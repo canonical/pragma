@@ -49,7 +49,6 @@ package-lock.json
 _site/
 *.*.map
 dist/
-api/
 
 # [env] Local environment settings
 .docker-project

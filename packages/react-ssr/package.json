@@ -18,9 +18,6 @@
   "bugs": {
     "url": "https://github.com/canonical/ds25/issues"
   },
-  "bin": {
-    "serve-ssr": "src/server/serve.ts"
-  },
   "homepage": "https://github.com/canonical/ds25#readme",
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
@@ -30,10 +27,25 @@
     "check:biome:fix": "biome check --write src *.json",
     "check:ts": "tsc --noEmit"
   },
+  "exports": {
+    ".": {
+      "import": "./dist/esm/index.js",
+      "types": "./dist/types/index.d.ts"
+    },
+    "./renderer": {
+      "import": "./dist/esm/renderer/index.js",
+      "types": "./dist/types/renderer/index.d.ts"
+    },
+    "./server": {
+      "import": "./dist/esm/server/index.js",
+      "types": "./dist/types/server/index.d.ts"
+    }
+  },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
     "@canonical/biome-config": "^0.4.0-experimental.0",
     "@canonical/typescript-config-base": "^0.4.0-experimental.0",
+    "@types/express": "^5.0.0",
     "@types/react": "^19.0.1",
     "@types/react-dom": "^19.0.2",
     "typescript": "^5.7.2"
@@ -41,6 +53,7 @@
   "dependencies": {
     "@canonical/utils": "^0.4.0-experimental.0",
     "domhandler": "^5.0.3",
+    "express": "^4.21.2",
     "htmlparser2": "^9.1.0",
     "react-dom": "^19.0.0"
   }

@@ -2,7 +2,7 @@
   "extends": "@canonical/typescript-config-react",
   "compilerOptions": {
     "baseUrl": "src",
-    "types": ["node", "react", "react-dom"]
+    "types": ["node", "react", "react-dom", "express"]
   },
   "include": ["src/**/*.ts"]
 }

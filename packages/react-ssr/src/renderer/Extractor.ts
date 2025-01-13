@@ -7,7 +7,8 @@ import React from "react";
  * Parses an HTML string to extract and convert script and link tags to React.createElement calls.
  */
 class Extractor {
-  private document: any;
+  // biome-ignore lint/suspicious/noExplicitAny: explicit any needed for the document type
+  private readonly document: any;
 
   constructor(html: string) {
     this.document = parseDocument(html);
