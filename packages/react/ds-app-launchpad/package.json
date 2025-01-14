@@ -1,5 +1,5 @@
 {
-  "name": "@canonical/react-ds-core",
+  "name": "@canonical/react-ds-app-launchpad",
   "version": "0.5.1-experimental.0",
   "type": "module",
   "module": "dist/esm/index.js",
