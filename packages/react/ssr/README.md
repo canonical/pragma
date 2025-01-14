@@ -154,13 +154,14 @@ const Renderer = new JSXRenderer(
   EntryServer, 
   { 
     htmlString, 
-    bootstrapModules: ["src/ssr/entry-client.tsx"] // Adds the client-side entry module to the page
+    renderToPipeableStreamOptions: {
+       bootstrapModules: ["src/ssr/entry-client.tsx"] // Adds the client-side entry module to the page
+    }
   }
 );
 ```
 
-The `JSXRenderer`'s options aim to support `react-dom/server`'s parameters for `renderToPipeableStream()`. 
-Only a subset of the options have been documented above.
+The `JSXRenderer` also accepts `renderToPipeableStreamOptions`, which are passed to react-dom/server`'s `renderToPipeableStream()`.
 
 For further information, refer to [React's `renderToPipeableStream()` documentation](https://react.dev/reference/react-dom/server/renderToPipeableStream#parameters).
 

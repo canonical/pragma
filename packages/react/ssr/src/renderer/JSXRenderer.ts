@@ -1,7 +1,11 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import type * as React from "react";
 import { type ReactElement, createElement } from "react";
-import { type PipeableStream, renderToPipeableStream } from "react-dom/server";
+import {
+  type PipeableStream,
+  type RenderToPipeableStreamOptions,
+  renderToPipeableStream,
+} from "react-dom/server";
 import Extractor from "./Extractor.js";
 
 export interface RendererOptions {
@@ -9,20 +13,15 @@ export interface RendererOptions {
   loadMessages?: (locale: string) => string;
   /** The HTML string to extract the script and link tags from */
   htmlString?: string;
-  /** The modules to bootstrap the app with */
-  bootstrapModules?: string[];
-  /** The content of the bootstrap script */
-  bootstrapScriptContent?: string;
-  /** The scripts to bootstrap the app with */
-  bootstrapScripts?: string[];
-  /** A callback to run when the stream is fully processed */
-  onAllReady?: () => void;
-  /** The size of the progressive chunks */
-  progressiveChunkSize?: number;
-  /** The nonce to use for the script tags */
-  nonce?: string;
-  /** The prefix for the identifiers */
-  identifierPrefix?: string;
+  /**
+   * Options to pass to `react-dom/server.renderToPipeableStream`
+   * We specifically exclude `onShellReady()`, `onError()`, and `onShellError()` as they are implemented by `JSXRenderer.render().`
+   * See https://react.dev/reference/react-dom/server/renderToPipeableStream#parameters
+   */
+  renderToPipeableStreamOptions?: Omit<
+    RenderToPipeableStreamOptions,
+    "onShellReady" | "onError" | "onShellError"
+  >;
 }
 
 /** The props that the server entrypoint component will receive */
@@ -110,6 +109,7 @@ export default class Renderer<
     let renderingError: Error;
 
     const jsxStream = renderToPipeableStream(jsx, {
+      ...this.options.renderToPipeableStreamOptions,
       // Early error, before the shell is prepared
       onShellError() {
         res
@@ -133,13 +133,6 @@ export default class Renderer<
       onError(error) {
         renderingError = error as Error;
       },
-      bootstrapModules: this.options.bootstrapModules,
-      bootstrapScripts: this.options.bootstrapScripts,
-      bootstrapScriptContent: this.options.bootstrapScriptContent,
-      onAllReady: this.options.onAllReady,
-      progressiveChunkSize: this.options.progressiveChunkSize,
-      nonce: this.options.nonce,
-      identifierPrefix: this.options.identifierPrefix,
     });
     return jsxStream;
   };
