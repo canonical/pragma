@@ -1,6 +1,6 @@
 {
   "name": "@canonical/generator-ds",
-  "version": "0.4.1-experimental.0",
+  "version": "0.6.0-experimental.0",
   "license": "GPL-3.0-only",
   "author": {
     "email": "webteam@canonical.com",

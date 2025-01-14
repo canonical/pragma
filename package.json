@@ -19,7 +19,9 @@
   "workspaces": [
     "configs/*",
     "packages/*",
-    "apps/*"
+    "packages/react/*",
+    "apps/*",
+    "apps/react/*"
   ],
   "scripts": {
     "build": "lerna run build",
