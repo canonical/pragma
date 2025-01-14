@@ -12,6 +12,8 @@ runs:
       with: 
         bun-version: ${{ inputs.bun-version }}
 
+      # TODO setup a matrix strategy to test multiple bun/node versions
+
       # "prepare" hook on `bun install` runs `bun run build`
     - name: Install dependencies
       shell: bash

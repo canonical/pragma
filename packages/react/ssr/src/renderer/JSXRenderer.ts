@@ -59,7 +59,6 @@ export default class Renderer<
   private extractor: Extractor | undefined;
 
   constructor(
-    // biome-ignore lint/suspicious/noExplicitAny: explicit any needed for the component props
     private readonly Component: TComponent,
     private readonly options: RendererOptions = {},
   ) {
@@ -96,9 +95,10 @@ export default class Renderer<
 
   /**
    * Renders this renderer's JSX component as a transmittable stream and sends it to the client
+   * TODO add a render function for ReadableStream, and rename this to be focused on PipeableStream
    * @param req Client's request
    * @param res Response object that will be sent to the client
-   * @return {Promise<>RenderResult>} The stream that was sent to the client
+   * @return {RenderResult} The stream that was sent to the client
    */
   render: RenderHandler = (
     req: IncomingMessage,
@@ -121,7 +121,6 @@ export default class Renderer<
       onShellReady() {
         res.writeHead(renderingError ? 500 : 200, {
           "Content-Type": "text/html; charset=utf-8",
-          "Transfer-Encoding": "chunked",
         });
 
         jsxStream.pipe(res);

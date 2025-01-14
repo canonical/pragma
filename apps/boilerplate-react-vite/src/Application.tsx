@@ -1,7 +1,7 @@
+import { Button } from "@canonical/react-ds-core";
 import React, { Suspense, useState, lazy } from "react";
 import canonicalLogo from "./assets/canonical.svg";
 import reactLogo from "./assets/react.svg";
-import { Button } from "@canonical/react-ds-core";
 import "./Application.css";
 
 const LazyButton = lazy(
