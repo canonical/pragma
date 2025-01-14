@@ -27,7 +27,7 @@ export interface RendererOptions {
 
 /** The props that the server entrypoint component will receive */
 export interface RendererServerEntrypointProps {
-  /** The language of the page */
+  /** The language of the page. This is typically read from the request headers. */
   lang?: string;
   /** The script tags to include in the page */
   scriptTags?: string;
