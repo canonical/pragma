@@ -1,5 +1,5 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
-import type { RenderHandler, RenderResult } from "../renderer/index.js";
+import type { RenderHandler } from "../renderer/index.js";
 
 /**
  * Execute a request handler that renders a React component to a stream, then streams it back to the client.

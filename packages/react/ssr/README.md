@@ -27,6 +27,12 @@ npm install @canonical/react-ssr
 
 This section walks you through setting up SSR for your React app, including creating entry points, building your app, and handling SSR requests.
 
+### Entrypoints
+
+You will notice that this setup encourages two entry points: one for the server, and one for the client. 
+The server entry point includes the full application HTML for compatibility with streams.
+The client entry point includes just the application component, which is hydrated on the client.
+
 ### Server-Side Entry Point
 
 Create a server-side entry point to wrap your application and inject the necessary scripts and links into the HTML.
@@ -88,30 +94,7 @@ The example below uses Vite.
 ### Server Request Handling
 
 Once your app is built, you can set up an Express server to handle SSR requests.
-
-```ts
-// src/ssr/server.ts
-import express from "express";
-import { serveStream } from "@canonical/react-ssr/server";
-import { JSXRenderer } from "@canonical/react-ssr/renderer";
-import htmlString from "../../dist/client/index.html?raw";
-import EntryServer from "./entry-server.js";
-
-// Set up the JSXRenderer with the server entry point
-const Renderer = new JSXRenderer(EntryServer, { htmlString });
-const ssrHandler = Renderer.render;
-
-const app = express();
-
-// Serve static assets
-app.use("/(assets|public)", express.static("dist/client/assets"));
-
-// Handle SSR requests and render the stream to the client
-app.use(serveStream(ssrHandler));
-```
-
-- The `JSXRenderer` renders the `EntryServer` component to a stream.
-- The `serveStream` controller sends the stream to the client.
+See [this file](../../../apps/boilerplate-react-vite/src/ssr/server.ts) as an example.
 
 ### Injecting the Client Application
 
