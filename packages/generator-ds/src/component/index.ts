@@ -133,10 +133,8 @@ export default class ComponentGenerator extends Generator<ComponentGeneratorOpti
 
     if (this.answers.withStyles) {
       this.fs.copyTpl(
-        this.templatePath("Component.css.ejs"),
-        this.destinationPath(
-          `${this.answers.componentPath}/${templateData.componentName}.css`,
-        ),
+        this.templatePath("style.css.ejs"),
+        this.destinationPath(`${this.answers.componentPath}/style.css`),
         templateData,
       );
     }
