@@ -1,0 +1,8 @@
+<%#
+    Template is appended to parent index.ts files.
+    Unlike other templates, this template may be appended to a file that already exists.
+    It does not output generator metadata.
+    Otherwise, users would have multiple copies of generator metadata in their index files,
+    that they would have to manually remove.
+#%>
+export * from './<%= componentName %>/index.js';
