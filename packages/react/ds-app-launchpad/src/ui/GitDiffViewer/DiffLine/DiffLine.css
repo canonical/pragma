@@ -1,0 +1,106 @@
+/* @canonical/generator-canonical-ds 0.0.1 */
+
+.ds.diff-line {
+  display: table-row;
+  font-family: var(--font-family-mono);
+  &.diff-line-add {
+    background-color: #e6ffed;
+
+    td.diff-gutter {
+      background-color: #e1f9e7;
+    }
+  }
+
+  &.diff-line-remove {
+    background-color: #ffeef0;
+
+    td.diff-gutter {
+      background-color: #fce3e6;
+    }
+  }
+
+  &.diff-line-context {
+    background-color: #f8f8f8;
+
+    td.diff-gutter {
+      background-color: #f6f8fa;
+    }
+  }
+
+  &.diff-line-hunk {
+    background-color: #f1f8ff;
+    color: rgba(0, 0, 0, 0.6);
+    user-select: none;
+    td.diff-gutter {
+      background-color: #e9f2ff;
+    }
+  }
+
+  td.diff-gutter {
+    width: var(--gutter-width);
+    padding: 0;
+    text-align: right;
+    border: 1px solid var(--border-color);
+    border-width: 0 1px;
+    user-select: none;
+    vertical-align: top;
+
+    &:not(.wrap) {
+      position: absolute; /* Keep the numbers fixed on line contents scroll */
+      vertical-align: middle;
+    }
+
+    .diff-line-numbers {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: #6a737d;
+      padding: 0px;
+    }
+    .line-num {
+      display: inline-block;
+      width: calc(var(--gutter-width) / 2 - 4px);
+      text-align: center;
+    }
+  }
+
+  td.diff-content {
+    padding: 0 0 0 calc(var(--gutter-width) + 4px);
+
+    &.wrap {
+      padding: 0 0 0 4px;
+      pre {
+        text-wrap: wrap;
+      }
+    }
+
+    pre {
+      margin: 0;
+      padding: 0 8px;
+      font-family: var(--font-family-mono);
+    }
+  }
+  &.interactive {
+    --icon-opacity: 0;
+    &:not(.diff-line-hunk) {
+      .diff-gutter {
+        cursor: pointer;
+        .diff-line-numbers::before {
+          content: var(--comment-icon);
+          display: inline-block;
+          width: var(--comment-icon-width);
+          opacity: var(--icon-opacity);
+          padding: 0 4px;
+        }
+      }
+
+      &:has(.diff-gutter:hover),
+      &:has(.diff-gutter:focus) {
+        filter: brightness(0.9);
+      }
+      &:has(.diff-gutter:hover) {
+        --icon-opacity: 1;
+      }
+    }
+  }
+}

@@ -6,11 +6,6 @@
   "license": "GPL-3.0-only",
   "scripts": {
     "dev": "vite",
-    "build": "bun run build:client && bun run build:server",
-    "build:client": "vite build --ssrManifest --outDir dist/client",
-    "build:server": "bun run build:server:middleware",
-    "build:server:middleware": "vite build --ssr src/ssr/server.ts --outDir dist/server",
-    "build:server:cli": "vite build --ssr src/ssr/renderer.tsx --outDir dist/server",
     "serve": "bun run serve:middleware",
     "serve:middleware": "bun run build:client && bun run build:server:middleware && node dist/server/server.js",
     "serve:cli": "bun run build:client && bun run build:server:cli && bun run serve-express dist/server/renderer.js",
