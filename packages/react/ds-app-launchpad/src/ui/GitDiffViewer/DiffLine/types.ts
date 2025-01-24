@@ -1,5 +1,5 @@
 /* @canonical/generator-canonical-ds 0.0.1 */
-import React from "react";
+import type React from "react";
 
 export type DiffContentLine = {
   type: "add" | "remove" | "context";

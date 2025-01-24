@@ -39,12 +39,11 @@ const GitDiffViewer: React.FC<GitDiffViewerProps> = ({
 
       // Query all .line-decoration in the table
       const lineDecorationRows = tableRef.current?.querySelectorAll(
-        "tr.line-decoration"
+        "tr.line-decoration",
       ) as NodeListOf<HTMLTableRowElement>;
-
-      lineDecorationRows.forEach((row) => {
+      for (const row of Array.from(lineDecorationRows)) {
         const container = row.querySelector(
-          ".line-decoration-container"
+          ".line-decoration-container",
         ) as HTMLDivElement | null;
 
         if (!container) return;
@@ -57,7 +56,7 @@ const GitDiffViewer: React.FC<GitDiffViewerProps> = ({
         // (because container is absolutely-positioned)
         const containerHeight = container.clientHeight;
         row.style.height = `${containerHeight}px`;
-      });
+      }
     });
 
     // Observe the table for size changes
@@ -67,7 +66,7 @@ const GitDiffViewer: React.FC<GitDiffViewerProps> = ({
     return () => {
       resizeObserver.disconnect();
     };
-  }, [diff, lineDecorations]);
+  }, []);
 
   const getLanguage = (filePath: string): string => {
     const extension = filePath.split(".").pop();
@@ -100,7 +99,7 @@ const GitDiffViewer: React.FC<GitDiffViewerProps> = ({
           let newLineCounter = hunk.newStart;
 
           return (
-            <div key={hunkIndex} className="diff-hunk">
+            <div key={`${diff.oldPath}-${hunkIndex}`} className="diff-hunk">
               <table className="diff-table" ref={tableRef}>
                 <tbody>
                   {/* Hunk header line */}
@@ -146,33 +145,32 @@ const GitDiffViewer: React.FC<GitDiffViewerProps> = ({
                                   setOpenComment((prev) =>
                                     prev === (lineNum2 || lineNum1)
                                       ? null
-                                      : lineNum2 || lineNum1
+                                      : lineNum2 || lineNum1,
                                   )
                               : undefined
                           }
                         />
 
-                        {lineDecorations &&
-                          lineDecorations[lineNum2 || lineNum1 || 0] && (
-                            <tr
-                              className="line-decoration"
-                              ref={(el) => {
-                                decorationRefs.current[
-                                  lineNum2 || lineNum1 || 0
-                                ] = el;
-                              }}
+                        {lineDecorations?.[lineNum2 || lineNum1 || 0] && (
+                          <tr
+                            className="line-decoration"
+                            ref={(el) => {
+                              decorationRefs.current[
+                                lineNum2 || lineNum1 || 0
+                              ] = el;
+                            }}
+                          >
+                            <td className="line-decoration-placeholder">
+                              &nbsp;
+                            </td>
+                            <td
+                              className="line-decoration-container"
+                              style={{ position: "absolute" }}
                             >
-                              <td className="line-decoration-placeholder">
-                                &nbsp;
-                              </td>
-                              <td
-                                className="line-decoration-container"
-                                style={{ position: "absolute" }}
-                              >
-                                {lineDecorations[lineNum2 || lineNum1 || 0]}
-                              </td>
-                            </tr>
-                          )}
+                              {lineDecorations[lineNum2 || lineNum1 || 0]}
+                            </td>
+                          </tr>
+                        )}
 
                         {/* Open comment row, if any */}
                         {openComment &&

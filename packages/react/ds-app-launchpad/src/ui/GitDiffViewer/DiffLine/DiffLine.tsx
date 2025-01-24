@@ -45,6 +45,12 @@ const DiffLine = ({
         className={`diff-gutter ${wrapLines ? "wrap" : ""}`}
         tabIndex={gutterIsInteractive && props.type !== "hunk" ? 0 : undefined}
         onClick={() => onCommentOpen?.()}
+        onKeyUp={(e) => {
+          if (e.key === "Enter") {
+            onCommentOpen?.();
+          }
+        }}
+        onKeyDown={undefined}
       >
         {props.type === "hunk" ? (
           "\u00A0"
@@ -60,10 +66,11 @@ const DiffLine = ({
           <pre>{props.hunkHeader}</pre>
         ) : (
           <pre
+            // biome-ignore lint/security/noDangerouslySetInnerHtml: syntax highlighting requires adding generated HTML
             dangerouslySetInnerHTML={{
               __html: props.content ? highlight(props.content) : "\u00A0",
             }}
-          ></pre>
+          />
         )}
       </td>
     </tr>

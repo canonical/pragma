@@ -1,10 +1,10 @@
 /* @canonical/generator-canonical-ds 0.0.1 */
 
-import { parseGitDiff } from "./diff-utils.js";
-import Component from "./GitDiffViewer.js";
 // Needed for function-based story, safe to remove otherwise
 // import type { GitDiffViewerProps } from './types.js'
 import type { Meta, StoryObj } from "@storybook/react";
+import Component from "./GitDiffViewer.js";
+import { parseGitDiff } from "./diff-utils.js";
 // Needed for template-based story, safe to remove otherwise
 // import type { StoryFn } from '@storybook/react'
 
@@ -92,6 +92,7 @@ export const WithComments: Story = {
             }
           }}
         />
+        {/* biome-ignore lint/a11y/useButtonType: */}
         <button onClick={onClose}>Close</button>
       </div>
     ),

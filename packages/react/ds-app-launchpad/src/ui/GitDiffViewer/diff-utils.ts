@@ -1,4 +1,4 @@
-import { Hunk, ParsedFile } from "./types.js";
+import type { Hunk, ParsedFile } from "./types.js";
 
 export function parseGitDiff(diffText: string): ParsedFile[] {
   const lines = diffText.split("\n");
@@ -8,8 +8,7 @@ export function parseGitDiff(diffText: string): ParsedFile[] {
 
   const fileRegex = /^diff --git a\/(.+) b\/(.+)$/;
   const hunkRegex = /^@@ -(\d+),?(\d*) \+(\d+),?(\d*) @@/;
-
-  lines.forEach((line) => {
+  for (const line of lines) {
     const fileMatch = line.match(fileRegex);
     if (fileMatch) {
       if (currentFile) files.push(currentFile);
@@ -19,33 +18,33 @@ export function parseGitDiff(diffText: string): ParsedFile[] {
         hunks: [],
       };
       currentHunk = null;
-      return;
+      continue;
     }
 
     const hunkMatch = line.match(hunkRegex);
     if (hunkMatch && currentFile) {
       currentHunk = {
         header: line,
-        oldStart: parseInt(hunkMatch[1], 10),
-        oldLines: hunkMatch[2] ? parseInt(hunkMatch[2], 10) : 1,
-        newStart: parseInt(hunkMatch[3], 10),
-        newLines: hunkMatch[4] ? parseInt(hunkMatch[4], 10) : 1,
+        oldStart: Number.parseInt(hunkMatch[1], 10),
+        oldLines: hunkMatch[2] ? Number.parseInt(hunkMatch[2], 10) : 1,
+        newStart: Number.parseInt(hunkMatch[3], 10),
+        newLines: hunkMatch[4] ? Number.parseInt(hunkMatch[4], 10) : 1,
         lines: [],
       };
       currentFile.hunks.push(currentHunk);
-      return;
+      continue;
     }
 
     if (currentHunk && currentFile) {
       const type = line.startsWith("+")
         ? "add"
         : line.startsWith("-")
-        ? "remove"
-        : "context";
+          ? "remove"
+          : "context";
       const content = line.slice(1);
       currentHunk.lines.push({ type, content });
     }
-  });
+  }
 
   if (currentFile) files.push(currentFile);
   return files;

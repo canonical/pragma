@@ -3,7 +3,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import Component from "./GitDiffViewer.js";
-import { AddComponentType, ParsedFile } from "./types.js";
+import type { AddComponentType, ParsedFile } from "./types.js";
 
 const diff: ParsedFile = {
   hunks: [
@@ -33,7 +33,11 @@ describe("GitDiffViewer component", () => {
 
   it("applies basic props correctly", () => {
     const { container } = render(
-      <Component diff={diff} className="test-class" style={{ color: "#333" }} />
+      <Component
+        diff={diff}
+        className="test-class"
+        style={{ color: "#333" }}
+      />,
     );
     expect(container.firstChild).toHaveClass("test-class");
     expect(container.firstChild).toHaveStyle({ color: "#333" });
@@ -51,16 +55,18 @@ describe("GitDiffViewer component", () => {
     const AddComment: AddComponentType = ({ lineNumber, onClose }) => (
       <div>
         New comment
+        {/* biome-ignore lint/a11y/useButtonType: */}
         <button onClick={onClose}>Close</button>
       </div>
     );
 
     const { container } = render(
-      <Component diff={diff} AddComment={AddComment} />
+      <Component diff={diff} AddComment={AddComment} />,
     );
     const gutter = container.querySelector(".diff-gutter[tabindex='0']");
     expect(gutter).toBeDefined();
-    fireEvent.click(gutter!);
+    if (!gutter) return;
+    fireEvent.click(gutter);
     screen.getByText("New comment");
   });
 });
