@@ -107,7 +107,7 @@ jobs:
         uses: ./.github/actions/setup-env
 
       - name: Setup Node, authenticate with NPM registry
-        uses: actions/setup-node@v4.1.0
+        uses: actions/setup-node@v4.2.0
         with:
           node-version: 22
           registry-url: https://registry.npmjs.org
