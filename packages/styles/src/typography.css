@@ -23,7 +23,7 @@ TODO
 
 html {
   color: #000;
-  font-family: var(--font-family-sans);
+  font-family: Arial, sans-serif;
   -moz-osx-font-smoothing: grayscale;
   -webkit-font-smoothing: antialiased;
   font-weight: 400;
