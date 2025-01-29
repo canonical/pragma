@@ -1,6 +1,7 @@
 name: "Pull request"
 on:
   pull_request:
+    # TODO determine if we really only want to run tests on main branch PRs
     branches:
       - main
 jobs:
@@ -9,13 +10,24 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-        # "prepare" hook on `bun install` runs `bun run build`
       - name: Setup environment
+        id: setup-env
         uses: ./.github/actions/setup-env
 
+        # Only check and test the packages that have changed
       - name: Code quality checks
-        run: bun run check
+        run: lerna run check ${{ steps.setup-env.outputs.lerna_scope }}
 
       - name: Test
-        run: bun run test
+        run: lerna run test ${{ steps.setup-env.outputs.lerna_scope }}
+
+  visual-tests:
+    name: Compare UI with baseline
+    needs: build
+    uses: ./.github/workflows/chromatic.yml
+    with:
+      onlyChanged: true
+    secrets: inherit

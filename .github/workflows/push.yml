@@ -23,3 +23,13 @@ jobs:
 
       - name: Test
         run: bun run test
+
+  update-visual-test-baseline:
+    name: Update visual testing baseline
+    needs: build
+    uses: ./.github/workflows/chromatic.yml
+    with:
+      onlyChanged: true
+      # baseline builds are automatically approved, as they were reviewed in the PR flow
+      autoApprove: true
+    secrets: inherit
