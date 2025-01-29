@@ -1,20 +1,27 @@
 /* @canonical/generator-canonical-ds 0.0.1 */
 
-// Needed for function-based story, safe to remove otherwise
-// import type { GitDiffViewerProps } from './types.js'
+import { useState } from "@storybook/preview-api";
 import type { Meta, StoryObj } from "@storybook/react";
+import type { CodeDiffViewerChildrenRender } from "./CodeDiffViewer/types.js";
 import Component from "./GitDiffViewer.js";
-import { parseGitDiff } from "./diff-utils.js";
-// Needed for template-based story, safe to remove otherwise
-// import type { StoryFn } from '@storybook/react'
+import parseGitDiff from "./utils/git-diff-parser.js";
 
 const meta = {
   title: "GitDiffViewer",
+  tags: ["autodocs"],
   component: Component,
+  excludeStories: [
+    "DUMMY_COMMENT",
+    "ADD_COMMENT",
+    "PARSED_SAMPLE_DIFF",
+    "PARSED_DELETED_FILE_DIFF",
+    "PARSED_ADDED_FILE_DIFF",
+  ],
 } satisfies Meta<typeof Component>;
 
 export default meta;
-const sampleDiff = `diff --git a/src/components/FileTree/FileItem.module.scss b/src/components/FileTree/FileItem.module.scss
+
+const SAMPLE_RAW_DIFF = `diff --git a/src/components/FileTree/FileItem.module.scss b/src/components/FileTree/FileItem.module.scss
 index e6e9670..a0c74ab 100644
 --- a/src/components/FileTree/FileItem.module.scss
 +++ b/src/components/FileTree/FileItem.module.scss
@@ -35,6 +42,90 @@ index e6e9670..a0c74ab 100644
     white-space: nowrap;
 `;
 
+const DELETED_FILE_RAW_DIFF = `diff --git a/.vscode/launch.json b/.vscode/launch.json
+deleted file mode 100644
+index e368c54..0000000
+--- a/.vscode/launch.json
++++ /dev/null
+@@ -1,11 +0,0 @@
+-{
+-    "version": "0.2.0",
+-    "configurations": [
+-        {
+-            "command": "./node_modules/.bin/astro dev",
+-            "name": "Development server",
+-            "request": "launch",
+-            "type": "node-terminal"
+-        }
+-    ]
+-}`;
+
+const ADDED_FILE_RAW_DIFF = `diff --git a/src/components/CodeDiff/CodeDiff.module.scss b/src/components/CodeDiff/CodeDiff.module.scss
+new file mode 100644
+index 0000000..76ec9a4
+--- /dev/null
++++ b/src/components/CodeDiff/CodeDiff.module.scss
+@@ -0,0 +1,5 @@
++.codeDiffContainer {
++    display: block;
++    flex: 1;
++    min-width: 0;
++}
+diff --git a/src/components/CodeDiff/FileDiff.module.scss b/src/components/CodeDiff/FileDiff.module.scss
+new file mode 100644
+index 0000000..5f67fba
+`;
+
+export const PARSED_SAMPLE_DIFF = parseGitDiff(SAMPLE_RAW_DIFF)[0];
+export const PARSED_DELETED_FILE_DIFF = parseGitDiff(DELETED_FILE_RAW_DIFF)[0];
+export const PARSED_ADDED_FILE_DIFF = parseGitDiff(ADDED_FILE_RAW_DIFF)[0];
+
+export const DUMMY_COMMENT = (
+  <div
+    style={{
+      backgroundColor: "#e0e0e0",
+      color: "black",
+      padding: "5px",
+      margin: "10px 5px",
+      border: "1px solid #ccc",
+      borderRadius: "4px",
+    }}
+  >
+    Test comment
+  </div>
+);
+
+export const ADD_COMMENT: CodeDiffViewerChildrenRender = (
+  lineNumber,
+  onClose,
+) => (
+  <div
+    style={{
+      display: "flex",
+      flexDirection: "column",
+      gap: "8px",
+      margin: "10px 5px",
+    }}
+  >
+    <textarea
+      style={{
+        resize: "vertical",
+      }}
+      // biome-ignore lint/a11y/noAutofocus:
+      autoFocus
+      placeholder={`Comment on line ${lineNumber}`}
+      // on enter, save the comment
+      onKeyDown={(e) => {
+        if (e.key === "Enter") {
+          onClose();
+        }
+      }}
+    />
+    {/* biome-ignore lint/a11y/useButtonType: */}
+    <button onClick={onClose}>Close</button>
+  </div>
+);
+
 /*
   CSF3 story
   Uses object-based story declarations with strong TS support (`Meta` and `StoryObj`).
@@ -44,22 +135,37 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   args: {
-    diff: parseGitDiff(sampleDiff)[0],
-  },
-};
-
-export const NoWrap: Story = {
-  args: {
-    diff: parseGitDiff(sampleDiff)[0],
+    diff: PARSED_SAMPLE_DIFF,
+    children: (
+      <>
+        <Component.FileHeader showCollapse showChangeCount />
+        <Component.CodeDiff />
+      </>
+    ),
     wrapLines: false,
+    lineDecorations: {},
+  },
+  render: (args) => {
+    const [collapsed, setCollapsed] = useState(false);
+    return (
+      <Component
+        {...args}
+        collapsed={collapsed}
+        onCollapseToggle={setCollapsed}
+      >
+        {args.children}
+      </Component>
+    );
   },
 };
 
 export const WithComments: Story = {
   args: {
-    diff: parseGitDiff(sampleDiff)[0],
+    diff: PARSED_SAMPLE_DIFF,
+    wrapLines: false,
+    collapsed: false,
     lineDecorations: {
-      21: (
+      20: (
         <div
           style={{
             backgroundColor: "#e0e0e0",
@@ -70,31 +176,45 @@ export const WithComments: Story = {
             borderRadius: "4px",
           }}
         >
-          Comment on line 21
+          Test comment
         </div>
       ),
     },
-    AddComment: ({ lineNumber, onClose }) => (
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: "8px",
-          margin: "10px 5px",
-        }}
-      >
-        <textarea
-          placeholder={`Comment on line ${lineNumber}`}
-          // on enter, save the comment
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              onClose();
-            }
-          }}
-        />
-        {/* biome-ignore lint/a11y/useButtonType: */}
-        <button onClick={onClose}>Close</button>
-      </div>
+    children: (
+      <>
+        <Component.FileHeader showChangeCount />
+        <Component.CodeDiff>{ADD_COMMENT}</Component.CodeDiff>
+      </>
+    ),
+  },
+};
+
+export const DeletedFile: Story = {
+  args: {
+    diff: PARSED_DELETED_FILE_DIFF,
+    wrapLines: false,
+    collapsed: false,
+    lineDecorations: {},
+    children: (
+      <>
+        <Component.FileHeader showChangeCount />
+        <Component.CodeDiff />
+      </>
+    ),
+  },
+};
+
+export const AddedFile: Story = {
+  args: {
+    diff: PARSED_ADDED_FILE_DIFF,
+    wrapLines: false,
+    collapsed: false,
+    lineDecorations: {},
+    children: (
+      <>
+        <Component.FileHeader showChangeCount />
+        <Component.CodeDiff />
+      </>
     ),
   },
 };

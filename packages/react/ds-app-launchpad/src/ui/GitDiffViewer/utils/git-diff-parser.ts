@@ -1,13 +1,15 @@
-import type { Hunk, ParsedFile } from "./types.js";
+import type { DiffFile, Hunk } from "../types.js";
 
-export function parseGitDiff(diffText: string): ParsedFile[] {
+function parseGitDiff(diffText: string): DiffFile[] {
   const lines = diffText.split("\n");
-  const files: ParsedFile[] = [];
-  let currentFile: ParsedFile | null = null;
+  const files: DiffFile[] = [];
+  let currentFile: DiffFile | null = null;
   let currentHunk: Hunk | null = null;
-
   const fileRegex = /^diff --git a\/(.+) b\/(.+)$/;
   const hunkRegex = /^@@ -(\d+),?(\d*) \+(\d+),?(\d*) @@/;
+  const oldFileRegex = /^--- (.+)$/;
+  const newFileRegex = /^\+\+\+ (.+)$/;
+
   for (const line of lines) {
     const fileMatch = line.match(fileRegex);
     if (fileMatch) {
@@ -15,9 +17,25 @@ export function parseGitDiff(diffText: string): ParsedFile[] {
       currentFile = {
         oldPath: fileMatch[1],
         newPath: fileMatch[2],
+        fileChangeState: "none",
         hunks: [],
       };
       currentHunk = null;
+      continue;
+    }
+
+    if (!currentFile) continue;
+
+    const oldFileMatch = line.match(oldFileRegex);
+    const newFileMatch = line.match(newFileRegex);
+    if (oldFileMatch || newFileMatch) {
+      if (oldFileMatch?.[0].includes("/dev/null")) {
+        currentFile.fileChangeState = "added";
+      } else if (newFileMatch?.[0].includes("/dev/null")) {
+        currentFile.fileChangeState = "deleted";
+      } else if (currentFile.fileChangeState === "none") {
+        currentFile.fileChangeState = "modified";
+      }
       continue;
     }
 
@@ -49,3 +67,5 @@ export function parseGitDiff(diffText: string): ParsedFile[] {
   if (currentFile) files.push(currentFile);
   return files;
 }
+
+export default parseGitDiff;

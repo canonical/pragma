@@ -21,6 +21,4 @@ export type DiffLineProps = {
   /* Inline styles */
   style?: React.CSSProperties;
   language?: string;
-  onCommentOpen?: () => void;
-  wrapLines: boolean;
 } & (DiffContentLine | DiffHunkLine);

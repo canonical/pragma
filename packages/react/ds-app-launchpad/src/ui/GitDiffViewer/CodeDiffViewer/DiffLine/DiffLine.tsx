@@ -1,6 +1,7 @@
 /* @canonical/generator-canonical-ds 0.0.1 */
 import hljs from "highlight.js";
 import type React from "react";
+import { useDiffViewer } from "ui/GitDiffViewer/DiffViewerContext/DiffViewerContext.js";
 import "./DiffLine.css";
 import type { DiffLineProps } from "./types.js";
 
@@ -15,11 +16,11 @@ const DiffLine = ({
   className,
   style,
   language = "plaintext",
-  wrapLines,
-  onCommentOpen,
   ...props
 }: DiffLineProps): React.ReactElement => {
-  const gutterIsInteractive = !!onCommentOpen;
+  const { wrapLines, addCommentEnabled, toggleAddCommentLocation } =
+    useDiffViewer();
+  const gutterIsInteractive = addCommentEnabled;
   const typeClass = `diff-line-${props.type}`;
   const highlight = (content: string) => {
     if (hljs.getLanguage(language)) {
@@ -27,6 +28,9 @@ const DiffLine = ({
     }
     return hljs.highlight(content, { language: "plaintext" }).value;
   };
+
+  const lineNumber =
+    props.type !== "hunk" ? Number(props.lineNum2 || props.lineNum1) : 0;
 
   return (
     <tr
@@ -44,10 +48,10 @@ const DiffLine = ({
       <td
         className={`diff-gutter ${wrapLines ? "wrap" : ""}`}
         tabIndex={gutterIsInteractive && props.type !== "hunk" ? 0 : undefined}
-        onClick={() => onCommentOpen?.()}
+        onClick={() => toggleAddCommentLocation(lineNumber)}
         onKeyUp={(e) => {
           if (e.key === "Enter") {
-            onCommentOpen?.();
+            toggleAddCommentLocation(lineNumber);
           }
         }}
         onKeyDown={undefined}
@@ -56,8 +60,8 @@ const DiffLine = ({
           "\u00A0"
         ) : (
           <div className="diff-line-numbers">
-            <span className="line-num">{props.lineNum1 ?? ""}</span>
-            <span className="line-num">{props.lineNum2 ?? ""}</span>
+            <span className="line-num">{props.lineNum1 ?? "+"}</span>
+            <span className="line-num">{props.lineNum2 ?? "-"}</span>
           </div>
         )}
       </td>

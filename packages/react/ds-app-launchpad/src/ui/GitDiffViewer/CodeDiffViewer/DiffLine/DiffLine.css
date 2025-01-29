@@ -1,52 +1,59 @@
 /* @canonical/generator-canonical-ds 0.0.1 */
 
 .ds.diff-line {
-  display: table-row;
+  display: block;
   font-family: var(--font-family-mono);
+  min-width: var(--table-width);
+  color: var(--git-diff-viewer-code-default-color);
+
   &.diff-line-add {
-    background-color: #e6ffed;
+    background-color: var(--git-diff-viewer-code-insertion-background);
 
     td.diff-gutter {
-      background-color: #e1f9e7;
-    }
-  }
-
-  &.diff-line-remove {
-    background-color: #ffeef0;
-
-    td.diff-gutter {
-      background-color: #fce3e6;
+      background-color: var(--git-diff-viewer-code-insertion-background);
     }
   }
 
   &.diff-line-context {
-    background-color: #f8f8f8;
+    background-color: var(--git-diff-viewer-code-default-background);
 
     td.diff-gutter {
-      background-color: #f6f8fa;
+      background-color: var(--git-diff-viewer-code-default-background);
+    }
+  }
+
+  &.diff-line-remove {
+    background-color: var(--git-diff-viewer-code-deletion-background);
+
+    td.diff-gutter {
+      background-color: var(--git-diff-viewer-code-deletion-background);
     }
   }
 
   &.diff-line-hunk {
-    background-color: #f1f8ff;
-    color: rgba(0, 0, 0, 0.6);
+    background-color: var(--git-diff-viewer-hunk-header-background);
+    color: var(--git-diff-viewer-hunk-header-color);
     user-select: none;
+    border-bottom: 1px solid var(--git-diff-viewer-border-color-tinted);
+
     td.diff-gutter {
-      background-color: #e9f2ff;
+      background-color: var(--git-diff-viewer-hunk-header-background);
+      border-color: var(--git-diff-viewer-border-color-tinted);
     }
   }
 
   td.diff-gutter {
-    width: var(--gutter-width);
+    min-width: var(--git-diff-viewer-gutter-width);
+    max-width: var(--git-diff-viewer-gutter-width);
     padding: 0;
     text-align: right;
-    border: 1px solid var(--border-color);
-    border-width: 0 1px;
+    border-right: 1px solid var(--git-diff-viewer-border-color-tinted);
     user-select: none;
     vertical-align: top;
 
     &:not(.wrap) {
-      position: absolute; /* Keep the numbers fixed on line contents scroll */
+      position: sticky;
+      left: 0;
       vertical-align: middle;
     }
 
@@ -54,21 +61,20 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      color: #6a737d;
       padding: 0px;
     }
     .line-num {
       display: inline-block;
-      width: calc(var(--gutter-width) / 2 - 4px);
+      width: calc(var(--git-diff-viewer-gutter-width) / 2 - 4px);
       text-align: center;
     }
   }
 
   td.diff-content {
-    padding: 0 0 0 calc(var(--gutter-width) + 4px);
+    /* padding: 0 0 0 calc(var(--git-diff-viewer-gutter-width) + 4px); */
+    padding: 0 0 0 4px;
 
     &.wrap {
-      padding: 0 0 0 4px;
       pre {
         text-wrap: wrap;
       }
