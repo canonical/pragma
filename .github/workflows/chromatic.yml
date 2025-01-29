@@ -1,0 +1,115 @@
+name: Chromatic UI visual test
+
+on:
+  workflow_call:
+    inputs:
+      onlyChanged:
+        description: 'Only run tests on changed stories'
+        required: false
+        type: boolean
+        default: false
+      autoApprove:
+        description: 'Automatically approve the build'
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  prepare-visual-tests:
+    name: Prepare visual tests
+    runs-on: ubuntu-latest
+    outputs:
+        packages_with_storybook: ${{ steps.get-packages-to-test.outputs.packages_with_storybook }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+           # Gives lerna access to all history so it can determine changed packages
+          fetch-depth: 0
+
+      - name: Setup environment
+        id: setup-env
+        uses: ./.github/actions/setup-env
+        with:
+          # No need to build in this job (it will be done in each matrix job)
+          # We just need bun and lerna installed.
+          build_packages: 'false'
+
+        # Construct test matrix
+      - name: Get packages to test with storybook
+        id: get-packages-to-test
+        run: |
+          packages_with_storybook="["
+          
+          packages=$(bun run lerna ls --all ${{ steps.setup-env.outputs.lerna_scope }} --json | jq -c '[.[] | {name, location}]')
+          
+          for PACKAGE in $(echo "$packages" | jq -c -r '.[] | @base64'); do
+            package_data=$(echo "$PACKAGE" | base64 --decode)
+            package_name=$(echo "$package_data" | jq -r '.name')
+            package_location=$(echo "$package_data" | jq -r '.location')
+            package_json_file="$package_location/package.json"
+          
+            # Check if the package has a storybook script
+            if [ -f "$package_json_file" ]; then
+              has_storybook=$(jq -r '.scripts.storybook' "$package_json_file")
+              if [ "$has_storybook" != "null" ]; then
+                packages_with_storybook+="\"$package_name\","
+                echo "Found storybook script in package: $package_name"
+              else
+                echo "No storybook script found in package: $package_name"
+              fi
+            fi
+          done
+          packages_with_storybook="${packages_with_storybook%,}]"
+          
+          echo $packages_with_storybook
+          echo "packages_with_storybook=$packages_with_storybook" >> $GITHUB_OUTPUT
+
+  run-visual-tests:
+    needs: prepare-visual-tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        package_name: ${{ fromJSON(needs.prepare-visual-tests.outputs.packages_with_storybook) }}
+      # If false, allow all packages to be tested, even if some fail. This is useful for PRs.
+      # If true, fail the entire job if any package fails. This is useful for updating the baseline.
+      fail-fast: ${{ inputs.autoApprove }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          # Gives chromatic access to all repo history for better comparison
+          fetch-depth: 0
+
+      - name: Setup environment
+        uses: ./.github/actions/setup-env
+        with:
+          packages_to_build: '[\"${{ matrix.package_name }}\"]'
+
+      - name: Get package directory
+        id: get-package-dir
+        shell: bash
+        run: |
+          # Lerna ls returns an absolute path to the package.
+          # However it must be passted to the chromatic runner as a relative path.
+          absolute_path=$(bun run lerna ls --scope ${{ matrix.package_name }} --json | jq -c -r '.[0].location')
+          relative_path=$(echo "$absolute_path" | awk -v root="$GITHUB_WORKSPACE" '{sub(root "/", "", $0); print}')
+          echo "package_dir=$relative_path" >> $GITHUB_OUTPUT
+
+      - name: Get chromatic secret name
+        id: get-chromatic-secret-name
+        run: |
+          # Sanitize the secret name for compatibility with GHA secrets
+          # Uppercase package name, remove "@" and replace non-alphanumeric characters with "_"
+          secret_name=CHROMATIC_TOKEN_$(echo "${{ matrix.package_name }}" | sed 's/@//g' | sed 's/[^a-zA-Z0-9_]/_/g' | tr '[:lower:]' '[:upper:]')
+          echo "secret_name=$secret_name" >> $GITHUB_OUTPUT
+
+      - name: Run Chromatic UI tests
+        uses: chromaui/action@latest
+        with:
+          projectToken: ${{ secrets[steps.get-chromatic-secret-name.outputs.secret_name] }}
+          workingDir: ${{ steps.get-package-dir.outputs.package_dir }}
+          onlyChanged: ${{ inputs.onlyChanged }}
+          autoAcceptChanges: ${{ inputs.autoApprove }}
+          # Chromatic expects "build-storybook" by default
+          buildScriptName: "build:storybook"

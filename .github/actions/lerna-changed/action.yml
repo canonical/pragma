@@ -1,0 +1,48 @@
+name: Get changed packages
+description: Helper action that retrieves and formats the list of packages to perform monorepo actions on.
+
+inputs:
+  packages_to_build:
+    description: JSON array of changed package names. If passed, this is used instead of running Lerna, and the `lerna_scope` will be generated from this list. You can also pass "*" to build all packages.
+    required: false
+
+outputs:
+  packages_to_build:
+    description: JSON array of changed package names
+    value: ${{ steps.get-packages-to-build.outputs.packages_to_build }}
+  lerna_scope:
+    description: --scope flag for each changed package. This can be used with most `lerna` commands to filter the packages to run the command on.
+    value: ${{ steps.get-lerna-scope.outputs.lerna_scope }}
+
+runs:
+  using: composite
+  steps:
+    - name: Get packages to build
+      id: get-packages-to-build
+      shell: bash
+      run: |
+        # All packages are built if the input is "*"
+        if [ "${{ inputs.packages_to_build }}" == "*" ]; then
+          packages_to_build=$(bun run lerna ls --json | jq -c -r '[.[].name]')
+        # If a list of packages is passed, use that
+        elif [ -n "${{ inputs.packages_to_build }}" ]; then
+          packages_to_build=$(echo "${{ inputs.packages_to_build }}" | jq -c -r .)
+        # Otherwise, use `lerna changed` to find packages changed since the last tag
+        else
+          packages_to_build=$(bun run lerna changed --all --json | jq -c -r '[.[].name]')
+        fi
+
+        echo "found changed packages: $packages_to_build"
+        echo "packages_to_build=$packages_to_build" >> $GITHUB_OUTPUT
+        
+    - name: Get Lerna scope
+      id: get-lerna-scope
+      shell: bash
+      run: |
+        for PACKAGE_NAME in $(echo '${{ steps.get-packages-to-build.outputs.packages_to_build }}' | jq -r '.[]'); do
+          echo "Found changed package: $PACKAGE_NAME"
+          lerna_scope="$lerna_scope--scope \"$PACKAGE_NAME\" "
+        done
+
+        echo "found lerna scope: $lerna_scope"
+        echo "lerna_scope=$lerna_scope" >> $GITHUB_OUTPUT
