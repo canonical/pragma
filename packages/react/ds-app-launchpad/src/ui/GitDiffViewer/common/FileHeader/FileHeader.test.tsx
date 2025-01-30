@@ -1,9 +1,9 @@
 /* @canonical/generator-canonical-ds 0.0.1 */
 
 import { render, screen } from "@testing-library/react";
+import GitDiffViewer from "ui/GitDiffViewer/GitDiffViewer.js";
 import { describe, expect, it } from "vitest";
-import { DiffViewerProvider } from "../DiffViewerContext/DiffViewerContext.js";
-import type { DiffFile } from "../types.js";
+import type { DiffFile } from "../../types.js";
 import Component from "./FileHeader.js";
 
 const SIMPLE_DIFF: DiffFile = {
@@ -16,18 +16,18 @@ const SIMPLE_DIFF: DiffFile = {
 describe("FileHeader component", () => {
   it("applies className correctly", () => {
     const { container } = render(
-      <DiffViewerProvider diff={SIMPLE_DIFF}>
+      <GitDiffViewer diff={SIMPLE_DIFF}>
         <Component className="test-class" />
-      </DiffViewerProvider>,
+      </GitDiffViewer>,
     );
-    expect(container.firstChild).toHaveClass("test-class");
+    expect(container.firstChild?.firstChild).toHaveClass("test-class");
   });
 
   it("shows the file path", () => {
     render(
-      <DiffViewerProvider diff={SIMPLE_DIFF}>
+      <GitDiffViewer diff={SIMPLE_DIFF}>
         <Component />
-      </DiffViewerProvider>,
+      </GitDiffViewer>,
     );
     expect(
       screen.getByText("src/components/FileTree/FileItem.module.scss"),
@@ -36,9 +36,9 @@ describe("FileHeader component", () => {
 
   it("shows the collapse button", () => {
     render(
-      <DiffViewerProvider diff={SIMPLE_DIFF}>
+      <GitDiffViewer diff={SIMPLE_DIFF}>
         <Component showCollapse />
-      </DiffViewerProvider>,
+      </GitDiffViewer>,
     );
     expect(screen.getByLabelText("Collapse file")).toBeDefined();
   });

@@ -1,17 +1,16 @@
 /* @canonical/generator-canonical-ds 0.0.1 */
 
 import type { Meta, StoryObj } from "@storybook/react";
-import { DiffViewerProvider } from "../DiffViewerContext/DiffViewerContext.js";
-import GitDiffViewer from "../GitDiffViewer.js";
+import GitDiffViewer from "ui/GitDiffViewer/GitDiffViewer.js";
 import {
   ADD_COMMENT,
   DUMMY_COMMENT,
   PARSED_SAMPLE_DIFF,
-} from "../GitDiffViewer.stories.js";
+} from "../../GitDiffViewer.stories.js";
 import Component from "./CodeDiffViewer.js";
 
 const meta = {
-  title: "GitDiffViewer/GitDiffViewer.CodeDiff",
+  title: "GitDiffViewer/CodeDiffViewer",
   tags: ["autodocs"],
   component: Component,
 } satisfies Meta<typeof Component>;
@@ -30,12 +29,12 @@ export const Default: Story = {
 
 export const WithComments: Story = {
   render: () => (
-    <DiffViewerProvider
+    <GitDiffViewer
       diff={PARSED_SAMPLE_DIFF}
       lineDecorations={{ 20: DUMMY_COMMENT }}
     >
       <Component />
-    </DiffViewerProvider>
+    </GitDiffViewer>
   ),
 };
 

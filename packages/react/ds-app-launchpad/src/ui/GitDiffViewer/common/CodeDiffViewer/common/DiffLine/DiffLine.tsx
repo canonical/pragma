@@ -1,8 +1,8 @@
 /* @canonical/generator-canonical-ds 0.0.1 */
 import hljs from "highlight.js";
 import type React from "react";
-import { useDiffViewer } from "ui/GitDiffViewer/DiffViewerContext/DiffViewerContext.js";
-import "./DiffLine.css";
+import { useDiffViewer } from "ui/GitDiffViewer/hooks/index.js";
+import "./style.css";
 import type { DiffLineProps } from "./types.js";
 
 const componentCssClassName = "ds diff-line";

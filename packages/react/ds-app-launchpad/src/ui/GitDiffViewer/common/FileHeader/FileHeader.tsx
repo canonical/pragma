@@ -1,9 +1,9 @@
 /* @canonical/generator-canonical-ds 0.0.1 */
 import type React from "react";
-import type { FileHeaderProps } from "./types.js";
-import "./FileHeader.css";
 import { useCallback } from "react";
-import { useDiffViewer } from "../DiffViewerContext/DiffViewerContext.js";
+import { useDiffViewer } from "ui/GitDiffViewer/hooks/index.js";
+import "./style.css";
+import type { FileHeaderProps } from "./types.js";
 
 const componentCssClassName = "ds file-header";
 

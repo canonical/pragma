@@ -1,16 +1,12 @@
 /* @canonical/generator-canonical-ds 0.0.1 */
 
 import type { Meta, StoryObj } from "@storybook/react";
-import { DiffViewerProvider } from "../DiffViewerContext/DiffViewerContext.js";
-import GitDiffViewer from "../GitDiffViewer.js";
-import {
-  PARSED_DELETED_FILE_DIFF,
-  PARSED_SAMPLE_DIFF,
-} from "../GitDiffViewer.stories.js";
+import GitDiffViewer from "../../GitDiffViewer.js";
+import { PARSED_SAMPLE_DIFF } from "../../GitDiffViewer.stories.js";
 import Component from "./FileHeader.js";
 
 const meta = {
-  title: "GitDiffViewer/GitDiffViewer.FileHeader",
+  title: "GitDiffViewer/FileHeader",
   tags: ["autodocs"],
   component: Component,
   decorators: [

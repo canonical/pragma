@@ -2,9 +2,9 @@
 
 import { useState } from "@storybook/preview-api";
 import type { Meta, StoryObj } from "@storybook/react";
-import type { CodeDiffViewerChildrenRender } from "./CodeDiffViewer/types.js";
 import Component from "./GitDiffViewer.js";
-import parseGitDiff from "./utils/git-diff-parser.js";
+import type { CodeDiffViewerChildrenRender } from "./common/CodeDiffViewer/types.js";
+import parseGitDiff from "./utils/parseGitDiff.js";
 
 const meta = {
   title: "GitDiffViewer",
@@ -97,7 +97,7 @@ export const DUMMY_COMMENT = (
 
 export const ADD_COMMENT: CodeDiffViewerChildrenRender = (
   lineNumber,
-  onClose,
+  onClose
 ) => (
   <div
     style={{

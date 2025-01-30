@@ -1,10 +1,10 @@
 /* @canonical/generator-canonical-ds 0.0.1 */
 import type React from "react";
 import { Fragment, useEffect, useRef } from "react";
-import { useDiffViewer } from "../DiffViewerContext/DiffViewerContext.js";
-import "./CodeDiffViewer.css";
-import DiffLine from "./DiffLine/DiffLine.js";
+import { useDiffViewer } from "ui/GitDiffViewer/hooks/index.js";
+import { DiffLine } from "./common/index.js";
 import "./HighlighTheme.css";
+import "./style.css";
 import type { CodeDiffViewerProps } from "./types.js";
 
 const componentCssClassName = "ds code-diff-viewer";

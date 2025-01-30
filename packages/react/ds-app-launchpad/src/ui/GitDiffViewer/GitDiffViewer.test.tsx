@@ -2,8 +2,8 @@
 
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import type { CodeDiffViewerChildrenRender } from "./CodeDiffViewer/types.js";
 import Component from "./GitDiffViewer.js";
+import type { CodeDiffViewerChildrenRender } from "./common/CodeDiffViewer/types.js";
 import type { DiffFile } from "./types.js";
 
 const diff: DiffFile = {
