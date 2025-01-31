@@ -1,50 +1,53 @@
 /* @canonical/generator-canonical-ds 0.0.1 */
 
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryFn } from "@storybook/react";
 import GitDiffViewer from "ui/GitDiffViewer/GitDiffViewer.js";
-import {
-  ADD_COMMENT,
-  DUMMY_COMMENT,
-  PARSED_SAMPLE_DIFF,
-} from "../../GitDiffViewer.stories.js";
-import Component from "./CodeDiffViewer.js";
 
-const meta = {
+import {
+  addCommentExample,
+  commentExample,
+  diffSample,
+} from "ui/GitDiffViewer/GitDiffViewer.fixture.js";
+import type { GitDiffViewerProps } from "ui/GitDiffViewer/types.js";
+import CodeDiffViewer from "./CodeDiffViewer.js";
+import type { CodeDiffViewerProps } from "./types.js";
+
+const meta: Meta = {
   title: "GitDiffViewer/CodeDiffViewer",
   tags: ["autodocs"],
-  component: Component,
-} satisfies Meta<typeof Component>;
+  component: CodeDiffViewer,
+  argTypes: {
+    diff: { table: { disable: true } },
+    lineDecorations: { table: { disable: true } },
+  },
+};
 
 export default meta;
 
-type Story = StoryObj<typeof meta>;
-
-export const Default: Story = {
-  render: () => (
-    <GitDiffViewer diff={PARSED_SAMPLE_DIFF}>
-      <Component />
+const Template: StoryFn<
+  CodeDiffViewerProps & Pick<GitDiffViewerProps, "diff" | "lineDecorations">
+> = ({ diff, lineDecorations, ...args }) => {
+  return (
+    <GitDiffViewer diff={diff} lineDecorations={lineDecorations}>
+      <CodeDiffViewer {...args} />
     </GitDiffViewer>
-  ),
+  );
 };
 
-export const WithComments: Story = {
-  render: () => (
-    <GitDiffViewer
-      diff={PARSED_SAMPLE_DIFF}
-      lineDecorations={{ 20: DUMMY_COMMENT }}
-    >
-      <Component />
-    </GitDiffViewer>
-  ),
+export const Default = Template.bind({});
+Default.args = {
+  diff: diffSample,
 };
 
-export const WithAddComment: Story = {
-  render: () => (
-    <GitDiffViewer
-      diff={PARSED_SAMPLE_DIFF}
-      lineDecorations={{ 20: DUMMY_COMMENT }}
-    >
-      <Component>{ADD_COMMENT}</Component>
-    </GitDiffViewer>
-  ),
+export const WithComments = Template.bind({});
+WithComments.args = {
+  diff: diffSample,
+  lineDecorations: { 20: commentExample },
+};
+
+export const WithAddComment = Template.bind({});
+WithAddComment.args = {
+  diff: diffSample,
+  lineDecorations: { 20: commentExample },
+  children: addCommentExample,
 };

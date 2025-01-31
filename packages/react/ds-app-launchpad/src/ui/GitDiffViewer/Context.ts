@@ -1,6 +1,6 @@
 import { createContext } from "react";
 import type { DiffViewerContextType } from "./types.js";
 
-export const DiffViewerContext = createContext<DiffViewerContextType | null>(
+export const GitDiffViewerContext = createContext<DiffViewerContextType | null>(
   null,
 );

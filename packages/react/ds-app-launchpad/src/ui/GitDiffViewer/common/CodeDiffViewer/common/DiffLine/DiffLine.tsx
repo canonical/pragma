@@ -46,7 +46,7 @@ const DiffLine = ({
         .join(" ")}
     >
       <td
-        className={`diff-gutter ${wrapLines ? "wrap" : ""}`}
+        className={`diff-gutter ${wrapLines ? "wrap" : ""} ${props.type}`}
         tabIndex={gutterIsInteractive && props.type !== "hunk" ? 0 : undefined}
         onClick={() => toggleAddCommentLocation(lineNumber)}
         onKeyUp={(e) => {

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { DiffViewerContext } from "./Context.js";
+import { GitDiffViewerContext } from "./Context.js";
 import { CodeDiffViewer, FileHeader } from "./common/index.js";
 import "./style.css";
 import type { DiffViewerContextType, GitDiffViewerType } from "./types.js";
@@ -71,7 +71,7 @@ const GitDiffViewer: GitDiffViewerType = ({
     }
   };
   return (
-    <DiffViewerContext.Provider
+    <GitDiffViewerContext.Provider
       value={{
         diff,
         isCollapsed: isCollapsed,
@@ -94,7 +94,7 @@ const GitDiffViewer: GitDiffViewerType = ({
       >
         {children}
       </div>
-    </DiffViewerContext.Provider>
+    </GitDiffViewerContext.Provider>
   );
 };
 

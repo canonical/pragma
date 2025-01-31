@@ -2,45 +2,28 @@
 
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
+import { diffSample } from "./GitDiffViewer.fixture.js";
 import Component from "./GitDiffViewer.js";
 import type { CodeDiffViewerChildrenRender } from "./common/CodeDiffViewer/types.js";
-import type { DiffFile } from "./types.js";
-
-const diff: DiffFile = {
-  hunks: [
-    {
-      header: "@@ -17,9 +17,13 @@",
-      lines: [
-        {
-          content: "background-color: transparent;",
-          type: "context",
-        },
-      ],
-      newLines: 1,
-      oldLines: 1,
-      newStart: 1,
-      oldStart: 1,
-    },
-  ],
-  newPath: "b/src/components/FileTree/FileItem.module.scss",
-  oldPath: "a/src/components/FileTree/FileItem.module.scss",
-  fileChangeState: "modified",
-};
 
 describe("GitDiffViewer component", () => {
   it("renders without crashing", () => {
     render(
-      <Component diff={diff}>
+      <Component diff={diffSample}>
         <Component.FileHeader />
         <Component.CodeDiff />
       </Component>,
     );
-    expect(screen.getByText(diff.hunks[0].header)).toBeDefined();
+    expect(screen.getByText(diffSample.hunks[0].header)).toBeDefined();
   });
 
   it("applies basic props correctly", () => {
     const { container } = render(
-      <Component diff={diff} className="test-class" style={{ color: "#333" }}>
+      <Component
+        diff={diffSample}
+        className="test-class"
+        style={{ color: "#333" }}
+      >
         <Component.FileHeader />
         <Component.CodeDiff />
       </Component>,
@@ -54,12 +37,12 @@ describe("GitDiffViewer component", () => {
       1: <div>Test</div>,
     };
     render(
-      <Component diff={diff} lineDecorations={lineDecorations}>
+      <Component diff={diffSample} lineDecorations={lineDecorations}>
         <Component.FileHeader />
         <Component.CodeDiff />
       </Component>,
     );
-    expect(screen.getByText("Test")).toBeDefined();
+    expect(screen.getByText("background-color")).toBeDefined();
   });
 
   it("renders AddComment component correctly", async () => {
@@ -72,7 +55,7 @@ describe("GitDiffViewer component", () => {
     );
 
     const { container } = render(
-      <Component diff={diff}>
+      <Component diff={diffSample}>
         <Component.FileHeader />
         <Component.CodeDiff>{addComment}</Component.CodeDiff>
       </Component>,
