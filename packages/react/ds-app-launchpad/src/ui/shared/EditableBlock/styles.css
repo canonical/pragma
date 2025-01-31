@@ -1,0 +1,23 @@
+.editable-block-component__header {
+  display: flex;
+  justify-content: space-between;
+}
+
+.editable-block-component__icon {
+    cursor: pointer;
+    flex: 1;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.editable-block-component__title {
+    flex: 1;
+    text-align: left;
+}
+
+.editable-block-component__children {
+  flex-grow: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
