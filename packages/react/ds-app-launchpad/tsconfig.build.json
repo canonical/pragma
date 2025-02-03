@@ -13,8 +13,8 @@
   "exclude": [
     "src/**/*.stories.ts",
     "src/**/*.stories.tsx",
-    "src/**/*.test.ts",
-    "src/**/*.test.tsx",
+    "src/**/*.tests.ts",
+    "src/**/*.tests.tsx",
     "vite.config.ts",
     "vitest.setup.ts",
     "vitest.config.ts",

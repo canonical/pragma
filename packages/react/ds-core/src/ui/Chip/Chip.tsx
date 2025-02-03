@@ -1,6 +1,6 @@
 /* @canonical/generator-canonical-ds 0.4.0-experimental.0 */
 import type React from "react";
-import "./Chip.css";
+import "./styles.css";
 import type { ChipPropsType } from "./types.js";
 
 const componentCssClassName = "ds chip";

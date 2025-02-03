@@ -36,7 +36,7 @@ export default mergeConfig(
       environment: "jsdom",
       // include vite globals for terser test code
       globals: true,
-      include: ["src/**/*.test.ts", "src/**/*.test.tsx"],
+      include: ["src/**/*.tests.ts", "src/**/*.tests.tsx"],
     },
   }),
 );
@@ -55,7 +55,7 @@ export default defineConfig({
     environment: "jsdom",
     // include vite globals for terser test code
     globals: true,
-    include: ["src/**/*.test.ts", "src/**/*.test.tsx"],
+    include: ["src/**/*.tests.ts", "src/**/*.tests.tsx"],
   }
 });
 ```

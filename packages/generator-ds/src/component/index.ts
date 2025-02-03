@@ -142,17 +142,17 @@ export default class ComponentGenerator extends Generator<ComponentGeneratorOpti
     );
 
     this.fs.copyTpl(
-      this.templatePath("Component.test.tsx.ejs"),
+      this.templatePath("Component.tests.tsx.ejs"),
       this.destinationPath(
-        `${this.answers.componentPath}/${templateData.componentName}.test.tsx`,
+        `${this.answers.componentPath}/${templateData.componentName}.tests.tsx`,
       ),
       templateData,
     );
 
     if (this.answers.withStyles) {
       this.fs.copyTpl(
-        this.templatePath("style.css.ejs"),
-        this.destinationPath(`${this.answers.componentPath}/style.css`),
+        this.templatePath("styles.css.ejs"),
+        this.destinationPath(`${this.answers.componentPath}/styles.css`),
         templateData,
       );
     }
