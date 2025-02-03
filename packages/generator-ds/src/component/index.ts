@@ -151,7 +151,7 @@ export default class ComponentGenerator extends Generator<ComponentGeneratorOpti
 
     if (this.answers.withStyles) {
       this.fs.copyTpl(
-        this.templatePath("styles.css.ejs"),
+        this.templatePath("Chip.css.ejs"),
         this.destinationPath(`${this.answers.componentPath}/styles.css`),
         templateData,
       );
