@@ -70,12 +70,16 @@ export default class ComponentGenerator extends Generator<ComponentGeneratorOpti
     const rawPath = super.destinationPath(...inPath);
     const dirName = path.dirname(rawPath);
 
+    let componentFolder = path.resolve(dirName);
+
     // Replace the last segment of the path with the Pascal-cased version
-    const componentFolder = path.resolve(
-      dirName,
-      "..",
-      casing.toPascalCase(path.basename(dirName)),
-    );
+    if (inPath.includes("/")) {
+      componentFolder = path.resolve(
+        componentFolder,
+        "..",
+        casing.toPascalCase(path.basename(dirName)),
+      );
+    }
 
     // Append the original file name to the new path
     const fileName = path.basename(rawPath);
