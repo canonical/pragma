@@ -1,5 +1,5 @@
 import path from "node:path";
-import { casing } from "@canonical/utils";
+import { casing, invariant } from "@canonical/utils";
 import Generator, { type BaseOptions } from "yeoman-generator";
 import globalContext from "../app/global-context.js";
 
@@ -66,6 +66,11 @@ export default class ComponentGenerator extends Generator<ComponentGeneratorOpti
 		if (!this.answers) return;
 
 		const componentName = path.basename(this.answers.componentPath);
+
+		invariant(
+			casing.isPascalCase(componentName),
+			`The component name ${componentName} must be in PascalCase.`,
+		);
 
 		const templateData = {
 			...globalContext,

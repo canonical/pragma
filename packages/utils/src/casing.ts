@@ -6,11 +6,11 @@
  * toPascalCase("my-component") // "MyComponent"
  */
 const toPascalCase = (s: string): string => {
-  if (!s) return "";
+	if (!s) return "";
 
-  const camelCased = toCamelCase(s);
+	const camelCased = toCamelCase(s);
 
-  return camelCased.charAt(0).toUpperCase() + camelCased.slice(1);
+	return camelCased.charAt(0).toUpperCase() + camelCased.slice(1);
 };
 
 /**
@@ -21,12 +21,12 @@ const toPascalCase = (s: string): string => {
  * toKebabCase("MyComponent") // "my-component"
  */
 const toKebabCase = (s: string): string => {
-  if (!s) return "";
+	if (!s) return "";
 
-  return s
-    .trim()
-    .replace(/([a-z0-9])([A-Z])/g, "$1-$2")
-    .toLowerCase();
+	return s
+		.trim()
+		.replace(/([a-z0-9])([A-Z])/g, "$1-$2")
+		.toLowerCase();
 };
 
 /**
@@ -37,17 +37,34 @@ const toKebabCase = (s: string): string => {
  * toCamelCase("my-component") // "myComponent"
  */
 const toCamelCase = (s: string): string => {
-  if (!s) return "";
+	if (!s) return "";
 
-  return s
-    .replace(/-([a-z])/g, (g) => g[1].toUpperCase())
-    .replaceAll("-", "")
-    .replaceAll("_", "")
-    .replaceAll(" ", "");
+	return s
+		.replace(/-([a-z])/g, (g) => g[1].toUpperCase())
+		.replaceAll("-", "")
+		.replaceAll("_", "")
+		.replaceAll(" ", "");
+};
+
+/**
+ * Check if a string is in PascalCase.
+ * @param s - The string to check
+ * @returns True if the string is in PascalCase, false otherwise.
+ * @example
+ * isPascalCase("MyComponent") // true
+ * isPascalCase("myComponent") // false
+ */
+const isPascalCase = (s: string): boolean => {
+	// A simple regular expression that requires:
+	// - the string to start with an uppercase letter
+	// - followed by zero or more lowercase letters or digits,
+	// - then zero or more groups that start with an uppercase letter followed by zero or more lowercase letters or digits.
+	return /^[A-Z][a-z0-9]*(?:[A-Z][a-z0-9]*)*$/.test(s);
 };
 
 export default {
-  toPascalCase,
-  toKebabCase,
-  toCamelCase,
+	toPascalCase,
+	toKebabCase,
+	toCamelCase,
+	isPascalCase,
 };
