@@ -30,12 +30,12 @@
  * ```
  */
 export default (
-	condition: unknown,
-	message?: string | (() => string),
-	prefix = "Invariant violation",
+  condition: unknown,
+  message?: string | (() => string),
+  prefix = "Invariant violation",
 ): asserts condition => {
-	if (!condition) {
-		const resolvedMessage = typeof message === "function" ? message() : message;
-		throw new Error(resolvedMessage ? `${prefix}: ${resolvedMessage}` : prefix);
-	}
+  if (!condition) {
+    const resolvedMessage = typeof message === "function" ? message() : message;
+    throw new Error(resolvedMessage ? `${prefix}: ${resolvedMessage}` : prefix);
+  }
 };
