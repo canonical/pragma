@@ -102,7 +102,7 @@ Before the release of 1.0.0, breaking changes result in a patch or minor level u
 The choice of patch or minor depends on the lowest level of change required to bump all packages to the same version at
 the same time.
 
-For example, consider this scenario:
+For example, consider this scenario where three packages A,B, and C are versioned, and package C has a breaking change:
 
 | Package | Version              | Change   | New Version          |
 |---------|----------------------|----------|----------------------|
