@@ -4,6 +4,10 @@ inputs:
   release_type:
     description: "Release type. If not 'stable', the current version will be bumped as a pre-release instead of a stable release."
     required: true
+  tag_prefix:
+    description: "Prefix for the git tag. Default is 'v'."
+    required: false
+    default: "v"
 outputs:
   VERSION:
     description: "The new latest version number across all packages"
@@ -30,4 +34,4 @@ runs:
 
     - name: Commit and tag v${{ steps.lerna_version.outputs.VERSION }}
       shell: bash
-      run: ${{ github.action_path }}/git-commit.sh v${{ steps.lerna_version.outputs.VERSION }}
+      run: ${{ github.action_path }}/git-commit.sh ${{ inputs.tag_prefix }}${{ steps.lerna_version.outputs.VERSION }}
