@@ -46,12 +46,12 @@ Level of change is determined by examining commit messages since the last releas
 These levels of change are standardized by the [Angular commit message guidelines](https://github.com/angular/angular/blob/22b96b9/CONTRIBUTING.md#-commit-message-guidelines).
 The following table shows the level of change for each commit type:
 
-| Commit Type                                  | Level of Change |
-|----------------------------------------------|-----------------|
-| fix                                          | patch           |
-| feat                                         | minor           |
-| BREAKING CHANGE (in commit body/description) | major           |
-| other (such as chore)                        | none            |
+| Commit Type                                                                                        | Level of Change |
+|----------------------------------------------------------------------------------------------------|-----------------|
+| fix                                                                                                | patch           |
+| feat                                                                                               | minor           |
+| BREAKING CHANGE (in commit body/description) (**This should not be used until we graduate to v1**) | major           |
+| other (such as chore)                                                                              | none            |
 
 We use
 Lerna's [fixed versioning strategy](https://lerna.js.org/docs/features/version-and-publish#fixedlocked-mode-default),
