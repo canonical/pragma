@@ -22,11 +22,11 @@ Open the [Tag workflow action](https://github.com/canonical/ds25/actions/workflo
 Click the "Run workflow" button to open a workflow triggering window.
 
 - Release type: The level of stability of this release. If a prerelease (anything that is not "stable") is chosen for
-  update type, this is used as the prerelease identifier (e.g., 0.0.1-rc.1).
+  update type, this is used as the prerelease identifier (e.g., 0.0.1-rc.1 for release type "rc").
     - Please note that all versions prior to 1.0.0 are considered breaking changes. There is no need to specify a
       breaking change release type for versions prior to 1.0.0.
     - To update to 1.0.0, see the [V1.0.0](#v100) section below.
-        - If you choose a stable release type and there are breaking changes, the publish action will fail until the
+        - If you choose a pre-release release type and there are breaking changes, the publish action will fail until the
           version is manually bumped to 1.0.0 to prevent creating v1+ prerelease versions.
 
 #### Conventional Commits
