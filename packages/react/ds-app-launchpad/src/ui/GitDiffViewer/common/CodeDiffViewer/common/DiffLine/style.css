@@ -1,7 +1,7 @@
 /* @canonical/generator-canonical-ds 0.0.1 */
 
 .ds.diff-line {
-  display: block;
+  display: flex;
   font-family: var(--font-family-mono);
   min-width: var(--table-width);
   color: var(--git-diff-viewer-code-default-color);
@@ -54,7 +54,6 @@
     &:not(.wrap) {
       position: sticky;
       left: 0;
-      vertical-align: middle;
     }
 
     .diff-line-numbers {
