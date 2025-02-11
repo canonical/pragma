@@ -11,16 +11,14 @@ This package, at the moment, solely exports the shared config. We might in the f
 ```typescript 
 import { createConfig } from "@canonical/storybook-config";
 
-import { dirname, join } from "node:path";
-
-function getAbsolutePath(value: string): string {
-	return dirname(require.resolve(join(value, "package.json")));
-}
-
-const config = createConfig(getAbsolutePath);
+const config = createConfig();
 
 /* Otherwise leads to a TS error "CSF Parsing error: Expected 'ObjectExpression' but found 'CallExpression' instead in 'CallExpression'."
  * https://github.com/storybookjs/storybook/issues/26778#issuecomment-2584041985
  */
 export default { ...config };
 ```
+
+## Caveats 
+- At the moment the factory is not configurable. We are not sure what the best api to pass custom config parameters would be, if any.
+- This storybook config for the time being only implementing a factory for react/vite. We imagine this might change to accomodate other frameworks and build tools.
