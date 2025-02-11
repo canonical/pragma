@@ -1,0 +1,44 @@
+{
+  "name": "@canonical/storybook-config",
+  "version": "0.9.0-experimental.1",
+  "description": "Canonical's standard Storybook configuration factory",
+  "main": "dist/esm/index.js",
+  "types": "dist/types/index.d.ts",
+  "author": {
+    "email": "webteam@canonical.com",
+    "name": "Canonical Webteam"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/canonical/ds25"
+  },
+  "license": "LGPL-3.0",
+  "bugs": {
+    "url": "https://github.com/canonical/ds25/issues"
+  },
+  "homepage": "https://github.com/canonical/ds25#readme",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "check": "bun run check:biome && bun run check:ts",
+    "check:fix": "bun run check:biome:fix && bun run check:ts",
+    "check:biome": "biome check src *.json",
+    "check:biome:fix": "biome check --write src *.json",
+    "check:ts": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "@canonical/biome-config": "^0.9.0-experimental.1",
+    "@canonical/typescript-config-react": "^0.9.0-experimental.1",
+    "typescript": "^5.7.2",
+    "@storybook/addon-essentials": "^8.4.7",
+    "@storybook/addon-interactions": "^8.4.7",
+    "@storybook/addon-links": "^8.4.7",
+    "@storybook/addon-onboarding": "^8.4.7",
+    "@storybook/react": "^8.4.7",
+    "@storybook/react-vite": "^8.4.7",
+    "@storybook/addon-themes": "^8.4.7"
+  },
+  "peerDependencies": {
+    "typescript": "^5.6.2"
+  }
+}
