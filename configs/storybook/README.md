@@ -1,4 +1,4 @@
-# Canonical Typescript Configuration
+# Canonical Storybook Configuration
 
 This package provides a reusable configuration factory for Canonical's Storybook projects.
 
@@ -24,5 +24,3 @@ const config = createConfig(getAbsolutePath);
  */
 export default { ...config };
 ```
-
-
