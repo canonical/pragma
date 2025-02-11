@@ -26,6 +26,7 @@
     "check:ts": "tsc --noEmit"
   },
   "dependencies": {
+    "@canonical/storybook-addon-baseline-grid": "^0.9.0-experimental.1",
     "@storybook/react": "^8.4.7",
     "@storybook/react-vite": "^8.4.7",
     "@storybook/addon-essentials": "^8.4.7",
