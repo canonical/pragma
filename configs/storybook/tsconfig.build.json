@@ -9,15 +9,5 @@
     "sourceMap": true,
     "skipLibCheck": true,
     "types": ["node", "react", "react-dom"]
-  },
-  "exclude": [
-    "src/**/*.stories.ts",
-    "src/**/*.stories.tsx",
-    "src/**/*.tests.ts",
-    "src/**/*.tests.tsx",
-    "vite.config.ts",
-    "vitest.setup.ts",
-    "vitest.config.ts",
-    ".storybook"
-  ]
+  }
 }
