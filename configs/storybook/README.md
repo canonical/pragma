@@ -6,7 +6,7 @@ This package, at the moment, solely exports the shared config. We might in the f
 
 ## Getting Started
 1. In your React Storybook project, install this package with `bun add @canonical/storybook-config`
-2. In your `.storybook/main.ts` file, replace the contents by 
+2. Replace the contents of `.storybook/main.ts` by 
 
 ```typescript 
 import { createConfig } from "@canonical/storybook-config";
