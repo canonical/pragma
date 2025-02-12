@@ -52,6 +52,7 @@ This configuration enables the following behavior:
 4. Disable version control integration: no interaction with Git
    1. Ignores `.gitignore`: Explicitly includes all files unless they are ignored manually or other files are included explicitly.
    2. Ignores Git add status: No need to stage files before running `biome check` or `biome format`.
+5. Ignores checking all files in `node_modules` and `dist` directories. Please note that if you specify your own ignored files using `files.ignore` in `biome.json`, you will override this behavior.
    
 ### Caveats
 #### Monorepos
