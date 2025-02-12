@@ -1,12 +1,8 @@
 /* @canonical/generator-canonical-ds 0.0.1 */
 
 import type { Meta, StoryFn } from "@storybook/react";
-import {
-  addCommentExample,
-  commentExample,
-  diffExample,
-} from "../../Provider.fixtures.js";
 import Provider from "../../Provider.js";
+import * as fixtures from "../../fixtures.js";
 import type { ProviderOptions } from "../../types.js";
 import CodeDiffViewer from "./CodeDiffViewer.js";
 import type { CodeDiffViewerProps } from "./types.js";
@@ -35,18 +31,18 @@ const Template: StoryFn<
 
 export const Default = Template.bind({});
 Default.args = {
-  diff: diffExample,
+  diff: fixtures.diffExample,
 };
 
 export const WithComments = Template.bind({});
 WithComments.args = {
-  diff: diffExample,
-  lineDecorations: { 20: commentExample },
+  diff: fixtures.diffExample,
+  lineDecorations: { 20: fixtures.commentExample },
 };
 
 export const InteractiveGutterWithAddComment = Template.bind({});
 InteractiveGutterWithAddComment.args = {
-  diff: diffExample,
-  lineDecorations: { 20: commentExample },
-  children: addCommentExample,
+  diff: fixtures.diffExample,
+  lineDecorations: { 20: fixtures.commentExample },
+  children: fixtures.addCommentExample,
 };

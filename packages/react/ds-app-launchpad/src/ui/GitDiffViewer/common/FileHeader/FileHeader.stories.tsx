@@ -1,8 +1,8 @@
 /* @canonical/generator-canonical-ds 0.0.1 */
 
 import type { Meta, StoryObj } from "@storybook/react";
-import { diffExample } from "../../Provider.fixtures.js";
 import Provider from "../../Provider.js";
+import { diffExample } from "../../fixtures.js";
 import Component from "./FileHeader.js";
 
 const meta = {

@@ -3,9 +3,10 @@ import type React from "react";
 import { Fragment, useEffect, useRef } from "react";
 import { useDiffViewer } from "../../hooks/index.js";
 import { DiffLine } from "./common/index.js";
-import "./HighlighTheme.css";
 import "./styles.css";
 import type { CodeDiffViewerProps } from "./types.js";
+// TODO: decide where to put this once we provide an external syntax highlighter option
+import "./HighlighTheme.css";
 
 const componentCssClassName = "ds code-diff-viewer";
 

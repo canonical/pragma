@@ -2,8 +2,8 @@
 
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import * as fixtures from "../../Provider.fixtures.js";
 import Provider from "../../Provider.js";
+import * as fixtures from "../../fixtures.js";
 import Component from "./FileHeader.js";
 
 describe("FileHeader component", () => {

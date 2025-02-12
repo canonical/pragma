@@ -2,7 +2,7 @@
 
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import * as fixtures from "../../../../Provider.fixtures.js";
+import * as fixtures from "../../../../fixtures.js";
 import GitDiffViewer from "../../../../index.js";
 import Component from "./DiffLine.js";
 import type { DiffContentLine, DiffHunkLine } from "./types.js";

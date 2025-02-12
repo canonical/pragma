@@ -2,8 +2,8 @@
 
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import * as fixtures from "./Provider.fixtures.js";
 import type { CodeDiffViewerChildrenRender } from "./common/CodeDiffViewer/types.js";
+import * as fixtures from "./fixtures.js";
 import Component from "./index.js";
 
 describe("GitDiffViewer component", () => {

@@ -72,9 +72,9 @@ const Provider = ({
     <Context.Provider
       value={{
         diff,
-        isCollapsed: isCollapsed,
+        isCollapsed,
         toggleCollapse,
-        wrapLines: wrapLines,
+        wrapLines,
         toggleWrapLines,
         setDiff: setInternalDiff,
         lineDecorations,

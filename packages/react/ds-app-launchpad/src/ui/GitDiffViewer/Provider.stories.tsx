@@ -2,7 +2,7 @@
 
 import { useState } from "@storybook/preview-api";
 import type { Meta, StoryObj } from "@storybook/react";
-import * as fixtures from "./Provider.fixtures.js";
+import * as fixtures from "./fixtures.js";
 import Component from "./index.js";
 
 const meta = {
