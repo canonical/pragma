@@ -14,8 +14,16 @@ Create `biome.json` in the root of your project and extend this configuration.
 
 ```json
 {
-  "$schema": "https://biomejs.dev/schemas/1.9.2/schema.json",
-  "extends": ["@canonical/biome-config"]
+  "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
+  "extends": [
+    "@canonical/biome-config"
+  ],
+  "files": {
+    "include": [
+      "src",
+      "*.json"
+    ]
+  }
 }
 ```
 Run `biome` commands as usual. The base configuration will be applied.
@@ -25,10 +33,7 @@ Example `package.json` scripts are provided below.
 ```jsonc
 {
   "scripts": {
-    // implicitly targets all files. 
     "check": "biome check",
-    // explicitly targets TS files; use this for more precision if needed
-    // "check:ts": "biome check --files src/**/*.ts",
     "format": "biome format",
     "lint": "biome lint"
   }
