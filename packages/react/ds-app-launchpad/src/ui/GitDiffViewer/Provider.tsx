@@ -1,32 +1,30 @@
 import { useState } from "react";
-import { GitDiffViewerContext } from "./Context.js";
-import { CodeDiffViewer, FileHeader } from "./common/index.js";
-import "./style.css";
-import type { DiffViewerContextType, GitDiffViewerType } from "./types.js";
+import Context from "./Context.js";
+import "./styles.css";
+import type { ContextOptions, ProviderOptions } from "./types.js";
 
 const componentCssClassName = "ds git-diff-viewer";
 
-const GitDiffViewer: GitDiffViewerType = ({
+const Provider = ({
   id,
   className,
   style,
   children,
   ...props
-}) => {
+}: ProviderOptions): React.ReactElement => {
   const [internalIsCollapsed, setInternalIsCollapsed] =
-    useState<DiffViewerContextType["isCollapsed"]>(false);
+    useState<ContextOptions["isCollapsed"]>(false);
   const [internalWrapLines, setInternalWrapLines] =
-    useState<DiffViewerContextType["wrapLines"]>(false);
-  const [internalDiff, setInternalDiff] =
-    useState<DiffViewerContextType["diff"]>();
+    useState<ContextOptions["wrapLines"]>(false);
+  const [internalDiff, setInternalDiff] = useState<ContextOptions["diff"]>();
   const [internalLineDecorations, setInternalLineDecorations] = useState<
-    DiffViewerContextType["lineDecorations"]
+    ContextOptions["lineDecorations"]
   >({});
   const [addCommentLocations, setAddCommentLocations] = useState<
-    DiffViewerContextType["addCommentLocations"]
+    ContextOptions["addCommentLocations"]
   >(new Set());
   const [addCommentEnabled, setAddCommentEnabled] =
-    useState<DiffViewerContextType["addCommentEnabled"]>(false);
+    useState<ContextOptions["addCommentEnabled"]>(false);
 
   const isCollapsed = props.collapsed ?? internalIsCollapsed;
   const wrapLines = props.wrapLines ?? internalWrapLines;
@@ -71,7 +69,7 @@ const GitDiffViewer: GitDiffViewerType = ({
     }
   };
   return (
-    <GitDiffViewerContext.Provider
+    <Context.Provider
       value={{
         diff,
         isCollapsed: isCollapsed,
@@ -94,11 +92,8 @@ const GitDiffViewer: GitDiffViewerType = ({
       >
         {children}
       </div>
-    </GitDiffViewerContext.Provider>
+    </Context.Provider>
   );
 };
 
-GitDiffViewer.CodeDiff = CodeDiffViewer;
-GitDiffViewer.FileHeader = FileHeader;
-
-export default GitDiffViewer;
+export default Provider;

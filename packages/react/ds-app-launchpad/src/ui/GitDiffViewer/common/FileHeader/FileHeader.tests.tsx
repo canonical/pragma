@@ -1,26 +1,26 @@
 /* @canonical/generator-canonical-ds 0.0.1 */
 
 import { render, screen } from "@testing-library/react";
-import { diffSample } from "ui/GitDiffViewer/GitDiffViewer.fixture.js";
-import GitDiffViewer from "ui/GitDiffViewer/GitDiffViewer.js";
 import { describe, expect, it } from "vitest";
+import * as fixtures from "../../Provider.fixtures.js";
+import Provider from "../../Provider.js";
 import Component from "./FileHeader.js";
 
 describe("FileHeader component", () => {
   it("applies className correctly", () => {
     const { container } = render(
-      <GitDiffViewer diff={diffSample}>
+      <Provider diff={fixtures.diffExample}>
         <Component className="test-class" />
-      </GitDiffViewer>,
+      </Provider>,
     );
     expect(container.firstChild?.firstChild).toHaveClass("test-class");
   });
 
   it("shows the file path", () => {
     render(
-      <GitDiffViewer diff={diffSample}>
+      <Provider diff={fixtures.diffExample}>
         <Component />
-      </GitDiffViewer>,
+      </Provider>,
     );
     expect(
       screen.getByText("src/components/FileTree/FileItem.module.scss"),
@@ -29,9 +29,9 @@ describe("FileHeader component", () => {
 
   it("shows the collapse button", () => {
     render(
-      <GitDiffViewer diff={diffSample}>
+      <Provider diff={fixtures.diffExample}>
         <Component showCollapse />
-      </GitDiffViewer>,
+      </Provider>,
     );
     expect(screen.getByLabelText("Collapse file")).toBeDefined();
   });

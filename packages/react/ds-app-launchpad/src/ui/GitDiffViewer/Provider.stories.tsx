@@ -2,14 +2,8 @@
 
 import { useState } from "@storybook/preview-api";
 import type { Meta, StoryObj } from "@storybook/react";
-import {
-  addCommentExample,
-  addedFileDiffSample,
-  commentExample,
-  deletedFileDiffSample,
-  diffSample,
-} from "./GitDiffViewer.fixture.js";
-import Component from "./GitDiffViewer.js";
+import * as fixtures from "./Provider.fixtures.js";
+import Component from "./index.js";
 
 const meta = {
   title: "GitDiffViewer",
@@ -23,7 +17,7 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   args: {
-    diff: diffSample,
+    diff: fixtures.diffExample,
     children: (
       <>
         <Component.FileHeader showCollapse showChangeCount />
@@ -49,16 +43,16 @@ export const Default: Story = {
 
 export const WithComments: Story = {
   args: {
-    diff: diffSample,
+    diff: fixtures.diffExample,
     wrapLines: false,
     collapsed: false,
     lineDecorations: {
-      20: commentExample,
+      20: fixtures.commentExample,
     },
     children: (
       <>
         <Component.FileHeader showChangeCount />
-        <Component.CodeDiff>{addCommentExample}</Component.CodeDiff>
+        <Component.CodeDiff>{fixtures.addCommentExample}</Component.CodeDiff>
       </>
     ),
   },
@@ -66,7 +60,7 @@ export const WithComments: Story = {
 
 export const DeletedFile: Story = {
   args: {
-    diff: deletedFileDiffSample,
+    diff: fixtures.deletedFileDiffExample,
     wrapLines: false,
     collapsed: false,
     lineDecorations: {},
@@ -81,7 +75,7 @@ export const DeletedFile: Story = {
 
 export const AddedFile: Story = {
   args: {
-    diff: addedFileDiffSample,
+    diff: fixtures.addedFileDiffExample,
     wrapLines: false,
     collapsed: false,
     lineDecorations: {},

@@ -1,14 +1,16 @@
 /* @canonical/generator-canonical-ds 0.0.1 */
 import type React from "react";
 import { useCallback } from "react";
-import { useDiffViewer } from "ui/GitDiffViewer/hooks/index.js";
-import "./style.css";
+import { useDiffViewer } from "../../hooks/index.js";
+import "./styles.css";
 import type { FileHeaderProps } from "./types.js";
 
 const componentCssClassName = "ds file-header";
 
 /**
- * description of the FileHeader component
+ * Displays the file name and change count for a diff.
+ * With option to add custom elements to the left and right of the file header.
+ *
  * @returns {React.ReactElement} - Rendered FileHeader
  */
 const FileHeader = ({
@@ -21,9 +23,9 @@ const FileHeader = ({
   leftContent,
   rightContent,
   ...props
-}: FileHeaderProps): React.ReactElement => {
+}: FileHeaderProps): React.ReactElement | null => {
   const { isCollapsed, toggleCollapse, diff } = useDiffViewer();
-  if (!diff) return <></>;
+  if (!diff) return null;
   const calculateChangeCount = useCallback(() => {
     let additions = 0;
     let deletions = 0;

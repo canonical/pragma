@@ -1,8 +1,8 @@
 import { useContext } from "react";
-import { GitDiffViewerContext } from "../Context.js";
+import Context from "../Context.js";
 
-export const useDiffViewer = () => {
-  const context = useContext(GitDiffViewerContext);
+const useDiffViewer = () => {
+  const context = useContext(Context);
   if (!context) {
     throw new Error(
       "useDiffViewer must be used within a DiffViewerProvider or GitDiffViewer component",
@@ -10,3 +10,5 @@ export const useDiffViewer = () => {
   }
   return context;
 };
+
+export default useDiffViewer;

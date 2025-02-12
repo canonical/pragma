@@ -1,7 +1,7 @@
 /* @canonical/generator-canonical-ds 0.0.1 */
 import type React from "react";
 
-export interface FileHeaderProps {
+export type FileHeaderProps = {
   /* A unique identifier for the FileHeader */
   id?: string;
   /* Additional CSS classes */
@@ -14,4 +14,4 @@ export interface FileHeaderProps {
   showChangeCount?: boolean;
   leftContent?: React.ReactNode;
   rightContent?: React.ReactNode;
-}
+};

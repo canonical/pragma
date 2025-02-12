@@ -13,7 +13,7 @@ export default mergeConfig(
       // Defines files that perform extra vitest configuration
       // Currently, this is used to extend vitest matchers and cleanup the DOM after each test
       setupFiles: ["./vitest.setup.ts"],
-      include: ["src/**/*.test.ts", "src/**/*.test.tsx"],
+      include: ["src/**/*.tests.ts", "src/**/*.tests.tsx"],
     },
-  }),
+  })
 );

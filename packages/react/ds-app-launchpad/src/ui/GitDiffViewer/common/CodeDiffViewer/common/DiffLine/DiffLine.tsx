@@ -1,14 +1,15 @@
 /* @canonical/generator-canonical-ds 0.0.1 */
 import hljs from "highlight.js";
 import type React from "react";
-import { useDiffViewer } from "ui/GitDiffViewer/hooks/index.js";
-import "./style.css";
+import { useDiffViewer } from "../../../../hooks/index.js";
+import "./styles.css";
 import type { DiffLineProps } from "./types.js";
 
 const componentCssClassName = "ds diff-line";
 
 /**
- * description of the DiffLine component
+ * Displays a single line of a diff as a table row with line numbers.
+ *
  * @returns {React.ReactElement} - Rendered DiffLine
  */
 const DiffLine = ({

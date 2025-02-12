@@ -1,16 +1,20 @@
 /* @canonical/generator-canonical-ds 0.0.1 */
 import type React from "react";
 import { Fragment, useEffect, useRef } from "react";
-import { useDiffViewer } from "ui/GitDiffViewer/hooks/index.js";
+import { useDiffViewer } from "../../hooks/index.js";
 import { DiffLine } from "./common/index.js";
 import "./HighlighTheme.css";
-import "./style.css";
+import "./styles.css";
 import type { CodeDiffViewerProps } from "./types.js";
 
 const componentCssClassName = "ds code-diff-viewer";
 
+const tableWidthCSSVar = "--table-width";
+
 /**
- * description of the CodeDiffViewer component
+ * Displays a diff in a table format with line numbers and syntax highlighting.
+ * With option to add comments to specific lines and interactive gutter for adding comments.
+ *
  * @returns {React.ReactElement} - Rendered CodeDiffViewer
  */
 const CodeDiffViewer = ({
@@ -18,7 +22,7 @@ const CodeDiffViewer = ({
   children,
   className,
   style,
-}: CodeDiffViewerProps): React.ReactElement => {
+}: CodeDiffViewerProps): React.ReactElement | null => {
   const {
     isCollapsed,
     diff,
@@ -30,7 +34,9 @@ const CodeDiffViewer = ({
   } = useDiffViewer();
   const tableRef = useRef<HTMLTableElement | null>(null);
 
-  // TODO: temporary syntax highlighting
+  // WIP: temporary syntax highlighting
+  // TODO: replace with a proper syntax highlighter
+  // TODO: add support for option to have external syntax highlighter
   const getLanguage = (filePath: string): string => {
     const extension = filePath.split(".").pop();
     const mapping: { [key: string]: string } = {
@@ -52,13 +58,14 @@ const CodeDiffViewer = ({
    * Observe the table for size changes and update the CSS variable
    */
   useEffect(() => {
+    // SSR check
     if (typeof ResizeObserver === "undefined") return;
     if (!tableRef.current) return;
 
     const resizeObserver = new ResizeObserver(() => {
       if (!tableRef.current) return;
       const tableWidth = tableRef.current?.clientWidth ?? 0;
-      tableRef.current.style.cssText = `--table-width: ${tableWidth}px`;
+      tableRef.current.style.cssText = `${tableWidthCSSVar}: ${tableWidth}px`;
     });
 
     // Observe the table for size changes
@@ -79,7 +86,7 @@ const CodeDiffViewer = ({
   }, [children, addCommentEnabled, setAddCommentEnabled]);
 
   if (isCollapsed) {
-    return <></>;
+    return null;
   }
 
   return (
@@ -89,84 +96,82 @@ const CodeDiffViewer = ({
       className={[componentCssClassName, className].filter(Boolean).join(" ")}
     >
       {!diff ? (
-        <div>No diff available</div>
+        <span>No diff available</span>
       ) : (
-        <div className="diff-file">
-          {diff.hunks.map((hunk, hunkIndex) => {
-            // We'll track the counters for old and new lines
-            // as we iterate through each hunk.
-            let oldLineCounter = hunk.oldStart;
-            let newLineCounter = hunk.newStart;
+        diff.hunks.map((hunk, hunkIndex) => {
+          // We'll track the counters for old and new lines
+          // as we iterate through each hunk.
+          let oldLineCounter = hunk.oldStart;
+          let newLineCounter = hunk.newStart;
 
-            return (
-              <div key={`${diff.oldPath}-${hunkIndex}`} className="diff-hunk">
-                <table className="diff-table" ref={tableRef} tabIndex={-1}>
-                  <tbody>
-                    {/* Hunk header line */}
-                    <DiffLine type="hunk" hunkHeader={hunk.header} />
+          return (
+            <div key={`${diff.oldPath}-${hunkIndex}`} className="diff-hunk">
+              <table className="diff-table" ref={tableRef} tabIndex={-1}>
+                <tbody>
+                  {/* Hunk header line */}
+                  <DiffLine type="hunk" hunkHeader={hunk.header} />
 
-                    {hunk.lines.map((line, lineIndex) => {
-                      let lineNum1: number | null = null;
-                      let lineNum2: number | null = null;
+                  {hunk.lines.map((line, lineIndex) => {
+                    let lineNum1: number | null = null;
+                    let lineNum2: number | null = null;
 
-                      if (line.type === "remove") {
-                        // Only the old line number advances
-                        lineNum1 = oldLineCounter++;
-                      } else if (line.type === "add") {
-                        // Only the new line number advances
-                        lineNum2 = newLineCounter++;
-                      } else {
-                        // context line => both lines advance
-                        lineNum1 = oldLineCounter++;
-                        lineNum2 = newLineCounter++;
-                      }
+                    if (line.type === "remove") {
+                      // Only the old line number advances
+                      lineNum1 = oldLineCounter++;
+                    } else if (line.type === "add") {
+                      // Only the new line number advances
+                      lineNum2 = newLineCounter++;
+                    } else {
+                      // context line => both lines advance
+                      lineNum1 = oldLineCounter++;
+                      lineNum2 = newLineCounter++;
+                    }
 
-                      const lineNumber = lineNum2 || lineNum1 || 0;
+                    const lineNumber = lineNum2 || lineNum1 || 0;
 
-                      // For rendering, if lineNum1 or lineNum2 is null,
-                      // you can display e.g. '+' or '-' or an empty cell.
-                      return (
-                        <Fragment
-                          key={`${diff.oldPath}-${hunkIndex}-${lineIndex}`}
-                        >
-                          {/* Normal diff line */}
-                          <DiffLine
-                            lineNum1={lineNum1}
-                            lineNum2={lineNum2}
-                            content={line.content}
-                            type={line.type}
-                            language={getLanguage(diff.newPath)}
-                          />
+                    // For rendering, if lineNum1 or lineNum2 is null,
+                    // you can display e.g. '+' or '-' or an empty cell.
+                    return (
+                      <Fragment
+                        key={`${diff.oldPath}-${hunkIndex}-${lineIndex}`}
+                      >
+                        {/* Normal diff line */}
+                        <DiffLine
+                          lineNum1={lineNum1}
+                          lineNum2={lineNum2}
+                          content={line.content}
+                          type={line.type}
+                          language={getLanguage(diff.newPath)}
+                        />
 
-                          {lineNum2 && lineDecorations?.[lineNum2] && (
+                        {lineNum2 && lineDecorations?.[lineNum2] && (
+                          <tr className="line-decoration">
+                            <td className="container">
+                              {lineDecorations[lineNum2]}
+                            </td>
+                          </tr>
+                        )}
+
+                        {/* Open comment row, if any */}
+                        {lineNum2 &&
+                          children &&
+                          addCommentLocations.has(lineNum2) && (
                             <tr className="line-decoration">
-                              <td className="line-decoration-container">
-                                {lineDecorations[lineNum2]}
+                              <td className="container">
+                                {children(lineNumber, () =>
+                                  toggleAddCommentLocation(lineNumber),
+                                )}
                               </td>
                             </tr>
                           )}
-
-                          {/* Open comment row, if any */}
-                          {lineNum2 &&
-                            children &&
-                            addCommentLocations.has(lineNum2) && (
-                              <tr className="line-decoration">
-                                <td className="line-decoration-container">
-                                  {children(lineNumber, () =>
-                                    toggleAddCommentLocation(lineNumber),
-                                  )}
-                                </td>
-                              </tr>
-                            )}
-                        </Fragment>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            );
-          })}
-        </div>
+                      </Fragment>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          );
+        })
       )}
     </div>
   );

@@ -1,7 +1,7 @@
 import type { CodeDiffViewerChildrenRender } from "./common/index.js";
-import parseGitDiff from "./utils/parseGitDiff.js";
+import { parseGitDiff } from "./utils/index.js";
 
-export const diffSample =
+export const diffExample =
   parseGitDiff(`diff --git a/src/components/FileTree/FileItem.module.scss b/src/components/FileTree/FileItem.module.scss
 index e6e9670..a0c74ab 100644
 --- a/src/components/FileTree/FileItem.module.scss
@@ -23,7 +23,7 @@ index e6e9670..a0c74ab 100644
     white-space: nowrap;
 `)[0];
 
-export const deletedFileDiffSample =
+export const deletedFileDiffExample =
   parseGitDiff(`diff --git a/.vscode/launch.json b/.vscode/launch.json
 deleted file mode 100644
 index e368c54..0000000
@@ -42,7 +42,7 @@ index e368c54..0000000
 -    ]
 -}`)[0];
 
-export const addedFileDiffSample =
+export const addedFileDiffExample =
   parseGitDiff(`diff --git a/src/components/CodeDiff/CodeDiff.module.scss b/src/components/CodeDiff/CodeDiff.module.scss
 new file mode 100644
 index 0000000..76ec9a4
@@ -90,7 +90,7 @@ export const addCommentExample: CodeDiffViewerChildrenRender = (
       style={{
         resize: "vertical",
       }}
-      // biome-ignore lint/a11y/noAutofocus:
+      // biome-ignore lint/a11y/noAutofocus: when the comment is opened, the textarea should be focused
       autoFocus
       placeholder={`Comment on line ${lineNumber}`}
       // on enter, save the comment
@@ -100,7 +100,8 @@ export const addCommentExample: CodeDiffViewerChildrenRender = (
         }
       }}
     />
-    {/* biome-ignore lint/a11y/useButtonType: */}
-    <button onClick={onClose}>Close</button>
+    <button onClick={onClose} type="button">
+      Close
+    </button>
   </div>
 );

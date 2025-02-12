@@ -6,7 +6,7 @@ export type CodeDiffViewerChildrenRender = (
   onClose: () => void,
 ) => React.ReactNode;
 
-export interface CodeDiffViewerProps {
+export type CodeDiffViewerProps = {
   /* A unique identifier for the CodeDiffViewer */
   id?: string;
   /* Additional CSS classes */
@@ -15,4 +15,4 @@ export interface CodeDiffViewerProps {
   children?: CodeDiffViewerChildrenRender;
   /* Inline styles */
   style?: React.CSSProperties;
-}
+};

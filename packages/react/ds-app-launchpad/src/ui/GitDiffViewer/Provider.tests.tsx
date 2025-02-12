@@ -2,25 +2,27 @@
 
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { diffSample } from "./GitDiffViewer.fixture.js";
-import Component from "./GitDiffViewer.js";
+import * as fixtures from "./Provider.fixtures.js";
 import type { CodeDiffViewerChildrenRender } from "./common/CodeDiffViewer/types.js";
+import Component from "./index.js";
 
 describe("GitDiffViewer component", () => {
   it("renders without crashing", () => {
     render(
-      <Component diff={diffSample}>
+      <Component diff={fixtures.diffExample}>
         <Component.FileHeader />
         <Component.CodeDiff />
       </Component>,
     );
-    expect(screen.getByText(diffSample.hunks[0].header)).toBeDefined();
+    expect(
+      screen.getByText(fixtures.diffExample.hunks[0].header),
+    ).toBeDefined();
   });
 
   it("applies basic props correctly", () => {
     const { container } = render(
       <Component
-        diff={diffSample}
+        diff={fixtures.diffExample}
         className="test-class"
         style={{ color: "#333" }}
       >
@@ -37,7 +39,7 @@ describe("GitDiffViewer component", () => {
       1: <div>Test</div>,
     };
     render(
-      <Component diff={diffSample} lineDecorations={lineDecorations}>
+      <Component diff={fixtures.diffExample} lineDecorations={lineDecorations}>
         <Component.FileHeader />
         <Component.CodeDiff />
       </Component>,
@@ -55,7 +57,7 @@ describe("GitDiffViewer component", () => {
     );
 
     const { container } = render(
-      <Component diff={diffSample}>
+      <Component diff={fixtures.diffExample}>
         <Component.FileHeader />
         <Component.CodeDiff>{addComment}</Component.CodeDiff>
       </Component>,

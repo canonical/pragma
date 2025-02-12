@@ -1,8 +1,7 @@
 import type React from "react";
-import type { CodeDiffViewerProps } from "./common/CodeDiffViewer/types.js";
-import type { FileHeaderProps } from "./common/FileHeader/types.js";
+import type { CodeDiffViewerProps, FileHeaderProps } from "./common/index.js";
 
-export type DiffViewerContextType = {
+export type ContextOptions = {
   /**
    * Whether the diff code section is collapsed.
    */
@@ -59,12 +58,7 @@ export type DiffViewerContextType = {
   toggleAddCommentLocation: (lineNumber: number) => void;
 };
 
-export type GitDiffViewerType = React.FC<GitDiffViewerProps> & {
-  CodeDiff: React.FC<CodeDiffViewerProps>;
-  FileHeader: React.FC<FileHeaderProps>;
-};
-
-export type GitDiffViewerProps = {
+export type ProviderOptions = {
   id?: string;
   className?: string;
   style?: React.CSSProperties;
@@ -83,6 +77,8 @@ export type GitDiffViewerProps = {
   ) => void;
 };
 
+export type ProviderComponent = (props: ProviderOptions) => React.ReactElement;
+
 export type Hunk = {
   header: string;
   oldStart: number;
@@ -100,4 +96,9 @@ export type DiffFile = {
   newPath: string;
   hunks: Hunk[];
   fileChangeState: "none" | "added" | "deleted" | "modified";
+};
+
+export type GitDiffViewerComponent = ProviderComponent & {
+  FileHeader: (props: FileHeaderProps) => React.ReactElement | null;
+  CodeDiff: (props: CodeDiffViewerProps) => React.ReactElement | null;
 };

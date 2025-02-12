@@ -1,8 +1,8 @@
 /* @canonical/generator-canonical-ds 0.0.1 */
 
 import type { Meta, StoryObj } from "@storybook/react";
-import { diffSample } from "ui/GitDiffViewer/GitDiffViewer.fixture.js";
-import GitDiffViewer from "../../GitDiffViewer.js";
+import { diffExample } from "../../Provider.fixtures.js";
+import Provider from "../../Provider.js";
 import Component from "./FileHeader.js";
 
 const meta = {
@@ -11,9 +11,9 @@ const meta = {
   component: Component,
   decorators: [
     (Story) => (
-      <GitDiffViewer diff={diffSample} collapsed={true}>
+      <Provider diff={diffExample} collapsed={true}>
         <Story />
-      </GitDiffViewer>
+      </Provider>
     ),
   ],
 } satisfies Meta<typeof Component>;

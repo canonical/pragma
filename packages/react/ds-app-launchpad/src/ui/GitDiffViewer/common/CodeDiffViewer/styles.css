@@ -27,7 +27,7 @@
       position: sticky;
       left: 0;
       width: var(--table-width);
-      .line-decoration-container {
+      .container {
         width: 100%;
         border: 1px solid var(--git-diff-viewer-border-color-tinted);
         border-width: 1px 0;

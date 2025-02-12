@@ -1,7 +1,16 @@
 /* @canonical/generator-canonical-ds 0.0.1 */
 
 export * from "./common/index.js";
-export { default as GitDiffViewer } from "./GitDiffViewer.js";
 export * from "./hooks/index.js";
 export * from "./types.js";
-export { default as parseGitDiff } from "./utils/parseGitDiff.js";
+export * from "./utils/index.js";
+
+import Provider from "./Provider.js";
+import { CodeDiffViewer, FileHeader } from "./common/index.js";
+import type { GitDiffViewerComponent } from "./types.js";
+
+const GitDiffViewer = Provider as GitDiffViewerComponent;
+GitDiffViewer.FileHeader = FileHeader;
+GitDiffViewer.CodeDiff = CodeDiffViewer;
+
+export default GitDiffViewer;
