@@ -1,6 +1,13 @@
+@layer normalize, primitives, modes, elements;
+
 /* Reset */
 @import url("normalize.css");
-
 /* Load external files first */
 /* TODO Ideally we would load the font-faces before this */
+
 @import url("@canonical/styles-primitives-canonical");
+@import url("@canonical/styles-modes-canonical");
+@import url("@canonical/styles-modes-density");
+@import url("@canonical/styles-modes-motion");
+@import url("@canonical/styles-modes-intents");
+@import url("@canonical/styles-elements");

@@ -1,5 +1,5 @@
 {
-  "name": "@canonical/styles-modes-canonical",
+  "name": "@canonical/styles-elements",
   "description": "Canonical's base styles",
   "version": "0.9.0-experimental.1",
   "main": "src/index.css",
@@ -26,5 +26,8 @@
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
     "@canonical/biome-config": "^0.9.0-experimental.1"
+  },
+  "dependencies": {
+    "normalize.css": "^8.0.1"
   }
 }
