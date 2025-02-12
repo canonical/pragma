@@ -1,0 +1,74 @@
+# Change Log
+
+All notable changes to this project will be documented in this file.
+See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
+
+# [0.9.0-experimental.1](https://github.com/canonical/ds25/compare/v0.9.0-experimental.0...v0.9.0-experimental.1) (2025-02-07)
+
+**Note:** Version bump only for package @canonical/biome-config
+
+
+
+
+
+## 0.4.0-experimental.0 (2025-02-06)
+
+
+
+
+## 0.4.0-experimental.0 (2024-12-09)
+
+* chore: version bump to 0.4.0-experimental.0 ([c1d4c3d](https://github.com/canonical/ds25/commit/c1d4c3d))
+* Cleanup `check`, `lint`, `format` package scripts ([45a1ac9](https://github.com/canonical/ds25/commit/45a1ac9))
+* Eliminate separate `lint`, `format` commands, add `check:ts` to `check:fix` commands ([e90c18b](https://github.com/canonical/ds25/commit/e90c18b))
+* Ensure all biome-controlled packages have biome dev dependencies; bump biome to 1.9.4 ([167301d](https://github.com/canonical/ds25/commit/167301d))
+
+
+
+## <small>0.3.1-experimental.0 (2024-12-04)</small>
+
+* chore: version bump to 0.3.1-experimental.0 ([685e33d](https://github.com/canonical/ds25/commit/685e33d))
+* Tsconfig docn improvements ([1ce8c72](https://github.com/canonical/ds25/commit/1ce8c72))
+
+
+
+## 0.3.0-experimental.0 (2024-11-26)
+
+* chore: version bump to 0.3.0-experimental.0 ([49b4177](https://github.com/canonical/ds25/commit/49b4177))
+* Biome docn improvement ([554356a](https://github.com/canonical/ds25/commit/554356a))
+
+
+
+## <small>0.2.1-experimental.0 (2024-11-22)</small>
+
+* chore: version bump to 0.2.1-experimental.0 ([e66e935](https://github.com/canonical/ds25/commit/e66e935))
+
+
+
+## 0.2.0-experimental.0 (2024-11-22)
+
+* chore: version bump to 0.2.0-experimental.0 ([a7b05ac](https://github.com/canonical/ds25/commit/a7b05ac))
+* fix typo in biome config installation instructions ([dc797bc](https://github.com/canonical/ds25/commit/dc797bc))
+
+
+
+## <small>0.1.1-experimental.0 (2024-11-14)</small>
+
+* chore: version bump to 0.0.1-experimental.8 ([06e6975](https://github.com/canonical/ds25/commit/06e6975))
+* chore: version bump to 0.1.0-experimental.0 ([223137b](https://github.com/canonical/ds25/commit/223137b))
+* chore: version bump to 0.1.1-experimental.0 ([342f24d](https://github.com/canonical/ds25/commit/342f24d))
+* Add proper attribution/licensing metadata to biome config package ([59c8cb3](https://github.com/canonical/ds25/commit/59c8cb3))
+* Added biome config to example ([046ae91](https://github.com/canonical/ds25/commit/046ae91))
+* Added peer dep + install instructions ([e9e312a](https://github.com/canonical/ds25/commit/e9e312a))
+* Apply biome linting/formatting fixes ([05f08ba](https://github.com/canonical/ds25/commit/05f08ba))
+* base ([20f24de](https://github.com/canonical/ds25/commit/20f24de))
+* cleanup ([e43d526](https://github.com/canonical/ds25/commit/e43d526))
+* Fix CI errors - set biome jsx runtime ([7d6267b](https://github.com/canonical/ds25/commit/7d6267b))
+* fix missing check:fix in biome config package ([c66c0de](https://github.com/canonical/ds25/commit/c66c0de))
+* rename to ds25 ([c33c3fc](https://github.com/canonical/ds25/commit/c33c3fc))
+* Run checks across the whole monorepo with lerna ([668466b](https://github.com/canonical/ds25/commit/668466b))
+* simplify publish auth ([3763268](https://github.com/canonical/ds25/commit/3763268))
+* Slight tweaks to tsconfig readmes ([f856287](https://github.com/canonical/ds25/commit/f856287))
+* update react JSX runtime to modern react-jsx ([aba3a77](https://github.com/canonical/ds25/commit/aba3a77))
+* v0.0.1-experimental.0 ([96ab587](https://github.com/canonical/ds25/commit/96ab587))
+* v0.0.1-experimental.2 ([f831ee4](https://github.com/canonical/ds25/commit/f831ee4))

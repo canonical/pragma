@@ -1,14 +1,13 @@
 name: Version packages
-description: Updates package version numbers for changed packages.
+description: Updates package version numbers and changelogs for changed packages.
 inputs:
-  update_type:
-    description: "Semver version update type"
+  release_type:
+    description: "Release type. If not 'stable', the current version will be bumped as a pre-release instead of a stable release."
     required: true
-    default: "prepatch"
-  prerelease_identifier:
-    description: "Prerelease identifier"
-    default: "experimental"
+  tag_prefix:
+    description: "Prefix for the git tag. Default is 'v'."
     required: false
+    default: "v"
 outputs:
   VERSION:
     description: "The new latest version number across all packages"
@@ -16,12 +15,23 @@ outputs:
 runs:
   using: composite
   steps:
-    - name: Version packages
+    - name: Version packages & generate changelogs
       shell: bash
       id: lerna_version
-      run: ${{ github.action_path }}/version.sh "${{ inputs.update_type }}" "${{ inputs.prerelease_identifier }}"
+      run: ${{ github.action_path }}/version.sh ${{ inputs.release_type }}
 
-      # Lerna may introuce slight formatting changes to the package.json files
-    - name: Format files
+      # Lerna may introduce slight formatting changes to the package.json files.
+      # This can be removed once https://github.com/lerna/lerna/issues/4117 is closed.
+    - name: Apply formatting fixes
       shell: bash
       run: bun run check:fix
+
+    - name: Setup Git CLI
+      uses: ./.github/actions/setup-git
+      with:
+        # This param sets the name of the committer to the person who ran the action.
+        name: ${{ github.actor }}
+
+    - name: Commit and tag v${{ steps.lerna_version.outputs.VERSION }}
+      shell: bash
+      run: ${{ github.action_path }}/git-commit.sh ${{ inputs.tag_prefix }}${{ steps.lerna_version.outputs.VERSION }}

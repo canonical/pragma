@@ -1,5 +1,5 @@
 import path from "node:path";
-import { casing } from "@canonical/utils";
+import { casing, invariant } from "@canonical/utils";
 import Generator, { type BaseOptions } from "yeoman-generator";
 import globalContext from "../app/global-context.js";
 
@@ -28,27 +28,31 @@ export default class ComponentGenerator extends Generator<ComponentGeneratorOpti
         "This generator should be run from the root directory of all your application's components (ex: src/components).",
       );
       this.log(
-        `This generator supports CLI input only. Use yo ${globalContext.generatorScriptIdentifer}:component --help for more information.`,
+        `Use yo ${globalContext.generatorScriptIdentifer}:component --help for more information.`,
       );
     }
 
     this.argument("componentPath", {
       type: String,
-      description: "The path to the component's root directory",
+      description:
+        "The path to the component's root directory. The last segment of the path will be used as the component name. For instance, 'path/to/Button' will create a 'Button' component in 'path/to'. Please note that you will want the last segment of your path to use PascalCase, following React conventions.",
       required: true,
       default: this.env.cwd,
     });
 
     this.option("withStyles", {
       type: Boolean,
-      description: "Include styles in the component",
+      description: "Creates a `styles.css` file associated with the component.",
       default: false,
+      alias: "c",
     });
 
     this.option("withStories", {
       type: Boolean,
-      description: "Include a storybook story in the component",
+      description:
+        "Creates a `[ComponentName].stories.tsx` file associated with the component",
       default: false,
+      alias: "s",
     });
 
     this.answers = {
@@ -58,36 +62,14 @@ export default class ComponentGenerator extends Generator<ComponentGeneratorOpti
     };
   }
 
-  /**
-   * Gets the path to the component's directory relative to the current working directory.
-   * Pascal-cases the final directory name to match React component naming conventions.
-   * @param inPath - The path to resolve, relative to the current working directory
-   * @return Path to the component's directory relative to the current working directory
-   * @example
-   * destinationPath("path/to/button/index.ts") // => "/path/to/Button/index.ts"
-   */
-  destinationPath(...inPath: string[]): string {
-    const rawPath = super.destinationPath(...inPath);
-    const dirName = path.dirname(rawPath);
-
-    // Replace the last segment of the path with the Pascal-cased version
-    const componentFolder = path.resolve(
-      dirName,
-      "..",
-      casing.toPascalCase(path.basename(dirName)),
-    );
-
-    // Append the original file name to the new path
-    const fileName = path.basename(rawPath);
-
-    return path.join(componentFolder, fileName);
-  }
-
   writing(): void {
     if (!this.answers) return;
 
-    const componentName = casing.toPascalCase(
-      path.basename(this.answers.componentPath),
+    const componentName = path.basename(this.answers.componentPath);
+
+    invariant(
+      casing.isPascalCase(componentName),
+      `The component name ${componentName} must be in PascalCase.`,
     );
 
     const templateData = {
@@ -142,17 +124,17 @@ export default class ComponentGenerator extends Generator<ComponentGeneratorOpti
     );
 
     this.fs.copyTpl(
-      this.templatePath("Component.test.tsx.ejs"),
+      this.templatePath("Component.tests.tsx.ejs"),
       this.destinationPath(
-        `${this.answers.componentPath}/${templateData.componentName}.test.tsx`,
+        `${this.answers.componentPath}/${templateData.componentName}.tests.tsx`,
       ),
       templateData,
     );
 
     if (this.answers.withStyles) {
       this.fs.copyTpl(
-        this.templatePath("style.css.ejs"),
-        this.destinationPath(`${this.answers.componentPath}/style.css`),
+        this.templatePath("styles.css.ejs"),
+        this.destinationPath(`${this.answers.componentPath}/styles.css`),
         templateData,
       );
     }

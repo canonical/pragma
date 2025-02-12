@@ -1,6 +1,6 @@
 {
   "name": "@canonical/storybook-addon-baseline-grid",
-  "version": "0.6.0-experimental.0",
+  "version": "0.9.0-experimental.1",
   "type": "module",
   "files": ["dist"],
   "types": "dist/types/index.d.ts",
@@ -38,8 +38,8 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
-    "@canonical/biome-config": "^0.4.0-experimental.0",
-    "@canonical/typescript-config-react": "^0.4.0-experimental.0",
+    "@canonical/biome-config": "^0.9.0-experimental.1",
+    "@canonical/typescript-config-react": "^0.9.0-experimental.1",
     "@storybook/addon-essentials": "^8.4.7",
     "@storybook/addon-interactions": "^8.4.7",
     "@storybook/addon-links": "^8.4.7",

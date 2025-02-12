@@ -2,24 +2,18 @@ name: Update package versions
 on:
   workflow_dispatch:
     inputs:
-      update_type:
-        description: "Verion update type"
-        required: true
-        # Change to minor once project is stable
-        default: "prepatch"
-        type: choice
-        options:
-          - patch
-          - minor
-          - major
-          - prepatch
-          - preminor
-          - premajor
-      prerelease_identifier:
-        description: "Pre-release identifier, used for pre(patch|minor|major) versions"
+      release_type:
+        description: "Release type. If not 'stable', the current version will be bumped as a pre-release instead of a stable release."
+        # TODO change default to stable after 1.0.0 is out
         default: "experimental"
         required: false
-        type: string
+        type: choice
+        options:
+          - "experimental"
+          - "alpha"
+          - "beta"
+          - "rc"
+          - "stable"
 env:
   MAIN_BRANCH: "refs/heads/main"
 
@@ -61,33 +55,20 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
+          # DEPLOY_KEY is used by lerna_version step to commit and push version bumps to the repo.
           ssh-key: ${{ secrets.DEPLOY_KEY }}
           # Lerna needs *all* the git history to determine which packages have changed
           fetch-depth: 0
 
+        # "prepare" hook on `bun install` runs `bun run build`
       - name: Setup environment
         uses: ./.github/actions/setup-env
 
-      - name: Bump package versions
+      - name: Bump package versions, commit, tag, and push to Git
         id: lerna_version
         uses: ./.github/actions/lerna-version
         with:
-          update_type: ${{ github.event.inputs.update_type }}
-          prerelease_identifier: ${{ github.event.inputs.prerelease_identifier }}
-
-      - name: Setup Git CLI
-        uses: ./.github/actions/setup-git
-        with:
-          name: ${{ github.actor }}
-
-      - name: Commit and tag v${{ steps.lerna_version.outputs.VERSION }}
-        run: |
-          git add .
-          git commit -m "chore: version bump to ${{ steps.lerna_version.outputs.VERSION }}"
-          # Create an annotated tag (`-m`) so that lerna can use it to determine which packages have changed
-          # See https://github.com/lerna/lerna/issues/1357#issuecomment-438162152
-          git tag "v${{ steps.lerna_version.outputs.VERSION }}" -m "v${{ steps.lerna_version.outputs.VERSION }}"
-          git push && git push --tags
+          release_type: ${{ github.event.inputs.release_type }}
 
   publish:
     name: Publish packages
@@ -107,7 +88,7 @@ jobs:
         uses: ./.github/actions/setup-env
 
       - name: Setup Node, authenticate with NPM registry
-        uses: actions/setup-node@v4.1.0
+        uses: actions/setup-node@v4.2.0
         with:
           node-version: 22
           registry-url: https://registry.npmjs.org

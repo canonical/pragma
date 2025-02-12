@@ -1,10 +1,12 @@
 {
   "name": "@canonical/react-ds-app-launchpad",
-  "version": "0.7.1-experimental.0",
+  "version": "0.9.0-experimental.1",
   "type": "module",
   "module": "dist/esm/index.js",
   "types": "dist/types/index.d.ts",
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "author": {
     "email": "webteam@canonical.com",
     "name": "Canonical Webteam"
@@ -36,25 +38,18 @@
     "test:vitest:watch": "vitest"
   },
   "dependencies": {
-    "@canonical/storybook-addon-baseline-grid": "^0.6.0-experimental.0",
-    "@canonical/styles": "^0.6.0-experimental.0",
-    "highlight.js": "^11.11.1",
+    "@canonical/styles": "^0.9.0-experimental.1",
+    "@canonical/storybook-config": "^0.9.0-experimental.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
-    "@canonical/biome-config": "^0.4.0-experimental.0",
-    "@canonical/typescript-config-react": "^0.4.0-experimental.0",
+    "@canonical/biome-config": "^0.9.0-experimental.1",
+    "@canonical/typescript-config-react": "^0.9.0-experimental.1",
     "@chromatic-com/storybook": "^3.2.2",
-    "@storybook/addon-essentials": "^8.4.7",
-    "@storybook/addon-interactions": "^8.4.7",
-    "@storybook/addon-links": "^8.4.7",
-    "@storybook/addon-onboarding": "^8.4.7",
-    "@storybook/addon-themes": "^8.4.7",
     "@storybook/blocks": "^8.4.7",
     "@storybook/react": "^8.4.7",
-    "@storybook/react-vite": "^8.4.7",
     "@storybook/test": "^8.4.7",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.1.0",

@@ -46,8 +46,25 @@ const toCamelCase = (s: string): string => {
     .replaceAll(" ", "");
 };
 
+/**
+ * Check if a string is in PascalCase.
+ * @param s - The string to check
+ * @returns True if the string is in PascalCase, false otherwise.
+ * @example
+ * isPascalCase("MyComponent") // true
+ * isPascalCase("myComponent") // false
+ */
+const isPascalCase = (s: string): boolean => {
+  // A simple regular expression that requires:
+  // - the string to start with an uppercase letter
+  // - followed by zero or more lowercase letters or digits,
+  // - then zero or more groups that start with an uppercase letter followed by zero or more lowercase letters or digits.
+  return /^[A-Z][a-z0-9]*(?:[A-Z][a-z0-9]*)*$/.test(s);
+};
+
 export default {
   toPascalCase,
   toKebabCase,
   toCamelCase,
+  isPascalCase,
 };

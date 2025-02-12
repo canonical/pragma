@@ -5,28 +5,20 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 # [0.9.0-experimental.1](https://github.com/canonical/ds25/compare/v0.9.0-experimental.0...v0.9.0-experimental.1) (2025-02-07)
 
-**Note:** Version bump only for package @canonical/react-ds-core
+**Note:** Version bump only for package @canonical/react-ds-app-launchpad
 
 
 
 
 
-## <small>0.8.1-experimental.0 (2025-02-06)</small>
+## <small>0.7.1-experimental.0 (2025-02-06)</small>
 
-
-
-
-## <small>0.8.1-experimental.0 (2025-02-04)</small>
-
-* chore: version bump to 0.8.1-experimental.0 ([a3b4f8a](https://github.com/canonical/ds25/commit/a3b4f8a))
-* chore(generator): rename style.css to styles.css, rename .test.tsx to .stories.tsx (#121) ([ccf391d](https://github.com/canonical/ds25/commit/ccf391d)), closes [#121](https://github.com/canonical/ds25/issues/121)
 
 
 
 ## <small>0.7.1-experimental.0 (2025-01-17)</small>
 
 * chore: version bump to 0.7.1-experimental.0 ([636cd2e](https://github.com/canonical/ds25/commit/636cd2e))
-* fix(react-core): Export chip component (#114) ([b2db0c6](https://github.com/canonical/ds25/commit/b2db0c6)), closes [#114](https://github.com/canonical/ds25/issues/114)
 * Fix: minor monorepo improvements (#111) ([7607ee8](https://github.com/canonical/ds25/commit/7607ee8)), closes [#111](https://github.com/canonical/ds25/issues/111)
 
 

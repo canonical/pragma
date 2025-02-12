@@ -1,7 +1,7 @@
 {
   "name": "@canonical/react-boilerplate-vite",
   "private": true,
-  "version": "0.7.1-experimental.0",
+  "version": "0.9.0-experimental.1",
   "type": "module",
   "license": "GPL-3.0-only",
   "scripts": {
@@ -21,16 +21,16 @@
     "check:ts": "tsc --noEmit"
   },
   "dependencies": {
-    "@canonical/react-ssr": "^0.7.1-experimental.0",
-    "@canonical/styles": "^0.6.0-experimental.0",
+    "@canonical/react-ssr": "^0.9.0-experimental.1",
+    "@canonical/styles": "^0.9.0-experimental.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
-    "@canonical/biome-config": "^0.4.0-experimental.0",
-    "@canonical/react-ds-core": "^0.7.1-experimental.0",
-    "@canonical/typescript-config-react": "^0.4.0-experimental.0",
+    "@canonical/biome-config": "^0.9.0-experimental.1",
+    "@canonical/react-ds-core": "^0.9.0-experimental.1",
+    "@canonical/typescript-config-react": "^0.9.0-experimental.1",
     "@types/node": "^22.10.1",
     "@types/react": "^19.0.1",
     "@types/react-dom": "^19.0.2",

@@ -1,6 +1,6 @@
 {
   "name": "@canonical/biome-config",
-  "version": "0.4.0-experimental.0",
+  "version": "0.9.0-experimental.1",
   "main": "biome.json",
   "author": {
     "email": "webteam@canonical.com",

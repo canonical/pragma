@@ -1,6 +1,6 @@
 {
 	"name": "@canonical/typescript-config-base",
-	"version": "0.4.0-experimental.0",
+	"version": "0.9.0-experimental.1",
 	"description": "Canonical's standard TypeScript configuration",
 	"main": "tsconfig.json",
 	"author": {

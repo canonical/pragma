@@ -1,0 +1,23 @@
+# Applies PR linting checks
+# This should be separate from the `pr` workflow as we don't need to build/test the code every time PR metadata changes
+# Follows https://github.com/amannn/action-semantic-pull-request/blob/40166f00814508ec3201fc8595b393d451c8cd80/README.md
+name: "PR Lint"
+on:
+  pull_request:
+    types:
+      - opened
+      - edited
+      - synchronize
+      - reopened
+permissions:
+  pull-requests: read
+
+jobs:
+  validate-pr-metadata:
+    name: Validate PR metadata
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify conventional commit-compliant PR title
+        uses: amannn/action-semantic-pull-request@v5.5.3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
