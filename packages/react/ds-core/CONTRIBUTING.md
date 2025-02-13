@@ -3,7 +3,7 @@
 This package provides an overview of the contribution process for the React Core package of Canonical's Design System.
 
 ## Getting Started
-Follow the [repository setup](../../../guides/SETUP.md) guide to set up your development environment.
+Follow the [repository setup](../../../README.md) guide to set up your development environment.
 
 Once the repository is set up, navigate to the `react/ds-core` package directory and run `bun run storybook` to start the Storybook server.
 
