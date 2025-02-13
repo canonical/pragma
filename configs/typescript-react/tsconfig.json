@@ -1,7 +1,7 @@
 {
-	"extends": "@canonical/typescript-config-base",
-	"compilerOptions": {
-		"lib": ["ES2023", "DOM"],
-		"jsx": "react-jsx"
-	}
+  "extends": "@canonical/typescript-config-base",
+  "compilerOptions": {
+    "lib": ["ES2023", "DOM"],
+    "jsx": "react-jsx"
+  }
 }

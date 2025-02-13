@@ -1,31 +1,33 @@
 {
-	"name": "@canonical/typescript-config-base",
-	"version": "0.9.0-experimental.1",
-	"description": "Canonical's standard TypeScript configuration",
-	"main": "tsconfig.json",
-	"author": {
-		"email": "webteam@canonical.com",
-		"name": "Canonical Webteam"
-	},
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/canonical/ds25"
-	},
-	"license": "LGPL-3.0",
-	"bugs": {
-		"url": "https://github.com/canonical/ds25/issues"
-	},
-	"homepage": "https://github.com/canonical/ds25#readme",
-	"scripts": {
-		"check": "bun run check:biome",
-		"check:fix": "bun run check:biome:fix",
-		"check:biome": "biome check *.json",
-		"check:biome:fix": "biome check --write *.json"
-	},
-	"devDependencies": {
-		"typescript": "^5.7.2"
-	},
-	"peerDependencies": {
-		"typescript": "^5.6.2"
-	}
+  "name": "@canonical/typescript-config-base",
+  "version": "0.9.0-experimental.2",
+  "description": "Canonical's standard TypeScript configuration",
+  "main": "tsconfig.json",
+  "author": {
+    "email": "webteam@canonical.com",
+    "name": "Canonical Webteam"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/canonical/ds25"
+  },
+  "license": "LGPL-3.0",
+  "bugs": {
+    "url": "https://github.com/canonical/ds25/issues"
+  },
+  "homepage": "https://github.com/canonical/ds25#readme",
+  "scripts": {
+    "check": "bun run check:biome",
+    "check:fix": "bun run check:biome:fix",
+    "check:biome": "biome check",
+    "check:biome:fix": "biome check --write"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "@canonical/biome-config": "^0.9.0-experimental.2",
+    "typescript": "^5.7.2"
+  },
+  "peerDependencies": {
+    "typescript": "^5.6.2"
+  }
 }

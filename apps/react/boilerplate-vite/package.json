@@ -1,7 +1,7 @@
 {
   "name": "@canonical/react-boilerplate-vite",
   "private": true,
-  "version": "0.9.0-experimental.1",
+  "version": "0.9.0-experimental.2",
   "type": "module",
   "license": "GPL-3.0-only",
   "scripts": {
@@ -16,21 +16,21 @@
     "serve:cli": "bun run build:client && bun run build:server:cli && bun run serve-express dist/server/renderer.js",
     "check": "bun run check:biome && bun run check:ts",
     "check:fix": "bun run check:biome:fix && bun run check:ts",
-    "check:biome": "biome check src *.json",
-    "check:biome:fix": "biome check --write src *.json",
+    "check:biome": "biome check",
+    "check:biome:fix": "biome check --write",
     "check:ts": "tsc --noEmit"
   },
   "dependencies": {
-    "@canonical/react-ssr": "^0.9.0-experimental.1",
-    "@canonical/styles": "^0.9.0-experimental.1",
+    "@canonical/react-ssr": "^0.9.0-experimental.2",
+    "@canonical/styles": "^0.9.0-experimental.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
-    "@canonical/biome-config": "^0.9.0-experimental.1",
-    "@canonical/react-ds-core": "^0.9.0-experimental.1",
-    "@canonical/typescript-config-react": "^0.9.0-experimental.1",
+    "@canonical/biome-config": "^0.9.0-experimental.2",
+    "@canonical/react-ds-core": "^0.9.0-experimental.2",
+    "@canonical/typescript-config-react": "^0.9.0-experimental.2",
     "@types/node": "^22.10.1",
     "@types/react": "^19.0.1",
     "@types/react-dom": "^19.0.2",

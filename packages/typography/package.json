@@ -2,7 +2,7 @@
   "name": "@canonical/typography",
   "module": "index.ts",
   "type": "module",
-  "version": "0.9.0-experimental.1",
+  "version": "0.9.0-experimental.2",
   "main": "src/index.css",
   "bin": {
     "extractFontData": "./src/extractFontData.ts"
@@ -11,13 +11,13 @@
     "extractFontData": "bun run ./src/extractFontData.ts",
     "check": "bun run check:biome && bun run check:ts",
     "check:fix": "bun run check:biome:fix && bun run check:ts",
-    "check:biome": "biome check src *.json",
-    "check:biome:fix": "biome check --write src *.json",
+    "check:biome": "biome check",
+    "check:biome:fix": "biome check --write",
     "check:ts": "tsc --noEmit"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
-    "@canonical/biome-config": "^0.9.0-experimental.1",
+    "@canonical/biome-config": "^0.9.0-experimental.2",
     "@types/bun": "latest"
   },
   "peerDependencies": {

@@ -9,29 +9,16 @@ export default class BaseGenerator extends Generator {
     },
   ];
 
-  // In prompting mode, prompt the user to select a subgenerator and run that generator
-  async prompting() {
-    const answers = await this.prompt([
-      {
-        type: "list",
-        name: "subgenerator",
-        message: "Please select a subgenerator",
-        choices: this.subgenerators.map((subgen) => ({
-          name: `${subgen.name} (${subgen.description})`,
-          value: subgen.name,
-        })),
-        when: () => this.subgenerators.length > 1,
-        default: this.subgenerators[0].name,
-      },
-    ]);
-    return this.composeWith(
-      `${globalContext.generatorScriptIdentifer}:${answers.subgenerator || this.subgenerators[0].name}`,
-      // Pass CLI args to the subgenerator
-      {
-        generatorArgs: this.args,
-        generatorOptions: this.options,
-      },
-    );
+  /**
+   * The root generator serves as a menuing system for the subgenerators.
+   * Its only purpose is to list subgenerators and prompt the user to select one.
+   * If the user runs the generator without any arguments, it will display the list of subgenerators.
+   */
+  showRootWelcomeMessage() {
+    // When --help is used, `this.log` is not defined and `help()` is invoked by the Yeoman lib anyway.
+    if (this.options.help) return;
+
+    this.log(this.help());
   }
 
   help() {
@@ -40,9 +27,11 @@ export default class BaseGenerator extends Generator {
     ${this.subgenerators
       .map(
         (subgen) =>
-          `\t- ${globalContext.generatorScriptIdentifer}:${subgen.name} - ${subgen.description}`,
+          `\t- yo ${globalContext.generatorScriptIdentifer}:${subgen.name} - ${subgen.description}`,
       )
-      .join("\n")}`;
+      .join("\n")}
+    \nTo see usage details for a generator, use the \`--help\` flag.\n\tFor example: yo ${globalContext.generatorScriptIdentifer}:${this.subgenerators[0].name} --help  
+    `;
 
     return `${super.help()}\n${subgeneratorHelp}`;
   }
