@@ -7,12 +7,14 @@ export type CodeDiffViewerChildrenRender = (
 ) => React.ReactNode;
 
 export type CodeDiffViewerProps = {
-  /* A unique identifier for the CodeDiffViewer */
+  /** A unique identifier for the CodeDiffViewer */
   id?: string;
-  /* Additional CSS classes */
+  /** Additional CSS classes */
   className?: string;
-  /* Add comment element */
+  /** Add comment element.
+   * If provided, the add comment button will be displayed on the line number.
+   */
   children?: CodeDiffViewerChildrenRender;
-  /* Inline styles */
+  /** Inline styles */
   style?: React.CSSProperties;
 };

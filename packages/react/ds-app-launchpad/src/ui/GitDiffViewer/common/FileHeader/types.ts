@@ -2,15 +2,16 @@
 import type React from "react";
 
 export type FileHeaderProps = {
-  /* A unique identifier for the FileHeader */
+  /** A unique identifier for the FileHeader */
   id?: string;
-  /* Additional CSS classes */
+  /** Additional CSS classes */
   className?: string;
-  /* Child elements */
+  /** Child elements */
   children?: React.ReactNode;
-  /* Inline styles */
+  /** Inline styles */
   style?: React.CSSProperties;
-  showCollapse?: boolean;
+  /** Shown by default */
+  hideCollapse?: boolean;
   showChangeCount?: boolean;
   leftContent?: React.ReactNode;
   rightContent?: React.ReactNode;

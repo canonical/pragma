@@ -29,10 +29,36 @@ describe("FileHeader component", () => {
 
   it("shows the collapse button", () => {
     render(
-      <Provider diff={fixtures.diffExample}>
-        <Component showCollapse />
+      <Provider
+        diff={fixtures.diffExample}
+        isCollapsed={false}
+        onCollapseToggle={() => {}}
+      >
+        <Component />
       </Provider>,
     );
     expect(screen.getByLabelText("Collapse file")).toBeDefined();
+  });
+
+  it("hides the collapse button when disabled", () => {
+    render(
+      <Provider
+        diff={fixtures.diffExample}
+        isCollapsed={false}
+        onCollapseToggle={() => {}}
+      >
+        <Component hideCollapse />
+      </Provider>,
+    );
+    expect(screen.queryByLabelText("Collapse file")).toBeNull();
+  });
+
+  it("hides the collapse button when collapse option is not available", () => {
+    render(
+      <Provider diff={fixtures.diffExample}>
+        <Component />
+      </Provider>,
+    );
+    expect(screen.queryByLabelText("Collapse file")).toBeNull();
   });
 });

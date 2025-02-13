@@ -1,91 +1,108 @@
 /* @canonical/generator-canonical-ds 0.0.1 */
 
-import { useState } from "@storybook/preview-api";
-import type { Meta, StoryObj } from "@storybook/react";
+import { useMemo, useState } from "@storybook/preview-api";
+import type { Meta, StoryFn } from "@storybook/react";
 import * as fixtures from "./fixtures.js";
 import { GitDiffViewer } from "./index.js";
+import type { ProviderOptions } from "./types.js";
 
 const meta = {
   title: "GitDiffViewer",
   tags: ["autodocs"],
   component: GitDiffViewer,
+  argTypes: {
+    isCollapsed: {
+      control: { type: "boolean", disable: true },
+      description: "Whether the diff is collapsed or not",
+    },
+    onCollapseToggle: {
+      action: "onCollapseToggle",
+      description: "Callback for when the collapse state changes",
+    },
+  },
 } satisfies Meta<typeof GitDiffViewer>;
 
 export default meta;
 
-type Story = StoryObj<typeof meta>;
-
-export const Default: Story = {
-  args: {
-    diff: fixtures.diffExample,
-    children: (
-      <>
-        <GitDiffViewer.FileHeader showCollapse showChangeCount />
-        <GitDiffViewer.CodeDiffViewer />
-      </>
-    ),
-    wrapLines: false,
-    lineDecorations: {},
-  },
-  render: (args) => {
-    const [collapsed, setCollapsed] = useState(false);
-    return (
-      <GitDiffViewer
-        {...args}
-        collapsed={collapsed}
-        onCollapseToggle={setCollapsed}
-      >
-        {args.children}
-      </GitDiffViewer>
-    );
-  },
-};
-
-export const WithComments: Story = {
-  args: {
-    diff: fixtures.diffExample,
-    wrapLines: false,
-    collapsed: false,
-    lineDecorations: {
-      20: fixtures.commentExample,
+const storyOptions = {
+  docs: {
+    source: {
+      type: "code",
     },
-    children: (
-      <>
-        <GitDiffViewer.FileHeader showChangeCount />
-        <GitDiffViewer.CodeDiffViewer>
-          {fixtures.addCommentExample}
-        </GitDiffViewer.CodeDiffViewer>
-      </>
-    ),
   },
 };
 
-export const DeletedFile: Story = {
-  args: {
-    diff: fixtures.deletedFileDiffExample,
-    wrapLines: false,
-    collapsed: false,
-    lineDecorations: {},
-    children: (
-      <>
-        <GitDiffViewer.FileHeader showChangeCount />
-        <GitDiffViewer.CodeDiffViewer />
-      </>
-    ),
-  },
+export const Default: StoryFn<ProviderOptions> = (args) => {
+  const [collapsed, setCollapsed] = useState(false);
+  return (
+    <GitDiffViewer
+      {...args}
+      diff={fixtures.diffExample}
+      isCollapsed={collapsed}
+      onCollapseToggle={setCollapsed}
+    >
+      <GitDiffViewer.FileHeader showChangeCount />
+      <GitDiffViewer.CodeDiffViewer />
+    </GitDiffViewer>
+  );
 };
 
-export const AddedFile: Story = {
-  args: {
-    diff: fixtures.addedFileDiffExample,
-    wrapLines: false,
-    collapsed: false,
-    lineDecorations: {},
-    children: (
-      <>
-        <GitDiffViewer.FileHeader showChangeCount />
-        <GitDiffViewer.CodeDiffViewer />
-      </>
-    ),
-  },
+Default.parameters = storyOptions;
+
+export const WithComments: StoryFn<ProviderOptions> = (args) => {
+  const [collapsed, setCollapsed] = useState(false);
+  // Consider memoizing the line decorations to avoid unnecessary re-renders
+  const lineDecorations = useMemo(() => ({ 20: fixtures.commentExample }), []);
+
+  return (
+    <GitDiffViewer
+      {...args}
+      diff={fixtures.diffExample}
+      lineDecorations={lineDecorations}
+      isCollapsed={collapsed}
+      onCollapseToggle={setCollapsed}
+    >
+      <GitDiffViewer.FileHeader showChangeCount />
+      <GitDiffViewer.CodeDiffViewer />
+    </GitDiffViewer>
+  );
 };
+
+WithComments.parameters = storyOptions;
+
+export const DeletedFile: StoryFn<ProviderOptions> = (args) => {
+  const [collapsed, setCollapsed] = useState(false);
+  return (
+    <GitDiffViewer
+      {...args}
+      diff={fixtures.deletedFileDiffExample}
+      isCollapsed={collapsed}
+      onCollapseToggle={setCollapsed}
+    >
+      <GitDiffViewer.FileHeader showChangeCount />
+      <GitDiffViewer.CodeDiffViewer />
+    </GitDiffViewer>
+  );
+};
+DeletedFile.parameters = storyOptions;
+
+export const InteractiveGutterWithAddComment: StoryFn<ProviderOptions> = (
+  args
+) => {
+  const [collapsed, setCollapsed] = useState(false);
+
+  return (
+    <GitDiffViewer
+      {...args}
+      diff={fixtures.diffExample}
+      isCollapsed={collapsed}
+      onCollapseToggle={setCollapsed}
+    >
+      <GitDiffViewer.FileHeader showChangeCount />
+      <GitDiffViewer.CodeDiffViewer>
+        {fixtures.addCommentExample}
+      </GitDiffViewer.CodeDiffViewer>
+    </GitDiffViewer>
+  );
+};
+InteractiveGutterWithAddComment.parameters = storyOptions;

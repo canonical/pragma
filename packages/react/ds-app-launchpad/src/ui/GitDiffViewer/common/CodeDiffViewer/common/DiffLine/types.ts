@@ -14,10 +14,10 @@ export type DiffHunkLine = {
 };
 
 export type DiffLineProps = {
-  /* A unique identifier for the DiffLine */
+  /** A unique identifier for the DiffLine */
   id?: string;
-  /* Additional CSS classes */
+  /** Additional CSS classes */
   className?: string;
-  /* Inline styles */
+  /** Inline styles */
   style?: React.CSSProperties;
 } & (DiffContentLine | DiffHunkLine);

@@ -1,62 +1,54 @@
+import type { AllOrNone } from "@canonical/utils";
 import type React from "react";
 import type { CodeDiffViewerProps, FileHeaderProps } from "./common/index.js";
 
-export type ContextOptions = {
+/**
+ * When this is provided, the component will add support for collapsing the diff code section.
+ */
+export type CollapseOption = {
   /**
    * Whether the diff code section is collapsed.
    */
   isCollapsed: boolean;
   /**
-   * Toggles the collapse state of the diff code section.
+   * Toggle the collapse state of the diff code section.
    */
-  toggleCollapse: () => void;
-  /**
-   * Whether the code lines should not overflow.
-   */
-  wrapLines: boolean;
-  /**
-   * Toggle the wrap lines state.
-   */
-  toggleWrapLines: () => void;
+  onCollapseToggle: (collapsed: boolean) => void;
+};
+
+export type DiffOptions = {
   /**
    * The diff file being displayed.
    *
    * In case you need to parse raw diff text,
    * you can use the `parseDiff` function from `@canonical/react-ds-app-launchpad`
    */
-  diff?: DiffFile;
+  diff: DiffFile;
+};
+
+export type WrapLinesOption = {
   /**
-   * Sets the diff file being displayed.
-   *
-   * In case you need to parse raw diff text,
-   * you can use the `parseDiff` function from `@canonical/react-ds-app-launchpad`
+   * Whether the code lines should not overflow.
    */
-  setDiff: (diff: DiffFile) => void;
+  wrapLines?: boolean;
+};
+
+export type LineDecorationOptions = {
   /**
    * Additional UI elements to be displayed bellow the code diff lines.
    */
-  lineDecorations: Record<number, React.ReactElement>;
-  /**
-   * Sets additional UI elements to be displayed bellow the code diff lines.
-   */
-  setLineDecorations: (
-    lineDecorations: Record<number, React.ReactElement>,
-  ) => void;
-  /**
-   * Whether the user can add comments to the diff.
-   */
+  lineDecorations?: Record<number, React.ReactElement>;
+};
+
+export type ContextOptions = {
   addCommentEnabled: boolean;
   setAddCommentEnabled: (enabled: boolean) => void;
-
-  /**
-   * The line number of where the user wants to add a comment.
-   */
-  addCommentLocations: Set<number>;
-  /**
-   * Toggle a line number where the user wants to add a comment.
-   */
+  addCommentOpenLocations: Set<number>;
   toggleAddCommentLocation: (lineNumber: number) => void;
-};
+} & AllOrNone<CollapseOption> &
+  LineDecorationOptions &
+  DiffOptions &
+  WrapLinesOption;
 
 export type ProviderOptions = {
   id?: string;
@@ -66,18 +58,10 @@ export type ProviderOptions = {
    * Consider using `GitDiffViewer.FileHeader`, and `GitDiffViewer.CodeDiff` components.
    */
   children?: React.ReactNode;
-  diff: DiffFile;
-  collapsed?: boolean;
-  onCollapseToggle?: (collapsed: boolean) => void;
-  wrapLines?: boolean;
-  onWrapLinesToggle?: (wrapLines: boolean) => void;
-  lineDecorations?: Record<number, React.ReactElement>;
-  onLineDecorationsChange?: (
-    lineDecorations: Record<number, React.ReactElement>,
-  ) => void;
-};
-
-export type ProviderComponent = (props: ProviderOptions) => React.ReactElement;
+} & AllOrNone<CollapseOption> &
+  LineDecorationOptions &
+  DiffOptions &
+  WrapLinesOption;
 
 export type Hunk = {
   header: string;
@@ -98,7 +82,9 @@ export type DiffFile = {
   fileChangeState: "none" | "added" | "deleted" | "modified";
 };
 
-export type GitDiffViewerComponent = ProviderComponent & {
+export type GitDiffViewerComponent = ((
+  props: ProviderOptions,
+) => React.ReactElement) & {
   FileHeader: (props: FileHeaderProps) => React.ReactElement | null;
   CodeDiffViewer: (props: CodeDiffViewerProps) => React.ReactElement | null;
 };

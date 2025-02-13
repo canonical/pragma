@@ -1,8 +1,6 @@
 /* @canonical/generator-canonical-ds 0.0.1 */
-
-export * from "./common/index.js";
 export * from "./hooks/index.js";
-export * from "./types.js";
+export type { DiffFile as GitDiffFile, Hunk as GitDiffHunk } from "./types.js";
 export * from "./utils/index.js";
 
 import Provider from "./Provider.js";

@@ -18,14 +18,15 @@ const FileHeader = ({
   children,
   className,
   style,
-  showCollapse,
+  hideCollapse = false,
   showChangeCount,
   leftContent,
   rightContent,
   ...props
-}: FileHeaderProps): React.ReactElement | null => {
-  const { isCollapsed, toggleCollapse, diff } = useGitDiffViewer();
-  if (!diff) return null;
+}: FileHeaderProps): React.ReactElement => {
+  const { isCollapsed, onCollapseToggle, diff } = useGitDiffViewer();
+  const shouldRenderCollapse = !hideCollapse && isCollapsed !== undefined;
+
   const calculateChangeCount = useCallback(() => {
     let additions = 0;
     let deletions = 0;
@@ -50,10 +51,10 @@ const FileHeader = ({
     >
       <div className="left-content">
         {leftContent}
-        {showCollapse && (
+        {shouldRenderCollapse && (
           <button
             className={`collapse-button ${isCollapsed ? "collapsed" : ""}`}
-            onClick={toggleCollapse}
+            onClick={() => onCollapseToggle(!isCollapsed)}
             aria-label="Collapse file"
             type="button"
           >
