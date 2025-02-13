@@ -21,9 +21,9 @@
 }
 
 .editable-block-component__title {
-    flex: 1;
-    text-align: left;
-    font-weight: 550;
+  flex: 1;
+  text-align: left;
+  font-weight: 550;
 }
 
 .editable-block-component__children {

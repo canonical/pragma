@@ -15,7 +15,7 @@ const meta = {
   //      options: Object.keys(ButtonAppearance),
   //   }
   // },
-  args: { },
+  args: {},
 } satisfies Meta<typeof Component>;
 
 export default meta;
@@ -27,19 +27,21 @@ type Story = StoryObj<typeof meta>;
 
 interface SampleChildProps {
   isEditing?: boolean;
+  toggleEditing?: () => void;
 }
 
-const SampleChild: React.FC<SampleChildProps> = ({ isEditing, toggleEditing }) => {
-  return (
-    <div>
-      {isEditing ? 'Edit mode.' : 'View mode.'}
-    </div>
-  );
+const SampleChild: React.FC<SampleChildProps> = ({
+  isEditing,
+  toggleEditing,
+}) => {
+  return <div>{isEditing ? "Edit mode." : "View mode."}</div>;
 };
 
 export const Default: Story = {
   args: {
     title: "Sample Title",
-    children: ({ isEditing }: { isEditing: boolean }) => <SampleChild isEditing={isEditing} />,
+    children: ({ isEditing }: { isEditing: boolean }) => (
+      <SampleChild isEditing={isEditing} />
+    ),
   },
 };

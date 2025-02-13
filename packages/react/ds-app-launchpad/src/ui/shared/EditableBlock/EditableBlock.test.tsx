@@ -1,6 +1,6 @@
 /* @canonical/generator-ds 0.8.0-experimental.0 */
 
-import { render, screen, fireEvent } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import EditableBlock from "./EditableBlock.js";
 
