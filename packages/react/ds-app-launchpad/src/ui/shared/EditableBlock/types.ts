@@ -2,15 +2,11 @@
 import type React from 'react'
 
 export interface EditableBlockProps {
-  /* A unique identifier for the EditableBlock */
   id?: string;
-  /* Additional CSS classes */
+  children: React.ReactNode | ((props: { isEditing: boolean, toggleEditing: () => void }) => React.ReactNode);
   className?: string;
-  /* Child elements */
-  children: React.ReactNode;
-  /* Inline styles */
   style?: React.CSSProperties;
-  title: string;
+  title?: string;
 }
 
 export interface EditingContextType {

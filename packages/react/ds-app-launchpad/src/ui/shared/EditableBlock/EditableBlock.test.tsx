@@ -1,17 +1,21 @@
 /* @canonical/generator-ds 0.8.0-experimental.0 */
 
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import Component from "./EditableBlock.js";
+import EditableBlock from "./EditableBlock.js";
 
 describe("EditableBlock component", () => {
-  it("renders", () => {
-    render(<Component>EditableBlock</Component>);
-    expect(screen.getByText('EditableBlock')).toBeInTheDocument();
+  it("renders children content", () => {
+    render(<EditableBlock title={"Hello world!"}>EditableBlock</EditableBlock>);
+    expect(screen.getByText("EditableBlock")).toBeInTheDocument();
   });
 
-  it("applies className", () => {
-    render(<Component className={"test-class"}>EditableBlock</Component>);
-    expect(screen.getByText("EditableBlock")).toHaveClass("test-class");
+  it("toggles editing state when icon is clicked", () => {
+    render(<EditableBlock title={"Hello world!"}>Content</EditableBlock>);
+    const editIcon = screen.getByRole("button");
+    fireEvent.click(editIcon);
+    expect(editIcon).toHaveClass("editable-block-component__icon--close");
+    fireEvent.click(editIcon);
+    expect(editIcon).toHaveClass("editable-block-component__icon--edit");
   });
 });

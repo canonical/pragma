@@ -29,10 +29,10 @@ interface SampleChildProps {
   isEditing?: boolean;
 }
 
-const SampleChild: React.FC<SampleChildProps> = ({ isEditing }) => {
+const SampleChild: React.FC<SampleChildProps> = ({ isEditing, toggleEditing }) => {
   return (
     <div>
-      {isEditing ? 'In editing mode.' : 'View mode.'}
+      {isEditing ? 'Edit mode.' : 'View mode.'}
     </div>
   );
 };
@@ -40,6 +40,6 @@ const SampleChild: React.FC<SampleChildProps> = ({ isEditing }) => {
 export const Default: Story = {
   args: {
     title: "Sample Title",
-    children: <SampleChild />,
+    children: ({ isEditing }: { isEditing: boolean }) => <SampleChild isEditing={isEditing} />,
   },
 };
