@@ -1,11 +1,12 @@
 /* @canonical/generator-canonical-ds 0.0.1 */
 import type React from "react";
-import { Fragment, useEffect, useRef } from "react";
-import { useDiffViewer } from "../../hooks/index.js";
+import { Fragment, useCallback, useEffect, useMemo, useRef } from "react";
+import { useGitDiffViewer } from "../../hooks/index.js";
 import { DiffLine } from "./common/index.js";
 import "./styles.css";
-import type { CodeDiffViewerProps } from "./types.js";
 // TODO: decide where to put this once we provide an external syntax highlighter option
+import hljs from "highlight.js";
+import type { CodeDiffViewerProps } from "./types.js";
 import "./HighlighTheme.css";
 
 const componentCssClassName = "ds code-diff-viewer";
@@ -32,14 +33,14 @@ const CodeDiffViewer = ({
     addCommentLocations,
     toggleAddCommentLocation,
     lineDecorations,
-  } = useDiffViewer();
+  } = useGitDiffViewer();
   const tableRef = useRef<HTMLTableElement | null>(null);
 
-  // WIP: temporary syntax highlighting
+  // [WIP] temporary syntax highlighting
   // TODO: replace with a proper syntax highlighter
   // TODO: add support for option to have external syntax highlighter
-  const getLanguage = (filePath: string): string => {
-    const extension = filePath.split(".").pop();
+  const diffCodeLanguage = useMemo(() => {
+    const extension = diff?.newPath.split(".").pop();
     const mapping: { [key: string]: string } = {
       js: "javascript",
       jsx: "javascript",
@@ -53,7 +54,17 @@ const CodeDiffViewer = ({
       // Add more mappings as needed
     };
     return mapping[extension || ""] || "plaintext";
-  };
+  }, [diff?.newPath]);
+
+  const highlight = useCallback(
+    (code: string) => {
+      if (hljs.getLanguage(diffCodeLanguage)) {
+        return hljs.highlight(code, { language: diffCodeLanguage }).value;
+      }
+      return hljs.highlight(code, { language: "plaintext" }).value;
+    },
+    [diffCodeLanguage],
+  );
 
   /**
    * Observe the table for size changes and update the CSS variable
@@ -140,9 +151,8 @@ const CodeDiffViewer = ({
                         <DiffLine
                           lineNum1={lineNum1}
                           lineNum2={lineNum2}
-                          content={line.content}
+                          content={highlight(line.content)}
                           type={line.type}
-                          language={getLanguage(diff.newPath)}
                         />
 
                         {lineNum2 && lineDecorations?.[lineNum2] && (

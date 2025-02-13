@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import Context from "./Context.js";
 import "./styles.css";
 import type { ContextOptions, ProviderOptions } from "./types.js";
@@ -10,7 +10,13 @@ const Provider = ({
   className,
   style,
   children,
-  ...props
+  diff,
+  collapsed,
+  onCollapseToggle,
+  lineDecorations,
+  onLineDecorationsChange,
+  wrapLines,
+  onWrapLinesToggle,
 }: ProviderOptions): React.ReactElement => {
   const [internalIsCollapsed, setInternalIsCollapsed] =
     useState<ContextOptions["isCollapsed"]>(false);
@@ -26,28 +32,37 @@ const Provider = ({
   const [addCommentEnabled, setAddCommentEnabled] =
     useState<ContextOptions["addCommentEnabled"]>(false);
 
-  const isCollapsed = props.collapsed ?? internalIsCollapsed;
-  const wrapLines = props.wrapLines ?? internalWrapLines;
-  const diff = props.diff ?? internalDiff;
-  const lineDecorations = props.lineDecorations ?? internalLineDecorations;
+  const currentIsCollapsed = useMemo(
+    () => collapsed ?? internalIsCollapsed,
+    [collapsed, internalIsCollapsed],
+  );
+  const currentWrapLines = useMemo(
+    () => wrapLines ?? internalWrapLines,
+    [wrapLines, internalWrapLines],
+  );
+  const currentDiff = useMemo(() => diff ?? internalDiff, [diff, internalDiff]);
+  const currentLineDecorations = useMemo(
+    () => lineDecorations ?? internalLineDecorations,
+    [lineDecorations, internalLineDecorations],
+  );
 
-  const toggleCollapse = () => {
-    if (props.collapsed !== undefined) {
-      props.onCollapseToggle?.(!isCollapsed);
+  const toggleCollapse = useCallback(() => {
+    if (collapsed !== undefined) {
+      onCollapseToggle?.(!currentIsCollapsed);
     } else {
       setInternalIsCollapsed((prev) => !prev);
     }
-  };
+  }, [collapsed, onCollapseToggle, currentIsCollapsed]);
 
-  const toggleWrapLines = () => {
-    if (props.wrapLines !== undefined) {
-      props.onWrapLinesToggle?.(!wrapLines);
+  const toggleWrapLines = useCallback(() => {
+    if (wrapLines !== undefined) {
+      onWrapLinesToggle?.(!currentWrapLines);
     } else {
       setInternalWrapLines((prev) => !prev);
     }
-  };
+  }, [wrapLines, onWrapLinesToggle, currentWrapLines]);
 
-  const toggleAddCommentLocation = (lineNumber: number) => {
+  const toggleAddCommentLocation = useCallback((lineNumber: number) => {
     setAddCommentLocations((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(lineNumber)) {
@@ -57,28 +72,30 @@ const Provider = ({
       }
       return newSet;
     });
-  };
+  }, []);
 
-  const onLineDecorationsChange = (
-    newLineDecorations: Record<number, React.ReactElement>,
-  ) => {
-    if (props.lineDecorations !== undefined) {
-      props.onLineDecorationsChange?.(newLineDecorations);
-    } else {
-      setInternalLineDecorations(newLineDecorations);
-    }
-  };
+  const handleLineDecorationsChange = useCallback(
+    (newLineDecorations: Record<number, React.ReactElement>) => {
+      if (lineDecorations !== undefined) {
+        onLineDecorationsChange?.(currentLineDecorations);
+      } else {
+        setInternalLineDecorations(newLineDecorations);
+      }
+    },
+    [lineDecorations, onLineDecorationsChange, currentLineDecorations],
+  );
+
   return (
     <Context.Provider
       value={{
-        diff,
-        isCollapsed,
+        diff: currentDiff,
+        isCollapsed: currentIsCollapsed,
         toggleCollapse,
-        wrapLines,
+        wrapLines: currentWrapLines,
         toggleWrapLines,
         setDiff: setInternalDiff,
-        lineDecorations,
-        setLineDecorations: onLineDecorationsChange,
+        lineDecorations: currentLineDecorations,
+        setLineDecorations: handleLineDecorationsChange,
         addCommentLocations,
         toggleAddCommentLocation,
         addCommentEnabled,

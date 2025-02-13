@@ -100,5 +100,5 @@ export type DiffFile = {
 
 export type GitDiffViewerComponent = ProviderComponent & {
   FileHeader: (props: FileHeaderProps) => React.ReactElement | null;
-  CodeDiff: (props: CodeDiffViewerProps) => React.ReactElement | null;
+  CodeDiffViewer: (props: CodeDiffViewerProps) => React.ReactElement | null;
 };

@@ -20,5 +20,4 @@ export type DiffLineProps = {
   className?: string;
   /* Inline styles */
   style?: React.CSSProperties;
-  language?: string;
 } & (DiffContentLine | DiffHunkLine);

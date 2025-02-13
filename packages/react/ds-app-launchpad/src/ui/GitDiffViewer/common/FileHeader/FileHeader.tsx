@@ -1,7 +1,7 @@
 /* @canonical/generator-canonical-ds 0.0.1 */
 import type React from "react";
 import { useCallback } from "react";
-import { useDiffViewer } from "../../hooks/index.js";
+import { useGitDiffViewer } from "../../hooks/index.js";
 import "./styles.css";
 import type { FileHeaderProps } from "./types.js";
 
@@ -24,7 +24,7 @@ const FileHeader = ({
   rightContent,
   ...props
 }: FileHeaderProps): React.ReactElement | null => {
-  const { isCollapsed, toggleCollapse, diff } = useDiffViewer();
+  const { isCollapsed, toggleCollapse, diff } = useGitDiffViewer();
   if (!diff) return null;
   const calculateChangeCount = useCallback(() => {
     let additions = 0;

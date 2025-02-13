@@ -4,15 +4,15 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import type { CodeDiffViewerChildrenRender } from "./common/CodeDiffViewer/types.js";
 import * as fixtures from "./fixtures.js";
-import Component from "./index.js";
+import { GitDiffViewer } from "./index.js";
 
 describe("GitDiffViewer component", () => {
   it("renders without crashing", () => {
     render(
-      <Component diff={fixtures.diffExample}>
-        <Component.FileHeader />
-        <Component.CodeDiff />
-      </Component>,
+      <GitDiffViewer diff={fixtures.diffExample}>
+        <GitDiffViewer.FileHeader />
+        <GitDiffViewer.CodeDiffViewer />
+      </GitDiffViewer>,
     );
     expect(
       screen.getByText(fixtures.diffExample.hunks[0].header),
@@ -21,14 +21,14 @@ describe("GitDiffViewer component", () => {
 
   it("applies basic props correctly", () => {
     const { container } = render(
-      <Component
+      <GitDiffViewer
         diff={fixtures.diffExample}
         className="test-class"
         style={{ color: "#333" }}
       >
-        <Component.FileHeader />
-        <Component.CodeDiff />
-      </Component>,
+        <GitDiffViewer.FileHeader />
+        <GitDiffViewer.CodeDiffViewer />
+      </GitDiffViewer>,
     );
     expect(container.firstChild).toHaveClass("test-class");
     expect(container.firstChild).toHaveStyle({ color: "#333" });
@@ -39,10 +39,13 @@ describe("GitDiffViewer component", () => {
       1: <div>Test</div>,
     };
     render(
-      <Component diff={fixtures.diffExample} lineDecorations={lineDecorations}>
-        <Component.FileHeader />
-        <Component.CodeDiff />
-      </Component>,
+      <GitDiffViewer
+        diff={fixtures.diffExample}
+        lineDecorations={lineDecorations}
+      >
+        <GitDiffViewer.FileHeader />
+        <GitDiffViewer.CodeDiffViewer />
+      </GitDiffViewer>,
     );
     expect(screen.getByText("background-color")).toBeDefined();
   });
@@ -57,10 +60,12 @@ describe("GitDiffViewer component", () => {
     );
 
     const { container } = render(
-      <Component diff={fixtures.diffExample}>
-        <Component.FileHeader />
-        <Component.CodeDiff>{addComment}</Component.CodeDiff>
-      </Component>,
+      <GitDiffViewer diff={fixtures.diffExample}>
+        <GitDiffViewer.FileHeader />
+        <GitDiffViewer.CodeDiffViewer>
+          {addComment}
+        </GitDiffViewer.CodeDiffViewer>
+      </GitDiffViewer>,
     );
     const gutter = container.querySelector(".diff-gutter[tabindex='0']");
     expect(gutter).toBeDefined();

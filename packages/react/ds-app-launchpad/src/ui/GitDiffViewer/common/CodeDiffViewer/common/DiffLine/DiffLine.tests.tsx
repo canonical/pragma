@@ -3,7 +3,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import * as fixtures from "../../../../fixtures.js";
-import GitDiffViewer from "../../../../index.js";
+import { GitDiffViewer } from "../../../../index.js";
 import Component from "./DiffLine.js";
 import type { DiffContentLine, DiffHunkLine } from "./types.js";
 
@@ -72,10 +72,10 @@ describe("DiffLine component", () => {
   it("has no interactive gutter on hunks", () => {
     const { container } = render(
       <GitDiffViewer diff={fixtures.diffExample} wrapLines>
-        <GitDiffViewer.CodeDiff>
+        <GitDiffViewer.CodeDiffViewer>
           {/* Having an add comment rendered here will result in having interactive mode enable */}
           {() => <></>}
-        </GitDiffViewer.CodeDiff>
+        </GitDiffViewer.CodeDiffViewer>
         <table>
           <tbody>
             <Component {...HUNK_LINE} />

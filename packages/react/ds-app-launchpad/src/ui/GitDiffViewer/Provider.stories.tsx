@@ -3,13 +3,13 @@
 import { useState } from "@storybook/preview-api";
 import type { Meta, StoryObj } from "@storybook/react";
 import * as fixtures from "./fixtures.js";
-import Component from "./index.js";
+import { GitDiffViewer } from "./index.js";
 
 const meta = {
   title: "GitDiffViewer",
   tags: ["autodocs"],
-  component: Component,
-} satisfies Meta<typeof Component>;
+  component: GitDiffViewer,
+} satisfies Meta<typeof GitDiffViewer>;
 
 export default meta;
 
@@ -20,8 +20,8 @@ export const Default: Story = {
     diff: fixtures.diffExample,
     children: (
       <>
-        <Component.FileHeader showCollapse showChangeCount />
-        <Component.CodeDiff />
+        <GitDiffViewer.FileHeader showCollapse showChangeCount />
+        <GitDiffViewer.CodeDiffViewer />
       </>
     ),
     wrapLines: false,
@@ -30,13 +30,13 @@ export const Default: Story = {
   render: (args) => {
     const [collapsed, setCollapsed] = useState(false);
     return (
-      <Component
+      <GitDiffViewer
         {...args}
         collapsed={collapsed}
         onCollapseToggle={setCollapsed}
       >
         {args.children}
-      </Component>
+      </GitDiffViewer>
     );
   },
 };
@@ -51,8 +51,10 @@ export const WithComments: Story = {
     },
     children: (
       <>
-        <Component.FileHeader showChangeCount />
-        <Component.CodeDiff>{fixtures.addCommentExample}</Component.CodeDiff>
+        <GitDiffViewer.FileHeader showChangeCount />
+        <GitDiffViewer.CodeDiffViewer>
+          {fixtures.addCommentExample}
+        </GitDiffViewer.CodeDiffViewer>
       </>
     ),
   },
@@ -66,8 +68,8 @@ export const DeletedFile: Story = {
     lineDecorations: {},
     children: (
       <>
-        <Component.FileHeader showChangeCount />
-        <Component.CodeDiff />
+        <GitDiffViewer.FileHeader showChangeCount />
+        <GitDiffViewer.CodeDiffViewer />
       </>
     ),
   },
@@ -81,8 +83,8 @@ export const AddedFile: Story = {
     lineDecorations: {},
     children: (
       <>
-        <Component.FileHeader showChangeCount />
-        <Component.CodeDiff />
+        <GitDiffViewer.FileHeader showChangeCount />
+        <GitDiffViewer.CodeDiffViewer />
       </>
     ),
   },

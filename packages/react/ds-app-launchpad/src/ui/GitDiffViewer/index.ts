@@ -9,8 +9,6 @@ import Provider from "./Provider.js";
 import { CodeDiffViewer, FileHeader } from "./common/index.js";
 import type { GitDiffViewerComponent } from "./types.js";
 
-const GitDiffViewer = Provider as GitDiffViewerComponent;
+export const GitDiffViewer = Provider as GitDiffViewerComponent;
 GitDiffViewer.FileHeader = FileHeader;
-GitDiffViewer.CodeDiff = CodeDiffViewer;
-
-export default GitDiffViewer;
+GitDiffViewer.CodeDiffViewer = CodeDiffViewer;

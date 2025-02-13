@@ -1,1 +1,1 @@
-export { default as useDiffViewer } from "./useDiffViewer.js";
+export { default as useGitDiffViewer } from "./useGitDiffViewer.js";

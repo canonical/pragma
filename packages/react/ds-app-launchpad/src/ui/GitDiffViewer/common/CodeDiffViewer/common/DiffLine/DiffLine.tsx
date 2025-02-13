@@ -1,7 +1,6 @@
 /* @canonical/generator-canonical-ds 0.0.1 */
-import hljs from "highlight.js";
 import type React from "react";
-import { useDiffViewer } from "../../../../hooks/index.js";
+import { useGitDiffViewer } from "../../../../hooks/index.js";
 import "./styles.css";
 import type { DiffLineProps } from "./types.js";
 
@@ -16,19 +15,12 @@ const DiffLine = ({
   id,
   className,
   style,
-  language = "plaintext",
   ...props
 }: DiffLineProps): React.ReactElement => {
   const { wrapLines, addCommentEnabled, toggleAddCommentLocation } =
-    useDiffViewer();
+    useGitDiffViewer();
   const gutterIsInteractive = addCommentEnabled;
   const typeClass = `diff-line-${props.type}`;
-  const highlight = (content: string) => {
-    if (hljs.getLanguage(language)) {
-      return hljs.highlight(content, { language }).value;
-    }
-    return hljs.highlight(content, { language: "plaintext" }).value;
-  };
 
   const lineNumber =
     props.type !== "hunk" ? Number(props.lineNum2 || props.lineNum1) : 0;
@@ -73,7 +65,7 @@ const DiffLine = ({
           <pre
             // biome-ignore lint/security/noDangerouslySetInnerHtml: syntax highlighting requires adding generated HTML
             dangerouslySetInnerHTML={{
-              __html: props.content ? highlight(props.content) : "\u00A0",
+              __html: props.content ? props.content : "\u00A0",
             }}
           />
         )}
