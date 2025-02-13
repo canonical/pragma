@@ -39,7 +39,7 @@ const EditableBlock = ({
   };
 
   const handleKeyUp = (event: React.KeyboardEvent) => {
-    if (event.key === "Enter") {
+    if (event.key === "Enter" || event.key === " ") {
       toggleEditing();
     }
   };
