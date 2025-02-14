@@ -87,7 +87,7 @@ export const DeletedFile: StoryFn<ProviderOptions> = (args) => {
 DeletedFile.parameters = storyOptions;
 
 export const InteractiveGutterWithAddComment: StoryFn<ProviderOptions> = (
-  args
+  args,
 ) => {
   const [collapsed, setCollapsed] = useState(false);
 

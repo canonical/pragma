@@ -10,4 +10,4 @@
  */
 export type AllOrNone<T extends Record<string, unknown>> =
   | T
-  | Partial<Record<keyof T, never>>;
+  | { [K in keyof T]?: never };
