@@ -53,6 +53,6 @@ export const InteractiveGutterWithAddComment = Template.bind({});
 InteractiveGutterWithAddComment.args = {
   diff: fixtures.diffExample,
   lineDecorations: { 20: fixtures.commentExample },
-  children: fixtures.addCommentExample,
+  AddComment: fixtures.addCommentExample,
 };
 InteractiveGutterWithAddComment.parameters = storyOptions;

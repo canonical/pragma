@@ -1,10 +1,10 @@
 /* @canonical/generator-canonical-ds 0.0.1 */
 import type React from "react";
 
-export type CodeDiffViewerChildrenRender = (
-  lineNumber: number,
-  onClose: () => void,
-) => React.ReactNode;
+export type CodeDiffViewerAddComment = (props: {
+  lineNumber: number;
+  onClose: () => void;
+}) => React.ReactNode;
 
 export type CodeDiffViewerProps = {
   /** A unique identifier for the CodeDiffViewer */
@@ -14,7 +14,7 @@ export type CodeDiffViewerProps = {
   /** Add comment element.
    * If provided, the add comment button will be displayed on the line number.
    */
-  children?: CodeDiffViewerChildrenRender;
+  AddComment?: CodeDiffViewerAddComment;
   /** Inline styles */
   style?: React.CSSProperties;
 };

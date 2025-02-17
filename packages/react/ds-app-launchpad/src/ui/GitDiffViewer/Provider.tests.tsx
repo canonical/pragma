@@ -2,7 +2,7 @@
 
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import type { CodeDiffViewerChildrenRender } from "./common/CodeDiffViewer/types.js";
+import type { CodeDiffViewerAddComment } from "./common/CodeDiffViewer/types.js";
 import * as fixtures from "./fixtures.js";
 import { GitDiffViewer } from "./index.js";
 
@@ -51,20 +51,19 @@ describe("GitDiffViewer component", () => {
   });
 
   it("renders AddComment component correctly", async () => {
-    const addComment: CodeDiffViewerChildrenRender = (lineNumber, onClose) => (
+    const AddComment: CodeDiffViewerAddComment = ({ lineNumber, onClose }) => (
       <div>
         New comment
-        {/* biome-ignore lint/a11y/useButtonType: */}
-        <button onClick={onClose}>Close</button>
+        <button onClick={onClose} type="button">
+          Close
+        </button>
       </div>
     );
 
     const { container } = render(
       <GitDiffViewer diff={fixtures.diffExample}>
         <GitDiffViewer.FileHeader />
-        <GitDiffViewer.CodeDiffViewer>
-          {addComment}
-        </GitDiffViewer.CodeDiffViewer>
+        <GitDiffViewer.CodeDiffViewer AddComment={AddComment} />
       </GitDiffViewer>,
     );
     const gutter = container.querySelector(".diff-gutter[tabindex='0']");

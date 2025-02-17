@@ -72,10 +72,12 @@ describe("DiffLine component", () => {
   it("has no interactive gutter on hunks", () => {
     const { container } = render(
       <GitDiffViewer diff={fixtures.diffExample} wrapLines>
-        <GitDiffViewer.CodeDiffViewer>
-          {/* Having an add comment rendered here will result in having interactive mode enable */}
-          {() => <></>}
-        </GitDiffViewer.CodeDiffViewer>
+        <GitDiffViewer.CodeDiffViewer
+          AddComment={
+            /* Having an add comment rendered here will result in having interactive mode enable */
+            () => <></>
+          }
+        />
         <table>
           <tbody>
             <Component {...HUNK_LINE} />

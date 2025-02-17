@@ -1,4 +1,4 @@
-import type { CodeDiffViewerChildrenRender } from "./common/index.js";
+import type { CodeDiffViewerAddComment } from "./common/index.js";
 import { parseGitDiff } from "./utils/index.js";
 
 export const diffExample =
@@ -74,10 +74,10 @@ export const commentExample = (
   </div>
 );
 
-export const addCommentExample: CodeDiffViewerChildrenRender = (
+export const addCommentExample: CodeDiffViewerAddComment = ({
   lineNumber,
   onClose,
-) => (
+}) => (
   <div
     style={{
       display: "flex",

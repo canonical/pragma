@@ -40,15 +40,19 @@ export type LineDecorationOptions = {
   lineDecorations?: Record<number, React.ReactElement>;
 };
 
-export type ContextOptions = {
+type UserContextOptions = LineDecorationOptions &
+  DiffOptions &
+  WrapLinesOption &
+  AllOrNone<CollapseOption>;
+
+type ManagedContextOptions = {
   addCommentEnabled: boolean;
   setAddCommentEnabled: (enabled: boolean) => void;
   addCommentOpenLocations: Set<number>;
   toggleAddCommentLocation: (lineNumber: number) => void;
-} & AllOrNone<CollapseOption> &
-  LineDecorationOptions &
-  DiffOptions &
-  WrapLinesOption;
+};
+
+export type ContextOptions = UserContextOptions & ManagedContextOptions;
 
 export type ProviderOptions = {
   id?: string;
@@ -58,10 +62,7 @@ export type ProviderOptions = {
    * Consider using `GitDiffViewer.FileHeader`, and `GitDiffViewer.CodeDiff` components.
    */
   children?: React.ReactNode;
-} & AllOrNone<CollapseOption> &
-  LineDecorationOptions &
-  DiffOptions &
-  WrapLinesOption;
+} & UserContextOptions;
 
 export type Hunk = {
   header: string;

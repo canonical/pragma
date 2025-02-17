@@ -21,7 +21,7 @@ const tableWidthCSSVar = "--table-width";
  */
 const CodeDiffViewer = ({
   id,
-  children,
+  AddComment,
   className,
   style,
 }: CodeDiffViewerProps): React.ReactElement | null => {
@@ -100,12 +100,12 @@ const CodeDiffViewer = ({
   }, []);
 
   useEffect(() => {
-    if (children && !addCommentEnabled) {
+    if (AddComment && !addCommentEnabled) {
       setAddCommentEnabled(true);
-    } else if (!children && addCommentEnabled) {
+    } else if (!AddComment && addCommentEnabled) {
       setAddCommentEnabled(false);
     }
-  }, [children, addCommentEnabled, setAddCommentEnabled]);
+  }, [AddComment, addCommentEnabled, setAddCommentEnabled]);
 
   if (isCollapsed) {
     return null;
@@ -170,13 +170,16 @@ const CodeDiffViewer = ({
 
                       {/* Open comment row, if any */}
                       {lineNum2 &&
-                        children &&
+                        AddComment &&
                         addCommentOpenLocations.has(lineNum2) && (
                           <tr className="line-decoration">
                             <td className="container">
-                              {children(lineNumber, () =>
-                                toggleAddCommentLocation(lineNumber),
-                              )}
+                              <AddComment
+                                lineNumber={lineNumber}
+                                onClose={() =>
+                                  toggleAddCommentLocation(lineNumber)
+                                }
+                              />
                             </td>
                           </tr>
                         )}

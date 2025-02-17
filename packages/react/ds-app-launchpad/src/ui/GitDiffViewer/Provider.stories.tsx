@@ -99,9 +99,7 @@ export const InteractiveGutterWithAddComment: StoryFn<ProviderOptions> = (
       onCollapseToggle={setCollapsed}
     >
       <GitDiffViewer.FileHeader showChangeCount />
-      <GitDiffViewer.CodeDiffViewer>
-        {fixtures.addCommentExample}
-      </GitDiffViewer.CodeDiffViewer>
+      <GitDiffViewer.CodeDiffViewer AddComment={fixtures.addCommentExample} />
     </GitDiffViewer>
   );
 };
