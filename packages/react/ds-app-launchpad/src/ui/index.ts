@@ -1,1 +1,1 @@
-export { Button, type ButtonProps } from "./Button/index.js";
+export * from "./GitDiffViewer/index.js";

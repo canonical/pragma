@@ -3,6 +3,25 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.9.0-experimental.4](https://github.com/canonical/ds25/compare/v0.9.0-experimental.3...v0.9.0-experimental.4) (2025-02-17)
+
+
+### Features
+
+* **launchpad:** Add GitDiffViewer component ([#117](https://github.com/canonical/ds25/issues/117)) ([6737965](https://github.com/canonical/ds25/commit/6737965a21fa3b9c78be30e6f1d22ebb003e1f9a))
+
+
+
+
+
+# [0.9.0-experimental.2](https://github.com/canonical/ds25/compare/v0.9.0-experimental.1...v0.9.0-experimental.2) (2025-02-12)
+
+**Note:** Version bump only for package @canonical/utils
+
+
+
+
+
 # [0.9.0-experimental.1](https://github.com/canonical/ds25/compare/v0.9.0-experimental.0...v0.9.0-experimental.1) (2025-02-07)
 
 **Note:** Version bump only for package @canonical/utils

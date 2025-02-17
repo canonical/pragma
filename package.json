@@ -20,6 +20,10 @@
     "configs/*",
     "packages/*",
     "packages/react/*",
+    "packages/styles/primitives/*",
+    "packages/styles/modes/*",
+    "packages/styles/elements",
+    "packages/styles/main/*",
     "apps/*",
     "apps/react/*"
   ],

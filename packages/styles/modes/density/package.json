@@ -1,0 +1,30 @@
+{
+  "name": "@canonical/styles-modes-density",
+  "description": "Canonical's base styles",
+  "version": "0.9.0-experimental.2",
+  "main": "src/index.css",
+  "files": ["src"],
+  "author": {
+    "email": "webteam@canonical.com",
+    "name": "Canonical Webteam"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/canonical/ds25"
+  },
+  "license": "LGPL-3.0",
+  "bugs": {
+    "url": "https://github.com/canonical/ds25/issues"
+  },
+  "homepage": "https://github.com/canonical/ds25#readme",
+  "scripts": {
+    "check": "bun run check:biome",
+    "check:fix": "bun run check:biome:fix",
+    "check:biome": "biome check",
+    "check:biome:fix": "biome check --write"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "@canonical/biome-config": "^0.9.0-experimental.2"
+  }
+}

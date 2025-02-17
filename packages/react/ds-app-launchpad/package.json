@@ -1,6 +1,6 @@
 {
   "name": "@canonical/react-ds-app-launchpad",
-  "version": "0.9.0-experimental.1",
+  "version": "0.9.0-experimental.4",
   "type": "module",
   "module": "dist/esm/index.js",
   "types": "dist/types/index.d.ts",
@@ -26,8 +26,8 @@
     "build:package:tsc": "tsc -p tsconfig.build.json",
     "check": "bun run check:biome && bun run check:ts",
     "check:fix": "bun run check:biome:fix && bun run check:ts",
-    "check:biome": "biome check src *.json",
-    "check:biome:fix": "biome check --write src *.json",
+    "check:biome": "biome check",
+    "check:biome:fix": "biome check --write",
     "check:ts": "tsc --noEmit",
     "storybook": "storybook dev -p 6006 --no-open --host 0.0.0.0",
     "test": "bun run test:vitest",
@@ -36,15 +36,17 @@
     "test:vitest:watch": "vitest"
   },
   "dependencies": {
-    "@canonical/styles": "^0.9.0-experimental.1",
-    "@canonical/storybook-config": "^0.9.0-experimental.1",
+    "@canonical/storybook-config": "^0.9.0-experimental.2",
+    "@canonical/styles": "^0.9.0-experimental.2",
+    "@canonical/utils": "^0.9.0-experimental.4",
+    "highlight.js": "^11.11.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
-    "@canonical/biome-config": "^0.9.0-experimental.1",
-    "@canonical/typescript-config-react": "^0.9.0-experimental.1",
+    "@canonical/biome-config": "^0.9.0-experimental.2",
+    "@canonical/typescript-config-react": "^0.9.0-experimental.2",
     "@chromatic-com/storybook": "^3.2.2",
     "@storybook/blocks": "^8.4.7",
     "@storybook/react": "^8.4.7",

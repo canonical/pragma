@@ -3,6 +3,18 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.9.0-experimental.2](https://github.com/canonical/ds25/compare/v0.9.0-experimental.1...v0.9.0-experimental.2) (2025-02-12)
+
+
+### Features
+
+* **forms:** Added a base package for the form components ([#128](https://github.com/canonical/ds25/issues/128)) ([6f68ead](https://github.com/canonical/ds25/commit/6f68eade4bcee41988bed4826a2a4211a1c25917))
+* **storybook:** Modularized the config creation for storybook ([#125](https://github.com/canonical/ds25/issues/125)) ([90189d8](https://github.com/canonical/ds25/commit/90189d89b5a1948a417adea245708336225f598d))
+
+
+
+
+
 # [0.9.0-experimental.1](https://github.com/canonical/ds25/compare/v0.9.0-experimental.0...v0.9.0-experimental.1) (2025-02-07)
 
 **Note:** Version bump only for package @canonical/react-ds-core

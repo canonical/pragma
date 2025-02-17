@@ -1,0 +1,75 @@
+/* @canonical/generator-canonical-ds 0.0.1 */
+
+.ds.file-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--git-diff-file-header-items-gap);
+  background-color: var(--git-diff-file-header-background-color);
+  padding: var(--git-diff-file-header-vertical-padding)
+    var(--git-diff-file-header-horizontal-padding);
+
+  &:not(:has(.left-content > .collapse-button.collapsed)) {
+    border-bottom: 1px solid var(--git-diff-viewer-border-color-tinted);
+  }
+
+  & > .left-content,
+  & > .right-content {
+    display: flex;
+    align-items: center;
+    gap: var(--git-diff-file-header-items-gap);
+  }
+
+  & > .left-content {
+    & > .file-name {
+      font-weight: 550;
+    }
+
+    & > .collapse-button {
+      border: none;
+      background-color: var(--git-diff-file-header-button-background);
+      cursor: pointer;
+      padding: 4px;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      border-radius: 1px;
+
+      &:hover {
+        background-color: var(--git-diff-file-header-button-hover-background);
+      }
+      &:focus {
+        background-color: var(--git-diff-file-header-button-focus-background);
+      }
+
+      &.collapsed {
+        transform: rotate(90deg);
+      }
+    }
+  }
+
+  & > .right-content {
+    & > .change-count {
+      font-size: 12px;
+      font-weight: 550;
+      line-height: 16px;
+      display: flex;
+      align-items: center;
+
+      & > .insertions,
+      & > .deletions {
+        padding: 0 4px;
+        display: flex;
+        align-items: center;
+      }
+      & > .insertions {
+        background-color: var(--git-diff-file-header-insertion-background);
+        color: var(--git-diff-file-header-insertion-color);
+      }
+      & > .deletions {
+        background-color: var(--git-diff-file-header-deletion-background);
+        color: var(--git-diff-file-header-deletion-color);
+      }
+    }
+  }
+}

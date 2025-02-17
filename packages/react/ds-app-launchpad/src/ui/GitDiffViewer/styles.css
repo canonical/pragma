@@ -1,0 +1,38 @@
+/* GitDiffViewer.css */
+.ds.git-diff-viewer {
+  --git-diff-viewer-code-default-background: #f7f7f7;
+  --git-diff-viewer-code-default-color: #636363;
+  --git-diff-viewer-code-insertion-background: #dff1e2;
+  --git-diff-viewer-code-insertion-color: #8cd297;
+  --git-diff-viewer-code-deletion-background: #f8e8ea;
+  --git-diff-viewer-code-deletion-color: #fba1aa;
+
+  --git-diff-viewer-border-color: rgba(0, 0, 0, 0.2);
+  --git-diff-viewer-border-color-tinted: rgba(0, 0, 0, 0.1);
+
+  --git-diff-viewer-gutter-width: 7.5em;
+  --git-diff-viewer-hunk-header-background: #ffffff;
+  --git-diff-viewer-hunk-header-color: rgba(0, 0, 0, 0.6);
+
+  --git-diff-file-header-horizontal-padding: 1em;
+  --git-diff-file-header-vertical-padding: 0.4em;
+  --git-diff-file-header-background-color: #ebebeb;
+  --git-diff-file-header-items-gap: 0.5em;
+
+  --git-diff-file-header-button-background: transparent;
+  --git-diff-file-header-button-hover-background: rgba(0, 0, 0, 0.1);
+  --git-diff-file-header-button-focus-background: rgba(0, 0, 0, 0.1);
+
+  --git-diff-file-header-insertion-background: rgba(10, 189, 37, 0.1);
+  --git-diff-file-header-insertion-color: var(
+    --git-diff-viewer-code-insertion-color,
+    #8cd297
+  );
+  --git-diff-file-header-deletion-background: rgba(255, 102, 120, 0.1);
+  --git-diff-file-header-deletion-color: var(
+    --git-diff-viewer-code-deletion-color,
+    #fba1aa
+  );
+
+  border: 1px solid var(--git-diff-viewer-border-color);
+}
