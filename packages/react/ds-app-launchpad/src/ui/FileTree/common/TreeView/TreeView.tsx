@@ -39,7 +39,13 @@ const TreeView = ({
             </Folder>
           );
         case "file":
-          return <File key={`${uid}-${path}`} name={node.name} />;
+          return (
+            <File
+              key={`${uid}-${path}`}
+              name={node.name}
+              marker={node.marker}
+            />
+          );
       }
     },
     [defaultCollapsed, uid],

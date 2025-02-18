@@ -13,6 +13,7 @@ const File = ({
   className,
   style,
   name,
+  marker,
 }: FileProps): React.ReactElement => {
   return (
     <Node
@@ -21,6 +22,7 @@ const File = ({
       style={style}
       name={name}
       nodeType="file"
+      marker={marker}
     />
   );
 };

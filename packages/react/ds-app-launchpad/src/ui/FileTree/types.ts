@@ -16,6 +16,7 @@ export type BaseNode = {
 
 export type FileNode = BaseNode & {
   type: "file";
+  marker?: React.ReactNode;
 };
 
 export type FolderNode = BaseNode & {

@@ -73,6 +73,19 @@ const storyOptions = {
   },
 };
 
+const marker = (color: string) => (
+  <div
+    style={{
+      height: "10px",
+      width: "10px",
+      borderRadius: "50%",
+      backgroundColor: color,
+    }}
+  >
+    &nbsp;
+  </div>
+);
+
 export const Default: StoryFn<ProviderOptions> = (args) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedNode, setSelectedNode] = useState<FileTreeData | null>(null);
@@ -95,9 +108,9 @@ export const Default: StoryFn<ProviderOptions> = (args) => {
         <FileTree.File name="logo.png" />
         <FileTree.File name="styles.css" />
         <FileTree.Folder name="images" defaultOpen>
-          <FileTree.File name="image1.png" />
-          <FileTree.File name="image2.png" />
-          <FileTree.File name="image3.png" />
+          <FileTree.File name="image1.png" marker={marker("orange")} />
+          <FileTree.File name="image2.png" marker={marker("green")} />
+          <FileTree.File name="image3.png" marker={marker("orange")} />
           <FileTree.File name="image4.png" />
         </FileTree.Folder>
       </FileTree.Folder>

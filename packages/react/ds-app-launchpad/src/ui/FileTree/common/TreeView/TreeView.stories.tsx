@@ -45,7 +45,7 @@ const tree: FileTreeData[] = [
     type: "folder",
     name: "assets",
     children: [
-      { type: "file", name: "image3.png" },
+      { type: "file", name: "image3.png", marker: <span>🔥</span> },
       { type: "file", name: "image4.png" },
       { type: "file", name: "image1.png" },
       { type: "file", name: "audio.mp3" },

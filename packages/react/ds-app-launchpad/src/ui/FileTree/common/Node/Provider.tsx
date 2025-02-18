@@ -20,6 +20,7 @@ const Provider = ({
   style,
   children,
   name,
+  marker,
   ...nodeOptions
 }: ProviderProps): React.ReactElement | null => {
   const {
@@ -218,6 +219,7 @@ const Provider = ({
               .join(" ")}
           />
           <span className="nodename">{name}</span>
+          {marker && <div className="marker">{marker}</div>}
         </li>
       )}
       {nodeOptions.nodeType === "folder" &&

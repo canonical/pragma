@@ -27,4 +27,7 @@ export type ProviderProps = {
   /* Inline styles */
   style?: React.CSSProperties;
   name: string;
+
+  /* Shows a marker to the right of the node */
+  marker?: React.ReactNode;
 } & (FileOptions | FolderOptions);

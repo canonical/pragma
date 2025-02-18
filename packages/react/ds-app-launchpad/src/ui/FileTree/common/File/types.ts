@@ -10,4 +10,9 @@ export interface FileProps {
   style?: React.CSSProperties;
   /* File name */
   name: string;
+
+  /**
+   * Shows a marker to the right of the file name.
+   */
+  marker?: React.ReactNode;
 }
