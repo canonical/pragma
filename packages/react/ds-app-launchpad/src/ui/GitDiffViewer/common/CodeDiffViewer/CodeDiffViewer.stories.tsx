@@ -1,8 +1,8 @@
 /* @canonical/generator-canonical-ds 0.0.1 */
 
 import type { Meta, StoryFn } from "@storybook/react";
-import { GitDiffViewer } from "ui/GitDiffViewer/index.js";
 import * as fixtures from "../../fixtures.js";
+import { GitDiffViewer } from "../../index.js";
 import type { ProviderOptions } from "../../types.js";
 import type { CodeDiffViewerProps } from "./types.js";
 

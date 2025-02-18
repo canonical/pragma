@@ -1,10 +1,17 @@
 /* @canonical/generator-ds 0.9.0-experimental.1 */
-export * from "./helpers/index.js";
-export * from "./types.js";
+export * from "./hooks/index.js";
+export type {
+  FileTreeData,
+  FileNode as FileTreeFileNode,
+  FolderNode as FileTreeFolderNode,
+} from "./types.js";
 
 import Provider from "./Provider.js";
-import { FileTreeComponent } from "./types.js";
+import { File, Folder, SearchBox, TreeView } from "./common/index.js";
+import type { FileTreeComponent } from "./types.js";
+
 export const FileTree = Provider as FileTreeComponent;
-// TODO: add file, folder and search components
-// FileTree.Folder = Folder;
-// ..
+FileTree.SearchBox = SearchBox;
+FileTree.File = File;
+FileTree.TreeView = TreeView;
+FileTree.Folder = Folder;

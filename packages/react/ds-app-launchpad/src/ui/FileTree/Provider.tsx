@@ -1,32 +1,8 @@
 import type React from "react";
-import { useCallback, useReducer } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import Context from "./Context.js";
 import "./styles.css";
-import type {
-  FileSelectionOptions,
-  ProviderOptions,
-  SearchOptions,
-} from "./types.js";
-
-type State = {
-  internalSearchQuery: SearchOptions["searchQuery"];
-  internalSelectedFile: FileSelectionOptions["selectedFile"];
-};
-
-type Action =
-  | { type: "SEARCH"; payload: SearchOptions["searchQuery"] }
-  | { type: "SELECT_FILE"; payload: FileSelectionOptions["selectedFile"] };
-
-function reducer(state: State, action: Action): State {
-  switch (action.type) {
-    case "SEARCH":
-      return { ...state, internalSearchQuery: action.payload };
-    case "SELECT_FILE":
-      return { ...state, internalSelectedFile: action.payload };
-    default:
-      return state;
-  }
-}
+import type { ManagedContextOptions, ProviderOptions } from "./types.js";
 
 const componentCssClassName = "ds file-tree";
 
@@ -35,61 +11,116 @@ const Provider = ({
   className,
   style,
   children,
-  searchQuery = "",
-  selectedFile = null,
-  // Controlled props
-  onSearch,
-  onSelectFile,
+  ...contextOptions
 }: ProviderOptions): React.ReactElement => {
-  const [state, dispatch] = useReducer(reducer, {
-    internalSearchQuery: searchQuery,
-    internalSelectedFile: selectedFile,
-  });
+  // const focusedNodeRef = useRef<HTMLLIElement>(null);
+  const fileTreeRef = useRef<HTMLDivElement>(null);
 
-  const currentSearchQuery = onSearch ? searchQuery : state.internalSearchQuery;
-  const currentSelectedFile = onSelectFile
-    ? selectedFile
-    : state.internalSelectedFile;
+  const handleFocusNextNode: ManagedContextOptions["focusNextNode"] =
+    useCallback((direction) => {
+      if (!fileTreeRef.current) return;
+      const currentNode = fileTreeRef.current.querySelector<HTMLElement>(
+        "[data-path-hash]:focus",
+      );
+      const currentNodeHash = currentNode?.getAttribute("data-path-hash");
+      if (!currentNodeHash) return;
 
-  const onSearchHandler: SearchOptions["onSearch"] = useCallback(
-    (query) => {
-      if (onSearch) {
-        onSearch(query);
-      } else {
-        dispatch({ type: "SEARCH", payload: query });
-      }
+      const nextNode =
+        direction === "up"
+          ? fileTreeRef.current.querySelector<HTMLElement>(
+              `[data-path-hash]:has(+ [data-path-hash="${currentNodeHash}"])`,
+            )
+          : fileTreeRef.current.querySelector<HTMLElement>(
+              `[data-path-hash="${currentNodeHash}"] + [data-path-hash]`,
+            );
+      if (!nextNode || !currentNode) return;
+      nextNode.focus();
+      currentNode.setAttribute("tabindex", "-1");
+      nextNode.setAttribute("tabindex", "0");
+    }, []);
+
+  const handleFocusEndNode: ManagedContextOptions["focusEndNode"] = useCallback(
+    (end) => {
+      if (!fileTreeRef.current) return;
+      const endNode = fileTreeRef.current.querySelector<HTMLElement>(
+        `[data-path-hash]:${end === "start" ? "first" : "last"}-of-type`,
+      );
+      const currentNode = fileTreeRef.current.querySelector<HTMLElement>(
+        "[data-path-hash]:focus",
+      );
+      if (!endNode || !currentNode) return;
+      endNode.focus();
+      currentNode.setAttribute("tabindex", "-1");
+      endNode.setAttribute("tabindex", "0");
     },
-    [onSearch]
+    [],
   );
 
-  const onSelectFileHandler: FileSelectionOptions["onSelectFile"] = useCallback(
-    (node) => {
-      if (onSelectFile) {
-        onSelectFile(node);
-      } else {
-        dispatch({ type: "SELECT_FILE", payload: node });
-      }
-    },
-    [onSelectFile]
-  );
+  const handleFocusNextSiblingCharacter: ManagedContextOptions["focusNextSiblingCharacter"] =
+    useCallback((character) => {
+      if (!fileTreeRef.current) return;
+      const currentNode = fileTreeRef.current.querySelector<HTMLElement>(
+        "[data-path-hash]:focus",
+      );
+      if (!currentNode) return;
+      const currentNodeHash = currentNode.getAttribute("data-path-hash");
+      if (!currentNodeHash) return;
+
+      const matchingNodes = Array.from(
+        fileTreeRef.current.querySelectorAll<HTMLElement>(
+          `[data-name^="${character}"]`,
+        ),
+      );
+      const currentNodeIndex = matchingNodes.findIndex(
+        (node) => node === currentNode,
+      );
+
+      const nextNodeWithCharacter = matchingNodes.at(
+        (currentNodeIndex + 1) % matchingNodes.length,
+      );
+
+      if (!nextNodeWithCharacter) return;
+      nextNodeWithCharacter.focus();
+      currentNode.setAttribute("tabindex", "-1");
+      nextNodeWithCharacter.setAttribute("tabindex", "0");
+    }, []);
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: on search query change, the first node may be filtered out
+  useEffect(() => {
+    if (!fileTreeRef.current) return;
+    const nodes = Array.from(
+      fileTreeRef.current.querySelectorAll<HTMLElement>(
+        "[data-path-hash][tabindex='0']",
+      ),
+    );
+    for (const node of nodes) {
+      node.setAttribute("tabindex", "-1");
+    }
+    const firstNode = fileTreeRef.current.querySelector<HTMLElement>(
+      "[data-path-hash]:not([hidden])",
+    );
+    firstNode?.setAttribute("tabindex", "0");
+  }, [contextOptions.searchQuery, contextOptions.selectedFile]);
 
   return (
-    <div
-      id={id}
-      style={style}
-      className={[componentCssClassName, className].filter(Boolean).join(" ")}
+    <Context.Provider
+      value={{
+        ...contextOptions,
+        expandable: contextOptions.expandable ?? false,
+        focusNextNode: handleFocusNextNode,
+        focusEndNode: handleFocusEndNode,
+        focusNextSiblingCharacter: handleFocusNextSiblingCharacter,
+      }}
     >
-      <Context.Provider
-        value={{
-          searchQuery: currentSearchQuery,
-          onSearch: onSearchHandler,
-          selectedFile: currentSelectedFile,
-          onSelectFile: onSelectFileHandler,
-        }}
+      <div
+        id={id}
+        style={style}
+        className={[componentCssClassName, className].filter(Boolean).join(" ")}
+        ref={fileTreeRef}
       >
         {children}
-      </Context.Provider>
-    </div>
+      </div>
+    </Context.Provider>
   );
 };
 

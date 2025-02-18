@@ -1,0 +1,61 @@
+/* @canonical/generator-ds 0.9.0-experimental.4 */
+
+.ds.search-box {
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid var(--file-tree-search-box-border-color);
+  padding: var(--file-tree-search-box-vertical-padding)
+    var(--file-tree-search-box-horizontal-padding);
+  &:has(.input:focus) {
+    outline: 2px solid -webkit-focus-ring-color;
+    outline-offset: -2px;
+    box-sizing: border-box;
+  }
+  & > .input {
+    flex: 1 1 100%;
+
+    vertical-align: baseline;
+    font-size: 1rem;
+    line-height: var(--file-tree-search-box-line-height);
+  }
+
+  & > .input:not(:valid) ~ .reset {
+    display: none;
+  }
+  & > .search,
+  & > .reset {
+    cursor: pointer;
+    width: var(--file-tree-search-box-button-size);
+    height: var(--file-tree-search-box-button-size);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background-color: transparent;
+    border: none;
+  }
+  & > .search > .icon {
+    content: var(--file-tree-search-box-search-icon);
+  }
+
+  & > .reset > .icon {
+    content: var(--file-tree-search-box-reset-icon);
+  }
+
+  /* remove search input default appearance */
+  & > .input {
+    border: none;
+    background-color: transparent;
+    &::-webkit-search-cancel-button {
+      appearance: none;
+    }
+    &:-webkit-autofill,
+    &:-webkit-autofill:hover,
+    &:-internal-autofill-selected,
+    &:active,
+    &:focus {
+      background-color: transparent;
+      border-color: transparent;
+      outline: none;
+    }
+  }
+}

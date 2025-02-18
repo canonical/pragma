@@ -1,5 +1,5 @@
 import { createContext } from "react";
-import { ContextOptions } from "./types.js";
+import type { ContextOptions } from "./types.js";
 
 const Context = createContext<ContextOptions | null>(null);
 

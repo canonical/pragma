@@ -1,0 +1,32 @@
+/* @canonical/generator-ds 0.9.0-experimental.4 */
+
+.ds.indentation-block {
+  display: inline-flex;
+  gap: var(--file-tree-node-items-gap);
+  align-items: center;
+  user-select: none;
+
+  & > .indent-block {
+    width: var(--file-tree-node-indent-width);
+    position: relative;
+    isolation: isolate;
+
+    padding: var(--file-tree-node-vertical-padding) 0;
+    &:not(.empty)::before {
+      content: "";
+      display: block;
+      position: absolute;
+      left: 50%;
+      top: 0;
+      bottom: 0;
+      transform: translateX(-50%);
+      width: var(--file-tree-node-indent-bar-width);
+      height: 100%;
+      background-color: var(--file-tree-node-indent-bar-color);
+    }
+  }
+  &:has(> .indent-block.empty) {
+    width: 0;
+    margin-left: calc(-1 * var(--file-tree-node-items-gap));
+  }
+}
