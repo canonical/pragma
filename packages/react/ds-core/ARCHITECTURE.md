@@ -27,24 +27,14 @@ Our architecture is driven by several core goals and design principles:
 
 ### 1.2 Tooling Choices
 
-On top of the [root-level architecture](../../../guides/ARCHITECTURE.md), this package leverages a modern React toolchain to achieve its goals:
+On top of the [root-level architecture](../../../guides/ARCHITECTURE.md), this package leverages a modern React
+toolchain to achieve its goals:
 
-* **[React 19](https://react.dev):**: This library is built on React 19. This version of React provides the latest
-  features, performance improvements, and compatibility with the broader React ecosystem.
-* **[Vite](https://vite.dev):** Vite is used as the development server and build tool specifically for Storybook.
-  * **Fast Storybook Development Server with HMR:** Vite provides a fast development server for Storybook, enabling
-  features like Hot Module Replacement (HMR) for a smooth and efficient component development and preview experience
-  within Storybook.
-  * **Optimized Storybook Builds:** Vite is also used to build the Storybook documentation site itself, optimizing assets
-  for deployment.
-* **[Storybook](https://storybook.js.org/):** Storybook is employed as a development and documentation environment for
-  components:
-  * **Isolated Component Development:** Storybook allows developers to focus on individual components in isolation, making
-  development and testing more focused and efficient.
-  * **Living Style Guide and Documentation:** Storybook serves as an interactive style guide, showcasing components and
-  their variations, and automatically generating documentation.
-  * **Visual Regression Testing:** Storybook integrates well with visual regression testing tools, such
-  as [Chromatic](https://www.chromatic.com/), enabling automated visual QA of components across different states and themes.
+| Tool(s)                                      | Enables                                                                     | Benefits                                                                              |
+|----------------------------------------------|-----------------------------------------------------------------------------|---------------------------------------------------------------------------------------|
+| [React 19](https://react.dev)                | Latest features, performance, and broad ecosystem compatibility             | Improved functionality, efficiency, and access to a wide range of libraries and tools |
+| [Vite](https://vite.dev)                     | Fast development server, Hot Module Replacement (HMR), and optimized builds | Quick dev feedback loops, faster loading times, and improved performance              |
+| [Storybook](https://storybook.js.org/)       | Isolated component development and living style guide with documentation    | Focused development and testing, centralized and interactive documentation            |
 
 ### 1.3 Component-Based Structure
 

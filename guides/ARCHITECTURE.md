@@ -55,7 +55,7 @@ Ideally, we could use `bun build` for production builds, as it offers some advan
 * **Speed**: Bun builds slightly faster than the Typescript compiler:
 
   | Tool       | Command                                                      | Real Time | User Time | Sys Time |
-        |------------|--------------------------------------------------------------|-----------|-----------|----------|
+  |------------|--------------------------------------------------------------|-----------|-----------|----------|
   | Bun        | `bun run build:package:bun && bun run build:package:types`   | 0m0.648s  | 0m1.498s  | 0m0.117s |
   | Typescript | `bun run build:package:tsc && bun run build:package:copycss` | 0m0.707s  | 0m1.615s  | 0m0.094s |
 
