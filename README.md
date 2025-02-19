@@ -1,82 +1,38 @@
-# DS-25 - Canonical's new design system
+# DS-25 - Canonical's New Design System
 
-Canonical's new design system.
-This is the successor to [Vanilla framework](https://vanillaframework.io).
+Welcome to DS-25 (name subject to change), Canonical's next-generation design system. 
+This monorepo serves as the central hub for our efforts to
+create a cohesive, efficient, and accessible design system and related tooling.
 
-## Getting started
+## 1. Our Core Values
 
-1. Install [NodeJS](https://nodejs.org/en/download/package-manager) version 20 or later.
-2. Install the [bun package manager](https://bun.sh/).
-3. Install Node dependencies: `bun install`.
+DS-25 is built upon the following core values:
 
-The monorepo's dependencies should now be installed.
+* **Reduced Complexity:** We strive for simplicity and clarity in our design and code, making it simple for everyone to
+  use and contribute.
+* **Fast and Modern Tooling:** We leverage cutting-edge, forward-looking technologies and workflows to ensure a smooth
+  and efficient development experience.
+* **Accessibility:** We prioritize inclusivity by designing for accessibility from the ground up, ensuring our products
+  are usable by everyone.
+* **Performance:** We emphasize speed and efficiency, optimizing our design system for optimal performance in production
+  and development environments.
 
-### Binary bun lockfile
+## 2. Project Goals
 
-Bun's lockfile (`bun.lockb`) is currently binary.
-This can cause issues with resolving git conflicts when switching branches or pulling changes from remote.
+DS-25 aims to provide a comprehensive design system that empowers teams to build consistent, high-quality user
+experiences. We are focused on:
 
-You can mitigate this issue locally by configuring your
-git client to read Bun lockfiles as text: `git config diff.lockb.textconv bun && git config diff.lockb.binary true`.
+* Creating a robust and scalable foundation for Canonical's design language.
+* Providing a seamless developer experience with modern tooling and clear documentation.
+* Ensuring accessibility and inclusivity for all users.
+* Establishing a collaborative environment for design and development.
 
-This will no longer be necessary once Bun [switches to a text-based lockfile](https://github.com/oven-sh/bun/issues/11863).
+## 3. Resources
 
-## Structure
+To learn more, check out the following resources:
 
-The design system is structured as a [monorepo](https://semaphoreci.com/blog/what-is-monorepo).
-It contains many sub-packages for applications, configurations, and other packages.
-
-The monorepo should not be considered to be a single project that is run as a whole.
-Each of its packages are separate modules that can be worked on independently.
-
-- `apps/`: Core applications consuming the design system. These could be documentation sites, boilerplates, etc.
-- `configs/`: Recommended configurations for linters, build tools, etc.
-- `packages/`: Modules that consume configurations and are consumed by applications.
-  - [`packages/ds-react-core`](/packages/ds-react-core/README.md) is especially noteworthy as it publishes our styling and React components, and documents them with [Storybook](https://storybook.js.org/).
-
-## Package scripts
-
-We currently use Lerna to run package scripts across all packages in the monorepo.
-This enables us to run tasks for all packages, taking advantage of concurrency
-and task result caching.
-
-Generally, you will be working on a small number of packages at a time,
-so we recommend switching to the directory of whatever package you are working
-on and running the appropriate scripts (`bun run check`, for example) on a
-per-package basis.
-
-In cases where running tasks across the entire monorepo is necessary,
-`lerna run` should be used. For example, the command `lerna run build`
-will run the `build` script specified in the `scripts` of each `package.json`
-in the monorepo.
-
-### Recommended package scripts
-
-Each package should define the following scripts in `package.json`:
-
-- `check`: Lints, formats, and (if applicable) type-checks the package.
-- `check:fix`: Lints, formats, type-checks, and fixes issues where possible.
-- `test`: Runs tests for the package.
-
-If a package has a build step, it should also define:
-- `build`: Builds the package as preparation for publishing or use by its dependencies.
-
-By creating these scripts in each package, the build and check tasks will be
-included in the monorepo's CI workflow, helping to avoid build errors later.
-
-## Documentation
-
-JavaScript documentation should be written with [TSDoc](https://tsdoc.org/).
-
-## Monorepo & Types
-
-The `@types` dependencies required by the monorepo packages and apps are by default hoisted in the root `node_modules`. However, this behaviour has two downsides : 
-- It can lead to conflicts between the types of different packages, for instance `bun` and `node` export overlapping types.
-- Consumption of types in packages and apps are not explicit, leading to issues that are difficult to debug.
-
-For this reason, we have opted for explicitly declaring the `@types` dependencies both in the `package.json` under `@devDependencies` and in  `tsconfig.json` under `compilerOptions/types` for each package and app. 
-
-## Notes for developers
-
-- To clean dependencies and build cache artifacts, run `bun run special:clean` (which resolves to `rm -rf node_modules .nx`). 
-- In some cases, you might want to additionally remove package builds with `rm -rf ./**/dist`.
+| Resource                                               | Description                                                                                                                             |
+|--------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------|
+| [Vanilla Framework](https://vanillaframework.io)       | Canonical's current SCSS framework. This project aims to succeed Vanilla, offering enhanced features and modern development practices.  |
+| [Contribution Documentation](./guides/CONTRIBUTING.md) | Learn how to contribute to DS-25. Find detailed instructions for installing, running, and working with the project locally.             |
+| [Architecture Documentation](./guides/ARCHITECTURE.md) | Explore the architectural decisions and principles behind DS-25. This includes explanations of project structure, benchmarks, and more. |
