@@ -1,0 +1,41 @@
+/* @canonical/generator-ds 0.9.0-experimental.4 */
+
+.ds.view-mode-tabs {
+  display: flex;
+
+  .tab {
+    padding: 8px 12px;
+    border: 1px solid var(--markdown-editor-tabs-inactive-border-color);
+    border-width: 1px 1px 0 1px;
+    color: var(--markdown-editor-tabs-inactive-color);
+    background-color: var(--markdown-editor-tabs-inactive-background-color);
+    cursor: pointer;
+
+    &:hover,
+    &:focus {
+      color: var(--markdown-editor-tabs-hover-color);
+      background-color: var(--markdown-editor-tabs-hover-background-color);
+    }
+    &:focus {
+      outline-offset: -6px;
+    }
+
+    &.selected {
+      color: var(--markdown-editor-tabs-active-color);
+      border-color: var(--markdown-editor-tabs-active-border-color);
+      background-color: var(--markdown-editor-tabs-active-background-color);
+      position: relative;
+
+      /* hide the top border of the tab panel for the selected tab */
+      &::after {
+        content: "";
+        position: absolute;
+        bottom: -1px;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background-color: var(--markdown-editor-editor-background-color);
+      }
+    }
+  }
+}

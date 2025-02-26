@@ -1,0 +1,55 @@
+/* @canonical/generator-ds 0.9.0-experimental.4 */
+
+.ds.markdown-editor {
+  --markdown-editor-editor-background-color: white;
+  --markdown-editor-editor-color: black;
+  --markdown-editor-editor-border-color: black;
+
+  --markdown-editor-tabs-active-color: black;
+  --markdown-editor-tabs-active-border-color: #7b7b7b;
+  --markdown-editor-tabs-active-background-color: white;
+  --markdown-editor-tabs-hover-color: black;
+  --markdown-editor-tabs-hover-background-color: #f2f2f2;
+  --markdown-editor-tabs-inactive-color: #737373;
+  --markdown-editor-tabs-inactive-border-color: transparent;
+  --markdown-editor-tabs-inactive-background-color: #ebeaeb;
+
+  --markdown-editor-toolbar-hover-background-color: #f2f2f2;
+  --markdown-editor-toolbar-separator-color: rgba(0, 0, 0, 0.2);
+  --markdown-editor-toolbar-button-size: 27px;
+  --markdown-editor-toolbar-buttons-gap: 4px;
+
+  --markdown-editor-input-horizontal-padding: 8px;
+  --markdown-editor-input-vert-padding: 6px;
+
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+
+  & > .top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: nowrap;
+    border-bottom: 1px solid #ebeaeb;
+    margin-bottom: -1px;
+  }
+
+  & > .editor-content {
+    border: 1px solid var(--markdown-editor-editor-border-color);
+    color: var(--markdown-editor-editor-color);
+    background-color: var(--markdown-editor-editor-background-color);
+    padding: var(--markdown-editor-input-vert-padding)
+      var(--markdown-editor-input-horizontal-padding);
+  }
+
+  & > textarea {
+    /* width: 100%; */
+    resize: vertical;
+    outline: none;
+  }
+
+  &:has(textarea:focus) {
+    outline: 1px solid -webkit-focus-ring-color;
+  }
+}

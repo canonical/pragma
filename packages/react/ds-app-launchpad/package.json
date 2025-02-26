@@ -41,7 +41,10 @@
     "@canonical/utils": "^0.9.0-experimental.4",
     "highlight.js": "^11.11.1",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "react-markdown": "^10.0.0",
+    "react-tooltip": "^5.28.0",
+    "rehype-sanitize": "^6.0.0"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
