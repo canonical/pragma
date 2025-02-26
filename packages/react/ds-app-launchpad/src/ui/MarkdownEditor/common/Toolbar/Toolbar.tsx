@@ -18,6 +18,7 @@ const Toolbar = ({
 }: ToolbarProps): React.ReactElement => {
   const toolbarRef = useRef<HTMLDivElement>(null);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: We want to reapply tabindex when children change
   useEffect(() => {
     if (!toolbarRef.current) return;
     const buttons = Array.from(
@@ -29,7 +30,7 @@ const Toolbar = ({
 
     const firstNode = buttons[0];
     firstNode.setAttribute("tabindex", "0");
-  }, []);
+  }, [children]);
 
   return (
     <div
