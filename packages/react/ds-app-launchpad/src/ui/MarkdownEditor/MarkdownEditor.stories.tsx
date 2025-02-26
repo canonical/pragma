@@ -2,7 +2,7 @@
 import type { Meta, StoryFn, StoryObj } from "@storybook/react";
 import { useState } from "storybook/internal/preview-api";
 import MarkdownEditor from "./MarkdownEditor.js";
-import { EditMode, MarkdownEditorProps } from "./types.js";
+import type { EditMode, MarkdownEditorProps } from "./types.js";
 
 const meta = {
   title: "MarkdownEditor",
@@ -43,9 +43,12 @@ function baz() {
 };
 
 export const ExternallyControlledEditMode: StoryFn<MarkdownEditorProps> = (
-  args
+  args,
 ) => {
   const [editMode, setEditMode] = useState<EditMode>("write");
+  const switchTo = editMode === "write" ? "Preview" : "Write";
+  const handleToggle = () => setEditMode(switchTo.toLowerCase() as EditMode);
+
   return (
     <div>
       <MarkdownEditor
@@ -56,8 +59,9 @@ export const ExternallyControlledEditMode: StoryFn<MarkdownEditorProps> = (
       />
       <fieldset>
         <legend>External Edit Mode Control</legend>
-        <button onClick={() => setEditMode("write")}>Write</button>
-        <button onClick={() => setEditMode("preview")}>Preview</button>
+        <button type="button" onClick={handleToggle}>
+          Switch to {switchTo}
+        </button>
       </fieldset>
     </div>
   );

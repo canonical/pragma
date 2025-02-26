@@ -1,6 +1,6 @@
 /* @canonical/generator-ds 0.9.0-experimental.4 */
 import type React from "react";
-import { EditMode } from "../../types.js";
+import type { EditMode } from "../../types.js";
 
 export interface ViewModeTabsProps {
   /* Additional CSS classes */

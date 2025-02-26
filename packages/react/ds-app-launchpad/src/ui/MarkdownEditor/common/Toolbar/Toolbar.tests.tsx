@@ -12,8 +12,8 @@ describe("Toolbar", () => {
         style={{ width: "500px" }}
         label="Test Toolbar"
       >
-        <button>Button 1</button>
-      </Toolbar>
+        <button type="button">Button 1</button>
+      </Toolbar>,
     );
 
     const toolbar = screen.getByRole("toolbar");
@@ -30,9 +30,9 @@ describe("Toolbar", () => {
   it("renders children correctly", () => {
     render(
       <Toolbar label="Test Toolbar">
-        <button>Button 1</button>
-        <button>Button 2</button>
-      </Toolbar>
+        <button type="button">Button 1</button>
+        <button type="button">Button 2</button>
+      </Toolbar>,
     );
 
     const buttons = screen.getAllByRole("button");
@@ -44,10 +44,10 @@ describe("Toolbar", () => {
   it("sets correct tabindex values on buttons", () => {
     render(
       <Toolbar label="Test Toolbar">
-        <button>Button 1</button>
-        <button>Button 2</button>
-        <button>Button 3</button>
-      </Toolbar>
+        <button type="button">Button 1</button>
+        <button type="button">Button 2</button>
+        <button type="button">Button 3</button>
+      </Toolbar>,
     );
 
     const buttons = screen.getAllByRole("button");
@@ -63,10 +63,10 @@ describe("Toolbar", () => {
   it("handles non-button children correctly", () => {
     render(
       <Toolbar label="Mixed Children">
-        <button>Button 1</button>
+        <button type="button">Button 1</button>
         <div>Not a button</div>
-        <button>Button 2</button>
-      </Toolbar>
+        <button type="button">Button 2</button>
+      </Toolbar>,
     );
 
     const toolbar = screen.getByRole("toolbar");
@@ -82,9 +82,9 @@ describe("Toolbar", () => {
     // First render with initial children
     const { rerender } = render(
       <Toolbar label="Dynamic Toolbar">
-        <button>Button 1</button>
-        <button>Button 2</button>
-      </Toolbar>
+        <button type="button">Button 1</button>
+        <button type="button">Button 2</button>
+      </Toolbar>,
     );
 
     let buttons = screen.getAllByRole("button");
@@ -94,10 +94,10 @@ describe("Toolbar", () => {
     // Rerender with different children
     rerender(
       <Toolbar label="Dynamic Toolbar">
-        <button>New Button 1</button>
-        <button>New Button 2</button>
-        <button>New Button 3</button>
-      </Toolbar>
+        <button type="button">New Button 1</button>
+        <button type="button">New Button 2</button>
+        <button type="button">New Button 3</button>
+      </Toolbar>,
     );
 
     buttons = screen.getAllByRole("button");

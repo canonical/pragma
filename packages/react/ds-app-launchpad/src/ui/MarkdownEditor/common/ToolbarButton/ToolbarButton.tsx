@@ -34,7 +34,7 @@ const ToolbarButton = ({
       }
     }
     return node;
-  }, [buttonRef]);
+  }, []);
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>) => {
     if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
@@ -45,7 +45,7 @@ const ToolbarButton = ({
         return;
       }
       const index = Array.from(buttons).indexOf(
-        buttonRef.current as HTMLButtonElement
+        buttonRef.current as HTMLButtonElement,
       );
       const nextButton = buttons[index + (event.key === "ArrowLeft" ? -1 : 1)];
       if (!nextButton) {

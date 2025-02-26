@@ -14,16 +14,16 @@ import ReactMarkdown from "react-markdown";
 import rehypeSanitize from "rehype-sanitize";
 import "../GitDiffViewer/common/CodeDiffViewer/HighlighTheme.css";
 import {
-  icons,
   Toolbar,
   ToolbarButton,
   ToolbarGroup,
   ToolbarSeparator,
   ViewModeTabs,
+  icons,
 } from "./common/index.js";
 import useEditor from "./hooks/useEditor.js";
 import "./styles.css";
-import { EditMode, type MarkdownEditorProps } from "./types.js";
+import type { EditMode, MarkdownEditorProps } from "./types.js";
 
 const componentCssClassName = "ds markdown-editor";
 
@@ -42,7 +42,7 @@ const MarkdownEditor = (
     editMode: controlledEditMode,
     onEditModeChange: controlledOnEditModeChange,
   }: MarkdownEditorProps,
-  ref: React.Ref<HTMLTextAreaElement | null>
+  ref: React.Ref<HTMLTextAreaElement | null>,
 ): React.ReactElement => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const previewRef = useRef<HTMLDivElement>(null);
@@ -61,23 +61,23 @@ const MarkdownEditor = (
         setInternalEditMode(newEditMode);
       }
     },
-    [controlledOnEditModeChange]
+    [controlledOnEditModeChange],
   );
 
   useImperativeHandle<HTMLTextAreaElement | null, HTMLTextAreaElement | null>(
     ref,
-    () => textareaRef.current
+    () => textareaRef.current,
   );
 
   useEffect(() => {
     if (previewRef.current && editMode === "preview") {
       for (const codeBlock of Array.from(
-        previewRef.current.querySelectorAll<HTMLElement>("pre code")
+        previewRef.current.querySelectorAll<HTMLElement>("pre code"),
       )) {
         hljs.highlightElement(codeBlock);
       }
     }
-  }, [previewRef.current, editMode]);
+  }, [editMode]);
 
   return (
     <div
@@ -164,7 +164,6 @@ const MarkdownEditor = (
         className="editor-content"
         ref={textareaRef}
         style={style}
-        role="textbox"
         hidden={editMode !== "write"}
       />
       {editMode === "preview" && (

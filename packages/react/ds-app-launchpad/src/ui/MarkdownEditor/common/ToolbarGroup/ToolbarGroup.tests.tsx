@@ -14,7 +14,7 @@ describe("ToolbarGroup component", () => {
     render(
       <ToolbarGroup label="test" className={"test-class"}>
         ToolbarGroup
-      </ToolbarGroup>
+      </ToolbarGroup>,
     );
     expect(screen.getByText("ToolbarGroup")).toHaveClass("test-class");
   });

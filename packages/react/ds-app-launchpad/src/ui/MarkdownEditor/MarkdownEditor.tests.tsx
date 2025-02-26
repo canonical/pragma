@@ -24,7 +24,7 @@ describe("MarkdownEditor", () => {
         placeholder="Enter markdown"
         className="custom-class"
         style={{ width: "500px" }}
-      />
+      />,
     );
 
     const textarea = screen.getByRole("textbox");
@@ -90,7 +90,7 @@ describe("MarkdownEditor", () => {
       <MarkdownEditor
         editMode="write"
         onEditModeChange={handleEditModeChange}
-      />
+      />,
     );
 
     // Find and click the preview tab

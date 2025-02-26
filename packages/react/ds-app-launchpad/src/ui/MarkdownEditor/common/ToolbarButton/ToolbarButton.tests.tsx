@@ -1,7 +1,7 @@
 /* @canonical/generator-ds 0.9.0-experimental.4 */
 import { fireEvent, render, screen } from "@testing-library/react";
-import { type ComponentProps } from "react";
-import { Tooltip as T } from "react-tooltip";
+import type { ComponentProps } from "react";
+import type { Tooltip as T } from "react-tooltip";
 import { describe, expect, it, vi } from "vitest";
 import ToolbarButton from "./ToolbarButton.js";
 
@@ -17,7 +17,7 @@ describe("ToolbarButton", () => {
     render(
       <ToolbarButton label="Bold">
         <svg data-testid="icon" />
-      </ToolbarButton>
+      </ToolbarButton>,
     );
 
     const button = screen.getByRole("button");
@@ -34,7 +34,7 @@ describe("ToolbarButton", () => {
         style={{ width: "50px" }}
       >
         <span>I</span>
-      </ToolbarButton>
+      </ToolbarButton>,
     );
 
     const button = screen.getByRole("button");
@@ -68,7 +68,7 @@ describe("ToolbarButton", () => {
 
   it("passes extra props to the button", () => {
     render(
-      <ToolbarButton label="Bold" disabled={true} data-test="test-value" />
+      <ToolbarButton label="Bold" disabled={true} data-test="test-value" />,
     );
 
     const button = screen.getByRole("button");
@@ -83,7 +83,7 @@ describe("ToolbarButton", () => {
         <ToolbarButton label="Button 1" />
         <ToolbarButton label="Button 2" data-testid="middle-button" />
         <ToolbarButton label="Button 3" />
-      </div>
+      </div>,
     );
 
     // Focus the middle button
@@ -105,7 +105,7 @@ describe("ToolbarButton", () => {
         <ToolbarButton label="Button 1" />
         <ToolbarButton label="Button 2" data-testid="middle-button" />
         <ToolbarButton label="Button 3" />
-      </div>
+      </div>,
     );
 
     // Focus the middle button

@@ -1,7 +1,7 @@
 /* @canonical/generator-ds 0.9.0-experimental.4 */
 import type React from "react";
 import { useId, useRef } from "react";
-import { EditMode } from "../../types.js";
+import type { EditMode } from "../../types.js";
 import "./styles.css";
 import type { ViewModeTabsProps } from "./types.js";
 
@@ -46,6 +46,7 @@ const ViewModeTabs = ({
       {tabs.map((tab, index) => (
         <button
           key={`tab-${id}-${tab}`}
+          type="button"
           role="tab"
           className={["tab", editMode === tab && selectedTabCssClassName]
             .filter(Boolean)

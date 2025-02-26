@@ -14,6 +14,7 @@ const ToolbarSeparator = ({
   style,
 }: ToolbarSeparatorProps): React.ReactElement => {
   return (
+    // biome-ignore lint/a11y/useFocusableInteractive: This element is not interactive
     <div
       id={id}
       style={style}

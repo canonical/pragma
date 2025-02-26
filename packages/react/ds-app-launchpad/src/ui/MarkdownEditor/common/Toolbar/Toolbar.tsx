@@ -21,7 +21,7 @@ const Toolbar = ({
   useEffect(() => {
     if (!toolbarRef.current) return;
     const buttons = Array.from(
-      toolbarRef.current.querySelectorAll<HTMLButtonElement>("button")
+      toolbarRef.current.querySelectorAll<HTMLButtonElement>("button"),
     );
     for (const button of buttons) {
       button.setAttribute("tabindex", "-1");
@@ -29,7 +29,7 @@ const Toolbar = ({
 
     const firstNode = buttons[0];
     firstNode.setAttribute("tabindex", "0");
-  }, [toolbarRef, children]);
+  }, []);
 
   return (
     <div
