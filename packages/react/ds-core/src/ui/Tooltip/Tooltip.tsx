@@ -42,7 +42,7 @@ const Tooltip = ({
   const [messagePosition, setMessagePosition] = useState<{
     left?: string;
     top?: string;
-  }>({}); // Initialize with empty object for easier styling
+  }>({});
   const targetRef = useRef<HTMLDivElement>(null);
   const messageRef = useRef<HTMLDivElement>(null);
   const [isVisible, setIsVisible] = useState(false);
@@ -50,6 +50,8 @@ const Tooltip = ({
     ReturnType<typeof setTimeout> | undefined
   >(undefined);
   const tooltipMessageId = useId();
+  const [isFocused, setIsFocused] = useState(false);
+  const [isOpening, setIsOpening] = useState(false);
 
   const calculateMessagePosition = useCallback(() => {
     if (!targetRef.current || !messageRef.current) return;
@@ -60,7 +62,6 @@ const Tooltip = ({
     let xOffset = 0;
     let yOffset = 0;
 
-    // vertical positioning offsets
     switch (position) {
       case "topCenter":
       case "topRight":
@@ -78,7 +79,6 @@ const Tooltip = ({
         break;
     }
 
-    // horizontal positioning offsets
     switch (position) {
       case "topCenter":
       case "btmCenter":
@@ -146,6 +146,15 @@ const Tooltip = ({
     };
   }, [isVisible, calculateMessagePosition]);
 
+  useEffect(() => {
+    if (isVisible && messageRef.current && isFocused) {
+      const firstFocusableElement = messageRef.current.querySelector(
+        '[tabIndex="0"], a, button, input, textarea, select',
+      ) as HTMLElement;
+      if (firstFocusableElement) firstFocusableElement.focus();
+    }
+  }, [isVisible, isFocused]);
+
   const replaceTimer = useCallback(
     (newTimer?: ReturnType<typeof setTimeout>) => {
       if (visibilityTimeout) clearTimeout(visibilityTimeout);
@@ -154,28 +163,14 @@ const Tooltip = ({
     [visibilityTimeout],
   );
 
-  const openTooltip = useCallback(
-    (autofocus = false) => {
-      replaceTimer(
-        setTimeout(() => {
-          setIsVisible(true);
-
-          if (autofocus && messageRef.current) {
-            const firstFocusableElement = messageRef.current.querySelector(
-              '[tabIndex="0"], a, button, input, textarea, select',
-            ) as HTMLElement;
-
-            replaceTimer(
-              setTimeout(() => {
-                if (firstFocusableElement) firstFocusableElement.focus();
-              }, 10),
-            );
-          }
-        }, showDelay),
-      );
-    },
-    [showDelay, replaceTimer],
-  );
+  const openTooltip = useCallback(() => {
+    replaceTimer(
+      setTimeout(() => {
+        setIsVisible(true);
+        setIsOpening(false);
+      }, showDelay),
+    );
+  }, [showDelay, replaceTimer]);
 
   const closeTooltip = useCallback(() => {
     replaceTimer(
@@ -196,8 +191,27 @@ const Tooltip = ({
     }, [closeTooltip]);
 
   const handleTriggerFocus = useCallback(() => {
-    openTooltip(true);
-  }, [openTooltip]);
+    setIsFocused(true);
+    // Avoid re-triggering focus if the tooltip is already open or in the process of opening
+    if (!isVisible && !isOpening) {
+      setIsOpening(true);
+      openTooltip();
+    }
+  }, [isVisible, isOpening, openTooltip]);
+
+  const handleTriggerBlur: FocusEventHandler<HTMLDivElement> = useCallback(
+    (event) => {
+      if (
+        event.relatedTarget &&
+        targetRef.current?.contains(event.relatedTarget as Node)
+      ) {
+        return;
+      }
+      setIsFocused(false);
+      closeTooltip();
+    },
+    [closeTooltip],
+  );
 
   const handleKeyDown = useCallback(
     (event: React.KeyboardEvent) => {
@@ -208,19 +222,6 @@ const Tooltip = ({
     [closeTooltip],
   );
 
-  const handleTriggerBlur: FocusEventHandler<HTMLDivElement> = useCallback(
-    (event) => {
-      // If focus is moving to an element that is within the tooltip target, ignore the blur event
-      if (
-        event.relatedTarget &&
-        targetRef.current?.contains(event.relatedTarget as Node)
-      ) {
-        return;
-      }
-      closeTooltip();
-    },
-    [closeTooltip],
-  );
   return (
     <div
       style={style}
