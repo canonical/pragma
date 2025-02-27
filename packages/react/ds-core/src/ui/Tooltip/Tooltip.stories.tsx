@@ -101,3 +101,13 @@ export const AutoAdjust: Story = {
     children: <Button label="Auto Adjusted left" />,
   },
 };
+
+export const Detached: Story = {
+  args: {
+    message: "Hello world",
+    autoAdjust: true,
+    detached: true,
+    position: "btmRight",
+    children: <Button label="Detached bottom right" />,
+  },
+};
