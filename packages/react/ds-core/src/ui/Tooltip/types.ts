@@ -42,16 +42,6 @@ export interface TooltipProps {
   hideDelay?: number;
 
   /**
-   * Where to render the portal, if detached.
-   */
-  portalTarget?: HTMLElement | null; // New prop: Where to render the portal. Defaults to document.body
-
-  /**
-   * Whether to detach the tooltip. Defaults to false.
-   */
-  detached?: boolean; // New prop: Whether to detach the tooltip
-
-  /**
    * z-index of the tooltip.
    */
   zIndex?: number;
