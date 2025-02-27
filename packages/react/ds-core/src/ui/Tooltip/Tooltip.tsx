@@ -253,8 +253,6 @@ const Tooltip = ({
             ...messagePosition,
             zIndex,
           }}
-          onPointerEnter={handleTriggerEnter}
-          onPointerLeave={handleTriggerLeave}
         >
           {message}
         </div>
