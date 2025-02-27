@@ -21,9 +21,9 @@
     }
 
     &.selected {
-      color: var(--markdown-editor-tabs-active-color);
-      border-color: var(--markdown-editor-tabs-active-border-color);
-      background-color: var(--markdown-editor-tabs-active-background-color);
+      color: var(--markdown-editor-editor-color);
+      border-color: var(--markdown-editor-editor-border-color);
+      background-color: var(--markdown-editor-editor-background-color);
       position: relative;
 
       /* hide the top border of the tab panel for the selected tab */

@@ -3,11 +3,8 @@
 .ds.markdown-editor {
   --markdown-editor-editor-background-color: white;
   --markdown-editor-editor-color: black;
-  --markdown-editor-editor-border-color: black;
+  --markdown-editor-editor-border-color: #7b7b7b;
 
-  --markdown-editor-tabs-active-color: black;
-  --markdown-editor-tabs-active-border-color: #7b7b7b;
-  --markdown-editor-tabs-active-background-color: white;
   --markdown-editor-tabs-hover-color: black;
   --markdown-editor-tabs-hover-background-color: #f2f2f2;
   --markdown-editor-tabs-inactive-color: #737373;
@@ -44,7 +41,6 @@
   }
 
   & > textarea {
-    /* width: 100%; */
     resize: vertical;
     outline: none;
   }
