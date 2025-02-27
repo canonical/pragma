@@ -1,5 +1,6 @@
 import type React from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { dataPathHash } from "../../Provider.js";
 import { useFileTree } from "../../hooks/index.js";
 import type { FileTreeData } from "../../types.js";
 import { hashNodeName } from "../../utils/index.js";
@@ -183,7 +184,9 @@ const Provider = ({
           id={id}
           style={style}
           // used by the provided to handle accessibility
-          data-path-hash={hashNodeName(path)}
+          {...{
+            [dataPathHash]: hashNodeName(path),
+          }}
           data-name={name}
           className={[
             componentCssClassName,

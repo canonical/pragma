@@ -5,6 +5,7 @@ import "./styles.css";
 import type { ManagedContextOptions, ProviderOptions } from "./types.js";
 
 const componentCssClassName = "ds file-tree";
+export const dataPathHash = "data-path-hash";
 
 const Provider = ({
   id,
@@ -13,25 +14,24 @@ const Provider = ({
   children,
   ...contextOptions
 }: ProviderOptions): React.ReactElement => {
-  // const focusedNodeRef = useRef<HTMLLIElement>(null);
-  const fileTreeRef = useRef<HTMLDivElement>(null);
+  const fileTreeRef = useRef<HTMLUListElement>(null);
 
   const handleFocusNextNode: ManagedContextOptions["focusNextNode"] =
     useCallback((direction) => {
       if (!fileTreeRef.current) return;
       const currentNode = fileTreeRef.current.querySelector<HTMLElement>(
-        "[data-path-hash]:focus",
+        `[${dataPathHash}]:focus`,
       );
-      const currentNodeHash = currentNode?.getAttribute("data-path-hash");
+      const currentNodeHash = currentNode?.getAttribute(dataPathHash);
       if (!currentNodeHash) return;
 
       const nextNode =
         direction === "up"
           ? fileTreeRef.current.querySelector<HTMLElement>(
-              `[data-path-hash]:has(+ [data-path-hash="${currentNodeHash}"])`,
+              `[${dataPathHash}]:has(+ [${dataPathHash}="${currentNodeHash}"])`,
             )
           : fileTreeRef.current.querySelector<HTMLElement>(
-              `[data-path-hash="${currentNodeHash}"] + [data-path-hash]`,
+              `[${dataPathHash}="${currentNodeHash}"] + [${dataPathHash}]`,
             );
       if (!nextNode || !currentNode) return;
       nextNode.focus();
@@ -43,10 +43,10 @@ const Provider = ({
     (end) => {
       if (!fileTreeRef.current) return;
       const endNode = fileTreeRef.current.querySelector<HTMLElement>(
-        `[data-path-hash]:${end === "start" ? "first" : "last"}-of-type`,
+        `[${dataPathHash}]:${end === "start" ? "first" : "last"}-of-type`,
       );
       const currentNode = fileTreeRef.current.querySelector<HTMLElement>(
-        "[data-path-hash]:focus",
+        `[${dataPathHash}]:focus`,
       );
       if (!endNode || !currentNode) return;
       endNode.focus();
@@ -60,10 +60,10 @@ const Provider = ({
     useCallback((character) => {
       if (!fileTreeRef.current) return;
       const currentNode = fileTreeRef.current.querySelector<HTMLElement>(
-        "[data-path-hash]:focus",
+        `[${dataPathHash}]:focus`,
       );
       if (!currentNode) return;
-      const currentNodeHash = currentNode.getAttribute("data-path-hash");
+      const currentNodeHash = currentNode.getAttribute(dataPathHash);
       if (!currentNodeHash) return;
 
       const matchingNodes = Array.from(
@@ -90,14 +90,14 @@ const Provider = ({
     if (!fileTreeRef.current) return;
     const nodes = Array.from(
       fileTreeRef.current.querySelectorAll<HTMLElement>(
-        "[data-path-hash][tabindex='0']",
+        `[${dataPathHash}][tabindex='0']`,
       ),
     );
     for (const node of nodes) {
       node.setAttribute("tabindex", "-1");
     }
     const firstNode = fileTreeRef.current.querySelector<HTMLElement>(
-      "[data-path-hash]:not([hidden])",
+      `[${dataPathHash}]:not([hidden])`,
     );
     firstNode?.setAttribute("tabindex", "0");
   }, [contextOptions.searchQuery, contextOptions.selectedFile]);
@@ -112,14 +112,15 @@ const Provider = ({
         focusNextSiblingCharacter: handleFocusNextSiblingCharacter,
       }}
     >
-      <div
+      <ul
         id={id}
         style={style}
         className={[componentCssClassName, className].filter(Boolean).join(" ")}
         ref={fileTreeRef}
+        role="tree"
       >
         {children}
-      </div>
+      </ul>
     </Context.Provider>
   );
 };
