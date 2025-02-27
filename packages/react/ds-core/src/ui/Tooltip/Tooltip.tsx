@@ -10,7 +10,6 @@ import {
 } from "react";
 import type { TooltipProps } from "./types.js";
 import "./styles.css";
-import { createPortal } from "react-dom";
 
 const componentCssClassName = "ds tooltip";
 
@@ -39,8 +38,6 @@ const Tooltip = ({
   zIndex = 1000,
   showDelay = 350,
   hideDelay = 350,
-  portalTarget = document.body,
-  detached = false,
 }: TooltipProps): React.ReactElement => {
   const [messagePosition, setMessagePosition] = useState<{
     left?: string;
@@ -121,18 +118,11 @@ const Tooltip = ({
       else if (absoluteY + messageRect.height > viewportHeight)
         adjustedYOffset -= absoluteY + messageRect.height - viewportHeight;
     }
-
-    if (detached && portalTarget) {
-      const portalRect = portalTarget.getBoundingClientRect();
-      adjustedXOffset += targetRect.left - portalRect.left;
-      adjustedYOffset += targetRect.top - portalRect.top;
-    }
-
     setMessagePosition({
       top: `${adjustedYOffset}px`,
       left: `${adjustedXOffset}px`,
     });
-  }, [position, autoAdjust, detached, portalTarget]);
+  }, [position, autoAdjust]);
 
   useEffect(() => {
     calculateMessagePosition();
@@ -233,22 +223,6 @@ const Tooltip = ({
     [closeTooltip],
   );
 
-  const tooltipMessage = (
-    <div
-      className={`${componentCssClassName}-message`}
-      ref={messageRef}
-      id={tooltipMessageId}
-      aria-hidden={!isVisible}
-      role="tooltip"
-      style={{
-        ...messagePosition,
-        zIndex,
-      }}
-    >
-      {message}
-    </div>
-  );
-
   return (
     <div
       style={style}
@@ -269,9 +243,19 @@ const Tooltip = ({
         onBlur={handleTriggerBlur}
       >
         {children}
-        {detached && portalTarget
-          ? createPortal(tooltipMessage, portalTarget)
-          : tooltipMessage}
+        <div
+          className={`${componentCssClassName}-message`}
+          ref={messageRef}
+          id={tooltipMessageId}
+          aria-hidden={!isVisible}
+          role="tooltip"
+          style={{
+            ...messagePosition,
+            zIndex,
+          }}
+        >
+          {message}
+        </div>
       </div>
     </div>
   );
