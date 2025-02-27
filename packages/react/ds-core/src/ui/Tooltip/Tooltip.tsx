@@ -201,6 +201,7 @@ const Tooltip = ({
 
   const handleTriggerBlur: FocusEventHandler<HTMLDivElement> = useCallback(
     (event) => {
+      // Don't close the tooltip if focus is moving to an element that is within the tooltip
       if (
         event.relatedTarget &&
         targetRef.current?.contains(event.relatedTarget as Node)
