@@ -19,6 +19,7 @@ import {
   ToolbarGroup,
   ToolbarSeparator,
   ViewModeTabs,
+  type ViewModeTabsProps,
   icons,
 } from "./common/index.js";
 import useEditor from "./hooks/useEditor.js";
@@ -48,33 +49,56 @@ const MarkdownEditor = (
   const previewRef = useRef<HTMLDivElement>(null);
   const [internalEditMode, setInternalEditMode] = useState<EditMode>("write");
   const { toolbar } = useEditor(textareaRef);
+  const [shouldFocusTextarea, setShouldFocusTextarea] = useState(false);
 
   const editMode = useMemo(() => {
     return controlledEditMode ?? internalEditMode;
   }, [controlledEditMode, internalEditMode]);
 
-  const handleEditModeChange = useCallback(
-    (newEditMode: EditMode) => {
-      if (controlledOnEditModeChange) {
-        controlledOnEditModeChange(newEditMode);
-      } else {
-        setInternalEditMode(newEditMode);
-      }
-    },
-    [controlledOnEditModeChange],
-  );
+  const handleEditModeChange: ViewModeTabsProps["onEditModeChange"] =
+    useCallback(
+      (newEditMode, eventType) => {
+        if (controlledOnEditModeChange) {
+          controlledOnEditModeChange(newEditMode);
+        } else {
+          setInternalEditMode(newEditMode);
+        }
+        // Set flag to focus textarea when switching to write mode after click
+        if (eventType === "click" && newEditMode === "write") {
+          setShouldFocusTextarea(true);
+        }
+      },
+      [controlledOnEditModeChange],
+    );
 
   useImperativeHandle<HTMLTextAreaElement | null, HTMLTextAreaElement | null>(
     ref,
     () => textareaRef.current,
   );
 
+  // Focus textarea when edit mode changes to "write"
+  useEffect(() => {
+    if (editMode === "write" && shouldFocusTextarea) {
+      // Use a small timeout to ensure DOM has updated
+      const focusTimeout = setTimeout(() => {
+        if (textareaRef.current) {
+          textareaRef.current.focus();
+        }
+        setShouldFocusTextarea(false);
+      }, 10);
+
+      return () => clearTimeout(focusTimeout);
+    }
+  }, [editMode, shouldFocusTextarea]);
+
   useEffect(() => {
     if (previewRef.current && editMode === "preview") {
       for (const codeBlock of Array.from(
         previewRef.current.querySelectorAll<HTMLElement>("pre code"),
       )) {
-        hljs.highlightElement(codeBlock);
+        if (!codeBlock.dataset.highlighted) {
+          hljs.highlightElement(codeBlock);
+        }
       }
     }
   }, [editMode]);

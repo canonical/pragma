@@ -23,13 +23,13 @@ const ViewModeTabs = ({
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>) => {
     if (event.key === "Enter" || event.key === " ") {
-      onEditModeChange(event.currentTarget.dataset.tab as EditMode);
+      onEditModeChange(event.currentTarget.dataset.tab as EditMode, "keydown");
     }
     if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
       const currentIndex = tabs.indexOf(editMode);
       const nextIndex = currentIndex === 0 ? 1 : 0;
 
-      onEditModeChange(tabs[nextIndex]);
+      onEditModeChange(tabs[nextIndex], "keydown");
       tabRefs.current[nextIndex]?.focus();
       event.preventDefault();
     }
@@ -52,7 +52,7 @@ const ViewModeTabs = ({
             .filter(Boolean)
             .join(" ")}
           aria-selected={editMode === tab}
-          onClick={() => onEditModeChange(tab)}
+          onClick={() => onEditModeChange(tab, "click")}
           onKeyDown={handleKeyDown}
           tabIndex={editMode === tab ? 0 : -1}
           data-tab={tab}

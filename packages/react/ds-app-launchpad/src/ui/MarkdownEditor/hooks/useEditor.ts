@@ -148,6 +148,80 @@ const useEditor = (
       .join(" ");
   };
 
+  // To be called when a user types Enter in the textarea
+  // Will insert the appropriate Markdown syntax for the next line
+  // In case of lists, code block.
+  const handleMarkdownSyntaxAutoComplete: (event: KeyboardEvent) => boolean =
+    useCallback(
+      (event) => {
+        const textarea = textareaRef.current;
+        if (!textarea) return false;
+
+        if (event.key !== "Enter") return false;
+
+        const { selectionStart, selectionEnd } = textarea;
+        const hasSelection = selectionStart !== selectionEnd;
+        if (hasSelection) return false;
+
+        const textBeforeCursor = textarea.value.substring(0, selectionStart);
+        const linesBeforeCursor = textBeforeCursor.split("\n");
+        const currentLine = linesBeforeCursor[linesBeforeCursor.length - 1];
+
+        // list autocompletion
+        const listRegex = /^(\s*)([-*]|\d+\.)\s/; // matches "- ", "* ", "1. "
+        const listMatch = currentLine.match(listRegex);
+        if (listMatch) {
+          const leadingWhitespace = listMatch[1];
+          const marker = listMatch[2];
+          const restOfLine = currentLine.substring(listMatch[0].length).trim();
+
+          // If the line is empty, exit list
+          // and replace current line with empty line
+          if (restOfLine.length === 0 || restOfLine === "[ ]") {
+            const lineStart = selectionStart - currentLine.length;
+            textarea.selectionStart = lineStart;
+            textarea.selectionEnd = selectionStart;
+            document.execCommand("insertText", false, "\n");
+            return true;
+          }
+
+          // Determine next marker based on type
+          const isCheckbox = /^\[([ xX])\]/.test(restOfLine);
+          const isOrdered = /\d/.test(marker);
+          let nextMarker: string;
+          if (isCheckbox) {
+            nextMarker = `${leadingWhitespace}- [ ]`;
+          } else {
+            nextMarker = isOrdered
+              ? `${Number.parseInt(marker) + 1}.`
+              : `${marker}`;
+          }
+          const nextLine = `\n${leadingWhitespace}${nextMarker} `;
+          document.execCommand("insertText", false, nextLine);
+          return true;
+        }
+
+        // code block autocompletion
+        const codeBlockRegex = /^(\s*)```/;
+        const codeBlockMatch = currentLine.match(codeBlockRegex);
+        if (codeBlockMatch) {
+          const occurrences = (textBeforeCursor.match(/```/g) || []).length;
+          if (occurrences % 2 === 1) {
+            const newText = `${textBeforeCursor}\n\n\`\`\`${textarea.value.substring(
+              selectionStart,
+            )}`;
+            textarea.value = newText;
+            textarea.selectionStart = selectionStart + 1;
+            textarea.selectionEnd = selectionStart + 1;
+            return true;
+          }
+        }
+
+        return false;
+      },
+      [textareaRef],
+    );
+
   const handleShortcuts = useCallback(
     (event: KeyboardEvent) => {
       const textarea = textareaRef.current;
@@ -199,6 +273,10 @@ const useEditor = (
         shortcutHandled = true;
       }
 
+      if (!shortcutHandled) {
+        shortcutHandled = handleMarkdownSyntaxAutoComplete(event);
+      }
+
       if (shortcutHandled) {
         event.preventDefault();
       } else {
@@ -214,6 +292,7 @@ const useEditor = (
       handleCode,
       handleOList,
       handleUList,
+      handleMarkdownSyntaxAutoComplete,
     ],
   );
 

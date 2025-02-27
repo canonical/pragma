@@ -55,7 +55,7 @@ describe("ViewModeTabs", () => {
     fireEvent.click(tabs[1]); // Click on Preview tab
 
     await waitFor(() => {
-      expect(mockOnEditModeChange).toHaveBeenCalledWith("preview");
+      expect(mockOnEditModeChange).toHaveBeenCalledWith("preview", "click");
     });
   });
 
@@ -70,7 +70,7 @@ describe("ViewModeTabs", () => {
     fireEvent.keyDown(tabs[0], { key: "ArrowRight" });
 
     await waitFor(() => {
-      expect(mockOnEditModeChange).toHaveBeenCalledWith("preview");
+      expect(mockOnEditModeChange).toHaveBeenCalledWith("preview", "keydown");
     });
 
     // Clear mock
@@ -88,7 +88,7 @@ describe("ViewModeTabs", () => {
     fireEvent.keyDown(screen.getAllByRole("tab")[1], { key: "ArrowLeft" });
 
     await waitFor(() => {
-      expect(mockOnEditModeChange).toHaveBeenCalledWith("write");
+      expect(mockOnEditModeChange).toHaveBeenCalledWith("write", "keydown");
     });
   });
 
@@ -101,7 +101,7 @@ describe("ViewModeTabs", () => {
     fireEvent.keyDown(tabs[1], { key: "Enter" });
 
     await waitFor(() => {
-      expect(mockOnEditModeChange).toHaveBeenCalledWith("preview");
+      expect(mockOnEditModeChange).toHaveBeenCalledWith("preview", "keydown");
     });
   });
 
@@ -114,7 +114,7 @@ describe("ViewModeTabs", () => {
     fireEvent.keyDown(tabs[1], { key: " " });
 
     await waitFor(() => {
-      expect(mockOnEditModeChange).toHaveBeenCalledWith("preview");
+      expect(mockOnEditModeChange).toHaveBeenCalledWith("preview", "keydown");
     });
   });
 

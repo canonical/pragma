@@ -9,5 +9,5 @@ export interface ViewModeTabsProps {
   style?: React.CSSProperties;
 
   editMode: EditMode;
-  onEditModeChange: (mode: EditMode) => void;
+  onEditModeChange: (mode: EditMode, eventType: "click" | "keydown") => void;
 }
