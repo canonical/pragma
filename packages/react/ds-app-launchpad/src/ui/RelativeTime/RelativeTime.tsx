@@ -133,6 +133,7 @@ const RelativeTime = ({
       id={id}
       style={style}
       className={[componentCssClassName, className].filter(Boolean).join(" ")}
+      title={time.toLocaleString()}
     >
       {relativeTime}
     </time>
