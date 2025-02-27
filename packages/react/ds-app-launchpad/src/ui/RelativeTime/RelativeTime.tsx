@@ -2,11 +2,9 @@
 import { Temporal } from "@js-temporal/polyfill";
 import type React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import "./styles.css";
 import type { RelativeTimeProps } from "./types.js";
 
 const componentCssClassName = "ds relative-time";
-const defaultUpdateInterval = 1000;
 
 /**
  * description of the RelativeTime component
@@ -103,7 +101,7 @@ const RelativeTime = ({
     if (duration < 60) return 1000; // 1 second for less than a minute ago
     if (duration < 3600) return 60000; // 1 minute for less than an hour ago
     if (duration < 86400) return 3600000; // 1 hour for less than a day ago
-    return 86400000;
+    return 86400000; // 1 day for anything older
   }, []);
 
   const updateTime = useCallback(() => {
@@ -134,6 +132,7 @@ const RelativeTime = ({
       style={style}
       className={[componentCssClassName, className].filter(Boolean).join(" ")}
       title={time.toLocaleString()}
+      dateTime={time.toString()}
     >
       {relativeTime}
     </time>
