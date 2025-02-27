@@ -1,17 +1,16 @@
 /* @canonical/generator-ds 0.9.0-experimental.4 */
 
 import { Temporal } from "@js-temporal/polyfill";
-import type { Meta, StoryFn, StoryObj } from "@storybook/react";
+import type { Meta, StoryFn } from "@storybook/react";
 import Component from "./RelativeTime.js";
 
 const meta = {
-  title: "",
+  title: "RelativeTime",
+  tags: ["autodocs"],
   component: Component,
 } satisfies Meta<typeof Component>;
 
 export default meta;
-
-type Story = StoryObj<typeof meta>;
 
 export const Default: StoryFn<typeof meta> = (args) => {
   const instant = Temporal.Now.instant();
@@ -23,6 +22,8 @@ export const Default: StoryFn<typeof meta> = (args) => {
   const fiveMonthsAgo = instant.subtract({ hours: 24 * 30 * 5 });
   const inFiveMonths = instant.add({ hours: 24 * 30 * 5 });
 
+  const invalidTime = "invalid time";
+
   const dates = [
     instant,
     fewSecondsAgo,
@@ -32,6 +33,7 @@ export const Default: StoryFn<typeof meta> = (args) => {
     inTwoDays,
     fiveMonthsAgo,
     inFiveMonths,
+    invalidTime,
   ];
 
   return (
