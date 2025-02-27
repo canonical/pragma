@@ -2,6 +2,7 @@ import type React from "react";
 import { useId } from "react";
 import {
   type FocusEventHandler,
+  type PointerEventHandler,
   useCallback,
   useEffect,
   useRef,
@@ -39,15 +40,11 @@ const Tooltip = ({
   hideDelay = 350,
 }: TooltipProps): React.ReactElement => {
   const [messagePosition, setMessagePosition] = useState<{
-    left?: number;
-    right?: number;
-    top?: number;
-    bottom?: number;
-  }>({ left: 0, right: 0, top: 0, bottom: 0 });
+    left?: string;
+    top?: string;
+  }>({}); // Initialize with empty object for easier styling
   const targetRef = useRef<HTMLDivElement>(null);
   const messageRef = useRef<HTMLDivElement>(null);
-  const [isHovered, setIsHovered] = useState(false);
-  const [isFocused, setIsFocused] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const [visibilityTimeout, setVisibilityTimeout] = useState<
     ReturnType<typeof setTimeout> | undefined
@@ -103,6 +100,9 @@ const Tooltip = ({
         break;
     }
 
+    let adjustedXOffset = xOffset;
+    let adjustedYOffset = yOffset;
+
     if (autoAdjust) {
       const viewportWidth = window.innerWidth;
       const viewportHeight = window.innerHeight;
@@ -110,152 +110,154 @@ const Tooltip = ({
       const absoluteX = targetRect.left + xOffset;
       const absoluteY = targetRect.top + yOffset;
 
-      if (absoluteX < 0) xOffset -= absoluteX;
+      if (absoluteX < 0) adjustedXOffset -= absoluteX;
       else if (absoluteX + messageRect.width > viewportWidth)
-        xOffset -= absoluteX + messageRect.width - viewportWidth;
+        adjustedXOffset -= absoluteX + messageRect.width - viewportWidth;
 
-      if (absoluteY < 0) yOffset -= absoluteY;
+      if (absoluteY < 0) adjustedYOffset -= absoluteY;
       else if (absoluteY + messageRect.height > viewportHeight)
-        yOffset -= absoluteY + messageRect.height - viewportHeight;
+        adjustedYOffset -= absoluteY + messageRect.height - viewportHeight;
     }
-
-    setMessagePosition({ top: yOffset, left: xOffset });
+    setMessagePosition({
+      top: `${adjustedYOffset}px`,
+      left: `${adjustedXOffset}px`,
+    });
   }, [position, autoAdjust]);
 
-  // On receiving hover or focus, calculate the position of the message
   useEffect(() => {
     calculateMessagePosition();
+  }, [calculateMessagePosition]);
 
+  useEffect(() => {
     const handleResize = () => {
-      if (isHovered) calculateMessagePosition();
+      if (isVisible) calculateMessagePosition();
     };
 
     const handleScroll = () => {
-      if (isHovered) calculateMessagePosition();
+      if (isVisible) calculateMessagePosition();
     };
 
     window.addEventListener("resize", handleResize);
-    window.addEventListener("scroll", handleScroll);
+    window.addEventListener("scroll", handleScroll, { passive: true });
 
     return () => {
       window.removeEventListener("resize", handleResize);
       window.removeEventListener("scroll", handleScroll);
     };
-  }, [isHovered, calculateMessagePosition]);
+  }, [isVisible, calculateMessagePosition]);
 
-  // Store a single instance of a timer, so only one timer is active at a time
-  const replaceTimer = (newTimer?: ReturnType<typeof setTimeout>) => {
-    if (visibilityTimeout) clearTimeout(visibilityTimeout);
-    setVisibilityTimeout(newTimer);
-  };
+  const replaceTimer = useCallback(
+    (newTimer?: ReturnType<typeof setTimeout>) => {
+      if (visibilityTimeout) clearTimeout(visibilityTimeout);
+      setVisibilityTimeout(newTimer);
+    },
+    [visibilityTimeout],
+  );
 
-  const openTooltip = (autofocus = false) => {
-    replaceTimer(
-      setTimeout(() => {
-        setIsVisible(true);
+  const openTooltip = useCallback(
+    (autofocus = false) => {
+      replaceTimer(
+        setTimeout(() => {
+          setIsVisible(true);
 
-        if (autofocus && messageRef.current) {
-          const firstFocusableElement = messageRef.current.querySelector(
-            '[tabIndex="0"], a, button, input, textarea, select',
-          ) as HTMLElement;
+          if (autofocus && messageRef.current) {
+            const firstFocusableElement = messageRef.current.querySelector(
+              '[tabIndex="0"], a, button, input, textarea, select',
+            ) as HTMLElement;
 
-          // Focus the first focusable element in the tooltip.
-          // We need to wait a little bit for the tooltip to be visible before we can focus
-          replaceTimer(
-            setTimeout(() => {
-              if (firstFocusableElement) firstFocusableElement.focus();
-            }, 10),
-          );
-        }
-      }, showDelay),
-    );
-  };
+            replaceTimer(
+              setTimeout(() => {
+                if (firstFocusableElement) firstFocusableElement.focus();
+              }, 10),
+            );
+          }
+        }, showDelay),
+      );
+    },
+    [showDelay, replaceTimer],
+  );
 
-  const closeTooltip = () => {
+  const closeTooltip = useCallback(() => {
     replaceTimer(
       setTimeout(() => {
         setIsVisible(false);
       }, hideDelay),
     );
-  };
+  }, [hideDelay, replaceTimer]);
 
-  const handleTriggerMouseEnter = () => {
-    setIsHovered(true);
-    openTooltip();
-  };
+  const handleTriggerEnter: PointerEventHandler<HTMLDivElement> =
+    useCallback(() => {
+      openTooltip();
+    }, [openTooltip]);
 
-  const handleTriggerMouseLeave = () => {
-    setIsHovered(false);
-    closeTooltip();
-  };
+  const handleTriggerLeave: PointerEventHandler<HTMLDivElement> =
+    useCallback(() => {
+      closeTooltip();
+    }, [closeTooltip]);
 
-  const handleTooltipMouseEnter = () => {
-    replaceTimer();
-
-    setIsHovered(true);
-    setIsVisible(true);
-  };
-
-  const handleTooltipMouseLeave = () => {
-    setIsHovered(false);
-  };
-
-  const handleTriggerFocus = () => {
-    // Do not re-focus if already focused, to avoid repeatedly focusing the same element
-    if (isFocused) return;
-
-    setIsFocused(true);
+  const handleTriggerFocus = useCallback(() => {
     openTooltip(true);
-  };
+  }, [openTooltip]);
 
-  const handleTriggerBlur: FocusEventHandler<HTMLSpanElement> = (event) => {
-    // If focus is moving to an element that is within the tooltip target, ignore the blur event
-    if (
-      event.relatedTarget &&
-      targetRef?.current?.contains(event.relatedTarget as Node)
-    ) {
-      event.preventDefault();
-      return;
-    }
-    setIsFocused(false);
-    closeTooltip();
-  };
+  const handleKeyDown = useCallback(
+    (event: React.KeyboardEvent) => {
+      if (event.key === "Escape") {
+        closeTooltip();
+      }
+    },
+    [closeTooltip],
+  );
 
+  const handleTriggerBlur: FocusEventHandler<HTMLDivElement> = useCallback(
+    (event) => {
+      // If focus is moving to an element that is within the tooltip target, ignore the blur event
+      if (
+        event.relatedTarget &&
+        targetRef.current?.contains(event.relatedTarget as Node)
+      ) {
+        return;
+      }
+      closeTooltip();
+    },
+    [closeTooltip],
+  );
   return (
-    <span
+    <div
       style={style}
       id={id}
       className={[componentCssClassName, className, POSITION_MAP[position]]
         .filter(Boolean)
         .join(" ")}
+      onKeyDown={handleKeyDown}
     >
-      <span
+      <div
         className={`${componentCssClassName}-target`}
         ref={targetRef}
-        onMouseEnter={handleTriggerMouseEnter}
+        onPointerEnter={handleTriggerEnter}
         data-ds-tooltip-targeted={isVisible ? "true" : "false"}
         aria-describedby={tooltipMessageId}
-        onMouseLeave={handleTriggerMouseLeave}
+        onPointerLeave={handleTriggerLeave}
         onFocus={handleTriggerFocus}
         onBlur={handleTriggerBlur}
       >
         {children}
-        <span
+        <div
           className={`${componentCssClassName}-message`}
           ref={messageRef}
           id={tooltipMessageId}
           aria-hidden={!isVisible}
+          role="tooltip"
           style={{
             ...messagePosition,
             zIndex,
           }}
-          onMouseEnter={handleTooltipMouseEnter}
-          onMouseLeave={handleTooltipMouseLeave}
+          onPointerEnter={handleTriggerEnter}
+          onPointerLeave={handleTriggerLeave}
         >
           {message}
-        </span>
-      </span>
-    </span>
+        </div>
+      </div>
+    </div>
   );
 };
 
