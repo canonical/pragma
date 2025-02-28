@@ -8,8 +8,8 @@ import Component from "./Text.js";
 // import type { StoryFn } from '@storybook/react'
 
 const meta = {
-	title: "Text",
-	component: Component,
+  title: "Text",
+  component: Component,
 } satisfies Meta<typeof Component>;
 
 export default meta;
@@ -22,9 +22,9 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
-	args: {
-		inputType: "text",
-	},
+  args: {
+    inputType: "text",
+  },
 };
 
 /*
