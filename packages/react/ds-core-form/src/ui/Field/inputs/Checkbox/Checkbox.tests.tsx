@@ -6,12 +6,12 @@ import Component from "./Checkbox.js";
 
 describe("Checkbox component", () => {
   it("renders", () => {
-    render(<Component>Checkbox</Component>);
+    render(<Component name="subscribe" />);
     expect(screen.getByText("Checkbox")).toBeInTheDocument();
   });
 
   it("applies className", () => {
-    render(<Component className={"test-class"}>Checkbox</Component>);
+    render(<Component className={"test-class"} name="accept" />);
     expect(screen.getByText("Checkbox")).toHaveClass("test-class");
   });
 });
