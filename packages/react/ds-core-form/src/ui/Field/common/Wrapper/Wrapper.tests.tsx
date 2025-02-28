@@ -7,7 +7,7 @@ import Component from "./Wrapper.js";
 describe("Wrapper component", () => {
   it("renders", () => {
     render(<Component>Wrapper</Component>);
-    expect(screen.getByText('Wrapper')).toBeInTheDocument();
+    expect(screen.getByText("Wrapper")).toBeInTheDocument();
   });
 
   it("applies className", () => {

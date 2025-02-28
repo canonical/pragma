@@ -9,9 +9,9 @@ import Component from "./Text.js";
 // import type { StoryFn } from '@storybook/react'
 
 const meta = {
-	title: "Text",
-	component: Component,
-	decorators: [decorators.form()],
+  title: "Text",
+  component: Component,
+  decorators: [decorators.form()],
 } satisfies Meta<typeof Component>;
 
 export default meta;

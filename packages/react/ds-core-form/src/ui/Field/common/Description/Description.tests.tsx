@@ -7,7 +7,7 @@ import Component from "./Description.js";
 describe("Description component", () => {
   it("renders", () => {
     render(<Component>Description</Component>);
-    expect(screen.getByText('Description')).toBeInTheDocument();
+    expect(screen.getByText("Description")).toBeInTheDocument();
   });
 
   it("applies className", () => {

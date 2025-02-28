@@ -10,9 +10,9 @@ import { InputType } from "./types.js";
 // import type { StoryFn } from '@storybook/react'
 
 const meta = {
-	title: "Field",
-	component: Component,
-	decorators: [decorators.form()],
+  title: "Field",
+  component: Component,
+  decorators: [decorators.form()],
 } satisfies Meta<typeof Component>;
 
 export default meta;
@@ -25,23 +25,23 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
-	args: {
-		name: "full_name",
-	},
+  args: {
+    name: "full_name",
+  },
 };
 
 export const TypeTextarea: Story = {
-	args: {
-		name: "content",
-		inputType: InputType.Textarea,
-	},
+  args: {
+    name: "content",
+    inputType: InputType.Textarea,
+  },
 };
 
 export const TypeCheckbox: Story = {
-	args: {
-		name: "subscribe",
-		inputType: InputType.Checkbox,
-	},
+  args: {
+    name: "subscribe",
+    inputType: InputType.Checkbox,
+  },
 };
 
 export const TypeCheckbox: Story = {
@@ -53,11 +53,11 @@ export const TypeCheckbox: Story = {
 const CustomComponent = () => <span>SomeExotic Input</span>;
 
 export const TypeCustom: Story = {
-	args: {
-		name: "exotic",
-		inputType: InputType.Custom,
-		CustomComponent,
-	},
+  args: {
+    name: "exotic",
+    inputType: InputType.Custom,
+    CustomComponent,
+  },
 };
 
 /*
