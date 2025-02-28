@@ -106,10 +106,10 @@
   --chip-margin-left: var(--spacing-horizontal-medium);
 
   /*
-    TODO the tooltip's color tokens should be inverted from the active color theme.
-        This is to provide greater color contrast against its context.
-        This will be implemented once theming DS-wide is added.
-  */
+      TODO the tooltip's color tokens should be inverted from the active color theme.
+          This is to provide greater color contrast against its context.
+          This will be implemented once theming DS-wide is added.
+    */
 
   --tooltip-color-background: var(--color-background-default);
   --tooltip-color-background-hover: var(--color-background-hover);
@@ -128,11 +128,6 @@
   --tooltip-font-size: var(--font-size-default);
   --tooltip-font-weight: var(--font-weight-default);
   --tooltip-line-height: var(--line-height-default);
-  --tooltip-spacing-arrow-size: var(--spacing-horizontal-small);
-  --tooltip-spacing-arrow-middle: calc(50% - var(--tooltip-spacing-arrow-size));
-  --tooltip-spacing-arrow-edge: calc(-1 * var(--tooltip-spacing-arrow-size));
-  --tooltip-border-arrow-visible: var(--tooltip-spacing-arrow-size) solid
-    var(--tooltip-color-background);
-  --tooltip-border-arrow-hidden: var(--tooltip-spacing-arrow-size) solid
-    transparent;
+
+  --tooltip-spacing-arrow-size: 6px;
 }

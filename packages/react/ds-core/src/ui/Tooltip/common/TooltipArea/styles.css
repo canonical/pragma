@@ -1,0 +1,14 @@
+.ds.tooltip-area {
+  position: relative;
+}
+
+.ds.tooltip-area__target {
+  cursor: pointer;
+  position: relative;
+  display: inline-block;
+}
+
+.ds.tooltip-area__target > * {
+  /* The tooltip targets must have no margin in order for too ltip placements to work correctly */
+  margin: 0 !important;
+}
