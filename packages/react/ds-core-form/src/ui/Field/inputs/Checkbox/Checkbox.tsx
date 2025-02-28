@@ -11,22 +11,22 @@ const componentCssClassName = "ds checkbox";
  * @returns {React.ReactElement} - Rendered Checkbox
  */
 const Checkbox = ({
-	id,
-	className,
-	style,
-	name,
-	registerProps,
+  id,
+  className,
+  style,
+  name,
+  registerProps,
 }: CheckboxProps): React.ReactElement => {
-	const { register } = useFormContext();
-	return (
-		<input
-			id={id}
-			style={style}
-			type="checkbox"
-			className={[componentCssClassName, className].filter(Boolean).join(" ")}
-			{...register(name, registerProps)}
-		/>
-	);
+  const { register } = useFormContext();
+  return (
+    <input
+      id={id}
+      style={style}
+      type="checkbox"
+      className={[componentCssClassName, className].filter(Boolean).join(" ")}
+      {...register(name, registerProps)}
+    />
+  );
 };
 
 export default Checkbox;

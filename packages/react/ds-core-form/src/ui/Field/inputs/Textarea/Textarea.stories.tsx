@@ -9,9 +9,9 @@ import Component from "./Textarea.js";
 // import type { StoryFn } from '@storybook/react'
 
 const meta = {
-	title: "Textarea",
-	component: Component,
-	decorators: [decorators.form()],
+  title: "Textarea",
+  component: Component,
+  decorators: [decorators.form()],
 } satisfies Meta<typeof Component>;
 
 export default meta;
@@ -24,9 +24,9 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
-	args: {
-		name: "content",
-	},
+  args: {
+    name: "content",
+  },
 };
 
 /*

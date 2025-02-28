@@ -7,7 +7,7 @@ import Component from "./Label.js";
 describe("Label component", () => {
   it("renders", () => {
     render(<Component>Label</Component>);
-    expect(screen.getByText('Label')).toBeInTheDocument();
+    expect(screen.getByText("Label")).toBeInTheDocument();
   });
 
   it("applies className", () => {
