@@ -4,5 +4,5 @@ import type { BaseInputProps } from "../types.js";
 
 export interface TextProps extends BaseInputProps {
   /* The type of input field Enum*/
-  inputType: "text" | "password" | "email" | "number" | "tel" | "url";
+  inputType?: "text" | "password" | "email" | "number" | "tel" | "url";
 }
