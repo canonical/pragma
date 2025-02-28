@@ -9,8 +9,8 @@ import { InputType } from "./types.js";
 // import type { StoryFn } from '@storybook/react'
 
 const meta = {
-  title: "Field",
-  component: Component,
+	title: "Field",
+	component: Component,
 } satisfies Meta<typeof Component>;
 
 export default meta;
@@ -23,15 +23,21 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
-  args: {
-    inputType: InputType.Text,
-  },
+	args: {
+		inputType: InputType.Text,
+	},
 };
 
 export const TypeTextarea: Story = {
-  args: {
-    inputType: InputType.Textarea,
-  },
+	args: {
+		inputType: InputType.Textarea,
+	},
+};
+
+export const TypeCheckbox: Story = {
+	args: {
+		inputType: InputType.Checkbox,
+	},
 };
 
 export const TypeCheckbox: Story = {
@@ -43,10 +49,10 @@ export const TypeCheckbox: Story = {
 const CustomComponent = () => <span>SomeExotic Input</span>;
 
 export const TypeCustom: Story = {
-  args: {
-    inputType: InputType.Custom,
-    CustomComponent,
-  },
+	args: {
+		inputType: InputType.Custom,
+		CustomComponent,
+	},
 };
 
 /*
