@@ -1,37 +1,39 @@
 /* @canonical/generator-ds 0.9.0-experimental.4 */
 import type React from "react";
+import type {
+	CheckboxProps,
+	TextProps,
+	TextareaProps,
+} from "./inputs/index.js";
 
 export enum InputType {
-  Text = "text",
-  Password = "password",
-  Email = "email",
-  Number = "number",
-  Tel = "tel",
-  Url = "url",
-  Textarea = "textarea",
-  Custom = "custom",
-  Checkbox = "checkbox",
-  // Date = "date",
-  // Time = "time",
-  // DatetimeLocal = "datetime-local",
-  // Month = "month",
-  // Week = "week",
-  // Color = "color",
+	Text = "text",
+	Password = "password",
+	Email = "email",
+	Number = "number",
+	Tel = "tel",
+	Url = "url",
+	Textarea = "textarea",
+	Custom = "custom",
+	Checkbox = "checkbox",
+	// Date = "date",
+	// Time = "time",
+	// DatetimeLocal = "datetime-local",
+	// Month = "month",
+	// Week = "week",
+	// Color = "color",
 }
 
-export interface FieldProps {
-  /* A unique identifier for the Field */
-  id?: string;
-  /* Additional CSS classes */
-  className?: string;
-  /* Child elements */
-  children?: React.ReactNode;
-  /* Inline styles */
-  style?: React.CSSProperties;
+export type UnionInputProps = CheckboxProps | TextProps | TextareaProps;
 
-  /* The type of input field Enum*/
-  inputType: InputType;
+export type FieldProps = {
+	/**
+	 * Type of input to render
+	 */
+	inputType: InputType;
 
-  /* Custom component to render */
-  CustomComponent?: React.ElementType;
-}
+	/**
+	 * Custom component to render
+	 **/
+	CustomComponent?: React.ElementType;
+} & UnionInputProps;

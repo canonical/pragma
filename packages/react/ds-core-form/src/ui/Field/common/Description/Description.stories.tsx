@@ -1,17 +1,15 @@
 /* @canonical/generator-ds 0.9.0-experimental.4 */
 
+import Component from "./Description.js";
 // Needed for function-based story, safe to remove otherwise
-// import type { TextProps } from './types.js'
+// import type { DescriptionProps } from './types.js'
 import type { Meta, StoryObj } from "@storybook/react";
-import * as decorators from "storybook/decorators.js";
-import Component from "./Text.js";
 // Needed for template-based story, safe to remove otherwise
 // import type { StoryFn } from '@storybook/react'
 
 const meta = {
-	title: "Text",
-	component: Component,
-	decorators: [decorators.form()],
+  title: "Description",
+  component: Component,
 } satisfies Meta<typeof Component>;
 
 export default meta;
@@ -25,7 +23,7 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   args: {
-    inputType: "text",
+    children: <span>Hello world!</span>
   },
 };
 
@@ -34,7 +32,7 @@ export const Default: Story = {
   Direct arguments passed to the component
   Simple, but can lead to repetition if used across multiple stories with similar configurations
 
-  export const Default = (args: TextProps) => <Component {...args} />;
+  export const Default = (args: DescriptionProps) => <Component {...args} />;
   Default.args = { children: <span>Hello world!</span> };
 */
 
