@@ -29,10 +29,6 @@ export interface TooltipProps {
    */
   position?: Position;
   /**
-   * An optional class to apply to the tooltip message element.
-   */
-  tooltipClassName?: string;
-  /**
    * Delay in ms after which Tooltip will appear (defaults to 350ms).
    */
   showDelay?: number;
@@ -40,7 +36,6 @@ export interface TooltipProps {
    * Delay in ms after which Tooltip will disappear (defaults to 350ms).
    */
   hideDelay?: number;
-
   /**
    * z-index of the tooltip.
    */
