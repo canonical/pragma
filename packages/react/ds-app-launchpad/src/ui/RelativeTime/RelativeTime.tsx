@@ -7,8 +7,10 @@ import type { RelativeTimeProps } from "./types.js";
 const componentCssClassName = "ds relative-time";
 
 /**
- * description of the RelativeTime component
- * @returns {React.ReactElement} - Rendered RelativeTime
+ * The RelativeTime component displays timestamps in a human-readable relative format (like "2 hours ago" or "in 3 days").
+ *
+ * It features automatic live updates with interval optimization based on time distance, configurable "now" threshold,
+ * and renders as proper semantic HTML using the <time> element. The component leverages the Temporal API for calculations and Intl.RelativeTimeFormat for localization.
  */
 const RelativeTime = ({
   id,
