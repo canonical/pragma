@@ -1,5 +1,5 @@
 /* @canonical/generator-ds 0.9.0-experimental.4 */
-import type React from 'react'
+import type React from "react";
 
 export interface CheckboxProps {
   /* A unique identifier for the Checkbox */

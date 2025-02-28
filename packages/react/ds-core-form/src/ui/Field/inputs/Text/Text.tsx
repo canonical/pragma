@@ -10,20 +10,20 @@ const componentCssClassName = "ds text";
  * @returns {React.ReactElement} - Rendered Text
  */
 const Text = ({
-	id,
-	children,
-	className,
-	style,
-	inputType,
+  id,
+  children,
+  className,
+  style,
+  inputType,
 }: TextProps): React.ReactElement => {
-	return (
-		<input
-			id={id}
-			style={style}
-			className={[componentCssClassName, className].filter(Boolean).join(" ")}
-			type={inputType}
-		/>
-	);
+  return (
+    <input
+      id={id}
+      style={style}
+      className={[componentCssClassName, className].filter(Boolean).join(" ")}
+      type={inputType}
+    />
+  );
 };
 
 export default Text;

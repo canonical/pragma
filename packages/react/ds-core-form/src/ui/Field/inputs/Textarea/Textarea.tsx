@@ -10,20 +10,20 @@ const componentCssClassName = "ds textarea";
  * @returns {React.ReactElement} - Rendered Textarea
  */
 const Textarea = ({
-	id,
-	children,
-	className,
-	style,
+  id,
+  children,
+  className,
+  style,
 }: TextareaProps): React.ReactElement => {
-	return (
-		<textarea
-			id={id}
-			style={style}
-			className={[componentCssClassName, className].filter(Boolean).join(" ")}
-		>
-			{children}
-		</textarea>
-	);
+  return (
+    <textarea
+      id={id}
+      style={style}
+      className={[componentCssClassName, className].filter(Boolean).join(" ")}
+    >
+      {children}
+    </textarea>
+  );
 };
 
 export default Textarea;
