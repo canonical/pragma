@@ -101,3 +101,16 @@ export const AutoAdjust: Story = {
     children: <Button label="Auto Adjusted left" />,
   },
 };
+
+export const Inline: Story = {
+  render: () => (
+    <p>
+      I am a paragraph using a&nbsp;
+      <Component message={"This is a tooltip describing the word"}>
+        <span>word</span>
+      </Component>
+      &nbsp;that needs further explanation, which will be provided via a
+      tooltip.
+    </p>
+  ),
+};
