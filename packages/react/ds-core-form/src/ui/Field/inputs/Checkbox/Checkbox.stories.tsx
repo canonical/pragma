@@ -1,16 +1,15 @@
 /* @canonical/generator-ds 0.9.0-experimental.4 */
 
+import Component from "./Checkbox.js";
 // Needed for function-based story, safe to remove otherwise
-// import type { FieldProps } from './types.js'
+// import type { CheckboxProps } from './types.js'
 import type { Meta, StoryObj } from "@storybook/react";
-import Component from "./Field.js";
-import { InputType } from "./types.js";
 // Needed for template-based story, safe to remove otherwise
 // import type { StoryFn } from '@storybook/react'
 
 const meta = {
-	title: "Field",
-	component: Component,
+  title: "Checkbox",
+  component: Component,
 } satisfies Meta<typeof Component>;
 
 export default meta;
@@ -23,30 +22,9 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
-	args: {
-		inputType: InputType.Text,
-	},
-};
-
-export const TypeTextarea: Story = {
-	args: {
-		inputType: InputType.Textarea,
-	},
-};
-
-export const TypeCheckbox: Story = {
-	args: {
-		inputType: InputType.Checkbox,
-	},
-};
-
-const CustomComponent = () => <span>SomeExotic Input</span>;
-
-export const TypeCustom: Story = {
-	args: {
-		inputType: InputType.Custom,
-		CustomComponent,
-	},
+  args: {
+    children: <span>Hello world!</span>
+  },
 };
 
 /*
@@ -54,7 +32,7 @@ export const TypeCustom: Story = {
   Direct arguments passed to the component
   Simple, but can lead to repetition if used across multiple stories with similar configurations
 
-  export const Default = (args: FieldProps) => <Component {...args} />;
+  export const Default = (args: CheckboxProps) => <Component {...args} />;
   Default.args = { children: <span>Hello world!</span> };
 */
 

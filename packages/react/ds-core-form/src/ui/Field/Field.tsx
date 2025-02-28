@@ -1,6 +1,6 @@
 /* @canonical/generator-ds 0.9.0-experimental.4 */
 import type React from "react";
-import { Text, Textarea } from "./inputs/index.js";
+import { Checkbox, Text, Textarea } from "./inputs/index.js";
 import { InputType } from "./types.js";
 import type { FieldProps } from "./types.js";
 
@@ -16,6 +16,8 @@ const Field = ({
 	switch (inputType) {
 		case InputType.Textarea:
 			return <Textarea {...props} />;
+		case InputType.Checkbox:
+			return <Checkbox {...props} />;
 		case InputType.Custom:
 			// @ts-ignore // TODO Add special type for both or none
 			return <CustomComponent {...props} />;
