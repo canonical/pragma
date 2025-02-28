@@ -45,12 +45,6 @@ export const TypeCheckbox: Story = {
   },
 };
 
-export const TypeCheckbox: Story = {
-  args: {
-    inputType: InputType.Checkbox,
-  },
-};
-
 const CustomComponent = () => <span>SomeExotic Input</span>;
 
 export const TypeCustom: Story = {

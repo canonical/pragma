@@ -25,7 +25,14 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   args: {
-    inputType: "text",
+    name: "full_name",
+  },
+};
+
+export const Email: Story = {
+  args: {
+    name: "email",
+    inputType: "email",
   },
 };
 
