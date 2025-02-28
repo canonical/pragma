@@ -10,19 +10,19 @@ const componentCssClassName = "ds checkbox";
  * @returns {React.ReactElement} - Rendered Checkbox
  */
 const Checkbox = ({
-	id,
-	children,
-	className,
-	style,
+  id,
+  children,
+  className,
+  style,
 }: CheckboxProps): React.ReactElement => {
-	return (
-		<input
-			id={id}
-			style={style}
-			type="checkbox"
-			className={[componentCssClassName, className].filter(Boolean).join(" ")}
-		/>
-	);
+  return (
+    <input
+      id={id}
+      style={style}
+      type="checkbox"
+      className={[componentCssClassName, className].filter(Boolean).join(" ")}
+    />
+  );
 };
 
 export default Checkbox;

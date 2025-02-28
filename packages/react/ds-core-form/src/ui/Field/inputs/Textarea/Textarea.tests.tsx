@@ -7,7 +7,7 @@ import Component from "./Textarea.js";
 describe("Textarea component", () => {
   it("renders", () => {
     render(<Component>Textarea</Component>);
-    expect(screen.getByText('Textarea')).toBeInTheDocument();
+    expect(screen.getByText("Textarea")).toBeInTheDocument();
   });
 
   it("applies className", () => {
