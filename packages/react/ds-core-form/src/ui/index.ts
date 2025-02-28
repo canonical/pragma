@@ -1,4 +1,3 @@
-export * from "./Button/index.js";
 export * from "./Field/index.js";
 
 /* 
