@@ -1,15 +1,15 @@
 /* @canonical/generator-ds 0.9.0-experimental.4 */
 
-import Component from "./Text.js";
 // Needed for function-based story, safe to remove otherwise
 // import type { TextProps } from './types.js'
 import type { Meta, StoryObj } from "@storybook/react";
+import Component from "./Text.js";
 // Needed for template-based story, safe to remove otherwise
 // import type { StoryFn } from '@storybook/react'
 
 const meta = {
-  title: "Text",
-  component: Component,
+	title: "Text",
+	component: Component,
 } satisfies Meta<typeof Component>;
 
 export default meta;
@@ -22,9 +22,9 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
-  args: {
-    children: <span>Hello world!</span>
-  },
+	args: {
+		inputType: "text",
+	},
 };
 
 /*

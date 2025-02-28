@@ -7,7 +7,7 @@ import Component from "./Checkbox.js";
 describe("Checkbox component", () => {
   it("renders", () => {
     render(<Component>Checkbox</Component>);
-    expect(screen.getByText('Checkbox')).toBeInTheDocument();
+    expect(screen.getByText("Checkbox")).toBeInTheDocument();
   });
 
   it("applies className", () => {

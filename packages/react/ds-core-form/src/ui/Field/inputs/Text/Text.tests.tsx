@@ -7,7 +7,7 @@ import Component from "./Text.js";
 describe("Text component", () => {
   it("renders", () => {
     render(<Component>Text</Component>);
-    expect(screen.getByText('Text')).toBeInTheDocument();
+    expect(screen.getByText("Text")).toBeInTheDocument();
   });
 
   it("applies className", () => {
