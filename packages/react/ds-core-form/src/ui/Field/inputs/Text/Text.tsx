@@ -22,9 +22,7 @@ const Text = ({
 			style={style}
 			className={[componentCssClassName, className].filter(Boolean).join(" ")}
 			type={inputType}
-		>
-			{children}
-		</input>
+		/>
 	);
 };
 
