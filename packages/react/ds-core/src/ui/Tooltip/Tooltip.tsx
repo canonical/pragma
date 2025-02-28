@@ -10,6 +10,7 @@ import {
 } from "react";
 import type { TooltipProps } from "./types.js";
 import "./styles.css";
+import { debounce } from "@canonical/utils";
 
 const componentCssClassName = "ds tooltip";
 
@@ -128,13 +129,13 @@ const Tooltip = ({
   }, [calculateMessagePosition]);
 
   useEffect(() => {
-    const handleResize = () => {
+    const handleResize = debounce(() => {
       if (isVisible) calculateMessagePosition();
-    };
+    }, 100);
 
-    const handleScroll = () => {
+    const handleScroll = debounce(() => {
       if (isVisible) calculateMessagePosition();
-    };
+    }, 100);
 
     window.addEventListener("resize", handleResize);
     window.addEventListener("scroll", handleScroll, { passive: true });

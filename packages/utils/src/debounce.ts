@@ -22,26 +22,17 @@ export default function debounce<
   F extends (...args: Parameters<F>) => ReturnType<F>,
 >(fn: F, delay: number): (...args: Parameters<F>) => Promise<ReturnType<F>> {
   let timeoutId: ReturnType<typeof setTimeout> | null = null;
-  let promiseReject: ((reason?: string) => void) | null = null;
 
   return (...args: Parameters<F>): Promise<ReturnType<F>> => {
-    // Timer already exists, clear it and reject the promise
+    // Timer already exists, clear it. This way we avoid resolving more than once.
     if (timeoutId) {
       clearTimeout(timeoutId);
-      if (promiseReject) {
-        promiseReject();
-      }
     }
 
-    return new Promise<ReturnType<F>>((resolve, reject) => {
-      promiseReject = reject;
-      timeoutId = setTimeout(async () => {
+    return new Promise<ReturnType<F>>((resolve) => {
+      timeoutId = setTimeout(() => {
         // Timer hasn't been cancelled, call the function
-        try {
-          resolve(fn(...args));
-        } catch (error) {
-          reject(error);
-        }
+        resolve(fn(...args));
       }, delay);
     });
   };
