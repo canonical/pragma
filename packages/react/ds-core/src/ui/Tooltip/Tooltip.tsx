@@ -46,9 +46,9 @@ const Tooltip = ({
   const targetRef = useRef<HTMLDivElement>(null);
   const messageRef = useRef<HTMLDivElement>(null);
   const [isVisible, setIsVisible] = useState(false);
-  const [visibilityTimeout, setVisibilityTimeout] = useState<
-    ReturnType<typeof setTimeout> | undefined
-  >(undefined);
+  const visibilityTimeout = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined,
+  );
   const tooltipMessageId = useId();
   const [isFocused, setIsFocused] = useState(false);
   const [isOpening, setIsOpening] = useState(false);
@@ -156,10 +156,12 @@ const Tooltip = ({
 
   const replaceTimer = useCallback(
     (newTimer?: ReturnType<typeof setTimeout>) => {
-      if (visibilityTimeout) clearTimeout(visibilityTimeout);
-      setVisibilityTimeout(newTimer);
+      if (visibilityTimeout.current) {
+        clearTimeout(visibilityTimeout.current);
+      }
+      visibilityTimeout.current = newTimer;
     },
-    [visibilityTimeout],
+    [],
   );
 
   const openTooltip = useCallback(() => {
