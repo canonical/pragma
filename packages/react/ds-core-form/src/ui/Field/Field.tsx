@@ -1,5 +1,6 @@
 /* @canonical/generator-ds 0.9.0-experimental.4 */
 import type React from "react";
+import { Text, Textarea } from "./inputs/index.js";
 import { InputType } from "./types.js";
 import type { FieldProps } from "./types.js";
 
@@ -8,22 +9,20 @@ import type { FieldProps } from "./types.js";
  * @returns {React.ReactElement} - Rendered Field
  */
 const Field = ({
-  id,
-  children,
-  className,
-  style,
-  inputType,
-  CustomComponent,
+	inputType,
+	CustomComponent,
+	...props
 }: FieldProps): React.ReactElement => {
-  switch (inputType) {
-    case InputType.Textarea:
-      return <textarea />;
-    case InputType.Custom:
-      // @ts-ignore // TODO Add special type for both or none
-      return <CustomComponent />;
-    default:
-      return <input />;
-  }
+	switch (inputType) {
+		case InputType.Textarea:
+			return <Textarea {...props} />;
+		case InputType.Custom:
+			// @ts-ignore // TODO Add special type for both or none
+			return <CustomComponent {...props} />;
+		default:
+			return <Text inputType={inputType} {...props} />;
+	}
 };
 
 export default Field;
+Field.types = InputType;
