@@ -62,23 +62,7 @@ const Tooltip = ({
     let xOffset = 0;
     let yOffset = 0;
 
-    switch (position) {
-      case "topCenter":
-      case "topRight":
-      case "topLeft":
-        yOffset = -(messageRect.height + ARROW_SIZE);
-        break;
-      case "btmCenter":
-      case "btmRight":
-      case "btmLeft":
-        yOffset = targetRect.height + ARROW_SIZE;
-        break;
-      case "left":
-      case "right":
-        yOffset = (targetRect.height - messageRect.height) / 2;
-        break;
-    }
-
+    // Horizontal positioning
     switch (position) {
       case "topCenter":
       case "btmCenter":
@@ -100,8 +84,23 @@ const Tooltip = ({
         break;
     }
 
-    let adjustedXOffset = xOffset;
-    let adjustedYOffset = yOffset;
+    // vertical positioning
+    switch (position) {
+      case "topCenter":
+      case "topRight":
+      case "topLeft":
+        yOffset = -(messageRect.height + ARROW_SIZE);
+        break;
+      case "btmCenter":
+      case "btmRight":
+      case "btmLeft":
+        yOffset = targetRect.height + ARROW_SIZE;
+        break;
+      case "left":
+      case "right":
+        yOffset = (targetRect.height - messageRect.height) / 2;
+        break;
+    }
 
     if (autoAdjust) {
       const viewportWidth = window.innerWidth;
@@ -110,17 +109,17 @@ const Tooltip = ({
       const absoluteX = targetRect.left + xOffset;
       const absoluteY = targetRect.top + yOffset;
 
-      if (absoluteX < 0) adjustedXOffset -= absoluteX;
+      if (absoluteX < 0) xOffset -= absoluteX;
       else if (absoluteX + messageRect.width > viewportWidth)
-        adjustedXOffset -= absoluteX + messageRect.width - viewportWidth;
+        xOffset -= absoluteX + messageRect.width - viewportWidth;
 
-      if (absoluteY < 0) adjustedYOffset -= absoluteY;
+      if (absoluteY < 0) yOffset -= absoluteY;
       else if (absoluteY + messageRect.height > viewportHeight)
-        adjustedYOffset -= absoluteY + messageRect.height - viewportHeight;
+        yOffset -= absoluteY + messageRect.height - viewportHeight;
     }
     setMessagePosition({
-      top: `${adjustedYOffset}px`,
-      left: `${adjustedXOffset}px`,
+      left: `${xOffset}px`,
+      top: `${yOffset}px`,
     });
   }, [position, autoAdjust]);
 
