@@ -8,8 +8,8 @@ import Component from "./Text.js";
 // import type { StoryFn } from '@storybook/react'
 
 const meta = {
-  title: "Text",
-  component: Component,
+	title: "Text",
+	component: Component,
 } satisfies Meta<typeof Component>;
 
 export default meta;

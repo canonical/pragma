@@ -20,18 +20,18 @@ export enum InputType {
 }
 
 export interface FieldProps {
-	/* A unique identifier for the Field */
-	id?: string;
-	/* Additional CSS classes */
-	className?: string;
-	/* Child elements */
-	children?: React.ReactNode;
-	/* Inline styles */
-	style?: React.CSSProperties;
+  /* A unique identifier for the Field */
+  id?: string;
+  /* Additional CSS classes */
+  className?: string;
+  /* Child elements */
+  children?: React.ReactNode;
+  /* Inline styles */
+  style?: React.CSSProperties;
 
-	/* The type of input field Enum*/
-	inputType: InputType;
+  /* The type of input field Enum*/
+  inputType: InputType;
 
-	/* Custom component to render */
-	CustomComponent?: React.ElementType;
+  /* Custom component to render */
+  CustomComponent?: React.ElementType;
 }
