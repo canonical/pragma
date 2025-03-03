@@ -40,7 +40,7 @@ const SampleChild = ({
 export const Default: Story = {
   args: {
     title: "Sample Title",
-    children: ({ isEditing }: { isEditing: boolean }) => (
+    EditComponent: ({ isEditing }: { isEditing: boolean }) => (
       <SampleChild isEditing={isEditing} />
     ),
   },

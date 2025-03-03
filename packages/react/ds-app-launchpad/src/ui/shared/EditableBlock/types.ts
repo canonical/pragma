@@ -1,14 +1,14 @@
 /* @canonical/generator-ds 0.8.0-experimental.0 */
 import type React from "react";
 
+export type EditElement = (props: {
+  isEditing: boolean;
+  toggleEditing: () => void;
+}) => React.ReactNode;
+
 export interface EditableBlockProps {
   id?: string;
-  children:
-    | React.ReactNode
-    | ((props: {
-        isEditing: boolean;
-        toggleEditing: () => void;
-      }) => React.ReactNode);
+  EditComponent: EditElement;
   className?: string;
   style?: React.CSSProperties;
   title?: string;

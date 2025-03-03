@@ -27,7 +27,7 @@ export const useEditing = (): EditingContextType => {
 
 const EditableBlock = ({
   id,
-  children,
+  EditComponent,
   className,
   style,
   title,
@@ -60,9 +60,12 @@ const EditableBlock = ({
         </div>
         <div className="editable-block-component__content">
           <div className="editable-block-component__children">
-            {typeof children === "function"
-              ? children({ isEditing, toggleEditing })
-              : children}
+            {EditComponent && (
+              <EditComponent
+                isEditing={isEditing}
+                toggleEditing={toggleEditing}
+              />
+            )}
           </div>
         </div>
       </div>
