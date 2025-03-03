@@ -16,7 +16,9 @@ describe("EditableBlock component", () => {
         EditComponent={SampleEditComponent}
       />,
     );
-    expect(screen.getByText("Sample")).toBeInTheDocument();
+    const sampleElement = screen.getByText("Sample");
+    expect(sampleElement).not.toBeNull();
+    expect(document.body.contains(sampleElement)).toBe(true);
   });
 
   it("toggles editing state when icon is clicked", () => {
