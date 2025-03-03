@@ -30,10 +30,10 @@ interface SampleChildProps {
   toggleEditing?: () => void;
 }
 
-const SampleChild: React.FC<SampleChildProps> = ({
+const SampleChild = ({
   isEditing,
   toggleEditing,
-}) => {
+}: SampleChildProps): React.ReactElement => {
   return <div>{isEditing ? "Edit mode." : "View mode."}</div>;
 };
 
