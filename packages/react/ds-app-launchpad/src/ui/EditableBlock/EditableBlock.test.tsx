@@ -28,9 +28,9 @@ describe("EditableBlock component", () => {
     );
     const editIcon = screen.getByRole("button");
     fireEvent.click(editIcon);
-    expect(editIcon).toHaveClass("editable-block-component__icon--close");
+    expect(editIcon.classList.contains("icon-close")).toBe(true);
     fireEvent.click(editIcon);
-    expect(editIcon).toHaveClass("editable-block-component__icon--edit");
+    expect(editIcon.classList.contains("icon-edit")).toBe(true);
   });
 
   it("toggles editing state when Enter key is pressed", () => {
@@ -42,9 +42,9 @@ describe("EditableBlock component", () => {
     );
     const editIcon = screen.getByRole("button");
     fireEvent.keyUp(editIcon, { key: "Enter", code: "Enter", charCode: 13 });
-    expect(editIcon).toHaveClass("editable-block-component__icon--close");
+    expect(editIcon.classList.contains("icon-close")).toBe(true);
     fireEvent.keyUp(editIcon, { key: "Enter", code: "Enter", charCode: 13 });
-    expect(editIcon).toHaveClass("editable-block-component__icon--edit");
+    expect(editIcon.classList.contains("icon-edit")).toBe(true);
   });
 
   it("toggles editing state when Space key is pressed", () => {
@@ -56,9 +56,9 @@ describe("EditableBlock component", () => {
     );
     const editIcon = screen.getByRole("button");
     fireEvent.keyUp(editIcon, { key: " ", code: "Space", charCode: 32 });
-    expect(editIcon).toHaveClass("editable-block-component__icon--close");
+    expect(editIcon.classList.contains("icon-close")).toBe(true);
     fireEvent.keyUp(editIcon, { key: " ", code: "Space", charCode: 32 });
-    expect(editIcon).toHaveClass("editable-block-component__icon--edit");
+    expect(editIcon.classList.contains("icon-edit")).toBe(true);
   });
 
   it("provides editing context to children", () => {
