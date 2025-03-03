@@ -10,7 +10,7 @@ export interface EditableBlockProps {
   id?: string;
   EditComponent: EditElement;
   className?: string;
-  style?: React.CSSProperties;
+  styles?: React.CSSProperties;
   title?: string;
 }
 

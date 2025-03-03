@@ -4,7 +4,9 @@ import {
   ReactElement,
   ReactNode,
   createContext,
+  useCallback,
   useContext,
+  useMemo,
   useState,
 } from "react";
 import type { EditableBlockProps, EditingContextType } from "./types.js";
@@ -28,29 +30,36 @@ export const useEditing = (): EditingContextType => {
 const EditableBlock = ({
   id,
   EditComponent,
-  className,
-  style,
+  className: userClassName,
+  styles,
   title,
 }: EditableBlockProps): React.ReactElement => {
   const [isEditing, setIsEditing] = useState<boolean>(false);
 
-  const toggleEditing = () => {
+  const toggleEditing = useCallback(() => {
     setIsEditing((editing) => !editing);
-  };
+  }, []);
 
-  const handleKeyUp = (event: React.KeyboardEvent) => {
-    if (event.key === "Enter" || event.key === " ") {
-      toggleEditing();
-    }
-  };
+  const handleKeyUp = useCallback(
+    (event: React.KeyboardEvent) => {
+      if (event.key === "Enter" || event.key === " ") {
+        toggleEditing();
+      }
+    },
+    [toggleEditing],
+  );
+
+  const componentClassName = useMemo(() => {
+    return ["ds", "editable-block", userClassName].filter(Boolean).join(" ");
+  }, [userClassName]);
 
   return (
     <EditingContext.Provider value={{ isEditing, toggleEditing }}>
-      <div className="editable-block-component">
-        <div className="editable-block-component__header">
-          <div className="editable-block-component__title">{title}</div>
+      <div className={componentClassName}>
+        <div className="header">
+          <div className="title">{title}</div>
           <div
-            className={`editable-block-component__icon ${isEditing ? "editable-block-component__icon--close" : "editable-block-component__icon--edit"}`}
+            className={`icon ${isEditing ? "icon-close" : "icon-edit"}`}
             onClick={toggleEditing}
             onKeyUp={handleKeyUp}
             onKeyDown={handleKeyUp}
@@ -58,8 +67,8 @@ const EditableBlock = ({
             tabIndex={0}
           />
         </div>
-        <div className="editable-block-component__content">
-          <div className="editable-block-component__children">
+        <div className="content">
+          <div className="children">
             {EditComponent && (
               <EditComponent
                 isEditing={isEditing}
