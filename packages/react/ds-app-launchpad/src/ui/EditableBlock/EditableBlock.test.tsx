@@ -71,9 +71,13 @@ describe("EditableBlock component", () => {
       <EditableBlock title={"Hello world!"} EditComponent={ChildComponent} />,
     );
 
-    expect(screen.getByText("Not Editing")).toBeInTheDocument();
+    const notEditingElement = screen.getByText("Not Editing");
+    expect(notEditingElement).not.toBeNull();
+    expect(document.body.contains(notEditingElement)).toBe(true);
     const editIcon = screen.getByRole("button");
     fireEvent.click(editIcon);
-    expect(screen.getByText("Editing")).toBeInTheDocument();
+    const editingElement = screen.getByText("Editing");
+    expect(editingElement).not.toBeNull();
+    expect(document.body.contains(editingElement)).toBe(true);
   });
 });
