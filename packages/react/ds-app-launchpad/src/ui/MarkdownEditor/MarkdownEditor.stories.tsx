@@ -2,6 +2,7 @@
 import type { Meta, StoryFn, StoryObj } from "@storybook/react";
 import { useState } from "storybook/internal/preview-api";
 import MarkdownEditor from "./MarkdownEditor.js";
+import * as fixtures from "./fixtures.js";
 import type { EditMode, MarkdownEditorProps } from "./types.js";
 
 const meta = {
@@ -26,19 +27,7 @@ export const ReadOnlyMarkdownViewer: Story = {
     hideToolbar: true,
     hidePreview: true,
     editMode: "preview",
-    defaultValue: `# Markdown Editor Example
-
-This is an example of a Markdown editor.
-
-\`\`\`js
-const foo = "bar";
-console.log(foo);
-
-function baz() {
-  return "qux";
-}
-\`\`\`
-`,
+    defaultValue: fixtures.markdownLongExample,
   },
 };
 
@@ -53,6 +42,7 @@ export const ExternallyControlledEditMode: StoryFn<MarkdownEditorProps> = (
     <div>
       <MarkdownEditor
         {...args}
+        defaultValue={fixtures.markdownShortExample}
         editMode={editMode}
         hidePreview
         onEditModeChange={(newMode) => setEditMode(newMode)}

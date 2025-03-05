@@ -38,6 +38,16 @@
     background-color: var(--markdown-editor-editor-background-color);
     padding: var(--markdown-editor-input-vert-padding)
       var(--markdown-editor-input-horizontal-padding);
+
+    ul.contains-task-list {
+      & li.task-list-item {
+        list-style: none;
+      }
+      & input[type="checkbox"] {
+        margin-inline-start: -20px;
+        margin-right: 5px;
+      }
+    }
   }
 
   & > textarea {

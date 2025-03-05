@@ -12,6 +12,7 @@ import {
 } from "react";
 import ReactMarkdown from "react-markdown";
 import rehypeSanitize from "rehype-sanitize";
+import remarkGfm from "remark-gfm";
 import "../GitDiffViewer/common/CodeDiffViewer/HighlighTheme.css";
 import {
   Toolbar,
@@ -194,6 +195,7 @@ const MarkdownEditor = (
         <div className="editor-content" style={style} ref={previewRef}>
           <ReactMarkdown
             rehypePlugins={[rehypeSanitize]}
+            remarkPlugins={[remarkGfm]}
             components={{
               h1: ({ children }) => <h3>{children}</h3>,
               h2: ({ children }) => <h3>{children}</h3>,

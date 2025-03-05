@@ -3,6 +3,7 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import MarkdownEditor from "./MarkdownEditor.js";
+import * as fixtures from "./fixtures.js";
 
 import { createRef } from "react";
 
@@ -20,7 +21,7 @@ describe("MarkdownEditor", () => {
   it("renders with custom props", () => {
     render(
       <MarkdownEditor
-        defaultValue="# Heading"
+        defaultValue={fixtures.markdownLongExample}
         placeholder="Enter markdown"
         className="custom-class"
         style={{ width: "500px" }}
@@ -28,14 +29,16 @@ describe("MarkdownEditor", () => {
     );
 
     const textarea = screen.getByRole("textbox");
-    expect(textarea).toHaveValue("# Heading");
+    expect(textarea).toHaveValue(fixtures.markdownLongExample);
     expect(textarea).toHaveAttribute("placeholder", "Enter markdown");
     expect(textarea).toHaveStyle({ width: "500px" });
     expect(textarea.closest(".ds.markdown-editor")).toHaveClass("custom-class");
   });
 
   it("switches between write and preview modes", async () => {
-    const { container } = render(<MarkdownEditor defaultValue="# Heading" />);
+    const { container } = render(
+      <MarkdownEditor defaultValue={fixtures.markdownLongExample} />,
+    );
 
     // Initially in write mode
     expect(screen.getByRole("textbox")).toBeVisible();
