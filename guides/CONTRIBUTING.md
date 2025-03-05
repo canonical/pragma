@@ -13,6 +13,7 @@ Before you can start contributing, you'll need to set up your local development 
 
 1. **Install Bun:** Install the [bun package manager](https://bun.sh/). This is our preferred package manager for this
    project.
+   Make sure you install Bun version 1.2.0 or later, as earlier versions do not generate text-based lockfiles by default.
 2. **Install Node.js:** Ensure you have [Node.js](https://nodejs.org/en/download/package-manager) version 20 or later
    installed. This may be used by some packages that are not fully using Bun.
 
@@ -20,17 +21,6 @@ Before you can start contributing, you'll need to set up your local development 
 
 1. **Install Dependencies:** Once Node.js and Bun are installed, navigate to the root directory of the monorepo and run
    `bun install`. This will install all necessary dependencies.
-
-#### 1.3 Binary Bun Lockfile Mitigation
-
-Bun's lockfile (`bun.lockb`) is currently binary, which can cause issues with resolving git conflicts when switching
-branches or pulling changes from remote.
-
-You can mitigate this issue locally by configuring your git client to read Bun lockfiles as text:
-`git config diff.lockb.textconv bun && git config diff.lockb.binary true`.
-
-This will no longer be necessary once
-Bun [switches to a text-based lockfile](https://github.com/oven-sh/bun/issues/11863).
 
 ### 2. Package Scripts and Monorepo Management
 

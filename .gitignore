@@ -37,7 +37,8 @@ bower_components/
 vendor/
 # Normally lockfiles would be committed, but we use yarn instead of NPM for locking dependencies
 package-lock.json
-
+## Use text-based bun.lock file instead
+bun.lockb
 # [build] Built files
 /build/
 /parts/
