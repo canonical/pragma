@@ -1,6 +1,6 @@
 /* @canonical/generator-ds 0.8.0-experimental.0 */
 import type React from "react";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 
 import EditingContext from "./Context.js";
 import type { EditElementProps, EditableBlockProps } from "./types.js";
@@ -21,23 +21,27 @@ const EditableBlock = <T extends EditElementProps>({
   tag: TitleTag = "h3",
 }: EditableBlockProps<T>): React.ReactElement => {
   const [isEditing, setIsEditing] = useState<boolean>(false);
-  const [isFocused, setisFocused] = useState<boolean>(false);
+  const isFocusedRef = useRef<boolean>(false);
 
   const toggleEditing = useCallback(() => {
     setIsEditing((editing) => !editing);
   }, []);
 
   const handleBlur = useCallback(() => {
-    setisFocused(false);
+    isFocusedRef.current = false;
+  }, []);
+
+  const handleFocus = useCallback(() => {
+    isFocusedRef.current = true;
   }, []);
 
   const handleKeyUp = useCallback(
     (event: React.KeyboardEvent) => {
-      if ((isFocused && event.key === "Enter") || event.key === " ") {
+      if ((isFocusedRef.current && event.key === "Enter") || event.key === " ") {
         toggleEditing();
       }
     },
-    [isFocused, toggleEditing],
+    [toggleEditing],
   );
 
   const componentCssClassName = "ds editable-block";
@@ -57,8 +61,8 @@ const EditableBlock = <T extends EditElementProps>({
             className={`icon ${isEditing ? "icon-close" : "icon-edit"}`}
             onClick={toggleEditing}
             onKeyUp={handleKeyUp}
-            onKeyDown={handleKeyUp}
             onBlur={handleBlur}
+            onFocus={handleFocus}
             role="button"
             tabIndex={0}
           />
