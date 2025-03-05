@@ -1,81 +1,71 @@
 /* @canonical/generator-ds 0.8.0-experimental.0 */
 import type React from "react";
-import {
-  ReactElement,
-  ReactNode,
-  createContext,
-  useCallback,
-  useContext,
-  useMemo,
-  useState,
-} from "react";
-import type { EditableBlockProps, EditingContextType } from "./types.js";
+import { useCallback, useMemo, useState } from "react";
+
+import EditingContext from "./Context.js";
+import type { EditElementProps, EditableBlockProps } from "./types.js";
+
 import "./styles.css";
 
 /**
- * description of the EditableBlock component
- * @returns {React.ReactElement} - Rendered EditableBlock
+ * Component that renders toggling edit mode block
+ * @returns {React.ReactElement}      - Rendered EditableBlock
  */
 
-const EditingContext = createContext<EditingContextType | undefined>(undefined);
-
-export const useEditing = (): EditingContextType => {
-  const context = useContext(EditingContext);
-  if (!context) {
-    throw new Error("useEditing cannot be used directly.");
-  }
-  return context;
-};
-
-const EditableBlock = ({
+const EditableBlock = <T extends EditElementProps>({
   id,
   EditComponent,
   className: userClassName,
-  styles,
+  style,
   title,
-}: EditableBlockProps): React.ReactElement => {
+}: EditableBlockProps<T>): React.ReactElement => {
   const [isEditing, setIsEditing] = useState<boolean>(false);
+  const [isFocused, setisFocused] = useState<boolean>(false);
 
   const toggleEditing = useCallback(() => {
     setIsEditing((editing) => !editing);
   }, []);
 
+  const handleBlur = useCallback(() => {
+    setisFocused(false);
+  }, []);
+
   const handleKeyUp = useCallback(
     (event: React.KeyboardEvent) => {
-      if (event.key === "Enter" || event.key === " ") {
+      if ((isFocused && event.key === "Enter") || event.key === " ") {
         toggleEditing();
       }
     },
-    [toggleEditing],
+    [isFocused, toggleEditing],
   );
 
-  const componentClassName = useMemo(() => {
-    return ["ds", "editable-block", userClassName].filter(Boolean).join(" ");
-  }, [userClassName]);
+  const componentCssClassName = "ds editable-block";
 
   return (
     <EditingContext.Provider value={{ isEditing, toggleEditing }}>
-      <div className={componentClassName}>
-        <div className="header">
+      <div
+        className={[componentCssClassName, userClassName]
+          .filter(Boolean)
+          .join(" ")}
+        style={style}
+        id={id}
+      >
+        <header>
           <div className="title">{title}</div>
           <div
             className={`icon ${isEditing ? "icon-close" : "icon-edit"}`}
             onClick={toggleEditing}
             onKeyUp={handleKeyUp}
             onKeyDown={handleKeyUp}
+            onBlur={handleBlur}
             role="button"
             tabIndex={0}
           />
-        </div>
+        </header>
         <div className="content">
-          <div className="children">
-            {EditComponent && (
-              <EditComponent
-                isEditing={isEditing}
-                toggleEditing={toggleEditing}
-              />
-            )}
-          </div>
+          {EditComponent && (
+            <EditComponent {...({ isEditing, toggleEditing } as T)} />
+          )}
         </div>
       </div>
     </EditingContext.Provider>

@@ -2,7 +2,8 @@
 
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import EditableBlock, { useEditing } from "./EditableBlock.js";
+import EditableBlock from "./EditableBlock.js";
+import { useEditableBlocks } from "./hooks/useEditableBlock.js";
 
 const SampleEditComponent = () => {
   return <div>Sample</div>;
@@ -65,7 +66,7 @@ describe("EditableBlock component", () => {
 
   it("provides editing context to children", () => {
     const ChildComponent = () => {
-      const { isEditing } = useEditing();
+      const { isEditing } = useEditableBlocks();
       return <div>{isEditing ? "Editing" : "Not Editing"}</div>;
     };
 
