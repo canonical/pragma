@@ -37,7 +37,10 @@ const EditableBlock = <T extends EditElementProps>({
 
   const handleKeyUp = useCallback(
     (event: React.KeyboardEvent) => {
-      if ((isFocusedRef.current && event.key === "Enter") || event.key === " ") {
+      if (
+        (isFocusedRef.current && event.key === "Enter") ||
+        event.key === " "
+      ) {
         toggleEditing();
       }
     },

@@ -9,12 +9,12 @@ const meta = {
   tags: ["autodocs"],
   argTypes: {
     tag: {
-      control: 'text',
-      description: 'The HTML tag to use for the title',
+      control: "text",
+      description: "The HTML tag to use for the title",
     },
   },
   args: {
-    tag: 'div',
+    tag: "div",
   },
 } satisfies Meta<typeof Component>;
 
