@@ -76,7 +76,7 @@
           position,
           isVisible,
           toggleVisibility
-        } = useTooltip({ distance: "var(--arrow-distance)" });
+        } = usePopup({ distance: "var(--arrow-distance)" });
         return (
           <SomeRandomContainer>
             <Button ref={targetRef}/>
@@ -93,7 +93,7 @@
           position,
           isVisible,
           toggleVisibility
-        } = useTooltip({preferredPositions: ["top", "bottom"]});
+        } = usePopup({preferredPositions: ["top", "bottom"]});
         return (
           <div class="parent">
             <input ref={targetRef}/>
@@ -109,7 +109,7 @@
           position,
           isVisible,
           toggleVisibility
-        } = useTooltip(options);
+        } = usePopup(options);
         return (
           <div class="parent">
             <Target ref={targetRef}/>
@@ -129,3 +129,16 @@
   - Another alternative is to provide the parent directly as well, such as TooltipContainer. Here, the hook invocation would be managed by the container, and the message would be automatically instantiated.
      - THis alternative can live together with the first one, the most gracious approach would be an HOC. withTooltip(Target, message, {options})
  */
+
+
+
+
+- Tooltip
+  - usePopup
+    - useWindowFitment
+    - useDelayedOpen
+
+- DatePicker
+  - useDatepicker
+    - useWindowFitment
+    - useDelayedOpen

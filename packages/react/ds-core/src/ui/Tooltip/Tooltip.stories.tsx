@@ -1,20 +1,21 @@
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryFn, StoryObj } from "@storybook/react";
 import { fn } from "@storybook/test";
 
+import { useState } from "react";
 import { Button } from "../Button/index.js";
+import type { PopupDirection } from "../hooks/index.js";
 import Component from "./Tooltip.js";
 
 const meta = {
   title: "Tooltip",
   component: Component,
   // Add padding to all tooltips to allow their entire contents to be visible
-  decorators: [
-    (Story) => (
-      <div style={{ padding: "3rem", backgroundColor: "gray" }}>
-        <Story />
-      </div>
-    ),
-  ],
+  parameters: {
+    layout: "centered",
+    backgrounds: {
+      default: "dark",
+    },
+  },
   tags: ["autodocs"],
 } satisfies Meta<typeof Component>;
 
@@ -23,50 +24,59 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   args: {
-    message: "Hello world",
+    Message: "Hello world",
     children: <Button label="Default" />,
   },
 };
 
-export const TopCenter: Story = {
+export const Top: Story = {
   args: {
-    message: "Hello world",
-    fittedPopupProps: {
-      preferredPositions: ["top"],
-    },
-    children: <Button label="Top Center" />,
+    Message: "Hello world",
+    preferredDirections: ["top"],
+    children: <Button label="Top" />,
   },
 };
 
 export const Left: Story = {
   args: {
-    message: "Hello world",
-    fittedPopupProps: {
-      preferredPositions: ["left"],
-    },
+    Message: "Hello world",
+    preferredDirections: ["left"],
     children: <Button label="Left" />,
   },
 };
 
+export const BestDirection: StoryFn<typeof Component> = () => {
+  const [currentDirection, setCurrentDirection] =
+    useState<PopupDirection>("left");
+  return (
+    <Component
+      Message="Resize to see the tooltip reposition itself."
+      preferredDirections={["right", "top", "bottom", "left"]}
+      onBestPositionChange={(direction) => {
+        setCurrentDirection(direction.positionName);
+      }}
+    >
+      <Button label={currentDirection.toUpperCase()} />
+    </Component>
+  );
+};
+
 export const Right: Story = {
   args: {
-    message: "Hello world",
-    fittedPopupProps: {
-      preferredPositions: ["right"],
-    },
+    Message: "Hello world",
+    preferredDirections: ["right"],
     children: <Button label="Right" />,
   },
 };
 
-export const BottomCenter: Story = {
+export const Bottom: Story = {
   args: {
-    message: "Hello world",
-    fittedPopupProps: {
-      preferredPositions: ["bottom"],
-    },
-    children: <Button label="Bottom Center" />,
+    Message: "Hello world",
+    preferredDirections: ["bottom"],
+    children: <Button label="Bottom" />,
   },
 };
+
 //
 // export const Inline: Story = {
 //   render: () => (

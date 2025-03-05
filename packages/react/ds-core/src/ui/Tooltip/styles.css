@@ -58,9 +58,9 @@
   margin-inline-end: var(--tooltip-margin-left, 0);
   padding-block: var(--tooltip-padding-vertical, 5px);
   padding-inline: var(--tooltip-padding-horizontal, 10px);
-  white-space: pre;
+  white-space: nowrap;
   text-align: left;
-  text-decoration: initial;
+  text-decoration: none;
   position: relative;
   pointer-events: auto;
 }

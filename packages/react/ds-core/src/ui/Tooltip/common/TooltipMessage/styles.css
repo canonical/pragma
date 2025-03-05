@@ -1,7 +1,81 @@
 /* @canonical/generator-ds 0.9.0-experimental.4 */
 
-/*
-.ds.tooltip-message {
+/* component variables
+    --tooltip-color-background: background color of the tooltip
+    --tooltip-color-background-hover: background color of the tooltip on hover
+    --tooltip-color-background-active: background color of the tooltip on active
+    --tooltip-color-text: text color of the tooltip
+    --tooltip-color-border: border color of the tooltip
+    --tooltip-color-border-hover: border color of the tooltip on hover
+    --tooltip-color-border-active: border color of the tooltip on active
 
-}
+    --tooltip-margin-left: left margin of the tooltip
+    --tooltip-margin-bottom: bottom margin of the tooltip
+    --tooltip-padding-vertical: vertical padding of the tooltip
+    --tooltip-padding-horizontal: horizontal padding of the tooltip
+    --tooltip-border-width: border width of the tooltip
+    --tooltip-border-arrow-visible: border of the arrow when visible
+    --tooltip-border-arrow-hidden: border of the arrow when hidden
+    --tooltip-font-size: font size of the tooltip
+    --tooltip-font-weight: font weight of the tooltip
+    --tooltip-line-height: line height of the tooltip
+
+    --tooltip-spacing-arrow-size: size of the arrow
+    --tooltip-spacing-arrow-edge: edge spacing of the arrow
+    --tooltip-spacing-arrow-middle: middle spacing of the arrow
 */
+
+/*
+    Note: The tooltip component's tokens and base styling are not applied at the .ds.tooltip level, rather they are applied at the message level.
+    This is because the tooltip wraps an arbitrary target element passed by the user, which we should generally not style.
+ */
+.ds.tooltip-message {
+  display: inline-block;
+  cursor: pointer;
+  color: var(
+    --intent-color-text,
+    var(--tooltip-color-text, var(--color-text-default))
+  );
+  background-color: var(
+    --intent-color,
+    var(--tooltip-color-background, var(--color-background-default))
+  );
+  border-color: var(
+    --intent-color-border,
+    var(--tooltip-color-border, transparent)
+  );
+  border-style: solid;
+  border-radius: var(--tooltip-border-radius);
+  border-width: var(--tooltip-border-width, 1px);
+  font-size: var(--tooltip-font-size, var(--font-size-small));
+  font-weight: var(--tooltip-font-weight, var(--font-weight-default));
+  line-height: var(--tooltip-line-height, var(--line-height-small));
+  margin-block-end: var(--tooltip-margin-bottom, 0);
+  margin-inline-end: var(--tooltip-margin-left, 0);
+  padding-block: var(--tooltip-padding-vertical, 5px);
+  padding-inline: var(--tooltip-padding-horizontal, 10px);
+  white-space: pre;
+  text-align: left;
+  text-decoration: initial;
+  position: relative;
+  pointer-events: auto;
+}
+
+.ds.tooltip-message {
+  position: absolute;
+  transition: opacity 0.1s ease-in-out, visibility 0.1s ease-in-out;
+}
+
+/* Hidden state */
+.ds.tooltip-message[aria-hidden="true"] {
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+}
+
+/* Visible state */
+.ds.tooltip-message[aria-hidden="false"] {
+  opacity: 1;
+  pointer-events: auto;
+  visibility: visible;
+}

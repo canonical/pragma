@@ -3,7 +3,7 @@ import type React from "react";
 import type { TooltipTriggerProps } from "./types.js";
 import "./styles.css";
 
-const componentCssClassName = "ds tooltip";
+const componentCssClassName = "ds tooltip-trigger";
 
 /**
  * description of the TooltipTrigger component

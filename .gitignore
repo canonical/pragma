@@ -28,6 +28,7 @@ pids
 *.pid
 *.seed
 .*-metadata
+.astro
 
 # [deps] Local dependencies
 .bundle/

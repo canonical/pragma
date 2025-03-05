@@ -27,6 +27,7 @@ const TooltipMessage = ({
       role="tooltip"
       style={{
         ...style,
+        visibility: isOpen ? "visible" : "hidden",
         zIndex,
       }}
     >
