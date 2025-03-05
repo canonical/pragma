@@ -7,15 +7,15 @@ const meta = {
   title: "EditableBlock",
   component: Component,
   tags: ["autodocs"],
-  // if using enum for appearance, you can use the following to generate controls
-  // argTypes: {
-  //   appearance: {
-  //      control: 'select',
-  //      mapping: ButtonAppearance,
-  //      options: Object.keys(ButtonAppearance),
-  //   }
-  // },
-  args: {},
+  argTypes: {
+    tag: {
+      control: 'text',
+      description: 'The HTML tag to use for the title',
+    },
+  },
+  args: {
+    tag: 'div',
+  },
 } satisfies Meta<typeof Component>;
 
 export default meta;

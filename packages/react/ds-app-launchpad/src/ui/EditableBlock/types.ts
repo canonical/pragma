@@ -1,5 +1,6 @@
 /* @canonical/generator-ds 0.8.0-experimental.0 */
 import type React from "react";
+import type { JSX } from "react";
 
 export interface EditingContextType {
   isEditing: boolean;
@@ -18,6 +19,7 @@ export interface EditableBlockProps<T extends EditElementProps> {
   className?: string;
   style?: React.CSSProperties;
   title?: string;
+  tag?: keyof JSX.IntrinsicElements;
 }
 
 export default EditableBlockProps;

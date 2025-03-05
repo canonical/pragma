@@ -18,6 +18,7 @@ const EditableBlock = <T extends EditElementProps>({
   className: userClassName,
   style,
   title,
+  tag: TitleTag = "h3",
 }: EditableBlockProps<T>): React.ReactElement => {
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [isFocused, setisFocused] = useState<boolean>(false);
@@ -51,7 +52,7 @@ const EditableBlock = <T extends EditElementProps>({
         id={id}
       >
         <header>
-          <div className="title">{title}</div>
+          <TitleTag className="title">{title}</TitleTag>
           <div
             className={`icon ${isEditing ? "icon-close" : "icon-edit"}`}
             onClick={toggleEditing}
