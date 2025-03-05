@@ -1,14 +1,14 @@
 /* @canonical/generator-ds 0.9.0-experimental.4 */
-import { type Temporal } from "@js-temporal/polyfill";
+import type { Temporal } from "@js-temporal/polyfill";
 import type React from "react";
 
 export interface RelativeTimeProps {
-  /* A unique identifier for the RelativeTime */
+  /** A unique identifier for the RelativeTime */
   id?: string;
-  /* Additional CSS classes */
+  /** Additional CSS classes */
   className?: string;
 
-  /* Inline styles */
+  /** Inline styles */
   style?: React.CSSProperties;
 
   /**
@@ -17,12 +17,13 @@ export interface RelativeTimeProps {
   time: string | Date | Temporal.Instant;
 
   /**
-   * Whether to update the displayed relative time every second (default is true).
+   * Disable live duration updates (default: false).
    */
-  updateLive?: boolean;
+  disableLiveUpdate?: boolean;
 
   /**
    * custom relative time format (default: local language and narrow style).
+   * @see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/RelativeTimeFormat
    */
   relativeTimeFormat?: Intl.RelativeTimeFormat;
 
@@ -30,4 +31,14 @@ export interface RelativeTimeProps {
    * The threshold in seconds for when to display the relative time as "just now" (default is 10).
    */
   nowThreshold?: number;
+
+  /**
+   * The keyword to use for "now" (default: "now")
+   */
+  nowKeyword?: string;
+
+  /**
+   * The keyword to use when the given time is not a valid. (default: "invalid date")
+   */
+  invalidDateKeyword?: string;
 }

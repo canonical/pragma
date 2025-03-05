@@ -1,13 +1,13 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, act } from "@testing-library/react";
 import { Temporal } from "@js-temporal/polyfill";
+import { act, render, screen } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import RelativeTime from "./RelativeTime.js";
 
 // Mock the Temporal.Now namespace
 vi.mock(
   "@js-temporal/polyfill",
   async (
-    importOriginal: () => Promise<typeof import("@js-temporal/polyfill")>
+    importOriginal: () => Promise<typeof import("@js-temporal/polyfill")>,
   ) => {
     const actual = await importOriginal();
     return {
@@ -20,7 +20,7 @@ vi.mock(
         },
       },
     };
-  }
+  },
 );
 
 describe("RelativeTime", () => {
@@ -56,7 +56,7 @@ describe("RelativeTime", () => {
         className="custom-class"
         style={{ color: "#000" }}
         id="time-id"
-      />
+      />,
     );
 
     const timeElement = screen.getByRole("time");
@@ -90,10 +90,16 @@ describe("RelativeTime", () => {
   it("handles invalid date input", () => {
     // Suppress the expected console error
     const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const invalideDateKeyword = "Invalid date";
 
-    render(<RelativeTime time="invalid-date-string" />);
+    render(
+      <RelativeTime
+        time="invalid-date-string"
+        invalidDateKeyword={invalideDateKeyword}
+      />,
+    );
 
-    expect(screen.getByText("Invalid date")).toBeInTheDocument();
+    expect(screen.getByText(invalideDateKeyword)).toBeInTheDocument();
     expect(consoleSpy).toHaveBeenCalled();
 
     consoleSpy.mockRestore();
@@ -107,7 +113,7 @@ describe("RelativeTime", () => {
     });
 
     render(
-      <RelativeTime time={pastTime} relativeTimeFormat={customFormatter} />
+      <RelativeTime time={pastTime} relativeTimeFormat={customFormatter} />,
     );
 
     expect(screen.getByText("5 minutes ago")).toBeInTheDocument();
@@ -115,14 +121,14 @@ describe("RelativeTime", () => {
 
   it("updates the time when updateLive is true", () => {
     const initialTime = mockNow.add({ seconds: 30 });
-    render(<RelativeTime time={initialTime} updateLive={true} />);
+    render(<RelativeTime time={initialTime} />);
 
     expect(screen.getByText("in 30 seconds")).toBeInTheDocument();
 
     // Advance time by 20 seconds
     act(() => {
       vi.spyOn(Temporal.Now, "instant").mockReturnValue(
-        mockNow.add({ seconds: 20 })
+        mockNow.add({ seconds: 20 }),
       );
       vi.advanceTimersByTime(1000); // Trigger the interval
     });
@@ -132,14 +138,14 @@ describe("RelativeTime", () => {
 
   it("does not update the time when updateLive is false", () => {
     const initialTime = mockNow.add({ seconds: 30 });
-    render(<RelativeTime time={initialTime} updateLive={false} />);
+    render(<RelativeTime time={initialTime} disableLiveUpdate />);
 
     expect(screen.getByText("in 30 seconds")).toBeInTheDocument();
 
     // Advance time by 20 seconds
     act(() => {
       vi.spyOn(Temporal.Now, "instant").mockReturnValue(
-        mockNow.add({ seconds: 20 })
+        mockNow.add({ seconds: 20 }),
       );
       vi.advanceTimersByTime(1000); // Try to trigger the interval
     });
@@ -161,7 +167,7 @@ describe("RelativeTime", () => {
     render(<RelativeTime time={mockNow.add({ minutes: 30 })} />);
     expect(setIntervalSpy).toHaveBeenLastCalledWith(
       expect.any(Function),
-      60000
+      60000,
     );
 
     setIntervalSpy.mockClear();
@@ -170,7 +176,7 @@ describe("RelativeTime", () => {
     render(<RelativeTime time={mockNow.add({ hours: 12 })} />);
     expect(setIntervalSpy).toHaveBeenLastCalledWith(
       expect.any(Function),
-      3600000
+      3600000,
     );
 
     setIntervalSpy.mockClear();
@@ -179,7 +185,7 @@ describe("RelativeTime", () => {
     render(<RelativeTime time={mockNow.add({ hours: 48 })} />);
     expect(setIntervalSpy).toHaveBeenLastCalledWith(
       expect.any(Function),
-      86400000
+      86400000,
     );
   });
 
@@ -187,7 +193,7 @@ describe("RelativeTime", () => {
     const clearIntervalSpy = vi.spyOn(window, "clearInterval");
 
     const { unmount } = render(
-      <RelativeTime time={mockNow.add({ minutes: 5 })} />
+      <RelativeTime time={mockNow.add({ minutes: 5 })} />,
     );
     unmount();
 

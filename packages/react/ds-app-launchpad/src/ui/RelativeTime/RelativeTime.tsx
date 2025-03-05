@@ -1,8 +1,13 @@
 /* @canonical/generator-ds 0.9.0-experimental.4 */
-import { Temporal } from "@js-temporal/polyfill";
+import type { Temporal } from "@js-temporal/polyfill";
 import type React from "react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { RelativeTimeProps } from "./types.js";
+import {
+  humanTimeFormatter,
+  optimalUpdateInterval,
+  parseInstant,
+} from "./utils/index.js";
 
 const componentCssClassName = "ds relative-time";
 
@@ -19,122 +24,79 @@ const RelativeTime = ({
   time,
   relativeTimeFormat,
   nowThreshold = 10,
-  updateLive = true,
+  disableLiveUpdate = false,
+  nowKeyword = "now",
+  invalidDateKeyword = "invalid date",
 }: RelativeTimeProps): React.ReactElement => {
   const [relativeTime, setRelativeTime] = useState("");
-  const intervalRef = useRef<number>(null);
+  const [localeTimeString, setLocaleTimeString] = useState("");
+  const [stringTime, setStringTime] = useState("");
 
-  // Convert the input time to a Temporal.Instant
-  const getInstant = useCallback(() => {
-    if (time instanceof Temporal.Instant) {
-      return time;
-    }
-    if (time instanceof Date) {
-      return Temporal.Instant.fromEpochMilliseconds(time.getTime());
-    }
+  const intervalRef = useRef<number>(null);
+  const instantTime: Temporal.Instant | null = useMemo(() => {
     try {
-      return Temporal.Instant.from(time);
-    } catch (e) {
-      console.error(
-        "Invalid time string (ISO string or Date object expected):",
-        time
-      );
+      return parseInstant(time);
+    } catch (error) {
+      console.error(error);
       return null;
     }
   }, [time]);
 
-  const calculateRelativeTime = useCallback(() => {
-    const instant = getInstant();
-    if (!instant) {
-      return "Invalid date";
+  const updateRelativeTime = useCallback(() => {
+    if (instantTime === null) {
+      setRelativeTime(invalidDateKeyword);
+      setLocaleTimeString("");
+      setStringTime("");
+      return null;
     }
-    const now = Temporal.Now.instant();
-    const deltaSeconds = instant.epochSeconds - now.epochSeconds;
-    const absDeltaSeconds = Math.abs(deltaSeconds);
-
-    if (absDeltaSeconds < nowThreshold) {
-      return "now";
-    }
-
-    const timeZone = Temporal.Now.timeZoneId() || "UTC";
-    const instantZDT = instant.toZonedDateTimeISO(timeZone);
-    const nowZDT = now.toZonedDateTimeISO(timeZone);
-    const diff = instantZDT.since(nowZDT, { largestUnit: "years" });
-
-    const units = [
-      "years",
-      "months",
-      "days",
-      "hours",
-      "minutes",
-      "seconds",
-    ] satisfies Intl.RelativeTimeFormatUnit[];
-
-    let rtfUnit: Intl.RelativeTimeFormatUnit = "seconds";
-    let rtfValue = 0;
-
-    for (const unit of units) {
-      const value = diff[unit];
-      if (value !== 0) {
-        rtfUnit = unit;
-        rtfValue = value;
-        break;
-      }
-    }
-
-    if (rtfValue === 0) {
-      return "now";
-    }
-
-    const formatter =
+    const timeFormatter =
       relativeTimeFormat ||
       new Intl.RelativeTimeFormat(undefined, { numeric: "auto" });
-    return formatter.format(rtfValue, rtfUnit);
-  }, []);
-
-  const getOptimalUpdateInterval = useCallback(() => {
-    const instant = getInstant();
-    // no point in updating if the time is invalid
-    if (!instant) return null;
-
-    const now = Temporal.Now.instant();
-    const duration = instant.since(now).total({ unit: "second" });
-
-    if (duration < 60) return 1000; // 1 second for less than a minute ago
-    if (duration < 3600) return 60000; // 1 minute for less than an hour ago
-    if (duration < 86400) return 3600000; // 1 hour for less than a day ago
-    return 86400000; // 1 day for anything older
-  }, []);
-
-  const updateTime = useCallback(() => {
-    setRelativeTime(calculateRelativeTime());
-  }, [calculateRelativeTime]);
+    setRelativeTime(
+      humanTimeFormatter(instantTime, {
+        nowThreshold,
+        nowKeyword,
+        relativeTimeFormat: timeFormatter,
+      }),
+    );
+    setLocaleTimeString(instantTime.toLocaleString());
+    setStringTime(instantTime.toString());
+  }, [
+    instantTime,
+    relativeTimeFormat,
+    nowThreshold,
+    nowKeyword,
+    invalidDateKeyword,
+  ]);
 
   useEffect(() => {
     // initial calculation
-    updateTime();
+    updateRelativeTime();
 
-    if (!updateLive) return;
+    if (disableLiveUpdate || instantTime === null) return;
 
-    const updateInterval = getOptimalUpdateInterval();
-    if (!updateInterval) return;
+    const updateInterval = optimalUpdateInterval(instantTime);
 
     // SSR check
     if (typeof window === "undefined") return;
 
-    intervalRef.current = window.setInterval(updateTime, updateInterval);
+    intervalRef.current = window.setInterval(
+      updateRelativeTime,
+      updateInterval,
+    );
+
     return () => {
       if (intervalRef.current) window.clearInterval(intervalRef.current);
     };
-  }, [updateLive, getOptimalUpdateInterval, updateTime]);
+  }, [instantTime, disableLiveUpdate, updateRelativeTime]);
 
   return (
     <time
       id={id}
       style={style}
       className={[componentCssClassName, className].filter(Boolean).join(" ")}
-      title={time.toLocaleString()}
-      dateTime={time.toString()}
+      title={localeTimeString}
+      dateTime={stringTime}
     >
       {relativeTime}
     </time>
