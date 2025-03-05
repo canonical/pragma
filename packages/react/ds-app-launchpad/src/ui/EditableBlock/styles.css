@@ -22,7 +22,7 @@
     }
 
     > .icon-close {
-      background-image: var(----editable-block-header-icon-close-url);
+      background-image: var(--editable-block-header-icon-close-url);
     }
 
     > .title {
