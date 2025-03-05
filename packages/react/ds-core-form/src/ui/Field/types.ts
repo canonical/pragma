@@ -24,7 +24,7 @@ export enum InputType {
   // Color = "color",
 }
 
-export type UnionInputProps = CheckboxProps | TextProps | TextareaProps;
+export type InputProps = CheckboxProps | TextProps | TextareaProps;
 
 export type FieldProps = {
   /**
@@ -36,4 +36,4 @@ export type FieldProps = {
    * Custom component to render
    **/
   CustomComponent?: React.ElementType;
-} & UnionInputProps;
+} & InputProps;
