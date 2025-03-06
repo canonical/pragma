@@ -2,19 +2,19 @@
 
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import ToolbarGroup from "./ToolbarGroup.js";
+import Component from "./ToolbarGroup.js";
 
 describe("ToolbarGroup component", () => {
   it("renders", () => {
-    render(<ToolbarGroup label="test">ToolbarGroup</ToolbarGroup>);
+    render(<Component label="test">ToolbarGroup</Component>);
     expect(screen.getByText("ToolbarGroup")).toBeInTheDocument();
   });
 
   it("applies className", () => {
     render(
-      <ToolbarGroup label="test" className={"test-class"}>
+      <Component label="test" className={"test-class"}>
         ToolbarGroup
-      </ToolbarGroup>,
+      </Component>,
     );
     expect(screen.getByText("ToolbarGroup")).toHaveClass("test-class");
   });

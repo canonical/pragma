@@ -3,7 +3,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import type { ComponentProps } from "react";
 import type { Tooltip as T } from "react-tooltip";
 import { describe, expect, it, vi } from "vitest";
-import ToolbarButton from "./ToolbarButton.js";
+import Component from "./ToolbarButton.js";
 
 // Mock the react-tooltip module
 vi.mock("react-tooltip", () => ({
@@ -15,9 +15,9 @@ vi.mock("react-tooltip", () => ({
 describe("ToolbarButton", () => {
   it("renders correctly with basic props", () => {
     render(
-      <ToolbarButton label="Bold">
+      <Component label="Bold">
         <svg data-testid="icon" />
-      </ToolbarButton>,
+      </Component>,
     );
 
     const button = screen.getByRole("button");
@@ -28,13 +28,13 @@ describe("ToolbarButton", () => {
 
   it("applies custom className and style", () => {
     render(
-      <ToolbarButton
+      <Component
         label="Italic"
         className="custom-class"
         style={{ width: "50px" }}
       >
         <span>I</span>
-      </ToolbarButton>,
+      </Component>,
     );
 
     const button = screen.getByRole("button");
@@ -45,7 +45,7 @@ describe("ToolbarButton", () => {
   });
 
   it("sets up tooltip with label only", () => {
-    render(<ToolbarButton label="Bold" />);
+    render(<Component label="Bold" />);
 
     const button = screen.getByRole("button");
     const tooltipId = button.getAttribute("data-tooltip-id");
@@ -60,16 +60,14 @@ describe("ToolbarButton", () => {
   });
 
   it("sets up tooltip with label and shortcut", () => {
-    render(<ToolbarButton label="Bold" shortcut="Ctrl+B" />);
+    render(<Component label="Bold" shortcut="Ctrl+B" />);
 
     const button = screen.getByRole("button");
     expect(button).toHaveAttribute("data-tooltip-content", "Bold (Ctrl+B)");
   });
 
   it("passes extra props to the button", () => {
-    render(
-      <ToolbarButton label="Bold" disabled={true} data-test="test-value" />,
-    );
+    render(<Component label="Bold" disabled={true} data-test="test-value" />);
 
     const button = screen.getByRole("button");
     expect(button).toBeDisabled();
@@ -80,9 +78,9 @@ describe("ToolbarButton", () => {
     // Create a toolbar structure with multiple buttons
     const { container } = render(
       <div role="toolbar">
-        <ToolbarButton label="Button 1" />
-        <ToolbarButton label="Button 2" data-testid="middle-button" />
-        <ToolbarButton label="Button 3" />
+        <Component label="Button 1" />
+        <Component label="Button 2" data-testid="middle-button" />
+        <Component label="Button 3" />
       </div>,
     );
 
@@ -102,9 +100,9 @@ describe("ToolbarButton", () => {
     // Create a toolbar structure with multiple buttons
     const { container } = render(
       <div role="toolbar">
-        <ToolbarButton label="Button 1" />
-        <ToolbarButton label="Button 2" data-testid="middle-button" />
-        <ToolbarButton label="Button 3" />
+        <Component label="Button 1" />
+        <Component label="Button 2" data-testid="middle-button" />
+        <Component label="Button 3" />
       </div>,
     );
 
@@ -122,7 +120,7 @@ describe("ToolbarButton", () => {
 
   it("does nothing when arrow keys are pressed but no siblings exist", () => {
     // Render a single button (no toolbar)
-    render(<ToolbarButton label="Lonely Button" data-testid="lonely-button" />);
+    render(<Component label="Lonely Button" data-testid="lonely-button" />);
 
     const button = screen.getByTestId("lonely-button");
     button.focus();

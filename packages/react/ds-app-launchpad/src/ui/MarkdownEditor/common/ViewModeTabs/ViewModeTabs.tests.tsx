@@ -2,7 +2,7 @@
 
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import ViewModeTabs from "./ViewModeTabs.js";
+import Component from "./ViewModeTabs.js";
 
 describe("ViewModeTabs", () => {
   const mockOnEditModeChange = vi.fn();
@@ -13,7 +13,7 @@ describe("ViewModeTabs", () => {
 
   it("renders correctly with default props", () => {
     render(
-      <ViewModeTabs editMode="write" onEditModeChange={mockOnEditModeChange} />,
+      <Component editMode="write" onEditModeChange={mockOnEditModeChange} />,
     );
 
     // Should render both tabs
@@ -31,7 +31,7 @@ describe("ViewModeTabs", () => {
 
   it("renders with custom className and style", () => {
     render(
-      <ViewModeTabs
+      <Component
         editMode="write"
         onEditModeChange={mockOnEditModeChange}
         className="custom-class"
@@ -48,7 +48,7 @@ describe("ViewModeTabs", () => {
 
   it("changes tab when clicked", async () => {
     render(
-      <ViewModeTabs editMode="write" onEditModeChange={mockOnEditModeChange} />,
+      <Component editMode="write" onEditModeChange={mockOnEditModeChange} />,
     );
 
     const tabs = screen.getAllByRole("tab");
@@ -61,7 +61,7 @@ describe("ViewModeTabs", () => {
 
   it("handles keyboard navigation with arrow keys", async () => {
     const { rerender } = render(
-      <ViewModeTabs editMode="write" onEditModeChange={mockOnEditModeChange} />,
+      <Component editMode="write" onEditModeChange={mockOnEditModeChange} />,
     );
 
     const tabs = screen.getAllByRole("tab");
@@ -78,10 +78,7 @@ describe("ViewModeTabs", () => {
 
     // Update component with new editMode
     rerender(
-      <ViewModeTabs
-        editMode="preview"
-        onEditModeChange={mockOnEditModeChange}
-      />,
+      <Component editMode="preview" onEditModeChange={mockOnEditModeChange} />,
     );
 
     // Navigate from Preview to Write with left arrow
@@ -94,7 +91,7 @@ describe("ViewModeTabs", () => {
 
   it("selects tab with Enter key", async () => {
     render(
-      <ViewModeTabs editMode="write" onEditModeChange={mockOnEditModeChange} />,
+      <Component editMode="write" onEditModeChange={mockOnEditModeChange} />,
     );
 
     const tabs = screen.getAllByRole("tab");
@@ -107,7 +104,7 @@ describe("ViewModeTabs", () => {
 
   it("selects tab with Space key", async () => {
     render(
-      <ViewModeTabs editMode="write" onEditModeChange={mockOnEditModeChange} />,
+      <Component editMode="write" onEditModeChange={mockOnEditModeChange} />,
     );
 
     const tabs = screen.getAllByRole("tab");
@@ -120,7 +117,7 @@ describe("ViewModeTabs", () => {
 
   it("sets correct tabIndex values", () => {
     const { rerender } = render(
-      <ViewModeTabs editMode="write" onEditModeChange={mockOnEditModeChange} />,
+      <Component editMode="write" onEditModeChange={mockOnEditModeChange} />,
     );
 
     const tabs = screen.getAllByRole("tab");
@@ -129,10 +126,7 @@ describe("ViewModeTabs", () => {
 
     // Re-render with different editMode
     rerender(
-      <ViewModeTabs
-        editMode="preview"
-        onEditModeChange={mockOnEditModeChange}
-      />,
+      <Component editMode="preview" onEditModeChange={mockOnEditModeChange} />,
     );
 
     const updatedTabs = screen.getAllByRole("tab");

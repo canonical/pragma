@@ -26,24 +26,22 @@ const componentCssClassName = "ds markdown-editor";
 /**
  * A dual-mode Markdown editor for writing and previewing Markdown content.
  */
-const MarkdownEditor = (
-  {
-    id,
-    className,
-    style,
-    textareaStyle,
-    previewStyle,
-    defaultValue,
-    placeholder,
-    hideToolbar = false,
-    hidePreview = false,
-    editMode: controlledEditMode,
-    onEditModeChange: controlledOnEditModeChange,
-    emptyInputKeyword = "No content",
-    ...textareaProps
-  }: MarkdownEditorProps,
-  ref: React.Ref<HTMLTextAreaElement | null>,
-): React.ReactElement => {
+const MarkdownEditor = ({
+  ref,
+  id,
+  className,
+  style,
+  textareaStyle,
+  previewStyle,
+  defaultValue,
+  placeholder,
+  hideToolbar = false,
+  hidePreview = false,
+  editMode: controlledEditMode,
+  onEditModeChange: controlledOnEditModeChange,
+  emptyInputMessage = "No content",
+  ...textareaProps
+}: MarkdownEditorProps): React.ReactElement => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [internalEditMode, setInternalEditMode] = useState<EditMode>("write");
   const [shouldFocusTextarea, setShouldFocusTextarea] = useState(false);
@@ -179,13 +177,11 @@ const MarkdownEditor = (
       />
       {editMode === "preview" && (
         <div className="editor-content" style={previewStyle}>
-          {textareaRef.current?.value || defaultValue || "No content"}
+          {textareaRef.current?.value || defaultValue || emptyInputMessage}
         </div>
       )}
     </div>
   );
 };
 
-const ForwardedMarkdownEditor = forwardRef(MarkdownEditor);
-
-export default ForwardedMarkdownEditor;
+export default MarkdownEditor;

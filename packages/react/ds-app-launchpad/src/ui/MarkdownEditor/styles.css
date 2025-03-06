@@ -1,5 +1,4 @@
 /* @canonical/generator-ds 0.9.0-experimental.4 */
-
 .ds.markdown-editor {
   --markdown-editor-editor-background-color: white;
   --markdown-editor-editor-color: black;
@@ -28,7 +27,6 @@
     justify-content: space-between;
     align-items: center;
     flex-wrap: nowrap;
-    border-bottom: 1px solid #ebeaeb;
     margin-bottom: -1px;
   }
 
@@ -44,8 +42,8 @@
         list-style: none;
       }
       & input[type="checkbox"] {
-        margin-inline-start: -20px;
-        margin-right: 5px;
+        margin-inline-start: -1.25em;
+        margin-right: 0.313em;
       }
     }
   }
@@ -56,6 +54,7 @@
   }
 
   &:has(textarea:focus) {
+    outline: 1px solid Highlight;
     outline: 1px solid -webkit-focus-ring-color;
   }
 }

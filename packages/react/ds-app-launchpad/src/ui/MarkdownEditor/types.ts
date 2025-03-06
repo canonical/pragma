@@ -4,6 +4,7 @@ import type React from "react";
 export type EditMode = "write" | "preview";
 
 export type MarkdownEditorProps = {
+  ref?: React.Ref<HTMLTextAreaElement>;
   /** A unique identifier for the MarkdownEditor */
   id?: string;
   /** Additional CSS classes */
@@ -25,7 +26,7 @@ export type MarkdownEditorProps = {
   /** Callback for edit mode change, needed if editMode is controlled */
   onEditModeChange?: (newEditMode: EditMode) => void;
   /** Empty input keyword in preview mode. (default: "No content") */
-  emptyInputKeyword?: string;
+  emptyInputMessage?: string;
   /** Textarea styles */
   textareaStyle?: React.CSSProperties;
   /** Preview pane styles */
