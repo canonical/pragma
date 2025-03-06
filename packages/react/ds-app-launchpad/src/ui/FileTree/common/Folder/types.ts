@@ -2,18 +2,18 @@
 import type React from "react";
 
 export interface FolderProps {
-  /* A unique identifier for the Folder */
+  /** A unique identifier for the Folder */
   id?: string;
-  /* Additional CSS classes */
+  /** Additional CSS classes */
   className?: string;
-  /* Child elements */
+  /** Child elements */
   children?: React.ReactNode;
-  /* Inline styles */
+  /** Inline styles */
   style?: React.CSSProperties;
 
-  /* Folder name */
+  /** Folder name */
   name: string;
 
-  /* Whether the folder is expanded by default */
+  /** Whether the folder is expanded by default */
   defaultOpen?: boolean;
 }

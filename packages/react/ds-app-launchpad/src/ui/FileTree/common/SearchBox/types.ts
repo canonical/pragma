@@ -2,12 +2,12 @@
 import type React from "react";
 
 export interface SearchBoxProps {
-  /* A unique identifier for the SearchBox */
+  /** A unique identifier for the SearchBox */
   id?: string;
-  /* Additional CSS classes */
+  /** Additional CSS classes */
   className?: string;
-  /* Child elements */
+  /** Child elements */
   children?: React.ReactNode;
-  /* Inline styles */
+  /** Inline styles */
   style?: React.CSSProperties;
 }

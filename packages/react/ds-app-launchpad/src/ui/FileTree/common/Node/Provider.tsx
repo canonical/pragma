@@ -183,7 +183,7 @@ const Provider = ({
         <li
           id={id}
           style={style}
-          // used by the provided to handle accessibility
+          // used by the provider to handle accessibility
           {...{
             [dataPathHash]: hashNodeName(path),
           }}
@@ -192,13 +192,13 @@ const Provider = ({
             componentCssClassName,
             className,
             nodeOptions.nodeType,
-            isExpanded ? expandedCssClassName : "",
-            nodeOptions.nodeType === "folder" && expandable
-              ? expandableCssClassName
-              : "",
-            nodeOptions.nodeType === "file" && onSelectFile !== undefined
-              ? selectableCssClassName
-              : "",
+            isExpanded && expandedCssClassName,
+            nodeOptions.nodeType === "folder" &&
+              expandable &&
+              expandableCssClassName,
+            nodeOptions.nodeType === "file" &&
+              onSelectFile !== undefined &&
+              selectableCssClassName,
           ]
             .filter(Boolean)
             .join(" ")}
@@ -216,7 +216,7 @@ const Provider = ({
             className={[
               "icon",
               nodeOptions.nodeType,
-              isExpanded ? expandedCssClassName : "",
+              isExpanded && expandedCssClassName,
             ]
               .filter(Boolean)
               .join(" ")}

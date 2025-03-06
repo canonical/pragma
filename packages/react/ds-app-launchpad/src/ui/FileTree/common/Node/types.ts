@@ -18,16 +18,16 @@ export type FolderOptions = {
 };
 
 export type ProviderProps = {
-  /* A unique identifier for the Folder */
+  /** A unique identifier for the Folder */
   id?: string;
-  /* Additional CSS classes */
+  /** Additional CSS classes */
   className?: string;
-  /* Child elements */
+  /** Child elements */
   children?: React.ReactNode;
-  /* Inline styles */
+  /** Inline styles */
   style?: React.CSSProperties;
   name: string;
 
-  /* Shows a marker to the right of the node */
+  /** Shows a marker to the right of the node */
   marker?: React.ReactNode;
 } & (FileOptions | FolderOptions);

@@ -66,8 +66,11 @@ export type ManagedContextOptions = {
 export type ContextOptions = UserContextOptions & ManagedContextOptions;
 
 export type ProviderOptions = {
+  /** A unique identifier for the SearchBox */
   id?: string;
+  /** Additional CSS classes */
   className?: string;
+  /** Inline styles */
   style?: React.CSSProperties;
   /**
    * Consider using `FileTree.Folder` and `FileTree.File` components to build the file tree.

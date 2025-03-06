@@ -2,12 +2,12 @@
 import type React from "react";
 
 export interface IndentationBlockProps {
-  /* A unique identifier for the IndentationBlock */
+  /** A unique identifier for the IndentationBlock */
   id?: string;
-  /* Additional CSS classes */
+  /** Additional CSS classes */
   className?: string;
-  /* Inline styles */
+  /** Inline styles */
   style?: React.CSSProperties;
-  /* Depth of the indentation */
+  /** Depth of the indentation */
   depth: number;
 }

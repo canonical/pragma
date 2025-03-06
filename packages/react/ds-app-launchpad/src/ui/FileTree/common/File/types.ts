@@ -2,13 +2,13 @@
 import type React from "react";
 
 export interface FileProps {
-  /* A unique identifier for the File */
+  /** A unique identifier for the File */
   id?: string;
-  /* Additional CSS classes */
+  /** Additional CSS classes */
   className?: string;
-  /* Inline styles */
+  /** Inline styles */
   style?: React.CSSProperties;
-  /* File name */
+  /** File name */
   name: string;
 
   /**

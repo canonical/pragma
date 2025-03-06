@@ -73,7 +73,7 @@ const storyOptions = {
   },
 };
 
-const marker = (color: string) => (
+const Marker = ({ color }: { color: string }) => (
   <div
     style={{
       height: "10px",
@@ -108,9 +108,9 @@ export const Default: StoryFn<ProviderOptions> = (args) => {
         <FileTree.File name="logo.png" />
         <FileTree.File name="styles.css" />
         <FileTree.Folder name="images" defaultOpen>
-          <FileTree.File name="image1.png" marker={marker("orange")} />
-          <FileTree.File name="image2.png" marker={marker("green")} />
-          <FileTree.File name="image3.png" marker={marker("orange")} />
+          <FileTree.File name="image1.png" marker={<Marker color="orange" />} />
+          <FileTree.File name="image2.png" marker={<Marker color="green" />} />
+          <FileTree.File name="image3.png" marker={<Marker color="orange" />} />
           <FileTree.File name="image4.png" />
         </FileTree.Folder>
       </FileTree.Folder>
