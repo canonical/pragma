@@ -34,14 +34,18 @@ const SampleChild = ({
   isEditing,
   toggleEditing,
 }: SampleChildProps): React.ReactElement => {
-  return <div>{isEditing ? "Edit mode." : "View mode."}</div>;
+  return (
+    <button type="button" onClick={toggleEditing}>
+      Toggle {isEditing ? "edit mode" : "view mode"}
+    </button>
+  );
 };
 
 export const Default: Story = {
   args: {
     title: "Sample Title",
-    EditComponent: ({ isEditing }: { isEditing: boolean }) => (
-      <SampleChild isEditing={isEditing} />
+    EditComponent: ({ isEditing, toggleEditing }: SampleChildProps) => (
+      <SampleChild isEditing={isEditing} toggleEditing={toggleEditing} />
     ),
   },
 };
