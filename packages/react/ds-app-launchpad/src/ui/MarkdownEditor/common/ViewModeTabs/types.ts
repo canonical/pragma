@@ -3,11 +3,12 @@ import type React from "react";
 import type { EditMode } from "../../types.js";
 
 export interface ViewModeTabsProps {
-  /* Additional CSS classes */
+  /** Additional CSS classes */
   className?: string;
-  /* Inline styles */
+  /** Inline styles */
   style?: React.CSSProperties;
-
+  /** The current edit mode */
   editMode: EditMode;
+  /** Callback for edit mode change */
   onEditModeChange: (mode: EditMode, eventType: "click" | "keydown") => void;
 }

@@ -18,7 +18,7 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {
   args: {
     placeholder: "Add a comment here...",
-    style: { minHeight: 150 },
+    rows: 5,
   },
 };
 

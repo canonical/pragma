@@ -2,14 +2,14 @@
 import type React from "react";
 
 export interface ToolbarGroupProps {
-  /* A unique identifier for the ToolbarGroup */
+  /** A unique identifier for the ToolbarGroup */
   id?: string;
-  /* Additional CSS classes */
+  /** Additional CSS classes */
   className?: string;
-  /* Child elements */
+  /** Child elements */
   children?: React.ReactNode;
-  /* Inline styles */
+  /** Inline styles */
   style?: React.CSSProperties;
-  /* Toolbar group label */
+  /** Toolbar group label */
   label: string;
 }

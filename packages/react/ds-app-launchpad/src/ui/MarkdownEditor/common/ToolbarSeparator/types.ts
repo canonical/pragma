@@ -2,10 +2,10 @@
 import type React from "react";
 
 export interface ToolbarSeparatorProps {
-  /* A unique identifier for the ToolbarSeparator */
+  /** A unique identifier for the ToolbarSeparator */
   id?: string;
-  /* Additional CSS classes */
+  /** Additional CSS classes */
   className?: string;
-  /* Inline styles */
+  /** Inline styles */
   style?: React.CSSProperties;
 }

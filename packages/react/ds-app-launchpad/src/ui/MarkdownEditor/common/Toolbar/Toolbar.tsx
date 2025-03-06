@@ -29,7 +29,7 @@ const Toolbar = ({
     }
 
     const firstNode = buttons[0];
-    firstNode.setAttribute("tabindex", "0");
+    if (firstNode) firstNode.setAttribute("tabindex", "0");
   }, [children]);
 
   return (
