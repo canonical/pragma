@@ -4,8 +4,8 @@ import type React from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { RelativeTimeProps } from "./types.js";
 import {
-  humanTimeFormatter,
-  optimalUpdateInterval,
+  formatHumanTime,
+  getOptimalUpdateInterval,
   parseInstant,
 } from "./utils/index.js";
 
@@ -53,7 +53,7 @@ const RelativeTime = ({
       relativeTimeFormat ||
       new Intl.RelativeTimeFormat(undefined, { numeric: "auto" });
     setRelativeTime(
-      humanTimeFormatter(instantTime, {
+      formatHumanTime(instantTime, {
         nowThreshold,
         nowKeyword,
         relativeTimeFormat: timeFormatter,
@@ -75,7 +75,7 @@ const RelativeTime = ({
 
     if (disableLiveUpdate || instantTime === null) return;
 
-    const updateInterval = optimalUpdateInterval(instantTime);
+    const updateInterval = getOptimalUpdateInterval(instantTime);
 
     // SSR check
     if (typeof window === "undefined") return;

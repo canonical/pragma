@@ -20,7 +20,7 @@ type FormatterOptions = {
  * @param options The options to use for formatting.
  * @returns A human-readable relative time string
  */
-function humanTimeFormatter(
+function formatHumanTime(
   instant: Temporal.Instant,
   options: FormatterOptions,
 ): string {
@@ -65,4 +65,4 @@ function humanTimeFormatter(
   return options.relativeTimeFormat.format(rtfValue, rtfUnit);
 }
 
-export default humanTimeFormatter;
+export default formatHumanTime;
