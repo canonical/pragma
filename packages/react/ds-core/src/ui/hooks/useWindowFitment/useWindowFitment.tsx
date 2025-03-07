@@ -1,20 +1,25 @@
 import { debounce } from "@canonical/utils";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  type CSSProperties,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import type {
   BestPosition,
   PopupDirection,
   RelativePosition,
   UseWindowFitmentProps,
   UseWindowFitmentResult,
-  WindowFitmentStyles,
 } from "./types.js";
 
 function useWindowFitment({
   preferredDirections = ["top", "bottom", "left", "right"],
-  distance = "10px",
+  distance = 0,
   gutter = "0px",
-  maxWidth = "300px",
-  isVisible,
+  maxWidth = "350px",
   resizeDelay = 150,
   scrollDelay = 150,
   onBestPositionChange,
@@ -28,7 +33,6 @@ function useWindowFitment({
    * @param direction The side of the target element to position the popup on.
    * @param targetRect The bounding client rect of the target element.
    * @param popupRect The bounding client rect of the popup element.
-   * @param offset The desired distance between the target and the popup.
    * @returns The calculated absolute position of the popup.
    */
   const calculateRelativePosition = useCallback(
@@ -36,7 +40,6 @@ function useWindowFitment({
       direction: PopupDirection,
       targetRect: DOMRect,
       popupRect: DOMRect,
-      offset: number,
     ): RelativePosition => {
       let left = 0;
       let top = 0;
@@ -48,20 +51,20 @@ function useWindowFitment({
           left = (targetRect.width - popupRect.width) / 2;
           break;
         case "right":
-          left = targetRect.width + offset;
+          left = targetRect.width + distance;
           break;
         case "left":
-          left = -(popupRect.width + offset);
+          left = -(popupRect.width + distance);
           break;
       }
 
       // vertical
       switch (direction) {
         case "top":
-          top = -(popupRect.height + offset);
+          top = -(popupRect.height + distance);
           break;
         case "bottom":
-          top = targetRect.height + offset;
+          top = targetRect.height + distance;
           break;
         case "right":
         case "left":
@@ -71,7 +74,7 @@ function useWindowFitment({
 
       return { left, top };
     },
-    [],
+    [distance],
   );
 
   /**
@@ -131,15 +134,10 @@ function useWindowFitment({
    * Find the best position for the popup based on the preferred directions.
    * @param targetRect The bounding client rect of the target element.
    * @param popupRect The bounding client rect of the popup element.
-   * @param distanceVal The desired distance between the target and the popup.
    * @returns The best position for the popup.
    */
   const findBestPosition = useCallback(
-    (
-      targetRect: DOMRect,
-      popupRect: DOMRect,
-      distanceVal: number,
-    ): BestPosition => {
+    (targetRect: DOMRect, popupRect: DOMRect): BestPosition => {
       let fallbackPosition: BestPosition | undefined = undefined;
 
       if (!preferredDirections.length) {
@@ -151,7 +149,6 @@ function useWindowFitment({
           positionName,
           targetRect,
           popupRect,
-          distanceVal,
         );
         const bestPositionForName: BestPosition = {
           positionName: positionName,
@@ -163,12 +160,12 @@ function useWindowFitment({
         fallbackPosition ||= bestPositionForName;
 
         // If this position fits, use it.
-        if (bestPositionForName.fits) {
-          console.log("fits", bestPositionForName);
-          return bestPositionForName;
-        } else {
-          console.log("does not fit", bestPositionForName);
-        }
+        // if (bestPositionForName.fits) {
+        //   console.log("fits", bestPositionForName);
+        //   return bestPositionForName;
+        // } else {
+        //   console.log("does not fit", bestPositionForName);
+        // }
       }
 
       console.log("fallback", fallbackPosition);
@@ -185,14 +182,8 @@ function useWindowFitment({
     const targetRect = targetRef.current.getBoundingClientRect();
     const popupRect = popupRef.current.getBoundingClientRect();
 
-    const distanceVal = Number.parseInt(distance, 10) || 0;
-
     setBestPosition((prevBestPosition) => {
-      const newBestPosition = findBestPosition(
-        targetRect,
-        popupRect,
-        distanceVal,
-      );
+      const newBestPosition = findBestPosition(targetRect, popupRect);
       if (prevBestPosition?.positionName !== newBestPosition.positionName) {
         if (onBestPositionChange) {
           onBestPositionChange(newBestPosition);
@@ -200,7 +191,7 @@ function useWindowFitment({
         return newBestPosition;
       }
     });
-  }, [distance, findBestPosition]);
+  }, [findBestPosition, onBestPositionChange]);
 
   // Recalculate position
   useEffect(() => {
@@ -224,9 +215,9 @@ function useWindowFitment({
       window.removeEventListener("resize", handleResize);
       window.removeEventListener("scroll", handleScroll);
     };
-  }, [isVisible, calculatePosition, resizeDelay, scrollDelay, bestPosition]);
+  }, [calculatePosition, resizeDelay, scrollDelay, bestPosition]);
 
-  const popupPositionStyle: WindowFitmentStyles = useMemo(
+  const popupPositionStyle: CSSProperties = useMemo(
     () => ({
       maxWidth: maxWidth,
       position: "absolute",

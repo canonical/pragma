@@ -10,7 +10,7 @@ import { useWindowFitment } from "../useWindowFitment/index.js";
 import type { UsePopupProps, UsePopupResult } from "./types.js";
 
 const usePopup = ({
-  isOpenOverride,
+  isOpen: isOpenProp,
   deactivateDelay,
   activateDelay,
   ...props
@@ -23,14 +23,14 @@ const usePopup = ({
     deactivate: close,
     activate: open,
   } = useDelayedToggle({ activateDelay, deactivateDelay });
+
   // Apply open override
-  const isOpen =
-    typeof isOpenOverride === "boolean" ? isOpenOverride : isOpenHook;
+  const isOpen = typeof isOpenProp === "boolean" ? isOpenProp : isOpenHook;
 
   const { targetRef, popupRef, bestPosition, popupPositionStyle } =
     useWindowFitment({
       ...props,
-      isVisible: isOpen,
+      isOpen: isOpen,
     });
 
   const handleTriggerFocus: FocusEventHandler = useCallback(

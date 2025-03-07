@@ -2,9 +2,9 @@
 
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import Component from "./TooltipMessage.js";
+import Component from "./TooltipArea.js";
 
-describe("TooltipMessage component", () => {
+describe("TooltipArea component", () => {
   // it("renders", () => {
   //   render(<Component>TooltipMessage</Component>);
   //   expect(screen.getByText("TooltipMessage")).toBeInTheDocument();

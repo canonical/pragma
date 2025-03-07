@@ -1,2 +1,1 @@
-export * from "./TooltipMessage/index.js";
-export * from "./TooltipTrigger/index.js";
+export * from "./TooltipArea/index.js";

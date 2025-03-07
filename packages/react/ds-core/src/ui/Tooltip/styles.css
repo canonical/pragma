@@ -13,29 +13,28 @@
     --tooltip-margin-bottom: bottom margin of the tooltip
     --tooltip-padding-vertical: vertical padding of the tooltip
     --tooltip-padding-horizontal: horizontal padding of the tooltip
-    --tooltip-border-width: border width of the tooltip
-    --tooltip-border-arrow-visible: border of the arrow when visible
-    --tooltip-border-arrow-hidden: border of the arrow when hidden
     --tooltip-font-size: font size of the tooltip
     --tooltip-font-weight: font weight of the tooltip
     --tooltip-line-height: line height of the tooltip
-
-    --tooltip-spacing-arrow-size: size of the arrow
-    --tooltip-spacing-arrow-edge: edge spacing of the arrow
-    --tooltip-spacing-arrow-middle: middle spacing of the arrow
 */
 
 .ds.tooltip {
-  display: contents;
+  display: inline-block;
+  position: absolute;
+  /*
+          Arrow size is overridden in `TooltipArea` component.
+          Trying to do this in the tokens file causes the calculations derived from `---tooltip-spacing-arrow-size` to not be updated.
+      */
+  --tooltip-spacing-arrow-size: var(--spacing-horizontal-small);
+  --tooltip-spacing-arrow-middle: calc(50% - var(--tooltip-spacing-arrow-size));
+  --tooltip-spacing-arrow-edge: calc(-2 * var(--tooltip-spacing-arrow-size));
+  --tooltip-border-arrow-visible: var(--tooltip-spacing-arrow-size) solid
+    var(--tooltip-color-background);
+  --tooltip-border-arrow-hidden: var(--tooltip-spacing-arrow-size) solid
+    transparent;
 }
 
-/*
-    Note: The tooltip component's tokens and base styling are not applied at the .ds.tooltip level, rather they are applied at the message level.
-    This is because the tooltip wraps an arbitrary target element passed by the user, which we should generally not style.
- */
-.ds.tooltip-message {
-  display: inline-block;
-  cursor: pointer;
+.ds.tooltip__message {
   color: var(
     --intent-color-text,
     var(--tooltip-color-text, var(--color-text-default))
@@ -58,49 +57,31 @@
   margin-inline-end: var(--tooltip-margin-left, 0);
   padding-block: var(--tooltip-padding-vertical, 5px);
   padding-inline: var(--tooltip-padding-horizontal, 10px);
-  white-space: nowrap;
+  white-space: pre;
   text-align: left;
-  text-decoration: none;
-  position: relative;
+  text-decoration: initial;
   pointer-events: auto;
-}
-
-.ds.tooltip-message,
-.ds.tooltip-target > *:first-child::before {
-  position: absolute;
+  position: relative;
   transition: opacity 0.1s ease-in-out, visibility 0.1s ease-in-out;
 }
 
 /* Hidden state */
-.ds.tooltip-message[aria-hidden="true"],
-.ds.tooltip-target[data-ds-tooltip-targeted="false"] > *:first-child::before {
+.ds.tooltip[aria-hidden="true"] {
   opacity: 0;
   pointer-events: none;
   visibility: hidden;
 }
 
 /* Visible state */
-.ds.tooltip-message[aria-hidden="false"],
-.ds.tooltip-target[data-ds-tooltip-targeted="true"] > *:first-child::before {
+.ds.tooltip[aria-hidden="false"] {
   opacity: 1;
   pointer-events: auto;
   visibility: visible;
 }
 
-.ds.tooltip-target {
-  display: inline-block;
-  position: relative;
-}
+/* triangle */
 
-/*
-    The child of the tooltip target element is passed by the user.
-    It must have no margin in order for the tooltip message to be positioned properly.
-*/
-.ds.tooltip-target > *:first-child {
-  margin: 0;
-}
-
-.ds.tooltip-target > *:first-child::before {
+.ds.tooltip::before {
   content: "";
   width: 0;
   height: 0;
@@ -108,104 +89,32 @@
   position: absolute;
 }
 
-/* Tooltip arrow shape definitions */
-/* Point down */
-.ds.tooltip.top-left,
-.ds.tooltip.top-center,
-.ds.tooltip.top-right {
-  & .ds.tooltip-target > *:first-child::before {
-    border-top: var(--tooltip-border-arrow-visible);
-  }
+.ds.tooltip.top::before {
+  border-top: var(--tooltip-border-arrow-visible);
+  bottom: var(--tooltip-spacing-arrow-edge);
 }
 
-/* Point up */
-.ds.tooltip.btm-left,
-.ds.tooltip.btm-center,
-.ds.tooltip.btm-right {
-  & .ds.tooltip-target > *:first-child::before {
-    border-bottom: var(--tooltip-border-arrow-visible);
-  }
+.ds.tooltip.right::before {
+  border-right: var(--tooltip-border-arrow-visible);
+  left: var(--tooltip-spacing-arrow-edge);
 }
 
-/* Point left */
-.ds.tooltip.right {
-  & .ds.tooltip-target > *:first-child::before {
-    border-right: var(--tooltip-border-arrow-visible);
-  }
+.ds.tooltip.bottom::before {
+  border-bottom: var(--tooltip-border-arrow-visible);
+  top: var(--tooltip-spacing-arrow-edge);
 }
 
-/* Point right */
-.ds.tooltip.left {
-  & .ds.tooltip-target > *:first-child::before {
-    border-left: var(--tooltip-border-arrow-visible);
-  }
+.ds.tooltip.left::before {
+  border-left: var(--tooltip-border-arrow-visible);
+  right: var(--tooltip-spacing-arrow-edge);
 }
 
-/* Tooltip arrow horizontal positioning */
-
-/* Horizontally centered */
-.ds.tooltip.top-center,
-.ds.tooltip.btm-center {
-  & .ds.tooltip-target > *:first-child::before {
-    left: var(--tooltip-spacing-arrow-middle);
-  }
+.ds.tooltip.top::before,
+.ds.tooltip.bottom::before {
+  left: var(--tooltip-spacing-arrow-middle);
 }
 
-/* Right corner */
-/* Corners also include horizontal spacing in order to provide some additional separation from the triangle edge and the tooltip edge */
-.ds.tooltip.top-right,
-.ds.tooltip.btm-right {
-  & .ds.tooltip-target > *:first-child::before {
-    right: var(--tooltip-spacing-arrow-size);
-  }
-}
-
-/* Left corner */
-.ds.tooltip.btm-left,
-.ds.tooltip.top-left {
-  & .ds.tooltip-target > *:first-child::before {
-    left: var(--tooltip-spacing-arrow-size);
-  }
-}
-
-/* Left edge */
-.ds.tooltip.left {
-  & .ds.tooltip-target > *:first-child::before {
-    left: var(--tooltip-spacing-arrow-edge);
-  }
-}
-
-/* Right edge */
-.ds.tooltip.right {
-  & .ds.tooltip-target > *:first-child::before {
-    right: var(--tooltip-spacing-arrow-edge);
-  }
-}
-
-/* Tooltip arrow vertical positioning */
-
-/* Bottom */
-.ds.tooltip.btm-left,
-.ds.tooltip.btm-center,
-.ds.tooltip.btm-right {
-  & .ds.tooltip-target > *:first-child::before {
-    bottom: var(--tooltip-spacing-arrow-edge);
-  }
-}
-
-/* Top */
-.ds.tooltip.top-left,
-.ds.tooltip.top-center,
-.ds.tooltip.top-right {
-  & .ds.tooltip-target > *:first-child::before {
-    top: var(--tooltip-spacing-arrow-edge);
-  }
-}
-
-/* Left, right */
-.ds.tooltip.left,
-.ds.tooltip.right {
-  & .ds.tooltip-target > *:first-child::before {
-    top: var(--tooltip-spacing-arrow-middle);
-  }
+.ds.tooltip.left::before,
+.ds.tooltip.right::before {
+  top: var(--tooltip-spacing-arrow-middle);
 }

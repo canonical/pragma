@@ -1,14 +1,19 @@
-import type { ReactNode } from "react";
-import type { UsePopupProps } from "../hooks/index.js";
+import type { CSSProperties, ReactNode, RefObject } from "react";
+import type { BestPosition } from "../hooks/index.js";
 
-export interface TooltipProps extends UsePopupProps {
-  /**
-   * The target element to which the tooltip should be attached.
-   * This can be any valid React element.
-   */
+export interface TooltipProps {
+  /* A unique identifier for the TooltipMessage */
+  id?: string;
+  /* Additional CSS classes */
+  className?: string;
+  /* Child elements */
   children: ReactNode;
-  /**
-   * The content of the tooltip. This can be a string or any valid React node.
-   */
-  Message: ReactNode;
+  /* Inline styles */
+  style?: CSSProperties;
+  /** Whether the tooltip is open or not */
+  isOpen?: boolean;
+  /** Ref to the tooltip, useful for calculating its dimensions */
+  ref?: RefObject<HTMLDivElement | null>;
+  /** The z-index of the tooltip */
+  zIndex?: number;
 }

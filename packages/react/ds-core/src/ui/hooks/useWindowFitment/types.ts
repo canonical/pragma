@@ -1,13 +1,5 @@
 import type { CSSProperties, RefObject } from "react";
 
-/**
- * The style object to be applied to the popup element.
- */
-export type WindowFitmentStyles = Pick<
-  CSSProperties,
-  "top" | "right" | "bottom" | "left" | "maxWidth"
->;
-
 export interface UseWindowFitmentProps {
   /**
    * An array of preferred directions for the popup.
@@ -16,21 +8,21 @@ export interface UseWindowFitmentProps {
    */
   preferredDirections?: PopupDirection[];
   /**
-   * The distance between the target and the popup.
-   * Can be a CSS length value (e.g., '10px', '1em').
-   * Defaults to '10px'.
+   * The distance, in pixels between the target and the popup.
+   * @TODO support non-px units and change this to a string. E.G., someone should be able to request '1em`.
    */
-  distance?: string;
+  distance?: number;
   /**
    * The gutter (padding) around the viewport, preventing the popup from being too close to the edges.
-   * Can be a CSS padding-like string (e.g., '10px', '10px 20px', '10px 20px 30px 40px').
-   * Defaults to '0px'.
+   * A CSS padding-like string (e.g., '10px', '10px 20px', '10px 20px 30px 40px').
+   * Assumes that each value is in pixels.
+   * @TODO support non-px units and change this to a string. E.G., someone should be able to request '0.5rem 1rem 1rem 0.5rem`.
    */
   gutter?: string;
   /**
    * The maximum width of the popup content.
    * Can be a CSS width value (e.g., '300px', '50%').
-   * Defaults to '300px'.
+   * Defaults to '350px'.
    */
   maxWidth?: string;
 
@@ -39,8 +31,8 @@ export interface UseWindowFitmentProps {
   /** How long to wait before processing actions called by scroll events Defaults to 150ms. */
   scrollDelay?: number;
 
-  /** Whether the popup is visible or not. */
-  isVisible?: boolean;
+  /** Whether the popup is open or not. */
+  isOpen?: boolean;
 
   /**
    * An optional callback to be called when the best position of the popup changes.
@@ -66,7 +58,13 @@ export interface UseWindowFitmentResult {
   /**
    * The style object to be applied to the popup element.
    */
-  popupPositionStyle: WindowFitmentStyles;
+  popupPositionStyle: CSSProperties;
+  //
+  // /**
+  //  * The distance, in pixels, between the target and the popup.
+  //  * In the future, this may be different from the `distance` prop if the distance is converted to pixels from some other unit.
+  //  */
+  // distance: number;
 }
 
 export type RelativePosition = {
