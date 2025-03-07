@@ -16,25 +16,18 @@
     --tooltip-font-size: font size of the tooltip
     --tooltip-font-weight: font weight of the tooltip
     --tooltip-line-height: line height of the tooltip
+
+    --tooltip-spacing-arrow-size: size of the arrow
 */
 
 .ds.tooltip {
-  display: inline-block;
-  position: absolute;
-  /*
-          Arrow size is overridden in `TooltipArea` component.
-          Trying to do this in the tokens file causes the calculations derived from `---tooltip-spacing-arrow-size` to not be updated.
-      */
-  --tooltip-spacing-arrow-size: var(--spacing-horizontal-small);
   --tooltip-spacing-arrow-middle: calc(50% - var(--tooltip-spacing-arrow-size));
   --tooltip-spacing-arrow-edge: calc(-2 * var(--tooltip-spacing-arrow-size));
   --tooltip-border-arrow-visible: var(--tooltip-spacing-arrow-size) solid
     var(--tooltip-color-background);
   --tooltip-border-arrow-hidden: var(--tooltip-spacing-arrow-size) solid
     transparent;
-}
 
-.ds.tooltip__message {
   color: var(
     --intent-color-text,
     var(--tooltip-color-text, var(--color-text-default))
@@ -61,8 +54,9 @@
   text-align: left;
   text-decoration: initial;
   pointer-events: auto;
-  position: relative;
-  transition: opacity 0.1s ease-in-out, visibility 0.1s ease-in-out;
+  display: inline-block;
+  transition: opacity 0.1s ease-in-out;
+  position: absolute;
 }
 
 /* Hidden state */

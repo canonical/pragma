@@ -10,7 +10,22 @@ import type {
   UseWindowFitmentResult,
 } from "../useWindowFitment/index.js";
 
-export type UsePopupProps = UseWindowFitmentProps & UseDelayedToggleProps;
+export interface UsePopupProps
+  extends UseWindowFitmentProps,
+    UseDelayedToggleProps {
+  /** A callback to be called when the target element is focused. */
+  onFocus?: FocusEventHandler;
+  /** A callback to be called when the target element loses focus. */
+  onBlur?: FocusEventHandler;
+  /** A callback to be called when the mouse enters the target element. */
+  onEnter?: PointerEventHandler;
+  /** A callback to be called when the mouse leaves the target */
+  onLeave?: PointerEventHandler;
+  /** A callback to be called when the popup is shown. */
+  onShow?: (event?: Event) => void;
+  /** A callback to be called when the popup is hidden. */
+  onHide?: (event?: Event) => void;
+}
 
 export interface UsePopupResult extends UseWindowFitmentResult {
   /**

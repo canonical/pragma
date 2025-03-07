@@ -18,19 +18,18 @@ const Tooltip = ({
   style,
   ref,
   isOpen = false,
-  zIndex
+  zIndex,
+  onPointerEnter,
+  onFocus,
 }: TooltipProps): React.ReactElement => {
   return (
     <div
-      className={[
-        componentCssClassName,
-        className
-      ]
-        .filter(Boolean)
-        .join(" ")}
+      className={[componentCssClassName, className].filter(Boolean).join(" ")}
       ref={ref}
       id={id}
       aria-hidden={!isOpen}
+      onPointerEnter={onPointerEnter}
+      onFocus={onFocus}
       role="tooltip"
       style={{
         ...style,
@@ -38,7 +37,7 @@ const Tooltip = ({
         zIndex,
       }}
     >
-      <div className={`${componentCssClassName}__message`}>{children}</div>
+      {children}
     </div>
   );
 };

@@ -3,11 +3,12 @@
 }
 
 .ds.tooltip-area__target {
-  display: inline-block;
   cursor: pointer;
+  position: relative;
+  display: inline-block;
 }
 
 .ds.tooltip-area__target > * {
-  /* The tooltip targets must have no margin in order for tooltip placements to work correctly */
+  /* The tooltip targets must have no margin in order for too ltip placements to work correctly */
   margin: 0 !important;
 }

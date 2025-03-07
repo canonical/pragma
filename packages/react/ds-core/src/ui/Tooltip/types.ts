@@ -1,4 +1,10 @@
-import type { CSSProperties, ReactNode, RefObject } from "react";
+import type {
+  CSSProperties,
+  FocusEventHandler,
+  PointerEventHandler,
+  ReactNode,
+  RefObject,
+} from "react";
 import type { BestPosition } from "../hooks/index.js";
 
 export interface TooltipProps {
@@ -16,4 +22,7 @@ export interface TooltipProps {
   ref?: RefObject<HTMLDivElement | null>;
   /** The z-index of the tooltip */
   zIndex?: number;
+
+  onPointerEnter?: PointerEventHandler;
+  onFocus?: FocusEventHandler;
 }

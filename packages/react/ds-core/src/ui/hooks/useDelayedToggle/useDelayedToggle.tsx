@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { UseDelayedToggleProps } from "./types.js";
+import type { UseDelayedToggleProps, UseDelayedToggleResult } from "./types.js";
 
 const useDelayedToggle = ({
-  activateDelay,
-  deactivateDelay,
-}: UseDelayedToggleProps) => {
+  activateDelay = 150,
+  deactivateDelay = 150,
+  onActivate,
+  onDeactivate,
+}: UseDelayedToggleProps): UseDelayedToggleResult => {
   const [flag, setFlag] = useState(false);
   const flagTimeout = useRef<ReturnType<typeof setTimeout> | undefined>(
     undefined,
@@ -20,31 +22,29 @@ const useDelayedToggle = ({
     [],
   );
 
-  const activate = useCallback(() => {
-    console.log("activate called");
-    replaceTimer(
-      setTimeout(() => {
-        setFlag(true);
-      }, activateDelay),
-    );
-  }, [activateDelay, replaceTimer]);
+  const activate = useCallback(
+    (event: Event) => {
+      replaceTimer(
+        setTimeout(() => {
+          setFlag(true);
+          if (onActivate) onActivate(event);
+        }, activateDelay),
+      );
+    },
+    [activateDelay, replaceTimer, onActivate],
+  );
 
-  const deactivate = useCallback(() => {
-    console.log("deactivate called");
-    replaceTimer(
-      setTimeout(() => {
-        setFlag(false);
-      }, deactivateDelay),
-    );
-  }, [deactivateDelay, replaceTimer]);
-
-  useEffect(() => {
-    return () => {
-      if (flagTimeout.current) {
-        clearTimeout(flagTimeout.current);
-      }
-    };
-  });
+  const deactivate = useCallback(
+    (event: Event) => {
+      replaceTimer(
+        setTimeout(() => {
+          setFlag(false);
+          if (onDeactivate) onDeactivate(event);
+        }, deactivateDelay),
+      );
+    },
+    [deactivateDelay, replaceTimer, onDeactivate],
+  );
 
   return { flag, activate, deactivate };
 };

@@ -6,12 +6,12 @@ export interface UseWindowFitmentProps {
    * The hook will try to position the popup in these directions in order.
    * Defaults to ['top', 'bottom', 'left', 'right'].
    */
-  preferredDirections?: PopupDirection[];
+  preferredDirections?: WindowFitmentDirection[];
   /**
    * The distance, in pixels between the target and the popup.
-   * @TODO support non-px units and change this to a string. E.G., someone should be able to request '1em`.
+   * @TODO support non-px units. E.G., someone should be able to request '1em`.
    */
-  distance?: number;
+  distance?: string;
   /**
    * The gutter (padding) around the viewport, preventing the popup from being too close to the edges.
    * A CSS padding-like string (e.g., '10px', '10px 20px', '10px 20px 30px 40px').
@@ -37,10 +37,10 @@ export interface UseWindowFitmentProps {
   /**
    * An optional callback to be called when the best position of the popup changes.
    */
-  onBestPositionChange?: (bestPosition: BestPosition) => void;
+  onBestPositionChange?: (bestPosition?: BestPosition) => void;
 }
 
-export type PopupDirection = "top" | "bottom" | "left" | "right";
+export type WindowFitmentDirection = "top" | "bottom" | "left" | "right";
 
 export interface UseWindowFitmentResult {
   /**
@@ -74,6 +74,6 @@ export type RelativePosition = {
 
 export interface BestPosition {
   position: RelativePosition;
-  positionName: PopupDirection;
+  positionName: WindowFitmentDirection;
   fits: boolean;
 }

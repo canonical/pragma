@@ -1,14 +1,12 @@
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryFn, StoryObj } from "@storybook/react";
 
 import { Button } from "../Button/index.js";
 import { withTooltip } from "./index.js";
 
-const Component = withTooltip(Button, "Tooltip message");
+type TooltipType = ReturnType<typeof withTooltip>;
 
 const meta = {
   title: "Tooltip/withTooltip",
-  component: Component,
-  // Add padding to all tooltips to allow their entire contents to be visible
   parameters: {
     layout: "centered",
     backgrounds: {
@@ -16,13 +14,15 @@ const meta = {
     },
   },
   tags: ["autodocs"],
-} satisfies Meta<typeof Component>;
+} satisfies Meta<TooltipType>;
 
 export default meta;
-type Story = StoryObj<typeof meta>;
+type Story = StoryObj<TooltipType>;
 
-export const Default: Story = {
-  args: {
-    label: "Tooltip HOC",
-  },
+export const Default: StoryFn = () => {
+  const TooltippedButton = withTooltip(Button, <span>Tooltip content</span>);
+
+  return <TooltippedButton label="Hover me" />;
 };
+
+Default.storyName = "Default";

@@ -19,7 +19,7 @@ const withTooltip = <TProps extends object>(
   Message: ReactNode,
   popupProps: UsePopupProps = {},
 ): FC<TProps> => {
-  const WithTooltipComponent = (
+  const WrappedComponent = (
     props: TProps,
     ref?: RefObject<HTMLElement>,
   ): ReactElement<TProps> => {
@@ -31,11 +31,11 @@ const withTooltip = <TProps extends object>(
   };
 
   // Set the displayName for easier debugging
-  WithTooltipComponent.displayName = `withTooltip(${
+  WrappedComponent.displayName = `withTooltip(${
     Component.displayName || Component.name || "Component"
   })`;
 
-  return WithTooltipComponent;
+  return WrappedComponent;
 };
 
 export default withTooltip;

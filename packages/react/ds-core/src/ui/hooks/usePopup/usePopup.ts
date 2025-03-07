@@ -13,6 +13,12 @@ const usePopup = ({
   isOpen: isOpenProp,
   deactivateDelay,
   activateDelay,
+  onEnter,
+  onLeave,
+  onFocus,
+  onBlur,
+  onShow,
+  onHide,
   ...props
 }: UsePopupProps): UsePopupResult => {
   const [isFocused, setIsFocused] = useState(false);
@@ -22,7 +28,12 @@ const usePopup = ({
     flag: isOpenHook,
     deactivate: close,
     activate: open,
-  } = useDelayedToggle({ activateDelay, deactivateDelay });
+  } = useDelayedToggle({
+    activateDelay,
+    deactivateDelay,
+    onActivate: onShow,
+    onDeactivate: onHide,
+  });
 
   // Apply open override
   const isOpen = typeof isOpenProp === "boolean" ? isOpenProp : isOpenHook;
@@ -36,41 +47,45 @@ const usePopup = ({
   const handleTriggerFocus: FocusEventHandler = useCallback(
     (event) => {
       setIsFocused(true);
-      !isOpenHook && open();
+      open(event.nativeEvent);
+      if (onFocus) onFocus(event);
     },
-    [isOpenHook, open],
+    [open, onFocus],
   );
 
   const handleTriggerBlur: FocusEventHandler = useCallback(
     (event) => {
       setIsFocused(false);
-      close();
+      close(event.nativeEvent);
+      if (onBlur) onBlur(event);
     },
-    [close],
+    [close, onBlur],
   );
 
   const handleTriggerEnter: PointerEventHandler = useCallback(
     (event) => {
       console.log("usePopup handleTriggerEnter");
-      open();
+      open(event.nativeEvent);
+      if (onEnter) onEnter(event);
     },
-    [open],
+    [open, onEnter],
   );
 
   const handleTriggerLeave: PointerEventHandler = useCallback(
     (event) => {
       console.log("usePopup handleTriggerLeave");
-      close();
+      close(event.nativeEvent);
+      if (onLeave) onLeave(event);
     },
-    [close],
+    [close, onLeave],
   );
 
   return {
-    isFocused,
     handleTriggerBlur,
     handleTriggerEnter,
     handleTriggerFocus,
     handleTriggerLeave,
+    isFocused,
     isOpen,
     popupId,
     popupRef,
