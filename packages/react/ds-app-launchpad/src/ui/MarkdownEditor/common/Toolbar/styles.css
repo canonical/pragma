@@ -4,7 +4,8 @@
   display: none;
 
   gap: var(--markdown-editor-toolbar-buttons-gap);
-  padding: 4px 8px;
+  padding: var(--markdown-editor-toolbar-vert-padding)
+    var(--markdown-editor-toolbar-horizontal-padding);
 }
 
 @container (min-width: 410px) {

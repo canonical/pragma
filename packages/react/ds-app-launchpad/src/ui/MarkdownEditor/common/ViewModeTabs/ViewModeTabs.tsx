@@ -17,6 +17,7 @@ const ViewModeTabs = ({
   style,
   editMode,
   onEditModeChange,
+  ariaLabelMessage = "View Mode Tabs",
 }: ViewModeTabsProps): React.ReactElement => {
   const id = useId();
   const tabRefs = useRef<HTMLButtonElement[]>([]);
@@ -41,7 +42,7 @@ const ViewModeTabs = ({
       style={style}
       className={[componentCssClassName, className].filter(Boolean).join(" ")}
       role="tablist"
-      aria-label="View Mode Tabs"
+      aria-label={ariaLabelMessage}
     >
       {tabs.map((tab, index) => (
         <button

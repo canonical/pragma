@@ -3,8 +3,9 @@
 .ds.view-mode-tabs {
   display: flex;
 
-  .tab {
-    padding: 8px 12px;
+  & > .tab {
+    padding: var(--markdown-editor-tabs-vert-padding)
+      var(--markdown-editor-tabs-horizontal-padding);
     border: 1px solid var(--markdown-editor-tabs-inactive-border-color);
     border-width: 1px 1px 0 1px;
     color: var(--markdown-editor-tabs-inactive-color);

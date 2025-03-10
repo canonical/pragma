@@ -11,4 +11,5 @@ export interface ViewModeTabsProps {
   editMode: EditMode;
   /** Callback for edit mode change */
   onEditModeChange: (mode: EditMode, eventType: "click" | "keydown") => void;
+  ariaLabelMessage?: string;
 }

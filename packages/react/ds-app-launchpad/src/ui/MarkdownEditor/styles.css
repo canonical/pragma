@@ -9,11 +9,15 @@
   --markdown-editor-tabs-inactive-color: #737373;
   --markdown-editor-tabs-inactive-border-color: transparent;
   --markdown-editor-tabs-inactive-background-color: #ebeaeb;
+  --markdown-editor-tabs-horizontal-padding: 12px;
+  --markdown-editor-tabs-vert-padding: 8px;
 
   --markdown-editor-toolbar-hover-background-color: #f2f2f2;
   --markdown-editor-toolbar-separator-color: rgba(0, 0, 0, 0.2);
   --markdown-editor-toolbar-button-size: 27px;
   --markdown-editor-toolbar-buttons-gap: 4px;
+  --markdown-editor-toolbar-horizontal-padding: 8px;
+  --markdown-editor-toolbar-vert-padding: 4px;
 
   --markdown-editor-input-horizontal-padding: 8px;
   --markdown-editor-input-vert-padding: 6px;
