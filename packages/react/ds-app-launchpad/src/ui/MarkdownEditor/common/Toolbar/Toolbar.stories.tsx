@@ -1,10 +1,7 @@
 /* @canonical/generator-ds 0.9.0-experimental.4 */
 import type { Meta, StoryObj } from "@storybook/react";
-import { ToolbarButton } from "../ToolbarButton/index.js";
-import { ToolbarGroup } from "../ToolbarGroup/index.js";
-import { ToolbarSeparator } from "../ToolbarSeparator/index.js";
-import Component from "./Toolbar.js";
 import "../../styles.css";
+import Component from "./Toolbar.js";
 
 const meta = {
   title: "MarkdownEditor/Toolbar",
@@ -28,20 +25,20 @@ export const Default: Story = {
     label: "Toolbar",
     children: (
       <>
-        <ToolbarGroup label="Toolbar Group 1">
-          <ToolbarButton label="Bold" shortcut="Ctrl+B">
+        <Component.Group label="Toolbar Group 1">
+          <Component.Button label="Bold" shortcut="Ctrl+B">
             B
-          </ToolbarButton>
-          <ToolbarButton label="Italic" shortcut="Ctrl+I">
+          </Component.Button>
+          <Component.Button label="Italic" shortcut="Ctrl+I">
             I
-          </ToolbarButton>
-        </ToolbarGroup>
-        <ToolbarSeparator />
-        <ToolbarGroup label="Toolbar Group 2">
-          <ToolbarButton label="Help" shortcut="Ctrl+H">
+          </Component.Button>
+        </Component.Group>
+        <Component.Separator />
+        <Component.Group label="Toolbar Group 2">
+          <Component.Button label="Help" shortcut="Ctrl+H">
             ?
-          </ToolbarButton>
-        </ToolbarGroup>
+          </Component.Button>
+        </Component.Group>
       </>
     ),
   },

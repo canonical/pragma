@@ -1,21 +1,20 @@
 /* @canonical/generator-ds 0.9.0-experimental.4 */
 import type React from "react";
 import { useEffect, useRef } from "react";
+import {
+  ToolbarButton,
+  ToolbarGroup,
+  ToolbarSeparator,
+} from "./common/index.js";
 import "./styles.css";
-import type { ToolbarProps } from "./types.js";
+import type { ToolbarComponent } from "./types.js";
 
 const componentCssClassName = "ds toolbar";
 
 /**
  * A horizontal container that groups related controls in a toolbar.
  */
-const Toolbar = ({
-  id,
-  children,
-  className,
-  style,
-  label,
-}: ToolbarProps): React.ReactElement => {
+const Toolbar = (({ id, children, className, style, label }) => {
   const toolbarRef = useRef<HTMLDivElement>(null);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: We want to reapply tabindex when children change
@@ -70,6 +69,10 @@ const Toolbar = ({
       {children}
     </div>
   );
-};
+}) as ToolbarComponent;
+
+Toolbar.Group = ToolbarGroup;
+Toolbar.Button = ToolbarButton;
+Toolbar.Separator = ToolbarSeparator;
 
 export default Toolbar;

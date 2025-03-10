@@ -3,7 +3,7 @@ import { render, screen } from "@testing-library/react";
 import type { ComponentProps } from "react";
 import type { Tooltip as T } from "react-tooltip";
 import { describe, expect, it, vi } from "vitest";
-import Component from "./ToolbarButton.js";
+import Component from "./Button.js";
 
 // Mock the react-tooltip module
 vi.mock("react-tooltip", () => ({

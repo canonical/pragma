@@ -2,7 +2,7 @@
 
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import Component from "./ToolbarGroup.js";
+import Component from "./Group.js";
 
 describe("ToolbarGroup component", () => {
   it("renders", () => {

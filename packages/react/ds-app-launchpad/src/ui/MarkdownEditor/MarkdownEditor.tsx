@@ -10,9 +10,6 @@ import {
 } from "react";
 import {
   Toolbar,
-  ToolbarButton,
-  ToolbarGroup,
-  ToolbarSeparator,
   ViewModeTabs,
   type ViewModeTabsProps,
   icons,
@@ -112,67 +109,67 @@ const MarkdownEditor = ({
         )}
         {!hideToolbar && (
           <Toolbar label={toolbarBarLabelMessage}>
-            <ToolbarGroup label={ToolbarTextFormattingGroupLabelMessage}>
-              <ToolbarButton
+            <Toolbar.Group label={ToolbarTextFormattingGroupLabelMessage}>
+              <Toolbar.Button
                 label={ToolbarTitleButtonLabelMessage}
                 onClick={() => {}}
                 shortcut={""}
               >
                 {icons.ToolbarTitle}
-              </ToolbarButton>
-              <ToolbarButton
+              </Toolbar.Button>
+              <Toolbar.Button
                 label={ToolbarBoldButtonLabelMessage}
                 onClick={() => {}}
                 shortcut={""}
               >
                 {icons.ToolbarBold}
-              </ToolbarButton>
-              <ToolbarButton
+              </Toolbar.Button>
+              <Toolbar.Button
                 label={ToolbarItalicButtonLabelMessage}
                 onClick={() => {}}
                 shortcut={""}
               >
                 {icons.ToolbarItalic}
-              </ToolbarButton>
-            </ToolbarGroup>
-            <ToolbarSeparator />
-            <ToolbarGroup label={ToolbarToolsGroupLabelMessage}>
-              <ToolbarButton
+              </Toolbar.Button>
+            </Toolbar.Group>
+            <Toolbar.Separator />
+            <Toolbar.Group label={ToolbarToolsGroupLabelMessage}>
+              <Toolbar.Button
                 label={ToolbarQuoteButtonLabelMessage}
                 onClick={() => {}}
                 shortcut={""}
               >
                 {icons.ToolbarQuote}
-              </ToolbarButton>
-              <ToolbarButton
+              </Toolbar.Button>
+              <Toolbar.Button
                 label={ToolbarCodeButtonLabelMessage}
                 onClick={() => {}}
                 shortcut={""}
               >
                 {icons.ToolbarCode}
-              </ToolbarButton>
-              <ToolbarButton
+              </Toolbar.Button>
+              <Toolbar.Button
                 label={ToolbarLinkButtonLabelMessage}
                 onClick={() => {}}
                 shortcut={""}
               >
                 {icons.ToolbarLink}
-              </ToolbarButton>
-              <ToolbarButton
+              </Toolbar.Button>
+              <Toolbar.Button
                 label={ToolbarUnorderedListButtonLabelMessage}
                 onClick={() => {}}
                 shortcut={""}
               >
                 {icons.ToolbarUnorderedList}
-              </ToolbarButton>
-              <ToolbarButton
+              </Toolbar.Button>
+              <Toolbar.Button
                 label={ToolbarOrderedListButtonLabelMessage}
                 onClick={() => {}}
                 shortcut={""}
               >
                 {icons.ToolbarOrderedList}
-              </ToolbarButton>
-            </ToolbarGroup>
+              </Toolbar.Button>
+            </Toolbar.Group>
           </Toolbar>
         )}
       </div>

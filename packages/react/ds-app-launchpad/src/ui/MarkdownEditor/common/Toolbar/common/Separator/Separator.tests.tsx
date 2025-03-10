@@ -2,7 +2,7 @@
 
 import { render } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import Component from "./ToolbarSeparator.js";
+import Component from "./Separator.js";
 
 describe("ToolbarSeparator component", () => {
   it("applies className", () => {
