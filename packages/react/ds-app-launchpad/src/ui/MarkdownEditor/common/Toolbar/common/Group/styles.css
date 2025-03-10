@@ -1,0 +1,7 @@
+/* @canonical/generator-ds 0.9.0-experimental.4 */
+
+.ds.toolbar-group {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--markdown-editor-toolbar-buttons-gap);
+}
