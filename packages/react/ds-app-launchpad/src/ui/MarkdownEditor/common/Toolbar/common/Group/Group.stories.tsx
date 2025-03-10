@@ -5,16 +5,16 @@ import { ToolbarButton } from "../Button/index.js";
 import Component from "./Group.js";
 
 const meta = {
-	title: "MarkdownEditor/Toolbar/Group",
-	tags: ["autodocs"],
-	component: Component,
-	decorators: [
-		(Story, { args }) => (
-			<div className="ds markdown-editor">
-				<Story {...args} />
-			</div>
-		),
-	],
+  title: "MarkdownEditor/Toolbar/Group",
+  tags: ["autodocs"],
+  component: Component,
+  decorators: [
+    (Story, { args }) => (
+      <div className="ds markdown-editor">
+        <Story {...args} />
+      </div>
+    ),
+  ],
 } satisfies Meta<typeof Component>;
 
 export default meta;
@@ -22,17 +22,17 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
-	args: {
-		label: "Toolbar Group",
-		children: (
-			<>
-				<ToolbarButton label="Bold" shortcut="Ctrl+B">
-					B
-				</ToolbarButton>
-				<ToolbarButton label="Italic" shortcut="Ctrl+I">
-					I
-				</ToolbarButton>
-			</>
-		),
-	},
+  args: {
+    label: "Toolbar Group",
+    children: (
+      <>
+        <ToolbarButton label="Bold" shortcut="Ctrl+B">
+          B
+        </ToolbarButton>
+        <ToolbarButton label="Italic" shortcut="Ctrl+I">
+          I
+        </ToolbarButton>
+      </>
+    ),
+  },
 };
