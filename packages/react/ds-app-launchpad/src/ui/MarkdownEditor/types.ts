@@ -25,10 +25,21 @@ export type MarkdownEditorProps = {
   editMode?: EditMode;
   /** Callback for edit mode change, needed if editMode is controlled */
   onEditModeChange?: (newEditMode: EditMode) => void;
-  /** Empty input keyword in preview mode. (default: "No content") */
-  emptyInputMessage?: string;
   /** Textarea styles */
   textareaStyle?: React.CSSProperties;
   /** Preview pane styles */
   previewStyle?: React.CSSProperties;
+
+  emptyInputMessage?: string;
+  toolbarBarLabelMessage?: string;
+  ToolbarTextFormattingGroupLabelMessage?: string;
+  ToolbarToolsGroupLabelMessage?: string;
+  ToolbarTitleButtonLabelMessage?: string;
+  ToolbarBoldButtonLabelMessage?: string;
+  ToolbarItalicButtonLabelMessage?: string;
+  ToolbarQuoteButtonLabelMessage?: string;
+  ToolbarCodeButtonLabelMessage?: string;
+  ToolbarLinkButtonLabelMessage?: string;
+  ToolbarUnorderedListButtonLabelMessage?: string;
+  ToolbarOrderedListButtonLabelMessage?: string;
 } & React.TextareaHTMLAttributes<HTMLTextAreaElement>;

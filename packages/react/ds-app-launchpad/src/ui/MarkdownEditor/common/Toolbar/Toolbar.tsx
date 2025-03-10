@@ -32,6 +32,30 @@ const Toolbar = ({
     if (firstNode) firstNode.setAttribute("tabindex", "0");
   }, [children]);
 
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (!toolbarRef.current) return;
+    const target = event.target as HTMLButtonElement;
+    if (target.tagName !== "BUTTON") return;
+
+    if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+      event.preventDefault();
+      const buttons = Array.from(
+        toolbarRef.current.querySelectorAll<HTMLButtonElement>("button") ?? [],
+      );
+      const direction = event.key === "ArrowLeft" ? -1 : 1;
+      const currentIndex = buttons.indexOf(target);
+      let nextIndex = currentIndex + direction;
+      if (nextIndex < 0) nextIndex = buttons.length - 1;
+      if (nextIndex >= buttons.length) nextIndex = 0;
+
+      const currentButton = buttons[currentIndex];
+      const nextButton = buttons[nextIndex];
+      currentButton.setAttribute("tabindex", "-1");
+      nextButton.setAttribute("tabindex", "0");
+      nextButton.focus();
+    }
+  };
+
   return (
     <div
       id={id}
@@ -41,6 +65,7 @@ const Toolbar = ({
       role="toolbar"
       aria-orientation="horizontal"
       ref={toolbarRef}
+      onKeyDown={handleKeyDown}
     >
       {children}
     </div>

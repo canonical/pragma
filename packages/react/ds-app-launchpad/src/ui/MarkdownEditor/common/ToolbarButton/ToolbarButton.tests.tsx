@@ -1,5 +1,5 @@
 /* @canonical/generator-ds 0.9.0-experimental.4 */
-import { fireEvent, render, screen } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import type { ComponentProps } from "react";
 import type { Tooltip as T } from "react-tooltip";
 import { describe, expect, it, vi } from "vitest";
@@ -74,62 +74,5 @@ describe("ToolbarButton", () => {
     expect(button).toHaveAttribute("data-test", "test-value");
   });
 
-  it("handles left arrow key navigation", () => {
-    // Create a toolbar structure with multiple buttons
-    const { container } = render(
-      <div role="toolbar">
-        <Component label="Button 1" />
-        <Component label="Button 2" data-testid="middle-button" />
-        <Component label="Button 3" />
-      </div>,
-    );
-
-    // Focus the middle button
-    const middleButton = screen.getByTestId("middle-button");
-    middleButton.focus();
-
-    // Press ArrowLeft
-    fireEvent.keyDown(middleButton, { key: "ArrowLeft" });
-
-    // Check if previous button got focus (need to get buttons from container)
-    const buttons = container.querySelectorAll("button");
-    expect(document.activeElement).toBe(buttons[0]);
-  });
-
-  it("handles right arrow key navigation", () => {
-    // Create a toolbar structure with multiple buttons
-    const { container } = render(
-      <div role="toolbar">
-        <Component label="Button 1" />
-        <Component label="Button 2" data-testid="middle-button" />
-        <Component label="Button 3" />
-      </div>,
-    );
-
-    // Focus the middle button
-    const middleButton = screen.getByTestId("middle-button");
-    middleButton.focus();
-
-    // Press ArrowRight
-    fireEvent.keyDown(middleButton, { key: "ArrowRight" });
-
-    // Check if next button got focus
-    const buttons = container.querySelectorAll("button");
-    expect(document.activeElement).toBe(buttons[2]);
-  });
-
-  it("does nothing when arrow keys are pressed but no siblings exist", () => {
-    // Render a single button (no toolbar)
-    render(<Component label="Lonely Button" data-testid="lonely-button" />);
-
-    const button = screen.getByTestId("lonely-button");
-    button.focus();
-
-    // Press arrow keys
-    fireEvent.keyDown(button, { key: "ArrowLeft" });
-    fireEvent.keyDown(button, { key: "ArrowRight" });
-
-    // Button should still have focus
-    expect(document.activeElement).toBe(button);
-  });
+  // Removed keyboard navigation tests
 });

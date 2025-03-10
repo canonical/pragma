@@ -1,7 +1,6 @@
 /* @canonical/generator-ds 0.9.0-experimental.4 */
 import type React from "react";
 import {
-  forwardRef,
   useCallback,
   useEffect,
   useImperativeHandle,
@@ -18,8 +17,8 @@ import {
   type ViewModeTabsProps,
   icons,
 } from "./common/index.js";
-import type { EditMode, MarkdownEditorProps } from "./types.js";
 import "./styles.css";
+import type { EditMode, MarkdownEditorProps } from "./types.js";
 
 const componentCssClassName = "ds markdown-editor";
 
@@ -40,6 +39,18 @@ const MarkdownEditor = ({
   editMode: controlledEditMode,
   onEditModeChange: controlledOnEditModeChange,
   emptyInputMessage = "No content",
+  toolbarBarLabelMessage = "Markdown Editor",
+  ToolbarTextFormattingGroupLabelMessage = "Text Formatting",
+  ToolbarToolsGroupLabelMessage = "Tools",
+  ToolbarTitleButtonLabelMessage = "Title",
+  ToolbarBoldButtonLabelMessage = "Bold",
+  ToolbarItalicButtonLabelMessage = "Italic",
+  ToolbarQuoteButtonLabelMessage = "Quote",
+  ToolbarCodeButtonLabelMessage = "Code",
+  ToolbarLinkButtonLabelMessage = "Link",
+  ToolbarUnorderedListButtonLabelMessage = "Unordered List",
+  ToolbarOrderedListButtonLabelMessage = "Ordered List",
+
   ...textareaProps
 }: MarkdownEditorProps): React.ReactElement => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -100,24 +111,24 @@ const MarkdownEditor = ({
           />
         )}
         {!hideToolbar && (
-          <Toolbar label="Markdown Editor">
-            <ToolbarGroup label="Text Formatting">
+          <Toolbar label={toolbarBarLabelMessage}>
+            <ToolbarGroup label={ToolbarTextFormattingGroupLabelMessage}>
               <ToolbarButton
-                label={"toolbar.title.label"}
+                label={ToolbarTitleButtonLabelMessage}
                 onClick={() => {}}
                 shortcut={""}
               >
                 {icons.ToolbarTitle}
               </ToolbarButton>
               <ToolbarButton
-                label={"toolbar.bold.label"}
+                label={ToolbarBoldButtonLabelMessage}
                 onClick={() => {}}
                 shortcut={""}
               >
                 {icons.ToolbarBold}
               </ToolbarButton>
               <ToolbarButton
-                label={"toolbar.italic.label"}
+                label={ToolbarItalicButtonLabelMessage}
                 onClick={() => {}}
                 shortcut={""}
               >
@@ -125,37 +136,37 @@ const MarkdownEditor = ({
               </ToolbarButton>
             </ToolbarGroup>
             <ToolbarSeparator />
-            <ToolbarGroup label="Tools">
+            <ToolbarGroup label={ToolbarToolsGroupLabelMessage}>
               <ToolbarButton
-                label={"toolbar.quote.label"}
+                label={ToolbarQuoteButtonLabelMessage}
                 onClick={() => {}}
                 shortcut={""}
               >
                 {icons.ToolbarQuote}
               </ToolbarButton>
               <ToolbarButton
-                label={"toolbar.code.label"}
+                label={ToolbarCodeButtonLabelMessage}
                 onClick={() => {}}
                 shortcut={""}
               >
                 {icons.ToolbarCode}
               </ToolbarButton>
               <ToolbarButton
-                label={"toolbar.link.label"}
+                label={ToolbarLinkButtonLabelMessage}
                 onClick={() => {}}
                 shortcut={""}
               >
                 {icons.ToolbarLink}
               </ToolbarButton>
               <ToolbarButton
-                label={"toolbar.uList.label"}
+                label={ToolbarUnorderedListButtonLabelMessage}
                 onClick={() => {}}
                 shortcut={""}
               >
                 {icons.ToolbarUnorderedList}
               </ToolbarButton>
               <ToolbarButton
-                label={"toolbar.oList.label"}
+                label={ToolbarOrderedListButtonLabelMessage}
                 onClick={() => {}}
                 shortcut={""}
               >
