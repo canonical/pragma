@@ -1,7 +1,11 @@
 import { useEffect, useState } from "react";
 import type { UseResizeObserverResult } from "./types.js";
 
-/** Hook to observe the size of an element. */
+/**
+ * Hook to observe the size of an element.
+ * @param element The element to observe.
+ * @returns The size of the element.
+ */
 export default function useResizeObserver<TElement extends HTMLElement>(
   element?: TElement | null,
 ): UseResizeObserverResult {
@@ -11,7 +15,7 @@ export default function useResizeObserver<TElement extends HTMLElement>(
   });
 
   useEffect(() => {
-    if (!element) return;
+    if (!element || typeof window === "undefined") return;
 
     const observer = new ResizeObserver(([entry]) => {
       if (entry) {
