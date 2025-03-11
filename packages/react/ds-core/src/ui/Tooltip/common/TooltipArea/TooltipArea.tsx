@@ -14,7 +14,6 @@ const componentCssClassName = "ds tooltip-area";
  * This component allows you to attach a tooltip to any JSX fragment.
  */
 const TooltipArea = ({
-  portalElement,
   children,
   Message,
   distance = "6px",
@@ -23,6 +22,7 @@ const TooltipArea = ({
   targetElementStyle,
   messageElementClassName,
   messageElementStyle,
+  parentElement,
   ...props
 }: TooltipAreaProps): ReactElement => {
   const {
@@ -37,6 +37,27 @@ const TooltipArea = ({
     handleTriggerLeave,
     bestPosition,
   } = usePopup({ distance, ...props });
+
+  const TooltipMessageElement = (
+    <Tooltip
+      id={popupId}
+      className={[bestPosition?.positionName, messageElementClassName]
+        .filter(Boolean)
+        .join(" ")}
+      onPointerEnter={handleTriggerEnter}
+      onFocus={handleTriggerFocus}
+      ref={popupRef}
+      style={{
+        ...messageElementStyle,
+        ...popupPositionStyle,
+        // @ts-ignore allow binding arrow size to distance, as it is needed both in JS and CSS calculations
+        "--tooltip-spacing-arrow-size": distance,
+      }}
+      isOpen={isOpen}
+    >
+      {Message}
+    </Tooltip>
+  );
 
   return (
     <span
@@ -59,28 +80,9 @@ const TooltipArea = ({
       {/*
         Portal can only be rendered on the client
       */}
-      {typeof window !== "undefined" &&
-        createPortal(
-          <Tooltip
-            id={popupId}
-            className={[bestPosition?.positionName, messageElementClassName]
-              .filter(Boolean)
-              .join(" ")}
-            onPointerEnter={handleTriggerEnter}
-            onFocus={handleTriggerFocus}
-            ref={popupRef}
-            style={{
-              ...messageElementStyle,
-              ...popupPositionStyle,
-              // @ts-ignore allow binding arrow size to distance, as it is needed both in JS and CSS calculations
-              "--tooltip-spacing-arrow-size": distance,
-            }}
-            isOpen={isOpen}
-          >
-            {Message}
-          </Tooltip>,
-          portalElement || document.body,
-        )}
+      {typeof window !== "undefined"
+        ? createPortal(TooltipMessageElement, parentElement || document.body)
+        : TooltipMessageElement}
     </span>
   );
 };
