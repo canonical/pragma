@@ -48,7 +48,7 @@ const TooltipArea = ({
     >
       <span
         id={targetElementId}
-        className={[`${componentCssClassName}__target`, targetElementClassName]
+        className={[componentCssClassName, targetElementClassName, "target"]
           .filter(Boolean)
           .join(" ")}
         ref={targetRef}
