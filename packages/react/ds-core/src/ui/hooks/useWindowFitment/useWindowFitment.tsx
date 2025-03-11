@@ -72,7 +72,7 @@ const useWindowFitment = ({
    * @param direction The side of the target element to position the popup on.
    * @param targetRect The bounding client rect of the target element.
    * @param popupRect The bounding client rect of the popup element.
-   * @returns The calculated absolute position of the popup.
+   * @returns The calculated relative position of the popup.
    */
   const calculateRelativePosition = useCallback(
     (
@@ -83,27 +83,33 @@ const useWindowFitment = ({
       let left = 0;
       let top = 0;
 
-      // horizontal
+      /*
+        We use left and top offsets to position the popup relative to the target element.
+        Then, we apply a margin on the opposite side of the popup to create a buffer zone between the target and the popup, to prevent a mouseleave event when moving from the target to the popup.
+        The fake margin is already included in `targetRect` dimensions, as it is rendered hidden at least once before the popup is shown.
+        In cases where `targetRect` is not included in the calculation, we add `distanceAsPixelsNumber` to account for the fake margin.
+       */
+      // horizontal offset
       switch (direction) {
         case "top":
         case "bottom":
           left = (targetRect.width - popupRect.width) / 2;
           break;
         case "right":
-          left = targetRect.width + distanceAsPixelsNumber;
+          left = targetRect.width;
           break;
         case "left":
           left = -(popupRect.width + distanceAsPixelsNumber);
           break;
       }
 
-      // vertical
+      // vertical offset
       switch (direction) {
         case "top":
           top = -(popupRect.height + distanceAsPixelsNumber);
           break;
         case "bottom":
-          top = targetRect.height + distanceAsPixelsNumber;
+          top = targetRect.height;
           break;
         case "right":
         case "left":
@@ -160,9 +166,9 @@ const useWindowFitment = ({
         throw new Error("Preferred directions must not be empty.");
       }
 
-      for (const positionName of preferredDirections) {
+      for (const direction of preferredDirections) {
         const relativePosition = calculateRelativePosition(
-          positionName,
+          direction,
           targetRect,
           popupRect,
         );
@@ -173,7 +179,7 @@ const useWindowFitment = ({
         };
 
         const bestPositionForName: BestPosition = {
-          positionName: positionName,
+          positionName: direction,
           position: absolutePosition,
           fits: fitsInWindow(absolutePosition, popupRect),
         };
