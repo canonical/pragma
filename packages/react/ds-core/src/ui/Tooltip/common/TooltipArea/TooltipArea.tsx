@@ -1,10 +1,5 @@
 import type React from "react";
-import {
-  Children,
-  type ReactElement,
-  cloneElement,
-  isValidElement,
-} from "react";
+import type { ReactElement } from "react";
 import { usePopup } from "../../../hooks/index.js";
 import { Tooltip } from "../../index.js";
 import type { TooltipAreaProps } from "./types.js";
@@ -57,18 +52,9 @@ const TooltipArea = ({
           .filter(Boolean)
           .join(" ")}
         ref={targetRef}
+        aria-describedby={popupId}
       >
-        {/*
-          Clone children to allow multiple elements to be passed as children
-          and associate the target element(s) to the tooltip, rather than the wrapper.
-        */}
-        {Children.map(children, (child) =>
-          child && isValidElement(child)
-            ? cloneElement(child, {
-                "aria-describedby": popupId,
-              } as React.HTMLAttributes<HTMLElement>)
-            : child,
-        )}
+        {children}
       </span>
       {/*
         Portal can only be rendered on the client
