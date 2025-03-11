@@ -5,9 +5,7 @@ import {
   useMemo,
   useRef,
 } from "react";
-import {
-  useResizeObserver,
-} from "../useResizeObserver/index.js";
+import { useResizeObserver } from "../useResizeObserver/index.js";
 import { useWindowDimensions } from "../useWindowDimensions/index.js";
 import type {
   BestPosition,
@@ -64,10 +62,10 @@ const useWindowFitment = ({
     return {
       top: topGutter,
       left: leftGutter,
-      right: window.innerWidth - rightGutter,
-      bottom: window.innerHeight - bottomGutter,
+      right: windowDimensions.windowWidth - rightGutter,
+      bottom: windowDimensions.windowHeight - bottomGutter,
     };
-  }, [gutter]);
+  }, [gutter, windowDimensions]);
 
   /**
    * Calculate the relative position of the popup when oriented in a given direction.
