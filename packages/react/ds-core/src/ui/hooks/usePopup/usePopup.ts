@@ -9,6 +9,20 @@ import { useDelayedToggle } from "../useDelayedToggle/index.js";
 import { useWindowFitment } from "../useWindowFitment/index.js";
 import type { UsePopupProps, UsePopupResult } from "./types.js";
 
+/**
+ * Manages the state of a popup.
+ * @param isOpen An override for the open state.
+ * @param deactivateDelay The delay in milliseconds before setting the flag to false.
+ * @param activateDelay The delay in milliseconds before setting the flag to true.
+ * @param onEnter A callback to be called when the mouse enters the target element.
+ * @param onLeave A callback to be called when the mouse leaves the target element.
+ * @param onFocus A callback to be called when the target element is focused.
+ * @param onBlur A callback to be called when the target element loses focus.
+ * @param onShow A callback to be called when the popup is shown.
+ * @param onHide A callback to be called when the popup is hidden.
+ * @param props The props to be passed to the useWindowFitment hook.
+ * @returns The current state of the popup, and event handlers for the target element.
+ */
 const usePopup = ({
   isOpen: isOpenProp,
   deactivateDelay,

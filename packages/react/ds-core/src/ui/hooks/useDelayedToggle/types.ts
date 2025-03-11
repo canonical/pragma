@@ -9,7 +9,6 @@ export interface UseDelayedToggleProps {
    * Defaults to 150ms.
    */
   deactivateDelay?: number;
-
   /** A callback to be called when the flag is set to true. */
   onActivate?: DelayedToggleActivateEventHandler;
   /** A callback to be called when the flag is set to false. */
