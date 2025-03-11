@@ -25,6 +25,9 @@ export interface TooltipAreaProps extends UsePopupProps {
   /** Style object applied to the target element */
   targetElementStyle?: CSSProperties;
 
-  tooltipElementClassName?: string;
-  tooltipElementStyle?: CSSProperties;
+  /* Class name applied to the tooltip/message element */
+  messageElementClassName?: string;
+
+  /* Styles applied to the tooltip/message element */
+  messageElementStyle?: CSSProperties;
 }
