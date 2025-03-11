@@ -57,58 +57,55 @@
   display: inline-block;
   transition: opacity 0.1s ease-in-out;
   position: absolute;
-}
 
-/* Hidden state */
-.ds.tooltip[aria-hidden="true"] {
-  opacity: 0;
-  pointer-events: none;
-  visibility: hidden;
-}
+  &[aria-hidden="true"] {
+    opacity: 0;
+    pointer-events: none;
+    visibility: hidden;
+  }
 
-/* Visible state */
-.ds.tooltip[aria-hidden="false"] {
-  opacity: 1;
-  pointer-events: auto;
-  visibility: visible;
-}
+  &[aria-hidden="false"] {
+    opacity: 1;
+    pointer-events: auto;
+    visibility: visible;
+  }
 
-/* triangle */
+  /* triangle */
+  &::before {
+    content: "";
+    width: 0;
+    height: 0;
+    border: var(--tooltip-border-arrow-hidden);
+    position: absolute;
+  }
 
-.ds.tooltip::before {
-  content: "";
-  width: 0;
-  height: 0;
-  border: var(--tooltip-border-arrow-hidden);
-  position: absolute;
-}
+  &.top::before {
+    border-top: var(--tooltip-border-arrow-visible);
+    bottom: var(--tooltip-spacing-arrow-edge);
+  }
 
-.ds.tooltip.top::before {
-  border-top: var(--tooltip-border-arrow-visible);
-  bottom: var(--tooltip-spacing-arrow-edge);
-}
+  &.right::before {
+    border-right: var(--tooltip-border-arrow-visible);
+    left: var(--tooltip-spacing-arrow-edge);
+  }
 
-.ds.tooltip.right::before {
-  border-right: var(--tooltip-border-arrow-visible);
-  left: var(--tooltip-spacing-arrow-edge);
-}
+  &.bottom::before {
+    border-bottom: var(--tooltip-border-arrow-visible);
+    top: var(--tooltip-spacing-arrow-edge);
+  }
 
-.ds.tooltip.bottom::before {
-  border-bottom: var(--tooltip-border-arrow-visible);
-  top: var(--tooltip-spacing-arrow-edge);
-}
+  &.left::before {
+    border-left: var(--tooltip-border-arrow-visible);
+    right: var(--tooltip-spacing-arrow-edge);
+  }
 
-.ds.tooltip.left::before {
-  border-left: var(--tooltip-border-arrow-visible);
-  right: var(--tooltip-spacing-arrow-edge);
-}
+  &.top::before,
+  &.bottom::before {
+    left: var(--tooltip-spacing-arrow-middle);
+  }
 
-.ds.tooltip.top::before,
-.ds.tooltip.bottom::before {
-  left: var(--tooltip-spacing-arrow-middle);
-}
-
-.ds.tooltip.left::before,
-.ds.tooltip.right::before {
-  top: var(--tooltip-spacing-arrow-middle);
+  &.left::before,
+  &.right::before {
+    top: var(--tooltip-spacing-arrow-middle);
+  }
 }
