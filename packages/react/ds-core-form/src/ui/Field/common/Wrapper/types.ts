@@ -11,4 +11,16 @@ export type WrapperProps = FieldProps & {
 	children?: React.ReactNode;
 	/* Inline styles */
 	style?: React.CSSProperties;
+
+	/* The name of input labelled */
+	label?: string;
+
+	/* Is the field optional */
+	isOptional?: boolean;
+
+	/* TODO */
+	nestedRegisterProps?: Record<string, unknown>;
+
+	/* Whether to unregister the field on unmount */
+	unregisterOnUnmount?: boolean;
 };
