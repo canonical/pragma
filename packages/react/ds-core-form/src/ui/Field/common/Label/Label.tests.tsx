@@ -6,12 +6,16 @@ import Component from "./Label.js";
 
 describe("Label component", () => {
   it("renders", () => {
-    render(<Component>Label</Component>);
+    render(<Component name="Email">Email</Component>);
     expect(screen.getByText("Label")).toBeInTheDocument();
   });
 
   it("applies className", () => {
-    render(<Component className={"test-class"}>Label</Component>);
+    render(
+      <Component className={"test-class"} name="Email">
+        Email
+      </Component>,
+    );
     expect(screen.getByText("Label")).toHaveClass("test-class");
   });
 });

@@ -8,8 +8,9 @@ import Component from "./Label.js";
 // import type { StoryFn } from '@storybook/react'
 
 const meta = {
-	title: "common/Label",
-	component: Component,
+  title: "common/Label",
+  component: Component,
+  tags: ["autodocs"],
 } satisfies Meta<typeof Component>;
 
 export default meta;
@@ -22,43 +23,25 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
-	args: {
-		children: <span>Hello world!</span>,
-	},
+  args: {
+    name: "email",
+    children: "What is your email ?",
+  },
 };
 
 export const Optional: Story = {
-	args: {
-		children: <span>Hello world!</span>,
-	},
+  args: {
+    name: "name",
+    children: "What is your name ?",
+    isOptional: true,
+  },
 };
 
-/*
-  Function-based story
-  Direct arguments passed to the component
-  Simple, but can lead to repetition if used across multiple stories with similar configurations
-
-  export const Default = (args: LabelProps) => <Component {...args} />;
-  Default.args = { children: <span>Hello world!</span> };
-*/
-
-/*
-  Template-Based story
-  Uses a template function to bind story variations, making it more reusable
-  Slightly more boilerplate but more flexible for creating multiple stories with different configurations
-
-  const Template: StoryFn<typeof Component> = (args) => <Component {...args} />;
-  export const Default: StoryFn<typeof Component> = Template.bind({});
-  Default.args = {
-    children: <span>Hello world!</span>
-  };
-*/
-
-/*
-  Static story
-  Simple and straightforward, but offers the least flexibility and reusability
-
-  export const Default: StoryFn<typeof Component> = () => (
-    <Component><span>Hello world!</span></Component>
-  );
-*/
+/** This represents a label for a fieldset, where we do not need an actual html label */
+export const SemanticLabel: Story = {
+  args: {
+    name: "email",
+    children: "Email",
+    tag: "span",
+  },
+};
