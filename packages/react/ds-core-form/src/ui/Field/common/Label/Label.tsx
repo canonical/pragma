@@ -5,25 +5,34 @@ import "./styles.css";
 
 const componentCssClassName = "ds label";
 
+const defaultMessages = {
+	optional: "optional",
+};
+
 /**
  * description of the Label component
  * @returns {React.ReactElement} - Rendered Label
  */
 const Label = ({
-  id,
-  children,
-  className,
-  style,
+	id,
+	children,
+	className,
+	style,
+	name,
+	optional,
+	messages,
+	as: Element = "label",
 }: LabelProps): React.ReactElement => {
-  return (
-    <div
-      id={id}
-      style={style}
-      className={[componentCssClassName, className].filter(Boolean).join(" ")}
-    >
-      {children}
-    </div>
-  );
+	return (
+		<Element
+			id={id}
+			style={style}
+			className={[componentCssClassName, className].filter(Boolean).join(" ")}
+		>
+			{children || name}
+			{optional && <span> {messages.optional}</span>}
+		</Element>
+	);
 };
 
 export default Label;
