@@ -6,7 +6,7 @@
     display: inline-block;
 
     & > * {
-      /* The tooltip targets must have no margin in order for too ltip placements to work correctly */
+      /* The tooltip targets must have no margin in order for tooltip placements to work correctly */
       margin: 0 !important;
     }
   }

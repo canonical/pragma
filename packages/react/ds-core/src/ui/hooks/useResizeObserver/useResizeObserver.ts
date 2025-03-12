@@ -14,8 +14,10 @@ export default function useResizeObserver<TElement extends HTMLElement>(
     height: 0,
   });
 
+  if (typeof window === "undefined") return size;
+
   useEffect(() => {
-    if (!element || typeof window === "undefined") return;
+    if (!element) return;
 
     const observer = new ResizeObserver(([entry]) => {
       if (entry) {

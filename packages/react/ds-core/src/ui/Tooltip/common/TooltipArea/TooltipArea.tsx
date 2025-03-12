@@ -69,9 +69,7 @@ const TooltipArea = ({
     >
       <span
         id={targetElementId}
-        className={[componentCssClassName, targetElementClassName, "target"]
-          .filter(Boolean)
-          .join(" ")}
+        className={["target"].filter(Boolean).join(" ")}
         ref={targetRef}
         aria-describedby={popupId}
       >
