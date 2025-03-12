@@ -78,7 +78,6 @@ const usePopup = ({
 
   const handleTriggerEnter: PointerEventHandler = useCallback(
     (event) => {
-      console.log("usePopup handleTriggerEnter");
       open(event.nativeEvent);
       if (onEnter) onEnter(event);
     },
@@ -87,7 +86,6 @@ const usePopup = ({
 
   const handleTriggerLeave: PointerEventHandler = useCallback(
     (event) => {
-      console.log("usePopup handleTriggerLeave");
       close(event.nativeEvent);
       if (onLeave) onLeave(event);
     },
