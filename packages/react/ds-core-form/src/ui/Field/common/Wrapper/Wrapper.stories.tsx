@@ -3,13 +3,20 @@
 // Needed for function-based story, safe to remove otherwise
 // import type { WrapperProps } from './types.js'
 import type { Meta, StoryObj } from "@storybook/react";
+import * as decorators from "storybook/decorators.js";
+import {
+	Text as TextInput,
+	Textarea as TextareaInput,
+} from "../../inputs/index.js";
+import type { BaseInputProps } from "../../inputs/types.js";
 import Component from "./Wrapper.js";
 // Needed for template-based story, safe to remove otherwise
 // import type { StoryFn } from '@storybook/react'
 
 const meta = {
-  title: "Wrapper",
-  component: Component,
+	title: "Wrapper",
+	component: Component,
+	decorators: [decorators.form()],
 } satisfies Meta<typeof Component>;
 
 export default meta;
@@ -22,9 +29,17 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
-  args: {
-    children: <span>Hello world!</span>,
-  },
+	args: {
+		name: "email",
+		Component: TextInput,
+	},
+};
+
+export const Textarea: Story = {
+	args: {
+		name: "description",
+		Component: TextareaInput,
+	},
 };
 
 /*

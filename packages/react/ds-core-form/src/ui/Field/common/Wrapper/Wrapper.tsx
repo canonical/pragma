@@ -5,65 +5,65 @@ import "./styles.css";
 import { Description, Label } from "../index.js";
 import { useFieldWrapper } from "./hooks/index.js";
 
-const componentCssClassName = "ds wrapper";
+const componentCssClassName = "ds form-wrapper";
 
 /**
  * description of the Wrapper component
  * @returns {React.ReactElement} - Rendered Wrapper
  */
 const Wrapper = ({
-  id,
-  children,
-  className,
-  style,
+	id,
+	children,
+	className,
+	style,
 
-  name,
-  Component,
-  description,
-  label,
-  isOptional,
-  registerProps: userRegisterProps,
-  nestedRegisterProps,
-  unregisterOnUnmount,
+	name,
+	Component,
+	description,
+	label,
+	isOptional,
+	registerProps: userRegisterProps,
+	nestedRegisterProps,
+	unregisterOnUnmount,
 
-  mockLabel = false,
-  ...otherProps
+	mockLabel = false,
+	...otherProps
 }: WrapperProps): React.ReactElement => {
-  const { fieldError, isError, ariaProps, registerProps } = useFieldWrapper(
-    name,
-    {
-      label,
-      isOptional,
-      userRegisterProps,
-      nestedRegisterProps,
-      unregisterOnUnmount,
-    },
-  );
+	const { fieldError, isError, ariaProps, registerProps } = useFieldWrapper(
+		name,
+		{
+			label,
+			isOptional,
+			userRegisterProps,
+			nestedRegisterProps,
+			unregisterOnUnmount,
+		},
+	);
 
-  return (
-    <div
-      id={id}
-      style={style}
-      className={[componentCssClassName, className].filter(Boolean).join(" ")}
-    >
-      <Label
-        name={name}
-        isOptional={isOptional}
-        as={mockLabel ? "legend" : undefined}
-        {...ariaProps.label}
-      >
-        {label}
-      </Label>
-      <Component
-        name={name}
-        registerProps={registerProps}
-        {...ariaProps.input}
-        {...otherProps}
-      />
-      <Description {...ariaProps.description}>{description}</Description>
-      {children}
-    </div>
-  );
+	return (
+		<div
+			id={id}
+			style={style}
+			className={[componentCssClassName, className].filter(Boolean).join(" ")}
+		>
+			<Label
+				name={name}
+				isOptional={isOptional}
+				as={mockLabel ? "legend" : undefined}
+				{...ariaProps.label}
+			>
+				{label}
+			</Label>
+			<Component
+				name={name}
+				registerProps={registerProps}
+				{...ariaProps.input}
+				{...otherProps}
+			/>
+			<Description {...ariaProps.description}>{description}</Description>
+			{children}
+		</div>
+	);
 };
 
 export default Wrapper;

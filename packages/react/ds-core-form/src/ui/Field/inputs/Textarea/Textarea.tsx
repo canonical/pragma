@@ -4,28 +4,28 @@ import { useFormContext } from "react-hook-form";
 import type { TextareaProps } from "./types.js";
 import "./styles.css";
 
-const componentCssClassName = "ds textarea";
+const componentCssClassName = "ds form-textarea";
 
 /**
  * description of the Textarea component
  * @returns {React.ReactElement} - Rendered Textarea
  */
 const Textarea = ({
-  id,
-  className,
-  style,
-  name,
-  registerProps,
+	id,
+	className,
+	style,
+	name,
+	registerProps,
 }: TextareaProps): React.ReactElement => {
-  const { register } = useFormContext();
-  return (
-    <textarea
-      id={id}
-      style={style}
-      className={[componentCssClassName, className].filter(Boolean).join(" ")}
-      {...register(name, registerProps)}
-    />
-  );
+	const { register } = useFormContext();
+	return (
+		<textarea
+			id={id}
+			style={style}
+			className={[componentCssClassName, className].filter(Boolean).join(" ")}
+			{...register(name, registerProps)}
+		/>
+	);
 };
 
 export default Textarea;
