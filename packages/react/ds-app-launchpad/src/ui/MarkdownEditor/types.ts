@@ -21,6 +21,8 @@ export type MarkdownEditorProps = {
   hideToolbar?: boolean;
   /** Hide the preview pane */
   hidePreview?: boolean;
+  /** Hide the border around the editor */
+  borderless?: boolean;
   /** Controlled edit mode, leave undefined for internal control */
   editMode?: EditMode;
   /** Callback for edit mode change, needed if editMode is controlled */
