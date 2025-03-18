@@ -57,12 +57,12 @@
     "@types/react-dom": "^19.0.2",
     "@vitejs/plugin-react": "^4.3.4",
     "copyfiles": "^2.4.1",
-    "globals": "^15.13.0",
-    "jsdom": "^25.0.1",
+    "globals": "^16.0.0",
+    "jsdom": "^26.0.0",
     "storybook": "^8.4.7",
     "typescript": "^5.7.2",
     "vite": "^6.0.3",
     "vite-tsconfig-paths": "^5.1.4",
-    "vitest": "^2.1.8"
+    "vitest": "^3.0.9"
   }
 }
