@@ -12,20 +12,21 @@ import {
 import ReactMarkdown from "react-markdown";
 import rehypeSanitize from "rehype-sanitize";
 import remarkGfm from "remark-gfm";
+import "../GitDiffViewer/common/CodeDiffViewer/HighlighTheme.css";
 import {
   Toolbar,
   ViewModeTabs,
   type ViewModeTabsProps,
   icons,
 } from "./common/index.js";
+import { useEditor } from "./hooks/index.js";
 import "./styles.css";
 import type { EditMode, MarkdownEditorProps } from "./types.js";
 ("react-markdown");
 
-import "../GitDiffViewer/common/CodeDiffViewer/HighlighTheme.css";
-import { useEditor } from "./hooks/index.js";
 const componentCssClassName = "ds markdown-editor";
-const componentCssWithBorderClassName = "bordered";
+const borderCssClassName = "bordered";
+
 /**
  * A dual-mode Markdown editor for writing and previewing Markdown content.
  */
@@ -123,7 +124,7 @@ const MarkdownEditor = ({
       className={[
         componentCssClassName,
         className,
-        !borderless && componentCssWithBorderClassName,
+        !borderless && borderCssClassName,
       ]
         .filter(Boolean)
         .join(" ")}
@@ -135,7 +136,7 @@ const MarkdownEditor = ({
             onEditModeChange={handleEditModeChange}
           />
         )}
-        {!hideToolbar && (
+        {!hideToolbar && toolbar && (
           <Toolbar label={toolbarBarLabelMessage}>
             <Toolbar.Group label={ToolbarTextFormattingGroupLabelMessage}>
               <Toolbar.Button

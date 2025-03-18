@@ -50,7 +50,7 @@
   }
 
   &.bordered {
-    & > .editor-content {
+    > .editor-content {
       border-color: var(--markdown-editor-editor-border-color);
       padding: var(--markdown-editor-input-vert-padding)
         var(--markdown-editor-input-horizontal-padding);

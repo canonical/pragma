@@ -20,7 +20,7 @@ describe("MarkdownEditor", () => {
 
   it("switches between write and preview modes", async () => {
     const { container } = render(
-      <MarkdownEditor defaultValue={fixtures.markdownLongExample} />
+      <MarkdownEditor defaultValue={fixtures.markdownLongExample} />,
     );
 
     // Initially in write mode
@@ -76,7 +76,7 @@ describe("MarkdownEditor", () => {
       <MarkdownEditor
         editMode="write"
         onEditModeChange={handleEditModeChange}
-      />
+      />,
     );
 
     // Find and click the preview tab

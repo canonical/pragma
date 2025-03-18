@@ -304,6 +304,8 @@ const useEditor = (
     };
   }, [textareaRef, handleShortcuts]);
 
+  if (typeof window === "undefined") return {};
+
   return {
     toolbar: {
       italic: {
