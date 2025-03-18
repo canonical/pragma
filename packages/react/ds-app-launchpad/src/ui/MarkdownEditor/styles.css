@@ -35,12 +35,9 @@
   }
 
   & > .editor-content {
-    border: 1px solid var(--markdown-editor-editor-border-color);
     color: var(--markdown-editor-editor-color);
     background-color: var(--markdown-editor-editor-background-color);
-    padding: var(--markdown-editor-input-vert-padding)
-      var(--markdown-editor-input-horizontal-padding);
-
+    border: 1px solid transparent;
     ul.contains-task-list {
       & li.task-list-item {
         list-style: none;
@@ -49,6 +46,14 @@
         margin-inline-start: -1.25em;
         margin-right: 0.313em;
       }
+    }
+  }
+
+  &.bordered {
+    > .editor-content {
+      border-color: var(--markdown-editor-editor-border-color);
+      padding: var(--markdown-editor-input-vert-padding)
+        var(--markdown-editor-input-horizontal-padding);
     }
   }
 

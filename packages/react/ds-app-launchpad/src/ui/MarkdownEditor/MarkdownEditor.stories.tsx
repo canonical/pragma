@@ -26,6 +26,7 @@ export const ReadOnlyMarkdownViewer: Story = {
   args: {
     hideToolbar: true,
     hidePreview: true,
+    borderless: true,
     editMode: "preview",
     defaultValue: fixtures.markdownLongExample,
   },
@@ -45,6 +46,7 @@ export const ExternallyControlledEditMode: StoryFn<MarkdownEditorProps> = (
         defaultValue={fixtures.markdownShortExample}
         editMode={editMode}
         hidePreview
+        borderless
         onEditModeChange={(newMode) => setEditMode(newMode)}
       />
       <fieldset>

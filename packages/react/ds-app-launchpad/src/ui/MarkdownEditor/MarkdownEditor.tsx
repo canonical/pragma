@@ -1,4 +1,5 @@
 /* @canonical/generator-ds 0.9.0-experimental.4 */
+import hljs from "highlight.js";
 import type React from "react";
 import {
   useCallback,
@@ -8,16 +9,23 @@ import {
   useRef,
   useState,
 } from "react";
+import ReactMarkdown from "react-markdown";
+import rehypeSanitize from "rehype-sanitize";
+import remarkGfm from "remark-gfm";
+import "../GitDiffViewer/common/CodeDiffViewer/HighlighTheme.css";
 import {
   Toolbar,
   ViewModeTabs,
   type ViewModeTabsProps,
   icons,
 } from "./common/index.js";
+import { useEditor } from "./hooks/index.js";
 import "./styles.css";
 import type { EditMode, MarkdownEditorProps } from "./types.js";
+("react-markdown");
 
 const componentCssClassName = "ds markdown-editor";
+const borderCssClassName = "bordered";
 
 /**
  * A dual-mode Markdown editor for writing and previewing Markdown content.
@@ -33,6 +41,7 @@ const MarkdownEditor = ({
   placeholder,
   hideToolbar = false,
   hidePreview = false,
+  borderless = false,
   editMode: controlledEditMode,
   onEditModeChange: controlledOnEditModeChange,
   emptyInputMessage = "No content",
@@ -47,12 +56,14 @@ const MarkdownEditor = ({
   ToolbarLinkButtonLabelMessage = "Link",
   ToolbarUnorderedListButtonLabelMessage = "Unordered List",
   ToolbarOrderedListButtonLabelMessage = "Ordered List",
-
   ...textareaProps
 }: MarkdownEditorProps): React.ReactElement => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const previewRef = useRef<HTMLDivElement>(null);
+
   const [internalEditMode, setInternalEditMode] = useState<EditMode>("write");
   const [shouldFocusTextarea, setShouldFocusTextarea] = useState(false);
+  const { toolbar } = useEditor(textareaRef);
 
   const editMode = useMemo(() => {
     return controlledEditMode ?? internalEditMode;
@@ -94,11 +105,29 @@ const MarkdownEditor = ({
     }
   }, [editMode, shouldFocusTextarea]);
 
+  useEffect(() => {
+    if (previewRef.current && editMode === "preview") {
+      for (const codeBlock of Array.from(
+        previewRef.current.querySelectorAll<HTMLElement>("pre code"),
+      )) {
+        if (!codeBlock.dataset.highlighted) {
+          hljs.highlightElement(codeBlock);
+        }
+      }
+    }
+  }, [editMode]);
+
   return (
     <div
       id={id}
       style={style}
-      className={[componentCssClassName, className].filter(Boolean).join(" ")}
+      className={[
+        componentCssClassName,
+        className,
+        !borderless && borderCssClassName,
+      ]
+        .filter(Boolean)
+        .join(" ")}
     >
       <div className="top-bar">
         {!hidePreview && (
@@ -107,27 +136,27 @@ const MarkdownEditor = ({
             onEditModeChange={handleEditModeChange}
           />
         )}
-        {!hideToolbar && (
+        {!hideToolbar && toolbar && (
           <Toolbar label={toolbarBarLabelMessage}>
             <Toolbar.Group label={ToolbarTextFormattingGroupLabelMessage}>
               <Toolbar.Button
                 label={ToolbarTitleButtonLabelMessage}
-                onClick={() => {}}
-                shortcut={""}
+                onClick={toolbar.title.handler}
+                shortcut={toolbar.title.shortcut}
               >
                 {icons.ToolbarTitle}
               </Toolbar.Button>
               <Toolbar.Button
                 label={ToolbarBoldButtonLabelMessage}
-                onClick={() => {}}
-                shortcut={""}
+                onClick={toolbar.bold.handler}
+                shortcut={toolbar.bold.shortcut}
               >
                 {icons.ToolbarBold}
               </Toolbar.Button>
               <Toolbar.Button
                 label={ToolbarItalicButtonLabelMessage}
-                onClick={() => {}}
-                shortcut={""}
+                onClick={toolbar.italic.handler}
+                shortcut={toolbar.italic.shortcut}
               >
                 {icons.ToolbarItalic}
               </Toolbar.Button>
@@ -136,36 +165,36 @@ const MarkdownEditor = ({
             <Toolbar.Group label={ToolbarToolsGroupLabelMessage}>
               <Toolbar.Button
                 label={ToolbarQuoteButtonLabelMessage}
-                onClick={() => {}}
-                shortcut={""}
+                onClick={toolbar.quote.handler}
+                shortcut={toolbar.quote.shortcut}
               >
                 {icons.ToolbarQuote}
               </Toolbar.Button>
               <Toolbar.Button
                 label={ToolbarCodeButtonLabelMessage}
-                onClick={() => {}}
-                shortcut={""}
+                onClick={toolbar.code.handler}
+                shortcut={toolbar.code.shortcut}
               >
                 {icons.ToolbarCode}
               </Toolbar.Button>
               <Toolbar.Button
                 label={ToolbarLinkButtonLabelMessage}
-                onClick={() => {}}
-                shortcut={""}
+                onClick={toolbar.link.handler}
+                shortcut={toolbar.link.shortcut}
               >
                 {icons.ToolbarLink}
               </Toolbar.Button>
               <Toolbar.Button
                 label={ToolbarUnorderedListButtonLabelMessage}
-                onClick={() => {}}
-                shortcut={""}
+                onClick={toolbar.uList.handler}
+                shortcut={toolbar.uList.shortcut}
               >
                 {icons.ToolbarUnorderedList}
               </Toolbar.Button>
               <Toolbar.Button
                 label={ToolbarOrderedListButtonLabelMessage}
-                onClick={() => {}}
-                shortcut={""}
+                onClick={toolbar.oList.handler}
+                shortcut={toolbar.oList.shortcut}
               >
                 {icons.ToolbarOrderedList}
               </Toolbar.Button>
@@ -184,8 +213,17 @@ const MarkdownEditor = ({
         {...textareaProps}
       />
       {editMode === "preview" && (
-        <div className="editor-content" style={previewStyle}>
-          {textareaRef.current?.value || defaultValue || emptyInputMessage}
+        <div className="editor-content" style={previewStyle} ref={previewRef}>
+          <ReactMarkdown
+            rehypePlugins={[rehypeSanitize]}
+            remarkPlugins={[remarkGfm]}
+            components={{
+              h1: ({ children }) => <h3>{children}</h3>,
+              h2: ({ children }) => <h3>{children}</h3>,
+            }}
+          >
+            {textareaRef.current?.value || defaultValue || emptyInputMessage}
+          </ReactMarkdown>
         </div>
       )}
     </div>
