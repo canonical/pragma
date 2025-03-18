@@ -1,0 +1,16 @@
+name: "ds-react-app-launchpad/Publish to chromatic"
+on:
+  push:
+    branches:
+      - '**'  # This excludes tags
+    paths: [packages/react/ds-app-launchpad/**]
+defaults:
+  run:
+    working-directory: packages/react/ds-app-launchpad
+jobs:
+  test-compile:
+    uses: ./.github/workflows/common/publish-to-chromatic.yaml
+    secrets:
+      PROJECT_TOKEN: ${{ secrets.CHROMATIC_TOKEN_CANONICAL_REACT_DS_APP_LAUNCHPAD }}
+    with:
+      working-directory: packages/react/ds-app-launchpad
