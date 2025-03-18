@@ -15,10 +15,16 @@ export default function useWindowDimensions({
   scrollDelay = 100,
 }: UseWindowDimensionProps = {}): UseWindowDimensionsResult {
   const isServer = typeof window === "undefined";
-  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
-  const [windowHeight, setWindowHeight] = useState(window.innerHeight);
-  const [scrollHeight, setScrollHeight] = useState(window.scrollY);
-  const [scrollWidth, setScrollWidth] = useState(window.scrollX);
+  const [windowWidth, setWindowWidth] = useState(
+    isServer ? 0 : window.innerWidth,
+  );
+  const [windowHeight, setWindowHeight] = useState(
+    isServer ? 0 : window.innerHeight,
+  );
+  const [scrollHeight, setScrollHeight] = useState(
+    isServer ? 0 : window.scrollY,
+  );
+  const [scrollWidth, setScrollWidth] = useState(isServer ? 0 : window.scrollX);
 
   const result = useMemo(
     () => ({
