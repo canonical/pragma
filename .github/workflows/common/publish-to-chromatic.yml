@@ -1,0 +1,49 @@
+name: "Publish to chromatic"
+on:
+  workflow_call:
+    inputs:
+      working-directory:
+        required: true
+        description: The directory where Storybook should be published from
+        type: string
+    secrets:
+      CHROMATIC_PROJECT_TOKEN:
+        required: true
+        description: Chromatic project token for publishing
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref
+    }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+        # "prepare" hook on `bun install` runs `bun run build`
+      - name: Setup environment
+        uses: ./.github/actions/setup-env
+
+      - name: Code quality checks
+        run: bun run check
+
+      - name: Test
+        run: bun run test
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+        # "prepare" hook on `bun install` runs `bun run build`
+      - name: Setup environment
+        uses: ./.github/actions/setup-env
+
+      - name: Publish to Chromatic
+        uses: chromaui/action@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          projectToken: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
+          exitZeroOnChanges: true
+          workingDir: ${{ inputs.working-directory }}
