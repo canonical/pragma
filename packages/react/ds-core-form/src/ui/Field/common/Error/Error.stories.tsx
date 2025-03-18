@@ -1,17 +1,15 @@
-/* @canonical/generator-ds 0.9.0-experimental.4 */
+/* @canonical/generator-ds 0.9.0-experimental.9 */
 
+import Component from "./Error.js";
 // Needed for function-based story, safe to remove otherwise
-// import type { TextareaProps } from './types.js'
+// import type { ErrorProps } from './types.js'
 import type { Meta, StoryObj } from "@storybook/react";
-import * as decorators from "storybook/decorators.js";
-import Component from "./Textarea.js";
 // Needed for template-based story, safe to remove otherwise
 // import type { StoryFn } from '@storybook/react'
 
 const meta = {
-	title: "Textarea",
-	component: Component,
-	decorators: [decorators.form()],
+  title: "Error",
+  component: Component,
 } satisfies Meta<typeof Component>;
 
 export default meta;
@@ -24,33 +22,9 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
-	args: {
-		name: "content",
-	},
-};
-
-export const WithValidation: Story = {
-	args: {
-		name: "content",
-		registerProps: {
-			required: {
-				value: true,
-				message: "A board name is required",
-			},
-			pattern: {
-				value: /@/, // Regular expression to check for '@' symbol
-				message: "Field must contain an '@' symbol",
-			},
-			minLength: {
-				value: 5,
-				message: "Board name must be at least 5 characters",
-			},
-			maxLength: {
-				value: 50,
-				message: "Board name must be at most 50 characters",
-			},
-		},
-	},
+  args: {
+    children: <span>Hello world!</span>
+  },
 };
 
 /*
@@ -58,7 +32,7 @@ export const WithValidation: Story = {
   Direct arguments passed to the component
   Simple, but can lead to repetition if used across multiple stories with similar configurations
 
-  export const Default = (args: TextareaProps) => <Component {...args} />;
+  export const Default = (args: ErrorProps) => <Component {...args} />;
   Default.args = { children: <span>Hello world!</span> };
 */
 

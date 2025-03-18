@@ -2,7 +2,7 @@
 import type React from "react";
 import type { WrapperProps } from "./types.js";
 import "./styles.css";
-import { Description, Label } from "../index.js";
+import { Description, Error as FieldError, Label } from "../index.js";
 import { useFieldWrapper } from "./hooks/index.js";
 
 const componentCssClassName = "ds form-wrapper";
@@ -39,6 +39,7 @@ const Wrapper = ({
 			unregisterOnUnmount,
 		},
 	);
+	console.log(fieldError);
 
 	return (
 		<div
@@ -46,6 +47,7 @@ const Wrapper = ({
 			style={style}
 			className={[componentCssClassName, className].filter(Boolean).join(" ")}
 		>
+			<Description {...ariaProps.description}>{description}</Description>
 			<Label
 				name={name}
 				isOptional={isOptional}
@@ -60,7 +62,11 @@ const Wrapper = ({
 				{...ariaProps.input}
 				{...otherProps}
 			/>
-			<Description {...ariaProps.description}>{description}</Description>
+			{isError && (
+				<FieldError {...ariaProps.error}>
+					{fieldError?.message?.toString()}
+				</FieldError>
+			)}
 			{children}
 		</div>
 	);

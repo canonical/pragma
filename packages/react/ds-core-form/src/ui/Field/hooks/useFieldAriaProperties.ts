@@ -22,7 +22,10 @@ const useFieldAriaProps = (name: string, isError: boolean) =>
 			},
 			label: { id: labelId },
 			description: { id: descriptionId },
-			error: { id: errorId },
+			error: {
+				id: errorId,
+				// role: "alert",
+			},
 		};
 	}, [name, isError]);
 

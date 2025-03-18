@@ -44,7 +44,7 @@ const useFieldWrapper = (
 				value: true,
 				// TODO
 				// @ts-ignore
-				message: messages.required(label || name),
+				// message: messages.required(label || name),
 			};
 		}
 		return {
@@ -52,7 +52,8 @@ const useFieldWrapper = (
 			...props,
 			...userRegisterProps,
 		};
-	}, [name, label, isOptional, userRegisterProps, nestedRegisterProps]);
+		// }, [name, label, isOptional, userRegisterProps, nestedRegisterProps]);
+	}, [name]);
 
 	const { unregister } = useFormContext();
 
