@@ -1,7 +1,7 @@
 name: "react-ds-core-form/chromatic"
 on:
   pull_request:
-    paths: [packages/react/ds-core/**]
+    paths: [packages/react/ds-core-form/**]
 jobs:
   test-compile:
     uses: ./.github/workflows/chromatic._template.yaml
