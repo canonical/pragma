@@ -1,8 +1,6 @@
 name: "ds-react-app-launchpad/Publish to chromatic"
 on:
-  push:
-    branches:
-      - '**'  # This excludes tags
+  pull_request:
     paths: [packages/react/ds-app-launchpad/**]
 defaults:
   run:

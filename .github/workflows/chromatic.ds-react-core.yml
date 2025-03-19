@@ -1,8 +1,6 @@
 name: "ds-react-core-form/Publish to chromatic"
 on:
-  push:
-    branches:
-      - '**'  # This excludes tags
+  pull_request:
     paths: [packages/react/ds-core-form/**]
 defaults:
   run:
