@@ -6,6 +6,6 @@ jobs:
   test-compile:
     uses: ./.github/workflows/chromatic._template.yml
     secrets:
-      PROJECT_TOKEN: ${{ secrets.CHROMATIC_TOKEN_CANONICAL_REACT_DS_CORE }}
+      CHROMATIC_PROJECT_TOKEN: ${{ secrets.CHROMATIC_TOKEN_CANONICAL_REACT_DS_CORE }}
     with:
       working-directory: packages/react/ds-core
