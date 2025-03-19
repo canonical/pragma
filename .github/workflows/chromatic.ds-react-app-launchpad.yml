@@ -4,7 +4,7 @@ on:
     paths: [packages/react/ds-app-launchpad/**]
 jobs:
   test-compile:
-    uses: ./.github/workflows/chromatic._template.yaml
+    uses: ./.github/workflows/chromatic._template.yml
     secrets:
       PROJECT_TOKEN: ${{ secrets.CHROMATIC_TOKEN_CANONICAL_REACT_DS_APP_LAUNCHPAD }}
     with:
