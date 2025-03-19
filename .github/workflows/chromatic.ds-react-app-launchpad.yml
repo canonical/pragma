@@ -2,9 +2,6 @@ name: "ds-react-app-launchpad/Publish to chromatic"
 on:
   pull_request:
     paths: [packages/react/ds-app-launchpad/**]
-defaults:
-  run:
-    working-directory: packages/react/ds-app-launchpad
 jobs:
   test-compile:
     uses: ./.github/workflows/_chromatic.yaml

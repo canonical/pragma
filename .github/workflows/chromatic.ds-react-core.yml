@@ -2,9 +2,6 @@ name: "ds-react-core-form/Publish to chromatic"
 on:
   pull_request:
     paths: [packages/react/ds-core-form/**]
-defaults:
-  run:
-    working-directory: packages/react/ds-core-form
 jobs:
   test-compile:
     uses: ./.github/workflows/_chromatic.yaml
