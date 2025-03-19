@@ -18,6 +18,9 @@
     --tooltip-line-height: line height of the tooltip
 
     --tooltip-spacing-arrow-size: size of the arrow
+
+    --tooltip-arrow-offset-left: offset of the arrow from the left
+    --tooltip-arrow-offset-top: offset of the arrow from the top
 */
 
 .ds.tooltip {
@@ -68,6 +71,13 @@
     opacity: 1;
     pointer-events: auto;
     visibility: visible;
+  }
+
+  &.autofit {
+    &::before {
+      transform: translateX(var(--tooltip-arrow-offset-left))
+        translateY(var(--tooltip-arrow-offset-top));
+    }
   }
 
   /* triangle */

@@ -15,6 +15,8 @@ const componentCssClassName = "ds tooltip-area";
  */
 const TooltipArea = ({
   children,
+  style,
+  className,
   Message,
   distance = "6px",
   targetElementId,
@@ -23,6 +25,7 @@ const TooltipArea = ({
   messageElementClassName,
   messageElementStyle,
   parentElement,
+  autoFit,
   ...props
 }: TooltipAreaProps): ReactElement => {
   const {
@@ -36,12 +39,16 @@ const TooltipArea = ({
     handleTriggerEnter,
     handleTriggerLeave,
     bestPosition,
-  } = usePopup({ distance, ...props });
+  } = usePopup({ distance, autoFit, ...props });
 
   const TooltipMessageElement = (
     <Tooltip
       id={popupId}
-      className={[bestPosition?.positionName, messageElementClassName]
+      className={[
+        bestPosition?.positionName,
+        messageElementClassName,
+        autoFit && "autofit",
+      ]
         .filter(Boolean)
         .join(" ")}
       onPointerEnter={handleTriggerEnter}
@@ -52,6 +59,11 @@ const TooltipArea = ({
         ...popupPositionStyle,
         // @ts-ignore allow binding arrow size to distance, as it is needed both in JS and CSS calculations
         "--tooltip-spacing-arrow-size": distance,
+        ...(autoFit &&
+          bestPosition?.autoFitOffset && {
+            "--tooltip-arrow-offset-top": `${bestPosition?.autoFitOffset.top || 0}px`,
+            "--tooltip-arrow-offset-left": `${bestPosition?.autoFitOffset.left || 0}px`,
+          }),
       }}
       isOpen={isOpen}
     >
@@ -61,7 +73,8 @@ const TooltipArea = ({
 
   return (
     <span
-      className={[componentCssClassName].filter(Boolean).join(" ")}
+      className={[componentCssClassName, className].filter(Boolean).join(" ")}
+      style={style}
       onFocus={handleTriggerFocus}
       onBlur={handleTriggerBlur}
       onPointerEnter={handleTriggerEnter}
@@ -69,7 +82,8 @@ const TooltipArea = ({
     >
       <span
         id={targetElementId}
-        className={["target"].filter(Boolean).join(" ")}
+        style={targetElementStyle}
+        className={["target", targetElementClassName].filter(Boolean).join(" ")}
         ref={targetRef}
         aria-describedby={popupId}
       >

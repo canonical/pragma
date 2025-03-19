@@ -19,6 +19,7 @@ describe("usePopup", () => {
     positionName: "bottom",
     position: { top: 10, left: 20 },
     fits: true,
+    autoFitOffset: { top: 0, left: 0 },
   };
 
   const mockPopupPositionStyle: CSSProperties = {

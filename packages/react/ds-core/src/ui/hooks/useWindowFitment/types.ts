@@ -2,6 +2,12 @@ import type { CSSProperties, RefObject } from "react";
 
 export interface UseWindowFitmentProps {
   /**
+   * Whether the popup should automatically fit into the viewport.
+   * If true, the hook will try to fit the popup into the viewport if it doesn't fit in the preferred directions.
+   * Defaults to false.
+   */
+  autoFit?: boolean;
+  /**
    * An array of preferred directions for the popup.
    * The hook will try to position the popup in these directions in order.
    * Defaults to ['top', 'bottom', 'left', 'right'].
@@ -76,4 +82,5 @@ export interface BestPosition {
   position: RelativePosition;
   positionName: WindowFitmentDirection;
   fits: boolean;
+  autoFitOffset: RelativePosition;
 }

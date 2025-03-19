@@ -23,6 +23,7 @@ const useWindowFitment = ({
   resizeDelay = 150,
   scrollDelay = 150,
   onBestPositionChange,
+  autoFit = false,
 }: UseWindowFitmentProps): UseWindowFitmentResult => {
   const isServer = typeof window === "undefined";
   const targetRef = useRef<HTMLDivElement | null>(null);
@@ -179,10 +180,34 @@ const useWindowFitment = ({
           left: targetRect.left + relativePosition.left,
         };
 
+        const autoFitOffset = { top: 0, left: 0 };
+
+        if (autoFit && bounds) {
+          // Adjust position if it overflows the bounds
+          if (absolutePosition.top < bounds.top) {
+            autoFitOffset.top = bounds.top - absolutePosition.top;
+            absolutePosition.top = bounds.top;
+          } else if (absolutePosition.top + popupRect.height > bounds.bottom) {
+            autoFitOffset.top =
+              bounds.bottom - (absolutePosition.top + popupRect.height);
+            absolutePosition.top = bounds.bottom - popupRect.height;
+          }
+
+          if (absolutePosition.left < bounds.left) {
+            autoFitOffset.left = -1 * (bounds.left - absolutePosition.left);
+            absolutePosition.left = bounds.left;
+          } else if (absolutePosition.left + popupRect.width > bounds.right) {
+            autoFitOffset.left =
+              -1 * (bounds.right - (absolutePosition.left + popupRect.width));
+            absolutePosition.left = bounds.right - popupRect.width;
+          }
+        }
+
         const bestPositionForName: BestPosition = {
           positionName: direction,
           position: absolutePosition,
           fits: fitsInWindow(absolutePosition, popupRect),
+          autoFitOffset,
         };
 
         // Save the calculated position as a fallback in case no other position fits.
@@ -197,7 +222,7 @@ const useWindowFitment = ({
       // biome-ignore lint/style/noNonNullAssertion: Fallback position is always defined here, due to the loop above and the thrown error if preferredDirections is empty.
       return fallbackPosition!;
     },
-    [calculateRelativePosition, fitsInWindow, isServer],
+    [calculateRelativePosition, fitsInWindow, isServer, autoFit, bounds],
   );
 
   /** The best possible position for the popup. */

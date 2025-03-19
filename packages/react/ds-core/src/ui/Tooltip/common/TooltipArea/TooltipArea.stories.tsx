@@ -105,3 +105,16 @@ export const Inline: StoryFn = () => {
     </p>
   );
 };
+
+export const AutoFit: StoryFn = () => {
+  return (
+    <Component
+      Message={"This is autofit"}
+      preferredDirections={["top"]}
+      autoFit={true}
+      style={{ position: "absolute", bottom: 0, left: 0 }}
+    >
+      <Button label={"Autofit"} />
+    </Component>
+  );
+};

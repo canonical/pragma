@@ -11,6 +11,10 @@ export interface TooltipAreaProps extends UsePopupProps {
    * The content of the tooltip. This can be a string or any valid React node.
    */
   Message: ReactNode;
+  /** Styles applied to the tooltip area */
+  style?: CSSProperties;
+  /** Class name applied to the tooltip area */
+  className?: string;
   /** ID applied to the target element */
   targetElementId?: string;
   /** Class name applied to the target element */
