@@ -3,6 +3,7 @@
 // Needed for function-based story, safe to remove otherwise
 // import type { FieldProps } from './types.js'
 import type { Meta, StoryObj } from "@storybook/react";
+import * as decorators from "storybook/decorators.js";
 import Component from "./Field.js";
 import { InputType } from "./types.js";
 // Needed for template-based story, safe to remove otherwise
@@ -11,6 +12,7 @@ import { InputType } from "./types.js";
 const meta = {
   title: "Field",
   component: Component,
+  decorators: [decorators.form()],
 } satisfies Meta<typeof Component>;
 
 export default meta;
@@ -24,18 +26,21 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   args: {
+    name: "full_name",
     inputType: InputType.Text,
   },
 };
 
 export const TypeTextarea: Story = {
   args: {
+    name: "content",
     inputType: InputType.Textarea,
   },
 };
 
 export const TypeCheckbox: Story = {
   args: {
+    name: "subscribe",
     inputType: InputType.Checkbox,
   },
 };
@@ -44,6 +49,7 @@ const CustomComponent = () => <span>SomeExotic Input</span>;
 
 export const TypeCustom: Story = {
   args: {
+    name: "exotic",
     inputType: InputType.Custom,
     CustomComponent,
   },

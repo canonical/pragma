@@ -1,6 +1,6 @@
 {
   "name": "@canonical/storybook-config",
-  "version": "0.9.0-experimental.2",
+  "version": "0.9.0-experimental.5",
   "description": "Canonical's standard Storybook configuration factory",
   "main": "dist/esm/index.js",
   "types": "dist/types/index.d.ts",

@@ -2,8 +2,8 @@
 
 import { useState } from "@storybook/preview-api";
 import type { Meta, StoryObj } from "@storybook/react";
-import { GitDiffViewer } from "ui/GitDiffViewer/index.js";
 import { diffExample } from "../../fixtures.js";
+import { GitDiffViewer } from "../../index.js";
 
 const meta = {
   title: "GitDiffViewer/FileHeader",

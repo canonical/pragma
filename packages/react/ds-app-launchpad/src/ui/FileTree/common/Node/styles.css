@@ -1,0 +1,60 @@
+.ds.node {
+  list-style: none;
+  display: flex;
+  gap: var(--file-tree-node-items-gap);
+  align-items: center;
+  /* vertical padding is set on the indentation level */
+  padding: 0 var(--file-tree-node-horizontal-padding);
+  cursor: default;
+  color: var(--file-tree-node-text-color-default);
+
+  /* When the list is interactive we change colors on interactions */
+  &.selectable,
+  &.expandable {
+    cursor: pointer;
+    &:focus,
+    &:hover {
+      background-color: var(--file-tree-node-background-color-hover);
+    }
+    &:focus {
+      outline: 1px solid var(--file-tree-node-focus-outline-color);
+      outline-offset: -1px;
+      color: var(--file-tree-node-text-color-active);
+      & > .icon {
+        filter: opacity(1);
+      }
+    }
+  }
+
+  /* When the list is static we apply active colors */
+  &:not(.selectable):not(.expandable) {
+    color: var(--file-tree-node-text-color-active);
+    & > .icon {
+      filter: opacity(1);
+    }
+  }
+
+  & > .icon {
+    user-select: none;
+    width: var(--file-tree-node-icon-size);
+    filter: opacity(0.6);
+    &.file {
+      content: var(--file-tree-node-file-icon);
+    }
+    &.folder {
+      content: var(--file-tree-node-closed-folder-icon);
+      &.expanded {
+        content: var(--file-tree-node-opened-folder-icon);
+      }
+    }
+  }
+  & > .nodename {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  & > .marker {
+    display: inline-block;
+  }
+}

@@ -1,6 +1,6 @@
 {
   "name": "@canonical/react-ds-core-form",
-  "version": "0.9.0-experimental.2",
+  "version": "0.9.0-experimental.9",
   "type": "module",
   "module": "dist/esm/index.js",
   "types": "dist/types/index.d.ts",
@@ -36,10 +36,11 @@
     "test:vitest:watch": "vitest"
   },
   "dependencies": {
-    "@canonical/storybook-config": "^0.9.0-experimental.2",
-    "@canonical/styles": "^0.9.0-experimental.2",
+    "@canonical/storybook-config": "^0.9.0-experimental.5",
+    "@canonical/styles": "^0.9.0-experimental.9",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "react-hook-form": "^7.54.2"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
@@ -56,12 +57,12 @@
     "@types/react-dom": "^19.0.2",
     "@vitejs/plugin-react": "^4.3.4",
     "copyfiles": "^2.4.1",
-    "globals": "^15.13.0",
-    "jsdom": "^25.0.1",
+    "globals": "^16.0.0",
+    "jsdom": "^26.0.0",
     "storybook": "^8.4.7",
     "typescript": "^5.7.2",
     "vite": "^6.0.3",
     "vite-tsconfig-paths": "^5.1.4",
-    "vitest": "^2.1.8"
+    "vitest": "^3.0.9"
   }
 }

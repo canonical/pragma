@@ -1,6 +1,6 @@
 {
   "name": "@canonical/generator-ds",
-  "version": "0.9.0-experimental.4",
+  "version": "0.9.0-experimental.9",
   "license": "GPL-3.0-only",
   "author": {
     "email": "webteam@canonical.com",
@@ -28,7 +28,7 @@
     "check:ts": "tsc --noEmit"
   },
   "dependencies": {
-    "@canonical/utils": "^0.9.0-experimental.4",
+    "@canonical/utils": "^0.9.0-experimental.9",
     "yeoman-generator": "^7.4.0"
   },
   "devDependencies": {

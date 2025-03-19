@@ -3,6 +3,7 @@
 // Needed for function-based story, safe to remove otherwise
 // import type { TextareaProps } from './types.js'
 import type { Meta, StoryObj } from "@storybook/react";
+import * as decorators from "storybook/decorators.js";
 import Component from "./Textarea.js";
 // Needed for template-based story, safe to remove otherwise
 // import type { StoryFn } from '@storybook/react'
@@ -10,6 +11,7 @@ import Component from "./Textarea.js";
 const meta = {
   title: "Textarea",
   component: Component,
+  decorators: [decorators.form()],
 } satisfies Meta<typeof Component>;
 
 export default meta;
@@ -23,7 +25,7 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   args: {
-    children: <span>Hello world!</span>,
+    name: "content",
   },
 };
 

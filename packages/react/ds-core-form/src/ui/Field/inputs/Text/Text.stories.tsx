@@ -3,6 +3,7 @@
 // Needed for function-based story, safe to remove otherwise
 // import type { TextProps } from './types.js'
 import type { Meta, StoryObj } from "@storybook/react";
+import * as decorators from "storybook/decorators.js";
 import Component from "./Text.js";
 // Needed for template-based story, safe to remove otherwise
 // import type { StoryFn } from '@storybook/react'
@@ -10,6 +11,7 @@ import Component from "./Text.js";
 const meta = {
   title: "Text",
   component: Component,
+  decorators: [decorators.form()],
 } satisfies Meta<typeof Component>;
 
 export default meta;
@@ -23,7 +25,14 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   args: {
-    inputType: "text",
+    name: "full_name",
+  },
+};
+
+export const Email: Story = {
+  args: {
+    name: "email",
+    inputType: "email",
   },
 };
 

@@ -1,4 +1,4 @@
-import { Button } from "@canonical/react-ds-core";
+import { Button, TooltipArea } from "@canonical/react-ds-core";
 import React, { Suspense, useState, lazy } from "react";
 import canonicalLogo from "./assets/canonical.svg";
 import reactLogo from "./assets/react.svg";
@@ -36,10 +36,15 @@ function App() {
         <LazyButton />
       </Suspense>
       <div className="card">
-        <Button
-          label={`Count: ${count}`}
-          onClick={() => setCount((count) => count + 1)}
-        />
+        <TooltipArea
+          preferredDirections={["right", "bottom"]}
+          Message={`Increment count to ${count + 1}`}
+        >
+          <Button
+            label={`Count: ${count}`}
+            onClick={() => setCount((count) => count + 1)}
+          />
+        </TooltipArea>
         <p>
           Edit <code>src/App.tsx</code> and save to test HMR
         </p>
