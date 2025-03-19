@@ -18,7 +18,7 @@ const Button = ({
       {...props}
       aria-label={label}
     >
-      {label}
+      {`${label} and some extra text`}
     </button>
   );
 };
