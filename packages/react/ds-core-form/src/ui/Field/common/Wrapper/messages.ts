@@ -1,3 +1,3 @@
 export default {
-	required: (name: string) => `${name} is required`,
+  required: (name: string) => `${name} is required`,
 };

@@ -7,7 +7,7 @@ import Component from "./Error.js";
 describe("Error component", () => {
   it("renders", () => {
     render(<Component>Error</Component>);
-    expect(screen.getByText('Error')).toBeInTheDocument();
+    expect(screen.getByText("Error")).toBeInTheDocument();
   });
 
   it("applies className", () => {

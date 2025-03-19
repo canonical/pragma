@@ -10,21 +10,21 @@ const componentCssClassName = "ds error";
  * @returns {React.ReactElement} - Rendered Error
  */
 const FieldError = ({
-	id,
-	children,
-	className,
-	style,
+  id,
+  children,
+  className,
+  style,
 }: ErrorProps): React.ReactElement => {
-	return (
-		<div
-			id={id}
-			style={style}
-			className={[componentCssClassName, className].filter(Boolean).join(" ")}
-			role="alert"
-		>
-			{children}
-		</div>
-	);
+  return (
+    <div
+      id={id}
+      style={style}
+      className={[componentCssClassName, className].filter(Boolean).join(" ")}
+      role="alert"
+    >
+      {children}
+    </div>
+  );
 };
 
 export default FieldError;
