@@ -1,10 +1,10 @@
-name: "ds-react-core-form/Publish to chromatic"
+name: "react-ds-core-form/chromatic"
 on:
   pull_request:
     paths: [packages/react/ds-core-form/**]
 jobs:
   test-compile:
-    uses: ./.github/workflows/_chromatic.yaml
+    uses: ./.github/workflows/chromatic._template.yaml
     secrets:
       PROJECT_TOKEN: ${{ secrets.CHROMATIC_TOKEN_CANONICAL_REACT_DS_CORE }}
     with:

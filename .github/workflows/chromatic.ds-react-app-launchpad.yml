@@ -1,10 +1,10 @@
-name: "ds-react-app-launchpad/Publish to chromatic"
+name: "react-ds-app-launchpad/chromatic"
 on:
   pull_request:
     paths: [packages/react/ds-app-launchpad/**]
 jobs:
   test-compile:
-    uses: ./.github/workflows/_chromatic.yaml
+    uses: ./.github/workflows/chromatic._template.yaml
     secrets:
       PROJECT_TOKEN: ${{ secrets.CHROMATIC_TOKEN_CANONICAL_REACT_DS_APP_LAUNCHPAD }}
     with:
