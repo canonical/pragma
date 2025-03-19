@@ -1,4 +1,4 @@
-name: "react-ds-core-form/chromatic"
+name: "react-ds-core/chromatic"
 on:
   pull_request:
     paths: [packages/react/ds-core-form/**]
