@@ -8,4 +8,4 @@ jobs:
     secrets:
       PROJECT_TOKEN: ${{ secrets.CHROMATIC_TOKEN_CANONICAL_REACT_DS_CORE_FORM }}
     with:
-      working-directory: packages/react/ds-core
+      working-directory: packages/react/ds-core-form
