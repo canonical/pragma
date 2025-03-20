@@ -23,7 +23,7 @@
   cursor: pointer;
 
   color: var(--intent-color-text, var(--button-color-text));
-  background-color: var(--intent-color, var(--button-color-background));
+  background-color: red;
   border-color: var(--intent-color-border, var(--button-color-border));
   border-style: solid;
   border-width: var(--button-border-width);
