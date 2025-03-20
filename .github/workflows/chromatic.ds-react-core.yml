@@ -2,6 +2,13 @@ name: "react-ds-core/chromatic"
 on:
   pull_request:
     paths: [packages/react/ds-core/**]
+env:
+  externalPaths:
+    - "configs/storybook/**"
+    - "configs/typescript-base/**"
+    - "configs/typescript-react/**"
+    - "packages/styles/**"
+    - "packages/utils/**"
 jobs:
   test-compile:
     uses: ./.github/workflows/chromatic._template.yml
@@ -9,3 +16,4 @@ jobs:
       CHROMATIC_PROJECT_TOKEN: ${{ secrets.CHROMATIC_TOKEN_CANONICAL_REACT_DS_CORE }}
     with:
       working-directory: packages/react/ds-core
+      externals: ${{ toJSON(env.externalPaths) }}

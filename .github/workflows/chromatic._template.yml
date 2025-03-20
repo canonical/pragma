@@ -6,6 +6,11 @@ on:
         required: true
         description: The directory where Storybook should be published from
         type: string
+      externals:
+        required: true
+        description: A JSON array string of external paths, relative to the working directory, that should cause a full re-build when changed.
+        type: string
+        default: "[]"
     secrets:
       CHROMATIC_PROJECT_TOKEN:
         required: true
@@ -52,3 +57,4 @@ jobs:
           workingDir: ${{ inputs.working-directory }}
           buildScriptName: "build:storybook"
           onlyChanged: true
+          externals: ${{ fromJSON(inputs.externals) }}
