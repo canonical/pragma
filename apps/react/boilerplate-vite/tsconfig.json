@@ -2,8 +2,22 @@
   "extends": "@canonical/typescript-config-react",
   "compilerOptions": {
     "baseUrl": "src",
-    "types": ["node", "react", "react-dom"],
+    "types": [
+      "node",
+      "react",
+      "react-dom",
+      "vitest/globals",
+      "@testing-library/jest-dom"
+    ],
     "noEmit": true
   },
-  "include": ["src", "vite.config.ts"]
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    ".storybook/*.ts",
+    ".storybook/*.tsx",
+    "vite.config.ts",
+    "vitest.setup.ts",
+    "vitest.config.ts"
+  ]
 }
