@@ -57,4 +57,4 @@ jobs:
           workingDir: ${{ inputs.working-directory }}
           buildScriptName: "build:storybook"
           onlyChanged: true
-          externals: ${{ fromJSON(inputs.externals) }}
+          externals: ${{ inputs.externals }}
