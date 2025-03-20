@@ -51,3 +51,4 @@ jobs:
           exitZeroOnChanges: true
           workingDir: ${{ inputs.working-directory }}
           buildScriptName: "build:storybook"
+          onlyChanged: true
