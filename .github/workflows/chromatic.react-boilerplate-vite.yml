@@ -1,0 +1,11 @@
+name: "react-ds-core/chromatic"
+on:
+  pull_request:
+    paths: [apps/react/boilerplate-vite/**]
+jobs:
+  test-compile:
+    uses: ./.github/workflows/chromatic._template.yml
+    secrets:
+      CHROMATIC_PROJECT_TOKEN: ${{ secrets.CHROMATIC_TOKEN_CANONICAL_REACT_BOILERPLATE_VITE }}
+    with:
+      working-directory: apps/react/boilerplate-vite
