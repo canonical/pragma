@@ -1,0 +1,14 @@
+{
+  "v": 5,
+  "entries": {
+    "examplecomponent--default": {
+      "type": "story",
+      "id": "examplecomponent--default",
+      "name": "Default",
+      "title": "ExampleComponent",
+      "importPath": "./src/ExampleComponent/ExampleComponent.stories.tsx",
+      "componentPath": "./ExampleComponent.js",
+      "tags": ["dev", "test"]
+    }
+  }
+}
