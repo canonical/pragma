@@ -9,13 +9,6 @@ on:
       - packages/utils/**
       - packages/react/ds-core/**
       - packages/react/ds-core-form/**
-env:
-  externalPaths:
-    - configs/storybook/**
-    - configs/typescript-base/**
-    - configs/typescript-react/**
-    - packages/styles/**
-    - packages/utils/**
 jobs:
   test-compile:
     uses: ./.github/workflows/chromatic._template.yml
@@ -23,4 +16,10 @@ jobs:
       CHROMATIC_PROJECT_TOKEN: ${{ secrets.CHROMATIC_TOKEN_CANONICAL_REACT_DS_CORE }}
     with:
       working-directory: packages/react/ds-core
-      externals: ${{ toJSON(env.externalPaths) }}
+      externals: '[
+        "configs/storybook/**",
+        "configs/typescript-base/**",
+        "configs/typescript-react/**",
+        "packages/styles/**",
+        "packages/utils/**"
+      ]'
