@@ -1,9 +1,9 @@
 /* @canonical/generator-ds 0.9.0-experimental.4 */
 import type React from "react";
 import type {
-  CheckboxProps,
-  TextProps,
-  TextareaProps,
+	CheckboxProps,
+	TextProps,
+	TextareaProps,
 } from "./inputs/index.js";
 
 /**
@@ -12,48 +12,56 @@ import type {
  * @param WrappedComponent - The React component to be enhanced, accepting FieldProps.
  * @returns A new React component with FieldProps extended by ExtendedProps.
  */
-export enum InputType {
-  Text = "text",
-  Password = "password",
-  Email = "email",
-  Number = "number",
-  Tel = "tel",
-  Url = "url",
-  Textarea = "textarea",
-  Custom = "custom",
-  Checkbox = "checkbox",
-  // Date = "date",
-  // Time = "time",
-  // DatetimeLocal = "datetime-local",
-  // Month = "month",
-  // Week = "week",
-  // Color = "color",
-}
+export type InputType =
+	| "text"
+	| "password"
+	| "email"
+	| "number"
+	| "tel"
+	| "url"
+	| "textarea"
+	| "custom"
+	| "checkbox";
+// | "date"
+// | "time"
+// | "datetime-local"
+// | "month"
+// | "week"
+// | "color";
 
 export type InputProps = CheckboxProps | TextProps | TextareaProps;
 
-export type FieldProps = {
-  /**
-   * Type of input to render
-   */
-  inputType: InputType;
+/**
+ * A type for an instantiated higher-order component (HOC) wrapping an Input.
+ * This accurately represents the props that can be passed to the HOC.
+ */
+export type BaseFieldProps = {
+	/**
+	 * middleware to apply to the input
+	 **/
+	middleware?: FormInputHOC[];
 
-  /**
-   * Custom component to render
-   **/
-  CustomComponent?: React.ElementType;
-
-  /**
-   * middleware to apply to the input
-   **/
-  middleware?: FormInputHOC[];
-
-  /**
-   * An optional wrapper component to render around the input.
-   */
-  WrapperComponent?: React.ElementType;
+	/**
+	 * An optional wrapper component to render around the input.
+	 */
+	WrapperComponent?: React.ElementType;
 } & InputProps;
 
+/**
+ * The props for the Field component, switching between different input types.
+ */
+export type FieldProps = {
+	/**
+	 * Type of input to render
+	 */
+	inputType: InputType;
+
+	/**
+	 * Custom component to render
+	 **/
+	CustomComponent?: React.ElementType;
+} & BaseFieldProps;
+
 export type FormInputHOC<ExtendedProps extends FieldProps = FieldProps> = (
-  WrappedComponent: React.ComponentType<FieldProps>,
+	WrappedComponent: React.ComponentType<BaseFieldProps>,
 ) => React.ComponentType<ExtendedProps>;

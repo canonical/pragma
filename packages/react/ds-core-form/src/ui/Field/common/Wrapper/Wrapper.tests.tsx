@@ -2,16 +2,25 @@
 
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
+import { Text } from "../../inputs/index.js";
 import Component from "./Wrapper.js";
 
 describe("Wrapper component", () => {
-  it("renders", () => {
-    render(<Component>Wrapper</Component>);
-    expect(screen.getByText("Wrapper")).toBeInTheDocument();
-  });
+	it("renders", () => {
+		render(
+			<Component name="test" Component={Text}>
+				Component
+			</Component>,
+		);
+		expect(screen.getByText("Component")).toBeInTheDocument();
+	});
 
-  it("applies className", () => {
-    render(<Component className={"test-class"}>Wrapper</Component>);
-    expect(screen.getByText("Wrapper")).toHaveClass("test-class");
-  });
+	it("applies className", () => {
+		render(
+			<Component name="test" Component={Text} className="test-class">
+				Component
+			</Component>,
+		);
+		expect(screen.getByText("Component")).toHaveClass("test-class");
+	});
 });
