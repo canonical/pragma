@@ -4,10 +4,5 @@
     cursor: pointer;
     position: relative;
     display: inline-block;
-
-    & > * {
-      /* The tooltip targets must have no margin in order for tooltip placements to work correctly */
-      margin: 0 !important;
-    }
   }
 }

@@ -61,6 +61,42 @@ const useWindowFitment = ({
   }, [gutter, windowDimensions, isServer]);
 
   /**
+   * Gets the internal sizing of an element.
+   * The internal sizing of an element is the maximum bounding client rect of its children.
+   * This is useful for obtaining the internal dimensions of an element that may have padding or margins.
+   * In the window fitment case, it allows us to determine how much space a target element's children take up,
+   * without accounting for margin or padding on the target element itself.
+   * This allows us to position popups relative to the target element, without needing to modify its margin or padding.
+   * @param parentElement The parent element to get the internal sizing of.
+   * @returns The internal sizing of the parent element.
+   */
+  const getInternalSizing = useCallback(
+    (parentElement: HTMLElement): DOMRect => {
+      if (!parentElement || !parentElement.children.length) {
+        return new DOMRect(0, 0, 0, 0);
+      }
+
+      let minX = Number.POSITIVE_INFINITY;
+      let minY = Number.POSITIVE_INFINITY;
+      let maxX = Number.NEGATIVE_INFINITY;
+      let maxY = Number.NEGATIVE_INFINITY;
+
+      const children = Array.from(parentElement.children);
+
+      for (const child of children) {
+        const childRect = child.getBoundingClientRect();
+        minX = Math.min(minX, childRect.left);
+        minY = Math.min(minY, childRect.top);
+        maxX = Math.max(maxX, childRect.right);
+        maxY = Math.max(maxY, childRect.bottom);
+      }
+
+      return new DOMRect(minX, minY, maxX - minX, maxY - minY);
+    },
+    [],
+  );
+
+  /**
    * Calculate the relative position of the popup when oriented in a given direction.
    * @param direction The side of the target element to position the popup on.
    * @param targetRect The bounding client rect of the target element.
@@ -236,13 +272,14 @@ const useWindowFitment = ({
       targetSize
     )
       return findBestPosition(
-        targetRef.current.getBoundingClientRect(),
+        getInternalSizing(targetRef.current),
         popupRef.current.getBoundingClientRect(),
         preferredDirections,
       );
   }, [
     findBestPosition,
     preferredDirections,
+    getInternalSizing,
     windowDimensions,
     popupSize,
     targetSize,
