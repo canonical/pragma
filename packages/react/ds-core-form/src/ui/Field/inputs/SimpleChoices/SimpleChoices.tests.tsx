@@ -5,8 +5,8 @@ import { describe, expect, it } from "vitest";
 import Component from "./SimpleChoices.js";
 
 describe("SimpleChoices component", () => {
-	it("passes", () => {
-		// todo add real tests
-		expect(true).toBe(true);
-	});
+  it("passes", () => {
+    // todo add real tests
+    expect(true).toBe(true);
+  });
 });

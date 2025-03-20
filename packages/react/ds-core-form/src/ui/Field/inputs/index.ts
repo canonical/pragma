@@ -10,4 +10,4 @@ export * from "./Range/index.js";
 
 export * from "./Select/index.js";
 
-export * from './SimpleChoices/index.js';
+export * from "./SimpleChoices/index.js";
