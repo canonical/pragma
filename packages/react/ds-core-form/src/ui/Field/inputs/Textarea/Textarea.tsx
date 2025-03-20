@@ -12,23 +12,23 @@ const componentCssClassName = "ds form-textarea";
  * @returns {React.ReactElement} - Rendered Textarea
  */
 const Textarea = ({
-	id,
-	className,
-	style,
-	name,
-	registerProps,
-	...otherProps
+  id,
+  className,
+  style,
+  name,
+  registerProps,
+  ...otherProps
 }: TextareaProps): React.ReactElement => {
-	const { register } = useFormContext();
-	return (
-		<textarea
-			id={id}
-			style={style}
-			className={[componentCssClassName, className].filter(Boolean).join(" ")}
-			{...otherProps}
-			{...register(name, registerProps)}
-		/>
-	);
+  const { register } = useFormContext();
+  return (
+    <textarea
+      id={id}
+      style={style}
+      className={[componentCssClassName, className].filter(Boolean).join(" ")}
+      {...otherProps}
+      {...register(name, registerProps)}
+    />
+  );
 };
 
 export default withWrapper(Textarea);

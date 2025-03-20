@@ -5,5 +5,5 @@ import type { BaseInputProps, OptionsProps } from "../types.js";
 // 	React.HTMLProps<HTMLTextAreaElement>;
 
 export type SelectProps = BaseInputProps &
-	OptionsProps &
-	React.HTMLProps<HTMLSelectElement>;
+  OptionsProps &
+  React.HTMLProps<HTMLSelectElement>;

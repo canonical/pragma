@@ -12,30 +12,30 @@ const componentCssClassName = "ds range";
  * @returns {React.ReactElement} - Rendered Range
  */
 const Range = ({
-	id,
-	className,
-	style,
-	name,
-	registerProps,
-	...otherProps
+  id,
+  className,
+  style,
+  name,
+  registerProps,
+  ...otherProps
 }: RangeProps): React.ReactElement => {
-	const { register, watch } = useFormContext();
-	const value = watch(name);
-	return (
-		<>
-			<input
-				id={id}
-				type="range"
-				className={[componentCssClassName, className].filter(Boolean).join(" ")}
-				style={style}
-				{...otherProps}
-				{...register(name, registerProps)}
-			/>
-			<output htmlFor={id} className="ds range-output">
-				{value}
-			</output>
-		</>
-	);
+  const { register, watch } = useFormContext();
+  const value = watch(name);
+  return (
+    <>
+      <input
+        id={id}
+        type="range"
+        className={[componentCssClassName, className].filter(Boolean).join(" ")}
+        style={style}
+        {...otherProps}
+        {...register(name, registerProps)}
+      />
+      <output htmlFor={id} className="ds range-output">
+        {value}
+      </output>
+    </>
+  );
 };
 
 export default withWrapper(Range);

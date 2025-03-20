@@ -2,4 +2,4 @@
 import type { BaseInputProps } from "../types.js";
 
 export type RangeProps = BaseInputProps &
-	React.InputHTMLAttributes<HTMLInputElement>;
+  React.InputHTMLAttributes<HTMLInputElement>;

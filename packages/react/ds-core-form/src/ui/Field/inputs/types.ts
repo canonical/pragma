@@ -5,26 +5,26 @@ import type { TextProps } from "./Text/types.js";
 import type { TextareaProps } from "./Textarea/types.js";
 
 export type BaseInputProps = {
-	id?: string;
-	className?: string;
-	style?: React.CSSProperties;
-	name: string;
-	registerProps?: Record<string, unknown>; //TODO improve
+  id?: string;
+  className?: string;
+  style?: React.CSSProperties;
+  name: string;
+  registerProps?: Record<string, unknown>; //TODO improve
 };
 
 export type Option = {
-	value: string;
-	label: string;
-	disabled?: boolean;
+  value: string;
+  label: string;
+  disabled?: boolean;
 };
 
 export type OptionsProps = {
-	options: Option[];
+  options: Option[];
 };
 
 export type InputProps =
-	| CheckboxProps
-	| TextProps
-	| TextareaProps
-	| SelectProps
-	| RangeProps;
+  | CheckboxProps
+  | TextProps
+  | TextareaProps
+  | SelectProps
+  | RangeProps;

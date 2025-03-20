@@ -3,4 +3,4 @@
 import type { BaseInputProps } from "../types.js";
 
 export type CheckboxProps = BaseInputProps &
-	React.InputHTMLAttributes<HTMLInputElement>;
+  React.InputHTMLAttributes<HTMLInputElement>;
