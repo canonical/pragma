@@ -9,7 +9,7 @@
     },
     "apps/react/boilerplate-vite": {
       "name": "@canonical/react-boilerplate-vite",
-      "version": "0.9.0-experimental.9",
+      "version": "0.9.0-experimental.10",
       "dependencies": {
         "@canonical/react-ssr": "^0.9.0-experimental.9",
         "@canonical/styles": "^0.9.0-experimental.9",
@@ -111,15 +111,15 @@
     },
     "packages/react/ds-app-launchpad": {
       "name": "@canonical/react-ds-app-launchpad",
-      "version": "0.9.0-experimental.9",
+      "version": "0.9.0-experimental.10",
       "dependencies": {
         "@canonical/storybook-config": "^0.9.0-experimental.5",
         "@canonical/styles": "^0.9.0-experimental.9",
         "@canonical/utils": "^0.9.0-experimental.9",
         "@js-temporal/polyfill": "^0.4.4",
         "highlight.js": "^11.11.1",
-        "react": "^19.0.0",
-        "react-dom": "^19.0.0",
+        "react": ">=18.0.0 <20.0.0",
+        "react-dom": ">=18.0.0 <20.0.0",
         "react-markdown": "^10.0.0",
         "react-tooltip": "^5.28.0",
         "rehype-sanitize": "^6.0.0",
@@ -151,7 +151,7 @@
     },
     "packages/react/ds-core": {
       "name": "@canonical/react-ds-core",
-      "version": "0.9.0-experimental.9",
+      "version": "0.9.0-experimental.10",
       "dependencies": {
         "@canonical/storybook-config": "^0.9.0-experimental.5",
         "@canonical/styles": "^0.9.0-experimental.9",
@@ -184,7 +184,7 @@
     },
     "packages/react/ds-core-form": {
       "name": "@canonical/react-ds-core-form",
-      "version": "0.9.0-experimental.9",
+      "version": "0.9.0-experimental.10",
       "dependencies": {
         "@canonical/storybook-config": "^0.9.0-experimental.5",
         "@canonical/styles": "^0.9.0-experimental.9",
@@ -218,7 +218,7 @@
     },
     "packages/react/ssr": {
       "name": "@canonical/react-ssr",
-      "version": "0.9.0-experimental.9",
+      "version": "0.9.0-experimental.10",
       "bin": {
         "serve-express": "./dist/esm/server/serve-express.js",
       },
