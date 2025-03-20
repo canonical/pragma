@@ -3,21 +3,18 @@ import type React from "react";
 import type { InputProps } from "./inputs/index.js";
 
 /**
- * A generic type for an instantiated higher-order component (HOC) used as form input middleware.
- * @template ExtendedProps - The props type that extends the base FieldProps with additional properties.
- * @param WrappedComponent - The React component to be enhanced, accepting FieldProps.
- * @returns A new React component with FieldProps extended by ExtendedProps.
+ * Represents the type of input to render.
  */
 export type InputType =
-  | "text"
-  | "password"
-  | "email"
-  | "number"
-  | "tel"
-  | "url"
-  | "textarea"
-  | "custom"
-  | "checkbox";
+	| "text"
+	| "password"
+	| "email"
+	| "number"
+	| "tel"
+	| "url"
+	| "textarea"
+	| "custom"
+	| "checkbox";
 // | "date"
 // | "time"
 // | "datetime-local"
@@ -26,15 +23,15 @@ export type InputType =
 // | "color";
 
 export type BaseWrapperProps = {
-  /**
-   * middleware to apply to the input
-   **/
-  middleware?: FormInputHOC[];
+	/**
+	 * middleware to apply to the input
+	 **/
+	middleware?: FormInputHOC[];
 
-  /**
-   * An optional wrapper component to render around the input.
-   */
-  WrapperComponent?: React.ElementType;
+	/**
+	 * An optional wrapper component to render around the input.
+	 */
+	WrapperComponent?: React.ElementType;
 };
 
 /**
@@ -47,19 +44,19 @@ export type BaseFieldProps = BaseWrapperProps & InputProps;
  * The props for the Field component, switching between different input types.
  */
 export type FieldProps = {
-  /**
-   * Type of input to render
-   */
-  inputType: InputType;
+	/**
+	 * Type of input to render
+	 */
+	inputType: InputType;
 
-  /**
-   * Custom component to render
-   **/
-  CustomComponent?: React.ElementType;
+	/**
+	 * Custom component to render
+	 **/
+	CustomComponent?: React.ElementType;
 } & BaseFieldProps;
 
 export type FormInputHOC<
-  ExtendedProps extends BaseFieldProps = BaseFieldProps,
+	ExtendedProps extends BaseFieldProps = BaseFieldProps,
 > = (
-  WrappedComponent: React.ComponentType<BaseFieldProps>,
+	WrappedComponent: React.ComponentType<BaseFieldProps>,
 ) => React.ComponentType<ExtendedProps>;
