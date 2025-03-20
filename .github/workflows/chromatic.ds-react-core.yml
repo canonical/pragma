@@ -1,14 +1,21 @@
 name: "react-ds-core/chromatic"
 on:
   pull_request:
-    paths: [packages/react/ds-core/**]
+    paths:
+      - configs/storybook/**
+      - configs/typescript-base/**
+      - configs/typescript-react/**
+      - packages/styles/**
+      - packages/utils/**
+      - packages/react/ds-core/**
+      - packages/react/ds-core-form/**
 env:
   externalPaths:
-    - "configs/storybook/**"
-    - "configs/typescript-base/**"
-    - "configs/typescript-react/**"
-    - "packages/styles/**"
-    - "packages/utils/**"
+    - configs/storybook/**
+    - configs/typescript-base/**
+    - configs/typescript-react/**
+    - packages/styles/**
+    - packages/utils/**
 jobs:
   test-compile:
     uses: ./.github/workflows/chromatic._template.yml
