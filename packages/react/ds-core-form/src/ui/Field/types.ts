@@ -62,6 +62,8 @@ export type FieldProps = {
 	CustomComponent?: React.ElementType;
 } & BaseFieldProps;
 
-export type FormInputHOC<ExtendedProps extends FieldProps = FieldProps> = (
+export type FormInputHOC<
+	ExtendedProps extends BaseFieldProps = BaseFieldProps,
+> = (
 	WrappedComponent: React.ComponentType<BaseFieldProps>,
 ) => React.ComponentType<ExtendedProps>;
