@@ -9,21 +9,21 @@ import type { FieldProps } from "./types.js";
  * @returns {React.ReactElement} - Rendered Field
  */
 const Field = ({
-	inputType,
-	CustomComponent,
-	...props
+  inputType,
+  CustomComponent,
+  ...props
 }: FieldProps): React.ReactElement => {
-	switch (inputType) {
-		case "textarea":
-			return <Textarea {...props} />;
-		case "checkbox":
-			return <Checkbox {...props} />;
-		case "custom":
-			// @ts-ignore // TODO Add special type for both or none
-			return <CustomComponent {...props} />;
-		default:
-			return <Text inputType={inputType} {...props} />;
-	}
+  switch (inputType) {
+    case "textarea":
+      return <Textarea {...props} />;
+    case "checkbox":
+      return <Checkbox {...props} />;
+    case "custom":
+      // @ts-ignore // TODO Add special type for both or none
+      return <CustomComponent {...props} />;
+    default:
+      return <Text inputType={inputType} {...props} />;
+  }
 };
 
 export default Field;
