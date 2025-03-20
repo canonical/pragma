@@ -12,64 +12,63 @@ const componentCssClassName = "ds form-wrapper";
  * @returns {React.ReactElement} - Rendered Wrapper
  */
 const Wrapper = ({
-  id,
-  children,
-  className,
-  style,
+	id,
+	children,
+	className,
+	style,
 
-  name,
-  Component,
-  description,
-  label,
-  isOptional,
-  registerProps: userRegisterProps,
-  nestedRegisterProps,
-  unregisterOnUnmount,
+	name,
+	Component,
+	description,
+	label,
+	isOptional,
+	registerProps: userRegisterProps,
+	nestedRegisterProps,
+	unregisterOnUnmount,
 
-  mockLabel = false,
-  ...otherProps
+	mockLabel = false,
+	...otherProps
 }: WrapperProps): React.ReactElement => {
-  const { fieldError, isError, ariaProps, registerProps } = useFieldWrapper(
-    name,
-    {
-      label,
-      isOptional,
-      userRegisterProps,
-      nestedRegisterProps,
-      unregisterOnUnmount,
-    },
-  );
-  console.log(fieldError);
+	const { fieldError, isError, ariaProps, registerProps } = useFieldWrapper(
+		name,
+		{
+			label,
+			isOptional,
+			userRegisterProps,
+			nestedRegisterProps,
+			unregisterOnUnmount,
+		},
+	);
 
-  return (
-    <div
-      id={id}
-      style={style}
-      className={[componentCssClassName, className].filter(Boolean).join(" ")}
-    >
-      <Description {...ariaProps.description}>{description}</Description>
-      <Label
-        name={name}
-        isOptional={isOptional}
-        as={mockLabel ? "legend" : undefined}
-        {...ariaProps.label}
-      >
-        {label}
-      </Label>
-      <Component
-        name={name}
-        registerProps={registerProps}
-        {...ariaProps.input}
-        {...otherProps}
-      />
-      {isError && (
-        <FieldError {...ariaProps.error}>
-          {fieldError?.message?.toString()}
-        </FieldError>
-      )}
-      {children}
-    </div>
-  );
+	return (
+		<div
+			id={id}
+			style={style}
+			className={[componentCssClassName, className].filter(Boolean).join(" ")}
+		>
+			<Description {...ariaProps.description}>{description}</Description>
+			<Label
+				name={name}
+				isOptional={isOptional}
+				tag={mockLabel ? "legend" : undefined}
+				{...ariaProps.label}
+			>
+				{label}
+			</Label>
+			<Component
+				name={name}
+				registerProps={registerProps}
+				{...ariaProps.input}
+				{...otherProps}
+			/>
+			{isError && (
+				<FieldError {...ariaProps.error}>
+					{fieldError?.message?.toString()}
+				</FieldError>
+			)}
+			{children}
+		</div>
+	);
 };
 
 export default Wrapper;

@@ -1,10 +1,6 @@
 /* @canonical/generator-ds 0.9.0-experimental.4 */
 import type React from "react";
-import type {
-	CheckboxProps,
-	TextProps,
-	TextareaProps,
-} from "./inputs/index.js";
+import type { InputProps } from "./inputs/index.js";
 
 /**
  * A generic type for an instantiated higher-order component (HOC) used as form input middleware.
@@ -29,13 +25,7 @@ export type InputType =
 // | "week"
 // | "color";
 
-export type InputProps = CheckboxProps | TextProps | TextareaProps;
-
-/**
- * A type for an instantiated higher-order component (HOC) wrapping an Input.
- * This accurately represents the props that can be passed to the HOC.
- */
-export type BaseFieldProps = {
+export type BaseWrapperProps = {
 	/**
 	 * middleware to apply to the input
 	 **/
@@ -45,7 +35,13 @@ export type BaseFieldProps = {
 	 * An optional wrapper component to render around the input.
 	 */
 	WrapperComponent?: React.ElementType;
-} & InputProps;
+};
+
+/**
+ * A type for an instantiated higher-order component (HOC) wrapping an Input.
+ * This accurately represents the props that can be passed to the HOC.
+ */
+export type BaseFieldProps = BaseWrapperProps & InputProps;
 
 /**
  * The props for the Field component, switching between different input types.

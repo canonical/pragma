@@ -1,11 +1,7 @@
 import * as React from "react";
 import { useMemo } from "react";
-import type {
-	BaseFieldProps,
-	FieldProps,
-	FormInputHOC,
-	InputProps,
-} from "../../types.js";
+import type { InputProps } from "../../inputs/index.js";
+import type { BaseFieldProps, FieldProps, FormInputHOC } from "../../types.js";
 import DefaultWrapper from "./Wrapper.js";
 import type { WrapperProps } from "./types.js";
 // import MockWrapper from './WrapperContent.js'
@@ -21,6 +17,7 @@ const withWrapper = (
 
 	function WrappedComponent({
 		middleware = [],
+		WrapperComponent = Wrapper,
 		...props
 	}: BaseFieldProps): React.ReactElement {
 		// We apply the middleware to the component in reverse orderso
@@ -35,9 +32,6 @@ const withWrapper = (
 					),
 			[middleware],
 		);
-
-		// The wrapper can also dynamically change based on the props passed to the component
-		const { WrapperComponent = Wrapper } = props;
 
 		return React.createElement(WrapperComponent, {
 			Component: ExtendedComponent,

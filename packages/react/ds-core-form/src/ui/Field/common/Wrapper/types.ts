@@ -1,8 +1,13 @@
 /* @canonical/generator-ds 0.9.0-experimental.4 */
 import type React from "react";
-import type { BaseFieldProps } from "../../types.js";
+import type { BaseInputProps } from "../../inputs/index.ts";
+import type { BaseFieldProps, BaseWrapperProps } from "../../types.js";
 
-export type WrapperProps = BaseFieldProps & {
+type BaseComponentProps = BaseInputProps & BaseWrapperProps;
+
+export type WrapperProps<
+	ComponentProps extends BaseComponentProps = BaseFieldProps,
+> = BaseFieldProps & {
 	/* A unique identifier for the Wrapper */
 	id?: string;
 	/* Additional CSS classes */
@@ -11,6 +16,9 @@ export type WrapperProps = BaseFieldProps & {
 	children?: React.ReactNode;
 	/* Inline styles */
 	style?: React.CSSProperties;
+
+	/* The description of the input */
+	description?: string;
 
 	/* The name of input labelled */
 	label?: string;
@@ -24,5 +32,9 @@ export type WrapperProps = BaseFieldProps & {
 	/* Whether to unregister the field on unmount */
 	unregisterOnUnmount?: boolean;
 
-	Component: React.ComponentType<BaseFieldProps>;
+	/* Whether to mock the label */
+	mockLabel?: boolean;
+
+	/* The input to render */
+	Component: React.ComponentType<ComponentProps>;
 };
