@@ -1,7 +1,15 @@
 name: "react-ds-app-launchpad/chromatic"
 on:
   pull_request:
-    paths: [packages/react/ds-app-launchpad/**]
+    paths: [ packages/react/ds-app-launchpad/** ]
+env:
+  externalPaths:
+    - "configs/storybook/**"
+    - "configs/typescript-base/**"
+    - "configs/typescript-react/**"
+    - "packages/styles/**"
+    - "packages/utils/**"
+    - "packages/react/ds-core/**"
 jobs:
   test-compile:
     uses: ./.github/workflows/chromatic._template.yml
@@ -9,3 +17,4 @@ jobs:
       CHROMATIC_PROJECT_TOKEN: ${{ secrets.CHROMATIC_TOKEN_CANONICAL_REACT_DS_APP_LAUNCHPAD }}
     with:
       working-directory: packages/react/ds-app-launchpad
+      externals: ${{ toJSON(env.externalPaths) }}
