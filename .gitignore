@@ -48,6 +48,7 @@ package-lock.json
 _site/
 *.*.map
 dist/
+storybook-static/
 
 # [env] Local environment settings
 .docker-project
