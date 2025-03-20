@@ -5,11 +5,11 @@ import { useFieldAriaProperties, useFieldError } from "../../../hooks/index.js";
 import messages from "../messages.js";
 
 type UseFieldWrapperOptions = {
-  label?: string;
-  isOptional?: boolean;
-  userRegisterProps?: RegisterOptions;
-  nestedRegisterProps?: RegisterOptions;
-  unregisterOnUnmount?: boolean;
+	label?: string;
+	isOptional?: boolean;
+	userRegisterProps?: RegisterOptions;
+	nestedRegisterProps?: RegisterOptions;
+	unregisterOnUnmount?: boolean;
 };
 
 /**
@@ -18,52 +18,53 @@ type UseFieldWrapperOptions = {
  * @param options - Additional options
  */
 const useFieldWrapper = (
-  name: string,
-  options: UseFieldWrapperOptions = {},
+	name: string,
+	options: UseFieldWrapperOptions = {},
 ) => {
-  const {
-    label,
-    isOptional = false,
-    userRegisterProps = {},
-    nestedRegisterProps = {},
-    unregisterOnUnmount = true,
-  } = options;
+	const {
+		label,
+		isOptional = false,
+		userRegisterProps = {},
+		nestedRegisterProps = {},
+		unregisterOnUnmount = true,
+	} = options;
 
-  const fieldError = useFieldError(name);
+	const fieldError = useFieldError(name);
 
-  const isError = !!fieldError;
+	const isError = !!fieldError;
 
-  const ariaProps = useFieldAriaProperties(name, isError);
+	const ariaProps = useFieldAriaProperties(name, isError);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: Comparing the `name` suffices
-  const registerProps = useMemo(() => {
-    const props: RegisterOptions = {};
-    // We take advantage of the declaration of optionality to map to the required prop
-    if (!isOptional) {
-      props.required = {
-        value: true,
-        message: messages.required(label || name),
-      };
-    }
-    return {
-      ...nestedRegisterProps,
-      ...props,
-      ...userRegisterProps,
-    };
-  }, [name]);
+	// biome-ignore lint/correctness/useExhaustiveDependencies: Comparing the `name` suffices
+	const registerProps = useMemo(() => {
+		const props: RegisterOptions = {};
+		// We take advantage of the declaration of optionality to map to the required prop
+		if (!isOptional) {
+			props.required = {
+				value: true,
+				message: messages.required(label || name),
+			};
+		}
+		return {
+			...nestedRegisterProps,
+			...props,
+			...userRegisterProps,
+		};
+	}, [name]);
 
-  const { unregister } = useFormContext();
+	const { unregister } = useFormContext();
 
-  useEffect(
-    () => () => (unregisterOnUnmount ? unregister(name) : undefined),
-    [unregisterOnUnmount, name, unregister],
-  );
+	// biome-ignore lint/correctness/useExhaustiveDependencies: Comparing the `name` suffices
+	useEffect(
+		() => () => (unregisterOnUnmount ? unregister(name) : undefined),
+		[name],
+	);
 
-  return {
-    fieldError,
-    isError,
-    ariaProps,
-    registerProps,
-  };
+	return {
+		fieldError,
+		isError,
+		ariaProps,
+		registerProps,
+	};
 };
 export default useFieldWrapper;

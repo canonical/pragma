@@ -19,6 +19,18 @@ const config = createConfig();
 export default { ...config };
 ```
 
+## Notes
+
+The [autodocs](https://storybook.js.org/docs/writing-docs/autodocs) feature is enabled by this config with ```typescript
+{
+    docs: {
+       autodocs: true,
+    },
+}
+```
+
+
+
 ## Caveats 
 - At the moment the factory is not configurable. We are not sure what the best api to pass custom config parameters would be, if any.
 - This storybook config for the time being only implementing a factory for react/vite. We imagine this might change to accomodate other frameworks and build tools.

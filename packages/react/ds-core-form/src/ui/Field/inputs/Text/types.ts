@@ -2,7 +2,7 @@
 import type React from "react";
 import type { BaseInputProps } from "../types.js";
 
-export interface TextProps extends BaseInputProps {
-  /* The type of input field Enum*/
-  inputType?: "text" | "password" | "email" | "number" | "tel" | "url";
-}
+export type TextProps = BaseInputProps & {
+	/* The type of input field Enum*/
+	inputType?: "text" | "password" | "email" | "number" | "tel" | "url";
+} & React.InputHTMLAttributes<HTMLInputElement>;

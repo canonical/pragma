@@ -2,4 +2,5 @@
 // import type React from "react";
 import type { BaseInputProps } from "../types.js";
 
-export interface CheckboxProps extends BaseInputProps {}
+export type CheckboxProps = BaseInputProps &
+	React.InputHTMLAttributes<HTMLInputElement>;
