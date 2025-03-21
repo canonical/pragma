@@ -6,7 +6,6 @@ on:
       - packages/styles/**
       - packages/utils/**
       - packages/react/ds-core/**
-      - packages/react/ds-core-form/**
       - packages/react/ds-app-launchpad/**
 jobs:
   test-compile:
