@@ -1,6 +1,6 @@
 {
   "name": "@canonical/react-ds-core-form",
-  "version": "0.9.0-experimental.10",
+  "version": "0.9.0-experimental.11",
   "type": "module",
   "module": "dist/esm/index.js",
   "types": "dist/types/index.d.ts",
@@ -36,7 +36,7 @@
     "test:vitest:watch": "vitest"
   },
   "dependencies": {
-    "@canonical/storybook-config": "^0.9.0-experimental.5",
+    "@canonical/storybook-config": "^0.9.0-experimental.11",
     "@canonical/styles": "^0.9.0-experimental.9",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
@@ -60,7 +60,7 @@
     "globals": "^16.0.0",
     "jsdom": "^26.0.0",
     "storybook": "^8.4.7",
-    "typescript": "^5.7.2",
+    "typescript": "^5.8.2",
     "vite": "^6.0.3",
     "vite-tsconfig-paths": "^5.1.4",
     "vitest": "^3.0.9"

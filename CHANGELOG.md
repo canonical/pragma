@@ -3,6 +3,23 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.9.0-experimental.11](https://github.com/canonical/ds25/compare/v0.9.0-experimental.10...v0.9.0-experimental.11) (2025-03-20)
+
+
+### Bug Fixes
+
+* **ds-app-launchpad:** Adapted the forwardRef pattern to R18 for backwards compatibility ([#163](https://github.com/canonical/ds25/issues/163)) ([acd2fab](https://github.com/canonical/ds25/commit/acd2fab76153718b576560b14ca125056171b725))
+
+
+### Features
+
+* **ci:** Chromatic CI Stage 1 : Reusable Workflows and base deployments ([#155](https://github.com/canonical/ds25/issues/155)) ([22c7760](https://github.com/canonical/ds25/commit/22c7760b59be1aa37e5b3389328357be5574d487))
+* **ds-core-form:** form boilerplate pt3 ([#150](https://github.com/canonical/ds25/issues/150)) ([e6193b2](https://github.com/canonical/ds25/commit/e6193b2639c0952736fab0ce82eadbf622bb3344))
+
+
+
+
+
 # [0.9.0-experimental.10](https://github.com/canonical/ds25/compare/v0.9.0-experimental.9...v0.9.0-experimental.10) (2025-03-19)
 
 

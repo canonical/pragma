@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.9.0-experimental.11](https://github.com/canonical/ds25/compare/v0.9.0-experimental.10...v0.9.0-experimental.11) (2025-03-20)
+
+
+### Features
+
+* **ds-core-form:** form boilerplate pt3 ([#150](https://github.com/canonical/ds25/issues/150)) ([e6193b2](https://github.com/canonical/ds25/commit/e6193b2639c0952736fab0ce82eadbf622bb3344))
+
+
+
+
+
 # [0.9.0-experimental.10](https://github.com/canonical/ds25/compare/v0.9.0-experimental.9...v0.9.0-experimental.10) (2025-03-19)
 
 **Note:** Version bump only for package @canonical/react-ds-core-form

@@ -9,7 +9,7 @@
     },
     "apps/react/boilerplate-vite": {
       "name": "@canonical/react-boilerplate-vite",
-      "version": "0.9.0-experimental.10",
+      "version": "0.9.0-experimental.11",
       "dependencies": {
         "@canonical/react-ssr": "^0.9.0-experimental.10",
         "@canonical/storybook-config": "^0.9.0-experimental.5",
@@ -20,7 +20,7 @@
       "devDependencies": {
         "@biomejs/biome": "^1.9.4",
         "@canonical/biome-config": "^0.9.0-experimental.2",
-        "@canonical/react-ds-core": "^0.9.0-experimental.10",
+        "@canonical/react-ds-core": "^0.9.0-experimental.11",
         "@canonical/typescript-config-react": "^0.9.0-experimental.2",
         "@chromatic-com/storybook": "^3.2.2",
         "@storybook/blocks": "^8.4.7",
@@ -32,7 +32,7 @@
         "@vitejs/plugin-react": "^4.3.4",
         "globals": "^16.0.0",
         "storybook": "^8.4.7",
-        "typescript": "^5.7.2",
+        "typescript": "^5.8.2",
         "vite": "^6.0.3",
         "vite-tsconfig-paths": "^5.1.4",
       },
@@ -49,7 +49,7 @@
     },
     "configs/storybook": {
       "name": "@canonical/storybook-config",
-      "version": "0.9.0-experimental.5",
+      "version": "0.9.0-experimental.11",
       "dependencies": {
         "@canonical/storybook-addon-baseline-grid": "^0.9.0-experimental.2",
         "@storybook/addon-essentials": "^8.4.7",
@@ -64,10 +64,10 @@
         "@biomejs/biome": "^1.9.4",
         "@canonical/biome-config": "^0.9.0-experimental.2",
         "@canonical/typescript-config-react": "^0.9.0-experimental.2",
-        "typescript": "^5.7.2",
+        "typescript": "^5.8.2",
       },
       "peerDependencies": {
-        "typescript": "^5.6.2",
+        "typescript": "^5.8.2",
       },
     },
     "configs/typescript-base": {
@@ -76,10 +76,10 @@
       "devDependencies": {
         "@biomejs/biome": "^1.9.4",
         "@canonical/biome-config": "^0.9.0-experimental.2",
-        "typescript": "^5.7.2",
+        "typescript": "^5.8.2",
       },
       "peerDependencies": {
-        "typescript": "^5.6.2",
+        "typescript": "^5.8.2",
       },
     },
     "configs/typescript-react": {
@@ -91,10 +91,10 @@
       "devDependencies": {
         "@biomejs/biome": "^1.9.4",
         "@canonical/biome-config": "^0.9.0-experimental.2",
-        "typescript": "^5.7.2",
+        "typescript": "^5.8.2",
       },
       "peerDependencies": {
-        "typescript": "^5.6.2",
+        "typescript": "^5.8.2",
       },
     },
     "packages/generator-ds": {
@@ -117,9 +117,9 @@
     },
     "packages/react/ds-app-launchpad": {
       "name": "@canonical/react-ds-app-launchpad",
-      "version": "0.9.0-experimental.10",
+      "version": "0.9.0-experimental.11",
       "dependencies": {
-        "@canonical/storybook-config": "^0.9.0-experimental.5",
+        "@canonical/storybook-config": "^0.9.0-experimental.11",
         "@canonical/styles": "^0.9.0-experimental.9",
         "@canonical/utils": "^0.9.0-experimental.9",
         "@js-temporal/polyfill": "^0.4.4",
@@ -149,7 +149,7 @@
         "globals": "^16.0.0",
         "jsdom": "^26.0.0",
         "storybook": "^8.4.7",
-        "typescript": "^5.7.2",
+        "typescript": "^5.8.2",
         "vite": "^6.0.3",
         "vite-tsconfig-paths": "^5.1.4",
         "vitest": "^3.0.9",
@@ -157,9 +157,9 @@
     },
     "packages/react/ds-core": {
       "name": "@canonical/react-ds-core",
-      "version": "0.9.0-experimental.10",
+      "version": "0.9.0-experimental.11",
       "dependencies": {
-        "@canonical/storybook-config": "^0.9.0-experimental.5",
+        "@canonical/storybook-config": "^0.9.0-experimental.11",
         "@canonical/styles": "^0.9.0-experimental.9",
         "react": "^19.0.0",
         "react-dom": "^19.0.0",
@@ -182,7 +182,7 @@
         "globals": "^16.0.0",
         "jsdom": "^26.0.0",
         "storybook": "^8.4.7",
-        "typescript": "^5.7.2",
+        "typescript": "^5.8.2",
         "vite": "^6.0.3",
         "vite-tsconfig-paths": "^5.1.4",
         "vitest": "^3.0.9",
@@ -190,9 +190,9 @@
     },
     "packages/react/ds-core-form": {
       "name": "@canonical/react-ds-core-form",
-      "version": "0.9.0-experimental.10",
+      "version": "0.9.0-experimental.11",
       "dependencies": {
-        "@canonical/storybook-config": "^0.9.0-experimental.5",
+        "@canonical/storybook-config": "^0.9.0-experimental.11",
         "@canonical/styles": "^0.9.0-experimental.9",
         "react": "^19.0.0",
         "react-dom": "^19.0.0",
@@ -216,7 +216,7 @@
         "globals": "^16.0.0",
         "jsdom": "^26.0.0",
         "storybook": "^8.4.7",
-        "typescript": "^5.7.2",
+        "typescript": "^5.8.2",
         "vite": "^6.0.3",
         "vite-tsconfig-paths": "^5.1.4",
         "vitest": "^3.0.9",
@@ -242,7 +242,7 @@
         "@types/express": "^5.0.0",
         "@types/react": "^19.0.1",
         "@types/react-dom": "^19.0.2",
-        "typescript": "^5.7.2",
+        "typescript": "^5.8.2",
       },
     },
     "packages/storybook-addon-baseline-grid": {
@@ -269,7 +269,7 @@
         "react": "^19.0.0",
         "react-dom": "^19.0.0",
         "storybook": "^8.4.7",
-        "typescript": "^5.7.2",
+        "typescript": "^5.8.2",
         "vite": "^6.0.3",
       },
       "peerDependencies": {
@@ -362,7 +362,7 @@
         "@types/bun": "latest",
       },
       "peerDependencies": {
-        "typescript": "^5.0.0",
+        "typescript": "^5.8.2",
       },
     },
     "packages/utils": {
@@ -372,7 +372,7 @@
         "@biomejs/biome": "^1.9.4",
         "@canonical/biome-config": "^0.9.0-experimental.2",
         "@canonical/typescript-config-base": "^0.9.0-experimental.2",
-        "typescript": "^5.7.2",
+        "typescript": "^5.8.2",
       },
     },
   },
@@ -2368,6 +2368,28 @@
     "@babel/helper-compilation-targets/semver": ["semver@6.3.1", "", { "bin": { "semver": "bin/semver.js" } }, "sha512-BR7VvDCVHO+q2xBEWskxS6DJE1qRnb7DxzUrogb71CWoSficBxYsiAGd+Kl0mmq/MprG9yArRkyrQxTO6XjMzA=="],
 
     "@babel/traverse/globals": ["globals@11.12.0", "", {}, "sha512-WOBp/EEGUiIsJSp7wcv/y6MO+lV9UoncWqxuFfm8eBwzWNgyfBd6Gz+IeKQ9jCmyhoH99g15M3T+QaVHFjizVA=="],
+
+    "@canonical/react-boilerplate-vite/typescript": ["typescript@5.8.2", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-aJn6wq13/afZp/jT9QZmwEjDqqvSGp1VT5GVg+f/t6/oVyrgXM6BY1h9BRh/O5p3PlUPAe+WuiEZOmb/49RqoQ=="],
+
+    "@canonical/react-ds-app-launchpad/typescript": ["typescript@5.8.2", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-aJn6wq13/afZp/jT9QZmwEjDqqvSGp1VT5GVg+f/t6/oVyrgXM6BY1h9BRh/O5p3PlUPAe+WuiEZOmb/49RqoQ=="],
+
+    "@canonical/react-ds-core/typescript": ["typescript@5.8.2", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-aJn6wq13/afZp/jT9QZmwEjDqqvSGp1VT5GVg+f/t6/oVyrgXM6BY1h9BRh/O5p3PlUPAe+WuiEZOmb/49RqoQ=="],
+
+    "@canonical/react-ds-core-form/typescript": ["typescript@5.8.2", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-aJn6wq13/afZp/jT9QZmwEjDqqvSGp1VT5GVg+f/t6/oVyrgXM6BY1h9BRh/O5p3PlUPAe+WuiEZOmb/49RqoQ=="],
+
+    "@canonical/react-ssr/typescript": ["typescript@5.8.2", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-aJn6wq13/afZp/jT9QZmwEjDqqvSGp1VT5GVg+f/t6/oVyrgXM6BY1h9BRh/O5p3PlUPAe+WuiEZOmb/49RqoQ=="],
+
+    "@canonical/storybook-addon-baseline-grid/typescript": ["typescript@5.8.2", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-aJn6wq13/afZp/jT9QZmwEjDqqvSGp1VT5GVg+f/t6/oVyrgXM6BY1h9BRh/O5p3PlUPAe+WuiEZOmb/49RqoQ=="],
+
+    "@canonical/storybook-config/typescript": ["typescript@5.8.2", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-aJn6wq13/afZp/jT9QZmwEjDqqvSGp1VT5GVg+f/t6/oVyrgXM6BY1h9BRh/O5p3PlUPAe+WuiEZOmb/49RqoQ=="],
+
+    "@canonical/typescript-config-base/typescript": ["typescript@5.8.2", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-aJn6wq13/afZp/jT9QZmwEjDqqvSGp1VT5GVg+f/t6/oVyrgXM6BY1h9BRh/O5p3PlUPAe+WuiEZOmb/49RqoQ=="],
+
+    "@canonical/typescript-config-react/typescript": ["typescript@5.8.2", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-aJn6wq13/afZp/jT9QZmwEjDqqvSGp1VT5GVg+f/t6/oVyrgXM6BY1h9BRh/O5p3PlUPAe+WuiEZOmb/49RqoQ=="],
+
+    "@canonical/typography/typescript": ["typescript@5.8.2", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-aJn6wq13/afZp/jT9QZmwEjDqqvSGp1VT5GVg+f/t6/oVyrgXM6BY1h9BRh/O5p3PlUPAe+WuiEZOmb/49RqoQ=="],
+
+    "@canonical/utils/typescript": ["typescript@5.8.2", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-aJn6wq13/afZp/jT9QZmwEjDqqvSGp1VT5GVg+f/t6/oVyrgXM6BY1h9BRh/O5p3PlUPAe+WuiEZOmb/49RqoQ=="],
 
     "@isaacs/cliui/string-width": ["string-width@5.1.2", "", { "dependencies": { "eastasianwidth": "^0.2.0", "emoji-regex": "^9.2.2", "strip-ansi": "^7.0.1" } }, "sha512-HnLOCR3vjcY8beoNLtcjZ5/nxn2afmME6lhrDrebokqMap+XbeW8n9TXpPDOqdGK5qcI3oT0GKTW6wC7EMiVqA=="],
 
