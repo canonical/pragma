@@ -70,7 +70,7 @@ describe("EditableBlock component", () => {
     expect(document.body.contains(editingElement)).toBe(true);
   });
 
-  it("shouldn't  switch to edit mode when readonly is true", () => {
+  it("shouldn't  switch to edit mode when isReadOnly is true", () => {
     const ChildComponent = () => {
       const { isEditing } = useEditableBlock();
       return <div>{isEditing ? "Editing" : "Not Editing"}</div>;
@@ -80,7 +80,7 @@ describe("EditableBlock component", () => {
       <EditableBlock
         title={"Hello world!"}
         EditComponent={ChildComponent}
-        readonly
+        isReadOnly
       />,
     );
 

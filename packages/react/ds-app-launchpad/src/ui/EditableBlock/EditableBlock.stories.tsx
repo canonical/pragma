@@ -52,7 +52,7 @@ export const Default: Story = {
 export const ReadOnlyBlock: Story = {
   args: {
     title: "Sample Title",
-    readonly: true,
+    isReadOnly: true,
     EditComponent: ({ isEditing, toggleEditing }: SampleChildProps) => (
       <SampleChild isEditing={isEditing} toggleEditing={toggleEditing} />
     ),

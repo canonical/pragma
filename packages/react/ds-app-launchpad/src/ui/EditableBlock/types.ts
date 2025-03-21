@@ -28,7 +28,7 @@ export interface EditableBlockProps<T extends EditElementProps> {
   tag?: keyof JSX.IntrinsicElements;
 
   /** Whether the block is read-only */
-  readonly?: boolean;
+  isReadOnly?: boolean;
 }
 
 export default EditableBlockProps;

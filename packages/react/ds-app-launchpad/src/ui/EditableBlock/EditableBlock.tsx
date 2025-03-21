@@ -19,15 +19,15 @@ const EditableBlock = <T extends EditElementProps>({
   style,
   title,
   tag: TitleTag = "h3",
-  readonly = false,
+  isReadOnly = false,
 }: EditableBlockProps<T>): React.ReactElement => {
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const isFocusedRef = useRef<boolean>(false);
 
   const toggleEditing = useCallback(() => {
-    if (readonly) return;
+    if (isReadOnly) return;
     setIsEditing((editing) => !editing);
-  }, [readonly]);
+  }, [isReadOnly]);
 
   const handleBlur = useCallback(() => {
     isFocusedRef.current = false;
@@ -62,7 +62,7 @@ const EditableBlock = <T extends EditElementProps>({
       >
         <header>
           <TitleTag className="title">{title}</TitleTag>
-          {!readonly && (
+          {!isReadOnly && (
             <div
               className={`icon ${isEditing ? "icon-close" : "icon-edit"}`}
               onClick={toggleEditing}
