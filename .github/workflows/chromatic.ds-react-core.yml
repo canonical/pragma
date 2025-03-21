@@ -3,8 +3,6 @@ on:
   pull_request:
     paths:
       - configs/storybook/**
-      - configs/typescript-base/**
-      - configs/typescript-react/**
       - packages/styles/**
       - packages/utils/**
       - packages/react/ds-core/**
@@ -18,8 +16,6 @@ jobs:
       working-directory: packages/react/ds-core
       externals: '[
         "configs/storybook/**",
-        "configs/typescript-base/**",
-        "configs/typescript-react/**",
         "packages/styles/**",
         "packages/utils/**"
       ]'
