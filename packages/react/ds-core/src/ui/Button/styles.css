@@ -25,7 +25,7 @@
   color: var(--intent-color-text, var(--button-color-text));
   background-color: var(--intent-color, var(--button-color-background));
   border-color: var(--intent-color-border, var(--button-color-border));
-  border-style: solid;
+  border-style: dotted;
   border-width: var(--button-border-width);
   font-size: var(--button-font-size);
   font-weight: var(--button-font-weight);
