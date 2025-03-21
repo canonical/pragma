@@ -1,6 +1,7 @@
 /* @canonical/generator-ds 0.9.0-experimental.4 */
 import type React from "react";
-import type { BaseInputProps, InputProps, WrapperProps } from "../../types.js";
+import { useMemo } from "react";
+import type { BaseInputProps, WrapperProps } from "../../types.js";
 import "./styles.css";
 import { Description, Error as FieldError, Label } from "../index.js";
 import { useFieldWrapper } from "./hooks/index.js";
@@ -11,62 +12,68 @@ const componentCssClassName = "ds form-wrapper";
  * description of the Wrapper component
  * @returns {React.ReactElement} - Rendered Wrapper
  */
-const Wrapper = ({
-	id,
-	className,
-	style,
+const Wrapper = <ComponentProps extends BaseInputProps>({
+  id,
+  className,
+  style,
 
-	name,
-	Component,
-	description,
-	label,
-	isOptional,
-	registerProps: userRegisterProps,
-	nestedRegisterProps,
-	unregisterOnUnmount,
+  name,
+  Component,
+  description,
+  label,
+  isOptional,
+  registerProps: userRegisterProps,
+  nestedRegisterProps,
+  unregisterOnUnmount,
 
-	mockLabel = false,
-	...otherProps
-}: WrapperProps): React.ReactElement => {
-	const { fieldError, isError, ariaProps, registerProps } = useFieldWrapper(
-		name,
-		{
-			label,
-			isOptional,
-			userRegisterProps,
-			nestedRegisterProps,
-			unregisterOnUnmount,
-		},
-	);
+  mockLabel = false,
+  ...otherProps
+}: WrapperProps<ComponentProps>): React.ReactElement => {
+  const { fieldError, isError, ariaProps, registerProps } = useFieldWrapper(
+    name,
+    {
+      label,
+      isOptional,
+      userRegisterProps,
+      nestedRegisterProps,
+      unregisterOnUnmount,
+    },
+  );
 
-	return (
-		<div
-			id={id}
-			style={style}
-			className={[componentCssClassName, className].filter(Boolean).join(" ")}
-		>
-			<Description {...ariaProps.description}>{description}</Description>
-			<Label
-				name={name}
-				isOptional={isOptional}
-				tag={mockLabel ? "legend" : undefined}
-				{...ariaProps.label}
-			>
-				{label}
-			</Label>
-			<Component
-				name={name}
-				registerProps={registerProps}
-				{...ariaProps.input}
-				{...otherProps}
-			/>
-			{isError && (
-				<FieldError {...ariaProps.error}>
-					{fieldError?.message?.toString()}
-				</FieldError>
-			)}
-		</div>
-	);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: -
+  const componentProps = useMemo(
+    () => ({
+      name,
+      registerProps,
+      ...ariaProps.input,
+      ...otherProps,
+    }),
+    [name, registerProps, ariaProps.input],
+  ) as unknown as ComponentProps;
+
+  return (
+    <div
+      id={id}
+      style={style}
+      className={[componentCssClassName, className].filter(Boolean).join(" ")}
+    >
+      <Description {...ariaProps.description}>{description}</Description>
+      <Label
+        name={name}
+        isOptional={isOptional}
+        tag={mockLabel ? "legend" : undefined}
+        {...ariaProps.label}
+      >
+        {label}
+      </Label>
+      <Component {...componentProps} />
+      {isError && (
+        <FieldError {...ariaProps.error}>
+          {fieldError?.message?.toString()}
+        </FieldError>
+      )}
+    </div>
+  );
 };
 
 export default Wrapper;
