@@ -1,5 +1,4 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { fn } from "@storybook/test";
 
 import Component from "./EditableBlock.js";
 
@@ -44,6 +43,16 @@ const SampleChild = ({
 export const Default: Story = {
   args: {
     title: "Sample Title",
+    EditComponent: ({ isEditing, toggleEditing }: SampleChildProps) => (
+      <SampleChild isEditing={isEditing} toggleEditing={toggleEditing} />
+    ),
+  },
+};
+
+export const ReadOnlyBlock: Story = {
+  args: {
+    title: "Sample Title",
+    readonly: true,
     EditComponent: ({ isEditing, toggleEditing }: SampleChildProps) => (
       <SampleChild isEditing={isEditing} toggleEditing={toggleEditing} />
     ),

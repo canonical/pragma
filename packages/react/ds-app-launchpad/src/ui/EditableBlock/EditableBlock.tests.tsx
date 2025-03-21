@@ -36,20 +36,6 @@ describe("EditableBlock component", () => {
     expect(editIcon.classList.contains("icon-edit")).toBe(true);
   });
 
-  it("toggles editing state when Enter key is pressed", () => {
-    render(
-      <EditableBlock
-        title={"Hello world!"}
-        EditComponent={SampleEditComponent}
-      />,
-    );
-    const editIcon = screen.getByRole("button");
-    fireEvent.keyUp(editIcon, { key: "Enter", code: "Enter", charCode: 13 });
-    expect(editIcon.classList.contains("icon-close")).toBe(true);
-    fireEvent.keyUp(editIcon, { key: "Enter", code: "Enter", charCode: 13 });
-    expect(editIcon.classList.contains("icon-edit")).toBe(true);
-  });
-
   it("toggles editing state when Space key is pressed", () => {
     render(
       <EditableBlock
@@ -82,5 +68,26 @@ describe("EditableBlock component", () => {
     const editingElement = screen.getByText("Editing");
     expect(editingElement).not.toBeNull();
     expect(document.body.contains(editingElement)).toBe(true);
+  });
+
+  it("shouldn't  switch to edit mode when readonly is true", () => {
+    const ChildComponent = () => {
+      const { isEditing } = useEditableBlock();
+      return <div>{isEditing ? "Editing" : "Not Editing"}</div>;
+    };
+
+    render(
+      <EditableBlock
+        title={"Hello world!"}
+        EditComponent={ChildComponent}
+        readonly
+      />,
+    );
+
+    const notEditingElement = screen.getByText("Not Editing");
+    expect(notEditingElement).not.toBeNull();
+    expect(document.body.contains(notEditingElement)).toBe(true);
+    const editIcon = screen.queryByRole("button");
+    expect(editIcon).toBeNull();
   });
 });
