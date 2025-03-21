@@ -12,34 +12,34 @@ const componentCssClassName = "ds select";
  * @returns {React.ReactElement} - Rendered Select
  */
 const Select = ({
-  id,
-  className,
-  style,
-  name,
-  registerProps,
-  options,
-  ...otherProps
+	id,
+	className,
+	style,
+	name,
+	registerProps,
+	options,
+	...otherProps
 }: SelectProps): React.ReactElement => {
-  const { register } = useFormContext();
-  return (
-    <select
-      id={id}
-      className={[componentCssClassName, className].filter(Boolean).join(" ")}
-      style={style}
-      {...otherProps}
-      {...register(name, registerProps)}
-    >
-      {options.map((option) => (
-        <option
-          key={option.value}
-          value={option.value}
-          disabled={option.disabled}
-        >
-          {option.label}
-        </option>
-      ))}
-    </select>
-  );
+	const { register } = useFormContext();
+	return (
+		<select
+			id={id}
+			className={[componentCssClassName, className].filter(Boolean).join(" ")}
+			style={style}
+			{...otherProps}
+			{...register(name, registerProps)}
+		>
+			{options.map((option) => (
+				<option
+					key={option.value}
+					value={option.value}
+					disabled={option.disabled}
+				>
+					{option.label}
+				</option>
+			))}
+		</select>
+	);
 };
 
-export default withWrapper(Select);
+export default withWrapper<SelectProps>(Select);

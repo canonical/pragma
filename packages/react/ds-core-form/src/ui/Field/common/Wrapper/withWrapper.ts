@@ -1,46 +1,70 @@
 import * as React from "react";
 import { useMemo } from "react";
-import type { InputProps } from "../../inputs/index.js";
-import type { BaseFieldProps, FieldProps, FormInputHOC } from "../../types.js";
+import type { TextProps } from "../../inputs/index.js";
+import type {
+	BaseInputProps,
+	BaseWrapperProps,
+	FieldProps,
+	InputPropsUnion,
+	Middleware,
+	TODOUnion,
+	WrappedComponentProps,
+	WrapperProps,
+} from "../../types.js";
 import DefaultWrapper from "./Wrapper.js";
-import type { WrapperProps } from "./types.js";
-// import MockWrapper from './WrapperContent.js'
-// import type { WrapperProps } from './types.js'
-// import withConditionalDisplay from './withConditionalDisplay.js'
 
-const withWrapper = (
-  Component: React.ComponentType<InputProps>,
-  options?: WrapperProps,
-  Wrapper: typeof DefaultWrapper = DefaultWrapper,
+type WrappedComponentPropsInternal<ComponentProps> = Omit<
+	WrappedComponentProps<ComponentProps>,
+	"Component"
+>;
+
+const withWrapper = <
+	ComponentProps extends BaseInputProps,
+	ComponentWrapperProps extends
+		BaseWrapperProps<ComponentProps> = WrapperProps<ComponentProps>,
+>(
+	Component: React.ComponentType<ComponentProps>,
+	options?: Partial<ComponentWrapperProps>,
+	Wrapper: React.ComponentType<ComponentWrapperProps> = DefaultWrapper,
 ) => {
-  const MemoizedComponent = React.memo(Component);
+	const MemoizedComponent = React.memo(Component);
 
-  function WrappedComponent({
-    middleware = [],
-    WrapperComponent = Wrapper,
-    ...props
-  }: BaseFieldProps): React.ReactElement {
-    // We apply the middleware to the component in reverse orderso
-    // so that the first middleware in the array is the first to be applied to the component
-    const ExtendedComponent = useMemo(
-      () =>
-        middleware
-          .reverse()
-          .reduce<React.ComponentType<BaseFieldProps>>(
-            (AccumulatedComponent, hoc) => hoc(AccumulatedComponent),
-            MemoizedComponent,
-          ),
-      [middleware],
-    );
+	function WrappedComponent({
+		middleware = [],
+		WrapperComponent = Wrapper,
+		...props
+	}: WrappedComponentPropsInternal<ComponentProps>): React.ReactElement {
+		// We apply the middleware to the component in reverse orderso
+		// so that the first middleware in the array is the first to be applied to the component
 
-    return React.createElement(WrapperComponent, {
-      Component: ExtendedComponent,
-      ...props,
-      ...options,
-    });
-  }
-  // return withConditionalDisplay(WrappedComponent)
-  return WrappedComponent;
+		// const ExtendedComponent = useMemo(
+		// 	() =>
+		// 		// The middleware happens between the Wrapper and the Component,
+		// 		// hence the return type of P
+		// 		middleware
+		// 			.reverse()
+		// 			.reduce<React.ComponentType<ComponentProps>>(
+		// 				(AccumulatedComponent, hoc) => hoc(AccumulatedComponent),
+		// 				MemoizedComponent,
+		// 			),
+		// 	[middleware],
+		// );
+
+		// Type casting to avoid hard to read overloads.
+		const finalProps = {
+			Component: MemoizedComponent,
+			// Component: ExtendedComponent,
+			...props,
+			...options,
+		} as WrapperProps<ComponentProps>; // The typing should be ComponentWrapperProps, but it would require an overload
+
+		return React.createElement(
+			WrapperComponent,
+			finalProps as WrapperProps<ComponentProps>,
+		);
+	}
+	// return withConditionalDisplay(WrappedComponent)
+	return WrappedComponent;
 };
 
 export default withWrapper;

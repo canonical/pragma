@@ -1,6 +1,7 @@
 /* @canonical/generator-ds 0.9.0-experimental.4 */
 // import type React from "react";
-import type { BaseInputProps } from "../types.js";
+import type { InputProps } from "../../types.js";
 
-export type CheckboxProps = BaseInputProps &
-  React.InputHTMLAttributes<HTMLInputElement>;
+type NativeCheckboxProps = React.InputHTMLAttributes<HTMLInputElement>;
+
+export type CheckboxProps = InputProps<NativeCheckboxProps>;

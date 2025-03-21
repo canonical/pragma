@@ -1,9 +1,10 @@
 /* @canonical/generator-ds 0.9.0-experimental.9 */
-import type { BaseInputProps, OptionsProps } from "../types.js";
+import type { InputProps, OptionsProps } from "../../types.js";
 
 // export type TextareaProps = BaseInputProps &
-// 	React.HTMLProps<HTMLTextAreaElement>;
+// 	React.HTMeProps<HTMLTextAreaElement>;
+//
 
-export type SelectProps = BaseInputProps &
-  OptionsProps &
-  React.HTMLProps<HTMLSelectElement>;
+type NativeSelectProps = React.SelectHTMLAttributes<HTMLSelectElement>;
+
+export type SelectProps = InputProps<NativeSelectProps & OptionsProps>;

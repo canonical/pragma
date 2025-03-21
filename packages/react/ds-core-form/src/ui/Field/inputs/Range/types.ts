@@ -1,5 +1,6 @@
 /* @canonical/generator-ds 0.9.0-experimental.9 */
-import type { BaseInputProps } from "../types.js";
+import type { InputProps } from "../../types.js";
 
-export type RangeProps = BaseInputProps &
-  React.InputHTMLAttributes<HTMLInputElement>;
+type NativeRangeProps = React.InputHTMLAttributes<HTMLInputElement>;
+
+export type RangeProps = InputProps<NativeRangeProps>;

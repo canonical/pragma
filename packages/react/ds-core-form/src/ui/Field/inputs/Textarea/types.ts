@@ -1,5 +1,6 @@
 /* @canonical/generator-ds 0.9.0-experimental.4 */
-import type { BaseInputProps } from "../types.js";
+import type { InputProps } from "../../types.js";
 
-export type TextareaProps = BaseInputProps &
-  React.HTMLProps<HTMLTextAreaElement>;
+type NativeTextareaProps = React.TextareaHTMLAttributes<HTMLTextAreaElement>;
+
+export type TextareaProps = InputProps<NativeTextareaProps>;

@@ -12,23 +12,25 @@ const componentCssClassName = "ds form-text";
  * @returns {React.ReactElement} - Rendered Text
  */
 const Text = ({
-  id,
-  className,
-  style,
-  inputType = "text",
-  name,
-  registerProps,
+	id,
+	className,
+	style,
+	inputType = "text",
+	name,
+	registerProps,
 }: TextProps): React.ReactElement => {
-  const { register } = useFormContext();
-  return (
-    <input
-      id={id}
-      style={style}
-      className={[componentCssClassName, className].filter(Boolean).join(" ")}
-      type={inputType}
-      {...register(name, registerProps)}
-    />
-  );
+	const { register } = useFormContext();
+	return (
+		<input
+			id={id}
+			style={style}
+			className={[componentCssClassName, className].filter(Boolean).join(" ")}
+			type={inputType}
+			{...register(name, registerProps)}
+		/>
+	);
 };
 
-export default withWrapper(Text);
+export type MyComp = typeof Text;
+
+export default withWrapper<TextProps>(Text);
