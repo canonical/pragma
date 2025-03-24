@@ -30,7 +30,7 @@ jobs:
 
       - name: Test
         run: bun run test
-  publish:
+  publish-to-chromatic:
     runs-on: ubuntu-latest
     needs: build
     steps:
