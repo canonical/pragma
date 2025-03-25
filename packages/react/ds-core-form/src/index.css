@@ -6,3 +6,59 @@
   /* Temporary, waiting for a better understanding */
   --baseline-shift: 1px;
 }
+
+.grid-fixed {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+}
+.grid-fluid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, 
+  minmax(100px, 1fr)
+  minmax(100px, 1fr)
+  minmax(100px, 1fr)
+  minmax(100px, 1fr)
+  );
+}
+
+
+.abcdef {
+  display: grid;
+  grid-template-columns: subgrid;
+  grid-column:1/-1;
+}
+
+/* .form-layout-top{ */
+/*   --form-label-columns:1/-1; */
+/*   --form-payload-columns:1/-1; */
+/* } */
+
+.form-layout-side{
+  --form-label-columns:1/3;
+  --form-payload-columns:3/-1;
+}
+
+
+.special-area {
+  --wrapper-columns:1/3;
+  --form-label-columns:1/-1;
+  --form-payload-columns:1/-1;
+}
+
+.special-number {
+  --wrapper-columns:3/-1;
+  --form-label-columns:1/-1;
+  --form-payload-columns:1/-1;
+}
+
+.special-width {
+  max-width:4ch;
+}
+
+.flexbox {
+  display: flex;
+}
+
+
+input {
+}

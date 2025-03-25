@@ -1,7 +1,6 @@
 /* @canonical/generator-ds 0.9.0-experimental.4 */
 
-/*
-.ds.label {
+.ds.form-label {
+  font-weight: bold;
 
 }
-*/

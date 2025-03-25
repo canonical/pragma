@@ -1,7 +1,16 @@
 /* @canonical/generator-ds 0.9.0-experimental.4 */
 
-/*
 .ds.form-wrapper {
+  display: grid;
+  grid-template-columns: subgrid;
+  grid-column: var(--wrapper-columns, 1/-1);
+  
+  .ds.form-label {
+    grid-column: var(--form-label-columns, 1/-1);
+  }
+
+  > .payload {
+    grid-column: var(--form-payload-columns, 1/-1);
+  }
 
 }
-*/
