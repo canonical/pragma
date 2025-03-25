@@ -1,19 +1,19 @@
 /* @canonical/generator-ds 0.9.0-experimental.9 */
 
 // Needed for function-based story, safe to remove otherwise
-// import type { SimpleChoicesProps } from './types.js'
+// import type { FormProps } from './types.js'
 import type { Meta, StoryObj } from "@storybook/react";
-import * as decorators from "storybook/decorators.js";
-import * as fixtures from "storybook/fixtures.options.js";
-import Component from "./SimpleChoices.js";
 // Needed for template-based story, safe to remove otherwise
-// import type { StoryFn } from '@storybook/react'
+import type { StoryFn } from "@storybook/react";
+import * as decorators from "storybook/decorators.js";
+import * as fieldMaps from "storybook/fixtures.fields.js";
+import { Field } from "../Field/index.js";
+import type { FieldProps } from "../Field/types.js";
 
 const meta = {
-  title: "Field/inputs/SimpleChoices",
-  component: Component,
+  title: "middleware",
   decorators: [decorators.form()],
-} satisfies Meta<typeof Component>;
+} satisfies Meta;
 
 export default meta;
 
@@ -22,21 +22,24 @@ export default meta;
   Uses object-based story declarations with strong TS support (`Meta` and `StoryObj`).
   Uses the latest storybook format.
 */
-type Story = StoryObj<typeof meta>;
+// type Story = StoryObj<typeof meta>;
 
-export const Default: Story = {
-  args: {
-    name: "select",
-    options: fixtures.continents,
-  },
+// export const Default: Story = {
+//   args: {
+//     children: <span>Hello world!</span>
+//   },
+// };
+
+type TemplateProps = {
+  wrapperClassName: string;
 };
 
-export const Multiple: Story = {
-  args: {
-    name: "select2",
-    options: fixtures.continents,
-    isMultiple: true,
-  },
+const Template: StoryFn<TemplateProps> = ({
+  wrapperClassName,
+}: TemplateProps) => <div className={wrapperClassName}>Test</div>;
+export const Default: StoryFn<TemplateProps> = Template.bind({});
+Default.args = {
+  wrapperClassName: "wrapper",
 };
 
 /*
@@ -44,7 +47,7 @@ export const Multiple: Story = {
   Direct arguments passed to the component
   Simple, but can lead to repetition if used across multiple stories with similar configurations
 
-  export const Default = (args: SimpleChoicesProps) => <Component {...args} />;
+  export const Default = (args: FormProps) => <Component {...args} />;
   Default.args = { children: <span>Hello world!</span> };
 */
 
