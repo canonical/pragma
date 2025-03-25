@@ -9,15 +9,15 @@ import Component from "./Range.js";
 // import type { StoryFn } from '@storybook/react'
 
 const meta = {
-	title: "Field/inputs/Range",
-	component: Component,
-	decorators: [
-		decorators.form({
-			defaultValues: {
-				age: 30,
-			},
-		}),
-	],
+  title: "Field/inputs/Range",
+  component: Component,
+  decorators: [
+    decorators.form({
+      defaultValues: {
+        age: 30,
+      },
+    }),
+  ],
 } satisfies Meta<typeof Component>;
 
 export default meta;
@@ -30,12 +30,12 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
-	args: {
-		name: "age",
-		min: 0,
-		max: 100,
-		step: 1,
-	},
+  args: {
+    name: "age",
+    min: 0,
+    max: 100,
+    step: 1,
+  },
 };
 
 /*

@@ -8,9 +8,9 @@ import Component from "./Label.js";
 // import type { StoryFn } from '@storybook/react'
 
 const meta = {
-	title: "common/Wrapper/Label",
-	component: Component,
-	tags: ["autodocs"],
+  title: "common/Wrapper/Label",
+  component: Component,
+  tags: ["autodocs"],
 } satisfies Meta<typeof Component>;
 
 export default meta;
@@ -23,25 +23,25 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
-	args: {
-		name: "email",
-		children: "What is your email ?",
-	},
+  args: {
+    name: "email",
+    children: "What is your email ?",
+  },
 };
 
 export const Optional: Story = {
-	args: {
-		name: "name",
-		children: "What is your name ?",
-		isOptional: true,
-	},
+  args: {
+    name: "name",
+    children: "What is your name ?",
+    isOptional: true,
+  },
 };
 
 /** This represents a label for a fieldset, where we do not need an actual html label */
 export const SemanticLabel: Story = {
-	args: {
-		name: "email",
-		children: "Email",
-		tag: "span",
-	},
+  args: {
+    name: "email",
+    children: "Email",
+    tag: "span",
+  },
 };

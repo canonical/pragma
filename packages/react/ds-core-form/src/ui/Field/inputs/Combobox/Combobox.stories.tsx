@@ -1,15 +1,17 @@
 /* @canonical/generator-ds 0.9.0-experimental.9 */
 
 // Needed for function-based story, safe to remove otherwise
-// import type { ErrorProps } from './types.js'
+// import type { ComboboxProps } from './types.js'
 import type { Meta, StoryObj } from "@storybook/react";
-import Component from "./Error.js";
+import * as decorators from "storybook/decorators.js";
+import Component from "./Combobox.js";
 // Needed for template-based story, safe to remove otherwise
 // import type { StoryFn } from '@storybook/react'
 
 const meta = {
-  title: "common/Wrapper/Error",
+  title: "Field/inputs/Combobox",
   component: Component,
+  decorators: [decorators.form()],
 } satisfies Meta<typeof Component>;
 
 export default meta;
@@ -23,7 +25,24 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   args: {
-    children: <span>Hello world!</span>,
+    name: "choose",
+    options: [
+      { label: "Option 1", value: "option1" },
+      { label: "Option 2", value: "option2" },
+      { label: "Option 3", value: "option3" },
+    ],
+  },
+};
+
+export const Multiple: Story = {
+  args: {
+    name: "countries",
+    isMultiple: true,
+    options: [
+      { label: "Option 1", value: "option1" },
+      { label: "Option 2", value: "option2" },
+      { label: "Option 3", value: "option3" },
+    ],
   },
 };
 
@@ -32,7 +51,7 @@ export const Default: Story = {
   Direct arguments passed to the component
   Simple, but can lead to repetition if used across multiple stories with similar configurations
 
-  export const Default = (args: ErrorProps) => <Component {...args} />;
+  export const Default = (args: ComboboxProps) => <Component {...args} />;
   Default.args = { children: <span>Hello world!</span> };
 */
 
