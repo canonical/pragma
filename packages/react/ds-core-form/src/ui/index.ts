@@ -27,3 +27,5 @@ Field switched between Input, Textarea, Checkbox, Select based on type
 /inputs/SimpleChoices  (list of radio buttons or checkboxes if multiple=true)
 
 */
+
+export * from './Form/index.js';
