@@ -20,20 +20,24 @@
     "check:biome": "biome check",
     "check:biome:fix": "biome check --write",
     "check:ts": "tsc --noEmit",
-    "storybook": "storybook dev -p 6010 --no-open --host 0.0.0.0"
+    "storybook": "storybook dev -p 6011 --no-open --host 0.0.0.0"
   },
   "dependencies": {
     "@canonical/storybook-config": "^0.9.0-experimental.5",
     "@canonical/react-ssr": "^0.9.0-experimental.10",
     "@canonical/styles": "^0.9.0-experimental.9",
+    "@tanstack/react-router": "^1.114.25",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "react-shadow": "^20.6.0"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
     "@canonical/biome-config": "^0.9.0-experimental.2",
     "@canonical/react-ds-core": "^0.9.0-experimental.11",
     "@canonical/typescript-config-react": "^0.9.0-experimental.2",
+    "@tanstack/react-router-devtools": "^1.114.25",
+    "@tanstack/router-plugin": "^1.114.25",
     "@chromatic-com/storybook": "^3.2.2",
     "@storybook/blocks": "^8.4.7",
     "@storybook/react": "^8.4.7",

@@ -2,14 +2,8 @@
   "extends": "@canonical/typescript-config-react",
   "compilerOptions": {
     "baseUrl": "src",
-    "skipLibCheck": true, // Remove if not using storybook
-    "types": [
-      "node",
-      "react",
-      "react-dom",
-      "vitest/globals",
-      "@testing-library/jest-dom"
-    ],
+    "skipLibCheck": true,
+    "types": ["node", "react", "react-dom"],
     "noEmit": true
   },
   "include": [
@@ -17,8 +11,6 @@
     "src/**/*.tsx",
     ".storybook/*.ts",
     ".storybook/*.tsx",
-    "vite.config.ts",
-    "vitest.setup.ts",
-    "vitest.config.ts"
+    "vite.config.ts"
   ]
 }

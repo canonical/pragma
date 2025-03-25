@@ -1,1 +1,1 @@
-export * from "./ExampleComponent/index.js";
+export * from "./ui/index.js";
