@@ -8,8 +8,8 @@ import Component from "./Description.js";
 // import type { StoryFn } from '@storybook/react'
 
 const meta = {
-  title: "Description",
-  component: Component,
+	title: "common/Wrapper/Description",
+	component: Component,
 } satisfies Meta<typeof Component>;
 
 export default meta;
@@ -22,9 +22,9 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
-  args: {
-    children: <span>Hello world!</span>,
-  },
+	args: {
+		children: <span>Hello world!</span>,
+	},
 };
 
 /*

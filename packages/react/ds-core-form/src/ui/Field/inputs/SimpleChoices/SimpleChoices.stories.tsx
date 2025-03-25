@@ -10,9 +10,9 @@ import Component from "./SimpleChoices.js";
 // import type { StoryFn } from '@storybook/react'
 
 const meta = {
-  title: "SimpleChoices",
-  component: Component,
-  decorators: [decorators.form()],
+	title: "Field/inputs/SimpleChoices",
+	component: Component,
+	decorators: [decorators.form()],
 } satisfies Meta<typeof Component>;
 
 export default meta;
@@ -25,25 +25,25 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
-  args: {
-    name: "select",
-    options: fixtures.base,
-  },
+	args: {
+		name: "select",
+		options: fixtures.base,
+	},
 };
 
 export const Multiple: Story = {
-  args: {
-    name: "select2",
-    options: fixtures.base,
-    isMultiple: true,
-  },
+	args: {
+		name: "select2",
+		options: fixtures.base,
+		isMultiple: true,
+	},
 };
 
 export const WithDisabledOption: Story = {
-  args: {
-    name: "select3",
-    options: fixtures.withDisabled,
-  },
+	args: {
+		name: "select3",
+		options: fixtures.withDisabled,
+	},
 };
 
 /*

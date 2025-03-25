@@ -9,9 +9,9 @@ import Component from "./Text.js";
 // import type { StoryFn } from '@storybook/react'
 
 const meta = {
-  title: "Text",
-  component: Component,
-  decorators: [decorators.form()],
+	title: "Field/inputs/Text",
+	component: Component,
+	decorators: [decorators.form()],
 } satisfies Meta<typeof Component>;
 
 export default meta;
@@ -24,16 +24,16 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
-  args: {
-    name: "full_name",
-  },
+	args: {
+		name: "full_name",
+	},
 };
 
 export const Email: Story = {
-  args: {
-    name: "email",
-    inputType: "email",
-  },
+	args: {
+		name: "email",
+		inputType: "email",
+	},
 };
 
 /*
