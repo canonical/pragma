@@ -7,7 +7,7 @@ const componentCssClassName = "ds form-label";
 
 /** Placeholder for internationalized messages */
 const defaultMessages = {
-	optional: () => "optional",
+  optional: () => "optional",
 };
 
 /**
@@ -15,27 +15,27 @@ const defaultMessages = {
  * @returns {React.ReactElement} - Rendered Label
  */
 const Label = ({
-	id,
-	children,
-	className,
-	style,
-	name,
-	isOptional,
-	messages = defaultMessages,
-	htmlFor,
-	tag: Element = "label",
+  id,
+  children,
+  className,
+  style,
+  name,
+  isOptional,
+  messages = defaultMessages,
+  htmlFor,
+  tag: Element = "label",
 }: LabelProps): React.ReactElement => {
-	return (
-		<Element
-			id={id}
-			style={style}
-			htmlFor={Element === "label" ? htmlFor : undefined}
-			className={[componentCssClassName, className].filter(Boolean).join(" ")}
-		>
-			{children || name}
-			{isOptional && <span> ({messages.optional()})</span>}
-		</Element>
-	);
+  return (
+    <Element
+      id={id}
+      style={style}
+      htmlFor={Element === "label" ? htmlFor : undefined}
+      className={[componentCssClassName, className].filter(Boolean).join(" ")}
+    >
+      {children || name}
+      {isOptional && <span> ({messages.optional()})</span>}
+    </Element>
+  );
 };
 
 export default Label;

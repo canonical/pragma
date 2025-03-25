@@ -11,15 +11,15 @@ import { Field } from "../Field/index.js";
 import type { FieldProps } from "../Field/types.js";
 
 const meta = {
-	title: "Form",
-	decorators: [
-		(Story: any) => (
-			<div className="grid-fluid">
-				<Story />
-			</div>
-		),
-		decorators.form(),
-	],
+  title: "Form",
+  decorators: [
+    (Story: React.ElementType) => (
+      <div className="grid-fluid">
+        <Story />
+      </div>
+    ),
+    decorators.form(),
+  ],
 } satisfies Meta;
 
 export default meta;
@@ -38,50 +38,50 @@ export default meta;
 // };
 
 type TemplateProps = {
-	text: string;
-	fieldMap: FieldProps[];
-	otherProps: Partial<FieldProps>;
-	wrapperClassName: string;
+  text: string;
+  fieldMap: FieldProps[];
+  otherProps: Partial<FieldProps>;
+  wrapperClassName: string;
 };
 
 const Template: StoryFn<TemplateProps> = ({
-	fieldMap,
-	wrapperClassName = "abcdef",
-	otherProps,
+  fieldMap,
+  wrapperClassName = "abcdef",
+  otherProps,
 }: TemplateProps) => (
-	<div className={wrapperClassName}>
-		{fieldMap.map((props: FieldProps) => (
-			<Field {...props} {...otherProps} key={props.name} />
-		))}
-	</div>
+  <div className={wrapperClassName}>
+    {fieldMap.map((props: FieldProps) => (
+      <Field {...props} {...otherProps} key={props.name} />
+    ))}
+  </div>
 );
 export const Default: StoryFn<TemplateProps> = Template.bind({});
 Default.args = {
-	fieldMap: fieldMaps.base,
+  fieldMap: fieldMaps.base,
 };
 
 export const AllDisabled: StoryFn<TemplateProps> = Template.bind({});
 AllDisabled.args = {
-	fieldMap: fieldMaps.base,
-	otherProps: { disabled: true },
+  fieldMap: fieldMaps.base,
+  otherProps: { disabled: true },
 };
 
 export const AllOptional: StoryFn<TemplateProps> = Template.bind({});
 AllOptional.args = {
-	fieldMap: fieldMaps.base,
-	otherProps: { isOptional: true },
+  fieldMap: fieldMaps.base,
+  otherProps: { isOptional: true },
 };
 
 export const Side: StoryFn<TemplateProps> = Template.bind({});
 Side.args = {
-	fieldMap: fieldMaps.base,
-	wrapperClassName: "abcdef form-layout-side",
+  fieldMap: fieldMaps.base,
+  wrapperClassName: "abcdef form-layout-side",
 };
 
 export const Flexbox: StoryFn<TemplateProps> = Template.bind({});
 Flexbox.args = {
-	fieldMap: fieldMaps.phone,
-	wrapperClassName: "flexbox",
+  fieldMap: fieldMaps.phone,
+  wrapperClassName: "flexbox",
 };
 
 /*
