@@ -6,7 +6,8 @@ import type { Meta, StoryObj } from "@storybook/react";
 // Needed for template-based story, safe to remove otherwise
 import type { StoryFn } from "@storybook/react";
 import * as decorators from "storybook/decorators.js";
-import * as fieldMaps from "storybook/fixtures.fields.js";
+import * as middleware from "./index.js";
+
 import { Field } from "../Field/index.js";
 import type { FieldProps } from "../Field/types.js";
 
@@ -41,6 +42,77 @@ export const Default: StoryFn<TemplateProps> = Template.bind({});
 Default.args = {
   wrapperClassName: "wrapper",
 };
+
+export const ConditionalDisplay: StoryObj = {
+  render: () => {
+    const emailField: FieldProps = {
+      name: "email",
+      inputType: "text",
+      description:
+        "Enter a gmail address and you should be prompted for the company",
+      label: "Email",
+    };
+
+    const companyField: FieldProps = {
+      name: "company",
+      inputType: "text",
+      label: "Company",
+      middleware: [
+        middleware.addConditionalDisplay(["email"], (values) =>
+          values[0]?.endsWith("@gmail.com"),
+        ),
+      ],
+    };
+
+    return (
+      <div>
+        <Field {...emailField} />
+        <Field {...companyField} />
+      </div>
+    );
+  },
+  name: "Conditional Display",
+};
+
+// export const RESTOptions: StoryObj = {
+// 	render: () => {
+// 		const choicesField: FieldProps = {
+// 			name: "choices",
+// 			inputType: "simple-choices",
+// 			label: "Select an option",
+// 			middleware: [
+// 				middleware.addRESTOptions("https://TODO", {
+// 					transformData: (data) => data.options,
+// 				}),
+// 			],
+// 		};
+//
+// 		return <Field {...choicesField} />;
+// 	},
+// 	name: "REST Options",
+// };
+//
+// export const RESTValidation: StoryObj = {
+// 	render: () => {
+// 		const domainField: FieldProps = {
+// 			name: "domain",
+// 			inputType: "text",
+// 			label: "Domain Name",
+// 			middleware: [
+// 				middleware.addRESTValidation("https://TODO", {
+// 					minLength: 3,
+// 					errorExtractor: async (response) => {
+// 						const data = await response.json();
+// 						return data.error || "Domain is not available";
+// 					},
+// 				}),
+// 			],
+// 		};
+//
+// 		return <Field {...domainField} />;
+// 	},
+// 	name: "REST Validation",
+// };
 
 /*
   Function-based story
