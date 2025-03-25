@@ -59,7 +59,7 @@
   pointer-events: auto;
   display: inline-block;
   transition: opacity 0.1s ease-in-out;
-  position: absolute;
+  position: fixed;
 
   &[aria-hidden="true"] {
     opacity: 0;
