@@ -1,12 +1,12 @@
-import type { ExampleRendererProps } from "./types.js";
+import type { RendererProps } from "./types.js";
 
 const componentCssClassname = "ds example-renderer";
 import root from "react-shadow";
 
-import { useConfig } from "../ExampleControls/Context.js";
+import { useConfig } from "../../hooks/index.js";
 import shadowCss from "./shadow-styles.css?raw";
 
-const ExampleRenderer = ({ style, className }: ExampleRendererProps) => {
+const Renderer = ({ style, className }: RendererProps) => {
   const { activeExample } = useConfig();
   return (
     <div
@@ -28,4 +28,4 @@ const ExampleRenderer = ({ style, className }: ExampleRendererProps) => {
   );
 };
 
-export default ExampleRenderer;
+export default Renderer;

@@ -3,7 +3,13 @@
   "compilerOptions": {
     "baseUrl": "src",
     "skipLibCheck": true,
-    "types": ["node", "react", "react-dom"],
+    "types": [
+      "node",
+      "react",
+      "react-dom",
+      "vitest/globals",
+      "@testing-library/jest-dom"
+    ],
     "noEmit": true
   },
   "include": [

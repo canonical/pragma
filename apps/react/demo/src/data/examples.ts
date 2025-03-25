@@ -1,9 +1,5 @@
-import type {
-  ExampleSettingValue,
-  ShowcaseExample,
-} from "../ExampleControls/index.js";
-import Button from "./Button.js";
-import { TypographicSpecimen } from "./TypographicSpecimen/index.js";
+import { Button, TypographicSpecimen } from "../ui/Example/common/index.js";
+import type { ShowcaseExample } from "../ui/Example/index.js";
 
 export const SHOWCASE_EXAMPLES: ShowcaseExample[] = [
   {
@@ -47,6 +43,7 @@ export const SHOWCASE_EXAMPLES: ShowcaseExample[] = [
         default: 16,
         min: 12,
         max: 24,
+        cssUnit: "px",
       },
       lineHeight: {
         value: 1.5,

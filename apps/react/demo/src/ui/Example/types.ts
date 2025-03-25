@@ -1,19 +1,11 @@
 import type {
-  CSSProperties,
   Dispatch,
   FC,
+  ReactElement,
   ReactNode,
   SetStateAction,
 } from "react";
-
-/**
- * Props for a React component that renders the controls inside a tooltip and allows changing the example configurations.
- */
-export interface ExampleControlsProps {
-  id?: string;
-  className?: string;
-  style?: CSSProperties;
-}
+import type { ControlsProps, RendererProps } from "./common/index.js";
 
 /** An action to update or reset an example setting */
 export interface BASE_EXAMPLE_ACTION<TExampleName extends string> {
@@ -149,7 +141,7 @@ export interface ShowcaseExample {
 export type ConfigState = Record<string, ShowcaseExample>;
 
 /** The context provider props for the config provider */
-export interface ConfigProviderProps {
+export interface ProviderProps {
   /** The examples that can be controlled by this provider */
   examples: ShowcaseExample[];
   /** The children to render, which will have access to the config context */
@@ -157,7 +149,7 @@ export interface ConfigProviderProps {
 }
 
 /** The value of the config context */
-export interface ConfigProviderValue {
+export interface ProviderValue {
   /** The current state of all examples */
   config: ConfigState;
   /** The dispatch function to update the state */
@@ -171,3 +163,10 @@ export interface ConfigProviderValue {
   /** All examples that can be controlled by this provider */
   allExamples: ShowcaseExample[];
 }
+
+export type ExampleControlsComponent = ((
+  props: ProviderProps,
+) => ReactElement) & {
+  Controls: (props: ControlsProps) => ReactElement | null;
+  Renderer: (props: RendererProps) => ReactElement | null;
+};

@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
 
-export interface ExampleRendererProps {
+export interface RendererProps {
   style?: CSSProperties;
   className?: string;
 }

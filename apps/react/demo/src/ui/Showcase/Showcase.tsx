@@ -1,24 +1,14 @@
-import {
-  ConfigProvider,
-  ExampleControls,
-  ExampleRenderer,
-  SHOWCASE_EXAMPLES,
-} from "./index.js";
+import { SHOWCASE_EXAMPLES } from "../../data/index.js";
+import { Example } from "../Example/index.js";
 
 const Showcase = () => {
   return (
-    <ConfigProvider examples={SHOWCASE_EXAMPLES}>
+    <Example examples={SHOWCASE_EXAMPLES}>
       <div>
-        <ExampleRenderer />
-        <ExampleControls
-          style={{
-            position: "fixed",
-            left: 0,
-            bottom: 0,
-          }}
-        />
+        <Example.Renderer />
+        <Example.Controls />
       </div>
-    </ConfigProvider>
+    </Example>
   );
 };
 

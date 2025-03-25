@@ -1,85 +1,27 @@
-import { type ChangeEvent, type ReactElement, useCallback } from "react";
-import type { ExampleControlsProps } from "./types.js";
+import type { ReactElement } from "react";
+import type { ControlsProps } from "./types.js";
 import "./styles.css";
 import { Button, TooltipArea } from "@canonical/react-ds-core";
-import { useConfig } from "./Context.js";
+import { useConfig } from "../../hooks/index.js";
+import { useExampleControls } from "./useExampleControls/index.js";
 
-const ExampleControls = ({
-  id,
-  className,
-  style,
-}: ExampleControlsProps): ReactElement => {
+const componentCssClassname = "ds example-controls";
+
+const Controls = ({ id, className, style }: ControlsProps): ReactElement => {
+  const { activeExample } = useConfig();
   const {
-    dispatch,
-    allExamples: examples,
-    activeExample,
-    activeExampleName,
-    setActiveExampleName,
-  } = useConfig();
-
-  const handleFontFamilyChange = useCallback(
-    (event: ChangeEvent<HTMLSelectElement>) => {
-      if (activeExampleName) {
-        dispatch({
-          type: "UPDATE_SETTING",
-          exampleName: activeExampleName,
-          settingName: "fontFamily",
-          newValue: event.target.value,
-        });
-      }
-    },
-    [activeExampleName, dispatch],
-  );
-
-  const handleFontSizeChange = useCallback(
-    (event: ChangeEvent<HTMLInputElement>) => {
-      if (activeExampleName) {
-        dispatch({
-          type: "UPDATE_SETTING",
-          exampleName: activeExampleName,
-          settingName: "fontSize",
-          newValue: Number.parseFloat(event.target.value),
-        });
-      }
-    },
-    [activeExampleName, dispatch],
-  );
-
-  const handlePrevExample = useCallback(() => {
-    if (examples?.length) {
-      const currentIndex = examples.findIndex(
-        (ex) => ex.name === activeExampleName,
-      );
-      const prevIndex = (currentIndex - 1 + examples.length) % examples.length;
-      setActiveExampleName(examples[prevIndex].name);
-    }
-  }, [activeExampleName, examples, setActiveExampleName]);
-
-  const handleNextExample = useCallback(() => {
-    if (examples?.length) {
-      const currentIndex = examples.findIndex(
-        (ex) => ex.name === activeExampleName,
-      );
-      const nextIndex = (currentIndex + 1) % examples.length;
-      setActiveExampleName(examples[nextIndex].name);
-    }
-  }, [activeExampleName, examples, setActiveExampleName]);
-
-  const handleCopyCss = useCallback(() => {
-    if (typeof window === "undefined" || !activeExample?.cssVars) return;
-    navigator.clipboard.writeText(
-      Object.entries(activeExample.cssVars)
-        .map((d) => `${d[0]}: ${d[1]};`)
-        .join("\n"),
-    );
-  }, [activeExample]);
+    handlePrevExample,
+    handleNextExample,
+    handleFontFamilyChange,
+    handleFontSizeChange,
+    handleLineHeightChange,
+    handleCopyCss,
+  } = useExampleControls();
 
   return (
     <div
       id={id}
-      className={["ds", "example-controls", className]
-        .filter(Boolean)
-        .join(" ")}
+      className={[componentCssClassname, className].filter(Boolean).join(" ")}
       style={{
         ...style,
         display: "flex",
@@ -96,11 +38,11 @@ const ExampleControls = ({
         // TODO use new form components when ready
         // TODO make something that can convert example controls into form inputs without having to specifically handle each case
         preferredDirections={["top"]}
-        targetElementClassName={"ds example-controls__config-button"}
+        targetElementClassName={"config-button"}
         activateDelay={0}
         autoFit={true}
         Message={
-          <div className={"ds example-controls__inputs"}>
+          <div className="inputs">
             {activeExample?.settings?.fontFamily && (
               <div style={{ marginBottom: "8px" }}>
                 <label
@@ -177,17 +119,7 @@ const ExampleControls = ({
                     max={activeExample.settings.lineHeight.max}
                     value={activeExample.settings.lineHeight.value}
                     step={activeExample.settings.lineHeight.step}
-                    onChange={(event) => {
-                      if (activeExampleName) {
-                        dispatch({
-                          type: "UPDATE_SETTING",
-                          exampleName: activeExampleName,
-                          settingName: "lineHeight",
-                          // @ts-ignore This is a string, but more concrete input handling will be added in a followup PR
-                          newValue: Number.parseFloat(event.target.value),
-                        });
-                      }
-                    }}
+                    onChange={handleLineHeightChange}
                     aria-label="Line Height"
                     aria-valuemin={activeExample.settings.lineHeight.min}
                     aria-valuemax={activeExample.settings.lineHeight.max}
@@ -216,4 +148,4 @@ const ExampleControls = ({
   );
 };
 
-export default ExampleControls;
+export default Controls;

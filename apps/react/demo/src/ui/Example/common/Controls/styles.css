@@ -1,0 +1,13 @@
+.ds.example-controls {
+  background-color: black;
+  width: 100%;
+  padding: var(--spacing-horizontal-small) var(--spacing-vertical-small);
+  position: fixed;
+  left: 0;
+  bottom: 0;
+
+  & .config-button {
+    /* Configure button has collapsed margins - add margin bottom to make it consistent with other buttons */
+    margin-bottom: var(--spacing-vertical-small);
+  }
+}
