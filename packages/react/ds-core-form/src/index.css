@@ -48,10 +48,3 @@
   --form-payload-columns: 1 / -1;
 }
 
-.special-width {
-  max-width: 4ch;
-}
-
-.flexbox {
-  display: flex;
-}
