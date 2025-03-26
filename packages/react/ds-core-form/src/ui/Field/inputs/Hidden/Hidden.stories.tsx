@@ -13,6 +13,9 @@ const meta = {
       },
     }),
   ],
+  parameters: {
+    chromatic: { disableSnapshot: true },
+  },
 } satisfies Meta<typeof Component>;
 
 export default meta;

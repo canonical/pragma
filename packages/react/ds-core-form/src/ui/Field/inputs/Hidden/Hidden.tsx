@@ -1,9 +1,8 @@
 /* @canonical/generator-ds 0.9.0-experimental.9 */
 import type React from "react";
 import { useFormContext } from "react-hook-form";
+import { InvisibleWrapper, withWrapper } from "../../common/Wrapper/index.js";
 import type { HiddenProps } from "./types.js";
-import "./styles.css";
-import withWrapper from "../../common/Wrapper/withWrapper.js";
 
 const componentCssClassName = "ds form-hidden";
 
@@ -32,4 +31,4 @@ const Hidden = ({
   );
 };
 
-export default withWrapper<HiddenProps>(Hidden);
+export default withWrapper<HiddenProps>(Hidden, {}, InvisibleWrapper);
