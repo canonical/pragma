@@ -10,8 +10,8 @@ import type {
 } from "./types.js";
 import { generateCssVariables } from "./utils/index.js";
 
-const Provider: FC<ProviderProps> = ({ examples, children }) => {
-  const initialState: ConfigState = examples.reduce(
+const Provider: FC<ProviderProps> = ({ items, children }) => {
+  const initialState: ConfigState = items.reduce(
     (acc: ConfigState, example) => {
       acc[example.name] = example;
       return acc;
@@ -22,7 +22,7 @@ const Provider: FC<ProviderProps> = ({ examples, children }) => {
   const [config, dispatch] = useReducer(configReducer, initialState);
   const [activeExampleName, setActiveExampleName] = useState<
     string | undefined
-  >(examples?.length ? examples[0].name : undefined);
+  >(items?.length ? items[0].name : undefined);
 
   const activeExampleConfig = useMemo(
     () => (activeExampleName ? config[activeExampleName] : undefined),
@@ -36,9 +36,9 @@ const Provider: FC<ProviderProps> = ({ examples, children }) => {
       activeExampleName,
       setActiveExampleName,
       activeExample: activeExampleConfig,
-      allExamples: examples,
+      allExamples: items,
     }),
-    [config, activeExampleName, activeExampleConfig, examples],
+    [config, activeExampleName, activeExampleConfig, items],
   );
 
   return <Context.Provider value={value}>{children}</Context.Provider>;

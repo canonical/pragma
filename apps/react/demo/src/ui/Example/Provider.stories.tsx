@@ -14,7 +14,7 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   args: {
-    examples: SHOWCASE_EXAMPLES,
+    items: SHOWCASE_EXAMPLES,
     children: (
       <div>
         <Example.Renderer />

@@ -3,7 +3,7 @@ import { Example } from "../Example/index.js";
 
 const Showcase = () => {
   return (
-    <Example examples={SHOWCASE_EXAMPLES}>
+    <Example items={SHOWCASE_EXAMPLES}>
       <div>
         <Example.Renderer />
         <Example.Controls />

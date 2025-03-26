@@ -143,7 +143,7 @@ export type ConfigState = Record<string, ShowcaseExample>;
 /** The context provider props for the config provider */
 export interface ProviderProps {
   /** The examples that can be controlled by this provider */
-  examples: ShowcaseExample[];
+  items: ShowcaseExample[];
   /** The children to render, which will have access to the config context */
   children: ReactNode;
 }
