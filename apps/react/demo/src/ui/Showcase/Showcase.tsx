@@ -1,5 +1,5 @@
 import { SHOWCASE_EXAMPLES } from "../../data/index.js";
-import { TypographicSpecimen } from "../Example/common/index.js";
+import { Controls, TypographicSpecimen } from "../Example/common/index.js";
 
 const Showcase = () => {
   return (
@@ -9,7 +9,10 @@ const Showcase = () => {
     //     <Example.Controls />
     //   </div>
     // </Example>
-    <TypographicSpecimen />
+    <>
+      <TypographicSpecimen />
+      <Controls />
+    </>
   );
 };
 
