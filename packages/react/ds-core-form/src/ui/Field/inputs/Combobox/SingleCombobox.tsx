@@ -5,7 +5,6 @@ import {
   type UseComboboxStateChange,
   useCombobox,
 } from "downshift";
-import type React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useController } from "react-hook-form";
 import type { Option } from "../../types.js";
