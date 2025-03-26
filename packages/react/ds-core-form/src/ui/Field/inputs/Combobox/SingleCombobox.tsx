@@ -13,7 +13,7 @@ import {
   mergeRefs,
 } from "./utils/index.js";
 import "./styles.css";
-const componentCssClassName = "ds combobox";
+const componentCssClassName = "ds form-combobox";
 
 /**
  * description of the SingleCombobox component
