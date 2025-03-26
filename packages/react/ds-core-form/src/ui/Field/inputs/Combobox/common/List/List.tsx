@@ -12,7 +12,7 @@ const componentCssClassName = "ds combobox-list";
 const List = ({
 	className,
 	style,
-	options,
+	items,
 	getMenuProps,
 	getItemProps,
 	highlightedIndex,
@@ -29,21 +29,26 @@ const List = ({
 			style={style}
 			{...getMenuProps()}
 		>
-			{options.map((option, index) => (
-				<li
-					{...getItemProps({
-						option,
-						index,
-						key: option?.[valueKey],
-						style: {
-							backgroundColor: highlightedIndex === index ? "yellow" : "white",
-							fontWeight: fieldValue === option[valueKey] ? "bold" : "normal",
-						},
-					})}
-				>
-					{convertItemToString(option)}
-				</li>
-			))}
+			{items.map((item, index) => {
+				const keyValue = item[valueKey];
+				const key = keyValue !== undefined ? String(keyValue) : `item-${index}`;
+				return (
+					<li
+						{...getItemProps({
+							item: item,
+							index,
+							style: {
+								backgroundColor:
+									highlightedIndex === index ? "yellow" : "white",
+								fontWeight: fieldValue === item[valueKey] ? "bold" : "normal",
+							},
+						})}
+						key={key}
+					>
+						{convertItemToString(item)}
+					</li>
+				);
+			})}
 		</ul>
 	);
 };

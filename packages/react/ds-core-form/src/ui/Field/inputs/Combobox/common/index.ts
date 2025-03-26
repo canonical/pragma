@@ -1,4 +1,3 @@
+export * from "./List/index.js";
 
-export * from './List/index.js';
-
-export * from './ResetButton/index.js';
+export * from "./ResetButton/index.js";

@@ -2,7 +2,7 @@
 import type React from "react";
 import type { ResetButtonProps } from "./types.js";
 import "./styles.css";
-import { Button } from "@canonical/ds-core";
+import { Button } from "@canonical/react-ds-core";
 import defaultMessages from "../../messages.js";
 
 const componentCssClassName = "ds combobox-reset-button";
@@ -12,21 +12,21 @@ const componentCssClassName = "ds combobox-reset-button";
  * @returns {React.ReactElement} - Rendered ResetButton
  */
 const ResetButton = ({
-	id,
-	className,
-	messages = defaultMessages,
-	style,
+  id,
+  className,
+  messages = defaultMessages,
+  style,
 }: ResetButtonProps): React.ReactElement => {
-	return (
-		<Button
-			id={id}
-			style={style}
-			className={[componentCssClassName, className].filter(Boolean).join(" ")}
-			aria-label={messages.reset()}
-		>
-			x
-		</Button>
-	);
+  return (
+    <Button
+      label="x" //TODO replace with semantic children
+      id={id}
+      style={style}
+      className={[componentCssClassName, className].filter(Boolean).join(" ")}
+      aria-label={messages.reset()}
+      type="button"
+    />
+  );
 };
 
 export default ResetButton;

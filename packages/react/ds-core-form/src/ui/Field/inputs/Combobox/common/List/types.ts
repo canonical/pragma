@@ -1,28 +1,32 @@
 /* @canonical/generator-ds 0.9.0-experimental.9 */
+import type { UseComboboxPropGetters } from "downshift";
 import type React from "react";
 import type { Option, OptionsProps } from "../../../../types.js";
+import type * as utils from "../../utils/index.js";
 
-export type ListProps = OptionsProps & {
-	/* Additional CSS classes */
-	className?: string;
-	/* Child elements */
-	children?: React.ReactNode;
-	/* Inline styles */
-	style?: React.CSSProperties;
+export type ListProps = {
+  /* Additional CSS classes */
+  className?: string;
+  /* Child elements */
+  children?: React.ReactNode;
+  /* Inline styles */
+  style?: React.CSSProperties;
 
-	getMenuProps: () => unknown;
+  items: Option[];
 
-	getItemProps: () => unknown;
+  getMenuProps: UseComboboxPropGetters<Option>["getMenuProps"];
 
-	highlightedIndex: number;
+  getItemProps: UseComboboxPropGetters<Option>["getItemProps"];
 
-	convertItemToString: (option: Option) => string;
+  highlightedIndex: number;
 
-	fieldValue: string;
+  convertItemToString: typeof utils.convertItemToString;
 
-	/* The key to read the value from */
-	valueKey: string;
+  fieldValue: string;
 
-	/* */
-	isOpen: boolean;
+  /* The key to read the value from */
+  valueKey: keyof Option;
+
+  /* */
+  isOpen: boolean;
 };

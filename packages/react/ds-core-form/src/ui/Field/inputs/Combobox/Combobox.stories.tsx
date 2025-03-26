@@ -4,9 +4,10 @@
 // import type { ComboboxProps } from './types.js'
 import type { Meta, StoryObj } from "@storybook/react";
 import * as decorators from "storybook/decorators.js";
-import Component from "./Combobox.js";
 // Needed for template-based story, safe to remove otherwise
 // import type { StoryFn } from '@storybook/react'
+import * as fixtures from "storybook/fixtures.options.js";
+import Component from "./Combobox.js";
 
 const meta = {
   title: "Field/inputs/Combobox",
@@ -25,24 +26,8 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   args: {
-    name: "choose",
-    options: [
-      { label: "Option 1", value: "option1" },
-      { label: "Option 2", value: "option2" },
-      { label: "Option 3", value: "option3" },
-    ],
-  },
-};
-
-export const Multiple: Story = {
-  args: {
-    name: "countries",
-    isMultiple: true,
-    options: [
-      { label: "Option 1", value: "option1" },
-      { label: "Option 2", value: "option2" },
-      { label: "Option 3", value: "option3" },
-    ],
+    name: "select",
+    options: fixtures.fruits,
   },
 };
 

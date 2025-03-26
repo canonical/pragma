@@ -1,3 +1,3 @@
-export { default as filterOptions } from "./filterOptions.js";
-export { default as convertValueToOption } from "./convertValueToOption.js";
-export { default as convertOptionToString } from "./convertOptionToString.js";
+export { default as filterItems } from "./filterItems.js";
+export { default as convertValueToItem } from "./convertValueToItem.js";
+export { default as convertItemToString } from "./convertItemToString.js";

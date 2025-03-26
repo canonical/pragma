@@ -1,4 +1,4 @@
 export default {
-	reset: () => "Clear selection",
-	empty: () => "Empty selection",
+  reset: () => "Clear selection",
+  empty: () => "Empty selection",
 };

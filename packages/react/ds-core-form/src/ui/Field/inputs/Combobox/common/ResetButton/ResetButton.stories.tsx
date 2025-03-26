@@ -1,9 +1,9 @@
 /* @canonical/generator-ds 0.9.0-experimental.9 */
 
-import Component from "./ResetButton.js";
 // Needed for function-based story, safe to remove otherwise
 // import type { ResetButtonProps } from './types.js'
 import type { Meta, StoryObj } from "@storybook/react";
+import Component from "./ResetButton.js";
 // Needed for template-based story, safe to remove otherwise
 // import type { StoryFn } from '@storybook/react'
 
@@ -23,7 +23,7 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   args: {
-    children: <span>Hello world!</span>
+    onClick: () => {},
   },
 };
 

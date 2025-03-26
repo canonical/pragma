@@ -1,147 +1,161 @@
 /* @canonical/generator-ds 0.9.0-experimental.9 */
-import { type UseComboboxStateChange, useCombobox } from "downshift";
+import {
+  type DownshiftState,
+  type StateChangeFunction,
+  type UseComboboxStateChange,
+  useCombobox,
+} from "downshift";
 import type React from "react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useController } from "react-hook-form";
+import type { Option } from "../../types.js";
 import type { ComboboxProps } from "./types.js";
 import "./styles.css";
 import { List, ResetButton } from "./common/index.js";
 import { VALUE_KEY } from "./constants.js";
 import {
-	convertOptionToString as defaultConvertOptionToString,
-	convertValueToOption as defaultConvertValueToOption,
-	filterOptions as defaultFilterOptions,
+  convertItemToString as defaultConvertItemToString,
+  convertValueToItem as defaultConvertValueToItem,
+  filterItems as defaultFilterItems,
 } from "./utils/index.js";
 const componentCssClassName = "ds combobox";
 
 /**
  * description of the SingleCombobox component
  * @returns {React.ReactElement} - Rendered SingleCombobox
+ * DIsambiguation :
+ * `Option` refers to the internal type of this library for inputs where a list of objects is presented. This type is common to several inputs, `Select`, `SimpleChoices` and this `Combobox`
+ * `Item` represents the type of an Option casted internally to be compatible with Downshift. It also matches the downshift vocabulary
  */
 const SingleCombobox = ({
-	id,
-	className,
-	style,
-	registerProps,
-	options,
-	name,
-	disabled = false,
-	openOnReset = false,
-	onInputValueChangeFactory,
-	placeholder,
-	valueKey = VALUE_KEY,
-	convertOptionToString = defaultConvertOptionToString,
-	convertValueToOption = defaultConvertValueToOption,
-	filterOptions = defaultFilterOptions,
+  id,
+  className,
+  style,
+  registerProps,
+  options,
+  name,
+  disabled = false,
+  openOnReset = false,
+  onInputValueChangeFactory,
+  placeholder,
+  valueKey = VALUE_KEY,
+  convertItemToString = defaultConvertItemToString,
+  convertValueToItem = defaultConvertValueToItem,
+  filterItems = defaultFilterItems,
 }: ComboboxProps): React.ReactElement => {
-	const [items, setItems] = useState(options);
+  const [items, setItems] = useState(options);
 
-	const {
-		field: { onChange, onBlur, ref: RHFRef, value: RHFValue },
-	} = useController({
-		name,
-		rules: registerProps,
-	});
+  const {
+    field: {
+      onChange,
+      onBlur,
+      ref: ReactHookFormRef,
+      value: ReactHookFormValue,
+    },
+  } = useController({
+    name,
+    rules: registerProps,
+  });
 
-	const handleSelectedItemChange = useCallback(
-		(changes: UseComboboxStateChange<ComboboxOption>) => {
-			onChange(changes.selectedItem?.[valueKey] || undefined);
-		},
-		[onChange, valueKey],
-	);
+  const handleSelectedItemChange = useCallback(
+    (changes: UseComboboxStateChange<Option>) => {
+      onChange(changes.selectedItem?.[valueKey] || undefined);
+    },
+    [onChange, valueKey],
+  );
 
-	const defaultOnInputValueChangeFactory = useCallback(
-		(stateUpdater) =>
-			({ inputValue }) =>
-				stateUpdater((state) => filterOptions(options, inputValue)),
-		[options],
-	);
+  const defaultOnInputValueChangeFactory =
+    (stateUpdater: React.Dispatch<React.SetStateAction<Option[]>>) =>
+    ({ inputValue }: { inputValue: string }) =>
+      stateUpdater(filterItems(options, inputValue));
 
-	const {
-		isOpen,
-		// inputValue,
-		openMenu,
-		// setInputValue,
-		// getToggleButtonProps,
-		selectItem,
-		selectedItem,
-		getMenuProps,
-		getInputProps,
-		highlightedIndex,
-		getItemProps,
-	} = useCombobox({
-		items,
-		// selectedItem        :RHFValue,
-		onSelectedItemChange: handleSelectedItemChange,
-		// stateReducer        :stateReducer || defaultStateReducer,
-		onInputValueChange: (
-			onInputValueChangeFactory || defaultOnInputValueChangeFactory
-		)(setItems),
-		initialSelectedItem: convertValueToOption(RHFValue, options),
-		itemToString: convertOptionToString,
-	});
+  const onInputValueChange = onInputValueChangeFactory
+    ? onInputValueChangeFactory(setItems)
+    : defaultOnInputValueChangeFactory(setItems);
 
-	const inputRef = useRef<HTMLInputElement>(null); // Create your own ref to manage focus
+  const {
+    isOpen,
+    // inputValue,
+    openMenu,
+    // setInputValue,
+    // getToggleButtonProps,
+    selectItem,
+    selectedItem,
+    getMenuProps,
+    getInputProps,
+    highlightedIndex,
+    getItemProps,
+  } = useCombobox({
+    items,
+    // selectedItem        :ReactHookFormValue,
+    onSelectedItemChange: handleSelectedItemChange,
+    // stateReducer        :stateReducer || defaultStateReducer,
+    onInputValueChange,
+    initialSelectedItem: convertValueToItem(ReactHookFormValue, options),
+    itemToString: convertItemToString,
+  });
 
-	const setCombinedRef = useCallback(
-		(instance) => {
-			RHFRef(instance);
-			inputRef.current = instance;
-		},
-		[RHFRef, inputRef],
-	);
+  const inputRef = useRef<HTMLInputElement>(null); // Create your own ref to manage focus
 
-	// biome-ignore lint/correctness/useExhaustiveDependencies: We want to run the effect if react-hook-form value changes only
-	useEffect(() => {
-		(async () => {
-			if (RHFValue !== selectedItem?.[valueKey]) {
-				const newItem = await convertValueToOption(RHFValue, options);
-				selectItem(newItem);
-			}
-		})();
-	}, [
-		RHFValue,
-		// valueKey,
-		// convertValueToItem,
-		// options,
-	]);
+  const setCombinedRef = useCallback(
+    (instance: HTMLInputElement | null) => {
+      ReactHookFormRef(instance);
+      inputRef.current = instance;
+    },
+    [ReactHookFormRef],
+  );
 
-	const resetAndFocusInput = useCallback(() => {
-		onChange("");
-		selectItem(undefined);
-		inputRef.current?.focus();
-		if (openOnReset) {
-			openMenu();
-		}
-	}, [inputRef.current, selectItem, openOnReset, openMenu, onChange]);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: We want to run the effect if react-hook-form value changes only
+  useEffect(() => {
+    (async () => {
+      if (ReactHookFormValue !== selectedItem?.[valueKey]) {
+        const newItem = await convertValueToItem(ReactHookFormValue, options);
+        selectItem(newItem);
+      }
+    })();
+  }, [
+    ReactHookFormValue,
+    // valueKey,
+    // convertValueToItem,
+    // options,
+  ]);
 
-	return (
-		<div
-			id={id}
-			style={style}
-			className={[componentCssClassName, className].filter(Boolean).join(" ")}
-		>
-			<input
-				{...getInputProps({
-					disabled,
-					placeholder,
-					onBlur,
-					ref: setCombinedRef,
-				})}
-			/>
-			<ResetButton onClick={resetAndFocusInput} />
-			<List
-				isOpen={isOpen}
-				getMenuProps={getMenuProps}
-				getItemProps={getItemProps}
-				items={items}
-				highlightedIndex={highlightedIndex}
-				fieldValue={RHFValue}
-				convertItemToString={convertItemToString}
-				valueKey={valueKey}
-			/>
-		</div>
-	);
+  const resetAndFocusInput = useCallback(() => {
+    onChange(undefined); // Consistent with handleSelectedItemChange
+    selectItem(null);
+    inputRef.current?.focus();
+    if (openOnReset) {
+      openMenu();
+    }
+  }, [selectItem, openOnReset, openMenu, onChange]);
+
+  return (
+    <div
+      id={id}
+      style={style}
+      className={[componentCssClassName, className].filter(Boolean).join(" ")}
+    >
+      <input
+        {...getInputProps({
+          disabled,
+          placeholder,
+          onBlur,
+          ref: setCombinedRef,
+        })}
+      />
+      <ResetButton onClick={resetAndFocusInput} />
+      <List
+        isOpen={isOpen}
+        getMenuProps={getMenuProps}
+        getItemProps={getItemProps}
+        items={items}
+        highlightedIndex={highlightedIndex}
+        fieldValue={ReactHookFormValue}
+        convertItemToString={convertItemToString}
+        valueKey={valueKey}
+      />
+    </div>
+  );
 };
 
 export default SingleCombobox;
