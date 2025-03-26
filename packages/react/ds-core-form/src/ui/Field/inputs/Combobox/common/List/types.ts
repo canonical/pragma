@@ -5,28 +5,28 @@ import type { Option, OptionsProps } from "../../../../types.js";
 import type * as utils from "../../utils/index.js";
 
 export type ListProps = {
-  /* Additional CSS classes */
-  className?: string;
-  /* Child elements */
-  children?: React.ReactNode;
-  /* Inline styles */
-  style?: React.CSSProperties;
+	/* Additional CSS classes */
+	className?: string;
+	/* Child elements */
+	children?: React.ReactNode;
+	/* Inline styles */
+	style?: React.CSSProperties;
 
-  items: Option[];
+	items: Option[];
 
-  getMenuProps: UseComboboxPropGetters<Option>["getMenuProps"];
+	getMenuProps: UseComboboxPropGetters<Option>["getMenuProps"];
 
-  getItemProps: UseComboboxPropGetters<Option>["getItemProps"];
+	getItemProps: UseComboboxPropGetters<Option>["getItemProps"];
 
-  highlightedIndex: number;
+	highlightedIndex: number;
 
-  convertItemToString: typeof utils.convertItemToString;
+	convertItemToString: typeof utils.convertItemToString;
 
-  fieldValue: string;
+	fieldValue: string | string[] | undefined;
 
-  /* The key to read the value from */
-  valueKey: keyof Option;
+	/* The key to read the value from */
+	valueKey: keyof Option;
 
-  /* */
-  isOpen: boolean;
+	/* */
+	isOpen: boolean;
 };
