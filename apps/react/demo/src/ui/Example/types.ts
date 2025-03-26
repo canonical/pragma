@@ -87,30 +87,8 @@ export interface ShowcaseExampleOpts {
   controls: ExampleControl[];
 }
 
-// --- Other Supporting Types (Unchanged) ---
-
 /** Structure for components associated with examples (if needed elsewhere) */
 export type ExampleComponent = ((props: ProviderProps) => ReactElement) & {
   Controls: (props: ControlsProps) => ReactElement | null;
   Renderer: (props: RendererProps) => ReactElement | null;
 };
-
-// --- Action Types for Reducer (Unchanged) ---
-
-/** Action to update a specific setting's value for a given example */
-type UpdateSettingAction = {
-  type: "UPDATE_SETTING";
-  exampleName: string;
-  // Identifies the control within the `controls` array by its `name` property
-  settingName: keyof AllExampleSettings;
-  newValue: ExampleSettingValue | ExampleSettingValue[];
-};
-
-/** Action to reset all controls of an example to their default values */
-type ResetExampleAction = {
-  type: "RESET_EXAMPLE";
-  exampleName: string;
-};
-
-/** Union of all possible actions the reducer can handle */
-export type ExampleAction = UpdateSettingAction | ResetExampleAction;
