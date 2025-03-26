@@ -1,11 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { Showcase } from "./showcase.js";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
-// For now, redirect all requests to the showcase
+// index route currently redirect to showcase
 export const Route = createFileRoute("/")({
-  component: Showcase,
+  loader: () => redirect({ to: "/showcase" }),
 });
-
-function Index() {
-  return <span>Home</span>;
-}
