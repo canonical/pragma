@@ -1,1 +1,1 @@
-export { default as generateCssVariables } from "./generateCssVariables.js";
+export * from "./output/index.js";

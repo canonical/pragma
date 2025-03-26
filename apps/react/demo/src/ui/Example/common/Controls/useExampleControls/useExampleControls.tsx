@@ -1,5 +1,6 @@
 import { type ChangeEvent, useCallback, useMemo } from "react";
 import { useConfig } from "../../../hooks/index.js";
+import type { AllExampleSettings, ExampleControl } from "../../../types.js";
 import type { UseExampleControlsResult } from "./types.js";
 
 const useExampleControls = (): UseExampleControlsResult => {
@@ -11,42 +12,17 @@ const useExampleControls = (): UseExampleControlsResult => {
     setActiveExampleName,
   } = useConfig();
 
-  const handleFontFamilyChange = useCallback(
-    (event: ChangeEvent<HTMLSelectElement>) => {
+  const handleControlChange = useCallback(
+    (
+      event: ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+      control: ExampleControl,
+    ) => {
       if (activeExampleName) {
         dispatch({
           type: "UPDATE_SETTING",
           exampleName: activeExampleName,
-          settingName: "fontFamily",
+          settingName: control.name,
           newValue: event.target.value,
-        });
-      }
-    },
-    [activeExampleName, dispatch],
-  );
-
-  const handleFontSizeChange = useCallback(
-    (event: ChangeEvent<HTMLInputElement>) => {
-      if (activeExampleName) {
-        dispatch({
-          type: "UPDATE_SETTING",
-          exampleName: activeExampleName,
-          settingName: "fontSize",
-          newValue: Number.parseFloat(event.target.value),
-        });
-      }
-    },
-    [activeExampleName, dispatch],
-  );
-
-  const handleLineHeightChange = useCallback(
-    (event: ChangeEvent<HTMLInputElement>) => {
-      if (activeExampleName) {
-        dispatch({
-          type: "UPDATE_SETTING",
-          exampleName: activeExampleName,
-          settingName: "lineHeight",
-          newValue: Number.parseFloat(event.target.value),
         });
       }
     },
@@ -74,9 +50,9 @@ const useExampleControls = (): UseExampleControlsResult => {
   }, [activeExampleName, examples, setActiveExampleName]);
 
   const handleCopyCss = useCallback(() => {
-    if (typeof window === "undefined" || !activeExample?.cssVars) return;
+    if (typeof window === "undefined" || !activeExample?.output?.css) return;
     navigator.clipboard.writeText(
-      Object.entries(activeExample.cssVars)
+      Object.entries(activeExample.output.css)
         .map((d) => `${d[0]}: ${d[1]};`)
         .join("\n"),
     );
@@ -84,21 +60,12 @@ const useExampleControls = (): UseExampleControlsResult => {
 
   return useMemo(
     () => ({
-      handleFontFamilyChange,
-      handleFontSizeChange,
       handleCopyCss,
       handlePrevExample,
       handleNextExample,
-      handleLineHeightChange,
+      handleControlChange,
     }),
-    [
-      handleFontFamilyChange,
-      handleFontSizeChange,
-      handleCopyCss,
-      handlePrevExample,
-      handleNextExample,
-      handleLineHeightChange,
-    ],
+    [handleCopyCss, handlePrevExample, handleNextExample, handleControlChange],
   );
 };
 

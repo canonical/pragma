@@ -16,7 +16,7 @@ const Renderer = ({ style, className }: RendererProps) => {
       {activeExample?.Component && (
         <>
           <h3>{activeExample.name}</h3>
-          <root.div style={activeExample.cssVars} mode={"closed"}>
+          <root.div style={activeExample.output?.css} mode={"closed"}>
             <style>{shadowCss}</style>
             <div className="ds shadow-container">
               <activeExample.Component />

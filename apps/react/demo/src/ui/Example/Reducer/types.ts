@@ -2,7 +2,9 @@ import type {
   AllExampleSettings,
   ExampleSetting,
   ExampleSettingValue,
+  ShowcaseExampleOpts,
 } from "../types.js";
+import type { AllOutput } from "../utils/index.js";
 
 /** An action to update or reset an example setting */
 export interface BASE_EXAMPLE_ACTION<TExampleName extends string> {
@@ -46,3 +48,16 @@ export type ExampleAction<TExampleName extends string = string> =
       [K in keyof AllExampleSettings]: UPDATE_EXAMPLE_ACTION<TExampleName, K>;
     }[keyof AllExampleSettings]
   | RESET_EXAMPLE_ACTION<TExampleName>;
+
+/**
+ * Represents a single showcase example as it exists within the application's state.
+ * Includes the current config state and output derived from it
+ */
+export interface ShowcaseExampleState extends ShowcaseExampleOpts {
+  output: AllOutput;
+}
+
+/**
+ * The overall state shape: a record of showcase examples (in their state representation) keyed by name.
+ */
+export type ConfigState = Record<string, ShowcaseExampleState>;

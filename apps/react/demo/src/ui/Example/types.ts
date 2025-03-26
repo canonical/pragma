@@ -1,64 +1,46 @@
 import type { FC, ReactElement } from "react";
 import type { ProviderProps } from "./Provider/types.js";
 import type { ControlsProps, RendererProps } from "./common/index.js";
+import type { AllOutput } from "./utils/index.js";
 
-/** A valid type for an example setting's value */
 export type ExampleSettingValue = number | string;
+export type ExampleOutputFormat = "css";
 
-/**
- * Configuration for an example setting.
- */
 export interface ExampleSetting<TValue extends ExampleSettingValue = string> {
-  /** The current value of the setting */
   value: TValue;
-  /** The default value of the setting */
   default: TValue;
-
-  /** Formats to disable for exporting */
-  disableFormats?: {
-    /** Whether to disable exporting to CSS */
-    css: boolean;
+  label: string;
+  disabledOutputFormats?: {
+    [key in ExampleOutputFormat]?: boolean;
   };
-
-  cssUnit?: string;
+  transformer?: (value: ExampleSettingValue) => ExampleSettingValue;
+  type: "number" | "string" | "choices";
 }
 
-/**
- * Configuration for an example that allows selecting a number.
- */
 export interface NumericExampleSetting extends ExampleSetting<number> {
-  /** The minimum value for the setting */
   min: number;
-  /** The maximum value for the setting */
   max: number;
-  /** The step value (how much to increment/decrement by) for the setting */
   step?: number;
+  type: "number";
 }
 
-/**
- * Configuration for an example that allows selecting one choice.
- */
 export interface ChoicesExampleSetting<TValue extends ExampleSettingValue>
   extends ExampleSetting<TValue> {
-  /** The choices available for the setting */
   choices: TValue[];
+  type: "choices";
 }
 
-/**
- * Configuration for an example that allows selecting multiple choices.
- */
 export type MultipleChoicesExampleConfiguration<
   TValue extends ExampleSettingValue,
-  // We use Choices setting as a base to inherit its choices property, but reset default and value to TValue[] instead of TValue to allow multiple selection
-> = Omit<ChoicesExampleSetting<TValue>, "value"> & {
-  /** The current value of the setting */
+> = Omit<ChoicesExampleSetting<TValue>, "value" | "default"> & {
   value: TValue[];
-  /** The default value of the setting */
   default: TValue[];
 };
 
+// --- Definition of All Possible Setting Types (Unchanged) ---
+
 /**
- * Settings for an example. Each key is the name of a setting, and the value is the configuration for that setting.
+ * All supported example settings
  */
 export type AllExampleSettings = {
   fontFamily?: ChoicesExampleSetting<string>;
@@ -75,24 +57,60 @@ export type AllExampleSettings = {
   textShadow?: ChoicesExampleSetting<string>;
 };
 
-/** A showcase example that can be rendered in the example renderer */
-export interface ShowcaseExample {
-  /** The name of the example */
+/**
+ * Represents the configuration and state for a single control/setting object
+ * within the `controls` array. It's a discriminated union based on the 'name' property.
+ * This structure is used both for initial configuration and within the state array.
+ */
+export type ExampleControl = {
+  [K in keyof AllExampleSettings]-?: {
+    name: K;
+  } & Required<AllExampleSettings>[K];
+}[keyof AllExampleSettings];
+
+/**
+ * Defines the initial configuration required to set up a showcase example.
+ * This is typically used when initializing the context state via the Provider's `items` prop.
+ */
+export interface ShowcaseExampleOpts {
+  /** Unique identifier name */
   name: string;
-  /** A description of the example */
+  /** User-friendly description */
   description: string;
-  /** Current settings for the example */
-  settings: AllExampleSettings;
-  /** The component to render for the example */
+  /** The React component to render */
   Component: FC;
-  /** CSS variables to apply to the component. These are derived from `settings`. */
-  cssVars?: Record<string, string | number | undefined>;
+  /**
+   * Array defining the controls and their initial/default configuration for this example.
+   * The `value` property within these initial configs is often ignored, as the
+   * state initialization will typically set `value` based on `default`.
+   */
+  controls: ExampleControl[];
 }
 
-/** The state of all examples. A key is a name of an example, the value is the example itself */
-export type ConfigState = Record<string, ShowcaseExample>;
+// --- Other Supporting Types (Unchanged) ---
 
+/** Structure for components associated with examples (if needed elsewhere) */
 export type ExampleComponent = ((props: ProviderProps) => ReactElement) & {
   Controls: (props: ControlsProps) => ReactElement | null;
   Renderer: (props: RendererProps) => ReactElement | null;
 };
+
+// --- Action Types for Reducer (Unchanged) ---
+
+/** Action to update a specific setting's value for a given example */
+type UpdateSettingAction = {
+  type: "UPDATE_SETTING";
+  exampleName: string;
+  // Identifies the control within the `controls` array by its `name` property
+  settingName: keyof AllExampleSettings;
+  newValue: ExampleSettingValue | ExampleSettingValue[];
+};
+
+/** Action to reset all controls of an example to their default values */
+type ResetExampleAction = {
+  type: "RESET_EXAMPLE";
+  exampleName: string;
+};
+
+/** Union of all possible actions the reducer can handle */
+export type ExampleAction = UpdateSettingAction | ResetExampleAction;

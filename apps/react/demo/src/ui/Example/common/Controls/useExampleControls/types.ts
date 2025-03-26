@@ -1,9 +1,11 @@
 import type { ChangeEvent } from "react";
+import type { ExampleControl } from "../../../types.js";
 
 export type UseExampleControlsResult = {
-  handleFontFamilyChange: (event: ChangeEvent<HTMLSelectElement>) => void;
-  handleFontSizeChange: (event: ChangeEvent<HTMLInputElement>) => void;
-  handleLineHeightChange: (event: ChangeEvent<HTMLInputElement>) => void;
+  handleControlChange: (
+    event: ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+    control: ExampleControl,
+  ) => void;
   handleCopyCss: () => void;
   handlePrevExample: () => void;
   handleNextExample: () => void;
