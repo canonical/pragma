@@ -36,3 +36,9 @@ To learn more, check out the following resources:
 | [Vanilla Framework](https://vanillaframework.io)       | Canonical's current SCSS framework. This project aims to succeed Vanilla, offering enhanced features and modern development practices.  |
 | [Contribution Documentation](./guides/CONTRIBUTING.md) | Learn how to contribute to DS-25. Find detailed instructions for installing, running, and working with the project locally.             |
 | [Architecture Documentation](./guides/ARCHITECTURE.md) | Explore the architectural decisions and principles behind DS-25. This includes explanations of project structure, benchmarks, and more. |
+
+## Thanks
+
+<a href="https://www.chromatic.com/"><img src="https://user-images.githubusercontent.com/321738/84662277-e3db4f80-af1b-11ea-88f5-91d67a5e59f6.png" width="153" height="30" alt="Chromatic" /></a>
+
+Thanks to [Chromatic](https://www.chromatic.com/) for providing the visual testing platform that helps us review UI changes and catch visual regressions.
