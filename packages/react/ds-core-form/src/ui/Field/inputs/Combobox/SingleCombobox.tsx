@@ -1,23 +1,18 @@
 /* @canonical/generator-ds 0.9.0-experimental.9 */
-import {
-  type DownshiftState,
-  type StateChangeFunction,
-  type UseComboboxStateChange,
-  useCombobox,
-} from "downshift";
+import { type UseComboboxStateChange, useCombobox } from "downshift";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useController } from "react-hook-form";
 import type { Option } from "../../types.js";
-import type { ComboboxProps } from "./types.js";
-import "./styles.css";
 import { List, ResetButton } from "./common/index.js";
 import { VALUE_KEY } from "./constants.js";
+import type { ComboboxProps } from "./types.js";
 import {
   convertItemToString as defaultConvertItemToString,
   convertValueToItem as defaultConvertValueToItem,
   filterItems as defaultFilterItems,
   mergeRefs,
 } from "./utils/index.js";
+import "./styles.css";
 const componentCssClassName = "ds combobox";
 
 /**
@@ -64,6 +59,8 @@ const SingleCombobox = ({
     [onChange, valueKey],
   );
 
+  /* This allows for the option logic to be controlled externally, for instance by a backend
+   * For simpler use cases, simply pass a custom filterItems function */
   const defaultOnInputValueChangeFactory =
     (stateUpdater: React.Dispatch<React.SetStateAction<Option[]>>) =>
     ({ inputValue }: { inputValue: string }) =>
