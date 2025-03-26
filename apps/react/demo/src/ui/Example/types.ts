@@ -132,7 +132,7 @@ export interface ShowcaseExample {
   /** Current settings for the example */
   settings: AllExampleSettings;
   /** The component to render for the example */
-  component: FC;
+  Component: FC;
   /** CSS variables to apply to the component. These are derived from `settings`. */
   cssVars?: Record<string, string | number | undefined>;
 }

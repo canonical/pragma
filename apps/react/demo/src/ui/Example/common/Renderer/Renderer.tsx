@@ -13,13 +13,13 @@ const Renderer = ({ style, className }: RendererProps) => {
       style={style}
       className={[componentCssClassname, className].filter(Boolean).join(" ")}
     >
-      {activeExample?.component && (
+      {activeExample?.Component && (
         <>
           <h3>{activeExample.name}</h3>
           <root.div style={activeExample.cssVars} mode={"closed"}>
             <style>{shadowCss}</style>
             <div className="ds shadow-container">
-              <activeExample.component />
+              <activeExample.Component />
             </div>
           </root.div>
         </>
