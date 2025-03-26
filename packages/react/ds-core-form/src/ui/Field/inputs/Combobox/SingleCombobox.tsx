@@ -17,6 +17,7 @@ import {
   convertItemToString as defaultConvertItemToString,
   convertValueToItem as defaultConvertValueToItem,
   filterItems as defaultFilterItems,
+  mergeRefs,
 } from "./utils/index.js";
 const componentCssClassName = "ds combobox";
 
@@ -83,6 +84,7 @@ const SingleCombobox = ({
     selectedItem,
     getMenuProps,
     getInputProps,
+    // setInputValue,
     highlightedIndex,
     getItemProps,
   } = useCombobox({
@@ -129,6 +131,8 @@ const SingleCombobox = ({
     }
   }, [selectItem, openOnReset, openMenu, onChange]);
 
+  const combinedRef = mergeRefs(setCombinedRef);
+
   return (
     <div
       id={id}
@@ -140,7 +144,7 @@ const SingleCombobox = ({
           disabled,
           placeholder,
           onBlur,
-          ref: setCombinedRef,
+          ref: combinedRef,
         })}
       />
       <ResetButton onClick={resetAndFocusInput} />

@@ -17,5 +17,5 @@ export interface ResetButtonProps {
   /* Custom messages */
   messages?: ResetButtonMessages;
 
-  onClick: (event: React.MouseEvent<HTMLButtonElement>) => void;
+  onClick: (event?: React.MouseEvent<HTMLButtonElement>) => void;
 }
