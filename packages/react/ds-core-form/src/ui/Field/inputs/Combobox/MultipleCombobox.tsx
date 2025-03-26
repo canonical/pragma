@@ -8,12 +8,20 @@ import { VALUE_KEY } from "./constants.js";
 import type { ComboboxProps } from "./types.js";
 import {
 	convertItemToString as defaultConvertItemToString,
+	convertValueToItem as defaultConvertValueToItem,
 	filterItems as defaultFilterItems,
 } from "./utils/index.js";
 import "./styles.css";
 
 const componentCssClassName = "ds form-combobox";
 
+/**
+ * A multiple-select combobox component that allows selecting multiple items.
+ * Uses Downshift's useMultipleSelection and useCombobox hooks for state management.
+ *
+ * @param {ComboboxProps} props - The component props
+ * @returns {React.ReactElement} - Rendered MultipleCombobox component
+ */
 const MultipleCombobox = ({
 	id,
 	className,
@@ -25,11 +33,14 @@ const MultipleCombobox = ({
 	placeholder,
 	valueKey = VALUE_KEY,
 	convertItemToString = defaultConvertItemToString,
+	convertValueToItem = defaultConvertValueToItem,
 	filterItems = defaultFilterItems,
+	onInputValueChangeFactory,
 }: ComboboxProps): React.ReactElement => {
-	// State for selected items and input value
+	// State for selected items, input value, and filtered items
 	const [selectedItems, setSelectedItems] = useState<Option[]>([]);
 	const [inputValue, setInputValue] = useState("");
+	const [items, setItems] = useState(options);
 
 	// React Hook Form integration
 	const {
@@ -39,25 +50,23 @@ const MultipleCombobox = ({
 		rules: registerProps,
 	});
 
-	// Initialize selectedItems from ReactHookFormValue on mount
-	// biome-ignore lint/correctness/useExhaustiveDependencies: We want to run the effect if react-hook-form value changes only
+	// Convert array of values to array of Option objects
+	const convertValuesToItems = useCallback(
+		(values: string[]) => {
+			return values
+				.map((val) => convertValueToItem(val, options, valueKey))
+				.filter(Boolean) as Option[];
+		},
+		[convertValueToItem, options, valueKey],
+	);
+
+	// Initialize selectedItems from ReactHookFormValue on mount or when it changes
 	useEffect(() => {
 		if (ReactHookFormValue && ReactHookFormValue.length > 0) {
-			const initialSelected = ReactHookFormValue.map((val: string) =>
-				// Todo : use a custom function to convert value to item
-				options.find((opt) => opt[valueKey] === val),
-			).filter(Boolean) as Option[];
-
-			// Only update if the current selectedItems differ
-			if (
-				JSON.stringify(initialSelected.map((item) => item[valueKey])) !==
-				JSON.stringify(selectedItems.map((item) => item[valueKey]))
-			) {
-				setSelectedItems(initialSelected);
-			}
+			const initialSelected = convertValuesToItems(ReactHookFormValue);
+			setSelectedItems(initialSelected);
 		}
-		// Dependency on ReactHookFormValue ensures it reflects form changes
-	}, [ReactHookFormValue, options, valueKey]);
+	}, [ReactHookFormValue, convertValuesToItems]);
 
 	// Downshift's useMultipleSelection hook for managing multiple selections
 	const {
@@ -76,6 +85,20 @@ const MultipleCombobox = ({
 		},
 	});
 
+	// Default onInputValueChangeFactory: filters items locally
+	const defaultOnInputValueChangeFactory = useCallback(
+		() =>
+			({ inputValue }: { inputValue: string }) => {
+				setItems(filterItems(options, inputValue));
+			},
+		[filterItems, options],
+	);
+
+	// Use provided onInputValueChangeFactory or default
+	const onInputValueChange = onInputValueChangeFactory
+		? onInputValueChangeFactory(setItems)
+		: defaultOnInputValueChangeFactory();
+
 	// Downshift's useCombobox hook for combobox functionality
 	const {
 		isOpen,
@@ -85,9 +108,8 @@ const MultipleCombobox = ({
 		highlightedIndex,
 		selectItem,
 	} = useCombobox({
-		items: filterItems(options, inputValue),
-		onInputValueChange: ({ inputValue: newInputValue }) =>
-			setInputValue(newInputValue || ""),
+		items,
+		onInputValueChange,
 		onSelectedItemChange: ({ selectedItem }) => {
 			if (
 				selectedItem &&
@@ -113,14 +135,14 @@ const MultipleCombobox = ({
 			style={style}
 			className={[componentCssClassName, className].filter(Boolean).join(" ")}
 		>
+			{/* Selected items displayed as chips */}
 			<div className="selected-items">
 				{selectedItems.map((selectedItem, index) => (
 					<button
-						key={selectedItem[valueKey]}
+						key={selectedItem[valueKey] as string}
 						{...getSelectedItemProps({ selectedItem, index })}
 						onClick={() => removeSelectedItem(selectedItem)}
 						className="chip"
-						type="button"
 					>
 						{convertItemToString(selectedItem)}
 						<span className="remove-icon">×</span>
@@ -128,19 +150,22 @@ const MultipleCombobox = ({
 				))}
 			</div>
 
+			{/* Input field for searching and selecting */}
 			<input
 				{...getInputProps(getDropdownProps({ preventKeyAction: isOpen }))}
 				placeholder={placeholder}
 				disabled={disabled}
 			/>
 
+			{/* Reset button to clear selections */}
 			<ResetButton onClick={resetSelection} />
 
+			{/* Dropdown list of available options */}
 			<List
 				isOpen={isOpen}
 				getMenuProps={getMenuProps}
 				getItemProps={getItemProps}
-				items={filterItems(options, inputValue)}
+				items={items}
 				highlightedIndex={highlightedIndex}
 				convertItemToString={convertItemToString}
 				valueKey={valueKey}
