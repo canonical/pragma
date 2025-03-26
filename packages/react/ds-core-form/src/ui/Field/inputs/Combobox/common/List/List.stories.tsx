@@ -12,33 +12,33 @@ import type { UseComboboxPropGetters } from "downshift";
 // import type { StoryFn } from '@storybook/react'
 
 const meta = {
-	title: "Field/inputs/Combobox/common/List",
-	component: Component,
+  title: "Field/inputs/Combobox/common/List",
+  component: Component,
 } satisfies Meta<typeof Component>;
 
 export default meta;
 
 // Simplified mock for getMenuProps
 const mockGetMenuProps = (() => ({
-	id: "menu-id",
-	role: "listbox",
-	"aria-labelledby": "label-id",
-	onMouseLeave: () => {},
+  id: "menu-id",
+  role: "listbox",
+  "aria-labelledby": "label-id",
+  onMouseLeave: () => {},
 })) as UseComboboxPropGetters<Option>["getMenuProps"];
 
 // Simplified mock for getItemProps
 const mockGetItemProps = (({
-	item,
-	index,
-	...rest
+  item,
+  index,
+  ...rest
 }: { item: Option; index?: number } & Record<string, unknown>) => {
-	return {
-		id: `item-${index ?? "unknown"}`,
-		role: "option",
-		"aria-selected": false,
-		onClick: () => {},
-		...rest,
-	};
+  return {
+    id: `item-${index ?? "unknown"}`,
+    role: "option",
+    "aria-selected": false,
+    onClick: () => {},
+    ...rest,
+  };
 }) as UseComboboxPropGetters<Option>["getItemProps"];
 /*
   CSF3 story
@@ -48,16 +48,16 @@ const mockGetItemProps = (({
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
-	args: {
-		items: fixtures.fruits,
-		getMenuProps: mockGetMenuProps,
-		getItemProps: mockGetItemProps,
-		highlightedIndex: -1,
-		convertItemToString: (item: Option | null) => item?.label || "",
-		fieldValue: "",
-		valueKey: "value" as keyof Option,
-		isOpen: true,
-	},
+  args: {
+    items: fixtures.fruits,
+    getMenuProps: mockGetMenuProps,
+    getItemProps: mockGetItemProps,
+    highlightedIndex: -1,
+    convertItemToString: (item: Option | null) => item?.label || "",
+    fieldValue: "",
+    valueKey: "value" as keyof Option,
+    isOpen: true,
+  },
 };
 
 /*
