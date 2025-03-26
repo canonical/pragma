@@ -8,7 +8,7 @@ import Component from "./ResetButton.js";
 // import type { StoryFn } from '@storybook/react'
 
 const meta = {
-  title: "ResetButton",
+  title: "Field/inputs/Combobox/common/ResetButton",
   component: Component,
 } satisfies Meta<typeof Component>;
 

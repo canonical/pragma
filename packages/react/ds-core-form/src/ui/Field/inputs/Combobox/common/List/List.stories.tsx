@@ -6,16 +6,48 @@ import type { Meta, StoryObj } from "@storybook/react";
 import * as fixtures from "storybook/fixtures.options.js";
 import type { Option } from "../../../../types.js";
 import Component from "./List.js";
+
+import type {
+  GetPropsCommonOptions,
+  Overwrite,
+  UseComboboxGetItemPropsOptions,
+  UseComboboxGetItemPropsReturnValue,
+  UseComboboxGetMenuPropsOptions,
+  UseComboboxGetMenuPropsReturnValue,
+  UseComboboxPropGetters,
+} from "downshift";
 // Needed for template-based story, safe to remove otherwise
 // import type { StoryFn } from '@storybook/react'
 
 const meta = {
-  title: "List",
+  title: "Field/inputs/Combobox/common/List",
   component: Component,
 } satisfies Meta<typeof Component>;
 
 export default meta;
 
+// Simplified mock for getMenuProps
+const mockGetMenuProps = (() => ({
+  id: "menu-id",
+  role: "listbox",
+  "aria-labelledby": "label-id",
+  onMouseLeave: () => {},
+})) as unknown as UseComboboxPropGetters<Option>["getMenuProps"];
+
+// Simplified mock for getItemProps
+const mockGetItemProps = (({
+  item,
+  index,
+  ...rest
+}: { item: Option; index?: number } & Record<string, unknown>) => {
+  return {
+    id: `item-${index ?? "unknown"}`,
+    role: "option",
+    "aria-selected": false,
+    onClick: () => {},
+    ...rest,
+  };
+}) as unknown as UseComboboxPropGetters<Option>["getItemProps"];
 /*
   CSF3 story
   Uses object-based story declarations with strong TS support (`Meta` and `StoryObj`).
@@ -25,18 +57,9 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   args: {
-    options: fixtures.fruits,
-    items: [],
-    getMenuProps: () => ({
-      id: "menu-id",
-      role: "listbox",
-    }),
-    getItemProps: ({ item, index }: { item: Option; index: number }) => ({
-      id: `item-${index}`,
-      role: "option",
-      "aria-selected": false,
-      onClick: () => {}, // Minimal event handler
-    }),
+    items: fixtures.fruits,
+    getMenuProps: mockGetMenuProps,
+    getItemProps: mockGetItemProps,
     highlightedIndex: -1,
     convertItemToString: (item: Option | null) => item?.label || "",
     fieldValue: "",
