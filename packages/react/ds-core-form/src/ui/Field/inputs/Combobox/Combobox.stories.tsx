@@ -10,9 +10,9 @@ import * as fixtures from "storybook/fixtures.options.js";
 import Component from "./Combobox.js";
 
 const meta = {
-	title: "Field/inputs/Combobox",
-	component: Component,
-	decorators: [decorators.form()],
+  title: "Field/inputs/Combobox",
+  component: Component,
+  decorators: [decorators.form()],
 } satisfies Meta<typeof Component>;
 
 export default meta;
@@ -25,18 +25,18 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
-	args: {
-		name: "select-fruit",
-		options: fixtures.fruits,
-	},
+  args: {
+    name: "select-fruit",
+    options: fixtures.fruits,
+  },
 };
 
 export const Multiple: Story = {
-	args: {
-		name: "select-multiple-fruits",
-		isMultiple: true,
-		options: fixtures.fruits,
-	},
+  args: {
+    name: "select-multiple-fruits",
+    isMultiple: true,
+    options: fixtures.fruits,
+  },
 };
 
 /*
