@@ -1,6 +1,6 @@
 import { useContext } from "react";
 import Context from "../../Context.js";
-import type { ProviderValue } from "../../types.js";
+import type { ProviderValue } from "../../Provider/index.js";
 
 /**
  * Hook to access the config object from the nearest ConfigProvider.

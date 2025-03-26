@@ -1,48 +1,10 @@
-import { type FC, useMemo, useReducer, useState } from "react";
-import Context from "./Context.js";
 import type {
   AllExampleSettings,
   ConfigState,
-  ExampleAction,
-  ProviderProps,
-  ProviderValue,
   ShowcaseExample,
-} from "./types.js";
-import { generateCssVariables } from "./utils/index.js";
-
-const Provider: FC<ProviderProps> = ({ items, children }) => {
-  const initialState: ConfigState = items.reduce(
-    (acc: ConfigState, example) => {
-      acc[example.name] = example;
-      return acc;
-    },
-    {},
-  );
-
-  const [config, dispatch] = useReducer(configReducer, initialState);
-  const [activeExampleName, setActiveExampleName] = useState<
-    string | undefined
-  >(items?.length ? items[0].name : undefined);
-
-  const activeExampleConfig = useMemo(
-    () => (activeExampleName ? config[activeExampleName] : undefined),
-    [config, activeExampleName],
-  );
-
-  const value: ProviderValue = useMemo(
-    () => ({
-      config,
-      dispatch,
-      activeExampleName,
-      setActiveExampleName,
-      activeExample: activeExampleConfig,
-      allExamples: items,
-    }),
-    [config, activeExampleName, activeExampleConfig, items],
-  );
-
-  return <Context.Provider value={value}>{children}</Context.Provider>;
-};
+} from "../types.js";
+import { generateCssVariables } from "../utils/index.js";
+import type { ExampleAction } from "./types.js";
 
 /**
  * Reducer that handles updating context state
@@ -109,4 +71,4 @@ const configReducer = (
   }
 };
 
-export default Provider;
+export default configReducer;

@@ -1,5 +1,4 @@
 import type { Meta, StoryObj } from "@storybook/react";
-
 import { SHOWCASE_EXAMPLES } from "../../data/index.js";
 import { Example } from "./index.js";
 

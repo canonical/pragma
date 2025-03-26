@@ -1,54 +1,6 @@
-import type {
-  Dispatch,
-  FC,
-  ReactElement,
-  ReactNode,
-  SetStateAction,
-} from "react";
+import type { FC, ReactElement } from "react";
+import type { ProviderProps } from "./Provider/types.js";
 import type { ControlsProps, RendererProps } from "./common/index.js";
-
-/** An action to update or reset an example setting */
-export interface BASE_EXAMPLE_ACTION<TExampleName extends string> {
-  exampleName: TExampleName;
-  type: "UPDATE_SETTING" | "RESET_EXAMPLE";
-}
-
-/** An action to update a setting for an example */
-export interface UPDATE_EXAMPLE_ACTION<
-  /** Name of the example */
-  TExampleName extends string,
-  /** The name of the setting */
-  TSettingName extends keyof AllExampleSettings,
-  /** The new value for the setting */
-  TValue extends
-    ExampleSettingValue = AllExampleSettings[TSettingName] extends ExampleSetting<
-    infer V
-  >
-    ? V
-    : ExampleSettingValue,
-> extends BASE_EXAMPLE_ACTION<TExampleName> {
-  type: "UPDATE_SETTING";
-  /** The name of the setting, as a string literal. Allows settings to be indexed by setting name with strict type checking */
-  settingName: TSettingName;
-  /** The type of the new value for the setting */
-  newValue: TValue;
-}
-
-/** An action to reset an example to its default settings */
-export interface RESET_EXAMPLE_ACTION<
-  /** Name of the example */
-  TExampleName extends string,
-> extends BASE_EXAMPLE_ACTION<TExampleName> {
-  type: "RESET_EXAMPLE";
-}
-
-/** An action to update or reset an example settings. Unifies UPDATE_ and RESET_ types with strict type checking. */
-export type ExampleAction<TExampleName extends string = string> =
-  | {
-      // Generate a type for each setting in AllExampleSettings
-      [K in keyof AllExampleSettings]: UPDATE_EXAMPLE_ACTION<TExampleName, K>;
-    }[keyof AllExampleSettings]
-  | RESET_EXAMPLE_ACTION<TExampleName>;
 
 /** A valid type for an example setting's value */
 export type ExampleSettingValue = number | string;
@@ -140,33 +92,7 @@ export interface ShowcaseExample {
 /** The state of all examples. A key is a name of an example, the value is the example itself */
 export type ConfigState = Record<string, ShowcaseExample>;
 
-/** The context provider props for the config provider */
-export interface ProviderProps {
-  /** The examples that can be controlled by this provider */
-  items: ShowcaseExample[];
-  /** The children to render, which will have access to the config context */
-  children: ReactNode;
-}
-
-/** The value of the config context */
-export interface ProviderValue {
-  /** The current state of all examples */
-  config: ConfigState;
-  /** The dispatch function to update the state */
-  dispatch: Dispatch<ExampleAction>;
-  /** The current active example name */
-  activeExampleName?: string;
-  /** The function to set the active example name. Use this to change which example is currently active. */
-  setActiveExampleName: Dispatch<SetStateAction<string | undefined>>;
-  /** The current active example */
-  activeExample?: ShowcaseExample;
-  /** All examples that can be controlled by this provider */
-  allExamples: ShowcaseExample[];
-}
-
-export type ExampleControlsComponent = ((
-  props: ProviderProps,
-) => ReactElement) & {
+export type ExampleComponent = ((props: ProviderProps) => ReactElement) & {
   Controls: (props: ControlsProps) => ReactElement | null;
   Renderer: (props: RendererProps) => ReactElement | null;
 };
