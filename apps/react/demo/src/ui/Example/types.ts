@@ -1,7 +1,4 @@
 import type { FC, ReactElement } from "react";
-import type { ProviderProps } from "./Provider/types.js";
-import type { ControlsProps, RendererProps } from "./common/index.js";
-import type { AllOutput } from "./utils/index.js";
 
 export type ExampleSettingValue = number | string;
 export type ExampleOutputFormat = "css";
@@ -86,9 +83,3 @@ export interface ShowcaseExampleOpts {
    */
   controls: ExampleControl[];
 }
-
-/** Structure for components associated with examples (if needed elsewhere) */
-export type ExampleComponent = ((props: ProviderProps) => ReactElement) & {
-  Controls: (props: ControlsProps) => ReactElement | null;
-  Renderer: (props: RendererProps) => ReactElement | null;
-};
