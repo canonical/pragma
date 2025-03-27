@@ -1,4 +1,4 @@
-import React, { type FC, useState, useMemo, useEffect } from "react";
+import React, { type FC, useState, useMemo, useEffect, act } from "react";
 import { useFormContext, useWatch } from "react-hook-form";
 import Context from "../Context.js";
 import type { ProviderProps, ProviderValue } from "./types.js";
@@ -7,7 +7,7 @@ const Provider: FC<ProviderProps> = ({ items = [], children }) => {
   // Default to the first item if available
   const [activeExampleIndex, setActiveExampleIndex] = useState(0);
 
-  const { reset } = useFormContext();
+  const { setValue } = useFormContext();
   const formState = useWatch();
 
   const activeExample = useMemo(
@@ -38,19 +38,19 @@ const Provider: FC<ProviderProps> = ({ items = [], children }) => {
   );
 
   useEffect(() => {
-    reset(
-      Object.fromEntries(
-        activeExample.controls.map((control) => [
-          control.name,
-          control.default,
-        ]),
-      ),
-    );
-  }, [activeExample, reset]);
+    // When the active example changes, set the form values to the new example's values
+    for (const control of activeExample.controls) {
+      setValue(control.name, control.value || control.default);
+    }
+  }, [activeExample, setValue]);
 
   useEffect(() => {
-    console.log({ formState, output });
-  }, [formState, output]);
+    // When form state changes, synchronize the form state values with the example control's values.
+    // This allows the form's state to be recovered when switching between examples.
+    for (const control of activeExample.controls) {
+      control.value = formState[control.name];
+    }
+  }, [formState, activeExample]);
 
   const value: ProviderValue = useMemo(
     () => ({

@@ -8,8 +8,8 @@ export type ExampleOutputFormat = "css";
 
 export interface ExampleSetting<TValue extends ExampleSettingValue = string>
   extends FieldProps {
-  value: TValue;
-  default: TValue;
+  value?: TValue;
+  default?: TValue;
   label: string;
   disabledOutputFormats?: {
     [key in ExampleOutputFormat]?: boolean;
@@ -17,41 +17,9 @@ export interface ExampleSetting<TValue extends ExampleSettingValue = string>
   transformer?: (value: ExampleSettingValue) => ExampleSettingValue;
 }
 
-export type NumericExampleSetting = ExampleSetting<number>;
-
-export interface ChoicesExampleSetting<TValue extends ExampleSettingValue>
-  extends ExampleSetting<TValue> {
-  inputType: "simple-choices";
-}
-
-/**
- * All supported example settings
- */
-export type AllExampleSettings = {
-  "--font-family"?: ChoicesExampleSetting<string>;
-  "--font-size"?: NumericExampleSetting;
-  "--color"?: ChoicesExampleSetting<string>;
-  "--background-color"?: ChoicesExampleSetting<string>;
-  "--line-height"?: NumericExampleSetting;
-  "--text-align"?: ChoicesExampleSetting<string>;
-  "--padding"?: NumericExampleSetting;
-  "--margin"?: NumericExampleSetting;
-  "--border"?: NumericExampleSetting;
-  "--border-radius"?: NumericExampleSetting;
-  "--box-shadow"?: ChoicesExampleSetting<string>;
-  "--text-shadow"?: ChoicesExampleSetting<string>;
-};
-
-/**
- * Represents the configuration and state for a single control/setting object
- * within the `controls` array. It's a discriminated union based on the 'name' property.
- * This structure is used both for initial configuration and within the state array.
- */
 export type ExampleControl = {
-  [K in keyof AllExampleSettings]-?: {
-    name: K;
-  } & Required<AllExampleSettings>[K];
-}[keyof AllExampleSettings];
+  [TValue in ExampleSettingValue]: ExampleSetting<TValue>;
+}[ExampleSettingValue];
 
 /**
  * Defines the initial configuration required to set up a showcase example.

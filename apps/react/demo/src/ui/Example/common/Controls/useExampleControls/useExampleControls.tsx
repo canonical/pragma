@@ -1,6 +1,5 @@
-import { type ChangeEvent, useCallback, useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { useConfig } from "../../../hooks/index.js";
-import type { AllExampleSettings, ExampleControl } from "../../../types.js";
 import type { UseExampleControlsResult } from "./types.js";
 
 const useExampleControls = (): UseExampleControlsResult => {

@@ -37,13 +37,13 @@ const Controls = ({ id, className, style }: ControlsProps): ReactElement => {
         activateDelay={0}
         autoFit={true}
         Message={
-          <div className="inputs">
+          <form className="inputs">
             {activeExample.controls.map(
               ({ value, transformer, ...control }) => (
                 <Field key={control.name} {...control} />
               ),
             )}
-          </div>
+          </form>
         }
       >
         <Button label="Configure" />

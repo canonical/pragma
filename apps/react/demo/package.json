@@ -27,6 +27,7 @@
     "@canonical/react-ssr": "^0.9.0-experimental.10",
     "@canonical/styles": "^0.9.0-experimental.9",
     "@tanstack/react-router": "^1.114.25",
+    "lodash": "^4.17.21",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-shadow": "^20.6.0"

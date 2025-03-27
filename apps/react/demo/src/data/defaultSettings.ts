@@ -1,3 +1,4 @@
+import { cloneDeep } from "lodash";
 import type { ExampleControl } from "../ui/Example/index.js";
 
 export const FONT_CONTROL: ExampleControl = {
@@ -35,10 +36,11 @@ export const LINE_HEIGHT_CONTROL: ExampleControl = {
   step: 0.5,
 };
 
-const DEFAULT_CONTROLS: ExampleControl[] = [
-  FONT_CONTROL,
-  FONT_SIZE_CONTROL,
-  LINE_HEIGHT_CONTROL,
-];
+/**
+ * Returns the default controls.
+ * Clones the controls so that examples can have their own state.
+ */
+const DEFAULT_CONTROLS: () => ExampleControl[] = () =>
+  cloneDeep([FONT_CONTROL, FONT_SIZE_CONTROL, LINE_HEIGHT_CONTROL]);
 
 export default DEFAULT_CONTROLS;

@@ -10,12 +10,25 @@ export const SHOWCASE_EXAMPLES: ShowcaseExampleOpts[] = [
     name: "Typographic Specimen",
     description: "A typographic specimen with configurable font settings",
     Component: TypographicSpecimen,
-    controls: DEFAULT_CONTROLS,
+    controls: DEFAULT_CONTROLS(),
   },
   {
     name: "example1",
     description: "An example with font settings",
     Component: ButtonExample,
-    controls: DEFAULT_CONTROLS,
+    controls: [
+      ...DEFAULT_CONTROLS(),
+      {
+        name: "numButtons",
+        label: "Number of buttons",
+        inputType: "range",
+        min: 1,
+        max: 5,
+        default: 1,
+        disabledOutputFormats: {
+          css: true,
+        },
+      },
+    ],
   },
 ];
