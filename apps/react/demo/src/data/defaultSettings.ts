@@ -4,7 +4,7 @@ import type { ExampleControl } from "../ui/Example/index.js";
 export const FONT_CONTROL: ExampleControl = {
   name: "--font-family",
   label: "Font family",
-  inputType: "simple-choices",
+  inputType: "select",
   value: "Arial",
   default: "Arial",
   options: [
