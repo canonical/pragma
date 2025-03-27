@@ -40,7 +40,10 @@ const Provider: FC<ProviderProps> = ({ items = [], children }) => {
   useEffect(() => {
     // When the active example changes, set the form values to the new example's values
     for (const control of activeExample.controls) {
-      setValue(control.name, control.value || control.defaultValue);
+      setValue(
+        control.name,
+        control.value !== undefined ? control.value : control.defaultValue,
+      );
     }
   }, [activeExample, setValue]);
 
