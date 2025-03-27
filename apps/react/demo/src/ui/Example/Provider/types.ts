@@ -17,6 +17,7 @@ export interface ProviderValue {
   setActiveExampleIndex: Dispatch<SetStateAction<number>>;
   /** All examples that can be controlled by this provider */
   allExamples: ShowcaseExampleOpts[];
+  /** The currently active example's parameters */
   activeExample: ShowcaseExampleOpts;
   // biome-ignore lint/suspicious/noExplicitAny: fixme later
   output: { [key in ExampleOutputFormat]: any };

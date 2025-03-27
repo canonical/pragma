@@ -1,5 +1,5 @@
 import type { FieldProps } from "@canonical/react-ds-core-form";
-import type { FC, ReactElement } from "react";
+import type { ReactElement } from "react";
 import type { ProviderProps } from "./Provider/types.js";
 import type { ControlsProps, RendererProps } from "./common/index.js";
 
@@ -8,7 +8,6 @@ export type ExampleOutputFormat = "css";
 
 export interface ExampleSetting<TValue extends ExampleSettingValue = string>
   extends FieldProps {
-  value?: TValue;
   defaultValue?: TValue;
   label: string;
   disabledOutputFormats?: {
