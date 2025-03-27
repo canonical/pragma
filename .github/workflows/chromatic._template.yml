@@ -58,3 +58,4 @@ jobs:
           buildScriptName: "build:storybook"
           onlyChanged: true
           externals: ${{ inputs.externals }}
+          autoAcceptChanges: "main"
