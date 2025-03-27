@@ -17,6 +17,8 @@ const Range = ({
   style,
   name,
   registerProps,
+  min,
+  max,
   ...otherProps
 }: RangeProps): React.ReactElement => {
   const { register, watch } = useFormContext();
@@ -28,6 +30,10 @@ const Range = ({
         type="range"
         className={[componentCssClassName, className].filter(Boolean).join(" ")}
         style={style}
+        aria-valuemin={min}
+        aria-valuemax={max}
+        min={min}
+        max={max}
         {...otherProps}
         {...register(name, registerProps)}
       />
