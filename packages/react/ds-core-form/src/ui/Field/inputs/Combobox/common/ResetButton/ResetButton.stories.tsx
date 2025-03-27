@@ -1,18 +1,15 @@
 /* @canonical/generator-ds 0.9.0-experimental.9 */
 
 // Needed for function-based story, safe to remove otherwise
-// import type { ComboboxProps } from './types.js'
+// import type { ResetButtonProps } from './types.js'
 import type { Meta, StoryObj } from "@storybook/react";
-import * as decorators from "storybook/decorators.js";
+import Component from "./ResetButton.js";
 // Needed for template-based story, safe to remove otherwise
 // import type { StoryFn } from '@storybook/react'
-import * as fixtures from "storybook/fixtures.options.js";
-import Component from "./Combobox.js";
 
 const meta = {
-  title: "Field/inputs/Combobox",
+  title: "Field/inputs/Combobox/common/ResetButton",
   component: Component,
-  decorators: [decorators.form()],
 } satisfies Meta<typeof Component>;
 
 export default meta;
@@ -26,8 +23,7 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   args: {
-    name: "select",
-    options: fixtures.fruits,
+    onClick: () => {},
   },
 };
 
@@ -36,7 +32,7 @@ export const Default: Story = {
   Direct arguments passed to the component
   Simple, but can lead to repetition if used across multiple stories with similar configurations
 
-  export const Default = (args: ComboboxProps) => <Component {...args} />;
+  export const Default = (args: ResetButtonProps) => <Component {...args} />;
   Default.args = { children: <span>Hello world!</span> };
 */
 

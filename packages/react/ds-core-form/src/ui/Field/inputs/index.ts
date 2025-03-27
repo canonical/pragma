@@ -13,3 +13,5 @@ export * from "./Select/index.js";
 export * from "./SimpleChoices/index.js";
 
 export * from "./Combobox/index.js";
+
+export * from "./Hidden/index.js";

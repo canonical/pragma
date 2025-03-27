@@ -1,22 +1,45 @@
 /* @canonical/generator-ds 0.9.0-experimental.9 */
 
 // Needed for function-based story, safe to remove otherwise
-// import type { ComboboxProps } from './types.js'
+// import type { ListProps } from './types.js'
 import type { Meta, StoryObj } from "@storybook/react";
-import * as decorators from "storybook/decorators.js";
+import * as fixtures from "storybook/fixtures.options.js";
+import type { Option } from "../../../../types.js";
+import Component from "./List.js";
+
+import type { UseComboboxPropGetters } from "downshift";
 // Needed for template-based story, safe to remove otherwise
 // import type { StoryFn } from '@storybook/react'
-import * as fixtures from "storybook/fixtures.options.js";
-import Component from "./Combobox.js";
 
 const meta = {
-  title: "Field/inputs/Combobox",
+  title: "Field/inputs/Combobox/common/List",
   component: Component,
-  decorators: [decorators.form()],
 } satisfies Meta<typeof Component>;
 
 export default meta;
 
+// Simplified mock for getMenuProps
+const mockGetMenuProps = (() => ({
+  id: "menu-id",
+  role: "listbox",
+  "aria-labelledby": "label-id",
+  onMouseLeave: () => {},
+})) as UseComboboxPropGetters<Option>["getMenuProps"];
+
+// Simplified mock for getItemProps
+const mockGetItemProps = (({
+  item,
+  index,
+  ...rest
+}: { item: Option; index?: number } & Record<string, unknown>) => {
+  return {
+    id: `item-${index ?? "unknown"}`,
+    role: "option",
+    "aria-selected": false,
+    onClick: () => {},
+    ...rest,
+  };
+}) as UseComboboxPropGetters<Option>["getItemProps"];
 /*
   CSF3 story
   Uses object-based story declarations with strong TS support (`Meta` and `StoryObj`).
@@ -26,8 +49,14 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   args: {
-    name: "select",
-    options: fixtures.fruits,
+    items: fixtures.fruits,
+    getMenuProps: mockGetMenuProps,
+    getItemProps: mockGetItemProps,
+    highlightedIndex: -1,
+    convertItemToString: (item: Option | null) => item?.label || "",
+    fieldValue: "",
+    valueKey: "value" as keyof Option,
+    isOpen: true,
   },
 };
 
@@ -36,7 +65,7 @@ export const Default: Story = {
   Direct arguments passed to the component
   Simple, but can lead to repetition if used across multiple stories with similar configurations
 
-  export const Default = (args: ComboboxProps) => <Component {...args} />;
+  export const Default = (args: ListProps) => <Component {...args} />;
   Default.args = { children: <span>Hello world!</span> };
 */
 

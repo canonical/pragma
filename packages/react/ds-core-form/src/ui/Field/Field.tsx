@@ -2,6 +2,8 @@
 import type React from "react";
 import {
   Checkbox,
+  Combobox,
+  Hidden,
   Range,
   Select,
   SimpleChoices,
@@ -30,6 +32,10 @@ const Field = ({
       return <Select {...props} />;
     case "simple-choices":
       return <SimpleChoices {...props} />;
+    case "combobox":
+      return <Combobox {...props} />;
+    case "hidden":
+      return <Hidden {...props} />;
     case "custom":
       // @ts-ignore // TODO Add special type for both or none
       return <CustomComponent {...props} />;

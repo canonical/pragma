@@ -75,45 +75,45 @@ export const ConditionalDisplay: StoryObj = {
 };
 
 // export const RESTOptions: StoryObj = {
-// 	render: () => {
-// 		const choicesField: FieldProps = {
-// 			name: "choices",
-// 			inputType: "simple-choices",
-// 			label: "Select an option",
-// 			middleware: [
-// 				middleware.addRESTOptions("https://TODO", {
-// 					transformData: (data) => data.options,
-// 				}),
-// 			],
-// 		};
+//   render: () => {
+//     const choicesField: FieldProps = {
+//       name: "choices",
+//       inputType: "simple-choices",
+//       label: "Select an option",
+//       middleware: [
+//         middleware.addRESTOptions("https://TODO", {
+//           transformData: (data) => data.options,
+//         }),
+//       ],
+//     };
 //
-// 		return <Field {...choicesField} />;
-// 	},
-// 	name: "REST Options",
+//     return <Field {...choicesField} />;
+//   },
+//   name: "REST Options",
 // };
 //
 // export const RESTValidation: StoryObj = {
-// 	render: () => {
-// 		const domainField: FieldProps = {
-// 			name: "domain",
-// 			inputType: "text",
-// 			label: "Domain Name",
-// 			middleware: [
-// 				middleware.addRESTValidation("https://TODO", {
-// 					minLength: 3,
-// 					errorExtractor: async (response) => {
-// 						const data = await response.json();
-// 						return data.error || "Domain is not available";
-// 					},
-// 				}),
-// 			],
-// 		};
+//   render: () => {
+//     const domainField: FieldProps = {
+//       name: "domain",
+//       inputType: "text",
+//       label: "Domain Name",
+//       middleware: [
+//         middleware.addRESTValidation("https://TODO", {
+//           minLength: 3,
+//           errorExtractor: async (response) => {
+//             const data = await response.json();
+//             return data.error || "Domain is not available";
+//           },
+//         }),
+//       ],
+//     };
 //
-// 		return <Field {...domainField} />;
-// 	},
-// 	name: "REST Validation",
+//     return <Field {...domainField} />;
+//   },
+//   name: "REST Validation",
 // };
-
+//
 /*
   Function-based story
   Direct arguments passed to the component
