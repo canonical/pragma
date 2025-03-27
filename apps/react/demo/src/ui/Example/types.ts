@@ -1,12 +1,13 @@
+import type { FieldProps } from "@canonical/react-ds-core-form";
 import type { FC, ReactElement } from "react";
 import type { ProviderProps } from "./Provider/types.js";
 import type { ControlsProps, RendererProps } from "./common/index.js";
-import type { AllOutput } from "./utils/index.js";
 
 export type ExampleSettingValue = number | string;
 export type ExampleOutputFormat = "css";
 
-export interface ExampleSetting<TValue extends ExampleSettingValue = string> {
+export interface ExampleSetting<TValue extends ExampleSettingValue = string>
+  extends FieldProps {
   value: TValue;
   default: TValue;
   label: string;
@@ -14,47 +15,31 @@ export interface ExampleSetting<TValue extends ExampleSettingValue = string> {
     [key in ExampleOutputFormat]?: boolean;
   };
   transformer?: (value: ExampleSettingValue) => ExampleSettingValue;
-  type: "number" | "string" | "choices";
 }
 
-export interface NumericExampleSetting extends ExampleSetting<number> {
-  min: number;
-  max: number;
-  step?: number;
-  type: "number";
-}
+export type NumericExampleSetting = ExampleSetting<number>;
 
 export interface ChoicesExampleSetting<TValue extends ExampleSettingValue>
   extends ExampleSetting<TValue> {
-  choices: TValue[];
-  type: "choices";
+  inputType: "simple-choices";
 }
-
-export type MultipleChoicesExampleConfiguration<
-  TValue extends ExampleSettingValue,
-> = Omit<ChoicesExampleSetting<TValue>, "value" | "default"> & {
-  value: TValue[];
-  default: TValue[];
-};
-
-// --- Definition of All Possible Setting Types (Unchanged) ---
 
 /**
  * All supported example settings
  */
 export type AllExampleSettings = {
-  fontFamily?: ChoicesExampleSetting<string>;
-  fontSize?: NumericExampleSetting;
-  color?: ChoicesExampleSetting<string>;
-  backgroundColor?: ChoicesExampleSetting<string>;
-  lineHeight?: NumericExampleSetting;
-  textAlign?: ChoicesExampleSetting<string>;
-  padding?: NumericExampleSetting;
-  margin?: NumericExampleSetting;
-  border?: NumericExampleSetting;
-  borderRadius?: NumericExampleSetting;
-  boxShadow?: ChoicesExampleSetting<string>;
-  textShadow?: ChoicesExampleSetting<string>;
+  "--font-family"?: ChoicesExampleSetting<string>;
+  "--font-size"?: NumericExampleSetting;
+  "--color"?: ChoicesExampleSetting<string>;
+  "--background-color"?: ChoicesExampleSetting<string>;
+  "--line-height"?: NumericExampleSetting;
+  "--text-align"?: ChoicesExampleSetting<string>;
+  "--padding"?: NumericExampleSetting;
+  "--margin"?: NumericExampleSetting;
+  "--border"?: NumericExampleSetting;
+  "--border-radius"?: NumericExampleSetting;
+  "--box-shadow"?: ChoicesExampleSetting<string>;
+  "--text-shadow"?: ChoicesExampleSetting<string>;
 };
 
 /**

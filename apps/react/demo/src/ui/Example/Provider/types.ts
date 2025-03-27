@@ -1,10 +1,5 @@
 import type { Dispatch, ReactNode, SetStateAction } from "react";
-import type {
-  ConfigState,
-  ExampleAction,
-  ShowcaseExampleState,
-} from "../Reducer/index.js";
-import type { ShowcaseExampleOpts } from "../types.js";
+import type { ExampleOutputFormat, ShowcaseExampleOpts } from "../types.js";
 
 /** The context provider props for the config provider */
 export interface ProviderProps {
@@ -16,16 +11,13 @@ export interface ProviderProps {
 
 /** The value of the config context */
 export interface ProviderValue {
-  /** The current state of all examples */
-  config: ConfigState;
-  /** The dispatch function to update the state */
-  dispatch: Dispatch<ExampleAction>;
   /** The current active example name */
-  activeExampleName?: string;
+  activeExampleIndex?: number;
   /** The function to set the active example name. Use this to change which example is currently active. */
-  setActiveExampleName: Dispatch<SetStateAction<string | undefined>>;
-  /** The current active example */
-  activeExample?: ShowcaseExampleState;
+  setActiveExampleIndex: Dispatch<SetStateAction<number>>;
   /** All examples that can be controlled by this provider */
   allExamples: ShowcaseExampleOpts[];
+  activeExample: ShowcaseExampleOpts;
+  // biome-ignore lint/suspicious/noExplicitAny: fixme later
+  output: { [key in ExampleOutputFormat]: any };
 }

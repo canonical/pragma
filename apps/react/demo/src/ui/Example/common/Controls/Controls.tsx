@@ -2,20 +2,16 @@ import type { ReactElement } from "react";
 import type { ControlsProps } from "./types.js";
 import "./styles.css";
 import { Button, TooltipArea } from "@canonical/react-ds-core";
+import { Field } from "@canonical/react-ds-core-form";
 import { useConfig } from "../../hooks/index.js";
-import { Control } from "./common/Control/index.js";
 import { useExampleControls } from "./useExampleControls/index.js";
 
 const componentCssClassname = "ds example-controls";
 
 const Controls = ({ id, className, style }: ControlsProps): ReactElement => {
-  const { activeExample } = useConfig();
-  const {
-    handlePrevExample,
-    handleNextExample,
-    handleControlChange,
-    handleCopyCss,
-  } = useExampleControls();
+  const { handlePrevExample, handleNextExample, handleCopyCss } =
+    useExampleControls();
+  const { activeExample, output } = useConfig();
 
   return (
     <div
@@ -42,22 +38,20 @@ const Controls = ({ id, className, style }: ControlsProps): ReactElement => {
         autoFit={true}
         Message={
           <div className="inputs">
-            {activeExample?.controls.map((control) => (
-              <Control
-                key={control.name}
-                control={control}
-                onChange={(event) => handleControlChange(event, control)}
-              />
-            ))}
+            {activeExample.controls.map(
+              ({ value, transformer, ...control }) => (
+                <Field key={control.name} {...control} />
+              ),
+            )}
           </div>
         }
       >
         <Button label="Configure" />
-      </TooltipArea>
+      </TooltipArea>{" "}
       <Button
         label="Copy"
         style={{ marginLeft: "auto" }}
-        disabled={!activeExample?.output?.css}
+        disabled={!output?.css}
         onClick={handleCopyCss}
       />
     </div>

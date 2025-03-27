@@ -7,7 +7,7 @@ import { useConfig } from "../../hooks/index.js";
 import shadowCss from "./shadow-styles.css?raw";
 
 const Renderer = ({ style, className }: RendererProps) => {
-  const { activeExample } = useConfig();
+  const { activeExample, output } = useConfig();
   return (
     <div
       style={style}
@@ -16,7 +16,7 @@ const Renderer = ({ style, className }: RendererProps) => {
       {activeExample?.Component && (
         <>
           <h3>{activeExample.name}</h3>
-          <root.div style={activeExample.output?.css} mode={"closed"}>
+          <root.div style={output.css} mode={"closed"}>
             <style>{shadowCss}</style>
             <div className="ds shadow-container">
               <activeExample.Component />

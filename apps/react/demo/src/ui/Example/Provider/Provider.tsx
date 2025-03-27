@@ -1,57 +1,66 @@
-import React, { type FC, useMemo, useReducer, useState } from "react";
+import React, { type FC, useState, useMemo, useEffect } from "react";
+import { useFormContext, useWatch } from "react-hook-form";
 import Context from "../Context.js";
-import { type ConfigState, Reducer } from "../Reducer/index.js";
-import type { ExampleControl, ShowcaseExampleOpts } from "../types.js";
-import generateAllOutput from "../utils/output/generateOutput.js";
 import type { ProviderProps, ProviderValue } from "./types.js";
 
 const Provider: FC<ProviderProps> = ({ items = [], children }) => {
-  const initialState = useMemo((): ConfigState => {
-    return items.reduce(
-      (acc: ConfigState, exampleOpts: ShowcaseExampleOpts) => {
-        const initialControlsState: ExampleControl[] = exampleOpts.controls.map(
-          (controlConfig: ExampleControl) =>
-            ({
-              ...controlConfig,
-              value: controlConfig.default,
-            }) as ExampleControl,
-        );
-
-        const { controls, ...baseExampleData } = exampleOpts;
-
-        acc[exampleOpts.name] = {
-          ...baseExampleData,
-          controls: initialControlsState,
-          output: generateAllOutput(initialControlsState),
-        };
-        return acc;
-      },
-      {},
-    );
-  }, [items]);
-
-  const [state, dispatch] = useReducer(Reducer, initialState);
-
   // Default to the first item if available
-  const [activeExampleName, setActiveExampleName] = useState<
-    string | undefined
-  >(items?.length ? items[0].name : undefined);
+  const [activeExampleIndex, setActiveExampleIndex] = useState(0);
+
+  const { reset } = useFormContext();
+  const formState = useWatch();
 
   const activeExample = useMemo(
-    () => (activeExampleName ? state[activeExampleName] : undefined),
-    [state, activeExampleName],
+    () => items[activeExampleIndex],
+    [activeExampleIndex, items],
   );
+
+  const css = useMemo(
+    () =>
+      Object.fromEntries(
+        activeExample.controls
+          .filter((control) => !control.disabledOutputFormats?.css)
+          .map((control) => {
+            const { name, transformer } = control;
+            const rawVal = formState[name];
+            const val = transformer ? transformer(rawVal) : rawVal;
+            return [name, val];
+          }),
+      ),
+    [activeExample, formState],
+  );
+
+  const output = useMemo(
+    () => ({
+      css,
+    }),
+    [css],
+  );
+
+  useEffect(() => {
+    reset(
+      Object.fromEntries(
+        activeExample.controls.map((control) => [
+          control.name,
+          control.default,
+        ]),
+      ),
+    );
+  }, [activeExample, reset]);
+
+  useEffect(() => {
+    console.log({ formState, output });
+  }, [formState, output]);
 
   const value: ProviderValue = useMemo(
     () => ({
-      config: state,
-      dispatch,
-      activeExampleName,
-      setActiveExampleName,
+      activeExampleIndex,
+      setActiveExampleIndex,
       activeExample,
       allExamples: items,
+      output,
     }),
-    [state, activeExampleName, activeExample, items],
+    [activeExampleIndex, activeExample, items, output],
   );
 
   return <Context.Provider value={value}>{children}</Context.Provider>;

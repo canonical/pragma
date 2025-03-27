@@ -1,17 +1,21 @@
 import type { ExampleControl } from "../ui/Example/index.js";
 
 export const FONT_CONTROL: ExampleControl = {
-  name: "fontFamily",
+  name: "--font-family",
   label: "Font family",
-  type: "choices",
+  inputType: "simple-choices",
   value: "Arial",
   default: "Arial",
-  choices: ["Arial", "Helvetica", "Times New Roman"],
+  options: [
+    { value: "Arial", label: "Arial" },
+    { value: "Times New Roman", label: "Times New Roman" },
+    { value: "Ubuntu", label: "Ubuntu" },
+  ],
 };
 
 export const FONT_SIZE_CONTROL: ExampleControl = {
-  name: "fontSize",
-  type: "number",
+  name: "--font-size",
+  inputType: "range",
   label: "Font size",
   value: 16,
   default: 16,
@@ -21,8 +25,8 @@ export const FONT_SIZE_CONTROL: ExampleControl = {
 };
 
 export const LINE_HEIGHT_CONTROL: ExampleControl = {
-  name: "lineHeight",
-  type: "number",
+  name: "--line-height",
+  inputType: "range",
   label: "Line height",
   value: 1.5,
   default: 1.5,
