@@ -39,7 +39,7 @@ const Controls = ({ id, className, style }: ControlsProps): ReactElement => {
         Message={
           <form className="inputs">
             {activeExample.controls.map(
-              ({ value, transformer, ...control }) => (
+              ({ value, transformer, disabledOutputFormats, ...control }) => (
                 <Field key={control.name} {...control} />
               ),
             )}
