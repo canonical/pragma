@@ -31,7 +31,7 @@ export interface ShowcaseExampleOpts {
   /** User-friendly description */
   description: string;
   /** The React component to render */
-  Component: FC;
+  Component: () => ReactElement;
   /**
    * Array defining the controls and their initial/default configuration for this example.
    * The `value` property within these initial configs is often ignored, as the
@@ -40,7 +40,6 @@ export interface ShowcaseExampleOpts {
   controls: ExampleControl[];
 }
 
-/** Structure for components associated with examples (if needed elsewhere) */
 export type ExampleComponent = ((props: ProviderProps) => ReactElement) & {
   Controls: (props: ControlsProps) => ReactElement | null;
   Renderer: (props: RendererProps) => ReactElement | null;

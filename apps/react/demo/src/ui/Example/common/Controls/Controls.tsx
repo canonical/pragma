@@ -47,7 +47,7 @@ const Controls = ({ id, className, style }: ControlsProps): ReactElement => {
         }
       >
         <Button label="Configure" />
-      </TooltipArea>{" "}
+      </TooltipArea>
       <Button
         label="Copy"
         style={{ marginLeft: "auto" }}
