@@ -24,7 +24,7 @@ export const SHOWCASE_EXAMPLES: ShowcaseExampleOpts[] = [
         inputType: "range",
         min: 1,
         max: 5,
-        default: 1,
+        defaultValue: 1,
         disabledOutputFormats: {
           css: true,
         },

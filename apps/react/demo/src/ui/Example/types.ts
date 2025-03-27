@@ -9,7 +9,7 @@ export type ExampleOutputFormat = "css";
 export interface ExampleSetting<TValue extends ExampleSettingValue = string>
   extends FieldProps {
   value?: TValue;
-  default?: TValue;
+  defaultValue?: TValue;
   label: string;
   disabledOutputFormats?: {
     [key in ExampleOutputFormat]?: boolean;

@@ -9,7 +9,7 @@ const Showcase = () => {
       // Todo use query parameters to figure out which example to show
       SHOWCASE_EXAMPLES[0].controls.map((control) => [
         control.name,
-        control.default,
+        control.defaultValue,
       ]),
     ),
   });
