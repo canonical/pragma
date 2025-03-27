@@ -26,6 +26,8 @@
     "@canonical/storybook-config": "^0.9.0-experimental.5",
     "@canonical/react-ssr": "^0.9.0-experimental.10",
     "@canonical/styles": "^0.9.0-experimental.9",
+    "@canonical/react-ds-core": "^0.9.0-experimental.11",
+    "@canonical/react-ds-core-form": "^0.9.0-experimental.11",
     "@tanstack/react-router": "^1.114.25",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
@@ -34,7 +36,6 @@
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
     "@canonical/biome-config": "^0.9.0-experimental.2",
-    "@canonical/react-ds-core": "^0.9.0-experimental.11",
     "@canonical/typescript-config-react": "^0.9.0-experimental.2",
     "@tanstack/react-router-devtools": "^1.114.25",
     "@tanstack/router-plugin": "^1.114.25",
