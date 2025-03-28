@@ -1,5 +1,7 @@
+import { ORIGINAL_VAR_NAME_KEY } from "data/index.js";
+import { useGlobalForm } from "hooks/index.js";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useFormContext, useWatch } from "react-hook-form";
+import { useFormContext } from "react-hook-form";
 import type { ExampleOutputFormat, Output } from "../types.js";
 import type { UseProviderStateProps, UseProviderStateResult } from "./types.js";
 
@@ -7,55 +9,52 @@ import type { UseProviderStateProps, UseProviderStateResult } from "./types.js";
  * Hook to manage the state of the provider
  */
 const useProviderState = ({
-  items = [],
-  defaultValues,
   outputFormats = ["css"],
 }: UseProviderStateProps): UseProviderStateResult => {
   // Default to the first item if available
   const [activeExampleIndex, setActiveExampleIndex] = useState(0);
-
-  const { setValue } = useFormContext();
-  const formState = useWatch();
+  const { defaultValues, examples } = useGlobalForm();
+  const { setValue, getValues } = useFormContext();
 
   const activeExample = useMemo(
-    () => items[activeExampleIndex],
-    [activeExampleIndex, items],
+    () => examples[activeExampleIndex],
+    [activeExampleIndex, examples],
   );
 
   const handlePrevExample = useCallback(() => {
     setActiveExampleIndex((currentIndex) => {
-      const nextIndex = (currentIndex - 1) % items.length;
-      return nextIndex < 0 ? items.length - 1 : nextIndex;
+      const nextIndex = (currentIndex - 1) % examples.length;
+      return nextIndex < 0 ? examples.length - 1 : nextIndex;
     });
-  }, [items]);
+  }, [examples]);
 
   const handleNextExample = useCallback(() => {
     setActiveExampleIndex((currentIndex) => {
-      const nextIndex = (currentIndex + 1) % items.length;
-      return nextIndex < 0 ? items.length - 1 : nextIndex;
+      const nextIndex = (currentIndex + 1) % examples.length;
+      return nextIndex < 0 ? examples.length - 1 : nextIndex;
     });
-  }, [items]);
+  }, [examples]);
 
   const output: Output = useMemo(
     () =>
       outputFormats.reduce((acc, format: ExampleOutputFormat) => {
         acc[format] = Object.fromEntries(
           activeExample.controls
-            .filter(
-              (control) =>
-                !control.disabledOutputFormats?.[format] &&
-                control.value !== undefined,
-            )
+            .filter((control) => !control.disabledOutputFormats?.[format])
             .map((control) => {
-              const { name, transformer } = control;
-              const rawVal = formState[name];
+              const {
+                [ORIGINAL_VAR_NAME_KEY]: name,
+                name: formStateKey,
+                transformer,
+              } = control;
+              const rawVal = getValues(formStateKey);
               const val = transformer ? transformer(rawVal) : rawVal;
               return [name, val];
             }),
         );
         return acc;
       }, {} as Output),
-    [outputFormats, activeExample, formState],
+    [outputFormats, activeExample, getValues],
   );
 
   const handleCopyOutput = useCallback(
@@ -73,31 +72,22 @@ const useProviderState = ({
   useEffect(() => {
     // When the active example changes, set the form values to the new example's values
     for (const control of activeExample.controls) {
-      setValue(
-        control.name,
-        control.value !== undefined
-          ? control.value
-          : defaultValues[activeExampleIndex][control.name],
-      );
+      const { name: formStateKey } = control;
+      const curVal = getValues(formStateKey);
+      const setValTo =
+        curVal !== undefined ? curVal : defaultValues[formStateKey];
+      if (curVal !== setValTo) {
+        setValue(formStateKey, setValTo);
+      }
     }
-  }, [activeExample, setValue, defaultValues, activeExampleIndex]);
-
-  useEffect(() => {
-    // When form state changes, synchronize the form state values with the example control's values.
-    // This allows the form's state to be recovered when switching between examples.
-    for (const control of activeExample.controls) {
-      control.value =
-        formState[control.name] ||
-        defaultValues[activeExampleIndex][control.name];
-    }
-  }, [formState, activeExample, defaultValues, activeExampleIndex]);
+  }, [activeExample, defaultValues, setValue, getValues]);
 
   return useMemo(
     () => ({
       activeExampleIndex,
       setActiveExampleIndex,
       activeExample,
-      allExamples: items,
+      allExamples: examples,
       handleCopyOutput,
       handlePrevExample,
       handleNextExample,
@@ -106,7 +96,7 @@ const useProviderState = ({
     [
       activeExampleIndex,
       activeExample,
-      items,
+      examples,
       output,
       handleCopyOutput,
       handlePrevExample,

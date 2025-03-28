@@ -1,7 +1,8 @@
 import type React from "react";
 import "./styles.css";
+import type { ShowcaseComponent } from "../../../types.js";
 
-const TypographicSpecimen = () => {
+const TypographicSpecimen: ShowcaseComponent = () => {
   const updateHeadingHierarchy = () => {};
 
   return (

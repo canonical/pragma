@@ -1,5 +1,7 @@
 import type { FieldProps } from "@canonical/react-ds-core-form";
 import type { Dispatch, ReactElement, ReactNode, SetStateAction } from "react";
+import { ORIGINAL_VAR_NAME_KEY } from "../../../../data/index.js";
+import type { FormState } from "../../../../hooks/index.js";
 import type { ControlsProps, RendererProps } from "./common/index.js";
 
 export type ExampleSettingValue = number | string;
@@ -24,16 +26,13 @@ export interface ContextOptions {
 
 /** The context provider props for the config provider */
 export interface ProviderProps {
-  /** The examples that can be controlled by this provider */
-  items: ShowcaseExample[];
-  /** The default values for each example. Mapping of example index to control name to default vaulue. */
-  defaultValues: Record<number, Record<string, ExampleSettingValue>>;
   /** The children to render, which will have access to the config context */
   children: ReactNode;
 
   outputFormats?: ExampleOutputFormat[];
 }
 export interface ExampleControlField extends FieldProps {
+  name: string;
   /** Formats for which output is disabled */
   disabledOutputFormats?: {
     [key in ExampleOutputFormat]?: boolean;
@@ -45,7 +44,12 @@ export interface ExampleControlField extends FieldProps {
    * This is not directly consumed by the field, but it is used to set the initial value in the form state.
    */
   defaultValue?: ExampleSettingValue;
+
+  [ORIGINAL_VAR_NAME_KEY]?: string;
 }
+
+/** The actual component that is rendered for an example. */
+export type ShowcaseComponent = (state: FormState) => ReactElement;
 
 /** An example to be showcased. Contains an example's metadata, controls/settings, and which component it is bound to. */
 export interface ShowcaseExample {
@@ -53,8 +57,8 @@ export interface ShowcaseExample {
   name: string;
   /** User-friendly description */
   description: string;
-  /** The React component to render */
-  Component: () => ReactElement;
+  /** The component to render */
+  Component: ShowcaseComponent;
   /**
    * Array defining the controls and their initial/default configuration for this example.
    * The `value` property within these initial configs is often ignored, as the

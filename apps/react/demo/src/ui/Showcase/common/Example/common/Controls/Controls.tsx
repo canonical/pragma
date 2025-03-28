@@ -29,8 +29,8 @@ const Controls = ({ id, className, style }: ControlsProps): ReactElement => {
     >
       <div>
         {/*TODO use icon buttons when icon is implemented*/}
-        <Button label={"Prev"} onClick={handlePrevExample} />
-        <Button label="Next" onClick={handleNextExample} />
+        <Button label={"Prev"} type="button" onClick={handlePrevExample} />
+        <Button label="Next" type="button" onClick={handleNextExample} />
       </div>
       <TooltipArea
         // TODO use new form components when ready
@@ -40,24 +40,28 @@ const Controls = ({ id, className, style }: ControlsProps): ReactElement => {
         activateDelay={0}
         autoFit={true}
         Message={
-          <form className="inputs">
+          <div className="inputs">
             {activeExample.controls.map(
               ({
                 defaultValue,
-                value,
                 transformer,
                 disabledOutputFormats,
                 ...control
               }) => (
-                <Field key={control.name} {...control} />
+                <Field
+                  key={control.name}
+                  unregisterOnUnmount={false}
+                  {...control}
+                />
               ),
             )}
-          </form>
+          </div>
         }
       >
         <Button label="Configure" />
       </TooltipArea>
       <Button
+        type="button"
         label="Copy"
         style={{ marginLeft: "auto" }}
         disabled={!output?.css}
