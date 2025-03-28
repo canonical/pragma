@@ -41,6 +41,9 @@ export type ExampleComponent = ((props: ProviderProps) => ReactElement) & {
   Renderer: (props: RendererProps) => ReactElement | null;
 };
 
+// biome-ignore lint/suspicious/noExplicitAny: Output types could have any shape
+export type Output = { [key in ExampleOutputFormat]?: any };
+
 /** The value of the config context */
 export interface ContextOptions {
   /** The current active example name */
@@ -51,6 +54,9 @@ export interface ContextOptions {
   allExamples: ShowcaseExample[];
   /** The currently active example's parameters */
   activeExample: ShowcaseExample;
-  // biome-ignore lint/suspicious/noExplicitAny: fixme later
-  output: { [key in ExampleOutputFormat]: any };
+
+  output: Output;
+  handleCopyOutput: (format: ExampleOutputFormat) => void;
+  handlePrevExample: () => void;
+  handleNextExample: () => void;
 }

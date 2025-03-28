@@ -1,2 +1,3 @@
 export { default as useConfig } from "./useConfig.js";
-export * from "./useExampleControls/index.js";
+export { default as useProviderState } from "./useProviderState.js";
+export * from "./types.js";

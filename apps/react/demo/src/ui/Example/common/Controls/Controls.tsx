@@ -3,14 +3,18 @@ import type { ControlsProps } from "./types.js";
 import "./styles.css";
 import { Button, TooltipArea } from "@canonical/react-ds-core";
 import { Field } from "@canonical/react-ds-core-form";
-import { useConfig, useExampleControls } from "../../hooks/index.js";
+import { useConfig } from "../../hooks/index.js";
 
 const componentCssClassname = "ds example-controls";
 
 const Controls = ({ id, className, style }: ControlsProps): ReactElement => {
-  const { handlePrevExample, handleNextExample, handleCopyCss } =
-    useExampleControls();
-  const { activeExample, output } = useConfig();
+  const {
+    activeExample,
+    output,
+    handlePrevExample,
+    handleNextExample,
+    handleCopyOutput,
+  } = useConfig();
 
   return (
     <div
@@ -57,7 +61,7 @@ const Controls = ({ id, className, style }: ControlsProps): ReactElement => {
         label="Copy"
         style={{ marginLeft: "auto" }}
         disabled={!output?.css}
-        onClick={handleCopyCss}
+        onClick={() => handleCopyOutput("css")}
       />
     </div>
   );

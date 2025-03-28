@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import type {
   ContextOptions,
+  ExampleOutputFormat,
   ExampleSettingValue,
   ShowcaseExample,
 } from "../types.js";
@@ -13,6 +14,8 @@ export interface ProviderProps {
   defaultValues: Record<number, Record<string, ExampleSettingValue>>;
   /** The children to render, which will have access to the config context */
   children: ReactNode;
+
+  outputFormats?: ExampleOutputFormat[];
 }
 
 export type UseProviderStateProps = Omit<ProviderProps, "children">;
