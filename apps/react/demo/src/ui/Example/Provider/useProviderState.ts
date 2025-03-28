@@ -4,10 +4,10 @@ import type { UseProviderStateProps, UseProviderStateResult } from "./types.js";
 
 /**
  * Hook to manage the state of the provider
- * @param items
  */
 const useProviderState = ({
   items,
+  defaultValues,
 }: UseProviderStateProps): UseProviderStateResult => {
   // Default to the first item if available
   const [activeExampleIndex, setActiveExampleIndex] = useState(0);
@@ -47,18 +47,22 @@ const useProviderState = ({
     for (const control of activeExample.controls) {
       setValue(
         control.name,
-        control.value !== undefined ? control.value : control.defaultValue,
+        control.value !== undefined
+          ? control.value
+          : defaultValues[activeExampleIndex][control.name],
       );
     }
-  }, [activeExample, setValue]);
+  }, [activeExample, setValue, defaultValues, activeExampleIndex]);
 
   useEffect(() => {
     // When form state changes, synchronize the form state values with the example control's values.
     // This allows the form's state to be recovered when switching between examples.
     for (const control of activeExample.controls) {
-      control.value = formState[control.name];
+      control.value =
+        formState[control.name] ||
+        defaultValues[activeExampleIndex][control.name];
     }
-  }, [formState, activeExample]);
+  }, [formState, activeExample, defaultValues, activeExampleIndex]);
 
   return useMemo(
     () => ({

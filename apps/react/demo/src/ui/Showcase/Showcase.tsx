@@ -1,26 +1,34 @@
 import { SHOWCASE_EXAMPLES } from "data/index.js";
+import { useMemo } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import { Example } from "../Example/index.js";
 
 const Showcase = () => {
+  const defaultValues = useMemo(
+    () =>
+      SHOWCASE_EXAMPLES.map((example) =>
+        Object.fromEntries(
+          example.controls.map((control) => [
+            control.name,
+            // TODO read initial value from URL query params
+            control.defaultValue,
+          ]),
+        ),
+      ),
+    [],
+  );
+
   const methods = useForm({
     mode: "onChange",
-    defaultValues: Object.fromEntries(
-      // Todo use query parameters to figure out which example to show
-      SHOWCASE_EXAMPLES[0].controls.map((control) => [
-        control.name,
-        control.defaultValue,
-      ]),
-    ),
+    // TODO read the active example from URL query params
+    defaultValues: defaultValues[0],
   });
 
   return (
     <FormProvider {...methods}>
-      <Example items={SHOWCASE_EXAMPLES}>
-        <div>
-          <Example.Renderer />
-          <Example.Controls />
-        </div>
+      <Example items={SHOWCASE_EXAMPLES} defaultValues={defaultValues}>
+        <Example.Renderer />
+        <Example.Controls />
       </Example>
     </FormProvider>
   );

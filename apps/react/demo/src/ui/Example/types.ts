@@ -6,19 +6,19 @@ import type { ControlsProps, RendererProps } from "./common/index.js";
 export type ExampleSettingValue = number | string;
 export type ExampleOutputFormat = "css";
 
-export interface ExampleSetting<TValue extends ExampleSettingValue = string>
-  extends FieldProps {
-  defaultValue?: TValue;
-  label: string;
+export interface ExampleControlField extends FieldProps {
+  /** Formats for which output is disabled */
   disabledOutputFormats?: {
     [key in ExampleOutputFormat]?: boolean;
   };
+  /** Transformer function to apply to output values */
   transformer?: (value: ExampleSettingValue) => ExampleSettingValue;
+  /**
+   * A default value for the control field.
+   * This is not directly consumed by the field, but it is used to set the initial value in the form state.
+   */
+  defaultValue?: ExampleSettingValue;
 }
-
-export type ExampleControl = {
-  [TValue in ExampleSettingValue]: ExampleSetting<TValue>;
-}[ExampleSettingValue];
 
 /** An example to be showcased. Contains an example's metadata, controls/settings, and which component it is bound to. */
 export interface ShowcaseExample {
@@ -33,7 +33,7 @@ export interface ShowcaseExample {
    * The `value` property within these initial configs is often ignored, as the
    * state initialization will typically set `value` based on `default`.
    */
-  controls: ExampleControl[];
+  controls: ExampleControlField[];
 }
 
 export type ExampleComponent = ((props: ProviderProps) => ReactElement) & {
