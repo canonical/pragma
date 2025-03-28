@@ -1,5 +1,5 @@
+import { SHOWCASE_EXAMPLES } from "data/index.js";
 import { FormProvider, useForm } from "react-hook-form";
-import { SHOWCASE_EXAMPLES } from "../../data/index.js";
 import { Example } from "../Example/index.js";
 
 const Showcase = () => {

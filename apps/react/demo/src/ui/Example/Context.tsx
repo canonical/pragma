@@ -1,6 +1,6 @@
 import { createContext } from "react";
-import type { ProviderValue } from "./Provider/index.js";
+import type { ContextOptions } from "./types.js";
 
-const Context = createContext<ProviderValue | undefined>(undefined);
+const Context = createContext<ContextOptions | undefined>(undefined);
 
 export default Context;

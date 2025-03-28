@@ -1,5 +1,5 @@
 import type { FieldProps } from "@canonical/react-ds-core-form";
-import type { ReactElement } from "react";
+import type { Dispatch, ReactElement, SetStateAction } from "react";
 import type { ProviderProps } from "./Provider/types.js";
 import type { ControlsProps, RendererProps } from "./common/index.js";
 
@@ -20,11 +20,8 @@ export type ExampleControl = {
   [TValue in ExampleSettingValue]: ExampleSetting<TValue>;
 }[ExampleSettingValue];
 
-/**
- * Defines the initial configuration required to set up a showcase example.
- * This is typically used when initializing the context state via the Provider's `items` prop.
- */
-export interface ShowcaseExampleOpts {
+/** An example to be showcased. Contains an example's metadata, controls/settings, and which component it is bound to. */
+export interface ShowcaseExample {
   /** Unique identifier name */
   name: string;
   /** User-friendly description */
@@ -43,3 +40,17 @@ export type ExampleComponent = ((props: ProviderProps) => ReactElement) & {
   Controls: (props: ControlsProps) => ReactElement | null;
   Renderer: (props: RendererProps) => ReactElement | null;
 };
+
+/** The value of the config context */
+export interface ContextOptions {
+  /** The current active example name */
+  activeExampleIndex?: number;
+  /** The function to set the active example name. Use this to change which example is currently active. */
+  setActiveExampleIndex: Dispatch<SetStateAction<number>>;
+  /** All examples that can be controlled by this provider */
+  allExamples: ShowcaseExample[];
+  /** The currently active example's parameters */
+  activeExample: ShowcaseExample;
+  // biome-ignore lint/suspicious/noExplicitAny: fixme later
+  output: { [key in ExampleOutputFormat]: any };
+}

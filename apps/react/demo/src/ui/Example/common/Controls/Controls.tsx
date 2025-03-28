@@ -3,8 +3,7 @@ import type { ControlsProps } from "./types.js";
 import "./styles.css";
 import { Button, TooltipArea } from "@canonical/react-ds-core";
 import { Field } from "@canonical/react-ds-core-form";
-import { useConfig } from "../../hooks/index.js";
-import { useExampleControls } from "./useExampleControls/index.js";
+import { useConfig, useExampleControls } from "../../hooks/index.js";
 
 const componentCssClassname = "ds example-controls";
 

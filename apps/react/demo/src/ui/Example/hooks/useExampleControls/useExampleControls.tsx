@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from "react";
-import { useConfig } from "../../../hooks/index.js";
+import { useConfig } from "../index.js";
 import type { UseExampleControlsResult } from "./types.js";
 
 const useExampleControls = (): UseExampleControlsResult => {

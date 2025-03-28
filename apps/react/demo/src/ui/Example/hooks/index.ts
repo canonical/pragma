@@ -1,1 +1,2 @@
-export * from "./useConfig/index.js";
+export { default as useConfig } from "./useConfig.js";
+export * from "./useExampleControls/index.js";

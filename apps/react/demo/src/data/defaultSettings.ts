@@ -12,7 +12,6 @@ export const FONT_CONTROL: (props: Partial<ExampleSetting>) => ExampleControl =
     name: "--font-family",
     label: "Font family",
     inputType: "select",
-    value: defaultValue,
     defaultValue,
     options,
   });
@@ -28,7 +27,6 @@ export const FONT_SIZE_CONTROL: (
   name: "--font-size",
   inputType: "range",
   label: "Font size",
-  value: defaultValue,
   defaultValue,
   min,
   max,
@@ -47,7 +45,6 @@ export const LINE_HEIGHT_CONTROL: (
   name: "--line-height",
   inputType: "range",
   label: "Line height",
-  value: defaultValue,
   defaultValue,
   min,
   max,
