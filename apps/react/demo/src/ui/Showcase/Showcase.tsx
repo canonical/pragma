@@ -1,7 +1,7 @@
 import { SHOWCASE_EXAMPLES } from "data/index.js";
 import { useMemo } from "react";
 import { FormProvider, useForm } from "react-hook-form";
-import { Example } from "../Example/index.js";
+import { Example } from "./common/index.js";
 
 const Showcase = () => {
   const defaultValues = useMemo(

@@ -1,10 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useFormContext, useWatch } from "react-hook-form";
-import type {
-  UseProviderStateProps,
-  UseProviderStateResult,
-} from "../Provider/index.js";
 import type { ExampleOutputFormat, Output } from "../types.js";
+import type { UseProviderStateProps, UseProviderStateResult } from "./types.js";
 
 /**
  * Hook to manage the state of the provider

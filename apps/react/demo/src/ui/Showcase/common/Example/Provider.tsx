@@ -1,5 +1,5 @@
-import Context from "../Context.js";
-import { useProviderState } from "../hooks/index.js";
+import Context from "./Context.js";
+import { useProviderState } from "./hooks/index.js";
 import type { ProviderProps } from "./types.js";
 
 const Provider = ({

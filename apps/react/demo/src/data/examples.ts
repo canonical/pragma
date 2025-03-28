@@ -1,8 +1,8 @@
 import {
   ButtonExample,
   TypographicSpecimen,
-} from "../ui/Example/common/index.js";
-import type { ShowcaseExample } from "../ui/Example/index.js";
+} from "ui/Showcase/common/Example/common/index.js";
+import type { ShowcaseExample } from "../ui/index.js";
 import DEFAULT_CONTROLS from "./defaultSettings.js";
 
 export const SHOWCASE_EXAMPLES: ShowcaseExample[] = [

@@ -1,4 +1,4 @@
-import type { ExampleControlField } from "../ui/Example/index.js";
+import type { ExampleControlField } from "../ui/index.js";
 
 export const FONT_CONTROL = ({
   defaultValue = "Arial",

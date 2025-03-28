@@ -1,11 +1,38 @@
 import type { FieldProps } from "@canonical/react-ds-core-form";
-import type { Dispatch, ReactElement, SetStateAction } from "react";
-import type { ProviderProps } from "./Provider/types.js";
+import type { Dispatch, ReactElement, ReactNode, SetStateAction } from "react";
 import type { ControlsProps, RendererProps } from "./common/index.js";
 
 export type ExampleSettingValue = number | string;
 export type ExampleOutputFormat = "css";
 
+/** The value of the config context */
+export interface ContextOptions {
+  /** The current active example name */
+  activeExampleIndex?: number;
+  /** The function to set the active example name. Use this to change which example is currently active. */
+  setActiveExampleIndex: Dispatch<SetStateAction<number>>;
+  /** All examples that can be controlled by this provider */
+  allExamples: ShowcaseExample[];
+  /** The currently active example's parameters */
+  activeExample: ShowcaseExample;
+
+  output: Output;
+  handleCopyOutput: (format: ExampleOutputFormat) => void;
+  handlePrevExample: () => void;
+  handleNextExample: () => void;
+}
+
+/** The context provider props for the config provider */
+export interface ProviderProps {
+  /** The examples that can be controlled by this provider */
+  items: ShowcaseExample[];
+  /** The default values for each example. Mapping of example index to control name to default vaulue. */
+  defaultValues: Record<number, Record<string, ExampleSettingValue>>;
+  /** The children to render, which will have access to the config context */
+  children: ReactNode;
+
+  outputFormats?: ExampleOutputFormat[];
+}
 export interface ExampleControlField extends FieldProps {
   /** Formats for which output is disabled */
   disabledOutputFormats?: {
@@ -43,20 +70,3 @@ export type ExampleComponent = ((props: ProviderProps) => ReactElement) & {
 
 // biome-ignore lint/suspicious/noExplicitAny: Output types could have any shape
 export type Output = { [key in ExampleOutputFormat]?: any };
-
-/** The value of the config context */
-export interface ContextOptions {
-  /** The current active example name */
-  activeExampleIndex?: number;
-  /** The function to set the active example name. Use this to change which example is currently active. */
-  setActiveExampleIndex: Dispatch<SetStateAction<number>>;
-  /** All examples that can be controlled by this provider */
-  allExamples: ShowcaseExample[];
-  /** The currently active example's parameters */
-  activeExample: ShowcaseExample;
-
-  output: Output;
-  handleCopyOutput: (format: ExampleOutputFormat) => void;
-  handlePrevExample: () => void;
-  handleNextExample: () => void;
-}
