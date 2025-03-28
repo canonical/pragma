@@ -14,7 +14,12 @@ const useProviderState = ({
   // Default to the first item if available
   const [activeExampleIndex, setActiveExampleIndex] = useState(0);
   const { defaultValues, examples } = useGlobalForm();
-  const { setValue, getValues } = useFormContext();
+  const { setValue, getValues, watch } = useFormContext();
+
+  useEffect(() => {
+    // Currently, changes to simple-changes and select fields don't cause re-renders unless we do this.
+    watch();
+  }, [watch]);
 
   const activeExample = useMemo(
     () => examples[activeExampleIndex],
