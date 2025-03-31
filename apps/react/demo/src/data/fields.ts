@@ -1,6 +1,8 @@
+/** Global field settings for commonly-used fields. */
+
 import type { ExampleControlField } from "../ui/index.js";
 
-export const FONT_CONTROL: ExampleControlField = {
+export const FONT_FAMILY_FIELD: ExampleControlField = {
   name: "--font-family",
   label: "Font family",
   inputType: "select",
@@ -12,7 +14,7 @@ export const FONT_CONTROL: ExampleControlField = {
   ],
 };
 
-export const FONT_SIZE_CONTROL: ExampleControlField = {
+export const FONT_SIZE_FIELD: ExampleControlField = {
   name: "--font-size",
   inputType: "range",
   label: "Font size",
@@ -23,7 +25,7 @@ export const FONT_SIZE_CONTROL: ExampleControlField = {
   transformer: (fontSize) => `${fontSize}px`,
 };
 
-export const LINE_HEIGHT_CONTROL: ExampleControlField = {
+export const LINE_HEIGHT_FIELD: ExampleControlField = {
   name: "--line-height",
   inputType: "range",
   label: "Line height",
@@ -33,14 +35,10 @@ export const LINE_HEIGHT_CONTROL: ExampleControlField = {
   step: 0.5,
 };
 
-/**
- * Returns the default controls.
- * Clones the controls so that examples can have their own state.
- */
-const DEFAULT_CONTROLS: ExampleControlField[] = [
-  FONT_CONTROL,
-  FONT_SIZE_CONTROL,
-  LINE_HEIGHT_CONTROL,
+const DEFAULT_FIELDS: ExampleControlField[] = [
+  FONT_FAMILY_FIELD,
+  FONT_SIZE_FIELD,
+  LINE_HEIGHT_FIELD,
 ];
 
-export default DEFAULT_CONTROLS;
+export default DEFAULT_FIELDS;
