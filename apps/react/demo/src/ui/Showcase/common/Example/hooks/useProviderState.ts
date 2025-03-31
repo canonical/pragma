@@ -1,7 +1,7 @@
 import { ORIGINAL_VAR_NAME_KEY } from "data/index.js";
-import { useGlobalForm } from "hooks/index.js";
+import { useExampleRHFInterface } from "hooks/index.js";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useFormContext } from "react-hook-form";
+import { useFormContext, useWatch } from "react-hook-form";
 import type { ExampleOutputFormat, Output } from "../types.js";
 import type { UseProviderStateProps, UseProviderStateResult } from "./types.js";
 
@@ -13,13 +13,10 @@ const useProviderState = ({
 }: UseProviderStateProps): UseProviderStateResult => {
   // Default to the first item if available
   const [activeExampleIndex, setActiveExampleIndex] = useState(0);
-  const { defaultValues, examples } = useGlobalForm();
-  const { setValue, getValues, watch } = useFormContext();
+  const { defaultValues, examples } = useExampleRHFInterface();
+  const { setValue, getValues } = useFormContext();
 
-  useEffect(() => {
-    // Currently, changes to simple-changes and select fields don't cause re-renders unless we do this.
-    watch();
-  }, [watch]);
+  const formState = useWatch();
 
   const activeExample = useMemo(
     () => examples[activeExampleIndex],
@@ -45,21 +42,21 @@ const useProviderState = ({
       outputFormats.reduce((acc, format: ExampleOutputFormat) => {
         acc[format] = Object.fromEntries(
           activeExample.controls
-            .filter((control) => !control.disabledOutputFormats?.[format])
+            .filter(
+              (control) =>
+                !control.disabledOutputFormats?.[format] &&
+                control[ORIGINAL_VAR_NAME_KEY],
+            )
             .map((control) => {
-              const {
-                [ORIGINAL_VAR_NAME_KEY]: name,
-                name: formStateKey,
-                transformer,
-              } = control;
-              const rawVal = getValues(formStateKey);
+              const { [ORIGINAL_VAR_NAME_KEY]: name, transformer } = control;
+              const rawVal = formState[activeExample.name]?.[name as string];
               const val = transformer ? transformer(rawVal) : rawVal;
               return [name, val];
             }),
         );
         return acc;
       }, {} as Output),
-    [outputFormats, activeExample, getValues],
+    [outputFormats, activeExample, formState],
   );
 
   const handleCopyOutput = useCallback(

@@ -1,1 +1,1 @@
-export * from "./useGlobalForm/index.js";
+export * from "./useExampleRHFInterface/index.js";

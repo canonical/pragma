@@ -1,6 +1,6 @@
 import { Button } from "@canonical/react-ds-core";
 import { useMemo } from "react";
-import type { ShowcaseComponent } from "../../types.js";
+import type { ShowcaseComponent } from "ui/index.js";
 const ButtonExample: ShowcaseComponent = ({ numButtons }) => {
   const buttons = useMemo(() => {
     return Array.from({ length: numButtons }, (_, i) => (

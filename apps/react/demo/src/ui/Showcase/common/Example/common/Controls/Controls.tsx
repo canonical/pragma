@@ -43,15 +43,17 @@ const Controls = ({ id, className, style }: ControlsProps): ReactElement => {
           <div className="inputs">
             {activeExample.controls.map(
               ({
+                name,
                 defaultValue,
                 transformer,
                 disabledOutputFormats,
-                ...control
+                ...fieldProps
               }) => (
                 <Field
-                  key={control.name}
+                  name={name}
+                  key={name}
                   unregisterOnUnmount={false}
-                  {...control}
+                  {...fieldProps}
                 />
               ),
             )}

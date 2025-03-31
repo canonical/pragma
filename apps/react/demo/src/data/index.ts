@@ -1,1 +1,2 @@
-export * from "./examples.js";
+export * from "./defaultSettings.js";
+export * from "./examples/index.js";

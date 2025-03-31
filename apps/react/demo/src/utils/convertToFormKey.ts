@@ -1,5 +1,3 @@
-import { casing } from "@canonical/utils";
-
 /**
  * Converts a list of domains to a form key.
  * Note: When using "." as a separator, the react-hook-form library will nest the form state by each .
@@ -9,16 +7,16 @@ import { casing } from "@canonical/utils";
  * @param domains - The domains to convert.
  * @example
  * ```ts
- * toGlobalFormStateKey("Typographic Specimen", "--font-size");
+ * convertToFormKey("Typographic Specimen", "--font-size");
  * // Returns "TypographicSpecimen.FontSize"
  * // Causes a form structure like this to be created:
  * // { TypographicSpecimen: { FontSize: "value" } }
  * ```
  * @returns The form key.
  */
-const toGlobalFormStateKey = (...domains: string[]) => {
+const convertToFormKey = (...domains: string[]) => {
   const delim = ".";
   return domains.map((domain) => domain.replaceAll(delim, "_")).join(delim);
 };
 
-export default toGlobalFormStateKey;
+export default convertToFormKey;

@@ -1,6 +1,6 @@
 import { RouterProvider, createRouter } from "@tanstack/react-router";
+import { useExampleRHFInterface } from "hooks/index.js";
 import { FormProvider } from "react-hook-form";
-import { useGlobalForm } from "./hooks/index.js";
 import { routeTree } from "./routeTree.gen.js";
 
 const router = createRouter({ routeTree });
@@ -12,7 +12,7 @@ declare module "@tanstack/react-router" {
 }
 
 function App() {
-  const { methods } = useGlobalForm();
+  const { methods } = useExampleRHFInterface();
 
   return (
     <FormProvider {...methods}>

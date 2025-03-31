@@ -4,7 +4,7 @@ const componentCssClassname = "ds example-renderer";
 import root from "react-shadow";
 
 import { useWatch } from "react-hook-form";
-import { toGlobalFormStateKey } from "util/index.js";
+import { toGlobalFormStateKey } from "utils/index.js";
 import { useConfig } from "../../hooks/index.js";
 import shadowCss from "./shadow-styles.css?raw";
 

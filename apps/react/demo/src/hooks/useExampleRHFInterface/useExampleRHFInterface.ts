@@ -1,16 +1,13 @@
+import { ORIGINAL_VAR_NAME_KEY, SHOWCASE_EXAMPLES } from "data/index.js";
 import { useMemo } from "react";
 import { useForm } from "react-hook-form";
-import { ORIGINAL_VAR_NAME_KEY, SHOWCASE_EXAMPLES } from "../../data/index.js";
-import { toGlobalFormStateKey } from "../../util/index.js";
+import { toGlobalFormStateKey } from "utils/index.js";
 import type { FormState, useGlobalFormResult } from "./types.js";
 
 /**
- * State management for a global form
- * This allows app state to be managed in a single location and be persisted across components
- * todo should this be a context provider instead? Currently `application.tsx` uses this and embeds the rest of the app inside
- * It's unlikely it would be used elsewhere, so the value of making it a context provider is unclear
+ * Converts the `SHOWCASE_EXAMPLES` to a format expected by React Hook Form, and provides some global form state data
  */
-const useGlobalForm = (): useGlobalFormResult => {
+const useExampleRHFInterface = (): useGlobalFormResult => {
   const examples = useMemo(
     () =>
       SHOWCASE_EXAMPLES.map((example) => ({
@@ -52,4 +49,4 @@ const useGlobalForm = (): useGlobalFormResult => {
   );
 };
 
-export default useGlobalForm;
+export default useExampleRHFInterface;

@@ -1,13 +1,13 @@
 import type { Meta, StoryObj } from "@storybook/react";
+import { useExampleRHFInterface } from "hooks/index.js";
 import { FormProvider } from "react-hook-form";
-import { useGlobalForm } from "../../hooks/index.js";
 import Component from "./Showcase.js";
 
 const meta = {
   title: "Showcase",
   component: Component,
   decorators: (Story) => {
-    const { methods } = useGlobalForm();
+    const { methods } = useExampleRHFInterface();
 
     return (
       <FormProvider {...methods}>

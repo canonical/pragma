@@ -1,9 +1,7 @@
-import {
-  ButtonExample,
-  TypographicSpecimen,
-} from "ui/Showcase/common/Example/common/index.js";
-import type { ShowcaseExample } from "../ui/index.js";
-import DEFAULT_CONTROLS from "./defaultSettings.js";
+import type { ShowcaseExample } from "../../ui/index.js";
+import DEFAULT_CONTROLS from "../defaultSettings.js";
+import { ButtonExample } from "./ButtonExample/index.js";
+import { TypographicSpecimen } from "./TypographicSpecimen/index.js";
 
 export const ORIGINAL_VAR_NAME_KEY = "data-original-var-name";
 
