@@ -17,11 +17,14 @@ export interface ContextOptions {
   allExamples: ShowcaseExample[];
   /** The currently active example's parameters */
   activeExample: ShowcaseExample;
-
+  /** The output values (e.g. CSS) for the currently active example */
   output: Output;
-  handleCopyOutput: (format: ExampleOutputFormat) => void;
-  handlePrevExample: () => void;
-  handleNextExample: () => void;
+  /** Function to copy the output values of a format  */
+  copyOutput: (format: ExampleOutputFormat) => void;
+  /** Switches to the previous example */
+  activatePrevExample: () => void;
+  /** Switches to the next example */
+  activateNextExample: () => void;
 }
 
 /** The context provider props for the config provider */

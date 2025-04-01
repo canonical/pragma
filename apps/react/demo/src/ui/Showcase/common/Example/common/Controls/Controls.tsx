@@ -11,9 +11,9 @@ const Controls = ({ id, className, style }: ControlsProps): ReactElement => {
   const {
     activeExample,
     output,
-    handlePrevExample,
-    handleNextExample,
-    handleCopyOutput,
+    activatePrevExample,
+    activateNextExample,
+    copyOutput,
   } = useConfig();
 
   return (
@@ -29,8 +29,8 @@ const Controls = ({ id, className, style }: ControlsProps): ReactElement => {
     >
       <div>
         {/*TODO use icon buttons when icon is implemented*/}
-        <Button label={"Prev"} type="button" onClick={handlePrevExample} />
-        <Button label="Next" type="button" onClick={handleNextExample} />
+        <Button label={"Prev"} type="button" onClick={activatePrevExample} />
+        <Button label="Next" type="button" onClick={activateNextExample} />
       </div>
       <TooltipArea
         // TODO use new form components when ready
@@ -67,7 +67,7 @@ const Controls = ({ id, className, style }: ControlsProps): ReactElement => {
         label="Copy"
         style={{ marginLeft: "auto" }}
         disabled={!output?.css}
-        onClick={() => handleCopyOutput("css")}
+        onClick={() => copyOutput("css")}
       />
     </div>
   );

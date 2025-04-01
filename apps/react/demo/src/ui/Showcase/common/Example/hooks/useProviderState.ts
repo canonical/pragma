@@ -23,20 +23,23 @@ const useProviderState = ({
     [activeExampleIndex, examples],
   );
 
-  const handlePrevExample = useCallback(() => {
+  /** Switches to the previous example */
+  const activatePrevExample = useCallback(() => {
     setActiveExampleIndex((currentIndex) => {
       const nextIndex = (currentIndex - 1) % examples.length;
       return nextIndex < 0 ? examples.length - 1 : nextIndex;
     });
   }, [examples]);
 
-  const handleNextExample = useCallback(() => {
+  /** Switches to the next example */
+  const activateNextExample = useCallback(() => {
     setActiveExampleIndex((currentIndex) => {
       const nextIndex = (currentIndex + 1) % examples.length;
       return nextIndex < 0 ? examples.length - 1 : nextIndex;
     });
   }, [examples]);
 
+  /** The output values for the active example */
   const output: Output = useMemo(
     () =>
       outputFormats.reduce((acc, format: ExampleOutputFormat) => {
@@ -59,7 +62,8 @@ const useProviderState = ({
     [outputFormats, activeExample, formState],
   );
 
-  const handleCopyOutput = useCallback(
+  /** Copy the output values to the clipboard */
+  const copyOutput = useCallback(
     (format: ExampleOutputFormat) => {
       if (typeof window === "undefined" || !output[format]) return;
       navigator.clipboard.writeText(
@@ -90,19 +94,19 @@ const useProviderState = ({
       setActiveExampleIndex,
       activeExample,
       allExamples: examples,
-      handleCopyOutput,
-      handlePrevExample,
-      handleNextExample,
+      copyOutput,
+      activatePrevExample,
+      activateNextExample,
       output,
     }),
     [
       activeExampleIndex,
       activeExample,
       examples,
+      copyOutput,
+      activatePrevExample,
+      activateNextExample,
       output,
-      handleCopyOutput,
-      handlePrevExample,
-      handleNextExample,
     ],
   );
 };
