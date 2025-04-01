@@ -2,17 +2,18 @@ import { ORIGINAL_VAR_NAME_KEY, SHOWCASE_EXAMPLES } from "data/index.js";
 import { useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { toGlobalFormStateKey } from "utils/index.js";
+import type { ShowcaseExample } from "../../ui/index.js";
 import type { FormState, useGlobalFormResult } from "./types.js";
 
 /**
  * Converts the `SHOWCASE_EXAMPLES` to a format expected by React Hook Form, and provides some global form state data
  */
 const useExampleRHFInterface = (): useGlobalFormResult => {
-  const examples = useMemo(
+  const examples: ShowcaseExample[] = useMemo(
     () =>
       SHOWCASE_EXAMPLES.map((example) => ({
         ...example,
-        controls: example.controls.map((control) => ({
+        fields: example.fields.map((control) => ({
           ...control,
           // Convert the control name to a global form state key
           name: toGlobalFormStateKey(example.name, control.name),
@@ -30,8 +31,8 @@ const useExampleRHFInterface = (): useGlobalFormResult => {
   const defaultValues = useMemo(
     () =>
       examples.reduce((acc, example) => {
-        for (const control of example.controls) {
-          acc[control.name] = control.defaultValue;
+        for (const field of example.fields) {
+          acc[field.name] = field.defaultValue;
         }
         return acc;
       }, {} as FormState),

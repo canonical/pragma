@@ -64,7 +64,7 @@ export interface ShowcaseExample {
    * The `value` property within these initial configs is often ignored, as the
    * state initialization will typically set `value` based on `default`.
    */
-  controls: ExampleControlField[];
+  fields: ExampleControlField[];
 }
 
 export type ExampleComponent = ((props: ProviderProps) => ReactElement) & {

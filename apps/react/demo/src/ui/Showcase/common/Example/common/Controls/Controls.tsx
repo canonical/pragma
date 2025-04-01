@@ -41,7 +41,7 @@ const Controls = ({ id, className, style }: ControlsProps): ReactElement => {
         autoFit={true}
         Message={
           <div className="inputs">
-            {activeExample.controls.map(
+            {activeExample.fields.map(
               ({
                 name,
                 defaultValue,

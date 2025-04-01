@@ -41,7 +41,7 @@ const useProviderState = ({
     () =>
       outputFormats.reduce((acc, format: ExampleOutputFormat) => {
         acc[format] = Object.fromEntries(
-          activeExample.controls
+          activeExample.fields
             .filter(
               (control) =>
                 !control.disabledOutputFormats?.[format] &&
@@ -73,7 +73,7 @@ const useProviderState = ({
 
   useEffect(() => {
     // When the active example changes, set the form values to the new example's values
-    for (const control of activeExample.controls) {
+    for (const control of activeExample.fields) {
       const { name: formStateKey } = control;
       const curVal = getValues(formStateKey);
       const setValTo =
