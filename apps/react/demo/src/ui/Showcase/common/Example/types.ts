@@ -1,7 +1,7 @@
 import type { FieldProps } from "@canonical/react-ds-core-form";
+import { ORIGINAL_VAR_NAME_KEY } from "data/index.js";
+import type { FormState } from "hooks/index.js";
 import type { Dispatch, ReactElement, ReactNode, SetStateAction } from "react";
-import { ORIGINAL_VAR_NAME_KEY } from "../../../../data/index.js";
-import type { FormState } from "../../../../hooks/index.js";
 import type { ControlsProps, RendererProps } from "./common/index.js";
 
 export type ExampleSettingValue = number | string;

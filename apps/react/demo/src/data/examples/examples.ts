@@ -5,8 +5,6 @@ import {
   TypographicSpecimenFields,
 } from "./TypographicSpecimen/index.js";
 
-export const ORIGINAL_VAR_NAME_KEY = "data-original-var-name";
-
 export const SHOWCASE_EXAMPLES: ShowcaseExample[] = [
   {
     name: "Typographic Specimen",
