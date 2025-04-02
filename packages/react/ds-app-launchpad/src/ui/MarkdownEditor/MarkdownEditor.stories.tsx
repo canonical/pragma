@@ -22,6 +22,14 @@ export const Default: Story = {
   },
 };
 
+export const WithCheckboxPreviewSwitch: Story = {
+  args: {
+    previewSwitchMode: "checkbox",
+    placeholder: "Add a comment here...",
+    rows: 5,
+  },
+};
+
 export const ReadOnlyMarkdownViewer: Story = {
   args: {
     hideToolbar: true,

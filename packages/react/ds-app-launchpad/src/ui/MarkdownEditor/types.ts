@@ -31,7 +31,9 @@ export type MarkdownEditorProps = {
   textareaStyle?: React.CSSProperties;
   /** Preview pane styles */
   previewStyle?: React.CSSProperties;
-
+  /** Control how the switch to preview mode looks */
+  previewSwitchMode?: "tab" | "checkbox";
+  /** On preview pane overflow, show a button to expand the preview pane */
   emptyInputMessage?: string;
   toolbarBarLabelMessage?: string;
   ToolbarTextFormattingGroupLabelMessage?: string;

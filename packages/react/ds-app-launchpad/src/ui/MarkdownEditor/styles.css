@@ -4,6 +4,8 @@
   --markdown-editor-editor-color: black;
   --markdown-editor-editor-border-color: #7b7b7b;
 
+  --markdown-editor-top-bar-background-color: white;
+
   --markdown-editor-tabs-hover-color: black;
   --markdown-editor-tabs-hover-background-color: #f2f2f2;
   --markdown-editor-tabs-inactive-color: #737373;
@@ -32,6 +34,18 @@
     align-items: center;
     flex-wrap: nowrap;
     margin-bottom: -1px;
+    background-color: var(--markdown-editor-top-bar-background-color);
+
+    > .preview-switch {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      font-size: 0.75rem;
+      font-weight: 550;
+      cursor: pointer;
+      padding: var(--markdown-editor-toolbar-vert-padding)
+        var(--markdown-editor-toolbar-horizontal-padding);
+    }
   }
 
   & > .editor-content {

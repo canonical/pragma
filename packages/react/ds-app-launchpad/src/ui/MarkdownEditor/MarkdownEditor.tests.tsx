@@ -91,4 +91,10 @@ describe("MarkdownEditor", () => {
       expect(handleEditModeChange).toHaveBeenCalledWith("preview");
     });
   });
+
+  it("shows a checkbox to switch between write and preview modes", () => {
+    render(<MarkdownEditor previewSwitchMode="checkbox" />);
+
+    expect(screen.getByRole("checkbox")).toBeInTheDocument();
+  });
 });

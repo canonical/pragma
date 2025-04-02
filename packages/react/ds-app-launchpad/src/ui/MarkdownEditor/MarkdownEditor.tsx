@@ -1,8 +1,7 @@
 import hljs from "highlight.js";
-/* @canonical/generator-ds 0.9.0-experimental.4 */
-import { forwardRef } from "react";
 import type React from "react";
 import {
+  forwardRef,
   useCallback,
   useEffect,
   useImperativeHandle,
@@ -43,6 +42,7 @@ const MarkdownEditor = forwardRef(
       placeholder,
       hideToolbar = false,
       hidePreview = false,
+      previewSwitchMode = "tab",
       borderless = false,
       editMode: controlledEditMode,
       onEditModeChange: controlledOnEditModeChange,
@@ -134,7 +134,7 @@ const MarkdownEditor = forwardRef(
           .join(" ")}
       >
         <div className="top-bar">
-          {!hidePreview && (
+          {!hidePreview && previewSwitchMode === "tab" && (
             <ViewModeTabs
               editMode={editMode}
               onEditModeChange={handleEditModeChange}
@@ -204,6 +204,22 @@ const MarkdownEditor = forwardRef(
                 </Toolbar.Button>
               </Toolbar.Group>
             </Toolbar>
+          )}
+          {!hidePreview && previewSwitchMode === "checkbox" && (
+            <div className="preview-switch">
+              <input
+                type="checkbox"
+                id={`${id}-preview-switch`}
+                checked={editMode === "preview"}
+                onChange={(e) => {
+                  handleEditModeChange(
+                    e.target.checked ? "preview" : "write",
+                    "click",
+                  );
+                }}
+              />
+              <label htmlFor={`${id}-preview-switch`}>Preview</label>
+            </div>
           )}
         </div>
 
