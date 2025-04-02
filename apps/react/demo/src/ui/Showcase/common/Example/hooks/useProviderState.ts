@@ -46,12 +46,12 @@ const useProviderState = ({
         acc[format] = Object.fromEntries(
           activeExample.fields
             .filter(
-              (control) =>
-                !control.disabledOutputFormats?.[format] &&
-                control[ORIGINAL_VAR_NAME_KEY],
+              (field) =>
+                !field.disabledOutputFormats?.[format] &&
+                field[ORIGINAL_VAR_NAME_KEY],
             )
-            .map((control) => {
-              const { [ORIGINAL_VAR_NAME_KEY]: name, transformer } = control;
+            .map((field) => {
+              const { [ORIGINAL_VAR_NAME_KEY]: name, transformer } = field;
               const rawVal = formState[activeExample.name]?.[name as string];
               const val = transformer ? transformer(rawVal) : rawVal;
               return [name, val];
