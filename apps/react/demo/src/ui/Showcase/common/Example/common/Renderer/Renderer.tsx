@@ -1,17 +1,11 @@
 import type { RendererProps } from "./types.js";
-
 const componentCssClassname = "ds example-renderer";
 import root from "react-shadow";
-
-import { useWatch } from "react-hook-form";
-import { toGlobalFormStateKey } from "utils/index.js";
 import { useConfig } from "../../hooks/index.js";
 import shadowCss from "./shadow-styles.css?raw";
 
 const Renderer = ({ style, className }: RendererProps) => {
-  const { activeExample, output } = useConfig();
-  const { [toGlobalFormStateKey(activeExample.name)]: componentConfigState } =
-    useWatch();
+  const { activeExample, output, activeExampleSettings } = useConfig();
 
   return (
     <div
@@ -24,7 +18,7 @@ const Renderer = ({ style, className }: RendererProps) => {
         <root.div style={output.css} mode={"closed"}>
           <style>{shadowCss}</style>
           <div className="ds shadow-container">
-            <activeExample.Component {...componentConfigState} />
+            <activeExample.Component {...activeExampleSettings} />
           </div>
         </root.div>
       )}

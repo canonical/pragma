@@ -75,13 +75,23 @@ const useProviderState = ({
     [output],
   );
 
+  /** The settings for the active example */
+  const activeExampleSettings = useMemo(
+    () => formState[activeExample.name],
+    [formState, activeExample],
+  );
+
   useEffect(() => {
     // When the active example changes, set the form values to the new example's values
-    for (const control of activeExample.fields) {
-      const { name: formStateKey } = control;
+    for (const field of activeExample.fields) {
+      const { name: formStateKey, [ORIGINAL_VAR_NAME_KEY]: originalFieldName } =
+        field;
       const curVal = getValues(formStateKey);
-      const setValTo =
-        curVal !== undefined ? curVal : defaultValues[formStateKey];
+      let setValTo = curVal;
+      // Fallback to default value if value is being cleared
+      if ((setValTo === undefined || setValTo === null) && originalFieldName) {
+        setValTo = defaultValues[activeExample.name]?.[originalFieldName];
+      }
       if (curVal !== setValTo) {
         setValue(formStateKey, setValTo);
       }
@@ -98,6 +108,7 @@ const useProviderState = ({
       activatePrevExample,
       activateNextExample,
       output,
+      activeExampleSettings,
     }),
     [
       activeExampleIndex,
@@ -107,6 +118,7 @@ const useProviderState = ({
       activatePrevExample,
       activateNextExample,
       output,
+      activeExampleSettings,
     ],
   );
 };

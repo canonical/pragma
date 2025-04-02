@@ -30,11 +30,16 @@ const useExampleRHFInterface = (): useGlobalFormResult => {
 
   const defaultValues = useMemo(
     () =>
-      examples.reduce((acc, example) => {
-        for (const field of example.fields) {
-          acc[field.name] = field.defaultValue;
-        }
-        return acc;
+      examples.reduce((exampleAcc, example) => {
+        // Top level of the default values is a dictionary of example names to their sets of fields
+        exampleAcc[example.name] = example.fields.reduce((fieldAcc, field) => {
+          // Second level of the default values is a set of fields and default values for each field
+          const { [ORIGINAL_VAR_NAME_KEY]: fieldName } = field;
+          if (!fieldName) return fieldAcc;
+          fieldAcc[fieldName] = field.defaultValue;
+          return fieldAcc;
+        }, {} as FormState);
+        return exampleAcc;
       }, {} as FormState),
     [examples],
   );

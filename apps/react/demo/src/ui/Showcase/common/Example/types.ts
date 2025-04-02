@@ -25,6 +25,8 @@ export interface ContextOptions {
   activatePrevExample: () => void;
   /** Switches to the next example */
   activateNextExample: () => void;
+  /** The settings for the current active example */
+  activeExampleSettings: FormState;
 }
 
 /** The context provider props for the config provider */
