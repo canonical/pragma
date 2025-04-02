@@ -13,16 +13,16 @@ const useExampleRHFInterface = (): useGlobalFormResult => {
     () =>
       SHOWCASE_EXAMPLES.map((example) => ({
         ...example,
-        fields: example.fields.map((control) => ({
-          ...control,
+        fields: example.fields.map((field) => ({
+          ...field,
           // Convert the control name to a global form state key
-          name: toGlobalFormStateKey(example.name, control.name),
+          name: toGlobalFormStateKey(example.name, field.name),
           // Preserve the control's original (non-domain-scoped) name so it can be used in output
           // The `name` needs to be set to the global form state key in order for updates to propagate
           // However, we also need to be able to reference the original name for output
           // Another way of doing this may be to create a fn that undoes the global form state key transformation
           // but, it's probably less computation and error-prone to just store the original name here.
-          [ORIGINAL_VAR_NAME_KEY]: control.name,
+          [ORIGINAL_VAR_NAME_KEY]: field.name,
         })),
       })),
     [],
