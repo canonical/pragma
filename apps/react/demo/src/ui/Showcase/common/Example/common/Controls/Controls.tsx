@@ -3,7 +3,7 @@ import type { ControlsProps } from "./types.js";
 import "./styles.css";
 import { Button, TooltipArea } from "@canonical/react-ds-core";
 import { Field } from "@canonical/react-ds-core-form";
-import { useConfig } from "../../hooks/index.js";
+import { useShowcaseContext } from "../../hooks/index.js";
 
 const componentCssClassname = "ds example-controls";
 
@@ -14,7 +14,7 @@ const Controls = ({ id, className, style }: ControlsProps): ReactElement => {
     activatePrevExample,
     activateNextExample,
     copyOutput,
-  } = useConfig();
+  } = useShowcaseContext();
 
   return (
     <div

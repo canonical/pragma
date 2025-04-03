@@ -1,11 +1,12 @@
 import type { RendererProps } from "./types.js";
 const componentCssClassname = "ds example-renderer";
 import root from "react-shadow";
-import { useConfig } from "../../hooks/index.js";
+import { useShowcaseContext } from "../../hooks/index.js";
 import shadowCss from "./shadow-styles.css?raw";
 
 const Renderer = ({ style, className }: RendererProps) => {
-  const { activeExample, output, activeExampleFormValues } = useConfig();
+  const { activeExample, output, activeExampleFormValues } =
+    useShowcaseContext();
 
   return (
     <div
