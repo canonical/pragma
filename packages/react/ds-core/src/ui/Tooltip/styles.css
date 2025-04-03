@@ -60,6 +60,7 @@
   display: inline-block;
   transition: opacity 0.1s ease-in-out;
   position: fixed;
+  overflow: auto;
 
   &[aria-hidden="true"] {
     opacity: 0;
