@@ -17,7 +17,7 @@ export const FONT_FAMILY_FIELD: ExampleControlField = {
 export const FONT_SIZE_FIELD: ExampleControlField = {
   name: "--font-size",
   inputType: "range",
-  label: "Font size",
+  label: "Root font size",
   defaultValue: 16,
   min: 12,
   max: 24,
@@ -28,12 +28,12 @@ export const FONT_SIZE_FIELD: ExampleControlField = {
 export const LINE_HEIGHT_FIELD: ExampleControlField = {
   name: "--line-height",
   inputType: "range",
-  label: "Line height",
-  defaultValue: 24,
-  min: 1,
-  max: 32,
-  step: 1,
-  transformer: (lineHeight) => `${lineHeight}px`,
+  label: "Root line height",
+  defaultValue: 1.5,
+  min: 0.125,
+  max: 12,
+  step: 0.125,
+  transformer: (lineHeight) => `${lineHeight}rem`,
 };
 
 const DEFAULT_FIELDS: ExampleControlField[] = [
