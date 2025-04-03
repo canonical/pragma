@@ -1,6 +1,6 @@
 import type { FieldProps } from "@canonical/react-ds-core-form";
 import { ORIGINAL_VAR_NAME_KEY } from "data/index.js";
-import type { FormState } from "hooks/index.js";
+import type { FormValues } from "hooks/index.js";
 import type { Dispatch, ReactElement, ReactNode, SetStateAction } from "react";
 import type { ControlsProps, RendererProps } from "./common/index.js";
 
@@ -26,7 +26,7 @@ export interface ContextOptions {
   /** Switches to the next example */
   activateNextExample: () => void;
   /** The settings for the current active example */
-  activeExampleSettings: FormState;
+  activeExampleFormValues: FormValues;
 }
 
 /** The context provider props for the config provider */
@@ -54,7 +54,7 @@ export interface ExampleControlField extends FieldProps {
 }
 
 /** The actual component that is rendered for an example. */
-export type ShowcaseComponent = (state: FormState) => ReactElement;
+export type ShowcaseComponent = (state: FormValues) => ReactElement;
 
 /** An example to be showcased. Contains an example's metadata, controls/settings, and which component it is bound to. */
 export interface ShowcaseExample {

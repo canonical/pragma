@@ -16,7 +16,7 @@ const useProviderState = ({
   const { defaultValues, examples } = useExampleRHFInterface();
   const { setValue, getValues } = useFormContext();
 
-  const formState = useWatch();
+  const formValues = useWatch();
 
   const activeExample = useMemo(
     () => examples[activeExampleIndex],
@@ -52,14 +52,14 @@ const useProviderState = ({
             )
             .map((field) => {
               const { [ORIGINAL_VAR_NAME_KEY]: name, transformer } = field;
-              const rawVal = formState[activeExample.name]?.[name as string];
+              const rawVal = formValues[activeExample.name]?.[name as string];
               const val = transformer ? transformer(rawVal) : rawVal;
               return [name, val];
             }),
         );
         return acc;
       }, {} as Output),
-    [outputFormats, activeExample, formState],
+    [outputFormats, activeExample, formValues],
   );
 
   /** Copy the output values to the clipboard */
@@ -76,9 +76,9 @@ const useProviderState = ({
   );
 
   /** The settings for the active example */
-  const activeExampleSettings = useMemo(
-    () => formState[activeExample.name],
-    [formState, activeExample],
+  const activeExampleFormValues = useMemo(
+    () => formValues[activeExample.name],
+    [formValues, activeExample],
   );
 
   useEffect(() => {
@@ -108,7 +108,7 @@ const useProviderState = ({
       activatePrevExample,
       activateNextExample,
       output,
-      activeExampleSettings,
+      activeExampleFormValues,
     }),
     [
       activeExampleIndex,
@@ -118,7 +118,7 @@ const useProviderState = ({
       activatePrevExample,
       activateNextExample,
       output,
-      activeExampleSettings,
+      activeExampleFormValues,
     ],
   );
 };

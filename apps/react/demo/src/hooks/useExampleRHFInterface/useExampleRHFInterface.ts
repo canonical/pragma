@@ -3,7 +3,7 @@ import { useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { toGlobalFormStateKey } from "utils/index.js";
 import type { ShowcaseExample } from "../../ui/index.js";
-import type { FormState, useGlobalFormResult } from "./types.js";
+import type { FormValues, useGlobalFormResult } from "./types.js";
 
 /**
  * Converts the `SHOWCASE_EXAMPLES` to a format expected by React Hook Form, and provides some global form state data
@@ -38,9 +38,9 @@ const useExampleRHFInterface = (): useGlobalFormResult => {
           if (!fieldName) return fieldAcc;
           fieldAcc[fieldName] = field.defaultValue;
           return fieldAcc;
-        }, {} as FormState);
+        }, {} as FormValues);
         return exampleAcc;
-      }, {} as FormState),
+      }, {} as FormValues),
     [examples],
   );
 
