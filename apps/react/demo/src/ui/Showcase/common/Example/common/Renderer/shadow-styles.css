@@ -1,3 +1,6 @@
+/* Allows examples to use our font faces from within the shadow DOM */
+@import "@canonical/styles-primitives-canonical/src/font-faces.css";
+
 .ds.shadow-container {
   all: initial;
   isolation: isolate;

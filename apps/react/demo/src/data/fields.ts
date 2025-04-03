@@ -10,7 +10,7 @@ export const FONT_FAMILY_FIELD: ExampleControlField = {
   options: [
     { value: "Arial", label: "Arial" },
     { value: "Times New Roman", label: "Times New Roman" },
-    { value: "Ubuntu", label: "Ubuntu" },
+    { value: "Ubuntu variable", label: "Ubuntu" },
   ],
 };
 
@@ -29,10 +29,11 @@ export const LINE_HEIGHT_FIELD: ExampleControlField = {
   name: "--line-height",
   inputType: "range",
   label: "Line height",
-  defaultValue: 1.5,
-  min: 0.5,
-  max: 4,
-  step: 0.5,
+  defaultValue: 24,
+  min: 1,
+  max: 32,
+  step: 1,
+  transformer: (lineHeight) => `${lineHeight}px`,
 };
 
 const DEFAULT_FIELDS: ExampleControlField[] = [
