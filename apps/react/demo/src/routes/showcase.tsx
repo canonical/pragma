@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Showcase } from "../ui/index.js";
+import type { FormValues } from "../hooks/index.js";
+import { Showcase, type ShowcaseSearchParams } from "../ui/index.js";
 
 export const Page = Showcase;
 
@@ -10,4 +11,10 @@ export const Page = Showcase;
 export const Route = createFileRoute("/showcase")({
   // Use the re-export from above
   component: Page,
+  validateSearch: (search: Record<string, unknown>): ShowcaseSearchParams => {
+    return {
+      exampleId: search.exampleId as string,
+      settingValues: search.settingValues as FormValues,
+    };
+  },
 });

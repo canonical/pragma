@@ -7,13 +7,15 @@ import {
 
 export const SHOWCASE_EXAMPLES: ShowcaseExample[] = [
   {
-    name: "Typographic Specimen",
+    id: "typographic-specimen",
+    label: "Typographic Specimen",
     description: "A typographic specimen with configurable font settings.",
     Component: TypographicSpecimen,
     fields: TypographicSpecimenFields,
   },
   {
-    name: "Button",
+    id: "button",
+    label: "Button",
     description: "A button example with font settings.",
     Component: ButtonExample,
     fields: ButtonExampleFields,

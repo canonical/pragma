@@ -16,7 +16,7 @@ const useExampleRHFInterface = (): useGlobalFormResult => {
         fields: example.fields.map((field) => ({
           ...field,
           // Convert the control name to a global form state key
-          name: toGlobalFormStateKey(example.name, field.name),
+          name: toGlobalFormStateKey(example.id, field.name),
           // Preserve the control's original (non-domain-scoped) name so it can be used in output
           // The `name` needs to be set to the global form state key in order for updates to propagate
           // However, we also need to be able to reference the original name for output
@@ -32,7 +32,7 @@ const useExampleRHFInterface = (): useGlobalFormResult => {
     () =>
       examples.reduce((exampleAcc, example) => {
         // Top level of the default values is a dictionary of example names to their sets of fields
-        exampleAcc[example.name] = example.fields.reduce((fieldAcc, field) => {
+        exampleAcc[example.id] = example.fields.reduce((fieldAcc, field) => {
           // Second level of the default values is a set of fields and default values for each field
           const { [ORIGINAL_VAR_NAME_KEY]: fieldName } = field;
           if (!fieldName) return fieldAcc;

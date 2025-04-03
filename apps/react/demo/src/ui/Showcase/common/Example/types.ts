@@ -29,12 +29,19 @@ export interface ContextOptions {
   activeExampleFormValues: FormValues;
 }
 
+export interface ShowcaseSearchParams {
+  exampleId?: string;
+  settingValues?: FormValues;
+}
+
 /** The context provider props for the config provider */
 export interface ProviderProps {
   /** The children to render, which will have access to the config context */
   children: ReactNode;
 
   outputFormats?: ExampleOutputFormat[];
+
+  queryParams?: ShowcaseSearchParams;
 }
 export interface ExampleControlField extends FieldProps {
   name: string;
@@ -58,8 +65,10 @@ export type ShowcaseComponent = (state: FormValues) => ReactElement;
 
 /** An example to be showcased. Contains an example's metadata, controls/settings, and which component it is bound to. */
 export interface ShowcaseExample {
-  /** Unique identifier name */
-  name: string;
+  /** Unique identifier */
+  id: string;
+  /** A user-friendly name for the example */
+  label: string;
   /** User-friendly description */
   description: string;
   /** The component to render */
