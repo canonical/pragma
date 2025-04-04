@@ -18,17 +18,17 @@ const TypographicSpecimen: ShowcaseComponent = () => {
 
         <div className="top-section-wrapper">
           <div className="column">
-            <h1>This is an h1 heading</h1>
+            <h1>This is an H1 heading</h1>
             <hr />
-            <h2>THIS IS AN H2 HEADING</h2>
+            <h2>This is an H2 heading</h2>
             <hr />
-            <h3>This is an h3 heading</h3>
+            <h3>This is an H3 heading</h3>
             <hr />
-            <h4>THIS IS AN H4 HEADING</h4>
+            <h4>This is an H4 heading</h4>
             <hr />
-            <h5>THIS IS AN H5 HEADING</h5>
+            <h5>This is an H5 heading</h5>
             <hr />
-            <h6>This is an h6 heading</h6>
+            <h6>This is an H6 heading</h6>
           </div>
 
           <div className="column">
@@ -38,7 +38,7 @@ const TypographicSpecimen: ShowcaseComponent = () => {
               liking press submit. Your customizations will update the vanilla
               config.
             </p>
-            <h4>THIS IS AN H4 HEADING</h4>
+            <h4>This is an H4 heading</h4>
             <p>
               Lorem ipsum dolor sit amet, consectetur adipiscing elit. Praesent
               finibus quam molestie elit porttitor faucibus. Duis eu orci
@@ -49,7 +49,7 @@ const TypographicSpecimen: ShowcaseComponent = () => {
               Aenean mauris metus, elementum id rhoncus eget, scelerisque ut
               lectus.
             </p>
-            <h5>THIS IS AN H5 HEADING</h5>
+            <h5>This is an H5 heading</h5>
             <p>
               Lorem ipsum dolor sit amet, consectetur adipiscing elit. Praesent
               finibus quam molestie elit porttitor faucibus. Duis eu orci
