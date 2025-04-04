@@ -2,7 +2,7 @@ import { ORIGINAL_VAR_NAME_KEY } from "data/index.js";
 import { useExampleRHFInterface } from "hooks/index.js";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useFormContext, useWatch } from "react-hook-form";
-import { toGlobalFormStateKey } from "../../../../../utils/index.js";
+import { convertToFormKey } from "utils/index.js";
 import type { ExampleOutputFormat, Output } from "../types.js";
 import type { UseProviderStateProps, UseProviderStateResult } from "./types.js";
 
@@ -43,7 +43,7 @@ const useProviderState = ({
     const { settingValues, exampleId } = queryParams;
     if (!settingValues || exampleId !== activeExample?.id) return;
     for (const settingName in settingValues) {
-      const key = toGlobalFormStateKey(activeExample.id, settingName);
+      const key = convertToFormKey(exampleId, settingName);
       const val = settingValues[settingName];
       if (
         val === undefined ||

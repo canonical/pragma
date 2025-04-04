@@ -1,7 +1,7 @@
 import { ORIGINAL_VAR_NAME_KEY, SHOWCASE_EXAMPLES } from "data/index.js";
 import { useMemo } from "react";
 import { useForm } from "react-hook-form";
-import { toGlobalFormStateKey } from "utils/index.js";
+import { convertToFormKey } from "utils/index.js";
 import type { ShowcaseExample } from "../../ui/index.js";
 import type { FormValues, useGlobalFormResult } from "./types.js";
 
@@ -16,7 +16,7 @@ const useExampleRHFInterface = (): useGlobalFormResult => {
         fields: example.fields.map((field) => ({
           ...field,
           // Convert the control name to a global form state key
-          name: toGlobalFormStateKey(example.id, field.name),
+          name: convertToFormKey(example.id, field.name),
           // Preserve the control's original (non-domain-scoped) name so it can be used in output
           // The `name` needs to be set to the global form state key in order for updates to propagate
           // However, we also need to be able to reference the original name for output
