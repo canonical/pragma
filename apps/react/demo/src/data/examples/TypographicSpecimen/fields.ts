@@ -1,16 +1,10 @@
-import type {
-  ExampleControlField,
-  ExampleSettingValue,
-} from "../../../ui/index.js";
-import DEFAULT_FIELDS, {
+import type { ExampleControlField } from "../../../ui/index.js";
+import {
   FONT_FAMILY_FIELD,
   FONT_SIZE_FIELD,
   LINE_HEIGHT_FIELD,
 } from "../../fields.js";
-
-// TBD is it better to keep common transformers like this in some constants/utils file, to separately declare them in each field, or some other way?
-const REM_TRANSFORMER = (value: ExampleSettingValue) => `${value}rem`;
-const PX_TRANSFORMER = (value: ExampleSettingValue) => `${value}px`;
+import { PX_TRANSFORMER, REM_TRANSFORMER } from "../transformers.js";
 
 const fields: ExampleControlField[] = [
   {

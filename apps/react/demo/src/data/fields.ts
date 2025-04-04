@@ -1,6 +1,7 @@
 /** Global field settings for commonly-used fields. */
 
 import type { ExampleControlField } from "../ui/index.js";
+import { PX_TRANSFORMER, REM_TRANSFORMER } from "./examples/transformers.js";
 
 export const FONT_FAMILY_FIELD: ExampleControlField = {
   name: "--font-family",
@@ -22,7 +23,7 @@ export const FONT_SIZE_FIELD: ExampleControlField = {
   min: 12,
   max: 24,
   step: 1,
-  transformer: (fontSize) => `${fontSize}px`,
+  transformer: PX_TRANSFORMER,
 };
 
 export const LINE_HEIGHT_FIELD: ExampleControlField = {
@@ -33,7 +34,7 @@ export const LINE_HEIGHT_FIELD: ExampleControlField = {
   min: 0.125,
   max: 12,
   step: 0.125,
-  transformer: (lineHeight) => `${lineHeight}rem`,
+  transformer: REM_TRANSFORMER,
 };
 
 const DEFAULT_FIELDS: ExampleControlField[] = [
