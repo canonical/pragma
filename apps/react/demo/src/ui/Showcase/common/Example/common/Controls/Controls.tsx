@@ -74,7 +74,7 @@ const Controls = ({ id, className, style }: ControlsProps): ReactElement => {
       </TooltipArea>
       <Button
         type="button"
-        label="Copy"
+        label="Copy CSS"
         style={{ marginLeft: "auto" }}
         disabled={!output?.css}
         onClick={() => copyOutput("css")}
