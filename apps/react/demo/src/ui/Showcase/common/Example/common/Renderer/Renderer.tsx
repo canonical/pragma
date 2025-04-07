@@ -13,7 +13,7 @@ const Renderer = ({ style, className }: RendererProps) => {
       style={style}
       className={[componentCssClassname, className].filter(Boolean).join(" ")}
     >
-      <h4>{activeExample.name}</h4>
+      <h3>{activeExample.name}</h3>
       <p>{activeExample.description}</p>
       {activeExample?.Component && (
         <root.div style={output.css} mode={"closed"}>

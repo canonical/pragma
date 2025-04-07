@@ -42,13 +42,13 @@ const Controls = ({ id, className, style }: ControlsProps): ReactElement => {
         autoFit={true}
         Message={
           <>
-            {activeExample.fields.map(
+            <h4>Example settings</h4>
             <Button
               label={"Reset to defaults"}
               type={"button"}
               onClick={resetActiveExample}
             />
-                ...fieldProps
+            <hr />
             <div className="inputs">
               {activeExample.fields.map(
                 ({
