@@ -17,6 +17,8 @@ export interface ContextOptions {
   allExamples: ShowcaseExample[];
   /** The currently active example's parameters */
   activeExample: ShowcaseExample;
+  /** Resets the active example to its default state */
+  resetActiveExample: () => void;
   /** The output values (e.g. CSS) for the currently active example */
   output: Output;
   /** Function to copy the output values of a format  */

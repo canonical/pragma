@@ -81,6 +81,17 @@ const useProviderState = ({
     [formValues, activeExample],
   );
 
+  /** Resets the active example to its default state */
+  const resetActiveExample = useCallback(() => {
+    for (const field of activeExample.fields) {
+      if (!field[ORIGINAL_VAR_NAME_KEY]) continue;
+      setValue(
+        field.name,
+        defaultValues[activeExample.name][field[ORIGINAL_VAR_NAME_KEY]],
+      );
+    }
+  }, [activeExample, defaultValues, setValue]);
+
   useEffect(() => {
     // When the active example changes, set the form values to the new example's values
     for (const field of activeExample.fields) {
@@ -109,6 +120,7 @@ const useProviderState = ({
       activateNextExample,
       output,
       activeExampleFormValues,
+      resetActiveExample,
     }),
     [
       activeExampleIndex,
@@ -119,6 +131,7 @@ const useProviderState = ({
       activateNextExample,
       output,
       activeExampleFormValues,
+      resetActiveExample,
     ],
   );
 };
