@@ -107,15 +107,13 @@ const CodeDiffViewer = ({
     }
   }, [AddComment, addCommentEnabled, setAddCommentEnabled]);
 
-  if (isCollapsed) {
-    return null;
-  }
-
   return (
     <div
       id={id}
       style={style}
-      className={[componentCssClassName, className].filter(Boolean).join(" ")}
+      className={[componentCssClassName, className, isCollapsed && "collapsed"]
+        .filter(Boolean)
+        .join(" ")}
     >
       {diff.hunks.map((hunk, hunkIndex) => {
         // We'll track the counters for old and new lines
