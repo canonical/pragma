@@ -2,7 +2,11 @@ import { ORIGINAL_VAR_NAME_KEY } from "data/index.js";
 import { useExampleRHFInterface } from "hooks/index.js";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useFormContext, useWatch } from "react-hook-form";
-import type { ExampleOutputFormat, Output } from "../types.js";
+import type {
+  ExampleOutputFormat,
+  FieldElementScopeName,
+  Output,
+} from "../types.js";
 import type { UseProviderStateProps, UseProviderStateResult } from "./types.js";
 
 /**
@@ -15,6 +19,9 @@ const useProviderState = ({
   const [activeExampleIndex, setActiveExampleIndex] = useState(0);
   const { defaultValues, examples } = useExampleRHFInterface();
   const { setValue, getValues } = useFormContext();
+  const [activeElementScope, setActiveElementScope] = useState<
+    FieldElementScopeName | undefined
+  >(undefined);
 
   const formValues = useWatch();
 
@@ -45,14 +52,10 @@ const useProviderState = ({
       outputFormats.reduce((acc, format: ExampleOutputFormat) => {
         acc[format] = Object.fromEntries(
           activeExample.fields
-            .filter(
-              (field) =>
-                !field.disabledOutputFormats?.[format] &&
-                field[ORIGINAL_VAR_NAME_KEY],
-            )
+            .filter((field) => !field.disabledOutputFormats?.[format])
             .map((field) => {
               const { [ORIGINAL_VAR_NAME_KEY]: name, transformer } = field;
-              const rawVal = formValues[activeExample.name]?.[name as string];
+              const rawVal = formValues[activeExample.name]?.[name];
               const val = transformer ? transformer(rawVal) : rawVal;
               return [name, val];
             }),
@@ -84,7 +87,6 @@ const useProviderState = ({
   /** Resets the active example to its default state */
   const resetActiveExample = useCallback(() => {
     for (const field of activeExample.fields) {
-      if (!field[ORIGINAL_VAR_NAME_KEY]) continue;
       setValue(
         field.name,
         defaultValues[activeExample.name][field[ORIGINAL_VAR_NAME_KEY]],
@@ -121,6 +123,8 @@ const useProviderState = ({
       output,
       activeExampleFormValues,
       resetActiveExample,
+      activeElementScope,
+      setActiveElementScope,
     }),
     [
       activeExampleIndex,
@@ -132,6 +136,7 @@ const useProviderState = ({
       output,
       activeExampleFormValues,
       resetActiveExample,
+      activeElementScope,
     ],
   );
 };

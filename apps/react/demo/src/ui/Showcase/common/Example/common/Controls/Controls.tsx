@@ -1,9 +1,10 @@
 import type { ReactElement } from "react";
 import type { ControlsProps } from "./types.js";
 import "./styles.css";
-import { Button, TooltipArea } from "@canonical/react-ds-core";
+import { Button, Chip, TooltipArea } from "@canonical/react-ds-core";
 import { Field } from "@canonical/react-ds-core-form";
 import { useShowcaseContext } from "../../hooks/index.js";
+import { SUPPORTED_ELEMENT_SCOPES } from "../../../../../../data/index.js";
 
 const componentCssClassname = "ds example-controls";
 
@@ -15,6 +16,8 @@ const Controls = ({ id, className, style }: ControlsProps): ReactElement => {
     activateNextExample,
     copyOutput,
     resetActiveExample,
+    activeElementScope,
+    setActiveElementScope,
   } = useShowcaseContext();
 
   return (
@@ -49,23 +52,46 @@ const Controls = ({ id, className, style }: ControlsProps): ReactElement => {
               onClick={resetActiveExample}
             />
             <hr />
+            <div className="elements">
+              <Chip
+                value="All"
+                appearance={!activeElementScope ? "information" : "neutral"}
+                onClick={() => setActiveElementScope(undefined)}
+              />
+              {/*TODO move this filter to the provider*/}
+              {SUPPORTED_ELEMENT_SCOPES.filter(scope => activeExample.fields.some(field => field.elementScope === scope)).map((scope) => (
+                <Chip
+                  key={`scope-${scope}`}
+                  value={scope.toUpperCase()}
+                  appearance={activeElementScope === scope ? "information" : "neutral"}
+                  onClick={() => setActiveElementScope(scope)}
+                />
+              ))}
+            </div>
             <div className="inputs">
-              {activeExample.fields.map(
-                ({
-                  name,
-                  defaultValue,
-                  transformer,
-                  disabledOutputFormats,
-                  ...fieldProps
-                }) => (
-                  <Field
-                    name={name}
-                    key={name}
-                    unregisterOnUnmount={false}
-                    {...fieldProps}
-                  />
-                ),
-              )}
+              {activeExample.fields
+                .filter(
+                  (field) =>
+                    (!activeElementScope && !field.elementScope) ||
+                    field.elementScope === activeElementScope,
+                )
+                .map(
+                  ({
+                    name,
+                    defaultValue,
+                    transformer,
+                    disabledOutputFormats,
+                    elementScope,
+                    ...fieldProps
+                  }) => (
+                    <Field
+                      name={name}
+                      key={name}
+                      unregisterOnUnmount={false}
+                      {...fieldProps}
+                    />
+                  ),
+                )}
             </div>
           </>
         }

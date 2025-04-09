@@ -1,7 +1,7 @@
 import DEFAULT_FIELDS from "data/fields.js";
-import type { ExampleControlField } from "ui/index.js";
+import type { ExampleControlFieldOpts } from "ui/index.js";
 
-const fields: ExampleControlField[] = [
+const fields: ExampleControlFieldOpts[] = [
   ...DEFAULT_FIELDS,
   {
     name: "numButtons",

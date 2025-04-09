@@ -11,3 +11,9 @@
     margin-bottom: var(--spacing-vertical-small);
   }
 }
+
+.elements {
+  display: flex;
+  flex-wrap: wrap;
+  max-width: 250px;
+}

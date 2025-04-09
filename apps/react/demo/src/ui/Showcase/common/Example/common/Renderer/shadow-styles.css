@@ -6,6 +6,7 @@
   isolation: isolate;
 }
 
+/* Global styles that apply to the entire example */
 * {
   font-family: var(--font-family);
   font-size: var(--font-size);

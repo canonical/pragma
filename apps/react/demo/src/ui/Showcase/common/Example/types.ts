@@ -7,6 +7,13 @@ import type { ControlsProps, RendererProps } from "./common/index.js";
 export type ExampleSettingValue = number | string;
 export type ExampleOutputFormat = "css";
 
+export type FieldElementScopeName = keyof HTMLElementTagNameMap;
+
+export interface FieldElementScopeOpts extends FieldProps {
+  scopeName: FieldElementScopeName;
+  defaultValue?: ExampleSettingValue;
+}
+
 /** The value of the config context */
 export interface ContextOptions {
   /** The current active example name */
@@ -29,6 +36,11 @@ export interface ContextOptions {
   activateNextExample: () => void;
   /** The settings for the current active example */
   activeExampleFormValues: FormValues;
+
+  activeElementScope?: FieldElementScopeName;
+  setActiveElementScope: Dispatch<
+    SetStateAction<FieldElementScopeName | undefined>
+  >;
 }
 
 /** The context provider props for the config provider */
@@ -38,28 +50,33 @@ export interface ProviderProps {
 
   outputFormats?: ExampleOutputFormat[];
 }
-export interface ExampleControlField extends FieldProps {
+
+export interface ExampleControlFieldOpts extends FieldProps {
   name: string;
+
+  /** Transformer function to apply to output values */
+  transformer?: (value: ExampleSettingValue) => ExampleSettingValue;
+
   /** Formats for which output is disabled */
   disabledOutputFormats?: {
     [key in ExampleOutputFormat]?: boolean;
   };
-  /** Transformer function to apply to output values */
-  transformer?: (value: ExampleSettingValue) => ExampleSettingValue;
-  /**
-   * A default value for the control field.
-   * This is not directly consumed by the field, but it is used to set the initial value in the form state.
-   */
-  defaultValue?: ExampleSettingValue;
 
-  [ORIGINAL_VAR_NAME_KEY]?: string;
+  elementScopes?: FieldElementScopeOpts[];
+}
+
+export interface ExampleControlField
+  extends Omit<ExampleControlFieldOpts, "elementScopes"> {
+  elementScope?: FieldElementScopeName | "all";
+
+  [ORIGINAL_VAR_NAME_KEY]: string;
 }
 
 /** The actual component that is rendered for an example. */
 export type ShowcaseComponent = (state: FormValues) => ReactElement;
 
 /** An example to be showcased. Contains an example's metadata, controls/settings, and which component it is bound to. */
-export interface ShowcaseExample {
+export interface ShowcaseExampleOpts {
   /** Unique identifier name */
   name: string;
   /** User-friendly description */
@@ -69,8 +86,12 @@ export interface ShowcaseExample {
   /**
    * Array defining the controls and their initial/default configuration for this example.
    * The `value` property within these initial configs is often ignored, as the
-   * state initialization will typically set `value` based on `default`.
+   * state initialization will typically set `value` based on `defaultValue`.
    */
+  fields: ExampleControlFieldOpts[];
+}
+
+export interface ShowcaseExample extends Omit<ShowcaseExampleOpts, "fields"> {
   fields: ExampleControlField[];
 }
 
