@@ -1,0 +1,25 @@
+{
+  "source": ["src/**/*.json"],
+  "platforms": {
+    "cssPrimitives": {
+      "buildPath": "dist/css/",
+      "transformGroup": "css",
+      "files": [
+        {
+          "destination": "primitives-canonical.css",
+          "format": "css/variables"
+        }
+      ]
+    },
+    "cssModes": {
+      "buildPath": "dist/css/",
+      "transformGroup": "css",
+      "files": [
+        {
+          "destination": "modes-[name].css",
+          "format": "css/variables"
+        }
+      ]
+    }
+  }
+}
