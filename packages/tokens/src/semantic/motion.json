@@ -1,0 +1,28 @@
+{
+  "normal-motion": {
+    "$extensions": {
+      "selector": ".normal-motion"
+    },
+    "animation-duration": {
+      "$value": "300ms",
+      "$type": "duration"
+    },
+    "transition-timing-function": {
+      "$value": "ease-in-out",
+      "$type": "cubicBezier"
+    }
+  },
+  "reduced-motion": {
+    "$extensions": {
+      "selector": ".reduced-motion"
+    },
+    "animation-duration": {
+      "$value": "0ms",
+      "$type": "duration"
+    },
+    "transition-timing-function": {
+      "$value": "linear",
+      "$type": "cubicBezier"
+    }
+  }
+}

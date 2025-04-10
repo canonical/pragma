@@ -21,8 +21,8 @@
   "scripts": {
     "build:old": "style-dictionary build",
     "build:primitives": "style-dictionary build --config config.primitives.js",
-    "build:modes": "style-dictionary build --config config.modes.js --verbose",
-    "build": "npm run build:primitives && npm run build:modes",
+    "build:semantic": "style-dictionary build --config config.semantic.js --verbose",
+    "build": "npm run build:primitives && npm run build:semantic",
     "check": "bun run check:biome",
     "check:fix": "bun run check:biome:fix",
     "check:biome": "biome check src *.json",
