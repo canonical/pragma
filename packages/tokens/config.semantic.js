@@ -65,7 +65,7 @@ export default {
 	platforms: {
 		css: {
 			transforms: ["name/semantic-local"], // Only transform token names, not values
-			buildPath: "dist/",
+			buildPath: "dist/css/",
 			files: [
 				{
 					destination: "semantic.css",
