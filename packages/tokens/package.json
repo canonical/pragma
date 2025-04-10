@@ -25,8 +25,8 @@
     "build": "npm run build:primitives && npm run build:semantic",
     "check": "bun run check:biome",
     "check:fix": "bun run check:biome:fix",
-    "check:biome": "biome check src *.json",
-    "check:biome:fix": "biome check --write src *.json"
+    "check:biome": "biome check src *.json *.js",
+    "check:biome:fix": "biome check --write src *.json *.js"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
