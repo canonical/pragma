@@ -1,6 +1,5 @@
 import StyleDictionary from "style-dictionary";
 
-// Register the custom formatter that wraps WRAPPED_FUNC
 StyleDictionary.registerFormat({
 	name: "css/semantic-selectors",
 	format: async ({ dictionary, options, file }) => {
@@ -38,6 +37,8 @@ StyleDictionary.registerFormat({
 				};
 
 				// Call WRAPPED_FUNC with the group-specific selector
+				// We prefer reusing the existing format function to avoid code duplication and API divergence
+				// https://github.com/amzn/style-dictionary/blob/main/lib/common/formats.js
 				const groupOutput =
 					await StyleDictionary.hooks.formats["css/variables"](parameters);
 
@@ -50,11 +51,20 @@ StyleDictionary.registerFormat({
 	},
 });
 
+StyleDictionary.registerTransform({
+	name: "name/semantic-local",
+	type: "name",
+	transform: (token) => {
+		// Use only the last part of the token's path as the variable name
+		return token.path[token.path.length - 1].replace(/ /g, "-").toLowerCase();
+	},
+});
+
 export default {
 	source: ["src/primitives/**/*.json", "src/semantic/**/*.json"],
 	platforms: {
 		css: {
-			transforms: ["name/kebab"], // Only transform token names, not values
+			transforms: ["name/semantic-local"], // Only transform token names, not values
 			buildPath: "dist/",
 			files: [
 				// {
