@@ -19,8 +19,22 @@ index e6e9670..a0c74ab 100644
 +    border-left: 2px solid var(--vf-color-accent);
 +}
  
-.fileName {
++.fileName {
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 200px;
+}
+
+@@ -30,4 +34,8 @@
+    display: flex;
+    align-items: center;
+    gap: 8px;
++   padding: 4px 8px;
++   border-radius: 4px;
++   background-color: var(--vf-color-background-secondary);
++   transition: background-color 0.2s ease;
+}
 `)[0];
 
 export const deletedFileDiffExample =

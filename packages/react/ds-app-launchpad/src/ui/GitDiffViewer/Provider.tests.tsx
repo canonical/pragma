@@ -36,7 +36,7 @@ describe("GitDiffViewer component", () => {
 
   it("renders line decorations correctly", () => {
     const lineDecorations = {
-      1: <div>Test</div>,
+      17: <div>Test</div>,
     };
     render(
       <GitDiffViewer
@@ -47,7 +47,7 @@ describe("GitDiffViewer component", () => {
         <GitDiffViewer.CodeDiffViewer />
       </GitDiffViewer>,
     );
-    expect(screen.getByText("background-color")).toBeDefined();
+    expect(screen.getByText("Test")).toBeDefined();
   });
 
   it("renders AddComment component correctly", async () => {

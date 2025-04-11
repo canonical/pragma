@@ -1,5 +1,6 @@
 import type { AllOrNone } from "@canonical/utils";
 import type React from "react";
+import type { ForwardRefExoticComponent } from "react";
 import type { CodeDiffViewerProps, FileHeaderProps } from "./common/index.js";
 
 /**
@@ -87,5 +88,7 @@ export type GitDiffViewerComponent = ((
   props: ProviderOptions,
 ) => React.ReactElement) & {
   FileHeader: (props: FileHeaderProps) => React.ReactElement | null;
-  CodeDiffViewer: (props: CodeDiffViewerProps) => React.ReactElement | null;
+  CodeDiffViewer: React.ForwardRefExoticComponent<
+    CodeDiffViewerProps & React.RefAttributes<HTMLTableElement>
+  >;
 };
