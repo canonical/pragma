@@ -6,12 +6,19 @@
   left: 0;
   bottom: 0;
 
-  & .config-button {
-    /* Configure button has collapsed margins - add margin bottom to make it consistent with other buttons */
-    margin-bottom: var(--spacing-vertical-small);
-  }
-
   & .end {
     margin-left: auto;
+  }
+
+  & .inputs-drawer-contents .setting-category .inputs {
+    display: grid;
+    --wrapper-columns: span 1;
+    grid-template-columns: repeat(auto-fit, minmax(225px, 1fr));
+    grid-column-gap: var(--spacing-horizontal-large);
+  }
+
+  & .setting-category {
+    padding: var(--spacing-vertical-medium) 0;
+    border-top: 1px solid var(--color-text-default);
   }
 }

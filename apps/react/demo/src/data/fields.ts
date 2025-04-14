@@ -1,6 +1,6 @@
 /** Global field settings for commonly-used fields. */
 
-import type { ExampleControlField } from "../ui/index.js";
+import type { ExampleControlField, FieldCategory } from "../ui/index.js";
 
 export const FONT_FAMILY_FIELD: ExampleControlField = {
   name: "--font-family",
@@ -36,10 +36,19 @@ export const LINE_HEIGHT_FIELD: ExampleControlField = {
   transformer: (lineHeight) => `${lineHeight}rem`,
 };
 
-const DEFAULT_FIELDS: ExampleControlField[] = [
-  FONT_FAMILY_FIELD,
-  FONT_SIZE_FIELD,
-  LINE_HEIGHT_FIELD,
+const DEFAULT_CATEGORIES: FieldCategory[] = [
+  {
+    label: "Typeface",
+    fields: [FONT_FAMILY_FIELD],
+  },
+  {
+    label: "Font size",
+    fields: [FONT_SIZE_FIELD],
+  },
+  {
+    label: "Line height",
+    fields: [LINE_HEIGHT_FIELD],
+  },
 ];
 
-export default DEFAULT_FIELDS;
+export default DEFAULT_CATEGORIES;

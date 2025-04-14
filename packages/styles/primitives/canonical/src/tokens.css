@@ -56,6 +56,7 @@
 
   --spacing-vertical-xsmall: 0.25rem;
   --spacing-vertical-small: 0.5rem;
+  --spacing-vertical-medium: 0.75rem;
 
   --spacing-input-margin-bottom: 0.5rem; /* TODO: needs baseline alignment https://github.com/canonical/vanilla-framework/blob/main/scss/_settings_spacing.scss#L122 */
   --spacing-input-padding-vertical: 0.5rem; /* TODO: needs to take baseline into account https://github.com/canonical/vanilla-framework/blob/main/scss/_settings_spacing.scss#L124 */

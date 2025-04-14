@@ -38,6 +38,17 @@ export interface ProviderProps {
 
   outputFormats?: ExampleOutputFormat[];
 }
+
+export interface FieldCategory {
+  label: string;
+  /**
+   * Array defining the controls and their initial/default configuration for this example.
+   * The `value` property within these initial configs is often ignored, as the
+   * state initialization will typically set `value` based on `default`.
+   */
+  fields: ExampleControlField[];
+}
+
 export interface ExampleControlField extends FieldProps {
   name: string;
   /** Formats for which output is disabled */
@@ -58,19 +69,21 @@ export interface ExampleControlField extends FieldProps {
 /** The actual component that is rendered for an example. */
 export type ShowcaseComponent = (state: FormValues) => ReactElement;
 
-/** An example to be showcased. Contains an example's metadata, controls/settings, and which component it is bound to. */
-export interface ShowcaseExample {
+/** The props for constructing a ShowcaseExample */
+export interface ShowcaseExampleOpts {
   /** Unique identifier name */
   name: string;
   /** User-friendly description */
   description: string;
   /** The component to render */
   Component: ShowcaseComponent;
-  /**
-   * Array defining the controls and their initial/default configuration for this example.
-   * The `value` property within these initial configs is often ignored, as the
-   * state initialization will typically set `value` based on `default`.
-   */
+  /** The categories of fields associated with this example */
+  fieldCategories: FieldCategory[];
+}
+
+/** A fully initialized ShowcaseExample */
+export interface ShowcaseExample extends ShowcaseExampleOpts {
+  /** A flattened array of all fields across all categories */
   fields: ExampleControlField[];
 }
 
