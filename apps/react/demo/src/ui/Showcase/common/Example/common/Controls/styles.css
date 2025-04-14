@@ -10,4 +10,8 @@
     /* Configure button has collapsed margins - add margin bottom to make it consistent with other buttons */
     margin-bottom: var(--spacing-vertical-small);
   }
+
+  & .end {
+    margin-left: auto;
+  }
 }
