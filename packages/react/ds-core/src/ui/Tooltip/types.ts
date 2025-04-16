@@ -11,14 +11,16 @@ export interface TooltipProps {
   positionElementId?: string;
   /* Class name to apply to the positioning element */
   positionElementClassName?: string;
+  /** Styles applied to the positioning element */
+  positionElementStyle?: CSSProperties;
+  /* Styles applied to the tooltip/message element */
+  messageElementStyle?: CSSProperties;
   /* ID to apply to the message element */
   messageElementId?: string;
   /* Class name to apply to the message element */
   messageElementClassName?: string;
   /* Child elements */
   children: ReactNode;
-  /* Inline styles */
-  style?: CSSProperties;
   /** Whether the tooltip is open or not */
   isOpen?: boolean;
   /** Ref to the tooltip, useful for calculating its dimensions */

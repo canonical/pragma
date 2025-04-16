@@ -14,10 +14,11 @@ const componentCssClassName = "ds tooltip";
 const Tooltip = ({
   positionElementId,
   positionElementClassName,
+  positionElementStyle,
   messageElementId,
   messageElementClassName,
+  messageElementStyle,
   children,
-  style,
   ref,
   isOpen = false,
   zIndex,
@@ -36,7 +37,9 @@ const Tooltip = ({
       onFocus={onFocus}
       role="tooltip"
       style={{
-        ...style,
+        ...positionElementStyle,
+        // This isn't strictly needed as it's already set by CSS based on `aria-hidden`, but it makes testing visibility easier.
+        visibility: isOpen ? "visible" : "hidden",
         zIndex,
       }}
     >
@@ -45,6 +48,7 @@ const Tooltip = ({
         className={[messageElementClassName, "message"]
           .filter(Boolean)
           .join(" ")}
+        style={messageElementStyle}
       >
         {children}
       </div>

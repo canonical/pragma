@@ -22,8 +22,6 @@ export interface TooltipAreaProps extends UsePopupProps, TooltipProps {
   targetElementClassName?: string;
   /** Style object applied to the target element */
   targetElementStyle?: CSSProperties;
-  /** Styles applied to the tooltip/message element */
-  messageElementStyle?: CSSProperties;
   /**
    * The element to which the tooltip should be attached.
    * This can be any valid React element.

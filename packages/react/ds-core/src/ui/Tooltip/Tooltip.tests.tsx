@@ -26,7 +26,7 @@ describe("Tooltip component", () => {
 
   it("applies style prop", async () => {
     render(
-      <Tooltip style={{ backgroundColor: "red" }} isOpen={true}>
+      <Tooltip positionElementStyle={{ backgroundColor: "red" }} isOpen={true}>
         Tooltip Content
       </Tooltip>,
     );
