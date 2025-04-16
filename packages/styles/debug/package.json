@@ -1,0 +1,38 @@
+{
+  "name": "@canonical/styles-debug",
+  "description": "Canonical's debugging styles. These are not included with the rest of the styles, but can be used for debugging purposes.",
+  "version": "0.9.0-experimental.12",
+  "main": "src/index.css",
+  "files": ["src"],
+  "author": {
+    "email": "webteam@canonical.com",
+    "name": "Canonical Webteam"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/canonical/ds25"
+  },
+  "exports": {
+    ".": {
+      "import": "./src/index.css"
+    },
+    "./baseline-grid": {
+      "import": "./src/baseline-grid.css"
+    }
+  },
+  "license": "LGPL-3.0",
+  "bugs": {
+    "url": "https://github.com/canonical/ds25/issues"
+  },
+  "homepage": "https://github.com/canonical/ds25#readme",
+  "scripts": {
+    "check": "bun run check:biome",
+    "check:fix": "bun run check:biome:fix",
+    "check:biome": "biome check",
+    "check:biome:fix": "biome check --write"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "@canonical/biome-config": "^0.9.0-experimental.12"
+  }
+}

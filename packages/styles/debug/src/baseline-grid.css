@@ -1,0 +1,28 @@
+.with-baseline-grid {
+  --addon-baseline-grid-color: var(--baseline-grid-color, rgba(255, 0, 0, 0.2));
+  --addon-baseline-height: var(--baseline-height, 0.5rem);
+  --addon-baseline-shift: var(--baseline-shift, 0);
+
+  position: relative;
+
+  &::after {
+    background: linear-gradient(
+      to top,
+      var(--addon-baseline-grid-color),
+      var(--addon-baseline-grid-color) 1px,
+      transparent 1px,
+      transparent
+    );
+    background-size: 100% var(--addon-baseline-height);
+    background-position: 0 var(--addon-baseline-shift);
+    bottom: 0;
+    content: "";
+    display: block;
+    left: 0;
+    pointer-events: none;
+    position: absolute;
+    right: 0;
+    top: 0;
+    z-index: 200;
+  }
+}

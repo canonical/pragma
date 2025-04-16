@@ -34,7 +34,8 @@
     "check:ts": "tsc --noEmit"
   },
   "dependencies": {
-    "@storybook/icons": "^1.2.10"
+    "@storybook/icons": "^1.2.10",
+    "@canonical/styles-debug": "^0.9.0-experimental.12"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",

@@ -2,6 +2,7 @@ import { withThemeByClassName } from "@storybook/addon-themes";
 import type { Preview, ReactRenderer } from "@storybook/react";
 
 import "index.css";
+import "@canonical/styles-debug/baseline-grid";
 
 const preview: Preview = {
   decorators: [
