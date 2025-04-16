@@ -22,8 +22,11 @@ const TooltipArea = ({
   targetElementId,
   targetElementClassName,
   targetElementStyle,
-  messageElementClassName,
   messageElementStyle,
+  messageElementId,
+  messageElementClassName,
+  positionElementId,
+  positionElementClassName,
   parentElement,
   autoFit,
   ...props
@@ -43,10 +46,11 @@ const TooltipArea = ({
 
   const TooltipMessageElement = (
     <Tooltip
-      id={popupId}
-      className={[
+      positionElementId={popupId}
+      messageElementId={messageElementId}
+      messageElementClassName={messageElementClassName}
+      positionElementClassName={[
         bestPosition?.positionName,
-        messageElementClassName,
         autoFit && "autofit",
       ]
         .filter(Boolean)

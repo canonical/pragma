@@ -12,9 +12,11 @@ const componentCssClassName = "ds tooltip";
  * - The [withTooltip](?path=/docs/tooltip-withtooltip--docs) HOC
  */
 const Tooltip = ({
-  id,
+  positionElementId,
+  positionElementClassName,
+  messageElementId,
+  messageElementClassName,
   children,
-  className,
   style,
   ref,
   isOpen = false,
@@ -24,20 +26,28 @@ const Tooltip = ({
 }: TooltipProps): React.ReactElement => {
   return (
     <div
-      className={[componentCssClassName, className].filter(Boolean).join(" ")}
+      id={positionElementId}
+      className={[componentCssClassName, positionElementClassName]
+        .filter(Boolean)
+        .join(" ")}
       ref={ref}
-      id={id}
       aria-hidden={!isOpen}
       onPointerEnter={onPointerEnter}
       onFocus={onFocus}
       role="tooltip"
       style={{
         ...style,
-        visibility: isOpen ? "visible" : "hidden",
         zIndex,
       }}
     >
-      {children}
+      <div
+        id={messageElementId}
+        className={[messageElementClassName, "message"]
+          .filter(Boolean)
+          .join(" ")}
+      >
+        {children}
+      </div>
     </div>
   );
 };
