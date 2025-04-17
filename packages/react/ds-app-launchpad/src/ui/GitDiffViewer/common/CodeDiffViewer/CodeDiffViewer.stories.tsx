@@ -1,6 +1,7 @@
 /* @canonical/generator-canonical-ds 0.0.1 */
 
 import type { Meta, StoryFn } from "@storybook/react";
+import { fn } from "@storybook/test";
 import * as fixtures from "../../fixtures.js";
 import { GitDiffViewer } from "../../index.js";
 import type { ProviderOptions } from "../../types.js";
@@ -55,4 +56,14 @@ InteractiveGutterWithAddComment.args = {
   lineDecorations: { 20: fixtures.commentExample },
   AddComment: fixtures.addCommentExample,
 };
+
 InteractiveGutterWithAddComment.parameters = storyOptions;
+
+export const InteractiveGutterWithClickHandler = Template.bind({});
+InteractiveGutterWithClickHandler.args = {
+  diff: fixtures.diffExample,
+  lineDecorations: { 20: fixtures.commentExample },
+  onLineClick: fn(),
+};
+
+InteractiveGutterWithClickHandler.parameters = storyOptions;

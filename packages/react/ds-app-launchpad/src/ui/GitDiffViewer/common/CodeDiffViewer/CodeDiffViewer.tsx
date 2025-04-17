@@ -14,7 +14,10 @@ import { useGitDiffViewer } from "../../hooks/index.js";
 import { DiffLine } from "./common/index.js";
 import "./HighlighTheme.css";
 import "./styles.css";
-import type { CodeDiffViewerProps } from "./types.js";
+import type {
+  CodeDiffViewerLineSelectOptions,
+  CodeDiffViewerProps,
+} from "./types.js";
 
 import updateTableWidth from "./utils/updateTableWidth.js";
 
@@ -30,6 +33,7 @@ const CodeDiffViewer = (
   {
     id,
     AddComment,
+    onLineClick,
     className,
     style,
     disableWidthCalculation = false,
@@ -39,8 +43,6 @@ const CodeDiffViewer = (
   const {
     isCollapsed,
     diff,
-    addCommentEnabled,
-    setAddCommentEnabled,
     addCommentOpenLocations,
     toggleAddCommentLocation,
     lineDecorations,
@@ -79,20 +81,25 @@ const CodeDiffViewer = (
     };
   }, [disableWidthCalculation]);
 
-  useEffect(() => {
-    if (AddComment && !addCommentEnabled) {
-      setAddCommentEnabled(true);
-    } else if (!AddComment && addCommentEnabled) {
-      setAddCommentEnabled(false);
-    }
-  }, [AddComment, addCommentEnabled, setAddCommentEnabled]);
-
   const handleCloseComment = useCallback(
     (lineNumber: number) => {
       toggleAddCommentLocation(lineNumber);
     },
     [toggleAddCommentLocation],
   );
+
+  const handleLineClick = useCallback(
+    (options: CodeDiffViewerLineSelectOptions) => {
+      onLineClick?.(options);
+      toggleAddCommentLocation(options.lineNumber);
+    },
+    [onLineClick, toggleAddCommentLocation],
+  );
+
+  const diffLineIsInteractive = useMemo(() => {
+    if (!onLineClick && !AddComment) return false;
+    return true;
+  }, [onLineClick, AddComment]);
 
   return (
     <div
@@ -137,7 +144,7 @@ const CodeDiffViewer = (
                     }
 
                     const lineNumber = lineNum2 || lineNum1 || 0;
-
+                    const diffLineNumber = hunk.diffStart + lineIndex;
                     // For rendering, if lineNum1 or lineNum2 is null,
                     // you can display e.g. '+' or '-' or an empty cell.
                     return (
@@ -150,6 +157,13 @@ const CodeDiffViewer = (
                           lineNum2={lineNum2}
                           content={highlightedLines[hunkIndex][lineIndex]}
                           type={line.type}
+                          isInteractive={diffLineIsInteractive}
+                          onLineClick={() =>
+                            handleLineClick({
+                              lineNumber,
+                              diffLineNumber,
+                            })
+                          }
                         />
 
                         {lineNum2 && lineDecorations?.[lineNum2] && (
@@ -168,7 +182,7 @@ const CodeDiffViewer = (
                               <td className="container">
                                 <AddComment
                                   lineNumber={lineNumber}
-                                  diffLineNumber={hunk.diffStart + lineIndex}
+                                  diffLineNumber={diffLineNumber}
                                   onClose={() => handleCloseComment(lineNumber)}
                                 />
                               </td>

@@ -47,8 +47,6 @@ type UserContextOptions = LineDecorationOptions &
   AllOrNone<CollapseOption>;
 
 type ManagedContextOptions = {
-  addCommentEnabled: boolean;
-  setAddCommentEnabled: (enabled: boolean) => void;
   addCommentOpenLocations: Set<number>;
   toggleAddCommentLocation: (lineNumber: number) => void;
 };

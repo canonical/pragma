@@ -1,5 +1,6 @@
 /* @canonical/generator-canonical-ds 0.0.1 */
 import type React from "react";
+import { useCallback } from "react";
 import { useGitDiffViewer } from "../../../../hooks/index.js";
 import "./styles.css";
 import type { DiffLineProps } from "./types.js";
@@ -16,15 +17,18 @@ const DiffLine = ({
   id,
   className,
   style,
+  isInteractive,
+  onLineClick,
   ...props
 }: DiffLineProps): React.ReactElement => {
-  const { wrapLines, addCommentEnabled, toggleAddCommentLocation } =
-    useGitDiffViewer();
-  const gutterIsInteractive = addCommentEnabled;
+  const { wrapLines } = useGitDiffViewer();
   const typeClass = `diff-line-${props.type}`;
 
-  const lineNumber =
-    props.type !== "hunk" ? Number(props.lineNum2 || props.lineNum1) : 0;
+  const handleLineClick = useCallback(() => {
+    if (isInteractive) {
+      onLineClick?.();
+    }
+  }, [isInteractive, onLineClick]);
 
   return (
     <tr
@@ -33,7 +37,7 @@ const DiffLine = ({
       className={[
         componentCssClassName,
         typeClass,
-        gutterIsInteractive ? "interactive" : "",
+        isInteractive && "interactive",
         className,
         props.type === "hunk" &&
           props.hunkIndex === 0 &&
@@ -44,11 +48,11 @@ const DiffLine = ({
     >
       <td
         className={`diff-gutter ${wrapLines ? "wrap" : ""} ${props.type}`}
-        tabIndex={gutterIsInteractive && props.type !== "hunk" ? 0 : undefined}
-        onClick={() => toggleAddCommentLocation(lineNumber)}
+        tabIndex={isInteractive && props.type !== "hunk" ? 0 : undefined}
+        onClick={handleLineClick}
         onKeyUp={(e) => {
           if (e.key === "Enter") {
-            toggleAddCommentLocation(lineNumber);
+            handleLineClick();
           }
         }}
         onKeyDown={undefined}
