@@ -6,6 +6,10 @@
   min-width: var(--table-width);
   color: var(--git-diff-viewer-code-default-color);
 
+  pre {
+    color: var(--git-diff-viewer-code-default-color);
+  }
+
   &.diff-line-add {
     background-color: var(--git-diff-viewer-code-insertion-background);
 

@@ -3,19 +3,18 @@ import type React from "react";
 import {
   Fragment,
   forwardRef,
-  useCallback,
   useEffect,
   useImperativeHandle,
   useMemo,
   useRef,
 } from "react";
+import { highlightDiffHunkLines } from "ui/GitDiffViewer/utils/index.js";
 import { useGitDiffViewer } from "../../hooks/index.js";
 import { DiffLine } from "./common/index.js";
-import "./styles.css";
-// TODO: decide where to put this once we provide an external syntax highlighter option
-import hljs from "highlight.js";
 import "./HighlighTheme.css";
+import "./styles.css";
 import type { CodeDiffViewerProps } from "./types.js";
+
 import updateTableWidth from "./utils/updateTableWidth.js";
 
 const componentCssClassName = "ds code-diff-viewer";
@@ -47,45 +46,11 @@ const CodeDiffViewer = (
   } = useGitDiffViewer();
   const tableRef = useRef<HTMLTableElement>(null);
 
-  // TODO: temporary syntax highlighting
-  // replace with a proper syntax highlighter
-  // add support for option to have external syntax highlighter
-  const diffCodeLanguage = useMemo(() => {
-    const extension = diff?.newPath.split(".").pop();
-    const mapping: { [key: string]: string } = {
-      js: "javascript",
-      jsx: "javascript",
-      ts: "typescript",
-      tsx: "typescript",
-      css: "css",
-      scss: "scss",
-      html: "xml",
-      py: "python",
-      java: "java",
-      // Add more mappings as needed
-    };
-    return mapping[extension || ""] || "plaintext";
-  }, [diff?.newPath]);
-
-  const highlight = useCallback(
-    (code: string) => {
-      if (hljs.getLanguage(diffCodeLanguage)) {
-        return hljs.highlight(code, { language: diffCodeLanguage }).value;
-      }
-      return hljs.highlight(code, { language: "plaintext" }).value;
-    },
-    [diffCodeLanguage],
-  );
-
-  const highlightedLines = useMemo(() => {
+  const highlightedLines: string[][] = useMemo(() => {
     if (!diff) return [];
 
-    return diff.hunks.map((hunk) => {
-      return hunk.lines.map((line) => {
-        return highlight(line.content);
-      });
-    });
-  }, [diff, highlight]);
+    return diff.hunks.map((hunk) => highlightDiffHunkLines(hunk.lines));
+  }, [diff]);
 
   useImperativeHandle<HTMLTableElement | null, HTMLTableElement | null>(
     ref,

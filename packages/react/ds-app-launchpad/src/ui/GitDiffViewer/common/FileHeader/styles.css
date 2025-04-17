@@ -34,8 +34,6 @@
       display: flex;
       align-items: center;
       border-radius: 1px;
-      transition: transform 0.15s ease-out;
-      transform: rotate(90deg);
 
       &:hover {
         background-color: var(--git-diff-file-header-button-hover-background);
@@ -44,8 +42,14 @@
         background-color: var(--git-diff-file-header-button-focus-background);
       }
 
+      > svg {
+        transform: rotate(90deg);
+        transition: transform 0.15s ease-out;
+      }
       &.collapsed {
-        transform: rotate(0deg);
+        > svg {
+          transform: rotate(0deg);
+        }
       }
     }
   }
