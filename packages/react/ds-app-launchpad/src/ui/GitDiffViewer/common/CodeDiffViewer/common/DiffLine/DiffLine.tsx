@@ -1,6 +1,5 @@
 /* @canonical/generator-canonical-ds 0.0.1 */
 import type React from "react";
-import { useCallback } from "react";
 import { useGitDiffViewer } from "../../../../hooks/index.js";
 import "./styles.css";
 import type { DiffLineProps } from "./types.js";
@@ -17,18 +16,12 @@ const DiffLine = ({
   id,
   className,
   style,
-  isInteractive,
   onLineClick,
   ...props
 }: DiffLineProps): React.ReactElement => {
   const { wrapLines } = useGitDiffViewer();
   const typeClass = `diff-line-${props.type}`;
-
-  const handleLineClick = useCallback(() => {
-    if (isInteractive) {
-      onLineClick?.();
-    }
-  }, [isInteractive, onLineClick]);
+  const isInteractive = Boolean(onLineClick);
 
   return (
     <tr
@@ -49,10 +42,10 @@ const DiffLine = ({
       <td
         className={`diff-gutter ${wrapLines ? "wrap" : ""} ${props.type}`}
         tabIndex={isInteractive && props.type !== "hunk" ? 0 : undefined}
-        onClick={handleLineClick}
+        onClick={onLineClick}
         onKeyUp={(e) => {
           if (e.key === "Enter") {
-            handleLineClick();
+            onLineClick?.();
           }
         }}
         onKeyDown={undefined}

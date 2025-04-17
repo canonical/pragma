@@ -21,8 +21,6 @@ export type DiffLineProps = {
   className?: string;
   /** Inline styles */
   style?: React.CSSProperties;
-  /** Whether the line is interactive */
-  isInteractive?: boolean;
   /** Callback function for when a line is clicked. */
-  onLineClick?: () => void;
+  onLineClick?: (() => void) | undefined;
 } & (DiffContentLine | DiffHunkLine);

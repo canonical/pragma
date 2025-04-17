@@ -88,6 +88,13 @@ const CodeDiffViewer = (
     [toggleAddCommentLocation],
   );
 
+  const getCloseCommentHandler = useCallback(
+    (lineNumber: number) => () => {
+      handleCloseComment(lineNumber);
+    },
+    [handleCloseComment],
+  );
+
   const handleLineClick = useCallback(
     (options: CodeDiffViewerLineSelectOptions) => {
       onLineClick?.(options);
@@ -96,10 +103,15 @@ const CodeDiffViewer = (
     [onLineClick, toggleAddCommentLocation],
   );
 
-  const diffLineIsInteractive = useMemo(() => {
-    if (!onLineClick && !AddComment) return false;
-    return true;
-  }, [onLineClick, AddComment]);
+  const diffLineIsInteractive = Boolean(onLineClick || AddComment);
+
+  const getDiffLineClickHandler = useCallback(
+    (lineNumber: number) =>
+      diffLineIsInteractive
+        ? () => handleLineClick({ lineNumber, diffLineNumber: lineNumber })
+        : undefined,
+    [handleLineClick, diffLineIsInteractive],
+  );
 
   return (
     <div
@@ -157,13 +169,7 @@ const CodeDiffViewer = (
                           lineNum2={lineNum2}
                           content={highlightedLines[hunkIndex][lineIndex]}
                           type={line.type}
-                          isInteractive={diffLineIsInteractive}
-                          onLineClick={() =>
-                            handleLineClick({
-                              lineNumber,
-                              diffLineNumber,
-                            })
-                          }
+                          onLineClick={getDiffLineClickHandler(lineNumber)}
                         />
 
                         {lineNum2 && lineDecorations?.[lineNum2] && (
@@ -183,7 +189,7 @@ const CodeDiffViewer = (
                                 <AddComment
                                   lineNumber={lineNumber}
                                   diffLineNumber={diffLineNumber}
-                                  onClose={() => handleCloseComment(lineNumber)}
+                                  onClose={getCloseCommentHandler(lineNumber)}
                                 />
                               </td>
                             </tr>
