@@ -71,6 +71,7 @@ export type Hunk = {
   oldLines: number;
   newStart: number;
   newLines: number;
+  diffStart: number;
   lines: {
     type: "add" | "remove" | "context";
     content: string;

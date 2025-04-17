@@ -3,6 +3,7 @@ import type React from "react";
 import {
   Fragment,
   forwardRef,
+  useCallback,
   useEffect,
   useImperativeHandle,
   useMemo,
@@ -86,6 +87,13 @@ const CodeDiffViewer = (
     }
   }, [AddComment, addCommentEnabled, setAddCommentEnabled]);
 
+  const handleCloseComment = useCallback(
+    (lineNumber: number) => {
+      toggleAddCommentLocation(lineNumber);
+    },
+    [toggleAddCommentLocation],
+  );
+
   return (
     <div
       id={id}
@@ -106,7 +114,11 @@ const CodeDiffViewer = (
               return (
                 <Fragment key={`${diff.oldPath}-${hunkIndex}`}>
                   {/* Hunk header line */}
-                  <DiffLine type="hunk" hunkHeader={hunk.header} />
+                  <DiffLine
+                    type="hunk"
+                    hunkHeader={hunk.header}
+                    hunkIndex={hunkIndex}
+                  />
 
                   {hunk.lines.map((line, lineIndex) => {
                     let lineNum1: number | null = null;
@@ -156,9 +168,8 @@ const CodeDiffViewer = (
                               <td className="container">
                                 <AddComment
                                   lineNumber={lineNumber}
-                                  onClose={() =>
-                                    toggleAddCommentLocation(lineNumber)
-                                  }
+                                  diffLineNumber={hunk.diffStart + lineIndex}
+                                  onClose={() => handleCloseComment(lineNumber)}
                                 />
                               </td>
                             </tr>

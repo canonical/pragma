@@ -17,6 +17,7 @@ const ADD_LINE: DiffContentLine = {
 const HUNK_LINE: DiffHunkLine = {
   type: "hunk",
   hunkHeader: "@@ -17,9 +17,13 @@",
+  hunkIndex: 0,
 } as const;
 
 describe("DiffLine component", () => {

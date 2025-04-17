@@ -11,6 +11,7 @@ export type DiffContentLine = {
 export type DiffHunkLine = {
   type: "hunk";
   hunkHeader: string;
+  hunkIndex: number;
 };
 
 export type DiffLineProps = {

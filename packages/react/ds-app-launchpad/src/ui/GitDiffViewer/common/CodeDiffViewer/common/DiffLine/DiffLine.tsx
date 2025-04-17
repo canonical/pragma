@@ -5,6 +5,7 @@ import "./styles.css";
 import type { DiffLineProps } from "./types.js";
 
 const componentCssClassName = "ds diff-line";
+const firstHunkLineCssClassName = "is-first-hunk";
 
 /**
  * Displays a single line of a diff as a table row with line numbers.
@@ -34,6 +35,9 @@ const DiffLine = ({
         typeClass,
         gutterIsInteractive ? "interactive" : "",
         className,
+        props.type === "hunk" &&
+          props.hunkIndex === 0 &&
+          firstHunkLineCssClassName,
       ]
         .filter(Boolean)
         .join(" ")}

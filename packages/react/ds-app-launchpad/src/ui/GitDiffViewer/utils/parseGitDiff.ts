@@ -5,7 +5,7 @@ function parseGitDiff(diffText: string): DiffFile[] {
   const files: DiffFile[] = [];
   let currentFile: DiffFile | null = null;
   let currentHunk: Hunk | null = null;
-
+  let currentDiffStart = 0;
   // Regular expressions to match file and hunk headers
   const fileRegex = /^diff --git a\/(.+) b\/(.+)$/;
   const hunkRegex = /^@@ -(\d+),?(\d*) \+(\d+),?(\d*) @@/;
@@ -13,6 +13,7 @@ function parseGitDiff(diffText: string): DiffFile[] {
   const newFileRegex = /^\+\+\+ (.+)$/;
 
   for (const line of lines) {
+    currentDiffStart++;
     const fileMatch = line.match(fileRegex);
     if (fileMatch) {
       // New file diff start
@@ -52,6 +53,7 @@ function parseGitDiff(diffText: string): DiffFile[] {
         oldLines: hunkMatch[2] ? Number.parseInt(hunkMatch[2], 10) : 1,
         newStart: Number.parseInt(hunkMatch[3], 10),
         newLines: hunkMatch[4] ? Number.parseInt(hunkMatch[4], 10) : 1,
+        diffStart: currentDiffStart + 1, // +1 because the first line is the hunk header
         lines: [],
       };
       currentFile.hunks.push(currentHunk);

@@ -89,6 +89,7 @@ export const commentExample = (
 
 export const addCommentExample: CodeDiffViewerAddComment = ({
   lineNumber,
+  diffLineNumber,
   onClose,
 }) => (
   <div
@@ -105,7 +106,7 @@ export const addCommentExample: CodeDiffViewerAddComment = ({
       }}
       // biome-ignore lint/a11y/noAutofocus: when the comment is opened, the textarea should be focused
       autoFocus
-      placeholder={`Comment on line ${lineNumber}`}
+      placeholder={`Comment on line ${lineNumber} (diff line ${diffLineNumber})`}
       // on enter, save the comment
       onKeyDown={(e) => {
         if (e.key === "Enter") {
