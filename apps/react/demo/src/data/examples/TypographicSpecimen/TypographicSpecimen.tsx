@@ -1,7 +1,7 @@
 import typographicSpecimenLinesImg from "assets/typographic-specimen-lines.png";
 import type { ShowcaseComponent } from "ui/index.js";
 /*
-  Using a more straightforward (import "./styles.css") would cause the styles to not be applied correctly as this is
+  Using a more straightforward (import "./shadow-styles.css") would cause the styles to not be applied correctly as this is
   assumed to be within a shadow DOM.
   So, for now we simply import the styles with vite's `?inline` to make sure style are bundled correctly.
   Then, we can inline the styles below.

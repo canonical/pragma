@@ -1,0 +1,16 @@
+/* Allows examples to use our font faces from within the shadow DOM */
+@import "@canonical/styles-primitives-canonical/src/font-faces.css";
+
+/* Reset */
+@import "normalize.css";
+
+.ds.shadow-container {
+  all: initial;
+  isolation: isolate;
+}
+
+* {
+  font-family: var(--font-family);
+  font-size: var(--font-size);
+  line-height: var(--line-height);
+}
