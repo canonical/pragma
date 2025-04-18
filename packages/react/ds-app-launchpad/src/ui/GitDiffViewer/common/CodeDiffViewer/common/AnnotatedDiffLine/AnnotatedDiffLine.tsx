@@ -1,23 +1,25 @@
 /* @canonical/generator-ds 0.9.0-experimental.12 */
 import type React from "react";
-import type { DiffLineRegionProps } from "./types.js";
+import type { AnnotatedDiffLineProps } from "./types.js";
 import "./styles.css";
 import { useCallback } from "react";
 import { useGitDiffViewer } from "../../../../hooks/index.js";
 import DiffLine from "../DiffLine/DiffLine.js";
 
+const componentCssClassName = "ds annotated-diff-line";
+
 /**
  * A component that displays a diff line content, line decorations and AddComment component.
- * @returns {React.ReactElement} - Rendered DiffLineRegion
+ * @returns {React.ReactElement} - Rendered AnnotatedDiffLine
  */
-const DiffLineRegion = ({
+const AnnotatedDiffLine = ({
   lineNum1,
   lineNum2,
   diffLineNumber,
   AddComment,
   onLineClick,
   ...rest
-}: DiffLineRegionProps): React.ReactElement => {
+}: AnnotatedDiffLineProps): React.ReactElement => {
   const { addCommentOpenLocations, toggleAddCommentLocation, lineDecorations } =
     useGitDiffViewer();
 
@@ -50,13 +52,13 @@ const DiffLineRegion = ({
         onLineClick={diffLineIsInteractive ? handleLineClick : undefined}
       />
       {lineNum2 && lineDecorations?.[lineNum2] && (
-        <tr className="line-decoration">
+        <tr className={componentCssClassName}>
           <td className="container">{lineDecorations[lineNum2]}</td>
         </tr>
       )}
       {/* Open comment row, if any */}
       {lineNum2 && AddComment && addCommentOpenLocations.has(lineNum2) && (
-        <tr className="line-decoration">
+        <tr className={componentCssClassName}>
           <td className="container">
             <AddComment
               lineNumber={lineNumber}
@@ -70,4 +72,4 @@ const DiffLineRegion = ({
   );
 };
 
-export default DiffLineRegion;
+export default AnnotatedDiffLine;

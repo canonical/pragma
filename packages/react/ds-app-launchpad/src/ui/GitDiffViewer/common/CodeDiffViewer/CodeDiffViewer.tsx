@@ -15,7 +15,7 @@ import "./HighlighTheme.css";
 import "./styles.css";
 import type { CodeDiffViewerProps } from "./types.js";
 
-import { DiffLineRegion } from "./common/DiffLineRegion/index.js";
+import { AnnotatedDiffLine } from "./common/AnnotatedDiffLine/index.js";
 import updateTableWidth from "./utils/updateTableWidth.js";
 
 const componentCssClassName = "ds code-diff-viewer";
@@ -118,7 +118,7 @@ const CodeDiffViewer = (
                     // you can display e.g. '+' or '-' or an empty cell.
                     return (
                       // Normal diff line
-                      <DiffLineRegion
+                      <AnnotatedDiffLine
                         key={`${diff.oldPath}-${hunkIndex}-${lineIndex}`}
                         lineNum1={lineNum1}
                         lineNum2={lineNum2}

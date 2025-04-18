@@ -26,19 +26,5 @@
       margin-left: -1px;
       margin-right: -1px;
     }
-
-    .line-decoration {
-      display: flex;
-      position: sticky;
-      left: 0;
-      width: var(--table-width);
-      .container {
-        width: 100%;
-        border: 1px solid var(--git-diff-viewer-border-color-tinted);
-        border-width: 1px 0;
-        border-radius: 1px;
-        padding: 0;
-      }
-    }
   }
 }

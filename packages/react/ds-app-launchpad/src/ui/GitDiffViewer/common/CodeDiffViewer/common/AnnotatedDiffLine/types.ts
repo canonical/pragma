@@ -6,7 +6,7 @@ import type {
 } from "../../types.js";
 import type { DiffContentLineProps } from "../DiffLine/types.js";
 
-export type DiffLineRegionProps = Omit<
+export type AnnotatedDiffLineProps = Omit<
   DiffContentLineProps,
   "onLineClick" | "lineNum1" | "lineNum2"
 > & {
