@@ -3,7 +3,6 @@ import type React from "react";
 import {
   Fragment,
   forwardRef,
-  useCallback,
   useEffect,
   useImperativeHandle,
   useMemo,
@@ -14,11 +13,9 @@ import { useGitDiffViewer } from "../../hooks/index.js";
 import { DiffLine } from "./common/index.js";
 import "./HighlighTheme.css";
 import "./styles.css";
-import type {
-  CodeDiffViewerLineSelectOptions,
-  CodeDiffViewerProps,
-} from "./types.js";
+import type { CodeDiffViewerProps } from "./types.js";
 
+import { DiffLineRegion } from "./common/DiffLineRegion/index.js";
 import updateTableWidth from "./utils/updateTableWidth.js";
 
 const componentCssClassName = "ds code-diff-viewer";
@@ -40,13 +37,7 @@ const CodeDiffViewer = (
   }: CodeDiffViewerProps,
   ref: React.Ref<HTMLTableElement>,
 ): React.ReactElement | null => {
-  const {
-    isCollapsed,
-    diff,
-    addCommentOpenLocations,
-    toggleAddCommentLocation,
-    lineDecorations,
-  } = useGitDiffViewer();
+  const { isCollapsed, diff } = useGitDiffViewer();
   const tableRef = useRef<HTMLTableElement>(null);
 
   const highlightedLines: string[][] = useMemo(() => {
@@ -80,38 +71,6 @@ const CodeDiffViewer = (
       resizeObserver.disconnect();
     };
   }, [disableWidthCalculation]);
-
-  const handleCloseComment = useCallback(
-    (lineNumber: number) => {
-      toggleAddCommentLocation(lineNumber);
-    },
-    [toggleAddCommentLocation],
-  );
-
-  const getCloseCommentHandler = useCallback(
-    (lineNumber: number) => () => {
-      handleCloseComment(lineNumber);
-    },
-    [handleCloseComment],
-  );
-
-  const handleLineClick = useCallback(
-    (options: CodeDiffViewerLineSelectOptions) => {
-      onLineClick?.(options);
-      toggleAddCommentLocation(options.lineNumber);
-    },
-    [onLineClick, toggleAddCommentLocation],
-  );
-
-  const diffLineIsInteractive = Boolean(onLineClick || AddComment);
-
-  const getDiffLineClickHandler = useCallback(
-    (lineNumber: number) =>
-      diffLineIsInteractive
-        ? () => handleLineClick({ lineNumber, diffLineNumber: lineNumber })
-        : undefined,
-    [handleLineClick, diffLineIsInteractive],
-  );
 
   return (
     <div
@@ -155,46 +114,20 @@ const CodeDiffViewer = (
                       lineNum2 = newLineCounter++;
                     }
 
-                    const lineNumber = lineNum2 || lineNum1 || 0;
-                    const diffLineNumber = hunk.diffStart + lineIndex;
                     // For rendering, if lineNum1 or lineNum2 is null,
                     // you can display e.g. '+' or '-' or an empty cell.
                     return (
-                      <Fragment
+                      // Normal diff line
+                      <DiffLineRegion
                         key={`${diff.oldPath}-${hunkIndex}-${lineIndex}`}
-                      >
-                        {/* Normal diff line */}
-                        <DiffLine
-                          lineNum1={lineNum1}
-                          lineNum2={lineNum2}
-                          content={highlightedLines[hunkIndex][lineIndex]}
-                          type={line.type}
-                          onLineClick={getDiffLineClickHandler(lineNumber)}
-                        />
-
-                        {lineNum2 && lineDecorations?.[lineNum2] && (
-                          <tr className="line-decoration">
-                            <td className="container">
-                              {lineDecorations[lineNum2]}
-                            </td>
-                          </tr>
-                        )}
-
-                        {/* Open comment row, if any */}
-                        {lineNum2 &&
-                          AddComment &&
-                          addCommentOpenLocations.has(lineNum2) && (
-                            <tr className="line-decoration">
-                              <td className="container">
-                                <AddComment
-                                  lineNumber={lineNumber}
-                                  diffLineNumber={diffLineNumber}
-                                  onClose={getCloseCommentHandler(lineNumber)}
-                                />
-                              </td>
-                            </tr>
-                          )}
-                      </Fragment>
+                        lineNum1={lineNum1}
+                        lineNum2={lineNum2}
+                        content={highlightedLines[hunkIndex][lineIndex]}
+                        type={line.type}
+                        diffLineNumber={hunk.diffStart + lineIndex}
+                        onLineClick={onLineClick}
+                        AddComment={AddComment}
+                      />
                     );
                   })}
                 </Fragment>

@@ -14,7 +14,7 @@ export type DiffHunkLine = {
   hunkIndex: number;
 };
 
-export type DiffLineProps = {
+type DiffLineCommonProps = {
   /** A unique identifier for the DiffLine */
   id?: string;
   /** Additional CSS classes */
@@ -23,4 +23,8 @@ export type DiffLineProps = {
   style?: React.CSSProperties;
   /** Callback function for when a line is clicked. */
   onLineClick?: (() => void) | undefined;
-} & (DiffContentLine | DiffHunkLine);
+};
+
+export type DiffContentLineProps = DiffLineCommonProps & DiffContentLine;
+export type DiffHunkLineProps = DiffLineCommonProps & DiffHunkLine;
+export type DiffLineProps = DiffContentLineProps | DiffHunkLineProps;
