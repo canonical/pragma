@@ -8,8 +8,8 @@ import {
   useMemo,
   useRef,
 } from "react";
-import { highlightDiffHunkLines } from "ui/GitDiffViewer/utils/index.js";
 import { useGitDiffViewer } from "../../hooks/index.js";
+import { highlightDiffHunkLines } from "../../utils/index.js";
 import { DiffLine } from "./common/index.js";
 import "./HighlighTheme.css";
 import "./styles.css";
