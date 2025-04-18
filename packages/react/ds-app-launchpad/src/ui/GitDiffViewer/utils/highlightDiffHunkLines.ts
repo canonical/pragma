@@ -22,16 +22,25 @@ function highlightDiffHunkLines(hunkLines: Hunk["lines"]): string[] {
     hunkContentDeletedVersion,
   ).split("\n");
 
-  const highlightedLines: string[] = hunkLines.map((line, index) => {
+  const highlightedLines: string[] = [];
+  let addedOffset = 0;
+  let removedOffset = 0;
+  for (let i = 0; i < hunkLines.length; i++) {
+    const line = hunkLines[i];
     switch (line.type) {
       case "context":
-        return highlightedHunkAddedVersion[index];
+        highlightedLines.push(highlightedHunkDeletedVersion[i - addedOffset]);
+        break;
       case "remove":
-        return highlightedHunkDeletedVersion[index];
+        highlightedLines.push(highlightedHunkDeletedVersion[i - addedOffset]);
+        removedOffset++;
+        break;
       case "add":
-        return highlightedHunkAddedVersion[index];
+        highlightedLines.push(highlightedHunkAddedVersion[i - removedOffset]);
+        addedOffset++;
+        break;
     }
-  });
+  }
 
   return highlightedLines;
 }
