@@ -72,23 +72,25 @@ new file mode 100644
 index 0000000..5f67fba
 `)[0];
 
-export const commentExample = (
-  <div
-    style={{
-      backgroundColor: "#e0e0e0",
-      color: "black",
-      padding: "5px",
-      margin: "10px 5px",
-      border: "1px solid #ccc",
-      borderRadius: "4px",
-    }}
-  >
-    Test comment
-  </div>
-);
+export const commentExample = {
+  6: (
+    <div
+      style={{
+        backgroundColor: "#e0e0e0",
+        color: "black",
+        padding: "5px",
+        margin: "10px 5px",
+        border: "1px solid #ccc",
+        borderRadius: "4px",
+      }}
+    >
+      Test comment
+    </div>
+  ),
+};
 
 export const addCommentExample: CodeDiffViewerAddComment = ({
-  lineNumber,
+  hunkLineNumber,
   diffLineNumber,
   onClose,
 }) => (
@@ -106,7 +108,7 @@ export const addCommentExample: CodeDiffViewerAddComment = ({
       }}
       // biome-ignore lint/a11y/noAutofocus: when the comment is opened, the textarea should be focused
       autoFocus
-      placeholder={`Comment on line ${lineNumber} (diff line ${diffLineNumber})`}
+      placeholder={`Comment on line ${hunkLineNumber} (diff line ${diffLineNumber})`}
       // on enter, save the comment
       onKeyDown={(e) => {
         if (e.key === "Enter") {

@@ -2,11 +2,23 @@
 import type React from "react";
 
 export type DiffContentLine = {
-  type: "add" | "remove" | "context";
-  lineNum1: number | string | null;
-  lineNum2: number | string | null;
   content: string;
-};
+} & (
+  | {
+      type: "add";
+      addLineNumber: number;
+    }
+  | {
+      type: "remove";
+      removeLineNumber: number;
+    }
+  | {
+      type: "context";
+      // we need both line numbers for context lines
+      addLineNumber: number;
+      removeLineNumber: number;
+    }
+);
 
 export type DiffHunkLine = {
   type: "hunk";

@@ -2,7 +2,7 @@
 import type React from "react";
 
 export type CodeDiffViewerLineSelectOptions = {
-  lineNumber: number;
+  hunkLineNumber: number;
   diffLineNumber: number;
 };
 

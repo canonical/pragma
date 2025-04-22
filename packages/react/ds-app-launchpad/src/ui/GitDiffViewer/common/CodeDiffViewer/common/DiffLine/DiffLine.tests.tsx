@@ -9,8 +9,7 @@ import type { DiffContentLine, DiffHunkLine } from "./types.js";
 
 const ADD_LINE: DiffContentLine = {
   type: "add",
-  lineNum1: "+",
-  lineNum2: 2,
+  addLineNumber: 2,
   content: "add line",
 } as const;
 

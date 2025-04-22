@@ -86,12 +86,11 @@ const CodeDiffViewer = (
             {diff.hunks.map((hunk, hunkIndex) => {
               // We'll track the counters for old and new lines
               // as we iterate through each hunk.
-              let oldLineCounter = hunk.oldStart;
-              let newLineCounter = hunk.newStart;
+              let oldLineCounter = hunk.positions.old.start;
+              let newLineCounter = hunk.positions.new.start;
 
               return (
                 <Fragment key={`${diff.oldPath}-${hunkIndex}`}>
-                  {/* Hunk header line */}
                   <DiffLine
                     type="hunk"
                     hunkHeader={hunk.header}
@@ -99,32 +98,23 @@ const CodeDiffViewer = (
                   />
 
                   {hunk.lines.map((line, lineIndex) => {
-                    let lineNum1: number | null = null;
-                    let lineNum2: number | null = null;
-
                     if (line.type === "remove") {
-                      // Only the old line number advances
-                      lineNum1 = oldLineCounter++;
+                      oldLineCounter++;
                     } else if (line.type === "add") {
-                      // Only the new line number advances
-                      lineNum2 = newLineCounter++;
+                      newLineCounter++;
                     } else {
-                      // context line => both lines advance
-                      lineNum1 = oldLineCounter++;
-                      lineNum2 = newLineCounter++;
+                      oldLineCounter++;
+                      newLineCounter++;
                     }
 
-                    // For rendering, if lineNum1 or lineNum2 is null,
-                    // you can display e.g. '+' or '-' or an empty cell.
                     return (
-                      // Normal diff line
                       <AnnotatedDiffLine
                         key={`${diff.oldPath}-${hunkIndex}-${lineIndex}`}
-                        lineNum1={lineNum1}
-                        lineNum2={lineNum2}
+                        newLineNumber={newLineCounter}
+                        oldLineNumber={oldLineCounter}
+                        diffLineNumber={hunk.positions.diff.start + lineIndex}
                         content={highlightedLines[hunkIndex][lineIndex]}
                         type={line.type}
-                        diffLineNumber={hunk.diffStart + lineIndex}
                         onLineClick={onLineClick}
                         AddComment={AddComment}
                       />

@@ -46,14 +46,14 @@ Default.parameters = storyOptions;
 export const WithComments = Template.bind({});
 WithComments.args = {
   diff: fixtures.diffExample,
-  lineDecorations: { 20: fixtures.commentExample },
+  lineDecorations: fixtures.commentExample,
 };
 WithComments.parameters = storyOptions;
 
 export const InteractiveGutterWithAddComment = Template.bind({});
 InteractiveGutterWithAddComment.args = {
   diff: fixtures.diffExample,
-  lineDecorations: { 20: fixtures.commentExample },
+  lineDecorations: fixtures.commentExample,
   AddComment: fixtures.addCommentExample,
 };
 
@@ -62,7 +62,7 @@ InteractiveGutterWithAddComment.parameters = storyOptions;
 export const InteractiveGutterWithClickHandler = Template.bind({});
 InteractiveGutterWithClickHandler.args = {
   diff: fixtures.diffExample,
-  lineDecorations: { 20: fixtures.commentExample },
+  lineDecorations: fixtures.commentExample,
   onLineClick: fn(),
 };
 

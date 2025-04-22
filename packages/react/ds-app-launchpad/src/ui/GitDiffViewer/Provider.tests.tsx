@@ -51,7 +51,7 @@ describe("GitDiffViewer component", () => {
   });
 
   it("renders AddComment component correctly", async () => {
-    const AddComment: CodeDiffViewerAddComment = ({ lineNumber, onClose }) => (
+    const AddComment: CodeDiffViewerAddComment = ({ onClose }) => (
       <div>
         New comment
         <button onClick={onClose} type="button">

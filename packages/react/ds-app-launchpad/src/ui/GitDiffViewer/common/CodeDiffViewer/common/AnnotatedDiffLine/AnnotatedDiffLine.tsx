@@ -1,10 +1,10 @@
 /* @canonical/generator-ds 0.9.0-experimental.12 */
 import type React from "react";
-import type { AnnotatedDiffLineProps } from "./types.js";
-import "./styles.css";
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import { useGitDiffViewer } from "../../../../hooks/index.js";
 import DiffLine from "../DiffLine/DiffLine.js";
+import "./styles.css";
+import type { AnnotatedDiffLineProps } from "./types.js";
 
 const componentCssClassName = "ds annotated-diff-line";
 
@@ -13,55 +13,63 @@ const componentCssClassName = "ds annotated-diff-line";
  * @returns {React.ReactElement} - Rendered AnnotatedDiffLine
  */
 const AnnotatedDiffLine = ({
-  lineNum1,
-  lineNum2,
+  newLineNumber,
+  oldLineNumber,
   diffLineNumber,
   AddComment,
   onLineClick,
+  type,
   ...rest
 }: AnnotatedDiffLineProps): React.ReactElement => {
   const { addCommentOpenLocations, toggleAddCommentLocation, lineDecorations } =
     useGitDiffViewer();
 
-  const lineNumber = Number(lineNum2 || lineNum1 || 0);
   const diffLineIsInteractive = Boolean(onLineClick || AddComment);
+
+  const hunkLineNumber = useMemo(() => {
+    return type === "add" ? newLineNumber : oldLineNumber;
+  }, [type, newLineNumber, oldLineNumber]);
 
   const handleLineClick = useCallback(() => {
     if (diffLineIsInteractive) {
-      onLineClick?.({ lineNumber, diffLineNumber });
-      toggleAddCommentLocation(lineNumber);
+      onLineClick?.({
+        hunkLineNumber,
+        diffLineNumber,
+      });
+      toggleAddCommentLocation(diffLineNumber);
     }
   }, [
     onLineClick,
-    lineNumber,
     diffLineNumber,
+    hunkLineNumber,
     toggleAddCommentLocation,
     diffLineIsInteractive,
   ]);
 
   const handleCloseComment = useCallback(() => {
-    toggleAddCommentLocation(lineNumber);
-  }, [toggleAddCommentLocation, lineNumber]);
+    toggleAddCommentLocation(diffLineNumber);
+  }, [toggleAddCommentLocation, diffLineNumber]);
 
   return (
     <>
       <DiffLine
         {...rest}
-        lineNum1={lineNum1}
-        lineNum2={lineNum2}
+        type={type}
+        addLineNumber={newLineNumber}
+        removeLineNumber={oldLineNumber}
         onLineClick={diffLineIsInteractive ? handleLineClick : undefined}
       />
-      {lineNum2 && lineDecorations?.[lineNum2] && (
+      {lineDecorations?.[diffLineNumber] && (
         <tr className={componentCssClassName}>
-          <td className="container">{lineDecorations[lineNum2]}</td>
+          <td className="container">{lineDecorations[diffLineNumber]}</td>
         </tr>
       )}
       {/* Open comment row, if any */}
-      {lineNum2 && AddComment && addCommentOpenLocations.has(lineNum2) && (
+      {AddComment && addCommentOpenLocations.has(diffLineNumber) && (
         <tr className={componentCssClassName}>
           <td className="container">
             <AddComment
-              lineNumber={lineNumber}
+              hunkLineNumber={hunkLineNumber}
               diffLineNumber={diffLineNumber}
               onClose={handleCloseComment}
             />

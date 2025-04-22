@@ -1,4 +1,4 @@
-import type { DiffFile, Hunk } from "../types.js";
+import type { DiffFile, Hunk, Position } from "../types.js";
 
 function parseGitDiff(diffText: string): DiffFile[] {
   const lines = diffText.split("\n");
@@ -46,14 +46,34 @@ function parseGitDiff(diffText: string): DiffFile[] {
 
     const hunkMatch = line.match(hunkRegex);
     if (hunkMatch && currentFile) {
+      const hunkPositions = [
+        Number.parseInt(hunkMatch[1]),
+        hunkMatch[2] ? Number.parseInt(hunkMatch[2]) : 1,
+        Number.parseInt(hunkMatch[3]),
+        hunkMatch[4] ? Number.parseInt(hunkMatch[4]) : 1,
+      ];
+      const oldPos: Position = {
+        start: hunkPositions[0],
+        end: hunkPositions[0] + hunkPositions[1],
+      };
+      const newPos: Position = {
+        start: hunkPositions[2],
+        end: hunkPositions[2] + hunkPositions[3],
+      };
+      const diffPos: Position = {
+        // +1 because the first line is the hunk header
+        start: currentDiffStart + 1,
+        end: currentDiffStart + 1,
+      };
+
       // New hunk start
       currentHunk = {
         header: line,
-        oldStart: Number.parseInt(hunkMatch[1], 10),
-        oldLines: hunkMatch[2] ? Number.parseInt(hunkMatch[2], 10) : 1,
-        newStart: Number.parseInt(hunkMatch[3], 10),
-        newLines: hunkMatch[4] ? Number.parseInt(hunkMatch[4], 10) : 1,
-        diffStart: currentDiffStart + 1, // +1 because the first line is the hunk header
+        positions: {
+          old: oldPos,
+          new: newPos,
+          diff: diffPos,
+        },
         lines: [],
       };
       currentFile.hunks.push(currentHunk);
@@ -69,6 +89,7 @@ function parseGitDiff(diffText: string): DiffFile[] {
           : "context";
       const content = line.slice(1); // Remove the leading +, - or space
       currentHunk.lines.push({ type, content });
+      currentHunk.positions.diff.end++;
     }
   }
 

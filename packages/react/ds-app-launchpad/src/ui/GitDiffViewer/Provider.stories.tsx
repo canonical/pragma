@@ -52,7 +52,7 @@ Default.parameters = storyOptions;
 export const WithComments: StoryFn<ProviderOptions> = (args) => {
   const [collapsed, setCollapsed] = useState(false);
   // Consider memoizing the line decorations to avoid unnecessary re-renders
-  const lineDecorations = useMemo(() => ({ 20: fixtures.commentExample }), []);
+  const lineDecorations = useMemo(() => fixtures.commentExample, []);
 
   return (
     <GitDiffViewer

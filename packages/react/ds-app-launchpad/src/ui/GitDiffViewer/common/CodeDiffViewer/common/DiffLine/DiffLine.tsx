@@ -54,8 +54,12 @@ const DiffLine = ({
           "\u00A0"
         ) : (
           <div className="diff-line-numbers">
-            <span className="line-num">{props.lineNum1 ?? "+"}</span>
-            <span className="line-num">{props.lineNum2 ?? "-"}</span>
+            <span className="line-num">
+              {props.type === "add" ? "+" : props.removeLineNumber}
+            </span>
+            <span className="line-num">
+              {props.type === "remove" ? "-" : props.addLineNumber}
+            </span>
           </div>
         )}
       </td>
