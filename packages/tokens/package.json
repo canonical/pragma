@@ -3,7 +3,7 @@
   "description": "Canonical design tokens: primitives and mode mappings for use with Style Dictionary",
   "version": "0.9.0-experimental.1",
   "main": "src/index.css",
-  "files": ["src"],
+  "files": ["dist"],
   "type": "module",
   "author": {
     "email": "webteam@canonical.com",
@@ -19,7 +19,6 @@
   },
   "homepage": "https://github.com/canonical/ds25#readme",
   "scripts": {
-    "build:old": "style-dictionary build",
     "build:primitives": "style-dictionary build --config config.primitives.js",
     "build:semantic": "style-dictionary build --config config.semantic.js --verbose --no-warn",
     "build": "npm run build:primitives && npm run build:semantic",

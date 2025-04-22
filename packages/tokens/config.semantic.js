@@ -2,52 +2,38 @@ import StyleDictionary from "style-dictionary";
 
 StyleDictionary.registerFormat({
   name: "css/semantic-selectors",
-  format: async ({ dictionary, options, file }) => {
-    let output = "";
-    let index = 0;
-    // Iterate over top-level groups in the token tree
-    for (const groupKey in dictionary.tokens) {
-      const group = dictionary.tokens[groupKey];
-      const selector = group.$extensions?.selector || `.${groupKey}`;
-      const tokens = dictionary.allTokens.filter(
-        (token) => token.path[0] === groupKey,
-      );
+  format: ({ dictionary }) => {
+    // Accumulate each group’s block
+    const output = Object.keys(dictionary.tokens)
+      .map((groupKey) => {
+        const selector =
+          dictionary.tokens[groupKey].$extensions?.selector || `.${groupKey}`;
+        // All tokens in this semantic group
+        const tokens = dictionary.allTokens.filter(
+          (t) => t.path[0] === groupKey,
+        );
+        if (!tokens.length) return "";
 
-      if (tokens.length > 0) {
-        // Create a temporary dictionary with only this group's tokens
-        const groupDictionary = {
-          ...dictionary,
-          allTokens: tokens,
-        };
+        // Build each line: LHS uses token.name (last segment), RHS uses full path
+        const lines = tokens.map((token) => {
+          const local = token.name; // from name/semantic-local
+          const value = token.original.$value;
+          const isReference = value.startsWith("{");
+          const formattedValue = value
+            .replaceAll(".", "-")
+            .replace(/[{}]/g, "")
+            .toLowerCase();
+          const comment = token.$description
+            ? ` /* ${token.$description} */`
+            : "";
+          return `  --${local}: ${isReference ? `var(--${formattedValue})` : formattedValue};${comment}`;
+        });
 
-        const parameters = {
-          dictionary: groupDictionary,
-          options: {
-            ...options,
-            selector,
-            showFileHeader: index === 0 ? options.showFileHeader : false,
-          },
-          file: {
-            ...file,
-            options: {
-              ...file.options,
-              showFileHeader: index === 0 ? file.showFileHeader : false,
-            },
-          },
-        };
-
-        // Call WRAPPED_FUNC with the group-specific selector
-        // We prefer reusing the existing format function to avoid code duplication and API divergence
-        // https://github.com/amzn/style-dictionary/blob/main/lib/common/formats.js
-        const groupOutput =
-          await StyleDictionary.hooks.formats["css/variables"](parameters);
-
-        // Append the output (remove extra newlines if needed)
-        output += `${groupOutput}\n`;
-        index++;
-      }
-    }
-    return output.trim();
+        return `${selector} {\n${lines.join("\n")}\n}`;
+      })
+      .filter(Boolean)
+      .join("\n\n");
+    return output;
   },
 });
 
