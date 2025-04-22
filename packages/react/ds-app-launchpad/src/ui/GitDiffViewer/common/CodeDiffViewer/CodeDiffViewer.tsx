@@ -98,6 +98,9 @@ const CodeDiffViewer = (
                   />
 
                   {hunk.lines.map((line, lineIndex) => {
+                    const newLineNumber = newLineCounter;
+                    const oldLineNumber = oldLineCounter;
+
                     if (line.type === "remove") {
                       oldLineCounter++;
                     } else if (line.type === "add") {
@@ -110,8 +113,8 @@ const CodeDiffViewer = (
                     return (
                       <AnnotatedDiffLine
                         key={`${diff.oldPath}-${hunkIndex}-${lineIndex}`}
-                        newLineNumber={newLineCounter}
-                        oldLineNumber={oldLineCounter}
+                        newLineNumber={newLineNumber}
+                        oldLineNumber={oldLineNumber}
                         diffLineNumber={hunk.positions.diff.start + lineIndex}
                         content={highlightedLines[hunkIndex][lineIndex]}
                         type={line.type}

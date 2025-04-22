@@ -52,7 +52,7 @@ describe("CodeDiffViewer component", () => {
       .getByText("Test comment")
       .closest("tr")?.previousSibling;
     const lineNumber = tableRowBeforeComment?.textContent;
-    expect(lineNumber).toMatch(/^18.*$/);
+    expect(lineNumber).toMatch(/^17.*$/);
   });
 
   it("calls onLineClick with the correct arguments", () => {
@@ -63,13 +63,13 @@ describe("CodeDiffViewer component", () => {
       </Provider>,
     );
 
-    const lineToClick = screen.getAllByText(/^18.*$/)[0].closest("td");
+    const lineToClick = screen.getAllByText(/^17.*$/)[0].closest("td");
     expect(lineToClick).toBeDefined();
     if (!lineToClick) return;
     fireEvent.click(lineToClick);
 
     expect(onLineClick).toHaveBeenCalledWith({
-      hunkLineNumber: 18,
+      hunkLineNumber: 17,
       diffLineNumber: 6,
     });
   });
