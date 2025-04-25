@@ -21,7 +21,6 @@ export interface BaseProps {
    * This will also be used for the `aria-label`.
    * If this contains anything other than a string literal (such as a <p> element), you should specify an
    * `aria-label` prop to ensure that the button label is applied properly. Otherwise, the label will be set to [object Object].
-   * TODO remove optional when we remove the `label` prop.
    * */
   children: ReactNode;
   /** The visual style of the button */
