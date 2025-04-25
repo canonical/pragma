@@ -23,13 +23,9 @@ export interface BaseProps {
    * `aria-label` prop to ensure that the button label is applied properly. Otherwise, the label will be set to [object Object].
    * TODO remove optional when we remove the `label` prop.
    * */
-  children?: ReactNode;
-  // for backwards compatibility, when we used label instead of children
-  label?: string;
+  children: ReactNode;
   /** The visual style of the button */
   appearance?: "neutral" | "base" | "positive" | "negative" | "link";
-  /** Optional click handler */
-  onClick?: () => void;
 }
 
 type Props = BaseProps & ButtonHTMLAttributes<HTMLButtonElement>;

@@ -7,8 +7,6 @@ const Button = ({
   className,
   children,
   style,
-  // This prop is deprecated but kept for backwards compatibility.
-  label,
   appearance,
   ...props
 }: Props): React.ReactElement => {
@@ -21,10 +19,10 @@ const Button = ({
       style={style}
       // Apply custom aria label if provided, otherwise use children text.
       // If the child is a JSX element (and not just a string), a custom aria-label should be used, otherwise the aria-label will be [object Object].
-      aria-label={label || props["aria-label"] || children?.toString() || ""}
+      aria-label={props["aria-label"] || children?.toString()}
       {...props}
     >
-      {label || children}
+      {props["aria-label"] || children}
     </button>
   );
 };
