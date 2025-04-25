@@ -10,7 +10,6 @@ const Button = ({
   // This prop is deprecated but kept for backwards compatibility.
   label,
   appearance,
-  disabled,
   ...props
 }: Props): React.ReactElement => {
   return (
@@ -20,8 +19,6 @@ const Button = ({
         .filter(Boolean)
         .join(" ")}
       style={style}
-      disabled={disabled}
-      aria-disabled={disabled}
       // Apply custom aria label if provided, otherwise use children text.
       // If the child is a JSX element (and not just a string), a custom aria-label should be used, otherwise the aria-label will be [object Object].
       aria-label={label || props["aria-label"] || children?.toString() || ""}
