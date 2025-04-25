@@ -153,7 +153,7 @@
         white-space: nowrap;
       }
 
-      & .close-button {
+      & button.close {
         background: none;
         border: none;
         color: var(--drawer-close-button-color);

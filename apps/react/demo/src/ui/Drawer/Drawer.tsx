@@ -54,7 +54,7 @@ const Drawer = ({
           <button
             type="button"
             onClick={close}
-            className="close-button"
+            className="close"
             aria-label={title ? `Close ${title}` : "Close Drawer"}
           >
             &times;
