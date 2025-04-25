@@ -58,11 +58,11 @@ const Controls = ({ id, className, style }: ControlsProps): ReactElement => {
           onClick={resetActiveExample}
         />
 
-        {activeExample.fieldCategories.map((category) => (
-          <div className="setting-category" key={category.label}>
-            <h4>{category.label}</h4>
+        {activeExample.sections.map((fieldSection) => (
+          <div className="setting-category" key={fieldSection.label}>
+            <h4>{fieldSection.label}</h4>
             <div className="inputs">
-              {category.fields.map(
+              {fieldSection.fields.map(
                 ({
                   name,
                   defaultValue,

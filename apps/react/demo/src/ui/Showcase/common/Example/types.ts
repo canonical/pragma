@@ -39,7 +39,7 @@ export interface ProviderProps {
   outputFormats?: ExampleOutputFormat[];
 }
 
-export interface FieldCategory {
+export interface FieldsSection {
   label: string;
   /**
    * Array defining the controls and their initial/default configuration for this example.
@@ -78,7 +78,7 @@ export interface ShowcaseExampleOpts {
   /** The component to render */
   Component: ShowcaseComponent;
   /** The categories of fields associated with this example */
-  fieldCategories: FieldCategory[];
+  sections: FieldsSection[];
 }
 
 /** A fully initialized ShowcaseExample */

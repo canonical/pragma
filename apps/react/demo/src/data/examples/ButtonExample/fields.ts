@@ -1,7 +1,7 @@
 import DEFAULT_CATEGORIES from "data/fields.js";
-import type { FieldCategory } from "ui/index.js";
+import type { FieldsSection } from "ui/index.js";
 
-const fieldCategories: FieldCategory[] = [
+const sections: FieldsSection[] = [
   ...DEFAULT_CATEGORIES,
   {
     label: "Misc",
@@ -21,4 +21,4 @@ const fieldCategories: FieldCategory[] = [
   },
 ];
 
-export default fieldCategories;
+export default sections;

@@ -1,4 +1,4 @@
-import type { ExampleSettingValue, FieldCategory } from "../../../ui/index.js";
+import type { ExampleSettingValue, FieldsSection } from "../../../ui/index.js";
 import {
   FONT_FAMILY_FIELD,
   FONT_SIZE_FIELD,
@@ -9,7 +9,7 @@ import {
 const REM_TRANSFORMER = (value: ExampleSettingValue) => `${value}rem`;
 const PX_TRANSFORMER = (value: ExampleSettingValue) => `${value}px`;
 
-const fieldCategories: FieldCategory[] = [
+const sections: FieldsSection[] = [
   {
     label: "Typeface",
     fields: [
@@ -208,4 +208,4 @@ const fieldCategories: FieldCategory[] = [
   },
 ];
 
-export default fieldCategories;
+export default sections;
