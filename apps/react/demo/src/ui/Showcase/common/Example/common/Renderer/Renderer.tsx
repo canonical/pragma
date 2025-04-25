@@ -3,8 +3,8 @@ import type { RendererProps } from "./types.js";
 const componentCssClassname = "ds example-renderer";
 import root from "react-shadow";
 import { useShowcaseContext } from "../../hooks/index.js";
-import "./styles.css";
-import shadowCss from "./shadow-styles.css?inline";
+import shadowCss from "./styles.css?inline";
+import "@canonical/styles-debug/baseline-grid";
 
 const Renderer = ({ style, className }: RendererProps) => {
   const {
