@@ -10,11 +10,18 @@ They are not included in the base styles packages, but can be used in conjunctio
 2. Import the styles you need:
 
 ```css
+/* CSS Import */
 /* To import all styles */
 @import url("@canonical/styles-debug");
 
 /* To import only certain styles */
 @import url("@canonical/styles-debug/baseline-grid");
+```
+
+If using a bundling tool like Vite, you may also directly import the styles in a component file:
+```tsx
+import "@canonical/styles-debug"; // import all debug styles
+// import "@canonical/styles-debug/baseline-grid"; // for baseline grid only
 ```
 
 ### Debug utilities
