@@ -157,7 +157,6 @@
         background: none;
         border: none;
         color: var(--drawer-close-button-color);
-        cursor: pointer;
         flex-shrink: 0;
         font-size: var(--drawer-close-button-font-size);
         line-height: var(--drawer-close-button-line-height);
