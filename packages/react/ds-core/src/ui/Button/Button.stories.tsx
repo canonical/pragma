@@ -27,7 +27,7 @@ type Story = StoryObj<typeof meta>;
  */
 export const Default: Story = {
   args: {
-    label: "Contact us",
+    children: "Contact us",
   },
 };
 
@@ -36,7 +36,7 @@ export const Default: Story = {
  */
 export const Positive: Story = {
   args: {
-    label: "Confirm",
+    children: "Confirm",
     appearance: "positive",
   },
 };
@@ -46,7 +46,7 @@ export const Positive: Story = {
  */
 export const Negative: Story = {
   args: {
-    label: "Delete",
+    children: "Delete",
     appearance: "negative",
   },
 };
@@ -56,7 +56,7 @@ export const Negative: Story = {
  */
 export const Custom: Story = {
   args: {
-    label: "Customize",
+    children: "Customize",
     className: "custom-class",
     style: {
       "--button-color-background": "lightblue",
@@ -85,13 +85,13 @@ export const IntentsInheritance: Story = {
         <p>
           I'm a wrapper with <code>positive</code> intent class name.
         </p>
-        <Button label="This is a neutral button" appearance="neutral" />
-        <Button label="This is a negative button" appearance="negative" />
-        <Button label="This button inherits the intent from parent" />
+        <Button appearance="neutral">This is a neutral button</Button>
+        <Button appearance="negative">This is a negative button</Button>
+        <Button>This button inherits the intent from parent</Button>
       </div>
     ),
   ],
   args: {
-    label: "Broken",
+    children: "Broken",
   },
 };

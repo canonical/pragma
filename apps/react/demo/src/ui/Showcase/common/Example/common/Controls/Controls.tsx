@@ -30,8 +30,12 @@ const Controls = ({ id, className, style }: ControlsProps): ReactElement => {
     >
       <div>
         {/*TODO use icon buttons when icon is implemented*/}
-        <Button label={"Prev"} type="button" onClick={activatePrevExample} />
-        <Button label="Next" type="button" onClick={activateNextExample} />
+        <Button type="button" onClick={activatePrevExample}>
+          Prev
+        </Button>
+        <Button type="button" onClick={activateNextExample}>
+          Next
+        </Button>
       </div>
       <TooltipArea
         // TODO use new form components when ready
@@ -43,11 +47,9 @@ const Controls = ({ id, className, style }: ControlsProps): ReactElement => {
         Message={
           <>
             <h4>Example settings</h4>
-            <Button
-              label={"Reset to defaults"}
-              type={"button"}
-              onClick={resetActiveExample}
-            />
+            <Button type={"button"} onClick={resetActiveExample}>
+              Reset to defaults
+            </Button>
             <hr />
             <div className="inputs">
               {activeExample.fields.map(
@@ -70,15 +72,16 @@ const Controls = ({ id, className, style }: ControlsProps): ReactElement => {
           </>
         }
       >
-        <Button label="Configure" />
+        <Button>Configure</Button>
       </TooltipArea>
       <Button
         type="button"
-        label="Copy CSS"
         style={{ marginLeft: "auto" }}
         disabled={!output?.css}
         onClick={() => copyOutput("css")}
-      />
+      >
+        Copy CSS
+      </Button>
     </div>
   );
 };
