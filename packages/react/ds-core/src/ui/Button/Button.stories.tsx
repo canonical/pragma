@@ -28,6 +28,7 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {
   args: {
     children: "Contact us",
+    disabled: true,
   },
 };
 
@@ -56,7 +57,8 @@ export const Negative: Story = {
  */
 export const Custom: Story = {
   args: {
-    children: "Customize",
+    children: <span>Customize</span>,
+    "aria-label": "Customize",
     className: "custom-class",
     style: {
       "--button-color-background": "lightblue",
