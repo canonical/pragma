@@ -12,16 +12,12 @@ const Provider = ({
   children,
   ...contextOptions
 }: ProviderOptions): React.ReactElement => {
-  const [addCommentEnabled, setAddCommentEnabled] = useState(false);
   const [addCommentOpenLocations, setAddCommentOpenLocations] = useState<
     Set<number>
   >(new Set());
 
   const toggleAddCommentLocation = useCallback(
     (lineNumber: number) => {
-      if (!addCommentEnabled) {
-        return;
-      }
       const newSet = new Set(addCommentOpenLocations);
       if (newSet.has(lineNumber)) {
         newSet.delete(lineNumber);
@@ -30,15 +26,13 @@ const Provider = ({
       }
       setAddCommentOpenLocations(newSet);
     },
-    [addCommentOpenLocations, addCommentEnabled],
+    [addCommentOpenLocations],
   );
 
   return (
     <Context.Provider
       value={{
         ...contextOptions,
-        addCommentEnabled,
-        setAddCommentEnabled,
         addCommentOpenLocations,
         toggleAddCommentLocation,
       }}

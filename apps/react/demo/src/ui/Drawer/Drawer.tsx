@@ -10,17 +10,17 @@ const componentCssClassName = "ds drawer";
  * @returns {React.ReactElement} - Rendered Drawer
  */
 const Drawer = ({
+  id,
+  style,
+  className,
+  children,
   isOpenOverride,
   onClose,
   onOpen,
   position = "right",
-  children,
   title,
   titleId,
-  className,
   contentsClassName,
-  id,
-  style,
   parent,
 }: DrawerProps): ReactElement => {
   const { isOpen, close, dialogueRef } = useDrawer({
@@ -55,7 +55,7 @@ const Drawer = ({
           <button
             type="button"
             onClick={close}
-            className="close-button"
+            className="close"
             aria-label={title ? `Close ${title}` : "Close Drawer"}
           >
             &times;

@@ -2,22 +2,41 @@
 import type React from "react";
 
 export type DiffContentLine = {
-  type: "add" | "remove" | "context";
-  lineNum1: number | string | null;
-  lineNum2: number | string | null;
   content: string;
-};
+} & (
+  | {
+      type: "add";
+      addLineNumber: number;
+    }
+  | {
+      type: "remove";
+      removeLineNumber: number;
+    }
+  | {
+      type: "context";
+      // we need both line numbers for context lines
+      addLineNumber: number;
+      removeLineNumber: number;
+    }
+);
 
 export type DiffHunkLine = {
   type: "hunk";
   hunkHeader: string;
+  hunkIndex: number;
 };
 
-export type DiffLineProps = {
+type DiffLineCommonProps = {
   /** A unique identifier for the DiffLine */
   id?: string;
   /** Additional CSS classes */
   className?: string;
   /** Inline styles */
   style?: React.CSSProperties;
-} & (DiffContentLine | DiffHunkLine);
+  /** Callback function for when a line is clicked. */
+  onLineClick?: (() => void) | undefined;
+};
+
+export type DiffContentLineProps = DiffLineCommonProps & DiffContentLine;
+export type DiffHunkLineProps = DiffLineCommonProps & DiffHunkLine;
+export type DiffLineProps = DiffContentLineProps | DiffHunkLineProps;

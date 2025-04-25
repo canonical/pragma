@@ -3,6 +3,50 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.9.0-experimental.18](https://github.com/canonical/ds25/compare/v0.9.0-experimental.17...v0.9.0-experimental.18) (2025-04-22)
+
+
+### Bug Fixes
+
+* **CodeDiffViewer:** fix line numbers ([#212](https://github.com/canonical/ds25/issues/212)) ([1cdc6fd](https://github.com/canonical/ds25/commit/1cdc6fda3658538cd4365bdd67a42d00a0284704))
+
+
+### Features
+
+* **GitDiffViewer:** refactor line numbers to add better support for diff lines ([#210](https://github.com/canonical/ds25/issues/210)) ([08c6285](https://github.com/canonical/ds25/commit/08c6285d5d7e3894a8c18d28fd52731a8d8fff17))
+
+
+
+
+
+# [0.9.0-experimental.17](https://github.com/canonical/ds25/compare/v0.9.0-experimental.16...v0.9.0-experimental.17) (2025-04-18)
+
+
+### Bug Fixes
+
+* wrong import ([#209](https://github.com/canonical/ds25/issues/209)) ([e31f062](https://github.com/canonical/ds25/commit/e31f0625b1549bc9ddce98b3cc81bbc6a781b658))
+
+
+
+
+
+# [0.9.0-experimental.16](https://github.com/canonical/ds25/compare/v0.9.0-experimental.15...v0.9.0-experimental.16) (2025-04-18)
+
+
+### Bug Fixes
+
+* **GitDiffViewer:** correct line highlighting logic in diff viewer ([#208](https://github.com/canonical/ds25/issues/208)) ([1f1fc58](https://github.com/canonical/ds25/commit/1f1fc585883bd5b61e126830776d3a46c021b6b3))
+
+
+### Features
+
+* **GitDiffViewer:** Improve code diff add comment interaction ([#207](https://github.com/canonical/ds25/issues/207)) ([20c042a](https://github.com/canonical/ds25/commit/20c042a6a8ce7bdb2066e828f80d848a7d812c56))
+* **GitDiffViewer:** improve syntax highlighting and fix file header collapse button animation ([#206](https://github.com/canonical/ds25/issues/206)) ([d7e8a07](https://github.com/canonical/ds25/commit/d7e8a070c459a8e1e6a2c0f8d116f1021e87ee9b))
+
+
+
+
+
 # [0.9.0-experimental.15](https://github.com/canonical/ds25/compare/v0.9.0-experimental.14...v0.9.0-experimental.15) (2025-04-15)
 
 

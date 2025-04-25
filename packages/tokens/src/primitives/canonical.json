@@ -1,0 +1,85 @@
+{
+  "color": {
+    "background-default": {
+      "$value": "#ffffff",
+      "$type": "color",
+      "$description": "Default background color"
+    },
+    "text-default": {
+      "$value": "#000000",
+      "$type": "color",
+      "$description": "Default text color"
+    },
+    "blue": {
+      "$value": "#24598f",
+      "$type": "color"
+    },
+    "yellow": {
+      "$value": "#cc7900",
+      "$type": "color"
+    },
+    "positive-default": {
+      "$value": "#0e8420",
+      "$type": "color",
+      "$description": "Positive intent color"
+    },
+    "negative-default": {
+      "$value": "#c7162b",
+      "$type": "color",
+      "$description": "Negative intent color"
+    }
+  },
+  "spacing": {
+    "horizontal": {
+      "xsmall": {
+        "$value": "0.25rem",
+        "$type": "dimension"
+      },
+      "small": {
+        "$value": "0.5rem",
+        "$type": "dimension"
+      },
+      "medium": {
+        "$value": "1.25rem",
+        "$type": "dimension"
+      },
+      "large": {
+        "$value": "1.5rem",
+        "$type": "dimension"
+      }
+    },
+    "vertical": {
+      "xsmall": {
+        "$value": "0.25rem",
+        "$type": "dimension"
+      },
+      "small": {
+        "$value": "0.5rem",
+        "$type": "dimension"
+      }
+    }
+  },
+  "typography": {
+    "font-family": {
+      "sans": {
+        "$value": "\"Ubuntu variable\", Ubuntu, -apple-system, 'Segoe UI', Roboto, sans-serif",
+        "$type": "font",
+        "$description": "Primary sans-serif font stack"
+      },
+      "mono": {
+        "$value": "\"Ubuntu Mono variable\", 'Ubuntu Mono', Consolas, monospace",
+        "$type": "font"
+      }
+    },
+    "font-size": {
+      "default": {
+        "$value": "1rem",
+        "$type": "dimension"
+      },
+      "small": {
+        "$value": "0.875rem",
+        "$type": "dimension"
+      }
+    }
+  }
+}

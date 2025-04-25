@@ -11,7 +11,7 @@ const meta = {
 
     return (
       <FormProvider {...methods}>
-        <form className="h-100">{Story()}</form>
+        <form id="form-root">{Story()}</form>
       </FormProvider>
     );
   },

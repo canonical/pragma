@@ -3,19 +3,19 @@ import type React from "react";
 import {
   Fragment,
   forwardRef,
-  useCallback,
   useEffect,
   useImperativeHandle,
   useMemo,
   useRef,
 } from "react";
 import { useGitDiffViewer } from "../../hooks/index.js";
+import { highlightDiffHunkLines } from "../../utils/index.js";
 import { DiffLine } from "./common/index.js";
-import "./styles.css";
-// TODO: decide where to put this once we provide an external syntax highlighter option
-import hljs from "highlight.js";
 import "./HighlighTheme.css";
+import "./styles.css";
 import type { CodeDiffViewerProps } from "./types.js";
+
+import { AnnotatedDiffLine } from "./common/AnnotatedDiffLine/index.js";
 import updateTableWidth from "./utils/updateTableWidth.js";
 
 const componentCssClassName = "ds code-diff-viewer";
@@ -30,62 +30,21 @@ const CodeDiffViewer = (
   {
     id,
     AddComment,
+    onLineClick,
     className,
     style,
     disableWidthCalculation = false,
   }: CodeDiffViewerProps,
   ref: React.Ref<HTMLTableElement>,
 ): React.ReactElement | null => {
-  const {
-    isCollapsed,
-    diff,
-    addCommentEnabled,
-    setAddCommentEnabled,
-    addCommentOpenLocations,
-    toggleAddCommentLocation,
-    lineDecorations,
-  } = useGitDiffViewer();
+  const { isCollapsed, diff } = useGitDiffViewer();
   const tableRef = useRef<HTMLTableElement>(null);
 
-  // TODO: temporary syntax highlighting
-  // replace with a proper syntax highlighter
-  // add support for option to have external syntax highlighter
-  const diffCodeLanguage = useMemo(() => {
-    const extension = diff?.newPath.split(".").pop();
-    const mapping: { [key: string]: string } = {
-      js: "javascript",
-      jsx: "javascript",
-      ts: "typescript",
-      tsx: "typescript",
-      css: "css",
-      scss: "scss",
-      html: "xml",
-      py: "python",
-      java: "java",
-      // Add more mappings as needed
-    };
-    return mapping[extension || ""] || "plaintext";
-  }, [diff?.newPath]);
-
-  const highlight = useCallback(
-    (code: string) => {
-      if (hljs.getLanguage(diffCodeLanguage)) {
-        return hljs.highlight(code, { language: diffCodeLanguage }).value;
-      }
-      return hljs.highlight(code, { language: "plaintext" }).value;
-    },
-    [diffCodeLanguage],
-  );
-
-  const highlightedLines = useMemo(() => {
+  const highlightedLines: string[][] = useMemo(() => {
     if (!diff) return [];
 
-    return diff.hunks.map((hunk) => {
-      return hunk.lines.map((line) => {
-        return highlight(line.content);
-      });
-    });
-  }, [diff, highlight]);
+    return diff.hunks.map((hunk) => highlightDiffHunkLines(hunk.lines));
+  }, [diff]);
 
   useImperativeHandle<HTMLTableElement | null, HTMLTableElement | null>(
     ref,
@@ -113,14 +72,6 @@ const CodeDiffViewer = (
     };
   }, [disableWidthCalculation]);
 
-  useEffect(() => {
-    if (AddComment && !addCommentEnabled) {
-      setAddCommentEnabled(true);
-    } else if (!AddComment && addCommentEnabled) {
-      setAddCommentEnabled(false);
-    }
-  }, [AddComment, addCommentEnabled, setAddCommentEnabled]);
-
   return (
     <div
       id={id}
@@ -135,70 +86,41 @@ const CodeDiffViewer = (
             {diff.hunks.map((hunk, hunkIndex) => {
               // We'll track the counters for old and new lines
               // as we iterate through each hunk.
-              let oldLineCounter = hunk.oldStart;
-              let newLineCounter = hunk.newStart;
+              let oldLineCounter = hunk.positions.old.start;
+              let newLineCounter = hunk.positions.new.start;
 
               return (
                 <Fragment key={`${diff.oldPath}-${hunkIndex}`}>
-                  {/* Hunk header line */}
-                  <DiffLine type="hunk" hunkHeader={hunk.header} />
+                  <DiffLine
+                    type="hunk"
+                    hunkHeader={hunk.header}
+                    hunkIndex={hunkIndex}
+                  />
 
                   {hunk.lines.map((line, lineIndex) => {
-                    let lineNum1: number | null = null;
-                    let lineNum2: number | null = null;
+                    const newLineNumber = newLineCounter;
+                    const oldLineNumber = oldLineCounter;
 
                     if (line.type === "remove") {
-                      // Only the old line number advances
-                      lineNum1 = oldLineCounter++;
+                      oldLineCounter++;
                     } else if (line.type === "add") {
-                      // Only the new line number advances
-                      lineNum2 = newLineCounter++;
+                      newLineCounter++;
                     } else {
-                      // context line => both lines advance
-                      lineNum1 = oldLineCounter++;
-                      lineNum2 = newLineCounter++;
+                      oldLineCounter++;
+                      newLineCounter++;
                     }
 
-                    const lineNumber = lineNum2 || lineNum1 || 0;
-
-                    // For rendering, if lineNum1 or lineNum2 is null,
-                    // you can display e.g. '+' or '-' or an empty cell.
                     return (
-                      <Fragment
+                      <AnnotatedDiffLine
                         key={`${diff.oldPath}-${hunkIndex}-${lineIndex}`}
-                      >
-                        {/* Normal diff line */}
-                        <DiffLine
-                          lineNum1={lineNum1}
-                          lineNum2={lineNum2}
-                          content={highlightedLines[hunkIndex][lineIndex]}
-                          type={line.type}
-                        />
-
-                        {lineNum2 && lineDecorations?.[lineNum2] && (
-                          <tr className="line-decoration">
-                            <td className="container">
-                              {lineDecorations[lineNum2]}
-                            </td>
-                          </tr>
-                        )}
-
-                        {/* Open comment row, if any */}
-                        {lineNum2 &&
-                          AddComment &&
-                          addCommentOpenLocations.has(lineNum2) && (
-                            <tr className="line-decoration">
-                              <td className="container">
-                                <AddComment
-                                  lineNumber={lineNumber}
-                                  onClose={() =>
-                                    toggleAddCommentLocation(lineNumber)
-                                  }
-                                />
-                              </td>
-                            </tr>
-                          )}
-                      </Fragment>
+                        newLineNumber={newLineNumber}
+                        oldLineNumber={oldLineNumber}
+                        diffLineNumber={hunk.positions.diff.start + lineIndex}
+                        content={highlightedLines[hunkIndex][lineIndex]}
+                        type={line.type}
+                        onLineClick={onLineClick}
+                        AddComment={AddComment}
+                      />
                     );
                   })}
                 </Fragment>

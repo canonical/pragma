@@ -3,7 +3,7 @@
 /* Establish a 100% height context - needed for the controls and renderer to properly fill the page */
 html,
 body,
-.h-100,
+#form-root,
 #storybook-root,
 #root {
   height: 100%;

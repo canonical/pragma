@@ -6,6 +6,10 @@
   min-width: var(--table-width);
   color: var(--git-diff-viewer-code-default-color);
 
+  pre {
+    color: var(--git-diff-viewer-code-default-color);
+  }
+
   &.diff-line-add {
     background-color: var(--git-diff-viewer-code-insertion-background);
 
@@ -34,7 +38,13 @@
     background-color: var(--git-diff-viewer-hunk-header-background);
     color: var(--git-diff-viewer-hunk-header-color);
     user-select: none;
-    border-bottom: 1px solid var(--git-diff-viewer-border-color-tinted);
+    border-color: var(--git-diff-viewer-border-color-tinted);
+    border-style: solid;
+    border-width: 1px 0;
+
+    &.is-first-hunk {
+      border-top-width: 0px;
+    }
 
     td.diff-gutter {
       background-color: var(--git-diff-viewer-hunk-header-background);

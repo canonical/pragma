@@ -5,6 +5,7 @@ import "./styles.css";
 import type { DiffLineProps } from "./types.js";
 
 const componentCssClassName = "ds diff-line";
+const firstHunkLineCssClassName = "is-first-hunk";
 
 /**
  * Displays a single line of a diff as a table row with line numbers.
@@ -15,15 +16,12 @@ const DiffLine = ({
   id,
   className,
   style,
+  onLineClick,
   ...props
 }: DiffLineProps): React.ReactElement => {
-  const { wrapLines, addCommentEnabled, toggleAddCommentLocation } =
-    useGitDiffViewer();
-  const gutterIsInteractive = addCommentEnabled;
+  const { wrapLines } = useGitDiffViewer();
   const typeClass = `diff-line-${props.type}`;
-
-  const lineNumber =
-    props.type !== "hunk" ? Number(props.lineNum2 || props.lineNum1) : 0;
+  const isInteractive = Boolean(onLineClick);
 
   return (
     <tr
@@ -32,19 +30,22 @@ const DiffLine = ({
       className={[
         componentCssClassName,
         typeClass,
-        gutterIsInteractive ? "interactive" : "",
+        isInteractive && "interactive",
         className,
+        props.type === "hunk" &&
+          props.hunkIndex === 0 &&
+          firstHunkLineCssClassName,
       ]
         .filter(Boolean)
         .join(" ")}
     >
       <td
         className={`diff-gutter ${wrapLines ? "wrap" : ""} ${props.type}`}
-        tabIndex={gutterIsInteractive && props.type !== "hunk" ? 0 : undefined}
-        onClick={() => toggleAddCommentLocation(lineNumber)}
+        tabIndex={isInteractive && props.type !== "hunk" ? 0 : undefined}
+        onClick={onLineClick}
         onKeyUp={(e) => {
           if (e.key === "Enter") {
-            toggleAddCommentLocation(lineNumber);
+            onLineClick?.();
           }
         }}
         onKeyDown={undefined}
@@ -53,8 +54,12 @@ const DiffLine = ({
           "\u00A0"
         ) : (
           <div className="diff-line-numbers">
-            <span className="line-num">{props.lineNum1 ?? "+"}</span>
-            <span className="line-num">{props.lineNum2 ?? "-"}</span>
+            <span className="line-num">
+              {props.type === "add" ? "+" : props.removeLineNumber}
+            </span>
+            <span className="line-num">
+              {props.type === "remove" ? "-" : props.addLineNumber}
+            </span>
           </div>
         )}
       </td>

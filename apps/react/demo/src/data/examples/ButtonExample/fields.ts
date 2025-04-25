@@ -1,10 +1,10 @@
-import { ROOT_CATEGORY } from "data/fields.js";
-import type { FieldCategory } from "ui/index.js";
+import { ROOT_SECTION } from "data/fields.js";
+import type { FieldsSection } from "../../../ui/index.js";
 
-const fieldCategories: FieldCategory[] = [
-  ROOT_CATEGORY,
+const sections: FieldsSection[] = [
+  ROOT_SECTION,
   {
-    label: "Misc",
+    title: "Misc",
     fields: [
       {
         name: "numButtons",
@@ -21,4 +21,4 @@ const fieldCategories: FieldCategory[] = [
   },
 ];
 
-export default fieldCategories;
+export default sections;

@@ -1,15 +1,11 @@
-import type { FieldCategory } from "../../../ui/index.js";
-import { ROOT_CATEGORY } from "../../fields.js";
-import {
-  BASELINE_MULTIPLE_TRANSFORMER,
-  FONT_RELATIVE_TRANSFORMERS,
-  PX_TRANSFORMER,
-} from "../../transformers.js";
+import type { FieldsSection } from "../../../ui/index.js";
+import { ROOT_SECTION } from "../../fields.js";
+import transformers from "../../transformers.js";
 
-const fieldCategories: FieldCategory[] = [
-  ROOT_CATEGORY,
+const sections: FieldsSection[] = [
+  ROOT_SECTION,
   {
-    label: "H1",
+    title: "H1",
     fields: [
       {
         name: "--h1-font-size",
@@ -19,7 +15,7 @@ const fieldCategories: FieldCategory[] = [
         max: 8,
         step: 0.125,
         defaultValue: 4,
-        ...FONT_RELATIVE_TRANSFORMERS,
+        ...transformers.fontRelativeTransformers,
       },
       {
         name: "--h1-line-height",
@@ -29,17 +25,17 @@ const fieldCategories: FieldCategory[] = [
         max: 20,
         step: 1,
         defaultValue: 8,
-        demoTransformer: BASELINE_MULTIPLE_TRANSFORMER,
+        demoTransformer: transformers.convertToBaselineMultiples,
       },
       {
         name: "--h1-space-after",
         label: "H1 Spacing After",
         inputType: "range",
+        ...transformers.fontRelativeTransformers,
         min: 0,
         max: 4,
         step: 0.05,
         defaultValue: 1.5,
-        ...FONT_RELATIVE_TRANSFORMERS,
       },
       {
         name: "--h1-nudge",
@@ -49,12 +45,12 @@ const fieldCategories: FieldCategory[] = [
         max: 4,
         step: 0.05,
         defaultValue: 0.55,
-        ...FONT_RELATIVE_TRANSFORMERS,
+        ...transformers.fontRelativeTransformers,
       },
     ],
   },
   {
-    label: "H2",
+    title: "H2",
     fields: [
       {
         name: "--h2-font-size",
@@ -64,7 +60,7 @@ const fieldCategories: FieldCategory[] = [
         max: 8,
         step: 0.125,
         defaultValue: 3,
-        ...FONT_RELATIVE_TRANSFORMERS,
+        ...transformers.fontRelativeTransformers,
       },
       {
         name: "--h2-line-height",
@@ -74,7 +70,7 @@ const fieldCategories: FieldCategory[] = [
         max: 20,
         step: 1,
         defaultValue: 8,
-        demoTransformer: BASELINE_MULTIPLE_TRANSFORMER,
+        demoTransformer: transformers.convertToBaselineMultiples,
       },
       {
         name: "--h2-space-after",
@@ -84,7 +80,7 @@ const fieldCategories: FieldCategory[] = [
         max: 4,
         step: 0.05,
         defaultValue: 1.5,
-        ...FONT_RELATIVE_TRANSFORMERS,
+        ...transformers.fontRelativeTransformers,
       },
       {
         name: "--h2-nudge",
@@ -94,12 +90,12 @@ const fieldCategories: FieldCategory[] = [
         max: 4,
         step: 0.05,
         defaultValue: 0.5,
-        ...FONT_RELATIVE_TRANSFORMERS,
+        ...transformers.fontRelativeTransformers,
       },
     ],
   },
   {
-    label: "H3",
+    title: "H3",
     fields: [
       {
         name: "--h3-font-size",
@@ -109,7 +105,7 @@ const fieldCategories: FieldCategory[] = [
         max: 8,
         step: 0.125,
         defaultValue: 3,
-        ...FONT_RELATIVE_TRANSFORMERS,
+        ...transformers.fontRelativeTransformers,
       },
       {
         name: "--h3-line-height",
@@ -119,7 +115,7 @@ const fieldCategories: FieldCategory[] = [
         max: 20,
         step: 1,
         defaultValue: 5,
-        demoTransformer: BASELINE_MULTIPLE_TRANSFORMER,
+        demoTransformer: transformers.convertToBaselineMultiples,
       },
       {
         name: "--h3-space-after",
@@ -129,7 +125,7 @@ const fieldCategories: FieldCategory[] = [
         max: 4,
         step: 0.05,
         defaultValue: 2,
-        ...FONT_RELATIVE_TRANSFORMERS,
+        ...transformers.fontRelativeTransformers,
       },
       {
         name: "--h3-nudge",
@@ -138,13 +134,13 @@ const fieldCategories: FieldCategory[] = [
         min: 0,
         max: 4,
         step: 0.05,
+        ...transformers.fontRelativeTransformers,
         defaultValue: 0.75,
-        ...FONT_RELATIVE_TRANSFORMERS,
       },
     ],
   },
   {
-    label: "H4",
+    title: "H4",
     fields: [
       {
         name: "--h4-font-size",
@@ -153,8 +149,8 @@ const fieldCategories: FieldCategory[] = [
         min: 0.25,
         max: 8,
         step: 0.125,
+        ...transformers.fontRelativeTransformers,
         defaultValue: 2,
-        ...FONT_RELATIVE_TRANSFORMERS,
       },
       {
         name: "--h4-line-height",
@@ -164,17 +160,17 @@ const fieldCategories: FieldCategory[] = [
         max: 20,
         step: 1,
         defaultValue: 4,
-        demoTransformer: BASELINE_MULTIPLE_TRANSFORMER,
+        demoTransformer: transformers.convertToBaselineMultiples,
       },
       {
         name: "--h4-space-after",
         label: "H4 Spacing After",
         inputType: "range",
+        ...transformers.fontRelativeTransformers,
         min: 0,
         max: 4,
         step: 0.05,
         defaultValue: 1,
-        ...FONT_RELATIVE_TRANSFORMERS,
       },
       {
         name: "--h4-nudge",
@@ -183,13 +179,13 @@ const fieldCategories: FieldCategory[] = [
         min: 0,
         max: 4,
         step: 0.05,
+        ...transformers.fontRelativeTransformers,
         defaultValue: 0.25,
-        ...FONT_RELATIVE_TRANSFORMERS,
       },
     ],
   },
   {
-    label: "H5",
+    title: "H5",
     fields: [
       {
         name: "--h5-font-size",
@@ -199,7 +195,7 @@ const fieldCategories: FieldCategory[] = [
         max: 8,
         step: 0.125,
         defaultValue: 1,
-        ...FONT_RELATIVE_TRANSFORMERS,
+        ...transformers.fontRelativeTransformers,
       },
       {
         name: "--h5-line-height",
@@ -208,18 +204,18 @@ const fieldCategories: FieldCategory[] = [
         min: 1,
         max: 20,
         step: 1,
+        demoTransformer: transformers.convertToBaselineMultiples,
         defaultValue: 3,
-        demoTransformer: BASELINE_MULTIPLE_TRANSFORMER,
       },
       {
         name: "--h5-space-after",
         label: "H5 Spacing After",
         inputType: "range",
+        ...transformers.fontRelativeTransformers,
         min: 0,
         max: 4,
         step: 0.05,
         defaultValue: 1,
-        ...FONT_RELATIVE_TRANSFORMERS,
       },
       {
         name: "--h5-nudge",
@@ -227,14 +223,14 @@ const fieldCategories: FieldCategory[] = [
         inputType: "range",
         min: 0,
         max: 4,
+        ...transformers.fontRelativeTransformers,
         step: 0.05,
         defaultValue: 0.4,
-        ...FONT_RELATIVE_TRANSFORMERS,
       },
     ],
   },
   {
-    label: "H6",
+    title: "H6",
     fields: [
       {
         name: "--h6-font-size",
@@ -244,7 +240,7 @@ const fieldCategories: FieldCategory[] = [
         max: 8,
         step: 0.125,
         defaultValue: 1,
-        ...FONT_RELATIVE_TRANSFORMERS,
+        ...transformers.fontRelativeTransformers,
       },
       {
         name: "--h6-line-height",
@@ -253,18 +249,18 @@ const fieldCategories: FieldCategory[] = [
         min: 1,
         max: 20,
         step: 1,
+        demoTransformer: transformers.convertToBaselineMultiples,
         defaultValue: 3,
-        demoTransformer: BASELINE_MULTIPLE_TRANSFORMER,
       },
       {
         name: "--h6-space-after",
         label: "H6 Spacing After",
         inputType: "range",
+        ...transformers.fontRelativeTransformers,
         min: 0,
         max: 4,
         step: 0.05,
         defaultValue: 1,
-        ...FONT_RELATIVE_TRANSFORMERS,
       },
       {
         name: "--h6-nudge",
@@ -272,14 +268,14 @@ const fieldCategories: FieldCategory[] = [
         inputType: "range",
         min: 0,
         max: 4,
+        ...transformers.fontRelativeTransformers,
         step: 0.05,
         defaultValue: 0.4,
-        ...FONT_RELATIVE_TRANSFORMERS,
       },
     ],
   },
   {
-    label: "Paragraph",
+    title: "Paragraph",
     fields: [
       {
         name: "--p-font-size",
@@ -289,7 +285,7 @@ const fieldCategories: FieldCategory[] = [
         max: 8,
         step: 0.125,
         defaultValue: 1,
-        ...FONT_RELATIVE_TRANSFORMERS,
+        ...transformers.fontRelativeTransformers,
       },
       {
         name: "--p-line-height",
@@ -299,7 +295,7 @@ const fieldCategories: FieldCategory[] = [
         max: 20,
         step: 1,
         defaultValue: 3,
-        demoTransformer: BASELINE_MULTIPLE_TRANSFORMER,
+        demoTransformer: transformers.convertToBaselineMultiples,
       },
       {
         name: "--p-space-after",
@@ -319,7 +315,7 @@ const fieldCategories: FieldCategory[] = [
         max: 4,
         step: 0.05,
         defaultValue: 0.375,
-        ...FONT_RELATIVE_TRANSFORMERS,
+        ...transformers.fontRelativeTransformers,
       },
     ],
   },
@@ -332,9 +328,9 @@ const fieldCategories: FieldCategory[] = [
         inputType: "range",
         min: 0,
         max: 16,
+        ...transformers.fontRelativeTransformers,
         step: 0.5,
         defaultValue: 4,
-        ...FONT_RELATIVE_TRANSFORMERS,
       },
       {
         name: "--section-padding-bottom-deep",
@@ -342,9 +338,9 @@ const fieldCategories: FieldCategory[] = [
         inputType: "range",
         min: 0,
         max: 16,
+        ...transformers.fontRelativeTransformers,
         step: 0.5,
         defaultValue: 8,
-        ...FONT_RELATIVE_TRANSFORMERS,
       },
       {
         name: "--section-padding-bottom-shallow",
@@ -359,7 +355,7 @@ const fieldCategories: FieldCategory[] = [
     ],
   },
   {
-    label: "Horizontal rule",
+    title: "Horizontal rule",
     fields: [
       {
         name: "--hr-margin-top",
@@ -369,7 +365,7 @@ const fieldCategories: FieldCategory[] = [
         max: 16,
         step: 1,
         defaultValue: 0,
-        demoTransformer: PX_TRANSFORMER,
+        demoTransformer: transformers.convertToPixels,
       },
       {
         name: "--hr-margin-bottom",
@@ -379,7 +375,7 @@ const fieldCategories: FieldCategory[] = [
         max: 16,
         step: 1,
         defaultValue: 7,
-        demoTransformer: PX_TRANSFORMER,
+        demoTransformer: transformers.convertToPixels,
       },
       {
         name: "--hr-height",
@@ -389,7 +385,7 @@ const fieldCategories: FieldCategory[] = [
         max: 16,
         step: 1,
         defaultValue: 1,
-        demoTransformer: PX_TRANSFORMER,
+        demoTransformer: transformers.convertToPixels,
       },
       {
         name: "--hr-highlighted-scale",
@@ -404,4 +400,4 @@ const fieldCategories: FieldCategory[] = [
   },
 ];
 
-export default fieldCategories;
+export default sections;

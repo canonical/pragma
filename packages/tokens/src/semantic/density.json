@@ -1,0 +1,28 @@
+{
+  "high-density": {
+    "$extensions": {
+      "selector": ".high-density"
+    },
+    "spacing-horizontal": {
+      "$value": "{spacing.horizontal.small}",
+      "$type": "dimension"
+    },
+    "spacing-vertical": {
+      "$value": "{spacing.vertical.small}",
+      "$type": "dimension"
+    }
+  },
+  "low-density": {
+    "$extensions": {
+      "selector": ".low-density"
+    },
+    "spacing-horizontal": {
+      "$value": "{spacing.horizontal.large}",
+      "$type": "dimension"
+    },
+    "spacing-vertical": {
+      "$value": "{spacing.vertical.xsmall}",
+      "$type": "dimension"
+    }
+  }
+}

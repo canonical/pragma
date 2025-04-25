@@ -47,8 +47,6 @@ type UserContextOptions = LineDecorationOptions &
   AllOrNone<CollapseOption>;
 
 type ManagedContextOptions = {
-  addCommentEnabled: boolean;
-  setAddCommentEnabled: (enabled: boolean) => void;
   addCommentOpenLocations: Set<number>;
   toggleAddCommentLocation: (lineNumber: number) => void;
 };
@@ -65,12 +63,18 @@ export type ProviderOptions = {
   children?: React.ReactNode;
 } & UserContextOptions;
 
+export type Position = {
+  start: number;
+  end: number;
+};
+
 export type Hunk = {
   header: string;
-  oldStart: number;
-  oldLines: number;
-  newStart: number;
-  newLines: number;
+  positions: {
+    old: Position;
+    new: Position;
+    diff: Position;
+  };
   lines: {
     type: "add" | "remove" | "context";
     content: string;

@@ -13,7 +13,7 @@ const useExampleRHFInterface = (): useGlobalFormResult => {
     () =>
       SHOWCASE_EXAMPLES.map((example) => {
         const allFields: ExampleControlField[] = [];
-        const fieldCategories = example.fieldCategories.map((category) => {
+        const sections = example.sections.map((category) => {
           const fields = category.fields.map((field) => ({
             ...field,
             // Convert the control name to a global form state key
@@ -33,7 +33,7 @@ const useExampleRHFInterface = (): useGlobalFormResult => {
         });
         return {
           ...example,
-          fieldCategories,
+          sections,
           fields: allFields,
         };
       }),
@@ -44,7 +44,7 @@ const useExampleRHFInterface = (): useGlobalFormResult => {
     () =>
       examples.reduce(
         (exampleAcc, example) => {
-          exampleAcc[example.name] = example.fieldCategories.reduce(
+          exampleAcc[example.name] = example.sections.reduce(
             (fieldAcc, category) => {
               for (const field of category.fields) {
                 const {
@@ -68,22 +68,14 @@ const useExampleRHFInterface = (): useGlobalFormResult => {
     [examples],
   );
 
-  const defaultValues: FormValues = useMemo(
-    () => ({
-      ...exampleSettingDefaultValues,
-      showBaselineGrid: false,
-    }),
-    [exampleSettingDefaultValues],
-  );
-
   const methods = useForm({
     mode: "onChange",
-    defaultValues,
+    defaultValues: exampleSettingDefaultValues,
   });
 
   return useMemo(
-    () => ({ methods, defaultValues, examples }),
-    [methods, defaultValues, examples],
+    () => ({ methods, defaultValues: exampleSettingDefaultValues, examples }),
+    [methods, exampleSettingDefaultValues, examples],
   );
 };
 

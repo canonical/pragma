@@ -1,7 +1,7 @@
 /* GitDiffViewer.css */
 .ds.git-diff-viewer {
   --git-diff-viewer-code-default-background: #f7f7f7;
-  --git-diff-viewer-code-default-color: #636363;
+  --git-diff-viewer-code-default-color: #000000;
   --git-diff-viewer-code-insertion-background: #dff1e2;
   --git-diff-viewer-code-insertion-color: #8cd297;
   --git-diff-viewer-code-deletion-background: #f8e8ea;

@@ -1,0 +1,21 @@
+{
+  "canonical": {
+    "$extensions": {
+      "selector": ".canonical"
+    },
+    "background": {
+      "$value": "{color.background-default}",
+      "$type": "color",
+      "$description": "Background color for canonical mode"
+    },
+    "text-color": {
+      "$value": "{color.text-default}",
+      "$type": "color",
+      "$description": "Text color for canonical mode"
+    },
+    "font-family": {
+      "$value": "{typography.font-family.sans}",
+      "$type": "font"
+    }
+  }
+}

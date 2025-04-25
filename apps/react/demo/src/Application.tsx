@@ -16,7 +16,7 @@ function App() {
 
   return (
     <FormProvider {...methods}>
-      <form className="h-100">
+      <form id="form-root">
         <RouterProvider router={router} />
       </form>
     </FormProvider>
