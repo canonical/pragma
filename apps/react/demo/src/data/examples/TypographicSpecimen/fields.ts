@@ -11,7 +11,7 @@ const PX_TRANSFORMER = (value: ExampleSettingValue) => `${value}px`;
 
 const sections: FieldsSection[] = [
   {
-    label: "Typeface",
+    title: "Typeface",
     fields: [
       {
         ...FONT_FAMILY_FIELD,
@@ -20,7 +20,7 @@ const sections: FieldsSection[] = [
     ],
   },
   {
-    label: "Font size",
+    title: "Font size",
     fields: [
       FONT_SIZE_FIELD,
       {
@@ -85,9 +85,9 @@ const sections: FieldsSection[] = [
       },
     ],
   },
-  { label: "Line height", fields: [LINE_HEIGHT_FIELD] },
+  { title: "Line height", fields: [LINE_HEIGHT_FIELD] },
   {
-    label: "Margin",
+    title: "Margin",
     fields: [
       {
         name: "--h1-margin-bottom",
@@ -192,7 +192,7 @@ const sections: FieldsSection[] = [
     ],
   },
   {
-    label: "Height",
+    title: "Height",
     fields: [
       {
         name: "--hr-height",

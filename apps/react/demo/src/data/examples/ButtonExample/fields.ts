@@ -4,7 +4,7 @@ import type { FieldsSection } from "ui/index.js";
 const sections: FieldsSection[] = [
   ...DEFAULT_CATEGORIES,
   {
-    label: "Misc",
+    title: "Misc",
     fields: [
       {
         name: "numButtons",

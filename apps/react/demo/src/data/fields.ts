@@ -38,15 +38,15 @@ export const LINE_HEIGHT_FIELD: ExampleControlField = {
 
 const DEFAULT_CATEGORIES: FieldsSection[] = [
   {
-    label: "Typeface",
+    title: "Typeface",
     fields: [FONT_FAMILY_FIELD],
   },
   {
-    label: "Font size",
+    title: "Font size",
     fields: [FONT_SIZE_FIELD],
   },
   {
-    label: "Line height",
+    title: "Line height",
     fields: [LINE_HEIGHT_FIELD],
   },
 ];

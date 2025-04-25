@@ -40,7 +40,7 @@ export interface ProviderProps {
 }
 
 export interface FieldsSection {
-  label: string;
+  title: string;
   /**
    * Array defining the controls and their initial/default configuration for this example.
    * The `value` property within these initial configs is often ignored, as the
