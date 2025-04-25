@@ -28,23 +28,18 @@ export interface UseDrawerResult {
 }
 
 export interface DrawerProps extends UseDrawerProps {
-  /** The side from which the drawer appears. Defaults to 'right'. */
-  position?: "left" | "right";
-
-  /** Content to be rendered inside the drawer. */
-  children: ReactNode;
-
-  /** Optional title for the drawer, used for the visible header and accessibility. */
-  title?: string;
-
-  /** A unique identifier for the title element, used for aria-labelledby. Required if 'title' prop is used. */
-  titleId?: string;
-
-  /** Optional additional CSS classes to apply to the drawer container. */
-  className?: string;
-
   /** A unique identifier for the main Drawer element */
   id?: string;
   /** Inline styles for the main Drawer element */
   style?: CSSProperties;
+  /** Optional additional CSS classes to apply to the drawer container. */
+  className?: string;
+  /** Content to be rendered inside the drawer. */
+  children: ReactNode;
+  /** The side from which the drawer appears. Defaults to 'right'. */
+  position?: "left" | "right";
+  /** Optional title for the drawer, used for the visible header and accessibility. */
+  title?: string;
+  /** A unique identifier for the title element, used for aria-labelledby. Required if 'title' prop is used. */
+  titleId?: string;
 }

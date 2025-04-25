@@ -10,16 +10,16 @@ const componentCssClassName = "ds drawer";
  * @returns {React.ReactElement} - Rendered Drawer
  */
 const Drawer = ({
+  id,
+  style,
+  className,
+  children,
   isOpenOverride,
   onClose,
   onOpen,
   position = "right",
-  children,
   title,
   titleId,
-  className,
-  id,
-  style,
   parent,
 }: DrawerProps): ReactElement => {
   const { isOpen, close, dialogueRef } = useDrawer({
