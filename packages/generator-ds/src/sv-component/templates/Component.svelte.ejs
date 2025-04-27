@@ -1,0 +1,20 @@
+<script lang="ts">
+  /* <%= generatorPackageName %> <%= generatorPackageVersion %> */
+  import type { <%= componentName %>Props } from './types.js'
+<% if (withStyles) { _%>
+  import clsx from "clsx"
+  import './styles.css'
+
+  const componentCssClassName = "<%= cssNamespace %> <%= componentCssClassName %>";
+<%_ } _%>
+
+  let { class: className, style, children }: <%= componentName %>Props = $props();
+</script>
+
+<div class={clsx(componentCssClassName, className)}  {style}>
+  {@render children?.()}
+</div>
+
+<!-- @component
+`<%= componentName %>` [FIXME] description of the component.
+-->
