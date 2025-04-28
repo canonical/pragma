@@ -34,10 +34,6 @@
   --drawer-dialogue-padding-vertical: var(--spacing-vertical-small);
   /** horizontal padding inside the dialogue box */
   --drawer-dialogue-padding-horizontal: var(--spacing-horizontal-medium);
-  /** translateX value for closed left drawer */
-  --drawer-dialogue-transform-closed-left: translateX(-100%);
-  /** translateX value for closed right drawer */
-  --drawer-dialogue-transform-closed-right: translateX(100%);
   /** translateX value for open drawer */
   --drawer-dialogue-transform-open: translateX(0);
 
@@ -120,13 +116,13 @@
     &.right {
       left: auto;
       right: 0;
-      transform: var(--drawer-dialogue-transform-closed-right);
+      transform: translateX(100%);
     }
 
     &.left {
       left: 0;
       right: auto;
-      transform: var(--drawer-dialogue-transform-closed-left);
+      transform: translateX(-100%);
     }
 
     & > .header {
