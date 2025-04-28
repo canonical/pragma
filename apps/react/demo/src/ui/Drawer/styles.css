@@ -129,7 +129,7 @@
       transform: var(--drawer-dialogue-transform-closed-left);
     }
 
-    & .header {
+    & > .header {
       align-items: center;
       border-bottom: var(--drawer-header-border-bottom);
       display: flex;
@@ -139,7 +139,7 @@
         var(--drawer-header-padding-right) var(--drawer-header-padding-bottom)
         var(--drawer-header-padding-left);
 
-      & .title {
+      & > .title {
         flex: 0 1 auto;
         font-size: var(--drawer-title-font-size);
         font-weight: var(--drawer-title-font-weight);
@@ -149,7 +149,7 @@
         white-space: nowrap;
       }
 
-      & button.close {
+      & > button.close {
         background: none;
         border: none;
         color: var(--drawer-close-button-color);
@@ -164,7 +164,7 @@
       }
     }
 
-    & .contents {
+    & > .contents {
       flex-grow: 1;
       overflow-y: auto;
       padding: var(--drawer-contents-padding-vertical)
@@ -180,7 +180,7 @@
       visibility: visible;
     }
 
-    & .dialogue {
+    & > .dialogue {
       transform: var(--drawer-dialogue-transform-open);
       transition: transform var(--drawer-transition-duration)
         var(--drawer-transition-timing-function-transform);
