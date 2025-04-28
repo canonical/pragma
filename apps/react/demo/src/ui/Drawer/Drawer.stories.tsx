@@ -26,8 +26,9 @@ export const Default: StoryFn<typeof Component> = () => {
       <Button
         onClick={() => setIsOpen((curIsOpen) => !curIsOpen)}
         type="button"
-        label={"Toggle drawer"}
-      />
+      >
+        Toggle Drawer
+      </Button>
       <Component
         title="Drawer title"
         isOpenOverride={isOpen}

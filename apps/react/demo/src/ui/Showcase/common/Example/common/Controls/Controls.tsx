@@ -47,11 +47,9 @@ const Controls = ({ id, className, style }: ControlsProps): ReactElement => {
         isOpenOverride={settingsOpen}
         onClose={() => setSettingsOpen(false)}
       >
-        <Button
-          label={"Reset to defaults"}
-          type={"button"}
-          onClick={resetActiveExample}
-        />
+        <Button type={"button"} onClick={resetActiveExample}>
+          Reset to defaults
+        </Button>
         <hr />
         <div className="inputs">
           {activeExample.fields.map(
@@ -73,17 +71,16 @@ const Controls = ({ id, className, style }: ControlsProps): ReactElement => {
         </div>
       </Drawer>
       <div className="end">
-        <Button
-          label="Settings"
-          type="button"
-          onClick={() => setSettingsOpen(true)}
-        />
+        <Button type="button" onClick={() => setSettingsOpen(true)}>
+          Settings
+        </Button>
         <Button
           type="button"
-          label="Copy CSS"
           disabled={!output?.css}
           onClick={() => copyOutput("css")}
-        />
+        >
+          Copy CSS
+        </Button>
       </div>
     </div>
   );
