@@ -13,8 +13,8 @@ const useExampleRHFInterface = (): useGlobalFormResult => {
     () =>
       SHOWCASE_EXAMPLES.map((example) => {
         const allFields: ExampleControlField[] = [];
-        const sections = example.sections.map((category) => {
-          const fields = category.fields.map((field) => ({
+        const sections = example.sections.map((section) => {
+          const fields = section.fields.map((field) => ({
             ...field,
             // Convert the control name to a global form state key
             name: toGlobalFormStateKey(example.name, field.name),
@@ -27,7 +27,7 @@ const useExampleRHFInterface = (): useGlobalFormResult => {
           }));
           allFields.push(...fields);
           return {
-            ...category,
+            ...section,
             fields,
           };
         });
@@ -45,8 +45,8 @@ const useExampleRHFInterface = (): useGlobalFormResult => {
       examples.reduce(
         (exampleAcc, example) => {
           exampleAcc[example.name] = example.sections.reduce(
-            (fieldAcc, category) => {
-              for (const field of category.fields) {
+            (fieldAcc, section) => {
+              for (const field of section.fields) {
                 const {
                   [ORIGINAL_VAR_NAME_KEY]: originalFieldName,
                   defaultValue,
@@ -67,10 +67,6 @@ const useExampleRHFInterface = (): useGlobalFormResult => {
       ),
     [examples],
   );
-
-  useEffect(() => {
-    console.log({ defaultValues, examples });
-  }, [defaultValues, examples]);
 
   const methods = useForm({
     mode: "onChange",

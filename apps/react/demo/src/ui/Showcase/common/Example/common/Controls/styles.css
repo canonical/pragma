@@ -10,15 +10,14 @@
     margin-left: auto;
   }
 
-  & .inputs-drawer-contents .setting-category .inputs {
-    display: grid;
-    --wrapper-columns: span 1;
-    grid-template-columns: repeat(auto-fit, minmax(225px, 1fr));
-    grid-column-gap: var(--spacing-horizontal-large);
-  }
-
-  & .setting-category {
+  & #showcase-settings-drawer > .contents > .setting-category {
     padding: var(--spacing-vertical-medium) 0;
     border-top: 1px solid var(--color-text-default);
+    & > .inputs {
+      display: grid;
+      --wrapper-columns: span 1;
+      grid-template-columns: repeat(auto-fit, minmax(225px, 1fr));
+      grid-column-gap: var(--spacing-horizontal-large);
+    }
   }
 }

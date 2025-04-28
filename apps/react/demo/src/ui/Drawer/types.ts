@@ -42,6 +42,4 @@ export interface DrawerProps extends UseDrawerProps {
   title?: string;
   /** A unique identifier for the title element, used for aria-labelledby. Required if 'title' prop is used. */
   titleId?: string;
-  /** Optional additional CSS classes to apply to the drawer contents. */
-  contentsClassName?: string;
 }

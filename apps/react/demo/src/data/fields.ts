@@ -1,6 +1,6 @@
 /** Global field settings for commonly-used fields. */
 
-import type { ExampleControlField, FieldsSection } from "../ui/index.js";
+import type { ExampleControlField, FormSection } from "../ui/index.js";
 
 export const FONT_FAMILY_FIELD: ExampleControlField = {
   name: "--font-family",
@@ -36,7 +36,7 @@ export const LINE_HEIGHT_FIELD: ExampleControlField = {
   transformer: (lineHeight) => `${lineHeight}rem`,
 };
 
-const DEFAULT_CATEGORIES: FieldsSection[] = [
+const DEFAULT_CATEGORIES: FormSection[] = [
   {
     title: "Typeface",
     fields: [FONT_FAMILY_FIELD],

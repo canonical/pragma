@@ -20,7 +20,6 @@ const Drawer = ({
   position = "right",
   title,
   titleId,
-  contentsClassName,
   parent,
 }: DrawerProps): ReactElement => {
   const { isOpen, close, dialogueRef } = useDrawer({
@@ -62,11 +61,7 @@ const Drawer = ({
           </button>
         </div>
 
-        <div
-          className={["contents", contentsClassName].filter(Boolean).join(" ")}
-        >
-          {children}
-        </div>
+        <div className="contents">{children}</div>
       </dialog>
     </div>
   );

@@ -47,20 +47,20 @@ const Controls = ({ id, className, style }: ControlsProps): ReactElement => {
       </div>
 
       <Drawer
+        id="showcase-settings-drawer"
         title={`${activeExample.name} settings`}
         isOpenOverride={settingsOpen}
         onClose={() => setSettingsOpen(false)}
-        contentsClassName="inputs-drawer-contents"
       >
         <Button type={"button"} onClick={resetActiveExample}>
           Reset to defaults
         </Button>
 
-        {activeExample.sections.map((fieldSection) => (
-          <div className="setting-category" key={fieldSection.title}>
-            <h4>{fieldSection.title}</h4>
+        {activeExample.sections.map((section) => (
+          <section className="setting-category" key={section.title}>
+            <h4>{section.title}</h4>
             <div className="inputs">
-              {fieldSection.fields.map(
+              {section.fields.map(
                 ({
                   name,
                   defaultValue,
@@ -77,7 +77,7 @@ const Controls = ({ id, className, style }: ControlsProps): ReactElement => {
                 ),
               )}
             </div>
-          </div>
+          </section>
         ))}
       </Drawer>
       <div className="end">
