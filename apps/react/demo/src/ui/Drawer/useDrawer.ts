@@ -20,7 +20,13 @@ const useDrawer = ({
 
   const open = useCallback(
     (event?: Event) => {
-      if (isSsr || !parentElement || !dialogueRef.current) return;
+      if (
+        isSsr ||
+        !parentElement ||
+        !dialogueRef.current ||
+        dialogueRef.current.open
+      )
+        return;
       parentElement.style.overflow = "hidden";
       setIsOpenInternal(true);
       dialogueRef.current.showModal();
@@ -31,7 +37,13 @@ const useDrawer = ({
 
   const close = useCallback(
     (event?: Event) => {
-      if (isSsr || !parentElement || !dialogueRef.current) return;
+      if (
+        isSsr ||
+        !parentElement ||
+        !dialogueRef.current ||
+        !dialogueRef.current.open
+      )
+        return;
       parentElement.style.overflow = "";
       setIsOpenInternal(false);
       dialogueRef.current.close();
