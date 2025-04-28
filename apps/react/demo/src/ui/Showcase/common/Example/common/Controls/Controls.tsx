@@ -59,7 +59,7 @@ const Controls = ({ id, className, style }: ControlsProps): ReactElement => {
         {activeExample.sections.map((section) => (
           <section className="setting-category" key={section.title}>
             <h4>{section.title}</h4>
-            <div className="inputs">
+            <div className="fields">
               {section.fields.map(
                 ({
                   name,

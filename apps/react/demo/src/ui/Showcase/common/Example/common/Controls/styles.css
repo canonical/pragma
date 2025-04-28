@@ -13,7 +13,7 @@
   & #showcase-settings-drawer > .contents > .setting-category {
     padding: var(--spacing-vertical-medium) 0;
     border-top: 1px solid var(--color-text-default);
-    & > .inputs {
+    & > .fields {
       display: grid;
       --wrapper-columns: span 1;
       grid-template-columns: repeat(auto-fit, minmax(225px, 1fr));
