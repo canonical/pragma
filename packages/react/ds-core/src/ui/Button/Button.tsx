@@ -19,7 +19,8 @@ const Button = ({
       style={style}
       // Apply custom aria label if provided, otherwise use children text.
       // If the child is a JSX element (and not just a string), a custom aria-label should be used, otherwise the aria-label will be [object Object].
-      aria-label={props["aria-label"] || children}
+      // toString() needed to avoid type error for non-string children
+      aria-label={props["aria-label"] || children?.toString()}
       {...props}
     >
       {children}
