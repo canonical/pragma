@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import type { ReactElement } from "react";
 import type { ControlsProps } from "./types.js";
 import "./styles.css";
@@ -20,6 +20,10 @@ const Controls = ({ id, className, style }: ControlsProps): ReactElement => {
   } = useShowcaseContext();
 
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const toggleSettingsOpen = useCallback(
+    () => setSettingsOpen((settingsOpen) => !settingsOpen),
+    [],
+  );
 
   return (
     <div
@@ -71,7 +75,7 @@ const Controls = ({ id, className, style }: ControlsProps): ReactElement => {
         </div>
       </Drawer>
       <div className="end">
-        <Button type="button" onClick={() => setSettingsOpen(true)}>
+        <Button type="button" onClick={toggleSettingsOpen}>
           Settings
         </Button>
         <Button
