@@ -1,9 +1,5 @@
 import type { ExampleSettingValue, FormSection } from "../../../ui/index.js";
-import {
-  FONT_FAMILY_FIELD,
-  FONT_SIZE_FIELD,
-  LINE_HEIGHT_FIELD,
-} from "../../fields.js";
+import * as fields from "../../fields.js";
 
 // TBD is it better to keep common transformers like this in some constants/utils file, to separately declare them in each field, or some other way?
 const REM_TRANSFORMER = (value: ExampleSettingValue) => `${value}rem`;
@@ -14,7 +10,7 @@ const sections: FormSection[] = [
     title: "Typeface",
     fields: [
       {
-        ...FONT_FAMILY_FIELD,
+        ...fields.FONT_FAMILY_FIELD,
         defaultValue: "Times New Roman",
       },
     ],
@@ -22,7 +18,7 @@ const sections: FormSection[] = [
   {
     title: "Font size",
     fields: [
-      FONT_SIZE_FIELD,
+      fields.FONT_SIZE_FIELD,
       {
         name: "--h1-font-size",
         label: "H1 Font Size",
@@ -85,7 +81,7 @@ const sections: FormSection[] = [
       },
     ],
   },
-  { title: "Line height", fields: [LINE_HEIGHT_FIELD] },
+  { title: "Line height", fields: [fields.LINE_HEIGHT_FIELD] },
   {
     title: "Margin",
     fields: [

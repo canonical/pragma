@@ -36,7 +36,7 @@ export const LINE_HEIGHT_FIELD: ExampleControlField = {
   transformer: (lineHeight) => `${lineHeight}rem`,
 };
 
-const DEFAULT_CATEGORIES: FormSection[] = [
+export const DEFAULT_SECTIONS: FormSection[] = [
   {
     title: "Typeface",
     fields: [FONT_FAMILY_FIELD],
@@ -50,5 +50,3 @@ const DEFAULT_CATEGORIES: FormSection[] = [
     fields: [LINE_HEIGHT_FIELD],
   },
 ];
-
-export default DEFAULT_CATEGORIES;

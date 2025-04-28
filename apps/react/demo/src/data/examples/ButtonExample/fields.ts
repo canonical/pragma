@@ -1,8 +1,8 @@
-import DEFAULT_CATEGORIES from "data/fields.js";
+import { DEFAULT_SECTIONS } from "data/fields.js";
 import type { FormSection } from "ui/index.js";
 
 const sections: FormSection[] = [
-  ...DEFAULT_CATEGORIES,
+  ...DEFAULT_SECTIONS,
   {
     title: "Misc",
     fields: [
