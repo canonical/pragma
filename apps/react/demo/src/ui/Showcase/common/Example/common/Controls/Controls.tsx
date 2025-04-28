@@ -52,11 +52,9 @@ const Controls = ({ id, className, style }: ControlsProps): ReactElement => {
         onClose={() => setSettingsOpen(false)}
         contentsClassName="inputs-drawer-contents"
       >
-        <Button
-          label={"Reset to defaults"}
-          type={"button"}
-          onClick={resetActiveExample}
-        />
+        <Button type={"button"} onClick={resetActiveExample}>
+          Reset to defaults
+        </Button>
 
         {activeExample.sections.map((fieldSection) => (
           <div className="setting-category" key={fieldSection.title}>
