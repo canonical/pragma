@@ -31,16 +31,16 @@ const Drawer = ({
 
   return (
     <div
+      id={id}
       className={[componentCssClassName, className, "overlay", isOpen && "open"]
         .filter(Boolean)
         .join(" ")}
+      style={style}
       aria-hidden={!isOpen}
     >
       <dialog
-        id={id}
         ref={dialogueRef}
         className={`dialogue ${position}`}
-        style={style}
         aria-modal="true"
         aria-hidden={!isOpen}
         aria-labelledby={titleId}
