@@ -8,10 +8,10 @@
   const componentCssClassName = "<%= cssNamespace %> <%= componentCssClassName %>";
 <%_ } _%>
 
-  let { class: className, style, children }: <%= componentName %>Props = $props();
+  let { id, class: className, style, children }: <%= componentName %>Props = $props();
 </script>
 
-<div class={clsx(componentCssClassName, className)}  {style}>
+<div class={clsx(componentCssClassName, className)} {id} {style}>
   {@render children?.()}
 </div>
 

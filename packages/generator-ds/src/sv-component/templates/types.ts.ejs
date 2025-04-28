@@ -2,6 +2,8 @@
 import type { Snippet } from "svelte"
 
 export type <%= componentName %>Props = {
+  /** A unique identifier for the <%= componentName %> */
+  id?: string | undefined | null;
   /** Additional CSS classes */
   class?: string | undefined | null;
   /** Child elements */
