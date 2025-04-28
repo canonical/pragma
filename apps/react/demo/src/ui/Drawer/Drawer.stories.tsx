@@ -19,8 +19,8 @@ export default meta;
 */
 type Story = StoryObj<typeof meta>;
 
-export const Default: StoryFn<typeof Component> = () => {
-  const [isOpen, setIsOpen] = useState(false);
+const Example = ({ defaultIsOpen = false }: { defaultIsOpen?: boolean }) => {
+  const [isOpen, setIsOpen] = useState(defaultIsOpen);
   return (
     <>
       <Button
@@ -39,3 +39,21 @@ export const Default: StoryFn<typeof Component> = () => {
     </>
   );
 };
+
+export const Default: StoryFn<typeof Component> = () => {
+  return <Example />;
+};
+
+// The default example hides the drawer by default, so regression testing it is not helpful.
+Default.parameters = {
+  chromatic: {
+    disable: true,
+  },
+};
+
+export const Open: StoryFn<typeof Component> = () => (
+  <Example defaultIsOpen={true} />
+);
+
+// Hide this story from the sidebar/storybook UI but keep it for visual regression testing
+Open.tags = ["!dev"];
