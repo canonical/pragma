@@ -57,6 +57,11 @@ const Drawer = ({
             onClick={close}
             className="close"
             aria-label={title ? `Close ${title}` : "Close Drawer"}
+            // Biome, by default, recommends against using autoFocus, however it seems that this is mainly meant for input elements.
+            // See Biome rule: https://biomejs.dev/linter/rules/no-autofocus/
+            // MDN recommends using autoFocus on the close button of a dialog to improve accessibility.
+            // biome-ignore lint/a11y/noAutofocus: Autofocus the close button per https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/dialog
+            autoFocus={true}
           >
             &times;
           </button>
