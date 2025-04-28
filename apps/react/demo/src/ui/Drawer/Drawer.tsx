@@ -41,6 +41,7 @@ const Drawer = ({
       <dialog
         ref={dialogueRef}
         className={`dialogue ${position}`}
+        open={isOpen}
         aria-modal="true"
         aria-hidden={!isOpen}
         aria-labelledby={titleId}
