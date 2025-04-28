@@ -12,6 +12,9 @@ export interface UseDrawerProps {
 
   /** Optional parent element to which the drawer will be appended. If not provided, defaults to document.body. */
   parent?: HTMLElement | null;
+
+  /** Optional reference to the dialog element used for the drawer. This allows the user to pass in their own ref for the dialogue. */
+  dialogueRef?: RefObject<HTMLDialogElement | null>;
 }
 
 export interface UseDrawerResult {
@@ -23,7 +26,7 @@ export interface UseDrawerResult {
   close: () => void;
   /** Toggles the drawer's open/closed state. */
   toggle: () => void;
-  /** Reference to the dialog element used for the drawer. */
+  /** Reference to the dialog element used for the drawer. Equal to `dialogueRef` prop, if it was passed, else a new ref is generated. */
   dialogueRef: RefObject<HTMLDialogElement | null>;
 }
 
@@ -42,4 +45,10 @@ export interface DrawerProps extends UseDrawerProps {
   title?: string;
   /** A unique identifier for the title element, used for aria-labelledby. Required if 'title' prop is used. */
   titleId?: string;
+  /**
+   * Whether to allow the contents of the drawer to overflow the dialogue element.
+   * This is useful for cases where drawer contents may bleed outside the drawer (such as using a tooltip or contextual menu)
+   * In such cases, the overflowing element should be a child of the dialogue (not the body).
+   * */
+  enableOverflow?: boolean;
 }
