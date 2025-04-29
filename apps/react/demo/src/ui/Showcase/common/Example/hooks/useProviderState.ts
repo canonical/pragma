@@ -2,7 +2,11 @@ import { ORIGINAL_VAR_NAME_KEY } from "data/index.js";
 import { useExampleRHFInterface } from "hooks/index.js";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useFormContext, useWatch } from "react-hook-form";
-import type { ExampleOutputFormat, Output } from "../types.js";
+import type {
+  ExampleControlField,
+  ExampleOutputFormat,
+  Output,
+} from "../types.js";
 import type { UseProviderStateProps, UseProviderStateResult } from "./types.js";
 
 /**
@@ -39,12 +43,25 @@ const useProviderState = ({
     });
   }, [examples]);
 
+  /**
+   * A flat array of all of the example fields on the currently active example.
+   * This makes iterative operations on the list of fields easier, as the fields are nested inside example sections.
+   * */
+  const activeExampleFields = useMemo(
+    () =>
+      activeExample.sections.reduce((fieldsAcc, section) => {
+        fieldsAcc.push(...section.fields);
+        return fieldsAcc;
+      }, [] as ExampleControlField[]),
+    [activeExample],
+  );
+
   /** The output values for the active example */
   const output: Output = useMemo(
     () =>
       outputFormats.reduce((acc, format: ExampleOutputFormat) => {
         acc[format] = Object.fromEntries(
-          activeExample.fields
+          activeExampleFields
             .filter(
               (field) =>
                 !field.disabledOutputFormats?.[format] &&
@@ -59,7 +76,7 @@ const useProviderState = ({
         );
         return acc;
       }, {} as Output),
-    [outputFormats, activeExample, formValues],
+    [outputFormats, activeExample, formValues, activeExampleFields],
   );
 
   /** Copy the output values to the clipboard */
@@ -83,18 +100,18 @@ const useProviderState = ({
 
   /** Resets the active example to its default state */
   const resetActiveExample = useCallback(() => {
-    for (const field of activeExample.fields) {
+    for (const field of activeExampleFields) {
       if (!field[ORIGINAL_VAR_NAME_KEY]) continue;
       setValue(
         field.name,
         defaultValues[activeExample.name][field[ORIGINAL_VAR_NAME_KEY]],
       );
     }
-  }, [activeExample, defaultValues, setValue]);
+  }, [activeExample, activeExampleFields, defaultValues, setValue]);
 
   useEffect(() => {
     // When the active example changes, set the form values to the new example's values
-    for (const field of activeExample.fields) {
+    for (const field of activeExampleFields) {
       const { name: formStateKey, [ORIGINAL_VAR_NAME_KEY]: originalFieldName } =
         field;
       const curVal = getValues(formStateKey);
@@ -107,7 +124,7 @@ const useProviderState = ({
         setValue(formStateKey, setValTo);
       }
     }
-  }, [activeExample, defaultValues, setValue, getValues]);
+  }, [activeExample, activeExampleFields, defaultValues, setValue, getValues]);
 
   return useMemo(
     () => ({

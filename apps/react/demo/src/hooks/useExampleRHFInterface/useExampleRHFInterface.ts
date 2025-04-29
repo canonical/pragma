@@ -12,7 +12,6 @@ const useExampleRHFInterface = (): useGlobalFormResult => {
   const examples: ShowcaseExample[] = useMemo(
     () =>
       SHOWCASE_EXAMPLES.map((example) => {
-        const allFields: ExampleControlField[] = [];
         const sections = example.sections.map((section) => {
           const fields = section.fields.map((field) => ({
             ...field,
@@ -25,7 +24,6 @@ const useExampleRHFInterface = (): useGlobalFormResult => {
             // but, it's probably less computation and error-prone to just store the original name here.
             [ORIGINAL_VAR_NAME_KEY]: field.name,
           }));
-          allFields.push(...fields);
           return {
             ...section,
             fields,
@@ -34,7 +32,6 @@ const useExampleRHFInterface = (): useGlobalFormResult => {
         return {
           ...example,
           sections,
-          fields: allFields,
         };
       }),
     [],

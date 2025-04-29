@@ -70,7 +70,7 @@ export interface ExampleControlField extends FieldProps {
 export type ShowcaseComponent = (state: FormValues) => ReactElement;
 
 /** The props for constructing a ShowcaseExample */
-export interface ShowcaseExampleOptions {
+export interface ShowcaseExample {
   /** Unique identifier name */
   name: string;
   /** User-friendly description */
@@ -79,12 +79,6 @@ export interface ShowcaseExampleOptions {
   Component: ShowcaseComponent;
   /** The categories of fields associated with this example */
   sections: FormSection[];
-}
-
-/** A fully initialized ShowcaseExample */
-export interface ShowcaseExample extends ShowcaseExampleOptions {
-  /** A flattened array of all fields across all categories */
-  fields: ExampleControlField[];
 }
 
 export type ExampleComponent = ((props: ProviderProps) => ReactElement) & {
