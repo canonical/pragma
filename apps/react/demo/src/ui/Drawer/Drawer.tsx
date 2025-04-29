@@ -17,7 +17,7 @@ const Drawer = ({
   isOpenOverride,
   onClose,
   onOpen,
-  position = "right",
+  position = "end",
   title,
   titleId,
   parent,

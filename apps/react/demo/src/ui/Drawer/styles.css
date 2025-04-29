@@ -34,8 +34,6 @@
   --drawer-dialogue-padding-vertical: var(--spacing-vertical-small);
   /** horizontal padding inside the dialogue box */
   --drawer-dialogue-padding-horizontal: var(--spacing-horizontal-medium);
-  /** translateX value for open drawer */
-  --drawer-dialogue-transform-open: translateX(0);
 
   /** bottom border for the header section */
   --drawer-header-border-bottom: 1px solid #e0e0e0;
@@ -108,23 +106,27 @@
     z-index: var(--drawer-overlay-z-index);
   }
 
-  &.right {
-    left: auto;
-    right: 0;
-    transform: translateX(100%);
-  }
-
-  &.left {
+  &.start:dir(ltr),
+  &.end:dir(rtl) {
     left: 0;
     right: auto;
     transform: translateX(-100%);
+  }
+
+  &.end:dir(ltr),
+  &.start:dir(rtl) {
+    left: auto;
+    right: 0;
+    transform: translateX(100%);
   }
 
   &[aria-hidden="false"] {
     &::backdrop {
       opacity: var(--drawer-overlay-opacity-open);
     }
-    transform: var(--drawer-dialogue-transform-open);
+
+    /*  Fight specificity of the ltr & rtl selectors above */
+    transform: translateX(0) !important;
     visibility: visible;
   }
 

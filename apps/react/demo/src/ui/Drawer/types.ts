@@ -39,8 +39,8 @@ export interface DrawerProps extends UseDrawerProps {
   className?: string;
   /** Content to be rendered inside the drawer. */
   children: ReactNode;
-  /** The side from which the drawer appears. Defaults to 'right'. */
-  position?: "left" | "right";
+  /** The side from which the drawer appears. Defaults to 'end'. */
+  position?: "start" | "end";
   /** Optional title for the drawer, used for the visible header and accessibility. */
   title?: string;
   /** A unique identifier for the title element, used for aria-labelledby. Required if 'title' prop is used. */
