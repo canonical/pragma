@@ -34,8 +34,6 @@
   --drawer-dialogue-padding-vertical: var(--spacing-vertical-small);
   /** horizontal padding inside the dialogue box */
   --drawer-dialogue-padding-horizontal: var(--spacing-horizontal-medium);
-  /** translateX value for open drawer */
-  --drawer-dialogue-transform-open: translateX(0);
 
   /** bottom border for the header section */
   --drawer-header-border-bottom: 1px solid #e0e0e0;
@@ -76,130 +74,121 @@
   --drawer-transition-timing-function-visibility: linear;
   --drawer-transition-timing-function-transform: ease-in-out;
 
-  container-type: inline-size;
+  background-color: var(--drawer-dialogue-background);
+  border: var(--drawer-dialogue-border);
+  box-shadow: var(--drawer-dialogue-box-shadow);
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  height: var(--drawer-dialogue-height);
+  margin: 0;
+  max-width: var(--drawer-dialogue-max-width);
+  padding: var(--drawer-dialogue-padding-vertical)
+    var(--drawer-dialogue-padding-horizontal);
+  position: fixed;
+  top: 0;
+  transition: transform var(--drawer-transition-duration)
+    var(--drawer-transition-timing-function-transform), visibility
+    var(--drawer-transition-duration)
+    var(--drawer-transition-timing-function-visibility);
+  visibility: hidden;
+  width: var(--drawer-dialogue-width-small);
+  z-index: var(--drawer-dialogue-z-index);
 
-  &.overlay {
+  &::backdrop {
     background-color: var(--drawer-overlay-background);
     inset: 0;
-    opacity: var(--drawer-overlay-opacity-closed);
     position: fixed;
     transition: opacity var(--drawer-transition-duration)
       var(--drawer-transition-timing-function-opacity), visibility
       var(--drawer-transition-duration)
       var(--drawer-transition-timing-function-visibility);
-    visibility: hidden;
     z-index: var(--drawer-overlay-z-index);
   }
 
-  & .dialogue {
-    background-color: var(--drawer-dialogue-background);
-    border: var(--drawer-dialogue-border);
-    box-shadow: var(--drawer-dialogue-box-shadow);
-    bottom: 0;
+  &.start:dir(ltr),
+  &.end:dir(rtl) {
+    left: 0;
+    right: auto;
+    transform: translateX(-100%);
+  }
+
+  &.end:dir(ltr),
+  &.start:dir(rtl) {
+    left: auto;
+    right: 0;
+    transform: translateX(100%);
+  }
+
+  &[aria-hidden="false"] {
+    &::backdrop {
+      opacity: var(--drawer-overlay-opacity-open);
+    }
+
+    /*  Fight specificity of the ltr & rtl selectors above */
+    transform: translateX(0) !important;
+    visibility: visible;
+  }
+
+  & > .header {
+    align-items: center;
+    border-bottom: var(--drawer-header-border-bottom);
     display: flex;
-    flex-direction: column;
-    height: var(--drawer-dialogue-height);
-    margin: 0;
-    max-width: var(--drawer-dialogue-max-width);
-    padding: var(--drawer-dialogue-padding-vertical)
-      var(--drawer-dialogue-padding-horizontal);
-    position: fixed;
-    top: 0;
-    transition: transform var(--drawer-transition-duration)
-      var(--drawer-transition-timing-function-transform), visibility
-      var(--drawer-transition-duration)
-      var(--drawer-transition-timing-function-visibility);
-    visibility: hidden;
-    width: var(--drawer-dialogue-width-small);
-    z-index: var(--drawer-dialogue-z-index);
+    flex-shrink: 0;
+    justify-content: space-between;
+    padding: var(--drawer-header-padding-top) var(--drawer-header-padding-right)
+      var(--drawer-header-padding-bottom) var(--drawer-header-padding-left);
 
-    &.right {
-      left: auto;
-      right: 0;
-      transform: translateX(100%);
+    & > .title {
+      flex: 0 1 auto;
+      font-size: var(--drawer-title-font-size);
+      font-weight: var(--drawer-title-font-weight);
+      margin: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
-    &.left {
-      left: 0;
-      right: auto;
-      transform: translateX(-100%);
-    }
-
-    & > .header {
-      align-items: center;
-      border-bottom: var(--drawer-header-border-bottom);
-      display: flex;
+    & > button.close {
+      background: none;
+      border: none;
+      color: var(--drawer-close-button-color);
       flex-shrink: 0;
-      justify-content: space-between;
-      padding: var(--drawer-header-padding-top)
-        var(--drawer-header-padding-right) var(--drawer-header-padding-bottom)
-        var(--drawer-header-padding-left);
+      font-size: var(--drawer-close-button-font-size);
+      line-height: var(--drawer-close-button-line-height);
+      padding: var(--drawer-close-button-padding);
 
-      & > .title {
-        flex: 0 1 auto;
-        font-size: var(--drawer-title-font-size);
-        font-weight: var(--drawer-title-font-weight);
-        margin: 0;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
+      &:hover {
+        color: var(--drawer-close-button-color-hover);
       }
-
-      & > button.close {
-        background: none;
-        border: none;
-        color: var(--drawer-close-button-color);
-        flex-shrink: 0;
-        font-size: var(--drawer-close-button-font-size);
-        line-height: var(--drawer-close-button-line-height);
-        padding: var(--drawer-close-button-padding);
-
-        &:hover {
-          color: var(--drawer-close-button-color-hover);
-        }
-      }
-    }
-
-    & > .contents {
-      flex-grow: 1;
-      overflow-y: auto;
-      padding: var(--drawer-contents-padding-vertical)
-        var(--drawer-contents-padding-horizontal);
     }
   }
 
-  &.open {
-    &.overlay {
-      opacity: var(--drawer-overlay-opacity-open);
-      transition: opacity var(--drawer-transition-duration)
-        var(--drawer-transition-timing-function-opacity);
-      visibility: visible;
-    }
-
-    & > .dialogue {
-      transform: var(--drawer-dialogue-transform-open);
-      transition: transform var(--drawer-transition-duration)
-        var(--drawer-transition-timing-function-transform);
-      visibility: visible;
-    }
+  & > .contents {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: var(--drawer-contents-padding-vertical)
+      var(--drawer-contents-padding-horizontal);
   }
 }
 
-@container (min-width: 60ch) {
-  .ds.drawer .dialogue {
+@media screen and (min-width: 620px) {
+  .ds.drawer {
     width: var(--drawer-dialogue-width-medium);
   }
 }
 
-@container (min-width: 120ch) {
-  .ds.drawer .dialogue {
+@media screen and (min-width: 1036px) {
+  .ds.drawer {
     width: var(--drawer-dialogue-width-large);
   }
 }
 
 @media (prefers-reduced-motion) {
-  .ds.drawer.overlay,
-  .ds.drawer .dialogue {
-    transition: none !important;
+  .ds.drawer {
+    &,
+    &::backdrop {
+      transition: none !important;
+    }
   }
 }

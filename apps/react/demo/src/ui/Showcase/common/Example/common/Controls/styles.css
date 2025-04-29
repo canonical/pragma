@@ -20,4 +20,8 @@
       grid-column-gap: var(--spacing-horizontal-large);
     }
   }
+
+  & .end {
+    margin-left: auto;
+  }
 }
