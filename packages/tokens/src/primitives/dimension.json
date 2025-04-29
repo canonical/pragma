@@ -103,17 +103,17 @@
       "small": {
         "$value": "0px",
         "$type": "dimension",
-        "$description": "Small border radius (placeholder, to be customized)"
+        "$description": "Small border radius"
       },
       "medium": {
         "$value": "0px",
         "$type": "dimension",
-        "$description": "Medium border radius (placeholder, to be customized)"
+        "$description": "Medium border radius"
       },
       "large": {
         "$value": "0px",
         "$type": "dimension",
-        "$description": "Large border radius (placeholder, to be customized)"
+        "$description": "Large border radius"
       },
       "full": {
         "$value": "9999px",
