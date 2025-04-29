@@ -5,6 +5,7 @@
 @import url("normalize.css");
 
 /* Values and settings */
+@import url("@canonical/tokens/dist/css/primitives-canonical.css");
 @import url("./tokens.css");
 
 /* Foundations styling */
