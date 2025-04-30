@@ -4,6 +4,7 @@ import { useFormContext } from "react-hook-form";
 import withWrapper from "../../common/Wrapper/withWrapper.js";
 import type { TextProps } from "./types.js";
 import "./styles.css";
+import { mixins } from "ui/constants.js";
 
 const componentCssClassName = "ds form-text";
 
@@ -32,6 +33,7 @@ const Text = ({
       {prefix && <span className="prefix">{prefix}</span>}
       <input
         type={inputType}
+        className={mixins.FormInput}
         {...otherProps}
         {...register(name, registerProps)}
       />

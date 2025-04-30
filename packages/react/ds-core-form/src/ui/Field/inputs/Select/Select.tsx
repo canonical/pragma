@@ -3,6 +3,7 @@ import type React from "react";
 import { useFormContext } from "react-hook-form";
 import type { SelectProps } from "./types.js";
 import "./styles.css";
+import { mixins } from "ui/constants.js";
 import withWrapper from "../../common/Wrapper/withWrapper.js";
 
 const componentCssClassName = "ds form-select";
@@ -24,7 +25,9 @@ const Select = ({
   return (
     <select
       id={id}
-      className={[componentCssClassName, className].filter(Boolean).join(" ")}
+      className={[mixins.FormInput, componentCssClassName, className]
+        .filter(Boolean)
+        .join(" ")}
       style={style}
       {...otherProps}
       {...register(name, registerProps)}
