@@ -1,7 +1,10 @@
 /* @canonical/generator-ds 0.9.0-experimental.9 */
 
-/*
-.ds.simple-choices {
-
+.ds.form-simple-choices {
+  & > .option {
+    direction: inherit;
+    display: flex;
+    align-items: center;
+    gap:var(--inline-gap);
+  }
 }
-*/

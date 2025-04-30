@@ -3,27 +3,27 @@ import type React from "react";
 import type { DescriptionProps } from "./types.js";
 import "./styles.css";
 
-const componentCssClassName = "ds description";
+const componentCssClassName = "ds form-field-description";
 
 /**
  * description of the Description component
  * @returns {React.ReactElement} - Rendered Description
  */
 const Description = ({
-  id,
-  children,
-  className,
-  style,
+	id,
+	children,
+	className,
+	style,
 }: DescriptionProps): React.ReactElement => {
-  return (
-    <div
-      id={id}
-      style={style}
-      className={[componentCssClassName, className].filter(Boolean).join(" ")}
-    >
-      {children}
-    </div>
-  );
+	return (
+		<p
+			id={id}
+			style={style}
+			className={[componentCssClassName, className].filter(Boolean).join(" ")}
+		>
+			{children}
+		</p>
+	);
 };
 
 export default Description;

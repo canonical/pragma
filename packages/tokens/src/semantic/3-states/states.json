@@ -1,0 +1,142 @@
+{
+  "success": {
+    "$extensions": {
+      "selector": ".success"
+    },
+    "state-color-default": {
+      "$value": "{states.success.color-default}",
+      "$type": "color",
+      "$description": "Color used to indicate the default success state"
+    },
+    "state-border-color-default": {
+      "$value": "{states.success.border-color-default}",
+      "$type": "color",
+      "$description": "Border color for the default success state"
+    },
+    "state-border-color-active": {
+      "$value": "{states.success.border-color-active}",
+      "$type": "color",
+      "$description": "Border color for the active success state"
+    },
+    "state-background-color-default": {
+      "$value": "{states.success.background-default}",
+      "$type": "color",
+      "$description": "Background color for the default success state"
+    },
+    "state-background-color-active": {
+      "$value": "{states.success.background-active}",
+      "$type": "color",
+      "$description": "Background color for the active success state"
+    },
+    "state-opacity": {
+      "$value": "{states.success.opacity}",
+      "$type": "number",
+      "$description": "Opacity level for the success state"
+    }
+  },
+  "danger": {
+    "$extensions": {
+      "selector": ".danger"
+    },
+    "state-color-default": {
+      "$value": "{states.danger.color-default}",
+      "$type": "color",
+      "$description": "Color used to indicate the default danger state"
+    },
+    "state-border-color-default": {
+      "$value": "{states.danger.border-color-default}",
+      "$type": "color",
+      "$description": "Border color for the default danger state"
+    },
+    "state-border-color-active": {
+      "$value": "{states.danger.border-color-active}",
+      "$type": "color",
+      "$description": "Border color for the active danger state"
+    },
+    "state-background-color-default": {
+      "$value": "{states.danger.background-default}",
+      "$type": "color",
+      "$description": "Background color for the default danger state"
+    },
+    "state-background-color-active": {
+      "$value": "{states.danger.background-active}",
+      "$type": "color",
+      "$description": "Background color for the active danger state"
+    },
+    "state-opacity": {
+      "$value": "{states.danger.opacity}",
+      "$type": "number",
+      "$description": "Opacity level for the danger state"
+    }
+  },
+  "disabled": {
+    "$extensions": {
+      "selector": ".disabled"
+    },
+    "state-color-default": {
+      "$value": "{states.disabled.color-default}",
+      "$type": "color",
+      "$description": "Color used to indicate the default disabled state"
+    },
+    "state-border-color-default": {
+      "$value": "{states.disabled.border-color-default}",
+      "$type": "color",
+      "$description": "Border color for the default disabled state"
+    },
+    "state-border-color-active": {
+      "$value": "{states.disabled.border-color-active}",
+      "$type": "color",
+      "$description": "Border color for the active disabled state"
+    },
+    "state-background-color-default": {
+      "$value": "{states.disabled.background-default}",
+      "$type": "color",
+      "$description": "Background color for the default disabled state"
+    },
+    "state-background-color-active": {
+      "$value": "{states.disabled.background-active}",
+      "$type": "color",
+      "$description": "Background color for the active disabled state"
+    },
+    "state-opacity": {
+      "$value": "{states.disabled.opacity}",
+      "$type": "number",
+      "$description": "Opacity level for the disabled state"
+    }
+  },
+  "idle": {
+    "$extensions": {
+      "selector": ".idle"
+    },
+    "state-color-default": {
+      "$value": "{states.idle.color-default}",
+      "$type": "color",
+      "$description": "Color used to indicate the default idle state"
+    },
+    "state-border-color-default": {
+      "$value": "{states.idle.border-color-default}",
+      "$type": "color",
+      "$description": "Border color for the default idle state"
+    },
+    "state-border-color-active": {
+      "$value": "{states.idle.border-color-active}",
+      "$type": "color",
+      "$description": "Border color for the active idle state"
+    },
+    "state-background-color-default": {
+      "$value": "{states.idle.background-default}",
+      "$type": "color",
+      "$description": "Background color for the default idle state"
+    },
+    "state-background-color-active": {
+      "$value": "{states.idle.background-active}",
+      "$type": "color",
+      "$description": "Background color for the active idle state"
+    },
+    "state-opacity": {
+      "$value": "{states.idle.opacity}",
+      "$type": "number",
+      "$description": "Opacity level for the idle state"
+    }
+  }
+}

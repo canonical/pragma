@@ -1,7 +1,8 @@
 /* @canonical/generator-ds 0.9.0-experimental.4 */
 
-/*
 .ds.form-text {
-
+  direction: inherit;
+  display:flex;
+  align-items: center;
+  gap:var(--inline-gap);
 }
-*/
