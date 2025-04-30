@@ -1,7 +1,7 @@
 import type { FormSection } from "../../../ui/index.js";
 import { ROOT_SECTION } from "../../fields.js";
 import * as fields from "../../fields.js";
-import transformers from "../../transformers.js";
+import * as transformers from "../../transformers.js";
 
 const sections: FormSection[] = [
   ROOT_SECTION,

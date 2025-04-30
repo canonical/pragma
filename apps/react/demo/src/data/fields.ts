@@ -1,7 +1,7 @@
 /** Global field settings for commonly-used fields. */
 
 import type { ExampleControlField, FormSection } from "../ui/index.js";
-import transformers from "./transformers.js";
+import * as transformers from "./transformers.js";
 
 export const FONT_FAMILY_FIELD: ExampleControlField = {
   name: "--font-family",
