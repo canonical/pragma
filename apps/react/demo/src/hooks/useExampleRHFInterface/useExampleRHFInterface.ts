@@ -65,10 +65,6 @@ const useExampleRHFInterface = (): useGlobalFormResult => {
     [examples],
   );
 
-  useEffect(() => {
-    console.log({ defaultValues, examples });
-  }, [defaultValues, examples]);
-
   const methods = useForm({
     mode: "onChange",
     defaultValues,
