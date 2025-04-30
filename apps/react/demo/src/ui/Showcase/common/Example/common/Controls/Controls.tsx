@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import type { ReactElement } from "react";
 import type { ControlsProps } from "./types.js";
 import "./styles.css";
@@ -20,6 +20,10 @@ const Controls = ({ id, className, style }: ControlsProps): ReactElement => {
   } = useShowcaseContext();
 
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const toggleSettingsOpen = useCallback(
+    () => setSettingsOpen((settingsOpen) => !settingsOpen),
+    [],
+  );
 
   return (
     <div
@@ -34,27 +38,29 @@ const Controls = ({ id, className, style }: ControlsProps): ReactElement => {
     >
       <div>
         {/*TODO use icon buttons when icon is implemented*/}
-        <Button label={"Prev"} type="button" onClick={activatePrevExample} />
-        <Button label="Next" type="button" onClick={activateNextExample} />
+        <Button type="button" onClick={activatePrevExample}>
+          Prev
+        </Button>
+        <Button type="button" onClick={activateNextExample}>
+          Next
+        </Button>
       </div>
 
       <Drawer
+        id="showcase-settings-drawer"
         title={`${activeExample.name} settings`}
         isOpenOverride={settingsOpen}
         onClose={() => setSettingsOpen(false)}
-        contentsClassName="inputs-drawer-contents"
       >
-        <Button
-          label={"Reset to defaults"}
-          type={"button"}
-          onClick={resetActiveExample}
-        />
+        <Button type={"button"} onClick={resetActiveExample}>
+          Reset to defaults
+        </Button>
 
-        {activeExample.sections.map((fieldSection) => (
-          <div className="setting-category" key={fieldSection.title}>
-            <h4>{fieldSection.title}</h4>
-            <div className="inputs">
-              {fieldSection.fields.map(
+        {activeExample.sections.map((section) => (
+          <section className="setting-category" key={section.title}>
+            <h4>{section.title}</h4>
+            <div className="fields">
+              {section.fields.map(
                 ({
                   name,
                   defaultValue,
@@ -72,21 +78,20 @@ const Controls = ({ id, className, style }: ControlsProps): ReactElement => {
                 ),
               )}
             </div>
-          </div>
+          </section>
         ))}
       </Drawer>
       <div className="end">
-        <Button
-          label="Settings"
-          type="button"
-          onClick={() => setSettingsOpen(true)}
-        />
+        <Button type="button" onClick={toggleSettingsOpen}>
+          Settings
+        </Button>
         <Button
           type="button"
-          label="Copy CSS"
           disabled={!demoOutput?.css}
           onClick={() => copyOutput("css")}
-        />
+        >
+          Copy CSS
+        </Button>
       </div>
     </div>
   );

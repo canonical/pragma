@@ -1,8 +1,9 @@
-import type { FieldsSection } from "../../../ui/index.js";
+import type { FormSection } from "../../../ui/index.js";
 import { ROOT_SECTION } from "../../fields.js";
+import * as fields from "../../fields.js";
 import transformers from "../../transformers.js";
 
-const sections: FieldsSection[] = [
+const sections: FormSection[] = [
   ROOT_SECTION,
   {
     title: "H1",
@@ -94,6 +95,7 @@ const sections: FieldsSection[] = [
       },
     ],
   },
+  { title: "Line height", fields: [fields.LINE_HEIGHT_FIELD] },
   {
     title: "H3",
     fields: [

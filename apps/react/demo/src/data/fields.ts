@@ -1,6 +1,6 @@
 /** Global field settings for commonly-used fields. */
 
-import type { ExampleControlField, FieldsSection } from "../ui/index.js";
+import type { ExampleControlField, FormSection } from "../ui/index.js";
 import transformers from "./transformers.js";
 
 export const FONT_FAMILY_FIELD: ExampleControlField = {
@@ -44,7 +44,7 @@ export const BASELINE_HEIGHT_FIELD: ExampleControlField = {
 
 export const LINE_HEIGHT_FIELD: ExampleControlField = {
   name: "--line-height",
-  inputType: "range",
+  inputType: "hidden",
   label: "Root line height",
   defaultValue: 1.5,
   min: 1,
@@ -52,7 +52,7 @@ export const LINE_HEIGHT_FIELD: ExampleControlField = {
   step: 0.25,
 };
 
-export const ROOT_SECTION: FieldsSection = {
+export const ROOT_SECTION: FormSection = {
   title: "Root",
   fields: [
     {

@@ -20,14 +20,15 @@ const ResetButton = ({
 }: ResetButtonProps): React.ReactElement => {
   return (
     <Button
-      label="x" //TODO replace with semantic children
       id={id}
       style={style}
       className={[componentCssClassName, className].filter(Boolean).join(" ")}
       aria-label={messages.reset()}
       type="button"
       onClick={onClick}
-    />
+    >
+      x
+    </Button>
   );
 };
 

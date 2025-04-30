@@ -39,7 +39,7 @@
     },
     "apps/react/demo": {
       "name": "@canonical/ds-demo-site",
-      "version": "0.9.0-experimental.13",
+      "version": "0.9.0-experimental.14",
       "dependencies": {
         "@canonical/react-ds-core": "^0.9.0-experimental.11",
         "@canonical/react-ds-core-form": "^0.9.0-experimental.11",
@@ -110,7 +110,7 @@
       "version": "0.9.0-experimental.12",
       "devDependencies": {
         "@biomejs/biome": "^1.9.4",
-        "@canonical/biome-config": "^0.9.0-experimental.2",
+        "@canonical/biome-config": "^0.9.0-experimental.12",
         "typescript": "^5.8.2",
       },
       "peerDependencies": {
@@ -121,11 +121,11 @@
       "name": "@canonical/typescript-config-react",
       "version": "0.9.0-experimental.12",
       "dependencies": {
-        "@canonical/typescript-config-base": "^0.9.0-experimental.2",
+        "@canonical/typescript-config-base": "^0.9.0-experimental.12",
       },
       "devDependencies": {
         "@biomejs/biome": "^1.9.4",
-        "@canonical/biome-config": "^0.9.0-experimental.2",
+        "@canonical/biome-config": "^0.9.0-experimental.12",
         "typescript": "^5.8.2",
       },
       "peerDependencies": {
@@ -152,7 +152,7 @@
     },
     "packages/react/ds-app-launchpad": {
       "name": "@canonical/react-ds-app-launchpad",
-      "version": "0.9.0-experimental.13",
+      "version": "0.9.0-experimental.15",
       "dependencies": {
         "@canonical/storybook-config": "^0.9.0-experimental.11",
         "@canonical/styles": "^0.9.0-experimental.9",
@@ -286,12 +286,13 @@
       "name": "@canonical/storybook-addon-baseline-grid",
       "version": "0.9.0-experimental.12",
       "dependencies": {
+        "@canonical/styles-debug": "^0.9.0-experimental.12",
         "@storybook/icons": "^1.2.10",
       },
       "devDependencies": {
         "@biomejs/biome": "^1.9.4",
-        "@canonical/biome-config": "^0.9.0-experimental.2",
-        "@canonical/typescript-config-react": "^0.9.0-experimental.2",
+        "@canonical/biome-config": "^0.9.0-experimental.12",
+        "@canonical/typescript-config-react": "^0.9.0-experimental.12",
         "@storybook/addon-essentials": "^8.4.7",
         "@storybook/addon-interactions": "^8.4.7",
         "@storybook/addon-links": "^8.4.7",
@@ -311,6 +312,14 @@
       },
       "peerDependencies": {
         "storybook": "^8.4.7",
+      },
+    },
+    "packages/styles/debug": {
+      "name": "@canonical/styles-debug",
+      "version": "0.9.0-experimental.12",
+      "devDependencies": {
+        "@biomejs/biome": "^1.9.4",
+        "@canonical/biome-config": "^0.9.0-experimental.12",
       },
     },
     "packages/styles/elements": {
@@ -518,6 +527,8 @@
     "@canonical/storybook-config": ["@canonical/storybook-config@workspace:configs/storybook"],
 
     "@canonical/styles": ["@canonical/styles@workspace:packages/styles/main/canonical"],
+
+    "@canonical/styles-debug": ["@canonical/styles-debug@workspace:packages/styles/debug"],
 
     "@canonical/styles-elements": ["@canonical/styles-elements@workspace:packages/styles/elements"],
 

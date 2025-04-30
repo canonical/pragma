@@ -8,9 +8,10 @@ const ButtonExample: ShowcaseComponent = ({ numButtons }) => {
         type="button"
         // biome-ignore lint/suspicious/noArrayIndexKey: demonstrative purposes only
         key={i}
-        label="Test button"
         onClick={() => alert("clicked!")}
-      />
+      >
+        Test button
+      </Button>
     ));
   }, [numButtons]);
 

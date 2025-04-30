@@ -1,11 +1,11 @@
-import type { ShowcaseExampleOpts } from "../../ui/index.js";
+import type { ShowcaseExample } from "../../ui/index.js";
 import { ButtonExample, ButtonExampleFields } from "./ButtonExample/index.js";
 import {
   TypographicSpecimen,
   TypographicSpecimenFields,
 } from "./TypographicSpecimen/index.js";
 
-export const SHOWCASE_EXAMPLES: ShowcaseExampleOpts[] = [
+export const SHOWCASE_EXAMPLES: ShowcaseExample[] = [
   {
     name: "Typographic Specimen",
     description: "A typographic specimen with configurable font settings.",

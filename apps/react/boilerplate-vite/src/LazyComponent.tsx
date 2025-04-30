@@ -2,11 +2,9 @@ import { Button } from "@canonical/react-ds-core";
 
 function LazyComponent() {
   return (
-    <Button
-      appearance={"positive"}
-      label={"Click me"}
-      onClick={() => alert("clicked!")}
-    />
+    <Button appearance={"positive"} onClick={() => alert("clicked!")}>
+      Click me
+    </Button>
   );
 }
 

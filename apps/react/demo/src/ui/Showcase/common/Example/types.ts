@@ -39,7 +39,7 @@ export interface ProviderProps {
   outputFormats?: ExampleOutputFormat[];
 }
 
-export interface FieldsSection {
+export interface FormSection {
   title: string;
   /**
    * Array defining the controls and their initial/default configuration for this example.
@@ -80,7 +80,7 @@ export type ExampleControlFieldAllTransformers = Required<
 export type ShowcaseComponent = (state: FormValues) => ReactElement;
 
 /** The props for constructing a ShowcaseExample */
-export interface ShowcaseExampleOpts {
+export interface ShowcaseExample {
   /** Unique identifier name */
   name: string;
   /** User-friendly description */
@@ -88,13 +88,7 @@ export interface ShowcaseExampleOpts {
   /** The component to render */
   Component: ShowcaseComponent;
   /** The categories of fields associated with this example */
-  sections: FieldsSection[];
-}
-
-/** A fully initialized ShowcaseExample */
-export interface ShowcaseExample extends ShowcaseExampleOpts {
-  /** A flattened array of all fields across all categories */
-  fields: ExampleControlField[];
+  sections: FormSection[];
 }
 
 export type ExampleComponent = ((props: ProviderProps) => ReactElement) & {

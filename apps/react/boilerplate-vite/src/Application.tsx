@@ -40,10 +40,9 @@ function App() {
           preferredDirections={["right", "bottom"]}
           Message={`Increment count to ${count + 1}`}
         >
-          <Button
-            label={`Count: ${count}`}
-            onClick={() => setCount((count) => count + 1)}
-          />
+          <Button onClick={() => setCount((count) => count + 1)}>
+            Count: {count}
+          </Button>
         </TooltipArea>
         <p>
           Edit <code>src/App.tsx</code> and save to test HMR

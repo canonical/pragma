@@ -12,9 +12,8 @@ const useExampleRHFInterface = (): useGlobalFormResult => {
   const examples: ShowcaseExample[] = useMemo(
     () =>
       SHOWCASE_EXAMPLES.map((example) => {
-        const allFields: ExampleControlField[] = [];
-        const sections = example.sections.map((category) => {
-          const fields = category.fields.map((field) => ({
+        const sections = example.sections.map((section) => {
+          const fields = section.fields.map((field) => ({
             ...field,
             // Convert the control name to a global form state key
             name: toGlobalFormStateKey(example.name, field.name),
@@ -25,16 +24,14 @@ const useExampleRHFInterface = (): useGlobalFormResult => {
             // but, it's probably less computation and error-prone to just store the original name here.
             [ORIGINAL_VAR_NAME_KEY]: field.name,
           }));
-          allFields.push(...fields);
           return {
-            ...category,
+            ...section,
             fields,
           };
         });
         return {
           ...example,
           sections,
-          fields: allFields,
         };
       }),
     [],
@@ -45,8 +42,8 @@ const useExampleRHFInterface = (): useGlobalFormResult => {
       examples.reduce(
         (exampleAcc, example) => {
           exampleAcc[example.name] = example.sections.reduce(
-            (fieldAcc, category) => {
-              for (const field of category.fields) {
+            (fieldAcc, section) => {
+              for (const field of section.fields) {
                 const {
                   [ORIGINAL_VAR_NAME_KEY]: originalFieldName,
                   defaultValue,
