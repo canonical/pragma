@@ -4,7 +4,7 @@ import { useFormContext } from "react-hook-form";
 import withWrapper from "../../common/Wrapper/withWrapper.js";
 import type { TextProps } from "./types.js";
 import "./styles.css";
-import { mixins } from "ui/constants.js";
+import { mixins } from "../../../constants.js";
 
 const componentCssClassName = "ds form-text";
 

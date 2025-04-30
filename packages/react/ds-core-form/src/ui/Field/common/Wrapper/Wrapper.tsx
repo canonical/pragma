@@ -3,7 +3,7 @@ import type React from "react";
 import { useMemo } from "react";
 import type { BaseInputProps, WrapperProps } from "../../types.js";
 import "./styles.css";
-import { states } from "ui/constants.js";
+import { states } from "../../../constants.js";
 import { Description, Error as FieldError, Label } from "../index.js";
 import { useFieldWrapper } from "./hooks/index.js";
 

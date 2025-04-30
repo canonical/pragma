@@ -3,7 +3,7 @@ import type React from "react";
 import { useFormContext } from "react-hook-form";
 import type { SelectProps } from "./types.js";
 import "./styles.css";
-import { mixins } from "ui/constants.js";
+import { mixins } from "../../../constants.js";
 import withWrapper from "../../common/Wrapper/withWrapper.js";
 
 const componentCssClassName = "ds form-select";
