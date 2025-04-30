@@ -2,7 +2,7 @@
 
 .ds.form-text {
   direction: inherit;
-  display:flex;
+  display: flex;
   align-items: center;
-  gap:var(--inline-gap);
+  gap: var(--inline-gap);
 }

@@ -10,20 +10,20 @@ const componentCssClassName = "ds form-field-description";
  * @returns {React.ReactElement} - Rendered Description
  */
 const Description = ({
-	id,
-	children,
-	className,
-	style,
+  id,
+  children,
+  className,
+  style,
 }: DescriptionProps): React.ReactElement => {
-	return (
-		<p
-			id={id}
-			style={style}
-			className={[componentCssClassName, className].filter(Boolean).join(" ")}
-		>
-			{children}
-		</p>
-	);
+  return (
+    <p
+      id={id}
+      style={style}
+      className={[componentCssClassName, className].filter(Boolean).join(" ")}
+    >
+      {children}
+    </p>
+  );
 };
 
 export default Description;

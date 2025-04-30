@@ -12,32 +12,32 @@ const componentCssClassName = "ds form-text";
  * @returns {React.ReactElement} - Rendered Text
  */
 const Text = ({
-	id,
-	className,
-	style,
-	inputType = "text",
-	name,
-	prefix,
-	suffix,
-	registerProps,
-	...otherProps // Should only be native input props
+  id,
+  className,
+  style,
+  inputType = "text",
+  name,
+  prefix,
+  suffix,
+  registerProps,
+  ...otherProps // Should only be native input props
 }: TextProps): React.ReactElement => {
-	const { register } = useFormContext();
-	return (
-		<div
-			id={id}
-			style={style}
-			className={[componentCssClassName, className].filter(Boolean).join(" ")}
-		>
-			{prefix && <span className="prefix">{prefix}</span>}
-			<input
-				type={inputType}
-				{...otherProps}
-				{...register(name, registerProps)}
-			/>
-			{suffix && <span className="suffix">{suffix}</span>}
-		</div>
-	);
+  const { register } = useFormContext();
+  return (
+    <div
+      id={id}
+      style={style}
+      className={[componentCssClassName, className].filter(Boolean).join(" ")}
+    >
+      {prefix && <span className="prefix">{prefix}</span>}
+      <input
+        type={inputType}
+        {...otherProps}
+        {...register(name, registerProps)}
+      />
+      {suffix && <span className="suffix">{suffix}</span>}
+    </div>
+  );
 };
 
 export type MyComp = typeof Text;
