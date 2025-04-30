@@ -101,7 +101,6 @@ const sections: FormSection[] = [
       },
     ],
   },
-  { title: "Line height", fields: [fields.LINE_HEIGHT_FIELD] },
   {
     title: "H3",
     fields: [
