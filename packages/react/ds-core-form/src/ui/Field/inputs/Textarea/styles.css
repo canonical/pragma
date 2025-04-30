@@ -1,10 +1,16 @@
 /* @canonical/generator-ds 0.9.0-experimental.4 */
 
 .ds.form-textarea {
-  color: var(--state-color-default);
+  color: var(--mod-color-default, var(--state-default-color-default));
+  background: var(--mod-background-default, var(--state-default-background-default));
 
   &:focus {
-    color: var(--state-color-active);
+    color: var(--mod-color-focus);
+  }
+
+  &:disabled {
+    color: var(--state-disabled-color-default);
+    background:var(--state-disabled-background-default);
   }
 
 }
