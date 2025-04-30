@@ -1,8 +1,8 @@
-import { ROOT_SECTION } from "data/fields.js";
+import * as fields from "data/fields.js";
 import type { FormSection } from "../../../ui/index.js";
 
 const sections: FormSection[] = [
-  ROOT_SECTION,
+  fields.createRootSection(),
   {
     title: "Misc",
     fields: [

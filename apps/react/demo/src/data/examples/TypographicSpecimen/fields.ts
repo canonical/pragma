@@ -1,10 +1,16 @@
 import type { FormSection } from "../../../ui/index.js";
-import { ROOT_SECTION } from "../../fields.js";
 import * as fields from "../../fields.js";
 import * as transformers from "../../transformers.js";
 
 const sections: FormSection[] = [
-  ROOT_SECTION,
+  fields.createRootSection([
+    {
+      ...fields.FONT_FAMILY_FIELD,
+      defaultValue: "Times New Roman",
+    },
+    fields.FONT_SIZE_FIELD,
+    fields.LINE_HEIGHT_FIELD,
+  ]),
   {
     title: "H1",
     fields: [

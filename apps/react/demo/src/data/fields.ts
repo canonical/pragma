@@ -52,15 +52,24 @@ export const LINE_HEIGHT_FIELD: ExampleControlField = {
   step: 0.25,
 };
 
-export const ROOT_SECTION: FormSection = {
-  title: "Root",
-  fields: [
-    {
-      ...FONT_FAMILY_FIELD,
-      defaultValue: "Times New Roman",
-    },
+/**
+ * Creates a root section for an example.
+ * This is a convenience function to create a section with the root font size and baseline height fields.
+ * It is functionalized so that a user can customize one of the root fields if they like.
+ * One use case for this is to use a different default font family for an example.
+ * @param fields The fields to include in the root section. Defaults to the font family, font size, and line height fields.
+ */
+export const createRootSection = (
+  fields: ExampleControlField[] = [
+    FONT_FAMILY_FIELD,
     FONT_SIZE_FIELD,
     LINE_HEIGHT_FIELD,
-    BASELINE_HEIGHT_FIELD,
   ],
-};
+): FormSection => ({
+  title: "Root",
+  fields: [
+    // Always include the baseline height field, as it is hidden, and always needed in the exported CSS
+    BASELINE_HEIGHT_FIELD,
+    ...fields,
+  ],
+});
