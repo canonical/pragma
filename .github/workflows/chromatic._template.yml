@@ -16,8 +16,7 @@ on:
         required: true
         description: Chromatic project token for publishing
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref
-    }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-${{ inputs.working-directory }}
   cancel-in-progress: true
 jobs:
   build:
