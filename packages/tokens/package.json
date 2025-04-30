@@ -2,7 +2,6 @@
   "name": "@canonical/tokens",
   "description": "Canonical design tokens: primitives and mode mappings for use with Style Dictionary",
   "version": "0.9.0-experimental.19",
-  "main": "src/index.css",
   "files": ["dist"],
   "type": "module",
   "author": {
