@@ -1,5 +1,5 @@
 import type {
-  ExampleControlFieldAllTransformers,
+  ExampleControlFieldAllTransformersRequired,
   ExampleSettingValue,
 } from "../ui/index.js";
 
@@ -30,7 +30,8 @@ export const convertToFontSizeMultiples = (value: ExampleSettingValue) =>
  * A pair of transformers for converting settings to functions of the font size in the demo,
  * and to `rem` units in the exported CSS.
  */
-export const fontRelativeTransformers: ExampleControlFieldAllTransformers = {
-  demoTransformer: convertToFontSizeMultiples,
-  transformer: convertToRems,
-};
+export const fontRelativeTransformers: ExampleControlFieldAllTransformersRequired =
+  {
+    demoTransformer: convertToFontSizeMultiples,
+    transformer: convertToRems,
+  };

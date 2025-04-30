@@ -6,6 +6,7 @@ import type {
   ExampleControlField,
   ExampleOutputFormat,
   Output,
+  TransformerFnKey,
 } from "../types.js";
 import type { UseProviderStateProps, UseProviderStateResult } from "./types.js";
 
@@ -67,54 +68,59 @@ const useProviderState = ({
     [activeExampleFields],
   );
 
+  /**
+   * Extracts the values from the form state for a given set of fields.
+   * @param fields The fields to extract values from.
+   * @param transformerFnKeys The keys of the transformer functions to apply to the values.
+   *  Transformers will be applied sequentially, and the first one defined on a given field will be applied to that field's value to produce the output.
+   * @returns A mapping of field names to their output values, alphabetically sorted by field name.
+   */
+  const extract = useCallback(
+    (
+      fields: ExampleControlField[],
+      transformerFnKeys: TransformerFnKey[],
+    ): Output =>
+      Object.fromEntries(
+        fields
+          .sort((a, b) => a.name.localeCompare(b.name))
+          .map((field) => {
+            const { [ORIGINAL_VAR_NAME_KEY]: name } = field;
+            const transformers = transformerFnKeys
+              .map((key) => field[key])
+              .filter(Boolean);
+            const [topTransformer] = transformers;
+            const rawVal = formValues[activeExample.name]?.[name as string];
+            const val = topTransformer ? topTransformer(rawVal) : rawVal;
+            return [name, val];
+          }),
+      ),
+    [formValues, activeExample],
+  );
+
   /** The output values for the active example */
   const demoOutput: Output = useMemo(
     () =>
       outputFormats.reduce((acc, format: ExampleOutputFormat) => {
-        acc[format] = Object.fromEntries(
-          outputFields(format).map((field) => {
-            const {
-              [ORIGINAL_VAR_NAME_KEY]: name,
-              demoTransformer,
-              transformer,
-            } = field;
-            const rawVal = formValues[activeExample.name]?.[name as string];
-            const val = demoTransformer
-              ? demoTransformer(rawVal)
-              : transformer
-                ? transformer(rawVal)
-                : rawVal;
-            return [name, val];
-          }),
-        );
+        acc[format] = extract(outputFields(format), [
+          "demoTransformer",
+          "transformer",
+        ]);
         return acc;
       }, {} as Output),
-    [outputFormats, activeExample, formValues, outputFields],
+    [outputFormats, outputFields, extract],
   );
 
   /** Copy the output values to the clipboard */
   const copyOutput = useCallback(
     (format: ExampleOutputFormat) => {
-      if (typeof window === "undefined" || !demoOutput[format]) return;
+      if (typeof window === "undefined") return;
       navigator.clipboard.writeText(
-        Object.entries(
-          Object.fromEntries(
-            outputFields(format)
-              // Organize the exported fields by alphabetizing them
-              .sort((a, b) => a.name.localeCompare(b.name))
-              .map((field) => {
-                const { [ORIGINAL_VAR_NAME_KEY]: name, transformer } = field;
-                const rawVal = formValues[activeExample.name]?.[name as string];
-                const val = transformer ? transformer(rawVal) : rawVal;
-                return [name, val];
-              }),
-          ),
-        )
+        Object.entries(extract(outputFields(format), ["transformer"]))
           .map((d) => `${d[0]}: ${d[1]};`)
           .join("\n"),
       );
     },
-    [demoOutput, outputFields, activeExample, formValues],
+    [outputFields, extract],
   );
 
   /** The settings for the active example */

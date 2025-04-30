@@ -49,23 +49,38 @@ export interface FormSection {
   fields: ExampleControlField[];
 }
 
-export interface ExampleControlField extends FieldProps {
-  name: string;
-  /** Formats for which output is disabled */
-  disabledOutputFormats?: {
-    [key in ExampleOutputFormat]?: boolean;
-  };
-  /**
-   * Transformer function to apply to demo output values
-   * If not set, the `transformer` function will be used instead
-   * */
-  demoTransformer?: (value: ExampleSettingValue) => ExampleSettingValue;
+/**
+ * Valid keys for field transformer functions.
+ */
+export type TransformerFnKey =
   /**
    * Default transformer function to apply to output values.
    * This is always applied to export values.
    * If the `demoTransformer` is not set, this will be used for demo output as well.
    * */
-  transformer?: (value: ExampleSettingValue) => ExampleSettingValue;
+  | "transformer"
+  /**
+   * Transformer function to apply to demo output values
+   * If not set, the `transformer` function will be used instead
+   * */
+  | "demoTransformer";
+
+/**
+ * Mapping of transformer function keys to their respective transformer functions
+ * Each function is optional.
+ * */
+export type TransformerFns = {
+  [key in TransformerFnKey]?: (
+    value: ExampleSettingValue,
+  ) => ExampleSettingValue;
+};
+
+export interface ExampleControlField extends FieldProps, TransformerFns {
+  name: string;
+  /** Formats for which output is disabled */
+  disabledOutputFormats?: {
+    [key in ExampleOutputFormat]?: boolean;
+  };
   /**
    * A default value for the control field.
    * This is not directly consumed by the field, but it is used to set the initial value in the form state.
@@ -79,9 +94,8 @@ export interface ExampleControlField extends FieldProps {
  * All transformers that can be applied to a field.
  * This is useful for applying different transforms to the same field.
  */
-export type ExampleControlFieldAllTransformers = Required<
-  Pick<ExampleControlField, "transformer" | "demoTransformer">
->;
+export type ExampleControlFieldAllTransformersRequired =
+  Required<TransformerFns>;
 
 /** The actual component that is rendered for an example. */
 export type ShowcaseComponent = (state: FormValues) => ReactElement;
