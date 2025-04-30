@@ -9,9 +9,9 @@ import Component from "./Textarea.js";
 // import type { StoryFn } from '@storybook/react'
 
 const meta = {
-	title: "Field/inputs/Textarea",
-	component: Component,
-	decorators: [decorators.form()],
+  title: "Field/inputs/Textarea",
+  component: Component,
+  decorators: [decorators.form()],
 } satisfies Meta<typeof Component>;
 
 export default meta;
@@ -24,41 +24,49 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
-	args: {
-		name: "content",
-	},
+  args: {
+    name: "content",
+  },
+};
+
+export const Disabled: Story = {
+  args: {
+    name: "full_name_disabled",
+    disabled: true,
+  },
 };
 
 export const Rows: Story = {
-	args: {
-		name: "content2",
-		rows: 7,
-	},
+  args: {
+    name: "content2",
+    rows: 7,
+  },
 };
 
 export const WithValidation: Story = {
-	args: {
-		name: "content3",
-		rows: 7,
-		registerProps: {
-			required: {
-				value: true,
-				message: "A board name is required",
-			},
-			pattern: {
-				value: /@/, // Regular expression to check for '@' symbol
-				message: "Field must contain an '@' symbol",
-			},
-			minLength: {
-				value: 5,
-				message: "Board name must be at least 5 characters",
-			},
-			maxLength: {
-				value: 50,
-				message: "Board name must be at most 50 characters",
-			},
-		},
-	},
+  args: {
+    name: "content3",
+    rows: 7,
+    description: "The content of the board",
+    registerProps: {
+      required: {
+        value: true,
+        message: "A board name is required",
+      },
+      pattern: {
+        value: /@/, // Regular expression to check for '@' symbol
+        message: "Field must contain an '@' symbol",
+      },
+      minLength: {
+        value: 5,
+        message: "Board name must be at least 5 characters",
+      },
+      maxLength: {
+        value: 50,
+        message: "Board name must be at most 50 characters",
+      },
+    },
+  },
 };
 
 /*

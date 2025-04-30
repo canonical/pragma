@@ -3,7 +3,14 @@
 /* Adapter */
 
 .ds {
-  --inline-gap: var(--dimension-scale-200);
+  --field-inline-gap: var(--dimension-scale-200);
+  --input-border-radius: var(--dimension-radius-medium);
+  --input-border-width: 1px;
+  --input-border-style: solid;
+  --input-border-bottom-width: var(--border-width);
+  --input-border-top-width: 0;
+  --input-border-left-width: 0;
+  --input-border-right-width: 0;
 }
 
 /* FIXME : To clean up*/

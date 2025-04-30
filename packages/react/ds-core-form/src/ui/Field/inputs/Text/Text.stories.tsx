@@ -29,6 +29,13 @@ export const Default: Story = {
   },
 };
 
+export const Disabled: Story = {
+  args: {
+    name: "full_name_disabled",
+    disabled: true,
+  },
+};
+
 export const Email: Story = {
   args: {
     name: "email",

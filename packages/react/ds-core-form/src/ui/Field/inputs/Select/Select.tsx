@@ -5,7 +5,7 @@ import type { SelectProps } from "./types.js";
 import "./styles.css";
 import withWrapper from "../../common/Wrapper/withWrapper.js";
 
-const componentCssClassName = "ds select";
+const componentCssClassName = "ds form-select";
 
 /**
  * description of the Select component

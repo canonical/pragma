@@ -1,8 +1,43 @@
 /* @canonical/generator-ds 0.9.0-experimental.4 */
 
 .ds.form-text {
+  border-radius: var(--border-radius);
+
   direction: inherit;
   display: flex;
   align-items: center;
-  gap: var(--inline-gap);
+  gap: var(--field-inline-gap);
+
+  & > input {
+    color: var(--mod-color-default, var(--state-idle-color-default));
+    background: var(
+      --mod-background-default,
+      var(--state-idle-background-default)
+    );
+    border-color: var(
+      --mod-border-color-default,
+      var(--state-idle-border-color-default)
+    );
+
+    border-style: var(--input-border-style);
+
+    border-bottom-width: var(--input-border-bottom-width);
+    border-top-width: var(--input-border-top-width);
+    border-left-width: var(--input-border-right-width);
+    border-right-width: var(--input-border-right-width);
+
+    &:focus {
+      color: var(--mod-color-focus, var(--state-idle-color-default));
+      border-color: var(
+        --mod-border-color-focus,
+        var(--state-idle-border-color-default)
+      );
+    }
+
+    &:disabled {
+      color: var(--state-disabled-color-default);
+      background: var(--state-disabled-background-default);
+      border-color: var(--state-disabled-border-color-default);
+    }
+  }
 }

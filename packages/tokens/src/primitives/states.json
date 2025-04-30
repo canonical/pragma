@@ -2,75 +2,235 @@
   "state": {
     "success": {
       "color": {
-        "default": { "$value": "#28a745", "$type": "color", "$description": "Default text color for the success state" },
-        "active": { "$value": "#218838", "$type": "color", "$description": "Text color for the active success state" },
-        "focus": { "$value": "#1e7e34", "$type": "color", "$description": "Text color for the focused success state" }
+        "default": {
+          "$value": "#28a745",
+          "$type": "color",
+          "$description": "Default text color for the success state"
+        },
+        "active": {
+          "$value": "#218838",
+          "$type": "color",
+          "$description": "Text color for the active success state"
+        },
+        "focus": {
+          "$value": "#1e7e34",
+          "$type": "color",
+          "$description": "Text color for the focused success state"
+        }
       },
       "border-color": {
-        "default": { "$value": "#28a745", "$type": "color", "$description": "Default border color for the success state" },
-        "active": { "$value": "#218838", "$type": "color", "$description": "Border color for the active success state" },
-        "focus": { "$value": "#1e7e34", "$type": "color", "$description": "Border color for the focused success state" }
+        "default": {
+          "$value": "#28a745",
+          "$type": "color",
+          "$description": "Default border color for the success state"
+        },
+        "active": {
+          "$value": "#218838",
+          "$type": "color",
+          "$description": "Border color for the active success state"
+        },
+        "focus": {
+          "$value": "#1e7e34",
+          "$type": "color",
+          "$description": "Border color for the focused success state"
+        }
       },
       "background": {
-        "default": { "$value": "#d4edda", "$type": "color", "$description": "Default background color for the success state" },
-        "active": { "$value": "#c3e6cb", "$type": "color", "$description": "Background color for the active success state" },
-        "focus": { "$value": "#b1dfb8", "$type": "color", "$description": "Background color for the focused success state" }
+        "default": {
+          "$value": "#d4edda",
+          "$type": "color",
+          "$description": "Default background color for the success state"
+        },
+        "active": {
+          "$value": "#c3e6cb",
+          "$type": "color",
+          "$description": "Background color for the active success state"
+        },
+        "focus": {
+          "$value": "#b1dfb8",
+          "$type": "color",
+          "$description": "Background color for the focused success state"
+        }
       },
-      "opacity": { "$value": "1", "$type": "number", "$description": "Opacity level for the success state" }
+      "opacity": {
+        "$value": "1",
+        "$type": "number",
+        "$description": "Opacity level for the success state"
+      }
     },
     "danger": {
       "color": {
-        "default": { "$value": "#dc3545", "$type": "color", "$description": "Default text color for the danger state" },
-        "active": { "$value": "#c82333", "$type": "color", "$description": "Text color for the active danger state" },
-        "focus": { "$value": "#bd2130", "$type": "color", "$description": "Text color for the focused danger state" }
+        "default": {
+          "$value": "#dc3545",
+          "$type": "color",
+          "$description": "Default text color for the danger state"
+        },
+        "active": {
+          "$value": "#c82333",
+          "$type": "color",
+          "$description": "Text color for the active danger state"
+        },
+        "focus": {
+          "$value": "#bd2130",
+          "$type": "color",
+          "$description": "Text color for the focused danger state"
+        }
       },
       "border-color": {
-        "default": { "$value": "#dc3545", "$type": "color", "$description": "Default border color for the danger state" },
-        "active": { "$value": "#c82333", "$type": "color", "$description": "Border color for the active danger state" },
-        "focus": { "$value": "#bd2130", "$type": "color", "$description": "Border color for the focused danger state" }
+        "default": {
+          "$value": "#dc3545",
+          "$type": "color",
+          "$description": "Default border color for the danger state"
+        },
+        "active": {
+          "$value": "#c82333",
+          "$type": "color",
+          "$description": "Border color for the active danger state"
+        },
+        "focus": {
+          "$value": "#bd2130",
+          "$type": "color",
+          "$description": "Border color for the focused danger state"
+        }
       },
       "background": {
-        "default": { "$value": "#f8d7da", "$type": "color", "$description": "Default background color for the danger state" },
-        "active": { "$value": "#f5c6cb", "$type": "color", "$description": "Background color for the active danger state" },
-        "focus": { "$value": "#f1b0b7", "$type": "color", "$description": "Background color for the focused danger state" }
+        "default": {
+          "$value": "#f8d7da",
+          "$type": "color",
+          "$description": "Default background color for the danger state"
+        },
+        "active": {
+          "$value": "#f5c6cb",
+          "$type": "color",
+          "$description": "Background color for the active danger state"
+        },
+        "focus": {
+          "$value": "#f1b0b7",
+          "$type": "color",
+          "$description": "Background color for the focused danger state"
+        }
       },
-      "opacity": { "$value": "1", "$type": "number", "$description": "Opacity level for the danger state" }
+      "opacity": {
+        "$value": "1",
+        "$type": "number",
+        "$description": "Opacity level for the danger state"
+      }
     },
     "disabled": {
       "color": {
-        "default": { "$value": "#6c757d", "$type": "color", "$description": "Default text color for the disabled state" },
-        "active": { "$value": "#5a6268", "$type": "color", "$description": "Text color for the active disabled state" },
-        "focus": { "$value": "#5a6268", "$type": "color", "$description": "Text color for the focused disabled state" }
+        "default": {
+          "$value": "#6c757d",
+          "$type": "color",
+          "$description": "Default text color for the disabled state"
+        },
+        "active": {
+          "$value": "#5a6268",
+          "$type": "color",
+          "$description": "Text color for the active disabled state"
+        },
+        "focus": {
+          "$value": "#5a6268",
+          "$type": "color",
+          "$description": "Text color for the focused disabled state"
+        }
       },
       "border-color": {
-        "default": { "$value": "#6c757d", "$type": "color", "$description": "Default border color for the disabled state" },
-        "active": { "$value": "#5a6268", "$type": "color", "$description": "Border color for the active disabled state" },
-        "focus": { "$value": "#5a6268", "$type": "color", "$description": "Border color for the focused disabled state" }
+        "default": {
+          "$value": "#6c757d",
+          "$type": "color",
+          "$description": "Default border color for the disabled state"
+        },
+        "active": {
+          "$value": "#5a6268",
+          "$type": "color",
+          "$description": "Border color for the active disabled state"
+        },
+        "focus": {
+          "$value": "#5a6268",
+          "$type": "color",
+          "$description": "Border color for the focused disabled state"
+        }
       },
       "background": {
-        "default": { "$value": "#e9ecef", "$type": "color", "$description": "Default background color for the disabled state" },
-        "active": { "$value": "#dee2e6", "$type": "color", "$description": "Background color for the active disabled state" },
-        "focus": { "$value": "#dee2e6", "$type": "color", "$description": "Background color for the focused disabled state" }
+        "default": {
+          "$value": "#e9ecef",
+          "$type": "color",
+          "$description": "Default background color for the disabled state"
+        },
+        "active": {
+          "$value": "#dee2e6",
+          "$type": "color",
+          "$description": "Background color for the active disabled state"
+        },
+        "focus": {
+          "$value": "#dee2e6",
+          "$type": "color",
+          "$description": "Background color for the focused disabled state"
+        }
       },
-      "opacity": { "$value": "0.5", "$type": "number", "$description": "Opacity level for the disabled state" }
+      "opacity": {
+        "$value": "0.5",
+        "$type": "number",
+        "$description": "Opacity level for the disabled state"
+      }
     },
     "idle": {
       "color": {
-        "default": { "$value": "#007bff", "$type": "color", "$description": "Default text color for the idle state" },
-        "active": { "$value": "#0069d9", "$type": "color", "$description": "Text color for the active idle state" },
-        "focus": { "$value": "#0056b3", "$type": "color", "$description": "Text color for the focused idle state" }
+        "default": {
+          "$value": "#007bff",
+          "$type": "color",
+          "$description": "Default text color for the idle state"
+        },
+        "active": {
+          "$value": "#0069d9",
+          "$type": "color",
+          "$description": "Text color for the active idle state"
+        },
+        "focus": {
+          "$value": "#0056b3",
+          "$type": "color",
+          "$description": "Text color for the focused idle state"
+        }
       },
       "border-color": {
-        "default": { "$value": "#007bff", "$type": "color", "$description": "Default border color for the idle state" },
-        "active": { "$value": "#0069d9", "$type": "color", "$description": "Border color for the active idle state" },
-        "focus": { "$value": "#0056b3", "$type": "color", "$description": "Border color for the focused idle state" }
+        "default": {
+          "$value": "#007bff",
+          "$type": "color",
+          "$description": "Default border color for the idle state"
+        },
+        "active": {
+          "$value": "#0069d9",
+          "$type": "color",
+          "$description": "Border color for the active idle state"
+        },
+        "focus": {
+          "$value": "#0056b3",
+          "$type": "color",
+          "$description": "Border color for the focused idle state"
+        }
       },
       "background": {
-        "default": { "$value": "#cce5ff", "$type": "color", "$description": "Default background color for the idle state" },
-        "active": { "$value": "#b8daff", "$type": "color", "$description": "Background color for the active idle state" },
-        "focus": { "$value": "#a4d0ff", "$type": "color", "$description": "Background color for the focused idle state" }
+        "default": {
+          "$value": "#cce5ff",
+          "$type": "color",
+          "$description": "Default background color for the idle state"
+        },
+        "active": {
+          "$value": "#b8daff",
+          "$type": "color",
+          "$description": "Background color for the active idle state"
+        },
+        "focus": {
+          "$value": "#a4d0ff",
+          "$type": "color",
+          "$description": "Background color for the focused idle state"
+        }
       },
-      "opacity": { "$value": "1", "$type": "number", "$description": "Opacity level for the idle state" }
+      "opacity": {
+        "$value": "1",
+        "$type": "number",
+        "$description": "Opacity level for the idle state"
+      }
     }
   }
 }
