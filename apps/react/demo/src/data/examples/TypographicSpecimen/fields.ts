@@ -3,14 +3,15 @@ import * as fields from "../../fields.js";
 import * as transformers from "../../transformers.js";
 
 const sections: FormSection[] = [
-  fields.createRootSection([
-    {
-      ...fields.FONT_FAMILY_FIELD,
-      defaultValue: "Times New Roman",
-    },
-    fields.FONT_SIZE_FIELD,
-    fields.LINE_HEIGHT_FIELD,
-  ]),
+  {
+    title: "Root",
+    fields: [
+      { ...fields.FONT_FAMILY_FIELD, defaultValue: "Times New Roman" },
+      fields.FONT_SIZE_FIELD,
+      fields.BASELINE_HEIGHT_FIELD,
+      fields.LINE_HEIGHT_FIELD,
+    ],
+  },
   {
     title: "H1",
     fields: [
