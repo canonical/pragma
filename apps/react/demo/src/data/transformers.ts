@@ -1,7 +1,4 @@
-import type {
-  ExampleControlFieldAllTransformersRequired,
-  ExampleSettingValue,
-} from "../ui/index.js";
+import type { ExampleSettingValue } from "../ui/index.js";
 
 export const convertToPixels = (value: ExampleSettingValue) => `${value}px`;
 
@@ -25,13 +22,3 @@ export const convertToRems = (value: ExampleSettingValue) => `${value}rem`;
  */
 export const convertToFontSizeMultiples = (value: ExampleSettingValue) =>
   `calc(${value} * var(--font-size))`;
-
-/**
- * A pair of transformers for converting settings to functions of the font size in the demo,
- * and to `rem` units in the exported CSS.
- */
-export const fontRelativeTransformers: ExampleControlFieldAllTransformersRequired =
-  {
-    demoTransformer: convertToFontSizeMultiples,
-    transformer: convertToRems,
-  };
