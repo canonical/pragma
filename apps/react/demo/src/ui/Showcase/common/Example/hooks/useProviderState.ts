@@ -45,7 +45,28 @@ const useProviderState = ({
   }, [examples]);
 
   /**
-   * A flat array of all of the example fields on the currently active example.
+   * Converts the output values to a string for a given format.
+   * This is useful for displaying the output values in a human-readable format or copying them to the clipboard.
+   * @param output The output values to convert.
+   * @param format The format to convert to.
+   * @returns The output values as a string.
+   */
+  const outputValueToString = useCallback(
+    (output: Output, format: ExampleOutputFormat) => {
+      switch (format) {
+        case "css":
+          return Object.entries(output)
+            .map((d) => `${d[0]}: ${d[1]};`)
+            .join("\n");
+        default:
+          throw new Error(`Unsupported output format: ${format}`);
+      }
+    },
+    [],
+  );
+
+  /**
+   * A flat array of all the example fields on the currently active example.
    * This makes iterative operations on the list of fields easier, as the fields are nested inside example sections.
    * */
   const activeExampleFields = useMemo(
@@ -114,13 +135,11 @@ const useProviderState = ({
   const copyOutput = useCallback(
     (format: ExampleOutputFormat) => {
       if (typeof window === "undefined") return;
-      navigator.clipboard.writeText(
-        Object.entries(extract(outputFields(format), ["transformer"]))
-          .map((d) => `${d[0]}: ${d[1]};`)
-          .join("\n"),
-      );
+      const output = extract(outputFields(format), ["transformer"]);
+      const outputAsString = outputValueToString(output, format);
+      navigator.clipboard.writeText(outputAsString);
     },
-    [outputFields, extract],
+    [outputFields, extract, outputValueToString],
   );
 
   /** The settings for the active example */
