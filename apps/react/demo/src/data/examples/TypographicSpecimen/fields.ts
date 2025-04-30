@@ -26,7 +26,7 @@ const sections: FormSection[] = [
         max: 20,
         step: 1,
         defaultValue: 9,
-        demoTransformer: transformers.convertToBaselineMultiples,
+        transformer: transformers.convertToBaselineMultiples,
       },
       {
         name: "--h1-margin-bottom",
@@ -71,7 +71,7 @@ const sections: FormSection[] = [
         max: 20,
         step: 1,
         defaultValue: 8,
-        demoTransformer: transformers.convertToBaselineMultiples,
+        transformer: transformers.convertToBaselineMultiples,
       },
       {
         name: "--h2-margin-bottom",
@@ -117,7 +117,7 @@ const sections: FormSection[] = [
         max: 20,
         step: 1,
         defaultValue: 5,
-        demoTransformer: transformers.convertToBaselineMultiples,
+        transformer: transformers.convertToBaselineMultiples,
       },
       {
         name: "--h3-margin-bottom",
@@ -162,7 +162,7 @@ const sections: FormSection[] = [
         max: 20,
         step: 1,
         defaultValue: 4,
-        demoTransformer: transformers.convertToBaselineMultiples,
+        transformer: transformers.convertToBaselineMultiples,
       },
       {
         name: "--h4-margin-bottom",
@@ -207,7 +207,7 @@ const sections: FormSection[] = [
         max: 20,
         step: 1,
         defaultValue: 4,
-        demoTransformer: transformers.convertToBaselineMultiples,
+        transformer: transformers.convertToBaselineMultiples,
       },
       {
         name: "--h5-margin-bottom",
@@ -252,7 +252,7 @@ const sections: FormSection[] = [
         max: 20,
         step: 1,
         defaultValue: 4,
-        demoTransformer: transformers.convertToBaselineMultiples,
+        transformer: transformers.convertToBaselineMultiples,
       },
       {
         name: "--h6-margin-bottom",
@@ -297,7 +297,7 @@ const sections: FormSection[] = [
         max: 20,
         step: 1,
         defaultValue: 3,
-        demoTransformer: transformers.convertToBaselineMultiples,
+        transformer: transformers.convertToBaselineMultiples,
       },
       {
         name: "--p-margin-top",
@@ -342,7 +342,7 @@ const sections: FormSection[] = [
         max: 16,
         step: 1,
         defaultValue: 0,
-        demoTransformer: transformers.convertToPixels,
+        transformer: transformers.convertToPixels,
       },
       {
         name: "--hr-margin-bottom",
@@ -352,7 +352,7 @@ const sections: FormSection[] = [
         max: 16,
         step: 1,
         defaultValue: 7,
-        demoTransformer: transformers.convertToPixels,
+        transformer: transformers.convertToPixels,
       },
       {
         name: "--hr-height",
@@ -362,7 +362,7 @@ const sections: FormSection[] = [
         max: 16,
         step: 1,
         defaultValue: 1,
-        demoTransformer: transformers.convertToPixels,
+        transformer: transformers.convertToPixels,
       },
     ],
   },

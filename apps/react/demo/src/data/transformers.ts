@@ -32,5 +32,5 @@ export const convertToFontSizeMultiples = (value: ExampleSettingValue) =>
  */
 export const fontRelativeTransformers: ExampleControlFieldAllTransformers = {
   demoTransformer: convertToFontSizeMultiples,
-  exportTransformer: convertToRems,
+  transformer: convertToRems,
 };

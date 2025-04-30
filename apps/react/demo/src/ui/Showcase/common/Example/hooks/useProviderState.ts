@@ -73,9 +73,17 @@ const useProviderState = ({
       outputFormats.reduce((acc, format: ExampleOutputFormat) => {
         acc[format] = Object.fromEntries(
           outputFields(format).map((field) => {
-            const { [ORIGINAL_VAR_NAME_KEY]: name, demoTransformer } = field;
+            const {
+              [ORIGINAL_VAR_NAME_KEY]: name,
+              demoTransformer,
+              transformer,
+            } = field;
             const rawVal = formValues[activeExample.name]?.[name as string];
-            const val = demoTransformer ? demoTransformer(rawVal) : rawVal;
+            const val = demoTransformer
+              ? demoTransformer(rawVal)
+              : transformer
+                ? transformer(rawVal)
+                : rawVal;
             return [name, val];
           }),
         );
@@ -95,17 +103,9 @@ const useProviderState = ({
               // Organize the exported fields by alphabetizing them
               .sort((a, b) => a.name.localeCompare(b.name))
               .map((field) => {
-                const {
-                  [ORIGINAL_VAR_NAME_KEY]: name,
-                  exportTransformer,
-                  demoTransformer,
-                } = field;
+                const { [ORIGINAL_VAR_NAME_KEY]: name, transformer } = field;
                 const rawVal = formValues[activeExample.name]?.[name as string];
-                const val = exportTransformer
-                  ? exportTransformer(rawVal)
-                  : demoTransformer
-                    ? demoTransformer(rawVal)
-                    : rawVal;
+                const val = transformer ? transformer(rawVal) : rawVal;
                 return [name, val];
               }),
           ),

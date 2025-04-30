@@ -65,7 +65,7 @@ const Controls = ({ id, className, style }: ControlsProps): ReactElement => {
                   name,
                   defaultValue,
                   demoTransformer,
-                  exportTransformer,
+                  transformer,
                   disabledOutputFormats,
                   ...fieldProps
                 }) => (

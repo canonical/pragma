@@ -23,7 +23,7 @@ export const FONT_SIZE_FIELD: ExampleControlField = {
   min: 12,
   max: 24,
   step: 1,
-  demoTransformer: transformers.convertToPixels,
+  transformer: transformers.convertToPixels,
 };
 
 /**
@@ -39,7 +39,7 @@ export const BASELINE_HEIGHT_FIELD: ExampleControlField = {
   min: 0.5,
   max: 2,
   step: 0.25,
-  demoTransformer: transformers.convertToRems,
+  transformer: transformers.convertToRems,
 };
 
 export const LINE_HEIGHT_FIELD: ExampleControlField = {

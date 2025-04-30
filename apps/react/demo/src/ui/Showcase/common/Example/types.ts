@@ -55,10 +55,17 @@ export interface ExampleControlField extends FieldProps {
   disabledOutputFormats?: {
     [key in ExampleOutputFormat]?: boolean;
   };
-  /** Transformer function to apply to demo output values */
+  /**
+   * Transformer function to apply to demo output values
+   * If not set, the `transformer` function will be used instead
+   * */
   demoTransformer?: (value: ExampleSettingValue) => ExampleSettingValue;
-  /** Transformer function to apply to exported values */
-  exportTransformer?: (value: ExampleSettingValue) => ExampleSettingValue;
+  /**
+   * Default transformer function to apply to output values.
+   * This is always applied to export values.
+   * If the `demoTransformer` is not set, this will be used for demo output as well.
+   * */
+  transformer?: (value: ExampleSettingValue) => ExampleSettingValue;
   /**
    * A default value for the control field.
    * This is not directly consumed by the field, but it is used to set the initial value in the form state.
@@ -73,7 +80,7 @@ export interface ExampleControlField extends FieldProps {
  * This is useful for applying different transforms to the same field.
  */
 export type ExampleControlFieldAllTransformers = Required<
-  Pick<ExampleControlField, "exportTransformer" | "demoTransformer">
+  Pick<ExampleControlField, "transformer" | "demoTransformer">
 >;
 
 /** The actual component that is rendered for an example. */
