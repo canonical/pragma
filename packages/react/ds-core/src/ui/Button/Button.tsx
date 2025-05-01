@@ -13,7 +13,7 @@ const Button = ({
   return (
     <button
       id={id}
-      className={["ds", "button", appearance, className]
+      className={["ds", "buttonn", appearance, className]
         .filter(Boolean)
         .join(" ")}
       style={style}
@@ -24,7 +24,6 @@ const Button = ({
       {...props}
     >
       {children}
-      Extra text!
     </button>
   );
 };
