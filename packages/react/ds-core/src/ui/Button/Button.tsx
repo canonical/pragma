@@ -24,7 +24,6 @@ const Button = ({
       {...props}
     >
       {children}
-      Extra text!
     </button>
   );
 };
