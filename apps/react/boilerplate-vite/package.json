@@ -1,7 +1,7 @@
 {
   "name": "@canonical/react-boilerplate-vite",
   "private": true,
-  "version": "0.9.0-experimental.13",
+  "version": "0.9.0-experimental.19",
   "type": "module",
   "license": "GPL-3.0-only",
   "scripts": {
@@ -24,7 +24,7 @@
   },
   "dependencies": {
     "@canonical/react-ssr": "^0.9.0-experimental.12",
-    "@canonical/storybook-config": "^0.9.0-experimental.12",
+    "@canonical/storybook-config": "^0.9.0-experimental.19",
     "@canonical/styles": "^0.9.0-experimental.12",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
@@ -32,7 +32,7 @@
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
     "@canonical/biome-config": "^0.9.0-experimental.12",
-    "@canonical/react-ds-core": "^0.9.0-experimental.13",
+    "@canonical/react-ds-core": "^0.9.0-experimental.19",
     "@canonical/typescript-config-react": "^0.9.0-experimental.12",
     "@chromatic-com/storybook": "^3.2.2",
     "@storybook/blocks": "^8.4.7",

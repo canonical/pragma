@@ -71,7 +71,7 @@ export type BaseWrapperProps<ComponentProps> = BaseProps & {
 };
 
 export type WrapperProps<ComponentProps> = BaseWrapperProps<ComponentProps> & {
-  /* The description of the input */
+  /* The description of the input. Will be a children of p.form-field-description */
   description?: string;
 
   /* The name of input labelled */

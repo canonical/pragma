@@ -3,7 +3,7 @@ import type React from "react";
 import type { ErrorProps } from "./types.js";
 import "./styles.css";
 
-const componentCssClassName = "ds error";
+const componentCssClassName = "ds form-field-error";
 
 /**
  * description of the Error component
@@ -16,14 +16,14 @@ const FieldError = ({
   style,
 }: ErrorProps): React.ReactElement => {
   return (
-    <div
+    <p
       id={id}
       style={style}
       className={[componentCssClassName, className].filter(Boolean).join(" ")}
       role="alert"
     >
       {children}
-    </div>
+    </p>
   );
 };
 

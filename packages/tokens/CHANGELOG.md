@@ -8,4 +8,4 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 ### Features
 
-* **Styles:** Extract baseline grid css styles to a "debug" styles package ([#203](https://github.com/canonical/ds25/issues/203)) ([30e69e4](https://github.com/canonical/ds25/commit/30e69e44799a1076c7c0b668ddb3b81b36b7d967))
+* **tokens:** Base token build pipeline with style dictionary ([#195](https://github.com/canonical/ds25/issues/195)) ([f29254d](https://github.com/canonical/ds25/commit/f29254d142eefe269a34c13fead625e5ba95aed5))

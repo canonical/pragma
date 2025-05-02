@@ -1,3 +1,5 @@
+@import url("@canonical/tokens/dist/css/semantic.css");
+
 @layer modes {
   .danger {
     /* Canonical Mode */

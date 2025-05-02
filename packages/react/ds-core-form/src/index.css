@@ -1,5 +1,52 @@
 @import url("@canonical/styles");
 
+/* Adapter */
+
+.ds {
+  --field-inline-gap: var(--dimension-scale-200);
+  --input-border-radius: var(--dimension-radius-medium);
+  --input-border-width: 1px;
+  --input-border-style: solid;
+  --input-border-bottom-width: var(--border-width);
+  --input-border-top-width: 0;
+  --input-border-left-width: 0;
+  --input-border-right-width: 0;
+}
+
+.form-input {
+  border-radius: var(--border-radius);
+
+  color: var(--mod-color-default, var(--state-idle-color-default));
+  background: var(
+    --mod-background-default,
+    var(--state-idle-background-default)
+  );
+  border-color: var(
+    --mod-border-color-default,
+    var(--state-idle-border-color-default)
+  );
+
+  border-bottom-width: var(--input-border-bottom-width);
+  border-top-width: var(--input-border-top-width);
+  border-left-width: var(--input-border-right-width);
+  border-right-width: var(--input-border-right-width);
+
+  &:focus {
+    color: var(--mod-color-focus, var(--state-idle-color-default));
+    border-color: var(
+      --mod-border-color-focus,
+      var(--state-idle-border-color-default)
+    );
+  }
+
+  &:disabled {
+    color: var(--state-disabled-color-default);
+    background: var(--state-disabled-background-default);
+    border-color: var(--state-disabled-border-color-default);
+  }
+}
+
+/* FIXME : To clean up*/
 :root {
   /* For debug */
   --baseline-grid-color: orange;
@@ -46,4 +93,10 @@
   --wrapper-columns: 3 / -1;
   --form-label-columns: 1 / -1;
   --form-payload-columns: 1 / -1;
+}
+
+/* Utility */
+
+.rtl {
+  direction: rtl;
 }

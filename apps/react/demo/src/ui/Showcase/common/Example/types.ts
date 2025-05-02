@@ -41,7 +41,7 @@ export interface ProviderProps {
   outputFormats?: ExampleOutputFormat[];
 }
 
-export interface FieldsSection {
+export interface FormSection {
   title: string;
   /**
    * Array defining the controls and their initial/default configuration for this example.
@@ -51,16 +51,38 @@ export interface FieldsSection {
   fields: ExampleControlField[];
 }
 
-export interface ExampleControlField extends FieldProps {
+/**
+ * Valid keys for field transformer functions.
+ */
+export type TransformerFnKey =
+  /**
+   * Default transformer function to apply to output values.
+   * This is always applied to export values.
+   * If the `demoTransformer` is not set, this will be used for demo output as well.
+   * */
+  | "transformer"
+  /**
+   * Transformer function to apply to demo output values
+   * If not set, the `transformer` function will be used instead
+   * */
+  | "demoTransformer";
+
+/**
+ * Mapping of transformer function keys to their respective transformer functions
+ * Each function is optional.
+ * */
+export type TransformerFns = {
+  [key in TransformerFnKey]?: (
+    value: ExampleSettingValue,
+  ) => ExampleSettingValue;
+};
+
+export interface ExampleControlField extends FieldProps, TransformerFns {
   name: string;
   /** Formats for which output is disabled */
   disabledOutputFormats?: {
     [key in ExampleOutputFormat]?: boolean;
   };
-  /** Transformer function to apply to demo output values */
-  demoTransformer?: (value: ExampleSettingValue) => ExampleSettingValue;
-  /** Transformer function to apply to exported values */
-  exportTransformer?: (value: ExampleSettingValue) => ExampleSettingValue;
   /**
    * A default value for the control field.
    * This is not directly consumed by the field, but it is used to set the initial value in the form state.
@@ -82,7 +104,7 @@ export type ExampleControlFieldAllTransformers = Required<
 export type ShowcaseComponent = (state: FormValues) => ReactElement;
 
 /** The props for constructing a ShowcaseExample */
-export interface ShowcaseExampleOpts {
+export interface ShowcaseExample {
   /** Unique identifier name */
   name: string;
   /** User-friendly description */
@@ -90,13 +112,7 @@ export interface ShowcaseExampleOpts {
   /** The component to render */
   Component: ShowcaseComponent;
   /** The categories of fields associated with this example */
-  sections: FieldsSection[];
-}
-
-/** A fully initialized ShowcaseExample */
-export interface ShowcaseExample extends ShowcaseExampleOpts {
-  /** A flattened array of all fields across all categories */
-  fields: ExampleControlField[];
+  sections: FormSection[];
 }
 
 export type ExampleComponent = ((props: ProviderProps) => ReactElement) & {

@@ -1,88 +1,78 @@
 /* @canonical/generator-ds 0.9.0-experimental.12 */
 
-/* component variables
-    --drawer-overlay-background: background color for the overlay behind the drawer
-    --drawer-overlay-opacity-closed: opacity of the overlay when the drawer is closed
-    --drawer-overlay-opacity-open: opacity of the overlay when the drawer is open
-    --drawer-overlay-z-index: stacking order for the overlay
-
-    --drawer-dialogue-background: background color for the drawer dialogue box
-    --drawer-dialogue-border: border style/color for the dialogue (using 'none' here)
-    --drawer-dialogue-box-shadow: shadow effect for the dialogue box
-    --drawer-dialogue-width: default width of the dialogue box
-    --drawer-dialogue-max-width: maximum width constraint for the dialogue box
-    --drawer-dialogue-height: height of the dialogue box (using viewport unit)
-    --drawer-dialogue-z-index: stacking order for the dialogue box
-    --drawer-dialogue-padding-vertical: vertical padding inside the dialogue box
-    --drawer-dialogue-padding-horizontal: horizontal padding inside the dialogue box
-    --drawer-dialogue-transform-closed-left: translateX value for closed left drawer
-    --drawer-dialogue-transform-closed-right: translateX value for closed right drawer
-    --drawer-dialogue-transform-open: translateX value for open drawer
-
-    --drawer-header-border-bottom: bottom border for the header section
-    --drawer-header-padding-top: top padding for the header
-    --drawer-header-padding-right: right padding for the header (using 0 for alignment)
-    --drawer-header-padding-bottom: bottom padding for the header
-    --drawer-header-padding-left: left padding for the header
-
-    --drawer-title-font-size: font size for the drawer title
-    --drawer-title-font-weight: font weight for the drawer title
-
-    --drawer-close-button-color: default color for the close button
-    --drawer-close-button-color-hover: hover color for the close button
-    --drawer-close-button-font-size: font size for the close button icon
-    --drawer-close-button-line-height: line height for the close button
-    --drawer-close-button-padding: padding around the close button
-
-    --drawer-contents-padding-vertical: vertical padding for the main content area
-    --drawer-contents-padding-horizontal: horizontal padding for the main content area (using 0)
-
-    --drawer-transition-duration: duration for transitions (opacity, transform)
-    --drawer-transition-timing-function: timing function for transitions
-*/
 .ds.drawer {
+  /** background color for the overlay behind the drawer */
   --drawer-overlay-background: rgba(0, 0, 0, 0.5);
+  /** opacity of the overlay when the drawer is closed */
   --drawer-overlay-opacity-closed: 0;
+  /** opacity of the overlay when the drawer is open */
   --drawer-overlay-opacity-open: 1;
+  /** stacking order for the overlay */
   --drawer-overlay-z-index: 999;
-
+  /** background color for the drawer dialogue box */
   --drawer-dialogue-background: #fff;
+  /** border style/color for the dialogue */
   --drawer-dialogue-border: none;
+  /** shadow effect for the dialogue box */
   --drawer-dialogue-box-shadow: 0 1px 1px 0 rgba(0, 0, 0, 0.15), 0 2px 2px -1px
     rgba(0, 0, 0, 0.15), 0 0 3px 0 rgba(0, 0, 0, 0.2);
+  /** width of the dialogue box on the small size */
   --drawer-dialogue-width-small: 80%;
+  /** width of the dialogue box on the medium size */
   --drawer-dialogue-width-medium: 66%;
+  /** width of the dialogue box on the large size */
   --drawer-dialogue-width-large: 33%;
+  /** default width of the dialogue box */
+  --drawer-dialogue-width: 320px;
+  /** maximum width constraint for the dialogue box */
   --drawer-dialogue-max-width: 90vw;
+  /** height of the dialogue box */
   --drawer-dialogue-height: 100svh;
+  /** stacking order for the dialogue box */
   --drawer-dialogue-z-index: 1000;
-  --drawer-dialogue-padding-vertical: var(--spacing-vertical-small); /* Example: Reusing existing spacing vars if available */
-  --drawer-dialogue-padding-horizontal: var(--spacing-horizontal-medium); /* Example: Reusing existing spacing vars */
-  --drawer-dialogue-transform-closed-left: translateX(-100%);
-  --drawer-dialogue-transform-closed-right: translateX(100%);
-  --drawer-dialogue-transform-open: translateX(0);
+  /** vertical padding inside the dialogue box */
+  --drawer-dialogue-padding-vertical: var(--spacing-vertical-small);
+  /** horizontal padding inside the dialogue box */
+  --drawer-dialogue-padding-horizontal: var(--spacing-horizontal-medium);
 
+  /** bottom border for the header section */
   --drawer-header-border-bottom: 1px solid #e0e0e0;
+  /** top padding for the header */
   --drawer-header-padding-top: var(--spacing-vertical-small);
+  /** right padding for the header */
   --drawer-header-padding-right: 0;
+  /** bottom padding for the header */
   --drawer-header-padding-bottom: var(--spacing-vertical-small);
+  /** left padding for the header */
   --drawer-header-padding-left: var(--spacing-horizontal-small);
 
+  /** font size for the drawer title */
   --drawer-title-font-size: 1.1rem;
+  /** font weight for the drawer title */
   --drawer-title-font-weight: 600;
 
+  /** default color for the close button */
   --drawer-close-button-color: #555;
+  /** hover color for the close button */
   --drawer-close-button-color-hover: #000;
+  /** font size for the close button icon */
   --drawer-close-button-font-size: 1.75rem;
+  /** line height for the close button */
   --drawer-close-button-line-height: 1;
+  /** padding around the close button */
   --drawer-close-button-padding: 0.25rem;
 
+  /** vertical padding for the main content area */
   --drawer-contents-padding-vertical: var(--spacing-vertical-small);
+  /** horizontal padding for the main content area */
   --drawer-contents-padding-horizontal: 0;
 
+  /** duration for transitions */
   --drawer-transition-duration: 0.3s;
-  --drawer-transition-timing-function: ease-in-out;
+  /** timing functions for transitions */
+  --drawer-transition-timing-function-opacity: linear;
   --drawer-transition-timing-function-visibility: linear;
+  --drawer-transition-timing-function-transform: ease-in-out;
 
   background-color: var(--drawer-dialogue-background);
   border: var(--drawer-dialogue-border);
@@ -91,8 +81,6 @@
   display: flex;
   flex-direction: column;
   height: var(--drawer-dialogue-height);
-  /* Need to override browser default `dialogue` styling, otherwise the dialogue may not extend to full height */
-  max-height: var(--drawer-dialogue-height);
   margin: 0;
   max-width: var(--drawer-dialogue-max-width);
   padding: var(--drawer-dialogue-padding-vertical)
@@ -107,128 +95,100 @@
   width: var(--drawer-dialogue-width-small);
   z-index: var(--drawer-dialogue-z-index);
 
-  &.overlay {
+  &::backdrop {
     background-color: var(--drawer-overlay-background);
     inset: 0;
-    opacity: var(--drawer-overlay-opacity-closed);
     position: fixed;
     transition: opacity var(--drawer-transition-duration)
-      var(--drawer-transition-timing-function), visibility
+      var(--drawer-transition-timing-function-opacity), visibility
       var(--drawer-transition-duration)
       var(--drawer-transition-timing-function-visibility);
-    visibility: hidden;
     z-index: var(--drawer-overlay-z-index);
   }
 
-  & .dialogue {
-    background-color: var(--drawer-dialogue-background);
-    border: var(--drawer-dialogue-border);
-    box-shadow: var(--drawer-dialogue-box-shadow);
-    bottom: 0;
+  &.start:dir(ltr),
+  &.end:dir(rtl) {
+    left: 0;
+    right: auto;
+    transform: translateX(-100%);
+  }
+
+  &.end:dir(ltr),
+  &.start:dir(rtl) {
+    left: auto;
+    right: 0;
+    transform: translateX(100%);
+  }
+
+  &[aria-hidden="false"] {
+    &::backdrop {
+      opacity: var(--drawer-overlay-opacity-open);
+    }
+
+    /*  Fight specificity of the ltr & rtl selectors above */
+    transform: translateX(0) !important;
+    visibility: visible;
+  }
+
+  & > .header {
+    align-items: center;
+    border-bottom: var(--drawer-header-border-bottom);
     display: flex;
-    flex-direction: column;
-    height: var(--drawer-dialogue-height);
-    margin: 0;
-    max-width: var(--drawer-dialogue-max-width);
-    padding: var(--drawer-dialogue-padding-vertical)
-      var(--drawer-dialogue-padding-horizontal);
-    position: fixed;
-    top: 0;
-    transition: transform var(--drawer-transition-duration)
-      var(--drawer-transition-timing-function), visibility
-      var(--drawer-transition-duration)
-      var(--drawer-transition-timing-function-visibility);
-    visibility: hidden;
-    width: var(--drawer-dialogue-width-small);
-    z-index: var(--drawer-dialogue-z-index);
+    flex-shrink: 0;
+    justify-content: space-between;
+    padding: var(--drawer-header-padding-top) var(--drawer-header-padding-right)
+      var(--drawer-header-padding-bottom) var(--drawer-header-padding-left);
 
-    &.right {
-      left: auto;
-      right: 0;
-      transform: var(--drawer-dialogue-transform-closed-right);
+    & > .title {
+      flex: 0 1 auto;
+      font-size: var(--drawer-title-font-size);
+      font-weight: var(--drawer-title-font-weight);
+      margin: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
-    &.left {
-      left: 0;
-      right: auto;
-      transform: var(--drawer-dialogue-transform-closed-left);
-    }
-
-    & .header {
-      align-items: center;
-      border-bottom: var(--drawer-header-border-bottom);
-      display: flex;
+    & > button.close {
+      background: none;
+      border: none;
+      color: var(--drawer-close-button-color);
       flex-shrink: 0;
-      justify-content: space-between;
-      padding: var(--drawer-header-padding-top)
-        var(--drawer-header-padding-right) var(--drawer-header-padding-bottom)
-        var(--drawer-header-padding-left);
+      font-size: var(--drawer-close-button-font-size);
+      line-height: var(--drawer-close-button-line-height);
+      padding: var(--drawer-close-button-padding);
 
-      & .title {
-        flex: 0 1 auto;
-        font-size: var(--drawer-title-font-size);
-        font-weight: var(--drawer-title-font-weight);
-        margin: 0;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
+      &:hover {
+        color: var(--drawer-close-button-color-hover);
       }
-
-      & button.close {
-        background: none;
-        border: none;
-        color: var(--drawer-close-button-color);
-        flex-shrink: 0;
-        font-size: var(--drawer-close-button-font-size);
-        line-height: var(--drawer-close-button-line-height);
-        padding: var(--drawer-close-button-padding);
-
-        &:hover {
-          color: var(--drawer-close-button-color-hover);
-        }
-      }
-    }
-
-    & .contents {
-      flex-grow: 1;
-      overflow-y: auto;
-      padding: var(--drawer-contents-padding-vertical)
-        var(--drawer-contents-padding-horizontal);
     }
   }
 
-  &.open {
-    &.overlay {
-      opacity: var(--drawer-overlay-opacity-open);
-      transition: opacity var(--drawer-transition-duration)
-        var(--drawer-transition-timing-function);
-      visibility: visible;
-    }
-
-    & .dialogue {
-      transform: var(--drawer-dialogue-transform-open);
-      transition: transform var(--drawer-transition-duration)
-        var(--drawer-transition-timing-function);
-      visibility: visible;
-    }
+  & > .contents {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: var(--drawer-contents-padding-vertical)
+      var(--drawer-contents-padding-horizontal);
   }
 }
 
-@container (min-width: 60ch) {
-  .ds.drawer .dialogue {
+@media screen and (min-width: 620px) {
+  .ds.drawer {
     width: var(--drawer-dialogue-width-medium);
   }
 }
 
-@container (min-width: 120ch) {
-  .ds.drawer .dialogue {
+@media screen and (min-width: 1036px) {
+  .ds.drawer {
     width: var(--drawer-dialogue-width-large);
   }
 }
 
 @media (prefers-reduced-motion) {
-  .ds.drawer.overlay,
-  .ds.drawer .dialogue {
-    transition: none !important;
+  .ds.drawer {
+    &,
+    &::backdrop {
+      transition: none !important;
+    }
   }
 }

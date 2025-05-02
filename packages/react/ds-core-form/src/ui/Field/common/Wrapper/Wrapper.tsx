@@ -3,6 +3,7 @@ import type React from "react";
 import { useMemo } from "react";
 import type { BaseInputProps, WrapperProps } from "../../types.js";
 import "./styles.css";
+import { states } from "../../../constants.js";
 import { Description, Error as FieldError, Label } from "../index.js";
 import { useFieldWrapper } from "./hooks/index.js";
 
@@ -55,7 +56,9 @@ const Wrapper = <ComponentProps extends BaseInputProps>({
     <div
       id={id}
       style={style}
-      className={[componentCssClassName, className].filter(Boolean).join(" ")}
+      className={[componentCssClassName, className, isError && states.Danger]
+        .filter(Boolean)
+        .join(" ")}
     >
       <Label
         name={name}

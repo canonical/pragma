@@ -22,7 +22,7 @@ type Story = StoryObj<TooltipType>;
 export const Default: StoryFn = () => {
   const TooltippedButton = withTooltip(Button, <span>Tooltip content</span>);
 
-  return <TooltippedButton label="Hover me" />;
+  return <TooltippedButton>Hover me</TooltippedButton>;
 };
 
 Default.storyName = "Default";

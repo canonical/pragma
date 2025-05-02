@@ -1,9 +1,17 @@
-import type { FieldsSection } from "../../../ui/index.js";
-import { ROOT_SECTION } from "../../fields.js";
-import transformers from "../../transformers.js";
+import type { FormSection } from "../../../ui/index.js";
+import * as fields from "../../fields.js";
+import * as transformers from "../../transformers.js";
 
-const sections: FieldsSection[] = [
-  ROOT_SECTION,
+const sections: FormSection[] = [
+  {
+    title: "Root",
+    fields: [
+      { ...fields.FONT_FAMILY_FIELD, defaultValue: "Times New Roman" },
+      fields.FONT_SIZE_FIELD,
+      fields.BASELINE_HEIGHT_FIELD,
+      fields.LINE_HEIGHT_FIELD,
+    ],
+  },
   {
     title: "H1",
     fields: [
@@ -15,7 +23,8 @@ const sections: FieldsSection[] = [
         max: 8,
         step: 0.125,
         defaultValue: 4,
-        ...transformers.fontRelativeTransformers,
+        demoTransformer: transformers.convertToFontSizeMultiples,
+        transformer: transformers.convertToRems,
       },
       {
         name: "--h1-line-height",
@@ -25,7 +34,7 @@ const sections: FieldsSection[] = [
         max: 20,
         step: 1,
         defaultValue: 9,
-        demoTransformer: transformers.convertToBaselineMultiples,
+        transformer: transformers.convertToBaselineMultiples,
       },
       {
         name: "--h1-margin-bottom",
@@ -35,7 +44,8 @@ const sections: FieldsSection[] = [
         max: 16,
         step: 0.125,
         defaultValue: 12,
-        ...transformers.fontRelativeTransformers,
+        demoTransformer: transformers.convertToFontSizeMultiples,
+        transformer: transformers.convertToRems,
       },
       {
         name: "--h1-padding-top",
@@ -45,7 +55,8 @@ const sections: FieldsSection[] = [
         max: 4,
         step: 0.05,
         defaultValue: 0.55,
-        ...transformers.fontRelativeTransformers,
+        demoTransformer: transformers.convertToFontSizeMultiples,
+        transformer: transformers.convertToRems,
       },
     ],
   },
@@ -60,7 +71,8 @@ const sections: FieldsSection[] = [
         max: 8,
         step: 0.125,
         defaultValue: 3,
-        ...transformers.fontRelativeTransformers,
+        demoTransformer: transformers.convertToFontSizeMultiples,
+        transformer: transformers.convertToRems,
       },
       {
         name: "--h2-line-height",
@@ -70,7 +82,7 @@ const sections: FieldsSection[] = [
         max: 20,
         step: 1,
         defaultValue: 8,
-        demoTransformer: transformers.convertToBaselineMultiples,
+        transformer: transformers.convertToBaselineMultiples,
       },
       {
         name: "--h2-margin-bottom",
@@ -80,7 +92,8 @@ const sections: FieldsSection[] = [
         max: 16,
         step: 0.125,
         defaultValue: 3,
-        ...transformers.fontRelativeTransformers,
+        demoTransformer: transformers.convertToFontSizeMultiples,
+        transformer: transformers.convertToRems,
       },
       {
         name: "--h2-padding-top",
@@ -90,7 +103,8 @@ const sections: FieldsSection[] = [
         max: 4,
         step: 0.05,
         defaultValue: 0.55,
-        ...transformers.fontRelativeTransformers,
+        demoTransformer: transformers.convertToFontSizeMultiples,
+        transformer: transformers.convertToRems,
       },
     ],
   },
@@ -105,7 +119,8 @@ const sections: FieldsSection[] = [
         max: 8,
         step: 0.125,
         defaultValue: 3,
-        ...transformers.fontRelativeTransformers,
+        demoTransformer: transformers.convertToFontSizeMultiples,
+        transformer: transformers.convertToRems,
       },
       {
         name: "--h3-line-height",
@@ -115,7 +130,7 @@ const sections: FieldsSection[] = [
         max: 20,
         step: 1,
         defaultValue: 5,
-        demoTransformer: transformers.convertToBaselineMultiples,
+        transformer: transformers.convertToBaselineMultiples,
       },
       {
         name: "--h3-margin-bottom",
@@ -125,7 +140,8 @@ const sections: FieldsSection[] = [
         max: 16,
         step: 0.125,
         defaultValue: 3,
-        ...transformers.fontRelativeTransformers,
+        demoTransformer: transformers.convertToFontSizeMultiples,
+        transformer: transformers.convertToRems,
       },
       {
         name: "--h3-padding-top",
@@ -135,7 +151,8 @@ const sections: FieldsSection[] = [
         max: 4,
         step: 0.05,
         defaultValue: 0.45,
-        ...transformers.fontRelativeTransformers,
+        demoTransformer: transformers.convertToFontSizeMultiples,
+        transformer: transformers.convertToRems,
       },
     ],
   },
@@ -150,7 +167,8 @@ const sections: FieldsSection[] = [
         max: 8,
         step: 0.125,
         defaultValue: 1,
-        ...transformers.fontRelativeTransformers,
+        demoTransformer: transformers.convertToFontSizeMultiples,
+        transformer: transformers.convertToRems,
       },
       {
         name: "--h4-line-height",
@@ -160,7 +178,7 @@ const sections: FieldsSection[] = [
         max: 20,
         step: 1,
         defaultValue: 4,
-        demoTransformer: transformers.convertToBaselineMultiples,
+        transformer: transformers.convertToBaselineMultiples,
       },
       {
         name: "--h4-margin-bottom",
@@ -170,7 +188,8 @@ const sections: FieldsSection[] = [
         max: 16,
         step: 0.125,
         defaultValue: 1.5,
-        ...transformers.fontRelativeTransformers,
+        demoTransformer: transformers.convertToFontSizeMultiples,
+        transformer: transformers.convertToRems,
       },
       {
         name: "--h4-padding-top",
@@ -180,7 +199,8 @@ const sections: FieldsSection[] = [
         max: 4,
         step: 0.05,
         defaultValue: 0.45,
-        ...transformers.fontRelativeTransformers,
+        demoTransformer: transformers.convertToFontSizeMultiples,
+        transformer: transformers.convertToRems,
       },
     ],
   },
@@ -195,7 +215,8 @@ const sections: FieldsSection[] = [
         max: 8,
         step: 0.125,
         defaultValue: 1,
-        ...transformers.fontRelativeTransformers,
+        demoTransformer: transformers.convertToFontSizeMultiples,
+        transformer: transformers.convertToRems,
       },
       {
         name: "--h5-line-height",
@@ -205,7 +226,7 @@ const sections: FieldsSection[] = [
         max: 20,
         step: 1,
         defaultValue: 4,
-        demoTransformer: transformers.convertToBaselineMultiples,
+        transformer: transformers.convertToBaselineMultiples,
       },
       {
         name: "--h5-margin-bottom",
@@ -215,7 +236,8 @@ const sections: FieldsSection[] = [
         max: 16,
         step: 0.125,
         defaultValue: 1.5,
-        ...transformers.fontRelativeTransformers,
+        demoTransformer: transformers.convertToFontSizeMultiples,
+        transformer: transformers.convertToRems,
       },
       {
         name: "--h5-padding-top",
@@ -225,7 +247,8 @@ const sections: FieldsSection[] = [
         max: 4,
         step: 0.125,
         defaultValue: 0.375,
-        ...transformers.fontRelativeTransformers,
+        demoTransformer: transformers.convertToFontSizeMultiples,
+        transformer: transformers.convertToRems,
       },
     ],
   },
@@ -240,7 +263,8 @@ const sections: FieldsSection[] = [
         max: 8,
         step: 0.125,
         defaultValue: 1,
-        ...transformers.fontRelativeTransformers,
+        demoTransformer: transformers.convertToFontSizeMultiples,
+        transformer: transformers.convertToRems,
       },
       {
         name: "--h6-line-height",
@@ -250,7 +274,7 @@ const sections: FieldsSection[] = [
         max: 20,
         step: 1,
         defaultValue: 4,
-        demoTransformer: transformers.convertToBaselineMultiples,
+        transformer: transformers.convertToBaselineMultiples,
       },
       {
         name: "--h6-margin-bottom",
@@ -260,7 +284,8 @@ const sections: FieldsSection[] = [
         max: 16,
         step: 0.125,
         defaultValue: 1.5,
-        ...transformers.fontRelativeTransformers,
+        demoTransformer: transformers.convertToFontSizeMultiples,
+        transformer: transformers.convertToRems,
       },
       {
         name: "--h6-padding-top",
@@ -270,7 +295,8 @@ const sections: FieldsSection[] = [
         max: 4,
         step: 0.125,
         defaultValue: 0.375,
-        ...transformers.fontRelativeTransformers,
+        demoTransformer: transformers.convertToFontSizeMultiples,
+        transformer: transformers.convertToRems,
       },
     ],
   },
@@ -285,7 +311,8 @@ const sections: FieldsSection[] = [
         max: 8,
         step: 0.125,
         defaultValue: 1,
-        ...transformers.fontRelativeTransformers,
+        demoTransformer: transformers.convertToFontSizeMultiples,
+        transformer: transformers.convertToRems,
       },
       {
         name: "--p-line-height",
@@ -295,7 +322,7 @@ const sections: FieldsSection[] = [
         max: 20,
         step: 1,
         defaultValue: 3,
-        demoTransformer: transformers.convertToBaselineMultiples,
+        transformer: transformers.convertToBaselineMultiples,
       },
       {
         name: "--p-margin-top",
@@ -305,7 +332,8 @@ const sections: FieldsSection[] = [
         max: 16,
         step: 0.125,
         defaultValue: 0.375,
-        ...transformers.fontRelativeTransformers,
+        demoTransformer: transformers.convertToFontSizeMultiples,
+        transformer: transformers.convertToRems,
       },
       {
         name: "--p-margin-bottom",
@@ -315,7 +343,8 @@ const sections: FieldsSection[] = [
         max: 16,
         step: 0.125,
         defaultValue: 1.625,
-        ...transformers.fontRelativeTransformers,
+        demoTransformer: transformers.convertToFontSizeMultiples,
+        transformer: transformers.convertToRems,
       },
       {
         name: "--p-padding-top",
@@ -325,7 +354,8 @@ const sections: FieldsSection[] = [
         max: 16,
         step: 0.125,
         defaultValue: 0.375,
-        ...transformers.fontRelativeTransformers,
+        demoTransformer: transformers.convertToFontSizeMultiples,
+        transformer: transformers.convertToRems,
       },
     ],
   },
@@ -340,7 +370,7 @@ const sections: FieldsSection[] = [
         max: 16,
         step: 1,
         defaultValue: 0,
-        demoTransformer: transformers.convertToPixels,
+        transformer: transformers.convertToPixels,
       },
       {
         name: "--hr-margin-bottom",
@@ -350,7 +380,7 @@ const sections: FieldsSection[] = [
         max: 16,
         step: 1,
         defaultValue: 7,
-        demoTransformer: transformers.convertToPixels,
+        transformer: transformers.convertToPixels,
       },
       {
         name: "--hr-height",
@@ -360,7 +390,7 @@ const sections: FieldsSection[] = [
         max: 16,
         step: 1,
         defaultValue: 1,
-        demoTransformer: transformers.convertToPixels,
+        transformer: transformers.convertToPixels,
       },
     ],
   },

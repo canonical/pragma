@@ -1,6 +1,6 @@
 {
   "name": "@canonical/storybook-config",
-  "version": "0.9.0-experimental.12",
+  "version": "0.9.0-experimental.19",
   "description": "Canonical's standard Storybook configuration factory",
   "main": "dist/esm/index.js",
   "types": "dist/types/index.d.ts",
@@ -26,7 +26,7 @@
     "check:ts": "tsc --noEmit"
   },
   "dependencies": {
-    "@canonical/storybook-addon-baseline-grid": "^0.9.0-experimental.12",
+    "@canonical/storybook-addon-baseline-grid": "^0.9.0-experimental.19",
     "@storybook/addon-essentials": "^8.4.7",
     "@storybook/addon-interactions": "^8.4.7",
     "@storybook/addon-links": "^8.4.7",

@@ -42,7 +42,7 @@ StyleDictionary.registerTransform({
   type: "name",
   transform: (token) => {
     // Use only the last part of the token's path as the variable name
-    return token.path[token.path.length - 1].replace(/ /g, "-").toLowerCase();
+    return token.path.slice(1).join("-").replace(/ /g, "-").toLowerCase();
   },
 });
 

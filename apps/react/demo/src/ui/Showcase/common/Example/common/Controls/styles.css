@@ -4,36 +4,23 @@
   padding: var(--spacing-horizontal-small) var(--spacing-vertical-small);
   box-sizing: border-box;
 
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  grid-auto-rows: auto;
-
-  & .start,
   & .end {
-    grid-column: 1 / -1;
-    min-width: 0;
-    display: flex;
-    flex-wrap: wrap;
+    margin-left: auto;
   }
 
-  /*
-      TODO the navigation area has an inverse theme (black background) and the baseline toggler has no background
-        so we need to override the color to make it stand out, otherwise it uses dark text on a dark background.
-     */
-
-  & #active-example-name,
-  & #baseline-toggler {
-    color: white;
-  }
-
-  & #baseline-toggler {
-    margin-right: var(--spacing-horizontal-large);
-
-    /* tmp until adrian is back - currently the label is smashed up against the input when they are laid out side by side */
-
-    & .payload {
-      margin-left: var(--spacing-horizontal-small);
+  & #showcase-settings-drawer > .contents > .setting-category {
+    padding: var(--spacing-vertical-medium) 0;
+    border-top: 1px solid var(--color-text-default);
+    & > .fields {
+      display: grid;
+      --wrapper-columns: span 1;
+      grid-template-columns: repeat(auto-fit, minmax(225px, 1fr));
+      grid-column-gap: var(--spacing-horizontal-large);
     }
+  }
+
+  & .end {
+    margin-left: auto;
   }
 }
 

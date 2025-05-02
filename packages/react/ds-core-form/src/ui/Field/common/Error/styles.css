@@ -1,7 +1,5 @@
 /* @canonical/generator-ds 0.9.0-experimental.9 */
 
-/*
-.ds.error {
-
+.ds.form-field-error {
+  color: var(--state-danger-color-default);
 }
-*/

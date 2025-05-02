@@ -1,7 +1,7 @@
 /** Global field settings for commonly-used fields. */
 
-import type { ExampleControlField, FieldsSection } from "../ui/index.js";
-import transformers from "./transformers.js";
+import type { ExampleControlField, FormSection } from "../ui/index.js";
+import * as transformers from "./transformers.js";
 
 export const FONT_FAMILY_FIELD: ExampleControlField = {
   name: "--font-family",
@@ -23,7 +23,7 @@ export const FONT_SIZE_FIELD: ExampleControlField = {
   min: 12,
   max: 24,
   step: 1,
-  demoTransformer: transformers.convertToPixels,
+  transformer: transformers.convertToPixels,
 };
 
 /**
@@ -39,28 +39,15 @@ export const BASELINE_HEIGHT_FIELD: ExampleControlField = {
   min: 0.5,
   max: 2,
   step: 0.25,
-  demoTransformer: transformers.convertToRems,
+  transformer: transformers.convertToRems,
 };
 
 export const LINE_HEIGHT_FIELD: ExampleControlField = {
   name: "--line-height",
-  inputType: "range",
+  inputType: "hidden",
   label: "Root line height",
   defaultValue: 1.5,
   min: 1,
   max: 12,
   step: 0.25,
-};
-
-export const ROOT_SECTION: FieldsSection = {
-  title: "Root",
-  fields: [
-    {
-      ...FONT_FAMILY_FIELD,
-      defaultValue: "Times New Roman",
-    },
-    FONT_SIZE_FIELD,
-    LINE_HEIGHT_FIELD,
-    BASELINE_HEIGHT_FIELD,
-  ],
 };

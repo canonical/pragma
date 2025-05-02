@@ -3,7 +3,7 @@ import type React from "react";
 import type { DescriptionProps } from "./types.js";
 import "./styles.css";
 
-const componentCssClassName = "ds description";
+const componentCssClassName = "ds form-field-description";
 
 /**
  * description of the Description component
@@ -16,13 +16,13 @@ const Description = ({
   style,
 }: DescriptionProps): React.ReactElement => {
   return (
-    <div
+    <p
       id={id}
       style={style}
       className={[componentCssClassName, className].filter(Boolean).join(" ")}
     >
       {children}
-    </div>
+    </p>
   );
 };
 

@@ -1,6 +1,6 @@
 {
   "name": "@canonical/storybook-addon-baseline-grid",
-  "version": "0.9.0-experimental.12",
+  "version": "0.9.0-experimental.19",
   "type": "module",
   "files": ["dist"],
   "types": "dist/types/index.d.ts",
@@ -34,8 +34,8 @@
     "check:ts": "tsc --noEmit"
   },
   "dependencies": {
-    "@storybook/icons": "^1.2.10",
-    "@canonical/styles-debug": "^0.9.0-experimental.12"
+    "@canonical/styles-debug": "^0.9.0-experimental.19",
+    "@storybook/icons": "^1.2.10"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",

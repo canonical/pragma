@@ -4,6 +4,7 @@ import { useFormContext } from "react-hook-form";
 import withWrapper from "../../common/Wrapper/withWrapper.js";
 import type { TextProps } from "./types.js";
 import "./styles.css";
+import { mixins } from "../../../constants.js";
 
 const componentCssClassName = "ds form-text";
 
@@ -17,19 +18,27 @@ const Text = ({
   style,
   inputType = "text",
   name,
+  prefix,
+  suffix,
   registerProps,
   ...otherProps // Should only be native input props
 }: TextProps): React.ReactElement => {
   const { register } = useFormContext();
   return (
-    <input
+    <div
       id={id}
       style={style}
       className={[componentCssClassName, className].filter(Boolean).join(" ")}
-      type={inputType}
-      {...otherProps}
-      {...register(name, registerProps)}
-    />
+    >
+      {prefix && <span className="prefix">{prefix}</span>}
+      <input
+        type={inputType}
+        className={mixins.FormInput}
+        {...otherProps}
+        {...register(name, registerProps)}
+      />
+      {suffix && <span className="suffix">{suffix}</span>}
+    </div>
   );
 };
 

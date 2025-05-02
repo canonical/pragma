@@ -29,9 +29,25 @@ export const Default: Story = {
   },
 };
 
+export const Disabled: Story = {
+  args: {
+    name: "full_name_disabled",
+    disabled: true,
+  },
+};
+
+export const Rows: Story = {
+  args: {
+    name: "content2",
+    rows: 7,
+  },
+};
+
 export const WithValidation: Story = {
   args: {
-    name: "content",
+    name: "content3",
+    rows: 7,
+    description: "The content of the board",
     registerProps: {
       required: {
         value: true,

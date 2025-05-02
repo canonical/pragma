@@ -7,7 +7,7 @@ import type { WrapperProps } from "../../types.js";
 import type { OptionProps, SimpleChoicesProps } from "./types.js";
 import "./styles.css";
 
-const componentCssClassName = "ds simple-choices";
+const componentCssClassName = "ds form-simple-choices";
 const optionClassName = "option";
 
 const Option = ({

@@ -29,11 +29,50 @@ export const Default: Story = {
   },
 };
 
+export const Disabled: Story = {
+  args: {
+    name: "full_name_disabled",
+    disabled: true,
+  },
+};
+
 export const Email: Story = {
   args: {
     name: "email",
     inputType: "email",
   },
+};
+
+export const WithPrefix: Story = {
+  args: {
+    name: "username",
+    inputType: "text",
+    prefix: "@",
+  },
+};
+
+export const WithSuffix: Story = {
+  args: {
+    name: "domain",
+    inputType: "text",
+    suffix: ".domain.com",
+  },
+};
+
+export const RTLWithPrefixAndSuffix: Story = {
+  args: {
+    name: "username_rtl",
+    label: "نام کاربری",
+    prefix: "نام:",
+    suffix: "!",
+  },
+  decorators: [
+    (Story) => (
+      <div className="rtl">
+        <Story />
+      </div>
+    ),
+  ],
 };
 
 /*

@@ -30,6 +30,27 @@ export const Default: Story = {
   },
 };
 
+export const WithValidation: Story = {
+  args: {
+    name: "Board",
+    inputType: "text",
+    registerProps: {
+      required: {
+        value: true,
+        message: "A board name is required",
+      },
+      minLength: {
+        value: 5,
+        message: "Board name must be at least 5 characters",
+      },
+      pattern: {
+        value: /^[a-zA-Z0-9]+$/,
+        message: "Board name must be alphanumeric",
+      },
+    },
+  },
+};
+
 export const TypeTextarea: Story = {
   args: {
     name: "content",

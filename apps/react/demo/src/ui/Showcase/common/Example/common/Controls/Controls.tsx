@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import type { ReactElement } from "react";
 import type { ControlsProps } from "./types.js";
 import "./styles.css";
-import { Button, TooltipArea } from "@canonical/react-ds-core";
+import { Button } from "@canonical/react-ds-core";
 import { Field } from "@canonical/react-ds-core-form";
 import { Drawer } from "ui/Drawer/index.js";
 import { useShowcaseContext } from "../../hooks/index.js";
@@ -20,85 +20,52 @@ const Controls = ({ id, className, style }: ControlsProps): ReactElement => {
   } = useShowcaseContext();
 
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const toggleSettingsOpen = useCallback(
+    () => setSettingsOpen((settingsOpen) => !settingsOpen),
+    [],
+  );
 
   return (
-    <>
-      <div
-        id={id}
-        className={[componentCssClassname, className].filter(Boolean).join(" ")}
-        style={style}
-      >
-        <div className="start">
-          {/*TODO use icon buttons when icon is implemented*/}
-          <Button
-            label="<"
-            type="button"
-            onClick={activatePrevExample}
-            aria-label="Previous example"
-          />
-          <Button
-            label=">"
-            type="button"
-            onClick={activateNextExample}
-            aria-label="Next example"
-          />
-          <span id="active-example-name" style={{ color: "white" }}>
-            {activeExample.name}&nbsp;
-            {/*Zindex is usd to draw the tooltip over the baseline overlay and the controls element. */}
-            <TooltipArea
-              Message={<span>{activeExample.description}</span>}
-              messageElementClassName="example-description"
-              maxWidth={"275px"}
-              zIndex={202}
-            >
-              {/*TODO replace this with an information icon when icon is implemented*/}
-              <i>(i)</i>
-            </TooltipArea>
-          </span>
-        </div>
-        <div className="end">
-          <Field
-            id="baseline-toggler"
-            inputType="checkbox"
-            name="showBaselineGrid"
-            label="Baseline grid"
-            isOptional={true}
-          />
-          <Button
-            label="Settings"
-            type="button"
-            onClick={() => setSettingsOpen(true)}
-          />
-          <Button
-            type="button"
-            label="Copy CSS"
-            disabled={!demoOutput?.css}
-            onClick={() => copyOutput("css")}
-          />
-        </div>
+    <div
+      id={id}
+      className={[componentCssClassname, className].filter(Boolean).join(" ")}
+      style={{
+        ...style,
+        display: "flex",
+        flexDirection: "row",
+        alignItems: "center",
+      }}
+    >
+      <div>
+        {/*TODO use icon buttons when icon is implemented*/}
+        <Button type="button" onClick={activatePrevExample}>
+          Prev
+        </Button>
+        <Button type="button" onClick={activateNextExample}>
+          Next
+        </Button>
       </div>
+
       <Drawer
+        id="showcase-settings-drawer"
         title={`${activeExample.name} settings`}
         isOpenOverride={settingsOpen}
         onClose={() => setSettingsOpen(false)}
-        contentsClassName="inputs-drawer-contents"
       >
-        <Button
-          label={"Reset to defaults"}
-          type={"button"}
-          onClick={resetActiveExample}
-        />
+        <Button type={"button"} onClick={resetActiveExample}>
+          Reset to defaults
+        </Button>
 
         {activeExample.sections.map((section) => (
-          <div className="setting-category" key={section.title}>
+          <section className="setting-category" key={section.title}>
             <h4>{section.title}</h4>
-            <div className="inputs">
+            <div className="fields">
               {section.fields.map(
                 ({
                   name,
                   defaultValue,
                   demoTransformer,
-                  exportTransformer,
+                  transformer,
                   disabledOutputFormats,
                   ...fieldProps
                 }) => (
@@ -111,10 +78,22 @@ const Controls = ({ id, className, style }: ControlsProps): ReactElement => {
                 ),
               )}
             </div>
-          </div>
+          </section>
         ))}
       </Drawer>
-    </>
+      <div className="end">
+        <Button type="button" onClick={toggleSettingsOpen}>
+          Settings
+        </Button>
+        <Button
+          type="button"
+          disabled={!demoOutput?.css}
+          onClick={() => copyOutput("css")}
+        >
+          Copy CSS
+        </Button>
+      </div>
+    </div>
   );
 };
 
