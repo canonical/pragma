@@ -3,12 +3,12 @@
   flex-direction: column;
   height: 100%;
 
-  & .renderer {
+  & > .renderer {
     flex: 1 1 auto;
     overflow: auto;
   }
 
-  & .controls {
+  & > .controls {
     flex-shrink: 0;
     /* Draw the controls over the baseline grid overlay */
     z-index: 201;

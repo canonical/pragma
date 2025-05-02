@@ -19,7 +19,7 @@ const useProviderState = ({
   // Default to the first item if available
   const [activeExampleIndex, setActiveExampleIndex] = useState(0);
   const { defaultValues, examples } = useExampleRHFInterface();
-  const { setValue, getValues, watch } = useFormContext();
+  const { setValue, getValues } = useFormContext();
 
   const formValues = useWatch();
 

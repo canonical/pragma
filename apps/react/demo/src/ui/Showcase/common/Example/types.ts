@@ -94,14 +94,6 @@ export interface ExampleControlField extends FieldProps, TransformerFns {
   [ORIGINAL_VAR_NAME_KEY]?: string;
 }
 
-/**
- * All transformers that can be applied to a field.
- * This is useful for applying different transforms to the same field.
- */
-export type ExampleControlFieldAllTransformers = Required<
-  Pick<ExampleControlField, "exportTransformer" | "demoTransformer">
->;
-
 /** The actual component that is rendered for an example. */
 export type ShowcaseComponent = (state: FormValues) => ReactElement;
 
