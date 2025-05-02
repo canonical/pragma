@@ -84,7 +84,28 @@
   --drawer-transition-timing-function: ease-in-out;
   --drawer-transition-timing-function-visibility: linear;
 
-  container-type: inline-size;
+  background-color: var(--drawer-dialogue-background);
+  border: var(--drawer-dialogue-border);
+  box-shadow: var(--drawer-dialogue-box-shadow);
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  height: var(--drawer-dialogue-height);
+  /* Need to override browser default `dialogue` styling, otherwise the dialogue may not extend to full height */
+  max-height: var(--drawer-dialogue-height);
+  margin: 0;
+  max-width: var(--drawer-dialogue-max-width);
+  padding: var(--drawer-dialogue-padding-vertical)
+    var(--drawer-dialogue-padding-horizontal);
+  position: fixed;
+  top: 0;
+  transition: transform var(--drawer-transition-duration)
+    var(--drawer-transition-timing-function-transform), visibility
+    var(--drawer-transition-duration)
+    var(--drawer-transition-timing-function-visibility);
+  visibility: hidden;
+  width: var(--drawer-dialogue-width-small);
+  z-index: var(--drawer-dialogue-z-index);
 
   &.overlay {
     background-color: var(--drawer-overlay-background);
