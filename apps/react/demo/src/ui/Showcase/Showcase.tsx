@@ -1,14 +1,16 @@
 import { Example } from "./common/index.js";
 import "./styles.css";
 
+const componentCssClassname = "ds showcase";
+
 const Showcase = () => {
   return (
-    <Example>
-      <div className="example">
+    <div className={componentCssClassname}>
+      <Example>
         <Example.Renderer className="renderer" />
         <Example.Controls className="controls" />
-      </div>
-    </Example>
+      </Example>
+    </div>
   );
 };
 

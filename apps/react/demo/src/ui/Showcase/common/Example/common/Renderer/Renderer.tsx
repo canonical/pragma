@@ -6,8 +6,12 @@ import { useShowcaseContext } from "../../hooks/index.js";
 import shadowCss from "./styles.css?inline";
 
 const Renderer = ({ style, className }: RendererProps) => {
-  const { activeExample, demoOutput, activeExampleFormValues } =
-    useShowcaseContext();
+  const {
+    activeExample,
+    demoOutput,
+    activeExampleFormValues,
+    showBaselineGrid,
+  } = useShowcaseContext();
 
   return (
     <div

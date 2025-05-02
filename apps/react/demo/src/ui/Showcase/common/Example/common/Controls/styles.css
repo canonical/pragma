@@ -2,7 +2,15 @@
   background-color: black;
   width: 100%;
   padding: var(--spacing-horizontal-small) var(--spacing-vertical-small);
-  box-sizing: border-box;
+  display: flex;
+  flex-flow: row wrap;
+  align-items: center;
+
+  & > #active-example-name {
+    /* TODO we need a way to invert color themes so this is cleaner and can cascade to all color settings  */
+    color: white;
+    margin-bottom: var(--spacing-vertical-medium);
+  }
 
   & .end {
     margin-left: auto;
@@ -16,49 +24,15 @@
       --wrapper-columns: span 1;
       grid-template-columns: repeat(auto-fit, minmax(225px, 1fr));
       grid-column-gap: var(--spacing-horizontal-large);
+
+      & .ds.form-field-description {
+        /** todo figure out why the form fields have huge bottom margins beneath their labels now */
+        margin-bottom: 0;
+      }
     }
   }
 
   & .end {
     margin-left: auto;
-  }
-}
-
-.inputs-drawer-contents {
-  & .setting-category {
-    padding: var(--spacing-vertical-medium) 0;
-    border-top: 1px solid var(--color-text-default);
-
-    & .inputs {
-      display: grid;
-      --wrapper-columns: span 1;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      grid-column-gap: var(--spacing-horizontal-medium);
-    }
-  }
-}
-
-@media screen and (min-width: 870px) {
-  .ds.example-controls {
-    column-gap: var(--spacing-horizontal-small);
-
-    & .start,
-    & .end {
-      justify-content: center;
-      align-items: center;
-    }
-
-    & .start {
-      grid-column: 1 / 2;
-    }
-
-    & .end {
-      grid-column: 3 / 4;
-    }
-
-    & #baseline-toggler {
-      --form-label-columns: 1 / 2;
-      --form-payload-columns: 2 / 3;
-    }
   }
 }

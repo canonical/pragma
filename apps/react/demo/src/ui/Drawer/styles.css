@@ -81,6 +81,8 @@
   display: flex;
   flex-direction: column;
   height: var(--drawer-dialogue-height);
+  /** Override the browser default max height styling */
+  max-height: var(--drawer-dialogue-height);
   margin: 0;
   max-width: var(--drawer-dialogue-max-width);
   padding: var(--drawer-dialogue-padding-vertical)

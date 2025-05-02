@@ -28,7 +28,12 @@ const useProviderState = ({
     [activeExampleIndex, examples],
   );
 
-  const showBaselineGrid = watch("showBaselineGrid");
+  const [showBaselineGrid, setShowBaselineGrid] = useState(false);
+
+  const toggleShowBaselineGrid = useCallback(() => {
+    setShowBaselineGrid((prev) => !prev);
+    return !showBaselineGrid;
+  }, [showBaselineGrid]);
 
   /** Switches to the previous example */
   const activatePrevExample = useCallback(() => {
@@ -191,6 +196,7 @@ const useProviderState = ({
       activeExampleFormValues,
       resetActiveExample,
       showBaselineGrid,
+      toggleShowBaselineGrid,
     }),
     [
       activeExampleIndex,
@@ -203,6 +209,7 @@ const useProviderState = ({
       activeExampleFormValues,
       resetActiveExample,
       showBaselineGrid,
+      toggleShowBaselineGrid,
     ],
   );
 };
