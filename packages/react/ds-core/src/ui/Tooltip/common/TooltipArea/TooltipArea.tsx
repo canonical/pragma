@@ -22,7 +22,8 @@ const TooltipArea = ({
   targetElementId,
   targetElementClassName,
   targetElementStyle,
-  positionElementStyle,
+  messageElementClassName,
+  messageElementStyle,
   parentElement,
   autoFit,
   ...props
@@ -42,10 +43,10 @@ const TooltipArea = ({
 
   const TooltipMessageElement = (
     <Tooltip
-      {...props}
-      positionElementId={popupId}
-      positionElementClassName={[
+      id={popupId}
+      className={[
         bestPosition?.positionName,
+        messageElementClassName,
         autoFit && "autofit",
       ]
         .filter(Boolean)
@@ -53,8 +54,8 @@ const TooltipArea = ({
       onPointerEnter={handleTriggerEnter}
       onFocus={handleTriggerFocus}
       ref={popupRef}
-      positionElementStyle={{
-        ...positionElementStyle,
+      style={{
+        ...messageElementStyle,
         ...popupPositionStyle,
         // @ts-ignore allow binding arrow size to distance, as it is needed both in JS and CSS calculations
         "--tooltip-spacing-arrow-size": distance,

@@ -31,38 +31,36 @@
   --tooltip-border-arrow-hidden: var(--tooltip-spacing-arrow-size) solid
     transparent;
 
+  color: var(
+    --intent-color-text,
+    var(--tooltip-color-text, var(--color-text-default))
+  );
+  background-color: var(
+    --intent-color,
+    var(--tooltip-color-background, var(--color-background-default))
+  );
+  border-color: var(
+    --intent-color-border,
+    var(--tooltip-color-border, transparent)
+  );
+  border-style: solid;
+  border-radius: var(--tooltip-border-radius);
+  border-width: var(--tooltip-border-width, 1px);
+  font-size: var(--tooltip-font-size, var(--font-size-small));
+  font-weight: var(--tooltip-font-weight, var(--font-weight-default));
+  line-height: var(--tooltip-line-height, var(--line-height-small));
+  margin-block-end: var(--tooltip-margin-bottom, 0);
+  margin-inline-end: var(--tooltip-margin-left, 0);
+  padding-block: var(--tooltip-padding-vertical, 5px);
+  padding-inline: var(--tooltip-padding-horizontal, 10px);
+  white-space: pre;
+  text-align: left;
+  text-decoration: initial;
+  pointer-events: auto;
   display: inline-block;
-  position: fixed;
   transition: opacity 0.1s ease-in-out;
-
-  & .message {
-    color: var(
-      --intent-color-text,
-      var(--tooltip-color-text, var(--color-text-default))
-    );
-    background-color: var(
-      --intent-color,
-      var(--tooltip-color-background, var(--color-background-default))
-    );
-    border-color: var(
-      --intent-color-border,
-      var(--tooltip-color-border, transparent)
-    );
-    border-style: solid;
-    border-radius: var(--tooltip-border-radius);
-    border-width: var(--tooltip-border-width, 1px);
-    font-size: var(--tooltip-font-size, var(--font-size-small));
-    font-weight: var(--tooltip-font-weight, var(--font-weight-default));
-    line-height: var(--tooltip-line-height, var(--line-height-small));
-    margin-block-end: var(--tooltip-margin-bottom, 0);
-    margin-inline-end: var(--tooltip-margin-left, 0);
-    padding-block: var(--tooltip-padding-vertical, 5px);
-    padding-inline: var(--tooltip-padding-horizontal, 10px);
-    text-align: left;
-    text-decoration: initial;
-    pointer-events: auto;
-    overflow: auto;
-  }
+  position: fixed;
+  overflow: auto;
 
   &[aria-hidden="true"] {
     opacity: 0;

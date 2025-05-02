@@ -5,30 +5,24 @@ import type {
   ReactNode,
   RefObject,
 } from "react";
+import type { BestPosition } from "../hooks/index.js";
 
 export interface TooltipProps {
-  /* ID to apply to the positioning element */
-  positionElementId?: string;
-  /* Class name to apply to the positioning element */
-  positionElementClassName?: string;
-  /** Styles applied to the positioning element */
-  positionElementStyle?: CSSProperties;
-  /* Styles applied to the tooltip/message element */
-  messageElementStyle?: CSSProperties;
-  /* ID to apply to the message element */
-  messageElementId?: string;
-  /* Class name to apply to the message element */
-  messageElementClassName?: string;
+  /* A unique identifier for the TooltipMessage */
+  id?: string;
+  /* Additional CSS classes */
+  className?: string;
   /* Child elements */
   children: ReactNode;
+  /* Inline styles */
+  style?: CSSProperties;
   /** Whether the tooltip is open or not */
   isOpen?: boolean;
   /** Ref to the tooltip, useful for calculating its dimensions */
   ref?: RefObject<HTMLDivElement | null>;
   /** The z-index of the tooltip */
   zIndex?: number;
-  /* Event handler for pointer enter */
+
   onPointerEnter?: PointerEventHandler;
-  /* Event handler for focus */
   onFocus?: FocusEventHandler;
 }

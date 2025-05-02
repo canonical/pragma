@@ -1,8 +1,7 @@
 import type { CSSProperties, ReactNode } from "react";
 import type { UsePopupProps } from "../../../hooks/index.js";
-import type { TooltipProps } from "../../types.js";
 
-export interface TooltipAreaProps extends UsePopupProps, TooltipProps {
+export interface TooltipAreaProps extends UsePopupProps {
   /**
    * The target element to which the tooltip should be attached.
    * This can be any valid React element.
@@ -22,6 +21,10 @@ export interface TooltipAreaProps extends UsePopupProps, TooltipProps {
   targetElementClassName?: string;
   /** Style object applied to the target element */
   targetElementStyle?: CSSProperties;
+  /** Class name applied to the tooltip/message element */
+  messageElementClassName?: string;
+  /** Styles applied to the tooltip/message element */
+  messageElementStyle?: CSSProperties;
   /**
    * The element to which the tooltip should be attached.
    * This can be any valid React element.

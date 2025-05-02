@@ -15,7 +15,7 @@ describe("Tooltip component", () => {
 
   it("applies additional className prop", async () => {
     render(
-      <Tooltip positionElementClassName="test-class" isOpen={true}>
+      <Tooltip className="test-class" isOpen={true}>
         Tooltip Content
       </Tooltip>,
     );
@@ -26,7 +26,7 @@ describe("Tooltip component", () => {
 
   it("applies style prop", async () => {
     render(
-      <Tooltip positionElementStyle={{ backgroundColor: "red" }} isOpen={true}>
+      <Tooltip style={{ backgroundColor: "red" }} isOpen={true}>
         Tooltip Content
       </Tooltip>,
     );
@@ -37,7 +37,7 @@ describe("Tooltip component", () => {
 
   it("applies id prop", async () => {
     render(
-      <Tooltip positionElementId="test-id" isOpen={true}>
+      <Tooltip id="test-id" isOpen={true}>
         Tooltip Content
       </Tooltip>,
     );
@@ -103,7 +103,7 @@ describe("Tooltip component", () => {
 
   it("correctly handles multiple class names", async () => {
     render(
-      <Tooltip positionElementClassName="class1 class2" isOpen={true}>
+      <Tooltip className="class1 class2" isOpen={true}>
         Tooltip Content
       </Tooltip>,
     );

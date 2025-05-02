@@ -65,6 +65,20 @@ describe("TooltipArea component", () => {
     );
   });
 
+  it("applies distance prop to tooltip style", async () => {
+    const distance = "10px";
+    render(
+      <Tooltip Message={Message} distance={distance}>
+        {Children}
+      </Tooltip>,
+    );
+    const target = screen.getByText("Target Element");
+    fireEvent.pointerEnter(target);
+    expect(await screen.findByText(Message)).toHaveStyle({
+      "--tooltip-spacing-arrow-size": distance,
+    });
+  });
+
   it("uses createPortal to render tooltip", async () => {
     render(<Tooltip Message={Message}>{Children}</Tooltip>);
     const target = screen.getByText("Target Element");
