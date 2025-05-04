@@ -1,10 +1,12 @@
 /* @canonical/generator-ds 0.9.0-experimental.9 */
 
-// Needed for function-based story, safe to remove otherwise
-// import type { FormProps } from './types.js'
 import type { Meta, StoryObj } from "@storybook/react";
 // Needed for template-based story, safe to remove otherwise
 import type { StoryFn } from "@storybook/react";
+import { http } from "msw";
+// Needed for function-based story, safe to remove otherwise
+// import type { FormProps } from './types.js'
+import { useMemo } from "react";
 import * as decorators from "storybook/decorators.js";
 import * as middleware from "./index.js";
 
@@ -12,11 +14,22 @@ import { Field } from "../Field/index.js";
 import type { FieldProps } from "../Field/types.js";
 
 const meta = {
-  title: "middleware",
-  decorators: [decorators.form()],
-} satisfies Meta;
+	title: "middleware",
+	decorators: [decorators.form()],
+	component: Field,
+	parameters: {
+		docs: {
+			description: {
+				component:
+					"Read the source of the stories in `middleware.stories.tsx` for the full code patterns.",
+			},
+		},
+	},
+} satisfies Meta<typeof Field>;
 
 export default meta;
+
+type Story = StoryObj<typeof meta>;
 
 /*
   CSF3 story
@@ -32,46 +45,112 @@ export default meta;
 // };
 
 type TemplateProps = {
-  wrapperClassName: string;
+	wrapperClassName: string;
 };
 
 const Template: StoryFn<TemplateProps> = ({
-  wrapperClassName,
+	wrapperClassName,
 }: TemplateProps) => <div className={wrapperClassName}>Test</div>;
 export const Default: StoryFn<TemplateProps> = Template.bind({});
 Default.args = {
-  wrapperClassName: "wrapper",
+	wrapperClassName: "wrapper",
 };
 
 export const ConditionalDisplay: StoryObj = {
-  render: () => {
-    const emailField: FieldProps = {
-      name: "email",
-      inputType: "text",
-      description:
-        "Enter a gmail address and you should be prompted for the company",
-      label: "Email",
-    };
+	render: () => {
+		const emailField: FieldProps = useMemo(
+			() => ({
+				name: "email",
+				inputType: "text",
+				description:
+					"Enter an email address ending with `@gmail.com` and you will be prompted for the company.",
+				label: "Email",
+			}),
+			[],
+		);
 
-    const companyField: FieldProps = {
-      name: "company",
-      inputType: "text",
-      label: "Company",
-      middleware: [
-        middleware.addConditionalDisplay(["email"], (values) =>
-          values[0]?.endsWith("@gmail.com"),
-        ),
-      ],
-    };
+		const companyField: FieldProps = useMemo(
+			() => ({
+				name: "company",
+				inputType: "text",
+				label: "Company",
+				middleware: [
+					middleware.addConditionalDisplay(["email"], (values) =>
+						values[0]?.endsWith("@gmail.com"),
+					),
+				],
+			}),
+			[],
+		);
 
-    return (
-      <div>
-        <Field {...emailField} />
-        <Field {...companyField} />
-      </div>
-    );
-  },
-  name: "Conditional Display",
+		return (
+			<div>
+				<Field {...emailField} />
+				<Field {...companyField} />
+			</div>
+		);
+	},
+	name: "Conditional Display",
+};
+
+// Story for addRESTOptions middleware
+export const RESTOptions: Story = {
+	args: {
+		name: "optionsField",
+		inputType: "select",
+		middleware: [middleware.addRESTOptions("/api/options")],
+	},
+	parameters: {
+		msw: {
+			handlers: [
+				http.get("/api/options", () => {
+					return new Response(
+						JSON.stringify({
+							options: [
+								{ value: "1", label: "Option 1" },
+								{ value: "2", label: "Option 2" },
+							],
+						}),
+						{
+							status: 200,
+							headers: { "Content-Type": "application/json" },
+						},
+					);
+				}),
+			],
+		},
+	},
+};
+
+// Story for addRESTValidation middleware
+export const RESTValidation: Story = {
+	args: {
+		name: "validationField",
+		inputType: "text",
+		description:
+			"If the value entered equals the string `invalid`, the back-end validation should fail.",
+		middleware: [middleware.addRESTValidation("/api/validate")],
+	},
+	parameters: {
+		msw: {
+			handlers: [
+				http.post(
+					"/api/validate",
+					async ({ request }: { request: Request }): Promise<Response> => {
+						const body = await request.json();
+						const { value } = body as { value: string };
+						if (value === "invalid") {
+							return new Response(JSON.stringify({ error: "Invalid value" }), {
+								status: 400,
+								headers: { "Content-Type": "application/json" },
+							});
+						}
+						return new Response(null, { status: 200 });
+					},
+				),
+			],
+		},
+	},
 };
 
 // export const RESTOptions: StoryObj = {
