@@ -108,6 +108,11 @@ export type WrapperHOCAdditionalProps<
    * An optional wrapper component to render around the input.
    */
   WrapperComponent?: React.ComponentType<ComponentWrapperProps>;
+
+  /**
+   * A tuple determining whether to render the input
+   */
+  condition?: [string[], (depsValues: unknown[]) => boolean];
 };
 
 export type WrappedComponentProps<

@@ -3,9 +3,7 @@ import { useFormContext } from "react-hook-form";
 import type { BaseInputProps, WrappedComponentProps } from "../../types.js";
 
 type WrappedComponentPropsInternal<ComponentProps extends BaseInputProps> =
-  Omit<WrappedComponentProps<ComponentProps>, "Component"> & {
-    condition?: [string[], (depsValues: unknown[]) => boolean];
-  };
+  Omit<WrappedComponentProps<ComponentProps>, "Component">;
 
 // TODO improve typing of P
 const withConditionalDisplay = <ComponentProps extends BaseInputProps>(
