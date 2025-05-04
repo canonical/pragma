@@ -5,9 +5,6 @@ import "index.css";
 import "@canonical/styles-debug/baseline-grid";
 
 const preview: Preview = {
-  parameters: {
-    actions: { argTypesRegex: "^on.*" },
-  },
   decorators: [
     withThemeByClassName<ReactRenderer>({
       themes: {

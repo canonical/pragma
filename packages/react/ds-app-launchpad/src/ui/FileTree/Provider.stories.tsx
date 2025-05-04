@@ -98,6 +98,7 @@ export const Default: StoryFn<ProviderOptions> = (args) => {
       onSelectFile={setSelectedNode}
       style={{
         maxWidth: 300,
+        maxHeight: "250px",
       }}
       {...args}
     >
