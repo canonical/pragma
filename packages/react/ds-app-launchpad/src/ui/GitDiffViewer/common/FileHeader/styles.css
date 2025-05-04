@@ -53,29 +53,4 @@
       }
     }
   }
-
-  & > .right-content {
-    & > .change-count {
-      font-size: 12px;
-      font-weight: 550;
-      line-height: 16px;
-      display: flex;
-      align-items: center;
-
-      & > .insertions,
-      & > .deletions {
-        padding: 0 4px;
-        display: flex;
-        align-items: center;
-      }
-      & > .insertions {
-        background-color: var(--git-diff-file-header-insertion-background);
-        color: var(--git-diff-file-header-insertion-color);
-      }
-      & > .deletions {
-        background-color: var(--git-diff-file-header-deletion-background);
-        color: var(--git-diff-file-header-deletion-color);
-      }
-    }
-  }
 }

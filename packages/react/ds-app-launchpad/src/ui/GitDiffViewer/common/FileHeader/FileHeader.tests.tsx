@@ -1,10 +1,15 @@
 /* @canonical/generator-canonical-ds 0.0.1 */
 
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import Provider from "../../Provider.js";
 import * as fixtures from "../../fixtures.js";
 import Component from "./FileHeader.js";
+
+// Mock the DiffChangeMarker component
+vi.mock("../../../index.js", () => ({
+  DiffChangeMarker: () => <div data-testid="mock-diff-change-marker" />,
+}));
 
 describe("FileHeader component", () => {
   it("applies className correctly", () => {
@@ -60,5 +65,14 @@ describe("FileHeader component", () => {
       </Provider>,
     );
     expect(screen.queryByLabelText("Collapse file")).toBeNull();
+  });
+
+  it("shows change count when showChangeCount is true", () => {
+    render(
+      <Provider diff={fixtures.diffExample}>
+        <Component showChangeCount />
+      </Provider>,
+    );
+    expect(screen.getByTestId("mock-diff-change-marker")).toBeDefined();
   });
 });
