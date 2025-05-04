@@ -1,6 +1,5 @@
 import * as React from "react";
 import { useMemo } from "react";
-import type { TextProps } from "../../inputs/index.js";
 import type {
   BaseInputProps,
   BaseWrapperProps,
@@ -8,9 +7,12 @@ import type {
   WrapperProps,
 } from "../../types.js";
 import DefaultWrapper from "./Wrapper.js";
+import withConditionalDisplay from "./withConditionalDisplay.js";
 
 type WrappedComponentPropsInternal<ComponentProps extends BaseInputProps> =
-  Omit<WrappedComponentProps<ComponentProps>, "Component">;
+  Omit<WrappedComponentProps<ComponentProps>, "Component"> & {
+    condition?: [string[], (depsValues: unknown[]) => boolean];
+  };
 
 const withWrapper = <
   ComponentProps extends BaseInputProps,
@@ -60,8 +62,7 @@ const withWrapper = <
       finalProps as WrapperProps<ComponentProps>,
     );
   }
-  // return withConditionalDisplay(WrappedComponent)
-  return WrappedComponent;
+  return withConditionalDisplay(WrappedComponent);
 };
 
 export default withWrapper;

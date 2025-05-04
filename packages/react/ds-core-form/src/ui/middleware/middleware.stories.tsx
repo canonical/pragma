@@ -8,23 +8,23 @@ import { http } from "msw";
 // import type { FormProps } from './types.js'
 import { useMemo } from "react";
 import * as decorators from "storybook/decorators.js";
+import * as fixtures from "storybook/fixtures.options.js";
 import * as middleware from "./index.js";
 
 import { Field } from "../Field/index.js";
-import type { FieldProps } from "../Field/types.js";
 
 const meta = {
-	title: "middleware",
-	decorators: [decorators.form()],
-	component: Field,
-	parameters: {
-		docs: {
-			description: {
-				component:
-					"Read the source of the stories in `middleware.stories.tsx` for the full code patterns.",
-			},
-		},
-	},
+  title: "middleware",
+  decorators: [decorators.form()],
+  component: Field,
+  parameters: {
+    docs: {
+      description: {
+        component:
+          "Read the source of the stories in `middleware.stories.tsx` for the full code patterns.",
+      },
+    },
+  },
 } satisfies Meta<typeof Field>;
 
 export default meta;
@@ -45,112 +45,76 @@ type Story = StoryObj<typeof meta>;
 // };
 
 type TemplateProps = {
-	wrapperClassName: string;
+  wrapperClassName: string;
 };
 
 const Template: StoryFn<TemplateProps> = ({
-	wrapperClassName,
+  wrapperClassName,
 }: TemplateProps) => <div className={wrapperClassName}>Test</div>;
 export const Default: StoryFn<TemplateProps> = Template.bind({});
 Default.args = {
-	wrapperClassName: "wrapper",
-};
-
-export const ConditionalDisplay: StoryObj = {
-	render: () => {
-		const emailField: FieldProps = useMemo(
-			() => ({
-				name: "email",
-				inputType: "text",
-				description:
-					"Enter an email address ending with `@gmail.com` and you will be prompted for the company.",
-				label: "Email",
-			}),
-			[],
-		);
-
-		const companyField: FieldProps = useMemo(
-			() => ({
-				name: "company",
-				inputType: "text",
-				label: "Company",
-				middleware: [
-					middleware.addConditionalDisplay(["email"], (values) =>
-						values[0]?.endsWith("@gmail.com"),
-					),
-				],
-			}),
-			[],
-		);
-
-		return (
-			<div>
-				<Field {...emailField} />
-				<Field {...companyField} />
-			</div>
-		);
-	},
-	name: "Conditional Display",
+  wrapperClassName: "wrapper",
 };
 
 // Story for addRESTOptions middleware
 export const RESTOptions: Story = {
-	args: {
-		name: "optionsField",
-		inputType: "select",
-		middleware: [middleware.addRESTOptions("/api/options")],
-	},
-	parameters: {
-		msw: {
-			handlers: [
-				http.get("/api/options", () => {
-					return new Response(
-						JSON.stringify({
-							options: [
-								{ value: "1", label: "Option 1" },
-								{ value: "2", label: "Option 2" },
-							],
-						}),
-						{
-							status: 200,
-							headers: { "Content-Type": "application/json" },
-						},
-					);
-				}),
-			],
-		},
-	},
+  args: {
+    name: "optionsField",
+    inputType: "select",
+    middleware: [
+      middleware.addRESTOptions("/api/options", {
+        transformData: (data) => data.options,
+      }),
+    ],
+  },
+  parameters: {
+    msw: {
+      handlers: [
+        http.get("/api/options", () => {
+          return new Response(
+            JSON.stringify({
+              options: fixtures.fruits,
+            }),
+            {
+              status: 200,
+              headers: { "Content-Type": "application/json" },
+            },
+          );
+        }),
+      ],
+    },
+  },
 };
 
 // Story for addRESTValidation middleware
 export const RESTValidation: Story = {
-	args: {
-		name: "validationField",
-		inputType: "text",
-		description:
-			"If the value entered equals the string `invalid`, the back-end validation should fail.",
-		middleware: [middleware.addRESTValidation("/api/validate")],
-	},
-	parameters: {
-		msw: {
-			handlers: [
-				http.post(
-					"/api/validate",
-					async ({ request }: { request: Request }): Promise<Response> => {
-						const body = await request.json();
-						const { value } = body as { value: string };
-						if (value === "invalid") {
-							return new Response(JSON.stringify({ error: "Invalid value" }), {
-								status: 400,
-								headers: { "Content-Type": "application/json" },
-							});
-						}
-						return new Response(null, { status: 200 });
-					},
-				),
-			],
-		},
-	},
+  args: {
+    name: "validationField",
+    inputType: "text",
+    description:
+      "If the value entered equals the string `invalid`, the back-end validation should fail.",
+    middleware: [middleware.addRESTValidation("/api/validate")],
+  },
+  parameters: {
+    msw: {
+      handlers: [
+        http.post(
+          "/api/validate",
+          async ({ request }: { request: Request }): Promise<Response> => {
+            const body = await request.json();
+            const { value } = body as { value: string };
+            if (value === "invalid") {
+              return new Response(JSON.stringify({ error: "Invalid value" }), {
+                status: 400,
+                headers: { "Content-Type": "application/json" },
+              });
+            }
+            return new Response(null, { status: 200 });
+          },
+        ),
+      ],
+    },
+  },
 };
 
 // export const RESTOptions: StoryObj = {
