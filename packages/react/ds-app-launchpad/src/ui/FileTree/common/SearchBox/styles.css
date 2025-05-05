@@ -6,15 +6,15 @@
   border-bottom: 1px solid var(--file-tree-search-box-border-color);
   padding: var(--file-tree-search-box-vertical-padding)
     var(--file-tree-search-box-horizontal-padding);
-  background-color: var(--file-tree-node-background-color);
+  background-color: var(--file-tree-search-box-background-color);
 
   position: sticky;
   top: 0;
-  z-index: 5;
 
-  &:has(.input:focus) {
+  &:focus-within {
+    outline: 2px solid Highlight;
     outline: 2px solid -webkit-focus-ring-color;
-    outline-offset: -2px;
+    outline-offset: -1px;
     box-sizing: border-box;
   }
   & > .input {
@@ -50,17 +50,12 @@
   /* remove search input default appearance */
   & > .input {
     border: none;
+
+    background-color: transparent;
+    border-color: transparent;
+    outline: none;
     &::-webkit-search-cancel-button {
       appearance: none;
-    }
-    &:-webkit-autofill,
-    &:-webkit-autofill:hover,
-    &:-internal-autofill-selected,
-    &:active,
-    &:focus {
-      background-color: transparent;
-      border-color: transparent;
-      outline: none;
     }
   }
 }

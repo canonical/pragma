@@ -1,13 +1,6 @@
 import type React from "react";
-import {
-  Children,
-  isValidElement,
-  useCallback,
-  useEffect,
-  useRef,
-} from "react";
+import { useCallback, useEffect, useRef } from "react";
 import Context from "./Context.js";
-import { SearchBox } from "./common/index.js";
 import "./styles.css";
 import type { ManagedContextOptions, ProviderOptions } from "./types.js";
 
@@ -19,6 +12,7 @@ const Provider = ({
   className,
   style,
   children,
+  header,
   ...contextOptions
 }: ProviderOptions): React.ReactElement => {
   const fileTreeRef = useRef<HTMLUListElement>(null);
@@ -109,18 +103,6 @@ const Provider = ({
     firstNode?.setAttribute("tabindex", "0");
   }, [contextOptions.searchQuery, contextOptions.selectedFile]);
 
-  // Separate SearchBox components from other children
-  const searchBoxes: React.ReactNode[] = [];
-  const treeItems: React.ReactNode[] = [];
-
-  Children.forEach(children, (child) => {
-    if (isValidElement(child) && child.type === SearchBox) {
-      searchBoxes.push(child);
-    } else {
-      treeItems.push(child);
-    }
-  });
-
   return (
     <Context.Provider
       value={{
@@ -136,9 +118,9 @@ const Provider = ({
         style={style}
         className={[componentCssClassName, className].filter(Boolean).join(" ")}
       >
-        {searchBoxes}
+        {header}
         <ul ref={fileTreeRef} role="tree">
-          {treeItems}
+          {children}
         </ul>
       </div>
     </Context.Provider>
