@@ -49,7 +49,8 @@ export default class ComponentGenerator extends Generator<ComponentGeneratorOpti
 
     this.option("useClsx", {
       type: Boolean,
-      description: "Uses the clsx library for class name handling instead of simple string join.",
+      description:
+        "Uses the clsx library for class name handling instead of simple string join.",
       default: false,
       alias: "x",
     });

@@ -7,6 +7,10 @@ export default class BaseGenerator extends Generator {
       name: "component",
       description: "Create a new React component",
     },
+    {
+      name: "sv-component",
+      description: "Create a new Svelte component",
+    },
   ];
 
   /**
