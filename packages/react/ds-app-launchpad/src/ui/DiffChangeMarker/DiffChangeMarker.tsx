@@ -1,7 +1,6 @@
 /* @canonical/generator-ds 0.9.0-experimental.12 */
 import type React from "react";
-import SimpleChangeMarker from "./common/SimpleChangeMarker/SimpleChangeMarker.js";
-import { DetailedChangeMarker } from "./common/index.js";
+import { DetailedChangeMarker, SimpleChangeMarker } from "./common/index.js";
 import "./styles.css";
 import type { DiffChangeMarkerProps, DiffChangeType } from "./types.js";
 
