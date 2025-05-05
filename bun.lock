@@ -9,7 +9,7 @@
     },
     "apps/react/boilerplate-vite": {
       "name": "@canonical/react-boilerplate-vite",
-      "version": "0.9.0-experimental.13",
+      "version": "0.9.0-experimental.19",
       "dependencies": {
         "@canonical/react-ssr": "^0.9.0-experimental.12",
         "@canonical/storybook-config": "^0.9.0-experimental.19",
@@ -39,7 +39,7 @@
     },
     "apps/react/demo": {
       "name": "@canonical/ds-demo-site",
-      "version": "0.9.0-experimental.14",
+      "version": "0.9.0-experimental.19",
       "dependencies": {
         "@canonical/react-ds-core": "^0.9.0-experimental.19",
         "@canonical/react-ds-core-form": "^0.9.0-experimental.19",
@@ -84,7 +84,7 @@
     },
     "configs/storybook": {
       "name": "@canonical/storybook-config",
-      "version": "0.9.0-experimental.12",
+      "version": "0.9.0-experimental.19",
       "dependencies": {
         "@canonical/storybook-addon-baseline-grid": "^0.9.0-experimental.19",
         "@storybook/addon-essentials": "^8.4.7",
@@ -137,7 +137,7 @@
       "version": "0.9.0-experimental.12",
       "dependencies": {
         "@canonical/utils": "^0.9.0-experimental.12",
-        "yeoman-generator": "^7.4.0",
+        "yeoman-generator": "^7.5.1",
       },
       "devDependencies": {
         "@biomejs/biome": "^1.9.4",
@@ -152,7 +152,7 @@
     },
     "packages/react/ds-app-launchpad": {
       "name": "@canonical/react-ds-app-launchpad",
-      "version": "0.9.0-experimental.18",
+      "version": "0.9.0-experimental.19",
       "dependencies": {
         "@canonical/storybook-config": "^0.9.0-experimental.19",
         "@canonical/styles": "^0.9.0-experimental.12",
@@ -192,7 +192,7 @@
     },
     "packages/react/ds-core": {
       "name": "@canonical/react-ds-core",
-      "version": "0.9.0-experimental.13",
+      "version": "0.9.0-experimental.19",
       "dependencies": {
         "@canonical/storybook-config": "^0.9.0-experimental.19",
         "@canonical/styles": "^0.9.0-experimental.12",
@@ -225,7 +225,7 @@
     },
     "packages/react/ds-core-form": {
       "name": "@canonical/react-ds-core-form",
-      "version": "0.9.0-experimental.13",
+      "version": "0.9.0-experimental.19",
       "dependencies": {
         "@canonical/react-ds-core": "^0.9.0-experimental.19",
         "@canonical/storybook-config": "^0.9.0-experimental.19",
@@ -284,7 +284,7 @@
     },
     "packages/storybook-addon-baseline-grid": {
       "name": "@canonical/storybook-addon-baseline-grid",
-      "version": "0.9.0-experimental.12",
+      "version": "0.9.0-experimental.19",
       "dependencies": {
         "@canonical/styles-debug": "^0.9.0-experimental.19",
         "@storybook/icons": "^1.2.10",
@@ -316,7 +316,7 @@
     },
     "packages/styles/debug": {
       "name": "@canonical/styles-debug",
-      "version": "0.9.0-experimental.12",
+      "version": "0.9.0-experimental.19",
       "devDependencies": {
         "@biomejs/biome": "^1.9.4",
         "@canonical/biome-config": "^0.9.0-experimental.12",
@@ -395,7 +395,7 @@
     },
     "packages/tokens": {
       "name": "@canonical/tokens",
-      "version": "0.9.0-experimental.1",
+      "version": "0.9.0-experimental.19",
       "dependencies": {
         "style-dictionary": "^4.3.3",
       },
