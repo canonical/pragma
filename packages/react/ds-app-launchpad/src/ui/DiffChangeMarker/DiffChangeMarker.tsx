@@ -1,9 +1,9 @@
 /* @canonical/generator-ds 0.9.0-experimental.12 */
 import type React from "react";
-import { useMemo } from "react";
-import * as icons from "./icons.js";
+import SimpleChangeMarker from "./common/SimpleChangeMarker/SimpleChangeMarker.js";
+import { DetailedChangeMarker } from "./common/index.js";
 import "./styles.css";
-import type { DiffChangeMarkerProps } from "./types.js";
+import type { DiffChangeMarkerProps, DiffChangeType } from "./types.js";
 
 const componentCssClassName = "ds diff-change-marker";
 
@@ -19,62 +19,66 @@ const DiffChangeMarker = ({
   markerStyle,
   ...markerOptions
 }: DiffChangeMarkerProps): React.ReactElement => {
-  const displayStyle = markerStyle;
   const isManual = "type" in markerOptions;
-  const manualOption = isManual ? markerOptions : undefined;
-  const autoOption = isManual ? undefined : markerOptions;
 
-  const changeType = useMemo(() => {
-    if (manualOption?.type) {
-      return manualOption.type;
+  const getChangeType = () => {
+    if (isManual) {
+      return markerOptions.type;
     }
-    if (autoOption?.additions && autoOption?.deletions) {
+    if (markerOptions.additions && markerOptions.deletions) {
       return "modified";
     }
-    if (autoOption?.additions) {
+    if (markerOptions.additions) {
       return "added";
     }
-    if (autoOption?.deletions) {
+    if (markerOptions.deletions) {
       return "deleted";
     }
     return "modified";
-  }, [autoOption?.additions, autoOption?.deletions, manualOption?.type]);
+  };
+
+  const formatChangeType = (type: DiffChangeType): string => {
+    switch (type) {
+      case "added":
+        return "Added";
+      case "deleted":
+        return "Removed";
+      case "modified":
+        return "Modified";
+    }
+  };
+
+  const changeType = getChangeType();
 
   return (
     <div
       id={id}
       style={style}
-      className={[componentCssClassName, className, `style-${displayStyle}`]
+      className={[componentCssClassName, className, `style-${markerStyle}`]
         .filter(Boolean)
         .join(" ")}
     >
-      {displayStyle === "detailed" ? (
+      {markerStyle === "detailed" ? (
         isManual ? (
-          <>
-            {changeType === "added" && <span className="added">Added</span>}
-            {changeType === "deleted" && (
-              <span className="deleted">Removed</span>
-            )}
-            {changeType === "modified" && (
-              <span className="modified">Modified</span>
-            )}
-          </>
+          <DetailedChangeMarker
+            {...{ [changeType]: formatChangeType(changeType) }}
+          />
         ) : (
-          <>
-            {markerOptions.deletions > 0 && (
-              <span className="deleted">-{markerOptions.deletions}</span>
-            )}
-            {markerOptions.additions > 0 && (
-              <span className="added">+{markerOptions.additions}</span>
-            )}
-          </>
+          <DetailedChangeMarker
+            deleted={
+              markerOptions.deletions > 0
+                ? `-${markerOptions.deletions}`
+                : undefined
+            }
+            added={
+              markerOptions.additions > 0
+                ? `+${markerOptions.additions}`
+                : undefined
+            }
+          />
         )
       ) : (
-        <div className={`change-indicator ${changeType}`}>
-          {changeType === "added" && icons.AddIcon}
-          {changeType === "deleted" && icons.DeleteIcon}
-          {changeType === "modified" && icons.ModifyIcon}
-        </div>
+        <SimpleChangeMarker changeType={changeType} />
       )}
     </div>
   );
