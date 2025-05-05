@@ -30,7 +30,7 @@ const createConfig = (): StorybookConfig => ({
   },
   staticDirs: [
     "../src/assets",
-    "../src/public", // For MSW
+    "../public", // For MSW
   ],
   docs: {
     autodocs: true,
