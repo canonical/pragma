@@ -16,7 +16,7 @@ import "./styles.css";
 import type { CodeDiffViewerProps } from "./types.js";
 
 import { AnnotatedDiffLine } from "./common/AnnotatedDiffLine/index.js";
-import updateTableWidth from "./utils/updateTableWidth.js";
+import { tableWidthCSSVar } from "./constants.js";
 
 const componentCssClassName = "ds code-diff-viewer";
 
@@ -62,7 +62,7 @@ const CodeDiffViewer = (
 
     const resizeObserver = new ResizeObserver(() => {
       if (!tableRef.current) return;
-      updateTableWidth(tableRef.current);
+      tableRef.current.style.cssText = `${tableWidthCSSVar}: ${tableRef.current.clientWidth}px`;
     });
 
     resizeObserver.observe(tableRef.current);
