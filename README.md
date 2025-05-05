@@ -37,6 +37,9 @@ To learn more, check out the following resources:
 | [Contribution Documentation](./guides/CONTRIBUTING.md) | Learn how to contribute to DS-25. Find detailed instructions for installing, running, and working with the project locally.             |
 | [Architecture Documentation](./guides/ARCHITECTURE.md) | Explore the architectural decisions and principles behind DS-25. This includes explanations of project structure, benchmarks, and more. |
 
+## 4. Caveats
+For the time being, node 23 seems to provoke [an error](./issues/226). Use node v22 for the time being, for instance with `nvm use 22`.
+
 ## Thanks
 
 <a href="https://www.chromatic.com/"><img src="https://user-images.githubusercontent.com/321738/84662277-e3db4f80-af1b-11ea-88f5-91d67a5e59f6.png" width="153" height="30" alt="Chromatic" /></a>
