@@ -57,7 +57,7 @@ const CodeDiffViewer = (
   useEffect(() => {
     // SSR check
     if (typeof ResizeObserver === "undefined") return;
-    if (disableWidthCalculation) return;
+    if (disableWidthCalculation || isCollapsed) return;
     if (!tableRef.current) return;
 
     const resizeObserver = new ResizeObserver(() => {
@@ -70,15 +70,15 @@ const CodeDiffViewer = (
     return () => {
       resizeObserver.disconnect();
     };
-  }, [disableWidthCalculation]);
+  }, [disableWidthCalculation, isCollapsed]);
+
+  if (isCollapsed) return null;
 
   return (
     <div
       id={id}
       style={style}
-      className={[componentCssClassName, className, isCollapsed && "collapsed"]
-        .filter(Boolean)
-        .join(" ")}
+      className={[componentCssClassName, className].filter(Boolean).join(" ")}
     >
       <div className="diff-hunk">
         <table className="diff-table" ref={tableRef} tabIndex={-1}>
