@@ -14,6 +14,7 @@ const componentCssClassName = "ds node";
 const expandedCssClassName = "expanded";
 const expandableCssClassName = "expandable";
 const selectableCssClassName = "selectable";
+const selectedCssClassName = "selected";
 
 const Provider = ({
   id,
@@ -199,6 +200,7 @@ const Provider = ({
             nodeOptions.nodeType === "file" &&
               onSelectFile !== undefined &&
               selectableCssClassName,
+            isSelected && selectedCssClassName,
           ]
             .filter(Boolean)
             .join(" ")}
@@ -210,6 +212,7 @@ const Provider = ({
           tabIndex={-1}
           onClick={handleClick}
           onKeyDown={handleKeyDown}
+          title={path}
         >
           <IndentationBlock depth={depth} />
           <div

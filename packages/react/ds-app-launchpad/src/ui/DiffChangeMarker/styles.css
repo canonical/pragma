@@ -1,0 +1,30 @@
+/* @canonical/generator-ds 0.9.0-experimental.12 */
+
+.ds.diff-change-marker {
+  --diff-change-marker-added-color: #8cd297;
+  --diff-change-marker-added-svg: #0e8420;
+  --diff-change-marker-added-alt: rgba(10, 189, 37, 0.1);
+
+  --diff-change-marker-deleted-color: #fba1aa;
+  --diff-change-marker-deleted-svg: #c7162b;
+  --diff-change-marker-deleted-alt: rgba(199, 0, 20, 0.1);
+
+  --diff-change-marker-modified-color: #c58c38;
+  --diff-change-marker-modified-svg: #cc7900;
+  --diff-change-marker-modified-alt: rgba(245, 158, 11, 0.1);
+
+  --diff-change-marker-font-size: 0.75rem;
+  --diff-change-marker-font-weight: 550;
+  --diff-change-marker-line-height: 1rem;
+
+  --diff-change-marker-simple-size: 1rem;
+
+  --diff-change-marker-detailed-padding: 0.125rem 0.25rem;
+
+  font-size: var(--diff-change-marker-font-size);
+  font-weight: var(--diff-change-marker-font-weight);
+  line-height: var(--diff-change-marker-line-height);
+
+  display: flex;
+  align-items: center;
+}

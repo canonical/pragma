@@ -1,7 +1,7 @@
 {
   "name": "@canonical/styles-primitives-canonical",
   "description": "Canonical's base styles",
-  "version": "0.9.0-experimental.12",
+  "version": "0.9.0-experimental.20",
   "main": "src/index.css",
   "files": ["src"],
   "author": {

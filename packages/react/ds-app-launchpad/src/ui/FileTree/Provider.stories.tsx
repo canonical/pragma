@@ -98,10 +98,11 @@ export const Default: StoryFn<ProviderOptions> = (args) => {
       onSelectFile={setSelectedNode}
       style={{
         maxWidth: 300,
+        maxHeight: "250px",
       }}
+      header={<FileTree.SearchBox />}
       {...args}
     >
-      <FileTree.SearchBox />
       <FileTree.Folder name="test-folder" />
       <FileTree.File name="test-file" />
       <FileTree.Folder name="assets" defaultOpen>

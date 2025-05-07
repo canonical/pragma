@@ -1,0 +1,21 @@
+/* @canonical/generator-ds 0.9.0-experimental.12 */
+.ds.detailed-change-marker {
+  > span {
+    padding: var(--diff-change-marker-detailed-padding);
+
+    &.added {
+      color: var(--diff-change-marker-added-color);
+      background-color: var(--diff-change-marker-added-alt);
+    }
+
+    &.deleted {
+      color: var(--diff-change-marker-deleted-color);
+      background-color: var(--diff-change-marker-deleted-alt);
+    }
+
+    &.modified {
+      color: var(--diff-change-marker-modified-color);
+      background-color: var(--diff-change-marker-modified-alt);
+    }
+  }
+}

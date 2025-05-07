@@ -76,6 +76,7 @@
       display: inline-block;
       width: calc(var(--git-diff-viewer-gutter-width) / 2 - 4px);
       text-align: center;
+      color: var(--git-diff-viewer-code-line-number-default-color);
     }
   }
 

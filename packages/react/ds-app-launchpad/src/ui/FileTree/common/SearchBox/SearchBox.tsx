@@ -13,7 +13,6 @@ const componentCssClassName = "ds search-box";
  */
 const SearchBox = ({
   id,
-  children,
   className,
   style,
 }: SearchBoxProps): React.ReactElement | null => {

@@ -3,6 +3,18 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.9.0-experimental.20](https://github.com/canonical/ds25/compare/v0.9.0-experimental.19...v0.9.0-experimental.20) (2025-05-05)
+
+
+### Features
+
+* **ComponentGenerator:** add Svelte component generator ([#215](https://github.com/canonical/ds25/issues/215)) ([13720cf](https://github.com/canonical/ds25/commit/13720cf06143fd684ebd863eaacafced1627f33f))
+* **tokens:** Improved folder structure and added dimension tokens ([#217](https://github.com/canonical/ds25/issues/217)) ([f4188e6](https://github.com/canonical/ds25/commit/f4188e6fd9f3369c678b137518404d0825b2265a))
+
+
+
+
+
 # [0.9.0-experimental.12](https://github.com/canonical/ds25/compare/v0.9.0-experimental.11...v0.9.0-experimental.12) (2025-04-03)
 
 **Note:** Version bump only for package @canonical/generator-ds

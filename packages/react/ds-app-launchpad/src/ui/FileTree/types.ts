@@ -74,9 +74,13 @@ export type ProviderOptions = {
   style?: React.CSSProperties;
   /**
    * Consider using `FileTree.Folder` and `FileTree.File` components to build the file tree.
-   * And `FileTree.Search` component to add search functionality.
    */
   children?: React.ReactNode;
+  /**
+   * The header of the file tree.
+   * Consider using `FileTree.Search` component to add search functionality.
+   */
+  header?: React.ReactNode;
 } & UserContextOptions;
 
 export type FileTreeComponent = ((

@@ -11,7 +11,9 @@ describe("FileTree component", () => {
   });
 
   it("applies className", () => {
-    render(<FileTree className={"test-class"}>FileTree</FileTree>);
-    expect(screen.getByText("FileTree")).toHaveClass("test-class");
+    const { container } = render(
+      <FileTree className={"test-class"}>FileTree</FileTree>,
+    );
+    expect(container.querySelector(".test-class")).toBeInTheDocument();
   });
 });

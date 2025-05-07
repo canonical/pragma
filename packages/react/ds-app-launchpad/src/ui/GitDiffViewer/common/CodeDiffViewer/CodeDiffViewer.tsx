@@ -16,7 +16,7 @@ import "./styles.css";
 import type { CodeDiffViewerProps } from "./types.js";
 
 import { AnnotatedDiffLine } from "./common/AnnotatedDiffLine/index.js";
-import updateTableWidth from "./utils/updateTableWidth.js";
+import { tableWidthCSSVar } from "./constants.js";
 
 const componentCssClassName = "ds code-diff-viewer";
 
@@ -57,12 +57,12 @@ const CodeDiffViewer = (
   useEffect(() => {
     // SSR check
     if (typeof ResizeObserver === "undefined") return;
-    if (disableWidthCalculation) return;
+    if (disableWidthCalculation || isCollapsed) return;
     if (!tableRef.current) return;
 
     const resizeObserver = new ResizeObserver(() => {
       if (!tableRef.current) return;
-      updateTableWidth(tableRef.current);
+      tableRef.current.style.cssText = `${tableWidthCSSVar}: ${tableRef.current.clientWidth}px`;
     });
 
     resizeObserver.observe(tableRef.current);
@@ -70,15 +70,15 @@ const CodeDiffViewer = (
     return () => {
       resizeObserver.disconnect();
     };
-  }, [disableWidthCalculation]);
+  }, [disableWidthCalculation, isCollapsed]);
+
+  if (isCollapsed) return null;
 
   return (
     <div
       id={id}
       style={style}
-      className={[componentCssClassName, className, isCollapsed && "collapsed"]
-        .filter(Boolean)
-        .join(" ")}
+      className={[componentCssClassName, className].filter(Boolean).join(" ")}
     >
       <div className="diff-hunk">
         <table className="diff-table" ref={tableRef} tabIndex={-1}>

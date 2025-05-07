@@ -3,6 +3,22 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.9.0-experimental.20](https://github.com/canonical/ds25/compare/v0.9.0-experimental.19...v0.9.0-experimental.20) (2025-05-05)
+
+
+### Bug Fixes
+
+* **CodeDiffViewer:**  improve component rendering ([#227](https://github.com/canonical/ds25/issues/227)) ([efb2919](https://github.com/canonical/ds25/commit/efb29196c2075140f971d8d998a081385191e45b))
+
+
+### Features
+
+* **DiffChangeMarker:** add DiffChangeMarker component and include it in GitDiffViewer.FileHeader ([#223](https://github.com/canonical/ds25/issues/223)) ([a659dda](https://github.com/canonical/ds25/commit/a659ddaa7189badd76475865b7b09bd3b032609f))
+
+
+
+
+
 # [0.9.0-experimental.19](https://github.com/canonical/ds25/compare/v0.9.0-experimental.18...v0.9.0-experimental.19) (2025-04-28)
 
 

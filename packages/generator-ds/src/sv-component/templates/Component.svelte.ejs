@@ -1,0 +1,29 @@
+<script lang="ts">
+  /* <%= generatorPackageName %> <%= generatorPackageVersion %> */
+  import type { <%= componentName %>Props } from './types.js'
+<% if (withStyles) { _%>
+<% if (useClsx) { _%>
+  import clsx from "clsx"
+<% } _%>
+  import './styles.css'
+
+  const componentCssClassName = "<%= cssNamespace %> <%= componentCssClassName %>";
+<%_ } _%>
+
+  let { id, class: className, style, children }: <%= componentName %>Props = $props();
+</script>
+
+<div class={<% if (withStyles && useClsx) { %>clsx(componentCssClassName, className)<% } else if (withStyles) { %>[componentCssClassName, className].filter(Boolean).join(" ")<% } else { %>className<% } %>} {id} {style}>
+  {@render children?.()}
+</div>
+
+<!-- @component
+`<%= componentName %>` [FIXME] (placeholder) A reusable UI component that renders content in a div container.
+
+## Example Usage
+```svelte
+<%= componentName %> class="custom-class" id="unique-id">
+  <p>Content goes here</p>
+</<%= componentName %>>
+```
+-->

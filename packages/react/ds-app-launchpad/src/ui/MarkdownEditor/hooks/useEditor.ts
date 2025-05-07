@@ -278,8 +278,6 @@ const useEditor = (
 
       if (shortcutHandled) {
         event.preventDefault();
-      } else {
-        event.stopPropagation();
       }
     },
     [

@@ -12,6 +12,7 @@ const Provider = ({
   className,
   style,
   children,
+  header,
   ...contextOptions
 }: ProviderOptions): React.ReactElement => {
   const fileTreeRef = useRef<HTMLUListElement>(null);
@@ -112,15 +113,16 @@ const Provider = ({
         focusNextSiblingCharacter: handleFocusNextSiblingCharacter,
       }}
     >
-      <ul
+      <div
         id={id}
         style={style}
         className={[componentCssClassName, className].filter(Boolean).join(" ")}
-        ref={fileTreeRef}
-        role="tree"
       >
-        {children}
-      </ul>
+        {header}
+        <ul ref={fileTreeRef} role="tree">
+          {children}
+        </ul>
+      </div>
     </Context.Provider>
   );
 };

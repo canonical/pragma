@@ -3,6 +3,7 @@ import type React from "react";
 import { useCallback } from "react";
 import { useGitDiffViewer } from "../../hooks/index.js";
 import "./styles.css";
+import { DiffChangeMarker } from "../../../index.js";
 import type { FileHeaderProps } from "./types.js";
 
 const componentCssClassName = "ds file-header";
@@ -79,16 +80,18 @@ const FileHeader = ({
         {showChangeCount && (
           <div className="change-count">
             {diff.fileChangeState === "modified" ? (
-              <>
-                <span className="deletions">-{changesCount.deletions}</span>
-                <span className="insertions">+{changesCount.additions}</span>
-              </>
-            ) : diff.fileChangeState === "added" ? (
-              <span className="insertions">Added</span>
-            ) : diff.fileChangeState === "deleted" ? (
-              <span className="deletions">Removed</span>
+              <DiffChangeMarker
+                additions={changesCount.additions}
+                deletions={changesCount.deletions}
+                markerStyle="detailed"
+              />
             ) : (
-              <></>
+              diff.fileChangeState !== "none" && (
+                <DiffChangeMarker
+                  type={diff.fileChangeState}
+                  markerStyle="detailed"
+                />
+              )
             )}
           </div>
         )}

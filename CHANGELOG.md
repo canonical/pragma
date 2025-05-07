@@ -3,6 +3,29 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.9.0-experimental.20](https://github.com/canonical/ds25/compare/v0.9.0-experimental.19...v0.9.0-experimental.20) (2025-05-05)
+
+
+### Bug Fixes
+
+* **Chromatic:** Chromatic workflows are concurrency-pruned on a per-package, instead of per-ref, basis ([#221](https://github.com/canonical/ds25/issues/221)) ([ec98e19](https://github.com/canonical/ds25/commit/ec98e19cba4dabab198a6c0c64f70ed118a2ac9d))
+* **CodeDiffViewer:**  improve component rendering ([#227](https://github.com/canonical/ds25/issues/227)) ([efb2919](https://github.com/canonical/ds25/commit/efb29196c2075140f971d8d998a081385191e45b))
+
+
+### Features
+
+* **ComponentGenerator:** add Svelte component generator ([#215](https://github.com/canonical/ds25/issues/215)) ([13720cf](https://github.com/canonical/ds25/commit/13720cf06143fd684ebd863eaacafced1627f33f))
+* **Demo site:** Apply font/baseline-relative settings ([#202](https://github.com/canonical/ds25/issues/202)) ([d834898](https://github.com/canonical/ds25/commit/d8348986ba1e6feea6d3380ad128b13bf9611ccc)), closes [/github.com/canonical/ds25/pull/202#discussion_r2060683715](https://github.com//github.com/canonical/ds25/pull/202/issues/discussion_r2060683715)
+* **Demo site:** Build Drawer component, move example settings into it ([#200](https://github.com/canonical/ds25/issues/200)) ([6edf5b3](https://github.com/canonical/ds25/commit/6edf5b32ff6b2c96d4a861b0b309d3aa94cb21b5))
+* **Demo site:** Settings in the drawer are laid out with a simple grid ([#201](https://github.com/canonical/ds25/issues/201)) ([e6ba0e7](https://github.com/canonical/ds25/commit/e6ba0e785bdbc8438f3daf03e1b1e9b9090b777c))
+* **DiffChangeMarker:** add DiffChangeMarker component and include it in GitDiffViewer.FileHeader ([#223](https://github.com/canonical/ds25/issues/223)) ([a659dda](https://github.com/canonical/ds25/commit/a659ddaa7189badd76475865b7b09bd3b032609f))
+* **form:** tokens ([#219](https://github.com/canonical/ds25/issues/219)) ([f355abd](https://github.com/canonical/ds25/commit/f355abd4a5c3be13d417e3e381fc74485f218917))
+* **tokens:** Improved folder structure and added dimension tokens ([#217](https://github.com/canonical/ds25/issues/217)) ([f4188e6](https://github.com/canonical/ds25/commit/f4188e6fd9f3369c678b137518404d0825b2265a))
+
+
+
+
+
 # [0.9.0-experimental.19](https://github.com/canonical/ds25/compare/v0.9.0-experimental.18...v0.9.0-experimental.19) (2025-04-28)
 
 
