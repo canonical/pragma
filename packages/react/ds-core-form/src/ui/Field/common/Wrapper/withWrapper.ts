@@ -9,10 +9,12 @@ import type {
 import DefaultWrapper from "./Wrapper.js";
 import withConditionalDisplay from "./withConditionalDisplay.js";
 
+type Condition = {
+  condition?: [string[], (depsValues: unknown[]) => boolean];
+};
+
 type WrappedComponentPropsInternal<ComponentProps extends BaseInputProps> =
-  Omit<WrappedComponentProps<ComponentProps>, "Component"> & {
-    condition?: [string[], (depsValues: unknown[]) => boolean];
-  };
+  Omit<WrappedComponentProps<ComponentProps>, "Component"> & Condition;
 
 const withWrapper = <
   ComponentProps extends BaseInputProps,

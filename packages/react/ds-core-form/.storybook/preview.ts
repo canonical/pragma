@@ -10,7 +10,6 @@ import "index.css";
 
 const withMSW = (Story: StoryFn, context: StoryContext) => {
 	useEffect(() => {
-		console.log("Story decorator called with ctx", context);
 		const { msw } = context.parameters;
 		if (msw && msw.handlers) {
 			worker.resetHandlers();
