@@ -10,7 +10,7 @@
 
   & > .controls {
     flex-shrink: 0;
-    /* Draw the controls over the baseline grid overlay */
+    /* Draw the controls over the baseline grid overlay, which has z-index 200. */
     z-index: 201;
   }
 }

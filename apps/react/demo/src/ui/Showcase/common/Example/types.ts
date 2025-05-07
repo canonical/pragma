@@ -31,8 +31,8 @@ export interface ContextOptions {
   activeExampleFormValues: FormValues;
   /** Whether the baseline grid should be shown */
   showBaselineGrid: boolean;
-  /** Toggles the baseline grid's visibility. Returns the new state */
-  toggleShowBaselineGrid: () => boolean;
+  /** Toggles the baseline grid's visibility. */
+  toggleShowBaselineGrid: () => void;
 }
 
 /** The context provider props for the config provider */

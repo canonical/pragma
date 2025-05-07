@@ -32,8 +32,7 @@ const useProviderState = ({
 
   const toggleShowBaselineGrid = useCallback(() => {
     setShowBaselineGrid((prev) => !prev);
-    return !showBaselineGrid;
-  }, [showBaselineGrid]);
+  }, []);
 
   /** Switches to the previous example */
   const activatePrevExample = useCallback(() => {
