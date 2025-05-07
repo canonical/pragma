@@ -1,0 +1,36 @@
+{
+  "name": "@canonical/webarchitect",
+  "description": "A tool to test the compliance with architecture specifications for packages and applications.",
+  "version": "0.9.0-experimental.12",
+  "type": "module",
+  "module": "dist/esm/index.js",
+  "types": "dist/types/index.d.ts",
+  "files": ["dist"],
+  "author": {
+    "email": "webteam@canonical.com",
+    "name": "Canonical Webteam"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/canonical/ds25"
+  },
+  "license": "LGPL-3.0",
+  "bugs": {
+    "url": "https://github.com/canonical/ds25/issues"
+  },
+  "homepage": "https://github.com/canonical/ds25#readme",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "check": "bun run check:biome && bun run check:ts",
+    "check:fix": "bun run check:biome:fix && bun run check:ts",
+    "check:biome": "biome check",
+    "check:biome:fix": "biome check --write",
+    "check:ts": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "@canonical/biome-config": "^0.9.0-experimental.12",
+    "@canonical/typescript-config-base": "^0.9.0-experimental.12",
+    "typescript": "^5.8.2"
+  }
+}
