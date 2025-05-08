@@ -24,7 +24,7 @@ import type { RenderHandler } from "../renderer/index.js";
  *
  * const app = express();
  *
- * app.use("/(assets|public)", express.static("dist/client/assets"));
+ * app.use(["/assets", "/public"], express.static("dist/client/assets"));
  * app.use(serveStream(ssrHandler));
  */
 export function serveStream(handler: RenderHandler) {
