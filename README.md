@@ -38,7 +38,7 @@ To learn more, check out the following resources:
 | [Architecture Documentation](./guides/ARCHITECTURE.md) | Explore the architectural decisions and principles behind DS-25. This includes explanations of project structure, benchmarks, and more. |
 
 ## 4. Caveats
-For the time being, node 23 seems to provoke [an error](./issues/226). Use node v22 for the time being, for instance with `nvm use 22`.
+For the time being, node 23 seems to provoke [an error](https://github.com/canonical/ds25/issues/226). Use node v22 for the time being, for instance with `nvm use 22`.
 
 ## Thanks
 
