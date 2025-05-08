@@ -156,9 +156,9 @@
       "version": "0.9.0-experimental.20",
       "dependencies": {
         "@canonical/storybook-config": "^0.9.0-experimental.19",
-        "@canonical/styles": "^0.9.0-experimental.12",
+        "@canonical/styles": "^0.9.0-experimental.20",
         "@canonical/utils": "^0.9.0-experimental.12",
-        "@js-temporal/polyfill": "^0.4.4",
+        "@js-temporal/polyfill": "^0.5.0",
         "highlight.js": "^11.11.1",
         "react": ">=18.0.0 <20.0.0",
         "react-dom": ">=18.0.0 <20.0.0",
@@ -341,9 +341,9 @@
         "@canonical/styles-elements": "^0.9.0-experimental.12",
         "@canonical/styles-modes-canonical": "^0.9.0-experimental.12",
         "@canonical/styles-modes-density": "^0.9.0-experimental.12",
-        "@canonical/styles-modes-intents": "^0.9.0-experimental.12",
+        "@canonical/styles-modes-intents": "^0.9.0-experimental.20",
         "@canonical/styles-modes-motion": "^0.9.0-experimental.12",
-        "@canonical/styles-primitives-canonical": "^0.9.0-experimental.12",
+        "@canonical/styles-primitives-canonical": "^0.9.0-experimental.20",
         "normalize.css": "^8.0.1",
       },
       "devDependencies": {
@@ -675,7 +675,7 @@
 
     "@jridgewell/trace-mapping": ["@jridgewell/trace-mapping@0.3.25", "", { "dependencies": { "@jridgewell/resolve-uri": "^3.1.0", "@jridgewell/sourcemap-codec": "^1.4.14" } }, "sha512-vNk6aEwybGtawWmy/PzwnGDOjCkLWSD2wqvjGGAgOAwCGWySYXfYoxt00IJkTF+8Lb57DwOb3Aa0o9CApepiYQ=="],
 
-    "@js-temporal/polyfill": ["@js-temporal/polyfill@0.4.4", "", { "dependencies": { "jsbi": "^4.3.0", "tslib": "^2.4.1" } }, "sha512-2X6bvghJ/JAoZO52lbgyAPFj8uCflhTo2g7nkFzEQdXd/D8rEeD4HtmTEpmtGCva260fcd66YNXBOYdnmHqSOg=="],
+    "@js-temporal/polyfill": ["@js-temporal/polyfill@0.5.1", "", { "dependencies": { "jsbi": "^4.3.0" } }, "sha512-hloP58zRVCRSpgDxmqCWJNlizAlUgJFqG2ypq79DCvyv9tHjRYMDOcPFjzfl/A1/YxDvRCZz8wvZvmapQnKwFQ=="],
 
     "@jsonjoy.com/base64": ["@jsonjoy.com/base64@1.1.2", "", { "peerDependencies": { "tslib": "2" } }, "sha512-q6XAnWQDIMA3+FTiOYajoYqySkO+JSat0ytXGSuRdq9uXE7o92gzuQwQM14xaCRlBLGq3v5miDGC4vkVTn54xA=="],
 
