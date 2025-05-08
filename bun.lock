@@ -9,7 +9,7 @@
     },
     "apps/react/boilerplate-vite": {
       "name": "@canonical/react-boilerplate-vite",
-      "version": "0.9.0-experimental.19",
+      "version": "0.9.0-experimental.20",
       "dependencies": {
         "@canonical/react-ssr": "^0.9.0-experimental.12",
         "@canonical/storybook-config": "^0.9.0-experimental.19",
@@ -39,7 +39,7 @@
     },
     "apps/react/demo": {
       "name": "@canonical/ds-demo-site",
-      "version": "0.9.0-experimental.19",
+      "version": "0.9.0-experimental.20",
       "dependencies": {
         "@canonical/react-ds-core": "^0.9.0-experimental.19",
         "@canonical/react-ds-core-form": "^0.9.0-experimental.19",
@@ -135,7 +135,7 @@
     },
     "packages/generator-ds": {
       "name": "@canonical/generator-ds",
-      "version": "0.9.0-experimental.12",
+      "version": "0.9.0-experimental.20",
       "dependencies": {
         "@canonical/utils": "^0.9.0-experimental.12",
         "yeoman-generator": "^7.5.1",
@@ -148,12 +148,12 @@
         "@types/json-schema": "^7.0.15",
         "@types/node": "^22.10.1",
         "copyfiles": "2.4.1",
-        "typescript": "5.7.2",
+        "typescript": "5.8.3",
       },
     },
     "packages/react/ds-app-launchpad": {
       "name": "@canonical/react-ds-app-launchpad",
-      "version": "0.9.0-experimental.19",
+      "version": "0.9.0-experimental.20",
       "dependencies": {
         "@canonical/storybook-config": "^0.9.0-experimental.19",
         "@canonical/styles": "^0.9.0-experimental.12",
@@ -193,7 +193,7 @@
     },
     "packages/react/ds-core": {
       "name": "@canonical/react-ds-core",
-      "version": "0.9.0-experimental.19",
+      "version": "0.9.0-experimental.20",
       "dependencies": {
         "@canonical/storybook-config": "^0.9.0-experimental.19",
         "@canonical/styles": "^0.9.0-experimental.12",
@@ -226,7 +226,7 @@
     },
     "packages/react/ds-core-form": {
       "name": "@canonical/react-ds-core-form",
-      "version": "0.9.0-experimental.19",
+      "version": "0.9.0-experimental.20",
       "dependencies": {
         "@canonical/react-ds-core": "^0.9.0-experimental.19",
         "@canonical/storybook-config": "^0.9.0-experimental.19",
@@ -336,7 +336,7 @@
     },
     "packages/styles/main/canonical": {
       "name": "@canonical/styles",
-      "version": "0.9.0-experimental.12",
+      "version": "0.9.0-experimental.20",
       "dependencies": {
         "@canonical/styles-elements": "^0.9.0-experimental.12",
         "@canonical/styles-modes-canonical": "^0.9.0-experimental.12",
@@ -369,7 +369,7 @@
     },
     "packages/styles/modes/intents": {
       "name": "@canonical/styles-modes-intents",
-      "version": "0.9.0-experimental.12",
+      "version": "0.9.0-experimental.20",
       "devDependencies": {
         "@biomejs/biome": "^1.9.4",
         "@canonical/biome-config": "^0.9.0-experimental.12",
@@ -388,7 +388,7 @@
     },
     "packages/styles/primitives/canonical": {
       "name": "@canonical/styles-primitives-canonical",
-      "version": "0.9.0-experimental.12",
+      "version": "0.9.0-experimental.20",
       "devDependencies": {
         "@biomejs/biome": "^1.9.4",
         "@canonical/biome-config": "^0.9.0-experimental.12",
@@ -396,7 +396,7 @@
     },
     "packages/tokens": {
       "name": "@canonical/tokens",
-      "version": "0.9.0-experimental.19",
+      "version": "0.9.0-experimental.20",
       "dependencies": {
         "style-dictionary": "^4.3.3",
       },
@@ -2608,8 +2608,6 @@
     "@babel/traverse/globals": ["globals@11.12.0", "", {}, "sha512-WOBp/EEGUiIsJSp7wcv/y6MO+lV9UoncWqxuFfm8eBwzWNgyfBd6Gz+IeKQ9jCmyhoH99g15M3T+QaVHFjizVA=="],
 
     "@bundled-es-modules/glob/glob": ["glob@10.4.5", "", { "dependencies": { "foreground-child": "^3.1.0", "jackspeak": "^3.1.2", "minimatch": "^9.0.4", "minipass": "^7.1.2", "package-json-from-dist": "^1.0.0", "path-scurry": "^1.11.1" }, "bin": { "glob": "dist/esm/bin.mjs" } }, "sha512-7Bv8RF0k6xjo7d4A/PxYLbUCfb6c+Vpd2/mB2yRDlew7Jb5hEXiCD9ibfO7wpk8i4sevK6DFny9h7EYbM3/sHg=="],
-
-    "@canonical/generator-ds/typescript": ["typescript@5.7.2", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-i5t66RHxDvVN40HfDd1PsEThGNnlMCMT3jMUuoh9/0TaqWevNontacunWyN02LA9/fIbEWlcHZcgTKb9QoaLfg=="],
 
     "@inquirer/core/cli-width": ["cli-width@4.1.0", "", {}, "sha512-ouuZd4/dm2Sw5Gmqy6bGyNNNe1qt9RpmxveLSO7KcgsTnU7RXfsw+/bukWGo1abgBiMAic068rclZsO4IWmmxQ=="],
 
