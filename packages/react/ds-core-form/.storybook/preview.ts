@@ -21,14 +21,11 @@ const withMSW = (Story: StoryFn, context: StoryContext) => {
 	return createElement(Story as ComponentType, context.args);
 };
 
-if (true || process.env.NODE_ENV === "development") {
-	console.log("About to start worker", worker);
-	worker.start({
-		serviceWorker: {
-			url: "/mockServiceWorker.js",
-		},
-	});
-}
+worker.start({
+	serviceWorker: {
+		url: "/mockServiceWorker.js",
+	},
+});
 
 const preview: Preview = {
 	decorators: [
