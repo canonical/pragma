@@ -45,7 +45,7 @@ export const TestDecorator: Story = {
     return (
       <div>
         <p>
-          Should return "{decoratorResponsePayload}", incidating MSW
+          Should return "{decoratorResponsePayload}", indicating MSW
           successfully adds handlers at the story level.
         </p>
         <pre>{data ? JSON.stringify(data) : "Loading..."}</pre>
