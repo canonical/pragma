@@ -1,19 +1,47 @@
 import { withThemeByClassName } from "@storybook/addon-themes";
 import type { Preview, ReactRenderer } from "@storybook/react";
+import type { StoryContext, StoryFn } from "@storybook/react";
+
+import { worker } from "mocks/browser.js";
+
+import { type ComponentType, createElement, useEffect } from "react";
 
 import "index.css";
 
+const withMSW = (Story: StoryFn, context: StoryContext) => {
+	useEffect(() => {
+		console.log("Story decorator called with ctx", context);
+		const { msw } = context.parameters;
+		if (msw && msw.handlers) {
+			worker.resetHandlers();
+			worker.use(...msw.handlers);
+		}
+		return () => worker.resetHandlers();
+	}, [context.parameters.msw]);
+
+	return createElement(Story as ComponentType, context.args);
+};
+
+if (process.env.NODE_ENV === "development") {
+	worker.start({
+		serviceWorker: {
+			url: "/mockServiceWorker.js",
+		},
+	});
+}
+
 const preview: Preview = {
-  decorators: [
-    withThemeByClassName<ReactRenderer>({
-      themes: {
-        light: "is-light",
-        dark: "is-dark",
-        paper: "is-paper",
-      },
-      defaultTheme: "light",
-    }),
-  ],
+	decorators: [
+		withThemeByClassName<ReactRenderer>({
+			themes: {
+				light: "is-light",
+				dark: "is-dark",
+				paper: "is-paper",
+			},
+			defaultTheme: "light",
+		}),
+		withMSW,
+	],
 };
 
 export default preview;
