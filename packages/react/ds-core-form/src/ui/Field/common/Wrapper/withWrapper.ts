@@ -3,15 +3,12 @@ import { useMemo } from "react";
 import type {
   BaseInputProps,
   BaseWrapperProps,
+  Condition,
   WrappedComponentProps,
   WrapperProps,
 } from "../../types.js";
 import DefaultWrapper from "./Wrapper.js";
 import withConditionalDisplay from "./withConditionalDisplay.js";
-
-type Condition = {
-  condition?: [string[], (depsValues: unknown[]) => boolean];
-};
 
 type WrappedComponentPropsInternal<ComponentProps extends BaseInputProps> =
   Omit<WrappedComponentProps<ComponentProps>, "Component"> & Condition;
