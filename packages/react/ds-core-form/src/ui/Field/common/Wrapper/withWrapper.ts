@@ -11,7 +11,9 @@ import DefaultWrapper from "./Wrapper.js";
 import withConditionalDisplay from "./withConditionalDisplay.js";
 
 type WrappedComponentPropsInternal<ComponentProps extends BaseInputProps> =
-  Omit<WrappedComponentProps<ComponentProps>, "Component"> & Condition;
+  Omit<WrappedComponentProps<ComponentProps>, "Component"> & {
+    condition?: Condition;
+  };
 
 const withWrapper = <
   ComponentProps extends BaseInputProps,
