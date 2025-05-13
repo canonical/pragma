@@ -12,6 +12,7 @@
 
 .ds.live-char-counter {
     padding: 0.5rem;
+    max-width: 100%;
 }
 
 .ds.live-char-counter.error {
