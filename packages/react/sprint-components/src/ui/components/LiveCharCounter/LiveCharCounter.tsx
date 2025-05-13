@@ -36,7 +36,6 @@ const LiveCharCounter = ({
         placeholder={`Type here...(max ${maxLength} characters)`}
       />
       <span>Character count: {count}</span>
-      {/* {children} */}
     </div>
   );
 };
