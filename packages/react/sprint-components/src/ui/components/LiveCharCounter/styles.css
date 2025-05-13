@@ -1,0 +1,22 @@
+/* @canonical/generator-ds 0.9.0-experimental.20 */
+
+.ds.live-char-counter-wrapper {
+    /** a comment that explains the purpose of this variable */
+    --live-char-counter-color-text: black;
+    --live-char-counter-border-radius: 0.25rem;
+
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.ds.live-char-counter {
+    padding: 0.5rem;
+}
+
+.ds.live-char-counter.error {
+    --live-char-counter-error-color: red;
+
+    color: var(--live-char-counter-error-color);
+    border-color: var(--live-char-counter-error-color);
+}
