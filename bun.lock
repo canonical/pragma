@@ -262,6 +262,39 @@
         "vitest": "^3.0.9",
       },
     },
+    "packages/react/sprint-components": {
+      "name": "@canonical/react-sprint-components",
+      "version": "0.9.0-experimental.20",
+      "dependencies": {
+        "@canonical/storybook-config": "^0.9.0-experimental.19",
+        "@canonical/styles": "^0.9.0-experimental.20",
+        "react": "^19.0.0",
+        "react-dom": "^19.0.0",
+      },
+      "devDependencies": {
+        "@biomejs/biome": "^1.9.4",
+        "@canonical/biome-config": "^0.9.0-experimental.12",
+        "@canonical/typescript-config-react": "^0.9.0-experimental.12",
+        "@chromatic-com/storybook": "^3.2.2",
+        "@storybook/blocks": "^8.4.7",
+        "@storybook/react": "^8.4.7",
+        "@storybook/test": "^8.4.7",
+        "@testing-library/jest-dom": "^6.6.3",
+        "@testing-library/react": "^16.1.0",
+        "@types/node": "^22.10.1",
+        "@types/react": "^19.0.1",
+        "@types/react-dom": "^19.0.2",
+        "@vitejs/plugin-react": "^4.3.4",
+        "copyfiles": "^2.4.1",
+        "globals": "^16.0.0",
+        "jsdom": "^26.0.0",
+        "storybook": "^8.4.7",
+        "typescript": "^5.8.2",
+        "vite": "^6.0.3",
+        "vite-tsconfig-paths": "^5.1.4",
+        "vitest": "^3.0.9",
+      },
+    },
     "packages/react/ssr": {
       "name": "@canonical/react-ssr",
       "version": "0.9.0-experimental.12",
@@ -528,6 +561,8 @@
     "@canonical/react-ds-core": ["@canonical/react-ds-core@workspace:packages/react/ds-core"],
 
     "@canonical/react-ds-core-form": ["@canonical/react-ds-core-form@workspace:packages/react/ds-core-form"],
+
+    "@canonical/react-sprint-components": ["@canonical/react-sprint-components@workspace:packages/react/sprint-components"],
 
     "@canonical/react-ssr": ["@canonical/react-ssr@workspace:packages/react/ssr"],
 
