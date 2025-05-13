@@ -9,7 +9,7 @@ const componentCssClassName = "ds live-char-counter";
 const errorCssClassName = "error";
 
 /**
- * description of the LiveCharCounter component
+ * LiveCharCounter component
  * @returns {React.ReactElement} - Rendered LiveCharCounter
  */
 const LiveCharCounter = ({
