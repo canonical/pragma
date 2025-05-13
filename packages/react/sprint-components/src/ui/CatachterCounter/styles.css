@@ -1,0 +1,19 @@
+/* @canonical/generator-ds 0.9.0-experimental.20 */
+
+.ds.catachter-counter {
+  /** a comment that explains the purpose of this variable */
+  --catachter-counter-color-text: black;
+
+  color: var(--catachter-counter-color-text);
+
+  width: 100%;
+  height: 400px;
+
+  display: grid;
+  place-content: center;
+
+  .image {
+    width: 40px;
+    position: absolute;
+  }
+}
