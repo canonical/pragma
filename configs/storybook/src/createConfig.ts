@@ -6,7 +6,11 @@ function getAbsolutePath(value: string): string {
   return dirname(require.resolve(join(value, "package.json")));
 }
 
-const createConfig = (): StorybookConfig => ({
+type CreateConfigOptions = {
+  staticDirs?: string[];
+};
+
+const createConfig = (options: CreateConfigOptions = {}): StorybookConfig => ({
   stories: ["../src/**/*.mdx", "../src/**/*.stories.@(js|jsx|mjs|ts|tsx)"],
   addons: [
     getAbsolutePath("@storybook/addon-links"),
@@ -28,7 +32,7 @@ const createConfig = (): StorybookConfig => ({
   typescript: {
     check: true,
   },
-  staticDirs: ["../src/assets"],
+  staticDirs: options.staticDirs,
   docs: {
     autodocs: true,
   },

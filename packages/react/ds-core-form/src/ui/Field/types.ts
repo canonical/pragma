@@ -94,6 +94,8 @@ export type Middleware<ComponentProps> = (
   Component: React.ComponentType<ComponentProps>,
 ) => React.ComponentType<ComponentProps>;
 
+export type Condition = [string[], (depsValues: unknown[]) => boolean];
+
 export type WrapperHOCAdditionalProps<
   ComponentProps extends BaseInputProps,
   ComponentWrapperProps extends
@@ -108,6 +110,11 @@ export type WrapperHOCAdditionalProps<
    * An optional wrapper component to render around the input.
    */
   WrapperComponent?: React.ComponentType<ComponentWrapperProps>;
+
+  /**
+   * A condition to determine whether to render the component or not.
+   */
+  condition?: Condition;
 };
 
 export type WrappedComponentProps<

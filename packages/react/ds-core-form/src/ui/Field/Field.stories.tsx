@@ -1,9 +1,11 @@
 /* @canonical/generator-ds 0.9.0-experimental.4 */
 
+import type { Meta, StoryObj } from "@storybook/react";
 // Needed for function-based story, safe to remove otherwise
 // import type { FieldProps } from './types.js'
-import type { Meta, StoryObj } from "@storybook/react";
+import { useMemo } from "react";
 import * as decorators from "storybook/decorators.js";
+import type { FieldProps } from "../Field/types.js";
 import Component from "./Field.js";
 // Needed for template-based story, safe to remove otherwise
 // import type { StoryFn } from '@storybook/react'
@@ -72,6 +74,46 @@ export const TypeCustom: Story = {
     name: "exotic",
     inputType: "custom",
     CustomComponent,
+  },
+};
+
+export const ConditionalDisplay: Story = {
+  render: () => {
+    const emailField: FieldProps = useMemo(
+      () => ({
+        name: "email",
+        inputType: "text",
+        description:
+          "Enter an email address ending with `@gmail.com` and you will be prompted for the company.",
+        label: "Email",
+      }),
+      [],
+    );
+
+    const companyField: FieldProps = useMemo(
+      () => ({
+        name: "company",
+        inputType: "text",
+        label: "Company",
+        optional: true,
+        condition: [
+          ["email"],
+          (values: string[]) => {
+            const value = values[0] as string;
+            if (!value) return false;
+            return value.endsWith("@gmail.com");
+          },
+        ],
+      }),
+      [],
+    );
+
+    return (
+      <div>
+        <Component {...emailField} />
+        <Component {...companyField} />
+      </div>
+    );
   },
 };
 

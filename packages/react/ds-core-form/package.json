@@ -33,7 +33,8 @@
     "test": "bun run test:vitest",
     "test:watch": "bun run test:vitest:watch",
     "test:vitest": "vitest run",
-    "test:vitest:watch": "vitest"
+    "test:vitest:watch": "vitest",
+    "init:msw": "npx msw init public/"
   },
   "dependencies": {
     "@canonical/react-ds-core": "^0.9.0-experimental.20",
@@ -61,10 +62,14 @@
     "copyfiles": "^2.4.1",
     "globals": "^16.0.0",
     "jsdom": "^26.0.0",
+    "msw": "^2.7.5",
     "storybook": "^8.4.7",
     "typescript": "^5.8.2",
     "vite": "^6.0.3",
     "vite-tsconfig-paths": "^5.1.4",
     "vitest": "^3.0.9"
+  },
+  "msw": {
+    "workerDirectory": ["public"]
   }
 }
