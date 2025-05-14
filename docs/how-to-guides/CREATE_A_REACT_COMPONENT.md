@@ -1,7 +1,5 @@
 ## Creating a React Component
 
-First, make sure you have [installed Bun](https://bun.sh/docs/installation).
-
 ### 1  Goals
 This document will guide you through the process of creating a new React component in the design system, and familiarize you
 with our folder structure and naming conventions.
