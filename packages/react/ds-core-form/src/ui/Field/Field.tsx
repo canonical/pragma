@@ -24,7 +24,7 @@ const Field = ({
   switch (inputType) {
     case "textarea":
       return <Textarea {...props} />;
-    case "checkbox":
+    case "checkbox  ":
       return <Checkbox {...props} />;
     case "range":
       return <Range {...props} />;
