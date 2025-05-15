@@ -3,6 +3,7 @@ import type { FieldProps } from "../Field/index.js";
 import Field from "../Field/Field.js";
 import { Button } from "@canonical/react-ds-core";
 import FormWrapper from "./FormWrapper.js";
+import addDynamicMinimumAge from "../middleware/addDynamicMinimumAge.js";
 
 const MyForm = () => {
   const fields: FieldProps[] = [
@@ -27,10 +28,11 @@ const MyForm = () => {
           message: "Age is required",
         },
         min: {
-          value: 18,
-          message: "Age must be at least 18",
+          value: 21,
+          message: "Age must be at least 21",
         },
       },
+      middleware: [addDynamicMinimumAge("country")],
     },
     {
       name: "country",
