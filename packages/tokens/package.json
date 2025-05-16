@@ -31,6 +31,6 @@
     "@canonical/biome-config": "^0.9.0-experimental.1"
   },
   "dependencies": {
-    "style-dictionary": "^4.3.3"
+    "style-dictionary": "^5.0.0"
   }
 }
