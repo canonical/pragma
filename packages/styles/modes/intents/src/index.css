@@ -1,13 +1,14 @@
 @import url("@canonical/tokens/dist/css/semantic.css");
 
 @layer modes {
-  .danger {
-    /* Canonical Mode */
-    --background: #f6f6f6;
+  [class*="fixed layout"] {
+    --mod-grid-template-columns: repeat(8, 1fr);
   }
-
-  .success {
-    /* Canonical Mode */
-    --background: #f6f6f6;
+  [class*="fluid layout"] {
+    --mod-grid-template-columns: repeat(
+      auto-fit,
+      minmax(100px, 1fr) minmax(100px, 1fr) minmax(100px, 1fr)
+        minmax(100px, 1fr)
+    );
   }
 }

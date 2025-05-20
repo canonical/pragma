@@ -5,3 +5,16 @@
     /* background:green; */
   }
 }
+
+main {
+  display: grid;
+  grid-template-columns: var(--mod-grid-template-columns);
+}
+
+section {
+  display:grid;
+  grid-column:1/-1;
+  grid-template-columns: subgrid;
+}
+/* @layer elements { */
+/* } */
