@@ -39,3 +39,41 @@ ORDER BY ?ns       # namespace ascending
  LIMIT 200
  `.trim();
 }
+
+/**
+ * Query the full set of predicate-object pairs for a given subject URI,
+ * aliasing them so they slot into useSPARQLQuery’s “s” and “label” fields.
+ */
+export function makeDetailQuery(uri: string): string {
+	return `
+PREFIX ds:   <${DS}>
+PREFIX rdfs: <${RDFS}>
+
+SELECT 
+  (?p AS ?predicate) 
+  (?o AS ?object)
+WHERE { <${uri}> ?p ?o }
+ORDER BY ?p
+`.trim();
+}
+
+export function makeSubjectQuadsQuery(uri: string, hops = 1): string {
+	let construct = `<${uri}> ?p1 ?o1 .\n`;
+	let where = `<${uri}> ?p1 ?o1 .\n`;
+	let lastVar = "?o1";
+
+	for (let i = 2; i <= hops; ++i) {
+		construct += `${lastVar} ?p${i} ?o${i} .\n`;
+		where += `OPTIONAL { ${lastVar} ?p${i} ?o${i} . }\n`;
+		lastVar = `?o${i}`;
+	}
+
+	return `
+CONSTRUCT {
+  ${construct}
+}
+WHERE {
+  ${where}
+}
+`.trim();
+}

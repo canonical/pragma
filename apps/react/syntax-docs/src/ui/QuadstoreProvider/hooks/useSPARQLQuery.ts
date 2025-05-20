@@ -1,5 +1,6 @@
 import type { Bindings } from "@comunica/types";
 import { useEffect, useState } from "react";
+import * as transformers from "../transformers.js";
 import useQuadstore from "./useQuadstore.js";
 
 export interface Result {
@@ -8,44 +9,44 @@ export interface Result {
 	typeUri: string | null;
 }
 
-/**
- * Convert a single SPARQL binding row into our Result object.
- */
-function transformBinding(binding: Bindings): Result {
-	return {
-		uri: binding.get("s")?.value ?? "",
-		label: binding.get("label")?.value ?? "",
-		typeUri: binding.has("t") ? binding.get("t")!.value : null,
-	};
+type QueryType = "SELECT" | "CONSTRUCT";
+
+interface UseSPARQLQueryOptions<T> {
+	queryType?: QueryType;
+	transformer?: (b: Bindings) => T;
 }
 
-/**
- * Hook performing a SPARQL query and returning an array of Results.
- * @param query - the SPARQL query string to execute
- */
-export default function useSPARQLQuery(query: string): Result[] {
+export default function useSPARQLQuery<T = Result>(
+	query: string,
+	options: UseSPARQLQueryOptions<T> = {},
+): T[] | any[] {
 	const engine = useQuadstore();
-	const [results, setResults] = useState<Result[]>([]);
+	const [results, setResults] = useState<T[] | any[]>([]);
+	const {
+		queryType = "SELECT",
+		transformer = transformers.defaultTransform as (b: Bindings) => T,
+	} = options;
 
 	useEffect(() => {
 		if (!engine || !query) return;
 
 		async function run() {
 			setResults([]);
-
-			const stream = await engine.queryBindings(query);
-			const rows: Result[] = [];
-
-			stream.on("data", (binding) => {
-				rows.push(transformBinding(binding));
-			});
-			stream.on("end", () => {
-				setResults(rows);
-			});
+			if (queryType === "CONSTRUCT") {
+				const stream = await engine.queryQuads(query);
+				const quads: any[] = [];
+				stream.on("data", (quad) => quads.push(quad));
+				stream.on("end", () => setResults(quads));
+			} else {
+				const stream = await engine.queryBindings(query);
+				const rows: T[] = [];
+				stream.on("data", (binding) => rows.push(transformer(binding)));
+				stream.on("end", () => setResults(rows));
+			}
 		}
 
 		run().catch(console.error);
-	}, [engine, query]);
+	}, [engine, query, transformer, queryType]);
 
 	return results;
 }

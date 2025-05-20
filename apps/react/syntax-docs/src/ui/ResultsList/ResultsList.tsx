@@ -1,8 +1,10 @@
 import type React from "react";
 import type { ResultsListProps } from "./types.js";
 import "./styles.css";
+import { DetailRow } from "./common/index.js";
 
 const componentClassName = "ds results-list";
+
 /**
  * Split an IRI into namespace + local name
  */
@@ -12,6 +14,10 @@ function splitIRI(iri: string): { ns: string; local: string } {
 		? { ns: iri.slice(0, idx + 1), local: iri.slice(idx + 1) }
 		: { ns: iri, local: "" };
 }
+
+/**
+ * Component to show details for a selected URI
+ */
 
 const ResultsList = ({
 	id,
@@ -46,12 +52,12 @@ const ResultsList = ({
 				</div>
 			</div>
 
-			{/* data rows */}
-			{results.map((r) => {
+			{/* data rows with optional detail row */}
+			{results.flatMap((r) => {
 				const isSelected = selectedUri === r.uri;
-				return (
+				const row = (
 					<div
-						key={r.uri}
+						key={`row-${r.uri}`}
 						role="row"
 						className={["row", isSelected ? "selected" : ""]
 							.filter(Boolean)
@@ -74,6 +80,9 @@ const ResultsList = ({
 						</div>
 					</div>
 				);
+				return isSelected
+					? [row, <DetailRow key={`detail-${r.uri}`} uri={r.uri} />]
+					: [row];
 			})}
 		</div>
 	);
