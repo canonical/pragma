@@ -10,48 +10,87 @@ const componentClassName = "ds search-controls";
  * @returns {React.ReactElement} - Rendered SearchControls
  */
 const SearchControls = ({
-	id,
-	children,
-	className,
-	style,
+	mode,
+	setMode,
 	type,
-	searchTerm,
 	setType,
+	searchTerm,
 	setSearchTerm,
-}: SearchControlsProps): React.ReactElement => {
-	return (
-		<div
-			id={id}
-			style={style}
-			className={[className, componentClassName].filter(Boolean).join(" ")}
-		>
-			<label htmlFor="type">Show&nbsp;</label>
-			<select value={type} onChange={(e) => setType(e.target.value)} id="type">
-				<option value="">All</option>
-				<option value="Class">Class</option>
-				<option value="Component">Component</option>
-				<option value="Pattern">Pattern</option>
-				<option value="Module">Module</option>
-				<option value="Token">Token</option>
-			</select>
-			<div className="search">
-				<input
-					style={{ marginLeft: 12, padding: "4px 8px" }}
-					placeholder="Search by name…"
-					value={searchTerm}
-					onChange={(e) => setSearchTerm(e.target.value)}
+	sparqlQuery,
+	setSparqlQuery,
+	runSparql,
+	...rest
+}: SearchControlsProps) => (
+	<div className="ds search-controls" {...rest}>
+		<label>
+			<input
+				type="radio"
+				checked={mode === "normal"}
+				onChange={() => setMode("normal")}
+			/>
+			Normal
+		</label>
+		<label style={{ marginLeft: 12 }}>
+			<input
+				type="radio"
+				checked={mode === "sparql"}
+				onChange={() => setMode("sparql")}
+			/>
+			SPARQL
+		</label>
+		{mode === "normal" ? (
+			<>
+				<label htmlFor="type">Show </label>
+				<select
+					value={type}
+					onChange={(e) => setType(e.target.value)}
+					id="type"
+				>
+					<option value="">All</option>
+					<option value="Class">Class</option>
+					<option value="Component">Component</option>
+					<option value="Pattern">Pattern</option>
+					<option value="Module">Module</option>
+					<option value="Token">Token</option>
+				</select>
+				<div className="search">
+					<input
+						placeholder="Search by name…"
+						value={searchTerm}
+						onChange={(e) => setSearchTerm(e.target.value)}
+					/>
+					<button
+						onClick={() => {
+							setType("");
+							setSearchTerm("");
+						}}
+					>
+						Reset
+					</button>
+				</div>
+			</>
+		) : (
+			<div
+				className="search"
+				style={{ flexDirection: "column", width: "100%" }}
+			>
+				<textarea
+					style={{ width: "100%", fontFamily: "monospace", margin: "8px 0" }}
+					rows={4}
+					value={sparqlQuery}
+					onChange={(e) => setSparqlQuery(e.target.value)}
+					placeholder="Enter any SPARQL SELECT query..."
 				/>
 				<button
-					onClick={() => {
-						setType("Component"); // or any default you prefer
-						setSearchTerm("");
-					}}
+					onClick={runSparql}
+					// disabled={!sparqlQuery?.trim().toLowerCase().startsWith("select")}
+					style={{ alignSelf: "flex-end" }}
 				>
-					Reset
+					Run Query
 				</button>
 			</div>
-		</div>
-	);
-};
+		)}
+	</div>
+);
 
 export default SearchControls;
