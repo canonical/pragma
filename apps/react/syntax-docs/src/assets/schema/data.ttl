@@ -1,0 +1,60 @@
+@prefix ds:   <http://syntax.example.org/ontology#> .
+@prefix data: <http://syntax.example.org/data/> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+
+###############################################################################
+# 1. SUBCOMPONENT DEFINITIONS (abstract)
+###############################################################################
+
+data:AccordionHeader
+    a ds:Component ;
+    ds:name        "Accordion Header" ;
+    ds:description "A clickable heading that toggles its panel." .
+
+data:AccordionPanel
+    a ds:Component ;
+    ds:name        "Accordion Panel" ;
+    ds:description "The content container revealed by its header." .
+
+data:AccordionItem
+    a ds:Component ;
+    ds:name        "Accordion Item" ;
+    ds:description "Pairs one header with its panel." ;
+    # It composes exactly one header and one panel
+    ds:composes    ( data:AccordionHeader data:AccordionPanel ) ;
+    # Optionally, you can annotate that the 'children' form a logical list
+    ds:props       ( [ ds:key "childrenType" ; ds:value "List<AccordionHeader|AccordionPanel>" ] ) .
+
+###############################################################################
+# 2. PATTERN DEFINITION (abstract)
+###############################################################################
+
+data:AccordionPattern
+    a ds:Pattern ;
+    ds:name           "Accordion" ;
+    ds:description    "A sequence of Accordion Items allowing progressive disclosure of content." ;
+    ds:version        "1.0.0" ;
+    ds:lastUpdated    "2025-05-19T00:00:00Z"^^xsd:dateTime ;
+    # The pattern composes a *list* of items
+    ds:composes       ( data:AccordionItem ) ;
+    ds:props          (
+        [ ds:key "items" ; ds:value "List<AccordionItem>" ]
+    ) ;
+    ds:hasModifier    ( data:Collapsed data:Expanded ) ;
+    ds:usesToken      data:token-spacing, data:token-transition ;
+    ds:hasRequirement (
+      [ a ds:RequirementLink ;
+        ds:requirement data:Accessibility ;
+        ds:description (
+          "Keyboard navigation (Tab, Shift+Tab, Arrow keys)."
+          "Proper WAI-ARIA attributes: aria-expanded, aria-controls, aria-hidden."
+        )
+      ]
+    ) ;
+    ds:hasAffordance  (
+      [ a ds:Affordance ;
+        ds:affordanceType ds:Interactive ;
+        ds:rationale      "Toggle panels via click or Enter/Space." ;
+        ds:causes         data:ToggleAccordionEvent ]
+    ) .
+

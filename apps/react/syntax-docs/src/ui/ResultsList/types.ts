@@ -1,8 +1,8 @@
-/* @canonical/generator-ds 0.9.0-experimental.9 */
+/* @canonical/generator-ds 0.9.0-experimental.20 */
 import type React from "react";
 
-export interface ExampleComponentProps {
-  /* A unique identifier for the ExampleComponent */
+export interface ResultsListProps {
+  /* A unique identifier for the ResultsList */
   id?: string;
   /* Additional CSS classes */
   className?: string;

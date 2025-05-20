@@ -1,8 +1,9 @@
-import { Button, TooltipArea } from "@canonical/react-ds-core";
+// import { Button, TooltipArea } from "@canonical/react-ds-core";
 import React, { Suspense, useState, lazy } from "react";
-import canonicalLogo from "./assets/canonical.svg";
-import reactLogo from "./assets/react.svg";
+// import canonicalLogo from "./assets/canonical.svg";
+// import reactLogo from "./assets/react.svg";
 import "./Application.css";
+import { Content, QuadstoreProvider } from "ui/index.js";
 
 const LazyButton = lazy(
 	() =>
@@ -16,8 +17,9 @@ function App() {
 	const [count, setCount] = useState(0);
 
 	return (
-		<>
-			<section>
+		<QuadstoreProvider>
+			<Content />
+			{/*
 				<h1 className="row">Canonical Design System</h1>
 				<h2 className="row">React Vite template</h2>
 				<a
@@ -56,8 +58,8 @@ function App() {
 						Edit <code>src/App.tsx</code> and save to test HMR
 					</p>
 				</div>
-			</section>
-		</>
+        */}
+		</QuadstoreProvider>
 	);
 }
 

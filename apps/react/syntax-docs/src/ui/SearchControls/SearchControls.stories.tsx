@@ -1,14 +1,14 @@
-/* @canonical/generator-ds 0.9.0-experimental.9 */
+/* @canonical/generator-ds 0.9.0-experimental.20 */
 
 // Needed for function-based story, safe to remove otherwise
-// import type { ExampleComponentProps } from './types.js'
+// import type { SearchControlsProps } from './types.js'
 import type { Meta, StoryObj } from "@storybook/react";
-import Component from "./ExampleComponent.js";
+import Component from "./SearchControls.js";
 // Needed for template-based story, safe to remove otherwise
 // import type { StoryFn } from '@storybook/react'
 
 const meta = {
-  title: "ExampleComponent",
+  title: "SearchControls",
   component: Component,
 } satisfies Meta<typeof Component>;
 
@@ -32,7 +32,7 @@ export const Default: Story = {
   Direct arguments passed to the component
   Simple, but can lead to repetition if used across multiple stories with similar configurations
 
-  export const Default = (args: ExampleComponentProps) => <Component {...args} />;
+  export const Default = (args: SearchControlsProps) => <Component {...args} />;
   Default.args = { children: <span>Hello world!</span> };
 */
 
