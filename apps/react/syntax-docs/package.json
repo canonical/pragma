@@ -26,7 +26,6 @@
     "@canonical/react-ssr": "^0.9.0-experimental.12",
     "@canonical/storybook-config": "^0.9.0-experimental.19",
     "@canonical/styles": "^0.9.0-experimental.20",
-    "@rdfjs/dataset": "^2.0.2",
     "browser-level": "^3.0.0",
     "jsonld": "^8.3.3",
     "n3": "^1.25.2",

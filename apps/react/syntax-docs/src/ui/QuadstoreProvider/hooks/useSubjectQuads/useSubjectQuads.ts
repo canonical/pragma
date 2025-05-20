@@ -1,20 +1,11 @@
-import useSPARQLQuery from "../useSPARQLQuery.js"; // adjust import if needed
+// useSubjectQuads.ts
+import * as queries from "../../queries.js";
+import useSPARQLQuery from "../useSPARQLQuery.js";
 
 export default function useSubjectQuads(uri: string, hops = 1) {
-	const query = makeSubjectQuadsQuery(uri, hops);
-
-	// You probably have a transform function for SELECT, but with CONSTRUCT you get quads.
-	// Let's assume your useSPARQLQuery can return quads directly for CONSTRUCT.
-	// If not, you may need to use your quadstore engine directly for CONSTRUCTs.
-
-	// For illustration, let's say your hook returns { data, loading, error }
-	const {
-		data: quads,
-		loading,
-		error,
-	} = useSPARQLQuery(query, /*transform=*/ null, {
+	const query = queries.makeSubjectQuadsQuery(uri, hops);
+	const quads = useSPARQLQuery(query, {
 		queryType: "CONSTRUCT",
 	});
-
-	return { quads, loading, error };
+	return { quads }; // No loading/error; your hook doesn't return them!
 }

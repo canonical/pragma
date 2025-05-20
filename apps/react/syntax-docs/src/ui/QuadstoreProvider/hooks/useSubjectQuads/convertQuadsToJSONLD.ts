@@ -1,14 +1,28 @@
-import { dataset } from "@rdfjs/dataset";
 import jsonld from "jsonld";
+import { Store } from "n3";
+import * as N3 from "n3";
 
-// This takes RDF/JS quads and a context and returns a JSON-LD document.
 export async function convertQuadsToJsonLd(quads: any[], context: any) {
-	// Convert to dataset, then n-quads string, then to JSON-LD
-	const ds = dataset();
-	quads.forEach((q) => ds.add(q));
-	const nquads = (await ds.toStream().readable) ? undefined : ""; // node streams
-	const expanded = await jsonld.fromRDF(ds.toStream(), {
+	const store = new Store();
+	quads.forEach((q) => store.addQuad(q));
+	// N3.Store can be consumed as an RDF/JS DatasetCore
+	// But jsonld.fromRDF in browser often wants N-Quads string
+	const writer = new N3.Writer({ format: "N-Quads" });
+	store.getQuads(null, null, null, null).forEach((q) => writer.addQuad(q));
+	const nquads = await new Promise<string>((resolve, reject) => {
+		writer.end((error, result) => {
+			if (error) reject(error);
+			else resolve(result);
+		});
+	});
+	const expanded = await jsonld.fromRDF(nquads, {
 		format: "application/n-quads",
 	});
-	return jsonld.compact(expanded, context);
+	// return expanded
+	// return jsonld.compact(expanded, context);
+	const frame = {
+		"@context": context,
+		"@embed": "@always",
+	};
+	return jsonld.frame(expanded, frame);
 }
