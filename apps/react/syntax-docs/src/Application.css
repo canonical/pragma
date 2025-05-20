@@ -1,13 +1,9 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+.row {
+  grid-column:1/-1;
 }
 
 .logo {
-  height: 6em;
-  padding: 1.5em;
+  width: 100%;
   will-change: filter;
   transition: filter 300ms;
 }
