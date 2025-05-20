@@ -55,6 +55,21 @@ const QuadstoreProvider = ({
 				await store.multiPut(quads);
 			}
 
+			try {
+				const countQ = `
+     SELECT (COUNT(*) AS ?count) WHERE { ?s ?p ?o }
+   `;
+				const countStream = await sparqlEngine.queryBindings(countQ);
+				countStream.on("data", (b) => {
+					console.log(
+						"🌐 QuadstoreProvider loaded quads:",
+						b.get("count").value,
+					);
+				});
+			} catch (err) {
+				console.warn("Could not run quad-count query:", err);
+			}
+
 			// 7) Provide the ready‐to‐use SPARQL engine
 			setEngine(sparqlEngine);
 		}

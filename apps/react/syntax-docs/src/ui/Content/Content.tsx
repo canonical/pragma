@@ -15,7 +15,7 @@ const Content = ({
 	className,
 	style,
 }: ContentProps): React.ReactElement => {
-	const [type, setType] = useState("Component");
+	const [type, setType] = useState("");
 	const [searchTerm, setSearchTerm] = useState("");
 	const results = useSPARQLQuery(type, searchTerm);
 	return (
@@ -31,7 +31,7 @@ const Content = ({
 				type={type}
 				setType={setType}
 			/>
-			<ResultsList className="row" />
+			<ResultsList className="row" results={results} />
 		</section>
 	);
 };

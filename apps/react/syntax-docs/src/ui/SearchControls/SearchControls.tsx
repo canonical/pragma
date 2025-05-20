@@ -25,10 +25,12 @@ const SearchControls = ({
 			<label>
 				Show&nbsp;
 				<select value={type} onChange={(e) => setType(e.target.value)}>
-					<option>Component</option>
-					<option>Pattern</option>
-					<option>Module</option>
-					<option>Token</option>
+					<option value="">All</option>
+					<option value="Class">Class</option>
+					<option value="Component">Component</option>
+					<option value="Pattern">Pattern</option>
+					<option value="Module">Module</option>
+					<option value="Token">Token</option>
 				</select>
 			</label>
 			<input
@@ -37,6 +39,14 @@ const SearchControls = ({
 				value={searchTerm}
 				onChange={(e) => setSearchTerm(e.target.value)}
 			/>
+			<button
+				onClick={() => {
+					setType("Component"); // or any default you prefer
+					setSearchTerm("");
+				}}
+			>
+				Reset
+			</button>
 		</div>
 	);
 };
