@@ -1,0 +1,51 @@
+{
+  "name": "@canonical/syntax-docs",
+  "private": true,
+  "version": "0.9.0-experimental.20",
+  "type": "module",
+  "license": "GPL-3.0-only",
+  "scripts": {
+    "dev": "vite",
+    "build": "bun run build:client && bun run build:server",
+    "build:storybook": "storybook build",
+    "build:client": "vite build --ssrManifest --outDir dist/client",
+    "build:server": "bun run build:server:middleware",
+    "build:server:middleware": "vite build --ssr src/ssr/server.ts --outDir dist/server",
+    "build:server:cli": "vite build --ssr src/ssr/renderer.tsx --outDir dist/server",
+    "serve": "bun run serve:middleware",
+    "serve:middleware": "bun run build:client && bun run build:server:middleware && node dist/server/server.js",
+    "serve:cli": "bun run build:client && bun run build:server:cli && bun run serve-express dist/server/renderer.js",
+    "check": "bun run check:biome && bun run check:ts",
+    "check:fix": "bun run check:biome:fix && bun run check:ts",
+    "check:biome": "biome check",
+    "check:biome:fix": "biome check --write",
+    "check:ts": "tsc --noEmit",
+    "storybook": "storybook dev -p 6010 --no-open --host 0.0.0.0"
+  },
+  "dependencies": {
+    "@canonical/react-ssr": "^0.9.0-experimental.12",
+    "@canonical/storybook-config": "^0.9.0-experimental.19",
+    "@canonical/styles": "^0.9.0-experimental.20",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "@canonical/biome-config": "^0.9.0-experimental.12",
+    "@canonical/react-ds-core": "^0.9.0-experimental.20",
+    "@canonical/typescript-config-react": "^0.9.0-experimental.12",
+    "@chromatic-com/storybook": "^3.2.2",
+    "@storybook/blocks": "^8.4.7",
+    "@storybook/react": "^8.4.7",
+    "@storybook/test": "^8.4.7",
+    "@types/node": "^22.10.1",
+    "@types/react": "^19.0.1",
+    "@types/react-dom": "^19.0.2",
+    "@vitejs/plugin-react": "^4.3.4",
+    "globals": "^16.0.0",
+    "storybook": "^8.4.7",
+    "typescript": "^5.8.2",
+    "vite": "^6.0.3",
+    "vite-tsconfig-paths": "^5.1.4"
+  }
+}
