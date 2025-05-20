@@ -3,6 +3,7 @@ import type React from "react";
 import { useState } from "react";
 import { ResultsList, SearchControls } from "ui/index.js";
 import { useSPARQLQuery } from "../QuadstoreProvider/hooks/index.js";
+import * as queries from "../QuadstoreProvider/queries.js";
 import type { ContentProps } from "./types.js";
 
 /**
@@ -17,7 +18,9 @@ const Content = ({
 }: ContentProps): React.ReactElement => {
 	const [type, setType] = useState("");
 	const [searchTerm, setSearchTerm] = useState("");
-	const results = useSPARQLQuery(type, searchTerm);
+	const [selectedUri, setSelectedUri] = useState("");
+	const sparql = queries.makeSearchQuery({ type, searchTerm });
+	const results = useSPARQLQuery(sparql);
 	return (
 		<section
 			id={id}
@@ -31,7 +34,12 @@ const Content = ({
 				type={type}
 				setType={setType}
 			/>
-			<ResultsList className="row" results={results} />
+			<ResultsList
+				className="row"
+				results={results}
+				selectedUri={selectedUri}
+				setSelectedUri={setSelectedUri}
+			/>
 		</section>
 	);
 };

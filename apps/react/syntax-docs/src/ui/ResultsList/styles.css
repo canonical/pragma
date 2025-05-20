@@ -1,0 +1,48 @@
+.ds.results-list {
+  display: grid;
+  grid-template-columns: subgrid;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  overflow: hidden;
+
+  & > .row {
+    display: grid;
+    grid-template-columns: subgrid;
+
+    &.selected {
+      background-color: lightcyan;
+    }
+
+    &.header {
+      background: #f5f5f5;
+      font-weight: bold;
+    }
+
+
+    &:last-child {
+      .cell {
+        border-bottom: none;
+      }
+    }
+  }
+
+  .cell {
+    padding: 8px 12px;
+    border-bottom: 1px solid #eee;
+  }
+
+  [aria-colindex="1"] {
+    grid-column: 1 / 4;
+  }
+
+  /* let col-2 name column expand, but if it needs extra span: */
+  [aria-colindex="2"] {
+    grid-column-end: span 2;
+  }
+
+  /* and span the last cell when aria-colspan > 1: */
+  [aria-colindex="3"] {
+    grid-column: 6/-1;
+  }
+}
+

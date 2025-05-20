@@ -1,0 +1,20 @@
+.ds.search-controls {
+  display:grid;
+  grid-template-columns: subgrid;
+
+  & > label {
+    grid-column-end:span 1;
+  } 
+
+  & > select {
+    grid-column-end:span 1;
+  }
+
+  & > .search {
+    grid-column:3/-1;
+    display:flex;
+    & > input {
+      flex-grow:1;
+    }
+  }
+}

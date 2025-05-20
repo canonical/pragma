@@ -40,6 +40,8 @@ ds:Window a rdfs:Class ; rdfs:subClassOf ds:Block ; rdfs:label "Window" .
 ds:Module a rdfs:Class ; rdfs:subClassOf ds:Block ; rdfs:label "Module" .
 ds:Pattern a rdfs:Class ; rdfs:subClassOf ds:Block ; rdfs:label "Pattern" .
 ds:Component a rdfs:Class ; rdfs:subClassOf ds:Block ; rdfs:label "Component" .
+ds:Subcomponent a rdfs:Class ; rdfs:subClassOf ds:Block ; rdfs:label       "Subcomponent" ; rdfs:comment     "Block used as part of a larger component or pattern." .
+
 
 # Modifiers
 ds:Modifier

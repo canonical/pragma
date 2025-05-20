@@ -1,32 +1,81 @@
-/* @canonical/generator-ds 0.9.0-experimental.20 */
 import type React from "react";
 import type { ResultsListProps } from "./types.js";
+import "./styles.css";
 
+const componentClassName = "ds results-list";
 /**
- * description of the ResultsList component
- * @returns {React.ReactElement} - Rendered ResultsList
+ * Split an IRI into namespace + local name
  */
+function splitIRI(iri: string): { ns: string; local: string } {
+	const idx = Math.max(iri.lastIndexOf("#"), iri.lastIndexOf("/"));
+	return idx >= 0
+		? { ns: iri.slice(0, idx + 1), local: iri.slice(idx + 1) }
+		: { ns: iri, local: "" };
+}
+
 const ResultsList = ({
 	id,
-	children,
-	className,
+	className = "",
 	style,
 	results,
+	selectedUri,
+	setSelectedUri,
 }: ResultsListProps): React.ReactElement => {
 	if (results.length === 0) {
 		return <div style={{ fontStyle: "italic" }}>No results</div>;
 	}
 
 	return (
-		<ul id={id} style={style} className={[className].filter(Boolean).join(" ")}>
-			{results.map((r) => (
-				<li key={r.uri} style={{ marginBottom: 8 }}>
-					<strong>{r.name}</strong>
-					<br />
-					<small style={{ color: "#666" }}>{r.uri}</small>
-				</li>
-			))}
-		</ul>
+		<div
+			id={id}
+			style={style}
+			className={[componentClassName, className].filter(Boolean).join(" ")}
+			role="grid"
+			aria-colcount={3}
+		>
+			{/* header row */}
+			<div role="row" className="row header">
+				<div role="columnheader" aria-colindex={1} className="cell">
+					Namespace
+				</div>
+				<div role="columnheader" aria-colindex={2} className="cell">
+					Name
+				</div>
+				<div role="columnheader" aria-colindex={3} className="cell">
+					Type
+				</div>
+			</div>
+
+			{/* data rows */}
+			{results.map((r) => {
+				const isSelected = selectedUri === r.uri;
+				return (
+					<div
+						key={r.uri}
+						role="row"
+						className={["row", isSelected ? "selected" : ""]
+							.filter(Boolean)
+							.join(" ")}
+						onClick={() => setSelectedUri(r.uri)}
+					>
+						<div role="gridcell" aria-colindex={1} className="cell">
+							<code>{splitIRI(r.uri).ns}</code>
+						</div>
+						<div role="gridcell" aria-colindex={2} className="cell">
+							{r.label}
+						</div>
+						<div
+							role="gridcell"
+							aria-colindex={3}
+							aria-colspan={r.typeUri ? 1 : 2}
+							className="cell"
+						>
+							{r.typeUri ? splitIRI(r.typeUri).local : "–"}
+						</div>
+					</div>
+				);
+			})}
+		</div>
 	);
 };
 
