@@ -1,0 +1,532 @@
+$ bun run check:biome:fix && bun run check:ts
+$ bun run check:biome:fix && bun run check:ts
+$ biome check --write
+$ biome check --write
+/home/adrian/co/home/adrian/code/cn/ds25/packages/shi/src/main.ts:3:21 lint/style/useNodejsImportProtocolde/cn/ds25/packages/shi/src/main.ts:3:21 lint/style/useNodejsImportProtocol  FIXABLE  ━  FIXABLE  ━━━━━━━━━━
+
+━━━━━━━━━
+
+  × A Node.js  × A Node.js builtin module should  builtin module should be imported with tbe imported with the node: protocol.he node: protocol.
+  
+
+  
+        1 │ #!/usr1 │ #!/usr/bin/env bun
+ /bin/env bun
+    2 │ 
+  > 3 │    2 │ 
+  > 3 │ import * as fs from import * as fs from "fs";
+      │                     ^^^^
+"fs";
+      │                     ^^^^
+    4 │ import { ChatAn    4 │ import { ChatAnthropic } from "@langchain/anthrthropic } from "@langchain/anthropic";
+    5 │ import { ChatGoogleGenerativeAI } from "@langchain/google-gopic";
+    5 │ import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
+  
+  i Using thenai";
+  
+  i Using the node: protocol is more explicit and signals thate node: protocol is more explicit and signals that the imported module belong the imported module belongs to Node.js.
+  
+  i Uns to Node.js.
+  
+  i Unsafe fix: Add the nodesafe fix: Add the node: protocol.
+  
+: protocol.
+  
+      1      1   1 │   #!/usr/bin/env   1 │   #!/usr/bin/env bun
+      2   2 │   bun
+      2   2 │   
+      3     │ -  
+      3     │ - import·*·as·fsimport·*·as·fs·from·"fs";
+      ·from·"fs";
+          3 │ + import·    3 │ + import·*·as·fs·from·"node*·as·fs·from·"node:fs";
+      4   4 │:fs";
+      4   4 │   import { ChatAn   import { ChatAnthropic } from "@lathropic } from "@langchain/anthropic";ngchain/anthropic";
+      5   5 │   im
+      5   5 │   import { ChatGoogleGport { ChatGoogleGenerativeAI } fromenerativeAI } from "@langchain/google "@langchain/google-genai";
+  
+-genai";
+  
+
+
+/home/adrian/c/home/adrian/code/cn/ds25/packages/ode/cn/ds25/packages/shi/src/main.tsshi/src/main.ts:39:37:39:37 lint/suspicious/noExplicit lint/suspicious/noExplicitAny ━━━━━━━━━━━━━
+
+Any ━━━━━━━━━━━━━
+
+  × Unexpected any  × Unexpected any. Specify a different . Specify a different type.
+  
+type.
+  
+    37    37 │ abstract class Comman │ abstract class Command {
+    38 │   proted {
+    38 │   protected args: string[]cted args: string[];
+  > 39 │   protec;
+  > 39 │   protected options: Recordted options: Record<string, any> = {};<string, any> = {};
+       │          
+       │                                                          ^^^
+    40       ^^^
+    40 │   protected argDe│   protected argDeclarations: ArgDeclaclarations: ArgDeclaration[];
+    41 │ ration[];
+    41 │ 
+  
+  i any disables
+  
+  i any disables many type checking rul many type checking rules. Its use should be aes. Its use should be avoided.
+  
+
+/home/voided.
+  
+
+/home/adrian/code/cn/ds25/paadrian/code/cn/ds25/packages/shi/src/main.tsckages/shi/src/main.ts:93:9:93:9 lint/suspicious/noImplicitAn lint/suspicious/noImplicitAnyLet ━━━━━━━━━━━
+
+yLet ━━━━━━━━━━━
+
+  × This variable im  × This variable implicitly has the any plicitly has the any type.
+  
+type.
+  
+     91 │     const pr   91 │     const prompt = this.fillTemplateompt = this.fillTemplate(PROMPT_IDS[promptId], (PROMPT_IDS[promptId], params);
+    92 │     const pparams);
+    92 │     const provider = process.env.rovider = process.env.LLM_PROVIDER || "openLLM_PROVIDER || "openai";
+  > 93 │     ai";
+  > 93 │     let model;
+       │ let model;
+       │         ^^^^^
+    94         ^^^^^
+    94 │ 
+    95 │     sw│ 
+    95 │     switch (provider) {
+ itch (provider) {
+  
+  i Variable dec 
+  i Variable declarations without tylarations without type annotation and initpe annotation and initialization implicitialization implicitly have the any type. ly have the any type. Declare a type or initDeclare a type or initialize the variable with some value.
+  
+
+/home/adrian/code/cn/ds25/packages/shi/src/main.tsialize the variable with some value.
+  
+
+/home/adrian/code/cn/ds25/packages/shi/src/main.ts:153:3:153:31 lint/complexity/useLiteralKeys  FIXABL1 lint/complexity/useLiteralKeys  FIXABLE  ━━━━━━━━━━
+
+  × The compuE  ━━━━━━━━━━
+
+  × The computed expression can be simplified wited expression can be simplified without the use of a string litthout the use of a string literal.
+  
+eral.
+  
+        152 │   async execute() {
+152 │   async execute() {
+  > 153 │     const nam  > 153 │     const name = this.options["name"];
+        │ e = this.options["name"];
+        │                                                     ^^^^^^
+    154 │     const        ^^^^^^
+    154 │     const schemaContent = this.options schemaContent = this.options["schema"];
+    155 │     co["schema"];
+    155 │     const description = thinst description = this.options["descripts.options["description"];
+  
+  i Unsafe fix: Uion"];
+  
+  i Unsafe fix: Use a literal key instese a literal key instead.
+  
+ad.
+  
+    15    151 151 │   
+    152 152 │   1 151 │   
+    152 152 │     async execute() {
+    153   async execute() {
+    153     │ - ····const·name·=·this.o    │ - ····const·name·=·this.options["name"];
+       ptions["name"];
+        153 │ + ····const·n 153 │ + ····const·name·=·this.options.name;ame·=·this.options.name;
+    154 154 │       const schemaContent = this.options["schema"];
+    155 155 │       const description = this.options["description"];
+  
+
+/home/adrian/code/cn/ds25/packages/shi/src/main.ts:154:40 lint
+    154 154 │       const schemaContent = this.options["schema"];
+    155 155 │       const description = this.options["description"];
+  
+
+/home/adrian/code/cn/ds25/packages/shi/src/main.ts:154:40 lint/complexity/useLiteralKeys  FIXAB/complexity/useLiteralKeys  FIXABLE  ━━━━━━━━━━
+
+  × TheLE  ━━━━━━━━━━
+
+  × The computed expression can be simplif computed expression can be simplified without the use of ied without the use of a string literal.
+  
+a string literal.
+  
+    152 │       152 │   async execute() {
+    153 │async execute() {
+    153 │     const name = this.opti     const name = this.options["name"];
+  > 154 │  ons["name"];
+  > 154 │     const schemaContent = t   const schemaContent = this.options["schema"];
+     his.options["schema"];
+        │                         │                                        ^^^^^^^^
+                   ^^^^^^^^
+    155 │     const description =   155 │     const description = this.options["descripti this.options["description"];
+    156 │ 
+  
+on"];
+    156 │ 
+  
+  i Unsafe fix: Use a li  i Unsafe fix: Use a literal key instead.
+  
+teral key instead.
+  
+    152 1    152 152 │     async execute() {
+   52 │     async execute() {
+    153 153 │       const 153 153 │       const name = this.options["na name = this.options["name"];
+    154     │ - me"];
+    154     │ - ····const·schemaContent·=·this····const·schemaContent·=·this.options["schema"];
+ .options["schema"];
+        154 │ + ····const·sc       154 │ + ····const·schemaContent·=·this.optihemaContent·=·this.options.schema;
+    155 155 │     ons.schema;
+    155 155 │       const description = th  const description = this.options["description"];is.options["description"];
+    156 156 │   
+  
+
+
+    156 156 │   
+  
+
+/home/adrian/code/cn/ds25/home/adrian/code/cn/ds25/packages/shi/src/main.ts/packages/shi/src/main.ts:1:155:38 lint/complexity/useL55:38 lint/complexity/useLiteralKeys  FIXABLE  ━━━━━━━━━iteralKeys  FIXABLE  ━━━━━━━━━━
+
+  × The computed express━
+
+  × The computed expression can be simplified without thion can be simplified without the use of a string literal.e use of a string literal.
+  
+
+  
+    153 │     cons    153 │     const name = this.optionst name = this.options["name"];
+    154 │     con["name"];
+    154 │     const schemaContent = this.options["schema"]st schemaContent = this.options["schema"];
+  > 155 │     const de;
+  > 155 │     const description = this.options[scription = this.options["description"];
+        │  "description"];
+        │                                      ^^                                    ^^^^^^^^^^^^^
+    156 │ 
+ ^^^^^^^^^^^
+    156 │ 
+    157 │     const respo   157 │     const response = await this.callLLM("snse = await this.callLLM("specification_create"pecification_create", {
+  
+  i Unsafe fix: Use a, {
+  
+  i Unsafe fix: Use a literal key instead.
+  
+ literal key instead.
+  
+    153     153 153 │       const name = 153 │       const name = this.options["name"];
+    this.options["name"];
+    154 154 │       cons154 154 │       const schemaContent = this.optiot schemaContent = this.options["schema"];
+    155     │ ns["schema"];
+    155     │ - ····const·description·=·- ····const·description·=·this.options["description"this.options["description"];
+        155 │ + ···];
+        155 │ + ····const·description·=·this.·const·description·=·this.options.description;
+    15options.description;
+    156 156 │   
+    157 157 │6 156 │   
+    157 157 │       const response = a       const response = await this.callLLM("specificwait this.callLLM("specification_create", {
+  
+
+/homeation_create", {
+  
+
+/home/adrian/code/cn/ds25/packages/adrian/code/cn/ds25/packages/shi/src/main.ts/shi/src/main.ts:17:177:38 lint/complexity/useLiteralK7:38 lint/complexity/useLiteralKeys  FIXABLE  ━━━━━━━━━━
+
+  ×eys  FIXABLE  ━━━━━━━━━━
+
+  × The computed expression can be  The computed expression can be simplified without the use of asimplified without the use of a string literal.
+  
+ string literal.
+  
+    176 │    176 │   async execute() {
+  > 177   async execute() {
+  > 177 │     const specCont │     const specContent = this.options["object"];ent = this.options["object"];
+        │                         
+        │                                      ^^^^^^^^
+                 ^^^^^^^^
+    178 │     const platfo178 │     const platform = this.options["platform"];rm = this.options["platform"];
+    179 │ 
+  
+  i Unsafe fix: Use
+    179 │ 
+  
+  i Unsafe fix: Use a literal key instead.
+   a literal key instead.
+  
+
+    175     175 175 │   
+    176 176 │    175 │   
+    176 176 │     async execute() {
+    177  async execute() {
+    177     │ - ····const·specCont    │ - ····const·specContent·=·this.options["ent·=·this.options["object"];
+        177 │ + ····cobject"];
+        177 │ + ····const·specContent·=·this.oponst·specContent·=·this.options.object;
+    178 178 tions.object;
+    178 178 │       const platform = t│       const platform = this.options["platform"];
+    179 his.options["platform"];
+    179 179 │   
+  
+
+/home/adri179 │   
+  
+
+/home/adrian/code/cn/ds25/packages/shi/an/code/cn/ds25/packages/shi/src/main.tssrc/main.ts:17:178:35 lint/complexity/useL8:35 lint/complexity/useLiteralKeys  FIXABLE  ━━━━━━━━━iteralKeys  FIXABLE  ━━━━━━━━━━
+
+  × The computed expressio━
+
+  × The computed expression can be simplified withoutn can be simplified without the use of a string literal.
+  
+ the use of a string literal.
+  
+    176     176 │   async execute() {
+    │   async execute() {
+    177 │     const specContent = th177 │     const specContent = this.options["object"];
+  > 178is.options["object"];
+  > 178 │     const platform = this │     const platform = this.options["platform"];
+  .options["platform"];
+        │                                │                                   ^^^^^^^^^^
+    179 │ 
+          ^^^^^^^^^^
+    179 │ 
+    180 │     const compo   180 │     const componentName = this.getComponnentName = this.getComponentName(specContent);
+  
+ entName(specContent);
+  
+  i Unsafe fix: Use a literal i Unsafe fix: Use a literal key instead.
+  
+ key instead.
+  
+    176    176 176 │     async execute()  176 │     async execute() {
+    177 177 │       cons{
+    177 177 │       const specContent = this.optt specContent = this.options["object"];
+    178     │ -ions["object"];
+    178     │ - ····const·platform·=·thi ····const·platform·=·this.options["platform"];s.options["platform"];
+        178 │ + ····const·
+        178 │ + ····const·platform·=·this.optionplatform·=·this.options.platform;
+    179 179 │  s.platform;
+    179 179 │   
+    180 180 │       const co 
+    180 180 │       const componentName = this.getmponentName = this.getComponentName(specContent)ComponentName(specContent);
+  
+
+/home/adr;
+  
+
+/home/adrian/code/cn/ds25/packages/shiian/code/cn/ds25/packages/shi/src/main.ts/src/main.ts::202:38 lint/complexity/useLitera202:38 lint/complexity/useLiteralKeys  FIXABLE  ━━━━━━━━━━
+
+  × TlKeys  FIXABLE  ━━━━━━━━━━
+
+  × The computed expression can be he computed expression can be simplified without the ussimplified without the use of a string literal.
+  
+e of a string literal.
+  
+    201 │      201 │   async execute() {
+  >  async execute() {
+  > 202 │     const specContent = t202 │     const specContent = this.options["object"];
+     his.options["object"];
+        │                                      │                                      ^^^^^^^^
+    203 │        ^^^^^^^^
+    203 │     const platform = this.options["platfconst platform = this.options["platform"];
+    204 │     coorm"];
+    204 │     const description = this.options["desnst description = this.options["description"];
+  
+  i Unsafe cription"];
+  
+  i Unsafe fix: Use a literal key instead.
+  
+fix: Use a literal key instead.
+  
+    200     200 200 │   
+    201 201 │     asy200 │   
+    201 201 │     async execute() {
+    2nc execute() {
+    202     │ - ····const·specConte02     │ - ····const·specContent·=·this.options["object"];nt·=·this.options["object"];
+        202 │ + ····const·
+        202 │ + ····const·specContent·=·this.optspecContent·=·this.options.object;
+    203 203 │  ions.object;
+    203 203 │       const platform = this.o     const platform = this.options["platform"];
+    204 20ptions["platform"];
+    204 204 │       const descript4 │       const description = this.options["descripion = this.options["description"];
+  
+
+/hotion"];
+  
+
+/home/adrian/code/cn/ds25/packagme/adrian/code/cn/ds25/packages/shi/src/main.tses/shi/src/main.ts:203:35:203:35 lint/complexity/useLiteralKeys  F lint/complexity/useLiteralKeys  FIXABLE  ━━━━━━━━━━
+
+  × The IXABLE  ━━━━━━━━━━
+
+  × The computed expression can be simpcomputed expression can be simplified without the use of a lified without the use of a string literal.
+  
+string literal.
+  
+    201    201 │   async execute() {
+   │   async execute() {
+    202 │     const specCo  202 │     const specContent = this.options["objectntent = this.options["object"];
+  > 203 │     const platf"];
+  > 203 │     const platform = this.options["platorm = this.options["platform"];
+        │             form"];
+        │                                   ^^^^^^^^                      ^^^^^^^^^^
+    204 │     const de^^
+    204 │     const description = this.options["description = this.options["description"];
+    205 │ scription"];
+    205 │ 
+  
+  i Unsafe fix: Use a litera
+  
+  i Unsafe fix: Use a literal key instead.
+  
+l key instead.
+  
+    201     201 201 │     async execute() {
+  201 │     async execute() {
+    202 202 │       const specC  202 202 │       const specContent = this.options["object"];ontent = this.options["object"];
+    203     │ - ····co
+    203     │ - ····const·platform·=·this.optionsnst·platform·=·this.options["platform"];
+        203["platform"];
+        203 │ + ····const·platform·=·thi │ + ····const·platform·=·this.options.platform;
+   s.options.platform;
+    204 204 │       const descripti 204 204 │       const description = this.options["description"];
+    2on = this.options["description"];
+    205 205 │   
+  
+05 205 │   
+  
+
+/home/adrian/code
+/home/adrian/code/cn/ds25/packages/shi/src/main./cn/ds25/packages/shi/src/main.tsts:204:38 lint/:204:38 lint/complexity/useLiteralKeys  complexity/useLiteralKeys  FIXABLE  ━━━━━━━━━━
+
+  × The comFIXABLE  ━━━━━━━━━━
+
+  × The computed expression can be sputed expression can be simplified without the use of a string litimplified without the use of a string literal.
+  
+eral.
+  
+    202 │     con    202 │     const specContent = this.options["object"];
+    203 │     const platformst specContent = this.options["object"];
+    203 │     const platform = this.option = this.options["platform"];
+  > 204s["platform"];
+  > 204 │     const de │     const description = thisscription = this.options["descr.options["description"];
+     iption"];
+        │                 │                                                          ^^^^^^^^^^^^^
+    205 │ 
+    206 │     con    ^^^^^^^^^^^^^
+    205 │ 
+    206 │     const componentName = thist componentName = this.getComponentNs.getComponentName(specConteame(specContent);
+  
+  i Unt);
+  
+  i Unsafe fix: Use a litnsafe fix: Use a literal key instead.
+  
+eral key instead.
+  
+    202 202 │       const specContent = this.options["object"];
+    203 203 │       const platform = this.options["platform"];
+    204     │ - ····const·description·=·this.options["description"];
+        204 │ + ····const·description·=·this.options.description;
+    205 205 │   
+    206 206 │       const componentName = this.getComponentName(specContent);
+  
+
+/home/adrian/code/cn/ds25/packages/shi/src/main.ts:228:38 lint/complexity/useLiteralKeys  FIXABLE  ━━━━━━━━━━
+
+  × The computed expression can be simplified without the use of a string literal.
+  
+    227 │   async execute() {
+  > 228 │     const specContent = this.options["object"];
+        │                                      ^^^^^^^^
+    229 │     const codeContent = this.op    202 202 │       const specContent = this.options["object"];
+    203 203 │       const platform = this.options["platform"];
+    204     │ - ····const·description·=·this.options["description"];
+        204 │ + ····const·description·=·this.options.description;
+    205 205 │   
+    206 206 │       const componentName = this.getComponentName(specContent);
+  
+
+/home/adrian/code/cn/ds25/packages/shi/src/main.ts:228:38 lint/complexity/useLiteralKeys  FIXABLE  ━━━━━━━━━━
+
+  × The computed expression can be simplified without the use of a string literal.
+  
+    227 │   async execute() {
+  > 228 │     const specContent = this.options["object"];
+        │                                      ^^^^^^^^
+    229 │     const codeContent = this.options["component"];
+    230 │ 
+  
+  i Unsafe fix: Use a literal key instead.
+  
+tions["component"];
+    230 │ 
+  
+  i Unsafe fix: Use a literal key instead.
+  
+    226 226    226 226 │   
+    227 227 │     async execute() {
+    228     │   
+    227 227 │     async execute() {
+    228     │ - ····con │ - ····const·specContenst·specContent·=·this.optiot·=·this.options["objectns["object"];
+        228 │ + ····const·sp"];
+        228 │ + ····const·specContent·=·thecContent·=·this.options.object;is.options.object;
+    229 229 │       const codeCont
+    229 229 │       const codeContent = this.optionsent = this.options["component"];
+ ["component"];
+    230 230 │   
+   230 230 │   
+  
+
+  
+
+/home/adria/home/adrian/code/cn/ds25/packagen/code/cn/ds25/packages/shi/src/main.tss/shi/src/main.ts:229:38 lint/c:229:38 lint/complexity/useLiteralKeys  FIXABLE  ━━━━━━━━━━
+
+  × The computed expression can be simplified without the use of a string literal.
+  
+    227 │   async execute() {
+    228 │     const specContent = this.options["object"]omplexity/useLiteralKeys  FIXABLE  ━━━━━━━━━━
+
+  × The computed expression can be simplified without the use of a string literal.
+  
+    227 │   async execute() {
+    228 │     const specContent = this.options["object"];
+  > 229 │     const codeContent = this.options["component"];
+        │                      ;
+  > 229 │     const codeContent = this.options["component"];
+        │                                      ^^^^^^^^^^^
+    230 │                ^^^^^^^^^^^
+    230 │ 
+    231 │     const response = await this 
+    231 │     const response = await this.callLLM("implementation_verify", {
+  
+  i Unsafe fix: .callLLM("implementation_verify", {
+  
+  i Unsafe fix: Use a literal key instead.
+  
+Use a literal key instead.
+  
+    227 227 │     a    227 227 │     async execute() {
+    228 228 │       const specContent = this.options["object"];
+    229     │ - ····const·codeContent·=·this.optisync execute() {
+    228 228 │       const specContent = this.options["object"];
+    229     │ - ····const·codeContent·=·this.options["component"];
+        229 │ + ····const·codeContent·=·this.opons["component"];
+        229 │ + ····const·codeContent·=·this.options.component;
+    230 230 │   
+    231 231 │       constions.component;
+    230 230 │   
+    231 231 │       const response = await this.callLLM("implementat response = await this.callLLM("implementation_verify", {
+  
+
+tion_verify", {
+  
+
+check ━━━━━check ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Some errors were emitted while applying fixes.Some errors were emitted while applying fixes.
+  
+
+
+  
+
+error: script "check:biome:fix" exited with code 1
+error: script "check:biome:fix" exited with code 1
+error: script "check:fix" exited with code 1
+error: script "check:fix" exited with code 1

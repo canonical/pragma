@@ -55,6 +55,7 @@ storybook-static/
 .*.hash
 .envrc
 .env.local
+.env
 env/
 env[23]/
 
