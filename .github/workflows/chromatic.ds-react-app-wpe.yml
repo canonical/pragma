@@ -1,0 +1,22 @@
+name: "react-ds-app-launchpad/chromatic"
+on:
+  pull_request:
+    paths:
+      - configs/storybook/**
+      - packages/styles/**
+      - packages/utils/**
+      - packages/react/ds-core/**
+      - packages/react/ds-app-wpe/**
+jobs:
+  test-compile:
+    uses: ./.github/workflows/chromatic._template.yml
+    secrets:
+      CHROMATIC_PROJECT_TOKEN: ${{ secrets.CHROMATIC_TOKEN_CANONICAL_REACT_DS_APP_WPE }}
+    with:
+      working-directory: packages/react/ds-app-wpe
+      externals: '[
+        "configs/storybook/**",
+        "packages/styles/**",
+        "packages/utils/**",
+        "packages/react/ds-core/**"
+      ]'
