@@ -2,7 +2,6 @@
 
 import * as fs from "node:fs";
 import { ChatAnthropic } from "@langchain/anthropic";
-import type { BaseChatModel } from "@langchain/core/language_models/chat_models";
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { ChatOpenAI } from "@langchain/openai";
 
@@ -13,7 +12,7 @@ const PLATFORM_EXTENSIONS: Record<string, string> = {
 };
 
 // Prompt templates for LLM
-const PROMPT_IDS: Record<string, string> = {
+const PROMPT_IDS: { [key: string]: string } = {
 	specification_create:
 		'Given the following JSON schema: {schema}, the component name: {name}, and the description: {description}, generate a JSON object that conforms to the schema, includes the "name" field set to "{name}", and matches the description. Return only the JSON object.',
 	implementation_create:
@@ -86,12 +85,12 @@ abstract class Command {
 	}
 
 	protected async callLLM(
-		promptId: keyof typeof PROMPT_IDS,
+		promptId: string,
 		params: Record<string, string>,
 	): Promise<string> {
 		const prompt = this.fillTemplate(PROMPT_IDS[promptId], params);
 		const provider = process.env.LLM_PROVIDER || "openai";
-		let model: BaseChatModel;
+		let model: ChatOpenAI | ChatAnthropic | ChatGoogleGenerativeAI;
 
 		switch (provider) {
 			case "openai":
