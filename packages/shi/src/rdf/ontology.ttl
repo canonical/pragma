@@ -1,0 +1,357 @@
+@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
+@prefix sh:    <http://www.w3.org/ns/shacl#> .
+@prefix ds:    <http://syntax.example.org/ontology#> .
+
+###############################################################################
+# 1. CLASSES
+###############################################################################
+
+ds:UIEntity
+    a rdfs:Class ;
+    rdfs:label   "UI Entity" ;
+    rdfs:comment "Root class for all design-system entities." .
+
+ds:SyntaxEntity
+    a rdfs:Class ;
+    rdfs:subClassOf ds:UIEntity ;
+    rdfs:label   "Syntax Entity" ;
+    rdfs:comment "UIEntity carrying a grammatical category." .
+
+ds:PartOfSpeech
+    a rdfs:Class ;
+    rdfs:label   "Part of Speech" ;
+    rdfs:comment "Grammatical category: noun, adjective, or verb." .
+
+ds:Noun a ds:PartOfSpeech ; rdfs:label "Noun" .
+ds:Adjective a ds:PartOfSpeech ; rdfs:label "Adjective" .
+ds:Verb a ds:PartOfSpeech ; rdfs:label "Verb" .
+
+# Structural Blocks
+ds:Block
+    a rdfs:Class ;
+    rdfs:subClassOf ds:SyntaxEntity ;
+    rdfs:label   "Block" ;
+    rdfs:comment "Container that may compose other UIEntities." .
+
+ds:Shell a rdfs:Class ; rdfs:subClassOf ds:Block ; rdfs:label "Shell" .
+ds:Window a rdfs:Class ; rdfs:subClassOf ds:Block ; rdfs:label "Window" .
+ds:Module a rdfs:Class ; rdfs:subClassOf ds:Block ; rdfs:label "Module" .
+ds:Pattern a rdfs:Class ; rdfs:subClassOf ds:Block ; rdfs:label "Pattern" .
+ds:Component a rdfs:Class ; rdfs:subClassOf ds:Block ; rdfs:label "Component" .
+ds:Subcomponent a rdfs:Class ; rdfs:subClassOf ds:Block ; rdfs:label       "Subcomponent" ; rdfs:comment     "Block used as part of a larger component or pattern." .
+
+
+# Modifiers
+ds:Modifier
+    a rdfs:Class ;
+    rdfs:subClassOf ds:SyntaxEntity ;
+    rdfs:label   "Modifier" ;
+    rdfs:comment "Adjective-like variation." .
+
+ds:Domain a rdfs:Class ; rdfs:subClassOf ds:Modifier ; rdfs:label "Domain" .
+ds:Mode   a rdfs:Class ; rdfs:subClassOf ds:Modifier ; rdfs:label "Mode" .
+ds:State  a rdfs:Class ; rdfs:subClassOf ds:Modifier ; rdfs:label "State" .
+
+# Events
+ds:Event a rdfs:Class ; rdfs:subClassOf ds:SyntaxEntity ; rdfs:label "Event" .
+ds:SystemEvent a rdfs:Class ; rdfs:subClassOf ds:Event ; rdfs:label "System Event" .
+ds:UserEvent a rdfs:Class ; rdfs:subClassOf ds:Event ; rdfs:label "User Event" .
+ds:InteractionEvent
+    a rdfs:Class ;
+    rdfs:subClassOf ds:UserEvent ;
+    rdfs:label "Interaction Event" .
+ds:DomainEvent
+    a rdfs:Class ;
+    rdfs:subClassOf ds:SystemEvent ;
+    rdfs:label "Domain Event" .
+
+# Affordances
+ds:Affordance
+    a rdfs:Class ;
+    rdfs:label   "Affordance" ;
+    rdfs:comment "Semantic action or signal provided by a Block." .
+
+ds:AffordanceType
+    a rdfs:Class ;
+    rdfs:label   "Affordance Type" ;
+    rdfs:comment "Categorizes affordances (interactive or perceptual)." .
+
+ds:Interactive a ds:AffordanceType ; rdfs:label "interactive" .
+ds:Perceptual a ds:AffordanceType ; rdfs:label "perceptual" .
+
+# Second-order Entities
+ds:Platform
+    a rdfs:Class ;
+    rdfs:subClassOf ds:UIEntity ;
+    rdfs:label   "Platform" ;
+    rdfs:comment "Target environment or technology." .
+
+ds:PlatformLink
+    a rdfs:Class ;
+    rdfs:subClassOf ds:UIEntity ;
+    rdfs:label   "Platform Link" ;
+    rdfs:comment "Reified link to a Platform with metadata." .
+
+ds:Requirement
+    a rdfs:Class ;
+    rdfs:subClassOf ds:UIEntity ;
+    rdfs:label   "Requirement" ;
+    rdfs:comment "Non-functional constraint (e.g., accessibility)." .
+
+ds:RequirementLink
+    a rdfs:Class ;
+    rdfs:subClassOf ds:UIEntity ;
+    rdfs:label   "Requirement Link" ;
+    rdfs:comment "Reified link to a Requirement with metadata." .
+
+ds:Token
+    a rdfs:Class ;
+    rdfs:subClassOf ds:UIEntity ;
+    rdfs:label   "Token" ;
+    rdfs:comment "Design token (color, spacing, typography)." .
+
+###############################################################################
+# 2. PROPERTIES
+###############################################################################
+
+# Core Attributes
+ds:name
+    a rdf:Property ;
+    rdfs:domain   ds:UIEntity ;
+    rdfs:range    xsd:string ;
+    rdfs:label    "name" ;
+    rdfs:comment  "Human-readable name." .
+
+ds:description
+    a rdf:Property ;
+    rdfs:domain   ds:UIEntity ;
+    rdfs:range    xsd:string ;
+    rdfs:label    "description" ;
+    rdfs:comment  "Detailed description." .
+
+ds:version
+    a rdf:Property ;
+    rdfs:domain   ds:UIEntity ;
+    rdfs:range    xsd:string ;
+    rdfs:label    "version" ;
+    rdfs:comment  "Semantic version (semver spec)." .
+
+ds:lastUpdated
+    a rdf:Property ;
+    rdfs:domain   ds:UIEntity ;
+    rdfs:range    xsd:dateTime ;
+    rdfs:label    "lastUpdated" ;
+    rdfs:comment  "ISO 8601 timestamp." .
+
+# Grammar
+ds:partOfSpeech
+    a rdf:Property ;
+    rdfs:domain   ds:SyntaxEntity ;
+    rdfs:range    ds:PartOfSpeech ;
+    rdfs:label    "partOfSpeech" ;
+    rdfs:comment  "One of Noun, Adjective, or Verb." .
+
+# Structure & Composition
+ds:composes
+    a rdf:Property ;
+    rdfs:domain   ds:Block ;
+    rdfs:range    ds:UIEntity ;
+    rdfs:label    "composes" ;
+    rdfs:comment  "Child UIEntities. DSL usage: composes(name, props, children) builds a tree." .
+
+ds:isPartOf
+    a rdf:Property ;
+    rdfs:domain   ds:UIEntity ;
+    rdfs:range    ds:Block ;
+    rdfs:label    "isPartOf" ;
+    rdfs:comment  "Inverse of composes: indicates this UIEntity is part of a Block and not standalone by default." .
+
+# Modifiers
+ds:hasModifier
+    a rdf:Property ;
+    rdfs:domain   ds:Block ;
+    rdfs:range    ds:Modifier ;
+    rdfs:label    "hasModifier" ;
+    rdfs:comment  "Modifiers applied to this Block." .
+
+# Affordances
+ds:hasAffordance
+    a rdf:Property ;
+    rdfs:domain   ds:Block ;
+    rdfs:range    ds:Affordance ;
+    rdfs:label    "hasAffordance" ;
+    rdfs:comment  "Affordances offered by this Block." .
+
+ds:affordanceType
+    a rdf:Property ;
+    rdfs:domain   ds:Affordance ;
+    rdfs:range    ds:AffordanceType ;
+    rdfs:label    "affordanceType" ;
+    rdfs:comment  "Interactive or perceptual." .
+
+ds:rationale
+    a rdf:Property ;
+    rdfs:domain   ds:Affordance ;
+    rdfs:range    xsd:string ;
+    rdfs:label    "rationale" ;
+    rdfs:comment  "Design justification." .
+
+ds:causes
+    a rdf:Property ;
+    rdfs:domain   ds:Affordance ;
+    rdfs:range    ds:DomainEvent ;
+    rdfs:label    "causes" ;
+    rdfs:comment  "Linked DomainEvent consequence." .
+
+# Requirements & Platforms
+ds:hasRequirement
+    a rdf:Property ;
+    rdfs:domain   ds:SyntaxEntity ;
+    rdfs:range    ds:RequirementLink ;
+    rdfs:label    "hasRequirement" ;
+    rdfs:comment  "Reified Requirement link." .
+
+ds:requirement
+    a rdf:Property ;
+    rdfs:domain   ds:RequirementLink ;
+    rdfs:range    ds:Requirement ;
+    rdfs:label    "requirement" .
+
+ds:hasPlatform
+    a rdf:Property ;
+    rdfs:domain   ds:SyntaxEntity ;
+    rdfs:range    ds:PlatformLink ;
+    rdfs:label    "hasPlatform" ;
+    rdfs:comment  "Reified Platform link." .
+
+ds:platform
+    a rdf:Property ;
+    rdfs:domain   ds:PlatformLink ;
+    rdfs:range    ds:Platform ;
+    rdfs:label    "platform" .
+
+ds:platformRequirements
+    a rdf:Property ;
+    rdfs:domain   ds:PlatformLink ;
+    rdfs:range    ds:RequirementLink ;
+    rdfs:label    "platformRequirements" ;
+    rdfs:comment  "RequirementLinks specific to this Platform." .
+
+# Props & Tokens
+ds:props
+    a rdf:Property ;
+    rdfs:domain   ds:UIEntity ;
+    rdfs:range    ds:Property ;
+    rdfs:label    "props" ;
+    rdfs:comment  "Structured key/value pairs." .
+
+ds:key
+    a rdf:Property ;
+    rdfs:domain   ds:Property ;
+    rdfs:range    xsd:string ;
+    rdfs:label    "key" .
+
+ds:value
+    a rdf:Property ;
+    rdfs:domain   ds:Property ;
+    rdfs:range    xsd:string ;
+    rdfs:label    "value" .
+
+ds:usesToken
+    a rdf:Property ;
+    rdfs:domain   ds:UIEntity ;
+    rdfs:range    ds:Token ;
+    rdfs:label    "usesToken" ; 
+    rdfs:comment  "Design tokens consumed." .
+
+###############################################################################
+# 3. SHACL SHAPES
+###############################################################################
+
+###############################################################################
+# 3. SHACL SHAPES
+###############################################################################
+
+## 3.1 SyntaxEntity
+ds:SyntaxEntityShape
+    a sh:NodeShape ;
+    sh:targetClass ds:SyntaxEntity ;
+    sh:property [
+      sh:path      ds:partOfSpeech ;
+      sh:minCount  1 ; sh:maxCount 1 ;
+      sh:class     ds:PartOfSpeech ;
+    ] .
+
+## 3.2 UIEntity
+ds:UIEntityShape
+    a sh:NodeShape ;
+    sh:targetClass ds:UIEntity ;
+    sh:property [ sh:path ds:name        ; sh:minCount 1 ; sh:maxCount 1 ] ;
+    sh:property [ sh:path ds:description ; sh:minCount 1 ; sh:maxCount 1 ] ;
+    sh:property [ sh:path ds:version     ; sh:minCount 1 ;
+                  sh:pattern "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-([0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*))?(?:\\+([0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*))?$" ] ;
+    sh:property [ sh:path ds:lastUpdated ; sh:minCount 1 ; sh:datatype xsd:dateTime ] .
+
+## 3.3 Block
+ds:BlockShape
+    a sh:NodeShape ;
+    sh:targetClass ds:Block ;
+    sh:property [ sh:path ds:composes    ; sh:minCount 0 ; sh:class ds:UIEntity ] ;
+    sh:property [ sh:path ds:isPartOf    ; sh:minCount 0 ; sh:class ds:Block ] ;
+    sh:property [ sh:path ds:hasModifier ; sh:minCount 0 ; sh:class ds:Modifier ] ;
+    sh:property [ sh:path ds:hasRequirement ; sh:minCount 0 ; sh:class ds:RequirementLink ] ;
+    sh:property [ sh:path ds:hasPlatform ; sh:minCount 0 ; sh:class ds:PlatformLink ] ;
+    sh:property [ sh:path ds:hasAffordance ; sh:minCount 0 ; sh:class ds:Affordance ] .
+
+## 3.4 Component
+ds:ComponentShape
+    a sh:NodeShape ;
+    sh:targetClass ds:Component ;
+    sh:property [ sh:path ds:usesToken     ; sh:minCount 1 ; sh:class ds:Token ] ;
+    sh:property [ sh:path ds:hasRequirement ; sh:minCount 1 ; sh:class ds:RequirementLink ] ;
+    sh:property [ sh:path ds:hasPlatform   ; sh:minCount 1 ; sh:class ds:PlatformLink ] ;
+    sh:property [ sh:path ds:hasAffordance ; sh:minCount 0 ; sh:class ds:Affordance ] .
+
+## 3.5 Affordance
+ds:AffordanceShape
+    a sh:NodeShape ;
+    sh:targetClass ds:Affordance ;
+    sh:property [ sh:path ds:affordanceType ; sh:minCount 1 ; sh:class ds:AffordanceType ] ;
+    sh:property [ sh:path ds:rationale       ; sh:minCount 1 ; sh:datatype xsd:string ] ;
+    sh:property [ sh:path ds:causes          ; sh:minCount 0 ; sh:class ds:DomainEvent ] ;
+    sh:closed true .
+
+## 3.6 Event
+ds:EventShape
+    a sh:NodeShape ;
+    sh:targetClass ds:Event ;
+    sh:property [ sh:path ds:name        ; sh:minCount 1 ; sh:maxCount 1 ] ;
+    sh:property [ sh:path ds:description ; sh:minCount 1 ; sh:maxCount 1 ] .
+
+## 3.7 PlatformLink & RequirementLink
+ds:PlatformLinkShape
+    a sh:NodeShape ;
+    sh:targetClass ds:PlatformLink ;
+    sh:property [ sh:path ds:platform            ; sh:minCount 1 ; sh:class ds:Platform ] ;
+    sh:property [ sh:path ds:description         ; sh:minCount 1 ; sh:maxCount 1 ] ;
+    sh:property [ sh:path ds:platformRequirements; sh:minCount 0 ; sh:class ds:RequirementLink ] ;
+    sh:closed true .
+
+ds:RequirementLinkShape
+    a sh:NodeShape ;
+    sh:targetClass ds:RequirementLink ;
+    sh:property [ sh:path ds:requirement         ; sh:minCount 1 ; sh:class ds:Requirement ] ;
+    sh:property [ sh:path ds:description         ; sh:minCount 1 ; sh:maxCount 1 ] ;
+    sh:closed true .
+
+## 3.8 IRI Syntax
+ds:URISyntaxShape
+    a sh:NodeShape ;
+    sh:targetSubjectsOf rdf:type ;
+    sh:nodeKind   sh:IRI ;
+    sh:pattern    "^http://syntax\\.example\\.org/[^/]+/[^/]+/[^/]+/[^/]+$" ;
+    sh:message    "IRI must be of form http://syntax.example.org/{tier}/{type}/{entity}/{version}" .
+
+

@@ -1,0 +1,280 @@
+@prefix ds:   <http://syntax.example.org/ontology#> .
+@prefix data: <http://syntax.example.org/data/> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+
+###############################################################################
+# 1. ACCORDION DOMAIN
+###############################################################################
+
+# Subcomponents of the Accordion pattern
+data:AccordionHeader
+    a ds:Subcomponent ;
+    ds:isPartOf    data:AccordionPattern ;
+    ds:name        "Accordion Header" ;
+    ds:description "A clickable heading that toggles its panel." .
+
+data:AccordionPanel
+    a ds:Subcomponent ;
+    ds:isPartOf    data:AccordionPattern ;
+    ds:name        "Accordion Panel" ;
+    ds:description "The content container revealed by its header." .
+
+data:AccordionItem
+    a ds:Subcomponent ;
+    ds:isPartOf    data:AccordionPattern ;
+    ds:name        "Accordion Item" ;
+    ds:description "Pairs one header with its panel." ;
+    ds:composes    ( data:AccordionHeader data:AccordionPanel ) ;
+    ds:props       ( [ ds:key "childrenType" ; ds:value "List<AccordionHeader|AccordionPanel>" ] ) .
+
+# Pattern definition
+data:AccordionPattern
+    a ds:Pattern ;
+    ds:name           "Accordion" ;
+    ds:description    "A sequence of Accordion Items allowing progressive disclosure of content." ;
+    ds:version        "1.0.0" ;
+    ds:lastUpdated    "2025-05-19T00:00:00Z"^^xsd:dateTime ;
+    ds:composes       ( data:AccordionItem ) ;
+    ds:props          ( [ ds:key "items" ; ds:value "List<AccordionItem>" ] ) ;
+    ds:hasModifier    ( data:Collapsed data:Expanded ) ;
+    ds:usesToken      data:token-spacing, data:token-transition ;
+    ds:hasRequirement (
+      [ a ds:RequirementLink ;
+        ds:requirement data:Accessibility ;
+        ds:description (
+          "Keyboard navigation (Tab, Shift+Tab, Arrow keys)."
+          "Proper WAI-ARIA attributes: aria-expanded, aria-controls, aria-hidden."
+        )
+      ]
+    ) ;
+    ds:hasAffordance  (
+      [ a ds:Affordance ;
+        ds:affordanceType ds:Interactive ;
+        ds:rationale      "Toggle panels via click or Enter/Space." ;
+        ds:causes         data:AccordionToggleEvent ]
+    ) .
+
+###############################################################################
+# 2. MODAL DOMAIN
+###############################################################################
+
+# Subcomponents of the Modal pattern
+data:ModalHeader
+    a ds:Subcomponent ;
+    ds:isPartOf    data:ModalPattern ;
+    ds:name        "Modal Header" ;
+    ds:description "Container for the modal's title and close control." .
+
+data:ModalBody
+    a ds:Subcomponent ;
+    ds:isPartOf    data:ModalPattern ;
+    ds:name        "Modal Body" ;
+    ds:description "Content area of the modal dialog." .
+
+data:ModalFooter
+    a ds:Subcomponent ;
+    ds:isPartOf    data:ModalPattern ;
+    ds:name        "Modal Footer" ;
+    ds:description "Area for action buttons at the bottom of the modal." .
+
+# Pattern definition
+data:ModalPattern
+    a ds:Pattern ;
+    ds:name           "Modal" ;
+    ds:description    "An overlay dialog that interrupts workflow to capture user attention." ;
+    ds:version        "1.0.0" ;
+    ds:lastUpdated    "2025-05-20T00:00:00Z"^^xsd:dateTime ;
+    ds:composes       ( data:ModalHeader data:ModalBody data:ModalFooter ) ;
+    ds:props          (
+      [ ds:key "size"                   ; ds:value "small|medium|large" ]
+      [ ds:key "dismissOnOverlayClick"  ; ds:value "boolean"           ]
+    ) ;
+    ds:hasModifier    ( data:ModalOpenState data:ModalClosedState ) ;
+    ds:usesToken      data:token-spacing, data:token-shadow ;
+    ds:hasRequirement (
+      [ a ds:RequirementLink ;
+        ds:requirement data:Accessibility ;
+        ds:description (
+          "Trap focus within the modal when open."
+          "Provide ARIA role=\"dialog\" and accessible name."
+        )
+      ]
+    ) ;
+    ds:hasAffordance  (
+      [ a ds:Affordance ;
+        ds:affordanceType ds:Interactive ;
+        ds:rationale      "Open and close dialogs to manage workflow." ;
+        ds:causes         data:ModalOpenEvent ]
+      [ a ds:Affordance ;
+        ds:affordanceType ds:Interactive ;
+        ds:rationale      "Close dialogs via click or Escape." ;
+        ds:causes         data:ModalCloseEvent ]
+    ) .
+
+###############################################################################
+# 3. TABS DOMAIN
+###############################################################################
+
+# Subcomponents of the Tabs pattern
+data:TabList
+    a ds:Subcomponent ;
+    ds:isPartOf    data:TabsPattern ;
+    ds:name        "Tab List" ;
+    ds:description "Container grouping individual Tab controls." .
+
+data:Tab
+    a ds:Subcomponent ;
+    ds:isPartOf    data:TabsPattern ;
+    ds:name        "Tab" ;
+    ds:description "Selectable control that reveals its associated panel." .
+
+data:TabPanel
+    a ds:Subcomponent ;
+    ds:isPartOf    data:TabsPattern ;
+    ds:name        "Tab Panel" ;
+    ds:description "Content container for a selected Tab." .
+
+# Pattern definition
+data:TabsPattern
+    a ds:Pattern ;
+    ds:name           "Tabs" ;
+    ds:description    "A set of tabbed panels, only one visible at a time." ;
+    ds:version        "1.0.0" ;
+    ds:lastUpdated    "2025-05-20T00:00:00Z"^^xsd:dateTime ;
+    ds:composes       ( data:TabList data:TabPanel ) ;
+    ds:props          (
+      [ ds:key "orientation" ; ds:value "Horizontal|Vertical" ]
+    ) ;
+    ds:hasModifier    ( data:TabsOrientationHorizontalMode data:TabsOrientationVerticalMode ) ;
+    ds:usesToken      data:token-spacing, data:token-transition ;
+    ds:hasRequirement (
+      [ a ds:RequirementLink ;
+        ds:requirement data:Accessibility ;
+        ds:description (
+          "Use ARIA roles: tablist, tab, tabpanel."
+          "Support arrow key navigation and focus."
+        )
+      ]
+    ) ;
+    ds:hasAffordance  (
+      [ a ds:Affordance ;
+        ds:affordanceType ds:Interactive ;
+        ds:rationale      "Switch panels via click or arrow keys." ;
+        ds:causes         data:TabsChangeTabEvent ]
+    ) .
+
+###############################################################################
+# 4. STANDALONE COMPONENTS
+###############################################################################
+
+data:Alert
+    a ds:Component ;
+    ds:name           "Alert" ;
+    ds:description    "A message box used to convey status or feedback." ;
+    ds:hasModifier    ( data:AlertInfoState data:AlertWarningState data:AlertErrorState ) ;
+    ds:usesToken      data:token-color, data:token-spacing ;
+    ds:hasRequirement (
+      [ a ds:RequirementLink ;
+        ds:requirement data:Accessibility ;
+        ds:description (
+          "Visible color contrast per WCAG AA."
+          "Icon or ARIA role=\"alert\" for screen readers."
+        )
+      ]
+    ) ;
+    ds:hasAffordance (
+      [ a ds:Affordance ;
+        ds:affordanceType ds:Perceptual ;
+        ds:rationale      "Conveys status severity at a glance." ]
+    ) .
+
+data:Badge
+    a ds:Component ;
+    ds:name           "Badge" ;
+    ds:description    "A small count or label to annotate other UI elements." ;
+    ds:props          ( [ ds:key "value" ; ds:value "string|number" ] ) ;
+    ds:usesToken      data:token-spacing, data:token-typography ;
+    ds:hasRequirement (
+      [ a ds:RequirementLink ;
+        ds:requirement data:Accessibility ;
+        ds:description (
+          "Use ARIA attributes if representing dynamic counts."
+          "Provide a textual label when conveying status."
+        )
+      ]
+    ) ;
+    ds:hasAffordance (
+      [ a ds:Affordance ;
+        ds:affordanceType ds:Perceptual ;
+        ds:rationale      "Displays supplemental information succinctly." ]
+    ) .
+
+###############################################################################
+# 5. DOMAIN EVENTS & STATES (grouped)
+###############################################################################
+
+data:AccordionToggleEvent
+    a ds:DomainEvent ;
+    ds:name        "Toggle Accordion" ;
+    ds:description "Fired when an accordion item is expanded or collapsed." .
+
+data:Collapsed
+    a ds:State ;
+    ds:name        "Collapsed" ;
+    ds:description "Panel content is hidden." .
+
+data:Expanded
+    a ds:State ;
+    ds:name        "Expanded" ;
+    ds:description "Panel content is visible." .
+
+data:ModalOpenEvent
+    a ds:DomainEvent ;
+    ds:name        "Open Modal" ;
+    ds:description "Fired when the modal is opened." .
+
+data:ModalCloseEvent
+    a ds:DomainEvent ;
+    ds:name        "Close Modal" ;
+    ds:description "Fired when the modal is closed." .
+
+data:ModalOpenState
+    a ds:State ;
+    ds:name        "Open" ;
+    ds:description "Modal is currently displayed." .
+
+data:ModalClosedState
+    a ds:State ;
+    ds:name        "Closed" ;
+    ds:description "Modal is currently hidden." .
+
+data:TabsChangeTabEvent
+    a ds:DomainEvent ;
+    ds:name        "Change Tab" ;
+    ds:description "Fired when a different tab is selected." .
+
+data:TabsOrientationHorizontalMode
+    a ds:Mode ;
+    ds:name        "Horizontal" ;
+    ds:description "Tabs arranged in a row." .
+
+data:TabsOrientationVerticalMode
+    a ds:Mode ;
+    ds:name        "Vertical" ;
+    ds:description "Tabs stacked in a column." .
+
+data:AlertInfoState
+    a ds:State ;
+    ds:name        "Info" ;
+    ds:description "Informational message style." .
+
+data:AlertWarningState
+    a ds:State ;
+    ds:name        "Warning" ;
+    ds:description "Warning message style." .
+
+data:AlertErrorState
+    a ds:State ;
+    ds:name        "Error" ;
+    ds:description "Error message style." .
+
