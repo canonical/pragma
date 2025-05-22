@@ -96,7 +96,7 @@ abstract class Command {
 			case "openai":
 				model = new ChatOpenAI({
 					apiKey: process.env.OPENAI_API_KEY,
-					model: "gpt-4",
+					model: "gpt-4.1",
 				});
 				break;
 			case "anthropic":
