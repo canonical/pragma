@@ -1,8 +1,0 @@
-{
-  "@id": "http://syntax.example.org/UIEntity/FileTree/1.0",
-  "@type": "ds:Component",
-  "ds:name": "FileTree",
-  "ds:description": "A tree of files",
-  "ds:version": "1.0",
-  "ds:lastUpdated": "2021-09-14T18:30:00Z"
-}
