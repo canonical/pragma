@@ -1,6 +1,6 @@
 import { ChatAnthropic } from "@langchain/anthropic";
 import { ChatOpenAI } from "@langchain/openai";
-import { type Operation, operations } from "./operations";
+import { type Operation, operations } from "./operations.js";
 
 const getLLM = (provider: string, model: string) => {
 	switch (provider) {

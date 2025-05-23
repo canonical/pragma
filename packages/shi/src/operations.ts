@@ -15,7 +15,10 @@ export interface Operation {
 		required: boolean;
 	}[];
 	prompt: string;
-	execute: (llm: LLMInstance, options: Record<string, string>) => Promise<any>;
+	execute: (
+		llm: LLMInstance,
+		options: Record<string, string>,
+	) => Promise<unknown>;
 }
 
 export const operations: {
@@ -38,7 +41,7 @@ export const operations: {
 				{ name: "description", shorthand: "d", type: "string", required: true },
 			],
 			prompt:
-				'Given the RDF Turtle schema: {schema}, the component name: {name}, and the description: {description}, generate a JSON object that conforms to the schema, includes a "name" field set to "{name}", and matches the description. Return only the JSON object without any quotes.',
+				'Given the RDF Turtle schema: {schema}, the component name: {name}, and the description: {description}, generate a RDF Turtle (.ttl) object that conforms to the schema, includes a "name" field set to "{name}", and matches the description. Return only the .ttl definitions without any quotes.',
 			execute: async (llm: LLMInstance, options: Record<string, string>) => {
 				const { name, schema, description } = options;
 				const prompt = operations.specification.create.prompt
