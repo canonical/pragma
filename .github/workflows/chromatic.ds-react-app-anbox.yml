@@ -1,4 +1,4 @@
-name: "react-ds-app-launchpad/chromatic"
+name: "react-ds-app-anbox/chromatic"
 on:
   pull_request:
     paths:
