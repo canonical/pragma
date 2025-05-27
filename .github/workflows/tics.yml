@@ -1,0 +1,26 @@
+name: Upload TICS report
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  tics-report:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup environment
+        uses: ./.github/actions/setup-env
+
+      - name: Test
+        run: bun run test
+
+      - name: Produce TICS report
+        shell: bash
+        run: |
+          set -x
+          export TICSAUTHTOKEN=${{ secrets.TICSAUTHTOKEN }}
+          curl --silent --show-error "https://canonical.tiobe.com/tiobeweb/TICS/api/public/v1/fapi/installtics/Script?cfg=default&platform=linux&url=https://canonical.tiobe.com/tiobeweb/TICS/" > install_tics.sh
+          . ./install_tics.sh
+          TICSQServer -project ds25 -tmpdir /tmp/tics -branchdir .
