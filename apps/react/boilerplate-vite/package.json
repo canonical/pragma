@@ -34,7 +34,7 @@
     "@canonical/biome-config": "^0.9.0-experimental.12",
     "@canonical/react-ds-core": "^0.9.0-experimental.20",
     "@canonical/typescript-config-react": "^0.9.0-experimental.12",
-    "@chromatic-com/storybook": "^3.2.2",
+    "@chromatic-com/storybook": "^4.0.0",
     "@storybook/blocks": "^8.4.7",
     "@storybook/react": "^8.4.7",
     "@storybook/test": "^8.4.7",
