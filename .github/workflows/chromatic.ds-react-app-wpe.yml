@@ -3,6 +3,7 @@ on:
   pull_request:
     paths:
       - configs/storybook/**
+      - packages/tokens/**
       - packages/styles/**
       - packages/utils/**
       - packages/react/ds-core/**
@@ -16,6 +17,7 @@ jobs:
       working-directory: packages/react/ds-app-wpe
       externals: '[
         "configs/storybook/**",
+        "packages/tokens/**",
         "packages/styles/**",
         "packages/utils/**",
         "packages/react/ds-core/**"
