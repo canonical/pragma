@@ -20,6 +20,10 @@ jobs:
           bun-version: ${{ matrix.bun-version }}
           node-version: ${{ matrix.node-version }}
 
+      - name: Build storybooks
+        # Storybook builds are not automatically run by `bun run build` as we don't generally need them for publishing.
+        run: lerna run build:storybook
+
       - name: Code quality checks
         run: bun run check
 
