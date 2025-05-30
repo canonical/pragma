@@ -5,13 +5,20 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [18, 19, 20, 21, 22, 23, 'latest']
+        bun-version: ['latest']
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-        # "prepare" hook on `bun install` runs `bun run build`
-      - name: Setup environment
+      - name: Setup environment for Bun ${{ matrix.bun-version }} and Node ${{ matrix.node-version }}
         uses: ./.github/actions/setup-env
+        with:
+          bun-version: ${{ matrix.bun-version }}
+          node-version: ${{ matrix.node-version }}
 
       - name: Code quality checks
         run: bun run check

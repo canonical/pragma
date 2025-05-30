@@ -1,18 +1,23 @@
 name: Setup environment
 description: Installs build tools and dependencies
 inputs:
-  bun-version: 
+  bun-version:
     default: latest
     description: Version of Bun to use
+  node-version:
+    default: latest
+    description: Version of Node to use
 runs:
   using: composite
   steps:
+    - uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+
     - name: Setup Bun
       uses: oven-sh/setup-bun@v2
-      with: 
+      with:
         bun-version: ${{ inputs.bun-version }}
-
-      # TODO setup a matrix strategy to test multiple bun/node versions
 
       # "prepare" hook on `bun install` runs `bun run build`
     - name: Install dependencies
