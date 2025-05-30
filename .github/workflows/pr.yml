@@ -8,8 +8,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node-version: [18, 19, 20, 21, 22, 23, 'latest']
-        bun-version: ['latest']
+        bun-version: ['1.2.15', 'latest']
+        node-version: [18, 19, 20, 21, 22, 23, 24, 'latest']
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
