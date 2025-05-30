@@ -25,6 +25,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
-    "@canonical/biome-config": "^0.9.0-experimental.12"
+    "@canonical/biome-config": "^0.9.0-experimental.12",
+    "@canonical/tokens": "^0.9.0-experimental.20"
   }
 }
