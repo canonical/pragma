@@ -1,5 +1,5 @@
 /* @canonical/generator-ds 0.9.0-experimental.20 */
-import type { Snippet } from "svelte"
+import type { Snippet } from "svelte";
 
 export type AwesomeButtonProps = {
   /** A unique identifier for the Button */
@@ -10,4 +10,4 @@ export type AwesomeButtonProps = {
   children?: Snippet | undefined | null;
   /** Inline styles */
   style?: string | undefined | null;
-}
+};

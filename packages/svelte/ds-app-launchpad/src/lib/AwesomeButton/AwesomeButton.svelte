@@ -1,7 +1,7 @@
 <script lang="ts">
-  import type { AwesomeButtonProps } from './types.js'
-  import clsx from "clsx"
-  import './styles.css'
+  import type { AwesomeButtonProps } from "./types.js";
+  import clsx from "clsx";
+  import "./styles.css";
 
   const componentCssClassName = "ds awesome-button";
 
