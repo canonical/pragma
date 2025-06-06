@@ -68,3 +68,7 @@ static/js/modules
 
 # NX cache
 .nx/
+
+# Svelte
+.svelte-kit/
+__screenshots__/
