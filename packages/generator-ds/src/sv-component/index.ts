@@ -10,6 +10,10 @@ interface ComponentGeneratorAnswers {
   withStyles: boolean;
   /** Whether to use clsx library for class name handling */
   useClsx: boolean;
+  /** Whether to include stories for the component */
+  withStories: boolean;
+  /** Whether to use `.ts` based story formats instead of the CSF3 & `.svelte` format */
+  useTsStories: boolean;
 }
 
 type ComponentGeneratorOptions = BaseOptions & ComponentGeneratorAnswers;
@@ -55,10 +59,28 @@ export default class ComponentGenerator extends Generator<ComponentGeneratorOpti
       alias: "x",
     });
 
+    this.option("withStories", {
+      type: Boolean,
+      description:
+        "Creates a `[ComponentName].stories.svelte` file associated with the component.",
+      default: false,
+      alias: "s",
+    });
+
+    this.option("useTsStories", {
+      type: Boolean,
+      description:
+        "Uses the `.ts` based story formats instead of the CSF3 & `.svelte` format. Useful when there is a specific need for a template-based stories or function-based stories, otherwise not recommended. Has no effect if `withStories` is not set.",
+      default: false,
+      alias: "t",
+    });
+
     this.answers = {
       componentPath: path.resolve(this.env.cwd, this.options.componentPath),
       withStyles: this.options.withStyles,
       useClsx: this.options.useClsx,
+      withStories: this.options.withStories,
+      useTsStories: this.options.useTsStories,
     };
   }
 
@@ -137,6 +159,26 @@ export default class ComponentGenerator extends Generator<ComponentGeneratorOpti
         this.destinationPath(`${this.answers.componentPath}/styles.css`),
         templateData,
       );
+    }
+
+    if (this.answers.withStories) {
+      if (this.answers.useTsStories) {
+        this.fs.copyTpl(
+          this.templatePath("Component.stories.ts.ejs"),
+          this.destinationPath(
+            `${this.answers.componentPath}/${templateData.componentName}.stories.ts`,
+          ),
+          templateData,
+        );
+      } else {
+        this.fs.copyTpl(
+          this.templatePath("Component.stories.svelte.ejs"),
+          this.destinationPath(
+            `${this.answers.componentPath}/${templateData.componentName}.stories.svelte`,
+          ),
+          templateData,
+        );
+      }
     }
   }
 }
