@@ -21,8 +21,5 @@ jobs:
       - name: Code quality checks
         run: bun run check
 
-        # TODO we could also upload the current coverage results to GH pages like MAAS does
-        # https://github.com/canonical/maas-ui/blob/b69e5401cca09d6c6b6e0ade75b16727e701ab0d/.github/workflows/coverage.yaml#L97-L107
-        # https://canonical.github.io/maas-ui/
       - name: Test with coverage
         uses: ./.github/actions/coverage
