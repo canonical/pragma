@@ -2,9 +2,6 @@
   /* <%= generatorPackageName %> <%= generatorPackageVersion %> */
   import type { <%= componentName %>Props } from "./types.js";
 <% if (withStyles) { _%>
-<% if (useClsx) { _%>
-  import clsx from "clsx";
-<% } _%>
   import "./styles.css";
 
   const componentCssClassName = "<%= cssNamespace %> <%= componentCssClassName %>";
@@ -13,7 +10,7 @@
   let { id, class: className, style, children }: <%= componentName %>Props = $props();
 </script>
 
-<div class={<% if (withStyles && useClsx) { %>clsx(componentCssClassName, className)<% } else if (withStyles) { %>[componentCssClassName, className].filter(Boolean).join(" ")<% } else { %>className<% } %>} {id} {style}>
+<div class={<% if (withStyles) { %>[componentCssClassName, className]<% } else { %>className<% } %>} {id} {style}>
   {@render children?.()}
 </div>
 

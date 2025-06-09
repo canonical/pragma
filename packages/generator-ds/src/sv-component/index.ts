@@ -8,8 +8,6 @@ interface ComponentGeneratorAnswers {
   componentPath: string;
   /** Whether to include styles in the component */
   withStyles: boolean;
-  /** Whether to use clsx library for class name handling */
-  useClsx: boolean;
   /** Whether to include stories for the component */
   withStories: boolean;
   /** Whether to use `.ts` based story formats instead of the CSF3 & `.svelte` format */
@@ -51,14 +49,6 @@ export default class ComponentGenerator extends Generator<ComponentGeneratorOpti
       alias: "c",
     });
 
-    this.option("useClsx", {
-      type: Boolean,
-      description:
-        "Uses the clsx library for class name handling instead of simple string join.",
-      default: false,
-      alias: "x",
-    });
-
     this.option("withStories", {
       type: Boolean,
       description:
@@ -78,7 +68,6 @@ export default class ComponentGenerator extends Generator<ComponentGeneratorOpti
     this.answers = {
       componentPath: path.resolve(this.env.cwd, this.options.componentPath),
       withStyles: this.options.withStyles,
-      useClsx: this.options.useClsx,
       withStories: this.options.withStories,
       useTsStories: this.options.useTsStories,
     };
