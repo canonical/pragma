@@ -2,6 +2,7 @@ import { createConfig } from "@canonical/storybook-config";
 
 const config = createConfig({
   framework: "svelte",
+	staticDirs: ["../src/assets", "../public"],
 });
 
 /* Otherwise leads to a TS error "CSF Parsing error: Expected 'ObjectExpression' but found 'CallExpression' instead in 'CallExpression'."
