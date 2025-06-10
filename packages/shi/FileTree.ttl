@@ -1,0 +1,68 @@
+Operation result: @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix ds:  <http://syntax.example.org/ontology#> .
+
+<http://syntax.example.org/data/FileTree>
+    a ds:Component ;
+    ds:name "FileTree" ;
+    ds:description "A tree of files" ;
+    ds:version "1.0.0" ;
+    ds:lastUpdated "2024-06-01T00:00:00Z"^^xsd:dateTime ;
+    ds:partOfSpeech ds:Noun ;
+    ds:hasAffordance [
+        a ds:Affordance ;
+        ds:affordanceType ds:Interactive ;
+        ds:rationale "Allows users to navigate and manage files efficiently."
+    ] ;
+    ds:hasAffordance [
+        a ds:Affordance ;
+        ds:affordanceType ds:Perceptual ;
+        ds:rationale "Visually represents hierarchical file structure."
+    ] ;
+    ds:hasRequirement [
+        a ds:RequirementLink ;
+        ds:requirement [
+            a ds:Requirement ;
+            ds:name "Accessibility Compliance" ;
+            ds:description "Must support screen readers and keyboard navigation."
+        ] ;
+        ds:description "Ensures accessibility standards are met."
+    ] ;
+    ds:hasPlatform [
+        a ds:PlatformLink ;
+        ds:platform [
+            a ds:Platform ;
+            ds:name "Web" ;
+            ds:description "Runs on modern web browsers."
+        ] ;
+        ds:description "Web platform support."
+    ] ;
+    ds:usesToken [
+        a ds:Token ;
+        ds:name "PrimaryColor" ;
+        ds:description "Primary brand color used in UI accents."
+    ] ;
+    ds:usesToken [
+        a ds:Token ;
+        ds:name "FontSizeMedium" ;
+        ds:description "Standard font size for readability."
+    ] ;    
+    ds:props [
+        a rdf:Property ;
+        ds:key "expandable" ;
+        ds:value "true"
+    ] , [
+        a rdf:Property ;
+        ds:key "dragAndDrop" ;
+        ds:value "enabled"
+    ] ;
+    ds:hasModifier [
+        a ds:State ;
+        ds:name "Collapsed" ;
+        ds:description "Default collapsed state of file folders."
+    ] ;
+    ds:hasModifier [
+        a ds:Domain ;
+        ds:name "FileSystem" ;
+        ds:description "Domain specific to file management."
+    ] .
