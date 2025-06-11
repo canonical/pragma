@@ -1,4 +1,4 @@
-// import type { StorybookConfig } from "@storybook/react-vite";
+import type { StorybookConfig } from "@storybook/react-vite";
 
 import { dirname, join } from "node:path";
 
@@ -37,9 +37,6 @@ const createConfig = (options: CreateConfigOptions = {}): StorybookConfig => ({
 		check: true,
 	},
 	staticDirs: options.staticDirs,
-	docs: {
-		autodocs: true,
-	},
 });
 
 export default createConfig;
