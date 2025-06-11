@@ -10,7 +10,7 @@ jobs:
       matrix:
         bun-version: ['1.2.15', 'latest']
         # Add 23, 24, latest once https://github.com/canonical/ds25/issues/226 is closed (Storybook doesn't support >=23 yet)
-        node-version: ['18', '19', '20', '21', '22']
+        node-version: ['18', '19', '20', '21', '22', '23', '24']
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
