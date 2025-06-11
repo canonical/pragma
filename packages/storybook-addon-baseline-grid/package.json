@@ -2,11 +2,16 @@
   "name": "@canonical/storybook-addon-baseline-grid",
   "version": "0.9.0-experimental.19",
   "type": "module",
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "types": "dist/types/index.d.ts",
   "author": "Bartek Szopka <bartek.szopka@canonical.com>",
   "description": "Displays the baseline grid",
-  "keywords": ["storybook-addons", "storybook-addons"],
+  "keywords": [
+    "storybook-addons",
+    "storybook-addons"
+  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/canonical/ds25"
@@ -44,10 +49,7 @@
     "@storybook/addon-essentials": "^8.4.7",
     "@storybook/addon-interactions": "^8.4.7",
     "@storybook/addon-links": "^8.4.7",
-    "@storybook/blocks": "^8.4.7",
-    "@storybook/react": "^8.4.7",
     "@storybook/react-vite": "^8.4.7",
-    "@storybook/test": "^8.4.7",
     "@types/node": "^24.0.0",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",

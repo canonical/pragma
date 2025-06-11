@@ -1,5 +1,5 @@
 /* @canonical/generator-ds 0.9.0-experimental.9 */
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import * as decorators from "storybook/decorators.js";
 import Component from "./Hidden.js";
 

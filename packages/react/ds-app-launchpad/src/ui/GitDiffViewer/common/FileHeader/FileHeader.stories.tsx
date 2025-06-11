@@ -1,7 +1,7 @@
 /* @canonical/generator-canonical-ds 0.0.1 */
 
-import { useState } from "@storybook/preview-api";
-import type { Meta, StoryObj } from "@storybook/react";
+import { useState } from "storybook/preview-api";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import { diffExample } from "../../fixtures.js";
 import { GitDiffViewer } from "../../index.js";
 

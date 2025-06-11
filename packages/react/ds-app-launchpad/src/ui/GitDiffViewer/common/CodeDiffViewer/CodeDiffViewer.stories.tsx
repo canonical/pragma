@@ -1,7 +1,7 @@
 /* @canonical/generator-canonical-ds 0.0.1 */
 
-import type { Meta, StoryFn } from "@storybook/react";
-import { fn } from "@storybook/test";
+import type { Meta, StoryFn } from "@storybook/react-vite";
+import { fn } from "storybook/test";
 import * as fixtures from "../../fixtures.js";
 import { GitDiffViewer } from "../../index.js";
 import type { ProviderOptions } from "../../types.js";

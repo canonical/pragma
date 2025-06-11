@@ -1,5 +1,5 @@
 /* @canonical/generator-ds 0.9.0-experimental.4 */
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import "../../../../styles.css";
 import Component from "./Separator.js";
 
