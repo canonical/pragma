@@ -58,6 +58,8 @@ export default function useWindowDimensions({
     void handleScroll();
 
     return () => {
+      handleResize.cancel();
+      handleScroll.cancel();
       window.removeEventListener("resize", handleResize);
       window.removeEventListener("scroll", handleScroll);
     };

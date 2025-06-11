@@ -55,6 +55,15 @@ const useDelayedToggle = ({
     [deactivateDelay, replaceTimer, onDeactivate],
   );
 
+  // Cleanup
+  useEffect(() => {
+    return () => {
+      if (flagTimeout.current) {
+        clearTimeout(flagTimeout.current);
+      }
+    };
+  }, []);
+
   return { flag, activate, deactivate };
 };
 
