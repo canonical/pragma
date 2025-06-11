@@ -8,6 +8,7 @@ function getAbsolutePath(value: string): string {
 
 type CreateConfigOptions = {
 	staticDirs?: string[];
+	extraAddons?: string[];
 };
 
 const createConfig = (options: CreateConfigOptions = {}): StorybookConfig => ({
@@ -17,14 +18,15 @@ const createConfig = (options: CreateConfigOptions = {}): StorybookConfig => ({
 		getAbsolutePath("@storybook/addon-docs"),
 		getAbsolutePath("@storybook/addon-a11y"),
 		getAbsolutePath("@storybook/addon-vitest"),
+		// // This is a bit weird, but for some reason this doesn't work when referenced via getAbsolutePath
+		// // see also: https://github.com/storybookjs/storybook/issues/24351#issuecomment-1777911065
+		"@canonical/storybook-addon-baseline-grid",
+		...(options.extraAddons || []),
 		// getAbsolutePath("@storybook/addon-links"),
 		// getAbsolutePath("@storybook/addon-essentials"),
 		// getAbsolutePath("@chromatic-com/storybook"),
 		// getAbsolutePath("@storybook/addon-interactions"),
 		// getAbsolutePath("@storybook/addon-themes"),
-		// // This is a bit weird, but for some reason this doesn't work when referenced via getAbsolutePath
-		// // see also: https://github.com/storybookjs/storybook/issues/24351#issuecomment-1777911065
-		// "@canonical/storybook-addon-baseline-grid",
 	],
 	framework: {
 		name: getAbsolutePath("@storybook/react-vite"),
