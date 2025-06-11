@@ -1,7 +1,7 @@
 /* @canonical/generator-ds 0.9.0-experimental.4 */
 
 import { Temporal } from "@js-temporal/polyfill";
-import type { Meta, StoryFn } from "@storybook/react";
+import type { Meta, StoryFn } from "@storybook/react-vite";
 import Component from "./RelativeTime.js";
 
 const meta = {
