@@ -25,7 +25,8 @@ function formatHumanTime(
   options: FormatterOptions,
 ): string {
   const now = Temporal.Now.instant();
-  const deltaSeconds = instant.epochSeconds - now.epochSeconds;
+  const deltaSeconds =
+    (instant.epochMilliseconds - now.epochMilliseconds) / 1000;
   const absDeltaSeconds = Math.abs(deltaSeconds);
 
   if (absDeltaSeconds < options.nowThreshold) {

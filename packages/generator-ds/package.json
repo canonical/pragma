@@ -37,7 +37,7 @@
     "@canonical/typescript-config-base": "^0.9.0-experimental.12",
     "@types/debug": "^4.1.12",
     "@types/json-schema": "^7.0.15",
-    "@types/node": "^22.10.1",
+    "@types/node": "^24.0.0",
     "@yeoman/adapter": "^2.1.1",
     "copyfiles": "2.4.1",
     "jsdom": "^26.0.0",

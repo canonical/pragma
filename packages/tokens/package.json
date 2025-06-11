@@ -28,7 +28,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
-    "@canonical/biome-config": "^0.9.0-experimental.1"
+    "@canonical/biome-config": "^0.9.0-experimental.12"
   },
   "dependencies": {
     "style-dictionary": "^4.3.3"

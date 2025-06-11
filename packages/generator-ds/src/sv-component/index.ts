@@ -2,6 +2,7 @@ import path from "node:path";
 import { casing, invariant } from "@canonical/utils";
 import Generator, { type BaseOptions } from "yeoman-generator";
 import globalContext from "../app/global-context.js";
+import { appendToParentIndexFile, touchOrAppendFile } from "../util/files.js";
 
 interface ComponentGeneratorAnswers {
   /** The path to the component's root directory */
@@ -93,23 +94,7 @@ export default class ComponentGenerator extends Generator<ComponentGeneratorOpti
       templateData,
     );
 
-    // Yeoman will inform the user that there is a file conflict if the parent index file already exists.
-    // Inform the user that the component export will be appended to the parent index file so this is not unexpected,
-    // and they have context for the file conflict.
-    if (this.fs.exists(this.destinationPath("index.ts"))) {
-      this.log("Appending component export to parent index file.");
-      this.log(
-        "Enter 'y' to accept, 'd' to see differences, or 'h' to see more options.",
-      );
-    }
-    this.fs.copyTpl(
-      this.templatePath("parent-index.ts.ejs"),
-      this.destinationPath("index.ts"),
-      templateData,
-      undefined,
-      // append to the parent index file if it already exists
-      { append: true },
-    );
+    appendToParentIndexFile(this, templateData);
 
     this.fs.copyTpl(
       this.templatePath("index.ts.ejs"),
