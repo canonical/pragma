@@ -7,7 +7,8 @@ import * as constants from "./constants.js";
  */
 function getOptimalUpdateInterval(instant: Temporal.Instant): number {
   const now = Temporal.Now.instant();
-  const deltaSeconds = instant.epochSeconds - now.epochSeconds;
+  const deltaSeconds =
+    (instant.epochMilliseconds - now.epochMilliseconds) / 1000;
   const absDeltaSeconds = Math.abs(deltaSeconds);
 
   if (absDeltaSeconds < constants.MINUTE_IN_SECONDS) {
