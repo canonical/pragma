@@ -19,7 +19,6 @@
     "@biomejs/biome": "^1.9.4",
     "@canonical/biome-config": "^0.9.0-experimental.12",
     "@types/bun": "latest",
-    "jsdom": "^26.0.0",
     "vitest": "^3.0.9"
   },
   "peerDependencies": {
