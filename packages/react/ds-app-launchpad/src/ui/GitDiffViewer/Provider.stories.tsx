@@ -1,7 +1,7 @@
 /* @canonical/generator-canonical-ds 0.0.1 */
 
-import { useMemo, useState } from "storybook/preview-api";
 import type { Meta, StoryFn } from "@storybook/react-vite";
+import { useMemo, useState } from "storybook/preview-api";
 import * as fixtures from "./fixtures.js";
 import { GitDiffViewer } from "./index.js";
 import type { ProviderOptions } from "./types.js";
