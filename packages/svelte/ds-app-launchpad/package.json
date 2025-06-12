@@ -1,0 +1,71 @@
+{
+  "name": "@canonical/svelte-ds-app-launchpad",
+  "version": "0.9.0-experimental.20",
+  "type": "module",
+  "module": "./dist/index.js",
+  "svelte": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "files": [
+    "dist",
+    "!dist/**/*.test.*",
+    "!dist/**/*.spec.*",
+    "!dist/**/*.stories.*"
+  ],
+  "author": {
+    "email": "webteam@canonical.com",
+    "name": "Canonical Webteam"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/canonical/ds25"
+  },
+  "license": "LGPL-3.0",
+  "bugs": {
+    "url": "https://github.com/canonical/ds25/issues"
+  },
+  "homepage": "https://github.com/canonical/ds25#readme",
+  "scripts": {
+    "dev": "vite dev",
+    "build": "vite build && npm run prepack",
+    "preview": "vite preview",
+    "prepare": "svelte-kit sync || echo ''",
+    "postinstall": "playwright install --with-deps chromium",
+    "prepack": "svelte-kit sync && svelte-package && publint",
+    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+    "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+    "test:server": "vitest --project=server --browser.headless --run",
+    "test:client": "vitest --project=client --browser.headless --run",
+    "test:ssr": "vitest --project=ssr --browser.headless --run",
+    "test:interactive": "vitest",
+    "test": "vitest --browser.headless --run --root ./",
+    "storybook": "storybook dev -p 6006 --no-open --host 0.0.0.0",
+    "build:storybook": "storybook build"
+  },
+  "dependencies": {
+    "@canonical/styles": "^0.9.0-experimental.20",
+    "@canonical/utils": "^0.9.0-experimental.12"
+  },
+  "peerDependencies": {
+    "svelte": "^5.0.0"
+  },
+  "devDependencies": {
+    "@canonical/storybook-config": "^0.9.0-experimental.19",
+    "@sveltejs/adapter-auto": "^6.0.0",
+    "@sveltejs/kit": "^2.16.0",
+    "@sveltejs/package": "^2.0.0",
+    "@sveltejs/vite-plugin-svelte": "^5.0.0",
+    "@types/node": "^22.10.1",
+    "@vitest/browser": "^3.2.1",
+    "playwright": "^1.52.0",
+    "publint": "^0.3.2",
+    "svelte": "^5.0.0",
+    "svelte-check": "^4.0.0",
+    "typescript": "^5.8.2",
+    "vite": "^6.2.6",
+    "vitest": "^3.0.9",
+    "vitest-browser-svelte": "^0.1.0"
+  }
+}

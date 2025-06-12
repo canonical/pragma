@@ -2,10 +2,10 @@
 	"compilerOptions": {
 		"paths": {
 			"$lib": [
-				"../src/ui"
+				"../src/lib"
 			],
 			"$lib/*": [
-				"../src/ui/*"
+				"../src/lib/*"
 			]
 		},
 		"rootDirs": [

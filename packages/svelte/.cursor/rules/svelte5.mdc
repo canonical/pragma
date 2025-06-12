@@ -1,0 +1,713 @@
+---
+description: 
+globs: *.svelte, *.svelte.ts
+alwaysApply: false
+---
+---
+description: writing svelte code
+globs: *.svelte, *.svelte.ts
+---
+In this project, we use Tailwind CSS for styling and shacn-svelte as the UI component library (built on top of Bits UI).
+It is a port of shadcn/ui to Svelte. You can use their CLI to install all the same shadcn components by running this command  `bunx shadcn-svelte@next add <component-1> <component-2>`, just like the Original React version.
+
+Please use the new Svelte 5 syntax when working in .svelte and .svelte.ts files. 
+
+Some key points include:
+- Using the new runes syntax ($state, $derived, etc.) to manage reactive state variables instead of the `$: ` syntax of Svelte 4.
+- Using the new event handler syntax  (onclick instead of on:click - the colon should not be included)
+- Using snippets instead of slots.
+- Using the $props() syntax to extract props, avoid using the old `export let props` syntax.
+- Use `$app/state` instead of `$app/stores`, then you can just access state objects like `page.url.pathname`.
+
+Current Path Aliases:
+
+- "@components": "./src/components"
+- "@utils": "./src/utils"
+- "@utils.js": "./src/utils"
+- "@hooks": "./src/hooks"
+- "@src": "./src"
+- "@server": "./src/lib/server"
+- "@api": "./src/lib/api"
+- "@types": "./src/types"
+- "@schemas": "./src/schemas"
+- "@state": "./src/lib/state"
+- "@db": "./src/lib/server/db"
+
+Please read the file `ai-docs/svelte.txt` at the root of this project which includes the full svelte 5 documentation if you are unsure or notice that you made a lint error while writing some code. This should help you with the correct syntax.
+
+Below is a cheat sheet that explains all the features of Svelte 5 in a concise way.
+---
+
+# Svelte 5 Cheat Sheet
+
+This cheat sheet provides a quick guide to the essential features of Svelte 5, focusing on the new runes syntax for reactivity and component structure.
+
+## .svelte files
+
+`.svelte` files are the foundation of Svelte applications, defining reusable components. They combine HTML markup with JavaScript logic and CSS styles, all within a single file.  A `.svelte` file is structured into three optional blocks: `<script>` for component logic, `<!-- markup -->` for HTML structure, and `<style>` for component-specific CSS.  The `<script>` block is where you'll write JavaScript, using runes to manage reactivity and props.  Styles within `<style>` are automatically scoped to the component, preventing CSS conflicts with other parts of your application.
+
+```svelte
+/// file: MyComponent.svelte
+<script>
+  let name = $state('World'); // Reactive state
+</script>
+
+<h1>Hello, {name}!</h1>
+
+<style>
+  h1 { color: blue; } /* Styles scoped to this component */
+</style>
+```
+
+## .svelte.js and .svelte.ts files
+
+Svelte 5 introduces `.svelte.js` (or `.svelte.ts` for TypeScript) files for creating reusable JavaScript modules that can leverage runes. These files are similar to regular `.js` or `.ts` modules but allow you to use runes for reactive logic outside of components. This is particularly useful for sharing reactive state or encapsulating complex reactive functions that can be imported and used across different components.  This feature promotes code reusability and helps in organizing reactive logic in larger applications.
+
+```javascript
+/// file: reactive-utils.svelte.js
+export const count = $state(0);
+
+export function increment() {
+  count.set(count + 1);
+}
+```
+
+## What are runes?
+
+Runes are special symbols in Svelte 5, prefixed with a `$`, that are used to control the Svelte compiler and manage reactivity. Think of them as keywords that are built into the Svelte language.  Unlike regular JavaScript functions, runes don't need to be imported and cannot be assigned to variables or passed as function arguments directly.  They are used to declare reactive state, derived values, effects, and component props, fundamentally changing how reactivity is handled in Svelte 5 compared to previous versions.
+
+```js
+let message = $state('Hello Svelte 5!'); // $state rune to create reactive state
+let doubled = $derived(count * 2);      // $derived rune for derived values
+```
+
+## $state
+
+The `$state` rune is the primary way to declare reactive variables in Svelte 5.  Variables created with `$state` automatically trigger UI updates whenever their value changes.  You initialize `$state` with an initial value, and then you can directly update the variable like any normal JavaScript variable.  For objects and arrays, `$state` creates a *deeply reactive proxy*, meaning changes within nested properties or array elements will also trigger reactivity.
+
+```svelte
+<script>
+  let count = $state(0); // Reactive number
+</script>
+
+<button on:click={() => count++}>Clicks: {count}</button>
+```
+
+For non-deeply reactive state, use `$state.raw`:
+
+```js
+let person = $state.raw({ name: 'Alice' }); // Not deeply reactive
+person = { name: 'Bob' }; // Reassignment works
+```
+
+To get a static snapshot of a `$state` proxy, use `$state.snapshot()`:
+
+```js
+console.log($state.snapshot(counter)); // Logs a plain object, not a Proxy
+```
+
+## $derived
+
+The `$derived` rune creates values that are automatically updated whenever their dependencies change.  Derived values are read-only and are defined by an expression that depends on other reactive state (declared with `$state` or other `$derived` values). Svelte efficiently recalculates derived values only when necessary and when they are actually accessed in the template or other reactive contexts.  This is crucial for performance as it avoids unnecessary computations.
+
+```svelte
+<script>
+  let count = $state(10);
+  let doubled = $derived(count * 2); // `doubled` updates when `count` changes
+</script>
+
+<p>{count} doubled is {doubled}</p>
+```
+
+For more complex derivations, use `$derived.by` with a function body:
+
+```svelte
+let numbers = $state([1, 2, 3]);
+let total = $derived.by(() => { // More complex logic
+  let sum = 0;
+  for (const n of numbers) {
+    sum += n;
+  }
+  return sum;
+});
+```
+
+## $effect
+
+The `$effect` rune allows you to perform side effects in response to reactive state changes.  Effects are functions that run after the component is mounted and re-run whenever any of the reactive values they depend on change.  This is useful for tasks like DOM manipulation, integrating with external libraries, or logging.  Effects should be used sparingly and are best suited for synchronizing with external systems, not for managing internal component state, which is better handled with `$derived`.
+
+```svelte
+<script>
+  let color = $state('red');
+  let canvas;
+
+  $effect(() => { // Effect runs when `color` changes
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = color;
+    ctx.fillRect(10, 10, 50, 50);
+  });
+</script>
+
+<canvas bind:this={canvas} width="100" height="100"></canvas>
+```
+
+Effects can also return a cleanup function:
+
+```svelte
+$effect(() => {
+  const timer = setInterval(() => { /* ... */ }, 1000);
+  return () => clearInterval(timer); // Cleanup on re-run or unmount
+});
+```
+
+For effects that need to run *before* DOM updates, use `$effect.pre`.
+
+## $props
+
+The `$props` rune is used to access properties passed to a Svelte component from its parent.  Inside a component, `$props()` returns an object containing all the props.  It's common to destructure props directly in the `<script>` block for easier access and to define default values.  Props are reactive, meaning when a parent component updates a prop value, the child component automatically re-renders.
+
+```svelte
+/// file: MyComponent.svelte
+<script>
+  let { name = 'Guest' } = $props(); // Destructure and set default
+</script>
+
+<p>Hello, {name}!</p>
+```
+
+You can also rename props during destructuring:
+
+```js
+let { 'data-id': id } = $props(); // Rename `data-id` to `id`
+```
+
+Use rest props to collect remaining props:
+
+```js
+let { a, b, ...rest } = $props(); // Collect remaining props into `rest`
+```
+
+## $bindable
+
+The `$bindable` rune is used in child components to create props that can be bound by parent components using `bind:`.  This enables two-way data binding, allowing changes in the child component to update the bound variable in the parent.  Use `$bindable` sparingly as it can make data flow harder to track, but it's useful for components like form inputs where two-way binding is often desired.
+
+```svelte
+/// file: FancyInput.svelte
+<script>
+  let { value = $bindable() } = $props(); // `value` is bindable
+</script>
+<input bind:value={value} />
+```
+
+In the parent component:
+
+```svelte
+/// file: App.svelte
+<script>
+  import FancyInput from './FancyInput.svelte';
+  let message = $state('Initial message');
+</script>
+
+<FancyInput bind:value={message} /> <p>{message}</p>
+```
+
+You can also provide a fallback value for `$bindable`:
+
+```js
+let { value = $bindable('default value') } = $props();
+```
+
+## $inspect
+
+The `$inspect` rune is a debugging tool similar to `console.log`, but it automatically re-runs whenever its arguments change, providing live updates in the console.  It deeply tracks reactive state, so changes within objects or arrays will also trigger `$inspect`.  This is helpful for observing reactive values and understanding data flow during development.
+
+```svelte
+<script>
+  let count = $state(0);
+  let message = $state('Hello');
+  $inspect(count, message); // Logs `count` and `message` whenever they change
+</script>
+```
+
+Use `$inspect(...).with(callback)` for custom logging or debugging actions:
+
+```svelte
+$inspect(count).with((type, count) => {
+  if (type === 'update') {
+    debugger; // Breakpoint on update
+  }
+});
+```
+
+For tracing the origin of effects, use `$inspect.trace()` within an effect.
+
+## $host
+
+The `$host` rune is specifically for components compiled as custom elements. It provides access to the custom element's host element (the element in the DOM that represents your custom element).  This is useful for dispatching custom events from your component to the outside world, allowing parent pages or frameworks to react to events originating from your custom element.
+
+```svelte
+/// file: Stepper.svelte
+<svelte:options customElement="my-stepper" />
+<script>
+  function dispatch(type) {
+    $host().dispatchEvent(new CustomEvent(type));
+  }
+</script>
+```
+
+## Basic markup
+
+Svelte markup is an extension of HTML, allowing you to embed JavaScript expressions and use special tags and directives.  You can use standard HTML tags like `<div>`, `<p>`, etc., and also component tags (capitalized or dot-notated) to include other Svelte components.  Attributes can be static HTML attributes or dynamic JavaScript expressions enclosed in curly braces `{}`.  Event listeners are added using `on:eventname` attributes.
+
+```svelte
+<script>
+  let dynamicClass = 'active';
+  let message = $state('Click me');
+  function handleClick() { alert('Clicked!'); }
+</script>
+
+<div class="{dynamicClass}">
+  <button on:click={handleClick}>{message}</button>
+</div>
+```
+
+Text expressions are also enclosed in curly braces: `{expression}`.  Use `{@html expression}` to render raw HTML. Comments are standard HTML comments `<!-- -->`.
+
+## {#if ...}
+
+`{#if ...}` blocks conditionally render content based on a JavaScript expression.  You can use `{:else if ...}` and `{:else}` to create more complex conditional rendering logic.  The content inside the `{#if}` block is only added to the DOM if the condition is truthy, and removed if it becomes falsy.
+
+```svelte
+<script>
+  let isLoggedIn = $state(false);
+</script>
+
+{#if isLoggedIn}
+  <p>Welcome back!</p>
+{:else}
+  <p>Please log in.</p>
+{/if}
+```
+
+## {#each ...}
+
+`{#each ...}` blocks are used to iterate over arrays or iterable objects and render a list of elements.  You can access the current item and optionally the index within the loop.  Keyed each blocks `{#each items as item (item.id)}` are important for performance when lists are reordered or modified, helping Svelte efficiently update the DOM.
+
+```svelte
+<script>
+  let items = $state(['Apple', 'Banana', 'Cherry']);
+</script>
+
+<ul>
+  {#each items as item, index (item)}
+    <li key={item}>{index + 1}: {item}</li>
+  {/each}
+</ul>
+```
+
+`{:else}` blocks can be used to render content when the list is empty.
+
+## {#key ...}
+
+`{#key ...}` blocks force a component or section of markup to be completely destroyed and recreated whenever the key expression changes.  This is useful for triggering component re-initialization or for applying transitions when a value changes.
+
+```svelte
+<script>
+  let currentView = $state('view1');
+</script>
+
+{#key currentView}
+  <svelte:component this={currentViewComponent} />
+{/key}
+```
+
+## {#await ...}
+
+`{#await ...}` blocks handle promises and render different content based on the promise's state: pending, resolved (`:then`), or rejected (`:catch`).  This is essential for handling asynchronous operations like fetching data and displaying loading states or error messages.
+
+```svelte
+<script>
+  let promise = fetchData(); // Function returning a Promise
+</script>
+
+{#await promise}
+  <p>Loading...</p>
+{:then data}
+  <p>Data: {data}</p>
+{:catch error}
+  <p>Error: {error.message}</p>
+{/await}
+```
+
+You can omit the `:catch` or the initial pending block if not needed.
+
+## {#snippet ...}
+
+`{#snippet ...}` blocks define reusable chunks of markup within a component, similar to functions for markup.  Snippets can accept parameters and can be rendered multiple times using `{@render snippetName(params)}`.  This promotes code reuse and makes templates more organized, especially for complex UI patterns.
+
+```svelte
+<script>
+  let images = $state([{ src: '...', caption: 'Image 1' }, { src: '...', caption: 'Image 2' }]);
+
+  {#snippet figure(image)}
+    <figure>
+      <img src={image.src} alt={image.caption} />
+      <figcaption>{image.caption}</figcaption>
+    </figure>
+  {/snippet}
+</script>
+
+{#each images as image}
+  {@render figure(image)}
+{/each}
+```
+
+Snippets can be passed as props to components, similar to slots in web components.
+
+## {@render ...}
+
+`{@render snippetName(params)}` tags are used to render snippets defined with `{#snippet ...}`.  You call `{@render}` with the snippet's name and any parameters it expects.  This is how you reuse markup defined in snippets within your templates.
+
+```svelte
+{@render figure(image)} // Renders the 'figure' snippet with 'image' data
+```
+
+Use optional chaining `{@render snippetName?.()}` for snippets that might be undefined.
+
+## {@html ...}
+
+`{@html expression}` tags render raw HTML strings directly into the component's markup.  Use this with caution as it bypasses Svelte's escaping and can introduce security vulnerabilities if the HTML source is not trusted.  Styles within `{@html}` content are not automatically scoped; use `:global` modifiers in your `<style>` block to style them.
+
+```svelte
+<script>
+  let htmlContent = $state('<b>Bold text</b>');
+</script>
+
+<div>{@html htmlContent}</div>
+```
+
+## {@const ...}
+
+`{@const variable = expression}` tags define constants within markup blocks like `{#each}` or `{#if}`.  These constants are scoped to the block they are defined in and are useful for calculations or values that are only needed within that block.
+
+```svelte
+{#each items as item}
+  {@const area = item.width * item.height}
+  <p>Area: {area}</p>
+{/each}
+```
+
+## {@debug ...}
+
+`{@debug var1, var2, ...}` tags are a debugging aid that logs the values of specified variables to the console whenever they change.  If devtools are open, it also pauses execution, acting like a `debugger` statement.  `{@debug}` without arguments acts as a general debugger that triggers on any state change.
+
+```svelte
+<script>
+  let name = $state('Alice');
+  let age = $state(30);
+</script>
+
+{@debug name, age}
+
+<p>Name: {name}, Age: {age}</p>
+```
+
+## bind
+
+The `bind:` directive creates two-way bindings between component state and DOM element properties or component props.  For input elements, `bind:value` synchronizes the input's value with a reactive variable.  Other bindings include `bind:checked` for checkboxes, `bind:group` for radio buttons and checkboxes, `bind:files` for file inputs, and `bind:this` to get a reference to a DOM element or component instance.
+
+```svelte
+<script>
+  let inputValue = $state('');
+</script>
+
+<input bind:value={inputValue} placeholder="Enter text" />
+<p>You typed: {inputValue}</p>
+```
+
+For components, `bind:property` binds to a `$bindable` prop in the child component.
+
+## use
+
+The `use:` directive applies actions to DOM elements when they are mounted.  Actions are functions that receive the DOM node as an argument and can return a cleanup function that runs when the element is unmounted.  Actions are often used with `$effect` to manage setup and teardown logic, especially for interactions with external APIs or DOM manipulations.
+
+```svelte
+<script>
+  import { focusTrap } from './actions.js'; // Custom action
+
+  function myAction(node) {
+    console.log('Element mounted');
+    return () => console.log('Element unmounted');
+  }
+</script>
+
+<div use:myAction use:focusTrap>...</div>
+```
+
+Actions can also accept parameters: `use:action={params}`.
+
+## transition
+
+The `transition:` directive applies transitions to elements when they enter or leave the DOM, typically within `{#if}` blocks.  Svelte provides built-in transitions like `fade`, `fly`, `slide`, `scale`, and `blur`.  Transitions can be bidirectional (smoothly reversible) or unidirectional (`in:` and `out:`).
+
+```svelte
+<script>
+  import { fade } from 'svelte/transition';
+  let visible = $state(true);
+</script>
+
+<button on:click={() => visible = !visible}>Toggle</button>
+
+{#if visible}
+  <div transition:fade={{ duration: 200 }}>Fades in/out</div>
+{/if}
+```
+
+Transitions can be customized with parameters and custom transition functions.
+
+## in: and out
+
+The `in:` and `out:` directives are unidirectional transitions, similar to `transition:` but not bidirectional.  `in:` transitions play when an element enters the DOM, and `out:` transitions play when it leaves.  They are useful when you want separate in and out animations.
+
+```svelte
+{#if visible}
+  <div in:fly={{ y: 200 }} out:fade>Flies in, fades out</div>
+{/if}
+```
+
+## animate
+
+The `animate:` directive is used within keyed `{#each}` blocks to animate elements when their order changes.  It uses FLIP (First, Last, Invert, Play) animation technique for smooth transitions during list reordering.  Svelte provides built-in animations like `flip` and you can also create custom animation functions.
+
+```svelte
+{#each list as item (item.id)}
+  <li animate:flip>{item.text}</li>
+{/each}
+```
+
+Animations are triggered only by reordering, not by adding or removing items.
+
+## style
+
+The `style:` directive provides a shorthand for setting inline styles on elements.  It allows you to set multiple styles and use dynamic values.  `style:propertyName={expression}` sets a specific style property.  `style:propertyName` (shorthand) is equivalent to `style:propertyName={propertyName}`.
+
+```svelte
+<script>
+  let textColor = $state('red');
+  let fontSize = $state('16px');
+</script>
+
+<p style:color={textColor} style:font-size={fontSize}>Styled text</p>
+```
+
+Use `style:propertyName|important={expression}` to add `!important` to the style.
+
+## class
+
+Classes can be set using the `class` attribute or the `class:` directive.  The `class` attribute can accept strings, objects, or arrays to dynamically set classes.  Objects set classes based on truthy keys, and arrays combine truthy values.  The `class:` directive `class:className={condition}` conditionally adds or removes a class based on a boolean expression.
+
+```svelte
+<script>
+  let isActive = $state(true);
+</script>
+
+<div class={{ active: isActive, 'text-bold': true }}>Using class object</div>
+<div class:active={isActive} class:text-bold>Using class directive</div>
+```
+
+## Scoped styles
+
+Styles defined within a `<style>` block in a `.svelte` component are automatically scoped to that component.  Svelte adds a unique class to the component's elements and prefixes CSS selectors to ensure styles only apply within the component, preventing style conflicts.
+
+```svelte
+<style>
+  p { color: green; } /* Only applies to <p> elements in this component */
+</style>
+```
+
+## Global styles
+
+To apply styles globally, use the `:global(...)` modifier or the `:global {...}` block within a `<style>` tag.  `:global(selector)` applies styles to the specified selector globally.  `:global {...}` block groups multiple global style rules.
+
+```svelte
+<style>
+  :global(body) { margin: 0; } /* Global body style */
+
+  :global {
+    .global-class { /* Global class style */
+      color: blue;
+    }
+  }
+</style>
+```
+
+## Custom properties
+
+Svelte components support CSS custom properties (variables).  You can pass custom properties as attributes to components and access them within the component's `<style>` using `var(--propertyName, fallbackValue)`.  This allows for theming and customization of components.
+
+```svelte
+<Slider --track-color="blue" --thumb-size="20px" />
+```
+
+Inside `Slider.svelte`:
+
+```svelte
+<style>
+  .track { background-color: var(--track-color, #ccc); }
+  .thumb { width: var(--thumb-size, 15px); }
+</style>
+```
+
+## Nested <style> elements
+
+While only one top-level `<style>` tag is allowed per component, you can nest `<style>` tags within other elements or logic blocks.  Nested `<style>` tags are inserted directly into the DOM without scoping or processing, behaving like standard HTML `<style>` tags.
+
+```svelte
+<div>
+  <style> /* Global style - not scoped */
+    div { color: red; }
+  </style>
+</div>
+```
+
+## <svelte:boundary>
+
+`<svelte:boundary>` elements create error boundaries, preventing errors within their children from crashing the entire application.  If an error occurs within a boundary, the boundary's content is removed, and you can provide a `failed` snippet to render fallback UI or an `onerror` handler to log or handle the error.
+
+```svelte
+<svelte:boundary>
+  <FlakyComponent /> {/* Component that might throw errors */}
+  {#snippet failed(error, reset)}
+    <button on:click={reset}>Try again</button>
+  {/snippet}
+</svelte:boundary>
+```
+
+## <svelte:window>
+
+`<svelte:window>` allows you to attach event listeners directly to the `window` object and bind to window properties like `innerWidth`, `scrollY`, etc.  It automatically handles adding and removing listeners when the component mounts and unmounts.  It must be placed at the top level of a component.
+
+```svelte
+<svelte:window on:keydown={handleKeydown} bind:scrollY={scrollY} />
+```
+
+## <svelte:document>
+
+`<svelte:document>` is similar to `<svelte:window>` but attaches event listeners to the `document` object.  Useful for document-level events like `visibilitychange` and for binding to document properties.  Must be at the top level of a component.
+
+```svelte
+<svelte:document on:visibilitychange={handleVisibilityChange} />
+```
+
+## <svelte:body>
+
+`<svelte:body>` allows attaching event listeners to the `document.body` element.  Useful for body-specific events like `mouseenter` and `mouseleave`.  Must be at the top level of a component.
+
+```svelte
+<svelte:body on:mouseenter={handleMouseenter} />
+```
+
+## <svelte:head>
+
+`<svelte:head>` allows you to insert elements into the `<head>` of the HTML document, such as `<title>`, `<meta>`, and `<link>` tags.  Useful for managing document metadata from within components.  Must be at the top level of a component.
+
+```svelte
+<svelte:head>
+  <title>My Svelte App</title>
+  <meta name="description" content="App description" />
+</svelte:head>
+```
+
+## <svelte:element>
+
+`<svelte:element this={tagName}>` renders a dynamic HTML element where `tagName` is a JavaScript expression that evaluates to a tag name string.  Useful for rendering elements whose tag is not known at compile time, e.g., from a CMS.
+
+```svelte
+<script>
+  let elementTag = $state('article');
+</script>
+
+<svelte:element this={elementTag}>Dynamic element content</svelte:element>
+```
+
+## <svelte:options>
+
+`<svelte:options>` is used to set component-specific compiler options.  Options include `runes={true/false}` to force runes or legacy mode, `namespace`, `customElement`, and `css="injected"`.  Must be at the top level of a component.
+
+```svelte
+<svelte:options customElement="my-component" />
+```
+
+## Stores
+
+Stores in Svelte are objects that hold reactive values and allow components to subscribe to changes.  In Svelte 5 with runes, stores are less central for component-level reactivity but remain useful for shared application state, asynchronous data, and integration with external state management libraries.  You can access a store's value reactively using the `$` prefix: `$storeName`.
+
+```svelte
+<script>
+  import { writable } from 'svelte/store';
+  const count = writable(0);
+</script>
+
+<p>Count: {$count}</p>
+<button on:click={() => count.update(n => n + 1)}>Increment</button>
+```
+
+`svelte/store` module provides `writable`, `readable`, `derived`, `readonly`, and `get` store utilities.
+
+## Context
+
+Context provides a way to share data between parent and child components without prop drilling.  `setContext(key, value)` makes a value available to child components under a given key.  `getContext(key)` retrieves a context value in a child component.  Context is not inherently reactive; use `$state` objects in context for reactivity.
+
+```svelte
+/// file: Parent.svelte
+<script>
+  import { setContext } from 'svelte';
+  let theme = $state('light');
+  setContext('theme', theme);
+</script>
+<ChildComponent />
+
+/// file: Child.svelte
+<script>
+  import { getContext } from 'svelte';
+  const theme = getContext('theme');
+</script>
+```
+
+## Lifecycle hooks
+
+Svelte 5 primarily uses `$effect` for most lifecycle needs.  `onMount(callback)` runs a callback after the component is mounted.  `onDestroy(callback)` runs a callback just before the component is unmounted.  `tick()` returns a promise that resolves after the next DOM update.  `beforeUpdate` and `afterUpdate` are deprecated in runes mode; use `$effect.pre` and `$effect` instead.
+
+```svelte
+<script>
+  import { onMount, onDestroy } from 'svelte';
+
+  onMount(() => { console.log('Component mounted'); });
+  onDestroy(() => { console.log('Component destroyed'); });
+</script>
+```
+
+## Imperative component API
+
+Svelte provides functions for programmatically managing components: `mount(Component, options)` to instantiate and mount a component, `unmount(component)` to unmount a component, `render(Component, options)` for server-side rendering, and `hydrate(Component, options)` for client-side hydration of SSR output.
+
+```javascript
+import { mount, unmount } from 'svelte';
+import App from './App.svelte';
+
+const appInstance = mount(App, { target: document.body });
+// ... later ...
+unmount(appInstance);
+```
+
+## TypeScript
+
+Svelte has built-in TypeScript support.  Use `<script lang="ts">` to enable TypeScript in `.svelte` files.  You can use type annotations, interfaces, and generics.  For more advanced TypeScript features, you might need to set up a preprocessor like `svelte-preprocess` with `vitePreprocess`.  Type `$props` and `$state` variables just like regular TypeScript variables.  Use `Component` and `ComponentProps` types from `svelte` for component typing.
+
+```svelte
+<script lang="ts">
+  let name: string = $state<string>('World');
+</script>
+```
+
+---
