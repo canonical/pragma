@@ -40,13 +40,11 @@ declare module '$env/static/private' {
 	export const I3SOCK: string;
 	export const _P9K_TTY: string;
 	export const NODE: string;
-	export const SSH_AUTH_SOCK: string;
 	export const XDG_DATA_HOME: string;
 	export const P9K_TTY: string;
 	export const XDG_CONFIG_HOME: string;
 	export const TMUX_PLUGIN_MANAGER_PATH: string;
 	export const npm_config_local_prefix: string;
-	export const SSH_AGENT_PID: string;
 	export const XCURSOR_SIZE: string;
 	export const EDITOR: string;
 	export const XDG_SEAT: string;
@@ -164,13 +162,11 @@ declare module '$env/dynamic/private' {
 		I3SOCK: string;
 		_P9K_TTY: string;
 		NODE: string;
-		SSH_AUTH_SOCK: string;
 		XDG_DATA_HOME: string;
 		P9K_TTY: string;
 		XDG_CONFIG_HOME: string;
 		TMUX_PLUGIN_MANAGER_PATH: string;
 		npm_config_local_prefix: string;
-		SSH_AGENT_PID: string;
 		XCURSOR_SIZE: string;
 		EDITOR: string;
 		XDG_SEAT: string;

@@ -1,7 +1,7 @@
 import { createConfig } from "@canonical/storybook-config";
 
 const config = createConfig({
-  framework: "svelte",
+	framework: "sveltekit",
 	staticDirs: ["../src/assets", "../public"],
 });
 
