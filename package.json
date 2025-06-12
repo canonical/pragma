@@ -20,6 +20,7 @@
     "configs/*",
     "packages/*",
     "packages/react/*",
+    "packages/storybook/*",
     "packages/styles/debug",
     "packages/styles/primitives/*",
     "packages/styles/modes/*",
