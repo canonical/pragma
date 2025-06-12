@@ -9,5 +9,5 @@
  * const example: Example = {}; // OK
  */
 export type AllOrNone<T extends Record<string, unknown>> =
-	| T
-	| { [K in keyof T]?: never };
+  | T
+  | { [K in keyof T]?: never };
