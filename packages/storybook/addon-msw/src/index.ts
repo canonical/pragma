@@ -1,2 +1,3 @@
 // make it work with --isolatedModules
-export default {};
+export { http, HttpResponse } from "msw";
+export type { MswParameter } from "./types.js";
