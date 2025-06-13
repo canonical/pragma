@@ -1,6 +1,7 @@
 # Code Standards Reference
 
-This document outlines the standards and conventions for writing code within the Canonical Design System. It aims to ensure consistency, maintainability, and readability across all code packages.
+This document outlines the standards and conventions for writing code within Pragma. It aims to ensure consistency,
+maintainability, and readability across all code packages.
 
 ## Introduction
 
@@ -14,6 +15,7 @@ Our code development practices are guided by the following core principles:
 ## Technology-Specific Standards
 
 For technology-specific standards, please refer to:
+
 - [React Standards](./STANDARDS_FOR_REACT.md) - Standards for React components and development
 - [Styling Standards](./STANDARDS_FOR_STYLING.md) - Standards for CSS and styling
 - [Testing Standards](./STANDARDS_FOR_TESTING.md) - Standards for writing and organizing tests
@@ -24,21 +26,23 @@ For technology-specific standards, please refer to:
 
 ### Default vs Named Exports (`code/exports/default-vs-named`)
 
-Files **shall** have either **one default export** or **multiple named exports**. The name of the file and its domain **shall** hint at the type of exports that are provided.
+Files **shall** have either **one default export** or **multiple named exports**. The name of the file and its domain *
+*shall** hint at the type of exports that are provided.
 
-| File | Exports | Rationale | 
-| ---- | ------- | --------- |
-| index.ts | multiple named exports | Usually reexports the contents of the folder to provide a public API |
-| ComponentName.tsx | single default export | Implements a single component, hinting at a single export. Wrappers/subcomponent logic should be provided in separate files when needed. |
-| types.ts | multiple named exports | Provides the required types for the current folder domain, itself potentially consisting of several files and object shapes. |
-| debounce.ts | single default export | We encapsulate the functional logic in a single export. If additional functionality is required, it can live in the same file (if it's not exported) or in another file (for reusable logic). | 
+| File                      | Exports                                   | Rationale                                                                                                                                                                                                                      | 
+|---------------------------|-------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| index.ts                  | multiple named exports                    | Usually reexports the contents of the folder to provide a public API                                                                                                                                                           |
+| ComponentName.tsx         | single default export                     | Implements a single component, hinting at a single export. Wrappers/subcomponent logic should be provided in separate files when needed.                                                                                       |
+| types.ts                  | multiple named exports                    | Provides the required types for the current folder domain, itself potentially consisting of several files and object shapes.                                                                                                   |
+| debounce.ts               | single default export                     | We encapsulate the functional logic in a single export. If additional functionality is required, it can live in the same file (if it's not exported) or in another file (for reusable logic).                                  | 
 | ComponentName.stories.tsx | multiple named exports (+ default export) | This is an exception, as this file conforms to the storybook standards. While the default export provides a configuration object for component stories, each named export corresponds to a story consuming this configuration. |
 
 > ✅ **Do**
-> 
+>
 > + Use default exports for single-purpose files like components or utility functions.
 > + Use named exports for files that provide multiple related exports like types or stories.
-> + Name files according to their export pattern (e.g., `ComponentName.tsx` for default exports, `types.ts` for named exports).
+> + Name files according to their export pattern (e.g., `ComponentName.tsx` for default exports, `types.ts` for named
+    exports).
 
 > ❌ **Don't**
 >
@@ -50,14 +54,14 @@ Files **shall** have either **one default export** or **multiple named exports**
 
 Aside from files named `index.ts`, all files providing named exports **shall** expose a single export shape.
 
-| File | Exports Type | Rationale | 
-| ---- | ------- | --------- |
-| stories.ts | `Story` | This file is a collection of Storybook Stories | 
+| File            | Exports Type         | Rationale                                                    | 
+|-----------------|----------------------|--------------------------------------------------------------|
+| stories.ts      | `Story`              | This file is a collection of Storybook Stories               | 
 | transformers.ts | `(value:str) => str` | This file is a collection of string transformation functions | 
-| fixtures.ts | `Fixture` | Mock Data substitutable to one another |
+| fixtures.ts     | `Fixture`            | Mock Data substitutable to one another                       |
 
 > ✅ **Do**
-> 
+>
 > + Identify the shape of the exports of your file before writing its contents.
 > + Export objects that share the same type.
 >   ```typescript
@@ -86,9 +90,11 @@ Aside from files named `index.ts`, all files providing named exports **shall** e
     TODO not sure if we should keep this one, as we break this standard ourselves sometimes. 
     We probably need a clearer idea of when to import * and when to separately import named constants.
 -->
+
 ### Named Exports Reimport (`code/imports/named-exports`)
 
-When directly importing the contents of a file containing named exports, developers **shall** use the `import * as` pattern to conserve the namespace.
+When directly importing the contents of a file containing named exports, developers **shall** use the `import * as`
+pattern to conserve the namespace.
 
 > ✅ **Do**
 > 
@@ -127,7 +133,7 @@ package/
 
 > ❌ **Don't**
 >
-> + Place tests and code under test in different directories, unless creating end-to-end tests. 
+> + Place tests and code under test in different directories, unless creating end-to-end tests.
 > + Place build artifacts in source directories
 > + Create deep directory hierarchies (prefer flat structures)
 
@@ -135,18 +141,18 @@ package/
 
 Files **shall** follow consistent naming conventions:
 
-| Type | Pattern | Example |
-|------|---------|---------|
-| Source Files | kebab-case.<ext> | `debounce.ts`, `invariant.ts` |
-| Test Files | kebab-case.tests.<ext> | `debounce.tests.ts` |
-| Type Definitions | types.<ext> | `types.ts` |
-| Documentation | kebab-case.md | `getting-started.md` |
+| Type             | Pattern                | Example                       |
+|------------------|------------------------|-------------------------------|
+| Source Files     | kebab-case.<ext>       | `debounce.ts`, `invariant.ts` |
+| Test Files       | kebab-case.tests.<ext> | `debounce.tests.ts`           |
+| Type Definitions | types.<ext>            | `types.ts`                    |
+| Documentation    | kebab-case.md          | `getting-started.md`          |
 
 > ✅ **Do**
-> 
 > + Use kebab-case for file names.
-> <!--TODO this is an exception to a standard, not sure how to handle these. Should this indicate that the standard at the top level shouldn't exist at all?-->
->   + Note: Some frameworks may use non-kebab-case casing, in part or in whole, as a standard. Refer to the standard-specific documentation as well. For example, [React components should generally use PascalCase](STANDARDS_FOR_REACT.md#file-and-folder-structure-reactfile-structure).
+>   + Note: Some frameworks may use non-kebab-case casing, in part or in whole, as a standard. Refer to the
+      standard-specific documentation as well. For
+      example, [React components should generally use PascalCase](STANDARDS_FOR_REACT.md#file-and-folder-structure-reactfile-structure).
 > + Use `.tests.<ext>` suffix for test files
 > + Use `types.<ext>` for type definition files
 > + Use `.md` extension for documentation
@@ -166,15 +172,15 @@ Custom errors **shall** extend the base `Error` class and include relevant conte
 
 ```typescript
 class ValidationError extends Error {
-  constructor(message: string, public readonly context: Record<string, unknown>) {
-    super(message);
-    this.name = 'ValidationError';
-  }
+    constructor(message: string, public readonly context: Record<string, unknown>) {
+        super(message);
+        this.name = 'ValidationError';
+    }
 }
 ```
 
 > ✅ **Do**
-> 
+>
 > + Create specific error types for different error cases
 > + Include relevant context in error objects
 > + Use descriptive error messages
@@ -195,7 +201,7 @@ Error handling **shall** be implemented at appropriate boundaries:
 3. **Async Operations**: Properly handle promise rejections
 
 > ✅ **Do**
-> 
+>
 > + Validate inputs at system boundaries
 > + Use try/catch/finally for resource management
 > + Handle promise rejections with .catch() or try/catch
@@ -221,21 +227,21 @@ Code **shall** be documented with clear, purposeful comments:
 /**
  * Debounces a function call, ensuring it is only executed once
  * within the specified time window.
- * 
+ *
  * @param fn - The function to debounce
  * @param delay - The delay in milliseconds
  * @returns A debounced version of the function
  */
 export function debounce<T extends (...args: any[]) => any>(
-  fn: T,
-  delay: number
+    fn: T,
+    delay: number
 ): (...args: Parameters<T>) => void {
-  // Implementation
+    // Implementation
 }
 ```
 
 > ✅ **Do**
-> 
+>
 > + Document all public APIs with JSDoc
 > + Explain complex logic with inline comments
 > + Include ticket references in TODO comments
@@ -259,7 +265,7 @@ Each package **shall** include a README.md file with:
 5. Contributing guidelines
 
 > ✅ **Do**
-> 
+>
 > + Keep README files up to date
 > + Include clear installation instructions
 > + Provide usage examples
