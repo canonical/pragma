@@ -1,0 +1,56 @@
+{
+  "$schema": "http://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/webarchitect/schemas/main/schema.json",
+  "description": "Schema for webarchitect",
+  "type": "object",
+  "properties": {
+    "name": { "type": "string" },
+    "extends": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  },
+  "required": ["name"],
+  "$defs": {
+    "fileRule": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "contains": { "$ref": "http://json-schema.org/draft/2020-12/schema#" }
+      },
+      "required": ["name", "contains"]
+    },
+    "directoryRule": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "contains": {
+          "type": "object",
+          "properties": {
+            "files": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/fileRule" }
+            },
+            "directories": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/directoryRule" }
+            }
+          }
+        },
+        "strict": { "type": "boolean" }
+      },
+      "required": ["name"]
+    }
+  },
+  "additionalProperties": {
+    "type": "object",
+    "properties": {
+      "file": { "$ref": "#/$defs/fileRule" },
+      "directory": { "$ref": "#/$defs/directoryRule" }
+    },
+    "oneOf": [
+      { "required": ["file"] },
+      { "required": ["directory"] }
+    ]
+  }
+}
