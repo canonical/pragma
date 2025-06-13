@@ -95,21 +95,146 @@ Most CSS variables should be bound to variables using a series of fallbacks
 - Primitives and theme variables are provided by the [tokens package](../../packages/tokens).
   - Generally, most of a component's variables shall be mappings to tokens to ensure consistency and maintain the tokens package's ability to effect global changes.
   - Values that are especially simple (like setting opacity to 0 when hidden) may be hard-coded.
+- All component variables **shall** be documented in a comment block at the top of the component's `styles.css` file.
 
-### Naming Conventions (`styles/custom-properties/naming`)
-All variables follow [CTI naming convention](https://github.com/amzn/style-dictionary/blob/86c2c30ba289121f7dc9c28f573d1996dbc4a3a8/README.md#categorytypeitem-structure).
+> ✅ **Do**
+> 
+> + Document all component variables with clear descriptions
+> + Use tokens for most variable values
+> + Keep variable names consistent with CTI convention
+> + Use intent variables for contextual theming
 
-- **Global Variables**: Defined in `:root` (e.g., `--baseline-grid-color`, `--color-text-default`).
-- **Component-Specific Variables**:
-  - Convention: `--<component-name>-<property-group>-<specific-property>`
-  - Example: `--button-color-background`, `--chip-border-radius`, `--tooltip-font-size`.
-- **Intent Variables**: Semantic variables used for theming based on purpose (e.g., positive, negative, information). These allow components to adapt to a contextual theme.
-  - Convention: `--intent-<property>-<variant/state>`
-  - Examples:
-    - `--intent-color`
-    - `--intent-color-text`
-    - `--intent-color-border`
-    - `--intent-color-hover`
-    - `--intent-color-active`
-    - `--intent-color-text-tinted` (for subtle variations)
-    - `--intent-color-tinted-hover`
+> ❌ **Don't**
+>
+> + Use hard-coded values when tokens are available
+> + Omit variable documentation
+> + Create variables that duplicate token functionality
+> + Use inconsistent naming patterns
+
+### Variable Documentation (`styles/custom-properties/documentation`)
+Component variables **shall** be documented in a standardized format:
+
+```css
+/* component variables
+    --component-name-property: description of the property
+    --component-name-property-state: description of the property in this state
+    --component-name-property-variant: description of the property in this variant
+*/
+```
+
+> ✅ **Do**
+> 
+> + Group related variables together
+> + Use clear, descriptive comments
+> + Document all states and variants
+> + Keep documentation up to date
+
+> ❌ **Don't**
+>
+> + Leave variables undocumented
+> + Use ambiguous descriptions
+> + Mix different documentation styles
+> + Document implementation details
+
+## CSS Layers (`styles/layers`)
+
+### Layer Organization (`styles/layers/organization`)
+CSS **shall** be organized using the `@layer` directive to control specificity and loading order:
+
+1. **normalize**: CSS reset and normalization
+2. **primitives**: Design tokens and basic styles
+3. **modes**: Theme variations and modes
+4. **elements**: Base element styles
+5. **components**: Component-specific styles
+
+```css
+@layer normalize, primitives, modes, elements, components;
+
+@layer normalize {
+  /* Reset and normalization styles */
+}
+
+@layer primitives {
+  /* Design tokens and basic styles */
+}
+
+@layer modes {
+  /* Theme variations */
+}
+
+@layer elements {
+  /* Base element styles */
+}
+
+@layer components {
+  /* Component-specific styles */
+}
+```
+
+> ✅ **Do**
+> 
+> + Use appropriate layer for each style
+> + Keep styles in their designated layers
+> + Import layers in the correct order
+> + Document layer usage in complex cases
+
+> ❌ **Don't**
+>
+> + Mix styles across layers
+> + Skip layer declarations
+> + Override styles from higher layers
+> + Use !important to bypass layers
+
+### Mode Layers (`styles/layers/modes`)
+Mode-specific styles **shall** be defined in their own layer:
+
+```css
+@layer modes {
+  .canonical {
+    /* Canonical Mode */
+    --background: #f6f6f6;
+  }
+  
+  .low-density {
+    /* Low Density Mode */
+    --spacing-unit: 0.5rem;
+  }
+}
+```
+
+> ✅ **Do**
+> 
+> + Define modes in the modes layer
+> + Use semantic variable names
+> + Document mode purposes
+> + Keep mode styles isolated
+
+> ❌ **Don't**
+>
+> + Mix modes with component styles
+> + Override mode variables in components
+> + Create conflicting mode definitions
+> + Use non-semantic variable names
+
+## Debug Styles (`styles/debug`)
+
+### Debug Utilities (`styles/debug/utilities`)
+Debug styles **shall** be kept separate from production styles and imported only when needed:
+
+1. **Baseline Grid**: For layout debugging
+2. **Component Outlines**: For component boundary visualization
+3. **Spacing Guides**: For spacing verification
+
+> ✅ **Do**
+> 
+> + Keep debug styles in separate files
+> + Use clear, descriptive class names
+> + Document debug utilities
+> + Make debug styles easily removable
+
+> ❌ **Don't**
+>
+> + Include debug styles in production
+> + Use debug styles for actual styling
+> + Leave debug styles enabled
+> + Create permanent debug classes
