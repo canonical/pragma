@@ -1,11 +1,11 @@
 <script lang="ts">
   /* <%= generatorPackageName %> <%= generatorPackageVersion %> */
-  import type { <%= componentName %>Props } from './types.js'
+  import type { <%= componentName %>Props } from "./types.js";
 <% if (withStyles) { _%>
 <% if (useClsx) { _%>
-  import clsx from "clsx"
+  import clsx from "clsx";
 <% } _%>
-  import './styles.css'
+  import "./styles.css";
 
   const componentCssClassName = "<%= cssNamespace %> <%= componentCssClassName %>";
 <%_ } _%>
@@ -22,7 +22,7 @@
 
 ## Example Usage
 ```svelte
-<%= componentName %> class="custom-class" id="unique-id">
+<<%= componentName %> class="custom-class" id="unique-id">
   <p>Content goes here</p>
 </<%= componentName %>>
 ```

@@ -28,7 +28,7 @@ export default class ComponentGenerator extends Generator<ComponentGeneratorOpti
         "This generator should be run from the root directory of all your application's components (ex: src/components).",
       );
       this.log(
-        `Use yo ${globalContext.generatorScriptIdentifer}:component --help for more information.`,
+        `Use yo ${globalContext.generatorScriptIdentifer}:sv-component --help for more information.`,
       );
     }
 
@@ -120,6 +120,14 @@ export default class ComponentGenerator extends Generator<ComponentGeneratorOpti
     this.fs.copyTpl(
       this.templatePath("types.ts.ejs"),
       this.destinationPath(`${this.answers.componentPath}/types.ts`),
+      templateData,
+    );
+
+    this.fs.copyTpl(
+      this.templatePath("Component.svelte.test.ejs"),
+      this.destinationPath(
+        `${this.answers.componentPath}/${templateData.componentName}.svelte.test.ts`,
+      ),
       templateData,
     );
 

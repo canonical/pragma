@@ -1,0 +1,28 @@
+/* <%= generatorPackageName %> <%= generatorPackageVersion %> */
+
+import { createRawSnippet } from "svelte";
+import { describe, expect, it, vi } from "vitest";
+import { render } from "vitest-browser-svelte";
+import Component from "./<%= componentName %>.svelte";
+
+describe("<%= componentName %> component", () => {
+  it("renders", async () => {
+    const children = createRawSnippet(() => ({
+      render: () => `<%= componentName %>`,
+    }));
+
+    const page = render(Component, { children });
+    const element = page.getByText("<%= componentName %>");
+    await expect.element(element).toBeInTheDocument();
+  });
+
+  it("applies class", async () => {
+    const children = createRawSnippet(() => ({
+      render: () => `<%= componentName %>`,
+    }));
+
+    const page = render(Component, { children, class: "test-class" });
+    const element = page.getByText("<%= componentName %>");
+    await expect.element(element).toHaveClass("test-class");
+  });
+});
