@@ -16,16 +16,15 @@ export const Tool = memo(function MyAddonSelector({ api }: { api: API }) {
     });
   }, [isActive, updateGlobals]);
 
-  // TODO: can be used to add keyboard shortcut
-  // useEffect(() => {
-  //   api.setAddonShortcut(ADDON_ID, {
-  //     label: "Toggle Baseline Grid",
-  //     defaultShortcut: ["O"],
-  //     actionName: "baseline",
-  //     showInMenu: false,
-  //     action: toggle,
-  //   });
-  // }, [toggle, api]);
+  useEffect(() => {
+    api.setAddonShortcut("custom-toolbar-addon", {
+      label: "Toggle baseline grid",
+      defaultShortcut: ["G"],
+      actionName: "Toggle",
+      showInMenu: false,
+      action: toggle,
+    });
+  }, [api, toggle]);
 
   return (
     <IconButton

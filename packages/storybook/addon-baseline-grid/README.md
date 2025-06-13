@@ -4,6 +4,8 @@ Displays the baseline grid overlay in the Storybook preview.
 
 ## Usage 
 
+- Press `g` to toggle the baseline grid on a story.
+
 ### Installation
 
 ```bash

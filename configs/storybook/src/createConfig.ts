@@ -9,6 +9,7 @@ function getAbsolutePath(value: string): string {
 type CreateConfigOptions = {
   staticDirs?: string[];
   extraAddons?: string[];
+  disabledAddons?: string[];
 };
 
 const createConfig = (options: CreateConfigOptions = {}): StorybookConfig => ({
@@ -27,7 +28,7 @@ const createConfig = (options: CreateConfigOptions = {}): StorybookConfig => ({
     // getAbsolutePath("@chromatic-com/storybook"),
     // getAbsolutePath("@storybook/addon-interactions"),
     // getAbsolutePath("@storybook/addon-themes"),
-  ],
+  ].filter((addon) => !options.disabledAddons?.includes(addon)),
   framework: {
     name: getAbsolutePath("@storybook/react-vite"),
     options: {},
