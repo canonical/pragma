@@ -33,27 +33,51 @@ Component `styles.css` files shall generally follow this order:
 
 ## Intents (`styles/intents`)
 
-Intents are one of our core styling patterns. Any entity in the design system may have one or many "intents", or 
-semantic style contexts that it belongs to in a given scenario.
+Intents are one of our core styling patterns. Any entity in the design system may have one or many "intents", or semantic style contexts that it belongs to in a given scenario.
 
-An intent is associated with one or many CSS variables, which are applied to an element and its descendants. 
-This allows contextual styling to easily apply to an entire section of the interface, and provides a level of customizability
-above design tokens. 
+An intent is associated with one or many CSS variables, which are applied to an element and its descendants. This allows contextual styling to easily apply to an entire section of the interface, and provides a level of customizability above design tokens.
 
 ### Style Binding (`styles/intents/binding`)
-Most CSS variables should be bound to variables using a series of fallbacks
-  ```css
-  /* Button component example */
-  color: var(--intent-color-text, var(--button-color-text));
-  background-color: var(--intent-color, var(--button-color-background));
+Most CSS variables should be bound to variables using a series of fallbacks:
 
-  /* Tooltip component example with an additional global fallback */
-  color: var(
-    --intent-color-text,
-    var(--tooltip-color-text, var(--color-text-default)) /* Global default if component/intent specific not set */
-  );
-  ```
+```css
+/* Button component example */
+color: var(--intent-color-text, var(--button-color-text));
+background-color: var(--intent-color, var(--button-color-background));
 
+/* Tooltip component example with an additional global fallback */
+color: var(
+  --intent-color-text,
+  var(--tooltip-color-text, var(--color-text-default)) /* Global default if component/intent specific not set */
+);
+```
+
+### Intent Variables (`styles/intents/variables`)
+Intent variables follow a specific naming convention and provide semantic styling based on purpose (e.g., positive, negative, information):
+
+- Convention: `--intent-<property>-<variant/state>`
+- Examples:
+  - `--intent-color`
+  - `--intent-color-text`
+  - `--intent-color-border`
+  - `--intent-color-hover`
+  - `--intent-color-active`
+  - `--intent-color-text-tinted` (for subtle variations)
+  - `--intent-color-tinted-hover`
+
+> ✅ **Do**
+> 
+> + Use intent variables for contextual theming
+> + Provide appropriate fallbacks for intent variables
+> + Document intent usage in component styles
+> + Keep intent variables consistent across components
+
+> ❌ **Don't**
+>
+> + Override intent variables without fallbacks
+> + Use intent variables for non-semantic styling
+> + Create new intent variables without documentation
+> + Mix intent variables with component-specific variables
 
 ## CSS Class Naming Conventions (`styles/class-naming`)
 
