@@ -84,7 +84,7 @@
         "@chromatic-com/storybook": "^4.0.0",
         "@storybook/addon-a11y": "^9.0.8",
         "@storybook/addon-docs": "^9.0.8",
-        "@storybook/addon-themes": "^9.0.9",
+        "@storybook/addon-themes": "^9.0.8",
         "@storybook/addon-vitest": "^9.0.8",
         "@storybook/react-vite": "^9.0.8",
       },
@@ -337,6 +337,7 @@
       "dependencies": {
         "@canonical/storybook-config": "^0.9.0-experimental.19",
         "@canonical/styles": "^0.9.0-experimental.20",
+        "@canonical/utils": "^0.9.0-experimental.12",
         "react": "^19.1.0",
         "react-dom": "^19.1.0",
       },
