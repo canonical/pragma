@@ -14,8 +14,10 @@ const meta = {
   // Add padding to all tooltips to allow their entire contents to be visible
   parameters: {
     layout: "centered",
+  },
+  globals: {
     backgrounds: {
-      default: "dark",
+      value: "dark",
     },
   },
   tags: ["autodocs"],

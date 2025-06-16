@@ -9,8 +9,10 @@ const meta = {
   title: "Tooltip/withTooltip",
   parameters: {
     layout: "centered",
+  },
+  globals: {
     backgrounds: {
-      default: "dark",
+      value: "dark",
     },
   },
   tags: ["autodocs"],
