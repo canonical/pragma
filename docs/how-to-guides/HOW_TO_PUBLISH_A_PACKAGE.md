@@ -7,7 +7,7 @@ This guide explains how to publish packages in the Canonical Design System using
 1. Ensure you have read-write access to the [@canonical](https://www.npmjs.com/org/canonical) NPM organization
 2. Have a valid NPM token with appropriate permissions set to the repo secret `NODE_AUTH_TOKEN`. The tokens last for 1 year. The current token will expire on 3 November 2025.
    1. To generate a new publishing token:
-   2. Make sure you have read-write access to the [@canonical](https://www.npmjs.com/org/canonical) NPM organisation.
+   2. Make sure you have read-write access to the [@canonical](https://www.npmjs.com/org/canonical) NPM organization.
    3. Go to the [Granular access tokens page](https://www.npmjs.com/settings/<NPM_USERNAME>/tokens/granular-access-tokens/new). Replace `<NPM_USERNAME>` in this URL with your NPM username.
    4. Set the expiration to 1 year.
    5. Set the package scopes to "Read and write" for the `@canonical` organization.
