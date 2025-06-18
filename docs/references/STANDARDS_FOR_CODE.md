@@ -24,6 +24,15 @@ For technology-specific standards, please refer to:
 
 ## Exports (`code/exports`)
 
+This section of standards applies only to code whose purpose is to provide modular functionality to other modules.
+For example:
+- A component
+- A utility function
+- A type definition
+- A set of constants
+
+It does not apply to code that is meant to be executed directly, such as a script or a CLI tool.
+
 ### Default vs Named Exports (`code/exports/default-vs-named`)
 
 Files **shall** have either **one default export** or **multiple named exports**. The name of the file and its domain *
