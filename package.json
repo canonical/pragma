@@ -1,0 +1,44 @@
+{
+  "name": "ds25",
+  "private": true,
+  "version": "0.0.1",
+  "description": "Canonical's Design System",
+  "author": {
+    "email": "webteam@canonical.com",
+    "name": "Canonical Webteam"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/canonical/ds25"
+  },
+  "license": "LGPL-3.0",
+  "bugs": {
+    "url": "https://github.com/canonical/ds25/issues"
+  },
+  "homepage": "https://github.com/canonical/ds25#readme",
+  "workspaces": [
+    "configs/*",
+    "packages/*",
+    "packages/react/*",
+    "packages/storybook/*",
+    "packages/styles/debug",
+    "packages/styles/primitives/*",
+    "packages/styles/modes/*",
+    "packages/styles/elements",
+    "packages/styles/main/*",
+    "apps/*",
+    "apps/react/*"
+  ],
+  "scripts": {
+    "build": "lerna run build",
+    "prepare": "bun run build",
+    "lerna": "lerna",
+    "check": "lerna run check",
+    "check:fix": "lerna run check:fix",
+    "test": "lerna run test",
+    "special:clean": "rm -rf node_modules .nx"
+  },
+  "devDependencies": {
+    "lerna": "^8.1.8"
+  }
+}
