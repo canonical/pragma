@@ -48,9 +48,6 @@
       "file": { "$ref": "#/$defs/fileRule" },
       "directory": { "$ref": "#/$defs/directoryRule" }
     },
-    "oneOf": [
-      { "required": ["file"] },
-      { "required": ["directory"] }
-    ]
+    "oneOf": [{ "required": ["file"] }, { "required": ["directory"] }]
   }
 }
