@@ -633,13 +633,14 @@
     "packages/webarchitect": {
       "name": "@canonical/webarchitect",
       "version": "0.9.0-experimental.12",
-      "dependencies": {
-        "json-schema": "^0.4.0",
+      "bin": {
+        "webarchitect": "dist/esm/cli.js",
       },
       "devDependencies": {
         "@biomejs/biome": "^1.9.4",
         "@canonical/biome-config": "^0.9.0-experimental.12",
         "@canonical/typescript-config-base": "^0.9.0-experimental.12",
+        "@types/json-schema": "^7.0.15",
         "typescript": "^5.8.2",
       },
     },

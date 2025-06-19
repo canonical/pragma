@@ -8,7 +8,7 @@
   "bin": {
     "webarchitect": "dist/esm/cli.js"
   },
-  "files": ["dist"],
+  "files": ["dist", "rulesets"],
   "author": {
     "email": "webteam@canonical.com",
     "name": "Canonical Webteam"
