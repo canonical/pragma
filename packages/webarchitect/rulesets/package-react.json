@@ -1,7 +1,7 @@
 {
   "$schema": "https://github.com/webarchitect/schemas/main/schema.json",
   "name": "package-react",
-  "extends": ["package"],
+  "extends": ["base-package"],
   "package-react": {
     "file": {
       "name": "package.json",
@@ -12,7 +12,7 @@
             "properties": {
               "react": {
                 "type": "string",
-                "pattern": "^>=19"
+                "pattern": "^(\\^|~|>=)?19\\."
               }
             },
             "required": ["react"]

@@ -32,4 +32,12 @@ export interface ValidationResult {
   rule: string;
   passed: boolean;
   message?: string;
+  // Verbose context information
+  context?: {
+    type: "file" | "directory";
+    target: string; // The file or directory path being validated
+    description?: string; // Human-readable description of what was checked
+    schema?: unknown; // The schema that was applied (for verbose output)
+    actualValue?: unknown; // What was found (for verbose output)
+  };
 }

@@ -4,10 +4,18 @@
   "description": "Schema for webarchitect",
   "type": "object",
   "properties": {
-    "name": { "type": "string" },
+    "$schema": {
+      "type": "string",
+      "description": "Reference to the meta-schema this schema conforms to"
+    },
+    "name": {
+      "type": "string",
+      "description": "Identifier for this ruleset"
+    },
     "extends": {
       "type": "array",
-      "items": { "type": "string" }
+      "items": { "type": "string" },
+      "description": "List of other rulesets this one extends from"
     }
   },
   "required": ["name"],
