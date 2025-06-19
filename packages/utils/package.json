@@ -35,7 +35,8 @@
     "check:fix": "bun run check:biome:fix && bun run check:ts",
     "check:biome": "biome check",
     "check:biome:fix": "biome check --write",
-    "check:ts": "tsc --noEmit"
+    "check:ts": "tsc --noEmit",
+    "test":" echo 'No tests defined yet'"
   },
   "devDependencies": {
     "@canonical/biome-config": "^0.9.0",

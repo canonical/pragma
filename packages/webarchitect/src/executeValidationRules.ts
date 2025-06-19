@@ -7,18 +7,32 @@ export default async function executeValidationRules(
   schema: Schema,
 ): Promise<ValidationResult[]> {
   const results: ValidationResult[] = [];
+
+  // Iterate through each rule in the schema
   for (const [ruleName, rule] of Object.entries(schema)) {
+    // Skip meta-properties that aren't validation rules
     if (ruleName === "$schema" || ruleName === "name" || ruleName === "extends")
       continue;
-    if (typeof rule === "object" && "file" in rule) {
-      const fileResults = await validateFileRule(projectPath, rule.file);
-      results.push(...fileResults);
-    } else if (typeof rule === "object" && "directory" in rule) {
-      const dirResults = await validateDirectoryRule(
-        projectPath,
-        rule.directory,
-      );
-      results.push(...dirResults);
+
+    // Type guard to ensure rule is an object with 'file' or 'directory'
+    if (typeof rule === "object" && rule !== null) {
+      if ("file" in rule) {
+        // Pass the rule name context to file validation
+        const fileResults = await validateFileRule(
+          projectPath,
+          rule.file,
+          ruleName,
+        );
+        results.push(...fileResults);
+      } else if ("directory" in rule) {
+        // Pass the rule name context to directory validation
+        const dirResults = await validateDirectoryRule(
+          projectPath,
+          rule.directory,
+          ruleName,
+        );
+        results.push(...dirResults);
+      }
     }
   }
   return results;
