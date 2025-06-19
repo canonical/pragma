@@ -1,5 +1,4 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { useId } from "react";
 import { describe, expect, it, vi } from "vitest";
 import Tooltip from "./Tooltip.js";
 
@@ -37,9 +36,8 @@ describe("Tooltip component", () => {
   });
 
   it("applies id prop", async () => {
-    const id = useId();
     render(
-      <Tooltip id={id} isOpen={true}>
+      <Tooltip id="test-id" isOpen={true}>
         Tooltip Content
       </Tooltip>,
     );
