@@ -36,7 +36,7 @@
     "check:biome": "biome check",
     "check:biome:fix": "biome check --write",
     "check:ts": "tsc --noEmit",
-    "test":" echo 'No tests defined yet'"
+    "test": "echo 'No tests defined yet'"
   },
   "devDependencies": {
     "@canonical/biome-config": "^0.9.0",
