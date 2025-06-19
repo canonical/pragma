@@ -8,7 +8,7 @@
       "contains": {
         "type": "object",
         "properties": {
-          "extends": { "const": "@company/biome-config" }
+          "extends": { "const": "@canonical/biome-config" }
         },
         "required": ["extends"],
         "additionalProperties": false
