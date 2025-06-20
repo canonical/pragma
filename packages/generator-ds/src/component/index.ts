@@ -116,6 +116,14 @@ export default class ComponentGenerator extends Generator<ComponentGeneratorOpti
       templateData,
     );
 
+    this.fs.copyTpl(
+      this.templatePath("Component.ssr.tests.tsx.ejs"),
+      this.destinationPath(
+        `${this.answers.componentPath}/${templateData.componentName}.ssr.tests.tsx`,
+      ),
+      templateData,
+    );
+
     if (this.answers.withStyles) {
       this.fs.copyTpl(
         this.templatePath("styles.css.ejs"),

@@ -1,0 +1,22 @@
+import { renderToString } from "react-dom/server";
+import { describe, expect, it } from "vitest";
+import Component from "./<%= componentName %>.js";
+
+describe("<%= componentName %> SSR", () => {
+  it("doesn't throw", () => {
+    expect(() => {
+      renderToString(<Component />);
+    }).not.toThrow();
+  });
+
+  it("renders", () => {
+    const html = renderToString(<Component />);
+    expect(html).toContain("<div");
+    expect(html).toContain("</div>");
+  });
+
+  it("applies className", () => {
+    const html = renderToString(<Component className="test-class" />);
+    expect(html).toContain('class="<% if (withStyles) { %><%= cssNamespace %> <%= componentCssClassName %> <% } %>test-class"');
+  });
+});
