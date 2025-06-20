@@ -1,6 +1,6 @@
 /* @canonical/generator-ds 0.9.0-experimental.12 */
 
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import Component from "./DiffChangeMarker.js";
 
 const meta = {

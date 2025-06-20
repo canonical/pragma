@@ -1,0 +1,69 @@
+/* <%= generatorPackageName %> <%= generatorPackageVersion %> */
+
+import { createRawSnippet } from "svelte";
+import Component from "./<%= componentName %>.svelte";
+import type { Meta, StoryFn } from "@storybook/svelte";
+
+const meta = {
+  title: "<%= componentName %>",
+  tags: ["autodocs"],
+  component: Component,
+} satisfies Meta<typeof Component>;
+
+export default meta;
+
+/*
+  Template-Based story
+  Uses a template function to bind story variations
+*/
+const Template: StoryFn<typeof Component> = (args) => ({
+  Component,
+  props: args,
+});
+
+export const Default: StoryFn<typeof Component> = Template.bind({});
+Default.args = {
+  children: createRawSnippet(() => ({
+    render: () => `<span><%= componentName %></span>`,
+  })),
+};
+
+export const WithProps: StoryFn<typeof Component> = Template.bind({});
+WithProps.args = {
+  children: createRawSnippet(() => ({
+    render: () => `<span><%= componentName %> with props</span>`,
+  })),
+  class: "custom-class",
+  id: "unique-id",
+  style: "background-color: tomato; padding: 10px; color: white;",
+};
+
+/* 
+  Function-based story
+  Simple, but can lead to repetition if used across multiple stories with similar configurations
+
+  import type { <%= componentName %>Props } from "./types.js";
+  export const Default = (args: <%= componentName %>Props) => ({
+    Component,
+    props: args,
+  });
+  Default.args = {
+    children: createRawSnippet(() => ({
+      render: () => `<span><%= componentName %></span>`,
+    })),
+  };
+*/
+
+/*
+  Static story
+  Simple and straightforward, but offers the least flexibility and reusability
+  
+  export const Default: StoryFn<typeof Component> = () => ({
+    Component,
+    props: {
+      children: createRawSnippet(() => ({
+        render: () => `<span><%= componentName %></span>`,
+      })),
+    },
+  });
+*/

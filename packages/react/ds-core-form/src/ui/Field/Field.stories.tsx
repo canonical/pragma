@@ -1,6 +1,6 @@
 /* @canonical/generator-ds 0.9.0-experimental.4 */
 
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 // Needed for function-based story, safe to remove otherwise
 // import type { FieldProps } from './types.js'
 import { useMemo } from "react";
@@ -8,7 +8,7 @@ import * as decorators from "storybook/decorators.js";
 import type { FieldProps } from "../Field/types.js";
 import Component from "./Field.js";
 // Needed for template-based story, safe to remove otherwise
-// import type { StoryFn } from '@storybook/react'
+// import type { StoryFn } from '@storybook/react-vite'
 
 const meta = {
   title: "Field",

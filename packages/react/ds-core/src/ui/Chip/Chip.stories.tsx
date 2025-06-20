@@ -2,10 +2,10 @@
 
 // Needed for function-based story, safe to remove otherwise
 // import type { ChipProps } from './types.js'
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 // Needed for template-based story, safe to remove otherwise
-// import type { StoryFn } from '@storybook/react'
-import { fn } from "@storybook/test";
+// import type { StoryFn } from '@storybook/react-vite'
+import { fn } from "storybook/test";
 import Component from "./Chip.js";
 
 const meta = {

@@ -1,0 +1,10 @@
+{
+  "extends": "@canonical/typescript-config-react",
+  "compilerOptions": {
+    "baseUrl": "src",
+    "jsx": "react",
+    "skipLibCheck": true,
+    "types": ["node", "react", "react-dom"]
+  },
+  "include": ["src/**/*"]
+}

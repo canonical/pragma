@@ -1,33 +1,11 @@
 import { withThemeByClassName } from "@storybook/addon-themes";
-import type { Preview, ReactRenderer } from "@storybook/react";
-import type { StoryContext, StoryFn } from "@storybook/react";
-
-import { worker } from "mocks/browser.js";
-
-import { type ComponentType, createElement, useEffect } from "react";
+import type { Preview, ReactRenderer } from "@storybook/react-vite";
 
 import "index.css";
-
-const withMSW = (Story: StoryFn, context: StoryContext) => {
-	useEffect(() => {
-		const { msw } = context.parameters;
-		if (msw && msw.handlers) {
-			worker.resetHandlers();
-			worker.use(...msw.handlers);
-		}
-		return () => worker.resetHandlers();
-	}, [context.parameters.msw]);
-
-	return createElement(Story as ComponentType, context.args);
-};
-
-worker.start({
-	serviceWorker: {
-		url: "/mockServiceWorker.js",
-	},
-});
+import "@canonical/styles-debug/baseline-grid";
 
 const preview: Preview = {
+	tags: ["autodocs"],
 	decorators: [
 		withThemeByClassName<ReactRenderer>({
 			themes: {
@@ -37,7 +15,6 @@ const preview: Preview = {
 			},
 			defaultTheme: "light",
 		}),
-		withMSW,
 	],
 };
 

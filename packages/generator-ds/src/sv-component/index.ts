@@ -9,8 +9,10 @@ interface ComponentGeneratorAnswers {
   componentPath: string;
   /** Whether to include styles in the component */
   withStyles: boolean;
-  /** Whether to use clsx library for class name handling */
-  useClsx: boolean;
+  /** Whether to include stories for the component */
+  withStories: boolean;
+  /** Whether to use `.ts` based story formats instead of the CSF3 & `.svelte` format */
+  useTsStories: boolean;
 }
 
 type ComponentGeneratorOptions = BaseOptions & ComponentGeneratorAnswers;
@@ -29,7 +31,7 @@ export default class ComponentGenerator extends Generator<ComponentGeneratorOpti
         "This generator should be run from the root directory of all your application's components (ex: src/components).",
       );
       this.log(
-        `Use yo ${globalContext.generatorScriptIdentifer}:component --help for more information.`,
+        `Use yo ${globalContext.generatorScriptIdentifer}:sv-component --help for more information.`,
       );
     }
 
@@ -48,18 +50,27 @@ export default class ComponentGenerator extends Generator<ComponentGeneratorOpti
       alias: "c",
     });
 
-    this.option("useClsx", {
+    this.option("withStories", {
       type: Boolean,
       description:
-        "Uses the clsx library for class name handling instead of simple string join.",
+        "Creates a `[ComponentName].stories.svelte` file associated with the component.",
       default: false,
-      alias: "x",
+      alias: "s",
+    });
+
+    this.option("useTsStories", {
+      type: Boolean,
+      description:
+        "Uses the `.ts` based story formats instead of the CSF3 & `.svelte` format. Useful when there is a specific need for a template-based stories or function-based stories, otherwise not recommended. Has no effect if `withStories` is not set.",
+      default: false,
+      alias: "t",
     });
 
     this.answers = {
       componentPath: path.resolve(this.env.cwd, this.options.componentPath),
       withStyles: this.options.withStyles,
-      useClsx: this.options.useClsx,
+      withStories: this.options.withStories,
+      useTsStories: this.options.useTsStories,
     };
   }
 
@@ -108,12 +119,40 @@ export default class ComponentGenerator extends Generator<ComponentGeneratorOpti
       templateData,
     );
 
+    this.fs.copyTpl(
+      this.templatePath("Component.svelte.test.ejs"),
+      this.destinationPath(
+        `${this.answers.componentPath}/${templateData.componentName}.svelte.test.ts`,
+      ),
+      templateData,
+    );
+
     if (this.answers.withStyles) {
       this.fs.copyTpl(
         this.templatePath("styles.css.ejs"),
         this.destinationPath(`${this.answers.componentPath}/styles.css`),
         templateData,
       );
+    }
+
+    if (this.answers.withStories) {
+      if (this.answers.useTsStories) {
+        this.fs.copyTpl(
+          this.templatePath("Component.stories.ts.ejs"),
+          this.destinationPath(
+            `${this.answers.componentPath}/${templateData.componentName}.stories.ts`,
+          ),
+          templateData,
+        );
+      } else {
+        this.fs.copyTpl(
+          this.templatePath("Component.stories.svelte.ejs"),
+          this.destinationPath(
+            `${this.answers.componentPath}/${templateData.componentName}.stories.svelte`,
+          ),
+          templateData,
+        );
+      }
     }
   }
 }

@@ -1,4 +1,4 @@
-import type { Meta, StoryFn, StoryObj } from "@storybook/react";
+import type { Meta, StoryFn, StoryObj } from "@storybook/react-vite";
 
 import { useEffect, useState } from "react";
 import { Button } from "../../../Button/index.js";
@@ -14,8 +14,10 @@ const meta = {
   // Add padding to all tooltips to allow their entire contents to be visible
   parameters: {
     layout: "centered",
+  },
+  globals: {
     backgrounds: {
-      default: "dark",
+      value: "dark",
     },
   },
   tags: ["autodocs"],

@@ -2,7 +2,7 @@
 
 // Needed for function-based story, safe to remove otherwise
 // import type { WrapperProps } from './types.js'
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import * as decorators from "storybook/decorators.js";
 import {
   Text as TextInput,
@@ -10,7 +10,7 @@ import {
 } from "../../inputs/index.js";
 import Component from "./Wrapper.js";
 // Needed for template-based story, safe to remove otherwise
-// import type { StoryFn } from '@storybook/react'
+// import type { StoryFn } from '@storybook/react-vite'
 
 const meta = {
   title: "common/Wrapper",

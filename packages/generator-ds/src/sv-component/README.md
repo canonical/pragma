@@ -9,4 +9,5 @@ This generator creates a new Svelte component with a basic structure.
 
 ### Options
 - `--withStyles` or `-c`: Creates a `styles.css` file associated with the component
-- `--useClsx` or `-x`: Uses the clsx library for class name handling instead of simple string join
+- `--withStories` or `-s`: Creates a Storybook file for the component
+- `--useTsStories` or `-t`: Uses the `.ts` based story formats instead of the CSF3 & `.svelte` format. Useful when there is a specific need for a template-based stories or function-based stories, otherwise not recommended. Has no effect if `withStories` is not set.

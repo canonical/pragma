@@ -1,6 +1,6 @@
 /* @canonical/generator-ds 0.9.0-experimental.1 */
 
-import type { Meta, StoryFn } from "@storybook/react";
+import type { Meta, StoryFn } from "@storybook/react-vite";
 import { useState } from "storybook/internal/preview-api";
 import { FileTree } from "./index.js";
 import type { FileTreeData, ProviderOptions } from "./types.js";

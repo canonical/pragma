@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import Component from "./Tooltip.js";
 import { Tooltip } from "./index.js";
 

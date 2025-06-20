@@ -1,4 +1,4 @@
-import type { Preview } from "@storybook/react";
+import type { Preview } from "@storybook/react-vite";
 
 import "@canonical/styles";
 import "@canonical/styles-debug/baseline-grid";

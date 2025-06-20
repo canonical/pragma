@@ -26,3 +26,5 @@ function MyComponent() {
 
 export default MyComponent;
 ```
+
+This is a test change to force chromatic to run

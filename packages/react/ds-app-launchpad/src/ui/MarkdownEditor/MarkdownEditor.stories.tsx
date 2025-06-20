@@ -1,5 +1,5 @@
 /* @canonical/generator-ds 0.9.0-experimental.4 */
-import type { Meta, StoryFn, StoryObj } from "@storybook/react";
+import type { Meta, StoryFn, StoryObj } from "@storybook/react-vite";
 import { useState } from "storybook/internal/preview-api";
 import MarkdownEditor from "./MarkdownEditor.js";
 import * as fixtures from "./fixtures.js";

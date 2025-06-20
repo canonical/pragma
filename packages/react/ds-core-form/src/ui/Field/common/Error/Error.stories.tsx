@@ -2,10 +2,10 @@
 
 // Needed for function-based story, safe to remove otherwise
 // import type { ErrorProps } from './types.js'
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import Component from "./Error.js";
 // Needed for template-based story, safe to remove otherwise
-// import type { StoryFn } from '@storybook/react'
+// import type { StoryFn } from '@storybook/react-vite'
 
 const meta = {
   title: "common/Wrapper/Error",
