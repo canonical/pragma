@@ -1,11 +1,36 @@
 import hljs from "highlight.js";
 import type { Hunk } from "../types.js";
 
-function highlight(code: string): string {
+function highlight(code: string, fileExtension: string | undefined): string {
+  const formattedFileExtension = fileExtension?.toLowerCase();
+  if (!formattedFileExtension) {
+    return hljs.highlightAuto(code).value;
+  }
+
+  const languages = hljs.listLanguages();
+
+  for (const language of languages) {
+    const languageDefinition = hljs.getLanguage(language);
+    if (
+      language.toLowerCase() === formattedFileExtension ||
+      languageDefinition?.aliases?.find(
+        (alias) => alias.toLowerCase() === formattedFileExtension,
+      )
+    ) {
+      return hljs.highlight(code, { language }).value;
+    }
+  }
+
+  // Fall back to auto-detection if no match found
   return hljs.highlightAuto(code).value;
 }
 
-function highlightDiffHunkLines(hunkLines: Hunk["lines"]): string[] {
+function highlightDiffHunkLines(
+  filePath: string,
+  hunkLines: Hunk["lines"],
+): string[] {
+  const fileExtension = filePath.split(".").pop();
+
   const hunkContentAddedVersion = hunkLines
     .filter((line) => line.type === "add" || line.type === "context")
     .map((line) => line.content)
@@ -15,11 +40,13 @@ function highlightDiffHunkLines(hunkLines: Hunk["lines"]): string[] {
     .map((line) => line.content)
     .join("\n");
 
-  const highlightedHunkAddedVersion = highlight(hunkContentAddedVersion).split(
-    "\n",
-  );
+  const highlightedHunkAddedVersion = highlight(
+    hunkContentAddedVersion,
+    fileExtension,
+  ).split("\n");
   const highlightedHunkDeletedVersion = highlight(
     hunkContentDeletedVersion,
+    fileExtension,
   ).split("\n");
 
   const highlightedLines: string[] = [];

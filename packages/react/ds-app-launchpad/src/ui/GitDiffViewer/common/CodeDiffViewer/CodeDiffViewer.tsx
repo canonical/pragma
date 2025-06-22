@@ -43,7 +43,9 @@ const CodeDiffViewer = (
   const highlightedLines: string[][] = useMemo(() => {
     if (!diff) return [];
 
-    return diff.hunks.map((hunk) => highlightDiffHunkLines(hunk.lines));
+    return diff.hunks.map((hunk) =>
+      highlightDiffHunkLines(diff.newPath, hunk.lines),
+    );
   }, [diff]);
 
   useImperativeHandle<HTMLTableElement | null, HTMLTableElement | null>(
