@@ -11,7 +11,7 @@
 
   --git-diff-viewer-gutter-width: 7.5em;
   --git-diff-viewer-hunk-header-background: #ffffff;
-  --git-diff-viewer-hunk-header-color: rgba(0, 0, 0, 0.6);
+  --git-diff-viewer-hunk-header-color: #707070;
 
   --git-diff-file-header-horizontal-padding: 1em;
   --git-diff-file-header-vertical-padding: 0.4em;

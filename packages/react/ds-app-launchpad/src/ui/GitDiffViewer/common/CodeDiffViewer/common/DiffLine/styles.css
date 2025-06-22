@@ -6,10 +6,6 @@
   min-width: var(--table-width);
   color: var(--git-diff-viewer-code-default-color);
 
-  pre {
-    color: var(--git-diff-viewer-code-default-color);
-  }
-
   &.diff-line-add {
     background-color: var(--git-diff-viewer-code-insertion-background);
 
@@ -96,25 +92,25 @@
       font-family: var(--font-family-mono);
     }
   }
+
   &.interactive {
     --icon-opacity: 0;
+
     &:not(.diff-line-hunk) {
       .diff-gutter {
         cursor: pointer;
-        .diff-line-numbers::before {
-          content: var(--comment-icon);
-          display: inline-block;
-          width: var(--comment-icon-width);
+        .comment-icon {
           opacity: var(--icon-opacity);
           padding: 0 4px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
         }
       }
 
-      &:has(.diff-gutter:hover),
-      &:has(.diff-gutter:focus) {
+      &:hover,
+      &:focus-within {
         filter: brightness(0.9);
-      }
-      &:has(.diff-gutter:hover) {
         --icon-opacity: 1;
       }
     }

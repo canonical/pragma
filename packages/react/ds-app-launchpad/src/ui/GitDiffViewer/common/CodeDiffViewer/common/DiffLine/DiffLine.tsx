@@ -1,6 +1,7 @@
 /* @canonical/generator-canonical-ds 0.0.1 */
 import type React from "react";
 import { useGitDiffViewer } from "../../../../hooks/index.js";
+import * as icons from "../icons.js";
 import "./styles.css";
 import type { DiffLineProps } from "./types.js";
 
@@ -54,6 +55,9 @@ const DiffLine = ({
           "\u00A0"
         ) : (
           <div className="diff-line-numbers">
+            {isInteractive && (
+              <span className="comment-icon">{icons.CommentIcon}</span>
+            )}
             <span className="line-num">
               {props.type === "add" ? "+" : props.removeLineNumber}
             </span>
