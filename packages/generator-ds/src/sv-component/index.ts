@@ -120,7 +120,7 @@ export default class ComponentGenerator extends Generator<ComponentGeneratorOpti
     );
 
     this.fs.copyTpl(
-      this.templatePath("Component.ssr.test.ejs"),
+      this.templatePath("Component.ssr.test.ts.ejs"),
       this.destinationPath(
         `${this.answers.componentPath}/${templateData.componentName}.ssr.test.ts`,
       ),
@@ -128,7 +128,7 @@ export default class ComponentGenerator extends Generator<ComponentGeneratorOpti
     );
 
     this.fs.copyTpl(
-      this.templatePath("Component.svelte.test.ejs"),
+      this.templatePath("Component.svelte.test.ts.ejs"),
       this.destinationPath(
         `${this.answers.componentPath}/${templateData.componentName}.svelte.test.ts`,
       ),
