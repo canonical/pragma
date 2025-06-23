@@ -11,6 +11,8 @@ interface ComponentGeneratorAnswers {
   withStyles: boolean;
   /** Whether to include a storybook story in the component */
   withStories: boolean;
+  /** Whether to omit the SSR tests for the component */
+  withoutSsrTests?: boolean;
 }
 
 type ComponentGeneratorOptions = BaseOptions & ComponentGeneratorAnswers;
@@ -56,10 +58,19 @@ export default class ComponentGenerator extends Generator<ComponentGeneratorOpti
       alias: "s",
     });
 
+    this.option("withoutSsrTests", {
+      type: Boolean,
+      description:
+        "Skips the creation of `[ComponentName].ssr.tests.tsx` (Server-Side Rendering tests) file associated with the component",
+      default: false,
+      alias: "w",
+    });
+
     this.answers = {
       componentPath: path.resolve(this.env.cwd, this.options.componentPath),
       withStyles: this.options.withStyles,
       withStories: this.options.withStories,
+      withoutSsrTests: this.options.withoutSsrTests,
     };
   }
 
@@ -116,13 +127,15 @@ export default class ComponentGenerator extends Generator<ComponentGeneratorOpti
       templateData,
     );
 
-    this.fs.copyTpl(
-      this.templatePath("Component.ssr.tests.tsx.ejs"),
-      this.destinationPath(
-        `${this.answers.componentPath}/${templateData.componentName}.ssr.tests.tsx`,
-      ),
-      templateData,
-    );
+    if (!this.answers.withoutSsrTests) {
+      this.fs.copyTpl(
+        this.templatePath("Component.ssr.tests.tsx.ejs"),
+        this.destinationPath(
+          `${this.answers.componentPath}/${templateData.componentName}.ssr.tests.tsx`,
+        ),
+        templateData,
+      );
+    }
 
     if (this.answers.withStyles) {
       this.fs.copyTpl(

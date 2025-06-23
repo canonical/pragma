@@ -13,6 +13,8 @@ interface ComponentGeneratorAnswers {
   withStories: boolean;
   /** Whether to use `.ts` based story formats instead of the CSF3 & `.svelte` format */
   useTsStories: boolean;
+  /** Whether to omit the SSR tests for the component */
+  withoutSsrTests?: boolean;
 }
 
 type ComponentGeneratorOptions = BaseOptions & ComponentGeneratorAnswers;
@@ -66,11 +68,20 @@ export default class ComponentGenerator extends Generator<ComponentGeneratorOpti
       alias: "t",
     });
 
+    this.option("withoutSsrTests", {
+      type: Boolean,
+      description:
+        "Skips the creation of `[ComponentName].ssr.test.ts` (Server-Side Rendering tests) file associated with the component",
+      default: false,
+      alias: "w",
+    });
+
     this.answers = {
       componentPath: path.resolve(this.env.cwd, this.options.componentPath),
       withStyles: this.options.withStyles,
       withStories: this.options.withStories,
       useTsStories: this.options.useTsStories,
+      withoutSsrTests: this.options.withoutSsrTests,
     };
   }
 
@@ -120,20 +131,22 @@ export default class ComponentGenerator extends Generator<ComponentGeneratorOpti
     );
 
     this.fs.copyTpl(
-      this.templatePath("Component.ssr.test.ts.ejs"),
-      this.destinationPath(
-        `${this.answers.componentPath}/${templateData.componentName}.ssr.test.ts`,
-      ),
-      templateData,
-    );
-
-    this.fs.copyTpl(
       this.templatePath("Component.svelte.test.ts.ejs"),
       this.destinationPath(
         `${this.answers.componentPath}/${templateData.componentName}.svelte.test.ts`,
       ),
       templateData,
     );
+
+    if (!this.answers.withoutSsrTests) {
+      this.fs.copyTpl(
+        this.templatePath("Component.ssr.test.ts.ejs"),
+        this.destinationPath(
+          `${this.answers.componentPath}/${templateData.componentName}.ssr.test.ts`,
+        ),
+        templateData,
+      );
+    }
 
     if (this.answers.withStyles) {
       this.fs.copyTpl(
