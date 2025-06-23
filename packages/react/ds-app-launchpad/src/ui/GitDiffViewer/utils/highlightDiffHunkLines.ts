@@ -13,7 +13,7 @@ function highlight(code: string, fileExtension: string | undefined): string {
     const languageDefinition = hljs.getLanguage(language);
     if (
       language.toLowerCase() === formattedFileExtension ||
-      languageDefinition?.aliases?.find(
+      languageDefinition?.aliases?.some(
         (alias) => alias.toLowerCase() === formattedFileExtension,
       )
     ) {
