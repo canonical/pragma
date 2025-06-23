@@ -20,4 +20,8 @@
       margin-right: -1px;
     }
   }
+
+  > .svg-refs {
+    display: none;
+  }
 }

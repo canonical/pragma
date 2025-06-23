@@ -13,6 +13,7 @@ import { highlightDiffHunkLines } from "../../utils/index.js";
 import { DiffLine } from "./common/index.js";
 import "./HighlighTheme.css";
 import "./styles.css";
+import * as icons from "./common/icons.js";
 import type { CodeDiffViewerProps } from "./types.js";
 
 import { AnnotatedDiffLine } from "./common/AnnotatedDiffLine/index.js";
@@ -129,6 +130,7 @@ const CodeDiffViewer = (
           </tbody>
         </table>
       </div>
+      <div className="svg-refs">{icons.CommentIcon}</div>
     </div>
   );
 };
