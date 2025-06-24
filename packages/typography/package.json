@@ -18,7 +18,8 @@
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
     "@canonical/biome-config": "^0.9.0-experimental.12",
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "vitest": "^3.0.9"
   },
   "peerDependencies": {
     "typescript": "^5.8.2"

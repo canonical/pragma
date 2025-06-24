@@ -68,3 +68,6 @@ static/js/modules
 
 # NX cache
 .nx/
+
+# [coverage] Code coverage reports
+coverage/

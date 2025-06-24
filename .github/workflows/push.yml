@@ -21,5 +21,5 @@ jobs:
       - name: Code quality checks
         run: bun run check
 
-      - name: Test
-        run: bun run test
+      - name: Test with coverage
+        uses: ./.github/actions/coverage

@@ -1,0 +1,52 @@
+name: "Coverage"
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+        # "prepare" hook on `bun install` runs `bun run build`
+      - name: Setup environment
+        uses: ./.github/actions/setup-env
+
+      - name: Test with coverage
+        uses: ./.github/actions/coverage
+
+      - name: Upload coverage to PR
+        if: github.event_name == 'pull_request'
+        # TODO maybe we don't want to use this action, but it is helpful for now in demonstrating coverage on the tics prep prs
+        # It's used in a few Canonical repos: https://github.com/search?q=org%3Acanonical%20davelosert%2Fvitest-coverage-report-action&type=code
+        uses: davelosert/vitest-coverage-report-action@v2
+
+  upload-coverage-pages:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: coverage
+    permissions:
+      id-token: write
+      pages: write
+    steps:
+      - name: Download coverage report
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: coverage
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

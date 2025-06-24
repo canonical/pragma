@@ -36,9 +36,13 @@
     "check": "lerna run check",
     "check:fix": "lerna run check:fix",
     "test": "lerna run test",
+    "test:coverage": "vitest test --coverage --run",
     "special:clean": "rm -rf node_modules .nx"
   },
   "devDependencies": {
-    "lerna": "^8.1.8"
+    "jsdom": "26.1.0",
+    "lerna": "^8.1.8",
+    "vitest": "3.2.2",
+    "@vitest/coverage-v8": "3.2.2"
   }
 }
