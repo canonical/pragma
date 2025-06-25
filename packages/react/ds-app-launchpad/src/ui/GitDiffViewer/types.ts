@@ -1,7 +1,5 @@
 import type { AllOrNone } from "@canonical/utils";
 import type React from "react";
-import type { ForwardRefExoticComponent } from "react";
-import type { CodeDiffViewerProps, FileHeaderProps } from "./common/index.js";
 
 /**
  * When this is provided, the component will add support for collapsing the diff code section.
@@ -86,13 +84,4 @@ export type DiffFile = {
   newPath: string;
   hunks: Hunk[];
   fileChangeState: "none" | "added" | "deleted" | "modified";
-};
-
-export type GitDiffViewerComponent = ((
-  props: ProviderOptions,
-) => React.ReactElement) & {
-  FileHeader: (props: FileHeaderProps) => React.ReactElement | null;
-  CodeDiffViewer: React.ForwardRefExoticComponent<
-    CodeDiffViewerProps & React.RefAttributes<HTMLTableElement>
-  >;
 };
