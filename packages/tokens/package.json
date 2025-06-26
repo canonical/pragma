@@ -18,9 +18,10 @@
   },
   "homepage": "https://github.com/canonical/ds25#readme",
   "scripts": {
+    "build": "npm run build:primitives && npm run build:semantic",
+    "build:all": "npm run build:primitives && npm run build:semantic",
     "build:primitives": "style-dictionary build --config config.primitives.js",
     "build:semantic": "style-dictionary build --config config.semantic.js --verbose --no-warn",
-    "build": "npm run build:primitives && npm run build:semantic",
     "check": "bun run check:biome",
     "check:fix": "bun run check:biome:fix",
     "check:biome": "biome check src *.json *.js",

@@ -19,6 +19,7 @@
   "module": "generators/index.js",
   "scripts": {
     "build": "bun run build:tsc && bun run build:copyfiles",
+    "build:all": "bun run build:tsc && bun run build:copyfiles",
     "build:tsc": "tsc",
     "build:copyfiles": "copyfiles -u 1 src/**/templates/**/* generators",
     "check": "bun run check:biome && bun run check:ts",

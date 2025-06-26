@@ -49,7 +49,28 @@ To ensure consistency and streamline CI workflows, each package should define th
 * `check`: Lints, formats, and type-checks the package.
 * `check:fix`: Lints, formats, type-checks, and automatically fixes issues where possible.
 * `test` (if applicable): Runs tests for the package.
-* `build` (if applicable): Builds the package for publishing or dependency usage.
+* `build` (if applicable): Builds the package for publishing and local development. 
+
+#### 2.4 Full Artifact Builds: build:all
+
+For CI and release workflows, every package that produces build artifacts (e.g., Storybook, docs, etc.) must define a `build:all` script in its `package.json`. This script should build **all** artifacts for the package, not just the minimal build required for linking in local development. This is useful for building artifacts that are not needed for publishing (for example, Storybook builds).
+
+- `build` should remain minimal, for linking and development (e.g., just TypeScript build or equivalent).
+- `build:all` must invoke all build steps needed to produce every artifact for the package.
+
+**Example:**
+```json
+{
+  "scripts": {
+      "build": "bun run build:package",
+      "build:all": "bun run build:package && bun run build:storybook",
+      "build:storybook": "storybook build",
+      "build:package": "bun run build:package:tsc && bun run build:package:copycss",
+  }
+}
+```
+
+The CI matrix and release workflows will use `build:all` to ensure all artifacts are built. See the PR template for checklist requirements.
 
 ### 3. Documentation Standards
 

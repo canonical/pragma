@@ -27,6 +27,7 @@
   },
   "scripts": {
     "build": "bun run build:package",
+    "build:all": "bun run build:package",
     "build:package": "bun run build:package:tsc",
     "build:package:tsc": "tsc -p tsconfig.build.json",
     "storybook": "storybook dev -p 6007 --no-open --host 0.0.0.0",

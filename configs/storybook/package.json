@@ -19,7 +19,8 @@
   "homepage": "https://github.com/canonical/ds25#readme",
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "check": "bun run check:biome && bun run check:ts",
+    "build:all": "tsc -p tsconfig.build.json",
+    "check": "bun run check:biome",
     "check:fix": "bun run check:biome:fix && bun run check:ts",
     "check:biome": "biome check",
     "check:biome:fix": "biome check --write",

@@ -15,8 +15,7 @@ Fixes [list issues/bugs if needed]
 - [ ] PR title follows the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) format. 
 - [ ] All packages define the required scripts in `package.json`:
   - [ ] All packages: `check`, `check:fix`, and `test`.
-  - [ ] Packages with a build step: `build`.
-
+  - [ ] Packages with build steps: `build` to build the package for development or distribution, `build:all` to build **all** artifacts. See [CONTRIBUTING.md](../old/CONTRIBUTING.md#24-full-artifact-builds-buildall) for details. 
 ## Screenshots
 
 [if relevant, include a screenshot or screen capture]
