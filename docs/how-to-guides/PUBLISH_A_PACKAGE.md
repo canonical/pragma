@@ -30,7 +30,7 @@ Use these steps if your package has never been published to NPM before (for exam
    - Change directory to your new package, e.g. `cd packages/react/ds-app-<your-package>`.
 
 5. **Publish the package**
-   - Run `npm publish`.
+   - Run `npm publish --access public`.
    - Confirm the package is now available on [NPM](https://npmjs.org).
 
 After the first manual publish, you can use the automated workflow for future releases.
