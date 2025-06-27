@@ -23,6 +23,9 @@
     "check:biome": "biome check",
     "check:biome:fix": "biome check --write"
   },
+  "dependencies": {
+    "@canonical/tokens": "^0.9.0-experimental.21"
+  },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
     "@canonical/biome-config": "^0.9.0-experimental.12"
