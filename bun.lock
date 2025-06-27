@@ -9,7 +9,7 @@
     },
     "apps/react/boilerplate-vite": {
       "name": "@canonical/react-boilerplate-vite",
-      "version": "0.9.0-experimental.20",
+      "version": "0.9.0-experimental.22",
       "dependencies": {
         "@canonical/react-ssr": "^0.9.0-experimental.12",
         "@canonical/storybook-config": "^0.9.0-experimental.19",
@@ -36,7 +36,7 @@
     },
     "apps/react/demo": {
       "name": "@canonical/ds-demo-site",
-      "version": "0.9.0-experimental.20",
+      "version": "0.9.0-experimental.22",
       "dependencies": {
         "@canonical/react-ds-core": "^0.9.0-experimental.20",
         "@canonical/react-ds-core-form": "^0.9.0-experimental.20",
@@ -79,7 +79,7 @@
     },
     "configs/storybook": {
       "name": "@canonical/storybook-config",
-      "version": "0.9.0-experimental.19",
+      "version": "0.9.0-experimental.21",
       "dependencies": {
         "@chromatic-com/storybook": "^4.0.0",
         "@storybook/addon-a11y": "^9.0.8",
@@ -91,7 +91,7 @@
       "devDependencies": {
         "@biomejs/biome": "^1.9.4",
         "@canonical/biome-config": "^0.9.0-experimental.12",
-        "@canonical/typescript-config-react": "^0.9.0-experimental.12",
+        "@canonical/typescript-config-react": "^0.9.0-experimental.21",
         "typescript": "^5.8.3",
       },
       "peerDependencies": {
@@ -100,7 +100,7 @@
     },
     "configs/typescript-base": {
       "name": "@canonical/typescript-config-base",
-      "version": "0.9.0-experimental.12",
+      "version": "0.9.0-experimental.21",
       "devDependencies": {
         "@biomejs/biome": "^1.9.4",
         "@canonical/biome-config": "^0.9.0-experimental.12",
@@ -112,9 +112,9 @@
     },
     "configs/typescript-react": {
       "name": "@canonical/typescript-config-react",
-      "version": "0.9.0-experimental.12",
+      "version": "0.9.0-experimental.21",
       "dependencies": {
-        "@canonical/typescript-config-base": "^0.9.0-experimental.12",
+        "@canonical/typescript-config-base": "^0.9.0-experimental.21",
       },
       "devDependencies": {
         "@biomejs/biome": "^1.9.4",
@@ -127,7 +127,7 @@
     },
     "packages/generator-ds": {
       "name": "@canonical/generator-ds",
-      "version": "0.9.0-experimental.20",
+      "version": "0.9.0-experimental.22",
       "dependencies": {
         "@canonical/utils": "^0.9.0-experimental.12",
         "yeoman-generator": "^7.5.1",
@@ -146,7 +146,7 @@
     },
     "packages/react/ds-app-anbox": {
       "name": "@canonical/react-ds-app-anbox",
-      "version": "0.9.0-experimental.20",
+      "version": "0.9.0-experimental.22",
       "dependencies": {
         "@canonical/storybook-config": "^0.9.0-experimental.19",
         "@canonical/styles": "^0.9.0-experimental.20",
@@ -176,7 +176,7 @@
     },
     "packages/react/ds-app-launchpad": {
       "name": "@canonical/react-ds-app-launchpad",
-      "version": "0.9.0-experimental.20",
+      "version": "0.9.0-experimental.22",
       "dependencies": {
         "@canonical/storybook-config": "^0.9.0-experimental.19",
         "@canonical/styles": "^0.9.0-experimental.20",
@@ -213,7 +213,7 @@
     },
     "packages/react/ds-app-lxd": {
       "name": "@canonical/react-ds-app-lxd",
-      "version": "0.9.0-experimental.20",
+      "version": "0.9.0-experimental.22",
       "dependencies": {
         "@canonical/storybook-config": "^0.9.0-experimental.19",
         "@canonical/styles": "^0.9.0-experimental.20",
@@ -243,7 +243,7 @@
     },
     "packages/react/ds-app-maas": {
       "name": "@canonical/react-ds-app-maas",
-      "version": "0.9.0-experimental.20",
+      "version": "0.9.0-experimental.22",
       "dependencies": {
         "@canonical/storybook-config": "^0.9.0-experimental.19",
         "@canonical/styles": "^0.9.0-experimental.20",
@@ -273,7 +273,7 @@
     },
     "packages/react/ds-app-stores": {
       "name": "@canonical/react-ds-app-stores",
-      "version": "0.9.0-experimental.20",
+      "version": "0.9.0-experimental.22",
       "dependencies": {
         "@canonical/storybook-config": "^0.9.0-experimental.19",
         "@canonical/styles": "^0.9.0-experimental.20",
@@ -303,7 +303,7 @@
     },
     "packages/react/ds-app-wpe": {
       "name": "@canonical/react-ds-app-wpe",
-      "version": "0.9.0-experimental.20",
+      "version": "0.9.0-experimental.22",
       "dependencies": {
         "@canonical/storybook-config": "^0.9.0-experimental.19",
         "@canonical/styles": "^0.9.0-experimental.20",
@@ -333,18 +333,18 @@
     },
     "packages/react/ds-core": {
       "name": "@canonical/react-ds-core",
-      "version": "0.9.0-experimental.20",
+      "version": "0.9.0-experimental.22",
       "dependencies": {
-        "@canonical/storybook-config": "^0.9.0-experimental.19",
-        "@canonical/styles": "^0.9.0-experimental.20",
-        "@canonical/utils": "^0.9.0-experimental.12",
+        "@canonical/storybook-config": "^0.9.0-experimental.21",
+        "@canonical/styles": "^0.9.0-experimental.21",
+        "@canonical/utils": "^0.9.0-experimental.21",
         "react": "^19.1.0",
         "react-dom": "^19.1.0",
       },
       "devDependencies": {
         "@biomejs/biome": "^1.9.4",
         "@canonical/biome-config": "^0.9.0-experimental.12",
-        "@canonical/typescript-config-react": "^0.9.0-experimental.12",
+        "@canonical/typescript-config-react": "^0.9.0-experimental.21",
         "@chromatic-com/storybook": "^4.0.0",
         "@testing-library/jest-dom": "^6.6.3",
         "@testing-library/react": "^16.3.0",
@@ -364,7 +364,7 @@
     },
     "packages/react/ds-core-form": {
       "name": "@canonical/react-ds-core-form",
-      "version": "0.9.0-experimental.20",
+      "version": "0.9.0-experimental.22",
       "dependencies": {
         "@canonical/react-ds-core": "^0.9.0-experimental.20",
         "@canonical/storybook-config": "^0.9.0-experimental.19",
@@ -398,7 +398,7 @@
     },
     "packages/react/ssr": {
       "name": "@canonical/react-ssr",
-      "version": "0.9.0-experimental.12",
+      "version": "0.9.0-experimental.21",
       "bin": {
         "serve-express": "./dist/esm/server/serve-express.js",
       },
@@ -421,7 +421,7 @@
     },
     "packages/storybook/addon-baseline-grid": {
       "name": "@canonical/storybook-addon-baseline-grid",
-      "version": "0.9.0-experimental.19",
+      "version": "0.9.0-experimental.21",
       "dependencies": {
         "@canonical/styles-debug": "^0.9.0-experimental.19",
         "@storybook/icons": "^1.2.10",
@@ -446,7 +446,7 @@
     },
     "packages/storybook/addon-msw": {
       "name": "@canonical/storybook-addon-msw",
-      "version": "0.9.0-experimental.19",
+      "version": "0.9.0-experimental.21",
       "dependencies": {
         "@canonical/styles-debug": "^0.9.0-experimental.19",
         "@storybook/icons": "^1.2.10",
@@ -491,14 +491,14 @@
     },
     "packages/styles/main/canonical": {
       "name": "@canonical/styles",
-      "version": "0.9.0-experimental.20",
+      "version": "0.9.0-experimental.21",
       "dependencies": {
         "@canonical/styles-elements": "^0.9.0-experimental.12",
         "@canonical/styles-modes-canonical": "^0.9.0-experimental.12",
         "@canonical/styles-modes-density": "^0.9.0-experimental.12",
         "@canonical/styles-modes-intents": "^0.9.0-experimental.20",
         "@canonical/styles-modes-motion": "^0.9.0-experimental.12",
-        "@canonical/styles-primitives-canonical": "^0.9.0-experimental.20",
+        "@canonical/styles-primitives-canonical": "^0.9.0-experimental.21",
         "normalize.css": "^8.0.1",
       },
       "devDependencies": {
@@ -543,16 +543,16 @@
     },
     "packages/styles/primitives/canonical": {
       "name": "@canonical/styles-primitives-canonical",
-      "version": "0.9.0-experimental.20",
+      "version": "0.9.0-experimental.21",
       "devDependencies": {
         "@biomejs/biome": "^1.9.4",
         "@canonical/biome-config": "^0.9.0-experimental.12",
-        "@canonical/tokens": "^0.9.0-experimental.20",
+        "@canonical/tokens": "^0.9.0-experimental.21",
       },
     },
     "packages/tokens": {
       "name": "@canonical/tokens",
-      "version": "0.9.0-experimental.20",
+      "version": "0.9.0-experimental.21",
       "dependencies": {
         "style-dictionary": "^4.3.3",
       },
@@ -581,11 +581,11 @@
     },
     "packages/utils": {
       "name": "@canonical/utils",
-      "version": "0.9.0-experimental.12",
+      "version": "0.9.0-experimental.21",
       "devDependencies": {
         "@biomejs/biome": "^1.9.4",
         "@canonical/biome-config": "^0.9.0-experimental.12",
-        "@canonical/typescript-config-base": "^0.9.0-experimental.12",
+        "@canonical/typescript-config-base": "^0.9.0-experimental.21",
         "typescript": "^5.8.3",
       },
     },
