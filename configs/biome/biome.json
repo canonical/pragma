@@ -7,7 +7,13 @@
   },
   "files": {
     "ignoreUnknown": false,
-    "includes": ["**", "!**/node_modules", "!**/dist", "!**/*.gen.ts", "!**/storybook-static"]
+    "includes": [
+      "**",
+      "!**/node_modules",
+      "!**/dist",
+      "!**/*.gen.ts",
+      "!**/storybook-static"
+    ]
   },
   "formatter": {
     "enabled": true,
