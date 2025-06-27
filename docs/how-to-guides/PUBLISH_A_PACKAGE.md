@@ -14,7 +14,7 @@ This guide shows you how to publish a package from this repository to NPM.
   4. Set the token as the `NODE_AUTH_TOKEN` GitHub secret for this repository. 
 
 ## Publishing a new package
-Use these steps if your package has never been published to NPM before (for example, it was just merged to `main`).
+Follow these steps if your package has never been published to NPM before (for example, it was just merged to `main`).
 
 1. **Log in to NPM**
    - Run `npm login` and enter your credentials for the [@canonical](https://www.npmjs.com/org/canonical) organization.
@@ -30,7 +30,7 @@ Use these steps if your package has never been published to NPM before (for exam
    - Change directory to your new package, e.g. `cd packages/react/ds-app-<your-package>`.
 
 5. **Publish the package**
-   - Run `npm publish --access public`.
+   - Run `npm publish --access public`. Note that the `--access public` flag is only required on first publish, subsequent invocations can omit it.
    - Confirm the package is now available on [NPM](https://npmjs.org).
 
 After the first manual publish, you can use the automated workflow for future releases.
