@@ -4,8 +4,8 @@ import {
   useCallback,
   useEffect,
   useId,
+  useState,
 } from "react";
-import { useState } from "react";
 import { useDelayedToggle } from "../useDelayedToggle/index.js";
 import { useWindowFitment } from "../useWindowFitment/index.js";
 import type {

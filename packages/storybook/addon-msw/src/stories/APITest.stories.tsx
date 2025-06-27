@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { http, HttpResponse } from "msw";
+import { HttpResponse, http } from "msw";
 import APITest from "./APITest.js";
 
 const meta: Meta<typeof APITest> = {

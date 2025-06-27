@@ -3,7 +3,9 @@
   "description": "Canonical's base styles",
   "version": "0.9.0",
   "main": "src/index.css",
-  "files": ["src"],
+  "files": [
+    "src"
+  ],
   "author": {
     "email": "webteam@canonical.com",
     "name": "Canonical Webteam"

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { http, HttpResponse } from "msw";
+import { HttpResponse, http } from "msw";
 import DynamicSearch from "./DynamicSearch.js";
 
 const meta: Meta<typeof DynamicSearch> = {
