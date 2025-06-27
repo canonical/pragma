@@ -5,8 +5,8 @@ import type {
   RangeProps,
   SelectProps,
   SimpleChoicesProps,
-  TextProps,
   TextareaProps,
+  TextProps,
 } from "./inputs/index.js";
 
 export type BaseProps = {

@@ -1,4 +1,4 @@
-import { RouterProvider, createRouter } from "@tanstack/react-router";
+import { createRouter, RouterProvider } from "@tanstack/react-router";
 import { useExampleRHFInterface } from "hooks/index.js";
 import { FormProvider } from "react-hook-form";
 import { routeTree } from "./routeTree.gen.js";
@@ -16,6 +16,7 @@ function App() {
 
   return (
     <FormProvider {...methods}>
+      {/* biome-ignore lint/nursery/useUniqueElementIds: Biome v2 TODO: fix */}
       <form id="form-root">
         <RouterProvider router={router} />
       </form>

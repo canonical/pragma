@@ -89,9 +89,10 @@
     var(--drawer-dialogue-padding-horizontal);
   position: fixed;
   top: 0;
-  transition: transform var(--drawer-transition-duration)
-    var(--drawer-transition-timing-function-transform), visibility
-    var(--drawer-transition-duration)
+  transition:
+    transform var(--drawer-transition-duration)
+    var(--drawer-transition-timing-function-transform),
+    visibility var(--drawer-transition-duration)
     var(--drawer-transition-timing-function-visibility);
   visibility: hidden;
   width: var(--drawer-dialogue-width-small);
@@ -101,9 +102,10 @@
     background-color: var(--drawer-overlay-background);
     inset: 0;
     position: fixed;
-    transition: opacity var(--drawer-transition-duration)
-      var(--drawer-transition-timing-function-opacity), visibility
-      var(--drawer-transition-duration)
+    transition:
+      opacity var(--drawer-transition-duration)
+      var(--drawer-transition-timing-function-opacity),
+      visibility var(--drawer-transition-duration)
       var(--drawer-transition-timing-function-visibility);
     z-index: var(--drawer-overlay-z-index);
   }

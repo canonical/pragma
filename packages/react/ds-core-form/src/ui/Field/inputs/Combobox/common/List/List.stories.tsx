@@ -3,11 +3,11 @@
 // Needed for function-based story, safe to remove otherwise
 // import type { ListProps } from './types.js'
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import type { UseComboboxPropGetters } from "downshift";
 import * as fixtures from "storybook/fixtures.options.js";
 import type { Option } from "../../../../types.js";
 import Component from "./List.js";
 
-import type { UseComboboxPropGetters } from "downshift";
 // Needed for template-based story, safe to remove otherwise
 // import type { StoryFn } from '@storybook/react-vite'
 

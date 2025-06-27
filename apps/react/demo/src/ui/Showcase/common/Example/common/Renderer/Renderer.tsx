@@ -1,6 +1,7 @@
 import type { RendererProps } from "./types.js";
 
 const componentCssClassname = "ds example-renderer";
+
 import root from "react-shadow";
 import { useShowcaseContext } from "../../hooks/index.js";
 import shadowCss from "./styles.css?inline";
