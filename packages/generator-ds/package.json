@@ -14,7 +14,9 @@
     "url": "https://github.com/canonical/ds25/issues"
   },
   "homepage": "https://github.com/canonical/ds25#readme",
-  "files": ["generators"],
+  "files": [
+    "generators"
+  ],
   "type": "module",
   "module": "generators/index.js",
   "scripts": {

@@ -5,7 +5,9 @@
   "type": "module",
   "module": "dist/esm/index.js",
   "types": "dist/types/index.d.ts",
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "author": {
     "email": "webteam@canonical.com",
     "name": "Canonical Webteam"

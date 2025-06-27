@@ -16,7 +16,7 @@ TODO
 }
 
 :root {
-  --baseline-height: .5rem;
+  --baseline-height: 0.5rem;
   --ascender: 830;
   --descender: -170;
   --units-per-em: 1000;
