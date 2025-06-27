@@ -50,7 +50,6 @@
     "react-hook-form": "^7.57.0"
   },
   "devDependencies": {
-<<<<<<< HEAD
     "@canonical/biome-config": "^0.9.0",
     "@canonical/typescript-config-react": "^0.9.0",
     "@biomejs/biome": "^2.0.0",
