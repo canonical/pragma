@@ -1,6 +1,7 @@
-import { render, screen } from "@testing-library/react";
+// import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import Component from "./Field.js";
+
+// import Component from "./Field.js";
 
 describe("Field component", () => {
   // it("renders", () => {

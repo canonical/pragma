@@ -1,6 +1,6 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import type * as React from "react";
-import { type ReactElement, createElement } from "react";
+import { createElement, type ReactElement } from "react";
 import {
   type PipeableStream,
   type RenderToPipeableStreamOptions,

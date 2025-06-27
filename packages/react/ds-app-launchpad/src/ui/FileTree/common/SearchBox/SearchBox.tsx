@@ -17,22 +17,19 @@ const SearchBox = ({
   style,
 }: SearchBoxProps): React.ReactElement | null => {
   const { searchQuery, onSearch } = useFileTree();
-  if (!onSearch) {
-    return null;
-  }
 
   const handleSearch: React.FormEventHandler<HTMLFormElement> = useCallback(
     (event) => {
       event.preventDefault();
       const formData = new FormData(event.currentTarget);
-      onSearch(formData.get("search") as string);
+      onSearch?.(formData.get("search") as string);
     },
     [onSearch],
   );
   const handleReset: React.FormEventHandler<HTMLFormElement> = useCallback(
     (event) => {
       event.preventDefault();
-      onSearch("");
+      onSearch?.("");
     },
     [onSearch],
   );
@@ -40,11 +37,15 @@ const SearchBox = ({
   const handleInputUpdate: React.ChangeEventHandler<HTMLInputElement> =
     useCallback(
       (event) => {
-        onSearch(event.currentTarget.value);
+        onSearch?.(event.currentTarget.value);
         event.preventDefault();
       },
       [onSearch],
     );
+
+  if (!onSearch) {
+    return null;
+  }
 
   return (
     <form

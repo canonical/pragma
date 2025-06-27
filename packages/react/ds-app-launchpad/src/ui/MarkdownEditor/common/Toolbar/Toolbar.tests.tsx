@@ -89,9 +89,8 @@ describe("Toolbar", () => {
   it("does nothing when arrow keys pressed on non-button elements", () => {
     render(
       <Toolbar label="Test Toolbar">
-        {/* biome-ignore lint/a11y/noNoninteractiveTabindex:
-         For testing purposes, we need to set tabindex on a non-interactive element
-          */}
+        {/* biome-ignore lint/a11y/noNoninteractiveTabindex: For testing purposes, we need to set tabindex on a non-interactive element
+         */}
         <div data-testid="not-a-button" tabIndex={0}>
           Div element
         </div>

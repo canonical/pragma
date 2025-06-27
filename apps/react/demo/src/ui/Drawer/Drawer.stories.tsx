@@ -18,7 +18,7 @@ export default meta;
   Uses object-based story declarations with strong TS support (`Meta` and `StoryObj`).
   Uses the latest storybook format.
 */
-type Story = StoryObj<typeof meta>;
+// type Story = StoryObj<typeof meta>;
 
 const Example = ({
   isOpenOverride = false,

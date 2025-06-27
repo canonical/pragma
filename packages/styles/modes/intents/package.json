@@ -3,7 +3,9 @@
   "description": "Canonical's base styles",
   "version": "0.9.0",
   "main": "src/index.css",
-  "files": ["src"],
+  "files": [
+    "src"
+  ],
   "author": {
     "email": "webteam@canonical.com",
     "name": "Canonical Webteam"
@@ -27,7 +29,7 @@
     "@canonical/tokens": "^0.9.0"
   },
   "devDependencies": {
-    "@biomejs/biome": "^1.9.4",
+    "@biomejs/biome": "^2.0.0",
     "@canonical/biome-config": "^0.9.0"
   }
 }

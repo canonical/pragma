@@ -5,7 +5,9 @@
   "type": "module",
   "module": "dist/esm/index.js",
   "types": "dist/types/index.d.ts",
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "author": {
     "email": "webteam@canonical.com",
     "name": "Canonical Webteam"
@@ -36,9 +38,9 @@
     "check:ts": "tsc --noEmit"
   },
   "devDependencies": {
-    "@biomejs/biome": "^1.9.4",
     "@canonical/biome-config": "^0.9.0",
     "@canonical/typescript-config-base": "^0.9.0",
+    "@biomejs/biome": "^2.0.0",
     "typescript": "^5.8.3"
   }
 }

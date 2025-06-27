@@ -6,17 +6,17 @@ TODO
 */
 
 :root {
-  --font-family-sans: "Ubuntu variable", "Ubuntu", -apple-system, "Segoe UI",
-    "Roboto", "Oxygen", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
-    sans-serif;
-  --font-family-mono: "Ubuntu Mono variable", "Ubuntu Mono", Consolas, Monaco,
-    Courier, monospace;
+  --font-family-sans:
+    "Ubuntu variable", "Ubuntu", -apple-system, "Segoe UI", "Roboto", "Oxygen",
+    "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
+  --font-family-mono:
+    "Ubuntu Mono variable", "Ubuntu Mono", Consolas, Monaco, Courier, monospace;
   --text-max-width: 40em;
   --font-size: 16px;
 }
 
 :root {
-  --baseline-height: .5rem;
+  --baseline-height: 0.5rem;
   --ascender: 830;
   --descender: -170;
   --units-per-em: 1000;
