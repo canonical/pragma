@@ -157,12 +157,12 @@
 
 .hljs-deletion {
   color: #dc3023;
-  background-color: #490202;
+  background-color: transparent;
 }
 
 .hljs-addition {
   color: #0e811f;
-  background-color: #04260f;
+  background-color: transparent;
 }
 
 .hljs-link {
