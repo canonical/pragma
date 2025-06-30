@@ -3,6 +3,7 @@ import type { Hunk } from "../types.js";
 
 function highlight(code: string, fileExtension: string | undefined): string {
   const formattedFileExtension = fileExtension?.toLowerCase();
+
   if (!formattedFileExtension) {
     return hljs.highlightAuto(code).value;
   }
@@ -25,6 +26,41 @@ function highlight(code: string, fileExtension: string | undefined): string {
   return hljs.highlightAuto(code).value;
 }
 
+/**
+ * Splits HTML spans that contain newline characters into separate spans for each line.
+ * This is useful for diff viewers where each line needs to be highlighted individually
+ * while preserving the original syntax highlighting CSS classes.
+ *
+ * @example
+ * ```typescript
+ * // Input HTML with multiline comment span
+ * const input = '<span class="hljs-comment">/**\\n * Description\\n *\/</span>';
+ *
+ * const output = splitMultilineSpans(input);
+ * // Returns: '<span class="hljs-comment">/**</span>\\n<span class="hljs-comment"> * Description</span>\\n<span class="hljs-comment"> *\/</span>'
+ * ```
+ *
+ * @example
+ * ```typescript
+ * // Input with multiple multiline spans
+ * const input = '<span class="hljs-keyword">function</span> <span class="hljs-title">test() {\\n  console.log("hello");\\n}</span>';
+ *
+ * const output = splitMultilineSpans(input);
+ * // Returns: '<span class="hljs-keyword">function</span> <span class="hljs-title">test() {</span>\\n<span class="hljs-title">  console.log("hello");</span>\\n<span class="hljs-title">}</span>'
+ * ```
+ */
+function splitMultilineSpans(html: string): string {
+  return html.replace(
+    /<span([^>]*)>([^<]*?\n[^<]*?)<\/span>/g,
+    (match, attributes, content) => {
+      const lines = content.split("\n");
+      return lines
+        .map((line: string) => `<span${attributes}>${line}</span>`)
+        .join("\n");
+    },
+  );
+}
+
 function highlightDiffHunkLines(
   filePath: string,
   hunkLines: Hunk["lines"],
@@ -40,13 +76,11 @@ function highlightDiffHunkLines(
     .map((line) => line.content)
     .join("\n");
 
-  const highlightedHunkAddedVersion = highlight(
-    hunkContentAddedVersion,
-    fileExtension,
+  const highlightedHunkAddedVersion = splitMultilineSpans(
+    highlight(hunkContentAddedVersion, fileExtension),
   ).split("\n");
-  const highlightedHunkDeletedVersion = highlight(
-    hunkContentDeletedVersion,
-    fileExtension,
+  const highlightedHunkDeletedVersion = splitMultilineSpans(
+    highlight(hunkContentDeletedVersion, fileExtension),
   ).split("\n");
 
   const highlightedLines: string[] = [];
