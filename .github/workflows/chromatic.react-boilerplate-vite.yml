@@ -1,4 +1,4 @@
-name: "react-ds-core/chromatic"
+name: "react-boilerplate-vite/chromatic"
 on:
   pull_request:
     paths:
