@@ -1,2 +1,2 @@
-export { default as useExampleRHFInterface } from "./useExampleRHFInterface.js";
 export * from "./types.js";
+export { default as useExampleRHFInterface } from "./useExampleRHFInterface.js";

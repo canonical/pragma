@@ -14,13 +14,10 @@ const ToolbarSeparator = ({
   style,
 }: ToolbarSeparatorProps): React.ReactElement => {
   return (
-    // biome-ignore lint/a11y/useFocusableInteractive: This element is not interactive
     <div
       id={id}
       style={style}
       className={[componentCssClassName, className].filter(Boolean).join(" ")}
-      role="separator"
-      aria-orientation="horizontal"
     />
   );
 };

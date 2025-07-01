@@ -162,7 +162,7 @@ const useWindowFitment = ({
       preferredDirections: WindowFitmentDirection[],
     ): BestPosition | undefined => {
       if (isServer) return;
-      let fallbackPosition: BestPosition | undefined = undefined;
+      let fallbackPosition: BestPosition | undefined;
 
       if (!preferredDirections.length) {
         throw new Error("Preferred directions must not be empty.");

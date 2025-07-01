@@ -14,8 +14,9 @@
   /** border style/color for the dialogue */
   --drawer-dialogue-border: none;
   /** shadow effect for the dialogue box */
-  --drawer-dialogue-box-shadow: 0 1px 1px 0 rgba(0, 0, 0, 0.15), 0 2px 2px -1px
-    rgba(0, 0, 0, 0.15), 0 0 3px 0 rgba(0, 0, 0, 0.2);
+  --drawer-dialogue-box-shadow:
+    0 1px 1px 0 rgba(0, 0, 0, 0.15), 0 2px 2px -1px rgba(0, 0, 0, 0.15), 0 0 3px
+    0 rgba(0, 0, 0, 0.2);
   /** width of the dialogue box on the small size */
   --drawer-dialogue-width-small: 80%;
   /** width of the dialogue box on the medium size */
@@ -89,9 +90,10 @@
     var(--drawer-dialogue-padding-horizontal);
   position: fixed;
   top: 0;
-  transition: transform var(--drawer-transition-duration)
-    var(--drawer-transition-timing-function-transform), visibility
-    var(--drawer-transition-duration)
+  transition:
+    transform var(--drawer-transition-duration)
+    var(--drawer-transition-timing-function-transform),
+    visibility var(--drawer-transition-duration)
     var(--drawer-transition-timing-function-visibility);
   visibility: hidden;
   width: var(--drawer-dialogue-width-small);
@@ -101,9 +103,10 @@
     background-color: var(--drawer-overlay-background);
     inset: 0;
     position: fixed;
-    transition: opacity var(--drawer-transition-duration)
-      var(--drawer-transition-timing-function-opacity), visibility
-      var(--drawer-transition-duration)
+    transition:
+      opacity var(--drawer-transition-duration)
+      var(--drawer-transition-timing-function-opacity),
+      visibility var(--drawer-transition-duration)
       var(--drawer-transition-timing-function-visibility);
     z-index: var(--drawer-overlay-z-index);
   }

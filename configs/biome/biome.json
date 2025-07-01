@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.0.0/schema.json",
   "vcs": {
     "enabled": false,
     "clientKind": "git",
@@ -7,11 +7,12 @@
   },
   "files": {
     "ignoreUnknown": false,
-    "ignore": [
-      "**/node_modules",
-      "**/dist",
-      "**/*.gen.ts",
-      "**/storybook-static"
+    "includes": [
+      "**",
+      "!**/node_modules",
+      "!**/dist",
+      "!**/*.gen.ts",
+      "!**/storybook-static"
     ]
   },
   "formatter": {
@@ -19,9 +20,7 @@
     "indentStyle": "space",
     "indentWidth": 2
   },
-  "organizeImports": {
-    "enabled": true
-  },
+  "assist": { "actions": { "source": { "organizeImports": "on" } } },
   "linter": {
     "enabled": true,
     "rules": {
@@ -32,5 +31,17 @@
     "formatter": {
       "quoteStyle": "double"
     }
-  }
+  },
+  "overrides": [
+    {
+      "includes": ["**/*.tests.tsx"],
+      "linter": {
+        "rules": {
+          "nursery": {
+            "useUniqueElementIds": "off"
+          }
+        }
+      }
+    }
+  ]
 }

@@ -1,9 +1,10 @@
 /* @canonical/generator-ds 0.9.0-experimental.4 */
 
-import { render, screen } from "@testing-library/react";
+// import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { Text } from "../../inputs/index.js";
-import Component from "./Wrapper.js";
+
+// import { Text } from "../../inputs/index.js";
+// import Component from "./Wrapper.js";
 
 describe("Wrapper component", () => {
   it("passes", () => {

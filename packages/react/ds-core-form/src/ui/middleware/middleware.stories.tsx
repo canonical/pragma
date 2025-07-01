@@ -1,17 +1,15 @@
 /* @canonical/generator-ds 0.9.0-experimental.9 */
 
-import type { Meta, StoryObj } from "@storybook/react-vite";
 // Needed for template-based story, safe to remove otherwise
-import type { StoryFn } from "@storybook/react-vite";
+import type { Meta, StoryFn, StoryObj } from "@storybook/react-vite";
 import { http } from "msw";
 // Needed for function-based story, safe to remove otherwise
 // import type { FormProps } from './types.js'
 import { useMemo } from "react";
 import * as decorators from "storybook/decorators.js";
 import * as fixtures from "storybook/fixtures.options.js";
-import * as middleware from "./index.js";
-
 import { Field } from "../Field/index.js";
+import * as middleware from "./index.js";
 
 const meta = {
   title: "middleware",

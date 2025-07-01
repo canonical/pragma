@@ -1,7 +1,7 @@
 import type React from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { dataPathHash } from "../../Provider.js";
 import { useFileTree } from "../../hooks/index.js";
+import { dataPathHash } from "../../Provider.js";
 import type { FileTreeData } from "../../types.js";
 import { hashNodeName } from "../../utils/index.js";
 import { IndentationBlock } from "../IndentationBlock/index.js";

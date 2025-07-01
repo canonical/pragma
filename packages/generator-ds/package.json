@@ -14,7 +14,9 @@
     "url": "https://github.com/canonical/ds25/issues"
   },
   "homepage": "https://github.com/canonical/ds25#readme",
-  "files": ["generators"],
+  "files": [
+    "generators"
+  ],
   "type": "module",
   "module": "generators/index.js",
   "scripts": {
@@ -33,9 +35,9 @@
     "yeoman-generator": "^7.5.1"
   },
   "devDependencies": {
-    "@biomejs/biome": "^1.9.4",
     "@canonical/biome-config": "^0.9.0",
     "@canonical/typescript-config-base": "^0.9.0",
+    "@biomejs/biome": "^2.0.0",
     "@types/debug": "^4.1.12",
     "@types/json-schema": "^7.0.15",
     "@types/node": "^24.0.0",

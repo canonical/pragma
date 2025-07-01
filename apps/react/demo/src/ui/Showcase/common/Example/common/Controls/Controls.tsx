@@ -1,5 +1,5 @@
-import { useCallback, useState } from "react";
 import type { ReactElement } from "react";
+import { useCallback, useState } from "react";
 import type { ControlsProps } from "./types.js";
 import "./styles.css";
 import { Button } from "@canonical/react-ds-core";
@@ -54,8 +54,10 @@ const Controls = ({ id, className, style }: ControlsProps): ReactElement => {
       {/*
         TODO we need a way to invert color themes once we implement theming
       */}
+      {/* biome-ignore lint/nursery/useUniqueElementIds: Biome v2 TODO: fix */}
       <h4 id="active-example-name">{activeExample.name}</h4>
 
+      {/* biome-ignore lint/nursery/useUniqueElementIds: Biome v2 TODO: fix */}
       <Drawer
         id="showcase-settings-drawer"
         title={`${activeExample.name} settings`}

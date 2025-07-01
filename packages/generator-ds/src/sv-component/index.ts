@@ -2,7 +2,7 @@ import path from "node:path";
 import { casing, invariant } from "@canonical/utils";
 import Generator, { type BaseOptions } from "yeoman-generator";
 import globalContext from "../app/global-context.js";
-import { appendToParentIndexFile, touchOrAppendFile } from "../util/files.js";
+import { appendToParentIndexFile } from "../util/files.js";
 
 interface ComponentGeneratorAnswers {
   /** The path to the component's root directory */
