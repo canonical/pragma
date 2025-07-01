@@ -1,0 +1,9 @@
+{
+  "extends": "@canonical/typescript-config-base",
+  "compilerOptions": {
+    "baseUrl": "src",
+    "types": ["node"],
+    "resolveJsonModule": true
+  },
+  "include": ["src/**/*.ts"]
+}

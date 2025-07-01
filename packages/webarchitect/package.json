@@ -1,21 +1,17 @@
 {
-  "name": "@canonical/utils",
-  "description": "Standard utility functions for Canonical's Web Engineering team",
-  "version": "0.9.0",
+  "name": "@canonical/webarchitect",
+  "description": "A tool to test the compliance with architecture specifications for packages and applications.",
+  "version": "0.9.0-experimental.12",
   "type": "module",
   "module": "dist/esm/index.js",
   "types": "dist/types/index.d.ts",
-  "files": ["dist"],
+  "bin": {
+    "webarchitect": "dist/esm/cli.js"
+  },
+  "files": ["dist", "rulesets"],
   "author": {
     "email": "webteam@canonical.com",
     "name": "Canonical Webteam"
-  },
-  "exports": {
-    ".": {
-      "import": "./dist/esm/index.js",
-      "types": "./dist/types/index.d.ts",
-      "default": "./dist/esm/index.js"
-    }
   },
   "repository": {
     "type": "git",
@@ -28,8 +24,7 @@
   "homepage": "https://github.com/canonical/ds25#readme",
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "build:all": "tsc -p tsconfig.build.json",
-    "check": "bun run check:biome",
+    "check": "bun run check:biome && bun run check:ts",
     "check:fix": "bun run check:biome:fix && bun run check:ts",
     "check:biome": "biome check",
     "check:biome:fix": "biome check --write",
@@ -38,8 +33,13 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
-    "@canonical/biome-config": "^0.9.0",
-    "@canonical/typescript-config-base": "^0.9.0",
-    "typescript": "^5.8.3"
+    "@canonical/biome-config": "^0.9.0-experimental.12",
+    "@canonical/typescript-config-base": "^0.9.0-experimental.12",
+    "@types/json-schema": "^7.0.15",
+    "typescript": "^5.8.2"
+  },
+  "dependencies": {
+    "ajv": "^8.17.1",
+    "commander": "^14.0.0"
   }
 }
