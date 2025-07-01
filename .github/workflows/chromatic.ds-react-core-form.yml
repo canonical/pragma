@@ -17,7 +17,7 @@ on:
       - packages/styles/**
       - packages/utils/**
       - packages/react/ds-core/**
-      - packages/react/ds-app-anbox/**
+      - packages/react/ds-core-form/**
 jobs:
   test-compile:
     uses: ./.github/workflows/chromatic._template.yml
