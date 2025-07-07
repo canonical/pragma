@@ -1,125 +1,84 @@
 {
   "dimension": {
-    "scale": {
-      "025": {
-        "$value": "0.125rem",
-        "$type": "dimension",
-        "$description": "Dimension scale token equivalent to 2px"
-      },
-      "050": {
-        "$value": "0.25rem",
-        "$type": "dimension",
-        "$description": "Dimension scale token equivalent to 4px"
-      },
-      "100": {
-        "$value": "0.5rem",
-        "$type": "dimension",
-        "$description": "Base dimension scale token equivalent to 8px"
-      },
-      "150": {
-        "$value": "0.75rem",
-        "$type": "dimension",
-        "$description": "Dimension scale token equivalent to 12px"
-      },
-      "175": {
-        "$value": "0.875rem",
-        "$type": "dimension",
-        "$description": "Dimension scale token equivalent to 14px"
-      },
-      "200": {
-        "$value": "1rem",
-        "$type": "dimension",
-        "$description": "Dimension scale token equivalent to 16px"
-      },
-      "250": {
-        "$value": "1.25rem",
-        "$type": "dimension",
-        "$description": "Dimension scale token equivalent to 20px"
-      },
-      "300": {
-        "$value": "1.5rem",
-        "$type": "dimension",
-        "$description": "Dimension scale token equivalent to 24px"
-      },
-      "400": {
-        "$value": "2rem",
-        "$type": "dimension",
-        "$description": "Dimension scale token equivalent to 32px"
-      },
-      "500": {
-        "$value": "2.5rem",
-        "$type": "dimension",
-        "$description": "Dimension scale token equivalent to 40px"
-      },
-      "600": {
-        "$value": "3rem",
-        "$type": "dimension",
-        "$description": "Dimension scale token equivalent to 48px"
-      },
-      "700": {
-        "$value": "3.5rem",
-        "$type": "dimension",
-        "$description": "Dimension scale token equivalent to 56px"
-      },
-      "800": {
-        "$value": "4rem",
-        "$type": "dimension",
-        "$description": "Dimension scale token equivalent to 64px"
-      },
-      "900": {
-        "$value": "4.5rem",
-        "$type": "dimension",
-        "$description": "Dimension scale token equivalent to 72px"
-      },
-      "1000": {
-        "$value": "5rem",
-        "$type": "dimension",
-        "$description": "Dimension scale token equivalent to 80px"
-      },
-      "1100": {
-        "$value": "5.5rem",
-        "$type": "dimension",
-        "$description": "Dimension scale token equivalent to 88px"
-      }
+    "025": {
+      "$value": "0.125rem",
+      "$type": "dimension",
+      "$description": "Dimension scale token equivalent to 2px"
     },
-    "stroke-thickness": {
-      "medium": {
-        "$value": "1.5px",
-        "$type": "dimension",
-        "$description": "Medium stroke thickness for lines"
-      },
-      "large": {
-        "$value": "3px",
-        "$type": "dimension",
-        "$description": "Large stroke thickness for lines"
-      }
+    "050": {
+      "$value": "0.25rem",
+      "$type": "dimension",
+      "$description": "Dimension scale token equivalent to 4px"
     },
-    "radius": {
-      "none": {
-        "$value": "0px",
-        "$type": "dimension",
-        "$description": "No border radius"
-      },
-      "small": {
-        "$value": "0px",
-        "$type": "dimension",
-        "$description": "Small border radius"
-      },
-      "medium": {
-        "$value": "0px",
-        "$type": "dimension",
-        "$description": "Medium border radius"
-      },
-      "large": {
-        "$value": "0px",
-        "$type": "dimension",
-        "$description": "Large border radius"
-      },
-      "full": {
-        "$value": "9999px",
-        "$type": "dimension",
-        "$description": "Fully rounded border radius for elements like chips"
-      }
+    "100": {
+      "$value": "0.5rem",
+      "$type": "dimension",
+      "$description": "Base dimension scale token equivalent to 8px"
+    },
+    "150": {
+      "$value": "0.75rem",
+      "$type": "dimension",
+      "$description": "Dimension scale token equivalent to 12px"
+    },
+    "175": {
+      "$value": "0.875rem",
+      "$type": "dimension",
+      "$description": "Dimension scale token equivalent to 14px"
+    },
+    "200": {
+      "$value": "1rem",
+      "$type": "dimension",
+      "$description": "Dimension scale token equivalent to 16px"
+    },
+    "250": {
+      "$value": "1.25rem",
+      "$type": "dimension",
+      "$description": "Dimension scale token equivalent to 20px"
+    },
+    "300": {
+      "$value": "1.5rem",
+      "$type": "dimension",
+      "$description": "Dimension scale token equivalent to 24px"
+    },
+    "400": {
+      "$value": "2rem",
+      "$type": "dimension",
+      "$description": "Dimension scale token equivalent to 32px"
+    },
+    "500": {
+      "$value": "2.5rem",
+      "$type": "dimension",
+      "$description": "Dimension scale token equivalent to 40px"
+    },
+    "600": {
+      "$value": "3rem",
+      "$type": "dimension",
+      "$description": "Dimension scale token equivalent to 48px"
+    },
+    "700": {
+      "$value": "3.5rem",
+      "$type": "dimension",
+      "$description": "Dimension scale token equivalent to 56px"
+    },
+    "800": {
+      "$value": "4rem",
+      "$type": "dimension",
+      "$description": "Dimension scale token equivalent to 64px"
+    },
+    "900": {
+      "$value": "4.5rem",
+      "$type": "dimension",
+      "$description": "Dimension scale token equivalent to 72px"
+    },
+    "1000": {
+      "$value": "5rem",
+      "$type": "dimension",
+      "$description": "Dimension scale token equivalent to 80px"
+    },
+    "1100": {
+      "$value": "5.5rem",
+      "$type": "dimension",
+      "$description": "Dimension scale token equivalent to 88px"
     }
   }
 }

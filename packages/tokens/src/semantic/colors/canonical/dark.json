@@ -1,0 +1,478 @@
+{
+  "tmp": {
+    "color": {
+      "caution": {
+        "$value": "#c48831",
+        "$type": "color"
+      },
+      "information": {
+        "$value": "#5ea6ed",
+        "$type": "color"
+      },
+      "negative": {
+        "$value": "#d17b85",
+        "$type": "color"
+      },
+      "positive": {
+        "$value": "#62a36c",
+        "$type": "color"
+      },
+      "transparent": {
+        "$value": "#ffffff00",
+        "$type": "color"
+      },
+      "background": {
+        "active": {
+          "$value": "#373737",
+          "$type": "color"
+        },
+        "alt": {
+          "$value": "#202020",
+          "$type": "color"
+        },
+        "canonical-logo": {
+          "$value": "#e95420",
+          "$type": "color"
+        },
+        "checkbox-checked": {
+          "$value": "{tmp.color.text.link.default}",
+          "$type": "color"
+        },
+        "code": {
+          "$value": "#ffffff08",
+          "$type": "color"
+        },
+        "default": {
+          "$value": "#262626",
+          "$type": "color"
+        },
+        "hover": {
+          "$value": "#313131",
+          "$type": "color"
+        },
+        "input": {
+          "$value": "#2f2f2f",
+          "$type": "color"
+        },
+        "overlay": {
+          "$value": "#111111d9",
+          "$type": "color"
+        },
+        "radio-checked": {
+          "$value": "{tmp.color.text.link.default}",
+          "$type": "color"
+        },
+        "tooltip": {
+          "$value": "#f7f7f7",
+          "$type": "color"
+        },
+        "badge": {
+          "default": {
+            "$value": "{tmp.color.text.default}",
+            "$type": "color"
+          },
+          "negative": {
+            "$value": "{tmp.color.background.button.negative.default}",
+            "$type": "color"
+          }
+        },
+        "button": {
+          "base": {
+            "active": {
+              "$value": "{tmp.color.background.active}",
+              "$type": "color"
+            },
+            "default": {
+              "$value": "#26262600",
+              "$type": "color"
+            },
+            "hover": {
+              "$value": "{tmp.color.background.hover}",
+              "$type": "color"
+            }
+          },
+          "brand": {
+            "active": {
+              "$value": "#cc4414",
+              "$type": "color"
+            },
+            "default": {
+              "$value": "#e95420",
+              "$type": "color"
+            },
+            "hover": {
+              "$value": "#da4816",
+              "$type": "color"
+            }
+          },
+          "default": {
+            "active": {
+              "$value": "{tmp.color.background.active}",
+              "$type": "color"
+            },
+            "default": {
+              "$value": "{tmp.color.background.default}",
+              "$type": "color"
+            },
+            "hover": {
+              "$value": "{tmp.color.background.hover}",
+              "$type": "color"
+            }
+          },
+          "negative": {
+            "active": {
+              "$value": "#7c0e1b",
+              "$type": "color"
+            },
+            "default": {
+              "$value": "#a11223",
+              "$type": "color"
+            },
+            "hover": {
+              "$value": "#8a0f1e",
+              "$type": "color"
+            }
+          },
+          "positive": {
+            "active": {
+              "$value": "#00570d",
+              "$type": "color"
+            },
+            "default": {
+              "$value": "#008013",
+              "$type": "color"
+            },
+            "hover": {
+              "$value": "#00670f",
+              "$type": "color"
+            }
+          }
+        },
+        "caution": {
+          "caution-active": {
+            "$value": "#ff73005c",
+            "$type": "color"
+          },
+          "default": {
+            "$value": "#ff730033",
+            "$type": "color"
+          },
+          "hover": {
+            "$value": "#ff8f334d",
+            "$type": "color"
+          }
+        },
+        "information": {
+          "active": {
+            "$value": "#0089ff5c",
+            "$type": "color"
+          },
+          "default": {
+            "$value": "#0089ff33",
+            "$type": "color"
+          },
+          "hover": {
+            "$value": "#0089ff4d",
+            "$type": "color"
+          }
+        },
+        "negative": {
+          "active": {
+            "$value": "#ff66785c",
+            "$type": "color"
+          },
+          "default": {
+            "$value": "#ff667833",
+            "$type": "color"
+          },
+          "hover": {
+            "$value": "#ff66784d",
+            "$type": "color"
+          }
+        },
+        "neutral": {
+          "active": {
+            "$value": "#ffffff40",
+            "$type": "color"
+          },
+          "default": {
+            "$value": "#ffffff26",
+            "$type": "color"
+          },
+          "hover": {
+            "$value": "#ffffff33",
+            "$type": "color"
+          }
+        },
+        "positive": {
+          "active": {
+            "$value": "#00c71e5c",
+            "$type": "color"
+          },
+          "default": {
+            "$value": "#0abd2533",
+            "$type": "color"
+          },
+          "hover": {
+            "$value": "#00c71e4d",
+            "$type": "color"
+          }
+        },
+        "slider": {
+          "progress": {
+            "$value": "{tmp.color.text.link.default}",
+            "$type": "color"
+          },
+          "track": {
+            "$value": "{tmp.color.border.default}",
+            "$type": "color"
+          }
+        },
+        "status-label": {
+          "caution": {
+            "$value": "#cc7900",
+            "$type": "color"
+          },
+          "default": {
+            "$value": "#666666",
+            "$type": "color"
+          },
+          "information": {
+            "$value": "#24598f",
+            "$type": "color"
+          },
+          "negative": {
+            "$value": "#c7162b",
+            "$type": "color"
+          },
+          "positive": {
+            "$value": "#0e8420",
+            "$type": "color"
+          }
+        },
+        "switch": {
+          "checked": {
+            "$value": "{tmp.color.text.link.default}",
+            "$type": "color"
+          },
+          "knob": {
+            "$value": "{tmp.color.background.default}",
+            "$type": "color"
+          },
+          "track": {
+            "$value": "{tmp.color.border.high-contrast}",
+            "$type": "color"
+          }
+        }
+      },
+      "border": {
+        "accent": {
+          "$value": "#0f95a1",
+          "$type": "color"
+        },
+        "caution": {
+          "$value": "{tmp.color.caution}",
+          "$type": "color"
+        },
+        "default": {
+          "$value": "#ffffff33",
+          "$type": "color"
+        },
+        "focus": {
+          "$value": "#99ccff",
+          "$type": "color"
+        },
+        "high-contrast": {
+          "$value": "#939393",
+          "$type": "color"
+        },
+        "highlight": {
+          "$value": "#ffffff",
+          "$type": "color"
+        },
+        "information": {
+          "$value": "{tmp.color.information}",
+          "$type": "color"
+        },
+        "low-contrast": {
+          "$value": "#ffffff1a",
+          "$type": "color"
+        },
+        "negative": {
+          "$value": "{tmp.color.negative}",
+          "$type": "color"
+        },
+        "neutral": {
+          "$value": "#a6a6a6",
+          "$type": "color"
+        },
+        "positive": {
+          "$value": "{tmp.color.positive}",
+          "$type": "color"
+        },
+        "switch-knob": {
+          "$value": "{tmp.color.border.high-contrast}",
+          "$type": "color"
+        },
+        "tab-active": {
+          "$value": "{tmp.color.border.highlight}",
+          "$type": "color"
+        }
+      },
+      "icon": {
+        "canonical-logo": {
+          "$value": "#ffffff",
+          "$type": "color"
+        },
+        "caution": {
+          "$value": "{tmp.color.caution}",
+          "$type": "color"
+        },
+        "default": {
+          "$value": "{tmp.color.text.default}",
+          "$type": "color"
+        },
+        "information": {
+          "$value": "{tmp.color.information}",
+          "$type": "color"
+        },
+        "link": {
+          "$value": "{tmp.color.text.link.default}",
+          "$type": "color"
+        },
+        "muted": {
+          "$value": "{tmp.color.text.muted}",
+          "$type": "color"
+        },
+        "negative": {
+          "$value": "{tmp.color.negative}",
+          "$type": "color"
+        },
+        "positive": {
+          "$value": "{tmp.color.positive}",
+          "$type": "color"
+        },
+        "pull-quote-quotation-mark": {
+          "$value": "{tmp.color.text.muted}",
+          "$type": "color"
+        },
+        "button": {
+          "base": {
+            "$value": "{tmp.color.text.default}",
+            "$type": "color"
+          },
+          "brand": {
+            "$value": "#ffffff",
+            "$type": "color"
+          },
+          "default": {
+            "$value": "{tmp.color.icon.default}",
+            "$type": "color"
+          },
+          "negative": {
+            "$value": "#ffffff",
+            "$type": "color"
+          },
+          "positive": {
+            "$value": "#ffffff",
+            "$type": "color"
+          }
+        },
+        "status": {
+          "queued": {
+            "$value": "#808080",
+            "$type": "color"
+          },
+          "shade-1": {
+            "$value": "#f7f7f7",
+            "$type": "color"
+          },
+          "shade-2": {
+            "$value": "#d9d9d9",
+            "$type": "color"
+          }
+        }
+      },
+      "text": {
+        "caution": {
+          "$value": "{tmp.color.caution}",
+          "$type": "color"
+        },
+        "default": {
+          "$value": "#ffffff",
+          "$type": "color"
+        },
+        "inactive": {
+          "$value": "#ffffffbf",
+          "$type": "color"
+        },
+        "muted": {
+          "$value": "#ffffff99",
+          "$type": "color"
+        },
+        "negative": {
+          "$value": "{tmp.color.negative}",
+          "$type": "color"
+        },
+        "positive": {
+          "$value": "{tmp.color.positive}",
+          "$type": "color"
+        },
+        "search-and-filter-overflow": {
+          "$value": "{tmp.color.text.link.default}",
+          "$type": "color"
+        },
+        "status-label": {
+          "$value": "#ffffff",
+          "$type": "color"
+        },
+        "tooltip": {
+          "$value": "#000000",
+          "$type": "color"
+        },
+        "badge": {
+          "default": {
+            "$value": "{tmp.color.background.default}",
+            "$type": "color"
+          },
+          "negative": {
+            "$value": "{tmp.color.text.button.negative}",
+            "$type": "color"
+          }
+        },
+        "button": {
+          "base": {
+            "$value": "{tmp.color.text.default}",
+            "$type": "color"
+          },
+          "brand": {
+            "$value": "#ffffff",
+            "$type": "color"
+          },
+          "default": {
+            "$value": "{tmp.color.text.default}",
+            "$type": "color"
+          },
+          "negative": {
+            "$value": "#ffffff",
+            "$type": "color"
+          },
+          "positive": {
+            "$value": "#ffffff",
+            "$type": "color"
+          }
+        },
+        "link": {
+          "default": {
+            "$value": "#6699cc",
+            "$type": "color"
+          },
+          "visited": {
+            "$value": "#a679d2",
+            "$type": "color"
+          }
+        }
+      }
+    }
+  }
+}
