@@ -1,7 +1,7 @@
 /* @canonical/generator-ds 0.9.0-experimental.9 */
 import type { UseComboboxPropGetters } from "downshift";
 import type React from "react";
-import type { Option, OptionsProps } from "../../../../types.js";
+import type { Option } from "../../../../types.js";
 import type * as utils from "../../utils/index.js";
 
 export type ListProps = {

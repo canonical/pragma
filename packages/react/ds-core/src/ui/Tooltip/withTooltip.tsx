@@ -1,9 +1,9 @@
-import React, {
-  type ComponentType,
-  type FC,
-  type ReactElement,
-  type ReactNode,
-  type RefObject,
+import type {
+  ComponentType,
+  FC,
+  ReactElement,
+  ReactNode,
+  RefObject,
 } from "react";
 import type { UsePopupProps } from "../hooks/index.js";
 import { TooltipArea } from "./common/TooltipArea/index.js";

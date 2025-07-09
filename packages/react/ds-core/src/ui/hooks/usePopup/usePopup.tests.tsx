@@ -158,9 +158,7 @@ describe("usePopup", () => {
   });
 
   it("should pass props to useWindowFitment", () => {
-    const { result } = renderHook(() =>
-      usePopup({ preferredDirections: ["top"] }),
-    );
+    renderHook(() => usePopup({ preferredDirections: ["top"] }));
     expect(vi.mocked(useWindowFitment)).toHaveBeenCalledWith({
       preferredDirections: ["top"],
       isOpen: false,
@@ -168,7 +166,7 @@ describe("usePopup", () => {
   });
 
   it("should pass isOpen to useWindowFitment", () => {
-    const { result } = renderHook(() => usePopup({ isOpen: true }));
+    renderHook(() => usePopup({ isOpen: true }));
     expect(vi.mocked(useWindowFitment)).toHaveBeenCalledWith({
       isOpen: true,
     });

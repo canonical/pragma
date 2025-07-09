@@ -1,4 +1,3 @@
-import type React from "react";
 import type { ReactElement } from "react";
 import { usePopup } from "../../../hooks/index.js";
 import { Tooltip } from "../../index.js";
@@ -72,6 +71,7 @@ const TooltipArea = ({
   );
 
   return (
+    // biome-ignore lint/a11y/noStaticElementInteractions: TODO this is kept as is to prevent breaking changes
     <span
       className={[componentCssClassName, className].filter(Boolean).join(" ")}
       style={style}

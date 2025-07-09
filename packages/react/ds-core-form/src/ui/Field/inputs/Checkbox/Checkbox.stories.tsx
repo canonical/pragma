@@ -5,6 +5,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import * as decorators from "storybook/decorators.js";
 import Component from "./Checkbox.js";
+
 // Needed for template-based story, safe to remove otherwise
 // import type { StoryFn } from '@storybook/react-vite'
 

@@ -13,11 +13,11 @@ const withConditionalDisplay = <ComponentProps extends BaseInputProps>(
     props: WrappedComponentPropsInternal<ComponentProps>,
   ) => {
     const { condition, ...otherProps } = props;
+    const { watch } = useFormContext();
     if (!condition)
       return React.createElement(WrappedComponent, props as ComponentProps);
     const [dependencies, conditionFunction] = condition;
 
-    const { watch } = useFormContext();
     const depValues = watch(dependencies);
     const shouldRender = conditionFunction(depValues);
     if (!shouldRender) return null;

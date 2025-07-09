@@ -4,7 +4,6 @@ import {
   type FieldErrors,
   type FieldErrorsImpl,
   type FieldValues,
-  type Merge,
   useFormState,
 } from "react-hook-form";
 

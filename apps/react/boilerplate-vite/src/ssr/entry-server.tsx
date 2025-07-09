@@ -2,7 +2,6 @@ import type {
   ReactServerEntrypointComponent,
   RendererServerEntrypointProps,
 } from "@canonical/react-ssr/renderer";
-import React from "react";
 import Application from "../Application.js";
 
 const EntryServer: ReactServerEntrypointComponent<
@@ -16,6 +15,7 @@ const EntryServer: ReactServerEntrypointComponent<
         {linkTags}
       </head>
       <body>
+        {/* biome-ignore lint/nursery/useUniqueElementIds: necessary for server-side rendering */}
         <div id="root">
           <Application />
         </div>

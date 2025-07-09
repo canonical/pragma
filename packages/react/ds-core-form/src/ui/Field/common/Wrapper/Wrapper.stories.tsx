@@ -5,10 +5,11 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import * as decorators from "storybook/decorators.js";
 import {
-  Text as TextInput,
   Textarea as TextareaInput,
+  Text as TextInput,
 } from "../../inputs/index.js";
 import Component from "./Wrapper.js";
+
 // Needed for template-based story, safe to remove otherwise
 // import type { StoryFn } from '@storybook/react-vite'
 

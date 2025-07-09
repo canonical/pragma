@@ -105,8 +105,8 @@ const MultipleCombobox = ({
     getInputProps,
     getItemProps,
     highlightedIndex,
-    selectItem,
-    inputValue, // Track input value
+    // selectItem,
+    // inputValue, // Track input value
     setInputValue, // Function to set input value
   } = useCombobox({
     items,
