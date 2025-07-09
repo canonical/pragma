@@ -1,0 +1,31 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`<Spinner /> renders and matches the snapshot 1`] = `
+<span
+  aria-live="polite"
+  class="p-text--default"
+  role="alert"
+>
+  <i
+    class="p-icon--spinner u-animation--spin"
+  >
+    Loading
+  </i>
+</span>
+`;
+
+exports[`<Spinner /> renders and matches the snapshot with text 1`] = `
+<span
+  aria-live="polite"
+  class="p-text--default"
+  role="alert"
+>
+  <i
+    class="p-icon--spinner u-animation--spin"
+  />
+   
+  <span>
+    foo
+  </span>
+</span>
+`;

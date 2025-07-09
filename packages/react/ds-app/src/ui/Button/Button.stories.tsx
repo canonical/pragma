@@ -76,7 +76,7 @@ export const Custom: Story = {
  */
 export const IntentsInheritance: Story = {
   decorators: [
-    (Story) => (
+    () => (
       <div
         className="positive"
         style={{
