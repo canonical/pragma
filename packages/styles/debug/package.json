@@ -32,7 +32,7 @@
     "check:biome:fix": "biome check --write"
   },
   "devDependencies": {
-    "@biomejs/biome": "^1.9.4",
+    "@biomejs/biome": "^2.0.0",
     "@canonical/biome-config": "^0.9.0"
   }
 }
