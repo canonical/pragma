@@ -16,12 +16,12 @@ const ToolbarGroup = ({
   label,
 }: ToolbarGroupProps): React.ReactElement => {
   return (
+    // biome-ignore lint/a11y/useSemanticElements: This element is a group of controls
     <div
       id={id}
       style={style}
       className={[componentCssClassName, className].filter(Boolean).join(" ")}
       aria-label={label}
-      // biome-ignore lint/a11y/useSemanticElements: This element is a group of controls
       role="group"
     >
       {children}

@@ -6,6 +6,7 @@ import type { Meta, StoryFn } from "@storybook/react-vite";
 import { useState } from "storybook/internal/preview-api";
 import { FileTree, type FileTreeData } from "../../index.js";
 import type { TreeViewProps } from "./types.js";
+
 // Needed for template-based story, safe to remove otherwise
 // import type { StoryFn } from '@storybook/react-vite'
 

@@ -2,8 +2,8 @@
 
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import Provider from "../../Provider.js";
 import * as fixtures from "../../fixtures.js";
+import Provider from "../../Provider.js";
 import Component from "./FileHeader.js";
 
 // Mock the DiffChangeMarker component

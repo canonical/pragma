@@ -3,7 +3,7 @@ import type React from "react";
 import { useCallback, useRef, useState } from "react";
 
 import EditingContext from "./Context.js";
-import type { EditElementProps, EditableBlockProps } from "./types.js";
+import type { EditableBlockProps, EditElementProps } from "./types.js";
 
 import "./styles.css";
 

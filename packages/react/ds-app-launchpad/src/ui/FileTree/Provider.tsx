@@ -119,6 +119,7 @@ const Provider = ({
         className={[componentCssClassName, className].filter(Boolean).join(" ")}
       >
         {header}
+        {/* biome-ignore lint/a11y/noNoninteractiveElementToInteractiveRole: legacy code */}
         <ul ref={fileTreeRef} role="tree">
           {children}
         </ul>

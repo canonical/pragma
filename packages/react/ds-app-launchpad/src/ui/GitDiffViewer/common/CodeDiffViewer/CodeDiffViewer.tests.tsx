@@ -2,8 +2,8 @@
 
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import Provider from "../../Provider.js";
 import * as fixtures from "../../fixtures.js";
+import Provider from "../../Provider.js";
 import Component from "./CodeDiffViewer.js";
 
 describe("CodeDiffViewer component", () => {

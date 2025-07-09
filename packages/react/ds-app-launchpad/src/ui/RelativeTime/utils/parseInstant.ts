@@ -14,7 +14,7 @@ function parseInstant(time: Temporal.Instant | Date | string) {
   }
   try {
     return Temporal.Instant.from(time);
-  } catch (e) {
+  } catch (_e) {
     throw new Error(
       `Invalid time string (ISO string or Date object expected): ${time}`,
     );
