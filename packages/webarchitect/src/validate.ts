@@ -23,9 +23,9 @@ import type { ValidationResult } from "./types.js";
  * ```
  */
 export default async function validate(
-	projectPath: string,
-	schemaArg: string,
+  projectPath: string,
+  schemaArg: string,
 ): Promise<ValidationResult[]> {
-	const schema = await loadFullSchema(schemaArg);
-	return executeValidationRules(projectPath, schema);
+  const schema = await loadFullSchema(schemaArg);
+  return executeValidationRules(projectPath, schema);
 }
