@@ -1,7 +1,7 @@
 import { createConfig } from "@canonical/storybook-config";
 
 const config = createConfig({
-	staticDirs: ["../src/assets"],
+  staticDirs: ["../src/assets"],
 });
 
 /* Otherwise leads to a TS error "CSF Parsing error: Expected 'ObjectExpression' but found 'CallExpression' instead in 'CallExpression'."

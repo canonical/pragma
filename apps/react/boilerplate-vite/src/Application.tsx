@@ -1,5 +1,5 @@
 import { Button, TooltipArea } from "@canonical/react-ds-core";
-import React, { Suspense, useState, lazy } from "react";
+import { lazy, Suspense, useState } from "react";
 import canonicalLogo from "./assets/canonical.svg";
 import reactLogo from "./assets/react.svg";
 import "./Application.css";

@@ -1,6 +1,5 @@
 /* @canonical/generator-canonical-ds 0.0.1 */
 import type React from "react";
-import commentSvg from "../../../../../assets/comment.svg";
 import { useGitDiffViewer } from "../../../../hooks/index.js";
 import "./styles.css";
 import type { DiffLineProps } from "./types.js";

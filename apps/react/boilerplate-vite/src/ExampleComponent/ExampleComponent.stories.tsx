@@ -4,6 +4,7 @@
 // import type { ExampleComponentProps } from './types.js'
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import Component from "./ExampleComponent.js";
+
 // Needed for template-based story, safe to remove otherwise
 // import type { StoryFn } from '@storybook/react-vite'
 

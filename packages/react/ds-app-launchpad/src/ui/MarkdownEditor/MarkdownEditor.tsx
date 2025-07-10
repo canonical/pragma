@@ -14,14 +14,15 @@ import rehypeSanitize from "rehype-sanitize";
 import remarkGfm from "remark-gfm";
 import "../GitDiffViewer/common/CodeDiffViewer/HighlighTheme.css";
 import {
+  icons,
   Toolbar,
   ViewModeTabs,
   type ViewModeTabsProps,
-  icons,
 } from "./common/index.js";
 import { useEditor } from "./hooks/index.js";
 import "./styles.css";
 import type { EditMode, MarkdownEditorProps } from "./types.js";
+
 ("react-markdown");
 
 const componentCssClassName = "ds markdown-editor";

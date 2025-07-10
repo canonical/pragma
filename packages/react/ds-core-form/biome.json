@@ -1,7 +1,15 @@
 {
-  "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.0.0/schema.json",
   "extends": ["@canonical/biome-config"],
   "files": {
-    "include": ["src", "*.json"]
+    "includes": [
+      "src",
+      ".storybook",
+      "*.json",
+      "vite.config.ts",
+      "vitest.config.ts",
+      "vitest.setup.ts",
+      "!public/mockServiceWorker.js"
+    ]
   }
 }

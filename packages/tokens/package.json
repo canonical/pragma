@@ -2,7 +2,9 @@
   "name": "@canonical/tokens",
   "description": "Canonical design tokens: primitives and mode mappings for use with Style Dictionary",
   "version": "0.9.0",
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "type": "module",
   "author": {
     "email": "webteam@canonical.com",
@@ -28,7 +30,7 @@
     "check:biome:fix": "biome check --write src *.json *.js"
   },
   "devDependencies": {
-    "@biomejs/biome": "^1.9.4",
+    "@biomejs/biome": "^2.0.0",
     "@canonical/biome-config": "^0.9.0"
   },
   "dependencies": {

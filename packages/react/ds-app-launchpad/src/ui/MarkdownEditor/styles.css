@@ -64,6 +64,7 @@
   }
 
   &.bordered {
+    /* biome-ignore lint/style/noDescendingSpecificity: legacy code */
     > .editor-content {
       border-color: var(--markdown-editor-editor-border-color);
       padding: var(--markdown-editor-input-vert-padding)
@@ -78,6 +79,7 @@
 
   &:has(textarea:focus) {
     outline: 1px solid Highlight;
+    /* biome-ignore lint/suspicious/noDuplicateProperties:legacy code */
     outline: 1px solid -webkit-focus-ring-color;
   }
 }

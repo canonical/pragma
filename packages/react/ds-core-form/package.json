@@ -4,7 +4,9 @@
   "type": "module",
   "module": "dist/esm/index.js",
   "types": "dist/types/index.d.ts",
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "author": {
     "email": "webteam@canonical.com",
     "name": "Canonical Webteam"
@@ -48,9 +50,9 @@
     "react-hook-form": "^7.57.0"
   },
   "devDependencies": {
-    "@biomejs/biome": "^1.9.4",
     "@canonical/biome-config": "^0.9.0",
     "@canonical/typescript-config-react": "^0.9.0",
+    "@biomejs/biome": "^2.0.0",
     "@chromatic-com/storybook": "^4.0.0",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
@@ -69,6 +71,8 @@
     "vitest": "^3.2.3"
   },
   "msw": {
-    "workerDirectory": ["public"]
+    "workerDirectory": [
+      "public"
+    ]
   }
 }

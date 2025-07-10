@@ -1,11 +1,10 @@
 /* @canonical/generator-ds 0.9.0-experimental.4 */
 
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
-import MarkdownEditor from "./MarkdownEditor.js";
-import * as fixtures from "./fixtures.js";
-
 import { createRef } from "react";
+import { describe, expect, it, vi } from "vitest";
+import * as fixtures from "./fixtures.js";
+import MarkdownEditor from "./MarkdownEditor.js";
 
 describe("MarkdownEditor", () => {
   it("renders correctly with default props", () => {

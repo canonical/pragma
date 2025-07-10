@@ -3,8 +3,8 @@ export * from "./hooks/index.js";
 export type { DiffFile as GitDiffFile, Hunk as GitDiffHunk } from "./types.js";
 export * from "./utils/index.js";
 
-import Provider from "./Provider.js";
 import { CodeDiffViewer, FileHeader } from "./common/index.js";
+import Provider from "./Provider.js";
 
 export const GitDiffViewer = Provider as typeof Provider & {
   FileHeader: typeof FileHeader;
