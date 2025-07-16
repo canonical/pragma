@@ -20,7 +20,7 @@
           "files": {
             "type": "object",
             "properties": {
-              "include": {
+              "includes": {
                 "type": "array",
                 "items": { "type": "string" }
               }
