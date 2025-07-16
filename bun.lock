@@ -641,9 +641,9 @@
         "commander": "^14.0.0",
       },
       "devDependencies": {
-        "@biomejs/biome": "^1.9.4",
-        "@canonical/biome-config": "^0.9.0-experimental.12",
-        "@canonical/typescript-config-base": "^0.9.0-experimental.12",
+        "@biomejs/biome": "^2.0.0",
+        "@canonical/biome-config": "^0.9.0",
+        "@canonical/typescript-config-base": "^0.9.0",
         "@types/json-schema": "^7.0.15",
         "typescript": "^5.8.2",
       },
