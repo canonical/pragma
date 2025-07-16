@@ -111,25 +111,25 @@ function formatTerminalOutput(
 
       if (
         verbose &&
-        result.context?.actualValue &&
-        result.context.actualValue !== "[File not found]"
+        result.context?.value &&
+        result.context.value !== "[File not found]"
       ) {
         // Use regular string instead of template literal where no interpolation needed
         console.log(chalk.gray("  Found:"));
-        if (typeof result.context.actualValue === "object") {
-          const preview = JSON.stringify(result.context.actualValue, null, 2)
+        if (typeof result.context.value === "object") {
+          const preview = JSON.stringify(result.context.value, null, 2)
             .split("\n")
             .slice(0, 10) // Show first 10 lines
             .map((line) => `    ${line}`)
             .join("\n");
           console.log(chalk.gray(preview));
           if (
-            JSON.stringify(result.context.actualValue).split("\n").length > 10
+            JSON.stringify(result.context.value).split("\n").length > 10
           ) {
             console.log(chalk.gray("    ... (truncated)"));
           }
         } else {
-          console.log(chalk.gray(`    ${result.context.actualValue}`));
+          console.log(chalk.gray(`    ${result.context.value}`));
         }
       }
       console.log(); // Empty line between failures

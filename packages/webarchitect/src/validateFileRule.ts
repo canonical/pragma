@@ -1,66 +1,8 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
-import type { JSONSchema7 } from "json-schema";
 import ajv from "./ajv.js";
+import describeSchema from "./describeSchema.js";
 import type { FileRule, ValidationResult } from "./types.js";
-
-/**
- * Generates a human-readable description of what a JSON schema validates.
- * Summarizes key constraints like type, required properties, patterns, etc.
- * Used to provide clear feedback about what validation rules are being applied.
- *
- * @param schema - JSON Schema to describe
- * @returns Human-readable description of the schema's validation rules
- *
- * @example
- * ```typescript
- * const schema = {
- *   type: "object",
- *   required: ["name", "version"],
- *   properties: { name: {}, version: {} }
- * };
- * const desc = describeSchema(schema);
- * // Returns: "must be object, must have properties: name, version, expected properties: name, version"
- * ```
- */
-function describeSchema(schema: JSONSchema7): string {
-  const descriptions: string[] = [];
-
-  if (schema.type) {
-    if (typeof schema.type === "string") {
-      descriptions.push(`must be ${schema.type}`);
-    } else if (Array.isArray(schema.type)) {
-      descriptions.push(`must be one of: ${schema.type.join(", ")}`);
-    }
-  }
-
-  if (schema.const !== undefined) {
-    descriptions.push(`must equal "${schema.const}"`);
-  }
-
-  if (typeof schema.pattern === "string") {
-    descriptions.push(`must match pattern /${schema.pattern}/`);
-  }
-
-  if (schema.required && Array.isArray(schema.required)) {
-    descriptions.push(`must have properties: ${schema.required.join(", ")}`);
-  }
-
-  if (schema.properties && typeof schema.properties === "object") {
-    const propNames = Object.keys(schema.properties);
-    if (propNames.length <= 3) {
-      descriptions.push(`expected properties: ${propNames.join(", ")}`);
-    } else {
-      descriptions.push(`validates ${propNames.length} properties`);
-    }
-  }
-
-  if (descriptions.length === 0) {
-    return "validates file content structure";
-  }
-
-  return descriptions.join(", ");
-}
 
 /**
  * Validates a file against a file rule specification.
@@ -91,7 +33,7 @@ function describeSchema(schema: JSONSchema7): string {
 export default async function validateFileRule(
   projectPath: string,
   fileRule: FileRule,
-  ruleName: string, // Add rule name parameter
+  ruleName: string,
 ): Promise<ValidationResult[]> {
   const filePath = join(projectPath, fileRule.name);
 
@@ -105,72 +47,51 @@ export default async function validateFileRule(
 
   try {
     const content = await readFile(filePath, "utf-8");
+    
+    // Hard fail: throw on malformed JSON with informative message
+    let json: unknown;
     try {
-      const json = JSON.parse(content);
-      const validate = ajv.compile(fileRule.contains);
-      const valid = validate(json);
-
-      if (valid) {
-        return [
-          {
-            rule: ruleName, // Use the rule name from schema, not filename
-            passed: true,
-            context: {
-              ...baseContext,
-              actualValue: json,
-            },
-          },
-        ];
-      }
-
-      return [
-        {
-          rule: ruleName, // Use the rule name from schema, not filename
-          passed: false,
-          message: `Validation failed: ${JSON.stringify(validate.errors)}`,
-          context: {
-            ...baseContext,
-            actualValue: json,
-          },
-        },
-      ];
+      json = JSON.parse(content);
     } catch (parseError) {
-      return [
-        {
-          rule: ruleName, // Use the rule name from schema, not filename
-          passed: false,
-          message: `Invalid JSON: ${(parseError as Error).message}`,
-          context: {
-            ...baseContext,
-            actualValue: `[Parse Error: ${(parseError as Error).message}]`,
-          },
-        },
-      ];
+      throw new Error(`Invalid JSON in ${filePath}: ${(parseError as Error).message}`);
     }
+    
+    // Soft fail: return validation result
+    const validate = ajv.compile(fileRule.contains);
+    const valid = validate(json);
+
+    return [{
+      rule: ruleName,
+      passed: valid,
+      message: valid ? undefined : `Validation failed: ${JSON.stringify(validate.errors)}`,
+      context: {
+        ...baseContext,
+        value: json,
+      },
+    }];
+    
   } catch (readError) {
     if ((readError as NodeJS.ErrnoException).code === "ENOENT") {
-      return [
-        {
-          rule: ruleName, // Use the rule name from schema, not filename
-          passed: false,
-          message: `File not found: ${filePath}`,
-          context: {
-            ...baseContext,
-            actualValue: "[File not found]",
-          },
-        },
-      ];
-    }
-    return [
-      {
-        rule: ruleName, // Use the rule name from schema, not filename
+      // Soft fail: file not found
+      return [{
+        rule: ruleName,
         passed: false,
-        message: `Error reading file: ${(readError as Error).message}`,
+        message: `File not found: ${filePath}`,
         context: {
           ...baseContext,
-          actualValue: `[Read Error: ${(readError as Error).message}]`,
+          value: "[File not found]",
         },
-      },
-    ];
+      }];
+    }
+    
+    // Hard fail: permission denied, I/O errors, etc. with informative message
+    const errorCode = (readError as NodeJS.ErrnoException).code;
+    const errorMessage = errorCode === "EACCES" 
+      ? `Permission denied accessing ${filePath}`
+      : errorCode === "EISDIR"
+      ? `Expected file but found directory: ${filePath}`
+      : `Error reading file ${filePath}: ${(readError as Error).message}`;
+    
+    throw new Error(errorMessage);
   }
 }

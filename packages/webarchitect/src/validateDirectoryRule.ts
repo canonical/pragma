@@ -30,7 +30,7 @@ import validateFileRule from "./validateFileRule.js";
 export default async function validateDirectoryRule(
   projectPath: string,
   dirRule: DirectoryRule,
-  ruleName: string, // Add rule name parameter
+  ruleName: string,
 ): Promise<ValidationResult[]> {
   const dirPath = join(projectPath, dirRule.name);
   const results: ValidationResult[] = [];
@@ -39,49 +39,42 @@ export default async function validateDirectoryRule(
   try {
     const stats = await stat(dirPath);
     if (!stats.isDirectory()) {
-      return [
-        {
-          rule: ruleName, // Use the rule name from schema
-          passed: false,
-          message: `Expected directory but found file: ${dirPath}`,
-          context: {
-            type: "directory" as const,
-            target: dirPath,
-            description: `Validates directory structure for ${dirRule.name}`,
-            actualValue: "[File found instead of directory]",
-          },
-        },
-      ];
-    }
-  } catch (e) {
-    if ((e as NodeJS.ErrnoException).code === "ENOENT") {
-      return [
-        {
-          rule: ruleName, // Use the rule name from schema
-          passed: false,
-          message: `Directory not found: ${dirPath}`,
-          context: {
-            type: "directory" as const,
-            target: dirPath,
-            description: `Validates directory structure for ${dirRule.name}`,
-            actualValue: "[Directory not found]",
-          },
-        },
-      ];
-    }
-    return [
-      {
-        rule: ruleName, // Use the rule name from schema
+      // Soft fail: expected directory but found file
+      return [{
+        rule: ruleName,
         passed: false,
-        message: `Error accessing directory: ${(e as Error).message}`,
+        message: `Expected directory but found file: ${dirPath}`,
         context: {
           type: "directory" as const,
           target: dirPath,
           description: `Validates directory structure for ${dirRule.name}`,
-          actualValue: `[Access Error: ${(e as Error).message}]`,
+          value: "[File found instead of directory]",
         },
-      },
-    ];
+      }];
+    }
+  } catch (e) {
+    if ((e as NodeJS.ErrnoException).code === "ENOENT") {
+      // Soft fail: directory not found
+      return [{
+        rule: ruleName,
+        passed: false,
+        message: `Directory not found: ${dirPath}`,
+        context: {
+          type: "directory" as const,
+          target: dirPath,
+          description: `Validates directory structure for ${dirRule.name}`,
+          value: "[Directory not found]",
+        },
+      }];
+    }
+    
+    // Hard fail: permission denied, I/O errors, etc. with informative message
+    const errorCode = (e as NodeJS.ErrnoException).code;
+    const errorMessage = errorCode === "EACCES" 
+      ? `Permission denied accessing directory ${dirPath}`
+      : `Error accessing directory ${dirPath}: ${(e as Error).message}`;
+    
+    throw new Error(errorMessage);
   }
 
   // Validate contained files and directories
@@ -129,14 +122,14 @@ export default async function validateDirectoryRule(
         message += `extra directories found: ${extraDirs.join(", ")}`;
       }
       results.push({
-        rule: ruleName, // Use the rule name from schema
+        rule: ruleName,
         passed: false,
         message,
         context: {
           type: "directory" as const,
           target: dirPath,
           description: `Strict validation for ${dirRule.name}`,
-          actualValue: { extraFiles, extraDirs },
+          value: { extraFiles, extraDirs },
         },
       });
     }
@@ -145,13 +138,13 @@ export default async function validateDirectoryRule(
   // If no errors were found (or all were passing), add a success result
   if (results.length === 0 || results.every((r) => r.passed)) {
     results.push({
-      rule: ruleName, // Use the rule name from schema
+      rule: ruleName,
       passed: true,
       context: {
         type: "directory" as const,
         target: dirPath,
         description: `Validates directory structure for ${dirRule.name}`,
-        actualValue: "[Directory exists and structure is valid]",
+        value: "[Directory exists and structure is valid]",
       },
     });
   }
