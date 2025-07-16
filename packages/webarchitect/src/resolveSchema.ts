@@ -100,12 +100,12 @@ export default async function resolveSchema(
     try {
       schemaSource = schemaPath;
       schemaData = JSON.parse(await readFile(schemaPath, "utf-8"));
-    } catch (e) {
+    } catch (_e) {
       const bundledPath = join(__dirname, "../../rulesets", schemaPath);
       try {
         schemaSource = bundledPath;
         schemaData = JSON.parse(await readFile(bundledPath, "utf-8"));
-      } catch (bundledError) {
+      } catch (_bundledError) {
         throw new Error(
           `Could not find ruleset: '${schemaArg}'. Checked local path '${schemaPath}' and bundled path '${bundledPath}'. Available bundled rulesets: base, package, package-react`,
         );

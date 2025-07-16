@@ -32,6 +32,8 @@ export default async function validateRule(
       return validateDirectoryRule(projectPath, rule.directory, ruleName);
     default:
       // Hard fail: invalid rule type indicates a programming error or corrupted schema
-      throw new Error(`Invalid rule type for '${ruleName}': expected rule to have 'file' or 'directory' property, but got ${JSON.stringify(rule)}`);
+      throw new Error(
+        `Invalid rule type for '${ruleName}': expected rule to have 'file' or 'directory' property, but got ${JSON.stringify(rule)}`,
+      );
   }
 }

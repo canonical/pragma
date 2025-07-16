@@ -25,8 +25,8 @@ export default async function loadFullSchema(
   if (schema.extends) {
     const baseSchemas = await Promise.all(schema.extends.map(loadFullSchema));
     const baseRules = baseSchemas.reduce((acc, s) => {
-      const { $schema, name, extends: _, ...rules } = s;
-      return Object.assign(acc, rules);
+      const { extends: _, ...rules } = s;
+      return { ...acc, ...rules };
     }, {});
     const { $schema, name, extends: _, ...rules } = schema;
     return Object.assign({}, baseRules, rules, { $schema, name });

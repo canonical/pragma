@@ -40,40 +40,45 @@ export default async function validateDirectoryRule(
     const stats = await stat(dirPath);
     if (!stats.isDirectory()) {
       // Soft fail: expected directory but found file
-      return [{
-        rule: ruleName,
-        passed: false,
-        message: `Expected directory but found file: ${dirPath}`,
-        context: {
-          type: "directory" as const,
-          target: dirPath,
-          description: `Validates directory structure for ${dirRule.name}`,
-          value: "[File found instead of directory]",
+      return [
+        {
+          rule: ruleName,
+          passed: false,
+          message: `Expected directory but found file: ${dirPath}`,
+          context: {
+            type: "directory" as const,
+            target: dirPath,
+            description: `Validates directory structure for ${dirRule.name}`,
+            value: "[File found instead of directory]",
+          },
         },
-      }];
+      ];
     }
   } catch (e) {
     if ((e as NodeJS.ErrnoException).code === "ENOENT") {
       // Soft fail: directory not found
-      return [{
-        rule: ruleName,
-        passed: false,
-        message: `Directory not found: ${dirPath}`,
-        context: {
-          type: "directory" as const,
-          target: dirPath,
-          description: `Validates directory structure for ${dirRule.name}`,
-          value: "[Directory not found]",
+      return [
+        {
+          rule: ruleName,
+          passed: false,
+          message: `Directory not found: ${dirPath}`,
+          context: {
+            type: "directory" as const,
+            target: dirPath,
+            description: `Validates directory structure for ${dirRule.name}`,
+            value: "[Directory not found]",
+          },
         },
-      }];
+      ];
     }
-    
+
     // Hard fail: permission denied, I/O errors, etc. with informative message
     const errorCode = (e as NodeJS.ErrnoException).code;
-    const errorMessage = errorCode === "EACCES" 
-      ? `Permission denied accessing directory ${dirPath}`
-      : `Error accessing directory ${dirPath}: ${(e as Error).message}`;
-    
+    const errorMessage =
+      errorCode === "EACCES"
+        ? `Permission denied accessing directory ${dirPath}`
+        : `Error accessing directory ${dirPath}: ${(e as Error).message}`;
+
     throw new Error(errorMessage);
   }
 

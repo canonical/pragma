@@ -1,4 +1,4 @@
-import type { Schema, ValidationResult } from "./types.js";
+import type { Rule, Schema, ValidationResult } from "./types.js";
 import validateRule from "./validateRule.js";
 
 /**
@@ -28,17 +28,27 @@ export default async function executeValidationRules(
   const validationPromises = Object.entries(schema)
     .filter(([ruleName, rule]) => {
       // Skip meta-properties that aren't validation rules
-      if (ruleName === "$schema" || ruleName === "name" || ruleName === "extends")
+      if (
+        ruleName === "$schema" ||
+        ruleName === "name" ||
+        ruleName === "extends"
+      )
         return false;
-      
+
       // Type guard to ensure rule is an object with 'file' or 'directory'
-      return typeof rule === "object" && rule !== null && ("file" in rule || "directory" in rule);
+      return (
+        typeof rule === "object" &&
+        rule !== null &&
+        ("file" in rule || "directory" in rule)
+      );
     })
-    .map(([ruleName, rule]) => validateRule(projectPath, rule, ruleName));
+    .map(([ruleName, rule]) =>
+      validateRule(projectPath, rule as Rule, ruleName),
+    );
 
   // Execute all validations in parallel
   const nestedResults = await Promise.all(validationPromises);
-  
+
   // Flatten the results array
   return nestedResults.flat();
 }

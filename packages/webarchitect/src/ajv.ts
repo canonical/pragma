@@ -66,5 +66,17 @@ ajv.opts.validateSchema = true;
 ajv.addFormat("email", /^[^\s@]+@[^\s@]+\.[^\s@]+$/);
 ajv.addFormat("uri", /^https?:\/\/[^\s]+$/);
 ajv.addFormat("uri-reference", /^[^\s]*$/);
+// Add regex format validation - validates that a string is a valid regular expression
+ajv.addFormat("regex", {
+  type: "string",
+  validate: (data: string) => {
+    try {
+      new RegExp(data);
+      return true;
+    } catch {
+      return false;
+    }
+  },
+});
 
 export default ajv;

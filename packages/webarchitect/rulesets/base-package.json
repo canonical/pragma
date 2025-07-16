@@ -61,7 +61,7 @@
             "contains": { "const": "dist" }
           },
           "license": {
-            "const": "LGPL-3.0"
+            "const": "GPL-3.0"
           },
           "scripts": {
             "type": "object",

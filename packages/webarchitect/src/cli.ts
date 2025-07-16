@@ -123,9 +123,7 @@ function formatTerminalOutput(
             .map((line) => `    ${line}`)
             .join("\n");
           console.log(chalk.gray(preview));
-          if (
-            JSON.stringify(result.context.value).split("\n").length > 10
-          ) {
+          if (JSON.stringify(result.context.value).split("\n").length > 10) {
             console.log(chalk.gray("    ... (truncated)"));
           }
         } else {
@@ -149,21 +147,16 @@ function formatTerminalOutput(
           console.log(chalk.gray(`  Rule: ${result.context.description}`));
         }
 
-        if (
-          result.context.actualValue &&
-          typeof result.context.actualValue === "object"
-        ) {
+        if (result.context.value && typeof result.context.value === "object") {
           // Use regular string instead of template literal
           console.log(chalk.gray("  Validated content:"));
-          const preview = JSON.stringify(result.context.actualValue, null, 2)
+          const preview = JSON.stringify(result.context.value, null, 2)
             .split("\n")
             .slice(0, 5) // Show fewer lines for passed validations
             .map((line) => `    ${line}`)
             .join("\n");
           console.log(chalk.gray(preview));
-          if (
-            JSON.stringify(result.context.actualValue).split("\n").length > 5
-          ) {
+          if (JSON.stringify(result.context.value).split("\n").length > 5) {
             console.log(chalk.gray("    ... (content validated successfully)"));
           }
         }
@@ -179,7 +172,9 @@ function formatTerminalOutput(
 
   if (failed > 0) {
     console.log(
-      chalk.red.bold(`Summary: ${failed}/${total} validations failed`),
+      chalk.red.bold(
+        `Summary: ${failed}/${total} validations failed (${passed} passed)`,
+      ),
     );
   } else {
     console.log(chalk.green.bold(`Summary: All ${total} validations passed`));
