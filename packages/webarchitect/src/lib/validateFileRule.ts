@@ -1,8 +1,8 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
+import type { FileRule, ValidationResult } from "../types.js";
 import ajv from "./ajv.js";
 import describeSchema from "./describeSchema.js";
-import type { FileRule, ValidationResult } from "./types.js";
 
 /**
  * Validates a file against a file rule specification.

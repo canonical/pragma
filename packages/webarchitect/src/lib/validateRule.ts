@@ -1,4 +1,4 @@
-import type { Rule, ValidationResult } from "./types.js";
+import type { Rule, ValidationResult } from "../types.js";
 import validateDirectoryRule from "./validateDirectoryRule.js";
 import validateFileRule from "./validateFileRule.js";
 

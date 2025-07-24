@@ -1,4 +1,4 @@
-import type { Rule, Schema, ValidationResult } from "./types.js";
+import type { Rule, Schema, ValidationResult } from "../types.js";
 import validateRule from "./validateRule.js";
 
 /**

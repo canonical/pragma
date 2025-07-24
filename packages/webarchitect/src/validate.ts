@@ -1,5 +1,4 @@
-import executeValidationRules from "./executeValidationRules.js";
-import loadFullSchema from "./loadFullSchema.js";
+import { executeValidationRules, loadFullSchema } from "./lib/index.js";
 import type { ValidationResult } from "./types.js";
 
 /**

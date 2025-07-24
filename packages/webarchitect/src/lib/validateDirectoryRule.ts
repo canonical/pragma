@@ -1,7 +1,7 @@
 import { stat } from "node:fs/promises";
 import { join } from "node:path";
+import type { DirectoryRule, ValidationResult } from "../types.js";
 import listDirectory from "./listDirectory.js";
-import type { DirectoryRule, ValidationResult } from "./types.js";
 import validateFileRule from "./validateFileRule.js";
 
 /**

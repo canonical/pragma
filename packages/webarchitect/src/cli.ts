@@ -2,7 +2,8 @@
 import type { ErrorObject } from "ajv";
 import chalk from "chalk";
 import { Command } from "commander";
-import type { ValidationResult } from "./types.js";
+import { discoverAllRulesets } from "./lib/index.js";
+import type { RulesetLocation, ValidationResult } from "./types.js";
 import validate from "./validate.js";
 
 const program = new Command();
@@ -217,12 +218,74 @@ function formatJsonOutput(results: ValidationResult[]): void {
   console.log(JSON.stringify(output, null, 2));
 }
 
+/**
+ * Displays available rulesets in a tree-like format.
+ * Groups rulesets by their location (bundled vs current directory).
+ */
+async function displayRulesetTree(): Promise<void> {
+  const { bundled, local } = await discoverAllRulesets();
+
+  if (bundled.length === 0 && local.length === 0) {
+    console.log(chalk.yellow("No rulesets found"));
+    return;
+  }
+
+  console.log(chalk.bold("\nAvailable Webarchitect Rulesets:"));
+  console.log(chalk.gray("─".repeat(50)));
+
+  // Display bundled rulesets
+  if (bundled.length > 0) {
+    console.log(chalk.cyan("Bundled Rulesets:"));
+    console.log(chalk.gray(`└── ${bundled[0].path.replace(/\/[^/]+$/, "")}/`));
+    for (let i = 0; i < bundled.length; i++) {
+      const isLast = i === bundled.length - 1;
+      const prefix = isLast ? "└──" : "├──";
+      const filename = `${bundled[i].name}.ruleset.json`;
+      console.log(
+        `    ${prefix} ${chalk.bold(bundled[i].name)} ${chalk.gray(`(${filename})`)}`,
+      );
+    }
+  }
+
+  // Display current directory rulesets
+  if (bundled.length > 0) console.log(); // Add spacing between sections
+  console.log(chalk.green("Current Directory:"));
+  console.log(chalk.gray(`└── ${process.cwd()}/`));
+  if (local.length > 0) {
+    for (let i = 0; i < local.length; i++) {
+      const isLast = i === local.length - 1;
+      const prefix = isLast ? "└──" : "├──";
+      const filename = `${local[i].name}.ruleset.json`;
+      console.log(
+        `    ${prefix} ${chalk.bold(local[i].name)} ${chalk.gray(`(${filename})`)}`,
+      );
+    }
+  } else {
+    console.log(chalk.gray(`    └── (no rulesets found at this path)`));
+  }
+}
+
 program
   .name("webarchitect")
-  .argument("<ruleset>", "ruleset identifier, local path, or URL")
+  .argument("[ruleset]", "ruleset identifier, local path, or URL")
   .option("-v, --verbose", "show all validation results")
   .option("--json", "output results in JSON format")
+  .option("--list", "list all available rulesets")
   .action(async (schemaArg, options) => {
+    // Handle --list option
+    if (options.list) {
+      await displayRulesetTree();
+      return;
+    }
+
+    // Require ruleset argument if not listing
+    if (!schemaArg) {
+      console.error(chalk.red("Error: Missing required argument 'ruleset'"));
+      console.error(
+        chalk.gray("Use 'webarchitect --list' to see available rulesets"),
+      );
+      process.exit(1);
+    }
     try {
       const results = await validate(process.cwd(), schemaArg);
 

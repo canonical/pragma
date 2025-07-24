@@ -1,18 +1,18 @@
 import ajvPackage from "ajv";
-import draft202012 from "./schemas/draft-2020-12.json" with { type: "json" };
-import metaApplicator from "./schemas/meta/applicator.json" with {
+import draft202012 from "../schemas/draft-2020-12.json" with { type: "json" };
+import metaApplicator from "../schemas/meta/applicator.json" with {
   type: "json",
 };
-import metaContent from "./schemas/meta/content.json" with { type: "json" };
-import metaCore from "./schemas/meta/core.json" with { type: "json" };
-import metaFormatAnnotation from "./schemas/meta/format-annotation.json" with {
+import metaContent from "../schemas/meta/content.json" with { type: "json" };
+import metaCore from "../schemas/meta/core.json" with { type: "json" };
+import metaFormatAnnotation from "../schemas/meta/format-annotation.json" with {
   type: "json",
 };
-import metaMetaData from "./schemas/meta/meta-data.json" with { type: "json" };
-import metaUnevaluated from "./schemas/meta/unevaluated.json" with {
+import metaMetaData from "../schemas/meta/meta-data.json" with { type: "json" };
+import metaUnevaluated from "../schemas/meta/unevaluated.json" with {
   type: "json",
 };
-import metaValidation from "./schemas/meta/validation.json" with {
+import metaValidation from "../schemas/meta/validation.json" with {
   type: "json",
 };
 

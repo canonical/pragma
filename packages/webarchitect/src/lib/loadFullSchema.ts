@@ -1,5 +1,5 @@
+import type { Schema } from "../types.js";
 import resolveSchema from "./resolveSchema.js";
-import type { Schema } from "./types.js";
 
 /**
  * Loads a schema and recursively resolves all extended schemas.

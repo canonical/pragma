@@ -1,13 +1,11 @@
 import { readFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 import type { ErrorObject } from "ajv";
+import { BUNDLED_RULESETS_DIR } from "../constants.js";
+import motherSchema from "../schema.json" with { type: "json" };
+import type { Schema } from "../types.js";
 import ajv from "./ajv.js";
-import motherSchema from "./schema.json" with { type: "json" };
-import type { Schema } from "./types.js";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+import discoverAllRulesets from "./discoverAllRulesets.js";
 
 const validateSchema = ajv.compile(motherSchema);
 
@@ -93,21 +91,26 @@ export default async function resolveSchema(
     schemaData = (await response.json()) as Schema;
   } else {
     let schemaPath = schemaArg;
-    if (!schemaPath.endsWith(".json")) {
-      schemaPath += ".json";
+    if (
+      !schemaPath.endsWith(".ruleset.json") &&
+      !schemaPath.endsWith(".json")
+    ) {
+      schemaPath += ".ruleset.json";
     }
 
     try {
       schemaSource = schemaPath;
       schemaData = JSON.parse(await readFile(schemaPath, "utf-8"));
     } catch (_e) {
-      const bundledPath = join(__dirname, "../../rulesets", schemaPath);
+      const bundledPath = join(BUNDLED_RULESETS_DIR, schemaPath);
       try {
         schemaSource = bundledPath;
         schemaData = JSON.parse(await readFile(bundledPath, "utf-8"));
       } catch (_bundledError) {
+        const { bundled } = await discoverAllRulesets();
+        const availableNames = bundled.map((r) => r.name).join(", ");
         throw new Error(
-          `Could not find ruleset: '${schemaArg}'. Checked local path '${schemaPath}' and bundled path '${bundledPath}'. Available bundled rulesets: base, package, package-react`,
+          `Could not find ruleset: '${schemaArg}'. Checked local path '${schemaPath}' and bundled path '${bundledPath}'. Available bundled rulesets: ${availableNames}`,
         );
       }
     }

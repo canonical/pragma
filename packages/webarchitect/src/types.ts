@@ -41,3 +41,9 @@ export interface ValidationResult {
     value?: unknown; // What was found (for verbose output)
   };
 }
+
+export interface RulesetLocation {
+  type: "bundled" | "local";
+  path: string;
+  name: string;
+}
