@@ -1,0 +1,97 @@
+{
+  "$schema": "https://github.com/webarchitect/schemas/main/schema.json",
+  "name": "package",
+  "extends": ["base"],
+  "biome": {
+    "file": {
+      "name": "biome.json",
+      "contains": {
+        "type": "object",
+        "properties": {
+          "$schema": {
+            "type": "string"
+          },
+          "extends": {
+            "type": "array",
+            "items": { "const": "@canonical/biome-config" },
+            "minItems": 1,
+            "maxItems": 1
+          },
+          "files": {
+            "type": "object",
+            "properties": {
+              "includes": {
+                "type": "array",
+                "items": { "type": "string" }
+              }
+            },
+            "additionalProperties": false,
+            "description": "File inclusion patterns only"
+          }
+        },
+        "required": ["extends"],
+        "additionalProperties": false
+      }
+    }
+  },
+  "package": {
+    "file": {
+      "name": "package.json",
+      "contains": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^@canonical/"
+          },
+          "version": {
+            "type": "string"
+          },
+          "type": {
+            "const": "module"
+          },
+          "module": {
+            "const": "dist/esm/index.js"
+          },
+          "types": {
+            "const": "dist/types/index.d.ts"
+          },
+          "files": {
+            "type": "array",
+            "contains": { "const": "dist" }
+          },
+          "license": {
+            "const": "GPL-3.0"
+          },
+          "scripts": {
+            "type": "object",
+            "properties": {
+              "build": {
+                "type": "string",
+                "description": "Build command (implementation flexible)"
+              },
+              "test": {
+                "type": "string",
+                "description": "Test command (implementation flexible)"
+              },
+              "check:ts": {
+                "const": "tsc --noEmit"
+              }
+            },
+            "required": ["build", "test", "check:ts"]
+          }
+        },
+        "required": [
+          "name",
+          "version",
+          "type",
+          "module",
+          "types",
+          "files",
+          "license",
+          "scripts"
+        ]
+      }
+    }
+  }
+}
