@@ -1,14 +1,29 @@
 /* <%= generatorPackageName %> <%= generatorPackageVersion %> */
 
-import type { Snippet } from "svelte";
+import type { HTMLAttributes } from "svelte/elements";
 
-export type <%= componentName %>Props = {
-  /** A unique identifier for the <%= componentName %> */
-  id?: string | undefined | null;
-  /** Additional CSS classes */
-  class?: string | undefined | null;
-  /** Child elements */
-  children?: Snippet | undefined | null;
-  /** Inline styles */
-  style?: string | undefined | null;
-};
+export interface <%= componentName %>Props extends HTMLAttributes<HTMLDivElement> {
+  // Define additional props specific to <%= componentName %> here
+}
+
+/*
+  For components that render specific HTML elements with extended prop sets,
+  consider using appropriate interfaces exported from `svelte/elements`.
+
+  For example:
+  - `HTMLButtonAttributes` (provides `disabled`, `type`, etc.)
+  - `HTMLAnchorAttributes` (provides `href`, `target`, etc.)
+  - `HTMLInputAttributes` (provides `type`, `checked`, `value`, etc.)
+  - `HTMLFormAttributes` (provides `action`, `method`, etc.)
+
+  ```typescript
+  import type { HTMLButtonAttributes } from "svelte/elements";
+
+  export interface MyButtonProps extends HTMLButtonAttributes {
+    // Your custom props here
+  }
+  ```
+  
+  See Svelte documentation on typing wrapper components:
+  https://svelte.dev/docs/svelte/typescript#Typing-wrapper-components
+*/
