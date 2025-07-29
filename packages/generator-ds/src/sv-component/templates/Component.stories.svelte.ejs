@@ -3,6 +3,7 @@
 <script module lang="ts">
   import { defineMeta } from "@storybook/addon-svelte-csf";
   import <%= componentName %> from "./<%= componentName %>.svelte";
+  // import type { <%= componentName %>Props } from "./types.js";
 
   /*
     CSF3 story
@@ -12,8 +13,15 @@
     title: "<%= componentName %>",
     tags: ["autodocs"],
     component: <%= componentName %>,
+    // Use render snippet for more control over story rendering.
+    // see: https://github.com/storybookjs/addon-svelte-csf?tab=readme-ov-file#default-snippet
+    // render,
   });
 </script>
+
+<!-- {#snippet render(args: <%= componentName %>Props)}
+  <<%= componentName %> {...args} />
+{/snippet} -->
 
 <!-- More on writing stories with args: https://storybook.js.org/docs/writing-stories/args -->
 <Story name="Default"><%= componentName %></Story>
