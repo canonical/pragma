@@ -2,7 +2,7 @@ name: Setup environment
 description: Installs build tools and dependencies
 inputs:
   bun-version:
-    default: latest
+    default: '1.2.19'
     description: Version of Bun to use
   node-version:
     # we default to 22 (not latest) because versions >= 23 currently cause storybook builds to fail.
