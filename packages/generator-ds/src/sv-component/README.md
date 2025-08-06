@@ -8,7 +8,7 @@ This generator creates a new Svelte component with a basic structure.
 3. The required arguments and possible flags are listed by invoking the generator with the `--help` flag, for instance `yo @canonical/ds:sv-component --help`
 
 ### Options
-- `--withStyles` or `-c`: Creates a `styles.css` file associated with the component
+- `--withStyles` or `-c`: Creates a `<style>` block in the component file
 - `--withStories` or `-s`: Creates a Storybook file for the component
 - `--useTsStories` or `-t`: Uses the `.ts` based story formats instead of the CSF3 & `.svelte` format. Useful when there is a specific need for a template-based stories or function-based stories, otherwise not recommended. Has no effect if `withStories` is not set
 - `--withoutSsrTests` or `-w`: Skips the creation of SSR tests for the component

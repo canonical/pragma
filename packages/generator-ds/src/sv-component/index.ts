@@ -47,7 +47,7 @@ export default class ComponentGenerator extends Generator<ComponentGeneratorOpti
 
     this.option("withStyles", {
       type: Boolean,
-      description: "Creates a `styles.css` file associated with the component.",
+      description: "Creates a `<style>` block in the component file.",
       default: false,
       alias: "c",
     });
@@ -144,14 +144,6 @@ export default class ComponentGenerator extends Generator<ComponentGeneratorOpti
         this.destinationPath(
           `${this.answers.componentPath}/${templateData.componentName}.ssr.test.ts`,
         ),
-        templateData,
-      );
-    }
-
-    if (this.answers.withStyles) {
-      this.fs.copyTpl(
-        this.templatePath("styles.css.ejs"),
-        this.destinationPath(`${this.answers.componentPath}/styles.css`),
         templateData,
       );
     }

@@ -3,7 +3,6 @@
 <script lang="ts">
   import type { <%= componentName %>Props } from "./types.js";
 <% if (withStyles) { _%>
-  import "./styles.css";
 
   const componentCssClassName = "<%= cssNamespace %> <%= componentCssClassName %>";
 <%_ } _%>
@@ -25,3 +24,11 @@
 </<%= componentName %>>
 ```
 -->
+<% if (withStyles) { _%>
+
+<style>
+  /* .<%= cssNamespace %>.<%= componentCssClassName %> {
+
+  } */
+</style>
+<%_ } _%>
