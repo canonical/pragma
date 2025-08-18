@@ -386,4 +386,31 @@
   --tooltip-line-height: var(--line-height-default);
 
   --tooltip-spacing-arrow-size: 6px;
+
+  --badge-color-background: var(--color-text-default);
+  --badge-color-text: var(--color-background-default);
+  --badge-color-background-negative: var(--color-background-negative-default);
+  --badge-color-text-negative: var(--color-background-negative-text);
+  --badge-color-background-positive: var(--color-background-positive-default);
+  --badge-color-text-positive: var(--color-background-positive-text);
+  --badge-color-background-caution: var(--color-background-caution-default);
+  --badge-color-text-caution: var(--color-palette-black);
+  --badge-color-background-information: var(
+    --color-background-information-default
+  );
+  --badge-color-text-information: var(--color-palette-white);
+
+  --badge-border-radius: 1rem;
+  --badge-font-size: var(--font-size-small);
+  --badge-font-weight: var(--font-weight-default);
+  --badge-line-height: var(--line-height-small);
+  --badge-padding-vertical: 0;
+  --badge-padding-horizontal: var(--spacing-horizontal-xsmall);
+  --badge-margin-bottom: 0;
+  /* Enough to fit max rounded value of "999T+" */
+  --badge-max-width: 5ch;
+  --badge-min-width: calc(
+    var(--badge-line-height) -
+    (2 * var(--badge-padding-horizontal))
+  );
 }
