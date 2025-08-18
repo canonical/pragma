@@ -36,12 +36,18 @@
     "check:biome": "biome check",
     "check:biome:fix": "biome check --write",
     "check:ts": "tsc --noEmit",
-    "test": "echo 'No tests defined yet'"
+    "test": "bun run test:vitest",
+    "test:watch": "bun run test:vitest:watch",
+    "test:vitest": "vitest run",
+    "test:vitest:watch": "vitest"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.0.0",
     "@canonical/biome-config": "^0.10.0-experimental.0",
     "@canonical/typescript-config-base": "^0.10.0-experimental.0",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "globals": "^16.2.0",
+    "vite": "^7.0.0",
+    "vitest": "^3.2.3"
   }
 }
