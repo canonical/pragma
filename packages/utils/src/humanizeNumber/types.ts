@@ -9,11 +9,9 @@ export type HumanizeNumberOptions = {
    * @default ["", "k", "M", "B", "T"]
    */
   units?: string[];
-  /**
-   * If provided, truncates the values that are larger than this number.
-   * This is useful for displaying large numbers in a more compact form.
-   */
-  truncateAfter?: number;
+
+  /** The maxiumum number of characters that can be used to represent the number */
+  maxChars?: number;
 
   /**
    * The base for the magnitude calculation.
