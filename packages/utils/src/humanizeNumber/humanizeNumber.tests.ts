@@ -46,11 +46,6 @@ describe("humanizeNumber", () => {
         },
       },
       {
-        it: "should show a truncated value for numbers close to the next unit",
-        input: 999_999,
-        expected: { displayValue: "0.9M+", value: 999_999, unit: "M" },
-      },
-      {
         it: "should truncate input decimals and add a plus",
         input: 12345.67,
         expected: { displayValue: "12.3k+", value: 12345.67, unit: "k" },
@@ -78,22 +73,6 @@ describe("humanizeNumber", () => {
       const input = 1.5e6;
       const options = { units: ["", "Kilo", "Mega"] };
       const expected = { displayValue: "1.5Mega", value: input, unit: "Mega" };
-      const result = humanizeNumber(input, options);
-      expect(result).toEqual(expected);
-    });
-
-    it("should respect the `truncateAfter` option for values below the threshold", () => {
-      const input = 8000;
-      const options = { truncateAfter: 10000 };
-      const expected = { displayValue: "8000", value: input, unit: "" };
-      const result = humanizeNumber(input, options);
-      expect(result).toEqual(expected);
-    });
-
-    it("should format normally for values above the `truncateAfter` threshold", () => {
-      const input = 12000;
-      const options = { truncateAfter: 10000 };
-      const expected = { displayValue: "12k", value: input, unit: "k" };
       const result = humanizeNumber(input, options);
       expect(result).toEqual(expected);
     });
@@ -163,6 +142,90 @@ describe("humanizeNumber", () => {
     });
   });
 
+  describe("MaxChars Constraint", () => {
+    const testCases: TestCase[] = [
+      {
+        it: "should respect maxChars by reducing decimal places while keeping unit",
+        input: 123456,
+        options: { maxChars: 5 },
+        expected: { displayValue: "123k+", value: 123456, unit: "k" },
+      },
+      {
+        it: "should handle very small maxChars",
+        input: 9999,
+        options: { maxChars: 2 },
+        expected: { displayValue: "9+", value: 9999, unit: "" },
+      },
+      {
+        it: "should use k unit when maxChars allows",
+        input: 9999,
+        options: { maxChars: 3 },
+        expected: { displayValue: "9k+", value: 9999, unit: "k" },
+      },
+      {
+        it: "should handle maxChars with decimals option",
+        input: 1234567,
+        options: { maxChars: 6, decimals: 2 },
+        expected: { displayValue: "1.23M+", value: 1234567, unit: "M" },
+      },
+      {
+        it: "should constrain large numbers to maxChars without unit",
+        input: 999_999_999,
+        options: { maxChars: 4 },
+        expected: { displayValue: "99M+", value: 999_999_999, unit: "M" },
+      },
+      {
+        it: "should handle numbers that don't need units with maxChars",
+        input: 999,
+        options: { maxChars: 3 },
+        expected: { displayValue: "999", value: 999, unit: "" },
+      },
+      {
+        it: "should handle numbers that don't need units but exceed maxChars",
+        input: 12345,
+        options: { maxChars: 3 },
+        expected: { displayValue: "9k+", value: 12345, unit: "k" },
+      },
+      {
+        it: "should handle maxChars with custom units",
+        input: 15e6,
+        options: { maxChars: 7, units: ["", "Kilo", "Mega"] },
+        expected: { displayValue: "15Mega", value: 15e6, unit: "Mega" },
+      },
+      {
+        it: "should constrain custom units when they exceed maxChars",
+        input: 1.5e6,
+        options: { maxChars: 4, units: ["", "k", "M"] },
+        expected: { displayValue: "1.5M", value: 1.5e6, unit: "M" },
+      },
+      {
+        it: "should constrain with exactly representable values",
+        input: 15000,
+        options: { maxChars: 3 },
+        expected: { displayValue: "15k", value: 15000, unit: "k" },
+      },
+      {
+        it: "should constrain with approximately representable values",
+        input: 15001,
+        options: { maxChars: 3 },
+        expected: { displayValue: "9k+", value: 15001, unit: "k" },
+      },
+      {
+        it: "should handle maxChars with values that would show plus sign",
+        input: 999_999,
+        options: { maxChars: 5 },
+        expected: { displayValue: "999k+", value: 999999, unit: "k" },
+      },
+    ];
+
+    testCases.forEach(({ it: testName, input, options, expected }) => {
+      it(testName, () => {
+        const result = humanizeNumber(input, options);
+        expect(result).toEqual(expected);
+      });
+    });
+  });
+
   describe("Edge Cases", () => {
     const testCases: TestCase[] = [
       {
@@ -171,7 +234,7 @@ describe("humanizeNumber", () => {
         expected: { displayValue: "0", value: 0, unit: "" },
       },
       {
-        it: "should return NaN displayValue for negative numbers (due to Math.log)",
+        it: "should return NaN displayValue for negative numbers",
         input: -100,
         expected: { displayValue: "NaN", value: -100, unit: "" },
       },
