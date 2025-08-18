@@ -27,7 +27,7 @@
         "@types/node": "^24.0.0",
         "@types/react": "^19.1.8",
         "@types/react-dom": "^19.1.6",
-        "@vitejs/plugin-react": "^4.5.2",
+        "@vitejs/plugin-react": "^5.0.0",
         "globals": "^16.2.0",
         "storybook": "^9.0.8",
         "typescript": "^5.8.3",
@@ -39,12 +39,12 @@
       "name": "@canonical/ds-demo-site",
       "version": "0.10.0-experimental.0",
       "dependencies": {
-        "@canonical/react-ds-core": "^0.9.0",
-        "@canonical/react-ds-core-form": "^0.9.0",
-        "@canonical/react-ssr": "^0.9.0",
-        "@canonical/storybook-config": "^0.9.0",
-        "@canonical/styles": "^0.9.0",
-        "@canonical/styles-debug": "^0.9.0",
+        "@canonical/react-ds-core": "^0.10.0-experimental.0",
+        "@canonical/react-ds-core-form": "^0.10.0-experimental.0",
+        "@canonical/react-ssr": "^0.10.0-experimental.0",
+        "@canonical/storybook-config": "^0.10.0-experimental.0",
+        "@canonical/styles": "^0.10.0-experimental.0",
+        "@canonical/styles-debug": "^0.10.0-experimental.0",
         "@tanstack/react-router": "^1.121.0",
         "react": "^19.1.0",
         "react-dom": "^19.1.0",
@@ -52,15 +52,15 @@
       },
       "devDependencies": {
         "@biomejs/biome": "^2.0.0",
-        "@canonical/biome-config": "^0.9.0",
-        "@canonical/typescript-config-react": "^0.9.0",
+        "@canonical/biome-config": "^0.10.0-experimental.0",
+        "@canonical/typescript-config-react": "^0.10.0-experimental.0",
         "@chromatic-com/storybook": "^4.0.0",
         "@tanstack/react-router-devtools": "^1.121.0",
         "@tanstack/router-plugin": "^1.121.0",
         "@types/node": "^24.0.0",
         "@types/react": "^19.1.8",
         "@types/react-dom": "^19.1.6",
-        "@vitejs/plugin-react": "^4.5.2",
+        "@vitejs/plugin-react": "^5.0.0",
         "globals": "^16.2.0",
         "storybook": "^9.0.8",
         "typescript": "^5.8.3",
@@ -150,22 +150,22 @@
       "name": "@canonical/react-ds-app",
       "version": "0.10.0-experimental.0",
       "dependencies": {
-        "@canonical/storybook-config": "^0.9.0",
-        "@canonical/styles": "^0.9.0",
+        "@canonical/storybook-config": "^0.10.0-experimental.0",
+        "@canonical/styles": "^0.10.0-experimental.0",
         "react": "^19.1.0",
         "react-dom": "^19.1.0",
       },
       "devDependencies": {
         "@biomejs/biome": "^2.0.0",
-        "@canonical/biome-config": "^0.9.0",
-        "@canonical/typescript-config-react": "^0.9.0",
+        "@canonical/biome-config": "^0.10.0-experimental.0",
+        "@canonical/typescript-config-react": "^0.10.0-experimental.0",
         "@chromatic-com/storybook": "^3.2.2",
         "@testing-library/jest-dom": "^6.6.3",
         "@testing-library/react": "^16.3.0",
         "@types/node": "^24.0.0",
         "@types/react": "^19.1.8",
         "@types/react-dom": "^19.1.6",
-        "@vitejs/plugin-react": "^4.5.2",
+        "@vitejs/plugin-react": "^5.0.0",
         "copyfiles": "^2.4.1",
         "globals": "^16.2.0",
         "jsdom": "^26.1.0",
@@ -180,22 +180,22 @@
       "name": "@canonical/react-ds-app-anbox",
       "version": "0.10.0-experimental.0",
       "dependencies": {
-        "@canonical/storybook-config": "^0.9.0",
-        "@canonical/styles": "^0.9.0",
+        "@canonical/storybook-config": "^0.10.0-experimental.0",
+        "@canonical/styles": "^0.10.0-experimental.0",
         "react": "^19.1.0",
         "react-dom": "^19.1.0",
       },
       "devDependencies": {
         "@biomejs/biome": "^2.0.0",
-        "@canonical/biome-config": "^0.9.0",
-        "@canonical/typescript-config-react": "^0.9.0",
+        "@canonical/biome-config": "^0.10.0-experimental.0",
+        "@canonical/typescript-config-react": "^0.10.0-experimental.0",
         "@chromatic-com/storybook": "^4.0.0",
         "@testing-library/jest-dom": "^6.6.3",
         "@testing-library/react": "^16.3.0",
         "@types/node": "^24.0.0",
         "@types/react": "^19.1.8",
         "@types/react-dom": "^19.1.6",
-        "@vitejs/plugin-react": "^4.5.2",
+        "@vitejs/plugin-react": "^5.0.0",
         "copyfiles": "^2.4.1",
         "globals": "^16.2.0",
         "jsdom": "^26.1.0",
@@ -210,9 +210,9 @@
       "name": "@canonical/react-ds-app-launchpad",
       "version": "0.10.0-experimental.0",
       "dependencies": {
-        "@canonical/storybook-config": "^0.9.0",
-        "@canonical/styles": "^0.9.0",
-        "@canonical/utils": "^0.9.0",
+        "@canonical/storybook-config": "^0.10.0-experimental.0",
+        "@canonical/styles": "^0.10.0-experimental.0",
+        "@canonical/utils": "^0.10.0-experimental.0",
         "@js-temporal/polyfill": "^0.5.1",
         "highlight.js": "^11.11.1",
         "react": ">=18.0.0 <20.0.0",
@@ -224,15 +224,15 @@
       },
       "devDependencies": {
         "@biomejs/biome": "^2.0.0",
-        "@canonical/biome-config": "^0.9.0",
-        "@canonical/typescript-config-react": "^0.9.0",
+        "@canonical/biome-config": "^0.10.0-experimental.0",
+        "@canonical/typescript-config-react": "^0.10.0-experimental.0",
         "@chromatic-com/storybook": "^4.0.0",
         "@testing-library/jest-dom": "^6.6.3",
         "@testing-library/react": "^16.3.0",
         "@types/node": "^24.0.0",
         "@types/react": "^19.1.8",
         "@types/react-dom": "^19.1.6",
-        "@vitejs/plugin-react": "^4.5.2",
+        "@vitejs/plugin-react": "^5.0.0",
         "copyfiles": "^2.4.1",
         "globals": "^16.2.0",
         "jsdom": "^26.1.0",
@@ -247,22 +247,22 @@
       "name": "@canonical/react-ds-app-lxd",
       "version": "0.10.0-experimental.0",
       "dependencies": {
-        "@canonical/storybook-config": "^0.9.0",
-        "@canonical/styles": "^0.9.0",
+        "@canonical/storybook-config": "^0.10.0-experimental.0",
+        "@canonical/styles": "^0.10.0-experimental.0",
         "react": "^19.1.0",
         "react-dom": "^19.1.0",
       },
       "devDependencies": {
         "@biomejs/biome": "^2.0.0",
-        "@canonical/biome-config": "^0.9.0",
-        "@canonical/typescript-config-react": "^0.9.0",
+        "@canonical/biome-config": "^0.10.0-experimental.0",
+        "@canonical/typescript-config-react": "^0.10.0-experimental.0",
         "@chromatic-com/storybook": "^3.2.2",
         "@testing-library/jest-dom": "^6.6.3",
         "@testing-library/react": "^16.3.0",
         "@types/node": "^24.0.0",
         "@types/react": "^19.1.8",
         "@types/react-dom": "^19.1.6",
-        "@vitejs/plugin-react": "^4.5.2",
+        "@vitejs/plugin-react": "^5.0.0",
         "copyfiles": "^2.4.1",
         "globals": "^16.2.0",
         "jsdom": "^26.1.0",
@@ -277,22 +277,22 @@
       "name": "@canonical/react-ds-app-maas",
       "version": "0.10.0-experimental.0",
       "dependencies": {
-        "@canonical/storybook-config": "^0.9.0",
-        "@canonical/styles": "^0.9.0",
+        "@canonical/storybook-config": "^0.10.0-experimental.0",
+        "@canonical/styles": "^0.10.0-experimental.0",
         "react": "^19.1.0",
         "react-dom": "^19.1.0",
       },
       "devDependencies": {
         "@biomejs/biome": "^2.0.0",
-        "@canonical/biome-config": "^0.9.0",
-        "@canonical/typescript-config-react": "^0.9.0",
+        "@canonical/biome-config": "^0.10.0-experimental.0",
+        "@canonical/typescript-config-react": "^0.10.0-experimental.0",
         "@chromatic-com/storybook": "^4.0.0",
         "@testing-library/jest-dom": "^6.6.3",
         "@testing-library/react": "^16.3.0",
         "@types/node": "^24.0.0",
         "@types/react": "^19.1.8",
         "@types/react-dom": "^19.1.6",
-        "@vitejs/plugin-react": "^4.5.2",
+        "@vitejs/plugin-react": "^5.0.0",
         "copyfiles": "^2.4.1",
         "globals": "^16.2.0",
         "jsdom": "^26.1.0",
@@ -307,22 +307,22 @@
       "name": "@canonical/react-ds-app-stores",
       "version": "0.10.0-experimental.0",
       "dependencies": {
-        "@canonical/storybook-config": "^0.9.0",
-        "@canonical/styles": "^0.9.0",
+        "@canonical/storybook-config": "^0.10.0-experimental.0",
+        "@canonical/styles": "^0.10.0-experimental.0",
         "react": "^19.1.0",
         "react-dom": "^19.1.0",
       },
       "devDependencies": {
         "@biomejs/biome": "^2.0.0",
-        "@canonical/biome-config": "^0.9.0",
-        "@canonical/typescript-config-react": "^0.9.0",
+        "@canonical/biome-config": "^0.10.0-experimental.0",
+        "@canonical/typescript-config-react": "^0.10.0-experimental.0",
         "@chromatic-com/storybook": "^4.0.0",
         "@testing-library/jest-dom": "^6.6.3",
         "@testing-library/react": "^16.3.0",
         "@types/node": "^24.0.0",
         "@types/react": "^19.1.8",
         "@types/react-dom": "^19.1.6",
-        "@vitejs/plugin-react": "^4.5.2",
+        "@vitejs/plugin-react": "^5.0.0",
         "copyfiles": "^2.4.1",
         "globals": "^16.2.0",
         "jsdom": "^26.1.0",
@@ -337,22 +337,22 @@
       "name": "@canonical/react-ds-app-wpe",
       "version": "0.10.0-experimental.0",
       "dependencies": {
-        "@canonical/storybook-config": "^0.9.0",
-        "@canonical/styles": "^0.9.0",
+        "@canonical/storybook-config": "^0.10.0-experimental.0",
+        "@canonical/styles": "^0.10.0-experimental.0",
         "react": "^19.1.0",
         "react-dom": "^19.1.0",
       },
       "devDependencies": {
         "@biomejs/biome": "^2.0.0",
-        "@canonical/biome-config": "^0.9.0",
-        "@canonical/typescript-config-react": "^0.9.0",
+        "@canonical/biome-config": "^0.10.0-experimental.0",
+        "@canonical/typescript-config-react": "^0.10.0-experimental.0",
         "@chromatic-com/storybook": "^3.2.2",
         "@testing-library/jest-dom": "^6.6.3",
         "@testing-library/react": "^16.3.0",
         "@types/node": "^24.0.0",
         "@types/react": "^19.1.8",
         "@types/react-dom": "^19.1.6",
-        "@vitejs/plugin-react": "^4.5.2",
+        "@vitejs/plugin-react": "^5.0.0",
         "copyfiles": "^2.4.1",
         "globals": "^16.2.0",
         "jsdom": "^26.1.0",
@@ -383,7 +383,7 @@
         "@types/node": "^24.0.0",
         "@types/react": "^19.1.8",
         "@types/react-dom": "^19.1.6",
-        "@vitejs/plugin-react": "^4.5.2",
+        "@vitejs/plugin-react": "^5.0.0",
         "copyfiles": "^2.4.1",
         "globals": "^16.2.0",
         "jsdom": "^26.1.0",
@@ -398,10 +398,10 @@
       "name": "@canonical/react-ds-core-form",
       "version": "0.10.0-experimental.0",
       "dependencies": {
-        "@canonical/react-ds-core": "^0.9.0",
-        "@canonical/storybook-config": "^0.9.0",
-        "@canonical/styles": "^0.9.0",
-        "@canonical/utils": "^0.9.0",
+        "@canonical/react-ds-core": "^0.10.0-experimental.0",
+        "@canonical/storybook-config": "^0.10.0-experimental.0",
+        "@canonical/styles": "^0.10.0-experimental.0",
+        "@canonical/utils": "^0.10.0-experimental.0",
         "downshift": "^9.0.9",
         "react": "^19.1.0",
         "react-dom": "^19.1.0",
@@ -409,15 +409,15 @@
       },
       "devDependencies": {
         "@biomejs/biome": "^2.0.0",
-        "@canonical/biome-config": "^0.9.0",
-        "@canonical/typescript-config-react": "^0.9.0",
+        "@canonical/biome-config": "^0.10.0-experimental.0",
+        "@canonical/typescript-config-react": "^0.10.0-experimental.0",
         "@chromatic-com/storybook": "^4.0.0",
         "@testing-library/jest-dom": "^6.6.3",
         "@testing-library/react": "^16.3.0",
         "@types/node": "^24.0.0",
         "@types/react": "^19.1.8",
         "@types/react-dom": "^19.1.6",
-        "@vitejs/plugin-react": "^4.5.2",
+        "@vitejs/plugin-react": "^5.0.0",
         "copyfiles": "^2.4.1",
         "globals": "^16.2.0",
         "jsdom": "^26.1.0",
@@ -466,7 +466,7 @@
         "@types/node": "^24.0.0",
         "@types/react": "^19.1.8",
         "@types/react-dom": "^19.1.6",
-        "@vitejs/plugin-react": "^4.5.2",
+        "@vitejs/plugin-react": "^5.0.0",
         "react": "^19.1.0",
         "react-dom": "^19.1.0",
         "storybook": "^9.0.8",
@@ -481,17 +481,17 @@
       "name": "@canonical/storybook-addon-msw",
       "version": "0.10.0-experimental.0",
       "dependencies": {
-        "@canonical/styles-debug": "^0.9.0",
+        "@canonical/styles-debug": "^0.10.0-experimental.0",
         "@storybook/icons": "^1.2.10",
       },
       "devDependencies": {
         "@biomejs/biome": "^2.0.0",
-        "@canonical/biome-config": "^0.9.0",
-        "@canonical/typescript-config-react": "^0.9.0",
+        "@canonical/biome-config": "^0.10.0-experimental.0",
+        "@canonical/typescript-config-react": "^0.10.0-experimental.0",
         "@types/node": "^24.0.0",
         "@types/react": "^19.1.8",
         "@types/react-dom": "^19.1.6",
-        "@vitejs/plugin-react": "^4.5.2",
+        "@vitejs/plugin-react": "^5.0.0",
         "msw": "^2.10.2",
         "react": "^19.1.0",
         "react-dom": "^19.1.0",
@@ -670,6 +670,8 @@
     "@babel/helper-compilation-targets": ["@babel/helper-compilation-targets@7.27.2", "", { "dependencies": { "@babel/compat-data": "^7.27.2", "@babel/helper-validator-option": "^7.27.1", "browserslist": "^4.24.0", "lru-cache": "^5.1.1", "semver": "^6.3.1" } }, "sha512-2+1thGUUWWjLTYTHZWK1n8Yga0ijBz1XAhUXcKy81rd5g6yh7hGqMp45v7cadSbEHc9G3OTv45SyneRN3ps4DQ=="],
 
     "@babel/helper-create-class-features-plugin": ["@babel/helper-create-class-features-plugin@7.27.1", "", { "dependencies": { "@babel/helper-annotate-as-pure": "^7.27.1", "@babel/helper-member-expression-to-functions": "^7.27.1", "@babel/helper-optimise-call-expression": "^7.27.1", "@babel/helper-replace-supers": "^7.27.1", "@babel/helper-skip-transparent-expression-wrappers": "^7.27.1", "@babel/traverse": "^7.27.1", "semver": "^6.3.1" }, "peerDependencies": { "@babel/core": "^7.0.0" } }, "sha512-QwGAmuvM17btKU5VqXfb+Giw4JcN0hjuufz3DYnpeVDvZLAObloM77bhMXiqry3Iio+Ai4phVRDwl6WU10+r5A=="],
+
+    "@babel/helper-globals": ["@babel/helper-globals@7.28.0", "", {}, "sha512-+W6cISkXFa1jXsDEdYA8HeevQT/FULhxzR99pxphltZcVaugps53THCeiWA8SguxxpSp3gKPiuYfSWopkLQ4hw=="],
 
     "@babel/helper-member-expression-to-functions": ["@babel/helper-member-expression-to-functions@7.27.1", "", { "dependencies": { "@babel/traverse": "^7.27.1", "@babel/types": "^7.27.1" } }, "sha512-E5chM8eWjTp/aNoVpcbfM7mLxu9XGLWYise2eBKGQomAk/Mb4XoxyqXTZbuTohbsl8EKqdlMhnDI2CCLfcs9wA=="],
 
@@ -1051,7 +1053,7 @@
 
     "@polka/url": ["@polka/url@1.0.0-next.29", "", {}, "sha512-wwQAWhWSuHaag8c4q/KN/vCoeOJYshAIvMQwD4GpSb3OiZklFfvAgmj0VCBBImRpuF/aFgIRzllXlVX93Jevww=="],
 
-    "@rolldown/pluginutils": ["@rolldown/pluginutils@1.0.0-beta.11", "", {}, "sha512-L/gAA/hyCSuzTF1ftlzUSI/IKr2POHsv1Dd78GfqkR83KMNuswWD61JxGV2L7nRwBBBSDr6R1gCkdTmoN7W4ag=="],
+    "@rolldown/pluginutils": ["@rolldown/pluginutils@1.0.0-beta.30", "", {}, "sha512-whXaSoNUFiyDAjkUF8OBpOm77Szdbk5lGNqFe6CbVbJFrhCCPinCbRA3NjawwlNHla1No7xvXXh+CpSxnPfUEw=="],
 
     "@rollup/pluginutils": ["@rollup/pluginutils@5.1.4", "", { "dependencies": { "@types/estree": "^1.0.0", "estree-walker": "^2.0.2", "picomatch": "^4.0.2" }, "peerDependencies": { "rollup": "^1.20.0||^2.0.0||^3.0.0||^4.0.0" }, "optionalPeers": ["rollup"] }, "sha512-USm05zrsFxYLPdWWq+K3STlWiT/3ELn3RcV5hJMghpeAIhxfsUIg6mt12CBJBInWMV4VneoV7SfGv8xIwo2qNQ=="],
 
@@ -1261,7 +1263,7 @@
 
     "@ungap/structured-clone": ["@ungap/structured-clone@1.3.0", "", {}, "sha512-WmoN8qaIAo7WTYWbAZuG8PYEhn5fkz7dZrqTBZ7dtt//lL2Gwms1IcnQ5yHqjDfX8Ft5j4YzDM23f87zBfDe9g=="],
 
-    "@vitejs/plugin-react": ["@vitejs/plugin-react@4.5.2", "", { "dependencies": { "@babel/core": "^7.27.4", "@babel/plugin-transform-react-jsx-self": "^7.27.1", "@babel/plugin-transform-react-jsx-source": "^7.27.1", "@rolldown/pluginutils": "1.0.0-beta.11", "@types/babel__core": "^7.20.5", "react-refresh": "^0.17.0" }, "peerDependencies": { "vite": "^4.2.0 || ^5.0.0 || ^6.0.0 || ^7.0.0-beta.0" } }, "sha512-QNVT3/Lxx99nMQWJWF7K4N6apUEuT0KlZA3mx/mVaoGj3smm/8rc8ezz15J1pcbcjDK0V15rpHetVfya08r76Q=="],
+    "@vitejs/plugin-react": ["@vitejs/plugin-react@5.0.0", "", { "dependencies": { "@babel/core": "^7.28.0", "@babel/plugin-transform-react-jsx-self": "^7.27.1", "@babel/plugin-transform-react-jsx-source": "^7.27.1", "@rolldown/pluginutils": "1.0.0-beta.30", "@types/babel__core": "^7.20.5", "react-refresh": "^0.17.0" }, "peerDependencies": { "vite": "^4.2.0 || ^5.0.0 || ^6.0.0 || ^7.0.0" } }, "sha512-Jx9JfsTa05bYkS9xo0hkofp2dCmp1blrKjw9JONs5BTHOvJCgLbaPSuZLGSVJW6u2qe0tc4eevY0+gSNNi0YCw=="],
 
     "@vitest/browser": ["@vitest/browser@3.2.3", "", { "dependencies": { "@testing-library/dom": "^10.4.0", "@testing-library/user-event": "^14.6.1", "@vitest/mocker": "3.2.3", "@vitest/utils": "3.2.3", "magic-string": "^0.30.17", "sirv": "^3.0.1", "tinyrainbow": "^2.0.0", "ws": "^8.18.2" }, "peerDependencies": { "playwright": "*", "vitest": "3.2.3", "webdriverio": "^7.0.0 || ^8.0.0 || ^9.0.0" }, "optionalPeers": ["playwright", "webdriverio"] }, "sha512-5HpUb0ixGF8JWSAjb/P1x/VPuTYUkL4pL0+YO6DJiuvQgqJN3PREaUEcXwfXjU4nBc37EahfpRbAwdE9pHs9lQ=="],
 
@@ -2741,7 +2743,7 @@
 
     "typedarray": ["typedarray@0.0.6", "", {}, "sha512-/aCDEGatGvZ2BIk+HmLf4ifCJFwvKFNb9/JeZPMulfgFracn9QFcAf5GO8B/mweUjSoblS5In0cWhqpfs/5PQA=="],
 
-    "typescript": ["typescript@5.8.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-p1diW6TqL9L07nNxvRMM7hMMw4c5XOo/1ibL4aAIGmSAt9slTE1Xgw5KWuof2uTOvCg9BY7ZRi+GaF+7sfgPeQ=="],
+    "typescript": ["typescript@5.9.2", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-CWBzXQrc/qOkhidw1OzBTQuYRbfyxDXJMVJ1XNwUHGROVmuaeiEm3OslpZ1RV96d7SKKjZKrSJu3+t/xlw3R9A=="],
 
     "uglify-js": ["uglify-js@3.19.3", "", { "bin": { "uglifyjs": "bin/uglifyjs" } }, "sha512-v3Xu+yuwBXisp6QYTcH4UbH+xYJXqnq2m/LtQVWKWzYc1iehYnLixoQDN9FH6/j9/oybfd6W9Ghwkl8+UMKTKQ=="],
 
@@ -2907,11 +2909,7 @@
 
     "@bundled-es-modules/tough-cookie/tough-cookie": ["tough-cookie@4.1.4", "", { "dependencies": { "psl": "^1.1.33", "punycode": "^2.1.1", "universalify": "^0.2.0", "url-parse": "^1.5.3" } }, "sha512-Loo5UUvLD9ScZ6jh8beX1T6sO1w2/MpCRpEP7V280GKMVUQ0Jzar2U3UJPsrdbziLEMMhu3Ujnq//rhiFuIeag=="],
 
-    "@canonical/generator-ds/typescript": ["typescript@5.9.2", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-CWBzXQrc/qOkhidw1OzBTQuYRbfyxDXJMVJ1XNwUHGROVmuaeiEm3OslpZ1RV96d7SKKjZKrSJu3+t/xlw3R9A=="],
-
     "@canonical/react-boilerplate-vite/@canonical/react-ds-core": ["@canonical/react-ds-core@0.9.0", "", { "dependencies": { "@canonical/storybook-config": "^0.9.0", "@canonical/styles": "^0.9.0", "@canonical/utils": "^0.9.0", "react": "^19.1.0", "react-dom": "^19.1.0" } }, "sha512-qbVqyXrMqkCQr1oGoy8ETOgox+rTVcIhwu6pvIEYPNlc3537uP0NwSJcCM/rf55FXT6GImmQW8N7HCdcY0OOEA=="],
-
-    "@canonical/react-boilerplate-vite/typescript": ["typescript@5.9.2", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-CWBzXQrc/qOkhidw1OzBTQuYRbfyxDXJMVJ1XNwUHGROVmuaeiEm3OslpZ1RV96d7SKKjZKrSJu3+t/xlw3R9A=="],
 
     "@canonical/react-ds-app/@chromatic-com/storybook": ["@chromatic-com/storybook@3.2.6", "", { "dependencies": { "chromatic": "^11.15.0", "filesize": "^10.0.12", "jsonfile": "^6.1.0", "react-confetti": "^6.1.0", "strip-ansi": "^7.1.0" }, "peerDependencies": { "storybook": "^8.2.0 || ^8.3.0-0 || ^8.4.0-0 || ^8.5.0-0 || ^8.6.0-0" } }, "sha512-FDmn5Ry2DzQdik+eq2sp/kJMMT36Ewe7ONXUXM2Izd97c7r6R/QyGli8eyh/F0iyqVvbLveNYFyF0dBOJNwLqw=="],
 
@@ -2919,21 +2917,9 @@
 
     "@canonical/react-ds-app-wpe/@chromatic-com/storybook": ["@chromatic-com/storybook@3.2.6", "", { "dependencies": { "chromatic": "^11.15.0", "filesize": "^10.0.12", "jsonfile": "^6.1.0", "react-confetti": "^6.1.0", "strip-ansi": "^7.1.0" }, "peerDependencies": { "storybook": "^8.2.0 || ^8.3.0-0 || ^8.4.0-0 || ^8.5.0-0 || ^8.6.0-0" } }, "sha512-FDmn5Ry2DzQdik+eq2sp/kJMMT36Ewe7ONXUXM2Izd97c7r6R/QyGli8eyh/F0iyqVvbLveNYFyF0dBOJNwLqw=="],
 
-    "@canonical/react-ds-core/typescript": ["typescript@5.9.2", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-CWBzXQrc/qOkhidw1OzBTQuYRbfyxDXJMVJ1XNwUHGROVmuaeiEm3OslpZ1RV96d7SKKjZKrSJu3+t/xlw3R9A=="],
-
-    "@canonical/react-ssr/typescript": ["typescript@5.9.2", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-CWBzXQrc/qOkhidw1OzBTQuYRbfyxDXJMVJ1XNwUHGROVmuaeiEm3OslpZ1RV96d7SKKjZKrSJu3+t/xlw3R9A=="],
-
-    "@canonical/storybook-addon-baseline-grid/typescript": ["typescript@5.9.2", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-CWBzXQrc/qOkhidw1OzBTQuYRbfyxDXJMVJ1XNwUHGROVmuaeiEm3OslpZ1RV96d7SKKjZKrSJu3+t/xlw3R9A=="],
-
-    "@canonical/storybook-config/typescript": ["typescript@5.9.2", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-CWBzXQrc/qOkhidw1OzBTQuYRbfyxDXJMVJ1XNwUHGROVmuaeiEm3OslpZ1RV96d7SKKjZKrSJu3+t/xlw3R9A=="],
-
     "@canonical/styles-primitives-canonical/@canonical/tokens": ["@canonical/tokens@0.9.0", "", { "dependencies": { "style-dictionary": "^4.3.3" } }, "sha512-S4YC2G80NxbmFU/JgYBJn4zXaQdVkJeIBFcXQurELQXlzHLVOizgacmfVRnw9UKfAGoOK6JezwLwhLyVWI6ozA=="],
 
-    "@canonical/typescript-config-base/typescript": ["typescript@5.9.2", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-CWBzXQrc/qOkhidw1OzBTQuYRbfyxDXJMVJ1XNwUHGROVmuaeiEm3OslpZ1RV96d7SKKjZKrSJu3+t/xlw3R9A=="],
-
-    "@canonical/typescript-config-react/typescript": ["typescript@5.9.2", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-CWBzXQrc/qOkhidw1OzBTQuYRbfyxDXJMVJ1XNwUHGROVmuaeiEm3OslpZ1RV96d7SKKjZKrSJu3+t/xlw3R9A=="],
-
-    "@canonical/utils/typescript": ["typescript@5.9.2", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-CWBzXQrc/qOkhidw1OzBTQuYRbfyxDXJMVJ1XNwUHGROVmuaeiEm3OslpZ1RV96d7SKKjZKrSJu3+t/xlw3R9A=="],
+    "@canonical/webarchitect/typescript": ["typescript@5.8.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-p1diW6TqL9L07nNxvRMM7hMMw4c5XOo/1ibL4aAIGmSAt9slTE1Xgw5KWuof2uTOvCg9BY7ZRi+GaF+7sfgPeQ=="],
 
     "@inquirer/core/cli-width": ["cli-width@4.1.0", "", {}, "sha512-ouuZd4/dm2Sw5Gmqy6bGyNNNe1qt9RpmxveLSO7KcgsTnU7RXfsw+/bukWGo1abgBiMAic068rclZsO4IWmmxQ=="],
 
@@ -3002,6 +2988,8 @@
     "@types/babel__traverse/@babel/types": ["@babel/types@7.27.1", "", { "dependencies": { "@babel/helper-string-parser": "^7.27.1", "@babel/helper-validator-identifier": "^7.27.1" } }, "sha512-+EzkxvLNfiUeKMgy/3luqfsCWFRXLb7U6wNQTk60tovuckwB15B191tJWvpp4HjiQWdJkCxO3Wbvc6jlk3Xb2Q=="],
 
     "@types/vinyl/@types/node": ["@types/node@22.15.17", "", { "dependencies": { "undici-types": "~6.21.0" } }, "sha512-wIX2aSZL5FE+MR0JlvF87BNVrtFWf6AE6rxSE9X7OwnVvoyCQjpzSRJ+M87se/4QCkCiebQAqrJ0y6fwIyi7nw=="],
+
+    "@vitejs/plugin-react/@babel/core": ["@babel/core@7.28.3", "", { "dependencies": { "@ampproject/remapping": "^2.2.0", "@babel/code-frame": "^7.27.1", "@babel/generator": "^7.28.3", "@babel/helper-compilation-targets": "^7.27.2", "@babel/helper-module-transforms": "^7.28.3", "@babel/helpers": "^7.28.3", "@babel/parser": "^7.28.3", "@babel/template": "^7.27.2", "@babel/traverse": "^7.28.3", "@babel/types": "^7.28.2", "convert-source-map": "^2.0.0", "debug": "^4.1.0", "gensync": "^1.0.0-beta.2", "json5": "^2.2.3", "semver": "^6.3.1" } }, "sha512-yDBHV9kQNcr2/sUr9jghVyz9C3Y5G2zUM2H2lo+9mKv4sFgbA8s8Z9t8D1jiTkGoO/NoIfKMyKWr4s6CN23ZwQ=="],
 
     "@vitest/expect/@vitest/utils": ["@vitest/utils@3.0.9", "", { "dependencies": { "@vitest/pretty-format": "3.0.9", "loupe": "^3.1.3", "tinyrainbow": "^2.0.0" } }, "sha512-ilHM5fHhZ89MCp5aAaM9uhfl1c2JdxVxl3McqsdVyVNN6JffnEen8UMCdRTzOhGXNQGo5GNL9QugHrz727Wnng=="],
 
@@ -3102,6 +3090,8 @@
     "json-stable-stringify/isarray": ["isarray@2.0.5", "", {}, "sha512-xHjhDr3cNBK0BzdUJSPXZntQUx/mwMS5Rw4A7lPJ90XGAO6ISP/ePDNuo0vhqOZU+UD5JoodwCAAoZQd3FeAKw=="],
 
     "lerna/chalk": ["chalk@4.1.0", "", { "dependencies": { "ansi-styles": "^4.1.0", "supports-color": "^7.1.0" } }, "sha512-qwx12AxXe2Q5xQ43Ac//I6v5aXTipYrSESdOgzrN+9XjgEpyjpKuvSGaN4qE93f7TQTlerQQ8S+EQ0EyDoVL1A=="],
+
+    "lerna/typescript": ["typescript@5.8.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-p1diW6TqL9L07nNxvRMM7hMMw4c5XOo/1ibL4aAIGmSAt9slTE1Xgw5KWuof2uTOvCg9BY7ZRi+GaF+7sfgPeQ=="],
 
     "libnpmpublish/ci-info": ["ci-info@4.2.0", "", {}, "sha512-cYY9mypksY8NRqgDB1XD1RiJL338v/551niynFTGkZOO2LHuB2OmOYxDIe/ttN9AHwrqdum1360G3ald0W9kCg=="],
 
@@ -3355,6 +3345,20 @@
 
     "@types/vinyl/@types/node/undici-types": ["undici-types@6.21.0", "", {}, "sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ=="],
 
+    "@vitejs/plugin-react/@babel/core/@babel/generator": ["@babel/generator@7.28.3", "", { "dependencies": { "@babel/parser": "^7.28.3", "@babel/types": "^7.28.2", "@jridgewell/gen-mapping": "^0.3.12", "@jridgewell/trace-mapping": "^0.3.28", "jsesc": "^3.0.2" } }, "sha512-3lSpxGgvnmZznmBkCRnVREPUFJv2wrv9iAoFDvADJc0ypmdOxdUtcLeBgBJ6zE0PMeTKnxeQzyk0xTBq4Ep7zw=="],
+
+    "@vitejs/plugin-react/@babel/core/@babel/helper-module-transforms": ["@babel/helper-module-transforms@7.28.3", "", { "dependencies": { "@babel/helper-module-imports": "^7.27.1", "@babel/helper-validator-identifier": "^7.27.1", "@babel/traverse": "^7.28.3" }, "peerDependencies": { "@babel/core": "^7.0.0" } }, "sha512-gytXUbs8k2sXS9PnQptz5o0QnpLL51SwASIORY6XaBKF88nsOT0Zw9szLqlSGQDP/4TljBAD5y98p2U1fqkdsw=="],
+
+    "@vitejs/plugin-react/@babel/core/@babel/helpers": ["@babel/helpers@7.28.3", "", { "dependencies": { "@babel/template": "^7.27.2", "@babel/types": "^7.28.2" } }, "sha512-PTNtvUQihsAsDHMOP5pfobP8C6CM4JWXmP8DrEIt46c3r2bf87Ua1zoqevsMo9g+tWDwgWrFP5EIxuBx5RudAw=="],
+
+    "@vitejs/plugin-react/@babel/core/@babel/parser": ["@babel/parser@7.28.3", "", { "dependencies": { "@babel/types": "^7.28.2" }, "bin": "./bin/babel-parser.js" }, "sha512-7+Ey1mAgYqFAx2h0RuoxcQT5+MlG3GTV0TQrgr7/ZliKsm/MNDxVVutlWaziMq7wJNAz8MTqz55XLpWvva6StA=="],
+
+    "@vitejs/plugin-react/@babel/core/@babel/traverse": ["@babel/traverse@7.28.3", "", { "dependencies": { "@babel/code-frame": "^7.27.1", "@babel/generator": "^7.28.3", "@babel/helper-globals": "^7.28.0", "@babel/parser": "^7.28.3", "@babel/template": "^7.27.2", "@babel/types": "^7.28.2", "debug": "^4.3.1" } }, "sha512-7w4kZYHneL3A6NP2nxzHvT3HCZ7puDZZjFMqDpBPECub79sTtSO5CGXDkKrTQq8ksAwfD/XI2MRFX23njdDaIQ=="],
+
+    "@vitejs/plugin-react/@babel/core/@babel/types": ["@babel/types@7.28.2", "", { "dependencies": { "@babel/helper-string-parser": "^7.27.1", "@babel/helper-validator-identifier": "^7.27.1" } }, "sha512-ruv7Ae4J5dUYULmeXw1gmb7rYRz57OWCPM57pHojnLq/3Z1CK2lNSLTCVjxVk1F/TZHwOZZrOWi0ur95BbLxNQ=="],
+
+    "@vitejs/plugin-react/@babel/core/semver": ["semver@6.3.1", "", { "bin": { "semver": "bin/semver.js" } }, "sha512-BR7VvDCVHO+q2xBEWskxS6DJE1qRnb7DxzUrogb71CWoSficBxYsiAGd+Kl0mmq/MprG9yArRkyrQxTO6XjMzA=="],
+
     "@vitest/expect/@vitest/utils/@vitest/pretty-format": ["@vitest/pretty-format@3.0.9", "", { "dependencies": { "tinyrainbow": "^2.0.0" } }, "sha512-OW9F8t2J3AwFEwENg3yMyKWweF7oRJlMyHOMIhO5F3n0+cgQAJZBjNgrF8dLwFTEXl5jUqBLXd9QyyKv8zEcmA=="],
 
     "@vitest/mocker/@vitest/spy/tinyspy": ["tinyspy@4.0.3", "", {}, "sha512-t2T/WLB2WRgZ9EpE4jgPJ9w+i66UZfDc8wHh0xrwiRNN+UwH98GIJkTeZqX9rg0i0ptwzqW+uYeIF0T4F8LR7A=="],
@@ -3558,6 +3562,10 @@
     "@joshwooding/vite-plugin-react-docgen-typescript/glob/minimatch/brace-expansion": ["brace-expansion@2.0.1", "", { "dependencies": { "balanced-match": "^1.0.0" } }, "sha512-XnAIvQ8eM+kC6aULx6wuQiwVsnzsi9d3WxzV3FpWTGA19F621kwdbsAcFKXgKUHZWsy+mY6iL1sHTxWEFCytDA=="],
 
     "@npmcli/package-json/glob/minimatch/brace-expansion": ["brace-expansion@2.0.1", "", { "dependencies": { "balanced-match": "^1.0.0" } }, "sha512-XnAIvQ8eM+kC6aULx6wuQiwVsnzsi9d3WxzV3FpWTGA19F621kwdbsAcFKXgKUHZWsy+mY6iL1sHTxWEFCytDA=="],
+
+    "@vitejs/plugin-react/@babel/core/@babel/generator/@jridgewell/gen-mapping": ["@jridgewell/gen-mapping@0.3.13", "", { "dependencies": { "@jridgewell/sourcemap-codec": "^1.5.0", "@jridgewell/trace-mapping": "^0.3.24" } }, "sha512-2kkt/7niJ6MgEPxF0bYdQ6etZaA+fQvDcLKckhy1yIQOzaoKjBBjSj63/aLVjYE3qhRt5dvM+uUyfCg6UKCBbA=="],
+
+    "@vitejs/plugin-react/@babel/core/@babel/generator/@jridgewell/trace-mapping": ["@jridgewell/trace-mapping@0.3.30", "", { "dependencies": { "@jridgewell/resolve-uri": "^3.1.0", "@jridgewell/sourcemap-codec": "^1.4.14" } }, "sha512-GQ7Nw5G2lTu/BtHTKfXhKHok2WGetd4XYcVKGx00SjAk8GMwgJM3zr6zORiPGuOE+/vkc90KtTosSSvaCjKb2Q=="],
 
     "bl/readable-stream/string_decoder/safe-buffer": ["safe-buffer@5.1.2", "", {}, "sha512-Gd2UZBJDkXlY7GbJxfsE8/nvKkUEU1G38c1siN6QP6a9PT9MmHB8GnpscSmMJSoF8LOIrt8ud/wPtojys4G6+g=="],
 
