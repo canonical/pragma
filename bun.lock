@@ -627,7 +627,10 @@
         "@biomejs/biome": "^2.0.0",
         "@canonical/biome-config": "^0.10.0-experimental.0",
         "@canonical/typescript-config-base": "^0.10.0-experimental.0",
+        "globals": "^16.2.0",
         "typescript": "^5.8.3",
+        "vite": "^7.0.0",
+        "vitest": "^3.2.3",
       },
     },
     "packages/webarchitect": {
