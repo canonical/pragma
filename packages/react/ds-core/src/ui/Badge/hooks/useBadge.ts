@@ -1,7 +1,7 @@
 import { math } from "@canonical/utils";
 import { useMemo } from "react";
 import type {
-  BadgePrecision,
+  BadgeOverflowStrategy,
   UseBadgeProps,
   UseBadgeResult,
 } from "../types.js";
@@ -13,15 +13,15 @@ const BADGE_MAX_VAL = 999;
  * @param value - The numeric value of the badge
  * @param displayValue - The formatted display value of the badge
  * @param unit - The unit suffix used (k, M, B, T, etc.)
- * @param precision - The precision mode
+ * @param overflowStrategy - The overflow strategy - see {@link BadgeOverflowStrategy}
  */
 const generateAriaLabel = (
   value: number,
   displayValue: string,
   unit: string,
-  precision?: BadgePrecision,
+  overflowStrategy?: BadgeOverflowStrategy,
 ): string => {
-  if (precision === "rounded") {
+  if (overflowStrategy === "compact") {
     if (value < 1000) {
       return `${value} items exist`;
     }
@@ -53,7 +53,10 @@ const generateAriaLabel = (
 /**
  * A hook to manage the logic for formatting a badge's numeric value and generating appropriate aria-labels.
  */
-const useBadge = ({ value, precision }: UseBadgeProps): UseBadgeResult => {
+const useBadge = ({
+  value,
+  overflowStrategy,
+}: UseBadgeProps): UseBadgeResult => {
   return useMemo(() => {
     let safeValue = Math.round(value);
 
@@ -65,10 +68,11 @@ const useBadge = ({ value, precision }: UseBadgeProps): UseBadgeResult => {
       safeValue = 0;
     }
 
-    if (precision === "rounded" || !Number.isFinite(value)) {
-      const { displayValue, unitSuffix } = math.formatWithUnit(safeValue, {
-        decimalsPolicy: "onlySmall",
-      });
+    if (overflowStrategy === "compact" || !Number.isFinite(value)) {
+      const { displayValue, unitSuffix } = math.displayNumberWithUnit(
+        safeValue,
+        { overflowStrategy: overflowStrategy },
+      );
 
       return {
         displayValue,
@@ -76,7 +80,7 @@ const useBadge = ({ value, precision }: UseBadgeProps): UseBadgeResult => {
           safeValue,
           displayValue,
           unitSuffix,
-          precision,
+          overflowStrategy,
         ),
       };
     }
@@ -92,10 +96,10 @@ const useBadge = ({ value, precision }: UseBadgeProps): UseBadgeResult => {
         safeValue,
         String(displayValue),
         "",
-        precision,
+        overflowStrategy,
       ),
     };
-  }, [value, precision]);
+  }, [value, overflowStrategy]);
 };
 
 export default useBadge;
