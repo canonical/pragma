@@ -18,10 +18,10 @@ const Badge = ({
   style,
   appearance = "neutral",
   value,
-  precision = "exact",
+  overflowStrategy = "truncate",
   role,
 }: BadgeProps): React.ReactElement => {
-  const { displayValue, ariaLabel } = useBadge({ value, precision });
+  const { displayValue, ariaLabel } = useBadge({ value, overflowStrategy });
 
   return (
     <span

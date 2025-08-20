@@ -24,39 +24,39 @@ describe("Badge component", () => {
   });
 
   it("rounds number correctly for thousands", () => {
-    render(<Component value={1200} precision="rounded" />);
+    render(<Component value={1200} overflowStrategy="compact" />);
     // Check that the correct value is displayed.
     expect(screen.getByText("1.2k")).toBeInTheDocument();
   });
 
   it("rounds number correctly for small values", () => {
-    render(<Component value={999} precision="rounded" />);
+    render(<Component value={999} overflowStrategy="compact" />);
     // Check that the correct value is displayed.
     expect(screen.getByText("999")).toBeInTheDocument();
   });
 
   it("rounds number correctly for millions", () => {
-    render(<Component value={132456455} precision="rounded" />);
+    render(<Component value={132456455} overflowStrategy="compact" />);
     // Check that the correct value is displayed.
-    expect(screen.getByText("132M")).toBeInTheDocument();
+    expect(screen.getByText("99M+")).toBeInTheDocument();
   });
 
   it("rounds number correctly for billions", () => {
-    render(<Component value={13245645512} precision="rounded" />);
+    render(<Component value={13245645512} overflowStrategy="compact" />);
     // Check that the correct value is displayed.
-    expect(screen.getByText("13B")).toBeInTheDocument();
+    expect(screen.getByText("13B+")).toBeInTheDocument();
   });
 
   it("rounds number correctly for trillions", () => {
-    render(<Component value={132456455123112} precision="rounded" />);
+    render(<Component value={132456455123112} overflowStrategy="compact" />);
     // Check that the correct value is displayed.
-    expect(screen.getByText("132T")).toBeInTheDocument();
+    expect(screen.getByText("99T+")).toBeInTheDocument();
   });
 
   it("displays the correct max value if it exceeds 999T", () => {
-    render(<Component value={1324564551231125} precision="rounded" />);
+    render(<Component value={1324564551231125} overflowStrategy="compact" />);
     // Check that the correct value is displayed.
-    expect(screen.getByText("999T+")).toBeInTheDocument();
+    expect(screen.getByText("99T+")).toBeInTheDocument();
   });
 
   it("renders negative numbers as 0", () => {
@@ -68,7 +68,7 @@ describe("Badge component", () => {
   it("renders out-of-range values (999T+) as '999T+'", () => {
     render(<Component value={Infinity} />);
     // Check that the correct value is displayed.
-    expect(screen.getByText("999T+")).toBeInTheDocument();
+    expect(screen.getByText("99T+")).toBeInTheDocument();
   });
 
   it("does not have aria-label when role is not defined", () => {
@@ -85,8 +85,8 @@ describe("Badge component", () => {
     expect(badge).toHaveAttribute("aria-label", "15 items exist");
   });
 
-  it("has correct aria-label for rounded precision with thousands", () => {
-    render(<Component value={1200} precision="rounded" role="status" />);
+  it("has correct aria-label for compact precision with thousands", () => {
+    render(<Component value={1200} overflowStrategy="compact" role="status" />);
     const badge = screen.getByText("1.2k");
     expect(badge).toHaveAttribute("role", "status");
     expect(badge).toHaveAttribute(
@@ -95,47 +95,59 @@ describe("Badge component", () => {
     );
   });
 
-  it("has correct aria-label for rounded precision with millions", () => {
-    render(<Component value={132456455} precision="rounded" role="status" />);
-    const badge = screen.getByText("132M");
-    expect(badge).toHaveAttribute("role", "status");
-    expect(badge).toHaveAttribute(
-      "aria-label",
-      "approximately 132 million items exist",
-    );
-  });
-
-  it("has correct aria-label for rounded precision with billions", () => {
-    render(<Component value={13245645512} precision="rounded" role="status" />);
-    const badge = screen.getByText("13B");
-    expect(badge).toHaveAttribute("role", "status");
-    expect(badge).toHaveAttribute(
-      "aria-label",
-      "approximately 13 billion items exist",
-    );
-  });
-
-  it("has correct aria-label for rounded precision with trillions", () => {
+  it("has correct aria-label for compact precision with millions", () => {
     render(
-      <Component value={132456455123112} precision="rounded" role="status" />,
+      <Component value={132456455} overflowStrategy="compact" role="status" />,
     );
-    const badge = screen.getByText("132T");
+    const badge = screen.getByText("99M+");
     expect(badge).toHaveAttribute("role", "status");
     expect(badge).toHaveAttribute(
       "aria-label",
-      "approximately 132 trillion items exist",
+      "approximately 99+ million items exist",
     );
   });
 
-  it("has correct aria-label for large numbers without rounded precision", () => {
+  it("has correct aria-label for compact precision with billions", () => {
+    render(
+      <Component
+        value={13245645512}
+        overflowStrategy="compact"
+        role="status"
+      />,
+    );
+    const badge = screen.getByText("13B+");
+    expect(badge).toHaveAttribute("role", "status");
+    expect(badge).toHaveAttribute(
+      "aria-label",
+      "approximately 13+ billion items exist",
+    );
+  });
+
+  it("has correct aria-label for compact precision with trillions", () => {
+    render(
+      <Component
+        value={132456455123112}
+        overflowStrategy="compact"
+        role="status"
+      />,
+    );
+    const badge = screen.getByText("99T+");
+    expect(badge).toHaveAttribute("role", "status");
+    expect(badge).toHaveAttribute(
+      "aria-label",
+      "approximately 99+ trillion items exist",
+    );
+  });
+
+  it("has correct aria-label for large numbers without compact precision", () => {
     render(<Component value={1000} role="status" />);
     const badge = screen.getByText("999+");
     expect(badge).toHaveAttribute("role", "status");
     expect(badge).toHaveAttribute("aria-label", "more than 999 items exist");
   });
 
-  it("has correct aria-label for small numbers with rounded precision", () => {
-    render(<Component value={999} precision="rounded" role="status" />);
+  it("has correct aria-label for small numbers with compact precision", () => {
+    render(<Component value={999} overflowStrategy="compact" role="status" />);
     const badge = screen.getByText("999");
     expect(badge).toHaveAttribute("role", "status");
     expect(badge).toHaveAttribute("aria-label", "999 items exist");

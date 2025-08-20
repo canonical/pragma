@@ -408,7 +408,7 @@
   --badge-padding-horizontal: var(--spacing-horizontal-xsmall);
   --badge-margin-bottom: 0;
   /* Enough to fit max rounded value of "999T+" */
-  --badge-max-width: 5ch;
+  --badge-max-width: 4ch;
   --badge-min-width: calc(
     var(--badge-line-height) -
     (2 * var(--badge-padding-horizontal))

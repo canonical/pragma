@@ -36,7 +36,7 @@ export const LargeNumber: Story = {
     docs: {
       description: {
         story:
-          "Numbers without rounded precision are displayed up to the maximum (999), and a '+' suffix is added when they exceed this limit. This prevents UI overflow while indicating that the actual value is larger. Ideal for scenarios where you need to show 'many' without overwhelming the user with large numbers.",
+          "Numbers without compact overflowStrategy are displayed up to the maximum (999), and a '+' suffix is added when they exceed this limit. This prevents UI overflow while indicating that the actual value is larger. Ideal for scenarios where you need to show 'many' without overwhelming the user with large numbers.",
       },
     },
   },
@@ -45,13 +45,13 @@ export const LargeNumber: Story = {
 export const LargeNumberRounded: Story = {
   args: {
     ...LargeNumber.args,
-    precision: "rounded",
+    overflowStrategy: "compact",
   },
   parameters: {
     docs: {
       description: {
         story:
-          "Rounded precision rounds values over 999 to their nearest unit (i.e., 1,234 -> 1.23k), allowing for up to 5 characters. This provides human-readable formatting for large numbers while maintaining reasonable precision.",
+          "compact overflowStrategy rounds values over 999 to their nearest unit (i.e., 1,234 -> 1.23k), allowing for up to 5 characters. This provides human-readable formatting for large numbers while maintaining reasonable overflowStrategy.",
       },
     },
   },
@@ -60,7 +60,7 @@ export const LargeNumberRounded: Story = {
 export const MaxValue: Story = {
   args: {
     value: 1324564551231125,
-    precision: "rounded",
+    overflowStrategy: "compact",
   },
   parameters: {
     docs: {
