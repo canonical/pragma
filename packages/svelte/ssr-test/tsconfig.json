@@ -1,0 +1,12 @@
+{
+  "extends": "@canonical/typescript-config-base",
+  "compilerOptions": {
+    "baseUrl": "src",
+    "skipLibCheck": true,
+    "types": ["vitest/globals"],
+    "paths": {
+      "@fixtures/*": ["fixtures/*"]
+    }
+  },
+  "include": ["src/**/*.ts", "vitest.config.ts"]
+}
