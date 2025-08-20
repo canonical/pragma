@@ -6,8 +6,6 @@ Utilities for testing **Svelte 5 server-side rendering (SSR)** components with f
 It renders a Svelte component via `svelte/server`, mounts the HTML into a `jsdom` document,
 and returns a query API (`getByText`, `getByRole`, etc.) plus access to `head`, `body`, and `html`.
 
----
-
 ## Installation
 
 ```bash
@@ -55,7 +53,7 @@ export default defineConfig({
 
 This keeps tests running in a Node environment, while `@canonical/svelte-ssr-test` creates its own `jsdom` instance for DOM queries.
 
-### Why?
+## Why?
 
 - **Familiar API:** Reuse the familiar `@testing-library` query API for assertions, making it easy to write and maintain tests:
   ```ts
