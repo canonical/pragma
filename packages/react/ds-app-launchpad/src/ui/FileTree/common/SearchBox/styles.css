@@ -27,9 +27,6 @@
     line-height: var(--file-tree-search-box-line-height);
   }
 
-  & > .input:not(:valid) ~ .reset {
-    display: none;
-  }
   & > .search,
   & > .reset {
     cursor: pointer;
@@ -41,6 +38,11 @@
     background-color: transparent;
     border: none;
   }
+
+  & > .input:not(:valid) ~ .reset {
+    display: none;
+  }
+
   & > .search > .icon {
     content: var(--file-tree-search-box-search-icon);
   }
