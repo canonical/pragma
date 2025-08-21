@@ -7,9 +7,10 @@ describe("render", () => {
     it("returns queries and container and html", () => {
       const { window, container, getByText, pretty } = render(
         fixtures.Greeting,
+        { props: { name: "World" } },
       );
       expect(container).toBeInstanceOf(window.HTMLElement);
-      expect(() => getByText("Hello")).not.toThrow();
+      expect(() => getByText("Hello World")).not.toThrow();
       const prettyOutput = pretty();
       expect(typeof prettyOutput).toBe("string");
       expect(prettyOutput.length).toBeGreaterThan(0);

@@ -19,8 +19,9 @@ type SvelteRenderOptions = {
 };
 
 export type RenderFunction = <
-  Comp extends Component,
-  Props extends ComponentProps<Comp>,
+  // biome-ignore lint/suspicious/noExplicitAny: Copied from svelte internal types
+  Comp extends Component<any>,
+  Props extends ComponentProps<Comp> = ComponentProps<Comp>,
 >(
   ...args: Record<never, never> extends Props
     ? [component: Comp, options?: SvelteRenderOptions]

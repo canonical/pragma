@@ -1,14 +1,11 @@
 /// <reference types="vitest/config" />
+
 import { svelte } from "@sveltejs/vite-plugin-svelte";
-import { defineConfig, type PluginOption } from "vite";
+import { defineConfig } from "vite";
 
 export default defineConfig({
-  plugins: [svelte() as PluginOption],
+  plugins: [process.env.VITEST ? svelte() : null].filter(Boolean),
   build: {
     sourcemap: true,
-  },
-  test: {
-    environment: "node",
-    include: ["src/**/*.tests.ts"],
   },
 });
