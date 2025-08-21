@@ -264,17 +264,17 @@
   --tmp-color-icon-button-negative: var(--tmp-color-palette-white);
 
   /** TODO
-            this variable does not have this value in the color spec sheet,
-            but is being kept for backwards compatibility for now.
-            Use --tmp-color-border-high-contrast for new use cases.
-     */
+              this variable does not have this value in the color spec sheet,
+              but is being kept for backwards compatibility for now.
+              Use --tmp-color-border-high-contrast for new use cases.
+       */
   --color-border-high-contrast: rgba(0, 0, 0, 0.56);
 
   /** TODO
-            these positive background variables are bound to button-specific colors
-            These have higher contrast than the color spec calls for.
-            The tmp- versions of these variables should be used for new components, and these vars should be revisited.
-     */
+              these positive background variables are bound to button-specific colors
+              These have higher contrast than the color spec calls for.
+              The tmp- versions of these variables should be used for new components, and these vars should be revisited.
+       */
   --color-background-positive-default: var(--tmp-color-palette-green-8);
   --color-background-positive-hover: var(--tmp-color-palette-green-10);
   --color-background-positive-active: var(--tmp-color-palette-green-13);
@@ -362,10 +362,10 @@
   --chip-margin-left: var(--spacing-horizontal-medium);
 
   /*
-      TODO the tooltip's color tokens should be inverted from the active color theme.
-          This is to provide greater color contrast against its context.
-          This will be implemented once theming DS-wide is added.
-    */
+        TODO the tooltip's color tokens should be inverted from the active color theme.
+            This is to provide greater color contrast against its context.
+            This will be implemented once theming DS-wide is added.
+      */
 
   --tooltip-color-background: var(--tmp-color-background-default);
   --tooltip-color-background-hover: var(--tmp-color-background-hover);

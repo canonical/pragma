@@ -1,0 +1,48 @@
+/* @canonical/generator-ds 0.10.0-experimental.2 */
+
+/*
+TODO enable highlighted card (a global modifier / intent)
+https://github.com/canonical/vanilla-framework/blob/e204a57a6c81cc9e78a71bb332fff8d660024097/scss/_patterns_card.scss#L19-L28
+*/
+
+.ds.card {
+  /*
+    TODO https://github.com/canonical/vanilla-framework/blob/e204a57a6c81cc9e78a71bb332fff8d660024097/scss/_patterns_card.scss#L12-L16
+  */
+  & .content {
+    /*
+   TODO find a way to port the Vanilla behavior of using "margin-collapsed" default text that maintains baseline alignment
+    Without adding utility classes for margin collapse
+   @extend %u-no-margin--bottom--default-text;
+  */
+  }
+
+  & .inner {
+    /* prevent overflow of child margins*/
+    overflow: auto;
+    padding: var(--spacing-vertical-large);
+  }
+}
+
+/*
+  TODO
+  The below SCSS comes from Vanilla (https://github.com/canonical/vanilla-framework/blob/e204a57a6c81cc9e78a71bb332fff8d660024097/scss/_patterns_card.scss#L84C1-L99C4)
+  We need to find a way to implement the visual design without relying on complex margin cancellation & selectors if possible
+  [class*='p-card'] {
+    // FIXME: this is overly complex
+    // stylelint-disable selector-max-type
+    > p:not([class*='p-heading--']),
+    > h5,
+    > h6 {
+      &:last-child {
+        margin-bottom: $spv-nudge-compensation;
+      }
+
+      &:first-child {
+        margin-top: -#{$sp-unit};
+      }
+    }
+    // stylelint-enable selector-max-type
+  }
+
+*/
