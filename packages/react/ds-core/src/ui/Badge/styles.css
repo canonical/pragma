@@ -1,0 +1,48 @@
+/* Badge.css */
+.ds.badge {
+  /** Pull the badge closer to the edge of a chip */
+  --badge-chip-margin-tweak: 0.15rem;
+
+  /* Base badge styles using tokens */
+  background-color: var(--badge-color-background);
+  border-radius: var(--badge-border-radius);
+  box-sizing: content-box;
+  color: var(--badge-color-text);
+  display: inline-block;
+  font-size: var(--badge-font-size);
+  font-weight: var(--badge-font-weight);
+  line-height: var(--badge-line-height);
+  margin-bottom: var(--badge-margin-bottom);
+  max-width: var(--badge-max-width);
+  min-width: var(--badge-min-width);
+  overflow: hidden;
+  padding: var(--badge-padding-vertical) var(--badge-padding-horizontal);
+  text-align: center;
+
+  &.positive {
+    background-color: var(--badge-color-background-positive);
+    color: var(--badge-color-text-positive);
+  }
+
+  &.negative {
+    background-color: var(--badge-color-background-negative);
+    color: var(--badge-color-text-negative);
+  }
+
+  &.caution {
+    background-color: var(--badge-color-background-caution);
+    color: var(--badge-color-text-caution);
+  }
+
+  &.information {
+    background-color: var(--badge-color-background-information);
+    color: var(--badge-color-text-information);
+  }
+}
+
+/* Context-specific styling for badges within chips */
+.ds.chip .ds.badge {
+  align-self: center;
+  margin-left: var(--spacing-horizontal-small);
+  margin-right: var(--badge-chip-margin-tweak);
+}
