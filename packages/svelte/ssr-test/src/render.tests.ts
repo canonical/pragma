@@ -7,7 +7,7 @@ describe("render", () => {
     it("returns queries and container and html", () => {
       const { window, container, getByText, pretty } = render(
         fixtures.Greeting,
-        { props: { name: "World" } },
+        { props: { name: "World" } }
       );
       expect(container).toBeInstanceOf(window.HTMLElement);
       expect(() => getByText("Hello World")).not.toThrow();
@@ -49,7 +49,7 @@ describe("render", () => {
 
     it("byPlaceholder/byTitle find inputs by placeholder and title", () => {
       const { window, getByPlaceholderText, getByTitle, queryByText } = render(
-        fixtures.InputsAndTitle,
+        fixtures.InputsAndTitle
       );
       const search = getByPlaceholderText("Search");
       expect(search).toBeInstanceOf(window.HTMLElement);
