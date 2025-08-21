@@ -48,7 +48,7 @@
     }
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.0.0",
+    "@biomejs/biome": "2.1.1",
     "@canonical/biome-config": "^0.10.0-experimental.0",
     "@canonical/typescript-config-base": "^0.10.0-experimental.0",
     "@types/express": "^5.0.3",

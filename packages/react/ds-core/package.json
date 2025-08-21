@@ -46,7 +46,7 @@
     "react-dom": "^19.1.0"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.0.0",
+    "@biomejs/biome": "2.1.1",
     "@canonical/biome-config": "^0.10.0-experimental.0",
     "@canonical/typescript-config-react": "^0.10.0-experimental.0",
     "@chromatic-com/storybook": "^4.0.0",

@@ -16,7 +16,7 @@
     "check:ts": "tsc --noEmit"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.0.0",
+    "@biomejs/biome": "2.1.1",
     "@canonical/biome-config": "^0.10.0-experimental.0",
     "@types/bun": "latest"
   },
