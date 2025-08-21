@@ -38,9 +38,11 @@
     "check:ts": "tsc --noEmit",
     "test": "vitest run"
   },
-  "peerDependencies": {
+  "dependencies": {
     "@testing-library/dom": "^10.4.1",
-    "jsdom": "^26.1.0",
+    "jsdom": "^26.1.0"
+  },
+  "peerDependencies": {
     "svelte": "^5.38.2"
   },
   "devDependencies": {
