@@ -320,11 +320,13 @@
 
   /* font tokens */
   --font-size-default: 1rem;
+  --font-size-xsmall: 0.75rem;
   --font-size-small: 0.875rem;
   --font-weight-default: 400;
   --font-weight-bold: 600;
-  --line-height-default: 1.5rem;
+  --line-height-xsmall: 1rem;
   --line-height-small: 1.25rem;
+  --line-height-default: 1.5rem;
 }
 
 /* component semantic tokens */
@@ -402,9 +404,9 @@
   --badge-color-text-information: var(--color-palette-white);
 
   --badge-border-radius: 1rem;
-  --badge-font-size: var(--font-size-small);
+  --badge-font-size: var(--font-size-xsmall);
   --badge-font-weight: var(--font-weight-bold);
-  --badge-line-height: var(--line-height-small);
+  --badge-line-height: var(--line-height-xsmall);
   --badge-padding-vertical: 0;
   --badge-padding-horizontal: var(--spacing-horizontal-xsmall);
   --badge-margin-bottom: 0;
