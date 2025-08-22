@@ -22,6 +22,7 @@
     "packages/react/*",
     "packages/storybook/*",
     "packages/styles/debug",
+    "packages/svelte/*",
     "packages/styles/primitives/*",
     "packages/styles/modes/*",
     "packages/styles/elements",

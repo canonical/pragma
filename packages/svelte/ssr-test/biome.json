@@ -1,0 +1,6 @@
+{
+  "extends": ["@canonical/biome-config"],
+  "files": {
+    "includes": ["src", "vite.config.ts", "vitest.config.ts"]
+  }
+}

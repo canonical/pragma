@@ -52,7 +52,7 @@ function highlight(code: string, fileExtension: string | undefined): string {
 function splitMultilineSpans(html: string): string {
   return html.replace(
     /<span([^>]*)>([^<]*?\n[^<]*?)<\/span>/g,
-    (match, attributes, content) => {
+    (_, attributes, content) => {
       const lines = content.split("\n");
       return lines
         .map((line: string) => `<span${attributes}>${line}</span>`)

@@ -1,4 +1,4 @@
-import type { Meta, StoryFn, StoryObj } from "@storybook/react-vite";
+import type { Meta, StoryFn } from "@storybook/react-vite";
 
 import { Button } from "../Button/index.js";
 import { withTooltip } from "./index.js";
@@ -19,7 +19,6 @@ const meta = {
 } satisfies Meta<TooltipType>;
 
 export default meta;
-// type Story = StoryObj<TooltipType>;
 
 export const Default: StoryFn = () => {
   const TooltippedButton = withTooltip(Button, <span>Tooltip content</span>);
