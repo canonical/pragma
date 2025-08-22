@@ -37,11 +37,11 @@ const humanize = (
     unit: "",
   };
 
-  if (!Number.isFinite(value) || Number.isNaN(value)) {
+  if (!Number.isFinite(value)) {
     console.error("humanize expects a finite number.");
     return {
       ...result,
-      displayValue: String(value),
+      displayValue: Number.isNaN(value) ? String(value) : "∞",
     };
   }
 

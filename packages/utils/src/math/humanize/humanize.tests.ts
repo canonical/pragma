@@ -183,7 +183,7 @@ describe("humanize", () => {
       {
         it: "should handle Infinity input",
         input: Infinity,
-        expected: { displayValue: "Infinity", value: Infinity, unit: "" },
+        expected: { displayValue: "∞", value: Infinity, unit: "" },
       },
       {
         it: "should handle the largest unit boundary",
