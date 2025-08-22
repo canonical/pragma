@@ -3,10 +3,12 @@
   "compilerOptions": {
     "baseUrl": "src",
     "skipLibCheck": true,
-    "types": ["vitest/globals"],
-    "paths": {
-      "@fixtures/*": ["fixtures/*"]
-    }
+    "types": ["vitest/globals"]
   },
-  "include": ["src/**/*.ts", "vitest.config.ts"]
+  "include": [
+    "src/**/*.ts",
+    "vitest.config.ts",
+    "svelte.config.ts",
+    "vite.config.ts"
+  ]
 }

@@ -1,6 +1,6 @@
 import type { BoundFunctions, queries } from "@testing-library/dom";
 import type { DOMWindow } from "jsdom";
-import { render as renderSvelte } from "svelte/server";
+import type { render as renderSvelte } from "svelte/server";
 
 export type RenderSvelteFn = typeof renderSvelte;
 

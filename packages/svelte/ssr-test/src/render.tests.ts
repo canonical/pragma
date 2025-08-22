@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest";
 import * as fixtures from "./fixtures/index.js";
-import { render } from "./render.js";
+import render from "./render.js";
 
 describe("render", () => {
   describe("core", () => {
     it("returns queries and container and html", () => {
       const { window, container, getByText, pretty } = render(
         fixtures.Greeting,
-        { props: { name: "World" } }
+        { props: { name: "World" } },
       );
       expect(container).toBeInstanceOf(window.HTMLElement);
       expect(() => getByText("Hello World")).not.toThrow();
@@ -49,7 +49,7 @@ describe("render", () => {
 
     it("byPlaceholder/byTitle find inputs by placeholder and title", () => {
       const { window, getByPlaceholderText, getByTitle, queryByText } = render(
-        fixtures.InputsAndTitle
+        fixtures.InputsAndTitle,
       );
       const search = getByPlaceholderText("Search");
       expect(search).toBeInstanceOf(window.HTMLElement);
