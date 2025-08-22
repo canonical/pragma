@@ -5,10 +5,5 @@
     "skipLibCheck": true,
     "types": ["vitest/globals"]
   },
-  "include": [
-    "src/**/*.ts",
-    "vitest.config.ts",
-    "svelte.config.ts",
-    "vite.config.ts"
-  ]
+  "include": ["src/**/*.ts"]
 }
