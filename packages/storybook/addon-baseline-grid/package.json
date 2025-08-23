@@ -44,7 +44,7 @@
     "@storybook/icons": "^1.2.10"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.1.1",
+    "@biomejs/biome": "2.2.2",
     "@canonical/biome-config": "^0.10.0-experimental.0",
     "@canonical/typescript-config-react": "^0.10.0-experimental.0",
     "@types/node": "^24.0.0",
