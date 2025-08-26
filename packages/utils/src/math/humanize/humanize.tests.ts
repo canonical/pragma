@@ -28,20 +28,20 @@ describe("humanize", () => {
       },
       {
         it: "should format millions",
-        input: 1_500_000,
-        expected: { displayValue: "1.5M", value: 1_500_000, unit: "M" },
+        input: 1.5e6,
+        expected: { displayValue: "1.5M", value: 1.5e6, unit: "M" },
       },
       {
         it: "should format billions",
-        input: 1_000_000_000,
-        expected: { displayValue: "1B", value: 1_000_000_000, unit: "B" },
+        input: 1.5e9,
+        expected: { displayValue: "1.5B", value: 1.5e9, unit: "B" },
       },
       {
         it: "should format trillions",
-        input: 1_500_000_000_000,
+        input: 1.5e12,
         expected: {
           displayValue: "1.5T",
-          value: 1_500_000_000_000,
+          value: 1.5e12,
           unit: "T",
         },
       },
@@ -75,7 +75,7 @@ describe("humanize", () => {
     });
 
     it("should support custom `units`", () => {
-      const input = 1_500_000;
+      const input = 1.5e6;
       const options = { units: ["", "Kilo", "Mega"] };
       const expected = { displayValue: "1.5Mega", value: input, unit: "Mega" };
       const result = humanize(input, options);
