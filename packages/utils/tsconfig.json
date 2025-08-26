@@ -2,7 +2,8 @@
   "extends": "@canonical/typescript-config-base",
   "compilerOptions": {
     "baseUrl": "src",
-    "types": ["node"]
+    "types": ["node", "vitest/globals"],
+    "skipLibCheck": true
   },
-  "include": ["src/**/*.ts"]
+  "include": ["src/**/*.ts", "vite.config.ts", "vitest.config.ts"]
 }
