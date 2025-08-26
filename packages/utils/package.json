@@ -37,7 +37,6 @@
     "check:biome:fix": "biome check --write",
     "check:ts": "tsc --noEmit",
     "test": "bun run test:vitest",
-    "test:watch": "bun run test:vitest:watch",
     "test:vitest": "vitest run",
     "test:vitest:watch": "vitest"
   },
