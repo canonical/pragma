@@ -87,7 +87,7 @@ export const IntentsInheritance: Story = {
         <p>
           I'm a wrapper with <code>positive</code> intent class name.
         </p>
-        <Button>This is a default button</Button>
+        <Button appearance="neutral">This is a neutral button</Button>
         <Button appearance="negative">This is a negative button</Button>
         <Button>This button inherits the intent from parent</Button>
       </div>
