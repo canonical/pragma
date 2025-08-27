@@ -2,7 +2,7 @@
 
 import type { PluralizeOptions } from "@canonical/utils";
 import type { HTMLAttributes } from "react";
-import type { SemanticStatus } from "../../types/index.js";
+import type { Severity } from "../../types/index.js";
 
 export interface BadgeProps
   extends HTMLAttributes<HTMLSpanElement>,
@@ -26,7 +26,7 @@ export interface BadgeProps
    * - "caution": Indicates a cautionary status
    * - "informative": Indicates an informative status
    */
-  appearance?: SemanticStatus;
+  appearance?: Severity;
 
   /**
    * Overflow strategy for the badge value

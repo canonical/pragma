@@ -10,7 +10,7 @@
 //
 
 import type { ButtonHTMLAttributes, ReactNode } from "react";
-import type { SemanticStatus } from "../../types/index.js";
+import type { Severity } from "../../types/index.js";
 
 export interface BaseProps {
   /* A unique identifier for the button */
@@ -25,7 +25,7 @@ export interface BaseProps {
    * */
   children: ReactNode;
   /** The visual style of the button */
-  appearance?: SemanticStatus | "base" | "link";
+  appearance?: Severity | "base" | "link";
 }
 
 type Props = BaseProps & ButtonHTMLAttributes<HTMLButtonElement>;
