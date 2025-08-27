@@ -1,14 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { humanize, humanizeToString } from "./index.js";
+import humanizeNumber, { humanizeNumberToString } from "./index.js";
 import type { HumanizeResult } from "./types.js";
 
 type TestCase = {
   it: string;
   input: number;
-  options?: Parameters<typeof humanize>[1];
+  options?: Parameters<typeof humanizeNumber>[1];
   expected: HumanizeResult;
 };
-describe("humanize", () => {
+describe("humanizeNumber", () => {
   describe("Basic Functionality", () => {
     const testCases: TestCase[] = [
       {
@@ -59,7 +59,7 @@ describe("humanize", () => {
 
     testCases.forEach(({ it: testName, input, options, expected }) => {
       it(testName, () => {
-        const result = humanize(input, options);
+        const result = humanizeNumber(input, options);
         expect(result).toEqual(expected);
       });
     });
@@ -70,7 +70,7 @@ describe("humanize", () => {
       const input = 12345;
       const options = { decimals: 3 };
       const expected = { displayValue: "12.345k", value: input, unit: "k" };
-      const result = humanize(input, options);
+      const result = humanizeNumber(input, options);
       expect(result).toEqual(expected);
     });
 
@@ -78,7 +78,7 @@ describe("humanize", () => {
       const input = 1.5e6;
       const options = { units: ["", "Kilo", "Mega"] };
       const expected = { displayValue: "1.5Mega", value: input, unit: "Mega" };
-      const result = humanize(input, options);
+      const result = humanizeNumber(input, options);
       expect(result).toEqual(expected);
     });
 
@@ -86,7 +86,7 @@ describe("humanize", () => {
       const input = 8000;
       const options = { truncateAfter: 10000 };
       const expected = { displayValue: "8000", value: input, unit: "" };
-      const result = humanize(input, options);
+      const result = humanizeNumber(input, options);
       expect(result).toEqual(expected);
     });
 
@@ -94,7 +94,7 @@ describe("humanize", () => {
       const input = 12000;
       const options = { truncateAfter: 10000 };
       const expected = { displayValue: "12k", value: input, unit: "k" };
-      const result = humanize(input, options);
+      const result = humanizeNumber(input, options);
       expect(result).toEqual(expected);
     });
 
@@ -102,7 +102,7 @@ describe("humanize", () => {
       const input = 2048;
       const options = { magnitudeBase: 1024, units: ["B", "KiB", "MiB"] };
       const expected = { displayValue: "2KiB", value: input, unit: "KiB" };
-      const result = humanize(input, options);
+      const result = humanizeNumber(input, options);
       expect(result).toEqual(expected);
     });
 
@@ -123,7 +123,7 @@ describe("humanize", () => {
       ];
 
       testCases.forEach(({ input, options, expected }) => {
-        const result = humanize(input, options);
+        const result = humanizeNumber(input, options);
         expect(result).toEqual(expected);
       });
     });
@@ -157,7 +157,7 @@ describe("humanize", () => {
 
     testCases.forEach(({ it: testName, input, options, expected }) => {
       it(testName, () => {
-        const result = humanize(input, options);
+        const result = humanizeNumber(input, options);
         expect(result).toEqual(expected);
       });
     });
@@ -194,19 +194,19 @@ describe("humanize", () => {
 
     testCases.forEach(({ it: testName, input, options, expected }) => {
       it(testName, () => {
-        const result = humanize(input, options);
+        const result = humanizeNumber(input, options);
         expect(result).toEqual(expected);
       });
     });
   });
 });
 
-describe("humanizeToString", () => {
+describe("humanizeNumberToString", () => {
   it("should return the displayValue as a string", () => {
     const input = 12345;
     const options = { decimals: 2 };
     const expected = "12.34k+"; // Truncates 12.345 to 12.34, then adds "+"
-    const result = humanizeToString(input, options);
+    const result = humanizeNumberToString(input, options);
     expect(result).toBe(expected);
   });
 });

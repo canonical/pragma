@@ -1,4 +1,4 @@
-import clamp from "../clamp.js";
+import { clamp } from "../index.js";
 import {
   DEFAULT_DECIMALS,
   DEFAULT_MAGNITUDE_BASE,
@@ -9,18 +9,18 @@ import type { HumanizeNumberOptions, HumanizeResult } from "./types.js";
 /**
  * Formats a large number into a compact, human-readable string with a unit suffix.
  * This function returns a humanized representation of a number, along with the selected unit and the original value if needed for further processing.
- * To return only the display value as a string, see {@link humanizeToString}.
+ * To return only the display value as a string, see {@link humanizeNumberToString}.
  *
  * @param value The number to format. It is expected to be a finite, non-negative number.
  * @param options Optional configuration for decimals and units.
  * @returns A formatted string representation of the number (e.g., "1.2k", "15M").
  *
  * @example
- * humanize(12345); // Returns "12.3k+"
- * humanize(999999); // Returns "999.9k+"
- * humanize(1500000, { decimals: 2 }); // Returns "1.50M"
+ * humanizeNumber(12345); // Returns "12.3k+"
+ * humanizeNumber(999999); // Returns "999.9k+"
+ * humanizeNumber(1500000, { decimals: 2 }); // Returns "1.50M"
  */
-const humanize = (
+const humanizeNumber = (
   value: number,
   options?: HumanizeNumberOptions,
 ): HumanizeResult => {
@@ -38,7 +38,7 @@ const humanize = (
   };
 
   if (!Number.isFinite(value)) {
-    console.error("humanize expects a finite number.");
+    console.error("humanizeNumber expects a finite number.");
     return {
       ...result,
       displayValue: Number.isNaN(value) ? String(value) : "∞",
@@ -85,7 +85,7 @@ const humanize = (
   // Format the final value
   const fixedDecimals = unitIndex === 0 ? 0 : decimals;
   const multiplier = 10 ** fixedDecimals;
-  // Truncate the scaled value, rather than rounding.
+  // Truncate the scaled value rather than rounding.
   // Otherwise, the display value might be larger than the original value.
   const finalValue = Math.trunc(scaledValue * multiplier) / multiplier;
   const unit = units[unitIndex] ?? "";
@@ -101,4 +101,4 @@ const humanize = (
   };
 };
 
-export default humanize;
+export default humanizeNumber;
