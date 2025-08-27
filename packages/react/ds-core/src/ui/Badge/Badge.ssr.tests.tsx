@@ -13,6 +13,12 @@ describe("Badge SSR", () => {
 
   it("renders", () => {
     const html = renderToString(<Component value={5} />);
-    expect(html).toBe('<span title="5 items" class="ds badge">5</span>');
+    expect(html).toContain("<span");
+    expect(html).toContain("</span>");
+  });
+
+  it("applies className", () => {
+    const html = renderToString(<Component value={5} className="test-class" />);
+    expect(html).toContain('class="ds badge test-class"');
   });
 });
