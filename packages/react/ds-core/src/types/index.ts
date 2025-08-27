@@ -1,1 +1,1 @@
-export type * from "./semantic-statuses.js";
+export type * from "./severity.js";
