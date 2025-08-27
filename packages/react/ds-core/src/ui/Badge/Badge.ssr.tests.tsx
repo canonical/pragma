@@ -13,6 +13,6 @@ describe("Badge SSR", () => {
 
   it("renders", () => {
     const html = renderToString(<Component value={5} />);
-    expect(html).toBe('<span class="ds badge">5</span>');
+    expect(html).toBe('<span title="5 items" class="ds badge">5</span>');
   });
 });
