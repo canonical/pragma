@@ -15,6 +15,11 @@ const preview: Preview = {
       defaultTheme: "light",
     }),
   ],
+  parameters: {
+    docs: {
+      codePanel: true,
+    },
+  },
 };
 
 export default preview;
