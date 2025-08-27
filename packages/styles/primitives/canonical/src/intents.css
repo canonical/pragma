@@ -32,6 +32,7 @@
   --intent-color-tinted-active: var(
     --color-background-information-tinted-active
   );
+  --intent-color-text: var(--color-palette-white);
   --intent-color-border: var(--intent-color);
   --intent-color-border-hover: var(--intent-color-hover);
   --intent-color-border-active: var(--intent-color-active);
@@ -42,6 +43,7 @@
   --intent-color-tinted: var(--color-background-caution-tinted-default);
   --intent-color-tinted-hover: var(--color-background-caution-tinted-hover);
   --intent-color-tinted-active: var(--color-background-caution-tinted-active);
+  --intent-color-text: var(--color-palette-black);
   --intent-color-border: var(--intent-color);
   --intent-color-border-hover: var(--intent-color-hover);
   --intent-color-border-active: var(--intent-color-active);

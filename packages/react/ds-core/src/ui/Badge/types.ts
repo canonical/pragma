@@ -20,13 +20,15 @@ export interface BadgeProps
 
   /**
    * Visual appearance of the badge, typically reflecting status.
-   * - "default": Neutral appearance
    * - "positive": Indicates a positive status
    * - "negative": Indicates a negative status
    * - "caution": Indicates a cautionary status
-   * - "informative": Indicates an informative status
+   * - "information": Indicates an informative status
+   *
+   * When no appearance is specified, uses the default badge styling.
+   * Badge excludes "neutral" appearance from the {@link Severity} type as the current neutral intent is not suited for badge (higher contrast than buttons)
    */
-  appearance?: Severity;
+  appearance?: Exclude<Severity, "neutral">;
 
   /**
    * Overflow strategy for the badge value

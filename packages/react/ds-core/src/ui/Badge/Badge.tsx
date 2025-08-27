@@ -15,7 +15,7 @@ const componentCssClassName = "ds badge";
 const Badge = ({
   value,
   className,
-  appearance = "default",
+  appearance,
   overflowStrategy = "truncate",
   itemOptions,
   ...props
@@ -29,11 +29,7 @@ const Badge = ({
   return (
     <span
       title={title}
-      className={[
-        componentCssClassName,
-        appearance !== "default" && appearance,
-        className,
-      ]
+      className={[componentCssClassName, appearance, className]
         .filter(Boolean)
         .join(" ")}
       {...props}
