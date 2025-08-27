@@ -19,9 +19,8 @@ const Badge = ({
   appearance = "neutral",
   value,
   overflowStrategy = "truncate",
-  role,
 }: BadgeProps): React.ReactElement => {
-  const { displayValue, ariaLabel } = useBadge({ value, overflowStrategy });
+  const { displayValue } = useBadge({ value, overflowStrategy });
 
   return (
     <span
@@ -34,7 +33,6 @@ const Badge = ({
       ]
         .filter(Boolean)
         .join(" ")}
-      {...(role === "status" ? { role, "aria-label": ariaLabel } : {})}
     >
       {displayValue}
     </span>

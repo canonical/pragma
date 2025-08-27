@@ -12,9 +12,7 @@ describe("Badge SSR", () => {
   });
 
   it("renders", () => {
-    const html = renderToString(<Component value={5} role={"status"} />);
-    expect(html).toBe(
-      '<span class="ds badge" role="status" aria-label="5 items exist">5</span>',
-    );
+    const html = renderToString(<Component value={5} />);
+    expect(html).toBe('<span class="ds badge">5</span>');
   });
 });

@@ -1,53 +1,31 @@
-import { math } from "@canonical/utils";
+import {
+  clamp,
+  humanizeNumberToString,
+  type PluralizeOptions,
+  pluralize,
+} from "@canonical/utils";
 import { useMemo } from "react";
-import type {
-  BadgeOverflowStrategy,
-  UseBadgeProps,
-  UseBadgeResult,
-} from "../types.js";
+import type { UseBadgeProps, UseBadgeResult } from "../types.js";
 
-const BADGE_MAX_VAL = 999;
+// Maximum number of characters to display in a badge before applying overflow strategy
+const BADGE_MAX_CHARS = 4;
+// Maximum natural value that can be displayed in a badge without overflow (e.g., 999 for 3 chars)
+const BADGE_MAX_NATURAL_VAL = 10 ** (BADGE_MAX_CHARS - 1) - 1;
 
 /**
  * Generate aria-label for badge values using unit information
  * @param value - The numeric value of the badge
  * @param displayValue - The formatted display value of the badge
- * @param unit - The unit suffix used (k, M, B, T, etc.)
- * @param overflowStrategy - The overflow strategy - see {@link BadgeOverflowStrategy}
+ * @param itemOptions - Options for pluralizing the item label - see {@link PluralizeOptions}
+ * @returns A string suitable for use as an aria-label, e.g., "5 items", "1 item", "999+ items"
  */
 const generateAriaLabel = (
   value: number,
   displayValue: string,
-  unit: string,
-  overflowStrategy?: BadgeOverflowStrategy,
+  itemOptions?: PluralizeOptions,
 ): string => {
-  if (overflowStrategy === "compact") {
-    if (value < 1000) {
-      return `${value} items exist`;
-    }
-
-    // Map units to their word equivalents
-    const unitMap: Record<string, string> = {
-      k: "thousand",
-      M: "million",
-      B: "billion",
-      T: "trillion",
-    };
-
-    const word = unitMap[unit];
-    if (word) {
-      // Extract numeric part by removing the unit
-      const numericPart = displayValue.replace(unit, "");
-      return `approximately ${numericPart} ${word} items exist`;
-    }
-
-    return `${displayValue} items exist`;
-  }
-
-  // Exact precision
-  return value <= BADGE_MAX_VAL
-    ? `${value} items exist`
-    : `more than ${BADGE_MAX_VAL} items exist`;
+  const itemStr = pluralize(value, itemOptions);
+  return `${displayValue} ${itemStr}`;
 };
 
 /**
@@ -55,51 +33,32 @@ const generateAriaLabel = (
  */
 const useBadge = ({
   value,
-  overflowStrategy,
+  overflowStrategy = "truncate",
+  itemOptions,
 }: UseBadgeProps): UseBadgeResult => {
-  return useMemo(() => {
-    let safeValue = Math.round(value);
+  const safeValue = useMemo(() => clamp(value, 0), [value]);
 
-    if (value < 0) {
-      console.error(
-        "Warning: The value used in the Badge should be positive. Received:",
-        value,
-      );
-      safeValue = 0;
+  const displayValue: string = useMemo(() => {
+    if (overflowStrategy === "compact") {
+      return humanizeNumberToString(value, { maxChars: 4 });
     }
+    return safeValue > BADGE_MAX_NATURAL_VAL
+      ? `${BADGE_MAX_NATURAL_VAL}+`
+      : String(safeValue);
+  }, [value, safeValue, overflowStrategy]);
 
-    if (overflowStrategy === "compact" || !Number.isFinite(value)) {
-      const { displayValue, unitSuffix } = math.displayNumberWithUnit(
-        safeValue,
-        { overflowStrategy: overflowStrategy },
-      );
+  const ariaLabel: string = useMemo(
+    () => generateAriaLabel(safeValue, String(displayValue), itemOptions),
+    [safeValue, displayValue, itemOptions],
+  );
 
-      return {
-        displayValue,
-        ariaLabel: generateAriaLabel(
-          safeValue,
-          displayValue,
-          unitSuffix,
-          overflowStrategy,
-        ),
-      };
-    }
-
-    // For undefined precision, cap at BADGE_MAX_VAL and add "+" if value was larger
-    const clampedValue = math.clamp(safeValue, undefined, BADGE_MAX_VAL);
-    const displayValue =
-      safeValue > BADGE_MAX_VAL ? `${clampedValue}+` : clampedValue;
-
-    return {
+  return useMemo(
+    () => ({
       displayValue,
-      ariaLabel: generateAriaLabel(
-        safeValue,
-        String(displayValue),
-        "",
-        overflowStrategy,
-      ),
-    };
-  }, [value, overflowStrategy]);
+      ariaLabel,
+    }),
+    [displayValue, ariaLabel],
+  );
 };
 
 export default useBadge;
