@@ -30,7 +30,7 @@ export const Default: Story = {
 
 export const LargeNumber: Story = {
   args: {
-    value: 1234,
+    value: 12345,
   },
   parameters: {
     docs: {
@@ -42,7 +42,7 @@ export const LargeNumber: Story = {
   },
 };
 
-export const LargeNumberRounded: Story = {
+export const LargeNumberCompacted: Story = {
   args: {
     ...LargeNumber.args,
     overflowStrategy: "compact",
