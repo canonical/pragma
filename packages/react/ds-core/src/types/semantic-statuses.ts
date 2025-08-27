@@ -1,5 +1,5 @@
 export type SemanticStatus =
-  | "neutral"
+  | "default"
   | "positive"
   | "negative"
   | "caution"
