@@ -13,27 +13,30 @@ const componentCssClassName = "ds badge";
  * @implements syntax:core:component:badge:1.0.0
  */
 const Badge = ({
-  id,
-  className,
-  style,
-  appearance = "neutral",
   value,
+  className,
+  appearance = "default",
   overflowStrategy = "truncate",
+  itemOptions,
+  ...props
 }: BadgeProps): React.ReactElement => {
-  const { displayValue, title } = useBadge({ value, overflowStrategy });
+  const { displayValue, title } = useBadge({
+    value,
+    overflowStrategy,
+    itemOptions,
+  });
 
   return (
     <span
-      id={id}
-      style={style}
       title={title}
       className={[
         componentCssClassName,
-        appearance !== "neutral" && appearance,
+        appearance !== "default" && appearance,
         className,
       ]
         .filter(Boolean)
         .join(" ")}
+      {...props}
     >
       {displayValue}
     </span>

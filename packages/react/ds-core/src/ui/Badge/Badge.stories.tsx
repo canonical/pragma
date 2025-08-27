@@ -162,16 +162,29 @@ export const WithCustomStyling: Story = {
   },
 };
 
-export const WithRole: Story = {
+export const WithCustomItemOptions: Story = {
   args: {
-    value: 10,
-    role: "status",
+    value: 15,
+    overflowStrategy: "compact",
+    itemOptions: { singularStem: "box", pluralSuffix: "es" },
   },
   parameters: {
     docs: {
       description: {
         story:
-          "Badge components are, by default, decorative - they are non-interactive and not perceived by screen readers. You can set the `role` prop to 'status'. This will ensure that screen readers announce the Badge's value as part of the page's status updates. This is particularly useful for dynamic content where the Badge reflects real-time data, such as notifications or live counters.",
+          "<p>" +
+          'The badge uses a <code>title</code> prop to show more context (ex: "15 servers" instead of just "15") about the badge contents on hover. ' +
+          "</p>" +
+          "<p>" +
+          "By default, the item is pluralized by adding an 's' suffix to the singular form \"item\". " +
+          "</p>" +
+          "<p>" +
+          "Custom <code>itemOptions</code> allow for fine-tuning of number unit formatting. " +
+          "For example, you can specify singular and plural forms of a unit to ensure grammatical correctness when displaying counts. " +
+          "</p>" +
+          "<p>" +
+          "In this example, 'box' is used for singular (1 box) and 'boxes' for plural (2 boxes). This is particularly useful in applications where the Badge represents quantities of specific items." +
+          "</p>",
       },
     },
   },
