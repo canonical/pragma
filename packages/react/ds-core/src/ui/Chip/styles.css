@@ -76,4 +76,11 @@
       var(--chip-color-background-active)
     );
   }
+
+  /* Context-specific styling for badges within chips */
+  & .ds.badge {
+    align-self: center;
+    margin-left: var(--spacing-horizontal-small);
+    margin-right: var(--badge-chip-margin-tweak);
+  }
 }

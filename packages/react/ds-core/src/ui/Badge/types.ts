@@ -1,10 +1,8 @@
 /* @canonical/generator-ds 0.10.0-experimental.2 */
 
-import type { OverflowStrategy } from "@canonical/utils";
+import type { PluralizeOptions } from "@canonical/utils";
 import type React from "react";
 import type { SemanticStatus } from "../../types/index.js";
-
-export type BadgeOverflowStrategy = OverflowStrategy;
 
 export interface BadgeProps extends Partial<Pick<HTMLSpanElement, "role">> {
   /* A unique identifier for the Badge */
@@ -13,6 +11,8 @@ export interface BadgeProps extends Partial<Pick<HTMLSpanElement, "role">> {
   className?: string;
   /* Inline styles */
   style?: React.CSSProperties;
+
+  itemOptions?: PluralizeOptions;
 
   /**
    * Numeric value to be displayed.
@@ -34,10 +34,13 @@ export interface BadgeProps extends Partial<Pick<HTMLSpanElement, "role">> {
    * - "truncate": Displays the value, up to the maximum (999), with a + if it exceeds 999.
    * - "compact": Rounds the value to the nearest thousand, million, billion, trillion, and formats it accordingly (e.g., 1.2k, 132M, etc.).
    */
-  overflowStrategy?: BadgeOverflowStrategy;
+  overflowStrategy?: "truncate" | "compact";
 }
 
-export type UseBadgeProps = Pick<BadgeProps, "value" | "overflowStrategy">;
+export type UseBadgeProps = Pick<
+  BadgeProps,
+  "value" | "overflowStrategy" | "itemOptions"
+>;
 
 /**
  * Result of the useBadge hook.

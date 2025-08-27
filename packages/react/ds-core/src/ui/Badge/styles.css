@@ -39,10 +39,3 @@
     color: var(--badge-color-text-information);
   }
 }
-
-/* Context-specific styling for badges within chips */
-.ds.chip .ds.badge {
-  align-self: center;
-  margin-left: var(--spacing-horizontal-small);
-  margin-right: var(--badge-chip-margin-tweak);
-}
