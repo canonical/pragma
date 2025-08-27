@@ -1,17 +1,16 @@
 /* @canonical/generator-ds 0.10.0-experimental.2 */
 
 import type { PluralizeOptions } from "@canonical/utils";
-import type React from "react";
+import type { HTMLAttributes } from "react";
 import type { SemanticStatus } from "../../types/index.js";
 
-export interface BadgeProps extends Partial<Pick<HTMLSpanElement, "role">> {
-  /* A unique identifier for the Badge */
-  id?: string;
-  /* Additional CSS classes */
-  className?: string;
-  /* Inline styles */
-  style?: React.CSSProperties;
-
+export interface BadgeProps
+  extends HTMLAttributes<HTMLSpanElement>,
+    PluralizeOptions {
+  /**
+   * Options for the verbal description of the item being counted.
+   * See {@link PluralizeOptions} for details.
+   */
   itemOptions?: PluralizeOptions;
 
   /**
@@ -21,7 +20,7 @@ export interface BadgeProps extends Partial<Pick<HTMLSpanElement, "role">> {
 
   /**
    * Visual appearance of the badge, typically reflecting status.
-   * - "neutral": Neutral appearance (default).
+   * - "default": Neutral appearance
    * - "positive": Indicates a positive status
    * - "negative": Indicates a negative status
    * - "caution": Indicates a cautionary status
