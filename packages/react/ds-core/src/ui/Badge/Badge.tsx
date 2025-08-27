@@ -20,12 +20,13 @@ const Badge = ({
   value,
   overflowStrategy = "truncate",
 }: BadgeProps): React.ReactElement => {
-  const { displayValue } = useBadge({ value, overflowStrategy });
+  const { displayValue, title } = useBadge({ value, overflowStrategy });
 
   return (
     <span
       id={id}
       style={style}
+      title={title}
       className={[
         componentCssClassName,
         appearance !== "neutral" && appearance,

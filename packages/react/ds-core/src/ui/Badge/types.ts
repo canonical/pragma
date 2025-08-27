@@ -49,6 +49,6 @@ export type UseBadgeProps = Pick<
 export interface UseBadgeResult {
   /** Formatted value to be displayed in the badge */
   displayValue: string | number;
-  /** ARIA label for accessibility, describing the value */
-  ariaLabel: string;
+  /** Title attribute, for displaying additional context about the badge on hover */
+  title: string;
 }
