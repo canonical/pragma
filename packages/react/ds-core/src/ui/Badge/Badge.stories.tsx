@@ -8,8 +8,6 @@ const meta = {
   component: Component,
   parameters: {
     docs: {
-      // TODO should we enable this for the entire package by default?
-      codePanel: true,
       description: {
         component:
           "A Badge component for displaying numeric values with optional formatting.",
