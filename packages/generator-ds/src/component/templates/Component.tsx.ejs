@@ -13,21 +13,19 @@ const componentCssClassName = "<%= cssNamespace %> <%= componentCssClassName %>"
  * @returns {React.ReactElement} - Rendered <%= componentName %>
  */
 const <%= componentName %> = ({
-  id,
-  children,
   className,
-  style
+  children,
+  ...props
 }: <%= componentName %>Props): React.ReactElement => {
   return (
     <div
-      id={id}
-      style={style}
       className={[
         <% if (withStyles) { _%>
         componentCssClassName,
         <%_ } _%>
         className
       ].filter(Boolean).join(" ")}
+      {...props}
     >
       {children}
     </div>
