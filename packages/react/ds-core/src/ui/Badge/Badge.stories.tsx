@@ -72,66 +72,6 @@ export const NegativeValue: Story = {
   },
 };
 
-export const PositiveAppearance: Story = {
-  args: {
-    value: 42,
-    appearance: "positive",
-  },
-  parameters: {
-    docs: {
-      description: {
-        story:
-          "The positive appearance uses green styling to indicate success, completion, or positive status.",
-      },
-    },
-  },
-};
-
-export const NegativeAppearance: Story = {
-  args: {
-    value: 99,
-    appearance: "negative",
-  },
-  parameters: {
-    docs: {
-      description: {
-        story:
-          "The negative appearance uses red styling to indicate errors, failures, or critical status.",
-      },
-    },
-  },
-};
-
-export const CautionAppearance: Story = {
-  args: {
-    value: 7,
-    appearance: "caution",
-  },
-  parameters: {
-    docs: {
-      description: {
-        story:
-          "The caution appearance uses yellow/orange styling to indicate warnings, pending states, or items requiring attention.",
-      },
-    },
-  },
-};
-
-export const InformationAppearance: Story = {
-  args: {
-    value: 3,
-    appearance: "information",
-  },
-  parameters: {
-    docs: {
-      description: {
-        story:
-          "The information appearance uses blue styling to indicate informational content, neutral status, or general notifications.",
-      },
-    },
-  },
-};
-
 export const WithCustomStyling: Story = {
   args: {
     value: 123,
