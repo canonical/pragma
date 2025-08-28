@@ -36,7 +36,8 @@ export const LargeNumber: Story = {
     docs: {
       description: {
         story:
-          "Numbers without compact overflowStrategy are displayed up to the maximum (999), and a '+' suffix is added when they exceed this limit. This prevents UI overflow while indicating that the actual value is larger. Ideal for scenarios where you need to show 'many' without overwhelming the user with large numbers.",
+          "Numbers are displayed with up to 4 characters. If the number cannot be represented in 4 characters, 3 characters (in this case, 9's) will be followed by an overflow indicator (" +
+          ") to indicate the number cannot fit in the Badge.  This prevents UI overflow while indicating that the actual value is larger.",
       },
     },
   },
@@ -51,22 +52,7 @@ export const LargeNumberCompacted: Story = {
     docs: {
       description: {
         story:
-          "compact overflowStrategy rounds values over 999 to their nearest unit (i.e., 1,234 -> 1.23k), allowing for up to 5 characters. This provides human-readable formatting for large numbers while maintaining reasonable overflowStrategy.",
-      },
-    },
-  },
-};
-
-export const MaxValue: Story = {
-  args: {
-    value: 1324564551231125,
-    overflowStrategy: "compact",
-  },
-  parameters: {
-    docs: {
-      description: {
-        story:
-          "Values exceeding 999T are automatically capped and displayed as '999T+'. This prevents UI overflow while clearly communicating that the actual value is beyond the displayable range.",
+          "Compact overflow strategy adjusts the radix to show as much precision as can be represented in 4 characters, and includes unit positional notation if needed. This provides human-readable formatting for large numbers.",
       },
     },
   },
