@@ -3,6 +3,6 @@
 const { name }: { name: string } = $props();
 </script>
 
-<div>
+<div class="test-class">
   <span data-testid="greeting">Hello {name}</span>
 </div>
