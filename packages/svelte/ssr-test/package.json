@@ -1,6 +1,13 @@
 {
   "name": "@canonical/svelte-ssr-test",
   "description": "Test package for Svelte SSR testing",
+  "keywords": [
+    "svelte",
+    "ssr",
+    "server-side rendering",
+    "testing",
+    "canonical"
+  ],
   "version": "0.10.0-experimental.0",
   "type": "module",
   "module": "dist/esm/index.js",
@@ -21,13 +28,13 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/canonical/ds25"
+    "url": "https://github.com/canonical/pragma"
   },
   "license": "LGPL-3.0",
   "bugs": {
-    "url": "https://github.com/canonical/ds25/issues"
+    "url": "https://github.com/canonical/pragma/issues"
   },
-  "homepage": "https://github.com/canonical/ds25#readme",
+  "homepage": "https://github.com/canonical/pragma#readme",
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "build:all": "tsc -p tsconfig.build.json",
