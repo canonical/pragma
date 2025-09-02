@@ -1,5 +1,10 @@
 /* <%= generatorPackageName %> <%= generatorPackageVersion %> */
 
-import type { HTMLAttributes } from 'react'
+import type { HTMLAttributes, ReactNode } from 'react'
 
-export interface <%= componentName %>Props extends HTMLAttributes<HTMLDivElement> {}
+export interface <%= componentName %>Props extends HTMLAttributes<HTMLDivElement> {
+    /* Additional CSS classes */
+    className?: string;
+    /* Child elements */
+    children?: ReactNode;
+}
