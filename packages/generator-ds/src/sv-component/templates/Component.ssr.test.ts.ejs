@@ -1,24 +1,55 @@
 /* <%= generatorPackageName %> <%= generatorPackageVersion %> */
 
-import { render } from "svelte/server";
+import { render } from "@canonical/svelte-ssr-test";
+import { createRawSnippet } from "svelte";
 import { describe, expect, it } from "vitest";
 import Component from "./<%= componentName %>.svelte";
+import type { <%= componentName %>Props } from "./types.js";
 
 describe("<%= componentName %> SSR", () => {
-  it("doesn't throw", () => {
-    expect(() => {
-      render(Component);
-    }).not.toThrow();
+  const baseProps = {
+    children: createRawSnippet(() => ({
+      render: () => `<span><%= componentName %></span>`,
+    })),
+  } satisfies <%= componentName %>Props;
+
+  describe("basics", () => {
+    it("doesn't throw", () => {
+      expect(() => {
+        render(Component, { props: { ...baseProps} });
+      }).not.toThrow();
+    });
+
+    it("renders", () => {
+      const { window, container } = render(Component, { props: { ...baseProps } });
+      expect(container.firstElementChild).toBeInstanceOf(window.HTMLDivElement);
+    });
   });
 
-  it("renders", () => {
-    const { body } = render(Component);
-    expect(body).toContain("<div");
-    expect(body).toContain("</div>");
-  });
+  describe("attributes", () => {
+    it.each([
+      ["id", "test-id"],
+      ["style", "color: orange;"],
+      ["aria-label", "test-aria-label"],
+    ])("applies %s", (attribute, expected) => {
+      const { container } = render(Component, {
+        props: { [attribute]: expected, ...baseProps},
+      });
+      expect(container.firstElementChild?.getAttribute(attribute)).toBe(
+        expected,
+      );
+    });
 
-  it("applies class", () => {
-    const { body } = render(Component, { props: { class: "test-class" } });
-    expect(body).toContain('class="<% if (withStyles) { %><%= cssNamespace %> <%= componentCssClassName %> <% } %>test-class"');
+    it("applies classes", () => {
+      const { container } = render(Component, {
+        props: { class: "test-class", ...baseProps },
+      });
+      const classes = ["test-class"];
+      <% if (withStyles) { %>classes.push("<%= cssNamespace %>", "<%= componentCssClassName %>");<% } %>
+
+      for (const className of classes) {
+        expect(container.firstElementChild?.classList).toContain(className);
+      }
+    });
   });
 });

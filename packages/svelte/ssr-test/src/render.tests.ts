@@ -9,7 +9,7 @@ describe("render", () => {
         fixtures.Greeting,
         { props: { name: "World" } },
       );
-      expect(container).toBeInstanceOf(window.HTMLElement);
+      expect(container.firstElementChild).toBeInstanceOf(window.HTMLDivElement);
       expect(() => getByText("Hello World")).not.toThrow();
       const prettyOutput = pretty();
       expect(typeof prettyOutput).toBe("string");
@@ -21,6 +21,13 @@ describe("render", () => {
       const short = pretty(10);
       expect(short.length).toBeLessThanOrEqual(10 + 100);
     });
+  });
+
+  it("maintains class names", () => {
+    const { container } = render(fixtures.Greeting, {
+      props: { name: "World" },
+    });
+    expect(container.firstElementChild?.classList).toContain("test-class");
   });
 
   describe("selectors", () => {
