@@ -132,6 +132,121 @@
   /* Transparent */
   --tmp-color-palette-transparent: rgba(0, 0, 0, 0);
 
+  /* Semantic color tokens with --tmp prefix */
+  /* Base semantic colors */
+  --tmp-color-positive: var(--tmp-color-palette-green-8);
+  --tmp-color-negative: var(--tmp-color-palette-red-8);
+  --tmp-color-information: var(--tmp-color-palette-blue-12);
+  --tmp-color-caution: var(--tmp-color-palette-yellow-8);
+
+  /* Text colors */
+  --tmp-color-text-default: var(--tmp-color-palette-black);
+  --tmp-color-text-muted: var(--tmp-color-palette-gray-23);
+  --tmp-color-text-inactive: var(--tmp-color-palette-gray-28);
+  --tmp-color-text-link-default: var(--tmp-color-palette-blue-11);
+  --tmp-color-text-link-visited: var(--tmp-color-palette-purple-2);
+  --tmp-color-text-button-positive: var(--tmp-color-palette-white);
+  --tmp-color-text-button-negative: var(--tmp-color-palette-white);
+  --tmp-color-text-button-brand: var(--tmp-color-palette-white);
+  --tmp-color-text-button-default: var(--tmp-color-text-default);
+  --tmp-color-text-button-base: var(--tmp-color-text-default);
+  --tmp-color-text-positive: var(--tmp-color-positive);
+  --tmp-color-text-negative: var(--tmp-color-negative);
+  --tmp-color-text-caution: var(--tmp-color-caution);
+  --tmp-color-text-tooltip: var(--tmp-color-palette-white);
+  --tmp-color-text-status-label: var(--tmp-color-palette-white);
+  --tmp-color-text-badge: var(--tmp-color-palette-white);
+  --tmp-color-text-search-and-filter-overflow: var(--tmp-color-information);
+
+  /* Background colors */
+  --tmp-color-background-default: var(--tmp-color-palette-white);
+  --tmp-color-background-hover: var(--tmp-color-palette-gray-4);
+  --tmp-color-background-active: var(--tmp-color-palette-gray-6);
+  --tmp-color-background-alt: var(--tmp-color-palette-gray-1);
+  --tmp-color-background-code: var(--tmp-color-palette-gray-1);
+  --tmp-color-background-input-default: var(--tmp-color-palette-gray-2);
+  --tmp-color-background-overlay: var(--tmp-color-palette-gray-38);
+  --tmp-color-background-neutral-default: var(--tmp-color-palette-gray-4);
+  --tmp-color-background-neutral-hover: var(--tmp-color-palette-gray-9);
+  --tmp-color-background-neutral-active: var(--tmp-color-palette-gray-11);
+  --tmp-color-background-positive-default: var(--tmp-color-palette-green-1);
+  --tmp-color-background-positive-hover: var(--tmp-color-palette-green-2);
+  --tmp-color-background-positive-active: var(--tmp-color-palette-green-3);
+  --tmp-color-background-caution-default: var(--tmp-color-palette-yellow-1);
+  --tmp-color-background-caution-hover: var(--tmp-color-palette-yellow-2);
+  --tmp-color-background-caution-active: var(--tmp-color-palette-yellow-4);
+  --tmp-color-background-negative-default: var(--tmp-color-palette-red-1);
+  --tmp-color-background-negative-hover: var(--tmp-color-palette-red-2);
+  --tmp-color-background-negative-active: var(--tmp-color-palette-red-4);
+  --tmp-color-background-information-default: var(--tmp-color-palette-blue-1);
+  --tmp-color-background-information-hover: var(--tmp-color-palette-blue-2);
+  --tmp-color-background-information-active: var(--tmp-color-palette-blue-4);
+  --tmp-color-background-button-positive-default: var(--tmp-color-palette-green-8);
+  --tmp-color-background-button-positive-hover: var(--tmp-color-palette-green-10);
+  --tmp-color-background-button-positive-active: var(--tmp-color-palette-green-13);
+  --tmp-color-background-button-negative-default: var(--tmp-color-palette-red-8);
+  --tmp-color-background-button-negative-hover: var(--tmp-color-palette-red-9);
+  --tmp-color-background-button-negative-active: var(--tmp-color-palette-red-10);
+  --tmp-color-background-button-brand-default: var(--tmp-color-palette-orange-1);
+  --tmp-color-background-button-brand-hover: var(--tmp-color-palette-orange-2);
+  --tmp-color-background-button-brand-active: var(--tmp-color-palette-orange-3);
+  --tmp-color-background-button-default-default: var(--tmp-color-background-default);
+  --tmp-color-background-button-default-hover: var(--tmp-color-background-hover);
+  --tmp-color-background-button-default-active: var(--tmp-color-background-active);
+  --tmp-color-background-button-base-default: var(--tmp-color-palette-transparent);
+  --tmp-color-background-button-base-hover: var(--tmp-color-background-hover);
+  --tmp-color-background-button-base-active: var(--tmp-color-background-active);
+  --tmp-color-background-checkbox-checked: var(--tmp-color-text-link-default);
+  --tmp-color-background-tooltip: var(--tmp-color-palette-gray-37);
+  --tmp-color-background-canonical-logo: var(--tmp-color-palette-orange-1);
+  --tmp-color-background-radio-checked: var(--tmp-color-text-link-default);
+  --tmp-color-background-status-label-default: var(--tmp-color-palette-gray-23);
+  --tmp-color-background-status-label-positive: var(--tmp-color-palette-green-8);
+  --tmp-color-background-status-label-caution: var(--tmp-color-palette-yellow-8);
+  --tmp-color-background-status-label-negative: var(--tmp-color-palette-red-8);
+  --tmp-color-background-status-label-information: var(--tmp-color-palette-blue-12);
+  --tmp-color-background-badge-default: var(--tmp-color-palette-black);
+  --tmp-color-background-badge-negative: var(--tmp-color-palette-red-8);
+  --tmp-color-background-switch-track: var(--tmp-color-background-neutral-default);
+  --tmp-color-background-switch-checked: var(--tmp-color-text-link-default);
+  --tmp-color-background-switch-knob: var(--tmp-color-background-default);
+  --tmp-color-background-slider-progress: var(--tmp-color-background-default);
+  --tmp-color-background-slider-track: var(--tmp-color-border-default);
+
+  /* Border colors */
+  --tmp-color-border-default: var(--tmp-color-palette-gray-15);
+  --tmp-color-border-high-contrast: var(--tmp-color-palette-gray-21);
+  --tmp-color-border-low-contrast: var(--tmp-color-palette-gray-9);
+  --tmp-color-border-neutral: var(--tmp-color-palette-gray-21);
+  --tmp-color-border-positive: var(--tmp-color-positive);
+  --tmp-color-border-negative: var(--tmp-color-negative);
+  --tmp-color-border-information: var(--tmp-color-information);
+  --tmp-color-border-caution: var(--tmp-color-caution);
+  --tmp-color-border-highlight: var(--tmp-color-palette-black);
+  --tmp-color-border-accent: var(--tmp-color-palette-teal-1);
+  --tmp-color-border-focus: var(--tmp-color-palette-blue-9);
+  --tmp-color-border-switch-knob: var(--tmp-color-background-neutral-default);
+  --tmp-color-border-tab-active: var(--tmp-color-border-highlight);
+
+  /* Icon colors */
+  --tmp-color-icon-default: var(--tmp-color-text-default);
+  --tmp-color-icon-muted: var(--tmp-color-text-muted);
+  --tmp-color-icon-positive: var(--tmp-color-positive);
+  --tmp-color-icon-negative: var(--tmp-color-negative);
+  --tmp-color-icon-information: var(--tmp-color-information);
+  --tmp-color-icon-caution: var(--tmp-color-caution);
+  --tmp-color-icon-link: var(--tmp-color-text-link-default);
+  --tmp-color-icon-status-shade-1: var(--tmp-color-palette-gray-1);
+  --tmp-color-icon-status-shade-2: var(--tmp-color-palette-gray-14);
+  --tmp-color-icon-status-queued: var(--tmp-color-palette-gray-13);
+  --tmp-color-icon-pull-quote-quotation-mark: var(--tmp-color-text-muted);
+  --tmp-color-icon-canonical-logo: var(--tmp-color-palette-white);
+  --tmp-color-icon-button-brand: var(--tmp-color-palette-white);
+  --tmp-color-icon-button-default: var(--tmp-color-icon-default);
+  --tmp-color-icon-button-base: var(--tmp-color-icon-default);
+  --tmp-color-icon-button-positive: var(--tmp-color-palette-white);
+  --tmp-color-icon-button-negative: var(--tmp-color-palette-white);
+
   --color-background-default: var(--color-palette-white);
   --color-text-default: var(--color-palette-black);
   --color-background-hover: rgba(242, 242, 242, 1);
