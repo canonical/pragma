@@ -390,18 +390,8 @@
 
   --tooltip-spacing-arrow-size: 6px;
 
-  --badge-color-background: var(--color-text-default);
-  --badge-color-text: var(--color-background-default);
-  --badge-color-background-negative: var(--color-background-negative-default);
-  --badge-color-text-negative: var(--color-background-negative-text);
-  --badge-color-background-positive: var(--color-background-positive-default);
-  --badge-color-text-positive: var(--color-background-positive-text);
-  --badge-color-background-caution: var(--color-background-caution-default);
-  --badge-color-text-caution: var(--color-palette-black);
-  --badge-color-background-information: var(
-    --color-background-information-default
-  );
-  --badge-color-text-information: var(--color-palette-white);
+  --badge-color-background: var(--tmp-color-text-default);
+  --badge-color-text: var(--tmp-color-background-default);
 
   --badge-border-radius: 1rem;
   --badge-font-size: var(--font-size-xsmall);
