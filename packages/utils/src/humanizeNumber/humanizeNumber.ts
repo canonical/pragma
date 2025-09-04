@@ -2,6 +2,7 @@ import {
   DEFAULT_DECIMALS,
   DEFAULT_MAGNITUDE_BASE,
   DEFAULT_UNITS,
+  OVERFLOW_INDICATOR,
 } from "./constants.js";
 import type { HumanizeNumberOptions, HumanizeResult } from "./types.js";
 
@@ -109,7 +110,7 @@ const humanizeNumber = (
 
   // Add "+" if the formatted value represents less than the original
   const representableValue = finalValue * magnitudeBase ** unitIndex;
-  const displayValue = `${finalValue}${unit}${representableValue < value ? "+" : ""}`;
+  const displayValue = `${finalValue}${unit}${representableValue < value ? OVERFLOW_INDICATOR : ""}`;
 
   return {
     displayValue,
