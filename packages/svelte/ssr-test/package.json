@@ -46,7 +46,7 @@
     "svelte": "^5.38.2"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.0.0",
+    "@biomejs/biome": "2.2.2",
     "@sveltejs/vite-plugin-svelte": "^5.0.0",
     "@types/jsdom": "^21.1.7",
     "vite": "^6.2.6",
