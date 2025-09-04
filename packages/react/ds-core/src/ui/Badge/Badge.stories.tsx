@@ -90,7 +90,7 @@ export const WithCustomItemOptions: Story = {
   args: {
     value: 15,
     overflowStrategy: "compact",
-    itemOptions: { singularStem: "box", pluralSuffix: "es" },
+    itemOptions: { singular: "box", plural: "boxes" },
   },
   parameters: {
     docs: {
