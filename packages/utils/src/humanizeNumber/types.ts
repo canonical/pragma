@@ -1,10 +1,5 @@
 export type HumanizeNumberOptions = {
   /**
-   * The number of decimal places to round to for units greater than the base.
-   * @default 1
-   */
-  decimals?: number;
-  /**
    * The array of unit suffixes to use, starting with the base unit (e.g., "").
    * @default ["", "k", "M", "B", "T"]
    */
@@ -18,6 +13,30 @@ export type HumanizeNumberOptions = {
    * @default 1000
    */
   magnitudeBase?: number;
+
+  /**
+   * Append this string to the display value to indicate truncation when the number has been truncated, indicating a loss of information due to rounding.
+   */
+  overflowIndicator?: string;
+
+  /**
+   * The strategy to use when the formatted number exceeds a certain length.
+   * - "round": Truncates the number and appends the overflowIndicator if the representable value is less than the actual value.
+   * - "clamp": Clamps the value to a specified minimum and/or maximum if provided in clampOptions.
+   * @default "round"
+   */
+  humanizeType?: "round" | "clamp";
+
+  /**
+   * When using "clamp" as the humanizeType, this option allows you to set minimum and/or maximum bounds for the output value.
+   * If the computed value is below the minimum, it will be set to the minimum.
+   * If it is above the maximum, it will be set to the maximum.
+   * This is useful for ensuring that the displayed value stays within a specific range.
+   */
+  clampOptions?: {
+    min?: number;
+    max?: number;
+  };
 };
 
 /**
