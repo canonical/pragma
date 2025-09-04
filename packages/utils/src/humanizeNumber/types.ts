@@ -10,9 +10,6 @@ export type HumanizeNumberOptions = {
    */
   units?: string[];
 
-  /** The maxiumum number of characters that can be used to represent the number */
-  maxChars?: number;
-
   /**
    * The base for the magnitude calculation.
    * This is typically 1000 for thousands, millions, etc.
@@ -21,16 +18,6 @@ export type HumanizeNumberOptions = {
    * @default 1000
    */
   magnitudeBase?: number;
-
-  /**
-   * Optional clamp settings to restrict the output value within a specific range.
-   * If provided, the output will be clamped to the specified minimum and maximum values.
-   * This is useful for ensuring that the humanized value does not exceed certain limits.
-   */
-  clampOptions?: {
-    min?: number;
-    max?: number;
-  };
 };
 
 /**
