@@ -63,6 +63,7 @@ const EditableBlock = <T extends EditElementProps>({
         <header>
           <TitleTag className="title">{title}</TitleTag>
           {!isReadOnly && (
+            // biome-ignore lint/a11y/useSemanticElements: TODO biome v2.2.2 - look into replacing this with a button element
             <div
               className={`icon ${isEditing ? "icon-close" : "icon-edit"}`}
               onClick={toggleEditing}

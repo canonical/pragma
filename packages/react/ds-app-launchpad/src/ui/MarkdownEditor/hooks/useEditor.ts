@@ -192,7 +192,7 @@ const useEditor = (
             nextMarker = `${leadingWhitespace}- [ ]`;
           } else {
             nextMarker = isOrdered
-              ? `${Number.parseInt(marker) + 1}.`
+              ? `${Number.parseInt(marker, 10) + 1}.`
               : `${marker}`;
           }
           const nextLine = `\n${leadingWhitespace}${nextMarker} `;

@@ -11,7 +11,7 @@ const meta = {
 
     return (
       <FormProvider {...methods}>
-        {/* biome-ignore lint/nursery/useUniqueElementIds: Biome v2 TODO: fix */}
+        {/* biome-ignore lint/correctness/useUniqueElementIds: Biome v2 TODO: fix */}
         <form id="form-root">{Story()}</form>
       </FormProvider>
     );
