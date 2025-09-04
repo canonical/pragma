@@ -4,9 +4,7 @@ import type { HumanizeNumberOptions, PluralizeOptions } from "@canonical/utils";
 import type { HTMLAttributes } from "react";
 import type { Severity } from "../../types/index.js";
 
-export interface BadgeProps
-  extends HTMLAttributes<HTMLSpanElement>,
-    PluralizeOptions {
+export interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
   /**
    * Options for the pluralization of the item being counted.
    * See {@link PluralizeOptions} for details.
