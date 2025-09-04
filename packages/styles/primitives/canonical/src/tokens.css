@@ -9,6 +9,129 @@
   --color-palette-blue: #24598f;
   --color-palette-yellow: #cc7900;
 
+  /* Red palette */
+  --tmp-color-palette-red-16: rgba(81, 51, 54, 1);
+  --tmp-color-palette-red-15: rgba(124, 14, 27, 1);
+  --tmp-color-palette-red-14: rgba(103, 57, 63, 1);
+  --tmp-color-palette-red-13: rgba(138, 15, 30, 1);
+  --tmp-color-palette-red-12: rgba(116, 61, 68, 1);
+  --tmp-color-palette-red-11: rgba(161, 18, 35, 1);
+  --tmp-color-palette-red-10: rgba(162, 18, 35, 1);
+  --tmp-color-palette-red-9: rgba(176, 19, 38, 1);
+  --tmp-color-palette-red-8: rgba(199, 22, 43, 1);
+  --tmp-color-palette-red-7: rgba(209, 123, 133, 1);
+  --tmp-color-palette-red-6: rgba(235, 199, 203, 1);
+  --tmp-color-palette-red-5: rgba(236, 207, 210, 1);
+  --tmp-color-palette-red-4: rgba(245, 209, 212, 1);
+  --tmp-color-palette-red-3: rgba(239, 219, 221, 1);
+  --tmp-color-palette-red-2: rgba(247, 217, 220, 1);
+  --tmp-color-palette-red-1: rgba(249, 229, 231, 1);
+
+  /* Orange palette */
+  --tmp-color-palette-orange-3: rgba(204, 68, 20, 1);
+  --tmp-color-palette-orange-2: rgba(218, 72, 22, 1);
+  --tmp-color-palette-orange-1: rgba(233, 84, 32, 1);
+
+  /* Yellow palette */
+  --tmp-color-palette-yellow-11: rgba(81, 53, 30, 1);
+  --tmp-color-palette-yellow-10: rgba(103, 69, 42, 1);
+  --tmp-color-palette-yellow-9: rgba(116, 66, 24, 1);
+  --tmp-color-palette-yellow-8: rgba(204, 121, 0, 1);
+  --tmp-color-palette-yellow-7: rgba(196, 136, 49, 1);
+  --tmp-color-palette-yellow-6: rgba(235, 215, 199, 1);
+  --tmp-color-palette-yellow-5: rgba(236, 220, 207, 1);
+  --tmp-color-palette-yellow-4: rgba(245, 225, 209, 1);
+  --tmp-color-palette-yellow-3: rgba(239, 228, 219, 1);
+  --tmp-color-palette-yellow-2: rgba(247, 230, 217, 1);
+  --tmp-color-palette-yellow-1: rgba(249, 238, 229, 1);
+
+  /* Green palette */
+  --tmp-color-palette-green-16: rgba(32, 68, 38, 1);
+  --tmp-color-palette-green-15: rgba(0, 87, 13, 1);
+  --tmp-color-palette-green-14: rgba(27, 86, 36, 1);
+  --tmp-color-palette-green-13: rgba(10, 95, 23, 1);
+  --tmp-color-palette-green-12: rgba(24, 96, 35, 1);
+  --tmp-color-palette-green-11: rgba(0, 103, 15, 1);
+  --tmp-color-palette-green-10: rgba(12, 109, 26, 1);
+  --tmp-color-palette-green-9: rgba(0, 128, 19, 1);
+  --tmp-color-palette-green-8: rgba(14, 132, 32, 1);
+  --tmp-color-palette-green-7: rgba(98, 163, 108, 1);
+  --tmp-color-palette-green-6: rgba(199, 235, 205, 1);
+  --tmp-color-palette-green-5: rgba(207, 236, 211, 1);
+  --tmp-color-palette-green-4: rgba(220, 238, 222, 1);
+  --tmp-color-palette-green-3: rgba(209, 245, 214, 1);
+  --tmp-color-palette-green-2: rgba(217, 247, 221, 1);
+  --tmp-color-palette-green-1: rgba(230, 248, 233, 1);
+
+  /* Teal palette */
+  --tmp-color-palette-teal-1: rgba(15, 149, 161, 1);
+
+  /* Blue palette */
+  --tmp-color-palette-blue-15: rgba(30, 58, 81, 1);
+  --tmp-color-palette-blue-14: rgba(27, 68, 103, 1);
+  --tmp-color-palette-blue-13: rgba(24, 74, 116, 1);
+  --tmp-color-palette-blue-12: rgba(36, 89, 143, 1);
+  --tmp-color-palette-blue-11: rgba(0, 102, 204, 1);
+  --tmp-color-palette-blue-10: rgba(102, 153, 204, 1);
+  --tmp-color-palette-blue-9: rgba(46, 150, 255, 1);
+  --tmp-color-palette-blue-8: rgba(94, 166, 237, 1);
+  --tmp-color-palette-blue-7: rgba(153, 204, 255, 1);
+  --tmp-color-palette-blue-6: rgba(199, 217, 235, 1);
+  --tmp-color-palette-blue-5: rgba(207, 221, 236, 1);
+  --tmp-color-palette-blue-4: rgba(209, 227, 245, 1);
+  --tmp-color-palette-blue-3: rgba(219, 229, 239, 1);
+  --tmp-color-palette-blue-2: rgba(217, 232, 247, 1);
+  --tmp-color-palette-blue-1: rgba(229, 239, 249, 1);
+
+  /* Purple palette */
+  --tmp-color-palette-purple-2: rgba(125, 66, 184, 1);
+  --tmp-color-palette-purple-1: rgba(166, 121, 210, 1);
+
+  /* Gray palette */
+  --tmp-color-palette-black: rgba(0, 0, 0, 1);
+  --tmp-color-palette-gray-38: rgba(17, 17, 17, 0.85);
+  --tmp-color-palette-gray-37: rgba(17, 17, 17, 1);
+  --tmp-color-palette-gray-36: rgba(32, 32, 32, 1);
+  --tmp-color-palette-gray-35: rgba(38, 38, 38, 1);
+  --tmp-color-palette-gray-34: rgba(45, 45, 45, 1);
+  --tmp-color-palette-gray-33: rgba(47, 47, 47, 1);
+  --tmp-color-palette-gray-32: rgba(49, 49, 49, 1);
+  --tmp-color-palette-gray-31: rgba(55, 55, 55, 1);
+  --tmp-color-palette-gray-30: rgba(60, 60, 60, 1);
+  --tmp-color-palette-gray-29: rgba(61, 61, 61, 1);
+  --tmp-color-palette-gray-28: rgba(64, 64, 64, 1);
+  --tmp-color-palette-gray-27: rgba(71, 71, 71, 1);
+  --tmp-color-palette-gray-26: rgba(81, 81, 81, 1);
+  --tmp-color-palette-gray-25: rgba(92, 92, 92, 1);
+  --tmp-color-palette-gray-24: rgba(97, 97, 97, 1);
+  --tmp-color-palette-gray-23: rgba(102, 102, 102, 1);
+  --tmp-color-palette-gray-22: rgba(107, 107, 107, 1);
+  --tmp-color-palette-gray-21: rgba(112, 112, 112, 1);
+  --tmp-color-palette-gray-20: rgba(146, 146, 146, 1);
+  --tmp-color-palette-gray-19: rgba(166, 166, 166, 1);
+  --tmp-color-palette-gray-18: rgba(168, 168, 168, 1);
+  --tmp-color-palette-gray-17: rgba(194, 194, 194, 1);
+  --tmp-color-palette-gray-16: rgba(201, 201, 201, 1);
+  --tmp-color-palette-gray-15: rgba(204, 204, 204, 1);
+  --tmp-color-palette-gray-14: rgba(217, 217, 217, 1);
+  --tmp-color-palette-gray-13: rgba(218, 218, 218, 1);
+  --tmp-color-palette-gray-12: rgba(219, 219, 219, 1);
+  --tmp-color-palette-gray-11: rgba(222, 222, 222, 1);
+  --tmp-color-palette-gray-10: rgba(224, 224, 224, 1);
+  --tmp-color-palette-gray-9: rgba(229, 229, 229, 1);
+  --tmp-color-palette-gray-8: rgba(231, 231, 231, 1);
+  --tmp-color-palette-gray-7: rgba(233, 233, 233, 1);
+  --tmp-color-palette-gray-6: rgba(235, 235, 235, 1);
+  --tmp-color-palette-gray-5: rgba(236, 236, 236, 1);
+  --tmp-color-palette-gray-4: rgba(242, 242, 242, 1);
+  --tmp-color-palette-gray-3: rgba(243, 243, 243, 1);
+  --tmp-color-palette-gray-2: rgba(245, 245, 245, 1);
+  --tmp-color-palette-gray-1: rgba(247, 247, 247, 1);
+  --tmp-color-palette-white: rgba(255, 255, 255, 1);
+
+  /* Transparent */
+  --tmp-color-palette-transparent: rgba(0, 0, 0, 0);
+
   --color-background-default: var(--color-palette-white);
   --color-text-default: var(--color-palette-black);
   --color-background-hover: rgba(242, 242, 242, 1);
