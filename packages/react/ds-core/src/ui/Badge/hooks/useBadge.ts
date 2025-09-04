@@ -1,4 +1,4 @@
-import { clamp, humanizeNumberToString, pluralize } from "@canonical/utils";
+import { clamp, humanizeNumber, pluralize } from "@canonical/utils";
 import { useMemo } from "react";
 import type { UseBadgeProps, UseBadgeResult } from "../types.js";
 
@@ -19,7 +19,7 @@ const useBadge = ({
 
   const displayValue: string = useMemo(() => {
     if (overflowStrategy === "compact") {
-      return humanizeNumberToString(value, { maxChars: 4 });
+      return humanizeNumber(value).displayValue;
     }
     return safeValue > BADGE_MAX_NATURAL_VAL
       ? `${BADGE_MAX_NATURAL_VAL}+`

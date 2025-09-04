@@ -3,4 +3,4 @@ export interface PluralizeOptions {
   singular?: string;
   /* The plural form of the word. If not provided, defaults to singular + 's'. */
   plural?: string;
-};
+}
