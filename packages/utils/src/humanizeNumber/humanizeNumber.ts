@@ -54,7 +54,6 @@ const selectOptimalUnit = (
 /**
  * Formats a large number into a compact, human-readable string with a unit suffix.
  * This function returns a humanized representation of a number, along with the selected unit and the original value if needed for further processing.
- * To return only the display value as a string, see {@link humanizeNumberToString}.
  *
  * @param value The number to format. It is expected to be a finite, non-negative number.
  * @param options Optional configuration for decimals, units, and display constraints.

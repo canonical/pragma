@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import humanizeNumber, { humanizeNumberToString } from "./index.js";
+import humanizeNumber from "./index.js";
 import type { HumanizeResult } from "./types.js";
 
 type TestCase = {
@@ -156,15 +156,5 @@ describe("humanizeNumber", () => {
         expect(result).toEqual(expected);
       });
     });
-  });
-});
-
-describe("humanizeNumberToString", () => {
-  it("should return the displayValue as a string", () => {
-    const input = 12345;
-    const options = { decimals: 2 };
-    const expected = "12.34k+"; // Truncates 12.345 to 12.34, then adds "+"
-    const result = humanizeNumberToString(input, options);
-    expect(result).toBe(expected);
   });
 });
