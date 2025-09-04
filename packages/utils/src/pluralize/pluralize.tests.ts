@@ -46,18 +46,18 @@ describe("pluralize", () => {
     });
   });
 
-  describe("Custom Singular Stem", () => {
+  describe("Custom Singular", () => {
     const testCases: TestCase[] = [
       {
-        it: "should use custom singular stem for count of 1",
+        it: "should use custom singular for count of 1",
         input: 1,
-        options: { singularStem: "cat" },
+        options: { singular: "cat" },
         expected: "cat",
       },
       {
-        it: "should pluralize custom singular stem with default suffix",
+        it: "should pluralize custom singular with default 's' suffix",
         input: 2,
-        options: { singularStem: "cat" },
+        options: { singular: "cat" },
         expected: "cats",
       },
     ];
@@ -70,29 +70,55 @@ describe("pluralize", () => {
     });
   });
 
-  describe("Custom Plural Suffix", () => {
+  describe("Custom Plural Forms", () => {
     const testCases: TestCase[] = [
       {
-        it: "should use custom singular stem and custom plural suffix",
+        it: "should use custom plural form for irregular plurals",
         input: 2,
-        options: { singularStem: "box", pluralSuffix: "es" },
+        options: { singular: "box", plural: "boxes" },
         expected: "boxes",
       },
       {
-        it: "should handle empty plural suffix",
-        input: 2,
-        options: { singularStem: "sheep", pluralSuffix: "" },
+        it: "should use singular for count of 1 with custom plural",
+        input: 1,
+        options: { singular: "box", plural: "boxes" },
+        expected: "box",
+      },
+      {
+        it: "should handle irregular plurals like children",
+        input: 1,
+        options: { singular: "child", plural: "children" },
+        expected: "child",
+      },
+      {
+        it: "should handle irregular plurals like children for multiple",
+        input: 3,
+        options: { singular: "child", plural: "children" },
+        expected: "children",
+      },
+      {
+        it: "should handle words that don't change in plural",
+        input: 1,
+        options: { singular: "sheep", plural: "sheep" },
         expected: "sheep",
       },
       {
-        it: "should andle complex plural suffix",
+        it: "should handle words that don't change in plural for multiple",
         input: 5,
-        options: {
-          singularStem: "city",
-          pluralStem: "cit",
-          pluralSuffix: "ies",
-        },
-        expected: "cities",
+        options: { singular: "sheep", plural: "sheep" },
+        expected: "sheep",
+      },
+      {
+        it: "should handle complex irregular plurals",
+        input: 1,
+        options: { singular: "person", plural: "people" },
+        expected: "person",
+      },
+      {
+        it: "should handle complex irregular plurals for multiple",
+        input: 4,
+        options: { singular: "person", plural: "people" },
+        expected: "people",
       },
     ];
 
@@ -109,49 +135,49 @@ describe("pluralize", () => {
       {
         it: "should handle exactly 1.0 as singular",
         input: 1.0,
-        options: { singularStem: "file" },
+        options: { singular: "file" },
         expected: "file",
       },
       {
         it: "should handle 1.1 as plural",
         input: 1.1,
-        options: { singularStem: "file" },
+        options: { singular: "file" },
         expected: "files",
       },
       {
         it: "should handle 0.9 as plural",
         input: 0.9,
-        options: { singularStem: "file" },
+        options: { singular: "file" },
         expected: "files",
       },
       {
         it: "should handle NaN as plural",
         input: NaN,
-        options: { singularStem: "file" },
+        options: { singular: "file" },
         expected: "files",
       },
       {
         it: "should handle Infinity as plural",
         input: Infinity,
-        options: { singularStem: "file" },
+        options: { singular: "file" },
         expected: "files",
       },
       {
         it: "should handle -Infinity as plural",
         input: -Infinity,
-        options: { singularStem: "file" },
+        options: { singular: "file" },
         expected: "files",
       },
       {
         it: "should handle very large numbers as plural",
         input: 1e10,
-        options: { singularStem: "star" },
+        options: { singular: "star" },
         expected: "stars",
       },
       {
         it: "should handle very small positive numbers as plural",
         input: 1e-10,
-        options: { singularStem: "particle" },
+        options: { singular: "particle" },
         expected: "particles",
       },
     ];
