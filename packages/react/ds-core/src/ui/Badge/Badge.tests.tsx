@@ -23,55 +23,135 @@ describe("Badge component", () => {
     expect(screen.getByText("999+")).toBeInTheDocument();
   });
 
-  it("rounds number correctly for thousands", () => {
-    render(<Component value={1200} overflowStrategy="compact" />);
-    // Check that the correct value is displayed.
-    expect(screen.getByText("1.2k")).toBeInTheDocument();
+  it("uses default clamp mode when empty options provided", () => {
+    render(<Component value={1200} humanizeOptions={{}} />);
+    // Check that the default clamp behavior is used
+    expect(screen.getByText("999+")).toBeInTheDocument();
   });
 
-  it("rounds number correctly for small values", () => {
-    render(<Component value={999} overflowStrategy="compact" />);
+  it("uses default clamp mode for small values", () => {
+    render(<Component value={999} humanizeOptions={{}} />);
     // Check that the correct value is displayed.
     expect(screen.getByText("999")).toBeInTheDocument();
   });
 
-  it("rounds number correctly for millions", () => {
-    render(<Component value={132_456_455} overflowStrategy="compact" />);
-    // Check that the correct value is displayed.
-    expect(screen.getByText("99M+")).toBeInTheDocument();
+  it("uses default clamp mode for millions", () => {
+    render(<Component value={132_456_455} humanizeOptions={{}} />);
+    // Check that the default clamp behavior is used
+    expect(screen.getByText("999+")).toBeInTheDocument();
   });
 
-  it("rounds number correctly for billions", () => {
-    render(<Component value={13_245_645_512} overflowStrategy="compact" />);
-    // Check that the correct value is displayed.
-    expect(screen.getByText("13B+")).toBeInTheDocument();
+  it("uses default clamp mode for billions", () => {
+    render(<Component value={13_245_645_512} humanizeOptions={{}} />);
+    // Check that the default clamp behavior is used
+    expect(screen.getByText("999+")).toBeInTheDocument();
   });
 
-  it("rounds number correctly for trillions", () => {
-    render(
-      <Component value={132_456_455_123_112} overflowStrategy="compact" />,
-    );
-    // Check that the correct value is displayed.
-    expect(screen.getByText("99T+")).toBeInTheDocument();
+  it("uses default clamp mode for trillions", () => {
+    render(<Component value={132_456_455_123_112} humanizeOptions={{}} />);
+    // Check that the default clamp behavior is used
+    expect(screen.getByText("999+")).toBeInTheDocument();
   });
 
-  it("displays the correct max value if it exceeds 999T", () => {
-    render(
-      <Component value={1_324_564_551_231_125} overflowStrategy="compact" />,
-    );
-    // Check that the correct value is displayed.
-    expect(screen.getByText("99T+")).toBeInTheDocument();
+  it("uses default clamp mode for extremely large values", () => {
+    render(<Component value={1_324_564_551_231_125} humanizeOptions={{}} />);
+    // Check that the default clamp behavior is used
+    expect(screen.getByText("999+")).toBeInTheDocument();
   });
 
-  it("renders negative numbers as 0", () => {
+  it("renders negative numbers as floored value", () => {
     render(<Component value={-1} />);
     // Check that the correct value is displayed.
     expect(screen.getByText("0")).toBeInTheDocument();
   });
 
-  it("renders out-of-range values with 999+'", () => {
+  it("renders out-of-range values with infinity symbol", () => {
     render(<Component value={Infinity} />);
     // Check that the correct value is displayed.
+    expect(screen.getByText("∞")).toBeInTheDocument();
+  });
+
+  it("supports custom clamp options", () => {
+    render(
+      <Component
+        value={1500}
+        humanizeOptions={{
+          humanizeType: "clamp",
+          clampOptions: { max: 999 },
+          overflowIndicator: "+",
+        }}
+      />,
+    );
+    // Check that the value is clamped to 999 with overflow indicator
     expect(screen.getByText("999+")).toBeInTheDocument();
+  });
+
+  it("supports custom units", () => {
+    render(
+      <Component
+        value={2048}
+        humanizeOptions={{
+          humanizeType: "round",
+          magnitudeBase: 1024,
+          units: ["B", "KiB", "MiB"],
+        }}
+      />,
+    );
+    // Check that the value uses custom binary units
+    expect(screen.getByText("2KiB")).toBeInTheDocument();
+  });
+
+  it("supports custom overflow indicator", () => {
+    render(
+      <Component
+        value={1500}
+        humanizeOptions={{
+          humanizeType: "clamp",
+          clampOptions: { max: 999 },
+          overflowIndicator: "++",
+        }}
+      />,
+    );
+    // Check that the custom overflow indicator is used
+    expect(screen.getByText("999++")).toBeInTheDocument();
+  });
+
+  it("supports partial configuration overrides", () => {
+    render(
+      <Component
+        value={1500}
+        humanizeOptions={{
+          overflowIndicator: "++",
+        }}
+      />,
+    );
+    // Check that only the overflow indicator is overridden, other defaults remain
+    expect(screen.getByText("999++")).toBeInTheDocument();
+  });
+
+  it("supports overriding clamp max value", () => {
+    render(
+      <Component
+        value={500}
+        humanizeOptions={{
+          clampOptions: { max: 100 },
+        }}
+      />,
+    );
+    // Check that the custom max value is used
+    expect(screen.getByText("100+")).toBeInTheDocument();
+  });
+
+  it("supports switching to round mode", () => {
+    render(
+      <Component
+        value={1500}
+        humanizeOptions={{
+          humanizeType: "round",
+        }}
+      />,
+    );
+    // Check that round mode is used instead of default clamp mode
+    expect(screen.getByText("1.5k")).toBeInTheDocument();
   });
 });

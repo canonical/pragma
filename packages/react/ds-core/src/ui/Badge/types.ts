@@ -1,6 +1,6 @@
 /* @canonical/generator-ds 0.10.0-experimental.2 */
 
-import type { PluralizeOptions } from "@canonical/utils";
+import type { HumanizeNumberOptions, PluralizeOptions } from "@canonical/utils";
 import type { HTMLAttributes } from "react";
 import type { Severity } from "../../types/index.js";
 
@@ -8,10 +8,10 @@ export interface BadgeProps
   extends HTMLAttributes<HTMLSpanElement>,
     PluralizeOptions {
   /**
-   * Options for the verbal description of the item being counted.
+   * Options for the pluralization of the item being counted.
    * See {@link PluralizeOptions} for details.
    */
-  itemOptions?: PluralizeOptions;
+  pluralizeOptions?: PluralizeOptions;
 
   /**
    * Numeric value to be displayed.
@@ -31,16 +31,25 @@ export interface BadgeProps
   appearance?: Exclude<Severity, "neutral">;
 
   /**
-   * Overflow strategy for the badge value
-   * - "truncate": Displays the value, up to the maximum (999), with a + if it exceeds 999.
-   * - "compact": Rounds the value to the nearest thousand, million, billion, trillion, and formats it accordingly (e.g., 1.2k, 132M, etc.).
+   * Options for humanizing the numeric value displayed in the badge.
+   * See {@link HumanizeNumberOptions} for details on available configuration options.
+   *
+   * @example
+   * // Default behavior (round mode)
+   * <Badge value={1500} />
+   *
+   * // Clamp to maximum of 999 with custom overflow indicator
+   * <Badge value={1500} humanizeOptions={{ humanizeType: "clamp", clampOptions: { max: 999 }, overflowIndicator: "+" }} />
+   *
+   * // Custom units for binary values
+   * <Badge value={2048} humanizeOptions={{ magnitudeBase: 1024, units: ["B", "KiB", "MiB"] }} />
    */
-  overflowStrategy?: "truncate" | "compact";
+  humanizeOptions?: HumanizeNumberOptions;
 }
 
 export type UseBadgeProps = Pick<
   BadgeProps,
-  "value" | "overflowStrategy" | "itemOptions"
+  "value" | "humanizeOptions" | "pluralizeOptions"
 >;
 
 /**

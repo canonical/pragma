@@ -10,7 +10,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "A Badge component for displaying numeric values with optional formatting.",
+          "A Badge component for displaying numeric values with flexible formatting options. Use the `humanizeOptions` prop to configure how numbers are displayed, including clamp mode (default), round mode, custom units, and overflow indicators.",
       },
     },
   },
@@ -26,7 +26,7 @@ export const Default: Story = {
   },
 };
 
-export const LargeNumber: Story = {
+export const Clamped: Story = {
   args: {
     value: 12345,
   },
@@ -34,37 +34,22 @@ export const LargeNumber: Story = {
     docs: {
       description: {
         story:
-          "Numbers are displayed with up to 4 characters. If the number cannot be represented in 4 characters, 3 characters (in this case, 9's) will be followed by an overflow indicator (" +
-          ") to indicate the number cannot fit in the Badge.  This prevents UI overflow while indicating that the actual value is larger.",
+          "By default, Badge uses clamp mode which displays numbers up to 999, then shows '999+' for larger values. This prevents UI overflow while indicating that the actual value is larger.",
       },
     },
   },
 };
 
-export const LargeNumberCompacted: Story = {
+export const Rounded: Story = {
   args: {
-    ...LargeNumber.args,
-    overflowStrategy: "compact",
+    ...Clamped.args,
+    humanizeOptions: { humanizeType: "round" },
   },
   parameters: {
     docs: {
       description: {
         story:
-          "Compact overflow strategy adjusts the radix to show as much precision as can be represented in 4 characters, and includes unit positional notation if needed. This provides human-readable formatting for large numbers.",
-      },
-    },
-  },
-};
-
-export const NegativeValue: Story = {
-  args: {
-    value: -1,
-  },
-  parameters: {
-    docs: {
-      description: {
-        story:
-          "Negative values are automatically converted to 0 to maintain the Badge's semantic meaning as a count or quantity indicator.",
+          "Using round mode adjusts the radix to show as much precision as can be represented, and includes unit positional notation if needed. This provides human-readable formatting for large numbers.",
       },
     },
   },
@@ -86,11 +71,10 @@ export const WithCustomStyling: Story = {
   },
 };
 
-export const WithCustomItemOptions: Story = {
+export const WithCustomPluralization: Story = {
   args: {
     value: 15,
-    overflowStrategy: "compact",
-    itemOptions: { singular: "box", plural: "boxes" },
+    pluralizeOptions: { singular: "box", plural: "boxes" },
   },
   parameters: {
     docs: {
@@ -109,6 +93,24 @@ export const WithCustomItemOptions: Story = {
           "<p>" +
           "In this example, 'box' is used for singular (1 box) and 'boxes' for plural (2 boxes). This is particularly useful in applications where the Badge represents quantities of specific items." +
           "</p>",
+      },
+    },
+  },
+};
+
+export const CustomBase: Story = {
+  args: {
+    value: 2048,
+    humanizeOptions: {
+      magnitudeBase: 1024,
+      units: ["B", "KiB", "MiB", "GiB"],
+    },
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Custom units and magnitude base allow for specialized formatting. This example uses binary units (1024-based) commonly used for file sizes and memory.",
       },
     },
   },
