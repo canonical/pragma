@@ -7,8 +7,7 @@
     "declarationDir": "dist/types",
     "declarationMap": true,
     "sourceMap": true,
-    "types": ["node"],
-    "skipLibCheck": false
+    "types": ["node"]
   },
   "include": ["src/**/*.ts"],
   "exclude": ["src/**/*.tests.ts", "vite.config.ts", "vitest.config.ts"]
