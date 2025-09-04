@@ -181,19 +181,31 @@
   --tmp-color-background-information-default: var(--tmp-color-palette-blue-1);
   --tmp-color-background-information-hover: var(--tmp-color-palette-blue-2);
   --tmp-color-background-information-active: var(--tmp-color-palette-blue-4);
-  --tmp-color-background-button-positive-default: var(--tmp-color-palette-green-8);
-  --tmp-color-background-button-positive-hover: var(--tmp-color-palette-green-10);
-  --tmp-color-background-button-positive-active: var(--tmp-color-palette-green-13);
+  --tmp-color-background-button-positive-default: var(
+    --tmp-color-palette-green-8
+  );
+  --tmp-color-background-button-positive-hover: var(
+    --tmp-color-palette-green-10
+  );
+  --tmp-color-background-button-positive-active: var(
+    --tmp-color-palette-green-13
+  );
   --tmp-color-background-button-negative-default: var(--tmp-color-palette-red-8);
   --tmp-color-background-button-negative-hover: var(--tmp-color-palette-red-9);
   --tmp-color-background-button-negative-active: var(--tmp-color-palette-red-10);
   --tmp-color-background-button-brand-default: var(--tmp-color-palette-orange-1);
   --tmp-color-background-button-brand-hover: var(--tmp-color-palette-orange-2);
   --tmp-color-background-button-brand-active: var(--tmp-color-palette-orange-3);
-  --tmp-color-background-button-default-default: var(--tmp-color-background-default);
+  --tmp-color-background-button-default-default: var(
+    --tmp-color-background-default
+  );
   --tmp-color-background-button-default-hover: var(--tmp-color-background-hover);
-  --tmp-color-background-button-default-active: var(--tmp-color-background-active);
-  --tmp-color-background-button-base-default: var(--tmp-color-palette-transparent);
+  --tmp-color-background-button-default-active: var(
+    --tmp-color-background-active
+  );
+  --tmp-color-background-button-base-default: var(
+    --tmp-color-palette-transparent
+  );
   --tmp-color-background-button-base-hover: var(--tmp-color-background-hover);
   --tmp-color-background-button-base-active: var(--tmp-color-background-active);
   --tmp-color-background-checkbox-checked: var(--tmp-color-text-link-default);
@@ -204,10 +216,14 @@
   --tmp-color-background-status-label-positive: var(--tmp-color-palette-green-8);
   --tmp-color-background-status-label-caution: var(--tmp-color-palette-yellow-8);
   --tmp-color-background-status-label-negative: var(--tmp-color-palette-red-8);
-  --tmp-color-background-status-label-information: var(--tmp-color-palette-blue-12);
+  --tmp-color-background-status-label-information: var(
+    --tmp-color-palette-blue-12
+  );
   --tmp-color-background-badge-default: var(--tmp-color-palette-black);
   --tmp-color-background-badge-negative: var(--tmp-color-palette-red-8);
-  --tmp-color-background-switch-track: var(--tmp-color-background-neutral-default);
+  --tmp-color-background-switch-track: var(
+    --tmp-color-background-neutral-default
+  );
   --tmp-color-background-switch-checked: var(--tmp-color-text-link-default);
   --tmp-color-background-switch-knob: var(--tmp-color-background-default);
   --tmp-color-background-slider-progress: var(--tmp-color-background-default);
@@ -247,20 +263,21 @@
   --tmp-color-icon-button-positive: var(--tmp-color-palette-white);
   --tmp-color-icon-button-negative: var(--tmp-color-palette-white);
 
-  --color-background-default: var(--color-palette-white);
-  --color-text-default: var(--color-palette-black);
-  --color-background-hover: rgba(242, 242, 242, 1);
-  --color-background-active: rgba(235, 235, 235, 1);
-
-  --color-background-neutral-default: rgb(242, 242, 242);
-  --color-background-neutral-hover: rgb(229, 229, 229);
-  --color-background-neutral-active: rgb(222, 222, 222);
-
+  /** TODO
+            this variable does not have this value in the color spec sheet,
+            but is being kept for backwards compatibility for now.
+            Use --tmp-color-border-high-contrast for new use cases.
+     */
   --color-border-high-contrast: rgba(0, 0, 0, 0.56);
 
-  --color-background-positive-default: rgba(14, 132, 32, 1);
-  --color-background-positive-hover: rgba(12, 109, 26, 1);
-  --color-background-positive-active: rgba(10, 95, 23, 1);
+  /** TODO
+            these positive background variables are bound to button-specific colors
+            These have higher contrast than the color spec calls for.
+            The tmp- versions of these variables should be used for new components, and these vars should be revisited.
+     */
+  --color-background-positive-default: var(--tmp-color-palette-green-8);
+  --color-background-positive-hover: var(--tmp-color-palette-green-10);
+  --color-background-positive-active: var(--tmp-color-palette-green-13);
   --color-background-positive-text: var(--color-palette-white); /* text on positive background */
 
   --color-background-positive-tinted-default: rgba(10, 189, 37, 0.1);
@@ -311,10 +328,10 @@
 
 /* component semantic tokens */
 :root {
-  --button-color-background: var(--color-background-default);
-  --button-color-background-hover: var(--color-background-hover);
-  --button-color-background-active: var(--color-background-active);
-  --button-color-text: var(--color-text-default);
+  --button-color-background: var(--tmp-color-background-default);
+  --button-color-background-hover: var(--tmp-color-background-hover);
+  --button-color-background-active: var(--tmp-color-background-active);
+  --button-color-text: var(--tmp-color-text-default);
   --button-color-border: var(--color-border-high-contrast);
   --button-color-border-hover: var(--button-color-border);
   --button-color-border-active: var(--button-color-border);
@@ -328,11 +345,11 @@
   --button-font-weight: var(--font-weight-default);
   --button-line-height: var(--line-height-default);
 
-  --chip-color-background: var(--color-background-neutral-default);
-  --chip-color-background-hover: var(--color-background-neutral-hover);
-  --chip-color-background-active: var(--color-background-neutral-active);
+  --chip-color-background: var(--tmp-color-background-neutral-default);
+  --chip-color-background-hover: var(--tmp-color-background-neutral-hover);
+  --chip-color-background-active: var(--tmp-color-background-neutral-active);
   --chip-color-border: var(--color-border-high-contrast);
-  --chip-color-text: var(--color-text-default);
+  --chip-color-text: var(--tmp-color-text-default);
 
   --chip-border-radius: 1rem;
   --chip-font-size: var(--font-size-small);
@@ -350,10 +367,10 @@
           This will be implemented once theming DS-wide is added.
     */
 
-  --tooltip-color-background: var(--color-background-default);
-  --tooltip-color-background-hover: var(--color-background-hover);
-  --tooltip-color-background-active: var(--color-background-active);
-  --tooltip-color-text: var(--color-text-default);
+  --tooltip-color-background: var(--tmp-color-background-default);
+  --tooltip-color-background-hover: var(--tmp-color-background-hover);
+  --tooltip-color-background-active: var(--tmp-color-background-active);
+  --tooltip-color-text: var(--tmp-color-text-default);
   --tooltip-color-border: var(--color-border-high-contrast);
   --tooltip-color-border-hover: var(--tooltip-color-border);
   --tooltip-color-border-active: var(--tooltip-color-border);
