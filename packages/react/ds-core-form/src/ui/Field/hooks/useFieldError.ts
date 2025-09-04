@@ -19,7 +19,7 @@ function useFieldError<TFieldValues extends FieldValues = FieldValues>(
   // biome-ignore lint/correctness/useExhaustiveDependencies: using a proxy
   const fieldError = useMemo(
     (): FieldError | undefined =>
-      // @ts-ignore TODO
+      // @ts-expect-error TODO
       fieldTree.reduce<ErrorTree>((acc: FieldErrors<TFieldValues>, key) => {
         if (acc) {
           return acc[key];
@@ -30,11 +30,11 @@ function useFieldError<TFieldValues extends FieldValues = FieldValues>(
       name, //proxy for errors
       // Below, those dependencies are lazily referenced, hence the need to explicitly evaluate them
       // We assume that three levels of nesting is enough for most use cases
-      // @ts-ignore TODO
+      // @ts-expect-error TODO
       errors[fieldTree[0]],
-      // @ts-ignore TODO
+      // @ts-expect-error TODO
       errors[fieldTree[0]]?.[fieldTree[1]],
-      // @ts-ignore TODO
+      // @ts-expect-error TODO
       errors[fieldTree[0]]?.[fieldTree[1]]?.[fieldTree[2]],
     ],
   );

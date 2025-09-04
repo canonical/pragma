@@ -37,7 +37,7 @@ const Field = ({
     case "hidden":
       return <Hidden {...props} />;
     case "custom":
-      // @ts-ignore // TODO Add special type for both or none
+      // @ts-expect-error // TODO Add special type for both or none
       return <CustomComponent {...props} />;
     default:
       return <Text inputType={inputType} {...props} />;

@@ -56,7 +56,7 @@ const TooltipArea = ({
       style={{
         ...messageElementStyle,
         ...popupPositionStyle,
-        // @ts-ignore allow binding arrow size to distance, as it is needed both in JS and CSS calculations
+        // @ts-expect-error allow binding arrow size to distance, as it is needed both in JS and CSS calculations
         "--tooltip-spacing-arrow-size": distance,
         ...(autoFit &&
           bestPosition?.autoFitOffset && {

@@ -7,7 +7,7 @@ import "./Application.css";
 const LazyButton = lazy(
   () =>
     new Promise((resolve) => {
-      // @ts-ignore
+      // @ts-expect-error
       setTimeout(() => resolve(import("./LazyComponent.js")), 2000);
     }),
 );

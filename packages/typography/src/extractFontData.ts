@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 
 import { readFileSync } from "node:fs";
-// @ts-ignore – no types for opentype by default
+// @ts-expect-error – no types for opentype by default
 import * as opentype from "opentype.js";
 
 const baselineHeight = 0.5;
