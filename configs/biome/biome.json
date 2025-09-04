@@ -9,10 +9,10 @@
     "ignoreUnknown": false,
     "includes": [
       "**",
-      "!**/node_modules",
-      "!**/dist",
+      "!**/node_modules/**",
+      "!**/dist/**",
       "!**/*.gen.ts",
-      "!**/storybook-static"
+      "!**/storybook-static/**"
     ]
   },
   "formatter": {
