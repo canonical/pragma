@@ -16,14 +16,14 @@ const Badge = ({
   value,
   className,
   appearance,
-  overflowStrategy = "truncate",
-  itemOptions,
+  humanizeOptions,
+  pluralizeOptions,
   ...props
 }: BadgeProps): React.ReactElement => {
   const { displayValue, title } = useBadge({
     value,
-    overflowStrategy,
-    itemOptions,
+    humanizeOptions,
+    pluralizeOptions,
   });
 
   return (
