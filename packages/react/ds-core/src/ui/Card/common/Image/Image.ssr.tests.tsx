@@ -2,9 +2,9 @@
 
 import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import Component from "./CardImage.js";
+import Component from "./Image.js";
 
-describe("CardImage SSR", () => {
+describe("Image SSR", () => {
   it("doesn't throw", () => {
     expect(() => {
       renderToString(<Component />);

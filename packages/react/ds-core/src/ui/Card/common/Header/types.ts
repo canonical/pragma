@@ -2,4 +2,4 @@
 
 import type { HTMLAttributes } from "react";
 
-export interface CardHeaderProps extends HTMLAttributes<HTMLElement> {}
+export interface HeaderProps extends HTMLAttributes<HTMLElement> {}

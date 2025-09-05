@@ -1,4 +1,4 @@
 /* @canonical/generator-ds 0.10.0-experimental.2 */
 
-export { default as CardThumbnail } from "./CardThumbnail.js";
+export { default as Image } from "./Image.js";
 export * from "./types.js";

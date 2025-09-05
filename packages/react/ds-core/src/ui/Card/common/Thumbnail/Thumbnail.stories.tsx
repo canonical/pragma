@@ -1,9 +1,9 @@
 /* @canonical/generator-ds 0.10.0-experimental.2 */
 
 // Needed for function-based story, safe to remove otherwise
-// import type { CardThumbnailProps } from './types.js'
+// import type { ThumbnailProps } from './types.js'
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import Component from "./CardThumbnail.js";
+import Component from "./Thumbnail.js";
 
 // Needed for template-based story, safe to remove otherwise
 // import type { StoryFn } from '@storybook/react'
@@ -34,7 +34,7 @@ export const Default: Story = {
   Direct arguments passed to the component
   Simple, but can lead to repetition if used across multiple stories with similar configurations
 
-  export const Default = (args: CardThumbnailProps) => <Component {...args} />;
+  export const Default = (args: ThumbnailProps) => <Component {...args} />;
   Default.args = { src: "https://via.placeholder.com/150x100", alt: "Sample thumbnail image" };
 */
 

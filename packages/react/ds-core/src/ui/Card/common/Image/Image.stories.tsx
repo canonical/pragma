@@ -1,9 +1,9 @@
 /* @canonical/generator-ds 0.10.0-experimental.2 */
 
 // Needed for function-based story, safe to remove otherwise
-// import type { CardImageProps } from './types.js'
+// import type { ImageProps } from './types.js'
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import Component from "./CardImage.js";
+import Component from "./Image.js";
 
 // Needed for template-based story, safe to remove otherwise
 // import type { StoryFn } from '@storybook/react'
@@ -34,7 +34,7 @@ export const Default: Story = {
   Direct arguments passed to the component
   Simple, but can lead to repetition if used across multiple stories with similar configurations
 
-  export const Default = (args: CardImageProps) => <Component {...args} />;
+  export const Default = (args: ImageProps) => <Component {...args} />;
   Default.args = { children: <span>Hello world!</span> };
 */
 

@@ -2,8 +2,7 @@
 
 import type { ImgHTMLAttributes } from "react";
 
-export interface CardThumbnailProps
-  extends ImgHTMLAttributes<HTMLImageElement> {
+export interface ThumbnailProps extends ImgHTMLAttributes<HTMLImageElement> {
   /* Additional CSS classes */
   className?: string;
 }

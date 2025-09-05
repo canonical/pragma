@@ -2,7 +2,7 @@
 
 import type { HTMLAttributes, ReactNode } from "react";
 
-export interface CardInnerProps extends HTMLAttributes<HTMLDivElement> {
+export interface InnerProps extends HTMLAttributes<HTMLDivElement> {
   /* Additional CSS classes */
   className?: string;
   /* Child elements */

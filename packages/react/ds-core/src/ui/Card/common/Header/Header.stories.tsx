@@ -1,15 +1,15 @@
 /* @canonical/generator-ds 0.10.0-experimental.2 */
 
 // Needed for function-based story, safe to remove otherwise
-// import type { CardInnerProps } from './types.js'
+// import type { HeaderProps } from './types.js'
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import Component from "./CardInner.js";
+import Component from "./Header.js";
 
 // Needed for template-based story, safe to remove otherwise
 // import type { StoryFn } from '@storybook/react'
 
 const meta = {
-  title: "Card/Inner",
+  title: "Card/Header",
   component: Component,
 } satisfies Meta<typeof Component>;
 
@@ -24,18 +24,7 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   args: {
-    children: (
-      <div>
-        <p>This is inner card content.</p>
-        <p>It can contain multiple elements and complex layouts.</p>
-      </div>
-    ),
-  },
-};
-
-export const WithSimpleText: Story = {
-  args: {
-    children: <span>Simple inner content</span>,
+    children: <span>Card Header Content</span>,
   },
 };
 
@@ -44,8 +33,8 @@ export const WithSimpleText: Story = {
   Direct arguments passed to the component
   Simple, but can lead to repetition if used across multiple stories with similar configurations
 
-  export const Default = (args: CardInnerProps) => <Component {...args} />;
-  Default.args = { children: <span>Inner content</span> };
+  export const Default = (args: HeaderProps) => <Component {...args} />;
+  Default.args = { children: <span>Card Header Content</span> };
 */
 
 /*
@@ -56,7 +45,7 @@ export const WithSimpleText: Story = {
   const Template: StoryFn<typeof Component> = (args) => <Component {...args} />;
   export const Default: StoryFn<typeof Component> = Template.bind({});
   Default.args = {
-    children: <span>Inner content</span>
+    children: <span>Card Header Content</span>
   };
 */
 
@@ -65,6 +54,6 @@ export const WithSimpleText: Story = {
   Simple and straightforward, but offers the least flexibility and reusability
 
   export const Default: StoryFn<typeof Component> = () => (
-    <Component><span>Inner content</span></Component>
+    <Component><span>Card Header Content</span></Component>
   );
 */

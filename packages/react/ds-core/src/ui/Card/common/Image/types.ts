@@ -2,7 +2,7 @@
 
 import type { ImgHTMLAttributes } from "react";
 
-export interface CardImageProps extends ImgHTMLAttributes<HTMLImageElement> {
+export interface ImageProps extends ImgHTMLAttributes<HTMLImageElement> {
   /* Additional CSS classes */
   className?: string;
 }

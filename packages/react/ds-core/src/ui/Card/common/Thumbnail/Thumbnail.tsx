@@ -1,24 +1,26 @@
 /* @canonical/generator-ds 0.10.0-experimental.2 */
 
 import type React from "react";
-import type { CardInnerProps } from "./types.js";
+import type { ThumbnailProps } from "./types.js";
 import "./styles.css";
 
-const componentCssClassName = "inner";
+const componentCssClassName = "thumbnail";
 
 /**
- * CardInner component for Card inner content
+ * Thumbnail component for Card thumbnails
  */
-const CardInner = ({
+const Thumbnail = ({
   className,
+  alt,
   ...props
-}: CardInnerProps): React.ReactElement => {
+}: ThumbnailProps): React.ReactElement => {
   return (
-    <div
+    <img
       className={[componentCssClassName, className].filter(Boolean).join(" ")}
+      alt={alt}
       {...props}
     />
   );
 };
 
-export default CardInner;
+export default Thumbnail;

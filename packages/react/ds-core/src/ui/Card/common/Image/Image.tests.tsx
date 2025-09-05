@@ -2,9 +2,9 @@
 
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import Component from "./CardImage.js";
+import Component from "./Image.js";
 
-describe("CardImage component", () => {
+describe("Image component", () => {
   it("renders", () => {
     const imgSrc = "https://placehold.co/400";
     render(<Component src={imgSrc} />);
