@@ -4,7 +4,7 @@ import type React from "react";
 import type { ThumbnailProps } from "./types.js";
 import "./styles.css";
 
-const componentCssClassName = "thumbnail";
+const componentCssClassName = "card-thumbnail";
 
 /**
  * Thumbnail component for Card thumbnails

@@ -4,7 +4,7 @@ import type React from "react";
 import type { HeaderProps } from "./types.js";
 import "./styles.css";
 
-const componentCssClassName = "header";
+const componentCssClassName = "card-header";
 
 /**
  * Header component for Card headers

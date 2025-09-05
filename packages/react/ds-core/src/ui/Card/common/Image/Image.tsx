@@ -4,7 +4,7 @@ import type React from "react";
 import type { ImageProps } from "./types.js";
 import "./styles.css";
 
-const componentCssClassName = "image";
+const componentCssClassName = "card-image";
 
 /**
  * description of the Image component

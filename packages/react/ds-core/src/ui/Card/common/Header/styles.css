@@ -1,6 +1,6 @@
 /* @canonical/generator-ds 0.10.0-experimental.2 */
 
-.ds.card .header {
+.ds.card .card-header {
   display: block;
   margin-bottom: var(--spacing-vertical-small);
 }

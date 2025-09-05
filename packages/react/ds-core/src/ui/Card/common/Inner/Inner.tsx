@@ -4,7 +4,7 @@ import type React from "react";
 import type { InnerProps } from "./types.js";
 import "./styles.css";
 
-const componentCssClassName = "inner";
+const componentCssClassName = "card-inner";
 
 /**
  * Inner component for Card inner content
