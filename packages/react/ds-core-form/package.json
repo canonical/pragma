@@ -34,7 +34,6 @@
     "check:ts": "tsc --noEmit",
     "storybook": "storybook dev -p 6008 --no-open --host 0.0.0.0",
     "test": "bun run test:vitest",
-    "test:watch": "bun run test:vitest:watch",
     "test:vitest": "vitest run",
     "test:vitest:watch": "vitest",
     "init:msw": "npx msw init public/"
