@@ -1,6 +1,7 @@
 /* @canonical/generator-ds 0.10.0-experimental.2 */
 
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { BadgeSeverities } from "./Badge.Appearance.stories.js";
 import Component from "./Badge.js";
 
 const meta = {
@@ -12,6 +13,15 @@ const meta = {
         component:
           "A Badge component for displaying numeric values with flexible formatting options. Use the `humanizeOptions` prop to configure how numbers are displayed, including clamp mode (default), round mode, custom units, and overflow indicators.",
       },
+    },
+  },
+  argTypes: {
+    value: {
+      control: { type: "number" },
+    },
+    appearance: {
+      options: BadgeSeverities,
+      control: { type: "select" },
     },
   },
 } satisfies Meta<typeof Component>;

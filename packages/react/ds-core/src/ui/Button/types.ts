@@ -9,8 +9,8 @@
 // }
 //
 
+import type { Severity } from "@canonical/ds-types";
 import type { ButtonHTMLAttributes, ReactNode } from "react";
-import type { Severity } from "../../types/index.js";
 
 export interface BaseProps {
   /* A unique identifier for the button */
@@ -24,7 +24,10 @@ export interface BaseProps {
    * `aria-label` prop to ensure that the button label is applied properly. Otherwise, the label will be set to [object Object].
    * */
   children: ReactNode;
-  /** The visual style of the button */
+  /**
+   * The visual style of the button
+   * TODO link button will be a separate component in the future
+   * */
   appearance?: Severity | "base" | "link";
 }
 

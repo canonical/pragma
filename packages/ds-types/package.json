@@ -1,0 +1,42 @@
+{
+  "name": "@canonical/ds-types",
+  "description": "Types and related type utilities for Pragma.",
+  "version": "0.10.0-experimental.0",
+  "private": true,
+  "type": "module",
+  "module": "dist/esm/index.js",
+  "types": "dist/types/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "author": {
+    "email": "webteam@canonical.com",
+    "name": "Canonical Webteam"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/canonical/ds25"
+  },
+  "license": "LGPL-3.0",
+  "bugs": {
+    "url": "https://github.com/canonical/ds25/issues"
+  },
+  "homepage": "https://github.com/canonical/ds25#readme",
+  "scripts": {
+    "build": "bun run build:package",
+    "build:all": "bun run build:package",
+    "build:package": "bun run build:package:tsc",
+    "build:package:tsc": "tsc -p tsconfig.build.json",
+    "check": "bun run check:biome && bun run check:ts",
+    "check:fix": "bun run check:biome:fix && bun run check:ts",
+    "check:biome": "biome check",
+    "check:biome:fix": "biome check --write",
+    "check:ts": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.1.1",
+    "@canonical/biome-config": "^0.10.0-experimental.0",
+    "@canonical/typescript-config-base": "^0.10.0-experimental.0",
+    "typescript": "^5.8.3"
+  }
+}
