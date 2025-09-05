@@ -1,0 +1,61 @@
+/* @canonical/generator-ds 0.10.0-experimental.2 */
+
+.ds.card {
+  /* prevent overflow of child margins */
+  overflow: auto;
+
+  color: var(--intent-color-text, var(--card-color-text));
+  background-color: var(--intent-color, var(--card-color-background));
+  border-width: var(--card-border-width);
+  border-style: var(--card-border-style);
+  border-color: var(--card-color-border);
+  margin-block-end: var(--card-margin-bottom);
+  margin-inline-end: var(--card-margin-left);
+  padding-block: var(--card-padding-vertical);
+  padding-inline: var(--card-padding-horizontal);
+
+  /*
+    TODO https://github.com/canonical/vanilla-framework/blob/e204a57a6c81cc9e78a71bb332fff8d660024097/scss/_patterns_card.scss#L12-L16
+  */
+  & .content {
+    /*
+   TODO find a way to port the Vanilla behavior of using "margin-collapsed" default text that maintains baseline alignment
+    Without adding utility classes for margin collapse
+   @extend %u-no-margin--bottom--default-text;
+  */
+  }
+
+  & .inner {
+    /* prevent overflow of child margins*/
+    overflow: auto;
+    padding: var(--spacing-vertical-large);
+  }
+
+  /*  TODO we need to discuss further how to globalize the emphasis modifiers - but as-named in Vanilla they aren't consistently applied */
+  &.highlighted {
+    box-shadow: var(--tmp-box-shadow);
+  }
+}
+
+/*
+  TODO
+  The below SCSS comes from Vanilla (https://github.com/canonical/vanilla-framework/blob/e204a57a6c81cc9e78a71bb332fff8d660024097/scss/_patterns_card.scss#L84C1-L99C4)
+  We need to find a way to implement the visual design without relying on complex margin cancellation & selectors if possible
+  [class*='p-card'] {
+    // FIXME: this is overly complex
+    // stylelint-disable selector-max-type
+    > p:not([class*='p-heading--']),
+    > h5,
+    > h6 {
+      &:last-child {
+        margin-bottom: $spv-nudge-compensation;
+      }
+
+      &:first-child {
+        margin-top: -#{$sp-unit};
+      }
+    }
+    // stylelint-enable selector-max-type
+  }
+
+*/

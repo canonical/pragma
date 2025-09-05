@@ -1,0 +1,6 @@
+/* @canonical/generator-ds 0.10.0-experimental.2 */
+
+.ds.card .card-thumbnail {
+  /*    todo populate this var from Vanilla somewhere in Pragma settings */
+  /*  max-height: map-get($icon-sizes, heading-icon--small); */
+}

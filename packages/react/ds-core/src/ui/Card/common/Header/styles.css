@@ -1,0 +1,11 @@
+/* @canonical/generator-ds 0.10.0-experimental.2 */
+
+.ds.card .card-header {
+  border-bottom: var(--card-header-border-width) var(--card-header-border-style)
+    var(--card-header-border-color);
+  padding-block-end: var(--card-header-padding-bottom);
+}
+
+/*
+ TODO Vanilla card header uses a u-sv1 utility that adds special extra margin to the border that needs to be accounted for here without adding util classes
+*/
