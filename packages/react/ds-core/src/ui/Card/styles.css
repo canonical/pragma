@@ -1,10 +1,5 @@
 /* @canonical/generator-ds 0.10.0-experimental.2 */
 
-/*
-TODO enable highlighted card (a global modifier / intent)
-https://github.com/canonical/vanilla-framework/blob/e204a57a6c81cc9e78a71bb332fff8d660024097/scss/_patterns_card.scss#L19-L28
-*/
-
 .ds.card {
   /*
     TODO https://github.com/canonical/vanilla-framework/blob/e204a57a6c81cc9e78a71bb332fff8d660024097/scss/_patterns_card.scss#L12-L16
