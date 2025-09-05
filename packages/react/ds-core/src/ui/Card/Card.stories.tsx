@@ -28,6 +28,13 @@ export const Default: Story = {
   },
 };
 
+export const Highlighted: Story = {
+  args: {
+    emphasis: "highlighted",
+    children: <span>Hello world!</span>,
+  },
+};
+
 /*
   Function-based story
   Direct arguments passed to the component

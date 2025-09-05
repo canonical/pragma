@@ -56,3 +56,13 @@
   --intent-color-border-hover: var(--intent-color-border);
   --intent-color-border-active: var(--intent-color-border);
 }
+
+/* TODO
+    it's not clear yet if any global behavior can truly be associated with highlighted emphasis.
+    In Vanilla, some highlighted components have box shadow (eg card https://github.com/canonical/vanilla-framework/blob/6af35433368f82d76d8deb7effebca47b434ee76/scss/_patterns_card.scss#L20-L23)
+    Others apply a special background (eg image https://github.com/canonical/vanilla-framework/blob/6af35433368f82d76d8deb7effebca47b434ee76/scss/_patterns_image.scss#L116-L118)
+    Most apply a highlight bar (eg notification, navigation, tab) https://github.com/canonical/vanilla-framework/blob/6af35433368f82d76d8deb7effebca47b434ee76/templates/docs/utilities/functions.md?plain=1#L60-L106
+    */
+/*.highlighted {*/
+
+/*}*/

@@ -16,8 +16,7 @@ const componentCssClassName = "ds card";
 const Card = ({
   className,
   children,
-  // todo enable emphasis modifier / intent
-  // highlighted = false,
+  emphasis,
   thumbnailOptions,
   titleElement,
   ...props
@@ -28,12 +27,7 @@ const Card = ({
     // biome-ignore lint/a11y/useSemanticElements: TODO figure out what to do with this warning
     <div
       aria-labelledby={titleElement ? titleId : undefined}
-      className={[
-        componentCssClassName,
-        className,
-        // todo enable emphasis modifier / intent
-        // highlighted && "highlighted",
-      ]
+      className={[componentCssClassName, className, emphasis]
         .filter(Boolean)
         .join(" ")}
       role="group"
@@ -59,7 +53,7 @@ const Card = ({
 const CardWithSubcomponents = Card as CardComponent;
 CardWithSubcomponents.Header = Header;
 CardWithSubcomponents.Inner = Inner;
-// CardWithSubcomponents.Thumbnail = Thumbnail;
+CardWithSubcomponents.Thumbnail = Thumbnail;
 CardWithSubcomponents.Image = Image;
 
 export default CardWithSubcomponents;

@@ -22,6 +22,11 @@ https://github.com/canonical/vanilla-framework/blob/e204a57a6c81cc9e78a71bb332ff
     overflow: auto;
     padding: var(--spacing-vertical-large);
   }
+
+  /*  TODO we need to discuss further how to globalize the emphasis modifiers - but as-named in Vanilla they aren't consistently applied */
+  &.highlighted {
+    box-shadow: var(--tmp-box-shadow);
+  }
 }
 
 /*
