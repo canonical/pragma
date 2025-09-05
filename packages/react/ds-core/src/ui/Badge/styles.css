@@ -1,0 +1,21 @@
+/* Badge.css */
+.ds.badge {
+  /** Pull the badge closer to the edge of a chip */
+  --badge-chip-margin-tweak: 0.15rem;
+
+  /* Base badge styles using tokens */
+  background-color: var(--intent-color, var(--badge-color-background));
+  border-radius: var(--badge-border-radius);
+  box-sizing: content-box;
+  color: var(--intent-color-text, var(--badge-color-text));
+  display: inline-block;
+  font-size: var(--badge-font-size);
+  font-weight: var(--badge-font-weight);
+  line-height: var(--badge-line-height);
+  margin-bottom: var(--badge-margin-bottom);
+  max-width: var(--badge-max-width);
+  min-width: var(--badge-min-width);
+  overflow: hidden;
+  padding: var(--badge-padding-vertical) var(--badge-padding-horizontal);
+  text-align: center;
+}
