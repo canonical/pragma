@@ -15,7 +15,7 @@ const EntryServer: ReactServerEntrypointComponent<
         {linkTags}
       </head>
       <body>
-        {/* biome-ignore lint/nursery/useUniqueElementIds: necessary for server-side rendering */}
+        {/** biome-ignore lint/correctness/useUniqueElementIds: necessary for server-side rendering */}
         <div id="root">
           <Application />
         </div>

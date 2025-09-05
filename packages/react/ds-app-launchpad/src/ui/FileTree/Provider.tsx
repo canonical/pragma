@@ -72,9 +72,7 @@ const Provider = ({
           `[data-name^="${character}"]`,
         ),
       );
-      const currentNodeIndex = matchingNodes.findIndex(
-        (node) => node === currentNode,
-      );
+      const currentNodeIndex = matchingNodes.indexOf(currentNode);
 
       const nextNodeWithCharacter = matchingNodes.at(
         (currentNodeIndex + 1) % matchingNodes.length,

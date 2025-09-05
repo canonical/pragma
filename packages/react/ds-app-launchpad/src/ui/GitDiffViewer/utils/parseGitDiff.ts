@@ -47,10 +47,10 @@ function parseGitDiff(diffText: string): DiffFile[] {
     const hunkMatch = line.match(hunkRegex);
     if (hunkMatch && currentFile) {
       const hunkPositions = [
-        Number.parseInt(hunkMatch[1]),
-        hunkMatch[2] ? Number.parseInt(hunkMatch[2]) : 1,
-        Number.parseInt(hunkMatch[3]),
-        hunkMatch[4] ? Number.parseInt(hunkMatch[4]) : 1,
+        Number.parseInt(hunkMatch[1], 10),
+        hunkMatch[2] ? Number.parseInt(hunkMatch[2], 10) : 1,
+        Number.parseInt(hunkMatch[3], 10),
+        hunkMatch[4] ? Number.parseInt(hunkMatch[4], 10) : 1,
       ];
       const oldPos: Position = {
         start: hunkPositions[0],
