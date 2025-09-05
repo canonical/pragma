@@ -1,6 +1,7 @@
 /* @canonical/generator-ds 0.10.0-experimental.2 */
 
 import type { Emphasis } from "@canonical/ds-types";
+import type { FC, HTMLAttributes, ReactNode } from "react";
 import type { Header, Image, Inner, Thumbnail } from "./common/index.js";
 
 /**
@@ -21,7 +22,7 @@ export interface CardProps extends HTMLAttributes<HTMLDivElement> {
 }
 
 // Compound component type
-export interface CardComponent extends React.FC<CardProps> {
+export interface CardComponent extends FC<CardProps> {
   Header: typeof Header;
   Inner: typeof Inner;
   Thumbnail: typeof Thumbnail;
