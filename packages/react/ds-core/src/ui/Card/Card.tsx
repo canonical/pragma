@@ -49,11 +49,9 @@ const Card = ({
   );
 };
 
-// Attach subcomponents to Card
-const CardWithSubcomponents = Card as CardComponent;
-CardWithSubcomponents.Header = Header;
-CardWithSubcomponents.Inner = Inner;
-CardWithSubcomponents.Thumbnail = Thumbnail;
-CardWithSubcomponents.Image = Image;
+Card.Header = Header;
+Card.Inner = Inner;
+Card.Thumbnail = Thumbnail;
+Card.Image = Image;
 
-export default CardWithSubcomponents;
+export default Card;
