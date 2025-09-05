@@ -1,8 +1,8 @@
 /* @canonical/generator-ds 0.10.0-experimental.2 */
 
+import type { Severity } from "@canonical/ds-types";
 import type { HumanizeNumberOptions, PluralizeOptions } from "@canonical/utils";
 import type { HTMLAttributes } from "react";
-import type { Severity } from "../../types/index.js";
 
 export interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
   /**
@@ -18,13 +18,14 @@ export interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
 
   /**
    * Visual appearance of the badge, typically reflecting status.
+   * Options include:
    * - "positive": Indicates a positive status
    * - "negative": Indicates a negative status
    * - "caution": Indicates a cautionary status
-   * - "information": Indicates an informative status
+   * // TODO neutral intent is currently defined in a very button-centric way. It should unset other appearances, but it currently applies default button styling.
+   *      Possibly we will need to revisit this by binding component variables without component name prefix, so that neutral can reset components to their neutral state.
    *
    * When no appearance is specified, uses the default badge styling.
-   * Badge excludes "neutral" appearance from the {@link Severity} type as the current neutral intent is not suited for badge (higher contrast than buttons)
    */
   appearance?: Exclude<Severity, "neutral">;
 

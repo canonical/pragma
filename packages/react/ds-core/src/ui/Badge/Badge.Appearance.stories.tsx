@@ -1,11 +1,17 @@
 /* @canonical/generator-ds 0.10.0-experimental.2 */
 
+import { SEVERITY } from "@canonical/ds-types";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import Component from "./Badge.js";
+
+// TODO exclude neutral for now as it is currently very button-centric. See comment in types.ts.
+export const BadgeSeverities = SEVERITY.filter((s) => s !== "neutral");
 
 const meta = {
   title: "Badge/Appearance",
   component: Component,
+  // TODO remove after fixing neutral severity issue mentioned above
+  excludeStories: ["BadgeSeverities"],
   parameters: {
     docs: {
       codePanel: true,
@@ -13,6 +19,15 @@ const meta = {
         component:
           "Badge appearance variants for different semantic severities.",
       },
+    },
+  },
+  args: {
+    value: 42,
+  },
+  argTypes: {
+    appearance: {
+      options: BadgeSeverities,
+      control: "select",
     },
   },
 } satisfies Meta<typeof Component>;
@@ -23,7 +38,6 @@ type Story = StoryObj<typeof meta>;
 
 export const Positive: Story = {
   args: {
-    value: 42,
     appearance: "positive",
   },
   parameters: {
@@ -38,7 +52,6 @@ export const Positive: Story = {
 
 export const Negative: Story = {
   args: {
-    value: 99,
     appearance: "negative",
   },
   parameters: {
@@ -53,7 +66,6 @@ export const Negative: Story = {
 
 export const Caution: Story = {
   args: {
-    value: 7,
     appearance: "caution",
   },
   parameters: {
@@ -68,7 +80,6 @@ export const Caution: Story = {
 
 export const Information: Story = {
   args: {
-    value: 3,
     appearance: "information",
   },
   parameters: {
