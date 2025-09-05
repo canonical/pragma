@@ -313,6 +313,7 @@
   --spacing-vertical-small: 0.5rem;
   --spacing-vertical-medium: 0.75rem;
   --spacing-vertical-large: 1rem;
+  --spacing-vertical-xlarge: 1.5rem;
 
   --spacing-input-margin-bottom: 0.5rem; /* TODO: needs baseline alignment https://github.com/canonical/vanilla-framework/blob/main/scss/_settings_spacing.scss#L122 */
   --spacing-input-padding-vertical: 0.5rem; /* TODO: needs to take baseline into account https://github.com/canonical/vanilla-framework/blob/main/scss/_settings_spacing.scss#L124 */
@@ -349,6 +350,21 @@
   --button-font-size: var(--font-size-default);
   --button-font-weight: var(--font-weight-default);
   --button-line-height: var(--line-height-default);
+
+  --card-border-style: solid;
+  --card-color-text: var(--tmp-color-text-default);
+  --card-color-background: var(--tmp-color-background-default);
+  --card-color-border: var(--tmp-color-border-default);
+  --card-border-width: var(--spacing-border-width);
+  --card-margin-bottom: var(--spacing-vertical-large);
+  --card-margin-left: 0;
+  --card-padding-vertical: calc(var(--spacing-vertical-large) - 1px);
+  --card-padding-horizontal: var(--card-padding-vertical);
+
+  --card-header-border-color: var(--tmp-color-border-low-contrast);
+  --card-header-border-style: solid;
+  --card-header-border-width: var(--spacing-border-width);
+  --card-header-padding-bottom: var(--spacing-vertical-large);
 
   --chip-color-background: var(--tmp-color-background-neutral-default);
   --chip-color-background-hover: var(--tmp-color-background-neutral-hover);

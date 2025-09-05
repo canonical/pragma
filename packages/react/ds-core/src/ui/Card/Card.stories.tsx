@@ -24,7 +24,12 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   args: {
-    children: <span>Hello world!</span>,
+    children: (
+      <>
+        <Component.Header>This is a title</Component.Header>
+        <Component.Inner>This is the inner</Component.Inner>
+      </>
+    ),
   },
 };
 

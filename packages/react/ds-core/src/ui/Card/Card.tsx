@@ -2,7 +2,7 @@
 
 import type React from "react";
 import { useId } from "react";
-import { Header, Image, Inner, Thumbnail } from "./common/index.js";
+import { Header, Image, Inner, Thumbnail, Title } from "./common/index.js";
 import type { CardComponent, CardProps } from "./types.js";
 import "./styles.css";
 
