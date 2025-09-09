@@ -1,8 +1,5 @@
 export { default as casing } from "./casing.js";
 
-export type * from "./clamp/index.js";
-export { default as clamp } from "./clamp/index.js";
-
 export { default as debounce } from "./debounce.js";
 
 export type * from "./humanizeNumber/index.js";

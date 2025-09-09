@@ -30,7 +30,7 @@ describe("humanizeNumber", () => {
       {
         it: "handles larger numbers with proper unit scaling",
         input: 12345,
-        expected: { displayValue: "12k", value: 12345, unit: "k" },
+        expected: { displayValue: "12k+", value: 12345, unit: "k" },
       },
       {
         it: "scales to millions unit for large values",
@@ -54,50 +54,7 @@ describe("humanizeNumber", () => {
       {
         it: "floors decimal inputs before applying units",
         input: 12345.67,
-        expected: { displayValue: "12k", value: 12345.67, unit: "k" },
-      },
-    ];
-
-    testCases.forEach(({ it: testName, input, options, expected }) => {
-      it(testName, () => {
-        const result = humanizeNumber(input, options);
-        expect(result).toEqual(expected);
-      });
-    });
-  });
-
-  describe("Clamp Mode", () => {
-    const testCases: TestCase[] = [
-      {
-        it: "clamps values above maximum and adds overflow indicator",
-        input: 1500,
-        options: { humanizeType: "clamp", clampOptions: { max: 999 } },
-        expected: { displayValue: "999+", value: 1500, unit: "" },
-      },
-      {
-        it: "clamps values below minimum to minimum value",
-        input: 50,
-        options: { humanizeType: "clamp", clampOptions: { min: 100 } },
-        expected: { displayValue: "100", value: 50, unit: "" },
-      },
-      {
-        it: "returns value unchanged when within min/max bounds",
-        input: 500,
-        options: {
-          humanizeType: "clamp",
-          clampOptions: { min: 100, max: 999 },
-        },
-        expected: { displayValue: "500", value: 500, unit: "" },
-      },
-      {
-        it: "uses custom overflow indicator when provided",
-        input: 1500,
-        options: {
-          humanizeType: "clamp",
-          clampOptions: { max: 999 },
-          overflowIndicator: "++",
-        },
-        expected: { displayValue: "999++", value: 1500, unit: "" },
+        expected: { displayValue: "12k+", value: 12345.67, unit: "k" },
       },
     ];
 
@@ -157,7 +114,7 @@ describe("humanizeNumber", () => {
         it: "caps at maximum unit when value exceeds all units",
         input: 1e18,
         expected: {
-          displayValue: "999T",
+          displayValue: "999T+",
           value: 1000000000000000000,
           unit: "T",
         },

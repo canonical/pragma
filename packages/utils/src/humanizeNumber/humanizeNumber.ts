@@ -1,4 +1,3 @@
-import { clamp } from "../index.js";
 import { DEFAULT_MAGNITUDE_BASE, DEFAULT_UNITS } from "./constants.js";
 import type { HumanizeNumberOptions, HumanizeResult } from "./types.js";
 
@@ -8,6 +7,7 @@ import type { HumanizeNumberOptions, HumanizeResult } from "./types.js";
  * @param value The value to round
  * @param units Array of unit suffixes
  * @param magnitudeBase The base for scaling
+ * @param overflowIndicator Indicator to use when value exceeds maximum displayable value
  * @param unit Current unit index
  * @returns Object with displayValue and unit
  */
@@ -15,44 +15,32 @@ const roundValue = (
   value: number,
   units: string[],
   magnitudeBase: number,
+  overflowIndicator: string,
   unit = 0,
 ): { displayValue: string; unit: string } => {
   if (value < magnitudeBase) {
     const truncatedValue = Number(value.toString().slice(0, 3));
     return {
-      displayValue: `${truncatedValue}${units[unit]}`,
+      displayValue: `${truncatedValue}${units[unit]}${truncatedValue < value ? overflowIndicator || "" : ""}`,
       unit: units[unit] || "",
     };
   }
 
+  // If the value exceeds the largest unit, cap it at `magnitudeBase - 1` of the largest unit and include the overflow indicator
   if (unit >= units.length - 1) {
     return {
-      displayValue: `999${units[units.length - 1]}`,
+      displayValue: `${magnitudeBase - 1}${units[units.length - 1]}${overflowIndicator || ""}`,
       unit: units[units.length - 1] || "",
     };
   }
   const newValue = value / magnitudeBase;
-  return roundValue(newValue, units, magnitudeBase, unit + 1);
-};
-
-/**
- * Clamps a value to a maximum and returns it with an overflow indicator.
- * @param value The value to clamp
- * @param min The minimum value
- * @param max The maximum value
- * @param overflowIndicator The indicator to append when clamped
- * @returns The clamped value as a string
- */
-const clampValue = (
-  value: number,
-  min?: number,
-  max?: number,
-  overflowIndicator?: string,
-): string => {
-  if (max !== undefined && value > max) {
-    return `${max}${overflowIndicator || ""}`;
-  }
-  return clamp(value, min, max).toString();
+  return roundValue(
+    newValue,
+    units,
+    magnitudeBase,
+    overflowIndicator,
+    unit + 1,
+  );
 };
 
 /**
@@ -66,7 +54,6 @@ const clampValue = (
  * @example
  * humanizeNumber(12345); // Returns "12k"
  * humanizeNumber(999999); // Returns "999k"
- * humanizeNumber(1500000, { humanizeType: "clamp", clampOptions: { max: 999 } }); // Returns "999+"
  */
 const humanizeNumber = (
   value: number,
@@ -75,8 +62,6 @@ const humanizeNumber = (
   const {
     units = DEFAULT_UNITS,
     magnitudeBase = DEFAULT_MAGNITUDE_BASE,
-    humanizeType = "round",
-    clampOptions,
     overflowIndicator = "+",
   } = options ?? {};
 
@@ -100,17 +85,7 @@ const humanizeNumber = (
     };
   }
 
-  if (humanizeType === "clamp" && clampOptions) {
-    const { min, max } = clampOptions;
-
-    return {
-      displayValue: clampValue(intValue, min, max, overflowIndicator),
-      value,
-      unit: "",
-    };
-  }
-
-  const result = roundValue(intValue, units, magnitudeBase);
+  const result = roundValue(intValue, units, magnitudeBase, overflowIndicator);
 
   return {
     displayValue: result.displayValue,
