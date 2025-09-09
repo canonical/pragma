@@ -11,7 +11,7 @@ import type { HumanizeNumberOptions, HumanizeResult } from "./types.js";
  * @param unit Current unit index
  * @returns Object with displayValue and unit
  */
-const roundValue = (
+const roundAndAddUnit = (
   value: number,
   units: string[],
   magnitudeBase: number,
@@ -34,7 +34,7 @@ const roundValue = (
     };
   }
   const newValue = value / magnitudeBase;
-  return roundValue(
+  return roundAndAddUnit(
     newValue,
     units,
     magnitudeBase,
@@ -85,7 +85,12 @@ const humanizeNumber = (
     };
   }
 
-  const result = roundValue(intValue, units, magnitudeBase, overflowIndicator);
+  const result = roundAndAddUnit(
+    intValue,
+    units,
+    magnitudeBase,
+    overflowIndicator,
+  );
 
   return {
     displayValue: result.displayValue,
