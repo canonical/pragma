@@ -10,59 +10,57 @@ type TestCase = {
 };
 
 describe("humanizeNumber", () => {
-  describe("Default Round Mode", () => {
-    const testCases: TestCase[] = [
-      {
-        it: "returns numbers without unit when below magnitude threshold",
-        input: 999,
-        expected: { displayValue: "999", value: 999, unit: "" },
+  const testCases: TestCase[] = [
+    {
+      it: "returns numbers without unit when below magnitude threshold",
+      input: 999,
+      expected: { displayValue: "999", value: 999, unit: "" },
+    },
+    {
+      it: "applies unit when reaching magnitude threshold",
+      input: 1000,
+      expected: { displayValue: "1k", value: 1000, unit: "k" },
+    },
+    {
+      it: "truncates to 3 characters and applies appropriate unit",
+      input: 1500,
+      expected: { displayValue: "1.5k", value: 1500, unit: "k" },
+    },
+    {
+      it: "handles larger numbers with proper unit scaling",
+      input: 12345,
+      expected: { displayValue: "12k+", value: 12345, unit: "k" },
+    },
+    {
+      it: "scales to millions unit for large values",
+      input: 1.5e6,
+      expected: { displayValue: "1.5M", value: 1500000, unit: "M" },
+    },
+    {
+      it: "scales to billions unit for very large values",
+      input: 1.5e9,
+      expected: { displayValue: "1.5B", value: 1500000000, unit: "B" },
+    },
+    {
+      it: "scales to trillions unit for extremely large values",
+      input: 1.5e12,
+      expected: {
+        displayValue: "1.5T",
+        value: 1500000000000,
+        unit: "T",
       },
-      {
-        it: "applies unit when reaching magnitude threshold",
-        input: 1000,
-        expected: { displayValue: "1k", value: 1000, unit: "k" },
-      },
-      {
-        it: "truncates to 3 characters and applies appropriate unit",
-        input: 1500,
-        expected: { displayValue: "1.5k", value: 1500, unit: "k" },
-      },
-      {
-        it: "handles larger numbers with proper unit scaling",
-        input: 12345,
-        expected: { displayValue: "12k+", value: 12345, unit: "k" },
-      },
-      {
-        it: "scales to millions unit for large values",
-        input: 1.5e6,
-        expected: { displayValue: "1.5M", value: 1500000, unit: "M" },
-      },
-      {
-        it: "scales to billions unit for very large values",
-        input: 1.5e9,
-        expected: { displayValue: "1.5B", value: 1500000000, unit: "B" },
-      },
-      {
-        it: "scales to trillions unit for extremely large values",
-        input: 1.5e12,
-        expected: {
-          displayValue: "1.5T",
-          value: 1500000000000,
-          unit: "T",
-        },
-      },
-      {
-        it: "floors decimal inputs before applying units",
-        input: 12345.67,
-        expected: { displayValue: "12k+", value: 12345.67, unit: "k" },
-      },
-    ];
+    },
+    {
+      it: "floors decimal inputs before applying units",
+      input: 12345.67,
+      expected: { displayValue: "12k+", value: 12345.67, unit: "k" },
+    },
+  ];
 
-    testCases.forEach(({ it: testName, input, options, expected }) => {
-      it(testName, () => {
-        const result = humanizeNumber(input, options);
-        expect(result).toEqual(expected);
-      });
+  testCases.forEach(({ it: testName, input, options, expected }) => {
+    it(testName, () => {
+      const result = humanizeNumber(input, options);
+      expect(result).toEqual(expected);
     });
   });
 
@@ -90,6 +88,12 @@ describe("humanizeNumber", () => {
 
   describe("Edge Cases", () => {
     const testCases: TestCase[] = [
+      {
+        it: "Handles empty units array by treating as no units",
+        input: 1500,
+        options: { units: [] },
+        expected: { displayValue: "999+", value: 1500, unit: "" },
+      },
       {
         it: "handles zero input",
         input: 0,

@@ -45,10 +45,9 @@ describe("Badge component", () => {
     expect(screen.getByText("999T+")).toBeInTheDocument();
   });
 
-  // TODO this would be changed to display 0 if we implement clamping as in RC
-  it("renders negative numbers as-is", () => {
+  it("renders negative numbers as 0", () => {
     render(<Component value={-1} />);
-    expect(screen.getByText("-1")).toBeInTheDocument();
+    expect(screen.getByText("0")).toBeInTheDocument();
   });
 
   it("renders out-of-range values with infinity symbol", () => {

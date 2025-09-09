@@ -11,7 +11,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "A Badge component for displaying numeric values with flexible formatting options. Use the `humanizeOptions` prop to configure how numbers are displayed, including custom units and overflow indicators.",
+          "A Badge component for displaying positive numeric values. Numbers are truncated by applying unit suffixes to keep the badge value compact.",
       },
     },
   },
@@ -32,7 +32,22 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   args: {
-    value: 500,
+    value: 1500,
+  },
+};
+
+export const Units: Story = {
+  args: {
+    value: 25001,
+    humanizeOptions: { units: [] },
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "By default, the badge applies metric, 1000-based unit suffixes (k, M, B, T) to truncate values. This can be disabled by providing an empty array to the `units` option, causing the badge to display values up to `magnitudeBase - 1` and then truncate with the overflow indicator.",
+      },
+    },
   },
 };
 

@@ -33,8 +33,6 @@ export interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
    * Options for humanizing the numeric value displayed in the badge.
    * See {@link HumanizeNumberOptions} for details on available configuration options.
    *
-   * @migration 1.0.0 - The badge does not support numeric clamping at this time to keep the component simple.
-   *
    * @example
    * // Default behavior (round mode)
    * <Badge value={1500} />
