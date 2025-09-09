@@ -40,8 +40,8 @@ export const Appearance: StoryFn<typeof Component> = (args) => (
   <div
     style={{ display: "inline-flex", gap: "var(--spacing-horizontal-small)" }}
   >
-    {MODIFIER_FAMILIES.severity.map((severityLevel) => (
-      <Component {...args} appearance={severityLevel} />
+    {MODIFIER_FAMILIES.severity.map((severityLevel, i) => (
+      <Component key={severityLevel} {...args} appearance={severityLevel} />
     ))}
   </div>
 );
