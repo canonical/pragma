@@ -9,7 +9,7 @@
 // }
 //
 
-import type { Severity } from "@canonical/ds-types";
+import type { ModifierFamily } from "@canonical/ds-types";
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 
 export interface BaseProps {
@@ -28,7 +28,7 @@ export interface BaseProps {
    * The visual style of the button
    * TODO link button will be a separate component in the future
    * */
-  appearance?: Severity | "base" | "link";
+  appearance?: ModifierFamily<"severity"> | "base" | "link";
 }
 
 type Props = BaseProps & ButtonHTMLAttributes<HTMLButtonElement>;

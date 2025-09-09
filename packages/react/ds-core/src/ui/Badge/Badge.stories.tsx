@@ -1,12 +1,8 @@
 /* @canonical/generator-ds 0.10.0-experimental.2 */
 
-import { SEVERITY } from "@canonical/ds-types";
+import { MODIFIER_FAMILIES } from "@canonical/ds-types";
 import type { Meta, StoryFn, StoryObj } from "@storybook/react-vite";
 import Component from "./Badge.js";
-
-const BadgeSeverities = SEVERITY.filter(
-  (severityLevel) => severityLevel !== "neutral",
-);
 
 const meta = {
   title: "Badge",
@@ -24,7 +20,7 @@ const meta = {
       control: { type: "number" },
     },
     appearance: {
-      options: BadgeSeverities,
+      options: MODIFIER_FAMILIES.severity,
       control: { type: "radio" },
     },
   },
@@ -42,7 +38,7 @@ export const Default: Story = {
 
 export const Appearance: StoryFn<typeof Component> = (args) => (
   <>
-    {BadgeSeverities.map((severityLevel) => (
+    {MODIFIER_FAMILIES.severity.map((severityLevel) => (
       <>
         <Component {...args} appearance={severityLevel} />
         <br />
@@ -50,11 +46,6 @@ export const Appearance: StoryFn<typeof Component> = (args) => (
     ))}
   </>
 );
-
-Appearance.args = {
-  value: 1500,
-};
-
 Appearance.parameters = {
   docs: {
     description: {
@@ -65,6 +56,20 @@ Appearance.parameters = {
         "- **Negative**: Indicates a negative status, such as an error or failure.\n" +
         "- **Caution**: Indicates a cautionary status, such as a warning or alert.\n" +
         "- **Information**: Indicates informational status, such as updates or general information.\n",
+    },
+  },
+};
+
+// All appearance badges use the same value for the story
+Appearance.args = {
+  value: 1500,
+};
+
+// Hide the appearance input control as the appearances are controlled by the story itself
+Appearance.argTypes = {
+  appearance: {
+    table: {
+      disable: true,
     },
   },
 };

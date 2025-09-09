@@ -8,8 +8,7 @@ This package is organized into families of types, each in their own folder withi
 
 - `src/`: Source files for the package
   - `index.ts`: Main entry point exporting all types
-  - `modifiers/`: Global design system modifier types. These are used to modify the appearance of UI blocks.
-    - `severity`: Types for severity modifiers (e.g., 'positive`, `negative`, `information`, etc.)
+  - `modifierFamilies`: Global design system modifier types. These are used to modify the appearance of UI blocks.
 
 ### Constants
 

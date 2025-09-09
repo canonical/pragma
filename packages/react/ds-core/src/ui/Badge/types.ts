@@ -1,6 +1,6 @@
 /* @canonical/generator-ds 0.10.0-experimental.2 */
 
-import type { Severity } from "@canonical/ds-types";
+import type { ModifierFamily } from "@canonical/ds-types";
 import type { HumanizeNumberOptions, PluralizeOptions } from "@canonical/utils";
 import type { HTMLAttributes } from "react";
 
@@ -22,7 +22,7 @@ export interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
    *
    * When no appearance is specified, uses the default badge styling.
    */
-  appearance?: Exclude<Severity, "neutral">;
+  appearance?: ModifierFamily<"severity">;
 
   /**
    * Options for humanizing the numeric value displayed in the badge.
