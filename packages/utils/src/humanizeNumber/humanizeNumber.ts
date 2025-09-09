@@ -59,15 +59,11 @@ const humanizeNumber = (
   value: number,
   options?: HumanizeNumberOptions,
 ): HumanizeResult => {
-  const { magnitudeBase = DEFAULT_MAGNITUDE_BASE, overflowIndicator = "+" } =
-    options ?? {};
-
-  let { units = DEFAULT_UNITS } = options ?? {};
-
-  // If the user passed an empty or undefined units array, use no units by treating the unit as an empty string
-  if (!units?.length) {
-    units = [""];
-  }
+  const {
+    units = DEFAULT_UNITS,
+    magnitudeBase = DEFAULT_MAGNITUDE_BASE,
+    overflowIndicator = "+",
+  } = options ?? {};
 
   // Display non-finite numbers (infinity, NaN) as-is
   if (!Number.isFinite(value)) {
