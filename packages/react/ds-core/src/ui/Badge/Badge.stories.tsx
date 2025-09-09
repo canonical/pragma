@@ -1,8 +1,12 @@
 /* @canonical/generator-ds 0.10.0-experimental.2 */
 
-import type { Meta, StoryObj } from "@storybook/react-vite";
-import { BadgeSeverities } from "./Badge.Appearance.stories.js";
+import { SEVERITY } from "@canonical/ds-types";
+import type { Meta, StoryFn, StoryObj } from "@storybook/react-vite";
 import Component from "./Badge.js";
+
+const BadgeSeverities = SEVERITY.filter(
+  (severityLevel) => severityLevel !== "neutral",
+);
 
 const meta = {
   title: "Badge",
@@ -21,7 +25,7 @@ const meta = {
     },
     appearance: {
       options: BadgeSeverities,
-      control: { type: "select" },
+      control: { type: "radio" },
     },
   },
 } satisfies Meta<typeof Component>;
@@ -33,6 +37,35 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {
   args: {
     value: 1500,
+  },
+};
+
+export const Appearance: StoryFn<typeof Component> = (args) => (
+  <>
+    {BadgeSeverities.map((severityLevel) => (
+      <>
+        <Component {...args} appearance={severityLevel} />
+        <br />
+      </>
+    ))}
+  </>
+);
+
+Appearance.args = {
+  value: 1500,
+};
+
+Appearance.parameters = {
+  docs: {
+    description: {
+      story:
+        "The appearance variant demonstrates the different visual styles available for the Badge component. Each appearance corresponds to a specific status or intent, allowing users to quickly identify the nature of the information being presented. The available appearances include:\n" +
+        "\n" +
+        "- **Positive**: Indicates a positive status, such as success or completion.\n" +
+        "- **Negative**: Indicates a negative status, such as an error or failure.\n" +
+        "- **Caution**: Indicates a cautionary status, such as a warning or alert.\n" +
+        "- **Information**: Indicates informational status, such as updates or general information.\n",
+    },
   },
 };
 
