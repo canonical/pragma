@@ -33,12 +33,14 @@ export interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
    * Options for humanizing the numeric value displayed in the badge.
    * See {@link HumanizeNumberOptions} for details on available configuration options.
    *
+   * @migration 1.0.0 - The badge does not support numeric clamping at this time to keep the component simple.
+   *
    * @example
    * // Default behavior (round mode)
    * <Badge value={1500} />
    *
    * // Clamp to maximum of 999 with custom overflow indicator
-   * <Badge value={1500} humanizeOptions={{ humanizeType: "clamp", clampOptions: { max: 999 }, overflowIndicator: "+" }} />
+   * <Badge value={1500} humanizeOptions={{ clampOptions: { max: 999 }, overflowIndicator: "+" }} />
    *
    * // Custom units for binary values
    * <Badge value={2048} humanizeOptions={{ magnitudeBase: 1024, units: ["B", "KiB", "MiB"] }} />

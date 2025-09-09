@@ -11,7 +11,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "A Badge component for displaying numeric values with flexible formatting options. Use the `humanizeOptions` prop to configure how numbers are displayed, including clamp mode (default), round mode, custom units, and overflow indicators.",
+          "A Badge component for displaying numeric values with flexible formatting options. Use the `humanizeOptions` prop to configure how numbers are displayed, including custom units and overflow indicators.",
       },
     },
   },
@@ -33,35 +33,6 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {
   args: {
     value: 500,
-  },
-};
-
-export const Clamped: Story = {
-  args: {
-    value: 12345,
-  },
-  parameters: {
-    docs: {
-      description: {
-        story:
-          "By default, Badge uses clamp mode which displays numbers up to 999, then shows '999+' for larger values. This prevents UI overflow while indicating that the actual value is larger.",
-      },
-    },
-  },
-};
-
-export const Rounded: Story = {
-  args: {
-    ...Clamped.args,
-    humanizeOptions: { humanizeType: "round" },
-  },
-  parameters: {
-    docs: {
-      description: {
-        story:
-          "Using round mode adjusts the radix to show as much precision as can be represented, and includes unit positional notation if needed. This provides human-readable formatting for large numbers.",
-      },
-    },
   },
 };
 

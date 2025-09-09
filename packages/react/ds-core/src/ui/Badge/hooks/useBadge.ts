@@ -7,8 +7,6 @@ import { useMemo } from "react";
 import type { UseBadgeProps, UseBadgeResult } from "../types.js";
 
 const DEFAULT_HUMANIZE_OPTIONS: HumanizeNumberOptions = {
-  humanizeType: "clamp",
-  clampOptions: { min: 0, max: 999 },
   overflowIndicator: "+",
 };
 
