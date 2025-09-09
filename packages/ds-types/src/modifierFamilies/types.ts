@@ -1,4 +1,4 @@
-import type MODIFIER_FAMILIES from "./modifierFamilies.js";
+import type { MODIFIER_FAMILIES } from "./constants.js";
 
 /**
  * A helper type that extracts the union type of a modifier family

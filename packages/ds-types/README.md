@@ -13,4 +13,4 @@ This package is organized into families of types, each in their own folder withi
 ### Constants
 
 Some types are derived from constants defined within their modifier folders. This allows runtime access to the same values used in type definitions.
-These constants are defined as uppercased versions of the type derived from them, and are defined in the `<modifierFamilyName>.ts` file within modifier folders.
+These constants are defined as PASCAL_CASED versions of the type derived from them, and are defined in the `constants.ts` file within modifier folders.

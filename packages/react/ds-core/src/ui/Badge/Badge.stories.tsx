@@ -37,25 +37,19 @@ export const Default: Story = {
 };
 
 export const Appearance: StoryFn<typeof Component> = (args) => (
-  <>
+  <div
+    style={{ display: "inline-flex", gap: "var(--spacing-horizontal-small)" }}
+  >
     {MODIFIER_FAMILIES.severity.map((severityLevel) => (
-      <>
-        <Component {...args} appearance={severityLevel} />
-        <br />
-      </>
+      <Component {...args} appearance={severityLevel} />
     ))}
-  </>
+  </div>
 );
 Appearance.parameters = {
   docs: {
     description: {
       story:
-        "The appearance variant demonstrates the different visual styles available for the Badge component. Each appearance corresponds to a specific status or intent, allowing users to quickly identify the nature of the information being presented. The available appearances include:\n" +
-        "\n" +
-        "- **Positive**: Indicates a positive status, such as success or completion.\n" +
-        "- **Negative**: Indicates a negative status, such as an error or failure.\n" +
-        "- **Caution**: Indicates a cautionary status, such as a warning or alert.\n" +
-        "- **Information**: Indicates informational status, such as updates or general information.\n",
+        "The appearance variant demonstrates the different visual styles available for the Badge component.",
     },
   },
 };
