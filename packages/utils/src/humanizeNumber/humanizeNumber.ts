@@ -60,10 +60,16 @@ const humanizeNumber = (
   options?: HumanizeNumberOptions,
 ): HumanizeResult => {
   const {
-    units = DEFAULT_UNITS,
     magnitudeBase = DEFAULT_MAGNITUDE_BASE,
     overflowIndicator = "+",
   } = options ?? {};
+
+  let {
+      units = DEFAULT_UNITS
+  } = options ?? {};
+
+  // If user passes an undefined or empty units array, fallback to [""] to show no unit suffix instead of `undefined`
+  if (!units?.length) units = [""];
 
   // Display non-finite numbers (infinity, NaN) as-is
   if (!Number.isFinite(value)) {
