@@ -15,7 +15,7 @@ const componentCssClassName = "ds badge";
 const Badge = ({
   value,
   className,
-  appearance,
+  severity,
   humanizeOptions,
   pluralizeOptions,
   ...props
@@ -29,7 +29,7 @@ const Badge = ({
   return (
     <span
       title={title}
-      className={[componentCssClassName, appearance, className]
+      className={[componentCssClassName, severity, className]
         .filter(Boolean)
         .join(" ")}
       {...props}

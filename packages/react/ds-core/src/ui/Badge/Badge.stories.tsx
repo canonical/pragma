@@ -19,7 +19,7 @@ const meta = {
     value: {
       control: { type: "number" },
     },
-    appearance: {
+    severity: {
       options: MODIFIER_FAMILIES.severity,
       control: { type: "radio" },
     },
@@ -36,32 +36,32 @@ export const Default: Story = {
   },
 };
 
-export const Appearance: StoryFn<typeof Component> = (args) => (
+export const Severity: StoryFn<typeof Component> = (args) => (
   <div
     style={{ display: "inline-flex", gap: "var(--spacing-horizontal-small)" }}
   >
     {MODIFIER_FAMILIES.severity.map((severityLevel, i) => (
-      <Component key={severityLevel} {...args} appearance={severityLevel} />
+      <Component key={severityLevel} {...args} severity={severityLevel} />
     ))}
   </div>
 );
-Appearance.parameters = {
+Severity.parameters = {
   docs: {
     description: {
       story:
-        "The appearance variant demonstrates the different visual styles available for the Badge component.",
+        "The severity variant demonstrates the different visual styles available for the Badge component.",
     },
   },
 };
 
-// All appearance badges use the same value for the story
-Appearance.args = {
+// All severity badges use the same value for the story
+Severity.args = {
   value: 1500,
 };
 
-// Hide the appearance input control as the appearances are controlled by the story itself
-Appearance.argTypes = {
-  appearance: {
+// Hide the severity input control as the severities are controlled by the story itself
+Severity.argTypes = {
+  severity: {
     table: {
       disable: true,
     },

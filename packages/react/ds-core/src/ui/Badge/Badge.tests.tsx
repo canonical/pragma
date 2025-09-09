@@ -11,7 +11,7 @@ describe("Badge component", () => {
   });
 
   it("can set its appearance", () => {
-    render(<Component value={15} appearance="negative" />);
+    render(<Component value={15} severity="negative" />);
     expect(screen.getByText("15")).toHaveClass("ds badge negative");
   });
 

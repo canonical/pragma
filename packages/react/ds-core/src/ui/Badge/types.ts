@@ -22,7 +22,7 @@ export interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
    *
    * When no appearance is specified, uses the default badge styling.
    */
-  appearance?: ModifierFamily<"severity">;
+  severity?: ModifierFamily<"severity">;
 
   /**
    * Options for humanizing the numeric value displayed in the badge.
