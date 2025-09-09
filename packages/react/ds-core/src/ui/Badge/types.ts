@@ -6,12 +6,6 @@ import type { HTMLAttributes } from "react";
 
 export interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
   /**
-   * Options for the pluralization of the item being counted.
-   * See {@link PluralizeOptions} for details.
-   */
-  pluralizeOptions?: PluralizeOptions;
-
-  /**
    * Numeric value to be displayed.
    */
   value: number;
@@ -22,6 +16,7 @@ export interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
    * - "positive": Indicates a positive status
    * - "negative": Indicates a negative status
    * - "caution": Indicates a cautionary status
+   * - "information": Indicates an informative status
    * // TODO neutral intent is currently defined in a very button-centric way. It should unset other appearances, but it currently applies default button styling.
    *      Possibly we will need to revisit this by binding component variables without component name prefix, so that neutral can reset components to their neutral state.
    *
@@ -31,19 +26,13 @@ export interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
 
   /**
    * Options for humanizing the numeric value displayed in the badge.
-   * See {@link HumanizeNumberOptions} for details on available configuration options.
-   *
-   * @example
-   * // Default behavior (round mode)
-   * <Badge value={1500} />
-   *
-   * // Clamp to maximum of 999 with custom overflow indicator
-   * <Badge value={1500} humanizeOptions={{ clampOptions: { max: 999 }, overflowIndicator: "+" }} />
-   *
-   * // Custom units for binary values
-   * <Badge value={2048} humanizeOptions={{ magnitudeBase: 1024, units: ["B", "KiB", "MiB"] }} />
    */
   humanizeOptions?: HumanizeNumberOptions;
+
+  /**
+   * Options for the pluralization of the item being counted.
+   */
+  pluralizeOptions?: PluralizeOptions;
 }
 
 export type UseBadgeProps = Pick<
