@@ -15,10 +15,12 @@ describe("Link component", () => {
     expect(screen.getByText("Link")).toHaveClass("test-class");
   });
 
-  describe("hoverContents", () => {
+  describe("activationContents", () => {
     it("applies soft classname", () => {
       render(
-        <Component hoverContents={<span>Lorem ipsum</span>}>Link</Component>,
+        <Component activationContents={<span>Lorem ipsum</span>}>
+          Link
+        </Component>,
       );
       expect(screen.getByText("Link")).toHaveClass("soft");
     });

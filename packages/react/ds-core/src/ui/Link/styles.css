@@ -23,17 +23,31 @@
     }
   }
 
-  & .hover-contents {
+  &:hover,
+  &:focus-visible,
+  &:focus {
+    & .activation-contents {
+      visibility: visible;
+    }
+  }
+
+  & .activation-contents {
     color: var(--tmp-color-text-default);
     display: inline-block;
-    padding: var(--link-hover-contents-padding-vertical)
-      var(--link-hover-contents-padding-horizontal);
+    padding: 0 var(--link-activation-contents-padding-horizontal);
     text-decoration: none;
     vertical-align: baseline;
     visibility: hidden;
-  }
 
-  &:hover .hover-contents {
-    visibility: visible;
+    /*     TODO I used a child element to allow the user to pass arbitrary content to be rendered on interaction, but this has the unintended consequence of affecting the intrinsic size of the parent link element which is visible in its focus outline
+          Another way of doing this might be to use a Portal
+          Vanilla handles this with a pseudoelement (which uses a hard-coded icon), which works well, but has the downside of being less flexible for arbitrary content
+          Need to do some field research and see what the best approach is
+          */
+    /*
+        max-height: 100%;
+      overflow: visible;
+
+  */
   }
 }

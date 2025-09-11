@@ -12,9 +12,9 @@ export interface LinkProps extends AnchorHTMLAttributes<HTMLAnchorElement> {
 
   /**
    * A node to render inline with the link when it is hovered
-   * @migration 1.0.0 - previously, only Anchor link icons were supported. Now, arbitrary content can be shown on hover.
+   * @migration 1.0.0 - previously, only Anchor link icons were supported. Now, arbitrary content can be shown on interaction.
    * */
-  hoverContents?: ReactNode;
+  activationContents?: ReactNode;
 
   /**
    * @migration 1.0.0 - inverted links are not migrated from Vanilla as they have been deprecated.
