@@ -61,13 +61,13 @@
 
 /* Emphasis modifiers */
 
-.highlighted,
-.accented {
+.highlighted {
   --intent-separator-bar-height: var(--tmp-dimension-separator-bar-thickness);
   --intent-separator-bar-color: var(--tmp-color-text-default);
 }
 
 .accented {
+  --intent-separator-bar-height: var(--tmp-dimension-separator-bar-thickness);
   --intent-separator-bar-color: var(--tmp-color-border-accent);
 }
 
