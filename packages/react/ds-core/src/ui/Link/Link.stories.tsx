@@ -38,7 +38,7 @@ export const InlineContents: Story = {
   args: {
     ...Soft.args,
     //   TODO make this an anchor link Icon after implementation of Icon component https://vanillaframework.io/docs/patterns/links#anchor-link
-    hoverContents: "+",
+    activationContents: "+",
   },
   parameters: {
     docs: {

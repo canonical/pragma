@@ -16,13 +16,13 @@ const Link = ({
   className,
   children,
   appearance: appearanceProp,
-  hoverContents,
+  activationContents,
   ...props
 }: LinkProps): React.ReactElement => {
   // If hoverContents is provided, the link should be rendered as a soft link
   const appearance = useMemo(
-    () => (hoverContents ? "soft" : appearanceProp),
-    [appearanceProp, hoverContents],
+    () => (activationContents ? "soft" : appearanceProp),
+    [appearanceProp, activationContents],
   );
 
   return (
@@ -33,7 +33,9 @@ const Link = ({
       {...props}
     >
       {children}
-      {hoverContents && <span className="hover-contents">{hoverContents}</span>}
+      {activationContents && (
+        <span className="activation-contents">{activationContents}</span>
+      )}
     </a>
   );
 };

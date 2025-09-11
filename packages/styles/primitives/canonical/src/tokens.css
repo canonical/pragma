@@ -372,8 +372,8 @@
   --chip-margin-left: var(--spacing-horizontal-medium);
 
   --link-soft-selected-font-weight: var(--font-weight-bold);
-  --link-hover-contents-padding-vertical: var(--spacing-vertical-small);
-  --link-hover-contents-padding-horizontal: var(--spacing-horizontal-small);
+  --link-activation-contents-padding-vertical: var(--spacing-vertical-small);
+  --link-activation-contents-padding-horizontal: var(--spacing-horizontal-small);
 
   /*
       TODO the tooltip's color tokens should be inverted from the active color theme.
