@@ -335,6 +335,10 @@
   --spacing-vertical-xsmall: 0.25rem;
   --spacing-vertical-small: 0.5rem;
   --spacing-vertical-medium: 0.75rem;
+  --spacing-vertical-large: 1rem;
+  --spacing-vertical-xlarge: 1.5rem;
+  --spacing-vertical-xxlarge: 4rem;
+  --spacing-vertical-xxxlarge: 8rem;
 
   --spacing-input-margin-bottom: 0.5rem; /* TODO: needs baseline alignment https://github.com/canonical/vanilla-framework/blob/main/scss/_settings_spacing.scss#L122 */
   --spacing-input-padding-vertical: 0.5rem; /* TODO: needs to take baseline into account https://github.com/canonical/vanilla-framework/blob/main/scss/_settings_spacing.scss#L124 */
@@ -443,4 +447,6 @@
   --rule-height: 1px;
   --rule-margin-top: 0;
   --rule-height-with-margin: var(--spacing-vertical-small);
+
+  --section-padding-bottom: var(--spacing-vertical-xxlarge);
 }
