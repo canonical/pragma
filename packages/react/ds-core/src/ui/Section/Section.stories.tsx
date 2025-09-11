@@ -42,7 +42,7 @@ Prominence.parameters = {
   docs: {
     description: {
       story:
-        "The prominence variant demonstrates the different visual styles available for the Badge component.",
+        "Sections can have varying visual prominence levels to organize information according to an information hierarchy.",
     },
   },
 };
