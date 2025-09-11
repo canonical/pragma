@@ -40,7 +40,8 @@ h2,
 h3,
 h4,
 h5,
-h6 {
+h6,
+a {
   max-width: var(--text-max-width);
   font-weight: var(--font-weight);
 }
@@ -86,4 +87,31 @@ h6 {
   --font-size: 1rem;
   --space-after: 2;
   --font-weight: 400;
+}
+
+/*
+    TODO what is the best way to implement focus in a reusable way?
+    TODO how much of this should be in the styles package (applied to the <a> tag) instead of in an implementation library?
+    For reference, Vanilla used a `vf-focus-themed` mixin with SCSS https://github.com/canonical/vanilla-framework/blob/6af35433368f82d76d8deb7effebca47b434ee76/scss/_global_functions.scss#L64-L101
+     Note, one option for enabling `focus-visible` on older browsers that don't support it is to use lightningCSS to to map to CSS classes, which would allow us to use a focus-visible polyfill
+     https://lightningcss.dev/transpilation.html#pseudo-class-replacement
+ */
+a {
+  color: var(--tmp-color-text-link-default);
+  text-decoration: none;
+
+  &:focus {
+    outline-offset: 0;
+  }
+
+  &:hover {
+    cursor: pointer;
+    text-decoration: underline;
+    text-decoration-thickness: var(--tmp-dimension-decoration-thickness-link);
+    text-underline-offset: var(--tmp-dimension-underline-offset-link);
+  }
+
+  &:visited {
+    color: var(--tmp-color-text-link-visited);
+  }
 }

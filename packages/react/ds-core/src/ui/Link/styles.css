@@ -1,0 +1,39 @@
+/* @canonical/generator-ds 0.10.0-experimental.2 */
+
+.ds.link {
+  &.soft {
+    /*
+            Soft links are explicitly meant to use normal text color
+            TODO because <a> tag have their color set in the styles package, we need to set a specific color here.
+                Otherwise, we could use `currentColor` or only apply link color to non-soft links, which would allow the link to inherit color from parent.
+                We should confirm this approach is what we want.
+        */
+    color: var(--tmp-color-text-default);
+
+    &:hover {
+      color: var(--tmp-color-text-link-default);
+    }
+
+    &:visited {
+      color: var(--tmp-color-text-default);
+    }
+
+    &[aria-current="page"] {
+      font-weight: var(--link-soft-selected-font-weight);
+    }
+  }
+
+  & .hover-contents {
+    color: var(--tmp-color-text-default);
+    display: inline-block;
+    padding: var(--link-hover-contents-padding-vertical)
+      var(--link-hover-contents-padding-horizontal);
+    text-decoration: none;
+    vertical-align: baseline;
+    visibility: hidden;
+  }
+
+  &:hover .hover-contents {
+    visibility: visible;
+  }
+}
