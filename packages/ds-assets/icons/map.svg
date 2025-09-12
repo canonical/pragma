@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+  <g id="map">
+    <path fill-rule="evenodd" clip-rule="evenodd" d="M10 3L6 1L1 2V14L6 13L10 15L15 14V2L10 3ZM9.25 4.30205L6.75 3.05205V11.6979L9.25 12.9479V4.30205ZM10.75 13.3203V4.37971L13.5 3.82971V12.7703L10.75 13.3203ZM5.25 11.6203V2.67971L2.5 3.22971V12.1703L5.25 11.6203Z" fill="currentColor"/>
+  </g>
+</svg>

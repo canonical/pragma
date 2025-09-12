@@ -127,6 +127,16 @@
         "typescript": "^5.8.2",
       },
     },
+    "packages/ds-assets": {
+      "name": "@canonical/ds-assets",
+      "version": "0.10.0-experimental.0",
+      "devDependencies": {
+        "@biomejs/biome": "2.2.2",
+        "@canonical/biome-config": "^0.10.0-experimental.0",
+        "@canonical/typescript-config-base": "^0.10.0-experimental.0",
+        "typescript": "^5.8.3",
+      },
+    },
     "packages/ds-types": {
       "name": "@canonical/ds-types",
       "version": "0.10.0-experimental.0",
@@ -782,6 +792,8 @@
     "@bundled-es-modules/tough-cookie": ["@bundled-es-modules/tough-cookie@0.1.6", "", { "dependencies": { "@types/tough-cookie": "^4.0.5", "tough-cookie": "^4.1.4" } }, "sha512-dvMHbL464C0zI+Yqxbz6kZ5TOEp7GLW+pry/RWndAR8MJQAXZ2rPmIs8tziTZjeIyhSNZgZbCePtfSbdWqStJw=="],
 
     "@canonical/biome-config": ["@canonical/biome-config@workspace:configs/biome"],
+
+    "@canonical/ds-assets": ["@canonical/ds-assets@workspace:packages/ds-assets"],
 
     "@canonical/ds-demo-site": ["@canonical/ds-demo-site@workspace:apps/react/demo"],
 
