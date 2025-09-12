@@ -7,5 +7,6 @@
     "declarationDir": "dist/types",
     "declarationMap": true,
     "sourceMap": true
-  }
+  },
+  "exclude": ["src/icons/standardize-icons.ts"]
 }

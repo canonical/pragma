@@ -134,6 +134,7 @@
         "@biomejs/biome": "2.2.2",
         "@canonical/biome-config": "^0.10.0-experimental.0",
         "@canonical/typescript-config-base": "^0.10.0-experimental.0",
+        "@types/node": "^24.0.0",
         "typescript": "^5.8.3",
       },
     },

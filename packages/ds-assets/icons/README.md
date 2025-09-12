@@ -11,6 +11,9 @@ Each icon shall:
 4. Use the same SVG canvas size. Currently, we are using 16x16.
 5. All paths shall be filled with `currentColor`.
 
+The [`src/icons/standardize-icons.ts` script](../src/icons/standardize-icons.ts) script will standardize all icons (except ones with `-dark` versions, to be revisited later) in the [`/icons`](../icons) folder to follow these requirements.
+Run the script with `bun run standadize-icons`.
+
 ## Coloring
 
 We have some icons that have colors baked into them. These will be addressed in a follow-up. These icons are, as of 12 September 2025:
@@ -37,6 +40,18 @@ There are other icons that are stored as monochrome, but have historically been 
     6. `unit-running`
     7. `warning`
 
+## TypeScript Support
 
+### Constants & Types
 
+The [`src/icons` folder](../src/icons) contains the full list of icons as a TypeScript array (`ICON_NAMES`) and as a type (`IconName`).
 
+#### Usage example
+
+```ts
+import type { IconName } from "@canonical/ds-assets";
+
+export interface MyComponentProps {
+    iconName: IconName;
+}
+```
