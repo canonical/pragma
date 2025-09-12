@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+  <g id="arrow-up">
+    <path fill-rule="evenodd" clip-rule="evenodd" d="M7.25006 3.81119L3.51379 7.54746L2.45312 6.4868L8.00035 0.939575L13.5476 6.4868L12.487 7.54746L8.75006 3.8106V14.989H7.25006V3.81119Z" fill="currentColor"/>
+  </g>
+</svg>

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+  <g id="play">
+    <path fill-rule="evenodd" clip-rule="evenodd" d="M11.3844 7.98988L5.5 3.8781V12.1161L11.3844 7.98988ZM12.538 9.01297C13.2485 8.51476 13.2475 7.46193 12.5362 6.96489L5.96599 2.37378C5.13742 1.79481 4 2.38761 4 3.39841V12.5968C4 13.6085 5.1393 14.2011 5.96768 13.6202L12.538 9.01297Z" fill="currentColor"/>
+  </g>
+</svg>
