@@ -304,6 +304,8 @@
   --color-background-caution-tinted-active: rgba(199, 90, 0, 0.18);
 
   /*  dimension tokens */
+  --tmp-dimension-decoration-thickness-link: 1px;
+  --tmp-dimension-underline-offset-link: 0.075em;
 
   /* 3px at 16px fontsize, expressed in rems so it scales with text if the root font-size changes at a breakpoint */
   --tmp-dimension-separator-bar-thickness: 0.1875rem;
@@ -368,6 +370,10 @@
   --chip-padding-horizontal: var(--spacing-horizontal-small);
   --chip-margin-bottom: var(--spacing-vertical-small);
   --chip-margin-left: var(--spacing-horizontal-medium);
+
+  --link-soft-selected-font-weight: var(--font-weight-bold);
+  --link-activation-contents-padding-vertical: var(--spacing-vertical-small);
+  --link-activation-contents-padding-horizontal: var(--spacing-horizontal-small);
 
   /*
       TODO the tooltip's color tokens should be inverted from the active color theme.
