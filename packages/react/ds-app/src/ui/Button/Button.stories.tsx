@@ -80,7 +80,7 @@ export const IntentsInheritance: Story = {
       <div
         className="positive"
         style={{
-          border: "2px solid var(--intent-color)",
+          border: "2px solid var(--modifier-color)",
           padding: "1rem",
         }}
       >

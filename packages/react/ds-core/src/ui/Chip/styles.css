@@ -1,13 +1,13 @@
 /* @canonical/generator-canonical-ds 0.4.0-experimental.0 */
 
 .ds.chip {
-  border-color: var(--intent-color-border, var(--chip-color-border));
+  border-color: var(--modifier-color-border, var(--chip-color-border));
   border-style: solid;
   border-radius: var(--chip-border-radius);
   border-width: var(--chip-border-width);
 
-  color: var(--intent-color-text-tinted, var(--chip-color-text));
-  background-color: var(--intent-color-tinted, var(--chip-color-background));
+  color: var(--modifier-color-text-tinted, var(--chip-color-text));
+  background-color: var(--modifier-color-tinted, var(--chip-color-background));
 
   display: inline-flex;
   align-items: baseline;
@@ -64,7 +64,7 @@
   &:hover:not(:has(.dismiss)),
   & > .dismiss:hover {
     background-color: var(
-      --intent-color-tinted-hover,
+      --modifier-color-tinted-hover,
       var(--chip-color-background-hover)
     );
   }
@@ -72,7 +72,7 @@
   &:active:not(:has(.dismiss)),
   & > .dismiss:active {
     background-color: var(
-      --intent-color-tinted-active,
+      --modifier-color-tinted-active,
       var(--chip-color-background-active)
     );
   }
