@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -56,9 +56,8 @@ function standardizeSvg(filePath: string): void {
  * Process all SVG files in the icons directory
  */
 function processAllIcons(): void {
-  const fs = require("node:fs");
-  const svgFiles = fs
-    .readdirSync(ICONS_DIR)
+  8;
+  const svgFiles = readdirSync(ICONS_DIR)
     .filter((file: string) => file.endsWith(".svg"))
     .map((file: string) => join(ICONS_DIR, file));
 
@@ -66,7 +65,7 @@ function processAllIcons(): void {
     // Skip if there's a corresponding -dark.svg file
     if (
       svg.endsWith("-dark.svg") ||
-      fs.existsSync(svg.replace(".svg", "-dark.svg"))
+      existsSync(svg.replace(".svg", "-dark.svg"))
     ) {
       continue;
     }
