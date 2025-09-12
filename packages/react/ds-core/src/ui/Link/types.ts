@@ -1,26 +1,36 @@
 /* @canonical/generator-ds 0.10.0-experimental.2 */
 
-import type { AnchorHTMLAttributes, ReactNode } from "react";
+import type {
+  AnchorHTMLAttributes,
+  ComponentPropsWithoutRef,
+  ElementType,
+  HTMLAttributes,
+  ReactNode,
+} from "react";
 
-export interface LinkProps extends AnchorHTMLAttributes<HTMLAnchorElement> {
-  /* Additional CSS classes */
+interface BaseProps extends HTMLAttributes<HTMLElement> {
+  /** Additional CSS classes */
   className?: string;
-  /* Child elements */
+  /** Content to display in the link */
   children?: ReactNode;
-  /* Link variant */
+  /** Link appearance modifier */
   appearance?: "soft";
-
-  /**
-   * A node to render inline with the link when it is hovered
-   * @migration 1.0.0 - previously, only Anchor link icons were supported. Now, arbitrary content can be shown on interaction.
-   * */
+  /** Content to show on hover/focus */
+  // TODO consider removing this from here for simplicity's sake, consider its use case as a separate component like "Anchor Link"? https://vanillaframework.io/docs/patterns/links#anchor-link
   activationContents?: ReactNode;
-
-  /**
-   * @migration 1.0.0 - inverted links are not migrated from Vanilla as they have been deprecated.
-   */
-
-  /**
-   * TODO also study TopLink https://vanillaframework.io/docs/patterns/links#back-to-top
-   */
 }
+
+/*
+Allow for different props based on the `as` prop, which allows the Link component to be used as another element.
+This makes the link more flexible; for example, it allows users to use Router framework links with our Link component.
+ */
+
+type AnchorProps = BaseProps &
+  AnchorHTMLAttributes<HTMLAnchorElement> & { as?: "a" };
+// omit `appearance` to allow TS binding to the `appearance` prop of the custom element rather than the link element
+// todo this isn't working but we likely need to solve it somehow
+type CustomProps = Omit<BaseProps, "appearance"> & {
+  as: ElementType;
+} & ComponentPropsWithoutRef<ElementType>;
+
+export type LinkProps = AnchorProps | CustomProps;
