@@ -42,7 +42,7 @@
     /*     TODO I used a child element to allow the user to pass arbitrary content to be rendered on interaction, but this has the unintended consequence of affecting the intrinsic size of the parent link element which is visible in its focus outline
           Another way of doing this might be to use a Portal
           Vanilla handles this with a pseudoelement (which uses a hard-coded icon), which works well, but has the downside of being less flexible for arbitrary content
-          Need to do some field research and see what the best approach is
+          Need to do some field research and see what the best approach is, but I'm welcome to opinions
           */
     /*
         max-height: 100%;
