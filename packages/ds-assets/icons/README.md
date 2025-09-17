@@ -19,7 +19,8 @@ Run the script with `bun run standardize-icons`.
 
 ## Coloring
 
-We have some icons that have colors baked into them. These icons are, as of 12 September 2025:
+Most of our icons are monochromatic, and consume the current text color using `currentColor`. 
+However, there are some icons that use more than one color. These icons are, as of September 2025:
 
 ### Brand icons
 
@@ -97,3 +98,7 @@ export interface MyComponentProps {
   iconName: IconName;
 }
 ```
+
+## SVG Optimization
+
+TBD, in a follow-up we may update the icon standardization script to optimize SVGs using SVGO or a similar tool.
