@@ -33,7 +33,13 @@ const createConfig = (options: CreateConfigOptions = {}): StorybookConfig => ({
   typescript: {
     check: true,
   },
-  staticDirs: options.staticDirs,
+  staticDirs: [
+    ...(options.staticDirs || []),
+    {
+      from: `${getAbsolutePath("@canonical/ds-assets")}/icons`,
+      to: "assets/canonical-pragma-icons",
+    },
+  ],
 });
 
 export default createConfig;

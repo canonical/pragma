@@ -1,3 +1,5 @@
+export const ICON_BASE_PATH = "/assets/canonical-pragma-icons/";
+
 export const ICON_NAMES = [
   "add-canvas",
   "add-logical-volume",

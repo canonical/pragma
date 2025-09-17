@@ -303,7 +303,14 @@
   --color-background-caution-tinted-hover: rgba(199, 90, 0, 0.15);
   --color-background-caution-tinted-active: rgba(199, 90, 0, 0.18);
 
-  /*  dimension tokens */
+  /* Primitive dimension scale tokens */
+  --dimension-scale-2xs: 0.5rem; /* 8px */
+  --dimension-scale-xs: 0.75rem; /* 12px */
+  --dimension-scale-sm: 1rem; /* 16px */
+  --dimension-scale-md: 1.5rem; /* 24px */
+  --dimension-scale-lg: 2rem; /* 32px */
+  --dimension-scale-xl: 3rem; /* 48px */
+  --dimension-scale-2xl: 6rem; /* 96px */
 
   /* 3px at 16px fontsize, expressed in rems so it scales with text if the root font-size changes at a breakpoint */
   --tmp-dimension-separator-bar-thickness: 0.1875rem;
@@ -374,6 +381,16 @@
           This is to provide greater color contrast against its context.
           This will be implemented once theming DS-wide is added.
     */
+
+  --icon-size-2xs: var(--dimension-scale-2xs);
+  --icon-size-xs: var(--dimension-scale-xs);
+  --icon-size-sm: var(--dimension-scale-sm);
+  --icon-size-md: var(--dimension-scale-md);
+  --icon-size-lg: var(--dimension-scale-lg);
+  --icon-size-xl: var(--dimension-scale-xl);
+  --icon-size-2xl: var(--dimension-scale-2xl);
+
+  --icon-margin-inline-end: var(--spacing-horizontal-small);
 
   --tooltip-color-background: var(--tmp-color-background-default);
   --tooltip-color-background-hover: var(--tmp-color-background-hover);
