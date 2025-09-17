@@ -32,7 +32,10 @@
     "check:biome": "biome check",
     "check:biome:fix": "biome check --write",
     "check:ts": "tsc --noEmit",
-    "standardize-icons": "bun ./scripts/standardize-icons.ts"
+    "standardize-icons": "bun ./scripts/standardize-icons.ts",
+    "test": "bun run test:vitest",
+    "test:vitest": "vitest run",
+    "test:vitest:watch": "vitest"
   },
   "dependencies": {
     "@canonical/styles-primitives-canonical": "^0.10.0-experimental.0"
@@ -42,6 +45,9 @@
     "@canonical/biome-config": "^0.10.0-experimental.0",
     "@canonical/typescript-config-base": "^0.10.0-experimental.0",
     "typescript": "^5.8.3",
-    "@types/node": "^24.0.0"
+    "@types/node": "^24.0.0",
+    "vite": "^7.0.0",
+    "vite-tsconfig-paths": "^5.1.4",
+    "vitest": "^3.2.3"
   }
 }
