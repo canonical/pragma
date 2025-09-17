@@ -1,5 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <svg width='16' height='16' xmlns='http://www.w3.org/2000/svg'>
-    <g id="status-in-progress" fill='none' fill-rule='evenodd'>
+  <g id="status-in-progress" fill='none' fill-rule='evenodd'>
         <circle fill='var(--color-palette-blue)' cx='8' cy='8' r='7'/>
         <path d='M8 3.5a4.5 4.5 0 110 9 4.5 4.5 0 010-9zM8 5a3 3 0 100 6 3 3 0 000-6z' fill='var(--tmp-color-background-alt)'
               fill-rule='nonzero' opacity='.5'/>

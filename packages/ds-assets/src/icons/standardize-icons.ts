@@ -1,12 +1,25 @@
 #!/usr/bin/env node
 
-import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const ICONS_DIR = join(__dirname, "../../", "icons");
+
+// Icons that should not be standardized
+const IGNORED_ICONS = new Set([
+  "email",
+  "facebook",
+  "github",
+  "github-dark",
+  "instagram",
+  "rss",
+  "x",
+  "x-dark",
+  "youtube",
+]);
 
 /**
  * Standardizes an SVG file to meet the following requirements:
@@ -23,14 +36,45 @@ function standardizeSvg(filePath: string): void {
   const iconName = basename(filePath, ".svg");
   let content = readFileSync(filePath, "utf-8");
 
+  // Extract and preserve mask elements, clip-path elements, and clip-path attributes
+  const preservedElements: Array<{
+    placeholder: string;
+    content: string;
+  }> = [];
+
+  // Mask elements
+  content = content.replace(/<mask[^>]*>[\s\S]*?<\/mask>/gi, (match) => {
+    const placeholder = `__PRESERVED_${preservedElements.length}__`;
+    preservedElements.push({ placeholder, content: match });
+    return placeholder;
+  });
+
+  // clipPath elements
+  content = content.replace(
+    /<clipPath[^>]*>[\s\S]*?<\/clipPath>/gi,
+    (match) => {
+      const placeholder = `__PRESERVED_${preservedElements.length}__`;
+      preservedElements.push({ placeholder, content: match });
+      return placeholder;
+    },
+  );
+
+  // clip-path attributes
+  content = content.replace(/clip-path\s*=\s*["'][^"']*["']/gi, (match) => {
+    const placeholder = `__PRESERVED_${preservedElements.length}__`;
+    preservedElements.push({ placeholder, content: match });
+    return placeholder;
+  });
+
+  // Replace color fills with currentColor
   content = content
-    // Replace color fills with currentColor
-    .replace(/fill="#[A-Fa-f0-9]{6}"/g, 'fill="currentColor"')
-    .replace(/fill="#[A-Fa-f0-9]{3}"/g, 'fill="currentColor"')
-    .replace(/fill="black"/g, 'fill="currentColor"')
-    .replace(/fill="white"/g, 'fill="currentColor"')
-    .replace(/fill="rgb\([^)]+\)"/g, 'fill="currentColor"')
-    .replace(/fill="none"/g, "");
+    .replace(/fill="none"/g, "")
+    .replace(/fill="[^"]*"/g, 'fill="currentColor"');
+
+  // Restore all preserved content
+  preservedElements.forEach(({ placeholder, content: preservedContent }) => {
+    content = content.replace(placeholder, preservedContent);
+  });
 
   // Extract the content between <svg> and </svg>
   const svgContentMatch = content.match(/<svg[^>]*>([\s\S]*?)<\/svg>/i);
@@ -55,16 +99,16 @@ function standardizeSvg(filePath: string): void {
     ${innerContent}
   </g>`;
   } else if (!hasGroupWithId) {
-    // Has <g> but no id - replace first <g> with one that has an id
+    // Has <g> but no id - add id while preserving existing attributes
     newInnerContent = innerContent.replace(
       /<g([^>]*)>/i,
-      `<g id="${iconName}"$1>`,
+      (_, attributes) => `<g${attributes} id="${iconName}">`,
     );
   } else {
-    // Already has <g> with id - replace the id
+    // Already has <g> with id - replace only the id while preserving other attributes
     newInnerContent = innerContent.replace(
-      /<g[^>]*id="[^"]*"[^>]*>/i,
-      `<g id="${iconName}">`,
+      /<g([^>]*?)id="[^"]*"([^>]*?)>/i,
+      (_, beforeId, afterId) => `<g${beforeId}id="${iconName}"${afterId}>`,
     );
   }
 
@@ -80,19 +124,12 @@ function standardizeSvg(filePath: string): void {
  * Process all SVG files in the icons directory
  */
 function processAllIcons(): void {
-  8;
   const svgFiles = readdirSync(ICONS_DIR)
     .filter((file: string) => file.endsWith(".svg"))
+    .filter((file: string) => !IGNORED_ICONS.has(basename(file, ".svg")))
     .map((file: string) => join(ICONS_DIR, file));
 
   for (const svg of svgFiles) {
-    // Skip if there's a corresponding -dark.svg file
-    if (
-      svg.endsWith("-dark.svg") ||
-      existsSync(svg.replace(".svg", "-dark.svg"))
-    ) {
-      continue;
-    }
     console.log(`Processing ${svg}...`);
     standardizeSvg(svg);
   }
