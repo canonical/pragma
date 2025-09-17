@@ -2,6 +2,7 @@
 
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
+import { Button } from "../Button/index.js";
 import Component from "./Link.js";
 
 describe("Link component", () => {
@@ -23,6 +24,22 @@ describe("Link component", () => {
         </Component>,
       );
       expect(screen.getByText("Link")).toHaveClass("soft");
+    });
+  });
+
+  describe("polymorphic as prop", () => {
+    it("functions as a button", () => {
+      const onClick = vi.fn();
+      render(
+        <Component as={Button} onClick={onClick}>
+          Link button
+        </Component>,
+      );
+      const button = screen.getByRole("button");
+      expect(button).toBeInTheDocument();
+      expect(button).toHaveTextContent("Link button");
+      button.click();
+      expect(onClick).toHaveBeenCalled();
     });
   });
 });
