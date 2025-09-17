@@ -448,5 +448,9 @@
   --rule-margin-top: 0;
   --rule-height-with-margin: var(--spacing-vertical-small);
 
-  --section-padding-bottom: var(--spacing-vertical-xxlarge);
+  --section-padding-bottom-shallow: var(--spacing-vertical-xlarge);
+  --section-padding-bottom-default: var(--spacing-vertical-xxlarge);
+  --section-padding-bottom-deep: var(--spacing-vertical-xxxlarge);
+  --section-padding-bottom-hero: var(--section-padding-bottom-default);
+  --section-padding-top-hero: var(--spacing-vertical-xlarge);
 }
