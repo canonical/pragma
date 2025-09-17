@@ -1,9 +1,8 @@
 /* @canonical/generator-ds 0.10.0-experimental.2 */
 
-import { MODIFIER_FAMILIES } from "@canonical/ds-types";
-
 import type { Meta, StoryFn, StoryObj } from "@storybook/react-vite";
 import Rule from "../Rule/Rule.js";
+import { SECTION_SPACING } from "./constants.js";
 import Component from "./Section.js";
 
 const meta = {
@@ -18,17 +17,22 @@ const meta = {
       control: { type: "text" },
       description: "The content of the section.",
     },
-    prominence: {
-      options: MODIFIER_FAMILIES.prominence,
+    spacing: {
+      options: SECTION_SPACING,
       control: { type: "radio" },
-      description: "The visual prominence level of the section.",
+      description: "The spacing variant of the section.",
+      table: {
+        type: {
+          summary: SECTION_SPACING.join(" | "),
+        },
+      },
     },
   },
   parameters: {
     docs: {
       description: {
         component:
-          "The `<Section>` component groups related content. Sections can have varying visual prominence levels to organize information according to an information hierarchy.",
+          "The `<Section>` component groups related content. Sections can have varying visual spacing levels to organize information according to an information hierarchy.",
       },
     },
   },
@@ -44,30 +48,30 @@ export const Default: Story = {
   },
 };
 
-export const Prominence: StoryFn<typeof Component> = (args) => (
+export const Spacing: StoryFn<typeof Component> = (args) => (
   <div>
-    {MODIFIER_FAMILIES.prominence.map((prominenceLevel) => (
-      <div key={prominenceLevel}>
+    {SECTION_SPACING.map((spacingLevel) => (
+      <div key={spacingLevel}>
         <Rule />
-        <Component key={prominenceLevel} {...args} prominence={prominenceLevel}>
-          <h4>This is a {prominenceLevel} section.</h4>
+        <Component key={spacingLevel} {...args} spacing={spacingLevel}>
+          <h4>This is a {spacingLevel} section.</h4>
         </Component>
       </div>
     ))}
   </div>
 );
-Prominence.parameters = {
+Spacing.parameters = {
   docs: {
     description: {
       story:
-        "Sections can have varying visual prominence levels to organize information according to an information hierarchy.",
+        "Sections can have varying visual spacing levels to organize information according to an information hierarchy.",
     },
   },
 };
 
-// Hide the prominence and children input controls as they are controlled by the story itself
-Prominence.argTypes = {
-  prominence: {
+// Hide the spacing and children input controls as they are controlled by the story itself
+Spacing.argTypes = {
+  spacing: {
     table: {
       disable: true,
     },

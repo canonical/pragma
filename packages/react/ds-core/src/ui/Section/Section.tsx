@@ -14,12 +14,16 @@ const componentCssClassName = "ds section";
 const Section = ({
   className,
   children,
-  prominence,
+  spacing,
   ...props
 }: SectionProps): React.ReactElement => {
   return (
     <section
-      className={[componentCssClassName, prominence, className]
+      className={[
+        componentCssClassName,
+        spacing && `spacing-${spacing}`,
+        className,
+      ]
         .filter(Boolean)
         .join(" ")}
       {...props}

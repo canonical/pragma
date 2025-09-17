@@ -1,7 +1,9 @@
 /* @canonical/generator-ds 0.10.0-experimental.2 */
 
-import type { ModifierFamily } from "@canonical/ds-types";
 import type { HTMLAttributes, ReactNode } from "react";
+import type { SECTION_SPACING } from "./constants.js";
+
+export type SectionSpacing = (typeof SECTION_SPACING)[number];
 
 /**
     We have used the `HTMLDivElement` as a default props base.
@@ -13,6 +15,6 @@ export interface SectionProps extends HTMLAttributes<HTMLDivElement> {
   className?: string;
   /* Child elements */
   children: ReactNode;
-  /* Visual prominence of the section */
-  prominence?: ModifierFamily<"prominence">;
+  /* Spacing variant of the section */
+  spacing?: SectionSpacing;
 }
