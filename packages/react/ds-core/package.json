@@ -38,6 +38,7 @@
     "test:vitest:watch": "vitest"
   },
   "dependencies": {
+    "@canonical/ds-assets": "^0.10.0-experimental.3",
     "@canonical/storybook-config": "^0.10.0-experimental.3",
     "@canonical/styles": "^0.10.0-experimental.3",
     "@canonical/utils": "^0.10.0-experimental.3",

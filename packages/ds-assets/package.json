@@ -1,7 +1,7 @@
 {
   "name": "@canonical/ds-assets",
   "description": "Assets for Pragma.",
-  "version": "0.10.0-experimental.0",
+  "version": "0.10.0-experimental.3",
   "type": "module",
   "module": "dist/esm/index.js",
   "types": "dist/types/index.d.ts",

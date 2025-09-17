@@ -129,7 +129,7 @@
     },
     "packages/ds-assets": {
       "name": "@canonical/ds-assets",
-      "version": "0.10.0-experimental.0",
+      "version": "0.10.0-experimental.3",
       "dependencies": {
         "@canonical/styles-primitives-canonical": "^0.10.0-experimental.0",
       },
@@ -394,6 +394,7 @@
       "name": "@canonical/react-ds-core",
       "version": "0.10.0-experimental.3",
       "dependencies": {
+        "@canonical/ds-assets": "^0.10.0-experimental.3",
         "@canonical/storybook-config": "^0.10.0-experimental.3",
         "@canonical/styles": "^0.10.0-experimental.3",
         "@canonical/utils": "^0.10.0-experimental.3",
