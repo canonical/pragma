@@ -12,7 +12,7 @@ Each icon shall:
 4. Use the same SVG canvas size. Currently, we are using 16x16.
 5. All paths shall be filled with `currentColor`.
 
-The [`src/icons/standardize-icons.ts` script](../src/icons/standardize-icons.ts) script will standardize all icons (
+The [`scripts/standardize-icons.ts` script](../scripts/standardize-icons.ts) script will standardize all icons (
 except ones with `-dark` versions, to be revisited later) in the [`/icons`](../icons) folder to follow these
 requirements.
 Run the script with `bun run standardize-icons`.

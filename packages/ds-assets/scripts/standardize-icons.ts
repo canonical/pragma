@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const ICONS_DIR = join(__dirname, "../../", "icons");
+const ICONS_DIR = join(__dirname, "../", "icons");
 
 // Icons that should not be standardized
 const IGNORED_ICONS = new Set([
@@ -68,8 +68,8 @@ function standardizeSvg(filePath: string): void {
 
   // Replace color fills with currentColor
   content = content
-    .replace(/fill="none"/g, "")
-    .replace(/fill="[^"]*"/g, 'fill="currentColor"');
+    // Only replace fill attributes that are not "none"
+    .replace(/fill="(?!none")[^"]*"/g, 'fill="currentColor"');
 
   // Restore all preserved content
   preservedElements.forEach(({ placeholder, content: preservedContent }) => {
