@@ -30,7 +30,6 @@ function standardizeSvg(filePath: string): void {
     .replace(/fill="black"/g, 'fill="currentColor"')
     .replace(/fill="white"/g, 'fill="currentColor"')
     .replace(/fill="rgb\([^)]+\)"/g, 'fill="currentColor"')
-    // Remove fill="none"
     .replace(/fill="none"/g, "");
 
   // Extract the content between <svg> and </svg>

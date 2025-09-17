@@ -34,6 +34,9 @@
     "check:ts": "tsc --noEmit",
     "standardize-icons": "bun src/icons/standardize-icons.ts"
   },
+  "dependencies": {
+    "@canonical/styles-primitives-canonical": "^0.10.0-experimental.0"
+  },
   "devDependencies": {
     "@biomejs/biome": "2.2.2",
     "@canonical/biome-config": "^0.10.0-experimental.0",
