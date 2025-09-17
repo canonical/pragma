@@ -40,6 +40,19 @@ There are other icons that are stored as monochrome, but have historically been 
     6. `unit-running`
     7. `warning`
 
+## Sizing
+
+We aim to provide icons that all have consistent 16x16 viewboxes. However, some of our historic icons do not have 16x16 viewboxes. These icons are stored with their unaltered viewboxes for now, but will be resized/scaled in a follow up:
+
+- `x`
+- `x-dark`
+- `facebook`
+- `instagram`
+- `github`
+- `youtube`
+- `rss`
+- `email`
+
 ## TypeScript Support
 
 ### Constants & Types

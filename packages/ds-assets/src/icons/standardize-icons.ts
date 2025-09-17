@@ -4,16 +4,19 @@ import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-// Get the directory containing SVG icons
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const ICONS_DIR = join(__dirname, "../../", "icons");
 
 /**
  * Standardizes an SVG file to meet the following requirements:
- * 1. Each SVG has a viewBox of 16x16
- * 2. Each SVG has a <g> element with the icon name as id
- * 3. All fill colors are set to currentColor
+ * 1. Each SVG has a <g> element with the icon name as id
+ * 2. All fill colors are set to currentColor
+ *
+ * Future considerations:
+ * - Standardize viewBox to 16x16 (requires path scaling)
+ * - Remove background rect elements
+ *
  * @param filePath Path to the SVG file
  */
 function standardizeSvg(filePath: string): void {
@@ -21,33 +24,55 @@ function standardizeSvg(filePath: string): void {
   let content = readFileSync(filePath, "utf-8");
 
   content = content
-    // Replace or add viewBox
-    .replace(/viewBox="[^"]*"/g, 'viewBox="0 0 16 16"')
-    // Replace specific color fills with currentColor
+    // Replace color fills with currentColor
     .replace(/fill="#[A-Fa-f0-9]{6}"/g, 'fill="currentColor"')
     .replace(/fill="#[A-Fa-f0-9]{3}"/g, 'fill="currentColor"')
     .replace(/fill="black"/g, 'fill="currentColor"')
     .replace(/fill="white"/g, 'fill="currentColor"')
     .replace(/fill="rgb\([^)]+\)"/g, 'fill="currentColor"')
     // Remove fill="none"
-    .replace(/fill="none"/g, "")
-    // Remove background rect elements
-    .replace(/<rect width="16" height="16" fill="white"\/>/g, "");
+    .replace(/fill="none"/g, "");
 
-  // Ensure SVG is wrapped in a <g> element with the icon name as id
-  if (!/<g.*>/i.test(content)) {
-    // Extract the content between <svg> and </svg>
-    const svgContentMatch = content.match(/<svg[^>]*>([\s\S]*?)<\/svg>/i);
-    const innerContent = svgContentMatch ? svgContentMatch[1].trim() : "";
+  // Extract the content between <svg> and </svg>
+  const svgContentMatch = content.match(/<svg[^>]*>([\s\S]*?)<\/svg>/i);
+  const innerContent = svgContentMatch ? svgContentMatch[1].trim() : "";
 
-    // Create new SVG with proper grouping
-    content = `<?xml version="1.0" encoding="UTF-8"?>
-<svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
-  <g id="${iconName}">
-    ${innerContent}
-  </g>
-</svg>`;
+  const svgAttributesMatch = content.match(/<svg([^>]*)>/i);
+  let existingAttributes = svgAttributesMatch ? svgAttributesMatch[1] : "";
+
+  const hasXmlns = /xmlns\s*=\s*["']http:\/\/www\.w3\.org\/2000\/svg["']/i.test(
+    existingAttributes,
+  );
+  if (!hasXmlns) {
+    existingAttributes += ' xmlns="http://www.w3.org/2000/svg"';
   }
+
+  const hasGroupWithId = /<g[^>]*id="[^"]*"[^>]*>/i.test(content);
+
+  let newInnerContent: string;
+  if (!/<g.*>/i.test(content)) {
+    // No <g> tag at all - wrap everything in a new <g>
+    newInnerContent = `  <g id="${iconName}">
+    ${innerContent}
+  </g>`;
+  } else if (!hasGroupWithId) {
+    // Has <g> but no id - replace first <g> with one that has an id
+    newInnerContent = innerContent.replace(
+      /<g([^>]*)>/i,
+      `<g id="${iconName}"$1>`,
+    );
+  } else {
+    // Already has <g> with id - replace the id
+    newInnerContent = innerContent.replace(
+      /<g[^>]*id="[^"]*"[^>]*>/i,
+      `<g id="${iconName}">`,
+    );
+  }
+
+  content = `<?xml version="1.0" encoding="UTF-8"?>
+<svg${existingAttributes}>
+  ${newInnerContent}
+</svg>`;
 
   writeFileSync(filePath, content, "utf-8");
 }
