@@ -76,7 +76,7 @@ export const WithActivationContents: Story = {
   args: {
     children: "Learn more",
     href: "https://ubuntu.com",
-    activationContents: "→",
+    activationContents: "+",
   },
   parameters: {
     docs: {
@@ -92,7 +92,7 @@ const FakeRouterLink = ({ ...props }: { children: ReactNode }) => (
   <a {...props}>{props.children}</a>
 );
 
-export const AsCustomComponent: Story = {
+export const AsPolymorphicComponent: Story = {
   args: {
     as: FakeRouterLink,
     children: "Download Ubuntu Desktop",
@@ -103,7 +103,7 @@ export const AsCustomComponent: Story = {
     docs: {
       description: {
         story:
-          "The `Link` component can be rendered as any component. Here we use our `Button` component to create a link that looks like a button.",
+          "The `<Link>` component can be rendered as any component. This is useful for using the styling of our `Link` component with the functionality of other components, such as routing frameworks' `<Link>` elements.<br><br>To apply link styling to other components, pass a React element name string or a custom component to the `as` prop.",
       },
     },
   },
