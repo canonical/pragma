@@ -23,7 +23,8 @@ const initializeWorker = async (): Promise<SetupWorker> => {
     worker = setupWorker();
     await worker.start({
       serviceWorker: { url: "/mockServiceWorker.js" },
-      onUnhandledRequest: "bypass",
+      // TODO remove me before merging this PR, this helps with debugging
+      onUnhandledRequest: "error",
     });
     console.log("Worker initialized and started");
     workerPromise = Promise.resolve(worker);
