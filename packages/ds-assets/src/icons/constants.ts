@@ -71,7 +71,6 @@ export const ICON_NAMES = [
   "information",
   "inspector-debug",
   "iso",
-  "linkedin",
   "loading-steps",
   "location",
   "lock-locked",

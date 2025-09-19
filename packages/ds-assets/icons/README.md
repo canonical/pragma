@@ -77,6 +77,7 @@ viewboxes. These icons are not currently in the repo, but will be added in the f
 - `github`
 - `github-dark`
 - `instagram`
+- `linkedin`
 - `rss`
 - `x`
 - `x-dark`
