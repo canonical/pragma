@@ -1,1 +1,1 @@
-export const SECTION_SPACING = ["default", "shallow", "deep", "hero"];
+export const SECTION_SPACING = ["shallow", "deep", "hero"];
