@@ -21,7 +21,7 @@ const componentCssClassName = "ds icon";
  */
 const Icon = ({
   iconName,
-  size = "sm",
+  size = "md",
   className,
   children,
   ...props

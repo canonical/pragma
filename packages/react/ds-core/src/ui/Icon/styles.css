@@ -1,75 +1,44 @@
 /* @canonical/generator-ds 0.10.0-experimental.2 */
 
 .ds.icon {
+  --icon-size: var(--icon-size-md);
   position: relative;
   margin-inline-end: var(--icon-margin-inline-end);
   display: inline-flex;
   justify-content: center;
   align-items: center;
 
-  /*
-  Some icons need their `currentColor` bound to a token.
-  TODO there are some icons that bake variable bindings directly into their SVGs, would it be preferable to define variables for them and pass them in at the icon level?
-  */
-  &.icon-conflict,
-  &.icon-conflict-resolution,
-  &.icon-warning {
-    color: var(--tmp-color-caution);
+  & > svg {
+    height: var(--icon-size);
+    width: var(--icon-size);
   }
 
-  &.icon-error,
-  &.icon-status-failed-small {
-    color: var(--color-background-negative-default);
+  &.size-2xs {
+    --icon-size: var(--icon-size-2xs);
   }
 
-  &.icon-success,
-  &.icon-status-succeeded-small,
-  &.icon-unit-running {
-    color: var(--color-background-positive-default);
+  &.size-xs {
+    --icon-size: var(--icon-size-xs);
   }
 
-  &.icon-email,
-  &.icon-status-in-progress {
-    color: var(--tmp-color-background-default);
+  &.size-sm {
+    --icon-size: var(--icon-size-sm);
   }
 
-  &.icon-status-waiting,
-  &.icon-status-waiting-small {
-    color: var(--tmp-color-caution);
+  /*  Medium is the default (already assigned at the component root level anyway to make size-md unnecessary) but is added here for completeness*/
+  &.size-md {
+    --icon-size: var(--icon-size-md);
   }
 
-  &.size-2xs > svg {
-    height: var(--icon-size-2xs);
-    width: var(--icon-size-2xs);
+  &.size-lg {
+    --icon-size: var(--icon-size-lg);
   }
 
-  &.size-xs > svg {
-    height: var(--icon-size-xs);
-    width: var(--icon-size-xs);
+  &.size-xl {
+    --icon-size: var(--icon-size-xl);
   }
 
-  &.size-sm > svg {
-    height: var(--icon-size-sm);
-    width: var(--icon-size-sm);
-  }
-
-  &.size-md > svg {
-    height: var(--icon-size-md);
-    width: var(--icon-size-md);
-  }
-
-  &.size-lg > svg {
-    height: var(--icon-size-lg);
-    width: var(--icon-size-lg);
-  }
-
-  &.size-xl > svg {
-    height: var(--icon-size-xl);
-    width: var(--icon-size-xl);
-  }
-
-  &.size-2xl > svg {
-    height: var(--icon-size-2xl);
-    width: var(--icon-size-2xl);
+  &.size-2xl {
+    --icon-size: var(--icon-size-2xl);
   }
 }

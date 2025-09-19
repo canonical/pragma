@@ -303,14 +303,14 @@
   --color-background-caution-tinted-hover: rgba(199, 90, 0, 0.15);
   --color-background-caution-tinted-active: rgba(199, 90, 0, 0.18);
 
-  /* Primitive dimension scale tokens */
-  --dimension-scale-2xs: 0.5rem; /* 8px */
-  --dimension-scale-xs: 0.75rem; /* 12px */
-  --dimension-scale-sm: 1rem; /* 16px */
-  --dimension-scale-md: 1.5rem; /* 24px */
-  --dimension-scale-lg: 2rem; /* 32px */
-  --dimension-scale-xl: 3rem; /* 48px */
-  --dimension-scale-2xl: 6rem; /* 96px */
+  /* Semantic dimension tokens - em-based for text-relative inline elements */
+  --dimension-inline-2xs: 0.25em;
+  --dimension-inline-xs: 0.5em;
+  --dimension-inline-sm: 0.75em;
+  --dimension-inline-md: 1em;
+  --dimension-inline-lg: 1.5em;
+  --dimension-inline-xl: 2em;
+  --dimension-inline-2xl: 3em;
 
   /* 3px at 16px fontsize, expressed in rems so it scales with text if the root font-size changes at a breakpoint */
   --tmp-dimension-separator-bar-thickness: 0.1875rem;
@@ -382,13 +382,14 @@
           This will be implemented once theming DS-wide is added.
     */
 
-  --icon-size-2xs: var(--dimension-scale-2xs);
-  --icon-size-xs: var(--dimension-scale-xs);
-  --icon-size-sm: var(--dimension-scale-sm);
-  --icon-size-md: var(--dimension-scale-md);
-  --icon-size-lg: var(--dimension-scale-lg);
-  --icon-size-xl: var(--dimension-scale-xl);
-  --icon-size-2xl: var(--dimension-scale-2xl);
+  /* Icon component tokens - consuming semantic inline dimensions */
+  --icon-size-2xs: var(--dimension-inline-2xs);
+  --icon-size-xs: var(--dimension-inline-xs);
+  --icon-size-sm: var(--dimension-inline-sm);
+  --icon-size-md: var(--dimension-inline-md);
+  --icon-size-lg: var(--dimension-inline-lg);
+  --icon-size-xl: var(--dimension-inline-xl);
+  --icon-size-2xl: var(--dimension-inline-2xl);
 
   --icon-margin-inline-end: var(--spacing-horizontal-small);
 
