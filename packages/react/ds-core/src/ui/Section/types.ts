@@ -15,6 +15,9 @@ export interface SectionProps extends HTMLAttributes<HTMLDivElement> {
   className?: string;
   /* Child elements */
   children: ReactNode;
-  /* Spacing variant of the section */
+  /*
+    Spacing variant of the section
+    FLAG: Unique, potentially inconsistent/unstable API
+  */
   spacing?: SectionSpacing;
 }
