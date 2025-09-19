@@ -3,6 +3,18 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.10.0-experimental.3](https://github.com/canonical/ds25/compare/v0.10.0-experimental.2...v0.10.0-experimental.3) (2025-09-18)
+
+
+### Features
+
+* Add Svelte SSR testing library renderer ([#305](https://github.com/canonical/ds25/issues/305)) ([da687db](https://github.com/canonical/ds25/commit/da687db2a8f6ad2d1b8cfc9806a041e5d18ea68c))
+* **Badge:** pt. 1 - utilities for the Badge component ([#304](https://github.com/canonical/ds25/issues/304)) ([f556180](https://github.com/canonical/ds25/commit/f5561801c196a55b6b17f18156f0d9cd736da5ea))
+
+
+
+
+
 # [0.10.0-experimental.0](https://github.com/canonical/ds25/compare/v0.9.1-experimental.0...v0.10.0-experimental.0) (2025-07-30)
 
 **Note:** Version bump only for package @canonical/react-ds-app-launchpad

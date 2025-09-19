@@ -1,6 +1,6 @@
 {
   "name": "@canonical/storybook-config",
-  "version": "0.10.0-experimental.0",
+  "version": "0.10.0-experimental.3",
   "description": "Canonical's standard Storybook configuration factory",
   "main": "dist/esm/index.js",
   "types": "dist/types/index.d.ts",
@@ -27,7 +27,7 @@
     "check:ts": "tsc --noEmit"
   },
   "dependencies": {
-    "@canonical/storybook-addon-baseline-grid": "^0.10.0-experimental.0",
+    "@canonical/storybook-addon-baseline-grid": "^0.10.0-experimental.3",
     "@chromatic-com/storybook": "^4.0.0",
     "@storybook/addon-a11y": "^9.0.8",
     "@storybook/addon-docs": "^9.0.8",
@@ -37,8 +37,8 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.2.2",
-    "@canonical/biome-config": "^0.10.0-experimental.0",
-    "@canonical/typescript-config-react": "^0.10.0-experimental.0",
+    "@canonical/biome-config": "^0.10.0-experimental.3",
+    "@canonical/typescript-config-react": "^0.10.0-experimental.3",
     "typescript": "^5.8.3"
   },
   "peerDependencies": {

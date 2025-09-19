@@ -3,6 +3,22 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.10.0-experimental.3](https://github.com/canonical/ds25/compare/v0.10.0-experimental.2...v0.10.0-experimental.3) (2025-09-18)
+
+
+### Bug Fixes
+
+* **React Core:** fix badge with empty units showing undefined units ([#319](https://github.com/canonical/ds25/issues/319)) ([30f2815](https://github.com/canonical/ds25/commit/30f2815ab177681ddd847660bdae2d7ba1a6dcbf))
+
+
+### Features
+
+* **Badge:** pt. 1 - utilities for the Badge component ([#304](https://github.com/canonical/ds25/issues/304)) ([f556180](https://github.com/canonical/ds25/commit/f5561801c196a55b6b17f18156f0d9cd736da5ea))
+
+
+
+
+
 # [0.10.0-experimental.0](https://github.com/canonical/ds25/compare/v0.9.1-experimental.0...v0.10.0-experimental.0) (2025-07-30)
 
 

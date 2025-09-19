@@ -3,6 +3,18 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.10.0-experimental.3](https://github.com/canonical/ds25/compare/v0.10.0-experimental.2...v0.10.0-experimental.3) (2025-09-18)
+
+
+### Features
+
+* **generator:** Include Svelte SSR Test package ([#315](https://github.com/canonical/ds25/issues/315)) ([244dbd0](https://github.com/canonical/ds25/commit/244dbd0b580101ecfdb5495300b012419d7d0769))
+* **Generator:** React component generator spreads native HTML props by default ([#313](https://github.com/canonical/ds25/issues/313)) ([ee3c1e8](https://github.com/canonical/ds25/commit/ee3c1e819ad70cd744d9e6322b6a57d2b53a960e))
+
+
+
+
+
 # [0.10.0-experimental.2](https://github.com/canonical/ds25/compare/v0.10.0-experimental.1...v0.10.0-experimental.2) (2025-08-06)
 
 

@@ -3,6 +3,28 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.10.0-experimental.3](https://github.com/canonical/ds25/compare/v0.10.0-experimental.2...v0.10.0-experimental.3) (2025-09-18)
+
+
+### Bug Fixes
+
+* **React Core:** fix badge with empty units showing undefined units ([#319](https://github.com/canonical/ds25/issues/319)) ([30f2815](https://github.com/canonical/ds25/commit/30f2815ab177681ddd847660bdae2d7ba1a6dcbf))
+
+
+### Features
+
+* Add Svelte SSR testing library renderer ([#305](https://github.com/canonical/ds25/issues/305)) ([da687db](https://github.com/canonical/ds25/commit/da687db2a8f6ad2d1b8cfc9806a041e5d18ea68c))
+* **Badge:** pt. 1 - utilities for the Badge component ([#304](https://github.com/canonical/ds25/issues/304)) ([f556180](https://github.com/canonical/ds25/commit/f5561801c196a55b6b17f18156f0d9cd736da5ea))
+* **Badge:** pt.2 - Badge component implementation / styling ([#302](https://github.com/canonical/ds25/issues/302)) ([847d75d](https://github.com/canonical/ds25/commit/847d75dc31966d2559dcd4591e557a99deece19b))
+* **generator:** Include Svelte SSR Test package ([#315](https://github.com/canonical/ds25/issues/315)) ([244dbd0](https://github.com/canonical/ds25/commit/244dbd0b580101ecfdb5495300b012419d7d0769))
+* **Generator:** React component generator spreads native HTML props by default ([#313](https://github.com/canonical/ds25/issues/313)) ([ee3c1e8](https://github.com/canonical/ds25/commit/ee3c1e819ad70cd744d9e6322b6a57d2b53a960e))
+* **React Core:** Build Rule component ([#320](https://github.com/canonical/ds25/issues/320)) ([4edbbd3](https://github.com/canonical/ds25/commit/4edbbd3ee4fa0ebd68fdfa8f85f7c52ccd8dd92f))
+* **tokens:** add primitive and semantic color tokens ([#308](https://github.com/canonical/ds25/issues/308)) ([3d53859](https://github.com/canonical/ds25/commit/3d53859a7876ca8c7032057c3a1750ef82741109))
+
+
+
+
+
 # [0.10.0-experimental.2](https://github.com/canonical/ds25/compare/v0.10.0-experimental.1...v0.10.0-experimental.2) (2025-08-06)
 
 
