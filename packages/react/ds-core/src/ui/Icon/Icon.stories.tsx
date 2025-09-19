@@ -1,11 +1,13 @@
 /* @canonical/generator-ds 0.10.0-experimental.2 */
 
+import { IconName } from "@canonical/ds-assets";
 import { ICON_NAMES } from "@canonical/ds-assets/src/index.js";
 // Needed for function-based story, safe to remove otherwise
 // import type { IconProps } from './types.js'
 import type { Meta, StoryFn, StoryObj } from "@storybook/react-vite";
 import { ICON_SIZES } from "./constants.js";
 import Component from "./Icon.js";
+import type { IconProps, IconSize } from "./types.js";
 
 // Needed for template-based story, safe to remove otherwise
 // import type { StoryFn } from '@storybook/react'
@@ -53,42 +55,77 @@ export const Default: Story = {
 export const Size: Story = {
   args: {
     icon: "certificate",
-    size: "lg",
   },
-  decorators: [
-    //  TODO should the icon and adjacent text vertically align? If so, implement that
-    (Story) => (
-      <span>
-        <Story />
-        Change the size in the controls to change the icon's size.
-      </span>
-    ),
-  ],
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Icons are sized relative to the font-size of their container. Use the `size` prop to adjust the size of the icon, relative to the surrounding text.",
+      },
+    },
+  },
+  render: (args) => (
+    <div>
+      <h1>
+        h1
+        <Component {...args} />
+      </h1>
+      <h2>
+        h2
+        <Component {...args} />
+      </h2>
+      <h3>
+        h3
+        <Component {...args} />
+      </h3>
+      <h4>
+        h4
+        <Component {...args} />
+      </h4>
+      <h5>
+        h5
+        <Component {...args} />
+      </h5>
+      <p>
+        Paragraph
+        <Component {...args} />
+      </p>
+      <small>
+        Small text
+        <Component {...args} />
+      </small>
+    </div>
+  ),
 };
 
-export const All: StoryFn<typeof Component> = (props) => (
+const IconGrid = ({ icon, ...props }: IconProps) => (
   <div
     style={{
       display: "grid",
       gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-      gap: "var(--spacing-horizontal-small",
     }}
   >
-    {/* TODO It may be better to group the items by type (like "social icons", etc) */}
     {ICON_NAMES.map((iconName) => (
-      <span
-        style={{
-          border: "1px solid var(--tmp-color-border-default)",
-          padding:
-            "var(--spacing-vertical-xsmall) var(--spacing-horizontal-xsmall)",
-          display: "flex",
-          alignItems: "center",
-        }}
-        key={iconName}
-      >
-        <Component key={iconName} {...props} icon={iconName} />
+      <span key={iconName}>
+        <Component icon={iconName} {...props} />
         &nbsp;{iconName}
       </span>
     ))}
   </div>
 );
+
+export const AllIcons: StoryFn<typeof Component> = (args) => (
+  <IconGrid {...args} />
+);
+export const AllIconsAllSizes: StoryFn<typeof Component> = (args) => (
+  <div>
+    {ICON_SIZES.map((size) => (
+      <div key={size}>
+        <h5>Size: {size}</h5>
+        <IconGrid {...args} size={size} />
+      </div>
+    ))}
+  </div>
+);
+// Hide from sidebar but keep in visual tests
+AllIconsAllSizes.tags = ["!dev"];
