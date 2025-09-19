@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width='16' height='16' xmlns='http://www.w3.org/2000/svg'>
+  <defs>
+    <mask id="progress-mask">
+      <rect width="16" height="16" fill="white"/>
+      <path d='M8 3.5a4.5 4.5 0 110 9 4.5 4.5 0 010-9zM8 5a3 3 0 100 6 3 3 0 000-6z' 
+            fill="black" fill-rule='nonzero' opacity=".5"/>
+      <path d='M8.15 5.004l-.037-1.502L8 3.5a4.5 4.5 0 11-4.43 5.3h1.538A3.001 3.001 0 0011 8a3 3 0 00-2.85-2.996z'
+            fill="black"/>
+    </mask>
+  </defs>
+  <g id="status-in-progress">
+    <circle fill='currentColor' cx='8' cy='8' r='7' mask="url(#progress-mask)"/>
+  </g>
+</svg>
