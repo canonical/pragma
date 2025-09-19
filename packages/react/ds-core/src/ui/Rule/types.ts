@@ -9,8 +9,5 @@ import type { HTMLAttributes } from "react";
     See https://developer.mozilla.org/en-US/docs/Web/API/HTML_DOM_API for a full list of HTML elements interfaces.
 */
 export interface RuleProps extends HTMLAttributes<HTMLHRElement> {
-  /* Additional CSS classes */
-  className?: string;
-
   emphasis?: ModifierFamily<"emphasis">;
 }

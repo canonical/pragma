@@ -12,8 +12,6 @@ export type IconSize = (typeof ICON_SIZES)[number];
     See https://developer.mozilla.org/en-US/docs/Web/API/HTML_DOM_API for a full list of HTML elements interfaces.
 */
 export interface IconProps extends HTMLAttributes<HTMLDivElement> {
-  /* Additional CSS classes */
-  className?: string;
   /* Name of the icon to display */
   iconName?: IconName;
   /* Size of the icon */
