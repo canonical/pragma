@@ -16,17 +16,6 @@ describe("Link component", () => {
     expect(screen.getByText("Link")).toHaveClass("test-class");
   });
 
-  describe("activationContents", () => {
-    it("applies soft classname", () => {
-      render(
-        <Component activationContents={<span>Lorem ipsum</span>}>
-          Link
-        </Component>,
-      );
-      expect(screen.getByText("Link")).toHaveClass("soft");
-    });
-  });
-
   describe("polymorphic as prop", () => {
     it("functions as a button", () => {
       const onClick = vi.fn();

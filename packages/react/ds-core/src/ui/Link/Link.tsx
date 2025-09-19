@@ -1,7 +1,6 @@
 /* @canonical/generator-ds 0.10.0-experimental.2 */
 
 import type { ElementType, ReactElement } from "react";
-import { useMemo } from "react";
 import type { LinkProps } from "./types.js";
 import "./styles.css";
 
@@ -15,16 +14,10 @@ const Link = <TElement extends ElementType = "a">({
   as,
   className,
   children,
-  appearance: appearanceProp,
-  activationContents,
+  appearance,
   ...props
 }: LinkProps<TElement>): ReactElement => {
   const Component = as || "a";
-  // If activationContents is provided, the link should be rendered as a soft link
-  const appearance = useMemo(
-    () => (activationContents ? "soft" : appearanceProp),
-    [appearanceProp, activationContents],
-  );
 
   return (
     <Component
@@ -34,13 +27,8 @@ const Link = <TElement extends ElementType = "a">({
       {...props}
     >
       {children}
-      {activationContents && (
-        <span className="activation-contents">{activationContents}</span>
-      )}
     </Component>
   );
 };
-
-Link.displayName = "Link";
 
 export default Link;
