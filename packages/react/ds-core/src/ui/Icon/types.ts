@@ -1,20 +1,16 @@
 /* @canonical/generator-ds 0.10.0-experimental.2 */
 
 import type { IconName } from "@canonical/ds-assets";
-import type { SVGAttributes } from "react";
+import type { ImgHTMLAttributes } from "react";
 import type { ICON_SIZES } from "./constants.js";
 
 export type IconSize = (typeof ICON_SIZES)[number];
 
-/**
-    We have used the `HTMLDivElement` as a default props base.
-    If your component is based on a different HTML element, please update it accordingly.
-    See https://developer.mozilla.org/en-US/docs/Web/API/HTML_DOM_API for a full list of HTML elements interfaces.
-*/
-export interface IconProps extends SVGAttributes<HTMLOrSVGElement> {
+export interface IconProps extends ImgHTMLAttributes<HTMLImageElement> {
   /* Name of the icon to display */
   icon: IconName;
   /* Size of the icon */
   size?: IconSize;
+  /* Root path to the icons (default: /assets/icons) */
   rootPath?: string;
 }

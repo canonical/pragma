@@ -12,45 +12,31 @@ const componentCssClassName = "ds icon";
  * @param iconName - Name of the icon to render
  * @param size - Size of the icon (sm, md, lg)
  * @param rootPath - Root path to the icons (default: /assets/icons)
- * @param xmlns - XML namespace (default: "http://www.w3.org/2000/svg")
- * @param version - SVG version (default: "1.1")
  * @param width - Width of the icon (default: "16")
  * @param height - Height of the icon (default: "16")
- * @param viewBox - ViewBox of the icon (default: "0 0 16 16")
- * @param role - ARIA role (default: "img")
  * @param className - Additional CSS classes
  * @returns {React.ReactElement} - Rendered Icon SVG
  * @implements syntax:core:component:icon:1.0.0
  */
 const Icon = ({
-  xmlns = "http://www.w3.org/2000/svg",
-  version = "1.1",
+  icon,
+  alt,
+  className,
   width = "16",
   height = "16",
-  viewBox = "0 0 16 16",
   size = "md",
-  icon,
-  className,
   rootPath = "/assets/icons",
-  role = "img",
   ...props
 }: IconProps): ReactElement => {
   return (
-    <svg
-      xmlns={xmlns}
-      version={version}
-      width={width}
-      height={height}
-      viewBox={viewBox}
+    <img
+      src={`${rootPath}/${icon}.svg`}
       className={[componentCssClassName, className, size && `size-${size}`]
         .filter(Boolean)
         .join(" ")}
-      role={role}
+      alt={alt}
       {...props}
-    >
-      <title>{icon}</title>
-      <use href={`${rootPath}/${icon}.svg#${icon}`} />
-    </svg>
+    />
   );
 };
 
