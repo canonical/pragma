@@ -52,19 +52,17 @@ In the interest of simplicity and uniformity (all non-branded icons should consu
 have been updated to consume only `currentColor`.
 They are listed along with the color they would be bound to in case we need to revert them to use non-text color in the future.
 
-| Icon Name(s)                             | Color variable                                                                      |
-|------------------------------------------|-------------------------------------------------------------------------------------|
-| `conflict`                               | `var(--tmp-color-caution)`                                                          |
-| `conflict-resolution`                    | `var(--tmp-color-caution)`                                                          |
-| `email`                                  | Multiple; see [multichromatic non-branded icons](#multichromatic-non-branded-icons) |
-| `error`                                  | `var(--color-background-negative-default)`                                          |
-| `status-in-progress`                     | Multiple; see [multichromatic non-branded icons](#multichromatic-non-branded-icons) |
-| `status-failed-small`                    | `var(--color-background-negative-default)`                                          |
-| `status-succeeded-small`                 | `var(--color-background-positive-default)`                                          |
-| `status-waiting`, `status-waiting-small` | `var(--tmp-color-caution)`                                                          |
-| `success`                                | `var(--color-background-positive-default)`                                          |
-| `unit-running`                           | `var(--color-background-positive-default)`                                          |
-| `warning`                                | `var(--tmp-color-caution)`                                                          |
+| Icon Name(s)          | Color variable                                                                      |
+|-----------------------|-------------------------------------------------------------------------------------|
+| `conflict`            | `var(--tmp-color-caution)`                                                          |
+| `conflict-resolution` | `var(--tmp-color-caution)`                                                          |
+| `email`               | Multiple; see [multichromatic non-branded icons](#multichromatic-non-branded-icons) |
+| `error`               | `var(--color-background-negative-default)`                                          |
+| `status-in-progress`  | Multiple; see [multichromatic non-branded icons](#multichromatic-non-branded-icons) |
+| `status-waiting`      | `var(--tmp-color-caution)`                                                          |
+| `success`             | `var(--color-background-positive-default)`                                          |
+| `unit-running`        | `var(--color-background-positive-default)`                                          |
+| `warning`             | `var(--tmp-color-caution)`                                                          |
 
 #### Multichromatic non-branded icons
 Some non-branded icons have also been multichromatic in the past. 
