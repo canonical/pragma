@@ -6,12 +6,13 @@ import Component from "./Icon.js";
 
 describe("Icon component", () => {
   it("renders", () => {
-    render(<Component>Icon</Component>);
-    expect(screen.getByText("Icon")).toBeInTheDocument();
+    render(<Component icon={"user"} />);
+    expect(screen.getByRole("img")).toBeInTheDocument();
+    expect(screen.getByTitle("user")).toBeInTheDocument();
   });
 
   it("applies className", () => {
-    render(<Component className={"test-class"}>Icon</Component>);
-    expect(screen.getByText("Icon")).toHaveClass("test-class");
+    render(<Component icon={"user"} className={"test-class"} />);
+    expect(screen.getByRole("img")).toHaveClass("test-class");
   });
 });

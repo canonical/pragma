@@ -13,7 +13,7 @@ export type IconSize = (typeof ICON_SIZES)[number];
 */
 export interface IconProps extends SVGAttributes<HTMLOrSVGElement> {
   /* Name of the icon to display */
-  icon?: IconName;
+  icon: IconName;
   /* Size of the icon */
   size?: IconSize;
   rootPath?: string;
