@@ -7,7 +7,7 @@ import { ICON_NAMES } from "@canonical/ds-assets/src/index.js";
 import type { Meta, StoryFn, StoryObj } from "@storybook/react-vite";
 import { ICON_SIZES } from "./constants.js";
 import Component from "./Icon.js";
-import type { IconProps, IconSize } from "./types.js";
+import type { IconProps } from "./types.js";
 
 // Needed for template-based story, safe to remove otherwise
 // import type { StoryFn } from '@storybook/react'
@@ -117,6 +117,7 @@ const IconGrid = ({ icon, ...props }: IconProps) => (
 export const AllIcons: StoryFn<typeof Component> = (args) => (
   <IconGrid {...args} />
 );
+
 export const AllIconsAllSizes: StoryFn<typeof Component> = (args) => (
   <div>
     {ICON_SIZES.map((size) => (
@@ -127,5 +128,39 @@ export const AllIconsAllSizes: StoryFn<typeof Component> = (args) => (
     ))}
   </div>
 );
-// Hide from sidebar but keep in visual tests
+
+// AllIconsAllSizes is only meant for visual testing
+// Hide from sidebar
 AllIconsAllSizes.tags = ["!dev"];
+// Hide from docs page
+AllIconsAllSizes.parameters = { docs: { disable: true } };
+
+export const Color: Story = {
+  args: {
+    icon: "user",
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Icons inherit the color of their parent element. Set `color` on a parent element to change the icon color.",
+      },
+    },
+  },
+  render: (args) => (
+    <div>
+      <p style={{ color: "blue" }}>
+        Blue
+        <Component {...args} />
+      </p>
+      <p style={{ color: "red" }}>
+        Red
+        <Component {...args} />
+      </p>
+      <p style={{ color: "green" }}>
+        Green
+        <Component {...args} />
+      </p>
+    </div>
+  ),
+};
