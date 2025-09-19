@@ -27,7 +27,6 @@ const Card = ({
   </div>
 );
 
-Card.displayName = "Card";
 Card.Thumbnail = Thumbnail;
 Card.Image = Image;
 Card.Section = Section;
