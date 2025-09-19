@@ -37,7 +37,7 @@ const createConfig = (options: CreateConfigOptions = {}): StorybookConfig => ({
     ...(options.staticDirs || []),
     {
       from: `${getAbsolutePath("@canonical/ds-assets")}/icons`,
-      to: "assets/canonical-pragma-icons",
+      to: "assets/icons",
     },
   ],
 });

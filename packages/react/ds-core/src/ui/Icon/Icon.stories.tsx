@@ -14,7 +14,7 @@ const meta = {
   title: "Icon",
   component: Component,
   argTypes: {
-    iconName: {
+    icon: {
       options: ICON_NAMES,
       control: { type: "select" },
       description: "The name of the icon to display.",
@@ -46,13 +46,13 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   args: {
-    iconName: "user",
+    icon: "user",
   },
 };
 
 export const Size: Story = {
   args: {
-    iconName: "certificate",
+    icon: "certificate",
     size: "lg",
   },
   decorators: [
@@ -86,7 +86,7 @@ export const All: StoryFn<typeof Component> = (props) => (
         }}
         key={iconName}
       >
-        <Component key={iconName} {...props} iconName={iconName} />
+        <Component key={iconName} {...props} icon={iconName} />
         &nbsp;{iconName}
       </span>
     ))}
