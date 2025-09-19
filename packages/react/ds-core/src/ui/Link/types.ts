@@ -10,9 +10,6 @@ interface LinkOwnProps {
   children?: ReactNode;
   /** Link appearance modifier */
   appearance?: "soft";
-  /** Content to show on hover/focus */
-  // TODO consider removing this from here for simplicity's sake, consider its use case as a separate component like "Anchor Link"? https://vanillaframework.io/docs/patterns/links#anchor-link
-  activationContents?: ReactNode;
 }
 
 export type LinkProps<TElement extends ElementType = "a"> =

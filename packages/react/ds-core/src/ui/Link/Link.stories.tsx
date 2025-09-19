@@ -1,9 +1,7 @@
 /* @canonical/generator-ds 0.10.0-experimental.2 */
 
-import type { Meta, StoryFn, StoryObj } from "@storybook/react-vite";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import type { ReactNode } from "react";
-import * as decorators from "storybook/decorators.js";
-import { Button } from "../Button/index.js";
 import Component from "./Link.js";
 
 const meta = {
@@ -23,10 +21,6 @@ const meta = {
       options: ["neutral", "soft"],
       control: { type: "radio" },
       description: "Link appearance modifier.",
-    },
-    activationContents: {
-      control: { type: "text" },
-      description: "Content to show on hover/focus.",
     },
     className: {
       control: { type: "text" },
@@ -71,28 +65,6 @@ export const Soft: Story = {
       },
     },
   },
-};
-
-export const WithActivationContents: Story = {
-  args: {
-    children: "Learn more",
-    href: "https://ubuntu.com",
-    activationContents: "+",
-  },
-  parameters: {
-    docs: {
-      description: {
-        story:
-          "Content in `activationContents` will be shown after the link when it is interacted with. This is useful for showing further context about a link interaction only upon hover/focus etc.",
-      },
-    },
-  },
-};
-
-export const WithActivationContentsRtl: Story = {
-  ...WithActivationContents,
-  name: "With Activation Contents (RTL)",
-  decorators: [decorators.rtl()],
 };
 
 const FakeRouterLink = ({ ...props }: { children: ReactNode }) => (
