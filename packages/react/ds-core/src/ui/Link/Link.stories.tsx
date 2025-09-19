@@ -2,6 +2,7 @@
 
 import type { Meta, StoryFn, StoryObj } from "@storybook/react-vite";
 import type { ReactNode } from "react";
+import * as decorators from "storybook/decorators.js";
 import { Button } from "../Button/index.js";
 import Component from "./Link.js";
 
@@ -86,6 +87,12 @@ export const WithActivationContents: Story = {
       },
     },
   },
+};
+
+export const WithActivationContentsRtl: Story = {
+  ...WithActivationContents,
+  name: "With Activation Contents (RTL)",
+  decorators: [decorators.rtl()],
 };
 
 const FakeRouterLink = ({ ...props }: { children: ReactNode }) => (
