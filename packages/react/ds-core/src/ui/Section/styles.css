@@ -2,15 +2,12 @@
 
 .ds.section {
   /*
-        Spacing variants
-        Note that top padding is only defined for the hero variant in our core setup.
-        The top padding is still bound here in case users customize their tokens.
+    Spacing variants
+    Note that top padding is only defined for the hero variant in our core setup.
+    The top padding is still bound here in case users customize their tokens.
     */
-  &,
-  &.spacing-default {
-    padding-bottom: var(--section-padding-bottom-default);
-    padding-top: var(--section-padding-top-default);
-  }
+  padding-bottom: var(--section-padding-bottom-default);
+  padding-top: var(--section-padding-top-default);
 
   &.spacing-shallow {
     padding-bottom: var(--section-padding-bottom-shallow);

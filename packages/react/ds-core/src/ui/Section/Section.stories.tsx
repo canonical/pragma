@@ -50,6 +50,10 @@ export const Default: Story = {
 
 export const Spacing: StoryFn<typeof Component> = (args) => (
   <div>
+    <Rule />
+    <Component {...args}>
+      <h4>This is a default section.</h4>
+    </Component>
     {SECTION_SPACING.map((spacingLevel) => (
       <div key={spacingLevel}>
         <Rule />
