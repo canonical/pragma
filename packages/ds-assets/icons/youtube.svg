@@ -1,4 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' width='40' height='40'>
-  <defs><path id='a' d='M.014.009H40v28.173H.014z'/></defs><g id="youtube" fill='none' fill-rule='evenodd' transform='translate(0 6)'><mask id='b' fill='#fff'><use xlink:href='#a'/></mask><path fill='#DA322A' d='M39.164 4.4A5.026 5.026 0 0035.628.842C32.508 0 20 0 20 0S7.492 0 4.372.841a5.026 5.026 0 00-3.536 3.56C0 7.54 0 14.09 0 14.09s0 6.55.836 9.69a5.026 5.026 0 003.536 3.56c3.12.84 15.628.84 15.628.84s12.508 0 15.628-.84a5.026 5.026 0 003.536-3.56c.836-3.14.836-9.69.836-9.69s0-6.55-.836-9.69' mask='url(#b)'/><path fill='#FFFFFE' d='M15.909 20.038V8.143l10.455 5.948-10.455 5.947'/></g>
-</svg>

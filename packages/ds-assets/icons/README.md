@@ -70,7 +70,7 @@ tokens from `@canonical/styles-primitives-canonical`. These icons are:
 ## Sizing
 
 We aim to provide icons that all have consistent 16x16 viewboxes. However, some of our historic icons do not have 16x16
-viewboxes. These icons are stored with their unaltered viewboxes for now, but will be resized/scaled in a follow up:
+viewboxes. These icons are not currently in the repo, but will be added in the future once we have scaled them.
 
 - `email`
 - `facebook`
