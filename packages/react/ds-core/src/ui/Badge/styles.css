@@ -4,10 +4,10 @@
   --badge-chip-margin-tweak: 0.15rem;
 
   /* Base badge styles using tokens */
-  background-color: var(--intent-color, var(--badge-color-background));
+  background-color: var(--modifier-color, var(--badge-color-background));
   border-radius: var(--badge-border-radius);
   box-sizing: content-box;
-  color: var(--intent-color-text, var(--badge-color-text));
+  color: var(--modifier-color-text, var(--badge-color-text));
   display: inline-block;
   font-size: var(--badge-font-size);
   font-weight: var(--badge-font-weight);
