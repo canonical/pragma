@@ -8,6 +8,7 @@ describe("Icon component", () => {
   it("renders", () => {
     render(<Component icon={"user"} />);
     expect(screen.getByRole("img")).toBeInTheDocument();
+    expect(screen.getByTitle("user")).toBeInTheDocument();
   });
 
   it("applies className", () => {
