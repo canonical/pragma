@@ -77,8 +77,10 @@ export const Highlighted: Story = {
 export const WithThumbnailSection: StoryFn<CardProps> = (props) => (
   <Component {...props}>
     <Component.ThumbnailSection
-      src="https://assets.ubuntu.com/v1/31bd2627-logo-raspberry-pi.svg"
-      alt="Raspberry Pi Logo"
+      imageProps={{
+        src: "https://assets.ubuntu.com/v1/31bd2627-logo-raspberry-pi.svg",
+        alt: "Raspberry Pi Logo",
+      }}
     />
     <Component.Section>
       <h3>Raspberry Pi2 and Pi3</h3>

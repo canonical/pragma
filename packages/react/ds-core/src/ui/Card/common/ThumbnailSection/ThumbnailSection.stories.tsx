@@ -15,9 +15,16 @@ const meta = {
     },
   },
   argTypes: {
-    alt: { control: "text" },
-    className: { control: "text" },
-    src: { control: "text" },
+    imageProps: {
+      description:
+        "Props for the image element. Be sure to also include a meaningful `alt` for accessibility.",
+      control: { type: "object" },
+      table: {
+        type: {
+          summary: "ImgHTMLAttributes<HTMLImageElement>",
+        },
+      },
+    },
   },
 } satisfies Meta<typeof Component>;
 
@@ -27,7 +34,9 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   args: {
-    src: "https://assets.ubuntu.com/v1/31bd2627-logo-raspberry-pi.svg",
-    alt: "Raspberry Pi Logo",
+    imageProps: {
+      src: "https://assets.ubuntu.com/v1/31bd2627-logo-raspberry-pi.svg",
+      alt: "Raspberry Pi Logo",
+    },
   },
 };

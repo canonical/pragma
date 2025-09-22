@@ -13,15 +13,16 @@ const componentCssClassName = "ds card-thumbnail-section";
  */
 const ThumbnailSection = ({
   className,
-  alt,
+  imageProps,
   ...props
 }: ThumbnailSectionProps): React.ReactElement => {
-  // todo apply componentcssclassname to the wrapper
   return (
     <Section
       className={[componentCssClassName, className].filter(Boolean).join(" ")}
+      {...props}
     >
-      <img alt={alt} {...props} />
+      {/* Must pass alt explicitly to avoid linting error. */}
+      <img alt={imageProps.alt} {...imageProps} />
     </Section>
   );
 };
