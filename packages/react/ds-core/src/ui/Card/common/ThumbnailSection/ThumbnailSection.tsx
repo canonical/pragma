@@ -2,20 +2,20 @@
 
 import type React from "react";
 import Section from "../Section/Section.js";
-import type { ThumbnailProps } from "./types.js";
+import type { ThumbnailSectionProps } from "./types.js";
 import "./styles.css";
 
-const componentCssClassName = "ds card-thumbnail";
+const componentCssClassName = "ds card-thumbnail-section";
 
 /**
- * Thumbnail component for Card thumbnails
+ * ThumbnailSection component for Card thumbnails
  * Extends Section behavior with thumbnail image
  */
-const Thumbnail = ({
+const ThumbnailSection = ({
   className,
   alt,
   ...props
-}: ThumbnailProps): React.ReactElement => {
+}: ThumbnailSectionProps): React.ReactElement => {
   return (
     <Section>
       <img
@@ -27,6 +27,6 @@ const Thumbnail = ({
   );
 };
 
-Thumbnail.displayName = "Card.Thumbnail";
+ThumbnailSection.displayName = "Card.ThumbnailSection";
 
-export default Thumbnail;
+export default ThumbnailSection;

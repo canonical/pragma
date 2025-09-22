@@ -1,7 +1,7 @@
 /* @canonical/generator-ds 0.10.0-experimental.2 */
 
 import type React from "react";
-import { Image, Section, Thumbnail } from "./common/index.js";
+import { Image, Section, ThumbnailSection } from "./common/index.js";
 import type { CardProps } from "./types.js";
 import "./styles.css";
 
@@ -27,7 +27,7 @@ const Card = ({
   </div>
 );
 
-Card.Thumbnail = Thumbnail;
+Card.ThumbnailSection = ThumbnailSection;
 Card.Image = Image;
 Card.Section = Section;
 

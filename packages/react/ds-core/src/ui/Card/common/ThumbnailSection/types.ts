@@ -2,7 +2,8 @@
 
 import type { ImgHTMLAttributes } from "react";
 
-export interface ThumbnailProps extends ImgHTMLAttributes<HTMLImageElement> {
-  /* Additional CSS classes */
+export interface ThumbnailSectionProps
+  extends ImgHTMLAttributes<HTMLImageElement> {
+  alt: string;
   className?: string;
 }

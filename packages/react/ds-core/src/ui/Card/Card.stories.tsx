@@ -3,11 +3,10 @@
 import { MODIFIER_FAMILIES } from "@canonical/ds-types";
 import type { Meta, StoryFn, StoryObj } from "@storybook/react-vite";
 import Component from "./Card.js";
-import { Default as DefaultThumbnailStory } from "./common/Thumbnail/Thumbnail.stories.js";
 import type { CardProps } from "./types.js";
 
 const meta = {
-  title: "Card",
+  title: "Card/Card",
   component: Component,
   argTypes: {
     children: {
@@ -25,7 +24,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "A `Card` component with subcomponents for different content types. Use `Card.Thumbnail` for small images, `Card.Image` for full-width images, and `Card.Section` for content sections.",
+          "A `Card` component with subcomponents for different content types. `Card.Section` is a helper for grouping flexible content within a card, providing padding and border separation. `Card.ThumbnailSection` is a `Card.Section` that embeds a small image. `Card.Image` displays a full-width image.",
       },
     },
   },
@@ -75,9 +74,12 @@ export const Highlighted: Story = {
   },
 };
 
-export const WithThumbnail: StoryFn<CardProps> = (props) => (
+export const WithThumbnailSection: StoryFn<CardProps> = (props) => (
   <Component {...props}>
-    <Component.Thumbnail {...DefaultThumbnailStory.args} />
+    <Component.ThumbnailSection
+      src="https://assets.ubuntu.com/v1/31bd2627-logo-raspberry-pi.svg"
+      alt="Raspberry Pi Logo"
+    />
     <Component.Section>
       <h3>Raspberry Pi2 and Pi3</h3>
       <p>
@@ -89,11 +91,10 @@ export const WithThumbnail: StoryFn<CardProps> = (props) => (
   </Component>
 );
 
-WithThumbnail.parameters = {
+WithThumbnailSection.parameters = {
   docs: {
     description: {
-      story:
-        "Use the `Card.Thumbnail` subcomponent to build a section with a small thumbnail image.",
+      story: "A Card with a ThumbnailSection image at the top.",
     },
   },
 };
