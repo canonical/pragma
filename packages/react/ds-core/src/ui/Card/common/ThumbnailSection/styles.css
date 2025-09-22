@@ -1,9 +1,11 @@
 /* @canonical/generator-ds 0.10.0-experimental.2 */
 
 .ds.card-thumbnail-section {
-  max-height: var(--card-thumbnail-max-height);
+  & > img {
+    max-height: var(--card-thumbnail-max-height);
 
-  /* TODO in Vanilla these are globally applied to all imgs, maybe we want to do that here as well */
-  max-width: 100%;
-  height: auto;
+    /* TODO in Vanilla these are globally applied to all imgs, maybe we want to do that here as well */
+    max-width: 100%;
+    height: auto;
+  }
 }

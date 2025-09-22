@@ -16,13 +16,12 @@ const ThumbnailSection = ({
   alt,
   ...props
 }: ThumbnailSectionProps): React.ReactElement => {
+  // todo apply componentcssclassname to the wrapper
   return (
-    <Section>
-      <img
-        className={[componentCssClassName, className].filter(Boolean).join(" ")}
-        alt={alt}
-        {...props}
-      />
+    <Section
+      className={[componentCssClassName, className].filter(Boolean).join(" ")}
+    >
+      <img alt={alt} {...props} />
     </Section>
   );
 };
