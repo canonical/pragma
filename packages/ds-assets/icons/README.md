@@ -25,19 +25,19 @@ Run the script with `bun run standardize-icons`.
 
 ## Coloring
 
-Most of our icons are monochromatic, and consume the current text color using `currentColor`. 
-However, there are some icons that use more than one color. These icons are, as of September 2025:
+Icons adapt their color to their context by consuming `currentColor`. This means that the icon will inherit the
+text color of its parent element.
 
-### Brand icons
+### Changes since Vanilla
 
-Brand icons represent a specific brand with a defined color scheme. These icons should retain their brand colors.
+Historically, our icons have not followed a consistent coloring approach. Some icons have been monochromatic, consuming
+`currentColor`, while others have been multichromatic, using multiple colors defined in our color palette.
 
-* `facebook`
-* `github` (has discrete light/dark versions)
-* `instagram`
-* `linkedin`
-* `rss`
-* `x` (has discrete light/dark versions)
+To improve consistency and simplify implementation, we have updated all non-branded icons to be monochromatic,
+consuming `currentColor`.
+
+Icons that have been updated to follow this approach are listed below, along with any colors they previously used (in case we need to revert them in the future).
+
 * `youtube`
 
 ### Non-branded icons
