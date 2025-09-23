@@ -5,7 +5,6 @@ import { ICON_NAMES } from "@canonical/ds-assets/src/index.js";
 // Needed for function-based story, safe to remove otherwise
 // import type { IconProps } from './types.js'
 import type { Meta, StoryFn, StoryObj } from "@storybook/react-vite";
-import { ICON_SIZES } from "./constants.js";
 import Component from "./Icon.js";
 import type { IconProps } from "./types.js";
 
@@ -20,11 +19,6 @@ const meta = {
       options: ICON_NAMES,
       control: { type: "select" },
       description: "The name of the icon to display.",
-    },
-    size: {
-      options: ICON_SIZES,
-      control: { type: "radio" },
-      description: "The size of the icon.",
     },
   },
   parameters: {
@@ -60,7 +54,7 @@ export const Size: Story = {
     docs: {
       description: {
         story:
-          "Icons are sized relative to the font-size of their container. Use the `size` prop to adjust the size of the icon, relative to the surrounding text.",
+          "Icons are sized relative to the `font-size` of their container.",
       },
     },
   },
@@ -98,7 +92,7 @@ export const Size: Story = {
   ),
 };
 
-const IconGrid = ({ icon, ...props }: IconProps) => (
+export const AllIcons: StoryFn<typeof Component> = (props) => (
   <div
     style={{
       display: "grid",
@@ -107,33 +101,17 @@ const IconGrid = ({ icon, ...props }: IconProps) => (
   >
     {ICON_NAMES.map((iconName) => (
       <span key={iconName}>
-        <Component icon={iconName} {...props} />
+        <Component {...props} icon={iconName} />
         &nbsp;{iconName}
       </span>
     ))}
   </div>
 );
 
-export const AllIcons: StoryFn<typeof Component> = (args) => (
-  <IconGrid {...args} />
-);
-
-export const AllIconsAllSizes: StoryFn<typeof Component> = (args) => (
-  <div>
-    {ICON_SIZES.map((size) => (
-      <div key={size}>
-        <h5>Size: {size}</h5>
-        <IconGrid {...args} size={size} />
-      </div>
-    ))}
-  </div>
-);
-
-// AllIconsAllSizes is only meant for visual testing
-// Hide from sidebar
-AllIconsAllSizes.tags = ["!dev"];
-// Hide from docs page
-AllIconsAllSizes.parameters = { docs: { disable: true } };
+AllIcons.argTypes = {
+  // Disable icon control for this story since we are displaying all icons
+  icon: { table: { disable: true } },
+};
 
 export const Color: Story = {
   args: {

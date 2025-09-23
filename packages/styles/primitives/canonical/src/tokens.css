@@ -408,14 +408,7 @@
           This will be implemented once theming DS-wide is added.
     */
 
-  /* Icon component tokens - consuming semantic inline dimensions */
-  --icon-size-2xs: var(--dimension-inline-2xs);
-  --icon-size-xs: var(--dimension-inline-xs);
-  --icon-size-sm: var(--dimension-inline-sm);
-  --icon-size-md: var(--dimension-inline-md);
-  --icon-size-lg: var(--dimension-inline-lg);
-  --icon-size-xl: var(--dimension-inline-xl);
-  --icon-size-2xl: var(--dimension-inline-2xl);
+  --icon-size: var(--dimension-inline-md);
 
   --tooltip-color-background: var(--tmp-color-background-default);
   --tooltip-color-background-hover: var(--tmp-color-background-hover);

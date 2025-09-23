@@ -22,7 +22,7 @@ describe("Icon SSR", () => {
       <Component className="test-class" icon={"user"} />,
     );
     expect(html).toContain(
-      '<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="16" height="16" viewBox="0 0 16 16" class="ds icon test-class size-md" role="img"><title>user</title><use href="/assets/icons/user.svg#user"></use></svg>',
+      '<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="16" height="16" viewBox="0 0 16 16" class="ds icon test-class" role="img"><title>user</title><use href="/assets/icons/user.svg#user"></use></svg>',
     );
   });
 });

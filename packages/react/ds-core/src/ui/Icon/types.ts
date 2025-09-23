@@ -2,9 +2,6 @@
 
 import type { IconName } from "@canonical/ds-assets";
 import type { SVGAttributes } from "react";
-import type { ICON_SIZES } from "./constants.js";
-
-export type IconSize = (typeof ICON_SIZES)[number];
 
 /**
     We have used the `HTMLDivElement` as a default props base.
@@ -14,7 +11,5 @@ export type IconSize = (typeof ICON_SIZES)[number];
 export interface IconProps extends SVGAttributes<HTMLOrSVGElement> {
   /* Name of the icon to display */
   icon: IconName;
-  /* Size of the icon */
-  size?: IconSize;
   rootPath?: string;
 }

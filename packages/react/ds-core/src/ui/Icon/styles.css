@@ -1,7 +1,6 @@
 /* @canonical/generator-ds 0.10.0-experimental.2 */
 
 .ds.icon {
-  --icon-size: var(--icon-size-md);
   position: relative;
   display: inline-flex;
   justify-content: center;
@@ -10,33 +9,4 @@
 
   height: var(--icon-size);
   width: var(--icon-size);
-
-  &.size-2xs {
-    --icon-size: var(--icon-size-2xs);
-  }
-
-  &.size-xs {
-    --icon-size: var(--icon-size-xs);
-  }
-
-  &.size-sm {
-    --icon-size: var(--icon-size-sm);
-  }
-
-  /*  Medium is the default (already assigned at the component root level anyway to make size-md unnecessary) but is added here for completeness*/
-  &.size-md {
-    --icon-size: var(--icon-size-md);
-  }
-
-  &.size-lg {
-    --icon-size: var(--icon-size-lg);
-  }
-
-  &.size-xl {
-    --icon-size: var(--icon-size-xl);
-  }
-
-  &.size-2xl {
-    --icon-size: var(--icon-size-2xl);
-  }
 }
