@@ -1,29 +1,31 @@
 /* @canonical/generator-ds 0.10.0-experimental.2 */
 
 .ds.section {
+  --section-padding-bottom: var(--section-padding-bottom-default);
+  --section-padding-top: var(--section-padding-top-default);
+  padding-bottom: var(--section-padding-bottom);
+  padding-top: var(--section-padding-top);
+
   /*
     Spacing variants
     Note that top padding is only defined for the hero variant in our core setup.
     The top padding is still bound here in case users customize their tokens.
     */
-  padding-bottom: var(--section-padding-bottom-default);
-  padding-top: var(--section-padding-top-default);
-
   &.spacing-shallow {
-    padding-bottom: var(--section-padding-bottom-shallow);
-    padding-top: var(--section-padding-top-shallow);
+    --section-padding-bottom: var(--section-padding-bottom-shallow);
+    --section-padding-top: var(--section-padding-top-shallow);
   }
 
   &.spacing-deep {
-    padding-bottom: var(--section-padding-bottom-deep);
-    padding-top: var(--section-padding-top-deep);
-
+    --section-padding-bottom: var(--section-padding-bottom-deep);
+    --section-padding-top: var(--section-padding-top-deep);
     /* TODO add responsiveness https://github.com/canonical/vanilla-framework/blob/6af35433368f82d76d8deb7effebca47b434ee76/scss/_patterns_section.scss#L16-L18 */
   }
 
   &.spacing-hero {
-    padding-bottom: var(--section-padding-bottom-hero);
-    padding-top: var(--section-padding-top-hero);
+    --section-padding-bottom: var(--section-padding-bottom-hero);
+    --section-padding-top: var(--section-padding-top-hero);
+
     /*    TODO add responsiveness https://github.com/canonical/vanilla-framework/blob/6af35433368f82d76d8deb7effebca47b434ee76/scss/_patterns_section.scss#L32-L34 */
   }
 }
