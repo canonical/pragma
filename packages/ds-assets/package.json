@@ -37,9 +37,6 @@
     "test:vitest": "vitest run",
     "test:vitest:watch": "vitest"
   },
-  "dependencies": {
-    "@canonical/styles-primitives-canonical": "^0.10.0-experimental.0"
-  },
   "devDependencies": {
     "@biomejs/biome": "2.2.2",
     "@canonical/biome-config": "^0.10.0-experimental.0",
