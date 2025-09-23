@@ -46,6 +46,29 @@ export const Default: Story = {
   },
 };
 
+export const AllIcons: StoryFn<typeof Component> = (props) => (
+  <div
+    style={{
+      display: "grid",
+      gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+    }}
+  >
+    {Array.from(ICON_NAMES)
+      .sort((a, b) => a.localeCompare(b))
+      .map((iconName) => (
+        <span key={iconName}>
+          <Component {...props} icon={iconName} />
+          &nbsp;{iconName}
+        </span>
+      ))}
+  </div>
+);
+
+AllIcons.argTypes = {
+  // Disable icon control for this story since we are displaying all icons
+  icon: { table: { disable: true } },
+};
+
 export const Size: Story = {
   args: {
     icon: "certificate",
@@ -90,27 +113,6 @@ export const Size: Story = {
       </small>
     </div>
   ),
-};
-
-export const AllIcons: StoryFn<typeof Component> = (props) => (
-  <div
-    style={{
-      display: "grid",
-      gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-    }}
-  >
-    {ICON_NAMES.map((iconName) => (
-      <span key={iconName}>
-        <Component {...props} icon={iconName} />
-        &nbsp;{iconName}
-      </span>
-    ))}
-  </div>
-);
-
-AllIcons.argTypes = {
-  // Disable icon control for this story since we are displaying all icons
-  icon: { table: { disable: true } },
 };
 
 export const Color: Story = {
