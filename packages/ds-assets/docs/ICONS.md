@@ -18,32 +18,29 @@ Icons adapt their color and size to their context. We use a consistent 16x16 vie
 
 Each icon's contents are wrapped in a `<g>` element with a matching ID (e.g., `<g id="warning">` for warning.svg). This pattern enables efficient reuse through SVG's `<use>` element - you can reference these icons in your markup like `<use href="path/to/warning.svg#warning" />`. Since the behavior of each icon is defined by these standards rather than implementation-specific code, platform libraries can stay lightweight. They just need to handle the mechanics of loading and displaying SVGs, keeping their APIs flat and predictable regardless of which icon you're using.
 
-The [`scripts/standardize-icons.ts` script](../scripts/standardize-icons.ts) script will standardize all icons (
-except ones with `-dark` versions, to be revisited later) in the [`/icons`](../icons) folder to follow these
+The [`scripts/standardize-icons.ts` script](../scripts/standardize-icons.ts) script will standardize all icons in the [`/icons`](../icons) folder to follow these
 requirements.
 Run the script with `bun run standardize-icons`.
 
 ## Coloring
 
-Most of our icons are monochromatic, and consume the current text color using `currentColor`.
-However, there are some icons that use more than one color. These icons are, as of September 2025:
+Icons adapt their color to their context by consuming `currentColor`. This means that the icon will inherit the
+text color of its parent element.
 
-### Brand icons
+### Changes since Vanilla
 
-Brand icons represent a specific brand with a defined color scheme. These icons should retain their brand colors.
+Historically, our icons have not followed a consistent coloring approach. Some icons have been monochromatic, consuming
+`currentColor`, while others have been multichromatic, using multiple colors defined in our color palette.
 
-* `facebook`
-* `github` (has discrete light/dark versions)
-* `instagram`
-* `linkedin`
-* `rss`
-* `x` (has discrete light/dark versions)
-* `youtube`
+To improve consistency and simplify implementation, we have updated all non-branded icons to be monochromatic,
+consuming `currentColor`.
 
-### Non-branded icons
+Icons that have been updated to follow this approach are listed below, along with any colors they previously used (in case we need to revert them in the future).
 
-Non-branded icons are not associated with a particular brand.
-Some of these non-branded icons have, historically, had different color(s) than the current text color.
+#### Branded icons
+
+Branded icons (e.g., social media logos), formerly used hard-coded brand colors. These icons have been updated to consume `currentColor` instead.
+Additionally, some of these icons had `-dark` variants to be used on light backgrounds. These variants have been removed, as the icon now adapts its color to its context, removing the need for explicit theming.
 
 #### Status icons
 
@@ -86,12 +83,10 @@ viewboxes. These icons are not currently in the repo, but will be added in the f
 - `email`
 - `facebook`
 - `github`
-- `github-dark`
 - `instagram`
 - `linkedin`
 - `rss`
 - `x`
-- `x-dark`
 - `youtube`
 
 ## TypeScript Support
