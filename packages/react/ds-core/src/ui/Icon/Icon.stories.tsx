@@ -1,15 +1,8 @@
 /* @canonical/generator-ds 0.10.0-experimental.2 */
 
-import { IconName } from "@canonical/ds-assets";
 import { ICON_NAMES } from "@canonical/ds-assets/src/index.js";
-// Needed for function-based story, safe to remove otherwise
-// import type { IconProps } from './types.js'
 import type { Meta, StoryFn, StoryObj } from "@storybook/react-vite";
 import Component from "./Icon.js";
-import type { IconProps } from "./types.js";
-
-// Needed for template-based story, safe to remove otherwise
-// import type { StoryFn } from '@storybook/react'
 
 const meta = {
   title: "Icon",
@@ -33,11 +26,6 @@ const meta = {
 
 export default meta;
 
-/*
-  CSF3 story
-  Uses object-based story declarations with strong TS support (`Meta` and `StoryObj`).
-  Uses the latest storybook format.
-*/
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
