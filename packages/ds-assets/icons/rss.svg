@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'>
+  <defs>
+    <mask id='rss-cutout' maskUnits='userSpaceOnUse'>
+      <rect x='0' y='0' width='16' height='16' fill='white'/>
+      <g transform='scale(0.4)'>
+        <path d='M6.34 6.274c15.07 0 27.332 12.314 27.332 27.452H28.41c0-12.236-9.9-22.19-22.07-22.19zM6.334 15.6c9.95 0 18.044 8.128 18.044 18.119h-5.261c0-3.44-1.33-6.671-3.747-9.097a12.657 12.657 0 00-9.036-3.76zm3.639 10.805a3.645 3.645 0 110 7.29 3.645 3.645 0 010-7.29z' fill='black'/>
+      </g>
+    </mask>
+  </defs>
+  <g id="rss">
+    <g mask='url(#rss-cutout)'>
+      <g transform='scale(0.4)'>
+        <rect width='40' height='40' rx='5' transform='rotate(180 20 20)' fill='currentColor'/>
+      </g>
+    </g>
+  </g>
+</svg>

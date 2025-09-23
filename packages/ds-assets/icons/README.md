@@ -38,12 +38,10 @@ consuming `currentColor`.
 
 Icons that have been updated to follow this approach are listed below, along with any colors they previously used (in case we need to revert them in the future).
 
-* `youtube`
+#### Branded icons
 
-### Non-branded icons
-
-Non-branded icons are not associated with a particular brand. 
-Some of these non-branded icons have, historically, had different color(s) than the current text color.
+Branded icons (e.g., social media logos), formerly used hard-coded brand colors. These icons have been updated to consume `currentColor` instead.
+Additionally, some of these icons had `-dark` variants to be used on light backgrounds. These variants have been removed, as the icon now adapts its color to its context, removing the need for explicit theming.
 
 #### Status icons
 
@@ -86,7 +84,6 @@ viewboxes. These icons are not currently in the repo, but will be added in the f
 - `email`
 - `facebook`
 - `github`
-- `github-dark`
 - `instagram`
 - `linkedin`
 - `rss`

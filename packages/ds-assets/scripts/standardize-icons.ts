@@ -8,19 +8,6 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const ICONS_DIR = join(__dirname, "../", "icons");
 
-// Icons that should not be standardized
-const IGNORED_ICONS = new Set([
-  "email",
-  "facebook",
-  "github",
-  "github-dark",
-  "instagram",
-  "rss",
-  "x",
-  "x-dark",
-  "youtube",
-]);
-
 /**
  * Standardizes an SVG file to meet the following requirements:
  * 1. Each SVG has a <g> element with the icon name as id
@@ -126,7 +113,6 @@ function standardizeSvg(filePath: string): void {
 function processAllIcons(): void {
   const svgFiles = readdirSync(ICONS_DIR)
     .filter((file: string) => file.endsWith(".svg"))
-    .filter((file: string) => !IGNORED_ICONS.has(basename(file, ".svg")))
     .map((file: string) => join(ICONS_DIR, file));
 
   for (const svg of svgFiles) {

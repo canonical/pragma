@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'>
+  <defs>
+    <mask id='youtube-cutout' maskUnits='userSpaceOnUse'>
+      <rect x='0' y='0' width='16' height='16' fill='white'/>
+      <g transform='translate(0 2.4) scale(0.4)'>
+        <path d='M15.909 20.038V8.143l10.455 5.948-10.455 5.947' fill='black'/>
+      </g>
+    </mask>
+  </defs>
+  <g id="youtube">
+    <g mask='url(#youtube-cutout)'>
+      <g transform='translate(0 2.4) scale(0.4)'>
+        <path d='M39.164 4.4A5.026 5.026 0 0035.628.842C32.508 0 20 0 20 0S7.492 0 4.372.841a5.026 5.026 0 00-3.536 3.56C0 7.54 0 14.09 0 14.09s0 6.55.836 9.69a5.026 5.026 0 003.536 3.56c3.12.84 15.628.84 15.628.84s12.508 0 15.628-.84a5.026 5.026 0 003.536-3.56c.836-3.14.836-9.69.836-9.69s0-6.55-.836-9.69' fill='currentColor'/>
+      </g>
+    </g>
+  </g>
+</svg>

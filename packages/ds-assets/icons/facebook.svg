@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'>
+  <defs>
+    <mask id='facebook-cutout' maskUnits='userSpaceOnUse'>
+      <rect x='0' y='0' width='16' height='16' fill='white'/>
+      <g transform='scale(0.4)'>
+        <path d='M27.785 25.781L28.672 20h-5.547v-3.752c0-1.581.775-3.123 3.26-3.123h2.521V8.203s-2.289-.39-4.477-.39c-4.568 0-7.554 2.768-7.554 7.78V20h-5.078v5.781h5.078v13.976a20.15 20.15 0 006.25 0V25.781h4.66' fill='black'/>
+      </g>
+    </mask>
+  </defs>
+  <g id="facebook">
+    <g mask='url(#facebook-cutout)'>
+      <g transform='scale(0.4)'>
+        <path d='M40 20C40 8.954 31.046 0 20 0S0 8.954 0 20c0 9.983 7.314 18.257 16.875 19.757V25.781h-5.078V20h5.078v-4.406c0-5.013 2.986-7.781 7.554-7.781 2.188 0 4.477.39 4.477.39v4.922h-2.522c-2.484 0-3.259 1.542-3.259 3.123V20h5.547l-.887 5.781h-4.66v13.976C32.686 38.257 40 29.983 40 20' fill='currentColor'/>
+        
+      </g>
+    </g>
+  </g>
+</svg>

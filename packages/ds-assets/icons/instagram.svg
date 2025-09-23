@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'>
+  <defs>
+    <mask id='instagram-cutout' maskUnits='userSpaceOnUse'>
+      <rect x='0' y='0' width='16' height='16' fill='white'/>
+      <g transform='scale(0.4)'>
+        <path d='M19.965 9.638c-5.694 0-10.327 4.633-10.327 10.327s4.633 10.327 10.327 10.327 10.327-4.633 10.327-10.327c0-5.695-4.633-10.327-10.327-10.327zm0 16.637a6.31 6.31 0 110-12.62 6.31 6.31 0 010 12.62z' fill='black'/>
+        <circle cx='30.312' cy='9.715' r='2.475' fill='black'/>
+      </g>
+    </mask>
+  </defs>
+  <g id="instagram">
+    <g mask='url(#instagram-cutout)'>
+      <g transform='scale(0.4)'>
+        <path d='M28.035 0h-16.14C5.336 0 0 5.336 0 11.895v16.14C0 34.594 5.336 39.93 11.895 39.93h16.14c6.559 0 11.895-5.336 11.895-11.895v-16.14C39.93 5.336 34.594 0 28.035 0zm7.878 28.035a7.878 7.878 0 01-7.878 7.878h-16.14a7.878 7.878 0 01-7.878-7.878v-16.14a7.878 7.878 0 017.878-7.878h16.14a7.878 7.878 0 017.878 7.878v16.14z' fill='currentColor'/>
+      </g>
+    </g>
+  </g>
+</svg>
