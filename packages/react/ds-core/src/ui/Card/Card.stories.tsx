@@ -2,6 +2,7 @@
 
 import { MODIFIER_FAMILIES } from "@canonical/ds-types";
 import type { Meta, StoryFn, StoryObj } from "@storybook/react-vite";
+import * as decorators from "../../storybook/decorators.js";
 import Component from "./Card.js";
 import type { CardProps } from "./types.js";
 
@@ -97,6 +98,107 @@ WithThumbnailSection.parameters = {
   docs: {
     description: {
       story: "A Card with a ThumbnailSection image at the top.",
+    },
+  },
+};
+
+export const GridLayout: StoryFn<CardProps> = () => (
+  <>
+    <Component>
+      <Component.Image src="https://assets.ubuntu.com/v1/5ce214a4-rpi.png" />
+      <Component.Section>
+        <h3>Raspberry Pi Cluster with MAAS</h3>
+        <p>
+          Build your own bare metal cloud using a Raspberry Pi cluster with
+          MAAS. The RPi 4 presents a great option to run a cluster on.
+        </p>
+      </Component.Section>
+    </Component>
+    <Component emphasis="highlighted">
+      <Component.ThumbnailSection
+        imageProps={{
+          src: "https://assets.ubuntu.com/v1/31bd2627-logo-raspberry-pi.svg",
+          alt: "Raspberry Pi Logo",
+        }}
+      />
+      <Component.Section>
+        <h3>Raspberry Pi2 and Pi3</h3>
+        <p>
+          For fun, for education and for profit, the RPi makes device
+          development personal and entertaining. Ubuntu Core supports the Pi2
+          and Pi3.
+        </p>
+        <p>
+          Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed non
+          risus.
+        </p>
+      </Component.Section>
+    </Component>
+    <Component>
+      <Component.Section>
+        <h3>Ubuntu Server</h3>
+        <p>
+          Ubuntu Server brings economic and technical scalability to your
+          datacenter, public or private. Whether you want to deploy an OpenStack
+          cloud, a Kubernetes cluster or a 50,000-node render farm, Ubuntu
+          Server delivers the best value scale-out performance available.
+        </p>
+        <p>
+          Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed non
+          risus.
+        </p>
+      </Component.Section>
+    </Component>
+    <Component>
+      <Component.ThumbnailSection
+        imageProps={{
+          src: "https://assets.ubuntu.com/v1/2d850f3f-CoF%2520Circle%2520New.svg",
+          alt: "Ubuntu logo",
+        }}
+      />
+      <Component.Section>
+        <h3>Ubuntu Desktop</h3>
+        <p>
+          Ubuntu Desktop is the modern, open source desktop operating system for
+          millions of PC and laptop users around the world.
+        </p>
+      </Component.Section>
+    </Component>
+    <Component emphasis="highlighted">
+      <Component.Section>
+        <h3>Canonical Kubernetes</h3>
+        <p>
+          Multi-cloud Kubernetes operations, simplified. Deploy and operate
+          consistently on AWS, Azure, Google Cloud, Oracle, OpenStack, VMware,
+          bare metal and edge.
+        </p>
+      </Component.Section>
+    </Component>
+    <Component>
+      <Component.ThumbnailSection
+        imageProps={{
+          src: "https://assets.ubuntu.com/v1/ac1c88fd-juju_logo.png",
+          alt: "Juju logo",
+        }}
+      />
+      <Component.Section>
+        <h3>Juju</h3>
+        <p>
+          Juju is an open source application modelling tool. Deploy, configure,
+          scale and operate your software on public and private clouds.
+        </p>
+      </Component.Section>
+    </Component>
+  </>
+);
+
+GridLayout.decorators = [decorators.grid()];
+
+GridLayout.parameters = {
+  docs: {
+    description: {
+      story:
+        "Wrap cards in a grid to ensure adjacent cards are evenly sized and spaced.",
     },
   },
 };

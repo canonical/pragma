@@ -389,8 +389,6 @@
   --card-color-text: var(--tmp-color-text-default);
   --card-color-background: var(--tmp-color-background-default);
   --card-border-width: var(--spacing-border-width);
-  --card-margin-bottom: var(--spacing-vertical-large);
-  --card-margin-left: 0;
 
   --card-section-padding-vertical: var(--spacing-vertical-large);
   --card-section-padding-horizontal: var(--spacing-horizontal-large);

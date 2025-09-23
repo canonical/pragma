@@ -10,8 +10,6 @@
   border-width: var(--card-border-width);
   border-style: var(--card-border-style);
   border-color: var(--card-section-separator-color);
-  margin-block-end: var(--card-margin-bottom);
-  margin-inline-end: var(--card-margin-left);
 
   & .card-section,
   & .card-image {
