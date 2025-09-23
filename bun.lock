@@ -82,6 +82,7 @@
       "name": "@canonical/storybook-config",
       "version": "0.10.0-experimental.3",
       "dependencies": {
+        "@canonical/ds-assets": "^0.10.0-experimental.3",
         "@canonical/storybook-addon-baseline-grid": "^0.10.0-experimental.3",
         "@chromatic-com/storybook": "^4.0.0",
         "@storybook/addon-a11y": "^9.0.8",

@@ -11,5 +11,6 @@ import type { SVGAttributes } from "react";
 export interface IconProps extends SVGAttributes<HTMLOrSVGElement> {
   /* Name of the icon to display */
   icon: IconName;
+  /** Root path to the icons (default: /icons). Must be exposed to the user. */
   rootPath?: string;
 }

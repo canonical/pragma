@@ -10,7 +10,7 @@ const componentCssClassName = "ds icon";
 /**
  * Icon component that renders SVG icons from @canonical/ds-assets
  * @param iconName - Name of the icon to render
- * @param rootPath - Root path to the icons (default: /assets/icons)
+ * @param rootPath - Root path to the icons (default: /icons)
  * @param width - Width of the icon (default: "16")
  * @param height - Height of the icon (default: "16")
  * @returns {React.ReactElement} - Rendered Icon SVG
@@ -24,7 +24,7 @@ const Icon = ({
   viewBox = "0 0 16 16",
   icon,
   className,
-  rootPath = "/assets/icons",
+  rootPath = "/icons",
   role = "img",
   ...props
 }: IconProps): ReactElement => {
