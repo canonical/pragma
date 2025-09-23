@@ -190,16 +190,24 @@
   --tmp-color-background-button-positive-active: var(
     --tmp-color-palette-green-13
   );
-  --tmp-color-background-button-negative-default: var(--tmp-color-palette-red-8);
+  --tmp-color-background-button-negative-default: var(
+    --tmp-color-palette-red-8
+  );
   --tmp-color-background-button-negative-hover: var(--tmp-color-palette-red-9);
-  --tmp-color-background-button-negative-active: var(--tmp-color-palette-red-10);
-  --tmp-color-background-button-brand-default: var(--tmp-color-palette-orange-1);
+  --tmp-color-background-button-negative-active: var(
+    --tmp-color-palette-red-10
+  );
+  --tmp-color-background-button-brand-default: var(
+    --tmp-color-palette-orange-1
+  );
   --tmp-color-background-button-brand-hover: var(--tmp-color-palette-orange-2);
   --tmp-color-background-button-brand-active: var(--tmp-color-palette-orange-3);
   --tmp-color-background-button-default-default: var(
     --tmp-color-background-default
   );
-  --tmp-color-background-button-default-hover: var(--tmp-color-background-hover);
+  --tmp-color-background-button-default-hover: var(
+    --tmp-color-background-hover
+  );
   --tmp-color-background-button-default-active: var(
     --tmp-color-background-active
   );
@@ -213,8 +221,12 @@
   --tmp-color-background-canonical-logo: var(--tmp-color-palette-orange-1);
   --tmp-color-background-radio-checked: var(--tmp-color-text-link-default);
   --tmp-color-background-status-label-default: var(--tmp-color-palette-gray-23);
-  --tmp-color-background-status-label-positive: var(--tmp-color-palette-green-8);
-  --tmp-color-background-status-label-caution: var(--tmp-color-palette-yellow-8);
+  --tmp-color-background-status-label-positive: var(
+    --tmp-color-palette-green-8
+  );
+  --tmp-color-background-status-label-caution: var(
+    --tmp-color-palette-yellow-8
+  );
   --tmp-color-background-status-label-negative: var(--tmp-color-palette-red-8);
   --tmp-color-background-status-label-information: var(
     --tmp-color-palette-blue-12
@@ -278,7 +290,9 @@
   --color-background-positive-default: var(--tmp-color-palette-green-8);
   --color-background-positive-hover: var(--tmp-color-palette-green-10);
   --color-background-positive-active: var(--tmp-color-palette-green-13);
-  --color-background-positive-text: var(--color-palette-white); /* text on positive background */
+  --color-background-positive-text: var(
+    --color-palette-white
+  ); /* text on positive background */
 
   --color-background-positive-tinted-default: rgba(10, 189, 37, 0.1);
   --color-background-positive-tinted-hover: rgba(0, 199, 30, 0.15);
@@ -291,7 +305,9 @@
   --color-background-negative-default: rgba(199, 22, 43, 1);
   --color-background-negative-hover: rgba(176, 19, 38, 1);
   --color-background-negative-active: rgba(162, 18, 35, 1);
-  --color-background-negative-text: var(--color-palette-white); /* text on positive background */
+  --color-background-negative-text: var(
+    --color-palette-white
+  ); /* text on positive background */
 
   --color-background-information-default: var(--color-palette-blue);
   --color-background-information-tinted-default: rgba(0, 99, 199, 0.1);
@@ -373,7 +389,9 @@
 
   --link-soft-selected-font-weight: var(--font-weight-bold);
   --link-activation-contents-padding-vertical: var(--spacing-vertical-small);
-  --link-activation-contents-padding-horizontal: var(--spacing-horizontal-small);
+  --link-activation-contents-padding-horizontal: var(
+    --spacing-horizontal-small
+  );
 
   /*
       TODO the tooltip's color tokens should be inverted from the active color theme.
