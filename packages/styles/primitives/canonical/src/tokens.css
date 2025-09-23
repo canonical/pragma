@@ -322,7 +322,7 @@
   /*  dimension tokens */
   --tmp-dimension-decoration-thickness-link: 1px;
   --tmp-dimension-underline-offset-link: 0.075em;
-  
+
   /* Semantic dimension tokens - em-based for text-relative inline elements */
   --dimension-inline-2xs: 0.25em;
   --dimension-inline-xs: 0.5em;
@@ -416,8 +416,6 @@
   --icon-size-lg: var(--dimension-inline-lg);
   --icon-size-xl: var(--dimension-inline-xl);
   --icon-size-2xl: var(--dimension-inline-2xl);
-
-  --icon-margin-inline-end: var(--spacing-horizontal-small);
 
   --tooltip-color-background: var(--tmp-color-background-default);
   --tooltip-color-background-hover: var(--tmp-color-background-hover);

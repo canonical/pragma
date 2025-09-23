@@ -3,7 +3,6 @@
 .ds.icon {
   --icon-size: var(--icon-size-md);
   position: relative;
-  margin-inline-end: var(--icon-margin-inline-end);
   display: inline-flex;
   justify-content: center;
   align-items: center;
