@@ -46,6 +46,7 @@ export const ICON_NAMES = [
   "disconnect",
   "drag",
   "edit",
+  "email",
   "error",
   "expand",
   "export",
