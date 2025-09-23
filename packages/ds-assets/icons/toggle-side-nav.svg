@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+  <g id="toggle-side-nav">
+    <path fill-rule="evenodd" clip-rule="evenodd" d="M12.25 1.05078V15.0255H13.75V1.05078H12.25ZM6.83363 11.7352L3.87129 8.77288L10.8492 8.77287V7.27287L3.87136 7.27288L6.83363 4.3106L5.77297 3.24994L1 8.02291L5.77297 12.7959L6.83363 11.7352Z" fill="currentColor"/>
+  </g>
+</svg>
