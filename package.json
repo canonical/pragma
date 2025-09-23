@@ -40,6 +40,6 @@
     "special:clean": "lerna clean --yes && nx reset && rm -rf node_modules"
   },
   "devDependencies": {
-    "lerna": "^8.1.8"
+    "lerna": "^9.0.0"
   }
 }
