@@ -67,6 +67,7 @@ export const Soft: Story = {
   },
 };
 
+// A fake router link component for demonstration purposes
 const FakeRouterLink = ({ ...props }: { children: ReactNode }) => (
   <a {...props}>{props.children}</a>
 );
@@ -83,6 +84,20 @@ export const AsPolymorphicComponent: Story = {
       description: {
         story:
           "The `<Link>` component can be rendered as any component. This is useful for using the styling of our `Link` component with the functionality of other components, such as routing frameworks' `<Link>` elements.<br><br>To apply link styling to other components, pass a React element name string or a custom component to the `as` prop.",
+      },
+      source: {
+        code: `
+// Example with a fictional RouterLink from a routing library
+import { Link } from '@canonical/react-ds-core';
+import { RouterLink } from 'your-router-library';
+
+<Link
+  as={RouterLink}
+  to="/download/desktop"
+>
+  Download Ubuntu Desktop
+</Link>
+        `,
       },
     },
   },
