@@ -47,13 +47,13 @@
   },
   "dependencies": {
     "@testing-library/dom": "^10.4.1",
-    "jsdom": "^26.1.0"
+    "jsdom": "^27.0.0"
   },
   "peerDependencies": {
     "svelte": "^5.38.2"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.2.2",
+    "@biomejs/biome": "2.2.4",
     "@sveltejs/vite-plugin-svelte": "^5.0.0",
     "@types/jsdom": "^21.1.7",
     "vite": "^6.2.6",

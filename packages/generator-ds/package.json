@@ -35,7 +35,7 @@
     "yeoman-generator": "^7.5.1"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.2.2",
+    "@biomejs/biome": "2.2.4",
     "@canonical/biome-config": "^0.10.0-experimental.3",
     "@canonical/typescript-config-base": "^0.10.0-experimental.3",
     "@types/debug": "^4.1.12",

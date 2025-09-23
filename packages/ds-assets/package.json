@@ -38,7 +38,7 @@
     "test:vitest:watch": "vitest"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.2.2",
+    "@biomejs/biome": "2.2.4",
     "@canonical/biome-config": "^0.10.0-experimental.0",
     "@canonical/typescript-config-base": "^0.10.0-experimental.0",
     "typescript": "^5.8.3",
