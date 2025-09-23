@@ -1,0 +1,5 @@
+/* mobile is assumed to use no breakpoints (default view) */
+
+@custom-media --breakpoint-sm (min-width: 620px); /* Tablet */
+@custom-media --breakpoint-lg (min-width: 1036px); /* Desktop */
+@custom-media --breakpoint-xl (min-width: 1681px); /* Large desktop */
