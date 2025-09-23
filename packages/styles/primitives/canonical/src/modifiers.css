@@ -5,7 +5,9 @@
   --modifier-color-hover: var(--color-background-positive-hover);
   --modifier-color-tinted-hover: var(--color-background-positive-tinted-hover);
   --modifier-color-active: var(--color-background-positive-active);
-  --modifier-color-tinted-active: var(--color-background-positive-tinted-active);
+  --modifier-color-tinted-active: var(
+    --color-background-positive-tinted-active
+  );
   --modifier-color-text: var(--color-background-positive-text);
   --modifier-color-text-tinted: var(--color-text-default);
   --modifier-color-border: var(--modifier-color);
@@ -19,7 +21,9 @@
   --modifier-color-hover: var(--color-background-negative-hover);
   --modifier-color-tinted-hover: var(--color-background-negative-tinted-hover);
   --modifier-color-active: var(--color-background-negative-active);
-  --modifier-color-tinted-active: var(--color-background-negative-tinted-active);
+  --modifier-color-tinted-active: var(
+    --color-background-negative-tinted-active
+  );
   --modifier-color-text: var(--color-background-negative-text);
   --modifier-color-border: var(--modifier-color);
   --modifier-color-border-hover: var(--modifier-color-hover);
