@@ -71,7 +71,7 @@ AllIcons.argTypes = {
 
 export const Size: Story = {
   args: {
-    icon: "certificate",
+    icon: "get-link",
   },
   parameters: {
     docs: {
@@ -84,33 +84,29 @@ export const Size: Story = {
   render: (args) => (
     <div>
       <h1>
-        h1
+        Button&nbsp;
         <Component {...args} />
       </h1>
       <h2>
-        h2
+        Variants&nbsp;
         <Component {...args} />
       </h2>
       <h3>
-        h3
+        Positive&nbsp;
         <Component {...args} />
       </h3>
       <h4>
-        h4
+        Usage&nbsp;
         <Component {...args} />
       </h4>
       <h5>
-        h5
+        When to use&nbsp;
         <Component {...args} />
       </h5>
-      <p>
-        Paragraph
+      <h6>
+        To indicate a positive and/or prominent action&nbsp;
         <Component {...args} />
-      </p>
-      <small>
-        Small text
-        <Component {...args} />
-      </small>
+      </h6>
     </div>
   ),
 };
