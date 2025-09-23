@@ -35,7 +35,7 @@ Historically, our icons have not followed a consistent coloring approach. Some i
 To improve consistency and simplify implementation, we have updated all non-branded icons to be monochromatic,
 consuming `currentColor`.
 
-Icons that have been updated to follow this approach are listed below, along with any colors they previously used (in case we need to revert them in the future).
+Icons that have been updated to follow this approach are listed below.
 
 #### Branded icons
 
@@ -47,19 +47,17 @@ Additionally, some of these icons had `-dark` variants to be used on light backg
 Status icons frequently use color to convey meaning (e.g.,  red for error, green for success, yellow for warning).
 In the interest of simplicity and uniformity (all non-branded icons should consume `currentColor`), these icons
 have been updated to consume only `currentColor`.
-They are listed along with the color they would be bound to in case we need to revert them to use non-text color in the future.
 
-| Icon Name(s)          | Color variable                                                                      |
-|-----------------------|-------------------------------------------------------------------------------------|
-| `conflict`            | `var(--tmp-color-caution)`                                                          |
-| `conflict-resolution` | `var(--tmp-color-caution)`                                                          |
-| `email`               | Multiple; see [multichromatic non-branded icons](#multichromatic-non-branded-icons) |
-| `error`               | `var(--color-background-negative-default)`                                          |
-| `status-in-progress`  | Multiple; see [multichromatic non-branded icons](#multichromatic-non-branded-icons) |
-| `status-waiting`      | `var(--tmp-color-caution)`                                                          |
-| `success`             | `var(--color-background-positive-default)`                                          |
-| `unit-running`        | `var(--color-background-positive-default)`                                          |
-| `warning`             | `var(--tmp-color-caution)`                                                          |
+Status icons that have been updated:
+- `conflict`
+- `conflict-resolution`
+- `email`
+- `error`
+- `status-in-progress`
+- `status-waiting`
+- `success`
+- `unit-running`
+- `warning`
 
 #### Multichromatic non-branded icons
 Some non-branded icons have also been multichromatic in the past.
@@ -67,27 +65,9 @@ These are, so far, icons with a rounded, filled background shape, and multiple c
 
 These icons have been simplified to also be monochromatic, consuming `currentColor` for all paths.
 
-In case these icons need to be updated in the future to use multiple non-text colors,
-they are listed below along with their constituent colors.
-
-| Icon Name            | Color Variables Used                                                                                                                                                                                                                                                        |
-|----------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `email`              | - `var(--tmp-color-text-muted)` (grey background circle)<br>- `currentColor` (envelope path, assumed to be set to `var(--tmp-color-background-default)` by the implementation library)                                                                                      |
-| `status-in-progress` | - `var(--color-palette-blue)` (blue background circle)<br>- `var(--tmp-color-background-alt)` (smaller loading spinner slice)<br>- `currentColor` (largest loading spinner slice, assumed to be set to `var(--tmp-color-background-default)` by the implementation library) |
-
-## Sizing
-
-We aim to provide icons that all have consistent 16x16 viewboxes. However, some of our historic icons do not have 16x16
-viewboxes. These icons are not currently in the repo, but will be added in the future once we have scaled them.
-
-- `email`
-- `facebook`
-- `github`
-- `instagram`
-- `linkedin`
-- `rss`
-- `x`
-- `youtube`
+Multichromatic non-branded icons that have been updated:
+- `email` - Previously had a grey background circle with envelope path
+- `status-in-progress` - Previously had a blue background circle with loading spinner slices
 
 ## TypeScript Support
 
