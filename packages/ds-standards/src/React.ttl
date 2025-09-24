@@ -1,0 +1,573 @@
+@prefix : <http://example.org/codestandards#> .
+@prefix cs: <http://example.org/codestandards#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+# React Category
+:ReactCategory a cs:Category ;
+    rdfs:label "React"@en ;
+    rdfs:comment "Standards specific to React development"@en .
+
+# Component Structure Standard
+:ComponentStructure a cs:CodeStandard ;
+    cs:name "react/component/folder-structure" ;
+    cs:hasCategory :ReactCategory ;
+    cs:description """Components should follow a consistent folder structure:
+- One component per folder
+- Component folder named same as component
+- Index file exporting the component
+- Separate files for component, types, styles, tests, and stories""" ;
+    cs:dos """```
+MyComponent/
+  ├── MyComponent.tsx       # Main component implementation
+  ├── types.ts             # TypeScript types/interfaces
+  ├── styles.css           # Component styles
+  ├── MyComponent.tests.tsx # Unit tests
+  ├── MyComponent.ssr.tests.tsx # Unit tests, for SSR mode
+  ├── MyComponent.stories.tsx # Storybook stories
+  └── index.ts            # Public exports
+```""" ;
+    cs:donts """Don't mix multiple components in one folder
+Don't use inconsistent file naming
+Don't skip index.ts for exports""" .
+
+# Component Props Standard
+:ComponentProps a cs:CodeStandard ;
+    cs:name "react/component/props" ;
+    cs:hasCategory :ReactCategory ;
+    cs:description "Props should be explicitly typed using TypeScript interfaces and follow consistent naming patterns" ;
+    cs:dos """```typescript
+interface ButtonProps {
+  label: string;
+  onClick: () => void;
+  variant?: 'primary' | 'secondary';
+}
+
+const Button = ({ label, onClick, variant = 'primary' }: ButtonProps) => {
+  // ...
+};
+```""" ;
+    cs:donts """Don't use `any` for prop types
+Don't destructure props in function parameters without type
+Don't use non-semantic prop names""" .
+
+# Component Naming Standard
+:ComponentNaming a cs:CodeStandard ;
+    cs:name "react/component/naming" ;
+    cs:hasCategory :ReactCategory ;
+    cs:description "Components should use PascalCase naming and be descriptive of their purpose" ;
+    cs:dos """
+        UserProfile
+        NavigationBar
+        SearchResultList
+    """ ;
+    cs:donts """
+        userProfile
+        navigation_bar
+        searchresultlist
+    """ .
+
+# Hook Naming Standard
+:HookNaming a cs:CodeStandard ;
+    cs:name "react/hook/naming" ;
+    cs:hasCategory :ReactCategory ;
+    cs:description "Custom hooks should start with 'use' and clearly describe their purpose" ;
+    cs:dos """useWindowSize()
+useAuthentication()
+useFormValidation()""" ;
+    cs:donts """windowSize()
+getAuth()
+validateForm()""" .
+
+# Subcomponent API Standard
+:SubcomponentAPI a cs:CodeStandard ;
+    cs:name "react/component/subcomponents-api" ;
+    cs:hasCategory :ReactCategory ;
+    cs:description """Components that expose subcomponents should follow a flat, semantic API structure:
+- Subcomponents should be exported directly from the main component file
+- Subcomponents should be assigned to the main component using dot notation
+- Subcomponent names should be semantic and self-descriptive
+- Subcomponent nesting should be kept to a single level""" ;
+    cs:dos """# Flat component structure with semantic naming
+```tsx
+// Card/common/Header/Header.tsx
+const Header = ({ title }: HeaderProps) => { /*...*/ };
+
+// Card/common/Footer/Footer.tsx
+const Footer = ({ actions }: FooterProps) => { /*...*/ };
+
+// Card/Card.tsx
+const Card = ({ children }: CardProps) => { /*...*/ };
+
+// Export subcomponents at the end of Card.tsx
+Card.Header = Header;
+Card.Footer = Footer;
+
+export default Card;
+```
+
+# Clear, semantic usage
+```tsx
+<Card>
+  <Card.Header title="User Profile" />
+  {content}
+  <Card.Footer actions={footerActions} />
+</Card>
+```
+
+The above examples demonstrate:
+- Semantic naming (Header, Footer) that clearly indicates purpose
+- Flat hierarchy with direct parent-child relationship
+- Subcomponents exported directly from main component
+- Clean, readable component composition""" ;
+cs:donts """# Avoid namespace repetition
+```tsx
+// Don't repeat component name in subcomponent
+Card.CardHeader = Header;  // Bad: Redundant 'Card' prefix
+```
+
+# Avoid deep nesting
+```tsx
+// Don't create nested subcomponent hierarchies
+<Card>
+  <Card.Section>
+    <Card.Section.Header>  // Bad: Too deep
+      <Card.Section.Header.Title />  // Bad: Too deep
+    </Card.Section.Header>
+  </Card.Section>
+</Card>
+```
+
+# Avoid non-semantic naming
+```tsx
+// Don't use generic or unclear names
+Card.Top = Header;  // Bad: 'Top' is positional, not semantic
+Card.Part1 = Section;  // Bad: 'Part1' is not descriptive
+```
+
+These anti-patterns:
+- Make code harder to understand and maintain
+- Create confusing component hierarchies
+- Reduce code readability and reusability""" .
+
+# CSS Class Ordering Standard
+:ClassNameOrdering a cs:CodeStandard ;
+    cs:name "react/component/classname-ordering" ;
+    cs:hasCategory :ReactCategory ;
+    cs:description """The className prop should be the last-applied CSS class in a component's class list to ensure proper CSS specificity and override behavior. This allows consumers to reliably override component styles when needed.""" ;
+    cs:dos """# Proper className ordering
+```tsx
+// Component applies classes in correct order: base classes first, className last
+const Rule = ({ className, emphasis, ...props }: RuleProps) => (
+  <hr
+    className={[
+      "ds rule",     // Base component classes
+      emphasis,      // Modifier classes
+      className      // Consumer classes (last)
+    ].filter(Boolean).join(" ")}
+    {...props}
+  />
+);
+```
+
+This pattern ensures:
+- Base styles establish default appearance
+- Modifier classes apply their changes
+- Consumer classes have highest specificity for overrides""" ;
+    cs:donts """# Incorrect className ordering
+```tsx
+// Don't put className before other classes
+const Rule = ({ className, emphasis, ...props }: RuleProps) => (
+  <hr
+    className={[
+      className,     // Bad: Consumer classes first
+      "ds rule",     // Base classes can't override consumer styles
+      emphasis       // Modifier might not work as expected
+    ].filter(Boolean).join(" ")}
+    {...props}
+  />
+);
+
+// Don't concatenate strings directly
+const Rule = ({ className, emphasis, ...props }: RuleProps) => (
+  <hr
+    className={`${className} ds rule ${emphasis}`}  // Bad: Hard to maintain, filter, and order
+    {...props}
+  />
+);
+```
+
+These approaches:
+- Make style overrides unpredictable
+- Can break component styling
+- Make maintenance more difficult""" .
+
+# Component Props Structure Standard
+:ComponentPropsStructure a cs:CodeStandard ;
+    cs:name "react/component/props-structure" ;
+    cs:hasCategory :ReactCategory ;
+    cs:description """Component props should follow a consistent structure and consumption pattern:
+- Props used explicitly in JSX should be destructured
+- Remaining props should be spread to the root element
+- Props should be grouped by purpose and usage""" ;
+    cs:dos """# Proper props structure and consumption
+```tsx
+interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  // Explicit props - will be used directly
+  label: string;
+  icon?: React.ReactNode;
+  // Modifier props
+  emphasis?: ModifierFamily<"emphasis">;
+  // Additional type safety
+  children?: never; // Button uses label prop instead
+}
+
+const Button = ({
+  // Destructure props used explicitly in JSX
+  label,
+  icon,
+  emphasis,
+  className,
+  // Spread remaining props to root element
+  ...props
+}: ButtonProps) => (
+  <button
+    className={["ds button", emphasis, className].filter(Boolean).join(" ")}
+    {...props}  // HTML button props spread here
+  >
+    {icon}
+    <span>{label}</span>
+  </button>
+);
+```
+
+This pattern provides:
+- Clear prop usage intent
+- Type safety for HTML attributes
+- Predictable prop behavior""" ;
+    cs:donts """# Problematic props handling
+```tsx
+// Don't mix explicit and spread props
+const Button = (props: ButtonProps) => (
+  <button
+    className={props.className}
+    onClick={props.onClick}  // Bad: Mixed with spread props
+    {...props}  // May cause duplicate props
+  >
+    {props.label}
+  </button>
+);
+
+// Don't destructure props that will be spread
+const Button = ({
+  label,
+  className,
+  onClick,  // Bad: Destructured but should be in ...props
+  onFocus,  // Bad: Destructured but should be in ...props
+  ...props
+}: ButtonProps) => (
+  <button
+    className={className}
+    onClick={onClick}
+    onFocus={onFocus}
+    {...props}
+  >
+    {label}
+  </button>
+);
+```
+
+These approaches:
+- Can cause prop conflicts
+- Make maintenance harder
+- Reduce code clarity""" .
+
+# Wrapper Component Props Standard
+:WrapperComponentProps a cs:CodeStandard ;
+    cs:name "react/component/wrapper-props" ;
+    cs:hasCategory :ReactCategory ;
+    cs:description """When a component's purpose is to wrap another component, it should:
+- Accept all unscoped props for the wrapper element
+- Use namespaced props for inner components
+- Follow semantic naming for prop namespaces""" ;
+    cs:dos """# Proper wrapper component structure
+```tsx
+interface ThumbnailSectionProps extends SectionProps {
+  // Namespaced props for inner image
+  imageProps: Omit<React.ImgHTMLAttributes<HTMLImageElement>, "alt"> & {
+    alt: string; // Make alt required
+  };
+}
+
+const ThumbnailSection = ({
+  imageProps,  // Namespaced props for image
+  className,
+  ...props    // Unscoped props for Section
+}: ThumbnailSectionProps) => (
+  <Section className={["thumbnail-section", className].filter(Boolean).join(" ")} {...props}>
+    <img {...imageProps} />  // Apply namespaced props
+    {props.children}
+  </Section>
+);
+```
+
+This approach:
+- Keeps prop scoping clear
+- Maintains type safety
+- Provides semantic prop grouping""" ;
+    cs:donts """# Problematic wrapper patterns
+```tsx
+// Don't mix prop scopes
+const ThumbnailSection = ({
+  src,      // Bad: Unscoped image props
+  alt,      // Bad: Unscoped image props
+  width,    // Bad: Ambiguous - for image or section?
+  ...props
+}: ThumbnailSectionProps) => (
+  <Section {...props}>
+    <img src={src} alt={alt} width={width} />
+  </Section>
+);
+
+// Don't use non-semantic prop names
+const ThumbnailSection = ({
+  innerProps,    // Bad: Not semantic
+  wrapperProps,  // Bad: Not semantic
+  ...props
+}: ThumbnailSectionProps) => (
+  <Section {...wrapperProps}>
+    <img {...innerProps} />
+  </Section>
+);
+```
+
+These patterns:
+- Create prop scope confusion
+- Make component usage unclear
+- Reduce code maintainability""" .
+
+# HTML Element Props Standard
+:HTMLElementProps a cs:CodeStandard ;
+    cs:name "react/component/html-element-props" ;
+    cs:hasCategory :ReactCategory ;
+    cs:description """Components that render HTML elements should extend the appropriate React HTML element type:
+- Use React's built-in HTML element interfaces
+- Extend the interface that matches the root element
+- Override prop types only when providing stronger constraints""" ;
+    cs:dos """# Proper HTML element prop typing
+```tsx
+// Extend button element props
+interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  label: string;  // Add required prop
+  emphasis?: ModifierFamily<"emphasis">;  // Add optional prop
+  children?: never;  // Explicitly prevent children
+}
+
+// Extend input element props
+interface TextFieldProps extends React.InputHTMLAttributes<HTMLInputElement> {
+  // Override type to be more specific
+  type?: "text" | "email" | "password";
+}
+
+// Extend div element props for container components
+interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
+  emphasis?: ModifierFamily<"emphasis">;
+}
+```
+
+This approach:
+- Provides complete HTML attribute typing
+- Maintains proper type constraints
+- Ensures consistent prop behavior""" ;
+    cs:donts """# Problematic HTML prop typing
+```tsx
+// Don't create props without HTML element types
+interface ButtonProps {  // Bad: Missing HTML button props
+  label: string;
+  onClick?: () => void;  // Duplicating HTML props
+  disabled?: boolean;    // Duplicating HTML props
+}
+
+// Don't use incorrect HTML element interface
+interface CardProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  // Bad: Card renders a div but extends button props
+}
+
+// Don't type HTML props manually
+interface TextFieldProps {
+  value?: string;        // Bad: Manually typing what React provides
+  onChange?: (e: any) => void;  // Bad: Incorrect event type
+  [key: string]: any;    // Bad: Unsafe prop spreading
+}
+```
+
+These approaches:
+- Miss standard HTML attributes
+- Provide incorrect type safety
+- Create inconsistent behavior""" .
+
+# Component Dependencies Standard
+:ComponentDependencies a cs:CodeStandard ;
+    cs:name "react/component/dependencies" ;
+    cs:hasCategory :ReactCategory ;
+    cs:description """Component dependencies and common folder relationships should follow a strict directional pattern:
+- Dependencies can go down into child components
+- Dependencies can go sideways to sibling components
+- Dependencies cannot go up to parent components
+- Common folder contains shared code for the component""" ;
+    cs:dos """# Proper dependency structure
+```
+Card/
+  ├── Card.tsx              # Can import from common/
+  ├── types.ts              # Can import from common/
+  ├── styles.css
+  ├── common/               # Shared code for Card
+  │   ├── Header/          # Subcomponent
+  │   │   ├── Header.tsx   # Can import from utils/
+  │   │   └── types.ts
+  │   ├── Footer/          # Sibling can import from Header/
+  │   │   ├── Footer.tsx
+  │   │   └── types.ts
+  │   └── utils/           # Shared utilities
+  │       └── helpers.ts
+  └── index.ts
+```
+
+This structure allows:
+- Card.tsx to import from common/
+- Header to import from utils/
+- Footer to import from Header/ (sideways)
+- Shared code in common/ folder""" ;
+    cs:donts """# Problematic dependency patterns
+```
+Card/
+  ├── Card.tsx
+  ├── common/
+  │   └── Header/
+  │       └── Header.tsx    # Don't import from Card.tsx
+  └── Footer/
+      └── Footer.tsx        # Don't import from ../Card.tsx
+
+components/
+  ├── Card/
+  │   └── Card.tsx         # Don't import from ../Header
+  └── Header/              # Don't let other components
+      └── Header.tsx       # depend on internal structure
+```
+
+These patterns create:
+- Circular dependencies
+- Tight coupling
+- Maintenance difficulties""" .
+
+
+# Custom Hooks Standard
+:CustomHooks a cs:CodeStandard ;
+    cs:name "react/hooks/custom" ;
+    cs:hasCategory :ReactCategory ;
+    cs:description """Custom hooks should be used when:
+- Logic needs to be shared between components
+- Component logic becomes complex
+- State management needs to be abstracted
+- Side effects need to be encapsulated""" ;
+    cs:dos """# Proper custom hook usage
+```tsx
+// Extract complex state logic into a hook
+const useFormField = (initialValue: string = '') => {
+  const [value, setValue] = useState(initialValue);
+  const [error, setError] = useState('');
+  const [touched, setTouched] = useState(false);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setValue(e.target.value);
+    setTouched(true);
+  };
+
+  const reset = () => {
+    setValue(initialValue);
+    setError('');
+    setTouched(false);
+  };
+
+  return {
+    value,
+    error,
+    touched,
+    handleChange,
+    reset,
+    setError
+  };
+};
+
+// Use hook to simplify component
+const EmailField = () => {
+  const email = useFormField('');
+  
+  useEffect(() => {
+    if (email.touched && !validateEmail(email.value)) {
+      email.setError('Invalid email');
+    }
+  }, [email.value, email.touched]);
+
+  return (
+    <input
+      value={email.value}
+      onChange={email.handleChange}
+      aria-invalid={!!email.error}
+    />
+  );
+};
+```
+
+This approach:
+- Reduces component complexity
+- Enables logic reuse
+- Improves testability""" ;
+    cs:donts """# Problematic hook patterns
+```tsx
+// Don't create hooks for simple state
+const useCounter = () => {  // Bad: Unnecessary abstraction
+  const [count, setCount] = useState(0);
+  return { count, setCount };
+};
+
+// Don't mix concerns in hooks
+const useUserData = () => {  // Bad: Too many responsibilities
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const navigate = useNavigate();
+  
+  // Authentication
+  const login = async () => {/*...*/};
+  const logout = async () => {/*...*/};
+  
+  // Profile management
+  const updateProfile = async () => {/*...*/};
+  const deleteAccount = async () => {/*...*/};
+  
+  // Preferences
+  const updateSettings = async () => {/*...*/};
+  
+  return { user, login, logout, updateProfile, /* ... */ };
+};
+
+// Don't use hooks conditionally
+const Component = ({ type }) => {
+  // Bad: Conditional hook usage
+  if (type === 'admin') {
+    useAdminData();
+  }
+  // ...
+};
+```
+
+These patterns:
+- Create unnecessary abstractions
+- Mix concerns
+- Break hooks rules
+- Make testing difficult""" .
+
+
