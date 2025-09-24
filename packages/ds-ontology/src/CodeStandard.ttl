@@ -1,0 +1,58 @@
+@prefix : <http://example.org/codestandards#> .
+@prefix cs: <http://example.org/codestandards#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+
+# Ontology Declaration
+cs: a owl:Ontology ;
+    rdfs:label "Code Standards Ontology"@en ;
+    rdfs:comment "An ontology for describing software development code standards and best practices"@en ;
+    dcterms:created "2025-01-09"^^xsd:date ;
+    dcterms:description "This ontology provides a structured way to document coding standards including categories, descriptions, do's and don'ts"@en ;
+    owl:versionInfo "1.0.0" .
+
+# Classes
+cs:CodeStandard a owl:Class ;
+                rdfs:label "Code Standard"@en ;
+                rdfs:comment "A coding standard or best practice guideline for software development"@en .
+
+cs:Category a owl:Class ;
+            rdfs:label "Category"@en ;
+            rdfs:comment "A category for grouping related code standards (e.g., testing, components, react, typescript)"@en ;
+            rdfs:subClassOf skos:Concept .
+
+# Object Properties
+cs:hasCategory a owl:ObjectProperty ;
+               rdfs:label "has category"@en ;
+               rdfs:comment "Associates a code standard with its category"@en ;
+               rdfs:domain cs:CodeStandard ;
+               rdfs:range cs:Category .
+
+# Datatype Properties
+cs:name a owl:DatatypeProperty ;
+        rdfs:label "name"@en ;
+        rdfs:comment "The domain-based identifier name of the code standard (e.g., 'react/component/folder-structure')"@en ;
+        rdfs:domain cs:CodeStandard ;
+        rdfs:range xsd:string .
+
+cs:description a owl:DatatypeProperty ;
+               rdfs:label "description"@en ;
+               rdfs:comment "A general description of the code standard in markdown format"@en ;
+               rdfs:domain cs:CodeStandard ;
+               rdfs:range xsd:string .
+
+cs:dos a owl:DatatypeProperty ;
+       rdfs:label "do's"@en ;
+       rdfs:comment "Examples of what should be done, in markdown format"@en ;
+       rdfs:domain cs:CodeStandard ;
+       rdfs:range xsd:string .
+
+cs:donts a owl:DatatypeProperty ;
+         rdfs:label "don'ts"@en ;
+         rdfs:comment "Examples of what should not be done, in markdown format"@en ;
+         rdfs:domain cs:CodeStandard ;
+         rdfs:range xsd:string .
