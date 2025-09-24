@@ -150,6 +150,17 @@
         "@canonical/biome-config": "^0.10.0-experimental.3",
       },
     },
+    "packages/ds-standards": {
+      "name": "@canonical/ds-standards",
+      "version": "0.10.0-experimental.3",
+      "dependencies": {
+        "@canonical/ds-ontology": "^0.10.0-experimental.3",
+      },
+      "devDependencies": {
+        "@biomejs/biome": "2.2.4",
+        "@canonical/biome-config": "^0.10.0-experimental.3",
+      },
+    },
     "packages/ds-types": {
       "name": "@canonical/ds-types",
       "version": "0.10.0-experimental.4",
@@ -816,6 +827,8 @@
     "@canonical/ds-demo-site": ["@canonical/ds-demo-site@workspace:apps/react/demo"],
 
     "@canonical/ds-ontology": ["@canonical/ds-ontology@workspace:packages/ds-ontology"],
+
+    "@canonical/ds-standards": ["@canonical/ds-standards@workspace:packages/ds-standards"],
 
     "@canonical/ds-types": ["@canonical/ds-types@workspace:packages/ds-types"],
 
