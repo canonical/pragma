@@ -1,0 +1,225 @@
+@prefix : <http://example.org/codestandards#> .
+@prefix cs: <http://example.org/codestandards#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+# Styling Category
+:StylingCategory a cs:Category ;
+    rdfs:label "Styling"@en ;
+    rdfs:comment "Standards specific to CSS styling and design system implementation"@en .
+
+# CSS Variables Standard
+:CSSVariables a cs:CodeStandard ;
+    cs:name "styling/css/variables" ;
+    cs:hasCategory :StylingCategory ;
+    cs:description """CSS variables should follow a clear scoping and naming pattern:
+- Global design tokens use semantic names
+- Component variables define component-specific tokens
+- Modifier variables use intent-based naming
+- Variables should have fallbacks for resilience""" ;
+    cs:dos """# Proper variable structure
+```css
+/* Global design tokens */
+:root {
+  /* Semantic color tokens */
+  --color-background-default: #fff;
+  --color-text-default: #000;
+  --color-border-high-contrast: rgba(0, 0, 0, 0.85);
+  
+  /* Semantic spacing tokens */
+  --dimension-separator-bar-thickness: 2px;
+}
+
+/* Component-specific variables */
+.ds.rule {
+  /* Component defaults with semantic names */
+  --rule-color-background: var(--color-border-high-contrast);
+  --rule-height: 1px;
+  --rule-margin-top: 1rem;
+}
+
+/* Intent-based modifier variables */
+.highlighted {
+  /* Modifier sets intent variables */
+  --intent-separator-bar-height: var(--dimension-separator-bar-thickness);
+  --intent-separator-bar-color: var(--color-text-default);
+}
+```
+
+This approach:
+- Creates clear variable hierarchy
+- Uses semantic naming
+- Provides fallback values""" ;
+    cs:donts """# Problematic variable patterns
+```css
+/* Don't use non-semantic names */
+:root {
+  --gray-100: #f8f9fa;  /* Bad: Color value naming */
+  --space-4: 1rem;      /* Bad: Abstract spacing units */
+}
+
+/* Don't skip fallbacks */
+.ds.rule {
+  height: var(--rule-height);  /* Bad: Missing fallback */
+}
+
+/* Don't use magic numbers */
+.highlighted {
+  --rule-height: 2px;  /* Bad: Hard-coded value */
+}
+
+/* Don't mix scopes */
+.ds.rule {
+  /* Bad: Global tokens defined in component */
+  --color-border-default: #000;
+}
+```
+
+These patterns:
+- Create maintenance issues
+- Reduce design consistency
+- Make updates difficult""" .
+
+# CSS Modifiers Standard
+:CSSModifiers a cs:CodeStandard ;
+    cs:name "styling/css/modifiers" ;
+    cs:hasCategory :StylingCategory ;
+    cs:description """CSS modifiers should follow a setter/getter pattern:
+- Component root defines scoped CSS variables for active styles
+- Modifier classes change root variables within their selectors
+- Component styles consume unscoped variables in a single place
+- Modifiers should be grouped into semantic families""" ;
+    cs:dos """# Proper modifier pattern
+```css
+/* Component base styles with scoped variables */
+.ds.rule {
+  /* Define component-scoped variables at root */
+  background-color: var(
+    --intent-separator-bar-color,
+    var(--rule-color-background)
+  );
+  height: var(--intent-separator-bar-height, var(--rule-height));
+}
+
+/* Modifier classes set variables */
+.highlighted {
+  --intent-separator-bar-height: var(--dimension-separator-bar-thickness);
+  --intent-separator-bar-color: var(--color-text-default);
+}
+
+.muted {
+  --intent-separator-bar-height: inherit;
+  --intent-separator-bar-color: var(--color-border-low-contrast);
+}
+
+/* TypeScript type safety */
+interface RuleProps extends HTMLHRElement {
+  emphasis?: ModifierFamily<"emphasis">;  // Type-safe modifier
+}
+```
+
+This approach:
+- Separates concerns (base styles vs. modifications)
+- Provides clear variable scope
+- Enables type-safe modifiers""" ;
+    cs:donts """# Problematic modifier patterns
+```css
+/* Don't mix modifiers with base styles */
+.ds.rule {
+  background-color: var(--color-border-default);
+}
+.ds.rule.highlighted {  /* Bad: Direct property modification */
+  background-color: var(--color-text-default);
+}
+
+/* Don't scope variables to states */
+.ds.rule.highlighted {
+  /* Bad: Variables bound to modifier state */
+  --rule-color: var(--color-text-default);
+  background-color: var(--rule-color);
+}
+
+/* Don't use non-semantic modifiers */
+.ds.rule.large {  /* Bad: Size should be controlled by CSS vars */
+  height: 4px;
+}
+
+/* Don't mix concerns */
+.positive {
+  /* Bad: Mixing different types of modifications */
+  --intent-color: green;
+  font-weight: bold;
+  border-radius: 4px;
+}
+```
+
+These patterns:
+- Mix concerns
+- Create maintenance issues
+- Reduce reusability""" .
+
+# CSS Selector Standard
+:CSSSelectors a cs:CodeStandard ;
+    cs:name "styling/css/selectors" ;
+    cs:hasCategory :StylingCategory ;
+    cs:description """CSS selectors should follow a consistent pattern:
+- Use namespace prefix for component root
+- Keep selectors flat and specific
+- Avoid deep nesting
+- Use semantic class names""" ;
+    cs:dos """# Proper selector patterns
+```css
+/* Component root with namespace */
+.ds.button {
+  /* Base styles */
+}
+
+/* Direct child selectors when needed */
+.ds.button > .icon {
+  margin-right: var(--button-icon-spacing);
+}
+
+/* State modifiers */
+.ds.button[disabled] {
+  opacity: var(--button-disabled-opacity);
+}
+
+/* Semantic modifier classes */
+.ds.button.primary {
+  --intent-color: var(--color-primary);
+}
+```
+
+This approach:
+- Maintains clear scope
+- Prevents style leaks
+- Keeps specificity manageable""" ;
+    cs:donts """# Problematic selector patterns
+```css
+/* Don't use deep nesting */
+.ds.card .content .title h2 {  /* Bad: Too specific */
+  color: var(--color-text-default);
+}
+
+/* Don't use non-semantic selectors */
+.ds.button.big {  /* Bad: Use modifier system instead */
+  padding: 1rem;
+}
+
+/* Don't rely on HTML structure */
+.ds.list li > span {  /* Bad: Coupled to markup */
+  color: var(--color-text-muted);
+}
+
+/* Don't use high specificity selectors */
+.ds.button.primary[type="submit"].large {  /* Bad: Too specific */
+  /* styles */
+}
+```
+
+These patterns:
+- Create brittle styles
+- Increase specificity problems
+- Make maintenance difficult""" .
