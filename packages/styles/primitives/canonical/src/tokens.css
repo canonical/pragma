@@ -451,7 +451,9 @@
   --section-padding-bottom-spacing-shallow: var(--spacing-vertical-xlarge);
   --section-padding-bottom-spacing-default: var(--spacing-vertical-xxlarge);
   --section-padding-bottom-spacing-deep: var(--spacing-vertical-xxxlarge);
-  --section-padding-bottom-spacing-hero: var(--section-padding-bottom-default);
+  --section-padding-bottom-spacing-hero: var(
+    --section-padding-bottom-spacing-default
+  );
   --section-padding-top-spacing-default: 0px;
   --section-padding-top-bordered-default: 0px;
   --section-padding-top-bordered-true: calc(

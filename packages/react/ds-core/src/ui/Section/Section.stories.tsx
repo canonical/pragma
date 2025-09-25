@@ -55,13 +55,13 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   args: {
-    children: <span>Hello world!</span>,
+    children: <p>Hello world!</p>,
   },
 };
 
 export const Bordered: Story = {
   args: {
-    children: <span>This section has a top border.</span>,
+    children: <p>This section has a top border.</p>,
     bordered: true,
   },
   parameters: {
