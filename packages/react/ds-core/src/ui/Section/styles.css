@@ -1,31 +1,22 @@
 /* @canonical/generator-ds 0.10.0-experimental.2 */
 
 .ds.section {
-  --section-padding-bottom: var(--section-padding-bottom-default);
-  --section-padding-top: var(--section-padding-top-default, 0px);
-  --section-border-start-width: var(--intent-separator-bar-height);
-
-  border-top-color: var(
-    --intent-separator-bar-color,
-    var(--rule-color-background)
-  );
-
-  border-top-style: var(--intent-border-style);
-  border-top-width: var(--section-border-start-width);
-  padding-bottom: var(--section-padding-bottom);
+  --section-padding-bottom: var(--section-padding-bottom-spacing-default);
 
   /*
-    The top border is similar to a Rule component, but we need to use padding instead of margin to maintain baseline alignment.
-    --section-padding-top: base top padding
-    --section-border-start-height-with-padding: height of the border including additional padding.
-        The border height + additional padding always adds up to this value, but global modifiers may change the distribution of border height and padding.
-    --section-border-start-width: height of the border itself, taking global modifiers into account.
-  */
-  padding-top: calc(
-    var(--section-padding-top) +
-    var(--section-border-start-height-with-padding) -
-    var(--section-border-start-width)
-  );
+    Section top padding is the sum of padding applied by two props - `spacing` and `bordered`.
+    We namespace each padding type, then add them together in the final padding-top declaration.
+    */
+  --section-padding-top-spacing: var(--section-padding-top-spacing-default);
+  --section-padding-top-bordered: var(--section-padding-top-bordered-default);
+
+  &.bordered {
+    /* Top padding subtracts border height */
+    --section-padding-top-bordered: var(--section-padding-top-bordered-true);
+    border-top-color: var(--section-border-start-color);
+    border-top-style: var(--section-border-start-style);
+    border-top-width: var(--section-border-start-width);
+  }
 
   /*
     Spacing variants
@@ -33,20 +24,27 @@
     The top padding is still bound here in case users customize their tokens.
     */
   &.spacing-shallow {
-    --section-padding-bottom: var(--section-padding-bottom-shallow);
-    --section-padding-top: var(--section-padding-top-shallow);
+    --section-padding-bottom: var(--section-padding-bottom-spacing-shallow);
+    --section-padding-top-spacing: var(--section-padding-top-spacing-shallow);
   }
 
   &.spacing-deep {
-    --section-padding-bottom: var(--section-padding-bottom-deep);
-    --section-padding-top: var(--section-padding-top-deep);
+    --section-padding-bottom: var(--section-padding-bottom-spacing-deep);
+    --section-padding-top-spacing: var(--section-padding-top-spacing-deep);
     /* TODO add responsiveness https://github.com/canonical/vanilla-framework/blob/6af35433368f82d76d8deb7effebca47b434ee76/scss/_patterns_section.scss#L16-L18 */
   }
 
   &.spacing-hero {
-    --section-padding-bottom: var(--section-padding-bottom-hero);
-    --section-padding-top: var(--section-padding-top-hero);
+    --section-padding-bottom: var(--section-padding-bottom-spacing-hero);
+    --section-padding-top-spacing: var(--section-padding-top-spacing-hero);
 
     /*    TODO add responsiveness https://github.com/canonical/vanilla-framework/blob/6af35433368f82d76d8deb7effebca47b434ee76/scss/_patterns_section.scss#L32-L34 */
   }
+
+  padding-bottom: var(--section-padding-bottom);
+  /*   Padding-top is applied by both the `spacing` prop and the `bordered` props */
+  padding-top: calc(
+    var(--section-padding-top-spacing) +
+    var(--section-padding-top-bordered)
+  );
 }

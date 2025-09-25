@@ -29,14 +29,12 @@ const meta = {
         },
       },
     },
-    emphasis: {
-      options: MODIFIER_FAMILIES.emphasis,
-      control: { type: "radio" },
-      description:
-        "The emphasis variant of the section. Defines the section's starting border.",
+    bordered: {
+      control: { type: "boolean" },
+      description: "Whether the section has a top border.",
       table: {
         type: {
-          summary: MODIFIER_FAMILIES.emphasis.join(" | "),
+          summary: "boolean",
         },
       },
     },
@@ -60,30 +58,26 @@ export const Default: Story = {
     children: <span>Hello world!</span>,
   },
 };
-export const Emphasis = (args: RuleProps) => (
-  <div>
-    {MODIFIER_FAMILIES.emphasis.map((emphasisLevel) => (
-      <>
-        <Component key={emphasisLevel} {...args} emphasis={emphasisLevel}>
-          <h4>This is a {emphasisLevel} section.</h4>
-        </Component>
-      </>
-    ))}
-  </div>
-);
-Emphasis.parameters = {
-  docs: {
-    description: {
-      story:
-        "Different levels of visual emphasis can be applied to the section to adjust the starting border style.",
+
+export const Bordered: Story = {
+  args: {
+    children: <span>This section has a top border.</span>,
+    bordered: true,
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "A section can have a top border to increase its visual separation from preceding content.",
+      },
     },
   },
 };
 
-export const Spacing: StoryFn<typeof Component> = (args) => (
+export const Spacing: StoryFn<typeof Component> = (props) => (
   <>
     {SECTION_SPACING.map((spacingLevel) => (
-      <Component key={spacingLevel} {...args} spacing={spacingLevel}>
+      <Component key={spacingLevel} spacing={spacingLevel} {...props}>
         <h4>This is a {spacingLevel} section.</h4>
       </Component>
     ))}
@@ -93,14 +87,19 @@ Spacing.parameters = {
   docs: {
     description: {
       story:
-        "Sections can have varying visual spacing levels to organize information according to an information hierarchy.",
+        "Sections can have varying visual spacing levels to organize information according to an information hierarchy.<br>Use the `spacing` prop to set the desired spacing level.<br>The example below uses `spacing` with `bordered` to help visually demonstrate the different spacing levels, but `spacing` can be used without `bordered` as well.",
     },
   },
 };
 
-// Hide the spacing and children input controls as they are controlled by the story itself
+// Hide the spacing, border, children input controls as they are controlled by the story itself
 Spacing.argTypes = {
   spacing: {
+    table: {
+      disable: true,
+    },
+  },
+  bordered: {
     table: {
       disable: true,
     },
@@ -113,5 +112,5 @@ Spacing.argTypes = {
 };
 
 Spacing.args = {
-  emphasis: "neutral",
+  bordered: true,
 };
