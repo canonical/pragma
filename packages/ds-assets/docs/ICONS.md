@@ -28,7 +28,7 @@ text color of its parent element.
 Historically, our icons have not followed a consistent coloring approach. Some icons have been monochromatic, consuming
 `currentColor`, while others have been multichromatic, using multiple colors defined in our color palette.
 
-To improve consistency and simplify implementation, we have updated all non-branded icons to be monochromatic,
+To improve consistency and simplify implementation, we have updated all icons to be monochromatic,
 consuming `currentColor`.
 
 Icons that have been updated to follow this approach are listed below.
