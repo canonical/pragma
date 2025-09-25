@@ -30,11 +30,17 @@ cs:hasCategory a owl:ObjectProperty ;
                rdfs:range cs:Category .
 
 # Datatype Properties
+cs:NamePattern a owl:Datatype ;
+  owl:onDatatype xsd:string ;
+  owl:withRestrictions (
+    [ xsd:pattern "^[a-z]+(/[a-z0-9-]+)*$" ]
+  ) .
+
 cs:name a owl:DatatypeProperty ;
         rdfs:label "name"@en ;
-        rdfs:comment "The domain-based identifier name of the code standard (e.g., 'react/component/folder-structure')"@en ;
+        rdfs:comment "The domain-based identifier name of the code standard (e.g., 'react/component/folder-structure')."@en ;
         rdfs:domain cs:CodeStandard ;
-        rdfs:range xsd:string .
+        rdfs:range cs:NamePattern .
 
 cs:description a owl:DatatypeProperty ;
                rdfs:label "description"@en ;
