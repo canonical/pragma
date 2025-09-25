@@ -18,10 +18,6 @@ Icons adapt their color and size to their context. We use a consistent 16x16 vie
 
 Each icon's contents are wrapped in a `<g>` element with a matching ID (e.g., `<g id="warning">` for warning.svg). This pattern enables efficient reuse through SVG's `<use>` element - you can reference these icons in your markup like `<use href="path/to/warning.svg#warning" />`. Since the behavior of each icon is defined by these standards rather than implementation-specific code, platform libraries can stay lightweight. They just need to handle the mechanics of loading and displaying SVGs, keeping their APIs flat and predictable regardless of which icon you're using.
 
-The [`scripts/standardize-icons.ts` script](../scripts/standardize-icons.ts) script will standardize all icons in the [`/icons`](../icons) folder to follow these
-requirements.
-Run the script with `bun run standardize-icons`.
-
 ## Coloring
 
 Icons adapt their color to their context by consuming `currentColor`. This means that the icon will inherit the

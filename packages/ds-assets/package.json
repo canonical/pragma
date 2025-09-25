@@ -32,7 +32,6 @@
     "check:biome": "biome check",
     "check:biome:fix": "biome check --write",
     "check:ts": "tsc --noEmit",
-    "standardize-icons": "bun ./scripts/standardize-icons.ts",
     "test": "bun run test:vitest",
     "test:vitest": "vitest run",
     "test:vitest:watch": "vitest"
