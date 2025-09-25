@@ -1,5 +1,6 @@
 /* @canonical/generator-ds 0.10.0-experimental.2 */
 
+import type { ModifierFamily } from "@canonical/ds-types";
 import type { HTMLAttributes, ReactNode } from "react";
 import type { SECTION_SPACING } from "./constants.js";
 
@@ -20,4 +21,7 @@ export interface SectionProps extends HTMLAttributes<HTMLDivElement> {
     FLAG: Unique, potentially inconsistent/unstable API
   */
   spacing?: SectionSpacing;
+
+  /** Emphasis variant of the section */
+  emphasis?: ModifierFamily<"emphasis">;
 }

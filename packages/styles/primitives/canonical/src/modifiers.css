@@ -50,6 +50,7 @@
 }
 
 .neutral {
+  --intent-border-style: solid;
   --intent-color: var(--color-background-default);
   --intent-color-hover: var(--color-background-hover);
   --intent-color-active: var(--color-background-active);
@@ -57,21 +58,25 @@
   --intent-color-border: var(--color-border-high-contrast);
   --intent-color-border-hover: var(--intent-color-border);
   --intent-color-border-active: var(--intent-color-border);
+  --intent-separator-bar-height: 1px;
 }
 
 /* Emphasis modifiers */
 
 .highlighted {
+  --intent-border-style: solid;
   --intent-separator-bar-height: var(--tmp-dimension-separator-bar-thickness);
   --intent-separator-bar-color: var(--tmp-color-text-default);
 }
 
 .accented {
+  --intent-border-style: solid;
   --intent-separator-bar-height: var(--tmp-dimension-separator-bar-thickness);
   --intent-separator-bar-color: var(--tmp-color-border-accent);
 }
 
 .muted {
-  --intent-separator-bar-height: inherit;
+  --intent-border-style: solid;
+  --intent-separator-bar-height: 1px;
   --intent-separator-bar-color: var(--tmp-color-border-low-contrast);
 }

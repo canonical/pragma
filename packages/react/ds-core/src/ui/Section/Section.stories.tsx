@@ -1,6 +1,8 @@
 /* @canonical/generator-ds 0.10.0-experimental.2 */
 
+import { MODIFIER_FAMILIES } from "@canonical/ds-types";
 import type { Meta, StoryFn, StoryObj } from "@storybook/react-vite";
+import type { RuleProps } from "../Rule/index.js";
 import Rule from "../Rule/Rule.js";
 import { SECTION_SPACING } from "./constants.js";
 import Component from "./Section.js";
@@ -27,6 +29,17 @@ const meta = {
         },
       },
     },
+    emphasis: {
+      options: MODIFIER_FAMILIES.emphasis,
+      control: { type: "radio" },
+      description:
+        "The emphasis variant of the section. Defines the section's starting border.",
+      table: {
+        type: {
+          summary: MODIFIER_FAMILIES.emphasis.join(" | "),
+        },
+      },
+    },
   },
   parameters: {
     docs: {
@@ -47,22 +60,34 @@ export const Default: Story = {
     children: <span>Hello world!</span>,
   },
 };
-
-export const Spacing: StoryFn<typeof Component> = (args) => (
+export const Emphasis = (args: RuleProps) => (
   <div>
-    <Rule />
-    <Component {...args}>
-      <h4>This is a default section.</h4>
-    </Component>
-    {SECTION_SPACING.map((spacingLevel) => (
-      <div key={spacingLevel}>
-        <Rule />
-        <Component key={spacingLevel} {...args} spacing={spacingLevel}>
-          <h4>This is a {spacingLevel} section.</h4>
+    {MODIFIER_FAMILIES.emphasis.map((emphasisLevel) => (
+      <>
+        <Component key={emphasisLevel} {...args} emphasis={emphasisLevel}>
+          <h4>This is a {emphasisLevel} section.</h4>
         </Component>
-      </div>
+      </>
     ))}
   </div>
+);
+Emphasis.parameters = {
+  docs: {
+    description: {
+      story:
+        "Different levels of visual emphasis can be applied to the section to adjust the starting border style.",
+    },
+  },
+};
+
+export const Spacing: StoryFn<typeof Component> = (args) => (
+  <>
+    {SECTION_SPACING.map((spacingLevel) => (
+      <Component key={spacingLevel} {...args} spacing={spacingLevel}>
+        <h4>This is a {spacingLevel} section.</h4>
+      </Component>
+    ))}
+  </>
 );
 Spacing.parameters = {
   docs: {
@@ -85,4 +110,8 @@ Spacing.argTypes = {
       disable: true,
     },
   },
+};
+
+Spacing.args = {
+  emphasis: "neutral",
 };

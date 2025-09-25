@@ -2,9 +2,30 @@
 
 .ds.section {
   --section-padding-bottom: var(--section-padding-bottom-default);
-  --section-padding-top: var(--section-padding-top-default);
+  --section-padding-top: var(--section-padding-top-default, 0px);
+  --section-border-start-width: var(--intent-separator-bar-height);
+
+  border-top-color: var(
+    --intent-separator-bar-color,
+    var(--rule-color-background)
+  );
+
+  border-top-style: var(--intent-border-style);
+  border-top-width: var(--section-border-start-width);
   padding-bottom: var(--section-padding-bottom);
-  padding-top: var(--section-padding-top);
+
+  /*
+    The top border is similar to a Rule component, but we need to use padding instead of margin to maintain baseline alignment.
+    --section-padding-top: base top padding
+    --section-border-start-height-with-padding: height of the border including additional padding.
+        The border height + additional padding always adds up to this value, but global modifiers may change the distribution of border height and padding.
+    --section-border-start-width: height of the border itself, taking global modifiers into account.
+  */
+  padding-top: calc(
+    var(--section-padding-top) +
+    var(--section-border-start-height-with-padding) -
+    var(--section-border-start-width)
+  );
 
   /*
     Spacing variants

@@ -15,12 +15,14 @@ const Section = ({
   className,
   children,
   spacing,
+  emphasis,
   ...props
 }: SectionProps): React.ReactElement => {
   return (
     <section
       className={[
         componentCssClassName,
+        emphasis,
         spacing && `spacing-${spacing}`,
         className,
       ]
