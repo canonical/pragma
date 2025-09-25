@@ -323,15 +323,6 @@
   --tmp-dimension-decoration-thickness-link: 1px;
   --tmp-dimension-underline-offset-link: 0.075em;
 
-  /* Semantic dimension tokens - em-based for text-relative inline elements */
-  --dimension-inline-2xs: 0.25em;
-  --dimension-inline-xs: 0.5em;
-  --dimension-inline-sm: 0.75em;
-  --dimension-inline-md: 1em;
-  --dimension-inline-lg: 1.5em;
-  --dimension-inline-xl: 2em;
-  --dimension-inline-2xl: 3em;
-
   /* 3px at 16px fontsize, expressed in rems so it scales with text if the root font-size changes at a breakpoint */
   --tmp-dimension-separator-bar-thickness: 0.1875rem;
 
@@ -408,7 +399,7 @@
           This will be implemented once theming DS-wide is added.
     */
 
-  --icon-size: var(--dimension-inline-md);
+  --icon-size: 1em;
 
   --tooltip-color-background: var(--tmp-color-background-default);
   --tooltip-color-background-hover: var(--tmp-color-background-hover);
