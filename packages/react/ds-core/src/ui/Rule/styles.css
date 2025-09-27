@@ -2,15 +2,15 @@
 
 .ds.rule {
   background-color: var(
-    --intent-separator-bar-color,
+    --modifier-separator-bar-color,
     var(--rule-color-background)
   );
   border-width: var(--rule-border-width);
-  height: var(--intent-separator-bar-height, var(--rule-height));
+  height: var(--modifier-separator-bar-height, var(--rule-height));
   margin-block-start: var(--rule-margin-top);
   /* global modifiers can change the height of the rule. Subtract the actual height of the rule from the target height to keep baseline alignment    */
   margin-block-end: calc(
     var(--rule-height-with-margin) -
-    var(--intent-separator-bar-height, var(--rule-height))
+    var(--modifier-separator-bar-height, var(--rule-height))
   );
 }

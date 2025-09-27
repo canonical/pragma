@@ -1,77 +1,87 @@
+/** severity intents */
 .positive {
-  --intent-color: var(--color-background-positive-default);
-  --intent-color-tinted: var(--color-background-positive-tinted-default);
-  --intent-color-hover: var(--color-background-positive-hover);
-  --intent-color-tinted-hover: var(--color-background-positive-tinted-hover);
-  --intent-color-active: var(--color-background-positive-active);
-  --intent-color-tinted-active: var(--color-background-positive-tinted-active);
-  --intent-color-text: var(--color-background-positive-text);
-  --intent-color-text-tinted: var(--color-text-default);
-  --intent-color-border: var(--intent-color);
-  --intent-color-border-hover: var(--intent-color-hover);
-  --intent-color-border-active: var(--intent-color-active);
+  --modifier-color: var(--color-background-positive-default);
+  --modifier-color-tinted: var(--color-background-positive-tinted-default);
+  --modifier-color-hover: var(--color-background-positive-hover);
+  --modifier-color-tinted-hover: var(--color-background-positive-tinted-hover);
+  --modifier-color-active: var(--color-background-positive-active);
+  --modifier-color-tinted-active: var(
+    --color-background-positive-tinted-active
+  );
+  --modifier-color-text: var(--color-background-positive-text);
+  --modifier-color-text-tinted: var(--color-text-default);
+  --modifier-color-border: var(--modifier-color);
+  --modifier-color-border-hover: var(--modifier-color-hover);
+  --modifier-color-border-active: var(--modifier-color-active);
 }
 
 .negative {
-  --intent-color: var(--color-background-negative-default);
-  --intent-color-tinted: var(--color-background-negative-tinted-default);
-  --intent-color-hover: var(--color-background-negative-hover);
-  --intent-color-tinted-hover: var(--color-background-negative-tinted-hover);
-  --intent-color-active: var(--color-background-negative-active);
-  --intent-color-tinted-active: var(--color-background-negative-tinted-active);
-  --intent-color-text: var(--color-background-negative-text);
-  --intent-color-border: var(--intent-color);
-  --intent-color-border-hover: var(--intent-color-hover);
-  --intent-color-border-active: var(--intent-color-active);
+  --modifier-color: var(--color-background-negative-default);
+  --modifier-color-tinted: var(--color-background-negative-tinted-default);
+  --modifier-color-hover: var(--color-background-negative-hover);
+  --modifier-color-tinted-hover: var(--color-background-negative-tinted-hover);
+  --modifier-color-active: var(--color-background-negative-active);
+  --modifier-color-tinted-active: var(
+    --color-background-negative-tinted-active
+  );
+  --modifier-color-text: var(--color-background-negative-text);
+  --modifier-color-border: var(--modifier-color);
+  --modifier-color-border-hover: var(--modifier-color-hover);
+  --modifier-color-border-active: var(--modifier-color-active);
 }
 
 .information {
-  --intent-color: var(--color-background-information-default);
-  --intent-color-tinted: var(--color-background-information-tinted-default);
-  --intent-color-tinted-hover: var(--color-background-information-tinted-hover);
-  --intent-color-tinted-active: var(
+  --modifier-color: var(--color-background-information-default);
+  --modifier-color-tinted: var(--color-background-information-tinted-default);
+  --modifier-color-tinted-hover: var(
+    --color-background-information-tinted-hover
+  );
+  --modifier-color-tinted-active: var(
     --color-background-information-tinted-active
   );
-  --intent-color-text: var(--color-palette-white);
-  --intent-color-border: var(--intent-color);
-  --intent-color-border-hover: var(--intent-color-hover);
-  --intent-color-border-active: var(--intent-color-active);
+  --modifier-color-text: var(--color-palette-white);
+  --modifier-color-border: var(--modifier-color);
+  --modifier-color-border-hover: var(--modifier-color-hover);
+  --modifier-color-border-active: var(--modifier-color-active);
 }
 
 .caution {
-  --intent-color: var(--color-background-caution-default);
-  --intent-color-tinted: var(--color-background-caution-tinted-default);
-  --intent-color-tinted-hover: var(--color-background-caution-tinted-hover);
-  --intent-color-tinted-active: var(--color-background-caution-tinted-active);
-  --intent-color-text: var(--color-palette-black);
-  --intent-color-border: var(--intent-color);
-  --intent-color-border-hover: var(--intent-color-hover);
-  --intent-color-border-active: var(--intent-color-active);
+  --modifier-color: var(--color-background-caution-default);
+  --modifier-color-tinted: var(--color-background-caution-tinted-default);
+  --modifier-color-tinted-hover: var(--color-background-caution-tinted-hover);
+  --modifier-color-tinted-active: var(--color-background-caution-tinted-active);
+  --modifier-color-text: var(--color-palette-black);
+  --modifier-color-border: var(--modifier-color);
+  --modifier-color-border-hover: var(--modifier-color-hover);
+  --modifier-color-border-active: var(--modifier-color-active);
 }
 
 .neutral {
-  --intent-color: var(--color-background-default);
-  --intent-color-hover: var(--color-background-hover);
-  --intent-color-active: var(--color-background-active);
-  --intent-color-text: var(--color-text-default);
-  --intent-color-border: var(--color-border-high-contrast);
-  --intent-color-border-hover: var(--intent-color-border);
-  --intent-color-border-active: var(--intent-color-border);
+  --modifier-color: var(--color-background-default);
+  --modifier-color-hover: var(--color-background-hover);
+  --modifier-color-active: var(--color-background-active);
+  --modifier-color-text: var(--color-text-default);
+  --modifier-color-border: var(--color-border-high-contrast);
+  --modifier-color-border-hover: var(--modifier-color-border);
+  --modifier-color-border-active: var(--modifier-color-border);
 }
 
 /* Emphasis modifiers */
 
 .highlighted {
-  --intent-separator-bar-height: var(--tmp-dimension-separator-bar-thickness);
-  --intent-separator-bar-color: var(--tmp-color-text-default);
+  --modifier-separator-bar-height: var(--tmp-dimension-separator-bar-thickness);
+  --modifier-separator-bar-color: var(--tmp-color-text-default);
+  --modifier-box-shadow: var(--tmp-box-shadow-highlighted);
 }
 
 .accented {
-  --intent-separator-bar-height: var(--tmp-dimension-separator-bar-thickness);
-  --intent-separator-bar-color: var(--tmp-color-border-accent);
+  --modifier-separator-bar-height: var(--tmp-dimension-separator-bar-thickness);
+  --modifier-separator-bar-color: var(--tmp-color-border-accent);
+  --modifier-box-shadow: inherit;
 }
 
 .muted {
-  --intent-separator-bar-height: inherit;
-  --intent-separator-bar-color: var(--tmp-color-border-low-contrast);
+  --modifier-separator-bar-height: inherit;
+  --modifier-separator-bar-color: var(--tmp-color-border-low-contrast);
+  --modifier-box-shadow: inherit;
 }

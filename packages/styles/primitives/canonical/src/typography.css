@@ -70,14 +70,14 @@ h2 {
 h3 {
   --line-height-multiplier: 4;
   --font-size: 1.5rem;
-  --space-after: 3;
+  --space-after: 1;
   --font-weight: 550;
 }
 
 h4 {
   --line-height-multiplier: 4;
   --font-size: 1.5rem;
-  --space-after: 3;
+  --space-after: 1;
   --font-weight: 275;
 }
 
