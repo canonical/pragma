@@ -21,6 +21,7 @@ runs:
       run: ${{ github.action_path }}/version.sh ${{ inputs.release_type }}
 
       # `lerna version` updates package numbers, so we must update the root lockfile.
+      # This can be removed once https://github.com/lerna/lerna/issues/4234 is closed.
     - name: Update lockfile
       shell: bash
       run: bun install --ignore-scripts
