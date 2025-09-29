@@ -15,50 +15,48 @@
     cs:name "icons/file-storage" ;
     cs:hasCategory :IconsCategory ;
     cs:description "Each icon must be stored as a single SVG file in the icons directory." ;
-    cs:dos """# Proper file storage
+    cs:dos """
+(Do) Store each icon as a single SVG file in the icons directory:
 ```
 icons/
   ├── warning.svg      # Single file per icon
   ├── search.svg
   └── github.svg
 ```
-
-This approach:
-- Keeps icons organized
-- Makes icons easy to find
-- Simplifies maintenance""" ;
-    cs:donts """# Problematic storage patterns
+""" ;
+    cs:donts """
+(Don't) Use problematic storage patterns:
 ```
 icons/
-  ├── variants/        # Bad: Separate directories for variants
+  ├── variants/        # Separate directories for variants
   │   └── warning-dark.svg
-  ├── warning/         # Bad: Nested directories per icon
+  ├── warning/         # Nested directories per icon
   │   └── index.svg
-  └── warning.svg.txt  # Bad: Wrong file extension
+  └── warning.svg.txt  # Wrong file extension
 ```
 
-These patterns:
-- Complicate file organization
-- Make icons harder to find
-- Create maintenance overhead""" .
+(Don't) Store multiple icons in a single SVG file:
+```
+icons/
+  └── all-icons.svg    # Bad: Multiple icons in one file
+```
+""" .
 
 # Icon File Naming Standard
 :IconFileNaming a cs:CodeStandard ;
     cs:name "icons/file-naming" ;
     cs:hasCategory :IconsCategory ;
-    cs:description "Icon files must be named using the format <name>.svg, where name is the semantic identifier for the icon." ;
-    cs:dos """# Proper file naming
+    cs:description "Icon files must be named using kebab-case and end with the .svg extension. The name should be a semantic identifier for the icon." ;
+    cs:dos """
+(Do) Name icon files using kebab-case semantic identifiers:
 ```
-warning.svg       # Clear, semantic name
-user-profile.svg  # Compound name with hyphen
-arrow-down.svg    # Directional indicator
+warning.svg
+user-profile.svg
+arrow-down.svg
 ```
-
-This approach:
-- Uses semantic names
-- Maintains consistency
-- Enables easy reference""" ;
-    cs:donts """# Problematic naming patterns
+""" ;
+    cs:donts """
+(Don't) Use problematic naming patterns:
 ```
 warning-16.svg    # Bad: Size in filename
 warning-dark.svg  # Bad: Theme variant
@@ -66,60 +64,43 @@ warning_icon.svg  # Bad: Redundant 'icon' suffix
 WARNING.svg       # Bad: Uppercase
 ```
 
-These patterns:
-- Create naming inconsistencies
-- Add unnecessary complexity
-- Make maintenance difficult""" .
+(Don't) Use non-semantic or ambiguous names:
+```
+icon1.svg         # Bad: Not descriptive
+shape.svg         # Bad: Not descriptive
+```
+""" .
 
 # Icon Group Element Standard
 :IconGroupElement a cs:CodeStandard ;
     cs:name "icons/group-element" ;
     cs:hasCategory :IconsCategory ;
     cs:description "Each icon SVG must contain a single <g> element with an id matching the icon's filename (without .svg)." ;
-    cs:dos """# Proper group element
+    cs:dos """
+(Do) Use a single <g> element with a matching id in each SVG:
 ```svg
 <!-- warning.svg -->
-<svg viewBox="0 0 16 16">
+<svg>
   <g id="warning">
-    <path d="..." />
+    <!-- icon paths -->
   </g>
 </svg>
 ```
-
-This enables:
-- SVG symbol reuse
-- Consistent referencing
-- Clear icon identification""" ;
-    cs:donts """# Problematic group patterns
+""" ;
+    cs:donts """
+(Don't) Use multiple <g> elements or mismatched ids:
 ```svg
-<!-- Bad: Missing group element -->
-<svg>
-  <path d="..." />
-</svg>
-
-<!-- Bad: Multiple groups -->
-<svg>
-  <g id="warning-outer">
-    <path d="..." />
-  </g>
-  <g id="warning-inner">
-    <path d="..." />
-  </g>
-</svg>
-
-<!-- Bad: Mismatched ID -->
 <!-- warning.svg -->
 <svg>
-  <g id="alert">  <!-- Doesn't match filename -->
-    <path d="..." />
+  <g id="icon-group">
+    <!-- icon paths -->
+  </g>
+  <g id="warning-alt">
+    <!-- alternate paths -->
   </g>
 </svg>
 ```
-
-These patterns:
-- Break symbol reuse
-- Create inconsistency
-- Make maintenance difficult""" .
+""" .
 
 # Icon ViewBox Standard
 :IconViewBox a cs:CodeStandard ;
@@ -134,11 +115,7 @@ These patterns:
   </g>
 </svg>
 ```
-
-This ensures:
-- Consistent scaling
-- Predictable sizing
-- Uniform appearance""" ;
+""" ;
     cs:donts """# Problematic viewBox patterns
 ```svg
 <!-- Bad: Different viewBox size -->
@@ -156,11 +133,7 @@ This ensures:
   <g id="icon">...</g>
 </svg>
 ```
-
-These patterns:
-- Create inconsistent scaling
-- Break layout predictability
-- Cause sizing issues""" .
+""" .
 
 # Icon Color Usage Standard
 :IconColorUsage a cs:CodeStandard ;
@@ -183,11 +156,7 @@ These patterns:
   </g>
 </svg>
 ```
-
-This enables:
-- Theme adaptation
-- Color inheritance
-- Consistent styling""" ;
+""" ;
     cs:donts """# Problematic color usage
 ```svg
 <!-- Bad: Hard-coded colors -->
@@ -202,11 +171,7 @@ This enables:
 <!-- Bad: Opacity for variation -->
 <path fill="currentColor" opacity="0.5" d="..." />
 ```
-
-These patterns:
-- Break theme compatibility
-- Create inconsistency
-- Limit flexibility""" .
+""" .
 
 # Icon Variant Standard
 :IconVariant a cs:CodeStandard ;
@@ -227,72 +192,64 @@ These patterns:
 .large-icon { font-size: 2em; }
 .warning-icon { color: var(--color-warning); }
 ```
-
-This approach:
-- Simplifies maintenance
-- Enables flexible styling
-- Reduces file count""" ;
+""" ;
     cs:donts """# Problematic variant patterns
 ```
-warning.svg          # Bad: Multiple files for
+warning.svg          # Multiple files for
 warning-small.svg    # different sizes
 warning-large.svg
 
-warning.svg          # Bad: Theme-specific
+warning.svg          # Theme-specific
 warning-dark.svg     # variants
 warning-light.svg
 
-/* Bad: Size-specific implementations */
+/* Size-specific implementations */
 .warning-16 { width: 16px; }
 .warning-24 { width: 24px; }
 ```
-
-These patterns:
-- Increase maintenance burden
-- Create inconsistency
-- Duplicate code""" .
+""" .
 
 # Icon Type Safety Standard
 :IconTypeSafety a cs:CodeStandard ;
     cs:name "icons/type-safety" ;
     cs:hasCategory :IconsCategory ;
-    cs:description "Icon names must be maintained in a type-safe constant array that generates the IconName type." ;
-    cs:dos """# Proper type safety
+    cs:description "Icon names must be maintained in a type-safe constant array that generates the IconName type. The constant and type should be defined in the icon exporter package and imported by consumers." ;
+    cs:dos """
+(Do) Define the constant array and type in the icon exporter package, and import them in consumer code:
 ```typescript
-// Constant array of icon names
+// In the icon exporter package
 export const ICON_NAMES = [
   "warning",
   "search",
   "github"
 ] as const;
 
-// Generated type from constants
 export type IconName = typeof ICON_NAMES[number];
 
-// Type-safe usage
+// In consumer code
+import { IconName } from '@your-icons-package';
+
 interface IconProps {
   name: IconName;
 }
 ```
-
-This provides:
-- Compile-time checking
-- Autocomplete support
-- Single source of truth""" ;
-    cs:donts """# Problematic typing patterns
+""" ;
+    cs:donts """
+(Don't) Define icon name types or values on the consumer side, or duplicate them:
 ```typescript
-// Bad: String literal type
-type IconName = "warning" | "search";  // Manual maintenance
+// Bad: String literal type defined in consumer code
+// This should be imported from the icon exporter package
+// Consumer code:
+type IconName = "warning" | "search";
 
-// Bad: Generic string
-type IconName = string;  // No type safety
+// Bad: Generic string type
+// No type safety for icon names
+// Consumer code:
+type IconName = string;
 
-// Bad: Separate type and values
+// Bad: Separate type and values, or manual duplication
+// This creates maintenance issues and should be avoided
 const ICONS = ["warning", "search"];
-type IconName = "warning" | "search";  // Duplication
+type IconName = "warning" | "search";
 ```
-
-These patterns:
-- Allow invalid icons
-- Require manual updates
-- Miss type checking""" .
+""" .

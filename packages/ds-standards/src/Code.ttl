@@ -14,103 +14,61 @@
 :FunctionScope a cs:CodeStandard ;
     cs:name "code/function/scope" ;
     cs:hasCategory :CodeCategory ;
-    cs:description """Functions should follow the "one feature = one function" principle:
-- Each function should handle one specific task
-- Functions should be pure when possible
-- Complex operations should be broken down into smaller functions
-- Functions should be placed close to where they are used""" ;
-    cs:dos """# Proper function scoping
+    cs:description "Functions should follow the 'one feature = one function' principle. Each function should handle one specific task. Functions should be pure when possible. Complex operations should be broken down into smaller functions. Functions should be placed close to where they are used." ;
+    cs:dos """
+(Do) Define functions with a single responsibility:
 ```typescript
-// Single responsibility functions
 const validateEmail = (email: string): boolean => {
   return /^[^@]+@[^@]+\.[^@]+$/.test(email);
 };
+```
 
-const validatePassword = (password: string): boolean => {
-  return password.length >= 8 && /[A-Z]/.test(password);
-};
-
-// Composition of single-purpose functions
+(Do) Compose single-purpose functions for complex logic:
+```typescript
 const validateForm = (email: string, password: string): boolean => {
   return validateEmail(email) && validatePassword(password);
 };
+```
 
-// Clear function boundaries in application logic
+(Do) Place functions close to where they are used in your application logic:
+```typescript
 class UserService {
   private async validateUser(user: User): Promise<ValidationResult> {
-    const basicValidation = validateUserFields(user);
-    const roleValidation = await validateUserRoles(user.roles);
-    return combineValidations(basicValidation, roleValidation);
+    // validation logic
   }
-
   async createUser(user: User): Promise<Result> {
-    const validation = await this.validateUser(user);
-    if (!validation.isValid) {
-      return Result.failure(validation.errors);
-    }
-    return this.saveUser(user);
+    // creation logic
   }
 }
 ```
-
-This approach:
-- Makes code easier to test
-- Improves reusability
-- Simplifies maintenance""" ;
-    cs:donts """# Problematic function patterns
+""" ;
+    cs:donts """
+(Don't) Mix multiple responsibilities in a single function:
 ```typescript
-// Don't mix multiple responsibilities
-const processUser = async (userData: any) => {  // Bad: Too many responsibilities
-  // Input validation
-  if (!userData.email || !userData.name) {
-    throw new Error('Invalid data');
-  }
-  
-  // Data transformation
-  const user = {
-    ...userData,
-    email: userData.email.toLowerCase(),
-    createdAt: new Date()
-  };
-  
-  // Database operation
-  const result = await db.users.insert(user);
-  
-  // Email notification
-  await sendWelcomeEmail(user.email);
-  
-  // Cache update
-  await cache.set(`user:${user.id}`, user);
-  
-  return result;
+const processUser = async (userData: any) => {
+  // validation, transformation, DB, notification, cache -- all in one
 };
+```
 
-// Don't create overly generic functions
-const handleData = (data: any) => {  // Bad: Too generic
+(Don't) Create overly generic functions that handle unrelated logic:
+```typescript
+const handleData = (data: any) => {
   if (data.type === 'user') {
     processUser(data);
   } else if (data.type === 'order') {
     processOrder(data);
   }
-  // More conditions...
 };
 ```
-
-These patterns:
-- Make testing difficult
-- Create maintenance problems
-- Reduce code reusability""" .
+""" .
 
 # API Stability Standard
 :APIStability a cs:CodeStandard ;
     cs:name "code/api/stability" ;
     cs:hasCategory :CodeCategory ;
-    cs:description """Use @unstable JSDoc tag to mark API stability:
-- Unstable APIs should be clearly marked
-- Each @unstable tag must include a description
-- Tags should be in types files
-- Tags should guide API consumers with clear context""" ;
-    cs:dos """# Proper stability documentation
+    cs:description "Use @unstable JSDoc tag to mark API stability. Unstable APIs should be clearly marked. Each @unstable tag must include a description. Tags should be in types files. Tags should guide API consumers with clear context." ;
+    cs:dos """
+(Do) Mark unstable APIs with a clear @unstable JSDoc tag and description:
 ```typescript
 /**
  * Configuration for data processing pipeline
@@ -118,66 +76,157 @@ These patterns:
  * in future releases. Currently only supports JSON data.
  */
 interface PipelineConfig {
-  /** 
+  // ...
+}
+```
+
+(Do) Add @unstable tags to specific properties with context:
+```typescript
+interface PipelineConfig {
+  /**
    * @unstable Custom transformers API is in beta, interface may change
    * to support stronger type validation
    */
   transformers?: DataTransformer[];
-  
-  /** 
-   * @unstable Parallel processing is unstable and may be replaced 
-   * with a different concurrency model in v2
-   */
-  parallel?: boolean;
-}
-
-/**
- * Options for cache configuration
- * @unstable The distributed cache API is experimental and will be 
- * replaced with a new consensus-based implementation in v2.1
- */
-interface CacheConfig {
-  distributed?: boolean;
 }
 ```
 
-This approach:
-- Clearly marks unstable features
-- Provides context and timeline
-- Helps users make informed decisions""" ;
-    cs:donts """# Problematic stability documentation
+(Do) Clearly describe the instability and future plans:
 ```typescript
-// Don't use unclear tags
+interface CacheConfig {
+  /**
+   * @unstable The distributed cache API is experimental and will be
+   * replaced with a new consensus-based implementation in v2.1
+   */
+  distributed?: boolean;
+}
+```
+""" ;
+    cs:donts """
+(Don't) Use unclear tags without explanation:
+```typescript
 interface ProcessorConfig {
   /** @experimental */  // Bad: No context
   streaming?: boolean;
 }
+```
 
-// Don't mix stability with regular docs
+(Don't) Mix stability tags with regular documentation without context:
+```typescript
 interface CacheOptions {
-  /** 
+  /**
    * Controls cache distribution
    * @unstable  // Bad: No explanation
    */
   mode: 'local' | 'distributed';
 }
+```
 
-// Don't use tags without explanation
+(Don't) Use @unstable tags without describing what's unstable:
+```typescript
 /**
  * @unstable  // Bad: No description of what's unstable
  */
 interface QueueConfig {
   processor: (item: any) => Promise<void>;
 }
+```
 
-// Don't mark stable APIs
+(Don't) Mark stable APIs unnecessarily:
+```typescript
 interface LoggerConfig {
   /** @stable */  // Bad: No need to mark stable APIs
   level: 'debug' | 'info' | 'error';
 }
 ```
+""" .
 
-These patterns:
-- Create confusion
-- Provide insufficient context
-- Make API stability unclear""" .
+:FileExportPattern a cs:CodeStandard ;
+    cs:name "code/file-export-pattern" ;
+    cs:hasCategory :CodeCategory ;
+    cs:description "Files should use either a single default export or multiple named exports, based on their domain and purpose. The file name should hint at the type of exports provided. An exception is made for compound components, where named exports can be attached as properties to the default export." ;
+    cs:dos """
+(Do) Use a single default export for files implementing a single component or function:
+```typescript
+// ComponentName.tsx
+export default ComponentName;
+```
+
+(Do) Use multiple named exports for files providing a public API or a collection of related items:
+```typescript
+// index.ts
+export { ComponentA, ComponentB };
+
+// types.ts
+export type TypeA = { ... };
+export type TypeB = { ... };
+```
+
+(Do) Attach named exports to a default export for compound components:
+```typescript
+// Accordion.tsx
+const Accordion = (props) => { /* ... */ };
+Accordion.Item = AccordionItem; // Attaching a subcomponent
+export default Accordion;
+```
+""" ;
+    cs:donts """
+(Don't) Mix default and unrelated named exports in a way that confuses the file's purpose:
+```typescript
+// Confusing: both default and a disconnected named export
+export default ComponentName;
+export const helper = () => {};
+```
+
+(Don't) Provide multiple unrelated exports from a file meant for a single domain:
+```typescript
+// Unrelated exports in one file
+export default debounce;
+export const throttle = () => {};
+export const logger = () => {};
+```
+""" .
+
+:NamedExportsTypeConsistency a cs:CodeStandard ;
+    cs:name "code/named-exports-type-consistency" ;
+    cs:hasCategory :CodeCategory ;
+    cs:description "Files providing named exports should expose a single export shape, except for index.ts files." ;
+    cs:dos """
+(Do) Export objects that share the same type from a file:
+```typescript
+export const myFuncA = (value: string) => {};
+export const myFuncB = (value: string) => {};
+export const myFuncC = (value: string) => {};
+```
+""" ;
+    cs:donts """
+(Don't) Export objects of different types or shapes from the same file:
+```typescript
+export const transformer = (value: string) => {};
+export const reducer = (map: string[]) => {};
+```
+
+// Or mixing classes and functions
+```typescript
+export const transformer = (value: string) => {};
+class ABC {}
+export { ABC };
+```
+""" .
+
+:NamedExportsReimport a cs:CodeStandard ;
+    cs:name "code/named-exports-reimport" ;
+    cs:hasCategory :CodeCategory ;
+    cs:description "When importing the contents of a file with named exports, use the 'import * as' pattern to conserve the namespace." ;
+    cs:dos """
+(Do) Use the 'import * as' pattern to conserve the namespace when reimporting named exports:
+```typescript
+import * as transformers from "./transformers.js";
+```
+""" ;
+    cs:donts """
+(Don't) Import named exports directly from a file containing multiple named exports:
+```typescript
+import { myFunc, otherFunc } from "./transformers.js";
+```
+""" .
