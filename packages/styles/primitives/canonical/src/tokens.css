@@ -276,17 +276,17 @@
   --tmp-color-icon-button-negative: var(--tmp-color-palette-white);
 
   /** TODO
-            this variable does not have this value in the color spec sheet,
-            but is being kept for backwards compatibility for now.
-            Use --tmp-color-border-high-contrast for new use cases.
-     */
+              this variable does not have this value in the color spec sheet,
+              but is being kept for backwards compatibility for now.
+              Use --tmp-color-border-high-contrast for new use cases.
+       */
   --color-border-high-contrast: rgba(0, 0, 0, 0.56);
 
   /** TODO
-            these positive background variables are bound to button-specific colors
-            These have higher contrast than the color spec calls for.
-            The tmp- versions of these variables should be used for new components, and these vars should be revisited.
-     */
+              these positive background variables are bound to button-specific colors
+              These have higher contrast than the color spec calls for.
+              The tmp- versions of these variables should be used for new components, and these vars should be revisited.
+       */
   --color-background-positive-default: var(--tmp-color-palette-green-8);
   --color-background-positive-hover: var(--tmp-color-palette-green-10);
   --color-background-positive-active: var(--tmp-color-palette-green-13);
@@ -323,10 +323,18 @@
   --tmp-dimension-decoration-thickness-link: 1px;
   --tmp-dimension-underline-offset-link: 0.075em;
 
+  --tmp-dimension-icon-small: 0.75rem;
+  --tmp-dimension-icon-default: 1rem;
+  --tmp-dimension-heading-icon--x-small: 1.5rem;
+  --tmp-dimension-heading-icon--small: 2rem;
+  --tmp-dimension-heading-icon--default: 2.5rem;
+  --tmp-dimension-thumbnail-default: 3rem;
+  --tmp-dimension-thumbnail-large: 6rem;
   /* 3px at 16px fontsize, expressed in rems so it scales with text if the root font-size changes at a breakpoint */
   --tmp-dimension-separator-bar-thickness: 0.1875rem;
 
   /* spacing tokens */
+
   --spacing-horizontal-xsmall: 0.25rem;
   --spacing-horizontal-small: 0.5rem;
   --spacing-horizontal-medium: 1.25rem;
@@ -344,6 +352,10 @@
   --spacing-input-padding-vertical: 0.5rem; /* TODO: needs to take baseline into account https://github.com/canonical/vanilla-framework/blob/main/scss/_settings_spacing.scss#L124 */
 
   --spacing-border-width: 1.5px; /* TODO: 1.5px was causing some baseline issues in Vanilla */
+
+  --tmp-box-shadow-highlighted:
+    0 1px 1px 0 var(--tmp-color-palette-gray-11), 0 2px 2px -1px
+    var(--tmp-color-palette-gray-11), 0 0 3px 0 var(--tmp-color-palette-gray-14);
 
   /* font tokens */
   --font-size-default: 1rem;
@@ -375,6 +387,19 @@
   --button-font-weight: var(--font-weight-default);
   --button-line-height: var(--line-height-default);
 
+  --card-border-style: solid;
+  --card-color-text: var(--tmp-color-text-default);
+  --card-color-background: var(--tmp-color-background-default);
+  --card-border-width: var(--spacing-border-width);
+
+  --card-section-padding-vertical: var(--spacing-vertical-large);
+  --card-section-padding-horizontal: var(--spacing-horizontal-large);
+  --card-section-separator-color: var(--tmp-color-border-default);
+  --card-section-separator-border-width: 1px;
+  --card-section-separator-border-style: solid;
+
+  --card-thumbnail-max-height: var(--tmp-dimension-heading-icon--small);
+
   --chip-color-background: var(--tmp-color-background-neutral-default);
   --chip-color-background-hover: var(--tmp-color-background-neutral-hover);
   --chip-color-background-active: var(--tmp-color-background-neutral-active);
@@ -398,10 +423,10 @@
   );
 
   /*
-      TODO the tooltip's color tokens should be inverted from the active color theme.
-          This is to provide greater color contrast against its context.
-          This will be implemented once theming DS-wide is added.
-    */
+        TODO the tooltip's color tokens should be inverted from the active color theme.
+            This is to provide greater color contrast against its context.
+            This will be implemented once theming DS-wide is added.
+      */
 
   --icon-size: 1em;
 

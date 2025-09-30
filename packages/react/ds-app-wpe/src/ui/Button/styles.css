@@ -22,9 +22,9 @@
   display: inline-block;
   cursor: pointer;
 
-  color: var(--intent-color-text, var(--button-color-text));
-  background-color: var(--intent-color, var(--button-color-background));
-  border-color: var(--intent-color-border, var(--button-color-border));
+  color: var(--modifier-color-text, var(--button-color-text));
+  background-color: var(--modifier-color, var(--button-color-background));
+  border-color: var(--modifier-color-border, var(--button-color-border));
   border-style: solid;
   border-width: var(--button-border-width);
   font-size: var(--button-font-size);
@@ -41,22 +41,22 @@
   /* component states */
   &:hover {
     background-color: var(
-      --intent-color-hover,
+      --modifier-color-hover,
       var(--button-color-background-hover)
     );
     border-color: var(
-      --intent-color-border-hover,
+      --modifier-color-border-hover,
       var(--button-color-border-hover)
     );
   }
 
   &:active {
     background-color: var(
-      --intent-color-active,
+      --modifier-color-active,
       var(--button-color-background-active)
     );
     border-color: var(
-      --intent-color-border-active,
+      --modifier-color-border-active,
       var(--button-color-border-active)
     );
   }

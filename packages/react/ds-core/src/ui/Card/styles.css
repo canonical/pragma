@@ -1,0 +1,23 @@
+/* @canonical/generator-ds 0.10.0-experimental.2 */
+
+.ds.card {
+  /* prevent overflow of child margins */
+  overflow: auto;
+
+  box-shadow: var(--modifier-box-shadow, var(--card-box-shadow));
+  color: var(--modifier-color-text, var(--card-color-text));
+  background-color: var(--modifier-color, var(--card-color-background));
+  border-width: var(--card-border-width);
+  border-style: var(--card-border-style);
+  border-color: var(--card-section-separator-color);
+
+  & .card-section,
+  & .card-image {
+    /* Last section doesn't need a border (the Card itself has a border) */
+    &:not(:last-child) {
+      border-bottom: var(--card-section-separator-border-width)
+        var(--card-section-separator-border-style)
+        var(--card-section-separator-color);
+    }
+  }
+}

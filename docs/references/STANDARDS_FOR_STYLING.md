@@ -31,25 +31,27 @@ Component `styles.css` files shall generally follow this order:
 5. **State Styles**: Styles for interactive states like `:hover`, `:active`, `:focus`, and accessibility states like `[aria-hidden="true"]`.
 6. **Pseudo-element Styles**: Styles for `::before` and `::after` pseudo-elements used for UI enhancements.
 
-## Intents (`styles/intents`)
+## Modifiers (`styles/modifiers`)
 
-Intents are one of our core styling patterns. Any entity in the design system may have one or many "intents", or 
-semantic style contexts that it belongs to in a given scenario.
+Modifiers are one of our core styling patterns. Any entity in the design system may consume one or many "modifier families", which are groups of related modifiers that can be applied to change the appearance or behavior of a component.
 
-An intent is associated with one or many CSS variables, which are applied to an element and its descendants. 
-This allows contextual styling to easily apply to an entire section of the interface, and provides a level of customizability
+An modifier family is associated with one or many CSS variables, which are applied to an element and its descendants. 
+This allows contextual styling to be easily applied to an entire section of the interface, and provides a level of customizability
 above design tokens. 
 
-### Style Binding (`styles/intents/binding`)
+Modifiers within the same modifier family all provide the same CSS variables, but may have different values.
+Components consuming a modifier family must consume all of its modifiers (partial modifier family consumption is not allowed).
+
+### Style Binding (`styles/modifiers/binding`)
 Most CSS variables should be bound to variables using a series of fallbacks
   ```css
   /* Button component example */
-  color: var(--intent-color-text, var(--button-color-text));
-  background-color: var(--intent-color, var(--button-color-background));
+  color: var(--modifier-color-text, var(--button-color-text));
+  background-color: var(--modifier-color, var(--button-color-background));
 
   /* Tooltip component example with an additional global fallback */
   color: var(
-    --intent-color-text,
+    --modifier-color-text,
     var(--tooltip-color-text, var(--color-text-default)) /* Global default if component/intent specific not set */
   );
   ```
@@ -104,12 +106,12 @@ All variables follow [CTI naming convention](https://github.com/amzn/style-dicti
   - Convention: `--<component-name>-<property-group>-<specific-property>`
   - Example: `--button-color-background`, `--chip-border-radius`, `--tooltip-font-size`.
 - **Intent Variables**: Semantic variables used for theming based on purpose (e.g., positive, negative, information). These allow components to adapt to a contextual theme.
-  - Convention: `--intent-<property>-<variant/state>`
+  - Convention: `--modifier-<property>-<variant/state>`
   - Examples:
-    - `--intent-color`
-    - `--intent-color-text`
-    - `--intent-color-border`
-    - `--intent-color-hover`
-    - `--intent-color-active`
-    - `--intent-color-text-tinted` (for subtle variations)
-    - `--intent-color-tinted-hover`
+    - `--modifier-color`
+    - `--modifier-color-text`
+    - `--modifier-color-border`
+    - `--modifier-color-hover`
+    - `--modifier-color-active`
+    - `--modifier-color-text-tinted` (for subtle variations)
+    - `--modifier-color-tinted-hover`

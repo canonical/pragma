@@ -1,0 +1,6 @@
+/* @canonical/generator-ds 0.10.0-experimental.2 */
+
+.ds.card-section {
+  padding-block: var(--card-section-padding-vertical);
+  padding-inline: var(--card-section-padding-horizontal);
+}

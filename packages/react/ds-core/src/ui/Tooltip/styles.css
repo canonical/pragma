@@ -32,15 +32,15 @@
     transparent;
 
   color: var(
-    --intent-color-text,
+    --modifier-color-text,
     var(--tooltip-color-text, var(--color-text-default))
   );
   background-color: var(
-    --intent-color,
+    --modifier-color,
     var(--tooltip-color-background, var(--color-background-default))
   );
   border-color: var(
-    --intent-color-border,
+    --modifier-color-border,
     var(--tooltip-color-border, transparent)
   );
   border-style: solid;
