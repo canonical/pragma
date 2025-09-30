@@ -23,18 +23,18 @@
     Note that top padding is only defined for the hero variant in our core setup.
     The top padding is still bound here in case users customize their tokens.
     */
-  &.spacing-shallow {
+  &.shallow {
     --section-padding-bottom: var(--section-padding-bottom-spacing-shallow);
     --section-padding-top-spacing: var(--section-padding-top-spacing-shallow);
   }
 
-  &.spacing-deep {
+  &.deep {
     --section-padding-bottom: var(--section-padding-bottom-spacing-deep);
     --section-padding-top-spacing: var(--section-padding-top-spacing-deep);
     /* TODO add responsiveness https://github.com/canonical/vanilla-framework/blob/6af35433368f82d76d8deb7effebca47b434ee76/scss/_patterns_section.scss#L16-L18 */
   }
 
-  &.spacing-hero {
+  &.hero {
     --section-padding-bottom: var(--section-padding-bottom-spacing-hero);
     --section-padding-top-spacing: var(--section-padding-top-spacing-hero);
 

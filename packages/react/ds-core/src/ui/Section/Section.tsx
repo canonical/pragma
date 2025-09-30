@@ -23,7 +23,7 @@ const Section = ({
       className={[
         componentCssClassName,
         bordered && "bordered",
-        spacing && `spacing-${spacing}`,
+        spacing,
         className,
       ]
         .filter(Boolean)
