@@ -11,13 +11,8 @@ const meta = {
   title: "Section",
   component: Component,
   argTypes: {
-    className: {
-      control: { type: "text" },
-      description: "Additional CSS classes to apply to the section.",
-    },
     children: {
       control: { type: "text" },
-      description: "The content of the section.",
     },
     spacing: {
       options: SECTION_SPACING,
@@ -26,15 +21,6 @@ const meta = {
       table: {
         type: {
           summary: SECTION_SPACING.join(" | "),
-        },
-      },
-    },
-    bordered: {
-      control: { type: "boolean" },
-      description: "Whether the section has a top border.",
-      table: {
-        type: {
-          summary: "boolean",
         },
       },
     },

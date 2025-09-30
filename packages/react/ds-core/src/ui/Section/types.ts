@@ -11,11 +11,11 @@ export type SectionSpacing = (typeof SECTION_SPACING)[number];
     See https://developer.mozilla.org/en-US/docs/Web/API/HTML_DOM_API for a full list of HTML elements interfaces.
 */
 export interface SectionProps extends HTMLAttributes<HTMLDivElement> {
-  /* Additional CSS classes */
+  /** Additional CSS classes */
   className?: string;
-  /* Child elements */
+  /** Child elements */
   children: ReactNode;
-  /*
+  /**
     Spacing variant of the section
     FLAG: Unique, potentially inconsistent/unstable API
   */
