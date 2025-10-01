@@ -165,10 +165,10 @@ interface QueueConfig {
 ```
 """ .
 
-cs:FileExportPattern a cso:CodeStandard ;
-    cso:name "code/file-export-pattern" ;
+cs:ExportShape a cso:CodeStandard ;
+    cso:name "code/export/shape" ;
     cso:hasCategory cs:CodeCategory ;
-    cso:description "Files must use either a single default export or multiple named exports. Compound components must attach named exports as properties to the default export." ;
+    cso:description "Files must use either a single default export or multiple named exports. When using multiple named exports, all exports must have the same type or shape. Compound components should be documented in a separate standard." ;
     cso:dos """
 (Do) Use a single default export for files implementing a single component or function:
 ```typescript
@@ -176,7 +176,7 @@ cs:FileExportPattern a cso:CodeStandard ;
 export default ComponentName;
 ```
 
-(Do) Use multiple named exports for files providing a public API or a collection of related items:
+(Do) Use multiple named exports for files providing a public API or a collection of related items, and ensure all exports have the same type:
 ```typescript
 // index.ts
 export { ComponentA, ComponentB };
@@ -184,75 +184,35 @@ export { ComponentA, ComponentB };
 // types.ts
 export type TypeA = { ... };
 export type TypeB = { ... };
-```
 
-(Do) Attach named exports to a default export for compound components:
-```typescript
-// Accordion.tsx
-const Accordion = (props) => { /* ... */ };
-Accordion.Item = AccordionItem; // Attaching a subcomponent
-export default Accordion;
-```
-""" ;
-    cso:donts """
-(Don't) Mix default and unrelated named exports in a way that confuses the file's purpose:
-```typescript
-// Confusing: both default and a disconnected named export
-export default ComponentName;
-export const helper = () => {};
-```
-
-(Don't) Provide multiple unrelated exports from a file meant for a single domain:
-```typescript
-// Unrelated exports in one file
-export default debounce;
-export const throttle = () => {};
-export const logger = () => {};
-```
-""" .
-
-cs:NamedExportsTypeConsistency a cso:CodeStandard ;
-    cso:name "code/named-exports-type-consistency" ;
-    cso:hasCategory cs:CodeCategory ;
-    cso:description "Files with named exports must expose a single export shape, except for index.ts files." ;
-    cso:dos """
-(Do) Export objects that share the same type from a file:
-```typescript
+// Consistent export shape:
 export const myFuncA = (value: string) => {};
 export const myFuncB = (value: string) => {};
 export const myFuncC = (value: string) => {};
 ```
 """ ;
     cso:donts """
+(Don't) Mix default and unrelated named exports in a way that confuses the file's purpose:
+```typescript
+export default ComponentName;
+export const helper = () => {};
+```
+
+(Don't) Provide multiple unrelated exports from a file meant for a single domain:
+```typescript
+export default debounce;
+export const throttle = () => {};
+export const logger = () => {};
+```
+
 (Don't) Export objects of different types or shapes from the same file:
 ```typescript
 export const transformer = (value: string) => {};
 export const reducer = (map: string[]) => {};
-```
 
 // Or mixing classes and functions
-```typescript
 export const transformer = (value: string) => {};
 class ABC {}
 export { ABC };
-```
-""" .
-
-cs:NamedExportsReimport a cso:CodeStandard ;
-    cso:name "code/named-exports-reimport" ;
-    cso:hasCategory cs:CodeCategory ;
-    cso:description "Module re-exports must use the 'export * as' pattern to preserve the module's namespace in index.ts files." ;
-    cso:dos """
-(Do) Use the 'export * as' pattern to re-export a module under a single namespace.
-```typescript
-// index.ts
-export * as transformers from "./transformers.js";
-```
-""" ;
-    cso:donts """
-(Don't) Re-export all members of a module individually, as it flattens the namespace.
-```typescript
-// index.ts
-export * from "./transformers.js"; // Flattens the namespace
 ```
 """ .
