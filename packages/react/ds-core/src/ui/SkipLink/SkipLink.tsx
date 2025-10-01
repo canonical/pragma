@@ -9,6 +9,7 @@ const componentCssClassName = "ds skip-link";
 
 /**
  * A component that allows users to skip to the main content of a page.
+ * @implements syntax:core:component:skiplink:1.0.0
  * @returns {React.ReactElement} - Rendered SkipLink
  */
 const SkipLink = ({
