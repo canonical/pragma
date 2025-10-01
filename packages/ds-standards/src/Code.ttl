@@ -1,4 +1,4 @@
-@prefix : <http://pragma.canonical.com/codestandards#> .
+@prefix cso: <http://pragma.canonical.com/codestandards#> .
 @prefix cs: <http://pragma.canonical.com/codestandards#> .
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
@@ -6,16 +6,16 @@
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
 # General Code Category
-:CodeCategory a cs:Category ;
+cs:CodeCategory a cso:Category ;
     rdfs:label "Code"@en ;
     rdfs:comment "General coding standards and best practices"@en .
 
 # Function Purity Standard
-:FunctionPurity a cs:CodeStandard ;
-    cs:name "code/function/purity" ;
-    cs:hasCategory :CodeCategory ;
-    cs:description "Functions must be pure. A pure function shall return the same output for the same input and shall not modify external state or perform I/O operations." ;
-    cs:dos """
+cs:FunctionPurity a cso:CodeStandard ;
+    cso:name "code/function/purity" ;
+    cso:hasCategory cs:CodeCategory ;
+    cso:description "Functions must be pure. A pure function shall return the same output for the same input and shall not modify external state or perform I/O operations." ;
+    cso:dos """
 (Do) Create pure functions that rely only on their inputs to compute the output.
 ```typescript
 const calculatePrice = (basePrice: number, taxRate: number): number => {
@@ -23,7 +23,7 @@ const calculatePrice = (basePrice: number, taxRate: number): number => {
 };
 ```
 """ ;
-    cs:donts """
+    cso:donts """
 (Don't) Create impure functions that modify external state or have side effects.
 ```typescript
 let total = 0;
@@ -34,11 +34,11 @@ const addToTotal = (value: number) => {
 """ .
 
 # Function Composition Standard
-:FunctionComposition a cs:CodeStandard ;
-    cs:name "code/function/composition" ;
-    cs:hasCategory :CodeCategory ;
-    cs:description "Each function must handle exactly one specific task. Complex operations must be broken down into smaller, single-purpose functions." ;
-    cs:dos """
+cs:FunctionComposition a cso:CodeStandard ;
+    cso:name "code/function/composition" ;
+    cso:hasCategory cs:CodeCategory ;
+    cso:description "Each function must handle exactly one specific task. Complex operations must be broken down into smaller, single-purpose functions." ;
+    cso:dos """
 (Do) Define functions with a single, clear responsibility.
 ```typescript
 const validateEmail = (email: string): boolean => {
@@ -57,7 +57,7 @@ const validateForm = (email: string, password:string): boolean => {
 };
 ```
 """ ;
-    cs:donts """
+    cso:donts """
 (Don't) Mix multiple responsibilities in a single function.
 ```typescript
 const processUserData = (user: any) => {
@@ -70,11 +70,11 @@ const processUserData = (user: any) => {
 """ .
 
 # Function Colocation Standard
-:FunctionColocation a cs:CodeStandard ;
-    cs:name "code/function/colocation" ;
-    cs:hasCategory :CodeCategory ;
-    cs:description "Functions must be defined in the same file where they are used. Functions used by a single component must be defined within that component's file." ;
-    cs:dos """
+cs:FunctionColocation a cso:CodeStandard ;
+    cso:name "code/function/colocation" ;
+    cso:hasCategory cs:CodeCategory ;
+    cso:description "Functions must be defined in the same file where they are used. Functions used by a single component must be defined within that component's file." ;
+    cso:dos """
 (Do) Place functions close to where they are used in your application logic.
 ```typescript
 class UserService {
@@ -89,7 +89,7 @@ class UserService {
 }
 ```
 """ ;
-    cs:donts """
+    cso:donts """
 (Don't) Store functions in a generic 'utils' folder if they are only used in one place.
 ```
 // utils/validators.ts
@@ -101,11 +101,11 @@ import { validateUser } from '../utils/validators'; // Less ideal if only used h
 """ .
 
 # API Stability Standard
-:APIStability a cs:CodeStandard ;
-    cs:name "code/api/stability" ;
-    cs:hasCategory :CodeCategory ;
-    cs:description "Unstable APIs must be marked with the @unstable JSDoc tag in type definition files. The tag must include a description of what is unstable." ;
-    cs:dos """
+cs:APIStability a cso:CodeStandard ;
+    cso:name "code/api/stability" ;
+    cso:hasCategory cs:CodeCategory ;
+    cso:description "Unstable APIs must be marked with the @unstable JSDoc tag in type definition files. The tag must include a description of what is unstable." ;
+    cso:dos """
 (Do) Mark an unstable interface with a clear @unstable JSDoc tag and description.
 ```typescript
 /**
@@ -140,7 +140,7 @@ interface CacheConfig {
 }
 ```
 """ ;
-    cs:donts """
+    cso:donts """
 (Don't) Use the @unstable tag without an explanation.
 ```typescript
 interface ProcessorConfig {
@@ -160,11 +160,11 @@ interface QueueConfig {
 ```
 """ .
 
-:FileExportPattern a cs:CodeStandard ;
-    cs:name "code/file-export-pattern" ;
-    cs:hasCategory :CodeCategory ;
-    cs:description "Files must use either a single default export or multiple named exports. Compound components must attach named exports as properties to the default export." ;
-    cs:dos """
+cs:FileExportPattern a cso:CodeStandard ;
+    cso:name "code/file-export-pattern" ;
+    cso:hasCategory cs:CodeCategory ;
+    cso:description "Files must use either a single default export or multiple named exports. Compound components must attach named exports as properties to the default export." ;
+    cso:dos """
 (Do) Use a single default export for files implementing a single component or function:
 ```typescript
 // ComponentName.tsx
@@ -189,7 +189,7 @@ Accordion.Item = AccordionItem; // Attaching a subcomponent
 export default Accordion;
 ```
 """ ;
-    cs:donts """
+    cso:donts """
 (Don't) Mix default and unrelated named exports in a way that confuses the file's purpose:
 ```typescript
 // Confusing: both default and a disconnected named export
@@ -206,11 +206,11 @@ export const logger = () => {};
 ```
 """ .
 
-:NamedExportsTypeConsistency a cs:CodeStandard ;
-    cs:name "code/named-exports-type-consistency" ;
-    cs:hasCategory :CodeCategory ;
-    cs:description "Files with named exports must expose a single export shape, except for index.ts files." ;
-    cs:dos """
+cs:NamedExportsTypeConsistency a cso:CodeStandard ;
+    cso:name "code/named-exports-type-consistency" ;
+    cso:hasCategory cs:CodeCategory ;
+    cso:description "Files with named exports must expose a single export shape, except for index.ts files." ;
+    cso:dos """
 (Do) Export objects that share the same type from a file:
 ```typescript
 export const myFuncA = (value: string) => {};
@@ -218,7 +218,7 @@ export const myFuncB = (value: string) => {};
 export const myFuncC = (value: string) => {};
 ```
 """ ;
-    cs:donts """
+    cso:donts """
 (Don't) Export objects of different types or shapes from the same file:
 ```typescript
 export const transformer = (value: string) => {};
@@ -233,18 +233,18 @@ export { ABC };
 ```
 """ .
 
-:NamedExportsReimport a cs:CodeStandard ;
-    cs:name "code/named-exports-reimport" ;
-    cs:hasCategory :CodeCategory ;
-    cs:description "Module re-exports must use the 'export * as' pattern to preserve the module's namespace in index.ts files." ;
-    cs:dos """
+cs:NamedExportsReimport a cso:CodeStandard ;
+    cso:name "code/named-exports-reimport" ;
+    cso:hasCategory cs:CodeCategory ;
+    cso:description "Module re-exports must use the 'export * as' pattern to preserve the module's namespace in index.ts files." ;
+    cso:dos """
 (Do) Use the 'export * as' pattern to re-export a module under a single namespace.
 ```typescript
 // index.ts
 export * as transformers from "./transformers.js";
 ```
 """ ;
-    cs:donts """
+    cso:donts """
 (Don't) Re-export all members of a module individually, as it flattens the namespace.
 ```typescript
 // index.ts
