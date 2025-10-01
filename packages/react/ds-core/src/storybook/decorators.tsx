@@ -18,15 +18,20 @@ export const grid = () => (Story: ElementType) => (
   </div>
 );
 
+/**
+ * Props for the main decorator
+ * @TODO this is the first decorator that seems like it may deserve a complex props object, and thus a separate Type.
+ *  Should this be a separate file? Or should the decorator be simplified somehow?
+ * */
 type MainDecoratorProps = {
   id?: string;
   children?: ReactNode;
 };
 
 /**
- * Wraps the story in a main element with the given id and before/after content.
- * @param id
- * @param beforeMain
+ * Places the story before a `<main>` element.
+ * @param id - The id of the main element
+ * @param children - Content to be rendered inside the main element
  */
 export const beforeMain =
   ({ id = "main", children }: MainDecoratorProps) =>
