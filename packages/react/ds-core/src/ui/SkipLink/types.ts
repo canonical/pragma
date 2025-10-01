@@ -13,7 +13,6 @@ export interface SkipLinkProps
   children?: ReactNode;
   /**
    * ID of the main content element
-   * `<main>` should use `tabIndex={-1}` to prevent it from being focusable without using the skip link.
    * @default "main"
    * */
   mainId?: string;
