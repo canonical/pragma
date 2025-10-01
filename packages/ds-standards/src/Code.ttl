@@ -15,7 +15,7 @@ cs:CodeCategory a cso:Category ;
 cs:FunctionPurity a cso:CodeStandard ;
     cso:name "code/function/purity" ;
     cso:hasCategory cs:CodeCategory ;
-    cso:description "Functions must be pure. A pure function shall return the same output for the same input and shall not modify external state or perform I/O operations." ;
+    cso:description "Functions should be pure where possible. A pure function returns the same output for the same input and does not modify external state or perform I/O operations. If a function must perform side effects (e.g., I/O in CLI tools), it must be explicitly annotated and documented with the reason for impurity using the industry-standard @remarks or @note tag in TSDoc/JSDoc." ;
     cso:dos """
 (Do) Create pure functions that rely only on their inputs to compute the output.
 ```typescript
@@ -23,14 +23,34 @@ const calculatePrice = (basePrice: number, taxRate: number): number => {
   return basePrice * (1 + taxRate);
 };
 ```
+
+(Do) Annotate and document impure functions that perform I/O or modify external state, explaining why impurity is necessary using @remarks or @note.
+```typescript
+/**
+ * Writes data to the file system.
+ * @remarks
+ * This function performs I/O and is impure. It will modify external state.
+ */
+function writeOutputToFile(data: string, path: string) {
+  fs.writeFileSync(path, data);
+}
+```
 """ ;
     cso:donts """
-(Don't) Create impure functions that modify external state or have side effects.
+(Don't) Create impure functions without annotation or documentation.
 ```typescript
 let total = 0;
 const addToTotal = (value: number) => {
-  total += value; // Modifies external state
+  total += value; // Modifies external state, not documented
 };
+```
+
+(Don't) Hide side effects in functions that appear pure.
+```typescript
+function getConfig() {
+  // Reads from disk without annotation
+  return fs.readFileSync('config.json');
+}
 ```
 """ .
 
