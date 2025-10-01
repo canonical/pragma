@@ -1,4 +1,4 @@
-import type { ElementType } from "react";
+import type { ElementType, ReactNode } from "react";
 
 export const rtl = () => (Story: ElementType) => (
   <div dir="rtl">
@@ -17,3 +17,24 @@ export const grid = () => (Story: ElementType) => (
     <Story />
   </div>
 );
+
+type MainDecoratorProps = {
+  id?: string;
+  children?: ReactNode;
+};
+
+/**
+ * Wraps the story in a main element with the given id and before/after content.
+ * @param id
+ * @param beforeMain
+ */
+export const beforeMain =
+  ({ id = "main", children }: MainDecoratorProps) =>
+  (Story: ElementType) => (
+    <>
+      <Story />
+      <main id={id} tabIndex={-1}>
+        {children}
+      </main>
+    </>
+  );

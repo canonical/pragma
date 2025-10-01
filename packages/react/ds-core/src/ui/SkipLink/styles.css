@@ -1,0 +1,19 @@
+/* @canonical/generator-ds 0.10.0-experimental.4 */
+
+.ds.skip-link {
+  background: var(--tmp-color-background-alt);
+  color: var(--tmp-color-text-link-default);
+  display: block;
+  left: -999px;
+  position: absolute;
+  top: -999px;
+
+  &:focus {
+    left: var(--spacing-horizontal-large);
+    padding-block: var(--spacing-vertical-large);
+    padding-inline: var(--spacing-horizontal-large);
+    position: fixed;
+    top: var(--spacing-vertical-small);
+    z-index: 999999;
+  }
+}
