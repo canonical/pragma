@@ -109,13 +109,13 @@ export const stringFunc = () => {};
 cs:APIStability a cso:CodeStandard ;
     cso:name "code/api/stability" ;
     cso:hasCategory cs:CodeCategory ;
-    cso:description "Unstable APIs must be marked with the @unstable JSDoc tag in type definition files. The tag must include a description of what is unstable." ;
+    cso:description "Experimental APIs must be marked with the @experimental JSDoc tag in type definition files. The tag must include a description of what is experimental." ;
     cso:dos """
-(Do) Mark an unstable interface with a clear @unstable JSDoc tag and description.
+(Do) Mark an experimental interface with a clear @experimental JSDoc tag and description.
 ```typescript
 /**
  * Configuration for the data processing pipeline.
- * @unstable The streaming API is experimental and may change
+ * @experimental The streaming API is experimental and may change
  * in future releases. Currently, it only supports JSON data.
  */
 interface PipelineConfig {
@@ -123,22 +123,22 @@ interface PipelineConfig {
 }
 ```
 
-(Do) Add an @unstable tag to a specific property with context about its instability.
+(Do) Add an @experimental tag to a specific property with context about its experimental status.
 ```typescript
 interface PipelineConfig {
   /**
-   * @unstable The custom transformers API is in beta, and the interface
+   * @experimental The custom transformers API is in beta, and the interface
    * may change to support stronger type validation.
    */
   transformers?: DataTransformer[];
 }
 ```
 
-(Do) Describe the instability and any future plans for the API.
+(Do) Describe the experimental status and any future plans for the API.
 ```typescript
 interface CacheConfig {
   /**
-   * @unstable The distributed cache API is experimental and will be
+   * @experimental The distributed cache API is experimental and will be
    * replaced with a new consensus-based implementation in v2.1.
    */
   distributed?: boolean;
@@ -146,18 +146,18 @@ interface CacheConfig {
 ```
 """ ;
     cso:donts """
-(Don't) Use the @unstable tag without an explanation.
+(Don't) Use the @experimental tag without an explanation.
 ```typescript
 interface ProcessorConfig {
-  /** @unstable */ // Bad: No context provided.
+  /** @experimental */ // Bad: No context provided.
   streaming?: boolean;
 }
 ```
 
-(Don't) Use the @unstable tag without describing what is unstable.
+(Don't) Use the @experimental tag without describing what is experimental.
 ```typescript
 /**
- * @unstable // Bad: No description of what is unstable.
+ * @experimental // Bad: No description of what is experimental.
  */
 interface QueueConfig {
   processor: (item: any) => Promise<void>;
