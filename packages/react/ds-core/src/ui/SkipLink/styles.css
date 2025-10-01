@@ -1,19 +1,19 @@
 /* @canonical/generator-ds 0.10.0-experimental.4 */
 
 .ds.skip-link {
-  background: var(--tmp-color-background-alt);
-  color: var(--tmp-color-text-link-default);
+  background: var(--skip-link-background);
+  color: var(--skip-link-color);
   display: block;
-  left: -999px;
+  left: var(--skip-link-left);
   position: absolute;
-  top: -999px;
+  top: var(--skip-link-top);
 
   &:focus {
-    left: var(--spacing-horizontal-large);
-    padding-block: var(--spacing-vertical-large);
-    padding-inline: var(--spacing-horizontal-large);
+    left: var(--skip-link-focus-left);
+    padding-block: var(--skip-link-focus-padding-block);
+    padding-inline: var(--skip-link-focus-padding-inline);
     position: fixed;
-    top: var(--spacing-vertical-small);
-    z-index: 999999;
+    top: var(--skip-link-focus-top);
+    z-index: var(--skip-link-focus-z-index);
   }
 }

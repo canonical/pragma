@@ -470,4 +470,14 @@
   --rule-height: 1px;
   --rule-margin-top: 0;
   --rule-height-with-margin: var(--spacing-vertical-small);
+
+  --skip-link-background: var(--tmp-color-background-alt);
+  --skip-link-color: var(--tmp-color-text-link-default);
+  --skip-link-left: -999px;
+  --skip-link-top: -999px;
+  --skip-link-focus-left: var(--spacing-horizontal-large);
+  --skip-link-focus-padding-block: var(--spacing-vertical-large);
+  --skip-link-focus-padding-inline: var(--spacing-horizontal-large);
+  --skip-link-focus-top: var(--spacing-vertical-small);
+  --skip-link-focus-z-index: 999999;
 }
