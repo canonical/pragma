@@ -9,10 +9,11 @@ import type { HTMLAttributes, ReactNode } from "react";
 */
 export interface SkipLinkProps
   extends Omit<HTMLAttributes<HTMLAnchorElement>, "href" | "tabIndex"> {
-  /** Child elements */
+  /** The contents of the skip link itself */
   children?: ReactNode;
   /**
    * ID of the main content element
+   * `<main>` should use `tabIndex={-1}` to prevent it from being focusable without using the skip link.
    * @default "main"
    * */
   mainId?: string;
