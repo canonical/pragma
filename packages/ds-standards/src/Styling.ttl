@@ -14,7 +14,10 @@
 :CSSVariableScoping a cs:CodeStandard ;
     cs:name "styling/css/variables/scoping" ;
     cs:hasCategory :StylingCategory ;
-    cs:description "CSS variables must be scoped correctly to ensure a clear and maintainable styling architecture. Global tokens are defined on `:root`, component-specific variables are scoped to the component's class, and modifier variables are used for modifier-based changes." ;
+    cs:description """CSS variables must follow a strict scoping hierarchy:
+- Global tokens must be defined on `:root`
+- Component variables must be scoped to component class
+- Modifier variables must be scoped to modifier class""" ;
     cs:dos """
 (Do) Define global design tokens on the `:root` element for broad reuse.
 ```css
@@ -65,7 +68,7 @@
 :CSSVariableNaming a cs:CodeStandard ;
     cs:name "styling/css/variables/naming" ;
     cs:hasCategory :StylingCategory ;
-    cs:description "CSS variable names must follow a consistent, semantic pattern that clearly communicates their purpose. Use the format `--scope-property-variant` (e.g., `--color-background-default`, `--rule-height`)." ;
+    cs:description "CSS variable names must use the format `--scope-property-variant` (e.g., `--color-background-default`, `--rule-height`)." ;
     cs:dos """
 (Do) Use semantic names that describe the variable's purpose.
 ```css
@@ -90,7 +93,7 @@
 :CSSSelectorNamespace a cs:CodeStandard ;
     cs:name "styling/css/selectors/namespace" ;
     cs:hasCategory :StylingCategory ;
-    cs:description "All component selectors must be prefixed with the `.ds` namespace (e.g., `.ds.button`). This prevents style collisions and clearly identifies components belonging to the design system." ;
+    cs:description "All component selectors must be prefixed with the `.ds` namespace (e.g., `.ds.button`)." ;
     cs:dos """
 (Do) Prefix all component selectors with `.ds`.
 ```css
@@ -114,7 +117,10 @@
 :CSSSelectorSpecificity a cs:CodeStandard ;
     cs:name "styling/css/selectors/specificity" ;
     cs:hasCategory :StylingCategory ;
-    cs:description "CSS selectors should be kept as flat and specific as possible to avoid high specificity and maintain a predictable styling system. Avoid deep nesting and reliance on HTML structure." ;
+    cs:description """CSS selectors must:
+- Use direct child selectors (>) when targeting internal elements
+- Use attribute selectors for states
+- Avoid nesting beyond one level""" ;
     cs:dos """
 (Do) Use direct child selectors when necessary to style a component's internal elements.
 ```css
@@ -160,7 +166,7 @@
 :CSSSelectorSemantics a cs:CodeStandard ;
     cs:name "styling/css/selectors/semantics" ;
     cs:hasCategory :StylingCategory ;
-    cs:description "CSS class names should be semantic and describe the purpose or state of an element, rather than its appearance. Use modifier classes to represent variations of a component." ;
+    cs:description "CSS class names must describe the purpose or state of an element, not its appearance." ;
     cs:dos """
 (Do) Use semantic modifier classes to represent component variations.
 ```css
@@ -184,7 +190,7 @@
 :CSSComponentNamingConvention a cs:CodeStandard ;
     cs:name "styling/css/selectors/component-naming-convention" ;
     cs:hasCategory :StylingCategory ;
-    cs:description "Component CSS class names must be the kebab-case version of the component's PascalCase name. This ensures a consistent and predictable mapping from component name to CSS class." ;
+    cs:description "Component CSS class names must be the kebab-case version of the component's PascalCase name." ;
     cs:dos """
 (Do) Convert PascalCase component names to kebab-case for CSS classes:
 - `MyComponent` -> `.ds.my-component`
