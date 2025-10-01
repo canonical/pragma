@@ -14,7 +14,7 @@
 :IconFileStorage a cs:CodeStandard ;
     cs:name "icons/file-storage" ;
     cs:hasCategory :IconsCategory ;
-    cs:description "Each icon must be stored as a single SVG file in the `icons/` directory. This practice ensures that icons are easy to locate and manage within the project." ;
+    cs:description "Each icon shall be stored as a single SVG file in the `icons/` directory." ;
     cs:dos """
 (Do) Store each icon as an individual SVG file in the designated `icons/` directory.
 ```
@@ -46,7 +46,10 @@ icons/
 :IconFileNaming a cs:CodeStandard ;
     cs:name "icons/file-naming" ;
     cs:hasCategory :IconsCategory ;
-    cs:description "Icon files must be named using kebab-case and end with the `.svg` extension. The name should be a semantic identifier that clearly describes the icon's purpose." ;
+    cs:description """Icon files must:
+- Use kebab-case naming
+- End with `.svg` extension
+- Use semantic identifiers""" ;
     cs:dos """
 (Do) Use kebab-case and a semantic identifier for the icon file name.
 ```
@@ -75,7 +78,7 @@ shape.svg
 :IconGroupElement a cs:CodeStandard ;
     cs:name "icons/group-element" ;
     cs:hasCategory :IconsCategory ;
-    cs:description "Each icon's SVG markup must contain a single `<g>` element. This group element must have an `id` attribute that exactly matches the icon's filename (excluding the `.svg` extension)." ;
+    cs:description "Each icon's SVG markup must contain a single `<g>` element with an `id` matching the filename (without `.svg`)." ;
     cs:dos """
 (Do) Include a single `<g>` element with an `id` that matches the filename.
 ```svg
@@ -106,7 +109,7 @@ shape.svg
 :IconViewBox a cs:CodeStandard ;
     cs:name "icons/viewbox" ;
     cs:hasCategory :IconsCategory ;
-    cs:description "All icon SVGs must use a consistent `viewBox` of `0 0 16 16`. This ensures that all icons are scaled uniformly and maintain a consistent visual size." ;
+    cs:description "All icon SVGs must use a `viewBox` of `0 0 16 16`." ;
     cs:dos """
 (Do) Set the `viewBox` attribute to `0 0 16 16` in the `<svg>` element.
 ```svg
@@ -147,7 +150,9 @@ shape.svg
 :IconColorUsage a cs:CodeStandard ;
     cs:name "icons/color-usage" ;
     cs:hasCategory :IconsCategory ;
-    cs:description "All paths within a non-branded icon's SVG must use `currentColor` for the `fill` attribute. This allows the icon's color to be controlled via CSS. Branded icons are an exception and may use brand-specific colors." ;
+    cs:description """Icon paths must use `fill` attribute as follows:
+- Non-branded icons must use `currentColor`
+- Branded icons may use brand-specific colors""" ;
     cs:dos """
 (Do) Use `currentColor` for the `fill` of paths in non-branded icons.
 ```svg
@@ -193,7 +198,7 @@ shape.svg
 :IconVariant a cs:CodeStandard ;
     cs:name "icons/variants" ;
     cs:hasCategory :IconsCategory ;
-    cs:description "Create only one SVG file per icon concept. Do not create separate files for different sizes or themes. Sizing should be handled by `em` units in CSS, and theming should be controlled by `currentColor`." ;
+    cs:description "Each icon concept must have exactly one SVG file. Size and theme variants are not allowed." ;
     cs:dos """
 (Do) Use a single SVG file for each icon and control its size and color with CSS.
 ```svg
@@ -231,7 +236,10 @@ warning-light.svg
 :IconTypeSafety a cs:CodeStandard ;
     cs:name "icons/type-safety" ;
     cs:hasCategory :IconsCategory ;
-    cs:description "Icon names must be maintained in a type-safe constant array, which is used to generate a corresponding `IconName` type. This constant and type should be defined in the icon exporter package and imported by consumers to ensure type safety." ;
+    cs:description """Icon names must be:
+- Maintained in a type-safe constant array
+- Used to generate the `IconName` type
+- Defined in the icon exporter package""" ;
     cs:dos """
 (Do) Define a constant array of icon names and derive the `IconName` type from it in the icon exporter package.
 ```typescript
@@ -268,7 +276,7 @@ type IconName = "warning" | "search";
 type IconName = string;
 ```
 
-(Don't) Maintain separate type and value definitions, as this can lead to inconsistencies.
+(Don't) Maintain separate type and value definitions.
 ```typescript
 // Bad: Duplication creates maintenance issues
 const ICONS = ["warning", "search"];
