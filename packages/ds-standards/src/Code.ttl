@@ -1,5 +1,5 @@
-@prefix : <http://example.org/codestandards#> .
-@prefix cs: <http://example.org/codestandards#> .
+@prefix : <http://pragma.canonical.com/codestandards#> .
+@prefix cs: <http://pragma.canonical.com/codestandards#> .
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix owl: <http://www.w3.org/2002/07/owl#> .
@@ -10,55 +10,93 @@
     rdfs:label "Code"@en ;
     rdfs:comment "General coding standards and best practices"@en .
 
-# Function Scope Standard
-:FunctionScope a cs:CodeStandard ;
-    cs:name "code/function/scope" ;
+# Function Purity Standard
+:FunctionPurity a cs:CodeStandard ;
+    cs:name "code/function/purity" ;
     cs:hasCategory :CodeCategory ;
-    cs:description "Functions should follow the 'one feature = one function' principle. Each function should handle one specific task. Functions should be pure when possible. Complex operations should be broken down into smaller functions. Functions should be placed close to where they are used." ;
+    cs:description "Functions should be pure whenever possible. A pure function always returns the same output for the same input and has no side effects, such as modifying external state or performing I/O operations. This makes them predictable, testable, and easier to reason about." ;
     cs:dos """
-(Do) Define functions with a single responsibility:
+(Do) Create pure functions that rely only on their inputs to compute the output.
+```typescript
+const calculatePrice = (basePrice: number, taxRate: number): number => {
+  return basePrice * (1 + taxRate);
+};
+```
+""" ;
+    cs:donts """
+(Don't) Create impure functions that modify external state or have side effects.
+```typescript
+let total = 0;
+const addToTotal = (value: number) => {
+  total += value; // Modifies external state
+};
+```
+""" .
+
+# Function Composition Standard
+:FunctionComposition a cs:CodeStandard ;
+    cs:name "code/function/composition" ;
+    cs:hasCategory :CodeCategory ;
+    cs:description "Each function should follow the 'one feature = one function' principle, handling one specific task. Complex operations should be broken down into smaller, single-purpose functions, which are then composed to achieve the desired outcome." ;
+    cs:dos """
+(Do) Define functions with a single, clear responsibility.
 ```typescript
 const validateEmail = (email: string): boolean => {
   return /^[^@]+@[^@]+\.[^@]+$/.test(email);
 };
 ```
 
-(Do) Compose single-purpose functions for complex logic:
+(Do) Compose single-purpose functions to build complex logic.
 ```typescript
-const validateForm = (email: string, password: string): boolean => {
+const validatePassword = (password: string): boolean => {
+  return password.length >= 8;
+};
+
+const validateForm = (email: string, password:string): boolean => {
   return validateEmail(email) && validatePassword(password);
 };
 ```
+""" ;
+    cs:donts """
+(Don't) Mix multiple responsibilities in a single function.
+```typescript
+const processUserData = (user: any) => {
+  // Validates user data
+  // Transforms the data
+  // Saves to the database
+  // Sends a notification
+};
+```
+""" .
 
-(Do) Place functions close to where they are used in your application logic:
+# Function Colocation Standard
+:FunctionColocation a cs:CodeStandard ;
+    cs:name "code/function/colocation" ;
+    cs:hasCategory :CodeCategory ;
+    cs:description "Functions should be placed as close as possible to where they are used. If a function is only used by a single component or in a specific file, it should be defined within that file to improve encapsulation and maintainability." ;
+    cs:dos """
+(Do) Place functions close to where they are used in your application logic.
 ```typescript
 class UserService {
   private async validateUser(user: User): Promise<ValidationResult> {
-    // validation logic
+    // Validation logic specific to UserService
   }
+
   async createUser(user: User): Promise<Result> {
-    // creation logic
+    const validationResult = await this.validateUser(user);
+    // ... creation logic
   }
 }
 ```
 """ ;
     cs:donts """
-(Don't) Mix multiple responsibilities in a single function:
-```typescript
-const processUser = async (userData: any) => {
-  // validation, transformation, DB, notification, cache -- all in one
-};
+(Don't) Store functions in a generic 'utils' folder if they are only used in one place.
 ```
+// utils/validators.ts
+export const validateUser = (user: User) => { ... };
 
-(Don't) Create overly generic functions that handle unrelated logic:
-```typescript
-const handleData = (data: any) => {
-  if (data.type === 'user') {
-    processUser(data);
-  } else if (data.type === 'order') {
-    processOrder(data);
-  }
-};
+// services/UserService.ts
+import { validateUser } from '../utils/validators'; // Less ideal if only used here
 ```
 """ .
 
@@ -66,77 +104,58 @@ const handleData = (data: any) => {
 :APIStability a cs:CodeStandard ;
     cs:name "code/api/stability" ;
     cs:hasCategory :CodeCategory ;
-    cs:description "Use @unstable JSDoc tag to mark API stability. Unstable APIs should be clearly marked. Each @unstable tag must include a description. Tags should be in types files. Tags should guide API consumers with clear context." ;
+    cs:description "Clearly mark API stability using the @unstable JSDoc tag in type definition files. The tag must include a description explaining what is unstable and why, providing clear guidance to API consumers." ;
     cs:dos """
-(Do) Mark unstable APIs with a clear @unstable JSDoc tag and description:
+(Do) Mark an unstable interface with a clear @unstable JSDoc tag and description.
 ```typescript
 /**
- * Configuration for data processing pipeline
+ * Configuration for the data processing pipeline.
  * @unstable The streaming API is experimental and may change
- * in future releases. Currently only supports JSON data.
+ * in future releases. Currently, it only supports JSON data.
  */
 interface PipelineConfig {
   // ...
 }
 ```
 
-(Do) Add @unstable tags to specific properties with context:
+(Do) Add an @unstable tag to a specific property with context about its instability.
 ```typescript
 interface PipelineConfig {
   /**
-   * @unstable Custom transformers API is in beta, interface may change
-   * to support stronger type validation
+   * @unstable The custom transformers API is in beta, and the interface
+   * may change to support stronger type validation.
    */
   transformers?: DataTransformer[];
 }
 ```
 
-(Do) Clearly describe the instability and future plans:
+(Do) Describe the instability and any future plans for the API.
 ```typescript
 interface CacheConfig {
   /**
    * @unstable The distributed cache API is experimental and will be
-   * replaced with a new consensus-based implementation in v2.1
+   * replaced with a new consensus-based implementation in v2.1.
    */
   distributed?: boolean;
 }
 ```
 """ ;
     cs:donts """
-(Don't) Use unclear tags without explanation:
+(Don't) Use the @unstable tag without an explanation.
 ```typescript
 interface ProcessorConfig {
-  /** @experimental */  // Bad: No context
+  /** @unstable */ // Bad: No context provided.
   streaming?: boolean;
 }
 ```
 
-(Don't) Mix stability tags with regular documentation without context:
-```typescript
-interface CacheOptions {
-  /**
-   * Controls cache distribution
-   * @unstable  // Bad: No explanation
-   */
-  mode: 'local' | 'distributed';
-}
-```
-
-(Don't) Use @unstable tags without describing what's unstable:
+(Don't) Use the @unstable tag without describing what is unstable.
 ```typescript
 /**
- * @unstable  // Bad: No description of what's unstable
+ * @unstable // Bad: No description of what is unstable.
  */
 interface QueueConfig {
   processor: (item: any) => Promise<void>;
-}
-```
-
-(Don't) Mark stable APIs unnecessarily:
-```typescript
-interface LoggerConfig {
-  /** @stable */  // Bad: No need to mark stable APIs
-  level: 'debug' | 'info' | 'error';
 }
 ```
 """ .
@@ -217,16 +236,18 @@ export { ABC };
 :NamedExportsReimport a cs:CodeStandard ;
     cs:name "code/named-exports-reimport" ;
     cs:hasCategory :CodeCategory ;
-    cs:description "When importing the contents of a file with named exports, use the 'import * as' pattern to conserve the namespace." ;
+    cs:description "When re-exporting an entire module, use the 'export * as' pattern to preserve the module's namespace. This is especially useful in `index.ts` files that act as an entry point." ;
     cs:dos """
-(Do) Use the 'import * as' pattern to conserve the namespace when reimporting named exports:
+(Do) Use the 'export * as' pattern to re-export a module under a single namespace.
 ```typescript
-import * as transformers from "./transformers.js";
+// index.ts
+export * as transformers from "./transformers.js";
 ```
 """ ;
     cs:donts """
-(Don't) Import named exports directly from a file containing multiple named exports:
+(Don't) Re-export all members of a module individually, as it flattens the namespace.
 ```typescript
-import { myFunc, otherFunc } from "./transformers.js";
+// index.ts
+export * from "./transformers.js"; // Flattens the namespace
 ```
 """ .
