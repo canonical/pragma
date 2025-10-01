@@ -1,7 +1,6 @@
 /* @canonical/generator-ds 0.10.0-experimental.4 */
 
 import type React from "react";
-import { useMemo } from "react";
 import type { SkipLinkProps } from "./types.js";
 import "./styles.css";
 
@@ -18,8 +17,7 @@ const SkipLink = ({
   mainId = "main",
   ...props
 }: SkipLinkProps): React.ReactElement => {
-  const href = useMemo(() => `#${mainId}`, [mainId]);
-
+  const href = `#${mainId}`;
   const skipLinkContents = children || "Skip to main content";
 
   return (
