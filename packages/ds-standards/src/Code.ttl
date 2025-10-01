@@ -70,35 +70,39 @@ const processUserData = (user: any) => {
 ```
 """ .
 
-# Function Colocation Standard
-cs:FunctionColocation a cso:CodeStandard ;
-    cso:name "code/function/colocation" ;
+# Function Location Standard
+cs:FunctionLocation a cso:CodeStandard ;
+    cso:name "code/function/location" ;
     cso:hasCategory cs:CodeCategory ;
-    cso:description "Functions must be defined in the same file where they are used. Functions used by a single component must be defined within that component's file." ;
+    cso:description "Functions must be defined as close to their broadest point of use as possible. Shared utilities must be placed in a common location, and each function must serve a single feature or responsibility." ;
     cso:dos """
-(Do) Place functions close to where they are used in your application logic.
+(Do) Place functions in the file or module where they are most broadly used. If a function is shared across multiple components or modules, place it in a common utility location.
 ```typescript
-class UserService {
-  private async validateUser(user: User): Promise<ValidationResult> {
-    // Validation logic specific to UserService
-  }
-
-  async createUser(user: User): Promise<Result> {
-    const validationResult = await this.validateUser(user);
-    // ... creation logic
-  }
+// utils/math.ts
+export function calculateSum(a: number, b: number): number {
+  return a + b;
 }
-```
+
+// Used in multiple places
+import { calculateSum } from './utils/math';
+
+// For single-use functions, keep them close to their usage:
+```typescript
+const formatUserName = (user: User) => `${user.firstName} ${user.lastName}`;
 """ ;
     cso:donts """
-(Don't) Store functions in a generic 'utils' folder if they are only used in one place.
-```
+(Don't) Place functions far from where they are used, or in a generic location if only used in one place.
+```typescript
 // utils/validators.ts
-export const validateUser = (user: User) => { ... };
+export const validateUser = (user: User) => { ... }; // Only used in one component
 
 // services/UserService.ts
 import { validateUser } from '../utils/validators'; // Less ideal if only used here
-```
+
+// Don't mix unrelated functions in a single file:
+```typescript
+export const mathFunc = () => {};
+export const stringFunc = () => {};
 """ .
 
 # API Stability Standard
