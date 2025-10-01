@@ -1,0 +1,434 @@
+@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl:   <http://www.w3.org/2002/07/owl#> .
+@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
+@prefix skos:  <http://www.w3.org/2004/02/skos/core#> .
+@prefix ds:    <http://syntax.example.org/ontology#> .
+
+# Ontology Declaration
+ds: a owl:Ontology ;
+    owl:versionInfo "2.0.0" ;
+    rdfs:label "Design System Ontology" ;
+    skos:definition "OWL ontology for UI design system based on schema diagram" .
+
+###############################################################################
+# METADATA PROPERTY FOR ACCEPTANCE CRITERIA
+###############################################################################
+
+ds:acceptanceCriteria
+    a owl:AnnotationProperty ;
+    rdfs:label "acceptanceCriteria" ;
+    skos:definition "Acceptance criteria that must be met for this property" ;
+    rdfs:domain rdf:Property ;
+    rdfs:range xsd:string .
+
+
+####
+# DATATYPES
+####
+
+ds:URIString
+    a rdfs:Datatype ;
+    owl:onDatatype xsd:string ;
+    owl:withRestrictions (
+        [ xsd:pattern "^ds:[a-zA-Z]+:[a-zA-Z]+:[a-zA-Z][a-zA-Z0-9]*:[0-9]+\\.[0-9]+\\.[0-9]+(-[a-zA-Z0-9]+)?(\\+[a-zA-Z0-9]+)?$" ]
+    ) ;
+    skos:definition "URI string following pattern ds:[tier]:[class]:[name]:[version]" .
+
+
+
+###############################################################################
+# 1. CORE CLASSES
+###############################################################################
+
+ds:UIElement
+    a owl:Class ;
+    rdfs:label "UI Element" ;
+    skos:definition "Root class for all design system entities" .
+
+ds:UIBlock
+    a owl:Class ;
+    rdfs:subClassOf ds:UIElement ;
+    rdfs:label "UI Block" ;
+    skos:definition "A category of visual or abstract entity that fulfills a particular role in composing user interfaces" .
+
+###############################################################################
+# 2. UI BLOCK SUBCLASSES
+###############################################################################
+
+ds:Component
+    a owl:Class ;
+    rdfs:subClassOf ds:UIBlock ;
+    rdfs:label "Component" ;
+    skos:definition "An implementable piece of user interface defined by its appearance and behaviour" .
+
+ds:Pattern
+    a owl:Class ;
+    rdfs:subClassOf ds:UIBlock ;
+    rdfs:label "Pattern" ;
+    skos:definition "A reusable solution to a recurring user problem in a specific context" .
+
+ds:Layout
+    a owl:Class ;
+    rdfs:subClassOf ds:UIBlock ;
+    rdfs:label "Layout" ;
+    skos:definition "Layouts are an opinionated division of space to navigate a domain of information." .
+
+ds:Subcomponent
+    a owl:Class ;
+    rdfs:subClassOf ds:UIBlock ;
+    rdfs:label "Subcomponent" ;
+    skos:definition "" . #TODO
+
+###############################################################################
+# 3. OTHER CORE CLASSES
+###############################################################################
+
+ds:Modifier
+    a owl:Class ;
+    rdfs:subClassOf ds:UIElement ;
+    rdfs:label "Modifier" ;
+    skos:definition "" . #TODO
+
+ds:Token
+    a owl:Class ;
+    rdfs:label "Token" ;
+    skos:definition "" . #TODO
+
+ds:Tier
+    a owl:Class ;
+    rdfs:label "Tier" ;
+    skos:definition "" . #TODO
+
+ds:Label
+    a owl:Class ;
+    rdfs:label "Label" ;
+    skos:definition "" . #TODO
+
+ds:ImplementationObject
+    a owl:Class ;
+    rdfs:label "Implementation Object" ;
+    skos:definition "Platform-specific implementation of a UI Block" .
+
+ds:ImplementationLibrary
+    a owl:Class ;
+    rdfs:label "Implementation Library" ;
+    skos:definition "" . #TODO
+
+ds:Affordance
+    a owl:Class ;
+    rdfs:label "Affordance" ;
+    skos:definition "" . #TODO
+
+###############################################################################
+# 4. PROPERTIES - UIElement Base Properties
+###############################################################################
+
+ds:name
+    a owl:DatatypeProperty ;
+    rdfs:domain ds:UIElement ;
+    rdfs:range xsd:string ;
+    rdfs:label "name" ;
+    skos:definition "" ; #TODO
+    ds:acceptanceCriteria "" . #TODO
+
+ds:description
+    a owl:DatatypeProperty ;
+    rdfs:domain ds:UIElement ;
+    rdfs:range xsd:string ;
+    rdfs:label "description" ;
+    skos:definition "" ; #TODO
+    ds:acceptanceCriteria "" . #TODO
+
+ds:version
+    a owl:DatatypeProperty, owl:FunctionalProperty ;
+    rdfs:domain ds:UIElement ;
+    rdfs:range xsd:string ;
+    rdfs:label "version" ;
+    skos:definition "" ; #TODO
+    ds:acceptanceCriteria "" . #TODO
+
+ds:uri
+    a owl:DatatypeProperty, owl:InverseFunctionalProperty ;
+    rdfs:domain ds:UIElement ;
+    rdfs:range ds:URIString ;
+    rdfs:label "URI" ;
+    skos:definition "Unique identifier for the UI element" ;
+    ds:acceptanceCriteria "" . #TODO
+
+ds:decisionLog
+    a owl:DatatypeProperty ;
+    rdfs:domain ds:UIElement ;
+    rdfs:range xsd:string ;
+    rdfs:label "decisionLog" ;
+    skos:definition "Log of decisions with [date][author][content]" ;
+    ds:acceptanceCriteria "[date] Contains the date of the decision made, [author] Links to the decision maker, [content] Contains the reasons of change, is clear on what the change is" .
+
+###############################################################################
+# 6. PROPERTIES - UIBlock Specific
+###############################################################################
+
+ds:tier
+    a owl:ObjectProperty, owl:FunctionalProperty ;
+    rdfs:domain ds:UIBlock ;
+    rdfs:range ds:Tier ;
+    rdfs:label "tier" ;
+    skos:definition "The tier to which the UI block belongs to" ;
+    ds:acceptanceCriteria "" . #TODO
+
+ds:nextRequiredStep
+    a owl:DatatypeProperty ;
+    rdfs:domain ds:UIBlock ;
+    rdfs:range xsd:string ;
+    rdfs:label "nextRequiredStep" ;
+    skos:definition "" ; #TODO
+    ds:acceptanceCriteria "" . #TODO
+
+ds:figmaLink
+    a owl:DatatypeProperty ;
+    rdfs:domain ds:UIBlock ;
+    rdfs:range xsd:anyURI ;
+    rdfs:label "figmaLink" ;
+    skos:definition "" ; #TODO
+    ds:acceptanceCriteria "" . #TODO
+
+ds:wireframeLink
+    a owl:DatatypeProperty ;
+    rdfs:domain ds:UIBlock ;
+    rdfs:range xsd:anyURI ;
+    rdfs:label "wireframeLink" ;
+    skos:definition "" ; #TODO
+    ds:acceptanceCriteria "" . #TODO
+
+ds:anatomy
+    a owl:DatatypeProperty ;
+    rdfs:domain ds:UIBlock ;
+    rdfs:range xsd:anyURI ;
+    rdfs:label "anatomy" ;
+    skos:definition "" ; #TODO
+    ds:acceptanceCriteria "" . #TODO
+
+ds:whenToUse
+    a owl:DatatypeProperty ;
+    rdfs:domain ds:UIBlock ;
+    rdfs:range xsd:string ;
+    rdfs:label "whenToUse" ;
+    skos:definition "" ; #TODO
+    ds:acceptanceCriteria "" . #TODO
+
+ds:whenNotToUse
+    a owl:DatatypeProperty ;
+    rdfs:domain ds:UIBlock ;
+    rdfs:range xsd:string ;
+    rdfs:label "whenNotToUse" ;
+    skos:definition "" ; #TODO
+    ds:acceptanceCriteria "" . #TODO
+
+ds:properties
+    a owl:DatatypeProperty ;
+    rdfs:domain ds:UIBlock ;
+    rdfs:range xsd:string ;
+    rdfs:label "properties" ;
+    skos:definition "" ; #TODO
+    ds:acceptanceCriteria "" . #TODO
+
+ds:guidelines
+    a owl:DatatypeProperty ;
+    rdfs:domain ds:UIBlock ;
+    rdfs:range xsd:string ;
+    rdfs:label "guidelines" ;
+    skos:definition "" ; #TODO
+    ds:acceptanceCriteria "" . #TODO
+
+ds:variants
+    a owl:DatatypeProperty ;
+    rdfs:domain ds:UIBlock ;
+    rdfs:range xsd:string ;
+    rdfs:label "variants" ;
+    skos:definition "" . #TODO
+    ds:acceptanceCriteria "" . #TODO
+
+###############################################################################
+# 7. PROPERTIES - Relationships
+###############################################################################
+
+ds:usesToken
+    a owl:ObjectProperty ;
+    rdfs:domain ds:UIBlock ;
+    rdfs:range ds:Token ;
+    rdfs:label "usesToken" ;
+    skos:definition "" ; #TODO
+    ds:acceptanceCriteria "" . #TODO
+
+ds:hasAffordance
+    a owl:ObjectProperty ;
+    rdfs:domain ds:UIBlock ;
+    rdfs:range ds:Affordance ;
+    rdfs:label "hasAffordance" ;
+    skos:definition "" . #TODO
+
+ds:hasLabel
+    a owl:ObjectProperty ;
+    rdfs:domain ds:UIBlock ;
+    rdfs:range ds:Label ;
+    rdfs:label "hasLabel" ;
+    skos:definition "" ; #TODO
+    ds:acceptanceCriteria "" . #TODO
+
+ds:labelReason # Move to reification
+    a owl:DatatypeProperty ;
+    rdfs:domain ds:UIBlock ;
+    rdfs:range xsd:string ;
+    rdfs:label "" ; #TODO
+    skos:definition "" . #TODO
+
+###############################################################################
+# 8. PROPERTIES - 
+###############################################################################
+
+# Subcomponent
+
+ds:standalone
+    a owl:DatatypeProperty, owl:FunctionalProperty ;
+    rdfs:domain ds:Subcomponent ;
+    rdfs:range xsd:boolean ;
+    rdfs:label "standalone" ;
+    skos:definition "" ; #TODO
+    ds:acceptanceCriteria "" . #TODO
+
+ds:parentComponent
+    a owl:ObjectProperty ;
+    rdfs:domain ds:Subcomponent ;
+    rdfs:range ds:Component ;
+    rdfs:label "parentComponent" ;
+    skos:definition "Parent component if not standalone" ;
+    ds:acceptanceCriteria "" . #TODO
+
+ds:hasSubcomponent
+    a owl:ObjectProperty ;
+    rdfs:domain ds:Component ;
+    rdfs:range ds:Subcomponent ;
+    owl:inverseOf ds:parentComponent ;
+    rdfs:label "hasSubcomponent" ;
+    skos:definition "" ; #TODO
+    ds:acceptanceCriteria "" . #TODO
+
+# Layout
+
+ds:grid
+    a owl:DatatypeProperty ;
+    rdfs:domain ds:Layout ;
+    rdfs:range xsd:string ;
+    rdfs:label "grid" ;
+    skos:definition "" ; #TODO
+    ds:acceptanceCriteria "" . #TODO
+
+ds:gridAreas
+    a owl:DatatypeProperty ;
+    rdfs:domain ds:Layout ;
+    rdfs:range xsd:string ;
+    rdfs:label "gridAreas" ;
+    skos:definition "" ; #TODO
+    ds:acceptanceCriteria "" . #TODO
+
+ds:targetDevices
+    a owl:DatatypeProperty ;
+    rdfs:domain ds:Layout ;
+    rdfs:range xsd:string ;
+    rdfs:label "targetDevices" ;
+    skos:definition "" ; #TODO
+    ds:acceptanceCriteria "" . #TODO
+
+# Implementation Object
+
+ds:implementsBlock
+    a owl:ObjectProperty, owl:FunctionalProperty ;
+    rdfs:domain ds:ImplementationObject ;
+    rdfs:range ds:UIBlock ;
+    rdfs:label "implementsBlock" ;
+    skos:definition "" . #TODO
+
+ds:implementationVersion
+    a owl:DatatypeProperty, owl:FunctionalProperty ;
+    rdfs:domain ds:ImplementationObject ;
+    rdfs:range xsd:string ;
+    rdfs:label "implementationVersion" ;
+    skos:definition "" . #TODO
+
+ds:library
+    a owl:ObjectProperty, owl:FunctionalProperty ;
+    rdfs:domain ds:ImplementationObject ;
+    rdfs:range ds:ImplementationLibrary ;
+    rdfs:label "library" ;
+    skos:definition "" . #TODO
+
+ds:headLink
+    a owl:DatatypeProperty ;
+    rdfs:domain ds:ImplementationObject ;
+    rdfs:range xsd:anyURI ;
+    rdfs:label "headLink" ;
+    skos:definition "" . #TODO
+
+ds:versionedLink
+    a owl:DatatypeProperty ;
+    rdfs:domain ds:ImplementationObject ;
+    rdfs:range xsd:string ;
+    rdfs:label "versionedLink" ;
+    skos:definition "" . #TODO
+
+ds:isDraft
+    a owl:DatatypeProperty ;
+    rdfs:domain ds:ImplementationObject ;
+    rdfs:range xsd:boolean ;
+    rdfs:label "isDraft" ;
+    skos:definition "" ; #TODO
+    ds:acceptanceCriteria "" . #TODO
+
+# Implementation Library 
+
+ds:libraryName
+    a owl:DatatypeProperty ;
+    rdfs:domain ds:ImplementationLibrary ;
+    rdfs:range xsd:string ;
+    rdfs:label "libraryName" ;
+    skos:definition "" ; #TODO
+    ds:acceptanceCriteria "" . #TODO
+
+ds:platform
+    a owl:DatatypeProperty ;
+    rdfs:domain ds:ImplementationLibrary ;
+    rdfs:range xsd:string ;
+    rdfs:label "platform" ;
+    skos:definition "" ; #TODO
+    ds:acceptanceCriteria "" . #TODO
+
+ds:libraryDescription
+    a owl:DatatypeProperty ;
+    rdfs:domain ds:ImplementationLibrary ;
+    rdfs:range xsd:string ;
+    rdfs:label "libraryDescription" ;
+    skos:definition "Describes the tier of DS implemented" ;
+    ds:acceptanceCriteria "" . #TODO
+
+ds:link
+    a owl:DatatypeProperty ;
+    rdfs:domain ds:ImplementationLibrary ;
+    rdfs:range xsd:anyURI ;
+    rdfs:label "link" ;
+    skos:definition "Link to main artifact" ;
+    ds:acceptanceCriteria "" . #TODO
+
+ds:documentation
+    a owl:DatatypeProperty ;
+    rdfs:domain ds:ImplementationLibrary ;
+    rdfs:range xsd:anyURI ;
+    rdfs:label "documentation" ;
+    skos:definition "Documentation link if different from main" ;
+    ds:acceptanceCriteria "" . #TODO
+
+ds:libraryTier
+    a owl:ObjectProperty ;
+    rdfs:domain ds:ImplementationLibrary ;
+    rdfs:range ds:Tier ;
+    rdfs:label "libraryTier" ;
+    ds:acceptanceCriteria "" . #TODO
