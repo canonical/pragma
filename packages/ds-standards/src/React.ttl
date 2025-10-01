@@ -14,7 +14,7 @@
 :ComponentFolderStructure a cs:CodeStandard ;
     cs:name "react/component/folder-structure" ;
     cs:hasCategory :ReactCategory ;
-    cs:description "Each component must reside in its own folder, which contains all related files, including the component implementation, stories, tests, styles, and type definitions. This colocation improves discoverability and maintainability." ;
+    cs:description "Each component must reside in its own folder, which contains all related files: component implementation, stories, tests, styles, and type definitions." ;
     cs:dos """
 (Do) Place all files related to a single component within the same component folder.
 ```
@@ -48,7 +48,7 @@ MyComponent/
 :ComponentFolderNaming a cs:CodeStandard ;
     cs:name "react/component/folder-naming" ;
     cs:hasCategory :ReactCategory ;
-    cs:description "Component folders must be named using PascalCase (e.g., `Button`, `Tooltip`). This convention ensures consistency with the component's own name." ;
+    cs:description "Component folders must be named using PascalCase (e.g., `Button`, `Tooltip`)." ;
     cs:dos """
 (Do) Name the component folder using PascalCase.
 ```
@@ -93,7 +93,7 @@ MyComponent/
 :ComponentPropsTyping a cs:CodeStandard ;
     cs:name "react/component/props-typing" ;
     cs:hasCategory :ReactCategory ;
-    cs:description "Component props must be explicitly typed using TypeScript interfaces. This ensures type safety and provides clear documentation for the component's API." ;
+    cs:description "Component props must be explicitly typed using TypeScript interfaces." ;
     cs:dos """
 (Do) Define an interface for the component's props.
 ```typescript
@@ -128,7 +128,7 @@ const Button = ({ label, onClick }) => {
 :ComponentPropsNaming a cs:CodeStandard ;
     cs:name "react/component/props-naming" ;
     cs:hasCategory :ReactCategory ;
-    cs:description "Prop names should be semantic and clearly describe their purpose. Avoid single-letter or ambiguous names." ;
+    cs:description "Prop names must be semantic and clearly describe their purpose." ;
     cs:dos """
 (Do) Use descriptive names for props.
 ```typescript
@@ -152,7 +152,7 @@ interface ButtonProps {
 :ComponentNaming a cs:CodeStandard ;
     cs:name "react/component/naming" ;
     cs:hasCategory :ReactCategory ;
-    cs:description "Components should use PascalCase naming and be descriptive of their purpose." ;
+    cs:description "Components must use PascalCase naming and be descriptive of their purpose." ;
     cs:dos """
 (Do) Use PascalCase and descriptive names for components:
 UserProfile
@@ -192,7 +192,7 @@ formValidation()
 :ContextShortcutHookNaming a cs:CodeStandard ;
     cs:name "react/hook/naming/context-shortcuts" ;
     cs:hasCategory :ReactCategory ;
-    cs:description "Context shortcut hooks should use the pattern useContextName, where the hook name starts with 'use' followed by the context name in PascalCase (e.g., useApplicationSettings)." ;
+    cs:description "Context shortcut hooks must use the pattern useContextName, where the hook name starts with 'use' followed by the context name in PascalCase." ;
     cs:dos """
 (Do) Name context shortcut hooks so the hook name starts with 'use' and follows the pattern useContextName:
 ```typescript
@@ -215,7 +215,10 @@ theme()
 :ComponentDependencies a cs:CodeStandard ;
     cs:name "react/component/dependencies" ;
     cs:hasCategory :ReactCategory ;
-    cs:description """Component dependencies must follow a strict unidirectional flow. Subcomponents should be organized in a `common/` folder within the parent component's directory. Dependencies can flow downwards (parent to subcomponent) or sideways (subcomponent to sibling), but never upwards (subcomponent to parent). This prevents circular dependencies and improves modularity.""" ;
+    cs:description """Component dependencies must follow a strict unidirectional flow:
+- Subcomponents must be in a `common/` folder within the parent component's directory
+- Dependencies can flow downwards (parent to subcomponent) or sideways (between siblings)
+- Dependencies must not flow upwards (subcomponent to parent)""" ;
     cs:dos """
 (Do) Place subcomponents in a `common/` folder inside the parent component directory.
 ```
@@ -258,7 +261,11 @@ import Header from '../Card/common/Header';
 :SubcomponentsExportAPI a cs:CodeStandard ;
     cs:name "react/component/subcomponents/export-api" ;
     cs:hasCategory :ReactCategory ;
-    cs:description "Public subcomponents should be exported by attaching them to the parent component using dot notation and semantic names. Private subcomponents remain internal. Consumers should use dot notation to access public subcomponents, with flat, semantic hierarchy." ;
+    cs:description """Public subcomponents must be:
+- Exported by attaching to parent component using dot notation
+- Named semantically
+- Kept to a single level of nesting
+Private subcomponents must remain internal.""" ;
     cs:dos """
 (Do) Export public subcomponents by attaching them to the parent component using dot notation:
 ```typescript
@@ -328,7 +335,7 @@ export { InternalHelper };
 :ClassNameOrdering a cs:CodeStandard ;
     cs:name "react/component/classname-ordering" ;
     cs:hasCategory :ReactCategory ;
-    cs:description "The `className` prop must be the last class applied in a component's class list. This ensures that consumer-provided classes can reliably override component styles due to CSS specificity rules." ;
+    cs:description "The `className` prop must be the last class applied in a component's class list." ;
     cs:dos """
 (Do) Apply the `className` prop at the end of the class list to ensure correct style overrides.
 ```tsx
@@ -364,7 +371,7 @@ const Rule = ({ className, emphasis, ...props }: RuleProps) => (
 :ClassNameConcatenation a cs:CodeStandard ;
     cs:name "react/component/classname-concatenation" ;
     cs:hasCategory :ReactCategory ;
-    cs:description "Class names must be constructed using an array and `.join(' ')`. This approach is more maintainable and less error-prone than direct string concatenation, as it simplifies adding, removing, and filtering classes." ;
+    cs:description "Class names must be constructed using an array and `.join(' ')`." ;
     cs:dos """
 (Do) Build the `className` string by joining an array of classes.
 ```tsx
@@ -392,10 +399,10 @@ const Rule = ({ className, emphasis, ...props }: RuleProps) => (
 :ComponentPropsStructure a cs:CodeStandard ;
     cs:name "react/component/props-structure" ;
     cs:hasCategory :ReactCategory ;
-    cs:description """Component props should follow a consistent structure and consumption pattern:
-- Props used explicitly in JSX should be destructured
-- Remaining props should be spread to the root element
-- Props should be grouped by purpose and usage""" ;
+    cs:description """Component props must:
+- Be destructured when used explicitly in JSX
+- Be spread to the root element when unused
+- Be grouped by purpose and usage""" ;
     cs:dos """# Proper props structure and consumption
 ```tsx
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -426,11 +433,7 @@ const Button = ({
   </button>
 );
 ```
-
-This pattern provides:
-- Clear prop usage intent
-- Type safety for HTML attributes
-- Predictable prop behavior""" ;
+""" ;
     cs:donts """# Problematic props handling
 ```tsx
 // Don't mix explicit and spread props
@@ -472,7 +475,7 @@ These approaches:
 :WrapperComponentProps a cs:CodeStandard ;
     cs:name "react/component/wrapper-props" ;
     cs:hasCategory :ReactCategory ;
-    cs:description """When a component's purpose is to wrap another component, it should:
+    cs:description """Wrapper components must:
 - Accept all unscoped props for the wrapper element
 - Use namespaced props for inner components
 - Follow semantic naming for prop namespaces""" ;
@@ -496,11 +499,7 @@ const ThumbnailSection = ({
   </Section>
 );
 ```
-
-This approach:
-- Keeps prop scoping clear
-- Maintains type safety
-- Provides semantic prop grouping""" ;
+""" ;
     cs:donts """# Problematic wrapper patterns
 ```tsx
 // Don't mix prop scopes
@@ -536,7 +535,7 @@ These patterns:
 :HTMLElementProps a cs:CodeStandard ;
     cs:name "react/component/html-element-props" ;
     cs:hasCategory :ReactCategory ;
-    cs:description """Components that render HTML elements should extend the appropriate React HTML element type:
+    cs:description """Components that render HTML elements must:
 - Use React's built-in HTML element interfaces
 - Extend the interface that matches the root element
 - Override prop types only when providing stronger constraints""" ;
@@ -596,7 +595,7 @@ These approaches:
 :CustomHooks a cs:CodeStandard ;
     cs:name "react/hooks/custom" ;
     cs:hasCategory :ReactCategory ;
-    cs:description "Custom hooks should be used when:
+    cs:description "Custom hooks must be used when:
 - Logic needs to be shared between components
 - Component logic becomes complex
 - State management needs to be abstracted
@@ -648,7 +647,9 @@ const useUserData = () => {
 :ContextProviderStructure a cs:CodeStandard ;
     cs:name "react/file-structure/context" ;
     cs:hasCategory :ReactCategory ;
-    cs:description "Context providers should be organized within the component folder that owns the context. The folder should contain `Context.tsx` for the context definition and `Provider.tsx` for the provider component." ;
+    cs:description "Context providers must be organized within the component folder that owns the context, containing:
+- `Context.tsx` for context definition
+- `Provider.tsx` for provider component" ;
     cs:dos """
 (Do) Place context-related files directly within the owning component's folder.
 ```
@@ -680,7 +681,7 @@ src/
 :ClassNameDSSelector a cs:CodeStandard ;
     cs:name "react/component/classname-ds-selector" ;
     cs:hasCategory :ReactCategory ;
-    cs:description "Every component must include a design system (ds) selector as the first class in its className list. This ensures consistent namespacing and styling across the design system." ;
+    cs:description "Every component must include a design system (ds) selector as the first class in its className list." ;
     cs:dos """
 (Do) Always include a ds selector as the first class in the className list:
 ```tsx
