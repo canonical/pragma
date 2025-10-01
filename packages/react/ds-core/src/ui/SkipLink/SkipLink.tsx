@@ -20,9 +20,7 @@ const SkipLink = ({
 }: SkipLinkProps): React.ReactElement => {
   const href = useMemo(() => `#${mainId}`, [mainId]);
 
-  const skipLinkContents = useMemo(() => {
-    return children || "Skip to main content";
-  }, [children]);
+  const skipLinkContents = children || "Skip to main content";
 
   return (
     <a
