@@ -5,7 +5,7 @@
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
 # Icons Category
-:IconsCategory a cso:Category ;
+cs:IconsCategory a cso:Category ;
     rdfs:label "Icons"@en ;
     rdfs:comment "Standards for icon development and implementation"@en .
     cso:slug "icons"
