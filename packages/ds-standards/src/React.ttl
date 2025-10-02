@@ -15,40 +15,35 @@ cs:ReactCategory a cso:Category ;
 cs:ComponentFolderStructure a cso:CodeStandard ;
     cso:name "react/component/folder-structure" ;
     cso:hasCategory cso:ReactCategory ;
-    cso:description "Each component must reside in its own folder, which contains all related files: component implementation, tests, type definitions, and optionally stories and styles. Some components may be styleless or may not have stories; styles.css and MyComponent.stories.tsx are optional." ;
+    cso:description "Each component must reside in its own folder, which contains all related files: component implementation, tests, type definitions, and optionally stories and styles. The index.ts file must be a complete barrel export for the component folder, re-exporting all public APIs. Some components may be styleless or may not have stories; in these cases, styles.css and MyComponent.stories.tsx are optional." ;
     cso:dos """
-(Do) Place all files related to a single component within the same component folder. `styles.css` and `MyComponent.stories.tsx` are optional.
-```
-MyComponent/
-  ├── MyComponent.tsx
-  ├── MyComponent.tests.tsx
-  ├── index.ts
-  ├── types.ts
-  ├── styles.css         # optional
-  ├── MyComponent.stories.tsx  # optional
+(Do) Create an index.ts file that re-exports all public APIs from the component folder.
+```typescript
+// index.ts
+export { default as MyComponent } from './MyComponent.js';
+export type * from './types.js';
+// If you have multiple components:
+export { default as SubComponent } from './SubComponent.js';
 ```
 """ ;
     cso:donts """
-(Don't) Place multiple components in the same folder.
-```
-MyComponent/
-  ├── MyComponent.tsx
-  ├── AnotherComponent.tsx   # Bad: Should be in its own folder
-  └── index.ts
+(Don't) Omit the index.ts file or fail to re-export all public APIs.
+```typescript
+// Bad: index.ts only exports default, omits types and named exports
+export { default } from './MyComponent.js';
 ```
 
-(Don't) Omit the `index.ts` file for barrel exports.
-```
-MyComponent/
-  ├── MyComponent.tsx
-  # Bad: Missing index.ts
+(Don't) Use `export * from './types.js'` as it allows value exports, which is not expected for types files.
+```typescript
+// Bad: Using export * from './types.js' allows value exports, which is not allowed
+export * from './types.js';
 ```
 """ .
 
 # Component Folder Naming Standard
 cs:ComponentFolderNaming a cso:CodeStandard ;
     cso:name "react/component/folder-naming" ;
-    cso:hasCategory :ReactCategory ;
+    cso:hasCategory cso: ReactCategory ;
     cso:description "Component folders must be named using PascalCase (e.g., `Button`, `Tooltip`)." ;
     cso:dos """
 (Do) Name the component folder using PascalCase.
@@ -69,47 +64,56 @@ tooltip_folder/
 # Component File Naming Standard
 cs:ComponentFileNaming a cso:CodeStandard ;
     cso:name "react/component/file-naming" ;
-    cso:hasCategory :ReactCategory ;
-    cso:description "Files within a component's folder must be named after the component, using the format `ComponentName.filetype.tsx`. For example, `MyComponent.stories.tsx`." ;
+    cso:hasCategory cso: ReactCategory ;
+    cso:description "File naming within a component folder is based on scope. Component-specific files (implementation, stories, tests) must be prefixed with the component's name (e.g., `MyComponent.tsx`, `MyComponent.stories.tsx`). Domain-level files that serve the entire folder (e.g., `Context.tsx`, `styles.css`, `types.ts`) should use generic, descriptive names, as the folder already provides the domain context." ;
     cso:dos """
-(Do) Name files using the component's name as a prefix.
+(Do) Prefix component-specific files and use generic names for domain-level files.
 ```
 MyComponent/
-  ├── MyComponent.tsx
-  ├── MyComponent.stories.tsx
-  ├── MyComponent.tests.tsx
+  ├── MyComponent.tsx           # Component-specific
+  ├── MyComponent.stories.tsx   # Component-specific
+  ├── MyComponent.test.tsx      # Component-specific
+  ├── Context.tsx               # Domain-level
+  ├── types.ts                  # Domain-level
+  └── styles.css                # Domain-level
 ```
 """ ;
     cso:donts """
-(Don't) Use generic or inconsistent file names.
+(Don't) Add redundant prefixes to domain-level files.
 ```
 MyComponent/
-  ├── main.tsx           # Bad: Not named after the component
-  ├── story.tsx          # Bad: Not named after the component
-  ├── test.tsx           # Bad: Not named after the component
+  ├── MyComponent.Context.tsx   # Bad: Redundant prefix
+  ├── MyComponent.types.ts      # Bad: Redundant prefix
+  └── MyComponent.styles.css    # Bad: Redundant prefix
 ```
 """ .
 
 # Component Props Typing Standard
 cs:ComponentPropsTyping a cso:CodeStandard ;
     cso:name "react/component/props-typing" ;
-    cso:hasCategory :ReactCategory ;
-    cso:description "Component props must be explicitly typed using TypeScript interfaces." ;
+    cso:hasCategory cso: ReactCategory ;
+    cso:description "Component prop interfaces must extend the appropriate React HTML element interface (e.g., `React.ButtonHTMLAttributes<HTMLButtonElement>`). Only define additional props that are specific to the component's implementation, override existing props for stricter typing, or explicitly define `children`. Use TSDoc comments to document the purpose of each prop." ;
     cso:dos """
-(Do) Define an interface for the component's props.
+(Do) Extend the base React HTML props interface and add component-specific props.
 ```typescript
-interface ButtonProps {
+// Good: Extends button attributes and adds a specific 'label' prop
+export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  /** The button label */
   label: string;
-  onClick: () => void;
-  variant?: 'primary' | 'secondary';
 }
-
-const Button = ({ label, onClick, variant = 'primary' }: ButtonProps) => {
-  // ...
-};
 ```
 """ ;
     cso:donts """
+(Don't) Manually redefine standard HTML attributes like `onClick` or `disabled`.
+```typescript
+// Bad: Duplicates standard button props
+export interface ButtonProps {
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
+}
+```
+
 (Don't) Use `any` for prop types.
 ```typescript
 const Button = (props: any) => {
@@ -117,18 +121,22 @@ const Button = (props: any) => {
 };
 ```
 
-(Don't) Destructure props without providing a type.
+
+(Don't) Omit TSDoc comments from an explicitly added prop
 ```typescript
-const Button = ({ label, onClick }) => {
-  // ...
-};
+// Bad: None of the props have descriptions
+export interface ButtonProps {
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
+}
 ```
 """ .
 
 # Component Props Naming Standard
 cs:ComponentPropsNaming a cso:CodeStandard ;
     cso:name "react/component/props-naming" ;
-    cso:hasCategory :ReactCategory ;
+    cso:hasCategory cso: ReactCategory ;
     cso:description "Prop names must be semantic and clearly describe their purpose." ;
     cso:dos """
 (Do) Use descriptive names for props.
@@ -152,7 +160,7 @@ interface ButtonProps {
 # Component Naming Standard
 cs:ComponentNaming a cso:CodeStandard ;
     cso:name "react/component/naming" ;
-    cso:hasCategory :ReactCategory ;
+    cso:hasCategory cso: ReactCategory ;
     cso:description "Components must use PascalCase naming and be descriptive of their purpose." ;
     cso:dos """
 (Do) Use PascalCase and descriptive names for components:
@@ -170,7 +178,7 @@ searchresultlist
 # Hook Naming Standard
 cs:HookNaming a cso:CodeStandard ;
     cso:name "react/hook/naming" ;
-    cso:hasCategory :ReactCategory ;
+    cso:hasCategory cso: ReactCategory ;
     cso:description "The hook name must start with 'use' and clearly describe its purpose." ;
     cso:dos """
 (Do) Name custom hooks so the hook name starts with 'use' and is descriptive:
@@ -189,33 +197,10 @@ formValidation()
 ```
 """ .
 
-# Context Shortcut Hook Naming Standard
-cs:ContextShortcutHookNaming a cso:CodeStandard ;
-    cso:name "react/hook/naming/context-shortcuts" ;
-    cso:hasCategory :ReactCategory ;
-    cso:description "Context shortcut hooks must use the pattern useContextName, where the hook name starts with 'use' followed by the context name in PascalCase." ;
-    cso:dos """
-(Do) Name context shortcut hooks so the hook name starts with 'use' and follows the pattern useContextName:
-```typescript
-useApplicationSettings()
-useUserPreferences()
-useThemeContext()
-```
-""" ;
-    cso:donts """
-
-(Don't) Use unclear or generic names for context shortcut hooks:
-```typescript
-settingsContext()
-preferences()
-theme()
-```
-""" .
-
 # Component Dependencies Standard
 cs:ComponentDependencies a cso:CodeStandard ;
     cso:name "react/component/dependencies" ;
-    cso:hasCategory :ReactCategory ;
+    cso:hasCategory cso: ReactCategory ;
     cso:description """Component dependencies must follow a strict unidirectional flow:
 - Subcomponents must be in a `common/` folder within the parent component's directory
 - Dependencies can flow downwards (parent to subcomponent) or sideways (between siblings)
@@ -238,35 +223,40 @@ Card/
 (Do) Allow subcomponents to depend on siblings or shared utilities within the same component scope.
 ```typescript
 // Header.tsx can import from utils/
-import { helper } from '../utils/helpers';
+import { helper } from '../utils/helpers.js';
 
 // Footer.tsx can import from Header.tsx
-import Header from '../Header';
+import Header from '../Header.js';
 ```
 """ ;
     cso:donts """
 (Don't) Create dependencies that flow upwards from a subcomponent to its parent.
 ```typescript
 // Bad: Header.tsx in Card/common/ should not import from Card.tsx
-import Card from '../../Card';
+import Card from '../../Card.js';
 ```
 
 (Don't) Allow external components to depend on the internal structure of another component.
 ```typescript
 // Bad: AnotherComponent should not import from Card's internal common folder
-import Header from '../Card/common/Header';
+import Header from '../Card/common/Header.js';
 ```
 """ .
 
 # Subcomponents Export and Consumption API Standard
 cs:SubcomponentsExportAPI a cso:CodeStandard ;
     cso:name "react/component/subcomponents/export-api" ;
-    cso:hasCategory :ReactCategory ;
-    cso:description """Public subcomponents must be:
-- Exported by attaching to parent component using dot notation
-- Named semantically
-- Kept to a single level of nesting
-Private subcomponents must remain internal.""" ;
+    cso:hasCategory cso: ReactCategory ;
+    cso:description """Subcomponents are **public** if they are intended to be directly used by the consumer of the parent component to construct a UI. For example, an `Accordion.Item` is public because the user needs to compose the `Accordion` with its items.
+
+Subcomponents are **private** if they are internal implementation details of the parent component, and are not intended for direct use by the consumer.
+
+Public subcomponents must be:
+- Exported by attaching them to the parent component using dot notation.
+- Named semantically.
+- Kept to a single level of nesting.
+
+Private subcomponents must remain internal to the component's implementation and not be exported from the main `index.ts` file.""" ;
     cso:dos """
 (Do) Export public subcomponents by attaching them to the parent component using dot notation:
 ```typescript
@@ -291,11 +281,6 @@ Card.Footer
 </Card>
 ```
 
-(Do) Keep private subcomponents internal and do not export them:
-```typescript
-// Only export subcomponents intended for public use
-// Private subcomponents remain unexported
-```
 """ ;
     cso:donts """
 (Don't) Repeat the parent component name in subcomponent names:
@@ -313,14 +298,12 @@ Card.Top = Header; // Bad: Mapping 'Header' to 'Top' is not allowed
 Card.Part1 = Section; // Bad: 'Part1' is not descriptive
 ```
 
-(Don't) Create deeply nested subcomponent hierarchies:
+(Don't) Nest subcomponents more than one level deep:
 ```typescript
 <Card>
-  <Card.Section>
-    <Card.Section.Header>
-      <Card.Section.Header.Title /> // Bad: Too deep
-    </Card.Section.Header>
-  </Card.Section>
+  <Card.Header>
+    <Card.Header.Title />
+  </Card.Header>
 </Card>
 ```
 
@@ -332,88 +315,81 @@ export { InternalHelper };
 ```
 """ .
 
-# CSS ClassName Ordering Standard
-cs:ClassNameOrdering a cso:CodeStandard ;
-    cso:name "react/component/classname-ordering" ;
-    cso:hasCategory :ReactCategory ;
-    cso:description "The `className` prop must be the last class applied in a component's class list." ;
-    cso:dos """
-(Do) Apply the `className` prop at the end of the class list to ensure correct style overrides.
-```tsx
-const Rule = ({ className, emphasis, ...props }: RuleProps) => (
-  <hr
-    className={[
-      "ds rule",     // Base component classes
-      emphasis,      // Modifier classes
-      className      // Consumer classes (last)
-    ].filter(Boolean).join(" ")}
-    {...props}
-  />
-);
-```
-""" ;
-    cso:donts """
-(Don't) Place the `className` prop before other classes in the list.
-```tsx
-const Rule = ({ className, emphasis, ...props }: RuleProps) => (
-  <hr
-    className={[
-      className,     // Bad: Consumer classes appear first
-      "ds rule",     // Base classes cannot override consumer styles
-      emphasis
-    ].filter(Boolean).join(" ")}
-    {...props}
-  />
-);
-```
-""" .
+# CSS ClassName Construction Standard
+cs:ClassNameConstruction a cso:CodeStandard ;
+    cso:name "react/component/classname-construction" ;
+    cso:hasCategory cso: ReactCategory ;
+    cso:description """Component CSS class names must be constructed following a specific pattern:
 
-# CSS ClassName Concatenation Standard
-cs:ClassNameConcatenation a cso:CodeStandard ;
-    cso:name "react/component/classname-concatenation" ;
-    cso:hasCategory :ReactCategory ;
-    cso:description "Class names must be constructed using an array and `.join(' ')`." ;
+1.  Base Class Constant: A `componentCssClassName` constant must be defined at the top of the component file. This constant holds the component's base class name, including the global `ds` scope (e.g., `"ds button"`).
+2.  Array Construction: The `className` string must be built from an array of classes.
+3.  Class Order: The classes in the array must be ordered from least to most specific to ensure a predictable CSS cascade:
+    a. Base Class: The `componentCssClassName` constant.
+    b. Modifier Classes: Classes derived from component props (e.g., `emphasis`, `severity`).
+    c. Consumer Classes: The `className` prop passed by the consumer.
+4.  Filtering and Joining: The array must be processed with `.filter(Boolean).join(" ")` to remove any falsy values (e.g., undefined props, expressions that evaluate to false) and create the final space-delimited string.""" ;
     cso:dos """
-(Do) Build the `className` string by joining an array of classes.
+(Do) Follow the complete pattern for class name construction.
 ```tsx
-const Rule = ({ className, emphasis, ...props }: RuleProps) => (
-  <hr
-    className={["ds rule", emphasis, className].filter(Boolean).join(" ")}
-    {...props}
-  />
-);
+const componentCssClassName = "ds badge";
+
+const Badge = ({
+  value,
+  className,
+  severity,
+  ...props
+}: BadgeProps): React.ReactElement => {
+  return (
+    <span
+      className={[componentCssClassName, severity, className]
+        .filter(Boolean)
+        .join(" ")}
+      {...props}
+    >
+      {value}
+    </span>
+  );
+};
 ```
 """ ;
     cso:donts """
-(Don't) Concatenate `className` strings directly using template literals or the `+` operator.
+(Don't) Hardcode the base class name inside the JSX.
 ```tsx
-const Rule = ({ className, emphasis, ...props }: RuleProps) => (
-  <hr
-    className={`${className} ds rule ${emphasis}`} // Bad: Hard to maintain
-    {...props}
-  />
-);
+// Bad: Base class "ds badge" is hardcoded.
+<span className={["ds badge", severity, className].filter(Boolean).join(" ")}>
+```
+
+(Don't) Place the consumer `className` prop before other classes.
+```tsx
+// Bad: Consumer class is first
+<span className={[className, componentCssClassName, severity].filter(Boolean).join(" ")}>
+```
+
+(Don't) Use string concatenation or template literals to add class names.
+```tsx
+// Bad: Harder to read and maintain, vulnerable to inconsistent formatting
+<span className={`${componentCssClassName} ${severity} ${className}`}>
 ```
 """ .
 
 # Component Props Structure Standard
 cs:ComponentPropsStructure a cso:CodeStandard ;
     cso:name "react/component/props-structure" ;
-    cso:hasCategory :ReactCategory ;
+    cso:hasCategory cso: ReactCategory ;
     cso:description """Component props must:
-- Be destructured when used explicitly in JSX
+- Be destructured when being passed to a markup node
 - Be spread to the root element when unused
-- Be grouped by purpose and usage""" ;
+""" ;
     cso:dos """# Proper props structure and consumption
 ```tsx
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  // Explicit props - will be used directly
+  // Explicit props - will be passed to markup nodes
+  /** The button label */
   label: string;
+  /** The button icon */
   icon?: React.ReactNode;
   // Modifier props
   emphasis?: ModifierFamily<"emphasis">;
-  // Additional type safety
-  children?: never; // Button uses label prop instead
 }
 
 const Button = ({
@@ -426,7 +402,7 @@ const Button = ({
   ...props
 }: ButtonProps) => (
   <button
-    className={["ds button", emphasis, className].filter(Boolean).join(" ")}
+    className={[componentCssClassname, emphasis, className].filter(Boolean).join(" ")}
     {...props}  // HTML button props spread here
   >
     {icon}
@@ -435,20 +411,20 @@ const Button = ({
 );
 ```
 """ ;
-    cso:donts """# Problematic props handling
+    cso:donts """
+(Don't) Mix explicit and spread props
 ```tsx
-// Don't mix explicit and spread props
 const Button = (props: ButtonProps) => (
   <button
     className={props.className}
     onClick={props.onClick}  // Bad: Mixed with spread props
-    {...props}  // May cause duplicate props
+    {...props}  // Duplicate props
   >
     {props.label}
   </button>
 );
 
-// Don't destructure props that will be spread
+// Don't destructure props that can be spread, unless the component mutates them or needs to directly operate upon them.
 const Button = ({
   label,
   className,
@@ -467,15 +443,10 @@ const Button = ({
 );
 ```
 
-These approaches:
-- Can cause prop conflicts
-- Make maintenance harder
-- Reduce code clarity""" .
-
 # Wrapper Component Props Standard
 cs:WrapperComponentProps a cso:CodeStandard ;
     cso:name "react/component/wrapper-props" ;
-    cso:hasCategory :ReactCategory ;
+    cso:hasCategory cso: ReactCategory ;
     cso:description """Wrapper components must:
 - Accept all unscoped props for the wrapper element
 - Use namespaced props for inner components
@@ -494,16 +465,16 @@ const ThumbnailSection = ({
   className,
   ...props    // Unscoped props for Section
 }: ThumbnailSectionProps) => (
-  <Section className={["thumbnail-section", className].filter(Boolean).join(" ")} {...props}>
+  <Section className={[componentCssClassName, className].filter(Boolean).join(" ")} {...props}>
     <img {...imageProps} />  // Apply namespaced props
     {props.children}
   </Section>
 );
 ```
 """ ;
-    cso:donts """# Problematic wrapper patterns
+    cso:donts """
 ```tsx
-// Don't mix prop scopes
+(Don't) mix prop scopes between wrapper and inner components
 const ThumbnailSection = ({
   src,      // Bad: Unscoped image props
   alt,      // Bad: Unscoped image props
@@ -526,16 +497,12 @@ const ThumbnailSection = ({
   </Section>
 );
 ```
-
-These patterns:
-- Create prop scope confusion
-- Make component usage unclear
-- Reduce code maintainability""" .
+"""
 
 # HTML Element Props Standard
 cs:HTMLElementProps a cso:CodeStandard ;
     cso:name "react/component/html-element-props" ;
-    cso:hasCategory :ReactCategory ;
+    cso:hasCategory cso: ReactCategory ;
     cso:description """Components that render HTML elements must:
 - Use React's built-in HTML element interfaces
 - Extend the interface that matches the root element
@@ -560,11 +527,7 @@ interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   emphasis?: ModifierFamily<"emphasis">;
 }
 ```
-
-This approach:
-- Provides complete HTML attribute typing
-- Maintains proper type constraints
-- Ensures consistent prop behavior""" ;
+""" ;
     cso:donts """# Problematic HTML prop typing
 ```tsx
 // Don't create props without HTML element types
@@ -586,21 +549,19 @@ interface TextFieldProps {
   [key: string]: any;    // Bad: Unsafe prop spreading
 }
 ```
-
-These approaches:
-- Miss standard HTML attributes
-- Provide incorrect type safety
-- Create inconsistent behavior""" .
+""" .
 
 # Custom Hooks Standard
 cs:CustomHooks a cso:CodeStandard ;
     cso:name "react/hooks/custom" ;
-    cso:hasCategory :ReactCategory ;
-    cso:description "Custom hooks must be used when:
+    cso:hasCategory cso: ReactCategory ;
+    cso:description """Custom hooks must be used when:
 - Logic needs to be shared between components
 - Component logic becomes complex
 - State management needs to be abstracted
-- Side effects need to be encapsulated" ;
+- Side effects need to be encapsulated
+
+Organize hooks based on their scope: local hooks inside the component folder, and global hooks in a shared hooks/ directory.""" ;
     cso:dos """
 (Do) Create a custom hook to share stateful logic between components.
 ```typescript
@@ -610,18 +571,19 @@ function useLocalStorage(key: string, initialValue: any) {
 }
 ```
 
-(Do) Organize hooks based on their scope: local hooks inside the component folder, and global hooks in a shared `hooks/` directory.
+(Do) Place local hooks inside the local `hooks/` folder.
 ```
-// Local hook for a single component
 MyComponent/
-  └── useMyComponentState.ts
+  └── hooks/
+     └──  useMyComponent.ts
+```
 
-// Global, shared hook
+(Do) Place global, shared hooks in a global `hooks/` directory.
+```
 src/
   └── ui/
       └── hooks/
           └── useWindowFitment/
-              ├── index.ts
               └── useWindowFitment.ts
 ```
 """ ;
@@ -642,12 +604,21 @@ const useUserData = () => {
   // ...
 };
 ```
+
+(Don't) Place hooks with global concern local to a component.
+
+```typescript
+// MyComponent/hooks/useWindowSize.ts
+const useWindowSize = () => {
+  // Bad: This hook should be in a global `src/ui/hooks/` directory as it is unrelated to the component
+};
+```
 """ .
 
 # Context Provider Structure Standard
 cs:ContextProviderStructure a cso:CodeStandard ;
     cso:name "react/file-structure/context" ;
-    cso:hasCategory :ReactCategory ;
+    cso:hasCategory cso: ReactCategory ;
     cso:description "Context providers must be organized within the component folder that owns the context, containing:
 - `Context.tsx` for context definition
 - `Provider.tsx` for provider component" ;
@@ -677,49 +648,3 @@ src/
       └── MyComponentContext.ts // Bad: Should be inside MyComponent/
 ```
 """ .
-
-# DS Selector Class Standard
-cs:ClassNameDSSelector a cso:CodeStandard ;
-    cso:name "react/component/classname-ds-selector" ;
-    cso:hasCategory :ReactCategory ;
-    cso:description "Every component must include a design system (ds) selector as the first class in its className list." ;
-    cso:dos """
-(Do) Always include a ds selector as the first class in the className list:
-```tsx
-const Button = ({ className, ...props }: ButtonProps) => (
-  <button
-    className={["ds button", className].filter(Boolean).join(" ")}
-    {...props}
-  >
-    {props.children}
-  </button>
-);
-```
-
-(Do) Use a specific ds selector for each component type:
-```tsx
-"ds card"
-"ds input"
-"ds modal"
-```
-""" ;
-    cso:donts """
-(Don't) Omit the ds selector from the className list:
-```tsx
-const Button = ({ className, ...props }: ButtonProps) => (
-  <button
-    className={[className].filter(Boolean).join(" ")}
-    {...props}
-  />
-); // Bad: No ds selector present
-```
-
-(Don't) Place the ds selector after other classes:
-```tsx
-const Button = ({ className, ...props }: ButtonProps) => (
-  <button
-    className={[className, "ds button"].filter(Boolean).join(" ")}
-    {...props}
-  />
-); // Bad: ds selector is not first
-```
