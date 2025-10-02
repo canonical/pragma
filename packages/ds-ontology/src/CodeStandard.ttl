@@ -59,3 +59,9 @@ cso:donts a owl:DatatypeProperty ;
          rdfs:comment "Examples of what should not be done, in markdown format"@en ;
          rdfs:domain cso:CodeStandard ;
          rdfs:range xsd:string .
+
+cso:slug a owl:DatatypeProperty ;
+    rdfs:label "slug"@en ;
+    rdfs:comment "A short identifier for the category or standard, used for domain annotation."@en ;
+    rdfs:domain cso:Category ;
+    rdfs:range xsd:string .
