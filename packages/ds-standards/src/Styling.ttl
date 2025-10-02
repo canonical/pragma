@@ -12,7 +12,7 @@ cs:StylingCategory a cso:Category ;
 
 # CSS Variable Scoping Standard
 cs:CSSVariableScoping a cso:CodeStandard ;
-    cso:name "styling/css/variables/scoping" ;
+    cso:name "styling/variables/scoping" ;
     cso:hasCategory cs:StylingCategory ;
     cso:description """CSS variables must follow a strict scoping hierarchy:
 - Global tokens must be defined on `:root`
@@ -66,7 +66,7 @@ cs:CSSVariableScoping a cso:CodeStandard ;
 
 # CSS Variable Naming Standard
 cs:CSSVariableNaming a cso:CodeStandard ;
-    cso:name "styling/css/variables/naming" ;
+    cso:name "styling/variables/naming" ;
     cso:hasCategory cs:StylingCategory ;
     cso:description "CSS variable names must use the format `--scope-property-variant` (e.g., `--color-background-default`, `--rule-height`)." ;
     cso:dos """
@@ -91,7 +91,7 @@ cs:CSSVariableNaming a cso:CodeStandard ;
 
 # CSS Selector Namespace Standard
 cs:CSSSelectorNamespace a cso:CodeStandard ;
-    cso:name "styling/css/selectors/namespace" ;
+    cso:name "styling/selectors/namespace" ;
     cso:hasCategory cs:StylingCategory ;
     cso:description "All component selectors must be prefixed with the `.ds` namespace (e.g., `.ds.button`)." ;
     cso:dos """
@@ -115,7 +115,7 @@ cs:CSSSelectorNamespace a cso:CodeStandard ;
 
 # CSS Selector Specificity Standard
 cs:CSSSelectorSpecificity a cso:CodeStandard ;
-    cso:name "styling/css/selectors/specificity" ;
+    cso:name "styling/selectors/specificity" ;
     cso:hasCategory cs:StylingCategory ;
     cso:description """CSS selectors must:
 - Use direct child selectors (>) when targeting internal elements
@@ -164,7 +164,7 @@ cs:CSSSelectorSpecificity a cso:CodeStandard ;
 
 # CSS Selector Semantics Standard
 cs:CSSSelectorSemantics a cso:CodeStandard ;
-    cso:name "styling/css/selectors/semantics" ;
+    cso:name "styling/selectors/semantics" ;
     cso:hasCategory cs:StylingCategory ;
     cso:description "CSS class names must describe the purpose or state of an element, not its appearance." ;
     cso:dos """
@@ -188,7 +188,7 @@ cs:CSSSelectorSemantics a cso:CodeStandard ;
 
 # Component Naming Convention for CSS
 cs:CSSComponentNamingConvention a cso:CodeStandard ;
-    cso:name "styling/css/selectors/component-naming-convention" ;
+    cso:name "styling/selectors/naming-convention" ;
     cso:hasCategory cs:StylingCategory ;
     cso:description "Component CSS class names must be the kebab-case version of the component's PascalCase name." ;
     cso:dos """
