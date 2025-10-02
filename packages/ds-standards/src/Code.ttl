@@ -104,7 +104,7 @@ export function calculateSum(a: number, b: number): number {
 }
 
 // Used in multiple places
-import { calculateSum } from './utils/math';
+import { calculateSum } from './utils/math.js';
 
 // For single-use functions, keep them close to their usage:
 ```typescript
@@ -117,7 +117,7 @@ const formatUserName = (user: User) => `${user.firstName} ${user.lastName}`;
 export const validateUser = (user: User) => { ... }; // Only used in one component
 
 // services/UserService.ts
-import { validateUser } from '../utils/validators'; // Less ideal if only used here
+import { validateUser } from '../utils/validators.js'; // Less ideal if only used here
 
 // Don't mix unrelated functions in a single file:
 ```typescript
