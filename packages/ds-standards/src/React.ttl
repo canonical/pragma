@@ -89,7 +89,7 @@ MyComponent/
 """ .
 
 # Component Props Typing Standard
-cs:ComponentPropsTyping a cso:CodeStandard ;
+cs:ComponentMarkupPropsTyping a cso:CodeStandard ;
     cso:name "react/component/markup-props-typing" ;
     cso:hasCategory cso: ReactCategory ;
     cso:description "For components that render html markup, the properties interface should extend the base HTML element props, to enable the passing of native properties through spreading. Use TSDoc comments to document the purpose of each prop." ;
@@ -325,7 +325,7 @@ export { InternalHelper };
 
 # CSS ClassName Construction Standard
 cs:ClassNameConstruction a cso:CodeStandard ;
-    cso:name "react/component/classname-construction" ;
+    cso:name "react/component/class-name-construction" ;
     cso:hasCategory cso: ReactCategory ;
     cso:description """Component CSS class names must be constructed following a specific pattern:
 
