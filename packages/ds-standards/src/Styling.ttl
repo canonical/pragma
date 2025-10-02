@@ -1,24 +1,24 @@
-@prefix : <http://pragma.canonical.com/codestandards#> .
-@prefix cs: <http://pragma.canonical.com/codestandards#> .
+@prefix cso: <http://pragma.canonical.com/codestandards#> .
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix owl: <http://www.w3.org/2002/07/owl#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
 # Styling Category
-:StylingCategory a cs:Category ;
+cs:StylingCategory a cso:Category ;
     rdfs:label "Styling"@en ;
-    rdfs:comment "Standards specific to CSS styling and design system implementation"@en .
+    rdfs:comment "Standards specific to CSS styling and design system implementation"@en ;
+    cso:slug "styling" .
 
 # CSS Variable Scoping Standard
-:CSSVariableScoping a cs:CodeStandard ;
-    cs:name "styling/css/variables/scoping" ;
-    cs:hasCategory :StylingCategory ;
-    cs:description """CSS variables must follow a strict scoping hierarchy:
+cs:CSSVariableScoping a cso:CodeStandard ;
+    cso:name "styling/css/variables/scoping" ;
+    cso:hasCategory cs:StylingCategory ;
+    cso:description """CSS variables must follow a strict scoping hierarchy:
 - Global tokens must be defined on `:root`
 - Component variables must be scoped to component class
 - Modifier variables must be scoped to modifier class""" ;
-    cs:dos """
+    cso:dos """
 (Do) Define global design tokens on the `:root` element for broad reuse.
 ```css
 /* Global design tokens */
@@ -46,7 +46,7 @@
 }
 ```
 """ ;
-    cs:donts """
+    cso:donts """
 (Don't) Mix different variable scopes, such as defining component-specific tokens on the `:root`.
 ```css
 /* Bad: Component token on the root */
@@ -65,11 +65,11 @@
 """ .
 
 # CSS Variable Naming Standard
-:CSSVariableNaming a cs:CodeStandard ;
-    cs:name "styling/css/variables/naming" ;
-    cs:hasCategory :StylingCategory ;
-    cs:description "CSS variable names must use the format `--scope-property-variant` (e.g., `--color-background-default`, `--rule-height`)." ;
-    cs:dos """
+cs:CSSVariableNaming a cso:CodeStandard ;
+    cso:name "styling/css/variables/naming" ;
+    cso:hasCategory cs:StylingCategory ;
+    cso:description "CSS variable names must use the format `--scope-property-variant` (e.g., `--color-background-default`, `--rule-height`)." ;
+    cso:dos """
 (Do) Use semantic names that describe the variable's purpose.
 ```css
 :root {
@@ -79,7 +79,7 @@
 }
 ```
 """ ;
-    cs:donts """
+    cso:donts """
 (Don't) Use non-semantic or abstract names that obscure the variable's function.
 ```css
 :root {
@@ -90,11 +90,11 @@
 """ .
 
 # CSS Selector Namespace Standard
-:CSSSelectorNamespace a cs:CodeStandard ;
-    cs:name "styling/css/selectors/namespace" ;
-    cs:hasCategory :StylingCategory ;
-    cs:description "All component selectors must be prefixed with the `.ds` namespace (e.g., `.ds.button`)." ;
-    cs:dos """
+cs:CSSSelectorNamespace a cso:CodeStandard ;
+    cso:name "styling/css/selectors/namespace" ;
+    cso:hasCategory cs:StylingCategory ;
+    cso:description "All component selectors must be prefixed with the `.ds` namespace (e.g., `.ds.button`)." ;
+    cso:dos """
 (Do) Prefix all component selectors with `.ds`.
 ```css
 /* Component root with namespace */
@@ -103,7 +103,7 @@
 }
 ```
 """ ;
-    cs:donts """
+    cso:donts """
 (Don't) Omit the `.ds` namespace from component selectors.
 ```css
 /* Bad: Missing .ds namespace */
@@ -114,14 +114,14 @@
 """ .
 
 # CSS Selector Specificity Standard
-:CSSSelectorSpecificity a cs:CodeStandard ;
-    cs:name "styling/css/selectors/specificity" ;
-    cs:hasCategory :StylingCategory ;
-    cs:description """CSS selectors must:
+cs:CSSSelectorSpecificity a cso:CodeStandard ;
+    cso:name "styling/css/selectors/specificity" ;
+    cso:hasCategory cs:StylingCategory ;
+    cso:description """CSS selectors must:
 - Use direct child selectors (>) when targeting internal elements
 - Use attribute selectors for states
 - Avoid nesting beyond one level""" ;
-    cs:dos """
+    cso:dos """
 (Do) Use direct child selectors when necessary to style a component's internal elements.
 ```css
 .ds.button > .icon {
@@ -136,7 +136,7 @@
 }
 ```
 """ ;
-    cs:donts """
+    cso:donts """
 (Don't) Use deeply nested selectors, as they are brittle and hard to override.
 ```css
 /* Bad: Too specific and tied to structure */
@@ -163,11 +163,11 @@
 """ .
 
 # CSS Selector Semantics Standard
-:CSSSelectorSemantics a cs:CodeStandard ;
-    cs:name "styling/css/selectors/semantics" ;
-    cs:hasCategory :StylingCategory ;
-    cs:description "CSS class names must describe the purpose or state of an element, not its appearance." ;
-    cs:dos """
+cs:CSSSelectorSemantics a cso:CodeStandard ;
+    cso:name "styling/css/selectors/semantics" ;
+    cso:hasCategory cs:StylingCategory ;
+    cso:description "CSS class names must describe the purpose or state of an element, not its appearance." ;
+    cso:dos """
 (Do) Use semantic modifier classes to represent component variations.
 ```css
 /* Semantic modifier for a primary button */
@@ -176,7 +176,7 @@
 }
 ```
 """ ;
-    cs:donts """
+    cso:donts """
 (Don't) Use non-semantic or presentational class names.
 ```css
 /* Bad: 'big' describes appearance, not purpose */
@@ -187,17 +187,17 @@
 """ .
 
 # Component Naming Convention for CSS
-:CSSComponentNamingConvention a cs:CodeStandard ;
-    cs:name "styling/css/selectors/component-naming-convention" ;
-    cs:hasCategory :StylingCategory ;
-    cs:description "Component CSS class names must be the kebab-case version of the component's PascalCase name." ;
-    cs:dos """
+cs:CSSComponentNamingConvention a cso:CodeStandard ;
+    cso:name "styling/css/selectors/component-naming-convention" ;
+    cso:hasCategory cs:StylingCategory ;
+    cso:description "Component CSS class names must be the kebab-case version of the component's PascalCase name." ;
+    cso:dos """
 (Do) Convert PascalCase component names to kebab-case for CSS classes:
 - `MyComponent` -> `.ds.my-component`
 - `UserProfile` -> `.ds.user-profile`
 - `Button` -> `.ds.button`
 """ ;
-    cs:donts """
+    cso:donts """
 (Don't) Use PascalCase or other formats in CSS class names:
 - `.ds.MyComponent` (Bad: Not kebab-case)
 - `.ds.user_profile` (Bad: Not kebab-case)
