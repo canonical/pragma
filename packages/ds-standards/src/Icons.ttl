@@ -1,21 +1,21 @@
-@prefix : <http://pragma.canonical.com/codestandards#> .
-@prefix cs: <http://pragma.canonical.com/codestandards#> .
+@prefix cso: <http://pragma.canonical.com/codestandards#> .
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix owl: <http://www.w3.org/2002/07/owl#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
 # Icons Category
-:IconsCategory a cs:Category ;
+:IconsCategory a cso:Category ;
     rdfs:label "Icons"@en ;
     rdfs:comment "Standards for icon development and implementation"@en .
+    cso:slug "icons"
 
 # Icon File Storage Standard
-:IconFileStorage a cs:CodeStandard ;
-    cs:name "icons/file-storage" ;
-    cs:hasCategory :IconsCategory ;
-    cs:description "Each icon shall be stored as a single SVG file in the `icons/` directory." ;
-    cs:dos """
+cs:IconFileStorage a cso:CodeStandard ;
+    cso:name "icons/file/storage" ;
+    cso:hasCategory cs:IconsCategory ;
+    cso:description "Each icon shall be stored as a single SVG file in the `icons/` directory." ;
+    cso:dos """
 (Do) Store each icon as an individual SVG file in the designated `icons/` directory.
 ```
 icons/
@@ -24,7 +24,7 @@ icons/
   └── github.svg
 ```
 """ ;
-    cs:donts """
+    cso:donts """
 (Don't) Store icons in nested directories or use incorrect file extensions.
 ```
 icons/
@@ -43,14 +43,13 @@ icons/
 """ .
 
 # Icon File Naming Standard
-:IconFileNaming a cs:CodeStandard ;
-    cs:name "icons/file-naming" ;
-    cs:hasCategory :IconsCategory ;
-    cs:description """Icon files must:
+cs:IconFileNaming a cso:CodeStandard ;
+    cso:name "icons/file/naming" ;
+    cso:hasCategory cs:IconsCategory ;
+    cso:description """Icon files must:
 - Use kebab-case naming
-- End with `.svg` extension
 - Use semantic identifiers""" ;
-    cs:dos """
+    cso:dos """
 (Do) Use kebab-case and a semantic identifier for the icon file name.
 ```
 warning.svg
@@ -58,7 +57,7 @@ user-profile.svg
 arrow-down.svg
 ```
 """ ;
-    cs:donts """
+    cso:donts """
 (Don't) Include size, theme, or redundant suffixes in the file name.
 ```
 warning-16.svg
@@ -75,11 +74,11 @@ shape.svg
 """ .
 
 # Icon Group Element Standard
-:IconGroupElement a cs:CodeStandard ;
-    cs:name "icons/group-element" ;
-    cs:hasCategory :IconsCategory ;
-    cs:description "Each icon's SVG markup must contain a single `<g>` element with an `id` matching the filename (without `.svg`)." ;
-    cs:dos """
+cs:IconGroupElement a cso:CodeStandard ;
+    cso:name "icons/svg/group-element" ;
+    cso:hasCategory cs:IconsCategory ;
+    cso:description "Each icon's SVG markup must contain a single `<g>` element with an `id` matching the filename (without `.svg`)." ;
+    cso:dos """
 (Do) Include a single `<g>` element with an `id` that matches the filename.
 ```svg
 <!-- warning.svg -->
@@ -90,7 +89,7 @@ shape.svg
 </svg>
 ```
 """ ;
-    cs:donts """
+    cso:donts """
 (Don't) Use multiple `<g>` elements or an `id` that does not match the filename.
 ```svg
 <!-- warning.svg -->
@@ -106,11 +105,11 @@ shape.svg
 """ .
 
 # Icon ViewBox Standard
-:IconViewBox a cs:CodeStandard ;
-    cs:name "icons/viewbox" ;
-    cs:hasCategory :IconsCategory ;
-    cs:description "All icon SVGs must use a `viewBox` of `0 0 16 16`." ;
-    cs:dos """
+cs:IconViewBox a cso:CodeStandard ;
+    cso:name "icons/svg/viewbox" ;
+    cso:hasCategory cs:IconsCategory ;
+    cso:description "All icon SVGs must use a `viewBox` of `0 0 16 16`." ;
+    cso:dos """
 (Do) Set the `viewBox` attribute to `0 0 16 16` in the `<svg>` element.
 ```svg
 <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'>
@@ -120,7 +119,7 @@ shape.svg
 </svg>
 ```
 """ ;
-    cs:donts """
+    cso:donts """
 (Don't) Use a `viewBox` with dimensions other than `16 16`.
 ```svg
 <!-- Bad: Different viewBox size -->
@@ -147,13 +146,11 @@ shape.svg
 """ .
 
 # Icon Color Usage Standard
-:IconColorUsage a cs:CodeStandard ;
-    cs:name "icons/color-usage" ;
-    cs:hasCategory :IconsCategory ;
-    cs:description """Icon paths must use `fill` attribute as follows:
-- Non-branded icons must use `currentColor`
-- Branded icons may use brand-specific colors""" ;
-    cs:dos """
+cs:IconColorUsage a cso:CodeStandard ;
+    cso:name "icons/svg/color-usage" ;
+    cso:hasCategory cs:IconsCategory ;
+    cso:description "Icon paths must use `fill` with `currentColor` for their paths" ;
+    cso:dos """
 (Do) Use `currentColor` for the `fill` of paths in non-branded icons.
 ```svg
 <!-- Non-branded icon -->
@@ -163,29 +160,11 @@ shape.svg
   </g>
 </svg>
 ```
-
-(Do) Use brand-specific colors for branded icons when necessary.
-```svg
-<!-- Branded icon -->
-<svg viewBox="0 0 16 16">
-  <g id="github">
-    <path fill="#181717" d="..." />
-  </g>
-</svg>
-```
 """ ;
-    cs:donts """
-(Don't) Use hard-coded colors in non-branded icons.
+    cso:donts """
+(Don't) Use hard-coded colors in icons.
 ```svg
 <path fill="#000000" d="..." />
-```
-
-(Don't) Mix `currentColor` with hard-coded colors in a single icon.
-```svg
-<g>
-  <path fill="currentColor" d="..." />
-  <path fill="#cccccc" d="..." />
-</g>
 ```
 
 (Don't) Use `opacity` to create different shades of a color.
@@ -195,11 +174,11 @@ shape.svg
 """ .
 
 # Icon Variant Standard
-:IconVariant a cs:CodeStandard ;
-    cs:name "icons/variants" ;
-    cs:hasCategory :IconsCategory ;
-    cs:description "Each icon concept must have exactly one SVG file. Size and theme variants are not allowed." ;
-    cs:dos """
+cs:IconVariant a cso:CodeStandard ;
+    cso:name "icons/variant/single-file" ;
+    cso:hasCategory cs:IconsCategory ;
+    cso:description "Each icon concept must have exactly one SVG file. Size and theme variants are not allowed." ;
+    cso:dos """
 (Do) Use a single SVG file for each icon and control its size and color with CSS.
 ```svg
 <!-- Single icon file -->
@@ -216,7 +195,7 @@ shape.svg
 .warning-icon { color: var(--color-warning); }
 ```
 """ ;
-    cs:donts """
+    cso:donts """
 (Don't) Create multiple files for different icon sizes.
 ```
 warning.svg
@@ -233,14 +212,14 @@ warning-light.svg
 """ .
 
 # Icon Type Safety Standard
-:IconTypeSafety a cs:CodeStandard ;
-    cs:name "icons/type-safety" ;
-    cs:hasCategory :IconsCategory ;
-    cs:description """Icon names must be:
+cs:IconTypeSafety a cso:CodeStandard ;
+    cso:name "icons/type-safety/definition" ;
+    cso:hasCategory cs:IconsCategory ;
+    cso:description """Icon names must be:
 - Maintained in a type-safe constant array
 - Used to generate the `IconName` type
 - Defined in the icon exporter package""" ;
-    cs:dos """
+    cso:dos """
 (Do) Define a constant array of icon names and derive the `IconName` type from it in the icon exporter package.
 ```typescript
 // In the icon exporter package
@@ -256,30 +235,124 @@ export type IconName = typeof ICON_NAMES[number];
 (Do) Import the `IconName` type in consumer code to ensure type safety.
 ```typescript
 // In consumer code
-import { IconName } from '@your-icons-package';
+import type { IconName } from '@canonical/ds-assets';
 
-interface IconProps {
-  name: IconName;
+export interface ComponentProps {
+  icon: IconName;
+}
+```
+
+(Do) Use `Pick` to restrict choices from `IconName` when necessary.
+
+```typescript
+// In consumer code
+import type { IconName } from '@canonical/ds-assets';
+
+export interface ComponentProps {
+  icon: Pick<IconName, "warning" | "search">;
 }
 ```
 """ ;
-    cs:donts """
+    cso:donts """
 (Don't) Define icon name types or values on the consumer side.
 ```typescript
 // Bad: String literal type defined in consumer code
-type IconName = "warning" | "search";
+type ComponentIconName = "warning" | "search";
+
+export interface ComponentProps {
+    icon: ComponentIconName;
+}
 ```
 
 (Don't) Use a generic `string` type for icon names.
 ```typescript
 // Bad: No type safety for icon names
-type IconName = string;
+export interface ComponentProps {
+    icon: string;
+}
 ```
 
 (Don't) Maintain separate type and value definitions.
 ```typescript
-// Bad: Duplication creates maintenance issues
+// Bad: Duplication of icon names
 const ICONS = ["warning", "search"];
 type IconName = "warning" | "search";
 ```
 """ .
+
+# Icon Mask Usage Standard
+cs:IconMaskUsage a cso:CodeStandard ;
+    cso:name "icons/svg/mask-usage" ;
+    cso:hasCategory cs:IconsCategory ;
+    cso:description "Icons may use SVG masks to negate or partially negate paths, enabling advanced visual effects such as cutouts and overlays." ;
+    cso:dos """
+(Do) Use SVG <mask> elements to create negative space or overlays in icons.
+Example:
+```svg
+<svg width='16' height='16' xmlns='http://www.w3.org/2000/svg'>
+  <defs>
+    <mask id="error-mask">
+      <rect width="16" height="16" fill="white"/>
+      <path d="..." fill="black"/>
+    </mask>
+  </defs>
+  <g id="error">
+    <circle fill='currentColor' cx='8' cy='8' r='7' mask="url(#error-mask)"/>
+  </g>
+</svg>
+```
+
+(Do) Use <rect> with fill="white" to define the mask area, and <path> with fill="black" to subtract shapes.
+Example:
+```svg
+<mask id="mask">
+  <rect width="16" height="16" fill="white"/>
+  <path d="M4 4h8v8H4z" fill="black"/>
+</mask>
+```
+
+(Do) Use opacity on mask paths to achieve partial negation (e.g., faded or semi-transparent cutouts).
+Example:
+```svg
+<mask id="progress-mask">
+  <rect width="16" height="16" fill="white"/>
+  <path d='...' fill="black" opacity=".5"/>
+</mask>
+```
+
+(Do) Reference the mask in the icon's main shape using mask="url(#mask-id)".
+Example:
+```svg
+<circle fill='currentColor' cx='8' cy='8' r='7' mask="url(#mask-id)"/>
+```
+""" ;
+    cso:donts """
+(Don't) Use masks without clear purpose or visual benefit.
+Example:
+```svg
+<!-- Bad: Mask used but has no effect -->
+<mask id="empty-mask">
+  <rect width="16" height="16" fill="white"/>
+</mask>
+<circle fill='currentColor' cx='8' cy='8' r='7' mask="url(#empty-mask)"/>
+```
+
+(Don't) use non-semantic mask ids or omit mask references in the main shape.
+Example:
+```svg
+<!-- Bad: Non-semantic mask id -->
+<mask id="123">
+  <rect width="16" height="16" fill="white"/>
+  <path d="..." fill="black"/>
+</mask>
+```
+
+(Don't) rely on masks for simple icons that do not require negative space or overlays.
+Example:
+```svg
+<!-- Bad: Mask used for a simple shape -->
+<mask id="simple-mask">
+  <rect width="16" height="16" fill="white"/>
+</mask>
+<rect fill='currentColor' x='2' y='2' width='12' height='12' mask="url(#simple-mask)"/>
+```
