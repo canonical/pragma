@@ -1,6 +1,6 @@
 import type { ExampleComponent } from "./types.js";
 
-export * from "./types.js";
+export type * from "./types.js";
 
 import { Controls } from "./common/Controls/index.js";
 import { Renderer } from "./common/Renderer/index.js";
