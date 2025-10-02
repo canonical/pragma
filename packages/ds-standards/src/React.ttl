@@ -40,11 +40,11 @@ export * from './types.js';
 ```
 """ .
 
-# Component Folder Naming Standard
+# Component Naming Standard
 cs:ComponentFolderNaming a cso:CodeStandard ;
-    cso:name "react/component/folder-naming" ;
+    cso:name "react/component/naming" ;
     cso:hasCategory cso: ReactCategory ;
-    cso:description "Component folders must be named using PascalCase (e.g., `Button`, `Tooltip`)." ;
+    cso:description "Components must be named in PascalCase (e.g., `Button`, `Tooltip`, `MyComponent`)." ;
     cso:dos """
 (Do) Name the component folder using PascalCase.
 ```
@@ -65,7 +65,7 @@ tooltip_folder/
 cs:ComponentFileNaming a cso:CodeStandard ;
     cso:name "react/component/file-naming" ;
     cso:hasCategory cso: ReactCategory ;
-    cso:description "File naming within a component folder is based on scope. Component-specific files (implementation, stories, tests) must be prefixed with the component's name (e.g., `MyComponent.tsx`, `MyComponent.stories.tsx`). Domain-level files that serve the entire folder (e.g., `Context.tsx`, `styles.css`, `types.ts`) should use generic, descriptive names, as the folder already provides the domain context." ;
+    cso:description "Component folder and file naming is based on scope. Component-specific files (implementation, stories, tests) must be prefixed with the component's name (e.g., `MyComponent.tsx`, `MyComponent.stories.tsx`). Domain-level files that serve the entire folder (e.g., `Context.tsx`, `styles.css`, `types.ts`) should use generic, descriptive names, as the folder already provides the domain context." ;
     cso:dos """
 (Do) Prefix component-specific files and use generic names for domain-level files.
 ```
