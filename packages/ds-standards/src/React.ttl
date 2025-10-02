@@ -304,7 +304,7 @@ Card.Top = Header; // Bad: Mapping 'Header' to 'Top' is not allowed
 
 (Don't) Use non-semantic or unclear subcomponent names:
 ```typescript
-Card.Part1 = Section; // Bad: 'Part1' is not descriptive
+Card.Part1 = Part1; // Bad: 'Part1' is not descriptive
 ```
 
 (Don't) Nest subcomponents more than one level deep:
