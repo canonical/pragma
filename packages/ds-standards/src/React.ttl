@@ -90,9 +90,9 @@ MyComponent/
 
 # Component Props Typing Standard
 cs:ComponentPropsTyping a cso:CodeStandard ;
-    cso:name "react/component/props-typing" ;
+    cso:name "react/component/markup-props-typing" ;
     cso:hasCategory cso: ReactCategory ;
-    cso:description "Component prop interfaces must extend the appropriate React HTML element interface (e.g., `React.ButtonHTMLAttributes<HTMLButtonElement>`). Only define additional props that are specific to the component's implementation, override existing props for stricter typing, or explicitly define `children`. Use TSDoc comments to document the purpose of each prop." ;
+    cso:description "For components that render html markup, the properties interface should extend the base HTML element props, to enable the passing of native properties through spreading. Use TSDoc comments to document the purpose of each prop." ;
     cso:dos """
 (Do) Extend the base React HTML props interface and add component-specific props.
 ```typescript
