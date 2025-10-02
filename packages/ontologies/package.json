@@ -23,7 +23,7 @@
   },
   "homepage": "https://github.com/canonical/ds25#readme",
   "scripts": {
-    "check": "bun run check:biome && bun run check:ts",
+    "check": "bun run check:biome",
     "check:fix": "bun run check:biome:fix",
     "check:biome": "biome check",
     "check:biome:fix": "biome check --write"
