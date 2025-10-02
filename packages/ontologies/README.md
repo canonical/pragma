@@ -1,7 +1,4 @@
-## Canonical Assets
+## Ontologies
 
-This package contains shared assets for Pragma.
+This package contains the Design System Ontology.
 
-For further information, please refer to the documentation for a specific asset type:
-
-- [Icons](./docs/ICONS.md)

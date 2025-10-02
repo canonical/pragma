@@ -323,6 +323,14 @@ ds:grid
     skos:definition "" ; #TODO
     ds:acceptanceCriteria "" . #TODO
 
+ds:domain
+    a owl:DatatypeProperty ;
+    rdfs:domain ds:Layout ;
+    rdfs:range xsd:string ;
+    rdfs:label "domain" ;
+    skos:definition "The domain of information associated with the layout." ; #TODO
+    ds:acceptanceCriteria "" . #TODO
+
 ds:gridAreas
     a owl:DatatypeProperty ;
     rdfs:domain ds:Layout ;
