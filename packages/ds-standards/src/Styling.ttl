@@ -1,0 +1,204 @@
+@prefix cso: <http://pragma.canonical.com/codestandards#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+# Styling Category
+cs:StylingCategory a cso:Category ;
+    rdfs:label "Styling"@en ;
+    rdfs:comment "Standards specific to CSS styling and design system implementation"@en ;
+    cso:slug "styling" .
+
+# CSS Variable Scoping Standard
+cs:CSSVariableScoping a cso:CodeStandard ;
+    cso:name "styling/variables/scoping" ;
+    cso:hasCategory cs:StylingCategory ;
+    cso:description """CSS variables must follow a strict scoping hierarchy:
+- Global tokens must be defined on `:root`
+- Component variables must be scoped to component class
+- Modifier variables must be scoped to modifier class""" ;
+    cso:dos """
+(Do) Define global design tokens on the `:root` element for broad reuse.
+```css
+/* Global design tokens */
+:root {
+  --color-background-default: #fff;
+  --color-text-default: #000;
+}
+```
+
+(Do) Scope variables to a component's class to define its specific design tokens.
+```css
+/* Component-specific variables */
+.ds.rule {
+  --rule-color-background: var(--color-border-high-contrast);
+  --rule-height: 1px;
+}
+```
+
+(Do) Use modifier-based variables within modifiers to apply contextual changes.
+```css
+/* Modifier-based modifier variables */
+.highlighted {
+  --modifier-separator-bar-height: var(--dimension-separator-bar-thickness);
+  --modifier-separator-bar-color: var(--color-text-default);
+}
+```
+""" ;
+    cso:donts """
+(Don't) Mix different variable scopes, such as defining component-specific tokens on the `:root`.
+```css
+/* Bad: Component token on the root */
+:root {
+  --rule-height: 1px;
+}
+```
+
+(Don't) Override component variables from a different component's scope.
+```css
+/* Bad: .card overriding .rule variables */
+.ds.card {
+  --rule-height: 2px;
+}
+```
+""" .
+
+# CSS Variable Naming Standard
+cs:CSSVariableNaming a cso:CodeStandard ;
+    cso:name "styling/variables/naming" ;
+    cso:hasCategory cs:StylingCategory ;
+    cso:description "CSS variable names must use the format `--scope-property-variant` (e.g., `--color-background-default`, `--rule-height`)." ;
+    cso:dos """
+(Do) Use semantic names that describe the variable's purpose.
+```css
+:root {
+  --color-background-default: #fff;
+  --color-text-default: #000;
+  --dimension-separator-bar-thickness: 2px;
+}
+```
+""" ;
+    cso:donts """
+(Don't) Use non-semantic or abstract names that obscure the variable's function.
+```css
+:root {
+  --gray-100: #f8f9fa; /* Bad: Name describes the value, not the purpose */
+  --space-4: 1rem;   /* Bad: Abstract name */
+}
+```
+""" .
+
+# CSS Selector Namespace Standard
+cs:CSSSelectorNamespace a cso:CodeStandard ;
+    cso:name "styling/selectors/namespace" ;
+    cso:hasCategory cs:StylingCategory ;
+    cso:description "All component selectors must be prefixed with the `.ds` namespace (e.g., `.ds.button`)." ;
+    cso:dos """
+(Do) Prefix all component selectors with `.ds`.
+```css
+/* Component root with namespace */
+.ds.button {
+  /* Base styles */
+}
+```
+""" ;
+    cso:donts """
+(Don't) Omit the `.ds` namespace from component selectors.
+```css
+/* Bad: Missing .ds namespace */
+.button {
+  /* styles */
+}
+```
+""" .
+
+# CSS Selector Specificity Standard
+cs:CSSSelectorSpecificity a cso:CodeStandard ;
+    cso:name "styling/selectors/specificity" ;
+    cso:hasCategory cs:StylingCategory ;
+    cso:description """CSS selectors must:
+- Use direct child selectors (>) when targeting internal elements
+- Use attribute selectors for states
+- Avoid nesting beyond one level""" ;
+    cso:dos """
+(Do) Use direct child selectors when necessary to style a component's internal elements.
+```css
+.ds.button > .icon {
+  margin-right: var(--button-icon-spacing);
+}
+```
+
+(Do) Use attribute selectors for styling states.
+```css
+.ds.button[disabled] {
+  opacity: var(--button-disabled-opacity);
+}
+```
+""" ;
+    cso:donts """
+(Don't) Use deeply nested selectors, as they are brittle and hard to override.
+```css
+/* Bad: Too specific and tied to structure */
+.ds.card .content .title h2 {
+  color: var(--color-text-default);
+}
+```
+
+(Don't) Create selectors that are tightly coupled to the HTML structure.
+```css
+/* Bad: Coupled to markup */
+.ds.list li > span {
+  color: var(--color-text-muted);
+}
+```
+
+(Don't) Chain multiple selectors, as it dramatically increases specificity.
+```css
+/* Bad: High specificity is hard to override */
+.ds.button.primary[type="submit"].large {
+  /* styles */
+}
+```
+""" .
+
+# CSS Selector Semantics Standard
+cs:CSSSelectorSemantics a cso:CodeStandard ;
+    cso:name "styling/selectors/semantics" ;
+    cso:hasCategory cs:StylingCategory ;
+    cso:description "CSS class names must describe the purpose or state of an element, not its appearance." ;
+    cso:dos """
+(Do) Use semantic modifier classes to represent component variations.
+```css
+/* Semantic modifier for a primary button */
+.ds.button.primary {
+  --modifier-color: var(--color-primary);
+}
+```
+""" ;
+    cso:donts """
+(Don't) Use non-semantic or presentational class names.
+```css
+/* Bad: 'big' describes appearance, not purpose */
+.ds.button.big {
+  padding: 1rem;
+}
+```
+""" .
+
+# Component Naming Convention for CSS
+cs:CSSComponentNamingConvention a cso:CodeStandard ;
+    cso:name "styling/selectors/naming-convention" ;
+    cso:hasCategory cs:StylingCategory ;
+    cso:description "Component CSS class names must be the kebab-case version of the component's PascalCase name." ;
+    cso:dos """
+(Do) Convert PascalCase component names to kebab-case for CSS classes:
+- `MyComponent` -> `.ds.my-component`
+- `UserProfile` -> `.ds.user-profile`
+- `Button` -> `.ds.button`
+""" ;
+    cso:donts """
+(Don't) Use PascalCase or other formats in CSS class names:
+- `.ds.MyComponent` (Bad: Not kebab-case)
+- `.ds.user_profile` (Bad: Not kebab-case)
+""" .
