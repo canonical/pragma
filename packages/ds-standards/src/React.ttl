@@ -104,7 +104,6 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 ```
 (Do) Explicitly declare props from the base HTML element interface to mark them as required or preclude them from being passed through spreading.
 ```typescript
-```typescript
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   /** The button label */
   label: string;
