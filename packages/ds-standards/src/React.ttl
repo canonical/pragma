@@ -15,7 +15,37 @@ cs:ReactCategory a cso:Category ;
 cs:ComponentFolderStructure a cso:CodeStandard ;
     cso:name "react/component/folder-structure" ;
     cso:hasCategory cso:ReactCategory ;
-    cso:description "Each component must reside in its own folder, which contains all related files: component implementation, tests, type definitions, and optionally stories and styles. The index.ts file must be a complete barrel export for the component folder, re-exporting all public APIs. Some components may be styleless or may not have stories; in these cases, styles.css and MyComponent.stories.tsx are optional." ;
+    cso:description "Each component must reside in its own folder, which contains all related files: component implementation, tests, type definitions, and optionally stories and styles. Some components may be styleless or may not have stories; in these cases, styles.css and MyComponent.stories.tsx are optional." ;
+    cso:dos """
+(Do) Place all component-related files within a single folder named after the component.
+```bash
+MyComponent/
+  ├── MyComponent.tsx
+  ├── MyComponent.stories.tsx
+  ├── MyComponent.test.tsx
+  ├── index.ts
+  ├── styles.css
+  └── types.ts
+```
+""" ;
+    cso:donts """
+(Don't) Scatter component files across different parts of the application.
+```bash
+# Bad: Files are not co-located
+components/
+  ├── MyComponent.tsx
+stories/
+  └── MyComponent.stories.tsx
+styles/
+  └── MyComponent.css
+```
+""" .
+
+# Barrel Exports Standard
+cs:BarrelExports a cso:CodeStandard ;
+    cso:name "react/component/barrel-exports" ;
+    cso:hasCategory cso:ReactCategory ;
+    cso:description "The index.ts file must be a complete barrel export for the component folder, re-exporting all public APIs." ;
     cso:dos """
 (Do) Create an index.ts file that re-exports all public APIs from the component folder.
 ```typescript
