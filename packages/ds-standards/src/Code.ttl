@@ -229,9 +229,6 @@ export const logger = () => {};
 ```typescript
 export const transformer = (value: string) => {};
 export const reducer = (map: string[]) => {};
-
-// Or mixing classes and functions
-export const transformer = (value: string) => {};
 class ABC {}
 export { ABC };
 ```
