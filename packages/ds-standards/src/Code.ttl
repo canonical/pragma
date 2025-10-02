@@ -1,5 +1,4 @@
 @prefix cso: <http://pragma.canonical.com/codestandards#> .
-@prefix cs: <http://pragma.canonical.com/codestandards#> .
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix owl: <http://www.w3.org/2002/07/owl#> .
@@ -188,7 +187,7 @@ interface QueueConfig {
 cs:ExportShape a cso:CodeStandard ;
     cso:name "code/export/shape" ;
     cso:hasCategory cs:CodeCategory ;
-    cso:description "Files must use either a single default export or multiple named exports. When using multiple named exports, all exports must have the same type or shape. Compound components should be documented in a separate standard." ;
+    cso:description "Files must use either a single default export or multiple named exports. When using multiple named exports, all exports must have the same type or shape." ;
     cso:dos """
 (Do) Use a single default export for files implementing a single component or function:
 ```typescript
