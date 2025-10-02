@@ -15,17 +15,17 @@ cs:ReactCategory a cso:Category ;
 cs:ComponentFolderStructure a cso:CodeStandard ;
     cso:name "react/component/folder-structure" ;
     cso:hasCategory cso:ReactCategory ;
-    cso:description "Each component must reside in its own folder, which contains all related files: component implementation, stories, tests, styles, and type definitions." ;
+    cso:description "Each component must reside in its own folder, which contains all related files: component implementation, tests, type definitions, and optionally stories and styles. Some components may be styleless or may not have stories; styles.css and MyComponent.stories.tsx are optional." ;
     cso:dos """
-(Do) Place all files related to a single component within the same component folder.
+(Do) Place all files related to a single component within the same component folder. `styles.css` and `MyComponent.stories.tsx` are optional.
 ```
 MyComponent/
   ├── MyComponent.tsx
-  ├── MyComponent.stories.tsx
   ├── MyComponent.tests.tsx
   ├── index.ts
-  ├── styles.css
-  └── types.ts
+  ├── types.ts
+  ├── styles.css         # optional
+  ├── MyComponent.stories.tsx  # optional
 ```
 """ ;
     cso:donts """
