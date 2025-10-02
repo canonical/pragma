@@ -149,7 +149,7 @@ cs:IconViewBox a cso:CodeStandard ;
 cs:IconColorUsage a cso:CodeStandard ;
     cso:name "icons/svg/color-usage" ;
     cso:hasCategory cs:IconsCategory ;
-    cso:description "Icon paths must use `fill` with `currentColor` for their paths" ;
+    cso:description "Icon must use `fill` with `currentColor` for their paths and shapes." ;
     cso:dos """
 (Do) Use `currentColor` for the `fill` of paths in non-branded icons.
 ```svg
