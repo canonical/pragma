@@ -621,30 +621,76 @@ cs:ContextProviderStructure a cso:CodeStandard ;
     cso:hasCategory cso: ReactCategory ;
     cso:description "Context providers must be organized within the component folder that owns the context, containing:
 - `Context.tsx` for context definition
-- `Provider.tsx` for provider component" ;
+- `Provider.tsx` for the provider component. There should only be one provider per component folder, and it must be named Provider.tsx.
+- If `Provider.tsx` exists, do not create a separate component file (e.g., `MyComponent.tsx`); the provider itself is the main component for the folder.
+- Use `index.ts` to export the provider as a named export matching the folder name, using a type from `types.ts` for props and component typing.
+- Attach subcomponents or hooks to the main export using dot notation (e.g., `Provider.SubComponent = SubComponent`)." ;
     cso:dos """
 (Do) Place context-related files directly within the owning component's folder.
 ```
 MyComponent/
   ├── Context.tsx     // Defines the context with createContext()
-  ├── Provider.tsx    // The component that provides the context value
-  ├── MyComponent.tsx
-  └── index.ts
+  ├── Provider.tsx    // The single provider component for this context
+  ├── index.ts        // Exports Provider as named export matching folder name
+  ├── types.ts        // Defines types for props and component
+```
+(Do) Name the provider component file Provider.tsx.
+(Do) Separate the state management from the provider itself by creating `hooks/useProviderState.ts`.
+(Do) Export the provider from index.ts as a named export matching the folder name, using a type from types.ts.
+(Do) Place subcomponents in the `MyComponent/common/` folder.
+(Do) Attach subcomponents to the main export using dot notation.
+Example:
+```typescript
+// Context.tsx
+import { createContext } from "react";
+import type { ContextOptions } from "./types.js";
+
+const Context = createContext<ContextOptions | undefined>(undefined);
+
+export default Context;
+
+// Provider.tsx
+import Context from "./Context.js";
+import { useProviderState } from "./hooks/index.js";
+import type { ProviderProps } from "./types.js";
+
+const Provider = ({ children, outputFormats }: ProviderProps) => {
+  const state = useProviderState({ outputFormats });
+
+  return <Context.Provider value={state}>{children}</Context.Provider>;
+};
+
+export default Provider;
+
+// types.ts
+
+export type MyComponent = ((props: ProviderProps) => ReactElement) & {
+  SubComponent: (props: SubComponentProps) => ReactElement | null;
+};
+
+
+// index.ts
+import Provider from "./Provider.js";
+import type { MyComponent } from "./types.js";
+import { SubComponent } from "./common/SubComponent/index.js";
+export const MyComponent = Provider as MyComponent;
+MyComponent.SubComponent = SubComponent;
+export default MyComponent;
 ```
 """ ;
     cso:donts """
-(Don't) Place context files in a separate `context/` subfolder, as it adds unnecessary nesting.
+(Don't) Place context files in a separate `context/` subfolder.
 ```
 MyComponent/
   └── context/
       ├── Context.tsx
       └── Provider.tsx
 ```
-
-(Don't) Place context files in a generic, top-level `contexts/` folder, as it obscures ownership.
+(Don't) Create multiple provider components in the same component folder.
+(Don't) Create a separate component file (e.g., `MyComponent.tsx`) when `Provider.tsx` exists; the provider is the main component.
+Example:
+MyComponent/
+  ├── Provider.tsx
+  ├── AnotherProvider.tsx // Bad: Only one provider per folder
+  ├── MyComponent.tsx     // Bad: Do not create this if Provider.tsx exists
 ```
-src/
-  └── contexts/
-      └── MyComponentContext.ts // Bad: Should be inside MyComponent/
-```
-""" .
