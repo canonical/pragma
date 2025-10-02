@@ -21,6 +21,20 @@ cso:Category a owl:Class ;
             rdfs:comment "A category for grouping related code standards (e.g., testing, components, react, typescript)"@en ;
             rdfs:subClassOf skos:Concept .
 
+# Datatype properties
+cso:slug a owl:DatatypeProperty ;
+    rdfs:label "slug"@en ;
+    rdfs:comment "A short identifier for the category or standard, used for domain annotation."@en ;
+    rdfs:domain cso:Category ;
+    rdfs:range xsd:string .
+
+# Datatypes
+cso:NamePattern a owl:Datatype ;
+    owl:onDatatype xsd:string ;
+    owl:withRestrictions (
+        [ xsd:pattern "^[a-z]+(/[a-z0-9-]+)*$" ]
+    ) .
+
 # Object Properties
 cso:hasCategory a owl:ObjectProperty ;
                rdfs:label "has category"@en ;
@@ -28,12 +42,6 @@ cso:hasCategory a owl:ObjectProperty ;
                rdfs:domain cso:CodeStandard ;
                rdfs:range cso:Category .
 
-# Datatype Properties
-cso:NamePattern a owl:Datatype ;
-  owl:onDatatype xsd:string ;
-  owl:withRestrictions (
-    [ xsd:pattern "^[a-z]+(/[a-z0-9-]+)*$" ]
-  ) .
 
 cso:name a owl:DatatypeProperty ;
         rdfs:label "name"@en ;
@@ -58,9 +66,3 @@ cso:donts a owl:DatatypeProperty ;
          rdfs:comment "Examples of what should not be done, in markdown format"@en ;
          rdfs:domain cso:CodeStandard ;
          rdfs:range xsd:string .
-
-cso:slug a owl:DatatypeProperty ;
-    rdfs:label "slug"@en ;
-    rdfs:comment "A short identifier for the category or standard, used for domain annotation."@en ;
-    rdfs:domain cso:Category ;
-    rdfs:range xsd:string .
