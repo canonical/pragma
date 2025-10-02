@@ -72,7 +72,7 @@ export * from './types.js';
 
 # Component Naming Standard
 cs:ComponentFolderNaming a cso:CodeStandard ;
-    cso:name "react/component/naming" ;
+    cso:name "react/component/folder-naming" ;
     cso:hasCategory cso: ReactCategory ;
     cso:description "Components must be named in PascalCase (e.g., `Button`, `Tooltip`, `MyComponent`)." ;
     cso:dos """
@@ -283,7 +283,7 @@ import Header from '../Card/common/Header.js';
 
 # Subcomponents Export and Consumption API Standard
 cs:SubcomponentsExportAPI a cso:CodeStandard ;
-    cso:name "react/component/subcomponents/export-api" ;
+    cso:name "react/component/subcomponent-export-api" ;
     cso:hasCategory cso: ReactCategory ;
     cso:description """Subcomponents are **public** if they are intended to be directly used by the consumer of the parent component to construct a UI. For example, an `Accordion.Item` is public because the user needs to compose the `Accordion` with its items.
 
