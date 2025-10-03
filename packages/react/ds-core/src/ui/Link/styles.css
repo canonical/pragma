@@ -22,4 +22,10 @@
       font-weight: var(--link-soft-selected-font-weight);
     }
   }
+
+  &:focus,
+  &:focus-visible {
+    outline-style: var(--link-focus-outline-style);
+    outline-width: var(--link-focus-outline-width);
+  }
 }

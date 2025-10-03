@@ -8,8 +8,11 @@
   position: absolute;
   top: var(--skip-link-top);
 
-  &:focus {
+  &:focus,
+  &:focus-visible {
     left: var(--skip-link-focus-left);
+    outline-style: var(--skip-link-focus-outline-style);
+    outline-width: var(--skip-link-focus-outline-width);
     padding-block: var(--skip-link-focus-padding-block);
     padding-inline: var(--skip-link-focus-padding-inline);
     position: fixed;

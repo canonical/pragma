@@ -333,6 +333,9 @@
   /* 3px at 16px fontsize, expressed in rems so it scales with text if the root font-size changes at a breakpoint */
   --tmp-dimension-separator-bar-thickness: 0.1875rem;
 
+  --tmp-focusable-focused-outline-width: 1px;
+  --tmp-focusable-focused-outline-style: solid;
+
   /* spacing tokens */
 
   --spacing-horizontal-xsmall: 0.25rem;
@@ -419,6 +422,8 @@
   --link-activation-contents-padding-horizontal: var(
     --spacing-horizontal-small
   );
+  --link-focus-outline-style: var(--tmp-focusable-focused-outline-style);
+  --link-focus-outline-width: var(--tmp-focusable-focused-outline-width);
 
   /*
         TODO the tooltip's color tokens should be inverted from the active color theme.
@@ -475,6 +480,8 @@
   --skip-link-color: var(--tmp-color-text-link-default);
   --skip-link-left: -999px;
   --skip-link-top: -999px;
+  --skip-link-focus-outline-style: var(--tmp-focusable-focused-outline-style);
+  --skip-link-focus-outline-width: var(--tmp-focusable-focused-outline-width);
   --skip-link-focus-left: var(--spacing-horizontal-large);
   --skip-link-focus-padding-block: var(--spacing-vertical-large);
   --skip-link-focus-padding-inline: var(--spacing-horizontal-large);
