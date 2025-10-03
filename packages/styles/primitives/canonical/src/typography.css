@@ -100,8 +100,11 @@ a {
   color: var(--tmp-color-text-link-default);
   text-decoration: none;
 
-  &:focus {
+  &:focus,
+  &:focus-visible {
     outline-offset: 0;
+    outline: var(--link-focus-outline-color) var(--link-focus-outline-style)
+      var(--link-focus-outline-width);
   }
 
   &:hover {
