@@ -13,6 +13,7 @@
     inset-inline-start: var(--skip-link-focus-inset-inline-start);
     outline-style: var(--skip-link-focus-outline-style);
     outline-width: var(--skip-link-focus-outline-width);
+    outline-color: var(--skip-link-focus-outline-color);
     padding-block: var(--skip-link-focus-padding-block);
     padding-inline: var(--skip-link-focus-padding-inline);
     position: fixed;
