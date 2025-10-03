@@ -114,3 +114,15 @@ export const Focused: Story = {
     skipLink.focus();
   },
 };
+
+export const FocusedRtl: Story = {
+  ...Focused,
+  decorators: [
+    decorators.beforeMain({
+      children: MainContents(),
+    }),
+    decorators.rtl(),
+  ],
+  tags: ["!dev", "!autodocs"],
+  name: "Focused (RTL)",
+};

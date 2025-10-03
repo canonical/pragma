@@ -4,13 +4,13 @@
   background: var(--skip-link-background);
   color: var(--skip-link-color);
   display: block;
-  left: var(--skip-link-left);
+  inset-inline-start: var(--skip-link-inset-inline-start);
   position: absolute;
   top: var(--skip-link-top);
 
   &:focus,
   &:focus-visible {
-    left: var(--skip-link-focus-left);
+    inset-inline-start: var(--skip-link-focus-inset-inline-start);
     outline-style: var(--skip-link-focus-outline-style);
     outline-width: var(--skip-link-focus-outline-width);
     padding-block: var(--skip-link-focus-padding-block);
