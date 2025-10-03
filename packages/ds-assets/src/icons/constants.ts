@@ -134,6 +134,7 @@ export const ICON_NAMES = [
   "thumbs-down",
   "thumbs-up",
   "tidy",
+  "timed-out",
   "toggle-side-nav",
   "turn-off-notification",
   "unit-pending",
