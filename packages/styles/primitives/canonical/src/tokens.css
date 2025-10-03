@@ -340,8 +340,9 @@
 
   --spacing-horizontal-xsmall: 0.25rem;
   --spacing-horizontal-small: 0.5rem;
-  --spacing-horizontal-medium: 1.25rem;
-  --spacing-horizontal-large: 1.5rem;
+  --spacing-horizontal-medium: 0.75rem;
+  --spacing-horizontal-large: 1rem;
+  --spacing-horizontal-xlarge: 1.5rem;
 
   --spacing-vertical-xsmall: 0.25rem;
   --spacing-vertical-small: 0.5rem;
