@@ -482,7 +482,7 @@
   --skip-link-top: -999px;
   --skip-link-focus-outline-style: var(--tmp-focusable-focused-outline-style);
   --skip-link-focus-outline-width: var(--tmp-focusable-focused-outline-width);
-  --skip-link-focus-left: var(--spacing-horizontal-large);
+  --skip-link-focus-left: var(--spacing-horizontal-small);
   --skip-link-focus-padding-block: var(--spacing-vertical-large);
   --skip-link-focus-padding-inline: var(--spacing-horizontal-large);
   --skip-link-focus-top: var(--spacing-vertical-small);
