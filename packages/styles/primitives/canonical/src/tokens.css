@@ -333,8 +333,9 @@
   /* 3px at 16px fontsize, expressed in rems so it scales with text if the root font-size changes at a breakpoint */
   --tmp-dimension-separator-bar-thickness: 0.1875rem;
 
-  --tmp-focusable-focused-outline-width: 1px;
+  --tmp-focusable-focused-outline-width: 3px;
   --tmp-focusable-focused-outline-style: solid;
+  --tmp-focusable-focused-outline-color: var(--tmp-color-palette-blue-9);
 
   /* spacing tokens */
 

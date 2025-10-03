@@ -14,6 +14,7 @@
     outline-style: var(--skip-link-focus-outline-style);
     outline-width: var(--skip-link-focus-outline-width);
     outline-color: var(--skip-link-focus-outline-color);
+    outline-offset: calc(-1 * var(--skip-link-focus-outline-width));
     padding-block: var(--skip-link-focus-padding-block);
     padding-inline: var(--skip-link-focus-padding-inline);
     position: fixed;
