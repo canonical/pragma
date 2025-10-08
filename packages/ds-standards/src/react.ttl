@@ -13,9 +13,10 @@ cs:ReactCategory a cso:Category ;
 
 # Component Folder Structure Standard
 cs:ComponentFolderStructure a cso:CodeStandard ;
-    cso:name "react/component/folder-structure" ;
+    cso:name "react/component/structure/folder" ;
+    cso:extends cs:ComponentFolderStructure ;
     cso:hasCategory cso:ReactCategory ;
-    cso:description "Each component must reside in its own folder, which contains all related files: component implementation, tests, type definitions, and optionally stories and styles. Some components may be styleless or may not have stories; in these cases, styles.css and MyComponent.stories.tsx are optional. Context providers follow a different structure (see react/file-structure/context)." ;
+    cso:description "Each component must reside in its own folder, which contains all related files: component implementation, tests, type definitions, and optionally stories and styles. Some components may be styleless or may not have stories; in these cases, styles.css and MyComponent.stories.tsx are optional. Context providers follow a different structure (see react/component/structure/context)." ;
     cso:dos """
 (Do) Place all component-related files within a single folder named after the component.
 ```bash
@@ -122,22 +123,73 @@ MyComponent/
 cs:ComponentPropsStandards a cso:CodeStandard ;
     cso:name "react/component/props" ;
     cso:hasCategory cso: ReactCategory ;
-    cso:description "All component props must be documented with TSDoc comments and follow type-specific patterns based on what the component renders." ;
+    cso:description """Component props must:
+- Be documented with TSDoc comments
+- Be destructured when used in markup
+- Be spread to the root element when unused
+- Follow type-specific patterns based on what the component renders""" ;
     cso:dos """
-(Do) Document all component props with TSDoc comments.
+(Do) Document props with TSDoc comments and use proper destructuring and spreading.
 ```typescript
-interface ButtonProps {
-  /** The button label */
+interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  /** The button's text content */
   label: string;
+  /** Optional icon to display before the label */
+  icon?: React.ReactNode;
+  /** Visual emphasis of the button */
+  emphasis?: ModifierFamily<"emphasis">;
 }
+
+const Button = ({
+  label,
+  icon,
+  emphasis,
+  className,
+  ...props  // Spread unused HTML button props
+}: ButtonProps) => (
+  <button 
+    className={[componentCssClassName, emphasis, className].filter(Boolean).join(" ")}
+    {...props}
+  >
+    {icon}
+    <span>{label}</span>
+  </button>
+);
 ```
 """ ;
     cso:donts """
-(Don't) Leave component props undocumented.
+(Don't) Mix explicit and spread props or destructure props unnecessarily.
 ```typescript
-interface ButtonProps {
-  label: string;        // Bad: No documentation
-}
+// Bad: Mixing explicit props with spread
+const Button = (props: ButtonProps) => (
+  <button
+    className={props.className}
+    onClick={props.onClick}  // Should be in ...props
+    {...props}              // Now duplicates onClick
+  >
+    {props.label}
+  </button>
+);
+
+// Bad: Unnecessarily destructuring HTML props
+const Button = ({
+  label,
+  className,
+  onClick,     // Should be in ...props
+  onFocus,     // Should be in ...props
+  disabled,    // Should be in ...props
+  ...props
+}: ButtonProps) => (
+  <button
+    className={className}
+    onClick={onClick}     // Explicit when it could be spread
+    onFocus={onFocus}    // Explicit when it could be spread
+    disabled={disabled}  // Explicit when it could be spread
+    {...props}
+  >
+    {label}
+  </button>
+);
 ```
 """ .
 
@@ -145,7 +197,7 @@ interface ButtonProps {
 cs:HTMLRenderingProps a cso:CodeStandard ;
     cso:name "react/component/props/html-rendering" ;
     cso:hasCategory cso: ReactCategory ;
-    cso:hasParent cs:ComponentPropsStandards ;
+    cso:extends cs:ComponentPropsStandards ;
     cso:description "Components that render HTML markup must extend the base HTML element props interface to enable passing native properties through spreading." ;
     cso:dos """
 (Do) Extend the appropriate React HTML props interface and add component-specific props.
@@ -212,7 +264,7 @@ searchresultlist
 
 # Hook Naming Standard
 cs:HookNaming a cso:CodeStandard ;
-    cso:name "react/hook/naming" ;
+    cso:name "react/hooks/naming" ;
     cso:hasCategory cso: ReactCategory ;
     cso:description "The hook name must start with 'use' and clearly describe its purpose." ;
     cso:dos """
@@ -408,76 +460,6 @@ const Badge = ({
 <span className={`${componentCssClassName} ${severity} ${className}`}>
 ```
 """ .
-
-# Component Props Structure Standard
-cs:ComponentPropsStructure a cso:CodeStandard ;
-    cso:name "react/component/props-structure" ;
-    cso:hasCategory cso: ReactCategory ;
-    cso:description """Component props must:
-- Be destructured when being passed to a markup node
-- Be spread to the root element when unused
-""" ;
-    cso:dos """# Proper props structure and consumption
-```tsx
-interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  // Explicit props - will be passed to markup nodes
-  /** The button label */
-  label: string;
-  /** The button icon */
-  icon?: React.ReactNode;
-  // Modifier props
-  emphasis?: ModifierFamily<"emphasis">;
-}
-
-const Button = ({
-  // Destructure props used explicitly in JSX
-  label,
-  icon,
-  emphasis,
-  className,
-  // Spread remaining props to root element
-  ...props
-}: ButtonProps) => (
-  <button
-    className={[componentCssClassname, emphasis, className].filter(Boolean).join(" ")}
-    {...props}  // HTML button props spread here
-  >
-    {icon}
-    <span>{label}</span>
-  </button>
-);
-```
-""" ;
-    cso:donts """
-(Don't) Mix explicit and spread props
-```tsx
-const Button = (props: ButtonProps) => (
-  <button
-    className={props.className}
-    onClick={props.onClick}  // Bad: Mixed with spread props
-    {...props}  // Duplicate props
-  >
-    {props.label}
-  </button>
-);
-
-// Don't destructure props that can be spread, unless the component mutates them or needs to directly operate upon them.
-const Button = ({
-  label,
-  className,
-  onClick,  // Bad: Destructured but should be in ...props
-  onFocus,  // Bad: Destructured but should be in ...props
-  ...props
-}: ButtonProps) => (
-  <button
-    className={className}
-    onClick={onClick}
-    onFocus={onFocus}
-    {...props}
-  >
-    {label}
-  </button>
-);
 ```
 """
 
@@ -485,7 +467,7 @@ const Button = ({
 cs:WrapperComponentProps a cso:CodeStandard ;
     cso:name "react/component/props/wrapper" ;
     cso:hasCategory cso: ReactCategory ;
-    cso:hasParent cs:ComponentPropsStandards ;
+    cso:extends cs:ComponentPropsStandards ;
     cso:description "Wrapper components must use namespaced props for inner components and accept unscoped props for the wrapper element." ;
     cso:dos """
 (Do) Use namespaced props for inner components and unscoped props for the wrapper element.
@@ -524,6 +506,56 @@ const ThumbnailSection = ({ src, alt, width, ...props }: ThumbnailSectionProps) 
 );
 ```
 """
+
+# Component Performance Standard
+cs:ComponentPerformance a cso:CodeStandard ;
+    cso:name "react/component/performance" ;
+    cso:hasCategory cso:ReactCategory ;
+    cso:description "Components must use React.memo for expensive renders and useMemo/useCallback for expensive computations or callback stability." ;
+    cso:dos """
+(Do) Use React.memo when a component's render is expensive and props change less frequently than parent renders.
+```typescript
+const ExpensiveList = React.memo(({ items }: Props) => (
+  <div>
+    {items.map(item => (
+      <ComplexItem key={item.id} {...item} />
+    ))}
+  </div>
+));
+```
+""" ;
+    cso:donts """
+(Don't) Use React.memo on simple components or when props change frequently.
+```typescript
+// Bad: Unnecessary memoization of a simple component
+const SimpleText = React.memo(({ text }: Props) => (
+  <span>{text}</span>
+));
+```
+""" .
+
+# Hooks Memoization Standard
+cs:HooksMemoization a cso:CodeStandard ;
+    cso:name "react/hooks/memoization" ;
+    cso:hasCategory cso:ReactCategory ;
+    cso:description "Hooks must use useMemo for expensive computations and useCallback for callback stability in prop passing." ;
+    cso:dos """
+(Do) Use useMemo for expensive computations that depend on specific values.
+```typescript
+const sortedItems = useMemo(() => {
+  return items
+    .slice()
+    .sort((a, b) => b.value - a.value);
+}, [items]);
+```
+""" ;
+    cso:donts """
+(Don't) Use useMemo/useCallback for simple operations or when dependencies change frequently.
+```typescript
+// Bad: Unnecessary memoization of a simple calculation
+const total = useMemo(() => a + b, [a, b]);
+```
+""" .
 
 # Custom Hooks Standard
 cs:CustomHooks a cso:CodeStandard ;
@@ -603,7 +635,8 @@ const useProviderState = ({
 
 # Context Provider Structure Standard
 cs:ContextProviderStructure a cso:CodeStandard ;
-    cso:name "react/file-structure/context" ;
+    cso:name "react/component/structure/context" ;
+    cso:extends cs:ComponentFolderStructure ;
     cso:hasCategory cso: ReactCategory ;
     cso:description "Context providers must use `Provider.tsx` as the main component file instead of the standard component naming pattern `<MyComponent>.tsx`." ;
     cso:dos """

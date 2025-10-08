@@ -42,9 +42,9 @@ cso:hasCategory a owl:ObjectProperty ;
                rdfs:domain cso:CodeStandard ;
                rdfs:range cso:Category .
 
-cso:hasParent a owl:ObjectProperty ;
-              rdfs:label "has parent"@en ;
-              rdfs:comment "Associates a child code standard with its parent standard, creating a hierarchical relationship"@en ;
+cso:extends a owl:ObjectProperty ;
+              rdfs:label "extends"@en ;
+              rdfs:comment "Associates a code standard with another standard that it extends or adds further context to"@en ;
               rdfs:domain cso:CodeStandard ;
               rdfs:range cso:CodeStandard .
 
