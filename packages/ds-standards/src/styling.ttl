@@ -7,324 +7,159 @@
 # Styling Category
 cs:StylingCategory a cso:Category ;
     rdfs:label "Styling"@en ;
-    rdfs:comment "Standards specific to CSS styling and design system implementation"@en ;
+    rdfs:comment "Standards for implementing design system styling patterns"@en ;
     cso:slug "styling" .
 
-cs:CSSTokenTypes a cso:CodeStandard ;
+cs:TokenTypes a cso:CodeStandard ;
     cso:name "styling/tokens/types" ;
     cso:hasCategory cs:StylingCategory ;
-    cso:description """CSS Tokens belong to one of the following types:
-      - Primitive tokens: Raw values that are used to build other tokens.
-      - Semantic tokens: Tokens that map semantic concepts to values defined by primitive tokens. 
-      - Component tokens: Tokens that map component style properties to values defined by semantic tokens.
+    cso:description """Design tokens follow a strict hierarchy:
+      - Primitive tokens: Raw values that form the foundation of the design system
+      - Semantic tokens: Map semantic concepts to primitive token values
+      - Component tokens: Map component properties to semantic token values
     """ ;
     cso:dos """
-(Do) Define primitive tokens as raw values.
-```css
-    --color-neutral-100: #fff;
-    --spacing-unit: 0.5rem;
+(Do) Define semantic tokens that map to primitive tokens.
 ```
-
-(Do) Define semantic tokens as mappings of semantic concepts to primitive tokens.
-```css
-    --color-background-default: var(--color-neutral-100);
-    --spacing-vertical-medium: calc(2 * var(--spacing-unit));
-```
-
-(Do) Define component tokens as mappings of component style properties to semantic tokens.
-```css
-    --button-padding-vertical: var(--spacing-vertical-medium);
+{
+  "color": {
+    "background": {
+      "default": {
+        "$type": "color",
+        "$value": "{color.neutral.100}"
+      }
+    }
+  }
+}
 ```
 """ ;
     cso:donts """
-(Don't) Define semantic tokens as raw values.
-```css
-    --color-background-default: #fff;
+(Don't) Skip the semantic layer by mapping component tokens directly to primitives.
 ```
-
-(Don't) bind component tokens directly to raw values or primitives.
-```css
-    --button-padding-vertical: 1rem;
-    --button-padding-horizontal: var(--spacing-unit);
+{
+  "button": {
+    "padding": {
+      "vertical": {
+        "$type": "dimension",
+        "$value": "{spacing.unit}"  # Should reference semantic token like {spacing.vertical.medium}
+      }
+    }
+  }
+}
 ```
 """ ;
 
-# CSS Token Binding Standard
-# TODO: This standard is currently forward-looking and we are not in compliance with it. Currently our tokens are all in `:root` but likely many should live more local to a selector (like a theme class `.canonical` for semantic vars, or a component class `.ds.skip-link` for component vars)
-cs:CSSTokenBinding a cso:CodeStandard ;
-    cso:name "styling/tokens/binding" ;
+# Design Token Creation Standard
+cs:DesignTokenCreation a cso:CodeStandard ;
+    cso:name "styling/tokens/creation" ;
     cso:hasCategory cs:StylingCategory ;
-    cso:description """CSS style properties that represent design decisions must be bound to tokens. Style properties that are implementation concerns, not design decisions, should directly use raw values.""" ;
+    cso:description """Design tokens must be created for all design decisions in a component. See css/properties/values for how these tokens are used in CSS implementation.""" ;
     cso:dos """
-(Do) Bind design-related style properties to component tokens.
-```css
-.ds.skip-link {
-    padding: var(--skip-link-padding-vertical) var(--skip-link-padding-horizontal);
-    color: var(--skip-link-color);
-    background-color: var(--skip-link-background-color);
-    border-radius: var(--skip-link-border-radius);
-}
+(Do) Create component tokens that reference semantic tokens for design decisions.
 ```
-
-(Do) Use raw values for implementation-specific properties, which need not be configurable.
-```css
-.ds.skip-link {
-    /* `visibility` is not a design decision; it's a technical detail that we don't expect needs to be configurable by a token maintainer */
-    visibility: hidden;
+{
+  "button": {
+    "background": {
+      "$type": "color",
+        "$value": "{color.background.primary}"
+    }
+  }
 }
 ```
 """ ;
     cso:donts """
-(Don't) Use raw values for design-related style properties.
-```css
-.ds.skip-link {
-    padding: 0.5rem 1rem;  /* Bad: Should use tokens */
-}
+(Don't) Use raw values for design decisions.
 ```
-
-(Don't) Use tokens for technical implementation details, which are not design decisions.
-```css
-.ds.skip-link {
-    /* `visibility` is not a design decision; it's a technical detail that we don't expect needs to be configurable by a token maintainer */
-    visibility: var(--skip-link-visibility);  /* Bad: Should use raw values; we don't expect this to be configurable */
+{
+  "button": {
+    "background": {
+      "$type": "color",
+        "$value": "#0066CC"  # Should reference semantic token like {color.background.primary}
+    }
+  }
 }
 ```
 """ ;
 
-# CSS Token Scoping Standard
-# TODO: This standard is currently forward-looking and we are not in compliance with it. Currently our tokens are all in `:root` but likely many should live more local to a selector (like a theme class `.canonical` for semantic vars, or a component class `.ds.skip-link` for component vars)
-cs:CSSTokenScoping a cso:CodeStandard ;
+# Theme Definition Standard
+cs:ThemeDefinition a cso:CodeStandard ;
+    cso:name "styling/themes/definition" ;
+    cso:hasCategory cs:StylingCategory ;
+    cso:description """Themes are collections of semantic tokens that provide consistent styling across components. See css/themes/activation for implementation details.""" ;
+    cso:dos """
+(Do) Define a theme as a complete set of semantic tokens.
+```
+{
+  "theme": {
+    "canonical": {
+      "color": {
+        "background": {
+          "default": {
+            "$type": "color",
+        "$value": "{color.neutral.100}"
+          }
+        }
+      }
+    }
+  }
+}
+```
+""" ;
+    cso:donts """
+(Don't) Mix implementation details into theme definitions.
+```
+{
+  "theme": {
+    "canonical": {
+      "class": "canonical",     // Bad: CSS implementation detail
+      "container": "div",       // Bad: HTML implementation detail
+    }
+  }
+}
+```
+""" .
+
+# Token Scoping Standard
+cs:TokenScoping a cso:CodeStandard ;
     cso:name "styling/tokens/scoping" ;
     cso:hasCategory cs:StylingCategory ;
-    cso:description """CSS tokens are scoped differently, according to their type:
-- Primitive tokens must be defined on `:root`
-- Semantic tokens must be defined in their theme class (e.g., `.canonical`)
-- Component tokens must be scoped to their component selector (e.g., `.ds.skip-link`)
+    cso:description """Design tokens must be scoped according to their type:
+- Primitive tokens: Global scope (system-wide base values)
+- Semantic tokens: Theme scope (theme-specific bindings to primitive tokens)
+- Component tokens: Component scope (bindings to semantic tokens)
 """ ;
     cso:dos """
-(Do) Define primitive tokens on `:root`
-```css
-:root {
-  --color-neutral-100: #fff;
-  --spacing-unit: 0.5rem;
-}
+(Do) Define primitive tokens in global scope.
 ```
-
-(Do) Define semantic tokens on a theme class, like `.canonical`
-```css
-.canonical {
-  --color-background-default: var(--color-neutral-100);
-  --spacing-vertical-medium: calc(2 * var(--spacing-unit));
-}
-```
-
-(Do) define component tokens on a component class, like `.ds.skip-link`.
-```css
-/* tokens.css */
-.ds.button {
-  --button-padding-vertical: var(--spacing-vertical-medium);
-}
-```
-
-(Do) bind component styles to component tokens in implementation libraries.
-```css
-/* packages/react/ds-core/src/ui/Button/styles.css */
-.ds.button {
-  padding: var(--button-padding-vertical) var(--button-padding-horizontal);
-}
-```
-""" ;
-    cso:donts """
-(Don't) Define semantic tokens in `:root`.
-```css
-/* Bad: Semantic token in :root */
-:root {
-  --color-background-default: #fff;  /* Should be in .canonical */
-}
-```
-
-(Don't) define primitive tokens outside of `:root`.
-```css
-/* Bad: Primitive token in theme class */
-.canonical {
-  --color-neutral-100: #fff;  /* Should be in :root */
-}
-```
-""" .
-
-# CSS Variable Naming Standard
-cs:CSSVariableNaming a cso:CodeStandard ;
-    cso:name "styling/variables/naming" ;
-    cso:hasCategory cs:StylingCategory ;
-    cso:description "CSS variable names must use the format `--scope-property-variant` (e.g., `--color-background-default`, `--rule-height`)." ;
-    cso:dos """
-(Do) Use semantic names that describe the variable's purpose.
-```css
-:root {
-  --color-background-default: #fff;
-  --color-text-default: #000;
-  --dimension-separator-bar-thickness: 2px;
-}
-```
-""" ;
-    cso:donts """
-(Don't) Use non-semantic or abstract names that obscure the variable's function.
-```css
-:root {
-  --gray-100: #f8f9fa; /* Bad: Name describes the value, not the purpose */
-  --space-4: 1rem;   /* Bad: Abstract name */
-}
-```
-""" .
-
-# CSS Selector Namespace Standard
-cs:CSSSelectorNamespace a cso:CodeStandard ;
-    cso:name "styling/selectors/namespace" ;
-    cso:hasCategory cs:StylingCategory ;
-    cso:description "All component selectors must be prefixed with the `.ds` namespace (e.g., `.ds.button`)." ;
-    cso:dos """
-(Do) Prefix all component selectors with `.ds`.
-```css
-/* Component root with namespace */
-.ds.button {
-  /* Base styles */
-}
-```
-""" ;
-    cso:donts """
-(Don't) Omit the `.ds` namespace from component selectors.
-```css
-/* Bad: Missing .ds namespace */
-.button {
-  /* styles */
-}
-```
-""" .
-
-# CSS Component Encapsulation Standard
-cs:CSSComponentEncapsulation a cso:CodeStandard ;
-    cso:name "styling/component/encapsulation" ;
-    cso:hasCategory cs:StylingCategory ;
-    cso:description "Component styles must be encapsulated using the component's root class as a boundary. All internal element styles must be scoped to the component's namespace." ;
-    cso:dos """
-(Do) Scope internal element styles using the component's namespace.
-```css
-.ds.button {
-  /* Component root styles */
-  
-  & > .icon {
-    /* Internal element styles */
-    margin-right: var(--button-icon-spacing);
+{
+  "color": {
+    "neutral": {
+      "100": {
+        "$type": "color",
+        "$value": "#FFFFFF"
+      }
+    }
   }
 }
 ```
 """ ;
     cso:donts """
-(Do) Don't style internal elements without the component namespace.
-```css
-/* Bad: Internal element not scoped to component */
-.icon {
-  margin-right: var(--button-icon-spacing);
-}
+(Don't) Define primitive tokens in theme scope.
 ```
-""" .
-
-# CSS State Handling Standard
-cs:CSSStateHandling a cso:CodeStandard ;
-    cso:name "styling/component/states" ;
-    cso:hasCategory cs:StylingCategory ;
-    cso:description "Component states must be handled using attribute selectors for native states and class modifiers for custom states." ;
-    cso:dos """
-(Do) Use attribute selectors for native element states.
-```css
-.ds.button {
-  &[disabled] {
-    opacity: var(--button-disabled-opacity);
+{
+  "theme": {
+    "canonical": {
+      "color": {
+        "neutral": {
+          "100": {
+            "$type": "color",
+        "$value": "#FFFFFF"  # Should be defined in global scope
+          }
+        }
+      }
+    }
   }
 }
 ```
-""" ;
-    cso:donts """
-(Don't) Use class modifiers for native states.
-```css
-/* Bad: Using class for native state */
-.ds.button.disabled {
-  opacity: var(--button-disabled-opacity);
-}
-```
 """ .
 
-# CSS Specificity Management Standard
-cs:CSSSpecificityManagement a cso:CodeStandard ;
-    cso:name "styling/selectors/specificity" ;
-    cso:hasCategory cs:StylingCategory ;
-    cso:description """CSS selectors must follow a strict specificity pattern:
-- Component root must use namespace + component name (.ds.button)
-- Single modifier class for variants (.ds.button.primary)
-- Single attribute for states (.ds.button[disabled])""" ;
-    cso:dos """
-(Do) Use the minimum specificity needed to achieve the styling goal.
-```css
-.ds.button {
-  /* Root: namespace + component (2 classes) */
-}
-
-.ds.button[disabled] {
-  /* State: root + attribute (2 classes + 1 attribute) */
-}
-
-.ds.button.base {
-  /* Variant: root + modifier (3 classes) */
-}
-```
-""" ;
-    cso:donts """
-(Don't) Combine multiple modifiers or mix states with variants.
-```css
-/* Bad: Mixing variant with state */
-.ds.button.primary[disabled].large {
-  /* Too specific: root + 2 modifiers + state */
-}
-```
-""" .
-
-# CSS Selector Semantics Standard
-cs:CSSSelectorSemantics a cso:CodeStandard ;
-    cso:name "styling/selectors/semantics" ;
-    cso:hasCategory cs:StylingCategory ;
-    cso:description "CSS class names must describe the purpose or state of an element, not its appearance." ;
-    cso:dos """
-(Do) Use semantic modifier classes to represent component variations.
-```css
-/* Semantic modifier for a primary button */
-.ds.button.primary {
-  --modifier-color: var(--color-primary);
-}
-```
-""" ;
-    cso:donts """
-(Don't) Use non-semantic or presentational class names.
-```css
-/* Bad: 'big' describes appearance, not purpose */
-.ds.button.big {
-  padding: 1rem;
-}
-```
-""" .
-
-# Component Naming Convention for CSS
-cs:CSSComponentNamingConvention a cso:CodeStandard ;
-    cso:name "styling/selectors/naming-convention" ;
-    cso:hasCategory cs:StylingCategory ;
-    cso:description "Component CSS class names must be the kebab-case version of the component's PascalCase name." ;
-    cso:dos """
-(Do) Convert PascalCase component names to kebab-case for CSS classes:
-- `MyComponent` -> `.ds.my-component`
-- `UserProfile` -> `.ds.user-profile`
-- `Button` -> `.ds.button`
-""" ;
-    cso:donts """
-(Don't) Use PascalCase or other formats in CSS class names:
-- `.ds.MyComponent` (Bad: Not kebab-case)
-- `.ds.user_profile` (Bad: Not kebab-case)
-""" .

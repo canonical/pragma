@@ -1,0 +1,210 @@
+@prefix cso: <http://pragma.canonical.com/codestandards#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+# CSS Category
+cs:CSSCategory a cso:Category ;
+    rdfs:label "CSS"@en ;
+    rdfs:comment "Standards for CSS technical implementation"@en ;
+    cso:slug "css" .
+
+# CSS Selector Namespace Standard
+cs:CSSSelectorNamespace a cso:CodeStandard ;
+    cso:name "css/selectors/namespace" ;
+    cso:hasCategory cs:CSSCategory ;
+    cso:description "All component selectors must be prefixed with the `.ds` namespace (e.g., `.ds.button`)." ;
+    cso:dos """
+(Do) Prefix all component selectors with `.ds`.
+```css
+/* Component root with namespace */
+.ds.button {
+  /* Base styles */
+}
+```
+""" ;
+    cso:donts """
+(Don't) Omit the `.ds` namespace from component selectors.
+```css
+/* Bad: Missing .ds namespace */
+.button {
+  /* styles */
+}
+```
+""" .
+
+# CSS Component Encapsulation Standard
+cs:CSSComponentEncapsulation a cso:CodeStandard ;
+    cso:name "css/component/encapsulation" ;
+    cso:hasCategory cs:CSSCategory ;
+    cso:description "Component styles must be encapsulated using the component's root class as a boundary. All internal element styles must be scoped to the component's namespace." ;
+    cso:dos """
+(Do) Scope internal element styles using the component's namespace.
+```css
+.ds.button {
+  /* Component root styles */
+  
+  & > .icon {
+    /* Internal element styles */
+    margin-right: var(--button-icon-spacing);
+  }
+}
+```
+""" ;
+    cso:donts """
+(Do) Don't style internal elements without the component namespace.
+```css
+/* Bad: Internal element not scoped to component */
+.icon {
+  margin-right: var(--button-icon-spacing);
+}
+```
+""" .
+
+# CSS State Handling Standard
+cs:CSSStateHandling a cso:CodeStandard ;
+    cso:name "css/component/states" ;
+    cso:hasCategory cs:CSSCategory ;
+    cso:description "Component states must be handled using attribute selectors for native states and class modifiers for custom states." ;
+    cso:dos """
+(Do) Use attribute selectors for native element states.
+```css
+.ds.button {
+  &[disabled] {
+    opacity: var(--button-disabled-opacity);
+  }
+}
+```
+""" ;
+    cso:donts """
+(Don't) Use class modifiers for native states.
+```css
+/* Bad: Using class for native state */
+.ds.button.disabled {
+  opacity: var(--button-disabled-opacity);
+}
+```
+""" .
+
+# CSS Specificity Management Standard
+cs:CSSSpecificityManagement a cso:CodeStandard ;
+    cso:name "css/selectors/specificity" ;
+    cso:hasCategory cs:CSSCategory ;
+    cso:description """CSS selectors must follow a strict specificity pattern:
+- Component root must use namespace + component name (.ds.button)
+- Single modifier class for variants (.ds.button.primary)
+- Single attribute for states (.ds.button[disabled])""" ;
+    cso:dos """
+(Do) Use a single modifier class for component variants.
+```css
+.ds.button.primary {
+  /* Variant: root + modifier (3 classes) */
+  background: var(--button-primary-background);
+}
+```
+""" ;
+    cso:donts """
+(Don't) Combine multiple modifiers or mix states with variants.
+```css
+/* Bad: Mixing variant with state */
+.ds.button.primary[disabled].large {
+  /* Too specific: root + 2 modifiers + state */
+}
+```
+""" .
+
+# CSS Selector Semantics Standard
+cs:CSSSelectorSemantics a cso:CodeStandard ;
+    cso:name "css/selectors/semantics" ;
+    cso:hasCategory cs:CSSCategory ;
+    cso:description "CSS class names must describe the purpose or state of an element, not its appearance." ;
+    cso:dos """
+(Do) Use semantic modifier classes to represent component variations.
+```css
+/* Semantic modifier for a primary button */
+.ds.button.primary {
+  --modifier-color: var(--color-primary);
+}
+```
+""" ;
+    cso:donts """
+(Don't) Use non-semantic or presentational class names.
+```css
+/* Bad: 'big' describes appearance, not purpose */
+.ds.button.big {
+  padding: 1rem;
+}
+```
+""" .
+
+# Theme Activation Standard
+cs:ThemeActivation a cso:CodeStandard ;
+    cso:name "css/themes/activation" ;
+    cso:hasCategory cs:CSSCategory ;
+    cso:description """Theme tokens must be activated through CSS classes on container elements. See styling/themes/definition for theme token structure.""" ;
+    cso:dos """
+(Do) Define semantic tokens within theme classes.
+```css
+.canonical {
+  --spacing-vertical-medium: var(--spacing-unit-2x);
+  --color-background: var(--color-neutral-100);
+}
+```
+""" ;
+    cso:donts """
+(Don't) Hardcode theme names in component styles.
+```css
+/* Bad: Component locked to specific theme */
+.ds.button {
+  padding: var(--canonical-spacing-vertical-medium);
+}
+```
+""" .
+
+# CSS Property Values Standard
+cs:CSSPropertyValues a cso:CodeStandard ;
+    cso:name "css/properties/values" ;
+    cso:hasCategory cs:CSSCategory ;
+    cso:description """CSS properties must use design tokens for design decisions (see styling/tokens/creation) and raw values for implementation details.""" ;
+    cso:dos """
+(Do) Use design tokens for design decisions.
+```css
+.ds.button {
+  /* Design decision uses token */
+  background: var(--button-background);
+}
+```
+(Do) Use raw values for implementation details, which should not be configurable.
+```css
+.ds.skip-link {
+    visibility: hidden;
+}
+```
+""" ;
+    cso:donts """
+(Don't) Use raw values for design decisions.
+```css
+.ds.button {
+  /* Bad: Design decision using raw value */
+  background: #0066CC;
+}
+```
+""" .
+
+# Component Naming Convention for CSS
+cs:CSSComponentNamingConvention a cso:CodeStandard ;
+    cso:name "css/selectors/naming-convention" ;
+    cso:hasCategory cs:CSSCategory ;
+    cso:description "Component CSS class names must be the kebab-case version of the component's PascalCase name." ;
+    cso:dos """
+(Do) Convert PascalCase component names to kebab-case for CSS classes:
+- `MyComponent` -> `.ds.my-component`
+- `UserProfile` -> `.ds.user-profile`
+- `Button` -> `.ds.button`
+""" ;
+    cso:donts """
+(Don't) Use PascalCase or other formats in CSS class names:
+- `.ds.MyComponent` (Bad: Not kebab-case)
+- `.ds.user_profile` (Bad: Not kebab-case)
+""" .
