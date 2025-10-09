@@ -75,7 +75,7 @@ export * from './types.js';
 cs:ComponentFolderNaming a cso:CodeStandard ;
     cso:name "react/component/folder-naming" ;
     cso:hasCategory cso: ReactCategory ;
-    cso:description "Components must be named in PascalCase (e.g., `Button`, `Tooltip`, `[MyComponent]`)." ;
+    cso:description "Components must be named in PascalCase (e.g., `Button`, `Tooltip`, `MyComponent`)." ;
     cso:dos """
 (Do) Name the component folder using PascalCase.
 ```
@@ -216,30 +216,6 @@ export interface ButtonProps {
   label: string;
   onClick?: () => void;    // Bad: Duplicates HTML button props
   disabled?: boolean;      // Bad: Duplicates HTML button props
-}
-```
-""" .
-
-# Component Props Naming Standard
-cs:ComponentPropsNaming a cso:CodeStandard ;
-    cso:name "react/component/props-naming" ;
-    cso:hasCategory cso: ReactCategory ;
-    cso:description "Prop names must be semantic and clearly describe their purpose." ;
-    cso:dos """
-(Do) Use descriptive names for props.
-```typescript
-interface ButtonProps {
-  label: string;
-  onClick: () => void;
-}
-```
-""" ;
-    cso:donts """
-(Don't) Use non-semantic or unclear prop names.
-```typescript
-interface ButtonProps {
-  a: string;      // Bad: Not descriptive
-  b: () => void;  // Bad: Not descriptive
 }
 ```
 """ .
