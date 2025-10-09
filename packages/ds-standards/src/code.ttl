@@ -14,7 +14,7 @@ cs:CodeCategory a cso:Category ;
 cs:FunctionPurity a cso:CodeStandard ;
     cso:name "code/function/purity" ;
     cso:hasCategory cs:CodeCategory ;
-    cso:description "Functions should be pure where possible. A pure function returns the same output for the same input and does not modify external state or perform I/O operations. If a function must perform side effects (e.g., I/O in CLI tools), it must be explicitly annotated and documented with the reason for impurity using the industry-standard @remarks or @note tag in TSDoc/JSDoc." ;
+    cso:description "Functions should be pure where possible. A pure function returns the same output for the same input and does not modify external state or perform I/O operations. If a function must perform side effects (e.g., I/O in CLI tools), it must be explicitly annotated and documented with the reason for impurity using the @note tag in TSDoc/JSDoc." ;
     cso:dos """
 (Do) Create pure functions that rely only on their inputs to compute the output.
 ```typescript
@@ -23,12 +23,11 @@ const calculatePrice = (basePrice: number, taxRate: number): number => {
 };
 ```
 
-(Do) Annotate and document impure functions that perform I/O or modify external state, explaining why impurity is necessary using @remarks or @note.
+(Do) Annotate and document impure functions that perform I/O or modify external state, explaining why impurity is necessary using @note.
 ```typescript
 /**
  * Writes data to the file system.
- * @remarks
- * This function performs I/O and is impure. It will modify external state.
+ * @note - This function is impure - it modifies the file system.
  */
 function writeOutputToFile(data: string, path: string) {
   fs.writeFileSync(path, data);
