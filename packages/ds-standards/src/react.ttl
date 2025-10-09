@@ -71,27 +71,6 @@ export * from './types.js';
 ```
 """ .
 
-# Component Naming Standard
-cs:ComponentFolderNaming a cso:CodeStandard ;
-    cso:name "react/component/folder-naming" ;
-    cso:hasCategory cso: ReactCategory ;
-    cso:description "Components must be named in PascalCase (e.g., `Button`, `Tooltip`, `MyComponent`)." ;
-    cso:dos """
-(Do) Name the component folder using PascalCase.
-```
-[MyComponent]/
-Tooltip/
-Button/
-```
-""" ;
-    cso:donts """
-(Don't) Use kebab-case or snake_case for component folder names.
-```
-my-component/
-tooltip_folder/
-```
-""" .
-
 # Component File Naming Standard
 cs:ComponentFileNaming a cso:CodeStandard ;
     cso:name "react/component/file-naming" ;
@@ -681,22 +660,6 @@ const useProviderState = ({
 }: UseProviderStateProps): UseProviderStateResult => {
  // centralize the entire provider state here...
 }
-```
-
-(Do) Attach subcomponents to the main exported component using dot notation.
-```typescript
-// [MyComponent]/types.ts
-export type [MyComponent]Component = ((props: ProviderProps) => ReactElement) & {
-  SubComponent: (props: SubComponentProps) => ReactElement | null;
-};
-
-// [MyComponent]/index.ts
-import { SubComponent } from "./common/SubComponent/index.js";
-
-export const [MyComponent] = Provider as [MyComponent]Component;
-[MyComponent].SubComponent = SubComponent;
-
-export default [MyComponent];
 ```
 """ ;
     cso:donts """
