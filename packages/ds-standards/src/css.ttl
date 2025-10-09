@@ -166,7 +166,7 @@ cs:ThemeActivation a cso:CodeStandard ;
 cs:CSSPropertyValues a cso:CodeStandard ;
     cso:name "css/properties/values" ;
     cso:hasCategory cs:CSSCategory ;
-    cso:description """CSS properties must use design tokens for design decisions (see styling/tokens/creation) and raw values for implementation details.""" ;
+    cso:description """CSS properties must use design tokens for design decisions (see styling/tokens/creation) and raw values for properties that are independent from design decisions, or "unthemable".""" ;
     cso:dos """
 (Do) Use design tokens for design decisions.
 ```css
@@ -175,7 +175,7 @@ cs:CSSPropertyValues a cso:CodeStandard ;
   background: var(--button-background);
 }
 ```
-(Do) Use raw values for implementation details, which should not be configurable.
+(Do) Use raw values for unthemable properties (independent of design decisions).
 ```css
 .ds.skip-link {
     visibility: hidden;
