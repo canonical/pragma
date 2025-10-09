@@ -119,15 +119,15 @@ cs:ComponentFileNaming a cso:CodeStandard ;
 ```
 """ .
 
-# Component Props Standards
-cs:ComponentPropsStandards a cso:CodeStandard ;
+# Component Props Standard
+cs:ComponentProps a cso:CodeStandard ;
     cso:name "react/component/props" ;
-    cso:hasCategory cso: ReactCategory ;
-    cso:description """Component props must:
+    cso:hasCategory cso:ReactCategory ;
+    cso:description "Component props must:
 - Be documented with TSDoc comments
 - Be destructured when used in markup
 - Be spread to the root element when unused
-- Follow type-specific patterns based on what the component renders""" ;
+- Follow type-specific patterns based on what the component renders" ;
     cso:dos """
 (Do) Document props with TSDoc comments and use proper destructuring and spreading.
 ```typescript
@@ -147,7 +147,7 @@ const Button = ({
   className,
   ...props  // Spread unused HTML button props
 }: ButtonProps) => (
-  <button 
+  <button
     className={[componentCssClassName, emphasis, className].filter(Boolean).join(" ")}
     {...props}
   >
@@ -196,8 +196,8 @@ const Button = ({
 # HTML Rendering Components Props Standard
 cs:HTMLRenderingProps a cso:CodeStandard ;
     cso:name "react/component/props/html-rendering" ;
-    cso:hasCategory cso: ReactCategory ;
-    cso:extends cs:ComponentPropsStandards ;
+    cso:hasCategory cso:ReactCategory ;
+    cso:extends cs:ComponentProps ;
     cso:description "Components that render HTML markup must extend the base HTML element props interface to enable passing native properties through spreading." ;
     cso:dos """
 (Do) Extend the appropriate React HTML props interface and add component-specific props.
@@ -436,14 +436,12 @@ const Badge = ({
 <span className={`${componentCssClassName} ${severity} ${className}`}>
 ```
 """ .
-```
-"""
 
 # Wrapper Component Props Standard
 cs:WrapperComponentProps a cso:CodeStandard ;
     cso:name "react/component/props/wrapper" ;
-    cso:hasCategory cso: ReactCategory ;
-    cso:extends cs:ComponentPropsStandards ;
+    cso:hasCategory cso:ReactCategory ;
+    cso:extends cs:ComponentProps ;
     cso:description "Wrapper components must use namespaced props for inner components and accept unscoped props for the wrapper element." ;
     cso:dos """
 (Do) Use namespaced props for inner components and unscoped props for the wrapper element.
