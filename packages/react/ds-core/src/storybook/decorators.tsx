@@ -19,7 +19,7 @@ export const grid = () => (Story: ElementType) => (
 );
 
 /**
- * Places the story before a `<main>` element.
+ * Places the story before a `<main>` element. This is useful for stories that need to be placed before the rest of the page contents in reading order (such as a skip link).
  * @param id - The id of the main element
  * @param children - Content to be rendered inside the main element
  * @TODO this is the first decorator that seems like it may deserve a complex props object, and thus a separate Type.
