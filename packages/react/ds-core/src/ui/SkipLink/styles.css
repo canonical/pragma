@@ -1,0 +1,21 @@
+/* @canonical/generator-ds 0.10.0-experimental.4 */
+
+.ds.skip-link {
+  background: var(--skip-link-background);
+  color: var(--skip-link-color);
+  display: block;
+  inset-inline-start: var(--skip-link-inset-inline-start);
+  position: absolute;
+  top: var(--skip-link-top);
+
+  &:focus,
+  &:focus-visible {
+    inset-inline-start: var(--skip-link-focus-inset-inline-start);
+    outline-offset: var(--skip-link-outline-offset);
+    padding-block: var(--skip-link-focus-padding-block);
+    padding-inline: var(--skip-link-focus-padding-inline);
+    position: fixed;
+    top: var(--skip-link-focus-top);
+    z-index: var(--skip-link-focus-z-index);
+  }
+}

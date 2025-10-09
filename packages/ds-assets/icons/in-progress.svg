@@ -1,12 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+<svg width='16' height='16' xmlns='http://www.w3.org/2000/svg'>
   <defs>
-    <mask id="progress-slice-mask">
-      <circle cx="8" cy="8" r="8" fill="white"/>
-      <path d="M8 8 L8 0 A8 8 0 0 0 0 8 L8 8 Z" fill="black"/>
+    <mask id="progress-mask">
+      <rect width="16" height="16" fill="white"/>
+      <path d='M8 3.5a4.5 4.5 0 110 9 4.5 4.5 0 010-9zM8 5a3 3 0 100 6 3 3 0 000-6z' 
+            fill="black" fill-rule='nonzero' opacity=".5"/>
+      <path d='M8.15 5.004l-.037-1.502L8 3.5a4.5 4.5 0 11-4.43 5.3h1.538A3.001 3.001 0 0011 8a3 3 0 00-2.85-2.996z'
+            fill="black"/>
     </mask>
   </defs>
   <g id="in-progress">
-    <path mask="url(#progress-slice-mask)" d="M8 1a7 7 0 1 1 0 14A7 7 0 0 1 8 1zm0 1.5a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11z" fill="currentColor" fill-rule="nonzero"/>
+    <circle fill='currentColor' cx='8' cy='8' r='7' mask="url(#progress-mask)"/>
   </g>
 </svg>
