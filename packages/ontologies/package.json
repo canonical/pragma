@@ -5,9 +5,9 @@
   "type": "module",
   "module": "dist/esm/index.js",
   "types": "dist/types/index.d.ts",
+  "private": true,
   "files": [
-    "dist",
-    "icons"
+    "src"
   ],
   "author": {
     "email": "webteam@canonical.com",

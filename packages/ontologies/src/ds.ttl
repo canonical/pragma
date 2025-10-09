@@ -35,6 +35,14 @@ ds:URIString
     ) ;
     skos:definition "URI string following pattern ds:[tier]:[class]:[name]:[version]" .
 
+ds:SemverString
+    a rdfs:Datatype ;
+    owl:onDatatype xsd:string ;
+    owl:withRestrictions (
+        [ xsd:pattern "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-([0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*))?(?:\\+([0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*))?$" ]
+    ) ;
+    skos:definition "Semantic version string following semver specification (MAJOR.MINOR.PATCH)" .
+
 
 
 ###############################################################################
@@ -143,10 +151,10 @@ ds:description
 ds:version
     a owl:DatatypeProperty, owl:FunctionalProperty ;
     rdfs:domain ds:UIElement ;
-    rdfs:range xsd:string ;
+    rdfs:range ds:SemverString ;
     rdfs:label "version" ;
-    skos:definition "" ; #TODO
-    ds:acceptanceCriteria "" . #TODO
+    skos:definition "Semantic version of the UI element following semver specification" ;
+    ds:acceptanceCriteria "Must follow semantic versioning format: MAJOR.MINOR.PATCH with optional pre-release and build metadata" .
 
 ds:uri
     a owl:DatatypeProperty, owl:InverseFunctionalProperty ;
