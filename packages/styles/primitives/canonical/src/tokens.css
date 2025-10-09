@@ -333,12 +333,17 @@
   /* 3px at 16px fontsize, expressed in rems so it scales with text if the root font-size changes at a breakpoint */
   --tmp-dimension-separator-bar-thickness: 0.1875rem;
 
+  --tmp-focusable-focused-outline-width: 3px;
+  --tmp-focusable-focused-outline-style: solid;
+  --tmp-focusable-focused-outline-color: var(--tmp-color-palette-blue-9);
+
   /* spacing tokens */
 
   --spacing-horizontal-xsmall: 0.25rem;
   --spacing-horizontal-small: 0.5rem;
-  --spacing-horizontal-medium: 1.25rem;
-  --spacing-horizontal-large: 1.5rem;
+  --spacing-horizontal-medium: 0.75rem;
+  --spacing-horizontal-large: 1rem;
+  --spacing-horizontal-xlarge: 1.5rem;
 
   --spacing-vertical-xsmall: 0.25rem;
   --spacing-vertical-small: 0.5rem;
@@ -419,6 +424,9 @@
   --link-activation-contents-padding-horizontal: var(
     --spacing-horizontal-small
   );
+  --link-focus-outline-style: var(--tmp-focusable-focused-outline-style);
+  --link-focus-outline-width: var(--tmp-focusable-focused-outline-width);
+  --link-focus-outline-color: var(--tmp-focusable-focused-outline-color);
 
   /*
         TODO the tooltip's color tokens should be inverted from the active color theme.
@@ -470,4 +478,18 @@
   --rule-height: 1px;
   --rule-margin-top: 0;
   --rule-height-with-margin: var(--spacing-vertical-small);
+
+  --skip-link-background: var(--tmp-color-background-alt);
+  --skip-link-color: var(--tmp-color-text-link-default);
+  --skip-link-inset-inline-start: -999px;
+  --skip-link-top: -999px;
+  --skip-link-outline-offset: calc(
+    -1 *
+    var(--tmp-focusable-focused-outline-width)
+  );
+  --skip-link-focus-inset-inline-start: var(--spacing-horizontal-small);
+  --skip-link-focus-padding-block: var(--spacing-vertical-large);
+  --skip-link-focus-padding-inline: var(--spacing-horizontal-large);
+  --skip-link-focus-top: var(--spacing-vertical-small);
+  --skip-link-focus-z-index: 999999;
 }
