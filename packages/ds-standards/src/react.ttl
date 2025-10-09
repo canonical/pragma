@@ -561,7 +561,7 @@ const total = useMemo(() => a + b, [a, b]);
 cs:CustomHooks a cso:CodeStandard ;
     cso:name "react/hooks/custom" ;
     cso:hasCategory cso: ReactCategory ;
-    cso:description "Custom hooks must separate concerns at the domain level. All hooks within a ComponentDomain/hooks directory are considered within the domain scope and should focus on a single concern. Provider state hooks must define types in `hooks/types.ts` with `UseProviderStateProps` (containing all `ProviderProps` minus `children`) and `UseProviderStateResult` (matching the context options). Custom hooks must be used when:
+    cso:description "Custom hooks must separate concerns at the domain level. All hooks within a ComponentDomain/hooks directory are considered within the domain scope and should focus on a single concern. Custom hooks must be used when:
     - Logic needs to be shared between components
     - Component logic becomes complex
     - State management needs to be abstracted
@@ -603,34 +603,6 @@ const useUserData = () => {
   return { isAuthenticated, profile, settings, notifications };
 };
 ```
-
-(Do) Create provider state hook types in `hooks/types.ts` for context providers.
-```typescript
-// [MyComponent]/hooks/types.ts
-import type { ContextOptions, ProviderProps } from "../types.js";
-
-// The props expected by the provider state hook. The children prop is omitted, as it is not passed to the hook - it is only rendered by the provider component.
-export type UseProviderStateProps = Omit<ProviderProps, "children">;
-
-// The result of the provider state hook. This should match the context options defined in the main component types file.
-export type UseProviderStateResult = ContextOptions;
-```
-
-(Do) Create a provider state hook implementation.
-```tsx
-// [MyComponent]/hooks/useProviderState.ts
-import { useContext } from "react";
-import type { UseProviderStateProps, UseProviderStateResult } from "./types.js";
-
-/**
- * Hook to manage the state of the provider
- */
-const useProviderState = ({
-    // ..props...
-}: UseProviderStateProps): UseProviderStateResult => {
- // centralize the entire provider state here...
-}
-```
 """ .
 
 # Context Provider Structure Standard
@@ -638,7 +610,7 @@ cs:ContextProviderStructure a cso:CodeStandard ;
     cso:name "react/component/structure/context" ;
     cso:extends cs:ComponentFolderStructure ;
     cso:hasCategory cso: ReactCategory ;
-    cso:description "Context providers must use `Provider.tsx` as the main component file instead of the standard component naming pattern `[MyComponent].tsx`." ;
+    cso:description "Context providers must use `Provider.tsx` as the main component file instead of the standard component naming pattern `[MyComponent].tsx`. Provider state hooks must define types in `hooks/types.ts` with `UseProviderStateProps` (containing all `ProviderProps` minus `children`) and `UseProviderStateResult` (matching the context options)." ;
     cso:dos """
 (Do) Organize provider-related files by separating concerns into distinct files: place the context definition in `Context.tsx`, the provider implementation in `Provider.tsx`, and provider-specific hooks in a `hooks/` directory. Create a `hooks/useProviderState.ts` file to centrally manage the state of the provider.`
 ```
