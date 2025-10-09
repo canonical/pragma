@@ -4,4 +4,6 @@ This package contains [RDF Turtle](https://www.w3.org/TR/turtle/) files that est
 
 Each file in [`src/`](./src/) corresponds to a specific domain of standards. The files are organized as follows:
 
-- [`Icons.ttl`](./src/Icons.ttl) - Standards for definition and usage of icons.
+- [`css.ttl`](src/css.ttl) - Standards for applying styles with CSS.
+- [`icons.ttl`](src/icons.ttl) - Standards for definition and usage of icons.
+- [`styling.ttl`](src/styling.ttl) - Standards for structuring and usage of styling, at a high level.
