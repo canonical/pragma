@@ -22,12 +22,6 @@ const meta = {
   title: "SkipLink",
   component: Component,
   parameters: {
-    docs: {
-      description: {
-        component:
-          '<p>The `SkipLink` component provides a way for users to quickly navigate to the main content of a page. It is typically used by keyboard and screen reader users to bypass repetitive navigation links and other elements that appear at the top of the page, pursuant to <a href="https://www.w3.org/WAI/WCAG21/Understanding/bypass-blocks.html">WCAG 2.1 Success Criterion 2.4.1</a>.</p><p>`SkipLink` should be placed near the top of your document body, before the `<main>` element.</p><p>The `<main>` element should have a `tabindex` of `-1` to prevent it from receiving focus from the keyboard without using the skip link.</p>',
-      },
-    },
     // SkipLink is hidden by default until it is focused, so we disable the snapshot test by default. The `Focused` story, hidden from the sidebar, forces the SkipLink to visible so it can be visually tested.
     chromatic: {
       disableSnapshot: true,
