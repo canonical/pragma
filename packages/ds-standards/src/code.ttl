@@ -7,7 +7,7 @@
 # General Code Category
 cs:CodeCategory a cso:Category ;
     rdfs:label "Code"@en ;
-    rdfs:comment "General coding standards and best practices"@en ;
+    rdfs:comment "General typescript coding standards and best practices"@en ;
     cso:slug "code" .
 
 # Function Purity Standard
