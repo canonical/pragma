@@ -507,56 +507,6 @@ const ThumbnailSection = ({ src, alt, width, ...props }: ThumbnailSectionProps) 
 ```
 """
 
-# Component Performance Standard
-cs:ComponentPerformance a cso:CodeStandard ;
-    cso:name "react/component/performance" ;
-    cso:hasCategory cso:ReactCategory ;
-    cso:description "Components must use React.memo for expensive renders and useMemo/useCallback for expensive computations or callback stability." ;
-    cso:dos """
-(Do) Use React.memo when a component's render is expensive and props change less frequently than parent renders.
-```typescript
-const ExpensiveList = React.memo(({ items }: Props) => (
-  <div>
-    {items.map(item => (
-      <ComplexItem key={item.id} {...item} />
-    ))}
-  </div>
-));
-```
-""" ;
-    cso:donts """
-(Don't) Use React.memo on simple components or when props change frequently.
-```typescript
-// Bad: Unnecessary memoization of a simple component
-const SimpleText = React.memo(({ text }: Props) => (
-  <span>{text}</span>
-));
-```
-""" .
-
-# Hooks Memoization Standard
-cs:HooksMemoization a cso:CodeStandard ;
-    cso:name "react/hooks/memoization" ;
-    cso:hasCategory cso:ReactCategory ;
-    cso:description "Hooks must use useMemo for expensive computations and useCallback for callback stability in prop passing." ;
-    cso:dos """
-(Do) Use useMemo for expensive computations that depend on specific values.
-```typescript
-const sortedItems = useMemo(() => {
-  return items
-    .slice()
-    .sort((a, b) => b.value - a.value);
-}, [items]);
-```
-""" ;
-    cso:donts """
-(Don't) Use useMemo/useCallback for simple operations or when dependencies change frequently.
-```typescript
-// Bad: Unnecessary memoization of a simple calculation
-const total = useMemo(() => a + b, [a, b]);
-```
-""" .
-
 # Custom Hooks Standard
 cs:CustomHooks a cso:CodeStandard ;
     cso:name "react/hooks/custom" ;
