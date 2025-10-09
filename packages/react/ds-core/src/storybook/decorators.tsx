@@ -1,4 +1,4 @@
-import type { ElementType } from "react";
+import type { ElementType, ReactNode } from "react";
 
 export const rtl = () => (Story: ElementType) => (
   <div dir="rtl">
@@ -17,3 +17,21 @@ export const grid = () => (Story: ElementType) => (
     <Story />
   </div>
 );
+
+/**
+ * Places the story before a `<main>` element. This is useful for stories that need to be placed before the rest of the page contents in reading order (such as a skip link).
+ * @param id - The id of the main element
+ * @param children - Content to be rendered inside the main element
+ * @TODO this is the first decorator that seems like it may deserve a complex props object, and thus a separate Type.
+ *      Should the type be declared separately? Should this be a separate file? Should the decorator be simplified somehow?
+ */
+export const beforeMain =
+  ({ id = "main", children }: { id?: string; children?: ReactNode }) =>
+  (Story: ElementType) => (
+    <>
+      <Story />
+      <main id={id} tabIndex={-1}>
+        {children}
+      </main>
+    </>
+  );
