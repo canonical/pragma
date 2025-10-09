@@ -1,10 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+    <!--TODO the right and bottom of this icon are slightly cropped -->
   <g id="success">
-    <mask id="success-mask">
-      <rect width="16" height="16" fill="white"/>
-      <path d="M10.83 4.50201L12.038 5.39201L7.00501 12.222L4.08301 9.12601L5.17401 8.09601L6.86301 9.88501L10.83 4.50201Z" fill="black"/>
-    </mask>
-    <path d="M8 1C9.85652 1 11.637 1.7375 12.9497 3.05025C14.2625 4.36301 15 6.14348 15 8C15 9.85652 14.2625 11.637 12.9497 12.9497C11.637 14.2625 9.85652 15 8 15C6.14348 15 4.36301 14.2625 3.05025 12.9497C1.7375 11.637 1 9.85652 1 8C1 6.14348 1.7375 4.36301 3.05025 3.05025C4.36301 1.7375 6.14348 1 8 1Z" fill="currentColor" mask="url(#success-mask)"/>
+      <path xmlns="http://www.w3.org/2000/svg" d="M8 0a8 8 0 110 16A8 8 0 018 0zm0 1.5a6.5 6.5 0 100 13 6.5 6.5 0 000-13zm2.814 2.45l1.203.897-5.537 7.43-3.485-3.694 1.09-1.03 2.259 2.394 4.47-5.997z" fill="currentColor" fill-rule="nonzero"/>
   </g>
 </svg>

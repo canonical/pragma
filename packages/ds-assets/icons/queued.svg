@@ -6,7 +6,7 @@
       <path d="M6 5c.163 0 .322.013.478.038A3.879 3.879 0 005.108 8c0 1.186.532 2.249 1.37 2.963A3 3 0 116 5zm4 0a3 3 0 110 6 3 3 0 010-6zm0 1.5a1.5 1.5 0 100 3 1.5 1.5 0 000-3z" fill="black"/>
     </mask>
   </defs>
-  <g id="status-queued">
+  <g id="queued">
     <circle cx="8" cy="8" r="7" fill="currentColor" mask="url(#queued-mask)"/>
   </g>
 </svg>
