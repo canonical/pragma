@@ -11,10 +11,7 @@
   &:focus,
   &:focus-visible {
     inset-inline-start: var(--skip-link-focus-inset-inline-start);
-    outline-style: var(--skip-link-focus-outline-style);
-    outline-width: var(--skip-link-focus-outline-width);
-    outline-color: var(--skip-link-focus-outline-color);
-    outline-offset: calc(-1 * var(--skip-link-focus-outline-width));
+    outline-offset: var(--skip-link-outline-offset);
     padding-block: var(--skip-link-focus-padding-block);
     padding-inline: var(--skip-link-focus-padding-inline);
     position: fixed;
