@@ -53,7 +53,7 @@ cs:CSSComponentEncapsulation a cso:CodeStandard ;
 ```
 """ ;
     cso:donts """
-(Do) Don't style internal elements without the component namespace.
+(Don't) Don't style internal elements without the component namespace.
 ```css
 /* Bad: Internal element not scoped to component */
 .icon {
