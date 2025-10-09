@@ -32,7 +32,7 @@ cso:slug a owl:DatatypeProperty ;
 cso:NamePattern a owl:Datatype ;
     owl:onDatatype xsd:string ;
     owl:withRestrictions (
-        [ xsd:pattern "^[a-z]+(/[a-z0-9-]+){2}$" ]
+        [ xsd:pattern "^[a-z]+(/[a-z0-9-]+){2,}$" ]
     ) .
 
 # Object Properties
