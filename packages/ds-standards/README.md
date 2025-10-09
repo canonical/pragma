@@ -4,5 +4,5 @@ This package contains [RDF Turtle](https://www.w3.org/TR/turtle/) files that est
 
 Each file in [`src/`](./src/) corresponds to a specific domain of standards. The files are organized as follows:
 
-- [`Code.ttl`](./src/Code.ttl) - Universal coding standards that apply across all programming contexts
-- [`Icons.ttl`](./src/Icons.ttl) - Standards for definition and usage of icons.
+- [`code.ttl`](src/code.ttl) - Universal coding standards that apply across all programming contexts
+- [`icons.ttl`](./src/icons.ttl) - Standards for definition and usage of icons.
