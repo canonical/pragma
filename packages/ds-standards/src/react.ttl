@@ -16,14 +16,14 @@ cs:ComponentFolderStructure a cso:CodeStandard ;
     cso:name "react/component/structure/folder" ;
     cso:extends cs:ComponentFolderStructure ;
     cso:hasCategory cso:ReactCategory ;
-    cso:description "Each component must reside in its own folder, which contains all related files: component implementation, tests, type definitions, and optionally stories and styles. Some components may be styleless or may not have stories; in these cases, styles.css and MyComponent.stories.tsx are optional. Context providers follow a different structure (see react/component/structure/context)." ;
+    cso:description "Each component must reside in its own folder, which contains all related files: component implementation, tests, type definitions, and optionally stories and styles. Some components may be styleless or may not have stories; in these cases, styles.css and [MyComponent].stories.tsx are optional. Context providers follow a different structure (see react/component/structure/context)." ;
     cso:dos """
 (Do) Place all component-related files within a single folder named after the component.
 ```bash
-MyComponent/
-  ├── MyComponent.tsx
-  ├── MyComponent.stories.tsx
-  ├── MyComponent.test.tsx
+[MyComponent]/
+  ├── [MyComponent].tsx
+  ├── [MyComponent].stories.tsx
+  ├── [MyComponent].test.tsx
   ├── index.ts
   ├── styles.css
   └── types.ts
@@ -34,11 +34,11 @@ MyComponent/
 ```bash
 # Bad: Files are not co-located
 components/
-  ├── MyComponent.tsx
+  ├── [MyComponent].tsx
 stories/
-  └── MyComponent.stories.tsx
+  └── [MyComponent].stories.tsx
 styles/
-  └── MyComponent.css
+  └── [MyComponent].css
 ```
 """ .
 
@@ -51,7 +51,7 @@ cs:BarrelExports a cso:CodeStandard ;
 (Do) Create an index.ts file that re-exports all public APIs from the component folder.
 ```typescript
 // index.ts
-export { default as MyComponent } from './MyComponent.js';
+export { default as [MyComponent] } from './[MyComponent].js';
 export type * from './types.js';
 // If you have multiple components:
 export { default as SubComponent } from './SubComponent.js';
@@ -61,7 +61,7 @@ export { default as SubComponent } from './SubComponent.js';
 (Don't) Omit the index.ts file or fail to re-export all public APIs.
 ```typescript
 // Bad: index.ts only exports default, omits types and named exports
-export { default } from './MyComponent.js';
+export { default } from './[MyComponent].js';
 ```
 
 (Don't) Use `export * from './types.js'` as it allows value exports, which is not expected for types files.
@@ -75,11 +75,11 @@ export * from './types.js';
 cs:ComponentFolderNaming a cso:CodeStandard ;
     cso:name "react/component/folder-naming" ;
     cso:hasCategory cso: ReactCategory ;
-    cso:description "Components must be named in PascalCase (e.g., `Button`, `Tooltip`, `MyComponent`)." ;
+    cso:description "Components must be named in PascalCase (e.g., `Button`, `Tooltip`, `[MyComponent]`)." ;
     cso:dos """
 (Do) Name the component folder using PascalCase.
 ```
-MyComponent/
+[MyComponent]/
 Tooltip/
 Button/
 ```
@@ -100,10 +100,10 @@ cs:ComponentFileNaming a cso:CodeStandard ;
     cso:dos """
 (Do) Prefix component-specific files and use generic names for domain-level files.
 ```
-MyComponent/
-  ├── MyComponent.tsx           # Component-specific
-  ├── MyComponent.stories.tsx   # Component-specific
-  ├── MyComponent.test.tsx      # Component-specific
+[MyComponent]/
+  ├── [MyComponent].tsx           # Component-specific
+  ├── [MyComponent].stories.tsx   # Component-specific
+  ├── [MyComponent].test.tsx      # Component-specific
   ├── Context.tsx               # Domain-level
   ├── types.ts                  # Domain-level
   └── styles.css                # Domain-level
@@ -112,10 +112,10 @@ MyComponent/
     cso:donts """
 (Don't) Add redundant prefixes to domain-level files.
 ```
-MyComponent/
-  ├── MyComponent.Context.tsx   # Bad: Redundant prefix
-  ├── MyComponent.types.ts      # Bad: Redundant prefix
-  └── MyComponent.styles.css    # Bad: Redundant prefix
+[MyComponent]/
+  ├── [MyComponent].Context.tsx   # Bad: Redundant prefix
+  ├── [MyComponent].types.ts      # Bad: Redundant prefix
+  └── [MyComponent].styles.css    # Bad: Redundant prefix
 ```
 """ .
 
@@ -569,7 +569,7 @@ cs:CustomHooks a cso:CodeStandard ;
     cso:dos """
 (Do) Create a custom hook that focuses on a single concern within the domain.
 ```typescript
-// MyComponent/hooks/useFormValidation.ts
+// [MyComponent]/hooks/useFormValidation.ts
 function useFormValidation(initialValues: FormValues) {
   const [errors, setErrors] = useState<FormErrors>({});
   const [isValid, setIsValid] = useState(false);
@@ -606,7 +606,7 @@ const useUserData = () => {
 
 (Do) Create provider state hook types in `hooks/types.ts` for context providers.
 ```typescript
-// MyComponent/hooks/types.ts
+// [MyComponent]/hooks/types.ts
 import type { ContextOptions, ProviderProps } from "../types.js";
 
 // The props expected by the provider state hook. The children prop is omitted, as it is not passed to the hook - it is only rendered by the provider component.
@@ -618,7 +618,7 @@ export type UseProviderStateResult = ContextOptions;
 
 (Do) Create a provider state hook implementation.
 ```tsx
-// MyComponent/hooks/useProviderState.ts
+// [MyComponent]/hooks/useProviderState.ts
 import { useContext } from "react";
 import type { UseProviderStateProps, UseProviderStateResult } from "./types.js";
 
@@ -638,19 +638,19 @@ cs:ContextProviderStructure a cso:CodeStandard ;
     cso:name "react/component/structure/context" ;
     cso:extends cs:ComponentFolderStructure ;
     cso:hasCategory cso: ReactCategory ;
-    cso:description "Context providers must use `Provider.tsx` as the main component file instead of the standard component naming pattern `<MyComponent>.tsx`." ;
+    cso:description "Context providers must use `Provider.tsx` as the main component file instead of the standard component naming pattern `[MyComponent].tsx`." ;
     cso:dos """
 (Do) Organize provider-related files by separating concerns into distinct files: place the context definition in `Context.tsx`, the provider implementation in `Provider.tsx`, and provider-specific hooks in a `hooks/` directory. Create a `hooks/useProviderState.ts` file to centrally manage the state of the provider.`
 ```
-MyComponent/
+[MyComponent]/
   ├── Context.tsx
   ├── Provider.tsx
   ├── index.ts
   ├── types.ts
   └── common/
-    └─ SubComponent/
+    └─ [SubComponent]/
         ├── index.ts
-        ├── SubComponent.tsx
+        ├── [SubComponent].tsx
         └── types.ts
   └── hooks/
       ├── index.ts
@@ -660,7 +660,7 @@ MyComponent/
 (Do) Create the context type within `types.ts`.
 
 ```typescript
-// MyComponent/types.ts
+// [MyComponent]/types.ts
 /** The value of the config context */
 export interface ContextOptions {
   /** Whether the baseline grid should be shown */
@@ -673,7 +673,7 @@ export interface ContextOptions {
 (Do) create the provider props type within `types.ts`, accepting `children` at a minimum and more props as needed.
 
 ```typescript
-// MyComponent/types.ts
+// [MyComponent]/types.ts
 
 export interface ProviderProps {
     // The child nodes which will have access to the provider state
@@ -684,7 +684,7 @@ export interface ProviderProps {
 
 (Do) Create a `Context.tsx` file for the context definition.
 ```tsx
-// MyComponent/Context.tsx
+// [MyComponent]/Context.tsx
 import { createContext } from "react";
 import type { ContextOptions } from "./types.js";
 
@@ -696,7 +696,7 @@ export default Context;
 
 (Do) Use `Provider.tsx` as the main component file. The provider is responsible for wrapping children with the context.
 ```tsx
-// MyComponent/Provider.tsx
+// [MyComponent]/Provider.tsx
 import Context from "./Context.js";
 import { useProviderState } from "./hooks/useProviderState.js";
 import type { ProviderProps } from "./types.js";
@@ -711,24 +711,24 @@ export default Provider;
 
 (Do) Use `index.ts` to export the `Provider` as a named component that matches the folder name, casting it to the component type.
 ```typescript
-// MyComponent/types.ts
+// [MyComponent]/types.ts
 import type { ReactElement } from "react";
 
-export type MyComponentComponent = ((props: ProviderProps) => ReactElement) & {
+export type [MyComponent]Component = ((props: ProviderProps) => ReactElement) & {
   SubComponent: (props: SubComponentProps) => ReactElement | null;
 };
 
-// MyComponent/index.ts
+// [MyComponent]/index.ts
 import Provider from "./Provider.js";
-import type { MyComponent } from "./types.js";
+import type { [MyComponent] } from "./types.js";
 
-export const MyComponent = Provider as MyComponentComponent;
-export default MyComponent;
+export const [MyComponent] = Provider as [MyComponent]Component;
+export default [MyComponent];
 ```
 
 (Do) Create provider state hook types in `hooks/types.ts` for context providers.
 ```typescript
-// MyComponent/hooks/types.ts
+// [MyComponent]/hooks/types.ts
 import type { ContextOptions, ProviderProps } from "../types.js";
 
 // The props expected by the provider state hook. The children prop is omitted, as it is not passed to the hook - it is only rendered by the provider component.
@@ -740,7 +740,7 @@ export type UseProviderStateResult = ContextOptions;
 
 (Do) Create a provider state hook implementation.
 ```tsx
-// MyComponent/hooks/useProviderState.ts
+// [MyComponent]/hooks/useProviderState.ts
 import { useContext } from "react";
 import type { UseProviderStateProps, UseProviderStateResult } from "./types.js";
 
@@ -756,31 +756,31 @@ const useProviderState = ({
 
 (Do) Attach subcomponents to the main exported component using dot notation.
 ```typescript
-// MyComponent/types.ts
-export type MyComponentComponent = ((props: ProviderProps) => ReactElement) & {
+// [MyComponent]/types.ts
+export type [MyComponent]Component = ((props: ProviderProps) => ReactElement) & {
   SubComponent: (props: SubComponentProps) => ReactElement | null;
 };
 
-// MyComponent/index.ts
+// [MyComponent]/index.ts
 import { SubComponent } from "./common/SubComponent/index.js";
 
-export const MyComponent = Provider as MyComponentComponent;
-MyComponent.SubComponent = SubComponent;
+export const [MyComponent] = Provider as [MyComponent]Component;
+[MyComponent].SubComponent = SubComponent;
 
-export default MyComponent;
+export default [MyComponent];
 ```
 """ ;
     cso:donts """
-(Don't) Create a separate component file (e.g., `MyComponent.tsx`) when `Provider.tsx` exists. The provider is the main component.
+(Don't) Create a separate component file (e.g., `[MyComponent].tsx`) when `Provider.tsx` exists. The provider is the main component.
 ```
-MyComponent/
-  ├── MyComponent.tsx
+[MyComponent]/
+  ├── [MyComponent].tsx
   └── Provider.tsx
 ```
 
 (Don't) Nest context-related files in a `context/` subfolder.
 ```
-MyComponent/
+[MyComponent]/
   └── context/ # Unnecessary nesting
       ├── Context.tsx
       └── Provider.tsx
@@ -788,7 +788,7 @@ MyComponent/
 
 (Don't) Create multiple provider files within the same component folder.
 ```
-MyComponent/
+[MyComponent]/
   ├── Provider.tsx
   └── AnotherProvider.tsx # Only one provider per component
 ```
