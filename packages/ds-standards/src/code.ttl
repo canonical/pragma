@@ -107,7 +107,17 @@ import { calculateSum } from './utils/math.js';
 
 // For single-use functions, keep them close to their usage:
 ```typescript
+// services/UserService.ts
 const formatUserName = (user: User) => `${user.firstName} ${user.lastName}`;
+
+const getProfileData = (user: User) => {
+  const formattedName = formatUserName(user);
+  return {
+    ...user,
+    formattedName,
+  };
+};
+
 """ ;
     cso:donts """
 (Don't) Place functions far from where they are used, or in a generic location if only used in one place.
