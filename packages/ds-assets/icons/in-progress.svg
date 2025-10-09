@@ -9,7 +9,7 @@
             fill="black"/>
     </mask>
   </defs>
-  <g id="status-in-progress">
+  <g id="in-progress">
     <circle fill='currentColor' cx='8' cy='8' r='7' mask="url(#progress-mask)"/>
   </g>
 </svg>
