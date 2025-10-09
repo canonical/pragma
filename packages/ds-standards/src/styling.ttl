@@ -201,51 +201,89 @@ cs:CSSSelectorNamespace a cso:CodeStandard ;
 ```
 """ .
 
-# CSS Selector Specificity Standard
-cs:CSSSelectorSpecificity a cso:CodeStandard ;
-    cso:name "styling/selectors/specificity" ;
+# CSS Component Encapsulation Standard
+cs:CSSComponentEncapsulation a cso:CodeStandard ;
+    cso:name "styling/component/encapsulation" ;
     cso:hasCategory cs:StylingCategory ;
-    cso:description """CSS selectors must:
-- Use direct child selectors (>) when targeting internal elements
-- Use attribute selectors for states
-- Avoid nesting beyond one level""" ;
+    cso:description "Component styles must be encapsulated using the component's root class as a boundary. All internal element styles must be scoped to the component's namespace." ;
     cso:dos """
-(Do) Use direct child selectors when necessary to style a component's internal elements.
+(Do) Scope internal element styles using the component's namespace.
 ```css
-.ds.button > .icon {
-  margin-right: var(--button-icon-spacing);
-}
-```
-
-(Do) Use attribute selectors for styling states.
-```css
-.ds.button[disabled] {
-  opacity: var(--button-disabled-opacity);
+.ds.button {
+  /* Component root styles */
+  
+  & > .icon {
+    /* Internal element styles */
+    margin-right: var(--button-icon-spacing);
+  }
 }
 ```
 """ ;
     cso:donts """
-(Don't) Use deeply nested selectors, as they are brittle and hard to override.
+(Do) Don't style internal elements without the component namespace.
 ```css
-/* Bad: Too specific and tied to structure */
-.ds.card .content .title h2 {
-  color: var(--color-text-default);
+/* Bad: Internal element not scoped to component */
+.icon {
+  margin-right: var(--button-icon-spacing);
 }
 ```
+""" .
 
-(Don't) Create selectors that are tightly coupled to the HTML structure.
+# CSS State Handling Standard
+cs:CSSStateHandling a cso:CodeStandard ;
+    cso:name "styling/component/states" ;
+    cso:hasCategory cs:StylingCategory ;
+    cso:description "Component states must be handled using attribute selectors for native states and class modifiers for custom states." ;
+    cso:dos """
+(Do) Use attribute selectors for native element states.
 ```css
-/* Bad: Coupled to markup */
-.ds.list li > span {
-  color: var(--color-text-muted);
+.ds.button {
+  &[disabled] {
+    opacity: var(--button-disabled-opacity);
+  }
 }
 ```
-
-(Don't) Chain multiple selectors, as it dramatically increases specificity.
+""" ;
+    cso:donts """
+(Don't) Use class modifiers for native states.
 ```css
-/* Bad: High specificity is hard to override */
-.ds.button.primary[type="submit"].large {
-  /* styles */
+/* Bad: Using class for native state */
+.ds.button.disabled {
+  opacity: var(--button-disabled-opacity);
+}
+```
+""" .
+
+# CSS Specificity Management Standard
+cs:CSSSpecificityManagement a cso:CodeStandard ;
+    cso:name "styling/selectors/specificity" ;
+    cso:hasCategory cs:StylingCategory ;
+    cso:description """CSS selectors must follow a strict specificity pattern:
+- Component root must use namespace + component name (.ds.button)
+- Single modifier class for variants (.ds.button.primary)
+- Single attribute for states (.ds.button[disabled])""" ;
+    cso:dos """
+(Do) Use the minimum specificity needed to achieve the styling goal.
+```css
+.ds.button {
+  /* Root: namespace + component (2 classes) */
+}
+
+.ds.button[disabled] {
+  /* State: root + attribute (2 classes + 1 attribute) */
+}
+
+.ds.button.base {
+  /* Variant: root + modifier (3 classes) */
+}
+```
+""" ;
+    cso:donts """
+(Don't) Combine multiple modifiers or mix states with variants.
+```css
+/* Bad: Mixing variant with state */
+.ds.button.primary[disabled].large {
+  /* Too specific: root + 2 modifiers + state */
 }
 ```
 """ .
