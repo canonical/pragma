@@ -566,21 +566,54 @@ cs:CustomHooks a cso:CodeStandard ;
     - Component logic becomes complex
     - State management needs to be abstracted
     - Side effects need to be encapsulated" ;
+
+    All of the types for a domain level's hooks must be defined in the `hooks/types.ts` file of that folder.
+    Each hook must define a [HookName]Props and [HookName]Result type in `hooks/types.ts`.
     cso:dos """
 (Do) Create a custom hook that focuses on a single concern within the domain.
 ```typescript
-// [MyComponent]/hooks/useFormValidation.ts
-function useFormValidation(initialValues: FormValues) {
-  const [errors, setErrors] = useState<FormErrors>({});
-  const [isValid, setIsValid] = useState(false);
-  
-  const validate = useCallback((values: FormValues) => {
-    // Single concern: form validation logic
-  }, []);
-  
-  return { errors, isValid, validate };
+// [MyComponent]/hooks/useWindowFitment.ts
+const useWindowFitment = ({
+  onBestPositionChange,
+  autoFit = false,
+}: UseWindowFitmentProps): UseWindowFitmentResult => {
+```
+(Do) Create hook types in `hooks/types.ts`.
+```typescript
+// [MyComponent]/hooks/types.ts
+export interface UseWindowFitmentProps {
+  /**
+   * Whether the popup should automatically fit into the viewport.
+   * If true, the hook will try to fit the popup into the viewport if it doesn't fit in the preferred directions.
+   * Defaults to false.
+   */
+  autoFit?: boolean;
+  /**
+   * An optional callback to be called when the best position of the popup changes.
+   */
+  onBestPositionChange?: (bestPosition?: BestPosition) => void;
+}
+
+export interface UseWindowFitmentResult {
+  /**
+   * A ref to be attached to the target element.
+   */
+  targetRef: RefObject<HTMLDivElement | null>;
+  /**
+   * A ref to be attached to the popup element.
+   */
+  popupRef: RefObject<HTMLDivElement | null>;
+  /**
+   * The calculated best possible position of the popup element.
+   */
+  bestPosition?: BestPosition;
+  /**
+   * The style object to be applied to the popup element.
+   */
+  popupPositionStyle: CSSProperties;
 }
 ```
+
 """ ;
     cso:donts """
 (Don't) Create a custom hook for simple, non-reusable state.
@@ -610,7 +643,7 @@ cs:ContextProviderStructure a cso:CodeStandard ;
     cso:name "react/component/structure/context" ;
     cso:extends cs:ComponentFolderStructure ;
     cso:hasCategory cso: ReactCategory ;
-    cso:description "Context providers must use `Provider.tsx` as the main component file instead of the standard component naming pattern `[MyComponent].tsx`. Provider state hooks must define types in `hooks/types.ts` with `UseProviderStateProps` (containing all `ProviderProps` minus `children`) and `UseProviderStateResult` (matching the context options)." ;
+    cso:description "Context providers must use `Provider.tsx` as the main component file instead of the standard component naming pattern `[MyComponent].tsx`. Provider prop and return types must be defined in the hook-level types file `hooks/types.ts` with `UseProviderStateProps` (containing all `ProviderProps` minus `children`) and `UseProviderStateResult` (matching the context options)." ;
     cso:dos """
 (Do) Organize provider-related files by separating concerns into distinct files: place the context definition in `Context.tsx`, the provider implementation in `Provider.tsx`, and provider-specific hooks in a `hooks/` directory. Create a `hooks/useProviderState.ts` file to centrally manage the state of the provider.`
 ```
