@@ -21,6 +21,20 @@ cso:Category a owl:Class ;
             rdfs:comment "A category for grouping related code standards (e.g., testing, components, react, typescript)"@en ;
             rdfs:subClassOf skos:Concept .
 
+# Datatype properties
+cso:slug a owl:DatatypeProperty ;
+    rdfs:label "slug"@en ;
+    rdfs:comment "A short identifier for the category or standard, used for domain annotation."@en ;
+    rdfs:domain cso:Category ;
+    rdfs:range xsd:string .
+
+# Datatypes
+cso:NamePattern a owl:Datatype ;
+    owl:onDatatype xsd:string ;
+    owl:withRestrictions (
+        [ xsd:pattern "^[a-z]+(/[a-z0-9-]+){2,}$" ]
+    ) .
+
 # Object Properties
 cso:hasCategory a owl:ObjectProperty ;
                rdfs:label "has category"@en ;
@@ -28,12 +42,12 @@ cso:hasCategory a owl:ObjectProperty ;
                rdfs:domain cso:CodeStandard ;
                rdfs:range cso:Category .
 
-# Datatype Properties
-cso:NamePattern a owl:Datatype ;
-  owl:onDatatype xsd:string ;
-  owl:withRestrictions (
-    [ xsd:pattern "^[a-z]+(/[a-z0-9-]+)*$" ]
-  ) .
+cso:extends a owl:ObjectProperty ;
+              rdfs:label "extends"@en ;
+              rdfs:comment "Associates a code standard with another standard that it extends or adds further context to"@en ;
+              rdfs:domain cso:CodeStandard ;
+              rdfs:range cso:CodeStandard .
+
 
 cso:name a owl:DatatypeProperty ;
         rdfs:label "name"@en ;
