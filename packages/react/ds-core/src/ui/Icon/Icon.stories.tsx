@@ -59,7 +59,7 @@ AllIcons.argTypes = {
 
 export const Size: Story = {
   args: {
-    icon: "get-link",
+    icon: "link",
   },
   parameters: {
     docs: {

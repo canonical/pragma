@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+  <g id="error-fill">
+      <mask id="error-fill-mask">
+          <rect width="16" height="16" fill="white"/>
+          <path d="M10.2816 4.638L11.3416 5.698L9.04965 7.99L11.3426 10.282L10.2826 11.342L7.98965 9.05L5.69965 11.343L4.63965 10.283L6.92965 7.99L4.63965 5.7L5.69965 4.64L7.99065 6.93L10.2816 4.638Z" fill="black"/>
+      </mask>
+      <path d="M8 14.25C11.4518 14.25 14.25 11.4518 14.25 8C14.25 4.54822 11.4518 1.75 8 1.75C4.54822 1.75 1.75 4.54822 1.75 8C1.75 11.4518 4.54822 14.25 8 14.25Z" fill="currentColor" mask="url(#error-fill-mask)"/>
+  </g>
+</svg>
