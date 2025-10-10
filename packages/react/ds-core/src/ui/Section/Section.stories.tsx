@@ -1,9 +1,6 @@
 /* @canonical/generator-ds 0.10.0-experimental.2 */
 
-import { MODIFIER_FAMILIES } from "@canonical/ds-types";
 import type { Meta, StoryFn, StoryObj } from "@storybook/react-vite";
-import type { RuleProps } from "../Rule/index.js";
-import Rule from "../Rule/Rule.js";
 import { SECTION_SPACING } from "./constants.js";
 import Component from "./Section.js";
 
@@ -22,14 +19,6 @@ const meta = {
         type: {
           summary: SECTION_SPACING.join(" | "),
         },
-      },
-    },
-  },
-  parameters: {
-    docs: {
-      description: {
-        component:
-          "The `<Section>` component groups related content. Sections can have varying visual spacing levels to organize information according to an information hierarchy.",
       },
     },
   },
