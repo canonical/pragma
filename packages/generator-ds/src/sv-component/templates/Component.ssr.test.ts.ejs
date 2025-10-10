@@ -1,6 +1,7 @@
 /* <%= generatorPackageName %> <%= generatorPackageVersion %> */
 
 import { render } from "@canonical/svelte-ssr-test";
+import type { RenderResult } from "@canonical/svelte-ssr-test";
 import { createRawSnippet } from "svelte";
 import { describe, expect, it } from "vitest";
 import Component from "./<%= componentName %>.svelte";
@@ -16,40 +17,70 @@ describe("<%= componentName %> SSR", () => {
   describe("basics", () => {
     it("doesn't throw", () => {
       expect(() => {
-        render(Component, { props: { ...baseProps} });
+        render(Component, { props: { ...baseProps } });
       }).not.toThrow();
     });
 
     it("renders", () => {
-      const { window, container } = render(Component, { props: { ...baseProps } });
-      expect(container.firstElementChild).toBeInstanceOf(window.HTMLDivElement);
+      const page = render(Component, { props: { ...baseProps } });
+      expect(componentLocator(page)).toBeInstanceOf(page.window.HTMLDivElement);
     });
   });
 
   describe("attributes", () => {
     it.each([
       ["id", "test-id"],
-      ["style", "color: orange;"],
       ["aria-label", "test-aria-label"],
     ])("applies %s", (attribute, expected) => {
-      const { container } = render(Component, {
-        props: { [attribute]: expected, ...baseProps},
+      const page = render(Component, {
+        props: { ...baseProps, [attribute]: expected },
       });
-      expect(container.firstElementChild?.getAttribute(attribute)).toBe(
-        expected,
-      );
+      expect(componentLocator(page).getAttribute(attribute)).toBe(expected);
     });
 
     it("applies classes", () => {
-      const { container } = render(Component, {
+      const page = render(Component, {
         props: { class: "test-class", ...baseProps },
       });
-      const classes = ["test-class"];
-      <% if (withStyles) { %>classes.push("<%= cssNamespace %>", "<%= componentCssClassName %>");<% } %>
+      expect(componentLocator(page).classList).toContain("test-class");
+<% if (withStyles) { _%>
+      expect(componentLocator(page).classList).toContain("<%= cssNamespace %>");
+      expect(componentLocator(page).classList).toContain("<%= componentCssClassName %>");<% } %>
+    });
 
-      for (const className of classes) {
-        expect(container.firstElementChild?.classList).toContain(className);
-      }
+    it("applies style", () => {
+      const page = render(Component, {
+        props: { style: "color: orange;", ...baseProps },
+      });
+      expect(componentLocator(page).style.color).toBe("orange");
     });
   });
 });
+
+// Note: Prefer role/semantics-oriented ways of selecting elements (e.g., by role, label, etc.) not only for component roots but for all elements to enhance accessibility and maintainability.
+// To select the component's root element, use one of the available [Queries](https://testing-library.com/docs/queries/about/#priority).
+function componentLocator(page: RenderResult): HTMLElement {
+  // 1. SEMANTIC ROLES (PREFERRED) - These the most closely resemble how assistive technologies interact with your component
+  // return page.getByRole("link", { name: "Learn more" });
+
+  // 2. LABELS - To test the association between labels and form controls
+  // return page.getByLabelText("Email address");
+
+  // 3. PLACEHOLDER TEXT - Useful for input fields with placeholders
+  // return page.getByPlaceholderText("Enter your email");
+
+  // 4. TEXT CONTENT - Good for testing the presence of unique texts and selecting non-interactive elements
+  // return page.getByText("<%= componentName %>");
+
+  // 5. DISPLAY VALUE - For selecting form elements by their current value
+  // return page.getByDisplayValue("test value");
+
+  // 6. ALT TEXT - For images and visual elements
+  // return page.getByAltText("Company logo");
+
+  // 7. TITLE ATTRIBUTE - For elements with title tooltips
+  // return page.getByTitle("Close dialog");
+
+  // 8. TEST IDS (LAST RESORT) - When semantic options aren't available
+  // return page.getByTestId("<%= componentCssClassName %>");
+}
