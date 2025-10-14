@@ -8,4 +8,5 @@ Each file in [`src/`](./src/) corresponds to a specific domain of standards. The
 - [`css.ttl`](src/css.ttl) - Standards for applying styles with CSS.
 - [`icons.ttl`](src/icons.ttl) - Standards for definition and usage of icons.
 - [`react.ttl`](src/react.ttl) - Standards specific to React component development and architecture
+- [`storybook.ttl`](src/storybook.ttl) - Standards for Storybook development / documentation.
 - [`styling.ttl`](src/styling.ttl) - Standards for structuring and usage of styling, at a high level.
