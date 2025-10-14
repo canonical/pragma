@@ -93,6 +93,140 @@ export const InternalTestState: Story = {
 ```
 """ .
 
+# Story Format Standard
+cs:StoryFormat a cso:CodeStandard ;
+    cso:name "storybook/story/format" ;
+    cso:hasCategory cs:StorybookCategory ;
+    cso:description """Stories must use one of three formats, each serving specific needs:
+1. CSF3 (object-based) format must be used for standard component variations where args define the component state.
+2. Function-based format must be used when the story needs to directly control component rendering or wrap the component with custom elements.
+3. Template-based format must be used when multiple stories share the same logic but differ in their args.""" ;
+    cso:dos """
+(Do) Use the format that matches your specific use case.
+```typescript
+// CSF3: For standard component variations through args
+type Story = StoryObj<typeof meta>;
+
+export const Default: Story = {
+  args: {
+    variant: "primary",
+    children: "Click me",
+    disabled: false
+  }
+};
+
+// Function-based: When story needs dynamic rendering logic
+export const WithDynamicChildren = (args: ComponentProps) => {
+  const [items] = useState(["Item 1", "Item 2"]);
+  return (
+    <Component {...args}>
+      {items.map((item) => (
+        <ListItem key={item}>{item}</ListItem>
+      ))}
+    </Component>
+  );
+};
+
+// Template-based: When multiple stories share logic
+const Template: StoryFn<typeof Component> = (args) => (
+  <div className="button-container">
+    <Label>Button:</Label>
+    <Component {...args} />
+  </div>
+);
+
+export const Primary = Template.bind({});
+Primary.args = { variant: "primary" };
+```
+""" ;
+    cso:donts """
+(Don't) Use a format that doesn't match your use case.
+```typescript
+// Bad: Using function format for simple args variation
+export const SimpleButton = () => (
+  <Component variant="primary" disabled={false}>
+    Click me
+  </Component>
+);
+
+// Bad: Duplicating complex logic without template
+export const First: Story = {
+  decorators: [(Story) => (
+    <div className="button-container">
+      <Label>Button:</Label>
+      <Story />
+    </div>
+  )]
+};
+```
+""" .
+
+# Story Decorator Standard
+cs:StoryDecorator a cso:CodeStandard ;
+    cso:name "storybook/story/decorator" ;
+    cso:hasCategory cs:StorybookCategory ;
+    cso:description "Decorators must be used to wrap stories in common context providers or layout elements. Decorators must be defined in `storybook/decorators.tsx` and be imported as `decorators` in the storybook file." ;
+    cso:dos """
+(Do) Use decorators for static context or layout wrapping.
+```typescript
+
+// storybook/decorators.tsx
+
+export const theme = (Story: StoryFn<typeof Component>) => (
+  <ThemeProvider theme="dark">
+    <Story />
+  </ThemeProvider>
+);
+
+export const config = (Story: StoryFn<typeof Component>) => (
+  <ConfigProvider locale="en">
+    <Story />
+  </ConfigProvider>
+);
+
+// src/ui/<ComponentName>/<ComponentName>.stories.tsx
+
+import * as decorators from "storybook/decorators.js";
+export const WithTheme: Story = {
+  decorators: [decorators.theme],
+  args: {
+    variant: "primary"
+  }
+};
+
+// Component-level decorator in meta, applies to all stories in this file.
+const meta = {
+  decorators: [decorators.config],
+} satisfies Meta<typeof Component>;
+
+export default meta;
+```
+""" ;
+    cso:donts """
+(Don't) Use function-based stories for static wrapping that could be done with decorators.
+```typescript
+// Bad: Using function-based story for static wrapping
+export const WithTheme = (args: ComponentProps) => (
+  <ThemeProvider theme="dark">
+    <Component {...args} />
+  </ThemeProvider>
+);
+```
+
+(Don't) define decorators directly in a story file.
+```typescript
+// Bad: Defining decorators directly in the story file
+export const WithTheme: Story = {
+  decorators: [(Story) => (
+    <ThemeProvider theme="dark">
+      <Story />
+    </ThemeProvider>
+  )],
+  // ....
+}
+```
+""" .
+
 # Story Import Standard
 cs:StoryImport a cso:CodeStandard ;
     cso:name "storybook/story/import" ;
