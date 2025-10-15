@@ -2,18 +2,18 @@
 
 import type { Locator } from "@vitest/browser/context";
 import { createRawSnippet } from "svelte";
+import type { ComponentProps } from "svelte";
 import { describe, expect, it } from "vitest";
 import { render } from "vitest-browser-svelte";
 import type { RenderResult } from "vitest-browser-svelte";
 import Component from "./<%= componentName %>.svelte";
-import type { <%= componentName %>Props } from "./types.js";
 
 describe("<%= componentName %> component", () => {
   const baseProps = {
     children: createRawSnippet(() => ({
       render: () => `<span><%= componentName %></span>`,
     })),
-  } satisfies <%= componentName %>Props;
+  } satisfies ComponentProps<typeof Component>;
 
   it("renders", async () => {
     const page = render(Component, { ...baseProps });

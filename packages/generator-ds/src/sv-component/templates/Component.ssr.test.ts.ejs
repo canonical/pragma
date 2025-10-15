@@ -3,16 +3,16 @@
 import { render } from "@canonical/svelte-ssr-test";
 import type { RenderResult } from "@canonical/svelte-ssr-test";
 import { createRawSnippet } from "svelte";
+import type { ComponentProps } from "svelte";
 import { describe, expect, it } from "vitest";
 import Component from "./<%= componentName %>.svelte";
-import type { <%= componentName %>Props } from "./types.js";
 
 describe("<%= componentName %> SSR", () => {
   const baseProps = {
     children: createRawSnippet(() => ({
       render: () => `<span><%= componentName %></span>`,
     })),
-  } satisfies <%= componentName %>Props;
+  } satisfies ComponentProps<typeof Component>;
 
   describe("basics", () => {
     it("doesn't throw", () => {
