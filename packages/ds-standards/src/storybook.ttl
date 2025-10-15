@@ -100,7 +100,7 @@ cs:StoryFormat a cso:CodeStandard ;
     cso:description """Stories must use one of three formats, each serving specific needs:
 1. CSF3 (object-based) format must be used for standard component variations where args define the component state.
 2. Function-based format must be used when the story needs to directly control component rendering or wrap the component with custom elements.
-3. Template-based format must be used when multiple stories share the same logic but differ in their args.""" ;
+3. Template-based format must be used when multiple stories share the same logic but differ in their args, and the template differs from the component markup.""" ;
     cso:dos """
 (Do) Use the format that matches your specific use case.
 ```typescript
@@ -165,7 +165,7 @@ export const First: Story = {
 cs:StoryDecorator a cso:CodeStandard ;
     cso:name "storybook/story/decorator" ;
     cso:hasCategory cs:StorybookCategory ;
-    cso:description "Decorators must be used to wrap stories in common context providers or layout elements. Decorators must be defined in `storybook/decorators.tsx` and be imported as `decorators` in the storybook file." ;
+    cso:description "Decorators must be used to wrap stories in common context providers or layout elements. Decorators should generally be defined in `storybook/decorators.tsx` and be imported as `decorators` in the storybook file. Decorators may be defined inline in story files in limited circumstances when it would be difficult to globally define a semantic decorator (e.g., a decorator that provides mock data specific to that component)." ;
     cso:dos """
 (Do) Use decorators for static context or layout wrapping.
 ```typescript
@@ -211,19 +211,6 @@ export const WithTheme = (args: ComponentProps) => (
     <Component {...args} />
   </ThemeProvider>
 );
-```
-
-(Don't) define decorators directly in a story file.
-```typescript
-// Bad: Defining decorators directly in the story file
-export const WithTheme: Story = {
-  decorators: [(Story) => (
-    <ThemeProvider theme="dark">
-      <Story />
-    </ThemeProvider>
-  )],
-  // ....
-}
 ```
 """ .
 
