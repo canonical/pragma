@@ -1,28 +1,80 @@
 /* <%= generatorPackageName %> <%= generatorPackageVersion %> */
 
+import type { Locator } from "@vitest/browser/context";
 import { createRawSnippet } from "svelte";
+import type { ComponentProps } from "svelte";
 import { describe, expect, it } from "vitest";
 import { render } from "vitest-browser-svelte";
+import type { RenderResult } from "vitest-browser-svelte";
 import Component from "./<%= componentName %>.svelte";
 
 describe("<%= componentName %> component", () => {
-  it("renders", async () => {
-    const children = createRawSnippet(() => ({
-      render: () => `<%= componentName %>`,
-    }));
+  const baseProps = {
+    children: createRawSnippet(() => ({
+      render: () => `<span><%= componentName %></span>`,
+    })),
+  } satisfies ComponentProps<typeof Component>;
 
-    const page = render(Component, { children });
-    const element = page.getByText("<%= componentName %>");
-    await expect.element(element).toBeInTheDocument();
+  it("renders", async () => {
+    const page = render(Component, { ...baseProps });
+    await expect.element(componentLocator(page)).toBeInTheDocument();
+    await expect.element(page.getByText("<%= componentName %>")).toBeVisible();
   });
 
-  it("applies class", async () => {
-    const children = createRawSnippet(() => ({
-      render: () => `<%= componentName %>`,
-    }));
+  describe("attributes", () => {
+    it.each([
+      ["id", "test-id"],
+      ["aria-label", "test-aria-label"],
+    ])("applies %s", async (attribute, expected) => {
+      const page = render(Component, { ...baseProps, [attribute]: expected });
+      await expect
+        .element(componentLocator(page))
+        .toHaveAttribute(attribute, expected);
+    });
 
-    const page = render(Component, { children, class: "test-class" });
-    const element = page.getByText("<%= componentName %>");
-    await expect.element(element).toHaveClass("test-class");
+    it("applies classes", async () => {
+      const page = render(Component, { ...baseProps, class: "test-class" });
+      await expect.element(componentLocator(page)).toHaveClass("test-class");
+<% if (withStyles) { _%>
+      await expect.element(componentLocator(page)).toHaveClass("<%= cssNamespace %>");
+      await expect
+        .element(componentLocator(page))
+        .toHaveClass("<%= componentCssClassName %>");<% } %>
+    });
+
+    it("applies style", async () => {
+      const page = render(Component, {
+        ...baseProps,
+        style: "color: orange;",
+      });
+      await expect
+        .element(componentLocator(page))
+        .toHaveStyle({ color: "orange" });
+    });
   });
 });
+
+// Note: Prefer role/semantics-oriented ways of selecting elements (e.g., by role, label, etc.) not only for component roots but for all elements to enhance accessibility and maintainability.
+// To select the component's root element, use one of the available [Locators](https://vitest.dev/guide/browser/locators.html).
+function componentLocator(page: RenderResult<typeof Component>): Locator {
+  // 1. SEMANTIC ROLES (PREFERRED) - These the most closely resemble how assistive technologies interact with your component
+  // return page.getByRole("link", { name: "Learn more" });
+
+  // 2. LABELS - To test the association between labels and form controls
+  // return page.getByLabel("Email address");
+
+  // 3. PLACEHOLDER TEXT - Useful for input fields with placeholders
+  // return page.getByPlaceholder("Enter your email");
+
+  // 4. TEXT CONTENT - Good for testing the presence of unique texts and selecting non-interactive elements
+  // return page.getByText("<%= componentName %>");
+
+  // 5. ALT TEXT - For images and visual elements
+  // return page.getByAltText("Company logo");
+
+  // 6. TITLE ATTRIBUTE - For elements with title tooltips
+  // return page.getByTitle("Close dialog");
+
+  // 7. TEST IDS (LAST RESORT) - When semantic options aren't available
+  // return page.getByTestId("<%= componentCssClassName %>");
+}
