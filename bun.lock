@@ -9,12 +9,12 @@
     },
     "apps/react/boilerplate-vite": {
       "name": "@canonical/react-boilerplate-vite",
-      "version": "0.10.0-experimental.4",
+      "version": "0.10.0-experimental.5",
       "dependencies": {
-        "@canonical/react-ds-core": "^0.10.0-experimental.4",
+        "@canonical/react-ds-core": "^0.10.0-experimental.5",
         "@canonical/react-ssr": "^0.10.0-experimental.4",
-        "@canonical/storybook-config": "^0.10.0-experimental.4",
-        "@canonical/styles": "^0.10.0-experimental.4",
+        "@canonical/storybook-config": "^0.10.0-experimental.5",
+        "@canonical/styles": "^0.10.0-experimental.5",
         "react": "^19.1.0",
         "react-dom": "^19.1.0",
       },
@@ -37,7 +37,7 @@
     },
     "apps/react/demo": {
       "name": "@canonical/ds-demo-site",
-      "version": "0.10.0-experimental.4",
+      "version": "0.10.0-experimental.5",
       "dependencies": {
         "@canonical/react-ds-core": "^0.10.0-experimental.4",
         "@canonical/react-ds-core-form": "^0.10.0-experimental.4",
@@ -80,9 +80,9 @@
     },
     "configs/storybook": {
       "name": "@canonical/storybook-config",
-      "version": "0.10.0-experimental.4",
+      "version": "0.10.0-experimental.5",
       "dependencies": {
-        "@canonical/ds-assets": "^0.10.0-experimental.4",
+        "@canonical/ds-assets": "^0.10.0-experimental.5",
         "@canonical/storybook-addon-baseline-grid": "^0.10.0-experimental.4",
         "@chromatic-com/storybook": "^4.0.0",
         "@storybook/addon-a11y": "^9.0.8",
@@ -130,7 +130,7 @@
     },
     "packages/ds-assets": {
       "name": "@canonical/ds-assets",
-      "version": "0.10.0-experimental.4",
+      "version": "0.10.0-experimental.5",
       "devDependencies": {
         "@biomejs/biome": "2.2.4",
         "@canonical/biome-config": "^0.10.0-experimental.4",
@@ -145,7 +145,7 @@
     },
     "packages/ds-ontology": {
       "name": "@canonical/ds-ontology",
-      "version": "0.10.0-experimental.3",
+      "version": "0.10.0-experimental.5",
       "devDependencies": {
         "@biomejs/biome": "2.2.4",
         "@canonical/biome-config": "^0.10.0-experimental.3",
@@ -153,7 +153,7 @@
     },
     "packages/ds-standards": {
       "name": "@canonical/ds-standards",
-      "version": "0.10.0-experimental.3",
+      "version": "0.10.0-experimental.5",
       "dependencies": {
         "@canonical/ds-ontology": "^0.10.0-experimental.3",
       },
@@ -174,7 +174,7 @@
     },
     "packages/generator-ds": {
       "name": "@canonical/generator-ds",
-      "version": "0.10.0-experimental.4",
+      "version": "0.10.0-experimental.5",
       "dependencies": {
         "@canonical/utils": "^0.10.0-experimental.4",
         "yeoman-generator": "^7.5.1",
@@ -193,7 +193,7 @@
     },
     "packages/ontologies": {
       "name": "@canonical/ontologies",
-      "version": "0.10.0-experimental.4",
+      "version": "0.10.0-experimental.5",
       "devDependencies": {
         "@biomejs/biome": "2.2.4",
         "@canonical/biome-config": "^0.10.0-experimental.4",
@@ -201,7 +201,7 @@
     },
     "packages/react/ds-app": {
       "name": "@canonical/react-ds-app",
-      "version": "0.10.0-experimental.4",
+      "version": "0.10.0-experimental.5",
       "dependencies": {
         "@canonical/storybook-config": "^0.10.0-experimental.4",
         "@canonical/styles": "^0.10.0-experimental.4",
@@ -231,7 +231,7 @@
     },
     "packages/react/ds-app-anbox": {
       "name": "@canonical/react-ds-app-anbox",
-      "version": "0.10.0-experimental.4",
+      "version": "0.10.0-experimental.5",
       "dependencies": {
         "@canonical/storybook-config": "^0.10.0-experimental.4",
         "@canonical/styles": "^0.10.0-experimental.4",
@@ -261,7 +261,7 @@
     },
     "packages/react/ds-app-launchpad": {
       "name": "@canonical/react-ds-app-launchpad",
-      "version": "0.10.0-experimental.4",
+      "version": "0.10.0-experimental.5",
       "dependencies": {
         "@canonical/storybook-config": "^0.10.0-experimental.4",
         "@canonical/styles": "^0.10.0-experimental.4",
@@ -298,7 +298,7 @@
     },
     "packages/react/ds-app-lxd": {
       "name": "@canonical/react-ds-app-lxd",
-      "version": "0.10.0-experimental.4",
+      "version": "0.10.0-experimental.5",
       "dependencies": {
         "@canonical/storybook-config": "^0.10.0-experimental.4",
         "@canonical/styles": "^0.10.0-experimental.4",
@@ -328,7 +328,7 @@
     },
     "packages/react/ds-app-maas": {
       "name": "@canonical/react-ds-app-maas",
-      "version": "0.10.0-experimental.4",
+      "version": "0.10.0-experimental.5",
       "dependencies": {
         "@canonical/storybook-config": "^0.10.0-experimental.4",
         "@canonical/styles": "^0.10.0-experimental.4",
@@ -358,7 +358,7 @@
     },
     "packages/react/ds-app-stores": {
       "name": "@canonical/react-ds-app-stores",
-      "version": "0.10.0-experimental.4",
+      "version": "0.10.0-experimental.5",
       "dependencies": {
         "@canonical/storybook-config": "^0.10.0-experimental.4",
         "@canonical/styles": "^0.10.0-experimental.4",
@@ -388,7 +388,7 @@
     },
     "packages/react/ds-app-wpe": {
       "name": "@canonical/react-ds-app-wpe",
-      "version": "0.10.0-experimental.4",
+      "version": "0.10.0-experimental.5",
       "dependencies": {
         "@canonical/storybook-config": "^0.10.0-experimental.4",
         "@canonical/styles": "^0.10.0-experimental.4",
@@ -418,11 +418,11 @@
     },
     "packages/react/ds-core": {
       "name": "@canonical/react-ds-core",
-      "version": "0.10.0-experimental.4",
+      "version": "0.10.0-experimental.5",
       "dependencies": {
-        "@canonical/ds-assets": "^0.10.0-experimental.4",
-        "@canonical/storybook-config": "^0.10.0-experimental.4",
-        "@canonical/styles": "^0.10.0-experimental.4",
+        "@canonical/ds-assets": "^0.10.0-experimental.5",
+        "@canonical/storybook-config": "^0.10.0-experimental.5",
+        "@canonical/styles": "^0.10.0-experimental.5",
         "@canonical/utils": "^0.10.0-experimental.4",
         "react": "^19.1.0",
         "react-dom": "^19.1.0",
@@ -451,7 +451,7 @@
     },
     "packages/react/ds-core-form": {
       "name": "@canonical/react-ds-core-form",
-      "version": "0.10.0-experimental.4",
+      "version": "0.10.0-experimental.5",
       "dependencies": {
         "@canonical/react-ds-core": "^0.10.0-experimental.4",
         "@canonical/storybook-config": "^0.10.0-experimental.4",
@@ -579,14 +579,14 @@
     },
     "packages/styles/main/canonical": {
       "name": "@canonical/styles",
-      "version": "0.10.0-experimental.4",
+      "version": "0.10.0-experimental.5",
       "dependencies": {
         "@canonical/styles-elements": "^0.10.0-experimental.4",
         "@canonical/styles-modes-canonical": "^0.10.0-experimental.4",
         "@canonical/styles-modes-density": "^0.10.0-experimental.4",
         "@canonical/styles-modes-intents": "^0.10.0-experimental.4",
         "@canonical/styles-modes-motion": "^0.10.0-experimental.4",
-        "@canonical/styles-primitives-canonical": "^0.10.0-experimental.4",
+        "@canonical/styles-primitives-canonical": "^0.10.0-experimental.5",
         "normalize.css": "^8.0.1",
       },
       "devDependencies": {
@@ -634,10 +634,10 @@
     },
     "packages/styles/primitives/canonical": {
       "name": "@canonical/styles-primitives-canonical",
-      "version": "0.10.0-experimental.4",
+      "version": "0.10.0-experimental.5",
       "dependencies": {
         "@canonical/tokens": "^0.10.0-experimental.4",
-        "@canonical/typography": "^0.10.0-experimental.4",
+        "@canonical/typography": "^0.10.0-experimental.5",
         "normalize.css": "^8.0.1",
       },
       "devDependencies": {
@@ -648,7 +648,7 @@
     },
     "packages/svelte/ssr-test": {
       "name": "@canonical/svelte-ssr-test",
-      "version": "0.10.0-experimental.4",
+      "version": "0.10.0-experimental.5",
       "dependencies": {
         "@testing-library/dom": "^10.4.1",
         "jsdom": "^27.0.0",
@@ -677,7 +677,7 @@
     },
     "packages/typography": {
       "name": "@canonical/typography",
-      "version": "0.10.0-experimental.4",
+      "version": "0.10.0-experimental.5",
       "bin": {
         "extractFontData": "./src/extractFontData.ts",
       },

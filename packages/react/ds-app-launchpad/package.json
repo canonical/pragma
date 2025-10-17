@@ -1,6 +1,6 @@
 {
   "name": "@canonical/react-ds-app-launchpad",
-  "version": "0.10.0-experimental.4",
+  "version": "0.10.0-experimental.5",
   "type": "module",
   "module": "dist/esm/index.js",
   "types": "dist/types/index.d.ts",
@@ -38,8 +38,8 @@
     "test:vitest:watch": "vitest"
   },
   "dependencies": {
-    "@canonical/storybook-config": "^0.10.0-experimental.4",
-    "@canonical/styles": "^0.10.0-experimental.4",
+    "@canonical/storybook-config": "^0.10.0-experimental.5",
+    "@canonical/styles": "^0.10.0-experimental.5",
     "@canonical/utils": "^0.10.0-experimental.4",
     "@js-temporal/polyfill": "^0.5.1",
     "highlight.js": "^11.11.1",

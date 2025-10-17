@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.10.0-experimental.5](https://github.com/canonical/ds25/compare/v0.10.0-experimental.4...v0.10.0-experimental.5) (2025-10-17)
+
+
+### Features
+
+* **React core:** Implement Card component ([#314](https://github.com/canonical/ds25/issues/314)) ([ad3dd81](https://github.com/canonical/ds25/commit/ad3dd8145e76b214532fb1e0293e97cab93cc819))
+
+
+
+
+
 # [0.10.0-experimental.4](https://github.com/canonical/ds25/compare/v0.10.0-experimental.3...v0.10.0-experimental.4) (2025-09-25)
 
 **Note:** Version bump only for package @canonical/react-ds-app-maas

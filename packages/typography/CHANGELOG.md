@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.10.0-experimental.5](https://github.com/canonical/pragma/compare/v0.10.0-experimental.4...v0.10.0-experimental.5) (2025-10-17)
+
+
+### Bug Fixes
+
+* **typography:** @types/bun dependency version set to "latest" causes conflict with frozen lock on CI ([#358](https://github.com/canonical/pragma/issues/358)) ([0207274](https://github.com/canonical/pragma/commit/02072742d1c6e15ac5f819b4bbff733be3e33ebd))
+
+
+
+
+
 # [0.10.0-experimental.4](https://github.com/canonical/pragma/compare/v0.10.0-experimental.3...v0.10.0-experimental.4) (2025-09-25)
 
 **Note:** Version bump only for package @canonical/typography

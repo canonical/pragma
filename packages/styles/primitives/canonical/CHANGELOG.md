@@ -3,6 +3,18 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.10.0-experimental.5](https://github.com/canonical/ds25/compare/v0.10.0-experimental.4...v0.10.0-experimental.5) (2025-10-17)
+
+
+### Features
+
+* **React Core:** Build `<SkipLink>` ([#352](https://github.com/canonical/ds25/issues/352)) ([fce545b](https://github.com/canonical/ds25/commit/fce545b32892b24c6fa8446504e1d96541d8a393)), closes [/github.com/canonical/pragma/pull/352#discussion_r2413230398](https://github.com//github.com/canonical/pragma/pull/352/issues/discussion_r2413230398) [/github.com/canonical/pragma/pull/352#discussion_r2401945932](https://github.com//github.com/canonical/pragma/pull/352/issues/discussion_r2401945932)
+* **React core:** Implement Card component ([#314](https://github.com/canonical/ds25/issues/314)) ([ad3dd81](https://github.com/canonical/ds25/commit/ad3dd8145e76b214532fb1e0293e97cab93cc819))
+
+
+
+
+
 # [0.10.0-experimental.4](https://github.com/canonical/ds25/compare/v0.10.0-experimental.3...v0.10.0-experimental.4) (2025-09-25)
 
 

@@ -5,7 +5,4 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 # [0.10.0-experimental.5](https://github.com/canonical/ds25/compare/v0.10.0-experimental.4...v0.10.0-experimental.5) (2025-10-17)
 
-
-### Features
-
-* **ontology:** Base Ontology ([#351](https://github.com/canonical/ds25/issues/351)) ([b8bfc31](https://github.com/canonical/ds25/commit/b8bfc31eccad08211b6d7697375b79f22d971ef8))
+**Note:** Version bump only for package @canonical/ds-standards

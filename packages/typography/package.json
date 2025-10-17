@@ -2,7 +2,7 @@
   "name": "@canonical/typography",
   "module": "index.ts",
   "type": "module",
-  "version": "0.10.0-experimental.4",
+  "version": "0.10.0-experimental.5",
   "main": "src/index.css",
   "bin": {
     "extractFontData": "./src/extractFontData.ts"

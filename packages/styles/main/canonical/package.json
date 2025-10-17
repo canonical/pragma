@@ -1,7 +1,7 @@
 {
   "name": "@canonical/styles",
   "description": "Canonical's base styles",
-  "version": "0.10.0-experimental.4",
+  "version": "0.10.0-experimental.5",
   "main": "src/index.css",
   "files": [
     "src"
@@ -35,7 +35,7 @@
     "@canonical/styles-modes-density": "^0.10.0-experimental.4",
     "@canonical/styles-modes-intents": "^0.10.0-experimental.4",
     "@canonical/styles-modes-motion": "^0.10.0-experimental.4",
-    "@canonical/styles-primitives-canonical": "^0.10.0-experimental.4",
+    "@canonical/styles-primitives-canonical": "^0.10.0-experimental.5",
     "normalize.css": "^8.0.1"
   }
 }

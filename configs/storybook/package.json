@@ -1,6 +1,6 @@
 {
   "name": "@canonical/storybook-config",
-  "version": "0.10.0-experimental.4",
+  "version": "0.10.0-experimental.5",
   "description": "Canonical's standard Storybook configuration factory",
   "main": "dist/esm/index.js",
   "types": "dist/types/index.d.ts",
@@ -27,7 +27,7 @@
     "check:ts": "tsc --noEmit"
   },
   "dependencies": {
-    "@canonical/ds-assets": "^0.10.0-experimental.4",
+    "@canonical/ds-assets": "^0.10.0-experimental.5",
     "@canonical/storybook-addon-baseline-grid": "^0.10.0-experimental.4",
     "@chromatic-com/storybook": "^4.0.0",
     "@storybook/addon-a11y": "^9.0.8",

@@ -1,7 +1,7 @@
 {
   "name": "@canonical/ds-ontology",
   "description": "Ontology definitions for Pragma",
-  "version": "0.10.0-experimental.3",
+  "version": "0.10.0-experimental.5",
   "private": true,
   "author": {
     "email": "webteam@canonical.com",

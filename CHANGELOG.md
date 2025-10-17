@@ -3,6 +3,26 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.10.0-experimental.5](https://github.com/canonical/ds25/compare/v0.10.0-experimental.4...v0.10.0-experimental.5) (2025-10-17)
+
+
+### Bug Fixes
+
+* **React Core:** Remove/rename unneeded icons ([#354](https://github.com/canonical/ds25/issues/354)) ([3dc9c46](https://github.com/canonical/ds25/commit/3dc9c4632d41284f973795c783446e8e02e47e6b)), closes [/github.com/canonical/pragma/issues/333#issuecomment-3364617394](https://github.com//github.com/canonical/pragma/issues/333/issues/issuecomment-3364617394) [/github.com/canonical/pragma/pull/354#issuecomment-3381138505](https://github.com//github.com/canonical/pragma/pull/354/issues/issuecomment-3381138505)
+* **typography:** @types/bun dependency version set to "latest" causes conflict with frozen lock on CI ([#358](https://github.com/canonical/ds25/issues/358)) ([0207274](https://github.com/canonical/ds25/commit/02072742d1c6e15ac5f819b4bbff733be3e33ebd))
+
+
+### Features
+
+* **ontology:** Base Ontology ([#351](https://github.com/canonical/ds25/issues/351)) ([b8bfc31](https://github.com/canonical/ds25/commit/b8bfc31eccad08211b6d7697375b79f22d971ef8))
+* **React Core:** Build `<SkipLink>` ([#352](https://github.com/canonical/ds25/issues/352)) ([fce545b](https://github.com/canonical/ds25/commit/fce545b32892b24c6fa8446504e1d96541d8a393)), closes [/github.com/canonical/pragma/pull/352#discussion_r2413230398](https://github.com//github.com/canonical/pragma/pull/352/issues/discussion_r2413230398) [/github.com/canonical/pragma/pull/352#discussion_r2401945932](https://github.com//github.com/canonical/pragma/pull/352/issues/discussion_r2401945932)
+* **React core:** Implement Card component ([#314](https://github.com/canonical/ds25/issues/314)) ([ad3dd81](https://github.com/canonical/ds25/commit/ad3dd8145e76b214532fb1e0293e97cab93cc819))
+* **svelte-generator:** Add semantics-oriented test element selectors ([#355](https://github.com/canonical/ds25/issues/355)) ([b178ab1](https://github.com/canonical/ds25/commit/b178ab1f4b128d84e20e8c9fe26bf393e773d0df))
+
+
+
+
+
 # [0.10.0-experimental.4](https://github.com/canonical/ds25/compare/v0.10.0-experimental.3...v0.10.0-experimental.4) (2025-09-25)
 
 

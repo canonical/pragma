@@ -1,7 +1,7 @@
 {
   "name": "@canonical/styles-primitives-canonical",
   "description": "Canonical's base styles",
-  "version": "0.10.0-experimental.4",
+  "version": "0.10.0-experimental.5",
   "main": "src/index.css",
   "files": [
     "src"
@@ -27,7 +27,7 @@
   },
   "dependencies": {
     "@canonical/tokens": "^0.10.0-experimental.4",
-    "@canonical/typography": "^0.10.0-experimental.4",
+    "@canonical/typography": "^0.10.0-experimental.5",
     "normalize.css": "^8.0.1"
   },
   "devDependencies": {

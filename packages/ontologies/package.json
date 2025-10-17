@@ -1,7 +1,7 @@
 {
   "name": "@canonical/ontologies",
   "description": "DS Ontologies",
-  "version": "0.10.0-experimental.4",
+  "version": "0.10.0-experimental.5",
   "private": true,
   "files": [
     "src"

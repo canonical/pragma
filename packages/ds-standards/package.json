@@ -1,7 +1,7 @@
 {
   "name": "@canonical/ds-standards",
   "description": "Ontology instances for Pragma standards",
-  "version": "0.10.0-experimental.3",
+  "version": "0.10.0-experimental.5",
   "private": true,
   "author": {
     "email": "webteam@canonical.com",
@@ -23,7 +23,7 @@
     "check:biome:fix": "biome check --write"
   },
   "dependencies": {
-    "@canonical/ds-ontology": "^0.10.0-experimental.3"
+    "@canonical/ds-ontology": "^0.10.0-experimental.5"
   },
   "devDependencies": {
     "@biomejs/biome": "2.2.4",
