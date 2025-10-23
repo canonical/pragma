@@ -19,11 +19,24 @@
 export default function throttle<
   T extends (...args: Parameters<T>) => ReturnType<T>,
 >(func: T, wait: number): (...args: Parameters<T>) => void {
-  let timer: ReturnType<typeof setTimeout> | null = null;
+  let isThrottled = false;
+  let lastArgs: Parameters<T> | null = null;
+
   return function (this: unknown, ...args: Parameters<T>) {
-    if (timer) clearTimeout(timer);
-    timer = setTimeout(() => {
-      func.apply(this, args);
+    if (isThrottled) {
+      lastArgs = args;
+      return;
+    }
+
+    func.apply(this, args);
+    isThrottled = true;
+
+    setTimeout(() => {
+      isThrottled = false;
+      if (lastArgs) {
+        func.apply(this, lastArgs);
+        lastArgs = null;
+      }
     }, wait);
   };
 }

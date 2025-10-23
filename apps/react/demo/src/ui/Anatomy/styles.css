@@ -1,0 +1,119 @@
+/* @canonical/generator-ds 0.10.0-experimental.5 */
+
+.ds.anatomy {
+  /** Background color for the anatomy component */
+  --anatomy-background: #ffffff;
+
+  /** Border color for elements */
+  --anatomy-border-color: #e5e7eb;
+
+  /** Primary text color */
+  --anatomy-text-primary: #1f2937;
+
+  /** Secondary text color */
+  --anatomy-text-secondary: #6b7280;
+
+  /** Accent color for interactive elements */
+  --anatomy-accent: #667eea;
+
+  /** Error state color */
+  --anatomy-error: #ef4444;
+
+  /** Success state color */
+  --anatomy-success: #10b981;
+
+  /** Transition duration for animations */
+  --anatomy-transition-duration: 0.3s;
+
+  /** Transition timing function - smooth cubic-bezier curve */
+  --anatomy-transition-timing: cubic-bezier(0.3, 0.0, 0.3, 1);
+
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.5rem;
+  background: var(--anatomy-background);
+  border-radius: 0.5rem;
+
+  & .controls {
+    display: grid;
+    align-items: center;
+    padding: 1rem;
+    background: lightblue; 
+  }
+
+  & .checkbox-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    & input[type="checkbox"] {
+      cursor: pointer;
+    }
+  }
+
+  & .visualization {
+    min-height: 400px;
+    padding: 2rem;
+    border: 2px solid var(--anatomy-border-color);
+    background: white;
+    overflow: visible;
+    perspective: calc(var(--is-3d-enabled, 0) * 2000px);
+    perspective-origin: center center;
+    transition: all var(--anatomy-transition-duration) var(--anatomy-transition-timing);
+    position: relative;
+
+    &.enabled-3d {
+      border-color: var(--anatomy-accent);
+      /* Beautiful gradient with 5 soft hues for 3D mode */
+      background: linear-gradient(
+        135deg,
+        #ffeaa7 0%,    /* Soft yellow */
+        #dfe6e9 20%,   /* Light gray */
+        #a8e6cf 40%,   /* Mint green */
+        #ffd3e1 60%,   /* Soft pink */
+        #c7ceea 80%,   /* Lavender */
+        #b8e6f7 100%   /* Sky blue */
+      );
+      background-size: 400% 400%;
+      animation: gradient-shift 15s ease infinite;
+    }
+  }
+
+  /* Gradient animation for subtle movement */
+  @keyframes gradient-shift {
+    0% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+    100% {
+      background-position: 0% 50%;
+    }
+  }
+
+  & .tree {
+    transform-style: preserve-3d;
+    transition: transform var(--anatomy-transition-duration) var(--anatomy-transition-timing);
+  }
+
+  & .edge-wrapper {
+    margin-bottom: 1rem;
+    transform-style: preserve-3d;
+  }
+
+  & .error {
+    padding: 1rem;
+    color: var(--anatomy-error);
+    border: 1px solid #fecaca;
+  }
+
+  & .empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 200px;
+    color: var(--anatomy-text-secondary);
+  }
+}

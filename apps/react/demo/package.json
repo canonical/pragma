@@ -31,6 +31,7 @@
     "@canonical/styles": "^0.10.0-experimental.5",
     "@canonical/styles-debug": "^0.10.0-experimental.4",
     "@tanstack/react-router": "^1.121.0",
+    "js-yaml": "^4.1.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-shadow": "^20.6.0"

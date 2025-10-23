@@ -1,0 +1,79 @@
+/* @canonical/generator-ds 0.10.0-experimental.5 */
+
+.ds.anatomy-edge {
+  /* display: inline-block; */
+  min-width: 200px;
+  background: rgba(255, 255, 255, 0.6); 
+  border: 2px solid var(--anatomy-text-secondary);
+  padding: 1rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+  transition: all var(--anatomy-transition-duration) var(--anatomy-transition-timing);
+  transform-style: preserve-3d;
+  transform: translateZ(calc(var(--is-3d-enabled, 0) * var(--depth, 0) * var(--depth-multiplier, 50) * 1px));
+
+  &:hover {
+    border-color: var(--anatomy-accent);
+    box-shadow: 0 4px 8px rgba(102, 126, 234, 0.15);
+  }
+
+  & .edge-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding-bottom: 0.5rem;
+    margin-bottom: 0.5rem;
+    border-bottom: 1px solid var(--anatomy-border-color);
+  }
+
+  & .edge-uri {
+    color: var(--anatomy-text-primary);
+    flex:1;
+    font-family: monospace;
+  }
+
+  & .cardinality {
+    color: var(--anatomy-error);
+    font-family: monospace;
+  }
+
+  /* & .slot { */
+  /*   color: var(--anatomy-success); */
+  /*   font-weight: 600; */
+  /*   font-size: 0.75rem; */
+  /* } */
+
+  & .children {
+    transform-style: preserve-3d;
+  }
+}
+
+/* 3D mode styles - applied when --is-3d-enabled is 1 */
+.ds.anatomy .tree[style*="--is-3d-enabled: 1"] .ds.anatomy-edge {
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15), 0 8px 16px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(102, 126, 234, 0.3);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  position: relative;
+
+  /* Glass morphism overlay */
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.1) 0%,
+      rgba(255, 255, 255, 0.05) 100%
+    );
+    pointer-events: none;
+  }
+
+  &:hover {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(249, 250, 251, 0.85) 100%);
+    border-color: rgba(102, 126, 234, 0.6);
+    box-shadow: 0 24px 48px rgba(102, 126, 234, 0.2), 0 12px 24px rgba(0, 0, 0, 0.1);
+  }
+}
