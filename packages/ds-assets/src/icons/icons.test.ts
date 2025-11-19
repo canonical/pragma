@@ -31,6 +31,25 @@ describe("icons", () => {
     });
   });
 
+  it("each icon SVG file is well-formed XML", async () => {
+    const iconsDir = join(process.cwd(), "icons");
+    const files = readdirSync(iconsDir);
+    const svgFiles = files.filter((file) => file.endsWith(".svg"));
+    const parser = new DOMParser();
+
+    svgFiles.forEach((svgFile) => {
+      const svgContents = readFileSync(join(iconsDir, svgFile), "utf-8");
+      const svgDoc = parser.parseFromString(svgContents, "image/svg+xml");
+      // https://developer.mozilla.org/en-US/docs/Web/API/DOMParser/parseFromString#error_handling
+      const parseError = svgDoc.querySelector("parsererror");
+
+      expect(
+        parseError,
+        `${svgFile} is not well-formed XML: ${parseError?.textContent}`,
+      ).toBeNull();
+    });
+  });
+
   it("each icon in the icons directory has a g element with an id matching its file name", async () => {
     const iconsDir = join(process.cwd(), "icons");
     const files = readdirSync(iconsDir);
