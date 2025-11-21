@@ -8,6 +8,7 @@ import type { AnatomyProps } from "./types.js";
 const meta = {
 	title: "Anatomy",
 	component: Component,
+	tags: ["autodocs"],
 	args: {
 		yamlContent: `
 core:component:Card:

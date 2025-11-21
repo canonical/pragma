@@ -26,7 +26,7 @@
   --anatomy-transition-duration: 0.3s;
 
   /** Transition timing function - smooth cubic-bezier curve */
-  --anatomy-transition-timing: cubic-bezier(0.3, 0.0, 0.3, 1);
+  --anatomy-transition-timing: cubic-bezier(0.3, 0, 0.3, 1);
 
   display: flex;
   flex-direction: column;
@@ -39,7 +39,7 @@
     display: grid;
     align-items: center;
     padding: 1rem;
-    background: lightblue; 
+    background: lightblue;
   }
 
   & .checkbox-wrapper {
@@ -60,7 +60,8 @@
     overflow: visible;
     perspective: calc(var(--is-3d-enabled, 0) * 2000px);
     perspective-origin: center center;
-    transition: all var(--anatomy-transition-duration) var(--anatomy-transition-timing);
+    transition: all var(--anatomy-transition-duration)
+      var(--anatomy-transition-timing);
     position: relative;
 
     &.enabled-3d {
@@ -68,12 +69,12 @@
       /* Beautiful gradient with 5 soft hues for 3D mode */
       background: linear-gradient(
         135deg,
-        #ffeaa7 0%,    /* Soft yellow */
-        #dfe6e9 20%,   /* Light gray */
-        #a8e6cf 40%,   /* Mint green */
-        #ffd3e1 60%,   /* Soft pink */
-        #c7ceea 80%,   /* Lavender */
-        #b8e6f7 100%   /* Sky blue */
+        #ffeaa7 0% /* Soft yellow */,
+        #dfe6e9 20% /* Light gray */,
+        #a8e6cf 40% /* Mint green */,
+        #ffd3e1 60% /* Soft pink */,
+        #c7ceea 80% /* Lavender */,
+        #b8e6f7 100% /* Sky blue */
       );
       background-size: 400% 400%;
       animation: gradient-shift 15s ease infinite;
@@ -95,7 +96,8 @@
 
   & .tree {
     transform-style: preserve-3d;
-    transition: transform var(--anatomy-transition-duration) var(--anatomy-transition-timing);
+    transition: transform var(--anatomy-transition-duration)
+      var(--anatomy-transition-timing);
   }
 
   & .edge-wrapper {

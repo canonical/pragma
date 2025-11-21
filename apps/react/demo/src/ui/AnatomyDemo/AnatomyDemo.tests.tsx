@@ -7,7 +7,7 @@ import Component from "./AnatomyDemo.js";
 describe("AnatomyDemo component", () => {
   it("renders", () => {
     render(<Component>AnatomyDemo</Component>);
-    expect(screen.getByText('AnatomyDemo')).toBeInTheDocument();
+    expect(screen.getByText("AnatomyDemo")).toBeInTheDocument();
   });
 
   it("applies className", () => {

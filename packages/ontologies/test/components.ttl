@@ -1,0 +1,300 @@
+@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl:   <http://www.w3.org/2002/07/owl#> .
+@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
+@prefix skos:  <http://www.w3.org/2004/02/skos/core#> .
+@prefix ds:    <http://syntax.example.org/ontology#> .
+@prefix dsi:   <http://syntax.example.org/instance#> .
+
+# Test Data Declaration
+dsi: a owl:Ontology ;
+    owl:versionInfo "1.0.0" ;
+    owl:imports ds: ;
+    rdfs:label "Design System Test Data - Support Case & Chat Components" ;
+    skos:definition "Test instances of UI components for support case management and chat interfaces" .
+
+###############################################################################
+# TIER INSTANCES (Referenced by components)
+###############################################################################
+
+dsi:CoreTier
+    a ds:Tier ;
+    ds:name "Core" ;
+    ds:description "Core tier containing fundamental components" ;
+    ds:version "1.0.0" .
+
+dsi:SemanticTier
+    a ds:Tier ;
+    ds:name "Semantic" ;
+    ds:description "Semantic tier containing meaningful compositions" ;
+    ds:version "1.0.0" .
+
+###############################################################################
+# LAYOUT COMPONENTS
+###############################################################################
+
+# Support Dashboard Layout
+dsi:SupportDashboardLayout
+    a ds:Layout ;
+    ds:uri "ds:semantic:layout:SupportDashboardLayout:1.0.0" ;
+    ds:name "Support Dashboard Layout" ;
+    ds:description "Main layout structure for support case management dashboard" ;
+    ds:version "1.0.0" ;
+    ds:tier dsi:SemanticTier ;
+    ds:domain "Support case management and ticket tracking" ;
+    ds:grid "12-column responsive grid with sidebar navigation" ;
+    ds:gridAreas "header, sidebar, main-content, case-list, case-detail" ;
+    ds:targetDevices "desktop, tablet" ;
+    ds:figmaLink "https://figma.com/file/support-dashboard-layout"^^xsd:anyURI ;
+    ds:anatomy "https://docs.example.org/layouts/support-dashboard#anatomy"^^xsd:anyURI ;
+    ds:whenToUse "Use when creating support agent interfaces for managing multiple customer cases" ;
+    ds:whenNotToUse "Do not use for customer-facing support forms or single-case views" ;
+    ds:guidelines "Maintain clear visual hierarchy between case list and detail views. Ensure responsive behavior on tablet devices." ;
+    ds:decisionLog "[2024-01-15][Design Team] Created initial layout for support dashboard based on agent feedback" .
+
+# Chat Interface Layout
+dsi:ChatInterfaceLayout
+    a ds:Layout ;
+    ds:uri "ds:semantic:layout:ChatInterfaceLayout:1.0.0" ;
+    ds:name "Chat Interface Layout" ;
+    ds:description "Layout for real-time chat communication interfaces" ;
+    ds:version "1.0.0" ;
+    ds:tier dsi:SemanticTier ;
+    ds:domain "Real-time communication and messaging" ;
+    ds:grid "Flexible vertical layout with fixed header and footer" ;
+    ds:gridAreas "chat-header, conversation-area, message-input-area, participant-list" ;
+    ds:targetDevices "desktop, tablet, mobile" ;
+    ds:figmaLink "https://figma.com/file/chat-interface-layout"^^xsd:anyURI ;
+    ds:anatomy "https://docs.example.org/layouts/chat-interface#anatomy"^^xsd:anyURI ;
+    ds:whenToUse "Use for chat applications, support conversations, and real-time messaging features" ;
+    ds:whenNotToUse "Do not use for asynchronous communication like email or forums" ;
+    ds:guidelines "Ensure message area is scrollable and new messages appear at bottom. Maintain input area visibility." ;
+    ds:decisionLog "[2024-01-20][UX Team] Optimized for mobile-first chat experience" .
+
+###############################################################################
+# CORE COMPONENTS
+###############################################################################
+
+# Support Case Card Component
+dsi:SupportCaseCard
+    a ds:Component ;
+    ds:uri "ds:core:component:SupportCaseCard:2.1.0" ;
+    ds:name "Support Case Card" ;
+    ds:description "Card component displaying support case summary information" ;
+    ds:version "2.1.0" ;
+    ds:tier dsi:CoreTier ;
+    ds:figmaLink "https://figma.com/file/support-case-card"^^xsd:anyURI ;
+    ds:wireframeLink "https://wireframes.example.org/support-case-card"^^xsd:anyURI ;
+    ds:anatomy "https://docs.example.org/components/support-case-card#anatomy"^^xsd:anyURI ;
+    ds:whenToUse "Use to display individual support cases in lists or grids" ;
+    ds:whenNotToUse "Do not use for detailed case views or case creation forms" ;
+    ds:properties "caseId, title, status, priority, assignee, createdDate, lastUpdated" ;
+    ds:variants "compact, standard, expanded" ;
+    ds:guidelines "Always display case ID prominently. Use color coding for priority levels." ;
+    ds:hasSubcomponent dsi:CasePriorityIndicator ;
+    ds:hasLabel dsi:CaseStatusLabel ;
+    ds:decisionLog "[2024-02-01][Product Team] Added expanded variant for more detailed preview" .
+
+# Chat Conversation Component
+dsi:ChatConversation
+    a ds:Component ;
+    ds:uri "ds:core:component:ChatConversation:3.0.0" ;
+    ds:name "Chat Conversation" ;
+    ds:description "Main container component for chat message threads" ;
+    ds:version "3.0.0" ;
+    ds:tier dsi:CoreTier ;
+    ds:figmaLink "https://figma.com/file/chat-conversation"^^xsd:anyURI ;
+    ds:wireframeLink "https://wireframes.example.org/chat-conversation"^^xsd:anyURI ;
+    ds:anatomy "https://docs.example.org/components/chat-conversation#anatomy"^^xsd:anyURI ;
+    ds:whenToUse "Use as the main container for displaying chat messages" ;
+    ds:whenNotToUse "Do not use for single message displays or notification systems" ;
+    ds:properties "messages, participants, timestamp, isTyping, readReceipts" ;
+    ds:variants "standard, compact, fullscreen" ;
+    ds:guidelines "Implement virtual scrolling for performance with large message histories" ;
+    ds:hasSubcomponent dsi:MessageInput ;
+    ds:hasSubcomponent dsi:MessageBubble ;
+    ds:decisionLog "[2024-02-15][Engineering Team] Migrated to version 3.0.0 with virtual scrolling support" .
+
+# Message Bubble Component
+dsi:MessageBubble
+    a ds:Component ;
+    ds:uri "ds:core:component:MessageBubble:1.2.0" ;
+    ds:name "Message Bubble" ;
+    ds:description "Individual message display component with sender information" ;
+    ds:version "1.2.0" ;
+    ds:tier dsi:CoreTier ;
+    ds:figmaLink "https://figma.com/file/message-bubble"^^xsd:anyURI ;
+    ds:anatomy "https://docs.example.org/components/message-bubble#anatomy"^^xsd:anyURI ;
+    ds:whenToUse "Use to display individual messages within a chat conversation" ;
+    ds:whenNotToUse "Do not use for system notifications or alerts" ;
+    ds:properties "message, sender, timestamp, status, reactions, attachments" ;
+    ds:variants "sent, received, system" ;
+    ds:guidelines "Maintain consistent spacing between bubbles. Support text wrapping and emoji rendering." ;
+    ds:hasSubcomponent dsi:MessageTimestamp ;
+    ds:hasSubcomponent dsi:UserAvatar ;
+    ds:decisionLog "[2024-01-25][Design Team] Added support for message reactions" .
+
+# Case Status Badge Component
+dsi:CaseStatusBadge
+    a ds:Component ;
+    ds:uri "ds:core:component:CaseStatusBadge:1.0.0" ;
+    ds:name "Case Status Badge" ;
+    ds:description "Visual indicator component for support case status" ;
+    ds:version "1.0.0" ;
+    ds:tier dsi:CoreTier ;
+    ds:figmaLink "https://figma.com/file/case-status-badge"^^xsd:anyURI ;
+    ds:anatomy "https://docs.example.org/components/case-status-badge#anatomy"^^xsd:anyURI ;
+    ds:whenToUse "Use to indicate the current status of a support case" ;
+    ds:whenNotToUse "Do not use for user status or system status indicators" ;
+    ds:properties "status, label, color, icon" ;
+    ds:variants "pill, square, dot" ;
+    ds:guidelines "Use consistent color mapping: green (resolved), yellow (pending), red (urgent), blue (in-progress)" ;
+    ds:hasLabel dsi:StatusTextLabel ;
+    ds:decisionLog "[2024-02-10][Accessibility Team] Added ARIA labels for screen readers" .
+
+###############################################################################
+# SUBCOMPONENTS
+###############################################################################
+
+# Message Input Subcomponent
+dsi:MessageInput
+    a ds:Subcomponent ;
+    ds:uri "ds:core:subcomponent:MessageInput:1.1.0" ;
+    ds:name "Message Input" ;
+    ds:description "Text input field for composing chat messages" ;
+    ds:version "1.1.0" ;
+    ds:tier dsi:CoreTier ;
+    ds:standalone false ;
+    ds:parentComponent dsi:ChatConversation ;
+    ds:figmaLink "https://figma.com/file/message-input"^^xsd:anyURI ;
+    ds:anatomy "https://docs.example.org/subcomponents/message-input#anatomy"^^xsd:anyURI ;
+    ds:whenToUse "Use as part of chat interfaces for message composition" ;
+    ds:whenNotToUse "Do not use for form inputs or search fields" ;
+    ds:properties "placeholder, value, maxLength, attachmentEnabled, emojiEnabled" ;
+    ds:guidelines "Support multi-line input with auto-resize. Include send button and attachment options." ;
+    ds:decisionLog "[2024-02-05][UX Team] Added emoji picker integration" .
+
+# Message Timestamp Subcomponent
+dsi:MessageTimestamp
+    a ds:Subcomponent ;
+    ds:uri "ds:core:subcomponent:MessageTimestamp:1.0.0" ;
+    ds:name "Message Timestamp" ;
+    ds:description "Timestamp display for chat messages" ;
+    ds:version "1.0.0" ;
+    ds:tier dsi:CoreTier ;
+    ds:standalone false ;
+    ds:parentComponent dsi:MessageBubble ;
+    ds:figmaLink "https://figma.com/file/message-timestamp"^^xsd:anyURI ;
+    ds:whenToUse "Use to show when a message was sent" ;
+    ds:whenNotToUse "Do not use for date pickers or calendar displays" ;
+    ds:properties "timestamp, format, timezone, relative" ;
+    ds:guidelines "Use relative time for recent messages (e.g., '2 minutes ago'), absolute for older" ;
+    ds:decisionLog "[2024-01-30][Engineering Team] Implemented smart relative time display" .
+
+# Case Priority Indicator Subcomponent
+dsi:CasePriorityIndicator
+    a ds:Subcomponent ;
+    ds:uri "ds:core:subcomponent:CasePriorityIndicator:1.0.0" ;
+    ds:name "Case Priority Indicator" ;
+    ds:description "Visual indicator for support case priority level" ;
+    ds:version "1.0.0" ;
+    ds:tier dsi:CoreTier ;
+    ds:standalone false ;
+    ds:parentComponent dsi:SupportCaseCard ;
+    ds:figmaLink "https://figma.com/file/case-priority-indicator"^^xsd:anyURI ;
+    ds:whenToUse "Use to indicate urgency level of support cases" ;
+    ds:whenNotToUse "Do not use for general importance indicators" ;
+    ds:properties "priority, color, icon, label" ;
+    ds:guidelines "Use consistent priority scale: Critical (red), High (orange), Medium (yellow), Low (green)" ;
+    ds:decisionLog "[2024-02-08][Support Team] Standardized priority levels across system" .
+
+# User Avatar Subcomponent (Standalone capable)
+dsi:UserAvatar
+    a ds:Subcomponent ;
+    ds:uri "ds:core:subcomponent:UserAvatar:2.0.0" ;
+    ds:name "User Avatar" ;
+    ds:description "Display component for user profile pictures or initials" ;
+    ds:version "2.0.0" ;
+    ds:tier dsi:CoreTier ;
+    ds:standalone true ;
+    ds:figmaLink "https://figma.com/file/user-avatar"^^xsd:anyURI ;
+    ds:anatomy "https://docs.example.org/subcomponents/user-avatar#anatomy"^^xsd:anyURI ;
+    ds:whenToUse "Use to represent users visually in interfaces" ;
+    ds:whenNotToUse "Do not use for logos or non-user images" ;
+    ds:properties "imageUrl, initials, size, status, shape" ;
+    ds:variants "small, medium, large, xlarge" ;
+    ds:guidelines "Always provide fallback to initials when image fails. Support online/offline status indicators." ;
+    ds:decisionLog "[2024-02-12][Design Team] Made standalone to support various contexts" .
+
+###############################################################################
+# PATTERNS
+###############################################################################
+
+# Support Case Workflow Pattern
+dsi:SupportCaseWorkflow
+    a ds:Pattern ;
+    ds:uri "ds:semantic:pattern:SupportCaseWorkflow:1.0.0" ;
+    ds:name "Support Case Workflow" ;
+    ds:description "Standardized workflow pattern for handling support case lifecycle" ;
+    ds:version "1.0.0" ;
+    ds:tier dsi:SemanticTier ;
+    ds:figmaLink "https://figma.com/file/support-case-workflow"^^xsd:anyURI ;
+    ds:wireframeLink "https://wireframes.example.org/support-workflow"^^xsd:anyURI ;
+    ds:anatomy "https://docs.example.org/patterns/support-workflow#anatomy"^^xsd:anyURI ;
+    ds:whenToUse "Use when implementing support case management systems" ;
+    ds:whenNotToUse "Do not use for simple contact forms or feedback collection" ;
+    ds:guidelines "Follow states: New → Assigned → In Progress → Awaiting Customer → Resolved → Closed" ;
+    ds:properties "states, transitions, actors, notifications, escalation" ;
+    ds:decisionLog "[2024-01-18][Product Team] Defined standard workflow based on industry best practices" .
+
+# Chat Thread Pattern
+dsi:ChatThreadPattern
+    a ds:Pattern ;
+    ds:uri "ds:semantic:pattern:ChatThreadPattern:1.1.0" ;
+    ds:name "Chat Thread Pattern" ;
+    ds:description "Pattern for organizing and displaying threaded chat conversations" ;
+    ds:version "1.1.0" ;
+    ds:tier dsi:SemanticTier ;
+    ds:figmaLink "https://figma.com/file/chat-thread-pattern"^^xsd:anyURI ;
+    ds:wireframeLink "https://wireframes.example.org/chat-thread"^^xsd:anyURI ;
+    ds:anatomy "https://docs.example.org/patterns/chat-thread#anatomy"^^xsd:anyURI ;
+    ds:whenToUse "Use for conversations requiring context and reply threading" ;
+    ds:whenNotToUse "Do not use for simple linear chat displays" ;
+    ds:guidelines "Indent replies visually. Collapse long threads by default. Support thread navigation." ;
+    ds:properties "parentMessage, replies, threadDepth, participants, threadStatus" ;
+    ds:variants "nested, flat-with-references" ;
+    ds:decisionLog "[2024-02-20][UX Team] Added support for flat thread view based on user research" .
+
+###############################################################################
+# LABEL INSTANCES
+###############################################################################
+
+dsi:CaseStatusLabel
+    a ds:Label ;
+    ds:name "Case Status" ;
+    ds:description "Label for support case status indicators" .
+
+dsi:StatusTextLabel
+    a ds:Label ;
+    ds:name "Status Text" ;
+    ds:description "Text label for status badges" .
+
+###############################################################################
+# TOKEN REFERENCES (Examples)
+###############################################################################
+
+dsi:PrimaryColorToken
+    a ds:Token ;
+    ds:name "Primary Color" ;
+    ds:description "Primary brand color used across components" .
+
+dsi:SpacingToken
+    a ds:Token ;
+    ds:name "Standard Spacing" ;
+    ds:description "Consistent spacing values for component layouts" .
+
+# Establish token relationships
+dsi:SupportCaseCard ds:usesToken dsi:PrimaryColorToken .
+dsi:ChatConversation ds:usesToken dsi:SpacingToken .
+dsi:MessageBubble ds:usesToken dsi:SpacingToken .
+dsi:CaseStatusBadge ds:usesToken dsi:PrimaryColorToken .

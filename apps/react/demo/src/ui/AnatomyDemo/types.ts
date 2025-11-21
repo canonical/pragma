@@ -1,6 +1,6 @@
 /* @canonical/generator-ds 0.10.0-experimental.5 */
 
-import type { HTMLAttributes, ReactNode } from 'react'
+import type { HTMLAttributes, ReactNode } from "react";
 
 /**
     We have used the `HTMLDivElement` as a default props base.
@@ -8,6 +8,6 @@ import type { HTMLAttributes, ReactNode } from 'react'
     See https://developer.mozilla.org/en-US/docs/Web/API/HTML_DOM_API for a full list of HTML elements interfaces.
 */
 export interface AnatomyDemoProps extends HTMLAttributes<HTMLDivElement> {
-    /** Child elements */
-    children?: ReactNode;
+  /** Child elements */
+  children?: ReactNode;
 }

@@ -1,0 +1,306 @@
+@prefix cso: <http://pragma.canonical.com/codestandards#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix csoi: <http://pragma.canonical.com/codestandards/instance#> .
+
+# Code Standards Instances for SupportCaseCard Component
+csoi: a owl:Ontology ;
+    owl:versionInfo "1.0.0" ;
+    owl:imports cso: ;
+    rdfs:label "Code Standards Instances - SupportCaseCard Implementation" ;
+    rdfs:comment "Code standards applied to the SupportCaseCard component implementation" .
+
+###############################################################################
+# CATEGORIES
+###############################################################################
+
+csoi:ReactCategory a cso:Category ;
+    cso:slug "react" ;
+    rdfs:label "React"@en ;
+    rdfs:comment "Standards for React components and patterns"@en .
+
+csoi:TypeScriptCategory a cso:Category ;
+    cso:slug "typescript" ;
+    rdfs:label "TypeScript"@en ;
+    rdfs:comment "Standards for TypeScript code"@en .
+
+csoi:TestingCategory a cso:Category ;
+    cso:slug "testing" ;
+    rdfs:label "Testing"@en ;
+    rdfs:comment "Standards for testing practices"@en .
+
+csoi:ComponentCategory a cso:Category ;
+    cso:slug "component" ;
+    rdfs:label "Component"@en ;
+    rdfs:comment "Standards for component architecture"@en .
+
+csoi:StylingCategory a cso:Category ;
+    cso:slug "styling" ;
+    rdfs:label "Styling"@en ;
+    rdfs:comment "Standards for CSS and styling"@en .
+
+###############################################################################
+# CODE STANDARDS - REACT COMPONENT STANDARDS
+###############################################################################
+
+csoi:ReactComponentFolderStructure a cso:CodeStandard ;
+    cso:name "react/component/folder-structure" ;
+    cso:hasCategory csoi:ReactCategory ;
+    cso:description """
+## Component Folder Structure
+Each component should be organized in its own folder with related files grouped together.
+The folder should contain the component implementation, styles, tests, and type definitions.
+""" ;
+    cso:dos """
+### Do:
+- Create a folder named after the component (e.g., `SupportCaseCard/`)
+- Include an `index.ts` file for exports
+- Keep component file as `SupportCaseCard.tsx`
+- Place styles in `styles.css` or `SupportCaseCard.module.css`
+- Include tests in `SupportCaseCard.test.tsx`
+- Add types in `types.ts` if complex
+""" ;
+    cso:donts """
+### Don't:
+- Don't scatter component files across multiple directories
+- Don't use generic names like `component.tsx`
+- Don't mix component files with unrelated code
+- Don't forget the index file for clean imports
+""" .
+
+csoi:ReactFunctionalComponents a cso:CodeStandard ;
+    cso:name "react/component/functional-components" ;
+    cso:hasCategory csoi:ReactCategory ;
+    cso:description """
+## Use Functional Components
+Always use functional components with hooks instead of class components for new code.
+""" ;
+    cso:dos """
+### Do:
+```tsx
+const SupportCaseCard: React.FC<SupportCaseCardProps> = ({
+  caseId,
+  title,
+  status
+}) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  return <div>...</div>;
+};
+```
+""" ;
+    cso:donts """
+### Don't:
+```tsx
+class SupportCaseCard extends React.Component {
+  render() {
+    return <div>...</div>;
+  }
+}
+```
+""" .
+
+###############################################################################
+# CODE STANDARDS - TYPESCRIPT STANDARDS
+###############################################################################
+
+csoi:TypeScriptStrongTyping a cso:CodeStandard ;
+    cso:name "typescript/typing/strong-typing" ;
+    cso:hasCategory csoi:TypeScriptCategory ;
+    cso:description """
+## Strong Typing
+Always provide explicit types for component props, state, and function parameters.
+Avoid using `any` type.
+""" ;
+    cso:dos """
+### Do:
+```tsx
+interface SupportCaseCardProps {
+  caseId: string;
+  title: string;
+  status: 'open' | 'pending' | 'resolved' | 'closed';
+  priority: 'low' | 'medium' | 'high' | 'critical';
+  assignee?: User;
+  createdDate: Date;
+  lastUpdated: Date;
+  variant?: 'compact' | 'standard' | 'expanded';
+}
+```
+""" ;
+    cso:donts """
+### Don't:
+```tsx
+interface SupportCaseCardProps {
+  caseId: any;
+  title: any;
+  status: string;
+  data: any;
+}
+```
+""" .
+
+csoi:TypeScriptEnums a cso:CodeStandard ;
+    cso:name "typescript/typing/enums" ;
+    cso:hasCategory csoi:TypeScriptCategory ;
+    cso:description """
+## Use String Literal Types or Const Assertions
+Prefer string literal types or const assertions over enums for better tree-shaking and type inference.
+""" ;
+    cso:dos """
+### Do:
+```tsx
+export const CaseStatus = {
+  OPEN: 'open',
+  PENDING: 'pending',
+  RESOLVED: 'resolved',
+  CLOSED: 'closed'
+} as const;
+
+type CaseStatus = typeof CaseStatus[keyof typeof CaseStatus];
+```
+""" ;
+    cso:donts """
+### Don't:
+```tsx
+enum CaseStatus {
+  OPEN = 'open',
+  PENDING = 'pending',
+  RESOLVED = 'resolved',
+  CLOSED = 'closed'
+}
+```
+""" .
+
+###############################################################################
+# CODE STANDARDS - TESTING STANDARDS
+###############################################################################
+
+csoi:TestingComponentTests a cso:CodeStandard ;
+    cso:name "testing/component/unit-tests" ;
+    cso:hasCategory csoi:TestingCategory ;
+    cso:description """
+## Component Testing
+Every component should have comprehensive unit tests covering props, interactions, and edge cases.
+""" ;
+    cso:dos """
+### Do:
+- Test component rendering with different props
+- Test user interactions
+- Test accessibility features
+- Use data-testid for test selectors
+- Mock external dependencies
+""" ;
+    cso:donts """
+### Don't:
+- Don't test implementation details
+- Don't use CSS classes as selectors
+- Don't skip edge cases
+- Don't test third-party library internals
+""" .
+
+###############################################################################
+# CODE STANDARDS - STYLING STANDARDS
+###############################################################################
+
+csoi:StylingCSSModules a cso:CodeStandard ;
+    cso:name "styling/css/modules" ;
+    cso:hasCategory csoi:StylingCategory ;
+    cso:description """
+## CSS Modules or CSS-in-JS
+Use CSS Modules or CSS-in-JS for component styling to ensure style encapsulation.
+""" ;
+    cso:dos """
+### Do:
+```css
+/* SupportCaseCard.module.css */
+.card {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-small);
+  padding: var(--spacing-medium);
+}
+
+.card--expanded {
+  box-shadow: var(--shadow-large);
+}
+```
+""" ;
+    cso:donts """
+### Don't:
+- Don't use global CSS classes without scoping
+- Don't use inline styles for complex styling
+- Don't hardcode color values
+""" .
+
+csoi:StylingBEMNaming a cso:CodeStandard ;
+    cso:name "styling/naming/bem" ;
+    cso:hasCategory csoi:StylingCategory ;
+    cso:extends csoi:StylingCSSModules ;
+    cso:description """
+## BEM Naming Convention
+Use BEM (Block Element Modifier) naming convention for CSS classes.
+""" ;
+    cso:dos """
+### Do:
+```css
+.support-case-card { }
+.support-case-card__header { }
+.support-case-card__title { }
+.support-case-card--expanded { }
+.support-case-card--priority-high { }
+```
+""" ;
+    cso:donts """
+### Don't:
+```css
+.card-header-title { }
+.cardHeader { }
+.red-card { }
+```
+""" .
+
+###############################################################################
+# CODE STANDARDS - COMPONENT ARCHITECTURE
+###############################################################################
+
+csoi:ComponentPropsInterface a cso:CodeStandard ;
+    cso:name "component/architecture/props-interface" ;
+    cso:hasCategory csoi:ComponentCategory ;
+    cso:description """
+## Component Props Interface
+Define clear, well-documented interfaces for component props.
+""" ;
+    cso:dos """
+### Do:
+- Export props interface
+- Document complex props with JSDoc
+- Use optional chaining for optional props
+- Provide sensible defaults
+""" ;
+    cso:donts """
+### Don't:
+- Don't use inline type definitions
+- Don't pass entire objects when only specific fields are needed
+- Don't mutate props
+""" .
+
+csoi:ComponentComposition a cso:CodeStandard ;
+    cso:name "component/architecture/composition" ;
+    cso:hasCategory csoi:ComponentCategory ;
+    cso:description """
+## Component Composition
+Favor composition over complex conditional rendering.
+""" ;
+    cso:dos """
+### Do:
+- Break down complex components into smaller pieces
+- Use children and render props patterns
+- Create subcomponents for repeated elements
+""" ;
+    cso:donts """
+### Don't:
+- Don't create monolithic components
+- Don't nest ternary operators deeply
+- Don't repeat JSX blocks
+""" .
