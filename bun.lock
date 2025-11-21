@@ -11,7 +11,6 @@
       "name": "@canonical/react-boilerplate-vite",
       "version": "0.10.0-experimental.5",
       "dependencies": {
-        "@canonical/react-ds-core": "^0.10.0-experimental.5",
         "@canonical/react-ssr": "^0.10.0-experimental.4",
         "@canonical/storybook-config": "^0.10.0-experimental.5",
         "@canonical/styles": "^0.10.0-experimental.5",
@@ -636,7 +635,6 @@
       "name": "@canonical/styles-primitives-canonical",
       "version": "0.10.0-experimental.5",
       "dependencies": {
-        "@canonical/tokens": "^0.10.0-experimental.4",
         "@canonical/typography": "^0.10.0-experimental.5",
         "normalize.css": "^8.0.1",
       },

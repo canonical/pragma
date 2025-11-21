@@ -61,7 +61,7 @@
 .grid-fluid {
   display: grid;
   grid-template-columns: repeat(
-      auto-fit,
+      auto-fill,
       minmax(100px, 1fr) minmax(100px, 1fr) minmax(100px, 1fr)
         minmax(100px, 1fr)
     );
