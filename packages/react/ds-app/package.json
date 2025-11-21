@@ -62,6 +62,6 @@
     "typescript": "^5.8.3",
     "vite": "^7.0.0",
     "vite-tsconfig-paths": "^5.1.4",
-    "vitest": "^3.2.3"
+    "vitest": "^4.0.0"
   }
 }
