@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.10.0-experimental.6](https://github.com/canonical/ds25/compare/v0.10.0-experimental.5...v0.10.0-experimental.6) (2025-11-24)
+
+
+### Bug Fixes
+
+* **assets:** Remove SVGs attributes left as text ([#371](https://github.com/canonical/ds25/issues/371)) ([60dd929](https://github.com/canonical/ds25/commit/60dd929d04913952f5ac3bb18746f33a8a569042))
+
+
+
+
+
 # [0.10.0-experimental.5](https://github.com/canonical/ds25/compare/v0.10.0-experimental.4...v0.10.0-experimental.5) (2025-10-17)
 
 

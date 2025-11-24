@@ -1,6 +1,6 @@
 {
   "name": "@canonical/react-ds-app",
-  "version": "0.10.0-experimental.5",
+  "version": "0.10.0-experimental.6",
   "type": "module",
   "module": "dist/esm/index.js",
   "types": "dist/types/index.d.ts",
@@ -39,8 +39,8 @@
     "test:vitest:watch": "vitest"
   },
   "dependencies": {
-    "@canonical/storybook-config": "^0.10.0-experimental.5",
-    "@canonical/styles": "^0.10.0-experimental.5",
+    "@canonical/storybook-config": "^0.10.0-experimental.6",
+    "@canonical/styles": "^0.10.0-experimental.6",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"
   },
