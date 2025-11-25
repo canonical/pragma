@@ -14,6 +14,11 @@ This guide shows you how to publish a package from this repository to NPM.
   4. Set the token as the `NODE_AUTH_TOKEN` GitHub secret for this repository. 
   5. Select "Bypass two-factor authentication (2FA)".
 
+Note: GitHub has [recently tightened NPM token security](https://github.blog/changelog/2025-09-29-strengthening-npm-security-important-changes-to-authentication-and-token-management/). 
+Among the measures introduced is a reduction in maximum token lifetime from infinite to 90 days, 
+so the above process will need to be repeated every 90 days until [these steps](https://github.com/canonical/pragma/issues/374) 
+are completed to migrate to [OIDC trusted publishing](https://docs.npmjs.com/trusted-publishers#step-1-add-a-trusted-publisher-on-npmjscom).
+
 ## Publishing a new package
 Follow these steps if your package has never been published to NPM before (for example, it was just merged to `main`).
 
