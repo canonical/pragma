@@ -7,11 +7,17 @@ This guide shows you how to publish a package from this repository to NPM.
 - You have publish access for the [@canonical](https://www.npmjs.com/org/canonical) NPM organization.
 - Your changes have been merged to the `main` branch.
 - You are familiar with [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/).
-- A valid NPM publishing token has been added to the repo secrets as `NODE_AUTH_TOKEN`. To generate/update the token:
+- A valid NPM publishing token has been added to the repo secrets as `NODE_AUTH_TOKEN`. The current token will expire on 22 Feb 2026. To generate/update the token:
   1. Go to the [Granular access tokens page](https://www.npmjs.com/settings/<NPM_USERNAME>/tokens/granular-access-tokens/new) (replace `<NPM_USERNAME>` with your NPM username).
-  2. Set the expiration to 1 year.
+  2. Set the expiration to 90 days.
   3. Set the package scopes to "Read and write" for the `@canonical` organisation.
   4. Set the token as the `NODE_AUTH_TOKEN` GitHub secret for this repository. 
+  5. Select "Bypass two-factor authentication (2FA)".
+
+Note: GitHub has [recently tightened NPM token security](https://github.blog/changelog/2025-09-29-strengthening-npm-security-important-changes-to-authentication-and-token-management/). 
+Among the measures introduced is a reduction in maximum token lifetime from infinite to 90 days, 
+so the above process will need to be repeated every 90 days until [these steps](https://github.com/canonical/pragma/issues/374) 
+are completed to migrate to [OIDC trusted publishing](https://docs.npmjs.com/trusted-publishers#step-1-add-a-trusted-publisher-on-npmjscom).
 
 ## Publishing a new package
 Follow these steps if your package has never been published to NPM before (for example, it was just merged to `main`).
