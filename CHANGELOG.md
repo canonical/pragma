@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.10.0-experimental.8](https://github.com/canonical/ds25/compare/v0.10.0-experimental.7...v0.10.0-experimental.8) (2025-12-04)
+
+
+### Bug Fixes
+
+* **assets:** Update SVG icons to use currentColor for fill attribute ([#376](https://github.com/canonical/ds25/issues/376)) ([c855099](https://github.com/canonical/ds25/commit/c855099fe4367fd744ac6f865303756237f2a54f))
+
+
+
+
+
 # [0.10.0-experimental.7](https://github.com/canonical/ds25/compare/v0.10.0-experimental.6...v0.10.0-experimental.7) (2025-12-03)
 
 
