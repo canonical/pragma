@@ -90,7 +90,7 @@ jobs:
       - name: Setup Node, authenticate with NPM registry
         uses: actions/setup-node@v5.0.0
         with:
-          node-version: 22
+          node-version: 24
           registry-url: https://registry.npmjs.org
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
