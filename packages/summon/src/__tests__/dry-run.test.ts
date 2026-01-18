@@ -645,10 +645,7 @@ describe("Dry-Run - getAffectedFiles", () => {
 
 describe("Dry-Run - assertEffects", () => {
   it("passes when effects match", () => {
-    const task = sequence_([
-      writeFile("/a.txt", "a"),
-      info("done"),
-    ]);
+    const task = sequence_([writeFile("/a.txt", "a"), info("done")]);
 
     expect(() =>
       assertEffects(task, [
@@ -662,17 +659,16 @@ describe("Dry-Run - assertEffects", () => {
     const task = writeFile("/a.txt", "a");
 
     expect(() =>
-      assertEffects(task, [
-        { _tag: "WriteFile" },
-        { _tag: "WriteFile" },
-      ]),
+      assertEffects(task, [{ _tag: "WriteFile" }, { _tag: "WriteFile" }]),
     ).toThrow("Expected 2 effects, got 1");
   });
 
   it("throws when effect property differs", () => {
     const task = writeFile("/a.txt", "a");
 
-    expect(() => assertEffects(task, [{ _tag: "WriteFile", path: "/b.txt" }])).toThrow();
+    expect(() =>
+      assertEffects(task, [{ _tag: "WriteFile", path: "/b.txt" }]),
+    ).toThrow();
   });
 
   it("only checks specified properties", () => {
@@ -696,7 +692,9 @@ describe("Dry-Run - assertFileWrites", () => {
     ]);
 
     // assertFileWrites checks getAffectedFiles which includes mkdir paths
-    expect(() => assertFileWrites(task, ["/a.txt", "/b.txt", "/dir"])).not.toThrow();
+    expect(() =>
+      assertFileWrites(task, ["/a.txt", "/b.txt", "/dir"]),
+    ).not.toThrow();
   });
 
   it("throws when file count differs", () => {

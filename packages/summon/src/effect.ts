@@ -159,7 +159,7 @@ export const describeEffect = (effect: Effect): string => {
     case "DeleteDirectory":
       return `Delete directory: ${effect.path}`;
     case "MakeDir":
-      return `Create directory: ${effect.path}${effect.recursive ? " (recursive)" : ""}`;
+      return `Created ${effect.path}/`;
     case "Exists":
       return `Check exists: ${effect.path}`;
     case "Glob":

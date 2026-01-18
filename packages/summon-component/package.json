@@ -3,9 +3,7 @@
   "description": "Component generators for Summon - React and Svelte component scaffolding",
   "version": "0.1.0",
   "type": "module",
-  "files": [
-    "generators"
-  ],
+  "main": "src/index.ts",
   "author": {
     "email": "webteam@canonical.com",
     "name": "Canonical Webteam"

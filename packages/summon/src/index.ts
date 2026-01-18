@@ -9,12 +9,13 @@
 // =============================================================================
 
 export type {
+  // Generator types
+  AnyGenerator,
   ConfirmPrompt,
   // Result types
   DryRunResult,
   Effect,
   ExecResult,
-  // Generator types
   GeneratorDefinition,
   GeneratorMeta,
   LogLevel,

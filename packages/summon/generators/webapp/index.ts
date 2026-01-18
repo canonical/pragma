@@ -11,7 +11,6 @@
 import * as path from "node:path";
 import {
   appendFile,
-  copyFile,
   debug,
   exec,
   exists,
@@ -21,9 +20,6 @@ import {
   mkdir,
   orElse,
   parallel,
-  promptConfirm,
-  promptSelect,
-  promptText,
   readFile,
   sequence_,
   setContext,
@@ -34,8 +30,8 @@ import {
   withHelpers,
   writeFile,
 } from "../../src/index.js";
-import type { GeneratorDefinition, Task } from "../../src/types.js";
 import { flatMap, map, pure } from "../../src/task.js";
+import type { GeneratorDefinition, Task } from "../../src/types.js";
 
 // =============================================================================
 // Types
@@ -64,8 +60,8 @@ const ensureDir = (dirPath: string): Task<void> =>
   flatMap(exists(dirPath), (doesExist) =>
     ifElse(
       doesExist,
-      sequence_([debug(`Directory ${dirPath} already exists`)]),
-      sequence_([info(`Creating ${dirPath}/`), mkdir(dirPath)]),
+      debug(`Directory ${dirPath} already exists`),
+      mkdir(dirPath),
     ),
   );
 
@@ -74,13 +70,13 @@ const ensureDir = (dirPath: string): Task<void> =>
  * Demonstrates: writeFile with transformation
  */
 const writeJson = (filePath: string, data: object): Task<void> =>
-  writeFile(filePath, JSON.stringify(data, null, 2) + "\n");
+  writeFile(filePath, `${JSON.stringify(data, null, 2)}\n`);
 
 /**
  * Try to read an existing config, falling back to default.
  * Demonstrates: orElse for error recovery
  */
-const readConfigOrDefault = <T>(
+const _readConfigOrDefault = <T>(
   configPath: string,
   defaultValue: T,
 ): Task<T> =>
@@ -210,14 +206,8 @@ export const generator: GeneratorDefinition<WebAppAnswers> = {
   ],
 
   generate: (answers) => {
-    const {
-      name,
-      framework,
-      styling,
-      withTests,
-      withDocs,
-      installDeps,
-    } = answers;
+    const { name, framework, styling, withTests, withDocs, installDeps } =
+      answers;
 
     // Filter out empty strings from features (handles --features= edge case)
     const features = (answers.features ?? []).filter((f) => f.length > 0);
@@ -268,7 +258,8 @@ export const generator: GeneratorDefinition<WebAppAnswers> = {
           type: "module",
           scripts: {
             dev: framework === "react" ? "vite" : "live-server public",
-            build: framework === "react" ? "vite build" : "echo 'No build step'",
+            build:
+              framework === "react" ? "vite build" : "echo 'No build step'",
             ...(withTests ? { test: "vitest" } : {}),
           },
           dependencies: {
@@ -341,7 +332,11 @@ export default {
       // Main entry point
       template({
         source: path.join(__dirname, "templates", "main.tsx.ejs"),
-        dest: path.join(projectDir, "src", `main.${framework === "react" ? "tsx" : "ts"}`),
+        dest: path.join(
+          projectDir,
+          "src",
+          `main.${framework === "react" ? "tsx" : "ts"}`,
+        ),
         vars,
       }),
 
@@ -477,7 +472,9 @@ export default defineConfig({
             ifElse(
               result.exitCode === 0,
               info("Dependencies installed successfully!"),
-              warn(`Installation completed with warnings (exit code: ${result.exitCode})`),
+              warn(
+                `Installation completed with warnings (exit code: ${result.exitCode})`,
+              ),
             ),
           ),
         ),

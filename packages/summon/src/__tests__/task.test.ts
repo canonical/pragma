@@ -14,7 +14,6 @@ import {
   pure,
   recover,
   task,
-  TaskBuilder,
 } from "../task.js";
 import type { Effect, Task, TaskError } from "../types.js";
 
@@ -230,7 +229,10 @@ describe("Task Monad - Monad Operations", () => {
     });
 
     it("returns Fail if continuation fails", () => {
-      const error: TaskError = { code: "CONT_ERR", message: "continuation error" };
+      const error: TaskError = {
+        code: "CONT_ERR",
+        message: "continuation error",
+      };
       const t = flatMap(pure(5), () => fail<number>(error));
       expect(t._tag).toBe("Fail");
       expect((t as { error: TaskError }).error.code).toBe("CONT_ERR");
@@ -238,9 +240,7 @@ describe("Task Monad - Monad Operations", () => {
 
     it("chains through Effect tasks", () => {
       const eff: Effect = { _tag: "ReadFile", path: "/test.txt" };
-      const t = flatMap(effect<string>(eff), (content) =>
-        pure(content.length),
-      );
+      const t = flatMap(effect<string>(eff), (content) => pure(content.length));
 
       expect(t._tag).toBe("Effect");
       const effectTask = t as {
@@ -304,11 +304,16 @@ describe("Task Monad - Monad Operations", () => {
     });
 
     it("can transform to complex types", () => {
-      const t = map(pure("hello"), (s) => ({ length: s.length, upper: s.toUpperCase() }));
-      expect((t as { value: { length: number; upper: string } }).value).toEqual({
-        length: 5,
-        upper: "HELLO",
-      });
+      const t = map(pure("hello"), (s) => ({
+        length: s.length,
+        upper: s.toUpperCase(),
+      }));
+      expect((t as { value: { length: number; upper: string } }).value).toEqual(
+        {
+          length: 5,
+          upper: "HELLO",
+        },
+      );
     });
 
     it("handles identity function", () => {
@@ -378,7 +383,9 @@ describe("Task Monad - Monad Operations", () => {
 
     it("provides the error to the handler", () => {
       const error: TaskError = { code: "ERR_42", message: "error 42" };
-      const t = recover(fail<string>(error), (e) => pure(`recovered: ${e.code}`));
+      const t = recover(fail<string>(error), (e) =>
+        pure(`recovered: ${e.code}`),
+      );
 
       expect((t as { value: string }).value).toBe("recovered: ERR_42");
     });
@@ -402,7 +409,9 @@ describe("Task Monad - Monad Operations", () => {
     it("handles nested recover calls", () => {
       const error: TaskError = { code: "ERR", message: "error" };
       const t = recover(
-        recover(fail<number>(error), () => fail<number>({ code: "ERR2", message: "second" })),
+        recover(fail<number>(error), () =>
+          fail<number>({ code: "ERR2", message: "second" }),
+        ),
         () => pure(42),
       );
 
@@ -433,7 +442,10 @@ describe("Task Monad - Monad Operations", () => {
 
     it("propagates through Effect tasks", () => {
       const eff: Effect = { _tag: "ReadFile", path: "/test.txt" };
-      const t = mapError(effect<string>(eff), (e) => ({ ...e, code: "MODIFIED" }));
+      const t = mapError(effect<string>(eff), (e) => ({
+        ...e,
+        code: "MODIFIED",
+      }));
 
       expect(t._tag).toBe("Effect");
     });
@@ -461,7 +473,9 @@ describe("Task Monad - Monad Operations", () => {
 describe("Task Monad - TaskBuilder", () => {
   describe("map method", () => {
     it("transforms value fluently", () => {
-      const result = of(10).map((x) => x * 2).unwrap();
+      const result = of(10)
+        .map((x) => x * 2)
+        .unwrap();
       expect((result as { value: number }).value).toBe(20);
     });
 
@@ -540,10 +554,10 @@ describe("Task Monad - TaskBuilder", () => {
 
   describe("tap method", () => {
     it("executes side effect without changing value", () => {
-      let sideEffect = 0;
+      let _sideEffect = 0;
       const result = of(42)
         .tap((x) => {
-          sideEffect = x;
+          _sideEffect = x;
           return pure(undefined);
         })
         .unwrap();
@@ -555,20 +569,14 @@ describe("Task Monad - TaskBuilder", () => {
 
   describe("then method", () => {
     it("sequences tasks discarding first result", () => {
-      const result = of(1)
-        .then(pure(2))
-        .then(pure(3))
-        .unwrap();
+      const result = of(1).then(pure(2)).then(pure(3)).unwrap();
 
       expect((result as { value: number }).value).toBe(3);
     });
 
     it("propagates failure", () => {
       const error: TaskError = { code: "ERR", message: "error" };
-      const result = of(1)
-        .then(fail<number>(error))
-        .then(pure(3))
-        .unwrap();
+      const result = of(1).then(fail<number>(error)).then(pure(3)).unwrap();
 
       expect(result._tag).toBe("Fail");
     });
@@ -910,7 +918,9 @@ describe("Task Monad - Edge Cases", () => {
     it("handles generic types", () => {
       const createTask = <T>(value: T) => pure(value);
       const t = createTask({ nested: { value: 42 } });
-      expect((t as { value: { nested: { value: number } } }).value.nested.value).toBe(42);
+      expect(
+        (t as { value: { nested: { value: number } } }).value.nested.value,
+      ).toBe(42);
     });
   });
 });
