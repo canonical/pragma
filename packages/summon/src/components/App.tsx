@@ -7,7 +7,7 @@
 import { Box, Text, useApp, useInput } from "ink";
 import { useCallback, useEffect, useState } from "react";
 import { dryRun } from "../dry-run.js";
-import type { Effect, GeneratorDefinition, Task, TaskError } from "../types.js";
+import type { Effect, GeneratorDefinition, PromptDefinition, Task, TaskError } from "../types.js";
 import { ExecutionProgress, type TimedEffect } from "./ExecutionProgress.js";
 import { PromptSequence } from "./PromptSequence.js";
 import { Spinner } from "./Spinner.js";
@@ -447,6 +447,97 @@ const DryRunTimeline = ({
   );
 };
 
+// =============================================================================
+// Completed Answers Display (for confirmation phase)
+// =============================================================================
+
+/**
+ * Format answer value for display based on prompt type.
+ */
+const formatAnswerValue = (
+  value: unknown,
+  prompt: PromptDefinition,
+): string => {
+  if (value === undefined || value === null) return "";
+
+  if (prompt.type === "confirm") {
+    return value ? "Yes" : "No";
+  }
+
+  if (prompt.type === "select" && prompt.choices) {
+    const choice = prompt.choices.find((c) => c.value === value);
+    return choice?.label ?? String(value);
+  }
+
+  if (prompt.type === "multiselect" && Array.isArray(value)) {
+    if (value.length === 0) return "None";
+    if (prompt.choices) {
+      return value
+        .map((v) => prompt.choices?.find((c) => c.value === v)?.label ?? v)
+        .join(", ");
+    }
+    return value.join(", ");
+  }
+
+  return String(value);
+};
+
+/**
+ * Display a single completed answer.
+ */
+const CompletedAnswerRow = ({
+  prompt,
+  value,
+}: {
+  prompt: PromptDefinition;
+  value: unknown;
+}) => {
+  const displayValue = formatAnswerValue(value, prompt);
+
+  return (
+    <Box>
+      <Text color="green">✔ </Text>
+      <Text dimColor>{prompt.message} </Text>
+      <Text color="cyan">{displayValue}</Text>
+    </Box>
+  );
+};
+
+/**
+ * Display all completed answers for confirmation review.
+ */
+const CompletedAnswers = ({
+  prompts,
+  answers,
+}: {
+  prompts: PromptDefinition[];
+  answers: Record<string, unknown>;
+}) => {
+  // Filter to only show prompts that have answers and pass their `when` condition
+  const activePrompts = prompts.filter((prompt) => {
+    if (prompt.when && !prompt.when(answers)) {
+      return false;
+    }
+    return prompt.name in answers;
+  });
+
+  if (activePrompts.length === 0) {
+    return null;
+  }
+
+  return (
+    <Box flexDirection="column" marginBottom={1}>
+      {activePrompts.map((prompt) => (
+        <CompletedAnswerRow
+          key={prompt.name}
+          prompt={prompt}
+          value={answers[prompt.name]}
+        />
+      ))}
+    </Box>
+  );
+};
+
 /**
  * Summarize effects for the confirmation message (just counts).
  */
@@ -474,7 +565,7 @@ const summarizeEffectsForConfirm = (effects: Effect[]): string => {
   if (directories.size > 0) parts.push(`${directories.size} director${directories.size > 1 ? "ies" : "y"}`);
   if (commands > 0) parts.push(`run ${commands} command${commands > 1 ? "s" : ""}`);
 
-  return parts.length > 0 ? parts.join(", ") : "make no changes";
+  return parts.length > 0 ? `create ${parts.join(", ")}` : "make no changes";
 };
 
 /**
@@ -541,7 +632,7 @@ export type AppState =
   | { phase: "loading" }
   | { phase: "prompting" }
   | { phase: "preview"; effects: Effect[] }
-  | { phase: "confirming"; effects: Effect[] }
+  | { phase: "confirming"; effects: Effect[]; promptAnswers: Record<string, unknown> }
   | { phase: "executing"; task: Task<void> }
   | { phase: "complete"; effects: TimedEffect[]; duration: number }
   | { phase: "error"; error: TaskError };
@@ -585,7 +676,7 @@ export const App = ({
           if (dryRunOnly) {
             setState({ phase: "preview", effects: result.effects });
           } else {
-            setState({ phase: "confirming", effects: result.effects });
+            setState({ phase: "confirming", effects: result.effects, promptAnswers });
           }
         } catch (err) {
           setState({
@@ -678,10 +769,18 @@ export const App = ({
 
       {state.phase === "confirming" && (
         <Box flexDirection="column">
+          {/* Show completed answers */}
+          <CompletedAnswers
+            prompts={generator.prompts}
+            answers={state.promptAnswers}
+          />
+          {/* Confirmation prompt with escape hint */}
           <Box>
+            <Text color="magenta">› </Text>
             <Text>This will {summarizeEffectsForConfirm(state.effects)}. </Text>
             <Text bold>Proceed? </Text>
-            <Text dimColor>(Y/n)</Text>
+            <Text dimColor>(Y/n) </Text>
+            <Text dimColor italic>esc to go back</Text>
           </Box>
         </Box>
       )}
