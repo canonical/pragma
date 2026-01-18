@@ -1,4 +1,4 @@
-import type { FieldProps } from "@canonical/react-ds-core-form";
+import type { FieldProps } from "@canonical/react-ds-global-form";
 import { ORIGINAL_VAR_NAME_KEY } from "data/index.js";
 import type { FormValues } from "hooks/index.js";
 import type { Dispatch, ReactElement, ReactNode, SetStateAction } from "react";

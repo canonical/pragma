@@ -2,8 +2,8 @@ import type { ReactElement } from "react";
 import { useCallback, useState } from "react";
 import type { ControlsProps } from "./types.js";
 import "./styles.css";
-import { Button } from "@canonical/react-ds-core";
-import { Field } from "@canonical/react-ds-core-form";
+import { Button } from "@canonical/react-ds-global";
+import { Field } from "@canonical/react-ds-global-form";
 import { Drawer } from "ui/Drawer/index.js";
 import { useShowcaseContext } from "../../hooks/index.js";
 

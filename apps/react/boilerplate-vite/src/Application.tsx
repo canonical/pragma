@@ -1,4 +1,4 @@
-import { Button, TooltipArea } from "@canonical/react-ds-core";
+import { Button, TooltipArea } from "@canonical/react-ds-global";
 import { lazy, Suspense, useState } from "react";
 import canonicalLogo from "./assets/canonical.svg";
 import reactLogo from "./assets/react.svg";

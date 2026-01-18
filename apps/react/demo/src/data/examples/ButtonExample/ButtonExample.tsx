@@ -1,4 +1,4 @@
-import { Button } from "@canonical/react-ds-core";
+import { Button } from "@canonical/react-ds-global";
 import { useMemo } from "react";
 import type { ShowcaseComponent } from "ui/index.js";
 

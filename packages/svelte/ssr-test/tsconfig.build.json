@@ -7,7 +7,7 @@
     "declarationDir": "dist/types",
     "declarationMap": true,
     "sourceMap": true,
-    "skipLibCheck": false
+    "skipLibCheck": true
   },
   "exclude": ["src/**/*.tests.ts", "vitest.config.ts", "src/fixtures/**/*"]
 }

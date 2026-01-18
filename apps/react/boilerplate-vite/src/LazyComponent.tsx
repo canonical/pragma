@@ -1,4 +1,4 @@
-import { Button } from "@canonical/react-ds-core";
+import { Button } from "@canonical/react-ds-global";
 
 function LazyComponent() {
   return (

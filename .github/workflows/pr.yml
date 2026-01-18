@@ -9,8 +9,8 @@ jobs:
       fail-fast: false
       matrix:
         bun-version: ['1.2.19']
-        # Add 23, 24, latest once https://github.com/canonical/ds25/issues/226 is closed (Storybook doesn't support >=23 yet)
-        node-version: ['20', '21', '22']
+        # Node 21 is EOL and unsupported by jsdom 27.x. Storybook Node 24 issues don't affect this workflow.
+        node-version: ['20', '22', '24']
     steps:
       - name: Checkout repo
         uses: actions/checkout@v5
