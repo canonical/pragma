@@ -60,7 +60,7 @@
     "@vitejs/plugin-react": "^5.1.2",
     "copyfiles": "^2.4.1",
     "globals": "^16.2.0",
-    "jsdom": "^27.4.0",
+    "jsdom": "^26.1.0",
     "msw": "^2.12.7",
     "storybook": "^10.1.11",
     "typescript": "^5.9.3",
