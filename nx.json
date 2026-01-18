@@ -23,7 +23,7 @@
       "dependsOn": ["^check:fix"],
       "cache": true
     },
-        "test": {
+    "test": {
       "dependsOn": ["^build"],
       "cache": true
     }
