@@ -4,7 +4,7 @@ import {
   type API,
   useParameter,
   useStorybookState,
-} from "storybook/internal/manager-api";
+} from "storybook/manager-api";
 import { PARAM_KEY } from "../constants.js";
 import type { MswParameter } from "../types.js";
 
@@ -23,10 +23,11 @@ export const Panel = memo(function MswPanel({ api, active }: PanelProps) {
 
   // Extract handler information for display
   // MSW handlers have an info property that contains request, resolver, and options
-  const handlerInfo = parameter.handlers.map((handler, index) => {
-    // The handler info structure in MSW v2 is different
-    // We'll extract what we can from the handler
-    const info = handler.info;
+  const handlerInfo = parameter.handlers.map(
+    (handler: (typeof parameter.handlers)[number], index: number) => {
+      // The handler info structure in MSW v2 is different
+      // We'll extract what we can from the handler
+      const info = handler.info;
 
     // Try to extract meaningful information
     // In MSW v2, handlers have a request property that might contain the predicate

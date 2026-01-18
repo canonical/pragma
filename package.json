@@ -41,5 +41,11 @@
   },
   "devDependencies": {
     "lerna": "^9.0.0"
+  },
+  "msw": {
+    "workerDirectory": [
+      "packages/react/ds-global-form/public",
+      "packages/storybook/addon-msw/public"
+    ]
   }
 }

@@ -1,7 +1,7 @@
 import { LightningIcon } from "@storybook/icons";
 import React, { memo, useCallback, useEffect } from "react";
 import { IconButton } from "storybook/internal/components";
-import { type API, useGlobals } from "storybook/internal/manager-api";
+import { type API, useGlobals } from "storybook/manager-api";
 import { KEY, TOOL_ID } from "../constants.js";
 
 export const Tool = memo(function MyAddonSelector({ api }: { api: API }) {
