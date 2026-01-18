@@ -448,6 +448,36 @@ const DryRunTimeline = ({
 };
 
 /**
+ * Summarize effects for the confirmation message (just counts).
+ */
+const summarizeEffectsForConfirm = (effects: Effect[]): string => {
+  const files = new Set<string>();
+  const directories = new Set<string>();
+  let commands = 0;
+
+  for (const effect of effects) {
+    switch (effect._tag) {
+      case "WriteFile":
+        files.add(effect.path);
+        break;
+      case "MakeDir":
+        directories.add(effect.path);
+        break;
+      case "Exec":
+        commands++;
+        break;
+    }
+  }
+
+  const parts: string[] = [];
+  if (files.size > 0) parts.push(`${files.size} file${files.size > 1 ? "s" : ""}`);
+  if (directories.size > 0) parts.push(`${directories.size} director${directories.size > 1 ? "ies" : "y"}`);
+  if (commands > 0) parts.push(`run ${commands} command${commands > 1 ? "s" : ""}`);
+
+  return parts.length > 0 ? parts.join(", ") : "make no changes";
+};
+
+/**
  * Summarize effects into a human-readable string.
  * Deduplicates paths to avoid counting the same directory multiple times.
  */
@@ -648,9 +678,10 @@ export const App = ({
 
       {state.phase === "confirming" && (
         <Box flexDirection="column">
-          <DryRunTimeline effects={state.effects} />
-          <Box marginTop={1}>
-            <Text>Proceed with these changes? (y/n)</Text>
+          <Box>
+            <Text>This will {summarizeEffectsForConfirm(state.effects)}. </Text>
+            <Text bold>Proceed? </Text>
+            <Text dimColor>(Y/n)</Text>
           </Box>
         </Box>
       )}
