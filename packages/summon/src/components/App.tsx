@@ -9,7 +9,6 @@ import { useCallback, useEffect, useState } from "react";
 import { dryRun } from "../dry-run.js";
 import type { Effect, GeneratorDefinition, Task, TaskError } from "../types.js";
 import { ExecutionProgress, type TimedEffect } from "./ExecutionProgress.js";
-import { FileTreePreview } from "./FileTreePreview.js";
 import { PromptSequence } from "./PromptSequence.js";
 import { Spinner } from "./Spinner.js";
 
@@ -368,6 +367,86 @@ const EffectTimeline = ({ effects }: { effects: TimedEffect[] }) => {
   );
 };
 
+// =============================================================================
+// Dry-Run Timeline - Preview without timestamps
+// =============================================================================
+
+/**
+ * Render a single dry-run row (no timestamp column).
+ */
+const DryRunRow = ({
+  effect,
+  isLast,
+}: {
+  effect: Effect;
+  isLast: boolean;
+}) => {
+  const connector = isLast ? "└─" : "├─";
+  const actionLabel = getActionLabel(effect);
+  const color = getActionColor(effect);
+  const payload = getEffectPayload(effect);
+
+  return (
+    <Box>
+      <Text dimColor>{connector} </Text>
+      <Text color={color}>{actionLabel.padEnd(ACTION_LABEL_WIDTH)}</Text>
+      <Text>{payload}</Text>
+    </Box>
+  );
+};
+
+/**
+ * Render effects as a preview timeline (dry-run mode).
+ * Shows the same format as execution timeline but without timestamps.
+ */
+const DryRunTimeline = ({
+  effects,
+  title = "Plan:",
+}: {
+  effects: Effect[];
+  title?: string;
+}) => {
+  // Filter to visible effects only and deduplicate MakeDir by path
+  const seenDirPaths = new Set<string>();
+  const visibleEffects = effects.filter((e) => {
+    if (!isVisibleEffect(e)) return false;
+    // Deduplicate MakeDir by path (keep only first occurrence)
+    if (e._tag === "MakeDir") {
+      if (seenDirPaths.has(e.path)) return false;
+      seenDirPaths.add(e.path);
+    }
+    return true;
+  });
+
+  if (visibleEffects.length === 0) {
+    return (
+      <Box>
+        <Text dimColor>No operations planned.</Text>
+      </Box>
+    );
+  }
+
+  return (
+    <Box flexDirection="column">
+      <Text bold dimColor>
+        {title}
+      </Text>
+      <Box flexDirection="column" marginLeft={1}>
+        {visibleEffects.map((effect, index) => {
+          const key = `${effect._tag}-${index}`;
+          return (
+            <DryRunRow
+              key={key}
+              effect={effect}
+              isLast={index === visibleEffects.length - 1}
+            />
+          );
+        })}
+      </Box>
+    </Box>
+  );
+};
+
 /**
  * Summarize effects into a human-readable string.
  * Deduplicates paths to avoid counting the same directory multiple times.
@@ -560,7 +639,7 @@ export const App = ({
 
       {state.phase === "preview" && (
         <Box flexDirection="column">
-          <FileTreePreview effects={state.effects} />
+          <DryRunTimeline effects={state.effects} title="Plan (dry-run):" />
           <Box marginTop={1}>
             <Text dimColor>Dry-run complete. No files were modified.</Text>
           </Box>
@@ -569,7 +648,7 @@ export const App = ({
 
       {state.phase === "confirming" && (
         <Box flexDirection="column">
-          <FileTreePreview effects={state.effects} />
+          <DryRunTimeline effects={state.effects} />
           <Box marginTop={1}>
             <Text>Proceed with these changes? (y/n)</Text>
           </Box>

@@ -84,7 +84,7 @@ export const mockEffect = (effect: Effect): unknown => {
 export const dryRun = <A>(task: Task<A>): DryRunResult<A> => {
   const effects: Effect[] = [];
 
-  const run = (t: Task<A>): A => {
+  const run = <T>(t: Task<T>): T => {
     switch (t._tag) {
       case "Pure":
         return t.value;
@@ -93,9 +93,32 @@ export const dryRun = <A>(task: Task<A>): DryRunResult<A> => {
         throw new TaskExecutionError(t.error);
 
       case "Effect": {
-        effects.push(t.effect);
-        const mockResult = mockEffect(t.effect);
-        return run(t.cont(mockResult));
+        const effect = t.effect;
+
+        // Handle Parallel specially - collect effects from all child tasks
+        if (effect._tag === "Parallel") {
+          const results = effect.tasks.map((childTask) => {
+            const childResult = dryRun(childTask);
+            effects.push(...childResult.effects);
+            return childResult.value;
+          });
+          return run(t.cont(results) as Task<T>);
+        }
+
+        // Handle Race specially - collect effects from first child task
+        if (effect._tag === "Race") {
+          if (effect.tasks.length > 0) {
+            const childResult = dryRun(effect.tasks[0]);
+            effects.push(...childResult.effects);
+            return run(t.cont(childResult.value) as Task<T>);
+          }
+          return run(t.cont(undefined) as Task<T>);
+        }
+
+        // Regular effects - add to list and mock
+        effects.push(effect);
+        const mockResult = mockEffect(effect);
+        return run(t.cont(mockResult) as Task<T>);
       }
     }
   };

@@ -29,9 +29,9 @@ import {
   when,
   withHelpers,
   writeFile,
-} from "../../src/index.js";
-import { flatMap, map, pure } from "../../src/task.js";
-import type { GeneratorDefinition, Task } from "../../src/types.js";
+} from "../../../src/index.js";
+import { flatMap, map, pure } from "../../../src/task.js";
+import type { GeneratorDefinition, Task } from "../../../src/types.js";
 
 // =============================================================================
 // Types

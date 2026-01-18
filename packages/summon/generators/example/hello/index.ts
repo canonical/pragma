@@ -15,8 +15,8 @@ import {
   template,
   when,
   withHelpers,
-} from "../../src/index.js";
-import type { GeneratorDefinition } from "../../src/types.js";
+} from "../../../src/index.js";
+import type { GeneratorDefinition } from "../../../src/types.js";
 
 // =============================================================================
 // Types
