@@ -22,6 +22,17 @@ export const writeFileEffect = (path: string, content: string): Effect => ({
   content,
 });
 
+export const appendFileEffect = (
+  path: string,
+  content: string,
+  createIfMissing = true,
+): Effect => ({
+  _tag: "AppendFile",
+  path,
+  content,
+  createIfMissing,
+});
+
 export const copyFileEffect = (source: string, dest: string): Effect => ({
   _tag: "CopyFile",
   source,
@@ -137,6 +148,8 @@ export const describeEffect = (effect: Effect): string => {
       return `Read file: ${effect.path}`;
     case "WriteFile":
       return `Write file: ${effect.path} (${effect.content.length} bytes)`;
+    case "AppendFile":
+      return `Append to file: ${effect.path} (${effect.content.length} bytes)${effect.createIfMissing ? " [create if missing]" : ""}`;
     case "CopyFile":
       return `Copy file: ${effect.source} → ${effect.dest}`;
     case "CopyDirectory":
@@ -174,6 +187,7 @@ export const describeEffect = (effect: Effect): string => {
 export const isWriteEffect = (effect: Effect): boolean => {
   switch (effect._tag) {
     case "WriteFile":
+    case "AppendFile":
     case "CopyFile":
     case "CopyDirectory":
     case "DeleteFile":
@@ -192,6 +206,7 @@ export const getAffectedPaths = (effect: Effect): string[] => {
   switch (effect._tag) {
     case "ReadFile":
     case "WriteFile":
+    case "AppendFile":
     case "DeleteFile":
     case "MakeDir":
     case "Exists":

@@ -22,6 +22,7 @@ export const mockEffect = (effect: Effect): unknown => {
       return `[mock content of ${effect.path}]`;
 
     case "WriteFile":
+    case "AppendFile":
     case "CopyFile":
     case "CopyDirectory":
     case "DeleteFile":
@@ -207,6 +208,7 @@ export const getAffectedFiles = (effects: Effect[]): string[] => {
   for (const effect of effects) {
     switch (effect._tag) {
       case "WriteFile":
+      case "AppendFile":
       case "DeleteFile":
         files.add(effect.path);
         break;

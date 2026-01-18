@@ -47,9 +47,18 @@ export const generator: GeneratorDefinition<HelloAnswers> = {
 
 Use this generator as a reference when building your own generators.`,
     examples: [
-      "summon hello --name=my-app --greeting=Hello",
-      "summon hello --name=my-app --no-withReadme --dry-run",
-      'summon hello --name=demo --description="A demo project" --dry-run',
+      // Zero-config: interactive prompts with defaults
+      "summon hello",
+      // Minimal: just the name
+      "summon hello --name=my-app",
+      // Partial: customize greeting
+      "summon hello --name=my-app --greeting=Hey",
+      // Skip optional file
+      "summon hello --name=my-app --no-withReadme",
+      // Preview without writing
+      "summon hello --dry-run",
+      // Full non-interactive
+      "summon hello --name=demo --greeting=Hello --description='A demo' --yes",
     ],
   },
 

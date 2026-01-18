@@ -1,14 +1,15 @@
 import { describe, expect, it, vi } from "vitest";
-import { sequence_ } from "../combinators.js";
+import { sequence_, traverse } from "../combinators.js";
 import {
   executeEffect,
-  run,
   runTask,
+  run,
   TaskExecutionError,
+  type RunTaskOptions,
 } from "../interpreter.js";
 import { info, succeed, warn } from "../primitives.js";
 import { effect, fail, flatMap, map, pure } from "../task.js";
-import type { Effect, TaskError } from "../types.js";
+import type { Effect, Task, TaskError } from "../types.js";
 
 // Note: These tests focus on the interpreter's logic without actually
 // performing I/O. For real I/O testing, integration tests should be used.
@@ -186,10 +187,7 @@ describe("Interpreter - runTask with Map and FlatMap", () => {
 
   it("handles chain of maps", async () => {
     const task = map(
-      map(
-        map(pure(2), (x) => x + 1),
-        (x) => x * 2,
-      ),
+      map(map(pure(2), (x) => x + 1), (x) => x * 2),
       (x) => x + 3,
     );
     const result = await runTask(task);
@@ -205,14 +203,14 @@ describe("Interpreter - runTask with Map and FlatMap", () => {
 describe("Interpreter - runTask with Log Effects", () => {
   it("calls onLog handler for log effects", async () => {
     const logs: Array<{ level: string; message: string }> = [];
-    const onLog = (
-      level: "debug" | "info" | "warn" | "error",
-      message: string,
-    ) => {
+    const onLog = (level: "debug" | "info" | "warn" | "error", message: string) => {
       logs.push({ level, message });
     };
 
-    const task = sequence_([info("Info message"), warn("Warning message")]);
+    const task = sequence_([
+      info("Info message"),
+      warn("Warning message"),
+    ]);
 
     await runTask(task, { onLog });
 
@@ -408,9 +406,7 @@ describe("Interpreter - runTask with Prompt Effects", () => {
     const task = effect<string>({ _tag: "Prompt", question });
     await runTask(task, { promptHandler });
 
-    expect(
-      (capturedQuestion as { question: typeof question }).question,
-    ).toEqual(question);
+    expect((capturedQuestion as { question: typeof question }).question).toEqual(question);
   });
 });
 
@@ -484,10 +480,7 @@ describe("Interpreter - executeEffect for Context", () => {
 describe("Interpreter - executeEffect for Log", () => {
   it("calls onLog handler", async () => {
     const logs: Array<{ level: string; message: string }> = [];
-    const onLog = (
-      level: "debug" | "info" | "warn" | "error",
-      message: string,
-    ) => {
+    const onLog = (level: "debug" | "info" | "warn" | "error", message: string) => {
       logs.push({ level, message });
     };
 
@@ -627,18 +620,10 @@ describe("Interpreter - Integration", () => {
           effect<number>({ _tag: "ReadContext", key: "counter" }),
           (count) =>
             flatMap(
-              effect<void>({
-                _tag: "WriteContext",
-                key: "counter",
-                value: count + 1,
-              }),
+              effect<void>({ _tag: "WriteContext", key: "counter", value: count + 1 }),
               () =>
                 flatMap(
-                  effect<void>({
-                    _tag: "Log",
-                    level: "info",
-                    message: `Count: ${count + 1}`,
-                  }),
+                  effect<void>({ _tag: "Log", level: "info", message: `Count: ${count + 1}` }),
                   () => effect<number>({ _tag: "ReadContext", key: "counter" }),
                 ),
             ),
