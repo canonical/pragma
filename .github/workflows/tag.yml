@@ -30,7 +30,7 @@ jobs:
           fi
 
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 1
 
@@ -53,7 +53,7 @@ jobs:
       VERSION: ${{ steps.lerna_version.outputs.VERSION }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           # DEPLOY_KEY is used by lerna_version step to commit and push version bumps to the repo.
           ssh-key: ${{ secrets.DEPLOY_KEY }}
@@ -76,7 +76,7 @@ jobs:
     needs: version
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           # Checkout the tag that was just created
           ref: v${{ needs.version.outputs.VERSION }}

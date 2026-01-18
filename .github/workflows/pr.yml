@@ -13,7 +13,7 @@ jobs:
         node-version: ['20', '22', '24']
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Setup environment for Bun ${{ matrix.bun-version }} and Node ${{ matrix.node-version }}
         uses: ./.github/actions/setup-env
