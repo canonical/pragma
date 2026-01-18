@@ -1,6 +1,6 @@
 {
   "name": "@canonical/react-ds-global",
-  "version": "0.10.0-experimental.8",
+  "version": "0.10.0",
   "type": "module",
   "module": "dist/esm/index.js",
   "types": "dist/types/index.d.ts",
@@ -38,18 +38,18 @@
     "test:vitest:watch": "vitest"
   },
   "dependencies": {
-    "@canonical/ds-assets": "^0.10.0-experimental.8",
-    "@canonical/storybook-config": "^0.10.0-experimental.8",
-    "@canonical/styles": "^0.10.0-experimental.6",
-    "@canonical/utils": "^0.10.0-experimental.4",
+    "@canonical/ds-assets": "^0.10.0",
+    "@canonical/storybook-config": "^0.10.0",
+    "@canonical/styles": "^0.10.0",
+    "@canonical/utils": "^0.10.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"
   },
   "devDependencies": {
     "@biomejs/biome": "2.2.4",
-    "@canonical/biome-config": "^0.10.0-experimental.4",
-    "@canonical/ds-types": "^0.10.0-experimental.4",
-    "@canonical/typescript-config-react": "^0.10.0-experimental.4",
+    "@canonical/biome-config": "^0.10.0",
+    "@canonical/ds-types": "^0.10.0",
+    "@canonical/typescript-config-react": "^0.10.0",
     "@chromatic-com/storybook": "^4.0.0",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",

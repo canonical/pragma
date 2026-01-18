@@ -1,7 +1,7 @@
 {
   "name": "@canonical/utils",
   "description": "Standard utility functions for Canonical's Web Engineering team",
-  "version": "0.10.0-experimental.4",
+  "version": "0.10.0",
   "type": "module",
   "module": "dist/esm/index.js",
   "types": "dist/types/index.d.ts",
@@ -42,8 +42,8 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.2.4",
-    "@canonical/biome-config": "^0.10.0-experimental.4",
-    "@canonical/typescript-config-base": "^0.10.0-experimental.4",
+    "@canonical/biome-config": "^0.10.0",
+    "@canonical/typescript-config-base": "^0.10.0",
     "globals": "^16.2.0",
     "typescript": "^5.8.3",
     "vite": "^7.0.0",
