@@ -3,13 +3,13 @@
   "description": "A tool to test the compliance with architecture specifications for packages and applications.",
   "version": "0.10.0",
   "type": "module",
-  "module": "dist/esm/index.js",
-  "types": "dist/types/index.d.ts",
+  "module": "src/index.ts",
+  "types": "src/index.ts",
   "bin": {
-    "webarchitect": "dist/esm/cli.js"
+    "webarchitect": "src/cli.ts"
   },
   "files": [
-    "dist",
+    "src",
     "rulesets"
   ],
   "author": {
@@ -26,13 +26,15 @@
   },
   "homepage": "https://github.com/canonical/ds25#readme",
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
-    "check": "bun run check:biome && bun run check:ts",
+    "build": "echo 'No build needed - runs directly from TypeScript'",
+    "build:all": "bun run build",
+    "check": "bun run check:biome && bun run check:ts && bun run check:webarchitect",
     "check:fix": "bun run check:biome:fix && bun run check:ts",
     "check:biome": "biome check",
     "check:biome:fix": "biome check --write",
     "check:ts": "tsc --noEmit",
-    "test": "echo 'No tests defined yet'"
+    "test": "echo 'No tests defined yet'",
+    "check:webarchitect": "webarchitect tool-ts"
   },
   "devDependencies": {
     "@biomejs/biome": "2.3.11",
