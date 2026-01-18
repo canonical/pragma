@@ -359,8 +359,9 @@
   --spacing-border-width: 1.5px; /* TODO: 1.5px was causing some baseline issues in Vanilla */
 
   --tmp-box-shadow-highlighted:
-    0 1px 1px 0 var(--tmp-color-palette-gray-11), 0 2px 2px -1px
-    var(--tmp-color-palette-gray-11), 0 0 3px 0 var(--tmp-color-palette-gray-14);
+    0 1px 1px 0 var(--tmp-color-palette-gray-11),
+    0 2px 2px -1px var(--tmp-color-palette-gray-11),
+    0 0 3px 0 var(--tmp-color-palette-gray-14);
 
   /* font tokens */
   --font-size-default: 1rem;

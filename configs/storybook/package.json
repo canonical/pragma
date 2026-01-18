@@ -38,12 +38,12 @@
     "@storybook/react-vite": "^10.1.11"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.2.4",
+    "@biomejs/biome": "2.3.11",
     "@canonical/biome-config": "^0.10.0",
     "@canonical/typescript-config-react": "^0.10.0",
-    "typescript": "^5.8.3"
+    "typescript": "^5.9.3"
   },
   "peerDependencies": {
-    "typescript": "^5.8.2"
+    "typescript": "^5.9.3"
   }
 }

@@ -1,5 +1,6 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { JSDOM } from "jsdom";
 import { describe, expect, it } from "vitest";
 import { ICON_NAMES } from "./constants.js";
 import type { IconName } from "./types.js";
@@ -35,11 +36,11 @@ describe("icons", () => {
     const iconsDir = join(process.cwd(), "icons");
     const files = readdirSync(iconsDir);
     const svgFiles = files.filter((file) => file.endsWith(".svg"));
-    const parser = new DOMParser();
 
     svgFiles.forEach((svgFile) => {
       const svgContents = readFileSync(join(iconsDir, svgFile), "utf-8");
-      const svgDoc = parser.parseFromString(svgContents, "image/svg+xml");
+      const dom = new JSDOM(svgContents, { contentType: "image/svg+xml" });
+      const svgDoc = dom.window.document;
       // https://developer.mozilla.org/en-US/docs/Web/API/DOMParser/parseFromString#error_handling
       const parseError = svgDoc.querySelector("parsererror");
 
@@ -54,10 +55,11 @@ describe("icons", () => {
     const iconsDir = join(process.cwd(), "icons");
     const files = readdirSync(iconsDir);
     const svgFiles = files.filter((file) => file.endsWith(".svg"));
-    const parser = new DOMParser();
+
     svgFiles.forEach((svgFile) => {
       const svgContents = readFileSync(join(iconsDir, svgFile), "utf-8");
-      const svgDoc = parser.parseFromString(svgContents, "image/svg+xml");
+      const dom = new JSDOM(svgContents, { contentType: "image/svg+xml" });
+      const svgDoc = dom.window.document;
 
       const primaryGroupElement = svgDoc.querySelector("svg > g");
       expect(
