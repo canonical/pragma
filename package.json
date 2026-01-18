@@ -40,7 +40,7 @@
     "special:clean": "lerna clean --yes && nx reset && rm -rf node_modules"
   },
   "devDependencies": {
-    "lerna": "^9.0.0"
+    "lerna": "^9.0.3"
   },
   "msw": {
     "workerDirectory": [

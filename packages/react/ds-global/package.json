@@ -46,24 +46,24 @@
     "react-dom": "^19.1.0"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.2.4",
+    "@biomejs/biome": "2.3.11",
     "@canonical/biome-config": "^0.10.0",
     "@canonical/ds-types": "^0.10.0",
     "@canonical/typescript-config-react": "^0.10.0",
     "@chromatic-com/storybook": "^4.0.0",
-    "@testing-library/jest-dom": "^6.6.3",
-    "@testing-library/react": "^16.3.0",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.1",
     "@types/node": "^24.0.0",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
-    "@vitejs/plugin-react": "^5.0.0",
+    "@vitejs/plugin-react": "^5.1.2",
     "copyfiles": "^2.4.1",
     "globals": "^16.2.0",
-    "jsdom": "^27.0.0",
+    "jsdom": "^26.1.0",
     "storybook": "^10.1.11",
-    "typescript": "^5.8.3",
-    "vite": "^7.0.0",
-    "vite-tsconfig-paths": "^5.1.4",
-    "vitest": "^3.2.3"
+    "typescript": "^5.9.3",
+    "vite": "^7.3.1",
+    "vite-tsconfig-paths": "^6.0.4",
+    "vitest": "^4.0.17"
   }
 }
