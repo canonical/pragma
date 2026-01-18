@@ -1,11 +1,9 @@
-import { createRequire } from "node:module";
-import { dirname, join } from "node:path";
+import { dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 import type { StorybookConfig } from "@storybook/react-vite";
 
-const require = createRequire(import.meta.url);
-
 function getAbsolutePath(value: string): string {
-  return dirname(require.resolve(join(value, "package.json")));
+  return dirname(fileURLToPath(import.meta.resolve(value + "/package.json")));
 }
 
 type CreateConfigOptions = {
