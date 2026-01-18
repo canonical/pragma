@@ -262,8 +262,17 @@ describe("Dry-Run - mock values in tasks", () => {
     expect(value).toBe("[mock content of /test.txt]");
   });
 
-  it("returns true for Exists task", () => {
+  it("returns false for Exists task when file not created during dry-run", () => {
     const task = exists("/any/path");
+    const { value } = dryRun(task);
+
+    expect(value).toBe(false);
+  });
+
+  it("returns true for Exists task when file was created during dry-run", () => {
+    const task = flatMap(writeFile("/any/path", "content"), () =>
+      exists("/any/path"),
+    );
     const { value } = dryRun(task);
 
     expect(value).toBe(true);

@@ -721,11 +721,19 @@ export const App = ({
     }
   }, [prefilledAnswers, state.phase, handlePromptsComplete]);
 
-  // Handle confirm/cancel input when in confirming state
+  // Handle going back from confirmation to prompting
+  const handleGoBack = useCallback(() => {
+    setState({ phase: "prompting" });
+  }, []);
+
+  // Handle confirm/cancel/back input when in confirming state
   useInput(
-    (input) => {
+    (input, key) => {
       if (state.phase === "confirming") {
-        if (input.toLowerCase() === "y") {
+        if (key.escape) {
+          handleGoBack();
+        } else if (key.return || input.toLowerCase() === "y") {
+          // Enter or Y confirms
           handleConfirm();
         } else if (input.toLowerCase() === "n") {
           handleCancel();
@@ -755,6 +763,7 @@ export const App = ({
           prompts={generator.prompts}
           onComplete={handlePromptsComplete}
           onCancel={handleCancel}
+          initialAnswers={answers}
         />
       )}
 

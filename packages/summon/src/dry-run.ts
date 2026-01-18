@@ -80,9 +80,29 @@ export const mockEffect = (effect: Effect): unknown => {
 
 /**
  * Run a task in dry-run mode, collecting effects without executing them.
+ * Tracks virtual filesystem state to properly handle exists() checks.
  */
 export const dryRun = <A>(task: Task<A>): DryRunResult<A> => {
   const effects: Effect[] = [];
+  // Track files/dirs that would be created during dry-run
+  const virtualFs = new Set<string>();
+
+  const mockEffectWithFs = (effect: Effect): unknown => {
+    switch (effect._tag) {
+      case "WriteFile":
+      case "AppendFile":
+        virtualFs.add(effect.path);
+        return undefined;
+      case "MakeDir":
+        virtualFs.add(effect.path);
+        return undefined;
+      case "Exists":
+        // Check if file was "created" during this dry-run
+        return virtualFs.has(effect.path);
+      default:
+        return mockEffect(effect);
+    }
+  };
 
   const run = <T>(t: Task<T>): T => {
     switch (t._tag) {
@@ -98,7 +118,7 @@ export const dryRun = <A>(task: Task<A>): DryRunResult<A> => {
         // Handle Parallel specially - collect effects from all child tasks
         if (effect._tag === "Parallel") {
           const results = effect.tasks.map((childTask) => {
-            const childResult = dryRun(childTask);
+            const childResult = dryRunWithVirtualFs(childTask, virtualFs);
             effects.push(...childResult.effects);
             return childResult.value;
           });
@@ -108,7 +128,7 @@ export const dryRun = <A>(task: Task<A>): DryRunResult<A> => {
         // Handle Race specially - collect effects from first child task
         if (effect._tag === "Race") {
           if (effect.tasks.length > 0) {
-            const childResult = dryRun(effect.tasks[0]);
+            const childResult = dryRunWithVirtualFs(effect.tasks[0], virtualFs);
             effects.push(...childResult.effects);
             return run(t.cont(childResult.value) as Task<T>);
           }
@@ -117,7 +137,72 @@ export const dryRun = <A>(task: Task<A>): DryRunResult<A> => {
 
         // Regular effects - add to list and mock
         effects.push(effect);
-        const mockResult = mockEffect(effect);
+        const mockResult = mockEffectWithFs(effect);
+        return run(t.cont(mockResult) as Task<T>);
+      }
+    }
+  };
+
+  const value = run(task);
+  return { value, effects };
+};
+
+/**
+ * Internal helper: Run dry-run with shared virtual filesystem state.
+ */
+const dryRunWithVirtualFs = <A>(
+  task: Task<A>,
+  virtualFs: Set<string>,
+): DryRunResult<A> => {
+  const effects: Effect[] = [];
+
+  const mockEffectWithFs = (effect: Effect): unknown => {
+    switch (effect._tag) {
+      case "WriteFile":
+      case "AppendFile":
+        virtualFs.add(effect.path);
+        return undefined;
+      case "MakeDir":
+        virtualFs.add(effect.path);
+        return undefined;
+      case "Exists":
+        return virtualFs.has(effect.path);
+      default:
+        return mockEffect(effect);
+    }
+  };
+
+  const run = <T>(t: Task<T>): T => {
+    switch (t._tag) {
+      case "Pure":
+        return t.value;
+
+      case "Fail":
+        throw new TaskExecutionError(t.error);
+
+      case "Effect": {
+        const effect = t.effect;
+
+        if (effect._tag === "Parallel") {
+          const results = effect.tasks.map((childTask) => {
+            const childResult = dryRunWithVirtualFs(childTask, virtualFs);
+            effects.push(...childResult.effects);
+            return childResult.value;
+          });
+          return run(t.cont(results) as Task<T>);
+        }
+
+        if (effect._tag === "Race") {
+          if (effect.tasks.length > 0) {
+            const childResult = dryRunWithVirtualFs(effect.tasks[0], virtualFs);
+            effects.push(...childResult.effects);
+            return run(t.cont(childResult.value) as Task<T>);
+          }
+          return run(t.cont(undefined) as Task<T>);
+        }
+
+        effects.push(effect);
+        const mockResult = mockEffectWithFs(effect);
         return run(t.cont(mockResult) as Task<T>);
       }
     }

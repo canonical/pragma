@@ -6,8 +6,8 @@
  */
 
 import * as fs from "node:fs";
-import { dryRun, dryRunWith, type Effect } from "@canonical/summon";
 import { describe, expect, it } from "vitest";
+import { dryRun, dryRunWith, type Effect } from "@canonical/summon";
 import { generators } from "../index.js";
 
 /**
@@ -261,9 +261,7 @@ describe("component/svelte generator", () => {
         "src/lib/components/Button/Button.svelte.test.ts",
       );
       expect(paths).toContain("src/lib/components/Button/Button.ssr.test.ts");
-      expect(paths).toContain(
-        "src/lib/components/Button/Button.stories.svelte",
-      );
+      expect(paths).toContain("src/lib/components/Button/Button.stories.svelte");
     });
 
     it("creates typescript stories when useTsStories is true", () => {
