@@ -27,7 +27,8 @@
     "build:all": "bun run build:package",
     "build:package": "bun run build:package:tsc",
     "build:package:tsc": "tsc -p tsconfig.build.json",
-    "check": "bun run check:biome && bun run check:ts",
+    "check": "bun run check:biome && bun run check:ts && bun run check:webarchitect",
+    "check:webarchitect": "webarchitect library",
     "check:fix": "bun run check:biome:fix && bun run check:ts",
     "check:biome": "biome check",
     "check:biome:fix": "biome check --write",
@@ -39,6 +40,7 @@
   "devDependencies": {
     "@biomejs/biome": "2.3.11",
     "@canonical/biome-config": "^0.10.0",
+    "@canonical/webarchitect": "^0.10.0",
     "@canonical/typescript-config-base": "^0.10.0",
     "@types/node": "^24.0.0",
     "jsdom": "^26.1.0",

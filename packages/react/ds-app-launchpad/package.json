@@ -27,7 +27,8 @@
     "build:package": "bun run build:package:tsc && bun run build:package:copycss",
     "build:package:copycss": "copyfiles -u 1 'src/ui/{,**/}*.css' dist/esm",
     "build:package:tsc": "tsc -p tsconfig.build.json",
-    "check": "bun run check:biome && bun run check:ts",
+    "check": "bun run check:biome && bun run check:ts && bun run check:webarchitect",
+    "check:webarchitect": "webarchitect library",
     "check:fix": "bun run check:biome:fix && bun run check:ts",
     "check:biome": "biome check",
     "check:biome:fix": "biome check --write",
@@ -53,6 +54,7 @@
   "devDependencies": {
     "@biomejs/biome": "2.3.11",
     "@canonical/biome-config": "^0.10.0",
+    "@canonical/webarchitect": "^0.10.0",
     "@canonical/typescript-config-react": "^0.10.0",
     "@chromatic-com/storybook": "^5.0.0",
     "@testing-library/jest-dom": "^6.9.1",
