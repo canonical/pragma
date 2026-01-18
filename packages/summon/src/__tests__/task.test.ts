@@ -567,16 +567,16 @@ describe("Task Monad - TaskBuilder", () => {
     });
   });
 
-  describe("then method", () => {
+  describe("andThen method", () => {
     it("sequences tasks discarding first result", () => {
-      const result = of(1).then(pure(2)).then(pure(3)).unwrap();
+      const result = of(1).andThen(pure(2)).andThen(pure(3)).unwrap();
 
       expect((result as { value: number }).value).toBe(3);
     });
 
     it("propagates failure", () => {
       const error: TaskError = { code: "ERR", message: "error" };
-      const result = of(1).then(fail<number>(error)).then(pure(3)).unwrap();
+      const result = of(1).andThen(fail<number>(error)).andThen(pure(3)).unwrap();
 
       expect(result._tag).toBe("Fail");
     });

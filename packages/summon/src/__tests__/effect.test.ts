@@ -540,14 +540,12 @@ describe("Effect Utilities - describeEffect", () => {
 
   it("describes MakeDir effect with recursive", () => {
     const effect = makeDirEffect("/new/directory", true);
-    expect(describeEffect(effect)).toBe(
-      "Create directory: /new/directory (recursive)",
-    );
+    expect(describeEffect(effect)).toBe("Created /new/directory/");
   });
 
   it("describes MakeDir effect without recursive", () => {
     const effect = makeDirEffect("/new/directory", false);
-    expect(describeEffect(effect)).toBe("Create directory: /new/directory");
+    expect(describeEffect(effect)).toBe("Created /new/directory/");
   });
 
   it("describes Exists effect", () => {

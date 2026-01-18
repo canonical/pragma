@@ -282,11 +282,21 @@ const discoverGeneratorTree = async (
   };
 
   if (explicitPath) {
-    // Explicit path mode: ONLY load from the specified directory
+    // Explicit path mode: ONLY load from the specified path
     const absolutePath = path.isAbsolute(explicitPath)
       ? explicitPath
       : path.join(process.cwd(), explicitPath);
-    await buildGeneratorTree(absolutePath, root);
+
+    // Check if it's a package with package.json (barrel export)
+    const pkgJsonPath = path.join(absolutePath, "package.json");
+    try {
+      await fs.access(pkgJsonPath);
+      // It's a package - use processPackage to load from barrel
+      await processPackage(path.basename(absolutePath), absolutePath, root);
+    } catch {
+      // Not a package - scan directory for generators
+      await buildGeneratorTree(absolutePath, root);
+    }
     return root;
   }
 

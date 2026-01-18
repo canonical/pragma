@@ -2,222 +2,60 @@
  * Svelte Component Generator
  *
  * Generates a Svelte 5 component with TypeScript, tests, and stories.
- * This replaces the yo @canonical/ds:sv-component generator.
  */
 
 import * as path from "node:path";
+import { fileURLToPath } from "node:url";
 import {
-  exists,
-  flatMap,
   type GeneratorDefinition,
-  generatorComment,
-  ifElseM,
   info,
   mkdir,
-  pure,
-  readFile,
   sequence_,
-  type Task,
-  templateHelpers,
+  template,
   when,
-  writeFile,
 } from "@canonical/summon";
+
+import {
+  appendExportToParentIndex,
+  type BaseComponentAnswers,
+  createComponentPathPrompt,
+  createTemplateContext,
+  getComponentName,
+  getParentDir,
+  sharedPrompts,
+} from "../shared/index.js";
 
 // =============================================================================
 // Types
 // =============================================================================
 
-interface ComponentAnswers {
-  componentPath: string;
-  withStyles: boolean;
-  withStories: boolean;
+interface SvelteComponentAnswers extends BaseComponentAnswers {
+  /** Use TypeScript stories format instead of Svelte CSF */
   useTsStories: boolean;
-  withSsrTests: boolean;
 }
 
 // =============================================================================
-// Validation
+// Template Paths
 // =============================================================================
 
-const isPascalCase = (str: string): boolean => {
-  return /^[A-Z][a-zA-Z0-9]*$/.test(str);
-};
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const templatesDir = path.join(__dirname, "..", "templates");
 
-// =============================================================================
-// Templates
-// =============================================================================
-
-const componentTemplate = (
-  name: string,
-  withStyles: boolean,
-): string => `${generatorComment("@canonical/summon:component-svelte", { version: "0.1.0" }).replace("//", "<!--").replace("$", " -->")}
-
-<script lang="ts">
-	import type { ${name}Props } from "./types";
-
-	let {
-		class: className = "",
-		children,
-		...props
-	}: ${name}Props = $props();
-</script>
-
-<div
-	class="${templateHelpers.kebabCase(name)}{className ? \` \${className}\` : ''}"
-	{...props}
->
-	{@render children?.()}
-</div>
-${
-  withStyles
-    ? `
-<style>
-	.${templateHelpers.kebabCase(name)} {
-		/* Component styles */
-	}
-</style>
-`
-    : ""
-}`;
-
-const typesTemplate = (
-  name: string,
-): string => `${generatorComment("@canonical/summon:component-svelte", { version: "0.1.0" })}
-
-import type { Snippet } from "svelte";
-import type { HTMLAttributes } from "svelte/elements";
-
-export interface ${name}Props extends HTMLAttributes<HTMLDivElement> {
-	/** Content to render inside the component */
-	children?: Snippet;
-}
-`;
-
-const indexTemplate = (
-  name: string,
-): string => `${generatorComment("@canonical/summon:component-svelte", { version: "0.1.0" })}
-
-export { default as ${name} } from "./${name}.svelte";
-export type { ${name}Props } from "./types";
-`;
-
-const testTemplate = (
-  name: string,
-): string => `${generatorComment("@canonical/summon:component-svelte", { version: "0.1.0" })}
-
-import { describe, expect, it } from "vitest";
-import { render, screen } from "@testing-library/svelte";
-import ${name} from "./${name}.svelte";
-
-describe("${name}", () => {
-	it("renders", () => {
-		render(${name});
-		// Add assertions based on your component
-	});
-
-	it("applies custom class", () => {
-		render(${name}, { props: { class: "custom-class" } });
-		const element = document.querySelector(".${templateHelpers.kebabCase(name)}");
-		expect(element).toHaveClass("custom-class");
-	});
-});
-`;
-
-const ssrTestTemplate = (
-  name: string,
-): string => `${generatorComment("@canonical/summon:component-svelte", { version: "0.1.0" })}
-
-import { describe, expect, it } from "vitest";
-import { render } from "svelte/server";
-import ${name} from "./${name}.svelte";
-
-describe("${name} SSR", () => {
-	it("renders on server without errors", () => {
-		const { body } = render(${name});
-		expect(body).toContain("${templateHelpers.kebabCase(name)}");
-	});
-});
-`;
-
-const storiesSvelteTemplate = (
-  name: string,
-): string => `${generatorComment("@canonical/summon:component-svelte", { version: "0.1.0" }).replace("//", "<!--").replace("$", " -->")}
-
-<script lang="ts" module>
-	import { defineMeta } from "@storybook/addon-svelte-csf";
-	import ${name} from "./${name}.svelte";
-
-	const { Story } = defineMeta({
-		title: "Components/${name}",
-		component: ${name},
-		tags: ["autodocs"],
-	});
-</script>
-
-<Story name="Default">
-	<${name}>Hello, ${name}!</${name}>
-</Story>
-
-<Story name="WithCustomClass">
-	<${name} class="custom-class">Custom styled</${name}>
-</Story>
-`;
-
-const storiesTsTemplate = (
-  name: string,
-): string => `${generatorComment("@canonical/summon:component-svelte", { version: "0.1.0" })}
-
-import type { Meta, StoryObj } from "@storybook/svelte";
-import ${name} from "./${name}.svelte";
-
-const meta: Meta<typeof ${name}> = {
-	title: "Components/${name}",
-	component: ${name},
-	tags: ["autodocs"],
-};
-
-export default meta;
-type Story = StoryObj<typeof ${name}>;
-
-export const Default: Story = {};
-
-export const WithCustomClass: Story = {
-	args: {
-		class: "custom-class",
-	},
-};
-`;
-
-// =============================================================================
-// File Operations
-// =============================================================================
-
-const appendExportToParentIndex = (
-  parentDir: string,
-  componentName: string,
-): Task<void> => {
-  const indexPath = path.join(parentDir, "index.ts");
-  const exportLine = `export * from "./${componentName}";\n`;
-
-  return ifElseM(
-    exists(indexPath),
-    // If exists, append
-    flatMap(readFile(indexPath), (content) => {
-      if (content.includes(`"./${componentName}"`)) {
-        return pure(undefined); // Already exported
-      }
-      return writeFile(indexPath, content + exportLine);
-    }),
-    // If not exists, create
-    writeFile(indexPath, exportLine),
-  );
+const svelteTemplates = {
+  component: path.join(templatesDir, "svelte", "component.svelte.ejs"),
+  types: path.join(templatesDir, "svelte", "types.ts.ejs"),
+  index: path.join(templatesDir, "svelte", "index.ts.ejs"),
+  test: path.join(templatesDir, "svelte", "test.ts.ejs"),
+  ssrTest: path.join(templatesDir, "svelte", "ssr.test.ts.ejs"),
+  storiesSvelte: path.join(templatesDir, "svelte", "stories.svelte.ejs"),
+  storiesTs: path.join(templatesDir, "svelte", "stories.ts.ejs"),
 };
 
 // =============================================================================
 // Generator Definition
 // =============================================================================
 
-export const generator: GeneratorDefinition<ComponentAnswers> = {
+export const generator: GeneratorDefinition<SvelteComponentAnswers> = {
   meta: {
     name: "component/svelte",
     description:
@@ -245,37 +83,8 @@ For example, 'src/lib/components/Button' creates a 'Button' component.`,
   },
 
   prompts: [
-    {
-      name: "componentPath",
-      type: "text",
-      message: "Component path (e.g., src/lib/components/Button):",
-      default: "src/lib/components/MyComponent",
-      validate: (value) => {
-        if (!value || typeof value !== "string") {
-          return "Component path is required";
-        }
-        const name = path.basename(value as string);
-        if (!isPascalCase(name)) {
-          return "Component name must be in PascalCase (e.g., MyComponent)";
-        }
-        return true;
-      },
-      group: "Component",
-    },
-    {
-      name: "withStyles",
-      type: "confirm",
-      message: "Include <style> block?",
-      default: true,
-      group: "Options",
-    },
-    {
-      name: "withStories",
-      type: "confirm",
-      message: "Include Storybook stories?",
-      default: true,
-      group: "Options",
-    },
+    createComponentPathPrompt("svelte"),
+    ...sharedPrompts,
     {
       name: "useTsStories",
       type: "confirm",
@@ -284,19 +93,13 @@ For example, 'src/lib/components/Button' creates a 'Button' component.`,
       when: (answers) => answers.withStories === true,
       group: "Options",
     },
-    {
-      name: "withSsrTests",
-      type: "confirm",
-      message: "Include SSR tests?",
-      default: true,
-      group: "Options",
-    },
   ],
 
   generate: (answers) => {
-    const componentName = path.basename(answers.componentPath);
+    const componentName = getComponentName(answers.componentPath);
     const componentDir = answers.componentPath;
-    const parentDir = path.dirname(componentDir);
+    const parentDir = getParentDir(answers.componentPath);
+    const ctx = createTemplateContext(answers, "svelte");
 
     return sequence_([
       info(`Generating Svelte component: ${componentName}`),
@@ -305,52 +108,61 @@ For example, 'src/lib/components/Button' creates a 'Button' component.`,
       mkdir(componentDir),
 
       // Create main component file
-      writeFile(
-        path.join(componentDir, `${componentName}.svelte`),
-        componentTemplate(componentName, answers.withStyles),
-      ),
+      template({
+        source: svelteTemplates.component,
+        dest: path.join(componentDir, `${componentName}.svelte`),
+        vars: ctx,
+      }),
 
       // Create types file
-      writeFile(
-        path.join(componentDir, "types.ts"),
-        typesTemplate(componentName),
-      ),
+      template({
+        source: svelteTemplates.types,
+        dest: path.join(componentDir, "types.ts"),
+        vars: ctx,
+      }),
 
       // Create index file
-      writeFile(
-        path.join(componentDir, "index.ts"),
-        indexTemplate(componentName),
-      ),
+      template({
+        source: svelteTemplates.index,
+        dest: path.join(componentDir, "index.ts"),
+        vars: ctx,
+      }),
 
       // Create test file
-      writeFile(
-        path.join(componentDir, `${componentName}.svelte.test.ts`),
-        testTemplate(componentName),
-      ),
+      template({
+        source: svelteTemplates.test,
+        dest: path.join(componentDir, `${componentName}.svelte.test.ts`),
+        vars: ctx,
+      }),
 
       // Create SSR test file (conditional)
       when(
         answers.withSsrTests,
-        writeFile(
-          path.join(componentDir, `${componentName}.ssr.test.ts`),
-          ssrTestTemplate(componentName),
-        ),
+        template({
+          source: svelteTemplates.ssrTest,
+          dest: path.join(componentDir, `${componentName}.ssr.test.ts`),
+          vars: ctx,
+        }),
       ),
 
-      // Create stories file (conditional)
+      // Create stories file (conditional - Svelte CSF format)
       when(
         answers.withStories && !answers.useTsStories,
-        writeFile(
-          path.join(componentDir, `${componentName}.stories.svelte`),
-          storiesSvelteTemplate(componentName),
-        ),
+        template({
+          source: svelteTemplates.storiesSvelte,
+          dest: path.join(componentDir, `${componentName}.stories.svelte`),
+          vars: ctx,
+        }),
       ),
+
+      // Create stories file (conditional - TypeScript format)
       when(
         answers.withStories && answers.useTsStories,
-        writeFile(
-          path.join(componentDir, `${componentName}.stories.ts`),
-          storiesTsTemplate(componentName),
-        ),
+        template({
+          source: svelteTemplates.storiesTs,
+          dest: path.join(componentDir, `${componentName}.stories.ts`),
+          vars: ctx,
+        }),
       ),
 
       // Append export to parent index
