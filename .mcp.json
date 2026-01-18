@@ -5,7 +5,7 @@
       "command": "npx",
       "args": [
         "nx-mcp@latest",
-        "/home/adrian/code/cn/pragma"
+        "."
       ],
       "env": {}
     },
