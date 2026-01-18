@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 
 // Dynamic search component for testing dynamic responses
 interface SearchResult {

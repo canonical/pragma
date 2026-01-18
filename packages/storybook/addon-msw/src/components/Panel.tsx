@@ -1,10 +1,6 @@
-import React, { memo } from "react";
+import { memo } from "react";
 import { AddonPanel, SyntaxHighlighter } from "storybook/internal/components";
-import {
-  type API,
-  useParameter,
-  useStorybookState,
-} from "storybook/internal/manager-api";
+import { type API, useParameter } from "storybook/manager-api";
 import { PARAM_KEY } from "../constants.js";
 import type { MswParameter } from "../types.js";
 
@@ -13,8 +9,7 @@ interface PanelProps {
   active?: boolean;
 }
 
-export const Panel = memo(function MswPanel({ api, active }: PanelProps) {
-  const state = useStorybookState();
+export const Panel = memo(function MswPanel({ active }: PanelProps) {
   const parameter = useParameter<MswParameter>(PARAM_KEY);
 
   if (!active || !parameter?.handlers) {
@@ -23,21 +18,23 @@ export const Panel = memo(function MswPanel({ api, active }: PanelProps) {
 
   // Extract handler information for display
   // MSW handlers have an info property that contains request, resolver, and options
-  const handlerInfo = parameter.handlers.map((handler, index) => {
-    // The handler info structure in MSW v2 is different
-    // We'll extract what we can from the handler
-    const info = handler.info;
+  const handlerInfo = parameter.handlers.map(
+    (handler: (typeof parameter.handlers)[number], index: number) => {
+      // The handler info structure in MSW v2 is different
+      // We'll extract what we can from the handler
+      const info = handler.info;
 
-    // Try to extract meaningful information
-    // In MSW v2, handlers have a request property that might contain the predicate
-    return {
-      index,
-      // We'll use a generic description since MSW doesn't expose method/path directly
-      type: info?.header ? "HTTP Handler" : "Unknown Handler",
-      // You could potentially inspect the handler's toString() or other properties
-      description: `Handler ${index + 1}`,
-    };
-  });
+      // Try to extract meaningful information
+      // In MSW v2, handlers have a request property that might contain the predicate
+      return {
+        index,
+        // We'll use a generic description since MSW doesn't expose method/path directly
+        type: info?.header ? "HTTP Handler" : "Unknown Handler",
+        // You could potentially inspect the handler's toString() or other properties
+        description: `Handler ${index + 1}`,
+      };
+    },
+  );
 
   return (
     <AddonPanel active={active}>

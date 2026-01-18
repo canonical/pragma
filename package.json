@@ -41,5 +41,10 @@
   },
   "devDependencies": {
     "lerna": "^9.0.0"
+  },
+  "msw": {
+    "workerDirectory": [
+      "packages/storybook/addon-msw/public"
+    ]
   }
 }
