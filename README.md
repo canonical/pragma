@@ -27,6 +27,17 @@ Tutorials have not been added to the documentation yet.
 |----------|-------------|
 
 
+## Webarchitect
+
+The monorepo uses `@canonical/webarchitect` to validate package architecture compliance. The following packages still need webarchitect integration:
+
+- `@canonical/typography` - Non-standard structure (CSS + CLI)
+- `@canonical/generator-ds` - Non-standard structure (generators/ instead of dist/)
+- `@canonical/storybook-addon-msw` - Missing `module` field
+- `@canonical/storybook-addon-baseline-grid` - Missing `module` field
+- `@canonical/svelte-ssr-test` - Pending
+- All `@canonical/styles-*` packages - CSS-only, need dedicated `styles` ruleset
+
 ## Caveats
 - For the time being, node 23 seems to provoke [an error](https://github.com/canonical/ds25/issues/226). Use node v22 for the time being, for instance with `nvm use 22`.
 - We currently require Bun v1.2.19. Please run `curl -fsSL https://bun.com/install | bash -s "bun-v1.2.19"` to install 1.2.19.

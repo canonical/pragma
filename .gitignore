@@ -13,6 +13,7 @@ Thumbs.db
 .spelling
 .vscode
 .idea
+session/
 
 # [cache] Cache and backup
 *.bak

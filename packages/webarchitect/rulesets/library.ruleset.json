@@ -1,39 +1,7 @@
 {
   "$schema": "https://github.com/webarchitect/schemas/main/schema.json",
-  "name": "package",
-  "extends": ["base"],
-  "biome": {
-    "file": {
-      "name": "biome.json",
-      "contains": {
-        "type": "object",
-        "properties": {
-          "$schema": {
-            "type": "string"
-          },
-          "extends": {
-            "type": "array",
-            "items": { "const": "@canonical/biome-config" },
-            "minItems": 1,
-            "maxItems": 1
-          },
-          "files": {
-            "type": "object",
-            "properties": {
-              "includes": {
-                "type": "array",
-                "items": { "type": "string" }
-              }
-            },
-            "additionalProperties": false,
-            "description": "File inclusion patterns only"
-          }
-        },
-        "required": ["extends"],
-        "additionalProperties": false
-      }
-    }
-  },
+  "name": "library",
+  "extends": ["tool"],
   "package": {
     "file": {
       "name": "package.json",
@@ -61,7 +29,7 @@
             "contains": { "const": "dist" }
           },
           "license": {
-            "const": "GPL-3.0"
+            "const": "LGPL-3.0"
           },
           "scripts": {
             "type": "object",
