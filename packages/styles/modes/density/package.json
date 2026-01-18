@@ -1,7 +1,7 @@
 {
   "name": "@canonical/styles-modes-density",
   "description": "Canonical's base styles",
-  "version": "0.10.0-experimental.4",
+  "version": "0.10.0",
   "main": "src/index.css",
   "files": [
     "src"
@@ -27,6 +27,6 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.2.4",
-    "@canonical/biome-config": "^0.10.0-experimental.4"
+    "@canonical/biome-config": "^0.10.0"
   }
 }

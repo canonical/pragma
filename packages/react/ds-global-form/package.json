@@ -1,6 +1,6 @@
 {
   "name": "@canonical/react-ds-global-form",
-  "version": "0.10.0-experimental.8",
+  "version": "0.10.0",
   "type": "module",
   "module": "dist/esm/index.js",
   "types": "dist/types/index.d.ts",
@@ -39,10 +39,10 @@
     "init:msw": "npx msw init public/"
   },
   "dependencies": {
-    "@canonical/react-ds-global": "^0.10.0-experimental.8",
-    "@canonical/storybook-config": "^0.10.0-experimental.8",
-    "@canonical/styles": "^0.10.0-experimental.6",
-    "@canonical/utils": "^0.10.0-experimental.4",
+    "@canonical/react-ds-global": "^0.10.0",
+    "@canonical/storybook-config": "^0.10.0",
+    "@canonical/styles": "^0.10.0",
+    "@canonical/utils": "^0.10.0",
     "downshift": "^9.0.9",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
@@ -50,8 +50,8 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.2.4",
-    "@canonical/biome-config": "^0.10.0-experimental.4",
-    "@canonical/typescript-config-react": "^0.10.0-experimental.4",
+    "@canonical/biome-config": "^0.10.0",
+    "@canonical/typescript-config-react": "^0.10.0",
     "@chromatic-com/storybook": "^4.0.0",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",

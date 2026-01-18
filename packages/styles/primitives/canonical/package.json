@@ -1,7 +1,7 @@
 {
   "name": "@canonical/styles-primitives-canonical",
   "description": "Canonical's base styles",
-  "version": "0.10.0-experimental.6",
+  "version": "0.10.0",
   "main": "src/index.css",
   "files": [
     "src"
@@ -27,12 +27,12 @@
   },
   "dependencies": {
     "@canonical/tokens": "^0.10.0-experimental.4",
-    "@canonical/typography": "^0.10.0-experimental.5",
+    "@canonical/typography": "^0.10.0",
     "normalize.css": "^8.0.1"
   },
   "devDependencies": {
     "@biomejs/biome": "2.2.4",
-    "@canonical/biome-config": "^0.10.0-experimental.4",
+    "@canonical/biome-config": "^0.10.0",
     "@canonical/tokens": "^0.9.0"
   }
 }
