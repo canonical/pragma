@@ -8,7 +8,7 @@ import { Box, Text, useApp, useInput } from "ink";
 import { useCallback, useEffect, useState } from "react";
 import { dryRun } from "../dry-run.js";
 import type { Effect, GeneratorDefinition, Task, TaskError } from "../types.js";
-import { ExecutionProgress } from "./ExecutionProgress.js";
+import { ExecutionProgress, type TimedEffect } from "./ExecutionProgress.js";
 import { FileTreePreview } from "./FileTreePreview.js";
 import { PromptSequence } from "./PromptSequence.js";
 import { Spinner } from "./Spinner.js";
@@ -221,7 +221,7 @@ const EffectTreeSection = ({
 /**
  * Render a tree view of completed effects, grouped by category.
  */
-const EffectTree = ({ effects }: { effects: Effect[] }) => {
+const _EffectTree = ({ effects }: { effects: Effect[] }) => {
   const groups = groupEffects(effects);
   const hasAnyEffects =
     groups.files.length > 0 ||
@@ -243,18 +243,143 @@ const EffectTree = ({ effects }: { effects: Effect[] }) => {
   );
 };
 
+// =============================================================================
+// Effect Timeline - Chronological display with timestamps
+// =============================================================================
+
+// Width for timestamp column (e.g., "+123ms")
+const TIMESTAMP_WIDTH = 8;
+
+/**
+ * Filter effects to only show user-relevant ones (not internal effects).
+ */
+const isVisibleEffect = (effect: Effect): boolean => {
+  switch (effect._tag) {
+    case "WriteFile":
+    case "AppendFile":
+    case "MakeDir":
+    case "CopyFile":
+    case "CopyDirectory":
+    case "DeleteFile":
+    case "DeleteDirectory":
+    case "Exec":
+      return true;
+    case "Log":
+      // Filter out debug logs
+      return effect.level !== "debug";
+    // Internal effects are not shown
+    case "ReadFile":
+    case "Exists":
+    case "Glob":
+    case "ReadContext":
+    case "WriteContext":
+    case "Prompt":
+    case "Parallel":
+    case "Race":
+      return false;
+    default:
+      return false;
+  }
+};
+
+/**
+ * Render a single timeline row with timestamp, action, and payload.
+ */
+const TimelineRow = ({
+  effect,
+  timestamp,
+  showTimestamp,
+  isLast,
+}: {
+  effect: Effect;
+  timestamp: number;
+  showTimestamp: boolean;
+  isLast: boolean;
+}) => {
+  const connector = isLast ? "└─" : "├─";
+  const actionLabel = getActionLabel(effect);
+  const color = getActionColor(effect);
+  const payload = getEffectPayload(effect);
+  const timestampStr = showTimestamp
+    ? `+${Math.round(timestamp)}ms`.padEnd(TIMESTAMP_WIDTH)
+    : " ".repeat(TIMESTAMP_WIDTH);
+
+  return (
+    <Box>
+      <Text dimColor>{timestampStr}</Text>
+      <Text dimColor>{connector} </Text>
+      <Text color={color}>{actionLabel.padEnd(ACTION_LABEL_WIDTH)}</Text>
+      <Text>{payload}</Text>
+    </Box>
+  );
+};
+
+/**
+ * Render effects in chronological order with timestamps.
+ * Timestamps are only shown when they differ from the previous effect.
+ * Duplicate MakeDir effects (same path) are deduplicated.
+ */
+const EffectTimeline = ({ effects }: { effects: TimedEffect[] }) => {
+  // Filter to visible effects only and deduplicate MakeDir by path
+  const seenDirPaths = new Set<string>();
+  const visibleEffects = effects.filter((e) => {
+    if (!isVisibleEffect(e.effect)) return false;
+    // Deduplicate MakeDir by path (keep only first occurrence)
+    if (e.effect._tag === "MakeDir") {
+      if (seenDirPaths.has(e.effect.path)) return false;
+      seenDirPaths.add(e.effect.path);
+    }
+    return true;
+  });
+
+  if (visibleEffects.length === 0) {
+    return null;
+  }
+
+  // Track which timestamps to show (only when different from previous)
+  let lastShownTimestamp = -1;
+
+  return (
+    <Box flexDirection="column" marginTop={1}>
+      <Text bold dimColor>
+        Timeline:
+      </Text>
+      <Box flexDirection="column" marginLeft={1}>
+        {visibleEffects.map((item, index) => {
+          const roundedTimestamp = Math.round(item.timestamp);
+          const showTimestamp = roundedTimestamp !== lastShownTimestamp;
+          if (showTimestamp) {
+            lastShownTimestamp = roundedTimestamp;
+          }
+          // Effects are append-only, index is stable
+          const key = `${item.timestamp}-${item.effect._tag}-${index}`;
+          return (
+            <TimelineRow
+              key={key}
+              effect={item.effect}
+              timestamp={item.timestamp}
+              showTimestamp={showTimestamp}
+              isLast={index === visibleEffects.length - 1}
+            />
+          );
+        })}
+      </Box>
+    </Box>
+  );
+};
+
 /**
  * Summarize effects into a human-readable string.
  * Deduplicates paths to avoid counting the same directory multiple times.
  */
-const summarizeEffects = (effects: Effect[]): string => {
+const summarizeEffects = (effects: TimedEffect[]): string => {
   const files = new Set<string>();
   const directories = new Set<string>();
   const copied = new Set<string>();
   const deleted = new Set<string>();
   let commands = 0;
 
-  for (const effect of effects) {
+  for (const { effect } of effects) {
     switch (effect._tag) {
       case "WriteFile":
         files.add(effect.path);
@@ -309,7 +434,7 @@ export type AppState =
   | { phase: "preview"; effects: Effect[] }
   | { phase: "confirming"; effects: Effect[] }
   | { phase: "executing"; task: Task<void> }
-  | { phase: "complete"; effects: Effect[]; duration: number }
+  | { phase: "complete"; effects: TimedEffect[]; duration: number }
   | { phase: "error"; error: TaskError };
 
 export interface AppProps {
@@ -379,7 +504,7 @@ export const App = ({
   }, [exit]);
 
   const handleExecutionComplete = useCallback(
-    (effects: Effect[], duration: number) => {
+    (effects: TimedEffect[], duration: number) => {
       setState({ phase: "complete", effects, duration });
     },
     [],
@@ -464,7 +589,7 @@ export const App = ({
           <Box>
             <Text color="green">✓ Generation complete!</Text>
           </Box>
-          <EffectTree effects={state.effects} />
+          <EffectTimeline effects={state.effects} />
           <Box marginTop={1}>
             <Text dimColor>
               {summarizeEffects(state.effects)} in {state.duration.toFixed(0)}ms

@@ -103,7 +103,7 @@ const buildGeneratorTree = async (
  * summon-component -> component
  * @scope/summon-component -> component
  */
-const extractTopicFromPackageName = (pkgName: string): string | null => {
+const _extractTopicFromPackageName = (pkgName: string): string | null => {
   // Handle scoped packages: @scope/summon-topic
   const scopedMatch = pkgName.match(/^@[^/]+\/summon-(.+)$/);
   if (scopedMatch) return scopedMatch[1];
@@ -116,6 +116,18 @@ const extractTopicFromPackageName = (pkgName: string): string | null => {
 };
 
 /**
+ * Check if a path is a directory (follows symlinks).
+ */
+const isDirectory = async (filePath: string): Promise<boolean> => {
+  try {
+    const stat = await fs.stat(filePath); // stat follows symlinks
+    return stat.isDirectory();
+  } catch {
+    return false;
+  }
+};
+
+/**
  * Discover summon-* packages in node_modules.
  */
 const discoverNodeModulesPackages = async (
@@ -123,35 +135,32 @@ const discoverNodeModulesPackages = async (
   root: GeneratorNode,
 ): Promise<void> => {
   try {
-    const entries = await fs.readdir(nodeModulesDir, { withFileTypes: true });
+    const entries = await fs.readdir(nodeModulesDir);
 
     for (const entry of entries) {
-      if (!entry.isDirectory()) continue;
+      const entryPath = path.join(nodeModulesDir, entry);
 
-      if (entry.name.startsWith("@")) {
+      if (entry.startsWith("@")) {
         // Scoped packages - look inside @scope/
-        const scopeDir = path.join(nodeModulesDir, entry.name);
+        if (!(await isDirectory(entryPath))) continue;
         try {
-          const scopedEntries = await fs.readdir(scopeDir, {
-            withFileTypes: true,
-          });
+          const scopedEntries = await fs.readdir(entryPath);
           for (const scopedEntry of scopedEntries) {
-            if (
-              scopedEntry.isDirectory() &&
-              scopedEntry.name.startsWith("summon-")
-            ) {
-              const pkgName = `${entry.name}/${scopedEntry.name}`;
-              const pkgDir = path.join(scopeDir, scopedEntry.name);
-              await processPackage(pkgName, pkgDir, root);
+            if (scopedEntry.startsWith("summon-")) {
+              const pkgDir = path.join(entryPath, scopedEntry);
+              if (await isDirectory(pkgDir)) {
+                await processPackage(`${entry}/${scopedEntry}`, pkgDir, root);
+              }
             }
           }
         } catch {
           // Scope directory doesn't exist or can't be read
         }
-      } else if (entry.name.startsWith("summon-")) {
+      } else if (entry.startsWith("summon-")) {
         // Unscoped summon-* package
-        const pkgDir = path.join(nodeModulesDir, entry.name);
-        await processPackage(entry.name, pkgDir, root);
+        if (await isDirectory(entryPath)) {
+          await processPackage(entry, entryPath, root);
+        }
       }
     }
   } catch {
@@ -162,57 +171,93 @@ const discoverNodeModulesPackages = async (
 /**
  * Process a potential summon package.
  */
+/**
+ * Generator cache - stores generators loaded from package barrels.
+ * Key is the command path (e.g., "component/react").
+ */
+const generatorCache = new Map<string, GeneratorDefinition>();
+
+/**
+ * Insert a generator into the tree at the given path.
+ * Creates intermediate namespace nodes as needed.
+ */
+const insertGeneratorAtPath = (
+  root: GeneratorNode,
+  pathStr: string,
+  generator: GeneratorDefinition,
+): void => {
+  const segments = pathStr.split("/").filter(Boolean);
+  let current = root;
+
+  // Cache the generator for later lookup
+  generatorCache.set(pathStr, generator);
+
+  for (let i = 0; i < segments.length; i++) {
+    const segment = segments[i];
+    const isLast = i === segments.length - 1;
+
+    if (!current.children.has(segment)) {
+      current.children.set(segment, {
+        name: segment,
+        path: "",
+        children: new Map(),
+      });
+    }
+
+    const child = current.children.get(segment);
+    if (!child) continue; // Should never happen since we just set it
+
+    if (isLast) {
+      // Mark as having a generator (use path as synthetic indexPath)
+      child.indexPath = `cache:${pathStr}`;
+    }
+
+    current = child;
+  }
+};
+
+/**
+ * Process a summon-* package.
+ *
+ * Imports the package's main entry and looks for a `generators` export
+ * mapping command paths to generator definitions.
+ */
 const processPackage = async (
   pkgName: string,
   pkgDir: string,
   root: GeneratorNode,
 ): Promise<void> => {
-  // First check if package.json has a summon.topic field
+  // Read package.json to get the main entry
   const pkgJsonPath = path.join(pkgDir, "package.json");
-  let topic: string | null = null;
+  let mainEntry: string | undefined;
 
   try {
     const pkgJson = JSON.parse(await fs.readFile(pkgJsonPath, "utf-8"));
-    // Check for explicit summon.topic field
-    if (pkgJson.summon?.topic) {
-      topic = pkgJson.summon.topic;
-    }
+    mainEntry = pkgJson.main;
   } catch {
-    // Can't read package.json
+    return; // Can't read package.json
   }
 
-  // Fall back to extracting from package name
-  if (!topic) {
-    topic = extractTopicFromPackageName(pkgName);
-  }
+  if (!mainEntry) return;
 
-  if (!topic) return;
-
-  // Look for generators directory in the package
-  const generatorsDir = path.join(pkgDir, "generators");
-
-  // Create topic node
-  const topicNode: GeneratorNode = {
-    name: topic,
-    path: generatorsDir,
-    children: new Map(),
-  };
-
-  // Check if the package itself is a generator (has generators/index.ts)
-  const topicIndexPath = path.join(generatorsDir, "index.ts");
+  // Import the package's main entry
+  const entryPath = path.join(pkgDir, mainEntry);
   try {
-    await fs.access(topicIndexPath);
-    topicNode.indexPath = topicIndexPath;
-  } catch {
-    // No top-level generator
-  }
+    const module = await import(entryPath);
+    const generators =
+      module.generators ?? module.default ?? ({} as Record<string, unknown>);
 
-  // Build subtree from generators directory
-  await buildGeneratorTree(generatorsDir, topicNode);
-
-  // Only add if we found something
-  if (topicNode.indexPath || topicNode.children.size > 0) {
-    mergeIntoTree(root, topicNode);
+    // Insert each generator into the tree
+    for (const [cmdPath, generator] of Object.entries(generators)) {
+      if (generator && typeof generator === "object" && "meta" in generator) {
+        insertGeneratorAtPath(root, cmdPath, generator as GeneratorDefinition);
+      }
+    }
+  } catch (err) {
+    console.error(
+      chalk.yellow(`Warning: Could not load generators from '${pkgName}':`),
+      (err as Error).message,
+    );
   }
 };
 
@@ -268,7 +313,7 @@ const discoverGeneratorTree = async (
  * Navigate the generator tree by path segments.
  * Returns [node, remainingSegments] where node is as deep as we could go.
  */
-const navigateTree = (
+const _navigateTree = (
   root: GeneratorNode,
   segments: string[],
 ): [GeneratorNode, string[]] => {
@@ -285,11 +330,19 @@ const navigateTree = (
 };
 
 /**
- * Load a generator from a path.
+ * Load a generator from a path or cache.
  */
 const loadGenerator = async (
   generatorPath: string,
 ): Promise<GeneratorDefinition> => {
+  // Check if this is a cached generator from a package barrel
+  if (generatorPath.startsWith("cache:")) {
+    const cacheKey = generatorPath.slice(6);
+    const cached = generatorCache.get(cacheKey);
+    if (cached) return cached;
+    throw new Error(`Generator not found in cache: ${cacheKey}`);
+  }
+
   const module = await import(generatorPath);
   const generator = module.default ?? module.generator;
 
@@ -362,7 +415,7 @@ const printNode = (node: GeneratorNode, pathSegments: string[]) => {
 /**
  * Print detailed help for a generator (meta.help and examples).
  */
-const printGeneratorHelp = async (
+const _printGeneratorHelp = async (
   node: GeneratorNode,
   pathSegments: string[],
 ) => {
@@ -508,12 +561,16 @@ const toKebabCase = (str: string): string =>
  * with-tests -> withTests
  * install-deps -> installDeps
  */
-const toCamelCase = (str: string): string =>
+const _toCamelCase = (str: string): string =>
   str.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
 
 const buildOptionInfo = (prompt: PromptDefinition): OptionInfo => {
   const kebabName = toKebabCase(prompt.name);
   const flagName = `--${kebabName}`;
+
+  // NOTE: We intentionally do NOT pass defaultValue to Commander.
+  // Defaults are handled by applyDefaults() after prompting, so we can
+  // distinguish between "user didn't provide" vs "user provided default value".
 
   switch (prompt.type) {
     case "confirm": {
@@ -540,7 +597,6 @@ const buildOptionInfo = (prompt: PromptDefinition): OptionInfo => {
       return {
         flags: `${flagName} <value>`,
         description: `${prompt.message} [${choices}]`,
-        defaultValue: prompt.default as string,
         group: prompt.group,
         promptName: prompt.name,
         kebabName,
@@ -555,12 +611,10 @@ const buildOptionInfo = (prompt: PromptDefinition): OptionInfo => {
         kebabName,
       };
     }
-    case "text":
     default: {
       return {
         flags: `${flagName} <value>`,
         description: `${prompt.message}`,
-        defaultValue: prompt.default as string,
         group: prompt.group,
         promptName: prompt.name,
         kebabName,
@@ -596,7 +650,7 @@ const configureGroupedHelp = (
     if (!groups.has(groupName)) {
       groups.set(groupName, []);
     }
-    groups.get(groupName)!.push(info);
+    groups.get(groupName)?.push(info);
   }
 
   // Only configure custom help if there are grouped options
@@ -665,6 +719,11 @@ const configureGroupedHelp = (
  * Extract answers from Commander options based on prompts.
  * Commander converts kebab-case flags to camelCase option keys automatically,
  * so --with-tests becomes options.withTests.
+ *
+ * IMPORTANT: For confirm (boolean) prompts with default: true, Commander's
+ * --no-X flag pattern means the option is ALWAYS present (true by default,
+ * false when --no-X is used). We skip these unless the value differs from
+ * the prompt's default, indicating the user explicitly used the flag.
  */
 const extractAnswers = (
   options: Record<string, unknown>,
@@ -678,9 +737,16 @@ const extractAnswers = (
 
     if (value !== undefined) {
       switch (prompt.type) {
-        case "confirm":
-          answers[prompt.name] = Boolean(value);
+        case "confirm": {
+          const boolValue = Boolean(value);
+          // For confirm prompts, Commander always sets a value due to --no-X pattern.
+          // Only include if the value differs from the prompt's default,
+          // which indicates the user explicitly used the flag.
+          if (boolValue !== prompt.default) {
+            answers[prompt.name] = boolValue;
+          }
           break;
+        }
         case "multiselect":
           answers[prompt.name] =
             typeof value === "string"
@@ -697,106 +763,201 @@ const extractAnswers = (
 };
 
 /**
- * Recursively register generator commands.
+ * Command Barrel - A flattened representation of all commands to register.
+ * This separates command discovery from registration, making the process cleaner.
  */
-const registerGeneratorCommands = async (
-  parentCmd: Command,
+interface CommandEntry {
+  /** Path segments to this command (e.g., ["component", "react"]) */
+  path: string[];
+  /** The generator definition if this is a runnable command */
+  generator?: GeneratorDefinition;
+  /** Description for namespace-only commands */
+  description?: string;
+}
+
+/**
+ * Build a command barrel from a generator tree.
+ * This flattens the tree into a list of commands, sorted by depth so parents are created first.
+ */
+const buildCommandBarrel = async (
   node: GeneratorNode,
-  pathSegments: string[],
-): Promise<void> => {
+  pathSegments: string[] = [],
+): Promise<CommandEntry[]> => {
+  const entries: CommandEntry[] = [];
+
   for (const [name, child] of node.children) {
     const childPath = [...pathSegments, name];
 
     if (child.indexPath) {
-      // This is a runnable generator - load it and register command
+      // Runnable generator
       try {
         const generator = await loadGenerator(child.indexPath);
+        entries.push({ path: childPath, generator });
 
-        // Create command for this generator
-        const cmd = parentCmd
-          .command(childPath.join(" "))
-          .description(generator.meta.description)
-          .option("-d, --dry-run", "Preview without writing files")
-          .option("-y, --yes", "Skip confirmation prompts")
-          .option("--no-preview", "Skip the file preview");
-
-        // Add prompt-based options
-        addPromptOptions(cmd, generator.prompts);
-
-        // Configure grouped help display
-        configureGroupedHelp(cmd, generator.prompts);
-
-        // Add action
-        cmd.action(async (cmdOptions: Record<string, unknown>) => {
-          const answers = extractAnswers(cmdOptions, generator.prompts);
-          const finalAnswers = applyDefaults(generator.prompts, answers);
-
-          // Determine execution mode
-          const hasAllAnswers = hasAllRequiredAnswers(
-            generator.prompts,
-            finalAnswers,
-          );
-          const isTTY = process.stdin.isTTY === true;
-
-          if (hasAllAnswers && cmdOptions.dryRun && !isTTY) {
-            // Batch dry-run mode
-            const { dryRun } = await import("./dry-run.js");
-
-            console.log();
-            console.log(chalk.bold.magenta(generator.meta.name));
-            console.log(chalk.dim(generator.meta.description));
-            console.log();
-
-            const task = generator.generate(finalAnswers);
-            const result = dryRun(task);
-
-            console.log(chalk.bold.cyan("Files to be created:"));
-            const seen = new Set<string>();
-            for (const effect of result.effects) {
-              if (effect._tag === "WriteFile") {
-                console.log(chalk.green(`  + ${effect.path}`));
-                seen.add(effect.path);
-              } else if (effect._tag === "MakeDir" && !seen.has(effect.path)) {
-                console.log(chalk.green(`  + ${effect.path}/`));
-                seen.add(effect.path);
-              }
-            }
-            console.log();
-            console.log(chalk.dim("Dry-run complete. No files were modified."));
-          } else {
-            // Interactive mode
-            const passedAnswers =
-              Object.keys(finalAnswers).length > 0 ? finalAnswers : undefined;
-
-            const { waitUntilExit } = render(
-              <App
-                generator={generator}
-                preview={cmdOptions.preview as boolean}
-                dryRunOnly={cmdOptions.dryRun as boolean}
-                answers={passedAnswers}
-              />,
-            );
-
-            await waitUntilExit();
-          }
-        });
-
-        // If this generator also has children, register them recursively
+        // If it also has children, we need to ensure parent exists and recurse
         if (child.children.size > 0) {
-          await registerGeneratorCommands(parentCmd, child, childPath);
+          const childEntries = await buildCommandBarrel(child, childPath);
+          entries.push(...childEntries);
         }
       } catch (err) {
-        // Skip generators that fail to load
         console.error(
           chalk.yellow(`Warning: Could not load generator '${name}':`),
           (err as Error).message,
         );
       }
     } else if (child.children.size > 0) {
-      // This is just a namespace, recurse into children
-      await registerGeneratorCommands(parentCmd, child, childPath);
+      // Namespace-only (no indexPath but has children)
+      // Add a placeholder entry so we create the parent command
+      entries.push({
+        path: childPath,
+        description: `${name} generators`,
+      });
+
+      // Recurse into children
+      const childEntries = await buildCommandBarrel(child, childPath);
+      entries.push(...childEntries);
     }
   }
+
+  // Sort by path length so parents are registered before children
+  return entries.sort((a, b) => a.path.length - b.path.length);
+};
+
+/**
+ * Register all commands from a command barrel.
+ * Commands are registered in order (parents before children) using a map to track created commands.
+ */
+const registerFromBarrel = (rootCmd: Command, barrel: CommandEntry[]): void => {
+  const commandMap = new Map<string, Command>();
+  commandMap.set("", rootCmd);
+
+  for (const entry of barrel) {
+    const name = entry.path[entry.path.length - 1];
+    const parentPath = entry.path.slice(0, -1).join("/");
+    const currentPath = entry.path.join("/");
+
+    // Skip if already registered (can happen with namespace + runnable at same path)
+    const existingCmd = commandMap.get(currentPath);
+    if (existingCmd) {
+      // But if we now have a generator, update the command
+      if (entry.generator) {
+        configureGeneratorCommand(existingCmd, entry.generator);
+      }
+      continue;
+    }
+
+    // Get or create parent command
+    const parentCmd = commandMap.get(parentPath) ?? rootCmd;
+
+    if (entry.generator) {
+      // Create runnable generator command
+      const cmd = parentCmd
+        .command(name)
+        .description(entry.generator.meta.description)
+        .option("-d, --dry-run", "Preview without writing files")
+        .option("-y, --yes", "Skip confirmation prompts")
+        .option("--no-preview", "Skip the file preview");
+
+      configureGeneratorCommand(cmd, entry.generator);
+      commandMap.set(currentPath, cmd);
+    } else {
+      // Create namespace-only command (just a container for subcommands)
+      const cmd = parentCmd
+        .command(name)
+        .description(entry.description ?? `${name} commands`);
+
+      commandMap.set(currentPath, cmd);
+    }
+  }
+};
+
+/**
+ * Configure a command with generator options and action.
+ */
+const configureGeneratorCommand = (
+  cmd: Command,
+  generator: GeneratorDefinition,
+): void => {
+  // Add prompt-based options
+  addPromptOptions(cmd, generator.prompts);
+
+  // Configure grouped help display
+  configureGroupedHelp(cmd, generator.prompts);
+
+  // Add action
+  cmd.action(async (cmdOptions: Record<string, unknown>) => {
+    // Extract only explicitly provided CLI answers (not defaults)
+    const cliAnswers = extractAnswers(cmdOptions, generator.prompts);
+    // Apply defaults for checking if we have all required answers
+    const answersWithDefaults = applyDefaults(generator.prompts, cliAnswers);
+
+    // Determine execution mode
+    const hasAllAnswers = hasAllRequiredAnswers(
+      generator.prompts,
+      answersWithDefaults,
+    );
+    const isTTY = process.stdin.isTTY === true;
+    const skipPrompts = cmdOptions.yes === true;
+
+    if (hasAllAnswers && cmdOptions.dryRun && !isTTY) {
+      // Batch dry-run mode (non-interactive)
+      const { dryRun } = await import("./dry-run.js");
+
+      console.log();
+      console.log(chalk.bold.magenta(generator.meta.name));
+      console.log(chalk.dim(generator.meta.description));
+      console.log();
+
+      const task = generator.generate(answersWithDefaults);
+      const result = dryRun(task);
+
+      console.log(chalk.bold.cyan("Files to be created:"));
+      const seen = new Set<string>();
+      for (const effect of result.effects) {
+        if (effect._tag === "WriteFile") {
+          console.log(chalk.green(`  + ${effect.path}`));
+          seen.add(effect.path);
+        } else if (effect._tag === "MakeDir" && !seen.has(effect.path)) {
+          console.log(chalk.green(`  + ${effect.path}/`));
+          seen.add(effect.path);
+        }
+      }
+      console.log();
+      console.log(chalk.dim("Dry-run complete. No files were modified."));
+    } else {
+      // Interactive mode
+      // Only pass answers if:
+      // 1. User explicitly used --yes to skip prompts, OR
+      // 2. User provided CLI arguments (not just defaults)
+      const shouldSkipPrompts =
+        skipPrompts || Object.keys(cliAnswers).length > 0;
+      const passedAnswers = shouldSkipPrompts ? answersWithDefaults : undefined;
+
+      const { waitUntilExit } = render(
+        <App
+          generator={generator}
+          preview={cmdOptions.preview as boolean}
+          dryRunOnly={cmdOptions.dryRun as boolean}
+          answers={passedAnswers}
+        />,
+      );
+
+      await waitUntilExit();
+    }
+  });
+};
+
+/**
+ * Register all generator commands from the tree.
+ * Uses the barrel pattern: build flat list → sort by depth → register in order.
+ */
+const registerGeneratorCommands = async (
+  parentCmd: Command,
+  node: GeneratorNode,
+  _pathSegments: string[],
+): Promise<void> => {
+  const barrel = await buildCommandBarrel(node);
+  registerFromBarrel(parentCmd, barrel);
 };
 
 // Main CLI setup

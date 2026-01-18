@@ -319,7 +319,12 @@ export const runTask = async <A>(
         onEffectStart?.(effect);
         const startTime = performance.now();
 
-        const result = await executeEffect(effect, context, promptHandler, onLog);
+        const result = await executeEffect(
+          effect,
+          context,
+          promptHandler,
+          onLog,
+        );
 
         const duration = performance.now() - startTime;
         onEffectComplete?.(effect, duration);

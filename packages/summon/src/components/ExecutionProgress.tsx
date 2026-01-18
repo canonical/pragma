@@ -12,13 +12,20 @@ import { runTask } from "../interpreter.js";
 import type { Effect, Task, TaskError } from "../types.js";
 import { Spinner } from "./Spinner.js";
 
+/** Effect with timing information for the completion timeline */
+export interface TimedEffect {
+  effect: Effect;
+  /** Time in ms when this effect completed, relative to execution start */
+  timestamp: number;
+}
+
 export interface ExecutionProgressProps {
   /** The task to execute */
   task: Task<void>;
   /** Whether to run in dry-run mode */
   dryRun?: boolean;
   /** Called when execution completes */
-  onComplete: (effects: Effect[], duration: number) => void;
+  onComplete: (effects: TimedEffect[], duration: number) => void;
   /** Called when execution fails */
   onError: (error: TaskError) => void;
 }
@@ -27,6 +34,7 @@ interface CompletedEffect {
   id: number;
   effect: Effect;
   duration: number;
+  timestamp: number;
 }
 
 interface LogMessage {
@@ -34,6 +42,26 @@ interface LogMessage {
   level: "debug" | "info" | "warn" | "error";
   message: string;
 }
+
+/** Effects that should be hidden from the progress display (internal/noisy) */
+const isInternalEffect = (effect: Effect): boolean => {
+  // Hide internal coordination effects
+  if (
+    effect._tag === "Log" ||
+    effect._tag === "Exists" ||
+    effect._tag === "ReadContext" ||
+    effect._tag === "WriteContext" ||
+    effect._tag === "Parallel" ||
+    effect._tag === "Race"
+  ) {
+    return true;
+  }
+  // Hide template file reads (internal implementation detail)
+  if (effect._tag === "ReadFile" && effect.path.includes("/templates/")) {
+    return true;
+  }
+  return false;
+};
 
 export const ExecutionProgress: React.FC<ExecutionProgressProps> = ({
   task,
@@ -49,21 +77,39 @@ export const ExecutionProgress: React.FC<ExecutionProgressProps> = ({
   const [isRunning, setIsRunning] = useState(true);
 
   useEffect(() => {
-    const collectedEffects: Effect[] = [];
+    const collectedEffects: TimedEffect[] = [];
     const startTime = performance.now();
     let effectId = 0;
     let logId = 0;
+    // Track seen directory paths to deduplicate MakeDir effects in live progress
+    const seenDirPaths = new Set<string>();
 
     const executeWithProgress = async () => {
       try {
         await runTask(task, {
           onEffectStart: (effect) => {
+            // Skip showing duplicate MakeDir in spinner
+            if (effect._tag === "MakeDir" && seenDirPaths.has(effect.path)) {
+              return;
+            }
             setCurrentEffect(effect);
           },
           onEffectComplete: (effect, duration) => {
             const id = effectId++;
-            collectedEffects.push(effect);
-            setCompletedEffects((prev) => [...prev, { id, effect, duration }]);
+            const timestamp = performance.now() - startTime;
+            collectedEffects.push({ effect, timestamp });
+            // Skip duplicate MakeDir effects in live display
+            if (effect._tag === "MakeDir") {
+              if (seenDirPaths.has(effect.path)) {
+                setCurrentEffect(null);
+                return;
+              }
+              seenDirPaths.add(effect.path);
+            }
+            setCompletedEffects((prev) => [
+              ...prev,
+              { id, effect, duration, timestamp },
+            ]);
             setCurrentEffect(null);
           },
           onLog: (level, message) => {
@@ -130,16 +176,16 @@ export const ExecutionProgress: React.FC<ExecutionProgressProps> = ({
           <Text>{log.message}</Text>
         </Text>
       ))}
-      {/* Show completed file effects */}
+      {/* Show completed file effects (excluding internal/noisy effects) */}
       {completedEffects
-        .filter((item) => item.effect._tag !== "Log")
+        .filter((item) => !isInternalEffect(item.effect))
         .map((item) => (
           <Text key={`effect-${item.id}`}>
             <Text color="green">✓</Text> {describeEffect(item.effect)}{" "}
             <Text dimColor>({item.duration.toFixed(0)}ms)</Text>
           </Text>
         ))}
-      {currentEffect && (
+      {currentEffect && !isInternalEffect(currentEffect) && (
         <Box>
           <Spinner color="blue" />
           <Text> {describeEffect(currentEffect)}</Text>

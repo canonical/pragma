@@ -21,7 +21,6 @@ import {
   writeFileEffect,
 } from "../effect.js";
 import { pure } from "../task.js";
-import type { Effect } from "../types.js";
 
 // =============================================================================
 // File System Effect Constructors
@@ -48,7 +47,9 @@ describe("Effect Constructors - File System", () => {
 
     it("handles paths with special characters", () => {
       const effect = readFileEffect("/path/with spaces/file (1).txt");
-      expect((effect as { path: string }).path).toBe("/path/with spaces/file (1).txt");
+      expect((effect as { path: string }).path).toBe(
+        "/path/with spaces/file (1).txt",
+      );
     });
 
     it("handles paths with unicode characters", () => {
@@ -90,7 +91,10 @@ describe("Effect Constructors - File System", () => {
     });
 
     it("handles JSON content", () => {
-      const jsonContent = JSON.stringify({ key: "value", nested: { arr: [1, 2, 3] } });
+      const jsonContent = JSON.stringify({
+        key: "value",
+        nested: { arr: [1, 2, 3] },
+      });
       const effect = writeFileEffect("/data.json", jsonContent);
       expect((effect as { content: string }).content).toBe(jsonContent);
     });
@@ -112,9 +116,16 @@ describe("Effect Constructors - File System", () => {
     });
 
     it("handles cross-directory copy", () => {
-      const effect = copyFileEffect("/source/dir/file.txt", "/different/dest/file.txt");
-      expect((effect as { source: string }).source).toBe("/source/dir/file.txt");
-      expect((effect as { dest: string }).dest).toBe("/different/dest/file.txt");
+      const effect = copyFileEffect(
+        "/source/dir/file.txt",
+        "/different/dest/file.txt",
+      );
+      expect((effect as { source: string }).source).toBe(
+        "/source/dir/file.txt",
+      );
+      expect((effect as { dest: string }).dest).toBe(
+        "/different/dest/file.txt",
+      );
     });
   });
 
@@ -186,12 +197,16 @@ describe("Effect Constructors - File System", () => {
 
     it("handles complex glob patterns", () => {
       const effect = globEffect("**/*.{ts,tsx,js,jsx}", "/src");
-      expect((effect as { pattern: string }).pattern).toBe("**/*.{ts,tsx,js,jsx}");
+      expect((effect as { pattern: string }).pattern).toBe(
+        "**/*.{ts,tsx,js,jsx}",
+      );
     });
 
     it("handles negation patterns", () => {
       const effect = globEffect("!**/node_modules/**", "/project");
-      expect((effect as { pattern: string }).pattern).toBe("!**/node_modules/**");
+      expect((effect as { pattern: string }).pattern).toBe(
+        "!**/node_modules/**",
+      );
     });
   });
 });
@@ -225,7 +240,12 @@ describe("Effect Constructors - Process", () => {
     });
 
     it("handles multiple args", () => {
-      const effect = execEffect("git", ["commit", "-m", "Initial commit", "--no-verify"]);
+      const effect = execEffect("git", [
+        "commit",
+        "-m",
+        "Initial commit",
+        "--no-verify",
+      ]);
       expect((effect as { args: string[] }).args).toEqual([
         "commit",
         "-m",
@@ -236,7 +256,10 @@ describe("Effect Constructors - Process", () => {
 
     it("handles args with special characters", () => {
       const effect = execEffect("echo", ['Hello "World"', "$PATH"]);
-      expect((effect as { args: string[] }).args).toEqual(['Hello "World"', "$PATH"]);
+      expect((effect as { args: string[] }).args).toEqual([
+        'Hello "World"',
+        "$PATH",
+      ]);
     });
   });
 });
@@ -257,7 +280,9 @@ describe("Effect Constructors - Prompt", () => {
       const effect = promptEffect(question);
 
       expect(effect._tag).toBe("Prompt");
-      expect((effect as { question: typeof question }).question).toEqual(question);
+      expect((effect as { question: typeof question }).question).toEqual(
+        question,
+      );
     });
 
     it("creates a Prompt effect for confirm", () => {
@@ -270,7 +295,9 @@ describe("Effect Constructors - Prompt", () => {
       const effect = promptEffect(question);
 
       expect(effect._tag).toBe("Prompt");
-      expect((effect as { question: typeof question }).question.type).toBe("confirm");
+      expect((effect as { question: typeof question }).question.type).toBe(
+        "confirm",
+      );
     });
 
     it("creates a Prompt effect for select", () => {
@@ -288,7 +315,9 @@ describe("Effect Constructors - Prompt", () => {
       const effect = promptEffect(question);
 
       expect(effect._tag).toBe("Prompt");
-      expect((effect as { question: typeof question }).question.choices).toHaveLength(3);
+      expect(
+        (effect as { question: typeof question }).question.choices,
+      ).toHaveLength(3);
     });
 
     it("creates a Prompt effect for multiselect", () => {
@@ -306,7 +335,9 @@ describe("Effect Constructors - Prompt", () => {
       const effect = promptEffect(question);
 
       expect(effect._tag).toBe("Prompt");
-      expect((effect as { question: typeof question }).question.type).toBe("multiselect");
+      expect((effect as { question: typeof question }).question.type).toBe(
+        "multiselect",
+      );
     });
   });
 });
@@ -490,7 +521,9 @@ describe("Effect Utilities - describeEffect", () => {
 
   it("describes CopyDirectory effect", () => {
     const effect = copyDirectoryEffect("/source/dir", "/dest/dir");
-    expect(describeEffect(effect)).toBe("Copy directory: /source/dir → /dest/dir");
+    expect(describeEffect(effect)).toBe(
+      "Copy directory: /source/dir → /dest/dir",
+    );
   });
 
   it("describes DeleteFile effect", () => {
@@ -500,12 +533,16 @@ describe("Effect Utilities - describeEffect", () => {
 
   it("describes DeleteDirectory effect", () => {
     const effect = deleteDirectoryEffect("/path/to/delete/dir");
-    expect(describeEffect(effect)).toBe("Delete directory: /path/to/delete/dir");
+    expect(describeEffect(effect)).toBe(
+      "Delete directory: /path/to/delete/dir",
+    );
   });
 
   it("describes MakeDir effect with recursive", () => {
     const effect = makeDirEffect("/new/directory", true);
-    expect(describeEffect(effect)).toBe("Create directory: /new/directory (recursive)");
+    expect(describeEffect(effect)).toBe(
+      "Create directory: /new/directory (recursive)",
+    );
   });
 
   it("describes MakeDir effect without recursive", () => {
@@ -633,17 +670,21 @@ describe("Effect Utilities - isWriteEffect", () => {
 
 describe("Effect Utilities - getAffectedPaths", () => {
   it("returns path for ReadFile", () => {
-    expect(getAffectedPaths(readFileEffect("/path/file.txt"))).toEqual(["/path/file.txt"]);
-  });
-
-  it("returns path for WriteFile", () => {
-    expect(getAffectedPaths(writeFileEffect("/path/file.txt", "content"))).toEqual([
+    expect(getAffectedPaths(readFileEffect("/path/file.txt"))).toEqual([
       "/path/file.txt",
     ]);
   });
 
+  it("returns path for WriteFile", () => {
+    expect(
+      getAffectedPaths(writeFileEffect("/path/file.txt", "content")),
+    ).toEqual(["/path/file.txt"]);
+  });
+
   it("returns path for DeleteFile", () => {
-    expect(getAffectedPaths(deleteFileEffect("/path/file.txt"))).toEqual(["/path/file.txt"]);
+    expect(getAffectedPaths(deleteFileEffect("/path/file.txt"))).toEqual([
+      "/path/file.txt",
+    ]);
   });
 
   it("returns path for MakeDir", () => {
@@ -651,25 +692,27 @@ describe("Effect Utilities - getAffectedPaths", () => {
   });
 
   it("returns path for Exists", () => {
-    expect(getAffectedPaths(existsEffect("/path/to/check"))).toEqual(["/path/to/check"]);
+    expect(getAffectedPaths(existsEffect("/path/to/check"))).toEqual([
+      "/path/to/check",
+    ]);
   });
 
   it("returns source and dest for CopyFile", () => {
-    expect(getAffectedPaths(copyFileEffect("/source.txt", "/dest.txt"))).toEqual([
-      "/source.txt",
-      "/dest.txt",
-    ]);
+    expect(
+      getAffectedPaths(copyFileEffect("/source.txt", "/dest.txt")),
+    ).toEqual(["/source.txt", "/dest.txt"]);
   });
 
   it("returns source and dest for CopyDirectory", () => {
-    expect(getAffectedPaths(copyDirectoryEffect("/source/dir", "/dest/dir"))).toEqual([
-      "/source/dir",
-      "/dest/dir",
-    ]);
+    expect(
+      getAffectedPaths(copyDirectoryEffect("/source/dir", "/dest/dir")),
+    ).toEqual(["/source/dir", "/dest/dir"]);
   });
 
   it("returns path for DeleteDirectory", () => {
-    expect(getAffectedPaths(deleteDirectoryEffect("/path/dir"))).toEqual(["/path/dir"]);
+    expect(getAffectedPaths(deleteDirectoryEffect("/path/dir"))).toEqual([
+      "/path/dir",
+    ]);
   });
 
   it("returns cwd for Glob", () => {
@@ -715,7 +758,9 @@ describe("Effect Constructors - Edge Cases", () => {
   describe("Path handling", () => {
     it("handles Windows-style paths", () => {
       const effect = readFileEffect("C:\\Users\\name\\file.txt");
-      expect((effect as { path: string }).path).toBe("C:\\Users\\name\\file.txt");
+      expect((effect as { path: string }).path).toBe(
+        "C:\\Users\\name\\file.txt",
+      );
     });
 
     it("handles trailing slashes", () => {
@@ -760,7 +805,11 @@ describe("Effect Constructors - Edge Cases", () => {
     });
 
     it("handles args with equals sign", () => {
-      const effect = execEffect("npm", ["config", "set", "registry=https://npm.example.com"]);
+      const effect = execEffect("npm", [
+        "config",
+        "set",
+        "registry=https://npm.example.com",
+      ]);
       expect((effect as { args: string[] }).args).toContain(
         "registry=https://npm.example.com",
       );

@@ -60,7 +60,12 @@ export type PromptQuestion =
 export type Effect =
   | { _tag: "ReadFile"; path: string }
   | { _tag: "WriteFile"; path: string; content: string }
-  | { _tag: "AppendFile"; path: string; content: string; createIfMissing: boolean }
+  | {
+      _tag: "AppendFile";
+      path: string;
+      content: string;
+      createIfMissing: boolean;
+    }
   | { _tag: "CopyFile"; source: string; dest: string }
   | { _tag: "CopyDirectory"; source: string; dest: string }
   | { _tag: "DeleteFile"; path: string }
@@ -148,6 +153,12 @@ export interface GeneratorDefinition<TAnswers = Record<string, unknown>> {
   prompts: PromptDefinition[];
   generate: (answers: TAnswers) => Task<void>;
 }
+
+/**
+ * A generator definition without type parameters, used in barrels/collections.
+ * Generators with any answer type can be assigned to this.
+ */
+export type AnyGenerator = GeneratorDefinition<Record<string, unknown>>;
 
 // =============================================================================
 // Task Event Types (for RxJS integration / progress reporting)

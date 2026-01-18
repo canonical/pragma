@@ -64,14 +64,17 @@ describe("Combinators - Sequencing", () => {
     it("preserves order", () => {
       const tasks = [pure("a"), pure("b"), pure("c"), pure("d"), pure("e")];
       const t = sequence(tasks);
-      expect((t as { value: string[] }).value).toEqual(["a", "b", "c", "d", "e"]);
+      expect((t as { value: string[] }).value).toEqual([
+        "a",
+        "b",
+        "c",
+        "d",
+        "e",
+      ]);
     });
 
     it("handles tasks with effects", () => {
-      const tasks = [
-        writeFile("/a.txt", "a"),
-        writeFile("/b.txt", "b"),
-      ];
+      const tasks = [writeFile("/a.txt", "a"), writeFile("/b.txt", "b")];
       const { effects } = dryRun(sequence(tasks));
 
       expect(effects.length).toBe(2);
@@ -160,7 +163,9 @@ describe("Combinators - Sequencing", () => {
     it("short-circuits on failure", () => {
       const error: TaskError = { code: "ERR", message: "failed" };
       const items = [1, 2, 3];
-      const t = traverse(items, (x) => (x === 2 ? fail<number>(error) : pure(x)));
+      const t = traverse(items, (x) =>
+        x === 2 ? fail<number>(error) : pure(x),
+      );
 
       expect(t._tag).toBe("Fail");
     });
@@ -177,9 +182,9 @@ describe("Combinators - Sequencing", () => {
   describe("traverse_", () => {
     it("applies function to each element and discards results", () => {
       const items = ["a", "b", "c"];
-      let count = 0;
+      let _count = 0;
       const t = traverse_(items, (_item) => {
-        count++;
+        _count++;
         return pure(undefined);
       });
 
@@ -544,7 +549,10 @@ describe("Combinators - Resource Management", () => {
     });
 
     it("propagates acquire failure without running use or release", () => {
-      const error: TaskError = { code: "ACQUIRE_ERR", message: "acquire failed" };
+      const error: TaskError = {
+        code: "ACQUIRE_ERR",
+        message: "acquire failed",
+      };
       const acquire = fail<string>(error);
       const use = (_r: string) => pure(42);
       const release = (_r: string) => pure(undefined);
@@ -586,7 +594,10 @@ describe("Combinators - Resource Management", () => {
 
     it("cleanup failure does not override main task failure", () => {
       const mainError: TaskError = { code: "MAIN_ERR", message: "main" };
-      const cleanupError: TaskError = { code: "CLEANUP_ERR", message: "cleanup" };
+      const cleanupError: TaskError = {
+        code: "CLEANUP_ERR",
+        message: "cleanup",
+      };
       const t = ensure(fail<number>(mainError), fail<void>(cleanupError));
 
       // When both main and cleanup fail, one of them propagates
@@ -617,7 +628,10 @@ describe("Combinators - Utility", () => {
     });
 
     it("propagates failure from side effect", () => {
-      const error: TaskError = { code: "SIDE_ERR", message: "side effect failed" };
+      const error: TaskError = {
+        code: "SIDE_ERR",
+        message: "side effect failed",
+      };
       const t = tap(pure(42), () => fail<void>(error));
 
       expect(t._tag).toBe("Fail");
@@ -723,7 +737,11 @@ describe("Combinators - Utility", () => {
   describe("zip3", () => {
     it("combines three tasks into a tuple", () => {
       const t = zip3(pure(1), pure("a"), pure(true));
-      expect((t as { value: [number, string, boolean] }).value).toEqual([1, "a", true]);
+      expect((t as { value: [number, string, boolean] }).value).toEqual([
+        1,
+        "a",
+        true,
+      ]);
     });
 
     it("propagates any failure", () => {
@@ -794,10 +812,7 @@ describe("Combinators - Integration", () => {
   it("can use bracket for resource management", () => {
     const createTempFile = writeFile("/tmp/lock", "locked");
     const useTempFile = () =>
-      sequence_([
-        info("Using temp file"),
-        writeFile("/output.txt", "data"),
-      ]);
+      sequence_([info("Using temp file"), writeFile("/output.txt", "data")]);
     const cleanupTempFile = () => writeFile("/tmp/lock", "");
 
     const t = bracket(createTempFile, useTempFile, cleanupTempFile);

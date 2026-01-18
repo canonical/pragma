@@ -28,7 +28,6 @@ import {
   withContext,
   writeFile,
 } from "../primitives.js";
-import type { Effect } from "../types.js";
 
 // =============================================================================
 // File System Primitives
@@ -55,7 +54,9 @@ describe("Primitives - File System", () => {
     it("handles absolute paths", () => {
       const task = readFile("/absolute/path/file.ts");
       const { effects } = dryRun(task);
-      expect((effects[0] as { path: string }).path).toBe("/absolute/path/file.ts");
+      expect((effects[0] as { path: string }).path).toBe(
+        "/absolute/path/file.ts",
+      );
     });
 
     it("handles relative paths", () => {
@@ -67,7 +68,9 @@ describe("Primitives - File System", () => {
     it("handles paths with spaces", () => {
       const task = readFile("/path/with spaces/file.txt");
       const { effects } = dryRun(task);
-      expect((effects[0] as { path: string }).path).toBe("/path/with spaces/file.txt");
+      expect((effects[0] as { path: string }).path).toBe(
+        "/path/with spaces/file.txt",
+      );
     });
   });
 
@@ -211,7 +214,9 @@ describe("Primitives - File System", () => {
     it("handles complex glob patterns", () => {
       const task = glob("**/*.{ts,tsx,js,jsx}", "/project");
       const { effects } = dryRun(task);
-      expect((effects[0] as { pattern: string }).pattern).toBe("**/*.{ts,tsx,js,jsx}");
+      expect((effects[0] as { pattern: string }).pattern).toBe(
+        "**/*.{ts,tsx,js,jsx}",
+      );
     });
 
     it("returns empty array by default in dry run", () => {
@@ -252,7 +257,12 @@ describe("Primitives - Process", () => {
     });
 
     it("handles multiple args", () => {
-      const task = exec("git", ["commit", "-m", "feat: add feature", "--no-verify"]);
+      const task = exec("git", [
+        "commit",
+        "-m",
+        "feat: add feature",
+        "--no-verify",
+      ]);
       const { effects } = dryRun(task);
       expect((effects[0] as { args: string[] }).args).toEqual([
         "commit",
@@ -291,7 +301,11 @@ describe("Primitives - Process", () => {
       const task = execSimple("git commit -m message");
       const { effects } = dryRun(task);
       expect((effects[0] as { command: string }).command).toBe("git");
-      expect((effects[0] as { args: string[] }).args).toEqual(["commit", "-m", "message"]);
+      expect((effects[0] as { args: string[] }).args).toEqual([
+        "commit",
+        "-m",
+        "message",
+      ]);
     });
 
     it("works with cwd parameter", () => {
@@ -331,7 +345,16 @@ describe("Primitives - Prompt", () => {
 
       expect(effects.length).toBe(1);
       expect(effects[0]._tag).toBe("Prompt");
-      const question = (effects[0] as { question: { type: string; name: string; message: string; default?: string } }).question;
+      const question = (
+        effects[0] as {
+          question: {
+            type: string;
+            name: string;
+            message: string;
+            default?: string;
+          };
+        }
+      ).question;
       expect(question.type).toBe("text");
       expect(question.name).toBe("name");
       expect(question.message).toBe("What is your name?");
@@ -341,7 +364,8 @@ describe("Primitives - Prompt", () => {
     it("works without default value", () => {
       const task = promptText("name", "What is your name?");
       const { effects } = dryRun(task);
-      const question = (effects[0] as { question: { default?: string } }).question;
+      const question = (effects[0] as { question: { default?: string } })
+        .question;
       expect(question.default).toBeUndefined();
     });
 
@@ -365,7 +389,11 @@ describe("Primitives - Prompt", () => {
 
       expect(effects.length).toBe(1);
       expect(effects[0]._tag).toBe("Prompt");
-      const question = (effects[0] as { question: { type: string; name: string; default?: boolean } }).question;
+      const question = (
+        effects[0] as {
+          question: { type: string; name: string; default?: boolean };
+        }
+      ).question;
       expect(question.type).toBe("confirm");
       expect(question.name).toBe("proceed");
       expect(question.default).toBe(true);
@@ -374,7 +402,8 @@ describe("Primitives - Prompt", () => {
     it("defaults to false", () => {
       const task = promptConfirm("proceed", "Continue?");
       const { effects } = dryRun(task);
-      const question = (effects[0] as { question: { default?: boolean } }).question;
+      const question = (effects[0] as { question: { default?: boolean } })
+        .question;
       expect(question.default).toBe(false);
     });
 
@@ -403,7 +432,11 @@ describe("Primitives - Prompt", () => {
 
       expect(effects.length).toBe(1);
       expect(effects[0]._tag).toBe("Prompt");
-      const question = (effects[0] as { question: { type: string; choices: typeof choices; default?: string } }).question;
+      const question = (
+        effects[0] as {
+          question: { type: string; choices: typeof choices; default?: string };
+        }
+      ).question;
       expect(question.type).toBe("select");
       expect(question.choices).toEqual(choices);
       expect(question.default).toBe("b");
@@ -437,12 +470,23 @@ describe("Primitives - Prompt", () => {
         { label: "ESLint", value: "eslint" },
         { label: "Prettier", value: "prettier" },
       ];
-      const task = promptMultiselect("features", "Select features:", choices, ["ts", "prettier"]);
+      const task = promptMultiselect("features", "Select features:", choices, [
+        "ts",
+        "prettier",
+      ]);
       const { effects } = dryRun(task);
 
       expect(effects.length).toBe(1);
       expect(effects[0]._tag).toBe("Prompt");
-      const question = (effects[0] as { question: { type: string; choices: typeof choices; default?: string[] } }).question;
+      const question = (
+        effects[0] as {
+          question: {
+            type: string;
+            choices: typeof choices;
+            default?: string[];
+          };
+        }
+      ).question;
       expect(question.type).toBe("multiselect");
       expect(question.choices).toEqual(choices);
       expect(question.default).toEqual(["ts", "prettier"]);
@@ -483,7 +527,9 @@ describe("Primitives - Logging", () => {
       expect(effects.length).toBe(1);
       expect(effects[0]._tag).toBe("Log");
       expect((effects[0] as { level: string }).level).toBe("warn");
-      expect((effects[0] as { message: string }).message).toBe("Warning message");
+      expect((effects[0] as { message: string }).message).toBe(
+        "Warning message",
+      );
     });
   });
 
@@ -516,7 +562,9 @@ describe("Primitives - Logging", () => {
 
       expect(effects.length).toBe(1);
       expect((effects[0] as { level: string }).level).toBe("warn");
-      expect((effects[0] as { message: string }).message).toBe("Warning message");
+      expect((effects[0] as { message: string }).message).toBe(
+        "Warning message",
+      );
     });
   });
 
@@ -704,7 +752,9 @@ describe("Primitives - Edge Cases", () => {
     it("handles Windows-style paths", () => {
       const task = readFile("C:\\Users\\name\\file.txt");
       const { effects } = dryRun(task);
-      expect((effects[0] as { path: string }).path).toBe("C:\\Users\\name\\file.txt");
+      expect((effects[0] as { path: string }).path).toBe(
+        "C:\\Users\\name\\file.txt",
+      );
     });
 
     it("handles paths with trailing slash", () => {
@@ -725,7 +775,9 @@ describe("Primitives - Edge Cases", () => {
       const largeContent = "x".repeat(1_000_000);
       const task = writeFile("/large.txt", largeContent);
       const { effects } = dryRun(task);
-      expect((effects[0] as { content: string }).content.length).toBe(1_000_000);
+      expect((effects[0] as { content: string }).content.length).toBe(
+        1_000_000,
+      );
     });
 
     it("handles content with null characters", () => {
@@ -746,7 +798,10 @@ describe("Primitives - Edge Cases", () => {
     it("handles arguments with spaces", () => {
       const task = exec("echo", ["hello world", "foo bar"]);
       const { effects } = dryRun(task);
-      expect((effects[0] as { args: string[] }).args).toEqual(["hello world", "foo bar"]);
+      expect((effects[0] as { args: string[] }).args).toEqual([
+        "hello world",
+        "foo bar",
+      ]);
     });
 
     it("handles empty command in execSimple", () => {
