@@ -65,6 +65,8 @@ export {
 // =============================================================================
 
 export {
+  // File system effects
+  appendFileEffect,
   copyDirectoryEffect,
   copyFileEffect,
   deleteDirectoryEffect,
@@ -87,7 +89,6 @@ export {
   raceEffect,
   // Context effects
   readContextEffect,
-  // File system effects
   readFileEffect,
   writeContextEffect,
   writeFileEffect,
@@ -98,6 +99,8 @@ export {
 // =============================================================================
 
 export {
+  // File system primitives
+  appendFile,
   copyDirectory,
   copyFile,
   debug,
@@ -123,7 +126,6 @@ export {
   promptMultiselect,
   promptSelect,
   promptText,
-  // File system primitives
   readFile,
   setContext,
   succeed,

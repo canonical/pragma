@@ -6,6 +6,7 @@
  */
 
 import {
+  appendFileEffect,
   copyDirectoryEffect,
   copyFileEffect,
   deleteDirectoryEffect,
@@ -39,6 +40,18 @@ export const readFile = (path: string): Task<string> =>
  */
 export const writeFile = (path: string, content: string): Task<void> =>
   effect(writeFileEffect(path, content));
+
+/**
+ * Append content to a file.
+ * @param path - Path to the file
+ * @param content - Content to append
+ * @param createIfMissing - Create the file if it doesn't exist (default: true)
+ */
+export const appendFile = (
+  path: string,
+  content: string,
+  createIfMissing = true,
+): Task<void> => effect(appendFileEffect(path, content, createIfMissing));
 
 /**
  * Copy a file from source to destination.

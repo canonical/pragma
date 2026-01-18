@@ -209,7 +209,8 @@ export default generator;
 ```typescript
 import {
   readFile,      // Read file contents
-  writeFile,     // Write file
+  writeFile,     // Write file (creates if not exists)
+  appendFile,    // Append to file (creates if not exists)
   copyFile,      // Copy file
   copyDirectory, // Copy directory recursively
   deleteFile,    // Delete file
@@ -218,6 +219,9 @@ import {
   exists,        // Check if path exists
   glob,          // Find files matching pattern
 } from "@canonical/summon";
+
+// appendFile is great for barrel files (index.ts exports)
+appendFile("src/index.ts", `export * from "./${name}.js";\n`);
 ```
 
 #### Process
@@ -298,11 +302,22 @@ templateDir({
 
 ### Testing Generators
 
-Generators are pure and testable without mocking:
+Generators are pure and testable without mocking. Summon uses [Vitest](https://vitest.dev) for testing:
+
+```bash
+# Run tests
+bun run test
+
+# Watch mode for development
+bun run test:watch
+
+# With coverage report
+bun run test:coverage
+```
 
 ```typescript
-import { describe, expect, it } from "bun:test";
-import { dryRun, expectTask, getAffectedFiles } from "@canonical/summon";
+import { describe, expect, it } from "vitest";
+import { dryRun, expectTask, getAffectedFiles, filterEffects } from "@canonical/summon";
 import { generator } from "./index";
 
 describe("my-generator", () => {
@@ -329,7 +344,71 @@ describe("my-generator", () => {
     matcher.toWriteFile("Button/index.ts");
     matcher.toNotWriteFile("Button/index.test.ts");
   });
+
+  it("verifies file content", () => {
+    const task = generator.generate({
+      name: "Button",
+      withTests: true,
+    });
+
+    const { effects } = dryRun(task);
+    const writes = filterEffects(effects, "WriteFile");
+
+    const indexFile = writes.find((w) => w.path.endsWith("index.ts"));
+    expect(indexFile?.content).toContain("export const Button");
+  });
 });
+```
+
+#### Testing Utilities
+
+Summon provides comprehensive testing utilities:
+
+```typescript
+import {
+  dryRun,              // Execute task collecting effects
+  dryRunWithContext,   // Execute with initial context
+  expectTask,          // Fluent assertion helper
+  collectEffects,      // Get all effects from a task
+  countEffects,        // Count effects by type
+  filterEffects,       // Filter effects by type
+  hasEffect,           // Check if effect exists
+  getFileWrites,       // Get write operations
+  getAffectedFiles,    // Get unique affected paths
+  createTestContext,   // Create context for testing
+} from "@canonical/summon";
+```
+
+#### expectTask Matchers
+
+The `expectTask` helper provides fluent assertions:
+
+```typescript
+const matcher = expectTask(task);
+
+// Value assertions
+matcher.toHaveValue(42);
+matcher.toBeSuccessful();
+matcher.toBeFailed("ERR_CODE");
+
+// Effect assertions
+matcher.toHaveEffect("WriteFile");
+matcher.toHaveEffectCount(5);
+
+// File assertions
+matcher.toWriteFile("/output/file.txt");
+matcher.toWriteFile("/output/file.txt", "expected content");
+matcher.toNotWriteFile("/unwanted/file.txt");
+matcher.toReadFile("/input/file.txt");
+matcher.toMakeDirectory("/output");
+
+// Command assertions
+matcher.toExecute("npm");
+matcher.toExecute("npm", ["install", "--save-dev"]);
+
+// Log assertions
+matcher.toLog("Creating files...");
+matcher.toLog("Warning!", "warn");
 ```
 
 ## CLI Flags
@@ -540,16 +619,28 @@ await run(task);
 
 ### hello (Demo)
 
-A demo generator showcasing Summon features:
+A simple demo generator showcasing basic Summon features:
 
 ```bash
-# Interactive
+# Zero-config: interactive prompts with sensible defaults
 summon hello
 
-# With flags
-summon --dry-run hello --name=my-project --greeting=Hello --withReadme
+# Minimal: just specify the name, defaults for the rest
+summon hello --name=my-app
 
-# See help
+# Partial: customize specific options
+summon hello --name=my-app --greeting=Hey
+
+# Skip optional files
+summon hello --name=my-app --no-with-readme
+
+# Preview what would be generated
+summon hello --dry-run
+
+# Full non-interactive (CI/scripting)
+summon hello --name=demo --greeting=Hello --description='A demo' --yes
+
+# See all options
 summon hello --help
 ```
 
@@ -558,7 +649,56 @@ This generator demonstrates:
 - Conditional file generation with `when()`
 - Sequential composition with `sequence_()`
 
-Use it as a reference when building your own generators.
+### webapp (Advanced Demo)
+
+A comprehensive demo generator showcasing the full power of Summon:
+
+```bash
+# Zero-config: uses all defaults, shows interactive prompts
+summon webapp
+
+# Minimal: just the project name
+summon webapp --name=my-app
+
+# Partial: specify stack choices
+summon webapp --name=my-app --framework=react --styling=tailwind
+
+# Add feature modules
+summon webapp --name=my-app --features=router,state,api
+
+# Full non-interactive (CI/scripting)
+summon webapp --name=my-app --framework=react --styling=tailwind \
+  --features=router,state --no-with-docs --yes
+
+# Preview without writing files
+summon webapp --dry-run
+
+# See all options with groups
+summon webapp --help
+```
+
+This generator demonstrates:
+
+**Effects:**
+- File Operations: `readFile`, `writeFile`, `copyFile`, `mkdir`, `exists`
+- Process Execution: `exec` (npm/bun commands)
+- Logging: `info`, `warn`, `debug`
+- Context: `getContext`, `setContext` (for passing data between tasks)
+
+**Combinators:**
+- `sequence_`: Sequential task composition
+- `parallel`: Concurrent task execution
+- `traverse_`: Mapping over arrays with tasks
+- `when`/`ifElse`: Conditional task execution
+- `orElse`: Error recovery with fallbacks
+- `flatMap`/`map`: Monadic composition
+
+**Templates:**
+- EJS templates with `withHelpers` (camelCase, pascalCase, etc.)
+- Conditional template sections
+- Dynamic content based on answers
+
+Use this as a reference when building complex generators.
 
 ## Combinators Reference
 

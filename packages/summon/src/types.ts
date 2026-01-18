@@ -60,6 +60,7 @@ export type PromptQuestion =
 export type Effect =
   | { _tag: "ReadFile"; path: string }
   | { _tag: "WriteFile"; path: string; content: string }
+  | { _tag: "AppendFile"; path: string; content: string; createIfMissing: boolean }
   | { _tag: "CopyFile"; source: string; dest: string }
   | { _tag: "CopyDirectory"; source: string; dest: string }
   | { _tag: "DeleteFile"; path: string }
@@ -135,6 +136,11 @@ export interface PromptDefinition {
   choices?: Array<{ label: string; value: string }>;
   when?: (answers: Record<string, unknown>) => boolean;
   validate?: (value: unknown) => boolean | string;
+  /**
+   * Group name for organizing options in --help output.
+   * Options without a group appear under "Options".
+   */
+  group?: string;
 }
 
 export interface GeneratorDefinition<TAnswers = Record<string, unknown>> {

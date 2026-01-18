@@ -482,52 +482,189 @@ const applyDefaults = (
 // =============================================================================
 
 /**
- * Add prompt-based options to a Commander command.
+ * Build option info for a prompt (flags, description, default).
  */
-const addPromptOptions = (cmd: Command, prompts: PromptDefinition[]): void => {
-  for (const prompt of prompts) {
-    const flagName = `--${prompt.name}`;
+interface OptionInfo {
+  flags: string;
+  description: string;
+  defaultValue?: string;
+  group?: string;
+  /** The original camelCase prompt name */
+  promptName: string;
+  /** The kebab-case flag name (without --) */
+  kebabName: string;
+}
 
-    switch (prompt.type) {
-      case "confirm": {
-        // Boolean: --flag / --no-flag
-        const defaultVal = prompt.default === true;
-        if (defaultVal) {
-          cmd.option(`--no-${prompt.name}`, prompt.message);
-        } else {
-          cmd.option(flagName, prompt.message);
-        }
-        break;
+/**
+ * Convert camelCase to kebab-case.
+ * withTests -> with-tests
+ * installDeps -> install-deps
+ */
+const toKebabCase = (str: string): string =>
+  str.replace(/([a-z])([A-Z])/g, "$1-$2").toLowerCase();
+
+/**
+ * Convert kebab-case to camelCase.
+ * with-tests -> withTests
+ * install-deps -> installDeps
+ */
+const toCamelCase = (str: string): string =>
+  str.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
+
+const buildOptionInfo = (prompt: PromptDefinition): OptionInfo => {
+  const kebabName = toKebabCase(prompt.name);
+  const flagName = `--${kebabName}`;
+
+  switch (prompt.type) {
+    case "confirm": {
+      const defaultVal = prompt.default === true;
+      if (defaultVal) {
+        return {
+          flags: `--no-${kebabName}`,
+          description: `${prompt.message}`,
+          group: prompt.group,
+          promptName: prompt.name,
+          kebabName,
+        };
       }
-      case "select": {
-        // Select: --flag <value> with choices in description
-        const choices = prompt.choices?.map((c) => c.value).join("|") ?? "";
-        const desc = `${prompt.message} [${choices}]`;
-        cmd.option(`${flagName} <value>`, desc, prompt.default as string);
-        break;
-      }
-      case "multiselect": {
-        // Multiselect: --flag <values> (comma-separated)
-        const desc = `${prompt.message} (comma-separated)`;
-        cmd.option(`${flagName} <values>`, desc);
-        break;
-      }
-      case "text":
-      default: {
-        // Text: --flag <value>
-        cmd.option(
-          `${flagName} <value>`,
-          prompt.message,
-          prompt.default as string,
-        );
-        break;
-      }
+      return {
+        flags: flagName,
+        description: `${prompt.message}`,
+        group: prompt.group,
+        promptName: prompt.name,
+        kebabName,
+      };
+    }
+    case "select": {
+      const choices = prompt.choices?.map((c) => c.value).join("|") ?? "";
+      return {
+        flags: `${flagName} <value>`,
+        description: `${prompt.message} [${choices}]`,
+        defaultValue: prompt.default as string,
+        group: prompt.group,
+        promptName: prompt.name,
+        kebabName,
+      };
+    }
+    case "multiselect": {
+      return {
+        flags: `${flagName} <values>`,
+        description: `${prompt.message} (comma-separated)`,
+        group: prompt.group,
+        promptName: prompt.name,
+        kebabName,
+      };
+    }
+    case "text":
+    default: {
+      return {
+        flags: `${flagName} <value>`,
+        description: `${prompt.message}`,
+        defaultValue: prompt.default as string,
+        group: prompt.group,
+        promptName: prompt.name,
+        kebabName,
+      };
     }
   }
 };
 
 /**
+ * Add prompt-based options to a Commander command.
+ */
+const addPromptOptions = (cmd: Command, prompts: PromptDefinition[]): void => {
+  for (const prompt of prompts) {
+    const info = buildOptionInfo(prompt);
+    cmd.option(info.flags, info.description, info.defaultValue);
+  }
+};
+
+/**
+ * Configure custom help with grouped options for a command.
+ */
+const configureGroupedHelp = (
+  cmd: Command,
+  prompts: PromptDefinition[],
+): void => {
+  // Collect option info by group
+  const groups = new Map<string, OptionInfo[]>();
+  const defaultGroupName = "Generator Options";
+
+  for (const prompt of prompts) {
+    const info = buildOptionInfo(prompt);
+    const groupName = info.group ?? defaultGroupName;
+    if (!groups.has(groupName)) {
+      groups.set(groupName, []);
+    }
+    groups.get(groupName)!.push(info);
+  }
+
+  // Only configure custom help if there are grouped options
+  if (groups.size <= 1 && !prompts.some((p) => p.group)) {
+    return;
+  }
+
+  // Override help output using configureHelp
+  cmd.configureHelp({
+    formatHelp: (cmd, helper) => {
+      const termWidth = 28; // Fixed width for option flags column
+
+      const formatItem = (
+        term: string,
+        description: string,
+        defaultVal?: string,
+      ): string => {
+        const fullDesc = defaultVal
+          ? `${description} (default: ${JSON.stringify(defaultVal)})`
+          : description;
+
+        if (description) {
+          const padding = " ".repeat(Math.max(termWidth - term.length, 2));
+          return `  ${term}${padding}${fullDesc}`;
+        }
+        return `  ${term}`;
+      };
+
+      let output = "";
+
+      // Usage
+      output += `Usage: ${helper.commandUsage(cmd)}\n`;
+
+      // Description
+      const desc = helper.commandDescription(cmd);
+      if (desc) {
+        output += `\n${desc}\n`;
+      }
+
+      // Built-in options (Global Options group)
+      output += "\nGlobal Options:\n";
+      output += formatItem("-d, --dry-run", "Preview without writing files");
+      output += "\n";
+      output += formatItem("-y, --yes", "Skip confirmation prompts");
+      output += "\n";
+      output += formatItem("--no-preview", "Skip the file preview");
+      output += "\n";
+      output += formatItem("-h, --help", "display help for command");
+      output += "\n";
+
+      // Grouped prompt options
+      for (const [groupName, options] of groups) {
+        output += `\n${groupName}:\n`;
+        for (const opt of options) {
+          output += formatItem(opt.flags, opt.description, opt.defaultValue);
+          output += "\n";
+        }
+      }
+
+      return output;
+    },
+  });
+};
+
+/**
  * Extract answers from Commander options based on prompts.
+ * Commander converts kebab-case flags to camelCase option keys automatically,
+ * so --with-tests becomes options.withTests.
  */
 const extractAnswers = (
   options: Record<string, unknown>,
@@ -536,6 +673,7 @@ const extractAnswers = (
   const answers: Record<string, unknown> = {};
 
   for (const prompt of prompts) {
+    // Commander auto-converts kebab-case to camelCase, so we can use the prompt name directly
     const value = options[prompt.name];
 
     if (value !== undefined) {
@@ -584,6 +722,9 @@ const registerGeneratorCommands = async (
 
         // Add prompt-based options
         addPromptOptions(cmd, generator.prompts);
+
+        // Configure grouped help display
+        configureGroupedHelp(cmd, generator.prompts);
 
         // Add action
         cmd.action(async (cmdOptions: Record<string, unknown>) => {

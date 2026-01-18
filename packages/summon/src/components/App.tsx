@@ -13,6 +13,236 @@ import { FileTreePreview } from "./FileTreePreview.js";
 import { PromptSequence } from "./PromptSequence.js";
 import { Spinner } from "./Spinner.js";
 
+// =============================================================================
+// Effect Tree - Hierarchical display with action labels and tree connectors
+// =============================================================================
+
+interface GroupedEffects {
+  files: Effect[];
+  directories: Effect[];
+  commands: Effect[];
+  logs: Effect[];
+}
+
+/**
+ * Group effects by category for display.
+ */
+const groupEffects = (effects: Effect[]): GroupedEffects => {
+  const groups: GroupedEffects = {
+    files: [],
+    directories: [],
+    commands: [],
+    logs: [],
+  };
+
+  for (const effect of effects) {
+    switch (effect._tag) {
+      case "WriteFile":
+      case "AppendFile":
+      case "CopyFile":
+      case "CopyDirectory":
+      case "DeleteFile":
+        groups.files.push(effect);
+        break;
+      case "MakeDir":
+      case "DeleteDirectory":
+        groups.directories.push(effect);
+        break;
+      case "Exec":
+        groups.commands.push(effect);
+        break;
+      case "Log":
+        // Filter out debug logs
+        if (effect.level !== "debug") {
+          groups.logs.push(effect);
+        }
+        break;
+      // Ignore internal effects: ReadFile, Exists, Glob, ReadContext, WriteContext, Parallel, Race
+    }
+  }
+
+  return groups;
+};
+
+/**
+ * Get human-readable action label for an effect.
+ */
+const getActionLabel = (effect: Effect): string => {
+  switch (effect._tag) {
+    case "WriteFile":
+      return "Created file";
+    case "AppendFile":
+      return "Appended to";
+    case "MakeDir":
+      return "Created dir";
+    case "CopyFile":
+      return "Copied file";
+    case "CopyDirectory":
+      return "Copied dir";
+    case "DeleteFile":
+      return "Deleted file";
+    case "DeleteDirectory":
+      return "Deleted dir";
+    case "Exec":
+      return "Executed";
+    case "Log":
+      switch (effect.level) {
+        case "info":
+          return "Info";
+        case "warn":
+          return "Warning";
+        case "error":
+          return "Error";
+        default:
+          return "Log";
+      }
+    default:
+      return effect._tag;
+  }
+};
+
+/**
+ * Get color for action label based on effect type.
+ */
+const getActionColor = (
+  effect: Effect,
+): "green" | "red" | "yellow" | "cyan" | "blue" | "magenta" | undefined => {
+  switch (effect._tag) {
+    case "WriteFile":
+    case "MakeDir":
+      return "green";
+    case "AppendFile":
+      return "magenta";
+    case "DeleteFile":
+    case "DeleteDirectory":
+      return "red";
+    case "CopyFile":
+    case "CopyDirectory":
+      return "cyan";
+    case "Exec":
+      return "yellow";
+    case "Log":
+      return effect.level === "error"
+        ? "red"
+        : effect.level === "warn"
+          ? "yellow"
+          : "blue";
+    default:
+      return undefined;
+  }
+};
+
+/**
+ * Get the payload (description) for an effect.
+ */
+const getEffectPayload = (effect: Effect): string => {
+  switch (effect._tag) {
+    case "WriteFile":
+      return effect.path;
+    case "AppendFile":
+      return effect.path;
+    case "MakeDir":
+      return effect.path;
+    case "CopyFile":
+      return `${effect.source} → ${effect.dest}`;
+    case "CopyDirectory":
+      return `${effect.source}/ → ${effect.dest}/`;
+    case "DeleteFile":
+    case "DeleteDirectory":
+      return effect.path;
+    case "Exec":
+      return `${effect.command} ${effect.args.join(" ")}`;
+    case "Log":
+      return effect.message;
+    default:
+      return effect._tag;
+  }
+};
+
+// Fixed width for action label column (padded to align payloads)
+const ACTION_LABEL_WIDTH = 14;
+
+/**
+ * Render a single effect as a tree row with action label and payload.
+ */
+const EffectTreeRow = ({
+  effect,
+  isLast,
+}: {
+  effect: Effect;
+  isLast: boolean;
+}) => {
+  const connector = isLast ? "└─" : "├─";
+  const actionLabel = getActionLabel(effect);
+  const color = getActionColor(effect);
+  const payload = getEffectPayload(effect);
+
+  return (
+    <Box>
+      <Text dimColor>{connector} </Text>
+      <Text color={color}>{actionLabel.padEnd(ACTION_LABEL_WIDTH)}</Text>
+      <Text>{payload}</Text>
+    </Box>
+  );
+};
+
+/**
+ * Render a section of the effect tree (e.g., Files, Directories).
+ */
+const EffectTreeSection = ({
+  title,
+  effects,
+}: {
+  title: string;
+  effects: Effect[];
+}) => {
+  if (effects.length === 0) {
+    return null;
+  }
+
+  return (
+    <Box flexDirection="column" marginTop={1}>
+      <Text bold dimColor>
+        {title}:
+      </Text>
+      <Box flexDirection="column" marginLeft={1}>
+        {effects.map((effect, index) => (
+          <EffectTreeRow
+            key={`${effect._tag}-${index}`}
+            effect={effect}
+            isLast={index === effects.length - 1}
+          />
+        ))}
+      </Box>
+    </Box>
+  );
+};
+
+/**
+ * Render a tree view of completed effects, grouped by category.
+ */
+const EffectTree = ({ effects }: { effects: Effect[] }) => {
+  const groups = groupEffects(effects);
+  const hasAnyEffects =
+    groups.files.length > 0 ||
+    groups.directories.length > 0 ||
+    groups.commands.length > 0 ||
+    groups.logs.length > 0;
+
+  if (!hasAnyEffects) {
+    return null;
+  }
+
+  return (
+    <Box flexDirection="column">
+      <EffectTreeSection title="Files" effects={groups.files} />
+      <EffectTreeSection title="Directories" effects={groups.directories} />
+      <EffectTreeSection title="Commands" effects={groups.commands} />
+      <EffectTreeSection title="Logs" effects={groups.logs} />
+    </Box>
+  );
+};
+
 /**
  * Summarize effects into a human-readable string.
  * Deduplicates paths to avoid counting the same directory multiple times.
@@ -234,6 +464,7 @@ export const App = ({
           <Box>
             <Text color="green">✓ Generation complete!</Text>
           </Box>
+          <EffectTree effects={state.effects} />
           <Box marginTop={1}>
             <Text dimColor>
               {summarizeEffects(state.effects)} in {state.duration.toFixed(0)}ms

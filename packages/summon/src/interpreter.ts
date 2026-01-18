@@ -55,6 +55,22 @@ export const executeEffect = async (
       return undefined;
     }
 
+    case "AppendFile": {
+      const dir = path.dirname(effect.path);
+      await fs.mkdir(dir, { recursive: true });
+      if (effect.createIfMissing) {
+        // Create file if it doesn't exist, then append
+        try {
+          await fs.access(effect.path);
+        } catch {
+          // File doesn't exist, create it
+          await fs.writeFile(effect.path, "", "utf-8");
+        }
+      }
+      await fs.appendFile(effect.path, effect.content, "utf-8");
+      return undefined;
+    }
+
     case "CopyFile": {
       const destDir = path.dirname(effect.dest);
       await fs.mkdir(destDir, { recursive: true });
