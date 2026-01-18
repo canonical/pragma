@@ -18,13 +18,13 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/canonical/pragma"
+    "url": "https://github.com/canonical/ds25"
   },
   "license": "GPL-3.0",
   "bugs": {
-    "url": "https://github.com/canonical/pragma/issues"
+    "url": "https://github.com/canonical/ds25/issues"
   },
-  "homepage": "https://github.com/canonical/pragma#readme",
+  "homepage": "https://github.com/canonical/ds25#readme",
   "scripts": {
     "build": "echo 'No build needed - runs directly from TypeScript'",
     "build:all": "bun run build",
@@ -34,21 +34,17 @@
     "check:biome:fix": "biome check --write",
     "check:ts": "tsc --noEmit",
     "check:webarchitect": "webarchitect tool-ts",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test": "bun test"
   },
   "devDependencies": {
     "@biomejs/biome": "2.3.11",
     "@canonical/biome-config": "^0.11.0",
     "@canonical/typescript-config-base": "^0.11.0",
     "@types/ejs": "^3.1.5",
-    "@types/omelette": "^0.4.5",
     "@types/react": "^19.0.0",
     "bun-types": "^1.0.0",
     "ink-testing-library": "^4.0.0",
-    "typescript": "^5.9.3",
-    "vitest": "^3.2.1"
+    "typescript": "^5.9.3"
   },
   "dependencies": {
     "chalk": "^5.6.2",
@@ -58,7 +54,6 @@
     "ink-select-input": "^6.0.0",
     "ink-spinner": "^5.0.0",
     "ink-text-input": "^6.0.0",
-    "omelette": "^0.4.17",
     "react": "^19.0.0"
   }
 }

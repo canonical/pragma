@@ -1,438 +1,583 @@
 # Summon
 
-A code generator framework where generators are pure functions that return data, not side effects.
+A monadic task-centric code generator framework with React Ink CLI.
 
-Write a generator once. Run it for real. Preview with `--dry-run`. Test without mocks. Same code, different interpreters.
+## What is Summon?
 
-```typescript
-generate: (answers) => writeFile(`src/${answers.name}.ts`, code)
-// Returns a Task describing "write this file"
-// Not a file write. Data.
-```
+Summon is a next-generation code generator framework that replaces traditional imperative generator architectures (like Yeoman) with a principled functional design. It enables you to write testable, composable generators without mocking.
+
+### Key Features
+
+- **Tasks as Pure Functions**: Tasks return effect descriptions rather than performing effects directly
+- **Monadic Composition**: Type-safe sequencing with automatic error propagation
+- **Interpreter Pattern**: Multiple execution modes (production, dry-run, test) from the same generator
+- **React Ink CLI**: Beautiful, interactive terminal UI
+- **Built-in Dry-Run**: Preview what files will be created before execution
 
 ## Installation
 
 ```bash
+# Using bun (recommended)
 bun add @canonical/summon
+
+# Using npm
+npm install @canonical/summon
 ```
 
-## Using Generators
+## Quick Start
 
-Summon discovers generators from installed packages automatically.
+### Try it immediately
 
 ```bash
-# See what's available
+# List available topics
 summon
 
-# Run a generator interactively
+# See what's under a topic
+summon component
+
+# Create a new React component
 summon component react
 
-# Pass answers as positional argument (when supported)
-summon component react src/components/Button
-
-# Or as a flag
-summon component react --component-path=src/components/Button
-
-# Preview first (nothing written to disk)
-summon component react src/components/Button --dry-run
-
-# Show debug output
-summon component react src/components/Button --verbose
+# Dry-run to see what would be created
+summon component react --dry-run
 ```
 
-Every prompt becomes a CLI flag. Boolean prompts with `default: true` use the `--no-` prefix to disable. Generators may also define a **positional argument** for their primary input (like a path), allowing cleaner command invocations.
-
-### CLI Options
-
-| Flag | Description |
-|------|-------------|
-| `-d, --dry-run` | Preview without writing files |
-| `-y, --yes` | Skip confirmation prompts |
-| `-v, --verbose` | Show debug output |
-| `--no-preview` | Skip the file preview |
-| `--no-generated-stamp` | Disable generated file stamp comments |
-
-### Shell Autocompletion
-
-Summon supports TAB completion for Bash, Zsh, and Fish shells. Completions are **dynamic** - they automatically detect newly installed generator packages without needing to re-run setup.
+### Create your own generator
 
 ```bash
-# Automatic setup (recommended)
-summon --setup-completion
+# Initialize a simple generator
+summon init my-generator
 
-# Or manual installation for each shell:
+# Or create a nested generator (under a topic)
+summon init component/vue
 
-# Zsh
-echo '. <(summon --completion)' >> ~/.zshrc
+# This creates:
+# generators/component/vue/
+# ├── index.ts
+# └── templates/
+#     ├── index.ts.ejs
+#     └── index.test.ts.ejs
 
-# Bash (may need: brew install bash-completion on macOS)
-summon --completion >> ~/.summon-completion.sh
-echo 'source ~/.summon-completion.sh' >> ~/.bash_profile
-
-# Fish
-echo 'summon --completion-fish | source' >> ~/.config/fish/config.fish
+# Run your generator
+summon component vue
 ```
 
-After setup, restart your shell or source the config file. Then:
+## CLI Commands
+
+### `summon [topic] [subtopic...]`
+
+Navigate the generator tree or run a generator.
 
 ```bash
-summon <TAB>                    # Shows: component, init, ...
-summon component <TAB>          # Shows: react, svelte
-summon component react <TAB>    # Shows: --component-path, --no-with-styles, ...
-summon component react --comp<TAB>  # Completes to: --component-path
+summon                                  # List available topics
+summon component                        # List generators under 'component'
+summon component react                  # Run the component/react generator
+summon component react --dry-run        # Preview without writing files
+summon component react --yes            # Skip confirmation
+summon component react --no-preview     # Skip file preview
+summon component react --answers '{"componentPath":"src/Button"}' # Non-interactive
 ```
 
-Completion features:
-- **Generator names** - Navigate the command tree with TAB
-- **Generator flags** - All prompts become completable flags
-- **Confirm prompts** - Shows `--no-X` for prompts with `default: true`
-- **Select/multiselect** - Completes with available choices
-- **Path prompts** - Filesystem path completion for prompts containing "path", "dir", "file", etc.
+### `summon init <path>`
 
-To remove autocompletion:
+Create a new generator scaffold. Supports nested paths.
 
 ```bash
-summon --cleanup-completion
+summon init my-generator                # Creates generators/my-generator/
+summon init component/vue               # Creates generators/component/vue/
+summon init --dir ./custom component/x  # Creates custom/component/x/
 ```
 
-### Positional Arguments
+## Publishing Generator Packages
 
-Generators can define one prompt as a **positional argument**, allowing users to provide the primary input without a flag:
+You can publish generators as npm packages for others to use. Summon automatically discovers packages from `node_modules`.
 
-```bash
-# With positional argument support
-summon component react src/components/Button
+### Package Naming Convention
 
-# Equivalent to
-summon component react --component-path=src/components/Button
+Name your package `summon-<topic>` or `@scope/summon-<topic>`:
+
 ```
-
-Positional arguments also get filesystem path completion when using TAB:
-
-```bash
-summon component react src/comp<TAB>  # Completes to: src/components/
-```
-
-### Installing Generator Packages
-
-Generator packages follow the naming convention `summon-*` or `@scope/summon-*`:
-
-```bash
-# Install a generator package
-bun add @canonical/summon-component
-
-# Now available (completions work immediately!)
-summon component react
-summon component svelte
-```
-
-## Creating Generators
-
-A generator is a pure function that takes answers and returns a `Task`—a data structure describing what to do.
-
-```typescript
-// src/module/types.ts
-interface ModuleAnswers {
-  name: string;
-  withTests: boolean;
-}
-
-// src/module/generator.ts
-import type { GeneratorDefinition } from "@canonical/summon";
-import { debug, info, writeFile, mkdir, sequence_, when } from "@canonical/summon";
-import type { ModuleAnswers } from "./types.js";
-
-export const generator = {
-  meta: {
-    name: "module",
-    description: "Creates a new module",
-    version: "0.1.0",
-  },
-
-  prompts: [
-    // positional: true allows `summon module src/utils` instead of `--name=src/utils`
-    { name: "name", type: "text", message: "Module name:", positional: true },
-    { name: "withTests", type: "confirm", message: "Include tests?", default: true },
-  ],
-
-  generate: (answers) => sequence_([
-    info(`Creating module: ${answers.name}`),
-
-    debug("Creating module directory"),
-    mkdir(`src/${answers.name}`),
-
-    debug("Creating index file"),
-    writeFile(`src/${answers.name}/index.ts`, `export const ${answers.name} = {};\n`),
-
-    when(answers.withTests, debug("Creating test file")),
-    when(answers.withTests,
-      writeFile(`src/${answers.name}/index.test.ts`, `test("works", () => {});\n`)
-    ),
-
-    info(`Created module at src/${answers.name}`),
-  ]),
-} as const satisfies GeneratorDefinition<ModuleAnswers>;
-
-// src/module/index.ts (barrel)
-export { generator } from "./generator.js";
-export type { ModuleAnswers } from "./types.js";
-
-// src/index.ts (package barrel)
-import type { AnyGenerator } from "@canonical/summon";
-import { generator as moduleGenerator } from "./module/index.js";
-
-export const generators = {
-  "module": moduleGenerator,
-} as const satisfies Record<string, AnyGenerator>;
+summon-component     -> summon component ...
+summon-api           -> summon api ...
+@myorg/summon-utils  -> summon utils ...
 ```
 
 ### Package Structure
 
-Each generator should be split into three files for maintainability:
-
 ```
-my-summon-package/
+summon-component/
 ├── package.json
-├── src/
-│   ├── index.ts              # Package barrel - exports generators record
-│   ├── module/
-│   │   ├── index.ts          # Generator barrel
-│   │   ├── types.ts          # Answer types
-│   │   └── generator.ts      # Generator definition
-│   └── templates/            # EJS templates (optional)
+├── generators/
+│   ├── react/
+│   │   └── index.ts      # summon component react
+│   ├── svelte/
+│   │   └── index.ts      # summon component svelte
+│   └── shared/           # Shared code (not a generator)
+│       └── validation.ts
 └── README.md
 ```
 
+### Package.json Configuration
+
 ```json
 {
-  "name": "@myorg/summon-module",
-  "main": "src/index.ts",
-  "peerDependencies": {
-    "@canonical/summon": "workspace:*"
-  }
+  "name": "summon-component",
+  "version": "1.0.0",
+  "files": ["generators"]
 }
 ```
 
-### Local Development
+Alternatively, use the `summon.topic` field to specify a custom topic name:
 
-For developing generators locally, link them to make them globally available:
-
-```bash
-# From your generator package directory
-cd /path/to/my-summon-package
-bun link        # for bun
-npm link        # for npm
-
-# Now available everywhere
-summon module src/utils
+```json
+{
+  "name": "@myorg/ds-generators",
+  "summon": {
+    "topic": "component"
+  },
+  "files": ["generators"]
+}
 ```
 
-Project-local packages (in `./node_modules`) take precedence over globally linked ones, so you can override with project-specific versions.
+### Discovery Priority
+
+Generators are discovered in this order (highest priority first):
+
+1. `./generators/` - Local project generators
+2. `./.generators/` - Local hidden generators
+3. `node_modules/summon-*` - Installed packages
+4. Built-in generators from `@canonical/summon`
+
+Local generators always override installed packages, allowing project-specific customization.
+
+## Writing Generators
+
+### Basic Generator Structure
+
+```typescript
+import type { GeneratorDefinition } from "@canonical/summon";
+import { writeFile, mkdir, info } from "@canonical/summon";
+import { sequence_, when } from "@canonical/summon";
+
+interface Answers {
+  name: string;
+  withTests: boolean;
+}
+
+export const generator: GeneratorDefinition<Answers> = {
+  meta: {
+    name: "my-generator",
+    description: "Generate something awesome",
+    version: "0.1.0",
+  },
+
+  prompts: [
+    {
+      name: "name",
+      type: "text",
+      message: "What is the name?",
+    },
+    {
+      name: "withTests",
+      type: "confirm",
+      message: "Include tests?",
+      default: true,
+    },
+  ],
+
+  generate: (answers) => {
+    return sequence_([
+      info(`Generating ${answers.name}...`),
+      mkdir(answers.name),
+      writeFile(`${answers.name}/index.ts`, `export const ${answers.name} = {};`),
+      when(
+        answers.withTests,
+        writeFile(`${answers.name}/index.test.ts`, `test("works", () => {});`)
+      ),
+      info("Done!"),
+    ]);
+  },
+};
+
+export default generator;
+```
+
+### Available Primitives
+
+#### File System
+
+```typescript
+import {
+  readFile,      // Read file contents
+  writeFile,     // Write file
+  copyFile,      // Copy file
+  copyDirectory, // Copy directory recursively
+  deleteFile,    // Delete file
+  deleteDirectory, // Delete directory
+  mkdir,         // Create directory
+  exists,        // Check if path exists
+  glob,          // Find files matching pattern
+} from "@canonical/summon";
+```
+
+#### Process
+
+```typescript
+import { exec, execSimple } from "@canonical/summon";
+
+exec("npm", ["install"], "/path/to/dir");
+execSimple("npm install");
+```
+
+#### Prompts
+
+```typescript
+import {
+  promptText,
+  promptConfirm,
+  promptSelect,
+  promptMultiselect,
+} from "@canonical/summon";
+
+promptText("name", "Enter your name:", "default");
+promptConfirm("proceed", "Continue?", true);
+promptSelect("choice", "Pick one:", [
+  { label: "Option A", value: "a" },
+  { label: "Option B", value: "b" },
+]);
+```
+
+#### Logging
+
+```typescript
+import { debug, info, warn, error } from "@canonical/summon";
+
+info("Creating files...");
+warn("File already exists");
+```
+
+### Combinators
+
+```typescript
+import {
+  sequence,      // Run tasks in order, collect results
+  sequence_,     // Run tasks in order, discard results
+  traverse,      // Map function over array, sequence results
+  parallel,      // Run tasks concurrently
+  when,          // Conditional execution
+  unless,        // Negative conditional
+  ifElse,        // If/else branching
+  retry,         // Retry on failure
+  orElse,        // Fallback on failure
+  optional,      // Return undefined on failure
+  bracket,       // Resource management (acquire/use/release)
+} from "@canonical/summon";
+```
+
+### Templates
+
+```typescript
+import { template, templateDir, withHelpers } from "@canonical/summon";
+
+// Single template
+template({
+  source: "./templates/component.tsx.ejs",
+  dest: `./src/components/${name}.tsx`,
+  vars: withHelpers({ name, description }),
+});
+
+// Directory of templates
+templateDir({
+  source: "./templates",
+  dest: `./src/${name}`,
+  vars: { name },
+  rename: { "Component.tsx": `${name}.tsx` },
+  ignore: ["*.md"],
+});
+```
 
 ### Testing Generators
 
-Because generators return data, testing is straightforward—no mocks needed:
+Generators are pure and testable without mocking:
 
 ```typescript
-import { dryRun, getAffectedFiles } from "@canonical/summon";
-import { generators } from "./index";
+import { describe, expect, it } from "bun:test";
+import { dryRun, expectTask, getAffectedFiles } from "@canonical/summon";
+import { generator } from "./index";
 
-const generator = generators["module"];
+describe("my-generator", () => {
+  it("creates the expected files", () => {
+    const task = generator.generate({
+      name: "Button",
+      withTests: true,
+    });
 
-test("creates expected files", () => {
-  const task = generator.generate({ name: "utils", withTests: true });
-  const { effects } = dryRun(task);
+    const { effects } = dryRun(task);
+    const files = getAffectedFiles(effects);
 
-  expect(getAffectedFiles(effects)).toEqual([
-    "src/utils/index.ts",
-    "src/utils/index.test.ts",
-  ]);
-});
+    expect(files).toContain("Button/index.ts");
+    expect(files).toContain("Button/index.test.ts");
+  });
 
-test("skips test file when disabled", () => {
-  const task = generator.generate({ name: "utils", withTests: false });
-  const { effects } = dryRun(task);
+  it("skips tests when disabled", () => {
+    const task = generator.generate({
+      name: "Button",
+      withTests: false,
+    });
 
-  expect(getAffectedFiles(effects)).not.toContain("src/utils/index.test.ts");
+    const matcher = expectTask(task);
+    matcher.toWriteFile("Button/index.ts");
+    matcher.toNotWriteFile("Button/index.test.ts");
+  });
 });
 ```
 
-The dry-run interpreter maintains a virtual filesystem, so conditional logic based on `exists()` works correctly even without touching the disk.
+## CLI Flags
 
-## The Monadic Pattern
+Each generator's prompts automatically become CLI flags:
 
-Summon uses a **monad** to compose tasks. If you've used Promises, you already understand the core idea.
+```bash
+# Run with flags
+summon hello --name=my-project --greeting=Hello
 
-### What's a Monad?
+# Boolean flags with default=true use --no-prefix to disable
+summon hello --name=my-project --no-withReadme
 
-A monad is a design pattern for chaining operations that have some context (like "might fail" or "has effects"). Think of it as a pipeline where each step can:
+# Combine with global options
+summon hello --name=my-project --dry-run
 
-1. **Transform values** (`map`) — Apply a function to the result
-2. **Chain operations** (`flatMap`) — Use the result to create the next step
-3. **Short-circuit on failure** — Errors propagate automatically
-
-```typescript
-// Promise (async context)
-fetchUser(id)
-  .then(user => fetchOrders(user.id))    // chain
-  .then(orders => orders.length)          // transform
-  .catch(handleError);                    // recover
-
-// Task (effect context)
-task(readFile("config.json"))
-  .map(content => JSON.parse(content))    // transform
-  .flatMap(config => writeFile(           // chain
-    config.outputPath,
-    generateCode(config)
-  ))
-  .recover(err => pure(defaultConfig));   // recover
+# View generator-specific help (shows all available flags)
+summon hello --help
 ```
 
-### The Task Type
+**Global options:**
+- `--dry-run`, `-d` - Preview without writing files
+- `--yes`, `-y` - Skip confirmation prompts
+- `--no-preview` - Skip the file preview
+- `--generators`, `-g` - Load generators from a specific path (for testing)
 
-`Task<A>` represents a computation that:
-- Describes effects (file I/O, shell commands, etc.)
-- Eventually produces a value of type `A`
-- May fail with an error
+**Reserved option names** (cannot be used as prompt names):
+`help`, `version`, `dryRun`, `yes`, `output`, `preview`, `generators`, `run`, `init`
+
+Use the `ForbidReserved` type for compile-time validation:
+
+```typescript
+import type { ForbidReserved, GeneratorDefinition } from "@canonical/summon";
+
+interface MyAnswers {
+  name: string;       // OK
+  // help: string;    // Would cause compile error!
+}
+
+// TypeScript will error if any answer key is reserved
+export const generator: GeneratorDefinition<ForbidReserved<MyAnswers>> = { ... };
+```
+
+## Understanding the Task Monad
+
+The Task monad is the core abstraction that makes Summon generators pure, composable, and testable.
+
+### What is a Task?
+
+A `Task<A>` represents a computation that:
+- May perform **effects** (write files, prompt user, etc.)
+- May **fail** with an error
+- Eventually produces a **value** of type `A`
 
 ```typescript
 // A Task is one of three things:
 type Task<A> =
-  | { _tag: "Pure"; value: A }                           // Done, here's the value
-  | { _tag: "Fail"; error: TaskError }                   // Failed with error
-  | { _tag: "Effect"; effect: Effect; cont: ... }        // Do this effect, then continue
+  | { _tag: "Pure"; value: A }                     // Completed with a value
+  | { _tag: "Effect"; effect: Effect; cont: ... }  // An effect to perform
+  | { _tag: "Fail"; error: TaskError }             // Failed with an error
 ```
 
-### Composing Tasks
+### Building Tasks
 
-The `TaskBuilder` provides a fluent API for composition:
+**Method 1: Using primitives (simplest)**
 
 ```typescript
-import { task, pure } from "@canonical/summon";
+import { writeFile, mkdir, info } from "@canonical/summon";
 
-// Build a pipeline
-const pipeline = task(readFile("input.txt"))
-  .map(content => content.toUpperCase())           // Transform the value
-  .flatMap(upper => writeFile("output.txt", upper)) // Chain another effect
-  .andThen(info("Done!"))                          // Sequence (ignore previous value)
-  .recover(err => pure(void 0));                   // Handle errors
-
-// pipeline is still just data — nothing has executed yet
+// Primitives return Task<something>
+const createDir = mkdir("output");           // Task<void>
+const write = writeFile("output/a.txt", ""); // Task<void>
+const read = readFile("config.json");        // Task<string>
 ```
 
-### Key Operations
-
-| Operation | Description | Example |
-|-----------|-------------|---------|
-| `pure(value)` | Wrap a value in a Task | `pure(42)` |
-| `map(fn)` | Transform the result | `.map(x => x * 2)` |
-| `flatMap(fn)` | Chain with another Task | `.flatMap(x => writeFile(...))` |
-| `andThen(task)` | Sequence, discard previous | `.andThen(info("next"))` |
-| `recover(fn)` | Handle errors | `.recover(e => pure(default))` |
-| `tap(fn)` | Side effect, keep value | `.tap(x => debug(x))` |
-
-### Why Monads for Generators?
-
-1. **Composable** — Small tasks combine into complex workflows
-2. **Predictable** — Errors propagate without explicit handling at each step
-3. **Testable** — The pipeline is data; inspect it without running effects
-4. **Declarative** — Describe *what* to do, not *how* to do it
+**Method 2: Using combinators**
 
 ```typescript
-// Complex workflow, reads like a recipe
-const scaffoldFeature = (name: string) =>
-  task(mkdir(`src/features/${name}`))
-    .andThen(template({
-      source: "templates/feature.ts.ejs",
-      dest: `src/features/${name}/index.ts`,
-      vars: { name },
-    }))
-    .andThen(when(config.withTests,
-      template({
-        source: "templates/test.ts.ejs",
-        dest: `src/features/${name}/index.test.ts`,
-        vars: { name },
-      })
-    ))
-    .andThen(info(`Created feature: ${name}`))
-    .unwrap();
+import { sequence_, when, parallel } from "@canonical/summon";
+
+const task = sequence_([
+  mkdir("output"),
+  parallel([
+    writeFile("output/a.txt", "A"),
+    writeFile("output/b.txt", "B"),
+  ]),
+  when(includeReadme, writeFile("README.md", "# Hello")),
+]);
 ```
 
-For a deeper dive into the "effects as data" philosophy, see [Explanation](docs/explanation.md).
-
-## Templating Engine
-
-Summon uses EJS by default for template rendering, but supports custom templating engines via the `TemplatingEngine` interface.
-
-### Default (EJS)
+**Method 3: Using the fluent builder with `.then()`**
 
 ```typescript
-import { template, templateDir } from "@canonical/summon";
+import { task, mkdir, writeFile, info } from "@canonical/summon";
 
-// Uses EJS by default
-template({
-  source: "templates/component.tsx.ejs",
-  dest: "src/components/<%= name %>.tsx",
-  vars: { name: "Button" },
-});
+// .then() chains tasks, discarding intermediate values (great for void tasks)
+const myTask = task(info("Starting..."))
+  .then(mkdir("output"))
+  .then(writeFile("output/a.txt", "A"))
+  .then(writeFile("output/b.txt", "B"))
+  .then(info("Done!"))
+  .unwrap();
+
+// .flatMap() when you need the result of the previous task
+const readAndTransform = task(readFile("input.txt"))
+  .flatMap((content) => writeFile("output.txt", content.toUpperCase()))
+  .unwrap();
 ```
 
-### Custom Engines
+### Creating Your Own Task Functions
 
-Implement `TemplatingEngine` to use Handlebars, Mustache, Nunjucks, or any other engine:
+You can create reusable task functions by composing existing primitives:
 
 ```typescript
-import type { TemplatingEngine } from "@canonical/summon";
-import Handlebars from "handlebars";
-import * as fs from "node:fs/promises";
+import { sequence_, mkdir, writeFile, info, when } from "@canonical/summon";
+import type { Task } from "@canonical/summon";
 
-const handlebarsEngine: TemplatingEngine = {
-  render(template, vars) {
-    return Handlebars.compile(template)(vars);
-  },
-
-  async renderAsync(template, vars) {
-    return Handlebars.compile(template)(vars);
-  },
-
-  async renderFile(templatePath, vars) {
-    const content = await fs.readFile(templatePath, "utf-8");
-    return Handlebars.compile(content)(vars);
-  },
+// A reusable function that returns a Task
+const createPackage = (name: string, withTests: boolean): Task<void> => {
+  return sequence_([
+    info(`Creating package ${name}...`),
+    mkdir(`packages/${name}/src`),
+    writeFile(`packages/${name}/package.json`, JSON.stringify({
+      name: `@myorg/${name}`,
+      version: "1.0.0",
+    }, null, 2)),
+    writeFile(`packages/${name}/src/index.ts`, `export const ${name} = {};`),
+    when(withTests, sequence_([
+      mkdir(`packages/${name}/tests`),
+      writeFile(`packages/${name}/tests/index.test.ts`, `test("works", () => {});`),
+    ])),
+  ]);
 };
 
-// Use in templates
-template({
-  source: "templates/component.hbs",
-  dest: "src/components/{{name}}.tsx",
-  vars: { name: "Button" },
-  engine: handlebarsEngine,
+// Use it in a generator
+export const generator: GeneratorDefinition<Answers> = {
+  // ...
+  generate: (answers) => createPackage(answers.name, answers.withTests),
+};
+```
+
+### Monadic Operations
+
+```typescript
+import { flatMap, map, pure, fail, recover } from "@canonical/summon";
+
+// flatMap: Chain tasks together
+const task = flatMap(readFile("config.json"), (content) => {
+  const config = JSON.parse(content);
+  return writeFile("output.json", JSON.stringify(config, null, 2));
+});
+
+// map: Transform the result
+const task2 = map(readFile("data.txt"), (content) => content.toUpperCase());
+
+// recover: Handle errors
+const task3 = recover(readFile("maybe-missing.txt"), (error) => {
+  return pure("default content");
 });
 ```
 
-### Interface
+### Creating Custom Effects
+
+For advanced use cases, you can create custom effect types:
 
 ```typescript
-interface TemplatingEngine {
-  /** Render a template string synchronously */
-  render(template: string, vars: Record<string, unknown>): string;
+import { effect, pure, flatMap } from "@canonical/summon";
+import type { Task, Effect } from "@canonical/summon";
 
-  /** Render a template string asynchronously */
-  renderAsync(template: string, vars: Record<string, unknown>): Promise<string>;
+// 1. Create an effect primitive
+const sendNotification = (message: string): Task<void> => {
+  // For effects that don't need interpreter support,
+  // implement them directly:
+  return flatMap(
+    exec("notify-send", [message]),
+    () => pure(undefined)
+  );
+};
 
-  /** Render a template file asynchronously */
-  renderFile(templatePath: string, vars: Record<string, unknown>): Promise<string>;
-}
+// 2. Or compose from existing effects
+const ensureDirectoryAndWrite = (path: string, content: string): Task<void> => {
+  const dir = path.substring(0, path.lastIndexOf("/"));
+  return sequence_([
+    mkdir(dir),
+    writeFile(path, content),
+  ]);
+};
 ```
 
-The `engine` option is available on `template()`, `templateDir()`, `renderString()`, `renderStringAsync()`, and `renderFile()`.
+## Programmatic API
 
-## Documentation
+```typescript
+import { run, dryRun } from "@canonical/summon";
+import { generator } from "./generators/my-generator";
 
-- **[Tutorial](docs/tutorial.md)** — Build your first generator from scratch
-- **[How-To Guides](docs/how-to.md)** — Solve specific problems
-- **[Reference](docs/reference.md)** — Complete API documentation
-- **[Explanation](docs/explanation.md)** — Why effects as data? The ideas behind Summon
+// Run with custom answers
+const task = generator.generate({ name: "Button", withTests: true });
+
+// Dry-run to preview
+const { effects, value } = dryRun(task);
+console.log("Would create:", effects.length, "files");
+
+// Actually execute
+await run(task);
+```
+
+## Built-in Generators
+
+### hello (Demo)
+
+A demo generator showcasing Summon features:
+
+```bash
+# Interactive
+summon hello
+
+# With flags
+summon --dry-run hello --name=my-project --greeting=Hello --withReadme
+
+# See help
+summon hello --help
+```
+
+This generator demonstrates:
+- EJS templates with `withHelpers()` for case transformations
+- Conditional file generation with `when()`
+- Sequential composition with `sequence_()`
+
+Use it as a reference when building your own generators.
+
+## Combinators Reference
+
+| Combinator | Description |
+|------------|-------------|
+| `sequence([t1, t2])` | Run in order, collect results as tuple |
+| `sequence_([t1, t2])` | Run in order, discard results |
+| `parallel([t1, t2])` | Run concurrently, collect results |
+| `parallelN(2, tasks)` | Run with concurrency limit |
+| `race([t1, t2])` | First to complete wins |
+| `when(cond, task)` | Run if condition is true |
+| `unless(cond, task)` | Run if condition is false |
+| `ifElse(cond, t1, t2)` | Branching |
+| `orElse(task, fallback)` | Fallback on error |
+| `retry(3, task)` | Retry on failure |
+| `attempt(task)` | Convert error to value |
+| `bracket(acq, rel, use)` | Resource management |
+| `tap(task, fn)` | Side effect without changing value |
+| `traverse(arr, fn)` | Map and sequence |
 
 ## License
 

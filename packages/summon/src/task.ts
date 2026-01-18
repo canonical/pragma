@@ -190,11 +190,11 @@ export class TaskBuilder<A> {
    *
    * @example
    * task(mkdir("output"))
-   *   .andThen(writeFile("output/a.txt", "A"))
-   *   .andThen(writeFile("output/b.txt", "B"))
-   *   .andThen(info("Done!"))
+   *   .then(writeFile("output/a.txt", "A"))
+   *   .then(writeFile("output/b.txt", "B"))
+   *   .then(info("Done!"))
    */
-  andThen<B>(next: Task<B>): TaskBuilder<B> {
+  then<B>(next: Task<B>): TaskBuilder<B> {
     return new TaskBuilder(flatMap(this._task, () => next));
   }
 

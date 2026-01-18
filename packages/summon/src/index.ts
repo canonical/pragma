@@ -9,13 +9,12 @@
 // =============================================================================
 
 export type {
-  // Generator types
-  AnyGenerator,
   ConfirmPrompt,
   // Result types
   DryRunResult,
   Effect,
   ExecResult,
+  // Generator types
   GeneratorDefinition,
   GeneratorMeta,
   LogLevel,
@@ -66,8 +65,6 @@ export {
 // =============================================================================
 
 export {
-  // File system effects
-  appendFileEffect,
   copyDirectoryEffect,
   copyFileEffect,
   deleteDirectoryEffect,
@@ -90,6 +87,7 @@ export {
   raceEffect,
   // Context effects
   readContextEffect,
+  // File system effects
   readFileEffect,
   writeContextEffect,
   writeFileEffect,
@@ -99,10 +97,7 @@ export {
 // Primitives
 // =============================================================================
 
-export type { SortFileLinesOptions } from "./primitives.js";
 export {
-  // File system primitives
-  appendFile,
   copyDirectory,
   copyFile,
   debug,
@@ -128,10 +123,9 @@ export {
   promptMultiselect,
   promptSelect,
   promptText,
+  // File system primitives
   readFile,
   setContext,
-  // File transformation primitives
-  sortFileLines,
   succeed,
   warn,
   withContext,
@@ -181,7 +175,7 @@ export {
 // Interpreter
 // =============================================================================
 
-export type { RunTaskOptions, StampConfig } from "./interpreter.js";
+export type { RunTaskOptions } from "./interpreter.js";
 export {
   executeEffect,
   run,
@@ -212,21 +206,11 @@ export {
 // Templates
 // =============================================================================
 
-export type {
-  StampOptions,
-  TemplateDirOptions,
-  TemplateOptions,
-  TemplatingEngine,
-} from "./template.js";
+export type { TemplateDirOptions, TemplateOptions } from "./template.js";
 export {
-  // Templating engine
-  ejsEngine,
-  // Stamp utilities
-  generateStamp,
   // Metadata
   generatorComment,
   generatorHtmlComment,
-  prependStamp,
   renderFile,
   // Template rendering
   renderString,

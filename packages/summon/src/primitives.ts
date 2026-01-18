@@ -6,7 +6,6 @@
  */
 
 import {
-  appendFileEffect,
   copyDirectoryEffect,
   copyFileEffect,
   deleteDirectoryEffect,
@@ -22,7 +21,7 @@ import {
   writeContextEffect,
   writeFileEffect,
 } from "./effect.js";
-import { effect, flatMap, pure } from "./task.js";
+import { effect, pure } from "./task.js";
 import type { ExecResult, LogLevel, PromptQuestion, Task } from "./types.js";
 
 // =============================================================================
@@ -40,18 +39,6 @@ export const readFile = (path: string): Task<string> =>
  */
 export const writeFile = (path: string, content: string): Task<void> =>
   effect(writeFileEffect(path, content));
-
-/**
- * Append content to a file.
- * @param path - Path to the file
- * @param content - Content to append
- * @param createIfMissing - Create the file if it doesn't exist (default: true)
- */
-export const appendFile = (
-  path: string,
-  content: string,
-  createIfMissing = true,
-): Task<void> => effect(appendFileEffect(path, content, createIfMissing));
 
 /**
  * Copy a file from source to destination.
@@ -94,176 +81,6 @@ export const exists = (path: string): Task<boolean> =>
  */
 export const glob = (pattern: string, cwd: string): Task<string[]> =>
   effect(globEffect(pattern, cwd));
-
-// =============================================================================
-// File Transformation Primitives
-// =============================================================================
-
-/**
- * Options for sorting file lines.
- */
-export interface SortFileLinesOptions {
-  /**
-   * Custom comparator function for sorting.
-   * Defaults to locale-aware string comparison.
-   */
-  compare?: (a: string, b: string) => number;
-
-  /**
-   * If true, remove duplicate lines after sorting.
-   * @default false
-   */
-  unique?: boolean;
-
-  /**
-   * Lines matching this pattern are considered "header" lines and will
-   * be kept at the top of the file, unsorted.
-   * Useful for preserving file headers, comments, or specific imports.
-   *
-   * @example /^\/\// - Keep lines starting with // at the top
-   * @example /^import.*from ["']react["']/ - Keep React imports at top
-   */
-  headerPattern?: RegExp;
-
-  /**
-   * Lines matching this pattern are considered "footer" lines and will
-   * be kept at the bottom of the file, unsorted.
-   */
-  footerPattern?: RegExp;
-
-  /**
-   * If true, preserve blank lines in their relative positions within
-   * the sorted content. If false, blank lines are sorted with other lines.
-   * @default false
-   */
-  preserveBlankLines?: boolean;
-}
-
-/**
- * Sort the lines of a file.
- *
- * This is useful for maintaining sorted barrel files (index.ts with exports),
- * sorted import lists, or any file where line order should be alphabetical.
- *
- * @param path - Path to the file to sort
- * @param options - Sorting options
- *
- * @example
- * // Sort a barrel file alphabetically
- * sortFileLines("src/index.ts")
- *
- * @example
- * // Sort exports, keeping the header comment
- * sortFileLines("src/index.ts", {
- *   headerPattern: /^\/\//,  // Keep comment lines at top
- * })
- *
- * @example
- * // Sort and deduplicate
- * sortFileLines("src/exports.ts", { unique: true })
- *
- * @example
- * // Custom sort (case-insensitive)
- * sortFileLines("src/index.ts", {
- *   compare: (a, b) => a.toLowerCase().localeCompare(b.toLowerCase())
- * })
- */
-export const sortFileLines = (
-  path: string,
-  options: SortFileLinesOptions = {},
-): Task<void> => {
-  const {
-    compare = (a, b) => a.localeCompare(b),
-    unique = false,
-    headerPattern,
-    footerPattern,
-    preserveBlankLines = false,
-  } = options;
-
-  return flatMap(readFile(path), (content) => {
-    const lines = content.split("\n");
-
-    // Separate header, body, and footer lines
-    const headerLines: string[] = [];
-    const footerLines: string[] = [];
-    const bodyLines: string[] = [];
-    const blankLineIndices: number[] = [];
-
-    // First pass: identify header lines (consecutive matches at start)
-    let inHeader = true;
-    let bodyStartIndex = 0;
-
-    if (headerPattern) {
-      for (let i = 0; i < lines.length; i++) {
-        if (inHeader && headerPattern.test(lines[i])) {
-          headerLines.push(lines[i]);
-          bodyStartIndex = i + 1;
-        } else {
-          inHeader = false;
-          break;
-        }
-      }
-    }
-
-    // Second pass: identify footer lines (consecutive matches at end)
-    let footerStartIndex = lines.length;
-
-    if (footerPattern) {
-      for (let i = lines.length - 1; i >= bodyStartIndex; i--) {
-        if (footerPattern.test(lines[i])) {
-          footerLines.unshift(lines[i]);
-          footerStartIndex = i;
-        } else {
-          break;
-        }
-      }
-    }
-
-    // Third pass: collect body lines
-    for (let i = bodyStartIndex; i < footerStartIndex; i++) {
-      const line = lines[i];
-      if (preserveBlankLines && line.trim() === "") {
-        blankLineIndices.push(bodyLines.length);
-        bodyLines.push(line);
-      } else {
-        bodyLines.push(line);
-      }
-    }
-
-    // Sort body lines (excluding blank lines if preserving them)
-    let sortedBody: string[];
-
-    if (preserveBlankLines) {
-      // Extract non-blank lines, sort them, then reinsert blanks
-      const nonBlankLines = bodyLines.filter((line) => line.trim() !== "");
-      const sortedNonBlank = unique
-        ? [...new Set(nonBlankLines)].sort(compare)
-        : nonBlankLines.sort(compare);
-
-      // Rebuild with blank lines in relative positions
-      sortedBody = [];
-      let nonBlankIdx = 0;
-      for (let i = 0; i < bodyLines.length; i++) {
-        if (blankLineIndices.includes(i)) {
-          sortedBody.push("");
-        } else if (nonBlankIdx < sortedNonBlank.length) {
-          sortedBody.push(sortedNonBlank[nonBlankIdx++]);
-        }
-      }
-    } else {
-      sortedBody = unique
-        ? [...new Set(bodyLines)].sort(compare)
-        : bodyLines.sort(compare);
-    }
-
-    // Reassemble the file
-    const sortedContent = [...headerLines, ...sortedBody, ...footerLines].join(
-      "\n",
-    );
-
-    return writeFile(path, sortedContent);
-  });
-};
 
 // =============================================================================
 // Process Primitives

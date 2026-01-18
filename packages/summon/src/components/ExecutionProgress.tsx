@@ -8,16 +8,9 @@ import { Box, Text } from "ink";
 import type React from "react";
 import { useEffect, useState } from "react";
 import { describeEffect } from "../effect.js";
-import { runTask, type StampConfig } from "../interpreter.js";
+import { runTask } from "../interpreter.js";
 import type { Effect, Task, TaskError } from "../types.js";
 import { Spinner } from "./Spinner.js";
-
-/** Effect with timing information for the completion timeline */
-export interface TimedEffect {
-  effect: Effect;
-  /** Time in ms when this effect completed, relative to execution start */
-  timestamp: number;
-}
 
 export interface ExecutionProgressProps {
   /** The task to execute */
@@ -25,18 +18,15 @@ export interface ExecutionProgressProps {
   /** Whether to run in dry-run mode */
   dryRun?: boolean;
   /** Called when execution completes */
-  onComplete: (effects: TimedEffect[], duration: number) => void;
+  onComplete: (effects: Effect[], duration: number) => void;
   /** Called when execution fails */
   onError: (error: TaskError) => void;
-  /** Stamp configuration for generated files (undefined = no stamps) */
-  stamp?: StampConfig;
 }
 
 interface CompletedEffect {
   id: number;
   effect: Effect;
   duration: number;
-  timestamp: number;
 }
 
 interface LogMessage {
@@ -45,32 +35,11 @@ interface LogMessage {
   message: string;
 }
 
-/** Effects that should be hidden from the progress display (internal/noisy) */
-const isInternalEffect = (effect: Effect): boolean => {
-  // Hide internal coordination effects
-  if (
-    effect._tag === "Log" ||
-    effect._tag === "Exists" ||
-    effect._tag === "ReadContext" ||
-    effect._tag === "WriteContext" ||
-    effect._tag === "Parallel" ||
-    effect._tag === "Race"
-  ) {
-    return true;
-  }
-  // Hide template file reads (internal implementation detail)
-  if (effect._tag === "ReadFile" && effect.path.includes("/templates/")) {
-    return true;
-  }
-  return false;
-};
-
 export const ExecutionProgress: React.FC<ExecutionProgressProps> = ({
   task,
   dryRun: _dryRun = false,
   onComplete,
   onError,
-  stamp,
 }) => {
   const [currentEffect, setCurrentEffect] = useState<Effect | null>(null);
   const [completedEffects, setCompletedEffects] = useState<CompletedEffect[]>(
@@ -80,40 +49,21 @@ export const ExecutionProgress: React.FC<ExecutionProgressProps> = ({
   const [isRunning, setIsRunning] = useState(true);
 
   useEffect(() => {
-    const collectedEffects: TimedEffect[] = [];
+    const collectedEffects: Effect[] = [];
     const startTime = performance.now();
     let effectId = 0;
     let logId = 0;
-    // Track seen directory paths to deduplicate MakeDir effects in live progress
-    const seenDirPaths = new Set<string>();
 
     const executeWithProgress = async () => {
       try {
         await runTask(task, {
-          stamp,
           onEffectStart: (effect) => {
-            // Skip showing duplicate MakeDir in spinner
-            if (effect._tag === "MakeDir" && seenDirPaths.has(effect.path)) {
-              return;
-            }
             setCurrentEffect(effect);
           },
           onEffectComplete: (effect, duration) => {
             const id = effectId++;
-            const timestamp = performance.now() - startTime;
-            collectedEffects.push({ effect, timestamp });
-            // Skip duplicate MakeDir effects in live display
-            if (effect._tag === "MakeDir") {
-              if (seenDirPaths.has(effect.path)) {
-                setCurrentEffect(null);
-                return;
-              }
-              seenDirPaths.add(effect.path);
-            }
-            setCompletedEffects((prev) => [
-              ...prev,
-              { id, effect, duration, timestamp },
-            ]);
+            collectedEffects.push(effect);
+            setCompletedEffects((prev) => [...prev, { id, effect, duration }]);
             setCurrentEffect(null);
           },
           onLog: (level, message) => {
@@ -143,7 +93,7 @@ export const ExecutionProgress: React.FC<ExecutionProgressProps> = ({
     };
 
     executeWithProgress();
-  }, [task, onComplete, onError, stamp]);
+  }, [task, onComplete, onError]);
 
   const logColor = (level: LogMessage["level"]) => {
     switch (level) {
@@ -180,16 +130,16 @@ export const ExecutionProgress: React.FC<ExecutionProgressProps> = ({
           <Text>{log.message}</Text>
         </Text>
       ))}
-      {/* Show completed file effects (excluding internal/noisy effects) */}
+      {/* Show completed file effects */}
       {completedEffects
-        .filter((item) => !isInternalEffect(item.effect))
+        .filter((item) => item.effect._tag !== "Log")
         .map((item) => (
           <Text key={`effect-${item.id}`}>
             <Text color="green">✓</Text> {describeEffect(item.effect)}{" "}
             <Text dimColor>({item.duration.toFixed(0)}ms)</Text>
           </Text>
         ))}
-      {currentEffect && !isInternalEffect(currentEffect) && (
+      {currentEffect && (
         <Box>
           <Spinner color="blue" />
           <Text> {describeEffect(currentEffect)}</Text>
