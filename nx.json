@@ -23,6 +23,10 @@
       "dependsOn": ["^check:fix"],
       "cache": true
     },
+    "check:webarchitect": {
+      "dependsOn": ["@canonical/webarchitect:build"],
+      "cache": true
+    },
     "test": {
       "dependsOn": ["^build"],
       "cache": true
