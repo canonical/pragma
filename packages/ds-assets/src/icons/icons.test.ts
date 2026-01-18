@@ -32,7 +32,8 @@ describe("icons", () => {
     });
   });
 
-  it("each icon SVG file is well-formed XML", async () => {
+  // TODO: find a better way to handle this - consider optimizing JSDOM usage or splitting tests
+  it("each icon SVG file is well-formed XML", { timeout: 30000 }, async () => {
     const iconsDir = join(process.cwd(), "icons");
     const files = readdirSync(iconsDir);
     const svgFiles = files.filter((file) => file.endsWith(".svg"));
@@ -51,29 +52,34 @@ describe("icons", () => {
     });
   });
 
-  it("each icon in the icons directory has a g element with an id matching its file name", async () => {
-    const iconsDir = join(process.cwd(), "icons");
-    const files = readdirSync(iconsDir);
-    const svgFiles = files.filter((file) => file.endsWith(".svg"));
+  // TODO: find a better way to handle this - consider optimizing JSDOM usage or splitting tests
+  it(
+    "each icon in the icons directory has a g element with an id matching its file name",
+    { timeout: 30000 },
+    async () => {
+      const iconsDir = join(process.cwd(), "icons");
+      const files = readdirSync(iconsDir);
+      const svgFiles = files.filter((file) => file.endsWith(".svg"));
 
-    svgFiles.forEach((svgFile) => {
-      const svgContents = readFileSync(join(iconsDir, svgFile), "utf-8");
-      const dom = new JSDOM(svgContents, { contentType: "image/svg+xml" });
-      const svgDoc = dom.window.document;
+      svgFiles.forEach((svgFile) => {
+        const svgContents = readFileSync(join(iconsDir, svgFile), "utf-8");
+        const dom = new JSDOM(svgContents, { contentType: "image/svg+xml" });
+        const svgDoc = dom.window.document;
 
-      const primaryGroupElement = svgDoc.querySelector("svg > g");
-      expect(
-        primaryGroupElement,
-        `${svgFile} does not contain a <g> element as a direct child of the <svg> element`,
-      ).not.toBeNull();
+        const primaryGroupElement = svgDoc.querySelector("svg > g");
+        expect(
+          primaryGroupElement,
+          `${svgFile} does not contain a <g> element as a direct child of the <svg> element`,
+        ).not.toBeNull();
 
-      const iconName = svgFile.replace(".svg", "");
-      const gElementId = primaryGroupElement?.getAttribute("id");
+        const iconName = svgFile.replace(".svg", "");
+        const gElementId = primaryGroupElement?.getAttribute("id");
 
-      expect(
-        gElementId,
-        `${svgFile}'s primary group element ID should be '${iconName}', but found '${gElementId}'`,
-      ).toBe(iconName);
-    });
-  });
+        expect(
+          gElementId,
+          `${svgFile}'s primary group element ID should be '${iconName}', but found '${gElementId}'`,
+        ).toBe(iconName);
+      });
+    },
+  );
 });

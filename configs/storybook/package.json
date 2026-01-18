@@ -30,7 +30,7 @@
   "dependencies": {
     "@canonical/ds-assets": "^0.10.0",
     "@canonical/storybook-addon-baseline-grid": "^0.10.0",
-    "@chromatic-com/storybook": "^4.0.0",
+    "@chromatic-com/storybook": "^5.0.0",
     "@storybook/addon-a11y": "^10.1.11",
     "@storybook/addon-docs": "^10.1.11",
     "@storybook/addon-themes": "^10.1.11",
