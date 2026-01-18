@@ -249,3 +249,4 @@ The programmatic API makes it easy to integrate webarchitect into existing build
 - **IDE Integration** - No real-time validation feedback is available yet in code editors. Developers must run webarchitect manually or through build scripts to see validation results. Real-time diagnostics would require Language Server Protocol implementation or editor-specific plugins.
 - **Svelte support** - No svelte-specific ruleset has been developed yet.
 - **Error Code Granularity** - All validation failures return the same exit code (1) regardless of failure type. Missing files, invalid JSON syntax, and schema validation failures are not distinguished programmatically. This limits automated error handling and reporting capabilities.
+ 
