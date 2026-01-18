@@ -26,3 +26,9 @@ runs:
     - name: Install dependencies
       shell: bash
       run: bun install --frozen-lockfile
+
+      # Workaround for https://github.com/oven-sh/bun/issues/19782
+      # Workspace bin symlinks aren't created on first install. Remove after fix is merged.
+    - name: Re-link workspace binaries
+      shell: bash
+      run: bun install

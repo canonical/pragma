@@ -1,0 +1,19 @@
+{
+  "$schema": "https://github.com/webarchitect/schemas/main/schema.json",
+  "name": "tool",
+  "extends": ["package"],
+  "package-license": {
+    "file": {
+      "name": "package.json",
+      "contains": {
+        "type": "object",
+        "properties": {
+          "license": {
+            "const": "GPL-3.0"
+          }
+        },
+        "required": ["license"]
+      }
+    }
+  }
+}

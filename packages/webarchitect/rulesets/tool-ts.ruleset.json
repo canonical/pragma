@@ -1,6 +1,6 @@
 {
   "$schema": "https://github.com/webarchitect/schemas/main/schema.json",
-  "name": "package",
+  "name": "tool-ts",
   "extends": ["base"],
   "biome": {
     "file": {
@@ -51,21 +51,21 @@
             "const": "module"
           },
           "module": {
-            "const": "dist/esm/index.js"
+            "const": "src/index.ts"
           },
           "types": {
-            "const": "dist/types/index.d.ts"
+            "const": "src/index.ts"
           },
           "files": {
             "type": "array",
-            "contains": { "const": "dist" }
+            "contains": { "const": "src" }
           },
           "scripts": {
             "type": "object",
             "properties": {
               "build": {
                 "type": "string",
-                "description": "Build command (implementation flexible)"
+                "description": "Build command (can be no-op for TS-only packages)"
               },
               "test": {
                 "type": "string",
@@ -87,6 +87,20 @@
           "files",
           "scripts"
         ]
+      }
+    }
+  },
+  "package-license": {
+    "file": {
+      "name": "package.json",
+      "contains": {
+        "type": "object",
+        "properties": {
+          "license": {
+            "const": "GPL-3.0"
+          }
+        },
+        "required": ["license"]
       }
     }
   }

@@ -1,9 +1,9 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 import type { ErrorObject } from "ajv";
 import chalk from "chalk";
 import { Command } from "commander";
 import { discoverAllRulesets } from "./lib/index.js";
-import type { RulesetLocation, ValidationResult } from "./types.js";
+import type { ValidationResult } from "./types.js";
 import validate from "./validate.js";
 
 const program = new Command();
