@@ -29,7 +29,25 @@ Tutorials have not been added to the documentation yet.
 
 ## Webarchitect
 
-The monorepo uses `@canonical/webarchitect` to validate package architecture compliance. The following packages still need webarchitect integration:
+The monorepo uses `@canonical/webarchitect` to validate package architecture compliance.
+
+### Ruleset Hierarchy
+
+```
+base (minimal base for future extensibility)
+  └── package (biome config + package.json structure)
+        ├── tool (GPL-3.0 license) - for CLI tools and applications
+        └── library (LGPL-3.0 license) - for reusable libraries
+```
+
+| Ruleset | License | Use Case |
+|---------|---------|----------|
+| `library` | LGPL-3.0 | Reusable packages consumed by other projects |
+| `tool` | GPL-3.0 | CLI tools, build tools, internal utilities |
+
+### Packages Pending Integration
+
+The following packages still need webarchitect integration:
 
 - `@canonical/typography` - Non-standard structure (CSS + CLI)
 - `@canonical/generator-ds` - Non-standard structure (generators/ instead of dist/)

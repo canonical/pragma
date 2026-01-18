@@ -1,64 +1,18 @@
 {
   "$schema": "https://github.com/webarchitect/schemas/main/schema.json",
   "name": "library",
-  "extends": ["tool"],
-  "package": {
+  "extends": ["package"],
+  "package-license": {
     "file": {
       "name": "package.json",
       "contains": {
         "type": "object",
         "properties": {
-          "name": {
-            "type": "string",
-            "pattern": "^@canonical/"
-          },
-          "version": {
-            "type": "string"
-          },
-          "type": {
-            "const": "module"
-          },
-          "module": {
-            "const": "dist/esm/index.js"
-          },
-          "types": {
-            "const": "dist/types/index.d.ts"
-          },
-          "files": {
-            "type": "array",
-            "contains": { "const": "dist" }
-          },
           "license": {
             "const": "LGPL-3.0"
-          },
-          "scripts": {
-            "type": "object",
-            "properties": {
-              "build": {
-                "type": "string",
-                "description": "Build command (implementation flexible)"
-              },
-              "test": {
-                "type": "string",
-                "description": "Test command (implementation flexible)"
-              },
-              "check:ts": {
-                "const": "tsc --noEmit"
-              }
-            },
-            "required": ["build", "test", "check:ts"]
           }
         },
-        "required": [
-          "name",
-          "version",
-          "type",
-          "module",
-          "types",
-          "files",
-          "license",
-          "scripts"
-        ]
+        "required": ["license"]
       }
     }
   }
