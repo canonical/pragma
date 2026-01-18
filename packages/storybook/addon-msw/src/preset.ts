@@ -1,18 +1,12 @@
 // This entry is a node-specific file, contrary to the other files in this folder which are made to be loaded in the browser.
+// This preset automatically provides the mockServiceWorker.js to consuming packages.
 
-// You can use presets to augment the Storybook configuration
-// You rarely want to do this in addons,
-// so often you want to delete this file and remove the reference to it in package.json#exports and package.json#bunder.nodeEntries
-// Read more about presets at https://storybook.js.org/docs/addons/writing-presets
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 
-// biome-ignore lint: untouched boilerplate
-export const viteFinal = async (config: any) => {
-  console.log("This addon is augmenting the Vite config");
-  return config;
-};
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
-// biome-ignore lint: untouched boilerplate
-export const webpack = async (config: any) => {
-  console.log("This addon is augmenting the Webpack config");
-  return config;
-};
+// Automatically serve mockServiceWorker.js for packages that include this addon.
+// The public/ folder contains the MSW service worker generated via `npx msw init public/`.
+// This eliminates the need for each consuming package to have its own copy.
+export const staticDirs = [join(__dirname, "../../public")];

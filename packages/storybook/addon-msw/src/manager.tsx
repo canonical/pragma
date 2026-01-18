@@ -1,4 +1,3 @@
-import React from "react";
 import { type API, addons, types } from "storybook/manager-api";
 import { Panel } from "./components/Panel.js";
 import { Tool } from "./components/Tool.js";
@@ -10,7 +9,7 @@ addons.register(ADDON_ID, (api: API) => {
   addons.add(TOOL_ID, {
     type: types.TOOL,
     title: "Toggle MSW",
-    match: ({ viewMode, tabId }: { viewMode?: string; tabId?: string }) =>
+    match: ({ viewMode }: { viewMode?: string; tabId?: string }) =>
       !!viewMode?.match(/^(story|docs)$/),
     render: () => <Tool api={api} />,
   });

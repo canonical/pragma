@@ -1,6 +1,6 @@
 {
   "extends": ["@canonical/biome-config"],
   "files": {
-    "includes": ["src", "*.json", "!src/styles/normalize.css"]
+    "includes": ["src", "*.json", "!public/mockServiceWorker.js"]
   }
 }

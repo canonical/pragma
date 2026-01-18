@@ -1,10 +1,6 @@
-import React, { memo } from "react";
+import { memo } from "react";
 import { AddonPanel, SyntaxHighlighter } from "storybook/internal/components";
-import {
-  type API,
-  useParameter,
-  useStorybookState,
-} from "storybook/manager-api";
+import { type API, useParameter } from "storybook/manager-api";
 import { PARAM_KEY } from "../constants.js";
 import type { MswParameter } from "../types.js";
 
@@ -13,8 +9,7 @@ interface PanelProps {
   active?: boolean;
 }
 
-export const Panel = memo(function MswPanel({ api, active }: PanelProps) {
-  const state = useStorybookState();
+export const Panel = memo(function MswPanel({ active }: PanelProps) {
   const parameter = useParameter<MswParameter>(PARAM_KEY);
 
   if (!active || !parameter?.handlers) {

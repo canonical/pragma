@@ -44,7 +44,6 @@
   },
   "msw": {
     "workerDirectory": [
-      "packages/react/ds-global-form/public",
       "packages/storybook/addon-msw/public"
     ]
   }

@@ -1,5 +1,5 @@
 // src/stories/ApiTestComponent.tsx
-import React, { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 interface ApiTestComponentProps {
   endpoint?: string;

@@ -3,7 +3,8 @@
   "version": "0.10.0-experimental.4",
   "type": "module",
   "files": [
-    "dist"
+    "dist",
+    "public"
   ],
   "types": "dist/types/index.d.ts",
   "author": {

@@ -35,8 +35,7 @@
     "storybook": "storybook dev -p 6008 --no-open --host 0.0.0.0",
     "test": "bun run test:vitest",
     "test:vitest": "vitest run",
-    "test:vitest:watch": "vitest",
-    "init:msw": "npx msw init public/"
+    "test:vitest:watch": "vitest"
   },
   "dependencies": {
     "@canonical/react-ds-global": "^0.10.0-experimental.8",
@@ -68,10 +67,5 @@
     "vite": "^7.0.0",
     "vite-tsconfig-paths": "^5.1.4",
     "vitest": "^3.2.3"
-  },
-  "msw": {
-    "workerDirectory": [
-      "public"
-    ]
   }
 }
