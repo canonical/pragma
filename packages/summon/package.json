@@ -1,0 +1,59 @@
+{
+  "name": "@canonical/summon",
+  "description": "A monadic task-centric code generator framework with React Ink CLI.",
+  "version": "0.1.0",
+  "type": "module",
+  "module": "src/index.ts",
+  "types": "src/index.ts",
+  "bin": {
+    "summon": "src/cli.tsx"
+  },
+  "files": [
+    "src",
+    "generators"
+  ],
+  "author": {
+    "email": "webteam@canonical.com",
+    "name": "Canonical Webteam"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/canonical/ds25"
+  },
+  "license": "GPL-3.0",
+  "bugs": {
+    "url": "https://github.com/canonical/ds25/issues"
+  },
+  "homepage": "https://github.com/canonical/ds25#readme",
+  "scripts": {
+    "build": "echo 'No build needed - runs directly from TypeScript'",
+    "build:all": "bun run build",
+    "check": "bun run check:biome && bun run check:ts && bun run check:webarchitect",
+    "check:fix": "bun run check:biome:fix && bun run check:ts",
+    "check:biome": "biome check",
+    "check:biome:fix": "biome check --write",
+    "check:ts": "tsc --noEmit",
+    "check:webarchitect": "webarchitect tool-ts",
+    "test": "bun test"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.3.11",
+    "@canonical/biome-config": "^0.11.0",
+    "@canonical/typescript-config-base": "^0.11.0",
+    "@types/ejs": "^3.1.5",
+    "@types/react": "^19.0.0",
+    "bun-types": "^1.0.0",
+    "ink-testing-library": "^4.0.0",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "chalk": "^5.6.2",
+    "commander": "^14.0.2",
+    "ejs": "^3.1.10",
+    "ink": "^6.0.0",
+    "ink-select-input": "^6.0.0",
+    "ink-spinner": "^5.0.0",
+    "ink-text-input": "^6.0.0",
+    "react": "^19.0.0"
+  }
+}
