@@ -9,11 +9,11 @@ jobs:
       fail-fast: false
       matrix:
         bun-version: ['1.2.19']
-        # Node 21 is EOL and unsupported by jsdom 27.x. Storybook Node 24 issues don't affect this workflow.
-        node-version: ['20', '22', '24']
+        # Node 20 EOL is April 2026. Testing on 22 (LTS) and 24 (current).
+        node-version: ['22', '24']
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Setup environment for Bun ${{ matrix.bun-version }} and Node ${{ matrix.node-version }}
         uses: ./.github/actions/setup-env

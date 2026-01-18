@@ -5,15 +5,14 @@ inputs:
     default: '1.2.19'
     description: Version of Bun to use
   node-version:
-    # we default to 22 (not latest) because versions >= 23 currently cause storybook builds to fail.
-    # see https://github.com/canonical/ds25/issues/226, https://github.com/oven-sh/bun/issues/3794
-    # TODO we can investigate removing this when Bun supports storybook & we can build without Node
-    default: '22'
+    # Node is required for Storybook and Lerna (Bun is used as package manager only)
+    # Storybook 10 supports Node 20.16+, 22.19+, or 24+
+    default: '24'
     description: Version of Node to use
 runs:
   using: composite
   steps:
-    - uses: actions/setup-node@v5
+    - uses: actions/setup-node@v6
       with:
         node-version: ${{ inputs.node-version }}
 
