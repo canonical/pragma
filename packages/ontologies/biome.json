@@ -1,6 +1,0 @@
-{
-  "extends": ["@canonical/biome-config"],
-  "files": {
-    "includes": ["src", "*.json"]
-  }
-}
