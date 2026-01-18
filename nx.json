@@ -16,7 +16,7 @@
       "cache": true
     },
     "check": {
-      "dependsOn": ["^check", "@canonical/webarchitect:build"],
+      "dependsOn": ["^check"],
       "cache": true
     },
     "check:fix": {

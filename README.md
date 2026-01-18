@@ -35,15 +35,18 @@ The monorepo uses `@canonical/webarchitect` to validate package architecture com
 
 ```
 base (minimal base for future extensibility)
-  └── package (biome config + package.json structure)
-        ├── tool (GPL-3.0 license) - for CLI tools and applications
-        └── library (LGPL-3.0 license) - for reusable libraries
+  └── package (biome config + package.json structure for compiled packages)
+  │     ├── tool (GPL-3.0 license) - for CLI tools and applications
+  │     └── library (LGPL-3.0 license) - for reusable libraries
+  │
+  └── tool-ts (GPL-3.0 license) - for TypeScript-only tools (no build, runs directly with Bun)
 ```
 
 | Ruleset | License | Use Case |
 |---------|---------|----------|
 | `library` | LGPL-3.0 | Reusable packages consumed by other projects |
-| `tool` | GPL-3.0 | CLI tools, build tools, internal utilities |
+| `tool` | GPL-3.0 | CLI tools, build tools, internal utilities (compiled) |
+| `tool-ts` | GPL-3.0 | TypeScript-only tools that run directly with Bun (no build step) |
 
 ### Packages Pending Integration
 

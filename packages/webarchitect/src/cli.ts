@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 import type { ErrorObject } from "ajv";
 import chalk from "chalk";
 import { Command } from "commander";
