@@ -29,16 +29,17 @@ export const Panel = memo(function MswPanel({ api, active }: PanelProps) {
       // We'll extract what we can from the handler
       const info = handler.info;
 
-    // Try to extract meaningful information
-    // In MSW v2, handlers have a request property that might contain the predicate
-    return {
-      index,
-      // We'll use a generic description since MSW doesn't expose method/path directly
-      type: info?.header ? "HTTP Handler" : "Unknown Handler",
-      // You could potentially inspect the handler's toString() or other properties
-      description: `Handler ${index + 1}`,
-    };
-  });
+      // Try to extract meaningful information
+      // In MSW v2, handlers have a request property that might contain the predicate
+      return {
+        index,
+        // We'll use a generic description since MSW doesn't expose method/path directly
+        type: info?.header ? "HTTP Handler" : "Unknown Handler",
+        // You could potentially inspect the handler's toString() or other properties
+        description: `Handler ${index + 1}`,
+      };
+    },
+  );
 
   return (
     <AddonPanel active={active}>
