@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { dryRun } from "../dry-run.js";
+import { flatMap } from "../task.js";
 import {
   copyDirectory,
   copyFile,
@@ -193,8 +194,16 @@ describe("Primitives - File System", () => {
       expect((effects[0] as { path: string }).path).toBe("/path/to/file");
     });
 
-    it("returns true by default in dry run", () => {
+    it("returns false by default in dry run when file not created", () => {
       const task = exists("/any/path");
+      const { value } = dryRun(task);
+      expect(value).toBe(false);
+    });
+
+    it("returns true in dry run when file was created during run", () => {
+      const task = flatMap(writeFile("/any/path", "content"), () =>
+        exists("/any/path"),
+      );
       const { value } = dryRun(task);
       expect(value).toBe(true);
     });

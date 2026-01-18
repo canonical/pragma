@@ -22,6 +22,8 @@ export interface PromptSequenceProps {
   onComplete: (answers: Record<string, unknown>) => void;
   /** Called when user cancels */
   onCancel?: () => void;
+  /** Initial answers (for resuming/editing) */
+  initialAnswers?: Record<string, unknown>;
 }
 
 // =============================================================================
@@ -339,9 +341,11 @@ export const PromptSequence = ({
   prompts,
   onComplete,
   onCancel,
+  initialAnswers,
 }: PromptSequenceProps) => {
+  // Always start at index 0, but preserve answers for display/editing
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [answers, setAnswers] = useState<Record<string, unknown>>({});
+  const [answers, setAnswers] = useState<Record<string, unknown>>(initialAnswers ?? {});
   // Track the history of prompt indices for back navigation
   const [history, setHistory] = useState<number[]>([]);
 

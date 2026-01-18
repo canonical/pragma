@@ -4,6 +4,7 @@
 
 import * as path from "node:path";
 import {
+  appendFile,
   exists,
   flatMap,
   ifElseM,
@@ -116,9 +117,9 @@ export const appendExportToParentIndex = (
       if (content.includes(`"./${componentName}"`)) {
         return pure(undefined); // Already exported
       }
-      return writeFile(indexPath, content + exportLine);
+      return appendFile(indexPath, exportLine);
     }),
-    // If not exists, create
+    // If not exists, create new file
     writeFile(indexPath, exportLine),
   );
 };
@@ -192,6 +193,8 @@ export interface TemplateContext {
   withStories: boolean;
   /** Include SSR tests */
   withSsrTests: boolean;
+  /** Index signature for compatibility with Record<string, unknown> */
+  [key: string]: unknown;
 }
 
 /**

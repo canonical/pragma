@@ -18,11 +18,15 @@ import type { GeneratorDefinition, PromptDefinition } from "./types.js";
 // Generator Discovery (Tree Structure)
 // =============================================================================
 
+/** Origin of a generator (for display purposes) */
+type GeneratorOrigin = "local" | "global" | "package" | "builtin";
+
 interface GeneratorNode {
   name: string;
   path: string; // Directory path
   indexPath?: string; // Path to index.ts if this is a runnable generator
   children: Map<string, GeneratorNode>;
+  origin?: GeneratorOrigin; // Where this generator came from
   meta?: {
     name: string;
     description: string;
@@ -61,6 +65,7 @@ const mergeIntoTree = (parent: GeneratorNode, child: GeneratorNode): void => {
 const buildGeneratorTree = async (
   dir: string,
   node: GeneratorNode,
+  origin: GeneratorOrigin = "local",
 ): Promise<void> => {
   try {
     const entries = await fs.readdir(dir, { withFileTypes: true });
@@ -74,6 +79,7 @@ const buildGeneratorTree = async (
           name: entry.name,
           path: childDir,
           children: new Map(),
+          origin,
         };
 
         // Check if this directory has an index.ts (is a runnable generator)
@@ -85,7 +91,7 @@ const buildGeneratorTree = async (
         }
 
         // Recursively discover children
-        await buildGeneratorTree(childDir, childNode);
+        await buildGeneratorTree(childDir, childNode, origin);
 
         // Only add node if it has an index.ts or has children with generators
         if (childNode.indexPath || childNode.children.size > 0) {
@@ -185,6 +191,7 @@ const insertGeneratorAtPath = (
   root: GeneratorNode,
   pathStr: string,
   generator: GeneratorDefinition,
+  origin: GeneratorOrigin = "package",
 ): void => {
   const segments = pathStr.split("/").filter(Boolean);
   let current = root;
@@ -201,6 +208,7 @@ const insertGeneratorAtPath = (
         name: segment,
         path: "",
         children: new Map(),
+        origin,
       });
     }
 
@@ -210,6 +218,7 @@ const insertGeneratorAtPath = (
     if (isLast) {
       // Mark as having a generator (use path as synthetic indexPath)
       child.indexPath = `cache:${pathStr}`;
+      child.origin = origin;
     }
 
     current = child;
@@ -226,6 +235,7 @@ const processPackage = async (
   pkgName: string,
   pkgDir: string,
   root: GeneratorNode,
+  origin: GeneratorOrigin = "package",
 ): Promise<void> => {
   // Read package.json to get the main entry
   const pkgJsonPath = path.join(pkgDir, "package.json");
@@ -250,7 +260,7 @@ const processPackage = async (
     // Insert each generator into the tree
     for (const [cmdPath, generator] of Object.entries(generators)) {
       if (generator && typeof generator === "object" && "meta" in generator) {
-        insertGeneratorAtPath(root, cmdPath, generator as GeneratorDefinition);
+        insertGeneratorAtPath(root, cmdPath, generator as GeneratorDefinition, origin);
       }
     }
   } catch (err) {
@@ -262,15 +272,77 @@ const processPackage = async (
 };
 
 /**
+ * Get the global summon config directory.
+ * Uses XDG_CONFIG_HOME if set, otherwise ~/.config/summon
+ */
+const getGlobalConfigDir = (): string => {
+  const xdgConfig = process.env.XDG_CONFIG_HOME;
+  if (xdgConfig) {
+    return path.join(xdgConfig, "summon");
+  }
+  return path.join(process.env.HOME ?? "~", ".config", "summon");
+};
+
+/**
+ * Discover globally installed summon-* packages.
+ * Looks in ~/.config/summon/node_modules for linked packages.
+ */
+const discoverGlobalPackages = async (
+  root: GeneratorNode,
+): Promise<void> => {
+  const globalDir = getGlobalConfigDir();
+  const globalNodeModules = path.join(globalDir, "node_modules");
+
+  try {
+    await fs.access(globalNodeModules);
+    // Reuse the same discovery logic but with "global" origin
+    const entries = await fs.readdir(globalNodeModules);
+
+    for (const entry of entries) {
+      const entryPath = path.join(globalNodeModules, entry);
+
+      if (entry.startsWith("@")) {
+        // Scoped packages
+        if (!(await isDirectory(entryPath))) continue;
+        try {
+          const scopedEntries = await fs.readdir(entryPath);
+          for (const scopedEntry of scopedEntries) {
+            if (scopedEntry.startsWith("summon-")) {
+              const pkgDir = path.join(entryPath, scopedEntry);
+              if (await isDirectory(pkgDir)) {
+                await processPackage(`${entry}/${scopedEntry}`, pkgDir, root, "global");
+              }
+            }
+          }
+        } catch {
+          // Scope directory doesn't exist
+        }
+      } else if (entry.startsWith("summon-")) {
+        if (await isDirectory(entryPath)) {
+          await processPackage(entry, entryPath, root, "global");
+        }
+      }
+    }
+  } catch {
+    // Global node_modules doesn't exist - that's fine
+  }
+
+  // Also check for generators directory in global config
+  await buildGeneratorTree(path.join(globalDir, "generators"), root, "global");
+};
+
+/**
  * Create the root generator tree from all sources.
  *
  * When `explicitPath` is provided, ONLY load from that path (for testing).
  *
- * Otherwise, priority (highest to lowest):
- * 1. Local ./generators/ (project-specific)
- * 2. Local ./.generators/ (project-specific, hidden)
- * 3. node_modules summon-* packages
- * 4. Built-in generators from @canonical/summon
+ * Otherwise, priority (highest to lowest, later overrides earlier):
+ * 1. Built-in generators from @canonical/summon
+ * 2. Global ~/.config/summon/node_modules summon-* packages
+ * 3. Global ~/.config/summon/generators/
+ * 4. node_modules summon-* packages (project-level)
+ * 5. Local ./.generators/ (project-specific, hidden)
+ * 6. Local ./generators/ (project-specific, highest priority)
  */
 const discoverGeneratorTree = async (
   explicitPath?: string,
@@ -292,29 +364,33 @@ const discoverGeneratorTree = async (
     try {
       await fs.access(pkgJsonPath);
       // It's a package - use processPackage to load from barrel
-      await processPackage(path.basename(absolutePath), absolutePath, root);
+      await processPackage(path.basename(absolutePath), absolutePath, root, "local");
     } catch {
       // Not a package - scan directory for generators
-      await buildGeneratorTree(absolutePath, root);
+      await buildGeneratorTree(absolutePath, root, "local");
     }
     return root;
   }
 
-  // Normal discovery mode
-  // 1. Built-in generators (lowest priority - added first, can be overridden)
-  await buildGeneratorTree(path.join(__dirname, "..", "generators"), root);
+  // Normal discovery mode (order matters: later sources override earlier)
 
-  // 2. node_modules packages (medium priority)
+  // 1. Built-in generators (lowest priority)
+  await buildGeneratorTree(path.join(__dirname, "..", "generators"), root, "builtin");
+
+  // 2-3. Global packages and generators
+  await discoverGlobalPackages(root);
+
+  // 4. node_modules packages (project-level)
   await discoverNodeModulesPackages(
     path.join(process.cwd(), "node_modules"),
     root,
   );
 
-  // 3. Local .generators (high priority)
-  await buildGeneratorTree(path.join(process.cwd(), ".generators"), root);
+  // 5. Local .generators (high priority)
+  await buildGeneratorTree(path.join(process.cwd(), ".generators"), root, "local");
 
-  // 4. Local generators (highest priority - added last, overrides all)
-  await buildGeneratorTree(path.join(process.cwd(), "generators"), root);
+  // 6. Local generators (highest priority)
+  await buildGeneratorTree(path.join(process.cwd(), "generators"), root, "local");
 
   return root;
 };
@@ -376,6 +452,24 @@ const program = new Command();
 // =============================================================================
 
 /**
+ * Format origin badge for display.
+ */
+const formatOrigin = (origin?: GeneratorOrigin): string => {
+  switch (origin) {
+    case "local":
+      return chalk.green("[local]");
+    case "global":
+      return chalk.blue("[global]");
+    case "package":
+      return chalk.magenta("[pkg]");
+    case "builtin":
+      return chalk.dim("[builtin]");
+    default:
+      return "";
+  }
+};
+
+/**
  * Print the available generators/sub-generators at a node.
  */
 const printNode = (node: GeneratorNode, pathSegments: string[]) => {
@@ -387,6 +481,7 @@ const printNode = (node: GeneratorNode, pathSegments: string[]) => {
     console.log(chalk.dim("\nCreate generators in:"));
     console.log(chalk.dim("  - ./generators/<topic>/index.ts"));
     console.log(chalk.dim("  - ./generators/<topic>/<subtopic>/index.ts"));
+    console.log(chalk.dim("  - ~/.config/summon/generators/<topic>/index.ts (global)"));
     return;
   }
 
@@ -399,6 +494,7 @@ const printNode = (node: GeneratorNode, pathSegments: string[]) => {
   for (const [name, child] of node.children) {
     const hasChildren = child.children.size > 0;
     const isRunnable = !!child.indexPath;
+    const originBadge = child.origin ? ` ${formatOrigin(child.origin)}` : "";
 
     let suffix = "";
     if (hasChildren && isRunnable) {
@@ -407,7 +503,7 @@ const printNode = (node: GeneratorNode, pathSegments: string[]) => {
       suffix = chalk.dim(" (has subtopics)");
     }
 
-    console.log(chalk.cyan(`  ${name}`) + suffix);
+    console.log(chalk.cyan(`  ${name}`) + originBadge + suffix);
 
     // Show immediate children as hints
     if (hasChildren) {
