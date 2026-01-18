@@ -902,6 +902,9 @@ const configureGeneratorCommand = (
     if (hasAllAnswers && cmdOptions.dryRun && !isTTY) {
       // Batch dry-run mode (non-interactive)
       const { dryRun } = await import("./dry-run.js");
+      const { isVisibleEffect, formatEffectLine } = await import(
+        "./cli-format.js"
+      );
 
       console.log();
       console.log(chalk.bold.magenta(generator.meta.name));
@@ -911,17 +914,23 @@ const configureGeneratorCommand = (
       const task = generator.generate(answersWithDefaults);
       const result = dryRun(task);
 
-      console.log(chalk.bold.cyan("Files to be created:"));
-      const seen = new Set<string>();
-      for (const effect of result.effects) {
-        if (effect._tag === "WriteFile") {
-          console.log(chalk.green(`  + ${effect.path}`));
-          seen.add(effect.path);
-        } else if (effect._tag === "MakeDir" && !seen.has(effect.path)) {
-          console.log(chalk.green(`  + ${effect.path}/`));
-          seen.add(effect.path);
+      // Filter and deduplicate effects
+      const seenDirPaths = new Set<string>();
+      const visibleEffects = result.effects.filter((e) => {
+        if (!isVisibleEffect(e)) return false;
+        if (e._tag === "MakeDir") {
+          if (seenDirPaths.has(e.path)) return false;
+          seenDirPaths.add(e.path);
         }
-      }
+        return true;
+      });
+
+      console.log(chalk.dim.bold("Plan:"));
+      visibleEffects.forEach((effect, index) => {
+        const isLast = index === visibleEffects.length - 1;
+        console.log(formatEffectLine(effect, isLast));
+      });
+
       console.log();
       console.log(chalk.dim("Dry-run complete. No files were modified."));
     } else {

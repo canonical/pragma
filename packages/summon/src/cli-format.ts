@@ -12,10 +12,8 @@ const ACTION_LABEL_WIDTH = 14;
 
 /**
  * Filter effects to only show user-relevant ones (not internal effects).
- * @param effect - The effect to check
- * @param verbose - If true, include debug logs
  */
-export const isVisibleEffect = (effect: Effect, verbose = false): boolean => {
+export const isVisibleEffect = (effect: Effect): boolean => {
   switch (effect._tag) {
     case "WriteFile":
     case "AppendFile":
@@ -27,11 +25,8 @@ export const isVisibleEffect = (effect: Effect, verbose = false): boolean => {
     case "Exec":
       return true;
     case "Log":
-      // Filter out debug logs unless verbose is enabled
-      if (effect.level === "debug") {
-        return verbose;
-      }
-      return true;
+      // Filter out debug logs
+      return effect.level !== "debug";
     // Internal effects are not shown
     case "ReadFile":
     case "Exists":
@@ -70,8 +65,6 @@ export const getActionLabel = (effect: Effect): string => {
       return "Execute";
     case "Log":
       switch (effect.level) {
-        case "debug":
-          return "Debug";
         case "info":
           return "Info";
         case "warn":
@@ -107,16 +100,11 @@ export const getActionColor = (
     case "Exec":
       return "yellow";
     case "Log":
-      switch (effect.level) {
-        case "error":
-          return "red";
-        case "warn":
-          return "yellow";
-        case "debug":
-          return undefined; // dim by default
-        default:
-          return "blue";
-      }
+      return effect.level === "error"
+        ? "red"
+        : effect.level === "warn"
+          ? "yellow"
+          : "blue";
     default:
       return undefined;
   }
