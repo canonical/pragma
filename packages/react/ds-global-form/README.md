@@ -1,4 +1,4 @@
-# react-ds-core-form
+# react-ds-global-form
 
 The collection of Form Components in the DS25.
 

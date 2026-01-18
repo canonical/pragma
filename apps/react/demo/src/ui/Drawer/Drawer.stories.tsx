@@ -1,6 +1,6 @@
 /* @canonical/generator-ds 0.9.0-experimental.12 */
 
-import { Button } from "@canonical/react-ds-core";
+import { Button } from "@canonical/react-ds-global";
 import type { Meta, StoryFn, StoryObj } from "@storybook/react-vite";
 import { useRef, useState } from "react";
 import Component from "./Drawer.js";

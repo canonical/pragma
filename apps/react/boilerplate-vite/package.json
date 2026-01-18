@@ -24,7 +24,7 @@
     "storybook": "storybook dev -p 6010 --no-open --host 0.0.0.0"
   },
   "dependencies": {
-    "@canonical/react-ds-core": "^0.10.0-experimental.8",
+    "@canonical/react-ds-global": "^0.10.0-experimental.8",
     "@canonical/react-ssr": "^0.10.0-experimental.4",
     "@canonical/storybook-config": "^0.10.0-experimental.8",
     "@canonical/styles": "^0.10.0-experimental.6",
@@ -34,7 +34,6 @@
   "devDependencies": {
     "@biomejs/biome": "2.2.4",
     "@canonical/biome-config": "^0.10.0-experimental.4",
-    "@canonical/react-ds-core": "^0.9.0",
     "@canonical/typescript-config-react": "^0.10.0-experimental.4",
     "@chromatic-com/storybook": "^4.0.0",
     "@types/node": "^24.0.0",

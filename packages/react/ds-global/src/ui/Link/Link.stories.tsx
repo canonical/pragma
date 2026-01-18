@@ -88,7 +88,7 @@ export const AsPolymorphicComponent: Story = {
       source: {
         code: `
 // Example with a fictional RouterLink from a routing library
-import { Link } from '@canonical/react-ds-core';
+import { Link } from '@canonical/react-ds-global';
 import { RouterLink } from 'your-router-library';
 
 <Link

@@ -1,4 +1,4 @@
-name: "react-ds-core-form/chromatic"
+name: "react-ds-global-form/chromatic"
 on:
   pull_request:
     paths:
@@ -7,8 +7,8 @@ on:
       - packages/tokens/**
       - packages/styles/**
       - packages/utils/**
-      - packages/react/ds-core/**
-      - packages/react/ds-core-form/**
+      - packages/react/ds-global/**
+      - packages/react/ds-global-form/**
   push:
     branches:
       - main
@@ -18,20 +18,20 @@ on:
       - packages/tokens/**
       - packages/styles/**
       - packages/utils/**
-      - packages/react/ds-core/**
-      - packages/react/ds-core-form/**
+      - packages/react/ds-global/**
+      - packages/react/ds-global-form/**
 jobs:
   test-compile:
     uses: ./.github/workflows/chromatic._template.yml
     secrets:
-      CHROMATIC_PROJECT_TOKEN: ${{ secrets.CHROMATIC_TOKEN_CANONICAL_REACT_DS_CORE_FORM }}
+      CHROMATIC_PROJECT_TOKEN: ${{ secrets.CHROMATIC_TOKEN_CANONICAL_REACT_DS_GLOBAL_FORM }}
     with:
-      working-directory: packages/react/ds-core-form
+      working-directory: packages/react/ds-global-form
       externals: '[
         "configs/storybook/**",
         "packages/ds-assets/**",
         "packages/tokens/**",
         "packages/styles/**",
         "packages/utils/**",
-        "packages/react/ds-core/**"
+        "packages/react/ds-global/**"
       ]'

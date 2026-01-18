@@ -1,4 +1,4 @@
-name: "react-ds-core/chromatic"
+name: "react-ds-global/chromatic"
 on:
   pull_request:
     paths:
@@ -7,7 +7,7 @@ on:
       - packages/tokens/**
       - packages/styles/**
       - packages/utils/**
-      - packages/react/ds-core/**
+      - packages/react/ds-global/**
   push:
     branches:
       - main
@@ -17,14 +17,14 @@ on:
       - packages/tokens/**
       - packages/styles/**
       - packages/utils/**
-      - packages/react/ds-core/**
+      - packages/react/ds-global/**
 jobs:
   test-compile:
     uses: ./.github/workflows/chromatic._template.yml
     secrets:
-      CHROMATIC_PROJECT_TOKEN: ${{ secrets.CHROMATIC_TOKEN_CANONICAL_REACT_DS_CORE }}
+      CHROMATIC_PROJECT_TOKEN: ${{ secrets.CHROMATIC_TOKEN_CANONICAL_REACT_DS_GLOBAL }}
     with:
-      working-directory: packages/react/ds-core
+      working-directory: packages/react/ds-global
       externals: '[
         "configs/storybook/**",
         "packages/ds-assets/**",
