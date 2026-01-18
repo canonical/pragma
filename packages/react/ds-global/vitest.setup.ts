@@ -8,8 +8,10 @@ afterEach(() => {
   cleanup();
 });
 
-global.ResizeObserver = vitest.fn().mockImplementation(() => ({
-  observe: vitest.fn(),
-  unobserve: vitest.fn(),
-  disconnect: vitest.fn(),
-}));
+class ResizeObserverMock {
+  observe = vitest.fn();
+  unobserve = vitest.fn();
+  disconnect = vitest.fn();
+}
+
+global.ResizeObserver = ResizeObserverMock as unknown as typeof ResizeObserver;
