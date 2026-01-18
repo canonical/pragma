@@ -2,12 +2,17 @@
  * PromptSequence Component
  *
  * Handles interactive prompts for generators using React Ink.
+ * Features:
+ * - Progress indicator (step X of Y)
+ * - Navigate back to previous answers
+ * - Show completed answers
+ * - Group headers
  */
 
 import { Box, Text, useInput } from "ink";
 import SelectInput from "ink-select-input";
 import TextInput from "ink-text-input";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { PromptDefinition } from "../types.js";
 
 export interface PromptSequenceProps {
@@ -19,14 +24,89 @@ export interface PromptSequenceProps {
   onCancel?: () => void;
 }
 
-interface TextPromptProps {
+// =============================================================================
+// Helper to format answer values for display
+// =============================================================================
+
+const formatAnswerValue = (
+  value: unknown,
+  prompt: PromptDefinition,
+): string => {
+  if (value === undefined || value === null) return "";
+
+  if (prompt.type === "confirm") {
+    return value ? "Yes" : "No";
+  }
+
+  if (prompt.type === "select" && prompt.choices) {
+    const choice = prompt.choices.find((c) => c.value === value);
+    return choice?.label ?? String(value);
+  }
+
+  if (prompt.type === "multiselect" && Array.isArray(value)) {
+    if (value.length === 0) return "None";
+    if (prompt.choices) {
+      return value
+        .map((v) => prompt.choices?.find((c) => c.value === v)?.label ?? v)
+        .join(", ");
+    }
+    return value.join(", ");
+  }
+
+  return String(value);
+};
+
+// =============================================================================
+// Completed Answer Display
+// =============================================================================
+
+interface CompletedAnswerProps {
   prompt: PromptDefinition;
-  onSubmit: (value: string) => void;
+  value: unknown;
+  isEditing?: boolean;
 }
 
-const TextPrompt = ({ prompt, onSubmit }: TextPromptProps) => {
-  const [value, setValue] = useState(String(prompt.default ?? ""));
+const CompletedAnswer = ({
+  prompt,
+  value,
+  isEditing = false,
+}: CompletedAnswerProps) => {
+  const displayValue = formatAnswerValue(value, prompt);
+
+  return (
+    <Box>
+      <Text color="green">✔ </Text>
+      <Text dimColor={!isEditing}>{prompt.message} </Text>
+      <Text color={isEditing ? "yellow" : "cyan"}>{displayValue}</Text>
+    </Box>
+  );
+};
+
+// =============================================================================
+// Text Prompt
+// =============================================================================
+
+interface TextPromptProps {
+  prompt: PromptDefinition;
+  initialValue?: string;
+  onSubmit: (value: string) => void;
+  onBack?: () => void;
+}
+
+const TextPrompt = ({
+  prompt,
+  initialValue,
+  onSubmit,
+  onBack,
+}: TextPromptProps) => {
+  const [value, setValue] = useState(initialValue ?? String(prompt.default ?? ""));
   const [error, setError] = useState<string | null>(null);
+
+  // Reset value when prompt changes
+  useEffect(() => {
+    setValue(initialValue ?? String(prompt.default ?? ""));
+    setError(null);
+  }, [prompt.name, initialValue, prompt.default]);
 
   const handleSubmit = useCallback(
     (val: string) => {
@@ -42,30 +122,42 @@ const TextPrompt = ({ prompt, onSubmit }: TextPromptProps) => {
     [prompt, onSubmit],
   );
 
+  // Handle back navigation with Escape
+  useInput((_input, key) => {
+    if (key.escape && onBack) {
+      onBack();
+    }
+  });
+
   return (
     <Box flexDirection="column">
       <Box>
-        <Text color="cyan">? </Text>
-        <Text bold>{prompt.message} </Text>
+        <Text color="magenta">› </Text>
+        <Text bold>{prompt.message}</Text>
       </Box>
       <Box marginLeft={2}>
         <TextInput value={value} onChange={setValue} onSubmit={handleSubmit} />
       </Box>
       {error && (
         <Box marginLeft={2}>
-          <Text color="red">{error}</Text>
+          <Text color="red">✘ {error}</Text>
         </Box>
       )}
     </Box>
   );
 };
 
+// =============================================================================
+// Confirm Prompt
+// =============================================================================
+
 interface ConfirmPromptProps {
   prompt: PromptDefinition;
   onSubmit: (value: boolean) => void;
+  onBack?: () => void;
 }
 
-const ConfirmPrompt = ({ prompt, onSubmit }: ConfirmPromptProps) => {
+const ConfirmPrompt = ({ prompt, onSubmit, onBack }: ConfirmPromptProps) => {
   const defaultValue = Boolean(prompt.default);
 
   useInput((input, key) => {
@@ -75,51 +167,83 @@ const ConfirmPrompt = ({ prompt, onSubmit }: ConfirmPromptProps) => {
       onSubmit(false);
     } else if (key.return) {
       onSubmit(defaultValue);
+    } else if (key.escape && onBack) {
+      onBack();
     }
   });
 
-  const hint = defaultValue ? "(Y/n)" : "(y/N)";
+  const hint = defaultValue ? "Y/n" : "y/N";
 
   return (
     <Box>
-      <Text color="cyan">? </Text>
+      <Text color="magenta">› </Text>
       <Text bold>{prompt.message} </Text>
-      <Text dimColor>{hint}</Text>
+      <Text dimColor>({hint})</Text>
     </Box>
   );
 };
 
+// =============================================================================
+// Select Prompt
+// =============================================================================
+
 interface SelectPromptProps {
   prompt: PromptDefinition;
   onSubmit: (value: string) => void;
+  onBack?: () => void;
 }
 
-const SelectPrompt = ({ prompt, onSubmit }: SelectPromptProps) => {
+const SelectPrompt = ({ prompt, onSubmit, onBack }: SelectPromptProps) => {
   const items =
     prompt.choices?.map((choice) => ({
       label: choice.label,
       value: choice.value,
     })) ?? [];
 
+  // Find initial index based on default value
+  const initialIndex = prompt.default
+    ? items.findIndex((item) => item.value === prompt.default)
+    : 0;
+
+  useInput((_input, key) => {
+    if (key.escape && onBack) {
+      onBack();
+    }
+  });
+
   return (
     <Box flexDirection="column">
       <Box>
-        <Text color="cyan">? </Text>
+        <Text color="magenta">› </Text>
         <Text bold>{prompt.message}</Text>
+        <Text dimColor> (↑↓ to select, enter to confirm)</Text>
       </Box>
       <Box marginLeft={2}>
-        <SelectInput items={items} onSelect={(item) => onSubmit(item.value)} />
+        <SelectInput
+          items={items}
+          initialIndex={initialIndex >= 0 ? initialIndex : 0}
+          onSelect={(item) => onSubmit(item.value)}
+        />
       </Box>
     </Box>
   );
 };
 
+// =============================================================================
+// Multiselect Prompt
+// =============================================================================
+
 interface MultiselectPromptProps {
   prompt: PromptDefinition;
   onSubmit: (values: string[]) => void;
+  onBack?: () => void;
 }
 
-const MultiselectPrompt = ({ prompt, onSubmit }: MultiselectPromptProps) => {
+const MultiselectPrompt = ({
+  prompt,
+  onSubmit,
+  onBack,
+}: MultiselectPromptProps) => {
   const [selected, setSelected] = useState<Set<string>>(
     new Set(prompt.default as string[] | undefined),
   );
@@ -128,6 +252,10 @@ const MultiselectPrompt = ({ prompt, onSubmit }: MultiselectPromptProps) => {
   const choices = prompt.choices ?? [];
 
   useInput((input, key) => {
+    if (key.escape && onBack) {
+      onBack();
+      return;
+    }
     if (key.upArrow) {
       setHighlightedIndex((prev) => (prev > 0 ? prev - 1 : choices.length - 1));
     } else if (key.downArrow) {
@@ -153,22 +281,24 @@ const MultiselectPrompt = ({ prompt, onSubmit }: MultiselectPromptProps) => {
   return (
     <Box flexDirection="column">
       <Box>
-        <Text color="cyan">? </Text>
+        <Text color="magenta">› </Text>
         <Text bold>{prompt.message}</Text>
-        <Text dimColor> (space to select, enter to confirm)</Text>
+        <Text dimColor> (space to toggle, enter to confirm)</Text>
       </Box>
       <Box marginLeft={2} flexDirection="column">
         {choices.map((choice, i) => {
           const isHighlighted = i === highlightedIndex;
           const isSelected = selected.has(choice.value);
-          const pointer = isHighlighted ? "> " : "  ";
-          const checkbox = isSelected ? "[x] " : "[ ] ";
+          const pointer = isHighlighted ? "› " : "  ";
+          const checkbox = isSelected ? "◉ " : "○ ";
 
           return (
             <Box key={choice.value}>
-              <Text color={isHighlighted ? "cyan" : undefined}>{pointer}</Text>
-              <Text color={isSelected ? "green" : undefined}>{checkbox}</Text>
-              <Text>{choice.label}</Text>
+              <Text color={isHighlighted ? "magenta" : undefined}>
+                {pointer}
+              </Text>
+              <Text color={isSelected ? "green" : "gray"}>{checkbox}</Text>
+              <Text color={isSelected ? undefined : "gray"}>{choice.label}</Text>
             </Box>
           );
         })}
@@ -177,6 +307,34 @@ const MultiselectPrompt = ({ prompt, onSubmit }: MultiselectPromptProps) => {
   );
 };
 
+// =============================================================================
+// Progress Header
+// =============================================================================
+
+interface ProgressHeaderProps {
+  current: number;
+  total: number;
+  group?: string;
+}
+
+const ProgressHeader = ({ current, total, group }: ProgressHeaderProps) => {
+  return (
+    <Box marginBottom={1}>
+      <Text dimColor>
+        {group ? `${group} · ` : ""}Step {current} of {total}
+        {" · "}
+        <Text dimColor italic>
+          esc to go back
+        </Text>
+      </Text>
+    </Box>
+  );
+};
+
+// =============================================================================
+// Main PromptSequence Component
+// =============================================================================
+
 export const PromptSequence = ({
   prompts,
   onComplete,
@@ -184,6 +342,8 @@ export const PromptSequence = ({
 }: PromptSequenceProps) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, unknown>>({});
+  // Track the history of prompt indices for back navigation
+  const [history, setHistory] = useState<number[]>([]);
 
   // Filter prompts based on `when` condition
   const activePrompts = prompts.filter((prompt) => {
@@ -203,6 +363,7 @@ export const PromptSequence = ({
       setAnswers(newAnswers);
 
       if (currentIndex < activePrompts.length - 1) {
+        setHistory((prev) => [...prev, currentIndex]);
         setCurrentIndex((prev) => prev + 1);
       } else {
         onComplete(newAnswers);
@@ -211,34 +372,90 @@ export const PromptSequence = ({
     [answers, currentPrompt, currentIndex, activePrompts.length, onComplete],
   );
 
-  // Handle escape to cancel
-  useInput((_input, key) => {
-    if (key.escape && onCancel) {
+  const handleBack = useCallback(() => {
+    if (history.length > 0) {
+      const prevIndex = history[history.length - 1];
+      setHistory((prev) => prev.slice(0, -1));
+      setCurrentIndex(prevIndex);
+    } else if (onCancel) {
       onCancel();
     }
-  });
+  }, [history, onCancel]);
 
   if (!currentPrompt) {
     return null;
   }
 
+  // Get previously completed prompts to display
+  const completedPrompts = activePrompts.slice(0, currentIndex);
+
   // Render the appropriate prompt type
-  switch (currentPrompt.type) {
-    case "text":
-      return <TextPrompt prompt={currentPrompt} onSubmit={handleAnswer} />;
-    case "confirm":
-      return <ConfirmPrompt prompt={currentPrompt} onSubmit={handleAnswer} />;
-    case "select":
-      return <SelectPrompt prompt={currentPrompt} onSubmit={handleAnswer} />;
-    case "multiselect":
-      return (
-        <MultiselectPrompt prompt={currentPrompt} onSubmit={handleAnswer} />
-      );
-    default:
-      return (
-        <Text color="red">
-          Unknown prompt type: {(currentPrompt as PromptDefinition).type}
-        </Text>
-      );
-  }
+  const renderCurrentPrompt = () => {
+    const existingValue = answers[currentPrompt.name];
+
+    switch (currentPrompt.type) {
+      case "text":
+        return (
+          <TextPrompt
+            prompt={currentPrompt}
+            initialValue={existingValue as string | undefined}
+            onSubmit={handleAnswer}
+            onBack={handleBack}
+          />
+        );
+      case "confirm":
+        return (
+          <ConfirmPrompt
+            prompt={currentPrompt}
+            onSubmit={handleAnswer}
+            onBack={handleBack}
+          />
+        );
+      case "select":
+        return (
+          <SelectPrompt
+            prompt={currentPrompt}
+            onSubmit={handleAnswer}
+            onBack={handleBack}
+          />
+        );
+      case "multiselect":
+        return (
+          <MultiselectPrompt
+            prompt={currentPrompt}
+            onSubmit={handleAnswer}
+            onBack={handleBack}
+          />
+        );
+      default:
+        return (
+          <Text color="red">
+            Unknown prompt type: {(currentPrompt as PromptDefinition).type}
+          </Text>
+        );
+    }
+  };
+
+  return (
+    <Box flexDirection="column">
+      {/* Progress indicator */}
+      <ProgressHeader
+        current={currentIndex + 1}
+        total={activePrompts.length}
+        group={currentPrompt.group}
+      />
+
+      {/* Show completed answers */}
+      {completedPrompts.map((prompt) => (
+        <CompletedAnswer
+          key={prompt.name}
+          prompt={prompt}
+          value={answers[prompt.name]}
+        />
+      ))}
+
+      {/* Current prompt */}
+      {renderCurrentPrompt()}
+    </Box>
+  );
 };
