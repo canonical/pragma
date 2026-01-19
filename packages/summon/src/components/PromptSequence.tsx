@@ -59,27 +59,43 @@ const formatAnswerValue = (
 };
 
 // =============================================================================
-// Completed Answer Display
+// Completed Answers Table Display
 // =============================================================================
 
-interface CompletedAnswerProps {
-  prompt: PromptDefinition;
-  value: unknown;
-  isEditing?: boolean;
+interface CompletedAnswersTableProps {
+  prompts: PromptDefinition[];
+  answers: Record<string, unknown>;
 }
 
-const CompletedAnswer = ({
-  prompt,
-  value,
-  isEditing = false,
-}: CompletedAnswerProps) => {
-  const displayValue = formatAnswerValue(value, prompt);
+/**
+ * Display completed answers in a borderless table format with aligned columns.
+ */
+const CompletedAnswersTable = ({
+  prompts,
+  answers,
+}: CompletedAnswersTableProps) => {
+  if (prompts.length === 0) {
+    return null;
+  }
+
+  // Calculate max width for the question column (for alignment)
+  const maxQuestionWidth = Math.max(...prompts.map((p) => p.message.length));
 
   return (
-    <Box>
-      <Text color="green">✔ </Text>
-      <Text dimColor={!isEditing}>{prompt.message} </Text>
-      <Text color={isEditing ? "yellow" : "cyan"}>{displayValue}</Text>
+    <Box flexDirection="column" marginBottom={1}>
+      {prompts.map((prompt) => {
+        const value = answers[prompt.name];
+        const displayValue = formatAnswerValue(value, prompt);
+
+        return (
+          <Box key={prompt.name}>
+            <Text color="green">✔ </Text>
+            <Text dimColor>{prompt.message.padEnd(maxQuestionWidth)}</Text>
+            <Text dimColor> </Text>
+            <Text color="cyan">{displayValue}</Text>
+          </Box>
+        );
+      })}
     </Box>
   );
 };
@@ -455,14 +471,10 @@ export const PromptSequence = ({
         group={currentPrompt.group}
       />
 
-      {/* Show completed answers */}
-      {completedPrompts.map((prompt) => (
-        <CompletedAnswer
-          key={prompt.name}
-          prompt={prompt}
-          value={answers[prompt.name]}
-        />
-      ))}
+      {/* Show completed answers in table format */}
+      {completedPrompts.length > 0 && (
+        <CompletedAnswersTable prompts={completedPrompts} answers={answers} />
+      )}
 
       {/* Current prompt */}
       {renderCurrentPrompt()}

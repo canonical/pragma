@@ -484,30 +484,9 @@ const formatAnswerValue = (
 };
 
 /**
- * Display a single completed answer.
+ * Display all completed answers in a borderless table format for confirmation review.
  */
-const CompletedAnswerRow = ({
-  prompt,
-  value,
-}: {
-  prompt: PromptDefinition;
-  value: unknown;
-}) => {
-  const displayValue = formatAnswerValue(value, prompt);
-
-  return (
-    <Box>
-      <Text color="green">✔ </Text>
-      <Text dimColor>{prompt.message} </Text>
-      <Text color="cyan">{displayValue}</Text>
-    </Box>
-  );
-};
-
-/**
- * Display all completed answers for confirmation review.
- */
-const CompletedAnswers = ({
+const CompletedAnswersTable = ({
   prompts,
   answers,
 }: {
@@ -526,34 +505,58 @@ const CompletedAnswers = ({
     return null;
   }
 
+  // Calculate max width for the question column (for alignment)
+  const maxQuestionWidth = Math.max(
+    ...activePrompts.map((p) => p.message.length),
+  );
+
   return (
     <Box flexDirection="column" marginBottom={1}>
-      {activePrompts.map((prompt) => (
-        <CompletedAnswerRow
-          key={prompt.name}
-          prompt={prompt}
-          value={answers[prompt.name]}
-        />
-      ))}
+      {activePrompts.map((prompt) => {
+        const value = answers[prompt.name];
+        const displayValue = formatAnswerValue(value, prompt);
+
+        return (
+          <Box key={prompt.name}>
+            <Text color="green">✔ </Text>
+            <Text dimColor>{prompt.message.padEnd(maxQuestionWidth)}</Text>
+            <Text dimColor> </Text>
+            <Text color="cyan">{displayValue}</Text>
+          </Box>
+        );
+      })}
     </Box>
   );
 };
 
 /**
- * Summarize effects for the confirmation message (just counts).
+ * Display a summary of planned effects in a borderless table format.
  */
-const summarizeEffectsForConfirm = (effects: Effect[]): string => {
+const EffectsSummaryTable = ({ effects }: { effects: Effect[] }) => {
   const files = new Set<string>();
   const directories = new Set<string>();
+  const copied = new Set<string>();
+  const deleted = new Set<string>();
   let commands = 0;
 
   for (const effect of effects) {
     switch (effect._tag) {
       case "WriteFile":
+      case "AppendFile":
         files.add(effect.path);
         break;
       case "MakeDir":
         directories.add(effect.path);
+        break;
+      case "CopyFile":
+        copied.add(effect.dest);
+        break;
+      case "CopyDirectory":
+        copied.add(effect.dest);
+        break;
+      case "DeleteFile":
+      case "DeleteDirectory":
+        deleted.add(effect.path);
         break;
       case "Exec":
         commands++;
@@ -561,17 +564,71 @@ const summarizeEffectsForConfirm = (effects: Effect[]): string => {
     }
   }
 
-  const parts: string[] = [];
-  if (files.size > 0)
-    parts.push(`${files.size} file${files.size > 1 ? "s" : ""}`);
-  if (directories.size > 0)
-    parts.push(
-      `${directories.size} director${directories.size > 1 ? "ies" : "y"}`,
-    );
-  if (commands > 0)
-    parts.push(`run ${commands} command${commands > 1 ? "s" : ""}`);
+  // Build rows for non-zero counts
+  const rows: Array<{ label: string; count: number; color: string }> = [];
 
-  return parts.length > 0 ? `create ${parts.join(", ")}` : "make no changes";
+  if (files.size > 0) {
+    rows.push({
+      label: `File${files.size > 1 ? "s" : ""} to create`,
+      count: files.size,
+      color: "green",
+    });
+  }
+  if (directories.size > 0) {
+    rows.push({
+      label: `Director${directories.size > 1 ? "ies" : "y"} to create`,
+      count: directories.size,
+      color: "green",
+    });
+  }
+  if (copied.size > 0) {
+    rows.push({
+      label: `Item${copied.size > 1 ? "s" : ""} to copy`,
+      count: copied.size,
+      color: "cyan",
+    });
+  }
+  if (deleted.size > 0) {
+    rows.push({
+      label: `Item${deleted.size > 1 ? "s" : ""} to delete`,
+      count: deleted.size,
+      color: "red",
+    });
+  }
+  if (commands > 0) {
+    rows.push({
+      label: `Command${commands > 1 ? "s" : ""} to run`,
+      count: commands,
+      color: "yellow",
+    });
+  }
+
+  if (rows.length === 0) {
+    return (
+      <Box marginBottom={1}>
+        <Text dimColor>No operations planned.</Text>
+      </Box>
+    );
+  }
+
+  // Calculate max label width for alignment
+  const maxLabelWidth = Math.max(...rows.map((r) => r.label.length));
+
+  return (
+    <Box flexDirection="column" marginBottom={1}>
+      <Text bold dimColor>
+        Operations:
+      </Text>
+      {rows.map((row) => (
+        <Box key={row.label}>
+          <Text dimColor> {row.label.padEnd(maxLabelWidth)} </Text>
+          <Text color={row.color as "green" | "cyan" | "red" | "yellow"}>
+            {row.count}
+          </Text>
+        </Box>
+      ))}
+    </Box>
+  );
 };
 
 /**
@@ -799,15 +856,16 @@ export const App = ({
 
       {state.phase === "confirming" && (
         <Box flexDirection="column">
-          {/* Show completed answers */}
-          <CompletedAnswers
+          {/* Show completed answers in table format */}
+          <CompletedAnswersTable
             prompts={generator.prompts}
             answers={state.promptAnswers}
           />
+          {/* Show effects summary table */}
+          <EffectsSummaryTable effects={state.effects} />
           {/* Confirmation prompt with escape hint */}
           <Box>
             <Text color="magenta">› </Text>
-            <Text>This will {summarizeEffectsForConfirm(state.effects)}. </Text>
             <Text bold>Proceed? </Text>
             <Text dimColor>(Y/n) </Text>
             <Text dimColor italic>
