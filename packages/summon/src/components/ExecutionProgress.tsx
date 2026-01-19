@@ -8,7 +8,7 @@ import { Box, Text } from "ink";
 import type React from "react";
 import { useEffect, useState } from "react";
 import { describeEffect } from "../effect.js";
-import { runTask } from "../interpreter.js";
+import { runTask, type StampConfig } from "../interpreter.js";
 import type { Effect, Task, TaskError } from "../types.js";
 import { Spinner } from "./Spinner.js";
 
@@ -28,6 +28,8 @@ export interface ExecutionProgressProps {
   onComplete: (effects: TimedEffect[], duration: number) => void;
   /** Called when execution fails */
   onError: (error: TaskError) => void;
+  /** Stamp configuration for generated files (undefined = no stamps) */
+  stamp?: StampConfig;
 }
 
 interface CompletedEffect {
@@ -68,6 +70,7 @@ export const ExecutionProgress: React.FC<ExecutionProgressProps> = ({
   dryRun: _dryRun = false,
   onComplete,
   onError,
+  stamp,
 }) => {
   const [currentEffect, setCurrentEffect] = useState<Effect | null>(null);
   const [completedEffects, setCompletedEffects] = useState<CompletedEffect[]>(
@@ -87,6 +90,7 @@ export const ExecutionProgress: React.FC<ExecutionProgressProps> = ({
     const executeWithProgress = async () => {
       try {
         await runTask(task, {
+          stamp,
           onEffectStart: (effect) => {
             // Skip showing duplicate MakeDir in spinner
             if (effect._tag === "MakeDir" && seenDirPaths.has(effect.path)) {
@@ -139,7 +143,7 @@ export const ExecutionProgress: React.FC<ExecutionProgressProps> = ({
     };
 
     executeWithProgress();
-  }, [task, onComplete, onError]);
+  }, [task, onComplete, onError, stamp]);
 
   const logColor = (level: LogMessage["level"]) => {
     switch (level) {

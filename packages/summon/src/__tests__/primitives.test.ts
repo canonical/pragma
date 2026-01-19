@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { dryRun } from "../dry-run.js";
+import { dryRun, dryRunWith } from "../dry-run.js";
 import {
   copyDirectory,
   copyFile,
@@ -23,6 +23,7 @@ import {
   promptText,
   readFile,
   setContext,
+  sortFileLines,
   succeed,
   warn,
   withContext,
@@ -817,6 +818,153 @@ describe("Primitives - Edge Cases", () => {
       const task = execSimple("");
       const { effects } = dryRun(task);
       expect((effects[0] as { command: string }).command).toBe("");
+    });
+  });
+});
+
+// =============================================================================
+// File Transformation Primitives
+// =============================================================================
+
+describe("Primitives - File Transformation", () => {
+  describe("sortFileLines", () => {
+    const createMocks = (content: string) =>
+      new Map([["ReadFile", () => content]]);
+
+    it("sorts lines alphabetically by default", () => {
+      const mockContent = "zebra\napple\nmango\nbanana";
+      const task = sortFileLines("/exports.ts");
+
+      const { effects } = dryRunWith(task, createMocks(mockContent));
+
+      expect(effects.length).toBe(2);
+      expect(effects[0]._tag).toBe("ReadFile");
+      expect(effects[1]._tag).toBe("WriteFile");
+
+      const writeEffect = effects[1] as { content: string };
+      expect(writeEffect.content).toBe("apple\nbanana\nmango\nzebra");
+    });
+
+    it("removes duplicates when unique option is true", () => {
+      const mockContent = "apple\nbanana\napple\nmango\nbanana";
+      const task = sortFileLines("/exports.ts", { unique: true });
+
+      const { effects } = dryRunWith(task, createMocks(mockContent));
+
+      const writeEffect = effects[1] as { content: string };
+      expect(writeEffect.content).toBe("apple\nbanana\nmango");
+    });
+
+    it("preserves header lines matching pattern", () => {
+      const mockContent =
+        "// Header comment\n// Another header\nexport { z } from './z';\nexport { a } from './a';\nexport { m } from './m';";
+      const task = sortFileLines("/exports.ts", {
+        headerPattern: /^\/\//,
+      });
+
+      const { effects } = dryRunWith(task, createMocks(mockContent));
+
+      const writeEffect = effects[1] as { content: string };
+      const lines = writeEffect.content.split("\n");
+
+      // Header lines should be preserved at top
+      expect(lines[0]).toBe("// Header comment");
+      expect(lines[1]).toBe("// Another header");
+      // Body should be sorted
+      expect(lines[2]).toBe("export { a } from './a';");
+      expect(lines[3]).toBe("export { m } from './m';");
+      expect(lines[4]).toBe("export { z } from './z';");
+    });
+
+    it("preserves footer lines matching pattern", () => {
+      const mockContent =
+        "export { z } from './z';\nexport { a } from './a';\n// Footer\n// End";
+      const task = sortFileLines("/exports.ts", {
+        footerPattern: /^\/\//,
+      });
+
+      const { effects } = dryRunWith(task, createMocks(mockContent));
+
+      const writeEffect = effects[1] as { content: string };
+      const lines = writeEffect.content.split("\n");
+
+      // Body should be sorted
+      expect(lines[0]).toBe("export { a } from './a';");
+      expect(lines[1]).toBe("export { z } from './z';");
+      // Footer lines should be preserved at bottom
+      expect(lines[2]).toBe("// Footer");
+      expect(lines[3]).toBe("// End");
+    });
+
+    it("accepts custom comparator", () => {
+      const mockContent = "Apple\nbanana\nCherry";
+      const task = sortFileLines("/exports.ts", {
+        compare: (a, b) => a.toLowerCase().localeCompare(b.toLowerCase()),
+      });
+
+      const { effects } = dryRunWith(task, createMocks(mockContent));
+
+      const writeEffect = effects[1] as { content: string };
+      expect(writeEffect.content).toBe("Apple\nbanana\nCherry");
+    });
+
+    it("handles empty file", () => {
+      const task = sortFileLines("/empty.ts");
+
+      const { effects } = dryRunWith(task, createMocks(""));
+
+      const writeEffect = effects[1] as { content: string };
+      expect(writeEffect.content).toBe("");
+    });
+
+    it("handles single line file", () => {
+      const task = sortFileLines("/single.ts");
+
+      const { effects } = dryRunWith(task, createMocks("only line"));
+
+      const writeEffect = effects[1] as { content: string };
+      expect(writeEffect.content).toBe("only line");
+    });
+
+    it("handles barrel file with exports", () => {
+      const mockContent = `// Auto-generated barrel
+export { zebra } from "./zebra.js";
+export { apple } from "./apple.js";
+export { mango } from "./mango.js";`;
+
+      const task = sortFileLines("/index.ts", {
+        headerPattern: /^\/\//,
+      });
+
+      const { effects } = dryRunWith(task, createMocks(mockContent));
+
+      const writeEffect = effects[1] as { content: string };
+      const lines = writeEffect.content.split("\n");
+
+      expect(lines[0]).toBe("// Auto-generated barrel");
+      expect(lines[1]).toBe('export { apple } from "./apple.js";');
+      expect(lines[2]).toBe('export { mango } from "./mango.js";');
+      expect(lines[3]).toBe('export { zebra } from "./zebra.js";');
+    });
+
+    it("combines header, unique, and custom comparator", () => {
+      const mockContent = `// Header
+B
+a
+B
+A
+c`;
+
+      const task = sortFileLines("/test.ts", {
+        headerPattern: /^\/\//,
+        unique: true,
+        compare: (a, b) => a.toLowerCase().localeCompare(b.toLowerCase()),
+      });
+
+      const { effects } = dryRunWith(task, createMocks(mockContent));
+
+      const writeEffect = effects[1] as { content: string };
+      expect(writeEffect.content).toBe("// Header\na\nA\nB\nc");
     });
   });
 });
