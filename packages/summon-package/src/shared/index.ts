@@ -187,7 +187,7 @@ export const detectPackageManager = (cwd: string): Task<PackageManager> => {
             ifElseM(
               exists(pnpmLock),
               pure("pnpm" as const),
-              pure("npm" as const),
+              pure("bun" as const),
             ),
           ),
         ),
