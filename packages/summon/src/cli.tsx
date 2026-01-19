@@ -260,7 +260,12 @@ const processPackage = async (
     // Insert each generator into the tree
     for (const [cmdPath, generator] of Object.entries(generators)) {
       if (generator && typeof generator === "object" && "meta" in generator) {
-        insertGeneratorAtPath(root, cmdPath, generator as GeneratorDefinition, origin);
+        insertGeneratorAtPath(
+          root,
+          cmdPath,
+          generator as GeneratorDefinition,
+          origin,
+        );
       }
     }
   } catch (err) {
@@ -287,9 +292,7 @@ const getGlobalConfigDir = (): string => {
  * Discover globally installed summon-* packages.
  * Looks in ~/.config/summon/node_modules for linked packages.
  */
-const discoverGlobalPackages = async (
-  root: GeneratorNode,
-): Promise<void> => {
+const discoverGlobalPackages = async (root: GeneratorNode): Promise<void> => {
   const globalDir = getGlobalConfigDir();
   const globalNodeModules = path.join(globalDir, "node_modules");
 
@@ -310,7 +313,12 @@ const discoverGlobalPackages = async (
             if (scopedEntry.startsWith("summon-")) {
               const pkgDir = path.join(entryPath, scopedEntry);
               if (await isDirectory(pkgDir)) {
-                await processPackage(`${entry}/${scopedEntry}`, pkgDir, root, "global");
+                await processPackage(
+                  `${entry}/${scopedEntry}`,
+                  pkgDir,
+                  root,
+                  "global",
+                );
               }
             }
           }
@@ -326,9 +334,6 @@ const discoverGlobalPackages = async (
   } catch {
     // Global node_modules doesn't exist - that's fine
   }
-
-  // Also check for generators directory in global config
-  await buildGeneratorTree(path.join(globalDir, "generators"), root, "global");
 };
 
 /**
@@ -338,11 +343,8 @@ const discoverGlobalPackages = async (
  *
  * Otherwise, priority (highest to lowest, later overrides earlier):
  * 1. Built-in generators from @canonical/summon
- * 2. Global ~/.config/summon/node_modules summon-* packages
- * 3. Global ~/.config/summon/generators/
- * 4. node_modules summon-* packages (project-level)
- * 5. Local ./.generators/ (project-specific, hidden)
- * 6. Local ./generators/ (project-specific, highest priority)
+ * 2. Global ~/.config/summon/node_modules/summon-* packages
+ * 3. Project ./node_modules/summon-* packages (highest priority)
  */
 const discoverGeneratorTree = async (
   explicitPath?: string,
@@ -364,7 +366,12 @@ const discoverGeneratorTree = async (
     try {
       await fs.access(pkgJsonPath);
       // It's a package - use processPackage to load from barrel
-      await processPackage(path.basename(absolutePath), absolutePath, root, "local");
+      await processPackage(
+        path.basename(absolutePath),
+        absolutePath,
+        root,
+        "local",
+      );
     } catch {
       // Not a package - scan directory for generators
       await buildGeneratorTree(absolutePath, root, "local");
@@ -375,22 +382,20 @@ const discoverGeneratorTree = async (
   // Normal discovery mode (order matters: later sources override earlier)
 
   // 1. Built-in generators (lowest priority)
-  await buildGeneratorTree(path.join(__dirname, "..", "generators"), root, "builtin");
+  await buildGeneratorTree(
+    path.join(__dirname, "..", "generators"),
+    root,
+    "builtin",
+  );
 
   // 2-3. Global packages and generators
   await discoverGlobalPackages(root);
 
-  // 4. node_modules packages (project-level)
+  // 3. node_modules packages (project-level, highest priority)
   await discoverNodeModulesPackages(
     path.join(process.cwd(), "node_modules"),
     root,
   );
-
-  // 5. Local .generators (high priority)
-  await buildGeneratorTree(path.join(process.cwd(), ".generators"), root, "local");
-
-  // 6. Local generators (highest priority)
-  await buildGeneratorTree(path.join(process.cwd(), "generators"), root, "local");
 
   return root;
 };
@@ -478,10 +483,14 @@ const printNode = (node: GeneratorNode, pathSegments: string[]) => {
 
   if (node.children.size === 0) {
     console.log(chalk.yellow("No generators found"));
-    console.log(chalk.dim("\nCreate generators in:"));
-    console.log(chalk.dim("  - ./generators/<topic>/index.ts"));
-    console.log(chalk.dim("  - ./generators/<topic>/<subtopic>/index.ts"));
-    console.log(chalk.dim("  - ~/.config/summon/generators/<topic>/index.ts (global)"));
+    console.log(chalk.dim("\nInstall a generator package:"));
+    console.log(chalk.dim("  bun add @scope/summon-<name>"));
+    console.log(chalk.dim("\nOr link globally:"));
+    console.log(
+      chalk.dim(
+        "  ln -s /path/to/pkg ~/.config/summon/node_modules/@scope/summon-<name>",
+      ),
+    );
     return;
   }
 

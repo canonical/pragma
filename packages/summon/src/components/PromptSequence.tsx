@@ -101,14 +101,16 @@ const TextPrompt = ({
   onSubmit,
   onBack,
 }: TextPromptProps) => {
-  const [value, setValue] = useState(initialValue ?? String(prompt.default ?? ""));
+  const [value, setValue] = useState(
+    initialValue ?? String(prompt.default ?? ""),
+  );
   const [error, setError] = useState<string | null>(null);
 
   // Reset value when prompt changes
   useEffect(() => {
     setValue(initialValue ?? String(prompt.default ?? ""));
     setError(null);
-  }, [prompt.name, initialValue, prompt.default]);
+  }, [initialValue, prompt.default]);
 
   const handleSubmit = useCallback(
     (val: string) => {
@@ -300,7 +302,9 @@ const MultiselectPrompt = ({
                 {pointer}
               </Text>
               <Text color={isSelected ? "green" : "gray"}>{checkbox}</Text>
-              <Text color={isSelected ? undefined : "gray"}>{choice.label}</Text>
+              <Text color={isSelected ? undefined : "gray"}>
+                {choice.label}
+              </Text>
             </Box>
           );
         })}
@@ -345,7 +349,9 @@ export const PromptSequence = ({
 }: PromptSequenceProps) => {
   // Always start at index 0, but preserve answers for display/editing
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [answers, setAnswers] = useState<Record<string, unknown>>(initialAnswers ?? {});
+  const [answers, setAnswers] = useState<Record<string, unknown>>(
+    initialAnswers ?? {},
+  );
   // Track the history of prompt indices for back navigation
   const [history, setHistory] = useState<number[]>([]);
 

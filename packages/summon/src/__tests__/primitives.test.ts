@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { dryRun } from "../dry-run.js";
-import { flatMap } from "../task.js";
 import {
   copyDirectory,
   copyFile,
@@ -29,6 +28,7 @@ import {
   withContext,
   writeFile,
 } from "../primitives.js";
+import { flatMap } from "../task.js";
 
 // =============================================================================
 // File System Primitives
