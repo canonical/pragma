@@ -11,18 +11,18 @@ const componentCssClassName = "ds card-section";
  * @returns {React.ReactElement} - Rendered Section
  */
 const Section = ({
-  children,
-  className,
-  ...props
+	children,
+	className,
+	...props
 }: SectionProps): React.ReactElement => {
-  return (
-    <section
-      className={[componentCssClassName, className].filter(Boolean).join(" ")}
-      {...props}
-    >
-      {children}
-    </section>
-  );
+	return (
+		<section
+			className={[componentCssClassName, className].filter(Boolean).join(" ")}
+			{...props}
+		>
+			{children}
+		</section>
+	);
 };
 
 Section.displayName = "Card.Section";
