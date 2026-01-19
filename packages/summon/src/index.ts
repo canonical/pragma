@@ -99,6 +99,7 @@ export {
 // Primitives
 // =============================================================================
 
+export type { SortFileLinesOptions } from "./primitives.js";
 export {
   // File system primitives
   appendFile,
@@ -129,6 +130,8 @@ export {
   promptText,
   readFile,
   setContext,
+  // File transformation primitives
+  sortFileLines,
   succeed,
   warn,
   withContext,
@@ -178,7 +181,7 @@ export {
 // Interpreter
 // =============================================================================
 
-export type { RunTaskOptions } from "./interpreter.js";
+export type { RunTaskOptions, StampConfig } from "./interpreter.js";
 export {
   executeEffect,
   run,
@@ -209,11 +212,18 @@ export {
 // Templates
 // =============================================================================
 
-export type { TemplateDirOptions, TemplateOptions } from "./template.js";
+export type {
+  StampOptions,
+  TemplateDirOptions,
+  TemplateOptions,
+} from "./template.js";
 export {
+  // Stamp utilities
+  generateStamp,
   // Metadata
   generatorComment,
   generatorHtmlComment,
+  prependStamp,
   renderFile,
   // Template rendering
   renderString,

@@ -696,11 +696,11 @@ summon [generator-path] [options]
 |------|-------|-------------|
 | `--dry-run` | `-d` | Preview without writing files |
 | `--yes` | `-y` | Skip confirmation prompts |
-| `--verbose` | `-v` | Show debug output |
 | `--no-preview` | | Skip file preview step |
 | `--no-generated-stamp` | | Disable generated file stamp comments |
 | `--generators` | `-g` | Load generators from specific path |
 | `--help` | `-h` | Show help |
+| `--version` | `-v` | Show version |
 
 ### Generated File Stamps
 

@@ -12,6 +12,7 @@ import chalk from "chalk";
 import { Command } from "commander";
 import { render } from "ink";
 import { App } from "./components/App.js";
+import type { StampConfig } from "./interpreter.js";
 import type { GeneratorDefinition, PromptDefinition } from "./types.js";
 
 // =============================================================================
@@ -277,32 +278,80 @@ const processPackage = async (
 };
 
 /**
- * Get the global summon config directory.
- * Uses XDG_CONFIG_HOME if set, otherwise ~/.config/summon
+ * Get bun's global node_modules directory.
+ * Default is ~/.bun/install/global/node_modules
  */
-const getGlobalConfigDir = (): string => {
-  const xdgConfig = process.env.XDG_CONFIG_HOME;
-  if (xdgConfig) {
-    return path.join(xdgConfig, "summon");
-  }
-  return path.join(process.env.HOME ?? "~", ".config", "summon");
+const getBunGlobalNodeModules = (): string => {
+  const bunInstallDir =
+    process.env.BUN_INSTALL ?? path.join(process.env.HOME ?? "~", ".bun");
+  return path.join(bunInstallDir, "install", "global", "node_modules");
 };
 
 /**
- * Discover globally installed summon-* packages.
- * Looks in ~/.config/summon/node_modules for linked packages.
+ * Get npm's global node_modules directory.
+ * Uses `npm root -g` equivalent logic.
  */
-const discoverGlobalPackages = async (root: GeneratorNode): Promise<void> => {
-  const globalDir = getGlobalConfigDir();
-  const globalNodeModules = path.join(globalDir, "node_modules");
+const getNpmGlobalNodeModules = async (): Promise<string | null> => {
+  // Check common npm global locations
+  const npmPrefix = process.env.NPM_CONFIG_PREFIX;
+  if (npmPrefix) {
+    return path.join(npmPrefix, "lib", "node_modules");
+  }
 
+  // Try NVM location
+  const nvmDir = process.env.NVM_DIR;
+  if (nvmDir) {
+    // NVM stores globals in the current node version's lib/node_modules
+    const nodeVersion = process.version;
+    const nvmNodeModules = path.join(
+      nvmDir,
+      "versions",
+      "node",
+      nodeVersion,
+      "lib",
+      "node_modules",
+    );
+    try {
+      await fs.access(nvmNodeModules);
+      return nvmNodeModules;
+    } catch {
+      // NVM path doesn't exist
+    }
+  }
+
+  // Fallback: check common system locations
+  const commonPaths = [
+    "/usr/local/lib/node_modules",
+    "/usr/lib/node_modules",
+    path.join(process.env.HOME ?? "~", ".npm-global", "lib", "node_modules"),
+  ];
+
+  for (const p of commonPaths) {
+    try {
+      await fs.access(p);
+      return p;
+    } catch {
+      // Path doesn't exist
+    }
+  }
+
+  return null;
+};
+
+/**
+ * Scan a node_modules directory for summon-* packages.
+ */
+const scanNodeModulesForSummonPackages = async (
+  nodeModulesDir: string,
+  root: GeneratorNode,
+  origin: GeneratorOrigin = "global",
+): Promise<void> => {
   try {
-    await fs.access(globalNodeModules);
-    // Reuse the same discovery logic but with "global" origin
-    const entries = await fs.readdir(globalNodeModules);
+    await fs.access(nodeModulesDir);
+    const entries = await fs.readdir(nodeModulesDir);
 
     for (const entry of entries) {
-      const entryPath = path.join(globalNodeModules, entry);
+      const entryPath = path.join(nodeModulesDir, entry);
 
       if (entry.startsWith("@")) {
         // Scoped packages
@@ -317,7 +366,7 @@ const discoverGlobalPackages = async (root: GeneratorNode): Promise<void> => {
                   `${entry}/${scopedEntry}`,
                   pkgDir,
                   root,
-                  "global",
+                  origin,
                 );
               }
             }
@@ -327,12 +376,38 @@ const discoverGlobalPackages = async (root: GeneratorNode): Promise<void> => {
         }
       } else if (entry.startsWith("summon-")) {
         if (await isDirectory(entryPath)) {
-          await processPackage(entry, entryPath, root, "global");
+          await processPackage(entry, entryPath, root, origin);
         }
       }
     }
   } catch {
-    // Global node_modules doesn't exist - that's fine
+    // Directory doesn't exist - that's fine
+  }
+};
+
+/**
+ * Discover globally installed summon-* packages.
+ * Looks in global package manager locations:
+ * 1. Bun global packages (~/.bun/install/global/node_modules)
+ * 2. NPM global packages (npm root -g)
+ *
+ * Users can link packages globally using:
+ *   bun link     # from the package directory
+ *   npm link     # from the package directory
+ */
+const discoverGlobalPackages = async (root: GeneratorNode): Promise<void> => {
+  // 1. Bun global packages
+  const bunGlobalNodeModules = getBunGlobalNodeModules();
+  await scanNodeModulesForSummonPackages(bunGlobalNodeModules, root, "global");
+
+  // 2. NPM global packages
+  const npmGlobalNodeModules = await getNpmGlobalNodeModules();
+  if (npmGlobalNodeModules) {
+    await scanNodeModulesForSummonPackages(
+      npmGlobalNodeModules,
+      root,
+      "global",
+    );
   }
 };
 
@@ -343,7 +418,7 @@ const discoverGlobalPackages = async (root: GeneratorNode): Promise<void> => {
  *
  * Otherwise, priority (highest to lowest, later overrides earlier):
  * 1. Built-in generators from @canonical/summon
- * 2. Global ~/.config/summon/node_modules/summon-* packages
+ * 2. Global packages (bun link / npm link locations)
  * 3. Project ./node_modules/summon-* packages (highest priority)
  */
 const discoverGeneratorTree = async (
@@ -485,12 +560,9 @@ const printNode = (node: GeneratorNode, pathSegments: string[]) => {
     console.log(chalk.yellow("No generators found"));
     console.log(chalk.dim("\nInstall a generator package:"));
     console.log(chalk.dim("  bun add @scope/summon-<name>"));
-    console.log(chalk.dim("\nOr link globally:"));
-    console.log(
-      chalk.dim(
-        "  ln -s /path/to/pkg ~/.config/summon/node_modules/@scope/summon-<name>",
-      ),
-    );
+    console.log(chalk.dim("\nOr link globally (from the package directory):"));
+    console.log(chalk.dim("  bun link        # for bun users"));
+    console.log(chalk.dim("  npm link        # for npm users"));
     return;
   }
 
@@ -813,6 +885,11 @@ const configureGroupedHelp = (
       output += "\n";
       output += formatItem("--no-preview", "Skip the file preview");
       output += "\n";
+      output += formatItem(
+        "--no-generated-stamp",
+        "Disable generated file stamp comments",
+      );
+      output += "\n";
       output += formatItem("-h, --help", "display help for command");
       output += "\n";
 
@@ -971,7 +1048,11 @@ const registerFromBarrel = (rootCmd: Command, barrel: CommandEntry[]): void => {
         .description(entry.generator.meta.description)
         .option("-d, --dry-run", "Preview without writing files")
         .option("-y, --yes", "Skip confirmation prompts")
-        .option("--no-preview", "Skip the file preview");
+        .option("--no-preview", "Skip the file preview")
+        .option(
+          "--no-generated-stamp",
+          "Disable generated file stamp comments",
+        );
 
       configureGeneratorCommand(cmd, entry.generator);
       commandMap.set(currentPath, cmd);
@@ -1013,6 +1094,16 @@ const configureGeneratorCommand = (
     );
     const isTTY = process.stdin.isTTY === true;
     const skipPrompts = cmdOptions.yes === true;
+
+    // Build stamp config if stamps are enabled (default: enabled)
+    // Commander's --no-X pattern sets generatedStamp to false when --no-generated-stamp is used
+    const stampEnabled = cmdOptions.generatedStamp !== false;
+    const stamp: StampConfig | undefined = stampEnabled
+      ? {
+          generator: generator.meta.name,
+          version: generator.meta.version,
+        }
+      : undefined;
 
     if (hasAllAnswers && cmdOptions.dryRun && !isTTY) {
       // Batch dry-run mode (non-interactive)
@@ -1063,6 +1154,7 @@ const configureGeneratorCommand = (
           preview={cmdOptions.preview as boolean}
           dryRunOnly={cmdOptions.dryRun as boolean}
           answers={passedAnswers}
+          stamp={stamp}
         />,
       );
 

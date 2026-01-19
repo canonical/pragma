@@ -43,8 +43,6 @@ const templates = {
   indexCss: path.join(templatesDir, "index.css.ejs"),
   cliTs: path.join(templatesDir, "cli.ts.ejs"),
   readme: path.join(templatesDir, "README.md.ejs"),
-  storybookMain: path.join(templatesDir, "storybook-main.ts.ejs"),
-  storybookPreview: path.join(templatesDir, "storybook-preview.ts.ejs"),
 };
 
 // =============================================================================
@@ -150,7 +148,7 @@ OPTIONS:
 
 The generator auto-detects:
   - Monorepo: Uses lerna.json version when in pragma monorepo
-  - Package manager: Detects bun/yarn/pnpm (defaults to bun)`,
+  - Package manager: Detects bun/npm/yarn/pnpm for install step`,
     examples: [
       "summon package --name=@canonical/my-tool --type=tool-ts",
       "summon package --name=@canonical/my-lib --type=library --with-react",
@@ -251,30 +249,6 @@ The generator auto-detects:
           dest: path.join(packageDir, "README.md"),
           vars: ctx,
         }),
-
-        // Create .storybook folder (conditional)
-        when(answers.withStorybook, mkdir(path.join(packageDir, ".storybook"))),
-        when(
-          answers.withStorybook,
-          mkdir(path.join(packageDir, "src", "assets")),
-        ),
-        when(answers.withStorybook, mkdir(path.join(packageDir, "public"))),
-        when(
-          answers.withStorybook,
-          template({
-            source: templates.storybookMain,
-            dest: path.join(packageDir, ".storybook", "main.ts"),
-            vars: ctx,
-          }),
-        ),
-        when(
-          answers.withStorybook,
-          template({
-            source: templates.storybookPreview,
-            dest: path.join(packageDir, ".storybook", "preview.ts"),
-            vars: ctx,
-          }),
-        ),
 
         info(`Package created at ./${packageDir}`),
 

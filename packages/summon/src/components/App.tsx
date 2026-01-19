@@ -7,6 +7,7 @@
 import { Box, Text, useApp, useInput } from "ink";
 import { useCallback, useEffect, useState } from "react";
 import { dryRun } from "../dry-run.js";
+import type { StampConfig } from "../interpreter.js";
 import type {
   Effect,
   GeneratorDefinition,
@@ -644,7 +645,7 @@ export type AppState =
     }
   | { phase: "executing"; task: Task<void> }
   | { phase: "complete"; effects: TimedEffect[]; duration: number }
-  | { phase: "error"; error: TaskError };
+  | { phase: "error"; error: TaskError; answers?: Record<string, unknown> };
 
 export interface AppProps {
   /** The generator to run */
@@ -655,6 +656,8 @@ export interface AppProps {
   dryRunOnly?: boolean;
   /** Pre-filled answers (for non-interactive mode) */
   answers?: Record<string, unknown>;
+  /** Stamp configuration for generated files (undefined = no stamps) */
+  stamp?: StampConfig;
 }
 
 export const App = ({
@@ -662,6 +665,7 @@ export const App = ({
   preview = true,
   dryRunOnly = false,
   answers: prefilledAnswers,
+  stamp,
 }: AppProps) => {
   const { exit } = useApp();
   const [state, setState] = useState<AppState>(
@@ -698,6 +702,7 @@ export const App = ({
               err instanceof Error
                 ? { code: "DRY_RUN_ERROR", message: err.message }
                 : { code: "UNKNOWN_ERROR", message: String(err) },
+            answers: promptAnswers,
           });
         }
       } else {
@@ -723,9 +728,12 @@ export const App = ({
     [],
   );
 
-  const handleExecutionError = useCallback((error: TaskError) => {
-    setState({ phase: "error", error });
-  }, []);
+  const handleExecutionError = useCallback(
+    (error: TaskError) => {
+      setState({ phase: "error", error, answers });
+    },
+    [answers],
+  );
 
   // Handle pre-filled answers
   useEffect(() => {
@@ -814,6 +822,7 @@ export const App = ({
           task={state.task}
           onComplete={handleExecutionComplete}
           onError={handleExecutionError}
+          stamp={stamp}
         />
       )}
 
@@ -839,6 +848,22 @@ export const App = ({
           {state.error.code && (
             <Box marginTop={1}>
               <Text dimColor>Code: {state.error.code}</Text>
+            </Box>
+          )}
+          {state.answers && Object.keys(state.answers).length > 0 && (
+            <Box flexDirection="column" marginTop={1}>
+              <Text dimColor bold>
+                Arguments:
+              </Text>
+              <Box flexDirection="column" marginLeft={1}>
+                {Object.entries(state.answers).map(([key, value]) => (
+                  <Box key={key}>
+                    <Text dimColor>
+                      {key}: {JSON.stringify(value)}
+                    </Text>
+                  </Box>
+                ))}
+              </Box>
             </Box>
           )}
         </Box>
