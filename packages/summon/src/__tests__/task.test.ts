@@ -576,7 +576,10 @@ describe("Task Monad - TaskBuilder", () => {
 
     it("propagates failure", () => {
       const error: TaskError = { code: "ERR", message: "error" };
-      const result = of(1).andThen(fail<number>(error)).andThen(pure(3)).unwrap();
+      const result = of(1)
+        .andThen(fail<number>(error))
+        .andThen(pure(3))
+        .unwrap();
 
       expect(result._tag).toBe("Fail");
     });

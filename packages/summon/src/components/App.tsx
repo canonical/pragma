@@ -7,7 +7,13 @@
 import { Box, Text, useApp, useInput } from "ink";
 import { useCallback, useEffect, useState } from "react";
 import { dryRun } from "../dry-run.js";
-import type { Effect, GeneratorDefinition, PromptDefinition, Task, TaskError } from "../types.js";
+import type {
+  Effect,
+  GeneratorDefinition,
+  PromptDefinition,
+  Task,
+  TaskError,
+} from "../types.js";
 import { ExecutionProgress, type TimedEffect } from "./ExecutionProgress.js";
 import { PromptSequence } from "./PromptSequence.js";
 import { Spinner } from "./Spinner.js";
@@ -374,13 +380,7 @@ const EffectTimeline = ({ effects }: { effects: TimedEffect[] }) => {
 /**
  * Render a single dry-run row (no timestamp column).
  */
-const DryRunRow = ({
-  effect,
-  isLast,
-}: {
-  effect: Effect;
-  isLast: boolean;
-}) => {
+const DryRunRow = ({ effect, isLast }: { effect: Effect; isLast: boolean }) => {
   const connector = isLast ? "└─" : "├─";
   const actionLabel = getActionLabel(effect);
   const color = getActionColor(effect);
@@ -561,9 +561,14 @@ const summarizeEffectsForConfirm = (effects: Effect[]): string => {
   }
 
   const parts: string[] = [];
-  if (files.size > 0) parts.push(`${files.size} file${files.size > 1 ? "s" : ""}`);
-  if (directories.size > 0) parts.push(`${directories.size} director${directories.size > 1 ? "ies" : "y"}`);
-  if (commands > 0) parts.push(`run ${commands} command${commands > 1 ? "s" : ""}`);
+  if (files.size > 0)
+    parts.push(`${files.size} file${files.size > 1 ? "s" : ""}`);
+  if (directories.size > 0)
+    parts.push(
+      `${directories.size} director${directories.size > 1 ? "ies" : "y"}`,
+    );
+  if (commands > 0)
+    parts.push(`run ${commands} command${commands > 1 ? "s" : ""}`);
 
   return parts.length > 0 ? `create ${parts.join(", ")}` : "make no changes";
 };
@@ -632,7 +637,11 @@ export type AppState =
   | { phase: "loading" }
   | { phase: "prompting" }
   | { phase: "preview"; effects: Effect[] }
-  | { phase: "confirming"; effects: Effect[]; promptAnswers: Record<string, unknown> }
+  | {
+      phase: "confirming";
+      effects: Effect[];
+      promptAnswers: Record<string, unknown>;
+    }
   | { phase: "executing"; task: Task<void> }
   | { phase: "complete"; effects: TimedEffect[]; duration: number }
   | { phase: "error"; error: TaskError };
@@ -676,7 +685,11 @@ export const App = ({
           if (dryRunOnly) {
             setState({ phase: "preview", effects: result.effects });
           } else {
-            setState({ phase: "confirming", effects: result.effects, promptAnswers });
+            setState({
+              phase: "confirming",
+              effects: result.effects,
+              promptAnswers,
+            });
           }
         } catch (err) {
           setState({
@@ -789,7 +802,9 @@ export const App = ({
             <Text>This will {summarizeEffectsForConfirm(state.effects)}. </Text>
             <Text bold>Proceed? </Text>
             <Text dimColor>(Y/n) </Text>
-            <Text dimColor italic>esc to go back</Text>
+            <Text dimColor italic>
+              esc to go back
+            </Text>
           </Box>
         </Box>
       )}
