@@ -96,7 +96,7 @@ Artifacts progress through seven lifecycle states:
 | `artifact:Deprecated` | 5 | Superseded but available |
 | `artifact:Archived` | 6 | No longer maintained |
 
-For documentation, the typical progression is Draft → Accepted (plan approved) → then implementation happens outside the artifact (the actual .md file is written).
+For documentation, a common progression is Draft → Accepted (plan approved) → then implementation happens outside the artifact (the actual .md file is written). However, artifacts are not limited to a single pass through these states. An accepted document may return to Review when significant changes are proposed, then back to Accepted after approval. Multiple review cycles are normal and expected for evolving documentation.
 
 ### Features as Sections
 
@@ -108,15 +108,23 @@ pragma:doc.example.section-one a artifact:Feature ;
     artifact:featureOrder 1 ;
     rdfs:label "Section Title" ;
     diataxis:inQuadrant diataxis:explanation ;
-    artifact:content """Outline of what this section covers.""" .
-
-# Nested subsection
-pragma:doc.example.section-one-a a artifact:Feature ;
-    artifact:featureOf pragma:doc.example.section-one ;
-    artifact:featureOrder 1 ;
-    rdfs:label "Subsection" ;
-    diataxis:inQuadrant diataxis:reference .
+    artifact:content """Outline of what this section covers.""" ;
+    # Nested subsections use blank nodes - no need for global identifiers
+    artifact:hasFeature [
+        a artifact:Feature ;
+        artifact:featureOrder 1 ;
+        rdfs:label "First Subsection" ;
+        diataxis:inQuadrant diataxis:reference
+    ] ;
+    artifact:hasFeature [
+        a artifact:Feature ;
+        artifact:featureOrder 2 ;
+        rdfs:label "Second Subsection" ;
+        diataxis:inQuadrant diataxis:howto
+    ] .
 ```
+
+Nested sections are modeled as blank nodes because they exist only in the context of their parent section. This keeps the namespace clean and reflects the structural dependency: subsections cannot be meaningfully referenced without their containing section.
 
 The four Diataxis quadrants serve different purposes:
 

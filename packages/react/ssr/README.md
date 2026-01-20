@@ -1,86 +1,145 @@
-# Canonical React SSR: No-Hassle Server-Side Rendering for React
+# @canonical/react-ssr
 
-This guide demonstrates how to set up server-side rendering (SSR) for React applications using `@canonical/react-ssr`. It covers everything from installation to building and handling SSR requests with client and server entry points.
-
-## Table of Contents
-1. [Installation](#installation)
-2. [Quick Start](#quick-start)
-    - [Server-Side Entry Point](#server-side-entry-point)
-    - [Client-Side Entry Point](#client-side-entry-point)
-    - [Building Your Application](#building-your-application)
-    - [Server Request Handling](#server-request-handling)
-    - [Injecting the Client Application](#injecting-the-client-application)
-3. [Customization](#customization)
-    - [Bootstrap Scripts](#bootstrap-scripts)
-
----
+Server-side rendering utilities for React applications. Provides streaming HTML rendering with `JSXRenderer`, Express middleware with `serveStream`, and automatic script/link tag injection from your build output.
 
 ## Installation
 
-First, install the `@canonical/react-ssr` package:
-
 ```bash
-npm install @canonical/react-ssr
+bun add @canonical/react-ssr
 ```
 
-## Quick Start
+Peer dependencies: `react`, `react-dom`, `express` (for Express usage).
 
-This section walks you through setting up SSR for your React app, including creating entry points, building your app, and handling SSR requests.
+## Express Server
 
-### Entrypoints
+Create a renderer that wraps your server entry component:
 
-You will notice that this setup encourages two entry points: one for the server, and one for the client. 
-The server entry point includes the full application HTML for compatibility with streams.
-The client entry point includes just the application component, which is hydrated on the client.
+```tsx
+// src/ssr/renderer.tsx
+import { JSXRenderer } from "@canonical/react-ssr/renderer";
+import htmlString from "../../dist/client/index.html?raw";
+import EntryServer from "./entry-server.js";
 
-### Server-Side Entry Point
+const Renderer = new JSXRenderer(EntryServer, { htmlString });
+export default Renderer.render;
+```
 
-Create a server-side entry point to wrap your application and inject the necessary scripts and links into the HTML.
+Create an Express server using `serveStream`:
+
+```ts
+// src/ssr/server.ts
+import { serveStream } from "@canonical/react-ssr/server";
+import express from "express";
+import render from "./renderer.js";
+
+const app = express();
+app.use("/assets", express.static("dist/client/assets"));
+app.use(serveStream(render));
+app.listen(5173);
+```
+
+Build and run:
+
+```bash
+vite build --ssrManifest --outDir dist/client
+vite build --ssr src/ssr/server.ts --outDir dist/server
+node dist/server/server.js
+```
+
+## Bun Server
+
+The renderer works the same way. For Bun's native server, convert the pipeable stream:
+
+```ts
+// src/ssr/server-bun.ts
+import render from "./renderer.js";
+import { Readable } from "node:stream";
+
+Bun.serve({
+  port: 5173,
+  async fetch(req) {
+    const url = new URL(req.url);
+
+    // Serve static assets
+    if (url.pathname.startsWith("/assets")) {
+      return new Response(Bun.file(`dist/client${url.pathname}`));
+    }
+
+    // SSR render
+    const { pipe } = render(req, null);
+    const readable = Readable.toWeb(Readable.from(pipeToIterable(pipe)));
+    return new Response(readable, {
+      headers: { "Content-Type": "text/html; charset=utf-8" },
+    });
+  },
+});
+
+function pipeToIterable(pipe: (dest: NodeJS.WritableStream) => void) {
+  const { Readable } = require("node:stream");
+  const passthrough = new (require("node:stream").PassThrough)();
+  pipe(passthrough);
+  return passthrough;
+}
+```
+
+Or use Express compatibility mode with Bun:
+
+```ts
+// Bun can run Express directly
+import app from "./server.js";  // Your Express server
+export default app;
+```
+
+## Entry Points
+
+### Server Entry
+
+The server entry renders the full HTML document. `scriptTags` and `linkTags` are extracted from your build output and injected automatically:
 
 ```tsx
 // src/ssr/entry-server.tsx
+import type { ReactServerEntrypointComponent, RendererServerEntrypointProps } from "@canonical/react-ssr/renderer";
 import Application from "../Application.js";
-import React from "react";
-import type {ReactServerEntrypointComponent, RendererServerEntrypointProps} from "@canonical/react-ssr/renderer";
 
-// Define your server-side entry point component
-const EntryServer: ReactServerEntrypointComponent<RendererServerEntrypointProps> = ({ lang = "en", scriptTags, linkTags }) => (
+const EntryServer: ReactServerEntrypointComponent<RendererServerEntrypointProps> = ({
+  lang = "en",
+  scriptTags,
+  linkTags,
+}) => (
   <html lang={lang}>
     <head>
-      <title>Canonical React SSR</title>
-      {scriptTags}
+      <title>My App</title>
       {linkTags}
     </head>
     <body>
       <div id="root">
         <Application />
       </div>
+      {scriptTags}
     </body>
   </html>
 );
 
 export default EntryServer;
 ```
-This component is responsible for rendering the HTML structure and injecting the necessary script and link tags that are required for hydration on the client.
 
-### Client-Side Entry Point
-Set up client-side hydration to rehydrate your app after the SSR content has been rendered.
+### Client Entry
+
+The client entry hydrates the server-rendered HTML:
+
 ```tsx
 // src/ssr/entry-client.tsx
 import { hydrateRoot } from "react-dom/client";
 import Application from "../Application.js";
 
-// Hydrate the client-side React app after the server-rendered HTML is loaded
-hydrateRoot(document.getElementById("root") as HTMLElement, <Application />);
+hydrateRoot(document.getElementById("root")!, <Application />);
 ```
 
-### Building your application
-To build your SSR React app, use a tool like Vite, Webpack, or Next. 
-The build process should include both client and server bundles. First, build the client-side app, then the server-side entry point.
-The example below uses Vite.
+## Building
 
-```json5
-// package.json
+Two-phase build with Vite:
+
+```json
 {
   "scripts": {
     "build": "bun run build:client && bun run build:server",
@@ -88,65 +147,34 @@ The example below uses Vite.
     "build:server": "vite build --ssr src/ssr/server.ts --outDir dist/server"
   }
 }
-
 ```
 
-### Server Request Handling
+The client build produces `dist/client/index.html` with bundled script/link tags. The server build imports this HTML string to extract those tags for injection.
 
-Once your app is built, you can set up an Express server to handle SSR requests.
-See [this file](../../../apps/react/boilerplate-vite/src/ssr/server.ts) as an example.
+## Customization
 
-### Injecting the Client Application
-
-Your client-side entry point must be executed by the client upon page load to rehydrate the server-rendered app.
-
-Example for injecting the client application into your HTML with Vite:
-
-```html
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vite + React + TS</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <!-- Inject the client-side entry point -->
-    <script type="module" src="/src/ssr/entry-client.tsx"></script>
-  </body>
-</html>
-```
-This script will hydrate the app on the client, connecting the React app to the server-rendered HTML.
-
-#### Customization
-You can inject additional bootstrapping scripts to customize the client-side setup. 
-This is useful if you need more control over how the client app boots.
-
-##### Bootstrap Scripts
-You can pass custom modules, scripts, or inline script content to be executed on the client before the app is hydrated.
-
-###### Options
-- `bootstrapModules`: An array of module paths. Generates `<script type="module" src="{SCRIPT_LINK}"></script>` elements.
-- `bootstrapScripts`: An array of script paths. Generates `<script type="text/javascript" src="{SCRIPT_LINK}"></script>` elements.
-- `bootstrapScriptContent`: Raw script content. Generates `<script type="text/javascript">{SCRIPT_CONTENT}</script>` elements.
+Pass options to React's `renderToPipeableStream`:
 
 ```ts
-import { JSXRenderer } from "@canonical/react-ssr/renderer";
-// Pass custom bootstrap scripts to the renderer
-const Renderer = new JSXRenderer(
-  EntryServer, 
-  { 
-    htmlString, 
-    renderToPipeableStreamOptions: {
-       bootstrapModules: ["src/ssr/entry-client.tsx"] // Adds the client-side entry module to the page
-    }
-  }
-);
+const Renderer = new JSXRenderer(EntryServer, {
+  htmlString,
+  renderToPipeableStreamOptions: {
+    bootstrapModules: ["src/ssr/entry-client.tsx"],
+    onShellReady() { console.log("Shell ready"); },
+    onError(err) { console.error(err); },
+  },
+});
 ```
 
-The `JSXRenderer` also accepts `renderToPipeableStreamOptions`, which are passed to react-dom/server`'s `renderToPipeableStream()`.
+Options include:
+- `bootstrapModules` - ES modules to load (`<script type="module">`)
+- `bootstrapScripts` - Scripts to load (`<script>`)
+- `bootstrapScriptContent` - Inline script content
 
-For further information, refer to [React's `renderToPipeableStream()` documentation](https://react.dev/reference/react-dom/server/renderToPipeableStream#parameters).
+See [React's renderToPipeableStream documentation](https://react.dev/reference/react-dom/server/renderToPipeableStream) for all options.
 
+## Examples
 
-
+See working examples in the monorepo:
+- [`apps/react/boilerplate-vite`](../../../apps/react/boilerplate-vite) - Vite + Express
+- [`apps/react/demo`](../../../apps/react/demo) - Full application example

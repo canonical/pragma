@@ -1,11 +1,65 @@
-# react-ds-global-form
+# @canonical/react-ds-global-form
 
-The collection of Form Components in the DS25.
+Form components for the Pragma design system. This package provides form fields with built-in validation patterns and middleware for connecting to backend services.
 
-## Architecture
+## Installation
 
-This package uses the same build as `ds-core` in the same folder. All comments made on the README.md file apply here.
+```bash
+bun add @canonical/react-ds-global-form
+```
 
-## Notes
+The package requires React 19 and builds on top of `@canonical/react-ds-global`.
 
-+ This package uses MSW to mock back-end requests - in particular related to field-level middleware. For that purpose, this package exposes a unique command, `init:msw` which populates the public folder with the service worker necessary to intercept requests with our mock API. This script only has to be run once, but is nevertheless kept on the package.json for reference.
+## Usage
+
+```tsx
+import { Field } from "@canonical/react-ds-global-form";
+
+function ContactForm() {
+  return (
+    <form>
+      <Field
+        name="email"
+        label="Email address"
+        type="email"
+        required
+        helpText="We'll never share your email."
+      />
+      <Field
+        name="message"
+        label="Message"
+        as="textarea"
+        rows={4}
+      />
+    </form>
+  );
+}
+```
+
+## Middleware
+
+The package includes middleware functions for connecting form fields to REST APIs:
+
+```tsx
+import { Field, addRESTOptions } from "@canonical/react-ds-global-form";
+
+<Field
+  name="country"
+  label="Country"
+  as="select"
+  middleware={[addRESTOptions("/api/countries")]}
+/>
+```
+
+## Storybook
+
+```bash
+cd packages/react/ds-global-form
+bun run storybook
+```
+
+The Storybook configuration includes MSW integration for mocking backend responses.
+
+## Component Specifications
+
+Form component specifications are defined in the [Design System Ontology](https://github.com/canonical/design-system).

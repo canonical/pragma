@@ -46,7 +46,7 @@ React components are organised into tiers based on their scope of applicability.
 | Apps | `@canonical/react-ds-app` | Application-level UI such as Navigation and Toolbar, suited for internal tools. |
 | Apps/WPE | `@canonical/react-ds-app-launchpad` | Components specific to Launchpad and WordPress Engine applications. |
 
-The tiers correspond to the [Design System Ontology](sem_modules/design-system), which provides the authoritative specification for each component including usage guidelines, modifier families, and anatomy definitions.
+The tiers correspond to the [Design System Ontology](https://github.com/canonical/design-system), which provides the authoritative specification for each component including usage guidelines, modifier families, and anatomy definitions.
 
 ### Core Infrastructure
 
