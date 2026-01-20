@@ -1,0 +1,12 @@
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>.
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>.
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#>.
+@prefix ds: <https://ds.canonical.com/>.
+
+ds:implementation.library.pragma-ds-types a ds:ImplementationLibrary;
+    ds:libraryName "Pragma DS-Types";
+    ds:platform "typescript";
+    ds:link "https://github.com/canonical/pragma/tree/main/packages/ds-types";
+    ds:libraryDescription "TypeScript types and constants for Pragma design system modifier families";
+    ds:documentation "https://pragma.canonical.com/types";
+    ds:libraryTier ds:global.
