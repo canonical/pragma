@@ -2,12 +2,20 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { ModifierMatrix } from "./ModifierMatrix.js";
 
-const TestComponent = ({ importance, anticipation, children }: {
+const TestComponent = ({
+  importance,
+  anticipation,
+  children,
+}: {
   importance?: string;
   anticipation?: string;
   children?: React.ReactNode;
 }) => (
-  <button data-importance={importance} data-anticipation={anticipation}>
+  <button
+    type="button"
+    data-importance={importance}
+    data-anticipation={anticipation}
+  >
     {children}
   </button>
 );
@@ -136,7 +144,9 @@ describe("ModifierMatrix", () => {
         className="custom-matrix"
       />,
     );
-    expect(container.querySelector(".modifier-matrix")).toHaveClass("custom-matrix");
+    expect(container.querySelector(".modifier-matrix")).toHaveClass(
+      "custom-matrix",
+    );
   });
 
   it("uses custom labels when provided", () => {

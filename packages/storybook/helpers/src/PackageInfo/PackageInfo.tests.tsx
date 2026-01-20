@@ -18,11 +18,7 @@ describe("PackageInfo", () => {
 
   it("renders tier and framework", () => {
     render(
-      <PackageInfo
-        name="@canonical/test"
-        tier="global"
-        framework="react"
-      />,
+      <PackageInfo name="@canonical/test" tier="global" framework="react" />,
     );
     expect(screen.getByText("Global")).toBeInTheDocument();
     expect(screen.getByText("React")).toBeInTheDocument();
@@ -76,7 +72,9 @@ describe("PackageInfo", () => {
       />,
     );
     expect(
-      screen.getByRole("region", { name: "Package information for @canonical/test-pkg" }),
+      screen.getByRole("region", {
+        name: "Package information for @canonical/test-pkg",
+      }),
     ).toBeInTheDocument();
   });
 
@@ -89,6 +87,9 @@ describe("PackageInfo", () => {
         className="custom-class"
       />,
     );
-    expect(screen.getByRole("region")).toHaveClass("package-info", "custom-class");
+    expect(screen.getByRole("region")).toHaveClass(
+      "package-info",
+      "custom-class",
+    );
   });
 });
