@@ -114,10 +114,10 @@ describe("Timeline", () => {
       </Timeline>,
     );
     const event = screen.getByTestId("event");
-    const content = event.querySelector(".timeline-event-content");
+    const content = event.querySelector(".content");
     const children = content?.children;
-    expect(children?.[0]).toHaveClass("timeline-event-actor");
-    expect(children?.[1]).toHaveClass("timeline-event-datetime");
-    expect(children?.[2]).toHaveClass("timeline-event-payload");
+    expect(children?.[0]).toHaveClass("actor");
+    expect(children?.[1]).toHaveClass("datetime");
+    expect(children?.[2]).toHaveClass("payload");
   });
 });
