@@ -11,6 +11,13 @@ import * as path from "node:path";
 import chalk from "chalk";
 import { Command } from "commander";
 import { render } from "ink";
+import {
+  type CompletionNode,
+  handleSetupRequest,
+  initCompletion,
+  isCompletionRequest,
+  isSetupRequest,
+} from "./completion.js";
 import { App } from "./components/App.js";
 import type { StampConfig } from "./interpreter.js";
 import type { GeneratorDefinition, PromptDefinition } from "./types.js";
@@ -883,6 +890,8 @@ const configureGroupedHelp = (
       output += "\n";
       output += formatItem("-y, --yes", "Skip confirmation prompts");
       output += "\n";
+      output += formatItem("-v, --verbose", "Show debug output");
+      output += "\n";
       output += formatItem("--no-preview", "Skip the file preview");
       output += "\n";
       output += formatItem(
@@ -1048,6 +1057,7 @@ const registerFromBarrel = (rootCmd: Command, barrel: CommandEntry[]): void => {
         .description(entry.generator.meta.description)
         .option("-d, --dry-run", "Preview without writing files")
         .option("-y, --yes", "Skip confirmation prompts")
+        .option("-v, --verbose", "Show debug output")
         .option("--no-preview", "Skip the file preview")
         .option(
           "--no-generated-stamp",
@@ -1112,6 +1122,8 @@ const configureGeneratorCommand = (
         "./cli-format.js"
       );
 
+      const verbose = cmdOptions.verbose === true;
+
       console.log();
       console.log(chalk.bold.magenta(generator.meta.name));
       console.log(chalk.dim(generator.meta.description));
@@ -1123,7 +1135,7 @@ const configureGeneratorCommand = (
       // Filter and deduplicate effects
       const seenDirPaths = new Set<string>();
       const visibleEffects = result.effects.filter((e) => {
-        if (!isVisibleEffect(e)) return false;
+        if (!isVisibleEffect(e, verbose)) return false;
         if (e._tag === "MakeDir") {
           if (seenDirPaths.has(e.path)) return false;
           seenDirPaths.add(e.path);
@@ -1153,6 +1165,7 @@ const configureGeneratorCommand = (
           generator={generator}
           preview={cmdOptions.preview as boolean}
           dryRunOnly={cmdOptions.dryRun as boolean}
+          verbose={cmdOptions.verbose as boolean}
           answers={passedAnswers}
           stamp={stamp}
         />,
@@ -1176,17 +1189,22 @@ const registerGeneratorCommands = async (
   registerFromBarrel(parentCmd, barrel);
 };
 
+/**
+ * Convert GeneratorNode to CompletionNode for the completion module.
+ */
+const toCompletionNode = (node: GeneratorNode): CompletionNode => ({
+  name: node.name,
+  indexPath: node.indexPath,
+  children: new Map(
+    [...node.children.entries()].map(([name, child]) => [
+      name,
+      toCompletionNode(child),
+    ]),
+  ),
+});
+
 // Main CLI setup
 const main = async () => {
-  program
-    .name("summon")
-    .description("A monadic task-centric code generator framework")
-    .version("0.1.0")
-    .option(
-      "-g, --generators <path>",
-      "Load generators ONLY from this path (for testing)",
-    );
-
   // Get generators path from args early (before full parse)
   const generatorsIdx = process.argv.indexOf("--generators");
   const gIdx = process.argv.indexOf("-g");
@@ -1197,13 +1215,46 @@ const main = async () => {
         ? process.argv[gIdx + 1]
         : undefined;
 
-  // Discover generators
+  // Discover generators (needed for both completion and normal CLI)
   const root = await discoverGeneratorTree(generatorsPath);
+
+  // Initialize shell completion (must happen before commander parsing)
+  // This intercepts --completion, --completion-fish, etc.
+  if (isCompletionRequest() || isSetupRequest()) {
+    const completionTree = toCompletionNode(root);
+    const complete = await initCompletion(completionTree, loadGenerator);
+
+    // Handle setup/cleanup requests
+    if (isSetupRequest()) {
+      handleSetupRequest(complete);
+      return; // handleSetupRequest calls process.exit
+    }
+
+    // For completion requests, omelette handles everything via init()
+    // We just need to exit cleanly
+    return;
+  }
+
+  program
+    .name("summon")
+    .description("A monadic task-centric code generator framework")
+    .version("0.1.0")
+    .option(
+      "-g, --generators <path>",
+      "Load generators ONLY from this path (for testing)",
+    )
+    .option("--setup-completion", "Install shell autocompletion")
+    .option("--cleanup-completion", "Remove shell autocompletion");
 
   // If no arguments or just help, show available topics
   if (process.argv.length === 2 || process.argv.includes("--help")) {
     if (process.argv.length === 2) {
       printNode(root, []);
+      console.log(
+        chalk.dim(
+          "Tip: Run 'summon --setup-completion' to enable TAB completion\n",
+        ),
+      );
       return;
     }
   }

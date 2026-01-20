@@ -32,8 +32,10 @@ interface GroupedEffects {
 
 /**
  * Group effects by category for display.
+ * @param effects - The effects to group
+ * @param verbose - If true, include debug logs
  */
-const groupEffects = (effects: Effect[]): GroupedEffects => {
+const groupEffects = (effects: Effect[], verbose = false): GroupedEffects => {
   const groups: GroupedEffects = {
     files: [],
     directories: [],
@@ -58,8 +60,8 @@ const groupEffects = (effects: Effect[]): GroupedEffects => {
         groups.commands.push(effect);
         break;
       case "Log":
-        // Filter out debug logs
-        if (effect.level !== "debug") {
+        // Filter out debug logs unless verbose is enabled
+        if (effect.level !== "debug" || verbose) {
           groups.logs.push(effect);
         }
         break;
@@ -93,6 +95,8 @@ const getActionLabel = (effect: Effect): string => {
       return "Executed";
     case "Log":
       switch (effect.level) {
+        case "debug":
+          return "Debug";
         case "info":
           return "Info";
         case "warn":
@@ -128,11 +132,16 @@ const getActionColor = (
     case "Exec":
       return "yellow";
     case "Log":
-      return effect.level === "error"
-        ? "red"
-        : effect.level === "warn"
-          ? "yellow"
-          : "blue";
+      switch (effect.level) {
+        case "error":
+          return "red";
+        case "warn":
+          return "yellow";
+        case "debug":
+          return undefined; // dim by default
+        default:
+          return "blue";
+      }
     default:
       return undefined;
   }
@@ -258,8 +267,10 @@ const TIMESTAMP_WIDTH = 8;
 
 /**
  * Filter effects to only show user-relevant ones (not internal effects).
+ * @param effect - The effect to check
+ * @param verbose - If true, include debug logs
  */
-const isVisibleEffect = (effect: Effect): boolean => {
+const isVisibleEffect = (effect: Effect, verbose = false): boolean => {
   switch (effect._tag) {
     case "WriteFile":
     case "AppendFile":
@@ -271,8 +282,11 @@ const isVisibleEffect = (effect: Effect): boolean => {
     case "Exec":
       return true;
     case "Log":
-      // Filter out debug logs
-      return effect.level !== "debug";
+      // Filter out debug logs unless verbose is enabled
+      if (effect.level === "debug") {
+        return verbose;
+      }
+      return true;
     // Internal effects are not shown
     case "ReadFile":
     case "Exists":
@@ -325,11 +339,17 @@ const TimelineRow = ({
  * Timestamps are only shown when they differ from the previous effect.
  * Duplicate MakeDir effects (same path) are deduplicated.
  */
-const EffectTimeline = ({ effects }: { effects: TimedEffect[] }) => {
+const EffectTimeline = ({
+  effects,
+  verbose = false,
+}: {
+  effects: TimedEffect[];
+  verbose?: boolean;
+}) => {
   // Filter to visible effects only and deduplicate MakeDir by path
   const seenDirPaths = new Set<string>();
   const visibleEffects = effects.filter((e) => {
-    if (!isVisibleEffect(e.effect)) return false;
+    if (!isVisibleEffect(e.effect, verbose)) return false;
     // Deduplicate MakeDir by path (keep only first occurrence)
     if (e.effect._tag === "MakeDir") {
       if (seenDirPaths.has(e.effect.path)) return false;
@@ -403,14 +423,16 @@ const DryRunRow = ({ effect, isLast }: { effect: Effect; isLast: boolean }) => {
 const DryRunTimeline = ({
   effects,
   title = "Plan:",
+  verbose = false,
 }: {
   effects: Effect[];
   title?: string;
+  verbose?: boolean;
 }) => {
   // Filter to visible effects only and deduplicate MakeDir by path
   const seenDirPaths = new Set<string>();
   const visibleEffects = effects.filter((e) => {
-    if (!isVisibleEffect(e)) return false;
+    if (!isVisibleEffect(e, verbose)) return false;
     // Deduplicate MakeDir by path (keep only first occurrence)
     if (e._tag === "MakeDir") {
       if (seenDirPaths.has(e.path)) return false;
@@ -711,6 +733,8 @@ export interface AppProps {
   preview?: boolean;
   /** Whether to run in dry-run mode only */
   dryRunOnly?: boolean;
+  /** Whether to show debug output */
+  verbose?: boolean;
   /** Pre-filled answers (for non-interactive mode) */
   answers?: Record<string, unknown>;
   /** Stamp configuration for generated files (undefined = no stamps) */
@@ -721,6 +745,7 @@ export const App = ({
   generator,
   preview = true,
   dryRunOnly = false,
+  verbose = false,
   answers: prefilledAnswers,
   stamp,
 }: AppProps) => {
@@ -847,7 +872,11 @@ export const App = ({
 
       {state.phase === "preview" && (
         <Box flexDirection="column">
-          <DryRunTimeline effects={state.effects} title="Plan (dry-run):" />
+          <DryRunTimeline
+            effects={state.effects}
+            title="Plan (dry-run):"
+            verbose={verbose}
+          />
           <Box marginTop={1}>
             <Text dimColor>Dry-run complete. No files were modified.</Text>
           </Box>
@@ -889,7 +918,7 @@ export const App = ({
           <Box>
             <Text color="green">✓ Generation complete!</Text>
           </Box>
-          <EffectTimeline effects={state.effects} />
+          <EffectTimeline effects={state.effects} verbose={verbose} />
           <Box marginTop={1}>
             <Text dimColor>
               {summarizeEffects(state.effects)} in {state.duration.toFixed(0)}ms
