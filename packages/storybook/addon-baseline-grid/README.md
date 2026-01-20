@@ -1,63 +1,54 @@
-# Storybook Addon DS Baseline Grid
+# @canonical/storybook-addon-baseline-grid
 
-Displays the baseline grid overlay in the Storybook preview.
+Baseline grid overlay for Storybook. This addon helps verify typography alignment by displaying a configurable grid overlay on stories.
 
-## Usage 
-
-- Press `g` to toggle the baseline grid on a story.
-
-### Installation
+## Installation
 
 ```bash
-npm install @canonical/storybook-addon-baseline-grid
+bun add -D @canonical/storybook-addon-baseline-grid
 ```
 
-In your `.storybook/main.js` file, add the following:
+## Setup
 
-```js
-module.exports = {
-  addons: ['@canonical/storybook-addon-baseline-grid'],
+Register the addon in your `.storybook/main.ts`:
+
+```typescript
+const config: StorybookConfig = {
+  addons: [
+    "@canonical/storybook-addon-baseline-grid",
+  ],
 };
+
+export default config;
 ```
 
-Please note that this addon does rely on ESM only and does not have a cjs build at all. This means you need a version of node >= 20 and a modern browser to use it.
+## Usage
 
-### Configuration
+Press `g` while viewing any story to toggle the baseline grid overlay. The grid appears as horizontal lines that help verify text alignment across components.
 
-By default the baseline uses defaults for the following css variables:
+The toolbar also includes a toggle button for the grid.
+
+## Configuration
+
+The grid appearance is controlled by CSS custom properties. Override the defaults in your preview styles:
 
 ```css
 :root {
   --baseline-grid-color: rgba(255, 0, 0, 0.2);
-  --baseline-height: .5rem;
+  --baseline-height: 0.5rem;
 }
 ```
 
-By providing yours in `:root` you can override these defaults, for instance 
+**--baseline-grid-color** sets the line colour. The default red with 20% opacity is visible without being distracting. Adjust opacity or use a different colour to match your preferences.
 
-```css
-:root {
-  --baseline-grid-color: rgba(0, 0, 255, 0.2);
-  --baseline-height: 1rem;
-}
-```
+**--baseline-height** sets the spacing between grid lines. This should match your typography baseline. The default 0.5rem (8px at default font size) aligns with common baseline grids.
 
-## Development
+## Why Use a Baseline Grid
 
-- `bun run start` runs babel in watch mode and starts Storybook
-- `bun run build` builds and packages the addon
+Baseline grids ensure consistent vertical rhythm across a design. When text, images, and UI elements align to the same baseline, layouts feel more cohesive and easier to scan.
 
-### Addon implementation
+The overlay helps catch alignment issues during development. Components that break the baseline become immediately visible when the grid is enabled.
 
-The addon logic lives mostly in following files:
+## Requirements
 
-- `src/components/Tool.tsx` - component that renders the addon button in the toolbar and toggles the global variable that enables the baseline grid overlay
-- `src/withBaselineGrid.ts` - decorator that adds a `with-baseline-grid` CSS class name to the story based on global state The grid look is an internally defined css class that is added to the story preview iframe, and defined in this file.
-- `/src/manager.tsx` - registers the addon with Storybook manager and handles in what state of Storybook addon is enabled
-- `/src/preview.tsx` - registers the decorator with Storybook preview
-
-### Storybook Addon Kit README
-
-This addon was created using the Storybook Addon Kit.
-
-Check the [full README generated](ADDON_KIT_README.md) by Addon Kit for more information. We will update this README with proper docs in future.
+This addon uses ES modules and requires Node 20 or later.

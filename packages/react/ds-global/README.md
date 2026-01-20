@@ -1,28 +1,69 @@
-## Canonical Design System - React Core
+# @canonical/react-ds-global
 
-This package provides the core React components and utilities for Canonical's Design System.
+Universal React components for the Pragma design system. This package provides foundational UI elements that apply across all Canonical web applications: buttons, badges, cards, tooltips, and more.
 
-## Getting Started
+## Prerequisites
 
-Install the package in a React 19 project with `bun add @canonical/react-ds-global`.
+- React 19 or higher
 
-Then, import components from the package and use them in your React components.
-An example of a component using the `Button` component:
+## Installation
+
+```bash
+bun add @canonical/react-ds-global
+```
+
+The package depends on `@canonical/styles` for CSS.
+
+## Usage
+
+Import components by name:
+
 ```tsx
-// MyComponent.tsx
-import { Button } from "@canonical/react-ds-global";
+import { Button, Badge, Card, Tooltip } from "@canonical/react-ds-global";
 
-function MyComponent() {
+function Example() {
   return (
-    <div>
-      <Button
-        appearance={"positive"}
-        label={"Click me"}
-        onClick={() => alert("hello world!")}
-      />
-    </div>
+    <Card>
+      <Badge>New</Badge>
+      <Tooltip content="Click to submit">
+        <Button appearance="positive">Submit</Button>
+      </Tooltip>
+    </Card>
   );
 }
-
-export default MyComponent;
 ```
+
+Components accept standard HTML attributes for their underlying elements. A `Button` accepts all `ButtonHTMLAttributes`, a `Link` accepts all `AnchorHTMLAttributes`, and so on.
+
+## Modifier Families
+
+Several components accept appearance props that correspond to modifier families from `@canonical/ds-types`:
+
+```tsx
+<Button appearance="positive">Confirm</Button>
+<Button appearance="negative">Delete</Button>
+<Button appearance="caution">Proceed with caution</Button>
+```
+
+The modifier classes integrate with CSS custom properties defined in `@canonical/styles`.
+
+## Styles
+
+Import the main styles package in your application entry point:
+
+```tsx
+import "@canonical/styles";
+```
+
+## Storybook
+
+Each component includes Storybook stories demonstrating usage patterns and variants:
+
+```bash
+cd packages/react/ds-global
+bun run storybook
+```
+
+## Component Specifications
+
+Component specifications are defined in the [Design System Ontology](https://github.com/canonical/design-system).

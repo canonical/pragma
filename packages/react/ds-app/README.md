@@ -1,28 +1,40 @@
-## Canonical Design System - React Core
+# @canonical/react-ds-app
 
-This package provides the core React components and utilities for Canonical's Design System.
+Application-level UI components for the Pragma design system. This package provides navigation, toolbars, and layout components suited for internal tools and applications.
 
-## Getting Started
+## Prerequisites
 
-Install the package in a React 19 project with `bun add @canonical/react-ds-global`.
+- React 19 or higher
 
-Then, import components from the package and use them in your React components.
-An example of a component using the `Button` component:
+## Installation
+
+```bash
+bun add @canonical/react-ds-app
+```
+
+The package builds on top of `@canonical/react-ds-global`.
+
+## Usage
+
 ```tsx
-// MyComponent.tsx
-import { Button } from "@canonical/react-ds-global";
+import { Button } from "@canonical/react-ds-app";
 
-function MyComponent() {
+function AppHeader() {
   return (
-    <div>
-      <Button
-        appearance={"positive"}
-        label={"Click me"}
-        onClick={() => alert("hello world!")}
-      />
-    </div>
+    <header>
+      <Button>Settings</Button>
+    </header>
   );
 }
-
-export default MyComponent;
 ```
+
+## Storybook
+
+```bash
+cd packages/react/ds-app
+bun run storybook
+```
+
+## Component Specifications
+
+Component specifications are defined in the [Design System Ontology](https://github.com/canonical/design-system).

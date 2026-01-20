@@ -1,22 +1,47 @@
 # Webarchitect
 
-A powerful command-line tool for validating project architecture and configuration consistency across development teams and organizations.
+Validates project architecture and configuration against rulesets. Run it to ensure packages follow organizational standards.
 
-## What is this tool for?
+```bash
+webarchitect library
+```
 
-Webarchitect helps development teams maintain consistent project structures and configuration standards. Think of it as a quality gate that ensures every project in your organization follows the same architectural patterns, uses the same build tools, and maintains the same configuration standards.
+## Built-in Rulesets
 
-### The Problem It Solves
+Pragma uses three rulesets:
 
-In large organizations with multiple development teams, projects tend to drift from established standards over time. One team might use different TypeScript configurations, another might have inconsistent package.json structures, and a third might be missing essential development scripts. This inconsistency creates several problems: developers waste time figuring out how each project works, code quality varies between teams, and maintaining projects becomes more difficult as each one follows slightly different patterns.
+| Ruleset | License | Use Case |
+|---------|---------|----------|
+| `library` | LGPL-3.0 | Packages consumed by other packages or applications |
+| `tool` | GPL-3.0 | Compiled CLI tools with a build step |
+| `tool-ts` | GPL-3.0 | TypeScript tools that run directly with Bun (no build) |
 
-Webarchitect addresses this challenge by providing automated validation of project architecture. Instead of relying on documentation that might become outdated or manual code reviews that might miss configuration details, you can define your organization's standards as executable rulesets and validate projects automatically.
+Each ruleset validates package.json structure, required scripts, TypeScript configuration, Biome setup, and license compliance.
 
-### How It Works
+## Quick Example
 
-The tool operates on the concept of "rulesets" - JSON Schema-based definitions that describe what files should exist in a project and what those files should contain. For example, a ruleset might specify that every package must have a `package.json` file with specific required fields, a `biome.json` file that extends your organization's linting configuration, and a TypeScript configuration that follows your team's standards.
+A library package includes this in its check script:
 
-When you run webarchitect against a project, it loads the specified ruleset, checks whether the required files exist, and validates that their contents match the expected structure and values. This approach gives you confidence that projects follow your established patterns without requiring manual inspection.
+```json
+{
+  "scripts": {
+    "check:webarchitect": "webarchitect library"
+  }
+}
+```
+
+Running `bun run check:webarchitect` validates that the package has correct exports, required fields, and LGPL-3.0 license.
+
+## What It Validates
+
+Webarchitect checks that:
+- `package.json` has required fields (name, version, type, module, types, exports)
+- `biome.json` extends `@canonical/biome-config`
+- `tsconfig.json` exists with proper configuration
+- License matches the ruleset requirement
+- Required scripts exist (build, check, test)
+
+When validation fails, you get specific error messages explaining what's wrong and what's expected.
 
 ## How to install and run?
 

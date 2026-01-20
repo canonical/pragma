@@ -1,17 +1,23 @@
 {
   "mcpServers": {
+    "context7": {
+      "type": "http",
+      "url": "https://mcp.context7.com/mcp"
+    },
     "nx": {
-      "type": "stdio",
-      "command": "npx",
       "args": [
         "nx-mcp@latest",
         "."
       ],
-      "env": {}
+      "command": "npx",
+      "env": {},
+      "type": "stdio"
     },
-    "context7": {
-      "type": "http",
-      "url": "https://mcp.context7.com/mcp"
+    "sem": {
+      "args": [
+        "mcp"
+      ],
+      "command": "sem"
     }
   }
 }
