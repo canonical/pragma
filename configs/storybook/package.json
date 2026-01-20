@@ -5,6 +5,16 @@
   "description": "Canonical's standard Storybook configuration factory",
   "main": "dist/esm/index.js",
   "types": "dist/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "default": "./dist/esm/index.js"
+    },
+    "./preview": {
+      "types": "./dist/types/previewConfig.d.ts",
+      "default": "./dist/esm/previewConfig.js"
+    }
+  },
   "author": {
     "email": "webteam@canonical.com",
     "name": "Canonical Webteam"

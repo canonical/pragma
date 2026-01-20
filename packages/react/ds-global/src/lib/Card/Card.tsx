@@ -32,6 +32,7 @@ const Card = ({
   </div>
 );
 
+Card.displayName = "Card";
 Card.Content = Content;
 Card.Header = Header;
 Card.Image = Image;

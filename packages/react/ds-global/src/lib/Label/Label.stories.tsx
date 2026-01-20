@@ -127,7 +127,7 @@ export const Success: Story = {
 /**
  * Error label for error status.
  */
-export const Error: Story = {
+export const ErrorLabel: Story = {
   args: {
     children: "Error",
     criticality: "error",

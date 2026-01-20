@@ -24,11 +24,13 @@ const meta = {
     },
     current: {
       control: { type: "boolean" },
-      description: "Whether this is the current/active breadcrumb. Renders as text instead of link.",
+      description:
+        "Whether this is the current/active breadcrumb. Renders as text instead of link.",
     },
     disabled: {
       control: { type: "boolean" },
-      description: "Whether the breadcrumb is disabled. Renders as text instead of link.",
+      description:
+        "Whether the breadcrumb is disabled. Renders as text instead of link.",
     },
     separator: {
       control: { type: "text" },
@@ -38,7 +40,16 @@ const meta = {
   decorators: [
     (Story) => (
       <nav aria-label="Breadcrumb">
-        <ol className="ds breadcrumbs" style={{ display: "flex", listStyle: "none", padding: 0, margin: 0, gap: "0.5rem" }}>
+        <ol
+          className="ds breadcrumbs"
+          style={{
+            display: "flex",
+            listStyle: "none",
+            padding: 0,
+            margin: 0,
+            gap: "0.5rem",
+          }}
+        >
           <Story />
         </ol>
       </nav>

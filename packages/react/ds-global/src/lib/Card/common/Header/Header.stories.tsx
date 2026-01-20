@@ -1,5 +1,4 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { Button } from "../../../Button/index.js";
 import Component from "./Header.js";
 
 const meta = {
@@ -10,18 +9,14 @@ const meta = {
     docs: {
       description: {
         component:
-          "Card.Header provides a title and optional actions slot for cards. Implements `ds:global.subcomponent.card-header`.",
+          "Card.Header provides a header section for cards. Implements `ds:global.subcomponent.card-header`.",
       },
     },
   },
   argTypes: {
     children: {
       control: { type: "text" },
-      description: "Title content (required).",
-    },
-    actions: {
-      control: false,
-      description: "Optional actions slot (buttons, links, etc.).",
+      description: "Header content (required).",
     },
   },
   decorators: [
@@ -40,48 +35,10 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 /**
- * Default header with title only.
+ * Default header with content.
  */
 export const Default: Story = {
   args: {
-    children: "Card Title",
-  },
-};
-
-/**
- * Header with title and action button.
- */
-export const WithActions: Story = {
-  args: {
-    children: "Card Title",
-    actions: <Button importance="tertiary">Action</Button>,
-  },
-};
-
-/**
- * Header with multiple action buttons.
- */
-export const WithMultipleActions: Story = {
-  args: {
-    children: "Card Title",
-    actions: (
-      <>
-        <Button importance="tertiary">Edit</Button>
-        <Button importance="tertiary" anticipation="destructive">
-          Delete
-        </Button>
-      </>
-    ),
-  },
-};
-
-/**
- * Header with long title that may truncate.
- */
-export const LongTitle: Story = {
-  args: {
-    children:
-      "This is a very long card title that might need to be truncated or wrapped depending on the available space",
-    actions: <Button importance="tertiary">Action</Button>,
+    children: "Card Header",
   },
 };

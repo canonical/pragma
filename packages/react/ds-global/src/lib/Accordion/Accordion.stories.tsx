@@ -177,3 +177,90 @@ export const WithRichContent: Story = {
     );
   },
 };
+
+/**
+ * Demonstrates keyboard navigation between accordion headers.
+ *
+ * Focus any header and use:
+ * - **Arrow Down**: Move to next header (wraps to first)
+ * - **Arrow Up**: Move to previous header (wraps to last)
+ * - **Home**: Move to first header
+ * - **End**: Move to last header
+ * - **Enter/Space**: Toggle expand/collapse
+ */
+export const KeyboardNavigation: Story = {
+  render: () => {
+    const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>(
+      {},
+    );
+
+    const handleExpandedChange = (id: string) => (expanded: boolean) => {
+      setExpandedItems((prev) => ({ ...prev, [id]: expanded }));
+    };
+
+    return (
+      <Accordion>
+        <Accordion.Item
+          heading="Step 1: Focus a header"
+          expanded={expandedItems.item1}
+          onExpandedChange={handleExpandedChange("item1")}
+        >
+          <p>
+            Click or Tab to focus any accordion header. The focused header will
+            show a visible outline.
+          </p>
+        </Accordion.Item>
+        <Accordion.Item
+          heading="Step 2: Navigate with arrows"
+          expanded={expandedItems.item2}
+          onExpandedChange={handleExpandedChange("item2")}
+        >
+          <p>
+            Press <kbd>Arrow Down</kbd> to move to the next header, or{" "}
+            <kbd>Arrow Up</kbd> to move to the previous one. Navigation wraps
+            around.
+          </p>
+        </Accordion.Item>
+        <Accordion.Item
+          heading="Step 3: Jump to ends"
+          expanded={expandedItems.item3}
+          onExpandedChange={handleExpandedChange("item3")}
+        >
+          <p>
+            Press <kbd>Home</kbd> to jump to the first header, or <kbd>End</kbd>{" "}
+            to jump to the last one.
+          </p>
+        </Accordion.Item>
+        <Accordion.Item
+          heading="Step 4: Toggle expansion"
+          expanded={expandedItems.item4}
+          onExpandedChange={handleExpandedChange("item4")}
+        >
+          <p>
+            Press <kbd>Enter</kbd> or <kbd>Space</kbd> to expand or collapse the
+            focused accordion item.
+          </p>
+        </Accordion.Item>
+        <Accordion.Item
+          heading="Step 5: Try it yourself!"
+          expanded={expandedItems.item5}
+          onExpandedChange={handleExpandedChange("item5")}
+        >
+          <p>
+            This accordion has 5 items. Practice navigating between them using
+            only your keyboard. Tab focuses the first header, then arrow keys
+            move between headers without needing to Tab repeatedly.
+          </p>
+        </Accordion.Item>
+      </Accordion>
+    );
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Implements WAI-ARIA Accordion Pattern keyboard navigation. Arrow keys move focus between headers, Home/End jump to first/last, Enter/Space toggles expansion.",
+      },
+    },
+  },
+};

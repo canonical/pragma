@@ -9,7 +9,6 @@ describe("Accordion", () => {
         <Accordion.Item heading="Test Heading">Test Content</Accordion.Item>
       </Accordion>,
     );
-
     expect(screen.getByText("Test Heading")).toBeInTheDocument();
   });
 
@@ -19,7 +18,6 @@ describe("Accordion", () => {
         <Accordion.Item heading="Test">Content</Accordion.Item>
       </Accordion>,
     );
-
     expect(container.firstChild).toHaveClass("ds", "accordion", "custom-class");
   });
 
@@ -29,13 +27,12 @@ describe("Accordion", () => {
         <Accordion.Item heading="Test">Content</Accordion.Item>
       </Accordion>,
     );
-
     expect(screen.getByTestId("test-accordion")).toBeInTheDocument();
   });
 });
 
 describe("Accordion.Item", () => {
-  it("renders heading and content", () => {
+  it("renders heading and content when expanded", () => {
     render(
       <Accordion>
         <Accordion.Item heading="Test Heading" expanded>
@@ -43,84 +40,68 @@ describe("Accordion.Item", () => {
         </Accordion.Item>
       </Accordion>,
     );
-
     expect(screen.getByText("Test Heading")).toBeInTheDocument();
     expect(screen.getByText("Test Content")).toBeInTheDocument();
   });
 
-  it("hides content when not expanded", () => {
-    render(
+  it("hides content when collapsed, shows when expanded", () => {
+    const { rerender } = render(
       <Accordion>
-        <Accordion.Item heading="Test Heading">Test Content</Accordion.Item>
+        <Accordion.Item heading="Test">Content</Accordion.Item>
       </Accordion>,
     );
+    expect(screen.getByRole("region", { hidden: true })).toHaveAttribute(
+      "hidden",
+    );
 
-    const content = screen.getByRole("region", { hidden: true });
-    expect(content).toHaveAttribute("hidden");
-  });
-
-  it("shows content when expanded", () => {
-    render(
+    rerender(
       <Accordion>
-        <Accordion.Item heading="Test Heading" expanded>
-          Test Content
+        <Accordion.Item heading="Test" expanded>
+          Content
         </Accordion.Item>
       </Accordion>,
     );
-
-    const content = screen.getByRole("region");
-    expect(content).not.toHaveAttribute("hidden");
+    expect(screen.getByRole("region")).not.toHaveAttribute("hidden");
   });
 
-  it("calls onExpandedChange when header is clicked", () => {
+  it("calls onExpandedChange on click, toggling state", () => {
     const onExpandedChange = vi.fn();
-
-    render(
+    const { rerender } = render(
       <Accordion>
-        <Accordion.Item
-          heading="Test Heading"
-          onExpandedChange={onExpandedChange}
-        >
-          Test Content
+        <Accordion.Item heading="Test" onExpandedChange={onExpandedChange}>
+          Content
         </Accordion.Item>
       </Accordion>,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: /test heading/i }));
-
+    fireEvent.click(screen.getByRole("button"));
     expect(onExpandedChange).toHaveBeenCalledWith(true);
-  });
 
-  it("toggles expanded state on click", () => {
-    const onExpandedChange = vi.fn();
-
-    render(
+    rerender(
       <Accordion>
         <Accordion.Item
-          heading="Test Heading"
+          heading="Test"
           expanded
           onExpandedChange={onExpandedChange}
         >
-          Test Content
+          Content
         </Accordion.Item>
       </Accordion>,
     );
-
-    fireEvent.click(screen.getByRole("button", { name: /test heading/i }));
-
+    fireEvent.click(screen.getByRole("button"));
     expect(onExpandedChange).toHaveBeenCalledWith(false);
   });
 
   it("has correct aria attributes", () => {
     render(
       <Accordion>
-        <Accordion.Item heading="Test Heading" expanded>
-          Test Content
+        <Accordion.Item heading="Test" expanded>
+          Content
         </Accordion.Item>
       </Accordion>,
     );
 
-    const button = screen.getByRole("button", { name: /test heading/i });
+    const button = screen.getByRole("button");
     const region = screen.getByRole("region");
 
     expect(button).toHaveAttribute("aria-expanded", "true");
@@ -128,43 +109,71 @@ describe("Accordion.Item", () => {
     expect(region).toHaveAttribute("aria-labelledby", button.id);
   });
 
-  it("supports keyboard navigation with Enter key", () => {
+  it("toggles on Enter and Space keys", () => {
     const onExpandedChange = vi.fn();
-
     render(
       <Accordion>
-        <Accordion.Item
-          heading="Test Heading"
-          onExpandedChange={onExpandedChange}
-        >
-          Test Content
+        <Accordion.Item heading="Test" onExpandedChange={onExpandedChange}>
+          Content
         </Accordion.Item>
       </Accordion>,
     );
 
-    const button = screen.getByRole("button", { name: /test heading/i });
+    const button = screen.getByRole("button");
     fireEvent.keyDown(button, { key: "Enter" });
+    expect(onExpandedChange).toHaveBeenCalledWith(true);
 
+    onExpandedChange.mockClear();
+    fireEvent.keyDown(button, { key: " " });
     expect(onExpandedChange).toHaveBeenCalledWith(true);
   });
+});
 
-  it("supports keyboard navigation with Space key", () => {
-    const onExpandedChange = vi.fn();
-
+describe("Accordion keyboard navigation", () => {
+  const renderThreeItems = () =>
     render(
       <Accordion>
-        <Accordion.Item
-          heading="Test Heading"
-          onExpandedChange={onExpandedChange}
-        >
-          Test Content
-        </Accordion.Item>
+        <Accordion.Item heading="First">First Content</Accordion.Item>
+        <Accordion.Item heading="Second">Second Content</Accordion.Item>
+        <Accordion.Item heading="Third">Third Content</Accordion.Item>
       </Accordion>,
     );
 
-    const button = screen.getByRole("button", { name: /test heading/i });
-    fireEvent.keyDown(button, { key: " " });
+  it("ArrowDown moves focus to next item, wrapping at end", () => {
+    renderThreeItems();
+    const buttons = screen.getAllByRole("button");
 
-    expect(onExpandedChange).toHaveBeenCalledWith(true);
+    buttons[0].focus();
+    fireEvent.keyDown(buttons[0], { key: "ArrowDown" });
+    expect(document.activeElement).toBe(buttons[1]);
+
+    buttons[2].focus();
+    fireEvent.keyDown(buttons[2], { key: "ArrowDown" });
+    expect(document.activeElement).toBe(buttons[0]);
+  });
+
+  it("ArrowUp moves focus to previous item, wrapping at start", () => {
+    renderThreeItems();
+    const buttons = screen.getAllByRole("button");
+
+    buttons[1].focus();
+    fireEvent.keyDown(buttons[1], { key: "ArrowUp" });
+    expect(document.activeElement).toBe(buttons[0]);
+
+    buttons[0].focus();
+    fireEvent.keyDown(buttons[0], { key: "ArrowUp" });
+    expect(document.activeElement).toBe(buttons[2]);
+  });
+
+  it("Home moves focus to first item, End to last", () => {
+    renderThreeItems();
+    const buttons = screen.getAllByRole("button");
+
+    buttons[2].focus();
+    fireEvent.keyDown(buttons[2], { key: "Home" });
+    expect(document.activeElement).toBe(buttons[0]);
+
+    fireEvent.keyDown(buttons[0], { key: "End" });
+    expect(document.activeElement).toBe(buttons[2]);
   });
 });

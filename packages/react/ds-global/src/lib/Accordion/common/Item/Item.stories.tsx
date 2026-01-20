@@ -39,7 +39,8 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {
   args: {
     heading: "Click to expand",
-    children: "This is the content that appears when the accordion item is expanded.",
+    children:
+      "This is the content that appears when the accordion item is expanded.",
     expanded: false,
   },
 };

@@ -158,4 +158,30 @@ describe("Breadcrumbs", () => {
     expect(screen.getByText("Home")).toBeInTheDocument();
     expect(screen.getByText("No URL")).toBeInTheDocument();
   });
+
+  it("links are keyboard accessible via Tab navigation", () => {
+    render(
+      <Breadcrumbs
+        items={[
+          { url: "/", label: "Home" },
+          { url: "/products", label: "Products" },
+          { key: "current", label: "Current", current: true },
+        ]}
+      />,
+    );
+
+    const homeLink = screen.getByText("Home");
+    const productsLink = screen.getByText("Products");
+
+    // Links should be focusable
+    homeLink.focus();
+    expect(document.activeElement).toBe(homeLink);
+
+    productsLink.focus();
+    expect(document.activeElement).toBe(productsLink);
+
+    // Current item (span) should not be a link
+    const currentItem = screen.getByText("Current");
+    expect(currentItem.tagName).toBe("SPAN");
+  });
 });
