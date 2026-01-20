@@ -448,6 +448,46 @@ The generator appends to `{parentDir}/index.ts`. If your project uses a differen
 - **[@canonical/summon](../summon/)** — The generator framework (required peer dependency)
 - **[@canonical/summon-package](../summon-package/)** — Package scaffolding for the monorepo
 
+---
+
+## Known Limitations
+
+### Compound Components
+
+The current generator creates single-level components. For compound components with subcomponents (e.g., `Accordion.Item`, `Card.Header`), you'll need to:
+
+1. Generate the parent component
+2. Manually create the `common/` directory structure for subcomponents
+3. Attach subcomponents using dot notation
+
+**Expected structure for compound components:**
+```
+Accordion/
+├── Accordion.tsx           # Parent with Accordion.Item = Item
+├── types.ts
+├── index.ts
+└── common/
+    └── Item/
+        ├── Item.tsx
+        ├── types.ts
+        ├── index.ts
+        └── styles.css
+```
+
+**Alternative**: For ontology-driven component generation that handles compound components, see the `component-from-ontology` skill at `/skills/component-from-ontology/SKILL.md`.
+
+### Code Standards
+
+Generated templates use generic patterns. For project-specific standards (CSS namespacing, className construction patterns, etc.), consider:
+
+1. Customizing templates in a local generator
+2. Post-generation linting/formatting
+3. Using the `component-from-ontology` skill which integrates with semantic code standards
+
+### Non-Interactive Environments
+
+See [Summon How-To: Non-Interactive Usage](/packages/summon/docs/how-to.md#non-interactive--llm-usage) for CI/LLM usage patterns.
+
 ## License
 
 GPL-3.0

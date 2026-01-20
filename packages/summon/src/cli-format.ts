@@ -163,3 +163,74 @@ export const formatEffectLine = (effect: Effect, isLast: boolean): string => {
 
   return `${chalk.dim(connector)} ${colorFn(paddedLabel)}${payload}`;
 };
+
+/**
+ * Maximum number of lines to show in content preview.
+ */
+const MAX_PREVIEW_LINES = 50;
+
+/**
+ * Maximum width for content lines (will truncate).
+ */
+const MAX_LINE_WIDTH = 120;
+
+/**
+ * Format file content for preview display.
+ * Shows line numbers and truncates long content.
+ *
+ * @param content - The file content to format
+ * @param maxLines - Maximum number of lines to show (default: MAX_PREVIEW_LINES)
+ */
+export const formatContentPreview = (
+  content: string,
+  maxLines: number = MAX_PREVIEW_LINES,
+): string => {
+  const lines = content.split("\n");
+  const totalLines = lines.length;
+  const showLines = lines.slice(0, maxLines);
+  const lineNumWidth = String(Math.min(totalLines, maxLines)).length;
+
+  const formatted = showLines.map((line, i) => {
+    const lineNum = String(i + 1).padStart(lineNumWidth, " ");
+    const truncatedLine =
+      line.length > MAX_LINE_WIDTH
+        ? `${line.slice(0, MAX_LINE_WIDTH - 3)}...`
+        : line;
+    return `${chalk.dim(`${lineNum} │`)} ${truncatedLine}`;
+  });
+
+  if (totalLines > maxLines) {
+    formatted.push(
+      chalk.dim(`   ... (${totalLines - maxLines} more lines omitted)`),
+    );
+  }
+
+  return formatted.join("\n");
+};
+
+/**
+ * Format an effect with its content (for verbose dry-run mode).
+ * This is useful for LLM agents that need to see generated file contents.
+ *
+ * @param effect - The effect to format
+ * @param isLast - Whether this is the last effect in the list
+ */
+export const formatEffectWithContent = (
+  effect: Effect,
+  isLast: boolean,
+): string => {
+  const baseLine = formatEffectLine(effect, isLast);
+
+  // Only show content for WriteFile and AppendFile effects
+  if (effect._tag === "WriteFile" || effect._tag === "AppendFile") {
+    const indent = isLast ? "   " : "│  ";
+    const contentPreview = formatContentPreview(effect.content);
+    const indentedContent = contentPreview
+      .split("\n")
+      .map((line) => `${chalk.dim(indent)}${line}`)
+      .join("\n");
+    return `${baseLine}\n${indentedContent}`;
+  }
+
+  return baseLine;
+};

@@ -1,0 +1,25 @@
+/**
+ * Accordion styles
+ * @implements dso:global.component.accordion
+ *
+ * DSL anatomy mapping:
+ * - layout.type: stack -> display: flex; flex-direction: column
+ * - layout.direction: vertical -> flex-direction: column
+ * - appearance.border: border/style/container
+ */
+.ds.accordion {
+  /* layout.type: stack, layout.direction: vertical */
+  display: flex;
+  flex-direction: column;
+
+  /* appearance.border: border/style/container */
+  border: var(--accordion-border-width, 1px) var(--accordion-border-style, solid)
+    var(--accordion-border-color, var(--color-border));
+  border-radius: var(--accordion-border-radius, var(--border-radius, 0.25rem));
+
+  /* Background */
+  background-color: var(--accordion-background, var(--color-surface, transparent));
+
+  /* Prevent overflow */
+  overflow: hidden;
+}

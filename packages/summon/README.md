@@ -47,10 +47,17 @@ Every prompt becomes a CLI flag. Boolean prompts with `default: true` use the `-
 | Flag | Description |
 |------|-------------|
 | `-d, --dry-run` | Preview without writing files |
-| `-y, --yes` | Skip confirmation prompts |
+| `-y, --yes` | Skip confirmation prompts and preview |
 | `-v, --verbose` | Show debug output |
+| `--show-contents` | Show file contents in dry-run (useful for LLMs) |
 | `--no-preview` | Skip the file preview |
 | `--no-generated-stamp` | Disable generated file stamp comments |
+
+**LLM Usage:** The `--show-contents` flag is particularly useful for AI assistants and LLM agents. When combined with `--dry-run`, it outputs the complete generated file contents, allowing the LLM to review, analyze, or use the generated code without writing to disk:
+
+```bash
+summon component react src/components/Button --dry-run --show-contents -y
+```
 
 ### Shell Autocompletion
 

@@ -1,0 +1,167 @@
+/**
+ * Accordion.Item styles
+ * @implements dso:global.subcomponent.accordion-item
+ *
+ * DSL anatomy mapping:
+ * - layout.type: stack -> display: flex; flex-direction: column
+ * - layout.direction: vertical -> flex-direction: column
+ */
+.ds.accordion-item {
+  /* layout.type: stack, layout.direction: vertical */
+  display: flex;
+  flex-direction: column;
+
+  /* Divider between items (not explicitly in DSL but common pattern) */
+  border-bottom: var(--accordion-item-border-width, 1px)
+    var(--accordion-item-border-style, solid)
+    var(--accordion-item-border-color, var(--color-border));
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+/**
+ * Header tab
+ * DSL: layout.type: flow, layout.direction: horizontal, layout.align: center
+ *      interaction.cursor: pointer
+ */
+.ds.accordion-item .accordion-item-header {
+  /* layout.type: flow, layout.direction: horizontal */
+  display: flex;
+  flex-direction: row;
+
+  /* layout.align: center */
+  align-items: center;
+  gap: var(--accordion-header-gap, var(--spacing-small, 0.5rem));
+
+  /* Full width */
+  width: 100%;
+
+  /* Spacing */
+  padding-block: var(--accordion-header-padding-block, var(--spacing-medium, 1rem));
+  padding-inline: var(--accordion-header-padding-inline, var(--spacing-medium, 1rem));
+
+  /* Background */
+  background: var(--accordion-header-background, var(--color-surface-interactive, transparent));
+
+  /* Reset button styles */
+  border: none;
+  font: inherit;
+  text-align: start;
+
+  /* interaction.cursor: pointer */
+  cursor: pointer;
+
+  /* Typography */
+  font-weight: var(--accordion-header-font-weight, var(--font-weight-semibold, 600));
+  font-size: var(--accordion-header-font-size, var(--font-size-body, 1rem));
+  color: var(--accordion-header-color, var(--color-text-primary, inherit));
+
+  /* Transition */
+  transition: background-color var(--transition-duration-fast, 150ms)
+    var(--transition-easing-standard, ease-out);
+
+  &:hover {
+    background: var(
+      --accordion-header-background-hover,
+      var(--color-surface-interactive-hover, rgba(0, 0, 0, 0.04))
+    );
+  }
+
+  &:active {
+    background: var(
+      --accordion-header-background-active,
+      var(--color-surface-interactive-active, rgba(0, 0, 0, 0.08))
+    );
+  }
+
+  &:focus-visible {
+    background: var(
+      --accordion-header-background-focus,
+      var(--color-surface-interactive-focus, rgba(0, 0, 0, 0.04))
+    );
+    outline: var(--focus-outline-width, 2px) solid
+      var(--focus-outline-color, var(--color-focus, #0066cc));
+    outline-offset: var(--focus-outline-offset, -2px);
+  }
+}
+
+/**
+ * Heading (role: heading)
+ * DSL: cardinality: 1
+ */
+.ds.accordion-item .accordion-item-heading {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/**
+ * Control indicator (role: control)
+ * DSL: size.width: size/icon/small, size.height: size/icon/small
+ *      cardinality: 1
+ */
+.ds.accordion-item .accordion-item-chevron {
+  flex-shrink: 0;
+  width: var(--accordion-chevron-size, var(--size-icon-small, 1rem));
+  height: var(--accordion-chevron-size, var(--size-icon-small, 1rem));
+
+  /* interaction.transform.collapsed: rotate(0deg), transition */
+  transform: rotate(0deg);
+  transition: transform var(--transition-duration-fast, 150ms)
+    var(--transition-easing-standard, ease-out);
+
+  /* Chevron icon using CSS mask */
+  &::before {
+    content: "";
+    display: block;
+    width: 100%;
+    height: 100%;
+    /* appearance.color: color/icon/secondary */
+    background-color: var(--accordion-chevron-color, var(--color-icon-secondary, currentColor));
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='currentColor' d='M4.47 5.47a.75.75 0 0 1 1.06 0L8 7.94l2.47-2.47a.75.75 0 1 1 1.06 1.06l-3 3a.75.75 0 0 1-1.06 0l-3-3a.75.75 0 0 1 0-1.06z'/%3E%3C/svg%3E");
+    mask-repeat: no-repeat;
+    mask-position: center;
+    mask-size: contain;
+  }
+}
+
+/* interaction.transform.expanded: rotate(180deg) */
+.ds.accordion-item .accordion-item-header[aria-expanded="true"] .accordion-item-chevron {
+  transform: rotate(180deg);
+}
+
+/**
+ * Content panel (role: content panel)
+ * DSL: layout.overflow: hidden
+ *      cardinality: 1
+ */
+.ds.accordion-item .accordion-item-content {
+  display: block;
+  overflow: hidden;
+  background: var(--accordion-content-background, var(--color-surface-content, transparent));
+
+  /* Transition for height animation (requires JS for proper animation) */
+  transition:
+    height var(--transition-duration-medium, 200ms) var(--transition-easing-decelerate, ease-out),
+    opacity var(--transition-duration-medium, 200ms) var(--transition-easing-decelerate, ease-out);
+}
+
+.ds.accordion-item .accordion-item-content[hidden] {
+  display: none;
+}
+
+/**
+ * Content padding wrapper
+ * (Implementation detail, not in DSL)
+ */
+.ds.accordion-item .accordion-item-content-inner {
+  display: block;
+  padding-block: var(--accordion-content-padding-block, var(--spacing-large, 1.5rem));
+  padding-inline: var(--accordion-content-padding-inline, var(--spacing-medium, 1rem));
+  font-size: var(--accordion-content-font-size, var(--font-size-body, 1rem));
+  color: var(--accordion-content-color, var(--color-text-secondary, inherit));
+  line-height: var(--accordion-content-line-height, var(--font-line-height-relaxed, 1.6));
+}

@@ -34,6 +34,13 @@ Node 23 has a [known compatibility issue](https://github.com/canonical/pragma/is
 **Recommended:**
 
 - **MCP-capable environment** such as Claude Code, Cursor, or Windsurf. The repository includes an `.mcp.json` configuration that enables AI assistants to query the codebase semantically, access Nx workspace intelligence, and retrieve up-to-date documentation.
+- **Summon generators** for scaffolding new components and packages. Install globally with `bun link` from each package directory:
+  ```bash
+  cd packages/summon && bun link
+  cd packages/summon-component && bun link
+  cd packages/summon-package && bun link
+  ```
+  Then use `summon component react src/lib/MyComponent` to scaffold components or `summon package` to create new packages. Run `summon --help` for all available generators.
 
 **Nice to have:**
 

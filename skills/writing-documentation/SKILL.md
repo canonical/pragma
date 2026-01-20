@@ -722,3 +722,9 @@ The transitions ontology provides semantic structure for provenance. Trust infra
 - Diataxis ontology: `sem_readme("diataxis")`
 - Pragma documentation: `docs/`
 - Artifact definitions: `session/artifacts/`
+
+## Related Skills
+
+- **component-from-ontology**: Generate component implementations from design system ontology. Use after documenting component specifications to create DSL-compliant implementations.
+- **anatomy-author** (design-system): Create anatomy DSL specifications for components. Use before this skill when documenting new component structures.
+- **component-specifier** (design-system): Specify component metadata (tier, modifiers, usage guidance). Use alongside documentation artifacts.
