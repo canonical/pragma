@@ -12,19 +12,19 @@ const componentCssClassName = "ds card";
  * @implements syntax:core:component:card:1.0.0
  */
 const Card = ({
-	className,
-	children,
-	emphasis = "neutral",
-	...props
+  className,
+  children,
+  emphasis = "neutral",
+  ...props
 }: CardProps): React.ReactElement => (
-	<div
-		className={[componentCssClassName, emphasis, className]
-			.filter(Boolean)
-			.join(" ")}
-		{...props}
-	>
-		{children}
-	</div>
+  <div
+    className={[componentCssClassName, emphasis, className]
+      .filter(Boolean)
+      .join(" ")}
+    {...props}
+  >
+    {children}
+  </div>
 );
 
 Card.ThumbnailSection = ThumbnailSection;
