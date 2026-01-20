@@ -5,9 +5,9 @@
  */
 
 export {
-	ModifierMatrix,
-	MODIFIER_AXES,
-	type ModifierAxis,
-	type ModifierAxisName,
-	type ModifierMatrixProps,
+  MODIFIER_AXES,
+  type ModifierAxis,
+  type ModifierAxisName,
+  ModifierMatrix,
+  type ModifierMatrixProps,
 } from "./ModifierMatrix/index.js";

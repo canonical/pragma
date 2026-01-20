@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import Component from "./Link.js";
 
 const meta = {
-  title: "Link",
+  title: "P1/Link",
   component: Component,
   tags: ["autodocs"],
   argTypes: {

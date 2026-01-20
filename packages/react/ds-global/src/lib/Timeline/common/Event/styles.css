@@ -65,11 +65,20 @@
 
 /**
  * Event content container
+ * DSL: layout.type: flow, layout.direction: horizontal
+ * The edges (actor, datetime, payload) flow horizontally per DSL spec
  */
 .ds.timeline-event .timeline-event-content {
   flex: 1;
   min-width: 0;
   padding-bottom: var(--timeline-event-spacing, var(--spacing-large, 1.5rem));
+
+  /* DSL edges flow horizontally: actor → datetime → payload */
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--timeline-content-gap, var(--spacing-small, 0.5rem));
 }
 
 /**
@@ -82,7 +91,6 @@
     var(--font-weight-semibold, 600)
   );
   color: var(--timeline-actor-color, var(--color-text-primary, inherit));
-  margin-bottom: var(--spacing-xxsmall, 0.125rem);
 }
 
 /**
@@ -90,13 +98,11 @@
  * DSL: role: datetime (cardinality: 0..1)
  */
 .ds.timeline-event .timeline-event-datetime {
-  display: block;
   font-size: var(
     --timeline-datetime-font-size,
     var(--font-size-small, 0.875rem)
   );
   color: var(--timeline-datetime-color, var(--color-text-secondary, #666));
-  margin-bottom: var(--spacing-xsmall, 0.25rem);
 }
 
 /**
@@ -109,6 +115,8 @@
     --timeline-payload-line-height,
     var(--font-line-height-relaxed, 1.6)
   );
+  /* Allow payload to wrap to full width on its own line when content is long */
+  flex-basis: 100%;
 }
 
 /* Criticality modifiers affect marker color */

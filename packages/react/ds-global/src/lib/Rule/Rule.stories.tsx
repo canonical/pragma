@@ -7,7 +7,7 @@ import Component from "./Rule.js";
 import type { RuleProps } from "./types.js";
 
 const meta = {
-  title: "Rule",
+  title: "P1/Rule",
   component: Component,
   argTypes: {
     emphasis: {

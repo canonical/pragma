@@ -1,3 +1,4 @@
+import { previewConfig } from "@canonical/storybook-config";
 import { withThemeByClassName } from "@storybook/addon-themes";
 import type { Preview, ReactRenderer } from "@storybook/react-vite";
 
@@ -17,6 +18,7 @@ const preview: Preview = {
     }),
   ],
   parameters: {
+    ...previewConfig.parameters,
     docs: {
       codePanel: true,
     },

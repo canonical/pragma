@@ -1,0 +1,87 @@
+import { Meta } from "@storybook/blocks";
+
+<Meta title="Introduction" />
+
+# Apps/WPE Tier — React
+
+Launchpad-specific components for Canonical's software collaboration platform. File trees, diff viewers, markdown editors, and UI patterns tailored to code hosting and bug tracking workflows.
+
+## Architecture
+
+The WPE (Web & Platform Engineering) tier extends Apps with product-specific functionality:
+
+```
+@canonical/react-ds-global (dependency)
+         ↓
+@canonical/react-ds-app (dependency)
+         ↓
+@canonical/react-ds-app-launchpad (this package)
+         ↓
+Launchpad Application
+```
+
+Components in this tier understand Launchpad's data models and may not be suitable for general use.
+
+## Components
+
+| Component | Purpose |
+|-----------|---------|
+| **DiffChangeMarker** | Line-level diff annotations |
+| **EditableBlock** | Inline editable content regions |
+| **FileTree** | Hierarchical file browser |
+| **GitDiffViewer** | Side-by-side and unified diff display |
+| **MarkdownEditor** | Rich markdown editing with preview |
+| **RelativeTime** | Human-readable time distances |
+
+## Domain Context
+
+Components understand Launchpad concepts:
+
+| Domain | Components handle... |
+|--------|---------------------|
+| Code hosting | Branches, diffs, file hierarchies |
+| Bug tracking | Status indicators, importance levels |
+| Collaboration | Comments, merge proposals |
+| Time | Relative timestamps, activity feeds |
+
+## FileTree
+
+Navigate directory structures with expand/collapse and selection:
+
+```tsx
+import { FileTree } from "@canonical/react-ds-app-launchpad";
+
+<FileTree
+  data={directoryStructure}
+  onSelect={handleFileSelect}
+  expandedPaths={["src", "src/components"]}
+/>
+```
+
+## GitDiffViewer
+
+Display code changes with syntax highlighting:
+
+```tsx
+import { GitDiffViewer } from "@canonical/react-ds-app-launchpad";
+
+<GitDiffViewer
+  diff={unifiedDiff}
+  mode="split"
+  language="typescript"
+/>
+```
+
+## Installation
+
+```bash
+bun add @canonical/react-ds-app-launchpad
+```
+
+Requires `@canonical/react-ds-app` as a peer dependency.
+
+## Links
+
+- [Source](https://github.com/canonical/pragma/tree/main/packages/react/ds-app-launchpad)
+- [Launchpad](https://launchpad.net)
+- [Design System Ontology](https://github.com/canonical/design-system)

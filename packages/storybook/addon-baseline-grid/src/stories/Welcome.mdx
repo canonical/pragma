@@ -1,0 +1,63 @@
+import { Meta } from "@storybook/blocks";
+
+<Meta title="Introduction" />
+
+# Baseline Grid Addon
+
+Storybook addon that overlays an 8px baseline grid on stories. Verify that typography, spacing, and component dimensions align to the design system's vertical rhythm.
+
+## Usage
+
+Toggle the grid using the toolbar icon (grid symbol). The overlay appears on all stories and persists across navigation.
+
+## What to Verify
+
+| Element | Expected Alignment |
+|---------|-------------------|
+| Text baselines | Land on grid lines |
+| Line heights | Multiples of 8px |
+| Vertical padding | Multiples of 8px |
+| Vertical margins | Multiples of 8px |
+| Component heights | Multiples of 8px when possible |
+
+Small optical adjustments (1-2px) are acceptable when they improve perceived alignment.
+
+## Configuration
+
+The addon works out of the box with `@canonical/storybook-config`. To customize:
+
+```ts
+// .storybook/preview.ts
+export const parameters = {
+  baselineGrid: {
+    gridSize: 8,
+    gridColor: "cyan",
+    gridOpacity: 0.15,
+  },
+};
+```
+
+## Per-Story Control
+
+Disable the grid for specific stories:
+
+```ts
+export const MyStory: Story = {
+  parameters: {
+    baselineGrid: { disable: true },
+  },
+};
+```
+
+## Why 8px?
+
+The 8px grid provides:
+
+- **Consistency** — Predictable spacing relationships
+- **Scalability** — Divides evenly at common sizes (16, 24, 32, 48)
+- **Screen compatibility** — Aligns well with device pixel ratios
+
+## Links
+
+- [Source](https://github.com/canonical/pragma/tree/main/packages/storybook/addon-baseline-grid)
+- [8-Point Grid System](https://spec.fm/specifics/8-pt-grid)

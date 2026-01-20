@@ -1,0 +1,51 @@
+import { Meta } from "@storybook/blocks";
+
+<Meta title="Introduction" />
+
+# Apps Tier — React
+
+Application-level components for building Canonical web applications. Navigation, toolbars, file browsers, and structural patterns that compose Global tier primitives into complete application interfaces.
+
+## Architecture
+
+Apps tier sits above Global, composing foundational components into higher-level application patterns:
+
+```
+@canonical/react-ds-global (dependency)
+         ↓
+@canonical/react-ds-app (this package)
+         ↓
+Your Application
+```
+
+## Components
+
+| Component | Purpose |
+|-----------|---------|
+| **Button** | Extended button with app-specific behaviors |
+
+This tier is under active development. Components are added as application patterns stabilize.
+
+## When to Use Apps Tier
+
+Use Apps tier components when building:
+
+- Internal tools and dashboards
+- Developer-facing applications
+- Complex navigation structures
+- File management interfaces
+
+For marketing sites, landing pages, or documentation, prefer Global tier components directly.
+
+## Installation
+
+```bash
+bun add @canonical/react-ds-app
+```
+
+Requires `@canonical/react-ds-global` as a peer dependency.
+
+## Links
+
+- [Source](https://github.com/canonical/pragma/tree/main/packages/react/ds-app)
+- [Design System Ontology](https://github.com/canonical/design-system)

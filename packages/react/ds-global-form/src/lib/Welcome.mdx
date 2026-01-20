@@ -1,0 +1,107 @@
+import { Meta } from "@storybook/blocks";
+
+<Meta title="Introduction" />
+
+# Global/Form Tier — React
+
+Form components for the Pragma design system. Field wrappers, inputs, validation states, and patterns for collecting user data with consistency and accessibility.
+
+## Architecture
+
+Extends the Global tier with input-specific behavior, validation feedback, and accessible label association.
+
+```
+@canonical/react-ds-global (dependency)
+         ↓
+@canonical/react-ds-global-form (this package)
+         ↓
+Your Application
+```
+
+## Components
+
+### Field
+
+The `Field` component wraps inputs with labels, help text, and validation messages:
+
+```tsx
+import { Field } from "@canonical/react-ds-global-form";
+
+<Field label="Email" help="We'll never share your email" error={errors.email}>
+  <Field.Text type="email" name="email" required />
+</Field>
+```
+
+### Input Types
+
+| Input | Purpose |
+|-------|---------|
+| **Text** | Single-line text, email, password, url, tel |
+| **Textarea** | Multi-line text |
+| **Select** | Dropdown selection |
+| **Checkbox** | Boolean or multiple selection |
+| **SimpleChoices** | Radio buttons, checkbox groups |
+| **Range** | Numeric slider |
+| **Combobox** | Searchable dropdown |
+| **Hidden** | Hidden form values |
+
+### Form
+
+Container for field groups with submission handling:
+
+```tsx
+import { Form, Field } from "@canonical/react-ds-global-form";
+
+<Form onSubmit={handleSubmit}>
+  <Field label="Name">
+    <Field.Text name="name" />
+  </Field>
+  <Field label="Bio">
+    <Field.Textarea name="bio" />
+  </Field>
+  <button type="submit">Submit</button>
+</Form>
+```
+
+## Validation States
+
+Fields communicate validation through visual states:
+
+```tsx
+// Error state
+<Field label="Email" error="Invalid email address">
+  <Field.Text type="email" />
+</Field>
+
+// Required field
+<Field label="Name" required>
+  <Field.Text name="name" />
+</Field>
+
+// Help text
+<Field label="Password" help="Minimum 8 characters">
+  <Field.Text type="password" />
+</Field>
+```
+
+## Accessibility
+
+Field components handle:
+
+- Label-input association via `id` and `htmlFor`
+- Error announcements with `aria-describedby`
+- Required field indication with `aria-required`
+- Help text linking with `aria-describedby`
+
+## Installation
+
+```bash
+bun add @canonical/react-ds-global-form
+```
+
+Requires `@canonical/react-ds-global` as a peer dependency.
+
+## Links
+
+- [Source](https://github.com/canonical/pragma/tree/main/packages/react/ds-global-form)
+- [Design System Ontology](https://github.com/canonical/design-system)

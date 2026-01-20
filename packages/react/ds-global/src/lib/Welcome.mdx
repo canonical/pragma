@@ -1,0 +1,94 @@
+import { Meta } from "@storybook/blocks";
+
+<Meta title="Introduction" />
+
+# Global Tier — React
+
+React implementation of universal design system components. Button, Badge, Card, Accordion, Tooltip, and foundational UI elements that apply across all Canonical products.
+
+## Architecture
+
+Components implement specifications from the [Design System Ontology](https://github.com/canonical/design-system). Each source file contains an `@implements` annotation linking it to its semantic specification.
+
+```
+Design System Ontology (specifications)
+         ↓
+@canonical/react-ds-global (this package)
+         ↓
+Your Application
+```
+
+## Components
+
+| Component | Purpose |
+|-----------|---------|
+| **Accordion** | Expandable content sections |
+| **Badge** | Status indicators, counts, labels |
+| **Breadcrumbs** | Navigation hierarchy |
+| **Button** | Action triggers |
+| **Card** | Content grouping |
+| **Chip** | Compact interactive elements |
+| **Icon** | SVG icon rendering |
+| **Label** | Form and content labels |
+| **Link** | Navigation anchors |
+| **Rule** | Visual separators |
+| **Section** | Content sectioning |
+| **SkipLink** | Accessibility navigation |
+| **Tile** | Selectable cards |
+| **Timeline** | Chronological sequences |
+| **Tooltip** | Contextual information |
+
+## Modifier System
+
+Components support orthogonal modifier families for systematic variation:
+
+```tsx
+// Importance: visual hierarchy
+<Button importance="primary">Main action</Button>
+<Button importance="secondary">Supporting action</Button>
+<Button importance="tertiary">Subtle action</Button>
+
+// Anticipation: expected outcome
+<Button anticipation="constructive">Save</Button>
+<Button anticipation="caution">Reset</Button>
+<Button anticipation="destructive">Delete</Button>
+
+// Combined
+<Button importance="primary" anticipation="destructive">
+  Delete Account
+</Button>
+```
+
+Each component with modifier support includes a **Matrix** story showing all combinations.
+
+## Installation
+
+```bash
+bun add @canonical/react-ds-global
+```
+
+Requires React 19+. Depends on `@canonical/styles` for CSS.
+
+## Usage
+
+```tsx
+import { Button, Badge, Card } from "@canonical/react-ds-global";
+import "@canonical/styles";
+
+function Example() {
+  return (
+    <Card>
+      <Badge>New</Badge>
+      <Button importance="primary">Submit</Button>
+    </Card>
+  );
+}
+```
+
+Components accept standard HTML attributes for their underlying elements.
+
+## Links
+
+- [Source](https://github.com/canonical/pragma/tree/main/packages/react/ds-global)
+- [Design System Ontology](https://github.com/canonical/design-system)
+- [Code Standards](https://github.com/canonical/code-standards)

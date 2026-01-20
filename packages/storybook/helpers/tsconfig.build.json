@@ -8,9 +8,5 @@
     "declarationMap": true,
     "sourceMap": true
   },
-  "exclude": [
-    "src/stories",
-    "src/**/*.stories.ts",
-    "src/**/*.stories.tsx"
-  ]
+  "exclude": ["src/stories", "src/**/*.stories.ts", "src/**/*.stories.tsx"]
 }

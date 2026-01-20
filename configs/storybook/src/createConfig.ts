@@ -19,6 +19,7 @@ const createConfig = (options: CreateConfigOptions = {}): StorybookConfig => ({
     getAbsolutePath("@storybook/addon-docs"),
     getAbsolutePath("@storybook/addon-a11y"),
     getAbsolutePath("@storybook/addon-vitest"),
+    getAbsolutePath("@storybook/addon-themes"),
     // // This is a bit weird, but for some reason this doesn't work when referenced via getAbsolutePath
     // // see also: https://github.com/storybookjs/storybook/issues/24351#issuecomment-1777911065
     "@canonical/storybook-addon-baseline-grid",

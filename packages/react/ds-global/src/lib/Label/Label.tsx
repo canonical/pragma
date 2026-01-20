@@ -14,12 +14,20 @@ const componentCssClassName = "ds label";
  */
 const Label = ({
   children,
+  anticipation,
+  importance,
   criticality,
   className,
   ...props
 }: LabelProps): React.ReactElement => (
   <span
-    className={[componentCssClassName, criticality, className]
+    className={[
+      componentCssClassName,
+      anticipation,
+      importance,
+      criticality,
+      className,
+    ]
       .filter(Boolean)
       .join(" ")}
     {...props}

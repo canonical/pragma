@@ -1,10 +1,5 @@
+import type { ModifierFamily } from "@canonical/ds-types";
 import type { HTMLAttributes, ReactNode } from "react";
-
-/**
- * Criticality modifier values
- * Maps to DSL modifierFamily: criticality
- */
-export type Criticality = "info" | "success" | "warning" | "critical";
 
 /**
  * Props for the Label component
@@ -15,6 +10,11 @@ export type Criticality = "info" | "success" | "warning" | "critical";
  * - layout.display: inline
  * - typography.size: font/size/label
  * - typography.weight: font/weight/medium
+ *
+ * Modifier families (from DSL):
+ * - anticipation: constructive, caution, destructive
+ * - importance: primary, secondary, tertiary
+ * - criticality: success, error, warning, information
  */
 export interface LabelProps extends HTMLAttributes<HTMLSpanElement> {
   /**
@@ -22,8 +22,25 @@ export interface LabelProps extends HTMLAttributes<HTMLSpanElement> {
    */
   children: ReactNode;
   /**
-   * Visual criticality modifier
-   * Maps to DSL hasModifierFamily: criticality
+   * Visual anticipation modifier - indicates expected outcome
+   * - constructive: Positive outcome
+   * - caution: Potentially risky
+   * - destructive: Negative/irreversible outcome
    */
-  criticality?: Criticality;
+  anticipation?: ModifierFamily<"anticipation">;
+  /**
+   * Visual importance modifier - indicates hierarchy
+   * - primary: High prominence
+   * - secondary: Medium prominence
+   * - tertiary: Low prominence
+   */
+  importance?: ModifierFamily<"importance">;
+  /**
+   * Visual criticality modifier - indicates status/severity
+   * - success: Positive status
+   * - error: Error status
+   * - warning: Warning status
+   * - information: Informational status
+   */
+  criticality?: ModifierFamily<"criticality">;
 }

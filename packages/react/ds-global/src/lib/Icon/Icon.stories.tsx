@@ -5,7 +5,7 @@ import type { Meta, StoryFn, StoryObj } from "@storybook/react-vite";
 import Component from "./Icon.js";
 
 const meta = {
-  title: "Icon",
+  title: "Q-A/Icon",
   component: Component,
   argTypes: {
     icon: {

@@ -2,122 +2,90 @@
  * ModifierMatrix styles
  *
  * A clean, minimal table layout for displaying modifier combinations.
- * Uses CSS custom properties for easy theming in different Storybook environments.
+ * Inherits colors from the environment - no hardcoded color overrides.
  */
 
 .modifier-matrix {
-	--matrix-border-color: #ddd;
-	--matrix-header-bg: #f5f5f5;
-	--matrix-cell-padding: 0.75rem;
-	--matrix-header-padding: 0.5rem 0.75rem;
-	--matrix-font-size: 0.875rem;
-	--matrix-title-font-size: 1rem;
-	--matrix-corner-size: 6rem;
+  --matrix-cell-padding: 0.75rem;
+  --matrix-header-padding: 0.5rem 0.75rem;
+  --matrix-font-size: 0.875rem;
+  --matrix-title-font-size: 1rem;
+  --matrix-corner-size: 6rem;
 
-	display: flex;
-	flex-direction: column;
-	gap: 1rem;
-	font-family: system-ui, -apple-system, sans-serif;
-}
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  font: inherit;
+  color: inherit;
 
-.modifier-matrix__title {
-	margin: 0;
-	font-size: var(--matrix-title-font-size);
-	font-weight: 600;
-}
+  & > .title {
+    margin: 0;
+    font-size: var(--matrix-title-font-size);
+    font-weight: 600;
+  }
 
-.modifier-matrix__table {
-	border-collapse: collapse;
-	font-size: var(--matrix-font-size);
-}
+  & > .table {
+    border-collapse: collapse;
+    font-size: var(--matrix-font-size);
 
-.modifier-matrix__header,
-.modifier-matrix__cell {
-	border: 1px solid var(--matrix-border-color);
-	text-align: center;
-	vertical-align: middle;
-}
+    & .header,
+    & .cell {
+      border: 1px solid currentColor;
+      border-color: color-mix(in srgb, currentColor 25%, transparent);
+      text-align: center;
+      vertical-align: middle;
+    }
 
-.modifier-matrix__header {
-	padding: var(--matrix-header-padding);
-	background-color: var(--matrix-header-bg);
-	font-weight: 500;
-	white-space: nowrap;
-}
+    & .header {
+      padding: var(--matrix-header-padding);
+      background-color: color-mix(in srgb, currentColor 5%, transparent);
+      font-weight: 500;
+      white-space: nowrap;
 
-.modifier-matrix__header--corner {
-	position: relative;
-	width: var(--matrix-corner-size);
-	min-width: var(--matrix-corner-size);
-	height: var(--matrix-corner-size);
-	background: linear-gradient(
-		to top right,
-		var(--matrix-header-bg) 49.5%,
-		var(--matrix-border-color) 49.5%,
-		var(--matrix-border-color) 50.5%,
-		var(--matrix-header-bg) 50.5%
-	);
-}
+      &.corner {
+        position: relative;
+        width: var(--matrix-corner-size);
+        min-width: var(--matrix-corner-size);
+        height: var(--matrix-corner-size);
+        background: linear-gradient(
+          to top right,
+          color-mix(in srgb, currentColor 5%, transparent) 49.5%,
+          color-mix(in srgb, currentColor 25%, transparent) 49.5%,
+          color-mix(in srgb, currentColor 25%, transparent) 50.5%,
+          color-mix(in srgb, currentColor 5%, transparent) 50.5%
+        );
 
-.modifier-matrix__axis-label {
-	position: absolute;
-	font-size: 0.75rem;
-	font-weight: 600;
-	color: #666;
-	text-transform: uppercase;
-	letter-spacing: 0.05em;
-}
+        & > .axis-label {
+          position: absolute;
+          font-size: 0.75rem;
+          font-weight: 600;
+          opacity: 0.7;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
 
-.modifier-matrix__axis-label--row {
-	bottom: 0.375rem;
-	left: 0.375rem;
-}
+          &.row {
+            bottom: 0.375rem;
+            left: 0.375rem;
+          }
 
-.modifier-matrix__axis-label--col {
-	top: 0.375rem;
-	right: 0.375rem;
-}
+          &.col {
+            top: 0.375rem;
+            right: 0.375rem;
+          }
+        }
+      }
 
-.modifier-matrix__header--row {
-	text-align: right;
-}
+      &.row-header {
+        text-align: right;
+      }
 
-.modifier-matrix__header--column {
-	text-align: center;
-}
+      &.col-header {
+        text-align: center;
+      }
+    }
 
-.modifier-matrix__cell {
-	padding: var(--matrix-cell-padding);
-	background-color: white;
-}
-
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-	.modifier-matrix {
-		--matrix-border-color: #444;
-		--matrix-header-bg: #2a2a2a;
-	}
-
-	.modifier-matrix__cell {
-		background-color: #1a1a1a;
-	}
-
-	.modifier-matrix__axis-label {
-		color: #999;
-	}
-}
-
-/* Storybook dark theme support */
-.sb-show-main.sb-main-padded[data-theme="dark"] .modifier-matrix,
-[data-theme="dark"] .modifier-matrix {
-	--matrix-border-color: #444;
-	--matrix-header-bg: #2a2a2a;
-}
-
-[data-theme="dark"] .modifier-matrix__cell {
-	background-color: #1a1a1a;
-}
-
-[data-theme="dark"] .modifier-matrix__axis-label {
-	color: #999;
+    & .cell {
+      padding: var(--matrix-cell-padding);
+    }
+  }
 }
