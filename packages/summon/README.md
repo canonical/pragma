@@ -259,6 +259,174 @@ test("skips test file when disabled", () => {
 
 The dry-run interpreter maintains a virtual filesystem, so conditional logic based on `exists()` works correctly even without touching the disk.
 
+## The Monadic Pattern
+
+Summon uses a **monad** to compose tasks. If you've used Promises, you already understand the core idea.
+
+### What's a Monad?
+
+A monad is a design pattern for chaining operations that have some context (like "might fail" or "has effects"). Think of it as a pipeline where each step can:
+
+1. **Transform values** (`map`) — Apply a function to the result
+2. **Chain operations** (`flatMap`) — Use the result to create the next step
+3. **Short-circuit on failure** — Errors propagate automatically
+
+```typescript
+// Promise (async context)
+fetchUser(id)
+  .then(user => fetchOrders(user.id))    // chain
+  .then(orders => orders.length)          // transform
+  .catch(handleError);                    // recover
+
+// Task (effect context)
+task(readFile("config.json"))
+  .map(content => JSON.parse(content))    // transform
+  .flatMap(config => writeFile(           // chain
+    config.outputPath,
+    generateCode(config)
+  ))
+  .recover(err => pure(defaultConfig));   // recover
+```
+
+### The Task Type
+
+`Task<A>` represents a computation that:
+- Describes effects (file I/O, shell commands, etc.)
+- Eventually produces a value of type `A`
+- May fail with an error
+
+```typescript
+// A Task is one of three things:
+type Task<A> =
+  | { _tag: "Pure"; value: A }                           // Done, here's the value
+  | { _tag: "Fail"; error: TaskError }                   // Failed with error
+  | { _tag: "Effect"; effect: Effect; cont: ... }        // Do this effect, then continue
+```
+
+### Composing Tasks
+
+The `TaskBuilder` provides a fluent API for composition:
+
+```typescript
+import { task, pure } from "@canonical/summon";
+
+// Build a pipeline
+const pipeline = task(readFile("input.txt"))
+  .map(content => content.toUpperCase())           // Transform the value
+  .flatMap(upper => writeFile("output.txt", upper)) // Chain another effect
+  .andThen(info("Done!"))                          // Sequence (ignore previous value)
+  .recover(err => pure(void 0));                   // Handle errors
+
+// pipeline is still just data — nothing has executed yet
+```
+
+### Key Operations
+
+| Operation | Description | Example |
+|-----------|-------------|---------|
+| `pure(value)` | Wrap a value in a Task | `pure(42)` |
+| `map(fn)` | Transform the result | `.map(x => x * 2)` |
+| `flatMap(fn)` | Chain with another Task | `.flatMap(x => writeFile(...))` |
+| `andThen(task)` | Sequence, discard previous | `.andThen(info("next"))` |
+| `recover(fn)` | Handle errors | `.recover(e => pure(default))` |
+| `tap(fn)` | Side effect, keep value | `.tap(x => debug(x))` |
+
+### Why Monads for Generators?
+
+1. **Composable** — Small tasks combine into complex workflows
+2. **Predictable** — Errors propagate without explicit handling at each step
+3. **Testable** — The pipeline is data; inspect it without running effects
+4. **Declarative** — Describe *what* to do, not *how* to do it
+
+```typescript
+// Complex workflow, reads like a recipe
+const scaffoldFeature = (name: string) =>
+  task(mkdir(`src/features/${name}`))
+    .andThen(template({
+      source: "templates/feature.ts.ejs",
+      dest: `src/features/${name}/index.ts`,
+      vars: { name },
+    }))
+    .andThen(when(config.withTests,
+      template({
+        source: "templates/test.ts.ejs",
+        dest: `src/features/${name}/index.test.ts`,
+        vars: { name },
+      })
+    ))
+    .andThen(info(`Created feature: ${name}`))
+    .unwrap();
+```
+
+For a deeper dive into the "effects as data" philosophy, see [Explanation](docs/explanation.md).
+
+## Templating Engine
+
+Summon uses EJS by default for template rendering, but supports custom templating engines via the `TemplatingEngine` interface.
+
+### Default (EJS)
+
+```typescript
+import { template, templateDir } from "@canonical/summon";
+
+// Uses EJS by default
+template({
+  source: "templates/component.tsx.ejs",
+  dest: "src/components/<%= name %>.tsx",
+  vars: { name: "Button" },
+});
+```
+
+### Custom Engines
+
+Implement `TemplatingEngine` to use Handlebars, Mustache, Nunjucks, or any other engine:
+
+```typescript
+import type { TemplatingEngine } from "@canonical/summon";
+import Handlebars from "handlebars";
+import * as fs from "node:fs/promises";
+
+const handlebarsEngine: TemplatingEngine = {
+  render(template, vars) {
+    return Handlebars.compile(template)(vars);
+  },
+
+  async renderAsync(template, vars) {
+    return Handlebars.compile(template)(vars);
+  },
+
+  async renderFile(templatePath, vars) {
+    const content = await fs.readFile(templatePath, "utf-8");
+    return Handlebars.compile(content)(vars);
+  },
+};
+
+// Use in templates
+template({
+  source: "templates/component.hbs",
+  dest: "src/components/{{name}}.tsx",
+  vars: { name: "Button" },
+  engine: handlebarsEngine,
+});
+```
+
+### Interface
+
+```typescript
+interface TemplatingEngine {
+  /** Render a template string synchronously */
+  render(template: string, vars: Record<string, unknown>): string;
+
+  /** Render a template string asynchronously */
+  renderAsync(template: string, vars: Record<string, unknown>): Promise<string>;
+
+  /** Render a template file asynchronously */
+  renderFile(templatePath: string, vars: Record<string, unknown>): Promise<string>;
+}
+```
+
+The `engine` option is available on `template()`, `templateDir()`, `renderString()`, `renderStringAsync()`, and `renderFile()`.
+
 ## Documentation
 
 - **[Tutorial](docs/tutorial.md)** — Build your first generator from scratch
