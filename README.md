@@ -2,8 +2,6 @@
 
 Pragma is Canonical's design system implementation. It provides React components, CSS styles, and developer tooling for building consistent user interfaces across Canonical's web properties.
 
-The name reflects our approach: pragmatic decisions based on what works, explicit code that shows its intentions, and conventions that reduce cognitive load without hiding behaviour behind framework magic.
-
 ## Quick Start
 
 Clone the repository and install dependencies. The installation step also builds all packages, which takes roughly 30 seconds on first run.
