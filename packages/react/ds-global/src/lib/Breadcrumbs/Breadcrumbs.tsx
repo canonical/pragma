@@ -1,5 +1,5 @@
 import type React from "react";
-import { getItemId } from "@canonical/ds-types";
+import { getItemId } from "@canonical/utils";
 import { Item } from "./common/index.js";
 import type { BreadcrumbsProps } from "./types.js";
 import "./styles.css";
@@ -33,17 +33,18 @@ const Breadcrumbs = ({
 	>
 		<ol className="list">
 			{items.map((item) => {
-				const key = getItemId(item);
+				const itemKey = getItemId(item);
+				const { key: _key, ...itemProps } = item;
 				const ItemComponent = item.Component ?? Item;
 
 				// Switch: use custom Component or default Item
 				// Each item is spread onto the component
 				return (
 					<ItemComponent
-						key={key}
+						key={itemKey}
 						separator={separator}
 						LinkComponent={LinkComponent}
-						{...item}
+						{...itemProps}
 					/>
 				);
 			})}

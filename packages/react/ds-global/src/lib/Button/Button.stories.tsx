@@ -1,3 +1,4 @@
+import { MODIFIER_AXES, ModifierMatrix } from "@canonical/storybook-helpers";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { fn } from "storybook/test";
 
@@ -341,89 +342,19 @@ export const ModifierInheritance: Story = {
    ========================================================================== */
 
 /**
- * Shows all combinations of importance and anticipation.
+ * Shows all combinations of importance and anticipation using the ModifierMatrix helper.
+ * This helper automatically generates the grid from the design system ontology.
  */
-export const ModifierMatrix: Story = {
-  decorators: [
-    (_Story) => (
-      <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-        <h3>Importance x Anticipation Matrix</h3>
-        <table style={{ borderCollapse: "collapse" }}>
-          <thead>
-            <tr>
-              <th style={{ padding: "0.5rem", border: "1px solid #ccc" }}></th>
-              <th style={{ padding: "0.5rem", border: "1px solid #ccc" }}>No anticipation</th>
-              <th style={{ padding: "0.5rem", border: "1px solid #ccc" }}>Constructive</th>
-              <th style={{ padding: "0.5rem", border: "1px solid #ccc" }}>Caution</th>
-              <th style={{ padding: "0.5rem", border: "1px solid #ccc" }}>Destructive</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td style={{ padding: "0.5rem", border: "1px solid #ccc" }}>Primary</td>
-              <td style={{ padding: "0.5rem", border: "1px solid #ccc" }}>
-                <Component importance="primary">Primary</Component>
-              </td>
-              <td style={{ padding: "0.5rem", border: "1px solid #ccc" }}>
-                <Component importance="primary" anticipation="constructive">Primary</Component>
-              </td>
-              <td style={{ padding: "0.5rem", border: "1px solid #ccc" }}>
-                <Component importance="primary" anticipation="caution">Primary</Component>
-              </td>
-              <td style={{ padding: "0.5rem", border: "1px solid #ccc" }}>
-                <Component importance="primary" anticipation="destructive">Primary</Component>
-              </td>
-            </tr>
-            <tr>
-              <td style={{ padding: "0.5rem", border: "1px solid #ccc" }}>Secondary</td>
-              <td style={{ padding: "0.5rem", border: "1px solid #ccc" }}>
-                <Component importance="secondary">Secondary</Component>
-              </td>
-              <td style={{ padding: "0.5rem", border: "1px solid #ccc" }}>
-                <Component importance="secondary" anticipation="constructive">Secondary</Component>
-              </td>
-              <td style={{ padding: "0.5rem", border: "1px solid #ccc" }}>
-                <Component importance="secondary" anticipation="caution">Secondary</Component>
-              </td>
-              <td style={{ padding: "0.5rem", border: "1px solid #ccc" }}>
-                <Component importance="secondary" anticipation="destructive">Secondary</Component>
-              </td>
-            </tr>
-            <tr>
-              <td style={{ padding: "0.5rem", border: "1px solid #ccc" }}>Tertiary</td>
-              <td style={{ padding: "0.5rem", border: "1px solid #ccc" }}>
-                <Component importance="tertiary">Tertiary</Component>
-              </td>
-              <td style={{ padding: "0.5rem", border: "1px solid #ccc" }}>
-                <Component importance="tertiary" anticipation="constructive">Tertiary</Component>
-              </td>
-              <td style={{ padding: "0.5rem", border: "1px solid #ccc" }}>
-                <Component importance="tertiary" anticipation="caution">Tertiary</Component>
-              </td>
-              <td style={{ padding: "0.5rem", border: "1px solid #ccc" }}>
-                <Component importance="tertiary" anticipation="destructive">Tertiary</Component>
-              </td>
-            </tr>
-            <tr>
-              <td style={{ padding: "0.5rem", border: "1px solid #ccc" }}>No importance</td>
-              <td style={{ padding: "0.5rem", border: "1px solid #ccc" }}>
-                <Component>Default</Component>
-              </td>
-              <td style={{ padding: "0.5rem", border: "1px solid #ccc" }}>
-                <Component anticipation="constructive">Default</Component>
-              </td>
-              <td style={{ padding: "0.5rem", border: "1px solid #ccc" }}>
-                <Component anticipation="caution">Default</Component>
-              </td>
-              <td style={{ padding: "0.5rem", border: "1px solid #ccc" }}>
-                <Component anticipation="destructive">Default</Component>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    ),
-  ],
+export const Matrix: Story = {
+  render: () => (
+    <ModifierMatrix
+      component={Component}
+      rowAxis={MODIFIER_AXES.importance}
+      columnAxis={MODIFIER_AXES.anticipation}
+      baseProps={{ children: "Button" }}
+      title="Importance x Anticipation Matrix"
+    />
+  ),
   args: {
     children: "Not rendered",
   },

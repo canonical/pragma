@@ -1,9 +1,11 @@
-import type { ReactElement } from "react";
+import type { ComponentType } from "react";
 
 /**
- * Default component type for navigation items
+ * Default component type for navigation items.
+ * A component that accepts any props.
  */
-export type DefaultComponent = ReactElement;
+// biome-ignore lint/suspicious/noExplicitAny: Component accepts any props
+export type DefaultComponent = ComponentType<any>;
 
 /**
  * Navigation item - Public API (WD405)

@@ -904,6 +904,11 @@ const configureGroupedHelp = (
         "Disable generated file stamp comments",
       );
       output += "\n";
+      output += formatItem(
+        "-l, --llm",
+        "LLM mode: combines --dry-run --show-contents --yes",
+      );
+      output += "\n";
       output += formatItem("-h, --help", "display help for command");
       output += "\n";
 
@@ -1081,6 +1086,10 @@ const registerFromBarrel = (rootCmd: Command, barrel: CommandEntry[]): void => {
         .option(
           "--no-generated-stamp",
           "Disable generated file stamp comments",
+        )
+        .option(
+          "-l, --llm",
+          "LLM mode: combines --dry-run --show-contents --yes",
         );
 
       // Set custom usage to show positional arg before [options]
@@ -1135,6 +1144,13 @@ const configureGeneratorCommand = (
       } else {
         // When there's no positional prompt, the first arg is options
         actualOptions = (positionalArg as Record<string, unknown>) ?? {};
+      }
+
+      // Expand --llm flag into its component flags
+      if (actualOptions.llm === true) {
+        actualOptions.dryRun = true;
+        actualOptions.showContents = true;
+        actualOptions.yes = true;
       }
 
       // Extract only explicitly provided CLI answers (not defaults)

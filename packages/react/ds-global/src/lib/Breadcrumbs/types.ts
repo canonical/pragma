@@ -55,4 +55,4 @@ export type BreadcrumbsComponent = ((
 	Item: (props: ItemProps) => ReactElement;
 };
 
-export type { BreadcrumbItem as BreadcrumbItem, LinkComponentProps };
+export type { LinkComponentProps };

@@ -5,6 +5,9 @@ export { default as debounce } from "./debounce.js";
 export type * from "./humanizeNumber/index.js";
 export { default as humanizeNumber } from "./humanizeNumber/index.js";
 export { default as invariant } from "./invariant.js";
+
+export * from "./navigation/index.js";
+
 export type * from "./pluralize/index.js";
 export { default as pluralize } from "./pluralize/index.js";
 

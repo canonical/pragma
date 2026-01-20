@@ -1,0 +1,52 @@
+{
+  "name": "@canonical/storybook-helpers",
+  "description": "Shared Storybook utilities and helper components for design system documentation",
+  "version": "0.11.0",
+  "type": "module",
+  "module": "dist/esm/index.js",
+  "types": "dist/types/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "author": {
+    "email": "webteam@canonical.com",
+    "name": "Canonical Webteam"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/canonical/pragma"
+  },
+  "license": "LGPL-3.0",
+  "bugs": {
+    "url": "https://github.com/canonical/pragma/issues"
+  },
+  "homepage": "https://github.com/canonical/pragma#readme",
+  "scripts": {
+    "build": "bun run build:tsc && bun run build:copycss",
+    "build:tsc": "tsc -p tsconfig.build.json",
+    "build:copycss": "copyfiles -u 1 'src/**/*.css' dist/esm",
+    "build:all": "bun run build",
+    "check": "bun run check:biome && bun run check:ts && bun run check:webarchitect",
+    "check:fix": "bun run check:biome:fix && bun run check:ts",
+    "check:biome": "biome check",
+    "check:biome:fix": "biome check --write",
+    "check:ts": "tsc --noEmit",
+    "check:webarchitect": "webarchitect package-react",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.3.11",
+    "@canonical/biome-config": "^0.11.0",
+    "@canonical/typescript-config-react": "^0.11.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "copyfiles": "^2.4.1",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
+  },
+  "dependencies": {
+    "@canonical/ds-types": "^0.11.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  }
+}

@@ -42,11 +42,11 @@ export const TwoLevels: Story = {
 export const ManyLevels: Story = {
 	args: {
 		items: [
-			{ url: "/", label: "Home" },
-			{ url: "/products", label: "Products" },
-			{ url: "/products/electronics", label: "Electronics" },
-			{ url: "/products/electronics/phones", label: "Phones" },
-			{ key: "iphone", label: "iPhone 15", current: true },
+			{ url: "/", label: "Ubuntu" },
+			{ url: "/server", label: "Server" },
+			{ url: "/server/docs", label: "Docs" },
+			{ url: "/server/docs/installation", label: "Installation" },
+			{ key: "autoinstall", label: "Autoinstall", current: true },
 		],
 	},
 };
