@@ -9,7 +9,7 @@ import type {
 import Component from "./TooltipArea.js";
 
 const meta = {
-  title: "P1/Tooltip/TooltipArea",
+  title: "C/Tooltip/TooltipArea",
   component: Component,
   // Add padding to all tooltips to allow their entire contents to be visible
   parameters: {

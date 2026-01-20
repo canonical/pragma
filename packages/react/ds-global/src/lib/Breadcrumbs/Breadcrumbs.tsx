@@ -1,5 +1,5 @@
-import type React from "react";
 import { getItemId } from "@canonical/utils";
+import type React from "react";
 import { Item } from "./common/index.js";
 import type { BreadcrumbsProps } from "./types.js";
 import "./styles.css";
@@ -19,37 +19,37 @@ const componentCssClassName = "ds breadcrumbs";
  * @implements ds:global.pattern.breadcrumbs
  */
 const Breadcrumbs = ({
-	items,
-	separator = "/",
-	LinkComponent = "a",
-	className,
-	"aria-label": ariaLabel = "Breadcrumb",
-	...props
+  items,
+  separator = "/",
+  LinkComponent = "a",
+  className,
+  "aria-label": ariaLabel = "Breadcrumb",
+  ...props
 }: BreadcrumbsProps): React.ReactElement => (
-	<nav
-		className={[componentCssClassName, className].filter(Boolean).join(" ")}
-		aria-label={ariaLabel}
-		{...props}
-	>
-		<ol className="list">
-			{items.map((item) => {
-				const itemKey = getItemId(item);
-				const { key: _key, ...itemProps } = item;
-				const ItemComponent = item.Component ?? Item;
+  <nav
+    className={[componentCssClassName, className].filter(Boolean).join(" ")}
+    aria-label={ariaLabel}
+    {...props}
+  >
+    <ol className="list">
+      {items.map((item) => {
+        const itemKey = getItemId(item);
+        const { key: _key, ...itemProps } = item;
+        const ItemComponent = item.Component ?? Item;
 
-				// Switch: use custom Component or default Item
-				// Each item is spread onto the component
-				return (
-					<ItemComponent
-						key={itemKey}
-						separator={separator}
-						LinkComponent={LinkComponent}
-						{...itemProps}
-					/>
-				);
-			})}
-		</ol>
-	</nav>
+        // Switch: use custom Component or default Item
+        // Each item is spread onto the component
+        return (
+          <ItemComponent
+            key={itemKey}
+            separator={separator}
+            LinkComponent={LinkComponent}
+            {...itemProps}
+          />
+        );
+      })}
+    </ol>
+  </nav>
 );
 
 Breadcrumbs.Item = Item;

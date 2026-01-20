@@ -1,14 +1,30 @@
 import { Meta } from "@storybook/blocks";
+import { PackageInfo } from "@canonical/storybook-helpers";
 
 <Meta title="Introduction" />
 
 # Global Tier — React
 
-React implementation of universal design system components. Button, Badge, Card, Accordion, Tooltip, and foundational UI elements that apply across all Canonical products.
+The foundational layer of Pragma. Every interface at Canonical shares these components — buttons, badges, cards, accordions, tooltips. This package is the React implementation of specifications defined in the Design System Ontology, a semantic knowledge graph that bridges design decisions to working code.
+
+## Package
+
+<PackageInfo
+  name="@canonical/react-ds-global"
+  version="0.11.0"
+  tier="global"
+  framework="react"
+  status="stable"
+  dependencies={["@canonical/ds-assets", "@canonical/styles", "@canonical/utils"]}
+  links={{
+    source: "https://github.com/canonical/pragma/tree/main/packages/react/ds-global",
+    ontology: "https://github.com/canonical/design-system",
+  }}
+/>
 
 ## Architecture
 
-Components implement specifications from the [Design System Ontology](https://github.com/canonical/design-system). Each source file contains an `@implements` annotation linking it to its semantic specification.
+Components implement specifications from the Design System Ontology. Each source file contains an `@implements` annotation linking it to its semantic specification.
 
 ```
 Design System Ontology (specifications)
@@ -20,23 +36,32 @@ Your Application
 
 ## Components
 
-| Component | Purpose |
-|-----------|---------|
-| **Accordion** | Expandable content sections |
-| **Badge** | Status indicators, counts, labels |
-| **Breadcrumbs** | Navigation hierarchy |
-| **Button** | Action triggers |
-| **Card** | Content grouping |
-| **Chip** | Compact interactive elements |
-| **Icon** | SVG icon rendering |
-| **Label** | Form and content labels |
-| **Link** | Navigation anchors |
-| **Rule** | Visual separators |
-| **Section** | Content sectioning |
-| **SkipLink** | Accessibility navigation |
-| **Tile** | Selectable cards |
-| **Timeline** | Chronological sequences |
-| **Tooltip** | Contextual information |
+<table>
+  <thead>
+    <tr>
+      <th>Component</th>
+      <th>Purpose</th>
+      <th>Readiness</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td>Accordion</td><td>Expandable content sections</td><td>B</td></tr>
+    <tr><td>Badge</td><td>Status indicators, counts, labels</td><td>A</td></tr>
+    <tr><td>Breadcrumbs</td><td>Navigation hierarchy</td><td>B</td></tr>
+    <tr><td>Button</td><td>Action triggers</td><td>A</td></tr>
+    <tr><td>Card</td><td>Content grouping</td><td>A</td></tr>
+    <tr><td>Chip</td><td>Compact interactive elements</td><td>B</td></tr>
+    <tr><td>Icon</td><td>SVG icon rendering</td><td>A</td></tr>
+    <tr><td>Label</td><td>Form and content labels</td><td>A</td></tr>
+    <tr><td>Link</td><td>Navigation anchors</td><td>A</td></tr>
+    <tr><td>Rule</td><td>Visual separators</td><td>A</td></tr>
+    <tr><td>Section</td><td>Content sectioning</td><td>B</td></tr>
+    <tr><td>SkipLink</td><td>Accessibility navigation</td><td>B</td></tr>
+    <tr><td>Tile</td><td>Selectable cards</td><td>B</td></tr>
+    <tr><td>Timeline</td><td>Chronological sequences</td><td>C</td></tr>
+    <tr><td>Tooltip</td><td>Contextual information</td><td>B</td></tr>
+  </tbody>
+</table>
 
 ## Modifier System
 

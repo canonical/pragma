@@ -1,14 +1,30 @@
 import { Meta } from "@storybook/blocks";
+import { PackageInfo } from "@canonical/storybook-helpers";
 
 <Meta title="Introduction" />
 
-# Apps/WPE Tier — React
+# Launchpad Components — React
 
-Launchpad-specific components for Canonical's software collaboration platform. File trees, diff viewers, markdown editors, and UI patterns tailored to code hosting and bug tracking workflows.
+Launchpad is Canonical's software collaboration platform — these components understand its unique data models and interaction patterns. File trees, diff viewers, markdown editors, and UI patterns tailored to code hosting and bug tracking workflows.
+
+## Package
+
+<PackageInfo
+  name="@canonical/react-ds-app-launchpad"
+  version="0.11.0"
+  tier="apps_wpe"
+  framework="react"
+  status="prerelease"
+  dependencies={["@canonical/styles", "@canonical/utils", "highlight.js", "react-markdown", "react-tooltip"]}
+  links={{
+    source: "https://github.com/canonical/pragma/tree/main/packages/react/ds-app-launchpad",
+    ontology: "https://github.com/canonical/design-system",
+  }}
+/>
 
 ## Architecture
 
-The WPE (Web & Platform Engineering) tier extends Apps with product-specific functionality:
+The WPE (Web & Platform Engineering) tier extends Apps with product-specific functionality. Components here are highly specialized and may not be suitable for use outside the Launchpad ecosystem.
 
 ```
 @canonical/react-ds-global (dependency)
@@ -20,29 +36,44 @@ The WPE (Web & Platform Engineering) tier extends Apps with product-specific fun
 Launchpad Application
 ```
 
-Components in this tier understand Launchpad's data models and may not be suitable for general use.
-
 ## Components
 
-| Component | Purpose |
-|-----------|---------|
-| **DiffChangeMarker** | Line-level diff annotations |
-| **EditableBlock** | Inline editable content regions |
-| **FileTree** | Hierarchical file browser |
-| **GitDiffViewer** | Side-by-side and unified diff display |
-| **MarkdownEditor** | Rich markdown editing with preview |
-| **RelativeTime** | Human-readable time distances |
+<table>
+  <thead>
+    <tr>
+      <th>Component</th>
+      <th>Purpose</th>
+      <th>Readiness</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td>DiffChangeMarker</td><td>Line-level diff annotations</td><td>C</td></tr>
+    <tr><td>EditableBlock</td><td>Inline editable content regions</td><td>C</td></tr>
+    <tr><td>FileTree</td><td>Hierarchical file browser</td><td>B</td></tr>
+    <tr><td>GitDiffViewer</td><td>Side-by-side and unified diff display</td><td>B</td></tr>
+    <tr><td>MarkdownEditor</td><td>Rich markdown editing with preview</td><td>C</td></tr>
+    <tr><td>RelativeTime</td><td>Human-readable time distances</td><td>B</td></tr>
+  </tbody>
+</table>
 
 ## Domain Context
 
 Components understand Launchpad concepts:
 
-| Domain | Components handle... |
-|--------|---------------------|
-| Code hosting | Branches, diffs, file hierarchies |
-| Bug tracking | Status indicators, importance levels |
-| Collaboration | Comments, merge proposals |
-| Time | Relative timestamps, activity feeds |
+<table>
+  <thead>
+    <tr>
+      <th>Domain</th>
+      <th>Components handle...</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td>Code hosting</td><td>Branches, diffs, file hierarchies</td></tr>
+    <tr><td>Bug tracking</td><td>Status indicators, importance levels</td></tr>
+    <tr><td>Collaboration</td><td>Comments, merge proposals</td></tr>
+    <tr><td>Time</td><td>Relative timestamps, activity feeds</td></tr>
+  </tbody>
+</table>
 
 ## FileTree
 

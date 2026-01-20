@@ -10,7 +10,7 @@ describe("Label SSR", () => {
   });
 
   it("renders with criticality modifier on server", () => {
-    const html = renderToString(<Label criticality="critical">Critical</Label>);
-    expect(html).toContain("critical");
+    const html = renderToString(<Label criticality="error">Error</Label>);
+    expect(html).toContain("error");
   });
 });

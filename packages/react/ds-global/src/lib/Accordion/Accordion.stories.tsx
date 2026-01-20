@@ -3,7 +3,7 @@ import { useState } from "react";
 import Accordion from "./Accordion.js";
 
 const meta: Meta<typeof Accordion> = {
-  title: "Accordion",
+  title: "A/Accordion",
   component: Accordion,
   tags: ["autodocs"],
   parameters: {

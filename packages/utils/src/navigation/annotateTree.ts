@@ -1,4 +1,4 @@
-import type { Item, _Item } from "@canonical/ds-types";
+import type { _Item, Item } from "@canonical/ds-types";
 import { getItemId } from "./getItemId.js";
 
 /**

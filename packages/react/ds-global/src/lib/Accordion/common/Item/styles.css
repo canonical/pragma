@@ -26,7 +26,7 @@
  * DSL: layout.type: flow, layout.direction: horizontal, layout.align: center
  *      interaction.cursor: pointer
  */
-.ds.accordion-item .accordion-item-header {
+.ds.accordion-item > .header {
   /* layout.type: flow, layout.direction: horizontal */
   display: flex;
   flex-direction: row;
@@ -103,7 +103,7 @@
  * Heading (role: heading)
  * DSL: cardinality: 1
  */
-.ds.accordion-item .accordion-item-heading {
+.ds.accordion-item > .header > .heading {
   flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -115,7 +115,7 @@
  * DSL: size.width: size/icon/small, size.height: size/icon/small
  *      cardinality: 1
  */
-.ds.accordion-item .accordion-item-chevron {
+.ds.accordion-item > .header > .chevron {
   flex-shrink: 0;
   width: var(--accordion-chevron-size, var(--size-icon-small, 1rem));
   height: var(--accordion-chevron-size, var(--size-icon-small, 1rem));
@@ -144,8 +144,7 @@
 }
 
 /* interaction.transform.expanded: rotate(180deg) */
-.ds.accordion-item .accordion-item-header[aria-expanded="true"]
-  .accordion-item-chevron {
+.ds.accordion-item > .header[aria-expanded="true"] > .chevron {
   transform: rotate(180deg);
 }
 
@@ -154,7 +153,7 @@
  * DSL: layout.overflow: hidden
  *      cardinality: 1
  */
-.ds.accordion-item .accordion-item-content {
+.ds.accordion-item > .content {
   display: block;
   overflow: hidden;
   background: var(
@@ -170,7 +169,7 @@
     var(--transition-easing-decelerate, ease-out);
 }
 
-.ds.accordion-item .accordion-item-content[hidden] {
+.ds.accordion-item > .content[hidden] {
   display: none;
 }
 
@@ -178,7 +177,7 @@
  * Content padding wrapper
  * (Implementation detail, not in DSL)
  */
-.ds.accordion-item .accordion-item-content-inner {
+.ds.accordion-item > .content > .content-inner {
   display: block;
   padding-block: var(
     --accordion-content-padding-block,

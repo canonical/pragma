@@ -73,7 +73,7 @@ describe("Button component", () => {
       render(
         <Component importance="primary" anticipation="destructive">
           Delete Account
-        </Component>
+        </Component>,
       );
       const button = screen.getByRole("button");
       expect(button).toHaveClass("primary", "destructive");
@@ -106,7 +106,7 @@ describe("Button component", () => {
       render(
         <Component icon={icon} iconPosition="end">
           Continue
-        </Component>
+        </Component>,
       );
 
       const button = screen.getByRole("button");
@@ -137,14 +137,17 @@ describe("Button component", () => {
   describe("accessibility", () => {
     it("uses children as aria-label when children is string", () => {
       render(<Component>Submit</Component>);
-      expect(screen.getByRole("button")).toHaveAttribute("aria-label", "Submit");
+      expect(screen.getByRole("button")).toHaveAttribute(
+        "aria-label",
+        "Submit",
+      );
     });
 
     it("uses explicit aria-label over children", () => {
       render(<Component aria-label="Submit form">Submit</Component>);
       expect(screen.getByRole("button")).toHaveAttribute(
         "aria-label",
-        "Submit form"
+        "Submit form",
       );
     });
 
@@ -152,7 +155,7 @@ describe("Button component", () => {
       render(
         <Component>
           <span>Complex content</span>
-        </Component>
+        </Component>,
       );
       // aria-label should be undefined (not set) when children is not a string
       expect(screen.getByRole("button")).not.toHaveAttribute("aria-label");
@@ -171,7 +174,7 @@ describe("Button component", () => {
       render(
         <Component type="submit" name="submitBtn" value="submit">
           Submit
-        </Component>
+        </Component>,
       );
       const button = screen.getByRole("button");
       expect(button).toHaveAttribute("type", "submit");
@@ -186,7 +189,9 @@ describe("Button component", () => {
 
     it("applies style prop", () => {
       render(<Component style={{ color: "red" }}>Test</Component>);
-      expect(screen.getByRole("button")).toHaveStyle({ color: "rgb(255, 0, 0)" });
+      expect(screen.getByRole("button")).toHaveStyle({
+        color: "rgb(255, 0, 0)",
+      });
     });
   });
 });

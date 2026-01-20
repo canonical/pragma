@@ -1,7 +1,7 @@
 /* @canonical/generator-ds 0.10.0-experimental.2 */
 
 import type React from "react";
-import { Content, Image, ThumbnailSection } from "./common/index.js";
+import { Content, Header, Image, Thumbnail } from "./common/index.js";
 import type { CardProps } from "./types.js";
 import "./styles.css";
 
@@ -33,7 +33,8 @@ const Card = ({
 );
 
 Card.Content = Content;
-Card.ThumbnailSection = ThumbnailSection;
+Card.Header = Header;
 Card.Image = Image;
+Card.Thumbnail = Thumbnail;
 
 export default Card;

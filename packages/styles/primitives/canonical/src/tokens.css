@@ -367,23 +367,33 @@
   /* Primary: High prominence, main call-to-action */
   --tmp-color-button-primary-background: var(--tmp-color-palette-gray-37);
   --tmp-color-button-primary-background-hover: var(--tmp-color-palette-gray-30);
-  --tmp-color-button-primary-background-active: var(--tmp-color-palette-gray-26);
+  --tmp-color-button-primary-background-active: var(
+    --tmp-color-palette-gray-26
+  );
   --tmp-color-button-primary-text: var(--tmp-color-palette-white);
   --tmp-color-button-primary-border: var(--tmp-color-palette-gray-37);
   --tmp-button-primary-border-width: var(--spacing-border-width);
 
   /* Secondary: Medium prominence, supporting actions */
   --tmp-color-button-secondary-background: var(--tmp-color-background-default);
-  --tmp-color-button-secondary-background-hover: var(--tmp-color-background-hover);
-  --tmp-color-button-secondary-background-active: var(--tmp-color-background-active);
+  --tmp-color-button-secondary-background-hover: var(
+    --tmp-color-background-hover
+  );
+  --tmp-color-button-secondary-background-active: var(
+    --tmp-color-background-active
+  );
   --tmp-color-button-secondary-text: var(--tmp-color-text-default);
   --tmp-color-button-secondary-border: var(--tmp-color-border-high-contrast);
   --tmp-button-secondary-border-width: var(--spacing-border-width);
 
   /* Tertiary: Low prominence, less important actions */
   --tmp-color-button-tertiary-background: var(--tmp-color-palette-transparent);
-  --tmp-color-button-tertiary-background-hover: var(--tmp-color-background-hover);
-  --tmp-color-button-tertiary-background-active: var(--tmp-color-background-active);
+  --tmp-color-button-tertiary-background-hover: var(
+    --tmp-color-background-hover
+  );
+  --tmp-color-button-tertiary-background-active: var(
+    --tmp-color-background-active
+  );
   --tmp-color-button-tertiary-text: var(--tmp-color-text-default);
   --tmp-color-button-tertiary-border: var(--tmp-color-palette-transparent);
   --tmp-button-tertiary-border-width: 0;

@@ -1,13 +1,14 @@
 /* @canonical/generator-ds 0.10.0-experimental.2 */
 
-import { MODIFIER_FAMILIES } from "@canonical/ds-types";
 import type { Meta, StoryFn, StoryObj } from "@storybook/react-vite";
 import * as decorators from "../../storybook/decorators.js";
 import Component from "./Card.js";
-import type { CardProps } from "./types.js";
+import type { CardEmphasis, CardProps } from "./types.js";
+
+const CARD_EMPHASIS_OPTIONS: CardEmphasis[] = ["neutral", "highlighted"];
 
 const meta = {
-  title: "In Progress/Card",
+  title: "A/Card",
   component: Component,
   argTypes: {
     children: {
@@ -15,17 +16,17 @@ const meta = {
       description: "Content to display in the card.",
     },
     emphasis: {
-      options: MODIFIER_FAMILIES.emphasis,
+      options: CARD_EMPHASIS_OPTIONS,
       control: { type: "radio" },
       description:
-        "Emphasis modifier for the card.<br><br>Note: currently, only 'neutral' and 'highlighted' are supported; support for other modifiers is forthcoming.",
+        "Emphasis modifier for the card. 'neutral' is the default; 'highlighted' provides increased visual prominence.",
     },
   },
   parameters: {
     docs: {
       description: {
         component:
-          "A `Card` component with subcomponents for different content types. `Card.Content` is the main content area within a card. `Card.ThumbnailSection` embeds a small image with content. `Card.Image` displays a full-width image.",
+          "A `Card` component with subcomponents for different content types. `Card.Header` provides title and actions, `Card.Content` is the main content area, `Card.Thumbnail` embeds a small image with optional content, and `Card.Image` displays a full-width image.",
       },
     },
   },
@@ -73,29 +74,28 @@ export const Highlighted: Story = {
   },
 };
 
-export const WithThumbnailSection: StoryFn<CardProps> = (props) => (
+export const WithThumbnail: StoryFn<CardProps> = (props) => (
   <Component {...props}>
-    <Component.ThumbnailSection
+    <Component.Thumbnail
       imageProps={{
         src: "https://assets.ubuntu.com/v1/31bd2627-logo-raspberry-pi.svg",
         alt: "Raspberry Pi Logo",
       }}
-    />
-    <Component.Content>
+    >
       <h3>Raspberry Pi2 and Pi3</h3>
       <p>
         For fun, for education and for profit, the RPi makes device development
         personal and entertaining. With support for both the Pi2 and the new
         Pi3, Ubuntu Core supports the world's most beloved board.
       </p>
-    </Component.Content>
+    </Component.Thumbnail>
   </Component>
 );
 
-WithThumbnailSection.parameters = {
+WithThumbnail.parameters = {
   docs: {
     description: {
-      story: "A Card with a ThumbnailSection image at the top.",
+      story: "A Card with a Thumbnail showing an image alongside content.",
     },
   },
 };
@@ -113,24 +113,19 @@ export const GridLayout: StoryFn<CardProps> = () => (
       </Component.Content>
     </Component>
     <Component emphasis="highlighted">
-      <Component.ThumbnailSection
+      <Component.Thumbnail
         imageProps={{
           src: "https://assets.ubuntu.com/v1/31bd2627-logo-raspberry-pi.svg",
           alt: "Raspberry Pi Logo",
         }}
-      />
-      <Component.Content>
+      >
         <h3>Raspberry Pi2 and Pi3</h3>
         <p>
           For fun, for education and for profit, the RPi makes device
           development personal and entertaining. Ubuntu Core supports the Pi2
           and Pi3.
         </p>
-        <p>
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed non
-          risus.
-        </p>
-      </Component.Content>
+      </Component.Thumbnail>
     </Component>
     <Component>
       <Component.Content>
@@ -148,19 +143,18 @@ export const GridLayout: StoryFn<CardProps> = () => (
       </Component.Content>
     </Component>
     <Component>
-      <Component.ThumbnailSection
+      <Component.Thumbnail
         imageProps={{
           src: "https://assets.ubuntu.com/v1/2d850f3f-CoF%2520Circle%2520New.svg",
           alt: "Ubuntu logo",
         }}
-      />
-      <Component.Content>
+      >
         <h3>Ubuntu Desktop</h3>
         <p>
           Ubuntu Desktop is the modern, open source desktop operating system for
           millions of PC and laptop users around the world.
         </p>
-      </Component.Content>
+      </Component.Thumbnail>
     </Component>
     <Component emphasis="highlighted">
       <Component.Content>
@@ -173,19 +167,18 @@ export const GridLayout: StoryFn<CardProps> = () => (
       </Component.Content>
     </Component>
     <Component>
-      <Component.ThumbnailSection
+      <Component.Thumbnail
         imageProps={{
           src: "https://assets.ubuntu.com/v1/ac1c88fd-juju_logo.png",
           alt: "Juju logo",
         }}
-      />
-      <Component.Content>
+      >
         <h3>Juju</h3>
         <p>
           Juju is an open source application modelling tool. Deploy, configure,
           scale and operate your software on public and private clouds.
         </p>
-      </Component.Content>
+      </Component.Thumbnail>
     </Component>
   </>
 );

@@ -50,16 +50,16 @@ const Item = ({
       <button
         type="button"
         id={headerId}
-        className="accordion-item-header"
+        className="header"
         aria-expanded={expanded}
         aria-controls={contentId}
         onClick={handleClick}
         onKeyDown={handleKeyDown}
       >
         {/* Control/Chevron indicator (cardinality: 1) */}
-        <span className="accordion-item-chevron" aria-hidden="true" />
+        <span className="chevron" aria-hidden="true" />
         {/* Heading (cardinality: 1) */}
-        <span className="accordion-item-heading">{heading}</span>
+        <span className="heading">{heading}</span>
       </button>
 
       {/* Content panel (cardinality: 1) */}
@@ -67,11 +67,11 @@ const Item = ({
         id={contentId}
         role="region"
         aria-labelledby={headerId}
-        className="accordion-item-content"
+        className="content"
         hidden={!expanded}
       >
         {/* Content padding wrapper */}
-        <div className="accordion-item-content-inner">{children}</div>
+        <div className="content-inner">{children}</div>
       </div>
     </div>
   );

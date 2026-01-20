@@ -4,7 +4,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import Component from "./ThumbnailSection.js";
 
 const meta = {
-  title: "In Progress/Card/ThumbnailSection",
+  title: "A/Card/ThumbnailSection",
   component: Component,
   parameters: {
     docs: {

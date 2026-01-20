@@ -888,7 +888,10 @@ const configureGroupedHelp = (
       output += "\nGlobal Options:\n";
       output += formatItem("-d, --dry-run", "Preview without writing files");
       output += "\n";
-      output += formatItem("-y, --yes", "Skip confirmation prompts and preview");
+      output += formatItem(
+        "-y, --yes",
+        "Skip confirmation prompts and preview",
+      );
       output += "\n";
       output += formatItem("-v, --verbose", "Show debug output");
       output += "\n";
@@ -1083,10 +1086,7 @@ const registerFromBarrel = (rootCmd: Command, barrel: CommandEntry[]): void => {
           "Show file contents in dry-run (useful for LLMs)",
         )
         .option("--no-preview", "Skip the file preview")
-        .option(
-          "--no-generated-stamp",
-          "Disable generated file stamp comments",
-        )
+        .option("--no-generated-stamp", "Disable generated file stamp comments")
         .option(
           "-l, --llm",
           "LLM mode: combines --dry-run --show-contents --yes",
@@ -1189,11 +1189,8 @@ const configureGeneratorCommand = (
       if (hasAllAnswers && actualOptions.dryRun && !isTTY) {
         // Batch dry-run mode (non-interactive)
         const { dryRun } = await import("./dry-run.js");
-        const {
-          isVisibleEffect,
-          formatEffectLine,
-          formatEffectWithContent,
-        } = await import("./cli-format.js");
+        const { isVisibleEffect, formatEffectLine, formatEffectWithContent } =
+          await import("./cli-format.js");
 
         const verbose = actualOptions.verbose === true;
         const showContents = actualOptions.showContents === true;
@@ -1234,7 +1231,9 @@ const configureGeneratorCommand = (
         // Note about --show-contents if not already using it
         if (!showContents) {
           console.log(
-            chalk.dim("Tip: Use --show-contents to see generated file contents"),
+            chalk.dim(
+              "Tip: Use --show-contents to see generated file contents",
+            ),
           );
         }
       } else {

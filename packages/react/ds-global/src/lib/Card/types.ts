@@ -1,12 +1,19 @@
 /* @canonical/generator-ds 0.10.0-experimental.2 */
 
-import type { ModifierFamily } from "@canonical/ds-types";
 import type { HTMLAttributes } from "react";
+
+/**
+ * Card-specific emphasis values.
+ * Note: These differ from the standard emphasis modifier family
+ * as Card uses "neutral" (default) and "highlighted" for visual distinction.
+ */
+export type CardEmphasis = "neutral" | "highlighted";
 
 export interface CardProps extends HTMLAttributes<HTMLDivElement> {
   /**
-   * TODO we need to verify with DS ontology group whether it is expected that a component consume ALL of a modifier family
-   *  Card in vanilla does not currently support the "muted" or "accented" emphasis modifiers.
+   * Visual emphasis for the card.
+   * - "neutral": Default appearance
+   * - "highlighted": Increased visual prominence
    */
-  emphasis?: ModifierFamily<"emphasis">;
+  emphasis?: CardEmphasis;
 }

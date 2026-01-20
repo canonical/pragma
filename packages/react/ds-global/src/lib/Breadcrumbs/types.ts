@@ -1,5 +1,10 @@
-import type { ComponentType, HTMLAttributes, ReactElement, ReactNode } from "react";
 import type { Item } from "@canonical/ds-types";
+import type {
+  ComponentType,
+  HTMLAttributes,
+  ReactElement,
+  ReactNode,
+} from "react";
 import type { ItemProps, LinkComponentProps } from "./common/Item/types.js";
 
 /**
@@ -9,11 +14,11 @@ import type { ItemProps, LinkComponentProps } from "./common/Item/types.js";
  * compatibility with the unified navigation type.
  */
 export interface BreadcrumbItem extends Item {
-	/**
-	 * Whether this is the current page.
-	 * When true, renders as text instead of link.
-	 */
-	current?: boolean;
+  /**
+   * Whether this is the current page.
+   * When true, renders as text instead of link.
+   */
+  current?: boolean;
 }
 
 /**
@@ -22,37 +27,37 @@ export interface BreadcrumbItem extends Item {
  * @implements dso:global.pattern.breadcrumbs
  */
 export interface BreadcrumbsProps extends HTMLAttributes<HTMLElement> {
-	/**
-	 * Navigation items to display (WD405 Item type)
-	 * Each item is spread onto Breadcrumbs.Item or custom Component
-	 */
-	items: BreadcrumbItem[];
-	/**
-	 * Custom separator between items
-	 * @default "/"
-	 */
-	separator?: ReactNode;
-	/**
-	 * Custom link component for router integration
-	 * e.g. Next.js Link, React Router Link
-	 * Applied to all items unless overridden per-item
-	 * @default "a"
-	 */
-	LinkComponent?: ComponentType<LinkComponentProps> | "a";
-	/**
-	 * Accessible label for the navigation landmark
-	 * @default "Breadcrumb"
-	 */
-	"aria-label"?: string;
+  /**
+   * Navigation items to display (WD405 Item type)
+   * Each item is spread onto Breadcrumbs.Item or custom Component
+   */
+  items: BreadcrumbItem[];
+  /**
+   * Custom separator between items
+   * @default "/"
+   */
+  separator?: ReactNode;
+  /**
+   * Custom link component for router integration
+   * e.g. Next.js Link, React Router Link
+   * Applied to all items unless overridden per-item
+   * @default "a"
+   */
+  LinkComponent?: ComponentType<LinkComponentProps> | "a";
+  /**
+   * Accessible label for the navigation landmark
+   * @default "Breadcrumb"
+   */
+  "aria-label"?: string;
 }
 
 /**
  * Breadcrumbs component type with attached subcomponents
  */
 export type BreadcrumbsComponent = ((
-	props: BreadcrumbsProps,
+  props: BreadcrumbsProps,
 ) => ReactElement) & {
-	Item: (props: ItemProps) => ReactElement;
+  Item: (props: ItemProps) => ReactElement;
 };
 
 export type { LinkComponentProps };

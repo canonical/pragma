@@ -54,7 +54,10 @@
       --breadcrumbs-separator-spacing,
       var(--spacing-small, 0.5rem)
     );
-    color: var(--breadcrumbs-separator-color, var(--color-text-secondary, #666));
+    color: var(
+      --breadcrumbs-separator-color,
+      var(--color-text-secondary, #666)
+    );
   }
 
   /* Hide separator on last item */

@@ -20,7 +20,7 @@
  * Timeline marker/dot
  * Visual indicator connecting events
  */
-.ds.timeline-event .timeline-event-marker {
+.ds.timeline-event > .marker {
   flex-shrink: 0;
   width: var(--timeline-marker-size, 12px);
   height: var(--timeline-marker-size, 12px);
@@ -68,7 +68,7 @@
  * DSL: layout.type: flow, layout.direction: horizontal
  * The edges (actor, datetime, payload) flow horizontally per DSL spec
  */
-.ds.timeline-event .timeline-event-content {
+.ds.timeline-event > .content {
   flex: 1;
   min-width: 0;
   padding-bottom: var(--timeline-event-spacing, var(--spacing-large, 1.5rem));
@@ -85,7 +85,7 @@
  * Actor element
  * DSL: role: actor (cardinality: 0..1)
  */
-.ds.timeline-event .timeline-event-actor {
+.ds.timeline-event > .content > .actor {
   font-weight: var(
     --timeline-actor-font-weight,
     var(--font-weight-semibold, 600)
@@ -97,7 +97,7 @@
  * Datetime element
  * DSL: role: datetime (cardinality: 0..1)
  */
-.ds.timeline-event .timeline-event-datetime {
+.ds.timeline-event > .content > .datetime {
   font-size: var(
     --timeline-datetime-font-size,
     var(--font-size-small, 0.875rem)
@@ -109,7 +109,7 @@
  * Payload element
  * DSL: role: payload (cardinality: 1, slotName: default)
  */
-.ds.timeline-event .timeline-event-payload {
+.ds.timeline-event > .content > .payload {
   color: var(--timeline-payload-color, var(--color-text-primary, inherit));
   line-height: var(
     --timeline-payload-line-height,
@@ -120,18 +120,18 @@
 }
 
 /* Criticality modifiers affect marker color */
-.ds.timeline-event.info .timeline-event-marker {
+.ds.timeline-event.info > .marker {
   background-color: var(--color-info, #0066cc);
 }
 
-.ds.timeline-event.success .timeline-event-marker {
+.ds.timeline-event.success > .marker {
   background-color: var(--color-success, #00a86b);
 }
 
-.ds.timeline-event.warning .timeline-event-marker {
+.ds.timeline-event.warning > .marker {
   background-color: var(--color-warning, #f5a623);
 }
 
-.ds.timeline-event.critical .timeline-event-marker {
+.ds.timeline-event.critical > .marker {
   background-color: var(--color-critical, #c7162b);
 }

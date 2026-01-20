@@ -1,4 +1,4 @@
-import { previewConfig } from "@canonical/storybook-config";
+import { previewConfig } from "@canonical/storybook-config/preview";
 import { withThemeByClassName } from "@storybook/addon-themes";
 import type { Preview, ReactRenderer } from "@storybook/react-vite";
 

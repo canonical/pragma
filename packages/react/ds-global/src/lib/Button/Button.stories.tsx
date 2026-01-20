@@ -5,7 +5,7 @@ import { fn } from "storybook/test";
 import Component from "./Button.js";
 
 const meta = {
-  title: "Q-A/Button",
+  title: "B/Button",
   component: Component,
   tags: ["autodocs"],
   argTypes: {
@@ -174,13 +174,23 @@ const PlusIcon = () => (
 
 const TrashIcon = () => (
   <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
-    <path d="M2 4h12M5 4V2h6v2M6 7v5M10 7v5M4 4l1 10h6l1-10" stroke="currentColor" strokeWidth="1.5" fill="none" />
+    <path
+      d="M2 4h12M5 4V2h6v2M6 7v5M10 7v5M4 4l1 10h6l1-10"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      fill="none"
+    />
   </svg>
 );
 
 const ArrowIcon = () => (
   <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
-    <path d="M1 8h12M9 4l4 4-4 4" stroke="currentColor" strokeWidth="2" fill="none" />
+    <path
+      d="M1 8h12M9 4l4 4-4 4"
+      stroke="currentColor"
+      strokeWidth="2"
+      fill="none"
+    />
   </svg>
 );
 
@@ -328,7 +338,9 @@ export const ModifierInheritance: Story = {
         </p>
         <Component>Inherits constructive</Component>
         <Component anticipation="destructive">Explicit destructive</Component>
-        <Component importance="primary">Primary (inherits constructive)</Component>
+        <Component importance="primary">
+          Primary (inherits constructive)
+        </Component>
       </div>
     ),
   ],

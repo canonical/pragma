@@ -20,7 +20,7 @@ export interface LabelProps extends HTMLAttributes<HTMLSpanElement> {
   /**
    * The label text content
    */
-  children: ReactNode;
+  children?: ReactNode;
   /**
    * Visual anticipation modifier - indicates expected outcome
    * - constructive: Positive outcome

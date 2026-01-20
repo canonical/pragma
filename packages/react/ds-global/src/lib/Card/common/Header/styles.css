@@ -1,0 +1,66 @@
+/**
+ * Card.Header styles
+ * @implements ds:global.subcomponent.card-header
+ *
+ * DSL anatomy:
+ * - layout.type: flow
+ * - layout.direction: horizontal
+ * - layout.justify: space-between
+ * - layout.align: center
+ * - spacing.internal: spacing/medium
+ */
+.ds.card-header {
+  /* layout.type: flow, layout.direction: horizontal */
+  display: flex;
+  flex-direction: row;
+
+  /* layout.justify: space-between */
+  justify-content: space-between;
+
+  /* layout.align: center */
+  align-items: center;
+
+  /* spacing.internal: spacing/medium */
+  gap: var(--card-header-gap, var(--spacing-medium, 1rem));
+  padding: var(--card-header-padding, var(--spacing-medium, 1rem));
+
+  /* Border bottom to separate from content */
+  border-bottom: var(--card-header-border-width, 1px) solid
+    var(--card-header-border-color, var(--color-border, #e5e5e5));
+}
+
+/**
+ * Title element
+ * DSL: role: title, typography.weight: font/weight/semibold
+ */
+.ds.card-header > .title {
+  /* typography.weight: font/weight/semibold */
+  font-weight: var(
+    --card-header-title-font-weight,
+    var(--font-weight-semibold, 600)
+  );
+  font-size: var(
+    --card-header-title-font-size,
+    var(--font-size-heading-small, 1.125rem)
+  );
+  color: var(--card-header-title-color, var(--color-text-primary, inherit));
+
+  /* Allow title to grow and truncate if needed */
+  flex: 1;
+  min-width: 0;
+}
+
+/**
+ * Actions element
+ * DSL: role: actions (cardinality: 0..1)
+ */
+.ds.card-header > .actions {
+  /* Prevent shrinking */
+  flex-shrink: 0;
+
+  /* Flow layout for multiple action items */
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--card-header-actions-gap, var(--spacing-small, 0.5rem));
+}

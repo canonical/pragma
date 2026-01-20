@@ -1,6 +1,18 @@
-/* @canonical/generator-ds 0.10.0-experimental.2 */
+/**
+ * Card.Content styles
+ * @implements ds:global.subcomponent.card-content
+ *
+ * DSL anatomy:
+ * - layout.type: stack
+ * - layout.direction: vertical
+ * - spacing.internal: spacing/medium
+ */
+.ds.card-content {
+  /* layout.type: stack, layout.direction: vertical */
+  display: flex;
+  flex-direction: column;
 
-.ds.card-section {
-  padding-block: var(--card-section-padding-vertical);
-  padding-inline: var(--card-section-padding-horizontal);
+  /* spacing.internal: spacing/medium */
+  gap: var(--card-content-gap, var(--spacing-medium, 1rem));
+  padding: var(--card-content-padding, var(--spacing-medium, 1rem));
 }

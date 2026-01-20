@@ -1,14 +1,30 @@
 import { Meta } from "@storybook/blocks";
+import { PackageInfo } from "@canonical/storybook-helpers";
 
 <Meta title="Introduction" />
 
-# Apps Tier — React
+# Application Components — React
 
-Application-level components for building Canonical web applications. Navigation, toolbars, file browsers, and structural patterns that compose Global tier primitives into complete application interfaces.
+While Global tier provides atoms, Apps tier provides molecules and organisms — the larger structural pieces that define how applications feel and function. Navigation, toolbars, layouts, and patterns for building complete interfaces that compose Global tier primitives into higher-level structures.
+
+## Package
+
+<PackageInfo
+  name="@canonical/react-ds-app"
+  version="0.11.0"
+  tier="apps"
+  framework="react"
+  status="prerelease"
+  dependencies={["@canonical/styles"]}
+  links={{
+    source: "https://github.com/canonical/pragma/tree/main/packages/react/ds-app",
+    ontology: "https://github.com/canonical/design-system",
+  }}
+/>
 
 ## Architecture
 
-Apps tier sits above Global, composing foundational components into higher-level application patterns:
+Apps tier components compose Global tier primitives into higher-level application patterns. They understand application context like navigation state and layout regions.
 
 ```
 @canonical/react-ds-global (dependency)
@@ -20,9 +36,18 @@ Your Application
 
 ## Components
 
-| Component | Purpose |
-|-----------|---------|
-| **Button** | Extended button with app-specific behaviors |
+<table>
+  <thead>
+    <tr>
+      <th>Component</th>
+      <th>Purpose</th>
+      <th>Readiness</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td>Button</td><td>Extended button with app-specific behaviors</td><td>C</td></tr>
+  </tbody>
+</table>
 
 This tier is under active development. Components are added as application patterns stabilize.
 

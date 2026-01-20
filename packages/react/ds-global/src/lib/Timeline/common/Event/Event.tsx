@@ -27,18 +27,18 @@ const Event = ({
     {...props}
   >
     {/* Timeline marker/dot */}
-    <div className="timeline-event-marker" aria-hidden="true" />
+    <div className="marker" aria-hidden="true" />
 
     {/* Event content container */}
-    <div className="timeline-event-content">
+    <div className="content">
       {/* edges[0]: actor (cardinality: 0..1) */}
-      {actor && <div className="timeline-event-actor">{actor}</div>}
+      {actor && <div className="actor">{actor}</div>}
 
       {/* edges[1]: datetime (cardinality: 0..1) */}
-      {datetime && <time className="timeline-event-datetime">{datetime}</time>}
+      {datetime && <time className="datetime">{datetime}</time>}
 
       {/* edges[2]: payload (cardinality: 1, slotName: default) */}
-      <div className="timeline-event-payload">{children}</div>
+      <div className="payload">{children}</div>
     </div>
   </div>
 );

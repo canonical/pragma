@@ -1,14 +1,30 @@
 import { Meta } from "@storybook/blocks";
+import { PackageInfo } from "@canonical/storybook-helpers";
 
 <Meta title="Introduction" />
 
-# Global/Form Tier — React
+# Form Components — React
 
-Form components for the Pragma design system. Field wrappers, inputs, validation states, and patterns for collecting user data with consistency and accessibility.
+Forms are where users provide data — getting them right is critical for both usability and data quality. This package extends the Global tier with specialized input components, validation patterns, and accessible form structures that work consistently across all Canonical products.
+
+## Package
+
+<PackageInfo
+  name="@canonical/react-ds-global-form"
+  version="0.11.0"
+  tier="global_form"
+  framework="react"
+  status="stable"
+  dependencies={["@canonical/react-ds-global", "@canonical/styles", "@canonical/utils", "downshift", "react-hook-form"]}
+  links={{
+    source: "https://github.com/canonical/pragma/tree/main/packages/react/ds-global-form",
+    ontology: "https://github.com/canonical/design-system",
+  }}
+/>
 
 ## Architecture
 
-Extends the Global tier with input-specific behavior, validation feedback, and accessible label association.
+Form components build on Global tier primitives and add input-specific behavior, validation states, and accessibility patterns.
 
 ```
 @canonical/react-ds-global (dependency)
@@ -34,16 +50,25 @@ import { Field } from "@canonical/react-ds-global-form";
 
 ### Input Types
 
-| Input | Purpose |
-|-------|---------|
-| **Text** | Single-line text, email, password, url, tel |
-| **Textarea** | Multi-line text |
-| **Select** | Dropdown selection |
-| **Checkbox** | Boolean or multiple selection |
-| **SimpleChoices** | Radio buttons, checkbox groups |
-| **Range** | Numeric slider |
-| **Combobox** | Searchable dropdown |
-| **Hidden** | Hidden form values |
+<table>
+  <thead>
+    <tr>
+      <th>Input</th>
+      <th>Purpose</th>
+      <th>Readiness</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td>Text</td><td>Single-line text, email, password, url, tel</td><td>A</td></tr>
+    <tr><td>Textarea</td><td>Multi-line text</td><td>A</td></tr>
+    <tr><td>Select</td><td>Dropdown selection</td><td>A</td></tr>
+    <tr><td>Checkbox</td><td>Boolean or multiple selection</td><td>A</td></tr>
+    <tr><td>SimpleChoices</td><td>Radio buttons, checkbox groups</td><td>B</td></tr>
+    <tr><td>Range</td><td>Numeric slider</td><td>B</td></tr>
+    <tr><td>Combobox</td><td>Searchable dropdown</td><td>B</td></tr>
+    <tr><td>Hidden</td><td>Hidden form values</td><td>A</td></tr>
+  </tbody>
+</table>
 
 ### Form
 
@@ -86,12 +111,7 @@ Fields communicate validation through visual states:
 
 ## Accessibility
 
-Field components handle:
-
-- Label-input association via `id` and `htmlFor`
-- Error announcements with `aria-describedby`
-- Required field indication with `aria-required`
-- Help text linking with `aria-describedby`
+Field components handle label-input association, error announcements, required field indication, and help text linking automatically.
 
 ## Installation
 
