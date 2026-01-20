@@ -24,9 +24,7 @@ These goals require certain infrastructure to be in place.
 
 ### Local Alignment
 
-- Node 22 or 24 (matching matrix)
-- Bun 1.2.19 (matching matrix)
-- Run `bun install` after pulling
+Ensure your local environment matches the [prerequisites in the main README](../README.md#prerequisites). Run `bun install` after pulling to sync dependencies.
 
 ## Why This Pipeline Exists
 
@@ -67,7 +65,7 @@ The pull request workflow runs on every PR. It uses a build matrix to test again
 ```yaml
 strategy:
   matrix:
-    bun-version: ['1.2.19']
+    bun-version: ['1.3.6']
     node-version: ['22', '24']
 ```
 
