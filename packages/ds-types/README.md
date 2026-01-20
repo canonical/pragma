@@ -57,4 +57,4 @@ const isValidSeverity = (value: string): value is ModifierFamily<"severity"> =>
 
 ## Design System Ontology
 
-The modifier families defined in this package derive from the Design System Ontology. The ontology provides the authoritative specification for which modifiers exist and their semantic meaning. Changes to modifier families should originate in the ontology and propagate to this package to maintain consistency between design specifications and implementation.
+The modifier families defined in this package derive from the [Design System Ontology](https://github.com/canonical/design-system). The ontology provides the authoritative specification for which modifiers exist and their semantic meaning. Changes to modifier families should originate in the ontology and propagate to this package to maintain consistency between design specifications and implementation.
