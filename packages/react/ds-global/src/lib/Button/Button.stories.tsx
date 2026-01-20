@@ -2,64 +2,295 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { fn } from "storybook/test";
 
 import Component from "./Button.js";
-import Button from "./Button.js";
 
 const meta = {
   title: "Button",
   component: Component,
   tags: ["autodocs"],
-  // if using enum for appearance, you can use the following to generate controls
-  // argTypes: {
-  //   appearance: {
-  //      control: 'select',
-  //      mapping: ButtonAppearance,
-  //      options: Object.keys(ButtonAppearance),
-  //   }
-  // },
-  args: { onClick: fn() }, // allows the onClick function to be spyed on
+  argTypes: {
+    importance: {
+      control: "select",
+      options: [undefined, "primary", "secondary", "tertiary"],
+    },
+    anticipation: {
+      control: "select",
+      options: [undefined, "constructive", "caution", "destructive"],
+    },
+    variant: {
+      control: "select",
+      options: [undefined, "link"],
+    },
+    iconPosition: {
+      control: "select",
+      options: ["start", "end"],
+    },
+  },
+  args: { onClick: fn() },
 } satisfies Meta<typeof Component>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
+/* ==========================================================================
+   Basic Examples
+   ========================================================================== */
+
 /**
- * A default button can be used to indicate a positive action that isn't necessarily the main call-to-action.
+ * Default button with no modifiers - uses base token styling.
  */
 export const Default: Story = {
   args: {
-    children: "Contact us",
+    children: "Button",
+  },
+};
+
+/**
+ * Button with only a label and no icon.
+ */
+export const LabelOnly: Story = {
+  args: {
+    children: "Click me",
+  },
+};
+
+/* ==========================================================================
+   Importance Modifier
+   Visual hierarchy: primary > secondary > tertiary
+   ========================================================================== */
+
+/**
+ * Primary buttons are high prominence and used for main call-to-actions.
+ */
+export const Primary: Story = {
+  args: {
+    children: "Primary Action",
+    importance: "primary",
+  },
+};
+
+/**
+ * Secondary buttons are medium prominence for supporting actions.
+ */
+export const Secondary: Story = {
+  args: {
+    children: "Secondary Action",
+    importance: "secondary",
+  },
+};
+
+/**
+ * Tertiary buttons are low prominence for less important actions.
+ */
+export const Tertiary: Story = {
+  args: {
+    children: "Tertiary Action",
+    importance: "tertiary",
+  },
+};
+
+/* ==========================================================================
+   Anticipation Modifier
+   Expected outcome: constructive, caution, destructive
+   ========================================================================== */
+
+/**
+ * Constructive buttons indicate positive outcomes (save, create, confirm).
+ */
+export const Constructive: Story = {
+  args: {
+    children: "Save Changes",
+    anticipation: "constructive",
+  },
+};
+
+/**
+ * Caution buttons indicate potentially risky actions requiring attention.
+ */
+export const Caution: Story = {
+  args: {
+    children: "Proceed with Caution",
+    anticipation: "caution",
+  },
+};
+
+/**
+ * Destructive buttons indicate negative/irreversible outcomes (delete, remove).
+ */
+export const Destructive: Story = {
+  args: {
+    children: "Delete Item",
+    anticipation: "destructive",
+  },
+};
+
+/* ==========================================================================
+   Orthogonal Modifier Combinations
+   Importance x Anticipation
+   ========================================================================== */
+
+/**
+ * Primary destructive button - prominent delete action.
+ */
+export const PrimaryDestructive: Story = {
+  args: {
+    children: "Delete Account",
+    importance: "primary",
+    anticipation: "destructive",
+  },
+};
+
+/**
+ * Secondary constructive button - supporting save action.
+ */
+export const SecondaryConstructive: Story = {
+  args: {
+    children: "Save Draft",
+    importance: "secondary",
+    anticipation: "constructive",
+  },
+};
+
+/**
+ * Tertiary caution button - subtle warning action.
+ */
+export const TertiaryCaution: Story = {
+  args: {
+    children: "Reset Form",
+    importance: "tertiary",
+    anticipation: "caution",
+  },
+};
+
+/* ==========================================================================
+   Icon Examples
+   ========================================================================== */
+
+const PlusIcon = () => (
+  <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+    <path d="M8 1v14M1 8h14" stroke="currentColor" strokeWidth="2" />
+  </svg>
+);
+
+const TrashIcon = () => (
+  <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+    <path d="M2 4h12M5 4V2h6v2M6 7v5M10 7v5M4 4l1 10h6l1-10" stroke="currentColor" strokeWidth="1.5" fill="none" />
+  </svg>
+);
+
+const ArrowIcon = () => (
+  <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+    <path d="M1 8h12M9 4l4 4-4 4" stroke="currentColor" strokeWidth="2" fill="none" />
+  </svg>
+);
+
+/**
+ * Button with icon at the start (default position).
+ */
+export const WithIconStart: Story = {
+  args: {
+    children: "Add Item",
+    icon: <PlusIcon />,
+    importance: "primary",
+  },
+};
+
+/**
+ * Button with icon at the end.
+ */
+export const WithIconEnd: Story = {
+  args: {
+    children: "Continue",
+    icon: <ArrowIcon />,
+    iconPosition: "end",
+    importance: "primary",
+  },
+};
+
+/**
+ * Icon-only button (requires aria-label for accessibility).
+ */
+export const IconOnly: Story = {
+  args: {
+    icon: <TrashIcon />,
+    "aria-label": "Delete item",
+    anticipation: "destructive",
+  },
+};
+
+/**
+ * Destructive button with icon.
+ */
+export const DestructiveWithIcon: Story = {
+  args: {
+    children: "Delete",
+    icon: <TrashIcon />,
+    anticipation: "destructive",
+  },
+};
+
+/* ==========================================================================
+   Link Variant
+   ========================================================================== */
+
+/**
+ * Link variant button - styled as a text link.
+ */
+export const LinkVariant: Story = {
+  args: {
+    children: "Learn more",
+    variant: "link",
+  },
+};
+
+/**
+ * Link variant with icon.
+ */
+export const LinkWithIcon: Story = {
+  args: {
+    children: "View details",
+    variant: "link",
+    icon: <ArrowIcon />,
+    iconPosition: "end",
+  },
+};
+
+/* ==========================================================================
+   States
+   ========================================================================== */
+
+/**
+ * Disabled button.
+ */
+export const Disabled: Story = {
+  args: {
+    children: "Disabled",
+    importance: "primary",
     disabled: true,
   },
 };
 
 /**
- * A positive button can be used to indicate a positive action that is the main call-to-action.
+ * Disabled destructive button.
  */
-export const Positive: Story = {
+export const DisabledDestructive: Story = {
   args: {
-    children: "Confirm",
-    appearance: "positive",
+    children: "Cannot Delete",
+    anticipation: "destructive",
+    disabled: true,
   },
 };
 
-/**
- * A negative button can be used to indicate a negative action that is destructive or permanent.
- */
-export const Negative: Story = {
-  args: {
-    children: "Delete",
-    appearance: "negative",
-  },
-};
+/* ==========================================================================
+   Custom Styling
+   ========================================================================== */
 
 /**
- * Custom button props can be passed to the button component.
+ * Custom styled button using CSS variables.
  */
-export const Custom: Story = {
+export const CustomStyled: Story = {
   args: {
-    children: <span>Customize</span>,
-    "aria-label": "Customize",
-    className: "custom-class",
+    children: "Custom Button",
+    "aria-label": "Custom styled button",
     style: {
       "--button-color-background": "lightblue",
       "--button-color-text": "midnightblue",
@@ -70,30 +301,130 @@ export const Custom: Story = {
   },
 };
 
+/* ==========================================================================
+   Modifier Inheritance
+   ========================================================================== */
+
 /**
- * Intent variables are inherited with CSS, so will be applied to all child elements. For example, if there is a "positive" notification, the child buttons without "intent" will also be positive.
- * For the child element to have a different intent, the intent class name should be explicitly added.
+ * Demonstrates how anticipation modifiers can be inherited from parent context.
+ * The modifier CSS variables cascade down, affecting child buttons.
  */
-export const IntentsInheritance: Story = {
+export const ModifierInheritance: Story = {
   decorators: [
     (_Story) => (
       <div
-        className="positive"
+        className="constructive"
         style={{
           border: "2px solid var(--modifier-color)",
           padding: "1rem",
+          display: "flex",
+          flexDirection: "column",
+          gap: "0.5rem",
         }}
       >
         <p>
-          I'm a wrapper with <code>positive</code> intent class name.
+          Parent has <code>constructive</code> class applied.
         </p>
-        <Button appearance="neutral">This is a neutral button</Button>
-        <Button appearance="negative">This is a negative button</Button>
-        <Button>This button inherits the intent from parent</Button>
+        <Component>Inherits constructive</Component>
+        <Component anticipation="destructive">Explicit destructive</Component>
+        <Component importance="primary">Primary (inherits constructive)</Component>
       </div>
     ),
   ],
   args: {
-    children: "Broken",
+    children: "Not rendered",
+  },
+};
+
+/* ==========================================================================
+   Complete Matrix
+   ========================================================================== */
+
+/**
+ * Shows all combinations of importance and anticipation.
+ */
+export const ModifierMatrix: Story = {
+  decorators: [
+    (_Story) => (
+      <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+        <h3>Importance x Anticipation Matrix</h3>
+        <table style={{ borderCollapse: "collapse" }}>
+          <thead>
+            <tr>
+              <th style={{ padding: "0.5rem", border: "1px solid #ccc" }}></th>
+              <th style={{ padding: "0.5rem", border: "1px solid #ccc" }}>No anticipation</th>
+              <th style={{ padding: "0.5rem", border: "1px solid #ccc" }}>Constructive</th>
+              <th style={{ padding: "0.5rem", border: "1px solid #ccc" }}>Caution</th>
+              <th style={{ padding: "0.5rem", border: "1px solid #ccc" }}>Destructive</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style={{ padding: "0.5rem", border: "1px solid #ccc" }}>Primary</td>
+              <td style={{ padding: "0.5rem", border: "1px solid #ccc" }}>
+                <Component importance="primary">Primary</Component>
+              </td>
+              <td style={{ padding: "0.5rem", border: "1px solid #ccc" }}>
+                <Component importance="primary" anticipation="constructive">Primary</Component>
+              </td>
+              <td style={{ padding: "0.5rem", border: "1px solid #ccc" }}>
+                <Component importance="primary" anticipation="caution">Primary</Component>
+              </td>
+              <td style={{ padding: "0.5rem", border: "1px solid #ccc" }}>
+                <Component importance="primary" anticipation="destructive">Primary</Component>
+              </td>
+            </tr>
+            <tr>
+              <td style={{ padding: "0.5rem", border: "1px solid #ccc" }}>Secondary</td>
+              <td style={{ padding: "0.5rem", border: "1px solid #ccc" }}>
+                <Component importance="secondary">Secondary</Component>
+              </td>
+              <td style={{ padding: "0.5rem", border: "1px solid #ccc" }}>
+                <Component importance="secondary" anticipation="constructive">Secondary</Component>
+              </td>
+              <td style={{ padding: "0.5rem", border: "1px solid #ccc" }}>
+                <Component importance="secondary" anticipation="caution">Secondary</Component>
+              </td>
+              <td style={{ padding: "0.5rem", border: "1px solid #ccc" }}>
+                <Component importance="secondary" anticipation="destructive">Secondary</Component>
+              </td>
+            </tr>
+            <tr>
+              <td style={{ padding: "0.5rem", border: "1px solid #ccc" }}>Tertiary</td>
+              <td style={{ padding: "0.5rem", border: "1px solid #ccc" }}>
+                <Component importance="tertiary">Tertiary</Component>
+              </td>
+              <td style={{ padding: "0.5rem", border: "1px solid #ccc" }}>
+                <Component importance="tertiary" anticipation="constructive">Tertiary</Component>
+              </td>
+              <td style={{ padding: "0.5rem", border: "1px solid #ccc" }}>
+                <Component importance="tertiary" anticipation="caution">Tertiary</Component>
+              </td>
+              <td style={{ padding: "0.5rem", border: "1px solid #ccc" }}>
+                <Component importance="tertiary" anticipation="destructive">Tertiary</Component>
+              </td>
+            </tr>
+            <tr>
+              <td style={{ padding: "0.5rem", border: "1px solid #ccc" }}>No importance</td>
+              <td style={{ padding: "0.5rem", border: "1px solid #ccc" }}>
+                <Component>Default</Component>
+              </td>
+              <td style={{ padding: "0.5rem", border: "1px solid #ccc" }}>
+                <Component anticipation="constructive">Default</Component>
+              </td>
+              <td style={{ padding: "0.5rem", border: "1px solid #ccc" }}>
+                <Component anticipation="caution">Default</Component>
+              </td>
+              <td style={{ padding: "0.5rem", border: "1px solid #ccc" }}>
+                <Component anticipation="destructive">Default</Component>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    ),
+  ],
+  args: {
+    children: "Not rendered",
   },
 };

@@ -1,6 +1,9 @@
-/* component styles */
+/* ==========================================================================
+   Button Component Styles
+   ========================================================================== */
 
-/* component variables
+/*
+  Component variables:
     --button-color-background: background color of the button
     --button-color-background-hover: background color of the button on hover
     --button-color-background-active: background color of the button on active
@@ -17,16 +20,56 @@
     --button-font-size: font size of the button
     --button-font-weight: font weight of the button
     --button-line-height: line height of the button
+
+  Modifier variables (from importance):
+    --modifier-importance-background
+    --modifier-importance-background-hover
+    --modifier-importance-background-active
+    --modifier-importance-text
+    --modifier-importance-border
+    --modifier-importance-border-width
+
+  Modifier variables (from anticipation):
+    --modifier-color
+    --modifier-color-hover
+    --modifier-color-active
+    --modifier-color-text
+    --modifier-color-border
+    --modifier-color-border-hover
+    --modifier-color-border-active
 */
+
 .ds.button {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-horizontal-small, 0.5rem);
   cursor: pointer;
 
-  color: var(--modifier-color-text, var(--button-color-text));
-  background-color: var(--modifier-color, var(--button-color-background));
-  border-color: var(--modifier-color-border, var(--button-color-border));
+  /*
+    Color resolution order:
+    1. Anticipation modifier (--modifier-color-*) takes precedence for semantic coloring
+    2. Importance modifier (--modifier-importance-*) for hierarchy styling
+    3. Base button tokens as fallback
+  */
+  color: var(
+    --modifier-color-text,
+    var(--modifier-importance-text, var(--button-color-text))
+  );
+  background-color: var(
+    --modifier-color,
+    var(--modifier-importance-background, var(--button-color-background))
+  );
+  border-color: var(
+    --modifier-color-border,
+    var(--modifier-importance-border, var(--button-color-border))
+  );
   border-style: solid;
-  border-width: var(--button-border-width);
+  border-width: var(
+    --modifier-importance-border-width,
+    var(--button-border-width)
+  );
+
   font-size: var(--button-font-size);
   font-weight: var(--button-font-weight);
   line-height: var(--button-line-height);
@@ -35,29 +78,83 @@
   padding-block: var(--button-padding-vertical);
   padding-inline: var(--button-padding-horizontal);
 
-  text-align: left;
+  text-align: center;
   text-decoration: none;
 
-  /* component states */
-  &:hover {
+  /* Hover state */
+  &:hover:not(:disabled) {
     background-color: var(
       --modifier-color-hover,
-      var(--button-color-background-hover)
+      var(
+        --modifier-importance-background-hover,
+        var(--button-color-background-hover)
+      )
     );
     border-color: var(
       --modifier-color-border-hover,
-      var(--button-color-border-hover)
+      var(--modifier-importance-border, var(--button-color-border-hover))
     );
   }
 
-  &:active {
+  /* Active state */
+  &:active:not(:disabled) {
     background-color: var(
       --modifier-color-active,
-      var(--button-color-background-active)
+      var(
+        --modifier-importance-background-active,
+        var(--button-color-background-active)
+      )
     );
     border-color: var(
       --modifier-color-border-active,
-      var(--button-color-border-active)
+      var(--modifier-importance-border, var(--button-color-border-active))
     );
+  }
+
+  /* Disabled state */
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+}
+
+/* ==========================================================================
+   Icon Slot
+   ========================================================================== */
+
+.ds.button > .icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: var(--icon-size, 1em);
+  height: var(--icon-size, 1em);
+}
+
+/* ==========================================================================
+   Link Variant
+   ========================================================================== */
+
+.ds.button.link {
+  background-color: transparent;
+  border-color: transparent;
+  border-width: 0;
+  padding-inline: 0;
+  color: var(--tmp-color-text-link-default, currentColor);
+  text-decoration: underline;
+  text-underline-offset: var(--tmp-dimension-underline-offset-link, 0.075em);
+
+  &:hover:not(:disabled) {
+    background-color: transparent;
+    border-color: transparent;
+    text-decoration-thickness: var(
+      --tmp-dimension-decoration-thickness-link,
+      1px
+    );
+  }
+
+  &:active:not(:disabled) {
+    background-color: transparent;
+    border-color: transparent;
   }
 }

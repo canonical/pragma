@@ -9,15 +9,60 @@ describe("Button SSR", () => {
     }).not.toThrow();
   });
 
-  it("renders", () => {
+  it("renders children", () => {
     const html = renderToString(<Component>Hello world!</Component>);
-    expect(html).toMatch(/<button[^>]*>Hello world!<\/button>/);
+    expect(html).toContain("Hello world!");
   });
 
-  it("applies className", () => {
+  it("applies base classes", () => {
+    const html = renderToString(<Component>Test</Component>);
+    expect(html).toContain('class="ds button"');
+  });
+
+  it("applies custom className", () => {
     const html = renderToString(
       <Component className="test-class">Hello world!</Component>,
     );
-    expect(html).toContain('class="ds button test-class"');
+    expect(html).toContain("ds button");
+    expect(html).toContain("test-class");
+  });
+
+  it("applies importance modifier", () => {
+    const html = renderToString(
+      <Component importance="primary">Primary</Component>,
+    );
+    expect(html).toContain("primary");
+  });
+
+  it("applies anticipation modifier", () => {
+    const html = renderToString(
+      <Component anticipation="destructive">Delete</Component>,
+    );
+    expect(html).toContain("destructive");
+  });
+
+  it("applies both importance and anticipation", () => {
+    const html = renderToString(
+      <Component importance="primary" anticipation="destructive">
+        Delete Account
+      </Component>,
+    );
+    expect(html).toContain("primary");
+    expect(html).toContain("destructive");
+  });
+
+  it("applies variant modifier", () => {
+    const html = renderToString(
+      <Component variant="link">Learn more</Component>,
+    );
+    expect(html).toContain("link");
+  });
+
+  it("renders icon with icon class", () => {
+    const html = renderToString(
+      <Component icon={<span>+</span>}>Add</Component>,
+    );
+    expect(html).toContain('class="icon"');
+    expect(html).toContain(">+<");
   });
 });

@@ -1,3 +1,89 @@
+/* ==========================================================================
+   Anticipation Modifiers
+   Expected outcome of an action (constructive, caution, destructive)
+   ========================================================================== */
+
+.constructive {
+  --modifier-color: var(--color-background-positive-default);
+  --modifier-color-tinted: var(--color-background-positive-tinted-default);
+  --modifier-color-hover: var(--color-background-positive-hover);
+  --modifier-color-tinted-hover: var(--color-background-positive-tinted-hover);
+  --modifier-color-active: var(--color-background-positive-active);
+  --modifier-color-tinted-active: var(
+    --color-background-positive-tinted-active
+  );
+  --modifier-color-text: var(--color-background-positive-text);
+  --modifier-color-text-tinted: var(--color-text-default);
+  --modifier-color-border: var(--modifier-color);
+  --modifier-color-border-hover: var(--modifier-color-hover);
+  --modifier-color-border-active: var(--modifier-color-active);
+}
+
+.destructive {
+  --modifier-color: var(--color-background-negative-default);
+  --modifier-color-tinted: var(--color-background-negative-tinted-default);
+  --modifier-color-hover: var(--color-background-negative-hover);
+  --modifier-color-tinted-hover: var(--color-background-negative-tinted-hover);
+  --modifier-color-active: var(--color-background-negative-active);
+  --modifier-color-tinted-active: var(
+    --color-background-negative-tinted-active
+  );
+  --modifier-color-text: var(--color-background-negative-text);
+  --modifier-color-border: var(--modifier-color);
+  --modifier-color-border-hover: var(--modifier-color-hover);
+  --modifier-color-border-active: var(--modifier-color-active);
+}
+
+/* ==========================================================================
+   Importance Modifiers
+   Visual hierarchy (primary > secondary > tertiary)
+   ========================================================================== */
+
+.primary {
+  --modifier-importance-background: var(--tmp-color-button-primary-background);
+  --modifier-importance-background-hover: var(
+    --tmp-color-button-primary-background-hover
+  );
+  --modifier-importance-background-active: var(
+    --tmp-color-button-primary-background-active
+  );
+  --modifier-importance-text: var(--tmp-color-button-primary-text);
+  --modifier-importance-border: var(--tmp-color-button-primary-border);
+  --modifier-importance-border-width: var(--tmp-button-primary-border-width);
+}
+
+.secondary {
+  --modifier-importance-background: var(
+    --tmp-color-button-secondary-background
+  );
+  --modifier-importance-background-hover: var(
+    --tmp-color-button-secondary-background-hover
+  );
+  --modifier-importance-background-active: var(
+    --tmp-color-button-secondary-background-active
+  );
+  --modifier-importance-text: var(--tmp-color-button-secondary-text);
+  --modifier-importance-border: var(--tmp-color-button-secondary-border);
+  --modifier-importance-border-width: var(--tmp-button-secondary-border-width);
+}
+
+.tertiary {
+  --modifier-importance-background: var(--tmp-color-button-tertiary-background);
+  --modifier-importance-background-hover: var(
+    --tmp-color-button-tertiary-background-hover
+  );
+  --modifier-importance-background-active: var(
+    --tmp-color-button-tertiary-background-active
+  );
+  --modifier-importance-text: var(--tmp-color-button-tertiary-text);
+  --modifier-importance-border: var(--tmp-color-button-tertiary-border);
+  --modifier-importance-border-width: var(--tmp-button-tertiary-border-width);
+}
+
+/* ==========================================================================
+   Legacy Severity Intents (for backward compatibility)
+   ========================================================================== */
+
 /** severity intents */
 .positive {
   --modifier-color: var(--color-background-positive-default);
