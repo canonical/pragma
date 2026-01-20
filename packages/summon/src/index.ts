@@ -216,8 +216,11 @@ export type {
   StampOptions,
   TemplateDirOptions,
   TemplateOptions,
+  TemplatingEngine,
 } from "./template.js";
 export {
+  // Templating engine
+  ejsEngine,
   // Stamp utilities
   generateStamp,
   // Metadata
