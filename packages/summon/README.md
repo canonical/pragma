@@ -27,17 +27,20 @@ summon
 # Run a generator interactively
 summon component react
 
-# Pass answers as flags
+# Pass answers as positional argument (when supported)
+summon component react src/components/Button
+
+# Or as a flag
 summon component react --component-path=src/components/Button
 
 # Preview first (nothing written to disk)
-summon component react --component-path=src/components/Button --dry-run
+summon component react src/components/Button --dry-run
 
 # Show debug output
-summon component react --component-path=src/components/Button --verbose
+summon component react src/components/Button --verbose
 ```
 
-Every prompt becomes a CLI flag. Boolean prompts with `default: true` use the `--no-` prefix to disable.
+Every prompt becomes a CLI flag. Boolean prompts with `default: true` use the `--no-` prefix to disable. Generators may also define a **positional argument** for their primary input (like a path), allowing cleaner command invocations.
 
 ### CLI Options
 
@@ -92,6 +95,24 @@ To remove autocompletion:
 summon --cleanup-completion
 ```
 
+### Positional Arguments
+
+Generators can define one prompt as a **positional argument**, allowing users to provide the primary input without a flag:
+
+```bash
+# With positional argument support
+summon component react src/components/Button
+
+# Equivalent to
+summon component react --component-path=src/components/Button
+```
+
+Positional arguments also get filesystem path completion when using TAB:
+
+```bash
+summon component react src/comp<TAB>  # Completes to: src/components/
+```
+
 ### Installing Generator Packages
 
 Generator packages follow the naming convention `summon-*` or `@scope/summon-*`:
@@ -129,7 +150,8 @@ export const generator = {
   },
 
   prompts: [
-    { name: "name", type: "text", message: "Module name:" },
+    // positional: true allows `summon module src/utils` instead of `--name=src/utils`
+    { name: "name", type: "text", message: "Module name:", positional: true },
     { name: "withTests", type: "confirm", message: "Include tests?", default: true },
   ],
 
@@ -202,7 +224,7 @@ bun link        # for bun
 npm link        # for npm
 
 # Now available everywhere
-summon module --name=utils
+summon module src/utils
 ```
 
 Project-local packages (in `./node_modules`) take precedence over globally linked ones, so you can override with project-specific versions.

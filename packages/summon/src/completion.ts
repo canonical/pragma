@@ -267,10 +267,26 @@ const getCompletionsAtPosition = (
       return getArgumentCompletions(generatorInfo.prompts, line, lastArg);
     }
 
-    // If there are no subcommands and this is a leaf generator,
-    // suggest flags (user pressed TAB after the generator name)
+    // Check if this generator has a positional prompt
+    const positionalPrompt = generatorInfo.prompts.find((p) => p.positional);
+
+    // If there are no subcommands and this is a leaf generator
     if (subcommands.length === 0) {
-      // Pass showAll=true to show all flags even without -- prefix
+      // Count non-flag args after the generator path
+      const nonFlagArgs = args.filter((a) => !a.startsWith("-"));
+      const argsAfterGenerator = nonFlagArgs.length - pathSoFar.length;
+
+      // If we have a positional prompt and haven't provided the positional arg yet
+      if (positionalPrompt && argsAfterGenerator === 0) {
+        // If the positional is a path, provide path completions
+        if (isPathPrompt(positionalPrompt)) {
+          return getPathCompletions(lastArg || "");
+        }
+        // Otherwise show flags (they can type the positional or use flags)
+        return getArgumentCompletions(generatorInfo.prompts, line, "", true);
+      }
+
+      // If positional already provided or no positional, show flags
       return getArgumentCompletions(generatorInfo.prompts, line, "", true);
     }
 
