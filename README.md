@@ -1,6 +1,6 @@
 # Pragma
 
-Pragma is Canonical's design system implementation. It provides React components, CSS styles, and developer tooling for building consistent user interfaces across Canonical's web properties.
+Pragma is Canonical's implementation of the [Design System](https://github.com/canonical/design-system). It provides components, CSS styles, and developer tooling for building consistent user interfaces across Canonical's web properties. React and Svelte 5 are the supported frameworks.
 
 ## Quick Start
 
@@ -23,15 +23,29 @@ The server starts at http://localhost:6006. Each component package has its own S
 
 ## Prerequisites
 
-Pragma requires Bun 1.3 or later for package management and script execution. Bun handles workspace resolution, dependency installation, and runs significantly faster than npm or yarn for these operations.
+**Required:**
 
-Node.js 22 or 24 is also required because Storybook and Lerna depend on Node internals that Bun does not yet fully support. Node 23 has a [known compatibility issue](https://github.com/canonical/pragma/issues/226) and should be avoided.
+- **React 19** or later for component packages (Svelte 5 for Svelte packages)
+- **Bun 1.3** or later for package management and script execution
+- **Node.js 22.12 or 24** because Storybook and Lerna depend on Node internals that Bun does not yet fully support. Node 22.12 specifically is required as earlier 22.x versions have module resolution issues.
+
+Node 23 has a [known compatibility issue](https://github.com/canonical/pragma/issues/226) and should be avoided.
+
+**Recommended:**
+
+- **MCP-capable environment** such as Claude Code, Cursor, or Windsurf. The repository includes an `.mcp.json` configuration that enables AI assistants to query the codebase semantically, access Nx workspace intelligence, and retrieve up-to-date documentation.
+
+**Nice to have:**
+
+- **Lerna installed globally** (`npm install -g lerna`) for running workspace-wide commands directly
 
 Install Bun with `curl -fsSL https://bun.sh/install | bash`. Install Node via nvm with `nvm install 24 && nvm use 24`.
 
 ## Repository Structure
 
 The monorepo uses Lerna for versioning and publishing, with Nx providing task caching and dependency-aware execution. All packages share a single version number (currently 0.11.0) to eliminate compatibility matrices between internal dependencies.
+
+A guiding principle throughout the codebase is that structure should be discoverable by both humans and machines. This means explicit conventions rather than hidden magic, schema-validated configurations, and specifications expressed as queryable data where possible.
 
 ### Component Tiers
 
@@ -44,7 +58,7 @@ React components are organised into tiers based on their scope of applicability.
 | Apps | `@canonical/react-ds-app` | Application-level UI such as Navigation and Toolbar, suited for internal tools. |
 | Apps/WPE | `@canonical/react-ds-app-launchpad` | Components specific to Launchpad and WordPress Engine applications. |
 
-The tiers correspond to the [Design System Ontology](https://github.com/canonical/design-system), which provides the authoritative specification for each component including usage guidelines, modifier families, and anatomy definitions.
+The tiers correspond to the [Design System Ontology](https://github.com/canonical/design-system), which models the design system as structured, queryable data. Each component has a formal specification including usage guidelines, modifier families, and anatomy definitions. This semantic approach enables tooling to understand design intent, not just implementation details.
 
 ### Core Infrastructure
 
@@ -68,7 +82,7 @@ Component styles live with their components rather than in the styles packages. 
 
 ### Developer Tooling
 
-**@canonical/webarchitect** validates that packages conform to architectural standards. It uses JSON Schema-based rulesets to verify package.json structure, TypeScript configuration, Biome setup, and license compliance. Every package runs `bun run check:webarchitect` as part of its check script.
+**@canonical/webarchitect** validates that packages conform to architectural standards. Rather than enforcing conventions through runtime magic, it uses JSON Schema-based rulesets to verify package.json structure, TypeScript configuration, Biome setup, and license compliance. Every package runs `bun run check:webarchitect` as part of its check script. The schemas serve as executable documentation: they describe what valid structure looks like while simultaneously enforcing it.
 
 Three rulesets cover the common cases. The `library` ruleset enforces LGPL-3.0 licensing for reusable packages. The `tool` ruleset enforces GPL-3.0 for CLI tools and applications. The `tool-ts` ruleset handles TypeScript-only tools that run directly with Bun without a build step.
 

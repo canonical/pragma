@@ -16,18 +16,30 @@ import type { MswGlobals, MswParameter } from "./types.js";
 
 // Singleton worker instance
 let worker: SetupWorker | null = null;
-let workerPromise: Promise<SetupWorker> | null = null;
+let workerPromise: Promise<SetupWorker | null> | null = null;
 
-const initializeWorker = async (): Promise<SetupWorker> => {
-  if (!worker) {
-    worker = setupWorker();
-    await worker.start({
-      serviceWorker: { url: "/mockServiceWorker.js" },
-      onUnhandledRequest: "bypass",
-    });
-    workerPromise = Promise.resolve(worker);
+const initializeWorker = async (): Promise<SetupWorker | null> => {
+  if (workerPromise) {
+    return workerPromise;
   }
-  return workerPromise as Promise<SetupWorker>;
+
+  workerPromise = (async () => {
+    try {
+      worker = setupWorker();
+      await worker.start({
+        serviceWorker: { url: "/mockServiceWorker.js" },
+        onUnhandledRequest: "bypass",
+      });
+      return worker;
+    } catch (error) {
+      console.warn("[MSW Addon] Failed to initialize worker:", error);
+      worker = null;
+      workerPromise = null;
+      return null;
+    }
+  })();
+
+  return workerPromise;
 };
 
 export const withMSW = (StoryFn: StoryFunction<Renderer>) => {
@@ -56,6 +68,12 @@ export const withMSW = (StoryFn: StoryFunction<Renderer>) => {
     const setupHandlers = async () => {
       const activeWorker = await initializeWorker();
       if (cancelled) return;
+
+      // If worker failed to initialize, just mark as ready and continue without MSW
+      if (!activeWorker) {
+        setIsWorkerReady(true);
+        return;
+      }
 
       const currentHandlers = handlersRef.current;
       if (currentHandlers && currentHandlers.length > 0) {

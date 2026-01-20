@@ -106,9 +106,23 @@ This pattern keeps components focused and independently testable. Each subcompon
 
 ---
 
+## VIII. Structured Data Over Prose
+
+Documentation written in prose is valuable for human readers but opaque to tooling. When specifications exist only as paragraphs in markdown files, tools cannot query them, validate against them, or use them to generate code. The knowledge is locked in a format that requires human interpretation.
+
+Pragma expresses specifications as structured, queryable data wherever practical. The [Design System Ontology](https://github.com/canonical/design-system) models components, modifiers, tiers, and usage guidelines as RDF that can be queried with SPARQL. Code standards are semantic data, not just prose rules. Architecture validation uses JSON Schema rulesets that serve as both documentation and enforcement.
+
+This approach has a specific benefit: AI assistants and other tools can understand the codebase at a semantic level. An AI agent working with Pragma can query which components belong to which tier, what modifier families a component supports, or whether a package structure conforms to standards. The `.mcp.json` configuration exposes this structured knowledge through Model Context Protocol servers.
+
+The principle does not mean abandoning prose. Human-readable documentation remains essential for explaining rationale, providing examples, and guiding newcomers. But where specifications need to be precise, consistent, and machine-actionable, we express them as data first and generate prose from that data when needed.
+
+The cost is additional tooling and a steeper learning curve for contributors unfamiliar with semantic technologies. We accept this cost because structured specifications eliminate ambiguity, enable automation, and make the codebase navigable by both humans and machines.
+
+---
+
 ## Summary
 
-These principles form a coherent approach to building maintainable software. Explicitness enables understanding. Conventions enable predictability. Restraint with abstraction enables evolution. Clarity enables optimisation when needed. Modern platforms enable clean code. Types enable documentation. Composition enables flexibility.
+These principles form a coherent approach to building maintainable software. Explicitness enables understanding. Conventions enable predictability. Restraint with abstraction enables evolution. Clarity enables optimisation when needed. Modern platforms enable clean code. Types enable documentation. Composition enables flexibility. Structured data enables automation and machine understanding.
 
 The principles sometimes tension with each other. Explicitness can conflict with DRY when extracting repeated code would hide the explicit structure. Conventions can conflict with no-magic when enforcing conventions automatically. In these cases, we resolve the tension by preferring the principle that keeps behaviour visible and code understandable.
 
