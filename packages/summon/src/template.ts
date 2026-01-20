@@ -1,8 +1,11 @@
 /**
  * Template Engine
  *
- * This module provides EJS-based template rendering utilities for generators.
+ * This module provides template rendering utilities for generators.
  * Templates are a key part of code generation, allowing dynamic file creation.
+ *
+ * By default uses EJS, but supports custom templating engines via the
+ * TemplatingEngine interface.
  */
 
 import * as path from "node:path";
@@ -11,6 +14,72 @@ import { sequence_ } from "./combinators.js";
 import { glob, mkdir, readFile, writeFile } from "./primitives.js";
 import { task } from "./task.js";
 import type { Task } from "./types.js";
+
+// =============================================================================
+// Templating Engine Interface
+// =============================================================================
+
+/**
+ * Abstract interface for templating engines.
+ *
+ * Implement this interface to use alternative template engines
+ * (e.g., Handlebars, Mustache, Nunjucks) with the summon generator.
+ *
+ * @example
+ * ```ts
+ * const handlebarsEngine: TemplatingEngine = {
+ *   render: (tpl, vars) => Handlebars.compile(tpl)(vars),
+ *   renderAsync: async (tpl, vars) => Handlebars.compile(tpl)(vars),
+ *   renderFile: async (path, vars) => {
+ *     const tpl = await fs.readFile(path, "utf-8");
+ *     return Handlebars.compile(tpl)(vars);
+ *   },
+ * };
+ * ```
+ */
+export interface TemplatingEngine {
+  /**
+   * Render a template string with variables (synchronous).
+   * Used for quick inline rendering like destination paths.
+   */
+  render(template: string, vars: Record<string, unknown>): string;
+
+  /**
+   * Render a template string with variables (asynchronous).
+   * Useful when templates may include async operations.
+   */
+  renderAsync(template: string, vars: Record<string, unknown>): Promise<string>;
+
+  /**
+   * Render a template file with variables (asynchronous).
+   * Implementations may leverage caching or streaming.
+   */
+  renderFile(
+    templatePath: string,
+    vars: Record<string, unknown>,
+  ): Promise<string>;
+}
+
+// =============================================================================
+// EJS Engine Implementation
+// =============================================================================
+
+/**
+ * Default EJS templating engine implementation.
+ */
+export const ejsEngine: TemplatingEngine = {
+  render(template, vars) {
+    return ejs.render(template, vars, { async: false });
+  },
+
+  async renderAsync(template, vars) {
+    return ejs.render(template, vars, { async: true }) as Promise<string>;
+  },
+
+  async renderFile(templatePath, vars) {
+    return ejs.renderFile(templatePath, vars, { async: true });
+  },
+};
 
 // =============================================================================
 // Stamp Options
@@ -34,6 +103,8 @@ export interface TemplateOptions {
   dest: string;
   /** Variables to pass to the template */
   vars: Record<string, unknown>;
+  /** Templating engine to use (defaults to EJS) */
+  engine?: TemplatingEngine;
 }
 
 export interface TemplateDirOptions {
@@ -49,6 +120,8 @@ export interface TemplateDirOptions {
   ignore?: string[];
   /** Content transformers by file extension or name */
   transform?: Record<string, (content: string) => string>;
+  /** Templating engine to use (defaults to EJS) */
+  engine?: TemplatingEngine;
 }
 
 // =============================================================================
@@ -57,22 +130,26 @@ export interface TemplateDirOptions {
 
 /**
  * Render a template string with variables.
+ * @param engine - Templating engine to use (defaults to EJS)
  */
 export const renderString = (
   template: string,
   vars: Record<string, unknown>,
+  engine: TemplatingEngine = ejsEngine,
 ): string => {
-  return ejs.render(template, vars, { async: false });
+  return engine.render(template, vars);
 };
 
 /**
  * Render a template string asynchronously.
+ * @param engine - Templating engine to use (defaults to EJS)
  */
 export const renderStringAsync = async (
   template: string,
   vars: Record<string, unknown>,
+  engine: TemplatingEngine = ejsEngine,
 ): Promise<string> => {
-  return ejs.render(template, vars, { async: true }) as Promise<string>;
+  return engine.renderAsync(template, vars);
 };
 
 // =============================================================================
@@ -81,12 +158,14 @@ export const renderStringAsync = async (
 
 /**
  * Render a template file with variables.
+ * @param engine - Templating engine to use (defaults to EJS)
  */
 export const renderFile = async (
   templatePath: string,
   vars: Record<string, unknown>,
+  engine: TemplatingEngine = ejsEngine,
 ): Promise<string> => {
-  return ejs.renderFile(templatePath, vars, { async: true });
+  return engine.renderFile(templatePath, vars);
 };
 
 // =============================================================================
@@ -97,13 +176,15 @@ export const renderFile = async (
  * Render a single template file to a destination.
  */
 export const template = (options: TemplateOptions): Task<void> => {
+  const engine = options.engine ?? ejsEngine;
+
   // Render destination path with variables
-  const destPath = renderString(options.dest, options.vars);
+  const destPath = renderString(options.dest, options.vars, engine);
   const destDir = path.dirname(destPath);
 
   return task(mkdir(destDir))
     .chain(() => task(readFile(options.source)))
-    .map((content) => renderString(content, options.vars))
+    .map((content) => renderString(content, options.vars, engine))
     .chain((rendered) => task(writeFile(destPath, rendered)))
     .unwrap();
 };
@@ -112,6 +193,8 @@ export const template = (options: TemplateOptions): Task<void> => {
  * Render a directory of templates to a destination.
  */
 export const templateDir = (options: TemplateDirOptions): Task<void> => {
+  const engine = options.engine ?? ejsEngine;
+
   return task(glob("**/*", options.source))
     .chain((files) => {
       const tasks = files
@@ -134,13 +217,14 @@ export const templateDir = (options: TemplateDirOptions): Task<void> => {
           }
 
           // Render destination path with variables
-          destFile = renderString(destFile, options.vars);
+          destFile = renderString(destFile, options.vars, engine);
           const destPath = path.join(options.dest, destFile);
 
           return template({
             source: sourcePath,
             dest: destPath,
             vars: options.vars,
+            engine,
           });
         });
 
