@@ -1,4 +1,5 @@
 import type React from "react";
+import { getItemId } from "@canonical/ds-types";
 import { Item } from "./common/index.js";
 import type { BreadcrumbsProps } from "./types.js";
 import "./styles.css";
@@ -18,21 +19,36 @@ const componentCssClassName = "ds breadcrumbs";
  * @implements ds:global.pattern.breadcrumbs
  */
 const Breadcrumbs = ({
-  children,
-  className,
-  "aria-label": ariaLabel = "Breadcrumb",
-  ...props
+	items,
+	separator = "/",
+	LinkComponent = "a",
+	className,
+	"aria-label": ariaLabel = "Breadcrumb",
+	...props
 }: BreadcrumbsProps): React.ReactElement => (
-  <nav
-    className={[componentCssClassName, className].filter(Boolean).join(" ")}
-    aria-label={ariaLabel}
-    {...props}
-  >
-    <ol className="breadcrumbs-list">
-      {/* DSL edges[0]: breadcrumbs-item (cardinality: 1..*) */}
-      {children}
-    </ol>
-  </nav>
+	<nav
+		className={[componentCssClassName, className].filter(Boolean).join(" ")}
+		aria-label={ariaLabel}
+		{...props}
+	>
+		<ol className="list">
+			{items.map((item) => {
+				const key = getItemId(item);
+				const ItemComponent = item.Component ?? Item;
+
+				// Switch: use custom Component or default Item
+				// Each item is spread onto the component
+				return (
+					<ItemComponent
+						key={key}
+						separator={separator}
+						LinkComponent={LinkComponent}
+						{...item}
+					/>
+				);
+			})}
+		</ol>
+	</nav>
 );
 
 Breadcrumbs.Item = Item;

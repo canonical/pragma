@@ -3,7 +3,7 @@
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#>.
 @prefix ds: <https://ds.canonical.com/>.
 
-ds:implementation.library.pragma-ds-types ds:hasImplementation [
+ds:implementation.library.canonical-ds-types ds:hasImplementation [
         a ds:ImplementationObject;
         ds:implementsBlock ds:global.modifier_family.anticipation;
         ds:headLink "src/modifierFamilies/constants.ts"

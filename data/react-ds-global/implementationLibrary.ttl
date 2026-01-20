@@ -3,10 +3,9 @@
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#>.
 @prefix ds: <https://ds.canonical.com/>.
 
-ds:implementation.library.pragma-react-ds-global a ds:ImplementationLibrary;
-    ds:libraryName "Pragma React DS-Global";
+ds:implementation.library.canonical-react-ds-global a ds:ImplementationLibrary;
+    ds:libraryName "@canonical/react-ds-global";
     ds:platform "react";
     ds:link "https://github.com/canonical/pragma/tree/main/packages/react/ds-global";
-    ds:libraryDescription "React implementation of the Pragma design system - Global tier";
     ds:documentation "https://pragma.canonical.com/react";
     ds:libraryTier ds:global.

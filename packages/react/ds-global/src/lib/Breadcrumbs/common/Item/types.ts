@@ -1,37 +1,42 @@
-import type { HTMLAttributes, ReactNode } from "react";
+import type { ComponentType, HTMLAttributes, ReactNode } from "react";
+import type { Item } from "@canonical/ds-types";
+
+/**
+ * Props passed to custom Link components
+ */
+export interface LinkComponentProps {
+	href?: string;
+	className?: string;
+	children?: ReactNode;
+}
 
 /**
  * Props for the Breadcrumbs.Item subcomponent
  *
- * @implements dso:global.subcomponent.breadcrumbs-item
+ * Extends navigation Item (WD405) with breadcrumb-specific props.
  *
- * Anatomy (from DSL):
- * - layout.type: flow
- * - layout.direction: horizontal
- * - layout.align: center
- * - edges:
- *   - [0] link (role: link, cardinality: 1, slotName: default)
- *   - [1] separator (role: separator, cardinality: 0..1)
+ * @implements dso:global.subcomponent.breadcrumbs-item
  */
-export interface ItemProps extends HTMLAttributes<HTMLLIElement> {
-  /**
-   * The link content (text or element)
-   * Maps to DSL role: link (cardinality: 1, slotName: default)
-   */
-  children: ReactNode;
-  /**
-   * URL for the breadcrumb link
-   */
-  href?: string;
-  /**
-   * Whether this is the current/active breadcrumb
-   * When true, renders as text instead of link
-   */
-  current?: boolean;
-  /**
-   * Custom separator character or element
-   * Maps to DSL role: separator (cardinality: 0..1)
-   * @default "/"
-   */
-  separator?: ReactNode;
+export interface ItemProps extends HTMLAttributes<HTMLLIElement>, Item {
+	/**
+	 * The link content (text or element)
+	 * Falls back to `label` from Item if not provided
+	 */
+	children?: ReactNode;
+	/**
+	 * Whether this is the current/active breadcrumb
+	 * When true, renders as text instead of link
+	 */
+	current?: boolean;
+	/**
+	 * Custom separator character or element
+	 * @default "/"
+	 */
+	separator?: ReactNode;
+	/**
+	 * Custom link component for router integration
+	 * e.g. Next.js Link, React Router Link
+	 * @default "a"
+	 */
+	LinkComponent?: ComponentType<LinkComponentProps> | "a";
 }

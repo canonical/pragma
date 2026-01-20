@@ -1,0 +1,18 @@
+{
+  "$schema": "./scripts/ds-config.schema.json",
+  "prefix": {
+    "short": "ds",
+    "namespace": "https://ds.canonical.com/"
+  },
+  "repository": "https://github.com/canonical/pragma",
+  "documentationBase": "https://pragma.canonical.com",
+  "defaults": {
+    "outputDir": "data",
+    "patterns": {
+      "typescript": "src/**/*.ts",
+      "react": "src/**/*.tsx",
+      "vue": "src/**/*.vue",
+      "svelte": "src/**/*.svelte"
+    }
+  }
+}

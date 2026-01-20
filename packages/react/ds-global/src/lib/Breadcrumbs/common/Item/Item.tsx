@@ -5,44 +5,56 @@ import "./styles.css";
 const componentCssClassName = "ds breadcrumbs-item";
 
 /**
- * Breadcrumbs.Item subcomponent
+ * Default breadcrumb item renderer.
  *
- * A single breadcrumb item with link and separator.
- * DOM order per DSL: [0] link, [1] separator
- * The separator is hidden on the last item via CSS :last-of-type.
+ * Can be replaced by providing a custom Component in the Item
+ * that satisfies ItemProps.
  *
  * @implements ds:global.subcomponent.breadcrumbs-item
  */
 const Item = ({
-  children,
-  href,
-  current = false,
-  separator = "/",
-  className,
-  ...props
-}: ItemProps): React.ReactElement => (
-  <li
-    className={[componentCssClassName, current && "current", className]
-      .filter(Boolean)
-      .join(" ")}
-    {...props}
-  >
-    {/* edges[0]: link (cardinality: 1, slotName: default) */}
-    {current ? (
-      <span className="breadcrumbs-item-link" aria-current="page">
-        {children}
-      </span>
-    ) : (
-      <a className="breadcrumbs-item-link" href={href}>
-        {children}
-      </a>
-    )}
-    {/* edges[1]: separator - hidden on last item via CSS */}
-    <span className="breadcrumbs-item-separator" aria-hidden="true">
-      {separator}
-    </span>
-  </li>
-);
+	children,
+	label,
+	url,
+	current = false,
+	separator = "/",
+	disabled = false,
+	className,
+	LinkComponent = "a",
+	// Destructure Item props we don't spread to DOM
+	key: _key,
+	items: _items,
+	displayItemsType: _displayItemsType,
+	Component: _Component,
+	...props
+}: ItemProps): React.ReactElement => {
+	const content = children ?? label;
+	const Link = LinkComponent;
+
+	return (
+		<li
+			className={[componentCssClassName, current && "current", className]
+				.filter(Boolean)
+				.join(" ")}
+			{...props}
+		>
+			{/* edges[0]: link (cardinality: 1, slotName: default) */}
+			{current || disabled ? (
+				<span className="link" aria-current={current ? "page" : undefined}>
+					{content}
+				</span>
+			) : (
+				<Link className="link" href={url}>
+					{content}
+				</Link>
+			)}
+			{/* edges[1]: separator - hidden on last item via CSS */}
+			<span className="separator" aria-hidden="true">
+				{separator}
+			</span>
+		</li>
+	);
+};
 
 Item.displayName = "Breadcrumbs.Item";
 

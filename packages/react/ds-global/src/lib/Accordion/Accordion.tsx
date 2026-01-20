@@ -6,25 +6,12 @@ import "./styles.css";
 const componentCssClassName = "ds accordion";
 
 /**
- * Accordion component
- *
- * A vertically stacked content area which can be collapsed and expanded
- * to reveal or hide its contents. Each Accordion.Item can be opened or
- * closed independently of its surrounding counterparts.
+ * The accordion is a vertically stacked content area which can be collapsed
+ * and expanded to reveal or hide its contents. An Accordion.Item can be opened
+ * or closed independently of its surrounding counterparts (i.e: multiple
+ * accordions can be open at the same time).
  *
  * @implements ds:global.component.accordion
- *
- * @example
- * ```tsx
- * <Accordion>
- *   <Accordion.Item heading="Section 1" expanded>
- *     Content for section 1
- *   </Accordion.Item>
- *   <Accordion.Item heading="Section 2">
- *     Content for section 2
- *   </Accordion.Item>
- * </Accordion>
- * ```
  */
 const Accordion = ({
   className,

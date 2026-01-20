@@ -1,14 +1,4 @@
 {
-  "name": "Pragma DS-Types",
   "platform": "typescript",
-  "description": "TypeScript types and constants for Pragma design system modifier families",
-  "link": "https://github.com/canonical/pragma/tree/main/packages/ds-types",
-  "documentation": "https://pragma.canonical.com/types",
-  "tier": "ds:global",
-  "prefix": {
-    "short": "ds",
-    "namespace": "https://ds.canonical.com/"
-  },
-  "pattern": "src/**/*.ts",
-  "outputDir": "data"
+  "tier": "ds:global"
 }

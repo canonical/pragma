@@ -10,19 +10,19 @@
 .ds.breadcrumbs {
   /* Typography */
   font-size: var(--breadcrumbs-font-size, var(--font-size-small, 0.875rem));
-}
 
-.ds.breadcrumbs .breadcrumbs-list {
-  /* layout.type: flow, layout.direction: horizontal */
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
+  & > .list {
+    /* layout.type: flow, layout.direction: horizontal */
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
 
-  /* layout.align: center */
-  align-items: center;
+    /* layout.align: center */
+    align-items: center;
 
-  /* Reset list styles */
-  margin: 0;
-  padding: 0;
-  list-style: none;
+    /* Reset list styles */
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
 }
