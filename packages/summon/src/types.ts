@@ -314,6 +314,23 @@ export interface GeneratorMeta {
  *
  * Each prompt becomes a CLI flag. The prompt name is converted to kebab-case
  * for the flag (e.g., `componentPath` → `--component-path`).
+ *
+ * Prompts can also be positional arguments by setting `positional: true`.
+ * Only text prompts can be positional, and only one prompt per generator
+ * should be marked as positional.
+ *
+ * @example
+ * ```typescript
+ * // Positional argument - can be used as:
+ * // summon component react src/components/Button
+ * // or: summon component react --component-path=src/components/Button
+ * {
+ *   name: "componentPath",
+ *   type: "text",
+ *   message: "Component path:",
+ *   positional: true,
+ * }
+ * ```
  */
 export interface PromptDefinition {
   /** Unique identifier, used as answer key and CLI flag name */
@@ -335,6 +352,20 @@ export interface PromptDefinition {
    * Options without a group appear under "Options".
    */
   group?: string;
+  /**
+   * If true, this prompt can be provided as a positional argument.
+   * Only one prompt per generator should be positional.
+   * Only text prompts can be positional.
+   *
+   * @example
+   * ```bash
+   * # With positional: true on componentPath
+   * summon component react src/components/Button
+   * # Equivalent to:
+   * summon component react --component-path=src/components/Button
+   * ```
+   */
+  positional?: boolean;
 }
 
 /**

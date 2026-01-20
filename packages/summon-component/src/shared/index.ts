@@ -120,7 +120,12 @@ export const appendExportToParentIndex = (
 import type { PromptDefinition } from "@canonical/summon";
 
 /**
- * Create component path prompt with framework-specific defaults
+ * Create component path prompt with framework-specific defaults.
+ *
+ * This prompt is marked as positional, allowing users to run:
+ *   summon component react src/components/Button
+ * instead of:
+ *   summon component react --component-path=src/components/Button
  */
 export const createComponentPathPrompt = (
   framework: Framework,
@@ -134,6 +139,7 @@ export const createComponentPathPrompt = (
       : "src/lib/components/MyComponent",
   validate: validateComponentPath,
   group: "Component",
+  positional: true,
 });
 
 /**

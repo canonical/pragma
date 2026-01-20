@@ -1051,9 +1051,19 @@ const registerFromBarrel = (rootCmd: Command, barrel: CommandEntry[]): void => {
     const parentCmd = commandMap.get(parentPath) ?? rootCmd;
 
     if (entry.generator) {
+      // Check if there's a positional prompt
+      const positionalPrompt = entry.generator.prompts.find(
+        (p) => p.positional,
+      );
+
       // Create runnable generator command
+      // If there's a positional prompt, add it as an optional argument
+      const commandSpec = positionalPrompt
+        ? `${name} [${toKebabCase(positionalPrompt.name)}]`
+        : name;
+
       const cmd = parentCmd
-        .command(name)
+        .command(commandSpec)
         .description(entry.generator.meta.description)
         .option("-d, --dry-run", "Preview without writing files")
         .option("-y, --yes", "Skip confirmation prompts")
@@ -1064,7 +1074,13 @@ const registerFromBarrel = (rootCmd: Command, barrel: CommandEntry[]): void => {
           "Disable generated file stamp comments",
         );
 
-      configureGeneratorCommand(cmd, entry.generator);
+      // Set custom usage to show positional arg before [options]
+      if (positionalPrompt) {
+        const positionalName = toKebabCase(positionalPrompt.name);
+        cmd.usage(`[${positionalName}] [options]`);
+      }
+
+      configureGeneratorCommand(cmd, entry.generator, positionalPrompt);
       commandMap.set(currentPath, cmd);
     } else {
       // Create namespace-only command (just a container for subcommands)
@@ -1083,6 +1099,7 @@ const registerFromBarrel = (rootCmd: Command, barrel: CommandEntry[]): void => {
 const configureGeneratorCommand = (
   cmd: Command,
   generator: GeneratorDefinition,
+  positionalPrompt?: PromptDefinition,
 ): void => {
   // Add prompt-based options
   addPromptOptions(cmd, generator.prompts);
@@ -1091,89 +1108,121 @@ const configureGeneratorCommand = (
   configureGroupedHelp(cmd, generator.prompts);
 
   // Add action
-  cmd.action(async (cmdOptions: Record<string, unknown>) => {
-    // Extract only explicitly provided CLI answers (not defaults)
-    const cliAnswers = extractAnswers(cmdOptions, generator.prompts);
-    // Apply defaults for checking if we have all required answers
-    const answersWithDefaults = applyDefaults(generator.prompts, cliAnswers);
+  // If there's a positional prompt, the first argument is the positional value
+  cmd.action(
+    async (
+      positionalArg: string | Record<string, unknown> | undefined,
+      cmdOptions?: Record<string, unknown>,
+    ) => {
+      // Commander passes different argument patterns:
+      // - No positional defined: (options)
+      // - Positional defined, value provided: (positionalValue, options)
+      // - Positional defined, no value: (undefined, options)
+      let actualOptions: Record<string, unknown>;
 
-    // Determine execution mode
-    const hasAllAnswers = hasAllRequiredAnswers(
-      generator.prompts,
-      answersWithDefaults,
-    );
-    const isTTY = process.stdin.isTTY === true;
-    const skipPrompts = cmdOptions.yes === true;
+      if (positionalPrompt) {
+        // When there's a positional prompt, cmdOptions is always the second arg
+        actualOptions = cmdOptions ?? {};
+      } else {
+        // When there's no positional prompt, the first arg is options
+        actualOptions = (positionalArg as Record<string, unknown>) ?? {};
+      }
 
-    // Build stamp config if stamps are enabled (default: enabled)
-    // Commander's --no-X pattern sets generatedStamp to false when --no-generated-stamp is used
-    const stampEnabled = cmdOptions.generatedStamp !== false;
-    const stamp: StampConfig | undefined = stampEnabled
-      ? {
-          generator: generator.meta.name,
-          version: generator.meta.version,
-        }
-      : undefined;
+      // Extract only explicitly provided CLI answers (not defaults)
+      const cliAnswers = extractAnswers(actualOptions, generator.prompts);
 
-    if (hasAllAnswers && cmdOptions.dryRun && !isTTY) {
-      // Batch dry-run mode (non-interactive)
-      const { dryRun } = await import("./dry-run.js");
-      const { isVisibleEffect, formatEffectLine } = await import(
-        "./cli-format.js"
+      // If positional argument was provided, add it to the answers
+      if (
+        positionalPrompt &&
+        typeof positionalArg === "string" &&
+        positionalArg
+      ) {
+        cliAnswers[positionalPrompt.name] = positionalArg;
+      }
+
+      // Apply defaults for checking if we have all required answers
+      const answersWithDefaults = applyDefaults(generator.prompts, cliAnswers);
+
+      // Determine execution mode
+      const hasAllAnswers = hasAllRequiredAnswers(
+        generator.prompts,
+        answersWithDefaults,
       );
+      const isTTY = process.stdin.isTTY === true;
+      const skipPrompts = actualOptions.yes === true;
 
-      const verbose = cmdOptions.verbose === true;
+      // Build stamp config if stamps are enabled (default: enabled)
+      // Commander's --no-X pattern sets generatedStamp to false when --no-generated-stamp is used
+      const stampEnabled = actualOptions.generatedStamp !== false;
+      const stamp: StampConfig | undefined = stampEnabled
+        ? {
+            generator: generator.meta.name,
+            version: generator.meta.version,
+          }
+        : undefined;
 
-      console.log();
-      console.log(chalk.bold.magenta(generator.meta.name));
-      console.log(chalk.dim(generator.meta.description));
-      console.log();
+      if (hasAllAnswers && actualOptions.dryRun && !isTTY) {
+        // Batch dry-run mode (non-interactive)
+        const { dryRun } = await import("./dry-run.js");
+        const { isVisibleEffect, formatEffectLine } = await import(
+          "./cli-format.js"
+        );
 
-      const task = generator.generate(answersWithDefaults);
-      const result = dryRun(task);
+        const verbose = actualOptions.verbose === true;
 
-      // Filter and deduplicate effects
-      const seenDirPaths = new Set<string>();
-      const visibleEffects = result.effects.filter((e) => {
-        if (!isVisibleEffect(e, verbose)) return false;
-        if (e._tag === "MakeDir") {
-          if (seenDirPaths.has(e.path)) return false;
-          seenDirPaths.add(e.path);
-        }
-        return true;
-      });
+        console.log();
+        console.log(chalk.bold.magenta(generator.meta.name));
+        console.log(chalk.dim(generator.meta.description));
+        console.log();
 
-      console.log(chalk.dim.bold("Plan:"));
-      visibleEffects.forEach((effect, index) => {
-        const isLast = index === visibleEffects.length - 1;
-        console.log(formatEffectLine(effect, isLast));
-      });
+        const task = generator.generate(answersWithDefaults);
+        const result = dryRun(task);
 
-      console.log();
-      console.log(chalk.dim("Dry-run complete. No files were modified."));
-    } else {
-      // Interactive mode
-      // Only pass answers if:
-      // 1. User explicitly used --yes to skip prompts, OR
-      // 2. User provided CLI arguments (not just defaults)
-      const shouldSkipPrompts =
-        skipPrompts || Object.keys(cliAnswers).length > 0;
-      const passedAnswers = shouldSkipPrompts ? answersWithDefaults : undefined;
+        // Filter and deduplicate effects
+        const seenDirPaths = new Set<string>();
+        const visibleEffects = result.effects.filter((e) => {
+          if (!isVisibleEffect(e, verbose)) return false;
+          if (e._tag === "MakeDir") {
+            if (seenDirPaths.has(e.path)) return false;
+            seenDirPaths.add(e.path);
+          }
+          return true;
+        });
 
-      const { waitUntilExit } = render(
-        <App
-          generator={generator}
-          preview={cmdOptions.preview as boolean}
-          dryRunOnly={cmdOptions.dryRun as boolean}
-          verbose={cmdOptions.verbose as boolean}
-          answers={passedAnswers}
-          stamp={stamp}
-        />,
-      );
+        console.log(chalk.dim.bold("Plan:"));
+        visibleEffects.forEach((effect, index) => {
+          const isLast = index === visibleEffects.length - 1;
+          console.log(formatEffectLine(effect, isLast));
+        });
 
-      await waitUntilExit();
-    }
-  });
+        console.log();
+        console.log(chalk.dim("Dry-run complete. No files were modified."));
+      } else {
+        // Interactive mode
+        // Only pass answers if:
+        // 1. User explicitly used --yes to skip prompts, OR
+        // 2. User provided CLI arguments (not just defaults)
+        const shouldSkipPrompts =
+          skipPrompts || Object.keys(cliAnswers).length > 0;
+        const passedAnswers = shouldSkipPrompts
+          ? answersWithDefaults
+          : undefined;
+
+        const { waitUntilExit } = render(
+          <App
+            generator={generator}
+            preview={actualOptions.preview as boolean}
+            dryRunOnly={actualOptions.dryRun as boolean}
+            verbose={actualOptions.verbose as boolean}
+            answers={passedAnswers}
+            stamp={stamp}
+          />,
+        );
+
+        await waitUntilExit();
+      }
+    },
+  );
 };
 
 /**
