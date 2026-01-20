@@ -1,0 +1,8 @@
+import { describe, expect, it } from "vitest";
+import { <%%= camelCase(name) %> } from "./index";
+
+describe("<%%= name %>", () => {
+	it("should be defined", () => {
+		expect(<%%= camelCase(name) %>).toBeDefined();
+	});
+});

@@ -1,0 +1,85 @@
+/**
+ * <%= name %> Generator
+ *
+ * <%= description %>
+ */
+
+import * as path from "node:path";
+import { fileURLToPath } from "node:url";
+import type { GeneratorDefinition } from "@canonical/summon";
+import {
+	info,
+	mkdir,
+	sequence_,
+	template,
+	when,
+	withHelpers,
+} from "@canonical/summon";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+interface Answers {
+	name: string;
+	description: string;
+	withTests: boolean;
+}
+
+export const generator: GeneratorDefinition<Answers> = {
+	meta: {
+		name: "<%= name %>",
+		description: "<%= description %>",
+		version: "0.1.0",
+	},
+
+	prompts: [
+		{
+			name: "name",
+			type: "text",
+			message: "Name:",
+			default: "my-module",
+		},
+		{
+			name: "description",
+			type: "text",
+			message: "Description:",
+			default: "",
+		},
+		{
+			name: "withTests",
+			type: "confirm",
+			message: "Include tests?",
+			default: true,
+		},
+	],
+
+	generate: (answers) => {
+		const vars = withHelpers({
+			...answers,
+		});
+
+		return sequence_([
+			info(`Generating ${answers.name}...`),
+
+			mkdir(answers.name),
+
+			template({
+				source: path.join(__dirname, "templates", "index.ts.ejs"),
+				dest: path.join(answers.name, "index.ts"),
+				vars,
+			}),
+
+			when(
+				answers.withTests,
+				template({
+					source: path.join(__dirname, "templates", "index.test.ts.ejs"),
+					dest: path.join(answers.name, "index.test.ts"),
+					vars,
+				}),
+			),
+
+			info(`Created ${answers.name}`),
+		]);
+	},
+};
+
+export default generator;

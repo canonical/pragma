@@ -2,7 +2,7 @@ name: Setup environment
 description: Installs build tools and dependencies
 inputs:
   bun-version:
-    default: '1.2.19'
+    default: '1.3.6'
     description: Version of Bun to use
   node-version:
     # Node is required for Storybook and Lerna (Bun is used as package manager only)

@@ -20,7 +20,7 @@ import type { ComponentProps, ElementType } from "react";
  * ```
  */
 export type PolymorphicComponentProps<
-  TOwnProps extends Object,
+  TOwnProps extends object,
   TElement extends ElementType,
 > = TOwnProps & { as?: TElement } & Omit<
     ComponentProps<TElement>,

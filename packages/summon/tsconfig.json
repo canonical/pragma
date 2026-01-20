@@ -1,0 +1,12 @@
+{
+  "extends": "@canonical/typescript-config-base",
+  "compilerOptions": {
+    "baseUrl": "src",
+    "types": ["node", "bun-types"],
+    "jsx": "react-jsx",
+    "resolveJsonModule": true,
+    "skipLibCheck": true
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx"],
+  "exclude": ["src/**/*.test.ts", "src/**/*.test.tsx"]
+}
