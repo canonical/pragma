@@ -5,52 +5,52 @@ import { PARAM_KEY } from "../constants.js";
 import type { MswParameter } from "../types.js";
 
 interface PanelProps {
-	api: API;
-	active?: boolean;
+  api: API;
+  active?: boolean;
 }
 
 export const Panel = memo(function MswPanel({ active }: PanelProps) {
-	const parameter = useParameter<MswParameter>(PARAM_KEY);
+  const parameter = useParameter<MswParameter>(PARAM_KEY);
 
-	if (!active || !parameter?.handlers) {
-		return null;
-	}
+  if (!active || !parameter?.handlers) {
+    return null;
+  }
 
-	// Extract handler information for display
-	// MSW handlers have an info property that contains request, resolver, and options
-	const handlerInfo = parameter.handlers.map(
-		(handler: (typeof parameter.handlers)[number], index: number) => {
-			// The handler info structure in MSW v2 is different
-			// We'll extract what we can from the handler
-			const info = handler.info;
+  // Extract handler information for display
+  // MSW handlers have an info property that contains request, resolver, and options
+  const handlerInfo = parameter.handlers.map(
+    (handler: (typeof parameter.handlers)[number], index: number) => {
+      // The handler info structure in MSW v2 is different
+      // We'll extract what we can from the handler
+      const info = handler.info;
 
-			// Try to extract meaningful information
-			// In MSW v2, handlers have a request property that might contain the predicate
-			return {
-				index,
-				// We'll use a generic description since MSW doesn't expose method/path directly
-				type: info?.header ? "HTTP Handler" : "Unknown Handler",
-				// You could potentially inspect the handler's toString() or other properties
-				description: `Handler ${index + 1}`,
-			};
-		},
-	);
+      // Try to extract meaningful information
+      // In MSW v2, handlers have a request property that might contain the predicate
+      return {
+        index,
+        // We'll use a generic description since MSW doesn't expose method/path directly
+        type: info?.header ? "HTTP Handler" : "Unknown Handler",
+        // You could potentially inspect the handler's toString() or other properties
+        description: `Handler ${index + 1}`,
+      };
+    },
+  );
 
-	const children = createElement(
-		"div",
-		{ style: { padding: "1rem" } },
-		createElement("h3", null, "Active MSW Handlers"),
-		createElement(
-			"p",
-			{ style: { marginBottom: "1rem", opacity: 0.7 } },
-			`${parameter.handlers.length} handler${parameter.handlers.length !== 1 ? "s" : ""} registered`,
-		),
-		createElement(
-			SyntaxHighlighter,
-			{ language: "json" },
-			JSON.stringify(handlerInfo, null, 2),
-		),
-	);
+  const children = createElement(
+    "div",
+    { style: { padding: "1rem" } },
+    createElement("h3", null, "Active MSW Handlers"),
+    createElement(
+      "p",
+      { style: { marginBottom: "1rem", opacity: 0.7 } },
+      `${parameter.handlers.length} handler${parameter.handlers.length !== 1 ? "s" : ""} registered`,
+    ),
+    createElement(
+      SyntaxHighlighter,
+      { language: "json" },
+      JSON.stringify(handlerInfo, null, 2),
+    ),
+  );
 
-	return createElement(AddonPanel, { active, children });
+  return createElement(AddonPanel, { active, children });
 });
