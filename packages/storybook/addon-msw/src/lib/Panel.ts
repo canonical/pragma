@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { createElement, memo } from "react";
 import { AddonPanel, SyntaxHighlighter } from "storybook/internal/components";
 import { type API, useParameter } from "storybook/manager-api";
 import { PARAM_KEY } from "../constants.js";
@@ -36,18 +36,21 @@ export const Panel = memo(function MswPanel({ active }: PanelProps) {
     },
   );
 
-  return (
-    <AddonPanel active={active}>
-      <div style={{ padding: "1rem" }}>
-        <h3>Active MSW Handlers</h3>
-        <p style={{ marginBottom: "1rem", opacity: 0.7 }}>
-          {parameter.handlers.length} handler
-          {parameter.handlers.length !== 1 ? "s" : ""} registered
-        </p>
-        <SyntaxHighlighter language="json">
-          {JSON.stringify(handlerInfo, null, 2)}
-        </SyntaxHighlighter>
-      </div>
-    </AddonPanel>
+  const children = createElement(
+    "div",
+    { style: { padding: "1rem" } },
+    createElement("h3", null, "Active MSW Handlers"),
+    createElement(
+      "p",
+      { style: { marginBottom: "1rem", opacity: 0.7 } },
+      `${parameter.handlers.length} handler${parameter.handlers.length !== 1 ? "s" : ""} registered`,
+    ),
+    createElement(
+      SyntaxHighlighter,
+      { language: "json" },
+      JSON.stringify(handlerInfo, null, 2),
+    ),
   );
+
+  return createElement(AddonPanel, { active, children });
 });

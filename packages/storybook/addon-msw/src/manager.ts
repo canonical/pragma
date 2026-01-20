@@ -1,7 +1,8 @@
+import { createElement } from "react";
 import { type API, addons, types } from "storybook/manager-api";
-import { Panel } from "./components/Panel.js";
-import { Tool } from "./components/Tool.js";
 import { ADDON_ID, PANEL_ID, TOOL_ID } from "./constants.js";
+import { Panel } from "./lib/Panel.js";
+import { Tool } from "./lib/Tool.js";
 
 // Register the addon
 addons.register(ADDON_ID, (api: API) => {
@@ -11,7 +12,7 @@ addons.register(ADDON_ID, (api: API) => {
     title: "Toggle MSW",
     match: ({ viewMode }: { viewMode?: string; tabId?: string }) =>
       !!viewMode?.match(/^(story|docs)$/),
-    render: () => <Tool api={api} />,
+    render: () => createElement(Tool, { api }),
   });
 
   // Register a panel to show active handlers
@@ -19,8 +20,7 @@ addons.register(ADDON_ID, (api: API) => {
     type: types.PANEL,
     title: "MSW",
     match: ({ viewMode }: { viewMode?: string }) => viewMode === "story",
-    render: ({ active }: { active?: boolean }) => (
-      <Panel api={api} active={active} />
-    ),
+    render: ({ active }: { active?: boolean }) =>
+      createElement(Panel, { api, active }),
   });
 });

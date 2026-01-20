@@ -1,5 +1,5 @@
 import { LightningIcon } from "@storybook/icons";
-import { memo, useCallback } from "react";
+import { createElement, memo, useCallback } from "react";
 import { IconButton } from "storybook/internal/components";
 import { type API, useGlobals } from "storybook/manager-api";
 import { KEY, TOOL_ID } from "../constants.js";
@@ -27,15 +27,15 @@ export const Tool = memo(function MyAddonSelector(_props: { api: API }) {
   //   });
   // }, [toggle, api]);
 
-  return (
-    <IconButton
-      key={TOOL_ID}
-      active={isActive}
-      disabled={isLocked}
-      title={isActive ? "MSW Active" : "MSW Inactive"}
-      onClick={toggle}
-    >
-      <LightningIcon />
-    </IconButton>
+  return createElement(
+    IconButton,
+    {
+      key: TOOL_ID,
+      active: isActive,
+      disabled: isLocked,
+      title: isActive ? "MSW Active" : "MSW Inactive",
+      onClick: toggle,
+    },
+    createElement(LightningIcon),
   );
 });

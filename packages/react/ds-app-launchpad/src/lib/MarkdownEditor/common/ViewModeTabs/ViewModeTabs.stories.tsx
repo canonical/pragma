@@ -1,7 +1,7 @@
 /* @canonical/generator-ds 0.9.0-experimental.4 */
 import type { Meta, StoryFn } from "@storybook/react-vite";
+import type { EditMode } from "lib/MarkdownEditor/types.js";
 import { useState } from "storybook/internal/preview-api";
-import type { EditMode } from "ui/MarkdownEditor/types.js";
 import Component from "./ViewModeTabs.js";
 import "../../styles.css";
 

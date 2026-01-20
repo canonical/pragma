@@ -1,5 +1,5 @@
+import type { Middleware, Option } from "lib/Field/types.js";
 import { createElement, useEffect, useState } from "react";
-import type { Middleware, Option } from "ui/Field/types.js";
 
 interface OptionsFetchOptions {
   method?: string;

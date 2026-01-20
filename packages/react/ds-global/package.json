@@ -25,7 +25,7 @@
     "build:all": "bun run build:package && bun run build:storybook",
     "build:storybook": "storybook build",
     "build:package": "bun run build:package:tsc && bun run build:package:copycss",
-    "build:package:copycss": "copyfiles -u 1 'src/ui/{,**/}*.css' dist/esm",
+    "build:package:copycss": "copyfiles -u 1 'src/lib/{,**/}*.css' dist/esm",
     "build:package:tsc": "tsc -p tsconfig.build.json",
     "check": "bun run check:biome && bun run check:ts && bun run check:webarchitect",
     "check:webarchitect": "webarchitect library",

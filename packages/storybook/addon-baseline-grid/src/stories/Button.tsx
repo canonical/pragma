@@ -1,3 +1,4 @@
+// biome-ignore lint/correctness/noUnusedImports: React is needed for JSX transform
 import React from "react";
 import "./button.css";
 
