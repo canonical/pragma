@@ -32,9 +32,65 @@ summon component react --component-path=src/components/Button
 
 # Preview first (nothing written to disk)
 summon component react --component-path=src/components/Button --dry-run
+
+# Show debug output
+summon component react --component-path=src/components/Button --verbose
 ```
 
 Every prompt becomes a CLI flag. Boolean prompts with `default: true` use the `--no-` prefix to disable.
+
+### CLI Options
+
+| Flag | Description |
+|------|-------------|
+| `-d, --dry-run` | Preview without writing files |
+| `-y, --yes` | Skip confirmation prompts |
+| `-v, --verbose` | Show debug output |
+| `--no-preview` | Skip the file preview |
+| `--no-generated-stamp` | Disable generated file stamp comments |
+
+### Shell Autocompletion
+
+Summon supports TAB completion for Bash, Zsh, and Fish shells. Completions are **dynamic** - they automatically detect newly installed generator packages without needing to re-run setup.
+
+```bash
+# Automatic setup (recommended)
+summon --setup-completion
+
+# Or manual installation for each shell:
+
+# Zsh
+echo '. <(summon --completion)' >> ~/.zshrc
+
+# Bash (may need: brew install bash-completion on macOS)
+summon --completion >> ~/.summon-completion.sh
+echo 'source ~/.summon-completion.sh' >> ~/.bash_profile
+
+# Fish
+echo 'summon --completion-fish | source' >> ~/.config/fish/config.fish
+```
+
+After setup, restart your shell or source the config file. Then:
+
+```bash
+summon <TAB>                    # Shows: component, init, ...
+summon component <TAB>          # Shows: react, svelte
+summon component react <TAB>    # Shows: --component-path, --no-with-styles, ...
+summon component react --comp<TAB>  # Completes to: --component-path
+```
+
+Completion features:
+- **Generator names** - Navigate the command tree with TAB
+- **Generator flags** - All prompts become completable flags
+- **Confirm prompts** - Shows `--no-X` for prompts with `default: true`
+- **Select/multiselect** - Completes with available choices
+- **Path prompts** - Filesystem path completion for prompts containing "path", "dir", "file", etc.
+
+To remove autocompletion:
+
+```bash
+summon --cleanup-completion
+```
 
 ### Installing Generator Packages
 
@@ -44,7 +100,7 @@ Generator packages follow the naming convention `summon-*` or `@scope/summon-*`:
 # Install a generator package
 bun add @canonical/summon-component
 
-# Now available
+# Now available (completions work immediately!)
 summon component react
 summon component svelte
 ```
@@ -54,16 +110,18 @@ summon component svelte
 A generator is a pure function that takes answers and returns a `Task`—a data structure describing what to do.
 
 ```typescript
-// src/index.ts
-import type { GeneratorDefinition, AnyGenerator } from "@canonical/summon";
-import { writeFile, mkdir, sequence_, when } from "@canonical/summon";
-
-interface Answers {
+// src/module/types.ts
+interface ModuleAnswers {
   name: string;
   withTests: boolean;
 }
 
-const generator: GeneratorDefinition<Answers> = {
+// src/module/generator.ts
+import type { GeneratorDefinition } from "@canonical/summon";
+import { debug, info, writeFile, mkdir, sequence_, when } from "@canonical/summon";
+import type { ModuleAnswers } from "./types.js";
+
+export const generator = {
   meta: {
     name: "module",
     description: "Creates a new module",
@@ -76,27 +134,50 @@ const generator: GeneratorDefinition<Answers> = {
   ],
 
   generate: (answers) => sequence_([
+    info(`Creating module: ${answers.name}`),
+
+    debug("Creating module directory"),
     mkdir(`src/${answers.name}`),
+
+    debug("Creating index file"),
     writeFile(`src/${answers.name}/index.ts`, `export const ${answers.name} = {};\n`),
+
+    when(answers.withTests, debug("Creating test file")),
     when(answers.withTests,
       writeFile(`src/${answers.name}/index.test.ts`, `test("works", () => {});\n`)
     ),
-  ]),
-};
 
-export const generators: Record<string, AnyGenerator> = {
-  "module": generator,
-};
+    info(`Created module at src/${answers.name}`),
+  ]),
+} as const satisfies GeneratorDefinition<ModuleAnswers>;
+
+// src/module/index.ts (barrel)
+export { generator } from "./generator.js";
+export type { ModuleAnswers } from "./types.js";
+
+// src/index.ts (package barrel)
+import type { AnyGenerator } from "@canonical/summon";
+import { generator as moduleGenerator } from "./module/index.js";
+
+export const generators = {
+  "module": moduleGenerator,
+} as const satisfies Record<string, AnyGenerator>;
 ```
 
 ### Package Structure
+
+Each generator should be split into three files for maintainability:
 
 ```
 my-summon-package/
 ├── package.json
 ├── src/
-│   ├── index.ts          # Exports generators record
-│   └── templates/        # EJS templates (optional)
+│   ├── index.ts              # Package barrel - exports generators record
+│   ├── module/
+│   │   ├── index.ts          # Generator barrel
+│   │   ├── types.ts          # Answer types
+│   │   └── generator.ts      # Generator definition
+│   └── templates/            # EJS templates (optional)
 └── README.md
 ```
 

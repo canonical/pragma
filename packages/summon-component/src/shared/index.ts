@@ -20,6 +20,7 @@ import {
 
 export type Framework = "react" | "svelte";
 
+/** Base answers shared across component generators */
 export interface BaseComponentAnswers {
   /** Full path to the component directory (e.g., src/components/Button) */
   componentPath: string;
@@ -30,18 +31,6 @@ export interface BaseComponentAnswers {
   /** Include SSR tests */
   withSsrTests: boolean;
 }
-
-export interface ReactComponentAnswers extends BaseComponentAnswers {
-  framework: "react";
-}
-
-export interface SvelteComponentAnswers extends BaseComponentAnswers {
-  framework: "svelte";
-  /** Use TypeScript stories format instead of Svelte CSF */
-  useTsStories: boolean;
-}
-
-export type ComponentAnswers = ReactComponentAnswers | SvelteComponentAnswers;
 
 // =============================================================================
 // Validation
