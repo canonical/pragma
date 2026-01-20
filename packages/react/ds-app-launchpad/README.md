@@ -2,13 +2,17 @@
 
 Launchpad-specific components for the Pragma design system. This package provides specialized UI elements for the Launchpad application, including markdown editing, git diff visualization, and file tree navigation.
 
+## Prerequisites
+
+- React 19 or higher
+
 ## Installation
 
 ```bash
 bun add @canonical/react-ds-app-launchpad
 ```
 
-The package requires React 19 and builds on top of `@canonical/react-ds-global`.
+The package builds on top of `@canonical/react-ds-global`.
 
 ## Usage
 

@@ -2,13 +2,17 @@
 
 Application-level UI components for the Pragma design system. This package provides navigation, toolbars, and layout components suited for internal tools and applications.
 
+## Prerequisites
+
+- React 19 or higher
+
 ## Installation
 
 ```bash
 bun add @canonical/react-ds-app
 ```
 
-The package requires React 19 and builds on top of `@canonical/react-ds-global`.
+The package builds on top of `@canonical/react-ds-global`.
 
 ## Usage
 

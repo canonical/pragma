@@ -2,13 +2,17 @@
 
 Universal React components for the Pragma design system. This package provides foundational UI elements that apply across all Canonical web applications: buttons, badges, cards, tooltips, and more.
 
+## Prerequisites
+
+- React 19 or higher
+
 ## Installation
 
 ```bash
 bun add @canonical/react-ds-global
 ```
 
-The package requires React 19 and depends on `@canonical/styles` for CSS.
+The package depends on `@canonical/styles` for CSS.
 
 ## Usage
 
