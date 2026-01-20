@@ -1,0 +1,129 @@
+/**
+ * Timeline.Event styles
+ * @implements dso:global.subcomponent.timeline-event
+ *
+ * DSL anatomy mapping:
+ * - layout.type: flow -> display: flex
+ * - layout.direction: horizontal -> flex-direction: row
+ */
+.ds.timeline-event {
+  /* layout.type: flow, layout.direction: horizontal */
+  display: flex;
+  flex-direction: row;
+  gap: var(--timeline-event-gap, var(--spacing-medium, 1rem));
+
+  /* Position relative for the connecting line */
+  position: relative;
+}
+
+/**
+ * Timeline marker/dot
+ * Visual indicator connecting events
+ */
+.ds.timeline-event .timeline-event-marker {
+  flex-shrink: 0;
+  width: var(--timeline-marker-size, 12px);
+  height: var(--timeline-marker-size, 12px);
+  border-radius: 50%;
+  background-color: var(
+    --modifier-color,
+    var(--timeline-marker-color, var(--color-border, #ccc))
+  );
+  border: var(--timeline-marker-border-width, 2px) solid
+    var(
+      --modifier-color-border,
+      var(--timeline-marker-border-color, var(--color-surface, #fff))
+    );
+  margin-top: var(--timeline-marker-offset, 0.25rem);
+
+  /* Position for connecting line */
+  position: relative;
+  z-index: 1;
+}
+
+/* Connecting line between events */
+.ds.timeline-event::before {
+  content: "";
+  position: absolute;
+  left: calc(var(--timeline-marker-size, 12px) / 2 - 1px);
+  top: calc(
+    var(--timeline-marker-size, 12px) +
+    var(--timeline-marker-offset, 0.25rem)
+  );
+  bottom: calc(
+    -1 *
+    var(--timeline-event-spacing, var(--spacing-large, 1.5rem))
+  );
+  width: var(--timeline-line-width, 2px);
+  background-color: var(--timeline-line-color, var(--color-border, #e0e0e0));
+}
+
+/* Hide line for last event */
+.ds.timeline-event:last-child::before {
+  display: none;
+}
+
+/**
+ * Event content container
+ */
+.ds.timeline-event .timeline-event-content {
+  flex: 1;
+  min-width: 0;
+  padding-bottom: var(--timeline-event-spacing, var(--spacing-large, 1.5rem));
+}
+
+/**
+ * Actor element
+ * DSL: role: actor (cardinality: 0..1)
+ */
+.ds.timeline-event .timeline-event-actor {
+  font-weight: var(
+    --timeline-actor-font-weight,
+    var(--font-weight-semibold, 600)
+  );
+  color: var(--timeline-actor-color, var(--color-text-primary, inherit));
+  margin-bottom: var(--spacing-xxsmall, 0.125rem);
+}
+
+/**
+ * Datetime element
+ * DSL: role: datetime (cardinality: 0..1)
+ */
+.ds.timeline-event .timeline-event-datetime {
+  display: block;
+  font-size: var(
+    --timeline-datetime-font-size,
+    var(--font-size-small, 0.875rem)
+  );
+  color: var(--timeline-datetime-color, var(--color-text-secondary, #666));
+  margin-bottom: var(--spacing-xsmall, 0.25rem);
+}
+
+/**
+ * Payload element
+ * DSL: role: payload (cardinality: 1, slotName: default)
+ */
+.ds.timeline-event .timeline-event-payload {
+  color: var(--timeline-payload-color, var(--color-text-primary, inherit));
+  line-height: var(
+    --timeline-payload-line-height,
+    var(--font-line-height-relaxed, 1.6)
+  );
+}
+
+/* Criticality modifiers affect marker color */
+.ds.timeline-event.info .timeline-event-marker {
+  background-color: var(--color-info, #0066cc);
+}
+
+.ds.timeline-event.success .timeline-event-marker {
+  background-color: var(--color-success, #00a86b);
+}
+
+.ds.timeline-event.warning .timeline-event-marker {
+  background-color: var(--color-warning, #f5a623);
+}
+
+.ds.timeline-event.critical .timeline-event-marker {
+  background-color: var(--color-critical, #c7162b);
+}

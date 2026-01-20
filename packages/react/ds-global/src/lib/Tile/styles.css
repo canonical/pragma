@@ -1,0 +1,66 @@
+/**
+ * Tile styles
+ * @implements dso:global.component.tile
+ *
+ * DSL anatomy mapping:
+ * - layout.type: stack -> display: flex; flex-direction: column
+ * - layout.direction: vertical -> flex-direction: column
+ * - interaction.cursor: pointer -> cursor: pointer
+ * - appearance.background: color/surface/tile -> background: var(--color-surface-tile)
+ * - appearance.radius: radius/tile -> border-radius: var(--radius-tile)
+ */
+.ds.tile {
+  /* layout.type: stack, layout.direction: vertical */
+  display: flex;
+  flex-direction: column;
+
+  /* interaction.cursor: pointer */
+  cursor: pointer;
+
+  /* appearance.background: color/surface/tile */
+  background: var(
+    --tile-background,
+    var(--color-surface-tile, var(--color-surface, #fff))
+  );
+
+  /* appearance.radius: radius/tile */
+  border-radius: var(
+    --tile-border-radius,
+    var(--radius-tile, var(--border-radius, 0.5rem))
+  );
+
+  /* Additional styling */
+  border: var(--tile-border-width, 1px) var(--tile-border-style, solid)
+    var(--tile-border-color, var(--color-border, #e0e0e0));
+  box-shadow: var(
+    --tile-box-shadow,
+    var(--shadow-small, 0 1px 3px rgba(0, 0, 0, 0.1))
+  );
+
+  /* Transition for hover effect */
+  transition:
+    box-shadow var(--transition-duration-fast, 150ms)
+    var(--transition-easing-standard, ease-out),
+    border-color var(--transition-duration-fast, 150ms)
+    var(--transition-easing-standard, ease-out);
+
+  /* Prevent overflow */
+  overflow: hidden;
+
+  &:hover {
+    box-shadow: var(
+      --tile-box-shadow-hover,
+      var(--shadow-medium, 0 4px 6px rgba(0, 0, 0, 0.1))
+    );
+    border-color: var(
+      --tile-border-color-hover,
+      var(--color-border-hover, #bdbdbd)
+    );
+  }
+
+  &:focus-visible {
+    outline: var(--focus-outline-width, 2px) solid
+      var(--focus-outline-color, var(--color-focus, #0066cc));
+    outline-offset: var(--focus-outline-offset, 2px);
+  }
+}

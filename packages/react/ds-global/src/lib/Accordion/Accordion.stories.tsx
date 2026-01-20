@@ -21,9 +21,11 @@ type Story = StoryObj<typeof Accordion>;
 
 export const Default: Story = {
   render: () => {
-    const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({
-      item1: true,
-    });
+    const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>(
+      {
+        item1: true,
+      },
+    );
 
     const handleExpandedChange = (id: string) => (expanded: boolean) => {
       setExpandedItems((prev) => ({ ...prev, [id]: expanded }));
@@ -37,9 +39,10 @@ export const Default: Story = {
           onExpandedChange={handleExpandedChange("item1")}
         >
           <p>
-            An accordion is a vertically stacked set of interactive headings that
-            each reveal a section of content. When used correctly, accordions help
-            users browse different pieces of related content more efficiently.
+            An accordion is a vertically stacked set of interactive headings
+            that each reveal a section of content. When used correctly,
+            accordions help users browse different pieces of related content
+            more efficiently.
           </p>
         </Accordion.Item>
         <Accordion.Item
@@ -59,9 +62,9 @@ export const Default: Story = {
           onExpandedChange={handleExpandedChange("item3")}
         >
           <p>
-            Avoid accordions when users need to read all the content, as they hide
-            information. Also avoid when there are only one or two sections - use
-            regular headings instead.
+            Avoid accordions when users need to read all the content, as they
+            hide information. Also avoid when there are only one or two sections
+            - use regular headings instead.
           </p>
         </Accordion.Item>
       </Accordion>
@@ -81,8 +84,8 @@ export const SingleItem: Story = {
           onExpandedChange={setExpanded}
         >
           <p>
-            This is the content that appears when the accordion item is expanded.
-            It can contain any React elements.
+            This is the content that appears when the accordion item is
+            expanded. It can contain any React elements.
           </p>
         </Accordion.Item>
       </Accordion>
@@ -92,11 +95,13 @@ export const SingleItem: Story = {
 
 export const AllExpanded: Story = {
   render: () => {
-    const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({
-      item1: true,
-      item2: true,
-      item3: true,
-    });
+    const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>(
+      {
+        item1: true,
+        item2: true,
+        item3: true,
+      },
+    );
 
     const handleExpandedChange = (id: string) => (expanded: boolean) => {
       setExpandedItems((prev) => ({ ...prev, [id]: expanded }));
@@ -132,9 +137,11 @@ export const AllExpanded: Story = {
 
 export const WithRichContent: Story = {
   render: () => {
-    const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({
-      item1: true,
-    });
+    const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>(
+      {
+        item1: true,
+      },
+    );
 
     const handleExpandedChange = (id: string) => (expanded: boolean) => {
       setExpandedItems((prev) => ({ ...prev, [id]: expanded }));

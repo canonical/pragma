@@ -77,7 +77,10 @@ describe("Accordion.Item", () => {
 
     render(
       <Accordion>
-        <Accordion.Item heading="Test Heading" onExpandedChange={onExpandedChange}>
+        <Accordion.Item
+          heading="Test Heading"
+          onExpandedChange={onExpandedChange}
+        >
           Test Content
         </Accordion.Item>
       </Accordion>,
@@ -130,7 +133,10 @@ describe("Accordion.Item", () => {
 
     render(
       <Accordion>
-        <Accordion.Item heading="Test Heading" onExpandedChange={onExpandedChange}>
+        <Accordion.Item
+          heading="Test Heading"
+          onExpandedChange={onExpandedChange}
+        >
           Test Content
         </Accordion.Item>
       </Accordion>,
@@ -147,7 +153,10 @@ describe("Accordion.Item", () => {
 
     render(
       <Accordion>
-        <Accordion.Item heading="Test Heading" onExpandedChange={onExpandedChange}>
+        <Accordion.Item
+          heading="Test Heading"
+          onExpandedChange={onExpandedChange}
+        >
           Test Content
         </Accordion.Item>
       </Accordion>,

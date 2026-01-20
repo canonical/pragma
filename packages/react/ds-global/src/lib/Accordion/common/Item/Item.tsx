@@ -14,7 +14,7 @@ const componentCssClassName = "ds accordion-item";
  * - Header tab with control (chevron) + heading
  * - Content panel
  *
- * @implements dso:global.subcomponent.accordion-item
+ * @implements ds:global.subcomponent.accordion-item
  */
 const Item = ({
   heading,

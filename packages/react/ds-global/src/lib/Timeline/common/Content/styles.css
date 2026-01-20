@@ -1,0 +1,13 @@
+/**
+ * Timeline.Content styles
+ * @implements dso:global.subcomponent.timeline-content
+ *
+ * DSL anatomy mapping:
+ * - layout.type: stack -> display: flex; flex-direction: column
+ * - layout.direction: vertical -> flex-direction: column
+ */
+.ds.timeline-content {
+  /* layout.type: stack, layout.direction: vertical */
+  display: flex;
+  flex-direction: column;
+}

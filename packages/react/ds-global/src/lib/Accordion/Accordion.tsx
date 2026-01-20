@@ -12,7 +12,7 @@ const componentCssClassName = "ds accordion";
  * to reveal or hide its contents. Each Accordion.Item can be opened or
  * closed independently of its surrounding counterparts.
  *
- * @implements dso:global.component.accordion
+ * @implements ds:global.component.accordion
  *
  * @example
  * ```tsx

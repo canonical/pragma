@@ -549,6 +549,77 @@ SELECT ?uri ?name ?anatomyDsl ?type WHERE {
 9. **Generate actionable fixes**: Include code snippets for fixes
 10. **Track with todos**: Use TodoWrite for multi-component audits
 
+## TSDoc Documentation
+
+Component TSDoc must use the description from the design system ontology. Stories serve as examples, so the component TSDoc should NOT include `@example` blocks.
+
+### Querying DSL Description
+
+```sparql
+SELECT ?description WHERE {
+  ?uri dso:name "{ComponentName}" .
+  ?uri dso:description ?description .
+}
+```
+
+### TSDoc Format
+
+```typescript
+/**
+ * {Description from DSL ontology - copied verbatim}
+ *
+ * @implements dso:{uri}
+ */
+const Component = ({ ... }: ComponentProps) => { ... };
+```
+
+### What NOT to Include
+
+- `@example` blocks (stories fulfill this role)
+- Implementation details
+- Custom descriptions that deviate from DSL
+
+### Example
+
+**DSL Query Result:**
+```
+description: "The label component is a compact, non-interactive visual element used to
+categorize content or indicate a status. Its primary role is metadata visualization.
+While it has similar visual properties to the Chip, it is purely informational and
+does not trigger actions or allow for removal."
+```
+
+**Correct TSDoc:**
+```typescript
+/**
+ * The label component is a compact, non-interactive visual element used to
+ * categorize content or indicate a status. Its primary role is metadata
+ * visualization. While it has similar visual properties to the Chip, it is
+ * purely informational and does not trigger actions or allow for removal.
+ *
+ * @implements dso:global.component.label
+ */
+const Label = ({ ... }: LabelProps) => { ... };
+```
+
+**Incorrect TSDoc:**
+```typescript
+/**
+ * Label component  // Bad: Custom title, not from DSL
+ *
+ * A compact visual element for status indication.  // Bad: Paraphrased, not verbatim
+ *
+ * @implements dso:global.component.label
+ *
+ * @example  // Bad: Examples belong in stories
+ * ```tsx
+ * <Label>Default</Label>
+ * <Label criticality="warning">Warning</Label>
+ * ```
+ */
+const Label = ({ ... }: LabelProps) => { ... };
+```
+
 ## Limitations
 
 - Cannot audit behavior (only structure, not runtime)

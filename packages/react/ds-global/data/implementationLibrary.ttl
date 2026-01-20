@@ -1,0 +1,12 @@
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>.
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>.
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#>.
+@prefix ds: <https://ds.canonical.com/>.
+
+ds:implementation.library.pragma-react-ds-global a ds:ImplementationLibrary;
+    ds:libraryName "Pragma React DS-Global";
+    ds:platform "react";
+    ds:link "https://github.com/canonical/pragma/tree/main/packages/react/ds-global";
+    ds:libraryDescription "React implementation of the Pragma design system - Global tier";
+    ds:documentation "https://pragma.canonical.com/react";
+    ds:libraryTier ds:global.

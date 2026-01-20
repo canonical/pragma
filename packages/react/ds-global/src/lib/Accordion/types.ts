@@ -14,8 +14,6 @@ export interface AccordionProps extends HTMLAttributes<HTMLDivElement> {
 /**
  * Accordion component type with attached subcomponents
  */
-export type AccordionComponent = ((
-  props: AccordionProps,
-) => ReactElement) & {
+export type AccordionComponent = ((props: AccordionProps) => ReactElement) & {
   Item: (props: ItemProps) => ReactElement | null;
 };

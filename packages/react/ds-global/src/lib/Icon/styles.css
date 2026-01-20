@@ -1,12 +1,18 @@
-/* @canonical/generator-ds 0.10.0-experimental.2 */
-
+/**
+ * Icon styles
+ * @implements dso:global.component.icon
+ *
+ * DSL anatomy mapping:
+ * - layout.display: inline-block -> display: inline-block
+ * - size.width: size/icon/default -> width: var(--size-icon-default)
+ * - size.height: size/icon/default -> height: var(--size-icon-default)
+ */
 .ds.icon {
-  position: relative;
-  display: inline-flex;
-  justify-content: center;
-  align-items: center;
+  /* layout.display: inline-block */
+  display: inline-block;
   vertical-align: middle;
 
-  height: var(--icon-size);
-  width: var(--icon-size);
+  /* size.width: size/icon/default, size.height: size/icon/default */
+  width: var(--icon-size, var(--size-icon-default, 1rem));
+  height: var(--icon-size, var(--size-icon-default, 1rem));
 }

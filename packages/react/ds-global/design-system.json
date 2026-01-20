@@ -1,0 +1,14 @@
+{
+  "name": "Pragma React DS-Global",
+  "platform": "react",
+  "description": "React implementation of the Pragma design system - Global tier",
+  "link": "https://github.com/canonical/pragma/tree/main/packages/react/ds-global",
+  "documentation": "https://pragma.canonical.com/react",
+  "tier": "ds:global",
+  "prefix": {
+    "short": "ds",
+    "namespace": "https://ds.canonical.com/"
+  },
+  "pattern": "src/**/*.tsx",
+  "outputDir": "data"
+}
