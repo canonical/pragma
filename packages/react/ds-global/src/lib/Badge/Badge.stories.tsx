@@ -5,7 +5,7 @@ import type { Meta, StoryFn, StoryObj } from "@storybook/react-vite";
 import Component from "./Badge.js";
 
 const meta = {
-  title: "Badge",
+  title: "C/Badge",
   component: Component,
   parameters: {
     docs: {

@@ -9,7 +9,7 @@ import { fn } from "storybook/test";
 import Component from "./Chip.js";
 
 const meta = {
-  title: "Chip",
+  title: "C/Chip",
   component: Component,
   tags: ["autodocs"],
 } satisfies Meta<typeof Component>;

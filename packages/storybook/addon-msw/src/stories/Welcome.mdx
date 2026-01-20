@@ -1,0 +1,127 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+
+<Meta title="Introduction" />
+
+# MSW Addon
+
+Storybook addon for mocking API requests using [Mock Service Worker](https://mswjs.io/). Define handlers per-story to test components with different API responses without a backend.
+
+## Basic Usage
+
+Add handlers to a story's parameters:
+
+```tsx
+import type { Meta, StoryObj } from "@storybook/react";
+import { http, HttpResponse } from "msw";
+import { UserList } from "./UserList";
+
+const meta: Meta<typeof UserList> = {
+  component: UserList,
+};
+export default meta;
+
+export const WithUsers: StoryObj = {
+  parameters: {
+    msw: {
+      handlers: [
+        http.get("/api/users", () => {
+          return HttpResponse.json([
+            { id: 1, name: "Alice" },
+            { id: 2, name: "Bob" },
+          ]);
+        }),
+      ],
+    },
+  },
+};
+```
+
+## Error States
+
+Test error handling by returning error responses:
+
+```tsx
+export const NotFound: StoryObj = {
+  parameters: {
+    msw: {
+      handlers: [
+        http.get("/api/users/:id", () => {
+          return HttpResponse.json(
+            { error: "User not found" },
+            { status: 404 }
+          );
+        }),
+      ],
+    },
+  },
+};
+
+export const NetworkError: StoryObj = {
+  parameters: {
+    msw: {
+      handlers: [
+        http.get("/api/users", () => {
+          return HttpResponse.error();
+        }),
+      ],
+    },
+  },
+};
+```
+
+## Request Methods
+
+| Method | Usage |
+|--------|-------|
+| `http.get(path, resolver)` | GET requests |
+| `http.post(path, resolver)` | POST requests |
+| `http.put(path, resolver)` | PUT requests |
+| `http.patch(path, resolver)` | PATCH requests |
+| `http.delete(path, resolver)` | DELETE requests |
+
+## Path Parameters
+
+Access dynamic path segments:
+
+```tsx
+http.get("/api/users/:id", ({ params }) => {
+  const user = users.find(u => u.id === params.id);
+  if (!user) {
+    return HttpResponse.json({ error: "Not found" }, { status: 404 });
+  }
+  return HttpResponse.json(user);
+});
+```
+
+## Request Body
+
+Read POST/PUT request bodies:
+
+```tsx
+http.post("/api/users", async ({ request }) => {
+  const body = await request.json();
+  return HttpResponse.json(
+    { id: 3, ...body },
+    { status: 201 }
+  );
+});
+```
+
+## Delayed Responses
+
+Simulate network latency:
+
+```tsx
+import { delay } from "msw";
+
+http.get("/api/users", async () => {
+  await delay(1000);
+  return HttpResponse.json(users);
+});
+```
+
+## Links
+
+- [Source](https://github.com/canonical/pragma/tree/main/packages/storybook/addon-msw)
+- [MSW Documentation](https://mswjs.io/)
+- [MSW Response Resolver API](https://mswjs.io/docs/concepts/response-resolver)

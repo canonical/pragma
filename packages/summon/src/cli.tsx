@@ -888,15 +888,28 @@ const configureGroupedHelp = (
       output += "\nGlobal Options:\n";
       output += formatItem("-d, --dry-run", "Preview without writing files");
       output += "\n";
-      output += formatItem("-y, --yes", "Skip confirmation prompts");
+      output += formatItem(
+        "-y, --yes",
+        "Skip confirmation prompts and preview",
+      );
       output += "\n";
       output += formatItem("-v, --verbose", "Show debug output");
+      output += "\n";
+      output += formatItem(
+        "--show-contents",
+        "Show file contents in dry-run (useful for LLMs)",
+      );
       output += "\n";
       output += formatItem("--no-preview", "Skip the file preview");
       output += "\n";
       output += formatItem(
         "--no-generated-stamp",
         "Disable generated file stamp comments",
+      );
+      output += "\n";
+      output += formatItem(
+        "-l, --llm",
+        "LLM mode: combines --dry-run --show-contents --yes",
       );
       output += "\n";
       output += formatItem("-h, --help", "display help for command");
@@ -1066,12 +1079,17 @@ const registerFromBarrel = (rootCmd: Command, barrel: CommandEntry[]): void => {
         .command(commandSpec)
         .description(entry.generator.meta.description)
         .option("-d, --dry-run", "Preview without writing files")
-        .option("-y, --yes", "Skip confirmation prompts")
+        .option("-y, --yes", "Skip confirmation prompts and preview")
         .option("-v, --verbose", "Show debug output")
-        .option("--no-preview", "Skip the file preview")
         .option(
-          "--no-generated-stamp",
-          "Disable generated file stamp comments",
+          "--show-contents",
+          "Show file contents in dry-run (useful for LLMs)",
+        )
+        .option("--no-preview", "Skip the file preview")
+        .option("--no-generated-stamp", "Disable generated file stamp comments")
+        .option(
+          "-l, --llm",
+          "LLM mode: combines --dry-run --show-contents --yes",
         );
 
       // Set custom usage to show positional arg before [options]
@@ -1128,6 +1146,13 @@ const configureGeneratorCommand = (
         actualOptions = (positionalArg as Record<string, unknown>) ?? {};
       }
 
+      // Expand --llm flag into its component flags
+      if (actualOptions.llm === true) {
+        actualOptions.dryRun = true;
+        actualOptions.showContents = true;
+        actualOptions.yes = true;
+      }
+
       // Extract only explicitly provided CLI answers (not defaults)
       const cliAnswers = extractAnswers(actualOptions, generator.prompts);
 
@@ -1164,11 +1189,11 @@ const configureGeneratorCommand = (
       if (hasAllAnswers && actualOptions.dryRun && !isTTY) {
         // Batch dry-run mode (non-interactive)
         const { dryRun } = await import("./dry-run.js");
-        const { isVisibleEffect, formatEffectLine } = await import(
-          "./cli-format.js"
-        );
+        const { isVisibleEffect, formatEffectLine, formatEffectWithContent } =
+          await import("./cli-format.js");
 
         const verbose = actualOptions.verbose === true;
+        const showContents = actualOptions.showContents === true;
 
         console.log();
         console.log(chalk.bold.magenta(generator.meta.name));
@@ -1192,11 +1217,25 @@ const configureGeneratorCommand = (
         console.log(chalk.dim.bold("Plan:"));
         visibleEffects.forEach((effect, index) => {
           const isLast = index === visibleEffects.length - 1;
-          console.log(formatEffectLine(effect, isLast));
+          // Use content preview when --show-contents is enabled
+          if (showContents) {
+            console.log(formatEffectWithContent(effect, isLast));
+          } else {
+            console.log(formatEffectLine(effect, isLast));
+          }
         });
 
         console.log();
         console.log(chalk.dim("Dry-run complete. No files were modified."));
+
+        // Note about --show-contents if not already using it
+        if (!showContents) {
+          console.log(
+            chalk.dim(
+              "Tip: Use --show-contents to see generated file contents",
+            ),
+          );
+        }
       } else {
         // Interactive mode
         // Only pass answers if:
@@ -1208,10 +1247,15 @@ const configureGeneratorCommand = (
           ? answersWithDefaults
           : undefined;
 
+        // When --yes is used, automatically skip preview (implies --no-preview)
+        const shouldShowPreview = skipPrompts
+          ? false
+          : (actualOptions.preview as boolean);
+
         const { waitUntilExit } = render(
           <App
             generator={generator}
-            preview={actualOptions.preview as boolean}
+            preview={shouldShowPreview}
             dryRunOnly={actualOptions.dryRun as boolean}
             verbose={actualOptions.verbose as boolean}
             answers={passedAnswers}

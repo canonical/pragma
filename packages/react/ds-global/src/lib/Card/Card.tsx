@@ -1,15 +1,20 @@
 /* @canonical/generator-ds 0.10.0-experimental.2 */
 
 import type React from "react";
-import { Image, Section, ThumbnailSection } from "./common/index.js";
+import { Content, Header, Image, Thumbnail } from "./common/index.js";
 import type { CardProps } from "./types.js";
 import "./styles.css";
 
 const componentCssClassName = "ds card";
 
 /**
- * Card component
- * @implements syntax:core:component:card:1.0.0
+ * The card component is a rigid, repeatable container used to represent
+ * specific data objects within a collection. Unlike the flexible Tile, a
+ * card follows a strict internal structure to ensure that when multiple
+ * cards are displayed together, the user can scan and compare attributes
+ * across the set with minimal cognitive effort.
+ *
+ * @implements ds:global.component.card
  */
 const Card = ({
   className,
@@ -27,8 +32,10 @@ const Card = ({
   </div>
 );
 
-Card.ThumbnailSection = ThumbnailSection;
+Card.displayName = "Card";
+Card.Content = Content;
+Card.Header = Header;
 Card.Image = Image;
-Card.Section = Section;
+Card.Thumbnail = Thumbnail;
 
 export default Card;

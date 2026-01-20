@@ -82,8 +82,8 @@
       "name": "@canonical/storybook-config",
       "version": "0.11.0",
       "dependencies": {
-        "@canonical/ds-assets": "^0.10.0",
-        "@canonical/storybook-addon-baseline-grid": "^0.10.0",
+        "@canonical/ds-assets": "^0.11.0",
+        "@canonical/storybook-addon-baseline-grid": "^0.11.0",
         "@chromatic-com/storybook": "^5.0.0",
         "@storybook/addon-a11y": "^10.1.11",
         "@storybook/addon-docs": "^10.1.11",
@@ -93,8 +93,8 @@
       },
       "devDependencies": {
         "@biomejs/biome": "2.3.11",
-        "@canonical/biome-config": "^0.10.0",
-        "@canonical/typescript-config-react": "^0.10.0",
+        "@canonical/biome-config": "^0.11.0",
+        "@canonical/typescript-config-react": "^0.11.0",
         "typescript": "^5.9.3",
       },
       "peerDependencies": {
@@ -133,9 +133,9 @@
       "version": "0.11.0",
       "devDependencies": {
         "@biomejs/biome": "2.3.11",
-        "@canonical/biome-config": "^0.10.0",
-        "@canonical/typescript-config-base": "^0.10.0",
-        "@canonical/webarchitect": "^0.10.0",
+        "@canonical/biome-config": "^0.11.0",
+        "@canonical/typescript-config-base": "^0.11.0",
+        "@canonical/webarchitect": "^0.11.0",
         "@types/node": "^24.0.0",
         "jsdom": "^26.1.0",
         "typescript": "^5.9.3",
@@ -149,9 +149,9 @@
       "version": "0.11.0",
       "devDependencies": {
         "@biomejs/biome": "2.3.11",
-        "@canonical/biome-config": "^0.10.0",
-        "@canonical/typescript-config-base": "^0.10.0",
-        "@canonical/webarchitect": "^0.10.0",
+        "@canonical/biome-config": "^0.11.0",
+        "@canonical/typescript-config-base": "^0.11.0",
+        "@canonical/webarchitect": "^0.11.0",
         "typescript": "^5.9.3",
       },
     },
@@ -247,19 +247,20 @@
       "name": "@canonical/react-ds-global",
       "version": "0.11.0",
       "dependencies": {
-        "@canonical/ds-assets": "^0.10.0",
-        "@canonical/storybook-config": "^0.10.0",
-        "@canonical/styles": "^0.10.0",
-        "@canonical/utils": "^0.10.0",
+        "@canonical/ds-assets": "^0.11.0",
+        "@canonical/storybook-config": "^0.11.0",
+        "@canonical/styles": "^0.11.0",
+        "@canonical/utils": "^0.11.0",
         "react": "^19.2.3",
         "react-dom": "^19.2.3",
       },
       "devDependencies": {
         "@biomejs/biome": "2.3.11",
-        "@canonical/biome-config": "^0.10.0",
-        "@canonical/ds-types": "^0.10.0",
-        "@canonical/typescript-config-react": "^0.10.0",
-        "@canonical/webarchitect": "^0.10.0",
+        "@canonical/biome-config": "^0.11.0",
+        "@canonical/ds-types": "^0.11.0",
+        "@canonical/storybook-helpers": "^0.11.0",
+        "@canonical/typescript-config-react": "^0.11.0",
+        "@canonical/webarchitect": "^0.11.0",
         "@chromatic-com/storybook": "^5.0.0",
         "@testing-library/jest-dom": "^6.9.1",
         "@testing-library/react": "^16.3.1",
@@ -392,6 +393,32 @@
         "storybook": "^10.1.11",
       },
     },
+    "packages/storybook/helpers": {
+      "name": "@canonical/storybook-helpers",
+      "version": "0.11.0",
+      "dependencies": {
+        "@canonical/ds-types": "^0.11.0",
+        "react": "^19.0.0",
+        "react-dom": "^19.0.0",
+      },
+      "devDependencies": {
+        "@biomejs/biome": "2.3.11",
+        "@canonical/biome-config": "^0.11.0",
+        "@canonical/typescript-config-react": "^0.11.0",
+        "@canonical/webarchitect": "^0.11.0",
+        "@testing-library/jest-dom": "^6.9.1",
+        "@testing-library/react": "^16.3.1",
+        "@types/react": "^19.0.0",
+        "@types/react-dom": "^19.0.0",
+        "@vitejs/plugin-react": "^5.1.2",
+        "copyfiles": "^2.4.1",
+        "jsdom": "^26.1.0",
+        "typescript": "^5.9.3",
+        "vite": "^7.3.1",
+        "vite-tsconfig-paths": "^6.0.4",
+        "vitest": "^4.0.17",
+      },
+    },
     "packages/styles/debug": {
       "name": "@canonical/styles-debug",
       "version": "0.11.0",
@@ -408,24 +435,24 @@
       },
       "devDependencies": {
         "@biomejs/biome": "2.3.11",
-        "@canonical/biome-config": "^0.10.0",
+        "@canonical/biome-config": "^0.11.0",
       },
     },
     "packages/styles/main/canonical": {
       "name": "@canonical/styles",
       "version": "0.11.0",
       "dependencies": {
-        "@canonical/styles-elements": "^0.10.0",
-        "@canonical/styles-modes-canonical": "^0.10.0",
-        "@canonical/styles-modes-density": "^0.10.0",
-        "@canonical/styles-modes-intents": "^0.10.0",
-        "@canonical/styles-modes-motion": "^0.10.0",
-        "@canonical/styles-primitives-canonical": "^0.10.0",
+        "@canonical/styles-elements": "^0.11.0",
+        "@canonical/styles-modes-canonical": "^0.11.0",
+        "@canonical/styles-modes-density": "^0.11.0",
+        "@canonical/styles-modes-intents": "^0.11.0",
+        "@canonical/styles-modes-motion": "^0.11.0",
+        "@canonical/styles-primitives-canonical": "^0.11.0",
         "normalize.css": "^8.0.1",
       },
       "devDependencies": {
         "@biomejs/biome": "2.3.11",
-        "@canonical/biome-config": "^0.10.0",
+        "@canonical/biome-config": "^0.11.0",
       },
     },
     "packages/styles/modes/canonical": {
@@ -433,7 +460,7 @@
       "version": "0.11.0",
       "devDependencies": {
         "@biomejs/biome": "2.3.11",
-        "@canonical/biome-config": "^0.10.0",
+        "@canonical/biome-config": "^0.11.0",
       },
     },
     "packages/styles/modes/density": {
@@ -441,7 +468,7 @@
       "version": "0.11.0",
       "devDependencies": {
         "@biomejs/biome": "2.3.11",
-        "@canonical/biome-config": "^0.10.0",
+        "@canonical/biome-config": "^0.11.0",
       },
     },
     "packages/styles/modes/intents": {
@@ -452,7 +479,7 @@
       },
       "devDependencies": {
         "@biomejs/biome": "2.3.11",
-        "@canonical/biome-config": "^0.10.0",
+        "@canonical/biome-config": "^0.11.0",
       },
     },
     "packages/styles/modes/motion": {
@@ -463,7 +490,7 @@
       },
       "devDependencies": {
         "@biomejs/biome": "2.3.11",
-        "@canonical/biome-config": "^0.10.0",
+        "@canonical/biome-config": "^0.11.0",
       },
     },
     "packages/styles/primitives/canonical": {
@@ -471,12 +498,12 @@
       "version": "0.11.0",
       "dependencies": {
         "@canonical/tokens": "^0.10.0-experimental.4",
-        "@canonical/typography": "^0.10.0",
+        "@canonical/typography": "^0.11.0",
         "normalize.css": "^8.0.1",
       },
       "devDependencies": {
         "@biomejs/biome": "2.3.11",
-        "@canonical/biome-config": "^0.10.0",
+        "@canonical/biome-config": "^0.11.0",
         "@canonical/tokens": "^0.9.0",
       },
     },
@@ -569,7 +596,7 @@
       },
       "devDependencies": {
         "@biomejs/biome": "2.3.11",
-        "@canonical/biome-config": "^0.10.0",
+        "@canonical/biome-config": "^0.11.0",
         "@types/bun": "^1.3.6",
       },
       "peerDependencies": {
@@ -579,11 +606,14 @@
     "packages/utils": {
       "name": "@canonical/utils",
       "version": "0.11.0",
+      "dependencies": {
+        "@canonical/ds-types": "^0.11.0",
+      },
       "devDependencies": {
         "@biomejs/biome": "2.3.11",
-        "@canonical/biome-config": "^0.10.0",
-        "@canonical/typescript-config-base": "^0.10.0",
-        "@canonical/webarchitect": "^0.10.0",
+        "@canonical/biome-config": "^0.11.0",
+        "@canonical/typescript-config-base": "^0.11.0",
+        "@canonical/webarchitect": "^0.11.0",
         "globals": "^17.0.0",
         "typescript": "^5.9.3",
         "vite": "^7.3.1",
@@ -603,8 +633,8 @@
       },
       "devDependencies": {
         "@biomejs/biome": "2.3.11",
-        "@canonical/biome-config": "^0.10.0",
-        "@canonical/typescript-config-base": "^0.10.0",
+        "@canonical/biome-config": "^0.11.0",
+        "@canonical/typescript-config-base": "^0.11.0",
         "@types/json-schema": "^7.0.15",
         "typescript": "^5.9.3",
       },
@@ -712,6 +742,8 @@
     "@canonical/storybook-addon-msw": ["@canonical/storybook-addon-msw@workspace:packages/storybook/addon-msw"],
 
     "@canonical/storybook-config": ["@canonical/storybook-config@workspace:configs/storybook"],
+
+    "@canonical/storybook-helpers": ["@canonical/storybook-helpers@workspace:packages/storybook/helpers"],
 
     "@canonical/styles": ["@canonical/styles@workspace:packages/styles/main/canonical"],
 

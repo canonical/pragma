@@ -1,0 +1,119 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+import { PackageInfo } from "@canonical/storybook-helpers";
+
+<Meta title="Introduction" />
+
+# Global Tier — React
+
+The foundational layer of Pragma. Every interface at Canonical shares these components — buttons, badges, cards, accordions, tooltips. This package is the React implementation of specifications defined in the Design System Ontology, a semantic knowledge graph that bridges design decisions to working code.
+
+## Package
+
+<PackageInfo
+  name="@canonical/react-ds-global"
+  version="0.11.0"
+  tier="global"
+  framework="react"
+  status="stable"
+  dependencies={["@canonical/ds-assets", "@canonical/styles", "@canonical/utils"]}
+  links={{
+    source: "https://github.com/canonical/pragma/tree/main/packages/react/ds-global",
+    ontology: "https://github.com/canonical/design-system",
+  }}
+/>
+
+## Architecture
+
+Components implement specifications from the Design System Ontology. Each source file contains an `@implements` annotation linking it to its semantic specification.
+
+```
+Design System Ontology (specifications)
+         ↓
+@canonical/react-ds-global (this package)
+         ↓
+Your Application
+```
+
+## Components
+
+<table>
+  <thead>
+    <tr>
+      <th>Component</th>
+      <th>Purpose</th>
+      <th>Readiness</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td>Accordion</td><td>Expandable content sections</td><td>A</td></tr>
+    <tr><td>Badge</td><td>Status indicators, counts, labels</td><td>C</td></tr>
+    <tr><td>Breadcrumbs</td><td>Navigation hierarchy</td><td>A</td></tr>
+    <tr><td>Button</td><td>Action triggers</td><td>B</td></tr>
+    <tr><td>Card</td><td>Content grouping</td><td>A</td></tr>
+    <tr><td>Chip</td><td>Compact interactive elements</td><td>C</td></tr>
+    <tr><td>Icon</td><td>SVG icon rendering</td><td>A</td></tr>
+    <tr><td>Label</td><td>Form and content labels</td><td>B</td></tr>
+    <tr><td>Link</td><td>Navigation anchors</td><td>C</td></tr>
+    <tr><td>Rule</td><td>Visual separators</td><td>C</td></tr>
+    <tr><td>Section</td><td>Content sectioning</td><td>C</td></tr>
+    <tr><td>SkipLink</td><td>Accessibility navigation</td><td>C</td></tr>
+    <tr><td>Tile</td><td>Selectable cards</td><td>B</td></tr>
+    <tr><td>Timeline</td><td>Chronological sequences</td><td>A</td></tr>
+    <tr><td>Tooltip</td><td>Contextual information</td><td>C</td></tr>
+  </tbody>
+</table>
+
+## Modifier System
+
+Components support orthogonal modifier families for systematic variation:
+
+```tsx
+// Importance: visual hierarchy
+<Button importance="primary">Main action</Button>
+<Button importance="secondary">Supporting action</Button>
+<Button importance="tertiary">Subtle action</Button>
+
+// Anticipation: expected outcome
+<Button anticipation="constructive">Save</Button>
+<Button anticipation="caution">Reset</Button>
+<Button anticipation="destructive">Delete</Button>
+
+// Combined
+<Button importance="primary" anticipation="destructive">
+  Delete Account
+</Button>
+```
+
+Each component with modifier support includes a **Matrix** story showing all combinations.
+
+## Installation
+
+```bash
+bun add @canonical/react-ds-global
+```
+
+Requires React 19+. Depends on `@canonical/styles` for CSS.
+
+## Usage
+
+```tsx
+import { Button, Badge, Card } from "@canonical/react-ds-global";
+import "@canonical/styles";
+
+function Example() {
+  return (
+    <Card>
+      <Badge>New</Badge>
+      <Button importance="primary">Submit</Button>
+    </Card>
+  );
+}
+```
+
+Components accept standard HTML attributes for their underlying elements.
+
+## Links
+
+- [Source](https://github.com/canonical/pragma/tree/main/packages/react/ds-global)
+- [Design System Ontology](https://github.com/canonical/design-system)
+- [Code Standards](https://github.com/canonical/code-standards)

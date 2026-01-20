@@ -1,0 +1,91 @@
+/**
+ * ModifierMatrix styles
+ *
+ * A clean, minimal table layout for displaying modifier combinations.
+ * Inherits colors from the environment - no hardcoded color overrides.
+ */
+
+.modifier-matrix {
+  --matrix-cell-padding: 0.75rem;
+  --matrix-header-padding: 0.5rem 0.75rem;
+  --matrix-font-size: 0.875rem;
+  --matrix-title-font-size: 1rem;
+  --matrix-corner-size: 6rem;
+
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  font: inherit;
+  color: inherit;
+
+  & > .title {
+    margin: 0;
+    font-size: var(--matrix-title-font-size);
+    font-weight: 600;
+  }
+
+  & > .table {
+    border-collapse: collapse;
+    font-size: var(--matrix-font-size);
+
+    & .header,
+    & .cell {
+      border: 1px solid currentColor;
+      border-color: color-mix(in srgb, currentColor 25%, transparent);
+      text-align: center;
+      vertical-align: middle;
+    }
+
+    & .header {
+      padding: var(--matrix-header-padding);
+      background-color: color-mix(in srgb, currentColor 5%, transparent);
+      font-weight: 500;
+      white-space: nowrap;
+
+      &.corner {
+        position: relative;
+        width: var(--matrix-corner-size);
+        min-width: var(--matrix-corner-size);
+        height: var(--matrix-corner-size);
+        background: linear-gradient(
+          to top right,
+          color-mix(in srgb, currentColor 5%, transparent) 49.5%,
+          color-mix(in srgb, currentColor 25%, transparent) 49.5%,
+          color-mix(in srgb, currentColor 25%, transparent) 50.5%,
+          color-mix(in srgb, currentColor 5%, transparent) 50.5%
+        );
+
+        & > .axis-label {
+          position: absolute;
+          font-size: 0.75rem;
+          font-weight: 600;
+          opacity: 0.7;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+
+          &.row {
+            bottom: 0.375rem;
+            left: 0.375rem;
+          }
+
+          &.col {
+            top: 0.375rem;
+            right: 0.375rem;
+          }
+        }
+      }
+
+      &.row-header {
+        text-align: right;
+      }
+
+      &.col-header {
+        text-align: center;
+      }
+    }
+
+    & .cell {
+      padding: var(--matrix-cell-padding);
+    }
+  }
+}

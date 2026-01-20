@@ -31,6 +31,7 @@
     "apps/react/*"
   ],
   "scripts": {
+    "collect": "bun scripts/collect-implementations.ts",
     "build": "lerna run build",
     "prepare": "bun run build",
     "lerna": "lerna",

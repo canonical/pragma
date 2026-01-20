@@ -1,0 +1,18 @@
+/**
+ * Tile.Content styles
+ * @implements dso:global.subcomponent.tile-content
+ *
+ * DSL anatomy mapping:
+ * - layout.type: stack -> display: flex; flex-direction: column
+ * - layout.direction: vertical -> flex-direction: column
+ * - spacing.internal: spacing/medium -> padding: var(--spacing-medium)
+ */
+.ds.tile-content {
+  /* layout.type: stack, layout.direction: vertical */
+  display: flex;
+  flex-direction: column;
+
+  /* spacing.internal: spacing/medium */
+  padding: var(--tile-content-padding, var(--spacing-medium, 1rem));
+  gap: var(--tile-content-gap, var(--spacing-medium, 1rem));
+}

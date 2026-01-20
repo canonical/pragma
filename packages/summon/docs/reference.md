@@ -695,12 +695,39 @@ summon [generator-path] [options]
 | Flag | Short | Description |
 |------|-------|-------------|
 | `--dry-run` | `-d` | Preview without writing files |
-| `--yes` | `-y` | Skip confirmation prompts |
+| `--yes` | `-y` | Skip confirmation prompts and preview |
 | `--verbose` | `-v` | Show debug output |
+| `--show-contents` | | Show file contents in dry-run (useful for LLMs) |
 | `--no-preview` | | Skip file preview step |
 | `--no-generated-stamp` | | Disable generated file stamp comments |
 | `--generators` | `-g` | Load generators from specific path |
 | `--help` | `-h` | Show help |
+
+### Verbose Dry-Run with File Contents
+
+The `--show-contents` flag enables verbose output during dry-run, showing the complete content of files that would be generated. This is particularly useful for:
+
+- **LLM agents**: AI assistants can review generated code without writing to disk
+- **Code review**: Preview exact file contents before committing to generation
+- **CI pipelines**: Log generated content for debugging or auditing
+
+```bash
+# Preview with file contents (non-interactive mode)
+summon component react src/components/Button --dry-run --show-contents -y
+```
+
+Output includes line-numbered file content:
+
+```
+├─ Create file   src/components/Button/Button.tsx
+│  1 │ import type { ButtonProps } from "./types.js";
+│  2 │ import "./styles.css";
+│  3 │
+│  4 │ const componentCssClassName = "ds button";
+│    ... (truncated after 50 lines)
+```
+
+Content is truncated to 50 lines and 120 characters per line to keep output manageable.
 
 ### Generated File Stamps
 

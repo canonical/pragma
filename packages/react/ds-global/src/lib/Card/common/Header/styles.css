@@ -1,0 +1,18 @@
+/**
+ * Card.Header styles
+ * @implements ds:global.subcomponent.card-header
+ *
+ * DSL anatomy:
+ * - layout.type: stack
+ * - layout.direction: vertical
+ * - spacing.internal: spacing/medium
+ */
+.ds.card-header {
+  /* layout.type: stack, layout.direction: vertical */
+  display: flex;
+  flex-direction: column;
+
+  /* spacing.internal: spacing/medium */
+  gap: var(--card-header-gap, var(--spacing-medium, 1rem));
+  padding: var(--card-header-padding, var(--spacing-medium, 1rem));
+}

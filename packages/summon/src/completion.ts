@@ -200,6 +200,7 @@ export const getArgumentCompletions = (
       "--verbose",
       "--no-preview",
       "--no-generated-stamp",
+      "--llm",
       "--help",
     ];
     for (const flag of builtinFlags) {

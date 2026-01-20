@@ -1,29 +1,62 @@
 import type Props from "./types.js";
 import "./styles.css";
 
-/** Buttons are clickable elements used to perform an action. */
+/**
+ * Buttons trigger actions within an interface, typically involving
+ * data transformation or manipulation. They provide clear visual
+ * indicators of the primary actions users can perform.
+ *
+ * @implements ds:global.component.button
+ */
 const Button = ({
   id,
   className,
   children,
   style,
-  appearance,
+  importance,
+  anticipation,
+  variant,
+  icon,
+  iconPosition = "start",
   ...props
 }: Props): React.ReactElement => {
+  const classNames = [
+    "ds",
+    "button",
+    importance,
+    anticipation,
+    variant,
+    className,
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  // Derive aria-label from children if not explicitly provided
+  const ariaLabel =
+    props["aria-label"] ||
+    (typeof children === "string" ? children : undefined);
+
+  const iconElement = icon && <span className="icon">{icon}</span>;
+
   return (
     <button
       id={id}
-      className={["ds", "button", appearance, className]
-        .filter(Boolean)
-        .join(" ")}
+      className={classNames}
       style={style}
-      // Apply custom aria label if provided, otherwise use children text.
-      // If the child is a JSX element (and not just a string), a custom aria-label should be used, otherwise the aria-label will be [object Object].
-      // toString() needed to avoid type error for non-string children
-      aria-label={props["aria-label"] || children?.toString()}
+      aria-label={ariaLabel}
       {...props}
     >
-      {children}
+      {iconPosition === "start" ? (
+        <>
+          {iconElement}
+          {children}
+        </>
+      ) : (
+        <>
+          {children}
+          {iconElement}
+        </>
+      )}
     </button>
   );
 };

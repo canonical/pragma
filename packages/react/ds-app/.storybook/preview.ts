@@ -1,26 +1,11 @@
-import { withThemeByClassName } from "@storybook/addon-themes";
-import type { Preview, ReactRenderer } from "@storybook/react-vite";
+import { previewConfig } from "@canonical/storybook-config/preview";
+import type { Preview } from "@storybook/react-vite";
 
 import "index.css";
 import "@canonical/styles-debug/baseline-grid";
 
 const preview: Preview = {
-  tags: ["autodocs"],
-  decorators: [
-    withThemeByClassName<ReactRenderer>({
-      themes: {
-        light: "is-light",
-        dark: "is-dark",
-        paper: "is-paper",
-      },
-      defaultTheme: "light",
-    }),
-  ],
-  parameters: {
-    docs: {
-      codePanel: true,
-    },
-  },
+  ...previewConfig,
 };
 
 export default preview;

@@ -6,7 +6,7 @@ import { withTooltip } from "./index.js";
 type TooltipType = ReturnType<typeof withTooltip>;
 
 const meta = {
-  title: "Tooltip/withTooltip",
+  title: "C/Tooltip/withTooltip",
   parameters: {
     layout: "centered",
   },

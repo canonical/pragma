@@ -1,0 +1,25 @@
+/**
+ * Tile.Header styles
+ * @implements dso:global.subcomponent.tile-header
+ *
+ * DSL anatomy mapping:
+ * - layout.type: flow -> display: flex
+ * - layout.direction: horizontal -> flex-direction: row
+ * - layout.align: center -> align-items: center
+ * - spacing.internal: spacing/medium -> padding: var(--spacing-medium)
+ */
+.ds.tile-header {
+  /* layout.type: flow, layout.direction: horizontal */
+  display: flex;
+  flex-direction: row;
+
+  /* layout.align: center */
+  align-items: center;
+
+  /* spacing.internal: spacing/medium */
+  padding: var(--tile-header-padding, var(--spacing-medium, 1rem));
+  gap: var(--tile-header-gap, var(--spacing-small, 0.5rem));
+
+  /* Typography */
+  font-weight: var(--tile-header-font-weight, var(--font-weight-semibold, 600));
+}

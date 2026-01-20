@@ -5,7 +5,7 @@ import { SECTION_SPACING } from "./constants.js";
 import Component from "./Section.js";
 
 const meta = {
-  title: "Section",
+  title: "C/Section",
   component: Component,
   argTypes: {
     children: {

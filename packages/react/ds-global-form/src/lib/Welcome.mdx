@@ -1,0 +1,127 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+import { PackageInfo } from "@canonical/storybook-helpers";
+
+<Meta title="Introduction" />
+
+# Form Components — React
+
+Forms are where users provide data — getting them right is critical for both usability and data quality. This package extends the Global tier with specialized input components, validation patterns, and accessible form structures that work consistently across all Canonical products.
+
+## Package
+
+<PackageInfo
+  name="@canonical/react-ds-global-form"
+  version="0.11.0"
+  tier="global_form"
+  framework="react"
+  status="stable"
+  dependencies={["@canonical/react-ds-global", "@canonical/styles", "@canonical/utils", "downshift", "react-hook-form"]}
+  links={{
+    source: "https://github.com/canonical/pragma/tree/main/packages/react/ds-global-form",
+    ontology: "https://github.com/canonical/design-system",
+  }}
+/>
+
+## Architecture
+
+Form components build on Global tier primitives and add input-specific behavior, validation states, and accessibility patterns.
+
+```
+@canonical/react-ds-global (dependency)
+         ↓
+@canonical/react-ds-global-form (this package)
+         ↓
+Your Application
+```
+
+## Components
+
+### Field
+
+The `Field` component wraps inputs with labels, help text, and validation messages:
+
+```tsx
+import { Field } from "@canonical/react-ds-global-form";
+
+<Field label="Email" help="We'll never share your email" error={errors.email}>
+  <Field.Text type="email" name="email" required />
+</Field>
+```
+
+### Input Types
+
+<table>
+  <thead>
+    <tr>
+      <th>Input</th>
+      <th>Purpose</th>
+      <th>Readiness</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td>Text</td><td>Single-line text, email, password, url, tel</td><td>A</td></tr>
+    <tr><td>Textarea</td><td>Multi-line text</td><td>A</td></tr>
+    <tr><td>Select</td><td>Dropdown selection</td><td>A</td></tr>
+    <tr><td>Checkbox</td><td>Boolean or multiple selection</td><td>A</td></tr>
+    <tr><td>SimpleChoices</td><td>Radio buttons, checkbox groups</td><td>B</td></tr>
+    <tr><td>Range</td><td>Numeric slider</td><td>B</td></tr>
+    <tr><td>Combobox</td><td>Searchable dropdown</td><td>B</td></tr>
+    <tr><td>Hidden</td><td>Hidden form values</td><td>A</td></tr>
+  </tbody>
+</table>
+
+### Form
+
+Container for field groups with submission handling:
+
+```tsx
+import { Form, Field } from "@canonical/react-ds-global-form";
+
+<Form onSubmit={handleSubmit}>
+  <Field label="Name">
+    <Field.Text name="name" />
+  </Field>
+  <Field label="Bio">
+    <Field.Textarea name="bio" />
+  </Field>
+  <button type="submit">Submit</button>
+</Form>
+```
+
+## Validation States
+
+Fields communicate validation through visual states:
+
+```tsx
+// Error state
+<Field label="Email" error="Invalid email address">
+  <Field.Text type="email" />
+</Field>
+
+// Required field
+<Field label="Name" required>
+  <Field.Text name="name" />
+</Field>
+
+// Help text
+<Field label="Password" help="Minimum 8 characters">
+  <Field.Text type="password" />
+</Field>
+```
+
+## Accessibility
+
+Field components handle label-input association, error announcements, required field indication, and help text linking automatically.
+
+## Installation
+
+```bash
+bun add @canonical/react-ds-global-form
+```
+
+Requires `@canonical/react-ds-global` as a peer dependency.
+
+## Links
+
+- [Source](https://github.com/canonical/pragma/tree/main/packages/react/ds-global-form)
+- [Design System Ontology](https://github.com/canonical/design-system)

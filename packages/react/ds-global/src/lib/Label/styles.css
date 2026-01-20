@@ -1,0 +1,33 @@
+/**
+ * Label styles
+ * @implements dso:global.component.label
+ *
+ * DSL anatomy mapping:
+ * - layout.display: inline -> display: inline
+ * - typography.size: font/size/label -> font-size: var(--font-size-label)
+ * - typography.weight: font/weight/medium -> font-weight: var(--font-weight-medium)
+ */
+.ds.label {
+  /* layout.display: inline */
+  display: inline;
+
+  /* typography.size: font/size/label */
+  font-size: var(--label-font-size, var(--font-size-label, 0.75rem));
+
+  /* typography.weight: font/weight/medium */
+  font-weight: var(--label-font-weight, var(--font-weight-medium, 500));
+
+  /* Additional styling */
+  line-height: var(--label-line-height, 1.2);
+  color: var(
+    --modifier-color-text,
+    var(--label-color, var(--color-text-secondary, inherit))
+  );
+  background-color: var(--modifier-color, var(--label-background, transparent));
+  padding-inline: var(--label-padding-inline, var(--spacing-xsmall, 0.25rem));
+  padding-block: var(--label-padding-block, var(--spacing-xxsmall, 0.125rem));
+  border-radius: var(
+    --label-border-radius,
+    var(--border-radius-small, 0.125rem)
+  );
+}

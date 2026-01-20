@@ -50,6 +50,7 @@
     "@biomejs/biome": "2.3.11",
     "@canonical/biome-config": "^0.11.0",
     "@canonical/ds-types": "^0.11.0",
+    "@canonical/storybook-helpers": "^0.11.0",
     "@canonical/typescript-config-react": "^0.11.0",
     "@canonical/webarchitect": "^0.11.0",
     "@chromatic-com/storybook": "^5.0.0",

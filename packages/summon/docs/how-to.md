@@ -452,6 +452,82 @@ summon -g ./packages/my-generators component react
 For CI/scripts:
 
 ```bash
-summon my-gen --name=auto --yes           # skip prompts, use defaults
-summon my-gen --name=auto --yes --no-preview  # also skip preview
+summon my-gen --name=auto -y              # skip prompts, use defaults, skip preview
+summon my-gen --name=auto --yes           # same as -y
 ```
+
+---
+
+## Non-Interactive / LLM Usage
+
+### Running in CI Pipelines
+
+For fully automated execution in CI/CD:
+
+```bash
+# Provide ALL required prompts as flags + -y
+summon component react \
+  --component-path=src/components/Button \
+  --with-styles \
+  --with-stories \
+  --with-ssr-tests \
+  -y
+```
+
+Key flags:
+- `-y` / `--yes` — Skip all confirmation prompts AND the file preview step
+- All prompt values as flags (check `summon <generator> --help` for available flags)
+
+### Verbose Dry-Run for LLM Agents
+
+When LLMs need to review generated code before committing, use `--show-contents` with `--dry-run`:
+
+```bash
+summon component react src/components/Button --dry-run --show-contents -y
+```
+
+This outputs complete file contents with line numbers:
+
+```
+├─ Create file   src/components/Button/Button.tsx
+│  1 │ import type { ButtonProps } from "./types.js";
+│  2 │ import "./styles.css";
+│  3 │
+│  4 │ const componentCssClassName = "ds button";
+│    ... (truncated after 50 lines)
+```
+
+**Why this matters for LLMs:**
+- Review generated code structure and patterns
+- Verify code standards compliance before writing
+- Extract patterns for similar components
+- Debug generation issues without modifying the filesystem
+
+### Current Limitation: TTY Requirement
+
+Summon's interactive UI (built with Ink) requires a TTY for keyboard input. When running in non-TTY environments (CI, LLM coding assistants like Claude Code):
+
+**Workaround**: Ensure all prompt values are provided via flags. With `--yes` and all values specified, the interactive UI is minimally invoked.
+
+**Alternative**: For complex component generation that integrates with design system ontologies, consider using the `component-from-ontology` skill in `/skills/component-from-ontology/SKILL.md`, which provides LLM-guided generation without TTY requirements.
+
+### Programmatic Usage
+
+For full control, invoke generators programmatically:
+
+```typescript
+import { generators } from "@canonical/summon-component";
+import { run } from "@canonical/summon";
+
+const generator = generators["component/react"];
+
+// Execute directly
+await run(generator.generate({
+  componentPath: "src/components/Button",
+  withStyles: true,
+  withStories: true,
+  withSsrTests: true,
+}));
+```
+
+This bypasses the CLI entirely, suitable for scripts and automation.

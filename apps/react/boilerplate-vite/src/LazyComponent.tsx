@@ -2,7 +2,7 @@ import { Button } from "@canonical/react-ds-global";
 
 function LazyComponent() {
   return (
-    <Button appearance={"positive"} onClick={() => alert("clicked!")}>
+    <Button anticipation="constructive" onClick={() => alert("clicked!")}>
       Click me
     </Button>
   );

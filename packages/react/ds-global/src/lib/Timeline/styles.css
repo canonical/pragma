@@ -1,0 +1,13 @@
+/**
+ * Timeline styles
+ * @implements dso:global.pattern.timeline
+ *
+ * DSL anatomy mapping:
+ * - layout.type: stack -> display: flex; flex-direction: column
+ * - layout.direction: vertical -> flex-direction: column
+ */
+.ds.timeline {
+  /* layout.type: stack, layout.direction: vertical */
+  display: flex;
+  flex-direction: column;
+}
