@@ -63,7 +63,7 @@ React components are organised into tiers based on their scope of applicability.
 | Global | `@canonical/react-ds-global` | Universal components like Button, Badge, Card, and Chip that apply across all contexts. |
 | Global Form | `@canonical/react-ds-global-form` | Form controls including Input, Select, and Checkbox, along with validation patterns. See [creating custom fields](packages/react/ds-global-form/docs/creating-custom-fields.md) and [creating middleware](packages/react/ds-global-form/docs/creating-middleware.md). |
 | Apps | `@canonical/react-ds-app` | Application-level UI such as Navigation and Toolbar, suited for internal tools. |
-| Apps/WPE | `@canonical/react-ds-app-launchpad` | Components specific to Launchpad and WordPress Engine applications. |
+| Apps/WPE | `@canonical/react-ds-app-launchpad` | Components specific to Launchpad and Workplace Engineering applications. |
 
 The tiers correspond to the [Design System Ontology](https://github.com/canonical/design-system), which models the design system as structured, queryable data. Each component has a formal specification including usage guidelines, modifier families, and anatomy definitions. This semantic approach enables tooling to understand design intent, not just implementation details.
 
