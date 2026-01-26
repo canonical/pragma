@@ -1,7 +1,7 @@
 {
   "name": "@canonical/summon",
   "description": "A monadic task-centric code generator framework with React Ink CLI.",
-  "version": "0.1.0",
+  "version": "0.12.0-experimental.0",
   "type": "module",
   "module": "src/index.ts",
   "types": "src/index.ts",

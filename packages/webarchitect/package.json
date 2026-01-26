@@ -1,7 +1,7 @@
 {
   "name": "@canonical/webarchitect",
   "description": "A tool to test the compliance with architecture specifications for packages and applications.",
-  "version": "0.11.0",
+  "version": "0.12.0-experimental.0",
   "type": "module",
   "module": "src/index.ts",
   "types": "src/index.ts",

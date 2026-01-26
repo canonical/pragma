@@ -1,6 +1,6 @@
 {
   "name": "@canonical/typescript-config-svelte",
-  "version": "0.11.0",
+  "version": "0.12.0-experimental.0",
   "description": "Canonical's standard TypeScript configuration for Svelte projects",
   "main": "tsconfig.json",
   "author": {
@@ -27,8 +27,8 @@
     "@canonical/biome-config": "^0.11.0"
   },
   "peerDependencies": {
-    "typescript": "^5.9.3",
-    "svelte": "^5.0.0"
+    "svelte": "^5.0.0",
+    "typescript": "^5.9.3"
   },
   "dependencies": {
     "@canonical/typescript-config-base": "^0.11.0"
