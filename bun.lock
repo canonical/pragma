@@ -128,6 +128,21 @@
         "typescript": "^5.9.3",
       },
     },
+    "configs/typescript-svelte": {
+      "name": "@canonical/typescript-config-svelte",
+      "version": "0.11.0",
+      "dependencies": {
+        "@canonical/typescript-config-base": "^0.11.0",
+      },
+      "devDependencies": {
+        "@biomejs/biome": "2.3.11",
+        "@canonical/biome-config": "^0.11.0",
+      },
+      "peerDependencies": {
+        "svelte": "^5.0.0",
+        "typescript": "^5.9.3",
+      },
+    },
     "packages/ds-assets": {
       "name": "@canonical/ds-assets",
       "version": "0.11.0",
@@ -774,6 +789,8 @@
     "@canonical/typescript-config-base": ["@canonical/typescript-config-base@workspace:configs/typescript-base"],
 
     "@canonical/typescript-config-react": ["@canonical/typescript-config-react@workspace:configs/typescript-react"],
+
+    "@canonical/typescript-config-svelte": ["@canonical/typescript-config-svelte@workspace:configs/typescript-svelte"],
 
     "@canonical/typography": ["@canonical/typography@workspace:packages/typography"],
 

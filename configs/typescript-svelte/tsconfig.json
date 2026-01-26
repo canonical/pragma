@@ -1,0 +1,6 @@
+{
+  "extends": "@canonical/typescript-config-base",
+  "compilerOptions": {
+    "types": ["svelte", "vite/client"]
+  }
+}
