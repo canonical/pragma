@@ -1,0 +1,34 @@
+{
+  "extends": ["@canonical/biome-config"],
+  "files": {
+    "includes": [
+      "src",
+      "*.json",
+      "!**/node_modules",
+      "!**/dist",
+      "!**/.build-cache"
+    ]
+  },
+  "html": {
+    "formatter": {
+      "indentScriptAndStyle": true
+    }
+  },
+  "overrides": [
+    {
+      "includes": ["src/**/*.svelte"],
+      "linter": {
+        "rules": {
+          "style": {
+            "useConst": "off",
+            "useImportType": "off"
+          },
+          "correctness": {
+            "noUnusedVariables": "off",
+            "noUnusedImports": "off"
+          }
+        }
+      }
+    }
+  ]
+}
