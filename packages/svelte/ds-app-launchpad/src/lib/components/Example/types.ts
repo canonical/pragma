@@ -4,4 +4,4 @@ import type { SvelteHTMLElements } from "svelte/elements";
 
 type BaseProps = SvelteHTMLElements["div"];
 
-export interface ExampleProps extends Exclude<BaseProps, "children"> {}
+export interface ExampleProps extends Omit<BaseProps, "children"> {}
