@@ -53,7 +53,7 @@
   "dependencies": {
     "chalk": "^5.6.2",
     "commander": "^14.0.2",
-    "ejs": "^3.1.10",
+    "ejs": "^4.0.0",
     "ink": "^6.0.0",
     "ink-select-input": "^6.0.0",
     "ink-spinner": "^5.0.0",
