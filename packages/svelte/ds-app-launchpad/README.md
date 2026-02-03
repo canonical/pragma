@@ -29,6 +29,16 @@ bun run check
 bun run test
 ```
 
+### Testing
+
+Tests use **Vitest browser mode**, which requires **Playwright**. This setup is currently **experimental in Pragma**.
+
+One-time setup (install Playwright browsers):
+
+```bash
+bunx playwright install
+```
+
 ## License
 
 LGPL-3.0

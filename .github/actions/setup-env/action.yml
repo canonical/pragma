@@ -26,18 +26,6 @@ runs:
       shell: bash
       run: bun install --frozen-lockfile
 
-
-    - name: Cache Playwright browsers
-      uses: actions/cache@v4
-      with:
-        path: ~/.cache/ms-playwright
-        key: ${{ runner.os }}-playwright-${{ hashFiles('**/bun.lock') }}
-          
-    - name: Install Playwright browsers
-      if: steps.cache-playwright-browsers.outputs.cache-hit != 'true'
-      shell: bash
-      run: bunx playwright install --with-deps
-
       # Workaround for https://github.com/oven-sh/bun/issues/19782
       # Workspace bin symlinks aren't created on first install. Remove after fix is merged.
     - name: Re-link workspace binaries
