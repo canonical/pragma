@@ -12,8 +12,7 @@
       "!**/node_modules",
       "!**/dist",
       "!**/*.gen.ts",
-      "!**/storybook-static",
-      "!**/.build-cache"
+      "!**/storybook-static"
     ]
   },
   "formatter": {
@@ -41,29 +40,6 @@
           "correctness": {
             "useUniqueElementIds": "off"
           }
-        }
-      }
-    },
-    {
-      "includes": ["**/*.svelte"],
-      "linter": {
-        // TODO: watch for the next biome release with better support for svelte
-        // and reconsider these rules.
-        // https://github.com/biomejs/biome/issues/7928 (almost fixed 14/15 tasks)
-        "rules": {
-          "style": {
-            "useConst": "off",
-            "useImportType": "off"
-          },
-          "correctness": {
-            "noUnusedVariables": "off",
-            "noUnusedImports": "off"
-          }
-        }
-      },
-      "html": {
-        "formatter": {
-          "indentScriptAndStyle": true
         }
       }
     }

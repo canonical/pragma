@@ -2,6 +2,23 @@
   "$schema": "https://raw.githubusercontent.com/canonical/pragma/refs/heads/main/packages/webarchitect/src/schema.json",
   "name": "package-svelte",
   "extends": ["package"],
+  "biome": {
+    "file": {
+      "name": "biome.json",
+      "contains": {
+        "type": "object",
+        "properties": {
+          "extends": {
+            "type": "array",
+            "items": { "const": "@canonical/biome-config-svelte" },
+            "minItems": 1,
+            "maxItems": 1
+          }
+        },
+        "required": ["extends"]
+      }
+    }
+  },
   "package-structure": {
     "file": {
       "name": "package.json",

@@ -1,6 +1,6 @@
 {
-  "extends": ["@canonical/biome-config"],
-  "files": {
-    "includes": ["src", "vite.config.ts", "svelte.config.ts", "tsconfig.json"]
-  }
+	"extends": ["@canonical/biome-config-svelte"],
+	"files": {
+		"includes": ["src", "vite.config.ts", "svelte.config.ts", "tsconfig.json"]
+	}
 }

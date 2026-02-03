@@ -1,0 +1,26 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.3.11/schema.json",
+  "extends": ["@canonical/biome-config"],
+  "overrides": [
+    {
+      "includes": ["**/*.svelte"],
+      "linter": {
+        "rules": {
+          "style": {
+            "useConst": "off",
+            "useImportType": "off"
+          },
+          "correctness": {
+            "noUnusedVariables": "off",
+            "noUnusedImports": "off"
+          }
+        }
+      },
+      "html": {
+        "formatter": {
+          "indentScriptAndStyle": true
+        }
+      }
+    }
+  ]
+}
