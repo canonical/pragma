@@ -5,7 +5,7 @@
   "type": "module",
   "license": "GPL-3.0-only",
   "scripts": {
-    "dev": "vite",
+    "dev": "bun run serve",
     "build": "bun run build:client && bun run build:server",
     "build:all": "bun run build:client && bun run build:server && bun run build:storybook",
     "build:storybook": "storybook build",
@@ -44,8 +44,6 @@
     "@canonical/typescript-config-react": "^0.13.0",
     "@chromatic-com/storybook": "^5.0.1",
     "@storybook/react-vite": "^10.2.8",
-    "@tanstack/react-router-devtools": "^1.151.3",
-    "@tanstack/router-plugin": "^1.151.5",
     "@types/express": "^5.0.6",
     "@types/node": "^24.10.13",
     "@types/react": "^19.2.13",

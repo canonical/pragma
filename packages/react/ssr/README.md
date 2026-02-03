@@ -1,6 +1,7 @@
 # @canonical/react-ssr
 
-Server-side rendering utilities for React applications. Provides streaming HTML rendering with `JSXRenderer`, Express middleware with `serveStream`, and automatic script/link tag injection from your build output.
+Server-side rendering utilities for React applications. Provides streaming HTML rendering, Express middleware with `serveStream`, 
+and automatic script/link tag injection from your build output.
 
 ## Installation
 
@@ -10,17 +11,39 @@ bun add @canonical/react-ssr
 
 Peer dependencies: `react`, `react-dom`, `express` (for Express usage).
 
+## SSR flavors
+
+There are usually two different flavors of SSR to be considered.
+
+Source: [Tanstack Router SSR Guide](https://tanstack.com/router/latest/docs/framework/react/guide/ssr)
+
+### Non-streaming SSR
+
+The entire page is rendered on the server and sent to the client in one single HTML request, 
+including the serialized data the application needs to hydrate on the client.
+
+This is what the `StringRenderer` offers.
+
+### Streaming SSR
+
+The critical first paint of the page is rendered on the server and sent to the client in one single HTML request, 
+including the serialized data the application needs to hydrate on the client.
+
+The rest of the page is then streamed to the client as it is rendered on the server.
+
+This is accomplished by using the `PipeableStreamRenderer`.
+
 ## Express Server
 
 Create a renderer that wraps your server entry component:
 
 ```tsx
 // src/ssr/renderer.tsx
-import { JSXRenderer } from "@canonical/react-ssr/renderer";
+import { PipeableStreamRenderer } from "@canonical/react-ssr/renderer";
 import htmlString from "../../dist/client/index.html?raw";
 import EntryServer from "./entry-server.js";
 
-const Renderer = new JSXRenderer(EntryServer, { htmlString });
+const Renderer = new PipeableStreamRenderer(EntryServer, { htmlString });
 export default Renderer.render;
 ```
 
@@ -156,12 +179,10 @@ The client build produces `dist/client/index.html` with bundled script/link tags
 Pass options to React's `renderToPipeableStream`:
 
 ```ts
-const Renderer = new JSXRenderer(EntryServer, {
+const Renderer = new PipeableStreamRenderer(EntryServer, {
   htmlString,
   renderToPipeableStreamOptions: {
     bootstrapModules: ["src/ssr/entry-client.tsx"],
-    onShellReady() { console.log("Shell ready"); },
-    onError(err) { console.error(err); },
   },
 });
 ```

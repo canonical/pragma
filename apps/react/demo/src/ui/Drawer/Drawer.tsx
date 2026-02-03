@@ -1,5 +1,5 @@
 /* @canonical/generator-ds 0.9.0-experimental.12 */
-import { type ReactElement, useMemo } from "react";
+import type { ReactElement } from "react";
 import type { DrawerProps } from "./types.js";
 import "./styles.css";
 import useDrawer from "./useDrawer.js";
