@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.2.4/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.3.11/schema.json",
   "vcs": {
     "enabled": false,
     "clientKind": "git",
@@ -12,7 +12,8 @@
       "!**/node_modules",
       "!**/dist",
       "!**/*.gen.ts",
-      "!**/storybook-static"
+      "!**/storybook-static",
+      "!**/.build-cache"
     ]
   },
   "formatter": {
@@ -40,6 +41,29 @@
           "correctness": {
             "useUniqueElementIds": "off"
           }
+        }
+      }
+    },
+    {
+      "includes": ["**/*.svelte"],
+      "linter": {
+        // TODO: watch for the next biome release with better support for svelte
+        // and reconsider these rules.
+        // https://github.com/biomejs/biome/issues/7928 (almost fixed 14/15 tasks)
+        "rules": {
+          "style": {
+            "useConst": "off",
+            "useImportType": "off"
+          },
+          "correctness": {
+            "noUnusedVariables": "off",
+            "noUnusedImports": "off"
+          }
+        }
+      },
+      "html": {
+        "formatter": {
+          "indentScriptAndStyle": true
         }
       }
     }

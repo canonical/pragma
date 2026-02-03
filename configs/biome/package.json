@@ -1,7 +1,7 @@
 {
   "name": "@canonical/biome-config",
   "version": "0.11.0",
-  "main": "biome.json",
+  "main": "biome.jsonc",
   "author": {
     "email": "webteam@canonical.com",
     "name": "Canonical Webteam"
@@ -18,8 +18,8 @@
   "scripts": {
     "check": "bun run check:biome",
     "check:fix": "bun run check:biome:fix",
-    "check:biome": "biome check *.json",
-    "check:biome:fix": "biome check --write *.json"
+    "check:biome": "biome check *.jsonc",
+    "check:biome:fix": "biome check --write *.jsonc"
   },
   "devDependencies": {
     "@biomejs/biome": "2.3.11"
