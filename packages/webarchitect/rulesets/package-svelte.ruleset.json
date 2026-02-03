@@ -1,39 +1,7 @@
 {
   "$schema": "https://raw.githubusercontent.com/canonical/pragma/refs/heads/main/packages/webarchitect/src/schema.json",
-  "name": "tool-ts",
-  "extends": ["base"],
-  "biome": {
-    "file": {
-      "name": "biome.json",
-      "contains": {
-        "type": "object",
-        "properties": {
-          "$schema": {
-            "type": "string"
-          },
-          "extends": {
-            "type": "array",
-            "items": { "const": "@canonical/biome-config" },
-            "minItems": 1,
-            "maxItems": 1
-          },
-          "files": {
-            "type": "object",
-            "properties": {
-              "includes": {
-                "type": "array",
-                "items": { "type": "string" }
-              }
-            },
-            "additionalProperties": false,
-            "description": "File inclusion patterns only"
-          }
-        },
-        "required": ["extends"],
-        "additionalProperties": false
-      }
-    }
-  },
+  "name": "package-svelte",
+  "extends": ["package"],
   "package-structure": {
     "file": {
       "name": "package.json",
@@ -51,28 +19,30 @@
             "const": "module"
           },
           "module": {
-            "const": "src/index.ts"
+            "const": "dist/index.js"
           },
           "types": {
-            "const": "src/index.ts"
+            "const": "dist/index.d.ts"
           },
           "files": {
             "type": "array",
-            "contains": { "const": "src" }
+            "contains": { "const": "dist" }
           },
           "scripts": {
             "type": "object",
             "properties": {
               "build": {
                 "type": "string",
-                "description": "Build command (can be no-op for TS-only packages)"
+                "pattern": ".*svelte-package.*",
+                "description": "Build must use svelte-package"
               },
               "test": {
                 "type": "string",
                 "description": "Test command (implementation flexible)"
               },
               "check:ts": {
-                "const": "tsc --noEmit"
+                "type": "string",
+                "pattern": "^svelte-check\\s"
               }
             },
             "required": ["build", "test", "check:ts"]
@@ -90,17 +60,24 @@
       }
     }
   },
-  "package-license": {
+  "package-svelte": {
     "file": {
       "name": "package.json",
       "contains": {
         "type": "object",
         "properties": {
-          "license": {
-            "const": "GPL-3.0"
+          "peerDependencies": {
+            "type": "object",
+            "properties": {
+              "svelte": {
+                "type": "string",
+                "pattern": "^(\\^|~|>=)?5\\."
+              }
+            },
+            "required": ["svelte"]
           }
         },
-        "required": ["license"]
+        "required": ["peerDependencies"]
       }
     }
   }

@@ -105,6 +105,8 @@ Webarchitect comes with several built-in rulesets that cover common project patt
 
 - `package-react`: - Extends base-package with React-specific requirements. This ruleset includes all the base package validations plus verification that React 19 or higher is specified as a dependency, ensuring your React projects use compatible versions. 
 
+- `package-svelte`: Extends the `package` ruleset for Svelte packages by redirecting output to a `dist/` folder built via **`svelte-package`** (necessary to compile components into valid JavaScript with the correct export conditions for bundlers) and requiring `check:ts` to run **`svelte-check`** (essential to leverage Svelte's additional type inference and specific validation logic that standard `tsc` does not provide).
+
 ### Ruleset Inheritance
 
 Rulesets can extend other rulesets, creating a hierarchy of validation requirements. For example, package-react extends base-package, which extends base. This means when you validate against package-react, you're actually running all three sets of rules. This inheritance model allows you to build complex validation requirements while keeping individual rulesets focused and maintainable.
@@ -272,6 +274,5 @@ The programmatic API makes it easy to integrate webarchitect into existing build
 
 - **Plain Text File Validation** - Webarchitect only validates JSON files. While it can verify that plain text files like LICENSE or README.md exist, it cannot validate their contents. This limitation affects license text verification, documentation standards, and configuration files that use non-JSON formats.
 - **IDE Integration** - No real-time validation feedback is available yet in code editors. Developers must run webarchitect manually or through build scripts to see validation results. Real-time diagnostics would require Language Server Protocol implementation or editor-specific plugins.
-- **Svelte support** - No svelte-specific ruleset has been developed yet.
 - **Error Code Granularity** - All validation failures return the same exit code (1) regardless of failure type. Missing files, invalid JSON syntax, and schema validation failures are not distinguished programmatically. This limits automated error handling and reporting capabilities.
  
