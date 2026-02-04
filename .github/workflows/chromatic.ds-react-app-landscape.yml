@@ -1,4 +1,4 @@
-name: "react-boilerplate-vite/chromatic"
+name: "react-ds-app-landscape/chromatic"
 on:
   pull_request:
     paths:
@@ -8,7 +8,7 @@ on:
       - packages/styles/**
       - packages/utils/**
       - packages/react/ds-global/**
-      - apps/react/boilerplate-vite/**
+      - packages/react/ds-app-landscape/**
   push:
     branches:
       - main
@@ -19,14 +19,14 @@ on:
       - packages/styles/**
       - packages/utils/**
       - packages/react/ds-global/**
-      - apps/react/boilerplate-vite/**
+      - packages/react/ds-app-landscape/**
 jobs:
   test-compile:
     uses: ./.github/workflows/chromatic._template.yml
     secrets:
-      CHROMATIC_PROJECT_TOKEN: ${{ secrets.CHROMATIC_TOKEN_CANONICAL_REACT_BOILERPLATE_VITE }}
+      CHROMATIC_PROJECT_TOKEN: ${{ secrets.CHROMATIC_TOKEN_CANONICAL_REACT_DS_APP_LANDSCAPE }}
     with:
-      working-directory: apps/react/boilerplate-vite
+      working-directory: packages/react/ds-app-landscape
       externals: '[
         "configs/storybook/**",
         "packages/ds-assets/**",
