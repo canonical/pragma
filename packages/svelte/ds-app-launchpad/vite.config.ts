@@ -1,8 +1,8 @@
 import { svelte } from "@sveltejs/vite-plugin-svelte";
 import { playwright } from "@vitest/browser-playwright";
-import { defineConfig } from "vite";
+import { defineConfig } from "vitest/config";
 
-export default defineConfig(() => ({
+export default defineConfig({
 	plugins: [
 		svelte({
 			compilerOptions: {
@@ -55,4 +55,4 @@ export default defineConfig(() => ({
 			},
 		],
 	},
-}));
+});

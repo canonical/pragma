@@ -10,6 +10,8 @@ type CreateConfigOptions = {
   staticDirs?: string[];
   extraAddons?: string[];
   disabledAddons?: string[];
+  projectName?: string;
+  projectLogo?: string;
 };
 
 const createConfig = (options: CreateConfigOptions = {}): StorybookConfig => ({
@@ -23,6 +25,7 @@ const createConfig = (options: CreateConfigOptions = {}): StorybookConfig => ({
     // // This is a bit weird, but for some reason this doesn't work when referenced via getAbsolutePath
     // // see also: https://github.com/storybookjs/storybook/issues/24351#issuecomment-1777911065
     "@canonical/storybook-addon-baseline-grid",
+    "@canonical/storybook-addon-shell-theme",
     ...(options.extraAddons || []),
   ].filter((addon) => !options.disabledAddons?.includes(addon)),
   framework: {
@@ -39,6 +42,10 @@ const createConfig = (options: CreateConfigOptions = {}): StorybookConfig => ({
     ...(options.staticDirs || []),
     getAbsolutePath("@canonical/ds-assets"),
   ],
+  env: {
+    PROJECT_NAME: options.projectName ?? "",
+    PROJECT_LOGO: options.projectLogo ?? "",
+  },
 });
 
 export default createConfig;
