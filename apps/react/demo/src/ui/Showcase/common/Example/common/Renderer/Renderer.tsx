@@ -21,10 +21,10 @@ const Renderer = ({ style, className }: RendererProps) => {
       <div style={demoOutput.css}>
         <style>{rendererCss}</style>
         <div
-            className={`ds shadow-container${showBaselineGrid ? " with-baseline-grid" : ""}`}
-          >
-            <activeExample.Component {...activeExampleFormValues} />
-          </div>
+          className={`ds shadow-container${showBaselineGrid ? " with-baseline-grid" : ""}`}
+        >
+          <activeExample.Component {...activeExampleFormValues} />
+        </div>
       </div>
     </div>
   );

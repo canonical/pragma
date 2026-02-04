@@ -44,7 +44,6 @@ class Extractor {
       }
     }
 
-    console.log(`Found ${elements.length} <${tagName}> tags`);
     return elements;
   }
 
@@ -63,7 +62,10 @@ class Extractor {
     }
   }
 
-  private convertToReactElement(element: Element): React.ReactElement {
+  private convertToReactElement(
+    element: Element,
+    index: number,
+  ): React.ReactElement {
     const props: { [key: string]: string } = {};
 
     for (const [key, value] of Object.entries(element.attribs)) {
@@ -76,26 +78,27 @@ class Extractor {
       elementChildren = element.firstChild.data;
     }
 
+    props.key = `${element.name}_${index}`;
     return React.createElement(element.name, props, elementChildren);
   }
 
   public getLinkElements(): React.ReactElement[] {
     const linkElements = this.getElementsByTagName("link");
-    return linkElements.map(this.convertToReactElement, this).reverse();
+    return linkElements.reverse().map(this.convertToReactElement, this);
   }
 
   public getScriptElements(): React.ReactElement[] {
     const scriptElements = this.getElementsByTagName("script");
     // reverse keeps the original order in the HTML (they are extracted with a stack in reverse)
     // the order might be important for some scripts (i.e. in Vite Dev mode)
-    return scriptElements.map(this.convertToReactElement, this).reverse();
+    return scriptElements.reverse().map(this.convertToReactElement, this);
   }
 
   public getOtherHeadElements(): React.ReactElement[] {
     const otherHeadElements = ["title", "style", "meta", "base"].flatMap(
       (elementName: string) => this.getElementsByTagName(elementName),
     );
-    return otherHeadElements.map(this.convertToReactElement, this).reverse();
+    return otherHeadElements.reverse().map(this.convertToReactElement, this);
   }
 }
 
