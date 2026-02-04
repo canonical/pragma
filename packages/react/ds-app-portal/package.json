@@ -40,9 +40,9 @@
     "test:vitest:watch": "vitest"
   },
   "dependencies": {
-    "@canonical/react-ds-global": "^0.11.0",
-    "@canonical/storybook-config": "^0.11.0",
-    "@canonical/styles": "^0.11.0",
+    "@canonical/react-ds-global": "^0.12.0-experimental.0",
+    "@canonical/storybook-config": "^0.12.0-experimental.0",
+    "@canonical/styles": "^0.12.0-experimental.0",
     "react": "^19.2.3",
     "react-dom": "^19.2.3"
   },
@@ -50,7 +50,7 @@
     "@biomejs/biome": "2.3.11",
     "@canonical/biome-config": "^0.11.0",
     "@canonical/typescript-config-react": "^0.11.0",
-    "@canonical/webarchitect": "^0.11.0",
+    "@canonical/webarchitect": "^0.12.0-experimental.0",
     "@chromatic-com/storybook": "^5.0.0",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.1",
