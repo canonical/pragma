@@ -131,6 +131,7 @@
     }
 
     /*  Fight specificity of the ltr & rtl selectors above */
+    /* biome-ignore lint/complexity/noImportantStyles: fix me */
     transform: translateX(0) !important;
     visibility: visible;
   }
@@ -193,6 +194,7 @@
   .ds.drawer {
     &,
     &::backdrop {
+      /* biome-ignore lint/complexity/noImportantStyles: fix me */
       transition: none !important;
     }
   }

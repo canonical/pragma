@@ -1,66 +1,67 @@
-:host {
+.shadow-container {
   --hr-color: black;
 }
 
-h2,
-h4,
-h5 {
+.shadow-container h2,
+.shadow-container h4,
+.shadow-container h5 {
   text-transform: uppercase;
 }
 
 /* Usually, headings would have negative top margin for nudges. However, we won't implement this yet. */
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
+.shadow-container h1,
+.shadow-container h2,
+.shadow-container h3,
+.shadow-container h4,
+.shadow-container h5,
+.shadow-container h6 {
+  font-weight: bold;
   margin-top: 0;
 }
 
-h1 {
+.shadow-container h1 {
   font-size: var(--h1-font-size);
   padding-top: var(--h1-padding-top);
   margin-bottom: var(--h1-margin-bottom);
   line-height: var(--h1-line-height);
 }
 
-h2 {
+.shadow-container h2 {
   font-size: var(--h2-font-size);
   padding-top: var(--h2-padding-top);
   margin-bottom: var(--h2-margin-bottom);
   line-height: var(--h2-line-height);
 }
 
-h3 {
+.shadow-container h3 {
   font-size: var(--h3-font-size);
   padding-top: var(--h3-padding-top);
   margin-bottom: var(--h3-margin-bottom);
   line-height: var(--h3-line-height);
 }
 
-h4 {
+.shadow-container h4 {
   font-size: var(--h4-font-size);
   padding-top: var(--h4-padding-top);
   margin-bottom: var(--h4-margin-bottom);
   line-height: var(--h4-line-height);
 }
 
-h5 {
+.shadow-container h5 {
   font-size: var(--h5-font-size);
   padding-top: var(--h5-padding-top);
   margin-bottom: var(--h5-margin-bottom);
   line-height: var(--h5-line-height);
 }
 
-h6 {
+.shadow-container h6 {
   font-size: var(--h6-font-size);
   padding-top: var(--h6-padding-top);
   margin-bottom: var(--h6-margin-bottom);
   line-height: var(--h6-line-height);
 }
 
-p {
+.shadow-container p {
   font-size: var(--p-font-size);
   padding-top: var(--p-padding-top);
   margin-top: var(--p-margin-top);
@@ -68,7 +69,7 @@ p {
   line-height: var(--p-line-height);
 }
 
-hr {
+.shadow-container hr {
   border: none;
   width: 100%;
   grid-column: 1 / -1;

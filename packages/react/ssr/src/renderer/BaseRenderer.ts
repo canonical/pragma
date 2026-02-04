@@ -4,6 +4,7 @@ import {
   type RenderToPipeableStreamOptions,
   renderToPipeableStream,
 } from "react-dom/server";
+import { INITIAL_DATA_KEY } from "./constants.js";
 import Extractor from "./Extractor.js";
 import type {
   RendererOptions,
@@ -11,7 +12,6 @@ import type {
   ServerEntrypoint,
   ServerEntrypointProps,
 } from "./types.js";
-import { INITIAL_DATA_KEY } from "./constants.js";
 
 // This class is responsible for rendering a React component to a readable stream.
 export default abstract class BaseRenderer<
