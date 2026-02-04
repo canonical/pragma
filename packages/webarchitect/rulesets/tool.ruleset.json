@@ -1,5 +1,5 @@
 {
-  "$schema": "https://github.com/webarchitect/schemas/main/schema.json",
+  "$schema": "https://raw.githubusercontent.com/canonical/pragma/refs/heads/main/packages/webarchitect/src/schema.json",
   "name": "tool",
   "extends": ["package"],
   "package-license": {

@@ -1,0 +1,71 @@
+{
+  "name": "@canonical/svelte-ds-app-launchpad",
+  "description": "Launchpad-specific components for the Pragma design system.",
+  "version": "0.11.0",
+  "type": "module",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.js",
+      "import": "./dist/index.js",
+      "svelte": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "author": {
+    "email": "webteam@canonical.com",
+    "name": "Canonical Webteam"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/canonical/pragma"
+  },
+  "license": "LGPL-3.0",
+  "bugs": {
+    "url": "https://github.com/canonical/pragma/issues"
+  },
+  "homepage": "https://github.com/canonical/pragma/tree/main/packages/svelte/ds-app-launchpad#readme",
+  "scripts": {
+    "build": "svelte-package -o dist -i src/lib --tsconfig ./tsconfig.json",
+    "build:all": "bun run build",
+    "check": "bun run check:biome && bun run check:ts && bun run check:webarchitect",
+    "check:fix": "bun run check:biome:fix && bun run check:ts",
+    "check:biome": "biome check",
+    "check:biome:fix": "biome check --write",
+    "check:ts": "svelte-check --tsconfig ./tsconfig.json",
+    "check:webarchitect": "webarchitect package-svelte -v",
+    "test": "vitest --run --project=ssr",
+    "test:watch": "vitest",
+    "test:server": "vitest --run --project=server",
+    "test:client": "vitest --run --project=client",
+    "test:ssr": "vitest --run --project=ssr",
+    "test:client:chromium": "vitest --run --project=client --browser=chromium",
+    "test:client:firefox": "vitest --run --project=client --browser=firefox",
+    "test:client:webkit": "vitest --run --project=client --browser=webkit",
+    "test:watch:client": "bun run test:watch --project=client --browser.headless=false"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.3.11",
+    "@canonical/biome-config-svelte": "^0.11.0",
+    "@canonical/svelte-ssr-test": "^0.11.0",
+    "@canonical/typescript-config-svelte": "^0.12.0-experimental.0",
+    "@sveltejs/package": "^2.5.7",
+    "@sveltejs/vite-plugin-svelte": "^6.2.4",
+    "@vitest/browser": "^4.0.18",
+    "@vitest/browser-playwright": "^4.0.18",
+    "bun-types": "^1.0.0",
+    "playwright": "^1.58.0",
+    "svelte-check": "^4.3.5",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.1",
+    "vitest": "^4.0.18",
+    "vitest-browser-svelte": "^2.0.2"
+  },
+  "dependencies": {},
+  "peerDependencies": {
+    "svelte": "^5.47.1"
+  }
+}
