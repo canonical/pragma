@@ -44,6 +44,10 @@
       "import": "./dist/esm/renderer/index.js",
       "types": "./dist/types/renderer/index.d.ts"
     },
+    "./renderer/constants": {
+      "import": "./dist/esm/renderer/constants.js",
+      "types": "./dist/types/renderer/constants.d.ts"
+    },
     "./server": {
       "import": "./dist/esm/server/index.js",
       "types": "./dist/types/server/index.d.ts"

@@ -11,8 +11,7 @@ import type {
   ServerEntrypoint,
   ServerEntrypointProps,
 } from "./types.js";
-
-export const INITIAL_DATA_KEY = "__INITIAL_DATA__";
+import { INITIAL_DATA_KEY } from "./constants.js";
 
 // This class is responsible for rendering a React component to a readable stream.
 export default abstract class BaseRenderer<
