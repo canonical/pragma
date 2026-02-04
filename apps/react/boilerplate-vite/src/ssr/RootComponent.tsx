@@ -13,7 +13,6 @@ export type InitialData = Record<string, unknown>;
  * @returns root component containing all the HTML of the page to be rendered.
  */
 function RootComponent(props: ServerEntrypointProps<InitialData>) {
-  console.log("rendering...");
   return (
     <html lang={props.lang}>
       <head>
@@ -23,11 +22,13 @@ function RootComponent(props: ServerEntrypointProps<InitialData>) {
         {props.linkElements}
       </head>
       <body>
-        {
-          // Add the following to pass initial data to the Application:
-          // <Application your_data_prop={props.initialData} />
-        }
-        <Application />
+        <div id="root">
+          {
+            // Add the following to pass initial data to the Application:
+            // <Application your_data_prop={props.initialData} />
+          }
+          <Application />
+        </div>
       </body>
     </html>
   );

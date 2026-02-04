@@ -1,5 +1,5 @@
 import type { ServerEntrypointProps } from "@canonical/react-ssr/renderer";
-import { Showcase } from "../ui/index.js";
+import Application from "../Application.js";
 
 export type InitialData = Record<string, unknown>;
 
@@ -13,7 +13,9 @@ function RootComponent(props: ServerEntrypointProps<InitialData>) {
         {props.linkElements}
       </head>
       <body>
-        <Showcase />
+        <div id="root">
+          <Application />
+        </div>
       </body>
     </html>
   );

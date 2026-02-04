@@ -1,5 +1,5 @@
 import { useContext } from "react";
-import Context from "../AppContext.js";
+import Context from "../Context.js";
 import type { ContextOptions } from "../types.js";
 
 /**
