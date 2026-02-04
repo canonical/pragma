@@ -4,7 +4,7 @@ import Application from "../Application.js";
 export type InitialData = Record<string, unknown>;
 
 /**
- * This function returns the component that renders the full page both in the Server and in the 
+ * This function returns the component that renders the full page both in the Server and in the
  * Client (as it needs to match exactly for hydration to work).
  * If you need to pass the initial data to the Renderer constructor.
  *

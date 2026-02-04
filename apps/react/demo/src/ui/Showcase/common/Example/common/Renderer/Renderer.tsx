@@ -5,10 +5,7 @@ const componentCssClassname = "ds example-renderer";
 import { useShowcaseContext } from "../../hooks/index.js";
 
 const Renderer = ({ style, className }: RendererProps) => {
-  const {
-    activeExample,
-    activeExampleFormValues,
-  } = useShowcaseContext();
+  const { activeExample, activeExampleFormValues } = useShowcaseContext();
 
   return (
     <div
