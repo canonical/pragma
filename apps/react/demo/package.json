@@ -5,7 +5,7 @@
   "type": "module",
   "license": "GPL-3.0-only",
   "scripts": {
-    "dev": "bun run serve",
+    "dev": "vite",
     "build": "bun run build:client && bun run build:server",
     "build:all": "bun run build:client && bun run build:server && bun run build:storybook",
     "build:storybook": "storybook build",

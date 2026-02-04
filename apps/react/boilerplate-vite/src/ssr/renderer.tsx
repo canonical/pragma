@@ -8,8 +8,12 @@ export const htmlString = await fs.readFile(
   "utf-8",
 );
 
-const Renderer = new PipeableStreamRenderer(EntryServer, {}, {
-  htmlString,
-});
+const Renderer = new PipeableStreamRenderer(
+  EntryServer,
+  {},
+  {
+    htmlString,
+  },
+);
 
 export default Renderer.render;
