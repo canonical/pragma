@@ -1,0 +1,76 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+import { PackageInfo } from "@canonical/storybook-helpers";
+
+<Meta title="Introduction" />
+
+# Application Components — React
+
+While Global tier provides atoms, Apps tier provides molecules and organisms — the larger structural pieces that define how applications feel and function. Navigation, toolbars, layouts, and patterns for building complete interfaces that compose Global tier primitives into higher-level structures.
+
+## Package
+
+<PackageInfo
+  name="@canonical/react-ds-app"
+  version="0.11.0"
+  tier="apps"
+  framework="react"
+  status="prerelease"
+  dependencies={["@canonical/styles"]}
+  links={{
+    source: "https://github.com/canonical/pragma/tree/main/packages/react/ds-app",
+    ontology: "https://github.com/canonical/design-system",
+  }}
+/>
+
+## Architecture
+
+Apps tier components compose Global tier primitives into higher-level application patterns. They understand application context like navigation state and layout regions.
+
+```
+@canonical/react-ds-global (dependency)
+         ↓
+@canonical/react-ds-app (this package)
+         ↓
+Your Application
+```
+
+## Components
+
+<table>
+  <thead>
+    <tr>
+      <th>Component</th>
+      <th>Purpose</th>
+      <th>Readiness</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td>Button</td><td>Extended button with app-specific behaviors</td><td>C</td></tr>
+  </tbody>
+</table>
+
+This tier is under active development. Components are added as application patterns stabilize.
+
+## When to Use Apps Tier
+
+Use Apps tier components when building:
+
+- Internal tools and dashboards
+- Developer-facing applications
+- Complex navigation structures
+- File management interfaces
+
+For marketing sites, landing pages, or documentation, prefer Global tier components directly.
+
+## Installation
+
+```bash
+bun add @canonical/react-ds-app
+```
+
+Requires `@canonical/react-ds-global` as a peer dependency.
+
+## Links
+
+- [Source](https://github.com/canonical/pragma/tree/main/packages/react/ds-app)
+- [Design System Ontology](https://github.com/canonical/design-system)

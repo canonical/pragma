@@ -1,0 +1,63 @@
+/* component styles */
+
+/* component variables
+    --button-color-background: background color of the button
+    --button-color-background-hover: background color of the button on hover
+    --button-color-background-active: background color of the button on active
+    --button-color-text: text color of the button
+    --button-color-border: border color of the button
+    --button-color-border-hover: border color of the button on hover
+    --button-color-border-active: border color of the button on active
+
+    --button-margin-left: left margin of the button
+    --button-margin-bottom: bottom margin of the button
+    --button-padding-vertical: vertical padding of the button
+    --button-padding-horizontal: horizontal padding of the button
+    --button-border-width: border width of the button
+    --button-font-size: font size of the button
+    --button-font-weight: font weight of the button
+    --button-line-height: line height of the button
+*/
+.ds.button {
+  display: inline-block;
+  cursor: pointer;
+
+  color: var(--modifier-color-text, var(--button-color-text));
+  background-color: var(--modifier-color, var(--button-color-background));
+  border-color: var(--modifier-color-border, var(--button-color-border));
+  border-style: solid;
+  border-width: var(--button-border-width);
+  font-size: var(--button-font-size);
+  font-weight: var(--button-font-weight);
+  line-height: var(--button-line-height);
+  margin-block-end: var(--button-margin-bottom);
+  margin-inline-end: var(--button-margin-left);
+  padding-block: var(--button-padding-vertical);
+  padding-inline: var(--button-padding-horizontal);
+
+  text-align: left;
+  text-decoration: none;
+
+  /* component states */
+  &:hover {
+    background-color: var(
+      --modifier-color-hover,
+      var(--button-color-background-hover)
+    );
+    border-color: var(
+      --modifier-color-border-hover,
+      var(--button-color-border-hover)
+    );
+  }
+
+  &:active {
+    background-color: var(
+      --modifier-color-active,
+      var(--button-color-background-active)
+    );
+    border-color: var(
+      --modifier-color-border-active,
+      var(--button-color-border-active)
+    );
+  }
+}
