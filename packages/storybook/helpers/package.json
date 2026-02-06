@@ -1,7 +1,7 @@
 {
   "name": "@canonical/storybook-helpers",
   "description": "Shared Storybook utilities and helper components for design system documentation",
-  "version": "0.12.0-experimental.0",
+  "version": "0.12.0",
   "type": "module",
   "module": "dist/esm/index.js",
   "types": "dist/types/index.d.ts",
@@ -36,9 +36,9 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.3.11",
-    "@canonical/biome-config": "^0.11.0",
-    "@canonical/typescript-config-react": "^0.11.0",
-    "@canonical/webarchitect": "^0.12.0-experimental.0",
+    "@canonical/biome-config": "^0.12.0",
+    "@canonical/typescript-config-react": "^0.12.0",
+    "@canonical/webarchitect": "^0.12.0",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.1",
     "@types/react": "^19.0.0",
@@ -52,7 +52,7 @@
     "vitest": "^4.0.17"
   },
   "dependencies": {
-    "@canonical/ds-types": "^0.12.0-experimental.0",
+    "@canonical/ds-types": "^0.12.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   }

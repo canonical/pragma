@@ -1,7 +1,7 @@
 {
   "name": "@canonical/summon",
   "description": "A monadic task-centric code generator framework with React Ink CLI.",
-  "version": "0.12.0-experimental.0",
+  "version": "0.12.0",
   "type": "module",
   "module": "src/index.ts",
   "types": "src/index.ts",
@@ -40,8 +40,8 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.3.11",
-    "@canonical/biome-config": "^0.11.0",
-    "@canonical/typescript-config-base": "^0.11.0",
+    "@canonical/biome-config": "^0.12.0",
+    "@canonical/typescript-config-base": "^0.12.0",
     "@types/ejs": "^3.1.5",
     "@types/omelette": "^0.4.5",
     "@types/react": "^19.0.0",
