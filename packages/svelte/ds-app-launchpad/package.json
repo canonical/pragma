@@ -48,7 +48,7 @@
     "test:watch:client": "bun run test:watch --project=client --browser.headless=false"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.3.11",
+    "@biomejs/biome": "2.3.14",
     "@canonical/biome-config-svelte": "^0.12.0",
     "@canonical/svelte-ssr-test": "^0.12.0",
     "@canonical/typescript-config-svelte": "^0.12.0",
