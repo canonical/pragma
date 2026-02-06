@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url";
 import type { StorybookConfig } from "storybook/internal/types";
 
 function getAbsolutePath(value: string): string {
-  return dirname(fileURLToPath(import.meta.resolve(value + "/package.json")));
+  return dirname(fileURLToPath(import.meta.resolve(`${value}/package.json`)));
 }
 
 type StorybookFrameworkConfig = {
@@ -18,14 +18,7 @@ const frameworks = {
   },
   svelte: {
     framework: getAbsolutePath("@storybook/svelte-vite"),
-    addons: [
-      {
-        name: getAbsolutePath("@storybook/addon-svelte-csf"),
-        options: {
-          legacyTemplate: false,
-        },
-      },
-    ],
+    addons: [getAbsolutePath("@storybook/addon-svelte-csf")],
   },
 } as const satisfies Record<string, StorybookFrameworkConfig>;
 
@@ -59,14 +52,7 @@ function createConfig<T extends keyof typeof frameworks>(
       "@canonical/storybook-addon-shell-theme",
       ...frameworks[framework].addons,
       ...(opts.extraAddons ?? []),
-    ].filter(
-      (addon) =>
-        !opts.disabledAddons?.some((disabledAddon) =>
-          typeof addon === "string"
-            ? addon === disabledAddon
-            : addon.name === disabledAddon,
-        ),
-    ),
+    ].filter((addon) => !opts.disabledAddons?.includes(addon)),
     framework: {
       name:
         framework === "react"
