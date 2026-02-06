@@ -1,0 +1,37 @@
+name: "react-ds-app-lxd/chromatic"
+on:
+  pull_request:
+    paths:
+      - configs/storybook/**
+      - packages/ds-assets/**
+      - packages/tokens/**
+      - packages/styles/**
+      - packages/utils/**
+      - packages/react/ds-global/**
+      - packages/react/ds-app-lxd/**
+  push:
+    branches:
+      - main
+    paths:
+      - configs/storybook/**
+      - packages/ds-assets/**
+      - packages/tokens/**
+      - packages/styles/**
+      - packages/utils/**
+      - packages/react/ds-global/**
+      - packages/react/ds-app-lxd/**
+jobs:
+  test-compile:
+    uses: ./.github/workflows/chromatic._template.yml
+    secrets:
+      CHROMATIC_PROJECT_TOKEN: ${{ secrets.CHROMATIC_TOKEN_CANONICAL_REACT_DS_APP_LXD }}
+    with:
+      working-directory: packages/react/ds-app-lxd
+      externals: '[
+        "configs/storybook/**",
+        "packages/ds-assets/**",
+        "packages/tokens/**",
+        "packages/styles/**",
+        "packages/utils/**",
+        "packages/react/ds-global/**"
+      ]'

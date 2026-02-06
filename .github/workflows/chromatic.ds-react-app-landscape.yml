@@ -1,0 +1,37 @@
+name: "react-ds-app-landscape/chromatic"
+on:
+  pull_request:
+    paths:
+      - configs/storybook/**
+      - packages/ds-assets/**
+      - packages/tokens/**
+      - packages/styles/**
+      - packages/utils/**
+      - packages/react/ds-global/**
+      - packages/react/ds-app-landscape/**
+  push:
+    branches:
+      - main
+    paths:
+      - configs/storybook/**
+      - packages/ds-assets/**
+      - packages/tokens/**
+      - packages/styles/**
+      - packages/utils/**
+      - packages/react/ds-global/**
+      - packages/react/ds-app-landscape/**
+jobs:
+  test-compile:
+    uses: ./.github/workflows/chromatic._template.yml
+    secrets:
+      CHROMATIC_PROJECT_TOKEN: ${{ secrets.CHROMATIC_TOKEN_CANONICAL_REACT_DS_APP_LANDSCAPE }}
+    with:
+      working-directory: packages/react/ds-app-landscape
+      externals: '[
+        "configs/storybook/**",
+        "packages/ds-assets/**",
+        "packages/tokens/**",
+        "packages/styles/**",
+        "packages/utils/**",
+        "packages/react/ds-global/**"
+      ]'

@@ -5,7 +5,7 @@ on:
       - configs/storybook/**
       - packages/styles/**
       - packages/utils/**
-      - packages/react/ds-core/**
+      - packages/react/ds-global/**
       - apps/react/demo/**
   push:
     branches:
@@ -15,7 +15,7 @@ on:
       - packages/tokens/**
       - packages/styles/**
       - packages/utils/**
-      - packages/react/ds-core/**
+      - packages/react/ds-global/**
       - packages/react/ds-app-anbox/**
 jobs:
   test-compile:
@@ -28,5 +28,5 @@ jobs:
         "configs/storybook/**",
         "packages/styles/**",
         "packages/utils/**",
-        "packages/react/ds-core/**"
+        "packages/react/ds-global/**"
       ]'

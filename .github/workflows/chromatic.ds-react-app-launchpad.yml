@@ -7,7 +7,7 @@ on:
       - packages/tokens/**
       - packages/styles/**
       - packages/utils/**
-      - packages/react/ds-core/**
+      - packages/react/ds-global/**
       - packages/react/ds-app-launchpad/**
   push:
     branches:
@@ -18,7 +18,7 @@ on:
       - packages/tokens/**
       - packages/styles/**
       - packages/utils/**
-      - packages/react/ds-core/**
+      - packages/react/ds-global/**
       - packages/react/ds-app-launchpad/**
 jobs:
   test-compile:
@@ -33,5 +33,5 @@ jobs:
         "packages/tokens/**",
         "packages/styles/**",
         "packages/utils/**",
-        "packages/react/ds-core/**"
+        "packages/react/ds-global/**"
       ]'
