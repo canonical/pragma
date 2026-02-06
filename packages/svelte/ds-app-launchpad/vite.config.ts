@@ -3,13 +3,7 @@ import { playwright } from "@vitest/browser-playwright";
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
-	plugins: [
-		svelte({
-			compilerOptions: {
-				runes: true,
-			},
-		}),
-	],
+	plugins: [svelte({})],
 	test: {
 		environment: "node",
 		include: ["src/**/*.tests.ts"],

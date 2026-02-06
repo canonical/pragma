@@ -1,9 +1,7 @@
 import { createConfig } from "@canonical/storybook-config";
 
-const config = createConfig({
+export const config = createConfig("react", {
   // TODO - The static dir public should be required - but it seems `mockServiceWorker.js` is served nonetheless. Unsure where it comes from.
   staticDirs: ["../public"],
   extraAddons: ["./local-preset.js"],
 });
-
-export default { ...config };

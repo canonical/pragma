@@ -1,0 +1,78 @@
+@import "./reset.css";
+@import "./font-faces.css";
+
+@import "@canonical/launchpad-design-tokens/dist/css/dimension/responsive.css";
+@import "@canonical/launchpad-design-tokens/dist/css/typography/responsive.css";
+@import "@canonical/launchpad-design-tokens/dist/css/opacity/opacity.css";
+@import "@canonical/launchpad-design-tokens/dist/css/transition/preferred.css";
+@import "@canonical/launchpad-design-tokens/dist/css/color/system.css";
+
+html {
+  color: var(--lp-color-text-default);
+  background-color: var(--lp-color-background-default);
+
+  /* 
+  TODO: Should the color be controlled on the level of modifiers (severity)? If so, how?
+  Outline colors, according to vanilla should:
+    - on `Chip` stay default no matter the modifier,
+      - OK, we just don't subscribe to the context at all;
+    - on `TextInput` follow the values of the secondary context,
+      - OK, we subscribe to the secondary context;
+    - on `Button` stay default for all severities but `positive`, where it should become a very dark green,
+      - not OK, we don't have the required value in the severity context.
+  */
+  --focus-outline: var(--dimension-stroke-thickness-large) solid
+    var(--lp-color-border-focus);
+  /* Most elements have the outline on the inside of the element. Needs to be adjusted for specific cases (e.g. checkbox, radio) */
+  --focus-outline-offset: calc(var(--dimension-stroke-thickness-large) * -1);
+}
+
+body {
+  font: var(--lp-typography-paragraph-s);
+}
+
+*:focus-visible {
+  outline: var(--focus-outline);
+  outline-offset: var(--focus-outline-offset);
+}
+.visually-hidden {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  position: absolute !important;
+  height: 1px;
+  width: 1px;
+  overflow: hidden;
+  clip: rect(
+    1px 1px 1px 1px
+  ); /* IE6, IE7 - a 0 height clip, off to the bottom right of the visible 1px box */
+  clip: rect(
+    1px,
+    1px,
+    1px,
+    1px
+  ); /*maybe deprecated but we need to support legacy browsers */
+  clip-path: inset(
+    50%
+  ); /*modern browsers, clip-path works inwards from each corner*/
+  white-space: nowrap; /* added line to stop words getting smushed together (as they go onto seperate lines and some screen readers do not understand line feeds as a space */
+}
+
+h1 {
+  font: var(--lp-typography-h1);
+}
+h2 {
+  font: var(--lp-typography-h2);
+}
+h3 {
+  font: var(--lp-typography-h3);
+}
+h4 {
+  font: var(--lp-typography-h4);
+}
+h5 {
+  font: var(--lp-typography-h5);
+}
+h6 {
+  font: var(--lp-typography-h6);
+}

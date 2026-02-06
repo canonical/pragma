@@ -31,16 +31,22 @@
   .ds.example {
     display: flex;
     flex-direction: column;
+    align-items: center;
     gap: 1rem;
+    padding: 1rem;
+    background-color: var(--lp-color-background-default);
     > button {
       border-radius: 8px;
       border: 1px solid transparent;
       padding: 0.6em 1.2em;
       font-size: 1em;
       font-weight: 500;
-      background-color: #1a1a1a;
-      color: #fff;
+      background-color: var(--lp-color-background-default);
+      border: 1px solid var(--lp-color-border-default);
+      color: var(--lp-color-text-default);
       transition: border-color 0.25s;
+      width: fit-content;
+
       &:hover {
         border-color: #646cff;
       }
@@ -48,6 +54,9 @@
       &:focus-visible {
         outline: 4px auto -webkit-focus-ring-color;
       }
+    }
+    > p {
+      color: var(--lp-color-text-default);
     }
   }
 </style>

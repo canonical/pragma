@@ -32,7 +32,7 @@ TypeScript
 // .storybook/main.ts
 import { createConfig } from "@canonical/storybook-config";
 
-const config = createConfig();
+const config = createConfig("react"); // or "svelte"
 
 export default config;
 ```
@@ -49,7 +49,7 @@ TypeScript
 // .storybook/main.ts
 import { createConfig } from "@canonical/storybook-config";
 
-const config = createConfig({
+const config = createConfig("react", { // or "svelte"
   projectName: "My Project Name",
   projectLogo: "https://example.com/my-logo.svg",
 });

@@ -45,11 +45,13 @@
     "test:client:chromium": "vitest --run --project=client --browser=chromium",
     "test:client:firefox": "vitest --run --project=client --browser=firefox",
     "test:client:webkit": "vitest --run --project=client --browser=webkit",
-    "test:watch:client": "bun run test:watch --project=client --browser.headless=false"
+    "test:watch:client": "bun run test:watch --project=client --browser.headless=false",
+    "storybook": "storybook dev -p 6006 --no-open --host 0.0.0.0"
   },
   "devDependencies": {
     "@biomejs/biome": "2.3.11",
     "@canonical/biome-config-svelte": "^0.12.0",
+    "@canonical/storybook-helpers": "^0.12.0",
     "@canonical/svelte-ssr-test": "^0.12.0",
     "@canonical/typescript-config-svelte": "^0.12.0",
     "@sveltejs/package": "^2.5.7",
@@ -58,11 +60,16 @@
     "@vitest/browser-playwright": "^4.0.18",
     "bun-types": "^1.0.0",
     "playwright": "^1.58.0",
+    "storybook": "^10.1.11",
     "svelte-check": "^4.3.5",
     "typescript": "^5.9.3",
     "vite": "^7.3.1",
     "vitest": "^4.0.18",
     "vitest-browser-svelte": "^2.0.2"
+  },
+  "dependencies": {
+    "@canonical/storybook-config": "^0.12.0",
+    "@canonical/launchpad-design-tokens": "^1.0.21"
   },
   "peerDependencies": {
     "svelte": "^5.47.1"
