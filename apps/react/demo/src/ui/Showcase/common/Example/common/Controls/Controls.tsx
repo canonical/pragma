@@ -54,10 +54,8 @@ const Controls = ({ id, className, style }: ControlsProps): ReactElement => {
       {/*
         TODO we need a way to invert color themes once we implement theming
       */}
-      {/** biome-ignore lint/correctness/useUniqueElementIds:Biome v2 TODO: fix */}
       <h4 id="active-example-name">{activeExample.name}</h4>
 
-      {/** biome-ignore lint/correctness/useUniqueElementIds: Biome v2 TODO: fix **/}
       <Drawer
         id="showcase-settings-drawer"
         title={`${activeExample.name} settings`}

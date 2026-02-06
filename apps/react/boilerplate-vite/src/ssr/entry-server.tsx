@@ -1,26 +1,6 @@
-import type {
-  ReactServerEntrypointComponent,
-  RendererServerEntrypointProps,
-} from "@canonical/react-ssr/renderer";
-import Application from "../Application.js";
+import type { ServerEntrypoint } from "@canonical/react-ssr/renderer";
+import RootComponent, { type InitialData } from "./RootComponent.js";
 
-const EntryServer: ReactServerEntrypointComponent<
-  RendererServerEntrypointProps
-> = ({ lang = "en", scriptTags, linkTags }: RendererServerEntrypointProps) => {
-  return (
-    <html lang={lang}>
-      <head>
-        <title>Canonical React Vite Boilerplate</title>
-        {scriptTags}
-        {linkTags}
-      </head>
-      <body>
-        <div id="root">
-          <Application />
-        </div>
-      </body>
-    </html>
-  );
-};
+const EntryServer: ServerEntrypoint<InitialData> = RootComponent;
 
 export default EntryServer;

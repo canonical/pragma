@@ -1,7 +1,7 @@
 {
   "name": "@canonical/react-ssr",
   "description": "TBD",
-  "version": "0.12.0",
+  "version": "0.13.0",
   "type": "module",
   "module": "dist/esm/index.js",
   "types": "dist/types/index.d.ts",
@@ -43,6 +43,10 @@
     "./renderer": {
       "import": "./dist/esm/renderer/index.js",
       "types": "./dist/types/renderer/index.d.ts"
+    },
+    "./renderer/constants": {
+      "import": "./dist/esm/renderer/constants.js",
+      "types": "./dist/types/renderer/constants.d.ts"
     },
     "./server": {
       "import": "./dist/esm/server/index.js",
