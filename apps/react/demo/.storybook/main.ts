@@ -1,5 +1,5 @@
 import { createConfig } from "@canonical/storybook-config";
 
-export const config = createConfig("react", {
+export default createConfig("react", {
   staticDirs: ["../src/assets"],
 });
