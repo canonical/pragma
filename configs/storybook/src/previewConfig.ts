@@ -1,11 +1,19 @@
 import { withThemeByClassName } from "@storybook/addon-themes";
-import type { Preview, ReactRenderer } from "@storybook/react-vite";
+import type { Preview as ReactPreview } from "@storybook/react-vite";
+import type { Preview as SveltePreview } from "@storybook/svelte-vite";
+
+/**
+ * Preview type for React and Svelte Storybooks.
+ * Most of the properties are the same, this is a convenience type to avoid
+ * having to write the same type for both frameworks.
+ */
+type Preview = ReactPreview & SveltePreview;
 
 /**
  * Theme decorator for Pragma design system Storybooks.
  * Provides light, dark, and paper theme switching.
  */
-export const themeDecorator = withThemeByClassName<ReactRenderer>({
+export const themeDecorator = withThemeByClassName({
   themes: {
     light: "is-light",
     dark: "is-dark",

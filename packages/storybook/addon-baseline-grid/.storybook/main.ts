@@ -1,6 +1,6 @@
 import { createConfig } from "@canonical/storybook-config";
 
-const config = createConfig({
+const config = createConfig("react", {
   staticDirs: [],
   extraAddons: ["./local-preset.js"],
   disabledAddons: ["@canonical/storybook-addon-baseline-grid"],
