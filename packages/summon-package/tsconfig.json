@@ -1,7 +1,7 @@
 {
   "extends": "@canonical/typescript-config",
   "compilerOptions": {
-    "types": ["node", "bun-types"],
+    "types": ["node", "@types/bun"],
     "jsx": "react-jsx",
     "skipLibCheck": true
   },
