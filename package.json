@@ -38,7 +38,7 @@
     "check": "lerna run check",
     "check:fix": "lerna run check:fix",
     "test": "lerna run test",
-    "special:clean": "lerna clean --yes && nx reset && rm -rf node_modules"
+    "special:clean": "nx reset && lerna clean --yes && rm -rf node_modules"
   },
   "devDependencies": {
     "lerna": "^9.0.3"

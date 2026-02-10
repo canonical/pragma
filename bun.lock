@@ -45,9 +45,11 @@
         "@canonical/storybook-config": "^0.13.0-experimental.0",
         "@canonical/styles": "^0.12.0",
         "@canonical/styles-debug": "^0.12.0",
+        "@canonical/styles-primitives-canonical": "^0.12.0",
         "@tanstack/react-router": "^1.151.3",
         "react": "^19.2.3",
         "react-dom": "^19.2.3",
+        "react-hook-form": "^7.71.1",
         "react-shadow": "^20.6.0",
       },
       "devDependencies": {
