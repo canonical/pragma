@@ -8,13 +8,14 @@ import { INITIAL_DATA_KEY } from "./constants.js";
 import Extractor from "./Extractor.js";
 import type {
   RendererOptions,
+  RenderHandler,
   RenderResult,
   ServerEntrypoint,
   ServerEntrypointProps,
 } from "./types.js";
 
 // This class is responsible for rendering a React component to a readable stream.
-export default abstract class BaseRenderer<
+export default class JSXRenderer<
   TComponent extends ServerEntrypoint<InitialData>,
   InitialData,
 > {
@@ -125,10 +126,90 @@ export default abstract class BaseRenderer<
   }
 
   /**
-   * Renders this renderer's JSX component and sends it to the client.
+   * This function is responsible for rendering a React component to a pipeable stream.
+   * See the README to understand the difference between rendering options.
+   *
+   * The PipeableStreamRenderer might improve the time taken for the page to be rendered and interactive
+   * (at least in part), using React's Suspense/lazy API and pipeable streams.
+   *
+   * CAUTION: The resulting HTML rendered this way is not cacheable.
+   *
    * @param _req Client's request
    * @param res Response object that will be sent to the client
    * @return {RenderResult} The stream that was sent to the client
    */
-  abstract render(_req: IncomingMessage, res: ServerResponse): RenderResult;
+  renderToStream: RenderHandler = (
+    _req: IncomingMessage,
+    res: ServerResponse,
+  ): RenderResult => {
+    const errorRef: { current: Error | undefined } = { current: undefined };
+    let jsxStream: RenderResult;
+
+    jsxStream = this.prepareRender(errorRef, {
+      // Early error, before the shell is prepared
+      onShellError(error) {
+        if (!res.headersSent) {
+          res
+            .writeHead(500, { "Content-Type": "text/html; charset=utf-8" })
+            .end("<h1>Something went wrong</h1>");
+        }
+        console.error(error);
+      },
+      onShellReady() {
+        if (!res.headersSent) {
+          res.writeHead(errorRef.current ? 500 : 200, {
+            "Content-Type": "text/html; charset=utf-8",
+          });
+        }
+
+        jsxStream.pipe(res);
+        res.on("finish", () => {
+          res.end();
+        });
+      },
+    });
+
+    return jsxStream;
+  };
+
+  /**
+   * Renders this renderer's JSX component as a transmittable stream and sends it to the client
+   * once it has been fully rendered. This means once all <Suspense> components have finished loading.
+   * Even if it uses the renderToPipeableStream render, this method uses the "onAllReady" event,
+   * thus waiting until all the HTML document is ready and behaving as the classic renderToString method.
+   *
+   * See the README to understand the difference between rendering options.
+   *
+   * renderToString is useful in Vite Dev mode, as the HMR doesn't work well with Suspense
+   * and the Pipeable Stream rendering. Also if the resulting document needs to be cached.
+   * 
+   * @param _req Client's request
+   * @param res Response object that will be sent to the client
+   * @return {RenderResult} The stream that was sent to the client
+   */
+  renderToString: RenderHandler = (
+    _req: IncomingMessage,
+    res: ServerResponse,
+  ): RenderResult => {
+    const errorRef: { current: Error | undefined } = { current: undefined };
+    let jsxStream: RenderResult;
+
+    jsxStream = this.prepareRender(errorRef, {
+      // this makes the pipeable stream work the same as the classic renderToString function
+      onAllReady() {
+        if (!res.headersSent) {
+          res.writeHead(errorRef.current ? 500 : 200, {
+            "Content-Type": "text/html; charset=utf-8",
+          });
+        }
+
+        jsxStream.pipe(res);
+        res.on("finish", () => {
+          res.end();
+        });
+      },
+    });
+
+    return jsxStream;
+  };
 }
