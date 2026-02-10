@@ -1,7 +1,7 @@
 {
   "name": "@canonical/ds-demo-site",
   "private": true,
-  "version": "0.12.0",
+  "version": "0.13.0-experimental.0",
   "type": "module",
   "license": "GPL-3.0-only",
   "scripts": {
@@ -24,10 +24,10 @@
     "storybook": "storybook dev -p 6011 --no-open --host 0.0.0.0"
   },
   "dependencies": {
-    "@canonical/react-ds-global": "^0.12.0",
-    "@canonical/react-ds-global-form": "^0.12.0",
+    "@canonical/react-ds-global": "^0.13.0-experimental.0",
+    "@canonical/react-ds-global-form": "^0.13.0-experimental.0",
     "@canonical/react-ssr": "^0.12.0",
-    "@canonical/storybook-config": "^0.12.0",
+    "@canonical/storybook-config": "^0.13.0-experimental.0",
     "@canonical/styles": "^0.12.0",
     "@canonical/styles-debug": "^0.12.0",
     "@tanstack/react-router": "^1.151.3",

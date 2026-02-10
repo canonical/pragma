@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.13.0-experimental.0](https://github.com/canonical/pragma/compare/v0.12.0...v0.13.0-experimental.0) (2026-02-10)
+
+
+### Features
+
+* **svelte-ssr-test:** Remove legacy component types ([#416](https://github.com/canonical/pragma/issues/416)) ([0c68cf9](https://github.com/canonical/pragma/commit/0c68cf9f7f11e79faeecf8233eef3b2383d9a8e4))
+
+
+
+
+
 # [0.12.0](https://github.com/canonical/pragma/compare/v0.12.0-experimental.0...v0.12.0) (2026-02-06)
 
 

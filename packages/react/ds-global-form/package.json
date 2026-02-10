@@ -1,6 +1,6 @@
 {
   "name": "@canonical/react-ds-global-form",
-  "version": "0.12.0",
+  "version": "0.13.0-experimental.0",
   "type": "module",
   "module": "dist/esm/index.js",
   "types": "dist/types/index.d.ts",
@@ -39,8 +39,8 @@
     "test:vitest:watch": "vitest"
   },
   "dependencies": {
-    "@canonical/react-ds-global": "^0.12.0",
-    "@canonical/storybook-config": "^0.12.0",
+    "@canonical/react-ds-global": "^0.13.0-experimental.0",
+    "@canonical/storybook-config": "^0.13.0-experimental.0",
     "@canonical/styles": "^0.12.0",
     "@canonical/utils": "^0.12.0",
     "downshift": "^9.0.13",

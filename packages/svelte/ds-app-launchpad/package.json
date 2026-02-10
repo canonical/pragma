@@ -1,7 +1,7 @@
 {
   "name": "@canonical/svelte-ds-app-launchpad",
   "description": "Launchpad-specific components for the Pragma design system.",
-  "version": "0.12.0",
+  "version": "0.13.0-experimental.0",
   "type": "module",
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -52,7 +52,7 @@
     "@biomejs/biome": "2.3.11",
     "@canonical/biome-config-svelte": "^0.12.0",
     "@canonical/storybook-helpers": "^0.12.0",
-    "@canonical/svelte-ssr-test": "^0.12.0",
+    "@canonical/svelte-ssr-test": "^0.13.0-experimental.0",
     "@canonical/typescript-config-svelte": "^0.12.0",
     "@sveltejs/package": "^2.5.7",
     "@sveltejs/vite-plugin-svelte": "^6.2.4",
@@ -68,8 +68,8 @@
     "vitest-browser-svelte": "^2.0.2"
   },
   "dependencies": {
-    "@canonical/storybook-config": "^0.12.0",
-    "@canonical/launchpad-design-tokens": "^1.0.21"
+    "@canonical/launchpad-design-tokens": "^1.0.21",
+    "@canonical/storybook-config": "^0.13.0-experimental.0"
   },
   "peerDependencies": {
     "svelte": "^5.47.1"

@@ -3,6 +3,18 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.13.0-experimental.0](https://github.com/canonical/ds25/compare/v0.12.0...v0.13.0-experimental.0) (2026-02-10)
+
+
+### Features
+
+* **storybook:** enhance configuration for Svelte support ([#415](https://github.com/canonical/ds25/issues/415)) ([af589bd](https://github.com/canonical/ds25/commit/af589bd9e4a63a3138551b998f7f8fe8d507a023))
+* **svelte-ssr-test:** Remove legacy component types ([#416](https://github.com/canonical/ds25/issues/416)) ([0c68cf9](https://github.com/canonical/ds25/commit/0c68cf9f7f11e79faeecf8233eef3b2383d9a8e4))
+
+
+
+
+
 # [0.12.0](https://github.com/canonical/ds25/compare/v0.12.0-experimental.0...v0.12.0) (2026-02-06)
 
 
