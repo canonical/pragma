@@ -66,6 +66,7 @@
     "globals": "^17.3.0",
     "jsdom": "^28.0.0",
     "msw": "^2.12.10",
+    "@storybook/addon-docs": "^10.2.8",
     "@storybook/react-vite": "^10.2.8",
     "storybook": "^10.2.8",
     "typescript": "^5.9.3",
