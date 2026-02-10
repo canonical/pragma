@@ -25,6 +25,9 @@
         "@canonical/biome-config": "^0.12.0",
         "@canonical/typescript-config-react": "^0.12.0",
         "@chromatic-com/storybook": "^5.0.0",
+        "@storybook/react-vite": "^10.1.11",
+        "@testing-library/jest-dom": "^6.9.1",
+        "@testing-library/react": "^16.3.1",
         "@types/node": "^24.0.0",
         "@types/react": "^19.2.8",
         "@types/react-dom": "^19.2.3",
@@ -34,6 +37,7 @@
         "typescript": "^5.9.3",
         "vite": "^7.3.1",
         "vite-tsconfig-paths": "^6.0.4",
+        "vitest": "^4.0.17",
       },
     },
     "apps/react/demo": {
@@ -58,6 +62,7 @@
         "@canonical/biome-config": "^0.12.0",
         "@canonical/typescript-config-react": "^0.12.0",
         "@chromatic-com/storybook": "^5.0.0",
+        "@storybook/react-vite": "^10.1.11",
         "@tanstack/react-router-devtools": "^1.151.3",
         "@tanstack/router-plugin": "^1.151.5",
         "@types/node": "^24.0.0",
@@ -224,6 +229,7 @@
         "@canonical/typescript-config-react": "^0.12.0",
         "@canonical/webarchitect": "^0.12.0",
         "@chromatic-com/storybook": "^5.0.0",
+        "@storybook/react-vite": "^10.1.11",
         "@testing-library/jest-dom": "^6.9.1",
         "@testing-library/react": "^16.3.1",
         "@types/node": "^24.0.0",
@@ -256,6 +262,7 @@
         "@canonical/typescript-config-react": "^0.12.0",
         "@canonical/webarchitect": "^0.12.0",
         "@chromatic-com/storybook": "^5.0.0",
+        "@storybook/react-vite": "^10.1.11",
         "@testing-library/jest-dom": "^6.9.1",
         "@testing-library/react": "^16.3.1",
         "@types/node": "^24.0.0",
@@ -288,6 +295,7 @@
         "@canonical/typescript-config-react": "^0.12.0",
         "@canonical/webarchitect": "^0.12.0",
         "@chromatic-com/storybook": "^5.0.0",
+        "@storybook/react-vite": "^10.1.11",
         "@testing-library/jest-dom": "^6.9.1",
         "@testing-library/react": "^16.3.1",
         "@types/node": "^24.0.0",
@@ -326,6 +334,7 @@
         "@canonical/typescript-config-react": "^0.12.0",
         "@canonical/webarchitect": "^0.12.0",
         "@chromatic-com/storybook": "^5.0.0",
+        "@storybook/react-vite": "^10.1.11",
         "@testing-library/jest-dom": "^6.9.1",
         "@testing-library/react": "^16.3.1",
         "@types/node": "^24.0.0",
@@ -358,6 +367,7 @@
         "@canonical/typescript-config-react": "^0.12.0",
         "@canonical/webarchitect": "^0.12.0",
         "@chromatic-com/storybook": "^5.0.0",
+        "@storybook/react-vite": "^10.1.11",
         "@testing-library/jest-dom": "^6.9.1",
         "@testing-library/react": "^16.3.1",
         "@types/node": "^24.0.0",
@@ -390,6 +400,7 @@
         "@canonical/typescript-config-react": "^0.12.0",
         "@canonical/webarchitect": "^0.12.0",
         "@chromatic-com/storybook": "^5.0.0",
+        "@storybook/react-vite": "^10.1.11",
         "@testing-library/jest-dom": "^6.9.1",
         "@testing-library/react": "^16.3.1",
         "@types/node": "^24.0.0",
@@ -425,6 +436,7 @@
         "@canonical/typescript-config-react": "^0.12.0",
         "@canonical/webarchitect": "^0.12.0",
         "@chromatic-com/storybook": "^5.0.0",
+        "@storybook/react-vite": "^10.1.11",
         "@testing-library/jest-dom": "^6.9.1",
         "@testing-library/react": "^16.3.1",
         "@types/node": "^24.0.0",
@@ -460,6 +472,7 @@
         "@canonical/typescript-config-react": "^0.12.0",
         "@canonical/webarchitect": "^0.12.0",
         "@chromatic-com/storybook": "^5.0.0",
+        "@storybook/react-vite": "^10.1.11",
         "@testing-library/jest-dom": "^6.9.1",
         "@testing-library/react": "^16.3.1",
         "@types/node": "^24.0.0",
@@ -768,11 +781,12 @@
         "@canonical/svelte-ssr-test": "^0.13.0-experimental.0",
         "@canonical/typescript-config-svelte": "^0.12.0",
         "@canonical/webarchitect": "^0.12.0",
+        "@storybook/addon-svelte-csf": "^5.0.10",
         "@sveltejs/package": "^2.5.7",
         "@sveltejs/vite-plugin-svelte": "^6.2.4",
+        "@types/bun": "^1.3.6",
         "@vitest/browser": "^4.0.18",
         "@vitest/browser-playwright": "^4.0.18",
-        "bun-types": "^1.0.0",
         "playwright": "^1.58.0",
         "storybook": "^10.1.11",
         "svelte-check": "^4.3.5",
@@ -2945,7 +2959,7 @@
 
     "strip-final-newline": ["strip-final-newline@2.0.0", "", {}, "sha512-BrpvfNAE3dcvq7ll3xVumzjKjZQ5tI1sEUIKr3Uoks0XUl45St3FlatVqef9prk4jRDzhW6WZg+3bk93y6pLjA=="],
 
-    "strip-indent": ["strip-indent@3.0.0", "", { "dependencies": { "min-indent": "^1.0.0" } }, "sha512-laJTa3Jb+VQpaC6DseHhF7dXVqHTfJPCRDaEbid/drOhgitgYku/letMUqOXFoWV0zIIUbjpdH2t+tYj4bQMRQ=="],
+    "strip-indent": ["strip-indent@4.1.1", "", {}, "sha512-SlyRoSkdh1dYP0PzclLE7r0M9sgbFKKMFXpFRUMNuKhQSbC6VQIGzq3E0qsfvGJaUFJPGv6Ws1NZ/haTAjfbMA=="],
 
     "strip-json-comments": ["strip-json-comments@2.0.1", "", {}, "sha512-4gB8na07fecVVkOI6Rs4e7T6NOTki5EmL7TUduTs6bu3EdnSycntVJ4re8kgZA+wx9IueI2Y11bfbgwtzuE0KQ=="],
 
@@ -3585,8 +3599,6 @@
 
     "raw-body/iconv-lite": ["iconv-lite@0.7.2", "", { "dependencies": { "safer-buffer": ">= 2.1.2 < 3.0.0" } }, "sha512-im9DjEDQ55s9fL4EYzOAv0yMqmMBSZp6G0VvFyTMPKWxiSBHUj9NW/qqLmXUwXrrM7AvqSlTCfvqRb0cM8yYqw=="],
 
-    "react-docgen/strip-indent": ["strip-indent@4.1.1", "", {}, "sha512-SlyRoSkdh1dYP0PzclLE7r0M9sgbFKKMFXpFRUMNuKhQSbC6VQIGzq3E0qsfvGJaUFJPGv6Ws1NZ/haTAjfbMA=="],
-
     "read-package-up/read-pkg": ["read-pkg@9.0.1", "", { "dependencies": { "@types/normalize-package-data": "^2.4.3", "normalize-package-data": "^6.0.0", "parse-json": "^8.0.0", "type-fest": "^4.6.0", "unicorn-magic": "^0.1.0" } }, "sha512-9viLL4/n1BJUCT1NXVTdS1jtm80yDEgR5T4yCelII49Mbj0v1rZdKqj7zCiYdbB0CuCgdrvHcNogAKTFPBocFA=="],
 
     "read-package-up/type-fest": ["type-fest@4.41.0", "", {}, "sha512-TeTSQ6H5YHvpqVwBRcnLDCBnDOHWYu7IvGbHT6N8AOymcr9PJGjc1GTtiWZTYg0NCgYwvnYWEkVChQAr9bjfwA=="],
@@ -3600,6 +3612,8 @@
     "recast/source-map": ["source-map@0.6.1", "", {}, "sha512-UjgapumWlbMhkBgzT7Ykc5YXUT46F0iKu8SGXq0bcwP5dz/h0Plj6enJqjz1Zbq2l5WaqYnrVbwWOWMyF3F47g=="],
 
     "redent/indent-string": ["indent-string@4.0.0", "", {}, "sha512-EdDDZu4A2OyIK7Lr/2zG+w5jmbuk1DVBnEwREQvBzspBJkCEbRa8GxU1lghYcaGJCnRWibjDXlq779X1/y5xwg=="],
+
+    "redent/strip-indent": ["strip-indent@3.0.0", "", { "dependencies": { "min-indent": "^1.0.0" } }, "sha512-laJTa3Jb+VQpaC6DseHhF7dXVqHTfJPCRDaEbid/drOhgitgYku/letMUqOXFoWV0zIIUbjpdH2t+tYj4bQMRQ=="],
 
     "rimraf/glob": ["glob@9.3.5", "", { "dependencies": { "fs.realpath": "^1.0.0", "minimatch": "^8.0.2", "minipass": "^4.2.4", "path-scurry": "^1.6.1" } }, "sha512-e1LleDykUz2Iu+MTYdkSsuWX8lvAjAcs0Xef0lNIu0S2wOAzuTxCJtcd9S3cijlwYF18EsU3rzb8jPVobxDh9Q=="],
 
