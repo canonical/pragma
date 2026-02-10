@@ -231,6 +231,7 @@
       "devDependencies": {
         "@biomejs/biome": "2.3.14",
         "@canonical/biome-config": "^0.12.0",
+        "@canonical/storybook-helpers": "^0.12.0",
         "@canonical/typescript-config-react": "^0.12.0",
         "@canonical/webarchitect": "^0.12.0",
         "@chromatic-com/storybook": "^5.0.1",
@@ -264,6 +265,7 @@
       "devDependencies": {
         "@biomejs/biome": "2.3.14",
         "@canonical/biome-config": "^0.12.0",
+        "@canonical/storybook-helpers": "^0.12.0",
         "@canonical/typescript-config-react": "^0.12.0",
         "@canonical/webarchitect": "^0.12.0",
         "@chromatic-com/storybook": "^5.0.1",
@@ -297,6 +299,7 @@
       "devDependencies": {
         "@biomejs/biome": "2.3.14",
         "@canonical/biome-config": "^0.12.0",
+        "@canonical/storybook-helpers": "^0.12.0",
         "@canonical/typescript-config-react": "^0.12.0",
         "@canonical/webarchitect": "^0.12.0",
         "@chromatic-com/storybook": "^5.0.1",
@@ -336,6 +339,7 @@
       "devDependencies": {
         "@biomejs/biome": "2.3.14",
         "@canonical/biome-config": "^0.12.0",
+        "@canonical/storybook-helpers": "^0.12.0",
         "@canonical/typescript-config-react": "^0.12.0",
         "@canonical/webarchitect": "^0.12.0",
         "@chromatic-com/storybook": "^5.0.1",
@@ -369,6 +373,7 @@
       "devDependencies": {
         "@biomejs/biome": "2.3.14",
         "@canonical/biome-config": "^0.12.0",
+        "@canonical/storybook-helpers": "^0.12.0",
         "@canonical/typescript-config-react": "^0.12.0",
         "@canonical/webarchitect": "^0.12.0",
         "@chromatic-com/storybook": "^5.0.1",
@@ -402,6 +407,7 @@
       "devDependencies": {
         "@biomejs/biome": "2.3.14",
         "@canonical/biome-config": "^0.12.0",
+        "@canonical/storybook-helpers": "^0.12.0",
         "@canonical/typescript-config-react": "^0.12.0",
         "@canonical/webarchitect": "^0.12.0",
         "@chromatic-com/storybook": "^5.0.1",
@@ -474,6 +480,7 @@
       "devDependencies": {
         "@biomejs/biome": "2.3.14",
         "@canonical/biome-config": "^0.12.0",
+        "@canonical/storybook-helpers": "^0.12.0",
         "@canonical/typescript-config-react": "^0.12.0",
         "@canonical/webarchitect": "^0.12.0",
         "@chromatic-com/storybook": "^5.0.1",
