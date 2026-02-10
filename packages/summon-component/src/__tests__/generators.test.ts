@@ -202,7 +202,7 @@ describe("component/react generator", () => {
 
       expect(parentIndex).toBeDefined();
       const content = (parentIndex as { content: string }).content;
-      expect(content).toContain('export * from "./Card"');
+      expect(content).toContain('export * from "./Card/index.js"');
     });
   });
 });
