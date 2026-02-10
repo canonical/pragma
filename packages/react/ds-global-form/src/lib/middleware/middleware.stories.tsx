@@ -3,9 +3,6 @@
 // Needed for template-based story, safe to remove otherwise
 import type { Meta, StoryFn, StoryObj } from "@storybook/react-vite";
 import { http } from "msw";
-// Needed for function-based story, safe to remove otherwise
-// import type { FormProps } from './types.js'
-import { useMemo } from "react";
 import * as decorators from "storybook/decorators.js";
 import * as fixtures from "storybook/fixtures.options.js";
 import { Field } from "../Field/index.js";

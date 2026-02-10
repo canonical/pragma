@@ -3,7 +3,6 @@ import type React from "react";
 import { useFormContext } from "react-hook-form";
 import withWrapper from "../../common/Wrapper/withWrapper.js";
 import { useOptionAriaProperties } from "../../hooks/index.js";
-import type { WrapperProps } from "../../types.js";
 import type { OptionProps, SimpleChoicesProps } from "./types.js";
 import "./styles.css";
 

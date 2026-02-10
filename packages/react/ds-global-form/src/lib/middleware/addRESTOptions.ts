@@ -45,7 +45,7 @@ function addRESTFieldOptions(
             setError(err.message);
             setLoading(false);
           });
-      }, [url]);
+      }, []);
 
       if (loading) {
         return createElement("div", null, "Loading options...");

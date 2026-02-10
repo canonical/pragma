@@ -39,17 +39,17 @@
     "test:coverage": "vitest run --coverage"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.3.11",
+    "@biomejs/biome": "2.3.14",
     "@canonical/biome-config": "^0.12.0",
     "@canonical/typescript-config": "^0.12.0",
     "@canonical/webarchitect": "^0.12.0",
     "@types/ejs": "^3.1.5",
     "@types/omelette": "^0.4.5",
-    "@types/react": "^19.0.0",
+    "@types/react": "^19.2.13",
     "bun-types": "^1.0.0",
     "ink-testing-library": "^4.0.0",
     "typescript": "^5.9.3",
-    "vitest": "^3.2.1"
+    "vitest": "^4.0.18"
   },
   "dependencies": {
     "chalk": "^5.6.2",
@@ -60,6 +60,6 @@
     "ink-spinner": "^5.0.0",
     "ink-text-input": "^6.0.0",
     "omelette": "^0.4.17",
-    "react": "^19.0.0"
+    "react": "^19.2.4"
   }
 }

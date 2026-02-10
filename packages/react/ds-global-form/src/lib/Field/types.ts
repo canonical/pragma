@@ -1,4 +1,3 @@
-import type { ComponentProps } from "react";
 import type { RegisterOptions } from "react-hook-form";
 import type {
   CheckboxProps,
