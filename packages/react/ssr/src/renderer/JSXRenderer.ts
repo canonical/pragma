@@ -1,139 +1,215 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
-import type * as React from "react";
-import { createElement, type ReactElement } from "react";
+import { createElement } from "react";
 import {
-  type PipeableStream,
   type RenderToPipeableStreamOptions,
   renderToPipeableStream,
 } from "react-dom/server";
+import { INITIAL_DATA_KEY } from "./constants.js";
 import Extractor from "./Extractor.js";
-
-export interface RendererOptions {
-  defaultLocale?: string;
-  loadMessages?: (locale: string) => string;
-  /** The HTML string to extract the script and link tags from */
-  htmlString?: string;
-  /**
-   * Options to pass to `react-dom/server.renderToPipeableStream`
-   * We specifically exclude `onShellReady()`, `onError()`, and `onShellError()` as they are implemented by `JSXRenderer.render().`
-   * See https://react.dev/reference/react-dom/server/renderToPipeableStream#parameters
-   */
-  renderToPipeableStreamOptions?: Omit<
-    RenderToPipeableStreamOptions,
-    "onShellReady" | "onError" | "onShellError"
-  >;
-}
-
-/** The props that the server entrypoint component will receive */
-export interface RendererServerEntrypointProps {
-  /** The language of the page. This is typically read from the request headers. */
-  lang?: string;
-  /** The script tags to include in the page */
-  scriptTags?: string;
-  /** The link tags to include in the page */
-  linkTags?: string;
-}
-
-// Expose the types for the rendering function for better type-safety in server code and caller code
-/** The result of rendering a React component */
-export type RenderResult = PipeableStream;
-/** A function that renders a React component */
-export type RenderHandler = (
-  req: IncomingMessage,
-  res: ServerResponse,
-) => RenderResult;
-
-export type ReactServerEntrypointComponent<
-  TComponentProps extends RendererServerEntrypointProps,
-> = React.ComponentType<TComponentProps>;
+import type {
+  RendererOptions,
+  RenderHandler,
+  RenderResult,
+  ServerEntrypoint,
+  ServerEntrypointProps,
+} from "./types.js";
 
 // This class is responsible for rendering a React component to a readable stream.
-export default class Renderer<
-  TComponent extends ReactServerEntrypointComponent<TComponentProps>,
-  TComponentProps extends
-    RendererServerEntrypointProps = RendererServerEntrypointProps,
+export default class JSXRenderer<
+  TComponent extends ServerEntrypoint<InitialData>,
+  InitialData,
 > {
-  private locale: string | undefined;
-  // private messages: any;
-  private extractor: Extractor | undefined;
+  protected extractor: Extractor | undefined;
 
   constructor(
-    private readonly Component: TComponent,
-    private readonly options: RendererOptions = {},
+    protected readonly Component: TComponent,
+    protected readonly initialData: InitialData = {} as InitialData,
+    protected readonly options: RendererOptions = {},
   ) {
-    // this.prepareLocale = this.prepareLocale.bind(this);
-    this.render = this.render.bind(this);
     this.extractor = this.options.htmlString
       ? new Extractor(this.options.htmlString)
       : undefined;
   }
 
-  //async prepareLocale(header: string | undefined) {
-  //  if (this.options.loadMessages) {
-  //    this.locale = header
-  //      ? header.slice(0, 2)
-  //      : this.options.defaultLocale || "en";
-  //    //this.messages = await this.options.loadMessages(this.locale);
-  //  }
-  //}
+  public getLocale(): string {
+    return this.options.defaultLocale || "en";
+  }
 
   /**
    * Gets the props needed to render the component
    * @return The props needed to render the component
-   * @private
+   * @protected
    */
-  private getComponentProps(): TComponentProps {
+  protected getComponentProps(): ServerEntrypointProps<InitialData> {
     return {
-      lang: this.locale,
-      scriptTags: this.extractor?.getScriptTags(),
-      linkTags: this.extractor?.getLinkTags(),
-      // todo implement message passing
-      // messages: this.messages,
-    } as TComponentProps;
+      lang: this.getLocale(),
+      scriptElements: this.extractor?.getScriptElements(),
+      linkElements: this.extractor?.getLinkElements(),
+      otherHeadElements: this.extractor?.getOtherHeadElements(),
+      initialData: this.initialData,
+    } as ServerEntrypointProps<InitialData>;
+  }
+
+  private getScriptsByType(
+    scripts: React.ReactElement[],
+    type: "module" | "classic",
+  ): string[] {
+    return (
+      scripts
+        .map(
+          (script) =>
+            script as React.ReactElement<
+              React.ComponentProps<"script">,
+              "script"
+            >,
+        )
+        .filter((script) => {
+          if (type === "module") {
+            return script.props.type === "module";
+          } else {
+            return script.props.type !== "module";
+          }
+        })
+        .map((script) => script.props.src)
+        .filter((src) => typeof src === "string") || []
+    );
+  }
+
+  protected enrichRendererOptions(
+    props: ServerEntrypointProps<InitialData>,
+  ): RenderToPipeableStreamOptions {
+    const enrichedOptions = { ...this.options.renderToPipeableStreamOptions };
+
+    // options passed by the user always take priority
+    if (!enrichedOptions.bootstrapScriptContent) {
+      if (props.initialData) {
+        enrichedOptions.bootstrapScriptContent = `window.${INITIAL_DATA_KEY} = ${JSON.stringify(props.initialData)}`;
+      }
+    }
+    if (!enrichedOptions.bootstrapScripts) {
+      if (props.scriptElements) {
+        enrichedOptions.bootstrapScripts = this.getScriptsByType(
+          props.scriptElements,
+          "classic",
+        );
+      }
+    }
+    if (!enrichedOptions.bootstrapModules) {
+      if (props.scriptElements) {
+        enrichedOptions.bootstrapModules = this.getScriptsByType(
+          props.scriptElements,
+          "module",
+        );
+      }
+    }
+
+    return enrichedOptions;
+  }
+
+  protected prepareRender(
+    errorRef: { current: Error | undefined },
+    renderOptions: RenderToPipeableStreamOptions,
+  ): RenderResult {
+    const props = this.getComponentProps();
+    const jsx = createElement(this.Component, props);
+
+    const jsxStream = renderToPipeableStream(jsx, {
+      ...this.enrichRendererOptions(props),
+      ...renderOptions,
+      // Error occurred during rendering, after the shell & headers were sent - store the error for usage after stream is sent
+      onError(error) {
+        errorRef.current = error as Error;
+        console.error(error);
+      },
+    });
+    return jsxStream;
   }
 
   /**
-   * Renders this renderer's JSX component as a transmittable stream and sends it to the client
-   * TODO add a render function for ReadableStream, and rename this to be focused on PipeableStream
-   * @param req Client's request
+   * This function is responsible for rendering a React component to a pipeable stream.
+   * See the README to understand the difference between rendering options.
+   *
+   * The PipeableStreamRenderer might improve the time taken for the page to be rendered and interactive
+   * (at least in part), using React's Suspense/lazy API and pipeable streams.
+   *
+   * CAUTION: The resulting HTML rendered this way is not cacheable.
+   *
+   * @param _req Client's request
    * @param res Response object that will be sent to the client
    * @return {RenderResult} The stream that was sent to the client
    */
-  render: RenderHandler = (
-    req: IncomingMessage,
+  renderToStream: RenderHandler = (
+    _req: IncomingMessage,
     res: ServerResponse,
   ): RenderResult => {
-    // await this.prepareLocale(req.headers.get("accept-language") || undefined);
-    const jsx = createElement(this.Component, this.getComponentProps());
+    const errorRef: { current: Error | undefined } = { current: undefined };
+    let jsxStream: RenderResult;
 
-    let renderingError: Error;
-
-    const jsxStream = renderToPipeableStream(jsx, {
-      ...this.options.renderToPipeableStreamOptions,
+    jsxStream = this.prepareRender(errorRef, {
       // Early error, before the shell is prepared
-      onShellError() {
-        res
-          .writeHead(500, { "Content-Type": "text/html; charset=utf-8" })
-          .end("<h1>Something went wrong</h1>");
-
-        throw new Error("An error occurred while constructing the SSR shell");
+      onShellError(error) {
+        if (!res.headersSent) {
+          res
+            .writeHead(500, { "Content-Type": "text/html; charset=utf-8" })
+            .end("<h1>Something went wrong</h1>");
+        }
+        console.error(error);
       },
       onShellReady() {
-        res.writeHead(renderingError ? 500 : 200, {
-          "Content-Type": "text/html; charset=utf-8",
-        });
+        if (!res.headersSent) {
+          res.writeHead(errorRef.current ? 500 : 200, {
+            "Content-Type": "text/html; charset=utf-8",
+          });
+        }
 
         jsxStream.pipe(res);
-
         res.on("finish", () => {
           res.end();
         });
       },
-      // Error occurred during rendering, after the shell & headers were sent - store the error for usage after stream is sent
-      onError(error) {
-        renderingError = error as Error;
+    });
+
+    return jsxStream;
+  };
+
+  /**
+   * Renders this renderer's JSX component as a transmittable stream and sends it to the client
+   * once it has been fully rendered. This means once all <Suspense> components have finished loading.
+   * Even if it uses the renderToPipeableStream render, this method uses the "onAllReady" event,
+   * thus waiting until all the HTML document is ready and behaving as the classic renderToString method.
+   *
+   * See the README to understand the difference between rendering options.
+   *
+   * renderToString is useful in Vite Dev mode, as the HMR doesn't work well with Suspense
+   * and the Pipeable Stream rendering. Also if the resulting document needs to be cached.
+   * 
+   * @param _req Client's request
+   * @param res Response object that will be sent to the client
+   * @return {RenderResult} The stream that was sent to the client
+   */
+  renderToString: RenderHandler = (
+    _req: IncomingMessage,
+    res: ServerResponse,
+  ): RenderResult => {
+    const errorRef: { current: Error | undefined } = { current: undefined };
+    let jsxStream: RenderResult;
+
+    jsxStream = this.prepareRender(errorRef, {
+      // this makes the pipeable stream work the same as the classic renderToString function
+      onAllReady() {
+        if (!res.headersSent) {
+          res.writeHead(errorRef.current ? 500 : 200, {
+            "Content-Type": "text/html; charset=utf-8",
+          });
+        }
+
+        jsxStream.pipe(res);
+        res.on("finish", () => {
+          res.end();
+        });
       },
     });
+
     return jsxStream;
   };
 }

@@ -1,7 +1,7 @@
 {
   "name": "@canonical/ds-demo-site",
   "private": true,
-  "version": "0.13.0-experimental.0",
+  "version": "0.13.0",
   "type": "module",
   "license": "GPL-3.0-only",
   "scripts": {
@@ -26,13 +26,13 @@
   "dependencies": {
     "@canonical/react-ds-global": "^0.13.0-experimental.0",
     "@canonical/react-ds-global-form": "^0.13.0-experimental.0",
-    "@canonical/react-ssr": "^0.12.0",
+    "@canonical/react-ssr": "^0.13.0",
     "@canonical/storybook-config": "^0.13.0-experimental.0",
     "@canonical/styles": "^0.12.0",
     "@canonical/styles-debug": "^0.12.0",
-    "@tanstack/react-router": "^1.151.3",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
+    "react-hook-form": "^7.71.1",
     "react-shadow": "^20.6.0"
   },
   "devDependencies": {
@@ -40,8 +40,6 @@
     "@canonical/biome-config": "^0.12.0",
     "@canonical/typescript-config-react": "^0.12.0",
     "@chromatic-com/storybook": "^5.0.0",
-    "@tanstack/react-router-devtools": "^1.151.3",
-    "@tanstack/router-plugin": "^1.151.5",
     "@types/node": "^24.0.0",
     "@types/react": "^19.2.8",
     "@types/react-dom": "^19.2.3",
