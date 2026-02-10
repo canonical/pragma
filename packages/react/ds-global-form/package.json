@@ -43,7 +43,7 @@
     "@canonical/storybook-config": "^0.13.0-experimental.0",
     "@canonical/styles": "^0.12.0",
     "@canonical/utils": "^0.12.0",
-    "downshift": "^9.0.13",
+    "downshift": "^9.3.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-hook-form": "^7.71.1"
@@ -64,7 +64,7 @@
     "copyfiles": "^2.4.1",
     "globals": "^17.3.0",
     "jsdom": "^28.0.0",
-    "msw": "^2.12.7",
+    "msw": "^2.12.10",
     "@storybook/react-vite": "^10.2.8",
     "storybook": "^10.2.8",
     "typescript": "^5.9.3",
