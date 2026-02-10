@@ -3,7 +3,7 @@
   "compilerOptions": {
     "baseUrl": "src",
     "skipLibCheck": true,
-    "types": ["node", "react", "react-dom"]
+    "types": ["react", "react-dom"]
   },
   "include": ["src/**/*"]
 }
