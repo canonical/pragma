@@ -2,12 +2,12 @@
 
 import { describe, expect, it } from "vitest";
 import { renderToString } from "react-dom/server";
-import { <%= name %> } from "./<%= name %>";
+import <%= name %> from "./<%= name %>.js";
 
 describe("<%= name %> SSR", () => {
 	it("renders without hydration errors", () => {
 		const html = renderToString(<<%= name %>>Test content</<%= name %>>);
 		expect(html).toContain("Test content");
-		expect(html).toContain("<%= kebabName %>");
+		expect(html).toContain("ds <%= kebabName %>");
 	});
 });

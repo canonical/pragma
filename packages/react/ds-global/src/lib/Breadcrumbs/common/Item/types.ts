@@ -17,7 +17,10 @@ export interface LinkComponentProps {
  *
  * @implements dso:global.subcomponent.breadcrumbs-item
  */
-export interface ItemProps extends HTMLAttributes<HTMLLIElement>, Item {
+export interface ItemProps
+  extends HTMLAttributes<HTMLLIElement>,
+    // biome-ignore lint/suspicious/noExplicitAny: Component accepts any props
+    Item<ComponentType<any>> {
   /**
    * The link content (text or element)
    * Falls back to `label` from Item if not provided

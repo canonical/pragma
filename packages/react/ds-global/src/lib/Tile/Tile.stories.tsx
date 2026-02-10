@@ -4,7 +4,7 @@ import Component from "./Tile.js";
 import Tile from "./Tile.js";
 
 const meta = {
-  title: "B/Tile",
+  title: "Beta/Tile",
   component: Component,
   tags: ["autodocs"],
   args: { onClick: fn() },

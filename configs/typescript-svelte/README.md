@@ -2,7 +2,7 @@
 
 This package provides a central configuration for Canonical's Svelte projects.
 
-This configuration extends a [base configuration](https://www.npmjs.com/package/@canonical/typescript-config-base),
+This configuration extends a [base configuration](https://www.npmjs.com/package/@canonical/typescript-config),
 which provides more general TypeScript settings and is suitable for non-Svelte projects.
 
 ## Getting Started

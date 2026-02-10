@@ -10,6 +10,8 @@
  */
 import type { ProjectAnnotations, Renderer } from "storybook/internal/types";
 
+import "@canonical/styles-debug/baseline-grid";
+
 import { KEY } from "./constants.js";
 import { withBaselineGrid } from "./withBaselineGrid.js";
 

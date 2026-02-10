@@ -26,7 +26,7 @@ The server starts at http://localhost:6006. Each component package has its own S
 **Required:**
 
 - **React 19** or later for component packages (Svelte 5 for Svelte packages)
-- **Bun 1.3** or later for package management and script execution
+- **Bun 1.3.9** or later for package management and script execution
 - **Node.js 22.12 or 24** because Storybook and Lerna depend on Node internals that Bun does not yet fully support. Node 22.12 specifically is required as earlier 22.x versions have module resolution issues.
 
 Node 23 has a [known compatibility issue](https://github.com/canonical/pragma/issues/226) and should be avoided.
@@ -60,7 +60,7 @@ React components are organised into tiers based on their scope of applicability.
 
 | Tier | Package | Scope |
 |------|---------|-------|
-| Global | `@canonical/react-ds-global` | Universal components like Button, Badge, Card, and Chip that apply across all contexts. |
+| Global | `@canonical/react-ds-global` | Universal components like Button, Badge, Card, and Chip that apply across all contexts. Components are grouped by maturity: **Stable** (production-ready), **Beta** (API may change), and **Experimental** (early-stage). |
 | Global Form | `@canonical/react-ds-global-form` | Form controls including Input, Select, and Checkbox, along with validation patterns. See [creating custom fields](packages/react/ds-global-form/docs/creating-custom-fields.md) and [creating middleware](packages/react/ds-global-form/docs/creating-middleware.md). |
 | Apps | `@canonical/react-ds-app` | Application-level UI such as Navigation and Toolbar, suited for internal tools. |
 | Apps/WPE | `@canonical/react-ds-app-launchpad` | Components specific to Launchpad and Workplace Engineering applications. |
@@ -136,6 +136,8 @@ bun run test
 
 For focused development on a single package, navigate to that package and use its scripts directly. Most packages provide `bun run storybook` for interactive development and `bun run test:vitest:watch` for test-driven development.
 
+> **Hint:** Use `bunx` instead of `npx` to run package binaries. This ensures the locally installed versions are used rather than potentially stale global npm caches.
+
 ## CI/CD
 
 Pull requests trigger a build matrix that tests against Node 22 and Node 24. The workflow builds all packages, runs checks, and executes tests. All matrix jobs must pass before merge.
@@ -166,7 +168,7 @@ The following table lists all packages in the monorepo with their location and p
 
 | Package | Path | Description |
 |---------|------|-------------|
-| `@canonical/react-ds-global` | `packages/react/ds-global` | Global tier components: Button, Badge, Card, Chip, Icon, Link, Rule, Section, SkipLink, Tooltip |
+| `@canonical/react-ds-global` | `packages/react/ds-global` | Global tier components grouped by maturity: **Stable** (Accordion, Breadcrumbs, Card, Icon, Timeline), **Beta** (Button, Label, Tile), **Experimental** (Badge, Chip, Link, Rule, Section, SkipLink, Tooltip) |
 | `@canonical/react-ds-global-form` | `packages/react/ds-global-form` | Form components with react-hook-form integration. Guides: [custom fields](packages/react/ds-global-form/docs/creating-custom-fields.md), [middleware](packages/react/ds-global-form/docs/creating-middleware.md) |
 | `@canonical/react-ds-app` | `packages/react/ds-app` | Application tier components: Navigation, Toolbar |
 | `@canonical/react-ds-app-launchpad` | `packages/react/ds-app-launchpad` | Launchpad-specific: Markdown renderer, Tooltip variants |
@@ -208,7 +210,7 @@ The following table lists all packages in the monorepo with their location and p
 | Package | Path | Description |
 |---------|------|-------------|
 | `@canonical/biome-config` | `configs/biome-config` | Shared Biome configuration for linting and formatting |
-| `@canonical/typescript-config-base` | `configs/typescript-config-base` | Base TypeScript configuration |
+| `@canonical/typescript-config` | `configs/typescript-config` | Base TypeScript configuration |
 | `@canonical/typescript-config-react` | `configs/typescript-config-react` | TypeScript configuration extending base with React settings |
 | `@canonical/storybook-config` | `configs/storybook-config` | Shared Storybook configuration factory |
 

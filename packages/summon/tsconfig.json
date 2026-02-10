@@ -1,8 +1,8 @@
 {
-  "extends": "@canonical/typescript-config-base",
+  "extends": "@canonical/typescript-config",
   "compilerOptions": {
     "baseUrl": "src",
-    "types": ["node", "bun-types"],
+    "types": ["node", "@types/bun"],
     "jsx": "react-jsx",
     "resolveJsonModule": true,
     "skipLibCheck": true

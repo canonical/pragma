@@ -66,7 +66,7 @@ describe("component/react generator", () => {
 
     it("has examples", () => {
       expect(generator.meta.examples).toBeDefined();
-      expect(generator.meta.examples!.length).toBeGreaterThan(0);
+      expect(generator.meta.examples?.length).toBeGreaterThan(0);
     });
   });
 
@@ -74,29 +74,29 @@ describe("component/react generator", () => {
     it("has componentPath prompt", () => {
       const prompt = generator.prompts.find((p) => p.name === "componentPath");
       expect(prompt).toBeDefined();
-      expect(prompt!.type).toBe("text");
-      expect(prompt!.default).toBe("src/components/MyComponent");
+      expect(prompt?.type).toBe("text");
+      expect(prompt?.default).toBe("src/components/MyComponent");
     });
 
     it("has withStyles prompt", () => {
       const prompt = generator.prompts.find((p) => p.name === "withStyles");
       expect(prompt).toBeDefined();
-      expect(prompt!.type).toBe("confirm");
-      expect(prompt!.default).toBe(true);
+      expect(prompt?.type).toBe("confirm");
+      expect(prompt?.default).toBe(true);
     });
 
     it("has withStories prompt", () => {
       const prompt = generator.prompts.find((p) => p.name === "withStories");
       expect(prompt).toBeDefined();
-      expect(prompt!.type).toBe("confirm");
-      expect(prompt!.default).toBe(true);
+      expect(prompt?.type).toBe("confirm");
+      expect(prompt?.default).toBe(true);
     });
 
     it("has withSsrTests prompt", () => {
       const prompt = generator.prompts.find((p) => p.name === "withSsrTests");
       expect(prompt).toBeDefined();
-      expect(prompt!.type).toBe("confirm");
-      expect(prompt!.default).toBe(true);
+      expect(prompt?.type).toBe("confirm");
+      expect(prompt?.default).toBe(true);
     });
   });
 
@@ -202,7 +202,7 @@ describe("component/react generator", () => {
 
       expect(parentIndex).toBeDefined();
       const content = (parentIndex as { content: string }).content;
-      expect(content).toContain('export * from "./Card"');
+      expect(content).toContain('export * from "./Card/index.js"');
     });
   });
 });
@@ -228,14 +228,14 @@ describe("component/svelte generator", () => {
     it("has componentPath prompt with svelte default", () => {
       const prompt = generator.prompts.find((p) => p.name === "componentPath");
       expect(prompt).toBeDefined();
-      expect(prompt!.default).toBe("src/lib/components/MyComponent");
+      expect(prompt?.default).toBe("src/lib/components/MyComponent");
     });
 
     it("has useTsStories prompt", () => {
       const prompt = generator.prompts.find((p) => p.name === "useTsStories");
       expect(prompt).toBeDefined();
-      expect(prompt!.type).toBe("confirm");
-      expect(prompt!.default).toBe(false);
+      expect(prompt?.type).toBe("confirm");
+      expect(prompt?.default).toBe(false);
     });
   });
 

@@ -4,7 +4,7 @@ import Component from "./Label.js";
 import Label from "./Label.js";
 
 const meta = {
-  title: "B/Label",
+  title: "Beta/Label",
   component: Component,
   tags: ["autodocs"],
   argTypes: {

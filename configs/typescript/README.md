@@ -6,12 +6,12 @@ For React projects, see the [React configuration](https://www.npmjs.com/package/
 
 ## Getting Started
 1. Install Typescript: `bun add -d typescript`
-2. Install this configuration: `bun add -d @canonical/typescript-config-base`
+2. Install this configuration: `bun add -d @canonical/typescript-config`
 3. Create a `tsconfig.json` file in the root of your project and extend this configuration.
 
 ```json
 {
-  "extends": "@canonical/typescript-config-base"
+  "extends": "@canonical/typescript-config"
 }
 ```
 

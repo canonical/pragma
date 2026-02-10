@@ -33,7 +33,7 @@ export const previewConfig: Partial<Preview> = {
   parameters: {
     options: {
       storySort: {
-        order: ["Introduction", "*"],
+        order: ["Introduction", "Stable", "Beta", "Experimental", "*"],
       },
     },
     docs: {

@@ -6,6 +6,10 @@ function getAbsolutePath(value: string): string {
   return dirname(fileURLToPath(import.meta.resolve(`${value}/package.json`)));
 }
 
+function getAddonPath(value: string): string {
+  return dirname(fileURLToPath(import.meta.resolve(`${value}/manager`)));
+}
+
 type StorybookFrameworkConfig = {
   framework: string;
   addons: StorybookConfig["addons"];
@@ -46,10 +50,8 @@ function createConfig<T extends keyof typeof frameworks>(
       getAbsolutePath("@storybook/addon-a11y"),
       getAbsolutePath("@storybook/addon-vitest"),
       getAbsolutePath("@storybook/addon-themes"),
-      // This is a bit weird, but for some reason this doesn't work when referenced via getAbsolutePath
-      // see also: https://github.com/storybookjs/storybook/issues/24351#issuecomment-1777911065
-      "@canonical/storybook-addon-baseline-grid",
-      "@canonical/storybook-addon-shell-theme",
+      getAddonPath("@canonical/storybook-addon-baseline-grid"),
+      getAddonPath("@canonical/storybook-addon-shell-theme"),
       ...frameworks[framework].addons,
       ...(opts.extraAddons ?? []),
     ].filter((addon) => !opts.disabledAddons?.includes(addon)),

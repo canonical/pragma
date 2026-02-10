@@ -4,7 +4,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import Component from "./Thumbnail.js";
 
 const meta = {
-  title: "A/Card/Thumbnail",
+  title: "Stable/Card/Thumbnail",
   component: Component,
   tags: ["autodocs"],
   parameters: {

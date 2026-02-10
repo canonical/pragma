@@ -35,25 +35,25 @@
     "test": "vitest run"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.3.11",
+    "@biomejs/biome": "2.3.14",
     "@canonical/biome-config": "^0.12.0",
     "@canonical/typescript-config-react": "^0.12.0",
     "@canonical/webarchitect": "^0.12.0",
     "@testing-library/jest-dom": "^6.9.1",
-    "@testing-library/react": "^16.3.1",
-    "@types/react": "^19.0.0",
-    "@types/react-dom": "^19.0.0",
-    "@vitejs/plugin-react": "^5.1.2",
+    "@testing-library/react": "^16.3.2",
+    "@types/react": "^19.2.13",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.1.4",
     "copyfiles": "^2.4.1",
-    "jsdom": "^26.1.0",
+    "jsdom": "^28.0.0",
     "typescript": "^5.9.3",
     "vite": "^7.3.1",
-    "vite-tsconfig-paths": "^6.0.4",
-    "vitest": "^4.0.17"
+    "vite-tsconfig-paths": "^6.1.0",
+    "vitest": "^4.0.18"
   },
   "dependencies": {
     "@canonical/ds-types": "^0.12.0",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4"
   }
 }

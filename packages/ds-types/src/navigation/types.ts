@@ -1,11 +1,9 @@
-import type { ComponentType } from "react";
-
 /**
  * Default component type for navigation items.
- * A component that accepts any props.
+ * Framework-agnostic — consumers supply a concrete type
+ * (e.g. React.ComponentType) via the generic parameter.
  */
-// biome-ignore lint/suspicious/noExplicitAny: Component accepts any props
-export type DefaultComponent = ComponentType<any>;
+export type DefaultComponent = unknown;
 
 /**
  * Navigation item - Public API (WD405)
