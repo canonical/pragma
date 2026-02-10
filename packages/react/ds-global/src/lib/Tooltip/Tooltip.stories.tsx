@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import Component from "./Tooltip.js";
 
 const meta = {
-  title: "C/Tooltip",
+  title: "Experimental/Tooltip",
   component: Component,
   tags: ["autodocs"],
 } satisfies Meta<typeof Component>;

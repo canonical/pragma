@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import Component from "./Item.js";
 
 const meta = {
-  title: "A/Breadcrumbs/Item",
+  title: "Stable/Breadcrumbs/Item",
   component: Component,
   tags: ["autodocs"],
   parameters: {

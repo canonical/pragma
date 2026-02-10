@@ -3,7 +3,7 @@ import { useState } from "react";
 import Component from "./Item.js";
 
 const meta = {
-  title: "A/Accordion/Item",
+  title: "Stable/Accordion/Item",
   component: Component,
   tags: ["autodocs"],
   parameters: {

@@ -101,6 +101,7 @@
         "@canonical/ds-assets": "^0.12.0",
         "@canonical/storybook-addon-baseline-grid": "^0.13.0-experimental.0",
         "@canonical/storybook-addon-shell-theme": "^0.13.0-experimental.0",
+        "@canonical/styles-debug": "^0.12.0",
         "@chromatic-com/storybook": "^5.0.0",
         "@storybook/addon-a11y": "^10.1.11",
         "@storybook/addon-docs": "^10.1.11",

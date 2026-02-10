@@ -3,7 +3,7 @@ import Component from "./Breadcrumbs.js";
 import type { BreadcrumbItem } from "./types.js";
 
 const meta = {
-  title: "A/Breadcrumbs",
+  title: "Stable/Breadcrumbs",
   component: Component,
   tags: ["autodocs"],
 } satisfies Meta<typeof Component>;

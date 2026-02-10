@@ -1,5 +1,4 @@
 export const CommentIcon = (
-  // biome-ignore lint/correctness/useUniqueElementIds: TODO ignore was added during biome 2.2.2 upgrade, should be fixed by replacing comment-icon with useId()
   <svg
     xmlns="http://www.w3.org/2000/svg"
     width={16}

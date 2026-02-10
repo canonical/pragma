@@ -5,7 +5,7 @@ import { fn } from "storybook/test";
 import Component from "./Button.js";
 
 const meta = {
-  title: "B/Button",
+  title: "Beta/Button",
   component: Component,
   tags: ["autodocs"],
   argTypes: {

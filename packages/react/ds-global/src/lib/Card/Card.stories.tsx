@@ -8,7 +8,7 @@ import type { CardEmphasis, CardProps } from "./types.js";
 const CARD_EMPHASIS_OPTIONS: CardEmphasis[] = ["neutral", "highlighted"];
 
 const meta = {
-  title: "A/Card",
+  title: "Stable/Card",
   component: Component,
   argTypes: {
     children: {
