@@ -38,7 +38,7 @@
     "@canonical/typescript-config-react": "^0.12.0",
     "@chromatic-com/storybook": "^5.0.1",
     "@types/express": "^5.0.6",
-    "@types/node": "^25.2.3",
+    "@types/node": "^24.10.13",
     "@types/react": "^19.2.13",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.1.4",
