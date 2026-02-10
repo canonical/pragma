@@ -22,13 +22,13 @@ export const appendExportToParentIndex = (
   componentName: string,
 ): Task<void> => {
   const indexPath = path.join(parentDir, "index.ts");
-  const exportLine = `export * from "./${componentName}";\n`;
+  const exportLine = `export * from "./${componentName}/index.js";\n`;
 
   return ifElseM(
     exists(indexPath),
     // If exists, append (if not already exported)
     flatMap(readFile(indexPath), (content) => {
-      if (content.includes(`"./${componentName}"`)) {
+      if (content.includes(`./${componentName}`)) {
         return pure(undefined); // Already exported
       }
       return appendFile(indexPath, exportLine);

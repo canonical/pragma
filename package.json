@@ -38,10 +38,11 @@
     "check": "lerna run check",
     "check:fix": "lerna run check:fix",
     "test": "lerna run test",
-    "special:clean": "nx reset && lerna clean --yes && rm -rf node_modules"
+    "special:clean": "bun run nx reset && lerna clean --yes && rm -rf node_modules"
   },
   "devDependencies": {
-    "lerna": "^9.0.3"
+    "lerna": "^9.0.3",
+    "nx": "^22.5.0"
   },
   "msw": {
     "workerDirectory": [

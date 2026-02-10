@@ -2,7 +2,7 @@
 
 import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { <%= name %> } from "./<%= name %>";
+import <%= name %> from "./<%= name %>.js";
 
 describe("<%= name %>", () => {
 	it("renders children", () => {
@@ -13,8 +13,8 @@ describe("<%= name %>", () => {
 	it("applies custom className", () => {
 		render(<<%= name %> className="custom-class">Content</<%= name %>>);
 		const element = screen.getByText("Content");
-		expect(element).toHaveClass("<%= kebabName %>");
-		expect(element).toHaveClass("custom-class");
+		expect(element.className).toContain("ds <%= kebabName %>");
+		expect(element.className).toContain("custom-class");
 	});
 
 	it("passes through additional props", () => {

@@ -93,7 +93,7 @@ The package.json file defines the package identity, exports, scripts, and depend
   "devDependencies": {
     "@biomejs/biome": "2.3.11",
     "@canonical/biome-config": "^0.11.0",
-    "@canonical/typescript-config-base": "^0.11.0",
+    "@canonical/typescript-config": "^0.11.0",
     "@canonical/webarchitect": "^0.11.0",
     "typescript": "^5.9.3",
     "vite": "^7.3.1",
@@ -116,7 +116,7 @@ Create `tsconfig.json`:
 
 ```json
 {
-  "extends": "@canonical/typescript-config-base",
+  "extends": "@canonical/typescript-config",
   "compilerOptions": {
     "baseUrl": "src",
     "types": ["node", "vitest/globals"]
@@ -145,9 +145,9 @@ Create `tsconfig.build.json`:
 }
 ```
 
-The base config extends the shared `@canonical/typescript-config-base` package, which defines strict type checking rules and module resolution settings. The build config adds output paths and excludes test files from compilation.
+The base config extends the shared `@canonical/typescript-config` package, which defines strict type checking rules and module resolution settings. The build config adds output paths and excludes test files from compilation.
 
-For React packages, extend `@canonical/typescript-config-react` instead of `@canonical/typescript-config-base`. The React config includes JSX settings and React-specific type definitions.
+For React packages, extend `@canonical/typescript-config-react` instead of `@canonical/typescript-config`. The React config includes JSX settings and React-specific type definitions.
 
 ### Step 4: Create Biome Configuration
 

@@ -31,6 +31,6 @@
     "typescript": "^5.9.3"
   },
   "dependencies": {
-    "@canonical/typescript-config-base": "^0.12.0"
+    "@canonical/typescript-config": "^0.12.0"
   }
 }

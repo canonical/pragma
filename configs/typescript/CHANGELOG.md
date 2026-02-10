@@ -5,7 +5,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 # [0.12.0](https://github.com/canonical/ds25/compare/v0.12.0-experimental.0...v0.12.0) (2026-02-06)
 
-**Note:** Version bump only for package @canonical/typescript-config-base
+**Note:** Version bump only for package @canonical/typescript-config
 
 
 
@@ -24,7 +24,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 # [0.10.0](https://github.com/canonical/ds25/compare/v0.10.0-experimental.8...v0.10.0) (2026-01-18)
 
-**Note:** Version bump only for package @canonical/typescript-config-base
+**Note:** Version bump only for package @canonical/typescript-config
 
 
 
@@ -32,7 +32,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 # [0.10.0-experimental.4](https://github.com/canonical/ds25/compare/v0.10.0-experimental.3...v0.10.0-experimental.4) (2025-09-25)
 
-**Note:** Version bump only for package @canonical/typescript-config-base
+**Note:** Version bump only for package @canonical/typescript-config
 
 
 
@@ -40,7 +40,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 # [0.10.0-experimental.3](https://github.com/canonical/ds25/compare/v0.10.0-experimental.2...v0.10.0-experimental.3) (2025-09-18)
 
-**Note:** Version bump only for package @canonical/typescript-config-base
+**Note:** Version bump only for package @canonical/typescript-config
 
 
 
@@ -48,7 +48,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 # [0.10.0-experimental.0](https://github.com/canonical/ds25/compare/v0.9.1-experimental.0...v0.10.0-experimental.0) (2025-07-30)
 
-**Note:** Version bump only for package @canonical/typescript-config-base
+**Note:** Version bump only for package @canonical/typescript-config
 
 
 
@@ -56,7 +56,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 # [0.9.0](https://github.com/canonical/ds25/compare/v0.9.0-experimental.22...v0.9.0) (2025-06-27)
 
-**Note:** Version bump only for package @canonical/typescript-config-base
+**Note:** Version bump only for package @canonical/typescript-config
 
 
 
@@ -64,7 +64,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 # [0.9.0-experimental.21](https://github.com/canonical/ds25/compare/v0.9.0-experimental.20...v0.9.0-experimental.21) (2025-06-24)
 
-**Note:** Version bump only for package @canonical/typescript-config-base
+**Note:** Version bump only for package @canonical/typescript-config
 
 
 
@@ -72,7 +72,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 # [0.9.0-experimental.12](https://github.com/canonical/ds25/compare/v0.9.0-experimental.11...v0.9.0-experimental.12) (2025-04-03)
 
-**Note:** Version bump only for package @canonical/typescript-config-base
+**Note:** Version bump only for package @canonical/typescript-config
 
 
 
@@ -80,7 +80,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 # [0.9.0-experimental.2](https://github.com/canonical/ds25/compare/v0.9.0-experimental.1...v0.9.0-experimental.2) (2025-02-12)
 
-**Note:** Version bump only for package @canonical/typescript-config-base
+**Note:** Version bump only for package @canonical/typescript-config
 
 
 
@@ -88,7 +88,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 # [0.9.0-experimental.1](https://github.com/canonical/ds25/compare/v0.9.0-experimental.0...v0.9.0-experimental.1) (2025-02-07)
 
-**Note:** Version bump only for package @canonical/typescript-config-base
+**Note:** Version bump only for package @canonical/typescript-config
 
 
 

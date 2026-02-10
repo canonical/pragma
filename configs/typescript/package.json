@@ -1,5 +1,5 @@
 {
-  "name": "@canonical/typescript-config-base",
+  "name": "@canonical/typescript-config",
   "version": "0.12.0",
   "description": "Canonical's standard TypeScript configuration",
   "main": "tsconfig.json",

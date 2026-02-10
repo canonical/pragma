@@ -2,7 +2,7 @@
 
 This package provides a central configuration for Canonical's React Typescript projects.
 
-This configuration extends a [base configuration](https://www.npmjs.com/package/@canonical/typescript-config-base),
+This configuration extends a [base configuration](https://www.npmjs.com/package/@canonical/typescript-config),
 which provides more general TypeScript settings and is suitable for non-React projects.
 
 ## Getting Started
@@ -28,6 +28,6 @@ This configuration is rooted in the [Canonical React Components Typescript confi
 It has been generalized to support non-React projects and be more minimal.
 
 React-specific changes to the original config are listed below. 
-For non-React relevant changes, see the [base configuration README](https://www.npmjs.com/package/@canonical/typescript-config-base#history).
+For non-React relevant changes, see the [base configuration README](https://www.npmjs.com/package/@canonical/typescript-config#history).
 
 - **`"jsx": "react"`** → `"jsx": "react-jsx"`: Transforms JSX to JS with [modern React JSX optimizations](https://legacy.reactjs.org/blog/2020/09/22/introducing-the-new-jsx-transform.html), instead of with React.createElement. Enables usage of JSX without importing React.

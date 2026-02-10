@@ -208,7 +208,7 @@ The following table lists all packages in the monorepo with their location and p
 | Package | Path | Description |
 |---------|------|-------------|
 | `@canonical/biome-config` | `configs/biome-config` | Shared Biome configuration for linting and formatting |
-| `@canonical/typescript-config-base` | `configs/typescript-config-base` | Base TypeScript configuration |
+| `@canonical/typescript-config` | `configs/typescript-config` | Base TypeScript configuration |
 | `@canonical/typescript-config-react` | `configs/typescript-config-react` | TypeScript configuration extending base with React settings |
 | `@canonical/storybook-config` | `configs/storybook-config` | Shared Storybook configuration factory |
 
