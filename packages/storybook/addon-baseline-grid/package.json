@@ -1,6 +1,6 @@
 {
   "name": "@canonical/storybook-addon-baseline-grid",
-  "version": "0.13.0-experimental.0",
+  "version": "0.13.0",
   "type": "module",
   "files": [
     "dist"
@@ -40,19 +40,19 @@
     "check:ts": "tsc --noEmit"
   },
   "dependencies": {
-    "@canonical/styles-debug": "^0.12.0",
+    "@canonical/styles-debug": "^0.13.0",
     "@storybook/icons": "^2.0.1"
   },
   "devDependencies": {
     "@biomejs/biome": "2.3.14",
-    "@canonical/biome-config": "^0.12.0",
-    "@canonical/typescript-config-react": "^0.12.0",
+    "@canonical/biome-config": "^0.13.0",
+    "@canonical/typescript-config-react": "^0.13.0",
+    "@storybook/react-vite": "^10.2.8",
     "@types/react": "^19.2.13",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.1.4",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
-    "@storybook/react-vite": "^10.2.8",
     "storybook": "^10.2.8",
     "typescript": "^5.9.3",
     "vite": "^7.3.1"
