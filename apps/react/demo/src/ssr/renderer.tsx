@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { PipeableStreamRenderer } from "@canonical/react-ssr/renderer";
+import { JSXRenderer } from "@canonical/react-ssr/renderer";
 import EntryServer from "./entry-server.js";
 
 export const htmlString = await fs.readFile(
@@ -8,7 +8,7 @@ export const htmlString = await fs.readFile(
   "utf-8",
 );
 
-const Renderer = new PipeableStreamRenderer(
+const Renderer = new JSXRenderer(
   EntryServer,
   {},
   {
@@ -16,4 +16,4 @@ const Renderer = new PipeableStreamRenderer(
   },
 );
 
-export default Renderer.render;
+export default Renderer.renderToString;
