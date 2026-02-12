@@ -1,4 +1,7 @@
 import { create } from "storybook/theming";
+import canonicalDarkLogo from "../assets/canonical-dark.svg?inline";
+import canonicalLightLogo from "../assets/canonical-light.svg?inline";
+import { tokens } from "./tokens.js";
 
 const BASE_THEME = {
   fontBase: "var(--font-ubuntu-sans)",
@@ -10,53 +13,83 @@ const BASE_THEME = {
 const LIGHT_THEME = create({
   ...BASE_THEME,
   base: "light",
-  colorPrimary: "#E95420",
-  colorSecondary: "#4F4F4F",
+  brandImage: canonicalLightLogo,
 
-  buttonBg: "#E95420",
+  // Colors
+  colorPrimary: tokens.semanticColorLightBrandPrimary,
+  colorSecondary: tokens.semanticColorLightTextLink,
 
   // UI
-  appBg: "#f3f3f3",
-  appContentBg: "#f3f3f3",
-  appPreviewBg: "#f7f7f7",
-  appBorderColor: "rgba(0, 0, 0, 0.2)",
-  // Text colors
-  textColor: "#000",
-  textInverseColor: "#FFF",
+  appBg: tokens.semanticColorLightBackground,
+  appContentBg: tokens.semanticColorLightBackground,
+  appPreviewBg: tokens.semanticColorLightBackgroundContainer,
+  appBorderColor: tokens.semanticColorLightBorderMuted,
+  appHoverBg: tokens.semanticColorLightForegroundNavigationPrimaryHover,
 
-  // Toolbar default and active colors
-  barTextColor: "#000",
-  barSelectedColor: "#E95420",
-  barHoverColor: "#000",
-  barBg: "#f3f3f3",
+  // Text
+  textColor: tokens.semanticColorLightText,
+  textInverseColor: tokens.semanticColorLightTextOnForegroundPrimary,
+  textMutedColor: tokens.semanticColorLightTextMuted,
 
-  textMutedColor: "#000",
+  // Toolbar
+  barTextColor: tokens.semanticColorLightText,
+  barSelectedColor: tokens.semanticColorLightText,
+  barHoverColor: tokens.semanticColorLightText,
+  barBg: tokens.semanticColorLightForegroundNavigationPrimary,
+
+  // Buttons
+  buttonBg: tokens.semanticColorLightForegroundGhostBrandedHover,
+  buttonBorder: tokens.semanticColorLightBorderBranded,
+
+  // Boolean (toggle) inputs
+  booleanBg: tokens.semanticColorLightBorder,
+  booleanSelectedBg: tokens.semanticColorLightForegroundInput,
+
+  // Form inputs
+  inputBg: tokens.semanticColorLightForegroundInput,
+  inputBorder: tokens.semanticColorLightBorder,
+  inputTextColor: tokens.semanticColorLightText,
 });
 
 const DARK_THEME = create({
   ...BASE_THEME,
   base: "dark",
-  colorPrimary: "#E8541F",
-  colorSecondary: "#777",
-  buttonBg: "#E8541F",
+  brandImage: canonicalDarkLogo,
+
+  // Colors
+  colorPrimary: tokens.semanticColorDarkBrandPrimary,
+  colorSecondary: tokens.semanticColorDarkTextLink,
 
   // UI
-  appBg: "#262626",
-  appContentBg: "#262626",
-  appPreviewBg: "#202020",
-  appBorderColor: "rgba(255, 255, 255, 0.2)",
+  appBg: tokens.semanticColorDarkBackground,
+  appContentBg: tokens.semanticColorDarkBackground,
+  appPreviewBg: tokens.semanticColorDarkBackgroundContainer,
+  appBorderColor: tokens.semanticColorDarkBorderMuted,
+  appHoverBg: tokens.semanticColorDarkForegroundNavigationPrimaryHover,
 
-  // Text colors
-  textColor: "#FFF",
-  textInverseColor: "#000",
+  // Text
+  textColor: tokens.semanticColorDarkText,
+  textInverseColor: tokens.semanticColorDarkTextOnForegroundPrimary,
+  textMutedColor: tokens.semanticColorDarkTextMuted,
 
-  // Toolbar default and active colors
-  barTextColor: "#FFF",
-  barSelectedColor: "#E8541F",
-  barHoverColor: "#FFF",
-  barBg: "#262626",
+  // Toolbar
+  barTextColor: tokens.semanticColorDarkText,
+  barSelectedColor: tokens.semanticColorDarkText,
+  barHoverColor: tokens.semanticColorDarkText,
+  barBg: tokens.semanticColorDarkForegroundNavigationPrimary,
 
-  textMutedColor: "#FFF",
+  // Buttons
+  buttonBg: tokens.semanticColorDarkForegroundGhostBrandedHover,
+  buttonBorder: tokens.semanticColorDarkBorderBranded,
+
+  // Boolean (toggle) inputs
+  booleanBg: tokens.semanticColorDarkBorder,
+  booleanSelectedBg: tokens.semanticColorDarkForegroundInput,
+
+  // Form inputs
+  inputBg: tokens.semanticColorDarkForegroundInput,
+  inputBorder: tokens.semanticColorDarkBorder,
+  inputTextColor: tokens.semanticColorDarkText,
 });
 
 export const THEME = {
