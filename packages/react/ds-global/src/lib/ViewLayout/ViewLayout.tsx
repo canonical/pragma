@@ -8,16 +8,16 @@ import "./styles.css";
  * ViewLayout component
  */
 export const ViewLayout = ({
-	className,
-	children,
-	...props
+  className,
+  children,
+  ...props
 }: ViewLayoutProps): JSX.Element => {
-	return (
-		<div
-			className={`ds view-layout${className ? ` ${className}` : ""}`}
-			{...props}
-		>
-			{children}
-		</div>
-	);
+  return (
+    <div
+      className={`ds view-layout${className ? ` ${className}` : ""}`}
+      {...props}
+    >
+      {children}
+    </div>
+  );
 };

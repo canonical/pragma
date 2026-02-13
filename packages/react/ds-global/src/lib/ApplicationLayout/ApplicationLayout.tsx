@@ -8,16 +8,16 @@ import "./styles.css";
  * ApplicationLayout component
  */
 export const ApplicationLayout = ({
-	className,
-	children,
-	...props
+  className,
+  children,
+  ...props
 }: ApplicationLayoutProps): JSX.Element => {
-	return (
-		<div
-			className={`ds application-layout${className ? ` ${className}` : ""}`}
-			{...props}
-		>
-			{children}
-		</div>
-	);
+  return (
+    <div
+      className={`ds application-layout${className ? ` ${className}` : ""}`}
+      {...props}
+    >
+      {children}
+    </div>
+  );
 };

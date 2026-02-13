@@ -9,6 +9,9 @@
   --gap: 1rem;
 }
 
-html, body, #root, #storybook-root {
+html,
+body,
+#root,
+#storybook-root {
   height: 100%;
 }

@@ -4,6 +4,6 @@
 import type { HTMLAttributes, ReactNode } from "react";
 
 export interface ViewLayoutProps extends HTMLAttributes<HTMLDivElement> {
-	/** Content to render inside the component */
-	children?: ReactNode;
+  /** Content to render inside the component */
+  children?: ReactNode;
 }

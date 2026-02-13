@@ -7,33 +7,34 @@ import { ViewContentLayout } from "../ViewContentLayout/ViewContentLayout.js";
 import { ViewLayout } from "./ViewLayout.js";
 
 const meta: Meta<typeof ViewLayout> = {
-	title: "Components/ViewLayout",
-	component: ViewLayout,
-	tags: ["autodocs"],
-	parameters: {
-		layout: "fullscreen",
-	},
+  title: "Components/ViewLayout",
+  component: ViewLayout,
+  tags: ["autodocs"],
+  parameters: {
+    layout: "fullscreen",
+  },
 };
 
 export default meta;
 type Story = StoryObj<typeof ViewLayout>;
 
 export const Default: Story = {
-	args: {
-		children: [
-			<ViewContentLayout key="content">
-				{[...Array(10)].map((_, index) => (
-					<testComponents.Card key={`test_${index}`} />
-				))}
-			</ViewContentLayout>,
-			<testComponents.Sidebar key="sidebar" />,
-		],
-	},
+  args: {
+    children: [
+      <ViewContentLayout key="content">
+        {[...Array(10)].map((_, index) => (
+          // biome-ignore lint/suspicious/noArrayIndexKey: only for testing purposes
+          <testComponents.Card key={`test_${index}`} />
+        ))}
+      </ViewContentLayout>,
+      <testComponents.Sidebar key="sidebar" />,
+    ],
+  },
 };
 
 export const WithCustomClass: Story = {
-	args: {
-		children: "Custom styled",
-		className: "custom-class",
-	},
+  args: {
+    children: "Custom styled",
+    className: "custom-class",
+  },
 };

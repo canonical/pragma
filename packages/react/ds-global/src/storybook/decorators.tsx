@@ -1,46 +1,46 @@
 import type { ElementType, ReactNode } from "react";
 
 export const rtl = () => (Story: ElementType) => (
-	<div dir="rtl">
-		<Story />
-	</div>
+  <div dir="rtl">
+    <Story />
+  </div>
 );
 
 export const grid = () => (Story: ElementType) => (
-	<div
-		style={{
-			display: "grid",
-			gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
-			gap: "1em",
-		}}
-	>
-		<Story />
-	</div>
+  <div
+    style={{
+      display: "grid",
+      gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+      gap: "1em",
+    }}
+  >
+    <Story />
+  </div>
 );
 
 export const threeColumnGrid = () => (Story: ElementType) => (
-	<div
-		style={{
-			display: "grid",
-			gridTemplateColumns: "repeat(3, 1fr)",
-			height: "100%",
-		}}
-	>
-		<Story />
-	</div>
+  <div
+    style={{
+      display: "grid",
+      gridTemplateColumns: "repeat(3, 1fr)",
+      height: "100%",
+    }}
+  >
+    <Story />
+  </div>
 );
 
 export const fluidGrid = () => (Story: ElementType) => (
-	<div
-		style={{
-			display: "grid",
-			gridTemplateColumns:
-				"repeat( auto-fit, minmax(100px, 1fr) minmax(100px, 1fr) minmax(100px, 1fr) minmax(100px, 1fr))",
-			height: "100%",
-		}}
-	>
-		<Story />
-	</div>
+  <div
+    style={{
+      display: "grid",
+      gridTemplateColumns:
+        "repeat( auto-fit, minmax(100px, 1fr) minmax(100px, 1fr) minmax(100px, 1fr) minmax(100px, 1fr))",
+      height: "100%",
+    }}
+  >
+    <Story />
+  </div>
 );
 
 /**
@@ -51,12 +51,12 @@ export const fluidGrid = () => (Story: ElementType) => (
  *      Should the type be declared separately? Should this be a separate file? Should the decorator be simplified somehow?
  */
 export const beforeMain =
-	({ id = "main", children }: { id?: string; children?: ReactNode }) =>
-	(Story: ElementType) => (
-		<>
-			<Story />
-			<main id={id} tabIndex={-1}>
-				{children}
-			</main>
-		</>
-	);
+  ({ id = "main", children }: { id?: string; children?: ReactNode }) =>
+  (Story: ElementType) => (
+    <>
+      <Story />
+      <main id={id} tabIndex={-1}>
+        {children}
+      </main>
+    </>
+  );

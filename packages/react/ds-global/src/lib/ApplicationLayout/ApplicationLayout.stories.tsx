@@ -8,36 +8,37 @@ import { ViewLayout } from "../ViewLayout/ViewLayout.js";
 import { ApplicationLayout } from "./ApplicationLayout.js";
 
 const meta: Meta<typeof ApplicationLayout> = {
-	title: "Components/ApplicationLayout",
-	component: ApplicationLayout,
-	tags: ["autodocs"],
-	parameters: {
-		layout: "fullscreen",
-	},
+  title: "Components/ApplicationLayout",
+  component: ApplicationLayout,
+  tags: ["autodocs"],
+  parameters: {
+    layout: "fullscreen",
+  },
 };
 
 export default meta;
 type Story = StoryObj<typeof ApplicationLayout>;
 
 export const Default: Story = {
-	args: {
-		children: [
-			<testComponents.Sidebar key="sidebar" />,
-			<ViewLayout key="view">
-				<ViewContentLayout key="content">
-					{[...Array(10)].map((_, index) => (
-						<testComponents.Card key={`test_${index}`} />
-					))}
-				</ViewContentLayout>
-				<testComponents.Sidebar key="sidebar" />,
-			</ViewLayout>,
-		],
-	},
+  args: {
+    children: [
+      <testComponents.Sidebar key="sidebar" />,
+      <ViewLayout key="view">
+        <ViewContentLayout key="content">
+          {[...Array(10)].map((_, index) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: only for testing purposes
+            <testComponents.Card key={`test_${index}`} />
+          ))}
+        </ViewContentLayout>
+        <testComponents.Sidebar key="sidebar" />,
+      </ViewLayout>,
+    ],
+  },
 };
 
 export const WithCustomClass: Story = {
-	args: {
-		children: "Custom styled",
-		className: "custom-class",
-	},
+  args: {
+    children: "Custom styled",
+    className: "custom-class",
+  },
 };
