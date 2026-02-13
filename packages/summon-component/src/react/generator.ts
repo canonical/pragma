@@ -5,8 +5,8 @@
  * - `ComponentName.tsx` - Main component file
  * - `types.ts` - TypeScript types and props interface
  * - `index.ts` - Barrel export
- * - `ComponentName.test.tsx` - Unit tests with @testing-library/react
- * - `ComponentName.ssr.test.tsx` - SSR tests (optional)
+ * - `ComponentName.tests.tsx` - Unit tests with @testing-library/react
+ * - `ComponentName.ssr.tests.tsx` - SSR tests (optional)
  * - `ComponentName.stories.tsx` - Storybook stories (optional)
  * - `styles.css` - CSS styles (optional)
  *
@@ -52,8 +52,8 @@ const reactTemplates = {
   component: path.join(templatesDir, "react", "component.tsx.ejs"),
   types: path.join(templatesDir, "react", "types.ts.ejs"),
   index: path.join(templatesDir, "react", "index.ts.ejs"),
-  test: path.join(templatesDir, "react", "test.tsx.ejs"),
-  ssrTest: path.join(templatesDir, "react", "ssr.test.tsx.ejs"),
+  test: path.join(templatesDir, "react", "tests.tsx.ejs"),
+  ssrTest: path.join(templatesDir, "react", "ssr.tests.tsx.ejs"),
   stories: path.join(templatesDir, "react", "stories.tsx.ejs"),
   styles: path.join(templatesDir, "shared", "styles.css.ejs"),
 };
@@ -134,7 +134,7 @@ For example, 'src/components/Button' creates a 'Button' component.`,
       debug("Creating test file"),
       template({
         source: reactTemplates.test,
-        dest: path.join(componentDir, `${componentName}.test.tsx`),
+        dest: path.join(componentDir, `${componentName}.tests.tsx`),
         vars: ctx,
       }),
 
@@ -143,7 +143,7 @@ For example, 'src/components/Button' creates a 'Button' component.`,
         answers.withSsrTests,
         template({
           source: reactTemplates.ssrTest,
-          dest: path.join(componentDir, `${componentName}.ssr.test.tsx`),
+          dest: path.join(componentDir, `${componentName}.ssr.tests.tsx`),
           vars: ctx,
         }),
       ),
