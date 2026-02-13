@@ -3,7 +3,7 @@
 
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { ViewLayout } from "./ViewLayout";
+import { ViewLayout } from "./ViewLayout.js";
 
 describe("ViewLayout", () => {
   it("renders children", () => {

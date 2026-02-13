@@ -3,7 +3,7 @@
 
 import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { ViewLayout } from "./ViewLayout";
+import { ViewLayout } from "./ViewLayout.js";
 
 describe("ViewLayout SSR", () => {
   it("renders without hydration errors", () => {
