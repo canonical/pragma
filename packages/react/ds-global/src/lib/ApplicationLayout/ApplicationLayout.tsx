@@ -14,7 +14,7 @@ export const ApplicationLayout = ({
 }: ApplicationLayoutProps): JSX.Element => {
 	return (
 		<div
-			className={`application-layout${className ? ` ${className}` : ""}`}
+			className={`ds application-layout${className ? ` ${className}` : ""}`}
 			{...props}
 		>
 			{children}

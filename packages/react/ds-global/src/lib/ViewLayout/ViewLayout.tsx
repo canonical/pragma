@@ -14,7 +14,7 @@ export const ViewLayout = ({
 }: ViewLayoutProps): JSX.Element => {
 	return (
 		<div
-			className={`view-layout${className ? ` ${className}` : ""}`}
+			className={`ds view-layout${className ? ` ${className}` : ""}`}
 			{...props}
 		>
 			{children}

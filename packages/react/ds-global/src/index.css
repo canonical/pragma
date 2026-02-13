@@ -5,4 +5,10 @@
   --baseline-grid-color: orange;
   /* Temporary, waiting for a better understanding */
   --baseline-shift: 1px;
+
+  --gap: 1rem;
+}
+
+html, body, #root, #storybook-root {
+  height: 100%;
 }
