@@ -18,6 +18,31 @@ export const grid = () => (Story: ElementType) => (
   </div>
 );
 
+export const threeColumnGrid = () => (Story: ElementType) => (
+  <div
+    style={{
+      display: "grid",
+      gridTemplateColumns: "repeat(3, 1fr)",
+      height: "100%",
+    }}
+  >
+    <Story />
+  </div>
+);
+
+export const fluidGrid = () => (Story: ElementType) => (
+  <div
+    style={{
+      display: "grid",
+      gridTemplateColumns:
+        "repeat( auto-fit, minmax(100px, 1fr) minmax(100px, 1fr) minmax(100px, 1fr) minmax(100px, 1fr))",
+      height: "100%",
+    }}
+  >
+    <Story />
+  </div>
+);
+
 /**
  * Places the story before a `<main>` element. This is useful for stories that need to be placed before the rest of the page contents in reading order (such as a skip link).
  * @param id - The id of the main element
