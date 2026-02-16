@@ -117,8 +117,8 @@ describe("component/react generator", () => {
       expect(paths).toContain("src/components/Button/Button.tsx");
       expect(paths).toContain("src/components/Button/types.ts");
       expect(paths).toContain("src/components/Button/index.ts");
-      expect(paths).toContain("src/components/Button/Button.test.tsx");
-      expect(paths).toContain("src/components/Button/Button.ssr.test.tsx");
+      expect(paths).toContain("src/components/Button/Button.tests.tsx");
+      expect(paths).toContain("src/components/Button/Button.ssr.tests.tsx");
       expect(paths).toContain("src/components/Button/Button.stories.tsx");
       expect(paths).toContain("src/components/Button/styles.css");
     });
@@ -139,8 +139,8 @@ describe("component/react generator", () => {
       expect(paths).toContain("src/components/Icon/Icon.tsx");
       expect(paths).toContain("src/components/Icon/types.ts");
       expect(paths).toContain("src/components/Icon/index.ts");
-      expect(paths).toContain("src/components/Icon/Icon.test.tsx");
-      expect(paths).not.toContain("src/components/Icon/Icon.ssr.test.tsx");
+      expect(paths).toContain("src/components/Icon/Icon.tests.tsx");
+      expect(paths).not.toContain("src/components/Icon/Icon.ssr.tests.tsx");
       expect(paths).not.toContain("src/components/Icon/Icon.stories.tsx");
       expect(paths).not.toContain("src/components/Icon/styles.css");
     });
