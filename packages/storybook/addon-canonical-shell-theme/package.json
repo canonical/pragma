@@ -1,7 +1,7 @@
 {
   "name": "@canonical/storybook-addon-shell-theme",
   "description": "Storybook addon that applies Canonical shell theme with light and dark modes.",
-  "version": "0.13.0",
+  "version": "0.14.0",
   "author": {
     "email": "webteam@canonical.com",
     "name": "Canonical Webteam"
@@ -48,9 +48,9 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.3.14",
-    "@canonical/biome-config": "^0.13.0",
-    "@canonical/typescript-config": "^0.13.0",
-    "@canonical/webarchitect": "^0.13.0",
+    "@canonical/biome-config": "^0.14.0",
+    "@canonical/typescript-config": "^0.14.0",
+    "@canonical/webarchitect": "^0.14.0",
     "copyfiles": "^2.4.1",
     "storybook": "^10.2.8",
     "typescript": "^5.9.3",
