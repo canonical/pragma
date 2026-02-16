@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.14.0](https://github.com/canonical/pragma/compare/v0.13.0...v0.14.0) (2026-02-16)
+
+
+### Features
+
+* **storybook-theme:** improve theme styles and add storybook default logo ([#419](https://github.com/canonical/pragma/issues/419)) ([4363cf1](https://github.com/canonical/pragma/commit/4363cf1b97cffe8a42073697f3aa82fb66f352b3))
+
+
+
+
+
 # [0.13.0](https://github.com/canonical/pragma/compare/v0.13.0-experimental.0...v0.13.0) (2026-02-10)
 
 **Note:** Version bump only for package @canonical/storybook-addon-shell-theme

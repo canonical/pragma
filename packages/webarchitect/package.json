@@ -1,7 +1,7 @@
 {
   "name": "@canonical/webarchitect",
   "description": "A tool to test the compliance with architecture specifications for packages and applications.",
-  "version": "0.13.0",
+  "version": "0.14.0",
   "type": "module",
   "module": "src/index.ts",
   "types": "src/index.ts",
@@ -38,8 +38,8 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.3.14",
-    "@canonical/biome-config": "^0.13.0",
-    "@canonical/typescript-config": "^0.13.0",
+    "@canonical/biome-config": "^0.14.0",
+    "@canonical/typescript-config": "^0.14.0",
     "@types/json-schema": "^7.0.15",
     "@types/node": "^24.10.13",
     "typescript": "^5.9.3"
