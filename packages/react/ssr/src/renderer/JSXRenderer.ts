@@ -3,6 +3,7 @@ import { createElement } from "react";
 import {
   type RenderToPipeableStreamOptions,
   renderToPipeableStream,
+  renderToString,
 } from "react-dom/server";
 import { INITIAL_DATA_KEY } from "./constants.js";
 import Extractor from "./Extractor.js";
@@ -17,7 +18,7 @@ import type {
 // This class is responsible for rendering a React JSX component.
 export default class JSXRenderer<
   TComponent extends ServerEntrypoint<InitialData>,
-  InitialData,
+  InitialData extends Record<string, unknown>,
 > {
   protected extractor: Extractor | undefined;
 
@@ -141,11 +142,18 @@ export default class JSXRenderer<
   renderToStream: RenderHandler = (
     _req: IncomingMessage,
     res: ServerResponse,
-  ): RenderResult => {
+  ): void => {
     const errorRef: { current: Error | undefined } = { current: undefined };
-    let jsxStream: RenderResult;
+    const props = this.getComponentProps();
+    const jsx = createElement(this.Component, props);
 
-    jsxStream = this.prepareRender(errorRef, {
+    const jsxStream: RenderResult = renderToPipeableStream(jsx, {
+      ...this.enrichRendererOptions(props),
+      // Error occurred during rendering, after the shell & headers were sent - store the error for usage after stream is sent
+      onError(error) {
+        errorRef.current = error as Error;
+        console.error(error);
+      },
       // Early error, before the shell is prepared
       onShellError(error) {
         if (!res.headersSent) {
@@ -168,15 +176,11 @@ export default class JSXRenderer<
         });
       },
     });
-
-    return jsxStream;
   };
 
   /**
-   * Renders this renderer's JSX component as a transmittable stream and sends it to the client
-   * once it has been fully rendered. This means once all <Suspense> components have finished loading.
-   * Even if it uses the renderToPipeableStream render, this method uses the "onAllReady" event,
-   * thus waiting until all the HTML document is ready and behaving as the classic renderToString method.
+   * Renders this renderer's JSX component as a string.
+   * This means all <Suspense> components are loaded synchronously.
    *
    * See the README to understand the difference between rendering options.
    *
@@ -185,31 +189,16 @@ export default class JSXRenderer<
    * 
    * @param _req Client's request
    * @param res Response object that will be sent to the client
-   * @return {RenderResult} The stream that was sent to the client
+   * @return {string} The string to send to the client
    */
   renderToString: RenderHandler = (
     _req: IncomingMessage,
     res: ServerResponse,
-  ): RenderResult => {
-    const errorRef: { current: Error | undefined } = { current: undefined };
-    let jsxStream: RenderResult;
-
-    jsxStream = this.prepareRender(errorRef, {
-      // this makes the pipeable stream work the same as the classic renderToString function
-      onAllReady() {
-        if (!res.headersSent) {
-          res.writeHead(errorRef.current ? 500 : 200, {
-            "Content-Type": "text/html; charset=utf-8",
-          });
-        }
-
-        jsxStream.pipe(res);
-        res.on("finish", () => {
-          res.end();
-        });
-      },
-    });
-
-    return jsxStream;
+  ): void => {
+    const props = this.getComponentProps();
+    const jsx = createElement(this.Component, props);
+    const html = renderToString(jsx);
+    res.writeHead(200, { "Content-Type": "text/html; charset=utf-8", }).write(html);
+    res.end();
   };
 }

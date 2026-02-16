@@ -22,7 +22,7 @@ export interface RendererOptions {
 }
 
 /** The props that the server entrypoint component will receive */
-export interface ServerEntrypointProps<InitialData> {
+export interface ServerEntrypointProps<InitialData extends Record<string, unknown>> {
   /** The language of the page. This is typically read from the request headers. */
   lang?: string;
   /** The script tags to include in the page */
@@ -38,7 +38,7 @@ export interface ServerEntrypointProps<InitialData> {
   initialData?: InitialData;
 }
 
-export type ServerEntrypoint<InitialData> = React.ComponentType<
+export type ServerEntrypoint<InitialData extends Record<string, unknown>> = React.ComponentType<
   ServerEntrypointProps<InitialData>
 >;
 
@@ -50,4 +50,4 @@ export type RenderResult = PipeableStream;
 export type RenderHandler = (
   req: IncomingMessage,
   res: ServerResponse,
-) => RenderResult;
+) => void;
