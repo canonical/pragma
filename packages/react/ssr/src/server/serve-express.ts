@@ -24,6 +24,10 @@ const { values, positionals } = parseArgs({
       alias: "r",
       default: "assets",
     },
+    streaming: {
+      type: "boolean",
+      default: false,
+    }
   },
   strict: true,
   allowPositionals: true,
@@ -41,7 +45,13 @@ if (!rendererFilePath) {
 }
 
 const handler: RenderHandler = await import(rendererFilePath).then(
-  (module) => module.default,
+  (module) => {
+    if (values.streaming) {
+      return module.default.renderToStream;
+    } else {
+      return module.default.renderToString;
+    }
+  },
 );
 
 if (typeof handler !== "function") {

@@ -1,6 +1,6 @@
 import { hydrateRoot } from "react-dom/client";
 import "../index.css";
-import RootComponent from "./RootComponent.js";
+import Shell from "./Shell.js";
 
 // entry-server page must match exactly the hydrated page in entry-client
-hydrateRoot(document, <RootComponent lang="en" />);
+hydrateRoot(document, <Shell lang="en" />);

@@ -10,13 +10,13 @@ import type { RenderHandler } from "../renderer/index.js";
  * @example ```ts
  * import express from "express";
  * import { serveStream } from "@canonical/react-ssr/server";
- * import { PipeableStreamRenderer } from "@canonical/react-ssr/renderer";
+ * import { JSXRenderer } from "@canonical/react-ssr/renderer";
  * // htmlString is created by some build process that bundles the client code
  * import htmlString from "../../dist/client/index.html?raw";
  * import EntryServer from "./entry-server.js";
  *
  * // `EntryServer` is an instance of `@canonical/react-ssr/renderer/ServerEntrypoint`
- * const Renderer = new PipeableStreamRenderer(EntryServer, {
+ * const Renderer = new JSXRenderer(EntryServer, {
  *   htmlString,
  * });
  *

@@ -1,6 +1,6 @@
 import type { ServerEntrypoint } from "@canonical/react-ssr/renderer";
-import RootComponent, { type InitialData } from "./RootComponent.js";
+import Shell, { type InitialData } from "./Shell.js";
 
-const EntryServer: ServerEntrypoint<InitialData> = RootComponent;
+const EntryServer: ServerEntrypoint<InitialData> = Shell;
 
 export default EntryServer;

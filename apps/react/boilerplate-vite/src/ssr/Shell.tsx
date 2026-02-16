@@ -12,7 +12,7 @@ export type InitialData = Record<string, unknown>;
  * or can be provided programmatically to the renderer constructor.
  * @returns root component containing all the HTML of the page to be rendered.
  */
-function RootComponent(props: ServerEntrypointProps<InitialData>) {
+function Shell(props: ServerEntrypointProps<InitialData>) {
   return (
     <html lang={props.lang}>
       <head>
@@ -34,4 +34,4 @@ function RootComponent(props: ServerEntrypointProps<InitialData>) {
   );
 }
 
-export default RootComponent;
+export default Shell;

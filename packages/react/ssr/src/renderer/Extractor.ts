@@ -3,6 +3,13 @@ import { type Document, Element, NodeWithChildren } from "domhandler";
 import { parseDocument } from "htmlparser2";
 import React from "react";
 
+const REACT_KEYS_DICTIONARY: { [key: string]: string | undefined } = {
+  "class": "className",
+  "for": "htmlFor",
+  "crossorigin": "crossOrigin",
+  "charset": "charSet",
+}
+
 /**
  * Parses an HTML string to extract and convert script and link tags to React.createElement calls.
  * It extracts all the possible tags from the <head> of an HTML page.
@@ -29,14 +36,12 @@ class Extractor {
       const node = stack.pop();
       if (!node) continue;
 
-      if (node instanceof Element) {
-        if (node.type === "tag" && node.name === tagName) {
-          elements.push(node);
-        }
-        // Check for script tags specifically
-        if (node.type === "script" && tagName === "script") {
-          elements.push(node);
-        }
+      if (node.type === "tag" && node.name === tagName) {
+        elements.push(node);
+      }
+      // Check for script tags specifically
+      if (node.type === "script" && tagName === "script") {
+        elements.push(node);
       }
 
       if (node instanceof NodeWithChildren) {
@@ -48,18 +53,8 @@ class Extractor {
   }
 
   protected convertKeyToReactKey(key: string): string {
-    switch (key.toLowerCase()) {
-      case "class":
-        return "className";
-      case "for":
-        return "htmlFor";
-      case "crossorigin":
-        return "crossOrigin";
-      case "charset":
-        return "charSet";
-      default:
-        return casing.toCamelCase(key);
-    }
+    const reactKey = REACT_KEYS_DICTIONARY[key.toLowerCase()];
+    return reactKey ? reactKey : casing.toCamelCase(key);
   }
 
   private convertToReactElement(
@@ -84,6 +79,8 @@ class Extractor {
 
   public getLinkElements(): React.ReactElement[] {
     const linkElements = this.getElementsByTagName("link");
+    // reverse keeps the original order in the HTML (they are extracted with a stack in reverse)
+    // the order might be important for some scripts (i.e. in Vite Dev mode)
     return linkElements.reverse().map(this.convertToReactElement, this);
   }
 
@@ -98,6 +95,8 @@ class Extractor {
     const otherHeadElements = ["title", "style", "meta", "base"].flatMap(
       (elementName: string) => this.getElementsByTagName(elementName),
     );
+    // reverse keeps the original order in the HTML (they are extracted with a stack in reverse)
+    // the order might be important for some scripts (i.e. in Vite Dev mode)
     return otherHeadElements.reverse().map(this.convertToReactElement, this);
   }
 }

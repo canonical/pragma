@@ -14,7 +14,7 @@ import type {
   ServerEntrypointProps,
 } from "./types.js";
 
-// This class is responsible for rendering a React component to a readable stream.
+// This class is responsible for rendering a React JSX component.
 export default class JSXRenderer<
   TComponent extends ServerEntrypoint<InitialData>,
   InitialData,
@@ -129,7 +129,7 @@ export default class JSXRenderer<
    * This function is responsible for rendering a React component to a pipeable stream.
    * See the README to understand the difference between rendering options.
    *
-   * The PipeableStreamRenderer might improve the time taken for the page to be rendered and interactive
+   * The streaming might improve the time taken for the page to be rendered and interactive
    * (at least in part), using React's Suspense/lazy API and pipeable streams.
    *
    * CAUTION: The resulting HTML rendered this way is not cacheable.

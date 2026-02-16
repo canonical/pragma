@@ -12,7 +12,7 @@ export interface RendererOptions {
   /**
    * Options to pass to `react-dom/server.renderToPipeableStream`
    * We specifically exclude `onShellReady()`, `onError()`, `onShellError()` and `onAllReady()` as they are
-   * implemented by `StringRenderer.render()` and `PipeableStreamRenderer.render()`.
+   * implemented by `JSXRenderer.renderToString()` and `JSXRenderer.renderToStream()`.
    * See https://react.dev/reference/react-dom/server/renderToPipeableStream#parameters
    */
   renderToPipeableStreamOptions?: Omit<

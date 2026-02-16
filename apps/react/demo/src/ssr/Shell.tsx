@@ -3,7 +3,7 @@ import Application from "../Application.js";
 
 export type InitialData = Record<string, unknown>;
 
-function RootComponent(props: ServerEntrypointProps<InitialData>) {
+function Shell(props: ServerEntrypointProps<InitialData>) {
   return (
     <html lang={props.lang}>
       <head>
@@ -21,4 +21,4 @@ function RootComponent(props: ServerEntrypointProps<InitialData>) {
   );
 }
 
-export default RootComponent;
+export default Shell;

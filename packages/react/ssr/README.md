@@ -22,7 +22,7 @@ Source: [Tanstack Router SSR Guide](https://tanstack.com/router/latest/docs/fram
 The entire page is rendered on the server and sent to the client in one single HTML request, 
 including the serialized data the application needs to hydrate on the client.
 
-This is what the `StringRenderer` offers.
+This is what `JSXRenderer.renderToString()` offers.
 
 ### Streaming SSR
 
@@ -31,7 +31,7 @@ including the serialized data the application needs to hydrate on the client.
 
 The rest of the page is then streamed to the client as it is rendered on the server.
 
-This is accomplished by using the `PipeableStreamRenderer`.
+This is accomplished by using `JSXRenderer.renderToStream()`.
 
 ## Express Server
 
@@ -39,11 +39,11 @@ Create a renderer that wraps your server entry component:
 
 ```tsx
 // src/ssr/renderer.tsx
-import { PipeableStreamRenderer } from "@canonical/react-ssr/renderer";
+import { JSXRenderer } from "@canonical/react-ssr/renderer";
 import htmlString from "../../dist/client/index.html?raw";
 import EntryServer from "./entry-server.js";
 
-const Renderer = new PipeableStreamRenderer(EntryServer, { htmlString });
+const Renderer = new JSXRenderer(EntryServer, { htmlString });
 export default Renderer.render;
 ```
 
@@ -179,7 +179,7 @@ The client build produces `dist/client/index.html` with bundled script/link tags
 Pass options to React's `renderToPipeableStream`:
 
 ```ts
-const Renderer = new PipeableStreamRenderer(EntryServer, {
+const Renderer = new JSXRenderer(EntryServer, {
   htmlString,
   renderToPipeableStreamOptions: {
     bootstrapModules: ["src/ssr/entry-client.tsx"],
