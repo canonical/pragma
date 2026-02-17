@@ -1,14 +1,14 @@
 import { casing } from "@canonical/utils";
-import { type Document, Element, NodeWithChildren } from "domhandler";
+import { type Document, type Element, NodeWithChildren } from "domhandler";
 import { parseDocument } from "htmlparser2";
 import React from "react";
 
 const REACT_KEYS_DICTIONARY: { [key: string]: string | undefined } = {
-  "class": "className",
-  "for": "htmlFor",
-  "crossorigin": "crossOrigin",
-  "charset": "charSet",
-}
+  class: "className",
+  for: "htmlFor",
+  crossorigin: "crossOrigin",
+  charset: "charSet",
+};
 
 /**
  * Parses an HTML string to extract and convert script and link tags to React.createElement calls.

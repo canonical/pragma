@@ -186,7 +186,7 @@ export default class JSXRenderer<
    *
    * renderToString is useful in Vite Dev mode, as the HMR doesn't work well with Suspense
    * and the Pipeable Stream rendering. Also if the resulting document needs to be cached.
-   * 
+   *
    * @param _req Client's request
    * @param res Response object that will be sent to the client
    * @return {string} The string to send to the client
@@ -198,7 +198,9 @@ export default class JSXRenderer<
     const props = this.getComponentProps();
     const jsx = createElement(this.Component, props);
     const html = renderToString(jsx);
-    res.writeHead(200, { "Content-Type": "text/html; charset=utf-8", }).write(html);
+    res
+      .writeHead(200, { "Content-Type": "text/html; charset=utf-8" })
+      .write(html);
     res.end();
   };
 }
