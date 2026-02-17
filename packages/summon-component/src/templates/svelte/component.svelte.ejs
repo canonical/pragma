@@ -2,6 +2,9 @@
 
 <script lang="ts">
 	import type { <%= name %>Props } from "./types";
+<% if (withStyles) { -%>
+	import "./styles.css";
+<% } -%>
 
 	let {
 		class: className = "",
@@ -11,15 +14,8 @@
 </script>
 
 <div
-	class="<%= kebabName %>{className ? ` ${className}` : ''}"
+	class="ds <%= kebabName %>{className ? ` ${className}` : ''}"
 	{...props}
 >
 	{@render children?.()}
 </div>
-<% if (withStyles) { %>
-<style>
-	.<%= kebabName %> {
-		/* Component styles */
-	}
-</style>
-<% } -%>

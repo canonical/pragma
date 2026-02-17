@@ -9,7 +9,7 @@
  */
 
 import * as path from "node:path";
-import * as ejs from "ejs";
+import ejs from "ejs";
 import { sequence_ } from "./combinators.js";
 import { glob, mkdir, readFile, writeFile } from "./primitives.js";
 import { task } from "./task.js";

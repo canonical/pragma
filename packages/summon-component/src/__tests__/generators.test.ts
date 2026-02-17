@@ -264,6 +264,7 @@ describe("component/svelte generator", () => {
       expect(paths).toContain(
         "src/lib/components/Button/Button.stories.svelte",
       );
+      expect(paths).toContain("src/lib/components/Button/styles.css");
     });
 
     it("creates typescript stories when useTsStories is true", () => {
@@ -305,6 +306,27 @@ describe("component/svelte generator", () => {
       const content = (mainFile as { content: string }).content;
       expect(content).toContain("$props()");
       expect(content).toContain("@render children");
+    });
+
+    it("imports styles.css when withStyles is enabled", () => {
+      const task = generator.generate({
+        componentPath: "src/lib/components/Banner",
+        withStyles: true,
+        withStories: false,
+        useTsStories: false,
+        withSsrTests: false,
+      });
+
+      const result = dryRunWithTemplates(task);
+      const mainFile = result.effects.find(
+        (e) =>
+          e._tag === "WriteFile" &&
+          (e as { path: string }).path.endsWith("Banner.svelte"),
+      );
+
+      const content = (mainFile as { content: string }).content;
+      expect(content).toContain('import "./styles.css";');
+      expect(content).not.toContain("<style>");
     });
   });
 });
