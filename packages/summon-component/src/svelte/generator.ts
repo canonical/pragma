@@ -9,6 +9,7 @@
  * - `ComponentName.ssr.test.ts` - SSR tests (optional)
  * - `ComponentName.stories.svelte` - Svelte CSF stories (optional)
  * - `ComponentName.stories.ts` - TypeScript stories (optional, alternative to Svelte CSF)
+ * - `styles.css` - CSS styles (optional)
  *
  * @example
  * ```bash
@@ -57,6 +58,7 @@ const svelteTemplates = {
   ssrTest: path.join(templatesDir, "svelte", "ssr.test.ts.ejs"),
   storiesSvelte: path.join(templatesDir, "svelte", "stories.svelte.ejs"),
   storiesTs: path.join(templatesDir, "svelte", "stories.ts.ejs"),
+  styles: path.join(templatesDir, "shared", "styles.css.ejs"),
 };
 
 // =============================================================================
@@ -75,16 +77,16 @@ export const generator = {
   meta: {
     name: "component/svelte",
     description:
-      "Generate a Svelte 5 component with TypeScript, tests, and stories",
+      "Generate a Svelte 5 component with TypeScript, tests, stories, and styles",
     version: "0.1.0",
-    help: `Generate a Svelte 5 component with TypeScript, tests, and stories.
+    help: `Generate a Svelte 5 component with TypeScript, tests, stories, and styles.
 
 FEATURES:
   - Svelte 5 with runes ($props)
   - TypeScript types and props interface
   - Unit tests with @testing-library/svelte
   - Storybook integration (Svelte CSF or TypeScript)
-  - Optional scoped styles
+  - CSS styles (optional)
   - SSR tests (optional)
   - Auto-export from parent index.ts
 
@@ -183,6 +185,16 @@ For example, 'src/lib/components/Button' creates a 'Button' component.`,
         template({
           source: svelteTemplates.storiesTs,
           dest: path.join(componentDir, `${componentName}.stories.ts`),
+          vars: ctx,
+        }),
+      ),
+
+      when(answers.withStyles, debug("Creating styles file")),
+      when(
+        answers.withStyles,
+        template({
+          source: svelteTemplates.styles,
+          dest: path.join(componentDir, "styles.css"),
           vars: ctx,
         }),
       ),

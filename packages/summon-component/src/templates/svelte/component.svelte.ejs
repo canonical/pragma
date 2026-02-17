@@ -2,24 +2,22 @@
 
 <script lang="ts">
 	import type { <%= name %>Props } from "./types";
+<% if (withStyles) { -%>
+	import "./styles.css";
+<% } -%>
+
+	const componentCssClassName = "ds <%= kebabName %>";
 
 	let {
-		class: className = "",
+		class: className,
 		children,
-		...props
+		...rest
 	}: <%= name %>Props = $props();
 </script>
 
 <div
-	class="<%= kebabName %>{className ? ` ${className}` : ''}"
-	{...props}
+	class={[componentCssClassName, className]}
+	{...rest}
 >
 	{@render children?.()}
 </div>
-<% if (withStyles) { %>
-<style>
-	.<%= kebabName %> {
-		/* Component styles */
-	}
-</style>
-<% } -%>

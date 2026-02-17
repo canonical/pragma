@@ -12,9 +12,16 @@
 </script>
 
 <Story name="Default">
-	<<%= name %>>Hello, <%= name %>!</<%= name %>>
+	Hello, <%= name %>!
 </Story>
 
-<Story name="WithCustomClass">
-	<<%= name %> class="custom-class">Custom styled</<%= name %>>
+<Story
+  name="WithCustomClass"
+  args={{
+    class: "custom-class",
+    id: "custom-id",
+    style: "background-color: tomato;",
+  }}
+>
+	Custom styled
 </Story>
