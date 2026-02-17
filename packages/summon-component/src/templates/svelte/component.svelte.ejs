@@ -6,16 +6,18 @@
 	import "./styles.css";
 <% } -%>
 
+	const componentCssClassName = "ds <%= kebabName %>";
+
 	let {
-		class: className = "",
+		class: className,
 		children,
-		...props
+		...rest
 	}: <%= name %>Props = $props();
 </script>
 
 <div
-	class="ds <%= kebabName %>{className ? ` ${className}` : ''}"
-	{...props}
+	class={[componentCssClassName, className]}
+	{...rest}
 >
 	{@render children?.()}
 </div>
