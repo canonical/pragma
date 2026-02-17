@@ -1,0 +1,87 @@
+.positive {
+  --lp-color-border-context: var(--lp-color-fill-positive-default);
+  --lp-color-border-hover-context: var(--lp-color-fill-positive-hover);
+  --lp-color-border-active-context: var(--lp-color-fill-positive-active);
+  --lp-color-text-context: var(--lp-color-text-white);
+  --lp-color-background-context: var(--lp-color-fill-positive-default);
+  --lp-color-background-hover-context: var(--lp-color-fill-positive-hover);
+  --lp-color-background-active-context: var(--lp-color-fill-positive-active);
+
+  --lp-color-border-secondary-context: var(--lp-color-border-positive);
+  --lp-color-text-secondary-context: var(--lp-color-text-default);
+  --lp-color-background-secondary-context: var(
+    --lp-color-background-positive-default
+  );
+  --lp-color-background-secondary-hover-context: var(
+    --lp-color-background-positive-hover
+  );
+  --lp-color-background-secondary-active-context: var(
+    --lp-color-background-positive-active
+  );
+}
+
+.negative {
+  --lp-color-border-context: var(--lp-color-fill-negative-default);
+  --lp-color-border-hover-context: var(--lp-color-fill-negative-hover);
+  --lp-color-border-active-context: var(--lp-color-fill-negative-active);
+  --lp-color-text-context: var(--lp-color-text-white);
+  --lp-color-background-context: var(--lp-color-fill-negative-default);
+  --lp-color-background-hover-context: var(--lp-color-fill-negative-hover);
+  --lp-color-background-active-context: var(--lp-color-fill-negative-active);
+
+  --lp-color-border-secondary-context: var(--lp-color-border-negative);
+  --lp-color-text-secondary-context: var(--lp-color-text-default);
+  --lp-color-background-secondary-context: var(
+    --lp-color-background-negative-default
+  );
+  --lp-color-background-secondary-hover-context: var(
+    --lp-color-background-negative-hover
+  );
+  --lp-color-background-secondary-active-context: var(
+    --lp-color-background-negative-active
+  );
+}
+
+.caution {
+  --lp-color-border-context: var(--lp-color-status-caution);
+  --lp-color-border-hover-context: var(--lp-color-status-caution);
+  --lp-color-border-active-context: var(--lp-color-status-caution);
+  --lp-color-text-context: var(--lp-color-text-white);
+  --lp-color-background-context: var(--lp-color-status-caution);
+  --lp-color-background-hover-context: var(--lp-color-status-caution);
+  --lp-color-background-active-context: var(--lp-color-status-caution);
+
+  --lp-color-border-secondary-context: var(--lp-color-border-caution);
+  --lp-color-text-secondary-context: var(--lp-color-text-default);
+  --lp-color-background-secondary-context: var(
+    --lp-color-background-caution-default
+  );
+  --lp-color-background-secondary-hover-context: var(
+    --lp-color-background-caution-hover
+  );
+  --lp-color-background-secondary-active-context: var(
+    --lp-color-background-caution-active
+  );
+}
+
+.information {
+  --lp-color-border-context: var(--lp-color-status-information);
+  --lp-color-border-hover-context: var(--lp-color-status-information);
+  --lp-color-border-active-context: var(--lp-color-status-information);
+  --lp-color-text-context: var(--lp-color-text-white);
+  --lp-color-background-context: var(--lp-color-status-information);
+  --lp-color-background-hover-context: var(--lp-color-status-information);
+  --lp-color-background-active-context: var(--lp-color-status-information);
+
+  --lp-color-border-secondary-context: var(--lp-color-border-information);
+  --lp-color-text-secondary-context: var(--lp-color-text-default);
+  --lp-color-background-secondary-context: var(
+    --lp-color-background-information-default
+  );
+  --lp-color-background-secondary-hover-context: var(
+    --lp-color-background-information-hover
+  );
+  --lp-color-background-secondary-active-context: var(
+    --lp-color-background-information-active
+  );
+}

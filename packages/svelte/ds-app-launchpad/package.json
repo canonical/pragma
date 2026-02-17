@@ -10,7 +10,8 @@
       "types": "./dist/index.d.js",
       "import": "./dist/index.js",
       "svelte": "./dist/index.js"
-    }
+    },
+    "./styles.css": "./src/lib/index.css"
   },
   "files": [
     "dist"
@@ -72,8 +73,9 @@
     "vitest-browser-svelte": "^2.0.2"
   },
   "dependencies": {
-    "@canonical/launchpad-design-tokens": "^1.0.22",
-    "@canonical/storybook-config": "^0.14.0"
+    "@canonical/launchpad-design-tokens": "^1.0.23",
+    "@canonical/storybook-config": "^0.14.0",
+    "@canonical/svelte-icons": "^0.0.9"
   },
   "peerDependencies": {
     "svelte": "^5.47.1"
