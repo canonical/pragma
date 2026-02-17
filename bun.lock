@@ -11,7 +11,7 @@
     },
     "apps/react/boilerplate-vite": {
       "name": "@canonical/react-boilerplate-vite",
-      "version": "0.14.0",
+      "version": "0.15.0-experimental.0",
       "dependencies": {
         "@canonical/react-ds-global": "^0.13.0-experimental.0",
         "@canonical/react-ssr": "^0.12.0",
@@ -44,7 +44,7 @@
     },
     "apps/react/demo": {
       "name": "@canonical/ds-demo-site",
-      "version": "0.14.0",
+      "version": "0.15.0-experimental.0",
       "dependencies": {
         "@canonical/react-ds-global": "^0.13.0-experimental.0",
         "@canonical/react-ds-global-form": "^0.13.0-experimental.0",
@@ -220,7 +220,7 @@
     },
     "packages/react/ds-app": {
       "name": "@canonical/react-ds-app",
-      "version": "0.14.0",
+      "version": "0.15.0-experimental.0",
       "dependencies": {
         "@canonical/react-ds-global": "^0.13.0-experimental.0",
         "@canonical/storybook-config": "^0.13.0-experimental.0",
@@ -255,7 +255,7 @@
     },
     "packages/react/ds-app-anbox": {
       "name": "@canonical/react-ds-app-anbox",
-      "version": "0.14.0",
+      "version": "0.15.0-experimental.0",
       "dependencies": {
         "@canonical/react-ds-global": "^0.13.0-experimental.0",
         "@canonical/storybook-config": "^0.13.0-experimental.0",
@@ -290,7 +290,7 @@
     },
     "packages/react/ds-app-landscape": {
       "name": "@canonical/react-ds-app-landscape",
-      "version": "0.14.0",
+      "version": "0.15.0-experimental.0",
       "dependencies": {
         "@canonical/react-ds-global": "^0.13.0-experimental.0",
         "@canonical/storybook-config": "^0.13.0-experimental.0",
@@ -325,7 +325,7 @@
     },
     "packages/react/ds-app-launchpad": {
       "name": "@canonical/react-ds-app-launchpad",
-      "version": "0.14.0",
+      "version": "0.15.0-experimental.0",
       "dependencies": {
         "@canonical/storybook-config": "^0.13.0-experimental.0",
         "@canonical/styles": "^0.12.0",
@@ -367,7 +367,7 @@
     },
     "packages/react/ds-app-lxd": {
       "name": "@canonical/react-ds-app-lxd",
-      "version": "0.14.0",
+      "version": "0.15.0-experimental.0",
       "dependencies": {
         "@canonical/react-ds-global": "^0.13.0-experimental.0",
         "@canonical/storybook-config": "^0.13.0-experimental.0",
@@ -402,7 +402,7 @@
     },
     "packages/react/ds-app-portal": {
       "name": "@canonical/react-ds-app-portal",
-      "version": "0.14.0",
+      "version": "0.15.0-experimental.0",
       "dependencies": {
         "@canonical/react-ds-global": "^0.13.0-experimental.0",
         "@canonical/storybook-config": "^0.13.0-experimental.0",
@@ -437,7 +437,7 @@
     },
     "packages/react/ds-global": {
       "name": "@canonical/react-ds-global",
-      "version": "0.14.0",
+      "version": "0.15.0-experimental.0",
       "dependencies": {
         "@canonical/ds-assets": "^0.12.0",
         "@canonical/storybook-config": "^0.13.0-experimental.0",
@@ -474,7 +474,7 @@
     },
     "packages/react/ds-global-form": {
       "name": "@canonical/react-ds-global-form",
-      "version": "0.14.0",
+      "version": "0.15.0-experimental.0",
       "dependencies": {
         "@canonical/react-ds-global": "^0.13.0-experimental.0",
         "@canonical/storybook-config": "^0.13.0-experimental.0",
@@ -728,7 +728,7 @@
     },
     "packages/summon": {
       "name": "@canonical/summon",
-      "version": "0.14.0",
+      "version": "0.15.0-experimental.0",
       "bin": {
         "summon": "src/cli.tsx",
       },
@@ -760,7 +760,7 @@
     },
     "packages/summon-component": {
       "name": "@canonical/summon-component",
-      "version": "0.14.0",
+      "version": "0.15.0-experimental.0",
       "devDependencies": {
         "@biomejs/biome": "2.3.14",
         "@canonical/biome-config": "^0.14.0",
@@ -794,7 +794,7 @@
     },
     "packages/svelte/ds-app-launchpad": {
       "name": "@canonical/svelte-ds-app-launchpad",
-      "version": "0.14.0",
+      "version": "0.15.0-experimental.0",
       "dependencies": {
         "@canonical/launchpad-design-tokens": "^1.0.22",
         "@canonical/storybook-config": "^0.13.0",

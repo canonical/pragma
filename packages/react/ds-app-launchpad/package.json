@@ -1,6 +1,6 @@
 {
   "name": "@canonical/react-ds-app-launchpad",
-  "version": "0.14.0",
+  "version": "0.15.0-experimental.0",
   "type": "module",
   "module": "dist/esm/index.js",
   "types": "dist/types/index.d.ts",

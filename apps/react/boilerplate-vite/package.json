@@ -1,7 +1,7 @@
 {
   "name": "@canonical/react-boilerplate-vite",
   "private": true,
-  "version": "0.14.0",
+  "version": "0.15.0-experimental.0",
   "type": "module",
   "license": "GPL-3.0-only",
   "scripts": {
@@ -24,7 +24,7 @@
     "storybook": "storybook dev -p 6010 --no-open --host 0.0.0.0"
   },
   "dependencies": {
-    "@canonical/react-ds-global": "^0.14.0",
+    "@canonical/react-ds-global": "^0.15.0-experimental.0",
     "@canonical/react-ssr": "^0.14.0",
     "@canonical/storybook-config": "^0.14.0",
     "@canonical/styles": "^0.14.0",

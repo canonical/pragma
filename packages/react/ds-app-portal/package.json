@@ -1,7 +1,7 @@
 {
   "name": "@canonical/react-ds-app-portal",
   "description": "Portal-specific components for the Pragma design system",
-  "version": "0.14.0",
+  "version": "0.15.0-experimental.0",
   "type": "module",
   "module": "dist/esm/index.js",
   "types": "dist/types/index.d.ts",
@@ -40,7 +40,7 @@
     "test:vitest:watch": "vitest"
   },
   "dependencies": {
-    "@canonical/react-ds-global": "^0.14.0",
+    "@canonical/react-ds-global": "^0.15.0-experimental.0",
     "@canonical/storybook-config": "^0.14.0",
     "@canonical/styles": "^0.14.0",
     "react": "^19.2.4",
