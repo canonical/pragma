@@ -1,6 +1,6 @@
 import previewConfig from "@canonical/storybook-config/preview";
 
-import "../src/styles/index.css";
+import "./styles/index.css";
 
 const preview = {
   ...previewConfig,
