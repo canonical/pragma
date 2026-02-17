@@ -70,6 +70,7 @@
     align-items: center;
     justify-content: center;
     background-color: transparent;
+		color: var(--lp-color-text-default);
     cursor: pointer;
     border-radius: var(--lp-dimension-radius-full);
     width: 0.85rem;
