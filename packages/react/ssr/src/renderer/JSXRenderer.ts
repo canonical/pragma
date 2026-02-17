@@ -15,13 +15,28 @@ import type {
   ServerEntrypointProps,
 } from "./types.js";
 
-// This class is responsible for rendering a React JSX component.
+/**
+ * This class is responsible for rendering a React JSX component and sending it as response to a client.
+ * It offers 2 ways of doing it:
+ * - As string
+ * - As stream
+ * Each way has its advantages and inconveniences. You can read more about them in the package README.
+ */
 export default class JSXRenderer<
   TComponent extends ServerEntrypoint<InitialData>,
   InitialData extends Record<string, unknown>,
 > {
   protected extractor: Extractor | undefined;
 
+  /**
+   * Creates a renderer instance which can be used to write Server Side Rendered HTML
+   * into a {@link node:http#ServerResponse | ServerResponse}.
+   *
+   * @param Component A React Component representing the whole page to be rendered.
+   * @param initialData An object that will be passed as props to the React Component, allowing
+   * to pass initial data needed for the rendering of the component.
+   * @param options Object with {@link RendererOptions | settings} to control the behavior of the rendering.
+   */
   constructor(
     protected readonly Component: TComponent,
     protected readonly initialData: InitialData = {} as InitialData,
@@ -32,14 +47,19 @@ export default class JSXRenderer<
       : undefined;
   }
 
+  /**
+   * Gets the locale to be used for the rendered page.
+   *
+   * @returns The default locale passed as option when creating the renderer instance or "en" as default.
+   */
   public getLocale(): string {
     return this.options.defaultLocale || "en";
   }
 
   /**
-   * Gets the props needed to render the component
-   * @return The props needed to render the component
-   * @protected
+   * Gets the props needed to render the component.
+   *
+   * @return The props needed to render the component.
    */
   protected getComponentProps(): ServerEntrypointProps<InitialData> {
     return {
@@ -51,7 +71,15 @@ export default class JSXRenderer<
     } as ServerEntrypointProps<InitialData>;
   }
 
-  private getScriptsByType(
+  /**
+   * Gets a list of all the "src" attributes of the given scripts that match the passed type.
+   *
+   * @param scripts A list of {@link react#React.ReactElement | ReactElements} that should represent script
+   * tags (every element which is not of type "script" will be filtered out).
+   * @param type The type of script which can be "classic" or "module".
+   * @returns A list of the "src" attributes of the passed scripts that match the given type.
+   */
+  protected getScriptSourcesByType(
     scripts: React.ReactElement[],
     type: "module" | "classic",
   ): string[] {
@@ -76,6 +104,20 @@ export default class JSXRenderer<
     );
   }
 
+  /**
+   * Adds some properties to the options that are passed to {@link react-dom#renderToPipeableStream | renderToPipeableStream}.
+   *
+   * @remark The options that are added are:
+   * - bootstrapScriptContent: includes the initial data passed as prop to the component in a <script> so that it
+   *  is available when rendering the page in the browser (to avoid hydration mismatches).
+   * - bootstrapScripts: classic scripts which react strips out of the page. The only way to add them is to include them
+   *  in this property.
+   * - bootstrapModules: module scripts which react also strips out of the page and need to be added like this.
+   *
+   * @param props The props object for the React Component.
+   * @returns An options object for {@link react-dom#renderToPipeableStream | renderToPipeableStream} method
+   * that enriches the user options with initial data and bootstrapping scripts (if not provided by the user).
+   */
   protected enrichRendererOptions(
     props: ServerEntrypointProps<InitialData>,
   ): RenderToPipeableStreamOptions {
@@ -89,7 +131,7 @@ export default class JSXRenderer<
     }
     if (!enrichedOptions.bootstrapScripts) {
       if (props.scriptElements) {
-        enrichedOptions.bootstrapScripts = this.getScriptsByType(
+        enrichedOptions.bootstrapScripts = this.getScriptSourcesByType(
           props.scriptElements,
           "classic",
         );
@@ -97,7 +139,7 @@ export default class JSXRenderer<
     }
     if (!enrichedOptions.bootstrapModules) {
       if (props.scriptElements) {
-        enrichedOptions.bootstrapModules = this.getScriptsByType(
+        enrichedOptions.bootstrapModules = this.getScriptSourcesByType(
           props.scriptElements,
           "module",
         );
@@ -107,28 +149,11 @@ export default class JSXRenderer<
     return enrichedOptions;
   }
 
-  protected prepareRender(
-    errorRef: { current: Error | undefined },
-    renderOptions: RenderToPipeableStreamOptions,
-  ): RenderResult {
-    const props = this.getComponentProps();
-    const jsx = createElement(this.Component, props);
-
-    const jsxStream = renderToPipeableStream(jsx, {
-      ...this.enrichRendererOptions(props),
-      ...renderOptions,
-      // Error occurred during rendering, after the shell & headers were sent - store the error for usage after stream is sent
-      onError(error) {
-        errorRef.current = error as Error;
-        console.error(error);
-      },
-    });
-    return jsxStream;
-  }
-
   /**
-   * This function is responsible for rendering a React component to a pipeable stream.
-   * See the README to understand the difference between rendering options.
+   * This function is responsible for rendering a React component and sending it to the client through
+   * a pipeable stream.
+   *
+   * @remark See the README to understand the difference between rendering options.
    *
    * The streaming might improve the time taken for the page to be rendered and interactive
    * (at least in part), using React's Suspense/lazy API and pipeable streams.
@@ -137,7 +162,6 @@ export default class JSXRenderer<
    *
    * @param _req Client's request
    * @param res Response object that will be sent to the client
-   * @return {RenderResult} The stream that was sent to the client
    */
   renderToStream: RenderHandler = (
     _req: IncomingMessage,
@@ -179,17 +203,19 @@ export default class JSXRenderer<
   };
 
   /**
-   * Renders this renderer's JSX component as a string.
-   * This means all <Suspense> components are loaded synchronously.
+   * Renders this renderer's JSX component as a string and writes it to the given
+   * {@link node:http#ServerResponse | ServerResponse}.
    *
-   * See the README to understand the difference between rendering options.
+   * @remark See the README to understand the difference between rendering options.
+   *
+   * Rendering to string means all <Suspense> components are loaded synchronously and the response
+   * won't be sent to the client until all components have finished loading data and processing.
    *
    * renderToString is useful in Vite Dev mode, as the HMR doesn't work well with Suspense
    * and the Pipeable Stream rendering. Also if the resulting document needs to be cached.
    *
    * @param _req Client's request
    * @param res Response object that will be sent to the client
-   * @return {string} The string to send to the client
    */
   renderToString: RenderHandler = (
     _req: IncomingMessage,

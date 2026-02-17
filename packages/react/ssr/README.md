@@ -43,7 +43,8 @@ import { JSXRenderer } from "@canonical/react-ssr/renderer";
 import htmlString from "../../dist/client/index.html?raw";
 import EntryServer from "./entry-server.js";
 
-const Renderer = new JSXRenderer(EntryServer, { htmlString });
+const initialData: Record<string, unknown> = {};
+const Renderer = new JSXRenderer(EntryServer, initialData, { htmlString });
 export default Renderer.render;
 ```
 
@@ -179,8 +180,10 @@ The client build produces `dist/client/index.html` with bundled script/link tags
 Pass options to React's `renderToPipeableStream`:
 
 ```ts
-const Renderer = new JSXRenderer(EntryServer, {
+const initialData: Record<string, unknown> = {};
+const Renderer = new JSXRenderer(EntryServer, initialData, {
   htmlString,
+  initialData,
   renderToPipeableStreamOptions: {
     bootstrapModules: ["src/ssr/entry-client.tsx"],
   },
