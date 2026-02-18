@@ -28,8 +28,6 @@ class Extractor {
 
   /**
    * Creates an Extractor object for a given HTML string.
-   *
-   * @param html A string representing an HTML page.
    */
   constructor(html: string) {
     this.document = parseDocument(html);
@@ -41,9 +39,6 @@ class Extractor {
    * @remark The method uses the parsed {@link Extractor.document | document} to navigate the
    * whole DOM (usinig a stack) and checks for the elements with the tag name that matches
    * the given parameter.
-   *
-   * @param tagName The name of the desired tag elements (i.e. "script", "style").
-   * @returns A list of all the parsed {@link domhandler#Element | Elements} that match tagName.
    */
   protected getElementsByTagName(tagName: string): Element[] {
     const elements: Element[] = [];
@@ -74,9 +69,6 @@ class Extractor {
    *
    * @remark There are some HTML attributes that don't map exactly to React with the same name.
    * For example, class -> className.
-   *
-   * @param key An HTML attribute name.
-   * @returns The equivalent React attribute property name.
    */
   protected convertKeyToReactKey(key: string): string {
     const reactKey = REACT_KEYS_DICTIONARY[key.toLowerCase()];
@@ -89,10 +81,6 @@ class Extractor {
    * @remark The method takes into account the attributes of the parsed {@link domhandler#Element | Element}
    * and passes them as props when creating the {@link react#React.ReactElement | ReactElement}.
    * It only handles children of type "text".
-   *
-   * @param element A {@link domhandler#Element | DOM Element} to convert.
-   * @param index The index of the element to be converted.
-   * @returns A {@link react#React.ReactElement | ReactElement} with the properties of the given element.
    */
   protected convertToReactElement(
     element: Element,
@@ -119,9 +107,6 @@ class Extractor {
    * into {@link react#React.ReactElement | ReactElements}.
    *
    * @remark The list of elements returned will be in order of appearance in the DOM.
-   *
-   * @returns A list of {@link react#React.ReactElement | ReactElements} with the properties of
-   * each of the <link> elements in the {@link Extractor.document | document}.
    */
   public getLinkElements(): React.ReactElement[] {
     const linkElements = this.getElementsByTagName("link");
@@ -135,9 +120,6 @@ class Extractor {
    * into {@link react#React.ReactElement | ReactElements}.
    *
    * @remark The list of elements returned will be in order of appearance in the DOM.
-   *
-   * @returns A list of {@link react#React.ReactElement | ReactElements} with the properties of
-   * each of the <script> elements in the {@link Extractor.document | document}.
    */
   public getScriptElements(): React.ReactElement[] {
     const scriptElements = this.getElementsByTagName("script");
@@ -151,9 +133,6 @@ class Extractor {
    * and converts them into {@link react#React.ReactElement | ReactElements}.
    *
    * @remark The list of elements returned will be in order of appearance in the DOM.
-   *
-   * @returns A list of {@link react#React.ReactElement | ReactElements} with the properties of
-   * each <title>, <style>, <meta> or <base> element in the {@link Extractor.document | document}.
    */
   public getOtherHeadElements(): React.ReactElement[] {
     const otherHeadElements = ["title", "style", "meta", "base"].flatMap(

@@ -31,11 +31,6 @@ export default class JSXRenderer<
   /**
    * Creates a renderer instance which can be used to write Server Side Rendered HTML
    * into a {@link node:http#ServerResponse | ServerResponse}.
-   *
-   * @param Component A React Component representing the whole page to be rendered.
-   * @param initialData An object that will be passed as props to the React Component, allowing
-   * to pass initial data needed for the rendering of the component.
-   * @param options Object with {@link RendererOptions | settings} to control the behavior of the rendering.
    */
   constructor(
     protected readonly Component: TComponent,
@@ -49,8 +44,7 @@ export default class JSXRenderer<
 
   /**
    * Gets the locale to be used for the rendered page.
-   *
-   * @returns The default locale passed as option when creating the renderer instance or "en" as default.
+   * Default if there was no locale passed as option is "en".
    */
   public getLocale(): string {
     return this.options.defaultLocale || "en";
@@ -58,8 +52,6 @@ export default class JSXRenderer<
 
   /**
    * Gets the props needed to render the component.
-   *
-   * @return The props needed to render the component.
    */
   protected getComponentProps(): ServerEntrypointProps<InitialData> {
     return {
@@ -73,11 +65,6 @@ export default class JSXRenderer<
 
   /**
    * Gets a list of all the "src" attributes of the given scripts that match the passed type.
-   *
-   * @param scripts A list of {@link react#React.ReactElement | ReactElements} that should represent script
-   * tags (every element which is not of type "script" will be filtered out).
-   * @param type The type of script which can be "classic" or "module".
-   * @returns A list of the "src" attributes of the passed scripts that match the given type.
    */
   protected getScriptSourcesByType(
     scripts: React.ReactElement[],
@@ -113,10 +100,6 @@ export default class JSXRenderer<
    * - bootstrapScripts: classic scripts which react strips out of the page. The only way to add them is to include them
    *  in this property.
    * - bootstrapModules: module scripts which react also strips out of the page and need to be added like this.
-   *
-   * @param props The props object for the React Component.
-   * @returns An options object for {@link react-dom#renderToPipeableStream | renderToPipeableStream} method
-   * that enriches the user options with initial data and bootstrapping scripts (if not provided by the user).
    */
   protected enrichRendererOptions(
     props: ServerEntrypointProps<InitialData>,
@@ -159,9 +142,6 @@ export default class JSXRenderer<
    * (at least in part), using React's Suspense/lazy API and pipeable streams.
    *
    * CAUTION: The resulting HTML rendered this way is not cacheable.
-   *
-   * @param _req Client's request
-   * @param res Response object that will be sent to the client
    */
   renderToStream: RenderHandler = (
     _req: IncomingMessage,
@@ -213,9 +193,6 @@ export default class JSXRenderer<
    *
    * renderToString is useful in Vite Dev mode, as the HMR doesn't work well with Suspense
    * and the Pipeable Stream rendering. Also if the resulting document needs to be cached.
-   *
-   * @param _req Client's request
-   * @param res Response object that will be sent to the client
    */
   renderToString: RenderHandler = (
     _req: IncomingMessage,
