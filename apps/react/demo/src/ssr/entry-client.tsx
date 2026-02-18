@@ -1,5 +1,6 @@
 import { hydrateRoot } from "react-dom/client";
 import "../index.css";
-import Application from "../Application.js";
+import Shell from "./Shell.js";
 
-hydrateRoot(document.getElementById("root") as HTMLElement, <Application />);
+// entry-server page must match exactly the hydrated page in entry-client
+hydrateRoot(document, <Shell lang="en" />);

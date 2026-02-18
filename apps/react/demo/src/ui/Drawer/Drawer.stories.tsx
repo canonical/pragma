@@ -1,7 +1,7 @@
 /* @canonical/generator-ds 0.9.0-experimental.12 */
 
 import { Button } from "@canonical/react-ds-global";
-import type { Meta, StoryFn, StoryObj } from "@storybook/react-vite";
+import type { Meta, StoryFn } from "@storybook/react-vite";
 import { useRef, useState } from "react";
 import Component from "./Drawer.js";
 import type { DrawerProps } from "./types.js";
@@ -15,7 +15,7 @@ export default meta;
 
 /*
   CSF3 story
-  Uses object-based story declarations with strong TS support (`Meta` and `StoryObj`).
+  Uses object-based story declarations with strong TS support (`Meta`).
   Uses the latest storybook format.
 */
 const Example = ({

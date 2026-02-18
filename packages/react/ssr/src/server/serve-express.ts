@@ -24,6 +24,10 @@ const { values, positionals } = parseArgs({
       alias: "r",
       default: "assets",
     },
+    streaming: {
+      type: "boolean",
+      default: false,
+    },
   },
   strict: true,
   allowPositionals: true,
@@ -40,9 +44,13 @@ if (!rendererFilePath) {
   process.exit(1);
 }
 
-const handler: RenderHandler = await import(rendererFilePath).then(
-  (module) => module.default,
-);
+const handler: RenderHandler = await import(rendererFilePath).then((module) => {
+  if (values.streaming) {
+    return module.default.renderToStream;
+  } else {
+    return module.default.renderToString;
+  }
+});
 
 if (typeof handler !== "function") {
   throw new Error("Renderer file must default-export a renderer function.");
