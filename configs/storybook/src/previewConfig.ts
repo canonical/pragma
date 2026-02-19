@@ -1,13 +1,14 @@
 import { withThemeByClassName } from "@storybook/addon-themes";
 import type { Preview as ReactPreview } from "@storybook/react-vite";
 import type { Preview as SveltePreview } from "@storybook/svelte-vite";
+import type { Preview as WebComponentsPreview } from "@storybook/web-components-vite";
 
 /**
  * Preview type for React and Svelte Storybooks.
  * Most of the properties are the same, this is a convenience type to avoid
  * having to write the same type for both frameworks.
  */
-type Preview = ReactPreview & SveltePreview;
+type Preview = ReactPreview & SveltePreview & WebComponentsPreview;
 
 /**
  * Theme decorator for Pragma design system Storybooks.
