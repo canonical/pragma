@@ -70,11 +70,13 @@
     align-items: center;
     justify-content: center;
     background-color: transparent;
-		color: var(--lp-color-text-default);
+    color: var(--lp-color-text-default);
     cursor: pointer;
     border-radius: var(--lp-dimension-radius-full);
-    width: 0.85rem;
-    height: 0.85rem;
+    width: var(--lp-dimension-size-xs);
+    height: var(--lp-dimension-size-xs);
+    padding-block: var(--lp-dimension-spacing-block-xxxs);
+    padding-inline: var(--lp-dimension-spacing-inline-xxxs);
     margin-left: var(--lp-dimension-spacing-inline-xxs);
     border: var(--lp-dimension-stroke-thickness-default) solid transparent;
   }
