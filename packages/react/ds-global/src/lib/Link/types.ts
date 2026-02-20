@@ -1,5 +1,3 @@
-/* @canonical/generator-ds 0.10.0-experimental.2 */
-
 import type { ElementType, ReactNode } from "react";
 import type { PolymorphicComponentProps } from "../../lib/index.js";
 

@@ -1,5 +1,8 @@
+import type React from "react";
 import type Props from "./types.js";
 import "./styles.css";
+
+const componentCssClassName = "ds button";
 
 /**
  * Buttons trigger actions within an interface, typically involving
@@ -20,17 +23,6 @@ const Button = ({
   iconPosition = "start",
   ...props
 }: Props): React.ReactElement => {
-  const classNames = [
-    "ds",
-    "button",
-    importance,
-    anticipation,
-    variant,
-    className,
-  ]
-    .filter(Boolean)
-    .join(" ");
-
   // Derive aria-label from children if not explicitly provided
   const ariaLabel =
     props["aria-label"] ||
@@ -41,7 +33,9 @@ const Button = ({
   return (
     <button
       id={id}
-      className={classNames}
+      className={[componentCssClassName, importance, anticipation, variant, className]
+        .filter(Boolean)
+        .join(" ")}
       style={style}
       aria-label={ariaLabel}
       {...props}

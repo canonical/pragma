@@ -1,5 +1,3 @@
-/* @canonical/generator-ds 0.10.0-experimental.4 */
-
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import Component from "./SkipLink.js";

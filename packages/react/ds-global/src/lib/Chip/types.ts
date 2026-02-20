@@ -1,4 +1,3 @@
-/* @canonical/generator-canonical-ds 0.4.0-experimental.0 */
 import type React from "react";
 
 /**
