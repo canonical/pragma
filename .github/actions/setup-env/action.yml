@@ -22,9 +22,17 @@ runs:
         bun-version: ${{ inputs.bun-version }}
 
       # "prepare" hook on `bun install` runs `bun run build`
+      # - name: Install dependencies
+      #   shell: bash
+      #   run: bun install --frozen-lockfile
+      # NOTE: --frozen-lockfile disabled for now due to a known Bun bug where bun install
+      # always writes the lockfile internally, causing false positives with --frozen-lockfile
+      # even when bun.lock content is unchanged. Tracked in:
+      # https://github.com/oven-sh/bun/issues/16692
+      # https://github.com/oven-sh/bun/issues/19088
     - name: Install dependencies
       shell: bash
-      run: bun install --frozen-lockfile
+      run: bun install && git diff --exit-code bun.lock
 
       # Workaround for https://github.com/oven-sh/bun/issues/19782
       # Workspace bin symlinks aren't created on first install. Remove after fix is merged.
