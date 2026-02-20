@@ -27,6 +27,7 @@ The server starts at http://localhost:6006. Each component package has its own S
 
 - **React 19** or later for component packages (Svelte 5 for Svelte packages)
 - **Bun 1.3.9** or later for package management and script execution
+  - Installing Bun via the snap package is not recommended as it may cause permission issues. This is a known [issue](https://github.com/shakeelansari63/snap-packages/issues/79). Use the official installation script instead.
 - **Node.js 22.12 or 24** because Storybook and Lerna depend on Node internals that Bun does not yet fully support. Node 22.12 specifically is required as earlier 22.x versions have module resolution issues.
 
 Node 23 has a [known compatibility issue](https://github.com/canonical/pragma/issues/226) and should be avoided.
