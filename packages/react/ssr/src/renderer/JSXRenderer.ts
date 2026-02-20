@@ -1,13 +1,16 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { createElement } from "react";
-import { renderToPipeableStream, renderToString } from "react-dom/server";
+import {
+  type RenderToPipeableStreamOptions,
+  renderToPipeableStream,
+  renderToString,
+} from "react-dom/server";
 import { INITIAL_DATA_KEY } from "./constants.js";
 import Extractor from "./Extractor.js";
 import type {
   RendererOptions,
   RenderHandler,
   RenderResult,
-  RenderToStreamOptions,
   ServerEntrypoint,
   ServerEntrypointProps,
 } from "./types.js";
@@ -100,7 +103,7 @@ export default class JSXRenderer<
    */
   protected enrichRendererOptions(
     props: ServerEntrypointProps<InitialData>,
-  ): RenderToStreamOptions {
+  ): RenderToPipeableStreamOptions {
     const enrichedOptions = { ...this.options.renderToPipeableStreamOptions };
 
     // options passed by the user always take priority
@@ -141,14 +144,12 @@ export default class JSXRenderer<
    * CAUTION: The resulting HTML rendered this way is not cacheable.
    */
   renderToStream: RenderHandler = (
-    req: IncomingMessage,
+    _req: IncomingMessage,
     res: ServerResponse,
   ): void => {
     const errorRef: { current: Error | undefined } = { current: undefined };
     const props = this.getComponentProps();
     const jsx = createElement(this.Component, props);
-    const overwriteCallbackDefaults =
-      this.options.overwriteDefaultStreamCallbacks || false;
     const {
       onShellError: onShellErrorCallback,
       onShellReady: onShellReadyCallback,
@@ -160,12 +161,9 @@ export default class JSXRenderer<
     const jsxStream: RenderResult = renderToPipeableStream(jsx, {
       ...options,
       // Error occurred during rendering, after the shell & headers were sent - store the error for usage after stream is sent
-      onError(error) {
+      onError(error, errorInfo) {
         if (onErrorCallback) {
-          onErrorCallback(error, req, res);
-          if (overwriteCallbackDefaults) {
-            return;
-          }
+          onErrorCallback(error, errorInfo);
         }
 
         errorRef.current = error as Error;
@@ -174,10 +172,7 @@ export default class JSXRenderer<
       // Early error, before the shell is prepared
       onShellError(error) {
         if (onShellErrorCallback) {
-          onShellErrorCallback(error, req, res);
-          if (overwriteCallbackDefaults) {
-            return;
-          }
+          onShellErrorCallback(error);
         }
 
         if (!res.headersSent) {
@@ -189,10 +184,7 @@ export default class JSXRenderer<
       },
       onShellReady() {
         if (onShellReadyCallback) {
-          onShellReadyCallback(req, res);
-          if (overwriteCallbackDefaults) {
-            return;
-          }
+          onShellReadyCallback();
         }
 
         if (!res.headersSent) {
@@ -208,10 +200,7 @@ export default class JSXRenderer<
       },
       onAllReady() {
         if (onAllReadyCallback) {
-          onAllReadyCallback(req, res);
-          if (overwriteCallbackDefaults) {
-            return;
-          }
+          onAllReadyCallback();
         }
       },
     });
