@@ -39,6 +39,6 @@
     "vitest": "^4.0.18"
   },
   "peerDependencies": {
-    "@canonical/summon": "^0.1.0"
+    "@canonical/summon": "^0.1.0 || ^0.15.0"
   }
 }
