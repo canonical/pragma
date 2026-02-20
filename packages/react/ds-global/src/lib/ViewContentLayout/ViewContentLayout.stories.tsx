@@ -5,7 +5,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { ViewContentLayout } from "./ViewContentLayout.js";
 
 const meta: Meta<typeof ViewContentLayout> = {
-  title: "Components/ViewContentLayout",
+  title: "Layouts/ViewContentLayout",
   component: ViewContentLayout,
   tags: ["autodocs"],
   parameters: {

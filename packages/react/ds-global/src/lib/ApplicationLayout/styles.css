@@ -3,7 +3,7 @@
 
 .ds.application-layout {
   /* Component styles */
-  background: lightyellow; /* For demo purposes only */
+  background: var(--mockup-stack-background); /* For demo purposes only */
   height: 100%;
   display: grid;
   gap: var(--gap);

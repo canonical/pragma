@@ -1,9 +1,8 @@
 export const Card = () => (
   <div
     style={{
-      border: "1px solid #ccc",
       minHeight: "300px",
-      backgroundColor: "#f9f9f9",
+      backgroundColor: "var(--mockup-stack-content)",
     }}
   >
     This is an example card inside the ViewLayout.
@@ -14,7 +13,7 @@ export const Sidebar = () => (
   <aside
     style={{
       height: "100%",
-      backgroundColor: "lightgreen",
+      backgroundColor: "var(--mockup-stack-navigation)",
       padding: "16px",
     }}
   >

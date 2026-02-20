@@ -4,7 +4,13 @@
   /* For debug */
   --baseline-grid-color: orange;
   /* Temporary, waiting for a better understanding */
+
+  --mockup-stack-background:#EDB3B340;
+  --mockup-stack-navigation:#C9595950;
+  --mockup-stack-content:#EDB3B360;
+  /* --mockup-stack-content:#FFFFFF80; */
   --baseline-shift: 1px;
+  --min-column-width: 65px;
 
   --gap: 1rem;
 }

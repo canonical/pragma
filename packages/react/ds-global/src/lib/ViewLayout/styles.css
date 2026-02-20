@@ -3,7 +3,7 @@
 
 .ds.view-layout {
   /* Component styles */
-  background: lightcoral; /* For demo purposes only */
+  background: var(--mockup-stack-background); /* For demo purposes only */
   display: grid;
   height: 100%;
   gap: var(--gap);

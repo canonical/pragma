@@ -7,7 +7,7 @@ import { ViewContentLayout } from "../ViewContentLayout/ViewContentLayout.js";
 import { ViewLayout } from "./ViewLayout.js";
 
 const meta: Meta<typeof ViewLayout> = {
-  title: "Components/ViewLayout",
+  title: "Layouts/ViewLayout",
   component: ViewLayout,
   tags: ["autodocs"],
   parameters: {
