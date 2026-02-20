@@ -14,6 +14,7 @@ Thumbs.db
 .vscode
 .idea
 session/
+.gemini/
 
 # [cache] Cache and backup
 *.bak

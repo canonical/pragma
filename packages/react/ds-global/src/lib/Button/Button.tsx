@@ -33,7 +33,13 @@ const Button = ({
   return (
     <button
       id={id}
-      className={[componentCssClassName, importance, anticipation, variant, className]
+      className={[
+        componentCssClassName,
+        importance,
+        anticipation,
+        variant,
+        className,
+      ]
         .filter(Boolean)
         .join(" ")}
       style={style}
