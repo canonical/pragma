@@ -1,16 +1,13 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { createElement } from "react";
-import {
-  type RenderToPipeableStreamOptions,
-  renderToPipeableStream,
-  renderToString,
-} from "react-dom/server";
+import { renderToPipeableStream, renderToString } from "react-dom/server";
 import { INITIAL_DATA_KEY } from "./constants.js";
 import Extractor from "./Extractor.js";
 import type {
   RendererOptions,
   RenderHandler,
   RenderResult,
+  RenderToStreamOptions,
   ServerEntrypoint,
   ServerEntrypointProps,
 } from "./types.js";
@@ -103,7 +100,7 @@ export default class JSXRenderer<
    */
   protected enrichRendererOptions(
     props: ServerEntrypointProps<InitialData>,
-  ): RenderToPipeableStreamOptions {
+  ): RenderToStreamOptions {
     const enrichedOptions = { ...this.options.renderToPipeableStreamOptions };
 
     // options passed by the user always take priority
@@ -144,22 +141,45 @@ export default class JSXRenderer<
    * CAUTION: The resulting HTML rendered this way is not cacheable.
    */
   renderToStream: RenderHandler = (
-    _req: IncomingMessage,
+    req: IncomingMessage,
     res: ServerResponse,
   ): void => {
     const errorRef: { current: Error | undefined } = { current: undefined };
     const props = this.getComponentProps();
     const jsx = createElement(this.Component, props);
+    const overwriteCallbackDefaults =
+      this.options.overwriteDefaultStreamCallbacks || false;
+    const {
+      onShellError: onShellErrorCallback,
+      onShellReady: onShellReadyCallback,
+      onAllReady: onAllReadyCallback,
+      onError: onErrorCallback,
+      ...options
+    } = this.enrichRendererOptions(props);
 
     const jsxStream: RenderResult = renderToPipeableStream(jsx, {
-      ...this.enrichRendererOptions(props),
+      ...options,
       // Error occurred during rendering, after the shell & headers were sent - store the error for usage after stream is sent
       onError(error) {
+        if (onErrorCallback) {
+          onErrorCallback(error, req, res);
+          if (overwriteCallbackDefaults) {
+            return;
+          }
+        }
+
         errorRef.current = error as Error;
         console.error(error);
       },
       // Early error, before the shell is prepared
       onShellError(error) {
+        if (onShellErrorCallback) {
+          onShellErrorCallback(error, req, res);
+          if (overwriteCallbackDefaults) {
+            return;
+          }
+        }
+
         if (!res.headersSent) {
           res
             .writeHead(500, { "Content-Type": "text/html; charset=utf-8" })
@@ -168,6 +188,13 @@ export default class JSXRenderer<
         console.error(error);
       },
       onShellReady() {
+        if (onShellReadyCallback) {
+          onShellReadyCallback(req, res);
+          if (overwriteCallbackDefaults) {
+            return;
+          }
+        }
+
         if (!res.headersSent) {
           res.writeHead(errorRef.current ? 500 : 200, {
             "Content-Type": "text/html; charset=utf-8",
@@ -178,6 +205,14 @@ export default class JSXRenderer<
         res.on("finish", () => {
           res.end();
         });
+      },
+      onAllReady() {
+        if (onAllReadyCallback) {
+          onAllReadyCallback(req, res);
+          if (overwriteCallbackDefaults) {
+            return;
+          }
+        }
       },
     });
   };
