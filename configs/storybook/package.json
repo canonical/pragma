@@ -52,7 +52,7 @@
     "@storybook/svelte-vite": "^10.2.8"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.3.14",
+    "@biomejs/biome": "2.4.4",
     "@canonical/biome-config": "^0.15.0",
     "@canonical/typescript-config-react": "^0.15.0",
     "@types/node": "^24.10.13",

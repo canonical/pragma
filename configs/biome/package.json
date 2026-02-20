@@ -22,9 +22,9 @@
     "check:biome:fix": "biome check --write *.json"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.3.14"
+    "@biomejs/biome": "2.4.4"
   },
   "peerDependencies": {
-    "@biomejs/biome": "2.3.11"
+    "@biomejs/biome": "2.4.4"
   }
 }

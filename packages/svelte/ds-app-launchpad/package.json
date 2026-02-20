@@ -50,7 +50,7 @@
     "storybook": "storybook dev -p 6006 --no-open --host 0.0.0.0"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.3.14",
+    "@biomejs/biome": "2.4.4",
     "@canonical/biome-config-svelte": "^0.15.0",
     "@canonical/storybook-helpers": "^0.15.0",
     "@canonical/svelte-ssr-test": "^0.15.0",
