@@ -1,0 +1,11 @@
+{
+  "extends": "@canonical/typescript-config",
+  "compilerOptions": {
+    "baseUrl": "src",
+    "skipLibCheck": true,
+    "types": ["vitest/globals"],
+    "experimentalDecorators": true,
+    "useDefineForClassFields": false
+  },
+  "include": ["src/**/*.ts", "vite.config.ts", "vitest.config.ts"]
+}
