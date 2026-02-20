@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.15.0](https://github.com/canonical/pragma/compare/v0.15.0-experimental.0...v0.15.0) (2026-02-20)
+
+
+### Features
+
+* **react/ssr:** add StringRenderer and some refactoring ([#411](https://github.com/canonical/pragma/issues/411)) ([fede428](https://github.com/canonical/pragma/commit/fede428fcf7a5bf5b90c9b1ff59482af04a2c287))
+
+
+
+
+
 # [0.15.0-experimental.0](https://github.com/canonical/pragma/compare/v0.14.0...v0.15.0-experimental.0) (2026-02-17)
 
 **Note:** Version bump only for package @canonical/react-boilerplate-vite

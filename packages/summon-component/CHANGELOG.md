@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.15.0](https://github.com/canonical/pragma/compare/v0.15.0-experimental.0...v0.15.0) (2026-02-20)
+
+
+### Bug Fixes
+
+* **react-ds-global:** Fixes transitional export patterns for components ([#426](https://github.com/canonical/pragma/issues/426)) ([db8a1db](https://github.com/canonical/pragma/commit/db8a1dba10419153f6be82ffee570c9db929dff7))
+
+
+
+
+
 # [0.15.0-experimental.0](https://github.com/canonical/pragma/compare/v0.14.0...v0.15.0-experimental.0) (2026-02-17)
 
 

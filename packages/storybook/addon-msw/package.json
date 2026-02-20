@@ -1,6 +1,6 @@
 {
   "name": "@canonical/storybook-addon-msw",
-  "version": "0.14.0",
+  "version": "0.15.0",
   "type": "module",
   "files": [
     "dist",
@@ -44,13 +44,13 @@
     "check:ts": "tsc --noEmit"
   },
   "dependencies": {
-    "@canonical/styles-debug": "^0.14.0",
+    "@canonical/styles-debug": "^0.15.0",
     "@storybook/icons": "^2.0.1"
   },
   "devDependencies": {
     "@biomejs/biome": "2.3.14",
-    "@canonical/biome-config": "^0.14.0",
-    "@canonical/typescript-config-react": "^0.14.0",
+    "@canonical/biome-config": "^0.15.0",
+    "@canonical/typescript-config-react": "^0.15.0",
     "@storybook/react-vite": "^10.2.8",
     "@types/node": "^24.10.13",
     "@types/react": "^19.2.13",
