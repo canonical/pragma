@@ -1,13 +1,33 @@
 import * as process from "node:process";
+import { JSXRenderer } from "@canonical/react-ssr/renderer";
 import { serveStream } from "@canonical/react-ssr/server";
 import express from "express";
-import render from "./renderer.js";
+import EntryServer from "./entry-server.js";
+import render, { htmlString } from "./renderer.js";
 
 const PORT = process.env.PORT || 5174;
 
 const app = express();
 
 app.use(/^\/(assets|public)/, express.static("dist/client/assets"));
+
+app.get("/stream", (req, res, next) => {
+  const renderer = new JSXRenderer(
+    EntryServer,
+    {},
+    {
+      htmlString,
+      renderToPipeableStreamOptions: {
+        onShellReady: (): void => {
+          console.log("Shell ready");
+        },
+        // pass any error to Express's error handling
+        onShellError: (error) => next(error),
+      },
+    },
+  );
+  renderer.renderToStream(req, res);
+});
 
 app.use(serveStream(render));
 
