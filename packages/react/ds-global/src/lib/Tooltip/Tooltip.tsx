@@ -1,4 +1,3 @@
-/* @canonical/generator-ds 0.9.0-experimental.4 */
 import type React from "react";
 import "./styles.css";
 import type { TooltipProps } from "./types.js";
@@ -6,10 +5,11 @@ import type { TooltipProps } from "./types.js";
 const componentCssClassName = "ds tooltip";
 
 /**
- * The Tooltip component is used to display a message.
- * This component is just the "message" part of the tooltip, and has no interactivity or positioning logic. It is generally not consumed directly, but rather in one of two ways
- * - The [TooltipArea](?path=/docs/tooltip-tooltiparea--docs) component
- * - The [withTooltip](?path=/docs/tooltip-withtooltip--docs) HOC
+ * The Tooltip component renders the message part of a tooltip. It has no
+ * interactivity or positioning logic and is generally consumed via
+ * TooltipArea or the withTooltip HOC.
+ *
+ * @implements ds:global.component.tooltip
  */
 const Tooltip = ({
   id,

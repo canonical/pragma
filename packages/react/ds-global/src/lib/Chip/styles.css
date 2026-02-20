@@ -1,5 +1,3 @@
-/* @canonical/generator-canonical-ds 0.4.0-experimental.0 */
-
 .ds.chip {
   border-color: var(--modifier-color-border, var(--chip-color-border));
   border-style: solid;
