@@ -1,5 +1,3 @@
-/* @canonical/generator-ds 0.10.0-experimental.4 */
-
 import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import Component from "./SkipLink.js";

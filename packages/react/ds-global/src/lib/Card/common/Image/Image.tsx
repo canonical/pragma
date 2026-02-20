@@ -1,5 +1,3 @@
-/* @canonical/generator-ds 0.10.0-experimental.2 */
-
 import type React from "react";
 import type { ImageProps } from "./types.js";
 import "./styles.css";
@@ -7,9 +5,11 @@ import "./styles.css";
 const componentCssClassName = "ds card-image";
 
 /**
- * Image component for Card
- * Full-width image with content bleed (no padding)
- * @returns {React.ReactElement} - Rendered Image
+ * Card.Image subcomponent
+ *
+ * Full-width image with content bleed (no padding).
+ *
+ * @implements ds:global.subcomponent.card-image
  */
 const Image = ({
   className,

@@ -1,6 +1,6 @@
 {
   "name": "@canonical/react-ds-global-form",
-  "version": "0.15.0-experimental.0",
+  "version": "0.15.0",
   "type": "module",
   "module": "dist/esm/index.js",
   "types": "dist/types/index.d.ts",
@@ -39,10 +39,10 @@
     "test:vitest:watch": "vitest"
   },
   "dependencies": {
-    "@canonical/react-ds-global": "^0.15.0-experimental.0",
-    "@canonical/storybook-config": "^0.14.0",
-    "@canonical/styles": "^0.14.0",
-    "@canonical/utils": "^0.14.0",
+    "@canonical/react-ds-global": "^0.15.0",
+    "@canonical/storybook-config": "^0.15.0",
+    "@canonical/styles": "^0.15.0",
+    "@canonical/utils": "^0.15.0",
     "downshift": "^9.3.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
@@ -50,10 +50,10 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.3.14",
-    "@canonical/biome-config": "^0.14.0",
-    "@canonical/storybook-helpers": "^0.14.0",
-    "@canonical/typescript-config-react": "^0.14.0",
-    "@canonical/webarchitect": "^0.14.0",
+    "@canonical/biome-config": "^0.15.0",
+    "@canonical/storybook-helpers": "^0.15.0",
+    "@canonical/typescript-config-react": "^0.15.0",
+    "@canonical/webarchitect": "^0.15.0",
     "@chromatic-com/storybook": "^5.0.1",
     "@storybook/addon-docs": "^10.2.8",
     "@storybook/react-vite": "^10.2.8",
