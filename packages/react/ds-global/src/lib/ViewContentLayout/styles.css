@@ -8,10 +8,9 @@
   /* grid-template-columns: subgrid; */
   grid-template-columns: repeat(
       auto-fill,
-      minmax(var(--min-column-width), 1fr) 
-      minmax(var(--min-column-width), 1fr) 
-      minmax(var(--min-column-width), 1fr) 
-      minmax(var(--min-column-width), 1fr) 
+      minmax(var(--min-column-width), 1fr) minmax(var(--min-column-width), 1fr)
+        minmax(var(--min-column-width), 1fr)
+        minmax(var(--min-column-width), 1fr)
     );
   gap: var(--gap);
   height: 100%;

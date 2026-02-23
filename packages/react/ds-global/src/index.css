@@ -5,9 +5,9 @@
   --baseline-grid-color: orange;
   /* Temporary, waiting for a better understanding */
 
-  --mockup-stack-background:#EDB3B340;
-  --mockup-stack-navigation:#C9595950;
-  --mockup-stack-content:#EDB3B360;
+  --mockup-stack-background: #edb3b340;
+  --mockup-stack-navigation: #c9595950;
+  --mockup-stack-content: #edb3b360;
   /* --mockup-stack-content:#FFFFFF80; */
   --baseline-shift: 1px;
   --min-column-width: 65px;
