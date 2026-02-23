@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.15.1](https://github.com/canonical/ds25/compare/v0.15.0...v0.15.1) (2026-02-23)
+
+
+### Bug Fixes
+
+* **tty:** update documentation to state the known issue of using the snap package for bun ([#424](https://github.com/canonical/ds25/issues/424)) ([6513d68](https://github.com/canonical/ds25/commit/6513d6891906701fd82f4ec8d5036de59473ed20))
+
+
+
+
+
 # [0.15.0](https://github.com/canonical/ds25/compare/v0.15.0-experimental.0...v0.15.0) (2026-02-20)
 
 
