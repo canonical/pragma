@@ -1,0 +1,14 @@
+.ds.spinner {
+	transform-origin: center center;
+	animation: loading-spinner var(--lp-transition-duration-sleepy) infinite
+		linear;
+}
+
+@keyframes loading-spinner {
+	from {
+		transform: rotate(0deg);
+	}
+	to {
+		transform: rotate(360deg);
+	}
+}

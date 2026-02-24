@@ -1,0 +1,85 @@
+.ds.button {
+	cursor: pointer;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+
+	background-color: var(
+		--lp-color-background-context,
+		var(--lp-color-background-default)
+	);
+	border: var(--lp-dimension-stroke-thickness-default) solid
+		var(--lp-color-border-context, var(--lp-color-border-high-contrast));
+	border-radius: var(--lp-dimension-radius-medium);
+	font: var(--lp-typography-context, var(--lp-typography-paragraph-default));
+	color: var(--lp-color-text-context, var(--lp-color-text-default));
+	text-decoration: none;
+	padding-inline: 0;
+	padding-block: 0;
+
+	transition-duration: var(--lp-transition-duration-snap);
+	transition-property: background-color, border-color;
+	transition-timing-function: var(--lp-transition-timing-ease-in);
+
+	&:not(:disabled):not([aria-disabled="true"]) {
+		&:hover {
+			background-color: var(
+				--lp-color-background-hover-context,
+				var(--lp-color-background-neutral-hover)
+			);
+			border-color: var(
+				--lp-color-border-hover-context,
+				var(--lp-color-border-context, var(--lp-color-border-high-contrast))
+			);
+		}
+
+		&:active {
+			background-color: var(
+				--lp-color-background-active-context,
+				var(--lp-color-background-neutral-active)
+			);
+			border-color: var(
+				--lp-color-border-active-context,
+				var(--lp-color-border-context, var(--lp-color-border-high-contrast))
+			);
+		}
+	}
+
+	&:disabled,
+	&[aria-disabled="true"] {
+		cursor: not-allowed;
+	}
+
+	&.explicit-disabled {
+		opacity: var(--lp-opacity-muted);
+	}
+
+	&.loading {
+		position: relative;
+
+		> .button-content {
+			visibility: hidden;
+		}
+
+		> .loader {
+			position: absolute;
+			inset: 0;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+		}
+	}
+
+	/* Button-specific modifiers */
+	&.brand {
+		--lp-color-text-context: var(--lp-color-text-white);
+		--lp-color-border-context: var(--lp-color-brand-default);
+		--lp-color-background-context: var(--lp-color-brand-default);
+		--lp-color-background-hover-context: var(--lp-color-brand-hover);
+		--lp-color-background-active-context: var(--lp-color-brand-active);
+	}
+
+	&.base {
+		--lp-color-border-context: transparent;
+	}
+}

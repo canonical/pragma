@@ -1,0 +1,60 @@
+.ds.button-content {
+	display: inline-grid;
+	grid-auto-flow: column;
+	grid-auto-rows: minmax(1lh, auto);
+	align-items: center;
+
+	gap: var(--lp-dimension-spacing-inline-xs);
+	padding-block: var(
+		--lp-dimension-padding-block-context,
+		var(--lp-dimension-spacing-block-xxs)
+	);
+	padding-inline: var(
+		--lp-dimension-padding-inline-context,
+		var(--lp-dimension-spacing-inline-s)
+	);
+	--icon-padding-subtract: calc(
+		var(
+				--lp-dimension-padding-inline-context,
+				var(--lp-dimension-spacing-inline-s)
+			) / 2
+	);
+
+	> .icon {
+		display: inline-flex;
+	}
+
+	/* icon inline center within the padding */
+	&:has(.text:not(:empty)) > .icon {
+		&.left {
+			margin-inline-start: calc(var(--icon-padding-subtract) * -1);
+		}
+		&.right {
+			margin-inline-end: calc(var(--icon-padding-subtract) * -1);
+		}
+	}
+
+	&:has(.text:empty) {
+		&:has(.icon.left) {
+			padding-inline-start: 0;
+		}
+		&:has(.icon.right) {
+			padding-inline-end: 0;
+		}
+
+		> .icon {
+			&.left {
+				margin-inline-start: var(--icon-padding-subtract);
+				margin-inline-end: calc(var(--icon-padding-subtract) * -1);
+			}
+			&.right {
+				margin-inline-end: var(--icon-padding-subtract);
+				margin-inline-start: calc(var(--icon-padding-subtract) * -1);
+			}
+		}
+	}
+
+	.text:empty {
+		display: none;
+	}
+}
