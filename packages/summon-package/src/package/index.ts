@@ -36,15 +36,26 @@ const templatesDir = path.join(__dirname, "..", "templates");
 
 const templates = {
   packageJson: path.join(templatesDir, "package.json.ejs"),
+  biome: path.join(templatesDir, "biome.json.ejs"),
+  readme: path.join(templatesDir, "README.md.ejs"),
   tsconfig: path.join(templatesDir, "tsconfig.json.ejs"),
   tsconfigReact: path.join(templatesDir, "tsconfig-react.json.ejs"),
-  biome: path.join(templatesDir, "biome.json.ejs"),
+  tsconfigBuildReact: path.join(templatesDir, "tsconfig-build-react.json.ejs"),
+  viteConfigReact: path.join(templatesDir, "vite.config-react.ts.ejs"),
+  vitestConfigReact: path.join(templatesDir, "vitest.config-react.ts.ejs"),
+  vitestSetupReact: path.join(templatesDir, "vitest.setup-react.ts.ejs"),
   indexTs: path.join(templatesDir, "index.ts.ejs"),
   indexCss: path.join(templatesDir, "index.css.ejs"),
   cliTs: path.join(templatesDir, "cli.ts.ejs"),
-  readme: path.join(templatesDir, "README.md.ejs"),
-  storybookMain: path.join(templatesDir, "storybook-main.ts.ejs"),
-  storybookPreview: path.join(templatesDir, "storybook-preview.ts.ejs"),
+  storybookMainReact: path.join(templatesDir, "storybook-main-react.ts.ejs"),
+  storybookPreviewReact: path.join(
+    templatesDir,
+    "storybook-preview-react.ts.ejs",
+  ),
+  storybookStylesReact: path.join(
+    templatesDir,
+    "storybook-styles-react.css.ejs",
+  ),
 };
 
 // =============================================================================
@@ -70,8 +81,12 @@ const prompts: PromptDefinition[] = [
         value: "tool-ts",
       },
       {
-        label: "library - Publishable library (dist/ build output)",
+        label: "library - TypeScript library (dist/ build output)",
         value: "library",
+      },
+      {
+        label: "react-library - React component library (dist/ build)",
+        value: "react-library",
       },
       {
         label: "css - CSS package (src/index.css, no build)",
@@ -89,13 +104,6 @@ const prompts: PromptDefinition[] = [
     group: "Package",
   },
   {
-    name: "withReact",
-    type: "confirm",
-    message: "Include React dependencies?",
-    default: false,
-    group: "Options",
-  },
-  {
     name: "withStorybook",
     type: "confirm",
     message: "Include Storybook setup?",
@@ -107,6 +115,7 @@ const prompts: PromptDefinition[] = [
     type: "confirm",
     message: "Include CLI binary entry point?",
     default: false,
+    when: (answers) => answers.type === "tool-ts",
     group: "Options",
   },
   {
@@ -131,29 +140,34 @@ export const generator: GeneratorDefinition<PackageAnswers> = {
     help: `Generate a new npm package with proper configuration.
 
 PACKAGE TYPES:
-  tool-ts   TypeScript tool that runs directly from src/ (no build step)
-            License: GPL-3.0, Entry: src/index.ts
-            Examples: summon, webarchitect
+  tool-ts        TypeScript tool that runs directly from src/ (no build step)
+                 License: GPL-3.0, Entry: src/index.ts
+                 Examples: summon, webarchitect
 
-  library   Publishable library with dist/ build output
-            License: LGPL-3.0, Entry: dist/esm/index.js
-            Examples: utils, ds-types
+  library        Plain TypeScript library with dist/ build output
+                 License: LGPL-3.0, Entry: dist/esm/index.js
 
-  css       CSS-only package (no TypeScript, no build)
-            License: LGPL-3.0, Entry: src/index.css
-            Examples: styles/primitives, styles/modes
+  react-library  React component library with dist/ build
+                 License: LGPL-3.0, Entry: dist/esm/index.js
+                 peerDeps: react, react-dom
+                 Vite: @vitejs/plugin-react + jsdom
+
+  css            CSS-only package (no TypeScript, no build)
+                 License: LGPL-3.0, Entry: src/index.css
+                 Examples: styles/primitives, styles/modes
 
 OPTIONS:
-  --with-react      Add React dependencies and TypeScript React config
   --with-storybook  Add Storybook configuration
-  --with-cli        Add CLI binary entry point (src/cli.ts)
+  --with-cli        Add CLI binary entry point src/cli.ts (tool-ts only)
 
 The generator auto-detects:
   - Monorepo: Uses lerna.json version when in pragma monorepo
   - Package manager: Detects bun/yarn/pnpm (defaults to bun)`,
     examples: [
       "summon package --name=@canonical/my-tool --type=tool-ts",
-      "summon package --name=@canonical/my-lib --type=library --with-react",
+      "summon package --name=@canonical/my-lib --type=library",
+      "summon package --name=@canonical/my-react-lib --type=react-library",
+      "summon package --name=@canonical/my-react-lib --type=react-library --with-storybook",
       "summon package --name=@canonical/my-cli --type=tool-ts --with-cli",
       "summon package --name=my-styles --type=css",
       "summon package --name=@canonical/my-pkg --type=library --no-run-install",
@@ -166,6 +180,7 @@ The generator auto-detects:
     const packageDir = getPackageShortName(answers.name);
     const cwd = process.cwd();
     const isCss = answers.type === "css";
+    const isReact = answers.type === "react-library";
     const needsTs = !isCss;
 
     return flatMap(detectMonorepo(cwd), (monorepoInfo) => {
@@ -182,7 +197,8 @@ The generator auto-detects:
         // Create directory structure
         mkdir(packageDir),
         mkdir(path.join(packageDir, "src")),
-
+        when(isReact, mkdir(path.join(packageDir, "src", "lib"))),
+        when(isReact, mkdir(path.join(packageDir, "src", "assets"))),
         // Create package.json
         template({
           source: templates.packageJson,
@@ -190,9 +206,17 @@ The generator auto-detects:
           vars: ctx,
         }),
 
-        // Create tsconfig.json (only for non-CSS packages)
+        // Create tsconfig.json — separate per type
         when(
-          needsTs && answers.withReact,
+          isReact,
+          template({
+            source: templates.tsconfigBuildReact,
+            dest: path.join(packageDir, "tsconfig.build.json"),
+            vars: ctx,
+          }),
+        ),
+        when(
+          isReact,
           template({
             source: templates.tsconfigReact,
             dest: path.join(packageDir, "tsconfig.json"),
@@ -200,7 +224,7 @@ The generator auto-detects:
           }),
         ),
         when(
-          needsTs && !answers.withReact,
+          needsTs && !isReact,
           template({
             source: templates.tsconfig,
             dest: path.join(packageDir, "tsconfig.json"),
@@ -214,6 +238,24 @@ The generator auto-detects:
           dest: path.join(packageDir, "biome.json"),
           vars: ctx,
         }),
+
+        // Create vite configs for react-library
+        when(
+          isReact,
+          template({
+            source: templates.viteConfigReact,
+            dest: path.join(packageDir, "vite.config.ts"),
+            vars: ctx,
+          }),
+        ),
+        when(
+          isReact,
+          template({
+            source: templates.vitestSetupReact,
+            dest: path.join(packageDir, "vitest.setup.ts"),
+            vars: ctx,
+          }),
+        ),
 
         // Create src/index.ts (for TS packages)
         when(
@@ -235,9 +277,9 @@ The generator auto-detects:
           }),
         ),
 
-        // Create src/cli.ts (conditional, only for TS packages)
+        // Create src/cli.ts (tool-ts only; prompt is already gated)
         when(
-          needsTs && answers.withCli,
+          answers.withCli,
           template({
             source: templates.cliTs,
             dest: path.join(packageDir, "src", "cli.ts"),
@@ -252,17 +294,13 @@ The generator auto-detects:
           vars: ctx,
         }),
 
-        // Create .storybook folder (conditional)
+        // Create .storybook folder (React storybook)
         when(answers.withStorybook, mkdir(path.join(packageDir, ".storybook"))),
-        when(
-          answers.withStorybook,
-          mkdir(path.join(packageDir, "src", "assets")),
-        ),
         when(answers.withStorybook, mkdir(path.join(packageDir, "public"))),
         when(
           answers.withStorybook,
           template({
-            source: templates.storybookMain,
+            source: templates.storybookMainReact,
             dest: path.join(packageDir, ".storybook", "main.ts"),
             vars: ctx,
           }),
@@ -270,8 +308,16 @@ The generator auto-detects:
         when(
           answers.withStorybook,
           template({
-            source: templates.storybookPreview,
+            source: templates.storybookPreviewReact,
             dest: path.join(packageDir, ".storybook", "preview.ts"),
+            vars: ctx,
+          }),
+        ),
+        when(
+          answers.withStorybook,
+          template({
+            source: templates.storybookStylesReact,
+            dest: path.join(packageDir, ".storybook", "styles.css"),
             vars: ctx,
           }),
         ),

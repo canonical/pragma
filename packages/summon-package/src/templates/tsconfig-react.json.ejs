@@ -2,7 +2,21 @@
   "extends": "@canonical/typescript-config-react",
   "compilerOptions": {
     "baseUrl": "src",
-    "types": ["bun-types"]
+    "skipLibCheck": true,
+    "types": [
+      "react",
+      "react-dom",
+      "vitest/globals",
+      "@testing-library/jest-dom"
+    ]
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx"]
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    <%_ if (withStorybook) { _%>
+    ".storybook/*.ts",
+    ".storybook/*.tsx",
+    <%_ } _%>
+    "vite.config.ts"
+  ]
 }

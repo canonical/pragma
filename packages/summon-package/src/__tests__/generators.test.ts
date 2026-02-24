@@ -12,6 +12,7 @@ import {
   getRuleset,
   type MonorepoInfo,
   type PackageAnswers,
+  type PackageType,
   validatePackageName,
 } from "../shared/index.js";
 
@@ -53,6 +54,10 @@ describe("getLicense", () => {
   it("returns LGPL-3.0 for css", () => {
     expect(getLicense("css")).toBe("LGPL-3.0");
   });
+
+  it("returns LGPL-3.0 for react-library", () => {
+    expect(getLicense("react-library")).toBe("LGPL-3.0");
+  });
 });
 
 describe("getEntryPoints", () => {
@@ -79,21 +84,28 @@ describe("getEntryPoints", () => {
     expect(entry.files).toContain("src");
     expect(entry.needsBuild).toBe(false);
   });
+
+  it("returns dist/esm paths for react-library", () => {
+    const entry = getEntryPoints("react-library");
+    expect(entry.module).toBe("dist/esm/index.js");
+    expect(entry.types).toBe("dist/types/index.d.ts");
+    expect(entry.files).toContain("dist");
+    expect(entry.needsBuild).toBe(true);
+  });
 });
 
 describe("getRuleset", () => {
-  it("returns package-react when withReact is true", () => {
-    expect(getRuleset("tool-ts", true)).toBe("package-react");
-    expect(getRuleset("library", true)).toBe("package-react");
-  });
-
-  it("returns package type when withReact is false", () => {
-    expect(getRuleset("tool-ts", false)).toBe("tool-ts");
-    expect(getRuleset("library", false)).toBe("library");
+  it("returns package type for tool-ts and library", () => {
+    expect(getRuleset("tool-ts")).toBe("tool-ts");
+    expect(getRuleset("library")).toBe("library");
   });
 
   it("returns base for css packages", () => {
-    expect(getRuleset("css", false)).toBe("base");
+    expect(getRuleset("css")).toBe("base");
+  });
+
+  it("returns package-react for react-library", () => {
+    expect(getRuleset("react-library")).toBe("package-react");
   });
 });
 
@@ -102,7 +114,6 @@ describe("createTemplateContext", () => {
     name: "@canonical/test-pkg",
     type: "tool-ts",
     description: "Test package",
-    withReact: false,
     withStorybook: false,
     withCli: false,
     runInstall: false,
@@ -167,6 +178,25 @@ describe("createTemplateContext", () => {
     expect(ctx.license).toBe("LGPL-3.0");
     expect(ctx.needsBuild).toBe(false);
   });
+
+  it("derives withReact=true for react-library type", () => {
+    const ctx = createTemplateContext(
+      { ...baseAnswers, type: "react-library" },
+      { isMonorepo: false },
+    );
+    expect(ctx.withReact).toBe(true);
+    expect(ctx.ruleset).toBe("package-react");
+  });
+
+  it("derives withReact=false for non-react types", () => {
+    for (const type of ["tool-ts", "library", "css"] as PackageType[]) {
+      const ctx = createTemplateContext(
+        { ...baseAnswers, type },
+        { isMonorepo: false },
+      );
+      expect(ctx.withReact).toBe(false);
+    }
+  });
 });
 
 // =============================================================================
@@ -186,9 +216,10 @@ describe("package generator", () => {
     expect(promptNames).toContain("name");
     expect(promptNames).toContain("type");
     expect(promptNames).toContain("description");
-    expect(promptNames).toContain("withReact");
     expect(promptNames).toContain("withCli");
     expect(promptNames).toContain("runInstall");
+    // withReact removed — encoded in type
+    expect(promptNames).not.toContain("withReact");
   });
 
   it("generates expected files for tool-ts package", () => {
@@ -196,7 +227,6 @@ describe("package generator", () => {
       name: "@canonical/my-tool",
       type: "tool-ts",
       description: "My tool",
-      withReact: false,
       withStorybook: false,
       withCli: false,
       runInstall: false,
@@ -209,15 +239,16 @@ describe("package generator", () => {
       .filter((e) => e._tag === "WriteFile")
       .map((e) => (e as { path: string }).path);
 
-    // Check core files are created
     expect(writePaths.some((p) => p.endsWith("package.json"))).toBe(true);
     expect(writePaths.some((p) => p.endsWith("tsconfig.json"))).toBe(true);
     expect(writePaths.some((p) => p.endsWith("biome.json"))).toBe(true);
     expect(writePaths.some((p) => p.endsWith("index.ts"))).toBe(true);
     expect(writePaths.some((p) => p.endsWith("README.md"))).toBe(true);
 
-    // Check CLI is NOT created when withCli is false
+    // No CLI when withCli is false
     expect(writePaths.some((p) => p.endsWith("cli.ts"))).toBe(false);
+    // No vite config for tool-ts
+    expect(writePaths.some((p) => p.endsWith("vite.config.ts"))).toBe(false);
   });
 
   it("generates CLI file when withCli is true", () => {
@@ -225,7 +256,6 @@ describe("package generator", () => {
       name: "@canonical/my-cli",
       type: "tool-ts",
       description: "My CLI",
-      withReact: false,
       withStorybook: false,
       withCli: true,
       runInstall: false,
@@ -246,7 +276,6 @@ describe("package generator", () => {
       name: "@canonical/my-styles",
       type: "css",
       description: "My styles",
-      withReact: false,
       withStorybook: false,
       withCli: false,
       runInstall: false,
@@ -259,13 +288,11 @@ describe("package generator", () => {
       .filter((e) => e._tag === "WriteFile")
       .map((e) => (e as { path: string }).path);
 
-    // Check CSS-specific files
     expect(writePaths.some((p) => p.endsWith("index.css"))).toBe(true);
     expect(writePaths.some((p) => p.endsWith("package.json"))).toBe(true);
     expect(writePaths.some((p) => p.endsWith("biome.json"))).toBe(true);
     expect(writePaths.some((p) => p.endsWith("README.md"))).toBe(true);
 
-    // Check no TypeScript files for CSS package
     expect(writePaths.some((p) => p.endsWith("index.ts"))).toBe(false);
     expect(writePaths.some((p) => p.endsWith("tsconfig.json"))).toBe(false);
   });
@@ -275,7 +302,6 @@ describe("package generator", () => {
       name: "@canonical/my-pkg",
       type: "tool-ts",
       description: "",
-      withReact: false,
       withStorybook: false,
       withCli: false,
       runInstall: false,
@@ -288,8 +314,49 @@ describe("package generator", () => {
       .filter((e) => e._tag === "MakeDir")
       .map((e) => (e as { path: string }).path);
 
-    // Directory should be the short name (without scope)
     expect(mkdirPaths.some((p) => p === "my-pkg")).toBe(true);
     expect(mkdirPaths.some((p) => p.endsWith("src"))).toBe(true);
+  });
+
+  it("generates expected files for react-library", () => {
+    const answers: PackageAnswers = {
+      name: "@canonical/my-react-lib",
+      type: "react-library",
+      description: "My React library",
+      withStorybook: false,
+      withCli: false,
+      runInstall: false,
+    };
+
+    const result = dryRun(generator.generate(answers));
+    const writePaths = result.effects
+      .filter((e) => e._tag === "WriteFile")
+      .map((e) => (e as { path: string }).path);
+
+    expect(writePaths.some((p) => p.endsWith("package.json"))).toBe(true);
+    expect(writePaths.some((p) => p.endsWith("tsconfig.json"))).toBe(true);
+    expect(writePaths.some((p) => p.endsWith("biome.json"))).toBe(true);
+    expect(writePaths.some((p) => p.endsWith("vite.config.ts"))).toBe(true);
+    expect(writePaths.some((p) => p.endsWith("vitest.setup.ts"))).toBe(true);
+    expect(writePaths.some((p) => p.endsWith("index.ts"))).toBe(true);
+    expect(writePaths.some((p) => p.endsWith("README.md"))).toBe(true);
+    expect(writePaths.some((p) => p.endsWith("index.css"))).toBe(false);
+  });
+
+  it("generates React storybook with assets/public dirs", () => {
+    const answers: PackageAnswers = {
+      name: "@canonical/my-react-lib",
+      type: "react-library",
+      description: "",
+      withStorybook: true,
+      withCli: false,
+      runInstall: false,
+    };
+    const result = dryRun(generator.generate(answers));
+    const mkdirPaths = result.effects
+      .filter((e) => e._tag === "MakeDir")
+      .map((e) => (e as { path: string }).path);
+    expect(mkdirPaths.some((p) => p.endsWith("assets"))).toBe(true);
+    expect(mkdirPaths.some((p) => p.endsWith("public"))).toBe(true);
   });
 });

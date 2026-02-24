@@ -16,7 +16,7 @@ import {
 // Types
 // =============================================================================
 
-export type PackageType = "tool-ts" | "library" | "css";
+export type PackageType = "tool-ts" | "library" | "react-library" | "css";
 
 export type PackageManager = "bun" | "npm" | "yarn" | "pnpm";
 
@@ -27,11 +27,9 @@ export interface PackageAnswers {
   type: PackageType;
   /** Package description */
   description: string;
-  /** Include React dependencies */
-  withReact: boolean;
   /** Include Storybook setup */
   withStorybook: boolean;
-  /** Include CLI binary entry point */
+  /** Include CLI binary entry point (tool-ts only) */
   withCli: boolean;
   /** Run package manager install after creation */
   runInstall: boolean;
@@ -201,10 +199,10 @@ export const detectPackageManager = (cwd: string): Task<PackageManager> => {
 // =============================================================================
 
 /**
- * Get the webarchitect ruleset based on package type and options
+ * Get the webarchitect ruleset based on package type
  */
-export const getRuleset = (type: PackageType, withReact: boolean): string => {
-  if (withReact) return "package-react";
+export const getRuleset = (type: PackageType): string => {
+  if (type === "react-library") return "package-react";
   if (type === "css") return "base"; // CSS packages use base ruleset
   return type; // "tool-ts" or "library"
 };
@@ -244,6 +242,14 @@ export const getEntryPoints = (
       needsBuild: false,
     };
   }
+  if (type === "react-library") {
+    return {
+      module: "dist/esm/index.js",
+      types: "dist/types/index.d.ts",
+      files: ["dist"],
+      needsBuild: true,
+    };
+  }
   // library
   return {
     module: "dist/esm/index.js",
@@ -251,6 +257,89 @@ export const getEntryPoints = (
     files: ["dist"],
     needsBuild: true,
   };
+};
+
+/**
+ * Get devDependencies for a package type.
+ * Returned object is already sorted alphabetically and ready for JSON rendering.
+ */
+export const getDevDependencies = (
+  type: PackageType,
+  opts: { monorepoVersion: string | undefined; withStorybook: boolean },
+): Record<string, string> => {
+  const mv = opts.monorepoVersion ?? "0.1.0";
+
+  if (type === "css") {
+    return {
+      "@biomejs/biome": "2.3.11",
+      "@canonical/biome-config": mv,
+    };
+  }
+
+  if (type === "react-library") {
+    return {
+      "@biomejs/biome": "2.3.11",
+      "@canonical/biome-config": mv,
+      "@canonical/typescript-config-react": mv,
+      "@canonical/webarchitect": mv,
+      "@testing-library/jest-dom": "^6.0.0",
+      "@testing-library/react": "^16.0.0",
+      "@types/react": "^19.0.0",
+      "@types/react-dom": "^19.0.0",
+      "@vitejs/plugin-react": "^4.0.0",
+      ...(opts.withStorybook
+        ? {
+            "@canonical/storybook-config": mv,
+            storybook: "^10.1.11",
+            "@storybook/react": "^10.1.11",
+          }
+        : {}),
+      react: "^19.0.0",
+      "react-dom": "^19.0.0",
+      copyfiles: "^2.4.1",
+      jsdom: "^28.0.0",
+      typescript: "^5.9.3",
+      vite: "^7.3.1",
+      "vite-tsconfig-paths": "^5.0.0",
+      vitest: "^3.2.4",
+    };
+  }
+
+  // tool-ts and library
+  return {
+    "@biomejs/biome": "2.3.11",
+    "@canonical/biome-config": mv,
+    "@canonical/typescript-config": mv,
+    ...(opts.withStorybook
+      ? {
+          "@chromatic-com/storybook": "^5.0.0",
+          "@canonical/storybook-config": mv,
+          storybook: "^10.1.11",
+        }
+      : {}),
+    "bun-types": "^1.0.0",
+    typescript: "^5.9.3",
+    vitest: "^3.2.4",
+  };
+};
+
+/**
+ * Get peerDependencies for a package type, or null if none apply.
+ */
+export const getPeerDependencies = (
+  type: PackageType,
+  opts: { monorepoVersion: string | undefined },
+): Record<string, string> | null => {
+  const mv = opts.monorepoVersion ?? "0.1.0";
+
+  if (type === "react-library") {
+    return {
+      "@canonical/styles": mv,
+      react: "^19.0.0",
+      "react-dom": "^19.0.0",
+    };
+  }
+  return null;
 };
 
 // =============================================================================
@@ -280,12 +369,16 @@ export interface TemplateContext {
   needsBuild: boolean;
   /** Webarchitect ruleset */
   ruleset: string;
-  /** Include React */
+  /** Whether this is a React library (derived from type === "react-library") */
   withReact: boolean;
   /** Include Storybook */
   withStorybook: boolean;
   /** Include CLI */
   withCli: boolean;
+  /** devDependencies for package.json */
+  devDependencies: Record<string, string>;
+  /** peerDependencies for package.json, or null if none */
+  peerDependencies: Record<string, string> | null;
   /** Monorepo version (if applicable) */
   monorepoVersion?: string;
   /** Generator name */
@@ -319,10 +412,17 @@ export const createTemplateContext = (
     types: entryPoints.types,
     files: entryPoints.files,
     needsBuild: entryPoints.needsBuild,
-    ruleset: getRuleset(answers.type, answers.withReact),
-    withReact: answers.withReact,
+    ruleset: getRuleset(answers.type),
+    withReact: answers.type === "react-library",
     withStorybook: answers.withStorybook,
     withCli: answers.withCli,
+    devDependencies: getDevDependencies(answers.type, {
+      monorepoVersion: monorepoInfo.version,
+      withStorybook: answers.withStorybook,
+    }),
+    peerDependencies: getPeerDependencies(answers.type, {
+      monorepoVersion: monorepoInfo.version,
+    }),
     monorepoVersion: monorepoInfo.version,
     generatorName: "@canonical/summon-package",
     generatorVersion: "0.1.0",

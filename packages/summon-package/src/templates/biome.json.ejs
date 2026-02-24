@@ -1,6 +1,12 @@
 {
   "extends": ["@canonical/biome-config"],
   "files": {
-    "includes": ["src", "*.json"]
+    "includes": [
+      "src",
+<%_ if (withReact) { _%>
+      "vite.config.ts",
+<%_ } _%>
+      "*.json"
+    ]
   }
 }
