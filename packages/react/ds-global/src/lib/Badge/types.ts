@@ -1,5 +1,3 @@
-/* @canonical/generator-ds 0.10.0-experimental.2 */
-
 import type { ModifierFamily } from "@canonical/ds-types";
 import type { HumanizeNumberOptions, PluralizeOptions } from "@canonical/utils";
 import type { HTMLAttributes } from "react";

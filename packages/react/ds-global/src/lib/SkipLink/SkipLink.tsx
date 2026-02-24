@@ -1,5 +1,3 @@
-/* @canonical/generator-ds 0.10.0-experimental.4 */
-
 import type React from "react";
 import type { SkipLinkProps } from "./types.js";
 import "./styles.css";
@@ -14,7 +12,7 @@ const componentCssClassName = "ds skip-link";
  * `SkipLink` should be placed near the top of your document body, before the `<main>` element.
  * The `<main>` element should have a `tabindex` of `-1` to prevent it from receiving focus from the keyboard without using the skip link.
  *
- * @implements syntax:core:component:skiplink:1.0.0
+ * @implements ds:site.pattern.skip_link
  */
 const SkipLink = ({
   className,

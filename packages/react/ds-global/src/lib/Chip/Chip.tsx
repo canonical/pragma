@@ -1,4 +1,3 @@
-/* @canonical/generator-canonical-ds 0.4.0-experimental.0 */
 import type React from "react";
 import "./styles.css";
 import type { ChipPropsType } from "./types.js";
@@ -6,8 +5,10 @@ import type { ChipPropsType } from "./types.js";
 const componentCssClassName = "ds chip";
 
 /**
- * description of the Chip component
- * @returns {React.ReactElement} - Rendered Chip
+ * A chip is a compact, interactive component used to represent an attribute,
+ * entity, or filter while facilitating secondary actions.
+ *
+ * @implements ds:global.component.chip
  */
 const Chip = ({
   appearance = "neutral",

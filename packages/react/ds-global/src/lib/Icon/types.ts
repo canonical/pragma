@@ -1,5 +1,3 @@
-/* @canonical/generator-ds 0.10.0-experimental.2 */
-
 import type { IconName } from "@canonical/ds-assets";
 import type { SVGAttributes } from "react";
 

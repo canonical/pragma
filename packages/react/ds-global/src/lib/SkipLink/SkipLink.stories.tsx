@@ -1,5 +1,3 @@
-/* @canonical/generator-ds 0.10.0-experimental.4 */
-
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import * as decorators from "storybook/decorators.js";
 import { expect } from "storybook/test";

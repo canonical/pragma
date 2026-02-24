@@ -1,5 +1,3 @@
-/* @canonical/generator-canonical-ds 0.4.0-experimental.0 */
-
 // Needed for function-based story, safe to remove otherwise
 // import type { ChipProps } from './types.js'
 import type { Meta, StoryObj } from "@storybook/react-vite";

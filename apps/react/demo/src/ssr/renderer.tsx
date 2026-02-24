@@ -1,9 +1,19 @@
+import fs from "node:fs/promises";
+import path from "node:path";
 import { JSXRenderer } from "@canonical/react-ssr/renderer";
-import htmlString from "../../dist/client/index.html?raw";
 import EntryServer from "./entry-server.js";
 
-const Renderer = new JSXRenderer(EntryServer, {
-  htmlString,
-});
+export const htmlString = await fs.readFile(
+  path.join(process.cwd(), "dist", "client", "index.html"),
+  "utf-8",
+);
 
-export default Renderer.render;
+const Renderer = new JSXRenderer(
+  EntryServer,
+  {},
+  {
+    htmlString,
+  },
+);
+
+export default Renderer.renderToString;

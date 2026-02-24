@@ -1,5 +1,3 @@
-/* @canonical/generator-ds 0.10.0-experimental.2 */
-
 import type React from "react";
 import { Content, Header, Image, Thumbnail } from "./common/index.js";
 import type { CardProps } from "./types.js";
@@ -32,7 +30,6 @@ const Card = ({
   </div>
 );
 
-Card.displayName = "Card";
 Card.Content = Content;
 Card.Header = Header;
 Card.Image = Image;

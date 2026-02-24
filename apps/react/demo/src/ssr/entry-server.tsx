@@ -1,27 +1,7 @@
-import type {
-  ReactServerEntrypointComponent,
-  RendererServerEntrypointProps,
-} from "@canonical/react-ssr/renderer";
-import Application from "../Application.js";
+import type { ServerEntrypoint } from "@canonical/react-ssr/renderer";
+import { type InitialData, default as Shell } from "./Shell.js";
 
-const EntryServer: ReactServerEntrypointComponent<
-  RendererServerEntrypointProps
-> = ({ lang = "en", scriptTags, linkTags }: RendererServerEntrypointProps) => {
-  return (
-    <html lang={lang}>
-      <head>
-        <title>Canonical React Vite Boilerplate</title>
-        {scriptTags}
-        {linkTags}
-      </head>
-      <body>
-        {/** biome-ignore lint/correctness/useUniqueElementIds: necessary for server-side rendering */}
-        <div id="root">
-          <Application />
-        </div>
-      </body>
-    </html>
-  );
-};
+// entry-server page must match exactly the hydrated page in entry-client
+const EntryServer: ServerEntrypoint<InitialData> = Shell;
 
 export default EntryServer;

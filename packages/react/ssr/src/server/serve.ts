@@ -15,7 +15,7 @@ import type { RenderHandler } from "../renderer/index.js";
  * import htmlString from "../../dist/client/index.html?raw";
  * import EntryServer from "./entry-server.js";
  *
- * // `EntryServer` is an instance of `@canonical/react-ssr/renderer/ReactServerEntrypointComponent`
+ * // `EntryServer` is an instance of `@canonical/react-ssr/renderer/ServerEntrypoint`
  * const Renderer = new JSXRenderer(EntryServer, {
  *   htmlString,
  * });

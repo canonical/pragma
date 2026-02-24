@@ -1,5 +1,3 @@
-/* @canonical/generator-ds 0.10.0-experimental.2 */
-
 import type { Meta, StoryFn, StoryObj } from "@storybook/react-vite";
 import * as decorators from "../../storybook/decorators.js";
 import Component from "./Card.js";

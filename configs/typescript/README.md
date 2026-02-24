@@ -56,4 +56,4 @@ Best Practices:
 
 This approach maintains compatibility with both Node.js and bundlers.
 
-In other words, by using NodeNext, we are aiming at compatibility with the ES Module specification, and this requires importing explicitly `mymodule/index.js` files instead of simply `mymodule/`
+In other words, by using NodeNext, we are aiming at compatibility with the ES Module specification, and this requires importing explicitly `mymodule/index.js` files instead of simply `mymodule/`.

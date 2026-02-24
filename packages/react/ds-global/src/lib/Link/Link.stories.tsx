@@ -1,5 +1,3 @@
-/* @canonical/generator-ds 0.10.0-experimental.2 */
-
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import type { ReactNode } from "react";
 import Component from "./Link.js";
