@@ -1,0 +1,42 @@
+.ds.radio {
+  position: relative;
+  cursor: pointer;
+  appearance: none;
+  flex-grow: 0;
+  flex-shrink: 0;
+  outline-offset: 1px;
+
+  width: var(--lp-dimension-size-xs);
+  height: var(--lp-dimension-size-xs);
+  border-radius: var(--lp-dimension-radius-full);
+  border: var(--lp-dimension-stroke-thickness-default) solid
+    var(--lp-color-border-high-contrast);
+  background-color: var(--lp-color-background-default);
+  transition: background-color var(--lp-transition-duration-brisk)
+    var(--lp-transition-timing-ease-out);
+
+  &::after {
+    content: "";
+    position: absolute;
+    inset: calc(var(--lp-dimension-stroke-thickness-default) * -1);
+    border-radius: var(--lp-dimension-radius-full);
+    border: calc(var(--lp-dimension-size-xs) * 0.3125) solid transparent;
+    transition: border-color var(--lp-transition-duration-brisk)
+      var(--lp-transition-timing-ease-out);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: var(--lp-opacity-muted);
+  }
+
+  &:hover:not(:disabled) {
+    background-color: var(--lp-color-background-hover);
+  }
+
+  &:checked {
+    &::after {
+      border-color: var(--lp-color-text-link-default);
+    }
+  }
+}
