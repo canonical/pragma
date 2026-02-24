@@ -1,0 +1,63 @@
+.ds.checkbox {
+  position: relative;
+  cursor: pointer;
+  appearance: none;
+  flex-grow: 0;
+  flex-shrink: 0;
+  outline-offset: 1px;
+
+  width: var(--lp-dimension-size-xs);
+  height: var(--lp-dimension-size-xs);
+  border: var(--lp-dimension-stroke-thickness-default) solid
+    var(--lp-color-border-high-contrast);
+  background-color: var(--lp-color-background-default);
+  transition:
+    background-color var(--lp-transition-duration-brisk)
+      var(--lp-transition-timing-ease-out),
+    border-color var(--lp-transition-duration-brisk)
+      var(--lp-transition-timing-ease-out);
+
+  &::after {
+    content: "";
+    position: absolute;
+    inset: calc(var(--lp-dimension-size-xs) * 0.1);
+    display: none;
+    background-color: var(--lp-color-background-default);
+  }
+
+  &:checked {
+    background-color: var(--lp-color-text-link-default);
+    border-color: var(--lp-color-text-link-default);
+
+    &::after {
+      display: block;
+      clip-path: polygon(
+        2.86% 50%,
+        38.21% 85.36%,
+        97.14% 26.43%,
+        85.36% 14.64%,
+        38.21% 61.78%,
+        14.64% 38.22%
+      );
+    }
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: var(--lp-opacity-muted);
+  }
+
+  &:hover:not(:disabled):not(:checked):not(:indeterminate) {
+    background-color: var(--lp-color-background-hover);
+  }
+
+  &:indeterminate {
+    background-color: var(--lp-color-text-link-default);
+    border-color: var(--lp-color-text-link-default);
+
+    &::after {
+      display: block;
+      clip-path: inset(40% 0);
+    }
+  }
+}
