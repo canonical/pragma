@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.16.0-experimental.0](https://github.com/canonical/ds25/compare/v0.15.1...v0.16.0-experimental.0) (2026-02-24)
+
+
+### Features
+
+* **svelte-ds-app-launchpad:** upstream Chip component and update styles ([#423](https://github.com/canonical/ds25/issues/423)) ([26d1047](https://github.com/canonical/ds25/commit/26d104771a0df4ece538bd268b2141c30267b60c))
+
+
+
+
+
 ## [0.15.1](https://github.com/canonical/ds25/compare/v0.15.0...v0.15.1) (2026-02-23)
 
 
