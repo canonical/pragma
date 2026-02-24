@@ -1,0 +1,10 @@
+.dense {
+  --lp-dimension-padding-block-context: var(--lp-dimension-spacing-block-minimum);
+  --lp-dimension-padding-inline-context: var(--lp-dimension-spacing-inline-s);
+}
+
+.compact {
+  --lp-dimension-padding-block-context: var(--lp-dimension-spacing-block-minimum);
+  --lp-dimension-padding-inline-context: var(--lp-dimension-spacing-inline-xs);
+  --lp-typography-context: var(--lp-typography-paragraph-s);
+}

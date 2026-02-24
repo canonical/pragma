@@ -6,3 +6,4 @@
  */
 
 export * from "./components/index.js";
+export * from "./modifier-families/index.js";
