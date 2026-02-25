@@ -7,7 +7,10 @@ import { describe, expect, it } from "vitest";
 import Component from "./Badge.svelte";
 
 describe("Badge SSR", () => {
-  const baseProps = { value: 42 } satisfies ComponentProps<typeof Component>;
+  const baseProps = {
+    value: 42,
+    "data-testid": "badge",
+  } satisfies ComponentProps<typeof Component>;
 
   describe("basics", () => {
     it("doesn't throw", () => {
@@ -56,35 +59,37 @@ describe("Badge SSR", () => {
 
   describe("Display value", () => {
     it("displays the capped variant by default", () => {
-      const page = render(Component, { props: { value: 10000 } });
+      const page = render(Component, {
+        props: { ...baseProps, value: 10000 },
+      });
       expect(componentLocator(page).textContent).toBe("999+");
     });
 
     describe("capped", () => {
       it("displays 0 for negative values", () => {
         const page = render(Component, {
-          props: { value: -1, variant: "capped" },
+          props: { ...baseProps, value: -1, variant: "capped" },
         });
         expect(componentLocator(page).textContent).toBe("0");
       });
 
       it("rounds to the nearest integer", () => {
         const page = render(Component, {
-          props: { value: 42.6, variant: "capped" },
+          props: { ...baseProps, value: 42.6, variant: "capped" },
         });
         expect(componentLocator(page).textContent).toBe("43");
       });
 
       it("displays the values up to 999", () => {
         const page = render(Component, {
-          props: { value: 999, variant: "capped" },
+          props: { ...baseProps, value: 999, variant: "capped" },
         });
         expect(componentLocator(page).textContent).toBe("999");
       });
 
       it("caps the value at 999", () => {
         const page = render(Component, {
-          props: { value: 10000, variant: "capped" },
+          props: { ...baseProps, value: 10000, variant: "capped" },
         });
         expect(componentLocator(page).textContent).toBe("999+");
       });
@@ -93,14 +98,14 @@ describe("Badge SSR", () => {
     describe("rounded", () => {
       it("displays 0 for negative values", () => {
         const page = render(Component, {
-          props: { value: -1, variant: "rounded" },
+          props: { ...baseProps, value: -1, variant: "rounded" },
         });
         expect(componentLocator(page).textContent).toBe("0");
       });
 
       it("rounds to the nearest integer", () => {
         const page = render(Component, {
-          props: { value: 42.6, variant: "rounded" },
+          props: { ...baseProps, value: 42.6, variant: "rounded" },
         });
         expect(componentLocator(page).textContent).toBe("43");
       });
@@ -116,7 +121,7 @@ describe("Badge SSR", () => {
         [1_234_567_890_123, "1.2T"],
       ])("displays %d as %s", (input, expected) => {
         const page = render(Component, {
-          props: { value: input, variant: "rounded" },
+          props: { ...baseProps, value: input, variant: "rounded" },
         });
         expect(componentLocator(page).textContent).toBe(expected);
       });

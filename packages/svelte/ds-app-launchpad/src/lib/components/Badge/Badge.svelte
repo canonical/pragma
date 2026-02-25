@@ -33,11 +33,7 @@
   });
 </script>
 
-<span
-  class={[componentCssClassName, className, severity]}
-  data-testid="badge"
-  {...rest}
->
+<span class={[componentCssClassName, className, severity]} {...rest}>
   {displayValue}
 </span>
 
