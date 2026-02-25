@@ -916,6 +916,7 @@
       "devDependencies": {
         "@biomejs/biome": "2.3.11",
         "@canonical/biome-config": "^0.15.0",
+        "@canonical/ds-types": "^0.15.0",
         "@canonical/styles": "^0.15.0",
         "@canonical/typescript-config": "^0.15.0",
         "@canonical/webarchitect": "^0.15.0",

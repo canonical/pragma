@@ -1,0 +1,24 @@
+/* ==========================================================================
+   Example Component Styles
+   ========================================================================== */
+
+:host {
+  /* Examplification of component variable defaults */
+  --example-color-background: var(--color-background-default, #f7f7f0);
+  --example-color-border: var(--color-border-default, #666);
+  --example-padding: var(--spacing-default, 0.75rem);
+  --example-border-radius: var(--border-radius-default, 0.25rem);
+  --example-border-width: 1px;
+
+  display: inline-block;
+}
+
+.ds.example {
+  padding: var(--example-padding);
+  background-color: var(--example-color-background);
+}
+
+.ds.example.outlined {
+  border: var(--example-border-width) solid var(--example-color-border);
+  border-radius: var(--example-border-radius);
+}

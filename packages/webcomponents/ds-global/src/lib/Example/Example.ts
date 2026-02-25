@@ -1,23 +1,51 @@
 import { html, LitElement } from "lit";
-import { customElement } from "lit/decorators.js";
+import { customElement, property } from "lit/decorators.js";
+import styles from "./styles.css";
+import type { BaseProps } from "./types.js";
+
+const componentCssClassName = "ds example";
 
 /**
- * Basic example web component.
+ * Example component demonstrating the structure and patterns for
+ * Lit web components in this package.
  *
- * This serves as a minimal example to demonstrate the structure
- * of a Lit web component in this package. It should be removed once real
- * components are implemented.
+ * Shows how to:
+ * - Use separate styles.css and types.ts files
+ * - Handle properties with decorators
+ * - Use slots for content projection
  *
  * @example
  * ```html
- * <my-element></my-element>
+ * <ds-example label="Click me"></ds-example>
  * ```
+ *
+ * @implements ds:global.component.example
  */
-@customElement("my-element")
-export class MyElement extends LitElement {
+@customElement("ds-example")
+export class DsExample extends LitElement implements BaseProps {
+  static styles = styles;
+
+  /**
+   * The label text to display
+   */
+  @property({ type: String })
+  label = "Example";
+
+  /**
+   * Display variant
+   */
+  @property({ type: String })
+  variant?: BaseProps["variant"];
+
   render() {
+    const classes = [componentCssClassName, this.variant]
+      .filter(Boolean)
+      .join(" ");
+
     return html`
-    <p>This is a web component</p>
+      <div class="${classes}">
+        <slot>${this.label}</slot>
+      </div>
     `;
   }
 }

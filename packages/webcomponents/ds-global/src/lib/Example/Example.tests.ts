@@ -1,23 +1,76 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import type { DsExample } from "./Example.js";
 import "./Example.js";
 
-describe("MyElement component", () => {
-  let elem: HTMLElement;
+describe("DsExample component", () => {
+  let elem: DsExample;
 
   beforeEach(() => {
-    elem = document.createElement("my-element");
+    elem = document.createElement("ds-example") as DsExample;
     document.body.appendChild(elem);
-  });
-
-  it("should render component", async () => {
-    await customElements.whenDefined("my-element");
-
-    const paragraph = elem.shadowRoot?.querySelector("p");
-    expect(paragraph).toBeTruthy();
-    expect(paragraph?.textContent?.trim()).toBe("This is a web component");
   });
 
   afterEach(() => {
     elem.remove();
+  });
+
+  it("should render component", async () => {
+    await customElements.whenDefined("ds-example");
+
+    const container = elem.shadowRoot?.querySelector(".ds.example");
+    expect(container).toBeTruthy();
+  });
+
+  it("should have correct tag name", () => {
+    expect(elem.tagName.toLowerCase()).toBe("ds-example");
+  });
+
+  it("should render default label", async () => {
+    await customElements.whenDefined("ds-example");
+    await elem.updateComplete;
+
+    const container = elem.shadowRoot?.querySelector(".ds.example");
+    expect(container?.textContent?.trim()).toBe("Example");
+  });
+
+  it("should render custom label", async () => {
+    elem.label = "Custom Label";
+    await elem.updateComplete;
+
+    const container = elem.shadowRoot?.querySelector(".ds.example");
+    expect(container?.textContent?.trim()).toBe("Custom Label");
+  });
+
+  it("should apply variant class", async () => {
+    elem.variant = "outlined";
+    await elem.updateComplete;
+
+    const container = elem.shadowRoot?.querySelector(".ds.example");
+    expect(container?.classList.contains("outlined")).toBe(true);
+  });
+
+  it("should not apply variant class when undefined", async () => {
+    await elem.updateComplete;
+
+    const container = elem.shadowRoot?.querySelector(".ds.example");
+    expect(container?.classList.contains("outlined")).toBe(false);
+  });
+
+  it("should render slotted content", async () => {
+    const slottedText = document.createTextNode("Slotted content");
+    elem.appendChild(slottedText);
+    await elem.updateComplete;
+
+    const slot = elem.shadowRoot?.querySelector("slot");
+    expect(slot).toBeTruthy();
+  });
+
+  it("should update label when attribute changes", async () => {
+    elem.setAttribute("label", "Updated Label");
+    await elem.updateComplete;
+
+    expect(elem.label).toBe("Updated Label");
+    const container = elem.shadowRoot?.querySelector(".ds.example");
+    expect(container?.textContent?.trim()).toBe("Updated Label");
   });
 });

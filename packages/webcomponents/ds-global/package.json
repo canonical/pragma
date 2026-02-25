@@ -29,7 +29,7 @@
   },
   "homepage": "https://github.com/canonical/pragma#readme",
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
+    "build": "vite build && tsc --emitDeclarationOnly -p tsconfig.build.json",
     "build:all": "bun run build && bun run build:storybook",
     "build:storybook": "storybook build",
     "check": "bun run check:biome && bun run check:ts && bun run check:webarchitect",
@@ -39,7 +39,8 @@
     "check:ts": "tsc --noEmit",
     "check:webarchitect": "webarchitect library",
     "storybook": "storybook dev -p 6006 --no-open --host 0.0.0.0",
-    "test": "vitest run"
+    "test": "bun run test:vitest",
+    "test:vitest": "vitest run"
   },
   "dependencies": {
     "@canonical/storybook-config": "^0.15.0",
@@ -48,6 +49,7 @@
   "devDependencies": {
     "@biomejs/biome": "2.3.11",
     "@canonical/biome-config": "^0.15.0",
+    "@canonical/ds-types": "^0.15.0",
     "@canonical/styles": "^0.15.0",
     "@canonical/typescript-config": "^0.15.0",
     "@canonical/webarchitect": "^0.15.0",
