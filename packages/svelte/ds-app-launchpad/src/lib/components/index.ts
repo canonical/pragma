@@ -2,6 +2,7 @@ export * from "./Badge/index.js";
 export * from "./Button/index.js";
 export * from "./Checkbox/index.js";
 export * from "./Chip/index.js";
+export * from "./Link/index.js";
 export * from "./NumberInput/index.js";
 export * from "./Radio/index.js";
 export * from "./Spinner/index.js";
