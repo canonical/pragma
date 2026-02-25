@@ -6,6 +6,17 @@ import { createFilter } from "vite";
  */
 export interface LitCssOptions {
   /**
+   * File pattern(s) to include for transformation.
+   * Defaults to all CSS files if not specified.
+   *
+   * @example
+   * ```ts
+   * include: /\/src\// // Only transform CSS files inside src/
+   * ```
+   */
+  include?: string | RegExp | (string | RegExp)[];
+
+  /**
    * File pattern(s) to exclude from transformation.
    * Useful for excluding global styles, themes, or index.css.
    *
@@ -41,11 +52,11 @@ export interface LitCssOptions {
  * ```
  */
 export function litCss(options: LitCssOptions = {}): VitePlugin {
-  const { exclude, verbose = false } = options;
+  const { include, exclude, verbose = false } = options;
 
-  // Create a filter function for .css files only, respecting exclude patterns
+  // Create a filter function for .css files only, respecting include/exclude patterns
   const cssFileRE = /\.css$/;
-  const filter = createFilter(cssFileRE, exclude);
+  const filter = createFilter(include ?? cssFileRE, exclude);
 
   const log = (...args: unknown[]) => {
     if (verbose) {
