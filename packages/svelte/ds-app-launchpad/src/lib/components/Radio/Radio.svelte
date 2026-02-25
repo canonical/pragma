@@ -14,7 +14,7 @@
 
   const onchange: typeof onchangeProp = (e) => {
     onchangeProp?.(e);
-    if (value && (e.target as HTMLInputElement).checked) {
+    if (value !== undefined && e.currentTarget.checked) {
       group = value;
     }
   };
@@ -30,7 +30,7 @@
 />
 
 <!-- @component
-`Radio` is a input control for selecting a single option from a set.
+`Radio` is an input control for selecting a single option from a set.
 
 As an input control, it requires a `<label>` associated with it.
 

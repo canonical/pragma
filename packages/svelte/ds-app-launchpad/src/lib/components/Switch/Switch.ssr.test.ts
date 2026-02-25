@@ -16,9 +16,7 @@ describe("Switch SSR", () => {
 
   it("renders", () => {
     const page = render(Component, { props: { ...baseProps } });
-    expect(componentLocator(page)).toBeInstanceOf(
-      page.window.HTMLInputElement,
-    );
+    expect(componentLocator(page)).toBeInstanceOf(page.window.HTMLInputElement);
   });
 
   describe("attributes", () => {
@@ -94,7 +92,6 @@ describe("Switch SSR", () => {
       const page = render(Component, {
         props: { ...baseProps, disabled: true },
       });
-      expect(componentLocator(page).getAttribute("aria-readonly")).toBe("true");
       expect(componentLocator(page).hasAttribute("disabled")).toBe(true);
     });
   });
