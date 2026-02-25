@@ -7,3 +7,11 @@
 .docs-story {
   background-color: var(--lp-color-background-default);
 }
+
+.row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: .5rem;
+  flex-wrap: wrap;
+}
