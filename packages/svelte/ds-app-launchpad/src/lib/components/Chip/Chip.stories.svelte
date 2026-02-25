@@ -5,6 +5,7 @@
   import { fn } from "storybook/test";
   import { MODIFIER_FAMILIES } from "../../modifier-families";
   import { ArchiveIcon } from "@canonical/svelte-icons";
+  import { Badge } from "../Badge/index.js";
 
   const { Story } = defineMeta({
     title: "Components/Chip",
@@ -73,8 +74,7 @@
   {#snippet template(args)}
     <Chip {...args}>
       {#snippet badge()}
-        <!-- TODO: uncomment once Badge is upstreamed -->
-        <!-- <Badge value={42} /> -->
+        <Badge value={42} />
       {/snippet}
     </Chip>
   {/snippet}
@@ -82,7 +82,7 @@
 
 <Story name="Read-only">
   {#snippet template(args)}
-    {#each [undefined, ...MODIFIER_FAMILIES.severity] as severity (severity)}
+    {#each MODIFIER_FAMILIES.severity as severity (severity)}
       <Chip
         {...args}
         lead="Severity"
@@ -90,10 +90,9 @@
         readonly
         {severity}
       >
-        <!-- TODO: uncomment once Badge is upstreamed -->
-        <!-- {#snippet badge()} -->
-        <!-- <Badge value={420} /> -->
-        <!-- {/snippet} -->
+        {#snippet badge()}
+          <Badge value={420} />
+        {/snippet}
       </Chip>
       <br />
       <br />
@@ -116,10 +115,9 @@
       {#snippet icon()}
         <ArchiveIcon />
       {/snippet}
-      <!-- TODO: uncomment once Badge is upstreamed -->
-      <!-- {#snippet badge()} -->
-      <!-- <Badge value={420} /> -->
-      <!-- {/snippet} -->
+      {#snippet badge()}
+        <Badge value={420} />
+      {/snippet}
     </Chip>
   {/snippet}
 </Story>
