@@ -44,14 +44,17 @@
   {/snippet}
 </Story>
 
-<Story name="Severities" args={{ value: 42 }}>
+<Story
+  name="Severities"
+  argTypes={{ severity: { table: { disable: true } } }}
+  args={{ value: 42 }}
+>
   {#snippet template(args)}
-    {#each [undefined, ...MODIFIER_FAMILIES.severity] as severity (severity)}
+    {#each MODIFIER_FAMILIES.severity as severity (severity)}
       <div class="row">
         <Badge {...args} {severity} />
         {severity || "default"}
       </div>
-      <br />
     {/each}
   {/snippet}
 </Story>
