@@ -10,8 +10,8 @@ export interface BadgeProps
    */
   value: number;
   /**
-   * - `capped` should be use whenever the amount of items is only relevant for small values. If the `value` is larger than 999, it will be displayed as `999+`.
-   * - `rounded` should be used whenever differences between large amounts of items are relevant. Values larger than 999 will be displayed as `1k`, `2.5M`, etc.
+   * - `capped` should be used whenever the amount of items is only relevant for small values. If the `value` is larger than 999, it will be displayed as `999+`.
+   * - `rounded` should be used whenever differences between large amounts of items are relevant. Values larger than 999 will be displayed as `1K`, `2.5M`, etc.
    *
    * @default "capped"
    */
