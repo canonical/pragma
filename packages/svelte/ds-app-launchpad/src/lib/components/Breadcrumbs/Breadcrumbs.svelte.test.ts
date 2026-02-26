@@ -7,6 +7,7 @@ import { page as pageContext, userEvent } from "vitest/browser";
 import { render } from "vitest-browser-svelte";
 import type { RenderResult } from "vitest-browser-svelte";
 import Component from "./Breadcrumbs.svelte";
+import type { Segment } from "./types.js";
 
 describe("Breadcrumbs component", () => {
   const baseProps = {
@@ -153,7 +154,7 @@ describe("Breadcrumbs component", () => {
 
       await expectAreCollapsed(page);
 
-      // Make sure the hidden segments are not accessible and all links are in the document
+      // Make sure the collapsed segments are not accessible and all links are in the document
       expect(page.getByRole("link").elements()).toHaveLength(
         collapseProps.segments.length,
       );
@@ -259,9 +260,7 @@ describe("Breadcrumbs component", () => {
     });
 
     describe("focus management", () => {
-      // WebKit on macOS doesn't include <a> in the tab order by default (TabsToLinks preference).
-      // See https://github.com/microsoft/playwright/issues/5609
-      it("allows focusing links with tab key", { todo: /AppleWebKit\/[\d.]+.*Version\//.test(navigator.userAgent) }, async () => {
+      it("allows focusing links with tab key", async () => {
         const page = render(Component, { ...baseProps });
 
         const firstLink = page.getByRole("link", { name: "Home" });
@@ -281,9 +280,7 @@ describe("Breadcrumbs component", () => {
           .toHaveFocus();
       });
 
-      // WebKit on macOS doesn't include <a> in the tab order by default (TabsToLinks preference).
-      // See https://github.com/microsoft/playwright/issues/5609
-      it("allows focusing links with tab key when segments are collapsed", { todo: /AppleWebKit\/[\d.]+.*Version\//.test(navigator.userAgent) }, async () => {
+      it("allows focusing links with tab key when segments are collapsed", async () => {
         const page = render(Component, {
           ...baseProps,
           minNumExpanded: 2,
@@ -317,6 +314,48 @@ describe("Breadcrumbs component", () => {
           )
           .toHaveFocus();
       });
+    });
+  });
+
+  describe("segments", () => {
+    it("segments with href are rendered as links", async () => {
+      const page = render(Component, {
+        ...baseProps,
+        segments: [
+          { label: "Linked Segment", href: "/linked" },
+          { label: "Text Segment" },
+        ],
+      });
+
+      const linkedSegment = page.getByRole("link", { name: "Linked Segment" });
+      await expect.element(linkedSegment).toBeInTheDocument();
+      await expect.element(linkedSegment).toHaveAttribute("href", "/linked");
+
+      await expect
+        .element(page.getByText("Text Segment"))
+        .not.toHaveRole("link");
+    });
+
+    it("segments props are reactive", async () => {
+      const segment = $state<Segment>({ label: "Initial", href: "/initial" });
+
+      const page = render(Component, {
+        ...baseProps,
+        segments: [segment],
+      });
+
+      const linkElement = page.getByRole("link", { name: "Initial" });
+      await expect.element(linkElement).toBeInTheDocument();
+
+      segment.label = "Updated";
+
+      await expect
+        .element(page.getByRole("link", { name: "Updated" }))
+        .toBeInTheDocument();
+
+      segment.href = undefined;
+
+      await expect.element(page.getByText("Updated")).not.toHaveRole("link");
     });
   });
 });

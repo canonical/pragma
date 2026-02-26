@@ -3,6 +3,7 @@
   import { Item } from "../common/index.js";
   import type { ExpandedItemsProps } from "./types.js";
   import "./styles.css";
+  import { useIsMounted } from "../../../../useIsMounted.svelte.js";
 
   const componentCssClassName = "ds expanded-items";
 
@@ -13,32 +14,29 @@
     canCollapseMore,
   }: ExpandedItemsProps = $props();
 
-  let mounted = $state(false);
-  onMount(() => {
-    mounted = true;
-  });
+  const mounted = useIsMounted();
 
-  const wrapExpanded = $derived(
-    // Allow wrapping of the expanded segments if JavaScript is not available (we never mount) or we have already collapsed all there is to collapse
-    !mounted || !canCollapseMore,
+  const nowrap = $derived(
+    // Prevent wrapping of the expanded segments if JavaScript is available (we have mounted) and we can still collapse more segments
+    mounted.value && canCollapseMore,
   );
 </script>
 
 <li
   role="none"
   class={componentCssClassName}
-  style:white-space={wrapExpanded ? "normal" : "nowrap"}
+  class:nowrap
   bind:clientWidth={containerWidth}
 >
   <ol role="none">
-    {#each segments as segment, i (i)}
+    {#each segments as { collapsed, ...segment }, i (i)}
       <li
         role="listitem"
         bind:offsetWidth={segmentWidths[i]}
-        class:hidden={segment.hidden}
-        aria-hidden={segment.hidden}
+        class:hidden={collapsed}
+        aria-hidden={collapsed}
       >
-        <Item {segment} current={i === segments.length - 1} />
+        <Item {...segment} current={i === segments.length - 1} />
       </li>
     {/each}
   </ol>

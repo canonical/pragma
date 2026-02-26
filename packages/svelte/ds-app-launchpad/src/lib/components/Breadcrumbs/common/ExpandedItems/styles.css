@@ -3,6 +3,10 @@
   flex-shrink: 1;
   overflow: hidden;
 
+  .nowrap {
+    white-space: nowrap;
+  }
+
   ol,
   li {
     display: inline-block;
@@ -18,7 +22,7 @@
       text-overflow: ellipsis;
 
       + li::before {
-        /* Show separator before all the segments that follow a non-hidden segment. This in practice applies only when there is no collapsed section */
+        /* Show separator before all the segments that follow a non-collapsed segment. This in practice applies only when there is no collapsed section */
         content: "/" / "";
         margin-inline: var(--lp-dimension-spacing-inline-xxs);
       }

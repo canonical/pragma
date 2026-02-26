@@ -2,7 +2,7 @@
 
 <script lang="ts">
   import { CollapsedItems, ExpandedItems } from "./common/index.js";
-  import type { BreadcrumbsProps, PossiblyHiddenSegment } from "./types";
+  import type { BreadcrumbsProps, PossiblyCollapsedSegment } from "./types";
   import "./styles.css";
 
   const componentCssClassName = "ds breadcrumbs";
@@ -24,8 +24,8 @@
 
   const [collapsed, expanded] = $derived.by(
     (): [
-      collapsed: PossiblyHiddenSegment[],
-      expanded: PossiblyHiddenSegment[],
+      collapsed: PossiblyCollapsedSegment[],
+      expanded: PossiblyCollapsedSegment[],
     ] => {
       if (
         // Bail out if we don't want to collapse any segments before reading `containerWidth` or `segmentWidths`
@@ -44,7 +44,7 @@
         .slice(0, segments.length)
         .reduce((acc, width) => acc + width, 0);
 
-      const collapsed: PossiblyHiddenSegment[] = [];
+      const collapsed: PossiblyCollapsedSegment[] = [];
       let i = 0;
       // Move the segments from the start one by one to the collapsed list until we can fit the rest in the `containerWidth` or we have collapsed the maximum number of segments
       while (
@@ -52,7 +52,7 @@
         expandedWidth >= containerWidth &&
         i < maxNumCollapsed
       ) {
-        collapsed.push({ ...segments[i], hidden: true });
+        collapsed.push({ ...segments[i], collapsed: true });
         expandedWidth -= segmentWidths[i];
         i++;
       }

@@ -4,20 +4,23 @@
 
   const componentCssClassName = "ds item";
 
-  let { segment, current = false }: ItemProps = $props();
-
-  const itemProps = $derived({
-    "aria-current": current ? "page" : undefined,
-    class: componentCssClassName,
-  } as const);
+  let { current = false, ...segment }: ItemProps = $props();
 </script>
 
-{#if segment.href}
-  <Link href={segment.href} {...itemProps}>
+{#if segment.href !== undefined}
+  <Link
+    aria-current={current ? "page" : undefined}
+    {...segment}
+    class={[componentCssClassName, segment.class]}
+  >
     {segment.label}
   </Link>
 {:else}
-  <span {...itemProps}>
+  <span
+    aria-current={current ? "page" : undefined}
+    {...segment}
+    class={[componentCssClassName, segment.class]}
+  >
     {segment.label}
   </span>
 {/if}

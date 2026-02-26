@@ -1,11 +1,11 @@
-import type { PossiblyHiddenSegment } from "../../types.js";
+import type { PossiblyCollapsedSegment } from "../../types.js";
 
 export interface ExpandedItemsProps {
   /**
    * ALL Breadcrumbs segments.
-   * Collapsed segments (with `hidden: true`) are not displayed in the UI, but used to keep `segmentWidths` in sync.
+   * Collapsed segments (with `collapsed: true`) are not displayed in the UI, but used to keep `segmentWidths` in sync.
    */
-  segments: PossiblyHiddenSegment[];
+  segments: PossiblyCollapsedSegment[];
   /** Bindable array of segment widths. */
   segmentWidths: number[];
   /** Bindable width of the expanded elements container. */

@@ -33,9 +33,9 @@
   }}
 >
   <ol role="none" data-testid="collapsed-segments">
-    {#each segments as segment, i (i)}
+    {#each segments as { collapsed: _, ...segment }, i (i)}
       <li role="listitem">
-        <Item {segment} current={hasCurrent && i === segments.length - 1} />
+        <Item {...segment} current={hasCurrent && i === segments.length - 1} />
       </li>
     {/each}
   </ol>

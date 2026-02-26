@@ -77,7 +77,7 @@
   }}
 >
   {#snippet template(args)}
-    <div class="placeholder-box" style:width="400px;">
+    <div class="placeholder-box" style="width: 400px; min-height: 200px;">
       <Breadcrumbs {...args} />
     </div>
   {/snippet}
@@ -90,7 +90,7 @@
   }}
 >
   {#snippet template(args)}
-    <div class="placeholder-box" style:width="400px;">
+    <div class="placeholder-box" style="width: 400px; min-height: 150px;">
       <Breadcrumbs {...args} />
     </div>
   {/snippet}
@@ -110,8 +110,30 @@
   }}
 >
   {#snippet template(args)}
-    <div class="placeholder-box" style:width="400px;">
+    <div class="placeholder-box" style="width: 400px; min-height: 100px;">
       <Breadcrumbs {...args} />
     </div>
+  {/snippet}
+</Story>
+
+<Story
+  name="With custom segment props"
+  args={{
+    segments: [
+      {
+        label: "I have a title",
+        title: "Custom title attribute",
+      },
+      { label: "I have a target", href: "/products", target: "_blank" },
+      {
+        label: "I have a style",
+        href: "/products/ubuntu",
+        style: "color: red;",
+      },
+    ],
+  }}
+>
+  {#snippet template(args)}
+    <Breadcrumbs {...args} />
   {/snippet}
 </Story>
