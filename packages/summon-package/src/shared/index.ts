@@ -16,20 +16,22 @@ import {
 // Types
 // =============================================================================
 
-export type PackageType = "tool-ts" | "library" | "react-library" | "css";
+export type ContentType = "typescript" | "css";
 
-export type PackageManager = "bun" | "npm" | "yarn" | "pnpm";
+export type Framework = "react" | "none";
 
 export interface PackageAnswers {
   /** Full package name (e.g., @canonical/my-package or my-package) */
   name: string;
-  /** Package type */
-  type: PackageType;
   /** Package description */
   description: string;
-  /** Include Storybook setup */
-  withStorybook: boolean;
-  /** Include CLI binary entry point (tool-ts only) */
+  /** What does the package contain? */
+  content: ContentType;
+  /** Does it use a web framework? (only when content=typescript) */
+  framework: Framework;
+  /** Does it export UI components? (only when framework !== "none") */
+  isComponentLibrary: boolean;
+  /** Does it have a CLI entry point? (only when not a component library) */
   withCli: boolean;
   /** Run package manager install after creation */
   runInstall: boolean;
@@ -38,6 +40,16 @@ export interface PackageAnswers {
 export interface MonorepoInfo {
   isMonorepo: boolean;
   version?: string;
+}
+
+export interface DerivedConfig {
+  needsBuild: boolean;
+  license: string;
+  storybook: boolean;
+  module: string;
+  types: string | null;
+  files: string[];
+  ruleset: string;
 }
 
 // =============================================================================
@@ -54,7 +66,6 @@ export const validatePackageName = (value: unknown): true | string => {
     return "Package name is required";
   }
 
-  // Extract the package name (handle scoped packages)
   const name = getPackageShortName(value);
 
   if (!/^[a-z][a-z0-9-]*[a-z0-9]$|^[a-z]$/.test(name)) {
@@ -111,6 +122,57 @@ export const pascalCase = (str: string): string => {
 };
 
 // =============================================================================
+// Derivation
+// =============================================================================
+
+/**
+ * Derive all build/license/config decisions from the answer set.
+ * Implements the decision tree derivation rules from the design doc.
+ */
+export const derivePackageConfig = (answers: PackageAnswers): DerivedConfig => {
+  const isCSS = answers.content === "css";
+  const hasCLI = answers.withCli;
+  const isComponentLib = answers.isComponentLibrary;
+  const hasFramework = answers.framework !== "none";
+
+  const needsBuild = !isCSS && !hasCLI;
+  const license = hasCLI && !isComponentLib ? "GPL-3.0" : "LGPL-3.0";
+  const storybook = isComponentLib;
+
+  const module_ = isCSS
+    ? "src/index.css"
+    : needsBuild
+      ? "dist/esm/index.js"
+      : "src/index.ts";
+
+  const types = isCSS
+    ? null
+    : needsBuild
+      ? "dist/types/index.d.ts"
+      : "src/index.ts";
+
+  const files = needsBuild ? ["dist"] : ["src"];
+
+  const ruleset = isCSS
+    ? "base"
+    : hasFramework
+      ? `package-${answers.framework}`
+      : hasCLI
+        ? "tool-ts"
+        : "library";
+
+  return {
+    needsBuild,
+    license,
+    storybook,
+    module: module_,
+    types,
+    files,
+    ruleset,
+  };
+};
+
+// =============================================================================
 // Detection Utilities
 // =============================================================================
 
@@ -118,7 +180,6 @@ export const pascalCase = (str: string): string => {
  * Detect if running in a monorepo and get the version
  */
 export const detectMonorepo = (cwd: string): Task<MonorepoInfo> => {
-  // Look for lerna.json in parent directories
   const lernaPath = path.join(cwd, "lerna.json");
   const parentLernaPath = path.join(cwd, "..", "lerna.json");
   const grandparentLernaPath = path.join(cwd, "..", "..", "lerna.json");
@@ -157,13 +218,14 @@ export const detectMonorepo = (cwd: string): Task<MonorepoInfo> => {
 /**
  * Detect the package manager in use
  */
-export const detectPackageManager = (cwd: string): Task<PackageManager> => {
+export const detectPackageManager = (
+  cwd: string,
+): Task<"bun" | "npm" | "yarn" | "pnpm"> => {
   const bunLock = path.join(cwd, "bun.lockb");
   const bunLock2 = path.join(cwd, "bun.lock");
   const yarnLock = path.join(cwd, "yarn.lock");
   const pnpmLock = path.join(cwd, "pnpm-lock.yaml");
 
-  // Also check parent directories for monorepo setup
   const parentBunLock = path.join(cwd, "..", "..", "bun.lockb");
   const parentBunLock2 = path.join(cwd, "..", "..", "bun.lock");
 
@@ -194,152 +256,58 @@ export const detectPackageManager = (cwd: string): Task<PackageManager> => {
   );
 };
 
-// =============================================================================
-// Configuration Helpers
-// =============================================================================
-
 /**
- * Get the webarchitect ruleset based on package type
+ * Reference packages for framework-specific versioning.
+ * Each framework's generated package version follows its reference package.
  */
-export const getRuleset = (type: PackageType): string => {
-  if (type === "react-library") return "package-react";
-  if (type === "css") return "base"; // CSS packages use base ruleset
-  return type; // "tool-ts" or "library"
+const FRAMEWORK_VERSION_PACKAGES: Record<Framework, string | null> = {
+  react: "@canonical/react-ds-global",
+  none: null,
 };
 
 /**
- * Get license based on package type
+ * Detect the version to use for a generated package based on framework.
+ * React packages follow @canonical/react-ds-global versioning.
+ * Falls back to monorepo version, then "*".
  */
-export const getLicense = (type: PackageType): string => {
-  if (type === "tool-ts") return "GPL-3.0";
-  return "LGPL-3.0"; // library and css use LGPL
-};
+export const detectFrameworkVersion = (
+  cwd: string,
+  framework: Framework,
+  monorepoInfo: MonorepoInfo,
+): Task<string> => {
+  const refPkg = FRAMEWORK_VERSION_PACKAGES[framework];
 
-/**
- * Get package entry points based on type
- */
-export const getEntryPoints = (
-  type: PackageType,
-): {
-  module: string;
-  types: string | null;
-  files: string[];
-  needsBuild: boolean;
-} => {
-  if (type === "tool-ts") {
-    return {
-      module: "src/index.ts",
-      types: "src/index.ts",
-      files: ["src"],
-      needsBuild: false,
-    };
-  }
-  if (type === "css") {
-    return {
-      module: "src/index.css",
-      types: null, // CSS packages don't have types
-      files: ["src"],
-      needsBuild: false,
-    };
-  }
-  if (type === "react-library") {
-    return {
-      module: "dist/esm/index.js",
-      types: "dist/types/index.d.ts",
-      files: ["dist"],
-      needsBuild: true,
-    };
-  }
-  // library
-  return {
-    module: "dist/esm/index.js",
-    types: "dist/types/index.d.ts",
-    files: ["dist"],
-    needsBuild: true,
-  };
-};
-
-/**
- * Get devDependencies for a package type.
- * Returned object is already sorted alphabetically and ready for JSON rendering.
- */
-export const getDevDependencies = (
-  type: PackageType,
-  opts: { monorepoVersion: string | undefined; withStorybook: boolean },
-): Record<string, string> => {
-  const mv = opts.monorepoVersion ?? "0.1.0";
-
-  if (type === "css") {
-    return {
-      "@biomejs/biome": "2.3.11",
-      "@canonical/biome-config": mv,
-    };
+  if (!refPkg) {
+    return pure(
+      monorepoInfo.isMonorepo ? (monorepoInfo.version ?? "0.1.0") : "0.1.0",
+    );
   }
 
-  if (type === "react-library") {
-    return {
-      "@biomejs/biome": "2.3.11",
-      "@canonical/biome-config": mv,
-      "@canonical/typescript-config-react": mv,
-      "@canonical/webarchitect": mv,
-      "@testing-library/jest-dom": "^6.0.0",
-      "@testing-library/react": "^16.0.0",
-      "@types/react": "^19.0.0",
-      "@types/react-dom": "^19.0.0",
-      "@vitejs/plugin-react": "^4.0.0",
-      ...(opts.withStorybook
-        ? {
-            "@canonical/storybook-config": mv,
-            storybook: "^10.1.11",
-            "@storybook/react": "^10.1.11",
-          }
-        : {}),
-      react: "^19.0.0",
-      "react-dom": "^19.0.0",
-      copyfiles: "^2.4.1",
-      jsdom: "^28.0.0",
-      typescript: "^5.9.3",
-      vite: "^7.3.1",
-      "vite-tsconfig-paths": "^5.0.0",
-      vitest: "^3.2.4",
-    };
-  }
+  // Try to find the reference package's package.json in the monorepo
+  // Convention: packages are at ../../{scope}/{name}/package.json relative to cwd
+  const pkgName = refPkg.replace("@canonical/", "");
+  // react-ds-global -> packages/react/ds-global
+  const parts = pkgName.split("-");
+  const framework_ = parts[0];
+  const rest = parts.slice(1).join("-");
+  const refPath = path.join(
+    cwd,
+    "..",
+    "..",
+    "packages",
+    framework_,
+    rest,
+    "package.json",
+  );
 
-  // tool-ts and library
-  return {
-    "@biomejs/biome": "2.3.11",
-    "@canonical/biome-config": mv,
-    "@canonical/typescript-config": mv,
-    ...(opts.withStorybook
-      ? {
-          "@chromatic-com/storybook": "^5.0.0",
-          "@canonical/storybook-config": mv,
-          storybook: "^10.1.11",
-        }
-      : {}),
-    "bun-types": "^1.0.0",
-    typescript: "^5.9.3",
-    vitest: "^3.2.4",
-  };
-};
-
-/**
- * Get peerDependencies for a package type, or null if none apply.
- */
-export const getPeerDependencies = (
-  type: PackageType,
-  opts: { monorepoVersion: string | undefined },
-): Record<string, string> | null => {
-  const mv = opts.monorepoVersion ?? "0.1.0";
-
-  if (type === "react-library") {
-    return {
-      "@canonical/styles": mv,
-      react: "^19.0.0",
-      "react-dom": "^19.0.0",
-    };
-  }
-  return null;
+  return ifElseM(
+    exists(refPath),
+    flatMap(readFile(refPath), (content) => {
+      const pkg = JSON.parse(content);
+      return pure(pkg.version as string);
+    }),
+    pure(monorepoInfo.isMonorepo ? (monorepoInfo.version ?? "0.1.0") : "0.1.0"),
+  );
 };
 
 // =============================================================================
@@ -349,36 +317,34 @@ export const getPeerDependencies = (
 export interface TemplateContext {
   /** Package short name (without scope) */
   shortName: string;
-  /** Full package name (as entered, e.g., @canonical/my-package) */
+  /** Full package name */
   name: string;
   /** Package description */
   description: string;
-  /** Package type */
-  type: PackageType;
+  /** Content type (from answers) */
+  content: ContentType;
+  /** Framework (from answers) */
+  framework: Framework;
+  /** Whether it exports UI components (from answers) */
+  isComponentLibrary: boolean;
+  /** Whether it has a CLI (from answers) */
+  withCli: boolean;
   /** Package version */
   version: string;
-  /** License */
+  /** License (derived) */
   license: string;
-  /** Module entry point */
+  /** Module entry point (derived) */
   module: string;
-  /** Types entry point (null for CSS packages) */
+  /** Types entry point (derived, null for CSS) */
   types: string | null;
-  /** Files to include */
+  /** Files to include in package (derived) */
   files: string[];
-  /** Whether this package type needs a build step */
+  /** Whether a build step is needed (derived) */
   needsBuild: boolean;
-  /** Webarchitect ruleset */
+  /** Whether Storybook is included (derived) */
+  storybook: boolean;
+  /** Webarchitect ruleset (derived) */
   ruleset: string;
-  /** Whether this is a React library (derived from type === "react-library") */
-  withReact: boolean;
-  /** Include Storybook */
-  withStorybook: boolean;
-  /** Include CLI */
-  withCli: boolean;
-  /** devDependencies for package.json */
-  devDependencies: Record<string, string>;
-  /** peerDependencies for package.json, or null if none */
-  peerDependencies: Record<string, string> | null;
   /** Monorepo version (if applicable) */
   monorepoVersion?: string;
   /** Generator name */
@@ -390,41 +356,33 @@ export interface TemplateContext {
 }
 
 /**
- * Create template context from answers
+ * Create template context from answers and detected info
  */
 export const createTemplateContext = (
   answers: PackageAnswers,
-  monorepoInfo: MonorepoInfo,
+  version: string,
+  monorepoVersion?: string,
 ): TemplateContext => {
-  const entryPoints = getEntryPoints(answers.type);
-  const version = monorepoInfo.isMonorepo
-    ? (monorepoInfo.version ?? "0.1.0")
-    : "0.1.0";
+  const config = derivePackageConfig(answers);
 
   return {
     shortName: getPackageShortName(answers.name),
     name: answers.name,
     description: answers.description,
-    type: answers.type,
-    version,
-    license: getLicense(answers.type),
-    module: entryPoints.module,
-    types: entryPoints.types,
-    files: entryPoints.files,
-    needsBuild: entryPoints.needsBuild,
-    ruleset: getRuleset(answers.type),
-    withReact: answers.type === "react-library",
-    withStorybook: answers.withStorybook,
+    content: answers.content,
+    framework: answers.framework,
+    isComponentLibrary: answers.isComponentLibrary,
     withCli: answers.withCli,
-    devDependencies: getDevDependencies(answers.type, {
-      monorepoVersion: monorepoInfo.version,
-      withStorybook: answers.withStorybook,
-    }),
-    peerDependencies: getPeerDependencies(answers.type, {
-      monorepoVersion: monorepoInfo.version,
-    }),
-    monorepoVersion: monorepoInfo.version,
+    version,
+    license: config.license,
+    module: config.module,
+    types: config.types,
+    files: config.files,
+    needsBuild: config.needsBuild,
+    storybook: config.storybook,
+    ruleset: config.ruleset,
+    monorepoVersion,
     generatorName: "@canonical/summon-package",
-    generatorVersion: "0.1.0",
+    generatorVersion: "0.2.0",
   };
 };
