@@ -1,12 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import type { DsExample } from "./Example.js";
-import "./Example.js";
+import type Example from "./Example.js";
 
-describe("DsExample component", () => {
-  let elem: DsExample;
+describe("Example component", () => {
+  let elem: Example;
 
   beforeEach(() => {
-    elem = document.createElement("ds-example") as DsExample;
+    elem = document.createElement("ds-example") as Example;
     document.body.appendChild(elem);
   });
 

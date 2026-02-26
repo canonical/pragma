@@ -22,7 +22,7 @@ const componentCssClassName = "ds example";
  * @implements ds:global.component.example
  */
 @customElement("ds-example")
-export class DsExample extends LitElement implements BaseProps {
+export default class Example extends LitElement implements BaseProps {
   static styles = styles;
 
   /**

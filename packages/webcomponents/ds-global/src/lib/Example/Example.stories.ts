@@ -1,8 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/web-components-vite";
 import { html } from "lit";
 
-import "./Example.js";
-import type { DsExample } from "./Example.js";
+import type Example from "./Example.js";
 
 const meta = {
   title: "Web Components/Example",
@@ -16,10 +15,10 @@ const meta = {
       options: [undefined, "outlined"],
     },
   },
-} satisfies Meta<DsExample>;
+} satisfies Meta<Example>;
 
 export default meta;
-type Story = StoryObj<DsExample>;
+type Story = StoryObj<Example>;
 
 /* ==========================================================================
    Basic Examples

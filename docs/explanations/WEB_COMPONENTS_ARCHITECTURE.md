@@ -23,6 +23,22 @@ For components with subcomponents, add a `common/` directory containing related 
 
 ## 1. CSS Styles: Separate Files vs. Inline
 
+### The Problem
+
+Lit's recommended approach for component styles is to write them inline as tagged template literals:
+
+```typescript
+import { css, LitElement } from 'lit';
+
+export class MyComponent extends LitElement {
+  static styles = css`
+    .ds.button { color: red; }
+  `;
+}
+```
+
+This works at runtime but means no CSS tooling — no syntax highlighting, no IntelliSense, no linting — and a completely different authoring experience from every other package in the monorepo. The challenge is keeping CSS as plain `.css` files for the developer while still satisfying Lit's requirement of a `CSSResult` object at runtime.
+
 ### The Choice: Separate CSS Files with Build Transformation
 
 **Decision:** Use separate `.css` files that are transformed to `CSSResult` objects at build time.
@@ -68,35 +84,14 @@ export class CanButton extends LitElement {
 
 ### Why Separate CSS Files
 
-**Developer Experience Benefits:**
-- **Full CSS tooling support**: IntelliSense, autocomplete, syntax highlighting, linting
-- **Clear separation**: `Button.ts` (113 lines of logic) + `styles.css` (186 lines of styles)
-- **Better maintainability**: Easier to scan, search, and edit dedicated CSS files
-- **Consistency with monorepo structure**: Matches React component file organization
-
-**Architectural Alignment:**
-- **Follows separation of concerns**: Logic in `.ts`, presentation in `.css`
-- **Follows standards documentation**: [STANDARDS_FOR_STYLING.md](../references/STANDARDS_FOR_STYLING.md) assumes separate `styles.css` files
+Keeping styles in `.css` files restores the full CSS authoring experience: syntax highlighting, IntelliSense, linting, and autocomplete all work as expected. It also keeps component files focused — logic stays in `.ts`, presentation stays in `.css` — which matches how every other package in the monorepo is structured and aligns with the conventions in [STANDARDS_FOR_STYLING.md](../references/STANDARDS_FOR_STYLING.md).
 
 
 ### Trade-offs Accepted
 
-**Violates "No Magic" Principle:**
-- Build-time transformation: `.css` → `CSSResult` is invisible to developers
-- Requires Vite plugin for package builds (not pure `tsc`)
-- Different build process from React packages
-- What you write (plain CSS) differs from what ships (JavaScript with Lit's `css` tagged templates)
+This approach introduces a build step that React packages don't need: a Vite plugin transforms `.css` imports into `CSSResult` objects, alongside a `css.d.ts` declaration for TypeScript. The transformation is an explicit, documented part of the build pipeline rather than hidden behaviour, but it does mean the webcomponents build process diverges from the simpler `tsc`-only approach used elsewhere.
 
-**Additional Complexity:**
-- Requires custom Vite plugin configuration
-- Requires type declaration file (`css.d.ts`)
-- Adds build tool dependency (Vite for builds, not just dev)
-
-**Summary:**
-Within Pragma's monorepo context, the benefits of separate CSS files outweigh the architectural purity concerns:
-1. **Monorepo consistency** matters more than framework orthodoxy
-2. **Developer experience** is critical for team productivity
-3. **Build transformation** is acceptable when benefits are substantial
+Within Pragma's monorepo, this is an acceptable trade-off. Consistency in developer experience and file organisation across packages matters more than build pipeline uniformity, and the additional tooling is self-contained within the webcomponents package.
 
 ### Shadow DOM Scoping: Critical Implementation Detail
 
@@ -130,28 +125,27 @@ Shadow DOM creates an isolated scope. Variables declared outside `:host` are not
 
 ### Build Requirements
 
-This approach requires:
-- Custom Vite plugin to transform CSS imports to `CSSResult` objects
-- Type declaration file (`css.d.ts`) for TypeScript support
-- Build script combining Vite (for CSS transformation) and `tsc` (for type definitions)
+The build combines Vite (for CSS-to-`CSSResult` transformation) and `tsc` (for type definitions). A `css.d.ts` declaration file tells TypeScript that `.css` imports are valid.
 
 **Why Vite over pure `tsc`:** TypeScript cannot transform CSS files. Vite handles the CSS-to-JavaScript transformation while `tsc` generates type definitions.
+
+**Why a type declaration alone is not enough:** A `css.d.ts` declaration only tells TypeScript that the import is valid and what type to assign it — it is a compile-time concern only. At runtime, Lit's `static styles` must receive a `CSSResult` object (produced by Lit's `css\`...\`` tagged template). Without the Vite plugin, the import would resolve to a plain string or an empty object depending on the bundler, and Lit would silently apply no styles.
 
 
 ## 2. Content Projection: Slots vs. React Children
 
 **Decision:** Use native Web Component slots for content projection.
 
-**Key Architectural Differences from React:**
-- Slots are a **browser standard**, not a framework abstraction
-- Support **named slots** for multiple content areas
-- Slotted content remains in the **light DOM** (accessible to parent page styles)
-- Components can provide **fallback content** declaratively
+Unlike React's `children` prop, slots are a browser standard — no framework abstraction involved. They support named slots for multiple content areas, and slotted content remains in the light DOM, meaning parent page styles can still reach it. Components can also declare fallback content directly in the template.
 
-**Styling Constraint:** The `::slotted()` pseudo-element only styles direct children, not deeply nested elements. This is a platform limitation that affects component API design.
+One platform constraint to be aware of: the `::slotted()` pseudo-element only styles direct slotted children, not deeply nested elements. This should be considered when designing component APIs.
 
 
 ## 3. Shadow DOM and Global Styles
+
+Shadow DOM creates a style boundary: CSS rules defined outside the component cannot reach elements inside it, and vice versa. This is intentional — it prevents global styles from accidentally breaking component internals — but it raises a practical question: how do design tokens and global styles like typography reach components at all?
+
+There are two mechanisms that cross the shadow boundary by design.
 
 ### CSS Variables Pierce Shadow DOM
 
@@ -171,7 +165,7 @@ Global design tokens work across shadow boundaries:
 
 ### Inheritable Properties Work Across Shadow DOM
 
-Inheritable CSS properties (like `font-family`, `color`, `line-height`) naturally cascade into shadow trees without explicit configuration. Shadow DOM only isolates **non-inheritable** properties and prevents **selectors** from crossing the boundary.
+Inheritable CSS properties (like `font-family`, `color`, `line-height`) naturally cascade into shadow trees without explicit configuration. Shadow DOM only isolates non-inheritable properties and prevents selectors from crossing the boundary.
 
 
 ### External Customization
@@ -179,7 +173,7 @@ Inheritable CSS properties (like `font-family`, `color`, `line-height`) naturall
 Consumers can customize components using CSS variables:
 
 ```css
-can-button {
+ds-button {
   --button-color-background: red;  /* Override component default */
 }
 ```
@@ -194,9 +188,5 @@ Following [STANDARDS_FOR_STYLING.md](../references/STANDARDS_FOR_STYLING.md), th
 
 ## 5. Testing Architectural Considerations
 
-**Key Difference from React:** Web component tests query **two DOM trees**:
-- **Shadow DOM** (`elem.shadowRoot?.querySelector()`) for internal component structure
-- **Light DOM** (`elem.querySelector()`) for slotted content
-
-Tests must wait for custom element registration using `customElements.whenDefined()` before querying the shadow tree.
+Unlike React, web component tests need to query two separate DOM trees: the shadow DOM (`elem.shadowRoot?.querySelector()`) for internal component structure, and the light DOM (`elem.querySelector()`) for slotted content. Tests must also wait for custom element registration via `customElements.whenDefined()` before querying the shadow tree, since the element may not be upgraded yet when the test begins.
 

@@ -2,7 +2,10 @@
   "extends": "@canonical/typescript-config",
   "compilerOptions": {
     "baseUrl": "src",
+    // skipLibCheck is required due to a type bug in @storybook/web-components types (WebComponentsMeta constraint)
+    // that cannot be resolved without a fix on the Storybook side.
     "skipLibCheck": true,
+    "lib": ["ES2023", "DOM"],
     "types": ["vitest/globals"],
     "experimentalDecorators": true,
     "useDefineForClassFields": false
