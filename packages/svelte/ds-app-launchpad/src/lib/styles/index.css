@@ -15,10 +15,10 @@ html {
     - on `Button` stay default for all severities but `positive`, where it should become a very dark green,
       - not OK, we don't have the required value in the severity context.
   */
-  --focus-outline: var(--dimension-stroke-thickness-large) solid
+  --focus-outline: var(--lp-dimension-stroke-thickness-large) solid
     var(--lp-color-border-focus);
   /* Most elements have the outline on the inside of the element. Needs to be adjusted for specific cases (e.g. checkbox, radio) */
-  --focus-outline-offset: calc(var(--dimension-stroke-thickness-large) * -1);
+  --focus-outline-offset: calc(var(--lp-dimension-stroke-thickness-large) * -1);
 }
 
 body {
@@ -29,6 +29,7 @@ body {
   outline: var(--focus-outline);
   outline-offset: var(--focus-outline-offset);
 }
+
 .visually-hidden {
   border: 0;
   padding: 0;
