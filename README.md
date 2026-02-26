@@ -25,12 +25,20 @@ The server starts at http://localhost:6006. Each component package has its own S
 
 **Required:**
 
-- **React 19** or later for component packages (Svelte 5 for Svelte packages)
-- **Bun 1.3.9** or later for package management and script execution
-  - Installing Bun via the snap package is not recommended as it may cause permission issues. This is a known [issue](https://github.com/shakeelansari63/snap-packages/issues/79). Use the official installation script instead.
-- **Node.js 22.12 or 24** because Storybook and Lerna depend on Node internals that Bun does not yet fully support. Node 22.12 specifically is required as earlier 22.x versions have module resolution issues.
+- **Bun 1.3.9 or later** for package management and script execution.
 
-Node 23 has a [known compatibility issue](https://github.com/canonical/pragma/issues/226) and should be avoided.
+  ```bash
+  curl -fsSL https://bun.sh/install | bash
+  ```
+
+- **React 19 or later** for component packages (Svelte 5 for Svelte packages).
+
+- **Node.js 22.12 or 24** using nvm for Storybook and Lerna.
+
+  ```bash
+  curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.4/install.sh | bash
+  nvm install 24 && nvm use 24
+  ```
 
 **Recommended:**
 
@@ -43,11 +51,22 @@ Node 23 has a [known compatibility issue](https://github.com/canonical/pragma/is
   ```
   Then use `summon component react src/lib/MyComponent` to scaffold components or `summon package` to create new packages. Run `summon --help` for all available generators.
 
+
 **Nice to have:**
 
-- **Lerna installed globally** (`npm install -g lerna`) for running workspace-wide commands directly
+- **Lerna installed globally** for running workspace-wide commands directly.
 
-Install Bun with `curl -fsSL https://bun.sh/install | bash`. Install Node via nvm with `nvm install 24 && nvm use 24`.
+  ```bash
+  npm install -g lerna
+  ```
+
+**Notes:**
+
+- Node 22.x earlier than 22.12 have module resolution issues.
+- Node 23 has a [known compatibility issue](https://github.com/canonical/pragma/issues/226) and should be avoided.
+- Installing Node via the snap package is not recommended as it may cause build issues.
+- Installing Bun via the snap package is not recommended as it may cause permission issues. This is a known [issue](https://github.com/shakeelansari63/snap-packages/issues/79). Use the official installation script instead.
+
 
 ## Repository Structure
 
