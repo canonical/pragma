@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import type Example from "./Example.js";
+import "./Example.js";
+import Example from "./Example.js";
 
 describe("Example component", () => {
   let elem: Example;
