@@ -44,6 +44,7 @@
   {disabled}
   bind:checked={getChecked, setChecked}
   aria-checked={ariaChecked}
+  aria-readonly={disabled}
   {...rest}
 />
 

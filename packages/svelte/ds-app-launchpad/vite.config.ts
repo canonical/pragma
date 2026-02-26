@@ -24,7 +24,7 @@ export default defineConfig({
 					},
 					include: ["src/**/*.svelte.test.{js,ts}"],
 					exclude: ["src/lib/server/**"],
-					setupFiles: ["vitest-browser-svelte"],
+					setupFiles: ["./vitest-setup-client.ts"],
 				},
 			},
 			{
