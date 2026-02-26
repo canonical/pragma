@@ -56,7 +56,7 @@
     }
 
     &::after {
-      /* This is to not to lose hover when moving the mouse over the gap to the child <ol> */
+      /* This is to not lose hover when moving the mouse over the gap to the child <ol> */
       content: "";
       position: absolute;
       top: 100%;

@@ -18,7 +18,7 @@
       text-overflow: ellipsis;
 
       + li::before {
-        /* Show separator before all the segments that follow a non-hidden segment. This is in practice applies only when there is no collapse section */
+        /* Show separator before all the segments that follow a non-hidden segment. This in practice applies only when there is no collapsed section */
         content: "/" / "";
         margin-inline: var(--lp-dimension-spacing-inline-xxs);
       }

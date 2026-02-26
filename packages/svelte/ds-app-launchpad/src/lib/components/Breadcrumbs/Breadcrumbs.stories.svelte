@@ -36,7 +36,7 @@
 </script>
 
 <Story
-  name="All segment are links"
+  name="All segments are links"
   args={{
     segments: [
       { label: "Project", href: "/launchpad" },
