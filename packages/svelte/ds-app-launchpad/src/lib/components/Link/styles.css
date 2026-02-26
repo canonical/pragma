@@ -5,7 +5,7 @@
   text-decoration: none;
   color: var(--lp-color-text-link-default);
 
-  &:visited {
+  &:not(.soft):visited {
     color: var(--lp-color-text-link-visited);
   }
 

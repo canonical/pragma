@@ -4,7 +4,7 @@ import type { HTMLAnchorAttributes } from "svelte/elements";
 
 export interface LinkProps extends HTMLAnchorAttributes {
   /**
-   * Whether the link should be styled as a soft link.
+   * Whether the link should be styled softly, inheriting the color of its parent.
    */
   soft?: boolean;
 }

@@ -41,6 +41,17 @@ describe("Link component", () => {
       await expect.element(componentLocator(page)).toHaveClass("link");
     });
 
+    it("inherits parent color when soft is true", async () => {
+      const parentColor = "rgb(255, 0, 0)";
+
+      document.body.style.color = parentColor;
+
+      const page = render(Component, { ...baseProps, soft: true });
+      await expect.element(componentLocator(page)).toHaveStyle({
+        color: parentColor,
+      });
+    });
+
     it("applies style", async () => {
       const page = render(Component, {
         ...baseProps,

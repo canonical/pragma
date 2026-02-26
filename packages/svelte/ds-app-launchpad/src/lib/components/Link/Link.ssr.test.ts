@@ -51,6 +51,13 @@ describe("Link SSR", () => {
       expect(componentLocator(page).classList).toContain("link");
     });
 
+    it("applies soft class when soft is true", () => {
+      const page = render(Component, {
+        props: { ...baseProps, soft: true },
+      });
+      expect(componentLocator(page).classList).toContain("soft");
+    });
+
     it("applies style", () => {
       const page = render(Component, {
         props: { ...baseProps, style: "color: orange;" },

@@ -14,3 +14,5 @@
 </script>
 
 <Story name="Default">Link</Story>
+
+<Story name="Soft" args={{ soft: true }}>Soft link</Story>
