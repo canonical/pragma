@@ -134,8 +134,6 @@ The build combines Vite (for CSS-to-`CSSResult` transformation) and `tsc` (for t
 
 ## 2. Content Projection: Slots vs. React Children
 
-**Decision:** Use native Web Component slots for content projection.
-
 Unlike React's `children` prop, slots are a browser standard — no framework abstraction involved. They support named slots for multiple content areas, and slotted content remains in the light DOM, meaning parent page styles can still reach it. Components can also declare fallback content directly in the template.
 
 One platform constraint to be aware of: the `::slotted()` pseudo-element only styles direct slotted children, not deeply nested elements. This should be considered when designing component APIs.
