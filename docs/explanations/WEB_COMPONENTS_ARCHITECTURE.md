@@ -39,6 +39,14 @@ export class MyComponent extends LitElement {
 
 This works at runtime but means no CSS tooling — no syntax highlighting, no IntelliSense, no linting — and a completely different authoring experience from every other package in the monorepo. The challenge is keeping CSS as plain `.css` files for the developer while still satisfying Lit's requirement of a `CSSResult` object at runtime.
 
+### Options Considered
+
+**Option A — Inline `css` tagged template literals (Lit default):** Write styles directly in the component file using Lit's `css\`...\`` syntax. No build configuration needed, but sacrifices all CSS tooling and diverges from the authoring experience of every other package in the monorepo.
+
+**Option B — `unsafeCSS` with raw string imports:** Import `.css` files as plain strings via Vite's `?inline` query and wrap them with Lit's `unsafeCSS()` at runtime. Keeps styles in separate files but requires `unsafeCSS(styles)` in every component — an escape hatch Lit names explicitly to flag that its usual safety guarantees don't apply.
+
+**Option C — Separate CSS files with Vite plugin transformation (chosen):** A custom Vite plugin transforms `.css` imports into `CSSResult` objects at build time, paired with a `css.d.ts` declaration so TypeScript understands the import type. Component code stays clean (`static styles = styles`), CSS tooling works without compromise, and the conversion happens once in one place rather than per-component.
+
 ### The Choice: Separate CSS Files with Build Transformation
 
 **Decision:** Use separate `.css` files that are transformed to `CSSResult` objects at build time.

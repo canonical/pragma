@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/web-components-vite";
 import { html } from "lit";
 
+import "./Example.js";
 import type Example from "./Example.js";
 
 const meta = {
