@@ -6,7 +6,7 @@ interface BaseProps extends WithoutChildren<HTMLInputAttributes> {
 }
 
 export interface TextInputPrimitiveProps extends BaseProps {
-	type?: "text" | "password" | "email" | "url" | "tel" | "search";
+	type?: Exclude<HTMLInputAttributes["type"], "number">;
 	value?: string;
 }
 
