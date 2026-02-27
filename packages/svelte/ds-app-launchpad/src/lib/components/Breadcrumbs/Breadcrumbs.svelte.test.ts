@@ -17,7 +17,6 @@ describe("Breadcrumbs component", () => {
       { label: "Subcategory", href: "/category/subcategory" },
       { label: "Current Page" },
     ],
-    "data-testid": "breadcrumbs",
   } satisfies ComponentProps<typeof Component>;
 
   it("renders", async () => {
@@ -361,7 +360,7 @@ describe("Breadcrumbs component", () => {
 });
 
 function componentLocator(page: RenderResult<typeof Component>): Locator {
-  return page.getByTestId("breadcrumbs");
+  return page.getByRole("navigation");
 }
 
 function collapsedLocator(page: RenderResult<typeof Component>): Locator {

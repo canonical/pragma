@@ -13,7 +13,6 @@ describe("Breadcrumbs SSR", () => {
       { label: "Category", href: "/category" },
       { label: "Current Page" },
     ],
-    "data-testid": "breadcrumbs",
   } satisfies ComponentProps<typeof Component>;
 
   describe("basics", () => {
@@ -115,5 +114,5 @@ describe("Breadcrumbs SSR", () => {
 });
 
 function componentLocator(page: RenderResult): HTMLElement {
-  return page.getByTestId("breadcrumbs");
+  return page.getByRole("navigation");
 }
