@@ -5,6 +5,8 @@
  * These are the building blocks for constructing generators.
  */
 
+import * as path from "node:path";
+import { ifElseM } from "./combinators.js";
 import {
   appendFileEffect,
   copyDirectoryEffect,
@@ -288,6 +290,55 @@ export const execSimple = (
   const parts = commandLine.split(" ");
   const [command, ...args] = parts;
   return exec(command, args, cwd);
+};
+
+// =============================================================================
+// Detection Primitives
+// =============================================================================
+
+/**
+ * Detect the package manager in use by checking for lockfiles.
+ * Searches the given directory and two levels up for bun, yarn, and pnpm
+ * lockfiles. Defaults to "bun" when no lockfile is found.
+ * @note This function is impure - it checks the filesystem for
+ * lockfiles (bun.lockb, bun.lock, yarn.lock, pnpm-lock.yaml).
+ */
+export const detectPackageManager = (
+  currentDirectory: string,
+): Task<"bun" | "npm" | "yarn" | "pnpm"> => {
+  const bunLock = path.join(currentDirectory, "bun.lockb");
+  const bunLock2 = path.join(currentDirectory, "bun.lock");
+  const yarnLock = path.join(currentDirectory, "yarn.lock");
+  const pnpmLock = path.join(currentDirectory, "pnpm-lock.yaml");
+
+  const parentBunLock = path.join(currentDirectory, "..", "..", "bun.lockb");
+  const parentBunLock2 = path.join(currentDirectory, "..", "..", "bun.lock");
+
+  return ifElseM(
+    exists(bunLock),
+    pure("bun" as const),
+    ifElseM(
+      exists(bunLock2),
+      pure("bun" as const),
+      ifElseM(
+        exists(parentBunLock),
+        pure("bun" as const),
+        ifElseM(
+          exists(parentBunLock2),
+          pure("bun" as const),
+          ifElseM(
+            exists(yarnLock),
+            pure("yarn" as const),
+            ifElseM(
+              exists(pnpmLock),
+              pure("pnpm" as const),
+              pure("bun" as const),
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
 };
 
 // =============================================================================
