@@ -22,6 +22,7 @@
 />
 
 <!-- This doesn't need keyboard navigation, as the links inside themselves are always tab-focusable. The click handler is for sighted use of touch devices on which hover does not exist -->
+<!-- `role="none"` is used here to "skip" the intermediate elements' semantics and expose all the segments (both collapsed and expanded) to assistive technologies as one flat list -->
 <li
   role="none"
   class={componentCssClassName}

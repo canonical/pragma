@@ -22,6 +22,7 @@
   );
 </script>
 
+<!-- `role="none"` is used here to "skip" the intermediate elements' semantics and expose all the segments (both collapsed and expanded) to assistive technologies as one flat list -->
 <li
   role="none"
   class={componentCssClassName}
