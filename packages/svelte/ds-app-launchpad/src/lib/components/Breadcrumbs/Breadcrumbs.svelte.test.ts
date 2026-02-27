@@ -6,6 +6,7 @@ import type { Locator } from "vitest/browser";
 import { page as pageContext, userEvent } from "vitest/browser";
 import { render } from "vitest-browser-svelte";
 import type { RenderResult } from "vitest-browser-svelte";
+import { tabToNextFocusable } from "../../test-utils.js";
 import Component from "./Breadcrumbs.svelte";
 import type { Segment } from "./types.js";
 
@@ -266,9 +267,9 @@ describe("Breadcrumbs component", () => {
         await expect.element(firstLink).toBeVisible();
         await userEvent.click(page.baseElement);
 
-        await userEvent.tab();
+        await tabToNextFocusable();
         await expect.element(firstLink).toHaveFocus();
-        await userEvent.tab();
+        await tabToNextFocusable();
         await expect
           .element(
             page.getByRole("link", {
@@ -293,9 +294,9 @@ describe("Breadcrumbs component", () => {
         await expect.element(firstLink).toBeInTheDocument();
         await userEvent.click(page.baseElement);
 
-        await userEvent.tab();
+        await tabToNextFocusable();
         await expect.element(firstLink).toHaveFocus();
-        await userEvent.tab();
+        await tabToNextFocusable();
         await expect
           .element(
             page.getByRole("link", {
@@ -304,7 +305,7 @@ describe("Breadcrumbs component", () => {
             }),
           )
           .toHaveFocus();
-        await userEvent.tab();
+        await tabToNextFocusable();
         await expect
           .element(
             page.getByRole("link", {
