@@ -2,12 +2,11 @@
  * Programmatic package.json builder
  *
  * Builds package.json as a typed object instead of rendering an EJS template.
- * Each apply* function is a small, testable unit that adds a profile to the
- * base package. Scripts are extracted as named constants for readability.
+ * Each apply* function is a small, single-purpose unit that adds a profile to
+ * the base package. Scripts are extracted as named constants for readability.
  */
 
-import type { Framework, TemplateContext } from "./index.js";
-import { caret, exact, type VersionMap } from "./versions.js";
+import type { Framework, TemplateContext, VersionMap } from "../types.js";
 
 // =============================================================================
 // Types
@@ -32,8 +31,26 @@ interface PackageJson {
   peerDependencies?: Record<string, string>;
 }
 
-/** Resolved versions passed to all profile functions */
-type ProfileOpts = VersionMap;
+// =============================================================================
+// Version formatting
+// =============================================================================
+
+/**
+ * Format a resolved version as a caret range.
+ * "19.2.4" → "^19.2.4", "*" → "*"
+ */
+const caret = (versions: VersionMap, packageName: string): string => {
+  const version = versions[packageName];
+  return version && version !== "*" ? `^${version}` : "*";
+};
+
+/**
+ * Format a resolved version as an exact pin.
+ * "2.3.14" → "2.3.14", "*" → "*"
+ */
+const exact = (versions: VersionMap, packageName: string): string => {
+  return versions[packageName] ?? "*";
+};
 
 // =============================================================================
 // Scripts
@@ -85,7 +102,7 @@ const storybookScripts = {
 // Base
 // =============================================================================
 
-export const createBasePackage = (
+const createBasePackage = (
   name: string,
   description: string,
   version: string,
@@ -117,42 +134,52 @@ export const createBasePackage = (
 // Profiles
 // =============================================================================
 
-export const applyCssProfile = (
-  pkg: PackageJson,
-  versions: ProfileOpts,
+/**
+ * Apply CSS package profile to a base package.json object.
+ * @note This function is impure - it mutates the input package object
+ * to set CSS-specific entry points, scripts, and dependencies.
+ */
+const applyCssProfile = (
+  packageJson: PackageJson,
+  versions: VersionMap,
 ): void => {
-  pkg.module = "src/index.css";
-  pkg.files = ["src"];
-  pkg.scripts = cssScripts;
-  pkg.devDependencies = sortObject({
+  packageJson.module = "src/index.css";
+  packageJson.files = ["src"];
+  packageJson.scripts = cssScripts;
+  packageJson.devDependencies = sortObject({
     "@biomejs/biome": exact(versions, "@biomejs/biome"),
     "@canonical/biome-config": caret(versions, "@canonical/biome-config"),
   });
 };
 
-export const applyTypeScriptProfile = (
-  pkg: PackageJson,
-  versions: ProfileOpts,
+/**
+ * Apply TypeScript package profile to a base package.json object.
+ * @note This function is impure - it mutates the input package object
+ * to set TypeScript-specific entry points, scripts, and dependencies.
+ */
+const applyTypeScriptProfile = (
+  packageJson: PackageJson,
+  versions: VersionMap,
   needsBuild: boolean,
   ruleset: string,
 ): void => {
   // Entry points
   if (needsBuild) {
-    pkg.module = "dist/esm/index.js";
-    pkg.types = "dist/types/index.d.ts";
-    pkg.files = ["dist"];
+    packageJson.module = "dist/esm/index.js";
+    packageJson.types = "dist/types/index.d.ts";
+    packageJson.files = ["dist"];
   } else {
-    pkg.module = "src/index.ts";
-    pkg.types = "src/index.ts";
-    pkg.files = ["src"];
+    packageJson.module = "src/index.ts";
+    packageJson.types = "src/index.ts";
+    packageJson.files = ["src"];
   }
 
   // Scripts
-  pkg.scripts = typescriptScripts(needsBuild, ruleset);
+  packageJson.scripts = typescriptScripts(needsBuild, ruleset);
 
   // Dependencies
-  pkg.devDependencies = sortObject({
-    ...pkg.devDependencies,
+  packageJson.devDependencies = sortObject({
+    ...packageJson.devDependencies,
     "@biomejs/biome": exact(versions, "@biomejs/biome"),
     "@canonical/biome-config": caret(versions, "@canonical/biome-config"),
     "@canonical/typescript-config": caret(
@@ -166,18 +193,23 @@ export const applyTypeScriptProfile = (
   });
 };
 
-export const applyFrameworkDeps = (
-  pkg: PackageJson,
+/**
+ * Apply framework-specific dependencies to a package.json object.
+ * @note This function is impure - it mutates the input package object
+ * to replace base TS config with framework-specific dependencies.
+ */
+const applyFrameworkDeps = (
+  packageJson: PackageJson,
   framework: Framework,
-  versions: ProfileOpts,
+  versions: VersionMap,
 ): void => {
   if (framework === "react") {
     // Replace base TS config with React-specific config
-    delete pkg.devDependencies["@canonical/typescript-config"];
-    delete pkg.devDependencies["bun-types"];
+    delete packageJson.devDependencies["@canonical/typescript-config"];
+    delete packageJson.devDependencies["bun-types"];
 
-    pkg.devDependencies = sortObject({
-      ...pkg.devDependencies,
+    packageJson.devDependencies = sortObject({
+      ...packageJson.devDependencies,
       "@canonical/typescript-config-react": caret(
         versions,
         "@canonical/typescript-config-react",
@@ -195,7 +227,7 @@ export const applyFrameworkDeps = (
       "vite-tsconfig-paths": caret(versions, "vite-tsconfig-paths"),
     });
 
-    pkg.peerDependencies = sortObject({
+    packageJson.peerDependencies = sortObject({
       "@canonical/styles": caret(versions, "@canonical/styles"),
       react: caret(versions, "react"),
       "react-dom": caret(versions, "react-dom"),
@@ -203,13 +235,18 @@ export const applyFrameworkDeps = (
   }
 };
 
-export const applyStorybookConfig = (
-  pkg: PackageJson,
+/**
+ * Apply Storybook configuration to a package.json object.
+ * @note This function is impure - it mutates the input package object
+ * to add Storybook dependencies and scripts.
+ */
+const applyStorybookConfig = (
+  packageJson: PackageJson,
   framework: Framework,
-  versions: ProfileOpts,
+  versions: VersionMap,
 ): void => {
-  pkg.devDependencies = sortObject({
-    ...pkg.devDependencies,
+  packageJson.devDependencies = sortObject({
+    ...packageJson.devDependencies,
     "@canonical/storybook-config": caret(
       versions,
       "@canonical/storybook-config",
@@ -222,11 +259,16 @@ export const applyStorybookConfig = (
     storybook: caret(versions, "storybook"),
   });
 
-  pkg.scripts = { ...pkg.scripts, ...storybookScripts };
+  packageJson.scripts = { ...packageJson.scripts, ...storybookScripts };
 };
 
-export const applyCli = (pkg: PackageJson, shortName: string): void => {
-  pkg.bin = { [shortName]: "src/cli.ts" };
+/**
+ * Apply CLI entry point to a package.json object.
+ * @note This function is impure - it mutates the input package object
+ * to add the bin field for CLI entry point.
+ */
+const applyCli = (packageJson: PackageJson, shortName: string): void => {
+  packageJson.bin = { [shortName]: "src/cli.ts" };
 };
 
 // =============================================================================
@@ -238,82 +280,58 @@ export const applyCli = (pkg: PackageJson, shortName: string): void => {
  * Uses resolved versions from the registry when available, defaults to "*".
  */
 export const buildPackageJson = (
-  ctx: TemplateContext,
+  context: TemplateContext,
   versions: VersionMap = {},
 ): PackageJson => {
-  const pkg = createBasePackage(
-    ctx.name,
-    ctx.description,
-    ctx.version,
-    ctx.license,
+  const packageJson = createBasePackage(
+    context.name,
+    context.description,
+    context.version,
+    context.license,
   );
 
-  if (ctx.content === "css") {
-    applyCssProfile(pkg, versions);
+  if (context.content === "css") {
+    applyCssProfile(packageJson, versions);
   } else {
-    applyTypeScriptProfile(pkg, versions, ctx.needsBuild, ctx.ruleset);
+    applyTypeScriptProfile(
+      packageJson,
+      versions,
+      context.needsBuild,
+      context.ruleset,
+    );
 
-    if (ctx.framework !== "none") {
-      applyFrameworkDeps(pkg, ctx.framework, versions);
+    if (context.framework !== "none") {
+      applyFrameworkDeps(packageJson, context.framework, versions);
     }
 
-    if (ctx.storybook) {
-      applyStorybookConfig(pkg, ctx.framework, versions);
+    if (context.storybook) {
+      applyStorybookConfig(packageJson, context.framework, versions);
     }
 
-    if (ctx.withCli) {
-      applyCli(pkg, ctx.shortName);
+    if (context.withCli) {
+      applyCli(packageJson, context.shortName);
     }
   }
 
-  return pkg;
+  return packageJson;
 };
 
 /**
  * Build a formatted package.json string.
  */
 export const buildPackageJsonString = (
-  ctx: TemplateContext,
+  context: TemplateContext,
   versions: VersionMap = {},
 ): string => {
-  return `${JSON.stringify(buildPackageJson(ctx, versions), null, 2)}\n`;
-};
-
-// =============================================================================
-// Biome.json builder
-// =============================================================================
-
-interface BiomeJson {
-  extends: string[];
-  files: { includes: string[] };
-}
-
-export const buildBiomeJson = (ctx: TemplateContext): BiomeJson => {
-  const includes = ["src", "*.json"];
-
-  if (ctx.framework !== "none" && ctx.content !== "css") {
-    includes.splice(1, 0, "vite.config.ts");
-  }
-
-  return {
-    extends: ["@canonical/biome-config"],
-    files: { includes },
-  };
-};
-
-/**
- * Build a formatted biome.json string.
- */
-export const buildBiomeJsonString = (ctx: TemplateContext): string => {
-  return `${JSON.stringify(buildBiomeJson(ctx), null, 2)}\n`;
+  return `${JSON.stringify(buildPackageJson(context, versions), null, 2)}\n`;
 };
 
 // =============================================================================
 // Helpers
 // =============================================================================
 
-const sortObject = (obj: Record<string, string>): Record<string, string> => {
+const sortObject = (object: Record<string, string>): Record<string, string> => {
   return Object.fromEntries(
-    Object.entries(obj).sort(([a], [b]) => a.localeCompare(b)),
+    Object.entries(object).sort(([a], [b]) => a.localeCompare(b)),
   );
 };

@@ -1,14 +1,16 @@
 /**
- * Programmatic JSON config file builders
+ * Programmatic tsconfig.json builder
  *
- * Builds JSON config files (tsconfig) as typed objects.
+ * Builds tsconfig.json and tsconfig.build.json as typed objects.
  * Non-JSON files (vite, vitest, storybook) live in templates/.
  */
 
 import type { CompilerOptions } from "typescript";
-import type { TemplateContext } from "./index.js";
+import type { TemplateContext } from "../types.js";
 
-const toJson = (obj: unknown): string => `${JSON.stringify(obj, null, 2)}\n`;
+const toJson = (object: unknown): string =>
+  `${JSON.stringify(object, null, 2)}\n`;
+
 // =============================================================================
 // Types
 // =============================================================================
@@ -33,9 +35,9 @@ const buildTsconfigNone = (): TsconfigJson => ({
   include: ["src/**/*.ts"],
 });
 
-const buildTsconfigReact = (ctx: TemplateContext): TsconfigJson => {
+const buildTsconfigReact = (context: TemplateContext): TsconfigJson => {
   const include = ["src/**/*.ts", "src/**/*.tsx"];
-  if (ctx.storybook) {
+  if (context.storybook) {
     include.push(".storybook/*.ts", ".storybook/*.tsx");
   }
   include.push("vite.config.ts");
@@ -56,9 +58,11 @@ const buildTsconfigReact = (ctx: TemplateContext): TsconfigJson => {
   };
 };
 
-export const buildTsconfigJson = (ctx: TemplateContext): string => {
+export const buildTsconfigJson = (context: TemplateContext): string => {
   const tsconfig =
-    ctx.framework === "react" ? buildTsconfigReact(ctx) : buildTsconfigNone();
+    context.framework === "react"
+      ? buildTsconfigReact(context)
+      : buildTsconfigNone();
   return toJson(tsconfig);
 };
 
@@ -66,7 +70,7 @@ export const buildTsconfigJson = (ctx: TemplateContext): string => {
 // tsconfig.build.json
 // =============================================================================
 
-const buildTsconfigBuildReact = (ctx: TemplateContext): TsconfigJson => {
+const buildTsconfigBuildReact = (context: TemplateContext): TsconfigJson => {
   const exclude = [
     "src/**/*.stories.ts",
     "src/**/*.stories.tsx",
@@ -76,7 +80,7 @@ const buildTsconfigBuildReact = (ctx: TemplateContext): TsconfigJson => {
     "vitest.setup.ts",
     "vitest.config.ts",
   ];
-  if (ctx.storybook) {
+  if (context.storybook) {
     exclude.push(".storybook");
   }
 
@@ -99,7 +103,9 @@ const buildTsconfigBuildReact = (ctx: TemplateContext): TsconfigJson => {
  * Returns tsconfig.build.json content, or null if not needed.
  * Only React packages (which use vite build) need a separate build tsconfig.
  */
-export const buildTsconfigBuildJson = (ctx: TemplateContext): string | null => {
-  if (ctx.framework !== "react") return null;
-  return toJson(buildTsconfigBuildReact(ctx));
+export const buildTsconfigBuildJson = (
+  context: TemplateContext,
+): string | null => {
+  if (context.framework !== "react") return null;
+  return toJson(buildTsconfigBuildReact(context));
 };

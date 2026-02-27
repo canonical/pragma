@@ -6,14 +6,14 @@ import { describe, expect, it } from "vitest";
 import {
   buildTsconfigBuildJson,
   buildTsconfigJson,
-} from "../shared/config-files.js";
+} from "../shared/config/index.js";
 import type { TemplateContext } from "../shared/index.js";
 
 // =============================================================================
 // Helpers
 // =============================================================================
 
-const makeCtx = (
+const makeContext = (
   overrides: Partial<TemplateContext> = {},
 ): TemplateContext => ({
   shortName: "test-pkg",
@@ -43,7 +43,7 @@ const makeCtx = (
 
 describe("buildTsconfigJson", () => {
   it("builds plain TS tsconfig for framework=none", () => {
-    const content = buildTsconfigJson(makeCtx({ framework: "none" }));
+    const content = buildTsconfigJson(makeContext({ framework: "none" }));
     const tsconfig = JSON.parse(content);
 
     expect(tsconfig.extends).toBe("@canonical/typescript-config");
@@ -52,7 +52,7 @@ describe("buildTsconfigJson", () => {
   });
 
   it("builds React tsconfig for framework=react", () => {
-    const content = buildTsconfigJson(makeCtx({ framework: "react" }));
+    const content = buildTsconfigJson(makeContext({ framework: "react" }));
     const tsconfig = JSON.parse(content);
 
     expect(tsconfig.extends).toBe("@canonical/typescript-config-react");
@@ -63,7 +63,7 @@ describe("buildTsconfigJson", () => {
 
   it("includes storybook paths when storybook=true", () => {
     const content = buildTsconfigJson(
-      makeCtx({ framework: "react", storybook: true }),
+      makeContext({ framework: "react", storybook: true }),
     );
     const tsconfig = JSON.parse(content);
 
@@ -73,7 +73,7 @@ describe("buildTsconfigJson", () => {
 
   it("excludes storybook paths when storybook=false", () => {
     const content = buildTsconfigJson(
-      makeCtx({ framework: "react", storybook: false }),
+      makeContext({ framework: "react", storybook: false }),
     );
     const tsconfig = JSON.parse(content);
 
@@ -87,11 +87,13 @@ describe("buildTsconfigJson", () => {
 
 describe("buildTsconfigBuildJson", () => {
   it("returns null for framework=none", () => {
-    expect(buildTsconfigBuildJson(makeCtx({ framework: "none" }))).toBeNull();
+    expect(
+      buildTsconfigBuildJson(makeContext({ framework: "none" })),
+    ).toBeNull();
   });
 
   it("builds React build tsconfig", () => {
-    const content = buildTsconfigBuildJson(makeCtx({ framework: "react" }));
+    const content = buildTsconfigBuildJson(makeContext({ framework: "react" }));
     expect(content).not.toBeNull();
     const tsconfig = JSON.parse(content as string);
 
@@ -103,7 +105,7 @@ describe("buildTsconfigBuildJson", () => {
 
   it("includes .storybook in exclude when storybook=true", () => {
     const content = buildTsconfigBuildJson(
-      makeCtx({ framework: "react", storybook: true }),
+      makeContext({ framework: "react", storybook: true }),
     );
     const tsconfig = JSON.parse(content as string);
 
@@ -112,7 +114,7 @@ describe("buildTsconfigBuildJson", () => {
 
   it("omits .storybook from exclude when storybook=false", () => {
     const content = buildTsconfigBuildJson(
-      makeCtx({ framework: "react", storybook: false }),
+      makeContext({ framework: "react", storybook: false }),
     );
     const tsconfig = JSON.parse(content as string);
 

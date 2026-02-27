@@ -6,6 +6,7 @@
  */
 
 import {
+  detectPackageManager,
   exec,
   flatMap,
   type GeneratorDefinition,
@@ -22,13 +23,13 @@ import {
   createTemplateContext,
   detectFrameworkVersion,
   detectMonorepo,
-  detectPackageManager,
   getPackageShortName,
   type PackageAnswers,
   validatePackageName,
 } from "../shared/index.js";
 import { fetchSourceVersions } from "../shared/versions.js";
 import { collectManifest } from "./files.js";
+import { meta } from "./meta.js";
 
 // =============================================================================
 // Prompts
@@ -53,7 +54,7 @@ const prompts: PromptDefinition[] = [
   {
     name: "content",
     type: "select",
-    message: "What does the package contain?",
+    message: "What would you like to publish?",
     choices: [
       { label: "TypeScript", value: "typescript" },
       { label: "CSS only (stylesheets, tokens)", value: "css" },
@@ -106,82 +107,57 @@ const prompts: PromptDefinition[] = [
 // Generator Definition
 // =============================================================================
 
-export const generator: GeneratorDefinition<PackageAnswers> = {
-  meta: {
-    name: "package",
-    description:
-      "Generate a new npm package with proper configuration for the pragma monorepo",
-    version: "0.2.0",
-    help: `Generate a new npm package using a decision-tree prompt flow.
-
-CONTENT:
-  typescript   TypeScript package (default)
-  css          CSS-only package (stylesheets, tokens)
-
-FRAMEWORK (TypeScript only):
-  none         No web framework (default)
-  react        React
-
-ARCHITECTURE (auto-derived from answers):
-  UI components → Storybook auto-included, builds to dist/
-  CLI package   → No build, GPL-3.0, runs from src/
-  Library       → Builds to dist/, LGPL-3.0
-
-The generator auto-detects:
-  - Monorepo: Uses lerna.json version when in pragma monorepo
-  - Framework version: React packages follow @canonical/react-ds-global version
-  - Package manager: Detects bun/yarn/pnpm (defaults to bun)`,
-    examples: [
-      "summon package --name=@canonical/my-tool --content=typescript --with-cli",
-      "summon package --name=@canonical/my-lib --content=typescript",
-      "summon package --name=@canonical/my-react-lib --content=typescript --framework=react --is-component-library",
-      "summon package --name=my-styles --content=css",
-      "summon package --name=@canonical/my-hooks --content=typescript --framework=react --no-is-component-library",
-    ],
-  },
+const generator: GeneratorDefinition<PackageAnswers> = {
+  meta,
 
   prompts,
 
   generate: (answers) => {
     const packageDir = getPackageShortName(answers.name);
-    const cwd = process.cwd();
-    const isTS = answers.content !== "css";
+    const currentDirectory = process.cwd();
+    const isTypeScript = answers.content !== "css";
 
-    return flatMap(detectMonorepo(cwd), (monorepoInfo) =>
+    return flatMap(detectMonorepo(currentDirectory), (monorepoInfo) =>
       flatMap(
-        detectFrameworkVersion(cwd, answers.framework, monorepoInfo),
+        detectFrameworkVersion(
+          currentDirectory,
+          answers.framework,
+          monorepoInfo,
+        ),
         (version) => {
-          const ctx = createTemplateContext(
+          const context = createTemplateContext(
             answers,
             version,
             monorepoInfo.version,
           );
 
           return flatMap(fetchSourceVersions(answers.framework), (versions) => {
-            const manifest = collectManifest(ctx, packageDir, versions);
+            const manifest = collectManifest(context, packageDir, versions);
 
             return sequence_([
               // Info
               info(`Creating package: ${answers.name}`),
               info(`Content: ${answers.content}`),
-              when(isTS, info(`Framework: ${answers.framework}`)),
+              when(isTypeScript, info(`Framework: ${answers.framework}`)),
               when(
                 monorepoInfo.isMonorepo,
                 info(`Monorepo detected, using version: ${version}`),
               ),
 
               // Directories
-              ...manifest.dirs.map((d) => mkdir(d)),
+              ...manifest.dirs.map((directory) => mkdir(directory)),
 
               // Programmatic files
-              ...manifest.files.map((f) => writeFile(f.path, f.content)),
+              ...manifest.files.map((file) =>
+                writeFile(file.path, file.content),
+              ),
 
               // EJS templates
-              ...manifest.templates.map((t) =>
+              ...manifest.templates.map((templateFile) =>
                 template({
-                  source: t.templatePath,
-                  dest: t.destPath,
-                  vars: ctx,
+                  source: templateFile.templatePath,
+                  dest: templateFile.destPath,
+                  vars: context,
                 }),
               ),
 
@@ -190,13 +166,16 @@ The generator auto-detects:
               // Run install (conditional)
               when(
                 answers.runInstall,
-                flatMap(detectPackageManager(cwd), (pm) =>
-                  sequence_([
-                    info(`Running ${pm} install...`),
-                    flatMap(exec(pm, ["install"], packageDir), () =>
-                      info("Dependencies installed successfully"),
-                    ),
-                  ]),
+                flatMap(
+                  detectPackageManager(currentDirectory),
+                  (packageManager) =>
+                    sequence_([
+                      info(`Running ${packageManager} install...`),
+                      flatMap(
+                        exec(packageManager, ["install"], packageDir),
+                        () => info("Dependencies installed successfully"),
+                      ),
+                    ]),
                 ),
               ),
               when(!answers.runInstall, info("Skipping install step")),

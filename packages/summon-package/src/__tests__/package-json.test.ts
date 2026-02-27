@@ -1,20 +1,17 @@
 /**
  * Tests for programmatic package.json and biome.json builders
+ *
+ * Tests exercise the public API (buildPackageJson, buildBiomeJsonString)
+ * through the decision-tree leaf paths. Internal profile functions
+ * (applyCssProfile, applyFrameworkDeps, etc.) are tested indirectly.
  */
 
 import { describe, expect, it } from "vitest";
-import type { TemplateContext } from "../shared/index.js";
 import {
-  applyCli,
-  applyCssProfile,
-  applyFrameworkDeps,
-  applyStorybookConfig,
-  applyTypeScriptProfile,
-  buildBiomeJson,
+  buildBiomeJsonString,
   buildPackageJson,
-  createBasePackage,
-} from "../shared/package-json.js";
-import type { VersionMap } from "../shared/versions.js";
+} from "../shared/config/index.js";
+import type { TemplateContext, VersionMap } from "../shared/types.js";
 
 // =============================================================================
 // Mock version map (simulates resolved versions)
@@ -51,11 +48,11 @@ const mockVersions: VersionMap = {
 // Helpers
 // =============================================================================
 
-const makeCtx = (
+const makeContext = (
   overrides: Partial<TemplateContext> = {},
 ): TemplateContext => ({
-  shortName: "test-pkg",
-  name: "@canonical/test-pkg",
+  shortName: "test-packageJson",
+  name: "@canonical/test-packageJson",
   description: "Test",
   content: "typescript",
   framework: "none",
@@ -76,162 +73,13 @@ const makeCtx = (
 });
 
 // =============================================================================
-// createBasePackage
-// =============================================================================
-
-describe("createBasePackage", () => {
-  it("creates base structure with all metadata", () => {
-    const pkg = createBasePackage(
-      "@canonical/test",
-      "desc",
-      "1.0.0",
-      "LGPL-3.0",
-    );
-    expect(pkg.name).toBe("@canonical/test");
-    expect(pkg.description).toBe("desc");
-    expect(pkg.version).toBe("1.0.0");
-    expect(pkg.license).toBe("LGPL-3.0");
-    expect(pkg.type).toBe("module");
-    expect(pkg.author.name).toBe("Canonical Webteam");
-    expect(pkg.repository.url).toContain("pragma");
-  });
-});
-
-// =============================================================================
-// applyCssProfile
-// =============================================================================
-
-describe("applyCssProfile", () => {
-  it("sets CSS entry point and scripts", () => {
-    const pkg = createBasePackage("test", "", "1.0.0", "LGPL-3.0");
-    applyCssProfile(pkg, mockVersions);
-
-    expect(pkg.module).toBe("src/index.css");
-    expect(pkg.files).toEqual(["src"]);
-    expect(pkg.scripts.build).toBe("echo 'No build needed'");
-    expect(pkg.scripts.test).toBe("echo 'No tests for CSS package'");
-    expect(pkg.scripts["check:ts"]).toBeUndefined();
-  });
-
-  it("includes minimal devDependencies with resolved versions", () => {
-    const pkg = createBasePackage("test", "", "1.0.0", "LGPL-3.0");
-    applyCssProfile(pkg, mockVersions);
-
-    expect(pkg.devDependencies["@biomejs/biome"]).toBe("2.3.11");
-    expect(pkg.devDependencies["@canonical/biome-config"]).toBe("^0.15.0");
-    expect(Object.keys(pkg.devDependencies)).not.toContain("typescript");
-  });
-
-  it("defaults to * when versions are not resolved", () => {
-    const pkg = createBasePackage("test", "", "1.0.0", "LGPL-3.0");
-    applyCssProfile(pkg, {});
-
-    expect(pkg.devDependencies["@biomejs/biome"]).toBe("*");
-  });
-});
-
-// =============================================================================
-// applyTypeScriptProfile
-// =============================================================================
-
-describe("applyTypeScriptProfile", () => {
-  it("sets build entry points when needsBuild is true", () => {
-    const pkg = createBasePackage("test", "", "1.0.0", "LGPL-3.0");
-    applyTypeScriptProfile(pkg, mockVersions, true, "library");
-
-    expect(pkg.module).toBe("dist/esm/index.js");
-    expect(pkg.types).toBe("dist/types/index.d.ts");
-    expect(pkg.files).toEqual(["dist"]);
-    expect(pkg.scripts.build).toBe("bun run build:package");
-  });
-
-  it("sets src entry points when needsBuild is false", () => {
-    const pkg = createBasePackage("test", "", "1.0.0", "GPL-3.0");
-    applyTypeScriptProfile(pkg, mockVersions, false, "tool-ts");
-
-    expect(pkg.module).toBe("src/index.ts");
-    expect(pkg.types).toBe("src/index.ts");
-    expect(pkg.files).toEqual(["src"]);
-    expect(pkg.scripts.build).toBe("echo 'No build needed'");
-  });
-
-  it("includes TS devDependencies with resolved versions", () => {
-    const pkg = createBasePackage("test", "", "1.0.0", "LGPL-3.0");
-    applyTypeScriptProfile(pkg, mockVersions, true, "library");
-
-    expect(pkg.devDependencies.typescript).toBe("^5.8.3");
-    expect(pkg.devDependencies.vitest).toBe("^3.1.1");
-    expect(pkg.devDependencies["@canonical/webarchitect"]).toBe("^0.15.0");
-  });
-});
-
-// =============================================================================
-// applyFrameworkDeps
-// =============================================================================
-
-describe("applyFrameworkDeps", () => {
-  it("adds React deps and peer deps with resolved versions", () => {
-    const pkg = createBasePackage("test", "", "1.0.0", "LGPL-3.0");
-    applyTypeScriptProfile(pkg, mockVersions, true, "package-react");
-    applyFrameworkDeps(pkg, "react", mockVersions);
-
-    expect(pkg.devDependencies.react).toBe("^19.0.0");
-    expect(pkg.devDependencies["@types/react"]).toBe("^19.0.0");
-    expect(pkg.devDependencies["@vitejs/plugin-react"]).toBe("^4.5.2");
-    expect(pkg.devDependencies["@canonical/typescript-config-react"]).toBe(
-      "^0.15.0",
-    );
-    // Base TS config should be replaced
-    expect(Object.keys(pkg.devDependencies)).not.toContain(
-      "@canonical/typescript-config",
-    );
-    expect(Object.keys(pkg.devDependencies)).not.toContain("bun-types");
-
-    expect(pkg.peerDependencies).toBeDefined();
-    expect(pkg.peerDependencies?.react).toBe("^19.0.0");
-  });
-});
-
-// =============================================================================
-// applyStorybookConfig
-// =============================================================================
-
-describe("applyStorybookConfig", () => {
-  it("adds storybook deps and scripts with resolved versions", () => {
-    const pkg = createBasePackage("test", "", "1.0.0", "LGPL-3.0");
-    applyTypeScriptProfile(pkg, mockVersions, true, "package-react");
-    applyStorybookConfig(pkg, "react", mockVersions);
-
-    expect(pkg.devDependencies.storybook).toBe("^10.2.8");
-    expect(pkg.devDependencies["@storybook/react-vite"]).toBe("^10.2.8");
-    expect(pkg.devDependencies["@canonical/storybook-config"]).toBe("^0.15.0");
-    expect(pkg.scripts.storybook).toBeDefined();
-    expect(pkg.scripts["build:storybook"]).toBeDefined();
-    expect(pkg.scripts["build:all"]).toContain("build:storybook");
-  });
-});
-
-// =============================================================================
-// applyCli
-// =============================================================================
-
-describe("applyCli", () => {
-  it("adds bin field", () => {
-    const pkg = createBasePackage("test", "", "1.0.0", "GPL-3.0");
-    applyCli(pkg, "my-tool");
-
-    expect(pkg.bin).toEqual({ "my-tool": "src/cli.ts" });
-  });
-});
-
-// =============================================================================
-// buildPackageJson — full integration per leaf
+// buildPackageJson — all decision-tree leaves
 // =============================================================================
 
 describe("buildPackageJson", () => {
-  it("Leaf A: CSS package", () => {
-    const pkg = buildPackageJson(
-      makeCtx({
+  it("Leaf 1: CSS package", () => {
+    const packageJson = buildPackageJson(
+      makeContext({
         content: "css",
         framework: "none",
         needsBuild: false,
@@ -244,14 +92,26 @@ describe("buildPackageJson", () => {
       mockVersions,
     );
 
-    expect(pkg.module).toBe("src/index.css");
-    expect(pkg.types).toBeUndefined();
-    expect(pkg.scripts.test).toContain("No tests");
+    expect(packageJson.module).toBe("src/index.css");
+    expect(packageJson.types).toBeUndefined();
+    expect(packageJson.files).toEqual(["src"]);
+    expect(packageJson.scripts.build).toBe("echo 'No build needed'");
+    expect(packageJson.scripts.test).toContain("No tests");
+    expect(packageJson.scripts["check:ts"]).toBeUndefined();
+
+    // CSS devDependencies: biome only
+    expect(packageJson.devDependencies["@biomejs/biome"]).toBe("2.3.11");
+    expect(packageJson.devDependencies["@canonical/biome-config"]).toBe(
+      "^0.15.0",
+    );
+    expect(Object.keys(packageJson.devDependencies)).not.toContain(
+      "typescript",
+    );
   });
 
-  it("Leaf C: React component library", () => {
-    const pkg = buildPackageJson(
-      makeCtx({
+  it("Leaf 2.1.1: React component library", () => {
+    const packageJson = buildPackageJson(
+      makeContext({
         content: "typescript",
         framework: "react",
         isComponentLibrary: true,
@@ -263,15 +123,43 @@ describe("buildPackageJson", () => {
       mockVersions,
     );
 
-    expect(pkg.module).toBe("dist/esm/index.js");
-    expect(pkg.peerDependencies?.react).toBe("^19.0.0");
-    expect(pkg.scripts.storybook).toBeDefined();
-    expect(pkg.devDependencies.storybook).toBe("^10.2.8");
+    expect(packageJson.module).toBe("dist/esm/index.js");
+    expect(packageJson.types).toBe("dist/types/index.d.ts");
+    expect(packageJson.files).toEqual(["dist"]);
+    expect(packageJson.scripts.build).toBe("bun run build:package");
+
+    // React deps
+    expect(packageJson.devDependencies.react).toBe("^19.0.0");
+    expect(packageJson.devDependencies["@types/react"]).toBe("^19.0.0");
+    expect(packageJson.devDependencies["@vitejs/plugin-react"]).toBe("^4.5.2");
+    expect(
+      packageJson.devDependencies["@canonical/typescript-config-react"],
+    ).toBe("^0.15.0");
+    // Base TS config replaced by React config
+    expect(Object.keys(packageJson.devDependencies)).not.toContain(
+      "@canonical/typescript-config",
+    );
+    expect(Object.keys(packageJson.devDependencies)).not.toContain("bun-types");
+
+    // Peer deps
+    expect(packageJson.peerDependencies?.react).toBe("^19.0.0");
+
+    // Storybook
+    expect(packageJson.devDependencies.storybook).toBe("^10.2.8");
+    expect(packageJson.devDependencies["@storybook/react-vite"]).toBe(
+      "^10.2.8",
+    );
+    expect(packageJson.devDependencies["@canonical/storybook-config"]).toBe(
+      "^0.15.0",
+    );
+    expect(packageJson.scripts.storybook).toBeDefined();
+    expect(packageJson.scripts["build:storybook"]).toBeDefined();
+    expect(packageJson.scripts["build:all"]).toContain("build:storybook");
   });
 
-  it("Leaf F: TS + none + CLI", () => {
-    const pkg = buildPackageJson(
-      makeCtx({
+  it("Leaf 2.2.1: TS + none + CLI", () => {
+    const packageJson = buildPackageJson(
+      makeContext({
         content: "typescript",
         framework: "none",
         withCli: true,
@@ -285,14 +173,21 @@ describe("buildPackageJson", () => {
       mockVersions,
     );
 
-    expect(pkg.module).toBe("src/index.ts");
-    expect(pkg.bin).toBeDefined();
-    expect(pkg.license).toBe("GPL-3.0");
+    expect(packageJson.module).toBe("src/index.ts");
+    expect(packageJson.bin).toBeDefined();
+    expect(packageJson.license).toBe("GPL-3.0");
+
+    // TS devDependencies
+    expect(packageJson.devDependencies.typescript).toBe("^5.8.3");
+    expect(packageJson.devDependencies.vitest).toBe("^3.1.1");
+    expect(packageJson.devDependencies["@canonical/webarchitect"]).toBe(
+      "^0.15.0",
+    );
   });
 
-  it("Leaf G: TS + none + no CLI (library)", () => {
-    const pkg = buildPackageJson(
-      makeCtx({
+  it("Leaf 2.2.2: TS + none + no CLI (library)", () => {
+    const packageJson = buildPackageJson(
+      makeContext({
         content: "typescript",
         framework: "none",
         needsBuild: true,
@@ -302,14 +197,33 @@ describe("buildPackageJson", () => {
       mockVersions,
     );
 
-    expect(pkg.module).toBe("dist/esm/index.js");
-    expect(pkg.bin).toBeUndefined();
-    expect(pkg.scripts.build).toBe("bun run build:package");
+    expect(packageJson.module).toBe("dist/esm/index.js");
+    expect(packageJson.types).toBe("dist/types/index.d.ts");
+    expect(packageJson.files).toEqual(["dist"]);
+    expect(packageJson.bin).toBeUndefined();
+    expect(packageJson.scripts.build).toBe("bun run build:package");
+  });
+
+  it("sets src entry points when needsBuild is false", () => {
+    const packageJson = buildPackageJson(
+      makeContext({
+        content: "typescript",
+        framework: "none",
+        needsBuild: false,
+        ruleset: "tool-ts",
+      }),
+      mockVersions,
+    );
+
+    expect(packageJson.module).toBe("src/index.ts");
+    expect(packageJson.types).toBe("src/index.ts");
+    expect(packageJson.files).toEqual(["src"]);
+    expect(packageJson.scripts.build).toBe("echo 'No build needed'");
   });
 
   it("devDependencies are sorted alphabetically", () => {
-    const pkg = buildPackageJson(
-      makeCtx({
+    const packageJson = buildPackageJson(
+      makeContext({
         content: "typescript",
         framework: "react",
         isComponentLibrary: true,
@@ -319,14 +233,14 @@ describe("buildPackageJson", () => {
       mockVersions,
     );
 
-    const keys = Object.keys(pkg.devDependencies);
+    const keys = Object.keys(packageJson.devDependencies);
     const sorted = [...keys].sort();
     expect(keys).toEqual(sorted);
   });
 
   it("defaults all versions to * when no VersionMap provided", () => {
-    const pkg = buildPackageJson(
-      makeCtx({
+    const packageJson = buildPackageJson(
+      makeContext({
         content: "typescript",
         framework: "react",
         isComponentLibrary: true,
@@ -336,32 +250,64 @@ describe("buildPackageJson", () => {
       }),
     );
 
-    expect(pkg.devDependencies.react).toBe("*");
-    expect(pkg.peerDependencies?.react).toBe("*");
+    expect(packageJson.devDependencies.react).toBe("*");
+    expect(packageJson.peerDependencies?.react).toBe("*");
+  });
+
+  it("defaults to * when versions are not resolved", () => {
+    const packageJson = buildPackageJson(makeContext({ content: "css" }), {});
+
+    expect(packageJson.devDependencies["@biomejs/biome"]).toBe("*");
+  });
+
+  it("creates base structure with all metadata", () => {
+    const packageJson = buildPackageJson(
+      makeContext({
+        name: "@canonical/test",
+        description: "desc",
+        version: "1.0.0",
+        license: "LGPL-3.0",
+      }),
+      mockVersions,
+    );
+
+    expect(packageJson.name).toBe("@canonical/test");
+    expect(packageJson.description).toBe("desc");
+    expect(packageJson.version).toBe("1.0.0");
+    expect(packageJson.license).toBe("LGPL-3.0");
+    expect(packageJson.type).toBe("module");
+    expect(packageJson.author.name).toBe("Canonical Webteam");
+    expect(packageJson.repository.url).toContain("pragma");
   });
 });
 
 // =============================================================================
-// buildBiomeJson
+// buildBiomeJsonString
 // =============================================================================
 
-describe("buildBiomeJson", () => {
+describe("buildBiomeJsonString", () => {
   it("includes vite.config.ts for framework packages", () => {
-    const biome = buildBiomeJson(
-      makeCtx({ framework: "react", content: "typescript" }),
+    const biome = JSON.parse(
+      buildBiomeJsonString(
+        makeContext({ framework: "react", content: "typescript" }),
+      ),
     );
     expect(biome.files.includes).toContain("vite.config.ts");
   });
 
   it("excludes vite.config.ts for non-framework packages", () => {
-    const biome = buildBiomeJson(
-      makeCtx({ framework: "none", content: "typescript" }),
+    const biome = JSON.parse(
+      buildBiomeJsonString(
+        makeContext({ framework: "none", content: "typescript" }),
+      ),
     );
     expect(biome.files.includes).not.toContain("vite.config.ts");
   });
 
   it("excludes vite.config.ts for CSS packages", () => {
-    const biome = buildBiomeJson(makeCtx({ content: "css" }));
+    const biome = JSON.parse(
+      buildBiomeJsonString(makeContext({ content: "css" })),
+    );
     expect(biome.files.includes).not.toContain("vite.config.ts");
   });
 });

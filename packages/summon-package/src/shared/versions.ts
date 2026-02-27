@@ -8,13 +8,7 @@
 
 import { exec, flatMap, pure, type Task } from "@canonical/summon";
 import type { Framework } from "./index.js";
-
-// =============================================================================
-// Types
-// =============================================================================
-
-/** Map of package name → resolved version (exact, e.g. "19.2.4") */
-export type VersionMap = Record<string, string>;
+import type { VersionMap } from "./types.js";
 
 // =============================================================================
 // Source package mapping
@@ -41,6 +35,8 @@ const SOURCE_PACKAGES: Record<Framework, string | null> = {
  * (all versions default to "*").
  *
  * Tries npm first, falls back to curl if npm is unavailable.
+ * @note This function is impure - it executes external commands
+ * (npm view / curl) to fetch package metadata from the npm registry.
  */
 export const fetchSourceVersions = (framework: Framework): Task<VersionMap> => {
   const sourcePackage = SOURCE_PACKAGES[framework];
@@ -74,13 +70,13 @@ export const fetchSourceVersions = (framework: Framework): Task<VersionMap> => {
  */
 const parseRegistryPackage = (json: string): VersionMap => {
   try {
-    const pkg = JSON.parse(json);
+    const parsedPackage = JSON.parse(json);
     const versions: VersionMap = {};
 
     for (const deps of [
-      pkg.dependencies,
-      pkg.devDependencies,
-      pkg.peerDependencies,
+      parsedPackage.dependencies,
+      parsedPackage.devDependencies,
+      parsedPackage.peerDependencies,
     ]) {
       if (deps) {
         for (const [name, version] of Object.entries(deps)) {
@@ -103,24 +99,3 @@ const parseRegistryPackage = (json: string): VersionMap => {
  */
 const stripRangePrefix = (version: string): string =>
   version.replace(/^[~^>=<]+/, "");
-
-// =============================================================================
-// Version formatting helpers
-// =============================================================================
-
-/**
- * Format a resolved version as a caret range.
- * "19.2.4" → "^19.2.4", "*" → "*"
- */
-export const caret = (versions: VersionMap, pkg: string): string => {
-  const v = versions[pkg];
-  return v && v !== "*" ? `^${v}` : "*";
-};
-
-/**
- * Format a resolved version as an exact pin.
- * "2.3.14" → "2.3.14", "*" → "*"
- */
-export const exact = (versions: VersionMap, pkg: string): string => {
-  return versions[pkg] ?? "*";
-};
