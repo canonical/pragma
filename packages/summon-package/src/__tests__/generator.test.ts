@@ -1,10 +1,28 @@
 /**
- * Dry-run tests for the package generator — all 6 leaf paths
+ * Dry-run tests for the package generator — all 6 decision-tree leaves
+ *
+ * Leaf numbering follows tree depth:
+ *
+ *   content?
+ *   ├── [1] css
+ *   └── [2] typescript
+ *       └── framework?
+ *           ├── [2.1] react
+ *           │   └── isComponentLibrary?
+ *           │       ├── [2.1.1] component library + storybook
+ *           │       └── [2.1.2] no components
+ *           │           └── withCli?
+ *           │               ├── [2.1.2.1] React CLI
+ *           │               └── [2.1.2.2] React hooks/utils
+ *           └── [2.2] none
+ *               └── withCli?
+ *                   ├── [2.2.1] CLI tool
+ *                   └── [2.2.2] plain library
  */
 
 import { dryRun } from "@canonical/summon";
 import { describe, expect, it } from "vitest";
-import { generator } from "../package/index.js";
+import generator from "../package/index.js";
 import type { PackageAnswers } from "../shared/index.js";
 
 // =============================================================================
@@ -25,16 +43,16 @@ const getWritePaths = (answers: PackageAnswers): string[] => {
   const task = generator.generate(answers);
   const result = dryRun(task);
   return result.effects
-    .filter((e) => e._tag === "WriteFile")
-    .map((e) => (e as { path: string }).path);
+    .filter((effect) => effect._tag === "WriteFile")
+    .map((effect) => (effect as { path: string }).path);
 };
 
 const getMkdirPaths = (answers: PackageAnswers): string[] => {
   const task = generator.generate(answers);
   const result = dryRun(task);
   return result.effects
-    .filter((e) => e._tag === "MakeDir")
-    .map((e) => (e as { path: string }).path);
+    .filter((effect) => effect._tag === "MakeDir")
+    .map((effect) => (effect as { path: string }).path);
 };
 
 // =============================================================================
@@ -49,7 +67,7 @@ describe("package generator", () => {
   });
 
   it("defines decision-tree prompts", () => {
-    const promptNames = generator.prompts.map((p) => p.name);
+    const promptNames = generator.prompts.map((prompt) => prompt.name);
 
     expect(promptNames).toContain("name");
     expect(promptNames).toContain("description");
@@ -67,7 +85,7 @@ describe("package generator", () => {
 
   it("framework prompt is conditional on content=typescript", () => {
     const frameworkPrompt = generator.prompts.find(
-      (p) => p.name === "framework",
+      (prompt) => prompt.name === "framework",
     );
     expect(frameworkPrompt?.when).toBeDefined();
     expect(
@@ -83,7 +101,7 @@ describe("package generator", () => {
 
   it("isComponentLibrary prompt is conditional on framework", () => {
     const prompt = generator.prompts.find(
-      (p) => p.name === "isComponentLibrary",
+      (prompt) => prompt.name === "isComponentLibrary",
     );
     expect(prompt?.when).toBeDefined();
     expect(
@@ -101,7 +119,9 @@ describe("package generator", () => {
   });
 
   it("withCli prompt is conditional on not being a component library", () => {
-    const prompt = generator.prompts.find((p) => p.name === "withCli");
+    const prompt = generator.prompts.find(
+      (prompt) => prompt.name === "withCli",
+    );
     expect(prompt?.when).toBeDefined();
     expect(
       prompt?.when?.({
@@ -119,10 +139,10 @@ describe("package generator", () => {
 });
 
 // =============================================================================
-// Leaf A: CSS
+// Leaf 1: CSS
 // =============================================================================
 
-describe("Leaf A: CSS package", () => {
+describe("Leaf 1: CSS package", () => {
   const answers: PackageAnswers = {
     ...base,
     content: "css",
@@ -131,28 +151,34 @@ describe("Leaf A: CSS package", () => {
 
   it("generates CSS index file", () => {
     const paths = getWritePaths(answers);
-    expect(paths.some((p) => p.endsWith("index.css"))).toBe(true);
+    expect(paths.some((filePath) => filePath.endsWith("index.css"))).toBe(true);
   });
 
   it("generates common files", () => {
     const paths = getWritePaths(answers);
-    expect(paths.some((p) => p.endsWith("package.json"))).toBe(true);
-    expect(paths.some((p) => p.endsWith("biome.json"))).toBe(true);
-    expect(paths.some((p) => p.endsWith("README.md"))).toBe(true);
+    expect(paths.some((filePath) => filePath.endsWith("package.json"))).toBe(
+      true,
+    );
+    expect(paths.some((filePath) => filePath.endsWith("biome.json"))).toBe(
+      true,
+    );
+    expect(paths.some((filePath) => filePath.endsWith("README.md"))).toBe(true);
   });
 
   it("does NOT generate TypeScript files", () => {
     const paths = getWritePaths(answers);
-    expect(paths.some((p) => p.endsWith("index.ts"))).toBe(false);
-    expect(paths.some((p) => p.endsWith("tsconfig.json"))).toBe(false);
+    expect(paths.some((filePath) => filePath.endsWith("index.ts"))).toBe(false);
+    expect(paths.some((filePath) => filePath.endsWith("tsconfig.json"))).toBe(
+      false,
+    );
   });
 });
 
 // =============================================================================
-// Leaf C: TS + React + Component Library
+// Leaf 2.1.1: TS + React + Component Library
 // =============================================================================
 
-describe("Leaf C: React component library", () => {
+describe("Leaf 2.1.1: React component library", () => {
   const answers: PackageAnswers = {
     ...base,
     framework: "react",
@@ -161,38 +187,52 @@ describe("Leaf C: React component library", () => {
 
   it("generates React-specific files", () => {
     const paths = getWritePaths(answers);
-    expect(paths.some((p) => p.endsWith("vite.config.ts"))).toBe(true);
-    expect(paths.some((p) => p.endsWith("vitest.setup.ts"))).toBe(true);
-    expect(paths.some((p) => p.endsWith("tsconfig.json"))).toBe(true);
-    expect(paths.some((p) => p.endsWith("tsconfig.build.json"))).toBe(true);
+    expect(paths.some((filePath) => filePath.endsWith("vite.config.ts"))).toBe(
+      true,
+    );
+    expect(paths.some((filePath) => filePath.endsWith("vitest.setup.ts"))).toBe(
+      true,
+    );
+    expect(paths.some((filePath) => filePath.endsWith("tsconfig.json"))).toBe(
+      true,
+    );
+    expect(
+      paths.some((filePath) => filePath.endsWith("tsconfig.build.json")),
+    ).toBe(true);
   });
 
   it("generates Storybook files", () => {
     const paths = getWritePaths(answers);
-    expect(paths.some((p) => p.includes(".storybook/main.ts"))).toBe(true);
-    expect(paths.some((p) => p.includes(".storybook/preview.ts"))).toBe(true);
-    expect(paths.some((p) => p.includes(".storybook/styles.css"))).toBe(true);
+    expect(
+      paths.some((filePath) => filePath.includes(".storybook/main.ts")),
+    ).toBe(true);
+    expect(
+      paths.some((filePath) => filePath.includes(".storybook/preview.ts")),
+    ).toBe(true);
+    expect(
+      paths.some((filePath) => filePath.includes(".storybook/styles.css")),
+    ).toBe(true);
   });
 
   it("creates React directory structure", () => {
     const dirs = getMkdirPaths(answers);
-    expect(dirs.some((p) => p.endsWith("lib"))).toBe(true);
-    expect(dirs.some((p) => p.endsWith("assets"))).toBe(true);
-    expect(dirs.some((p) => p.endsWith(".storybook"))).toBe(true);
-    expect(dirs.some((p) => p.endsWith("public"))).toBe(true);
+    expect(dirs.some((filePath) => filePath.endsWith("lib"))).toBe(true);
+    expect(dirs.some((filePath) => filePath.endsWith("assets"))).toBe(true);
+    expect(dirs.some((filePath) => filePath.endsWith(".storybook"))).toBe(true);
+    expect(dirs.some((filePath) => filePath.endsWith("public"))).toBe(true);
   });
 
   it("does NOT generate CLI file", () => {
     const paths = getWritePaths(answers);
-    expect(paths.some((p) => p.endsWith("cli.ts"))).toBe(false);
+    expect(paths.some((filePath) => filePath.endsWith("cli.ts"))).toBe(false);
   });
 });
 
 // =============================================================================
-// Leaf D: TS + React + No Components + CLI
+// Leaf 2.1.2.1: TS + React + No Components + CLI
 // =============================================================================
 
-describe("Leaf D: React + CLI (no components)", () => {
+describe("Leaf 2.1.2.1: React + CLI (no components)", () => {
   const answers: PackageAnswers = {
     ...base,
     framework: "react",
@@ -202,26 +242,32 @@ describe("Leaf D: React + CLI (no components)", () => {
 
   it("generates CLI file", () => {
     const paths = getWritePaths(answers);
-    expect(paths.some((p) => p.endsWith("cli.ts"))).toBe(true);
+    expect(paths.some((filePath) => filePath.endsWith("cli.ts"))).toBe(true);
   });
 
   it("generates React config files", () => {
     const paths = getWritePaths(answers);
-    expect(paths.some((p) => p.endsWith("vite.config.ts"))).toBe(true);
-    expect(paths.some((p) => p.endsWith("tsconfig.json"))).toBe(true);
+    expect(paths.some((filePath) => filePath.endsWith("vite.config.ts"))).toBe(
+      true,
+    );
+    expect(paths.some((filePath) => filePath.endsWith("tsconfig.json"))).toBe(
+      true,
+    );
   });
 
   it("does NOT generate Storybook files", () => {
     const paths = getWritePaths(answers);
-    expect(paths.some((p) => p.includes(".storybook"))).toBe(false);
+    expect(paths.some((filePath) => filePath.includes(".storybook"))).toBe(
+      false,
+    );
   });
 });
 
 // =============================================================================
-// Leaf E: TS + React + No Components + No CLI
+// Leaf 2.1.2.2: TS + React + No Components + No CLI
 // =============================================================================
 
-describe("Leaf E: React hooks/utils (no components, no CLI)", () => {
+describe("Leaf 2.1.2.2: React hooks/utils (no components, no CLI)", () => {
   const answers: PackageAnswers = {
     ...base,
     framework: "react",
@@ -231,23 +277,31 @@ describe("Leaf E: React hooks/utils (no components, no CLI)", () => {
 
   it("generates React config files", () => {
     const paths = getWritePaths(answers);
-    expect(paths.some((p) => p.endsWith("vite.config.ts"))).toBe(true);
-    expect(paths.some((p) => p.endsWith("tsconfig.json"))).toBe(true);
-    expect(paths.some((p) => p.endsWith("tsconfig.build.json"))).toBe(true);
+    expect(paths.some((filePath) => filePath.endsWith("vite.config.ts"))).toBe(
+      true,
+    );
+    expect(paths.some((filePath) => filePath.endsWith("tsconfig.json"))).toBe(
+      true,
+    );
+    expect(
+      paths.some((filePath) => filePath.endsWith("tsconfig.build.json")),
+    ).toBe(true);
   });
 
   it("does NOT generate Storybook or CLI files", () => {
     const paths = getWritePaths(answers);
-    expect(paths.some((p) => p.includes(".storybook"))).toBe(false);
-    expect(paths.some((p) => p.endsWith("cli.ts"))).toBe(false);
+    expect(paths.some((filePath) => filePath.includes(".storybook"))).toBe(
+      false,
+    );
+    expect(paths.some((filePath) => filePath.endsWith("cli.ts"))).toBe(false);
   });
 });
 
 // =============================================================================
-// Leaf F: TS + None + CLI
+// Leaf 2.2.1: TS + None + CLI
 // =============================================================================
 
-describe("Leaf F: TypeScript CLI tool", () => {
+describe("Leaf 2.2.1: TypeScript CLI tool", () => {
   const answers: PackageAnswers = {
     ...base,
     framework: "none",
@@ -256,27 +310,33 @@ describe("Leaf F: TypeScript CLI tool", () => {
 
   it("generates CLI file and index.ts", () => {
     const paths = getWritePaths(answers);
-    expect(paths.some((p) => p.endsWith("cli.ts"))).toBe(true);
-    expect(paths.some((p) => p.endsWith("index.ts"))).toBe(true);
+    expect(paths.some((filePath) => filePath.endsWith("cli.ts"))).toBe(true);
+    expect(paths.some((filePath) => filePath.endsWith("index.ts"))).toBe(true);
   });
 
   it("generates plain tsconfig (not React)", () => {
     const paths = getWritePaths(answers);
-    expect(paths.some((p) => p.endsWith("tsconfig.json"))).toBe(true);
-    expect(paths.some((p) => p.endsWith("vite.config.ts"))).toBe(false);
+    expect(paths.some((filePath) => filePath.endsWith("tsconfig.json"))).toBe(
+      true,
+    );
+    expect(paths.some((filePath) => filePath.endsWith("vite.config.ts"))).toBe(
+      false,
+    );
   });
 
   it("does NOT generate Storybook files", () => {
     const paths = getWritePaths(answers);
-    expect(paths.some((p) => p.includes(".storybook"))).toBe(false);
+    expect(paths.some((filePath) => filePath.includes(".storybook"))).toBe(
+      false,
+    );
   });
 });
 
 // =============================================================================
-// Leaf G: TS + None + No CLI (plain library)
+// Leaf 2.2.2: TS + None + No CLI (plain library)
 // =============================================================================
 
-describe("Leaf G: Plain TypeScript library", () => {
+describe("Leaf 2.2.2: Plain TypeScript library", () => {
   const answers: PackageAnswers = {
     ...base,
     framework: "none",
@@ -285,23 +345,33 @@ describe("Leaf G: Plain TypeScript library", () => {
 
   it("generates standard files", () => {
     const paths = getWritePaths(answers);
-    expect(paths.some((p) => p.endsWith("package.json"))).toBe(true);
-    expect(paths.some((p) => p.endsWith("biome.json"))).toBe(true);
-    expect(paths.some((p) => p.endsWith("tsconfig.json"))).toBe(true);
-    expect(paths.some((p) => p.endsWith("index.ts"))).toBe(true);
-    expect(paths.some((p) => p.endsWith("README.md"))).toBe(true);
+    expect(paths.some((filePath) => filePath.endsWith("package.json"))).toBe(
+      true,
+    );
+    expect(paths.some((filePath) => filePath.endsWith("biome.json"))).toBe(
+      true,
+    );
+    expect(paths.some((filePath) => filePath.endsWith("tsconfig.json"))).toBe(
+      true,
+    );
+    expect(paths.some((filePath) => filePath.endsWith("index.ts"))).toBe(true);
+    expect(paths.some((filePath) => filePath.endsWith("README.md"))).toBe(true);
   });
 
   it("does NOT generate CLI, Storybook, or React files", () => {
     const paths = getWritePaths(answers);
-    expect(paths.some((p) => p.endsWith("cli.ts"))).toBe(false);
-    expect(paths.some((p) => p.includes(".storybook"))).toBe(false);
-    expect(paths.some((p) => p.endsWith("vite.config.ts"))).toBe(false);
+    expect(paths.some((filePath) => filePath.endsWith("cli.ts"))).toBe(false);
+    expect(paths.some((filePath) => filePath.includes(".storybook"))).toBe(
+      false,
+    );
+    expect(paths.some((filePath) => filePath.endsWith("vite.config.ts"))).toBe(
+      false,
+    );
   });
 
   it("creates directory structure using short name", () => {
     const dirs = getMkdirPaths(answers);
-    expect(dirs.some((p) => p === "test-pkg")).toBe(true);
-    expect(dirs.some((p) => p.endsWith("src"))).toBe(true);
+    expect(dirs.some((filePath) => filePath === "test-pkg")).toBe(true);
+    expect(dirs.some((filePath) => filePath.endsWith("src"))).toBe(true);
   });
 });

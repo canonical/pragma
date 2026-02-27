@@ -37,7 +37,7 @@ describe("validatePackageName", () => {
 });
 
 // =============================================================================
-// derivePackageConfig — all 6 leaves
+// derivePackageConfig — all 6 decision-tree leaves
 // =============================================================================
 
 describe("derivePackageConfig", () => {
@@ -51,7 +51,7 @@ describe("derivePackageConfig", () => {
     runInstall: false,
   };
 
-  it("Leaf A: CSS — no build, LGPL, no storybook, base ruleset", () => {
+  it("Leaf 1: CSS — no build, LGPL, no storybook, base ruleset", () => {
     const config = derivePackageConfig({ ...base, content: "css" });
     expect(config.needsBuild).toBe(false);
     expect(config.license).toBe("LGPL-3.0");
@@ -62,7 +62,7 @@ describe("derivePackageConfig", () => {
     expect(config.files).toEqual(["src"]);
   });
 
-  it("Leaf C: TS + React + component lib — build, LGPL, storybook, package-react", () => {
+  it("Leaf 2.1.1: TS + React + component lib — build, LGPL, storybook, package-react", () => {
     const config = derivePackageConfig({
       ...base,
       framework: "react",
@@ -77,7 +77,7 @@ describe("derivePackageConfig", () => {
     expect(config.files).toEqual(["dist"]);
   });
 
-  it("Leaf D: TS + React + no components + CLI — no build, GPL, no storybook", () => {
+  it("Leaf 2.1.2.1: TS + React + no components + CLI — no build, GPL, no storybook", () => {
     const config = derivePackageConfig({
       ...base,
       framework: "react",
@@ -93,7 +93,7 @@ describe("derivePackageConfig", () => {
     expect(config.files).toEqual(["src"]);
   });
 
-  it("Leaf E: TS + React + no components + no CLI — build, LGPL, no storybook", () => {
+  it("Leaf 2.1.2.2: TS + React + no components + no CLI — build, LGPL, no storybook", () => {
     const config = derivePackageConfig({
       ...base,
       framework: "react",
@@ -109,7 +109,7 @@ describe("derivePackageConfig", () => {
     expect(config.files).toEqual(["dist"]);
   });
 
-  it("Leaf F: TS + none + CLI — no build, GPL, tool-ts ruleset", () => {
+  it("Leaf 2.2.1: TS + none + CLI — no build, GPL, tool-ts ruleset", () => {
     const config = derivePackageConfig({
       ...base,
       framework: "none",
@@ -124,7 +124,7 @@ describe("derivePackageConfig", () => {
     expect(config.files).toEqual(["src"]);
   });
 
-  it("Leaf G: TS + none + no CLI — build, LGPL, library ruleset", () => {
+  it("Leaf 2.2.2: TS + none + no CLI — build, LGPL, library ruleset", () => {
     const config = derivePackageConfig({
       ...base,
       framework: "none",
@@ -156,35 +156,38 @@ describe("createTemplateContext", () => {
   };
 
   it("creates context with version and monorepo version", () => {
-    const ctx = createTemplateContext(base, "1.2.3", "1.2.3");
-    expect(ctx.name).toBe("@canonical/test-pkg");
-    expect(ctx.shortName).toBe("test-pkg");
-    expect(ctx.version).toBe("1.2.3");
-    expect(ctx.monorepoVersion).toBe("1.2.3");
+    const context = createTemplateContext(base, "1.2.3", "1.2.3");
+    expect(context.name).toBe("@canonical/test-pkg");
+    expect(context.shortName).toBe("test-pkg");
+    expect(context.version).toBe("1.2.3");
+    expect(context.monorepoVersion).toBe("1.2.3");
   });
 
   it("includes derived fields", () => {
-    const ctx = createTemplateContext(base, "0.1.0");
-    expect(ctx.license).toBe("LGPL-3.0");
-    expect(ctx.needsBuild).toBe(true);
-    expect(ctx.storybook).toBe(false);
-    expect(ctx.ruleset).toBe("library");
+    const context = createTemplateContext(base, "0.1.0");
+    expect(context.license).toBe("LGPL-3.0");
+    expect(context.needsBuild).toBe(true);
+    expect(context.storybook).toBe(false);
+    expect(context.ruleset).toBe("library");
   });
 
   it("includes answer fields", () => {
-    const ctx = createTemplateContext(
+    const context = createTemplateContext(
       { ...base, framework: "react", isComponentLibrary: true },
       "0.1.0",
     );
-    expect(ctx.content).toBe("typescript");
-    expect(ctx.framework).toBe("react");
-    expect(ctx.isComponentLibrary).toBe(true);
-    expect(ctx.storybook).toBe(true);
+    expect(context.content).toBe("typescript");
+    expect(context.framework).toBe("react");
+    expect(context.isComponentLibrary).toBe(true);
+    expect(context.storybook).toBe(true);
   });
 
   it("handles unscoped package names", () => {
-    const ctx = createTemplateContext({ ...base, name: "my-package" }, "0.1.0");
-    expect(ctx.name).toBe("my-package");
-    expect(ctx.shortName).toBe("my-package");
+    const context = createTemplateContext(
+      { ...base, name: "my-package" },
+      "0.1.0",
+    );
+    expect(context.name).toBe("my-package");
+    expect(context.shortName).toBe("my-package");
   });
 });

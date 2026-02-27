@@ -67,8 +67,8 @@ const prompts: PromptDefinition[] = [
     type: "select",
     message: "Does it use a web framework?",
     choices: [
-      { label: "None", value: "none" },
       { label: "React", value: "react" },
+      { label: "None", value: "none" },
     ],
     default: "none",
     when: (answers) => answers.content === "typescript",
