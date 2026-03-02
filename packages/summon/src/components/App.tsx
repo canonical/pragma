@@ -223,7 +223,7 @@ const EffectTreeSection = ({
       <Box flexDirection="column" marginLeft={1}>
         {effects.map((effect, index) => (
           <EffectTreeRow
-            key={`${effect._tag}-${index}`}
+            key={`${effect._tag}:${getEffectPayload(effect)}`}
             effect={effect}
             isLast={index === effects.length - 1}
           />

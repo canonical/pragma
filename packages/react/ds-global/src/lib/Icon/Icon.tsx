@@ -1,4 +1,3 @@
-import type React from "react";
 import type { ReactElement } from "react";
 import type { IconProps } from "./types.js";
 import "./styles.css";
@@ -24,6 +23,7 @@ const Icon = ({
       viewBox={viewBox}
       className={[componentCssClassName, className].filter(Boolean).join(" ")}
       role={role}
+      aria-label={icon}
       {...props}
     >
       <use href={`${rootPath}/${icon}.svg#${icon}`} />

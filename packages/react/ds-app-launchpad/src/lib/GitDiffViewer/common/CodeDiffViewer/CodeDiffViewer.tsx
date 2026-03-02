@@ -93,7 +93,7 @@ const CodeDiffViewer = (
               let newLineCounter = hunk.positions.new.start;
 
               return (
-                <Fragment key={`${diff.oldPath}-${hunkIndex}`}>
+                <Fragment key={`${diff.oldPath}-${hunk.header}`}>
                   <DiffLine
                     type="hunk"
                     hunkHeader={hunk.header}
@@ -115,7 +115,7 @@ const CodeDiffViewer = (
 
                     return (
                       <AnnotatedDiffLine
-                        key={`${diff.oldPath}-${hunkIndex}-${lineIndex}`}
+                        key={`${diff.oldPath}-${line.type}-${oldLineNumber}-${newLineNumber}`}
                         newLineNumber={newLineNumber}
                         oldLineNumber={oldLineNumber}
                         diffLineNumber={hunk.positions.diff.start + lineIndex}

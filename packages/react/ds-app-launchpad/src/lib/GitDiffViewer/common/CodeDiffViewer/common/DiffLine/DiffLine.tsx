@@ -63,8 +63,8 @@ const DiffLine = ({
                   fill="none"
                   xmlns="http://www.w3.org/2000/svg"
                 >
-                  <use href="#comment-icon" />
                   <title>Comment</title>
+                  <use href="#comment-icon" />
                 </svg>
               </span>
             )}

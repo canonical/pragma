@@ -6,6 +6,51 @@
   min-width: var(--table-width);
   color: var(--git-diff-viewer-code-default-color);
 
+  td.diff-gutter {
+    min-width: var(--git-diff-viewer-gutter-width);
+    max-width: var(--git-diff-viewer-gutter-width);
+    padding: 0;
+    text-align: right;
+    border-right: 1px solid var(--git-diff-viewer-border-color-tinted);
+    user-select: none;
+    vertical-align: top;
+
+    &:not(.wrap) {
+      position: sticky;
+      left: 0;
+    }
+
+    .diff-line-numbers {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0px;
+    }
+    .line-num {
+      display: inline-block;
+      width: calc(var(--git-diff-viewer-gutter-width) / 2 - 4px);
+      text-align: center;
+      color: var(--git-diff-viewer-code-line-number-default-color);
+    }
+  }
+
+  td.diff-content {
+    /* padding: 0 0 0 calc(var(--git-diff-viewer-gutter-width) + 4px); */
+    padding: 0 0 0 4px;
+
+    pre {
+      margin: 0;
+      padding: 0 8px;
+      font-family: var(--font-family-mono);
+    }
+
+    &.wrap {
+      pre {
+        text-wrap: wrap;
+      }
+    }
+  }
+
   &.diff-line-add {
     background-color: var(--git-diff-viewer-code-insertion-background);
 
@@ -45,51 +90,6 @@
     td.diff-gutter {
       background-color: var(--git-diff-viewer-hunk-header-background);
       border-color: var(--git-diff-viewer-border-color-tinted);
-    }
-  }
-
-  td.diff-gutter {
-    min-width: var(--git-diff-viewer-gutter-width);
-    max-width: var(--git-diff-viewer-gutter-width);
-    padding: 0;
-    text-align: right;
-    border-right: 1px solid var(--git-diff-viewer-border-color-tinted);
-    user-select: none;
-    vertical-align: top;
-
-    &:not(.wrap) {
-      position: sticky;
-      left: 0;
-    }
-
-    .diff-line-numbers {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 0px;
-    }
-    .line-num {
-      display: inline-block;
-      width: calc(var(--git-diff-viewer-gutter-width) / 2 - 4px);
-      text-align: center;
-      color: var(--git-diff-viewer-code-line-number-default-color);
-    }
-  }
-
-  td.diff-content {
-    /* padding: 0 0 0 calc(var(--git-diff-viewer-gutter-width) + 4px); */
-    padding: 0 0 0 4px;
-
-    &.wrap {
-      pre {
-        text-wrap: wrap;
-      }
-    }
-
-    pre {
-      margin: 0;
-      padding: 0 8px;
-      font-family: var(--font-family-mono);
     }
   }
 
