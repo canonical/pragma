@@ -1,85 +1,73 @@
 .ds.button {
-	cursor: pointer;
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
+  --color-background-button-active: var(
+    --lp-color-background-active-context,
+    var(--lp-color-background-neutral-active)
+  );
+  --color-background-button-hover: var(
+    --lp-color-background-hover-context,
+    var(--lp-color-background-neutral-hover)
+  );
+  --color-background-button: var(
+    --lp-color-background-context,
+    var(--lp-color-background-default)
+  );
+  --color-border-button: var(
+    --lp-color-border-context,
+    var(--lp-color-border-high-contrast)
+  );
+  --color-border-button-hover: var(
+    --lp-color-border-hover-context,
+    var(--color-border-button)
+  );
+  --color-border-button-active: var(
+    --lp-color-border-active-context,
+    var(--color-border-button)
+  );
+  --color-text-button: var(
+    --lp-color-text-context,
+    var(--lp-color-text-default)
+  );
+  --typography-button: var(
+    --lp-typography-context,
+    var(--lp-typography-paragraph-default)
+  );
 
-	background-color: var(
-		--lp-color-background-context,
-		var(--lp-color-background-default)
-	);
-	border: var(--lp-dimension-stroke-thickness-default) solid
-		var(--lp-color-border-context, var(--lp-color-border-high-contrast));
-	border-radius: var(--lp-dimension-radius-medium);
-	font: var(--lp-typography-context, var(--lp-typography-paragraph-default));
-	color: var(--lp-color-text-context, var(--lp-color-text-default));
-	text-decoration: none;
-	padding-inline: 0;
-	padding-block: 0;
+  padding-inline: 0;
+  padding-block: 0;
+  align-items: center;
+  display: inline-flex;
+  justify-content: center;
 
-	transition-duration: var(--lp-transition-duration-snap);
-	transition-property: background-color, border-color;
-	transition-timing-function: var(--lp-transition-timing-ease-in);
+  &:not(.explicit-disabled) {
+    --opacity-button-disabled: 1;
+  }
 
-	&:not(:disabled):not([aria-disabled="true"]) {
-		&:hover {
-			background-color: var(
-				--lp-color-background-hover-context,
-				var(--lp-color-background-neutral-hover)
-			);
-			border-color: var(
-				--lp-color-border-hover-context,
-				var(--lp-color-border-context, var(--lp-color-border-high-contrast))
-			);
-		}
+  &.loading {
+    position: relative;
 
-		&:active {
-			background-color: var(
-				--lp-color-background-active-context,
-				var(--lp-color-background-neutral-active)
-			);
-			border-color: var(
-				--lp-color-border-active-context,
-				var(--lp-color-border-context, var(--lp-color-border-high-contrast))
-			);
-		}
-	}
+    > .button-content {
+      visibility: hidden;
+    }
 
-	&:disabled,
-	&[aria-disabled="true"] {
-		cursor: not-allowed;
-	}
+    > .loader {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+  }
 
-	&.explicit-disabled {
-		opacity: var(--lp-opacity-muted);
-	}
+  /* Button-specific modifiers */
+  &.brand {
+    --lp-color-text-context: var(--lp-color-text-white);
+    --lp-color-border-context: var(--lp-color-brand-default);
+    --lp-color-background-context: var(--lp-color-brand-default);
+    --lp-color-background-hover-context: var(--lp-color-brand-hover);
+    --lp-color-background-active-context: var(--lp-color-brand-active);
+  }
 
-	&.loading {
-		position: relative;
-
-		> .button-content {
-			visibility: hidden;
-		}
-
-		> .loader {
-			position: absolute;
-			inset: 0;
-			display: flex;
-			align-items: center;
-			justify-content: center;
-		}
-	}
-
-	/* Button-specific modifiers */
-	&.brand {
-		--lp-color-text-context: var(--lp-color-text-white);
-		--lp-color-border-context: var(--lp-color-brand-default);
-		--lp-color-background-context: var(--lp-color-brand-default);
-		--lp-color-background-hover-context: var(--lp-color-brand-hover);
-		--lp-color-background-active-context: var(--lp-color-brand-active);
-	}
-
-	&.base {
-		--lp-color-border-context: transparent;
-	}
+  &.base {
+    --lp-color-border-context: transparent;
+  }
 }
