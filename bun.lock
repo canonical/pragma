@@ -799,6 +799,7 @@
         "@canonical/svelte-icons": "^0.0.9",
       },
       "devDependencies": {
+        "@biomejs/biome": "2.4.5",
         "@canonical/biome-config-svelte": "^0.15.0",
         "@canonical/storybook-helpers": "^0.15.1",
         "@canonical/svelte-ssr-test": "^0.15.1",
