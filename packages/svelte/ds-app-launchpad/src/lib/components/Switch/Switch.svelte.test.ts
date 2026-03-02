@@ -1,8 +1,8 @@
 import type { Locator } from "@vitest/browser/context";
 import { describe, expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
-import { render } from "vitest-browser-svelte";
 import type { RenderResult } from "vitest-browser-svelte";
+import { render } from "vitest-browser-svelte";
 import Component from "./Switch.svelte";
 
 describe("Switch component", () => {
@@ -160,7 +160,7 @@ describe("Switch component", () => {
   });
 });
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// biome-ignore lint/suspicious/noExplicitAny: Svelte 5 component types are incompatible with RenderResult's Component constraint
 function componentLocator(page: RenderResult<any>): Locator {
   return page.getByRole("switch");
 }

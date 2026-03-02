@@ -1,26 +1,26 @@
 <script lang="ts">
-	import { Spinner } from "../Spinner/index.js";
-	import { ButtonPrimitive } from "../common/ButtonPrimitive/index.js";
-	import { Content } from "./common/Content";
-	import type { ButtonProps } from "./types";
-	import "./styles.css";
+  import { ButtonPrimitive } from "../common/ButtonPrimitive/index.js";
+  import { Spinner } from "../Spinner/index.js";
+  import { Content } from "./common/Content";
+  import type { ButtonProps } from "./types";
+  import "./styles.css";
 
-	const componentCssClassName = "ds button";
+  const componentCssClassName = "ds button";
 
-	let {
-		class: className,
-		ref = $bindable(),
-		severity,
-		density,
-		children,
-		iconLeft,
-		iconRight,
-		loading,
-		disabled,
-		...rest
-	}: ButtonProps = $props();
+  let {
+    class: className,
+    ref = $bindable(),
+    severity,
+    density,
+    children,
+    iconLeft,
+    iconRight,
+    loading,
+    disabled,
+    ...rest
+  }: ButtonProps = $props();
 
-	const isDisabled = $derived(loading || disabled);
+  const isDisabled = $derived(loading || disabled);
 </script>
 
 <ButtonPrimitive

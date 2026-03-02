@@ -1,11 +1,11 @@
 <script lang="ts">
-	import { SpinnerIcon } from "@canonical/svelte-icons";
-	import type { SpinnerProps } from "./types";
-	import "./styles.css";
+  import { SpinnerIcon } from "@canonical/svelte-icons";
+  import type { SpinnerProps } from "./types";
+  import "./styles.css";
 
-	const componentCssClassName = "ds spinner";
+  const componentCssClassName = "ds spinner";
 
-	let { class: className, ...rest }: SpinnerProps = $props();
+  let { class: className, ...rest }: SpinnerProps = $props();
 </script>
 
 <SpinnerIcon

@@ -13,9 +13,9 @@
   background-color: var(--lp-color-background-default);
   transition:
     background-color var(--lp-transition-duration-brisk)
-      var(--lp-transition-timing-ease-out),
+    var(--lp-transition-timing-ease-out),
     border-color var(--lp-transition-duration-brisk)
-      var(--lp-transition-timing-ease-out);
+    var(--lp-transition-timing-ease-out);
 
   &::after {
     content: "";

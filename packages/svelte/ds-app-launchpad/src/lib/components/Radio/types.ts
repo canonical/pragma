@@ -1,9 +1,7 @@
 import type { HTMLInputAttributes } from "svelte/elements";
 
-interface BaseProps extends Omit<
-  HTMLInputAttributes,
-  "children" | "indeterminate"
-> {
+interface BaseProps
+  extends Omit<HTMLInputAttributes, "children" | "indeterminate"> {
   type?: "radio";
 }
 

@@ -14,8 +14,7 @@ type ChipClickOptions = {
 };
 
 export interface ChipProps
-  extends
-    Omit<HTMLAttributes<HTMLElement>, "onclick" | "children">,
+  extends Omit<HTMLAttributes<HTMLElement>, "onclick" | "children">,
     ModifierFamily<["density", "severity"]>,
     ChipClickOptions {
   /** The value of the chip */

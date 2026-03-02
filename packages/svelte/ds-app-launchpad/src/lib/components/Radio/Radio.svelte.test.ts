@@ -1,8 +1,8 @@
 import type { Locator } from "@vitest/browser/context";
 import type { ComponentProps } from "svelte";
 import { describe, expect, it, vi } from "vitest";
-import { render } from "vitest-browser-svelte";
 import type { RenderResult } from "vitest-browser-svelte";
+import { render } from "vitest-browser-svelte";
 import Component from "./Radio.svelte";
 
 describe("Radio component", () => {
@@ -116,7 +116,7 @@ describe("Radio component", () => {
   });
 });
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// biome-ignore lint/suspicious/noExplicitAny: Svelte 5 component types are incompatible with RenderResult's Component constraint
 function componentLocator(page: RenderResult<any>): Locator {
   return page.getByRole("radio");
 }

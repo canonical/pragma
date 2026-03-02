@@ -2,9 +2,9 @@
 
 import type { ComponentProps } from "svelte";
 import { describe, expect, it } from "vitest";
-import { render } from "vitest-browser-svelte";
 import type { Locator } from "vitest/browser";
 import type { RenderResult } from "vitest-browser-svelte";
+import { render } from "vitest-browser-svelte";
 import Component from "./Badge.svelte";
 
 describe("Badge component", () => {
@@ -133,6 +133,7 @@ describe("Badge component", () => {
   });
 });
 
-function componentLocator(page: RenderResult<typeof Component>): Locator {
+// biome-ignore lint/suspicious/noExplicitAny: Svelte 5 component types are incompatible with RenderResult's Component constraint
+function componentLocator(page: RenderResult<any>): Locator {
   return page.getByTestId("badge");
 }

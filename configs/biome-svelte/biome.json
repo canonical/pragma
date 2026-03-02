@@ -1,6 +1,10 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.3.14/schema.json",
+  "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
   "extends": ["@canonical/biome-config"],
+  "formatter": {
+    "indentStyle": "space",
+    "indentWidth": 2
+  },
   "overrides": [
     {
       "includes": ["**/*.svelte"],

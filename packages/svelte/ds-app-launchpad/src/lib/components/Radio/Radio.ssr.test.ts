@@ -1,5 +1,5 @@
-import { render } from "@canonical/svelte-ssr-test";
 import type { RenderResult } from "@canonical/svelte-ssr-test";
+import { render } from "@canonical/svelte-ssr-test";
 import { describe, expect, it } from "vitest";
 import Component from "./Radio.svelte";
 import type { RadioProps } from "./types.js";
@@ -15,9 +15,7 @@ describe("Radio SSR", () => {
 
   it("renders", () => {
     const page = render(Component, { props: { ...baseProps } });
-    expect(componentLocator(page)).toBeInstanceOf(
-      page.window.HTMLInputElement,
-    );
+    expect(componentLocator(page)).toBeInstanceOf(page.window.HTMLInputElement);
   });
 
   describe("attributes", () => {
