@@ -3,7 +3,7 @@
   --color-background-input-hover: var(--lp-color-background-hover);
   --color-background-input: var(--lp-color-background-input);
   --dimension-padding-inline-input: var(--lp-dimension-spacing-inline-m);
-  --lp-dimension-padding-block-input: var(--lp-dimension-spacing-block-xxs);
+  --dimension-padding-block-input: var(--lp-dimension-spacing-block-xxs);
   --color-border-input: var(--lp-color-border-high-contrast);
   --border-style-input: none none solid none;
   --dimension-border-width-input: var(--lp-dimension-stroke-thickness-default);
@@ -23,7 +23,7 @@
   --color-outline-input-invalid: var(--lp-color-border-negative);
 
   padding-inline: var(--dimension-padding-inline-input);
-  padding-block: var(--lp-dimension-padding-block-input);
+  padding-block: var(--dimension-padding-block-input);
   border-width: var(--dimension-border-width-input);
   border-style: var(--border-style-input);
   border-color: var(--color-border-input);
