@@ -83,23 +83,20 @@ export function ModifierMatrix<
               <span className="axis-label row">{rowAxis.name}</span>
               <span className="axis-label col">{columnAxis.name}</span>
             </th>
-            {colValues.map((colValue, colIdx) => (
-              <th
-                key={colValue ?? `col-none-${colIdx}`}
-                className="header col-header"
-              >
+            {colValues.map((colValue) => (
+              <th key={colValue ?? "col-none"} className="header col-header">
                 {getColLabel(colValue)}
               </th>
             ))}
           </tr>
         </thead>
         <tbody>
-          {rowValues.map((rowValue, rowIdx) => (
-            <tr key={rowValue ?? `row-none-${rowIdx}`}>
+          {rowValues.map((rowValue) => (
+            <tr key={rowValue ?? "row-none"}>
               <th className="header row-header">{getRowLabel(rowValue)}</th>
-              {colValues.map((colValue, colIdx) => (
+              {colValues.map((colValue) => (
                 <td
-                  key={`${rowValue ?? "none"}-${colValue ?? "none"}-${rowIdx}-${colIdx}`}
+                  key={`${rowValue ?? "none"}-${colValue ?? "none"}`}
                   className="cell"
                 >
                   {renderCell

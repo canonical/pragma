@@ -65,19 +65,28 @@ export const Bottom: Story = {
   },
 };
 
-export const Changeable: StoryFn = () => {
-  const options: WindowFitmentDirection[] = ["top", "right", "bottom", "left"];
+const changeableOptions: WindowFitmentDirection[] = [
+  "top",
+  "right",
+  "bottom",
+  "left",
+];
 
+export const Changeable: StoryFn = () => {
   const [bestPosition, setBestPosition] = useState<BestPosition | undefined>(
     undefined,
   );
 
-  const [preferredDirection, setPreferredDirection] = useState(options[0]);
+  const [preferredDirection, setPreferredDirection] = useState(
+    changeableOptions[0],
+  );
 
   const [changeCount, setChangeCount] = useState(0);
 
   useEffect(() => {
-    setPreferredDirection(options[changeCount % options.length]);
+    setPreferredDirection(
+      changeableOptions[changeCount % changeableOptions.length],
+    );
   }, [changeCount]);
 
   return (

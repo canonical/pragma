@@ -72,13 +72,6 @@
     visibility: visible;
   }
 
-  &.autofit {
-    &::before {
-      transform: translateX(var(--tooltip-arrow-offset-left))
-        translateY(var(--tooltip-arrow-offset-top));
-    }
-  }
-
   /* triangle */
   &::before {
     content: "";
@@ -86,6 +79,13 @@
     height: 0;
     border: var(--tooltip-border-arrow-hidden);
     position: absolute;
+  }
+
+  &.autofit {
+    &::before {
+      transform: translateX(var(--tooltip-arrow-offset-left))
+        translateY(var(--tooltip-arrow-offset-top));
+    }
   }
 
   &.top::before {

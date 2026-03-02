@@ -78,6 +78,7 @@
 
   &:has(textarea:focus) {
     outline: 1px solid Highlight;
+    /* biome-ignore lint/suspicious/noDuplicateProperties: fallback for browsers without -webkit-focus-ring-color */
     outline: 1px solid -webkit-focus-ring-color;
   }
 }

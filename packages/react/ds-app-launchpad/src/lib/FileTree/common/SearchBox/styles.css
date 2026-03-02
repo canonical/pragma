@@ -13,6 +13,7 @@
 
   &:focus-within {
     outline: 2px solid Highlight;
+    /* biome-ignore lint/suspicious/noDuplicateProperties: fallback for browsers without -webkit-focus-ring-color */
     outline: 2px solid -webkit-focus-ring-color;
     outline-offset: -1px;
     box-sizing: border-box;

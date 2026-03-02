@@ -91,7 +91,7 @@ The package.json file defines the package identity, exports, scripts, and depend
     "test:vitest:watch": "vitest"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.3.11",
+    "@biomejs/biome": "2.4.5",
     "@canonical/biome-config": "^0.11.0",
     "@canonical/typescript-config": "^0.11.0",
     "@canonical/webarchitect": "^0.11.0",

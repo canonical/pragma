@@ -73,7 +73,7 @@ export const FileTreePreview = ({
         {title}
       </Text>
       <Box marginLeft={1} flexDirection="column">
-        {fileEffects.map((info, i) => {
+        {fileEffects.map((info) => {
           const actionColor =
             info.action === "delete" || info.action === "rmdir"
               ? "red"
@@ -82,7 +82,7 @@ export const FileTreePreview = ({
             info.action === "delete" || info.action === "rmdir" ? "-" : "+";
 
           return (
-            <Box key={`${info.path}-${i}`}>
+            <Box key={info.path}>
               <Text color={actionColor}>{actionIcon} </Text>
               <Text>{info.path}</Text>
               {info.size !== undefined && (
