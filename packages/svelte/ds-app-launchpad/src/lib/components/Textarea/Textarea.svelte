@@ -51,7 +51,7 @@
 		--color-border-textarea-input: var(--lp-color-border-high-contrast);
 		--border-style-textarea-input: none none solid none;
 		--dimension-border-width-textarea-input: var(
-			--dimension-stroke-thickness-default
+			--lp-dimension-stroke-thickness-default
 		);
 		--color-text-textarea-input: var(--lp-color-text-default);
 		--color-text-textarea-input-placeholder: var(--lp-color-text-muted);

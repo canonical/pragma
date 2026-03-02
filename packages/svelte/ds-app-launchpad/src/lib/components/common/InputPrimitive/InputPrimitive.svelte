@@ -21,7 +21,7 @@
 		--lp-dimension-padding-block-input: var(--lp-dimension-spacing-block-xxs);
 		--color-border-input: var(--lp-color-border-high-contrast);
 		--border-style-input: none none solid none;
-		--dimension-border-width-input: var(--dimension-stroke-thickness-default);
+		--dimension-border-width-input: var(--lp-dimension-stroke-thickness-default);
 		--color-outline-input: var(--lp-color-border-focus);
 		--color-text-input: var(--lp-color-text-default);
 		--color-text-input-placeholder: var(--lp-color-text-muted);
