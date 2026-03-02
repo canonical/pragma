@@ -16,13 +16,9 @@
 .ds.example {
   padding: var(--example-padding);
   background-color: var(--example-color-background);
-}
 
-/* ==========================================================================
-   Outlined Variant
-   ========================================================================== */
-
-.ds.example.outlined {
-  border: var(--example-border-width) solid var(--example-color-border);
-  border-radius: var(--example-border-radius);
+  &.outlined {
+    border: var(--example-border-width) solid var(--example-color-border);
+    border-radius: var(--example-border-radius);
+  }
 }
