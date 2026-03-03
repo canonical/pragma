@@ -3,8 +3,7 @@ import type { ModifierFamily } from "modifier-families";
 import type { SvelteHTMLElements } from "svelte/elements";
 
 export interface BadgeProps
-  extends
-    Omit<SvelteHTMLElements["span"], "children">,
+  extends Omit<SvelteHTMLElements["span"], "children">,
     ModifierFamily<"severity"> {
   /**
    * The non-negative integer value displayed within the badge. Negative values will be clamped to 0. Floats will be rounded.

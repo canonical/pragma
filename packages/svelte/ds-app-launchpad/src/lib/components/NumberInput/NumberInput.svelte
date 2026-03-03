@@ -1,17 +1,17 @@
 <script lang="ts">
-	import { InputPrimitive } from "../common/index.js";
-	import type { NumberInputProps } from "./types.js";
-	import "./styles.css";
+  import { InputPrimitive } from "../common/index.js";
+  import type { NumberInputProps } from "./types.js";
+  import "./styles.css";
 
-	const componentCssClassName = "ds number-input";
+  const componentCssClassName = "ds number-input";
 
-	let {
-		class: className,
-		severity,
-		density,
-		value = $bindable(),
-		...rest
-	}: NumberInputProps = $props();
+  let {
+    class: className,
+    severity,
+    density,
+    value = $bindable(),
+    ...rest
+  }: NumberInputProps = $props();
 </script>
 
 <InputPrimitive

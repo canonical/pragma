@@ -2,7 +2,6 @@ import type { Locator } from "@vitest/browser/context";
 import { describe, expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-svelte";
-import type { RenderResult } from "vitest-browser-svelte";
 import Component from "./Switch.svelte";
 
 describe("Switch component", () => {
@@ -160,7 +159,6 @@ describe("Switch component", () => {
   });
 });
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function componentLocator(page: RenderResult<any>): Locator {
+function componentLocator(page: ReturnType<typeof render>): Locator {
   return page.getByRole("switch");
 }

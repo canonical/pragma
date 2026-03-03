@@ -1,10 +1,10 @@
 <script lang="ts" module>
+  import { ArchiveIcon } from "@canonical/svelte-icons";
   import { defineMeta } from "@storybook/addon-svelte-csf";
-  import Button from "./Button.svelte";
-  import type { ButtonProps } from "./types";
   import { fn } from "storybook/test";
   import { MODIFIER_FAMILIES } from "../../modifier-families";
-  import { ArchiveIcon } from "@canonical/svelte-icons";
+  import Button from "./Button.svelte";
+  import type { ButtonProps } from "./types";
 
   const BUTTON_SEVERITIES = [
     "brand",

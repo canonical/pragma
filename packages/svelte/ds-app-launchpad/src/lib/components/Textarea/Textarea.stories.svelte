@@ -1,31 +1,31 @@
 <script lang="ts" module>
-	import { defineMeta } from "@storybook/addon-svelte-csf";
-	import Textarea from "./Textarea.svelte";
+  import { defineMeta } from "@storybook/addon-svelte-csf";
+  import Textarea from "./Textarea.svelte";
 
-	const { Story } = defineMeta({
-		title: "components/Textarea",
-		tags: ["autodocs"],
-		component: Textarea,
-		argTypes: {
-			disabled: {
-				control: { type: "boolean" },
-				description: "Disables the textarea, preventing user interaction.",
-				table: {
-					type: { summary: "boolean" },
-					category: "properties",
-				},
-			},
-			placeholder: {
-				control: { type: "text" },
-				description: "The placeholder text for the textarea.",
-				table: {
-					type: { summary: "string" },
-					category: "properties",
-				},
-			},
-		},
-	});
-	let value = $state("");
+  const { Story } = defineMeta({
+    title: "components/Textarea",
+    tags: ["autodocs"],
+    component: Textarea,
+    argTypes: {
+      disabled: {
+        control: { type: "boolean" },
+        description: "Disables the textarea, preventing user interaction.",
+        table: {
+          type: { summary: "boolean" },
+          category: "properties",
+        },
+      },
+      placeholder: {
+        control: { type: "text" },
+        description: "The placeholder text for the textarea.",
+        table: {
+          type: { summary: "string" },
+          category: "properties",
+        },
+      },
+    },
+  });
+  let value = $state("");
 </script>
 
 <Story name="Default" />

@@ -1,12 +1,11 @@
-import { render } from "@canonical/svelte-ssr-test";
 import type { RenderResult } from "@canonical/svelte-ssr-test";
+import { render } from "@canonical/svelte-ssr-test";
+import type { ComponentProps } from "svelte";
 import { describe, expect, it } from "vitest";
 import Component from "./Switch.svelte";
-import type { SwitchProps } from "./types.js";
 
 describe("Switch SSR", () => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const baseProps = {} satisfies SwitchProps<any>;
+  const baseProps = {} satisfies ComponentProps<typeof Component>;
 
   it("doesn't throw", () => {
     expect(() => {
