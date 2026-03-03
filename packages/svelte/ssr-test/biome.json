@@ -1,6 +1,4 @@
 {
-	"extends": ["@canonical/biome-config-svelte"],
-	"files": {
-		"includes": ["src", "vite.config.ts", "vitest.config.ts"]
-	}
+  "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
+  "extends": ["@canonical/biome-config"]
 }
