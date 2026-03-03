@@ -5,25 +5,25 @@ import { customElement } from "lit/decorators.js";
 <% if (withStyles) { -%>
 import styles from "./styles.css";
 <% } -%>
+import type { <%= name %>Props } from "./types.js";
+
+const componentCssClassName = "ds <%= kebabName %>";
 
 /**
  * <%= name %> web component.
  *
- * @example
- * ```html
- * <ds-<%= kebabName %>></ds-<%= kebabName %>>
- * ```
+ * @implements ds:global.component.<%= kebabName %>
  */
 @customElement("ds-<%= kebabName %>")
-export class <%= name %> extends LitElement {
+export default class <%= name %> extends LitElement implements <%= name %>Props {
 <% if (withStyles) { -%>
 	static styles = styles;
 
 <% } -%>
 	render() {
 		return html`
-			<div class="ds <%= kebabName %>">
-				<slot></slot>
+			<div class="${componentCssClassName}">
+			<slot></slot>
 			</div>
 		`;
 	}

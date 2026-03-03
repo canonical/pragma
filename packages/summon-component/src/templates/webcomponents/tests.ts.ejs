@@ -2,27 +2,28 @@
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import "./<%= name %>.js";
+import type <%= name %> from "./<%= name %>.js";
 
 describe("<%= name %> component", () => {
-	let elem: HTMLElement;
+	let elem: <%= name %>;
 
 	beforeEach(() => {
-			elem = document.createElement("ds-<%= kebabName %>");
+			elem = document.createElement("ds-<%= kebabName %>") as <%= name %>;
 			document.body.appendChild(elem);
         });
 
-        it("should render component", async () => {
-			await customElements.whenDefined("ds-<%= kebabName %>");
-
-			const container = elem.shadowRoot?.querySelector(".ds.<%= kebabName %>");
-			expect(container).toBeTruthy();
-        });
-
-        it("should have correct tag name", () => {
-			expect(elem.tagName.toLowerCase()).toBe("ds-<%= kebabName %>");
-		});
-
 	afterEach(() => {
 		elem.remove();
+	});
+
+	it("should render component", async () => {
+		await customElements.whenDefined("ds-<%= kebabName %>");
+
+		const container = elem.shadowRoot?.querySelector(".ds.<%= kebabName %>");
+		expect(container).toBeTruthy();
+	});
+
+	it("should have correct tag name", () => {
+		expect(elem.tagName.toLowerCase()).toBe("ds-<%= kebabName %>");
 	});
 });

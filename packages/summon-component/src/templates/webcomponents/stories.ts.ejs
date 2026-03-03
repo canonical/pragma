@@ -4,14 +4,15 @@ import type { Meta, StoryObj } from "@storybook/web-components-vite";
 import { html } from "lit";
 
 import "./<%= name %>.js";
+import type <%= name %> from "./<%= name %>.js";
 
 const meta = {
 	title: "Web Components/<%= name %>",
 	tags: ["autodocs"],
-} satisfies Meta;
+} satisfies Meta<<%= name %>>;
 
 export default meta;
-type Story = StoryObj;
+type Story = StoryObj<<%= name %>>;
 
 export const Default: Story = {
 	render: () => html`<ds-<%= kebabName %>></ds-<%= kebabName %>>`,
