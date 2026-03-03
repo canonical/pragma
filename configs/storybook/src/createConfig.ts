@@ -24,6 +24,10 @@ const frameworks = {
     framework: getAbsolutePath("@storybook/svelte-vite"),
     addons: [getAbsolutePath("@storybook/addon-svelte-csf")],
   },
+  webcomponents: {
+    framework: getAbsolutePath("@storybook/web-components-vite"),
+    addons: [],
+  },
 } as const satisfies Record<string, StorybookFrameworkConfig>;
 
 type CreateConfigOptions = {
@@ -56,10 +60,7 @@ function createConfig<T extends keyof typeof frameworks>(
       ...(opts.extraAddons ?? []),
     ].filter((addon) => !opts.disabledAddons?.includes(addon)),
     framework: {
-      name:
-        framework === "react"
-          ? getAbsolutePath("@storybook/react-vite")
-          : getAbsolutePath("@storybook/svelte-vite"),
+      name: frameworks[framework].framework,
       options: {},
     },
     core: {
