@@ -1,0 +1,26 @@
+.ds.number-input {
+  --color-background-input-active: var(
+    --lp-color-background-secondary-active-context,
+    var(--lp-color-background-active)
+  );
+  --color-background-input-hover: var(
+    --lp-color-background-secondary-hover-context,
+    var(--lp-color-background-hover)
+  );
+  --color-background-input: var(
+    --lp-color-background-secondary-context,
+    var(--lp-color-background-input)
+  );
+  --dimension-padding-block-input: var(
+    --lp-dimension-padding-block-context,
+    var(--lp-dimension-spacing-block-xxs)
+  );
+  --color-border-input: var(
+    --lp-color-border-secondary-context,
+    var(--lp-color-border-high-contrast)
+  );
+  --color-outline-input: var(
+    --lp-color-border-secondary-context,
+    var(--lp-color-border-focus)
+  );
+}
