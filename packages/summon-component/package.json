@@ -1,7 +1,7 @@
 {
   "name": "@canonical/summon-component",
   "description": "Component generators for Summon - React and Svelte component scaffolding",
-  "version": "0.16.0-experimental.1",
+  "version": "0.16.0",
   "type": "module",
   "main": "src/index.ts",
   "author": {
@@ -30,9 +30,9 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.5",
-    "@canonical/biome-config": "^0.16.0-experimental.1",
-    "@canonical/typescript-config": "^0.16.0-experimental.1",
-    "@canonical/webarchitect": "^0.16.0-experimental.1",
+    "@canonical/biome-config": "^0.16.0",
+    "@canonical/typescript-config": "^0.16.0",
+    "@canonical/webarchitect": "^0.16.0",
     "@types/bun": "^1.3.8",
     "@types/node": "^24.10.13",
     "typescript": "^5.9.3",
