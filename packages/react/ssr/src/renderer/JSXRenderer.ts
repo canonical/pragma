@@ -162,18 +162,14 @@ export default class JSXRenderer<
       ...options,
       // Error occurred during rendering, after the shell & headers were sent - store the error for usage after stream is sent
       onError(error, errorInfo) {
-        if (onErrorCallback) {
-          onErrorCallback(error, errorInfo);
-        }
+        onErrorCallback?.(error, errorInfo);
 
         errorRef.current = error as Error;
         console.error(error);
       },
       // Early error, before the shell is prepared
       onShellError(error) {
-        if (onShellErrorCallback) {
-          onShellErrorCallback(error);
-        }
+        onShellErrorCallback?.(error);
 
         if (!res.headersSent) {
           res
@@ -183,9 +179,7 @@ export default class JSXRenderer<
         console.error(error);
       },
       onShellReady() {
-        if (onShellReadyCallback) {
-          onShellReadyCallback();
-        }
+        onShellReadyCallback?.();
 
         if (!res.headersSent) {
           res.writeHead(errorRef.current ? 500 : 200, {
@@ -199,9 +193,7 @@ export default class JSXRenderer<
         });
       },
       onAllReady() {
-        if (onAllReadyCallback) {
-          onAllReadyCallback();
-        }
+        onAllReadyCallback?.();
       },
     });
   };
