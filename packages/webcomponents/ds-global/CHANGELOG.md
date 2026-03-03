@@ -9,13 +9,3 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 ### Features
 
 * **webcomponents:** adding package for Lit web components library ([#425](https://github.com/canonical/pragma/issues/425)) ([cbbce62](https://github.com/canonical/pragma/commit/cbbce6269967900a63254f9cad887b868874ad9e))
-
-
-
-
-
-# Changelog
-
-## 0.1.0 (initial release)
-
-- Initial release with `DOM` lib, `experimentalDecorators`, and `useDefineForClassFields: false` for Lit-based Web Components projects.

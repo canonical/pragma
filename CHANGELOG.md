@@ -3,6 +3,27 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.16.0-experimental.1](https://github.com/canonical/ds25/compare/v0.16.0-experimental.0...v0.16.0-experimental.1) (2026-03-03)
+
+
+### Bug Fixes
+
+* **svelte-ds-app-launchpad:** ButtonPrimitive doesn't have styles ([#443](https://github.com/canonical/ds25/issues/443)) ([31f6994](https://github.com/canonical/ds25/commit/31f69947b1de96bbd3d7e0b10c0d228bdb2b2332))
+
+
+### Features
+
+* **react/ssr:** add option to pass custom callbacks to renderer ([#427](https://github.com/canonical/ds25/issues/427)) ([b56ee62](https://github.com/canonical/ds25/commit/b56ee622c7c8b4ff4c54d9c6d90910d14aa63cfd))
+* **svelte-ds-app-launchpad:** upstream Badge component ([#434](https://github.com/canonical/ds25/issues/434)) ([b49e643](https://github.com/canonical/ds25/commit/b49e64362c562fbb6a532bec6353355c343f720e)), closes [#436](https://github.com/canonical/ds25/issues/436)
+* **svelte-ds-app-launchpad:** upstream Button, ButtonPrimitive, and Spinner components ([#433](https://github.com/canonical/ds25/issues/433)) ([d3e67df](https://github.com/canonical/ds25/commit/d3e67df173fd0916b84b169b63486520d0624518))
+* **svelte-ds-app-launchpad:** upstream switch, radio & checkbox components ([#435](https://github.com/canonical/ds25/issues/435)) ([a43d7e2](https://github.com/canonical/ds25/commit/a43d7e242f33f285315c9575c93804508e70277b))
+* **svelte-ds-app-launchpad:** upstream TextInput, NumberInput, Textarea, and InputPrimitive components ([#441](https://github.com/canonical/ds25/issues/441)) ([69b2a2e](https://github.com/canonical/ds25/commit/69b2a2e7df829847e587061af584aed5e0026f50))
+* **webcomponents:** adding package for Lit web components library ([#425](https://github.com/canonical/ds25/issues/425)) ([cbbce62](https://github.com/canonical/ds25/commit/cbbce6269967900a63254f9cad887b868874ad9e))
+
+
+
+
+
 # [0.16.0-experimental.0](https://github.com/canonical/ds25/compare/v0.15.1...v0.16.0-experimental.0) (2026-02-24)
 
 

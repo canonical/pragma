@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.16.0-experimental.1](https://github.com/canonical/pragma/compare/v0.16.0-experimental.0...v0.16.0-experimental.1) (2026-03-03)
+
+
+### Features
+
+* **react/ssr:** add option to pass custom callbacks to renderer ([#427](https://github.com/canonical/pragma/issues/427)) ([b56ee62](https://github.com/canonical/pragma/commit/b56ee622c7c8b4ff4c54d9c6d90910d14aa63cfd))
+
+
+
+
+
 ## [0.15.1](https://github.com/canonical/pragma/compare/v0.15.0...v0.15.1) (2026-02-23)
 
 **Note:** Version bump only for package @canonical/ds-demo-site
