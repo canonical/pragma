@@ -52,7 +52,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.5",
-    "@canonical/biome-config-svelte": "^0.17.0",
+    "@canonical/biome-config": "^0.17.1",
     "@canonical/storybook-helpers": "^0.17.1",
     "@canonical/svelte-ssr-test": "^0.17.1",
     "@canonical/typescript-config-svelte": "^0.17.1",
