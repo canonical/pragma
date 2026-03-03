@@ -150,16 +150,27 @@ export default class JSXRenderer<
     const errorRef: { current: Error | undefined } = { current: undefined };
     const props = this.getComponentProps();
     const jsx = createElement(this.Component, props);
+    const {
+      onShellError: onShellErrorCallback,
+      onShellReady: onShellReadyCallback,
+      onAllReady: onAllReadyCallback,
+      onError: onErrorCallback,
+      ...options
+    } = this.enrichRendererOptions(props);
 
     const jsxStream: RenderResult = renderToPipeableStream(jsx, {
-      ...this.enrichRendererOptions(props),
+      ...options,
       // Error occurred during rendering, after the shell & headers were sent - store the error for usage after stream is sent
-      onError(error) {
+      onError(error, errorInfo) {
+        onErrorCallback?.(error, errorInfo);
+
         errorRef.current = error as Error;
         console.error(error);
       },
       // Early error, before the shell is prepared
       onShellError(error) {
+        onShellErrorCallback?.(error);
+
         if (!res.headersSent) {
           res
             .writeHead(500, { "Content-Type": "text/html; charset=utf-8" })
@@ -168,6 +179,8 @@ export default class JSXRenderer<
         console.error(error);
       },
       onShellReady() {
+        onShellReadyCallback?.();
+
         if (!res.headersSent) {
           res.writeHead(errorRef.current ? 500 : 200, {
             "Content-Type": "text/html; charset=utf-8",
@@ -178,6 +191,9 @@ export default class JSXRenderer<
         res.on("finish", () => {
           res.end();
         });
+      },
+      onAllReady() {
+        onAllReadyCallback?.();
       },
     });
   };

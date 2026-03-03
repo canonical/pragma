@@ -10,15 +10,10 @@ export interface RendererOptions {
   /** An HTML string to extract the head tags from */
   htmlString?: string;
   /**
-   * Options to pass to `react-dom/server.renderToPipeableStream`
-   * We specifically exclude `onShellReady()`, `onError()`, `onShellError()` and `onAllReady()` as they are
-   * implemented by `JSXRenderer.renderToString()` and `JSXRenderer.renderToStream()`.
-   * See https://react.dev/reference/react-dom/server/renderToPipeableStream#parameters
+   * Options to pass to `react-dom/server.renderToPipeableStream`.
+   * See https://react.dev/reference/react-dom/server/renderToPipeableStream#parameters.
    */
-  renderToPipeableStreamOptions?: Omit<
-    RenderToPipeableStreamOptions,
-    "onShellReady" | "onError" | "onShellError" | "onAllReady"
-  >;
+  renderToPipeableStreamOptions?: RenderToPipeableStreamOptions;
 }
 
 /** The props that the server entrypoint component will receive */
