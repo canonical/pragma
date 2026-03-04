@@ -115,19 +115,19 @@ export function usePositionArea(
     };
   });
 
-  let fallbackStyle = $state<string>("");
+  let fallbackPosition = $state({ x: 0, y: 0 });
 
   const { triggerAttachment, targetAttachment } = useFloatingUI(
     () => isFloatingUiActive,
     () => floatingUIConfig,
     ({ x, y }) => {
-      fallbackStyle = `position: absolute; left: ${x}px; top: ${y}px;`;
+      fallbackPosition = { x, y };
     },
   );
 
   const targetStyle = $derived.by(() => {
-    if (needsFallback && fallbackStyle) {
-      return fallbackStyle;
+    if (needsFallback) {
+      return `position: absolute; left: ${fallbackPosition.x}px; top: ${fallbackPosition.y}px;`;
     }
     const tryFallback = getTryFallbacks?.();
     return `position-area: ${getPosition()};${tryFallback ? ` position-try-fallbacks: ${tryFallback};` : ""}`;
@@ -179,7 +179,11 @@ export function useFloatingUI(
 
     const cleanup = autoUpdate(triggerRef, targetRef, () => {
       if (!triggerRef || !targetRef) return;
-      computePosition(triggerRef, targetRef, options).then(callback);
+      computePosition(triggerRef, targetRef, options)
+        .then(callback)
+        .catch(() => {
+          // Swallow errors from computePosition to avoid unhandled promise rejections.
+        });
     });
 
     return () => {
