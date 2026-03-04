@@ -29,9 +29,9 @@ export interface PopoverProps extends BaseProps {
    *
    * Snippet arguments:
    * - `triggerProps`: Props that should be spread on the button element to make it control the popover:
-   *   - `popovertarget`: The id of the popover element. Setting this attribute on the enables declarative control of the popover;
-   *   - `style`: The style attribute containing the `anchor-name` value that links the trigger to the popover for the anchor positioning (need to be explicitly defined, when the the popover is triggered via the imperative API).
-   *   - attachment enabling JS-based positioning fallback for unsupported browsers (see `position` prop);
+   *   - `popovertarget`: The id of the popover element. Setting this attribute on the trigger enables declarative control of the popover;
+   *   - `style`: The style attribute containing the `anchor-name` value that links the trigger to the popover for the anchor positioning (needs to be explicitly defined when the popover is triggered via the imperative API).
+   *   - a Svelte attachment that enables JS-based positioning fallback for browsers that don't support CSS anchor positioning (see `position` prop);
    * - `open`: A boolean indicating whether the popover is open or closed.
    */
   trigger: Snippet<[triggerProps: PopoverTriggerProps, open: boolean]>;
