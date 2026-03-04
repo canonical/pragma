@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.17.0](https://github.com/canonical/pragma/compare/v0.16.0...v0.17.0) (2026-03-04)
+
+
+### Features
+
+* **summon:** summon component webcomponents ([#448](https://github.com/canonical/pragma/issues/448)) ([ae5d33d](https://github.com/canonical/pragma/commit/ae5d33d052f7c05be292e6a565cf371f47868274))
+
+
+
+
+
 # [0.16.0](https://github.com/canonical/pragma/compare/v0.16.0-experimental.1...v0.16.0) (2026-03-03)
 
 **Note:** Version bump only for package @canonical/summon-component

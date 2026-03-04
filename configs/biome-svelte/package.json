@@ -1,6 +1,6 @@
 {
   "name": "@canonical/biome-config-svelte",
-  "version": "0.16.0",
+  "version": "0.17.0",
   "description": "Canonical's Biome configuration for Svelte projects (extends @canonical/biome-config)",
   "main": "biome.json",
   "author": {
