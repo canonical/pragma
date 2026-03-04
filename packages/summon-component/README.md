@@ -62,6 +62,19 @@ summon component svelte --component-path=src/lib/components/Card
 summon component svelte --component-path=src/lib/components/Card --use-ts-stories
 ```
 
+### Web Component (Lit)
+
+```bash
+# Interactive — prompts guide you
+summon component webcomponents
+
+# Direct — specify path
+summon component webcomponents --component-path=src/lib/Button
+
+# Preview — see what would be created
+summon component webcomponents --component-path=src/lib/Button --dry-run
+```
+
 ---
 
 ## What Gets Generated
@@ -182,6 +195,142 @@ Uses Svelte 5 runes (`$props()`) and render tags (`@render`).
 
 ---
 
+### Web Components (Lit)
+
+For `summon component webcomponents --component-path=src/lib/Button`:
+
+```
+src/lib/Button/
+├── Button.ts            # Lit element implementation
+├── types.ts             # Props interface
+├── index.ts             # Barrel export
+├── Button.tests.ts      # Unit tests (Vitest + shadow DOM)
+├── Button.stories.ts    # Storybook stories (optional)
+└── styles.css           # Component styles as CSSResult (optional)
+```
+
+And appends to `src/lib/index.ts`:
+
+```typescript
+export * from "./Button/index.js";
+```
+
+#### Generated Component
+
+```typescript
+// Button.ts
+import { html, LitElement } from "lit";
+import { customElement } from "lit/decorators.js";
+import styles from "./styles.css";
+import type { ButtonProps } from "./types.js";
+
+const componentCssClassName = "ds button";
+
+/**
+ * Button web component.
+ *
+ * @implements ds:global.component.button
+ */
+@customElement("ds-button")
+export default class Button extends LitElement implements ButtonProps {
+  static styles = styles;
+
+  render() {
+    return html`
+      <div class="${componentCssClassName}">
+        <slot></slot>
+      </div>
+    `;
+  }
+}
+```
+
+#### Generated Types
+
+```typescript
+// types.ts
+export interface ButtonProps {
+  // Define props specific to Button here
+}
+```
+
+#### Generated Styles
+
+```css
+/* styles.css */
+:host {
+  /*
+   * Declare component-scoped CSS variables here.
+   * Variables must be on :host to be accessible inside the shadow tree.
+   *
+   * Example:
+   * --button-color-background: var(--color-background-default);
+   * --button-color-text: var(--color-text-default);
+   */
+}
+
+.ds.button {
+  /* Component styles */
+}
+```
+
+#### Generated Test
+
+```typescript
+// Button.tests.ts
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import "./Button.js";
+import type Button from "./Button.js";
+
+describe("Button component", () => {
+  let elem: Button;
+
+  beforeEach(() => {
+    elem = document.createElement("ds-button") as Button;
+    document.body.appendChild(elem);
+  });
+
+  afterEach(() => {
+    elem.remove();
+  });
+
+  it("should render component", async () => {
+    await customElements.whenDefined("ds-button");
+    const container = elem.shadowRoot?.querySelector(".ds.button");
+    expect(container).toBeTruthy();
+  });
+
+  it("should have correct tag name", () => {
+    expect(elem.tagName.toLowerCase()).toBe("ds-button");
+  });
+});
+```
+
+#### Generated Stories
+
+```typescript
+// Button.stories.ts
+import type { Meta, StoryObj } from "@storybook/web-components-vite";
+import { html } from "lit";
+
+import "./Button.js";
+import type Button from "./Button.js";
+
+const meta = {
+  title: "Web Components/Button",
+  tags: ["autodocs"],
+} satisfies Meta<Button>;
+
+export default meta;
+type Story = StoryObj<Button>;
+
+export const Default: Story = {
+  render: () => html`<ds-button></ds-button>`,
+};
+```
+
+---
+
 ## Options Reference
 
 ### React Options
@@ -217,6 +366,16 @@ Uses Svelte 5 runes (`$props()`) and render tags (`@render`).
 | `--yes`, `-y` | Skip confirmation prompts |
 | `--no-preview` | Skip the file preview step |
 | `--help` | Show all options |
+
+### Web Components Options
+
+| Flag | Description | Default |
+|------|-------------|---------|
+| `--component-path` | Full path for the component (e.g., `src/lib/Button`) | Interactive prompt |
+| `--with-styles` | Include `styles.css` file | `true` |
+| `--no-with-styles` | Skip styles file | — |
+| `--with-stories` | Include Storybook stories | `true` |
+| `--no-with-stories` | Skip stories file | — |
 
 ---
 
@@ -420,7 +579,7 @@ summon
 
 # Should show:
 # component [pkg] (has subtopics)
-#   └─ react, svelte
+#   └─ react, svelte, webcomponents
 ```
 
 If not, verify installation:
