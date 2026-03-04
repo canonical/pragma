@@ -65,3 +65,10 @@ root of a monorepository, and using `overrides` to specify any exceptions for su
 Biome is still in development and may not support all languages or features.
 We recommend checking the [Biome supported languages list](https://biomejs.dev/internals/language-support/) 
 to ensure that your project is supported.
+
+##### Svelte
+We include Svelte-specific overrides because Biome does not yet support "cross-language" lint behavior, which can produce false positives for `noUnusedVariables`, `noUnusedImports`, `useImportType`, and `useConst`.
+
+These lint overrides are temporary and should be removed once [biomejs/biome#8590](https://github.com/biomejs/biome/issues/8590) is resolved.
+
+We keep these overrides directly in `@canonical/biome-config` (rather than in a separate Svelte-specific config package) because Biome config extension is not transitive. For additional context, see [PR #449](https://github.com/canonical/pragma/pull/449).
