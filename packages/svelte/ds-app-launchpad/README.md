@@ -34,6 +34,14 @@ Import the main styles in your project's layout file (e.g. `routes/+layout.svelt
 <Chip lead="Hello" value="world!" />
 ```
 
+## Dependencies notes
+
+This section documents non-trivial runtime dependencies in this package.
+
+| Dependency                                     | What it's used for                                                      | Why it's needed now                                                                                                                                                                                                                                  | Long-term plan                     |
+| ---------------------------------------------- | ----------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
+| [`@floating-ui/dom`](https://floating-ui.com/) | Positioning floating elements with consistent behavior across browsers. | Native CSS anchored positioning support for [`position-area`](https://caniuse.com/mdn-css_properties_position-area) and [`position-try-fallbacks`](https://caniuse.com/mdn-css_properties_position-try-fallbacks) is still maturing across browsers. | Revisit as native support improves |
+
 ## Development
 
 **Note:** Testing requires Playwright; see the [Testing](#testing) section below.
