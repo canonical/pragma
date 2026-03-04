@@ -24,6 +24,6 @@
   },
   "peerDependencies": {
     "@biomejs/biome": "2.4.5",
-    "@canonical/biome-config": "^0.11.0"
+    "@canonical/biome-config": "^0.11.0 || ^0.17.0"
   }
 }
