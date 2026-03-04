@@ -1,16 +1,16 @@
 <script lang="ts">
-	import type { ContentProps } from "./types";
-	import "./styles.css";
+  import type { ContentProps } from "./types";
+  import "./styles.css";
 
-	const componentCssClassName = "ds button-content";
+  const componentCssClassName = "ds button-content";
 
-	let {
-		class: className,
-		children,
-		iconLeft,
-		iconRight,
-		...rest
-	}: ContentProps = $props();
+  let {
+    class: className,
+    children,
+    iconLeft,
+    iconRight,
+    ...rest
+  }: ContentProps = $props();
 </script>
 
 <div class={[componentCssClassName, className]} {...rest}>

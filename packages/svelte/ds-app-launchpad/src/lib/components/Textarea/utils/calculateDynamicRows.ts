@@ -4,22 +4,22 @@
  * @returns The calculated number of rows.
  */
 export function calculateDynamicRows(
-	textareaValue: string,
-	minRows: number,
-	maxRows: number,
+  textareaValue: string,
+  minRows: number,
+  maxRows: number,
 ): number {
-	const effectiveMin = Math.min(minRows, maxRows);
-	const effectiveMax = Math.max(minRows, maxRows);
+  const effectiveMin = Math.min(minRows, maxRows);
+  const effectiveMax = Math.max(minRows, maxRows);
 
-	const linesCount = countLinesToLimit(textareaValue, effectiveMax);
+  const linesCount = countLinesToLimit(textareaValue, effectiveMax);
 
-	if (linesCount <= effectiveMin) {
-		return effectiveMin;
-	} else if (linesCount <= effectiveMax) {
-		return linesCount;
-	} else {
-		return effectiveMax;
-	}
+  if (linesCount <= effectiveMin) {
+    return effectiveMin;
+  } else if (linesCount <= effectiveMax) {
+    return linesCount;
+  } else {
+    return effectiveMax;
+  }
 }
 
 /**
@@ -28,14 +28,14 @@ export function calculateDynamicRows(
  * @returns  The total number of lines counted or the limit, whichever is smaller.
  */
 function countLinesToLimit(value: string, limit: number): number {
-	let totalLines = 1;
-	for (const char of value) {
-		if (char === "\n") {
-			totalLines++;
-		}
-		if (totalLines > limit) {
-			break;
-		}
-	}
-	return totalLines;
+  let totalLines = 1;
+  for (const char of value) {
+    if (char === "\n") {
+      totalLines++;
+    }
+    if (totalLines > limit) {
+      break;
+    }
+  }
+  return totalLines;
 }

@@ -2,9 +2,9 @@
 
 import type { ComponentProps } from "svelte";
 import { describe, expect, it } from "vitest";
-import { render } from "vitest-browser-svelte";
 import type { Locator } from "vitest/browser";
 import type { RenderResult } from "vitest-browser-svelte";
+import { render } from "vitest-browser-svelte";
 import Component from "./Badge.svelte";
 
 describe("Badge component", () => {

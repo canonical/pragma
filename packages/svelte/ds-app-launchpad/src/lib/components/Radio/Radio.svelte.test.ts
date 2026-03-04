@@ -2,7 +2,6 @@ import type { Locator } from "@vitest/browser/context";
 import type { ComponentProps } from "svelte";
 import { describe, expect, it, vi } from "vitest";
 import { render } from "vitest-browser-svelte";
-import type { RenderResult } from "vitest-browser-svelte";
 import Component from "./Radio.svelte";
 
 describe("Radio component", () => {
@@ -116,7 +115,6 @@ describe("Radio component", () => {
   });
 });
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function componentLocator(page: RenderResult<any>): Locator {
+function componentLocator(page: ReturnType<typeof render>): Locator {
   return page.getByRole("radio");
 }

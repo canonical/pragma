@@ -1,7 +1,6 @@
 import type { Locator } from "@vitest/browser/context";
 import { describe, expect, it, vi } from "vitest";
 import { render } from "vitest-browser-svelte";
-import type { RenderResult } from "vitest-browser-svelte";
 import Component from "./Checkbox.svelte";
 
 describe("Checkbox component", () => {
@@ -132,7 +131,6 @@ describe("Checkbox component", () => {
   });
 });
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function componentLocator(page: RenderResult<any>): Locator {
+function componentLocator(page: ReturnType<typeof render>): Locator {
   return page.getByRole("checkbox");
 }

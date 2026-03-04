@@ -808,7 +808,7 @@
       },
       "devDependencies": {
         "@biomejs/biome": "2.4.5",
-        "@canonical/biome-config-svelte": "^0.17.0",
+        "@canonical/biome-config": "^0.17.0",
         "@canonical/storybook-helpers": "^0.17.0",
         "@canonical/svelte-ssr-test": "^0.17.0",
         "@canonical/typescript-config-svelte": "^0.17.0",
@@ -841,7 +841,7 @@
       },
       "devDependencies": {
         "@biomejs/biome": "2.4.5",
-        "@canonical/biome-config-svelte": "^0.17.0",
+        "@canonical/biome-config": "^0.17.0",
         "@canonical/typescript-config": "^0.17.0",
         "@sveltejs/vite-plugin-svelte": "^6.2.4",
         "@types/jsdom": "^27.0.0",
@@ -1017,8 +1017,6 @@
     "@bundled-es-modules/memfs": ["@bundled-es-modules/memfs@4.17.0", "", { "dependencies": { "assert": "^2.1.0", "buffer": "^6.0.3", "events": "^3.3.0", "memfs": "^4.17.0", "path": "^0.12.7", "stream": "^0.0.3", "util": "^0.12.5" } }, "sha512-ykdrkEmQr9BV804yd37ikXfNnvxrwYfY9Z2/EtMHFEFadEjsQXJ1zL9bVZrKNLDtm91UdUOEHso6Aweg93K6xQ=="],
 
     "@canonical/biome-config": ["@canonical/biome-config@workspace:configs/biome"],
-
-    "@canonical/biome-config-svelte": ["@canonical/biome-config-svelte@0.17.0", "", { "peerDependencies": { "@biomejs/biome": "2.4.5", "@canonical/biome-config": "^0.11.0" } }, "sha512-fDZXNxNcfyjPGOzv01mKL59SvrYiJ122cWnmF6UYMBMusNqZmlaAm3KcruNLMemSGCYURbH9o1NOlED8zO01ig=="],
 
     "@canonical/ds-assets": ["@canonical/ds-assets@workspace:packages/ds-assets"],
 
