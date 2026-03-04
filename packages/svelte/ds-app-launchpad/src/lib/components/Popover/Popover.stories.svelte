@@ -60,6 +60,8 @@
   {/snippet}
 </Story>
 
+<!-- Use imperative control when popover visibility needs to follow business logic rather than only user clicks, such as auto-dismiss countdowns, external event triggers, or coordinated UI state. -->
+
 <Story
   name="Imperatively controlled"
   argTypes={{
@@ -107,6 +109,8 @@
   {/snippet}
 </Story>
 
+<!-- Use custom positioning when the popover needs more deliberate placement than the default behavior provides. -->
+
 <Story
   name="With customized position"
   args={{ popover: "manual" }}
@@ -135,6 +139,8 @@
     </div>
   {/snippet}
 </Story>
+
+<!-- Use fallback positioning when the preferred placement might not fit in the viewport and the popover should choose an alternative automatically. -->
 
 <Story
   name="Fallback positioned"
