@@ -1,7 +1,7 @@
 {
   "name": "@canonical/styles-modes-intents",
   "description": "Canonical's base styles",
-  "version": "0.17.0",
+  "version": "0.17.1",
   "main": "src/index.css",
   "files": [
     "src"
@@ -30,6 +30,6 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.5",
-    "@canonical/biome-config": "^0.17.0"
+    "@canonical/biome-config": "^0.17.1"
   }
 }
