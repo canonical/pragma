@@ -3,8 +3,8 @@
 import type { ComponentProps } from "svelte";
 import { assert, describe, expect, it, vi } from "vitest";
 import type { Locator } from "vitest/browser";
-import { render } from "vitest-browser-svelte";
 import type { RenderResult } from "vitest-browser-svelte";
+import { render } from "vitest-browser-svelte";
 import Component from "./Popover.svelte";
 import {
   children,

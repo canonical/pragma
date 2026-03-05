@@ -1,9 +1,9 @@
-import { autoUpdate, computePosition, flip } from "@floating-ui/dom";
 import type {
   ComputePositionConfig,
   ComputePositionReturn,
   Placement,
 } from "@floating-ui/dom";
+import { autoUpdate, computePosition, flip } from "@floating-ui/dom";
 import type { Attachment } from "svelte/attachments";
 import { useIsMounted } from "./useIsMounted.svelte.js";
 
