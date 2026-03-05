@@ -1,0 +1,70 @@
+.ds.collapsed-items {
+  position: relative;
+
+  border: var(--lp-dimension-stroke-thickness-default) solid
+    var(--lp-color-border-high-contrast);
+  padding-inline: var(--lp-dimension-spacing-inline-s);
+  background-color: var(--lp-color-background-default);
+
+  &::before {
+    content: "..." / "";
+  }
+
+  .ds.item {
+    display: block;
+
+    padding-block: var(--lp-dimension-spacing-block-xxs);
+    padding-inline: var(--lp-dimension-spacing-inline-m);
+    transition: background-color var(--lp-transition-duration-snap)
+      var(--lp-transition-timing-ease-in);
+
+    &:hover {
+      background-color: var(--lp-color-background-hover);
+    }
+
+    &:active {
+      background-color: var(--lp-color-background-active);
+    }
+  }
+
+  > ol {
+    left: calc(var(--lp-dimension-stroke-thickness-default) * -1);
+    display: flex;
+    flex-direction: column;
+    position: absolute;
+    /* `visibility: hidden` hides the elements from tab navigation, which is not what we want */
+    opacity: 0;
+    pointer-events: none;
+
+    padding-block: var(--lp-dimension-spacing-block-xs);
+    min-width: min(17rem, 100vw);
+    margin-top: var(--lp-dimension-spacing-block-xxs);
+  }
+
+  &:focus-within,
+  /* biome-ignore lint/style/noDescendingSpecificity: false positive */
+    &:hover,
+  &.open {
+    background-color: var(--lp-color-background-active);
+
+    > ol {
+      opacity: 1;
+      pointer-events: auto;
+
+      border: var(--lp-dimension-stroke-thickness-default) solid
+        var(--lp-color-border-high-contrast);
+      background: var(--lp-color-background-default);
+    }
+
+    &::after {
+      /* This is to not lose hover when moving the mouse over the gap to the child <ol> */
+      content: "";
+      position: absolute;
+      top: 100%;
+      left: 0;
+      width: 100%;
+
+      height: var(--lp-dimension-spacing-block-xxs);
+    }
+  }
+}

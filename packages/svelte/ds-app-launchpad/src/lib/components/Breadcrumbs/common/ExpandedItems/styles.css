@@ -1,0 +1,37 @@
+.ds.expanded-items {
+  flex-grow: 1;
+  flex-shrink: 1;
+  overflow: hidden;
+
+  .nowrap {
+    white-space: nowrap;
+  }
+
+  ol,
+  li {
+    display: inline-block;
+    max-width: 100%;
+    vertical-align: middle;
+  }
+
+  li {
+    white-space: nowrap;
+
+    &:not(.hidden) {
+      overflow: hidden;
+      text-overflow: ellipsis;
+
+      + li::before {
+        /* Show separator before all the segments that follow a non-collapsed segment. This in practice applies only when there is no collapsed section */
+        content: "/" / "";
+        margin-inline: var(--lp-dimension-spacing-inline-xxs);
+      }
+    }
+
+    &.hidden {
+      visibility: hidden;
+      position: absolute;
+      pointer-events: none;
+    }
+  }
+}
