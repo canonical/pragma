@@ -42,7 +42,8 @@
   }
 
   &:focus-within,
-  &:hover,
+  /* biome-ignore lint/style/noDescendingSpecificity: false positive */
+    &:hover,
   &.open {
     background-color: var(--lp-color-background-active);
 

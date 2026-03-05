@@ -15,10 +15,8 @@ type TextSegment = Omit<SvelteHTMLElements["span"], "children"> & {
 
 export type Segment = LinkSegment | TextSegment;
 
-export interface BreadcrumbsProps extends Omit<
-  SvelteHTMLElements["nav"],
-  "children"
-> {
+export interface BreadcrumbsProps
+  extends Omit<SvelteHTMLElements["nav"], "children"> {
   /**
    * Breadcrumb segments.
    */
