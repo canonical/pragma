@@ -47,7 +47,7 @@
     "react-dom": "^19.2.4"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.4.5",
+    "@biomejs/biome": "2.4.6",
     "@canonical/biome-config": "^0.17.1",
     "@canonical/ds-types": "^0.17.1",
     "@canonical/storybook-helpers": "^0.17.1",

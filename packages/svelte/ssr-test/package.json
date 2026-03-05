@@ -53,7 +53,7 @@
     "svelte": "^5.38.2"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.4.5",
+    "@biomejs/biome": "2.4.6",
     "@canonical/biome-config": "^0.17.1",
     "@canonical/typescript-config": "^0.17.1",
     "@sveltejs/vite-plugin-svelte": "^6.2.4",
