@@ -108,6 +108,8 @@ export {
   debug,
   deleteDirectory,
   deleteFile,
+  // Detection primitives
+  detectPackageManager,
   error,
   // Process primitives
   exec,
