@@ -8,10 +8,10 @@ export const contentPresets = [
   {
     name: "Release announcement",
     html: `
-      <h1>Ubuntu 26.04 LTS "Noble Numbat"</h1>
+      <h1>Ubuntu 26.04 LTS "Resolute Raccoon"</h1>
       <p>
         Canonical is proud to announce the release of Ubuntu 26.04 LTS,
-        codenamed "Noble Numbat". This long-term support release will
+        codenamed "Resolute Raccoon". This long-term support release will
         receive security updates and critical fixes for five years, with
         optional extended support available through Ubuntu Pro for an
         additional five years.
