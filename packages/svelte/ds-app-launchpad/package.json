@@ -75,7 +75,8 @@
   "dependencies": {
     "@canonical/launchpad-design-tokens": "^1.0.23",
     "@canonical/storybook-config": "^0.17.1",
-    "@canonical/svelte-icons": "^0.0.9"
+    "@canonical/svelte-icons": "^0.0.9",
+    "@floating-ui/dom": "^1.7.6"
   },
   "peerDependencies": {
     "svelte": "^5.47.1"
