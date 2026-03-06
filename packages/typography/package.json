@@ -8,6 +8,7 @@
     "extractFontData": "./src/extractFontData.ts"
   },
   "scripts": {
+    "dev": "bun --watch run ./example/serve.ts",
     "extractFontData": "bun run ./src/extractFontData.ts",
     "check": "bun run check:biome && bun run check:ts",
     "check:fix": "bun run check:biome:fix && bun run check:ts",

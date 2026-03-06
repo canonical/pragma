@@ -1,170 +1,80 @@
 <!doctype html>
-<html lang="en" class="">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <title>Font Baseline Alignment Demo</title>
+
+    <!-- Baseline engine (UNTOUCHED) -->
     <link rel="stylesheet" href="../src/index.css" />
 
+    <!-- Example layout & debug styles -->
+    <link rel="stylesheet" href="./styles/layout.css" />
+    <link rel="stylesheet" href="./styles/demo.css" />
+
     <style>
-      /* This tag contains only the required styles for this pattern to work. */
-
-      /* Import your font here */
-      @import url("https://fonts.googleapis.com/css2?family=Karla:ital,wght@0,200..800;1,200..800&family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&display=swap");
-
-      /* Configure the baseline height */
-        :root {
-          --baseline-height: 0.6rem;
-        }
-
-
-      /* Consume the font and provide its metrics, read from the script */
-      @layer typography {
-        html {
-          font-family: "Lato", sans-serif;
-        }
-      }
+      /*
+       * Tag-level variable defaults.
+       * These are the CONSUMED values – the baseline engine in
+       * src/index.css reads them to compute nudges.
+       * Keep in sync with the input defaults in sidebar.js.
+       *
+       * Baseline = 0.5rem
+       * LH multiplier = lineHeight / baseline
+       * space-after  = spaceAfter / baseline
+       */
 
       :root {
-          --ascender: 940;
-          --descender: -260;
-          --units-per-em: 1000;
+        --baseline-height: 0.5rem;
+      }
+
+      h1 {
+        --font-size: 2.625rem;
+        --line-height-multiplier: 6;
+        --space-after: 2;
+      }
+
+      h2 {
+        --font-size: 2.625rem;
+        --line-height-multiplier: 6;
+        --space-after: 2;
+      }
+
+      h3 {
+        --font-size: 1.5rem;
+        --line-height-multiplier: 4;
+        --space-after: 2;
+      }
+
+      h4 {
+        --font-size: 1.5rem;
+        --line-height-multiplier: 4;
+        --space-after: 2;
+      }
+
+      h5 {
+        --font-size: 1rem;
+        --line-height-multiplier: 3;
+        --space-after: 2;
+      }
+
+      h6 {
+        --font-size: 1rem;
+        --line-height-multiplier: 3;
+        --space-after: 2;
       }
 
       p {
         --font-size: 1rem;
-        --line-height-multiplier: 2;
-      }
-
-      h1 {
-        --line-height-multiplier: 6;
-        --font-size: 4rem;
-        --space-after:1;
-      }
-
-      h2 {
-        --line-height-multiplier: 5;
-        --font-size: 3rem;
-      }
-
-      h3 {
-        --line-height-multiplier: 4;
-        --font-size: 2rem;
-      }
-
-      h4 {
-        --line-height: calc(var(--baseline-height) * 3);
-        --font-size: 2rem;
-      }
-
-    </style>
-    <style>
-      /* This tag requires local boilerplate tags */
-      html {
-        --font-size: 32px;
-        font-size: var(--font-size);
-        height: 100%;
-      }
-
-      body {
-        height: 100%;
-        margin: 0;
-      }
-
-      main {
-        background-image: linear-gradient(
-          to bottom,
-          #df1f00 1px,
-          transparent 1px
-        );
-        background-size: 100% var(--baseline-height);
-        /*background-position: 0 1px;*/
-      }
-
-      h1,
-      h2,
-      h3,
-      h4, 
-      h5, 
-      h6,
-      p {
-        background: #fededebb;
-      }
-
-      .controls {
-        display: flex;
-        gap: 1rem;
-        background: #f0f0f0;
-        height: calc(var(--baseline-height) * 6);
-        position: sticky;
-        top: 0;
-        z-index: 10;
-        font-size: 0.7rem; /* Smaller font size for controls */
+        --line-height-multiplier: 3;
+        --space-after: 2;
       }
     </style>
   </head>
 
   <body>
+    <settings-sidebar></settings-sidebar>
+
     <main>
-      <div class="controls">
-        <control-slider
-          label="H1 Font Size"
-          min="2"
-          max="6"
-          step="0.1"
-          value="4.2"
-          target-selector="h1"
-          css-variable="--font-size"
-          unit="rem"
-        >
-        </control-slider>
-
-        <control-slider
-          label="H1 Line Height"
-          min="1"
-          max="12"
-          step="1"
-          value="6"
-          target-selector="h1"
-          css-variable="--line-height-multiplier"
-        >
-        </control-slider>
-
-        <control-slider
-          label="P Font Size"
-          min="0.8"
-          max="2"
-          step="0.1"
-          value="1"
-          target-selector="p"
-          css-variable="--font-size"
-          unit="rem"
-        >
-        </control-slider>
-
-        <control-slider
-          label="P Line Height"
-          min="1"
-          max="10"
-          step="1"
-          value="2"
-          target-selector="p"
-          css-variable="--line-height-multiplier"
-        >
-        </control-slider>
-
-        <control-slider
-          label="Baseline Height"
-          min="0.4"
-          max="1.2"
-          step="0.1"
-          value="0.6"
-          target-selector=":root"
-          css-variable="--baseline-height"
-          unit="rem"
-        >
-        </control-slider>
-      </div>
-
       <p>This is a text aligned on the baseline</p>
       <p>
         Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam
@@ -183,6 +93,8 @@
       <p>Another piece of content</p>
       <h3>This is a H3 aligned on the grid</h3>
       <h4>Test of h4</h4>
+      <h5>Heading level 5</h5>
+      <h6>Heading level 6</h6>
       <p>
         The jellyfish is a very interesting creature. It doesn't have a brain,
         heart, bones, or eyes. It's made up of a smooth, bag-like body and
@@ -200,48 +112,6 @@
       </p>
     </main>
 
-    <script>
-      class ControlSlider extends HTMLElement {
-        connectedCallback() {
-          const label = this.getAttribute("label");
-          const min = this.getAttribute("min");
-          const max = this.getAttribute("max");
-          const step = this.getAttribute("step");
-          const value = this.getAttribute("value");
-          const targetSelector = this.getAttribute("target-selector");
-          const cssVariable = this.getAttribute("css-variable");
-          const unit = this.getAttribute("unit") || "";
-
-          this.innerHTML = `
-            <div class="control">
-              <label>${label}</label>
-              <input 
-                type="range" 
-                min="${min}" 
-                max="${max}" 
-                step="${step}" 
-                value="${value}" 
-              />
-            </div>
-          `;
-
-          const input = this.querySelector("input");
-          input.addEventListener("input", (event) => {
-            const stylesheet = [...document.styleSheets].find(
-              (sheet) => !sheet.href || sheet.href.startsWith(location.origin),
-            );
-            const rule = [...stylesheet.cssRules].find(
-              (r) => r.selectorText === targetSelector,
-            );
-            if (rule) {
-              rule.style.setProperty(cssVariable, event.target.value + unit);
-            }
-          });
-        }
-      }
-
-      customElements.define("control-slider", ControlSlider);
-    </script>
+    <script type="module" src="./scripts/app.js"></script>
   </body>
 </html>
-cont
