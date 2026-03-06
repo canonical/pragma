@@ -2,11 +2,22 @@ import { fonts } from "./fonts.js";
 import { contentPresets } from "./content.js";
 
 /**
+ * Engine IDs matching the <link> elements in index.html.
+ * Only one is enabled at a time; the rest have `disabled`.
+ */
+const ENGINES = [
+  { id: "engine-classic",   label: "Classic (extracted metrics)" },
+  { id: "engine-text-trim", label: "Text-trim (cap unit + text-box)" },
+  { id: "engine-cap",       label: "Cap-unit nudge (cap unit only)" },
+];
+
+/**
  * <settings-sidebar>
  *
  * Full-height left sidebar containing:
+ *   - Engine picker (switches the active baseline CSS)
  *   - Font picker (<select> populated from fonts.js)
- *   - Per-tag size & line-height-multiplier sliders (h1-h4, p)
+ *   - Per-tag size & line-height-multiplier sliders (h1-h6, p)
  *   - Baseline height slider
  *
  * Font switching updates:
@@ -20,6 +31,9 @@ class SettingsSidebar extends HTMLElement {
 
   connectedCallback() {
     this.innerHTML = this.#template();
+    this.querySelector("#engine-select").addEventListener("change", (e) => {
+      this.#switchEngine(e.target.value);
+    });
     this.querySelector("#font-select").addEventListener("change", (e) => {
       this.#applyFont(e.target.value);
     });
@@ -30,6 +44,18 @@ class SettingsSidebar extends HTMLElement {
     // Apply defaults on load
     this.#applyFont(fonts[0].name);
     this.#applyContent(contentPresets[0].name);
+  }
+
+  /* ------------------------------------------------------------------ */
+  /*  Engine switching                                                   */
+  /* ------------------------------------------------------------------ */
+
+  #switchEngine(engineId) {
+    for (const engine of ENGINES) {
+      const link = document.getElementById(engine.id);
+      if (!link) continue;
+      link.disabled = engine.id !== engineId;
+    }
   }
 
   /* ------------------------------------------------------------------ */
@@ -108,6 +134,10 @@ class SettingsSidebar extends HTMLElement {
   /* ------------------------------------------------------------------ */
 
   #template() {
+    const engineOptions = ENGINES
+      .map((e) => `<option value="${e.id}">${e.label}</option>`)
+      .join("\n");
+
     const fontOptions = fonts
       .map((f) => `<option value="${f.name}">${f.name}</option>`)
       .join("\n");
@@ -119,6 +149,12 @@ class SettingsSidebar extends HTMLElement {
     return `
       <div class="sidebar-inner">
         <div class="sidebar-title">Settings</div>
+
+        <!-- Engine picker -->
+        <fieldset>
+          <legend>Engine</legend>
+          <select id="engine-select">${engineOptions}</select>
+        </fieldset>
 
         <!-- Font picker -->
         <fieldset>

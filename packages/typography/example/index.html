@@ -4,8 +4,10 @@
     <meta charset="UTF-8" />
     <title>Font Baseline Alignment Demo</title>
 
-    <!-- Baseline engine (UNTOUCHED) -->
-    <link rel="stylesheet" href="../src/index.css" />
+    <!-- Baseline engines (only one active at a time) -->
+    <link id="engine-classic"   rel="stylesheet" href="../src/index.css" />
+    <link id="engine-text-trim" rel="stylesheet" href="../src/index-text-trim.css" disabled />
+    <link id="engine-cap"       rel="stylesheet" href="../src/index-cap.css" disabled />
 
     <!-- Example layout & debug styles -->
     <link rel="stylesheet" href="./styles/layout.css" />
