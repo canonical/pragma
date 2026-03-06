@@ -53,9 +53,7 @@ p {
   line-height: var(--computed-line-height);
   font-size: var(--font-size);
 
-  --baseline-position: calc(
-    (var(--computed-line-height) + 1cap) / 2
-  );
+  --baseline-position: calc((var(--computed-line-height) + 1cap) / 2);
 
   --top-nudge: calc(
     var(--baseline-height) -

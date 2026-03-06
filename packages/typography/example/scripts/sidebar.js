@@ -1,14 +1,14 @@
-import { fonts } from "./fonts.js";
 import { contentPresets } from "./content.js";
+import { fonts } from "./fonts.js";
 
 /**
  * Engine IDs matching the <link> elements in index.html.
  * Only one is enabled at a time; the rest have `disabled`.
  */
 const ENGINES = [
-  { id: "engine-classic",   label: "Classic (extracted metrics)" },
+  { id: "engine-classic", label: "Classic (extracted metrics)" },
   { id: "engine-text-trim", label: "Text-trim (cap unit + text-box)" },
-  { id: "engine-cap",       label: "Cap-unit nudge (cap unit only)" },
+  { id: "engine-cap", label: "Cap-unit nudge (cap unit only)" },
 ];
 
 /**
@@ -134,9 +134,9 @@ class SettingsSidebar extends HTMLElement {
   /* ------------------------------------------------------------------ */
 
   #template() {
-    const engineOptions = ENGINES
-      .map((e) => `<option value="${e.id}">${e.label}</option>`)
-      .join("\n");
+    const engineOptions = ENGINES.map(
+      (e) => `<option value="${e.id}">${e.label}</option>`,
+    ).join("\n");
 
     const fontOptions = fonts
       .map((f) => `<option value="${f.name}">${f.name}</option>`)

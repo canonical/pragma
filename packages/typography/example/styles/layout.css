@@ -118,11 +118,7 @@ main {
   padding: 0 1rem;
 
   /* Baseline grid overlay */
-  background-image: linear-gradient(
-    to bottom,
-    #df1f00 1px,
-    transparent 1px
-  );
+  background-image: linear-gradient(to bottom, #df1f00 1px, transparent 1px);
   background-size: 100% var(--baseline-height);
   background-repeat: repeat;
   background-attachment: local;

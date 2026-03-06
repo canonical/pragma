@@ -14,7 +14,7 @@
  * `src/index.css` resolve correctly via relative paths.
  */
 
-import { resolve, extname } from "node:path";
+import { extname, resolve } from "node:path";
 
 const PORT = Number(process.env.PORT) || 3333;
 const ROOT = resolve(import.meta.dir, "..");
@@ -104,4 +104,6 @@ Bun.serve({
 });
 
 console.log(`Typography example → http://localhost:${PORT}`);
-console.log("Watching for changes (run with: bun --watch run example/serve.ts)");
+console.log(
+  "Watching for changes (run with: bun --watch run example/serve.ts)",
+);
