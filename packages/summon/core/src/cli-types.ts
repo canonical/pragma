@@ -21,22 +21,22 @@
  * ```
  */
 export type ReservedOption =
-	| "help"
-	| "version"
-	| "dryRun"
-	| "dry-run"
-	| "yes"
-	| "output"
-	| "preview"
-	| "generators"
-	| "run"
-	| "init"
-	| "llm"
-	| "format"
-	| "showFiles"
-	| "show-files"
-	| "verbose"
-	| "generatedStamp";
+  | "help"
+  | "version"
+  | "dryRun"
+  | "dry-run"
+  | "yes"
+  | "output"
+  | "preview"
+  | "generators"
+  | "run"
+  | "init"
+  | "llm"
+  | "format"
+  | "showFiles"
+  | "show-files"
+  | "verbose"
+  | "generatedStamp";
 
 /**
  * Type helper that produces a compile-time error if T contains any reserved option names.
@@ -53,7 +53,7 @@ export type ReservedOption =
  * ```
  */
 export type ForbidReserved<T> = {
-	[K in keyof T]: K extends ReservedOption
-		? [`Error: '${K & string}' is a reserved option name`]
-		: T[K];
+  [K in keyof T]: K extends ReservedOption
+    ? [`Error: '${K & string}' is a reserved option name`]
+    : T[K];
 };

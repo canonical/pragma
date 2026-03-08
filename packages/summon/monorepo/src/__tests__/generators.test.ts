@@ -2,11 +2,30 @@
  * Tests for @canonical/summon-monorepo generators
  */
 
-import { existsSync, readFileSync, rmSync } from "node:fs";
-import * as path from "node:path";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { dryRun, type FileEntry } from "@canonical/summon";
+import { readFileSync } from "node:fs";
+import { dryRunWith, type Effect } from "@canonical/summon";
+import { describe, expect, it } from "vitest";
 import { generator } from "../monorepo/index.js";
+
+/** Provide a real ReadFile mock so templates render with actual content */
+const realReadFile = new Map<string, (effect: Effect) => unknown>([
+  ["ReadFile", (e) => readFileSync((e as { path: string }).path, "utf-8")],
+]);
+
+type FileEntry = { path: string; content: string };
+
+const dryRun = (task: Parameters<typeof dryRunWith>[0]) =>
+  dryRunWith(task, realReadFile);
+
+const getFiles = (result: ReturnType<typeof dryRun>): FileEntry[] =>
+  result.effects
+    .filter(
+      (
+        e,
+      ): e is Extract<(typeof result.effects)[number], { _tag: "WriteFile" }> =>
+        e._tag === "WriteFile",
+    )
+    .map((e) => ({ path: e.path, content: e.content }));
 
 const defaultAnswers = {
   name: "test-monorepo",
@@ -21,10 +40,10 @@ const defaultAnswers = {
 
 describe("monorepo generator", () => {
   describe("dry run", () => {
-    it("generates all expected files", async () => {
-      const result = await dryRun(generator, defaultAnswers);
+    it("generates all expected files", () => {
+      const result = dryRun(generator.generate(defaultAnswers));
 
-      const filePaths = result.files.map((f: FileEntry) => f.path);
+      const filePaths = getFiles(result).map((f) => f.path);
 
       // Root config files
       expect(filePaths).toContain("test-monorepo/package.json");
@@ -37,20 +56,14 @@ describe("monorepo generator", () => {
       expect(filePaths).toContain("test-monorepo/LICENSE");
 
       // Scripts
-      expect(filePaths).toContain(
-        "test-monorepo/scripts/publish-status.ts",
-      );
+      expect(filePaths).toContain("test-monorepo/scripts/publish-status.ts");
 
       // GitHub workflows
-      expect(filePaths).toContain(
-        "test-monorepo/.github/workflows/ci.yml",
-      );
+      expect(filePaths).toContain("test-monorepo/.github/workflows/ci.yml");
       expect(filePaths).toContain(
         "test-monorepo/.github/workflows/pr-lint.yml",
       );
-      expect(filePaths).toContain(
-        "test-monorepo/.github/workflows/tag.yml",
-      );
+      expect(filePaths).toContain("test-monorepo/.github/workflows/tag.yml");
 
       // GitHub actions
       expect(filePaths).toContain(
@@ -75,11 +88,11 @@ describe("monorepo generator", () => {
       );
     });
 
-    it("generates valid package.json with correct metadata", async () => {
-      const result = await dryRun(generator, defaultAnswers);
+    it("generates valid package.json with correct metadata", () => {
+      const result = dryRun(generator.generate(defaultAnswers));
 
-      const pkgFile = result.files.find(
-        (f: FileEntry) => f.path === "test-monorepo/package.json",
+      const pkgFile = getFiles(result).find(
+        (f) => f.path === "test-monorepo/package.json",
       );
       expect(pkgFile).toBeDefined();
 
@@ -89,9 +102,7 @@ describe("monorepo generator", () => {
       expect(pkg.version).toBe("0.0.0");
       expect(pkg.description).toBe("A test monorepo");
       expect(pkg.license).toBe("LGPL-3.0");
-      expect(pkg.repository.url).toBe(
-        "https://github.com/test/test-monorepo",
-      );
+      expect(pkg.repository.url).toBe("https://github.com/test/test-monorepo");
       expect(pkg.workspaces).toEqual(["packages/*"]);
       expect(pkg.scripts.build).toBe("lerna run build");
       expect(pkg.scripts["test:coverage"]).toBe("lerna run test:coverage");
@@ -103,11 +114,11 @@ describe("monorepo generator", () => {
       expect(pkg.devDependencies["@vitest/coverage-v8"]).toBeDefined();
     });
 
-    it("generates lerna.json with fixed versioning", async () => {
-      const result = await dryRun(generator, defaultAnswers);
+    it("generates lerna.json with fixed versioning", () => {
+      const result = dryRun(generator.generate(defaultAnswers));
 
-      const lernaFile = result.files.find(
-        (f: FileEntry) => f.path === "test-monorepo/lerna.json",
+      const lernaFile = getFiles(result).find(
+        (f) => f.path === "test-monorepo/lerna.json",
       );
       expect(lernaFile).toBeDefined();
 
@@ -115,11 +126,11 @@ describe("monorepo generator", () => {
       expect(lerna.version).toBe("0.0.1");
     });
 
-    it("generates tsconfig extending the chosen config", async () => {
-      const result = await dryRun(generator, defaultAnswers);
+    it("generates tsconfig extending the chosen config", () => {
+      const result = dryRun(generator.generate(defaultAnswers));
 
-      const tsconfigFile = result.files.find(
-        (f: FileEntry) => f.path === "test-monorepo/tsconfig.json",
+      const tsconfigFile = getFiles(result).find(
+        (f) => f.path === "test-monorepo/tsconfig.json",
       );
       expect(tsconfigFile).toBeDefined();
 
@@ -127,24 +138,26 @@ describe("monorepo generator", () => {
       expect(tsconfig.extends).toBe("@canonical/typescript-config-base");
     });
 
-    it("generates tsconfig with lit config when selected", async () => {
-      const result = await dryRun(generator, {
-        ...defaultAnswers,
-        typescriptConfig: "@canonical/typescript-config-lit",
-      });
+    it("generates tsconfig with lit config when selected", () => {
+      const result = dryRun(
+        generator.generate({
+          ...defaultAnswers,
+          typescriptConfig: "@canonical/typescript-config-lit",
+        }),
+      );
 
-      const tsconfigFile = result.files.find(
-        (f: FileEntry) => f.path === "test-monorepo/tsconfig.json",
+      const tsconfigFile = getFiles(result).find(
+        (f) => f.path === "test-monorepo/tsconfig.json",
       );
       const tsconfig = JSON.parse(tsconfigFile!.content);
       expect(tsconfig.extends).toBe("@canonical/typescript-config-lit");
     });
 
-    it("generates biome.json extending @canonical/biome-config", async () => {
-      const result = await dryRun(generator, defaultAnswers);
+    it("generates biome.json extending @canonical/biome-config", () => {
+      const result = dryRun(generator.generate(defaultAnswers));
 
-      const biomeFile = result.files.find(
-        (f: FileEntry) => f.path === "test-monorepo/biome.json",
+      const biomeFile = getFiles(result).find(
+        (f) => f.path === "test-monorepo/biome.json",
       );
       expect(biomeFile).toBeDefined();
 
@@ -152,46 +165,47 @@ describe("monorepo generator", () => {
       expect(biome.extends).toEqual(["@canonical/biome-config"]);
     });
 
-    it("generates tag.yml with NPM_AUTH_TOKEN", async () => {
-      const result = await dryRun(generator, defaultAnswers);
+    it("generates tag.yml with NPM_AUTH_TOKEN", () => {
+      const result = dryRun(generator.generate(defaultAnswers));
 
-      const tagFile = result.files.find(
-        (f: FileEntry) => f.path === "test-monorepo/.github/workflows/tag.yml",
+      const tagFile = getFiles(result).find(
+        (f) => f.path === "test-monorepo/.github/workflows/tag.yml",
       );
       expect(tagFile).toBeDefined();
       expect(tagFile!.content).toContain("NPM_AUTH_TOKEN");
       expect(tagFile!.content).not.toContain("NODE_AUTH_TOKEN");
     });
 
-    it("generates setup-env with pinned bun version", async () => {
-      const result = await dryRun(generator, defaultAnswers);
+    it("generates setup-env with pinned bun version", () => {
+      const result = dryRun(generator.generate(defaultAnswers));
 
-      const setupFile = result.files.find(
-        (f: FileEntry) =>
-          f.path === "test-monorepo/.github/actions/setup-env/action.yml",
+      const setupFile = getFiles(result).find(
+        (f) => f.path === "test-monorepo/.github/actions/setup-env/action.yml",
       );
       expect(setupFile).toBeDefined();
       expect(setupFile!.content).toContain('default: "1.3.9"');
     });
 
-    it("generates GPL-3.0 license when selected", async () => {
-      const result = await dryRun(generator, {
-        ...defaultAnswers,
-        license: "GPL-3.0",
-      });
+    it("generates GPL-3.0 license when selected", () => {
+      const result = dryRun(
+        generator.generate({
+          ...defaultAnswers,
+          license: "GPL-3.0",
+        }),
+      );
 
-      const licenseFile = result.files.find(
-        (f: FileEntry) => f.path === "test-monorepo/LICENSE",
+      const licenseFile = getFiles(result).find(
+        (f) => f.path === "test-monorepo/LICENSE",
       );
       expect(licenseFile).toBeDefined();
       expect(licenseFile!.content).toContain("GNU GENERAL PUBLIC LICENSE");
     });
 
-    it("generates LGPL-3.0 license by default", async () => {
-      const result = await dryRun(generator, defaultAnswers);
+    it("generates LGPL-3.0 license by default", () => {
+      const result = dryRun(generator.generate(defaultAnswers));
 
-      const licenseFile = result.files.find(
-        (f: FileEntry) => f.path === "test-monorepo/LICENSE",
+      const licenseFile = getFiles(result).find(
+        (f) => f.path === "test-monorepo/LICENSE",
       );
       expect(licenseFile).toBeDefined();
       expect(licenseFile!.content).toContain(
@@ -199,12 +213,13 @@ describe("monorepo generator", () => {
       );
     });
 
-    it("does not generate any package directories", async () => {
-      const result = await dryRun(generator, defaultAnswers);
+    it("does not generate any package directories", () => {
+      const result = dryRun(generator.generate(defaultAnswers));
 
-      const filePaths = result.files.map((f: FileEntry) => f.path);
-      const packageFiles = filePaths.filter((p: string) =>
-        p.startsWith("test-monorepo/packages/") && !p.endsWith("/"),
+      const filePaths = getFiles(result).map((f) => f.path);
+      const packageFiles = filePaths.filter(
+        (p: string) =>
+          p.startsWith("test-monorepo/packages/") && !p.endsWith("/"),
       );
       expect(packageFiles).toHaveLength(0);
     });

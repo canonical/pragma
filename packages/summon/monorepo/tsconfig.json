@@ -2,7 +2,8 @@
   "extends": "@canonical/typescript-config",
   "compilerOptions": {
     "baseUrl": "src",
-    "types": ["bun-types"]
+    "types": ["node", "@types/bun"],
+    "skipLibCheck": true
   },
   "include": ["src/**/*.ts"]
 }
