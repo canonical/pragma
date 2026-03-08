@@ -13,8 +13,13 @@
   "exclude": [
     "src/**/*.stories.ts",
     "src/**/*.stories.tsx",
+    "src/**/*.test.ts",
+    "src/**/*.test.tsx",
     "src/**/*.tests.ts",
     "src/**/*.tests.tsx",
+    "src/**/*.ssr.test.ts",
+    "src/**/*.ssr.test.tsx",
+    "src/**/mockTokens.ts",
     "vite.config.ts",
     "vitest.setup.ts",
     "vitest.config.ts",
