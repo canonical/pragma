@@ -1,3 +1,22 @@
+/* Component tokens — sourced from @canonical/design-tokens */
+:root {
+  --chip-color-background: var(--color-foreground-secondary);
+  --chip-color-background-hover: var(--color-foreground-secondary-hover);
+  --chip-color-background-active: var(--color-foreground-secondary-active);
+  --chip-color-border: var(--color-border-high-contrast);
+  --chip-color-text: var(--color-text);
+
+  --chip-border-radius: 1rem;
+  --chip-font-size: var(--font-size-small);
+  --chip-font-weight: var(--font-weight-default);
+  --chip-line-height: var(--line-height-small);
+  --chip-border-width: var(--spacing-border-width);
+  --chip-padding-vertical: var(--spacing-vertical-xsmall);
+  --chip-padding-horizontal: var(--spacing-horizontal-small);
+  --chip-margin-bottom: var(--spacing-vertical-small);
+  --chip-margin-left: var(--spacing-horizontal-medium);
+}
+
 .ds.chip {
   border-color: var(--modifier-color-border, var(--chip-color-border));
   border-style: solid;

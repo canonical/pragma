@@ -1,0 +1,46 @@
+{
+  "name": "@canonical/styles-typography",
+  "description": "Typography baseline alignment engines and scale tokens for the Canonical Design System.",
+  "version": "0.17.1",
+  "main": "src/index.css",
+  "type": "module",
+  "files": [
+    "src"
+  ],
+  "bin": {
+    "extract-font-data": "./src/scripts/extractFontData.ts"
+  },
+  "scripts": {
+    "dev": "bun --watch run ./example/serve.ts",
+    "extract-font-data": "bun run ./src/scripts/extractFontData.ts",
+    "check": "bun run check:biome && bun run check:ts",
+    "check:fix": "bun run check:biome:fix && bun run check:ts",
+    "check:biome": "biome check",
+    "check:biome:fix": "biome check --write",
+    "check:ts": "tsc --noEmit"
+  },
+  "author": {
+    "email": "webteam@canonical.com",
+    "name": "Canonical Webteam"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/canonical/ds25"
+  },
+  "license": "LGPL-3.0",
+  "dependencies": {
+    "@canonical/design-tokens": "^0.17.1",
+    "opentype.js": "^1.3.4"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.4.5",
+    "@canonical/biome-config": "^0.17.1",
+    "@canonical/typescript-config": "^0.17.1",
+    "@types/bun": "^1.3.8",
+    "@types/node": "^24.10.13",
+    "typescript": "^5.9.3"
+  },
+  "peerDependencies": {
+    "typescript": "^5.8.2"
+  }
+}

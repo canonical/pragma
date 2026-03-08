@@ -1,0 +1,11 @@
+/*
+ * @canonical/styles-typography — Baseline Grid Engine
+ *
+ * Re-exports the default baseline engine (cap-unit approach).
+ *
+ * Available engines:
+ *   - baseline-cap.css      — Uses the CSS `cap` unit (no extraction needed) [default]
+ *   - baseline-metrics.css  — Uses extracted font metrics (ascender/descender/unitsPerEm)
+ *   - baseline-trim.css     — Uses text-box-trim + cap unit hybrid
+ */
+@import url('./baseline-cap.css');

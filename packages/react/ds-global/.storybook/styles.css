@@ -1,3 +1,6 @@
+/* Coexistence: old styles loaded first, new styles override via cascade.
+ * Remove @canonical/styles-old import once Phase 4 cleanup is complete. */
+@import url("@canonical/styles-old");
 @import url("@canonical/styles");
 
 :root {

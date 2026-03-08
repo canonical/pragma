@@ -1,0 +1,156 @@
+/* @canonical/styles-typography — Semantic token mapper
+ *
+ * Bridges the gap between the semantic typography tokens emitted by
+ * @canonical/design-tokens (--typography-heading-{N}-*, --typography-text-{tier}-*)
+ * and the engine variables consumed by the baseline alignment engines
+ * (--font-size, --line-height-multiplier, --font-weight, --space-after, etc.).
+ *
+ * The design-tokens modifier provides:
+ *   --typography-heading-{1-6}-font-size      → e.g. var(--dimension-size-fontSize-700)
+ *   --typography-heading-{1-6}-font-weight     → e.g. var(--typography-weight-medium)
+ *   --typography-heading-{1-6}-line-height     → unitless ratio e.g. var(--number-line-height-700)
+ *   --typography-heading-{1-6}-letter-spacing  → e.g. var(--dimension-letterSpacing-default)
+ *   --typography-heading-{1-6}-font-family     → e.g. var(--typography-fontFamily-default)
+ *   (same pattern for text.primary, text.secondary, text.tertiary)
+ *
+ * The engine expects per-element:
+ *   --font-size              → <length>
+ *   --line-height-multiplier → <number> in baseline-height units
+ *   --font-weight            → <number>
+ *   --space-after            → <number> in baseline-height units
+ *   --baseline-height        → set at :root (default: 0.5rem)
+ *
+ * The line-height-multiplier is computed using round() to snap the typographic
+ * line-height (font-size × unitless ratio) to the nearest baseline-grid unit:
+ *   round(up, font-size × line-height-ratio / baseline-height, 1)
+ */
+
+/* ── Headings ── */
+
+h1 {
+  --font-size: var(--typography-heading-1-font-size);
+  --font-weight: var(--typography-heading-1-font-weight);
+  --line-height-multiplier: round(
+    up,
+    calc(
+      var(--typography-heading-1-font-size) *
+      var(--typography-heading-1-line-height) /
+      var(--baseline-height)
+    ),
+    1
+  );
+  --space-after: 2;
+  font-family: var(--typography-heading-1-font-family);
+  font-weight: var(--font-weight);
+  letter-spacing: var(--typography-heading-1-letter-spacing);
+}
+
+h2 {
+  --font-size: var(--typography-heading-2-font-size);
+  --font-weight: var(--typography-heading-2-font-weight);
+  --line-height-multiplier: round(
+    up,
+    calc(
+      var(--typography-heading-2-font-size) *
+      var(--typography-heading-2-line-height) /
+      var(--baseline-height)
+    ),
+    1
+  );
+  --space-after: 2;
+  font-family: var(--typography-heading-2-font-family);
+  font-weight: var(--font-weight);
+  letter-spacing: var(--typography-heading-2-letter-spacing);
+}
+
+h3 {
+  --font-size: var(--typography-heading-3-font-size);
+  --font-weight: var(--typography-heading-3-font-weight);
+  --line-height-multiplier: round(
+    up,
+    calc(
+      var(--typography-heading-3-font-size) *
+      var(--typography-heading-3-line-height) /
+      var(--baseline-height)
+    ),
+    1
+  );
+  --space-after: 1;
+  font-family: var(--typography-heading-3-font-family);
+  font-weight: var(--font-weight);
+  letter-spacing: var(--typography-heading-3-letter-spacing);
+}
+
+h4 {
+  --font-size: var(--typography-heading-4-font-size);
+  --font-weight: var(--typography-heading-4-font-weight);
+  --line-height-multiplier: round(
+    up,
+    calc(
+      var(--typography-heading-4-font-size) *
+      var(--typography-heading-4-line-height) /
+      var(--baseline-height)
+    ),
+    1
+  );
+  --space-after: 1;
+  font-family: var(--typography-heading-4-font-family);
+  font-weight: var(--font-weight);
+  letter-spacing: var(--typography-heading-4-letter-spacing);
+}
+
+h5 {
+  --font-size: var(--typography-heading-5-font-size);
+  --font-weight: var(--typography-heading-5-font-weight);
+  --line-height-multiplier: round(
+    up,
+    calc(
+      var(--typography-heading-5-font-size) *
+      var(--typography-heading-5-line-height) /
+      var(--baseline-height)
+    ),
+    1
+  );
+  --space-after: 1;
+  font-family: var(--typography-heading-5-font-family);
+  font-weight: var(--font-weight);
+  letter-spacing: var(--typography-heading-5-letter-spacing);
+}
+
+h6 {
+  --font-size: var(--typography-heading-6-font-size);
+  --font-weight: var(--typography-heading-6-font-weight);
+  --line-height-multiplier: round(
+    up,
+    calc(
+      var(--typography-heading-6-font-size) *
+      var(--typography-heading-6-line-height) /
+      var(--baseline-height)
+    ),
+    1
+  );
+  --space-after: 1;
+  font-family: var(--typography-heading-6-font-family);
+  font-weight: var(--font-weight);
+  letter-spacing: var(--typography-heading-6-letter-spacing);
+}
+
+/* ── Text ── */
+
+p {
+  --font-size: var(--typography-text-primary-font-size);
+  --font-weight: var(--typography-text-primary-font-weight);
+  --line-height-multiplier: round(
+    up,
+    calc(
+      var(--typography-text-primary-font-size) *
+      var(--typography-text-primary-line-height) /
+      var(--baseline-height)
+    ),
+    1
+  );
+  --space-after: 1;
+  font-family: var(--typography-text-primary-font-family);
+  font-weight: var(--font-weight);
+  letter-spacing: var(--typography-text-primary-letter-spacing);
+}

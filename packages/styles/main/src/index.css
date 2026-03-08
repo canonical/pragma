@@ -1,0 +1,29 @@
+/* @canonical/styles — Global stylesheet entry point
+ *
+ * Single import for consumers:
+ *   @import url("@canonical/styles");
+ */
+
+/* Layer ordering — deterministic cascade (spec §C.2) */
+@layer normalize, ds.reset, ds.modifiers, ds.components;
+
+/* Reset */
+@import url("normalize.css");
+
+/* Typography: interpreter engine + scale tokens */
+@import url("@canonical/styles-typography");
+
+/* Design tokens — colour, spacing, surfaces, states */
+@import url("@canonical/design-tokens/dist/sets.primitive.css");
+@import url("@canonical/design-tokens/dist/modifiers.theme.css");
+@import url("@canonical/design-tokens/dist/modifiers.surfaces.css");
+@import url("@canonical/design-tokens/dist/modifiers.anticipation.css");
+@import url("@canonical/design-tokens/dist/modifiers.criticality.css");
+@import url("@canonical/design-tokens/dist/modifiers.emphasis.css");
+@import url("@canonical/design-tokens/dist/modifiers.importance.css");
+@import url("@canonical/design-tokens/dist/states.css");
+
+/* Establish color-scheme for light-dark() support */
+:root {
+  color-scheme: light dark;
+}
