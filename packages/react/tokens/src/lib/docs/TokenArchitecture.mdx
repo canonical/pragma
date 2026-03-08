@@ -1,0 +1,93 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+
+<Meta title="Foundation/Design Tokens/Understanding/Token Architecture" />
+
+# Understanding Token Architecture
+
+The token system exists to solve a coordination problem. When dozens of components need to respond to themes, modifiers, surfaces, and interaction states — all without knowing about each other — the contract between them must be explicit, layered, and compositional.
+
+This page explains _why_ the system is structured the way it is, not how to use it. For practical steps, see the how-to guides.
+
+## The coordination problem
+
+A button needs a background color. A card needs a background color. An input needs a border color. In dark mode, all three need different colors than in light mode. Inside an `.error` modifier, the button should turn red, the input border should turn red, and the card should keep its neutral background.
+
+The naive approach — giving each component a `theme` prop and an `intent` prop — creates a combinatorial explosion. Every component must handle every theme × modifier × surface × state combination internally. The token system removes this burden from components entirely.
+
+## Three tiers, three responsibilities
+
+The tiered architecture separates _source material_ from _consumer API_ from _contextual infrastructure_.
+
+### Primitives are the palette
+
+Primitive tokens hold raw values: `--color-palette-gray-500` resolves to `oklch(50% 0 0)`. They form a closed vocabulary of every value the system can produce. No component should ever reference a primitive directly — doing so creates a hard dependency on a specific value that cannot adapt to context.
+
+Primitives exist so that semantic tokens can be defined in terms of a shared vocabulary. When the brand palette changes, only primitive tokens change. Everything downstream recomputes.
+
+### Semantic tokens are the API
+
+Semantic tokens express intent: `--color-text` means "the correct text color for the current context." They are paired (light and dark values), and components reference them through `var()`. This is the layer that components should read.
+
+The word "semantic" is deliberate. These tokens carry meaning — `--color-foreground-primary` means "the dominant interactive surface color" — while primitives carry only value. The distinction matters because meaning is stable across contexts, even when values change.
+
+### Derived tokens are infrastructure
+
+Derived tokens include modifier channels (`--modifier-color-text`), surface channels (`--surface-color-background`), and interaction states (`--hover--color-foreground-primary`). They are not meant for direct consumption. Instead, they are intermediate variables that the CSS cascade resolves automatically.
+
+Derived tokens exist because a semantic token alone cannot know its context. `--color-text` does not know whether it is inside an `.error` container or a `.surface` container. The derived layer adds this contextual awareness without changing the semantic token's definition.
+
+## Why channel variables
+
+The channel variable pattern is the key mechanism that makes modifiers compositional.
+
+Consider a component that sets `color: var(--color-text)`. When a parent element applies `.error`, the component's text should turn red. But the component does not know about `.error`, and it should not need to. The solution is a channel variable:
+
+```css
+color: var(--modifier-color-text, var(--color-text));
+```
+
+The `.error` class sets `--modifier-color-text` to the error text color. The component reads the channel first and falls back to the base semantic token. This indirection means any modifier — `.error`, `.success`, `.warning`, `.branded` — works without the component knowing about any of them.
+
+The same pattern extends to surfaces (`--surface-color-background`) and states (`--hover--*`, `--active--*`, `--disabled--*`), creating a uniform fallback chain: state → modifier → surface → base.
+
+## Why fallback chains
+
+Fallback chains encode precedence without requiring specificity hacks or `!important`. The pattern:
+
+```css
+var(--hover--color-foreground-primary,
+  var(--modifier-color-foreground-primary,
+    var(--surface-color-foreground-primary,
+      var(--color-foreground-primary))))
+```
+
+reads as: "use the hover state if set, otherwise use the modifier channel if set, otherwise use the surface channel if set, otherwise use the base semantic token." Each layer is optional. A component inside no modifier and no surface simply falls through to the base. A component inside `.error` on `.surface .surface` picks up both the modifier _and_ the surface context.
+
+This is not just syntactic sugar. It makes the cascade _debuggable_: in DevTools, you can see exactly which variable is set and which is falling through. There are no computed intermediate values hiding the resolution path.
+
+## Why CSS cascade layers
+
+The system uses `@layer` to establish a strict ordering:
+
+```
+@layer ds.tokens;       /* primitives and semantic defaults */
+@layer ds.modifiers;    /* modifier channel overrides */
+@layer ds.surfaces;     /* surface depth compounding */
+@layer ds.states;       /* interaction state derivations */
+```
+
+This ordering guarantees that surfaces can override modifiers, and states can override everything, regardless of selector specificity or source order. It also means that new features (a future `ds.motion` layer, for instance) can be slotted into the cascade without refactoring existing tokens.
+
+## The design principle
+
+The token architecture follows a single design principle: **components should be context-unaware**. A button should not know whether it is in dark mode, inside an error state, on the second surface layer, or being hovered. It references semantic tokens through fallback chains, and the cascade handles the rest.
+
+This is why three tiers instead of one, why channel variables instead of direct references, and why fallback chains instead of prop-driven logic.
+
+## Further reading
+
+- [The Modifier Contract](?path=/docs/foundation-design-tokens-understanding-modifier-contract--docs): how ancestor classes rebind descendant output
+- [Surface Depth Model](?path=/docs/foundation-design-tokens-understanding-surface-depth-model--docs): how nested containers create visual layers
+- [Theme Mechanics](?path=/docs/foundation-design-tokens-understanding-theme-mechanics--docs): how light/dark switching and delta variables work
+- [How to find the right token](?path=/docs/foundation-design-tokens-how-to-find-the-right-token--docs): decision tree for choosing tokens
+- [Token Explorer](?path=/docs/foundation-design-tokens-explorer--docs): browse the full token catalog

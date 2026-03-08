@@ -1,0 +1,166 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+
+<Meta title="Foundation/Design Tokens/Learn/Your First Token-Aware Component" />
+
+# Your first token-aware component
+
+> In this tutorial, you will build a simple info card that uses semantic tokens for all its colors, responds to modifier classes automatically, and looks correct in both light and dark themes.
+
+## Prerequisites
+
+- A Pragma monorepo checkout with `bun install` completed
+- A package that imports `@canonical/styles`
+- Basic React and CSS knowledge
+
+## What you'll build
+
+A card component with a title, description, and a subtle border. It will:
+
+- Use semantic color tokens (not hardcoded values)
+- Respond to `.error`, `.success`, and `.warning` modifier classes
+- Switch between light and dark themes without any code changes
+
+## Steps
+
+### 1. Create the CSS file
+
+Create `InfoCard.css` with semantic tokens and modifier channel fallbacks:
+
+```css
+.ds.info-card {
+  display: grid;
+  gap: var(--dimension-1);
+  padding: var(--dimension-2);
+  border: 1px solid var(--modifier-color-border, var(--color-border-subtle));
+  border-radius: 0.75rem;
+  background: var(--surface-color-background, var(--color-background));
+  color: var(--modifier-color-text, var(--color-text));
+}
+
+.ds.info-card {
+  & > .title {
+    margin: 0;
+    font-weight: 600;
+  }
+
+  & > .body {
+    margin: 0;
+    color: var(--modifier-color-text, var(--color-text-muted));
+    line-height: 1.5;
+  }
+}
+```
+
+Notice:
+
+- The root class is `.ds.info-card` — the `.ds` namespace scopes it within the design system
+- `--modifier-color-border` and `--modifier-color-text` are the channel variables — they are unset by default and only take effect inside a modifier class
+- `--surface-color-background` is the surface channel — it activates inside `.surface` containers
+- `--dimension-1` and `--dimension-2` are spacing tokens, not modifier-aware (spacing does not change per context)
+
+You should see: a CSS file with no hardcoded color values anywhere.
+
+### 2. Create the React component
+
+Create `InfoCard.tsx`:
+
+```tsx
+import "./InfoCard.css";
+
+interface InfoCardProps {
+  title: string;
+  children: React.ReactNode;
+  className?: string;
+}
+
+const componentCssClassName = "ds info-card";
+
+export function InfoCard({ title, children, className }: InfoCardProps) {
+  const classes = [componentCssClassName, className].filter(Boolean).join(" ");
+
+  return (
+    <article className={classes}>
+      <h3 className="title">{title}</h3>
+      <p className="body">{children}</p>
+    </article>
+  );
+}
+```
+
+You should see: a straightforward component with no color logic, no theme prop, no intent prop.
+
+### 3. Render the component
+
+In a story or page, render the card:
+
+```tsx
+<InfoCard title="System status">
+  All services are operating normally.
+</InfoCard>
+```
+
+You should see: a card with dark text on a light background (in light theme), or light text on a dark background (in dark theme). The border is subtle in both themes.
+
+### 4. Test with modifier classes
+
+Wrap the card in modifier containers:
+
+```tsx
+<div style={{ display: "grid", gap: "1rem" }}>
+  <InfoCard title="Default">
+    No modifier applied. Uses base semantic tokens.
+  </InfoCard>
+
+  <div className="error">
+    <InfoCard title="Error context">
+      Text and border have shifted to error colors.
+    </InfoCard>
+  </div>
+
+  <div className="success">
+    <InfoCard title="Success context">
+      Text and border have shifted to success colors.
+    </InfoCard>
+  </div>
+
+  <div className="warning">
+    <InfoCard title="Warning context">
+      Text and border have shifted to warning colors.
+    </InfoCard>
+  </div>
+</div>
+```
+
+You should see: four cards. The first has default colors. The other three have text and borders that match their modifier context — red tones for error, green for success, amber for warning. **You did not change the component code.** The modifier classes set `--modifier-color-text` and `--modifier-color-border`, which the card's CSS reads through its fallback chain.
+
+### 5. Test with the theme switcher
+
+Use the Storybook theme switcher to toggle between light and dark mode.
+
+You should see: all four cards adapt. The error card has a red tint that works on both light and dark backgrounds. The semantic tokens carry paired values, and the modifier-specific tokens (`--color-text-error`, etc.) are also paired.
+
+### 6. Inspect the cascade in DevTools
+
+Open browser DevTools, select the error card, and inspect the `color` property:
+
+- You should see `var(--modifier-color-text, var(--color-text))` in the Styles panel
+- In the Computed panel, `--modifier-color-text` resolves to `var(--color-text-error)`
+- `--color-text-error` resolves to its paired value (one for light, one for dark)
+
+This is the full resolution chain in action: component → channel → intent-specific semantic → themed value.
+
+## What you learned
+
+You've built a token-aware component from scratch. You now know how to:
+
+- Use semantic tokens instead of hardcoded color values
+- Add modifier channel fallbacks so ancestor classes can rebind colors
+- Add surface channel fallbacks for depth-aware backgrounds
+- Verify behavior across themes and modifier contexts
+
+## Next steps
+
+- [Adding surface depth to a layout](?path=/docs/foundation-design-tokens-learn-adding-surface-depth--docs) — learn how nested surfaces create visual layers
+- [How to find the right token](?path=/docs/foundation-design-tokens-how-to-find-the-right-token--docs) — decision tree for token selection
+- [Token Architecture](?path=/docs/foundation-design-tokens-understanding-token-architecture--docs) — understand why the system works this way
+- [Token Explorer](?path=/docs/foundation-design-tokens-explorer--docs) — browse all available tokens

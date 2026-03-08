@@ -1,0 +1,117 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+
+<Meta title="Foundation/Design Tokens/Understanding/Surface Depth Model" />
+
+# Understanding the Surface Depth Model
+
+Surfaces create visual layers — elevated cards, inset panels, nested dialogs — using only CSS custom properties and descendant selectors. No JavaScript, no counters, no data attributes.
+
+This page explains how the depth model works, why it oscillates, and what the design implications are.
+
+## What surfaces solve
+
+Most interfaces have depth. A page has a background, a card sits on top of it, and a popover sits on top of the card. Each layer needs a slightly different background to create visual separation, and the elements on each layer need appropriately contrasting text, borders, and interactive surfaces.
+
+The naive approach assigns explicit depth: `<Card depth={2}>`. This breaks composition — if you move the card from the page to a dialog, you must update the depth prop. The surface model eliminates depth tracking by letting the CSS cascade count nesting automatically.
+
+## How compound selectors track depth
+
+The surface system uses descendant selectors of increasing specificity:
+
+```css
+.surface              { --surface-color-background: var(--color-background); }
+.surface .surface     { --surface-color-background: var(--color-background-layer2); }
+.surface .surface .surface { --surface-color-background: var(--color-background-layer3); }
+```
+
+Each level of `.surface` nesting matches a more specific descendant selector, and CSS specificity ensures the deepest match wins. The component using `background: var(--surface-color-background, var(--color-background))` automatically gets the correct layer without knowing its depth.
+
+This is the same pattern applied to roughly 15 surface channel variables — backgrounds, ghost foregrounds, input foregrounds, border colors, and specialized surface tokens.
+
+## The oscillation pattern
+
+The depth model uses three layers, and then oscillates:
+
+| Nesting level | Resolves to | Visual effect |
+|---------------|-------------|---------------|
+| `.surface` | Layer 1 (root values) | Structural marker, no visual change from root |
+| `.surface .surface` | Layer 2 | Tinted background (e.g., gray-20 in light, gray-960 in dark) |
+| `.surface .surface .surface` | Layer 3 | Returns toward root values |
+
+Layer 1 is intentionally identical to the root context. Its purpose is structural: it declares "this container participates in the surface system." The visual shift begins at layer 2.
+
+The oscillation exists because real interfaces rarely go deeper than three levels. A card on a page is layer 2. A popover on the card is layer 3. Anything deeper returns to a visually similar state, preventing the interface from becoming progressively darker (or lighter) without bound.
+
+## Why layer 1 equals root
+
+This design choice serves two purposes:
+
+First, it keeps existing UIs stable. Adding `.surface` to a wrapper does not change its appearance. It only prepares it for depth tracking. This means you can adopt surfaces incrementally without visual regressions.
+
+Second, it provides a future extension point. If the system later differentiates layer 1 from root (perhaps with a subtle elevation or border change), every existing surface context will pick up the change automatically, because the structural `.surface` class is already in place.
+
+## Passthrough containers
+
+Not every wrapper needs to advance the depth counter. A layout grid, a scroll container, or a generic `<div>` between two surface layers should not change the visual depth. Because surface channels use CSS custom property inheritance, containers that omit `.surface` simply pass through the current depth:
+
+```html
+<div class="surface">            <!-- Layer 1 -->
+  <div class="layout-grid">     <!-- Passthrough — still layer 1 -->
+    <div class="surface">       <!-- Layer 2 -->
+      <p>Content on a tinted background</p>
+    </div>
+  </div>
+</div>
+```
+
+The `.layout-grid` div does not set or reset any surface channel variables. It inherits the values from its `.surface` ancestor. Only the next `.surface` descendant advances the depth. This means you can refactor layout wrappers freely without affecting surface depth.
+
+## Interaction with modifiers
+
+Surfaces and modifiers are independent cascade layers. In the layer ordering:
+
+```
+@layer ds.tokens → ds.modifiers → ds.surfaces → ds.states
+```
+
+Surfaces override modifiers. This means a surface context can adjust foreground colors that modifiers have set, ensuring visual coherence at each depth level. In practice, the interaction is invisible to component authors — the fallback chain handles it:
+
+```css
+color: var(--modifier-color-text, var(--color-text));
+background: var(--surface-color-background, var(--color-background));
+```
+
+A component inside both `.error` and `.surface .surface` picks up the error text color from the modifier layer and the layer-2 background from the surface layer. No special handling is needed.
+
+## Why not CSS counters?
+
+CSS counters were considered and rejected for several reasons:
+
+1. **Counters cannot set custom properties.** A counter can increment and be displayed via `content`, but it cannot conditionally set `--surface-color-background` based on its value. Custom properties cannot be computed from counter values in current CSS.
+
+2. **Descendant selectors are simpler.** Three levels of compound selectors are easy to read, debug, and understand. Counter-based approaches require JavaScript or `@container style()` queries that add runtime complexity.
+
+3. **Three levels are sufficient.** Real-world interfaces rarely exceed three levels of visual depth. The oscillation pattern at layer 3 handles edge cases gracefully.
+
+## Why not data attributes?
+
+Data attributes like `data-depth="2"` were also considered. They require JavaScript to compute the correct depth at render time, which reintroduces the coordination problem surfaces were designed to eliminate. The CSS-only approach means surfaces work in SSR, in static HTML, and in any rendering framework.
+
+## Debugging surfaces
+
+In browser DevTools, surface channels are visible as custom properties on each `.surface` element. You can trace the resolution chain:
+
+1. Find the element in the inspector
+2. Look for `--surface-color-background` in the Computed tab
+3. Follow the value back to the matching compound selector in `modifiers.surfaces.css`
+4. Count the `.surface` ancestors to determine the current depth
+
+If a surface channel is unexpectedly unset, it usually means a `.surface` class is missing from an ancestor that should participate in depth tracking.
+
+## Further reading
+
+- [Token Architecture](?path=/docs/foundation-design-tokens-understanding-token-architecture--docs): the three-tier system that surfaces operate within
+- [The Modifier Contract](?path=/docs/foundation-design-tokens-understanding-modifier-contract--docs): how modifiers interact with surfaces in the cascade
+- [Theme Mechanics](?path=/docs/foundation-design-tokens-understanding-theme-mechanics--docs): how light/dark switching affects surface values
+- [Tutorial: Adding surface depth](?path=/docs/foundation-design-tokens-learn-adding-surface-depth--docs): hands-on walkthrough of surface nesting
+- [Surfaces story](?path=/docs/foundation-design-tokens-surfaces--docs): live demonstration of surface layering

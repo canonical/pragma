@@ -1,0 +1,193 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+
+<Meta title="Foundation/Design Tokens/How to/Support Modifiers" />
+
+# How to support modifiers in a component
+
+This guide shows you how to make a component respond to modifier classes (`.error`, `.success`, `.warning`, etc.) through the token channel variable system. No JavaScript is involved.
+
+## Prerequisites
+
+- A working React component with CSS
+- `@canonical/styles` imported in your project
+- Familiarity with CSS custom properties
+
+## Steps
+
+### 1. Identify the color properties in your component
+
+List every CSS property that sets a color. These are the properties that need modifier support:
+
+```css
+/* Before: direct semantic references */
+.ds.my-component {
+  color: var(--color-text);
+  border-color: var(--color-border);
+  background: var(--color-foreground-ghost);
+}
+```
+
+### 2. Add the modifier channel fallback
+
+For each color property, prepend the matching `--modifier-*` channel variable:
+
+```css
+/* After: modifier-aware */
+.ds.my-component {
+  color: var(--modifier-color-text, var(--color-text));
+  border-color: var(--modifier-color-border, var(--color-border));
+  background: var(--modifier-color-foreground-ghost, var(--color-foreground-ghost));
+}
+```
+
+The channel variable names follow a consistent pattern: `--modifier-color-{rest}` where `{rest}` matches the base semantic token name after `--color-`.
+
+| Base semantic token | Modifier channel |
+|--------------------|-----------------|
+| `--color-text` | `--modifier-color-text` |
+| `--color-border` | `--modifier-color-border` |
+| `--color-icon-default` | `--modifier-color-icon` |
+| `--color-foreground-primary` | `--modifier-color-foreground-primary` |
+| `--color-foreground-ghost` | `--modifier-color-foreground-ghost` |
+| `--color-foreground-input` | `--modifier-color-foreground-input` |
+| `--color-focusRing` | `--modifier-color-focusRing` |
+
+### 3. Add surface fallbacks (if applicable)
+
+If the component renders a background or sits inside layered containers, add the surface channel between modifier and base:
+
+```css
+.ds.my-component {
+  background: var(
+    --modifier-color-foreground-ghost,
+    var(--surface-color-foreground-ghost,
+      var(--color-foreground-ghost))
+  );
+}
+```
+
+For the component's own background when it acts as a surface:
+
+```css
+.ds.my-component {
+  background: var(--surface-color-background, var(--color-background));
+}
+```
+
+### 4. Add interaction state tokens (if interactive)
+
+For hover, active, and disabled states on interactive elements:
+
+```css
+.ds.my-component:hover {
+  background: var(
+    --hover--color-foreground-primary,
+    var(--modifier-color-foreground-primary,
+      var(--color-foreground-primary))
+  );
+}
+
+.ds.my-component:active {
+  background: var(
+    --active--color-foreground-primary,
+    var(--modifier-color-foreground-primary,
+      var(--color-foreground-primary))
+  );
+}
+
+.ds.my-component:disabled {
+  background: var(
+    --disabled--color-foreground-primary,
+    var(--modifier-color-foreground-primary,
+      var(--color-foreground-primary))
+  );
+}
+```
+
+### 5. Test with modifier classes
+
+Wrap your component in modifier containers to verify:
+
+```html
+<!-- Default (no modifier) -->
+<MyComponent />
+
+<!-- Error context -->
+<div class="error">
+  <MyComponent />
+</div>
+
+<!-- Success context -->
+<div class="success">
+  <MyComponent />
+</div>
+
+<!-- Warning context -->
+<div class="warning">
+  <MyComponent />
+</div>
+```
+
+In Storybook, the [Modifiers story](?path=/docs/foundation-design-tokens-modifiers--docs) demonstrates this pattern with live token tables.
+
+### 6. Test across themes
+
+Switch the Storybook theme between light and dark. All modifier colors should remain legible because the modifier-specific semantic tokens (like `--color-text-error`) carry paired light/dark values.
+
+## Variations
+
+### Components that only need text/icon color
+
+Simple components like labels or badges may only need the text channel:
+
+```css
+.ds.label {
+  color: var(--modifier-color-text, var(--color-text));
+}
+```
+
+### Components with multiple color zones
+
+Complex components like cards may have a header with a background and a body with text. Apply the appropriate channel to each zone:
+
+```css
+.ds.card {
+  & > .header {
+    background: var(--modifier-color-foreground-primary, var(--color-foreground-primary));
+    color: var(--color-text-on-foreground);
+  }
+
+  & > .body {
+    color: var(--modifier-color-text, var(--color-text));
+    border-top-color: var(--modifier-color-border, var(--color-border-subtle));
+  }
+}
+```
+
+> **Note**: `--color-text-on-foreground` does not have a modifier channel because it is always read on top of a foreground surface. Its value adapts via theme pairing, not modifier rebinding.
+
+## Troubleshooting
+
+### Colors don't change inside `.error`
+
+Verify you are using the modifier channel `var(--modifier-color-text, ...)` and not a direct `var(--color-text)` reference. The modifier class only sets `--modifier-*` variables — it cannot intercept a direct semantic reference.
+
+### Colors look wrong in nested modifiers
+
+If a component is inside both `.error` and an inner `.success`, the inner modifier wins because CSS custom properties inherit to the closest ancestor. This is expected behavior. If you need to prevent nesting, that is a layout concern, not a token concern.
+
+### Focus ring doesn't change
+
+Use `--modifier-color-focusRing` for the focus ring color:
+
+```css
+.ds.input:focus-visible {
+  outline-color: var(--modifier-color-focusRing, var(--color-focusRing));
+}
+```
+
+## Related
+
+- [How to find the right token](?path=/docs/foundation-design-tokens-how-to-find-the-right-token--docs) — token selection guide
+- [The Modifier Contract](?path=/docs/foundation-design-tokens-understanding-modifier-contract--docs) — understanding why channels exist
+- [How to handle token changes](?path=/docs/foundation-design-tokens-how-to-handle-token-changes--docs) — managing pre-1.0 token changes

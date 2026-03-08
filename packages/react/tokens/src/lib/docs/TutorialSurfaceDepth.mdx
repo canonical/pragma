@@ -1,0 +1,182 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+
+<Meta title="Foundation/Design Tokens/Learn/Adding Surface Depth" />
+
+# Adding surface depth
+
+> In this tutorial, you will nest `.surface` containers to create visual depth layers, observe how the token system automatically alternates background colors, and understand the oscillation pattern that makes card-on-card layouts work.
+
+## Prerequisites
+
+- You have completed the [first token-aware component tutorial](?path=/docs/foundation-design-tokens-learn-your-first-token-aware-component--docs)
+- A Pragma monorepo checkout with `bun install` completed
+- A package that imports `@canonical/styles`
+
+## What you'll build
+
+A page layout with three depth levels: a page background, a card on the page, and an inset panel inside the card. Each level will have a distinct background shade without any manual color assignments.
+
+## Steps
+
+### 1. Start with a single surface
+
+Create a container with the `.surface` class:
+
+```tsx
+<div className="surface" style={{ padding: "2rem" }}>
+  <h2>Page content</h2>
+  <p>This is the root surface. It has a slightly elevated background.</p>
+</div>
+```
+
+You should see: the container has a background that is slightly different from the bare page. This is depth level 1 — the first step away from the document root.
+
+### 2. Nest a card inside the surface
+
+Place a card inside the surface container:
+
+```tsx
+<div className="surface" style={{ padding: "2rem" }}>
+  <h2>Page content</h2>
+
+  <div
+    className="surface"
+    style={{
+      padding: "1.5rem",
+      borderRadius: "0.75rem",
+      marginTop: "1rem",
+    }}
+  >
+    <h3>Card title</h3>
+    <p>This card sits one level deeper than the page.</p>
+  </div>
+</div>
+```
+
+You should see: the inner card has a background that contrasts with the outer surface. In light mode, the outer surface is light-gray and the inner card is lighter (closer to white). This is depth level 2.
+
+Inspect in DevTools: the inner `.surface .surface` compound selector has activated, overriding the depth-1 tokens with depth-2 values.
+
+### 3. Add a third level
+
+Place another surface inside the card:
+
+```tsx
+<div className="surface" style={{ padding: "2rem" }}>
+  <h2>Page content</h2>
+
+  <div
+    className="surface"
+    style={{
+      padding: "1.5rem",
+      borderRadius: "0.75rem",
+      marginTop: "1rem",
+    }}
+  >
+    <h3>Card title</h3>
+    <p>This card sits one level deeper than the page.</p>
+
+    <div
+      className="surface"
+      style={{
+        padding: "1rem",
+        borderRadius: "0.5rem",
+        marginTop: "0.75rem",
+        border: "1px solid var(--color-border-subtle)",
+      }}
+    >
+      <p>
+        Inset content at depth 3. The oscillation pattern means this
+        level's background matches depth 1, creating a visual rhythm.
+      </p>
+    </div>
+  </div>
+</div>
+```
+
+You should see: the innermost panel's background color has cycled back to resemble the outermost surface. This is the three-level oscillation: depth 3 reuses the values from depth 1, creating a consistent rhythm rather than drifting toward pure black or pure white.
+
+### 4. Observe the oscillation in DevTools
+
+Select the innermost `.surface` element in DevTools and inspect the computed styles:
+
+1. The selector `.surface .surface .surface` is active on the innermost element
+2. The `--surface-color-background` value matches the depth-1 surface
+3. The `--surface-color-border` and other surface channels have also cycled back
+
+This three-level oscillation is implemented with compound descendant selectors:
+
+| CSS selector | Depth | Description |
+|---|---|---|
+| `.surface` | 1 | First level, elevated from root |
+| `.surface .surface` | 2 | Second level, contrasts with depth 1 |
+| `.surface .surface .surface` | 3 | Third level, matches depth 1 values |
+
+Beyond depth 3, the pattern repeats. The token system does not need — and does not use — CSS counters, JavaScript, or data attributes.
+
+### 5. Test passthrough containers
+
+Insert a non-surface wrapper between two surface levels:
+
+```tsx
+<div className="surface" style={{ padding: "2rem" }}>
+  <h2>Page content</h2>
+
+  <div className="layout-grid">
+    {/* This div is not a surface — it's a layout container */}
+    <div
+      className="surface"
+      style={{ padding: "1.5rem", borderRadius: "0.75rem" }}
+    >
+      <h3>Card inside a layout grid</h3>
+      <p>The depth still increments correctly.</p>
+    </div>
+  </div>
+</div>
+```
+
+You should see: the card is still at depth 2, even though a non-surface `div` sits between it and the outer surface. The compound selector `.surface .surface` uses descendant matching (space combinator), not child matching (`>`). Any number of non-surface wrappers can appear between surface levels without breaking the depth tracking.
+
+### 6. Combine surfaces with modifiers
+
+Apply a modifier class alongside a surface:
+
+```tsx
+<div className="surface" style={{ padding: "2rem" }}>
+  <h2>Page content</h2>
+
+  <div
+    className="error surface"
+    style={{ padding: "1.5rem", borderRadius: "0.75rem", marginTop: "1rem" }}
+  >
+    <h3>Error panel</h3>
+    <p>This surface has both depth-2 background and error-tinted text.</p>
+  </div>
+</div>
+```
+
+You should see: the inner panel has the depth-2 surface background *and* error-colored text. Surface depth and modifier context are independent systems — they compose without interference. The surface sets `--surface-color-background`, the modifier sets `--modifier-color-text`, and both are consumed by components through their respective fallback chains.
+
+### 7. Switch themes and verify
+
+Toggle between light and dark mode using the Storybook theme switcher.
+
+You should see: the oscillation pattern holds in both themes. In light mode, surfaces alternate between lighter and slightly darker shades. In dark mode, they alternate between darker and slightly lighter shades. The depth relationships are preserved — depth 2 always contrasts with depths 1 and 3.
+
+## What you learned
+
+You've seen how the surface depth model works in practice. You now know:
+
+- Nesting `.surface` containers creates automatic depth levels
+- The oscillation pattern repeats every three levels, preventing drift
+- Compound descendant selectors track depth — no JavaScript or counters needed
+- Non-surface wrappers don't break depth tracking
+- Surfaces and modifiers compose independently
+- The pattern works identically in light and dark themes
+
+## Next steps
+
+- [Surface Depth Model](?path=/docs/foundation-design-tokens-understanding-surface-depth-model--docs) — understand why this pattern was chosen over alternatives
+- [How to support modifiers](?path=/docs/foundation-design-tokens-how-to-support-modifiers--docs) — make your components respond to modifier context
+- [Token Architecture](?path=/docs/foundation-design-tokens-understanding-token-architecture--docs) — see how surfaces fit into the three-tier system
+- [Surfaces](?path=/docs/foundation-design-tokens-surfaces--docs) — explore all surface configurations in the token explorer

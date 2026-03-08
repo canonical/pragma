@@ -1,0 +1,111 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+
+<Meta title="Foundation/Design Tokens/How to/Find the Right Token" />
+
+# How to find the right token
+
+This guide helps you select the correct token for a CSS property. It assumes you know what you are styling and need to find the token that represents it.
+
+## Prerequisites
+
+- Familiarity with CSS custom properties (`var()`)
+- Access to the [Token Explorer](?path=/docs/foundation-design-tokens-explorer--docs) in this Storybook
+- `@canonical/styles` imported in your project
+
+## Steps
+
+### 1. Identify the CSS property
+
+Start with the property you are writing. Token selection follows directly from the property:
+
+| CSS property | Token family | Example token |
+|-------------|-------------|---------------|
+| `color` | `--color-text-*` or `--color-icon-*` | `--color-text`, `--color-text-muted` |
+| `background` / `background-color` | `--color-background` or `--color-foreground-*` | `--color-foreground-primary` |
+| `border-color` | `--color-border-*` | `--color-border`, `--color-border-subtle` |
+| `box-shadow` | `--shadow-*` | `--shadow-raised` |
+| `padding` / `margin` / `gap` | `--dimension-*` | `--dimension-2` |
+| `font-family` | `--font-family-*` | `--font-family-brand` |
+| `font-weight` | `--font-weight-*` | `--font-weight-strong` |
+| `outline-color` | `--color-focusRing-*` | `--color-focusRing` |
+
+### 2. Choose the tier
+
+The property tells you _what_ to style. The tier tells you _which level_ of the token hierarchy to use:
+
+| You are writing… | Use this tier | Why |
+|-------------------|--------------|-----|
+| A component's own styles | **Semantic** | Components should read intent-bearing tokens, not raw values. |
+| A modifier class (`.error`, etc.) | **Semantic (intent-specific)** | Modifiers map channel variables to intent-specific semantics like `--color-text-error`. |
+| A theme override | **Primitive** | Theme definitions map semantic tokens to palette values. |
+
+**Rule of thumb:** If you are inside a component's CSS file, you should be using semantic tokens. Primitives are for theme and system authors only.
+
+### 3. Decide if you need a channel variable
+
+If your component should respond to modifier or surface context, wrap the token in the appropriate fallback chain:
+
+| Context support needed | Fallback chain |
+|----------------------|----------------|
+| Modifier-aware text/border/icon | `var(--modifier-color-text, var(--color-text))` |
+| Surface-aware background | `var(--surface-color-background, var(--color-background))` |
+| Both modifier and surface | `var(--modifier-color-foreground-primary, var(--surface-color-foreground-primary, var(--color-foreground-primary)))` |
+| Stateful (hover) | `var(--hover--color-foreground-primary, var(--modifier-color-foreground-primary, var(--color-foreground-primary)))` |
+| None (standalone, context-free) | `var(--color-text)` (direct semantic reference) |
+
+Most components need at least modifier awareness. See [How to support modifiers](?path=/docs/foundation-design-tokens-how-to-support-modifiers--docs) for the full pattern.
+
+### 4. Look up the token
+
+Open the [Token Explorer](?path=/docs/foundation-design-tokens-explorer--docs) and use the search field to find tokens by:
+
+- **CSS variable name:** `--color-text`
+- **DTCG ID:** `color.text`
+- **Type:** `color`, `dimension`
+- **Output file:** `modifiers.theme.css`
+
+Group by **prefix** to see all tokens in a semantic family together (e.g., all `color.text.*` tokens, all `color.border.*` tokens).
+
+### 5. Check the stability indicator
+
+Before using a token, check its stability:
+
+| Stability | Action |
+|-----------|--------|
+| **Stable** | Use freely. This token is locked for production. |
+| **WIP** | Use with awareness that the name or value may change. Codemods will be provided for migrations. |
+| **Experimental** | Avoid in production code. This token is under active design and may be removed. |
+
+## Quick reference: most common tokens
+
+| Need | Token |
+|------|-------|
+| Body text color | `var(--modifier-color-text, var(--color-text))` |
+| Muted/secondary text | `var(--modifier-color-text, var(--color-text-muted))` |
+| Primary button background | `var(--modifier-color-foreground-primary, var(--color-foreground-primary))` |
+| Card/panel background | `var(--surface-color-background, var(--color-background))` |
+| Default border | `var(--modifier-color-border, var(--color-border))` |
+| Subtle border | `var(--modifier-color-border, var(--color-border-subtle))` |
+| Icon color | `var(--modifier-color-icon, var(--color-icon-default))` |
+| Standard spacing | `var(--dimension-2)` (1rem) |
+| Small spacing | `var(--dimension-1)` (0.5rem) |
+
+## Troubleshooting
+
+### "The token is not resolving"
+
+Ensure `@canonical/styles` is imported. Token CSS custom properties are defined in the generated stylesheet — without it, `var()` references fall through to their fallback or `initial`.
+
+### "The color doesn't change in dark mode"
+
+Check that you are using a semantic (paired) token, not a primitive. Primitives have the same value in both themes. Use the Explorer's "light" and "dark" columns to verify the token is paired.
+
+### "The color doesn't change inside .error"
+
+Check that you are using the modifier channel (`--modifier-color-text`) with a fallback to the base semantic token. If you reference `--color-text` directly, modifiers cannot intercept it.
+
+## Related
+
+- [Token Explorer](?path=/docs/foundation-design-tokens-explorer--docs) — browse all tokens
+- [How to support modifiers](?path=/docs/foundation-design-tokens-how-to-support-modifiers--docs) — add modifier channel support
+- [Token Architecture](?path=/docs/foundation-design-tokens-understanding-token-architecture--docs) — why the tiers and channels exist
