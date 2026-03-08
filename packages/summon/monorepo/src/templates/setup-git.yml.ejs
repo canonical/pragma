@@ -1,0 +1,19 @@
+name: Setup Git CLI
+description: Sets up the Git CLI context
+inputs:
+  name:
+    required: true
+    description: Git username
+  email:
+    required: true
+    description: Git email
+    default: "webteam@canonical.com"
+
+runs:
+  using: composite
+  steps:
+    - name: Install dependencies
+      shell: bash
+      run: |
+        git config --global user.email "${{ inputs.email }}"
+        git config --global user.name "${{ inputs.name }}"

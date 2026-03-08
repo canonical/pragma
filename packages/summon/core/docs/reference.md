@@ -697,23 +697,65 @@ summon [generator-path] [options]
 | `--dry-run` | `-d` | Preview without writing files |
 | `--yes` | `-y` | Skip confirmation prompts and preview |
 | `--verbose` | `-v` | Show debug output |
-| `--show-contents` | | Show file contents in dry-run (useful for LLMs) |
+| `--show-files` | | Show file contents in dry-run |
+| `--llm` | `-l` | LLM mode: dry-run with markdown output, no prompts, no stamps |
+| `--format <type>` | | Output format: `json` (implies dry-run, no prompts, no stamps) |
 | `--no-preview` | | Skip file preview step |
 | `--no-generated-stamp` | | Disable generated file stamp comments |
 | `--generators` | `-g` | Load generators from specific path |
 | `--help` | `-h` | Show help |
 
-### Verbose Dry-Run with File Contents
+### LLM-Optimized Output
 
-The `--show-contents` flag enables verbose output during dry-run, showing the complete content of files that would be generated. This is particularly useful for:
+Summon treats LLMs as first-class CLI users with two dedicated output modes.
 
-- **LLM agents**: AI assistants can review generated code without writing to disk
-- **Code review**: Preview exact file contents before committing to generation
-- **CI pipelines**: Log generated content for debugging or auditing
+#### Markdown Mode (`--llm`)
+
+The `--llm` flag (or `-l`) produces structured markdown output. It implies `--dry-run --yes --show-files --no-generated-stamp`:
 
 ```bash
-# Preview with file contents (non-interactive mode)
-summon component react src/components/Button --dry-run --show-contents -y
+summon component react src/components/Button --llm
+```
+
+Output includes:
+- **Answers table** — All prompt values as a markdown table
+- **Plan table** — Every effect (create file, mkdir, exec, etc.) as a table row
+- **File contents** — Full file content in fenced code blocks with language hints
+- **Replay command** — The exact CLI command to execute the generation
+
+#### JSON Mode (`--format json`)
+
+The `--format json` flag produces machine-parseable JSON. Same implications as `--llm`:
+
+```bash
+summon component react src/components/Button --format json
+```
+
+Returns a JSON object with `generator`, `answers`, `plan`, `files`, and `executeCommand` fields.
+
+#### Environment Variable
+
+Set `SUMMON_LLM=1` for session-level LLM mode:
+
+```bash
+export SUMMON_LLM=1
+summon component react src/components/Button
+```
+
+#### Structured Help
+
+Combine `--help` with `--llm` for structured markdown help output:
+
+```bash
+summon component react --help --llm
+```
+
+### Dry-Run with File Contents
+
+The `--show-files` flag enables verbose output during dry-run, showing the complete content of files that would be generated. This is useful for code review, CI pipelines, and debugging:
+
+```bash
+summon component react src/components/Button --dry-run --show-files -y
 ```
 
 Output includes line-numbered file content:

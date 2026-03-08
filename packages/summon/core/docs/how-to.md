@@ -478,12 +478,37 @@ Key flags:
 - `-y` / `--yes` — Skip all confirmation prompts AND the file preview step
 - All prompt values as flags (check `summon <generator> --help` for available flags)
 
-### Verbose Dry-Run for LLM Agents
+### LLM-Optimized Output
 
-When LLMs need to review generated code before committing, use `--show-contents` with `--dry-run`:
+Use `--llm` for structured markdown output or `--format json` for machine-parseable JSON. Both imply `--dry-run --yes --show-files --no-generated-stamp`:
 
 ```bash
-summon component react src/components/Button --dry-run --show-contents -y
+# Structured markdown (answers table, plan table, fenced code blocks, replay command)
+summon component react src/components/Button --llm
+
+# Machine-parseable JSON
+summon component react src/components/Button --format json
+
+# Session-level LLM mode
+export SUMMON_LLM=1
+summon component react src/components/Button
+
+# Structured help for LLMs
+summon component react --help --llm
+```
+
+**Why this matters for LLMs:**
+- Structured, parseable output without ANSI escape codes
+- Full file contents in fenced code blocks with language hints
+- Replay command for executing the generation after review
+- JSON mode for programmatic integration
+
+### Dry-Run with File Contents
+
+When you need to review generated code without the full LLM output format, use `--show-files` with `--dry-run`:
+
+```bash
+summon component react src/components/Button --dry-run --show-files -y
 ```
 
 This outputs complete file contents with line numbers:
@@ -496,12 +521,6 @@ This outputs complete file contents with line numbers:
 │  4 │ const componentCssClassName = "ds button";
 │    ... (truncated after 50 lines)
 ```
-
-**Why this matters for LLMs:**
-- Review generated code structure and patterns
-- Verify code standards compliance before writing
-- Extract patterns for similar components
-- Debug generation issues without modifying the filesystem
 
 ### Current Limitation: TTY Requirement
 

@@ -1,0 +1,61 @@
+/**
+ * Compares local workspace package versions against the npm registry.
+ *
+ * Reads workspace globs from the root package.json, resolves every
+ * non-private package, and reports whether the local version is
+ * published, outdated, or new.
+ */
+import { execSync } from "node:child_process";
+import { readFileSync } from "node:fs";
+import { join, resolve } from "node:path";
+
+const root = resolve(import.meta.dirname, "..");
+const rootPkg = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
+const patterns: string[] = rootPkg.workspaces ?? [];
+
+// Bun glob resolves workspace patterns the same way the package manager does.
+const glob = new Bun.Glob("package.json");
+
+const packages: { name: string; version: string; path: string }[] = [];
+
+for (const pattern of patterns) {
+  const dir = join(root, pattern);
+  // pattern may contain wildcards — expand each match
+  const parentGlob = new Bun.Glob(pattern);
+  for (const match of parentGlob.scanSync({ cwd: root, onlyFiles: false })) {
+    const pkgPath = join(root, match, "package.json");
+    try {
+      const pkg = JSON.parse(readFileSync(pkgPath, "utf8"));
+      if (pkg.private) continue;
+      packages.push({ name: pkg.name, version: pkg.version, path: match });
+    } catch {
+      // Not a package directory
+    }
+  }
+}
+
+// Sort by name for stable output
+packages.sort((a, b) => a.name.localeCompare(b.name));
+
+const pad = Math.max(...packages.map((p) => `${p.name}@${p.version}`.length));
+
+for (const pkg of packages) {
+  let registry: string;
+  try {
+    registry = execSync(`npm view ${pkg.name} version 2>/dev/null`, {
+      encoding: "utf8",
+    }).trim();
+  } catch {
+    registry = "unpublished";
+  }
+
+  const local = `${pkg.name}@${pkg.version}`;
+  const match = registry === pkg.version;
+  const status = registry === "unpublished"
+    ? "new"
+    : match
+      ? "published"
+      : "outdated";
+
+  console.log(`${local.padEnd(pad)}  registry: ${registry.padEnd(12)}  ${status}`);
+}

@@ -40,9 +40,11 @@
     "check": "lerna run check",
     "check:fix": "lerna run check:fix",
     "test": "lerna run test",
+    "test:coverage": "lerna run test:coverage",
     "special:clean": "bun run nx reset && lerna clean --yes && rm -rf node_modules **/dist **/node_modules"
   },
   "devDependencies": {
+    "@vitest/coverage-v8": "^4.0.0",
     "lerna": "^9.0.3",
     "nx": "^22.5.0"
   },

@@ -1,0 +1,34 @@
+{
+  "name": "<%= name %>-monorepo",
+  "private": true,
+  "version": "0.0.0",
+  "description": "<%= description %>",
+  "author": <%- author %>,
+  "repository": {
+    "type": "git",
+    "url": "<%= repository %>"
+  },
+  "license": "<%= license %>",
+  "bugs": {
+    "url": "<%= repository %>/issues"
+  },
+  "homepage": "<%= repository %>#readme",
+  "workspaces": ["packages/*"],
+  "scripts": {
+    "build": "lerna run build",
+    "build:all": "lerna run build:all",
+    "check": "lerna run check",
+    "check:fix": "lerna run check:fix",
+    "test": "lerna run test",
+    "test:coverage": "lerna run test:coverage",
+    "lerna": "lerna",
+    "special:clean": "bun run nx reset && lerna clean --yes && rm -rf node_modules **/dist **/node_modules",
+    "publish:manual": "bun run build && npm publish --access public --workspaces",
+    "publish:status": "bun scripts/publish-status.ts"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "^4.0.0",
+    "lerna": "^9.0.3",
+    "nx": "^22.5.0"
+  }
+}
