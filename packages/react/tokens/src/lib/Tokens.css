@@ -1,0 +1,474 @@
+:root {
+  --token-story-canvas: #ffffff;
+  --token-story-ink: #171717;
+  --token-story-muted: color-mix(
+    in srgb,
+    var(--token-story-ink, #171717) 74%,
+    transparent
+  );
+  --token-story-panel: color-mix(
+    in srgb,
+    var(--token-story-ink, #171717) 2.5%,
+    transparent
+  );
+  --token-story-border: color-mix(
+    in srgb,
+    var(--token-story-ink, #171717) 10%,
+    transparent
+  );
+  --token-story-warning-bg: color-mix(in srgb, orange 10%, transparent);
+  --token-story-warning-ink: color-mix(
+    in srgb,
+    orange 78%,
+    var(--token-story-ink, #171717) 22%
+  );
+}
+
+.ds.token-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 0.5rem 0 1rem;
+  color: var(--token-story-ink, #171717);
+  background: transparent;
+
+  & code {
+    font-family: ui-monospace, monospace;
+    font-size: 0.875em;
+  }
+
+  /* ---- Shared card surface ---- */
+
+  &
+    :is(
+      .banner,
+      .panel,
+      .kpi,
+      .hierarchy-card,
+      .rule,
+      .pattern-card,
+      .guidance-card,
+      .upgrade-note,
+      .code-block,
+      .sample,
+      .surface-stack,
+      .lens-card
+    ) {
+    border: 1px solid
+      var(--token-story-border, color-mix(in srgb, #171717 10%, transparent));
+    border-radius: 0.875rem;
+    background: var(
+      --token-story-panel,
+      color-mix(in srgb, #171717 2.5%, transparent)
+    );
+  }
+
+  & :is(.banner, .panel, .pattern-card, .upgrade-note) {
+    padding: 1rem;
+  }
+
+  /* ---- Eyebrow utility ---- */
+
+  & .eyebrow {
+    color: color-mix(in srgb, var(--token-story-ink, #171717) 65%, transparent);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  /* ---- Heading resets ---- */
+
+  & :is(.banner, .panel, .pattern-card, .guidance-card) :is(h2, h3, h4) {
+    margin: 0;
+  }
+
+  /* ---- Muted prose ---- */
+
+  & :is(.banner, .rule, .hierarchy-card, .preview-card, .upgrade-note) p,
+  & :is(.panel, .pattern-card) > .header p {
+    margin: 0;
+    color: var(
+      --token-story-muted,
+      color-mix(in srgb, #171717 74%, transparent)
+    );
+    line-height: 1.5;
+  }
+
+  /* ---- Banner ---- */
+
+  & .banner {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 1rem;
+    align-items: start;
+
+    & .title {
+      font-size: 1.375rem;
+      line-height: 1.15;
+    }
+
+    & .notice {
+      display: grid;
+      gap: 0.25rem;
+      max-width: 17rem;
+      padding: 0.75rem 0.875rem;
+      border-radius: 0.75rem;
+      background: var(
+        --token-story-warning-bg,
+        color-mix(in srgb, orange 10%, transparent)
+      );
+      color: var(
+        --token-story-warning-ink,
+        color-mix(in srgb, orange 78%, #171717 22%)
+      );
+    }
+  }
+
+  /* ---- KPI grid ---- */
+
+  & .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+    gap: 0.75rem;
+  }
+
+  & .kpi {
+    display: grid;
+    gap: 0.25rem;
+    padding: 0.875rem;
+
+    & > .value {
+      font-size: 1.375rem;
+      line-height: 1;
+    }
+
+    & > .detail {
+      color: color-mix(
+        in srgb,
+        var(--token-story-ink, #171717) 70%,
+        transparent
+      );
+      font-size: 0.75rem;
+    }
+  }
+
+  /* ---- Panel ---- */
+
+  & .panel {
+    display: grid;
+    gap: 0.875rem;
+
+    & > .header {
+      display: grid;
+      gap: 0.25rem;
+    }
+  }
+
+  /* ---- Grids ---- */
+
+  & :is(.rule-grid, .hierarchy-grid, .guidance-grid, .lens-grid) {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+    gap: 0.75rem;
+  }
+
+  & :is(.rule, .hierarchy-card, .guidance-card, .lens-card) {
+    display: grid;
+    gap: 0.375rem;
+    padding: 0.875rem;
+  }
+
+  /* ---- Hierarchy card ---- */
+
+  & .hierarchy-card > .note {
+    color: color-mix(in srgb, var(--token-story-ink, #171717) 64%, transparent);
+    font-size: 0.75rem;
+  }
+
+  /* ---- Lens card ---- */
+
+  & .lens-card {
+    & > .why,
+    & > .example {
+      margin: 0;
+      line-height: 1.5;
+    }
+
+    & > .why {
+      color: color-mix(
+        in srgb,
+        var(--token-story-ink, #171717) 78%,
+        transparent
+      );
+    }
+
+    & > .example {
+      color: color-mix(
+        in srgb,
+        var(--token-story-ink, #171717) 64%,
+        transparent
+      );
+      font-size: 0.75rem;
+    }
+  }
+
+  /* ---- Type note ---- */
+
+  & .type-note {
+    margin: 0;
+    padding: 0.75rem 0.875rem;
+    border-radius: 0.75rem;
+    background: color-mix(
+      in srgb,
+      var(--token-story-ink, #171717) 4%,
+      transparent
+    );
+    color: color-mix(in srgb, var(--token-story-ink, #171717) 74%, transparent);
+    font-size: 0.8125rem;
+    line-height: 1.5;
+  }
+
+  /* ---- Stack ---- */
+
+  & .stack {
+    display: grid;
+    gap: 1rem;
+  }
+
+  /* ---- Pattern grid ---- */
+
+  & .pattern-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+  }
+
+  & .pattern-card {
+    display: grid;
+    gap: 0.875rem;
+
+    &.wide {
+      grid-column: 1 / -1;
+    }
+
+    & > .header {
+      display: grid;
+      gap: 0.25rem;
+    }
+  }
+
+  /* ---- Preview grid ---- */
+
+  & .preview-grid {
+    display: grid;
+    gap: 0.75rem;
+
+    &.modifiers {
+      grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+    }
+  }
+
+  & .preview-card {
+    display: grid;
+    gap: 0.375rem;
+
+    & > .title {
+      font-size: 0.9375rem;
+    }
+  }
+
+  /* ---- Sample card ---- */
+
+  & .sample {
+    padding: 0.875rem;
+    background: var(
+      --surface-color-background,
+      var(--color-background, var(--token-story-canvas, #ffffff))
+    );
+    border-color: var(
+      --modifier-color-border,
+      var(
+        --color-border,
+        var(--token-story-border, color-mix(in srgb, #171717 10%, transparent))
+      )
+    );
+    color: var(
+      --modifier-color-text,
+      var(--color-text, var(--token-story-ink, #171717))
+    );
+  }
+
+  /* ---- Surface stack ---- */
+
+  & .surface-stack {
+    display: grid;
+    gap: 0.625rem;
+    padding: 0.875rem;
+    background: var(
+      --surface-color-background,
+      var(--color-background, var(--token-story-canvas, #ffffff))
+    );
+    color: var(
+      --modifier-color-text,
+      var(--color-text, var(--token-story-ink, #171717))
+    );
+  }
+
+  & .surface-layer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    font-size: 0.8125rem;
+
+    & > span {
+      color: color-mix(in srgb, currentColor 68%, transparent);
+      font-family: ui-monospace, monospace;
+      font-size: 0.75rem;
+    }
+  }
+
+  /* ---- State strip ---- */
+
+  & .state-strip {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  & .state-button {
+    min-width: 7rem;
+    padding: 0.625rem 0.875rem;
+    border: none;
+    border-radius: 0.625rem;
+    font: inherit;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-text-on-foreground, var(--token-story-canvas, #ffffff));
+    background: var(
+      --modifier-color-foreground-primary,
+      var(--color-foreground-primary, currentColor)
+    );
+
+    &.hover {
+      background: var(
+        --hover--color-foreground-primary,
+        var(
+          --modifier-color-foreground-primary,
+          var(--color-foreground-primary, currentColor)
+        )
+      );
+    }
+
+    &.active {
+      background: var(
+        --active--color-foreground-primary,
+        var(
+          --modifier-color-foreground-primary,
+          var(--color-foreground-primary, currentColor)
+        )
+      );
+    }
+
+    &.disabled {
+      background: var(
+        --disabled--color-foreground-primary,
+        color-mix(in srgb, currentColor 24%, transparent)
+      );
+      color: color-mix(
+        in srgb,
+        var(--token-story-canvas, #ffffff) 85%,
+        currentColor 15%
+      );
+      opacity: 0.8;
+    }
+  }
+
+  /* ---- Code grid ---- */
+
+  & .code-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+    gap: 0.75rem;
+  }
+
+  & .code-block,
+  & .inline-command {
+    margin: 0;
+    overflow-x: auto;
+    font-family: ui-monospace, monospace;
+  }
+
+  & .code-block {
+    padding: 0.875rem 1rem;
+    font-size: 0.8125rem;
+    line-height: 1.55;
+  }
+
+  /* ---- Guidance card ---- */
+
+  & .guidance-card {
+    & ul {
+      margin: 0;
+      padding-left: 1rem;
+      color: color-mix(
+        in srgb,
+        var(--token-story-ink, #171717) 78%,
+        transparent
+      );
+    }
+
+    & li + li {
+      margin-top: 0.375rem;
+    }
+
+    &.good {
+      border-color: color-mix(in srgb, green 22%, transparent);
+    }
+
+    &.bad {
+      border-color: color-mix(in srgb, red 18%, transparent);
+    }
+  }
+
+  /* ---- Upgrade note ---- */
+
+  & .upgrade-note {
+    display: grid;
+    gap: 0.5rem;
+  }
+
+  & .inline-command {
+    padding: 0.625rem 0.75rem;
+    border-radius: 0.625rem;
+    background: color-mix(
+      in srgb,
+      var(--token-story-ink, #171717) 5%,
+      transparent
+    );
+  }
+
+  /* ---- Responsive ---- */
+
+  @media (max-width: 900px) {
+    & .banner,
+    & .pattern-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+}
+
+/* ---- Theme overrides ---- */
+
+:where(.is-light, .light, .is-paper, .paper) .ds.token-page {
+  --token-story-canvas: #ffffff;
+  --token-story-ink: #171717;
+  color-scheme: light;
+}
+
+.dark .ds.token-page {
+  --token-story-canvas: #111315;
+  --token-story-ink: #f5f5f5;
+  color-scheme: dark;
+}
