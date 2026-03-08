@@ -1,3 +1,22 @@
+/* @canonical/styles-typography — Classic engine
+ *
+ * Widest browser support. Requires JS font extraction via `extractFontData`
+ * and the following :root variables:
+ *   --ascender, --descender, --units-per-em
+ *
+ * Consumer contract:
+ *   :root {
+ *     --baseline-height: <length>;
+ *     --ascender: <number>;
+ *     --descender: <number>;
+ *     --units-per-em: <number>;
+ *   }
+ *   element { --font-size: <length>; --line-height-multiplier: <number>; }
+ */
+
+/* Typography scale tokens from design-tokens */
+@import url("@canonical/design-tokens/dist/modifiers.typography.css");
+
 :root {
   /* Agnostic values */
   --natural-line-height: calc((var(--ascender) - var(--descender)));
@@ -20,12 +39,13 @@ p {
   margin: 0;
 }
 
-/* Where the magic happens */
-/* Add or remove selectors as needed. The baseline alignment will apply to the selectors included here */
+/* Baseline alignment — classic engine */
 h1,
 h2,
 h3,
 h4,
+h5,
+h6,
 p {
   --computed-line-height: var(
     --line-height,
@@ -49,7 +69,6 @@ p {
     ((var(--computed-line-height) - var(--line-height-scale)) / 2) +
     var(--ascender-scale)
   );
-  /*--top-nudge: 0.41em;*/
   --top-nudge: calc(
     var(--baseline-height) -
     mod(var(--baseline-position), var(--baseline-height))

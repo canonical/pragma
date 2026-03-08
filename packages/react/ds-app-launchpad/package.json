@@ -40,7 +40,7 @@
   },
   "dependencies": {
     "@canonical/storybook-config": "^0.17.1",
-    "@canonical/styles": "^0.17.1",
+    "@canonical/styles": "workspace:*",
     "@canonical/utils": "^0.17.1",
     "@js-temporal/polyfill": "^0.5.1",
     "highlight.js": "^11.11.1",

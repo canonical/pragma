@@ -1,0 +1,56 @@
+/* @canonical/styles-typography — Cap-unit engine (default)
+ *
+ * No JS font extraction required. Uses CSS `cap` unit and `mod()` for
+ * baseline alignment. Broad browser support: Chrome 113+, Safari 17.4+,
+ * Firefox 113+.
+ *
+ * Consumer contract:
+ *   :root { --baseline-height: <length>; }
+ *   element { --font-size: <length>; --line-height-multiplier: <number>; }
+ */
+
+/* Typography scale tokens from design-tokens */
+@import url("@canonical/design-tokens/dist/modifiers.typography.css");
+
+/* Semantic token → engine variable mapper */
+@import url("./mapper.css");
+
+/* Reset */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p {
+  margin: 0;
+}
+
+/* Baseline alignment — cap-unit engine */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p {
+  --computed-line-height: var(
+    --line-height,
+    calc(var(--baseline-height) * var(--line-height-multiplier))
+  );
+  line-height: var(--computed-line-height);
+  font-size: var(--font-size);
+
+  --baseline-position: calc((var(--computed-line-height) + 1cap) / 2);
+  --top-nudge: calc(
+    var(--baseline-height) -
+    mod(var(--baseline-position), var(--baseline-height))
+  );
+  --bottom-nudge: calc(var(--baseline-height) - var(--top-nudge));
+  padding-top: var(--top-nudge);
+  margin-bottom: calc(
+    var(--bottom-nudge) +
+    var(--space-after, 0) *
+    var(--baseline-height)
+  );
+}

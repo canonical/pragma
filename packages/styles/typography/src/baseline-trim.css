@@ -1,0 +1,49 @@
+/* @canonical/styles-typography — Text-trim engine
+ *
+ * Most modern, narrowest browser support: Chrome 133+, Safari 18.2+.
+ * Uses `text-box: trim-both cap alphabetic` for intrinsic baseline snapping.
+ * No JS font extraction required.
+ *
+ * Consumer contract:
+ *   :root { --baseline-height: <length>; }
+ *   element { --font-size: <length>; --line-height-multiplier: <number>; }
+ */
+
+/* Typography scale tokens from design-tokens */
+@import url("@canonical/design-tokens/dist/modifiers.typography.css");
+
+/* Reset */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p {
+  margin: 0;
+}
+
+/* Baseline alignment — text-trim engine */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p {
+  --computed-line-height: var(
+    --line-height,
+    calc(var(--baseline-height) * var(--line-height-multiplier))
+  );
+  line-height: var(--computed-line-height);
+  font-size: var(--font-size);
+
+  text-box: trim-both cap alphabetic;
+  padding-top: mod(calc(-1 * 1cap), var(--baseline-height));
+  margin-bottom: calc(
+    var(--baseline-height) -
+    mod(calc(-1 * 1cap), var(--baseline-height)) +
+    var(--space-after, 0) *
+    var(--baseline-height)
+  );
+}

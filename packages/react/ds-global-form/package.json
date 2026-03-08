@@ -41,7 +41,7 @@
   "dependencies": {
     "@canonical/react-ds-global": "^0.17.1",
     "@canonical/storybook-config": "^0.17.1",
-    "@canonical/styles": "^0.17.1",
+    "@canonical/styles": "workspace:*",
     "@canonical/utils": "^0.17.1",
     "downshift": "^9.3.0",
     "react": "^19.2.4",
