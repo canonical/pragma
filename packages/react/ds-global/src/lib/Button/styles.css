@@ -1,3 +1,23 @@
+/* Component tokens — sourced from @canonical/design-tokens */
+:root {
+  --button-color-background: var(--color-foreground-ghost);
+  --button-color-background-hover: var(--color-foreground-ghost-hover);
+  --button-color-background-active: var(--color-foreground-ghost-active);
+  --button-color-text: var(--color-text);
+  --button-color-border: var(--color-border-high-contrast);
+  --button-color-border-hover: var(--button-color-border);
+  --button-color-border-active: var(--button-color-border);
+
+  --button-margin-left: var(--spacing-horizontal-large);
+  --button-margin-bottom: var(--spacing-input-margin-bottom);
+  --button-padding-vertical: var(--spacing-input-padding-vertical);
+  --button-padding-horizontal: var(--spacing-horizontal-large);
+  --button-border-width: var(--spacing-border-width);
+  --button-font-size: var(--font-size-default);
+  --button-font-weight: var(--font-weight-default);
+  --button-line-height: var(--line-height-default);
+}
+
 /* ==========================================================================
    Button Component Styles
    ========================================================================== */
@@ -140,7 +160,7 @@
   border-color: transparent;
   border-width: 0;
   padding-inline: 0;
-  color: var(--tmp-color-text-link-default, currentColor);
+  color: var(--color-text-link, currentColor);
   text-decoration: underline;
   text-underline-offset: var(--tmp-dimension-underline-offset-link, 0.075em);
 

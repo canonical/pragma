@@ -1,3 +1,26 @@
+/* Component tokens — sourced from @canonical/design-tokens */
+:root {
+  --section-padding-bottom-spacing-shallow: var(--spacing-vertical-xlarge);
+  --section-padding-bottom-spacing-default: var(--spacing-vertical-xxlarge);
+  --section-padding-bottom-spacing-deep: var(--spacing-vertical-xxxlarge);
+  --section-padding-bottom-spacing-hero: var(
+    --section-padding-bottom-spacing-default
+  );
+  --section-padding-top-spacing-default: 0px;
+  --section-padding-top-bordered-default: 0px;
+  --section-padding-top-bordered-true: calc(
+    var(--section-border-start-width-with-padding) -
+    var(--section-border-start-width)
+  );
+  --section-padding-top-spacing-shallow: 0px;
+  --section-padding-top-spacing-deep: 0px;
+  --section-padding-top-spacing-hero: var(--spacing-vertical-xlarge);
+  --section-border-start-color: var(--color-border-muted);
+  --section-border-start-style: solid;
+  --section-border-start-width: var(--rule-height);
+  --section-border-start-width-with-padding: var(--spacing-vertical-small);
+}
+
 .ds.section {
   --section-padding-bottom: var(--section-padding-bottom-spacing-default);
 

@@ -1,3 +1,12 @@
+/* Component tokens — sourced from @canonical/design-tokens */
+:root {
+  --rule-color-background: var(--color-border-muted);
+  --rule-border-width: 0;
+  --rule-height: 1px;
+  --rule-margin-top: 0;
+  --rule-height-with-margin: var(--spacing-vertical-small);
+}
+
 .ds.rule {
   background-color: var(
     --modifier-separator-bar-color,
