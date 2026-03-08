@@ -1,0 +1,47 @@
+# Deploy the typography baseline demo to GitHub Pages.
+# Only triggers on changes within packages/typography/.
+name: Deploy typography demo to Pages
+
+on:
+  push:
+    branches: ["demo-baseline"]
+    paths:
+      - "packages/typography/**"
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Prepare artifact
+        run: |
+          mkdir -p _site/typography
+          cp -r packages/typography/src packages/typography/example _site/typography/
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: "_site"
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

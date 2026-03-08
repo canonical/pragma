@@ -1,0 +1,70 @@
+/*
+ * Cap-unit baseline engine
+ *
+ * Same nudge pattern as the classic engine (padding-top + margin-bottom
+ * with mod()), but replaces the JS-extracted --ascender / --descender /
+ * --units-per-em variables with the browser-native `cap` CSS unit.
+ *
+ * The browser resolves 1cap from the font's OpenType tables at render
+ * time, so no extractFontData step is needed and font switching
+ * updates the grid alignment automatically.
+ *
+ * Requires: --baseline-height, --font-size, --line-height-multiplier
+ *           on each element (same contract as the classic engine).
+ *
+ * How it works:
+ *
+ *   In an untrimmed line box the baseline sits at:
+ *     baseline-position = (line-height + 1cap) / 2
+ *
+ *   This is because half-leading distributes equally above and below
+ *   the glyph area, and the cap height (1cap) is the distance from
+ *   the alphabetic baseline to the top of capital letters. The
+ *   baseline is therefore half a line-height down, plus half the
+ *   cap height.
+ *
+ *   The mod() snap is identical to the classic engine.
+ */
+
+/* Reset */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p {
+  margin: 0;
+}
+
+/* Where the magic happens */
+/* Add or remove selectors as needed. */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p {
+  --computed-line-height: var(
+    --line-height,
+    calc(var(--baseline-height) * var(--line-height-multiplier))
+  );
+  line-height: var(--computed-line-height);
+  font-size: var(--font-size);
+
+  --baseline-position: calc((var(--computed-line-height) + 1cap) / 2);
+
+  --top-nudge: calc(
+    var(--baseline-height) -
+    mod(var(--baseline-position), var(--baseline-height))
+  );
+  --bottom-nudge: calc(var(--baseline-height) - var(--top-nudge));
+
+  padding-top: var(--top-nudge);
+  margin-bottom: calc(
+    var(--bottom-nudge) +
+    var(--space-after, 0) *
+    var(--baseline-height)
+  );
+}

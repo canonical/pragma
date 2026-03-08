@@ -1,0 +1,61 @@
+/*
+ * Text-trim baseline engine
+ *
+ * Uses text-box: trim-both cap alphabetic to strip half-leading,
+ * then snaps the alphabetic baseline to the grid with mod().
+ *
+ * No font-metric extraction needed -- the browser reads OpenType
+ * tables natively. The CSS `cap` unit gives us the cap-to-baseline
+ * distance, which is the trimmed box height for a single line.
+ *
+ * Requires: --baseline-height, --font-size, --line-height-multiplier
+ *           on each element (same contract as the nudge engine).
+ *
+ * How it works:
+ *
+ *   After trimming, the content box for a single line is exactly
+ *   1cap tall (cap line at top, alphabetic baseline at bottom).
+ *   The baseline is therefore at offset `padding-top + 1cap` from
+ *   the top of the element.
+ *
+ *   To land the baseline on a grid line:
+ *     padding-top + 1cap = M * baseline-height
+ *     padding-top = mod(-1cap, baseline-height)
+ *
+ *   For multi-line text, internal lines keep full line-height
+ *   (a grid multiple), so every subsequent baseline also lands
+ *   on a grid line automatically.
+ *
+ *   margin-bottom = space-after * baseline-height (always on-grid).
+ *   Total element height = padding-top + 1cap + (N-1)*lh + margin-bottom
+ *                        = grid multiple.
+ */
+
+/* Reset */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p {
+  margin: 0;
+}
+
+/* Where the magic happens */
+/* Add or remove selectors as needed. */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p {
+  font-size: var(--font-size);
+  line-height: calc(var(--baseline-height) * var(--line-height-multiplier));
+  text-box: trim-both cap alphabetic;
+
+  /* Snap the alphabetic baseline onto the nearest grid line */
+  padding-top: mod(calc(-1 * 1cap), var(--baseline-height));
+  margin-bottom: calc(var(--space-after, 0) * var(--baseline-height));
+}
