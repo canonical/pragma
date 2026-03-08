@@ -41,8 +41,7 @@
         "type": "object",
         "properties": {
           "name": {
-            "type": "string",
-            "pattern": "^@canonical/"
+            "type": "string"
           },
           "version": {
             "type": "string"
