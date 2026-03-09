@@ -1,0 +1,164 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+
+<Meta title="Foundation/Design Tokens/Understanding/Theme Mechanics" />
+
+# Understanding Theme Mechanics
+
+Theming in the token system is not a runtime toggle. It is a property of the token values themselves — semantic tokens carry paired light and dark values, and the CSS resolves the correct one based on context. This page explains how theme switching works, how delta variables create consistent interaction states across themes, and how theme forcing overrides the system default.
+
+## Paired values
+
+Every semantic color token is defined with two values: one for light mode, one for dark mode. For example:
+
+```
+--color-text:
+  light → oklch(12.21% 0 0)   (near-black)
+  dark  → oklch(100% 0 0)     (white)
+```
+
+The build pipeline generates CSS that switches between these values using the `light-dark()` function, `@media (prefers-color-scheme)`, or class-based forcing. Components never choose between light and dark — they reference `--color-text` and the correct value is always resolved by the time the browser paints.
+
+This pairing is what makes the `isPaired` flag in the `TokenEntry` data model meaningful. An unpaired token — like a primitive palette color — has the same value in both themes. A paired token has values that were deliberately chosen for each context.
+
+## How switching works
+
+Theme switching happens through CSS class-based forcing. The system supports two approaches:
+
+### Automatic: system preference
+
+When no explicit theme class is applied, semantic tokens respect `prefers-color-scheme`:
+
+```css
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-text: oklch(100% 0 0);
+    --color-background: oklch(12.21% 0 0);
+    /* ... all semantic tokens with dark values */
+  }
+}
+```
+
+### Explicit: class forcing
+
+A `.dark` class on any ancestor forces dark mode for its subtree, overriding the system preference:
+
+```css
+.dark {
+  --color-text: oklch(100% 0 0);
+  --color-background: oklch(12.21% 0 0);
+  color-scheme: dark;
+}
+```
+
+The `:where()` wrapper keeps specificity at zero, so these overrides do not compete with component-level styles. The `color-scheme` property tells the browser to render native form controls in the appropriate theme.
+
+Light forcing works identically with `.light`. The Storybook theme switcher uses these classes, which is why stories rendered with `TokenTable` and `TokenSwatch` update correctly when you change the theme.
+
+## Delta variables
+
+Interaction states — hover, active, disabled — need to work across both themes. A hover effect that lightens a color works in dark mode (where surfaces are dark and lightening creates contrast), but the same lightening in light mode might make an already-light element invisible.
+
+Delta variables solve this by defining theme-aware shift amounts:
+
+```css
+/* Light mode */
+:root {
+  --delta-hover-color-foreground-primary: 0.19;
+  --delta-active-color-foreground-primary: 0.26;
+}
+
+/* Dark mode */
+.dark, @media (prefers-color-scheme: dark) {
+  --delta-hover-color-foreground-primary: -0.04;
+  --delta-active-color-foreground-primary: -0.06;
+}
+```
+
+In light mode, hover lightens by 0.19 (on the oklch lightness axis). In dark mode, hover darkens by 0.04. The result is perceptually consistent — hover always creates visible contrast from the resting state — even though the direction of the shift is opposite.
+
+## Oklch relative color syntax
+
+State tokens use CSS relative color syntax to apply deltas:
+
+```css
+--hover--color-foreground-primary: oklch(
+  from var(--modifier-color-foreground-primary,
+    var(--color-foreground-primary))
+  calc(l + var(--delta-hover-color-foreground-primary)) c h
+);
+```
+
+Breaking this down:
+
+1. `from var(...)` — start from the current foreground color, respecting any modifier context
+2. `calc(l + var(...))` — shift the lightness by the theme-aware delta
+3. `c h` — keep chroma and hue unchanged
+
+This means the hover state is always _derived_ from the current color, not a separate hand-picked value. If the base color changes (because a modifier is applied, or the theme switches), the hover color recomputes automatically.
+
+The oklch color space is used because lightness (`l`) is perceptually uniform — a `+0.19` shift produces roughly the same perceptual contrast regardless of the starting color. This would not be true in sRGB or HSL.
+
+## Disabled state: a different strategy
+
+Disabled states do not use lightness shifts. Instead, they use `color-mix()` to blend the element color toward the background at 34% opacity:
+
+```css
+--disabled--color-foreground-primary: color-mix(
+  in oklch,
+  var(--modifier-color-foreground-primary,
+    var(--color-foreground-primary)) 34%,
+  var(--surface-color-background, var(--color-background))
+);
+```
+
+This approach ensures that disabled elements appear faded against their actual background — whether that background is a root page, a surface layer, or a modifier context. The 34% ratio was chosen to meet WCAG contrast minimums for disabled states while remaining visually distinct from both enabled and hidden elements.
+
+## Theme scope and subtree forcing
+
+Theme classes can be applied to any element, not just `:root`. This enables mixed-theme interfaces:
+
+```html
+<body class="light">
+  <main>
+    <!-- Light-themed content -->
+    <aside class="dark">
+      <!-- Dark-themed sidebar -->
+      <div class="surface">
+        <!-- Dark surface tokens apply here -->
+      </div>
+    </aside>
+  </main>
+</body>
+```
+
+Every token within the `.dark` subtree resolves to its dark value, including modifier channels, surface layers, and interaction states. This works because CSS custom properties inherit through the DOM tree — setting them on an ancestor affects all descendants.
+
+The cascade layer ordering remains the same within a forced theme: tokens → modifiers → surfaces → states. Theme forcing only changes _which values_ are placed in the token layer.
+
+## What theme switching does not do
+
+Theme switching does not affect layout, spacing, typography scale, or component structure. It affects only color-related tokens. This is a deliberate constraint — the visual hierarchy, information density, and interactive patterns of an interface should not change based on the user's color preference.
+
+Dimension tokens (`--dimension-1`, `--dimension-2`, etc.) are unpaired and theme-invariant. Typography tokens are similarly stable across themes. Only color tokens carry paired values.
+
+## Common misconceptions
+
+### "I need to pass a theme prop"
+
+No component in the system accepts a theme prop. Theming is handled entirely by CSS custom properties and ancestor classes. If you are considering a theme prop, the component is likely reading the wrong token (a primitive instead of a semantic), or the token system is missing a semantic token for your use case.
+
+### "Dark mode means inverting colors"
+
+Dark mode does not mechanically invert light mode values. Each dark-mode value is independently chosen for legibility, contrast, and visual comfort on dark backgrounds. The delta variables for interaction states are also independently tuned for dark mode — they shift in the opposite direction with different magnitudes.
+
+### "I should detect the theme in JavaScript"
+
+JavaScript theme detection is almost never needed. The CSS handles all theming through custom properties and media queries. If you find yourself checking `prefers-color-scheme` in JavaScript, ask whether a token already provides the value you need.
+
+## Further reading
+
+- [Token Architecture](?path=/docs/foundation-design-tokens-understanding-token-architecture--docs): the three-tier system that theming operates within
+- [The Modifier Contract](?path=/docs/foundation-design-tokens-understanding-modifier-contract--docs): how modifiers interact with theme-aware tokens
+- [Surface Depth Model](?path=/docs/foundation-design-tokens-understanding-surface-depth-model--docs): how surfaces provide theme-aware depth
+- [Interaction States story](?path=/docs/foundation-design-tokens-interactionstates--docs): live demonstration of hover, active, disabled
+- [How to find the right token](?path=/docs/foundation-design-tokens-how-to-find-the-right-token--docs): decision tree including theme considerations

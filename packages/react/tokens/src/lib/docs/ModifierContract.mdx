@@ -1,0 +1,127 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+
+<Meta title="Foundation/Design Tokens/Understanding/Modifier Contract" />
+
+# Understanding the Modifier Contract
+
+Modifiers are the mechanism through which a parent container changes the visual output of every descendant component — without those components knowing about the modifier, and without any prop drilling or runtime logic.
+
+This page explains the contract between modifier classes and component styles.
+
+## The problem modifiers solve
+
+A form has an error. The form's border should turn red, but so should the label text, the input border, the icon color, and the helper text — every piece of the form's visual output should shift to communicate the error state.
+
+Without modifiers, you would need to thread an `intent="error"` prop into every child component. This couples components to specific contexts, requires runtime coordination, and makes composition fragile. If you add a new child to the form, you must remember to pass the prop.
+
+Modifiers solve this by letting a single ancestor class change every descendant's output simultaneously through the CSS cascade. No prop drilling, no React context, no JavaScript at all.
+
+## How the contract works
+
+The modifier contract has two sides: the **modifier class** sets channel variables, and **component styles** read them through fallback chains.
+
+### The modifier side
+
+When an ancestor element applies a modifier class like `.error`, it sets a group of **channel variables**:
+
+```css
+.error {
+  --modifier-color-text: var(--color-text-error);
+  --modifier-color-border: var(--color-border-error);
+  --modifier-color-icon: var(--color-icon-error);
+  --modifier-color-foreground-input: var(--color-foreground-input-error);
+  --modifier-color-focusRing: var(--color-focusRing-error);
+}
+```
+
+These channel variables are prefixed with `--modifier-` to make their role explicit. They are intermediate — set by modifiers, read by components — and they point to intent-specific semantic tokens (`--color-text-error`, `--color-border-error`).
+
+### The component side
+
+Components read the channel variable first, with a fallback to the base semantic token:
+
+```css
+.button {
+  color: var(--modifier-color-text, var(--color-text));
+  border-color: var(--modifier-color-border, var(--color-border));
+}
+```
+
+Outside any modifier context, `--modifier-color-text` is unset, and the component falls through to `--color-text`. Inside `.error`, the channel variable resolves to the error text color. Inside `.success`, it resolves to the success text color. The component code is identical in every case.
+
+## Modifier families
+
+The system defines several modifier families, each setting the same channel variables to different intent-specific values:
+
+| Family | Classes | Purpose |
+|--------|---------|---------|
+| **Criticality** | `.error`, `.warning`, `.success`, `.information` | Feedback states for forms and alerts |
+| **Emphasis** | `.muted`, `.branded` | Visual prominence adjustment |
+| **Anticipation** | `.constructive`, `.destructive`, `.caution` | Expected outcome of an action |
+
+All families set the same channel variables. This uniformity means a component that supports `.error` automatically supports `.constructive`, `.branded`, and every other modifier — the component does not distinguish between them.
+
+## Why this matters for composition
+
+The channel variable indirection is what makes modifiers compositional. Consider a form:
+
+```html
+<form class="error">
+  <label>Email</label>
+  <input type="email" />
+  <span class="helper-text">Please enter a valid email</span>
+</form>
+```
+
+The label, input, and helper text all read `--modifier-color-text`. None of them know about `.error`. If you replace `.error` with `.warning`, every descendant's color shifts. If you add a new component inside the form, it automatically participates in the modifier context as long as it reads the channel variable.
+
+This compositionality breaks if a component references `--color-text-error` directly. That hard-codes the intent and prevents the component from working inside `.warning` or `.success` contexts. The contract is: **components reference channels, not intents**.
+
+## Nesting and override behavior
+
+Modifiers can nest. An `.error` form might contain a `.success` badge:
+
+```html
+<form class="error">
+  <div class="success">
+    <span>Verified</span>
+  </div>
+</form>
+```
+
+The inner `.success` sets `--modifier-color-text` to the success text color, overriding the `.error` value for its descendants. CSS custom property inheritance handles this automatically — the closest ancestor setting a channel variable wins.
+
+This means modifiers compose without special logic: the last modifier in the DOM tree determines the visual output.
+
+## What modifiers do not do
+
+Modifiers **do not** change layout, spacing, or typography. They only affect color-related channel variables. This is a deliberate constraint — color is the visual property most affected by context (error, success, brand emphasis), while layout is determined by the component's own specifications.
+
+Modifiers also do not affect primitive tokens. A palette color like `--color-palette-red-600` is the same everywhere. Only semantic tokens participate in the modifier system, because only semantic tokens carry intent.
+
+## The cascade position
+
+Modifier channel variables live in `@layer ds.modifiers`, which overrides `@layer ds.tokens` (base semantic values). This means a modifier can override a semantic token's value regardless of selector specificity, and a surface channel (in `@layer ds.surfaces`) can in turn override a modifier channel when appropriate.
+
+The layered cascade ensures a predictable resolution order: tokens → modifiers → surfaces → states.
+
+## Common misconceptions
+
+### "Modifiers change the theme"
+
+Modifiers do not change the theme. Theme switching (light/dark) changes _which values_ semantic tokens resolve to. Modifiers change _which semantic tokens_ a component reads. An `.error` modifier works identically in light mode and dark mode — the error text color is defined for both themes in the semantic token layer.
+
+### "Components should detect the modifier"
+
+Components should not detect or respond to modifiers through JavaScript. The entire mechanism is CSS-only. A component that checks `classList.contains('error')` has broken the contract — it now depends on a specific modifier instead of reading the channel.
+
+### "I need a new modifier for my use case"
+
+New modifiers are rarely needed. The existing families cover the standard intent space. If you need a novel color context, first check whether a combination of existing modifiers and surfaces achieves the result. If a new modifier family is genuinely needed, it should be added to `@canonical/styles` so that all components benefit from it.
+
+## Further reading
+
+- [Token Architecture](?path=/docs/foundation-design-tokens-understanding-token-architecture--docs): why the system has three tiers
+- [Surface Depth Model](?path=/docs/foundation-design-tokens-understanding-surface-depth-model--docs): how surfaces interact with modifiers
+- [How to support modifiers in a component](?path=/docs/foundation-design-tokens-how-to-support-modifiers--docs): practical steps for modifier integration
+- [Modifiers story](?path=/docs/foundation-design-tokens-modifiers--docs): live demonstration of modifier rebinding

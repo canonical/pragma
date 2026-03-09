@@ -1,0 +1,111 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+
+<Meta title="Foundation/Design Tokens/How to/Handle Token Changes" />
+
+# How to handle token changes during pre-1.0
+
+This guide explains how to manage dependency on design tokens while the system is still evolving. It applies to both monorepo consumers (packages within Pragma) and external consumers (applications importing `@canonical/styles`).
+
+## Prerequisites
+
+- A project that consumes `@canonical/styles` or `@canonical/react-tokens`
+- Familiarity with npm/bun version pinning
+
+## Steps
+
+### 1. Check the stability of tokens you depend on
+
+Before using a token, look at its stability indicator in the [Token Explorer](?path=/docs/foundation-design-tokens-explorer--docs):
+
+| Stability | What it means |
+|-----------|--------------|
+| **Stable** | Name and semantic intent are locked. Values may be refined (e.g., a color may shift by a few oklch units), but the CSS variable name will not change. |
+| **WIP** | Name and intent are established but may change. Codemods will be provided for any rename. |
+| **Experimental** | Under active design. May be renamed, restructured, or removed entirely. Do not use in production code. |
+
+### 2. Pin your dependency version
+
+Outside the monorepo, pin to a specific version or a tilde range:
+
+```json
+{
+  "dependencies": {
+    "@canonical/styles": "~0.17.0"
+  }
+}
+```
+
+Tilde (`~`) locks to patch updates only. This prevents automatic adoption of new token renames while still receiving bug fixes.
+
+Inside the monorepo, dependencies are managed by the workspace protocol and follow the release train. Token changes within the monorepo are accompanied by codemods.
+
+### 3. Run codemods after upgrading
+
+When you upgrade `@canonical/styles` to a new minor version that includes token renames, run the provided codemod:
+
+```bash
+npx nx run-many -t codemod:tokens
+```
+
+This scans your CSS and TSX files for old token names and replaces them with the new names. The codemod is idempotent — running it multiple times produces the same result.
+
+> **Note**: Codemods only handle first-party migrations within the monorepo. External consumers should check the changelog for rename mappings.
+
+### 4. Audit experimental tokens before major upgrades
+
+Before upgrading across a minor version boundary, search your codebase for experimental tokens:
+
+```bash
+grep -rn "experimental" packages/react/tokens/src/
+```
+
+Or use the Explorer's stability filter to check which tokens in your usage set are experimental.
+
+### 5. Prefer semantic tokens over primitives
+
+Semantic token names are more stable than primitives because they express intent rather than value. `--color-text` is unlikely to be renamed because "text color" is a fundamental concept. `--color-palette-gray-520` may be renamed if the palette is restructured.
+
+By using semantic tokens, you reduce your exposure to token renames.
+
+### 6. Subscribe to the changelog
+
+Token changes are documented in the package changelog. The `@canonical/styles` changelog includes a dedicated "Token Changes" section for each release that lists:
+
+- **Added**: new tokens
+- **Renamed**: old name → new name (with codemod support)
+- **Removed**: tokens that were experimental and are now deleted
+- **Changed**: value adjustments (no name change)
+
+## Variations
+
+### You maintain a design system consumer outside the monorepo
+
+Pin your `@canonical/styles` version. When upgrading, read the changelog, search your CSS for any renamed tokens, and update manually. If a codemod is available for external consumers, it will be noted in the release.
+
+### You are inside the monorepo
+
+Run `npx nx run-many -t codemod:tokens` after pulling. The codemod handles all known renames. If a codemod fails, check whether you are using a token that was experimental and has been removed — you will need to migrate to the replacement manually.
+
+### You need to support multiple themes or whitelabel
+
+All token changes maintain the same channel variable contract. If you have custom themes that override semantic tokens, verify that your overrides still match the canonical token names after an upgrade. Renamed tokens will have new CSS variable names.
+
+## Troubleshooting
+
+### "A token I'm using has disappeared"
+
+Check whether the token was experimental. Experimental tokens may be removed without a deprecation period. Search the changelog for the token name to find its replacement.
+
+### "The codemod didn't catch one of my usages"
+
+Codemods match `var(--old-token-name)` patterns in CSS and template literals. If you construct token names dynamically (e.g., string concatenation), the codemod cannot detect them. Search for the old name manually.
+
+### "Colors look different after upgrading"
+
+A value refinement (e.g., shifting a gray from `oklch(50% 0 0)` to `oklch(48% 0 0.005)`) is within the scope of a stable token. The name and intent are unchanged, but the rendered color may shift slightly. This is expected and intentional — it reflects design refinement, not a breaking change.
+
+## Related
+
+- [Token Explorer](?path=/docs/foundation-design-tokens-explorer--docs) — check stability indicators
+- [How to find the right token](?path=/docs/foundation-design-tokens-how-to-find-the-right-token--docs) — choose stable tokens from the start
+- [Token Architecture](?path=/docs/foundation-design-tokens-understanding-token-architecture--docs) — why stability varies by tier
