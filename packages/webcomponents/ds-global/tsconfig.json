@@ -1,5 +1,5 @@
 {
-  "extends": "@canonical/typescript-config-webcomponents",
+  "extends": "@canonical/typescript-config-lit",
   "compilerOptions": {
     "baseUrl": "src",
     // skipLibCheck is required due to a type bug in @storybook/web-components types (WebComponentsMeta constraint)
