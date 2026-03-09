@@ -608,10 +608,13 @@ const printNode = (node: GeneratorNode, pathSegments: string[]) => {
 
 /**
  * Print detailed help for a generator (meta.help and examples).
+ *
+ * When `llmMode` is true, outputs structured markdown help via formatLlmHelp.
  */
 const _printGeneratorHelp = async (
   node: GeneratorNode,
   pathSegments: string[],
+  llmMode = false,
 ) => {
   if (!node.indexPath) return;
 
@@ -619,6 +622,13 @@ const _printGeneratorHelp = async (
     const generator = await loadGenerator(node.indexPath);
     const { meta, prompts } = generator;
     const commandPath = pathSegments.join(" ");
+
+    // LLM mode: output structured markdown help and return
+    if (llmMode) {
+      const { formatLlmHelp } = await import("./cli-format.js");
+      process.stdout.write(formatLlmHelp(generator, commandPath));
+      return;
+    }
 
     console.log();
     console.log(chalk.bold.cyan(`summon ${commandPath}`));
@@ -638,7 +648,7 @@ const _printGeneratorHelp = async (
       console.log(chalk.bold("Options:"));
       console.log();
       for (const prompt of prompts) {
-        const flagName = `--${prompt.name}`;
+        const flagName = `--${toKebabCase(prompt.name)}`;
         const typeHint =
           prompt.type === "confirm"
             ? "[boolean]"
@@ -677,6 +687,37 @@ const _printGeneratorHelp = async (
         console.log(`  ${chalk.cyan(name)}${desc ? ` - ${desc}` : ""}`);
       }
     }
+
+    // LLM Usage section
+    console.log();
+    console.log(chalk.bold("LLM Usage:"));
+    console.log(chalk.dim("  # Preview what will be generated (markdown):"));
+    console.log(
+      chalk.dim(
+        `  summon ${commandPath} ${prompts
+          .filter((p) => !p.when && p.default === undefined)
+          .map((p) => `--${toKebabCase(p.name)} <value>`)
+          .join(" ")} --llm`,
+      ),
+    );
+    console.log(chalk.dim("  # Preview (JSON):"));
+    console.log(
+      chalk.dim(
+        `  summon ${commandPath} ${prompts
+          .filter((p) => !p.when && p.default === undefined)
+          .map((p) => `--${toKebabCase(p.name)} <value>`)
+          .join(" ")} --format json`,
+      ),
+    );
+    console.log(chalk.dim("  # Execute directly:"));
+    console.log(
+      chalk.dim(
+        `  summon ${commandPath} ${prompts
+          .filter((p) => !p.when && p.default === undefined)
+          .map((p) => `--${toKebabCase(p.name)} <value>`)
+          .join(" ")} --yes`,
+      ),
+    );
 
     console.log();
   } catch {
@@ -895,10 +936,7 @@ const configureGroupedHelp = (
       output += "\n";
       output += formatItem("-v, --verbose", "Show debug output");
       output += "\n";
-      output += formatItem(
-        "--show-contents",
-        "Show file contents in dry-run (useful for LLMs)",
-      );
+      output += formatItem("--show-files", "Show file contents in dry-run");
       output += "\n";
       output += formatItem("--no-preview", "Skip the file preview");
       output += "\n";
@@ -909,7 +947,12 @@ const configureGroupedHelp = (
       output += "\n";
       output += formatItem(
         "-l, --llm",
-        "LLM mode: combines --dry-run --show-contents --yes",
+        "Dry-run with markdown output, no prompts, no stamps",
+      );
+      output += "\n";
+      output += formatItem(
+        "--format <type>",
+        "Output format: json (dry-run, no prompts, no stamps)",
       );
       output += "\n";
       output += formatItem("-h, --help", "display help for command");
@@ -1081,15 +1124,16 @@ const registerFromBarrel = (rootCmd: Command, barrel: CommandEntry[]): void => {
         .option("-d, --dry-run", "Preview without writing files")
         .option("-y, --yes", "Skip confirmation prompts and preview")
         .option("-v, --verbose", "Show debug output")
-        .option(
-          "--show-contents",
-          "Show file contents in dry-run (useful for LLMs)",
-        )
+        .option("--show-files", "Show file contents in dry-run")
         .option("--no-preview", "Skip the file preview")
         .option("--no-generated-stamp", "Disable generated file stamp comments")
         .option(
           "-l, --llm",
-          "LLM mode: combines --dry-run --show-contents --yes",
+          "LLM mode: dry-run with markdown output, no prompts, no stamps",
+        )
+        .option(
+          "--format <type>",
+          "Output format: json (implies dry-run, no prompts, no stamps)",
         );
 
       // Set custom usage to show positional arg before [options]
@@ -1146,11 +1190,25 @@ const configureGeneratorCommand = (
         actualOptions = (positionalArg as Record<string, unknown>) ?? {};
       }
 
+      // Support SUMMON_LLM=1 environment variable
+      if (process.env.SUMMON_LLM === "1" && actualOptions.llm !== true) {
+        actualOptions.llm = true;
+      }
+
       // Expand --llm flag into its component flags
       if (actualOptions.llm === true) {
         actualOptions.dryRun = true;
-        actualOptions.showContents = true;
+        actualOptions.showFiles = true;
         actualOptions.yes = true;
+        actualOptions.generatedStamp = false;
+      }
+
+      // Expand --format json into its component flags
+      if (actualOptions.format === "json") {
+        actualOptions.dryRun = true;
+        actualOptions.showFiles = true;
+        actualOptions.yes = true;
+        actualOptions.generatedStamp = false;
       }
 
       // Extract only explicitly provided CLI answers (not defaults)
@@ -1189,52 +1247,72 @@ const configureGeneratorCommand = (
       if (hasAllAnswers && actualOptions.dryRun && !isTTY) {
         // Batch dry-run mode (non-interactive)
         const { dryRun } = await import("./dry-run.js");
-        const { isVisibleEffect, formatEffectLine, formatEffectWithContent } =
-          await import("./cli-format.js");
 
         const verbose = actualOptions.verbose === true;
-        const showContents = actualOptions.showContents === true;
-
-        console.log();
-        console.log(chalk.bold.magenta(generator.meta.name));
-        console.log(chalk.dim(generator.meta.description));
-        console.log();
+        const showFiles = actualOptions.showFiles === true;
 
         const task = generator.generate(answersWithDefaults);
         const result = dryRun(task);
 
-        // Filter and deduplicate effects
-        const seenDirPaths = new Set<string>();
-        const visibleEffects = result.effects.filter((e) => {
-          if (!isVisibleEffect(e, verbose)) return false;
-          if (e._tag === "MakeDir") {
-            if (seenDirPaths.has(e.path)) return false;
-            seenDirPaths.add(e.path);
-          }
-          return true;
-        });
-
-        console.log(chalk.dim.bold("Plan:"));
-        visibleEffects.forEach((effect, index) => {
-          const isLast = index === visibleEffects.length - 1;
-          // Use content preview when --show-contents is enabled
-          if (showContents) {
-            console.log(formatEffectWithContent(effect, isLast));
-          } else {
-            console.log(formatEffectLine(effect, isLast));
-          }
-        });
-
-        console.log();
-        console.log(chalk.dim("Dry-run complete. No files were modified."));
-
-        // Note about --show-contents if not already using it
-        if (!showContents) {
-          console.log(
-            chalk.dim(
-              "Tip: Use --show-contents to see generated file contents",
-            ),
+        if (actualOptions.llm === true) {
+          // LLM mode: structured markdown output
+          const { formatLlmMarkdown } = await import("./cli-format.js");
+          const output = formatLlmMarkdown(
+            generator,
+            answersWithDefaults,
+            result.effects,
+            verbose,
           );
+          process.stdout.write(output);
+        } else if (actualOptions.format === "json") {
+          // JSON mode: structured JSON output
+          const { formatLlmJson } = await import("./cli-format.js");
+          const output = formatLlmJson(
+            generator,
+            answersWithDefaults,
+            result.effects,
+            verbose,
+          );
+          process.stdout.write(`${JSON.stringify(output, null, 2)}\n`);
+        } else {
+          // Human-readable dry-run output
+          const { isVisibleEffect, formatEffectLine, formatEffectWithContent } =
+            await import("./cli-format.js");
+
+          console.log();
+          console.log(chalk.bold.magenta(generator.meta.name));
+          console.log(chalk.dim(generator.meta.description));
+          console.log();
+
+          // Filter and deduplicate effects
+          const seenDirPaths = new Set<string>();
+          const visibleEffects = result.effects.filter((e) => {
+            if (!isVisibleEffect(e, verbose)) return false;
+            if (e._tag === "MakeDir") {
+              if (seenDirPaths.has(e.path)) return false;
+              seenDirPaths.add(e.path);
+            }
+            return true;
+          });
+
+          console.log(chalk.dim.bold("Plan:"));
+          visibleEffects.forEach((effect, index) => {
+            const isLast = index === visibleEffects.length - 1;
+            if (showFiles) {
+              console.log(formatEffectWithContent(effect, isLast));
+            } else {
+              console.log(formatEffectLine(effect, isLast));
+            }
+          });
+
+          console.log();
+          console.log(chalk.dim("Dry-run complete. No files were modified."));
+
+          if (!showFiles) {
+            console.log(
+              chalk.dim("Tip: Use --show-files to see generated file contents"),
+            );
+          }
         }
       } else {
         // Interactive mode
@@ -1339,17 +1417,60 @@ const main = async () => {
     .option("--setup-completion", "Install shell autocompletion")
     .option("--cleanup-completion", "Remove shell autocompletion");
 
-  // If no arguments or just help, show available topics
-  if (process.argv.length === 2 || process.argv.includes("--help")) {
-    if (process.argv.length === 2) {
-      printNode(root, []);
-      console.log(
-        chalk.dim(
-          "Tip: Run 'summon --setup-completion' to enable TAB completion\n",
-        ),
-      );
-      return;
+  // If no arguments, show available topics
+  if (process.argv.length === 2) {
+    printNode(root, []);
+    console.log(
+      chalk.dim(
+        "Tip: Run 'summon --setup-completion' to enable TAB completion\n",
+      ),
+    );
+    return;
+  }
+
+  // Intercept --help --llm (or --help -l) for structured markdown help
+  const hasHelp =
+    process.argv.includes("--help") || process.argv.includes("-h");
+  const hasLlm =
+    process.argv.includes("--llm") ||
+    process.argv.includes("-l") ||
+    process.env.SUMMON_LLM === "1";
+  if (hasHelp && hasLlm) {
+    // Extract command path segments (skip "summon", flags, and flag arguments)
+    const skipFlags = new Set([
+      "--help",
+      "-h",
+      "--llm",
+      "-l",
+      "--generators",
+      "-g",
+      "--format",
+    ]);
+    const args = process.argv.slice(2);
+    const segments: string[] = [];
+    let skipNext = false;
+    for (const arg of args) {
+      if (skipNext) {
+        skipNext = false;
+        continue;
+      }
+      if (skipFlags.has(arg)) {
+        if (arg === "--generators" || arg === "-g" || arg === "--format")
+          skipNext = true;
+        continue;
+      }
+      if (arg.startsWith("-")) continue;
+      segments.push(arg);
     }
+
+    if (segments.length > 0) {
+      const [node] = _navigateTree(root, segments);
+      if (node.indexPath) {
+        await _printGeneratorHelp(node, segments, true);
+        return;
+      }
+    }
+    // Fall through to normal help if we can't find the generator
   }
 
   // Register generator commands dynamically

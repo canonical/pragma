@@ -240,26 +240,6 @@ export {
 } from "./template.js";
 
 // =============================================================================
-// Components (for custom CLI implementations)
-// =============================================================================
-
-export type {
-  AppProps,
-  AppState,
-  ExecutionProgressProps,
-  FileTreePreviewProps,
-  PromptSequenceProps,
-  SpinnerProps,
-} from "./components/index.js";
-export {
-  App,
-  ExecutionProgress,
-  FileTreePreview,
-  PromptSequence,
-  Spinner,
-} from "./components/index.js";
-
-// =============================================================================
 // CLI Types (for generator authors)
 // =============================================================================
 

@@ -1,0 +1,40 @@
+#!/bin/bash
+
+# Bumps the versions of packages and generates changelogs in a monorepo according to the Conventional Commits specification.
+# INPUTS:
+# $1: release_type (required) - The type of release to perform. Can be "stable" or a pre-release identifier (alpha, beta, rc, etc.)
+# OUTPUTS:
+# $GITHUB_OUTPUT: The highest version number among all packages after the update is completed is written to "VERSION".
+
+if [ -z "$1" ]; then
+  echo "Error: release_type argument is required."
+  exit 1
+fi
+
+release_type="$1"
+
+OLD_VERSION=$(jq -r '.version' lerna.json)
+
+if [ "$release_type" == "stable" ]; then
+  VERSION_ARGS="--conventional-graduate"
+else
+  VERSION_ARGS="--preid $release_type --conventional-prerelease"
+fi
+
+bun run lerna version --conventional-commits $VERSION_ARGS --no-git-tag-version --no-push --yes
+
+NEW_VERSION=$(jq -r '.version' lerna.json)
+
+if [ "$OLD_VERSION" == "$NEW_VERSION" ]; then
+  echo "No version changes detected. Exiting."
+  exit 1
+elif [ "$release_type" != "stable" ]; then
+  OLD_MAJOR=$(echo "$OLD_VERSION" | cut -d. -f1)
+  NEW_MAJOR=$(echo "$NEW_VERSION" | cut -d. -f1)
+  if [ "$NEW_MAJOR" -ne "$OLD_MAJOR" ]; then
+    echo "Unexpected major version bump detected. Exiting."
+    exit 1
+  fi
+fi
+
+echo "VERSION=$NEW_VERSION" >> "$GITHUB_OUTPUT"

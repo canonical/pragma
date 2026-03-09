@@ -6,6 +6,7 @@
 
 import { Box, Text, useApp, useInput } from "ink";
 import { useCallback, useEffect, useState } from "react";
+import { formatContentPreview } from "../cli-format.js";
 import { dryRun } from "../dry-run.js";
 import type { StampConfig } from "../interpreter.js";
 import type {
@@ -713,6 +714,52 @@ const summarizeEffects = (effects: TimedEffect[]): string => {
   return `Created ${parts.join(", ")}`;
 };
 
+// =============================================================================
+// File Content View - Full file content display (for Ctrl+O toggle)
+// =============================================================================
+
+/**
+ * Display the full content of all WriteFile/AppendFile effects.
+ * Used when the user toggles file content view with Ctrl+O.
+ */
+const FileContentView = ({ effects }: { effects: Effect[] }) => {
+  const writeEffects = effects.filter(
+    (e): e is Effect & { _tag: "WriteFile" | "AppendFile" } =>
+      e._tag === "WriteFile" || e._tag === "AppendFile",
+  );
+
+  if (writeEffects.length === 0) {
+    return (
+      <Box marginBottom={1}>
+        <Text dimColor>No file contents to display.</Text>
+      </Box>
+    );
+  }
+
+  return (
+    <Box flexDirection="column" marginBottom={1}>
+      <Text bold dimColor>
+        File contents:
+      </Text>
+      {writeEffects.map((effect, i) => (
+        // biome-ignore lint/suspicious/noArrayIndexKey: path may be duplicated across effects
+        <Box key={`${effect.path}-${i}`} flexDirection="column" marginTop={1}>
+          <Text color="green" bold>
+            {effect.path}
+          </Text>
+          <Box marginLeft={1}>
+            <Text>{formatContentPreview(effect.content)}</Text>
+          </Box>
+        </Box>
+      ))}
+    </Box>
+  );
+};
+
+// =============================================================================
+// App State and Component
+// =============================================================================
+
 export type AppState =
   | { phase: "loading" }
   | { phase: "prompting" }
@@ -756,6 +803,7 @@ export const App = ({
   const [answers, setAnswers] = useState<Record<string, unknown>>(
     prefilledAnswers ?? {},
   );
+  const [showFiles, setShowFiles] = useState(false);
 
   const handlePromptsComplete = useCallback(
     (promptAnswers: Record<string, unknown>) => {
@@ -826,14 +874,18 @@ export const App = ({
 
   // Handle going back from confirmation to prompting
   const handleGoBack = useCallback(() => {
+    setShowFiles(false);
     setState({ phase: "prompting" });
   }, []);
 
-  // Handle confirm/cancel/back input when in confirming state
+  // Handle confirm/cancel/back/show-files input when in confirming state
   useInput(
     (input, key) => {
       if (state.phase === "confirming") {
-        if (key.escape) {
+        // Ctrl+O toggles file content view
+        if (key.ctrl && input === "o") {
+          setShowFiles((prev) => !prev);
+        } else if (key.escape) {
           handleGoBack();
         } else if (key.return || input.toLowerCase() === "y") {
           // Enter or Y confirms
@@ -890,15 +942,20 @@ export const App = ({
             prompts={generator.prompts}
             answers={state.promptAnswers}
           />
-          {/* Show effects summary table */}
-          <EffectsSummaryTable effects={state.effects} />
-          {/* Confirmation prompt with escape hint */}
+          {/* Show effects summary or file contents based on toggle */}
+          {showFiles ? (
+            <FileContentView effects={state.effects} />
+          ) : (
+            <EffectsSummaryTable effects={state.effects} />
+          )}
+          {/* Confirmation prompt with escape hint and Ctrl+O hint */}
           <Box>
             <Text color="magenta">› </Text>
             <Text bold>Proceed? </Text>
             <Text dimColor>(Y/n) </Text>
             <Text dimColor italic>
-              esc to go back
+              esc to go back · ctrl+o {showFiles ? "hide" : "show"} file
+              contents
             </Text>
           </Box>
         </Box>

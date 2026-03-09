@@ -1,0 +1,45 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "schedule": ["before 9am on monday"],
+  "labels": ["Maintenance 🔨"],
+  "semanticCommits": "enabled",
+  "packageRules": [
+    {
+      "description": "Group Biome toolchain",
+      "matchPackageNames": ["@biomejs/biome", "@canonical/biome-config"],
+      "groupName": "biome"
+    },
+    {
+      "description": "Group TypeScript toolchain",
+      "matchPackageNames": ["typescript"],
+      "matchPackagePrefixes": ["@canonical/typescript-config-"],
+      "groupName": "typescript"
+    },
+    {
+      "description": "Group Vitest ecosystem",
+      "matchPackageNames": ["vitest"],
+      "matchPackagePrefixes": ["@vitest/"],
+      "groupName": "vitest"
+    },
+    {
+      "description": "Group Lerna + Nx orchestration",
+      "matchPackageNames": ["lerna", "nx"],
+      "matchPackagePrefixes": ["@nx/"],
+      "groupName": "lerna-nx"
+    },
+    {
+      "description": "Group Canonical internal packages",
+      "matchPackagePrefixes": ["@canonical/"],
+      "groupName": "canonical",
+      "excludePackageNames": ["@canonical/biome-config"],
+      "excludePackagePrefixes": ["@canonical/typescript-config-"]
+    },
+    {
+      "description": "Automerge patch/minor devDependencies",
+      "matchDepTypes": ["devDependencies"],
+      "matchUpdateTypes": ["patch", "minor"],
+      "automerge": true
+    }
+  ]
+}

@@ -1,0 +1,38 @@
+name: Version packages
+description: Updates package version numbers and changelogs for changed packages.
+inputs:
+  release_type:
+    description: "Release type. If not 'stable', the current version will be bumped as a pre-release instead of a stable release."
+    required: true
+  tag_prefix:
+    description: "Prefix for the git tag. Default is 'v'."
+    required: false
+    default: "v"
+outputs:
+  VERSION:
+    description: "The new latest version number across all packages"
+    value: ${{ steps.lerna_version.outputs.VERSION }}
+runs:
+  using: composite
+  steps:
+    - name: Version packages & generate changelogs
+      shell: bash
+      id: lerna_version
+      run: ${{ github.action_path }}/version.sh ${{ inputs.release_type }}
+
+    - name: Update lockfile
+      shell: bash
+      run: bun install --ignore-scripts
+
+    - name: Apply formatting fixes
+      shell: bash
+      run: bun run check:fix
+
+    - name: Setup Git CLI
+      uses: ./.github/actions/setup-git
+      with:
+        name: ${{ github.actor }}
+
+    - name: Commit and tag v${{ steps.lerna_version.outputs.VERSION }}
+      shell: bash
+      run: ${{ github.action_path }}/git-commit.sh ${{ inputs.tag_prefix }}${{ steps.lerna_version.outputs.VERSION }}

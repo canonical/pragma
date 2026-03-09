@@ -1,0 +1,53 @@
+# <%= name %>
+
+<%= description || 'TODO: Add description' %>
+
+## Getting Started
+
+```bash
+# Install dependencies
+bun install
+
+# Run checks
+bun run check
+
+# Run tests
+bun run test
+```
+
+## Development
+
+### Adding a new package
+
+Use [summon-package](https://www.npmjs.com/package/@canonical/summon-package) to scaffold a new package:
+
+```bash
+bunx summon package
+```
+
+### Scripts
+
+| Script | Description |
+|--------|-------------|
+| `bun run build` | Build all packages |
+| `bun run build:all` | Build all packages and artifacts |
+| `bun run check` | Run linting and type checks |
+| `bun run check:fix` | Auto-fix linting issues |
+| `bun run test` | Run all tests |
+| `bun run test:coverage` | Run tests with coverage |
+| `bun run publish:status` | Compare local vs. registry versions |
+| `bun run special:clean` | Clean all build artifacts and dependencies |
+
+### Releasing
+
+Releases are managed via the `tag.yml` GitHub Actions workflow:
+
+1. Go to **Actions** > **Update package versions**
+2. Select a release type (experimental, alpha, beta, rc, stable)
+3. Run the workflow
+
+This will bump versions, generate changelogs, tag, and publish to npm.
+
+## License
+
+<%= license %>

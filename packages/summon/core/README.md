@@ -49,14 +49,27 @@ Every prompt becomes a CLI flag. Boolean prompts with `default: true` use the `-
 | `-d, --dry-run` | Preview without writing files |
 | `-y, --yes` | Skip confirmation prompts and preview |
 | `-v, --verbose` | Show debug output |
-| `--show-contents` | Show file contents in dry-run (useful for LLMs) |
+| `--show-files` | Show file contents in dry-run |
+| `-l, --llm` | LLM mode: dry-run with markdown output, no prompts, no stamps |
+| `--format <type>` | Output format: `json` (implies dry-run, no prompts, no stamps) |
 | `--no-preview` | Skip the file preview |
 | `--no-generated-stamp` | Disable generated file stamp comments |
 
-**LLM Usage:** The `--show-contents` flag is particularly useful for AI assistants and LLM agents. When combined with `--dry-run`, it outputs the complete generated file contents, allowing the LLM to review, analyze, or use the generated code without writing to disk:
+**LLM Usage:** Summon treats LLMs as first-class CLI users. Use `--llm` for structured markdown output or `--format json` for machine-parseable JSON. Both imply `--dry-run --yes --show-files --no-generated-stamp`:
 
 ```bash
-summon component react src/components/Button --dry-run --show-contents -y
+# Structured markdown (answers table, plan table, fenced code blocks)
+summon component react src/components/Button --llm
+
+# Machine-parseable JSON
+summon component react src/components/Button --format json
+
+# Session-level LLM mode via environment variable
+export SUMMON_LLM=1
+summon component react src/components/Button
+
+# Structured help for LLMs
+summon component react --help --llm
 ```
 
 ### Shell Autocompletion

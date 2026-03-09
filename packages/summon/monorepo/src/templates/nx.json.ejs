@@ -1,0 +1,27 @@
+{
+  "cli": {
+    "packageManager": "bun"
+  },
+  "targetDefaults": {
+    "build": {
+      "dependsOn": ["^build"],
+      "cache": true
+    },
+    "build:all": {
+      "dependsOn": ["^build:all"],
+      "cache": true
+    },
+    "check": {
+      "dependsOn": ["^check"],
+      "cache": true
+    },
+    "check:fix": {
+      "dependsOn": ["^check:fix"],
+      "cache": true
+    },
+    "test": {
+      "dependsOn": ["^build"],
+      "cache": true
+    }
+  }
+}

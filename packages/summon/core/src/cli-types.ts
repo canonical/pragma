@@ -30,7 +30,13 @@ export type ReservedOption =
   | "preview"
   | "generators"
   | "run"
-  | "init";
+  | "init"
+  | "llm"
+  | "format"
+  | "showFiles"
+  | "show-files"
+  | "verbose"
+  | "generatedStamp";
 
 /**
  * Type helper that produces a compile-time error if T contains any reserved option names.
