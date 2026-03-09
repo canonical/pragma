@@ -28,7 +28,7 @@
     "@canonical/react-ds-global-form": "^0.17.1",
     "@canonical/react-ssr": "^0.17.1",
     "@canonical/storybook-config": "^0.17.1",
-    "@canonical/styles": "^0.17.1",
+    "@canonical/styles": "workspace:*",
     "@canonical/styles-debug": "^0.17.1",
     "@canonical/styles-primitives-canonical": "^0.17.1",
     "@tanstack/react-router": "^1.151.3",

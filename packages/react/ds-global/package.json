@@ -41,7 +41,8 @@
   "dependencies": {
     "@canonical/ds-assets": "^0.17.1",
     "@canonical/storybook-config": "^0.17.1",
-    "@canonical/styles": "^0.17.1",
+    "@canonical/styles": "workspace:*",
+    "@canonical/styles-old": "workspace:*",
     "@canonical/utils": "^0.17.1",
     "react": "^19.2.4",
     "react-dom": "^19.2.4"

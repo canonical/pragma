@@ -8,13 +8,14 @@ webarchitect library
 
 ## Built-in Rulesets
 
-Pragma uses three rulesets:
+Pragma uses four rulesets:
 
 | Ruleset | License | Use Case |
 |---------|---------|----------|
 | `library` | LGPL-3.0 | Packages consumed by other packages or applications |
 | `tool` | GPL-3.0 | Compiled CLI tools with a build step |
 | `tool-ts` | GPL-3.0 | TypeScript tools that run directly with Bun (no build) |
+| `assets` | LGPL-3.0 | Asset packages (design tokens, fonts) with no build scripts |
 
 Each ruleset validates package.json structure, required scripts, TypeScript configuration, Biome setup, and license compliance.
 

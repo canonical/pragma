@@ -13,8 +13,10 @@ Thumbs.db
 .spelling
 .vscode
 .idea
+.kg/
 session/
 .gemini/
+pragma.code-workspace
 
 # [cache] Cache and backup
 *.bak

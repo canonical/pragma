@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Font Baseline Alignment Demo</title>
+
+    <!-- Baseline engines (only one active at a time) -->
+    <link id="engine-cap"     rel="stylesheet" href="../src/baseline-cap.css" />
+    <link id="engine-metrics" rel="stylesheet" href="../src/baseline-metrics.css" disabled />
+    <link id="engine-trim"    rel="stylesheet" href="../src/baseline-trim.css" disabled />
+
+    <!-- Example layout & debug styles -->
+    <link rel="stylesheet" href="./styles/layout.css" />
+    <link rel="stylesheet" href="./styles/demo.css" />
+
+    <style>
+      /*
+       * Tag-level variable defaults.
+       * These are the CONSUMED values – the baseline engine in
+       * src/index.css reads them to compute nudges.
+       * Keep in sync with the input defaults in sidebar.js.
+       *
+       * Baseline = 0.5rem
+       * LH multiplier = lineHeight / baseline
+       * space-after  = spaceAfter / baseline
+       */
+
+      :root {
+        --baseline-height: 0.5rem;
+      }
+
+      h1 {
+        --font-size: 2.625rem;
+        --line-height-multiplier: 6;
+        --space-after: 2;
+      }
+
+      h2 {
+        --font-size: 2.625rem;
+        --line-height-multiplier: 6;
+        --space-after: 2;
+      }
+
+      h3 {
+        --font-size: 1.5rem;
+        --line-height-multiplier: 4;
+        --space-after: 2;
+      }
+
+      h4 {
+        --font-size: 1.5rem;
+        --line-height-multiplier: 4;
+        --space-after: 2;
+      }
+
+      h5 {
+        --font-size: 1rem;
+        --line-height-multiplier: 3;
+        --space-after: 2;
+      }
+
+      h6 {
+        --font-size: 1rem;
+        --line-height-multiplier: 3;
+        --space-after: 2;
+      }
+
+      p {
+        --font-size: 1rem;
+        --line-height-multiplier: 3;
+        --space-after: 2;
+      }
+    </style>
+  </head>
+
+  <body>
+    <settings-sidebar></settings-sidebar>
+
+    <main>
+      <p>This is a text aligned on the baseline</p>
+      <p>
+        Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam
+        scelerisque, nunc nec lacinia ultricies, nunc nunc ultricies sapien, nec
+        lacinia sapien nunc nec nunc. Nullam scelerisque, nunc nec lacinia
+        ultricies, nunc nunc ultricies sapien, nec lacinia sapien nunc nec nunc.
+        Nullam scelerisque, nunc nec lacinia ultricies, nunc nunc ultricies
+        sapien, nec lacinia
+      </p>
+      <p>Another paragraph</p>
+      <h1>This is a title aligned on the grid</h1>
+      <p>Another paragraph</p>
+      <p>Another paragraph</p>
+      <h2>A h2 title - it should not shift the alignment</h2>
+      <p>Another piece of content</p>
+      <p>Another piece of content</p>
+      <h3>This is a H3 aligned on the grid</h3>
+      <h4>Test of h4</h4>
+      <h5>Heading level 5</h5>
+      <h6>Heading level 6</h6>
+      <p>
+        The jellyfish is a very interesting creature. It doesn't have a brain,
+        heart, bones, or eyes. It's made up of a smooth, bag-like body and
+        tentacles armed with tiny, stinging cells. The jellyfish uses these
+        cells to sting or paralyze its prey before eating it. Some jellyfish are
+        harmless to humans, but others have a very painful sting. The box
+        jellyfish is one of the most venomous creatures in the world. It has
+        tentacles that can grow up to 10 feet long and contain enough venom to
+        harm other animals. The jellyfish lives in groups called swarms.
+      </p>
+      <p>
+        Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam
+        scelerisque, nunc nec lacinia ultricies, nunc nunc ultricies sapien, nec
+        lacinia sapien nunc nec nunc. Nullam scelerisque, nunc nec lacinia
+      </p>
+    </main>
+
+    <script type="module" src="./scripts/app.js"></script>
+  </body>
+</html>

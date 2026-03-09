@@ -214,7 +214,7 @@ The following table lists all packages in the monorepo with their location and p
 | `@canonical/ds-types` | `packages/ds-types` | TypeScript types for modifier families and component props |
 | `@canonical/ds-assets` | `packages/ds-assets` | Icons and shared visual assets |
 | `@canonical/utils` | `packages/utils` | Utility functions: debounce, throttle |
-| `@canonical/typography` | `packages/typography` | Font utilities and extracted font data |
+| `@canonical/styles-typography` | `packages/styles/typography` | Baseline grid alignment engines, typography scale tokens, and font metric extraction |
 
 ### Developer Tooling
 

@@ -1,7 +1,4 @@
 {
   "artifacts": ["@canonical/design-tokens/dist/tokens.json"],
-  "globalStylesheets": [
-    ".storybook/styles.css",
-    "node_modules/@canonical/styles/src/index.css"
-  ]
+  "globalStylesheets": ["@canonical/styles/src/index.css"]
 }

@@ -42,7 +42,7 @@
   "dependencies": {
     "@canonical/react-ds-global": "^0.17.1",
     "@canonical/storybook-config": "^0.17.1",
-    "@canonical/styles": "^0.17.1",
+    "@canonical/styles": "workspace:*",
     "react": "^19.2.4",
     "react-dom": "^19.2.4"
   },

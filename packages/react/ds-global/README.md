@@ -55,6 +55,8 @@ Import the main styles package in your application entry point:
 import "@canonical/styles";
 ```
 
+`@canonical/styles` provides the global design tokens (colour, spacing, typography). Each component in this package co-locates its own component-level tokens in a `styles.css` file next to the component source. These component tokens reference the global tokens from `@canonical/design-tokens` and are included automatically when the component is imported.
+
 ## Storybook
 
 Each component includes Storybook stories demonstrating usage patterns and variants:
