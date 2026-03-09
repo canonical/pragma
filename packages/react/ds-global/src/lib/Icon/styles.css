@@ -1,3 +1,8 @@
+/* Component tokens (migrated from @canonical/styles-primitives-canonical tokens.css) */
+:root {
+  --icon-size: 1em;
+}
+
 /**
  * Icon styles
  * @implements dso:global.component.icon

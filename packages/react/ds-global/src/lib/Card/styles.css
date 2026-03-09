@@ -1,3 +1,19 @@
+/* Component tokens (migrated from @canonical/styles-primitives-canonical tokens.css) */
+:root {
+  --card-border-style: solid;
+  --card-color-text: var(--tmp-color-text-default);
+  --card-color-background: var(--tmp-color-background-default);
+  --card-border-width: var(--spacing-border-width);
+
+  --card-section-padding-vertical: var(--spacing-vertical-large);
+  --card-section-padding-horizontal: var(--spacing-horizontal-large);
+  --card-section-separator-color: var(--tmp-color-border-default);
+  --card-section-separator-border-width: 1px;
+  --card-section-separator-border-style: solid;
+
+  --card-thumbnail-max-height: var(--tmp-dimension-heading-icon--small);
+}
+
 .ds.card {
   /* prevent overflow of child margins */
   overflow: auto;
