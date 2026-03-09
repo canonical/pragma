@@ -1,0 +1,181 @@
+@prefix ds:   <https://ds.canonical.com/> .
+@prefix sh:   <http://www.w3.org/ns/shacl#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+
+# ============================================================
+# Token SHACL Shapes
+# ============================================================
+# Validates the invariants of the TokenEntry TypeScript interface.
+# These shapes can be used to validate tokens.json artifact data
+# once it is expressed as RDF, or to validate curated mock tokens.
+# ============================================================
+
+ds:TokenShape a sh:NodeShape ;
+    sh:targetClass ds:Token ;
+    rdfs:label "Token Shape" ;
+    skos:definition "Validates that a token instance has all required fields and correct value constraints." ;
+
+    # ---- Required fields ----
+
+    sh:property [
+        sh:path ds:cssVar ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:string ;
+        sh:pattern "^--[a-z]" ;
+        sh:name "cssVar" ;
+        sh:description "Must be a CSS custom property name starting with '--'." ;
+    ] ;
+
+    sh:property [
+        sh:path ds:tokenId ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:string ;
+        sh:pattern "^[a-z][a-z0-9.\\-]*$" ;
+        sh:name "tokenId" ;
+        sh:description "Dot-separated DTCG path, e.g., 'color.background'." ;
+    ] ;
+
+    sh:property [
+        sh:path ds:tokenType ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:name "tokenType" ;
+        sh:description "Must reference one of the 13 DTCG token types." ;
+    ] ;
+
+    sh:property [
+        sh:path ds:tokenTier ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:in ( ds:token.tier.primitive ds:token.tier.semantic ds:token.tier.derived ) ;
+        sh:name "tokenTier" ;
+        sh:description "Must be one of: primitive, semantic, derived." ;
+    ] ;
+
+    sh:property [
+        sh:path ds:isPaired ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:boolean ;
+        sh:name "isPaired" ;
+        sh:description "Whether the token resolves differently in light and dark modes." ;
+    ] ;
+
+    sh:property [
+        sh:path ds:cssOutputFile ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:string ;
+        sh:pattern "^[a-z][a-z0-9.\\-]*\\.css$" ;
+        sh:name "cssOutputFile" ;
+        sh:description "The generated CSS file name." ;
+    ] ;
+
+    # ---- Optional fields ----
+
+    sh:property [
+        sh:path ds:tokenStability ;
+        sh:maxCount 1 ;
+        sh:in ( ds:stability.stable ds:stability.wip ds:stability.experimental ) ;
+        sh:name "tokenStability" ;
+        sh:description "Maturity level. Required in the UI but optional in the artifact (defaults to 'wip')." ;
+    ] ;
+
+    sh:property [
+        sh:path ds:valueLight ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:string ;
+        sh:name "valueLight" ;
+        sh:description "Resolved light-mode value." ;
+    ] ;
+
+    sh:property [
+        sh:path ds:valueDark ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:string ;
+        sh:name "valueDark" ;
+        sh:description "Resolved dark-mode value." ;
+    ] ;
+
+    sh:property [
+        sh:path ds:derivedFrom ;
+        sh:maxCount 1 ;
+        sh:class ds:Token ;
+        sh:name "derivedFrom" ;
+        sh:description "Base token reference. Required when tier is 'derived'." ;
+    ] ;
+
+    sh:property [
+        sh:path ds:derivationKind ;
+        sh:maxCount 1 ;
+        sh:name "derivationKind" ;
+        sh:description "How the token is derived. Required when derivedFrom is present." ;
+    ] ;
+
+    sh:property [
+        sh:path ds:tokenDescription ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:string ;
+        sh:name "tokenDescription" ;
+        sh:description "Human-readable description." ;
+    ] .
+
+# ---- Derived token constraint ----
+# When tier is derived, derivedFrom and derivationKind are required.
+
+ds:DerivedTokenShape a sh:NodeShape ;
+    sh:targetClass ds:Token ;
+    rdfs:label "Derived Token Constraint" ;
+    skos:definition "Ensures derived tokens always declare their base and derivation kind." ;
+    sh:property [
+        sh:path ds:tokenTier ;
+        sh:hasValue ds:token.tier.derived ;
+    ] ;
+    sh:property [
+        sh:path ds:derivedFrom ;
+        sh:minCount 1 ;
+        sh:name "derivedFrom (derived tier)" ;
+        sh:description "Derived tokens must reference a base token." ;
+    ] ;
+    sh:property [
+        sh:path ds:derivationKind ;
+        sh:minCount 1 ;
+        sh:in (
+            ds:derivation.hover
+            ds:derivation.active
+            ds:derivation.disabled
+            ds:derivation.delta
+            ds:derivation.channelModifier
+            ds:derivation.channelSurface
+        ) ;
+        sh:name "derivationKind (derived tier)" ;
+        sh:description "Derived tokens must specify the derivation mechanism." ;
+    ] .
+
+# ---- Paired token constraint ----
+# When isPaired is true, both valueLight and valueDark should exist.
+
+ds:PairedTokenShape a sh:NodeShape ;
+    sh:targetClass ds:Token ;
+    rdfs:label "Paired Token Constraint" ;
+    skos:definition "Ensures paired tokens have both light and dark values." ;
+    sh:property [
+        sh:path ds:isPaired ;
+        sh:hasValue true ;
+    ] ;
+    sh:property [
+        sh:path ds:valueLight ;
+        sh:minCount 1 ;
+        sh:name "valueLight (paired)" ;
+        sh:description "Paired tokens must have a light-mode value." ;
+    ] ;
+    sh:property [
+        sh:path ds:valueDark ;
+        sh:minCount 1 ;
+        sh:name "valueDark (paired)" ;
+        sh:description "Paired tokens must have a dark-mode value." ;
+    ] .

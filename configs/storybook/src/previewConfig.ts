@@ -17,7 +17,7 @@ type Preview = ReactPreview & SveltePreview & WebComponentsPreview;
 export const themeDecorator = withThemeByClassName({
   themes: {
     light: "is-light",
-    dark: "is-dark",
+    dark: "dark",
     paper: "is-paper",
   },
   defaultTheme: "light",

@@ -1,0 +1,160 @@
+@prefix ds:   <https://ds.canonical.com/> .
+@prefix dtcg: <https://ds.canonical.com/dtcg/> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+
+# ============================================================
+# Token Vocabulary Extension
+# ============================================================
+# Proposal for enriching ds:Token in the design-system ontology.
+# Lives in the tokens package temporarily. Once validated, these
+# definitions migrate upstream to the design-system ontology at
+# ~/code/cn/design-system/definitions/ontology.ttl.
+# ============================================================
+
+# ---- Enrich ds:Token ----
+
+ds:Token
+    skos:definition "A named design decision expressed as a key-value pair. Tokens encode visual and spatial properties (color, dimension, typography, motion) in a platform-agnostic format and are compiled to CSS custom properties for consumption." .
+
+# ---- Token tiers ----
+
+ds:TokenTier a owl:Class ;
+    rdfs:label "Token Tier" ;
+    skos:definition "The hierarchical level of a token in the design system's abstraction stack." .
+
+ds:token.tier.primitive a ds:TokenTier ;
+    rdfs:label "Primitive" ;
+    skos:definition "Raw values forming the design system foundation. Never referenced directly by component styles." .
+
+ds:token.tier.semantic a ds:TokenTier ;
+    rdfs:label "Semantic" ;
+    skos:definition "Intent-bearing tokens that form the component-facing API. These are the stable contract." .
+
+ds:token.tier.derived a ds:TokenTier ;
+    rdfs:label "Derived" ;
+    skos:definition "Infrastructure tokens produced by modifiers, surfaces, and interaction states. Resolved through CSS cascade and fallback chains." .
+
+# ---- Token types (DTCG-aligned) ----
+
+ds:TokenType a owl:Class ;
+    rdfs:label "Token Type" ;
+    skos:definition "DTCG-aligned classification of the value a token carries." .
+
+dtcg:color a ds:TokenType ; rdfs:label "Color" .
+dtcg:dimension a ds:TokenType ; rdfs:label "Dimension" .
+dtcg:number a ds:TokenType ; rdfs:label "Number" .
+dtcg:fontFamily a ds:TokenType ; rdfs:label "Font Family" .
+dtcg:fontWeight a ds:TokenType ; rdfs:label "Font Weight" .
+dtcg:duration a ds:TokenType ; rdfs:label "Duration" .
+dtcg:cubicBezier a ds:TokenType ; rdfs:label "Cubic Bezier" .
+dtcg:gradient a ds:TokenType ; rdfs:label "Gradient" .
+dtcg:border a ds:TokenType ; rdfs:label "Border" .
+dtcg:shadow a ds:TokenType ; rdfs:label "Shadow" .
+dtcg:typography a ds:TokenType ; rdfs:label "Typography" .
+dtcg:transition a ds:TokenType ; rdfs:label "Transition" .
+dtcg:strokeStyle a ds:TokenType ; rdfs:label "Stroke Style" .
+
+# ---- Derivation kinds ----
+
+ds:DerivationKind a owl:Class ;
+    rdfs:label "Derivation Kind" ;
+    skos:definition "The mechanism by which a derived token is produced from its base token." .
+
+ds:derivation.hover a ds:DerivationKind ; rdfs:label "Hover" .
+ds:derivation.active a ds:DerivationKind ; rdfs:label "Active" .
+ds:derivation.disabled a ds:DerivationKind ; rdfs:label "Disabled" .
+ds:derivation.delta a ds:DerivationKind ; rdfs:label "Delta" .
+ds:derivation.channelModifier a ds:DerivationKind ; rdfs:label "Channel Modifier" .
+ds:derivation.channelSurface a ds:DerivationKind ; rdfs:label "Channel Surface" .
+
+# ---- Token stability ----
+
+ds:TokenStability a owl:Class ;
+    rdfs:label "Token Stability" ;
+    skos:definition "The maturity level of a token in the design system lifecycle." .
+
+ds:stability.stable a ds:TokenStability ; rdfs:label "Stable" ;
+    skos:definition "Covered by semver. Breaking changes require a major version bump and codemod." .
+
+ds:stability.wip a ds:TokenStability ; rdfs:label "WIP" ;
+    skos:definition "Work in progress. Name and value may change without a major version bump." .
+
+ds:stability.experimental a ds:TokenStability ; rdfs:label "Experimental" ;
+    skos:definition "Proof of concept. May be removed entirely." .
+
+# ---- Properties on ds:Token ----
+
+ds:tokenTier a owl:ObjectProperty, owl:FunctionalProperty ;
+    rdfs:domain ds:Token ;
+    rdfs:range ds:TokenTier ;
+    rdfs:label "tokenTier" ;
+    skos:definition "The hierarchical tier of this token." .
+
+ds:tokenType a owl:ObjectProperty, owl:FunctionalProperty ;
+    rdfs:domain ds:Token ;
+    rdfs:range ds:TokenType ;
+    rdfs:label "tokenType" ;
+    skos:definition "The DTCG-aligned type of this token's value." .
+
+ds:cssVar a owl:DatatypeProperty, owl:InverseFunctionalProperty ;
+    rdfs:domain ds:Token ;
+    rdfs:range xsd:string ;
+    rdfs:label "cssVar" ;
+    skos:definition "The CSS custom property name, e.g., '--color-background'." .
+
+ds:tokenId a owl:DatatypeProperty, owl:InverseFunctionalProperty ;
+    rdfs:domain ds:Token ;
+    rdfs:range xsd:string ;
+    rdfs:label "tokenId" ;
+    skos:definition "The dot-separated DTCG path, e.g., 'color.background'." .
+
+ds:derivedFrom a owl:ObjectProperty ;
+    rdfs:domain ds:Token ;
+    rdfs:range ds:Token ;
+    rdfs:label "derivedFrom" ;
+    skos:definition "The base token from which this token is derived." .
+
+ds:derivationKind a owl:ObjectProperty, owl:FunctionalProperty ;
+    rdfs:domain ds:Token ;
+    rdfs:range ds:DerivationKind ;
+    rdfs:label "derivationKind" ;
+    skos:definition "The mechanism by which this token is derived from its base." .
+
+ds:isPaired a owl:DatatypeProperty, owl:FunctionalProperty ;
+    rdfs:domain ds:Token ;
+    rdfs:range xsd:boolean ;
+    rdfs:label "isPaired" ;
+    skos:definition "True when the token resolves to different values in light and dark modes." .
+
+ds:cssOutputFile a owl:DatatypeProperty ;
+    rdfs:domain ds:Token ;
+    rdfs:range xsd:string ;
+    rdfs:label "cssOutputFile" ;
+    skos:definition "The generated CSS file that declares this token." .
+
+ds:tokenStability a owl:ObjectProperty, owl:FunctionalProperty ;
+    rdfs:domain ds:Token ;
+    rdfs:range ds:TokenStability ;
+    rdfs:label "tokenStability" ;
+    skos:definition "The maturity level of this token." .
+
+ds:valueLight a owl:DatatypeProperty ;
+    rdfs:domain ds:Token ;
+    rdfs:range xsd:string ;
+    rdfs:label "valueLight" ;
+    skos:definition "The resolved value in light mode." .
+
+ds:valueDark a owl:DatatypeProperty ;
+    rdfs:domain ds:Token ;
+    rdfs:range xsd:string ;
+    rdfs:label "valueDark" ;
+    skos:definition "The resolved value in dark mode." .
+
+ds:tokenDescription a owl:DatatypeProperty ;
+    rdfs:domain ds:Token ;
+    rdfs:range xsd:string ;
+    rdfs:label "tokenDescription" ;
+    skos:definition "Human-readable description of the token's purpose." .

@@ -1,7 +1,8 @@
 {
-  "extends": "@canonical/typescript-config-react",
+  "extends": "../../../configs/typescript-react/tsconfig.json",
   "compilerOptions": {
     "baseUrl": "src",
+    "jsx": "react-jsx",
     "skipLibCheck": true,
     "types": [
       "node",
@@ -19,10 +20,5 @@
     "vite.config.ts",
     "vitest.setup.ts",
     "vitest.config.ts"
-  ],
-  "exclude": [
-    "src/lib/Tokens.stories.tsx",
-    "src/lib/Typography.stories.tsx",
-    "src/lib/mockTokens.ts"
   ]
 }

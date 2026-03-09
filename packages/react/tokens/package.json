@@ -1,0 +1,72 @@
+{
+  "name": "@canonical/react-tokens",
+  "version": "0.17.1",
+  "type": "module",
+  "module": "dist/esm/index.js",
+  "types": "dist/types/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "author": {
+    "email": "webteam@canonical.com",
+    "name": "Canonical Webteam"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/canonical/ds25"
+  },
+  "license": "LGPL-3.0",
+  "bugs": {
+    "url": "https://github.com/canonical/ds25/issues"
+  },
+  "homepage": "https://github.com/canonical/ds25#readme",
+  "scripts": {
+    "build": "bun run build:package",
+    "build:all": "bun run build:package && bun run build:storybook",
+    "build:storybook": "storybook build",
+    "build:package": "bun run build:package:tsc && bun run build:package:copycss",
+    "build:package:copycss": "copyfiles -u 1 'src/lib/{,**/}*.css' dist/esm",
+    "build:package:tsc": "tsc -p tsconfig.build.json",
+    "check": "bun run check:biome && bun run check:ts && bun run check:webarchitect",
+    "check:webarchitect": "webarchitect package-react",
+    "check:fix": "bun run check:biome:fix && bun run check:ts",
+    "check:biome": "biome check",
+    "check:biome:fix": "biome check --write",
+    "check:ts": "tsc --noEmit",
+    "storybook": "storybook dev -p 6006 --no-open --host 0.0.0.0",
+    "test": "bun run test:vitest",
+    "test:vitest": "vitest run --passWithNoTests",
+    "test:vitest:watch": "vitest"
+  },
+  "dependencies": {
+    "@canonical/storybook-config": "^0.17.1",
+    "@canonical/styles": "workspace:*",
+    "@canonical/styles-old": "workspace:*",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.4.5",
+    "@canonical/biome-config": "^0.17.1",
+    "@canonical/ds-types": "^0.17.1",
+    "@canonical/typescript-config-react": "^0.17.1",
+    "@canonical/webarchitect": "^0.17.1",
+    "@chromatic-com/storybook": "^5.0.1",
+    "@storybook/addon-docs": "^10.2.8",
+    "@storybook/react-vite": "^10.2.8",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@types/node": "^24.10.13",
+    "@types/react": "^19.2.13",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.1.4",
+    "copyfiles": "^2.4.1",
+    "globals": "^17.3.0",
+    "jsdom": "^28.0.0",
+    "storybook": "^10.2.8",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.1",
+    "vite-tsconfig-paths": "^6.1.0",
+    "vitest": "^4.0.18"
+  }
+}
