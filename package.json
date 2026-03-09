@@ -21,6 +21,7 @@
     "packages/*",
     "packages/react/*",
     "packages/storybook/*",
+    "packages/summon/*",
     "packages/styles/debug",
     "packages/svelte/*",
     "packages/webcomponents/*",
