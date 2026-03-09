@@ -1,0 +1,31 @@
+import react from "@vitejs/plugin-react";
+import { defineConfig } from "vitest/config";
+import tsconfigPaths from "vite-tsconfig-paths";
+
+export default defineConfig({
+  plugins: [react(), tsconfigPaths()],
+  build: {
+    sourcemap: true,
+  },
+  test: {
+    projects: [
+      {
+        test: {
+          name: "client",
+          environment: "jsdom",
+          globals: true,
+          setupFiles: ["./vitest.setup.ts"],
+          include: ["src/**/*.tests.ts", "src/**/*.tests.tsx"],
+          exclude: ["src/**/*.ssr.tests.tsx"],
+        },
+      },
+      {
+        test: {
+          name: "ssr",
+          environment: "node",
+          include: ["src/**/*.ssr.tests.tsx"],
+        },
+      },
+    ],
+  },
+});
