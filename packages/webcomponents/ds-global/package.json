@@ -47,7 +47,7 @@
     "lit": "^3.2.1"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.3.11",
+    "@biomejs/biome": "2.4.6",
     "@canonical/biome-config": "^0.17.1",
     "@canonical/ds-types": "^0.17.1",
     "@canonical/styles": "^0.17.1",
