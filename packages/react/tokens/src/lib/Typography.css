@@ -1,0 +1,151 @@
+:root {
+  --token-story-canvas: #ffffff;
+  --token-story-ink: #171717;
+  --token-story-muted: color-mix(
+    in srgb,
+    var(--token-story-ink, #171717) 74%,
+    transparent
+  );
+  --token-story-panel: color-mix(
+    in srgb,
+    var(--token-story-ink, #171717) 2.5%,
+    transparent
+  );
+  --token-story-border: color-mix(
+    in srgb,
+    var(--token-story-ink, #171717) 10%,
+    transparent
+  );
+}
+
+.typography-page {
+  display: grid;
+  gap: 1rem;
+  padding: 0.5rem 0 1rem;
+  color: var(
+    --modifier-color-text,
+    var(--color-text, var(--token-story-ink, #171717))
+  );
+}
+
+:where(.is-light, .light, .is-paper, .paper) .typography-page {
+  --token-story-canvas: #ffffff;
+  --token-story-ink: #171717;
+  color-scheme: light;
+}
+
+.dark .typography-page {
+  --token-story-canvas: #111315;
+  --token-story-ink: #f5f5f5;
+  color-scheme: dark;
+}
+
+.typography-page .eyebrow {
+  color: color-mix(in srgb, var(--token-story-ink, #171717) 65%, transparent);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.typography-hero,
+.typography-panel,
+.typography-sample {
+  border: 1px solid
+    var(--token-story-border, color-mix(in srgb, #171717 10%, transparent));
+  border-radius: 0.875rem;
+  background: var(
+    --token-story-panel,
+    color-mix(in srgb, #171717 2.5%, transparent)
+  );
+}
+
+.typography-hero,
+.typography-panel {
+  padding: 1rem;
+}
+
+.typography-hero {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.typography-hero p,
+.typography-panel p,
+.typography-sample p {
+  margin: 0;
+  color: var(--token-story-muted, color-mix(in srgb, #171717 74%, transparent));
+}
+
+.typography-grid,
+.typography-context-grid {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.typography-grid {
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+}
+
+.typography-sample {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.875rem;
+  color: var(
+    --modifier-color-text,
+    var(--color-text, var(--token-story-ink, #171717))
+  );
+}
+
+.typography-sample .eyebrow {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, currentColor 65%, transparent);
+}
+
+.typography-sample .stack {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.typography-sample .stack > * {
+  margin: 0;
+  color: inherit;
+}
+
+.typography-context-grid {
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+}
+
+.typography-context-card {
+  display: grid;
+  gap: 0.375rem;
+  padding: 0.875rem;
+  border-radius: 0.875rem;
+  background: var(
+    --surface-color-background,
+    var(--color-background, var(--token-story-canvas, #ffffff))
+  );
+  border: 1px solid
+    var(--token-story-border, color-mix(in srgb, #171717 10%, transparent));
+  color: var(
+    --modifier-color-text,
+    var(--color-text, var(--token-story-ink, #171717))
+  );
+}
+
+.typography-context-card > .title {
+  margin: 0;
+}
+
+.typography-context-card > .body {
+  margin: 0;
+  color: inherit;
+}
+
+.typography-context-card > .meta {
+  font-size: 0.75rem;
+  color: color-mix(in srgb, currentColor 68%, transparent);
+}

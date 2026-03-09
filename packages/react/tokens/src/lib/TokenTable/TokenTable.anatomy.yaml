@@ -1,0 +1,100 @@
+---
+node:
+  uri: global.component.token-table
+  styles:
+    layout.type: stack
+    layout.direction: column
+    spacing.gap: spacing/small
+  edges:
+    - node:
+        role: toolbar
+        styles:
+          layout.type: stack
+          layout.direction: row
+          layout.justify: space-between
+        edges:
+          - node:
+              role: heading
+              styles:
+                layout.type: stack
+                layout.direction: column
+              edges:
+                - node:
+                    role: title
+                    styles:
+                      typography.weight: font-weight/semibold
+                      typography.size: font-size/small
+                  relation:
+                    cardinality: "0..1"
+                - node:
+                    role: caption
+                    styles:
+                      typography.size: font-size/xsmall
+                  relation:
+                    cardinality: "0..1"
+            relation:
+              cardinality: "0..1"
+          - node:
+              role: controls
+              styles:
+                layout.type: stack
+                layout.direction: row
+                layout.align: center
+              edges:
+                - node:
+                    role: count badge
+                  relation:
+                    cardinality: "0..1"
+                - node:
+                    role: search input
+                  relation:
+                    cardinality: "0..1"
+            relation:
+              cardinality: "0..1"
+      relation:
+        cardinality: "0..1"
+    - node:
+        role: scroll container
+        edges:
+          - node:
+              role: grid
+              styles:
+                layout.type: table
+              edges:
+                - node:
+                    role: header row
+                  relation:
+                    cardinality: "1"
+                - node:
+                    role: group header
+                  relation:
+                    cardinality: "0..*"
+                - node:
+                    role: token row
+                    edges:
+                      - node:
+                          role: token cell
+                        relation:
+                          cardinality: "1"
+                      - uri: global.subcomponent.token-swatch
+                        relation:
+                          cardinality: "0..1"
+                          slotName: preview
+                      - node:
+                          role: value cell
+                        relation:
+                          cardinality: "0..*"
+                      - node:
+                          role: stability badge
+                        relation:
+                          cardinality: "0..1"
+                    relation:
+                      cardinality: "0..*"
+            relation:
+              cardinality: "1"
+      relation:
+        cardinality: "1"
+    - node:
+        role: empty state
+      relation:
+        cardinality: "0..1"

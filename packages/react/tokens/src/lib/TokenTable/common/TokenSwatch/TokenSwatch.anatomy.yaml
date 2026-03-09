@@ -1,0 +1,70 @@
+---
+node:
+  uri: global.subcomponent.token-swatch
+  edges:
+    - switch:
+        discriminator: token-type
+        cases:
+          - uri: color
+            node:
+              role: color swatch group
+              edges:
+                - node:
+                    role: color preview
+                    styles:
+                      size.width: dimension/2
+                      size.height: dimension/2
+                      appearance.radius: radius/small
+                      appearance.border: color/border
+                  relation:
+                    cardinality: "1"
+                - node:
+                    role: paired indicator
+                  relation:
+                    cardinality: "0..1"
+                - node:
+                    role: hex value
+                  relation:
+                    cardinality: "0..1"
+          - uri: dimension
+            node:
+              role: dimension preview
+              edges:
+                - node:
+                    role: bar
+                  relation:
+                    cardinality: "1"
+                - node:
+                    role: value label
+                  relation:
+                    cardinality: "1"
+          - uri: reference
+            node:
+              role: derivation reference
+              edges:
+                - node:
+                    role: arrow indicator
+                  relation:
+                    cardinality: "1"
+                - node:
+                    role: parent token name
+                  relation:
+                    cardinality: "1"
+                - node:
+                    role: derivation badge
+                  relation:
+                    cardinality: "0..1"
+          - uri: $custom
+            node:
+              role: generic preview
+              edges:
+                - node:
+                    role: chip
+                  relation:
+                    cardinality: "0..1"
+                - node:
+                    role: value display
+                  relation:
+                    cardinality: "1"
+      relation:
+        cardinality: "1"
