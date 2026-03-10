@@ -19,15 +19,16 @@
   --button-font-weight: var(--font-weight-default);
   --button-line-height: var(--line-height-default);
 
+  display: inline-flex;
   font-family: inherit;
 }
 
 .ds.button {
-  font: inherit;
-
   display: inline-flex;
   align-items: center;
   justify-content: center;
+
+  font: inherit;
   gap: var(--spacing-horizontal-small, 0.5rem);
   cursor: pointer;
 
