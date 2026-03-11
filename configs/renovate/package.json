@@ -9,12 +9,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/nicholasgasior/pragma"
+    "url": "https://github.com/canonical/pragma"
   },
   "bugs": {
-    "url": "https://github.com/nicholasgasior/pragma/issues"
+    "url": "https://github.com/canonical/pragma/issues"
   },
-  "homepage": "https://github.com/nicholasgasior/pragma#readme",
+  "homepage": "https://github.com/canonical/pragma#readme",
   "files": ["default.json"],
   "renovate-config": {
     "default": {

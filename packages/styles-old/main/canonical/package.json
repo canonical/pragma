@@ -13,13 +13,13 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/canonical/ds25"
+    "url": "https://github.com/canonical/pragma"
   },
   "license": "LGPL-3.0",
   "bugs": {
-    "url": "https://github.com/canonical/ds25/issues"
+    "url": "https://github.com/canonical/pragma/issues"
   },
-  "homepage": "https://github.com/canonical/ds25#readme",
+  "homepage": "https://github.com/canonical/pragma#readme",
   "scripts": {
     "check": "bun run check:biome",
     "check:fix": "bun run check:biome:fix",
