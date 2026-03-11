@@ -22,11 +22,11 @@
     "check:biome:fix": "biome check --write"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.4.5",
+    "@biomejs/biome": "2.4.6",
     "@canonical/biome-config": "^0.17.1"
   },
   "dependencies": {
-    "@canonical/design-tokens": "^0.0.2",
+    "@canonical/design-tokens": "^0.1.0",
     "@canonical/styles-typography": "^0.17.1",
     "normalize.css": "^8.0.1"
   }

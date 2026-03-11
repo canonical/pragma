@@ -54,13 +54,13 @@
     }
   },
   "devDependencies": {
-    "@biomejs/biome": "2.4.5",
+    "@biomejs/biome": "2.4.6",
     "@canonical/biome-config": "^0.17.1",
     "@canonical/typescript-config-react": "^0.17.1",
     "@canonical/webarchitect": "^0.17.1",
     "@types/express": "^5.0.6",
-    "@types/node": "^24.10.13",
-    "@types/react": "^19.2.13",
+    "@types/node": "^24.12.0",
+    "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "typescript": "^5.9.3"
   },
