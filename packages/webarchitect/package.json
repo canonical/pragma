@@ -18,13 +18,13 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/canonical/ds25"
+    "url": "https://github.com/canonical/pragma"
   },
   "license": "GPL-3.0",
   "bugs": {
-    "url": "https://github.com/canonical/ds25/issues"
+    "url": "https://github.com/canonical/pragma/issues"
   },
-  "homepage": "https://github.com/canonical/ds25#readme",
+  "homepage": "https://github.com/canonical/pragma#readme",
   "scripts": {
     "build": "echo 'No build needed - runs directly from TypeScript'",
     "build:all": "bun run build",
