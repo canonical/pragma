@@ -1,0 +1,29 @@
+.ds.description-list-container {
+  container: description-list / inline-size;
+}
+
+.ds.description-list {
+  display: grid;
+  row-gap: var(--lp-dimension-spacing-block-xs);
+  column-gap: var(--lp-dimension-spacing-inline-xs);
+  --min-width-description-list-item: 160px;
+
+  &.grid {
+    grid-template-columns: repeat(
+        auto-fit,
+        minmax(var(--min-width-description-list-item), 1fr)
+      );
+  }
+
+  &.auto {
+    /* 
+      width > 621 - (2 * 24) = narrow breakpoint - (2 * padding) = 573px
+    */
+    @container description-list (width > 573px) {
+      grid-template-columns: repeat(
+          auto-fit,
+          minmax(var(--min-width-description-list-item), 1fr)
+        );
+    }
+  }
+}
