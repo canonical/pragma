@@ -1,7 +1,7 @@
 {
   "name": "@canonical/styles",
   "description": "Canonical Design System global stylesheet. Aggregates normalize, typography, and design tokens.",
-  "version": "0.17.1",
+  "version": "0.18.0",
   "main": "src/index.css",
   "files": [
     "src"
@@ -23,11 +23,11 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.6",
-    "@canonical/biome-config": "^0.17.1"
+    "@canonical/biome-config": "^0.18.0"
   },
   "dependencies": {
     "@canonical/design-tokens": "^0.1.0",
-    "@canonical/styles-typography": "^0.17.1",
+    "@canonical/styles-typography": "^0.18.0",
     "normalize.css": "^8.0.1"
   }
 }

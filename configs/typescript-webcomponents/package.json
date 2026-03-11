@@ -1,6 +1,6 @@
 {
   "name": "@canonical/typescript-config-webcomponents",
-  "version": "0.17.1",
+  "version": "0.18.0",
   "description": "Canonical's standard TypeScript configuration for Web Components projects",
   "main": "tsconfig.json",
   "author": {
@@ -24,13 +24,13 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.6",
-    "@canonical/biome-config": "^0.17.1",
+    "@canonical/biome-config": "^0.18.0",
     "typescript": "^5.9.3"
   },
   "peerDependencies": {
     "typescript": "^5.9.3"
   },
   "dependencies": {
-    "@canonical/typescript-config": "^0.17.1"
+    "@canonical/typescript-config": "^0.18.0"
   }
 }

@@ -3,6 +3,19 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.18.0](https://github.com/canonical/pragma/compare/v0.17.1...v0.18.0) (2026-03-11)
+
+
+### Features
+
+* **styles:** pt2, components css tokens (placeholders) ([#457](https://github.com/canonical/pragma/issues/457)) ([2560b3f](https://github.com/canonical/pragma/commit/2560b3f4e157b7ab6daa96d162c3011d8c6bbc7b))
+* **tokens-viz:** pt1, scaffholding ([#461](https://github.com/canonical/pragma/issues/461)) ([e6a1c7a](https://github.com/canonical/pragma/commit/e6a1c7a4fda74ba4fe37c570d7351472c8e735c4))
+* **tokens:** lsp-config ([#455](https://github.com/canonical/pragma/issues/455)) ([d311c09](https://github.com/canonical/pragma/commit/d311c091bac6dc6309748f5360c65fd28d12cd63))
+
+
+
+
+
 ## [0.17.1](https://github.com/canonical/ds25/compare/v0.17.0...v0.17.1) (2026-03-04)
 
 **Note:** Version bump only for package @canonical/react-ds-global

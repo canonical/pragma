@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.18.0](https://github.com/canonical/pragma/compare/v0.17.1...v0.18.0) (2026-03-11)
+
+
+### Bug Fixes
+
+* **biome-svelte:** Run biome against svelte packages ([#450](https://github.com/canonical/pragma/issues/450)) ([a6bb495](https://github.com/canonical/pragma/commit/a6bb4952c92754849d0be85bc49d9f448b7048a9))
+
+
+
+
+
 ## [0.17.1](https://github.com/canonical/ds25/compare/v0.17.0...v0.17.1) (2026-03-04)
 
 **Note:** Version bump only for package @canonical/webarchitect

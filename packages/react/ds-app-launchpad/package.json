@@ -1,6 +1,6 @@
 {
   "name": "@canonical/react-ds-app-launchpad",
-  "version": "0.17.1",
+  "version": "0.18.0",
   "type": "module",
   "module": "dist/esm/index.js",
   "types": "dist/types/index.d.ts",
@@ -39,9 +39,9 @@
     "test:vitest:watch": "vitest"
   },
   "dependencies": {
-    "@canonical/storybook-config": "^0.17.1",
+    "@canonical/storybook-config": "^0.18.0",
     "@canonical/styles": "workspace:*",
-    "@canonical/utils": "^0.17.1",
+    "@canonical/utils": "^0.18.0",
     "@js-temporal/polyfill": "^0.5.1",
     "highlight.js": "^11.11.1",
     "react": ">=18.0.0 <20.0.0",
@@ -53,10 +53,10 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.6",
-    "@canonical/biome-config": "^0.17.1",
-    "@canonical/storybook-helpers": "^0.17.1",
-    "@canonical/typescript-config-react": "^0.17.1",
-    "@canonical/webarchitect": "^0.17.1",
+    "@canonical/biome-config": "^0.18.0",
+    "@canonical/storybook-helpers": "^0.18.0",
+    "@canonical/typescript-config-react": "^0.18.0",
+    "@canonical/webarchitect": "^0.18.0",
     "@chromatic-com/storybook": "^5.0.1",
     "@storybook/addon-docs": "^10.2.17",
     "@storybook/react-vite": "^10.2.17",

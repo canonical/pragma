@@ -1,7 +1,7 @@
 {
   "name": "@canonical/webcomponents-ds-global",
   "description": "Global Web Components built with Lit for the Pragma design system.",
-  "version": "0.17.1",
+  "version": "0.18.0",
   "type": "module",
   "module": "dist/esm/index.js",
   "types": "dist/types/index.d.ts",
@@ -43,16 +43,16 @@
     "test:vitest": "vitest run"
   },
   "dependencies": {
-    "@canonical/storybook-config": "^0.17.1",
+    "@canonical/storybook-config": "^0.18.0",
     "lit": "^3.3.2"
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.6",
-    "@canonical/biome-config": "^0.17.1",
-    "@canonical/ds-types": "^0.17.1",
-    "@canonical/styles": "^0.17.1",
-    "@canonical/typescript-config-webcomponents": "^0.17.1",
-    "@canonical/webarchitect": "^0.17.1",
+    "@canonical/biome-config": "^0.18.0",
+    "@canonical/ds-types": "^0.18.0",
+    "@canonical/styles": "^0.18.0",
+    "@canonical/typescript-config-webcomponents": "^0.18.0",
+    "@canonical/webarchitect": "^0.18.0",
     "@chromatic-com/storybook": "^5.0.1",
     "@storybook/web-components-vite": "^10.2.17",
     "@types/node": "^24.12.0",

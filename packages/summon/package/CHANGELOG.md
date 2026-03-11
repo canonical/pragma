@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.18.0](https://github.com/canonical/pragma/compare/v0.17.1...v0.18.0) (2026-03-11)
+
+
+### Features
+
+* **tokens-viz:** pt1, scaffholding ([#461](https://github.com/canonical/pragma/issues/461)) ([e6a1c7a](https://github.com/canonical/pragma/commit/e6a1c7a4fda74ba4fe37c570d7351472c8e735c4))
+
+
+
+
+
 ## [0.17.1](https://github.com/canonical/pragma/compare/v0.17.0...v0.17.1) (2026-03-04)
 
 **Note:** Version bump only for package @canonical/summon-package

@@ -3,6 +3,29 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.18.0](https://github.com/canonical/pragma/compare/v0.17.1...v0.18.0) (2026-03-11)
+
+
+### Bug Fixes
+
+* **biome-svelte:** Run biome against svelte packages ([#450](https://github.com/canonical/pragma/issues/450)) ([a6bb495](https://github.com/canonical/pragma/commit/a6bb4952c92754849d0be85bc49d9f448b7048a9))
+
+
+### Features
+
+* **styles:** pt2, components css tokens (placeholders) ([#457](https://github.com/canonical/pragma/issues/457)) ([2560b3f](https://github.com/canonical/pragma/commit/2560b3f4e157b7ab6daa96d162c3011d8c6bbc7b))
+* **summon:** pt2, monorepo generator ([#459](https://github.com/canonical/pragma/issues/459)) ([fed0ea1](https://github.com/canonical/pragma/commit/fed0ea12f290a85dde427842b392fe30c69587cc))
+* **svelte-ds-app-launchpad:** upstream Link & Breadcrumbs components ([#438](https://github.com/canonical/pragma/issues/438)) ([b339ae6](https://github.com/canonical/pragma/commit/b339ae68a0277c2e63f0ae94de41406fb4abe58c))
+* **svelte-ds-app-launchpad:** Upstream Popover component ([#447](https://github.com/canonical/pragma/issues/447)) ([688c46e](https://github.com/canonical/pragma/commit/688c46eebd081b5fad955f403d62011134da3c20))
+* **token-viz:** pt2, components ([#462](https://github.com/canonical/pragma/issues/462)) ([5aa7fea](https://github.com/canonical/pragma/commit/5aa7fea22abbf10de17089091477dee80b7c49d9))
+* **token-viz:** pt3, documentation ([#463](https://github.com/canonical/pragma/issues/463)) ([de39b5f](https://github.com/canonical/pragma/commit/de39b5f0525170cfae84316e87ccd62d8ebf2f63))
+* **tokens-viz:** pt1, scaffholding ([#461](https://github.com/canonical/pragma/issues/461)) ([e6a1c7a](https://github.com/canonical/pragma/commit/e6a1c7a4fda74ba4fe37c570d7351472c8e735c4))
+* **tokens:** lsp-config ([#455](https://github.com/canonical/pragma/issues/455)) ([d311c09](https://github.com/canonical/pragma/commit/d311c091bac6dc6309748f5360c65fd28d12cd63))
+
+
+
+
+
 ## [0.17.1](https://github.com/canonical/ds25/compare/v0.17.0...v0.17.1) (2026-03-04)
 
 
