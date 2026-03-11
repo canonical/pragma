@@ -1,5 +1,6 @@
 {
   "name": "@canonical/styles-old",
+  "private": true,
   "description": "Canonical's base styles",
   "version": "0.17.1",
   "main": "src/index.css",
