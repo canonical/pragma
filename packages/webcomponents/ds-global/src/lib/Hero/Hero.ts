@@ -15,13 +15,13 @@ const componentCssClassName = "ds hero";
  */
 @customElement("ds-hero")
 export default class Hero extends LitElement implements HeroProps {
-	static styles = styles;
+  static styles = styles;
 
-	render() {
-		return html`
+  render() {
+    return html`
 			<div class="${componentCssClassName}">
 			<slot></slot>
 			</div>
 		`;
-	}
+  }
 }

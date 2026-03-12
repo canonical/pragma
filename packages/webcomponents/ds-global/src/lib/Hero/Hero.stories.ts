@@ -9,23 +9,24 @@ import type Hero from "./Hero.js";
 import "../SiteLayout/SiteLayout.js";
 
 const meta = {
-	title: "Web Components/Hero",
-	tags: ["autodocs"],
-	parameters: {
-		layout: "fullscreen",
-	},
-	decorators: [
-		(story) => html`
+  title: "Web Components/Hero",
+  tags: ["autodocs"],
+  parameters: {
+    layout: "fullscreen",
+  },
+  decorators: [
+    (story) => html`
 			<ds-site-layout>
 				${story()}
 			</ds-site-layout>
 		`,
-	],
+  ],
 } satisfies Meta<Hero>;
 
 export default meta;
 type Story = StoryObj<Hero>;
 
 export const Default: Story = {
-	render: () => html`<ds-hero><h1>Some title of the content dad da daadas d</h1></ds-hero>`,
+  render: () =>
+    html`<ds-hero><h1>Some title of the content dad da daadas d</h1></ds-hero>`,
 };

@@ -6,25 +6,25 @@ import "./Hero.js";
 import type Hero from "./Hero.js";
 
 describe("Hero component", () => {
-	let elem: Hero;
+  let elem: Hero;
 
-	beforeEach(() => {
-			elem = document.createElement("ds-hero") as Hero;
-			document.body.appendChild(elem);
-        });
+  beforeEach(() => {
+    elem = document.createElement("ds-hero") as Hero;
+    document.body.appendChild(elem);
+  });
 
-	afterEach(() => {
-		elem.remove();
-	});
+  afterEach(() => {
+    elem.remove();
+  });
 
-	it("should render component", async () => {
-		await customElements.whenDefined("ds-hero");
+  it("should render component", async () => {
+    await customElements.whenDefined("ds-hero");
 
-		const container = elem.shadowRoot?.querySelector(".ds.hero");
-		expect(container).toBeTruthy();
-	});
+    const container = elem.shadowRoot?.querySelector(".ds.hero");
+    expect(container).toBeTruthy();
+  });
 
-	it("should have correct tag name", () => {
-		expect(elem.tagName.toLowerCase()).toBe("ds-hero");
-	});
+  it("should have correct tag name", () => {
+    expect(elem.tagName.toLowerCase()).toBe("ds-hero");
+  });
 });

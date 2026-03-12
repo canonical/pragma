@@ -4,6 +4,4 @@
 /**
  * Props for the Hero component.
  */
-export interface HeroProps {
-	// Define props specific to Hero here
-}
+export type HeroProps = {};
