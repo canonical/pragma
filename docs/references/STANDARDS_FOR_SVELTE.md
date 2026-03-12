@@ -151,6 +151,10 @@ Ensure core functionality remains usable without client-side JavaScript.
 >
 > + Require JavaScript for basic UI toggles or navigation.
 >   ```svelte
+>   <script>
+>     let isOpen = $state(false);
+>   </script>
+>
 >   <!-- Requires JS for basic toggle functionality -->
 >   <button onclick={() => isOpen = !isOpen}>
 >     Toggle content
@@ -170,12 +174,13 @@ Gate JS-enhanced behavior behind mount state to avoid pre-hydration assumptions.
 >   <script>
 >     import { useIsMounted } from './hooks.svelte.js';
 >     const isMounted = useIsMounted();
+>     let isOpen = $state(false);
 >   </script>
 >
 >   <!-- Only apply ARIA attributes once JS is ready to handle them -->
 >   <button
 >     type="button"
->     aria-expanded={isMounted() ? isOpen : undefined}
+>     aria-expanded={isMounted.value ? isOpen : undefined}
 >     onclick={() => isOpen = !isOpen}
 >   >
 >     Menu
@@ -187,6 +192,10 @@ Gate JS-enhanced behavior behind mount state to avoid pre-hydration assumptions.
 >
 > + Apply ARIA states or roles that imply behavior unavailable before hydration.
 >   ```svelte
+>   <script>
+>     let isOpen = $state(false);
+>   </script>
+>
 >   <!-- ARIA state implies behavior that won't work before hydration -->
 >   <button
 >     type="button"
