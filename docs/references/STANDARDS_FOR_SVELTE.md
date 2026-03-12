@@ -12,7 +12,9 @@ Our Svelte components and development practices are guided by the following core
 * **Accessibility:** Aim for [WCAG 2.2 AA](https://www.w3.org/TR/WCAG22/) compliance by default.
 * **Modernity:** Embrace forward-looking technologies and best practices in the Svelte ecosystem.
 
-### Component purity (`svelte/svelte/purity`)
+## Component Logic (`svelte/component`)
+
+### Component purity (`svelte/component/purity`)
 All components must be decoupled from framework-specific logic and SvelteKit dependencies.
 
 > ✅ **Do**
@@ -37,7 +39,7 @@ All components must be decoupled from framework-specific logic and SvelteKit dep
 >   <h1>{$page.data.title}</h1>
 >   ```
 
-### Describe effects (`svelte/svelte/effect-descriptions`)
+### Describe effects (`svelte/component/effect-descriptions`)
 Every `$effect` rune must have a descriptive comment explaining its intent.
 
 > ✅ **Do**
@@ -59,7 +61,7 @@ Every `$effect` rune must have a descriptive comment explaining its intent.
 >   });
 >   ```
 
-### Elements reference naming (`svelte/svelte/reference-naming`)
+### Elements reference naming (`svelte/component/reference-naming`)
 Differentiate between reactive and non-reactive element references in their naming.
 
 > ✅ **Do**
@@ -97,7 +99,7 @@ Differentiate between reactive and non-reactive element references in their nami
 >   </div>
 >   ```
 
-### use… functions (`svelte/svelte/use-functions`)
+### use… functions (`svelte/component/use-functions`)
 Reserve the `use…` prefix for functions encapsulating reusable, reactive, lifecycle-bound logic.
 
 > ✅ **Do**
@@ -129,7 +131,9 @@ Reserve the `use…` prefix for functions encapsulating reusable, reactive, life
 >   <button onclick={handleClick}>Start</button>
 >   ```
 
-### Prefer no JS approach (`svelte/svelte/no-js`)
+## Progressive Enhancement (`svelte/progressive-enhancement`)
+
+### Prefer no JS approach (`svelte/progressive-enhancement/no-js`)
 Ensure core functionality remains usable without client-side JavaScript.
 
 > ✅ **Do**
@@ -156,7 +160,7 @@ Ensure core functionality remains usable without client-side JavaScript.
 >   {/if}
 >   ```
 
-### Mount-gated progressive enhancement (`svelte/svelte/progressive-enhancement`)
+### Mount-gated progressive enhancement (`svelte/progressive-enhancement/mount-gating`)
 Gate JS-enhanced behavior behind mount state to avoid pre-hydration assumptions.
 
 > ✅ **Do**
