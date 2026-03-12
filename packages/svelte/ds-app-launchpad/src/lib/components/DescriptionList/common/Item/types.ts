@@ -3,10 +3,6 @@
 import type { Snippet } from "svelte";
 import type { SvelteHTMLElements } from "svelte/elements";
 
-/*
-  For components that render specific HTML elements with extended prop sets,
-  make sure to change `"div"` to the appropriate HTML element type.
-*/
 type BaseProps = SvelteHTMLElements["div"];
 
 export interface ItemProps extends BaseProps {
