@@ -3,4 +3,4 @@
  */
 
 export { generator } from "./generator.js";
-export type { WebComponentAnswers } from "./types.js";
+export type { LitAnswers } from "./types.js";

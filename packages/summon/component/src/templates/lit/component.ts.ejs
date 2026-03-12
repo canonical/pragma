@@ -17,14 +17,14 @@ const componentCssClassName = "ds <%= kebabName %>";
 @customElement("ds-<%= kebabName %>")
 export default class <%= name %> extends LitElement implements <%= name %>Props {
 <% if (withStyles) { -%>
-	static styles = styles;
+  static styles = styles;
 
 <% } -%>
-	render() {
-		return html`
-			<div class="${componentCssClassName}">
-			<slot></slot>
-			</div>
-		`;
-	}
+  render() {
+    return html`
+      <div class="${componentCssClassName}">
+        <slot></slot>
+      </div>
+    `;
+  }
 }

@@ -7,13 +7,13 @@ import "./<%= name %>.js";
 import type <%= name %> from "./<%= name %>.js";
 
 const meta = {
-	title: "Web Components/<%= name %>",
-	tags: ["autodocs"],
+  title: "Web Components/<%= name %>",
+  tags: ["autodocs"],
 } satisfies Meta<<%= name %>>;
 
 export default meta;
 type Story = StoryObj<<%= name %>>;
 
 export const Default: Story = {
-	render: () => html`<ds-<%= kebabName %>></ds-<%= kebabName %>>`,
+  render: () => html`<ds-<%= kebabName %>>Hello, <%= name %>!</ds-<%= kebabName %>>`,
 };

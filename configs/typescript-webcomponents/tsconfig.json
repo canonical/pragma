@@ -1,8 +1,0 @@
-{
-  "extends": "@canonical/typescript-config",
-  "compilerOptions": {
-    "lib": ["ES2023", "DOM"],
-    "experimentalDecorators": true,
-    "useDefineForClassFields": false
-  }
-}
