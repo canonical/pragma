@@ -168,7 +168,7 @@ Gate JS-enhanced behavior behind mount state to avoid pre-hydration assumptions.
 > + Use a `useIsMounted()` helper to conditionally apply JS-only attributes.
 >   ```svelte
 >   <script>
->     import { useIsMounted } from './hooks.js';
+>     import { useIsMounted } from './hooks.svelte.js';
 >     const isMounted = useIsMounted();
 >   </script>
 >
