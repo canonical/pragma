@@ -181,7 +181,7 @@ Gate JS-enhanced behavior behind mount state to avoid pre-hydration assumptions.
 >     Menu
 >   </button>
 >   ```
-> + Use `@media (scripting)` to hide JS-only affordances for the first paint if necessary.
+> + Use [`@media (scripting: enabled)`](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/At-rules/@media/scripting) to hide JS-only affordances for the first paint if necessary.
 >
 > ❌ **Don't**
 >
