@@ -239,7 +239,6 @@ Use snippets to control content placement and subcomponents to encapsulate logic
 > + Pass primary content via the default `children` snippet.
 > + Use named snippets for multiple, distinct areas.
 >   ```svelte
->   <!-- Usage -->
 >   <Card>
 >     {#snippet header()}
 >       <h3>Title</h3>
@@ -254,7 +253,6 @@ Use snippets to control content placement and subcomponents to encapsulate logic
 >
 > + Pass complex content or UI structures via props instead of snippets.
 >   ```svelte
->   <!-- Usage -->
 >   <Card 
 >     header="Title" 
 >     body="Main content" 
@@ -274,7 +272,6 @@ Pass descriptively named props objects back to snippets to allow consumers to wi
 >     "aria-describedby": helpId 
 >   })}
 >
->   <!-- Usage -->
 >   <MyComponent>
 >     {#snippet trigger(triggerProps)}
 >        <button {...triggerProps}>
@@ -291,7 +288,6 @@ Pass descriptively named props objects back to snippets to allow consumers to wi
 >   <!-- Component -->
 >   {@render trigger()}
 >
->   <!-- Usage -->
 >   <MyComponent>
 >     {#snippet trigger()}
 >        <button popovertarget="hardcoded-id">
