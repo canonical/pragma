@@ -112,7 +112,7 @@ Reserve the `use…` prefix for functions encapsulating reusable, reactive, life
 >
 >   <button onclick={() => stopwatch.start()}>Start</button>
 >   ```
-> + Use standard functions for non-reactive utilities.
+> + Use standard functions (not `use..` functions) for utilities.
 >   ```javascript
 >   const formatted = formatDate(new Date());
 >   ```
