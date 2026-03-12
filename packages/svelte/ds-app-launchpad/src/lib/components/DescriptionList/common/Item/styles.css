@@ -1,0 +1,64 @@
+.ds.description-list-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lp-dimension-spacing-block-xs);
+
+  dt {
+    order: 1;
+    font: var(--lp-typography-paragraph-s-strong);
+    color: var(--lp-color-text-muted);
+  }
+
+  dd {
+    order: 3;
+    font: var(--lp-typography-paragraph-s);
+    color: var(--lp-color-text-default);
+  }
+
+  /* Horizontal line for list layout */
+  &::before {
+    content: "";
+    order: 2;
+    height: 1px;
+    flex-grow: 1;
+    background: repeating-linear-gradient(
+      to right,
+      var(--lp-color-border-low-contrast) 0px 2px,
+      transparent 2px 4px
+    );
+    flex-basis: 10%;
+
+    display: none;
+  }
+
+  &.list {
+    flex-direction: row;
+    align-items: baseline;
+    gap: var(--lp-dimension-spacing-inline-xs);
+
+    &::before {
+      display: block;
+    }
+
+    dd {
+      text-align: end;
+    }
+  }
+
+  &.auto {
+    /* Defined in DescriptionList.svelte */
+    @container description-list (width <= 573px) {
+      flex-direction: row;
+      align-items: baseline;
+      gap: var(--lp-dimension-spacing-inline-xs);
+
+      &::before {
+        display: block;
+      }
+
+      dd {
+        text-align: end;
+      }
+    }
+  }
+}
