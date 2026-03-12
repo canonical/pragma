@@ -9,8 +9,9 @@ This skill turns a planning document into a disciplined execution loop:
 1. **Interpret the plan contract** — understand the plan's stages, constraints, deliverables, and acceptance signals.
 2. **Translate plan structure into executable slices** — break work into stage-sized implementation units.
 3. **Preserve reviewability** — keep commits aligned to completed slices rather than mixing unrelated work.
-4. **Enforce approval gates** — run the right validations at the right time, not only at the end.
-5. **Report progress against the plan** — maintain a clear mapping from plan items to code changes.
+4. **Apply code standards continuously** — treat architecture, export, naming, and layering standards as acceptance constraints rather than optional polish.
+5. **Enforce approval gates** — run the right validations at the right time, not only at the end.
+6. **Report progress against the plan** — maintain a clear mapping from plan items to code changes.
 
 This skill is intentionally **plan-agnostic**. It works with:
 
@@ -34,6 +35,7 @@ Use this skill when:
 
 - a user asks to implement work from a roadmap or staged plan
 - a multi-PR or multi-commit change must follow explicit phases
+- code standards or review feedback may refine the definition of done
 - approval gates matter as much as coding
 - you need to pause after a stage and wait for a signal
 - the work spans refactors, tests, validation, and documentation
@@ -47,6 +49,7 @@ Use this skill when:
 | **execution mode** | No | Read-only planning, staged execution, or full execution |
 | **commit policy** | No | Whether commits are allowed immediately or deferred |
 | **approval policy** | No | When to run checks and when to wait for user confirmation |
+| **code standards source** | No | Standards documents, packages, or repo conventions that must constrain the implementation |
 
 ## Core Principles
 
@@ -81,7 +84,23 @@ A stage is complete only when:
 - any requested audit conditions are satisfied
 - the result matches the plan's acceptance language
 
-### 4. Commits should tell the plan story
+### 4. Code standards are part of the contract when applicable
+
+If the repository has explicit standards, they must be folded into execution.
+
+Examples:
+
+- export-domain boundaries
+- folder structure rules
+- naming conventions
+- layering constraints
+- documentation/comment style
+- test organization
+
+If a standards document is surfaced during review, update the working contract.
+Do not treat it as optional follow-up.
+
+### 5. Commits should tell the plan story
 
 Prefer commits that correspond to plan slices such as:
 
@@ -93,7 +112,7 @@ Prefer commits that correspond to plan slices such as:
 
 Avoid mixing unrelated cleanup into the same commit unless the plan explicitly treats it as part of the slice.
 
-### 5. Keep a live mapping from plan to code
+### 6. Keep a live mapping from plan to code
 
 At every point, be able to answer:
 
@@ -144,6 +163,19 @@ In this mode:
 
 ## Discovery Flow
 
+### Step 0: Discover standards before editing
+
+Look for any standards that can change implementation shape, such as:
+
+- repository code standards documents
+- package-local contribution guides
+- lint or architecture rules
+- existing domain export conventions
+- prior review guidance supplied by the user
+
+Extract the standards that materially affect the current slice and attach them
+to the working execution table as additional acceptance constraints.
+
 ### Step 1: Read the plan as structure, not prose
 
 Extract the following if present:
@@ -167,10 +199,10 @@ Typical plan markers include:
 
 Convert the plan into an internal structure like:
 
-| Stage | Goal | Files/areas | Risks | Approval gates | Commit boundary |
-|-------|------|-------------|-------|----------------|-----------------|
-| 1 | parser migration | CSS scanners, parser helpers | parser shape mismatch | tests, lint, perf gate | yes |
-| 2 | runtime integration | worker, buffer update | stale cache state | unit tests | yes |
+| Stage | Goal | Files/areas | Risks | Standards | Approval gates | Commit boundary |
+|-------|------|-------------|-------|-----------|----------------|-----------------|
+| 1 | parser migration | CSS scanners, parser helpers | parser shape mismatch | export rules, comment style | tests, lint, perf gate | yes |
+| 2 | runtime integration | worker, buffer update | stale cache state | layering constraints | unit tests | yes |
 
 If the plan does not name stages explicitly, infer them from concern clusters.
 
@@ -191,6 +223,7 @@ Read the relevant files, tests, and adjacent modules before editing.
 Focus on:
 
 - current architecture
+- applicable code standards
 - export structure
 - test patterns
 - runtime coupling points
@@ -204,6 +237,7 @@ Prefer:
 
 - complete, coherent changes
 - domain-aligned file organization
+- standards-compliant exports and layering
 - compatibility shims only when needed
 - tests that prove the stage outcome
 
@@ -222,6 +256,7 @@ Examples:
 - after parser migration, run scanner and parser tests
 - after runtime changes, run targeted worker/runtime tests
 - after export restructuring, run lint/typecheck/import tests
+- after standards-driven refactors, run search or structure audits that prove the standard is actually satisfied
 - after final integration, run full package or repo validation
 
 ### Step 7: Reconcile against the plan before declaring done
@@ -229,6 +264,7 @@ Examples:
 Ask:
 
 - Did the code actually satisfy the named stage objective?
+- Did the implementation satisfy the applicable code standards?
 - Were all requested gates run?
 - Did new structural requirements emerge from standards documents?
 - Is there any plan-driven cleanup still missing?
@@ -251,6 +287,9 @@ Avoid committing a half-validated slice.
 
 Approval gates can be explicit or implicit.
 
+Code-standards validation can also be explicit or implicit, and it should be
+handled with the same seriousness as test gates.
+
 ### Explicit gates
 
 These are written directly in the plan, for example:
@@ -272,6 +311,8 @@ Examples:
 - targeted tests after parser/runtime changes
 - search audit after "remove all references" requests
 - performance or regression checks after incremental parsing changes
+- structure or import audits after folder/domain refactors
+- documentation comment review when references are being materialized into code comments
 
 When implicit gates are necessary, add them and explain why.
 
@@ -287,6 +328,7 @@ Use a mix of these as appropriate:
 | **Search audit** | Verify removals, naming, or reference cleanup |
 | **Performance guard** | Prove non-functional constraints |
 | **Standards audit** | Verify folder/export/architecture compliance |
+| **Comment/materialization audit** | Verify removed plan references were replaced by durable rationale in code or docs |
 
 ## Commit Strategy
 
@@ -316,6 +358,7 @@ Split when changes differ in kind, such as:
 - product code vs documentation
 - runtime behavior vs organizational refactor
 - migration work vs cleanup work
+- standards-conformance refactor vs new feature work
 
 If a later user request adds a drive-by cleanup, decide whether it belongs to the same slice or deserves a separate commit.
 
@@ -361,6 +404,21 @@ Approach:
 - treat the standards/review feedback as new acceptance constraints
 - refactor the remaining work plan before continuing
 
+## Code Standards Integration Pattern
+
+When standards are present, use this mini-loop inside each stage:
+
+1. **Locate the governing standards**
+	- repository docs, package docs, review notes, lint architecture
+2. **Translate them into local constraints**
+	- exports, folders, symbols, comments, tests
+3. **Apply them during implementation**
+	- do not defer standards work unless the user explicitly asks
+4. **Prove them with an audit**
+	- tests, search, structure review, or targeted validation
+5. **Record them in the summary**
+	- state which standards changed the implementation outcome
+
 ## Reporting Pattern
 
 When summarizing progress, report against the plan rather than giving an unstructured changelog.
@@ -368,16 +426,18 @@ When summarizing progress, report against the plan rather than giving an unstruc
 Recommended format:
 
 1. **completed stage items**
-2. **validation performed**
-3. **remaining items**
-4. **whether a commit was created**
-5. **what is waiting on user approval**
+2. **standards applied**
+3. **validation performed**
+4. **remaining items**
+5. **whether a commit was created**
+6. **what is waiting on user approval**
 
 ## Anti-Patterns
 
 Avoid these mistakes:
 
 - starting implementation before understanding the active stage
+- treating code standards as optional cleanup
 - claiming a stage is done without running its gates
 - delaying all validation until the very end
 - creating one large commit for many unrelated stages
@@ -390,7 +450,7 @@ Avoid these mistakes:
 Use this template internally when operating from a plan:
 
 1. **Parse the contract**
-	- extract stages, constraints, gates
+	- extract stages, constraints, standards, gates
 2. **Choose the active slice**
 	- define what is in and out of scope
 3. **Gather context**
@@ -398,19 +458,20 @@ Use this template internally when operating from a plan:
 4. **Implement**
 	- make the smallest complete slice
 5. **Validate**
-	- run targeted then broader gates
+	- run targeted then broader gates, including standards audits
 6. **Reconcile**
-	- compare result against plan language
+	- compare result against plan language and standards
 7. **Commit**
 	- only if allowed and only after stability
 8. **Report**
-	- map code and validation back to the plan
+	- map code, standards, and validation back to the plan
 
 ## Success Criteria
 
 This skill has been applied well when:
 
 - the implementation can be explained stage by stage
+- the effect of code standards on the implementation is explicit
 - commit history mirrors the execution plan
 - approval gates were actually exercised
 - user-requested pauses and restrictions were honored
