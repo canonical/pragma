@@ -76,4 +76,4 @@ static/js/modules
 sem.toml
 sem_modules/
 .claude/
-.kg/
+*.code-workspace
