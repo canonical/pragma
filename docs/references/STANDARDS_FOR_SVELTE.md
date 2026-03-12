@@ -73,7 +73,7 @@ Differentiate between reactive and non-reactive element references in their nami
 >     let containerRef = $state();
 >     
 >     $effect(() => {
->       const headerElement = containerRef.querySelector('h1');
+>       const headerElement = containerRef?.querySelector('h1');
 >     });
 >   </script>
 >
