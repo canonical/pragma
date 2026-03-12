@@ -1,6 +1,5 @@
 <script module lang="ts">
   import { defineMeta } from "@storybook/addon-svelte-csf";
-  import type { Snippet } from "svelte";
   import { setDescriptionListContext } from "../../context.js";
   import { DescriptionList } from "../../index.js";
   import Item from "./Item.svelte";
@@ -11,7 +10,11 @@
     component: Item,
     args: {
       name: "Example term",
-      children: "Example description" as unknown as Snippet,
+    },
+    argTypes: {
+      children: {
+        control: { disable: true },
+      },
     },
   });
 </script>
@@ -23,9 +26,9 @@
 </script>
 
 <Story name="Default">
-  {#snippet template(args)}
+  {#snippet template({ children: _, ...args })}
     <DescriptionList>
-      <DescriptionList.Item {...args} />
+      <DescriptionList.Item {...args}>Example description</DescriptionList.Item>
     </DescriptionList>
   {/snippet}
 </Story>
