@@ -266,7 +266,6 @@ Pass descriptively named props objects back to snippets to allow consumers to wi
 >
 > + Provide a `triggerProps` (or similarly named) object for spreading onto target elements.
 >   ```svelte
->   <!-- Component -->
 >   {@render trigger({ 
 >     popovertarget: popoverId,
 >     "aria-describedby": helpId 
@@ -285,7 +284,6 @@ Pass descriptively named props objects back to snippets to allow consumers to wi
 >
 > + Render snippets without providing necessary attributes, forcing consumers to manually wire up internal IDs.
 >   ```svelte
->   <!-- Component -->
 >   {@render trigger()}
 >
 >   <MyComponent>
