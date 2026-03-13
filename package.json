@@ -24,7 +24,7 @@
     "packages/summon/*",
     "packages/styles/*",
     "packages/svelte/*",
-    "packages/webcomponents/*",
+    "packages/lit/*",
     "packages/styles-old/primitives/*",
     "packages/styles-old/modes/*",
     "packages/styles-old/elements",

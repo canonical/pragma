@@ -15,16 +15,16 @@
  * summon component svelte --component-path=src/lib/components/Button
  *
  * # Generate a Web Component
- * summon component webcomponents --component-path=src/lib/components/Button
+ * summon component lit --component-path=src/lib/components/Button
  * ```
  *
  * @packageDocumentation
  */
 
 import type { AnyGenerator } from "@canonical/summon";
+import { generator as litGenerator } from "./lit/index.js";
 import { generator as reactGenerator } from "./react/index.js";
 import { generator as svelteGenerator } from "./svelte/index.js";
-import { generator as webComponentsGenerator } from "./webcomponents/index.js";
 
 /**
  * Registry of all component generators.
@@ -35,7 +35,7 @@ import { generator as webComponentsGenerator } from "./webcomponents/index.js";
 export const generators = {
   "component/react": reactGenerator,
   "component/svelte": svelteGenerator,
-  "component/webcomponents": webComponentsGenerator,
+  "component/lit": litGenerator,
 } as const satisfies Record<string, AnyGenerator>;
 
 export default generators;

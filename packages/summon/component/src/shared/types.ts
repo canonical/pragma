@@ -2,7 +2,7 @@
  * Shared types for component generators
  */
 
-export type Framework = "react" | "svelte" | "webcomponents";
+export type Framework = "react" | "svelte" | "lit";
 
 /** Base answers shared across component generators */
 export interface BaseComponentAnswers {

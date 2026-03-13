@@ -24,10 +24,10 @@
 
 | ID | Rule | Gate |
 |----|------|------|
-| C1.1 | Components target exactly one of: React, Svelte, or Web Components (Lit) | framework ∈ {react, svelte, webcomponents} |
+| C1.1 | Components target exactly one of: React, Svelte, or Web Components (Lit) | framework ∈ {react, svelte, lit} |
 | C1.2 | React components live in `src/react/` | directory = `src/react/` |
 | C1.3 | Svelte components live in `src/svelte/` | directory = `src/svelte/` |
-| C1.4 | Web Components live in `src/webcomponents/` | directory = `src/webcomponents/` |
+| C1.4 | Web Components live in `src/lit/` | directory = `src/lit/` |
 
 ### Framework Matrix
 
@@ -35,7 +35,7 @@
 |-----------|-----------|---------------|-----------|
 | React | `src/react/` | `.tsx` | `.stories.tsx` |
 | Svelte | `src/svelte/` | `.svelte` | `.stories.svelte` + `.stories.ts` |
-| Web Components (Lit) | `src/webcomponents/` | `.ts` | `.stories.ts` |
+| Web Components (Lit) | `src/lit/` | `.ts` | `.stories.ts` |
 
 ---
 

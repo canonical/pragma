@@ -11,7 +11,7 @@ This package, at the moment, solely exports the shared config. We might in the f
 ```typescript 
 import { createConfig } from "@canonical/storybook-config";
 
-export default createConfig("react"); // or one of "svelte", "webcomponents"
+export default createConfig("react"); // or one of "svelte", "lit"
 ```
 
 ## Notes
@@ -28,4 +28,4 @@ The [autodocs](https://storybook.js.org/docs/writing-docs/autodocs) feature is e
 
 ## Caveats 
 - At the moment the factory is not configurable. We are not sure what the best api to pass custom config parameters would be, if any.
-- This storybook config for the time being only implementing a factory for react/vite, svelte/vite and webcomponents/vite. We imagine this might change to accomodate other frameworks and build tools.
+- This storybook config for the time being only implementing a factory for react/vite, svelte/vite and lit/vite. We imagine this might change to accomodate other frameworks and build tools.

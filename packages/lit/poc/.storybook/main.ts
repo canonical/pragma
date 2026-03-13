@@ -1,3 +1,3 @@
 import { createConfig } from "@canonical/storybook-config";
 
-export default createConfig("webcomponents");
+export default createConfig("lit");

@@ -24,7 +24,7 @@ const frameworks = {
     framework: getAbsolutePath("@storybook/svelte-vite"),
     addons: [getAbsolutePath("@storybook/addon-svelte-csf")],
   },
-  webcomponents: {
+  lit: {
     framework: getAbsolutePath("@storybook/web-components-vite"),
     addons: [],
   },

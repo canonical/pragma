@@ -1,4 +1,4 @@
-name: "webcomponents-ds-global/chromatic"
+name: "lit-poc/chromatic"
 on:
   pull_request:
     paths:
@@ -7,7 +7,7 @@ on:
       - packages/tokens/**
       - packages/styles/**
       - packages/utils/**
-      - packages/webcomponents/ds-global/**
+      - packages/lit/poc/**
   push:
     branches:
       - main
@@ -17,18 +17,18 @@ on:
       - packages/tokens/**
       - packages/styles/**
       - packages/utils/**
-      - packages/webcomponents/ds-global/**
+      - packages/lit/poc/**
 jobs:
   test-compile:
     uses: ./.github/workflows/chromatic._template.yml
     secrets:
-      CHROMATIC_PROJECT_TOKEN: ${{ secrets.CHROMATIC_TOKEN_CANONICAL_WEBCOMPONENTS_DS_GLOBAL }}
+      CHROMATIC_PROJECT_TOKEN: ${{ secrets.CHROMATIC_TOKEN_CANONICAL_LIT_POC }}
     with:
-      working-directory: packages/webcomponents/ds-global
+      working-directory: packages/lit/poc
       externals: '[
         "configs/storybook/**",
         "packages/ds-assets/**",
         "packages/tokens/**",
         "packages/styles/**",
         "packages/utils/**"
-      ]'
+        ]'

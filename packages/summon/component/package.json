@@ -1,6 +1,6 @@
 {
   "name": "@canonical/summon-component",
-  "description": "Component generators for Summon - React and Svelte component scaffolding",
+  "description": "Component generators for Summon - React, Svelte and Lit component scaffolding",
   "version": "0.18.0",
   "type": "module",
   "main": "src/index.ts",

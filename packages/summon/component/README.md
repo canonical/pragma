@@ -66,13 +66,13 @@ summon component svelte --component-path=src/lib/components/Card --use-ts-storie
 
 ```bash
 # Interactive — prompts guide you
-summon component webcomponents
+summon component lit
 
 # Direct — specify path
-summon component webcomponents --component-path=src/lib/Button
+summon component lit --component-path=src/lib/Button
 
 # Preview — see what would be created
-summon component webcomponents --component-path=src/lib/Button --dry-run
+summon component lit --component-path=src/lib/Button --dry-run
 ```
 
 ---
@@ -197,7 +197,7 @@ Uses Svelte 5 runes (`$props()`) and render tags (`@render`).
 
 ### Web Components (Lit)
 
-For `summon component webcomponents --component-path=src/lib/Button`:
+For `summon component lit --component-path=src/lib/Button`:
 
 ```
 src/lib/Button/
@@ -579,7 +579,7 @@ summon
 
 # Should show:
 # component [pkg] (has subtopics)
-#   └─ react, svelte, webcomponents
+#   └─ react, svelte, lit
 ```
 
 If not, verify installation:
