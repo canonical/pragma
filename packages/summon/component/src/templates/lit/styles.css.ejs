@@ -2,7 +2,8 @@
 
 :host {
   /*
-   * Declare component-scoped CSS variables here.
+   * Host controls the outer layout role.
+   * Declare component CSS variables here when needed.
    * Variables must be on :host to be accessible inside the shadow tree.
    *
    * Example:
@@ -13,5 +14,12 @@
 }
 
 .ds.<%= kebabName %> {
-  /* Component styles */
+  /* Inner layout and visual styles go here. */
 }
+
+/*
+ * Grid guidance:
+ * - If this component defines layout, use `display: grid` on `.ds.<%= kebabName %>`.
+ * - If this component consumes a parent grid, use `grid-column`/`grid-row` on `:host`.
+ * - For subgrid usage, also set `display: grid` and `grid-template-columns: subgrid`.
+ */
