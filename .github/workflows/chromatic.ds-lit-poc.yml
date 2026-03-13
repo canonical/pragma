@@ -22,7 +22,7 @@ jobs:
   test-compile:
     uses: ./.github/workflows/chromatic._template.yml
     secrets:
-      CHROMATIC_PROJECT_TOKEN: ${{ secrets.CHROMATIC_TOKEN_CANONICAL_WEBCOMPONENTS_DS_GLOBAL }}
+      CHROMATIC_PROJECT_TOKEN: ${{ secrets.CHROMATIC_TOKEN_CANONICAL_LIT_POC }}
     with:
       working-directory: packages/lit/poc
       externals: '[
