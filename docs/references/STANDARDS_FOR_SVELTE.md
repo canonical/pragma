@@ -290,6 +290,24 @@ Pass descriptively named props objects back to snippets to allow consumers to wi
 >   ```
 >
 > ❌ **Don't**
+> 
+> + Pass individual HTML attributes as positional snippet arguments, which prevents consumers from spreading props and forces them to know both argument order and intended usage.
+>
+>   ```svelte
+>   {@render trigger(popoverId, helpId)}
+>
+>   <!-- Usage -->
+>   <MyComponent>
+>     {#snippet trigger(popoverId, helpId)}
+>        <button
+>          popovertarget={popoverId}
+>          aria-describedby={helpId}
+>        >
+>          Open Popover
+>        </button>
+>     {/snippet}
+>   </MyComponent>
+>   ```
 >
 > + Render snippets without providing necessary attributes, forcing consumers to manually wire up internal IDs.
 >   ```svelte
