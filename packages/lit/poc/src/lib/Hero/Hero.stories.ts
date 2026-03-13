@@ -27,5 +27,12 @@ type Story = StoryObj<Hero>;
 
 export const Default: Story = {
   render: () =>
-    html`<ds-hero><h1>Some title of the content dad da daadas d</h1></ds-hero>`,
+    html`
+      <ds-hero>
+        <h1>Scale out with Ubuntu Server</h1>
+        <p>Ubuntu is the world's most popular Linux distribution across public clouds, data centres and the edge. Trusted by developers, enterprises, and governments worldwide.</p>
+        <a href="#">Get Ubuntu</a>
+        <a href="#">Learn more</a>
+        <img slot="image" src="https://assets.ubuntu.com/v1/cf1e2ddb-datacenter-wide-crop.jpeg" alt="Canonical data centre" />
+      </ds-hero>`,
 };

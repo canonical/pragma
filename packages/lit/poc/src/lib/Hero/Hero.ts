@@ -19,7 +19,8 @@ export default class Hero extends LitElement implements HeroProps {
   render() {
     return html`
 			<div class="${componentCssClassName}">
-			<slot></slot>
+        <slot></slot>
+        <slot name="image"></slot>
 			</div>
 		`;
   }

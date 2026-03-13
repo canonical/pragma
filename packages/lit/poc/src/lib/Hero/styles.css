@@ -7,5 +7,11 @@
 }
 
 .ds.hero {
-  /* Component styles */
+  grid-column: 1 / -1;
+
+  & ::slotted(img) {
+    width: 100%;
+    height: auto;
+    object-fit: cover;
+  }
 }
