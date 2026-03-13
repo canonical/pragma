@@ -186,7 +186,7 @@ Gate JS-enhanced behavior behind mount state to avoid pre-hydration assumptions.
 >     Menu
 >   </button>
 >   ```
-> + Use [`@media (scripting: enabled)`](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/At-rules/@media/scripting) to hide JS-only affordances for the first paint if this mount gate would cause a FOUC-like “flash of un-javascripted content”
+> + Use [`@media (scripting: enabled)`](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/At-rules/@media/scripting) to hide affordances for the first paint if this mount gate would cause a FOUC-like “flash of un-javascripted content”
 >
 > ❌ **Don't**
 >
