@@ -9,9 +9,9 @@ import {
 import { registerMatchers } from "../../testing/matchers.js";
 import type { TestStoreResult } from "../../testing/store.js";
 import { createTestStore } from "../../testing/store.js";
-import { definePlugin } from "./definePlugin.js";
+import createStore from "./createStore.js";
+import definePlugin from "./definePlugin.js";
 import { sparql } from "./sparql.js";
-import { create } from "./create.js";
 import type { AskResult, ConstructResult, SelectResult } from "./types.js";
 
 registerMatchers();
@@ -144,7 +144,7 @@ describe("Cache", () => {
 
     // Second: create store from same cache
     const cachePath = join(tmpDir, ".cache.nq");
-    const store2 = await create({
+    const store2 = await createStore({
       sources: [], // No sources — should load from cache
       cache: cachePath,
     });

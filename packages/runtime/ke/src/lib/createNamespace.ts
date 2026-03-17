@@ -6,11 +6,11 @@ import type { URI } from "./types.js";
  *
  * @example
  * ```ts
- * const schema = namespace("http://schema.org/");
+ * const schema = createNamespace("http://schema.org/");
  * const name = schema("name"); // URI: "http://schema.org/name"
  * ```
  */
-export function namespace<NS extends string>(
+export default function createNamespace<NS extends string>(
   ns: NS,
 ): <T extends string>(term: T) => URI {
   return <T extends string>(term: T): URI => {

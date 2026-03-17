@@ -3,9 +3,9 @@
  *
  * @example
  * ```ts
- * import { create, sparql } from "@canonical/ke";
+ * import { createStore, sparql } from "@canonical/ke";
  *
- * const store = await create({
+ * const store = await createStore({
  *   sources: ["./ontology.ttl"],
  *   prefixes: { schema: "http://schema.org/" },
  * });
@@ -14,9 +14,9 @@
  * ```
  */
 
-export { create } from "./lib/create.js";
-export { definePlugin } from "./lib/definePlugin.js";
-export { namespace } from "./lib/namespace.js";
+export { default as createNamespace } from "./lib/createNamespace.js";
+export { default as createStore } from "./lib/createStore.js";
+export { default as definePlugin } from "./lib/definePlugin.js";
 export {
   escapeSparqlURI,
   escapeSparqlValue,

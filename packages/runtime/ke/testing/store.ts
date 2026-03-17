@@ -1,8 +1,13 @@
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { create } from "../src/lib/create.js";
-import type { Plugin, PrefixMap, Store, StoreConfig } from "../src/lib/types.js";
+import createStore from "../src/lib/createStore.js";
+import type {
+  Plugin,
+  PrefixMap,
+  Store,
+  StoreConfig,
+} from "../src/lib/types.js";
 import { PEOPLE_TTL } from "./fixtures.js";
 
 /**
@@ -65,7 +70,7 @@ export async function createTestStore(
     config.cache = join(tmpDir, ".cache.nq");
   }
 
-  const store = await create(config);
+  const store = await createStore(config);
 
   const cleanup = () => {
     store.dispose();

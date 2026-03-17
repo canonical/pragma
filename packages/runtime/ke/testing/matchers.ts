@@ -1,5 +1,9 @@
 import { expect } from "vitest";
-import type { ConstructResult, SelectResult, Triple } from "../src/lib/types.js";
+import type {
+  ConstructResult,
+  SelectResult,
+  Triple,
+} from "../src/lib/types.js";
 
 /**
  * Custom matcher: check if a ConstructResult contains a specific triple.

@@ -16,6 +16,6 @@ import type { Plugin } from "./types.js";
  * });
  * ```
  */
-export function definePlugin<P extends Plugin>(plugin: P): P {
+export default function definePlugin<P extends Plugin>(plugin: P): P {
   return plugin;
 }

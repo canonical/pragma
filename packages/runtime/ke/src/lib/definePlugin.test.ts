@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { definePlugin } from "./definePlugin.js";
+import definePlugin from "./definePlugin.js";
 
 describe("definePlugin", () => {
   it("returns the plugin as-is", () => {

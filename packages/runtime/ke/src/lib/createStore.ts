@@ -336,8 +336,9 @@ async function loadOxigraph() {
 
 /**
  * Create a new ke Store instance (KE.02 — sole entry point).
+ * @note Impure — reads TTL files from disk, loads WASM module, writes cache.
  */
-export async function create(config: StoreConfig): Promise<Store> {
+export default async function createStore(config: StoreConfig): Promise<Store> {
   const oxigraph = await loadOxigraph();
   const oxStore = new oxigraph.Store();
 
