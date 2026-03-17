@@ -1,4 +1,4 @@
-/* @canonical/generator-ds 0.9.0-experimental.4 */
-
-/* .ds.form-textarea { */
-/* } */
+.ds.form-textarea {
+  min-height: calc(3lh + var(--tmp-space-input-block) * 2);
+  resize: vertical;
+}

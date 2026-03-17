@@ -2,22 +2,48 @@ import previewConfig from "@canonical/storybook-config/preview";
 
 import "./styles.css";
 
+/**
+ * Theme decorator — sets .light/.dark class and color-scheme on <html>,
+ * driving design token resolution via light-dark().
+ */
+const themeDecorator = (
+  story: Function,
+  context: { globals?: { theme?: string } },
+) => {
+  const theme = context.globals?.theme ?? "light";
+  document.documentElement.className = theme;
+  document.documentElement.style.colorScheme = theme;
+  return story();
+};
+
 const preview = {
   ...previewConfig,
   // https://github.com/storybookjs/storybook/issues/31842
   tags: ["autodocs"],
+  decorators: [themeDecorator],
   globalTypes: {
-    ...previewConfig.globalTypes,
+    theme: {
+      description: "Color scheme",
+      toolbar: {
+        title: "Theme",
+        icon: "circlehollow",
+        items: ["light", "dark"],
+        dynamicTitle: true,
+      },
+    },
     grid: {
-      name: "Grid",
       description: "Grid layout strategy",
-      defaultValue: "intrinsic",
       toolbar: {
         icon: "grid",
         items: ["intrinsic", "responsive"],
         title: "Grid",
+        dynamicTitle: true,
       },
     },
+  },
+  initialGlobals: {
+    theme: "light",
+    grid: "intrinsic",
   },
 };
 
