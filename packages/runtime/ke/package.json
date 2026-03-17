@@ -31,7 +31,7 @@
     "type": "git",
     "url": "https://github.com/canonical/pragma"
   },
-  "license": "GPL-3.0",
+  "license": "LGPL-3.0",
   "bugs": {
     "url": "https://github.com/canonical/pragma/issues"
   },
@@ -41,7 +41,8 @@
     "build:all": "bun run build:package",
     "build:package": "bun run build:package:tsc",
     "build:package:tsc": "tsc -p tsconfig.build.json",
-    "check": "bun run check:biome && bun run check:ts",
+    "check": "bun run check:biome && bun run check:ts && bun run check:webarchitect",
+    "check:webarchitect": "webarchitect library",
     "check:fix": "bun run check:biome:fix && bun run check:ts",
     "check:biome": "biome check",
     "check:biome:fix": "biome check --write",
@@ -54,6 +55,7 @@
     "@biomejs/biome": "2.4.6",
     "@canonical/biome-config": "^0.18.0",
     "@canonical/typescript-config": "^0.18.0",
+    "@canonical/webarchitect": "^0.18.0",
     "@types/bun": "^1.3.10",
     "@types/node": "^24.12.0",
     "expect-type": "^1.3.0",
