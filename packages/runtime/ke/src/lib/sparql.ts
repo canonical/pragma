@@ -1,13 +1,34 @@
+// =============================================================================
+// @canonical/ke — SPARQL tagged template and injection escaping
+//
+// This module provides the `sparql` tagged template literal and supporting
+// escape functions. It is the primary way to construct SPARQL queries safely.
+//
+// The core security contract: any value interpolated into a sparql`` template
+// is escaped or rejected. You cannot accidentally inject SPARQL keywords,
+// graph patterns, or update operations through interpolation.
+// =============================================================================
+
 import type { SPARQL, URI } from "./types.js";
 
-/**
- * Dangerous SPARQL patterns that could indicate injection attempts.
- */
+// ---------------------------------------------------------------------------
+// Dangerous pattern detection
+//
+// These regex patterns match SPARQL keywords and syntax that should NEVER
+// appear in an interpolated string value. If a user-provided string contains
+// any of these, `escapeSparqlValue()` throws rather than attempting to escape.
+//
+// This is an allowlist-by-exclusion approach: we assume all strings are safe
+// EXCEPT those matching known dangerous patterns. This is conservative — it
+// will reject some technically safe strings (e.g., a person named "Addison"
+// won't match because `ADD\s` requires ADD followed by whitespace).
+// ---------------------------------------------------------------------------
+
 const DANGEROUS_PATTERNS = [
-  /[{}]/,
-  /;\s*$/,
-  /UNION/i,
-  /INSERT/i,
+  /[{}]/, // Graph pattern delimiters — could close/open WHERE clauses
+  /;\s*$/, // Trailing semicolons — could terminate a triple pattern
+  /UNION/i, // UNION — could inject alternative graph patterns
+  /INSERT/i, // SPARQL Update operations — could mutate the store
   /DELETE/i,
   /DROP/i,
   /CLEAR/i,
@@ -15,42 +36,87 @@ const DANGEROUS_PATTERNS = [
   /CREATE/i,
   /COPY/i,
   /MOVE/i,
-  /ADD\s/i,
-  /#/,
+  /ADD\s/i, // ADD followed by whitespace (avoids false positives on "Addison")
+  /#/, // Comments — could comment out the rest of the query
 ];
 
-/**
- * We detect branded URIs by checking if the string was created via
- * the namespace helper or cast as URI. Since branded types are a
- * compile-time-only concept, at runtime we use a WeakSet registry.
- */
-const uriRegistry = new WeakSet<object>();
+// ---------------------------------------------------------------------------
+// URI runtime tracking
+//
+// Branded types (URI, SPARQL) are compile-time only — at runtime they're just
+// strings. But the `sparql` tagged template needs to distinguish URIs from
+// plain strings at runtime to decide whether to wrap in <angle brackets> or
+// "quotes".
+//
+// Solution: a module-level Set tracks strings that have been marked as URIs
+// via `markAsURI()` (called internally by `createNamespace()`). When the
+// tagged template encounters an interpolated value, it checks this Set.
+//
+// Tradeoff: the Set grows unboundedly. In practice, namespace helpers create
+// a finite set of URIs (ontology terms), so this is not a memory concern.
+// If it ever becomes one, switch to a WeakRef-based approach.
+// ---------------------------------------------------------------------------
+
+/** Internal registry of strings that have been marked as URIs at runtime. */
+const uriSet = new Set<string>();
 
 /**
- * Registers a string as a known URI at runtime.
- * This is used internally by the namespace helper.
+ * Mark a string as a URI at runtime so the `sparql` tagged template can
+ * detect it and wrap it in angle brackets instead of quoting it.
+ *
+ * This is called internally by `createNamespace()`. Most consumers should
+ * use `createNamespace()` instead of calling this directly.
+ *
+ * @example
+ * ```ts
+ * const uri = markAsURI("http://schema.org/name");
+ * const query = sparql`SELECT ?s WHERE { ?s ${uri} ?o }`;
+ * // → SELECT ?s WHERE { ?s <http://schema.org/name> ?o }
+ * ```
  */
-export function registerURI(value: URI): URI {
-  // Wrap in String object so it can go in WeakSet
-  return value;
+export function markAsURI(value: string): URI {
+  uriSet.add(value);
+  return value as URI;
 }
 
 /**
- * Escape a value for safe SPARQL interpolation (TP.02).
+ * Check whether a value has been marked as a URI at runtime.
+ * Used by the `sparql` tagged template to decide escaping strategy.
+ */
+export function isBrandedURI(value: unknown): value is URI {
+  if (typeof value !== "string") return false;
+  return uriSet.has(value);
+}
+
+// ---------------------------------------------------------------------------
+// Escape functions
+// ---------------------------------------------------------------------------
+
+/**
+ * Escape a value for safe interpolation into a SPARQL query string.
  *
- * Handles:
- * - null/undefined → empty string
- * - numbers → numeric literal
- * - booleans → "true"/"false"
- * - URI branded strings → <uri>
- * - plain strings → escaped and quoted literal
- * - rejects strings with dangerous SPARQL injection patterns
+ * This is the core security gate. Every interpolated value in a `sparql``
+ * template passes through this function (unless it's a branded URI, which
+ * goes through `escapeSparqlURI` instead).
+ *
+ * Escaping rules:
+ * - `null` / `undefined` → `""` (empty string literal)
+ * - `number` → numeric literal (e.g., `42`, `3.14`). NaN/Infinity rejected.
+ * - `boolean` → `true` / `false`
+ * - `string` → quoted and escaped (`"hello"` → `"hello"`). Special chars
+ *   (backslash, quotes, newlines, tabs) are backslash-escaped. Strings
+ *   matching dangerous patterns are rejected with an error.
+ * - anything else → throws (objects, symbols, functions, etc.)
+ *
+ * @throws If the value contains dangerous SPARQL patterns or is an unsupported type
  */
 export function escapeSparqlValue(value: unknown): string {
+  // Null/undefined → empty string literal
   if (value === null || value === undefined) {
     return '""';
   }
 
+  // Numbers → numeric literal (reject non-finite)
   if (typeof value === "number") {
     if (!Number.isFinite(value)) {
       throw new Error(`Cannot serialize non-finite number: ${value}`);
@@ -58,12 +124,13 @@ export function escapeSparqlValue(value: unknown): string {
     return String(value);
   }
 
+  // Booleans → bare true/false
   if (typeof value === "boolean") {
     return String(value);
   }
 
+  // Strings → escaped and quoted, with dangerous pattern rejection
   if (typeof value === "string") {
-    // Check for dangerous patterns in string values
     for (const pattern of DANGEROUS_PATTERNS) {
       if (pattern.test(value)) {
         throw new Error(
@@ -72,13 +139,13 @@ export function escapeSparqlValue(value: unknown): string {
       }
     }
 
-    // Escape special characters in string literals
+    // Backslash-escape special characters within the string literal
     const escaped = value
-      .replace(/\\/g, "\\\\")
-      .replace(/"/g, '\\"')
-      .replace(/\n/g, "\\n")
-      .replace(/\r/g, "\\r")
-      .replace(/\t/g, "\\t");
+      .replace(/\\/g, "\\\\") // \ → \\
+      .replace(/"/g, '\\"') // " → \"
+      .replace(/\n/g, "\\n") // newline → \n
+      .replace(/\r/g, "\\r") // carriage return → \r
+      .replace(/\t/g, "\\t"); // tab → \t
 
     return `"${escaped}"`;
   }
@@ -87,74 +154,68 @@ export function escapeSparqlValue(value: unknown): string {
 }
 
 /**
- * Escape a URI value for SPARQL interpolation.
- * Wraps the URI in angle brackets.
+ * Escape a branded URI for SPARQL interpolation by wrapping in angle brackets.
+ *
+ * URI values are NOT quoted — they're wrapped in `<...>` per SPARQL syntax.
+ * Validates that the URI doesn't contain characters that could break out of
+ * the angle bracket context.
+ *
+ * @throws If the URI contains `>`, newline, or carriage return
  */
 export function escapeSparqlURI(value: URI): string {
   const str = value as string;
-  // Validate URI doesn't contain dangerous characters
   if (str.includes(">") || str.includes("\n") || str.includes("\r")) {
     throw new Error(`Invalid URI: ${str}`);
   }
   return `<${str}>`;
 }
 
+// ---------------------------------------------------------------------------
+// Tagged template
+// ---------------------------------------------------------------------------
+
 /**
- * Tagged template for creating type-safe SPARQL queries (TP.02).
+ * Tagged template literal for constructing type-safe SPARQL queries.
  *
- * Interpolated values are automatically escaped to prevent injection.
- * URI-branded values are wrapped in angle brackets.
- * Strings are escaped and quoted.
+ * Every interpolated value is automatically escaped to prevent injection:
+ * - Branded URIs (from `createNamespace()`) → `<http://example.org/name>`
+ * - Strings → `"escaped value"`
+ * - Numbers → `42`
+ * - Booleans → `true` / `false`
+ * - Dangerous strings → throws an error
+ *
+ * The return type carries the literal query string as a type parameter,
+ * enabling compile-time inference of the result type via `InferQueryResult<Q>`.
+ *
+ * @example
+ * ```ts
+ * const ds = createNamespace("https://ds.canonical.com/");
+ * const name = "Button";
+ * const query = sparql`SELECT ?c WHERE { ?c a ${ds("UIBlock")} ; ds:name ${name} }`;
+ * // → SELECT ?c WHERE { ?c a <https://ds.canonical.com/UIBlock> ; ds:name "Button" }
+ * //   URIs get <brackets>, strings get "quotes"
+ * ```
  */
 export function sparql<Q extends string>(
   strings: TemplateStringsArray,
   ...values: unknown[]
 ): SPARQL<Q> {
+  // Build the query by interleaving static string parts with escaped values
   let result = strings[0];
 
   for (let i = 0; i < values.length; i++) {
     const value = values[i];
 
+    // Branded URIs get angle-bracket wrapping; everything else gets value escaping
     if (isBrandedURI(value)) {
       result += escapeSparqlURI(value);
     } else {
       result += escapeSparqlValue(value);
     }
 
+    // Append the next static string part
     result += strings[i + 1];
   }
 
   return result as SPARQL<Q>;
-}
-
-/**
- * Runtime check for branded URI values.
- * We use a symbol-based approach: branded URIs carry a hidden marker.
- */
-const URI_MARKER = Symbol.for("@canonical/ke:URI");
-
-interface MarkedURI {
-  [key: symbol]: boolean;
-}
-
-export function isBrandedURI(value: unknown): value is URI {
-  if (typeof value !== "string") return false;
-  // Check if it's a String object with our marker
-  // In practice, we detect URIs by checking if they look like IRIs
-  // and were created through our namespace() helper
-  return uriSet.has(value);
-}
-
-/**
- * Internal set to track strings that have been marked as URIs.
- * Using a regular Set since strings can't go in WeakSet.
- */
-const uriSet = new Set<string>();
-
-/**
- * Mark a string as a URI at runtime so the sparql tag can detect it.
- */
-export function markAsURI(value: string): URI {
-  uriSet.add(value);
-  return value as URI;
 }
