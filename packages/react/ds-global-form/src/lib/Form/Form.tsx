@@ -37,9 +37,7 @@ function FormShell({
 function ExternalForm({
   methods,
   ...rest
-}: FormProps & {
-  methods: NonNullable<FormProps["methods"]>;
-}): React.ReactElement {
+}: FormProps & { methods: NonNullable<FormProps["methods"]> }): React.ReactElement {
   return <FormShell {...rest} methods={methods} />;
 }
 

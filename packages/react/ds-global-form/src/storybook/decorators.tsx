@@ -31,3 +31,14 @@ export const form = ({ defaultValues = {} }: FormDecoratorParams = {}) => {
     return <FormWrapper />;
   };
 };
+
+export const grid = () => {
+  return (Story: React.ElementType, context: { globals?: { grid?: string } }) => {
+    const gridType = context.globals?.grid ?? "fluid";
+    return (
+      <div className={`ds-grid${gridType === "fixed" ? " ds-grid--fixed" : ""}`}>
+        <Story />
+      </div>
+    );
+  };
+};

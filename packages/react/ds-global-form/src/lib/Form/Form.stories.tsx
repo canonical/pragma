@@ -11,14 +11,7 @@ import type { FieldProps } from "../Field/types.js";
 
 const meta = {
   title: "Form",
-  decorators: [
-    (Story: React.ElementType) => (
-      <div className="grid-fluid">
-        <Story />
-      </div>
-    ),
-    decorators.form(),
-  ],
+  decorators: [decorators.grid(), decorators.form()],
 } satisfies Meta;
 
 export default meta;
@@ -45,7 +38,7 @@ type TemplateProps = {
 
 const Template: StoryFn<TemplateProps> = ({
   fieldMap,
-  wrapperClassName = "abcdef",
+  wrapperClassName = "ds-subgrid",
   otherProps,
 }: TemplateProps) => (
   <div className={wrapperClassName}>
@@ -74,7 +67,7 @@ AllOptional.args = {
 export const Side: StoryFn<TemplateProps> = Template.bind({});
 Side.args = {
   fieldMap: fieldMaps.base,
-  wrapperClassName: "abcdef form-layout-side",
+  wrapperClassName: "ds-subgrid form-layout-side",
 };
 
 /*

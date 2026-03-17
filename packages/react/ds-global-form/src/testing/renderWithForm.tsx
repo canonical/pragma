@@ -1,8 +1,4 @@
-import {
-  type RenderOptions,
-  type RenderResult,
-  render,
-} from "@testing-library/react";
+import { type RenderOptions, type RenderResult, render } from "@testing-library/react";
 import type React from "react";
 import { FormProvider, type UseFormProps, useForm } from "react-hook-form";
 

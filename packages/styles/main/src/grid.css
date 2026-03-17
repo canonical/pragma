@@ -1,0 +1,46 @@
+/* @canonical/styles — Grid layout presets
+ *
+ * Two grid strategies, switchable at any ancestor:
+ *
+ *   --ds-grid-fixed:  8-column responsive grid (fixed track count)
+ *   --ds-grid-fluid:  intrinsic-fluid grid (tracks in groups of 4, auto-fills to container)
+ *
+ * Usage:
+ *   <div class="ds-grid">          — uses fluid by default
+ *   <div class="ds-grid ds-grid--fixed"> — uses fixed 8-col
+ *   <div class="ds-subgrid">       — subgrid child, inherits parent columns
+ *
+ * Override at any level:
+ *   .my-section { --ds-grid-template: var(--ds-grid-fixed); }
+ */
+
+@layer ds.components {
+  :root {
+    --ds-grid-col-min: 100px;
+
+    --ds-grid-fixed: repeat(8, 1fr);
+    --ds-grid-fluid: repeat(
+      auto-fill,
+      minmax(var(--ds-grid-col-min), 1fr)
+        minmax(var(--ds-grid-col-min), 1fr)
+        minmax(var(--ds-grid-col-min), 1fr)
+        minmax(var(--ds-grid-col-min), 1fr)
+    );
+  }
+
+  .ds-grid {
+    display: grid;
+    grid-template-columns: var(--ds-grid-template, var(--ds-grid-fluid));
+    gap: var(--ds-grid-gap, 1rem);
+  }
+
+  .ds-grid--fixed {
+    --ds-grid-template: var(--ds-grid-fixed);
+  }
+
+  .ds-subgrid {
+    display: grid;
+    grid-template-columns: subgrid;
+    grid-column: var(--ds-subgrid-span, 1 / -1);
+  }
+}
