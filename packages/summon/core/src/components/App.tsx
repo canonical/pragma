@@ -4,18 +4,17 @@
  * Main CLI application component using React Ink.
  */
 
+import {
+  dryRun,
+  type Effect,
+  type Task,
+  type TaskError,
+} from "@canonical/task";
 import { Box, Text, useApp, useInput } from "ink";
 import { useCallback, useEffect, useState } from "react";
 import { formatContentPreview } from "../cli-format.js";
-import { dryRun } from "../dry-run.js";
-import type { StampConfig } from "../interpreter.js";
-import type {
-  Effect,
-  GeneratorDefinition,
-  PromptDefinition,
-  Task,
-  TaskError,
-} from "../types.js";
+import type { StampConfig } from "../stamp.js";
+import type { GeneratorDefinition, PromptDefinition } from "../types.js";
 import { ExecutionProgress, type TimedEffect } from "./ExecutionProgress.js";
 import { PromptSequence } from "./PromptSequence.js";
 import { Spinner } from "./Spinner.js";

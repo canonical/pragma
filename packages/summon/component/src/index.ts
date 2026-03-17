@@ -21,7 +21,7 @@
  * @packageDocumentation
  */
 
-import type { AnyGenerator } from "@canonical/summon";
+import type { AnyGenerator } from "@canonical/summon-core";
 import { generator as litGenerator } from "./lit/index.js";
 import { generator as reactGenerator } from "./react/index.js";
 import { generator as svelteGenerator } from "./svelte/index.js";

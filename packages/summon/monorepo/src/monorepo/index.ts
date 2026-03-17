@@ -9,17 +9,11 @@
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
-  exec,
-  flatMap,
   type GeneratorDefinition,
-  info,
-  mkdir,
   type PromptDefinition,
-  sequence_,
   template,
-  when,
-  writeFile,
-} from "@canonical/summon";
+} from "@canonical/summon-core";
+import { exec, flatMap, info, mkdir, sequence_, when } from "@canonical/task";
 
 import {
   createTemplateContext,

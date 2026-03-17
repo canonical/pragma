@@ -21,15 +21,8 @@
 
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
-import {
-  debug,
-  type GeneratorDefinition,
-  info,
-  mkdir,
-  sequence_,
-  template,
-  when,
-} from "@canonical/summon";
+import { type GeneratorDefinition, template } from "@canonical/summon-core";
+import { debug, info, mkdir, sequence_, when } from "@canonical/task";
 
 import {
   appendExportToParentIndex,

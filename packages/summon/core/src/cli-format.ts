@@ -5,8 +5,9 @@
  */
 
 import * as path from "node:path";
+import type { Effect } from "@canonical/task";
 import chalk from "chalk";
-import type { Effect, GeneratorDefinition, PromptDefinition } from "./types.js";
+import type { GeneratorDefinition, PromptDefinition } from "./types.js";
 
 // Fixed width for action label column
 const ACTION_LABEL_WIDTH = 14;

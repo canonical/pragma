@@ -3,7 +3,7 @@
  */
 
 import { readFileSync } from "node:fs";
-import { dryRunWith, type Effect } from "@canonical/summon";
+import { dryRunWith, type Effect } from "@canonical/task";
 import { describe, expect, it } from "vitest";
 import { generator } from "../monorepo/index.js";
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { sequence, sequence_, traverse } from "../combinators.js";
+import { sequence, sequence_, traverse } from "../lib/combinators.js";
 import {
   assertEffects,
   assertFileWrites,
@@ -12,7 +12,7 @@ import {
   getAffectedFiles,
   getFileWrites,
   mockEffect,
-} from "../dry-run.js";
+} from "../lib/dry-run.js";
 import {
   copyFile,
   exec,
@@ -27,9 +27,9 @@ import {
   readFile,
   setContext,
   writeFile,
-} from "../primitives.js";
-import { fail, flatMap, map, pure } from "../task.js";
-import type { Effect, TaskError } from "../types.js";
+} from "../lib/primitives.js";
+import { fail, flatMap, map, pure } from "../lib/task.js";
+import type { Effect, TaskError } from "../lib/types.js";
 
 // =============================================================================
 // Core dryRun Function

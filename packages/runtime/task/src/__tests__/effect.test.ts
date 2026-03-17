@@ -19,8 +19,8 @@ import {
   readFileEffect,
   writeContextEffect,
   writeFileEffect,
-} from "../effect.js";
-import { pure } from "../task.js";
+} from "../lib/effect.js";
+import { pure } from "../lib/task.js";
 
 // =============================================================================
 // File System Effect Constructors

@@ -39,6 +39,7 @@
     "vitest": "^4.0.18"
   },
   "peerDependencies": {
-    "@canonical/summon": "^0.1.0"
+    "@canonical/summon-core": "^0.18.0",
+    "@canonical/task": "^0.18.0"
   }
 }

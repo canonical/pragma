@@ -2,7 +2,7 @@
  * Shared prompt definitions for component generators
  */
 
-import type { PromptDefinition } from "@canonical/summon";
+import type { PromptDefinition } from "@canonical/summon-core";
 import type { Framework } from "./types.js";
 import { validateComponentPath } from "./validation.js";
 

@@ -4,7 +4,7 @@
  * Package generator for Summon - scaffold new npm packages with proper configuration.
  */
 
-import type { AnyGenerator } from "@canonical/summon";
+import type { AnyGenerator } from "@canonical/summon-core";
 import { generator as packageGenerator } from "./package/index.js";
 
 export const generators: Record<string, AnyGenerator> = {
