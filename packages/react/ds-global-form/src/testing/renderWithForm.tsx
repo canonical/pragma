@@ -1,4 +1,4 @@
-import { type RenderOptions, render } from "@testing-library/react";
+import { type RenderOptions, type RenderResult, render } from "@testing-library/react";
 import type React from "react";
 import { FormProvider, type UseFormProps, useForm } from "react-hook-form";
 
@@ -23,7 +23,7 @@ export function renderWithForm(
     formProps?: UseFormProps;
     renderOptions?: Omit<RenderOptions, "wrapper">;
   },
-) {
+): RenderResult {
   return render(ui, {
     wrapper: ({ children }: { children: React.ReactNode }) => (
       <TestForm formProps={options?.formProps}>{children}</TestForm>
