@@ -1,10 +1,90 @@
-/* @canonical/generator-ds 0.9.0-experimental.9 */
-
 .ds.form-simple-choices {
+  border: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--tmp-space-field-inline) var(--tmp-space-field-gap);
+
   & > .option {
     direction: inherit;
     display: flex;
     align-items: center;
-    gap: var(--field-inline-gap);
+    gap: var(--tmp-space-field-inline);
+    cursor: pointer;
+
+    &.disabled {
+      cursor: not-allowed;
+      opacity: 0.5;
+    }
+
+    & > input[type="radio"] {
+      appearance: none;
+      width: 1.25rem;
+      height: 1.25rem;
+      border: var(--dimension-stroke-thickness-medium) solid var(--color-border);
+      border-radius: 50%;
+      background: var(--color-foreground-radio-unselected);
+      cursor: inherit;
+      transition: background-color 150ms ease, border-color 150ms ease;
+
+      &:checked {
+        border-color: var(--color-foreground-radio-selected);
+        background: radial-gradient(
+          var(--color-foreground-radio-selected) 40%,
+          var(--color-foreground-radio-unselected) 41%
+        );
+      }
+
+      &:hover:not(:disabled) {
+        background: var(--color-foreground-radio-unselected-hover);
+      }
+
+      &:focus-visible {
+        outline: none;
+        border-color: var(--color-focusRing);
+        box-shadow: 0 0 0 1px var(--color-focusRing);
+      }
+
+      &:disabled {
+        border-color: var(--color-border-disabled);
+        background: var(--color-foreground-radio-unselected-disabled);
+      }
+    }
+
+    & > input[type="checkbox"] {
+      appearance: none;
+      width: 1.25rem;
+      height: 1.25rem;
+      border: var(--dimension-stroke-thickness-medium) solid var(--color-border);
+      border-radius: var(--dimension-radius-small);
+      background: var(--color-foreground-checkbox-unselected);
+      cursor: inherit;
+      transition: background-color 150ms ease, border-color 150ms ease;
+
+      &:checked {
+        background: var(--color-foreground-checkbox-selected);
+        border-color: var(--color-foreground-checkbox-selected);
+        background-image: url("/icons/checkmark.svg#checkmark");
+        background-repeat: no-repeat;
+        background-position: center;
+        background-size: 75%;
+      }
+
+      &:hover:not(:disabled) {
+        background: var(--color-foreground-checkbox-unselected-hover);
+      }
+
+      &:focus-visible {
+        outline: none;
+        border-color: var(--color-focusRing);
+        box-shadow: 0 0 0 1px var(--color-focusRing);
+      }
+
+      &:disabled {
+        border-color: var(--color-border-disabled);
+        background: var(--color-foreground-checkbox-unselected-disabled);
+      }
+    }
   }
 }

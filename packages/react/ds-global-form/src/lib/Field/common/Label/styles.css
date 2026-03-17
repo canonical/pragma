@@ -1,5 +1,9 @@
-/* @canonical/generator-ds 0.9.0-experimental.4 */
-
 .ds.form-label {
-  font-weight: bold;
+  font-weight: var(--typography-text-primary-font-weight-bold, bold);
+  font-size: var(--typography-text-primary-font-size);
+  color: var(--color-text);
+
+  & > .required {
+    color: var(--color-text-error);
+  }
 }

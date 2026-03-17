@@ -1,5 +1,6 @@
-/* @canonical/generator-ds 0.9.0-experimental.9 */
-
 .ds.form-field-error {
-  color: var(--state-danger-color-default);
+  font-size: var(--typography-text-secondary-font-size);
+  color: var(--color-text-error);
+  margin: 0;
+  margin-block-start: var(--tmp-space-group-gap);
 }
