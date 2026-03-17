@@ -1,0 +1,42 @@
+:host {
+  --logo-size: 6.5rem;
+  --logo-offset: 1rem;
+  --logo-gap: 2rem;
+
+  grid-column: 1 / -1;
+
+  display: grid;
+  grid-template-columns: subgrid;
+}
+
+.ds.logo-section {
+  grid-column: 1 / -1;
+
+  & .heading {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
+    align-items: baseline;
+    margin-block-end: 2rem;
+  }
+
+  & .title {
+    font-variant-caps: all-small-caps;
+  }
+
+  & .logos {
+    line-height: 0;
+    padding-block: var(--logo-offset);
+  }
+
+  & ::slotted(img) {
+    height: var(--logo-size);
+    width: auto;
+    margin-inline-end: var(--logo-gap);
+    margin-block: calc(-1 * var(--logo-offset));
+  }
+
+  & slot[name="cta"] {
+    display: flex;
+    gap: 1rem;
+  }
+}
