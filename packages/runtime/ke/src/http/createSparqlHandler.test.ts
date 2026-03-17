@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
-import type { TestStoreResult } from "../../testing/store.js";
-import { createTestStore } from "../../testing/store.js";
+import createTestStore from "../../testing/createTestStore.js";
+import type { TestStoreResult } from "../../testing/types.js";
 import createSparqlHandler from "./createSparqlHandler.js";
 
 describe("createSparqlHandler", () => {
