@@ -1,8 +1,8 @@
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { create } from "../src/store.js";
-import type { Plugin, PrefixMap, Store, StoreConfig } from "../src/types.js";
+import { create } from "../src/lib/create.js";
+import type { Plugin, PrefixMap, Store, StoreConfig } from "../src/lib/types.js";
 import { PEOPLE_TTL } from "./fixtures.js";
 
 /**

@@ -60,6 +60,7 @@ function normalizeSource(spec: SourceSpec): SourceConfig {
   return spec;
 }
 
+/** @note Impure — reads filesystem to resolve glob patterns. */
 function resolveGlobsSync(patterns: string[]): string[] {
   const files: string[] = [];
   for (const pattern of patterns) {
@@ -81,6 +82,7 @@ function resolveGlobsSync(patterns: string[]): string[] {
   return files;
 }
 
+/** @note Impure — reads file contents from disk. */
 function resolveSources(specs: SourceSpec[]): ResolvedSource[] {
   const resolved: ResolvedSource[] = [];
 
@@ -297,6 +299,7 @@ function loadSource(
   }
 }
 
+/** @note Impure — reads serialized cache from disk into the store. */
 function tryLoadCache(oxStore: OxStore, cachePath: string): boolean {
   const absPath = resolve(cachePath);
   if (!existsSync(absPath)) return false;
@@ -310,6 +313,7 @@ function tryLoadCache(oxStore: OxStore, cachePath: string): boolean {
   }
 }
 
+/** @note Impure — writes serialized store to disk as N-Quads. */
 function writeCache(oxStore: OxStore, cachePath: string): void {
   const absPath = resolve(cachePath);
   const dir = dirname(absPath);

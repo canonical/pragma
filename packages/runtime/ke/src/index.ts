@@ -14,21 +14,16 @@
  * ```
  */
 
-// Namespace helper
-export { namespace } from "./namespace.js";
-// Plugin helper
-export { definePlugin } from "./plugin.js";
-// Tagged template & escaping
+export { create } from "./lib/create.js";
+export { definePlugin } from "./lib/definePlugin.js";
+export { namespace } from "./lib/namespace.js";
 export {
   escapeSparqlURI,
   escapeSparqlValue,
   markAsURI,
   sparql,
-} from "./sparql.js";
-// Core entry point
-export { create } from "./store.js";
+} from "./lib/sparql.js";
 
-// Types
 export type {
   AskResult,
   Binding,
@@ -48,4 +43,4 @@ export type {
   StoreConfig,
   Triple,
   URI,
-} from "./types.js";
+} from "./lib/types.js";

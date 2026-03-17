@@ -5,13 +5,13 @@ import {
   MINIMAL_TTL,
   ORGANIZATIONS_TTL,
   PEOPLE_TTL,
-} from "../testing/fixtures.js";
-import { registerMatchers } from "../testing/matchers.js";
-import type { TestStoreResult } from "../testing/store.js";
-import { createTestStore } from "../testing/store.js";
-import { definePlugin } from "./plugin.js";
+} from "../../testing/fixtures.js";
+import { registerMatchers } from "../../testing/matchers.js";
+import type { TestStoreResult } from "../../testing/store.js";
+import { createTestStore } from "../../testing/store.js";
+import { definePlugin } from "./definePlugin.js";
 import { sparql } from "./sparql.js";
-import { create } from "./store.js";
+import { create } from "./create.js";
 import type { AskResult, ConstructResult, SelectResult } from "./types.js";
 
 registerMatchers();
