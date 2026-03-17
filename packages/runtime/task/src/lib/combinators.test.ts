@@ -26,11 +26,11 @@ import {
   whenM,
   zip,
   zip3,
-} from "../lib/combinators.js";
-import { dryRun } from "../lib/dry-run.js";
-import { info, mkdir, writeFile } from "../lib/primitives.js";
-import { effect, fail, flatMap, map, pure } from "../lib/task.js";
-import type { Effect, Task, TaskError } from "../lib/types.js";
+} from "./combinators.js";
+import { dryRun } from "./dry-run.js";
+import { info, mkdir, writeFile } from "./primitives.js";
+import { effect, fail, flatMap, map, pure } from "./task.js";
+import type { Effect, Task, TaskError } from "./types.js";
 
 // =============================================================================
 // Sequencing Combinators
