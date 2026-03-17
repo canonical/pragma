@@ -18,6 +18,18 @@ import {
 import type { HarnessDefinition, McpServerConfig } from "./types.js";
 
 /**
+ * Assert that the harness uses a JSON-based config format.
+ * TOML-based harnesses (e.g. Codex) are not yet supported for config operations.
+ */
+const assertJsonFormat = (harness: HarnessDefinition): void => {
+  if (harness.configFormat === "toml") {
+    throw new Error(
+      `Config read/write for TOML-based harness "${harness.name}" is not yet supported`,
+    );
+  }
+};
+
+/**
  * Parse a JSON string into a record, returning an empty object on failure.
  */
 const parseJsonSafe = (content: string): Record<string, unknown> => {
@@ -51,6 +63,7 @@ export const readMcpConfig = (
   harness: HarnessDefinition,
   projectRoot: string,
 ): Task<Record<string, McpServerConfig>> => {
+  assertJsonFormat(harness);
   const configPath = harness.configPath(projectRoot);
 
   return ifElseM(
@@ -77,6 +90,7 @@ export const writeMcpConfig = (
   serverName: string,
   config: McpServerConfig,
 ): Task<void> => {
+  assertJsonFormat(harness);
   const configPath = harness.configPath(projectRoot);
 
   return ifElseM(
@@ -109,6 +123,7 @@ export const removeMcpConfig = (
   projectRoot: string,
   serverName: string,
 ): Task<void> => {
+  assertJsonFormat(harness);
   const configPath = harness.configPath(projectRoot);
 
   return ifElseM(

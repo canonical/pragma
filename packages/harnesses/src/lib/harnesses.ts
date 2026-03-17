@@ -1,6 +1,9 @@
 /**
  * Registry of known AI harnesses with their detection signals and config paths.
  * Pure data — adding a new harness is adding an entry, not writing new code.
+ *
+ * Multiple entries may exist for the same harness ID with different version
+ * ranges to handle config format changes across versions.
  */
 
 import type { HarnessDefinition } from "./types.js";
@@ -9,6 +12,7 @@ const harnesses: readonly HarnessDefinition[] = [
   {
     id: "claude-code",
     name: "Claude Code",
+    version: "*",
     detect: [
       { type: "directory", path: "~/.claude" },
       { type: "file", path: ".mcp.json" },
@@ -21,6 +25,7 @@ const harnesses: readonly HarnessDefinition[] = [
   {
     id: "cursor",
     name: "Cursor",
+    version: "*",
     detect: [{ type: "directory", path: ".cursor" }],
     configPath: (root) => `${root}/.cursor/mcp.json`,
     configFormat: "json",
@@ -30,8 +35,13 @@ const harnesses: readonly HarnessDefinition[] = [
   {
     id: "windsurf",
     name: "Windsurf",
-    detect: [{ type: "directory", path: ".windsurf" }],
-    configPath: (root) => `${root}/.windsurf/mcp.json`,
+    version: "*",
+    detect: [
+      { type: "directory", path: ".windsurf" },
+      { type: "file", path: "~/.codeium/windsurf/mcp_config.json" },
+    ],
+    configPath: () =>
+      `${process.env.HOME ?? ""}/.codeium/windsurf/mcp_config.json`,
     configFormat: "json",
     mcpKey: "mcpServers",
     skillsPath: (root) => `${root}/.windsurf/skills`,
@@ -39,6 +49,7 @@ const harnesses: readonly HarnessDefinition[] = [
   {
     id: "cline",
     name: "Cline",
+    version: "*",
     detect: [
       { type: "directory", path: ".vscode" },
       { type: "extension", id: "saoudrizwan.claude-dev" },
@@ -51,20 +62,22 @@ const harnesses: readonly HarnessDefinition[] = [
   {
     id: "roo-code",
     name: "Roo Code",
+    version: "*",
     detect: [
-      { type: "directory", path: ".vscode" },
+      { type: "directory", path: ".roo" },
       { type: "extension", id: "rooveterinaryinc.roo-cline" },
     ],
-    configPath: (root) => `${root}/.vscode/mcp.json`,
+    configPath: (root) => `${root}/.roo/mcp.json`,
     configFormat: "json",
     mcpKey: "mcpServers",
-    skillsPath: (root) => `${root}/.agents/skills`,
+    skillsPath: (root) => `${root}/.roo/skills`,
   },
   {
     id: "opencode",
     name: "OpenCode",
-    detect: [{ type: "file", path: ".opencode.json" }],
-    configPath: (root) => `${root}/.opencode.json`,
+    version: "*",
+    detect: [{ type: "file", path: "opencode.json" }],
+    configPath: (root) => `${root}/opencode.json`,
     configFormat: "json",
     mcpKey: "mcp",
     skillsPath: (root) => `${root}/.agents/skills`,
@@ -72,7 +85,8 @@ const harnesses: readonly HarnessDefinition[] = [
   {
     id: "gemini-cli",
     name: "Gemini CLI",
-    detect: [{ type: "file", path: ".gemini/settings.json" }],
+    version: "*",
+    detect: [{ type: "directory", path: ".gemini" }],
     configPath: (root) => `${root}/.gemini/settings.json`,
     configFormat: "json",
     mcpKey: "mcpServers",
@@ -81,16 +95,21 @@ const harnesses: readonly HarnessDefinition[] = [
   {
     id: "codex",
     name: "Codex",
-    detect: [{ type: "file", path: ".codex/config.json" }],
-    configPath: (root) => `${root}/.codex/config.json`,
-    configFormat: "json",
-    mcpKey: "mcpServers",
+    version: "*",
+    detect: [{ type: "directory", path: ".codex" }],
+    configPath: (root) => `${root}/.codex/config.toml`,
+    configFormat: "toml",
+    mcpKey: "mcp_servers",
     skillsPath: (root) => `${root}/.agents/skills`,
   },
   {
     id: "vscode",
     name: "VS Code",
-    detect: [{ type: "directory", path: ".vscode" }],
+    version: "*",
+    detect: [
+      { type: "directory", path: ".vscode" },
+      { type: "file", path: ".vscode/mcp.json" },
+    ],
     configPath: (root) => `${root}/.vscode/mcp.json`,
     configFormat: "json",
     mcpKey: "servers",

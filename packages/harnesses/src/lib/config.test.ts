@@ -240,3 +240,27 @@ describe("removeMcpConfig", () => {
     expect(result.effects.length).toBeGreaterThan(0);
   });
 });
+
+describe("TOML format guard", () => {
+  const codex = harnesses.find(
+    (h) => h.id === "codex",
+  ) as (typeof harnesses)[number];
+
+  it("readMcpConfig throws for TOML-based harnesses", () => {
+    expect(() => readMcpConfig(codex, "/project")).toThrow(
+      /TOML-based harness/,
+    );
+  });
+
+  it("writeMcpConfig throws for TOML-based harnesses", () => {
+    expect(() =>
+      writeMcpConfig(codex, "/project", "pragma", { command: "pragma" }),
+    ).toThrow(/TOML-based harness/);
+  });
+
+  it("removeMcpConfig throws for TOML-based harnesses", () => {
+    expect(() => removeMcpConfig(codex, "/project", "pragma")).toThrow(
+      /TOML-based harness/,
+    );
+  });
+});

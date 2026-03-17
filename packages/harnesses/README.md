@@ -78,17 +78,21 @@ Config merge behaviour:
 
 The registry is pure data — adding a new harness is adding an entry, not writing new code.
 
-| Harness | ID | Config path | Skills path |
-|---------|-----|------------|-------------|
-| Claude Code | `claude-code` | `.mcp.json` | `.claude/skills/` |
-| Cursor | `cursor` | `.cursor/mcp.json` | `.cursor/skills/` |
-| Windsurf | `windsurf` | `.windsurf/mcp.json` | `.windsurf/skills/` |
-| Cline | `cline` | `.vscode/mcp.json` | `.agents/skills/` |
-| Roo Code | `roo-code` | `.vscode/mcp.json` | `.agents/skills/` |
-| OpenCode | `opencode` | `.opencode.json` | `.agents/skills/` |
-| Gemini CLI | `gemini-cli` | `.gemini/settings.json` | `.agents/skills/` |
-| Codex | `codex` | `.codex/config.json` | `.agents/skills/` |
-| VS Code | `vscode` | `.vscode/mcp.json` | `.agents/skills/` |
+| Harness | ID | Config path | Format | MCP key | Skills path |
+|---------|-----|------------|--------|---------|-------------|
+| Claude Code | `claude-code` | `.mcp.json` | JSON | `mcpServers` | `.claude/skills/` |
+| Cursor | `cursor` | `.cursor/mcp.json` | JSON | `mcpServers` | `.cursor/skills/` |
+| Windsurf | `windsurf` | `~/.codeium/windsurf/mcp_config.json` | JSON | `mcpServers` | `.windsurf/skills/` |
+| Cline | `cline` | `.vscode/mcp.json` | JSON | `mcpServers` | `.agents/skills/` |
+| Roo Code | `roo-code` | `.roo/mcp.json` | JSON | `mcpServers` | `.roo/skills/` |
+| OpenCode | `opencode` | `opencode.json` | JSON | `mcp` | `.agents/skills/` |
+| Gemini CLI | `gemini-cli` | `.gemini/settings.json` | JSON | `mcpServers` | `.agents/skills/` |
+| Codex | `codex` | `.codex/config.toml` | TOML | `mcp_servers` | `.agents/skills/` |
+| VS Code | `vscode` | `.vscode/mcp.json` | JSON | `servers` | `.agents/skills/` |
+
+Each entry includes a `version` field (semver range) to support config format changes across harness versions. Multiple entries can exist for the same harness ID with different version ranges.
+
+Codex uses TOML config — config read/write operations are not yet supported for TOML-based harnesses.
 
 ```typescript
 import { harnesses, findHarnessById } from "@canonical/harnesses";

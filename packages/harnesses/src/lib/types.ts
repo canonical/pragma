@@ -13,15 +13,25 @@ export type DetectionSignal =
   | { readonly type: "env"; readonly key: string; readonly value?: string };
 
 /**
+ * A semver range string (e.g. ">=1.5.0", "*") used to match harness versions.
+ * "*" matches any version.
+ */
+export type VersionRange = string;
+
+/**
  * Definition of an AI harness (editor/agent) with its detection signals,
  * configuration format, and known paths.
+ *
+ * Multiple entries may exist for the same harness ID with different version
+ * ranges, allowing config format changes across versions.
  */
 export interface HarnessDefinition {
   readonly id: string;
   readonly name: string;
+  readonly version: VersionRange;
   readonly detect: readonly DetectionSignal[];
   readonly configPath: (projectRoot: string) => string;
-  readonly configFormat: "json" | "jsonc";
+  readonly configFormat: "json" | "jsonc" | "toml";
   readonly mcpKey: string;
   readonly skillsPath: (projectRoot: string) => string;
 }
