@@ -7,7 +7,7 @@
 // =============================================================================
 
 // ---------------------------------------------------------------------------
-// Branded types (TP.01)
+// Branded types 
 //
 // Branded types add compile-time safety to string values that have semantic
 // meaning. A URI is a string at runtime, but TypeScript won't let you pass
@@ -39,7 +39,7 @@ declare const GraphNameBrand: unique symbol;
 export type GraphName = string & { [GraphNameBrand]: true };
 
 // ---------------------------------------------------------------------------
-// Prefix map (KE.07)
+// Prefix map 
 //
 // A PrefixMap maps short prefix names to full namespace IRIs. When registered
 // at store creation, these prefixes are automatically prepended as PREFIX
@@ -182,7 +182,7 @@ export interface ReloadOptions {
 }
 
 // ---------------------------------------------------------------------------
-// Query result types (TP.03)
+// Query result types 
 //
 // SPARQL has three query forms, each returning a different shape:
 //
@@ -238,7 +238,7 @@ export interface AskResult {
 export type QueryResult = SelectResult | ConstructResult | AskResult;
 
 // ---------------------------------------------------------------------------
-// Query type inference (TP.04)
+// Query type inference 
 //
 // These type-level utilities inspect the literal string type of a SPARQL query
 // and infer which result type it will produce. This happens entirely at compile
@@ -311,7 +311,7 @@ export type InferQueryResult<Q extends string> =
         : QueryResult;
 
 // ---------------------------------------------------------------------------
-// Plugin interface (TP.05)
+// Plugin interface 
 //
 // Plugins hook into three lifecycle events, called in array order:
 //

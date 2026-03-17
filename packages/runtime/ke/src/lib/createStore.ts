@@ -1,8 +1,8 @@
 // =============================================================================
 // @canonical/ke — Store creation and implementation
 //
-// This is the core of ke. The `createStore()` function is the sole entry point
-// (KE.02). It boots an Oxigraph WASM triple store, loads RDF sources, wires
+// This is the core of ke. The `createStore()` function is the sole entry point.
+// It boots an Oxigraph WASM triple store, loads RDF sources, wires
 // up plugins and prefixes, and returns a Store interface.
 //
 // Architecture:
@@ -312,7 +312,7 @@ class KeStore implements Store {
 
     // Step 3: Detect query type and execute via Oxigraph
     // use_default_graph_as_union: true makes all named graphs visible by default,
-    // so you don't need explicit GRAPH clauses to query across graphs (GR.02)
+    // so you don't need explicit GRAPH clauses to query across graphs
     const queryType = detectQueryType(queryStr);
     const rawResult = this.oxStore.query(queryStr, {
       use_default_graph_as_union: true,
@@ -449,7 +449,7 @@ function loadSource(
 }
 
 // ---------------------------------------------------------------------------
-// Cache (KE.06)
+// Cache
 //
 // The cache serializes the entire store to N-Quads format on first boot.
 // On subsequent boots, the N-Quads file is loaded directly into Oxigraph,
@@ -460,7 +460,7 @@ function loadSource(
 //
 // Cache invalidation is manual: consumers call `store.reload({ force: true })`
 // or delete the cache file. Automatic invalidation (e.g., mtime checking)
-// is deferred to v0.4 (RS.02).
+// may be added in a future version.
 // ---------------------------------------------------------------------------
 
 /**
@@ -479,7 +479,6 @@ function tryLoadCache(oxStore: OxStore, cachePath: string): boolean {
     return true;
   } catch {
     // Cache is corrupted or unreadable — fall through to normal loading.
-    // Future: RS.02 will detect corruption and rebuild automatically.
     return false;
   }
 }
@@ -530,7 +529,7 @@ async function loadOxigraph() {
 // ---------------------------------------------------------------------------
 
 /**
- * Create a new ke triple store (KE.02 — sole entry point).
+ * Create a new ke triple store (sole entry point).
  *
  * This is the only way to create a Store. It:
  * 1. Loads the Oxigraph WASM module

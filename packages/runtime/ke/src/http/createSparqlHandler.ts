@@ -16,7 +16,7 @@
 // escaping is for application-level interpolation, not protocol-level access.
 //
 // This is a future sub-path export (`@canonical/ke/http`) described in
-// A.TRANSFER as "when someone wants a SPARQL endpoint."
+
 // =============================================================================
 
 import type { Store } from "../lib/types.js";
