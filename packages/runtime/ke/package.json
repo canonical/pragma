@@ -3,16 +3,16 @@
   "description": "Headless triple store runtime built on Oxigraph WASM",
   "version": "0.18.0",
   "type": "module",
-  "module": "src/index.ts",
-  "types": "src/index.ts",
+  "module": "dist/esm/index.js",
+  "types": "dist/types/index.d.ts",
   "exports": {
     ".": {
-      "types": "./src/index.ts",
-      "import": "./src/index.ts"
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/esm/index.js"
     },
     "./http": {
-      "types": "./src/http/index.ts",
-      "import": "./src/http/index.ts"
+      "types": "./dist/types/http/index.d.ts",
+      "import": "./dist/esm/http/index.js"
     },
     "./testing": {
       "types": "./testing/index.ts",
@@ -20,7 +20,7 @@
     }
   },
   "files": [
-    "src",
+    "dist",
     "testing"
   ],
   "author": {
@@ -37,7 +37,10 @@
   },
   "homepage": "https://github.com/canonical/pragma#readme",
   "scripts": {
-    "build": "echo 'No build needed - runs directly from TypeScript'",
+    "build": "bun run build:package",
+    "build:all": "bun run build:package",
+    "build:package": "bun run build:package:tsc",
+    "build:package:tsc": "tsc -p tsconfig.build.json",
     "check": "bun run check:biome && bun run check:ts",
     "check:fix": "bun run check:biome:fix && bun run check:ts",
     "check:biome": "biome check",
