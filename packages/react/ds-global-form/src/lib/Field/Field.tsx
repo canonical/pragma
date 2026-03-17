@@ -37,6 +37,11 @@ const Field = ({
     case "hidden":
       return <Hidden {...props} />;
     case "custom":
+      if (!CustomComponent) {
+        throw new Error(
+          'Field with inputType="custom" requires a CustomComponent prop.',
+        );
+      }
       return <CustomComponent {...props} />;
     default:
       return <Text inputType={inputType} {...props} />;
