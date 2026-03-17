@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { PragmaError } from "./error.js";
+import { PragmaError } from "./PragmaError.js";
 
 describe("PragmaError", () => {
   describe("notFound", () => {

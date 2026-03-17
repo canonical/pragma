@@ -1,24 +1,5 @@
-const ERROR_CODES = [
-  "ENTITY_NOT_FOUND",
-  "EMPTY_RESULTS",
-  "INVALID_INPUT",
-  "AMBIGUOUS_INPUT",
-  "STORE_ERROR",
-  "CONFIG_ERROR",
-  "INTERNAL_ERROR",
-] as const;
-
-type ErrorCode = (typeof ERROR_CODES)[number];
-
-interface PragmaErrorData {
-  code: ErrorCode;
-  message: string;
-  entity?: { type: string; name: string };
-  suggestions?: string[];
-  recovery?: string | string[];
-  filters?: Record<string, string>;
-  validOptions?: string[];
-}
+import type { ErrorCode } from "./constants.js";
+import type { PragmaErrorData } from "./PragmaErrorData.js";
 
 class PragmaError extends Error {
   readonly code: ErrorCode;
@@ -122,5 +103,4 @@ class PragmaError extends Error {
   }
 }
 
-export { PragmaError, ERROR_CODES };
-export type { ErrorCode, PragmaErrorData };
+export { PragmaError };
