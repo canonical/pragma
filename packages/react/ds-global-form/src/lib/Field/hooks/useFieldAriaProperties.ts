@@ -18,7 +18,9 @@ const useFieldAriaProps = (name: string, isError: boolean) => {
       input: {
         id: baseId,
         "aria-labelledby": labelId,
-        "aria-describedby": `${descriptionId}${isError}` ? ` ${labelId}` : "",
+        "aria-describedby":
+          [descriptionId, isError ? errorId : ""].filter(Boolean).join(" ") ||
+          undefined,
         "aria-errormessage": isError ? errorId : undefined,
         "aria-invalid": isError,
       },

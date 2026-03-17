@@ -40,7 +40,7 @@ const withWrapper = <
       () =>
         // The middleware happens between the Wrapper and the Component,
         // hence the return type of P
-        middleware
+        [...middleware]
           .reverse()
           .reduce<React.ComponentType<ComponentProps>>(
             (AccumulatedComponent, hoc) => hoc(AccumulatedComponent),
