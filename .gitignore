@@ -15,6 +15,7 @@ Thumbs.db
 .idea
 .kg/
 session/
+session*/
 .gemini/
 pragma.code-workspace
 
