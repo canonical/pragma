@@ -10,6 +10,10 @@
       "types": "./src/index.ts",
       "import": "./src/index.ts"
     },
+    "./http": {
+      "types": "./src/http/index.ts",
+      "import": "./src/http/index.ts"
+    },
     "./testing": {
       "types": "./testing/index.ts",
       "import": "./testing/index.ts"
