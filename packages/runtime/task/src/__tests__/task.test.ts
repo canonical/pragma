@@ -14,8 +14,8 @@ import {
   pure,
   recover,
   task,
-} from "../task.js";
-import type { Effect, Task, TaskError } from "../types.js";
+} from "../lib/task.js";
+import type { Effect, Task, TaskError } from "../lib/types.js";
 
 // =============================================================================
 // Core Constructors

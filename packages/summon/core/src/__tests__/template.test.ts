@@ -1,5 +1,5 @@
+import { dryRun } from "@canonical/task";
 import { describe, expect, it } from "vitest";
-import { dryRun } from "../dry-run.js";
 import {
   generatorComment,
   generatorHtmlComment,

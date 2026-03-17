@@ -8,6 +8,7 @@
 
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
+import { dryRun } from "@canonical/task";
 import chalk from "chalk";
 import { Command } from "commander";
 import { render } from "ink";
@@ -19,7 +20,7 @@ import {
   isSetupRequest,
 } from "./completion.js";
 import { App } from "./components/App.js";
-import type { StampConfig } from "./interpreter.js";
+import type { StampConfig } from "./stamp.js";
 import type { GeneratorDefinition, PromptDefinition } from "./types.js";
 
 // =============================================================================
@@ -1246,8 +1247,6 @@ const configureGeneratorCommand = (
 
       if (hasAllAnswers && actualOptions.dryRun && !isTTY) {
         // Batch dry-run mode (non-interactive)
-        const { dryRun } = await import("./dry-run.js");
-
         const verbose = actualOptions.verbose === true;
         const showFiles = actualOptions.showFiles === true;
 

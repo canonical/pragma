@@ -2,7 +2,7 @@
  * Tests for summon-package generator
  */
 
-import { dryRun } from "@canonical/summon";
+import { dryRun } from "@canonical/task";
 import { describe, expect, it } from "vitest";
 import { generator } from "../package/index.js";
 import {

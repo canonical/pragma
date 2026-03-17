@@ -1,14 +1,14 @@
 import { describe, expect, it, vi } from "vitest";
-import { sequence_ } from "../combinators.js";
+import { sequence_ } from "../lib/combinators.js";
 import {
   executeEffect,
   run,
   runTask,
   TaskExecutionError,
-} from "../interpreter.js";
-import { info, succeed, warn } from "../primitives.js";
-import { effect, fail, flatMap, map, pure } from "../task.js";
-import type { Effect, TaskError } from "../types.js";
+} from "../lib/interpreter.js";
+import { info, succeed, warn } from "../lib/primitives.js";
+import { effect, fail, flatMap, map, pure } from "../lib/task.js";
+import type { Effect, TaskError } from "../lib/types.js";
 
 // Note: These tests focus on the interpreter's logic without actually
 // performing I/O. For real I/O testing, integration tests should be used.

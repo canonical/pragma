@@ -4,8 +4,8 @@
  * Displays a list of files that will be created/modified.
  */
 
+import type { Effect } from "@canonical/task";
 import { Box, Text } from "ink";
-import type { Effect } from "../types.js";
 
 export interface FileTreePreviewProps {
   /** Effects to display */

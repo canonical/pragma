@@ -12,7 +12,7 @@ import {
   readFile,
   type Task,
   writeFile,
-} from "@canonical/summon";
+} from "@canonical/task";
 
 /**
  * Append export to parent index.ts file (or create if not exists)

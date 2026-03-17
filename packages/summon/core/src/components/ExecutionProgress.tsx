@@ -4,12 +4,16 @@
  * Displays the progress of task execution with effect-by-effect feedback.
  */
 
+import {
+  describeEffect,
+  type Effect,
+  type Task,
+  type TaskError,
+} from "@canonical/task";
 import { Box, Text } from "ink";
 import type React from "react";
 import { useEffect, useState } from "react";
-import { describeEffect } from "../effect.js";
-import { runTask, type StampConfig } from "../interpreter.js";
-import type { Effect, Task, TaskError } from "../types.js";
+import { runTaskWithStamp, type StampConfig } from "../stamp.js";
 import { Spinner } from "./Spinner.js";
 
 /** Effect with timing information for the completion timeline */
@@ -89,7 +93,7 @@ export const ExecutionProgress: React.FC<ExecutionProgressProps> = ({
 
     const executeWithProgress = async () => {
       try {
-        await runTask(task, {
+        await runTaskWithStamp(task, {
           stamp,
           onEffectStart: (effect) => {
             // Skip showing duplicate MakeDir in spinner

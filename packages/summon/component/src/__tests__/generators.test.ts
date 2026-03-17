@@ -6,7 +6,7 @@
  */
 
 import * as fs from "node:fs";
-import { dryRun, dryRunWith, type Effect } from "@canonical/summon";
+import { dryRun, dryRunWith, type Effect, type Task } from "@canonical/task";
 import { describe, expect, it } from "vitest";
 import { generators } from "../index.js";
 
@@ -14,7 +14,7 @@ import { generators } from "../index.js";
  * Helper: dry-run with actual file reading for templates.
  * This allows testing template output without writing files.
  */
-const dryRunWithTemplates = <A>(task: import("@canonical/summon").Task<A>) => {
+const dryRunWithTemplates = <A>(task: Task<A>) => {
   const mocks = new Map<string, (effect: Effect) => unknown>([
     [
       "ReadFile",

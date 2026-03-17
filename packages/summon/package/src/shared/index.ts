@@ -10,7 +10,7 @@ import {
   pure,
   readFile,
   type Task,
-} from "@canonical/summon";
+} from "@canonical/task";
 
 // =============================================================================
 // Types

@@ -6,15 +6,9 @@
 
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
-import type { GeneratorDefinition } from "@canonical/summon";
-import {
-	info,
-	mkdir,
-	sequence_,
-	template,
-	when,
-	withHelpers,
-} from "@canonical/summon";
+import type { GeneratorDefinition } from "@canonical/summon-core";
+import { template, withHelpers } from "@canonical/summon-core";
+import { info, mkdir, sequence_, when } from "@canonical/task";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 

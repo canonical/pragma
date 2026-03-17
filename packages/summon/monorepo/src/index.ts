@@ -5,7 +5,7 @@
  * with CI, release, and shared configuration.
  */
 
-import type { AnyGenerator } from "@canonical/summon";
+import type { AnyGenerator } from "@canonical/summon-core";
 import { generator as monorepoGenerator } from "./monorepo/index.js";
 
 export const generators: Record<string, AnyGenerator> = {
