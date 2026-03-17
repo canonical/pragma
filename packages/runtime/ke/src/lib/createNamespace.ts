@@ -9,7 +9,7 @@
 // name and marks the result as a URI at runtime (via markAsURI), so the
 // `sparql` tagged template wraps it in <angle brackets> instead of "quotes".
 //
-// This follows the const ontology term pattern (TP.06) — define your
+// This follows the const ontology term pattern — define your
 // namespaces once, then use them throughout your queries.
 // =============================================================================
 

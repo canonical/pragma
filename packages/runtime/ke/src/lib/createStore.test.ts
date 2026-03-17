@@ -1,14 +1,14 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
+import createTestStore from "../../testing/createTestStore.js";
 import {
   MINIMAL_TTL,
   ORGANIZATIONS_TTL,
   PEOPLE_TTL,
 } from "../../testing/fixtures.js";
-import { registerMatchers } from "../../testing/matchers.js";
-import type { TestStoreResult } from "../../testing/store.js";
-import { createTestStore } from "../../testing/store.js";
+import { registerMatchers } from "../../testing/registerMatchers.js";
+import type { TestStoreResult } from "../../testing/types.js";
 import createStore from "./createStore.js";
 import definePlugin from "./definePlugin.js";
 import { sparql } from "./sparql.js";

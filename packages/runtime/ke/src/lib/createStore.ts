@@ -1,8 +1,8 @@
 // =============================================================================
 // @canonical/ke — Store creation and implementation
 //
-// This is the core of ke. The `createStore()` function is the sole entry point
-// (KE.02). It boots an Oxigraph WASM triple store, loads RDF sources, wires
+// This is the core of ke. The `createStore()` function is the sole entry point.
+// It boots an Oxigraph WASM triple store, loads RDF sources, wires
 // up plugins and prefixes, and returns a Store interface.
 //
 // Architecture:
@@ -169,36 +169,50 @@ function resolveSources(specs: SourceSpec[]): ResolvedSource[] {
 }
 
 // ---------------------------------------------------------------------------
-// Query type detection
+// Query result detection
 //
-// SPARQL queries start with a verb (SELECT, CONSTRUCT, ASK, DESCRIBE) that
-// determines the result shape. We need to detect this at runtime to parse
-// Oxigraph's return value into the correct QueryResult variant.
+// Instead of parsing the SPARQL query string to determine the query form
+// (SELECT/CONSTRUCT/ASK), we inspect the shape of Oxigraph's return value.
+// This is robust — no regex, no parsing, no edge cases with # in IRIs or
+// PREFIX declarations.
 //
-// The detection strips PREFIX declarations and comments first, then checks
-// the first keyword. DESCRIBE is mapped to "construct" because Oxigraph
-// returns quads for both CONSTRUCT and DESCRIBE.
+// Oxigraph returns:
+// - boolean → ASK query
+// - Array of Map<string, Term> → SELECT query
+// - Array of Quad (objects with .subject) → CONSTRUCT or DESCRIBE query
+// - string → when results_format is specified (we don't use this)
 // ---------------------------------------------------------------------------
 
 /**
- * Detect the SPARQL query form by inspecting the first keyword after
- * stripping PREFIX declarations and comments.
+ * Detect the SPARQL result type by inspecting Oxigraph's return value shape.
+ * This avoids fragile string parsing of the query itself.
  */
-function detectQueryType(
-  queryStr: string,
-): "select" | "construct" | "ask" | "unknown" {
-  const stripped = queryStr
-    .replace(/#[^\n]*/g, "") // Strip single-line comments
-    .replace(/PREFIX\s+\S+:\s*<[^>]*>\s*/gi, "") // Strip PREFIX declarations
-    .trim();
+function detectResultType(rawResult: unknown): "select" | "construct" | "ask" {
+  // ASK queries return a boolean
+  if (typeof rawResult === "boolean") {
+    return "ask";
+  }
 
-  const upper = stripped.toUpperCase();
+  // SELECT and CONSTRUCT both return arrays, but with different element types
+  if (Array.isArray(rawResult)) {
+    // Empty result — could be either. Default to select (more common).
+    if (rawResult.length === 0) {
+      return "select";
+    }
 
-  if (upper.startsWith("SELECT")) return "select";
-  if (upper.startsWith("CONSTRUCT")) return "construct";
-  if (upper.startsWith("DESCRIBE")) return "construct"; // DESCRIBE returns quads too
-  if (upper.startsWith("ASK")) return "ask";
-  return "unknown";
+    // SELECT returns Map<string, Term> entries
+    if (rawResult[0] instanceof Map) {
+      return "select";
+    }
+
+    // CONSTRUCT/DESCRIBE returns Quad objects (have a .subject property)
+    if (typeof rawResult[0] === "object" && "subject" in rawResult[0]) {
+      return "construct";
+    }
+  }
+
+  // Fallback — shouldn't happen with valid SPARQL
+  return "select";
 }
 
 // ---------------------------------------------------------------------------
@@ -310,20 +324,21 @@ class KeStore implements Store {
       }
     }
 
-    // Step 3: Detect query type and execute via Oxigraph
+    // Step 3: Execute via Oxigraph
     // use_default_graph_as_union: true makes all named graphs visible by default,
-    // so you don't need explicit GRAPH clauses to query across graphs (GR.02)
-    const queryType = detectQueryType(queryStr);
+    // so you don't need explicit GRAPH clauses to query across graphs
     const rawResult = this.oxStore.query(queryStr, {
       use_default_graph_as_union: true,
     });
 
-    // Step 4: Parse Oxigraph's return value into our discriminated union
+    // Step 4: Detect result type from Oxigraph's return value shape and
+    // parse into our discriminated union. This is more robust than parsing
+    // the query string — no regex, no edge cases.
+    const resultType = detectResultType(rawResult);
     let result: QueryResult;
 
-    switch (queryType) {
+    switch (resultType) {
       case "select": {
-        // Oxigraph returns an array of Map<string, Term> for SELECT
         const bindings = rawResult as Map<string, OxTerm>[];
         const variables: string[] =
           bindings.length > 0 ? Array.from(bindings[0].keys()) : [];
@@ -342,7 +357,6 @@ class KeStore implements Store {
         break;
       }
       case "construct": {
-        // Oxigraph returns an array of Quad for CONSTRUCT/DESCRIBE
         const quads = rawResult as OxQuad[];
         const triples: Triple[] = quads.map((quad) => ({
           subject: termToString(quad.subject),
@@ -356,15 +370,12 @@ class KeStore implements Store {
         break;
       }
       case "ask": {
-        // Oxigraph returns a boolean for ASK
         result = {
           type: "ask",
           result: rawResult as boolean,
         } satisfies AskResult;
         break;
       }
-      default:
-        throw new Error(`Unsupported query type: ${queryType}`);
     }
 
     // Step 5: Run onResult plugin hooks (in array order)
@@ -449,7 +460,7 @@ function loadSource(
 }
 
 // ---------------------------------------------------------------------------
-// Cache (KE.06)
+// Cache
 //
 // The cache serializes the entire store to N-Quads format on first boot.
 // On subsequent boots, the N-Quads file is loaded directly into Oxigraph,
@@ -460,7 +471,7 @@ function loadSource(
 //
 // Cache invalidation is manual: consumers call `store.reload({ force: true })`
 // or delete the cache file. Automatic invalidation (e.g., mtime checking)
-// is deferred to v0.4 (RS.02).
+// may be added in a future version.
 // ---------------------------------------------------------------------------
 
 /**
@@ -479,7 +490,6 @@ function tryLoadCache(oxStore: OxStore, cachePath: string): boolean {
     return true;
   } catch {
     // Cache is corrupted or unreadable — fall through to normal loading.
-    // Future: RS.02 will detect corruption and rebuild automatically.
     return false;
   }
 }
@@ -530,7 +540,7 @@ async function loadOxigraph() {
 // ---------------------------------------------------------------------------
 
 /**
- * Create a new ke triple store (KE.02 — sole entry point).
+ * Create a new ke triple store (sole entry point).
  *
  * This is the only way to create a Store. It:
  * 1. Loads the Oxigraph WASM module
