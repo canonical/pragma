@@ -26,6 +26,9 @@
 /* Grid layout presets */
 @import url("./grid.css");
 
+/* Temporary semantic tokens (candidates for design-tokens) */
+@import url("./tmp.css");
+
 /* Establish color-scheme for light-dark() support */
 :root {
   color-scheme: light dark;

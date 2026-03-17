@@ -38,7 +38,7 @@ type TemplateProps = {
 
 const Template: StoryFn<TemplateProps> = ({
   fieldMap,
-  wrapperClassName = "ds-subgrid",
+  wrapperClassName = "subgrid",
   otherProps,
 }: TemplateProps) => (
   <div className={wrapperClassName}>
@@ -67,7 +67,7 @@ AllOptional.args = {
 export const Side: StoryFn<TemplateProps> = Template.bind({});
 Side.args = {
   fieldMap: fieldMaps.base,
-  wrapperClassName: "ds-subgrid form-layout-side",
+  wrapperClassName: "subgrid form-layout-side",
 };
 
 /*

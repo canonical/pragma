@@ -34,9 +34,9 @@ export const form = ({ defaultValues = {} }: FormDecoratorParams = {}) => {
 
 export const grid = () => {
   return (Story: React.ElementType, context: { globals?: { grid?: string } }) => {
-    const gridType = context.globals?.grid ?? "fluid";
+    const modifier = context.globals?.grid ?? "intrinsic";
     return (
-      <div className={`ds-grid${gridType === "fixed" ? " ds-grid--fixed" : ""}`}>
+      <div className={`grid ${modifier}`}>
         <Story />
       </div>
     );

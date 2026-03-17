@@ -11,10 +11,10 @@ const preview = {
     grid: {
       name: "Grid",
       description: "Grid layout strategy",
-      defaultValue: "fluid",
+      defaultValue: "intrinsic",
       toolbar: {
         icon: "grid",
-        items: ["fluid", "fixed"],
+        items: ["intrinsic", "responsive"],
         title: "Grid",
       },
     },

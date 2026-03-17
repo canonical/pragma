@@ -1,18 +1,5 @@
 @import url("@canonical/styles");
 
-/* ── tmp spacing tokens ──────────────────────────────────────────────
- * Semantic spacing for form components. Each references a dimension
- * primitive. Prefixed --tmp- to signal these are candidates for
- * upstreaming to @canonical/design-tokens once validated.
- */
-:root {
-  --tmp-space-input-block: var(--dimension-100); /* 0.5rem  — vertical padding inside inputs */
-  --tmp-space-input-inline: var(--dimension-150); /* 0.75rem — horizontal padding inside inputs */
-  --tmp-space-field-gap: var(--dimension-300); /* 1.5rem  — gap between form fields */
-  --tmp-space-field-inline: var(--dimension-100); /* 0.5rem  — gap between label and input */
-  --tmp-space-group-gap: var(--dimension-050); /* 0.25rem — gap between description/error and input */
-}
-
 /* ── Form adapter ────────────────────────────────────────────────────
  * Maps design tokens to form component custom properties.
  */
@@ -65,7 +52,7 @@
 }
 
 /* ── Form layout variants ────────────────────────────────────────────
- * Applied on a parent .ds-grid to control label/payload column spans.
+ * Applied on a parent .grid to control label/payload column spans.
  */
 .form-layout-side {
   --form-label-columns: 1 / 3;
