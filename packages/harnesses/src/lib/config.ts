@@ -16,10 +16,12 @@ import {
   type Task,
   writeFile,
 } from "@canonical/task";
-import mergeTomlSection from "./mergeTomlSection.js";
-import parseTomlSection from "./parseTomlSection.js";
-import removeTomlSection from "./removeTomlSection.js";
-import serializeTomlSection from "./serializeTomlSection.js";
+import {
+  mergeTomlSection,
+  parseTomlSection,
+  removeTomlSection,
+  serializeTomlSection,
+} from "./toml/index.js";
 import type { HarnessDefinition, McpServerConfig } from "./types.js";
 
 /**
