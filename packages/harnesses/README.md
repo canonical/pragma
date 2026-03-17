@@ -85,6 +85,10 @@ The registry is pure data — adding a new harness is adding an entry, not writi
 | Windsurf | `windsurf` | `.windsurf/mcp.json` | `.windsurf/skills/` |
 | Cline | `cline` | `.vscode/mcp.json` | `.agents/skills/` |
 | Roo Code | `roo-code` | `.vscode/mcp.json` | `.agents/skills/` |
+| OpenCode | `opencode` | `.opencode.json` | `.agents/skills/` |
+| Gemini CLI | `gemini-cli` | `.gemini/settings.json` | `.agents/skills/` |
+| Codex | `codex` | `.codex/config.json` | `.agents/skills/` |
+| VS Code | `vscode` | `.vscode/mcp.json` | `.agents/skills/` |
 
 ```typescript
 import { harnesses, findHarnessById } from "@canonical/harnesses";

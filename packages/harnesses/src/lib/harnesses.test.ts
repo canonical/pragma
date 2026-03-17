@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 import harnesses from "./harnesses.js";
 
 describe("harnesses registry", () => {
-  it("contains all five known harnesses", () => {
-    expect(harnesses).toHaveLength(5);
+  it("contains all known harnesses", () => {
+    expect(harnesses).toHaveLength(9);
     const ids = harnesses.map((h) => h.id);
     expect(ids).toEqual([
       "claude-code",
@@ -11,6 +11,10 @@ describe("harnesses registry", () => {
       "windsurf",
       "cline",
       "roo-code",
+      "opencode",
+      "gemini-cli",
+      "codex",
+      "vscode",
     ]);
   });
 

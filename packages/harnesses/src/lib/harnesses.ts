@@ -60,6 +60,42 @@ const harnesses: readonly HarnessDefinition[] = [
     mcpKey: "mcpServers",
     skillsPath: (root) => `${root}/.agents/skills`,
   },
+  {
+    id: "opencode",
+    name: "OpenCode",
+    detect: [{ type: "file", path: ".opencode.json" }],
+    configPath: (root) => `${root}/.opencode.json`,
+    configFormat: "json",
+    mcpKey: "mcp",
+    skillsPath: (root) => `${root}/.agents/skills`,
+  },
+  {
+    id: "gemini-cli",
+    name: "Gemini CLI",
+    detect: [{ type: "file", path: ".gemini/settings.json" }],
+    configPath: (root) => `${root}/.gemini/settings.json`,
+    configFormat: "json",
+    mcpKey: "mcpServers",
+    skillsPath: (root) => `${root}/.agents/skills`,
+  },
+  {
+    id: "codex",
+    name: "Codex",
+    detect: [{ type: "file", path: ".codex/config.json" }],
+    configPath: (root) => `${root}/.codex/config.json`,
+    configFormat: "json",
+    mcpKey: "mcpServers",
+    skillsPath: (root) => `${root}/.agents/skills`,
+  },
+  {
+    id: "vscode",
+    name: "VS Code",
+    detect: [{ type: "directory", path: ".vscode" }],
+    configPath: (root) => `${root}/.vscode/mcp.json`,
+    configFormat: "json",
+    mcpKey: "servers",
+    skillsPath: (root) => `${root}/.agents/skills`,
+  },
 ];
 
 export default harnesses;
