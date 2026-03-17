@@ -1,6 +1,7 @@
 /**
  * MCP config read/write/remove as Task values.
  * All effects go through @canonical/task primitives — no raw fs calls.
+ * Supports both JSON and TOML config formats.
  */
 
 import { dirname } from "node:path";
@@ -15,19 +16,13 @@ import {
   type Task,
   writeFile,
 } from "@canonical/task";
+import {
+  mergeTomlSection,
+  parseTomlSection,
+  removeTomlSection,
+  serializeTomlSection,
+} from "./toml.js";
 import type { HarnessDefinition, McpServerConfig } from "./types.js";
-
-/**
- * Assert that the harness uses a JSON-based config format.
- * TOML-based harnesses (e.g. Codex) are not yet supported for config operations.
- */
-const assertJsonFormat = (harness: HarnessDefinition): void => {
-  if (harness.configFormat === "toml") {
-    throw new Error(
-      `Config read/write for TOML-based harness "${harness.name}" is not yet supported`,
-    );
-  }
-};
 
 /**
  * Parse a JSON string into a record, returning an empty object on failure.
@@ -63,8 +58,18 @@ export const readMcpConfig = (
   harness: HarnessDefinition,
   projectRoot: string,
 ): Task<Record<string, McpServerConfig>> => {
-  assertJsonFormat(harness);
   const configPath = harness.configPath(projectRoot);
+
+  if (harness.configFormat === "toml") {
+    return ifElseM(
+      exists(configPath),
+      map(readFile(configPath), (content) => {
+        const sections = parseTomlSection(content, harness.mcpKey);
+        return sections as unknown as Record<string, McpServerConfig>;
+      }),
+      pure({} as Record<string, McpServerConfig>),
+    );
+  }
 
   return ifElseM(
     exists(configPath),
@@ -90,8 +95,32 @@ export const writeMcpConfig = (
   serverName: string,
   config: McpServerConfig,
 ): Task<void> => {
-  assertJsonFormat(harness);
   const configPath = harness.configPath(projectRoot);
+
+  if (harness.configFormat === "toml") {
+    const fields: Record<string, unknown> = { command: config.command };
+    if (config.args) fields.args = config.args;
+    if (config.cwd) fields.cwd = config.cwd;
+
+    return ifElseM(
+      exists(configPath),
+      flatMap(readFile(configPath), (content) => {
+        const merged = mergeTomlSection(
+          content,
+          harness.mcpKey,
+          serverName,
+          fields,
+        );
+        return writeFile(configPath, merged);
+      }),
+      flatMap(mkdir(dirname(configPath), true), () =>
+        writeFile(
+          configPath,
+          serializeTomlSection(harness.mcpKey, { [serverName]: fields }),
+        ),
+      ),
+    );
+  }
 
   return ifElseM(
     exists(configPath),
@@ -123,8 +152,18 @@ export const removeMcpConfig = (
   projectRoot: string,
   serverName: string,
 ): Task<void> => {
-  assertJsonFormat(harness);
   const configPath = harness.configPath(projectRoot);
+
+  if (harness.configFormat === "toml") {
+    return ifElseM(
+      exists(configPath),
+      flatMap(readFile(configPath), (content) => {
+        const removed = removeTomlSection(content, harness.mcpKey, serverName);
+        return writeFile(configPath, removed);
+      }),
+      pure(undefined),
+    );
+  }
 
   return ifElseM(
     exists(configPath),

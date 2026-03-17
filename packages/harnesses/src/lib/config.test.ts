@@ -241,26 +241,72 @@ describe("removeMcpConfig", () => {
   });
 });
 
-describe("TOML format guard", () => {
+describe("TOML config (Codex)", () => {
   const codex = harnesses.find(
     (h) => h.id === "codex",
   ) as (typeof harnesses)[number];
 
-  it("readMcpConfig throws for TOML-based harnesses", () => {
-    expect(() => readMcpConfig(codex, "/project")).toThrow(
-      /TOML-based harness/,
+  it("reads mcp_servers from TOML config", () => {
+    const tomlContent = [
+      "[mcp_servers.figma]",
+      'url = "https://mcp.figma.com/mcp"',
+      "",
+      "[mcp_servers.pragma]",
+      'command = "pragma"',
+    ].join("\n");
+
+    const result = dryRunWith(
+      readMcpConfig(codex, "/project"),
+      buildMocks({
+        Exists: existsMock(() => true),
+        ReadFile: readFileMock(tomlContent),
+      }),
     );
+
+    expect(result.value.pragma).toBeDefined();
+    expect(result.value.pragma.command).toBe("pragma");
   });
 
-  it("writeMcpConfig throws for TOML-based harnesses", () => {
-    expect(() =>
-      writeMcpConfig(codex, "/project", "pragma", { command: "pragma" }),
-    ).toThrow(/TOML-based harness/);
+  it("writes mcp_servers entry as TOML table", () => {
+    const result = dryRunWith(
+      writeMcpConfig(codex, "/project", "pragma", {
+        command: "pragma",
+        args: ["mcp"],
+      }),
+      buildMocks({
+        Exists: existsMock(() => false),
+        MakeDir: mkdirMock,
+        WriteFile: writeMock,
+      }),
+    );
+
+    const writeEffects = filterEffects(result.effects, "WriteFile");
+    expect(writeEffects.length).toBe(1);
+    expect(writeEffects[0].content).toContain("[mcp_servers.pragma]");
+    expect(writeEffects[0].content).toContain('command = "pragma"');
   });
 
-  it("removeMcpConfig throws for TOML-based harnesses", () => {
-    expect(() => removeMcpConfig(codex, "/project", "pragma")).toThrow(
-      /TOML-based harness/,
+  it("removes mcp_servers entry from TOML", () => {
+    const tomlContent = [
+      "[mcp_servers.figma]",
+      'url = "https://mcp.figma.com/mcp"',
+      "",
+      "[mcp_servers.pragma]",
+      'command = "pragma"',
+    ].join("\n");
+
+    const result = dryRunWith(
+      removeMcpConfig(codex, "/project", "pragma"),
+      buildMocks({
+        Exists: existsMock(() => true),
+        ReadFile: readFileMock(tomlContent),
+        WriteFile: writeMock,
+      }),
     );
+
+    const writeEffects = filterEffects(result.effects, "WriteFile");
+    expect(writeEffects.length).toBe(1);
+    expect(writeEffects[0].content).toContain("[mcp_servers.figma]");
+    expect(writeEffects[0].content).not.toContain("[mcp_servers.pragma]");
   });
 });
