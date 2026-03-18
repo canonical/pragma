@@ -17,7 +17,7 @@
   padding-inline: var(--tmp-space-input-inline);
   border: var(--dimension-stroke-thickness-medium) solid var(--color-border);
   border-radius: var(--dimension-radius-small);
-  background: var(--color-foreground-input);
+  background-color: var(--color-foreground-input);
   color: var(--color-text);
   font-family: var(--typography-text-primary-font-family);
   font-size: var(--typography-text-primary-font-size);
@@ -25,7 +25,7 @@
   transition: border-color 150ms ease, box-shadow 150ms ease;
 
   &:hover:not(:disabled) {
-    background: var(--hover--color-foreground-input, var(--color-foreground-input-hover));
+    background-color: var(--hover--color-foreground-input, var(--color-foreground-input-hover));
   }
 
   &:focus-visible {
@@ -36,7 +36,7 @@
 
   &:disabled {
     border-color: var(--disabled--color-border);
-    background: var(--color-foreground-input-disabled);
+    background-color: var(--color-foreground-input-disabled);
     color: var(--disabled--color-text);
     cursor: not-allowed;
   }

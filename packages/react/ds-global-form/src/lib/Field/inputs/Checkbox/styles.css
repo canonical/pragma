@@ -26,13 +26,18 @@
     background-size: 75%;
   }
 
-  &:hover:not(:disabled) {
+  &:hover:not(:disabled):not(:checked):not(:indeterminate) {
     background: var(--color-foreground-checkbox-unselected-hover);
   }
 
-  &:checked:hover:not(:disabled),
+  &:checked:hover:not(:disabled) {
+    background-color: var(--color-foreground-checkbox-selected);
+    filter: brightness(0.9);
+  }
+
   &:indeterminate:hover:not(:disabled) {
-    opacity: 0.85;
+    background-color: var(--color-foreground-checkbox-selected);
+    filter: brightness(0.9);
   }
 
   &:focus-visible {

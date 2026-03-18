@@ -1,61 +1,53 @@
-/* @canonical/generator-ds 0.9.0-experimental.4 */
-
-// Needed for function-based story, safe to remove otherwise
-// import type { CheckboxProps } from './types.js'
+import { useEffect } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import * as decorators from "storybook/decorators.js";
 import Component from "./Checkbox.js";
 
-// Needed for template-based story, safe to remove otherwise
-// import type { StoryFn } from '@storybook/react-vite'
-
 const meta = {
   title: "Field/inputs/Checkbox",
   component: Component,
-  decorators: [decorators.form()],
 } satisfies Meta<typeof Component>;
 
 export default meta;
 
-/*
-  CSF3 story
-  Uses object-based story declarations with strong TS support (`Meta` and `StoryObj`).
-  Uses the latest storybook format.
-*/
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
+  decorators: [decorators.form()],
   args: {
     name: "subscribe",
   },
 };
 
-/*
-  Function-based story
-  Direct arguments passed to the component
-  Simple, but can lead to repetition if used across multiple stories with similar configurations
+export const Checked: Story = {
+  decorators: [
+    decorators.form({ defaultValues: { subscribe_checked: true } }),
+  ],
+  args: {
+    name: "subscribe_checked",
+    label: "Checked",
+  },
+};
 
-  export const Default = (args: CheckboxProps) => <Component {...args} />;
-  Default.args = { children: <span>Hello world!</span> };
-*/
+const IndeterminateHelper = () => {
+  useEffect(() => {
+    const el = document.querySelector<HTMLInputElement>(
+      'input[name="subscribe_indeterminate"]',
+    );
+    if (el) el.indeterminate = true;
+  }, []);
+  return <Component name="subscribe_indeterminate" label="Indeterminate" />;
+};
 
-/*
-  Template-Based story
-  Uses a template function to bind story variations, making it more reusable
-  Slightly more boilerplate but more flexible for creating multiple stories with different configurations
+export const Indeterminate: Story = {
+  decorators: [decorators.form({ touchedFields: ["subscribe_indeterminate"] })],
+  render: () => <IndeterminateHelper />,
+};
 
-  const Template: StoryFn<typeof Component> = (args) => <Component {...args} />;
-  export const Default: StoryFn<typeof Component> = Template.bind({});
-  Default.args = {
-    children: <span>Hello world!</span>
-  };
-*/
-
-/*
-  Static story
-  Simple and straightforward, but offers the least flexibility and reusability
-
-  export const Default: StoryFn<typeof Component> = () => (
-    <Component><span>Hello world!</span></Component>
-  );
-*/
+export const Disabled: Story = {
+  decorators: [decorators.form()],
+  args: {
+    name: "subscribe_disabled",
+    disabled: true,
+  },
+};
