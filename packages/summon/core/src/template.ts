@@ -217,8 +217,9 @@ export const templateDir = (options: TemplateDirOptions): Task<void> => {
           let destFile = file.replace(/\.ejs$/, "");
 
           // Apply renames
-          if (options.rename?.[destFile]) {
-            destFile = options.rename[destFile];
+          const renamed = options.rename?.[destFile];
+          if (renamed) {
+            destFile = renamed;
           }
 
           // Render destination path with variables
