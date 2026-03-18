@@ -959,6 +959,7 @@
       "dependencies": {
         "@canonical/task": "^0.18.0",
         "chalk": "^5.6.2",
+        "cli-framework": "workspace:*",
         "commander": "^14.0.3",
         "ejs": "^4.0.1",
         "ink": "^6.8.0",

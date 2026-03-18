@@ -10,9 +10,9 @@ import {
   type Task,
   type TaskError,
 } from "@canonical/task";
+import { formatContentPreview } from "cli-framework";
 import { Box, Text, useApp, useInput } from "ink";
 import { useCallback, useEffect, useState } from "react";
-import { formatContentPreview } from "../cli-format.js";
 import type { StampConfig } from "../stamp.js";
 import type { GeneratorDefinition, PromptDefinition } from "../types.js";
 import { ExecutionProgress, type TimedEffect } from "./ExecutionProgress.js";

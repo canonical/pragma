@@ -10,6 +10,14 @@ import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { dryRun } from "@canonical/task";
 import chalk from "chalk";
+import {
+  formatEffectLine,
+  formatEffectWithContent,
+  formatGeneratorLlmHelp,
+  formatLlmJson,
+  formatLlmMarkdown,
+  isVisibleEffect,
+} from "cli-framework";
 import { Command } from "commander";
 import { render } from "ink";
 import {
@@ -626,8 +634,7 @@ const _printGeneratorHelp = async (
 
     // LLM mode: output structured markdown help and return
     if (llmMode) {
-      const { formatLlmHelp } = await import("./cli-format.js");
-      process.stdout.write(formatLlmHelp(generator, commandPath));
+      process.stdout.write(formatGeneratorLlmHelp(generator, commandPath));
       return;
     }
 
@@ -1255,7 +1262,6 @@ const configureGeneratorCommand = (
 
         if (actualOptions.llm === true) {
           // LLM mode: structured markdown output
-          const { formatLlmMarkdown } = await import("./cli-format.js");
           const output = formatLlmMarkdown(
             generator,
             answersWithDefaults,
@@ -1265,7 +1271,6 @@ const configureGeneratorCommand = (
           process.stdout.write(output);
         } else if (actualOptions.format === "json") {
           // JSON mode: structured JSON output
-          const { formatLlmJson } = await import("./cli-format.js");
           const output = formatLlmJson(
             generator,
             answersWithDefaults,
@@ -1275,9 +1280,6 @@ const configureGeneratorCommand = (
           process.stdout.write(`${JSON.stringify(output, null, 2)}\n`);
         } else {
           // Human-readable dry-run output
-          const { isVisibleEffect, formatEffectLine, formatEffectWithContent } =
-            await import("./cli-format.js");
-
           console.log();
           console.log(chalk.bold.magenta(generator.meta.name));
           console.log(chalk.dim(generator.meta.description));
