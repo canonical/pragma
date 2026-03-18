@@ -4,13 +4,13 @@
  * Main CLI application component using React Ink.
  */
 
+import { formatContentPreview } from "@canonical/cli-core";
 import {
   dryRun,
   type Effect,
   type Task,
   type TaskError,
 } from "@canonical/task";
-import { formatContentPreview } from "cli-framework";
 import { Box, Text, useApp, useInput } from "ink";
 import { useCallback, useEffect, useState } from "react";
 import type { StampConfig } from "../stamp.js";

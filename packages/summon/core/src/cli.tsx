@@ -8,8 +8,6 @@
 
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
-import { dryRun } from "@canonical/task";
-import chalk from "chalk";
 import {
   formatEffectLine,
   formatEffectWithContent,
@@ -17,7 +15,9 @@ import {
   formatLlmJson,
   formatLlmMarkdown,
   isVisibleEffect,
-} from "cli-framework";
+} from "@canonical/cli-core";
+import { dryRun } from "@canonical/task";
+import chalk from "chalk";
 import { Command } from "commander";
 import { render } from "ink";
 import {

@@ -1,6 +1,6 @@
-# cli-framework
+# @canonical/cli-core
 
-Shared CLI machinery for the pragma and summon binaries. Workspace-internal — not published to npm.
+Shared CLI machinery for the pragma and summon binaries.
 
 Provides `CommandDefinition` as the universal command unit, Commander.js registration, output adapters, completion infrastructure, and help text formatting.
 
@@ -13,7 +13,7 @@ import {
   createOutputResult,
   type CommandDefinition,
   type CommandContext,
-} from "cli-framework";
+} from "@canonical/cli-core";
 import { Command } from "commander";
 
 const commands: CommandDefinition[] = [
@@ -69,7 +69,7 @@ Three-variant tagged union:
 Derive tab-completion from command definitions:
 
 ```typescript
-import { buildCompleters, resolveCompletion } from "cli-framework";
+import { buildCompleters, resolveCompletion } from "@canonical/cli-core";
 
 const tree = buildCompleters(commands);
 const result = resolveCompletion(tree, ["component", "ge"]);
@@ -83,7 +83,7 @@ Three levels: noun (L1), verb (L2), argument (L3 — dynamic via `ParameterDefin
 Custom renderers that override Commander auto-generation:
 
 ```typescript
-import { formatHelp, formatVerbHelp, formatNounHelp } from "cli-framework";
+import { formatHelp, formatVerbHelp, formatNounHelp } from "@canonical/cli-core";
 
 const help = formatHelp("pragma", "semantic design system CLI", commands);
 const nounHelp = formatNounHelp("pragma", "component", commands);

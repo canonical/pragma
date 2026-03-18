@@ -1,6 +1,5 @@
 {
-  "name": "cli-framework",
-  "private": true,
+  "name": "@canonical/cli-core",
   "description": "Shared CLI machinery: CommandDefinition, registerAll, completions, OutputAdapter.",
   "version": "0.18.0",
   "type": "module",
