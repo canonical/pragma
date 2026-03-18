@@ -1,0 +1,96 @@
+:root {
+  /* Input chrome */
+  --form-input-padding-block: var(--tmp-space-input-block);
+  --form-input-padding-inline: var(--tmp-space-input-inline);
+  --form-input-border-width: var(--dimension-stroke-thickness-medium);
+  --form-input-border-color: var(--color-border);
+  --form-input-border-radius: var(--dimension-radius-small);
+  --form-input-background: var(--color-foreground-input);
+  --form-input-color: var(--color-text);
+  --form-input-font-size: var(--typography-text-primary-font-size);
+  --form-input-line-height: var(--typography-text-primary-line-height);
+
+  /* Field layout */
+  --form-field-gap: var(--tmp-space-field-gap);
+  --form-field-inline-gap: var(--tmp-space-field-inline);
+  --form-group-gap: var(--tmp-space-group-gap);
+
+  /* Label */
+  --form-label-font-weight: var(--typography-text-primary-font-weight-bold);
+  --form-label-font-size: var(--typography-text-primary-font-size);
+  --form-label-color: var(--color-text);
+
+  /* Description */
+  --form-description-font-size: var(--typography-text-secondary-font-size);
+  --form-description-color: var(--color-text-muted);
+
+  /* Error */
+  --form-error-font-size: var(--typography-text-secondary-font-size);
+  --form-error-color: var(--modifier-color-text, var(--color-text-error));
+
+  /* State colors */
+  --form-input-border-color-focus: var(--color-focusRing);
+  --form-input-border-color-error: var(--color-border-error);
+  --form-input-background-disabled: var(--color-foreground-input-disabled);
+  --form-input-color-disabled: var(--disabled--color-text);
+  --form-input-border-color-disabled: var(--disabled--color-border);
+
+  /* Focus ring */
+  --form-focus-ring-color: var(--color-focusRing);
+  --form-focus-ring-color-error: var(--color-focusRing-error);
+}
+
+/* ── .ds.input.chrome — shared input chrome ─────────────────────────
+ * Applied on native <textarea>/<select> directly, and on the
+ * composite .ds.input.text wrapper for <input> + prefix/suffix.
+ */
+.ds.input.chrome {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  padding-block: var(--form-input-padding-block);
+  padding-inline: var(--form-input-padding-inline);
+  border: var(--form-input-border-width) solid var(--form-input-border-color);
+  border-radius: var(--form-input-border-radius);
+  background-color: var(--form-input-background);
+  color: var(--form-input-color);
+  font-family: var(--typography-text-primary-font-family);
+  font-size: var(--form-input-font-size);
+  line-height: var(--form-input-line-height);
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease;
+
+  &:hover:not(:disabled, :has(input:disabled)) {
+    background-color: var(
+      --hover--color-foreground-input,
+      var(--color-foreground-input-hover)
+    );
+  }
+
+  &:focus-visible,
+  &:focus-within {
+    outline: none;
+    border-color: var(--form-input-border-color-focus);
+    box-shadow: 0 0 0 1px var(--form-focus-ring-color);
+  }
+
+  &:disabled,
+  &:has(input:disabled) {
+    border-color: var(--form-input-border-color-disabled);
+    background-color: var(--form-input-background-disabled);
+    color: var(--form-input-color-disabled);
+    cursor: not-allowed;
+  }
+}
+
+/* ── Danger — set on .ds.field ancestor via .danger class ─────────── */
+.danger > .payload .ds.input.chrome {
+  border-color: var(--form-input-border-color-error);
+}
+
+.danger > .payload .ds.input.chrome:focus-visible,
+.danger > .payload .ds.input.chrome:focus-within {
+  border-color: var(--form-focus-ring-color-error);
+  box-shadow: 0 0 0 1px var(--form-focus-ring-color-error);
+}

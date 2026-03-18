@@ -3,10 +3,9 @@ import type React from "react";
 import { useFormContext } from "react-hook-form";
 import type { TextareaProps } from "./types.js";
 import "./styles.css";
-import { mixins } from "../../../constants.js";
 import withWrapper from "../../common/Wrapper/withWrapper.js";
 
-const componentCssClassName = "ds form-textarea";
+const componentCssClassName = "ds input textarea chrome";
 
 /**
  * description of the Textarea component
@@ -25,9 +24,7 @@ const Textarea = ({
     <textarea
       id={id}
       style={style}
-      className={[mixins.FormInput, componentCssClassName, className]
-        .filter(Boolean)
-        .join(" ")}
+      className={[componentCssClassName, className].filter(Boolean).join(" ")}
       {...otherProps}
       {...register(name, registerProps)}
     />

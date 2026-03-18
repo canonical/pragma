@@ -9,6 +9,15 @@ import * as fieldMaps from "storybook/fixtures.fields.js";
 import { Field } from "../Field/index.js";
 import type { FieldProps } from "../Field/types.js";
 
+/**
+ * ## Grid context
+ *
+ * The `Form` component does **not** establish a CSS grid.
+ * Grid context is the consumer's responsibility — wrap your fields in
+ * a grid container (`display: grid` / `display: subgrid`) that suits
+ * your layout needs. The storybook decorator `decorators.grid()` shows
+ * one way to provide that context.
+ */
 const meta = {
   title: "Form",
   decorators: [decorators.grid(), decorators.form()],

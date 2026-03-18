@@ -3,7 +3,7 @@ import type React from "react";
 import type { DescriptionProps } from "./types.js";
 import "./styles.css";
 
-const componentCssClassName = "ds form-field-description";
+const componentCssClassName = "ds field-description";
 
 /**
  * description of the Description component

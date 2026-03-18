@@ -1,19 +1,27 @@
-.ds.form-text {
+.ds.input.text {
   direction: inherit;
   display: flex;
   align-items: center;
   position: relative;
+  padding: 0;
 
-  & > .form-input {
+  & > input {
     flex: 1;
     min-width: 0;
+    border: none;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    outline: none;
+    padding-block: var(--form-input-padding-block);
+    padding-inline: var(--form-input-padding-inline);
   }
 
   & > .prefix,
   & > .suffix {
     display: flex;
     align-items: center;
-    padding-inline: var(--tmp-space-field-inline);
+    padding-inline: var(--form-field-inline-gap);
     color: var(--color-text-muted);
     white-space: nowrap;
     user-select: none;

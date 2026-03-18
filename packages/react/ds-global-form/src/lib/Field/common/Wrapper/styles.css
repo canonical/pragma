@@ -1,11 +1,11 @@
-.ds.form-wrapper {
+.ds.field {
   display: grid;
   grid-template-columns: subgrid;
   grid-column: var(--wrapper-columns, 1 / -1);
-  gap: var(--tmp-space-field-inline);
+  gap: var(--form-field-inline-gap);
   align-items: baseline;
 
-  & > .ds.form-label {
+  & > .ds.field-label {
     grid-column: var(--form-label-columns, 1 / -1);
   }
 
@@ -13,6 +13,6 @@
     grid-column: var(--form-payload-columns, 1 / -1);
     display: flex;
     flex-direction: column;
-    gap: var(--tmp-space-group-gap);
+    gap: var(--form-group-gap);
   }
 }

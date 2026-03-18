@@ -3,7 +3,7 @@ import type React from "react";
 import type { ErrorProps } from "./types.js";
 import "./styles.css";
 
-const componentCssClassName = "ds form-field-error";
+const componentCssClassName = "ds field-error";
 
 /**
  * description of the Error component

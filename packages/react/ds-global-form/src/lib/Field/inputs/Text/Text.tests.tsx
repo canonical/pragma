@@ -20,9 +20,10 @@ describe("Text", () => {
     expect(screen.getByText(".com")).toBeInTheDocument();
   });
 
-  it("applies the form-input class", () => {
+  it("applies chrome on the wrapper", () => {
     renderWithForm(<Text name="username" />);
-    expect(screen.getByRole("textbox")).toHaveClass("form-input");
+    const wrapper = screen.getByRole("textbox").parentElement;
+    expect(wrapper).toHaveClass("ds", "input", "text", "chrome");
   });
 
   it("supports disabled state", () => {

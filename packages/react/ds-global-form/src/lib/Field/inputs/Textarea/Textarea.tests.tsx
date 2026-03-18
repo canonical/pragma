@@ -14,11 +14,10 @@ describe("Textarea", () => {
     expect(screen.getByRole("textbox")).toHaveAttribute("name", "content");
   });
 
-  it("applies both form-input and component class", () => {
+  it("applies chrome and component classes", () => {
     renderWithForm(<Textarea name="content" />);
     const el = screen.getByRole("textbox");
-    expect(el).toHaveClass("form-input");
-    expect(el).toHaveClass("form-textarea");
+    expect(el).toHaveClass("ds", "input", "textarea", "chrome");
   });
 
   it("supports disabled state", () => {

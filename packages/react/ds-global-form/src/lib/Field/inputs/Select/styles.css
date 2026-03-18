@@ -1,9 +1,9 @@
 /* Chevron indicator sourced from @canonical/ds-assets icons/chevron-down.svg */
-.ds.form-select {
+.ds.input.select {
   appearance: none;
   background-image: url("/icons/chevron-down.svg#chevron-down");
   background-repeat: no-repeat;
-  background-position: right var(--tmp-space-input-inline) center;
+  background-position: right var(--form-input-padding-inline) center;
   background-size: 1em;
-  padding-inline-end: calc(var(--tmp-space-input-inline) * 2 + 1em);
+  padding-inline-end: calc(var(--form-input-padding-inline) * 2 + 1em);
 }
