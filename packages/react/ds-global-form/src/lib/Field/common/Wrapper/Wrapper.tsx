@@ -7,7 +7,7 @@ import { states } from "../../../constants.js";
 import { Description, Error as FieldError, Label } from "../index.js";
 import { useFieldWrapper } from "./hooks/index.js";
 
-const componentCssClassName = "ds form-wrapper";
+const componentCssClassName = "ds field";
 
 /**
  * description of the Wrapper component

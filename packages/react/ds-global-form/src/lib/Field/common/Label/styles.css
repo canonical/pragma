@@ -1,7 +1,7 @@
-.ds.form-label {
-  font-weight: var(--typography-text-primary-font-weight-bold, bold);
-  font-size: var(--typography-text-primary-font-size);
-  color: var(--color-text);
+.ds.field-label {
+  font-weight: var(--form-label-font-weight, bold);
+  font-size: var(--form-label-font-size);
+  color: var(--form-label-color);
 
   & > .required {
     color: var(--color-text-error);

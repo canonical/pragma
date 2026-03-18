@@ -1,4 +1,4 @@
-.ds.form-textarea {
-  min-height: calc(3lh + var(--tmp-space-input-block) * 2);
+.ds.input.textarea {
+  min-height: calc(3lh + var(--form-input-padding-block) * 2);
   resize: vertical;
 }

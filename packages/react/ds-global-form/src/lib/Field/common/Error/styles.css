@@ -1,6 +1,6 @@
-.ds.form-field-error {
-  font-size: var(--typography-text-secondary-font-size);
-  color: var(--color-text-error);
+.ds.field-error {
+  font-size: var(--form-error-font-size);
+  color: var(--form-error-color);
   margin: 0;
-  margin-block-start: var(--tmp-space-group-gap);
+  margin-block-start: var(--form-group-gap);
 }

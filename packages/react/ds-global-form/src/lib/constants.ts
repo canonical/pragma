@@ -4,7 +4,3 @@ export enum states {
   Idle = "idle",
   Disabled = "disabled",
 }
-
-export enum mixins {
-  FormInput = "form-input",
-}
