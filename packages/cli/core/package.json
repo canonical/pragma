@@ -1,15 +1,19 @@
 {
-  "name": "@canonical/pragma",
-  "description": "CLI and MCP server for Canonical's design system.",
+  "name": "cli-framework",
+  "private": true,
+  "description": "Shared CLI machinery: CommandDefinition, registerAll, completions, OutputAdapter.",
   "version": "0.18.0",
   "type": "module",
-  "module": "src/index.ts",
-  "types": "src/index.ts",
-  "bin": {
-    "pragma": "src/bin.ts"
+  "module": "dist/esm/index.js",
+  "types": "dist/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/esm/index.js"
+    }
   },
   "files": [
-    "src"
+    "dist"
   ],
   "author": {
     "email": "webteam@canonical.com",
@@ -19,15 +23,16 @@
     "type": "git",
     "url": "https://github.com/canonical/pragma"
   },
-  "license": "GPL-3.0",
+  "license": "LGPL-3.0",
   "bugs": {
     "url": "https://github.com/canonical/pragma/issues"
   },
   "homepage": "https://github.com/canonical/pragma#readme",
   "scripts": {
-    "build": "echo 'No build needed - runs directly from TypeScript'",
+    "build": "tsc -p tsconfig.build.json",
+    "build:all": "bun run build",
     "check": "bun run check:biome && bun run check:ts && bun run check:webarchitect",
-    "check:webarchitect": "webarchitect tool-ts",
+    "check:webarchitect": "webarchitect library",
     "check:fix": "bun run check:biome:fix && bun run check:ts",
     "check:biome": "biome check",
     "check:biome:fix": "biome check --write",
@@ -35,6 +40,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage"
+  },
+  "dependencies": {
+    "commander": "^14.0.3"
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.6",
@@ -45,8 +53,5 @@
     "@types/node": "^24.12.0",
     "typescript": "^5.9.3",
     "vitest": "^4.0.18"
-  },
-  "dependencies": {
-    "smol-toml": "^1.3.1"
   }
 }
