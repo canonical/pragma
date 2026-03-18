@@ -186,6 +186,9 @@
       "name": "cli-framework",
       "version": "0.18.0",
       "dependencies": {
+        "@canonical/summon-core": "workspace:*",
+        "@canonical/task": "workspace:*",
+        "chalk": "^5.4.1",
         "commander": "^14.0.3",
       },
       "devDependencies": {

@@ -77,3 +77,34 @@ export {
   formatNounHelp,
   formatVerbHelp,
 } from "./lib/help.js";
+
+// =============================================================================
+// Generator Bridge
+// =============================================================================
+
+export {
+  generatorToCommand,
+  promptToParameter,
+} from "./lib/convertGenerator.js";
+export { default as executeGenerator } from "./lib/executeGenerator.js";
+
+// =============================================================================
+// Effect Formatting
+// =============================================================================
+
+export {
+  buildReplayCommand,
+  formatContentPreview,
+  formatEffectLine,
+  formatEffectWithContent,
+  formatLlmHelp as formatGeneratorLlmHelp,
+  formatLlmJson,
+  formatLlmMarkdown,
+  getActionColor,
+  getActionLabel,
+  getEffectPayload,
+  getLanguageHint,
+  getLlmActionLabel,
+  getLlmEffectPath,
+  isVisibleEffect,
+} from "./lib/formatEffects.js";
