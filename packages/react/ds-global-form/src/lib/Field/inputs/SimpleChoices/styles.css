@@ -26,7 +26,9 @@
       border-radius: 50%;
       background-color: var(--color-foreground-radio-unselected);
       cursor: inherit;
-      transition: background-color 150ms ease, border-color 150ms ease;
+      transition:
+        background-color 150ms ease,
+        border-color 150ms ease;
 
       &:checked {
         border-color: var(--color-foreground-radio-selected);
@@ -64,7 +66,9 @@
       border-radius: var(--dimension-radius-small);
       background-color: var(--color-foreground-checkbox-unselected);
       cursor: inherit;
-      transition: background-color 150ms ease, border-color 150ms ease;
+      transition:
+        background-color 150ms ease,
+        border-color 150ms ease;
 
       &:checked {
         background: var(--color-foreground-checkbox-selected);

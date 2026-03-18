@@ -7,7 +7,7 @@ import "./styles.css";
  * driving design token resolution via light-dark().
  */
 const themeDecorator = (
-  story: Function,
+  story: (...args: unknown[]) => unknown,
   context: { globals?: { theme?: string } },
 ) => {
   const theme = context.globals?.theme ?? "light";

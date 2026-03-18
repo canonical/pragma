@@ -21,7 +21,10 @@ const ThemeTest = () => (
       }}
     >
       <strong>--color-background / --color-text / --color-border</strong>
-      <p>This text should be dark-on-light in light theme, light-on-dark in dark theme.</p>
+      <p>
+        This text should be dark-on-light in light theme, light-on-dark in dark
+        theme.
+      </p>
     </div>
 
     <div

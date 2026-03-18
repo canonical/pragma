@@ -1,9 +1,8 @@
 import { fireEvent, screen, waitFor } from "@testing-library/react";
-import type React from "react";
 import { describe, expect, it } from "vitest";
 import { renderWithForm } from "../../../../testing/renderWithForm.js";
-import type { BaseInputProps, Middleware } from "../../types.js";
 import Text from "../../inputs/Text/Text.js";
+import type { BaseInputProps, Middleware } from "../../types.js";
 
 // Text is already wrapped with withWrapper, so we test through it.
 

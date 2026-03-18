@@ -1,14 +1,17 @@
-import { useEffect } from "react";
-import type React from "react";
-import { FormProvider, useForm } from "react-hook-form";
 import { useFormStateEmitter } from "@canonical/storybook-addon-form-state";
+import type React from "react";
+import { useEffect } from "react";
+import { FormProvider, useForm } from "react-hook-form";
 
 interface FormDecoratorParams {
   defaultValues?: Record<string, unknown>;
   touchedFields?: string[];
 }
 
-export const form = ({ defaultValues = {}, touchedFields = [] }: FormDecoratorParams = {}) => {
+export const form = ({
+  defaultValues = {},
+  touchedFields = [],
+}: FormDecoratorParams = {}) => {
   return (Story: React.ElementType) => {
     const FormWrapper: React.ElementType = () => {
       const methods = useForm({
@@ -23,7 +26,9 @@ export const form = ({ defaultValues = {}, touchedFields = [] }: FormDecoratorPa
       // https://github.com/react-hook-form/react-hook-form/issues/1418
       useEffect(() => {
         for (const field of touchedFields) {
-          methods.setValue(field, methods.getValues(field), { shouldTouch: true });
+          methods.setValue(field, methods.getValues(field), {
+            shouldTouch: true,
+          });
         }
       }, [methods]);
 
@@ -41,7 +46,10 @@ export const form = ({ defaultValues = {}, touchedFields = [] }: FormDecoratorPa
 };
 
 export const grid = () => {
-  return (Story: React.ElementType, context: { globals?: { grid?: string } }) => {
+  return (
+    Story: React.ElementType,
+    context: { globals?: { grid?: string } },
+  ) => {
     const modifier = context.globals?.grid ?? "intrinsic";
     return (
       <div className={`grid ${modifier}`}>

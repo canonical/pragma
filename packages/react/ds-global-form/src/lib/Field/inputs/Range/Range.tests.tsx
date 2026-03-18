@@ -5,17 +5,17 @@ import Range from "./Range.js";
 
 describe("Range", () => {
   it("renders a range input", () => {
-    renderWithForm(<Range name="volume" />);
+    renderWithForm(<Range name="volume" min={0} max={100} />);
     expect(screen.getByRole("slider")).toBeInTheDocument();
   });
 
   it("registers with react-hook-form", () => {
-    renderWithForm(<Range name="volume" />);
+    renderWithForm(<Range name="volume" min={0} max={100} />);
     expect(screen.getByRole("slider")).toHaveAttribute("name", "volume");
   });
 
   it("renders an output element", () => {
-    renderWithForm(<Range name="volume" />);
+    renderWithForm(<Range name="volume" min={0} max={100} />);
     expect(screen.getByRole("status")).toBeInTheDocument();
   });
 

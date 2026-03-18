@@ -23,10 +23,15 @@
   font-family: var(--typography-text-primary-font-family);
   font-size: var(--typography-text-primary-font-size);
   line-height: var(--typography-text-primary-line-height);
-  transition: border-color 150ms ease, box-shadow 150ms ease;
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease;
 
   &:hover:not(:disabled) {
-    background-color: var(--hover--color-foreground-input, var(--color-foreground-input-hover));
+    background-color: var(
+      --hover--color-foreground-input,
+      var(--color-foreground-input-hover)
+    );
   }
 
   &:focus-visible {

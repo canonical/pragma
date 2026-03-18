@@ -22,10 +22,8 @@
 
     --grid-intrinsic: repeat(
       auto-fill,
-      minmax(var(--grid-col-min), 1fr)
-        minmax(var(--grid-col-min), 1fr)
-        minmax(var(--grid-col-min), 1fr)
-        minmax(var(--grid-col-min), 1fr)
+      minmax(var(--grid-col-min), 1fr) minmax(var(--grid-col-min), 1fr)
+        minmax(var(--grid-col-min), 1fr) minmax(var(--grid-col-min), 1fr)
     );
   }
 

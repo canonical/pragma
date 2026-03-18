@@ -5,7 +5,7 @@ import useFieldAriaProperties from "./useFieldAriaProperties.js";
 describe("useFieldAriaProperties", () => {
   it("returns consistent IDs for a given name", () => {
     const { result } = renderHook(() => useFieldAriaProperties("email", false));
-    const { input, label, description, error } = result.current;
+    const { input, label, description } = result.current;
 
     expect(label.htmlFor).toBe(input.id);
     expect(input["aria-labelledby"]).toBe(label.id);

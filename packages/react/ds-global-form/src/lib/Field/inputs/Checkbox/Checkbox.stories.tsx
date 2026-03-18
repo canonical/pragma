@@ -1,5 +1,5 @@
-import { useEffect } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { useEffect } from "react";
 import * as decorators from "storybook/decorators.js";
 import Component from "./Checkbox.js";
 
@@ -20,9 +20,7 @@ export const Default: Story = {
 };
 
 export const Checked: Story = {
-  decorators: [
-    decorators.form({ defaultValues: { subscribe_checked: true } }),
-  ],
+  decorators: [decorators.form({ defaultValues: { subscribe_checked: true } })],
   args: {
     name: "subscribe_checked",
     label: "Checked",
@@ -40,6 +38,7 @@ const IndeterminateHelper = () => {
 };
 
 export const Indeterminate: Story = {
+  args: { name: "subscribe_indeterminate" },
   decorators: [decorators.form({ touchedFields: ["subscribe_indeterminate"] })],
   render: () => <IndeterminateHelper />,
 };

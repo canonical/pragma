@@ -46,8 +46,7 @@ const List = ({
     >
       {items.map((item, index) => {
         const keyValue = item[valueKey];
-        const key =
-          keyValue !== undefined ? String(keyValue) : `item-${index}`;
+        const key = keyValue !== undefined ? String(keyValue) : `item-${index}`;
         let isSelected = false;
 
         if (fieldValue !== undefined) {

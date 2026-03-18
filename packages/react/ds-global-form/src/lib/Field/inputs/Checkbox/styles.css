@@ -6,7 +6,9 @@
   border-radius: var(--dimension-radius-small);
   background: var(--color-foreground-checkbox-unselected);
   cursor: pointer;
-  transition: background-color 150ms ease, border-color 150ms ease;
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease;
 
   &:checked {
     background: var(--color-foreground-checkbox-selected);
