@@ -1,5 +1,6 @@
 #!/usr/bin/env bun
 
+import { runCli } from "./lib/runCli.js";
 import { detectLocalInstall } from "./pm.js";
 
 const localWarning = detectLocalInstall();
@@ -7,4 +8,4 @@ if (localWarning) {
   console.warn(localWarning);
 }
 
-console.log("pragma — not yet implemented");
+await runCli(process.argv);
