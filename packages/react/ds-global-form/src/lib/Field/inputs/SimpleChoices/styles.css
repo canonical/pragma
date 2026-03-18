@@ -24,7 +24,7 @@
       height: 1.25rem;
       border: var(--dimension-stroke-thickness-medium) solid var(--color-border);
       border-radius: 50%;
-      background: var(--color-foreground-radio-unselected);
+      background-color: var(--color-foreground-radio-unselected);
       cursor: inherit;
       transition: background-color 150ms ease, border-color 150ms ease;
 
@@ -36,8 +36,12 @@
         );
       }
 
-      &:hover:not(:disabled) {
-        background: var(--color-foreground-radio-unselected-hover);
+      &:hover:not(:disabled):not(:checked) {
+        background-color: var(--color-foreground-radio-unselected-hover);
+      }
+
+      &:checked:hover:not(:disabled) {
+        filter: brightness(0.9);
       }
 
       &:focus-visible {
@@ -48,7 +52,7 @@
 
       &:disabled {
         border-color: var(--color-border-disabled);
-        background: var(--color-foreground-radio-unselected-disabled);
+        background-color: var(--color-foreground-radio-unselected-disabled);
       }
     }
 
@@ -58,7 +62,7 @@
       height: 1.25rem;
       border: var(--dimension-stroke-thickness-medium) solid var(--color-border);
       border-radius: var(--dimension-radius-small);
-      background: var(--color-foreground-checkbox-unselected);
+      background-color: var(--color-foreground-checkbox-unselected);
       cursor: inherit;
       transition: background-color 150ms ease, border-color 150ms ease;
 
@@ -71,8 +75,12 @@
         background-size: 75%;
       }
 
-      &:hover:not(:disabled) {
-        background: var(--color-foreground-checkbox-unselected-hover);
+      &:hover:not(:disabled):not(:checked) {
+        background-color: var(--color-foreground-checkbox-unselected-hover);
+      }
+
+      &:checked:hover:not(:disabled) {
+        filter: brightness(0.9);
       }
 
       &:focus-visible {
@@ -83,7 +91,7 @@
 
       &:disabled {
         border-color: var(--color-border-disabled);
-        background: var(--color-foreground-checkbox-unselected-disabled);
+        background-color: var(--color-foreground-checkbox-unselected-disabled);
       }
     }
   }

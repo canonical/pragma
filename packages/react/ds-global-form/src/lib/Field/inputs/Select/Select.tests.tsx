@@ -1,4 +1,4 @@
-import { screen } from "@testing-library/react";
+import { fireEvent, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { renderWithForm } from "../../../../testing/renderWithForm.js";
 import Select from "./Select.js";
@@ -37,5 +37,12 @@ describe("Select", () => {
   it("supports disabled state", () => {
     renderWithForm(<Select name="color" options={options} disabled />);
     expect(screen.getByRole("combobox")).toBeDisabled();
+  });
+
+  it("changes value on selection", () => {
+    renderWithForm(<Select name="color" options={options} />);
+    const select = screen.getByRole("combobox");
+    fireEvent.change(select, { target: { value: "blue" } });
+    expect(select).toHaveValue("blue");
   });
 });

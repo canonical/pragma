@@ -1,4 +1,4 @@
-import { screen } from "@testing-library/react";
+import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { renderWithForm } from "../../../../testing/renderWithForm.js";
 import Text from "./Text.js";
@@ -28,5 +28,25 @@ describe("Text", () => {
   it("supports disabled state", () => {
     renderWithForm(<Text name="username" disabled />);
     expect(screen.getByRole("textbox")).toBeDisabled();
+  });
+
+  it("shows error on validation failure", async () => {
+    renderWithForm(
+      <Text name="email" registerProps={{ required: "Required" }} />,
+      { formProps: { mode: "onTouched" } },
+    );
+    const input = screen.getByRole("textbox");
+    fireEvent.focus(input);
+    fireEvent.blur(input);
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toHaveTextContent("Required");
+    });
+  });
+
+  it("accepts user input", () => {
+    renderWithForm(<Text name="username" />);
+    const input = screen.getByRole("textbox");
+    fireEvent.change(input, { target: { value: "john" } });
+    expect(input).toHaveValue("john");
   });
 });

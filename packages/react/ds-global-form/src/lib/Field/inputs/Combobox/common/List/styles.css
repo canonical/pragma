@@ -1,20 +1,25 @@
+/* Native popover + CSS anchor positioning.
+ * Anchored to --combobox-input defined on the combobox's <input>. */
 .ds.combobox-list {
-  position: absolute;
-  z-index: 10;
-  width: 100%;
+  /* Reset popover defaults */
+  margin: 0;
+  padding: 0;
+  border: none;
+  inset: unset;
+
+  /* Anchor to combobox input */
+  position-anchor: --combobox-input;
+  position-area: block-end span-inline-end;
+  width: anchor-size(inline);
+  margin-block-start: 2px;
+
   max-height: 15rem;
   overflow-y: auto;
   background-color: var(--color-background);
   border: var(--dimension-stroke-thickness-medium) solid var(--color-border);
   border-radius: var(--dimension-radius-small);
   box-shadow: 0 4px 6px -1px oklch(0% 0 0 / 0.1);
-  margin-block-start: 2px;
-  padding: 0;
   list-style: none;
-
-  &:not(.is-open) {
-    display: none;
-  }
 
   & > li {
     padding: var(--tmp-space-input-block) var(--tmp-space-input-inline);

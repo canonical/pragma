@@ -1,17 +1,13 @@
 .ds.combobox-reset-button {
-  position: absolute;
-  right: var(--tmp-space-input-inline);
-  top: 50%;
-  transform: translateY(-50%);
-  background: none;
-  border: none;
-  padding: 0.25rem;
+  all: unset;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-inline: var(--tmp-space-input-inline);
   cursor: pointer;
   color: var(--color-text-muted);
   font-size: 1rem;
   line-height: 1;
-  border-radius: var(--dimension-radius-small);
-  transition: color 150ms ease;
 
   &:hover {
     color: var(--color-text);
@@ -20,5 +16,6 @@
   &:focus-visible {
     outline: none;
     box-shadow: 0 0 0 1px var(--color-focusRing);
+    border-radius: var(--dimension-radius-small);
   }
 }

@@ -1,4 +1,4 @@
-import { screen } from "@testing-library/react";
+import { fireEvent, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { renderWithForm } from "../../../../testing/renderWithForm.js";
 import Checkbox from "./Checkbox.js";
@@ -29,5 +29,13 @@ describe("Checkbox", () => {
       formProps: { defaultValues: { agree: true } },
     });
     expect(screen.getByRole("checkbox")).toBeChecked();
+  });
+
+  it("toggles on click", () => {
+    renderWithForm(<Checkbox name="agree" />);
+    const checkbox = screen.getByRole("checkbox");
+    expect(checkbox).not.toBeChecked();
+    fireEvent.click(checkbox);
+    expect(checkbox).toBeChecked();
   });
 });

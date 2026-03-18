@@ -1,4 +1,4 @@
-import { screen } from "@testing-library/react";
+import { fireEvent, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { renderWithForm } from "../../../../testing/renderWithForm.js";
 import SimpleChoices from "./SimpleChoices.js";
@@ -44,5 +44,13 @@ describe("SimpleChoices", () => {
     renderWithForm(<SimpleChoices name="color" options={opts} />);
     expect(screen.getAllByRole("radio")).toHaveLength(4);
     expect(screen.getAllByRole("radio")[3]).toBeDisabled();
+  });
+
+  it("selects a radio option on click", () => {
+    renderWithForm(<SimpleChoices name="color" options={options} />);
+    const radios = screen.getAllByRole("radio");
+    fireEvent.click(radios[1]);
+    expect(radios[1]).toBeChecked();
+    expect(radios[0]).not.toBeChecked();
   });
 });
