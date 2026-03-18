@@ -69,6 +69,7 @@ const svelteTemplates = {
 export const generator = {
   meta: {
     name: "component/svelte",
+    displayName: "@canonical/summon:component-svelte",
     description:
       "Generate a Svelte 5 component with TypeScript, tests, stories, and styles",
     version: "0.1.0",

@@ -117,11 +117,11 @@ export const applyStamp = (
     if (firstNewline !== -1) {
       const shebang = content.slice(0, firstNewline + 1);
       const rest = content.slice(firstNewline + 1);
-      return `${shebang}${stampLine}\n${rest}`;
+      return `${shebang}${stampLine}\n\n${rest}`;
     }
   }
 
-  return `${stampLine}\n${content}`;
+  return `${stampLine}\n\n${content}`;
 };
 
 // =============================================================================

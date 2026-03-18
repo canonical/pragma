@@ -66,6 +66,7 @@ const reactTemplates = {
 export const generator = {
   meta: {
     name: "component/react",
+    displayName: "@canonical/summon:component-react",
     description:
       "Generate a React component with TypeScript, tests, stories, and styles",
     version: "0.1.0",
