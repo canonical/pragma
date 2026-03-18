@@ -98,6 +98,13 @@ export const executeEffect = async (
       return undefined;
     }
 
+    case "Symlink": {
+      const dir = path.dirname(effect.path);
+      await fs.mkdir(dir, { recursive: true });
+      await fs.symlink(effect.target, effect.path);
+      return undefined;
+    }
+
     case "Exists": {
       try {
         await fs.access(effect.path);
@@ -254,6 +261,8 @@ export interface RunTaskOptions {
   onEffectComplete?: (effect: Effect, duration: number) => void;
   /** Handler for log effects. If provided, log output goes here instead of console */
   onLog?: (level: "debug" | "info" | "warn" | "error", message: string) => void;
+  /** AbortSignal for interrupting task execution */
+  signal?: AbortSignal;
 }
 
 // =============================================================================
@@ -273,9 +282,23 @@ export const runTask = async <A>(
     onEffectStart,
     onEffectComplete,
     onLog,
+    signal,
   } = options;
 
+  const checkInterrupted = (): void => {
+    if (signal?.aborted) {
+      throw new TaskExecutionError({
+        code: "TASK_INTERRUPTED",
+        message: signal.reason
+          ? `Task interrupted: ${signal.reason}`
+          : "Task interrupted",
+      });
+    }
+  };
+
   const runInternal = async <B>(t: Task<B>): Promise<B> => {
+    checkInterrupted();
+
     switch (t._tag) {
       case "Pure":
         return t.value;
@@ -291,9 +314,33 @@ export const runTask = async <A>(
           onEffectStart?.(effect);
           const startTime = performance.now();
 
-          const results = await Promise.all(
+          const settled = await Promise.allSettled(
             effect.tasks.map((task) => runInternal(task)),
           );
+
+          const errors: TaskError[] = [];
+          const results: unknown[] = [];
+
+          for (const result of settled) {
+            if (result.status === "fulfilled") {
+              results.push(result.value);
+            } else {
+              const err = result.reason;
+              errors.push(
+                err instanceof TaskExecutionError
+                  ? err.taskError
+                  : { code: "INTERNAL", message: String(err) },
+              );
+            }
+          }
+
+          if (errors.length > 0) {
+            const primary = errors[0];
+            throw new TaskExecutionError({
+              ...primary,
+              suppressed: errors.length > 1 ? errors.slice(1) : undefined,
+            });
+          }
 
           const duration = performance.now() - startTime;
           onEffectComplete?.(effect, duration);

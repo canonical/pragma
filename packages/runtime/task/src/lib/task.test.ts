@@ -1,10 +1,14 @@
 import { describe, expect, it } from "vitest";
+import { dryRun } from "./dry-run.js";
+import { readFileEffect, writeFileEffect } from "./effect.js";
 import {
+  $,
   ap,
   effect,
   fail,
   failWith,
   flatMap,
+  gen,
   hasEffects,
   isFailed,
   isPure,
@@ -924,6 +928,74 @@ describe("Task Monad - Edge Cases", () => {
       expect(
         (t as { value: { nested: { value: number } } }).value.nested.value,
       ).toBe(42);
+    });
+  });
+
+  // ===========================================================================
+  // Generator Syntax
+  // ===========================================================================
+
+  describe("gen", () => {
+    it("returns pure value from generator", () => {
+      const t = gen(function* () {
+        yield* $(pure(undefined));
+        return 42;
+      });
+
+      const { value } = dryRun(t);
+      expect(value).toBe(42);
+    });
+
+    it("yields effects and gets results", () => {
+      const readTask: Task<string> = effect(readFileEffect("test.json"));
+
+      const t = gen(function* () {
+        const content = yield* $(readTask);
+        return `got: ${content}`;
+      });
+
+      const { value, effects } = dryRun(t);
+      expect(effects.length).toBe(1);
+      expect(effects[0]._tag).toBe("ReadFile");
+      expect(value).toBe("got: [mock content of test.json]");
+    });
+
+    it("sequences multiple effects", () => {
+      const readTask: Task<string> = effect(readFileEffect("input.txt"));
+      const writeTask: Task<void> = effect(
+        writeFileEffect("output.txt", "data"),
+      );
+
+      const t = gen(function* () {
+        const content = yield* $(readTask);
+        yield* $(writeTask);
+        return content;
+      });
+
+      const { effects } = dryRun(t);
+      expect(effects.length).toBe(2);
+      expect(effects[0]._tag).toBe("ReadFile");
+      expect(effects[1]._tag).toBe("WriteFile");
+    });
+
+    it("propagates failures", () => {
+      const t = gen(function* () {
+        yield* $(fail({ code: "TEST", message: "boom" }));
+        return "unreachable";
+      });
+
+      expect(() => dryRun(t)).toThrow("boom");
+    });
+
+    it("composes with flatMap outside gen", () => {
+      const inner = gen(function* () {
+        const v = yield* $(pure(10));
+        return v * 2;
+      });
+
+      const outer = flatMap(inner, (n) => pure(n + 1));
+      const { value } = dryRun(outer);
+      expect(value).toBe(21);
     });
   });
 });

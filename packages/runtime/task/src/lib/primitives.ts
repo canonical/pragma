@@ -19,6 +19,7 @@ import {
   promptEffect,
   readContextEffect,
   readFileEffect,
+  symlinkEffect,
   writeContextEffect,
   writeFileEffect,
 } from "./effect.js";
@@ -88,6 +89,14 @@ export const mkdir = (path: string, recursive = true): Task<void> =>
  */
 export const exists = (path: string): Task<boolean> =>
   effect(existsEffect(path));
+
+/**
+ * Create a symbolic link.
+ * @param target - The target path the symlink points to
+ * @param linkPath - The path where the symlink is created
+ */
+export const symlink = (target: string, linkPath: string): Task<void> =>
+  effect(symlinkEffect(target, linkPath));
 
 /**
  * Find files matching a glob pattern.

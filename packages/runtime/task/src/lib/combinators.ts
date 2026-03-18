@@ -145,6 +145,30 @@ export const ifElseM = <A>(
   flatMap(conditionTask, (condition) => ifElse(condition, onTrue, onFalse));
 
 // =============================================================================
+// Dispatch Combinators
+// =============================================================================
+
+/**
+ * Detect-then-dispatch: run a detection task, then dispatch to a handler
+ * based on the detected key. Falls back to the fallback task if the key
+ * is null or not found in handlers.
+ */
+export const switchMap = <K extends string, A>(
+  detect: Task<K | null>,
+  handlers: Partial<Record<K, Task<A>>>,
+  fallback: Task<A>,
+): Task<A> =>
+  flatMap(detect, (key) => {
+    if (key !== null && key in handlers) {
+      const handler = handlers[key];
+      if (handler) {
+        return handler;
+      }
+    }
+    return fallback;
+  });
+
+// =============================================================================
 // Error Handling Combinators
 // =============================================================================
 

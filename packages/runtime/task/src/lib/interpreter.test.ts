@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { sequence_ } from "./combinators.js";
+import { parallel, sequence_ } from "./combinators.js";
 import {
   executeEffect,
   run,
@@ -669,5 +669,95 @@ describe("Interpreter - Integration", () => {
 
     expect(result).toBe(84);
     expect(logs).toEqual(["Starting", "Value: 42"]);
+  });
+
+  // ===========================================================================
+  // AbortSignal
+  // ===========================================================================
+
+  describe("signal (AbortSignal)", () => {
+    it("interrupts before first effect when already aborted", async () => {
+      const controller = new AbortController();
+      controller.abort("cancelled");
+
+      const task = info("should not run");
+
+      await expect(
+        runTask(task, {
+          signal: controller.signal,
+          onLog: () => {},
+        }),
+      ).rejects.toThrow("Task interrupted");
+    });
+
+    it("includes reason in error message", async () => {
+      const controller = new AbortController();
+      controller.abort("user cancelled");
+
+      try {
+        await runTask(pure(42), { signal: controller.signal });
+        expect.unreachable("should have thrown");
+      } catch (err) {
+        expect(err).toBeInstanceOf(TaskExecutionError);
+        expect((err as TaskExecutionError).code).toBe("TASK_INTERRUPTED");
+      }
+    });
+
+    it("does not interrupt when signal is not aborted", async () => {
+      const controller = new AbortController();
+      const logs: string[] = [];
+
+      const result = await runTask(
+        flatMap(info("ok"), () => pure(42)),
+        {
+          signal: controller.signal,
+          onLog: (_, msg) => logs.push(msg),
+        },
+      );
+
+      expect(result).toBe(42);
+      expect(logs).toEqual(["ok"]);
+    });
+  });
+
+  // ===========================================================================
+  // Parallel Suppressed Errors
+  // ===========================================================================
+
+  describe("parallel suppressed errors", () => {
+    it("captures all errors from parallel failures", async () => {
+      const task = parallel([
+        fail({ code: "ERR_A", message: "error a" }),
+        fail({ code: "ERR_B", message: "error b" }),
+        pure(42),
+      ]);
+
+      try {
+        await runTask(task, {});
+        expect.unreachable("should have thrown");
+      } catch (err) {
+        expect(err).toBeInstanceOf(TaskExecutionError);
+        const taskErr = (err as TaskExecutionError).taskError;
+        expect(taskErr.code).toBe("ERR_A");
+        expect(taskErr.suppressed).toHaveLength(1);
+        expect(taskErr.suppressed?.[0].code).toBe("ERR_B");
+      }
+    });
+
+    it("does not set suppressed when only one error", async () => {
+      const task = parallel([
+        fail({ code: "ERR_A", message: "error a" }),
+        pure(42),
+      ]);
+
+      try {
+        await runTask(task, {});
+        expect.unreachable("should have thrown");
+      } catch (err) {
+        const taskErr = (err as TaskExecutionError).taskError;
+        expect(taskErr.code).toBe("ERR_A");
+        expect(taskErr.suppressed).toBeUndefined();
+      }
+    });
   });
 });

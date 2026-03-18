@@ -137,6 +137,8 @@ export type Effect =
   | { _tag: "WriteContext"; key: string; value: unknown }
   /** Run tasks in parallel */
   | { _tag: "Parallel"; tasks: Task<unknown>[] }
+  /** Create a symbolic link */
+  | { _tag: "Symlink"; target: string; path: string }
   /** Race tasks, return first to complete */
   | { _tag: "Race"; tasks: Task<unknown>[] };
 
@@ -158,7 +160,24 @@ export interface TaskError {
   context?: Record<string, unknown>;
   /** Stack trace if available */
   stack?: string;
+  /** For parallel failures: all errors, not just the first */
+  suppressed?: TaskError[];
 }
+
+// =============================================================================
+// Base Error Codes
+// =============================================================================
+
+/**
+ * Base error codes used by the task framework.
+ * Domains can extend this with their own codes.
+ */
+export type BaseErrorCode =
+  | "FILE_NOT_FOUND"
+  | "EXEC_FAILED"
+  | "PROMPT_CANCELLED"
+  | "TASK_INTERRUPTED"
+  | "INTERNAL";
 
 // =============================================================================
 // Task Monad - The core abstraction for composable operations

@@ -28,6 +28,7 @@ export const mockEffect = (effect: Effect): unknown => {
     case "DeleteFile":
     case "DeleteDirectory":
     case "MakeDir":
+    case "Symlink":
     case "Log":
     case "WriteContext":
       return undefined;
@@ -94,6 +95,9 @@ export const dryRun = <A>(task: Task<A>): DryRunResult<A> => {
         virtualFs.add(effect.path);
         return undefined;
       case "MakeDir":
+        virtualFs.add(effect.path);
+        return undefined;
+      case "Symlink":
         virtualFs.add(effect.path);
         return undefined;
       case "Exists":
@@ -322,6 +326,9 @@ export const getAffectedFiles = (effects: Effect[]): string[] => {
         break;
       case "CopyFile":
         files.add(effect.dest);
+        break;
+      case "Symlink":
+        files.add(effect.path);
         break;
       case "MakeDir":
         files.add(effect.path);
