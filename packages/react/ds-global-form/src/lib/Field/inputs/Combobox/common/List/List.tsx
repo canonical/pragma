@@ -43,15 +43,13 @@ const List = ({
         }
         return (
           <li
-            {...getItemProps({
-              item: item,
-              index,
-              style: {
-                backgroundColor:
-                  highlightedIndex === index ? "yellow" : "white",
-                fontWeight: isSelected ? "bold" : "normal",
-              },
-            })}
+            {...getItemProps({ item, index })}
+            className={[
+              highlightedIndex === index && "highlighted",
+              isSelected && "selected",
+            ]
+              .filter(Boolean)
+              .join(" ")}
             key={key}
           >
             {convertItemToString(item)}

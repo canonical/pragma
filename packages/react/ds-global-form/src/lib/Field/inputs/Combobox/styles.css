@@ -1,7 +1,41 @@
-/* @canonical/generator-ds 0.9.0-experimental.9 */
-
-/*
 .ds.form-combobox {
+  position: relative;
 
+  & > input {
+    width: 100%;
+  }
+
+  & > .selected-items {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--tmp-space-group-gap);
+    margin-block-end: var(--tmp-space-group-gap);
+
+    &:empty {
+      display: none;
+    }
+  }
+
+  & > .selected-items > .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.125rem 0.5rem;
+    background-color: var(--color-foreground-secondary);
+    border: var(--dimension-stroke-thickness-medium) solid var(--color-border-muted);
+    border-radius: var(--dimension-radius-full, 9999px);
+    font-size: var(--typography-text-secondary-font-size);
+    color: var(--color-text);
+    cursor: pointer;
+    transition: background-color 150ms ease;
+
+    &:hover {
+      background-color: var(--color-foreground-secondary-hover);
+    }
+
+    & > .remove-icon {
+      font-size: 0.75em;
+      line-height: 1;
+    }
+  }
 }
-*/
