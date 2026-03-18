@@ -17,6 +17,7 @@ import {
   raceEffect,
   readContextEffect,
   readFileEffect,
+  symlinkEffect,
   writeContextEffect,
   writeFileEffect,
 } from "./effect.js";
@@ -183,6 +184,16 @@ describe("Effect Constructors - File System", () => {
 
       expect(effect._tag).toBe("Exists");
       expect((effect as { path: string }).path).toBe("/path/to/check");
+    });
+  });
+
+  describe("symlinkEffect", () => {
+    it("creates a Symlink effect with target and path", () => {
+      const effect = symlinkEffect("/target/dir", "/link/path");
+
+      expect(effect._tag).toBe("Symlink");
+      expect((effect as { target: string }).target).toBe("/target/dir");
+      expect((effect as { path: string }).path).toBe("/link/path");
     });
   });
 
@@ -596,6 +607,11 @@ describe("Effect Utilities - describeEffect", () => {
     const effect = raceEffect([pure(1), pure(2)]);
     expect(describeEffect(effect)).toBe("Race: 2 tasks");
   });
+
+  it("describes Symlink effect", () => {
+    const effect = symlinkEffect("/target", "/link");
+    expect(describeEffect(effect)).toBe("Symlink: /link → /target");
+  });
 });
 
 describe("Effect Utilities - isWriteEffect", () => {
@@ -621,6 +637,10 @@ describe("Effect Utilities - isWriteEffect", () => {
 
   it("returns true for MakeDir", () => {
     expect(isWriteEffect(makeDirEffect("/path"))).toBe(true);
+  });
+
+  it("returns true for Symlink", () => {
+    expect(isWriteEffect(symlinkEffect("/target", "/link"))).toBe(true);
   });
 
   it("returns false for ReadFile", () => {
@@ -692,6 +712,13 @@ describe("Effect Utilities - getAffectedPaths", () => {
   it("returns path for Exists", () => {
     expect(getAffectedPaths(existsEffect("/path/to/check"))).toEqual([
       "/path/to/check",
+    ]);
+  });
+
+  it("returns target and path for Symlink", () => {
+    expect(getAffectedPaths(symlinkEffect("/target", "/link"))).toEqual([
+      "/target",
+      "/link",
     ]);
   });
 

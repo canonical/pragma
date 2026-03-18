@@ -66,6 +66,12 @@ export const existsEffect = (path: string): Effect => ({
   path,
 });
 
+export const symlinkEffect = (target: string, path: string): Effect => ({
+  _tag: "Symlink",
+  target,
+  path,
+});
+
 export const globEffect = (pattern: string, cwd: string): Effect => ({
   _tag: "Glob",
   pattern,
@@ -162,6 +168,8 @@ export const describeEffect = (effect: Effect): string => {
       return `Created ${effect.path}/`;
     case "Exists":
       return `Check exists: ${effect.path}`;
+    case "Symlink":
+      return `Symlink: ${effect.path} → ${effect.target}`;
     case "Glob":
       return `Glob: ${effect.pattern} in ${effect.cwd}`;
     case "Exec":
@@ -193,6 +201,7 @@ export const isWriteEffect = (effect: Effect): boolean => {
     case "DeleteFile":
     case "DeleteDirectory":
     case "MakeDir":
+    case "Symlink":
       return true;
     default:
       return false;
@@ -211,6 +220,8 @@ export const getAffectedPaths = (effect: Effect): string[] => {
     case "MakeDir":
     case "Exists":
       return [effect.path];
+    case "Symlink":
+      return [effect.target, effect.path];
     case "CopyFile":
     case "CopyDirectory":
       return [effect.source, effect.dest];

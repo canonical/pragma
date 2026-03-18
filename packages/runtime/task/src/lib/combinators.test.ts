@@ -16,6 +16,7 @@ import {
   retryWithBackoff,
   sequence,
   sequence_,
+  switchMap,
   tap,
   tapError,
   timeout,
@@ -890,6 +891,62 @@ describe("Combinators - Edge Cases", () => {
 
       const { value } = dryRun(t);
       expect(value).toEqual({ type: "success", value: 42 });
+    });
+  });
+
+  // ===========================================================================
+  // switchMap
+  // ===========================================================================
+
+  describe("switchMap", () => {
+    it("dispatches to the matched handler", () => {
+      const t = switchMap<"a" | "b", string>(
+        pure("a"),
+        {
+          a: pure("handled-a"),
+          b: pure("handled-b"),
+        },
+        pure("fallback"),
+      );
+
+      const { value } = dryRun(t);
+      expect(value).toBe("handled-a");
+    });
+
+    it("dispatches to fallback when key is null", () => {
+      const t = switchMap<"a" | "b", string>(
+        pure(null),
+        {
+          a: pure("handled-a"),
+          b: pure("handled-b"),
+        },
+        pure("fallback"),
+      );
+
+      const { value } = dryRun(t);
+      expect(value).toBe("fallback");
+    });
+
+    it("dispatches to fallback when key is not in handlers", () => {
+      const t = switchMap<"a" | "b" | "c", string>(
+        pure("c"),
+        {
+          a: pure("handled-a"),
+          b: pure("handled-b"),
+        },
+        pure("fallback"),
+      );
+
+      const { value } = dryRun(t);
+      expect(value).toBe("fallback");
+    });
+
+    it("works with effectful detect task", () => {
+      const detect: Task<"x" | null> = pure("x");
+      const t = switchMap<"x", number>(detect, { x: pure(42) }, pure(0));
+
+      const { value } = dryRun(t);
+      expect(value).toBe(42);
     });
   });
 });

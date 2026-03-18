@@ -25,6 +25,7 @@ import {
   setContext,
   sortFileLines,
   succeed,
+  symlink,
   warn,
   withContext,
   writeFile,
@@ -205,6 +206,24 @@ describe("Primitives - File System", () => {
       const task = flatMap(writeFile("/any/path", "content"), () =>
         exists("/any/path"),
       );
+      const { value } = dryRun(task);
+      expect(value).toBe(true);
+    });
+  });
+
+  describe("symlink", () => {
+    it("creates a Symlink effect", () => {
+      const task = symlink("/target/dir", "/link/path");
+      const { effects } = dryRun(task);
+
+      expect(effects.length).toBe(1);
+      expect(effects[0]._tag).toBe("Symlink");
+      expect((effects[0] as { target: string }).target).toBe("/target/dir");
+      expect((effects[0] as { path: string }).path).toBe("/link/path");
+    });
+
+    it("symlink makes path exist in dry run", () => {
+      const task = flatMap(symlink("/target", "/link"), () => exists("/link"));
       const { value } = dryRun(task);
       expect(value).toBe(true);
     });

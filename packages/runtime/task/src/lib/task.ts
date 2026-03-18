@@ -217,6 +217,66 @@ export const task = <A>(t: Task<A>): TaskBuilder<A> => new TaskBuilder(t);
 export const of = <A>(value: A): TaskBuilder<A> => task(pure(value));
 
 // =============================================================================
+// Generator Syntax
+// =============================================================================
+
+/**
+ * A wrapper that makes a Task iterable, enabling `yield*` syntax
+ * in generator-based task composition with proper type inference.
+ */
+export interface TaskGen<A> {
+  [Symbol.iterator](): Generator<Task<unknown>, A, unknown>;
+}
+
+/**
+ * Wrap a Task for use with `yield*` inside `gen()`.
+ *
+ * @example
+ * ```typescript
+ * const content = yield* $(readFile("package.json"))
+ * ```
+ */
+export const $ = <A>(task: Task<A>): TaskGen<A> => ({
+  *[Symbol.iterator]() {
+    return (yield task) as A;
+  },
+});
+
+/**
+ * Write sequential effectful code using generator syntax.
+ * Avoids nested flatMap chains for complex sequential tasks.
+ *
+ * Use `yield*` with `$(task)` to unwrap a task, getting back its value.
+ * Under the hood this composes flatMap calls.
+ *
+ * @example
+ * ```typescript
+ * const myTask = gen(function* () {
+ *   const content = yield* $(readFile("package.json"))
+ *   const parsed = JSON.parse(content)
+ *   yield* $(writeFile("output.json", JSON.stringify(parsed)))
+ *   yield* $(info("Wrote output.json"))
+ *   return parsed
+ * })
+ * ```
+ */
+export const gen = <A>(
+  f: () => Generator<Task<unknown>, A, unknown>,
+): Task<A> => {
+  const iterator = f();
+
+  const step = (nextValue: unknown): Task<A> => {
+    const result = iterator.next(nextValue);
+    if (result.done) {
+      return pure(result.value);
+    }
+    return flatMap(result.value, (value) => step(value));
+  };
+
+  return step(undefined);
+};
+
+// =============================================================================
 // Utility Functions
 // =============================================================================
 

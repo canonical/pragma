@@ -10,6 +10,7 @@
 // =============================================================================
 
 export type {
+  BaseErrorCode,
   ConfirmPrompt,
   DryRunResult,
   Effect,
@@ -31,12 +32,15 @@ export type {
 // Task Monad
 // =============================================================================
 
+export type { TaskGen } from "./lib/task.js";
 export {
+  $,
   ap,
   effect,
   fail,
   failWith,
   flatMap,
+  gen,
   hasEffects,
   isFailed,
   isPure,
@@ -72,6 +76,7 @@ export {
   raceEffect,
   readContextEffect,
   readFileEffect,
+  symlinkEffect,
   writeContextEffect,
   writeFileEffect,
 } from "./lib/effect.js";
@@ -107,6 +112,7 @@ export {
   setContext,
   sortFileLines,
   succeed,
+  symlink,
   warn,
   withContext,
   writeFile,
@@ -133,6 +139,7 @@ export {
   retryWithBackoff,
   sequence,
   sequence_,
+  switchMap,
   tap,
   tapError,
   timeout,
