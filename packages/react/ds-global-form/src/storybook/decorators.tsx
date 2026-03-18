@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import type React from "react";
 import { FormProvider, useForm } from "react-hook-form";
+import { useFormStateEmitter } from "@canonical/storybook-addon-form-state";
 
 interface FormDecoratorParams {
   defaultValues?: Record<string, unknown>;
@@ -15,6 +16,8 @@ export const form = ({ defaultValues = {}, touchedFields = [] }: FormDecoratorPa
         defaultValues,
       });
 
+      useFormStateEmitter(methods);
+
       // react-hook-form has no `defaultTouched` in UseFormProps.
       // setValue with shouldTouch is the idiomatic workaround.
       // https://github.com/react-hook-form/react-hook-form/issues/1418
@@ -24,16 +27,10 @@ export const form = ({ defaultValues = {}, touchedFields = [] }: FormDecoratorPa
         }
       }, [methods]);
 
-      const onSubmit = (data: Record<string, unknown>) => {
-        console.log("[FORM SUBMIT]", data);
-      };
-
       return (
         <FormProvider {...methods}>
-          <form onSubmit={methods.handleSubmit(onSubmit)}>
+          <form onSubmit={methods.handleSubmit(() => {})}>
             <Story />
-            <br />
-            <input type="submit" value="Print in console" />
           </form>
         </FormProvider>
       );
