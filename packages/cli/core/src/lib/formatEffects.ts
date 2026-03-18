@@ -1,13 +1,18 @@
 /**
- * CLI Formatting Utilities
+ * Effect formatting utilities for CLI output.
  *
- * Shared formatting functions for CLI output (both interactive and batch modes).
+ * Lifted from summon-core's cli-format.ts into cli-framework so both
+ * summon and pragma binaries can share effect formatting without importing
+ * summon internals.
  */
 
 import * as path from "node:path";
+import type {
+  GeneratorDefinition,
+  PromptDefinition,
+} from "@canonical/summon-core";
 import type { Effect } from "@canonical/task";
 import chalk from "chalk";
-import type { GeneratorDefinition, PromptDefinition } from "./types.js";
 
 // Fixed width for action label column
 const ACTION_LABEL_WIDTH = 14;
@@ -27,6 +32,7 @@ export const isVisibleEffect = (effect: Effect, verbose = false): boolean => {
     case "DeleteFile":
     case "DeleteDirectory":
     case "Exec":
+    case "Symlink":
       return true;
     case "Log":
       // Filter out debug logs unless verbose is enabled
@@ -70,6 +76,8 @@ export const getActionLabel = (effect: Effect): string => {
       return "Delete dir";
     case "Exec":
       return "Execute";
+    case "Symlink":
+      return "Symlink";
     case "Log":
       switch (effect.level) {
         case "debug":
@@ -108,6 +116,8 @@ export const getActionColor = (
       return "cyan";
     case "Exec":
       return "yellow";
+    case "Symlink":
+      return "cyan";
     case "Log":
       switch (effect.level) {
         case "error":
@@ -144,6 +154,8 @@ export const getEffectPayload = (effect: Effect): string => {
       return effect.path;
     case "Exec":
       return `${effect.command} ${effect.args.join(" ")}`;
+    case "Symlink":
+      return `${effect.target} → ${effect.path}`;
     case "Log":
       return effect.message;
     default:
@@ -295,7 +307,7 @@ export const getLanguageHint = (filePath: string): string => {
 /**
  * Get the plain-text action label for an effect (for LLM output).
  */
-const getLlmActionLabel = (effect: Effect): string => {
+export const getLlmActionLabel = (effect: Effect): string => {
   switch (effect._tag) {
     case "WriteFile":
       return "create";
@@ -313,6 +325,8 @@ const getLlmActionLabel = (effect: Effect): string => {
       return "rmdir";
     case "Exec":
       return "exec";
+    case "Symlink":
+      return "symlink";
     case "Log":
       return effect.level;
     default:
@@ -323,7 +337,7 @@ const getLlmActionLabel = (effect: Effect): string => {
 /**
  * Get the path/description for an effect (plain text, for LLM output).
  */
-const getLlmEffectPath = (effect: Effect): string => {
+export const getLlmEffectPath = (effect: Effect): string => {
   switch (effect._tag) {
     case "WriteFile":
     case "AppendFile":
@@ -337,6 +351,8 @@ const getLlmEffectPath = (effect: Effect): string => {
       return `${effect.source}/ -> ${effect.dest}/`;
     case "Exec":
       return `${effect.command} ${effect.args.join(" ")}`;
+    case "Symlink":
+      return `${effect.target} -> ${effect.path}`;
     case "Log":
       return effect.message;
     default:
@@ -347,7 +363,7 @@ const getLlmEffectPath = (effect: Effect): string => {
 /**
  * Build the replay command string from generator name and answers.
  */
-const buildReplayCommand = (
+export const buildReplayCommand = (
   generatorName: string,
   answers: Record<string, unknown>,
   prompts: PromptDefinition[],
@@ -399,8 +415,8 @@ export const formatLlmMarkdown = (
 ): string => {
   const lines: string[] = [];
 
-  // Header
-  lines.push(`# summon ${generator.meta.name}`);
+  // Header — use generator meta name directly (binary-agnostic)
+  lines.push(`# ${generator.meta.name}`);
   lines.push("");
   lines.push(`> ${generator.meta.description}`);
   lines.push(`> v${generator.meta.version}`);
@@ -556,7 +572,8 @@ export const formatLlmHelp = (
   const { meta, prompts } = generator;
   const lines: string[] = [];
 
-  lines.push(`# summon ${commandPath}`);
+  // Use commandPath directly — binary-agnostic
+  lines.push(`# ${commandPath}`);
   lines.push("");
   lines.push(`> ${meta.description}`);
   lines.push(`> v${meta.version}`);
@@ -648,8 +665,8 @@ export const formatLlmHelp = (
     .join(" ");
   const flagStr = exampleFlags ? ` ${exampleFlags}` : "";
 
-  lines.push(`1. Preview: \`summon ${commandPath}${flagStr} --llm\``);
-  lines.push(`2. Execute: \`summon ${commandPath}${flagStr} --yes\``);
+  lines.push(`1. Preview: \`${commandPath}${flagStr} --llm\``);
+  lines.push(`2. Execute: \`${commandPath}${flagStr} --yes\``);
   lines.push("");
 
   // Examples

@@ -4,6 +4,7 @@
  * Main CLI application component using React Ink.
  */
 
+import { formatContentPreview } from "@canonical/cli-core";
 import {
   dryRun,
   type Effect,
@@ -12,7 +13,6 @@ import {
 } from "@canonical/task";
 import { Box, Text, useApp, useInput } from "ink";
 import { useCallback, useEffect, useState } from "react";
-import { formatContentPreview } from "../cli-format.js";
 import type { StampConfig } from "../stamp.js";
 import type { GeneratorDefinition, PromptDefinition } from "../types.js";
 import { ExecutionProgress, type TimedEffect } from "./ExecutionProgress.js";

@@ -85,12 +85,12 @@ Binary size: ~98 MB (linux-x64), ~58 MB (darwin-arm64). The Bun runtime (~90 MB)
 
 ## Architecture
 
-pragma uses the federation pattern from `cli-framework`: each domain exports `CommandDefinition[]`, and the root CLI registers them into a single Commander.js program. Output adapters handle plain text, LLM markdown, and JSON rendering.
+pragma uses the federation pattern from `@canonical/cli-core`: each domain exports `CommandDefinition[]`, and the root CLI registers them into a single Commander.js program. Output adapters handle plain text, LLM markdown, and JSON rendering.
 
 ## Dependencies
 
 - [`@canonical/ke`](../runtime/ke/) — triple store runtime (Oxigraph WASM)
-- [`cli-framework`](../core/) — shared CLI machinery (Commander.js registration, help formatting, completions)
+- [`@canonical/cli-core`](../core/) — shared CLI machinery (Commander.js registration, help formatting, completions)
 - [`smol-toml`](https://github.com/nicolo-ribaudo/smol-toml) — TOML parser for `pragma.config.toml`
 
 ## License

@@ -5,7 +5,7 @@ import {
   formatLlmHelp,
   type GlobalFlags,
   registerAll,
-} from "cli-framework";
+} from "@canonical/cli-core";
 import { Command, CommanderError } from "commander";
 import { readConfig } from "../config.js";
 import { PROGRAM_DESCRIPTION, PROGRAM_NAME, VERSION } from "../constants.js";

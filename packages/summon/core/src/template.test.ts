@@ -8,7 +8,7 @@ import {
   templateDir,
   templateHelpers,
   withHelpers,
-} from "../template.js";
+} from "./template.js";
 
 // =============================================================================
 // String Rendering
