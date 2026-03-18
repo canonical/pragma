@@ -1,0 +1,57 @@
+/* @canonical/styles — Grid layout presets
+ *
+ * .grid            — establishes a grid context
+ * .grid.responsive — 4 / 8 / 12 column responsive grid (breakpoint-driven)
+ * .grid.intrinsic  — fluid auto-fill grid (groups of 4)
+ * .subgrid         — subgrid child, inherits parent columns
+ *
+ * The .grid class subscribes to --modifier-grid-template.
+ * If no modifier is set, grid-template-columns is not declared
+ * and the grid behaves as a plain block-level grid context.
+ *
+ * Usage:
+ *   <div class="grid responsive">   — 8-col fixed
+ *   <div class="grid intrinsic">    — fluid auto-fill
+ *   <div class="grid">              — bare context, bring your own columns
+ *   <div class="subgrid">           — inherits parent columns
+ */
+
+@layer ds.components {
+  :root {
+    --grid-col-min: 100px;
+
+    --grid-intrinsic: repeat(
+      auto-fill,
+      minmax(var(--grid-col-min), 1fr) minmax(var(--grid-col-min), 1fr)
+        minmax(var(--grid-col-min), 1fr) minmax(var(--grid-col-min), 1fr)
+    );
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: var(--modifier-grid-template);
+    gap: var(--grid-gap, 1rem);
+  }
+
+  .responsive {
+    --modifier-grid-template: repeat(4, 1fr);
+
+    @media (min-width: 768px) {
+      --modifier-grid-template: repeat(8, 1fr);
+    }
+
+    @media (min-width: 1280px) {
+      --modifier-grid-template: repeat(12, 1fr);
+    }
+  }
+
+  .intrinsic {
+    --modifier-grid-template: var(--grid-intrinsic);
+  }
+
+  .subgrid {
+    display: grid;
+    grid-template-columns: subgrid;
+    grid-column: var(--subgrid-span, 1 / -1);
+  }
+}

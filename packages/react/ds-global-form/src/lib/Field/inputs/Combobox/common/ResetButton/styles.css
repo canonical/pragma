@@ -1,7 +1,21 @@
-/* @canonical/generator-ds 0.9.0-experimental.9 */
-
-/*
 .ds.combobox-reset-button {
+  all: unset;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-inline: var(--tmp-space-input-inline);
+  cursor: pointer;
+  color: var(--color-text-muted);
+  font-size: 1rem;
+  line-height: 1;
 
+  &:hover {
+    color: var(--color-text);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 1px var(--color-focusRing);
+    border-radius: var(--dimension-radius-small);
+  }
 }
-*/

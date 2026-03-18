@@ -16,9 +16,8 @@ type Preview = ReactPreview & SveltePreview & LitPreview;
  */
 export const themeDecorator = withThemeByClassName({
   themes: {
-    light: "is-light",
+    light: "light",
     dark: "dark",
-    paper: "is-paper",
   },
   defaultTheme: "light",
 });

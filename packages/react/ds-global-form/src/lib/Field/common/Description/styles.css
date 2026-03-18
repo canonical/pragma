@@ -1,7 +1,6 @@
-/* @canonical/generator-ds 0.9.0-experimental.4 */
-
-/*
 .ds.form-field-description {
-
+  font-size: var(--typography-text-secondary-font-size);
+  color: var(--color-text-muted);
+  margin: 0;
+  margin-block-start: var(--tmp-space-group-gap);
 }
-*/

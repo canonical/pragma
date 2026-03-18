@@ -1,0 +1,72 @@
+{
+  "name": "@canonical/storybook-addon-form-state",
+  "version": "0.18.0",
+  "type": "module",
+  "files": [
+    "dist"
+  ],
+  "types": "dist/types/index.d.ts",
+  "description": "Storybook panel displaying live react-hook-form state",
+  "keywords": [
+    "storybook-addons"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/canonical/pragma"
+  },
+  "bugs": {
+    "url": "https://github.com/canonical/pragma/issues"
+  },
+  "license": "LGPL-3.0",
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "default": "./dist/esm/index.js"
+    },
+    "./preview": {
+      "types": "./dist/types/preview.d.ts",
+      "default": "./dist/esm/preview.js"
+    },
+    "./manager": {
+      "types": "./dist/types/manager.d.ts",
+      "default": "./dist/esm/manager.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "build": "bun run build:package",
+    "build:all": "bun run build:package",
+    "build:package": "bun run build:package:tsc",
+    "build:package:tsc": "tsc -p tsconfig.build.json",
+    "check": "bun run check:biome && bun run check:ts",
+    "check:fix": "bun run check:biome:fix && bun run check:ts",
+    "check:biome": "biome check",
+    "check:biome:fix": "biome check --write",
+    "check:ts": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.4.6",
+    "@canonical/biome-config": "^0.18.0",
+    "@canonical/typescript-config-react": "^0.18.0",
+    "@storybook/react-vite": "^10.2.17",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "react-hook-form": "^7.71.2",
+    "storybook": "^10.2.17",
+    "typescript": "^5.9.3"
+  },
+  "peerDependencies": {
+    "react": "^18.0.0 || ^19.0.0",
+    "react-dom": "^18.0.0 || ^19.0.0",
+    "react-hook-form": "^7.0.0",
+    "storybook": "^10.2.17"
+  },
+  "storybook": {
+    "displayName": "Form State",
+    "supportedFrameworks": [
+      "react"
+    ]
+  }
+}

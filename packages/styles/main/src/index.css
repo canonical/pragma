@@ -23,6 +23,12 @@
 @import url("@canonical/design-tokens/dist/modifiers.importance.css");
 @import url("@canonical/design-tokens/dist/states.css");
 
+/* Grid layout presets */
+@import url("./grid.css");
+
+/* Temporary semantic tokens (candidates for design-tokens) */
+@import url("./tmp.css");
+
 /* Establish color-scheme for light-dark() support */
 :root {
   color-scheme: light dark;

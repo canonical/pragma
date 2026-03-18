@@ -1,14 +1,11 @@
-/* @canonical/generator-ds 0.9.0-experimental.9 */
 import type React from "react";
+import { useEffect, useRef } from "react";
+import mergeRefs from "../../utils/mergeRefs.js";
 import type { ListProps } from "./types.js";
 import "./styles.css";
 
 const componentCssClassName = "ds combobox-list";
 
-/**
- * description of the List component
- * @returns {React.ReactElement} - Rendered List
- */
 const List = ({
   className,
   style,
@@ -21,13 +18,31 @@ const List = ({
   valueKey,
   isOpen,
 }: ListProps): React.ReactElement => {
+  const listRef = useRef<HTMLUListElement>(null);
+
+  useEffect(() => {
+    const el = listRef.current;
+    if (!el) return;
+    try {
+      if (isOpen) {
+        el.showPopover();
+      } else {
+        el.hidePopover();
+      }
+    } catch {
+      // popover API not supported or already in target state
+    }
+  }, [isOpen]);
+
+  const { ref: menuRef, ...menuProps } = getMenuProps();
+
   return (
     <ul
-      className={[componentCssClassName, className, isOpen && "is-open"]
-        .filter((e) => e)
-        .join(" ")}
+      ref={mergeRefs(listRef, menuRef)}
+      popover="manual"
+      className={[componentCssClassName, className].filter(Boolean).join(" ")}
       style={style}
-      {...getMenuProps()}
+      {...menuProps}
     >
       {items.map((item, index) => {
         const keyValue = item[valueKey];
@@ -43,15 +58,13 @@ const List = ({
         }
         return (
           <li
-            {...getItemProps({
-              item: item,
-              index,
-              style: {
-                backgroundColor:
-                  highlightedIndex === index ? "yellow" : "white",
-                fontWeight: isSelected ? "bold" : "normal",
-              },
-            })}
+            {...getItemProps({ item, index })}
+            className={[
+              highlightedIndex === index && "highlighted",
+              isSelected && "selected",
+            ]
+              .filter(Boolean)
+              .join(" ")}
             key={key}
           >
             {convertItemToString(item)}

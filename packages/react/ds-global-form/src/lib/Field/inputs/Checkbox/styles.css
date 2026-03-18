@@ -1,7 +1,62 @@
-/* @canonical/generator-ds 0.9.0-experimental.4 */
-
-/*
 .ds.form-checkbox {
+  appearance: none;
+  width: 1.25rem;
+  height: 1.25rem;
+  border: var(--dimension-stroke-thickness-medium) solid var(--color-border);
+  border-radius: var(--dimension-radius-small);
+  background: var(--color-foreground-checkbox-unselected);
+  cursor: pointer;
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease;
 
+  &:checked {
+    background: var(--color-foreground-checkbox-selected);
+    border-color: var(--color-foreground-checkbox-selected);
+    background-image: url("/icons/checkmark.svg#checkmark");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 75%;
+  }
+
+  &:indeterminate {
+    background: var(--color-foreground-checkbox-selected);
+    border-color: var(--color-foreground-checkbox-selected);
+    background-image: url("/icons/minus.svg#minus");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 75%;
+  }
+
+  &:hover:not(:disabled):not(:checked):not(:indeterminate) {
+    background: var(--color-foreground-checkbox-unselected-hover);
+  }
+
+  &:checked:hover:not(:disabled) {
+    background-color: var(--color-foreground-checkbox-selected);
+    filter: brightness(0.9);
+  }
+
+  &:indeterminate:hover:not(:disabled) {
+    background-color: var(--color-foreground-checkbox-selected);
+    filter: brightness(0.9);
+  }
+
+  &:focus-visible {
+    outline: none;
+    border-color: var(--color-focusRing);
+    box-shadow: 0 0 0 1px var(--color-focusRing);
+  }
+
+  &:disabled {
+    border-color: var(--color-border-disabled);
+    background: var(--color-foreground-checkbox-unselected-disabled);
+    cursor: not-allowed;
+  }
+
+  &:checked:disabled,
+  &:indeterminate:disabled {
+    background: var(--color-foreground-checkbox-selected-disabled);
+    border-color: var(--color-foreground-checkbox-selected-disabled);
+  }
 }
-*/
