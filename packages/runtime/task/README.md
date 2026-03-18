@@ -45,7 +45,7 @@ const greet = flatMap(
 
 Effects are pure data — tagged unions describing what should happen:
 
-- **File I/O**: `ReadFile`, `WriteFile`, `AppendFile`, `CopyFile`, `CopyDirectory`, `DeleteFile`, `DeleteDirectory`, `MakeDir`, `Exists`, `Glob`
+- **File I/O**: `ReadFile`, `WriteFile`, `AppendFile`, `CopyFile`, `CopyDirectory`, `DeleteFile`, `DeleteDirectory`, `MakeDir`, `Exists`, `Glob`, `Symlink`
 - **Process**: `Exec`
 - **Interaction**: `Prompt` (text, confirm, select, multiselect)
 - **Logging**: `Log` (debug, info, warn, error)
@@ -57,7 +57,7 @@ Effects are pure data — tagged unions describing what should happen:
 Task-returning wrappers for every effect:
 
 ```typescript
-import { readFile, writeFile, exec, promptConfirm, info } from "@canonical/task";
+import { readFile, writeFile, exec, symlink, promptConfirm, info } from "@canonical/task";
 
 const deploy = flatMap(
   promptConfirm("Deploy to production?"),
@@ -65,6 +65,9 @@ const deploy = flatMap(
     ? sequence_([exec("deploy.sh", []), info("Deployed")])
     : info("Cancelled"),
 );
+
+// Create a symbolic link
+const link = symlink("../shared/utils", "src/utils");
 ```
 
 ### Combinators
@@ -88,6 +91,11 @@ const resilient = retry(flakeyTask, 3);
 
 // Resource management (acquire → use → release)
 const safe = bracket(openDb, useDb, closeDb);
+
+// Chain tasks where each result determines the next task
+const pipeline = switchMap(readFile("config.json"), (raw) =>
+  writeFile("parsed.json", JSON.stringify(JSON.parse(raw), null, 2)),
+);
 ```
 
 ### Interpreter
@@ -127,8 +135,8 @@ assertEffects(myTask, [
 | Category | Key Exports |
 |----------|-------------|
 | **Monad** | `pure`, `flatMap`, `map`, `fail`, `recover`, `task` (builder) |
-| **Primitives** | `readFile`, `writeFile`, `exec`, `prompt*`, `log`, `mkdir`, `glob` |
-| **Combinators** | `sequence`, `parallel`, `when`, `retry`, `bracket`, `traverse`, `zip` |
+| **Primitives** | `readFile`, `writeFile`, `exec`, `symlink`, `prompt*`, `log`, `mkdir`, `glob` |
+| **Combinators** | `sequence`, `parallel`, `when`, `retry`, `bracket`, `traverse`, `zip`, `switchMap` |
 | **Interpreter** | `runTask`, `run`, `executeEffect` |
 | **Dry-Run** | `dryRun`, `dryRunWith`, `collectEffects`, `assertEffects` |
 
