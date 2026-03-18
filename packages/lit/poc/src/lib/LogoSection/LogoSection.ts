@@ -12,12 +12,16 @@ const componentCssClassName = "ds logo-section";
  * A vertically stacked pattern with an optional heading and a logo grid.
  *
  * @slot logos - One or more logo items to display in the logo grid.
- * @slot description - Optional descriptive text displayed beside the heading.
  * @slot cta - Optional call-to-action content displayed beside the heading.
  *
- * @prop {string} title - Heading text for the section. Ignored in `minimal` mode.
- * @prop {string} titleHref - When set, wraps the title in an anchor tag. Ignored in `minimal` mode.
- * @prop {"default" | "minimal"} mode - `minimal` renders a plain `<div>` wrapper with only the logo block; `default` renders a full `<section>` with heading, description and CTA slots.
+ * @prop {string} title - Heading text for the section.
+ * @prop {string} titleHref - When set, wraps the title in an anchor tag.
+ * @prop {string} description - Descriptive text beside the heading.
+ * @prop {string} descriptionHref - When set, wraps the description in an
+ *   anchor tag.
+ * @prop {"default" | "minimal"} mode - `minimal` renders a plain `<div>`
+ *   wrapper with only the logo block; `default` renders a full `<section>`
+ *   with heading, description and CTA slots.
  *
  * @implements ds:global.component.logo-section
  */
@@ -27,13 +31,23 @@ export default class LogoSection extends LitElement implements Props {
 
   @property({ type: String }) title = "";
   @property({ type: String, attribute: "title-href" }) titleHref = "";
+  @property({ type: String }) description = "";
+  @property({ type: String, attribute: "description-href" }) descriptionHref =
+    "";
   @property({ type: String, attribute: "mode" }) mode: "default" | "minimal" =
     "default";
 
   private get titleContent() {
     return this.titleHref
-      ? html`<a href="${this.titleHref}">${this.title}</a>`
+      ? html`<a class="link" href="${this.titleHref}">${this.title}</a>`
       : this.title;
+  }
+
+  private get descriptionContent() {
+    if (!this.description) return null;
+    return this.descriptionHref
+      ? html`<a class="link" href="${this.descriptionHref}">${this.description}</a>`
+      : this.description;
   }
 
   render() {
@@ -55,7 +69,7 @@ export default class LogoSection extends LitElement implements Props {
             <h4 class="title">${this.titleContent}</h4>
           </div>
           <div>
-            <slot name="description"></slot>
+            <p class="description">${this.descriptionContent}</p>
             <slot name="cta"></slot>
           </div>
         </div>

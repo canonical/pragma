@@ -25,32 +25,9 @@ export const Default: Story = {
   render: () => html`
 		<ds-logo-section
 			title="The quick brown fox jumps over the lazy dog"
+			description="The quick brown fox jumps over the lazy dog"
+			description-href="#"
 		>
-			<p slot="description" href="#">The quick brown fox jumps over the lazy dog</p>
-
-			<img slot="logos" src="https://assets.ubuntu.com/v1/38fdfd23-Dell-logo.png" alt="Dell Technologies" loading="lazy">
-			<img slot="logos" src="https://assets.ubuntu.com/v1/cd5f636a-hp-logo.png" alt="Hewlett Packard" loading="lazy">
-			<img slot="logos" src="https://assets.ubuntu.com/v1/f90702cd-lenovo-logo.png" alt="Lenovo" loading="lazy">
-			<img slot="logos" src="https://assets.ubuntu.com/v1/2ef3c028-amazon-web-services-logo.png" alt="Amazon Web Services" loading="lazy">
-			<img slot="logos" src="https://assets.ubuntu.com/v1/cb7ef8ac-ibm-cloud-logo.png" alt="IBM Cloud" loading="lazy">
-			<img slot="logos" src="https://assets.ubuntu.com/v1/210f44e4-microsoft-azure-new-logo.png" alt="Microsoft Azure" loading="lazy">
-			<img slot="logos" src="https://assets.ubuntu.com/v1/a554a818-google-cloud-logo.png" alt="Google Cloud" loading="lazy">
-			<img slot="logos" src="https://assets.ubuntu.com/v1/b3e692f4-oracle-new-logo.png" alt="Oracle" loading="lazy">
-
-		</ds-logo-section>
-	`,
-};
-
-export const CTABlock: Story = {
-  render: () => html`
-		<ds-logo-section
-			title="The quick brown fox jumps over the lazy dog"
-		>
-			<p slot="description">The quick brown fox jumps over the lazy dog</p>
-
-			<button slot="cta">Try it out</button>
-			<a slot="cta" href="#">Lorem ipsum dolor sit amet ›</a>
-
 			<img slot="logos" src="https://assets.ubuntu.com/v1/38fdfd23-Dell-logo.png" alt="Dell Technologies" loading="lazy">
 			<img slot="logos" src="https://assets.ubuntu.com/v1/cd5f636a-hp-logo.png" alt="Hewlett Packard" loading="lazy">
 			<img slot="logos" src="https://assets.ubuntu.com/v1/f90702cd-lenovo-logo.png" alt="Lenovo" loading="lazy">
@@ -68,10 +45,9 @@ export const Minimal: Story = {
   render: () => html`
 		<ds-logo-section
 			title="The quick brown fox jumps over the lazy dog"
+			description="The quick brown fox jumps over the lazy dog"
 			mode="minimal"
 		>
-			<p slot="description">The quick brown fox jumps over the lazy dog</p>
-
 			<img slot="logos" src="https://assets.ubuntu.com/v1/38fdfd23-Dell-logo.png" alt="Dell Technologies" loading="lazy">
 			<img slot="logos" src="https://assets.ubuntu.com/v1/cd5f636a-hp-logo.png" alt="Hewlett Packard" loading="lazy">
 			<img slot="logos" src="https://assets.ubuntu.com/v1/f90702cd-lenovo-logo.png" alt="Lenovo" loading="lazy">
@@ -80,7 +56,6 @@ export const Minimal: Story = {
 			<img slot="logos" src="https://assets.ubuntu.com/v1/210f44e4-microsoft-azure-new-logo.png" alt="Microsoft Azure" loading="lazy">
 			<img slot="logos" src="https://assets.ubuntu.com/v1/a554a818-google-cloud-logo.png" alt="Google Cloud" loading="lazy">
 			<img slot="logos" src="https://assets.ubuntu.com/v1/b3e692f4-oracle-new-logo.png" alt="Oracle" loading="lazy">
-
 		</ds-logo-section>
 	`,
 };

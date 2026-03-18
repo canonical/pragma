@@ -45,9 +45,46 @@ describe("LogoSection component", () => {
       elem.title = "Our partners";
       elem.titleHref = "https://example.com";
       await elem.updateComplete;
-      const link = elem.shadowRoot?.querySelector(".title a");
+      const link = elem.shadowRoot?.querySelector(".title .link");
       expect(link?.getAttribute("href")).toBe("https://example.com");
       expect(link?.textContent).toBe("Our partners");
+    });
+
+    it("does not render description text when description is empty", async () => {
+      await elem.updateComplete;
+      const secondCol = elem.shadowRoot?.querySelector(".description");
+      expect(secondCol?.textContent?.trim()).toBe("");
+    });
+
+    it("renders description as a link when descriptionHref is set", async () => {
+      elem.description = "Learn more";
+      elem.descriptionHref = "https://example.com/about";
+      await elem.updateComplete;
+      const link = elem.shadowRoot?.querySelector(".description .link");
+      expect(link?.getAttribute("href")).toBe("https://example.com/about");
+      expect(link?.textContent?.trim()).toBe("Learn more");
+    });
+
+    it("exposes a logos slot", () => {
+      expect(elem.shadowRoot?.querySelector("slot[name='logos']")).toBeTruthy();
+    });
+
+    it("exposes a cta slot", () => {
+      expect(elem.shadowRoot?.querySelector("slot[name='cta']")).toBeTruthy();
+    });
+  });
+
+  describe("default prop values", () => {
+    it("defaults mode to 'default'", () => {
+      expect(elem.mode).toBe("default");
+    });
+
+    it("defaults title to empty string", () => {
+      expect(elem.title).toBe("");
+    });
+
+    it("defaults description to empty string", () => {
+      expect(elem.description).toBe("");
     });
   });
 
@@ -66,6 +103,16 @@ describe("LogoSection component", () => {
 
     it("does not render the heading block", () => {
       expect(elem.shadowRoot?.querySelector(".heading")).toBeNull();
+    });
+
+    it("does not render title even when set", async () => {
+      elem.title = "Our partners";
+      await elem.updateComplete;
+      expect(elem.shadowRoot?.querySelector("h4")).toBeNull();
+    });
+
+    it("exposes a logos slot", () => {
+      expect(elem.shadowRoot?.querySelector("slot[name='logos']")).toBeTruthy();
     });
   });
 });

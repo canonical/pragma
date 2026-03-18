@@ -23,20 +23,25 @@
     font-variant-caps: all-small-caps;
   }
 
+  & .link {
+    text-decoration: none;
+    color: var(--tmp-color-text-link-default);
+  }
+
+  & .link:hover {
+    text-decoration: underline;
+  }
+
   & .logos {
     line-height: 0;
     padding-block: var(--logo-offset);
   }
 
-  & ::slotted(img) {
+  & ::slotted(img),
+  ::slotted(svg) {
     height: var(--logo-size);
     width: auto;
     margin-inline-end: var(--logo-gap);
     margin-block: calc(-1 * var(--logo-offset));
-  }
-
-  & slot[name="cta"] {
-    display: flex;
-    gap: 1rem;
   }
 }
