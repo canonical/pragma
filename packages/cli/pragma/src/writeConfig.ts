@@ -23,8 +23,15 @@ export default function writeConfig(cwd: string, update: ConfigUpdate): void {
   try {
     const raw = readFileSync(configPath, "utf-8");
     existing = parse(raw);
-  } catch {
-    // File doesn't exist or is unparseable — start fresh.
+  } catch (err: unknown) {
+    // Only swallow "file not found" — surface parse or permission errors.
+    const isNotFound =
+      err instanceof Error &&
+      "code" in err &&
+      (err as NodeJS.ErrnoException).code === "ENOENT";
+    if (!isNotFound) {
+      throw err;
+    }
   }
 
   if (update.tier !== undefined) {

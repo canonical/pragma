@@ -132,4 +132,9 @@ describe("writeConfig", () => {
     const raw = readFileSync(join(dir, "pragma.config.toml"), "utf-8");
     expect(raw).toBe("");
   });
+
+  it("throws on unparseable existing config instead of silently overwriting", () => {
+    writeFileSync(join(dir, "pragma.config.toml"), "invalid = [toml");
+    expect(() => writeConfig(dir, { tier: "apps" })).toThrow();
+  });
 });

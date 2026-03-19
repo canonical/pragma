@@ -96,7 +96,6 @@ describe("resolveConfigShow", () => {
     const data = resolveConfigShow(
       { tier: "apps/lxd", channel: "experimental" },
       {
-        cwd: "/tmp",
         packageManager: "bun",
         configFilePath: "/tmp/pragma.config.toml",
         configFileExists: true,
@@ -115,7 +114,6 @@ describe("resolveConfigShow", () => {
     const data = resolveConfigShow(
       { tier: undefined, channel: "normal" },
       {
-        cwd: "/tmp",
         packageManager: "npm",
         configFilePath: "/tmp/pragma.config.toml",
         configFileExists: false,
@@ -132,7 +130,6 @@ describe("resolveConfigShow", () => {
     const data = resolveConfigShow(
       { tier: undefined, channel: "prerelease" },
       {
-        cwd: "/tmp",
         packageManager: "pnpm",
         configFilePath: "/tmp/pragma.config.toml",
         configFileExists: true,

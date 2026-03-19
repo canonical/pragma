@@ -76,7 +76,6 @@ export function validateChannel(value: string): Channel {
 export function resolveConfigShow(
   config: PragmaConfig,
   opts: {
-    cwd: string;
     packageManager: string;
     configFilePath: string;
     configFileExists: boolean;

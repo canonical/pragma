@@ -76,7 +76,7 @@ const configTierCommand: CommandDefinition = {
     }
 
     // Validate tier against ontology
-    const store = await bootStore({ cwd: ctx.cwd });
+    const store = await bootStore();
     await validateTier(store, tierPath);
 
     writeConfig(ctx.cwd, { tier: tierPath });
@@ -156,7 +156,6 @@ const configShowCommand: CommandDefinition = {
     const cfgExists = configExists(ctx.cwd);
 
     const data = resolveConfigShow(config, {
-      cwd: ctx.cwd,
       packageManager: pm,
       configFilePath: cfgPath,
       configFileExists: cfgExists,
