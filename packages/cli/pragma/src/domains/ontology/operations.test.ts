@@ -27,16 +27,16 @@ describe("listOntologies", () => {
 
     const ds = result.find((o) => o.prefix === "ds");
     expect(ds).toBeDefined();
-    expect(ds!.namespace).toBe("https://ds.canonical.com/");
-    expect(ds!.classCount).toBeGreaterThan(0);
-    expect(ds!.propertyCount).toBeGreaterThan(0);
+    expect(ds?.namespace).toBe("https://ds.canonical.com/");
+    expect(ds?.classCount).toBeGreaterThan(0);
+    expect(ds?.propertyCount).toBeGreaterThan(0);
   });
 
   it("includes cso namespace", async () => {
     const result = await listOntologies(store);
     const cso = result.find((o) => o.prefix === "cso");
     expect(cso).toBeDefined();
-    expect(cso!.classCount).toBeGreaterThan(0);
+    expect(cso?.classCount).toBeGreaterThan(0);
   });
 
   it("returns sorted by prefix", async () => {
@@ -60,32 +60,25 @@ describe("showOntology", () => {
     const result = await showOntology(store, "ds");
     const component = result.classes.find((c) => c.label === "Component");
     expect(component).toBeDefined();
-    expect(component!.superclass).toContain("UIBlock");
+    expect(component?.superclass).toContain("UIBlock");
   });
 
   it("includes property domain and range", async () => {
     const result = await showOntology(store, "ds");
-    const nameProp = result.properties.find((p) =>
-      p.uri.endsWith("name"),
-    );
+    const nameProp = result.properties.find((p) => p.uri.endsWith("name"));
     expect(nameProp).toBeDefined();
-    expect(nameProp!.domain).toContain("UIBlock");
-    expect(nameProp!.type).toBe("datatype");
+    expect(nameProp?.domain).toContain("UIBlock");
+    expect(nameProp?.type).toBe("datatype");
   });
 
   it("resolves full namespace URI", async () => {
-    const result = await showOntology(
-      store,
-      "https://ds.canonical.com/",
-    );
+    const result = await showOntology(store, "https://ds.canonical.com/");
     expect(result.prefix).toBe("ds");
     expect(result.classes.length).toBeGreaterThan(0);
   });
 
   it("throws PragmaError.invalidInput for unknown prefix", async () => {
-    await expect(showOntology(store, "unknown")).rejects.toThrow(
-      PragmaError,
-    );
+    await expect(showOntology(store, "unknown")).rejects.toThrow(PragmaError);
 
     try {
       await showOntology(store, "unknown");
@@ -109,10 +102,10 @@ describe("showOntologyRaw", () => {
     const triples = await showOntologyRaw(store, "ds");
     expect(triples.length).toBeGreaterThan(0);
 
-    const subjects = triples.map((t) => t.subject);
-    expect(subjects.some((s) => s.startsWith("https://ds.canonical.com/"))).toBe(
-      true,
+    const hasDs = triples.some((t) =>
+      t.subject.startsWith("https://ds.canonical.com/"),
     );
+    expect(hasDs).toBe(true);
   });
 
   it("throws PragmaError.invalidInput for unknown prefix", async () => {
