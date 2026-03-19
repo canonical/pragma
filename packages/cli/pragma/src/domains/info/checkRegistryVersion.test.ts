@@ -25,7 +25,7 @@ describe("checkRegistryVersion", () => {
 
     expect(result).toEqual({ latest: "0.19.0", distTag: "latest" });
     expect(globalThis.fetch).toHaveBeenCalledWith(
-      "https://registry.npmjs.org/@canonical/pragma",
+      "https://registry.npmjs.org/%40canonical%2Fpragma",
       expect.objectContaining({
         headers: { Accept: "application/json" },
       }),

@@ -15,7 +15,7 @@ describe("config tier command", () => {
   let dir: string;
   const tierCmd = collectConfigCommands().find(
     (c) => c.path.join(" ") === "config tier",
-  )!;
+  ) as ReturnType<typeof collectConfigCommands>[number];
 
   beforeEach(() => {
     dir = mkdtempSync(join(tmpdir(), "pragma-cmd-tier-"));
@@ -77,7 +77,7 @@ describe("config channel command", () => {
   let dir: string;
   const channelCmd = collectConfigCommands().find(
     (c) => c.path.join(" ") === "config channel",
-  )!;
+  ) as ReturnType<typeof collectConfigCommands>[number];
 
   beforeEach(() => {
     dir = mkdtempSync(join(tmpdir(), "pragma-cmd-channel-"));
@@ -158,7 +158,7 @@ describe("config show command", () => {
   let dir: string;
   const showCmd = collectConfigCommands().find(
     (c) => c.path.join(" ") === "config show",
-  )!;
+  ) as ReturnType<typeof collectConfigCommands>[number];
 
   beforeEach(() => {
     dir = mkdtempSync(join(tmpdir(), "pragma-cmd-show-"));

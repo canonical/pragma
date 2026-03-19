@@ -17,7 +17,7 @@ async function checkRegistryVersion(
   channel: Channel,
 ): Promise<RegistryCheckResult | undefined> {
   const distTag = DIST_TAG_MAP[channel];
-  const url = `https://registry.npmjs.org/${packageName}`;
+  const url = `https://registry.npmjs.org/${encodeURIComponent(packageName)}`;
 
   try {
     const response = await fetch(url, {

@@ -57,12 +57,14 @@ async function executeInfo(
   }
 
   let store: InfoData["store"];
+  let keStore: Awaited<ReturnType<typeof bootStore>> | undefined;
   try {
-    const keStore = await bootStore({ cwd: ctx.cwd });
+    keStore = await bootStore({ cwd: ctx.cwd });
     store = await collectStoreSummary(keStore);
-    keStore.dispose();
   } catch {
     // Store unavailable — show info without store section
+  } finally {
+    keStore?.dispose();
   }
 
   const data: InfoData = {
