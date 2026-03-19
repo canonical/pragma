@@ -15,9 +15,7 @@ import type {
 // Plain
 // =============================================================================
 
-export function formatStandardsListPlain(
-  standards: StandardSummary[],
-): string {
+export function formatStandardsListPlain(standards: StandardSummary[]): string {
   const lines: string[] = [];
   for (const s of standards) {
     const cat = s.category ? ` [${s.category}]` : "";
@@ -63,9 +61,7 @@ export function formatStandardGetPlain(
   return lines.join("\n");
 }
 
-export function formatCategoriesPlain(
-  categories: CategorySummary[],
-): string {
+export function formatCategoriesPlain(categories: CategorySummary[]): string {
   const lines: string[] = [];
   for (const c of categories) {
     const plural = c.standardCount === 1 ? "standard" : "standards";
@@ -78,9 +74,7 @@ export function formatCategoriesPlain(
 // LLM
 // =============================================================================
 
-export function formatStandardsListLlm(
-  standards: StandardSummary[],
-): string {
+export function formatStandardsListLlm(standards: StandardSummary[]): string {
   const lines: string[] = [];
   lines.push("## Standards");
   lines.push("");
@@ -121,9 +115,7 @@ export function formatStandardGetLlm(
   return lines.join("\n");
 }
 
-export function formatCategoriesLlm(
-  categories: CategorySummary[],
-): string {
+export function formatCategoriesLlm(categories: CategorySummary[]): string {
   const lines: string[] = [];
   lines.push("## Standard Categories");
   lines.push("");

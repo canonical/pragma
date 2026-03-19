@@ -1,5 +1,5 @@
-import type { Store } from "@canonical/ke";
 import type { CommandContext, CommandOutputResult } from "@canonical/cli-core";
+import type { Store } from "@canonical/ke";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { DS_ALL_TTL } from "../../../testing/dsFixtures.js";
 import { createTestStore } from "../../../testing/store.js";

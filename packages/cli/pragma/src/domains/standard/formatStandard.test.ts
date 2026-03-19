@@ -1,3 +1,4 @@
+import type { URI } from "@canonical/ke";
 import { describe, expect, it } from "vitest";
 import type {
   CategorySummary,
@@ -15,7 +16,7 @@ import {
 } from "./formatStandard.js";
 
 const SUMMARY: StandardSummary = {
-  uri: "http://example.com/s1" as any,
+  uri: "http://example.com/s1" as URI,
   name: "react/component/folder-structure",
   category: "react",
   description: "Components must follow the standard folder layout",

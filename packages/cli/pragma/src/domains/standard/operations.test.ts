@@ -52,13 +52,13 @@ describe("listStandards", () => {
   it("filters by search term in name", async () => {
     const result = await listStandards(store, { search: "folder" });
     expect(result.length).toBe(1);
-    expect(result[0]!.name).toBe("react/component/folder-structure");
+    expect(result[0]?.name).toBe("react/component/folder-structure");
   });
 
   it("filters by search term in description", async () => {
     const result = await listStandards(store, { search: "pure" });
     expect(result.length).toBe(1);
-    expect(result[0]!.name).toBe("code/function/purity");
+    expect(result[0]?.name).toBe("code/function/purity");
   });
 
   it("returns empty for non-matching category", async () => {
@@ -72,7 +72,7 @@ describe("listStandards", () => {
       search: "props",
     });
     expect(result.length).toBe(1);
-    expect(result[0]!.name).toBe("react/component/props");
+    expect(result[0]?.name).toBe("react/component/props");
   });
 });
 

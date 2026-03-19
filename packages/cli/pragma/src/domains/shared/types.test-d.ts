@@ -119,7 +119,9 @@ expectTypeOf(listComponents).returns.resolves.toEqualTypeOf<
 expectTypeOf(getComponent).returns.resolves.toEqualTypeOf<ComponentDetailed>();
 expectTypeOf(listStandards).returns.resolves.toEqualTypeOf<StandardSummary[]>();
 expectTypeOf(getStandard).returns.resolves.toEqualTypeOf<StandardDetailed>();
-expectTypeOf(listCategories).returns.resolves.toEqualTypeOf<CategorySummary[]>();
+expectTypeOf(listCategories).returns.resolves.toEqualTypeOf<
+  CategorySummary[]
+>();
 expectTypeOf(listModifiers).returns.resolves.toEqualTypeOf<ModifierFamily[]>();
 expectTypeOf(getModifier).returns.resolves.toEqualTypeOf<ModifierFamily>();
 expectTypeOf(listTokens).returns.resolves.toEqualTypeOf<TokenSummary[]>();

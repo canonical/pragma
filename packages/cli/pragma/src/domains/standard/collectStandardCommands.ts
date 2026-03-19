@@ -7,15 +7,14 @@
  * @see ST.02–ST.06, CL.04
  */
 
-import type { Store } from "@canonical/ke";
 import {
   type CommandContext,
   type CommandDefinition,
   createOutputResult,
 } from "@canonical/cli-core";
+import type { Store } from "@canonical/ke";
 import { PragmaError } from "../../error/index.js";
 import { bootStore } from "../shared/bootStore.js";
-import type { StandardCommandOptions } from "./types.js";
 import {
   formatCategoriesLlm,
   formatCategoriesPlain,
@@ -26,6 +25,7 @@ import {
   formatStandardsListPlain,
 } from "./formatStandard.js";
 import { getStandard, listCategories, listStandards } from "./operations.js";
+import type { StandardCommandOptions } from "./types.js";
 
 /**
  * Collect all standard command definitions.
@@ -73,10 +73,7 @@ function buildStandardList(
         "pragma standard list --llm",
       ],
     },
-    async execute(
-      params: Record<string, unknown>,
-      ctx: CommandContext,
-    ) {
+    async execute(params: Record<string, unknown>, ctx: CommandContext) {
       const store = await resolveStore();
       const filters = {
         category: params.category as string | undefined,
@@ -134,10 +131,7 @@ function buildStandardGet(
         "pragma standard get react/component/folder-structure --llm",
       ],
     },
-    async execute(
-      params: Record<string, unknown>,
-      ctx: CommandContext,
-    ) {
+    async execute(params: Record<string, unknown>, ctx: CommandContext) {
       const store = await resolveStore();
       const name = params.name as string;
       const detailed = (params.detailed as boolean) ?? false;
@@ -172,10 +166,7 @@ function buildStandardCategories(
     meta: {
       examples: ["pragma standard categories"],
     },
-    async execute(
-      _params: Record<string, unknown>,
-      ctx: CommandContext,
-    ) {
+    async execute(_params: Record<string, unknown>, ctx: CommandContext) {
       const store = await resolveStore();
       const categories = await listCategories(store);
 
