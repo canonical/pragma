@@ -158,8 +158,10 @@ export async function listCategories(
       WHERE {
         ?cat a cso:Category ;
              cso:categoryName ?categoryName .
-        ?standard a cso:CodeStandard ;
-                  cso:category ?cat .
+        OPTIONAL {
+          ?standard a cso:CodeStandard ;
+                    cso:category ?cat .
+        }
       }
       GROUP BY ?categoryName
       ORDER BY ?categoryName

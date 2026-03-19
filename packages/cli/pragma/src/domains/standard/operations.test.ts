@@ -116,4 +116,29 @@ describe("listCategories", () => {
     const sorted = [...names].sort();
     expect(names).toEqual(sorted);
   });
+
+  it("includes categories with zero standards", async () => {
+    const ttlWithEmptyCategory = `
+      @prefix cso: <http://pragma.canonical.com/codestandards#> .
+      cso:empty_cat a cso:Category ; cso:categoryName "empty" .
+      cso:filled_cat a cso:Category ; cso:categoryName "filled" .
+      cso:s1 a cso:CodeStandard ;
+        cso:name "filled/one" ;
+        cso:category cso:filled_cat ;
+        cso:description "A standard" .
+    `;
+    const { store: testStore, cleanup: testCleanup } = await createTestStore({
+      ttl: ttlWithEmptyCategory,
+    });
+    try {
+      const result = await listCategories(testStore);
+      const empty = result.find((c) => c.name === "empty");
+      expect(empty).toBeDefined();
+      expect(empty?.standardCount).toBe(0);
+      const filled = result.find((c) => c.name === "filled");
+      expect(filled?.standardCount).toBe(1);
+    } finally {
+      testCleanup();
+    }
+  });
 });
