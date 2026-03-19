@@ -103,6 +103,47 @@ cso:react-props a cso:CodeStandard ;
   cso:description "Props must extend the base HTML element type" .
 `;
 
+/**
+ * Stats-oriented ontology — class hierarchy for stats plugin testing.
+ *
+ * Hierarchy:
+ *   UIElement
+ *   └── UIBlock
+ *       ├── Component
+ *       ├── Pattern
+ *       ├── Layout
+ *       └── Subcomponent
+ */
+export const STATS_ONTOLOGY_TTL = `
+@prefix ds: <https://ds.canonical.com/> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+
+ds:UIElement a owl:Class .
+ds:UIBlock a owl:Class ; rdfs:subClassOf ds:UIElement .
+ds:Component a owl:Class ; rdfs:subClassOf ds:UIBlock .
+ds:Pattern a owl:Class ; rdfs:subClassOf ds:UIBlock .
+ds:Layout a owl:Class ; rdfs:subClassOf ds:UIBlock .
+ds:Subcomponent a owl:Class ; rdfs:subClassOf ds:UIBlock .
+`;
+
+/**
+ * Stats-oriented instances — typed individuals for stats plugin testing.
+ *
+ * Counts: 3 Component, 2 Pattern, 1 Layout, 0 Subcomponent
+ * Rollup: UIBlock = 6, UIElement = 6
+ */
+export const STATS_INSTANCES_TTL = `
+@prefix ds: <https://ds.canonical.com/> .
+
+ds:button a ds:Component .
+ds:card a ds:Component .
+ds:input a ds:Component .
+ds:accordion a ds:Pattern .
+ds:tabs a ds:Pattern .
+ds:sidebar a ds:Layout .
+`;
+
 export const MULTI_TYPE_TTL = `
 @prefix ex: <http://example.org/> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .

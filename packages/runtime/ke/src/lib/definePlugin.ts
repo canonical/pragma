@@ -7,14 +7,14 @@
 // type annotation.
 //
 // Without definePlugin:
-//   const plugin: Plugin = { name: "foo", onQuery(s) { ... } }  // manual annotation
+//   const plugin: Plugin<MyApi> = { name: "foo", onReady(ctx) { ... } }
 //
 // With definePlugin:
-//   const plugin = definePlugin({ name: "foo", onQuery(s) { ... } })  // inferred
+//   const plugin = definePlugin<MyApi>({ name: "foo", onReady(ctx) { ... } })
 //
-// The generic <P extends Plugin> ensures that the returned type preserves
-// the specific shape of the input (e.g., which hooks are defined), which
-// can be useful for downstream type narrowing.
+// The TApi generic flows through to Plugin<TApi>, enabling type-safe API
+// exposure via store.api<TApi>("pluginName"). Defaults to void for plugins
+// that don't expose an API.
 // =============================================================================
 
 import type { Plugin } from "./types.js";
@@ -28,29 +28,32 @@ import type { Plugin } from "./types.js";
  *
  * @example
  * ```ts
+ * // Plugin without API (TApi defaults to void)
  * const loggingPlugin = definePlugin({
  *   name: "logger",
- *   onLoad(source) {
+ *   onLoad(source, ctx) {
  *     console.log(`Loading: ${source.path}`);
  *   },
- *   onQuery(sparql) {
- *     console.log(`Query: ${sparql.slice(0, 100)}`);
- *     // Return void — query passes through unchanged
- *   },
- *   onResult(result) {
- *     console.log(`Result: ${result.type}, ${
- *       result.type === "select" ? result.bindings.length + " rows" : ""
- *     }`);
- *     // Return void — result passes through unchanged
+ * });
+ *
+ * // Plugin with typed API
+ * interface MyApi { getCount(): number }
+ * const myPlugin = definePlugin<MyApi>({
+ *   name: "my-plugin",
+ *   onReady(ctx) {
+ *     return { getCount: () => 42 };
  *   },
  * });
  *
  * const store = await createStore({
  *   sources: ["./data.ttl"],
- *   plugins: [loggingPlugin],
+ *   plugins: [loggingPlugin, myPlugin],
  * });
+ * const api = store.api<MyApi>("my-plugin");
  * ```
  */
-export default function definePlugin<P extends Plugin>(plugin: P): P {
+export default function definePlugin<TApi = void>(
+  plugin: Plugin<TApi>,
+): Plugin<TApi> {
   return plugin;
 }

@@ -14,6 +14,7 @@ export type {
   GraphName,
   InferQueryResult,
   Plugin,
+  PluginContext,
   PrefixMap,
   QueryResult,
   ReloadOptions,
