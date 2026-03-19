@@ -96,7 +96,7 @@ describe("monorepo generator", () => {
       );
       expect(pkgFile).toBeDefined();
 
-      const pkg = JSON.parse(pkgFile!.content);
+      const pkg = JSON.parse(pkgFile?.content ?? "");
       expect(pkg.name).toBe("test-monorepo-monorepo");
       expect(pkg.private).toBe(true);
       expect(pkg.version).toBe("0.0.0");
@@ -122,7 +122,7 @@ describe("monorepo generator", () => {
       );
       expect(lernaFile).toBeDefined();
 
-      const lerna = JSON.parse(lernaFile!.content);
+      const lerna = JSON.parse(lernaFile?.content ?? "");
       expect(lerna.version).toBe("0.0.1");
     });
 
@@ -134,7 +134,7 @@ describe("monorepo generator", () => {
       );
       expect(tsconfigFile).toBeDefined();
 
-      const tsconfig = JSON.parse(tsconfigFile!.content);
+      const tsconfig = JSON.parse(tsconfigFile?.content ?? "");
       expect(tsconfig.extends).toBe("@canonical/typescript-config-base");
     });
 
@@ -149,7 +149,7 @@ describe("monorepo generator", () => {
       const tsconfigFile = getFiles(result).find(
         (f) => f.path === "test-monorepo/tsconfig.json",
       );
-      const tsconfig = JSON.parse(tsconfigFile!.content);
+      const tsconfig = JSON.parse(tsconfigFile?.content ?? "");
       expect(tsconfig.extends).toBe("@canonical/typescript-config-lit");
     });
 
@@ -161,7 +161,7 @@ describe("monorepo generator", () => {
       );
       expect(biomeFile).toBeDefined();
 
-      const biome = JSON.parse(biomeFile!.content);
+      const biome = JSON.parse(biomeFile?.content ?? "");
       expect(biome.extends).toEqual(["@canonical/biome-config"]);
     });
 
@@ -172,8 +172,8 @@ describe("monorepo generator", () => {
         (f) => f.path === "test-monorepo/.github/workflows/tag.yml",
       );
       expect(tagFile).toBeDefined();
-      expect(tagFile!.content).toContain("NPM_AUTH_TOKEN");
-      expect(tagFile!.content).not.toContain("NODE_AUTH_TOKEN");
+      expect(tagFile?.content).toContain("NPM_AUTH_TOKEN");
+      expect(tagFile?.content).not.toContain("NODE_AUTH_TOKEN");
     });
 
     it("generates setup-env with pinned bun version", () => {
@@ -183,7 +183,7 @@ describe("monorepo generator", () => {
         (f) => f.path === "test-monorepo/.github/actions/setup-env/action.yml",
       );
       expect(setupFile).toBeDefined();
-      expect(setupFile!.content).toContain('default: "1.3.9"');
+      expect(setupFile?.content).toContain('default: "1.3.9"');
     });
 
     it("generates GPL-3.0 license when selected", () => {
@@ -198,7 +198,7 @@ describe("monorepo generator", () => {
         (f) => f.path === "test-monorepo/LICENSE",
       );
       expect(licenseFile).toBeDefined();
-      expect(licenseFile!.content).toContain("GNU GENERAL PUBLIC LICENSE");
+      expect(licenseFile?.content).toContain("GNU GENERAL PUBLIC LICENSE");
     });
 
     it("generates LGPL-3.0 license by default", () => {
@@ -208,7 +208,7 @@ describe("monorepo generator", () => {
         (f) => f.path === "test-monorepo/LICENSE",
       );
       expect(licenseFile).toBeDefined();
-      expect(licenseFile!.content).toContain(
+      expect(licenseFile?.content).toContain(
         "GNU LESSER GENERAL PUBLIC LICENSE",
       );
     });

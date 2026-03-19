@@ -72,7 +72,8 @@ export async function getToken(
     });
   }
 
-  const b = result.bindings[0]!;
+  // Safe: length check above guarantees bindings[0] exists
+  const b = result.bindings[0] as (typeof result.bindings)[number];
 
   const values: { theme: string; value: string }[] = [];
   if (b.valueLight) values.push({ theme: "light", value: b.valueLight });

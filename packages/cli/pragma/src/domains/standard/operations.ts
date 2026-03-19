@@ -99,7 +99,8 @@ export async function getStandard(
     });
   }
 
-  const base = baseResult.bindings[0]!;
+  // Safe: length check above guarantees bindings[0] exists
+  const base = baseResult.bindings[0] as (typeof baseResult.bindings)[number];
   const standardUri = base.standard;
 
   // Fetch dos

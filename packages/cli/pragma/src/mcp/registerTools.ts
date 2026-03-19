@@ -16,10 +16,8 @@ import type { Store } from "@canonical/ke";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import type { PragmaConfig } from "../config.js";
-import {
-  getComponent,
-  listComponents,
-} from "../domains/component/operations.js";
+import getComponent from "../domains/component/getComponent.js";
+import listComponents from "../domains/component/listComponents.js";
 import { getModifier, listModifiers } from "../domains/modifier/operations.js";
 import type { FilterConfig } from "../domains/shared/types.js";
 import {

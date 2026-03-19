@@ -48,7 +48,8 @@ export default async function getComponent(
     });
   }
 
-  const base = baseResult.bindings[0]!;
+  // Safe: length check above guarantees bindings[0] exists
+  const base = baseResult.bindings[0] as (typeof baseResult.bindings)[number];
   const componentUri = base.component;
 
   // Modifiers with values
