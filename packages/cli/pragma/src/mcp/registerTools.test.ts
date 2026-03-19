@@ -73,14 +73,34 @@ describe("component_list", () => {
     expect(names).toContain("Card");
   });
 
-  it("returns all components with allTiers", async () => {
-    const result = await client.callTool({
-      name: "component_list",
-      arguments: { allTiers: true },
+  it("allTiers widens tier filter without changing channel", async () => {
+    // Create a client with tier=global so LXD Panel (apps/lxd) is hidden
+    const restricted = await createTestMcpClient({
+      config: { tier: "global", channel: "normal" },
     });
-    const data = parseText(result) as unknown[];
-    const names = data.map((c) => (c as { name: string }).name);
-    expect(names).toContain("Beta Widget");
+    try {
+      const without = await restricted.client.callTool({
+        name: "component_list",
+        arguments: {},
+      });
+      const withoutNames = (parseText(without) as { name: string }[]).map(
+        (c) => c.name,
+      );
+      expect(withoutNames).not.toContain("LXD Panel");
+
+      const withAll = await restricted.client.callTool({
+        name: "component_list",
+        arguments: { allTiers: true },
+      });
+      const withAllNames = (parseText(withAll) as { name: string }[]).map(
+        (c) => c.name,
+      );
+      expect(withAllNames).toContain("LXD Panel");
+      // Channel is still normal — Beta Widget (experimental) stays hidden
+      expect(withAllNames).not.toContain("Beta Widget");
+    } finally {
+      await restricted.cleanup();
+    }
   });
 });
 

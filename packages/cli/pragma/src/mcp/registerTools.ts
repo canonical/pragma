@@ -59,9 +59,10 @@ function registerTools(
     },
     async ({ allTiers }) => {
       try {
-        const filters: FilterConfig = allTiers
-          ? { tier: undefined, channel: "prerelease" }
-          : { tier: config.tier, channel: config.channel };
+        const filters: FilterConfig = {
+          tier: allTiers ? undefined : config.tier,
+          channel: config.channel,
+        };
         const result = await listComponents(store, filters);
         return {
           content: [{ type: "text", text: JSON.stringify(result, null, 2) }],

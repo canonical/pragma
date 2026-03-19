@@ -48,9 +48,12 @@ async function createTestMcpClient(options?: {
   return {
     client,
     cleanup: async () => {
-      await client.close();
-      await server.close();
-      cleanupStore();
+      try {
+        await client.close();
+        await server.close();
+      } finally {
+        cleanupStore();
+      }
     },
   };
 }
