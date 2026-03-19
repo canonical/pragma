@@ -24,9 +24,10 @@ import {
 } from "./renderInfo.js";
 import type { InfoData } from "./types.js";
 
-function selectInfoRenderer(
-  flags: { llm: boolean; format: "text" | "json" },
-): (data: InfoData) => string {
+function selectInfoRenderer(flags: {
+  llm: boolean;
+  format: "text" | "json";
+}): (data: InfoData) => string {
   if (flags.format === "json") return renderInfoJson;
   if (flags.llm) return renderInfoLlm;
   return renderInfoPlain;

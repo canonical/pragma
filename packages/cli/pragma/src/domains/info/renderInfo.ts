@@ -8,10 +8,7 @@
  */
 
 import chalk from "chalk";
-import {
-  formatField,
-  formatHeading,
-} from "../../lib/formatTerminal.js";
+import { formatField, formatHeading } from "../../lib/formatTerminal.js";
 import type { InfoData } from "./types.js";
 
 function renderInfoPlain(data: InfoData): string {
@@ -51,10 +48,7 @@ function renderInfoPlain(data: InfoData): string {
     lines.push("");
     lines.push(formatHeading("Store"));
     lines.push(
-      formatField(
-        "  Triples:",
-        data.store.tripleCount.toLocaleString(),
-      ),
+      formatField("  Triples:", data.store.tripleCount.toLocaleString()),
     );
     if (data.store.graphNames.length > 0) {
       lines.push(
@@ -82,9 +76,7 @@ function renderInfoLlm(data: InfoData): string {
   } else {
     lines.push("- Tier: (none)");
   }
-  lines.push(
-    `- Channel: ${data.channel} (${data.channelReleases.join(", ")})`,
-  );
+  lines.push(`- Channel: ${data.channel} (${data.channelReleases.join(", ")})`);
 
   if (data.update) {
     lines.push(
@@ -99,9 +91,7 @@ function renderInfoLlm(data: InfoData): string {
   if (data.store) {
     lines.push(`- Store: ${data.store.tripleCount.toLocaleString()} triples`);
     if (data.store.graphNames.length > 0) {
-      lines.push(
-        `- Graphs: default, ${data.store.graphNames.join(", ")}`,
-      );
+      lines.push(`- Graphs: default, ${data.store.graphNames.join(", ")}`);
     }
   }
 

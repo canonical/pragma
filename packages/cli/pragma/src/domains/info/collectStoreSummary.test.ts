@@ -1,7 +1,7 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { Store } from "@canonical/ke";
-import { createTestStore } from "../../../testing/store.js";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { DS_ONTOLOGY_TTL, DS_TIERS_TTL } from "../../../testing/dsFixtures.js";
+import { createTestStore } from "../../../testing/store.js";
 import { collectStoreSummary } from "./collectStoreSummary.js";
 
 describe("collectStoreSummary", () => {
@@ -39,9 +39,7 @@ describe("collectStoreSummary", () => {
     beforeAll(async () => {
       const result = await createTestStore({
         ttl: DS_ONTOLOGY_TTL,
-        graphs: [
-          { graph: "urn:test:tiers", ttl: DS_TIERS_TTL },
-        ],
+        graphs: [{ graph: "urn:test:tiers", ttl: DS_TIERS_TTL }],
       });
       store = result.store;
       cleanup = result.cleanup;

@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import type { InfoData } from "./types.js";
 import {
   renderInfoJson,
   renderInfoLlm,
   renderInfoPlain,
 } from "./renderInfo.js";
+import type { InfoData } from "./types.js";
 
 function createInfoData(overrides: Partial<InfoData> = {}): InfoData {
   return {
@@ -71,9 +71,7 @@ describe("renderInfoPlain", () => {
   });
 
   it("shows offline fallback", () => {
-    const output = renderInfoPlain(
-      createInfoData({ updateSkipped: true }),
-    );
+    const output = renderInfoPlain(createInfoData({ updateSkipped: true }));
     expect(output).toContain("offline");
   });
 

@@ -1,14 +1,12 @@
 import { describe, expect, it } from "vitest";
-import type { UpgradeData } from "./types.js";
 import {
   renderUpgradeJson,
   renderUpgradeLlm,
   renderUpgradePlain,
 } from "./renderUpgrade.js";
+import type { UpgradeData } from "./types.js";
 
-function createUpgradeData(
-  overrides: Partial<UpgradeData> = {},
-): UpgradeData {
+function createUpgradeData(overrides: Partial<UpgradeData> = {}): UpgradeData {
   return {
     pm: "bun",
     current: "0.18.0",
@@ -93,9 +91,7 @@ describe("renderUpgradeLlm", () => {
   });
 
   it("shows already latest", () => {
-    const output = renderUpgradeLlm(
-      createUpgradeData({ alreadyLatest: true }),
-    );
+    const output = renderUpgradeLlm(createUpgradeData({ alreadyLatest: true }));
     expect(output).toContain("Already at latest");
   });
 

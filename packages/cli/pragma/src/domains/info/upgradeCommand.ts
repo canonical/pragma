@@ -7,8 +7,8 @@
  * @see IN.05, IN.06, IN.08 in B.11.INSTALL
  */
 
-import type { CommandDefinition, CommandResult } from "@canonical/cli-core";
 import { execSync } from "node:child_process";
+import type { CommandDefinition, CommandResult } from "@canonical/cli-core";
 import { readConfig } from "../../config.js";
 import { VERSION } from "../../constants.js";
 import { PragmaError } from "../../error/index.js";
@@ -21,9 +21,10 @@ import {
 } from "./renderUpgrade.js";
 import type { UpgradeData } from "./types.js";
 
-function selectUpgradeRenderer(
-  flags: { llm: boolean; format: "text" | "json" },
-): (data: UpgradeData) => string {
+function selectUpgradeRenderer(flags: {
+  llm: boolean;
+  format: "text" | "json";
+}): (data: UpgradeData) => string {
   if (flags.format === "json") return renderUpgradeJson;
   if (flags.llm) return renderUpgradeLlm;
   return renderUpgradePlain;

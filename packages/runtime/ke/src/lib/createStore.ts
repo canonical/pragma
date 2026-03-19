@@ -84,8 +84,6 @@ function inferFormat(filePath: string): "turtle" | "ntriples" | "rdfxml" {
     case ".xml":
     case ".rdfxml":
       return "rdfxml";
-    case ".ttl":
-    case ".turtle":
     default:
       return "turtle";
   }

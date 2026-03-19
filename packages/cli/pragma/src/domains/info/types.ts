@@ -11,7 +11,11 @@ export interface InfoData {
   readonly channel: string;
   readonly channelReleases: readonly string[];
   readonly update:
-    | { readonly current: string; readonly latest: string; readonly command: string }
+    | {
+        readonly current: string;
+        readonly latest: string;
+        readonly command: string;
+      }
     | undefined;
   readonly updateSkipped: boolean;
   readonly store:
