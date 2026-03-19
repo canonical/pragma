@@ -18,7 +18,7 @@ import {
   formatComponentListJson,
   formatComponentListLlm,
 } from "./formatComponentList.js";
-import { listComponents } from "./operations.js";
+import listComponents from "./listComponents.js";
 
 export default function buildListCommand(
   store: Store,

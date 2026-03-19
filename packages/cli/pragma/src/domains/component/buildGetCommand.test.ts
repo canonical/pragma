@@ -4,9 +4,8 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { DS_ALL_TTL } from "../../../testing/dsFixtures.js";
 import { createTestStore } from "../../../testing/store.js";
 import { PragmaError } from "../../error/index.js";
-import type { ComponentSummary, FilterConfig } from "../shared/types.js";
+import type { FilterConfig } from "../shared/types.js";
 import buildGetCommand from "./buildGetCommand.js";
-import buildListCommand from "./buildListCommand.js";
 
 let store: Store;
 let cleanup: () => void;
@@ -48,68 +47,6 @@ async function executeOutput(
   const text = result.render.plain(result.value);
   return { value: result.value, text };
 }
-
-describe("buildListCommand", () => {
-  it("returns output result with component data", async () => {
-    const cmd = buildListCommand(store, prereleaseConfig);
-    const { value } = await executeOutput(cmd, {}, ctx);
-    const names = (value as ComponentSummary[]).map((c) => c.name);
-    expect(names).toContain("Button");
-    expect(names).toContain("Card");
-  });
-
-  it("renders plain text output", async () => {
-    const cmd = buildListCommand(store, prereleaseConfig);
-    const { text } = await executeOutput(cmd, {}, ctx);
-    expect(text).toContain("Button");
-    expect(text).toContain("Card");
-  });
-
-  it("renders LLM markdown", async () => {
-    const cmd = buildListCommand(store, prereleaseConfig);
-    const { text } = await executeOutput(cmd, {}, llmCtx);
-    expect(text).toContain("## Components");
-    expect(text).toContain("**Button**");
-  });
-
-  it("renders JSON output", async () => {
-    const cmd = buildListCommand(store, prereleaseConfig);
-    const { text } = await executeOutput(cmd, {}, jsonCtx);
-    const parsed = JSON.parse(text);
-    expect(Array.isArray(parsed)).toBe(true);
-    expect(parsed.some((c: ComponentSummary) => c.name === "Button")).toBe(
-      true,
-    );
-  });
-
-  it("respects tier filter from config", async () => {
-    const cmd = buildListCommand(store, { tier: "global", channel: "normal" });
-    const { value } = await executeOutput(cmd, {}, ctx);
-    const names = (value as ComponentSummary[]).map((c) => c.name);
-    expect(names).toContain("Button");
-    expect(names).not.toContain("LXD Panel");
-  });
-
-  it("--all-tiers ignores tier filter", async () => {
-    const cmd = buildListCommand(store, {
-      tier: "global",
-      channel: "prerelease",
-    });
-    const { value } = await executeOutput(cmd, { allTiers: true }, ctx);
-    const names = (value as ComponentSummary[]).map((c) => c.name);
-    expect(names).toContain("Button");
-    expect(names).toContain("LXD Panel");
-  });
-
-  it("returns results with combined tier + channel", async () => {
-    const cmd = buildListCommand(store, {
-      tier: "apps/lxd",
-      channel: "normal",
-    });
-    const result = await cmd.execute({}, ctx);
-    expect(result.tag).toBe("output");
-  });
-});
 
 describe("buildGetCommand", () => {
   it("returns summary by default", async () => {

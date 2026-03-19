@@ -65,10 +65,8 @@ export type {
 // D3 — Shared Operations
 // =============================================================================
 
-export {
-  getComponent,
-  listComponents,
-} from "./domains/component/operations.js";
+export { default as getComponent } from "./domains/component/getComponent.js";
+export { default as listComponents } from "./domains/component/listComponents.js";
 export { default as executeQuery } from "./domains/graph/executeQuery.js";
 export { default as inspectUri } from "./domains/graph/inspectUri.js";
 export {

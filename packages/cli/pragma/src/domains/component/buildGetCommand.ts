@@ -19,7 +19,8 @@ import {
   formatComponentGetJson,
   formatComponentGetLlm,
 } from "./formatComponentGet.js";
-import { getComponent, listComponents } from "./operations.js";
+import getComponent from "./getComponent.js";
+import listComponents from "./listComponents.js";
 import resolveAspects from "./resolveAspects.js";
 import type { AspectFlags } from "./types.js";
 
