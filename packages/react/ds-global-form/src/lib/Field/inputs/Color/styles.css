@@ -1,0 +1,200 @@
+.ds.input.color {
+  position: relative;
+}
+
+.ds.input.color > .color-trigger {
+  display: flex;
+  align-items: center;
+  gap: var(--form-field-inline-gap);
+  width: 100%;
+  box-sizing: border-box;
+  padding-block: var(--form-input-padding-block);
+  padding-inline: var(--form-input-padding-inline);
+  border: var(--form-input-border-width) solid var(--form-input-border-color);
+  border-radius: var(--form-input-border-radius);
+  background-color: var(--form-input-background);
+  color: var(--form-input-color);
+  font-family: var(--typography-text-primary-font-family);
+  font-size: var(--form-input-font-size);
+  line-height: var(--form-input-line-height);
+  cursor: pointer;
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease;
+  text-align: start;
+  anchor-name: --color-trigger;
+
+  &:hover:not(:disabled) {
+    background-color: var(
+      --hover--color-foreground-input,
+      var(--color-foreground-input-hover)
+    );
+  }
+
+  &:focus-visible {
+    outline: none;
+    border-color: var(--form-input-border-color-focus);
+    box-shadow: 0 0 0 1px var(--form-focus-ring-color);
+  }
+
+  &:disabled {
+    border-color: var(--form-input-border-color-disabled);
+    background-color: var(--form-input-background-disabled);
+    color: var(--form-input-color-disabled);
+    cursor: not-allowed;
+  }
+}
+
+.ds.input.color .color-preview {
+  display: inline-block;
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: var(--dimension-radius-small);
+  border: var(--form-input-border-width) solid var(--form-input-border-color);
+  flex-shrink: 0;
+}
+
+.ds.input.color > .color-popover {
+  position-anchor: --color-trigger;
+  position-area: block-end span-inline-end;
+  margin: 0;
+  margin-block-start: var(--form-group-gap);
+  border: var(--form-input-border-width) solid var(--form-input-border-color);
+  border-radius: var(--form-input-border-radius);
+  background-color: var(--form-input-background);
+  padding: var(--form-input-padding-inline);
+  box-shadow: 0 4px 12px rgb(0 0 0 / 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: var(--form-field-inline-gap);
+}
+
+.ds.input.color > .color-popover > .swatch-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: var(--form-group-gap);
+}
+
+.ds.input.color > .color-popover > .swatch-grid > .swatch {
+  appearance: none;
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--dimension-radius-small);
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition:
+    border-color 150ms ease,
+    transform 150ms ease;
+
+  &:hover:not(:disabled) {
+    transform: scale(1.15);
+  }
+
+  &.selected {
+    border-color: var(--form-input-border-color-focus);
+    box-shadow: 0 0 0 1px var(--form-focus-ring-color);
+  }
+
+  &:focus-visible {
+    outline: none;
+    border-color: var(--form-input-border-color-focus);
+    box-shadow: 0 0 0 1px var(--form-focus-ring-color);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+}
+
+/* Hex input row — inside popover (with separator) */
+.ds.input.color > .color-popover > .hex-input-row {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding-block: var(--form-group-gap);
+  border-block-start: var(--form-input-border-width) solid
+    var(--form-input-border-color);
+}
+
+/* Inline variant (hex-only, no popover) — apply chrome on the row */
+.ds.input.color.inline > .hex-input-row {
+  display: flex;
+  align-items: center;
+  gap: var(--form-field-inline-gap);
+  padding: var(--form-input-padding-block) var(--form-input-padding-inline);
+  border: var(--form-input-border-width) solid var(--form-input-border-color);
+  border-radius: var(--form-input-border-radius);
+  background-color: var(--form-input-background);
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease;
+
+  &:focus-within {
+    outline: none;
+    border-color: var(--form-input-border-color-focus);
+    box-shadow: 0 0 0 1px var(--form-focus-ring-color);
+  }
+}
+
+.ds.input.color .hex-prefix {
+  color: var(--color-text-muted);
+  font-size: var(--form-input-font-size);
+  user-select: none;
+}
+
+/* Hex input inside popover — has its own border */
+.ds.input.color > .color-popover > .hex-input-row > .hex-input {
+  flex: 1;
+  min-width: 0;
+  border: var(--form-input-border-width) solid var(--form-input-border-color);
+  border-radius: var(--form-input-border-radius);
+  background-color: var(--form-input-background);
+  color: var(--form-input-color);
+  font-family: var(--typography-text-primary-font-family);
+  font-size: var(--form-input-font-size);
+  padding: var(--form-group-gap) var(--form-field-inline-gap);
+
+  &:focus-visible {
+    outline: none;
+    border-color: var(--form-input-border-color-focus);
+    box-shadow: 0 0 0 1px var(--form-focus-ring-color);
+  }
+
+  &:disabled {
+    background-color: var(--form-input-background-disabled);
+    color: var(--form-input-color-disabled);
+    cursor: not-allowed;
+  }
+}
+
+/* Hex input inline — borderless, chrome is on the row */
+.ds.input.color.inline > .hex-input-row > .hex-input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  color: var(--form-input-color);
+  font-family: var(--typography-text-primary-font-family);
+  font-size: var(--form-input-font-size);
+  outline: none;
+}
+
+/* Danger state */
+.danger > .payload .ds.input.color > .color-trigger {
+  border-color: var(--form-input-border-color-error);
+}
+
+.danger > .payload .ds.input.color > .color-trigger:focus-visible {
+  border-color: var(--form-focus-ring-color-error);
+  box-shadow: 0 0 0 1px var(--form-focus-ring-color-error);
+}
+
+.danger > .payload .ds.input.color.inline > .hex-input-row {
+  border-color: var(--form-input-border-color-error);
+}
+
+.danger > .payload .ds.input.color.inline > .hex-input-row:focus-within {
+  border-color: var(--form-focus-ring-color-error);
+  box-shadow: 0 0 0 1px var(--form-focus-ring-color-error);
+}
