@@ -3,7 +3,8 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { DS_ALL_TTL } from "../../../testing/dsFixtures.js";
 import { createTestStore } from "../../../testing/store.js";
 import { PragmaError } from "../../error/index.js";
-import { executeQuery, inspectUri } from "./operations.js";
+import executeQuery from "./executeQuery.js";
+import inspectUri from "./inspectUri.js";
 
 let store: Store;
 let cleanup: () => void;
@@ -20,7 +21,7 @@ describe("executeQuery", () => {
   it("executes a SELECT query and returns bindings", async () => {
     const result = await executeQuery(
       store,
-      'SELECT ?name WHERE { ?c a ds:Component ; ds:name ?name } ORDER BY ?name',
+      "SELECT ?name WHERE { ?c a ds:Component ; ds:name ?name } ORDER BY ?name",
     );
     expect(result.type).toBe("select");
     if (result.type === "select") {
@@ -33,7 +34,7 @@ describe("executeQuery", () => {
   it("executes a CONSTRUCT query and returns triples", async () => {
     const result = await executeQuery(
       store,
-      'CONSTRUCT { ?c ds:name ?name } WHERE { ?c a ds:Component ; ds:name ?name }',
+      "CONSTRUCT { ?c ds:name ?name } WHERE { ?c a ds:Component ; ds:name ?name }",
     );
     expect(result.type).toBe("construct");
     if (result.type === "construct") {
@@ -55,9 +56,9 @@ describe("executeQuery", () => {
   });
 
   it("throws PragmaError on invalid SPARQL", async () => {
-    await expect(
-      executeQuery(store, "SELECT INVALID SPARQL"),
-    ).rejects.toThrow(PragmaError);
+    await expect(executeQuery(store, "SELECT INVALID SPARQL")).rejects.toThrow(
+      PragmaError,
+    );
 
     try {
       await executeQuery(store, "SELECT INVALID SPARQL");
@@ -105,9 +106,9 @@ describe("inspectUri", () => {
   });
 
   it("throws PragmaError.notFound for unknown URI", async () => {
-    await expect(
-      inspectUri(store, "ds:nonexistent_entity"),
-    ).rejects.toThrow(PragmaError);
+    await expect(inspectUri(store, "ds:nonexistent_entity")).rejects.toThrow(
+      PragmaError,
+    );
 
     try {
       await inspectUri(store, "ds:nonexistent_entity");
@@ -117,12 +118,34 @@ describe("inspectUri", () => {
   });
 
   it("throws PragmaError.invalidInput for unknown prefix", async () => {
-    await expect(
-      inspectUri(store, "unknown:something"),
-    ).rejects.toThrow(PragmaError);
+    await expect(inspectUri(store, "unknown:something")).rejects.toThrow(
+      PragmaError,
+    );
 
     try {
       await inspectUri(store, "unknown:something");
+    } catch (e) {
+      expect((e as PragmaError).code).toBe("INVALID_INPUT");
+    }
+  });
+
+  it("throws PragmaError.invalidInput for bare string without prefix", async () => {
+    await expect(inspectUri(store, "button")).rejects.toThrow(PragmaError);
+
+    try {
+      await inspectUri(store, "button");
+    } catch (e) {
+      expect((e as PragmaError).code).toBe("INVALID_INPUT");
+    }
+  });
+
+  it("throws PragmaError.invalidInput for URI with unsafe IRI characters", async () => {
+    await expect(inspectUri(store, "https://example.com/<injected>")).rejects.toThrow(
+      PragmaError,
+    );
+
+    try {
+      await inspectUri(store, "https://example.com/<injected>");
     } catch (e) {
       expect((e as PragmaError).code).toBe("INVALID_INPUT");
     }

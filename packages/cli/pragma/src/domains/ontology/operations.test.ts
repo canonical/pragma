@@ -3,11 +3,9 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { DS_ALL_TTL } from "../../../testing/dsFixtures.js";
 import { createTestStore } from "../../../testing/store.js";
 import { PragmaError } from "../../error/index.js";
-import {
-  listOntologies,
-  showOntology,
-  showOntologyRaw,
-} from "./operations.js";
+import listOntologies from "./listOntologies.js";
+import showOntology from "./showOntology.js";
+import showOntologyRaw from "./showOntologyRaw.js";
 
 let store: Store;
 let cleanup: () => void;
