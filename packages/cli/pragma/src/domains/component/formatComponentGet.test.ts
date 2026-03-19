@@ -7,7 +7,7 @@ import {
   formatComponentGetJson,
   formatComponentGetLlm,
 } from "./formatComponentGet.js";
-import type { AspectFlags } from "./resolveAspects.js";
+import type { AspectFlags } from "./types.js";
 
 const BUTTON_DETAILED: ComponentDetailed = {
   uri: "https://ds.canonical.com/button" as URI,

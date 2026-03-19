@@ -13,7 +13,7 @@ import {
   formatSection,
 } from "../../lib/formatTerminal.js";
 import type { AnatomyNode, ComponentDetailed } from "../shared/types.js";
-import type { AspectFlags } from "./resolveAspects.js";
+import type { AspectFlags } from "./types.js";
 
 /**
  * Format component summary (default mode, no --detailed).

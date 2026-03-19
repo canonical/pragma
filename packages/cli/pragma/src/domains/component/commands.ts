@@ -26,8 +26,8 @@ import {
   formatComponentListLlm,
 } from "./formatComponentList.js";
 import { getComponent, listComponents } from "./operations.js";
-import type { AspectFlags } from "./resolveAspects.js";
 import resolveAspects from "./resolveAspects.js";
+import type { AspectFlags } from "./types.js";
 
 /**
  * Build component CommandDefinition[] bound to a live store and config.

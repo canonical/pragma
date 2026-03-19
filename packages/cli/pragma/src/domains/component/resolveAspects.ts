@@ -5,13 +5,7 @@
  * only those selected are shown.
  */
 
-export interface AspectFlags {
-  readonly anatomy: boolean;
-  readonly modifiers: boolean;
-  readonly tokens: boolean;
-  readonly standards: boolean;
-  readonly implementations: boolean;
-}
+import type { AspectFlags } from "./types.js";
 
 const ALL_ASPECTS: AspectFlags = {
   anatomy: true,
