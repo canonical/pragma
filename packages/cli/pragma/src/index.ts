@@ -44,7 +44,13 @@ export type {
   ComponentDetailed,
   ComponentSummary,
   FilterConfig,
+  InspectResult,
   ModifierFamily,
+  OntologyClass,
+  OntologyDetailed,
+  OntologyProperty,
+  OntologySummary,
+  PredicateGroup,
   StandardDetailed,
   StandardListFilters,
   StandardRef,
@@ -64,9 +70,18 @@ export {
   listComponents,
 } from "./domains/component/operations.js";
 export {
+  executeQuery,
+  inspectUri,
+} from "./domains/graph/operations.js";
+export {
   getModifier,
   listModifiers,
 } from "./domains/modifier/operations.js";
+export {
+  listOntologies,
+  showOntology,
+  showOntologyRaw,
+} from "./domains/ontology/operations.js";
 export {
   getStandard,
   listCategories,
