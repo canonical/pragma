@@ -10,11 +10,7 @@ import type { PragmaConfig } from "../src/config.js";
 import { registerTools } from "../src/mcp/registerTools.js";
 import { DS_ALL_TTL } from "./dsFixtures.js";
 import { createTestStore } from "./store.js";
-
-interface TestMcpClientResult {
-  client: Client;
-  cleanup: () => Promise<void>;
-}
+import type { TestMcpClientResult } from "./types.js";
 
 /**
  * Create an in-process MCP client connected to a server with
@@ -55,5 +51,3 @@ export default async function createTestMcpClient(options?: {
     },
   };
 }
-
-export type { TestMcpClientResult };
