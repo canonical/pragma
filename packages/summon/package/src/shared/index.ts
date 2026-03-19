@@ -77,7 +77,7 @@ export const validatePackageName = (value: unknown): true | string => {
  */
 export const getPackageShortName = (fullName: string): string => {
   const match = fullName.match(/^@[^/]+\/(.+)$/);
-  return match ? match[1] : fullName;
+  return match?.[1] ?? fullName;
 };
 
 /**
