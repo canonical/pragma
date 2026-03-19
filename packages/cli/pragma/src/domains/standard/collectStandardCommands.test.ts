@@ -4,7 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { DS_ALL_TTL } from "../../../testing/dsFixtures.js";
 import { createTestStore } from "../../../testing/store.js";
 import { PragmaError } from "../../error/index.js";
-import collectStandardCommands from "./commands.js";
+import collectStandardCommands from "./collectStandardCommands.js";
 
 /**
  * Integration tests for standard CLI commands (D5).
@@ -180,7 +180,7 @@ describe("standard get", () => {
     expect(text).toContain("### Do");
   });
 
-  it("renders JSON format", async () => {
+  it("renders JSON with --detailed", async () => {
     const cmd = findCommand(["standard", "get"]);
     const result = await cmd.execute(
       { name: "react/component/folder-structure", detailed: true },
@@ -191,6 +191,21 @@ describe("standard get", () => {
     const parsed = JSON.parse(text);
     expect(parsed.name).toBe("react/component/folder-structure");
     expect(parsed.dos).toBeDefined();
+    expect(parsed.donts).toBeDefined();
+  });
+
+  it("renders JSON without --detailed (omits dos/donts)", async () => {
+    const cmd = findCommand(["standard", "get"]);
+    const result = await cmd.execute(
+      { name: "react/component/folder-structure" },
+      makeCtx({ format: "json" }),
+    );
+    const output = result as CommandOutputResult;
+    const text = output.render.plain(output.value);
+    const parsed = JSON.parse(text);
+    expect(parsed.name).toBe("react/component/folder-structure");
+    expect(parsed.dos).toBeUndefined();
+    expect(parsed.donts).toBeUndefined();
   });
 });
 
