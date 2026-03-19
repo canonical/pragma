@@ -1,5 +1,6 @@
 export type { PragmaConfig } from "./config.js";
 export { readConfig } from "./config.js";
+export { default as configExists } from "./configExists.js";
 export type { Channel } from "./constants.js";
 export {
   PROGRAM_DESCRIPTION,
@@ -27,6 +28,9 @@ export {
   detectPackageManager,
   PM_COMMANDS,
 } from "./pm.js";
+export { default as resolveConfigPath } from "./resolveConfigPath.js";
+export type { ConfigUpdate } from "./writeConfig.js";
+export { default as writeConfig } from "./writeConfig.js";
 
 // =============================================================================
 // D3 — Shared Operation Types (TB.01)
@@ -68,6 +72,17 @@ export {
 } from "./domains/standard/operations.js";
 export { listTiers } from "./domains/tier/operations.js";
 export { getToken, listTokens } from "./domains/token/operations.js";
+
+// =============================================================================
+// D6 — Config Operations
+// =============================================================================
+
+export type { ConfigShowData } from "./domains/config/operations.js";
+export {
+  resolveConfigShow,
+  validateChannel,
+  validateTier,
+} from "./domains/config/operations.js";
 
 // =============================================================================
 // D3 — Store Bootstrap
