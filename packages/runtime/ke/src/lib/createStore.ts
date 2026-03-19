@@ -212,7 +212,9 @@ function parseRawResult(rawResult: unknown): QueryResult {
     if (rawResult[0] instanceof Map) {
       const bindings = rawResult as Map<string, OxTerm>[];
       const variables: string[] =
-        bindings.length > 0 ? Array.from(bindings[0]!.keys()) : [];
+        bindings.length > 0
+          ? Array.from((bindings[0] as (typeof bindings)[number]).keys())
+          : [];
       const mappedBindings: Binding[] = bindings.map((binding) => {
         const obj: Binding = {};
         for (const [key, value] of binding) {
@@ -347,8 +349,7 @@ function createPluginContext(
         graph?: string;
       },
     ): void {
-      const mimeType =
-        FORMAT_MAP[options?.format ?? "turtle"] ?? "text/turtle";
+      const mimeType = FORMAT_MAP[options?.format ?? "turtle"] ?? "text/turtle";
       if (options?.graph) {
         oxStore.load(content, {
           format: mimeType,
@@ -511,7 +512,7 @@ class KeStore implements Store {
   dispose(): void {
     // Run onDispose hooks in reverse order (LIFO, like destructors)
     for (let i = this.plugins.length - 1; i >= 0; i--) {
-      const plugin = this.plugins[i]!;
+      const plugin = this.plugins[i] as (typeof this.plugins)[number];
       if (plugin.onDispose) {
         try {
           plugin.onDispose();

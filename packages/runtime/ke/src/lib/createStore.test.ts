@@ -12,11 +12,7 @@ import type { TestStoreResult } from "../../testing/types.js";
 import createStore from "./createStore.js";
 import definePlugin from "./definePlugin.js";
 import { sparql } from "./sparql.js";
-import type {
-  AskResult,
-  ConstructResult,
-  SelectResult,
-} from "./types.js";
+import type { AskResult, ConstructResult, SelectResult } from "./types.js";
 
 registerMatchers();
 
@@ -479,7 +475,8 @@ describe("Plugin API — store.api()", () => {
         const result = (await ctx.query(
           sparql`SELECT (COUNT(*) AS ?count) WHERE { ?s ?p ?o }`,
         )) as SelectResult;
-        const total = Number.parseInt(result.bindings[0]!.count!, 10);
+        const binding = result.bindings[0] as (typeof result.bindings)[number];
+        const total = Number.parseInt(binding.count ?? "0", 10);
         return { getTotal: () => total };
       },
     });
@@ -488,7 +485,7 @@ describe("Plugin API — store.api()", () => {
     const api = testResult.store.api<CountApi>("counter");
 
     expect(api).toBeDefined();
-    expect(api!.getTotal()).toBeGreaterThan(0);
+    expect(api?.getTotal()).toBeGreaterThan(0);
   });
 
   it("refreshes the API after reload", async () => {
@@ -516,11 +513,11 @@ describe("Plugin API — store.api()", () => {
       plugins: [plugin],
     });
 
-    expect(testResult.store.api<MyApi>("call-counter")!.getCallCount()).toBe(1);
+    expect(testResult.store.api<MyApi>("call-counter")?.getCallCount()).toBe(1);
 
     await testResult.store.reload({ force: true });
 
-    expect(testResult.store.api<MyApi>("call-counter")!.getCallCount()).toBe(2);
+    expect(testResult.store.api<MyApi>("call-counter")?.getCallCount()).toBe(2);
   });
 
   it("returns undefined for unknown plugin names", async () => {
@@ -538,9 +535,7 @@ describe("Plugin API — store.api()", () => {
     });
 
     testResult = await createTestStore({ plugins: [plugin] });
-    await testResult.store.query(
-      sparql`ASK { ?s ?p ?o }`,
-    );
+    await testResult.store.query(sparql`ASK { ?s ?p ?o }`);
 
     expect(queries.length).toBe(1);
     expect(testResult.store.api("legacy")).toBeUndefined();

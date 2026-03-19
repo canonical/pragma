@@ -82,7 +82,9 @@ async function computeStats(ctx: PluginContext): Promise<StatsApi> {
 
   const directCounts = new Map<string, number>();
   for (const binding of typeResult.bindings) {
-    directCounts.set(binding.class!, Number.parseInt(binding.count!, 10));
+    const cls = binding.class ?? "";
+    const count = Number.parseInt(binding.count ?? "0", 10);
+    directCounts.set(cls, count);
   }
 
   // Step 2: Query the rdfs:subClassOf hierarchy
@@ -95,13 +97,13 @@ async function computeStats(ctx: PluginContext): Promise<StatsApi> {
   const allClasses = new Set<string>([...directCounts.keys()]);
 
   for (const binding of hierarchyResult.bindings) {
-    const sub = binding.sub!;
-    const sup = binding.super!;
+    const sub = binding.sub ?? "";
+    const sup = binding.super ?? "";
     allClasses.add(sub);
     allClasses.add(sup);
 
     if (!childrenMap.has(sup)) childrenMap.set(sup, new Set());
-    childrenMap.get(sup)!.add(sub);
+    childrenMap.get(sup)?.add(sub);
   }
 
   // Step 3: Compute total counts (direct + all descendant instances)
@@ -110,7 +112,7 @@ async function computeStats(ctx: PluginContext): Promise<StatsApi> {
   const visiting = new Set<string>();
 
   function computeTotal(cls: string): number {
-    if (totalCounts.has(cls)) return totalCounts.get(cls)!;
+    if (totalCounts.has(cls)) return totalCounts.get(cls) ?? 0;
     if (visiting.has(cls)) return directCounts.get(cls) ?? 0; // cycle — break
 
     visiting.add(cls);
