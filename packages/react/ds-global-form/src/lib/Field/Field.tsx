@@ -2,13 +2,20 @@
 import type React from "react";
 import {
   Checkbox,
+  Choices,
+  Color,
   Combobox,
+  DateInput,
+  DateTimeInput,
+  FileUpload,
   Hidden,
+  Phone,
   Range,
   Select,
   SimpleChoices,
   Text,
   Textarea,
+  TimeInput,
 } from "./inputs/index.js";
 import type { FieldProps } from "./types.js";
 
@@ -36,6 +43,20 @@ const Field = ({
       return <Combobox {...props} />;
     case "hidden":
       return <Hidden {...props} />;
+    case "date":
+      return <DateInput {...props} />;
+    case "time":
+      return <TimeInput {...props} />;
+    case "datetime":
+      return <DateTimeInput {...props} />;
+    case "file":
+      return <FileUpload {...props} />;
+    case "color":
+      return <Color {...props} />;
+    case "phone":
+      return <Phone {...props} />;
+    case "choices":
+      return <Choices {...props} />;
     case "custom":
       if (!CustomComponent) {
         throw new Error(

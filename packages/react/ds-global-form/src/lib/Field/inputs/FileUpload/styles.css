@@ -1,0 +1,130 @@
+.ds.input.file-upload {
+  display: flex;
+  flex-direction: column;
+  gap: var(--form-group-gap);
+
+  & > .drop-zone {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 8rem;
+    padding: var(--form-input-padding-block) var(--form-input-padding-inline);
+    border: var(--form-input-border-width) dashed var(--form-input-border-color);
+    border-radius: var(--form-input-border-radius);
+    background-color: var(--form-input-background);
+    color: var(--color-text-muted);
+    font-size: var(--form-input-font-size);
+    cursor: pointer;
+    transition:
+      border-color 150ms ease,
+      background-color 150ms ease;
+
+    & > input[type="file"] {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    &:hover:not(:disabled) {
+      background-color: var(
+        --hover--color-foreground-input,
+        var(--color-foreground-input-hover)
+      );
+    }
+
+    &:focus-visible {
+      outline: none;
+      border-color: var(--form-input-border-color-focus);
+      box-shadow: 0 0 0 1px var(--form-focus-ring-color);
+    }
+
+    &.drag-over {
+      border-color: var(--form-input-border-color-focus);
+      background-color: var(
+        --hover--color-foreground-input,
+        var(--color-foreground-input-hover)
+      );
+    }
+
+    &:disabled {
+      background-color: var(--form-input-background-disabled);
+      color: var(--form-input-color-disabled);
+      cursor: not-allowed;
+    }
+  }
+
+  & > .file-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--form-group-gap);
+  }
+
+  & > .file-list > .file-item {
+    display: flex;
+    align-items: center;
+    gap: var(--form-field-inline-gap);
+    padding: var(--form-group-gap) var(--form-input-padding-inline);
+    border: var(--form-input-border-width) solid var(--form-input-border-color);
+    border-radius: var(--form-input-border-radius);
+    background-color: var(--form-input-background);
+    font-size: var(--form-description-font-size);
+  }
+
+  & > .file-list > .file-item > .file-preview {
+    width: 2rem;
+    height: 2rem;
+    object-fit: cover;
+    border-radius: var(--form-input-border-radius);
+    flex-shrink: 0;
+  }
+
+  & > .file-list > .file-item > .file-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  & > .file-list > .file-item > .file-size {
+    color: var(--color-text-muted);
+    white-space: nowrap;
+  }
+
+  & > .file-list > .file-item > .file-remove {
+    appearance: none;
+    border: none;
+    background: none;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    font-size: 1.25em;
+    line-height: 1;
+    padding: 0 0.25rem;
+
+    &:hover {
+      color: var(--color-text);
+    }
+
+    &:disabled {
+      cursor: not-allowed;
+      opacity: 0.5;
+    }
+  }
+}
+
+/* Danger state */
+.danger > .payload .ds.input.file-upload > .drop-zone {
+  border-color: var(--form-input-border-color-error);
+}
+
+.danger > .payload .ds.input.file-upload > .drop-zone:focus-visible {
+  border-color: var(--form-focus-ring-color-error);
+  box-shadow: 0 0 0 1px var(--form-focus-ring-color-error);
+}

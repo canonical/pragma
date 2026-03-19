@@ -1,0 +1,55 @@
+/* Phone — composite input: country selector + telephone number.
+ * The .chrome class on the wrapper provides shared border/focus styling.
+ * Internal elements share the visual space.
+ */
+.ds.input.phone {
+  display: flex;
+  align-items: center;
+  padding: 0;
+
+  & > .country-select {
+    appearance: none;
+    border: none;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    padding-block: var(--form-input-padding-block);
+    padding-inline: var(--form-input-padding-inline);
+    padding-inline-end: var(--form-field-inline-gap);
+    border-inline-end: var(--form-input-border-width) solid
+      var(--form-input-border-color);
+    cursor: pointer;
+    white-space: nowrap;
+    min-width: 5.5rem;
+
+    &:focus-visible {
+      outline: none;
+      background-color: var(
+        --hover--color-foreground-input,
+        var(--color-foreground-input-hover)
+      );
+    }
+
+    &:disabled {
+      cursor: not-allowed;
+      color: var(--form-input-color-disabled);
+    }
+  }
+
+  & > .number-input {
+    flex: 1;
+    min-width: 0;
+    border: none;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    outline: none;
+    padding-block: var(--form-input-padding-block);
+    padding-inline: var(--form-input-padding-inline);
+
+    &:disabled {
+      cursor: not-allowed;
+      color: var(--form-input-color-disabled);
+    }
+  }
+}
