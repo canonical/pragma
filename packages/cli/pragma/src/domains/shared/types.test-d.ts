@@ -9,7 +9,8 @@
 
 import type { Store, URI } from "@canonical/ke";
 import { expectTypeOf } from "expect-type";
-import { getComponent, listComponents } from "../component/operations.js";
+import getComponent from "../component/getComponent.js";
+import listComponents from "../component/listComponents.js";
 import { getModifier, listModifiers } from "../modifier/operations.js";
 import {
   getStandard,

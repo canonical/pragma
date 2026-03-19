@@ -6,10 +6,15 @@ import {
   type GlobalFlags,
   registerAll,
 } from "@canonical/cli-core";
+import type { Store } from "@canonical/ke";
 import { Command, CommanderError } from "commander";
 import { readConfig } from "../config.js";
 import { PROGRAM_DESCRIPTION, PROGRAM_NAME, VERSION } from "../constants.js";
+import buildGetCommand from "../domains/component/buildGetCommand.js";
+import buildListCommand from "../domains/component/buildListCommand.js";
 import { collectConfigCommands } from "../domains/config/commands.js";
+import { bootStore } from "../domains/shared/bootStore.js";
+import type { FilterConfig } from "../domains/shared/types.js";
 import collectStandardCommands from "../domains/standard/collectStandardCommands.js";
 import { PragmaError } from "../error/index.js";
 import { mapExitCode } from "./mapExitCode.js";
@@ -19,8 +24,16 @@ import {
   renderErrorPlain,
 } from "./renderError.js";
 
-function collectCommands(): CommandDefinition[] {
-  return [...collectConfigCommands(), ...collectStandardCommands()];
+function collectCommands(
+  store: Store,
+  config: FilterConfig,
+): CommandDefinition[] {
+  return [
+    ...collectConfigCommands(),
+    ...collectStandardCommands(),
+    buildListCommand(store, config),
+    buildGetCommand(store, config),
+  ];
 }
 
 function createProgram(
@@ -93,8 +106,10 @@ async function runCli(argv: readonly string[]): Promise<void> {
   const globalFlags = parseGlobalFlags(argv);
 
   let cwd: string;
+  let config: FilterConfig;
   try {
-    const config = readConfig();
+    const rawConfig = readConfig();
+    config = { tier: rawConfig.tier, channel: rawConfig.channel };
     cwd = process.cwd();
     if (globalFlags.verbose) {
       const tier = config.tier ?? "(none)";
@@ -112,11 +127,26 @@ async function runCli(argv: readonly string[]): Promise<void> {
     return;
   }
 
-  const ctx: CommandContext = { cwd, globalFlags };
-  const commands = collectCommands();
-  const program = createProgram(commands, ctx);
+  let store: Store;
+  try {
+    store = await bootStore({ cwd });
+  } catch (err) {
+    const pragmaErr =
+      err instanceof PragmaError
+        ? err
+        : PragmaError.storeError(
+            err instanceof Error ? err.message : String(err),
+          );
+    process.stderr.write(`${renderError(pragmaErr, globalFlags)}\n`);
+    process.exitCode = mapExitCode(pragmaErr.code);
+    return;
+  }
 
   try {
+    const ctx: CommandContext = { cwd, globalFlags };
+    const commands = collectCommands(store, config);
+    const program = createProgram(commands, ctx);
+
     await program.parseAsync(argv);
   } catch (err) {
     if (err instanceof CommanderError) {
@@ -127,8 +157,6 @@ async function runCli(argv: readonly string[]): Promise<void> {
         process.exitCode = 0;
         return;
       }
-      // Commander already wrote the error via configureOutput.writeErr,
-      // so just set the exit code without re-printing.
       process.exitCode = err.exitCode;
       return;
     }
@@ -144,6 +172,8 @@ async function runCli(argv: readonly string[]): Promise<void> {
     );
     process.stderr.write(`${renderError(wrapped, globalFlags)}\n`);
     process.exitCode = 127;
+  } finally {
+    store.dispose();
   }
 }
 
