@@ -7,6 +7,7 @@ export {
   markAsURI,
   sparql,
 } from "./sparql.js";
+export { default as validateIri } from "./validateIri.js";
 
 export type {
   AskResult,

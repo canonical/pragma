@@ -8,7 +8,10 @@
 
 import { PragmaError } from "../../error/index.js";
 
-/** Characters not allowed in IRI references inside `<...>` in SPARQL. */
+/**
+ * Characters not allowed inside `<IRI>` in SPARQL.
+ * Mirrors `validateIri` from `@canonical/ke` — use that import once ke is rebuilt.
+ */
 const UNSAFE_IRI_PATTERN = /[<>"{}|\\^`\s]/;
 
 export default function resolveUri(
@@ -16,7 +19,7 @@ export default function resolveUri(
   prefixes: Readonly<Record<string, string>>,
 ): string {
   if (uri.startsWith("http://") || uri.startsWith("https://")) {
-    validateIri(uri);
+    assertSafeIri(uri);
     return uri;
   }
 
@@ -40,7 +43,7 @@ export default function resolveUri(
   }
 
   const resolved = `${namespace}${localName}`;
-  validateIri(resolved);
+  assertSafeIri(resolved);
   return resolved;
 }
 
@@ -48,7 +51,7 @@ export default function resolveUri(
  * Reject URIs containing characters that would break SPARQL `<IRI>` syntax
  * or enable injection.
  */
-function validateIri(uri: string): void {
+function assertSafeIri(uri: string): void {
   if (UNSAFE_IRI_PATTERN.test(uri)) {
     throw PragmaError.invalidInput("uri", uri, {
       recovery: "URI contains characters not allowed in IRIs.",
