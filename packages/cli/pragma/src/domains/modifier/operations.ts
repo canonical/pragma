@@ -65,7 +65,8 @@ export async function getModifier(
     });
   }
 
-  const b = result.bindings[0]!;
+  // Safe: length check above guarantees bindings[0] exists
+  const b = result.bindings[0] as (typeof result.bindings)[number];
   return {
     uri: (b.family ?? "") as URI,
     name,
