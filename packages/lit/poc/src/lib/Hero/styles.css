@@ -16,15 +16,6 @@
     grid-column: 1;
   }
 
-  & .header,
-  & .body {
-    padding-bottom: 1.5rem;
-  }
-
-  & .description {
-    padding-bottom: 1.125rem;
-  }
-
   &.no-media .content {
     display: contents;
   }
@@ -51,7 +42,14 @@
   }
 }
 
-@media only screen and (min-width: 1280px) {
+@media only screen and (min-width: 620px) {
+  .ds.hero.no-media {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media only screen and (min-width: 1120px) {
   .ds.hero {
     display: grid;
     grid-template-columns: 1fr 1fr;
