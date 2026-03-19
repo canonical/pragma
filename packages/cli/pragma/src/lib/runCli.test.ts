@@ -3,12 +3,15 @@ import { VERSION } from "../constants.js";
 import { collectCommands, createProgram, parseGlobalFlags } from "./runCli.js";
 
 describe("collectCommands", () => {
-  it("returns config commands", () => {
+  it("returns config and standard commands", () => {
     const commands = collectCommands();
     const paths = commands.map((c) => c.path.join(" "));
     expect(paths).toContain("config tier");
     expect(paths).toContain("config channel");
     expect(paths).toContain("config show");
+    expect(paths).toContain("standard list");
+    expect(paths).toContain("standard get");
+    expect(paths).toContain("standard categories");
   });
 });
 

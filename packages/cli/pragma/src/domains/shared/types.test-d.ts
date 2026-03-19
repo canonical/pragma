@@ -21,6 +21,7 @@ import { getToken, listTokens } from "../token/operations.js";
 import type {
   AnatomyNode,
   AnatomyTree,
+  CategorySummary,
   CodeBlock,
   ComponentDetailed,
   ComponentSummary,
@@ -79,6 +80,10 @@ expectTypeOf<StandardDetailed["donts"]>().toEqualTypeOf<readonly CodeBlock[]>();
 expectTypeOf<CodeBlock["language"]>().toBeString();
 expectTypeOf<CodeBlock["code"]>().toBeString();
 
+// CategorySummary
+expectTypeOf<CategorySummary["name"]>().toBeString();
+expectTypeOf<CategorySummary["standardCount"]>().toBeNumber();
+
 // ModifierFamily
 expectTypeOf<ModifierFamily["uri"]>().toEqualTypeOf<URI>();
 expectTypeOf<ModifierFamily["values"]>().toEqualTypeOf<readonly string[]>();
@@ -114,7 +119,9 @@ expectTypeOf(listComponents).returns.resolves.toEqualTypeOf<
 expectTypeOf(getComponent).returns.resolves.toEqualTypeOf<ComponentDetailed>();
 expectTypeOf(listStandards).returns.resolves.toEqualTypeOf<StandardSummary[]>();
 expectTypeOf(getStandard).returns.resolves.toEqualTypeOf<StandardDetailed>();
-expectTypeOf(listCategories).returns.resolves.toEqualTypeOf<string[]>();
+expectTypeOf(listCategories).returns.resolves.toEqualTypeOf<
+  CategorySummary[]
+>();
 expectTypeOf(listModifiers).returns.resolves.toEqualTypeOf<ModifierFamily[]>();
 expectTypeOf(getModifier).returns.resolves.toEqualTypeOf<ModifierFamily>();
 expectTypeOf(listTokens).returns.resolves.toEqualTypeOf<TokenSummary[]>();

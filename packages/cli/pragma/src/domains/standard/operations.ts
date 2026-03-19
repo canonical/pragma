@@ -9,15 +9,36 @@ import { escapeSparqlValue } from "@canonical/ke";
 import { PragmaError } from "../../error/index.js";
 import { buildQuery } from "../shared/buildQuery.js";
 import type {
+  CategorySummary,
   CodeBlock,
   StandardDetailed,
+  StandardListFilters,
   StandardSummary,
 } from "../shared/types.js";
 
 /**
- * List all code standards.
+ * List all code standards, optionally filtered by category or search term.
+ *
+ * @see ST.05
  */
-export async function listStandards(store: Store): Promise<StandardSummary[]> {
+export async function listStandards(
+  store: Store,
+  filters?: StandardListFilters,
+): Promise<StandardSummary[]> {
+  const filterClauses: string[] = [];
+
+  if (filters?.category) {
+    const escaped = escapeSparqlValue(filters.category);
+    filterClauses.push(`FILTER(?categoryName = ${escaped})`);
+  }
+
+  if (filters?.search) {
+    const escaped = escapeSparqlValue(filters.search.toLowerCase());
+    filterClauses.push(
+      `FILTER(CONTAINS(LCASE(?name), ${escaped}) || CONTAINS(LCASE(?description), ${escaped}))`,
+    );
+  }
+
   const result = await store.query(
     buildQuery(`
       SELECT ?standard ?name ?categoryName ?description
@@ -29,6 +50,7 @@ export async function listStandards(store: Store): Promise<StandardSummary[]> {
           ?standard cso:category ?cat .
           ?cat cso:categoryName ?categoryName .
         }
+        ${filterClauses.join("\n        ")}
       }
       ORDER BY ?name
     `),
@@ -123,20 +145,30 @@ export async function getStandard(
 }
 
 /**
- * List all standard categories with their names.
+ * List all standard categories with standard counts.
+ *
+ * @see ST.05
  */
-export async function listCategories(store: Store): Promise<string[]> {
+export async function listCategories(store: Store): Promise<CategorySummary[]> {
   const result = await store.query(
     buildQuery(`
-      SELECT DISTINCT ?categoryName
+      SELECT ?categoryName (COUNT(?standard) AS ?count)
       WHERE {
         ?cat a cso:Category ;
              cso:categoryName ?categoryName .
+        OPTIONAL {
+          ?standard a cso:CodeStandard ;
+                    cso:category ?cat .
+        }
       }
+      GROUP BY ?categoryName
       ORDER BY ?categoryName
     `),
   );
 
   if (result.type !== "select") return [];
-  return result.bindings.map((b) => b.categoryName ?? "");
+  return result.bindings.map((b) => ({
+    name: b.categoryName ?? "",
+    standardCount: Number.parseInt(b.count ?? "0", 10) || 0,
+  }));
 }

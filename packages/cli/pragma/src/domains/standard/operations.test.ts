@@ -40,6 +40,40 @@ describe("listStandards", () => {
     const sorted = [...names].sort();
     expect(names).toEqual(sorted);
   });
+
+  it("filters by category", async () => {
+    const result = await listStandards(store, { category: "react" });
+    expect(result.length).toBe(2);
+    for (const s of result) {
+      expect(s.category).toBe("react");
+    }
+  });
+
+  it("filters by search term in name", async () => {
+    const result = await listStandards(store, { search: "folder" });
+    expect(result.length).toBe(1);
+    expect(result[0]?.name).toBe("react/component/folder-structure");
+  });
+
+  it("filters by search term in description", async () => {
+    const result = await listStandards(store, { search: "pure" });
+    expect(result.length).toBe(1);
+    expect(result[0]?.name).toBe("code/function/purity");
+  });
+
+  it("returns empty for non-matching category", async () => {
+    const result = await listStandards(store, { category: "nonexistent" });
+    expect(result.length).toBe(0);
+  });
+
+  it("combines category and search filters", async () => {
+    const result = await listStandards(store, {
+      category: "react",
+      search: "props",
+    });
+    expect(result.length).toBe(1);
+    expect(result[0]?.name).toBe("react/component/props");
+  });
 });
 
 describe("getStandard", () => {
@@ -65,10 +99,46 @@ describe("getStandard", () => {
 });
 
 describe("listCategories", () => {
-  it("returns distinct categories", async () => {
+  it("returns categories with standard counts", async () => {
     const result = await listCategories(store);
-    expect(result).toContain("react");
-    expect(result).toContain("code");
     expect(result.length).toBe(2);
+
+    const react = result.find((c) => c.name === "react");
+    expect(react?.standardCount).toBe(2);
+
+    const code = result.find((c) => c.name === "code");
+    expect(code?.standardCount).toBe(1);
+  });
+
+  it("returns sorted by name", async () => {
+    const result = await listCategories(store);
+    const names = result.map((c) => c.name);
+    const sorted = [...names].sort();
+    expect(names).toEqual(sorted);
+  });
+
+  it("includes categories with zero standards", async () => {
+    const ttlWithEmptyCategory = `
+      @prefix cso: <http://pragma.canonical.com/codestandards#> .
+      cso:empty_cat a cso:Category ; cso:categoryName "empty" .
+      cso:filled_cat a cso:Category ; cso:categoryName "filled" .
+      cso:s1 a cso:CodeStandard ;
+        cso:name "filled/one" ;
+        cso:category cso:filled_cat ;
+        cso:description "A standard" .
+    `;
+    const { store: testStore, cleanup: testCleanup } = await createTestStore({
+      ttl: ttlWithEmptyCategory,
+    });
+    try {
+      const result = await listCategories(testStore);
+      const empty = result.find((c) => c.name === "empty");
+      expect(empty).toBeDefined();
+      expect(empty?.standardCount).toBe(0);
+      const filled = result.find((c) => c.name === "filled");
+      expect(filled?.standardCount).toBe(1);
+    } finally {
+      testCleanup();
+    }
   });
 });
