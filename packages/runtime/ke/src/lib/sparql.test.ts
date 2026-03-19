@@ -86,12 +86,12 @@ describe("escapeSparqlURI", () => {
 
   it("rejects URIs with closing angle bracket", () => {
     const uri = "http://example.org/te>st" as URI;
-    expect(() => escapeSparqlURI(uri)).toThrow("Invalid URI");
+    expect(() => escapeSparqlURI(uri)).toThrow("Invalid IRI");
   });
 
   it("rejects URIs with newlines", () => {
     const uri = "http://example.org/te\nst" as URI;
-    expect(() => escapeSparqlURI(uri)).toThrow("Invalid URI");
+    expect(() => escapeSparqlURI(uri)).toThrow("Invalid IRI");
   });
 });
 

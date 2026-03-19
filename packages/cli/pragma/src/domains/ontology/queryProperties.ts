@@ -1,5 +1,8 @@
 /**
  * Query all properties in a namespace from the ke store.
+ *
+ * Deduplicates by property URI — a property with multiple rdfs:domain or
+ * rdfs:range values keeps only the first encountered.
  */
 
 import type { Store } from "@canonical/ke";
@@ -28,13 +31,20 @@ export default async function queryProperties(
 
   if (result.type !== "select") return [];
 
-  return result.bindings.map((b) => ({
-    uri: b.prop ?? "",
-    label: b.label ?? extractLocalName(b.prop ?? ""),
-    ...(b.domain ? { domain: b.domain } : {}),
-    ...(b.range ? { range: b.range } : {}),
-    type: b.propType?.includes("ObjectProperty")
-      ? ("object" as const)
-      : ("datatype" as const),
-  }));
+  const seen = new Map<string, OntologyProperty>();
+  for (const b of result.bindings) {
+    const uri = b.prop ?? "";
+    if (seen.has(uri)) continue;
+    seen.set(uri, {
+      uri,
+      label: b.label ?? extractLocalName(uri),
+      ...(b.domain ? { domain: b.domain } : {}),
+      ...(b.range ? { range: b.range } : {}),
+      type: b.propType?.includes("ObjectProperty")
+        ? ("object" as const)
+        : ("datatype" as const),
+    });
+  }
+
+  return [...seen.values()];
 }

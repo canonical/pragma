@@ -10,6 +10,7 @@
 // =============================================================================
 
 import type { SPARQL, URI } from "./types.js";
+import validateIri from "./validateIri.js";
 
 // ---------------------------------------------------------------------------
 // Dangerous pattern detection
@@ -157,16 +158,14 @@ export function escapeSparqlValue(value: unknown): string {
  * Escape a branded URI for SPARQL interpolation by wrapping in angle brackets.
  *
  * URI values are NOT quoted — they're wrapped in `<...>` per SPARQL syntax.
- * Validates that the URI doesn't contain characters that could break out of
- * the angle bracket context.
+ * Delegates IRI safety validation to `validateIri` for a single source of
+ * truth on disallowed characters.
  *
- * @throws If the URI contains `>`, newline, or carriage return
+ * @throws If the URI contains characters not allowed in IRIs
  */
 export function escapeSparqlURI(value: URI): string {
   const str = value as string;
-  if (str.includes(">") || str.includes("\n") || str.includes("\r")) {
-    throw new Error(`Invalid URI: ${str}`);
-  }
+  validateIri(str);
   return `<${str}>`;
 }
 

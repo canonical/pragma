@@ -1,5 +1,8 @@
 /**
  * Query all classes in a namespace from the ke store.
+ *
+ * Deduplicates by class URI — a class with multiple rdfs:subClassOf values
+ * keeps only the first superclass encountered.
  */
 
 import type { Store } from "@canonical/ke";
@@ -26,12 +29,16 @@ export default async function queryClasses(
 
   if (result.type !== "select") return [];
 
-  return result.bindings.map((b) => {
-    const entry: OntologyClass = {
-      uri: b.class ?? "",
-      label: b.label ?? extractLocalName(b.class ?? ""),
+  const seen = new Map<string, OntologyClass>();
+  for (const b of result.bindings) {
+    const uri = b.class ?? "";
+    if (seen.has(uri)) continue;
+    seen.set(uri, {
+      uri,
+      label: b.label ?? extractLocalName(uri),
       ...(b.superclass ? { superclass: b.superclass } : {}),
-    };
-    return entry;
-  });
+    });
+  }
+
+  return [...seen.values()];
 }
