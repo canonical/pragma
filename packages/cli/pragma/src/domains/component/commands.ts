@@ -14,18 +14,20 @@ import {
 import type { Store } from "@canonical/ke";
 import { PragmaError } from "../../error/index.js";
 import type { FilterConfig } from "../shared/types.js";
-import formatComponentGet, {
-  type AspectFlags,
+import {
+  formatComponentGet,
   formatComponentGetDetailed,
   formatComponentGetJson,
   formatComponentGetLlm,
-  resolveAspects,
 } from "./formatComponentGet.js";
-import formatComponentList, {
+import {
+  formatComponentList,
   formatComponentListJson,
   formatComponentListLlm,
 } from "./formatComponentList.js";
 import { getComponent, listComponents } from "./operations.js";
+import type { AspectFlags } from "./resolveAspects.js";
+import resolveAspects from "./resolveAspects.js";
 
 /**
  * Build component CommandDefinition[] bound to a live store and config.

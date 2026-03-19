@@ -13,52 +13,12 @@ import {
   formatSection,
 } from "../../lib/formatTerminal.js";
 import type { AnatomyNode, ComponentDetailed } from "../shared/types.js";
-
-export interface AspectFlags {
-  readonly anatomy: boolean;
-  readonly modifiers: boolean;
-  readonly tokens: boolean;
-  readonly standards: boolean;
-  readonly implementations: boolean;
-}
-
-const ALL_ASPECTS: AspectFlags = {
-  anatomy: true,
-  modifiers: true,
-  tokens: true,
-  standards: true,
-  implementations: true,
-};
-
-/**
- * Resolve aspect flags: if none are set, show all. If any are set,
- * show only those selected.
- */
-export function resolveAspects(flags: Partial<AspectFlags>): AspectFlags {
-  const anySet =
-    flags.anatomy ||
-    flags.modifiers ||
-    flags.tokens ||
-    flags.standards ||
-    flags.implementations;
-
-  if (!anySet) return ALL_ASPECTS;
-
-  return {
-    anatomy: flags.anatomy ?? false,
-    modifiers: flags.modifiers ?? false,
-    tokens: flags.tokens ?? false,
-    standards: flags.standards ?? false,
-    implementations: flags.implementations ?? false,
-  };
-}
+import type { AspectFlags } from "./resolveAspects.js";
 
 /**
  * Format component summary (default mode, no --detailed).
  */
-export default function formatComponentGet(
-  component: ComponentDetailed,
-): string {
+export function formatComponentGet(component: ComponentDetailed): string {
   const lines: string[] = [];
 
   lines.push(formatHeading(component.name));

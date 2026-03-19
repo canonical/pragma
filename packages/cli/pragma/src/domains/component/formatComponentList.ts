@@ -10,7 +10,7 @@ import type { ComponentSummary } from "../shared/types.js";
 /**
  * Format component list as plain terminal output.
  */
-export default function formatComponentList(
+export function formatComponentList(
   components: readonly ComponentSummary[],
 ): string {
   const lines: string[] = [];
