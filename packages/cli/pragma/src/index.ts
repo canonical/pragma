@@ -1,5 +1,11 @@
-export type { PragmaConfig } from "./config.js";
-export { readConfig } from "./config.js";
+export type { ConfigUpdate, PragmaConfig } from "./config.js";
+export {
+  configExists,
+  isValidChannel,
+  readConfig,
+  resolveConfigPath,
+  writeConfig,
+} from "./config.js";
 export type { Channel } from "./constants.js";
 export {
   PROGRAM_DESCRIPTION,
@@ -68,6 +74,17 @@ export {
 } from "./domains/standard/operations.js";
 export { listTiers } from "./domains/tier/operations.js";
 export { getToken, listTokens } from "./domains/token/operations.js";
+
+// =============================================================================
+// D6 — Config Operations
+// =============================================================================
+
+export type { ConfigShowData } from "./domains/config/operations.js";
+export {
+  resolveConfigShow,
+  validateChannel,
+  validateTier,
+} from "./domains/config/operations.js";
 
 // =============================================================================
 // D3 — Store Bootstrap
