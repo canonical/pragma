@@ -9,16 +9,15 @@
 
 import type { Store, URI } from "@canonical/ke";
 import { expectTypeOf } from "expect-type";
-import getComponent from "../component/getComponent.js";
-import listComponents from "../component/listComponents.js";
-import { getModifier, listModifiers } from "../modifier/operations.js";
+import { getComponent, listComponents } from "../component/operations/index.js";
+import { getModifier, listModifiers } from "../modifier/operations/index.js";
 import {
   getStandard,
   listCategories,
   listStandards,
-} from "../standard/operations.js";
-import { listTiers } from "../tier/operations.js";
-import { getToken, listTokens } from "../token/operations.js";
+} from "../standard/operations/index.js";
+import { listTiers } from "../tier/operations/index.js";
+import { getToken, listTokens } from "../token/operations/index.js";
 import type {
   AnatomyNode,
   AnatomyTree,

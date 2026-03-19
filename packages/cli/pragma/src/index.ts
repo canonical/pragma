@@ -65,35 +65,49 @@ export type {
 // D3 — Shared Operations
 // =============================================================================
 
-export { default as getComponent } from "./domains/component/getComponent.js";
-export { default as listComponents } from "./domains/component/listComponents.js";
-export { default as executeQuery } from "./domains/graph/executeQuery.js";
-export { default as inspectUri } from "./domains/graph/inspectUri.js";
+export {
+  getComponent,
+  listComponents,
+} from "./domains/component/operations/index.js";
+export {
+  executeQuery,
+  inspectUri,
+} from "./domains/graph/operations/index.js";
 export {
   getModifier,
   listModifiers,
-} from "./domains/modifier/operations.js";
-export { default as listOntologies } from "./domains/ontology/listOntologies.js";
-export { default as showOntology } from "./domains/ontology/showOntology.js";
-export { default as showOntologyRaw } from "./domains/ontology/showOntologyRaw.js";
+} from "./domains/modifier/operations/index.js";
+export {
+  listOntologies,
+  showOntology,
+  showOntologyRaw,
+} from "./domains/ontology/operations/index.js";
 export {
   getStandard,
   listCategories,
   listStandards,
-} from "./domains/standard/operations.js";
-export { listTiers } from "./domains/tier/operations.js";
-export { getToken, listTokens } from "./domains/token/operations.js";
+} from "./domains/standard/operations/index.js";
+export { listTiers } from "./domains/tier/operations/index.js";
+export { getToken, listTokens } from "./domains/token/operations/index.js";
 
 // =============================================================================
 // D6 — Config Operations
 // =============================================================================
 
-export type { ConfigShowData } from "./domains/config/operations.js";
+export type { ConfigShowData } from "./domains/config/operations/index.js";
 export {
   resolveConfigShow,
   validateChannel,
   validateTier,
-} from "./domains/config/operations.js";
+} from "./domains/config/operations/index.js";
+
+// =============================================================================
+// Shared Infrastructure
+// =============================================================================
+
+export type { PragmaContext } from "./domains/shared/context.js";
+export type { Formatters } from "./domains/shared/formatters.js";
+export { selectFormatter } from "./domains/shared/formatters.js";
 
 // =============================================================================
 // D3 — Store Bootstrap

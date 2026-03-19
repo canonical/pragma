@@ -1,5 +1,4 @@
 import {
-  type CommandContext,
   type CommandDefinition,
   formatHelp,
   formatLlmHelp,
@@ -10,14 +9,14 @@ import type { Store } from "@canonical/ke";
 import { Command, CommanderError } from "commander";
 import { readConfig } from "../config.js";
 import { PROGRAM_DESCRIPTION, PROGRAM_NAME, VERSION } from "../constants.js";
-import buildGetCommand from "../domains/component/buildGetCommand.js";
-import buildListCommand from "../domains/component/buildListCommand.js";
-import { collectConfigCommands } from "../domains/config/commands.js";
+import { commands as componentCommands } from "../domains/component/index.js";
+import { commands as configCommands } from "../domains/config/index.js";
 import infoCommand from "../domains/info/infoCommand.js";
 import upgradeCommand from "../domains/info/upgradeCommand.js";
 import { bootStore } from "../domains/shared/bootStore.js";
+import type { PragmaContext } from "../domains/shared/context.js";
 import type { FilterConfig } from "../domains/shared/types.js";
-import collectStandardCommands from "../domains/standard/collectStandardCommands.js";
+import { commands as standardCommands } from "../domains/standard/index.js";
 import { PragmaError } from "../error/index.js";
 import { mapExitCode } from "./mapExitCode.js";
 import {
@@ -26,15 +25,11 @@ import {
   renderErrorPlain,
 } from "./renderError.js";
 
-function collectCommands(
-  store: Store,
-  config: FilterConfig,
-): CommandDefinition[] {
+function collectCommands(ctx: PragmaContext): CommandDefinition[] {
   return [
-    ...collectConfigCommands(),
-    ...collectStandardCommands(),
-    buildListCommand(store, config),
-    buildGetCommand(store, config),
+    ...configCommands(ctx),
+    ...standardCommands(ctx),
+    ...componentCommands(ctx),
     infoCommand,
     upgradeCommand,
   ];
@@ -42,7 +37,7 @@ function collectCommands(
 
 function createProgram(
   commands: readonly CommandDefinition[],
-  ctx: CommandContext,
+  ctx: PragmaContext,
 ): Command {
   const program = new Command();
   program.name(PROGRAM_NAME);
@@ -147,8 +142,8 @@ async function runCli(argv: readonly string[]): Promise<void> {
   }
 
   try {
-    const ctx: CommandContext = { cwd, globalFlags };
-    const commands = collectCommands(store, config);
+    const ctx: PragmaContext = { cwd, globalFlags, store, config };
+    const commands = collectCommands(ctx);
     const program = createProgram(commands, ctx);
 
     await program.parseAsync(argv);
