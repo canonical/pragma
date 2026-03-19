@@ -78,6 +78,12 @@ describe("formatComponentGet (summary)", () => {
 });
 
 describe("formatComponentGetDetailed", () => {
+  it("includes summary counts in detailed view", () => {
+    const text = formatComponentGetDetailed(BUTTON_DETAILED, ALL_ASPECTS);
+    expect(text).toContain("3");
+    expect(text).toContain("1");
+  });
+
   it("shows modifiers section with values", () => {
     const text = formatComponentGetDetailed(BUTTON_DETAILED, ALL_ASPECTS);
     expect(text).toContain("Modifiers");
@@ -116,9 +122,10 @@ describe("formatComponentGetDetailed", () => {
     };
     const text = formatComponentGetDetailed(BUTTON_DETAILED, aspects);
     expect(text).toContain("Modifiers");
-    expect(text).not.toContain("Tokens");
-    expect(text).not.toContain("Anatomy");
-    expect(text).not.toContain("Implementations");
+    // Summary field "Tokens: 1" is always shown, but the Tokens section should not appear
+    expect(text).not.toContain("color.primary");
+    expect(text).not.toContain("Anatomy\n");
+    expect(text).not.toContain("Button.tsx");
   });
 });
 
@@ -165,6 +172,10 @@ describe("formatComponentGetJson", () => {
     const text = formatComponentGetJson(BUTTON_DETAILED, true, ALL_ASPECTS);
     const parsed = JSON.parse(text);
     expect(parsed.name).toBe("Button");
+    expect(parsed.nodeCount).toBe(3);
+    expect(parsed.tokenCount).toBe(1);
+    expect(parsed.modifiers).toBeDefined();
+    expect(parsed.implementations).toBeDefined();
     expect(parsed.modifierValues).toBeDefined();
     expect(parsed.tokens).toBeDefined();
     expect(parsed.anatomy).toBeDefined();

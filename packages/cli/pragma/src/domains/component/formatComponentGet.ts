@@ -56,6 +56,8 @@ export function formatComponentGetDetailed(
   lines.push("");
   lines.push(formatField("URI:", component.uri));
   lines.push(formatField("Tier:", component.tier));
+  lines.push(formatField("Anatomy nodes:", String(component.nodeCount)));
+  lines.push(formatField("Tokens:", String(component.tokenCount)));
 
   if (aspects.modifiers && component.modifierValues.length > 0) {
     lines.push("");
@@ -192,6 +194,10 @@ export function formatComponentGetJson(
     uri: component.uri,
     name: component.name,
     tier: component.tier,
+    modifiers: component.modifiers,
+    implementations: component.implementations,
+    nodeCount: component.nodeCount,
+    tokenCount: component.tokenCount,
   };
 
   if (aspects.modifiers) result.modifierValues = component.modifierValues;

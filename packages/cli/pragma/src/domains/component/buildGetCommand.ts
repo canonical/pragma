@@ -94,7 +94,7 @@ export default function buildGetCommand(
       const name = params.name as string;
       if (!name) {
         throw PragmaError.invalidInput("name", "(empty)", {
-          recovery: "Run `pragma component list` to see available components",
+          recovery: "Run `pragma component list` to see available components.",
         });
       }
 

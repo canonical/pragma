@@ -140,7 +140,8 @@ describe("buildGetCommand", () => {
     );
     expect(text).toContain("Modifiers");
     expect(text).toContain("importance");
-    expect(text).not.toContain("Tokens");
+    // Summary field "Tokens: 1" is always shown, but token details should not appear
+    expect(text).not.toContain("color.primary");
   });
 
   it("composes aspect flags (--modifiers --tokens)", async () => {
