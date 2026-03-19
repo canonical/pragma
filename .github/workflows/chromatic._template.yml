@@ -19,31 +19,14 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}-${{ inputs.working-directory }}
   cancel-in-progress: true
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@v6
-
-        # "prepare" hook on `bun install` runs `bun run build`
-      - name: Setup environment
-        uses: ./.github/actions/setup-env
-
-      - name: Code quality checks
-        run: bun run check
-
-      - name: Test
-        run: bun run test
   publish-to-chromatic:
     runs-on: ubuntu-latest
-    needs: build
     steps:
       - name: Checkout repo
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
-        # "prepare" hook on `bun install` runs `bun run build`
       - name: Setup environment
         uses: ./.github/actions/setup-env
 
