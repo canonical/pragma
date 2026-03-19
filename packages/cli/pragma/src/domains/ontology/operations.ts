@@ -5,7 +5,7 @@
  * Queries the TBox (schema layer) — classes, properties, namespace statistics.
  */
 
-import type { Store } from "@canonical/ke";
+import type { Store, Triple } from "@canonical/ke";
 import { PragmaError } from "../../error/index.js";
 import { buildQuery } from "../shared/buildQuery.js";
 import type {
@@ -128,7 +128,7 @@ export async function showOntology(
 export async function showOntologyRaw(
   store: Store,
   prefixOrUri: string,
-): Promise<{ subject: string; predicate: string; object: string }[]> {
+): Promise<Triple[]> {
   const { namespace } = resolvePrefix(prefixOrUri, store.prefixes);
 
   const result = await store.query(

@@ -6,7 +6,6 @@
  */
 
 import type { QueryResult, Store } from "@canonical/ke";
-import { escapeSparqlValue } from "@canonical/ke";
 import { PragmaError } from "../../error/index.js";
 import { buildQuery } from "../shared/buildQuery.js";
 import type { InspectResult, PredicateGroup } from "../shared/types.js";
