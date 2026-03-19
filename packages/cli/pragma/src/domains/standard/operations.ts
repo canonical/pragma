@@ -149,9 +149,7 @@ export async function getStandard(
  *
  * @see ST.05
  */
-export async function listCategories(
-  store: Store,
-): Promise<CategorySummary[]> {
+export async function listCategories(store: Store): Promise<CategorySummary[]> {
   const result = await store.query(
     buildQuery(`
       SELECT ?categoryName (COUNT(?standard) AS ?count)
