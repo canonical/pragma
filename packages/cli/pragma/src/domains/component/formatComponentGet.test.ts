@@ -43,20 +43,13 @@ const BUTTON_DETAILED: ComponentDetailed = {
       name: "color.primary",
     },
   ],
-  standards: [
-    {
-      uri: "http://pragma.canonical.com/codestandards#react_folder" as URI,
-      name: "react/component/folder-structure",
-      category: "react",
-    },
-  ],
+  standards: [],
 };
 
 const ALL_ASPECTS: AspectFlags = {
   anatomy: true,
   modifiers: true,
   tokens: true,
-  standards: true,
   implementations: true,
 };
 
@@ -106,12 +99,6 @@ describe("formatComponentGetDetailed", () => {
     expect(text).toContain("color.primary");
   });
 
-  it("shows standards section", () => {
-    const text = formatComponentGetDetailed(BUTTON_DETAILED, ALL_ASPECTS);
-    expect(text).toContain("Standards");
-    expect(text).toContain("react/component/folder-structure");
-  });
-
   it("shows anatomy section", () => {
     const text = formatComponentGetDetailed(BUTTON_DETAILED, ALL_ASPECTS);
     expect(text).toContain("Anatomy");
@@ -125,14 +112,12 @@ describe("formatComponentGetDetailed", () => {
       anatomy: false,
       modifiers: true,
       tokens: false,
-      standards: false,
       implementations: false,
     };
     const text = formatComponentGetDetailed(BUTTON_DETAILED, aspects);
     expect(text).toContain("Modifiers");
     expect(text).not.toContain("Tokens");
     expect(text).not.toContain("Anatomy");
-    expect(text).not.toContain("Standards");
     expect(text).not.toContain("Implementations");
   });
 });
@@ -150,7 +135,6 @@ describe("formatComponentGetLlm", () => {
     expect(text).toContain("### Modifiers");
     expect(text).toContain("### Implementations");
     expect(text).toContain("### Tokens");
-    expect(text).toContain("### Standards");
     expect(text).toContain("### Anatomy");
   });
 
@@ -159,14 +143,12 @@ describe("formatComponentGetLlm", () => {
       anatomy: false,
       modifiers: true,
       tokens: true,
-      standards: false,
       implementations: false,
     };
     const text = formatComponentGetLlm(BUTTON_DETAILED, true, aspects);
     expect(text).toContain("### Modifiers");
     expect(text).toContain("### Tokens");
     expect(text).not.toContain("### Anatomy");
-    expect(text).not.toContain("### Standards");
   });
 });
 
@@ -193,7 +175,6 @@ describe("formatComponentGetJson", () => {
       anatomy: false,
       modifiers: true,
       tokens: false,
-      standards: false,
       implementations: false,
     };
     const text = formatComponentGetJson(BUTTON_DETAILED, true, aspects);

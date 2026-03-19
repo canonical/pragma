@@ -209,7 +209,19 @@ ds:button a ds:Component ;
   ds:release ds:stable ;
   ds:modifier ds:modifier_family.importance ;
   ds:modifier ds:modifier_family.density ;
-  ds:usesToken ds:token.color.primary .
+  ds:usesToken ds:token.color.primary ;
+  ds:anatomyNode ds:button_node.root ;
+  ds:anatomyNode ds:button_node.label ;
+  ds:anatomyNode ds:button_node.icon .
+
+ds:button_node.root a ds:AnatomyNode ;
+  ds:name "button" .
+
+ds:button_node.label a ds:AnatomyNode ;
+  ds:name "label" .
+
+ds:button_node.icon a ds:AnatomyNode ;
+  ds:name "icon" .
 
 ds:card a ds:Component ;
   ds:name "Card" ;

@@ -8,7 +8,6 @@ describe("resolveAspects", () => {
       anatomy: true,
       modifiers: true,
       tokens: true,
-      standards: true,
       implementations: true,
     });
   });
@@ -18,14 +17,12 @@ describe("resolveAspects", () => {
       anatomy: false,
       modifiers: false,
       tokens: false,
-      standards: false,
       implementations: false,
     });
     expect(result).toEqual({
       anatomy: true,
       modifiers: true,
       tokens: true,
-      standards: true,
       implementations: true,
     });
   });
@@ -36,7 +33,6 @@ describe("resolveAspects", () => {
       anatomy: false,
       modifiers: true,
       tokens: false,
-      standards: false,
       implementations: false,
     });
   });
@@ -47,7 +43,6 @@ describe("resolveAspects", () => {
       anatomy: false,
       modifiers: true,
       tokens: true,
-      standards: false,
       implementations: false,
     });
   });
@@ -57,14 +52,12 @@ describe("resolveAspects", () => {
       anatomy: true,
       modifiers: true,
       tokens: true,
-      standards: true,
       implementations: true,
     });
     expect(result).toEqual({
       anatomy: true,
       modifiers: true,
       tokens: true,
-      standards: true,
       implementations: true,
     });
   });

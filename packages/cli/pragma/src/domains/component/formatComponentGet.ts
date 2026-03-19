@@ -90,16 +90,6 @@ export function formatComponentGetDetailed(
     );
   }
 
-  if (aspects.standards && component.standards.length > 0) {
-    lines.push("");
-    lines.push(
-      formatSection(
-        "Standards",
-        formatList(component.standards.map((s) => `${s.name} (${s.category})`)),
-      ),
-    );
-  }
-
   if (aspects.anatomy && component.anatomy) {
     lines.push("");
     lines.push(
@@ -165,14 +155,6 @@ export function formatComponentGetLlm(
     }
   }
 
-  if (aspects.standards && component.standards.length > 0) {
-    lines.push("");
-    lines.push("### Standards");
-    for (const s of component.standards) {
-      lines.push(`- ${s.name} (${s.category})`);
-    }
-  }
-
   if (aspects.anatomy && component.anatomy) {
     lines.push("");
     lines.push("### Anatomy");
@@ -216,7 +198,6 @@ export function formatComponentGetJson(
   if (aspects.implementations)
     result.implementationPaths = component.implementationPaths;
   if (aspects.tokens) result.tokens = component.tokens;
-  if (aspects.standards) result.standards = component.standards;
   if (aspects.anatomy) result.anatomy = component.anatomy;
 
   return JSON.stringify(result, null, 2);

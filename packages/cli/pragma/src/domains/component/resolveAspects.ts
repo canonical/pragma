@@ -11,7 +11,6 @@ const ALL_ASPECTS: AspectFlags = {
   anatomy: true,
   modifiers: true,
   tokens: true,
-  standards: true,
   implementations: true,
 };
 
@@ -19,11 +18,7 @@ export default function resolveAspects(
   flags: Partial<AspectFlags>,
 ): AspectFlags {
   const anySet =
-    flags.anatomy ||
-    flags.modifiers ||
-    flags.tokens ||
-    flags.standards ||
-    flags.implementations;
+    flags.anatomy || flags.modifiers || flags.tokens || flags.implementations;
 
   if (!anySet) return ALL_ASPECTS;
 
@@ -31,7 +26,6 @@ export default function resolveAspects(
     anatomy: flags.anatomy ?? false,
     modifiers: flags.modifiers ?? false,
     tokens: flags.tokens ?? false,
-    standards: flags.standards ?? false,
     implementations: flags.implementations ?? false,
   };
 }

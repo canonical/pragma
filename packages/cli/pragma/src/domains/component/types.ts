@@ -8,6 +8,5 @@ export interface AspectFlags {
   readonly anatomy: boolean;
   readonly modifiers: boolean;
   readonly tokens: boolean;
-  readonly standards: boolean;
   readonly implementations: boolean;
 }

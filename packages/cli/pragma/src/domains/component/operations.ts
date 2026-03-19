@@ -168,8 +168,23 @@ export async function getComponent(
         }))
       : [];
 
+  // Anatomy node count
+  const nodeResult = await store.query(
+    buildQuery(`
+      SELECT (COUNT(DISTINCT ?node) AS ?nodeCount)
+      WHERE {
+        <${componentUri}> ds:anatomyNode ?node .
+      }
+    `),
+  );
+
+  const nodeCount =
+    nodeResult.type === "select" && nodeResult.bindings.length > 0
+      ? Number.parseInt(nodeResult.bindings[0]?.nodeCount ?? "0", 10) || 0
+      : 0;
+
   // Standards (not linked directly to components in current ontology;
-  // will be populated via @follows in v0.2)
+  // will be populated via @follows in v0.3)
   const standards: StandardRef[] = [];
 
   return {
@@ -178,7 +193,7 @@ export async function getComponent(
     tier: extractLocalName(base.tier ?? ""),
     modifiers: [...modifierMap.keys()],
     implementations,
-    nodeCount: 0,
+    nodeCount,
     tokenCount: tokens.length,
     anatomy: null,
     modifierValues: [...modifierMap.entries()].map(([family, values]) => ({

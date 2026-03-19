@@ -1,8 +1,7 @@
 /**
- * Component command definitions for `pragma component list` and `pragma component get`.
+ * Build the `pragma component get` command definition.
  *
- * Wires D3 shared operations to the CLI via CommandDefinition[].
- * Consumed by collectCommands() in runCli.ts.
+ * @note Impure — the returned command closes over the store and config.
  */
 
 import {
@@ -20,94 +19,11 @@ import {
   formatComponentGetJson,
   formatComponentGetLlm,
 } from "./formatComponentGet.js";
-import {
-  formatComponentList,
-  formatComponentListJson,
-  formatComponentListLlm,
-} from "./formatComponentList.js";
 import { getComponent, listComponents } from "./operations.js";
 import resolveAspects from "./resolveAspects.js";
 import type { AspectFlags } from "./types.js";
 
-/**
- * Build component CommandDefinition[] bound to a live store and config.
- *
- * @note Impure — the returned commands close over the store and config.
- */
-export default function buildComponentCommands(
-  store: Store,
-  config: FilterConfig,
-): CommandDefinition[] {
-  return [buildListCommand(store, config), buildGetCommand(store, config)];
-}
-
-// =============================================================================
-// List command
-// =============================================================================
-
-function buildListCommand(
-  store: Store,
-  config: FilterConfig,
-): CommandDefinition {
-  return {
-    path: ["component", "list"],
-    description: "List components in the design system",
-    parameters: [
-      {
-        name: "allTiers",
-        description: "Show components from all tiers",
-        type: "boolean",
-        default: false,
-      },
-    ],
-    meta: {
-      examples: [
-        "pragma component list",
-        "pragma component list --all-tiers",
-        "pragma component list --llm",
-        "pragma component list --format json",
-      ],
-    },
-    execute: async (
-      params: Record<string, unknown>,
-      ctx: CommandContext,
-    ): Promise<CommandResult> => {
-      const allTiers = params.allTiers === true;
-      const filters: FilterConfig = allTiers
-        ? { tier: undefined, channel: config.channel }
-        : config;
-
-      const components = await listComponents(store, filters);
-
-      if (components.length === 0) {
-        throw PragmaError.emptyResults("component", {
-          filters: describeFilters(filters),
-          recovery: allTiers
-            ? undefined
-            : "Try `pragma component list --all-tiers` to widen the search",
-        });
-      }
-
-      return createOutputResult(components, {
-        plain: (data) => {
-          if (ctx.globalFlags.format === "json") {
-            return formatComponentListJson(data);
-          }
-          if (ctx.globalFlags.llm) {
-            return formatComponentListLlm(data);
-          }
-          return formatComponentList(data);
-        },
-      });
-    },
-  };
-}
-
-// =============================================================================
-// Get command
-// =============================================================================
-
-function buildGetCommand(
+export default function buildGetCommand(
   store: Store,
   config: FilterConfig,
 ): CommandDefinition {
@@ -131,7 +47,7 @@ function buildGetCommand(
       {
         name: "detailed",
         description:
-          "Show full details including anatomy, modifiers, tokens, and standards",
+          "Show full details including anatomy, modifiers, tokens, and implementations",
         type: "boolean",
         default: false,
       },
@@ -154,12 +70,6 @@ function buildGetCommand(
         default: false,
       },
       {
-        name: "standards",
-        description: "Show applicable standards",
-        type: "boolean",
-        default: false,
-      },
-      {
         name: "implementations",
         description: "Show implementation paths",
         type: "boolean",
@@ -167,13 +77,7 @@ function buildGetCommand(
       },
     ],
     parameterGroups: {
-      "Aspect filters": [
-        "anatomy",
-        "modifiers",
-        "tokens",
-        "standards",
-        "implementations",
-      ],
+      "Aspect filters": ["anatomy", "modifiers", "tokens", "implementations"],
     },
     meta: {
       examples: [
@@ -199,16 +103,13 @@ function buildGetCommand(
         anatomy: params.anatomy === true,
         modifiers: params.modifiers === true,
         tokens: params.tokens === true,
-        standards: params.standards === true,
         implementations: params.implementations === true,
       };
 
-      // If any aspect flag is set, treat as detailed
       const isAspectSelected =
         aspectInput.anatomy ||
         aspectInput.modifiers ||
         aspectInput.tokens ||
-        aspectInput.standards ||
         aspectInput.implementations;
       const showDetailed = detailed || (isAspectSelected ?? false);
       const aspects = resolveAspects(aspectInput);
@@ -231,15 +132,4 @@ function buildGetCommand(
       });
     },
   };
-}
-
-// =============================================================================
-// Helpers
-// =============================================================================
-
-function describeFilters(filters: FilterConfig): Record<string, string> {
-  const result: Record<string, string> = {};
-  if (filters.tier) result.tier = filters.tier;
-  result.channel = filters.channel;
-  return result;
 }
