@@ -28,4 +28,14 @@ describe("createMcpServer", () => {
       expect(tool.inputSchema.type).toBe("object");
     }
   });
+
+  it("creates a server with registered resources", async () => {
+    const { resources } = await client.listResources();
+    expect(resources.length).toBeGreaterThan(0);
+  });
+
+  it("creates a server with registered resource templates", async () => {
+    const { resourceTemplates } = await client.listResourceTemplates();
+    expect(resourceTemplates.length).toBeGreaterThan(0);
+  });
 });

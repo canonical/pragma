@@ -7,6 +7,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { PragmaConfig } from "../src/config.js";
+import registerResources from "../src/mcp/registerResources.js";
 import registerTools from "../src/mcp/registerTools.js";
 import { DS_ALL_TTL } from "./dsFixtures.js";
 import { createTestStore } from "./store.js";
@@ -14,7 +15,7 @@ import type { TestMcpClientResult } from "./types.js";
 
 /**
  * Create an in-process MCP client connected to a server with
- * all tools registered against a test store.
+ * all tools and resources registered against a test store.
  */
 export default async function createTestMcpClient(options?: {
   ttl?: string;
@@ -30,6 +31,7 @@ export default async function createTestMcpClient(options?: {
 
   const server = new McpServer({ name: "pragma-test", version: "0.0.0" });
   registerTools(server, store, config);
+  registerResources(server, store, config);
 
   const [serverTransport, clientTransport] =
     InMemoryTransport.createLinkedPair();

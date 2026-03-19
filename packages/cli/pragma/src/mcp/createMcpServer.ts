@@ -2,13 +2,14 @@
  * MCP server factory.
  *
  * Boots the ke store, reads config, creates the McpServer,
- * and registers all tools. Returns the server ready for transport.
+ * and registers all tools and resources. Returns the server ready for transport.
  */
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { readConfig } from "../config.js";
 import { VERSION } from "../constants.js";
 import { bootStore } from "../domains/shared/bootStore.js";
+import registerResources from "./registerResources.js";
 import registerTools from "./registerTools.js";
 
 /**
@@ -26,5 +27,6 @@ export default async function createMcpServer(options?: {
     version: VERSION,
   });
   registerTools(server, store, config);
+  registerResources(server, store, config);
   return server;
 }
