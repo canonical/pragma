@@ -219,8 +219,7 @@ const useWindowFitment = ({
         }
       }
 
-      // biome-ignore lint/style/noNonNullAssertion: Fallback position is always defined here, due to the loop above and the thrown error if preferredDirections is empty.
-      return fallbackPosition!;
+      return fallbackPosition as BestPosition;
     },
     [calculateRelativePosition, fitsInWindow, isServer, autoFit, bounds],
   );
