@@ -55,6 +55,14 @@ function createProgram(
   program.helpOption("-h, --help", "Show help");
   program.configureHelp({ formatHelp: () => "" });
 
+  program
+    .command("mcp")
+    .description("Start the MCP server over stdio")
+    .action(async () => {
+      const { runMcpServer } = await import("../mcp/runMcpServer.js");
+      await runMcpServer();
+    });
+
   registerAll(program, commands, ctx);
 
   return program;
