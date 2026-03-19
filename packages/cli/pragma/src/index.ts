@@ -121,17 +121,27 @@ export {
 // D9 — Info + Upgrade
 // =============================================================================
 
-export type { RegistryCheckResult } from "./domains/info/checkRegistryVersion.js";
-export {
-  checkRegistryVersion,
-  DIST_TAG_MAP,
-} from "./domains/info/checkRegistryVersion.js";
-export type { StoreSummary } from "./domains/info/collectStoreSummary.js";
+export type {
+  InfoData,
+  RegistryCheckResult,
+  StoreSummary,
+  UpgradeData,
+} from "./domains/info/types.js";
+export { default as checkRegistryVersion } from "./domains/info/checkRegistryVersion.js";
 export { collectStoreSummary } from "./domains/info/collectStoreSummary.js";
-export type { InfoData } from "./domains/info/infoCommand.js";
-export { infoCommand } from "./domains/info/infoCommand.js";
-export type { UpgradeData } from "./domains/info/upgradeCommand.js";
-export { upgradeCommand } from "./domains/info/upgradeCommand.js";
+export { DIST_TAG_MAP, REGISTRY_TIMEOUT_MS } from "./domains/info/constants.js";
+export { default as infoCommand } from "./domains/info/infoCommand.js";
+export { default as upgradeCommand } from "./domains/info/upgradeCommand.js";
+export {
+  renderInfoJson,
+  renderInfoLlm,
+  renderInfoPlain,
+} from "./domains/info/renderInfo.js";
+export {
+  renderUpgradeJson,
+  renderUpgradeLlm,
+  renderUpgradePlain,
+} from "./domains/info/renderUpgrade.js";
 
 // =============================================================================
 // D11 — MCP Adapter

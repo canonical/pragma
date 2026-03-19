@@ -1,37 +1,17 @@
 /**
- * Check the npm registry for the latest version of @canonical/pragma.
+ * Check the npm registry for the latest version of a package.
  *
- * Uses channel → dist-tag alignment (IN.06):
- * - normal → latest
- * - experimental → experimental
- * - prerelease → next
+ * Returns undefined when offline or when the registry does not respond
+ * within 3 seconds (IN.08).
  *
  * @note Impure — performs an HTTP fetch to the npm registry.
  * @see IN.06, IN.08 in B.11.INSTALL
  */
 
 import type { Channel } from "../../constants.js";
+import { DIST_TAG_MAP, REGISTRY_TIMEOUT_MS } from "./constants.js";
+import type { RegistryCheckResult } from "./types.js";
 
-const DIST_TAG_MAP: Record<Channel, string> = {
-  normal: "latest",
-  experimental: "experimental",
-  prerelease: "next",
-};
-
-const REGISTRY_TIMEOUT_MS = 3_000;
-
-interface RegistryCheckResult {
-  readonly latest: string;
-  readonly distTag: string;
-}
-
-/**
- * Query the npm registry for the latest version of a package on the
- * dist-tag corresponding to the given channel.
- *
- * Returns undefined when offline or when the registry does not respond
- * within 3 seconds (IN.08).
- */
 async function checkRegistryVersion(
   packageName: string,
   channel: Channel,
@@ -60,5 +40,4 @@ async function checkRegistryVersion(
   }
 }
 
-export { checkRegistryVersion, DIST_TAG_MAP, REGISTRY_TIMEOUT_MS };
-export type { RegistryCheckResult };
+export default checkRegistryVersion;

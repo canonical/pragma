@@ -9,66 +9,32 @@
 
 import type { CommandDefinition, CommandResult } from "@canonical/cli-core";
 import { execSync } from "node:child_process";
-import chalk from "chalk";
 import { readConfig } from "../../config.js";
 import { VERSION } from "../../constants.js";
 import { PragmaError } from "../../error/index.js";
 import { detectPackageManager, PM_COMMANDS } from "../../pm.js";
-import { checkRegistryVersion } from "./checkRegistryVersion.js";
+import checkRegistryVersion from "./checkRegistryVersion.js";
+import {
+  renderUpgradeJson,
+  renderUpgradeLlm,
+  renderUpgradePlain,
+} from "./renderUpgrade.js";
+import type { UpgradeData } from "./types.js";
 
-interface UpgradeData {
-  readonly pm: string;
-  readonly current: string;
-  readonly latest: string | undefined;
-  readonly command: string;
-  readonly dryRun: boolean;
-  readonly alreadyLatest: boolean;
-  readonly offline: boolean;
-  readonly executed: boolean;
+function selectUpgradeRenderer(
+  flags: { llm: boolean; format: "text" | "json" },
+): (data: UpgradeData) => string {
+  if (flags.format === "json") return renderUpgradeJson;
+  if (flags.llm) return renderUpgradeLlm;
+  return renderUpgradePlain;
 }
 
-function renderUpgradePlain(data: UpgradeData): string {
-  const lines: string[] = [];
-
-  lines.push(`Installed via: ${data.pm} (global)`);
-
-  if (data.offline) {
-    lines.push("Could not reach registry");
-    return lines.join("\n");
-  }
-
-  if (data.alreadyLatest) {
-    lines.push(`Already at latest version (${data.current}).`);
-    return lines.join("\n");
-  }
-
-  lines.push("");
-  lines.push(
-    `@canonical/pragma  ${data.current} → ${chalk.green(data.latest)}`,
-  );
-  lines.push("");
-
-  if (data.dryRun) {
-    lines.push(`Would run: ${chalk.cyan(data.command)}`);
-  } else {
-    lines.push(`Running: ${chalk.cyan(data.command)}`);
-    lines.push("");
-    lines.push(`done. Updated to ${data.latest}.`);
-  }
-
-  return lines.join("\n");
-}
-
-function renderUpgradeLlm(data: UpgradeData): string {
-  if (data.offline) return "Upgrade check failed: could not reach registry";
-  if (data.alreadyLatest) return `Already at latest version (${data.current})`;
-  if (data.dryRun)
-    return `Would upgrade: ${data.current} → ${data.latest}\nCommand: ${data.command}`;
-  return `Upgraded: ${data.current} → ${data.latest}`;
-}
-
-function renderUpgradeJson(data: UpgradeData): string {
-  return JSON.stringify(data, null, 2);
+function buildUpgradeResult(
+  data: UpgradeData,
+  flags: { llm: boolean; format: "text" | "json" },
+): CommandResult {
+  const render = selectUpgradeRenderer(flags);
+  return { tag: "output", value: data, render: { plain: render } };
 }
 
 async function executeUpgrade(
@@ -80,60 +46,41 @@ async function executeUpgrade(
   const config = readConfig(ctx.cwd);
   const command = PM_COMMANDS[pm].update("@canonical/pragma");
 
-  // Registry check (IN.08)
   const registryResult = await checkRegistryVersion(
     "@canonical/pragma",
     config.channel,
   );
 
   if (!registryResult) {
-    const data: UpgradeData = {
-      pm,
-      current: VERSION,
-      latest: undefined,
-      command,
-      dryRun,
-      alreadyLatest: false,
-      offline: true,
-      executed: false,
-    };
-
-    return {
-      tag: "output",
-      value: data,
-      render: {
-        plain: (d: UpgradeData) => {
-          if (ctx.globalFlags.format === "json") return renderUpgradeJson(d);
-          if (ctx.globalFlags.llm) return renderUpgradeLlm(d);
-          return renderUpgradePlain(d);
-        },
+    return buildUpgradeResult(
+      {
+        pm,
+        current: VERSION,
+        latest: undefined,
+        command,
+        dryRun,
+        alreadyLatest: false,
+        offline: true,
+        executed: false,
       },
-    };
+      ctx.globalFlags,
+    );
   }
 
   if (registryResult.latest === VERSION) {
-    const data: UpgradeData = {
-      pm,
-      current: VERSION,
-      latest: registryResult.latest,
-      command,
-      dryRun,
-      alreadyLatest: true,
-      offline: false,
-      executed: false,
-    };
-
-    return {
-      tag: "output",
-      value: data,
-      render: {
-        plain: (d: UpgradeData) => {
-          if (ctx.globalFlags.format === "json") return renderUpgradeJson(d);
-          if (ctx.globalFlags.llm) return renderUpgradeLlm(d);
-          return renderUpgradePlain(d);
-        },
+    return buildUpgradeResult(
+      {
+        pm,
+        current: VERSION,
+        latest: registryResult.latest,
+        command,
+        dryRun,
+        alreadyLatest: true,
+        offline: false,
+        executed: false,
       },
-    };
+      ctx.globalFlags,
+    );
   }
 
   let executed = false;
@@ -148,28 +95,19 @@ async function executeUpgrade(
     }
   }
 
-  const data: UpgradeData = {
-    pm,
-    current: VERSION,
-    latest: registryResult.latest,
-    command,
-    dryRun,
-    alreadyLatest: false,
-    offline: false,
-    executed,
-  };
-
-  return {
-    tag: "output",
-    value: data,
-    render: {
-      plain: (d: UpgradeData) => {
-        if (ctx.globalFlags.format === "json") return renderUpgradeJson(d);
-        if (ctx.globalFlags.llm) return renderUpgradeLlm(d);
-        return renderUpgradePlain(d);
-      },
+  return buildUpgradeResult(
+    {
+      pm,
+      current: VERSION,
+      latest: registryResult.latest,
+      command,
+      dryRun,
+      alreadyLatest: false,
+      offline: false,
+      executed,
     },
-  };
+    ctx.globalFlags,
+  );
 }
 
 const upgradeCommand: CommandDefinition = {
@@ -186,10 +124,4 @@ const upgradeCommand: CommandDefinition = {
   execute: executeUpgrade,
 };
 
-export {
-  upgradeCommand,
-  renderUpgradeJson,
-  renderUpgradeLlm,
-  renderUpgradePlain,
-};
-export type { UpgradeData };
+export default upgradeCommand;

@@ -9,138 +9,27 @@
  */
 
 import type { CommandDefinition, CommandResult } from "@canonical/cli-core";
-import chalk from "chalk";
 import { readConfig } from "../../config.js";
 import { VERSION } from "../../constants.js";
-import { PragmaError } from "../../error/index.js";
-import {
-  formatField,
-  formatHeading,
-} from "../../lib/formatTerminal.js";
 import { detectPackageManager, PM_COMMANDS } from "../../pm.js";
 import { CHANNEL_RELEASES } from "../filters/buildChannelFilter.js";
 import { resolveTierChain } from "../filters/buildTierFilter.js";
 import { bootStore } from "../shared/bootStore.js";
-import { checkRegistryVersion } from "./checkRegistryVersion.js";
+import checkRegistryVersion from "./checkRegistryVersion.js";
 import { collectStoreSummary } from "./collectStoreSummary.js";
+import {
+  renderInfoJson,
+  renderInfoLlm,
+  renderInfoPlain,
+} from "./renderInfo.js";
+import type { InfoData } from "./types.js";
 
-interface InfoData {
-  readonly version: string;
-  readonly pm: string;
-  readonly configPath: string;
-  readonly tier: string | undefined;
-  readonly tierChain: readonly string[];
-  readonly channel: string;
-  readonly channelReleases: readonly string[];
-  readonly update:
-    | { readonly current: string; readonly latest: string; readonly command: string }
-    | undefined;
-  readonly updateSkipped: boolean;
-  readonly store:
-    | { readonly tripleCount: number; readonly graphNames: readonly string[] }
-    | undefined;
-}
-
-function renderInfoPlain(data: InfoData): string {
-  const lines: string[] = [];
-
-  lines.push(`pragma v${data.version}`);
-
-  // Install method
-  lines.push(formatField("  Installed via:", `${data.pm} (global)`));
-
-  // Config
-  lines.push(formatField("  Config:", data.configPath));
-
-  if (data.tier) {
-    const chain = data.tierChain.join(" → ");
-    lines.push(formatField("    tier:", `${data.tier} (${chain})`));
-  } else {
-    lines.push(formatField("    tier:", "(none)"));
-  }
-
-  const releases = data.channelReleases.join(", ");
-  lines.push(formatField("    channel:", `${data.channel} (${releases})`));
-
-  // Update
-  lines.push("");
-  lines.push(formatHeading("Update"));
-  if (data.update) {
-    lines.push(
-      `  ${data.update.current} → ${chalk.green(data.update.latest)} available`,
-    );
-    lines.push(`  Run ${chalk.cyan(`\`${data.update.command}\``)} to upgrade.`);
-    lines.push(`  Or run ${chalk.cyan("`pragma upgrade`")}.`);
-  } else if (data.updateSkipped) {
-    lines.push("  Upgrade check skipped (offline)");
-  } else {
-    lines.push("  Up to date.");
-  }
-
-  // Store
-  if (data.store) {
-    lines.push("");
-    lines.push(formatHeading("Store"));
-    lines.push(
-      formatField(
-        "  Triples:",
-        data.store.tripleCount.toLocaleString(),
-      ),
-    );
-    if (data.store.graphNames.length > 0) {
-      lines.push(
-        formatField(
-          "  Graphs:",
-          `default, ${data.store.graphNames.join(", ")}`,
-        ),
-      );
-    } else {
-      lines.push(formatField("  Graphs:", "default"));
-    }
-  }
-
-  return lines.join("\n");
-}
-
-function renderInfoLlm(data: InfoData): string {
-  const lines: string[] = [];
-
-  lines.push(`# pragma v${data.version}`);
-  lines.push(`- Installed via: ${data.pm} (global)`);
-
-  if (data.tier) {
-    lines.push(`- Tier: ${data.tier} (${data.tierChain.join(" → ")})`);
-  } else {
-    lines.push("- Tier: (none)");
-  }
-  lines.push(
-    `- Channel: ${data.channel} (${data.channelReleases.join(", ")})`,
-  );
-
-  if (data.update) {
-    lines.push(
-      `- Update: ${data.update.current} → ${data.update.latest} available`,
-    );
-  } else if (data.updateSkipped) {
-    lines.push("- Update: check skipped (offline)");
-  } else {
-    lines.push("- Update: up to date");
-  }
-
-  if (data.store) {
-    lines.push(`- Store: ${data.store.tripleCount.toLocaleString()} triples`);
-    if (data.store.graphNames.length > 0) {
-      lines.push(
-        `- Graphs: default, ${data.store.graphNames.join(", ")}`,
-      );
-    }
-  }
-
-  return lines.join("\n");
-}
-
-function renderInfoJson(data: InfoData): string {
-  return JSON.stringify(data, null, 2);
+function selectInfoRenderer(
+  flags: { llm: boolean; format: "text" | "json" },
+): (data: InfoData) => string {
+  if (flags.format === "json") return renderInfoJson;
+  if (flags.llm) return renderInfoLlm;
+  return renderInfoPlain;
 }
 
 async function executeInfo(
@@ -152,7 +41,6 @@ async function executeInfo(
   const tierChain = resolveTierChain(config.tier);
   const channelReleases = CHANNEL_RELEASES[config.channel];
 
-  // Registry check (IN.08: 3s timeout, offline fallback)
   const registryResult = await checkRegistryVersion(
     "@canonical/pragma",
     config.channel,
@@ -168,7 +56,6 @@ async function executeInfo(
     };
   }
 
-  // Store summary (optional — may fail if packages not installed)
   let store: InfoData["store"];
   try {
     const keStore = await bootStore({ cwd: ctx.cwd });
@@ -191,16 +78,12 @@ async function executeInfo(
     store,
   };
 
+  const render = selectInfoRenderer(ctx.globalFlags);
+
   return {
     tag: "output",
     value: data,
-    render: {
-      plain: (d: InfoData) => {
-        if (ctx.globalFlags.format === "json") return renderInfoJson(d);
-        if (ctx.globalFlags.llm) return renderInfoLlm(d);
-        return renderInfoPlain(d);
-      },
-    },
+    render: { plain: render },
   };
 }
 
@@ -211,5 +94,4 @@ const infoCommand: CommandDefinition = {
   execute: executeInfo,
 };
 
-export { infoCommand, renderInfoJson, renderInfoLlm, renderInfoPlain };
-export type { InfoData };
+export default infoCommand;

@@ -6,11 +6,7 @@
 
 import type { Store } from "@canonical/ke";
 import { buildQuery } from "../shared/buildQuery.js";
-
-interface StoreSummary {
-  readonly tripleCount: number;
-  readonly graphNames: readonly string[];
-}
+import type { StoreSummary } from "./types.js";
 
 /**
  * Query the store for total triple count and named graph URIs.
@@ -45,4 +41,3 @@ async function collectStoreSummary(store: Store): Promise<StoreSummary> {
 }
 
 export { collectStoreSummary };
-export type { StoreSummary };

@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import type { UpgradeData } from "./upgradeCommand.js";
+import type { UpgradeData } from "./types.js";
 import {
   renderUpgradeJson,
   renderUpgradeLlm,
   renderUpgradePlain,
-} from "./upgradeCommand.js";
+} from "./renderUpgrade.js";
 
 function createUpgradeData(
   overrides: Partial<UpgradeData> = {},

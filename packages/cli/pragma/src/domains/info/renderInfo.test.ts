@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import type { InfoData } from "./infoCommand.js";
+import type { InfoData } from "./types.js";
 import {
   renderInfoJson,
   renderInfoLlm,
   renderInfoPlain,
-} from "./infoCommand.js";
+} from "./renderInfo.js";
 
 function createInfoData(overrides: Partial<InfoData> = {}): InfoData {
   return {
