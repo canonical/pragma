@@ -1,11 +1,18 @@
 import type { RegisterOptions } from "react-hook-form";
 import type {
   CheckboxProps,
+  ChoicesProps,
+  ColorProps,
+  DateInputProps,
+  DateTimeInputProps,
+  FileUploadProps,
+  PhoneProps,
   RangeProps,
   SelectProps,
   SimpleChoicesProps,
   TextareaProps,
   TextProps,
+  TimeInputProps,
 } from "./inputs/index.js";
 
 export type BaseProps = {
@@ -57,6 +64,13 @@ export type FieldProps =
   | ({ inputType: "select" } & SelectProps)
   | ({ inputType: "simple-choices" } & SimpleChoicesProps)
   | ({ inputType: "textarea" } & TextareaProps)
+  | ({ inputType: "date" } & DateInputProps)
+  | ({ inputType: "time" } & TimeInputProps)
+  | ({ inputType: "datetime" } & DateTimeInputProps)
+  | ({ inputType: "file" } & FileUploadProps)
+  | ({ inputType: "color" } & ColorProps)
+  | ({ inputType: "phone" } & PhoneProps)
+  | ({ inputType: "choices" } & ChoicesProps)
   | ({
       inputType: "custom";
       // biome-ignore lint/suspicious/noExplicitAny: In the case of a custom component, we'd expect
