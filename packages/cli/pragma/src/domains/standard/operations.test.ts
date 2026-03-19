@@ -40,6 +40,40 @@ describe("listStandards", () => {
     const sorted = [...names].sort();
     expect(names).toEqual(sorted);
   });
+
+  it("filters by category", async () => {
+    const result = await listStandards(store, { category: "react" });
+    expect(result.length).toBe(2);
+    for (const s of result) {
+      expect(s.category).toBe("react");
+    }
+  });
+
+  it("filters by search term in name", async () => {
+    const result = await listStandards(store, { search: "folder" });
+    expect(result.length).toBe(1);
+    expect(result[0]!.name).toBe("react/component/folder-structure");
+  });
+
+  it("filters by search term in description", async () => {
+    const result = await listStandards(store, { search: "pure" });
+    expect(result.length).toBe(1);
+    expect(result[0]!.name).toBe("code/function/purity");
+  });
+
+  it("returns empty for non-matching category", async () => {
+    const result = await listStandards(store, { category: "nonexistent" });
+    expect(result.length).toBe(0);
+  });
+
+  it("combines category and search filters", async () => {
+    const result = await listStandards(store, {
+      category: "react",
+      search: "props",
+    });
+    expect(result.length).toBe(1);
+    expect(result[0]!.name).toBe("react/component/props");
+  });
 });
 
 describe("getStandard", () => {
@@ -65,10 +99,21 @@ describe("getStandard", () => {
 });
 
 describe("listCategories", () => {
-  it("returns distinct categories", async () => {
+  it("returns categories with standard counts", async () => {
     const result = await listCategories(store);
-    expect(result).toContain("react");
-    expect(result).toContain("code");
     expect(result.length).toBe(2);
+
+    const react = result.find((c) => c.name === "react");
+    expect(react?.standardCount).toBe(2);
+
+    const code = result.find((c) => c.name === "code");
+    expect(code?.standardCount).toBe(1);
+  });
+
+  it("returns sorted by name", async () => {
+    const result = await listCategories(store);
+    const names = result.map((c) => c.name);
+    const sorted = [...names].sort();
+    expect(names).toEqual(sorted);
   });
 });

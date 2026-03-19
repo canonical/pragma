@@ -71,6 +71,16 @@ export interface StandardDetailed extends StandardSummary {
   readonly donts: readonly CodeBlock[];
 }
 
+export interface CategorySummary {
+  readonly name: string;
+  readonly standardCount: number;
+}
+
+export interface StandardListFilters {
+  readonly category?: string;
+  readonly search?: string;
+}
+
 // =============================================================================
 // Modifier
 // =============================================================================
