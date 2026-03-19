@@ -123,7 +123,7 @@ export {
 // D11 — MCP Adapter
 // =============================================================================
 
-export { createMcpServer } from "./mcp/createMcpServer.js";
-export { registerTools } from "./mcp/registerTools.js";
-export { serializeError } from "./mcp/serializeError.js";
+export { default as createMcpServer } from "./mcp/createMcpServer.js";
+export { default as registerTools } from "./mcp/registerTools.js";
+export { default as serializeError } from "./mcp/serializeError.js";
 export type { McpErrorPayload, McpRecovery } from "./mcp/types.js";

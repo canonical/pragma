@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseRecovery } from "./parseRecovery.js";
+import parseRecovery from "./parseRecovery.js";
 
 describe("parseRecovery", () => {
   it("parses backtick-wrapped command", () => {

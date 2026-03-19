@@ -7,10 +7,10 @@
 
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import type { PragmaError } from "../error/PragmaError.js";
-import { buildRecovery } from "./buildRecovery.js";
+import buildRecovery from "./buildRecovery.js";
 import type { McpErrorPayload } from "./types.js";
 
-function serializeError(error: PragmaError): CallToolResult {
+export default function serializeError(error: PragmaError): CallToolResult {
   const recovery = buildRecovery(error.recovery);
 
   const payload: McpErrorPayload = {
@@ -27,5 +27,3 @@ function serializeError(error: PragmaError): CallToolResult {
     isError: true,
   };
 }
-
-export { serializeError };

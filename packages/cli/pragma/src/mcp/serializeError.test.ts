@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { PragmaError } from "../error/PragmaError.js";
-import { serializeError } from "./serializeError.js";
+import serializeError from "./serializeError.js";
 import type { McpErrorPayload } from "./types.js";
 
 function parsePayload(result: { content: unknown[] }): McpErrorPayload {

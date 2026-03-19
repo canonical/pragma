@@ -30,12 +30,12 @@ import {
 import { listTiers } from "../domains/tier/operations.js";
 import { getToken, listTokens } from "../domains/token/operations.js";
 import { PragmaError } from "../error/PragmaError.js";
-import { serializeError } from "./serializeError.js";
+import serializeError from "./serializeError.js";
 
 /**
  * Register all D3-backed MCP tools on the server.
  */
-function registerTools(
+export default function registerTools(
   server: McpServer,
   store: Store,
   config: PragmaConfig,
@@ -403,5 +403,3 @@ function registerTools(
     },
   );
 }
-
-export { registerTools };

@@ -7,7 +7,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { PragmaConfig } from "../src/config.js";
-import { registerTools } from "../src/mcp/registerTools.js";
+import registerTools from "../src/mcp/registerTools.js";
 import { DS_ALL_TTL } from "./dsFixtures.js";
 import { createTestStore } from "./store.js";
 import type { TestMcpClientResult } from "./types.js";

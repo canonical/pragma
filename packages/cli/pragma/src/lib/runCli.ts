@@ -59,7 +59,7 @@ function createProgram(
     .command("mcp")
     .description("Start the MCP server over stdio")
     .action(async () => {
-      const { runMcpServer } = await import("../mcp/runMcpServer.js");
+      const { default: runMcpServer } = await import("../mcp/runMcpServer.js");
       await runMcpServer();
     });
 

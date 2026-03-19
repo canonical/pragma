@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildRecovery } from "./buildRecovery.js";
+import buildRecovery from "./buildRecovery.js";
 
 describe("buildRecovery", () => {
   it("returns undefined for undefined input", () => {

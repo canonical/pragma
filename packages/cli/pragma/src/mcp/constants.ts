@@ -10,4 +10,4 @@ const FLAG_MAP: Record<string, [string, unknown]> = {
   "--detailed": ["detailed", true],
 };
 
-export { FLAG_MAP };
+export default FLAG_MAP;

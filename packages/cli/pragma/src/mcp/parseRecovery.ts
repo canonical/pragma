@@ -6,10 +6,12 @@
  * - `"pragma component list --all-tiers"`
  */
 
-import { FLAG_MAP } from "./constants.js";
+import FLAG_MAP from "./constants.js";
 import type { McpRecovery } from "./types.js";
 
-function parseRecovery(recovery: string): McpRecovery | undefined {
+export default function parseRecovery(
+  recovery: string,
+): McpRecovery | undefined {
   const backtickMatch = recovery.match(/`(pragma\s+[^`]+)`/);
   const command = backtickMatch?.[1] ?? recovery;
 
@@ -39,5 +41,3 @@ function parseRecovery(recovery: string): McpRecovery | undefined {
       : `Run pragma ${noun} ${verb}`,
   };
 }
-
-export { parseRecovery };
