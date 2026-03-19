@@ -10,13 +10,8 @@ export default function resolvePrefix(
   prefixOrUri: string,
   prefixes: Readonly<Record<string, string>>,
 ): { prefix: string; namespace: string } {
-  if (
-    prefixOrUri.startsWith("http://") ||
-    prefixOrUri.startsWith("https://")
-  ) {
-    const entry = Object.entries(prefixes).find(
-      ([, ns]) => ns === prefixOrUri,
-    );
+  if (prefixOrUri.startsWith("http://") || prefixOrUri.startsWith("https://")) {
+    const entry = Object.entries(prefixes).find(([, ns]) => ns === prefixOrUri);
     if (entry) return { prefix: entry[0], namespace: entry[1] };
 
     throw PragmaError.invalidInput("namespace", prefixOrUri, {

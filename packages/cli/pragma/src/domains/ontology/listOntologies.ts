@@ -59,14 +59,10 @@ export default async function listOntologies(
     }
   }
 
-  const allPrefixes = new Set([
-    ...classCounts.keys(),
-    ...propCounts.keys(),
-  ]);
+  const allPrefixes = new Set([...classCounts.keys(), ...propCounts.keys()]);
 
   return [...allPrefixes].sort().map((prefix) => {
-    const namespace =
-      prefixEntries.find(([p]) => p === prefix)?.[1] ?? "";
+    const namespace = prefixEntries.find(([p]) => p === prefix)?.[1] ?? "";
     return {
       prefix,
       namespace,

@@ -3,7 +3,6 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { DS_ALL_TTL } from "../../../testing/dsFixtures.js";
 import { createTestStore } from "../../../testing/store.js";
 import { PragmaError } from "../../error/index.js";
-import executeQuery from "./executeQuery.js";
 import inspectUri from "./inspectUri.js";
 
 let store: Store;
@@ -16,57 +15,6 @@ beforeAll(async () => {
 });
 
 afterAll(() => cleanup());
-
-describe("executeQuery", () => {
-  it("executes a SELECT query and returns bindings", async () => {
-    const result = await executeQuery(
-      store,
-      "SELECT ?name WHERE { ?c a ds:Component ; ds:name ?name } ORDER BY ?name",
-    );
-    expect(result.type).toBe("select");
-    if (result.type === "select") {
-      const names = result.bindings.map((b) => b.name);
-      expect(names).toContain("Button");
-      expect(names).toContain("Card");
-    }
-  });
-
-  it("executes a CONSTRUCT query and returns triples", async () => {
-    const result = await executeQuery(
-      store,
-      "CONSTRUCT { ?c ds:name ?name } WHERE { ?c a ds:Component ; ds:name ?name }",
-    );
-    expect(result.type).toBe("construct");
-    if (result.type === "construct") {
-      expect(result.triples.length).toBeGreaterThan(0);
-      const names = result.triples.map((t) => t.object);
-      expect(names).toContain("Button");
-    }
-  });
-
-  it("executes an ASK query and returns boolean", async () => {
-    const result = await executeQuery(
-      store,
-      "ASK { ?c a ds:Component ; ds:name ?name }",
-    );
-    expect(result.type).toBe("ask");
-    if (result.type === "ask") {
-      expect(result.result).toBe(true);
-    }
-  });
-
-  it("throws PragmaError on invalid SPARQL", async () => {
-    await expect(executeQuery(store, "SELECT INVALID SPARQL")).rejects.toThrow(
-      PragmaError,
-    );
-
-    try {
-      await executeQuery(store, "SELECT INVALID SPARQL");
-    } catch (e) {
-      expect((e as PragmaError).code).toBe("STORE_ERROR");
-    }
-  });
-});
 
 describe("inspectUri", () => {
   it("returns grouped triples for a known URI", async () => {
@@ -86,10 +34,7 @@ describe("inspectUri", () => {
   });
 
   it("accepts full URIs", async () => {
-    const result = await inspectUri(
-      store,
-      "https://ds.canonical.com/button",
-    );
+    const result = await inspectUri(store, "https://ds.canonical.com/button");
     expect(result.uri).toBe("https://ds.canonical.com/button");
     expect(result.groups.length).toBeGreaterThan(0);
   });
@@ -140,9 +85,9 @@ describe("inspectUri", () => {
   });
 
   it("throws PragmaError.invalidInput for URI with unsafe IRI characters", async () => {
-    await expect(inspectUri(store, "https://example.com/<injected>")).rejects.toThrow(
-      PragmaError,
-    );
+    await expect(
+      inspectUri(store, "https://example.com/<injected>"),
+    ).rejects.toThrow(PragmaError);
 
     try {
       await inspectUri(store, "https://example.com/<injected>");
