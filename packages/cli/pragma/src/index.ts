@@ -27,3 +27,66 @@ export {
   detectPackageManager,
   PM_COMMANDS,
 } from "./pm.js";
+
+// =============================================================================
+// D3 — Shared Operation Types (TB.01)
+// =============================================================================
+
+export type {
+  AnatomyNode,
+  AnatomyTree,
+  CodeBlock,
+  ComponentDetailed,
+  ComponentSummary,
+  FilterConfig,
+  ModifierFamily,
+  StandardDetailed,
+  StandardRef,
+  StandardSummary,
+  TierEntry,
+  TokenDetailed,
+  TokenRef,
+  TokenSummary,
+} from "./domains/shared/types.js";
+
+// =============================================================================
+// D3 — Shared Operations
+// =============================================================================
+
+export {
+  getComponent,
+  listComponents,
+} from "./domains/component/operations.js";
+export {
+  getModifier,
+  listModifiers,
+} from "./domains/modifier/operations.js";
+export {
+  getStandard,
+  listCategories,
+  listStandards,
+} from "./domains/standard/operations.js";
+export { listTiers } from "./domains/tier/operations.js";
+export { getToken, listTokens } from "./domains/token/operations.js";
+
+// =============================================================================
+// D3 — Store Bootstrap
+// =============================================================================
+
+export { bootStore, DEFAULT_SOURCES } from "./domains/shared/bootStore.js";
+export { buildQuery } from "./domains/shared/buildQuery.js";
+export { PREFIX_MAP } from "./domains/shared/prefixes.js";
+
+// =============================================================================
+// D3 — Filters
+// =============================================================================
+
+export {
+  buildChannelFilter,
+  CHANNEL_RELEASES,
+} from "./domains/filters/buildChannelFilter.js";
+export { buildFilters } from "./domains/filters/buildFilters.js";
+export {
+  buildTierFilter,
+  resolveTierChain,
+} from "./domains/filters/buildTierFilter.js";

@@ -341,7 +341,7 @@ class KeStore implements Store {
       case "select": {
         const bindings = rawResult as Map<string, OxTerm>[];
         const variables: string[] =
-          bindings.length > 0 ? Array.from(bindings[0].keys()) : [];
+          bindings.length > 0 ? Array.from(bindings[0]!.keys()) : [];
         const mappedBindings: Binding[] = bindings.map((binding) => {
           const obj: Binding = {};
           for (const [key, value] of binding) {

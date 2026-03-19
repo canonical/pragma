@@ -56,3 +56,11 @@ export {
 // =============================================================================
 
 export type { ForbidReserved, ReservedOption } from "./cli-types.js";
+
+// =============================================================================
+// Discovery (generator tree algorithm + types)
+// =============================================================================
+
+export { default as discoverGeneratorTree } from "./discovery/discoverGeneratorTree.js";
+export { generatorCache } from "./discovery/generatorCache.js";
+export type { GeneratorNode, GeneratorOrigin } from "./discovery/types.js";

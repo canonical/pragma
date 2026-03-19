@@ -1,11 +1,27 @@
 /**
- * Placeholder for createTestStore — will be implemented in D3
- * when @canonical/ke is available as a dependency.
+ * Test store bridge — wraps @canonical/ke/testing with pragma's
+ * default prefix map pre-configured.
  */
-function createTestStore(): unknown {
-  throw new Error(
-    "createTestStore is a placeholder. Implement after @canonical/ke lands (D3).",
-  );
+
+import type { TestStoreOptions, TestStoreResult } from "@canonical/ke/testing";
+import { createTestStore as keCreateTestStore } from "@canonical/ke/testing";
+import { PREFIX_MAP } from "../src/domains/shared/prefixes.js";
+
+interface PragmaTestStoreOptions extends Omit<TestStoreOptions, "prefixes"> {
+  prefixes?: TestStoreOptions["prefixes"];
+}
+
+async function createTestStore(
+  options: PragmaTestStoreOptions = {},
+): Promise<TestStoreResult> {
+  return keCreateTestStore({
+    ...options,
+    prefixes: {
+      ...PREFIX_MAP,
+      ...options.prefixes,
+    },
+  });
 }
 
 export { createTestStore };
+export type { PragmaTestStoreOptions };
