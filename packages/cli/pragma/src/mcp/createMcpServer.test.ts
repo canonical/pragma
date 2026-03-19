@@ -1,6 +1,6 @@
 import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { createTestMcpClient } from "../../testing/mcp.js";
+import createTestMcpClient from "../../testing/createTestMcpClient.js";
 
 let client: Client;
 let cleanup: () => Promise<void>;

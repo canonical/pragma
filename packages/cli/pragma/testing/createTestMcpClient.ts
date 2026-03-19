@@ -16,21 +16,19 @@ interface TestMcpClientResult {
   cleanup: () => Promise<void>;
 }
 
-const DEFAULT_CONFIG: PragmaConfig = {
-  tier: undefined,
-  channel: "normal",
-};
-
 /**
  * Create an in-process MCP client connected to a server with
  * all tools registered against a test store.
  */
-async function createTestMcpClient(options?: {
+export default async function createTestMcpClient(options?: {
   ttl?: string;
   config?: PragmaConfig;
 }): Promise<TestMcpClientResult> {
   const ttl = options?.ttl ?? DS_ALL_TTL;
-  const config = options?.config ?? DEFAULT_CONFIG;
+  const config: PragmaConfig = options?.config ?? {
+    tier: undefined,
+    channel: "normal",
+  };
 
   const { store, cleanup: cleanupStore } = await createTestStore({ ttl });
 
@@ -58,5 +56,4 @@ async function createTestMcpClient(options?: {
   };
 }
 
-export { createTestMcpClient };
 export type { TestMcpClientResult };
