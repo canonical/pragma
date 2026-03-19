@@ -3,4 +3,9 @@
 /**
  * Props for the Hero component.
  */
-export type HeroProps = {};
+export type HeroProps = {
+  /** Heading text for the section. */
+  title?: string;
+  /** Descriptive text displayed beside the heading. */
+  description?: string;
+};

@@ -6,6 +6,7 @@ import { html } from "lit";
 import "./Hero.js";
 import type Hero from "./Hero.js";
 import "../SiteLayout/SiteLayout.js";
+import "../Button/Button.js";
 
 const meta = {
   title: "Web Components/Hero",
@@ -28,11 +29,27 @@ type Story = StoryObj<Hero>;
 export const Default: Story = {
   render: () =>
     html`
-      <ds-hero>
-        <h1>Scale out with Ubuntu Server</h1>
-        <p>Ubuntu is the world's most popular Linux distribution across public clouds, data centres and the edge. Trusted by developers, enterprises, and governments worldwide.</p>
-        <a href="#">Get Ubuntu</a>
-        <a href="#">Learn more</a>
-        <img slot="image" src="https://assets.ubuntu.com/v1/cf1e2ddb-datacenter-wide-crop.jpeg" alt="Canonical data centre" />
+      <ds-hero title="Scale out with Ubuntu Server"
+        description="Ubuntu Server brings economic and technical scalability to your enterprise data center, public or private cloud. Whether you want to deploy an OpenStack cloud, a Kubernetes cluster, or a 50,000-node render farm, Ubuntu Server delivers the best value scale-out performance available."
+      >
+        <div slot="cta">
+          <hr/>
+          <ds-button class="constructive">Download Ubuntu Server</ds-button>
+        </div>
+        <img slot="media" src="https://assets.ubuntu.com/v1/a1dd867d-hero.jpg" alt="Canonical data centre">
+      </ds-hero>`,
+};
+
+export const NoMedia: Story = {
+  render: () =>
+    html`
+      <ds-hero title="Ubuntu leads in hyperscale"
+        description="Ubuntu is the hyperscale OS, natively powering scale-out workloads on a new wave of low-cost, ultra-dense hardware based on x86 and ARM processors."
+      >
+        <div slot="cta">
+          <hr/>
+          <ds-button class="constructive">Download Ubuntu Server</ds-button>
+          <a href="#">Download Ubuntu for ARM ›</a>
+        </div>
       </ds-hero>`,
 };
