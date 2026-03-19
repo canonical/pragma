@@ -118,3 +118,12 @@ export {
   buildTierFilter,
   resolveTierChain,
 } from "./domains/filters/buildTierFilter.js";
+
+// =============================================================================
+// D11 — MCP Adapter
+// =============================================================================
+
+export { default as createMcpServer } from "./mcp/createMcpServer.js";
+export { default as registerTools } from "./mcp/registerTools.js";
+export { default as serializeError } from "./mcp/serializeError.js";
+export type { McpErrorPayload, McpRecovery } from "./mcp/types.js";

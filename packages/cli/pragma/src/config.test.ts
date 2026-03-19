@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { readConfig } from "./config.js";
+import { PragmaError } from "./error/PragmaError.js";
 import writeConfig from "./writeConfig.js";
 
 describe("readConfig", () => {
@@ -51,9 +52,20 @@ describe("readConfig", () => {
     expect(config).toEqual({ tier: undefined, channel: "normal" });
   });
 
-  it("throws on invalid channel", () => {
+  it("throws PragmaError on invalid channel", () => {
     writeFileSync(join(dir, "pragma.config.toml"), 'channel = "aggressive"\n');
-    expect(() => readConfig(dir)).toThrow('Invalid channel "aggressive"');
+    expect(() => readConfig(dir)).toThrow(PragmaError);
+    try {
+      readConfig(dir);
+    } catch (e) {
+      expect(e).toBeInstanceOf(PragmaError);
+      expect((e as PragmaError).code).toBe("CONFIG_ERROR");
+      expect((e as PragmaError).validOptions).toEqual([
+        "normal",
+        "experimental",
+        "prerelease",
+      ]);
+    }
   });
 
   it("ignores non-string tier", () => {
