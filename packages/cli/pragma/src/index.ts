@@ -118,6 +118,22 @@ export {
 } from "./domains/filters/buildTierFilter.js";
 
 // =============================================================================
+// D9 — Info + Upgrade
+// =============================================================================
+
+export type { RegistryCheckResult } from "./domains/info/checkRegistryVersion.js";
+export {
+  checkRegistryVersion,
+  DIST_TAG_MAP,
+} from "./domains/info/checkRegistryVersion.js";
+export type { StoreSummary } from "./domains/info/collectStoreSummary.js";
+export { collectStoreSummary } from "./domains/info/collectStoreSummary.js";
+export type { InfoData } from "./domains/info/infoCommand.js";
+export { infoCommand } from "./domains/info/infoCommand.js";
+export type { UpgradeData } from "./domains/info/upgradeCommand.js";
+export { upgradeCommand } from "./domains/info/upgradeCommand.js";
+
+// =============================================================================
 // D11 — MCP Adapter
 // =============================================================================
 

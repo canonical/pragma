@@ -13,6 +13,8 @@ import { PROGRAM_DESCRIPTION, PROGRAM_NAME, VERSION } from "../constants.js";
 import buildGetCommand from "../domains/component/buildGetCommand.js";
 import buildListCommand from "../domains/component/buildListCommand.js";
 import { collectConfigCommands } from "../domains/config/commands.js";
+import { infoCommand } from "../domains/info/infoCommand.js";
+import { upgradeCommand } from "../domains/info/upgradeCommand.js";
 import { bootStore } from "../domains/shared/bootStore.js";
 import type { FilterConfig } from "../domains/shared/types.js";
 import collectStandardCommands from "../domains/standard/collectStandardCommands.js";
@@ -33,6 +35,8 @@ function collectCommands(
     ...collectStandardCommands(),
     buildListCommand(store, config),
     buildGetCommand(store, config),
+    infoCommand,
+    upgradeCommand,
   ];
 }
 
