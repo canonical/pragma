@@ -12,7 +12,11 @@ import type { TestStoreResult } from "../../testing/types.js";
 import createStore from "./createStore.js";
 import definePlugin from "./definePlugin.js";
 import { sparql } from "./sparql.js";
-import type { AskResult, ConstructResult, SelectResult } from "./types.js";
+import type {
+  AskResult,
+  ConstructResult,
+  SelectResult,
+} from "./types.js";
 
 registerMatchers();
 
@@ -170,7 +174,7 @@ describe("Plugin hooks", () => {
     const loadedSources: string[] = [];
     const plugin = definePlugin({
       name: "load-tracker",
-      onLoad(source) {
+      onLoad(source, _ctx) {
         loadedSources.push(source.path);
       },
     });
@@ -305,5 +309,240 @@ describe("Reload", () => {
       sparql`ASK { <http://example.org/newSubject> <http://example.org/newPredicate> "newObject" }`,
     );
     expect((after as AskResult).result).toBe(true);
+  });
+});
+
+describe("Plugin lifecycle — onReady", () => {
+  let testResult: TestStoreResult | undefined;
+
+  afterEach(() => {
+    testResult?.cleanup();
+    testResult = undefined;
+  });
+
+  it("calls onReady with a working PluginContext after sources are loaded", async () => {
+    let readyCount = 0;
+    const plugin = definePlugin({
+      name: "ready-tracker",
+      async onReady(ctx) {
+        // Plugin can query the fully loaded store
+        const result = await ctx.query(
+          sparql`ASK { ?s <http://schema.org/name> "Alice" }`,
+        );
+        expect(result.type).toBe("ask");
+        expect((result as AskResult).result).toBe(true);
+        readyCount++;
+      },
+    });
+
+    testResult = await createTestStore({ plugins: [plugin] });
+    expect(readyCount).toBe(1);
+  });
+
+  it("can inject triples via ctx.update() in onReady", async () => {
+    const plugin = definePlugin({
+      name: "injector",
+      onReady(ctx) {
+        ctx.update(`
+          INSERT DATA {
+            <http://example.org/injected> <http://example.org/by> "plugin" .
+          }
+        `);
+      },
+    });
+
+    testResult = await createTestStore({ plugins: [plugin] });
+    const { store } = testResult;
+
+    const result = await store.query(
+      sparql`ASK { <http://example.org/injected> <http://example.org/by> "plugin" }`,
+    );
+    expect((result as AskResult).result).toBe(true);
+  });
+
+  it("can inject triples via ctx.load() in onReady", async () => {
+    const plugin = definePlugin({
+      name: "loader",
+      onReady(ctx) {
+        ctx.load(
+          `@prefix ex: <http://example.org/> . ex:loaded ex:via "ctx.load" .`,
+          { graph: "urn:test:injected" },
+        );
+      },
+    });
+
+    testResult = await createTestStore({ plugins: [plugin] });
+    const { store } = testResult;
+
+    const result = await store.query(
+      sparql`ASK { <http://example.org/loaded> <http://example.org/via> "ctx.load" }`,
+    );
+    expect((result as AskResult).result).toBe(true);
+  });
+});
+
+describe("Plugin lifecycle — onReload", () => {
+  let testResult: TestStoreResult | undefined;
+
+  afterEach(() => {
+    testResult?.cleanup();
+    testResult = undefined;
+  });
+
+  it("calls onReload after store.reload()", async () => {
+    let reloadCount = 0;
+    const plugin = definePlugin({
+      name: "reload-tracker",
+      onReload(_ctx) {
+        reloadCount++;
+      },
+    });
+
+    testResult = await createTestStore({
+      ttl: MINIMAL_TTL,
+      plugins: [plugin],
+    });
+    expect(reloadCount).toBe(0);
+
+    await testResult.store.reload({ force: true });
+    expect(reloadCount).toBe(1);
+
+    await testResult.store.reload({ force: true });
+    expect(reloadCount).toBe(2);
+  });
+});
+
+describe("Plugin lifecycle — onDispose", () => {
+  let testResult: TestStoreResult | undefined;
+
+  afterEach(() => {
+    testResult?.cleanup();
+    testResult = undefined;
+  });
+
+  it("calls onDispose when the store is disposed", async () => {
+    let disposed = false;
+    const plugin = definePlugin({
+      name: "dispose-tracker",
+      onDispose() {
+        disposed = true;
+      },
+    });
+
+    testResult = await createTestStore({ plugins: [plugin] });
+    expect(disposed).toBe(false);
+
+    testResult.store.dispose();
+    expect(disposed).toBe(true);
+  });
+
+  it("runs onDispose in reverse plugin order (LIFO)", async () => {
+    const order: string[] = [];
+
+    const pluginA = definePlugin({
+      name: "a",
+      onDispose() {
+        order.push("a");
+      },
+    });
+
+    const pluginB = definePlugin({
+      name: "b",
+      onDispose() {
+        order.push("b");
+      },
+    });
+
+    testResult = await createTestStore({ plugins: [pluginA, pluginB] });
+    testResult.store.dispose();
+
+    expect(order).toEqual(["b", "a"]);
+  });
+});
+
+describe("Plugin API — store.api()", () => {
+  let testResult: TestStoreResult | undefined;
+
+  afterEach(() => {
+    testResult?.cleanup();
+    testResult = undefined;
+  });
+
+  it("returns the API exposed by onReady", async () => {
+    interface CountApi {
+      getTotal(): number;
+    }
+
+    const plugin = definePlugin<CountApi>({
+      name: "counter",
+      async onReady(ctx) {
+        const result = (await ctx.query(
+          sparql`SELECT (COUNT(*) AS ?count) WHERE { ?s ?p ?o }`,
+        )) as SelectResult;
+        const total = Number.parseInt(result.bindings[0]!.count!, 10);
+        return { getTotal: () => total };
+      },
+    });
+
+    testResult = await createTestStore({ plugins: [plugin] });
+    const api = testResult.store.api<CountApi>("counter");
+
+    expect(api).toBeDefined();
+    expect(api!.getTotal()).toBeGreaterThan(0);
+  });
+
+  it("refreshes the API after reload", async () => {
+    let callCount = 0;
+    interface MyApi {
+      getCallCount(): number;
+    }
+
+    const plugin = definePlugin<MyApi>({
+      name: "call-counter",
+      onReady(_ctx) {
+        callCount++;
+        const snapshot = callCount;
+        return { getCallCount: () => snapshot };
+      },
+      onReload(_ctx) {
+        callCount++;
+        const snapshot = callCount;
+        return { getCallCount: () => snapshot };
+      },
+    });
+
+    testResult = await createTestStore({
+      ttl: MINIMAL_TTL,
+      plugins: [plugin],
+    });
+
+    expect(testResult.store.api<MyApi>("call-counter")!.getCallCount()).toBe(1);
+
+    await testResult.store.reload({ force: true });
+
+    expect(testResult.store.api<MyApi>("call-counter")!.getCallCount()).toBe(2);
+  });
+
+  it("returns undefined for unknown plugin names", async () => {
+    testResult = await createTestStore();
+    expect(testResult.store.api("nonexistent")).toBeUndefined();
+  });
+
+  it("backward compat: plugins without new hooks still work", async () => {
+    const queries: string[] = [];
+    const plugin = definePlugin({
+      name: "legacy",
+      onQuery(queryStr) {
+        queries.push(queryStr);
+      },
+    });
+
+    testResult = await createTestStore({ plugins: [plugin] });
+    await testResult.store.query(
+      sparql`ASK { ?s ?p ?o }`,
+    );
+
+    expect(queries.length).toBe(1);
+    expect(testResult.store.api("legacy")).toBeUndefined();
   });
 });

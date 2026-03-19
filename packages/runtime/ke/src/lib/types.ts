@@ -311,40 +311,108 @@ export type InferQueryResult<Q extends string> =
         : QueryResult;
 
 // ---------------------------------------------------------------------------
+// Plugin context
+//
+// A privileged handle passed to plugin lifecycle hooks that need store access.
+// It provides read access via `query()` and controlled write access via
+// `update()` and `load()`. This is NOT the public Store — it deliberately
+// omits `reload()` and `dispose()` to prevent infinite loops and misuse.
+//
+// Plugins should NOT store references to this context beyond the hook
+// invocation — it is scoped to the lifecycle event.
+// ---------------------------------------------------------------------------
+
+/**
+ * A context object passed to plugin lifecycle hooks that need store access.
+ * Provides read access via `query()` and controlled write access via
+ * `update()` and `load()`.
+ */
+export interface PluginContext {
+  /** Execute a read-only SPARQL query (same semantics as Store.query). */
+  query<Q extends string>(sparql: SPARQL<Q>): Promise<InferQueryResult<Q>>;
+
+  /**
+   * Execute a SPARQL UPDATE operation (INSERT DATA, DELETE DATA, etc.).
+   * Use for injecting computed triples into the store.
+   */
+  update(sparql: string): void;
+
+  /**
+   * Load raw RDF content into the store, optionally into a named graph.
+   * Equivalent to loading a source file but from a string.
+   */
+  load(
+    content: string,
+    options?: {
+      format?: "turtle" | "ntriples" | "rdfxml";
+      graph?: string;
+    },
+  ): void;
+
+  /** The registered prefix map (readonly). */
+  prefixes: Readonly<PrefixMap>;
+}
+
+// ---------------------------------------------------------------------------
 // Plugin interface
 //
-// Plugins hook into three lifecycle events, called in array order:
+// Plugins hook into store lifecycle events, called in array order:
 //
-// 1. onLoad(source)  — called once per source file, after reading but before
-//                      Oxigraph parses it. Use for logging, metrics, or
-//                      transforming TTL content.
+// 1. onLoad(source)   — per source file, after reading, before Oxigraph parse.
+// 2. onReady(ctx)     — once after ALL sources loaded. Store is queryable.
+//                       Return a value to expose it as the plugin's API.
+// 3. onQuery(sparql)  — before each query. Return modified string or void.
+// 4. onResult(result) — after each query. Return modified result or void.
+// 5. onReload(ctx)    — after a reload() completes. Same as onReady.
+// 6. onDispose()      — on store disposal. Runs in reverse plugin order.
 //
-// 2. onQuery(sparql) — called before each query execution. Receives the
-//                      full query string (with prefixes already expanded).
-//                      Return a modified string to rewrite the query, or
-//                      void/undefined to pass through unchanged.
-//
-// 3. onResult(result) — called after each query execution. Receives the
-//                       parsed QueryResult. Return a modified result to
-//                       transform it, or void/undefined to pass through.
-//
-// Plugins are an escape hatch for cross-cutting concerns (logging, caching,
-// access control, metrics). Most consumers won't need them.
+// The generic `TApi` parameter types the return value of `onReady` and
+// `onReload`. The returned value is stored and accessible to consumers via
+// `store.api<TApi>("pluginName")`. Defaults to `void` — existing plugins
+// that don't return anything continue to work unchanged.
 // ---------------------------------------------------------------------------
 
 /** A ke plugin that hooks into store lifecycle events. */
-export interface Plugin {
-  /** Unique name for this plugin. Used for error attribution. */
+export interface Plugin<TApi = void> {
+  /** Unique name for this plugin. Used for error attribution and API lookup. */
   name: string;
 
-  /** Called for each source file after reading, before Oxigraph parsing. */
-  onLoad?(source: ResolvedSource): Promise<void> | void;
+  /**
+   * Called for each source file after reading, before Oxigraph parsing.
+   * Receives both the resolved source and the plugin context.
+   */
+  onLoad?(source: ResolvedSource, ctx: PluginContext): Promise<void> | void;
 
-  /** Called before query execution. Return a modified query string, or undefined. */
-  onQuery?(sparql: string): string | undefined;
+  /**
+   * Called once after ALL sources have been loaded and parsed.
+   * The store is fully populated and queryable. Use `ctx.update()` or
+   * `ctx.load()` to inject computed triples.
+   *
+   * Return a value to expose it as the plugin's API via `store.api()`.
+   */
+  onReady?(ctx: PluginContext): Promise<TApi> | TApi | undefined;
 
-  /** Called after query execution. Return a modified result, or undefined. */
-  onResult?(result: QueryResult): QueryResult | undefined;
+  /**
+   * Called before query execution. Receives the query string
+   * (with prefixes expanded) and the plugin context.
+   * Return a modified query string, or undefined.
+   */
+  onQuery?(sparql: string, ctx: PluginContext): string | undefined;
+
+  /**
+   * Called after query execution. Receives the parsed result
+   * and the plugin context. Return a modified result, or undefined.
+   */
+  onResult?(result: QueryResult, ctx: PluginContext): QueryResult | undefined;
+
+  /**
+   * Called after a `reload()` completes and all sources are re-loaded.
+   * Same capabilities as `onReady`. Returned value replaces the plugin API.
+   */
+  onReload?(ctx: PluginContext): Promise<TApi> | TApi | undefined;
+
+  /** Called when the store is disposed. Use for cleanup (timers, handles). */
+  onDispose?(): void;
 }
 
 // ---------------------------------------------------------------------------
@@ -386,4 +454,18 @@ export interface Store {
 
   /** The registered prefix map (readonly). See PrefixMap documentation. */
   prefixes: Readonly<PrefixMap>;
+
+  /**
+   * Access a plugin's exposed API by plugin name.
+   * Returns undefined if the plugin doesn't exist or didn't expose an API.
+   *
+   * @example
+   * ```ts
+   * const stats = store.api<StatsApi>("stats");
+   * if (stats) {
+   *   const counts = stats.getCounts();
+   * }
+   * ```
+   */
+  api<T = unknown>(pluginName: string): T | undefined;
 }

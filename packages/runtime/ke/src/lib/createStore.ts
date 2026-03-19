@@ -7,14 +7,15 @@
 //
 // Architecture:
 //   createStore(config) → [load Oxigraph WASM] → [resolve sources] → [parse TTL]
-//     → [run onLoad plugins] → [write cache] → KeStore instance
+//     → [run onLoad plugins] → [run onReady plugins] → [write cache] → KeStore
 //
 // The KeStore class wraps the Oxigraph Store with:
 //   - Automatic prefix expansion (PREFIX declarations prepended to queries)
-//   - Plugin hooks (onLoad, onQuery, onResult) in array order
+//   - Plugin hooks (onLoad, onReady, onQuery, onResult, onReload, onDispose)
 //   - Query result parsing into discriminated union types
 //   - Named graph support via use_default_graph_as_union
 //   - N-Quads cache for fast subsequent boots
+//   - Plugin API exposure via store.api()
 // =============================================================================
 
 import {
@@ -31,6 +32,7 @@ import type {
   ConstructResult,
   InferQueryResult,
   Plugin,
+  PluginContext,
   PrefixMap,
   QueryResult,
   ReloadOptions,
@@ -167,7 +169,7 @@ function resolveSources(specs: SourceSpec[]): ResolvedSource[] {
 }
 
 // ---------------------------------------------------------------------------
-// Query result detection
+// Query result parsing
 //
 // Instead of parsing the SPARQL query string to determine the query form
 // (SELECT/CONSTRUCT/ASK), we inspect the shape of Oxigraph's return value.
@@ -179,38 +181,70 @@ function resolveSources(specs: SourceSpec[]): ResolvedSource[] {
 // - Array of Map<string, Term> → SELECT query
 // - Array of Quad (objects with .subject) → CONSTRUCT or DESCRIBE query
 // - string → when results_format is specified (we don't use this)
+//
+// parseRawResult() is used by both KeStore.query() and PluginContext.query()
+// to avoid duplicating the detection + conversion logic.
 // ---------------------------------------------------------------------------
 
 /**
- * Detect the SPARQL result type by inspecting Oxigraph's return value shape.
- * This avoids fragile string parsing of the query itself.
+ * Parse Oxigraph's raw query result into ke's discriminated union type.
+ * Detects the result type by inspecting the return value shape, then
+ * converts RDF/JS terms to plain strings.
  */
-function detectResultType(rawResult: unknown): "select" | "construct" | "ask" {
+function parseRawResult(rawResult: unknown): QueryResult {
   // ASK queries return a boolean
   if (typeof rawResult === "boolean") {
-    return "ask";
+    return { type: "ask", result: rawResult } satisfies AskResult;
   }
 
   // SELECT and CONSTRUCT both return arrays, but with different element types
   if (Array.isArray(rawResult)) {
     // Empty result — could be either. Default to select (more common).
     if (rawResult.length === 0) {
-      return "select";
+      return {
+        type: "select",
+        variables: [],
+        bindings: [],
+      } satisfies SelectResult;
     }
 
     // SELECT returns Map<string, Term> entries
     if (rawResult[0] instanceof Map) {
-      return "select";
+      const bindings = rawResult as Map<string, OxTerm>[];
+      const variables: string[] =
+        bindings.length > 0 ? Array.from(bindings[0]!.keys()) : [];
+      const mappedBindings: Binding[] = bindings.map((binding) => {
+        const obj: Binding = {};
+        for (const [key, value] of binding) {
+          obj[key] = termToString(value);
+        }
+        return obj;
+      });
+      return {
+        type: "select",
+        variables,
+        bindings: mappedBindings,
+      } satisfies SelectResult;
     }
 
     // CONSTRUCT/DESCRIBE returns Quad objects (have a .subject property)
     if (typeof rawResult[0] === "object" && "subject" in rawResult[0]) {
-      return "construct";
+      const quads = rawResult as OxQuad[];
+      const triples: Triple[] = quads.map((quad) => ({
+        subject: termToString(quad.subject),
+        predicate: termToString(quad.predicate),
+        object: termToString(quad.object),
+      }));
+      return { type: "construct", triples } satisfies ConstructResult;
     }
   }
 
   // Fallback — shouldn't happen with valid SPARQL
-  return "select";
+  return {
+    type: "select",
+    variables: [],
+    bindings: [],
+  } satisfies SelectResult;
 }
 
 // ---------------------------------------------------------------------------
@@ -269,6 +303,67 @@ function termToString(term: OxTerm): string {
 }
 
 // ---------------------------------------------------------------------------
+// Plugin context
+//
+// A PluginContext is a privileged handle given to plugin lifecycle hooks.
+// It wraps the Oxigraph store and exposes query + controlled write access
+// without exposing reload/dispose (which would cause infinite loops).
+//
+// The context's query() does NOT run onQuery/onResult hooks — plugin queries
+// bypass other plugins to avoid surprising cross-talk.
+// ---------------------------------------------------------------------------
+
+/**
+ * Create a PluginContext that wraps the Oxigraph store.
+ * Used by onLoad, onReady, onReload, onQuery, and onResult hooks.
+ */
+function createPluginContext(
+  oxStore: OxStore,
+  oxNamedNode: (value: string) => OxNamedNode,
+  prefixes: PrefixMap,
+): PluginContext {
+  return {
+    async query<Q extends string>(
+      sparqlQuery: SPARQL<Q>,
+    ): Promise<InferQueryResult<Q>> {
+      let queryStr = sparqlQuery as string;
+      queryStr = expandPrefixes(queryStr, prefixes);
+
+      const rawResult = oxStore.query(queryStr, {
+        use_default_graph_as_union: true,
+      });
+
+      return parseRawResult(rawResult) as InferQueryResult<Q>;
+    },
+
+    update(sparql: string): void {
+      oxStore.update(sparql);
+    },
+
+    load(
+      content: string,
+      options?: {
+        format?: "turtle" | "ntriples" | "rdfxml";
+        graph?: string;
+      },
+    ): void {
+      const mimeType =
+        FORMAT_MAP[options?.format ?? "turtle"] ?? "text/turtle";
+      if (options?.graph) {
+        oxStore.load(content, {
+          format: mimeType,
+          to_graph_name: oxNamedNode(options.graph),
+        });
+      } else {
+        oxStore.load(content, { format: mimeType });
+      }
+    },
+
+    prefixes,
+  };
+}
+
+// ---------------------------------------------------------------------------
 // KeStore — the internal Store implementation
 // ---------------------------------------------------------------------------
 
@@ -284,6 +379,7 @@ class KeStore implements Store {
   private _prefixes: PrefixMap;
   private plugins: Plugin[];
   private oxNamedNode: (value: string) => OxNamedNode;
+  private pluginApis: Map<string, unknown>;
 
   constructor(
     oxStore: OxStore,
@@ -297,10 +393,20 @@ class KeStore implements Store {
     this._prefixes = { ...prefixes }; // Shallow copy — consumer can't mutate
     this.plugins = plugins;
     this.oxNamedNode = oxNamedNode; // Held for reload(), which needs to create NamedNodes
+    this.pluginApis = new Map();
   }
 
   get prefixes(): Readonly<PrefixMap> {
     return this._prefixes;
+  }
+
+  api<T = unknown>(pluginName: string): T | undefined {
+    return this.pluginApis.get(pluginName) as T | undefined;
+  }
+
+  /** @internal — used by createStore() to set plugin APIs after onReady. */
+  setPluginApi(name: string, value: unknown): void {
+    this.pluginApis.set(name, value);
   }
 
   async query<Q extends string>(
@@ -311,78 +417,39 @@ class KeStore implements Store {
     // Step 1: Prepend registered PREFIX declarations
     queryStr = expandPrefixes(queryStr, this._prefixes);
 
-    // Step 2: Run onQuery plugin hooks (in array order)
+    // Step 2: Create plugin context for hooks that need it
+    const ctx = createPluginContext(
+      this.oxStore,
+      this.oxNamedNode,
+      this._prefixes,
+    );
+
+    // Step 3: Run onQuery plugin hooks (in array order)
     // Plugins can rewrite the query string, e.g., to add LIMIT clauses
     for (const plugin of this.plugins) {
       if (plugin.onQuery) {
-        const modified = plugin.onQuery(queryStr);
+        const modified = plugin.onQuery(queryStr, ctx);
         if (typeof modified === "string") {
           queryStr = modified;
         }
       }
     }
 
-    // Step 3: Execute via Oxigraph
+    // Step 4: Execute via Oxigraph
     // use_default_graph_as_union: true makes all named graphs visible by default,
     // so you don't need explicit GRAPH clauses to query across graphs
     const rawResult = this.oxStore.query(queryStr, {
       use_default_graph_as_union: true,
     });
 
-    // Step 4: Detect result type from Oxigraph's return value shape and
-    // parse into our discriminated union. This is more robust than parsing
-    // the query string — no regex, no edge cases.
-    const resultType = detectResultType(rawResult);
-    let result: QueryResult;
+    // Step 5: Parse into discriminated union
+    let result = parseRawResult(rawResult);
 
-    switch (resultType) {
-      case "select": {
-        const bindings = rawResult as Map<string, OxTerm>[];
-        const variables: string[] =
-          bindings.length > 0
-            ? Array.from((bindings[0] as (typeof bindings)[number]).keys())
-            : [];
-        const mappedBindings: Binding[] = bindings.map((binding) => {
-          const obj: Binding = {};
-          for (const [key, value] of binding) {
-            obj[key] = termToString(value);
-          }
-          return obj;
-        });
-        result = {
-          type: "select",
-          variables,
-          bindings: mappedBindings,
-        } satisfies SelectResult;
-        break;
-      }
-      case "construct": {
-        const quads = rawResult as OxQuad[];
-        const triples: Triple[] = quads.map((quad) => ({
-          subject: termToString(quad.subject),
-          predicate: termToString(quad.predicate),
-          object: termToString(quad.object),
-        }));
-        result = {
-          type: "construct",
-          triples,
-        } satisfies ConstructResult;
-        break;
-      }
-      case "ask": {
-        result = {
-          type: "ask",
-          result: rawResult as boolean,
-        } satisfies AskResult;
-        break;
-      }
-    }
-
-    // Step 5: Run onResult plugin hooks (in array order)
+    // Step 6: Run onResult plugin hooks (in array order)
     // Plugins can transform results, e.g., to add computed fields
     for (const plugin of this.plugins) {
       if (plugin.onResult) {
-        const modified = plugin.onResult(result);
+        const modified = plugin.onResult(result, ctx);
         if (modified) {
           result = modified;
         }
@@ -404,6 +471,13 @@ class KeStore implements Store {
     // Clear all triples from the store before reloading
     this.oxStore.update("CLEAR ALL");
 
+    // Create plugin context for hooks
+    const ctx = createPluginContext(
+      this.oxStore,
+      this.oxNamedNode,
+      this._prefixes,
+    );
+
     // Re-resolve sources from disk (files may have changed)
     const sources = resolveSources(this.config.sources);
 
@@ -411,23 +485,42 @@ class KeStore implements Store {
       // Run onLoad plugins for each source
       for (const plugin of this.plugins) {
         if (plugin.onLoad) {
-          await plugin.onLoad(source);
+          await plugin.onLoad(source, ctx);
         }
       }
 
       loadSource(this.oxStore, this.oxNamedNode, source);
     }
 
-    // Update cache if configured
+    // Run onReload plugins after all sources are loaded
+    for (const plugin of this.plugins) {
+      if (plugin.onReload) {
+        const api = await plugin.onReload(ctx);
+        if (api !== undefined && api !== null) {
+          this.pluginApis.set(plugin.name, api);
+        }
+      }
+    }
+
+    // Write cache AFTER plugins have injected their computed triples
     if (this.config.cache) {
       writeCache(this.oxStore, this.config.cache);
     }
   }
 
   dispose(): void {
-    // Oxigraph WASM Store is garbage-collected — no explicit free() needed.
-    // This method exists to satisfy the Store interface contract and allow
-    // consumers to signal they're done with the store.
+    // Run onDispose hooks in reverse order (LIFO, like destructors)
+    for (let i = this.plugins.length - 1; i >= 0; i--) {
+      const plugin = this.plugins[i]!;
+      if (plugin.onDispose) {
+        try {
+          plugin.onDispose();
+        } catch {
+          // Swallow errors during dispose — don't break the chain
+        }
+      }
+    }
+    this.pluginApis.clear();
   }
 }
 
@@ -547,8 +640,10 @@ async function loadOxigraph() {
  * 2. Creates a new Oxigraph Store instance
  * 3. Tries to load from cache (if configured)
  * 4. If no cache hit: resolves sources, reads files, runs onLoad plugins,
- *    parses TTL into the store, writes cache
- * 5. Returns a Store interface with prefix expansion and plugin hooks
+ *    parses TTL into the store
+ * 5. Runs onReady plugins (can query/inject computed data)
+ * 6. Writes cache (after plugins, so injected triples are cached)
+ * 7. Returns a Store interface with prefix expansion and plugin hooks
  *
  * @note Impure — reads TTL files from disk, loads WASM module, writes cache.
  *
@@ -563,6 +658,7 @@ async function loadOxigraph() {
  *     ds: "https://ds.canonical.com/",
  *     cso: "http://pragma.canonical.com/codestandards#",
  *   },
+ *   plugins: [statsPlugin()],
  *   cache: "./.cache/ke-store.nq",
  * });
  *
@@ -586,6 +682,9 @@ export default async function createStore(config: StoreConfig): Promise<Store> {
     loadedFromCache = tryLoadCache(oxStore, config.cache);
   }
 
+  // Create plugin context for lifecycle hooks
+  const ctx = createPluginContext(oxStore, oxigraph.namedNode, prefixes);
+
   // No cache hit — resolve sources, run plugins, load into Oxigraph
   if (!loadedFromCache) {
     const sources = resolveSources(config.sources);
@@ -594,18 +693,39 @@ export default async function createStore(config: StoreConfig): Promise<Store> {
       // Run onLoad plugin hooks before Oxigraph parses the content
       for (const plugin of plugins) {
         if (plugin.onLoad) {
-          await plugin.onLoad(source);
+          await plugin.onLoad(source, ctx);
         }
       }
 
       loadSource(oxStore, oxigraph.namedNode, source);
     }
+  }
 
-    // Serialize to cache for faster subsequent boots
-    if (config.cache) {
-      writeCache(oxStore, config.cache);
+  // Create the store instance
+  const store = new KeStore(
+    oxStore,
+    config,
+    prefixes,
+    plugins,
+    oxigraph.namedNode,
+  );
+
+  // Run onReady plugins — store is fully populated and queryable.
+  // Skipped on cache hit only if onReady is not defined — if a plugin
+  // has onReady, it always runs (it may compute derived data or APIs).
+  for (const plugin of plugins) {
+    if (plugin.onReady) {
+      const api = await plugin.onReady(ctx);
+      if (api !== undefined && api !== null) {
+        store.setPluginApi(plugin.name, api);
+      }
     }
   }
 
-  return new KeStore(oxStore, config, prefixes, plugins, oxigraph.namedNode);
+  // Write cache AFTER onReady plugins, so plugin-injected triples are cached
+  if (!loadedFromCache && config.cache) {
+    writeCache(oxStore, config.cache);
+  }
+
+  return store;
 }

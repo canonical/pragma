@@ -14,6 +14,10 @@
       "types": "./dist/types/http/index.d.ts",
       "import": "./dist/esm/http/index.js"
     },
+    "./plugins/stats": {
+      "types": "./dist/types/lib/plugins/stats.d.ts",
+      "import": "./dist/esm/lib/plugins/stats.js"
+    },
     "./testing": {
       "types": "./testing/index.ts",
       "import": "./testing/index.ts"
