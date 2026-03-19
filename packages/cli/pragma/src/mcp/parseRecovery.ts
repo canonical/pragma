@@ -6,7 +6,7 @@
  * - `"pragma component list --all-tiers"`
  */
 
-import FLAG_MAP from "./constants.js";
+import { FLAG_MAP } from "./constants.js";
 import type { McpRecovery } from "./types.js";
 
 export default function parseRecovery(
