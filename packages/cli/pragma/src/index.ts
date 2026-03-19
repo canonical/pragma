@@ -33,7 +33,7 @@ export type { ConfigUpdate } from "./writeConfig.js";
 export { default as writeConfig } from "./writeConfig.js";
 
 // =============================================================================
-// D3 — Shared Operation Types (TB.01)
+// D3 — Shared Operation Types
 // =============================================================================
 
 export type {
@@ -59,51 +59,46 @@ export type {
   TokenDetailed,
   TokenRef,
   TokenSummary,
-} from "./domains/shared/types.js";
+} from "./lib/domains/shared/types.js";
 
 // =============================================================================
 // D3 — Shared Operations
 // =============================================================================
 
-export {
-  getComponent,
-  listComponents,
-} from "./domains/component/operations.js";
-export { default as executeQuery } from "./domains/graph/executeQuery.js";
-export { default as inspectUri } from "./domains/graph/inspectUri.js";
-export {
-  getModifier,
-  listModifiers,
-} from "./domains/modifier/operations.js";
-export { default as listOntologies } from "./domains/ontology/listOntologies.js";
-export { default as showOntology } from "./domains/ontology/showOntology.js";
-export { default as showOntologyRaw } from "./domains/ontology/showOntologyRaw.js";
-export {
-  getStandard,
-  listCategories,
-  listStandards,
-} from "./domains/standard/operations.js";
-export { listTiers } from "./domains/tier/operations.js";
-export { getToken, listTokens } from "./domains/token/operations.js";
+export { getComponent } from "./lib/domains/component/getComponent.js";
+export { listComponents } from "./lib/domains/component/listComponents.js";
+export { default as executeQuery } from "./lib/domains/graph/executeQuery.js";
+export { default as inspectUri } from "./lib/domains/graph/inspectUri.js";
+export { getModifier } from "./lib/domains/modifier/getModifier.js";
+export { listModifiers } from "./lib/domains/modifier/listModifiers.js";
+export { default as listOntologies } from "./lib/domains/ontology/listOntologies.js";
+export { default as showOntology } from "./lib/domains/ontology/showOntology.js";
+export { default as showOntologyRaw } from "./lib/domains/ontology/showOntologyRaw.js";
+export { getStandard } from "./lib/domains/standard/getStandard.js";
+export { listCategories } from "./lib/domains/standard/listCategories.js";
+export { listStandards } from "./lib/domains/standard/listStandards.js";
+export { listTiers } from "./lib/domains/tier/listTiers.js";
+export { getToken } from "./lib/domains/token/getToken.js";
+export { listTokens } from "./lib/domains/token/listTokens.js";
 
 // =============================================================================
 // D6 — Config Operations
 // =============================================================================
 
-export type { ConfigShowData } from "./domains/config/operations.js";
+export type { ConfigShowData } from "./lib/domains/config/operations.js";
 export {
   resolveConfigShow,
   validateChannel,
   validateTier,
-} from "./domains/config/operations.js";
+} from "./lib/domains/config/operations.js";
 
 // =============================================================================
 // D3 — Store Bootstrap
 // =============================================================================
 
-export { bootStore, DEFAULT_SOURCES } from "./domains/shared/bootStore.js";
-export { buildQuery } from "./domains/shared/buildQuery.js";
-export { PREFIX_MAP } from "./domains/shared/prefixes.js";
+export { bootStore, DEFAULT_SOURCES } from "./lib/domains/shared/bootStore.js";
+export { buildQuery } from "./lib/domains/shared/buildQuery.js";
+export { PREFIX_MAP } from "./lib/domains/shared/prefixes.js";
 
 // =============================================================================
 // D3 — Filters
@@ -112,9 +107,9 @@ export { PREFIX_MAP } from "./domains/shared/prefixes.js";
 export {
   buildChannelFilter,
   CHANNEL_RELEASES,
-} from "./domains/filters/buildChannelFilter.js";
-export { buildFilters } from "./domains/filters/buildFilters.js";
+} from "./lib/domains/filters/buildChannelFilter.js";
+export { buildFilters } from "./lib/domains/filters/buildFilters.js";
 export {
   buildTierFilter,
   resolveTierChain,
-} from "./domains/filters/buildTierFilter.js";
+} from "./lib/domains/filters/buildTierFilter.js";

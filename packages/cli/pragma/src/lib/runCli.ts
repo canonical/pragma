@@ -9,9 +9,9 @@ import {
 import { Command, CommanderError } from "commander";
 import { readConfig } from "../config.js";
 import { PROGRAM_DESCRIPTION, PROGRAM_NAME, VERSION } from "../constants.js";
-import { collectConfigCommands } from "../domains/config/commands.js";
-import collectStandardCommands from "../domains/standard/collectStandardCommands.js";
 import { PragmaError } from "../error/index.js";
+import { collectConfigCommands } from "./domains/config/commands.js";
+import collectStandardCommands from "./domains/standard/collectStandardCommands.js";
 import { mapExitCode } from "./mapExitCode.js";
 import {
   renderErrorJson,

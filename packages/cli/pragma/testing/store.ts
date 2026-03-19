@@ -5,7 +5,7 @@
 
 import type { TestStoreOptions, TestStoreResult } from "@canonical/ke/testing";
 import { createTestStore as keCreateTestStore } from "@canonical/ke/testing";
-import { PREFIX_MAP } from "../src/domains/shared/prefixes.js";
+import { PREFIX_MAP } from "../src/lib/domains/shared/prefixes.js";
 
 interface PragmaTestStoreOptions extends Omit<TestStoreOptions, "prefixes"> {
   prefixes?: TestStoreOptions["prefixes"];
