@@ -12,7 +12,7 @@ import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import chalk from "chalk";
 import type { GeneratorDefinition } from "../types.js";
-import { generatorCache } from "./loadGenerator.js";
+import { generatorCache } from "./generatorCache.js";
 import type { GeneratorNode, GeneratorOrigin } from "./types.js";
 
 // =============================================================================
@@ -118,7 +118,7 @@ const insertGeneratorAtPath = (
   generatorCache.set(pathStr, generator);
 
   for (let i = 0; i < segments.length; i++) {
-    const segment = segments[i];
+    const segment = segments[i] ?? "";
     const isLast = i === segments.length - 1;
 
     if (!current.children.has(segment)) {
@@ -373,6 +373,13 @@ const discoverGlobalPackages = async (root: GeneratorNode): Promise<void> => {
 // Public API
 // =============================================================================
 
+interface DiscoverOptions {
+  /** When set, ONLY load from this path (for testing). */
+  explicitPath?: string;
+  /** Directory containing built-in generators. Defaults to ../generators relative to this file. */
+  builtinDir?: string;
+}
+
 /**
  * Create the root generator tree from all sources.
  *
@@ -386,8 +393,13 @@ const discoverGlobalPackages = async (root: GeneratorNode): Promise<void> => {
  * @note Impure — scans the filesystem and imports generator modules.
  */
 export default async function discoverGeneratorTree(
-  explicitPath?: string,
+  explicitPathOrOptions?: string | DiscoverOptions,
 ): Promise<GeneratorNode> {
+  const options: DiscoverOptions =
+    typeof explicitPathOrOptions === "string"
+      ? { explicitPath: explicitPathOrOptions }
+      : (explicitPathOrOptions ?? {});
+  const { explicitPath, builtinDir } = options;
   const root: GeneratorNode = {
     name: "root",
     path: "",
@@ -421,11 +433,8 @@ export default async function discoverGeneratorTree(
   // Normal discovery mode (order matters: later sources override earlier)
 
   // 1. Built-in generators (lowest priority)
-  await buildGeneratorTree(
-    path.join(__dirname, "..", "generators"),
-    root,
-    "builtin",
-  );
+  const defaultBuiltinDir = path.join(__dirname, "..", "generators");
+  await buildGeneratorTree(builtinDir ?? defaultBuiltinDir, root, "builtin");
 
   // 2-3. Global packages and generators
   await discoverGlobalPackages(root);
