@@ -92,22 +92,8 @@ describe("validateChannel", () => {
 });
 
 describe("resolveConfigShow", () => {
-  let store: Store;
-  let cleanup: TestStoreResult["cleanup"];
-
-  beforeAll(async () => {
-    const result = await createTestStore({ ttl: TIERS_TTL });
-    store = result.store;
-    cleanup = result.cleanup;
-  });
-
-  afterAll(async () => {
-    await cleanup();
-  });
-
-  it("resolves tier chain and included releases", async () => {
-    const data = await resolveConfigShow(
-      store,
+  it("resolves tier chain and included releases", () => {
+    const data = resolveConfigShow(
       { tier: "apps/lxd", channel: "experimental" },
       {
         cwd: "/tmp",
@@ -125,9 +111,8 @@ describe("resolveConfigShow", () => {
     expect(data.configFileExists).toBe(true);
   });
 
-  it("returns empty tier chain when no tier is set", async () => {
-    const data = await resolveConfigShow(
-      store,
+  it("returns empty tier chain when no tier is set", () => {
+    const data = resolveConfigShow(
       { tier: undefined, channel: "normal" },
       {
         cwd: "/tmp",
@@ -143,9 +128,8 @@ describe("resolveConfigShow", () => {
     expect(data.configFileExists).toBe(false);
   });
 
-  it("includes all release levels for prerelease channel", async () => {
-    const data = await resolveConfigShow(
-      store,
+  it("includes all release levels for prerelease channel", () => {
+    const data = resolveConfigShow(
       { tier: undefined, channel: "prerelease" },
       {
         cwd: "/tmp",

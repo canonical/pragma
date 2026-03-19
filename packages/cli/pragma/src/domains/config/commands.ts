@@ -10,55 +10,22 @@
 
 import type { CommandDefinition } from "@canonical/cli-core";
 import { createOutputResult } from "@canonical/cli-core";
-import {
-  configExists,
-  readConfig,
-  resolveConfigPath,
-  writeConfig,
-} from "../../config.js";
+import { readConfig } from "../../config.js";
+import configExists from "../../configExists.js";
 import { detectPackageManager } from "../../pm.js";
+import resolveConfigPath from "../../resolveConfigPath.js";
+import writeConfig from "../../writeConfig.js";
 import { bootStore } from "../shared/bootStore.js";
-import type { ConfigShowData } from "./operations.js";
 import {
   resolveConfigShow,
   validateChannel,
   validateTier,
 } from "./operations.js";
-
-// =============================================================================
-// Renderers
-// =============================================================================
-
-function renderConfigSetPlain(field: string, value: string): string {
-  return `Set ${field} to "${value}".`;
-}
-
-function renderConfigResetPlain(field: string): string {
-  return `Reset ${field} to default.`;
-}
-
-function renderConfigShowPlain(data: ConfigShowData): string {
-  const lines: string[] = [];
-
-  if (data.tier !== undefined) {
-    const chain = data.tierChain.join(" → ");
-    lines.push(`tier: ${data.tier} (${chain})`);
-  } else {
-    lines.push("tier: (none — all tiers visible)");
-  }
-
-  const releases = data.includedReleases.join(" + ");
-  lines.push(`channel: ${data.channel} (${releases})`);
-  lines.push(`installed via: ${data.packageManager}`);
-
-  if (data.configFileExists) {
-    lines.push(`config file: ${data.configFilePath}`);
-  } else {
-    lines.push("config file: (not found)");
-  }
-
-  return lines.join("\n");
-}
+import {
+  renderConfigResetPlain,
+  renderConfigSetPlain,
+  renderConfigShowPlain,
+} from "./renderConfigPlain.js";
 
 // =============================================================================
 // Commands
@@ -184,12 +151,11 @@ const configShowCommand: CommandDefinition = {
   },
   execute: async (_params, ctx) => {
     const config = readConfig(ctx.cwd);
-    const store = await bootStore({ cwd: ctx.cwd });
     const pm = detectPackageManager();
     const cfgPath = resolveConfigPath(ctx.cwd);
     const cfgExists = configExists(ctx.cwd);
 
-    const data = await resolveConfigShow(store, config, {
+    const data = resolveConfigShow(config, {
       cwd: ctx.cwd,
       packageManager: pm,
       configFilePath: cfgPath,

@@ -1,11 +1,6 @@
-export type { ConfigUpdate, PragmaConfig } from "./config.js";
-export {
-  configExists,
-  isValidChannel,
-  readConfig,
-  resolveConfigPath,
-  writeConfig,
-} from "./config.js";
+export type { PragmaConfig } from "./config.js";
+export { readConfig } from "./config.js";
+export { default as configExists } from "./configExists.js";
 export type { Channel } from "./constants.js";
 export {
   PROGRAM_DESCRIPTION,
@@ -33,6 +28,9 @@ export {
   detectPackageManager,
   PM_COMMANDS,
 } from "./pm.js";
+export { default as resolveConfigPath } from "./resolveConfigPath.js";
+export type { ConfigUpdate } from "./writeConfig.js";
+export { default as writeConfig } from "./writeConfig.js";
 
 // =============================================================================
 // D3 — Shared Operation Types (TB.01)

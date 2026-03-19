@@ -69,9 +69,11 @@ export function validateChannel(value: string): Channel {
 
 /**
  * Resolve data for `pragma config show`.
+ *
+ * Pure data assembly — no store access needed. Tier chain is resolved
+ * from the configured path string, not from the ontology.
  */
-export async function resolveConfigShow(
-  store: Store,
+export function resolveConfigShow(
   config: PragmaConfig,
   opts: {
     cwd: string;
@@ -79,19 +81,11 @@ export async function resolveConfigShow(
     configFilePath: string;
     configFileExists: boolean;
   },
-): Promise<ConfigShowData> {
-  // Validate tier exists if set, but don't throw — show may display stale config
-  let tierChain: string[] = [];
-  if (config.tier !== undefined) {
-    const tiers = await listTiers(store);
-    const match = tiers.find((t) => t.path === config.tier);
-    if (match) {
-      tierChain = resolveTierChain(config.tier);
-    } else {
-      // Tier in config doesn't match ontology — show what's configured anyway
-      tierChain = resolveTierChain(config.tier);
-    }
-  }
+): ConfigShowData {
+  // Don't throw for stale config — show always displays what's configured.
+  // resolveTierChain is pure string manipulation, doesn't need ontology.
+  const tierChain =
+    config.tier !== undefined ? resolveTierChain(config.tier) : [];
 
   const includedReleases = CHANNEL_RELEASES[config.channel];
 
