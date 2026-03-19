@@ -7,7 +7,6 @@ export {
   markAsURI,
   sparql,
 } from "./sparql.js";
-
 export type {
   AskResult,
   Binding,
@@ -28,3 +27,4 @@ export type {
   Triple,
   URI,
 } from "./types.js";
+export { default as validateIri } from "./validateIri.js";

@@ -340,11 +340,11 @@ export interface Plugin {
   /** Called for each source file after reading, before Oxigraph parsing. */
   onLoad?(source: ResolvedSource): Promise<void> | void;
 
-  /** Called before query execution. Return a modified query string, or void. */
-  onQuery?(sparql: string): string | void;
+  /** Called before query execution. Return a modified query string, or undefined. */
+  onQuery?(sparql: string): string | undefined;
 
-  /** Called after query execution. Return a modified result, or void. */
-  onResult?(result: QueryResult): QueryResult | void;
+  /** Called after query execution. Return a modified result, or undefined. */
+  onResult?(result: QueryResult): QueryResult | undefined;
 }
 
 // ---------------------------------------------------------------------------

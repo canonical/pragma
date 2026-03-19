@@ -132,6 +132,58 @@ export interface TierEntry {
 }
 
 // =============================================================================
+// Graph
+// =============================================================================
+
+/** A predicate group from `graph inspect`: one predicate with all its objects. */
+export interface PredicateGroup {
+  readonly predicate: string;
+  readonly objects: readonly string[];
+}
+
+/** Result of `graph inspect <uri>`: all triples where URI is subject. */
+export interface InspectResult {
+  readonly uri: string;
+  readonly groups: readonly PredicateGroup[];
+}
+
+// =============================================================================
+// Ontology
+// =============================================================================
+
+/** Summary of a loaded ontology namespace from `ontology list`. */
+export interface OntologySummary {
+  readonly prefix: string;
+  readonly namespace: string;
+  readonly classCount: number;
+  readonly propertyCount: number;
+}
+
+/** A class in an ontology's class hierarchy. */
+export interface OntologyClass {
+  readonly uri: string;
+  readonly label: string;
+  readonly superclass?: string;
+}
+
+/** A property in an ontology namespace. */
+export interface OntologyProperty {
+  readonly uri: string;
+  readonly label: string;
+  readonly domain?: string;
+  readonly range?: string;
+  readonly type: "object" | "datatype";
+}
+
+/** Detailed view of a single ontology namespace from `ontology show`. */
+export interface OntologyDetailed {
+  readonly prefix: string;
+  readonly namespace: string;
+  readonly classes: readonly OntologyClass[];
+  readonly properties: readonly OntologyProperty[];
+}
+
+// =============================================================================
 // Filter configuration
 // =============================================================================
 
