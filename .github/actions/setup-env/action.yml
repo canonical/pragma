@@ -1,5 +1,5 @@
 name: Setup environment
-description: Installs build tools and dependencies
+description: Installs build tools, restores caches, and installs dependencies
 inputs:
   bun-version:
     default: '1.3.9'
@@ -21,7 +21,26 @@ runs:
       with:
         bun-version: ${{ inputs.bun-version }}
 
-      # "prepare" hook on `bun install` runs `bun run build`
+    - name: Cache node_modules
+      uses: actions/cache@v4
+      with:
+        path: node_modules
+        key: node-modules-${{ runner.os }}-${{ inputs.node-version }}-${{ hashFiles('bun.lock') }}
+
+    - name: Cache Bun global cache
+      uses: actions/cache@v4
+      with:
+        path: ~/.bun/install/cache
+        key: bun-cache-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+
+    - name: Cache Nx
+      uses: actions/cache@v4
+      with:
+        path: .nx/cache
+        key: nx-cache-${{ runner.os }}-${{ inputs.node-version }}-${{ github.sha }}
+        restore-keys: |
+          nx-cache-${{ runner.os }}-${{ inputs.node-version }}-
+
     - name: Install dependencies
       shell: bash
       # NOTE: --frozen-lockfile disabled for now due to a known Bun bug where bun install
@@ -30,10 +49,14 @@ runs:
       # https://github.com/oven-sh/bun/issues/16692
       # https://github.com/oven-sh/bun/issues/19088
       # run: bun install --frozen-lockfile
-      run: bun install && git diff --exit-code bun.lock
+      #
+      # --ignore-scripts prevents the "prepare" lifecycle hook from triggering a full
+      # monorepo build during install. Workflows that need a build invoke it explicitly
+      # or rely on Nx transitive dependsOn.
+      run: bun install --ignore-scripts && git diff --exit-code bun.lock
 
       # Workaround for https://github.com/oven-sh/bun/issues/19782
       # Workspace bin symlinks aren't created on first install. Remove after fix is merged.
     - name: Re-link workspace binaries
       shell: bash
-      run: bun install
+      run: bun install --ignore-scripts

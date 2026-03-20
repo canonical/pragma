@@ -34,7 +34,6 @@ jobs:
         with:
           fetch-depth: 1
 
-        # "prepare" hook on `bun install` runs `bun run build`
       - name: Setup environment
         uses: ./.github/actions/setup-env
 
@@ -60,7 +59,6 @@ jobs:
           # Lerna needs *all* the git history to determine which packages have changed
           fetch-depth: 0
 
-        # "prepare" hook on `bun install` runs `bun run build`
       - name: Setup environment
         uses: ./.github/actions/setup-env
 
@@ -83,9 +81,11 @@ jobs:
           # Lerna needs *all* the git history to determine which packages have changed
           fetch-depth: 0
 
-        # "prepare" hook on `bun install` runs `bun run build`
       - name: Setup Environment
         uses: ./.github/actions/setup-env
+
+      - name: Build
+        run: bun run build
 
       - name: Setup Node, authenticate with NPM registry
         uses: actions/setup-node@v6

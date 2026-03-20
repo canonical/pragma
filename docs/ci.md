@@ -48,13 +48,25 @@ The pipeline uses several tools, each chosen for specific reasons.
 
 **Lerna** manages versioning and publishing. It understands the monorepo structure, tracks which packages have changed since the last release, generates changelogs from conventional commits, and publishes packages to npm in the correct dependency order. Lerna's fixed versioning mode keeps all packages at the same version number, eliminating compatibility matrices.
 
-**Nx** provides task orchestration and caching. When you run `bun run build`, Nx determines the dependency graph between packages and builds them in the correct order. When you run the same command again, Nx skips packages that haven't changed. This caching dramatically speeds up CI builds after the first run.
+**Nx** provides task orchestration and caching. When you run `bun run build`, Nx determines the dependency graph between packages and builds them in the correct order. When you run the same command again, Nx skips packages that haven't changed. The `setup-env` action persists the Nx cache across CI runs using `actions/cache`, so this caching benefits CI as well as local development — subsequent jobs within the same PR and across PRs on the same branch reuse prior build outputs.
 
 **Bun** handles package management. It resolves workspace dependencies, installs packages, and runs scripts. Bun is significantly faster than npm or yarn for these operations. However, Bun does not yet fully support all Node.js APIs that Storybook and Lerna require.
 
 **Node.js** runs Storybook and Lerna. The pipeline installs both Bun and Node, using Bun for package management and Node for tools that require fuller Node.js compatibility. The build matrix tests against Node 22 (LTS) and Node 24 (current) to catch compatibility issues.
 
-**Chromatic** provides visual regression testing. It captures screenshots of Storybook stories, stores baselines, and highlights visual differences between builds. Chromatic runs as a separate workflow with path filtering, so changes to `react-ds-global` only trigger visual tests for that package. This conserves snapshot credits while ensuring visual changes are reviewed.
+**Chromatic** provides visual regression testing. It captures screenshots of Storybook stories, stores baselines, and highlights visual differences between builds. Chromatic runs as a separate workflow with path filtering, so changes to `react-ds-global` only trigger visual tests for that package. This conserves snapshot credits while ensuring visual changes are reviewed. Chromatic workflows are focused solely on visual baselines — they do not run code quality checks or tests. Correctness is owned by `pr.yml` (on PRs) and `push.yml` (on main).
+
+## Caching
+
+CI uses `actions/cache` in the `setup-env` composite action to persist three things across jobs and runs:
+
+- **`node_modules/`** — keyed on `bun.lock` hash and Node version. Eliminates redundant dependency downloads.
+- **`~/.bun/install/cache/`** — Bun's global download cache. Speeds up `bun install` even when `node_modules` misses.
+- **`.nx/cache/`** — Nx's local computation cache. Allows Nx to skip rebuilding or re-checking packages whose inputs haven't changed, even on fresh CI runners.
+
+The `setup-env` action is responsible only for toolchain setup (Node, Bun), cache restoration, and dependency installation. It does not build, check, or test. In CI, `bun install` runs with `--ignore-scripts` to prevent the `prepare` lifecycle hook from triggering a full monorepo build. Workflows that need a build invoke it explicitly (e.g. `lerna run build:all` in `pr.yml`) or rely on Nx's transitive `dependsOn` configuration (e.g. `test` depends on `^build`).
+
+Locally, `bun install` still triggers the `prepare` hook and builds the workspace automatically. This divergence is intentional: local development prioritises convenience, while CI prioritises explicit, cacheable steps.
 
 ## Workflows
 
@@ -87,7 +99,7 @@ The workflow has three jobs:
 
 1. **build** runs checks and tests to verify the release candidate
 2. **version** bumps version numbers, generates changelogs, commits, and creates a git tag
-3. **publish** checks out the tagged commit and publishes packages to npm
+3. **publish** checks out the tagged commit, builds all packages, and publishes them to npm
 
 The version job uses Lerna's conventional commit analysis to determine version bumps. A `feat:` commit triggers a minor bump, a `fix:` commit triggers a patch bump, and a `BREAKING CHANGE:` footer triggers a major bump.
 
@@ -106,7 +118,7 @@ on:
 
 The path list includes both the package itself and its dependencies. Changes to `styles` packages trigger Chromatic for all component packages because style changes affect visual output.
 
-Chromatic workflows use a shared template (`.github/workflows/chromatic._template.yml`) that defines the common build and publish steps. Each package workflow passes its working directory and external dependencies to the template.
+Chromatic workflows use a shared template (`.github/workflows/chromatic._template.yml`) that defines the publish step. Each package workflow passes its working directory and external dependencies to the template. The template does not run `check` or `test` — correctness is enforced by `pr.yml`'s `build-gate` status check, which is required by branch protection.
 
 On pull requests, Chromatic requires manual approval for visual changes. On pushes to main, changes are automatically accepted as new baselines. This allows reviewing visual changes during PR review while keeping baselines current after merge.
 
@@ -155,7 +167,7 @@ bun run check
 bun run test
 ```
 
-If the failure involves Nx caching, the CI cache may contain stale artifacts. Nx caches are keyed by file content hashes; if a file changed in a way that doesn't affect its hash (unlikely but possible), the cache may serve outdated results. Re-running the workflow usually resolves this.
+If the failure involves Nx caching, the CI cache may contain stale artifacts. Nx caches are keyed by file content hashes; if a file changed in a way that doesn't affect its hash (unlikely but possible), the cache may serve outdated results. Re-running the workflow usually resolves this. If the problem persists, the Nx cache can be busted by pushing a trivial change (the cache key includes `github.sha`).
 
 ### Chromatic shows unexpected visual changes
 

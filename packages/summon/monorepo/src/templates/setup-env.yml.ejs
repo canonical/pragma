@@ -1,5 +1,5 @@
 name: Setup environment
-description: Installs Bun and dependencies
+description: Installs Bun, restores caches, and installs dependencies
 
 inputs:
   bun-version:
@@ -13,6 +13,26 @@ runs:
       uses: oven-sh/setup-bun@v2
       with:
         bun-version: ${{ inputs.bun-version }}
+
+    - name: Cache node_modules
+      uses: actions/cache@v4
+      with:
+        path: node_modules
+        key: node-modules-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+
+    - name: Cache Bun global cache
+      uses: actions/cache@v4
+      with:
+        path: ~/.bun/install/cache
+        key: bun-cache-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+
+    - name: Cache Nx
+      uses: actions/cache@v4
+      with:
+        path: .nx/cache
+        key: nx-cache-${{ runner.os }}-${{ github.sha }}
+        restore-keys: |
+          nx-cache-${{ runner.os }}-
 
     - name: Install dependencies
       shell: bash
