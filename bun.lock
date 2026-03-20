@@ -234,6 +234,8 @@
         "vitest": "^4.0.18",
       },
       "optionalDependencies": {
+        "@canonical/anatomy-dsl": "^0.2.0",
+        "@canonical/code-standards": "^0.1.0",
         "@canonical/design-system": "^0.1.0",
       },
     },
@@ -1228,9 +1230,13 @@
 
     "@bundled-es-modules/memfs": ["@bundled-es-modules/memfs@4.17.0", "", { "dependencies": { "assert": "^2.1.0", "buffer": "^6.0.3", "events": "^3.3.0", "memfs": "^4.17.0", "path": "^0.12.7", "stream": "^0.0.3", "util": "^0.12.5" } }, "sha512-ykdrkEmQr9BV804yd37ikXfNnvxrwYfY9Z2/EtMHFEFadEjsQXJ1zL9bVZrKNLDtm91UdUOEHso6Aweg93K6xQ=="],
 
+    "@canonical/anatomy-dsl": ["@canonical/anatomy-dsl@0.2.0", "", {}, "sha512-wmUTGyynfG2qcuIxIhq2H7w3AsNXrwaDk7C0W2hb9y2ooKdjNWjTd8BoDV+KcFrLGgCiNJYhTSVfF+Y7eWQUyg=="],
+
     "@canonical/biome-config": ["@canonical/biome-config@workspace:configs/biome"],
 
     "@canonical/cli-core": ["@canonical/cli-core@workspace:packages/cli/core"],
+
+    "@canonical/code-standards": ["@canonical/code-standards@0.1.0", "", {}, "sha512-/eDpuWIUND98yhON7XVqgVY6apobNPispqnEcalSv1XVc7KkAvQAVkexbAiyzS6EaJwZG5k/D1i2j1Nv1psSeQ=="],
 
     "@canonical/design-system": ["@canonical/design-system@0.1.0", "", { "dependencies": { "ajv": "^8.17.1", "jsonld": "^9.0.0", "n3": "^1.26.0" }, "bin": { "collect-implementations": "src/collect-implementations.ts" } }, "sha512-6y814ZPl5X2vimAGOzMSYpXObwt9/8+0bqTd14RD8VRnta1MBfFlU3EEq0kelpFJsJOqJTkXJaPw7XEFYPT6Dw=="],
 
