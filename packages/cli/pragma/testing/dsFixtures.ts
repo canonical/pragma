@@ -3,18 +3,25 @@
  *
  * Richer than ke's generic fixtures — includes the full vocabulary
  * that D3 operations query against.
+ *
+ * All @prefix declarations derived from {@link TTL_PREFIXES} so that
+ * a namespace rename in PREFIX_MAP propagates here automatically.
  */
+
+import { PREFIX_MAP, TTL_PREFIXES } from "../src/domains/shared/prefixes.js";
+
+/** Turtle @prefix block for ds: only (most data fixtures). */
+const dsPrefix = `@prefix ds: <${PREFIX_MAP.ds}> .`;
+
+/** Turtle @prefix block for cs: only (standards fixtures). */
+const csPrefix = `@prefix cs: <${PREFIX_MAP.cs}> .`;
 
 // =============================================================================
 // Ontology (TBox) — class and property definitions
 // =============================================================================
 
 export const DS_ONTOLOGY_TTL = `
-@prefix ds: <https://ds.canonical.com/> .
-@prefix cs: <http://pragma.canonical.com/codestandards#> .
-@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
-@prefix owl: <http://www.w3.org/2002/07/owl#> .
-@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+${TTL_PREFIXES}
 
 # ---- Classes ----
 
@@ -156,7 +163,7 @@ cs:extends a owl:ObjectProperty ;
 // =============================================================================
 
 export const DS_TIERS_TTL = `
-@prefix ds: <https://ds.canonical.com/> .
+${dsPrefix}
 
 ds:global a ds:Tier ;
   ds:name "global" .
@@ -173,7 +180,7 @@ ds:apps_lxd a ds:Tier ;
 // =============================================================================
 
 export const DS_RELEASES_TTL = `
-@prefix ds: <https://ds.canonical.com/> .
+${dsPrefix}
 
 ds:stable a ds:ReleaseChannel .
 ds:experimental a ds:ReleaseChannel .
@@ -186,7 +193,7 @@ ds:beta a ds:ReleaseChannel .
 // =============================================================================
 
 export const DS_COMPONENTS_TTL = `
-@prefix ds: <https://ds.canonical.com/> .
+${dsPrefix}
 
 ds:button a ds:Component ;
   ds:name "Button" ;
@@ -229,7 +236,7 @@ ds:beta_widget a ds:Component ;
 // =============================================================================
 
 export const DS_IMPLEMENTATIONS_TTL = `
-@prefix ds: <https://ds.canonical.com/> .
+${dsPrefix}
 
 ds:impl.react a ds:ImplementationLibrary ;
   ds:libraryName "@canonical/react-ds-global" ;
@@ -254,7 +261,7 @@ ds:impl.svelte a ds:ImplementationLibrary ;
 // =============================================================================
 
 export const DS_STANDARDS_TTL = `
-@prefix cs: <http://pragma.canonical.com/codestandards#> .
+${csPrefix}
 
 cs:react_category a cs:Category ;
   cs:slug "react" .
@@ -290,7 +297,7 @@ cs:code_purity a cs:CodeStandard ;
 // =============================================================================
 
 export const DS_MODIFIERS_TTL = `
-@prefix ds: <https://ds.canonical.com/> .
+${dsPrefix}
 
 ds:modifier_family.importance a ds:ModifierFamily ;
   ds:name "importance" .
@@ -324,7 +331,7 @@ ds:mod_density_compact a ds:Modifier ;
 // =============================================================================
 
 export const DS_TOKENS_TTL = `
-@prefix ds: <https://ds.canonical.com/> .
+${dsPrefix}
 
 ds:token_type.color a ds:TokenType ;
   rdfs:label "Color" .

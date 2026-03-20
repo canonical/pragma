@@ -23,3 +23,14 @@ export const PREFIX_MAP = {
 export const P = Object.fromEntries(
   Object.keys(PREFIX_MAP).map((k) => [k, `${k}:`]),
 ) as { readonly [K in keyof typeof PREFIX_MAP]: `${K}:` };
+
+/**
+ * Turtle `@prefix` declarations derived from {@link PREFIX_MAP}.
+ *
+ * Includes `xsd:` which TTL data files commonly use but SPARQL queries
+ * don't need (ke auto-injects PREFIX_MAP for queries).
+ */
+export const TTL_PREFIXES = [
+  ...Object.entries(PREFIX_MAP).map(([k, uri]) => `@prefix ${k}: <${uri}> .`),
+  "@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .",
+].join("\n");

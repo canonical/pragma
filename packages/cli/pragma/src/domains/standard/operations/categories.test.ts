@@ -2,6 +2,7 @@ import type { Store } from "@canonical/ke";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { DS_ALL_TTL } from "../../../../testing/dsFixtures.js";
 import { createTestStore } from "../../../../testing/store.js";
+import { PREFIX_MAP } from "../../shared/prefixes.js";
 import listCategories from "./categories.js";
 
 let store: Store;
@@ -36,7 +37,7 @@ describe("listCategories", () => {
 
   it("includes categories with zero standards", async () => {
     const ttlWithEmptyCategory = `
-      @prefix cs: <http://pragma.canonical.com/codestandards#> .
+      @prefix cs: <${PREFIX_MAP.cs}> .
       cs:empty_cat a cs:Category ; cs:slug "empty" .
       cs:filled_cat a cs:Category ; cs:slug "filled" .
       cs:s1 a cs:CodeStandard ;
