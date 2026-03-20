@@ -36,6 +36,12 @@ runs:
         path: ~/.bun/install/cache
         key: bun-cache-${{ runner.os }}-${{ hashFiles('bun.lock') }}
 
+    - name: Cache Nx
+      uses: actions/cache@v4
+      with:
+        path: .nx/cache
+        key: nx-cache-${{ runner.os }}-${{ inputs.node-version }}-${{ github.sha }}
+
     - name: Install dependencies
       shell: bash
       # NOTE: --frozen-lockfile disabled for now due to a known Bun bug where bun install
@@ -59,4 +65,8 @@ runs:
     - name: Build
       if: ${{ inputs.build-target != '' }}
       shell: bash
+      # Accept Nx cache from other runners in the same workflow.
+      # Safe in CI where all runners are trusted GH-hosted machines.
+      env:
+        NX_REJECT_UNKNOWN_LOCAL_CACHE: "0"
       run: bunx lerna run ${{ inputs.build-target }}

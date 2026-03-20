@@ -3,7 +3,7 @@ on:
   pull_request:
 
 jobs:
-  build-matrix:
+  build:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -15,7 +15,26 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v6
 
-      - name: Setup environment for Bun ${{ matrix.bun-version }} and Node ${{ matrix.node-version }}
+      - name: Setup environment
+        uses: ./.github/actions/setup-env
+        with:
+          bun-version: ${{ matrix.bun-version }}
+          node-version: ${{ matrix.node-version }}
+          build-target: build:all
+
+  check:
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        bun-version: ['1.3.9']
+        node-version: ['22', '24']
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v6
+
+      - name: Setup environment
         uses: ./.github/actions/setup-env
         with:
           bun-version: ${{ matrix.bun-version }}
@@ -25,11 +44,31 @@ jobs:
       - name: Code quality checks
         run: bun run check
 
+  test:
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        bun-version: ['1.3.9']
+        node-version: ['22', '24']
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v6
+
+      - name: Setup environment
+        uses: ./.github/actions/setup-env
+        with:
+          bun-version: ${{ matrix.bun-version }}
+          node-version: ${{ matrix.node-version }}
+          build-target: build:all
+
       - name: Test
         run: bun run test
+
   build-gate:
     runs-on: ubuntu-latest
-    needs: build-matrix
+    needs: [check, test]
     if: ${{ success() }}
     steps:
       - name: All checks passed
