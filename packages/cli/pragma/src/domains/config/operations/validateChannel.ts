@@ -1,0 +1,23 @@
+/**
+ * Validate a channel value.
+ *
+ * @see CF.04 in B.08.CONFIG
+ */
+
+import { type Channel, VALID_CHANNELS } from "../../../constants.js";
+import { PragmaError } from "../../../error/index.js";
+
+/**
+ * Validate a channel value.
+ *
+ * @throws PragmaError.invalidInput if the channel is not one of the three valid values.
+ */
+export default function validateChannel(value: string): Channel {
+  if (VALID_CHANNELS.includes(value as Channel)) {
+    return value as Channel;
+  }
+
+  throw PragmaError.invalidInput("channel", value, {
+    validOptions: [...VALID_CHANNELS],
+  });
+}

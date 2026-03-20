@@ -16,17 +16,22 @@ import type { Store } from "@canonical/ke";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import type { PragmaConfig } from "../config.js";
-import getComponent from "../domains/component/getComponent.js";
-import listComponents from "../domains/component/listComponents.js";
-import { getModifier, listModifiers } from "../domains/modifier/operations.js";
+import {
+  getComponent,
+  listComponents,
+} from "../domains/component/operations/index.js";
+import {
+  getModifier,
+  listModifiers,
+} from "../domains/modifier/operations/index.js";
 import type { FilterConfig } from "../domains/shared/types.js";
 import {
   getStandard,
   listCategories,
   listStandards,
-} from "../domains/standard/operations.js";
-import { listTiers } from "../domains/tier/operations.js";
-import { getToken, listTokens } from "../domains/token/operations.js";
+} from "../domains/standard/operations/index.js";
+import { listTiers } from "../domains/tier/operations/index.js";
+import { getToken, listTokens } from "../domains/token/operations/index.js";
 import { PragmaError } from "../error/PragmaError.js";
 import serializeError from "./serializeError.js";
 
