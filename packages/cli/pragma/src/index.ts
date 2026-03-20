@@ -174,6 +174,18 @@ export { resolveAddConfig } from "./domains/token/operations/index.js";
 export { commands as createCommands } from "./domains/create/index.js";
 
 // =============================================================================
+// v0.3-04 — Doctor
+// =============================================================================
+
+export { doctorCommand } from "./domains/doctor/commands/index.js";
+export type {
+  CheckContext,
+  CheckResult,
+  DoctorData,
+} from "./domains/doctor/operations/index.js";
+export { runChecks } from "./domains/doctor/operations/index.js";
+
+// =============================================================================
 // D11 — MCP Adapter
 // =============================================================================
 

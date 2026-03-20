@@ -12,6 +12,7 @@ import { PROGRAM_DESCRIPTION, PROGRAM_NAME, VERSION } from "../constants.js";
 import { commands as componentCommands } from "../domains/component/index.js";
 import { commands as configCommands } from "../domains/config/index.js";
 import { commands as createCommands } from "../domains/create/index.js";
+import { doctorCommand } from "../domains/doctor/commands/index.js";
 import infoCommand from "../domains/info/infoCommand.js";
 import upgradeCommand from "../domains/info/upgradeCommand.js";
 import { commands as modifierCommands } from "../domains/modifier/index.js";
@@ -38,6 +39,7 @@ function collectCommands(ctx: PragmaContext): CommandDefinition[] {
     ...tierCommands(ctx),
     ...tokenCommands(ctx),
     ...componentCommands(ctx),
+    doctorCommand,
     infoCommand,
     upgradeCommand,
   ];
@@ -111,6 +113,21 @@ function renderError(error: PragmaError, flags: GlobalFlags): string {
 
 async function runCli(argv: readonly string[]): Promise<void> {
   const globalFlags = parseGlobalFlags(argv);
+
+  // Doctor runs before store boot — it validates the environment itself.
+  const commandArg = argv.slice(2).find((a) => !a.startsWith("-"));
+  if (commandArg === "doctor") {
+    const { doctorCommand } = await import(
+      "../domains/doctor/commands/index.js"
+    );
+    const ctx = { cwd: process.cwd(), globalFlags };
+    const result = await doctorCommand.execute({}, ctx);
+    if (result.tag === "output") {
+      const render = result.render.plain;
+      process.stdout.write(`${render(result.value)}\n`);
+    }
+    return;
+  }
 
   let cwd: string;
   let config: FilterConfig;
