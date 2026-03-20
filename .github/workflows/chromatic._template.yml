@@ -30,6 +30,9 @@ jobs:
       - name: Setup environment
         uses: ./.github/actions/setup-env
 
+      - name: Build all artifacts
+        run: lerna run build:all
+
       - name: Publish to Chromatic
         uses: chromaui/action@v13
         with:
