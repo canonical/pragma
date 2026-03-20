@@ -17,6 +17,7 @@ import infoCommand from "../domains/info/infoCommand.js";
 import upgradeCommand from "../domains/info/upgradeCommand.js";
 import buildLlmCommand from "../domains/llm/llmCommand.js";
 import { commands as modifierCommands } from "../domains/modifier/index.js";
+import { commands as setupCommands } from "../domains/setup/index.js";
 import { bootStore } from "../domains/shared/bootStore.js";
 import type { PragmaContext } from "../domains/shared/context.js";
 import type { FilterConfig } from "../domains/shared/types.js";
@@ -153,24 +154,38 @@ async function runCli(argv: readonly string[]): Promise<void> {
     return;
   }
 
-  let store: Store;
-  try {
-    store = await bootStore({ cwd });
-  } catch (err) {
-    const pragmaErr =
-      err instanceof PragmaError
-        ? err
-        : PragmaError.storeError(
-            err instanceof Error ? err.message : String(err),
-          );
-    process.stderr.write(`${renderError(pragmaErr, globalFlags)}\n`);
-    process.exitCode = mapExitCode(pragmaErr.code);
-    return;
+  // Setup and MCP commands don't need the ke store — skip boot for them
+  const needsStore = !argv.includes("setup") && !argv.includes("mcp");
+
+  let store: Store | undefined;
+  if (needsStore) {
+    try {
+      store = await bootStore({ cwd });
+    } catch (err) {
+      const pragmaErr =
+        err instanceof PragmaError
+          ? err
+          : PragmaError.storeError(
+              err instanceof Error ? err.message : String(err),
+            );
+      process.stderr.write(`${renderError(pragmaErr, globalFlags)}\n`);
+      process.exitCode = mapExitCode(pragmaErr.code);
+      return;
+    }
   }
 
   try {
-    const ctx: PragmaContext = { cwd, globalFlags, store, config };
-    const commands = collectCommands(ctx);
+    const dummyStore = { dispose: () => {} } as Store;
+    const ctx: PragmaContext = {
+      cwd,
+      globalFlags,
+      store: store ?? dummyStore,
+      config,
+    };
+    const commands = [
+      ...setupCommands(),
+      ...(store ? collectCommands(ctx) : []),
+    ];
     const program = createProgram(commands, ctx);
 
     await program.parseAsync(argv);
@@ -199,7 +214,7 @@ async function runCli(argv: readonly string[]): Promise<void> {
     process.stderr.write(`${renderError(wrapped, globalFlags)}\n`);
     process.exitCode = 127;
   } finally {
-    store.dispose();
+    store?.dispose();
   }
 }
 
