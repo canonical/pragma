@@ -20,14 +20,14 @@ export default async function getToken(
     buildQuery(`
       SELECT ?token ?typeName ?valueLight ?valueDark
       WHERE {
-        ?token a ds:Token ;
-               ds:tokenId ${escaped} .
+        ?token a dso:Token ;
+               dso:tokenId ${escaped} .
         OPTIONAL {
-          ?token ds:tokenType ?type .
+          ?token dso:tokenType ?type .
           ?type rdfs:label ?typeName .
         }
-        OPTIONAL { ?token ds:valueLight ?valueLight }
-        OPTIONAL { ?token ds:valueDark ?valueDark }
+        OPTIONAL { ?token dso:valueLight ?valueLight }
+        OPTIONAL { ?token dso:valueDark ?valueDark }
       }
       LIMIT 1
     `),

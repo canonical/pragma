@@ -21,9 +21,9 @@ import { PREFIX_MAP } from "./prefixes.js";
  * @see CF.02
  */
 export const DEFAULT_SOURCES: readonly string[] = [
-  "node_modules/@canonical/ds-global/definitions/ontology.ttl",
-  "node_modules/@canonical/ds-global/data/**/*.ttl",
-  "node_modules/@canonical/anatomy-dsl/ontology/**/*.ttl",
+  "node_modules/@canonical/design-system/definitions/ontology.ttl",
+  "node_modules/@canonical/design-system/data/**/*.ttl",
+  "node_modules/@canonical/anatomy-dsl/definitions/**/*.ttl",
   "node_modules/@canonical/code-standards/definitions/**/*.ttl",
   "node_modules/@canonical/code-standards/data/**/*.ttl",
 ];
@@ -61,7 +61,7 @@ export async function bootStore(
       error instanceof Error ? error.message : String(error),
       {
         recovery:
-          "Ensure design system packages are installed: bun add -D @canonical/ds-global @canonical/code-standards",
+          "Ensure design system packages are installed: bun add -D @canonical/design-system @canonical/code-standards @canonical/anatomy-dsl",
       },
     );
   }

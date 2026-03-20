@@ -47,14 +47,13 @@ describe("tier list command", () => {
     expect(text).toContain("apps/lxd");
   });
 
-  it("shows parent references", async () => {
+  it("renders flat tier list without parent references", async () => {
     const ctx = makeCtx();
     const cmd = listCommand(ctx);
     const result = await cmd.execute({}, ctx);
     const output = result as CommandOutputResult;
     const text = output.render.plain(output.value);
-    expect(text).toContain("(parent: global)");
-    expect(text).toContain("(parent: apps)");
+    expect(text).not.toContain("(parent:");
   });
 
   it("renders LLM format with --llm", async () => {

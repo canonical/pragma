@@ -19,7 +19,7 @@ afterAll(() => cleanup());
 describe("inspectUri", () => {
   it("returns grouped triples for a known URI", async () => {
     const result = await inspectUri(store, "ds:button");
-    expect(result.uri).toBe("https://ds.canonical.com/button");
+    expect(result.uri).toBe("https://ds.canonical.com/data/button");
     expect(result.groups.length).toBeGreaterThan(0);
 
     const predicates = result.groups.map((g) => g.predicate);
@@ -30,12 +30,15 @@ describe("inspectUri", () => {
 
   it("resolves prefixed URIs", async () => {
     const result = await inspectUri(store, "ds:button");
-    expect(result.uri).toBe("https://ds.canonical.com/button");
+    expect(result.uri).toBe("https://ds.canonical.com/data/button");
   });
 
   it("accepts full URIs", async () => {
-    const result = await inspectUri(store, "https://ds.canonical.com/button");
-    expect(result.uri).toBe("https://ds.canonical.com/button");
+    const result = await inspectUri(
+      store,
+      "https://ds.canonical.com/data/button",
+    );
+    expect(result.uri).toBe("https://ds.canonical.com/data/button");
     expect(result.groups.length).toBeGreaterThan(0);
   });
 

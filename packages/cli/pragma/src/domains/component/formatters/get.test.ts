@@ -5,7 +5,7 @@ import type { AspectFlags } from "../types.js";
 import formatters from "./get.js";
 
 const BUTTON_DETAILED: ComponentDetailed = {
-  uri: "https://ds.canonical.com/button" as URI,
+  uri: "https://ds.canonical.com/data/button" as URI,
   name: "Button",
   tier: "global",
   modifiers: ["importance", "density"],
@@ -34,7 +34,7 @@ const BUTTON_DETAILED: ComponentDetailed = {
   ],
   tokens: [
     {
-      uri: "https://ds.canonical.com/token.color.primary" as URI,
+      uri: "https://ds.canonical.com/data/token.color.primary" as URI,
       name: "color.primary",
     },
   ],

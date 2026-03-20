@@ -11,11 +11,15 @@ export default async function listModifiers(
 ): Promise<ModifierFamily[]> {
   const result = await store.query(
     buildQuery(`
-      SELECT ?family ?name (GROUP_CONCAT(DISTINCT ?value; separator="|") AS ?values)
+      SELECT ?family ?name (GROUP_CONCAT(DISTINCT ?valueName; separator="|") AS ?values)
       WHERE {
-        ?family a ds:ModifierFamily ;
-                ds:modifierName ?name ;
-                ds:hasValue ?value .
+        ?family a dso:ModifierFamily ;
+                dso:name ?name .
+        OPTIONAL {
+          ?mod a dso:Modifier ;
+               dso:modifierFamily ?family ;
+               dso:name ?valueName .
+        }
       }
       GROUP BY ?family ?name
       ORDER BY ?name

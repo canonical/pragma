@@ -10,155 +10,146 @@
 // =============================================================================
 
 export const DS_ONTOLOGY_TTL = `
-@prefix ds: <https://ds.canonical.com/> .
-@prefix cso: <http://pragma.canonical.com/codestandards#> .
+@prefix ds: <https://ds.canonical.com/data/> .
+@prefix dso: <https://ds.canonical.com/ontology#> .
+@prefix cs: <http://pragma.canonical.com/codestandards#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix owl: <http://www.w3.org/2002/07/owl#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
 # ---- Classes ----
 
-ds:UIBlock a owl:Class ;
+dso:UIBlock a owl:Class ;
   rdfs:label "UI Block" .
 
-ds:Component a owl:Class ;
-  rdfs:subClassOf ds:UIBlock ;
+dso:Component a owl:Class ;
+  rdfs:subClassOf dso:UIBlock ;
   rdfs:label "Component" .
 
-ds:Pattern a owl:Class ;
-  rdfs:subClassOf ds:UIBlock ;
+dso:Pattern a owl:Class ;
+  rdfs:subClassOf dso:UIBlock ;
   rdfs:label "Pattern" .
 
-ds:Tier a owl:Class ;
+dso:Tier a owl:Class ;
   rdfs:label "Tier" .
 
-ds:ModifierFamily a owl:Class ;
+dso:ModifierFamily a owl:Class ;
   rdfs:label "Modifier Family" .
 
-ds:Token a owl:Class ;
+dso:Modifier a owl:Class ;
+  rdfs:label "Modifier" .
+
+dso:Token a owl:Class ;
   rdfs:label "Design Token" .
 
-ds:TokenType a owl:Class ;
+dso:TokenType a owl:Class ;
   rdfs:label "Token Type" .
 
-ds:ImplementationLibrary a owl:Class ;
+dso:ImplementationLibrary a owl:Class ;
   rdfs:label "Implementation Library" .
 
-ds:ImplementationObject a owl:Class ;
+dso:ImplementationObject a owl:Class ;
   rdfs:label "Implementation Object" .
 
-cso:CodeStandard a owl:Class ;
+cs:CodeStandard a owl:Class ;
   rdfs:label "Code Standard" .
 
-cso:Category a owl:Class ;
+cs:Category a owl:Class ;
   rdfs:label "Standard Category" .
 
 # ---- Properties ----
 
-ds:name a owl:DatatypeProperty ;
-  rdfs:domain ds:UIBlock ;
+dso:name a owl:DatatypeProperty ;
+  rdfs:domain dso:UIBlock ;
   rdfs:range xsd:string .
 
-ds:tier a owl:ObjectProperty ;
-  rdfs:domain ds:UIBlock .
+dso:tier a owl:ObjectProperty ;
+  rdfs:domain dso:UIBlock .
 
-ds:release a owl:ObjectProperty ;
-  rdfs:domain ds:UIBlock .
+dso:release a owl:ObjectProperty ;
+  rdfs:domain dso:UIBlock .
 
-ds:modifier a owl:ObjectProperty ;
-  rdfs:domain ds:UIBlock ;
-  rdfs:range ds:ModifierFamily .
+dso:hasModifierFamily a owl:ObjectProperty ;
+  rdfs:domain dso:UIBlock ;
+  rdfs:range dso:ModifierFamily .
 
-ds:tierPath a owl:DatatypeProperty ;
-  rdfs:domain ds:Tier ;
+dso:modifierFamily a owl:ObjectProperty ;
+  rdfs:domain dso:Modifier ;
+  rdfs:range dso:ModifierFamily .
+
+dso:tokenId a owl:DatatypeProperty ;
+  rdfs:domain dso:Token ;
   rdfs:range xsd:string .
 
-ds:parentTier a owl:ObjectProperty ;
-  rdfs:domain ds:Tier ;
-  rdfs:range ds:Tier .
+dso:tokenType a owl:ObjectProperty ;
+  rdfs:domain dso:Token ;
+  rdfs:range dso:TokenType .
 
-ds:depth a owl:DatatypeProperty ;
-  rdfs:domain ds:Tier ;
-  rdfs:range xsd:integer .
+dso:tokenTier a owl:ObjectProperty ;
+  rdfs:domain dso:Token .
 
-ds:modifierName a owl:DatatypeProperty ;
-  rdfs:domain ds:ModifierFamily ;
+dso:valueLight a owl:DatatypeProperty ;
+  rdfs:domain dso:Token ;
   rdfs:range xsd:string .
 
-ds:hasValue a owl:DatatypeProperty ;
-  rdfs:domain ds:ModifierFamily ;
+dso:valueDark a owl:DatatypeProperty ;
+  rdfs:domain dso:Token ;
   rdfs:range xsd:string .
 
-ds:tokenId a owl:DatatypeProperty ;
-  rdfs:domain ds:Token ;
+dso:platform a owl:DatatypeProperty ;
+  rdfs:domain dso:ImplementationLibrary ;
   rdfs:range xsd:string .
 
-ds:tokenType a owl:ObjectProperty ;
-  rdfs:domain ds:Token ;
-  rdfs:range ds:TokenType .
-
-ds:tokenTier a owl:ObjectProperty ;
-  rdfs:domain ds:Token .
-
-ds:valueLight a owl:DatatypeProperty ;
-  rdfs:domain ds:Token ;
+dso:libraryName a owl:DatatypeProperty ;
+  rdfs:domain dso:ImplementationLibrary ;
   rdfs:range xsd:string .
 
-ds:valueDark a owl:DatatypeProperty ;
-  rdfs:domain ds:Token ;
+dso:hasImplementation a owl:ObjectProperty ;
+  rdfs:domain dso:ImplementationLibrary ;
+  rdfs:range dso:ImplementationObject .
+
+dso:implementsBlock a owl:ObjectProperty ;
+  rdfs:domain dso:ImplementationObject ;
+  rdfs:range dso:UIBlock .
+
+dso:headLink a owl:DatatypeProperty ;
+  rdfs:domain dso:ImplementationObject ;
   rdfs:range xsd:string .
 
-ds:platform a owl:DatatypeProperty ;
-  rdfs:domain ds:ImplementationLibrary ;
+dso:usesToken a owl:ObjectProperty ;
+  rdfs:domain dso:UIBlock ;
+  rdfs:range dso:Token .
+
+dso:anatomyNode a owl:ObjectProperty ;
+  rdfs:domain dso:UIBlock .
+
+cs:name a owl:DatatypeProperty ;
+  rdfs:domain cs:CodeStandard ;
   rdfs:range xsd:string .
 
-ds:libraryName a owl:DatatypeProperty ;
-  rdfs:domain ds:ImplementationLibrary ;
+cs:hasCategory a owl:ObjectProperty ;
+  rdfs:domain cs:CodeStandard ;
+  rdfs:range cs:Category .
+
+cs:slug a owl:DatatypeProperty ;
+  rdfs:domain cs:Category ;
   rdfs:range xsd:string .
 
-ds:hasImplementation a owl:ObjectProperty ;
-  rdfs:domain ds:ImplementationLibrary ;
-  rdfs:range ds:ImplementationObject .
-
-ds:implementsBlock a owl:ObjectProperty ;
-  rdfs:domain ds:ImplementationObject ;
-  rdfs:range ds:UIBlock .
-
-ds:headLink a owl:DatatypeProperty ;
-  rdfs:domain ds:ImplementationObject ;
+cs:description a owl:DatatypeProperty ;
+  rdfs:domain cs:CodeStandard ;
   rdfs:range xsd:string .
 
-ds:usesToken a owl:ObjectProperty ;
-  rdfs:domain ds:UIBlock ;
-  rdfs:range ds:Token .
-
-cso:name a owl:DatatypeProperty ;
-  rdfs:domain cso:CodeStandard ;
+cs:dos a owl:DatatypeProperty ;
+  rdfs:domain cs:CodeStandard ;
   rdfs:range xsd:string .
 
-cso:category a owl:ObjectProperty ;
-  rdfs:domain cso:CodeStandard ;
-  rdfs:range cso:Category .
-
-cso:categoryName a owl:DatatypeProperty ;
-  rdfs:domain cso:Category ;
+cs:donts a owl:DatatypeProperty ;
+  rdfs:domain cs:CodeStandard ;
   rdfs:range xsd:string .
 
-cso:description a owl:DatatypeProperty ;
-  rdfs:domain cso:CodeStandard ;
-  rdfs:range xsd:string .
-
-cso:do a owl:DatatypeProperty ;
-  rdfs:domain cso:CodeStandard ;
-  rdfs:range xsd:string .
-
-cso:dont a owl:DatatypeProperty ;
-  rdfs:domain cso:CodeStandard ;
-  rdfs:range xsd:string .
-
-cso:extends a owl:ObjectProperty ;
-  rdfs:domain cso:CodeStandard ;
-  rdfs:range cso:CodeStandard .
+cs:extends a owl:ObjectProperty ;
+  rdfs:domain cs:CodeStandard ;
+  rdfs:range cs:CodeStandard .
 `;
 
 // =============================================================================
@@ -166,21 +157,17 @@ cso:extends a owl:ObjectProperty ;
 // =============================================================================
 
 export const DS_TIERS_TTL = `
-@prefix ds: <https://ds.canonical.com/> .
+@prefix ds: <https://ds.canonical.com/data/> .
+@prefix dso: <https://ds.canonical.com/ontology#> .
 
-ds:global a ds:Tier ;
-  ds:tierPath "global" ;
-  ds:depth 0 .
+ds:global a dso:Tier ;
+  dso:name "global" .
 
-ds:apps a ds:Tier ;
-  ds:tierPath "apps" ;
-  ds:parentTier ds:global ;
-  ds:depth 1 .
+ds:apps a dso:Tier ;
+  dso:name "apps" .
 
-ds:apps_lxd a ds:Tier ;
-  ds:tierPath "apps/lxd" ;
-  ds:parentTier ds:apps ;
-  ds:depth 2 .
+ds:apps_lxd a dso:Tier ;
+  dso:name "apps/lxd" .
 `;
 
 // =============================================================================
@@ -188,12 +175,13 @@ ds:apps_lxd a ds:Tier ;
 // =============================================================================
 
 export const DS_RELEASES_TTL = `
-@prefix ds: <https://ds.canonical.com/> .
+@prefix ds: <https://ds.canonical.com/data/> .
+@prefix dso: <https://ds.canonical.com/ontology#> .
 
-ds:stable a ds:ReleaseChannel .
-ds:experimental a ds:ReleaseChannel .
-ds:alpha a ds:ReleaseChannel .
-ds:beta a ds:ReleaseChannel .
+ds:stable a dso:ReleaseChannel .
+ds:experimental a dso:ReleaseChannel .
+ds:alpha a dso:ReleaseChannel .
+ds:beta a dso:ReleaseChannel .
 `;
 
 // =============================================================================
@@ -201,42 +189,43 @@ ds:beta a ds:ReleaseChannel .
 // =============================================================================
 
 export const DS_COMPONENTS_TTL = `
-@prefix ds: <https://ds.canonical.com/> .
+@prefix ds: <https://ds.canonical.com/data/> .
+@prefix dso: <https://ds.canonical.com/ontology#> .
 
-ds:button a ds:Component ;
-  ds:name "Button" ;
-  ds:tier ds:global ;
-  ds:release ds:stable ;
-  ds:modifier ds:modifier_family.importance ;
-  ds:modifier ds:modifier_family.density ;
-  ds:usesToken ds:token.color.primary ;
-  ds:anatomyNode ds:button_node.root ;
-  ds:anatomyNode ds:button_node.label ;
-  ds:anatomyNode ds:button_node.icon .
+ds:button a dso:Component ;
+  dso:name "Button" ;
+  dso:tier ds:global ;
+  dso:release ds:stable ;
+  dso:hasModifierFamily ds:modifier_family.importance ;
+  dso:hasModifierFamily ds:modifier_family.density ;
+  dso:usesToken ds:token.color.primary ;
+  dso:anatomyNode ds:button_node.root ;
+  dso:anatomyNode ds:button_node.label ;
+  dso:anatomyNode ds:button_node.icon .
 
-ds:button_node.root a ds:AnatomyNode ;
-  ds:name "button" .
+ds:button_node.root a dso:AnatomyNode ;
+  dso:name "button" .
 
-ds:button_node.label a ds:AnatomyNode ;
-  ds:name "label" .
+ds:button_node.label a dso:AnatomyNode ;
+  dso:name "label" .
 
-ds:button_node.icon a ds:AnatomyNode ;
-  ds:name "icon" .
+ds:button_node.icon a dso:AnatomyNode ;
+  dso:name "icon" .
 
-ds:card a ds:Component ;
-  ds:name "Card" ;
-  ds:tier ds:global ;
-  ds:release ds:stable .
+ds:card a dso:Component ;
+  dso:name "Card" ;
+  dso:tier ds:global ;
+  dso:release ds:stable .
 
-ds:lxd_panel a ds:Component ;
-  ds:name "LXD Panel" ;
-  ds:tier ds:apps_lxd ;
-  ds:release ds:stable .
+ds:lxd_panel a dso:Component ;
+  dso:name "LXD Panel" ;
+  dso:tier ds:apps_lxd ;
+  dso:release ds:stable .
 
-ds:beta_widget a ds:Component ;
-  ds:name "Beta Widget" ;
-  ds:tier ds:global ;
-  ds:release ds:beta .
+ds:beta_widget a dso:Component ;
+  dso:name "Beta Widget" ;
+  dso:tier ds:global ;
+  dso:release ds:beta .
 `;
 
 // =============================================================================
@@ -244,24 +233,25 @@ ds:beta_widget a ds:Component ;
 // =============================================================================
 
 export const DS_IMPLEMENTATIONS_TTL = `
-@prefix ds: <https://ds.canonical.com/> .
+@prefix ds: <https://ds.canonical.com/data/> .
+@prefix dso: <https://ds.canonical.com/ontology#> .
 
-ds:impl.react a ds:ImplementationLibrary ;
-  ds:libraryName "@canonical/react-ds-global" ;
-  ds:platform "react" ;
-  ds:hasImplementation [
-    a ds:ImplementationObject ;
-    ds:implementsBlock ds:button ;
-    ds:headLink "src/lib/Button/Button.tsx"
+ds:impl.react a dso:ImplementationLibrary ;
+  dso:libraryName "@canonical/react-ds-global" ;
+  dso:platform "react" ;
+  dso:hasImplementation [
+    a dso:ImplementationObject ;
+    dso:implementsBlock ds:button ;
+    dso:headLink "src/lib/Button/Button.tsx"
   ] , [
-    a ds:ImplementationObject ;
-    ds:implementsBlock ds:card ;
-    ds:headLink "src/lib/Card/Card.tsx"
+    a dso:ImplementationObject ;
+    dso:implementsBlock ds:card ;
+    dso:headLink "src/lib/Card/Card.tsx"
   ] .
 
-ds:impl.svelte a ds:ImplementationLibrary ;
-  ds:libraryName "@canonical/svelte-ds-global" ;
-  ds:platform "svelte" .
+ds:impl.svelte a dso:ImplementationLibrary ;
+  dso:libraryName "@canonical/svelte-ds-global" ;
+  dso:platform "svelte" .
 `;
 
 // =============================================================================
@@ -269,54 +259,70 @@ ds:impl.svelte a ds:ImplementationLibrary ;
 // =============================================================================
 
 export const DS_STANDARDS_TTL = `
-@prefix cso: <http://pragma.canonical.com/codestandards#> .
+@prefix cs: <http://pragma.canonical.com/codestandards#> .
 
-cso:react_category a cso:Category ;
-  cso:categoryName "react" .
+cs:react_category a cs:Category ;
+  cs:slug "react" .
 
-cso:code_category a cso:Category ;
-  cso:categoryName "code" .
+cs:code_category a cs:Category ;
+  cs:slug "code" .
 
-cso:react_folder a cso:CodeStandard ;
-  cso:name "react/component/folder-structure" ;
-  cso:category cso:react_category ;
-  cso:description "Components must follow the standard folder layout" ;
-  cso:do "Place component files in src/lib/ComponentName/" ;
-  cso:do "Include index.ts barrel export" ;
-  cso:dont "Use flat directory with all components at same level" .
+cs:react_folder a cs:CodeStandard ;
+  cs:name "react/component/folder-structure" ;
+  cs:hasCategory cs:react_category ;
+  cs:description "Components must follow the standard folder layout" ;
+  cs:dos "Place component files in src/lib/ComponentName/" ;
+  cs:dos "Include index.ts barrel export" ;
+  cs:donts "Use flat directory with all components at same level" .
 
-cso:react_props a cso:CodeStandard ;
-  cso:name "react/component/props" ;
-  cso:category cso:react_category ;
-  cso:description "Props must extend the base HTML element type" ;
-  cso:do "Extend HTMLAttributes<HTMLElement>" ;
-  cso:dont "Define props without extending HTML attributes" .
+cs:react_props a cs:CodeStandard ;
+  cs:name "react/component/props" ;
+  cs:hasCategory cs:react_category ;
+  cs:description "Props must extend the base HTML element type" ;
+  cs:dos "Extend HTMLAttributes<HTMLElement>" ;
+  cs:donts "Define props without extending HTML attributes" .
 
-cso:code_purity a cso:CodeStandard ;
-  cso:name "code/function/purity" ;
-  cso:category cso:code_category ;
-  cso:description "Functions should be pure where possible" ;
-  cso:do "Return same output for same input" ;
-  cso:dont "Modify external state without annotation" .
+cs:code_purity a cs:CodeStandard ;
+  cs:name "code/function/purity" ;
+  cs:hasCategory cs:code_category ;
+  cs:description "Functions should be pure where possible" ;
+  cs:dos "Return same output for same input" ;
+  cs:donts "Modify external state without annotation" .
 `;
 
 // =============================================================================
-// Modifier families
+// Modifier families and modifier instances
 // =============================================================================
 
 export const DS_MODIFIERS_TTL = `
-@prefix ds: <https://ds.canonical.com/> .
+@prefix ds: <https://ds.canonical.com/data/> .
+@prefix dso: <https://ds.canonical.com/ontology#> .
 
-ds:modifier_family.importance a ds:ModifierFamily ;
-  ds:modifierName "importance" ;
-  ds:hasValue "default" ;
-  ds:hasValue "primary" ;
-  ds:hasValue "secondary" .
+ds:modifier_family.importance a dso:ModifierFamily ;
+  dso:name "importance" .
 
-ds:modifier_family.density a ds:ModifierFamily ;
-  ds:modifierName "density" ;
-  ds:hasValue "default" ;
-  ds:hasValue "compact" .
+ds:mod_importance_default a dso:Modifier ;
+  dso:name "default" ;
+  dso:modifierFamily ds:modifier_family.importance .
+
+ds:mod_importance_primary a dso:Modifier ;
+  dso:name "primary" ;
+  dso:modifierFamily ds:modifier_family.importance .
+
+ds:mod_importance_secondary a dso:Modifier ;
+  dso:name "secondary" ;
+  dso:modifierFamily ds:modifier_family.importance .
+
+ds:modifier_family.density a dso:ModifierFamily ;
+  dso:name "density" .
+
+ds:mod_density_default a dso:Modifier ;
+  dso:name "default" ;
+  dso:modifierFamily ds:modifier_family.density .
+
+ds:mod_density_compact a dso:Modifier ;
+  dso:name "compact" ;
+  dso:modifierFamily ds:modifier_family.density .
 `;
 
 // =============================================================================
@@ -324,27 +330,28 @@ ds:modifier_family.density a ds:ModifierFamily ;
 // =============================================================================
 
 export const DS_TOKENS_TTL = `
-@prefix ds: <https://ds.canonical.com/> .
+@prefix ds: <https://ds.canonical.com/data/> .
+@prefix dso: <https://ds.canonical.com/ontology#> .
 
-ds:token_type.color a ds:TokenType ;
+ds:token_type.color a dso:TokenType ;
   rdfs:label "Color" .
 
-ds:token_type.dimension a ds:TokenType ;
+ds:token_type.dimension a dso:TokenType ;
   rdfs:label "Dimension" .
 
-ds:token.color.primary a ds:Token ;
-  ds:tokenId "color.primary" ;
-  ds:tokenType ds:token_type.color ;
-  ds:tokenTier ds:token_tier.semantic ;
-  ds:valueLight "#0066cc" ;
-  ds:valueDark "#4d9aff" .
+ds:token.color.primary a dso:Token ;
+  dso:tokenId "color.primary" ;
+  dso:tokenType ds:token_type.color ;
+  dso:tokenTier ds:token_tier.semantic ;
+  dso:valueLight "#0066cc" ;
+  dso:valueDark "#4d9aff" .
 
-ds:token.spacing.sm a ds:Token ;
-  ds:tokenId "spacing.sm" ;
-  ds:tokenType ds:token_type.dimension ;
-  ds:tokenTier ds:token_tier.primitive ;
-  ds:valueLight "8px" ;
-  ds:valueDark "8px" .
+ds:token.spacing.sm a dso:Token ;
+  dso:tokenId "spacing.sm" ;
+  dso:tokenType ds:token_type.dimension ;
+  dso:tokenTier ds:token_tier.primitive ;
+  dso:valueLight "8px" ;
+  dso:valueDark "8px" .
 `;
 
 // =============================================================================

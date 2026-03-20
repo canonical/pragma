@@ -4,40 +4,30 @@ import type { TierEntry } from "../../shared/types.js";
 import formatters from "./list.js";
 
 const TIERS: TierEntry[] = [
-  { uri: "http://example.com/t1" as URI, path: "global", depth: 0 },
-  {
-    uri: "http://example.com/t2" as URI,
-    path: "apps",
-    parent: "global",
-    depth: 1,
-  },
-  {
-    uri: "http://example.com/t3" as URI,
-    path: "apps/lxd",
-    parent: "apps",
-    depth: 2,
-  },
+  { uri: "http://example.com/t1" as URI, path: "apps", depth: 0 },
+  { uri: "http://example.com/t2" as URI, path: "apps/lxd", depth: 0 },
+  { uri: "http://example.com/t3" as URI, path: "global", depth: 0 },
 ];
 
 describe("tier list formatters", () => {
-  it("plain renders hierarchy with indentation", () => {
+  it("plain renders flat tier names", () => {
     const text = formatters.plain(TIERS);
     expect(text).toContain("global");
-    expect(text).toContain("  apps (parent: global)");
-    expect(text).toContain("    apps/lxd (parent: apps)");
+    expect(text).toContain("apps");
+    expect(text).toContain("apps/lxd");
   });
 
-  it("plain omits parent for root tier", () => {
+  it("plain renders one tier per line", () => {
     const text = formatters.plain(TIERS);
-    const globalLine = text.split("\n")[0];
-    expect(globalLine).toBe("global");
+    const lines = text.split("\n").filter(Boolean);
+    expect(lines).toHaveLength(3);
   });
 
   it("llm renders markdown heading and bold paths", () => {
     const text = formatters.llm(TIERS);
     expect(text).toContain("## Tiers");
     expect(text).toContain("- **global**");
-    expect(text).toContain("  - **apps**");
-    expect(text).toContain("    - **apps/lxd**");
+    expect(text).toContain("- **apps**");
+    expect(text).toContain("- **apps/lxd**");
   });
 });
