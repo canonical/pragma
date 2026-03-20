@@ -186,6 +186,37 @@ export type {
 export { runChecks } from "./domains/doctor/operations/index.js";
 
 // =============================================================================
+// D09 — Skills
+// =============================================================================
+
+export {
+  SKILL_SOURCES,
+  SOURCE_PACKAGE_MAP,
+} from "./domains/skill/constants.js";
+export { commands as skillCommands } from "./domains/skill/index.js";
+export type { SkillListResult } from "./domains/skill/operations/index.js";
+export {
+  discoverSkills,
+  listSkills,
+} from "./domains/skill/operations/index.js";
+export type {
+  DiscoveredSkill,
+  SkillFrontmatter,
+  SkillSource,
+} from "./domains/skill/types.js";
+
+// =============================================================================
+// D09 — Setup
+// =============================================================================
+
+export { commands as setupCommands } from "./domains/setup/index.js";
+export { setupSkills } from "./domains/setup/operations/index.js";
+export type {
+  SetupSkillsResult,
+  SymlinkAction,
+} from "./domains/setup/types.js";
+
+// =============================================================================
 // D11 — MCP Adapter
 // =============================================================================
 

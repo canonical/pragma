@@ -2,7 +2,7 @@
  * Setup domain — CLI commands for environment configuration.
  *
  * Commands: `pragma setup all`, `pragma setup lsp`, `pragma setup mcp`,
- * `pragma setup completions`
+ * `pragma setup completions`, `pragma setup skills`
  *
  * Setup commands do not require the ke store. They operate on the
  * local filesystem and AI harness configs only.
@@ -14,10 +14,17 @@ import {
   completionsCommand,
   lspCommand,
   mcpCommand,
+  skillsCommand,
 } from "./commands/index.js";
 
 export function commands(): CommandDefinition[] {
-  return [allCommand, lspCommand, mcpCommand, completionsCommand];
+  return [
+    allCommand,
+    lspCommand,
+    mcpCommand,
+    completionsCommand,
+    skillsCommand(),
+  ];
 }
 
 export {
@@ -25,4 +32,5 @@ export {
   setupCompletions,
   setupLsp,
   setupMcp,
+  setupSkills,
 } from "./operations/index.js";
