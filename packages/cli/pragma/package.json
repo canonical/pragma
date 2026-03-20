@@ -53,7 +53,10 @@
     "@canonical/design-system": "^0.1.0"
   },
   "dependencies": {
+    "@canonical/anatomy-dsl": "file:../../../../anatomy-dsl",
     "@canonical/cli-core": "^0.18.0",
+    "@canonical/code-standards": "file:../../../../code-standards",
+    "@canonical/design-system": "^0.1.0",
     "@canonical/harnesses": "^0.18.0",
     "@canonical/ke": "^0.18.0",
     "@canonical/summon-component": "^0.18.0",
