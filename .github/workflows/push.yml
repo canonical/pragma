@@ -18,6 +18,9 @@ jobs:
       - name: Setup environment
         uses: ./.github/actions/setup-env
 
+      - name: Build all artifacts
+        run: lerna run build:all
+
       - name: Code quality checks
         run: bun run check
 

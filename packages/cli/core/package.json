@@ -41,8 +41,8 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "@canonical/summon-core": "workspace:*",
-    "@canonical/task": "workspace:*",
+    "@canonical/summon-core": "^0.18.0",
+    "@canonical/task": "^0.18.0",
     "chalk": "^5.4.1",
     "commander": "^14.0.3"
   },
