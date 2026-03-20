@@ -17,6 +17,8 @@ jobs:
 
       - name: Setup environment
         uses: ./.github/actions/setup-env
+        with:
+          build-target: build:all
 
       - name: Code quality checks
         run: bun run check

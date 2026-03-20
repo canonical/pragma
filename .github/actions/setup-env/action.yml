@@ -9,6 +9,9 @@ inputs:
     # Storybook 10 supports Node 20.16+, 22.19+, or 24+
     default: '24'
     description: Version of Node to use
+  build-target:
+    default: ''
+    description: 'Lerna build target to run after install (e.g. "build", "build:all"). Leave empty to skip.'
 runs:
   using: composite
   steps:
@@ -33,14 +36,6 @@ runs:
         path: ~/.bun/install/cache
         key: bun-cache-${{ runner.os }}-${{ hashFiles('bun.lock') }}
 
-    - name: Cache Nx
-      uses: actions/cache@v4
-      with:
-        path: .nx/cache
-        key: nx-cache-${{ runner.os }}-${{ inputs.node-version }}-${{ github.sha }}
-        restore-keys: |
-          nx-cache-${{ runner.os }}-${{ inputs.node-version }}-
-
     - name: Install dependencies
       shell: bash
       # NOTE: --frozen-lockfile disabled for now due to a known Bun bug where bun install
@@ -60,3 +55,8 @@ runs:
     - name: Re-link workspace binaries
       shell: bash
       run: bun install --ignore-scripts
+
+    - name: Build
+      if: ${{ inputs.build-target != '' }}
+      shell: bash
+      run: bunx lerna run ${{ inputs.build-target }}

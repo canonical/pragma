@@ -42,7 +42,7 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "@canonical/task": "workspace:*"
+    "@canonical/task": "^0.18.0"
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.6",
