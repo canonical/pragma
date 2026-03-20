@@ -8,10 +8,50 @@
 
 .ds.hero {
   grid-column: 1 / -1;
+  padding-top: 1.5rem;
+  padding-bottom: 4rem;
+  gap: 2rem;
 
-  & ::slotted(img) {
+  & .content {
+    grid-column: 1;
+  }
+
+  &.no-media .content {
+    display: contents;
+  }
+
+  &.no-media .header {
+    grid-column: 1;
+  }
+
+  &.no-media .body {
+    grid-column: 2;
+  }
+
+  & .media {
+    grid-column: 2;
+    margin: 0;
+    overflow: hidden;
+  }
+
+  ::slotted([slot="media"]) {
     width: 100%;
-    height: auto;
+    height: 100%;
     object-fit: cover;
+    display: block;
+  }
+}
+
+@media only screen and (min-width: 620px) {
+  .ds.hero.no-media {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media only screen and (min-width: 1120px) {
+  .ds.hero {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
   }
 }

@@ -26,4 +26,53 @@ describe("Hero component", () => {
   it("should have correct tag name", () => {
     expect(elem.tagName.toLowerCase()).toBe("ds-hero");
   });
+
+  it("should render title in h1", async () => {
+    elem.title = "Title";
+    await elem.updateComplete;
+
+    const h1 = elem.shadowRoot?.querySelector(".header h1");
+    expect(h1?.textContent).toBe("Title");
+  });
+
+  it("should render description when provided", async () => {
+    elem.description = "Some description";
+    await elem.updateComplete;
+
+    const p = elem.shadowRoot?.querySelector(".body p.description");
+    expect(p?.textContent).toBe("Some description");
+  });
+
+  it("should not render description when not provided", async () => {
+    await elem.updateComplete;
+
+    const p = elem.shadowRoot?.querySelector(".body p.description");
+    expect(p).toBeNull();
+  });
+
+  it("should have no-media class when no media slot is filled", async () => {
+    await elem.updateComplete;
+
+    const section = elem.shadowRoot?.querySelector("section");
+    expect(section?.classList.contains("no-media")).toBe(true);
+  });
+
+  it("should hide media div when no media slot is filled", async () => {
+    await elem.updateComplete;
+
+    const media = elem.shadowRoot?.querySelector(".media");
+    expect(media?.hasAttribute("hidden")).toBe(true);
+  });
+
+  it("should show media and remove no-media class when media slot is filled", async () => {
+    const img = document.createElement("img");
+    img.slot = "media";
+    elem.appendChild(img);
+    await elem.updateComplete;
+
+    const section = elem.shadowRoot?.querySelector("section");
+    const media = elem.shadowRoot?.querySelector(".media");
+    expect(section?.classList.contains("no-media")).toBe(false);
+    expect(media?.hasAttribute("hidden")).toBe(false);
+  });
 });
