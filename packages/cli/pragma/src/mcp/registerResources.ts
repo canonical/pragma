@@ -13,7 +13,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { PragmaConfig } from "../config.js";
 import { LABEL_PROPERTY } from "../constants.js";
-import resolveUri from "../domains/graph/resolveUri.js";
+import resolveUri from "../domains/graph/helpers/resolveUri.js";
 import { buildQuery } from "../domains/shared/buildQuery.js";
 import { PragmaError } from "../error/PragmaError.js";
 

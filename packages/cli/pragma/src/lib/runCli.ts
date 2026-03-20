@@ -11,6 +11,7 @@ import { readConfig } from "../config.js";
 import { PROGRAM_DESCRIPTION, PROGRAM_NAME, VERSION } from "../constants.js";
 import { commands as componentCommands } from "../domains/component/index.js";
 import { commands as configCommands } from "../domains/config/index.js";
+import { commands as createCommands } from "../domains/create/index.js";
 import infoCommand from "../domains/info/infoCommand.js";
 import upgradeCommand from "../domains/info/upgradeCommand.js";
 import { bootStore } from "../domains/shared/bootStore.js";
@@ -28,6 +29,7 @@ import {
 function collectCommands(ctx: PragmaContext): CommandDefinition[] {
   return [
     ...configCommands(ctx),
+    ...createCommands(),
     ...standardCommands(ctx),
     ...componentCommands(ctx),
     infoCommand,

@@ -27,9 +27,9 @@ function parseText(result: { content: unknown[] }): unknown {
 // =============================================================================
 
 describe("tool listing", () => {
-  it("registers 11 tools", async () => {
+  it("registers 13 tools", async () => {
     const { tools } = await client.listTools();
-    expect(tools).toHaveLength(11);
+    expect(tools).toHaveLength(13);
   });
 
   it("all tools have descriptions", async () => {
@@ -53,6 +53,8 @@ describe("tool listing", () => {
     expect(names).toContain("token_get");
     expect(names).toContain("tier_list");
     expect(names).toContain("config_show");
+    expect(names).toContain("pragma_create_component");
+    expect(names).toContain("pragma_create_package");
   });
 });
 
@@ -367,6 +369,72 @@ describe("config_show", () => {
     };
     expect(data.channel).toBe("normal");
     expect(data.tier).toBeNull();
+  });
+});
+
+// =============================================================================
+// Generator tools (D14 — mutating)
+// =============================================================================
+
+describe("pragma_create_component", () => {
+  it("returns JSON generation plan for react", async () => {
+    const result = await client.callTool({
+      name: "pragma_create_component",
+      arguments: {
+        framework: "react",
+        componentPath: "src/components/Button",
+      },
+    });
+    expect(result.isError).toBeFalsy();
+    const first = result.content[0] as { type: string; text: string };
+    expect(first.type).toBe("text");
+    const data = JSON.parse(first.text);
+    expect(data.generator.name).toBe("component/react");
+    expect(Array.isArray(data.plan)).toBe(true);
+    expect(data.plan.length).toBeGreaterThan(0);
+  });
+
+  it("returns JSON generation plan for svelte", async () => {
+    const result = await client.callTool({
+      name: "pragma_create_component",
+      arguments: {
+        framework: "svelte",
+        componentPath: "src/lib/components/Toggle",
+      },
+    });
+    expect(result.isError).toBeFalsy();
+    const first = result.content[0] as { type: string; text: string };
+    const data = JSON.parse(first.text);
+    expect(data.generator.name).toBe("component/svelte");
+  });
+
+  it("returns error for invalid framework", async () => {
+    const result = await client.callTool({
+      name: "pragma_create_component",
+      arguments: {
+        framework: "angular",
+        componentPath: "src/components/Button",
+      },
+    });
+    expect(result.isError).toBe(true);
+  });
+});
+
+describe("pragma_create_package", () => {
+  it("returns JSON generation plan", async () => {
+    const result = await client.callTool({
+      name: "pragma_create_package",
+      arguments: {
+        name: "@canonical/test-pkg",
+        type: "tool-ts",
+      },
+    });
+    expect(result.isError).toBeFalsy();
+    const first = result.content[0] as { type: string; text: string };
+    expect(first.type).toBe("text");
+    const data = JSON.parse(first.text);
+    expect(data.generator.name).toBe("package");
+    expect(Array.isArray(data.plan)).toBe(true);
   });
 });
 
