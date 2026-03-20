@@ -120,8 +120,30 @@ function renderError(error: PragmaError, flags: GlobalFlags): string {
 async function runCli(argv: readonly string[]): Promise<void> {
   const globalFlags = parseGlobalFlags(argv);
 
-  // Doctor runs before store boot — it validates the environment itself.
+  // Completions client — intercept before store boot.
+  // The client manages server lifecycle independently.
+  const completionsIdx = argv.indexOf("--completions");
+  if (completionsIdx !== -1) {
+    const partial = argv.slice(completionsIdx + 1).join(" ");
+    const { default: queryCompletions } = await import(
+      "../completions/queryCompletions.js"
+    );
+    await queryCompletions(partial);
+    return;
+  }
+
   const commandArg = argv.slice(2).find((a) => !a.startsWith("-"));
+
+  // Completions server — boots its own store with cache.
+  if (commandArg === "_completions-server") {
+    const { default: startCompletionsServer } = await import(
+      "../completions/startCompletionsServer.js"
+    );
+    await startCompletionsServer();
+    return;
+  }
+
+  // Doctor runs before store boot — it validates the environment itself.
   if (commandArg === "doctor") {
     const { doctorCommand } = await import(
       "../domains/doctor/commands/index.js"

@@ -224,3 +224,12 @@ export { default as createMcpServer } from "./mcp/createMcpServer.js";
 export { default as registerTools } from "./mcp/registerTools.js";
 export { default as serializeError } from "./mcp/serializeError.js";
 export type { McpErrorPayload, McpRecovery } from "./mcp/types.js";
+
+// =============================================================================
+// D10 — Completions Server
+// =============================================================================
+
+export { default as computeSocketPath } from "./completions/computeSocketPath.js";
+export { default as handleQuery } from "./completions/handleQuery.js";
+export { default as queryCompletions } from "./completions/queryCompletions.js";
+export { default as startCompletionsServer } from "./completions/startCompletionsServer.js";
