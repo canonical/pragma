@@ -20,16 +20,13 @@ import { generators as packageGenerators } from "@canonical/summon-package";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import type { PragmaConfig } from "../config.js";
-import collectLlmContext from "../domains/llm/collectLlmContext.js";
-import {
-  COMMAND_REFERENCE,
-  DECISION_TREES,
-} from "../domains/llm/constants.js";
-import type { LlmData } from "../domains/llm/types.js";
 import {
   getComponent,
   listComponents,
 } from "../domains/component/operations/index.js";
+import collectLlmContext from "../domains/llm/collectLlmContext.js";
+import { COMMAND_REFERENCE, DECISION_TREES } from "../domains/llm/constants.js";
+import type { LlmData } from "../domains/llm/types.js";
 import {
   getModifier,
   listModifiers,

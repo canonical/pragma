@@ -18,9 +18,7 @@ import { COMMAND_REFERENCE, DECISION_TREES } from "./constants.js";
 import renderLlmOrientation from "./renderLlmOrientation.js";
 import type { LlmData } from "./types.js";
 
-export default function buildLlmCommand(
-  ctx: PragmaContext,
-): CommandDefinition {
+export default function buildLlmCommand(ctx: PragmaContext): CommandDefinition {
   return {
     path: ["llm"],
     description:

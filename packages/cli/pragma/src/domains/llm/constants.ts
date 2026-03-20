@@ -61,7 +61,7 @@ export const COMMAND_REFERENCE: readonly CommandRefEntry[] = [
   { command: "tier list", tokens: "~50" },
   { command: "ontology list", tokens: "~80" },
   { command: "ontology show <prefix>", tokens: "~300" },
-  { command: "graph query \"<sparql>\"", tokens: "varies" },
+  { command: 'graph query "<sparql>"', tokens: "varies" },
   { command: "graph inspect <uri>", tokens: "~200" },
   { command: "config show", tokens: "~50" },
   { command: "info", tokens: "~100" },
