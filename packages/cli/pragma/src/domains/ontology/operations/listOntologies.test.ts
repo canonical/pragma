@@ -2,6 +2,7 @@ import type { Store } from "@canonical/ke";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { DS_ALL_TTL } from "../../../../testing/dsFixtures.js";
 import { createTestStore } from "../../../../testing/store.js";
+import { PREFIX_MAP } from "../../shared/prefixes.js";
 import listOntologies from "./listOntologies.js";
 
 let store: Store;
@@ -22,7 +23,7 @@ describe("listOntologies", () => {
 
     const ds = result.find((o) => o.prefix === "ds");
     expect(ds).toBeDefined();
-    expect(ds?.namespace).toBe("https://ds.canonical.com/");
+    expect(ds?.namespace).toBe(PREFIX_MAP.ds);
     expect(ds?.classCount).toBeGreaterThan(0);
     expect(ds?.propertyCount).toBeGreaterThan(0);
   });

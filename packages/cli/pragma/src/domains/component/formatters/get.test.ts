@@ -1,11 +1,12 @@
 import type { URI } from "@canonical/ke";
 import { describe, expect, it } from "vitest";
+import { PREFIX_MAP } from "../../shared/prefixes.js";
 import type { ComponentDetailed } from "../../shared/types.js";
 import type { AspectFlags } from "../types.js";
 import formatters from "./get.js";
 
 const BUTTON_DETAILED: ComponentDetailed = {
-  uri: "https://ds.canonical.com/button" as URI,
+  uri: `${PREFIX_MAP.ds}button` as URI,
   name: "Button",
   tier: "global",
   modifiers: ["importance", "density"],
@@ -34,7 +35,7 @@ const BUTTON_DETAILED: ComponentDetailed = {
   ],
   tokens: [
     {
-      uri: "https://ds.canonical.com/token.color.primary" as URI,
+      uri: `${PREFIX_MAP.ds}token.color.primary` as URI,
       name: "color.primary",
     },
   ],

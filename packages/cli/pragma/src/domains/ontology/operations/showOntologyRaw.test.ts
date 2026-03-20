@@ -3,6 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { DS_ALL_TTL } from "../../../../testing/dsFixtures.js";
 import { createTestStore } from "../../../../testing/store.js";
 import { PragmaError } from "../../../error/index.js";
+import { PREFIX_MAP } from "../../shared/prefixes.js";
 import showOntologyRaw from "./showOntologyRaw.js";
 
 let store: Store;
@@ -21,9 +22,7 @@ describe("showOntologyRaw", () => {
     const triples = await showOntologyRaw(store, "ds");
     expect(triples.length).toBeGreaterThan(0);
 
-    const hasDs = triples.some((t) =>
-      t.subject.startsWith("https://ds.canonical.com/"),
-    );
+    const hasDs = triples.some((t) => t.subject.startsWith(PREFIX_MAP.ds));
     expect(hasDs).toBe(true);
   });
 

@@ -3,6 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { DS_ALL_TTL } from "../../../../testing/dsFixtures.js";
 import { createTestStore } from "../../../../testing/store.js";
 import { PragmaError } from "../../../error/index.js";
+import { P } from "../../shared/prefixes.js";
 import executeQuery from "./executeQuery.js";
 
 let store: Store;
@@ -20,7 +21,7 @@ describe("executeQuery", () => {
   it("executes a SELECT query and returns bindings", async () => {
     const result = await executeQuery(
       store,
-      "SELECT ?name WHERE { ?c a ds:Component ; ds:name ?name } ORDER BY ?name",
+      `SELECT ?name WHERE { ?c a ${P.ds}Component ; ${P.ds}name ?name } ORDER BY ?name`,
     );
     expect(result.type).toBe("select");
     if (result.type === "select") {
@@ -33,7 +34,7 @@ describe("executeQuery", () => {
   it("executes a CONSTRUCT query and returns triples", async () => {
     const result = await executeQuery(
       store,
-      "CONSTRUCT { ?c ds:name ?name } WHERE { ?c a ds:Component ; ds:name ?name }",
+      `CONSTRUCT { ?c ${P.ds}name ?name } WHERE { ?c a ${P.ds}Component ; ${P.ds}name ?name }`,
     );
     expect(result.type).toBe("construct");
     if (result.type === "construct") {
@@ -46,7 +47,7 @@ describe("executeQuery", () => {
   it("executes an ASK query and returns boolean", async () => {
     const result = await executeQuery(
       store,
-      "ASK { ?c a ds:Component ; ds:name ?name }",
+      `ASK { ?c a ${P.ds}Component ; ${P.ds}name ?name }`,
     );
     expect(result.type).toBe("ask");
     if (result.type === "ask") {

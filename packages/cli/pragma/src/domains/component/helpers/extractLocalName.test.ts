@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { PREFIX_MAP } from "../../shared/prefixes.js";
 import extractLocalName from "./extractLocalName.js";
 
 describe("extractLocalName", () => {
@@ -7,7 +8,7 @@ describe("extractLocalName", () => {
   });
 
   it("extracts after last slash", () => {
-    expect(extractLocalName("https://ds.canonical.com/global")).toBe("global");
+    expect(extractLocalName(`${PREFIX_MAP.ds}global`)).toBe("global");
   });
 
   it("returns full string when no separator", () => {
@@ -15,6 +16,6 @@ describe("extractLocalName", () => {
   });
 
   it("handles nested path", () => {
-    expect(extractLocalName("https://ds.canonical.com/apps/lxd")).toBe("lxd");
+    expect(extractLocalName(`${PREFIX_MAP.ds}apps/lxd`)).toBe("lxd");
   });
 });

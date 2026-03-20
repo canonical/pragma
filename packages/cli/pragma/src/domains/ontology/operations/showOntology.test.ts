@@ -3,6 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { DS_ALL_TTL } from "../../../../testing/dsFixtures.js";
 import { createTestStore } from "../../../../testing/store.js";
 import { PragmaError } from "../../../error/index.js";
+import { PREFIX_MAP } from "../../shared/prefixes.js";
 import showOntology from "./showOntology.js";
 
 let store: Store;
@@ -20,7 +21,7 @@ describe("showOntology", () => {
   it("returns classes and properties for a prefix", async () => {
     const result = await showOntology(store, "ds");
     expect(result.prefix).toBe("ds");
-    expect(result.namespace).toBe("https://ds.canonical.com/");
+    expect(result.namespace).toBe(PREFIX_MAP.ds);
     expect(result.classes.length).toBeGreaterThan(0);
     expect(result.properties.length).toBeGreaterThan(0);
   });
@@ -41,7 +42,7 @@ describe("showOntology", () => {
   });
 
   it("resolves full namespace URI", async () => {
-    const result = await showOntology(store, "https://ds.canonical.com/");
+    const result = await showOntology(store, PREFIX_MAP.ds);
     expect(result.prefix).toBe("ds");
     expect(result.classes.length).toBeGreaterThan(0);
   });
