@@ -158,6 +158,16 @@ export type {
 export { default as upgradeCommand } from "./domains/info/upgradeCommand.js";
 
 // =============================================================================
+// D8 — Modifier, Tier, Token Domains
+// =============================================================================
+
+export { commands as modifierCommands } from "./domains/modifier/index.js";
+export { commands as tierCommands } from "./domains/tier/index.js";
+export { commands as tokenCommands } from "./domains/token/index.js";
+export type { AddConfigResult } from "./domains/token/operations/index.js";
+export { resolveAddConfig } from "./domains/token/operations/index.js";
+
+// =============================================================================
 // D14 — Create Commands
 // =============================================================================
 
