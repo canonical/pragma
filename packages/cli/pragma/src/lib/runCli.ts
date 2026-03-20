@@ -15,6 +15,7 @@ import { commands as createCommands } from "../domains/create/index.js";
 import { doctorCommand } from "../domains/doctor/commands/index.js";
 import infoCommand from "../domains/info/infoCommand.js";
 import upgradeCommand from "../domains/info/upgradeCommand.js";
+import buildLlmCommand from "../domains/llm/llmCommand.js";
 import { commands as modifierCommands } from "../domains/modifier/index.js";
 import { bootStore } from "../domains/shared/bootStore.js";
 import type { PragmaContext } from "../domains/shared/context.js";
@@ -42,6 +43,7 @@ function collectCommands(ctx: PragmaContext): CommandDefinition[] {
     doctorCommand,
     infoCommand,
     upgradeCommand,
+    buildLlmCommand(ctx),
   ];
 }
 
