@@ -24,24 +24,10 @@ describe("listTiers", () => {
     expect(paths).toContain("apps/lxd");
   });
 
-  it("includes parent references", async () => {
+  it("returns sorted by name", async () => {
     const result = await listTiers(store);
-    const appsLxd = result.find((t) => t.path === "apps/lxd");
-    expect(appsLxd?.parent).toBe("apps");
-    expect(appsLxd?.depth).toBe(2);
-  });
-
-  it("global has no parent", async () => {
-    const result = await listTiers(store);
-    const global = result.find((t) => t.path === "global");
-    expect(global?.parent).toBeUndefined();
-    expect(global?.depth).toBe(0);
-  });
-
-  it("returns sorted by depth then path", async () => {
-    const result = await listTiers(store);
-    expect(result[0].path).toBe("global");
-    expect(result[1].path).toBe("apps");
-    expect(result[2].path).toBe("apps/lxd");
+    const paths = result.map((t) => t.path);
+    const sorted = [...paths].sort();
+    expect(paths).toEqual(sorted);
   });
 });

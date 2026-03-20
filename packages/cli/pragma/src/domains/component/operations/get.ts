@@ -33,9 +33,9 @@ export default async function getComponent(
     buildQuery(`
       SELECT ?component ?tier
       WHERE {
-        ?component a ds:Component ;
-                   ds:name ${escaped} ;
-                   ds:tier ?tier .
+        ?component a dso:Component ;
+                   dso:name ${escaped} ;
+                   dso:tier ?tier .
         ${filterClauses}
       }
       LIMIT 1
@@ -57,9 +57,13 @@ export default async function getComponent(
     buildQuery(`
       SELECT ?modName ?value
       WHERE {
-        <${componentUri}> ds:modifier ?mod .
-        ?mod ds:modifierName ?modName ;
-             ds:hasValue ?value .
+        <${componentUri}> dso:hasModifierFamily ?family .
+        ?family dso:name ?modName .
+        OPTIONAL {
+          ?mod a dso:Modifier ;
+               dso:modifierFamily ?family ;
+               dso:name ?value .
+        }
       }
       ORDER BY ?modName ?value
     `),
@@ -79,10 +83,10 @@ export default async function getComponent(
     buildQuery(`
       SELECT ?framework ?path
       WHERE {
-        ?lib ds:hasImplementation ?impl .
-        ?impl ds:implementsBlock <${componentUri}> ;
-              ds:headLink ?path .
-        ?lib ds:platform ?framework .
+        ?lib dso:hasImplementation ?impl .
+        ?impl dso:implementsBlock <${componentUri}> ;
+              dso:headLink ?path .
+        ?lib dso:platform ?framework .
       }
       ORDER BY ?framework
     `),
@@ -109,8 +113,8 @@ export default async function getComponent(
     buildQuery(`
       SELECT ?token ?tokenId
       WHERE {
-        <${componentUri}> ds:usesToken ?token .
-        ?token ds:tokenId ?tokenId .
+        <${componentUri}> dso:usesToken ?token .
+        ?token dso:tokenId ?tokenId .
       }
       ORDER BY ?tokenId
     `),
@@ -129,7 +133,7 @@ export default async function getComponent(
     buildQuery(`
       SELECT (COUNT(DISTINCT ?node) AS ?nodeCount)
       WHERE {
-        <${componentUri}> ds:anatomyNode ?node .
+        <${componentUri}> dso:anatomyNode ?node .
       }
     `),
   );
@@ -170,8 +174,8 @@ async function listAllFrameworks(store: Store): Promise<string[]> {
     buildQuery(`
       SELECT DISTINCT ?framework
       WHERE {
-        ?lib a ds:ImplementationLibrary ;
-             ds:platform ?framework .
+        ?lib a dso:ImplementationLibrary ;
+             dso:platform ?framework .
       }
       ORDER BY ?framework
     `),

@@ -22,12 +22,12 @@ export default async function getStandard(
     buildQuery(`
       SELECT ?standard ?categoryName ?description
       WHERE {
-        ?standard a cso:CodeStandard ;
-                  cso:name ${escaped} ;
-                  cso:description ?description .
+        ?standard a cs:CodeStandard ;
+                  cs:name ${escaped} ;
+                  cs:description ?description .
         OPTIONAL {
-          ?standard cso:category ?cat .
-          ?cat cso:categoryName ?categoryName .
+          ?standard cs:hasCategory ?cat .
+          ?cat cs:slug ?categoryName .
         }
       }
       LIMIT 1
@@ -48,7 +48,7 @@ export default async function getStandard(
   const dosResult = await store.query(
     buildQuery(`
       SELECT ?doText
-      WHERE { <${standardUri}> cso:do ?doText }
+      WHERE { <${standardUri}> cs:dos ?doText }
     `),
   );
 
@@ -64,7 +64,7 @@ export default async function getStandard(
   const dontsResult = await store.query(
     buildQuery(`
       SELECT ?dontText
-      WHERE { <${standardUri}> cso:dont ?dontText }
+      WHERE { <${standardUri}> cs:donts ?dontText }
     `),
   );
 

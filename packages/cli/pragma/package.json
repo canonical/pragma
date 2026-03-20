@@ -49,6 +49,9 @@
     "typescript": "^5.9.3",
     "vitest": "^4.0.18"
   },
+  "optionalDependencies": {
+    "@canonical/design-system": "^0.1.0"
+  },
   "dependencies": {
     "@canonical/cli-core": "^0.18.0",
     "@canonical/harnesses": "^0.18.0",

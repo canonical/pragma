@@ -18,13 +18,13 @@ afterAll(() => cleanup());
 
 describe("showOntologyRaw", () => {
   it("returns triples for a known namespace", async () => {
-    const triples = await showOntologyRaw(store, "ds");
+    const triples = await showOntologyRaw(store, "dso");
     expect(triples.length).toBeGreaterThan(0);
 
-    const hasDs = triples.some((t) =>
-      t.subject.startsWith("https://ds.canonical.com/"),
+    const hasDso = triples.some((t) =>
+      t.subject.startsWith("https://ds.canonical.com/ontology#"),
     );
-    expect(hasDs).toBe(true);
+    expect(hasDso).toBe(true);
   });
 
   it("throws PragmaError.invalidInput for unknown prefix", async () => {

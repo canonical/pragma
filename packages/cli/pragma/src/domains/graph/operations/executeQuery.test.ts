@@ -20,7 +20,7 @@ describe("executeQuery", () => {
   it("executes a SELECT query and returns bindings", async () => {
     const result = await executeQuery(
       store,
-      "SELECT ?name WHERE { ?c a ds:Component ; ds:name ?name } ORDER BY ?name",
+      "SELECT ?name WHERE { ?c a dso:Component ; dso:name ?name } ORDER BY ?name",
     );
     expect(result.type).toBe("select");
     if (result.type === "select") {
@@ -33,7 +33,7 @@ describe("executeQuery", () => {
   it("executes a CONSTRUCT query and returns triples", async () => {
     const result = await executeQuery(
       store,
-      "CONSTRUCT { ?c ds:name ?name } WHERE { ?c a ds:Component ; ds:name ?name }",
+      "CONSTRUCT { ?c dso:name ?name } WHERE { ?c a dso:Component ; dso:name ?name }",
     );
     expect(result.type).toBe("construct");
     if (result.type === "construct") {
@@ -46,7 +46,7 @@ describe("executeQuery", () => {
   it("executes an ASK query and returns boolean", async () => {
     const result = await executeQuery(
       store,
-      "ASK { ?c a ds:Component ; ds:name ?name }",
+      "ASK { ?c a dso:Component ; dso:name ?name }",
     );
     expect(result.type).toBe("ask");
     if (result.type === "ask") {

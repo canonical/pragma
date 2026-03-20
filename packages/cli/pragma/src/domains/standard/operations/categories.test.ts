@@ -36,13 +36,13 @@ describe("listCategories", () => {
 
   it("includes categories with zero standards", async () => {
     const ttlWithEmptyCategory = `
-      @prefix cso: <http://pragma.canonical.com/codestandards#> .
-      cso:empty_cat a cso:Category ; cso:categoryName "empty" .
-      cso:filled_cat a cso:Category ; cso:categoryName "filled" .
-      cso:s1 a cso:CodeStandard ;
-        cso:name "filled/one" ;
-        cso:category cso:filled_cat ;
-        cso:description "A standard" .
+      @prefix cs: <http://pragma.canonical.com/codestandards#> .
+      cs:empty_cat a cs:Category ; cs:slug "empty" .
+      cs:filled_cat a cs:Category ; cs:slug "filled" .
+      cs:s1 a cs:CodeStandard ;
+        cs:name "filled/one" ;
+        cs:hasCategory cs:filled_cat ;
+        cs:description "A standard" .
     `;
     const { store: testStore, cleanup: testCleanup } = await createTestStore({
       ttl: ttlWithEmptyCategory,

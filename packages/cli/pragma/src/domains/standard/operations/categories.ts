@@ -17,11 +17,11 @@ export default async function listCategories(
     buildQuery(`
       SELECT ?categoryName (COUNT(?standard) AS ?count)
       WHERE {
-        ?cat a cso:Category ;
-             cso:categoryName ?categoryName .
+        ?cat a cs:Category ;
+             cs:slug ?categoryName .
         OPTIONAL {
-          ?standard a cso:CodeStandard ;
-                    cso:category ?cat .
+          ?standard a cs:CodeStandard ;
+                    cs:hasCategory ?cat .
         }
       }
       GROUP BY ?categoryName

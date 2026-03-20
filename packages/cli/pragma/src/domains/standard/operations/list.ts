@@ -21,8 +21,10 @@ export default async function listStandards(
   const filterClauses: string[] = [];
 
   if (filters?.category) {
-    const escaped = escapeSparqlValue(filters.category);
-    filterClauses.push(`FILTER(?categoryName = ${escaped})`);
+    const escaped = escapeSparqlValue(filters.category.toLowerCase());
+    filterClauses.push(
+      `?standard cs:hasCategory ?filterCat . ?filterCat cs:slug ?catSlug . FILTER(?catSlug = ${escaped})`,
+    );
   }
 
   if (filters?.search) {
@@ -36,12 +38,12 @@ export default async function listStandards(
     buildQuery(`
       SELECT ?standard ?name ?categoryName ?description
       WHERE {
-        ?standard a cso:CodeStandard ;
-                  cso:name ?name ;
-                  cso:description ?description .
+        ?standard a cs:CodeStandard ;
+                  cs:name ?name ;
+                  cs:description ?description .
         OPTIONAL {
-          ?standard cso:category ?cat .
-          ?cat cso:categoryName ?categoryName .
+          ?standard cs:hasCategory ?cat .
+          ?cat cs:slug ?categoryName .
         }
         ${filterClauses.join("\n        ")}
       }

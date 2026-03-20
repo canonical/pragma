@@ -27,13 +27,11 @@ describe("validateTier", () => {
   it("returns the matching TierEntry for a valid tier", async () => {
     const entry = await validateTier(store, "apps/lxd");
     expect(entry.path).toBe("apps/lxd");
-    expect(entry.depth).toBe(2);
   });
 
   it("returns the global tier", async () => {
     const entry = await validateTier(store, "global");
     expect(entry.path).toBe("global");
-    expect(entry.depth).toBe(0);
   });
 
   it("throws INVALID_INPUT for a nonexistent tier", async () => {

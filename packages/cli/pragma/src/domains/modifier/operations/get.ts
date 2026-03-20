@@ -18,11 +18,15 @@ export default async function getModifier(
 
   const result = await store.query(
     buildQuery(`
-      SELECT ?family (GROUP_CONCAT(DISTINCT ?value; separator="|") AS ?values)
+      SELECT ?family (GROUP_CONCAT(DISTINCT ?valueName; separator="|") AS ?values)
       WHERE {
-        ?family a ds:ModifierFamily ;
-                ds:modifierName ${escaped} ;
-                ds:hasValue ?value .
+        ?family a dso:ModifierFamily ;
+                dso:name ${escaped} .
+        OPTIONAL {
+          ?mod a dso:Modifier ;
+               dso:modifierFamily ?family ;
+               dso:name ?valueName .
+        }
       }
       GROUP BY ?family
     `),

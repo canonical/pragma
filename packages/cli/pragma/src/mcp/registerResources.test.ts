@@ -48,15 +48,15 @@ describe("resource listing", () => {
   it("lists OWL classes as resources", async () => {
     const { resources } = await client.listResources();
     const uris = resources.map((r) => r.uri);
-    expect(uris).toContain("pragma:ds:UIBlock");
-    expect(uris).toContain("pragma:ds:Component");
+    expect(uris).toContain("pragma:dso:UIBlock");
+    expect(uris).toContain("pragma:dso:Component");
   });
 
   it("lists code standards as resources", async () => {
     const { resources } = await client.listResources();
     const uris = resources.map((r) => r.uri);
-    expect(uris).toContain("pragma:cso:react_folder");
-    expect(uris).toContain("pragma:cso:code_purity");
+    expect(uris).toContain("pragma:cs:react_folder");
+    expect(uris).toContain("pragma:cs:code_purity");
   });
 
   it("uses label as resource name when available", async () => {
@@ -83,7 +83,7 @@ describe("read component instance", () => {
       properties: { predicate: string; values: unknown[] }[];
     };
     expect(entity.prefixed).toBe("ds:button");
-    expect(entity.types).toContain("ds:Component");
+    expect(entity.types).toContain("dso:Component");
     expect(entity.label).toBe("Button");
   });
 
@@ -103,7 +103,7 @@ describe("read component instance", () => {
       }[];
     };
 
-    const tierProp = entity.properties.find((p) => p.predicate === "ds:tier");
+    const tierProp = entity.properties.find((p) => p.predicate === "dso:tier");
     expect(tierProp).toBeDefined();
     const tierValue = tierProp?.values[0];
     expect(tierValue?.type).toBe("uri");
@@ -121,7 +121,7 @@ describe("read component instance", () => {
       }[];
     };
 
-    const nameProp = entity.properties.find((p) => p.predicate === "ds:name");
+    const nameProp = entity.properties.find((p) => p.predicate === "dso:name");
     expect(nameProp).toBeDefined();
     expect(nameProp?.values[0]?.type).toBe("literal");
     expect(nameProp?.values[0]?.value).toBe("Button");
@@ -135,7 +135,7 @@ describe("read component instance", () => {
 describe("read OWL class", () => {
   it("returns class with rdfs:label", async () => {
     const result = await client.readResource({
-      uri: "pragma:ds:UIBlock",
+      uri: "pragma:dso:UIBlock",
     });
     const entity = parseContents(result) as {
       types: string[];
@@ -160,7 +160,7 @@ describe("read OWL class", () => {
 describe("read code standard", () => {
   it("returns standard with properties", async () => {
     const result = await client.readResource({
-      uri: "pragma:cso:code_purity",
+      uri: "pragma:cs:code_purity",
     });
     const entity = parseContents(result) as {
       types: string[];
@@ -170,16 +170,16 @@ describe("read code standard", () => {
         values: { type: string; value?: string }[];
       }[];
     };
-    expect(entity.types).toContain("cso:CodeStandard");
+    expect(entity.types).toContain("cs:CodeStandard");
 
-    const nameProp = entity.properties.find((p) => p.predicate === "cso:name");
+    const nameProp = entity.properties.find((p) => p.predicate === "cs:name");
     expect(nameProp?.values[0]?.value).toBe("code/function/purity");
 
-    const doProp = entity.properties.find((p) => p.predicate === "cso:do");
+    const doProp = entity.properties.find((p) => p.predicate === "cs:dos");
     expect(doProp).toBeDefined();
     expect(doProp?.values.length).toBeGreaterThan(0);
 
-    const dontProp = entity.properties.find((p) => p.predicate === "cso:dont");
+    const dontProp = entity.properties.find((p) => p.predicate === "cs:donts");
     expect(dontProp).toBeDefined();
   });
 });
@@ -189,7 +189,7 @@ describe("read code standard", () => {
 // =============================================================================
 
 describe("read tier", () => {
-  it("returns tier with path and hierarchy", async () => {
+  it("returns tier with name", async () => {
     const result = await client.readResource({
       uri: "pragma:ds:apps_lxd",
     });
@@ -200,17 +200,10 @@ describe("read tier", () => {
         values: { type: string; value?: string; prefixed?: string }[];
       }[];
     };
-    expect(entity.types).toContain("ds:Tier");
+    expect(entity.types).toContain("dso:Tier");
 
-    const pathProp = entity.properties.find(
-      (p) => p.predicate === "ds:tierPath",
-    );
-    expect(pathProp?.values[0]?.value).toBe("apps/lxd");
-
-    const parentProp = entity.properties.find(
-      (p) => p.predicate === "ds:parentTier",
-    );
-    expect(parentProp?.values[0]?.prefixed).toBe("ds:apps");
+    const nameProp = entity.properties.find((p) => p.predicate === "dso:name");
+    expect(nameProp?.values[0]?.value).toBe("apps/lxd");
   });
 });
 

@@ -27,7 +27,7 @@ export default function resolveUri(
   if (colonIdx === -1) {
     throw PragmaError.invalidInput("uri", uri, {
       recovery:
-        'Use a prefixed URI (e.g., "ds:button") or a full URI (e.g., "https://ds.canonical.com/button").',
+        'Use a prefixed URI (e.g., "ds:button") or a full URI (e.g., "https://ds.canonical.com/data/button").',
     });
   }
 

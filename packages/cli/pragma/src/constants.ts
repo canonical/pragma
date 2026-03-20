@@ -13,8 +13,9 @@ type Channel = (typeof VALID_CHANNELS)[number];
  * level-1 object relations to summaries.
  */
 const LABEL_PROPERTY: Record<string, string> = {
-  ds: "https://ds.canonical.com/name",
-  cso: "http://pragma.canonical.com/codestandards#name",
+  ds: "https://ds.canonical.com/ontology#name",
+  dso: "https://ds.canonical.com/ontology#name",
+  cs: "http://pragma.canonical.com/codestandards#name",
   rdfs: "http://www.w3.org/2000/01/rdf-schema#label",
   owl: "http://www.w3.org/2000/01/rdf-schema#label",
 };
