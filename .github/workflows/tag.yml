@@ -36,9 +36,8 @@ jobs:
 
       - name: Setup environment
         uses: ./.github/actions/setup-env
-
-      - name: Build all artifacts
-        run: lerna run build:all
+        with:
+          build-target: build:all
 
         # TODO add Nx and only test the packages that have changed since last tag
       - name: Code quality checks
@@ -86,9 +85,8 @@ jobs:
 
       - name: Setup Environment
         uses: ./.github/actions/setup-env
-
-      - name: Build
-        run: bun run build
+        with:
+          build-target: build
 
       - name: Setup Node, authenticate with NPM registry
         uses: actions/setup-node@v6
