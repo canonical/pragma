@@ -14,10 +14,13 @@ import { commands as configCommands } from "../domains/config/index.js";
 import { commands as createCommands } from "../domains/create/index.js";
 import infoCommand from "../domains/info/infoCommand.js";
 import upgradeCommand from "../domains/info/upgradeCommand.js";
+import { commands as modifierCommands } from "../domains/modifier/index.js";
 import { bootStore } from "../domains/shared/bootStore.js";
 import type { PragmaContext } from "../domains/shared/context.js";
 import type { FilterConfig } from "../domains/shared/types.js";
 import { commands as standardCommands } from "../domains/standard/index.js";
+import { commands as tierCommands } from "../domains/tier/index.js";
+import { commands as tokenCommands } from "../domains/token/index.js";
 import { PragmaError } from "../error/index.js";
 import { mapExitCode } from "./mapExitCode.js";
 import {
@@ -31,6 +34,9 @@ function collectCommands(ctx: PragmaContext): CommandDefinition[] {
     ...configCommands(ctx),
     ...createCommands(),
     ...standardCommands(ctx),
+    ...modifierCommands(ctx),
+    ...tierCommands(ctx),
+    ...tokenCommands(ctx),
     ...componentCommands(ctx),
     infoCommand,
     upgradeCommand,

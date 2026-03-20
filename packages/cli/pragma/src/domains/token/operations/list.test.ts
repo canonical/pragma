@@ -29,4 +29,23 @@ describe("listTokens", () => {
     const sorted = [...names].sort();
     expect(names).toEqual(sorted);
   });
+
+  it("filters by category", async () => {
+    const result = await listTokens(store, { category: "Color" });
+    const names = result.map((t) => t.name);
+    expect(names).toContain("color.primary");
+    expect(names).not.toContain("spacing.sm");
+  });
+
+  it("category filter is case-insensitive", async () => {
+    const result = await listTokens(store, { category: "color" });
+    const names = result.map((t) => t.name);
+    expect(names).toContain("color.primary");
+    expect(names).not.toContain("spacing.sm");
+  });
+
+  it("returns empty for non-matching category", async () => {
+    const result = await listTokens(store, { category: "nonexistent" });
+    expect(result).toEqual([]);
+  });
 });

@@ -317,12 +317,19 @@ export default function registerTools(
   server.registerTool(
     "token_list",
     {
-      description: "List all design tokens.",
+      description:
+        "List all design tokens. Optionally filter by category (token type).",
+      inputSchema: z.object({
+        category: z
+          .string()
+          .optional()
+          .describe("Filter by token type (e.g., Color, Dimension)"),
+      }),
       annotations: { readOnlyHint: true, openWorldHint: false },
     },
-    async () => {
+    async ({ category }) => {
       try {
-        const result = await listTokens(store);
+        const result = await listTokens(store, { category });
         return {
           content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
         };

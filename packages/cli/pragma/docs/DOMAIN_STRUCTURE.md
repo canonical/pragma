@@ -6,9 +6,9 @@ Canonical structure for all command and operation domains in `@canonical/pragma`
 
 ## Two domain tiers
 
-**CLI domains** have commands, operations, formatters, and optionally helpers. Three exist today: `component`, `config`, `standard`.
+**CLI domains** have commands, operations, formatters, and optionally helpers. Six exist today: `component`, `config`, `modifier`, `standard`, `tier`, `token`.
 
-**Operations-only domains** expose operations consumed by the MCP adapter but have no CLI commands. Five exist today: `modifier`, `tier`, `token`, `graph`, `ontology`.
+**Operations-only domains** expose operations consumed by the MCP adapter but have no CLI commands. Two exist today: `graph`, `ontology`.
 
 ---
 
