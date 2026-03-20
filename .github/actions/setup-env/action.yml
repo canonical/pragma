@@ -36,14 +36,6 @@ runs:
         path: ~/.bun/install/cache
         key: bun-cache-${{ runner.os }}-${{ hashFiles('bun.lock') }}
 
-    - name: Cache Nx
-      uses: actions/cache@v4
-      with:
-        path: .nx/cache
-        key: nx-cache-${{ runner.os }}-${{ inputs.node-version }}-${{ github.sha }}
-        restore-keys: |
-          nx-cache-${{ runner.os }}-${{ inputs.node-version }}-
-
     - name: Install dependencies
       shell: bash
       # NOTE: --frozen-lockfile disabled for now due to a known Bun bug where bun install
