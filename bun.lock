@@ -234,7 +234,7 @@
         "vitest": "^4.0.18",
       },
       "optionalDependencies": {
-        "@canonical/anatomy-dsl": "^0.2.0",
+        "@canonical/anatomy-dsl": "^0.2.1",
         "@canonical/code-standards": "^0.1.0",
         "@canonical/design-system": "^0.1.0",
       },
@@ -1230,7 +1230,7 @@
 
     "@bundled-es-modules/memfs": ["@bundled-es-modules/memfs@4.17.0", "", { "dependencies": { "assert": "^2.1.0", "buffer": "^6.0.3", "events": "^3.3.0", "memfs": "^4.17.0", "path": "^0.12.7", "stream": "^0.0.3", "util": "^0.12.5" } }, "sha512-ykdrkEmQr9BV804yd37ikXfNnvxrwYfY9Z2/EtMHFEFadEjsQXJ1zL9bVZrKNLDtm91UdUOEHso6Aweg93K6xQ=="],
 
-    "@canonical/anatomy-dsl": ["@canonical/anatomy-dsl@0.2.0", "", {}, "sha512-wmUTGyynfG2qcuIxIhq2H7w3AsNXrwaDk7C0W2hb9y2ooKdjNWjTd8BoDV+KcFrLGgCiNJYhTSVfF+Y7eWQUyg=="],
+    "@canonical/anatomy-dsl": ["@canonical/anatomy-dsl@0.2.1", "", {}, "sha512-oAYumzhG8MYOqF337UjInwWVJG2tiSSb6eysz3AI4V/bk8WMS0Ii90Ot6XHnWFjFMjUbFSwua8wwOcDkSyTXYg=="],
 
     "@canonical/biome-config": ["@canonical/biome-config@workspace:configs/biome"],
 
