@@ -1,7 +1,7 @@
 /**
  * `pragma setup lsp` command definition.
  *
- * Configures VS Code for the Terrazzo LSP.
+ * Installs the Terrazzo LSP VS Code extension.
  *
  * @see SU.01 in B.15.SETUP
  */
@@ -12,7 +12,7 @@ import setupLsp from "../operations/setupLsp.js";
 
 const lspCommand: CommandDefinition = {
   path: ["setup", "lsp"],
-  description: "Configure VS Code for Terrazzo LSP",
+  description: "Install the Terrazzo LSP VS Code extension",
   parameters: [
     {
       name: "dryRun",

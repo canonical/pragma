@@ -1,7 +1,7 @@
 /**
  * Setup domain — CLI commands for environment configuration.
  *
- * Commands: `pragma setup`, `pragma setup lsp`, `pragma setup mcp`,
+ * Commands: `pragma setup all`, `pragma setup lsp`, `pragma setup mcp`,
  * `pragma setup completions`
  *
  * Setup commands do not require the ke store. They operate on the

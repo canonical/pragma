@@ -1,5 +1,5 @@
 /**
- * `pragma setup` — composed monad running all setup steps.
+ * `pragma setup all` — composed monad running all setup steps.
  *
  * Each step is guarded by a promptConfirm gate. Running with --yes
  * skips all prompts. The steps run in sequence so prompts appear
@@ -33,7 +33,7 @@ export default function setupAll(root: string): Task<void> {
     // Step 2: LSP
     yield* $(info("\n2. LSP"));
     const doLsp = yield* $(
-      promptConfirm("setup-lsp", "  Set up VS Code LSP?", true),
+      promptConfirm("setup-lsp", "  Install Terrazzo LSP extension?", true),
     );
     yield* $(when(doLsp, setupLsp(root)));
 

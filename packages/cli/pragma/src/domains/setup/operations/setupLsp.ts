@@ -1,65 +1,24 @@
 /**
- * `pragma setup lsp` — configure VS Code for the Terrazzo LSP.
+ * `pragma setup lsp` — install the Terrazzo LSP VS Code extension.
  *
- * VS Code only in v0.2 (SU.01). Merges terrazzo-lsp settings into
- * .vscode/settings.json without overwriting existing entries.
+ * Runs `npx @canonical/terrazzo-lsp-extension` which installs the
+ * bundled VSIX into VS Code.
  *
  * @see SU.01 in B.15.SETUP
  */
 
-import {
-  $,
-  exists,
-  gen,
-  info,
-  readFile,
-  type Task,
-  warn,
-  writeFile,
-} from "@canonical/task";
-import { LSP_SETTINGS } from "../helpers/constants.js";
+import { $, exec, gen, info, type Task } from "@canonical/task";
 
 /**
- * Compose a Task that configures VS Code settings for the Terrazzo LSP.
+ * Compose a Task that installs the Terrazzo LSP VS Code extension
+ * via its bundled install script.
  *
- * @param root - Project root directory.
+ * @param root - Project root directory (used as cwd for npx).
  */
 export default function setupLsp(root: string): Task<void> {
   return gen(function* () {
-    const vscodeDirExists = yield* $(exists(`${root}/.vscode`));
-    if (!vscodeDirExists) {
-      yield* $(
-        warn(
-          "No .vscode/ directory detected. VS Code is the only supported editor in v0.2.",
-        ),
-      );
-      return;
-    }
-
-    const tokensConfigExists = yield* $(exists(`${root}/tokens.config.mjs`));
-    if (!tokensConfigExists) {
-      yield* $(
-        warn(
-          "tokens.config.mjs not found. Run `pragma tokens add-config` first.",
-        ),
-      );
-    }
-
-    const settingsPath = `${root}/.vscode/settings.json`;
-    const settingsExist = yield* $(exists(settingsPath));
-
-    let settings: Record<string, unknown> = {};
-    if (settingsExist) {
-      const content = yield* $(readFile(settingsPath));
-      try {
-        settings = JSON.parse(content) as Record<string, unknown>;
-      } catch {
-        settings = {};
-      }
-    }
-
-    const merged = { ...settings, ...LSP_SETTINGS };
-    yield* $(writeFile(settingsPath, `${JSON.stringify(merged, null, 2)}\n`));
-    yield* $(info("✓ LSP configured for VS Code."));
+    yield* $(info("Installing Terrazzo LSP extension for VS Code..."));
+    yield* $(exec("npx", ["@canonical/terrazzo-lsp-extension"], root));
+    yield* $(info("✓ Terrazzo LSP extension installed."));
   });
 }
