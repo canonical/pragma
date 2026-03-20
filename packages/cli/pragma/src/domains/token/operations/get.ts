@@ -8,6 +8,7 @@ import type { Store, URI } from "@canonical/ke";
 import { escapeSparqlValue } from "@canonical/ke";
 import { PragmaError } from "../../../error/index.js";
 import { buildQuery } from "../../shared/buildQuery.js";
+import { P } from "../../shared/prefixes.js";
 import type { TokenDetailed } from "../../shared/types.js";
 
 export default async function getToken(
@@ -20,14 +21,14 @@ export default async function getToken(
     buildQuery(`
       SELECT ?token ?typeName ?valueLight ?valueDark
       WHERE {
-        ?token a dso:Token ;
-               dso:tokenId ${escaped} .
+        ?token a ${P.dso}Token ;
+               ${P.dso}tokenId ${escaped} .
         OPTIONAL {
-          ?token dso:tokenType ?type .
-          ?type rdfs:label ?typeName .
+          ?token ${P.dso}tokenType ?type .
+          ?type ${P.rdfs}label ?typeName .
         }
-        OPTIONAL { ?token dso:valueLight ?valueLight }
-        OPTIONAL { ?token dso:valueDark ?valueDark }
+        OPTIONAL { ?token ${P.dso}valueLight ?valueLight }
+        OPTIONAL { ?token ${P.dso}valueDark ?valueDark }
       }
       LIMIT 1
     `),

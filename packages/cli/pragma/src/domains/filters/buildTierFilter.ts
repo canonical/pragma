@@ -1,3 +1,5 @@
+import { P } from "../shared/prefixes.js";
+
 /**
  * Tier filter — hierarchical visibility.
  *
@@ -54,7 +56,7 @@ export function buildTierFilter(
   if (tierPath === undefined) return "";
 
   const chain = resolveTierChain(tierPath);
-  const uriList = chain.map((t) => `ds:${tierPathToLocal(t)}`).join(", ");
+  const uriList = chain.map((t) => `${P.ds}${tierPathToLocal(t)}`).join(", ");
 
   return `FILTER(?${varName} IN (${uriList}))`;
 }

@@ -5,6 +5,7 @@
 import type { Store, URI } from "@canonical/ke";
 import { escapeSparqlValue } from "@canonical/ke";
 import { buildQuery } from "../../shared/buildQuery.js";
+import { P } from "../../shared/prefixes.js";
 import type { TokenSummary } from "../../shared/types.js";
 
 export interface TokenListFilters {
@@ -23,11 +24,11 @@ export default async function listTokens(
     buildQuery(`
       SELECT ?token ?tokenId ?typeName
       WHERE {
-        ?token a dso:Token ;
-               dso:tokenId ?tokenId .
+        ?token a ${P.dso}Token ;
+               ${P.dso}tokenId ?tokenId .
         OPTIONAL {
-          ?token dso:tokenType ?type .
-          ?type rdfs:label ?typeName .
+          ?token ${P.dso}tokenType ?type .
+          ?type ${P.rdfs}label ?typeName .
         }
         ${categoryFilter}
       }

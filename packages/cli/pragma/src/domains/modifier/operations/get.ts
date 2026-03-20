@@ -8,6 +8,7 @@ import type { Store, URI } from "@canonical/ke";
 import { escapeSparqlValue } from "@canonical/ke";
 import { PragmaError } from "../../../error/index.js";
 import { buildQuery } from "../../shared/buildQuery.js";
+import { P } from "../../shared/prefixes.js";
 import type { ModifierFamily } from "../../shared/types.js";
 
 export default async function getModifier(
@@ -20,12 +21,12 @@ export default async function getModifier(
     buildQuery(`
       SELECT ?family (GROUP_CONCAT(DISTINCT ?valueName; separator="|") AS ?values)
       WHERE {
-        ?family a dso:ModifierFamily ;
-                dso:name ${escaped} .
+        ?family a ${P.dso}ModifierFamily ;
+                ${P.dso}name ${escaped} .
         OPTIONAL {
-          ?mod a dso:Modifier ;
-               dso:modifierFamily ?family ;
-               dso:name ?valueName .
+          ?mod a ${P.dso}Modifier ;
+               ${P.dso}modifierFamily ?family ;
+               ${P.dso}name ?valueName .
         }
       }
       GROUP BY ?family

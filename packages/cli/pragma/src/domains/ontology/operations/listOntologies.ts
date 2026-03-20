@@ -8,6 +8,7 @@
 
 import type { Store } from "@canonical/ke";
 import { buildQuery } from "../../shared/buildQuery.js";
+import { P } from "../../shared/prefixes.js";
 import type { OntologySummary } from "../../shared/types.js";
 import findNamespace from "../helpers/findNamespace.js";
 
@@ -17,7 +18,7 @@ export default async function listOntologies(
   const classResult = await store.query(
     buildQuery(`
       SELECT ?class
-      WHERE { ?class a owl:Class }
+      WHERE { ?class a ${P.owl}Class }
     `),
   );
 
@@ -26,7 +27,7 @@ export default async function listOntologies(
       SELECT ?prop ?propType
       WHERE {
         ?prop a ?propType .
-        VALUES ?propType { owl:ObjectProperty owl:DatatypeProperty }
+        VALUES ?propType { ${P.owl}ObjectProperty ${P.owl}DatatypeProperty }
       }
     `),
   );

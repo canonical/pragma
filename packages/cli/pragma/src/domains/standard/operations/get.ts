@@ -10,6 +10,7 @@ import type { Store, URI } from "@canonical/ke";
 import { escapeSparqlValue } from "@canonical/ke";
 import { PragmaError } from "../../../error/index.js";
 import { buildQuery } from "../../shared/buildQuery.js";
+import { P } from "../../shared/prefixes.js";
 import type { CodeBlock, StandardDetailed } from "../../shared/types.js";
 
 export default async function getStandard(
@@ -22,12 +23,12 @@ export default async function getStandard(
     buildQuery(`
       SELECT ?standard ?categoryName ?description
       WHERE {
-        ?standard a cs:CodeStandard ;
-                  cs:name ${escaped} ;
-                  cs:description ?description .
+        ?standard a ${P.cs}CodeStandard ;
+                  ${P.cs}name ${escaped} ;
+                  ${P.cs}description ?description .
         OPTIONAL {
-          ?standard cs:hasCategory ?cat .
-          ?cat cs:slug ?categoryName .
+          ?standard ${P.cs}hasCategory ?cat .
+          ?cat ${P.cs}slug ?categoryName .
         }
       }
       LIMIT 1
@@ -48,7 +49,7 @@ export default async function getStandard(
   const dosResult = await store.query(
     buildQuery(`
       SELECT ?doText
-      WHERE { <${standardUri}> cs:dos ?doText }
+      WHERE { <${standardUri}> ${P.cs}dos ?doText }
     `),
   );
 
@@ -64,7 +65,7 @@ export default async function getStandard(
   const dontsResult = await store.query(
     buildQuery(`
       SELECT ?dontText
-      WHERE { <${standardUri}> cs:donts ?dontText }
+      WHERE { <${standardUri}> ${P.cs}donts ?dontText }
     `),
   );
 

@@ -7,6 +7,7 @@
 
 import type { Store } from "@canonical/ke";
 import { buildQuery } from "../../shared/buildQuery.js";
+import { P } from "../../shared/prefixes.js";
 import type { OntologyClass } from "../../shared/types.js";
 import extractLocalName from "./extractLocalName.js";
 
@@ -18,10 +19,10 @@ export default async function queryClasses(
     buildQuery(`
       SELECT ?class ?label ?superclass
       WHERE {
-        ?class a owl:Class .
+        ?class a ${P.owl}Class .
         FILTER(STRSTARTS(STR(?class), "${namespace}"))
-        OPTIONAL { ?class rdfs:label ?label }
-        OPTIONAL { ?class rdfs:subClassOf ?superclass }
+        OPTIONAL { ?class ${P.rdfs}label ?label }
+        OPTIONAL { ?class ${P.rdfs}subClassOf ?superclass }
       }
       ORDER BY ?class
     `),
