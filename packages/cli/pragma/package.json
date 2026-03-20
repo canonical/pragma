@@ -50,8 +50,6 @@
     "vitest": "^4.0.18"
   },
   "optionalDependencies": {
-    "@canonical/anatomy-dsl": "file:../../../../anatomy-dsl",
-    "@canonical/code-standards": "file:../../../../code-standards",
     "@canonical/design-system": "^0.1.0"
   },
   "dependencies": {
