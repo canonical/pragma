@@ -18,7 +18,13 @@ import {
 } from "./commands/index.js";
 
 export function commands(): CommandDefinition[] {
-  return [allCommand, lspCommand, mcpCommand, completionsCommand, skillsCommand()];
+  return [
+    allCommand,
+    lspCommand,
+    mcpCommand,
+    completionsCommand,
+    skillsCommand(),
+  ];
 }
 
 export {
