@@ -8,8 +8,7 @@
 import type { PrefixMap } from "@canonical/ke";
 
 export const PREFIX_MAP = {
-  ds: "https://ds.canonical.com/data/",
-  dso: "https://ds.canonical.com/ontology#",
+  ds: "https://ds.canonical.com/",
   cs: "http://pragma.canonical.com/codestandards#",
   rdfs: "http://www.w3.org/2000/01/rdf-schema#",
   owl: "http://www.w3.org/2002/07/owl#",
@@ -18,7 +17,7 @@ export const PREFIX_MAP = {
 /**
  * SPARQL prefix accessors derived from {@link PREFIX_MAP}.
  *
- * Use in query templates: `${P.dso}Component` → `"dso:Component"`.
+ * Use in query templates: `${P.ds}Component` → `"ds:Component"`.
  * Renaming a key in PREFIX_MAP automatically updates every query.
  */
 export const P = Object.fromEntries(

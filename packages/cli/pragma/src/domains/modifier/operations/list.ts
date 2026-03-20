@@ -14,12 +14,12 @@ export default async function listModifiers(
     buildQuery(`
       SELECT ?family ?name (GROUP_CONCAT(DISTINCT ?valueName; separator="|") AS ?values)
       WHERE {
-        ?family a ${P.dso}ModifierFamily ;
-                ${P.dso}name ?name .
+        ?family a ${P.ds}ModifierFamily ;
+                ${P.ds}name ?name .
         OPTIONAL {
-          ?mod a ${P.dso}Modifier ;
-               ${P.dso}modifierFamily ?family ;
-               ${P.dso}name ?valueName .
+          ?mod a ${P.ds}Modifier ;
+               ${P.ds}modifierFamily ?family ;
+               ${P.ds}name ?valueName .
         }
       }
       GROUP BY ?family ?name

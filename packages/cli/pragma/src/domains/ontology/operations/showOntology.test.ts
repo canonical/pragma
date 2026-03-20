@@ -18,22 +18,22 @@ afterAll(() => cleanup());
 
 describe("showOntology", () => {
   it("returns classes and properties for a prefix", async () => {
-    const result = await showOntology(store, "dso");
-    expect(result.prefix).toBe("dso");
-    expect(result.namespace).toBe("https://ds.canonical.com/ontology#");
+    const result = await showOntology(store, "ds");
+    expect(result.prefix).toBe("ds");
+    expect(result.namespace).toBe("https://ds.canonical.com/");
     expect(result.classes.length).toBeGreaterThan(0);
     expect(result.properties.length).toBeGreaterThan(0);
   });
 
   it("includes class labels and superclass relationships", async () => {
-    const result = await showOntology(store, "dso");
+    const result = await showOntology(store, "ds");
     const component = result.classes.find((c) => c.label === "Component");
     expect(component).toBeDefined();
     expect(component?.superclass).toContain("UIBlock");
   });
 
   it("includes property domain and range", async () => {
-    const result = await showOntology(store, "dso");
+    const result = await showOntology(store, "ds");
     const nameProp = result.properties.find((p) => p.uri.endsWith("name"));
     expect(nameProp).toBeDefined();
     expect(nameProp?.domain).toContain("UIBlock");
@@ -41,11 +41,8 @@ describe("showOntology", () => {
   });
 
   it("resolves full namespace URI", async () => {
-    const result = await showOntology(
-      store,
-      "https://ds.canonical.com/ontology#",
-    );
-    expect(result.prefix).toBe("dso");
+    const result = await showOntology(store, "https://ds.canonical.com/");
+    expect(result.prefix).toBe("ds");
     expect(result.classes.length).toBeGreaterThan(0);
   });
 

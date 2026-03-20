@@ -21,12 +21,12 @@ export default async function getModifier(
     buildQuery(`
       SELECT ?family (GROUP_CONCAT(DISTINCT ?valueName; separator="|") AS ?values)
       WHERE {
-        ?family a ${P.dso}ModifierFamily ;
-                ${P.dso}name ${escaped} .
+        ?family a ${P.ds}ModifierFamily ;
+                ${P.ds}name ${escaped} .
         OPTIONAL {
-          ?mod a ${P.dso}Modifier ;
-               ${P.dso}modifierFamily ?family ;
-               ${P.dso}name ?valueName .
+          ?mod a ${P.ds}Modifier ;
+               ${P.ds}modifierFamily ?family ;
+               ${P.ds}name ?valueName .
         }
       }
       GROUP BY ?family

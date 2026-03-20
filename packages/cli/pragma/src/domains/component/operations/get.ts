@@ -34,9 +34,9 @@ export default async function getComponent(
     buildQuery(`
       SELECT ?component ?tier
       WHERE {
-        ?component a ${P.dso}Component ;
-                   ${P.dso}name ${escaped} ;
-                   ${P.dso}tier ?tier .
+        ?component a ${P.ds}Component ;
+                   ${P.ds}name ${escaped} ;
+                   ${P.ds}tier ?tier .
         ${filterClauses}
       }
       LIMIT 1
@@ -58,12 +58,12 @@ export default async function getComponent(
     buildQuery(`
       SELECT ?modName ?value
       WHERE {
-        <${componentUri}> ${P.dso}hasModifierFamily ?family .
-        ?family ${P.dso}name ?modName .
+        <${componentUri}> ${P.ds}hasModifierFamily ?family .
+        ?family ${P.ds}name ?modName .
         OPTIONAL {
-          ?mod a ${P.dso}Modifier ;
-               ${P.dso}modifierFamily ?family ;
-               ${P.dso}name ?value .
+          ?mod a ${P.ds}Modifier ;
+               ${P.ds}modifierFamily ?family ;
+               ${P.ds}name ?value .
         }
       }
       ORDER BY ?modName ?value
@@ -84,10 +84,10 @@ export default async function getComponent(
     buildQuery(`
       SELECT ?framework ?path
       WHERE {
-        ?lib ${P.dso}hasImplementation ?impl .
-        ?impl ${P.dso}implementsBlock <${componentUri}> ;
-              ${P.dso}headLink ?path .
-        ?lib ${P.dso}platform ?framework .
+        ?lib ${P.ds}hasImplementation ?impl .
+        ?impl ${P.ds}implementsBlock <${componentUri}> ;
+              ${P.ds}headLink ?path .
+        ?lib ${P.ds}platform ?framework .
       }
       ORDER BY ?framework
     `),
@@ -114,8 +114,8 @@ export default async function getComponent(
     buildQuery(`
       SELECT ?token ?tokenId
       WHERE {
-        <${componentUri}> ${P.dso}usesToken ?token .
-        ?token ${P.dso}tokenId ?tokenId .
+        <${componentUri}> ${P.ds}usesToken ?token .
+        ?token ${P.ds}tokenId ?tokenId .
       }
       ORDER BY ?tokenId
     `),
@@ -134,7 +134,7 @@ export default async function getComponent(
     buildQuery(`
       SELECT (COUNT(DISTINCT ?node) AS ?nodeCount)
       WHERE {
-        <${componentUri}> ${P.dso}anatomyNode ?node .
+        <${componentUri}> ${P.ds}anatomyNode ?node .
       }
     `),
   );
@@ -175,8 +175,8 @@ async function listAllFrameworks(store: Store): Promise<string[]> {
     buildQuery(`
       SELECT DISTINCT ?framework
       WHERE {
-        ?lib a ${P.dso}ImplementationLibrary ;
-             ${P.dso}platform ?framework .
+        ?lib a ${P.ds}ImplementationLibrary ;
+             ${P.ds}platform ?framework .
       }
       ORDER BY ?framework
     `),

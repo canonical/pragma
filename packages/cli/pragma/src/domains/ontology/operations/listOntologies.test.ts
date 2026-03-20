@@ -20,11 +20,11 @@ describe("listOntologies", () => {
     const result = await listOntologies(store);
     expect(result.length).toBeGreaterThan(0);
 
-    const dso = result.find((o) => o.prefix === "dso");
-    expect(dso).toBeDefined();
-    expect(dso?.namespace).toBe("https://ds.canonical.com/ontology#");
-    expect(dso?.classCount).toBeGreaterThan(0);
-    expect(dso?.propertyCount).toBeGreaterThan(0);
+    const ds = result.find((o) => o.prefix === "ds");
+    expect(ds).toBeDefined();
+    expect(ds?.namespace).toBe("https://ds.canonical.com/");
+    expect(ds?.classCount).toBeGreaterThan(0);
+    expect(ds?.propertyCount).toBeGreaterThan(0);
   });
 
   it("includes cs namespace", async () => {

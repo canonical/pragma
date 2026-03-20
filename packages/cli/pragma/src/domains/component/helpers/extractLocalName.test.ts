@@ -7,9 +7,7 @@ describe("extractLocalName", () => {
   });
 
   it("extracts after last slash", () => {
-    expect(extractLocalName("https://ds.canonical.com/data/global")).toBe(
-      "global",
-    );
+    expect(extractLocalName("https://ds.canonical.com/global")).toBe("global");
   });
 
   it("returns full string when no separator", () => {
@@ -17,8 +15,6 @@ describe("extractLocalName", () => {
   });
 
   it("handles nested path", () => {
-    expect(extractLocalName("https://ds.canonical.com/data/apps/lxd")).toBe(
-      "lxd",
-    );
+    expect(extractLocalName("https://ds.canonical.com/apps/lxd")).toBe("lxd");
   });
 });

@@ -23,7 +23,7 @@ describe("CHANNEL_RELEASES", () => {
 describe("buildChannelFilter", () => {
   it("generates OPTIONAL + FILTER for normal", () => {
     const result = buildChannelFilter("normal");
-    expect(result).toContain("OPTIONAL { ?component dso:release ?release }");
+    expect(result).toContain("OPTIONAL { ?component ds:release ?release }");
     expect(result).toContain(
       "FILTER(!BOUND(?release) || ?release IN (ds:stable))",
     );

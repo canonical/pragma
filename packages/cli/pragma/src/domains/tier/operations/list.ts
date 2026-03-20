@@ -12,8 +12,8 @@ export default async function listTiers(store: Store): Promise<TierEntry[]> {
     buildQuery(`
       SELECT ?tier ?name
       WHERE {
-        ?tier a ${P.dso}Tier ;
-              ${P.dso}name ?name .
+        ?tier a ${P.ds}Tier ;
+              ${P.ds}name ?name .
       }
       ORDER BY ?name
     `),

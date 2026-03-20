@@ -1,7 +1,7 @@
 /**
  * Extract the local name from a full URI.
  *
- * `"https://ds.canonical.com/data/global"` → `"global"`
+ * `"https://ds.canonical.com/global"` → `"global"`
  * `"http://example.org/ns#Thing"` → `"Thing"`
  */
 export default function extractLocalName(uri: string): string {

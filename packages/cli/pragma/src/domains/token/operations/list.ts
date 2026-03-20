@@ -24,10 +24,10 @@ export default async function listTokens(
     buildQuery(`
       SELECT ?token ?tokenId ?typeName
       WHERE {
-        ?token a ${P.dso}Token ;
-               ${P.dso}tokenId ?tokenId .
+        ?token a ${P.ds}Token ;
+               ${P.ds}tokenId ?tokenId .
         OPTIONAL {
-          ?token ${P.dso}tokenType ?type .
+          ?token ${P.ds}tokenType ?type .
           ?type ${P.rdfs}label ?typeName .
         }
         ${categoryFilter}

@@ -25,13 +25,13 @@ export default async function listComponents(
              (COUNT(DISTINCT ?node) AS ?nodeCount)
              (COUNT(DISTINCT ?token) AS ?tokenCount)
       WHERE {
-        ?component a ${P.dso}Component ;
-                   ${P.dso}name ?name ;
-                   ${P.dso}tier ?tier .
+        ?component a ${P.ds}Component ;
+                   ${P.ds}name ?name ;
+                   ${P.ds}tier ?tier .
         ${filterClauses}
-        OPTIONAL { ?component ${P.dso}hasModifierFamily ?mod . ?mod ${P.dso}name ?modName }
-        OPTIONAL { ?component ${P.dso}anatomyNode ?node }
-        OPTIONAL { ?component ${P.dso}usesToken ?token }
+        OPTIONAL { ?component ${P.ds}hasModifierFamily ?mod . ?mod ${P.ds}name ?modName }
+        OPTIONAL { ?component ${P.ds}anatomyNode ?node }
+        OPTIONAL { ?component ${P.ds}usesToken ?token }
       }
       GROUP BY ?component ?name ?tier
       ORDER BY ?name

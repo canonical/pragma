@@ -36,7 +36,7 @@ export function buildChannelFilter(
   const uriList = releases.map((r) => `${P.ds}${r}`).join(", ");
 
   return [
-    `OPTIONAL { ?component ${P.dso}release ?${varName} }`,
+    `OPTIONAL { ?component ${P.ds}release ?${varName} }`,
     `FILTER(!BOUND(?${varName}) || ?${varName} IN (${uriList}))`,
   ].join("\n    ");
 }
