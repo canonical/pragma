@@ -21,6 +21,7 @@ import { commands as setupCommands } from "../domains/setup/index.js";
 import { bootStore } from "../domains/shared/bootStore.js";
 import type { PragmaContext } from "../domains/shared/context.js";
 import type { FilterConfig } from "../domains/shared/types.js";
+import { commands as skillCommands } from "../domains/skill/index.js";
 import { commands as standardCommands } from "../domains/standard/index.js";
 import { commands as tierCommands } from "../domains/tier/index.js";
 import { commands as tokenCommands } from "../domains/token/index.js";
@@ -36,11 +37,13 @@ function collectCommands(ctx: PragmaContext): CommandDefinition[] {
   return [
     ...configCommands(ctx),
     ...createCommands(),
+    ...setupCommands(),
     ...standardCommands(ctx),
     ...modifierCommands(ctx),
     ...tierCommands(ctx),
     ...tokenCommands(ctx),
     ...componentCommands(ctx),
+    ...skillCommands(ctx),
     doctorCommand,
     infoCommand,
     upgradeCommand,
