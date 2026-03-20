@@ -27,9 +27,9 @@ function parseText(result: { content: unknown[] }): unknown {
 // =============================================================================
 
 describe("tool listing", () => {
-  it("registers 13 tools", async () => {
+  it("registers 14 tools", async () => {
     const { tools } = await client.listTools();
-    expect(tools).toHaveLength(13);
+    expect(tools).toHaveLength(14);
   });
 
   it("all tools have descriptions", async () => {
@@ -55,6 +55,7 @@ describe("tool listing", () => {
     expect(names).toContain("config_show");
     expect(names).toContain("pragma_create_component");
     expect(names).toContain("pragma_create_package");
+    expect(names).toContain("pragma_llm");
   });
 });
 
@@ -435,6 +436,29 @@ describe("pragma_create_package", () => {
     const data = JSON.parse(first.text);
     expect(data.generator.name).toBe("package");
     expect(Array.isArray(data.plan)).toBe(true);
+  });
+});
+
+// =============================================================================
+// LLM Orientation
+// =============================================================================
+
+describe("pragma_llm", () => {
+  it("returns orientation data with context, trees, and commands", async () => {
+    const result = await client.callTool({
+      name: "pragma_llm",
+      arguments: {},
+    });
+    const data = parseText(result) as {
+      context: { counts: Record<string, number>; namespaces: string[] };
+      decisionTrees: { intent: string }[];
+      commandReference: { command: string }[];
+    };
+    expect(data.context.counts.components).toBeGreaterThan(0);
+    expect(data.context.counts.standards).toBeGreaterThan(0);
+    expect(data.context.namespaces.length).toBeGreaterThan(0);
+    expect(data.decisionTrees).toHaveLength(5);
+    expect(data.commandReference.length).toBeGreaterThan(0);
   });
 });
 

@@ -20,6 +20,12 @@ import { generators as packageGenerators } from "@canonical/summon-package";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import type { PragmaConfig } from "../config.js";
+import collectLlmContext from "../domains/llm/collectLlmContext.js";
+import {
+  COMMAND_REFERENCE,
+  DECISION_TREES,
+} from "../domains/llm/constants.js";
+import type { LlmData } from "../domains/llm/types.js";
 import {
   getComponent,
   listComponents,
@@ -566,6 +572,39 @@ export default function registerTools(
             },
           ],
           isError: true,
+        };
+      } catch (error) {
+        if (error instanceof PragmaError) return serializeError(error);
+        throw error;
+      }
+    },
+  );
+
+  // ---------------------------------------------------------------------------
+  // LLM Orientation
+  // ---------------------------------------------------------------------------
+
+  server.registerTool(
+    "pragma_llm",
+    {
+      description:
+        "Get LLM orientation for the pragma design system CLI. Returns context, decision trees for common intents, and command reference with token costs. Call this first when starting a design system task.",
+      annotations: { readOnlyHint: true, openWorldHint: false },
+    },
+    async () => {
+      try {
+        const filters: FilterConfig = {
+          tier: config.tier,
+          channel: config.channel,
+        };
+        const context = await collectLlmContext(store, filters);
+        const data: LlmData = {
+          context,
+          decisionTrees: DECISION_TREES,
+          commandReference: COMMAND_REFERENCE,
+        };
+        return {
+          content: [{ type: "text", text: JSON.stringify(data, null, 2) }],
         };
       } catch (error) {
         if (error instanceof PragmaError) return serializeError(error);
