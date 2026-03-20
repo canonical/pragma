@@ -52,7 +52,7 @@
   "optionalDependencies": {
     "@canonical/anatomy-dsl": "^0.2.1",
     "@canonical/code-standards": "^0.1.0",
-    "@canonical/design-system": "^0.1.0"
+    "@canonical/design-system": "^0.1.1"
   },
   "dependencies": {
     "@canonical/cli-core": "^0.18.0",
