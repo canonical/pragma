@@ -34,7 +34,7 @@ jobs:
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
             echo "cmd=bunx nx affected -t build:all --base=origin/${{ github.event.pull_request.base.ref }} --head=HEAD" >> "$GITHUB_OUTPUT"
           else
-            echo "cmd=bunx lerna run build:all" >> "$GITHUB_OUTPUT"
+            echo "cmd=bunx nx affected -t build:all --base=HEAD~1 --head=HEAD" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Setup environment
