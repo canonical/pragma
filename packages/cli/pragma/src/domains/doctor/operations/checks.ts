@@ -17,7 +17,11 @@ import { detectHarnesses, readMcpConfig } from "@canonical/harnesses";
 import { runTask } from "@canonical/task";
 import configExists from "../../../configExists.js";
 import { VERSION } from "../../../constants.js";
-import { detectLocalInstall, detectPackageManager } from "../../../pm.js";
+import {
+  PM_COMMANDS,
+  detectLocalInstall,
+  detectPackageManager,
+} from "../../../pm.js";
 import { collectStoreSummary } from "../../info/collectStoreSummary.js";
 import { bootStore } from "../../shared/bootStore.js";
 import type { CheckContext, CheckResult } from "./types.js";
@@ -169,7 +173,7 @@ export async function checkTerrazzo(ctx: CheckContext): Promise<CheckResult> {
       name: "terrazzo-lsp",
       status: "fail",
       detail: "not found",
-      remedy: "npm install -g @terrazzo/lsp",
+      remedy: PM_COMMANDS[detectPackageManager()].install("@terrazzo/lsp"),
     };
   }
 }
