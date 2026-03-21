@@ -36,6 +36,7 @@ type CreateConfigOptions = {
   disabledAddons?: string[];
   projectName?: string;
   projectLogo?: string;
+  refs?: StorybookConfig["refs"];
 };
 
 function createConfig<T extends keyof typeof frameworks>(
@@ -77,6 +78,7 @@ function createConfig<T extends keyof typeof frameworks>(
       PROJECT_NAME: opts.projectName ?? "",
       PROJECT_LOGO: opts.projectLogo ?? "",
     },
+    ...(opts.refs ? { refs: opts.refs } : {}),
   };
 }
 

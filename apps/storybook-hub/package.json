@@ -1,0 +1,49 @@
+{
+  "name": "@canonical/storybook-hub",
+  "private": true,
+  "version": "0.18.0",
+  "type": "module",
+  "license": "LGPL-3.0",
+  "scripts": {
+    "storybook": "storybook dev -p 6100 --no-open",
+    "build:storybook": "storybook build",
+    "build:all": "bun run build:storybook",
+    "check": "bun run check:biome && bun run check:ts",
+    "check:fix": "bun run check:biome:fix && bun run check:ts",
+    "check:biome": "biome check",
+    "check:biome:fix": "biome check --write",
+    "check:ts": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@canonical/storybook-config": "^0.18.0",
+    "@canonical/storybook-addon-msw": "^0.18.0",
+    "@canonical/storybook-addon-form-state": "^0.18.0",
+    "@canonical/styles": "^0.18.0",
+    "@canonical/styles-old": "^0.18.0",
+    "@canonical/styles-debug": "^0.18.0",
+    "@canonical/react-ds-global": "^0.18.0",
+    "@canonical/react-ds-global-form": "^0.18.0",
+    "@canonical/react-ds-app": "^0.18.0",
+    "@canonical/react-ds-app-anbox": "^0.18.0",
+    "@canonical/react-ds-app-landscape": "^0.18.0",
+    "@canonical/react-ds-app-launchpad": "^0.18.0",
+    "@canonical/react-ds-app-lxd": "^0.18.0",
+    "@canonical/react-ds-app-portal": "^0.18.0",
+    "@canonical/react-tokens": "^0.18.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.4.6",
+    "@canonical/biome-config": "^0.18.0",
+    "@canonical/typescript-config-react": "^0.18.0",
+    "@storybook/react-vite": "^10.2.17",
+    "@types/node": "^24.12.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "storybook": "^10.2.17",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.1",
+    "vite-tsconfig-paths": "^6.1.1"
+  }
+}

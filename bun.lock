@@ -79,6 +79,42 @@
         "vite-tsconfig-paths": "^6.1.1",
       },
     },
+    "apps/storybook-hub": {
+      "name": "@canonical/storybook-hub",
+      "version": "0.18.0",
+      "dependencies": {
+        "@canonical/react-ds-app": "^0.18.0",
+        "@canonical/react-ds-app-anbox": "^0.18.0",
+        "@canonical/react-ds-app-landscape": "^0.18.0",
+        "@canonical/react-ds-app-launchpad": "^0.18.0",
+        "@canonical/react-ds-app-lxd": "^0.18.0",
+        "@canonical/react-ds-app-portal": "^0.18.0",
+        "@canonical/react-ds-global": "^0.18.0",
+        "@canonical/react-ds-global-form": "^0.18.0",
+        "@canonical/react-tokens": "^0.18.0",
+        "@canonical/storybook-addon-form-state": "^0.18.0",
+        "@canonical/storybook-addon-msw": "^0.18.0",
+        "@canonical/storybook-config": "^0.18.0",
+        "@canonical/styles": "^0.18.0",
+        "@canonical/styles-debug": "^0.18.0",
+        "@canonical/styles-old": "^0.18.0",
+      },
+      "devDependencies": {
+        "@biomejs/biome": "2.4.6",
+        "@canonical/biome-config": "^0.18.0",
+        "@canonical/typescript-config-react": "^0.18.0",
+        "@storybook/react-vite": "^10.2.17",
+        "@types/node": "^24.12.0",
+        "@types/react": "^19.2.14",
+        "@types/react-dom": "^19.2.3",
+        "react": "^19.2.4",
+        "react-dom": "^19.2.4",
+        "storybook": "^10.2.17",
+        "typescript": "^5.9.3",
+        "vite": "^7.3.1",
+        "vite-tsconfig-paths": "^6.1.1",
+      },
+    },
     "configs/biome": {
       "name": "@canonical/biome-config",
       "version": "0.18.0",
@@ -1292,6 +1328,8 @@
     "@canonical/storybook-config": ["@canonical/storybook-config@workspace:configs/storybook"],
 
     "@canonical/storybook-helpers": ["@canonical/storybook-helpers@workspace:packages/storybook/helpers"],
+
+    "@canonical/storybook-hub": ["@canonical/storybook-hub@workspace:apps/storybook-hub"],
 
     "@canonical/styles": ["@canonical/styles@workspace:packages/styles/main"],
 

@@ -1,0 +1,52 @@
+import { Meta } from "@storybook/blocks";
+
+<Meta title="Introduction" />
+
+# Pragma Design System
+
+Welcome to the **Pragma Design System Hub** — the unified entry point for all component
+libraries in the Canonical design system.
+
+## What's here
+
+This hub composes all individual Storybook instances across the monorepo into a single
+navigable interface. Each section in the sidebar corresponds to a separate component
+library:
+
+| Library | Framework | Description |
+|---------|-----------|-------------|
+| **Global** | React | Core components: Button, Badge, Card, Chip, Icon, Link, etc. |
+| **Global Form** | React | Form components: Field, Checkbox, Combobox, Select, etc. |
+| **App** | React | Shared application-level components |
+| **App Landscape** | React | Landscape-specific components |
+| **App Launchpad** | React | Launchpad-specific: MarkdownEditor, FileTree, GitDiffViewer |
+| **App LXD** | React | LXD-specific components |
+| **App Portal** | React | Portal-specific components |
+| **App Anbox** | React | Anbox-specific components |
+| **Tokens** | React | Design token showcase |
+| **Lit PoC** | Lit | Web Components proof of concept |
+| **Svelte App Launchpad** | Svelte | Svelte Launchpad components |
+| **Demo Site** | React | Full demo application |
+
+## Design principles
+
+The design system is built on a **modifier-based ontology** with three axes:
+
+- **Importance**: primary, secondary, tertiary
+- **Anticipation**: constructive, caution, destructive
+- **Variant**: link, ghost, etc.
+
+Components express these modifiers consistently, enabling predictable composition
+across the entire system.
+
+## Getting started
+
+Each composed Storybook runs independently. In development, start the instances you
+need alongside this hub:
+
+```bash
+# Start specific instances + the hub
+nx run-many -t storybook --projects=ds-global,ds-global-form,storybook-hub
+```
+
+In production builds, this hub points to the Chromatic-hosted versions of each library.
