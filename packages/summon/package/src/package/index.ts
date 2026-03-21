@@ -40,10 +40,7 @@ const templates = {
   readme: path.join(templatesDir, "README.md.ejs"),
   storybookMain: path.join(templatesDir, "storybook-main.ts.ejs"),
   storybookPreview: path.join(templatesDir, "storybook-preview.ts.ejs"),
-  pullRequestTemplate: path.join(
-    templatesDir,
-    "PULL_REQUEST_TEMPLATE.md.ejs",
-  ),
+  pullRequestTemplate: path.join(templatesDir, "PULL_REQUEST_TEMPLATE.md.ejs"),
 };
 
 // =============================================================================
@@ -255,11 +252,7 @@ The generator auto-detects:
         mkdir(path.join(packageDir, ".github")),
         template({
           source: templates.pullRequestTemplate,
-          dest: path.join(
-            packageDir,
-            ".github",
-            "PULL_REQUEST_TEMPLATE.md",
-          ),
+          dest: path.join(packageDir, ".github", "PULL_REQUEST_TEMPLATE.md"),
           vars: ctx,
         }),
 
