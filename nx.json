@@ -9,10 +9,16 @@
     },
     "build:all": {
       "dependsOn": ["^build:all"],
+      "outputs": [
+        "{projectRoot}/dist",
+        "{projectRoot}/build",
+        "{projectRoot}/storybook-static"
+      ],
       "cache": true
     },
     "build:storybook": {
       "dependsOn": ["^build:storybook"],
+      "outputs": ["{projectRoot}/storybook-static"],
       "cache": true
     },
     "check": {
