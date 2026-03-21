@@ -8,6 +8,7 @@
 import type { Store, URI } from "@canonical/ke";
 import { buildFilters } from "../../filters/buildFilters.js";
 import { buildQuery } from "../../shared/buildQuery.js";
+import { P } from "../../shared/prefixes.js";
 import type { ComponentSummary, FilterConfig } from "../../shared/types.js";
 import extractLocalName from "../helpers/extractLocalName.js";
 
@@ -24,13 +25,13 @@ export default async function listComponents(
              (COUNT(DISTINCT ?node) AS ?nodeCount)
              (COUNT(DISTINCT ?token) AS ?tokenCount)
       WHERE {
-        ?component a dso:Component ;
-                   dso:name ?name ;
-                   dso:tier ?tier .
+        ?component a ${P.ds}Component ;
+                   ${P.ds}name ?name ;
+                   ${P.ds}tier ?tier .
         ${filterClauses}
-        OPTIONAL { ?component dso:hasModifierFamily ?mod . ?mod dso:name ?modName }
-        OPTIONAL { ?component dso:anatomyNode ?node }
-        OPTIONAL { ?component dso:usesToken ?token }
+        OPTIONAL { ?component ${P.ds}hasModifierFamily ?mod . ?mod ${P.ds}name ?modName }
+        OPTIONAL { ?component ${P.ds}anatomyNode ?node }
+        OPTIONAL { ?component ${P.ds}usesToken ?token }
       }
       GROUP BY ?component ?name ?tier
       ORDER BY ?name

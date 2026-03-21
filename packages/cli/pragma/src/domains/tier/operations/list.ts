@@ -4,6 +4,7 @@
 
 import type { Store, URI } from "@canonical/ke";
 import { buildQuery } from "../../shared/buildQuery.js";
+import { P } from "../../shared/prefixes.js";
 import type { TierEntry } from "../../shared/types.js";
 
 export default async function listTiers(store: Store): Promise<TierEntry[]> {
@@ -11,8 +12,8 @@ export default async function listTiers(store: Store): Promise<TierEntry[]> {
     buildQuery(`
       SELECT ?tier ?name
       WHERE {
-        ?tier a dso:Tier ;
-              dso:name ?name .
+        ?tier a ${P.ds}Tier ;
+              ${P.ds}name ?name .
       }
       ORDER BY ?name
     `),

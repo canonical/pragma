@@ -4,6 +4,7 @@
 
 import type { Store, URI } from "@canonical/ke";
 import { buildQuery } from "../../shared/buildQuery.js";
+import { P } from "../../shared/prefixes.js";
 import type { ModifierFamily } from "../../shared/types.js";
 
 export default async function listModifiers(
@@ -13,12 +14,12 @@ export default async function listModifiers(
     buildQuery(`
       SELECT ?family ?name (GROUP_CONCAT(DISTINCT ?valueName; separator="|") AS ?values)
       WHERE {
-        ?family a dso:ModifierFamily ;
-                dso:name ?name .
+        ?family a ${P.ds}ModifierFamily ;
+                ${P.ds}name ?name .
         OPTIONAL {
-          ?mod a dso:Modifier ;
-               dso:modifierFamily ?family ;
-               dso:name ?valueName .
+          ?mod a ${P.ds}Modifier ;
+               ${P.ds}modifierFamily ?family ;
+               ${P.ds}name ?valueName .
         }
       }
       GROUP BY ?family ?name

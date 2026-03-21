@@ -1,10 +1,11 @@
 import type { URI } from "@canonical/ke";
 import { describe, expect, it } from "vitest";
+import { PREFIX_MAP } from "../../shared/prefixes.js";
 import type { ComponentSummary } from "../../shared/types.js";
 import formatters from "./list.js";
 
 const BUTTON: ComponentSummary = {
-  uri: "https://ds.canonical.com/data/button" as URI,
+  uri: `${PREFIX_MAP.ds}button` as URI,
   name: "Button",
   tier: "global",
   modifiers: ["importance", "density"],
@@ -17,7 +18,7 @@ const BUTTON: ComponentSummary = {
 };
 
 const CARD: ComponentSummary = {
-  uri: "https://ds.canonical.com/data/card" as URI,
+  uri: `${PREFIX_MAP.ds}card` as URI,
   name: "Card",
   tier: "global",
   modifiers: [],

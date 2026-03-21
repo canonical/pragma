@@ -1,6 +1,7 @@
 import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import createTestMcpClient from "../../testing/createTestMcpClient.js";
+import { P } from "../domains/shared/prefixes.js";
 
 let client: Client;
 let cleanup: () => Promise<void>;
@@ -40,28 +41,28 @@ describe("resource listing", () => {
   it("lists resources including known entities", async () => {
     const { resources } = await client.listResources();
     const uris = resources.map((r) => r.uri);
-    expect(uris).toContain("pragma:ds:button");
-    expect(uris).toContain("pragma:ds:card");
-    expect(uris).toContain("pragma:ds:global");
+    expect(uris).toContain(`pragma:${P.ds}button`);
+    expect(uris).toContain(`pragma:${P.ds}card`);
+    expect(uris).toContain(`pragma:${P.ds}global`);
   });
 
   it("lists OWL classes as resources", async () => {
     const { resources } = await client.listResources();
     const uris = resources.map((r) => r.uri);
-    expect(uris).toContain("pragma:dso:UIBlock");
-    expect(uris).toContain("pragma:dso:Component");
+    expect(uris).toContain(`pragma:${P.ds}UIBlock`);
+    expect(uris).toContain(`pragma:${P.ds}Component`);
   });
 
   it("lists code standards as resources", async () => {
     const { resources } = await client.listResources();
     const uris = resources.map((r) => r.uri);
-    expect(uris).toContain("pragma:cs:react_folder");
-    expect(uris).toContain("pragma:cs:code_purity");
+    expect(uris).toContain(`pragma:${P.cs}react_folder`);
+    expect(uris).toContain(`pragma:${P.cs}code_purity`);
   });
 
   it("uses label as resource name when available", async () => {
     const { resources } = await client.listResources();
-    const button = resources.find((r) => r.uri === "pragma:ds:button");
+    const button = resources.find((r) => r.uri === `pragma:${P.ds}button`);
     expect(button?.name).toBe("Button");
   });
 });
@@ -73,7 +74,7 @@ describe("resource listing", () => {
 describe("read component instance", () => {
   it("returns entity with types and label", async () => {
     const result = await client.readResource({
-      uri: "pragma:ds:button",
+      uri: `pragma:${P.ds}button`,
     });
     const entity = parseContents(result) as {
       uri: string;
@@ -82,14 +83,14 @@ describe("read component instance", () => {
       label: string | null;
       properties: { predicate: string; values: unknown[] }[];
     };
-    expect(entity.prefixed).toBe("ds:button");
-    expect(entity.types).toContain("dso:Component");
+    expect(entity.prefixed).toBe(`${P.ds}button`);
+    expect(entity.types).toContain(`${P.ds}Component`);
     expect(entity.label).toBe("Button");
   });
 
   it("resolves level-1 URI objects to summaries", async () => {
     const result = await client.readResource({
-      uri: "pragma:ds:button",
+      uri: `pragma:${P.ds}button`,
     });
     const entity = parseContents(result) as {
       properties: {
@@ -103,16 +104,18 @@ describe("read component instance", () => {
       }[];
     };
 
-    const tierProp = entity.properties.find((p) => p.predicate === "dso:tier");
+    const tierProp = entity.properties.find(
+      (p) => p.predicate === `${P.ds}tier`,
+    );
     expect(tierProp).toBeDefined();
     const tierValue = tierProp?.values[0];
     expect(tierValue?.type).toBe("uri");
-    expect(tierValue?.prefixed).toBe("ds:global");
+    expect(tierValue?.prefixed).toBe(`${P.ds}global`);
   });
 
   it("includes literal values", async () => {
     const result = await client.readResource({
-      uri: "pragma:ds:button",
+      uri: `pragma:${P.ds}button`,
     });
     const entity = parseContents(result) as {
       properties: {
@@ -121,7 +124,9 @@ describe("read component instance", () => {
       }[];
     };
 
-    const nameProp = entity.properties.find((p) => p.predicate === "dso:name");
+    const nameProp = entity.properties.find(
+      (p) => p.predicate === `${P.ds}name`,
+    );
     expect(nameProp).toBeDefined();
     expect(nameProp?.values[0]?.type).toBe("literal");
     expect(nameProp?.values[0]?.value).toBe("Button");
@@ -135,7 +140,7 @@ describe("read component instance", () => {
 describe("read OWL class", () => {
   it("returns class with rdfs:label", async () => {
     const result = await client.readResource({
-      uri: "pragma:dso:UIBlock",
+      uri: `pragma:${P.ds}UIBlock`,
     });
     const entity = parseContents(result) as {
       types: string[];
@@ -145,9 +150,9 @@ describe("read OWL class", () => {
         values: { type: string; value?: string }[];
       }[];
     };
-    expect(entity.types).toContain("owl:Class");
+    expect(entity.types).toContain(`${P.owl}Class`);
     const labelProp = entity.properties.find(
-      (p) => p.predicate === "rdfs:label",
+      (p) => p.predicate === `${P.rdfs}label`,
     );
     expect(labelProp?.values[0]?.value).toBe("UI Block");
   });
@@ -160,7 +165,7 @@ describe("read OWL class", () => {
 describe("read code standard", () => {
   it("returns standard with properties", async () => {
     const result = await client.readResource({
-      uri: "pragma:cs:code_purity",
+      uri: `pragma:${P.cs}code_purity`,
     });
     const entity = parseContents(result) as {
       types: string[];
@@ -170,16 +175,20 @@ describe("read code standard", () => {
         values: { type: string; value?: string }[];
       }[];
     };
-    expect(entity.types).toContain("cs:CodeStandard");
+    expect(entity.types).toContain(`${P.cs}CodeStandard`);
 
-    const nameProp = entity.properties.find((p) => p.predicate === "cs:name");
+    const nameProp = entity.properties.find(
+      (p) => p.predicate === `${P.cs}name`,
+    );
     expect(nameProp?.values[0]?.value).toBe("code/function/purity");
 
-    const doProp = entity.properties.find((p) => p.predicate === "cs:dos");
+    const doProp = entity.properties.find((p) => p.predicate === `${P.cs}dos`);
     expect(doProp).toBeDefined();
     expect(doProp?.values.length).toBeGreaterThan(0);
 
-    const dontProp = entity.properties.find((p) => p.predicate === "cs:donts");
+    const dontProp = entity.properties.find(
+      (p) => p.predicate === `${P.cs}donts`,
+    );
     expect(dontProp).toBeDefined();
   });
 });
@@ -191,7 +200,7 @@ describe("read code standard", () => {
 describe("read tier", () => {
   it("returns tier with name", async () => {
     const result = await client.readResource({
-      uri: "pragma:ds:apps_lxd",
+      uri: `pragma:${P.ds}apps_lxd`,
     });
     const entity = parseContents(result) as {
       types: string[];
@@ -200,9 +209,11 @@ describe("read tier", () => {
         values: { type: string; value?: string; prefixed?: string }[];
       }[];
     };
-    expect(entity.types).toContain("dso:Tier");
+    expect(entity.types).toContain(`${P.ds}Tier`);
 
-    const nameProp = entity.properties.find((p) => p.predicate === "dso:name");
+    const nameProp = entity.properties.find(
+      (p) => p.predicate === `${P.ds}name`,
+    );
     expect(nameProp?.values[0]?.value).toBe("apps/lxd");
   });
 });
@@ -214,7 +225,7 @@ describe("read tier", () => {
 describe("error handling", () => {
   it("returns text/plain error for unknown entity", async () => {
     const result = await client.readResource({
-      uri: "pragma:ds:nonexistent",
+      uri: `pragma:${P.ds}nonexistent`,
     });
     const first = result.contents[0] as ResourceContent;
     expect(first.mimeType).toBe("text/plain");

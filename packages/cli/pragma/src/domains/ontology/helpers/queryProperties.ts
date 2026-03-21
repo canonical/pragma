@@ -7,6 +7,7 @@
 
 import type { Store } from "@canonical/ke";
 import { buildQuery } from "../../shared/buildQuery.js";
+import { P } from "../../shared/prefixes.js";
 import type { OntologyProperty } from "../../shared/types.js";
 import extractLocalName from "./extractLocalName.js";
 
@@ -19,11 +20,11 @@ export default async function queryProperties(
       SELECT ?prop ?label ?domain ?range ?propType
       WHERE {
         ?prop a ?propType .
-        VALUES ?propType { owl:ObjectProperty owl:DatatypeProperty }
+        VALUES ?propType { ${P.owl}ObjectProperty ${P.owl}DatatypeProperty }
         FILTER(STRSTARTS(STR(?prop), "${namespace}"))
-        OPTIONAL { ?prop rdfs:label ?label }
-        OPTIONAL { ?prop rdfs:domain ?domain }
-        OPTIONAL { ?prop rdfs:range ?range }
+        OPTIONAL { ?prop ${P.rdfs}label ?label }
+        OPTIONAL { ?prop ${P.rdfs}domain ?domain }
+        OPTIONAL { ?prop ${P.rdfs}range ?range }
       }
       ORDER BY ?prop
     `),

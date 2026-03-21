@@ -1,4 +1,5 @@
 import pkg from "../package.json" with { type: "json" };
+import { PREFIX_MAP } from "./domains/shared/prefixes.js";
 
 const PROGRAM_NAME = "pragma";
 const PROGRAM_DESCRIPTION = "CLI and MCP server for Canonical's design system.";
@@ -13,11 +14,10 @@ type Channel = (typeof VALID_CHANNELS)[number];
  * level-1 object relations to summaries.
  */
 const LABEL_PROPERTY: Record<string, string> = {
-  ds: "https://ds.canonical.com/ontology#name",
-  dso: "https://ds.canonical.com/ontology#name",
-  cs: "http://pragma.canonical.com/codestandards#name",
-  rdfs: "http://www.w3.org/2000/01/rdf-schema#label",
-  owl: "http://www.w3.org/2000/01/rdf-schema#label",
+  ds: `${PREFIX_MAP.ds}name`,
+  cs: `${PREFIX_MAP.cs}name`,
+  rdfs: `${PREFIX_MAP.rdfs}label`,
+  owl: `${PREFIX_MAP.rdfs}label`,
 };
 
 export {

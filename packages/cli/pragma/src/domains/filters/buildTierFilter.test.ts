@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { P } from "../shared/prefixes.js";
 import {
   buildTierFilter,
   resolveTierChain,
@@ -56,18 +57,18 @@ describe("buildTierFilter", () => {
   });
 
   it("generates FILTER for 'global'", () => {
-    expect(buildTierFilter("global")).toBe("FILTER(?tier IN (ds:global))");
+    expect(buildTierFilter("global")).toBe(`FILTER(?tier IN (${P.ds}global))`);
   });
 
   it("generates FILTER for 'apps/lxd' with parent chain", () => {
     expect(buildTierFilter("apps/lxd")).toBe(
-      "FILTER(?tier IN (ds:global, ds:apps, ds:apps_lxd))",
+      `FILTER(?tier IN (${P.ds}global, ${P.ds}apps, ${P.ds}apps_lxd))`,
     );
   });
 
   it("uses custom variable name", () => {
     expect(buildTierFilter("apps", "t")).toBe(
-      "FILTER(?t IN (ds:global, ds:apps))",
+      `FILTER(?t IN (${P.ds}global, ${P.ds}apps))`,
     );
   });
 });

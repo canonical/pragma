@@ -8,6 +8,7 @@
  */
 
 import type { Channel } from "../../constants.js";
+import { P } from "../shared/prefixes.js";
 
 /**
  * Release levels visible per channel setting.
@@ -32,10 +33,10 @@ export function buildChannelFilter(
   varName = "release",
 ): string {
   const releases = CHANNEL_RELEASES[channel];
-  const uriList = releases.map((r) => `ds:${r}`).join(", ");
+  const uriList = releases.map((r) => `${P.ds}${r}`).join(", ");
 
   return [
-    `OPTIONAL { ?component dso:release ?${varName} }`,
+    `OPTIONAL { ?component ${P.ds}release ?${varName} }`,
     `FILTER(!BOUND(?${varName}) || ?${varName} IN (${uriList}))`,
   ].join("\n    ");
 }

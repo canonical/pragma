@@ -12,6 +12,7 @@ import { escapeSparqlValue } from "@canonical/ke";
 import { PragmaError } from "../../../error/index.js";
 import { buildFilters } from "../../filters/buildFilters.js";
 import { buildQuery } from "../../shared/buildQuery.js";
+import { P } from "../../shared/prefixes.js";
 import type {
   ComponentDetailed,
   FilterConfig,
@@ -33,9 +34,9 @@ export default async function getComponent(
     buildQuery(`
       SELECT ?component ?tier
       WHERE {
-        ?component a dso:Component ;
-                   dso:name ${escaped} ;
-                   dso:tier ?tier .
+        ?component a ${P.ds}Component ;
+                   ${P.ds}name ${escaped} ;
+                   ${P.ds}tier ?tier .
         ${filterClauses}
       }
       LIMIT 1
@@ -57,12 +58,12 @@ export default async function getComponent(
     buildQuery(`
       SELECT ?modName ?value
       WHERE {
-        <${componentUri}> dso:hasModifierFamily ?family .
-        ?family dso:name ?modName .
+        <${componentUri}> ${P.ds}hasModifierFamily ?family .
+        ?family ${P.ds}name ?modName .
         OPTIONAL {
-          ?mod a dso:Modifier ;
-               dso:modifierFamily ?family ;
-               dso:name ?value .
+          ?mod a ${P.ds}Modifier ;
+               ${P.ds}modifierFamily ?family ;
+               ${P.ds}name ?value .
         }
       }
       ORDER BY ?modName ?value
@@ -83,10 +84,10 @@ export default async function getComponent(
     buildQuery(`
       SELECT ?framework ?path
       WHERE {
-        ?lib dso:hasImplementation ?impl .
-        ?impl dso:implementsBlock <${componentUri}> ;
-              dso:headLink ?path .
-        ?lib dso:platform ?framework .
+        ?lib ${P.ds}hasImplementation ?impl .
+        ?impl ${P.ds}implementsBlock <${componentUri}> ;
+              ${P.ds}headLink ?path .
+        ?lib ${P.ds}platform ?framework .
       }
       ORDER BY ?framework
     `),
@@ -113,8 +114,8 @@ export default async function getComponent(
     buildQuery(`
       SELECT ?token ?tokenId
       WHERE {
-        <${componentUri}> dso:usesToken ?token .
-        ?token dso:tokenId ?tokenId .
+        <${componentUri}> ${P.ds}usesToken ?token .
+        ?token ${P.ds}tokenId ?tokenId .
       }
       ORDER BY ?tokenId
     `),
@@ -133,7 +134,7 @@ export default async function getComponent(
     buildQuery(`
       SELECT (COUNT(DISTINCT ?node) AS ?nodeCount)
       WHERE {
-        <${componentUri}> dso:anatomyNode ?node .
+        <${componentUri}> ${P.ds}anatomyNode ?node .
       }
     `),
   );
@@ -174,8 +175,8 @@ async function listAllFrameworks(store: Store): Promise<string[]> {
     buildQuery(`
       SELECT DISTINCT ?framework
       WHERE {
-        ?lib a dso:ImplementationLibrary ;
-             dso:platform ?framework .
+        ?lib a ${P.ds}ImplementationLibrary ;
+             ${P.ds}platform ?framework .
       }
       ORDER BY ?framework
     `),

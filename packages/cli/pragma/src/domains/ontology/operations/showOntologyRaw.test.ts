@@ -3,6 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { DS_ALL_TTL } from "../../../../testing/dsFixtures.js";
 import { createTestStore } from "../../../../testing/store.js";
 import { PragmaError } from "../../../error/index.js";
+import { PREFIX_MAP } from "../../shared/prefixes.js";
 import showOntologyRaw from "./showOntologyRaw.js";
 
 let store: Store;
@@ -18,13 +19,11 @@ afterAll(() => cleanup());
 
 describe("showOntologyRaw", () => {
   it("returns triples for a known namespace", async () => {
-    const triples = await showOntologyRaw(store, "dso");
+    const triples = await showOntologyRaw(store, "ds");
     expect(triples.length).toBeGreaterThan(0);
 
-    const hasDso = triples.some((t) =>
-      t.subject.startsWith("https://ds.canonical.com/ontology#"),
-    );
-    expect(hasDso).toBe(true);
+    const hasDs = triples.some((t) => t.subject.startsWith(PREFIX_MAP.ds));
+    expect(hasDs).toBe(true);
   });
 
   it("throws PragmaError.invalidInput for unknown prefix", async () => {

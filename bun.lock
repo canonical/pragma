@@ -234,7 +234,9 @@
         "vitest": "^4.0.18",
       },
       "optionalDependencies": {
-        "@canonical/design-system": "^0.1.0",
+        "@canonical/anatomy-dsl": "^0.2.1",
+        "@canonical/code-standards": "^0.1.0",
+        "@canonical/design-system": "^0.1.1",
       },
     },
     "packages/cli/summon": {
@@ -1228,11 +1230,15 @@
 
     "@bundled-es-modules/memfs": ["@bundled-es-modules/memfs@4.17.0", "", { "dependencies": { "assert": "^2.1.0", "buffer": "^6.0.3", "events": "^3.3.0", "memfs": "^4.17.0", "path": "^0.12.7", "stream": "^0.0.3", "util": "^0.12.5" } }, "sha512-ykdrkEmQr9BV804yd37ikXfNnvxrwYfY9Z2/EtMHFEFadEjsQXJ1zL9bVZrKNLDtm91UdUOEHso6Aweg93K6xQ=="],
 
+    "@canonical/anatomy-dsl": ["@canonical/anatomy-dsl@0.2.1", "", {}, "sha512-oAYumzhG8MYOqF337UjInwWVJG2tiSSb6eysz3AI4V/bk8WMS0Ii90Ot6XHnWFjFMjUbFSwua8wwOcDkSyTXYg=="],
+
     "@canonical/biome-config": ["@canonical/biome-config@workspace:configs/biome"],
 
     "@canonical/cli-core": ["@canonical/cli-core@workspace:packages/cli/core"],
 
-    "@canonical/design-system": ["@canonical/design-system@0.1.0", "", { "dependencies": { "ajv": "^8.17.1", "jsonld": "^9.0.0", "n3": "^1.26.0" }, "bin": { "collect-implementations": "src/collect-implementations.ts" } }, "sha512-6y814ZPl5X2vimAGOzMSYpXObwt9/8+0bqTd14RD8VRnta1MBfFlU3EEq0kelpFJsJOqJTkXJaPw7XEFYPT6Dw=="],
+    "@canonical/code-standards": ["@canonical/code-standards@0.1.0", "", {}, "sha512-/eDpuWIUND98yhON7XVqgVY6apobNPispqnEcalSv1XVc7KkAvQAVkexbAiyzS6EaJwZG5k/D1i2j1Nv1psSeQ=="],
+
+    "@canonical/design-system": ["@canonical/design-system@0.1.1", "", { "dependencies": { "ajv": "^8.17.1", "jsonld": "^9.0.0", "n3": "^2.0.1" }, "bin": { "collect-implementations": "src/collect-implementations.ts" } }, "sha512-Mc5pCTXLfF8hwwzG/FVWe0RQthzGhbXowjEVP55ZclbjAeglRHXvGxhgqo+MRfgoE5Pt6BHZkTVazL0dgr/3pA=="],
 
     "@canonical/design-tokens": ["@canonical/design-tokens@0.1.0", "", {}, "sha512-lfeXYlwI0TdLgRdW52a14va3Jgqb7QXEnwU8IzVP+NjAQmrEJ5BGPQmwCF+ohO3svvjMInrFFw7K93OJQUK+4w=="],
 
@@ -3022,7 +3028,7 @@
 
     "mute-stream": ["mute-stream@2.0.0", "", {}, "sha512-WWdIxpyjEn+FhQJQQv9aQAYlHoNVdzIzUySNV1gHUPDSdZJ3yZn7pAAbQcV7B56Mvu881q9FZV+0Vx2xC44VWA=="],
 
-    "n3": ["n3@1.26.0", "", { "dependencies": { "buffer": "^6.0.3", "readable-stream": "^4.0.0" } }, "sha512-SQknS0ua90rN+3RHuk8BeIqeYyqIH/+ecViZxX08jR4j6MugqWRjtONl3uANG/crWXnOM2WIqBJtjIhVYFha+w=="],
+    "n3": ["n3@2.0.3", "", { "dependencies": { "buffer": "^6.0.3", "readable-stream": "^4.0.0" } }, "sha512-um/toGVENTarHBYIK2TdH6ByBhW75WpdKpv8iTYt9wF2QfBk8s8a16iaWZFUAAC1BKfGdb99kfgx6pltdDwfKA=="],
 
     "nan": ["nan@2.26.2", "", {}, "sha512-0tTvBTYkt3tdGw22nrAy50x7gpbGCCFH3AFcyS5WiUu7Eu4vWlri1woE6qHBSfy11vksDqkiwjOnlR7WV8G1Hw=="],
 

@@ -9,6 +9,7 @@
 import type { Store, URI } from "@canonical/ke";
 import { escapeSparqlValue } from "@canonical/ke";
 import { buildQuery } from "../../shared/buildQuery.js";
+import { P } from "../../shared/prefixes.js";
 import type {
   StandardListFilters,
   StandardSummary,
@@ -23,7 +24,7 @@ export default async function listStandards(
   if (filters?.category) {
     const escaped = escapeSparqlValue(filters.category.toLowerCase());
     filterClauses.push(
-      `?standard cs:hasCategory ?filterCat . ?filterCat cs:slug ?catSlug . FILTER(?catSlug = ${escaped})`,
+      `?standard ${P.cs}hasCategory ?filterCat . ?filterCat ${P.cs}slug ?catSlug . FILTER(?catSlug = ${escaped})`,
     );
   }
 
@@ -38,12 +39,12 @@ export default async function listStandards(
     buildQuery(`
       SELECT ?standard ?name ?categoryName ?description
       WHERE {
-        ?standard a cs:CodeStandard ;
-                  cs:name ?name ;
-                  cs:description ?description .
+        ?standard a ${P.cs}CodeStandard ;
+                  ${P.cs}name ?name ;
+                  ${P.cs}description ?description .
         OPTIONAL {
-          ?standard cs:hasCategory ?cat .
-          ?cat cs:slug ?categoryName .
+          ?standard ${P.cs}hasCategory ?cat .
+          ?cat ${P.cs}slug ?categoryName .
         }
         ${filterClauses.join("\n        ")}
       }

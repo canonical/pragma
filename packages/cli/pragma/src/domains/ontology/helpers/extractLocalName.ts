@@ -1,6 +1,6 @@
 /**
  * Extract the local name from a full URI.
- * `"https://ds.canonical.com/ontology#UIBlock"` → `"UIBlock"`
+ * `"https://ds.canonical.com/UIBlock"` → `"UIBlock"`
  */
 
 export default function extractLocalName(uri: string): string {
