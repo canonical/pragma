@@ -27,8 +27,20 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Resolve build command
+        id: build
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            echo "cmd=bunx nx affected -t build:all --base=origin/${{ github.event.pull_request.base.ref }} --head=HEAD" >> "$GITHUB_OUTPUT"
+          else
+            echo "cmd=bunx nx affected -t build:all --base=HEAD~1 --head=HEAD" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Setup environment
         uses: ./.github/actions/setup-env
+        with:
+          build-command: ${{ steps.build.outputs.cmd }}
 
       - name: Publish to Chromatic
         uses: chromaui/action@v13
