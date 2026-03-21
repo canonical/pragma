@@ -93,7 +93,7 @@ export function litCss(options: LitCssOptions = {}): VitePlugin {
         this: any,
         code: string,
         id: string,
-        options?: { ssr?: boolean },
+        options?: { moduleType: string; ssr?: boolean },
       ) {
         // Check if this is a CSS file we should transform
         const cleanId = id.split("?")[0];
@@ -128,8 +128,11 @@ export function litCss(options: LitCssOptions = {}): VitePlugin {
 
         if (!result) return result;
 
-        // Extract code from result
-        const cssCode = typeof result === "string" ? result : result.code;
+        // Extract code from result, coercing to string for Vite 8 compat
+        // (result.code may be a RolldownMagicString in Vite 8+)
+        const cssCode = String(
+          typeof result === "string" ? result : result.code,
+        );
 
         if (!cssCode) {
           return;
