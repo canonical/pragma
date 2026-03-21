@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    name: Build and test
+    name: Build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
@@ -17,11 +17,35 @@ jobs:
 
       - name: Setup environment
         uses: ./.github/actions/setup-env
+
+  check:
+    name: Code quality checks
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v6
         with:
-          build-target: build:all
+          fetch-depth: 1
+
+      - name: Setup environment
+        uses: ./.github/actions/setup-env
 
       - name: Code quality checks
         run: bun run check
+
+  test:
+    name: Test
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+
+      - name: Setup environment
+        uses: ./.github/actions/setup-env
 
       - name: Test
         run: bun run test

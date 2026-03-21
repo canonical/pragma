@@ -1,5 +1,5 @@
 name: Setup environment
-description: Installs build tools, restores caches, and installs dependencies
+description: Installs build tools, restores caches, starts Nx cache server, and installs dependencies
 inputs:
   bun-version:
     default: '1.3.9'
@@ -9,9 +9,9 @@ inputs:
     # Storybook 10 supports Node 20.16+, 22.19+, or 24+
     default: '24'
     description: Version of Node to use
-  build-target:
-    default: ''
-    description: 'Lerna build target to run after install (e.g. "build", "build:all"). Leave empty to skip.'
+  build-command:
+    default: 'bunx lerna run build:all'
+    description: Build command to run. Override with nx affected for PR workflows.
 runs:
   using: composite
   steps:
@@ -36,6 +36,12 @@ runs:
         path: ~/.bun/install/cache
         key: bun-cache-${{ runner.os }}-${{ hashFiles('bun.lock') }}
 
+    - name: Cache Nx remote cache
+      uses: actions/cache@v4
+      with:
+        path: /tmp/nx-remote-cache
+        key: nx-remote-cache-${{ runner.os }}-${{ inputs.node-version }}-${{ github.sha }}
+
     - name: Install dependencies
       shell: bash
       # NOTE: --frozen-lockfile disabled for now due to a known Bun bug where bun install
@@ -46,8 +52,7 @@ runs:
       # run: bun install --frozen-lockfile
       #
       # --ignore-scripts prevents the "prepare" lifecycle hook from triggering a full
-      # monorepo build during install. Workflows that need a build invoke it explicitly
-      # or rely on Nx transitive dependsOn.
+      # monorepo build during install. Workflows that need a build invoke it explicitly.
       run: bun install --ignore-scripts && git diff --exit-code bun.lock
 
       # Workaround for https://github.com/oven-sh/bun/issues/19782
@@ -56,7 +61,14 @@ runs:
       shell: bash
       run: bun install --ignore-scripts
 
-    - name: Build
-      if: ${{ inputs.build-target != '' }}
+    - name: Start Nx cache server
       shell: bash
-      run: bunx lerna run ${{ inputs.build-target }}
+      run: |
+        bun ${{ github.action_path }}/nx-cache-server.ts &
+        sleep 1
+        echo "NX_SELF_HOSTED_REMOTE_CACHE_SERVER=http://localhost:9876" >> "$GITHUB_ENV"
+        echo "NX_SELF_HOSTED_REMOTE_CACHE_ACCESS_TOKEN=local" >> "$GITHUB_ENV"
+
+    - name: Build packages
+      shell: bash
+      run: ${{ inputs.build-command }}

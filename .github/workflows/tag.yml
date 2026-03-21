@@ -19,7 +19,7 @@ env:
 
 jobs:
   build:
-    name: Build & test
+    name: Build
     runs-on: ubuntu-latest
     steps:
       - name: Validate input
@@ -36,12 +36,35 @@ jobs:
 
       - name: Setup environment
         uses: ./.github/actions/setup-env
-        with:
-          build-target: build:all
 
-        # TODO add Nx and only test the packages that have changed since last tag
+  check:
+    name: Code quality checks
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+
+      - name: Setup environment
+        uses: ./.github/actions/setup-env
+
       - name: Code quality checks
         run: bun run check
+
+  test:
+    name: Test
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+
+      - name: Setup environment
+        uses: ./.github/actions/setup-env
 
       - name: Test
         run: bun run test
@@ -49,16 +72,14 @@ jobs:
   version:
     name: Bump package versions
     runs-on: ubuntu-latest
-    needs: build
+    needs: [check, test]
     outputs:
       VERSION: ${{ steps.lerna_version.outputs.VERSION }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
         with:
-          # DEPLOY_KEY is used by lerna_version step to commit and push version bumps to the repo.
           ssh-key: ${{ secrets.DEPLOY_KEY }}
-          # Lerna needs *all* the git history to determine which packages have changed
           fetch-depth: 0
 
       - name: Setup environment
@@ -78,15 +99,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
         with:
-          # Checkout the tag that was just created
           ref: v${{ needs.version.outputs.VERSION }}
-          # Lerna needs *all* the git history to determine which packages have changed
           fetch-depth: 0
 
       - name: Setup Environment
         uses: ./.github/actions/setup-env
-        with:
-          build-target: build
 
       - name: Setup Node, authenticate with NPM registry
         uses: actions/setup-node@v6
