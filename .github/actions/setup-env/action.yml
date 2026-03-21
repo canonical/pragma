@@ -66,11 +66,10 @@ runs:
       run: |
         bun ${{ github.action_path }}/nx-cache-server.ts &
         sleep 1
+        echo "NX_SELF_HOSTED_REMOTE_CACHE_SERVER=http://localhost:9876" >> "$GITHUB_ENV"
+        echo "NX_SELF_HOSTED_REMOTE_CACHE_ACCESS_TOKEN=local" >> "$GITHUB_ENV"
 
     - name: Build
       if: ${{ inputs.build-target != '' }}
       shell: bash
-      env:
-        NX_SELF_HOSTED_REMOTE_CACHE_SERVER: "http://localhost:9876"
-        NX_SELF_HOSTED_REMOTE_CACHE_ACCESS_TOKEN: "local"
       run: bunx lerna run ${{ inputs.build-target }}

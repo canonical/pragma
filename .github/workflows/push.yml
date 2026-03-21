@@ -5,10 +5,6 @@ on:
     branches:
       - main
 
-env:
-  NX_SELF_HOSTED_REMOTE_CACHE_SERVER: "http://localhost:9876"
-  NX_SELF_HOSTED_REMOTE_CACHE_ACCESS_TOKEN: "local"
-
 jobs:
   build:
     name: Build
