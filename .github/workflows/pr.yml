@@ -22,6 +22,7 @@ jobs:
         with:
           bun-version: ${{ matrix.bun-version }}
           node-version: ${{ matrix.node-version }}
+          build-command: bunx nx affected -t build:all --base=origin/${{ github.event.pull_request.base.ref }} --head=HEAD
 
   check:
     needs: build
@@ -42,9 +43,10 @@ jobs:
         with:
           bun-version: ${{ matrix.bun-version }}
           node-version: ${{ matrix.node-version }}
+          build-command: bunx nx affected -t build:all --base=origin/${{ github.event.pull_request.base.ref }} --head=HEAD
 
       - name: Code quality checks
-        run: bun run check
+        run: bunx nx affected -t check --base=origin/${{ github.event.pull_request.base.ref }} --head=HEAD
 
   test:
     needs: build
@@ -65,9 +67,10 @@ jobs:
         with:
           bun-version: ${{ matrix.bun-version }}
           node-version: ${{ matrix.node-version }}
+          build-command: bunx nx affected -t build:all --base=origin/${{ github.event.pull_request.base.ref }} --head=HEAD
 
       - name: Test
-        run: bun run test
+        run: bunx nx affected -t test --base=origin/${{ github.event.pull_request.base.ref }} --head=HEAD
 
   build-gate:
     runs-on: ubuntu-latest

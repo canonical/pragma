@@ -9,6 +9,9 @@ inputs:
     # Storybook 10 supports Node 20.16+, 22.19+, or 24+
     default: '24'
     description: Version of Node to use
+  build-command:
+    default: 'bunx lerna run build:all'
+    description: Build command to run. Override with nx affected for PR workflows.
 runs:
   using: composite
   steps:
@@ -66,6 +69,6 @@ runs:
         echo "NX_SELF_HOSTED_REMOTE_CACHE_SERVER=http://localhost:9876" >> "$GITHUB_ENV"
         echo "NX_SELF_HOSTED_REMOTE_CACHE_ACCESS_TOKEN=local" >> "$GITHUB_ENV"
 
-    - name: Build all packages
+    - name: Build packages
       shell: bash
-      run: bunx lerna run build:all
+      run: ${{ inputs.build-command }}
