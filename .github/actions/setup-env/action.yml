@@ -9,9 +9,6 @@ inputs:
     # Storybook 10 supports Node 20.16+, 22.19+, or 24+
     default: '24'
     description: Version of Node to use
-  build-target:
-    default: ''
-    description: 'Lerna build target to run after install (e.g. "build", "build:all"). Leave empty to skip.'
 runs:
   using: composite
   steps:
@@ -69,7 +66,6 @@ runs:
         echo "NX_SELF_HOSTED_REMOTE_CACHE_SERVER=http://localhost:9876" >> "$GITHUB_ENV"
         echo "NX_SELF_HOSTED_REMOTE_CACHE_ACCESS_TOKEN=local" >> "$GITHUB_ENV"
 
-    - name: Build
-      if: ${{ inputs.build-target != '' }}
+    - name: Build all packages
       shell: bash
-      run: bunx lerna run ${{ inputs.build-target }}
+      run: bunx lerna run build:all

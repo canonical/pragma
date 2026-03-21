@@ -23,9 +23,6 @@ jobs:
           bun-version: ${{ matrix.bun-version }}
           node-version: ${{ matrix.node-version }}
 
-      - name: Build affected packages
-        run: bunx nx affected -t build:all --base=origin/main
-
   check:
     needs: build
     runs-on: ubuntu-latest
@@ -46,11 +43,8 @@ jobs:
           bun-version: ${{ matrix.bun-version }}
           node-version: ${{ matrix.node-version }}
 
-      - name: Build affected packages
-        run: bunx nx affected -t build:all --base=origin/main
-
       - name: Code quality checks
-        run: bunx nx affected -t check --base=origin/main
+        run: bun run check
 
   test:
     needs: build
@@ -72,11 +66,8 @@ jobs:
           bun-version: ${{ matrix.bun-version }}
           node-version: ${{ matrix.node-version }}
 
-      - name: Build affected packages
-        run: bunx nx affected -t build:all --base=origin/main
-
       - name: Test
-        run: bunx nx affected -t test --base=origin/main
+        run: bun run test
 
   build-gate:
     runs-on: ubuntu-latest

@@ -36,8 +36,6 @@ jobs:
 
       - name: Setup environment
         uses: ./.github/actions/setup-env
-        with:
-          build-target: build:all
 
   check:
     name: Code quality checks
@@ -51,8 +49,6 @@ jobs:
 
       - name: Setup environment
         uses: ./.github/actions/setup-env
-        with:
-          build-target: build:all
 
       - name: Code quality checks
         run: bun run check
@@ -69,8 +65,6 @@ jobs:
 
       - name: Setup environment
         uses: ./.github/actions/setup-env
-        with:
-          build-target: build:all
 
       - name: Test
         run: bun run test
@@ -110,8 +104,6 @@ jobs:
 
       - name: Setup Environment
         uses: ./.github/actions/setup-env
-        with:
-          build-target: build
 
       - name: Setup Node, authenticate with NPM registry
         uses: actions/setup-node@v6
