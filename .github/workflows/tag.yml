@@ -16,6 +16,8 @@ on:
           - "stable"
 env:
   MAIN_BRANCH: "refs/heads/main"
+  NX_SELF_HOSTED_REMOTE_CACHE_SERVER: "http://localhost:9876"
+  NX_SELF_HOSTED_REMOTE_CACHE_ACCESS_TOKEN: "local"
 
 jobs:
   build:
@@ -85,9 +87,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
         with:
-          # DEPLOY_KEY is used by lerna_version step to commit and push version bumps to the repo.
           ssh-key: ${{ secrets.DEPLOY_KEY }}
-          # Lerna needs *all* the git history to determine which packages have changed
           fetch-depth: 0
 
       - name: Setup environment
@@ -107,9 +107,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
         with:
-          # Checkout the tag that was just created
           ref: v${{ needs.version.outputs.VERSION }}
-          # Lerna needs *all* the git history to determine which packages have changed
           fetch-depth: 0
 
       - name: Setup Environment

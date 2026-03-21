@@ -1,5 +1,5 @@
 name: Setup environment
-description: Installs build tools, restores caches, and installs dependencies
+description: Installs build tools, restores caches, starts Nx cache server, and installs dependencies
 inputs:
   bun-version:
     default: '1.3.9'
@@ -52,8 +52,7 @@ runs:
       # run: bun install --frozen-lockfile
       #
       # --ignore-scripts prevents the "prepare" lifecycle hook from triggering a full
-      # monorepo build during install. Workflows that need a build invoke it explicitly
-      # or rely on Nx transitive dependsOn.
+      # monorepo build during install. Workflows that need a build invoke it explicitly.
       run: bun install --ignore-scripts && git diff --exit-code bun.lock
 
       # Workaround for https://github.com/oven-sh/bun/issues/19782
@@ -63,7 +62,6 @@ runs:
       run: bun install --ignore-scripts
 
     - name: Start Nx cache server
-      if: ${{ inputs.build-target != '' }}
       shell: bash
       run: |
         bun ${{ github.action_path }}/nx-cache-server.ts &
