@@ -18,9 +18,9 @@ import { runTask } from "@canonical/task";
 import configExists from "../../../configExists.js";
 import { VERSION } from "../../../constants.js";
 import {
-  PM_COMMANDS,
   detectLocalInstall,
   detectPackageManager,
+  PM_COMMANDS,
 } from "../../../pm.js";
 import { collectStoreSummary } from "../../info/collectStoreSummary.js";
 import { bootStore } from "../../shared/bootStore.js";
