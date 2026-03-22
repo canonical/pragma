@@ -8,6 +8,19 @@ import { Command } from "commander";
 import { PROGRAM_DESCRIPTION, PROGRAM_NAME, VERSION } from "../constants.js";
 import type { PragmaContext } from "../domains/shared/context.js";
 
+/**
+ * Build and configure the top-level Commander program.
+ *
+ * Registers all domain commands, global flags, help formatting,
+ * and the `mcp` subcommand. Returns the configured Commander instance
+ * ready for `parseAsync`.
+ *
+ * @param commands - Domain command definitions to register.
+ * @param ctx - Shared pragma context (global flags, store, config).
+ * @returns Configured Commander program.
+ *
+ * @note Impure — attaches process.stdout/stderr handlers and lazy-imports the MCP server.
+ */
 export default function createProgram(
   commands: readonly CommandDefinition[],
   ctx: PragmaContext,

@@ -1,9 +1,4 @@
-/**
- * Setup domain types.
- *
- * Types for the `pragma setup skills` command.
- */
-
+/** Describes a single symlink create/skip/replace action performed during skill setup. */
 export interface SymlinkAction {
   readonly skillName: string;
   readonly target: string;
@@ -12,6 +7,7 @@ export interface SymlinkAction {
   readonly harnessName: string;
 }
 
+/** Aggregate result of the `pragma setup skills` operation. */
 export interface SetupSkillsResult {
   readonly actions: readonly SymlinkAction[];
   readonly harnessCount: number;

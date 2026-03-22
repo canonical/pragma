@@ -1,13 +1,14 @@
-/**
- * Collect summary statistics from a ke store via SPARQL.
- */
-
 import type { Store } from "@canonical/ke";
 import { buildQuery } from "../../shared/buildQuery.js";
 import type { StoreSummary } from "../types.js";
 
 /**
- * Query the store for total triple count and named graph URIs.
+ * Queries the ke store for total triple count and named graph URIs.
+ *
+ * @note Queries ke store
+ *
+ * @param store - The ke store to query.
+ * @returns A {@link StoreSummary} with `tripleCount` and `graphNames`.
  */
 async function collectStoreSummary(store: Store): Promise<StoreSummary> {
   const countResult = await store.query(

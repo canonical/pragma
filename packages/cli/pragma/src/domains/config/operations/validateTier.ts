@@ -1,17 +1,16 @@
-/**
- * Validate a tier path against the ontology.
- */
-
 import type { Store } from "@canonical/ke";
 import { PragmaError } from "#error";
 import type { TierEntry } from "../../shared/types.js";
 import { listTiers } from "../../tier/operations/index.js";
 
 /**
- * Validate a tier path against the ontology.
+ * Validate a tier path against the ke store ontology.
  *
+ * @param store - The booted ke store.
+ * @param tierPath - The tier path string to validate.
  * @returns The matching TierEntry.
- * @throws PragmaError.invalidInput if the tier path doesn't exist in the ontology.
+ * @throws PragmaError.invalidInput if the tier path does not exist in the ontology.
+ * @note Queries ke store
  */
 export default async function validateTier(
   store: Store,

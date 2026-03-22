@@ -1,11 +1,16 @@
-/**
- * Resolve a prefix string or namespace URI to both prefix and namespace.
- *
- * @throws PragmaError.invalidInput if the prefix is unknown.
- */
-
 import { PragmaError } from "#error";
 
+/**
+ * Resolves a prefix string or full namespace URI to both prefix and namespace.
+ *
+ * Accepts either a short prefix (e.g. `ds`) or a full namespace URI
+ * (e.g. `https://ds.canonical.com/`) and returns the matching pair.
+ *
+ * @param prefixOrUri - A short prefix or full namespace URI.
+ * @param prefixes - Registered prefix-to-namespace mapping from the store.
+ * @returns An object with `prefix` and `namespace` strings.
+ * @throws PragmaError.invalidInput if the prefix or namespace is unknown.
+ */
 export default function resolvePrefix(
   prefixOrUri: string,
   prefixes: Readonly<Record<string, string>>,

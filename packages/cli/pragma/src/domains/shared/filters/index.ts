@@ -1,3 +1,4 @@
+/** @module Shared SPARQL filter builders for tier and channel visibility. */
 export { buildChannelFilter, CHANNEL_RELEASES } from "./buildChannelFilter.js";
 export { default as buildFilterConfig } from "./buildFilterConfig.js";
 export { buildFilters } from "./buildFilters.js";

@@ -23,8 +23,9 @@ export const CHANNEL_RELEASES: Record<Channel, readonly string[]> = {
  * Uses OPTIONAL + FILTER pattern: binds ?release if present,
  * then filters to allowed values OR unbound (= stable default).
  *
- * @param channel - Configured channel
- * @param varName - SPARQL variable to filter (default: "release")
+ * @param channel - Configured channel.
+ * @param varName - SPARQL variable to filter (default: `"release"`).
+ * @returns SPARQL OPTIONAL + FILTER clause string.
  */
 export function buildChannelFilter(
   channel: Channel,

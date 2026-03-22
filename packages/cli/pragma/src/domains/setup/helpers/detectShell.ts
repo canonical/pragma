@@ -1,9 +1,4 @@
-/**
- * Shell detection from $SHELL environment variable.
- *
- * @note Impure — reads process.env.SHELL.
- */
-
+/** Union of supported shell identifiers. */
 export type ShellId = "zsh" | "bash" | "fish";
 
 const SHELL_MAP: Record<string, ShellId> = {
@@ -13,8 +8,10 @@ const SHELL_MAP: Record<string, ShellId> = {
 };
 
 /**
- * Detect the user's shell from $SHELL.
- * Returns null if the shell is unknown or $SHELL is unset.
+ * Detect the user's shell from the `$SHELL` environment variable.
+ *
+ * @returns The detected ShellId, or null if `$SHELL` is unset or unrecognized.
+ * @note Impure
  */
 export default function detectShell(): ShellId | null {
   const shell = process.env.SHELL ?? "";

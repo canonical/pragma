@@ -4,6 +4,12 @@ import type { PackageManager } from "./types.js";
 /**
  * Detect which package manager installed pragma from the binary path.
  *
+ * Inspects the resolved symlink target for known directory patterns
+ * (`.bun/`, `/pnpm/`, `/yarn/`). Falls back to `"npm"`.
+ *
+ * @param binPath - Path to the pragma binary (defaults to `process.argv[1]`).
+ * @returns Detected package manager identifier.
+ *
  * @note Impure — resolves real filesystem path.
  */
 export default function detectPackageManager(

@@ -1,15 +1,14 @@
-/**
- * Renderers for `pragma upgrade` output.
- *
- * Three functions of the same shape: `(UpgradeData) => string`.
- * - plain: terminal with chalk formatting
- * - llm: condensed Markdown
- * - json: serialized JSON
- */
-
 import chalk from "chalk";
 import type { UpgradeData } from "../types.js";
 
+/**
+ * Renders `pragma upgrade` output for a plain terminal.
+ *
+ * Shows version comparison, dry-run notice, or completion status with chalk styling.
+ *
+ * @param data - The upgrade outcome data.
+ * @returns A formatted terminal string.
+ */
 function renderUpgradePlain(data: UpgradeData): string {
   const lines: string[] = [];
 
@@ -42,6 +41,12 @@ function renderUpgradePlain(data: UpgradeData): string {
   return lines.join("\n");
 }
 
+/**
+ * Renders `pragma upgrade` output as condensed Markdown for LLM consumption.
+ *
+ * @param data - The upgrade outcome data.
+ * @returns A single-line Markdown string.
+ */
 function renderUpgradeLlm(data: UpgradeData): string {
   if (data.offline) return "Upgrade check failed: could not reach registry";
   if (data.alreadyLatest) return `Already at latest version (${data.current})`;
@@ -50,6 +55,12 @@ function renderUpgradeLlm(data: UpgradeData): string {
   return `Upgraded: ${data.current} → ${data.latest}`;
 }
 
+/**
+ * Renders `pragma upgrade` output as indented JSON.
+ *
+ * @param data - The upgrade outcome data.
+ * @returns A JSON string.
+ */
 function renderUpgradeJson(data: UpgradeData): string {
   return JSON.stringify(data, null, 2);
 }

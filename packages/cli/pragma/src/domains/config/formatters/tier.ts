@@ -1,12 +1,12 @@
-/**
- * Formatters for `pragma config tier` output.
- *
- * Groups three formatter sets for the tier command's branches:
- * set, reset, and query.
- */
-
 import type { Formatters } from "../../shared/formatters.js";
 
+/**
+ * Formatter sets for `pragma config tier` output, grouped by branch:
+ *
+ * - **set** formats the confirmation after setting a tier (plain/llm/json).
+ * - **reset** formats the confirmation after resetting to default (plain/llm/json).
+ * - **query** formats the current tier value (plain/llm/json).
+ */
 const tierFormatters = {
   set: {
     plain: (d: { field: string; value: string }) =>

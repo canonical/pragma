@@ -1,13 +1,15 @@
-/**
- * Config domain — CLI commands and operations.
- *
- * Commands: `pragma config tier`, `pragma config channel`, `pragma config show`
- */
+/** @module Config domain -- tier, channel, and show commands for `pragma config`. */
 
 import type { CommandDefinition } from "@canonical/cli-core";
 import type { PragmaContext } from "../shared/context.js";
 import { channelCommand, showCommand, tierCommand } from "./commands/index.js";
 
+/**
+ * Return all config command definitions.
+ *
+ * @param ctx - Pragma context providing cwd, store, and formatter selection.
+ * @returns An array of CommandDefinitions for the config subcommands.
+ */
 export function commands(ctx: PragmaContext): CommandDefinition[] {
   return [tierCommand(ctx), channelCommand(ctx), showCommand(ctx)];
 }

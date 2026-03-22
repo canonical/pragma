@@ -1,3 +1,9 @@
+/**
+ * Wires the `pragma modifier lookup <name>` CLI command.
+ *
+ * Retrieves a single modifier family by name and renders its values.
+ */
+
 import {
   type CommandDefinition,
   createOutputResult,

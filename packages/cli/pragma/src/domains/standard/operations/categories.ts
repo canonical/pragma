@@ -1,7 +1,9 @@
 /**
- * List all standard categories with standard counts.
+ * Lists all standard categories with the number of standards in each.
  *
- * Pure function: Store → CategorySummary[].
+ * @param store - ke store to query
+ * @returns array of category summaries ordered by name, empty when none exist
+ * @note Queries ke store
  */
 
 import type { Store } from "@canonical/ke";

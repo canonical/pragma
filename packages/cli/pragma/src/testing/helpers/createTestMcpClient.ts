@@ -1,15 +1,3 @@
-/**
- * In-process MCP client for integration testing.
- *
- * Creates a server from an existing `PragmaRuntime` via
- * `createMcpServerFromRuntime` and connects through the MCP SDK's
- * in-process transport. No network, no stdio.
- *
- * The client shares the test-owned runtime — lifecycle is explicit.
- *
- * @note Impure — creates MCP server and client, connects transport.
- */
-
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import type { PragmaRuntime } from "../../domains/shared/runtime.js";
@@ -18,9 +6,16 @@ import type { TestMcpClientResult } from "../types.js";
 
 /**
  * Create an in-process MCP client connected to a server backed by
- * the given runtime. The caller owns the runtime lifecycle.
+ * the given runtime.
  *
- * @note Impure — creates MCP server and client, connects transport.
+ * Uses `createMcpServerFromRuntime` and the MCP SDK's in-memory
+ * transport. No network, no stdio. The caller owns the runtime
+ * lifecycle and must call `cleanup` when done.
+ *
+ * @param runtime - An already-booted pragma runtime.
+ * @returns The connected client and a cleanup function.
+ *
+ * @note Impure
  */
 export default async function createTestMcpClient(
   runtime: PragmaRuntime,

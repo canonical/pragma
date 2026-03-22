@@ -1,11 +1,7 @@
-/**
- * Resolve skill source directories from the shared package registry.
- * Package-manager agnostic — works with bun, npm, pnpm, yarn.
- */
-
 import { join } from "node:path";
 import { PACKAGES, resolvePackages } from "../../shared/packages.js";
 
+/** A resolved skill source directory from an installed package. */
 export interface SkillSource {
   /** Absolute path to the skills directory. */
   readonly dir: string;
@@ -15,6 +11,13 @@ export interface SkillSource {
   readonly relativePath: string;
 }
 
+/**
+ * Resolve skill source directories from the shared package registry.
+ * Package-manager agnostic -- works with bun, npm, pnpm, yarn.
+ *
+ * @returns Array of resolved skill sources with absolute paths.
+ * @note Impure
+ */
 export default function resolveSkillSources(): SkillSource[] {
   const sources: SkillSource[] = [];
   const resolved = resolvePackages();

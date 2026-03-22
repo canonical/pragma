@@ -9,6 +9,13 @@ import { resolveCompletion } from "@canonical/cli-core";
  * level detection (noun/verb/argument), invokes the matched completer,
  * and joins the results with newlines. Returns an empty string when
  * no completer matches.
+ *
+ * @param partial - The raw partial input string from the shell.
+ * @param tree - The completion tree built from registered commands.
+ * @param ctx - The command context providing store and config.
+ * @returns Newline-separated completion candidates, or empty string.
+ *
+ * @note Queries ke store
  */
 export default async function handleQuery(
   partial: string,

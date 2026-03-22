@@ -14,6 +14,9 @@ import { P } from "../prefixes.js";
  * "apps" -> ["global", "apps"]
  * "global" -> ["global"]
  * undefined -> [] (no filter -- all tiers visible)
+ *
+ * @param tierPath - Slash-separated tier path, or `undefined` for no filtering.
+ * @returns Ordered array of tier paths from root to leaf.
  */
 export function resolveTierChain(tierPath: string | undefined): string[] {
   if (tierPath === undefined) return [];
@@ -34,6 +37,9 @@ export function resolveTierChain(tierPath: string | undefined): string[] {
 /**
  * Convert a tier path to its URI local name.
  * Slashes become underscores: `"apps/lxd"` -> `"apps_lxd"`.
+ *
+ * @param tierPath - Slash-separated tier path.
+ * @returns Underscore-separated local name suitable for URI construction.
  */
 export function tierPathToLocal(tierPath: string): string {
   return tierPath.replace(/\//g, "_");
@@ -44,8 +50,9 @@ export function tierPathToLocal(tierPath: string): string {
  *
  * Returns an empty string when tier is undefined (no filter = all tiers visible).
  *
- * @param tierPath - Configured tier path (e.g., "apps/lxd") or undefined
- * @param varName - SPARQL variable to filter (default: "tier")
+ * @param tierPath - Configured tier path (e.g., `"apps/lxd"`) or `undefined`.
+ * @param varName - SPARQL variable to filter (default: `"tier"`).
+ * @returns SPARQL FILTER clause string, or empty string when no tier is set.
  */
 export function buildTierFilter(
   tierPath: string | undefined,

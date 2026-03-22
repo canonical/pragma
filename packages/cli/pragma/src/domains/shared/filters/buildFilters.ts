@@ -13,6 +13,9 @@ import { buildTierFilter } from "./buildTierFilter.js";
  *
  * Returns a string to insert into a SPARQL WHERE clause body.
  * Each filter is independently optional.
+ *
+ * @param config - Tier and channel filter settings.
+ * @returns Combined SPARQL clause fragments.
  */
 export function buildFilters(config: FilterConfig): string {
   const parts: string[] = [];

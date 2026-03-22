@@ -1,3 +1,4 @@
+/** @module Individual environment health checks invoked by runChecks. */
 export { default as checkConfigFile } from "./checkConfigFile.js";
 export { default as checkKeStore } from "./checkKeStore.js";
 export { default as checkMcpConfigured } from "./checkMcpConfigured.js";

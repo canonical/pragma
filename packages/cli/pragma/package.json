@@ -58,9 +58,9 @@
     "vitest": "^4.0.18"
   },
   "optionalDependencies": {
-    "@canonical/anatomy-dsl": "^0.2.1",
-    "@canonical/code-standards": "^0.1.0",
-    "@canonical/design-system": "^0.1.1"
+    "@canonical/anatomy-dsl": "^0.2.2",
+    "@canonical/code-standards": "^0.1.2",
+    "@canonical/design-system": "^0.1.2"
   },
   "dependencies": {
     "@canonical/cli-core": "^0.18.0",

@@ -1,7 +1,11 @@
 /**
- * Look up a single modifier family by name.
+ * Look up a single modifier family by name, including its allowed values.
  *
- * @throws PragmaError.notFound if the modifier family does not exist.
+ * @param store - ke store to query
+ * @param name - modifier family name (e.g. "importance")
+ * @returns the modifier family with its value list
+ * @throws PragmaError.notFound if the modifier family does not exist
+ * @note Queries ke store
  */
 
 import type { Store, URI } from "@canonical/ke";

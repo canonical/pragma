@@ -1,11 +1,3 @@
-/**
- * `pragma setup mcp` — configure MCP server for detected AI harnesses.
- *
- * Detects installed harnesses (Claude Code, Cursor, etc.), prompts for
- * each, and writes the pragma MCP server entry into their config files.
- * When a harness ID is forced, detection is bypassed.
- */
-
 import type { McpServerConfig } from "@canonical/harnesses";
 import {
   detectHarnesses,
@@ -25,7 +17,10 @@ import {
 import { MCP_SERVER_NAME } from "../helpers/constants.js";
 
 /**
- * Build the pragma MCP server config for a project root.
+ * Build the pragma MCP server config object for a project root.
+ *
+ * @param root - Project root directory.
+ * @returns The MCP server configuration pointing to `pragma mcp`.
  */
 function pragmaMcpConfig(root: string): McpServerConfig {
   return { command: "pragma", args: ["mcp"], cwd: root };
@@ -33,10 +28,13 @@ function pragmaMcpConfig(root: string): McpServerConfig {
 
 /**
  * Compose a Task that configures the pragma MCP server for detected
- * (or forced) AI harnesses.
+ * (or forced) AI harnesses. In detection mode, prompts for each
+ * discovered harness before writing.
  *
  * @param root - Project root directory.
  * @param forceHarnessId - If set, bypass detection and configure this harness only.
+ * @returns A Task that yields void on completion.
+ * @note Impure
  */
 export default function setupMcp(
   root: string,

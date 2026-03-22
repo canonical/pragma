@@ -1,5 +1,9 @@
 /**
- * `pragma block lookup` command definition.
+ * Wires the `pragma block lookup <name>` CLI command.
+ *
+ * Accepts a positional block name and optional aspect flags (anatomy,
+ * modifiers, tokens, implementations). Delegates to {@link lookupBlock} for
+ * data retrieval and {@link lookupFormatters} for output rendering.
  */
 
 import {

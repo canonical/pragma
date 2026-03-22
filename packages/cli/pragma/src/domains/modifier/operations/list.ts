@@ -1,5 +1,9 @@
 /**
- * List all modifier families with their values.
+ * Lists all modifier families with their allowed values, ordered by name.
+ *
+ * @param store - ke store to query
+ * @returns array of modifier families, empty when none exist
+ * @note Queries ke store
  */
 
 import type { Store, URI } from "@canonical/ke";

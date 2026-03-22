@@ -1,5 +1,8 @@
 /**
- * `pragma standard categories` command definition.
+ * Wires the `pragma standard categories` CLI command.
+ *
+ * Lists all standard categories with their standard counts. Throws a
+ * structured recovery error when no categories are found.
  */
 
 import {

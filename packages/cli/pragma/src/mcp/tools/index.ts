@@ -3,6 +3,8 @@
  *
  * Collects declarative ToolSpec arrays from each domain and registers
  * them on the MCP server via the registerFromSpec adapter.
+ *
+ * @module
  */
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -39,6 +41,9 @@ const allSpecs: readonly ToolSpec[] = [
 
 /**
  * Register all MCP tools on the server.
+ *
+ * @param server - The MCP server to register tools on.
+ * @param runtime - The pragma runtime providing store and config.
  */
 export default function registerAllTools(
   server: McpServer,

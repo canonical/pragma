@@ -1,7 +1,13 @@
 /**
- * Look up detailed information for a single token.
+ * Look up detailed information for a single design token by name.
  *
- * @throws PragmaError.notFound if the token does not exist.
+ * Queries the token URI, type, and per-theme values (light/dark).
+ *
+ * @param store - ke store to query
+ * @param name - token name (e.g. "color.primary")
+ * @returns full token detail including theme values
+ * @throws PragmaError.notFound if the token does not exist
+ * @note Queries ke store
  */
 
 import type { Store, URI } from "@canonical/ke";

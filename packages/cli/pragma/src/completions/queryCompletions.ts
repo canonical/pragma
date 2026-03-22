@@ -1,3 +1,10 @@
+import { existsSync, unlinkSync } from "node:fs";
+import { resolve } from "node:path";
+import computeSocketPath from "./computeSocketPath.js";
+import { SPAWN_TIMEOUT_MS } from "./constants.js";
+import querySocket from "./querySocket.js";
+import waitForSocket from "./waitForSocket.js";
+
 /**
  * Client entry point for shell tab completion.
  *
@@ -6,16 +13,10 @@
  * Designed to be called by `pragma --completions <partial>`.
  * Fails silently on error — shell completion must never block the terminal.
  *
- * @note Impure — spawns processes, connects to sockets, writes to stdout.
+ * @param partial - The partial CLI input to complete.
+ *
+ * @note Impure
  */
-
-import { existsSync, unlinkSync } from "node:fs";
-import { resolve } from "node:path";
-import computeSocketPath from "./computeSocketPath.js";
-import { SPAWN_TIMEOUT_MS } from "./constants.js";
-import querySocket from "./querySocket.js";
-import waitForSocket from "./waitForSocket.js";
-
 export default async function queryCompletions(partial: string): Promise<void> {
   const socketPath = computeSocketPath(process.cwd());
 

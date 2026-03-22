@@ -1,5 +1,5 @@
 /**
- * MCP tool specs for the block domain.
+ * MCP tool specs for the block domain — block_list, block_lookup, block_batch_lookup.
  *
  * Declarative definitions — no MCP imports. The adapter layer
  * converts these into registered MCP tools via `registerFromSpec()`.

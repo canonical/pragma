@@ -1,7 +1,10 @@
 /**
- * List all code standards, optionally filtered by category or search term.
+ * Lists all code standards, optionally filtered by category or search term.
  *
- * Pure function: Store + filters → StandardSummary[].
+ * @param store - ke store to query
+ * @param filters - optional category and/or search text filters
+ * @returns array of standard summaries ordered by name, empty when none match
+ * @note Queries ke store
  */
 
 import type { Store, URI } from "@canonical/ke";

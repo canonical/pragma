@@ -1,12 +1,12 @@
-/**
- * Formatters for `pragma config channel` output.
- *
- * Groups three formatter sets for the channel command's branches:
- * set, reset, and query.
- */
-
 import type { Formatters } from "../../shared/formatters.js";
 
+/**
+ * Formatter sets for `pragma config channel` output, grouped by branch:
+ *
+ * - **set** formats the confirmation after setting a channel (plain/llm/json).
+ * - **reset** formats the confirmation after resetting to default (plain/llm/json).
+ * - **query** formats the current channel value (plain/llm/json).
+ */
 const channelFormatters = {
   set: {
     plain: (d: { field: string; value: string }) =>

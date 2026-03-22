@@ -1,13 +1,3 @@
-/**
- * Bridge between Task<void> and CommandResult.
- *
- * Handles dry-run (collect effects, format for display), --yes mode
- * (auto-confirm prompts), and production execution with interactive
- * readline-based prompts.
- *
- * @note Impure — executes tasks, writes to stderr, reads stdin.
- */
-
 import { createInterface } from "node:readline";
 import {
   type CommandResult,
@@ -25,6 +15,7 @@ import {
 } from "@canonical/task";
 import type { LogLevel } from "../types.js";
 
+/** Options controlling how {@link runSetupTask} executes. */
 export interface SetupTaskOptions {
   readonly dryRun?: boolean;
   readonly undo?: boolean;
@@ -35,8 +26,10 @@ export interface SetupTaskOptions {
 }
 
 /**
- * Auto-confirm prompt handler for --yes mode.
- * Returns the default value for each prompt type.
+ * Auto-confirm prompt handler for `--yes` mode.
+ *
+ * @param effect - A Prompt effect to resolve.
+ * @returns The default value for the prompt type.
  */
 function autoConfirmHandler(
   effect: Effect & { _tag: "Prompt" },
@@ -50,8 +43,11 @@ function autoConfirmHandler(
 }
 
 /**
- * Interactive prompt handler using readline.
- * Supports confirm prompts; other types use defaults.
+ * Interactive prompt handler using readline on stdin/stderr.
+ * Supports confirm prompts; other types fall back to defaults.
+ *
+ * @param effect - A Prompt effect to resolve interactively.
+ * @returns The user's answer.
  */
 async function interactivePromptHandler(
   effect: Effect & { _tag: "Prompt" },
@@ -82,7 +78,11 @@ async function interactivePromptHandler(
 }
 
 /**
- * Format dry-run effects for plain terminal output.
+ * Format dry-run effects as plain terminal output with tree-style lines.
+ *
+ * @param effects - Collected effects from the dry-run.
+ * @param verbose - Whether to include debug-level effects.
+ * @returns Formatted multi-line string.
  */
 function formatDryRunPlain(
   effects: readonly Effect[],
@@ -100,7 +100,11 @@ function formatDryRunPlain(
 }
 
 /**
- * Format dry-run effects for LLM markdown output.
+ * Format dry-run effects as a markdown table for LLM output.
+ *
+ * @param effects - Collected effects from the dry-run.
+ * @param verbose - Whether to include debug-level effects.
+ * @returns Markdown-formatted string.
  */
 function formatDryRunLlm(effects: readonly Effect[], verbose: boolean): string {
   const visible = effects.filter((e) => isVisibleEffect(e, verbose));
@@ -122,7 +126,10 @@ function formatDryRunLlm(effects: readonly Effect[], verbose: boolean): string {
 }
 
 /**
- * Format dry-run effects for JSON output.
+ * Format dry-run effects as a JSON array.
+ *
+ * @param effects - Collected effects from the dry-run.
+ * @returns JSON string with effect summaries.
  */
 function formatDryRunJson(effects: readonly Effect[]): string {
   const entries = effects
@@ -138,11 +145,17 @@ function formatDryRunJson(effects: readonly Effect[]): string {
 }
 
 /**
- * Execute a setup Task<void> and return a CommandResult.
+ * Execute a setup Task and return a CommandResult.
  *
- * - `--dry-run`: collects effects, formats them, returns output result.
- * - `--yes`: auto-confirms all prompts.
- * - default: interactive prompts via readline, log output to stderr.
+ * Supports three execution modes:
+ * - `--dry-run`: collects effects without executing, formats for display.
+ * - `--undo`: walks the task tree, collects undo operations, executes in reverse.
+ * - default: interactive execution with readline-based prompts on stderr.
+ *
+ * @param task - The setup Task to execute.
+ * @param options - Execution options (dryRun, undo, yes, verbose, llm, format).
+ * @returns A CommandResult with exit code or formatted output.
+ * @note Impure
  */
 export default async function runSetupTask(
   task: Task<void>,

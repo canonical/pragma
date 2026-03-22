@@ -1,12 +1,15 @@
 /**
- * Formatters for `pragma standard list` output.
+ * Three-mode formatter for `pragma standard list` output.
  *
- * Pure functions: StandardListOutput → string.
+ * - **plain** — terminal text with progressive disclosure.
+ * - **llm** — condensed Markdown consumed by LLM agents and reused
+ *   by the MCP adapter when `condensed: true`.
+ * - **json** — structured JSON; enrichment varies by disclosure level.
  *
- * Supports progressive disclosure:
- *   summary  — name + category + description (default)
- *   digest   — summary + first do example (truncated)
- *   detailed — summary + full dos/donts
+ * Disclosure levels:
+ *   - summary  — name + category + description (default)
+ *   - digest   — summary + first do example (truncated)
+ *   - detailed — summary + full dos/donts
  */
 
 import type { Formatters } from "../../shared/formatters.js";

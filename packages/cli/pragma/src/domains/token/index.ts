@@ -1,3 +1,11 @@
+/**
+ * @module Token domain — CLI commands and operations.
+ *
+ * Commands: `pragma token list`, `pragma token lookup <name>`,
+ *           `pragma tokens add-config`.
+ * Operations: {@link lookupToken}, {@link listTokens}, {@link resolveAddConfig}.
+ */
+
 import type { CommandDefinition } from "@canonical/cli-core";
 import type { PragmaContext } from "../shared/context.js";
 import {

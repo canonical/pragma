@@ -1,3 +1,4 @@
+/** Supported Node.js package managers. */
 type PackageManager = "bun" | "npm" | "pnpm" | "yarn";
 
 interface InstallSource {

@@ -1,3 +1,10 @@
+/**
+ * Wires the `pragma token list` CLI command.
+ *
+ * Lists all design tokens with an optional `--category` filter.
+ * Throws a structured recovery error when no tokens match.
+ */
+
 import {
   type CommandDefinition,
   createOutputResult,

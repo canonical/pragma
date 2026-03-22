@@ -1,9 +1,11 @@
 /**
  * Completions server public API.
  *
- * Exports the server entry point, client entry point, socket path
+ * Re-exports the server entry point, client entry point, socket path
  * computation, and query handler for use by runCli and the pragma
  * package barrel.
+ *
+ * @module
  */
 
 export { default as computeSocketPath } from "./computeSocketPath.js";

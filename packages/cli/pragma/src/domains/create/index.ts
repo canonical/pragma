@@ -1,13 +1,13 @@
-/**
- * Create domain — generator commands for `pragma create`.
- *
- * PA.13 — selective inclusion: component (react/svelte/lit) + package.
- * Monorepo generator is excluded.
- */
+/** @module Create domain -- generator commands for `pragma create` (component and package). */
 
 import type { CommandDefinition } from "@canonical/cli-core";
 import { componentCommand, packageCommand } from "./commands/index.js";
 
+/**
+ * Return all create command definitions.
+ *
+ * @returns An array of CommandDefinitions for component and package generators.
+ */
 export function commands(): CommandDefinition[] {
   return [componentCommand(), packageCommand()];
 }

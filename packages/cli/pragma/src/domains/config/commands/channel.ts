@@ -1,9 +1,3 @@
-/**
- * `pragma config channel` command definition.
- *
- * Set, reset, or query the release channel.
- */
-
 import {
   type CommandDefinition,
   type CommandResult,
@@ -15,6 +9,16 @@ import { selectFormatter } from "../../shared/formatters.js";
 import { channelFormatters } from "../formatters/index.js";
 import { validateChannel } from "../operations/index.js";
 
+/**
+ * Build the `pragma config channel` command definition.
+ *
+ * Supports three modes: set a channel value, reset to default, or
+ * query the current channel when no arguments are provided.
+ *
+ * @param ctx - Pragma context providing cwd and formatter selection.
+ * @returns The command definition for `pragma config channel`.
+ * @note Impure
+ */
 export default function buildChannelCommand(
   ctx: PragmaContext,
 ): CommandDefinition {

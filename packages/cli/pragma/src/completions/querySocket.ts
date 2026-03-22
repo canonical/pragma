@@ -4,10 +4,13 @@
  *
  * Opens a Bun TCP connection to the socket, writes the partial
  * terminated by a newline, and accumulates response chunks until
- * the server closes the connection. The newline ensures the
- * server's data handler fires even for an empty partial.
+ * the server closes the connection.
  *
- * @note Impure — opens a Unix socket connection, performs I/O.
+ * @param socketPath - Absolute path to the Unix domain socket.
+ * @param partial - The partial CLI input to send for completion.
+ * @returns The server's response with trailing newline stripped.
+ *
+ * @note Impure
  */
 export default function querySocket(
   socketPath: string,

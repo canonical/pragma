@@ -1,13 +1,14 @@
-/**
- * Formatters for `pragma setup skills` output.
- *
- * Pure functions: SetupSkillsOutput → string.
- */
-
 import chalk from "chalk";
 import type { Formatters } from "../../shared/formatters.js";
 import type { SetupSkillsOutput } from "./types.js";
 
+/**
+ * Formatters for `pragma setup skills` output.
+ *
+ * - **plain** renders symlink actions grouped by harness with chalk styling.
+ * - **llm** renders a markdown summary with bullet lists.
+ * - **json** serializes the raw SetupSkillsResult.
+ */
 const formatters: Formatters<SetupSkillsOutput> = {
   plain({ result, dryRun }) {
     const lines: string[] = [];
@@ -90,6 +91,12 @@ const formatters: Formatters<SetupSkillsOutput> = {
   },
 };
 
+/**
+ * Group actions by their harness name for display.
+ *
+ * @param actions - Symlink actions to group.
+ * @returns A Map keyed by harness name.
+ */
 function groupByHarness(
   actions: readonly { harnessName: string }[],
 ): Map<string, typeof actions> {

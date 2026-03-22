@@ -1,13 +1,3 @@
-/**
- * Boot a ke-backed completions server on a Unix domain socket.
- *
- * Uses `bootPragma()` for unified store + config initialization, builds
- * the completion tree from all registered commands, and listens on a
- * project-scoped Unix domain socket. Auto-exits after 10 seconds of idle.
- *
- * @note Impure — boots ke store, binds Unix socket, manages process lifecycle.
- */
-
 import { existsSync, unlinkSync } from "node:fs";
 import type { GlobalFlags } from "@canonical/cli-core";
 import { buildCompleters } from "@canonical/cli-core";
@@ -26,7 +16,13 @@ const COMPLETIONS_FLAGS: GlobalFlags = {
 };
 
 /**
- * @note Impure — boots ke store, binds Unix socket, manages process lifecycle.
+ * Boot a ke-backed completions server on a Unix domain socket.
+ *
+ * Uses `bootPragma()` for unified store + config initialization, builds
+ * the completion tree from all registered commands, and listens on a
+ * project-scoped Unix domain socket. Auto-exits after 10 seconds of idle.
+ *
+ * @note Impure
  */
 export default async function startCompletionsServer(): Promise<void> {
   const runtime: PragmaRuntime = await bootPragma();

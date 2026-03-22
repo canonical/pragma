@@ -1,10 +1,3 @@
-/**
- * `pragma setup completions` — install shell completion scripts.
- *
- * Detects the user's shell from $SHELL and writes the appropriate
- * completion script. Override with --zsh, --bash, or --fish.
- */
-
 import { dirname } from "node:path";
 import {
   $,
@@ -24,9 +17,12 @@ import {
 import detectShell, { type ShellId } from "../helpers/detectShell.js";
 
 /**
- * Compose a Task that installs shell completion scripts.
+ * Compose a Task that detects the user's shell and writes the
+ * appropriate completion script to the standard install path.
  *
  * @param forceShell - If set, skip detection and use this shell.
+ * @returns A Task that yields void on completion.
+ * @note Impure
  */
 export default function setupCompletions(forceShell?: ShellId): Task<void> {
   return gen(function* () {

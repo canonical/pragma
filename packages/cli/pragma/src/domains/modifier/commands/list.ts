@@ -1,3 +1,10 @@
+/**
+ * Wires the `pragma modifier list` CLI command.
+ *
+ * Lists all modifier families with their allowed values. Throws a
+ * structured recovery error when no families are found.
+ */
+
 import {
   type CommandDefinition,
   createOutputResult,

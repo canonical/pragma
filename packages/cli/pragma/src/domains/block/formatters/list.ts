@@ -1,7 +1,11 @@
 /**
- * Formatters for `pragma block list` output.
+ * Three-mode formatter for `pragma block list` output.
  *
- * Pure functions: BlockSummary[] → string.
+ * - **plain** — styled terminal output with chalk; one line per block
+ *   showing name, tier, modifiers, and available implementations.
+ * - **llm** — condensed Markdown consumed by LLM agents and reused
+ *   by the MCP adapter when `condensed: true`.
+ * - **json** — structured JSON array for programmatic consumption.
  */
 
 import chalk from "chalk";

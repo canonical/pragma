@@ -1,8 +1,13 @@
 /**
- * List all blocks visible under the given filters.
+ * Lists all blocks visible under the given tier and channel filters.
  *
- * Pure function: Store + FilterConfig → BlockSummary[].
- * Consumed by CLI commands and MCP adapter.
+ * Returns summary-level data (name, tier, modifiers, node/token counts)
+ * for each matching block, ordered alphabetically by name.
+ *
+ * @param store - ke store to query
+ * @param filters - tier and channel filter configuration
+ * @returns array of block summaries, empty when none match
+ * @note Queries ke store
  */
 
 import type { Store, URI } from "@canonical/ke";

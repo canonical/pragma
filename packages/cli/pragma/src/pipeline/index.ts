@@ -1,3 +1,4 @@
+/** @module CLI pipeline — program construction, flag parsing, error rendering, and command routing. */
 export { default as collectCommands } from "./collectCommands.js";
 export { default as createProgram } from "./createProgram.js";
 export {

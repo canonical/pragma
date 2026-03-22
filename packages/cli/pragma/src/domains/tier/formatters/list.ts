@@ -1,3 +1,13 @@
+/**
+ * Three-mode formatter for `pragma tier list` output.
+ *
+ * - **plain** — indented terminal text showing tier hierarchy with
+ *   optional parent annotations.
+ * - **llm** — condensed Markdown consumed by LLM agents and reused
+ *   by the MCP adapter when `condensed: true`.
+ * - **json** — structured JSON array for programmatic consumption.
+ */
+
 import type { Formatters } from "../../shared/formatters.js";
 import type { TierEntry } from "../../shared/types.js";
 

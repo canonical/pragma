@@ -1,5 +1,10 @@
 /**
- * List all design tokens, optionally filtered by category (token type name).
+ * Lists all design tokens, optionally filtered by category (token type name).
+ *
+ * @param store - ke store to query
+ * @param filters - optional category filter
+ * @returns array of token summaries ordered by token ID, empty when none match
+ * @note Queries ke store
  */
 
 import type { Store, URI } from "@canonical/ke";
@@ -8,6 +13,7 @@ import { buildQuery } from "../../shared/buildQuery.js";
 import { P } from "../../shared/prefixes.js";
 import type { TokenSummary } from "../../shared/types.js";
 
+/** Optional filters for the token list operation. */
 export interface TokenListFilters {
   readonly category?: string;
 }

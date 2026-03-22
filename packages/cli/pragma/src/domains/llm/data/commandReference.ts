@@ -1,9 +1,10 @@
-/**
- * Command reference with token estimates for `pragma llm`.
- */
-
 import type { CommandRefEntry } from "../types.js";
 
+/**
+ * Static command reference table with approximate token-cost estimates.
+ *
+ * Used by the `pragma llm` orientation output to help LLMs budget context.
+ */
 export const COMMAND_REFERENCE: readonly CommandRefEntry[] = [
   { command: "block list", tokens: "~200" },
   { command: "block lookup <name> --detailed", tokens: "~500" },

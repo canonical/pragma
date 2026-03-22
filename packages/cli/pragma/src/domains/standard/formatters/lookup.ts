@@ -1,7 +1,11 @@
 /**
- * Formatters for `pragma standard lookup` output.
+ * Three-mode formatter for `pragma standard lookup` output.
  *
- * Pure functions: StandardLookupInput → string.
+ * - **plain** — terminal text showing name, category, description, and
+ *   optional dos/donts when detailed.
+ * - **llm** — condensed Markdown consumed by LLM agents and reused
+ *   by the MCP adapter when `condensed: true`.
+ * - **json** — structured JSON; omits dos/donts unless detailed.
  */
 
 import type { Formatters } from "../../shared/formatters.js";

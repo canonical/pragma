@@ -1,13 +1,15 @@
-/**
- * Check that the ke store boots successfully, reporting triple count and
- * boot time.
- * @note Impure — boots store, runs SPARQL queries.
- */
-
 import { collectStoreSummary } from "../../../info/operations/index.js";
 import { bootStore } from "../../../shared/bootStore.js";
 import type { CheckContext, CheckResult } from "../types.js";
 
+/**
+ * Check that the ke store boots successfully, reporting triple count
+ * and boot time.
+ *
+ * @param ctx - Check context with the working directory.
+ * @returns A CheckResult indicating pass (with triple count) or fail.
+ * @note Impure
+ */
 export default async function checkKeStore(
   ctx: CheckContext,
 ): Promise<CheckResult> {

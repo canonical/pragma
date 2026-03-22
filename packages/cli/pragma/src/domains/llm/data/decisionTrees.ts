@@ -1,9 +1,11 @@
-/**
- * Static decision trees for `pragma llm`.
- */
-
 import type { DecisionTree } from "../types.js";
 
+/**
+ * Static decision trees guiding LLMs through common pragma workflows.
+ *
+ * Each tree maps an intent (e.g. "Build a block") to a compact ASCII
+ * flowchart with token-cost annotations.
+ */
 export const DECISION_TREES: readonly DecisionTree[] = [
   {
     intent: "Build a block",

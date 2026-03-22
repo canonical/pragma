@@ -2,6 +2,12 @@ import { realpathSync } from "node:fs";
 import { PM_COMMANDS } from "./constants.js";
 import detectPackageManager from "./detectPackageManager.js";
 
+/**
+ * Check whether a resolved binary path falls within a known global prefix directory.
+ *
+ * @param path - Resolved filesystem path.
+ * @returns `true` if the path is under a global package manager directory.
+ */
 function isGlobalPrefix(path: string): boolean {
   return (
     path.includes("/.bun/") ||
@@ -13,6 +19,9 @@ function isGlobalPrefix(path: string): boolean {
 
 /**
  * Warn if pragma is installed locally (in node_modules/.bin) instead of globally.
+ *
+ * @param binPath - Path to the pragma binary (defaults to `process.argv[1]`).
+ * @returns Warning string if locally installed, or `undefined` if global.
  *
  * @note Impure — resolves real filesystem path.
  */

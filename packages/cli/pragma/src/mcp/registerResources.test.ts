@@ -182,12 +182,12 @@ describe("read code standard", () => {
     );
     expect(nameProp?.values[0]?.value).toBe("code/function/purity");
 
-    const doProp = entity.properties.find((p) => p.predicate === `${P.cs}dos`);
+    const doProp = entity.properties.find((p) => p.predicate === `${P.cs}do`);
     expect(doProp).toBeDefined();
     expect(doProp?.values.length).toBeGreaterThan(0);
 
     const dontProp = entity.properties.find(
-      (p) => p.predicate === `${P.cs}donts`,
+      (p) => p.predicate === `${P.cs}dont`,
     );
     expect(dontProp).toBeDefined();
   });

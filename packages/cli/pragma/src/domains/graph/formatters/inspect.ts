@@ -1,12 +1,15 @@
-/**
- * Formatters for `pragma graph inspect` output.
- */
-
 import chalk from "chalk";
 import { formatHeading } from "#pipeline";
 import type { Formatters } from "../../shared/formatters.js";
 import type { InspectResult } from "../../shared/types.js";
 
+/**
+ * Formatters for `pragma graph inspect` output.
+ *
+ * - **plain**: terminal output with chalk-styled URI heading and bold predicates.
+ * - **llm**: condensed Markdown with heading and bulleted object lists.
+ * - **json**: serialized {@link InspectResult} as indented JSON.
+ */
 const formatters: Formatters<InspectResult> = {
   plain(result) {
     const lines: string[] = [];

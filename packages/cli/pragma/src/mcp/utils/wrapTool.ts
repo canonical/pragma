@@ -1,12 +1,3 @@
-/**
- * Envelope construction for MCP tool handlers.
- *
- * Every MCP tool is wrapped by `wrapTool` — no tool constructs its own
- * envelope. This ensures consistent `{ ok, data, meta }` success responses,
- * `{ ok, condensed, text, tokens }` condensed responses, and
- * `{ ok: false, error }` error responses across all tools.
- */
-
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { PragmaError } from "#error";
 import type { PragmaRuntime } from "../../domains/shared/runtime.js";
@@ -15,6 +6,11 @@ import type { ToolPayload } from "../types.js";
 
 /**
  * Wrap a tool handler function with envelope construction and error handling.
+ *
+ * Every MCP tool is wrapped by this function — no tool constructs its own
+ * envelope. This ensures consistent `{ ok, data, meta }` success responses,
+ * `{ ok, condensed, text, tokens }` condensed responses, and
+ * `{ ok: false, error }` error responses across all tools.
  *
  * The returned handler catches `PragmaError` instances and serializes them
  * as `{ ok: false, error }` responses. Unknown errors propagate to the MCP

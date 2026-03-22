@@ -11,6 +11,7 @@ import type {
   StandardSummary,
 } from "../../shared/types.js";
 
+/** Input payload for the standard-lookup formatter, pairing data with a detail flag. */
 export interface StandardLookupInput {
   readonly standard: StandardDetailed;
   readonly detailed: boolean;

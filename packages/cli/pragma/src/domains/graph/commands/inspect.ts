@@ -1,7 +1,3 @@
-/**
- * `pragma graph inspect` command definition.
- */
-
 import {
   type CommandDefinition,
   type CommandResult,
@@ -13,6 +9,15 @@ import { selectFormatter } from "../../shared/formatters.js";
 import { inspectFormatters } from "../formatters/index.js";
 import { inspectUri } from "../operations/index.js";
 
+/**
+ * Builds the `pragma graph inspect` command definition.
+ *
+ * Accepts a URI (full or prefixed) and returns all triples where
+ * the URI is the subject, grouped by predicate.
+ *
+ * @param ctx - Pragma runtime context providing the ke store and config.
+ * @returns A command definition for `graph inspect`.
+ */
 export default function buildInspectCommand(
   ctx: PragmaContext,
 ): CommandDefinition {

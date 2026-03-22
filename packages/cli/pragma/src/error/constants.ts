@@ -1,3 +1,4 @@
+/** All recognized pragma error codes as a const tuple. */
 const ERROR_CODES = [
   "ENTITY_NOT_FOUND",
   "EMPTY_RESULTS",

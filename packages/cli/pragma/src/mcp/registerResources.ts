@@ -1,13 +1,3 @@
-/**
- * MCP resource registration.
- *
- * Every subject URI in the ke graph becomes a discoverable MCP resource.
- * Reading a resource returns the entity's properties with level-1 object
- * relations resolved to summaries (label and description from PROPERTY_MAP).
- *
- * Graph-driven resources.
- */
-
 import type { Store } from "@canonical/ke";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -242,6 +232,15 @@ async function readEntity(
 
 /**
  * Register graph-driven MCP resources on the server.
+ *
+ * Every subject URI in the ke graph becomes a discoverable MCP resource.
+ * Reading a resource returns the entity's properties with level-1 object
+ * relations resolved to summaries (label and description from PROPERTY_MAP).
+ *
+ * @param server - The MCP server to register resources on.
+ * @param runtime - The pragma runtime providing the ke store and prefixes.
+ *
+ * @note Impure
  */
 export default function registerResources(
   server: McpServer,

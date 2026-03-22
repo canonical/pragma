@@ -8,6 +8,9 @@ import type { ConfigUpdate } from "./types.js";
  * Merges updates into existing JSON. A field set to `undefined` removes it.
  * Creates the file if it doesn't exist.
  *
+ * @param cwd - Directory containing (or to contain) pragma.config.json.
+ * @param update - Fields to set or remove.
+ *
  * @note Impure — writes to the filesystem.
  */
 export default function writeConfig(cwd: string, update: ConfigUpdate): void {

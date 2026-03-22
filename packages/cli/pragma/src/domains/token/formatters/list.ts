@@ -1,3 +1,12 @@
+/**
+ * Three-mode formatter for `pragma token list` output.
+ *
+ * - **plain** — one line per token showing name and optional category.
+ * - **llm** — condensed Markdown consumed by LLM agents and reused
+ *   by the MCP adapter when `condensed: true`.
+ * - **json** — structured JSON array for programmatic consumption.
+ */
+
 import type { Formatters } from "../../shared/formatters.js";
 import type { TokenSummary } from "../../shared/types.js";
 

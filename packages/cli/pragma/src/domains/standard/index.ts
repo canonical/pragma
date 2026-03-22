@@ -1,8 +1,9 @@
 /**
- * Standard domain — CLI commands and operations.
+ * @module Standard domain — CLI commands and operations.
  *
  * Commands: `pragma standard list`, `pragma standard lookup <name>`,
- *           `pragma standard categories`
+ *           `pragma standard categories`.
+ * Operations: {@link lookupStandard}, {@link listStandards}, {@link listCategories}.
  */
 
 import type { CommandDefinition } from "@canonical/cli-core";

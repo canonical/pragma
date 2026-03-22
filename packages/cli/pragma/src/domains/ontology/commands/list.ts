@@ -1,7 +1,3 @@
-/**
- * `pragma ontology list` command definition.
- */
-
 import {
   type CommandDefinition,
   type CommandResult,
@@ -13,6 +9,14 @@ import { selectFormatter } from "../../shared/formatters.js";
 import { listFormatters } from "../formatters/index.js";
 import { listOntologies } from "../operations/index.js";
 
+/**
+ * Builds the `pragma ontology list` command definition.
+ *
+ * Lists all loaded ontology namespaces with class and property counts.
+ *
+ * @param ctx - Pragma runtime context providing the ke store and config.
+ * @returns A command definition for `ontology list`.
+ */
 export default function buildListCommand(
   ctx: PragmaContext,
 ): CommandDefinition {

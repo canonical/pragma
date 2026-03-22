@@ -1,12 +1,14 @@
-/**
- * Render the `pragma llm` orientation output.
- *
- * Single output mode — condensed Markdown designed for LLM context.
- * Budget: ≤800 tokens.
- */
-
 import type { LlmData } from "../types.js";
 
+/**
+ * Renders the `pragma llm` orientation document.
+ *
+ * Produces a single condensed Markdown output (budget: <=800 tokens) containing
+ * context summary, decision trees, and a command reference table.
+ *
+ * @param data - The assembled LLM orientation data.
+ * @returns A Markdown string for LLM context injection.
+ */
 export default function renderLlmOrientation(data: LlmData): string {
   const lines: string[] = [];
 

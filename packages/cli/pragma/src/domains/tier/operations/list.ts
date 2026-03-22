@@ -1,5 +1,9 @@
 /**
- * List all tiers from the ontology.
+ * Lists all tiers defined in the design system ontology, ordered by name.
+ *
+ * @param store - ke store to query
+ * @returns array of tier entries, empty when none exist
+ * @note Queries ke store
  */
 
 import type { Store, URI } from "@canonical/ke";

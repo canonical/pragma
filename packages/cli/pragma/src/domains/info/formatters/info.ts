@@ -1,16 +1,15 @@
-/**
- * Renderers for `pragma info` output.
- *
- * Three functions of the same shape: `(InfoData) => string`.
- * - plain: terminal with chalk formatting
- * - llm: condensed Markdown
- * - json: serialized JSON
- */
-
 import chalk from "chalk";
 import { formatField, formatHeading } from "#pipeline";
 import type { InfoData } from "../types.js";
 
+/**
+ * Renders `pragma info` output for a plain terminal.
+ *
+ * Includes chalk-styled version, config, update status, and store summary.
+ *
+ * @param data - The collected info data.
+ * @returns A formatted terminal string.
+ */
 function renderInfoPlain(data: InfoData): string {
   const lines: string[] = [];
 
@@ -65,6 +64,12 @@ function renderInfoPlain(data: InfoData): string {
   return lines.join("\n");
 }
 
+/**
+ * Renders `pragma info` output as condensed Markdown for LLM consumption.
+ *
+ * @param data - The collected info data.
+ * @returns A Markdown string.
+ */
 function renderInfoLlm(data: InfoData): string {
   const lines: string[] = [];
 
@@ -98,6 +103,12 @@ function renderInfoLlm(data: InfoData): string {
   return lines.join("\n");
 }
 
+/**
+ * Renders `pragma info` output as indented JSON.
+ *
+ * @param data - The collected info data.
+ * @returns A JSON string.
+ */
 function renderInfoJson(data: InfoData): string {
   return JSON.stringify(data, null, 2);
 }

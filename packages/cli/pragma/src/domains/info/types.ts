@@ -1,7 +1,4 @@
-/**
- * Types for the info + upgrade domain.
- */
-
+/** Data collected by `pragma info` for rendering. */
 export interface InfoData {
   readonly version: string;
   readonly pm: string;
@@ -24,6 +21,7 @@ export interface InfoData {
     | undefined;
 }
 
+/** Data collected by `pragma upgrade` for rendering. */
 export interface UpgradeData {
   readonly pm: string;
   readonly current: string;
@@ -35,11 +33,13 @@ export interface UpgradeData {
   readonly executed: boolean;
 }
 
+/** Result of checking the npm registry for the latest package version. */
 export interface RegistryCheckResult {
   readonly latest: string;
   readonly distTag: string;
 }
 
+/** Summary statistics from the ke store (triple count and named graphs). */
 export interface StoreSummary {
   readonly tripleCount: number;
   readonly graphNames: readonly string[];

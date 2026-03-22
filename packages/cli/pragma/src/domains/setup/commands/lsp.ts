@@ -1,13 +1,14 @@
-/**
- * `pragma setup lsp` command definition.
- *
- * Installs the Terrazzo LSP VS Code extension.
- */
-
 import type { CommandDefinition, CommandResult } from "@canonical/cli-core";
 import runSetupTask from "../helpers/runSetupTask.js";
 import setupLsp from "../operations/setupLsp.js";
 
+/**
+ * `pragma setup lsp` command definition.
+ *
+ * Installs the Terrazzo LSP VS Code extension.
+ *
+ * @note Impure
+ */
 const lspCommand: CommandDefinition = {
   path: ["setup", "lsp"],
   description: "Install the Terrazzo LSP VS Code extension",

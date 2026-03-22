@@ -1,9 +1,3 @@
-/**
- * `pragma setup skills` command definition.
- *
- * SK.03 — detects harnesses, discovers skills, symlinks skill folders.
- */
-
 import {
   type CommandDefinition,
   type CommandResult,
@@ -19,6 +13,16 @@ import { skillsFormatters } from "../formatters/index.js";
 import type { SetupSkillsOutput } from "../formatters/types.js";
 import { setupSkills } from "../operations/index.js";
 
+/**
+ * Build the `pragma setup skills` command definition.
+ *
+ * Discovers skills from installed packages, detects AI harnesses,
+ * and symlinks skill folders into each harness directory. Supports
+ * dry-run mode via effect collection.
+ *
+ * @returns The command definition for `pragma setup skills`.
+ * @note Impure
+ */
 export default function buildSkillsCommand(): CommandDefinition {
   return {
     path: ["setup", "skills"],

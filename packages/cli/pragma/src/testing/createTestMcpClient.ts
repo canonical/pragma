@@ -1,8 +1,3 @@
-/**
- * MCP test client — creates an in-process server+client pair
- * connected via InMemoryTransport for integration testing.
- */
-
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import type { PragmaConfig } from "../config/index.js";
@@ -15,6 +10,14 @@ import type { TestMcpClientResult } from "./types.js";
 /**
  * Create an in-process MCP client connected to a server with
  * all tools and resources registered against a test store.
+ *
+ * Uses InMemoryTransport — no network, no stdio. The returned
+ * `cleanup` disposes the client, server, and backing store.
+ *
+ * @param options - Optional TTL data and config overrides.
+ * @returns The connected client and a cleanup function.
+ *
+ * @note Impure
  */
 export default async function createTestMcpClient(options?: {
   ttl?: string;

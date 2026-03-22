@@ -1,9 +1,14 @@
 /**
- * Look up detailed information for a single standard.
+ * Look up detailed information for a single code standard by name.
  *
- * Pure function: Store + name → StandardDetailed.
+ * Queries the base standard data plus its dos and donts code blocks,
+ * then assembles a {@link StandardDetailed} object.
  *
- * @throws PragmaError.notFound if the standard does not exist.
+ * @param store - ke store to query
+ * @param name - standard name (e.g. "react/component/folder-structure")
+ * @returns full standard detail including dos/donts code blocks
+ * @throws PragmaError.notFound if the standard does not exist
+ * @note Queries ke store
  */
 
 import type { Store, URI } from "@canonical/ke";
@@ -49,35 +54,47 @@ export default async function lookupStandard(
   const base = baseResult.bindings[0] as (typeof baseResult.bindings)[number];
   const standardUri = base.standard;
 
-  // Fetch dos
+  // Fetch dos (cs:do → cs:Example with cs:description, cs:language, cs:code)
   const dosResult = await store.query(
     buildQuery(`
-      SELECT ?doText
-      WHERE { <${standardUri}> ${P.cs}dos ?doText }
+      SELECT ?description ?language ?code
+      WHERE {
+        <${standardUri}> ${P.cs}do ?example .
+        OPTIONAL { ?example ${P.cs}description ?description }
+        OPTIONAL { ?example ${P.cs}language ?language }
+        OPTIONAL { ?example ${P.cs}code ?code }
+      }
     `),
   );
 
   const dos: CodeBlock[] =
     dosResult.type === "select"
       ? dosResult.bindings.map((b) => ({
-          language: "typescript",
-          code: b.doText ?? "",
+          language: b.language ?? "typescript",
+          code: b.code ?? "",
+          caption: b.description,
         }))
       : [];
 
-  // Fetch donts
+  // Fetch donts (cs:dont → cs:Example with cs:description, cs:language, cs:code)
   const dontsResult = await store.query(
     buildQuery(`
-      SELECT ?dontText
-      WHERE { <${standardUri}> ${P.cs}donts ?dontText }
+      SELECT ?description ?language ?code
+      WHERE {
+        <${standardUri}> ${P.cs}dont ?example .
+        OPTIONAL { ?example ${P.cs}description ?description }
+        OPTIONAL { ?example ${P.cs}language ?language }
+        OPTIONAL { ?example ${P.cs}code ?code }
+      }
     `),
   );
 
   const donts: CodeBlock[] =
     dontsResult.type === "select"
       ? dontsResult.bindings.map((b) => ({
-          language: "typescript",
-          code: b.dontText ?? "",
+          language: b.language ?? "typescript",
+          code: b.code ?? "",
+          caption: b.description,
         }))
       : [];
 

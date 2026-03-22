@@ -4,6 +4,12 @@ import { PragmaError } from "../error/PragmaError.js";
 import resolveConfigPath from "./resolveConfigPath.js";
 import type { PragmaConfig } from "./types.js";
 
+/**
+ * Type guard: check whether a value is a recognized channel string.
+ *
+ * @param value - Candidate value.
+ * @returns `true` if value is a valid Channel.
+ */
 function isValidChannel(value: unknown): value is Channel {
   return typeof value === "string" && VALID_CHANNELS.includes(value as Channel);
 }
@@ -11,8 +17,13 @@ function isValidChannel(value: unknown): value is Channel {
 /**
  * Read pragma config from `pragma.config.json` in the given directory.
  *
+ * Returns defaults (no tier, `"normal"` channel) when the file is missing or empty.
+ *
+ * @param cwd - Directory containing pragma.config.json (defaults to `process.cwd()`).
+ * @returns Parsed configuration.
+ * @throws PragmaError with code `CONFIG_ERROR` if JSON is invalid or channel is unrecognized.
+ *
  * @note Impure — reads config from filesystem.
- * @throws PragmaError with code CONFIG_ERROR if JSON is invalid or channel is unrecognized.
  */
 export default function readConfig(cwd: string = process.cwd()): PragmaConfig {
   const configPath = resolveConfigPath(cwd);
