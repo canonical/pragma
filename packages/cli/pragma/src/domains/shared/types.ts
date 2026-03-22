@@ -305,5 +305,6 @@ export interface BatchResult<T> {
     name: string;
     code: string;
     message: string;
+    recovery?: { tool: string };
   }[];
 }
