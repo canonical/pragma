@@ -27,9 +27,9 @@ import {
   getToken,
   listTokens,
 } from "../../src/domains/token/operations/index.js";
-import { createTestMcpClient } from "../helpers/mcp.js";
-import assertParity from "../helpers/parity.js";
-import { createTestRuntime } from "../helpers/runtime.js";
+import assertParity from "../helpers/assertParity.js";
+import createTestMcpClient from "../helpers/createTestMcpClient.js";
+import createTestRuntime from "../helpers/createTestRuntime.js";
 
 let rt: PragmaRuntime;
 let client: Client;

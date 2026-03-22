@@ -5,17 +5,17 @@
  * Each call creates an independent runtime. The caller owns disposal.
  * Uses the real `bootPragma()` to exercise the actual boot path.
  *
- * @note Impure — creates temp directory, writes fixture files, boots ke store.
+ * @note Impure — creates temp directory, reads fixture files, boots ke store.
  */
 
-import { copyFileSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { copyFileSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { PragmaRuntime } from "../../src/domains/shared/runtime.js";
 import { bootPragma } from "../../src/domains/shared/runtime.js";
-import { DS_ALL_TTL } from "../dsFixtures.js";
 
 const FIXTURES_DIR = new URL("../fixtures/", import.meta.url).pathname;
+const CANONICAL_TTL = join(FIXTURES_DIR, "canonical.ttl");
 
 type ConfigName = "canonical-config.json" | "filtered-config.json";
 
@@ -24,7 +24,7 @@ type ConfigName = "canonical-config.json" | "filtered-config.json";
  *
  * Stages the selected config as `pragma.config.json` in a temp directory
  * and calls the real `bootPragma()` with a sources override pointing at
- * the canonical TTL fixture. No mocks.
+ * `testing/fixtures/canonical.ttl`. No mocks.
  *
  * @param options.config - Config file name within the fixtures directory.
  *   Defaults to `"canonical-config.json"` (tier=global, channel=normal).
@@ -41,23 +41,23 @@ type ConfigName = "canonical-config.json" | "filtered-config.json";
  * expect(rt.config.tier).toBe("apps/lxd");
  * rt.dispose();
  */
-export async function createTestRuntime(options?: {
+export default async function createTestRuntime(options?: {
   config?: ConfigName;
 }): Promise<PragmaRuntime> {
   const configFile = options?.config ?? "canonical-config.json";
 
-  // Stage a temp directory with pragma.config.json and the canonical
-  // TTL fixture so bootPragma exercises the real config + store path.
+  // Stage a temp directory with pragma.config.json so bootPragma's
+  // readConfig() finds it via the real config lookup path.
   const tmpDir = mkdtempSync(join(tmpdir(), "pragma-test-"));
   copyFileSync(
     join(FIXTURES_DIR, configFile),
     join(tmpDir, "pragma.config.json"),
   );
 
-  const ttlPath = join(tmpDir, "canonical.ttl");
-  writeFileSync(ttlPath, DS_ALL_TTL);
-
-  const runtime = await bootPragma({ cwd: tmpDir, sources: [ttlPath] });
+  const runtime = await bootPragma({
+    cwd: tmpDir,
+    sources: [CANONICAL_TTL],
+  });
 
   // Wrap dispose to also clean up the temp directory.
   const originalDispose = runtime.dispose.bind(runtime);

@@ -6,6 +6,8 @@
  * in-process transport. No network, no stdio.
  *
  * The client shares the test-owned runtime — lifecycle is explicit.
+ *
+ * @note Impure — creates MCP server and client, connects transport.
  */
 
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
@@ -17,8 +19,10 @@ import type { TestMcpClientResult } from "../types.js";
 /**
  * Create an in-process MCP client connected to a server backed by
  * the given runtime. The caller owns the runtime lifecycle.
+ *
+ * @note Impure — creates MCP server and client, connects transport.
  */
-export async function createTestMcpClient(
+export default async function createTestMcpClient(
   runtime: PragmaRuntime,
 ): Promise<TestMcpClientResult> {
   const { server } = createMcpServerFromRuntime(runtime);

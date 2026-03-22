@@ -10,7 +10,7 @@
 import { afterAll, describe, expect, it } from "vitest";
 import { listComponents } from "../../src/domains/component/operations/index.js";
 import type { PragmaRuntime } from "../../src/domains/shared/runtime.js";
-import { createTestRuntime } from "../helpers/runtime.js";
+import createTestRuntime from "../helpers/createTestRuntime.js";
 
 describe("PragmaRuntime boot", () => {
   const runtimes: PragmaRuntime[] = [];

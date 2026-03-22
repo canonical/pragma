@@ -1,0 +1,301 @@
+
+@prefix ds: <https://ds.canonical.com/> .
+@prefix cs: <http://pragma.canonical.com/codestandards#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+# ---- Classes ----
+
+ds:UIBlock a owl:Class ;
+  rdfs:label "UI Block" .
+
+ds:Component a owl:Class ;
+  rdfs:subClassOf ds:UIBlock ;
+  rdfs:label "Component" .
+
+ds:Pattern a owl:Class ;
+  rdfs:subClassOf ds:UIBlock ;
+  rdfs:label "Pattern" .
+
+ds:Tier a owl:Class ;
+  rdfs:label "Tier" .
+
+ds:ModifierFamily a owl:Class ;
+  rdfs:label "Modifier Family" .
+
+ds:Modifier a owl:Class ;
+  rdfs:label "Modifier" .
+
+ds:Token a owl:Class ;
+  rdfs:label "Design Token" .
+
+ds:TokenType a owl:Class ;
+  rdfs:label "Token Type" .
+
+ds:ImplementationLibrary a owl:Class ;
+  rdfs:label "Implementation Library" .
+
+ds:ImplementationObject a owl:Class ;
+  rdfs:label "Implementation Object" .
+
+cs:CodeStandard a owl:Class ;
+  rdfs:label "Code Standard" .
+
+cs:Category a owl:Class ;
+  rdfs:label "Standard Category" .
+
+# ---- Properties ----
+
+ds:name a owl:DatatypeProperty ;
+  rdfs:domain ds:UIBlock ;
+  rdfs:range xsd:string .
+
+ds:tier a owl:ObjectProperty ;
+  rdfs:domain ds:UIBlock .
+
+ds:release a owl:ObjectProperty ;
+  rdfs:domain ds:UIBlock .
+
+ds:hasModifierFamily a owl:ObjectProperty ;
+  rdfs:domain ds:UIBlock ;
+  rdfs:range ds:ModifierFamily .
+
+ds:modifierFamily a owl:ObjectProperty ;
+  rdfs:domain ds:Modifier ;
+  rdfs:range ds:ModifierFamily .
+
+ds:tokenId a owl:DatatypeProperty ;
+  rdfs:domain ds:Token ;
+  rdfs:range xsd:string .
+
+ds:tokenType a owl:ObjectProperty ;
+  rdfs:domain ds:Token ;
+  rdfs:range ds:TokenType .
+
+ds:tokenTier a owl:ObjectProperty ;
+  rdfs:domain ds:Token .
+
+ds:valueLight a owl:DatatypeProperty ;
+  rdfs:domain ds:Token ;
+  rdfs:range xsd:string .
+
+ds:valueDark a owl:DatatypeProperty ;
+  rdfs:domain ds:Token ;
+  rdfs:range xsd:string .
+
+ds:platform a owl:DatatypeProperty ;
+  rdfs:domain ds:ImplementationLibrary ;
+  rdfs:range xsd:string .
+
+ds:libraryName a owl:DatatypeProperty ;
+  rdfs:domain ds:ImplementationLibrary ;
+  rdfs:range xsd:string .
+
+ds:hasImplementation a owl:ObjectProperty ;
+  rdfs:domain ds:ImplementationLibrary ;
+  rdfs:range ds:ImplementationObject .
+
+ds:implementsBlock a owl:ObjectProperty ;
+  rdfs:domain ds:ImplementationObject ;
+  rdfs:range ds:UIBlock .
+
+ds:headLink a owl:DatatypeProperty ;
+  rdfs:domain ds:ImplementationObject ;
+  rdfs:range xsd:string .
+
+ds:usesToken a owl:ObjectProperty ;
+  rdfs:domain ds:UIBlock ;
+  rdfs:range ds:Token .
+
+ds:anatomyNode a owl:ObjectProperty ;
+  rdfs:domain ds:UIBlock .
+
+cs:name a owl:DatatypeProperty ;
+  rdfs:domain cs:CodeStandard ;
+  rdfs:range xsd:string .
+
+cs:hasCategory a owl:ObjectProperty ;
+  rdfs:domain cs:CodeStandard ;
+  rdfs:range cs:Category .
+
+cs:slug a owl:DatatypeProperty ;
+  rdfs:domain cs:Category ;
+  rdfs:range xsd:string .
+
+cs:description a owl:DatatypeProperty ;
+  rdfs:domain cs:CodeStandard ;
+  rdfs:range xsd:string .
+
+cs:dos a owl:DatatypeProperty ;
+  rdfs:domain cs:CodeStandard ;
+  rdfs:range xsd:string .
+
+cs:donts a owl:DatatypeProperty ;
+  rdfs:domain cs:CodeStandard ;
+  rdfs:range xsd:string .
+
+cs:extends a owl:ObjectProperty ;
+  rdfs:domain cs:CodeStandard ;
+  rdfs:range cs:CodeStandard .
+
+
+@prefix ds: <https://ds.canonical.com/> .
+
+ds:global a ds:Tier ;
+  ds:name "global" .
+
+ds:apps a ds:Tier ;
+  ds:name "apps" .
+
+ds:apps_lxd a ds:Tier ;
+  ds:name "apps/lxd" .
+
+
+@prefix ds: <https://ds.canonical.com/> .
+
+ds:stable a ds:ReleaseChannel .
+ds:experimental a ds:ReleaseChannel .
+ds:alpha a ds:ReleaseChannel .
+ds:beta a ds:ReleaseChannel .
+
+
+@prefix ds: <https://ds.canonical.com/> .
+
+ds:button a ds:Component ;
+  ds:name "Button" ;
+  ds:tier ds:global ;
+  ds:release ds:stable ;
+  ds:hasModifierFamily ds:modifier_family.importance ;
+  ds:hasModifierFamily ds:modifier_family.density ;
+  ds:usesToken ds:token.color.primary ;
+  ds:anatomyNode ds:button_node.root ;
+  ds:anatomyNode ds:button_node.label ;
+  ds:anatomyNode ds:button_node.icon .
+
+ds:button_node.root a ds:AnatomyNode ;
+  ds:name "button" .
+
+ds:button_node.label a ds:AnatomyNode ;
+  ds:name "label" .
+
+ds:button_node.icon a ds:AnatomyNode ;
+  ds:name "icon" .
+
+ds:card a ds:Component ;
+  ds:name "Card" ;
+  ds:tier ds:global ;
+  ds:release ds:stable .
+
+ds:lxd_panel a ds:Component ;
+  ds:name "LXD Panel" ;
+  ds:tier ds:apps_lxd ;
+  ds:release ds:stable .
+
+ds:beta_widget a ds:Component ;
+  ds:name "Beta Widget" ;
+  ds:tier ds:global ;
+  ds:release ds:beta .
+
+
+@prefix ds: <https://ds.canonical.com/> .
+
+ds:impl.react a ds:ImplementationLibrary ;
+  ds:libraryName "@canonical/react-ds-global" ;
+  ds:platform "react" ;
+  ds:hasImplementation [
+    a ds:ImplementationObject ;
+    ds:implementsBlock ds:button ;
+    ds:headLink "src/lib/Button/Button.tsx"
+  ] , [
+    a ds:ImplementationObject ;
+    ds:implementsBlock ds:card ;
+    ds:headLink "src/lib/Card/Card.tsx"
+  ] .
+
+ds:impl.svelte a ds:ImplementationLibrary ;
+  ds:libraryName "@canonical/svelte-ds-global" ;
+  ds:platform "svelte" .
+
+
+@prefix cs: <http://pragma.canonical.com/codestandards#> .
+
+cs:react_category a cs:Category ;
+  cs:slug "react" .
+
+cs:code_category a cs:Category ;
+  cs:slug "code" .
+
+cs:react_folder a cs:CodeStandard ;
+  cs:name "react/component/folder-structure" ;
+  cs:hasCategory cs:react_category ;
+  cs:description "Components must follow the standard folder layout" ;
+  cs:dos "Place component files in src/lib/ComponentName/" ;
+  cs:dos "Include index.ts barrel export" ;
+  cs:donts "Use flat directory with all components at same level" .
+
+cs:react_props a cs:CodeStandard ;
+  cs:name "react/component/props" ;
+  cs:hasCategory cs:react_category ;
+  cs:description "Props must extend the base HTML element type" ;
+  cs:dos "Extend HTMLAttributes<HTMLElement>" ;
+  cs:donts "Define props without extending HTML attributes" .
+
+cs:code_purity a cs:CodeStandard ;
+  cs:name "code/function/purity" ;
+  cs:hasCategory cs:code_category ;
+  cs:description "Functions should be pure where possible" ;
+  cs:dos "Return same output for same input" ;
+  cs:donts "Modify external state without annotation" .
+
+
+@prefix ds: <https://ds.canonical.com/> .
+
+ds:modifier_family.importance a ds:ModifierFamily ;
+  ds:name "importance" .
+
+ds:mod_importance_default a ds:Modifier ;
+  ds:name "default" ;
+  ds:modifierFamily ds:modifier_family.importance .
+
+ds:mod_importance_primary a ds:Modifier ;
+  ds:name "primary" ;
+  ds:modifierFamily ds:modifier_family.importance .
+
+ds:mod_importance_secondary a ds:Modifier ;
+  ds:name "secondary" ;
+  ds:modifierFamily ds:modifier_family.importance .
+
+ds:modifier_family.density a ds:ModifierFamily ;
+  ds:name "density" .
+
+ds:mod_density_default a ds:Modifier ;
+  ds:name "default" ;
+  ds:modifierFamily ds:modifier_family.density .
+
+ds:mod_density_compact a ds:Modifier ;
+  ds:name "compact" ;
+  ds:modifierFamily ds:modifier_family.density .
+
+
+@prefix ds: <https://ds.canonical.com/> .
+
+ds:token_type.color a ds:TokenType ;
+  rdfs:label "Color" .
+
+ds:token_type.dimension a ds:TokenType ;
+  rdfs:label "Dimension" .
+
+ds:token.color.primary a ds:Token ;
+  ds:tokenId "color.primary" ;
+  ds:tokenType ds:token_type.color ;
+  ds:tokenTier ds:token_tier.semantic ;
+  ds:valueLight "#0066cc" ;
+  ds:valueDark "#4d9aff" .
+
+ds:token.spacing.sm a ds:Token ;
+  ds:tokenId "spacing.sm" ;
+  ds:tokenType ds:token_type.dimension ;
+  ds:tokenTier ds:token_tier.primitive ;
+  ds:valueLight "8px" ;
+  ds:valueDark "8px" .
