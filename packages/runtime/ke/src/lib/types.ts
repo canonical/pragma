@@ -143,6 +143,12 @@ export interface StoreConfig {
    * Use `store.reload({ force: true })` to bypass the cache.
    */
   cache?: string;
+
+  /**
+   * Base directory for resolving relative source paths and glob patterns.
+   * Defaults to `process.cwd()` if omitted.
+   */
+  cwd?: string;
 }
 
 // ---------------------------------------------------------------------------
