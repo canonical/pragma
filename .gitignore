@@ -54,6 +54,7 @@ _site/
 *.*.map
 dist/
 storybook-static/
+coverage/
 
 # [env] Local environment settings
 .docker-project
