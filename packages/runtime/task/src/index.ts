@@ -181,3 +181,16 @@ export {
   getFileWrites,
   mockEffect,
 } from "./lib/dry-run.js";
+
+// =============================================================================
+// Undo Interpreter
+// =============================================================================
+
+export type { UndoResult } from "./lib/undo-interpreter.js";
+export { collectUndos, runUndo } from "./lib/undo-interpreter.js";
+
+// =============================================================================
+// Undo Options (re-exported from effect for convenience)
+// =============================================================================
+
+export type { UndoOptions } from "./lib/effect.js";

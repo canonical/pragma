@@ -8,6 +8,46 @@
 import type { Effect, LogLevel, PromptQuestion, Task } from "./types.js";
 
 // =============================================================================
+// Undo Options
+// =============================================================================
+
+/**
+ * Options for attaching an undo task to an effect.
+ *
+ * - `Task<void>`: custom undo task to execute when reversing this effect
+ * - `null`: explicitly disable the default undo for this effect
+ * - `undefined` / omitted: use the default undo (if one exists for this effect type)
+ */
+export interface UndoOptions {
+  undo?: Task<void> | null;
+}
+
+/**
+ * Resolve an undo option against a default.
+ * - explicit Task → use it
+ * - null → no undo (disabled)
+ * - undefined → use the default
+ */
+const resolveUndo = (
+  option: Task<void> | null | undefined,
+  defaultUndo: Task<void> | undefined,
+): Task<void> | undefined => {
+  if (option === null) return undefined;
+  if (option !== undefined) return option;
+  return defaultUndo;
+};
+
+/**
+ * Build a bare Task<void> from an effect, without importing from task.ts.
+ * Used to construct default undo tasks and avoid circular imports.
+ */
+const bareTask = (eff: Effect): Task<void> => ({
+  _tag: "Effect",
+  effect: eff,
+  cont: () => ({ _tag: "Pure", value: undefined }),
+});
+
+// =============================================================================
 // File System Effect Constructors
 // =============================================================================
 
@@ -16,49 +56,91 @@ export const readFileEffect = (path: string): Effect => ({
   path,
 });
 
-export const writeFileEffect = (path: string, content: string): Effect => ({
+export const writeFileEffect = (
+  path: string,
+  content: string,
+  opts?: UndoOptions,
+): Effect => ({
   _tag: "WriteFile",
   path,
   content,
+  undo: resolveUndo(
+    opts?.undo,
+    bareTask({ _tag: "DeleteFile", path }),
+  ),
 });
 
 export const appendFileEffect = (
   path: string,
   content: string,
   createIfMissing = true,
+  opts?: UndoOptions,
 ): Effect => ({
   _tag: "AppendFile",
   path,
   content,
   createIfMissing,
+  undo: resolveUndo(opts?.undo, undefined),
 });
 
-export const copyFileEffect = (source: string, dest: string): Effect => ({
+export const copyFileEffect = (
+  source: string,
+  dest: string,
+  opts?: UndoOptions,
+): Effect => ({
   _tag: "CopyFile",
   source,
   dest,
+  undo: resolveUndo(
+    opts?.undo,
+    bareTask({ _tag: "DeleteFile", path: dest }),
+  ),
 });
 
-export const copyDirectoryEffect = (source: string, dest: string): Effect => ({
+export const copyDirectoryEffect = (
+  source: string,
+  dest: string,
+  opts?: UndoOptions,
+): Effect => ({
   _tag: "CopyDirectory",
   source,
   dest,
+  undo: resolveUndo(
+    opts?.undo,
+    bareTask({ _tag: "DeleteDirectory", path: dest }),
+  ),
 });
 
-export const deleteFileEffect = (path: string): Effect => ({
+export const deleteFileEffect = (
+  path: string,
+  opts?: UndoOptions,
+): Effect => ({
   _tag: "DeleteFile",
   path,
+  undo: resolveUndo(opts?.undo, undefined),
 });
 
-export const deleteDirectoryEffect = (path: string): Effect => ({
+export const deleteDirectoryEffect = (
+  path: string,
+  opts?: UndoOptions,
+): Effect => ({
   _tag: "DeleteDirectory",
   path,
+  undo: resolveUndo(opts?.undo, undefined),
 });
 
-export const makeDirEffect = (path: string, recursive = true): Effect => ({
+export const makeDirEffect = (
+  path: string,
+  recursive = true,
+  opts?: UndoOptions,
+): Effect => ({
   _tag: "MakeDir",
   path,
   recursive,
+  undo: resolveUndo(
+    opts?.undo,
+    bareTask({ _tag: "DeleteDirectory", path }),
+  ),
 });
 
 export const existsEffect = (path: string): Effect => ({
@@ -66,10 +148,18 @@ export const existsEffect = (path: string): Effect => ({
   path,
 });
 
-export const symlinkEffect = (target: string, path: string): Effect => ({
+export const symlinkEffect = (
+  target: string,
+  path: string,
+  opts?: UndoOptions,
+): Effect => ({
   _tag: "Symlink",
   target,
   path,
+  undo: resolveUndo(
+    opts?.undo,
+    bareTask({ _tag: "DeleteFile", path }),
+  ),
 });
 
 export const globEffect = (pattern: string, cwd: string): Effect => ({
@@ -86,11 +176,13 @@ export const execEffect = (
   command: string,
   args: string[],
   cwd?: string,
+  opts?: UndoOptions,
 ): Effect => ({
   _tag: "Exec",
   command,
   args,
   cwd,
+  undo: resolveUndo(opts?.undo, undefined),
 });
 
 // =============================================================================

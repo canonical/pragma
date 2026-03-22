@@ -20,6 +20,12 @@ const allCommand: CommandDefinition = {
       default: false,
     },
     {
+      name: "undo",
+      description: "Reverse a previous setup",
+      type: "boolean",
+      default: false,
+    },
+    {
       name: "yes",
       description: "Skip all confirmation prompts",
       type: "boolean",
@@ -31,6 +37,7 @@ const allCommand: CommandDefinition = {
       "pragma setup all",
       "pragma setup all --yes",
       "pragma setup all --dry-run",
+      "pragma setup all --undo",
     ],
   },
   execute: async (
@@ -39,6 +46,7 @@ const allCommand: CommandDefinition = {
   ): Promise<CommandResult> =>
     runSetupTask(setupAll(ctx.cwd), {
       dryRun: params.dryRun === true,
+      undo: params.undo === true,
       yes: params.yes === true,
       verbose: ctx.globalFlags.verbose,
       llm: ctx.globalFlags.llm,

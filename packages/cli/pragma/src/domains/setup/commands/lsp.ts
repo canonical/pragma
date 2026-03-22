@@ -18,9 +18,19 @@ const lspCommand: CommandDefinition = {
       type: "boolean",
       default: false,
     },
+    {
+      name: "undo",
+      description: "Reverse a previous setup",
+      type: "boolean",
+      default: false,
+    },
   ],
   meta: {
-    examples: ["pragma setup lsp", "pragma setup lsp --dry-run"],
+    examples: [
+      "pragma setup lsp",
+      "pragma setup lsp --dry-run",
+      "pragma setup lsp --undo",
+    ],
   },
   execute: async (
     params: Record<string, unknown>,
@@ -28,6 +38,7 @@ const lspCommand: CommandDefinition = {
   ): Promise<CommandResult> =>
     runSetupTask(setupLsp(ctx.cwd), {
       dryRun: params.dryRun === true,
+      undo: params.undo === true,
       verbose: ctx.globalFlags.verbose,
       llm: ctx.globalFlags.llm,
       format: ctx.globalFlags.format,

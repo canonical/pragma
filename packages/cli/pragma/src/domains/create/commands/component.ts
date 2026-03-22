@@ -62,6 +62,11 @@ export default function buildComponentCommand(): CommandDefinition {
       type: "boolean",
     },
     {
+      name: "undo",
+      description: "Reverse a previously generated component",
+      type: "boolean",
+    },
+    {
       name: "yes",
       description: "Skip confirmation prompts",
       type: "boolean",

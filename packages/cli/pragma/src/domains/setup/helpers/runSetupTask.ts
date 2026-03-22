@@ -16,10 +16,17 @@ import {
   formatEffectLine,
   isVisibleEffect,
 } from "@canonical/cli-core";
-import { dryRun, type Effect, runTask, type Task } from "@canonical/task";
+import {
+  dryRun,
+  type Effect,
+  runTask,
+  runUndo,
+  type Task,
+} from "@canonical/task";
 
 export interface SetupTaskOptions {
   readonly dryRun?: boolean;
+  readonly undo?: boolean;
   readonly yes?: boolean;
   readonly verbose?: boolean;
   readonly llm?: boolean;
@@ -157,6 +164,37 @@ export default async function runSetupTask(
 
     const text = formatDryRunPlain(result.effects, verbose);
     return createOutputResult(text, { plain: (s) => s });
+  }
+
+  // Undo mode: walk the task tree, collect undos, execute in reverse
+  if (options.undo) {
+    const promptHandler = options.yes
+      ? autoConfirmHandler
+      : interactivePromptHandler;
+
+    const onLog = (
+      level: "debug" | "info" | "warn" | "error",
+      message: string,
+    ): void => {
+      if (level === "debug" && !verbose) return;
+      process.stderr.write(`${message}\n`);
+    };
+
+    try {
+      const result = await runUndo(task, { promptHandler, onLog });
+      if (result.undoCount === 0) {
+        process.stderr.write("Nothing to undo.\n");
+      } else {
+        process.stderr.write(
+          `Undo complete (${result.undoCount} step${result.undoCount === 1 ? "" : "s"} reversed).\n`,
+        );
+      }
+      return createExitResult(0);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      process.stderr.write(`Undo failed: ${message}\n`);
+      return createExitResult(1);
+    }
   }
 
   // Production execution

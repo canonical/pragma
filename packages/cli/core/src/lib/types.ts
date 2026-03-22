@@ -143,6 +143,8 @@ export interface InteractiveGenerator {
 export interface InteractiveOptions {
   /** Only show what would happen, don't write files */
   readonly dryRunOnly: boolean;
+  /** Reverse a previously executed generator */
+  readonly undo: boolean;
   /** Show detailed output */
   readonly verbose: boolean;
   /** Stamp configuration for generated files */

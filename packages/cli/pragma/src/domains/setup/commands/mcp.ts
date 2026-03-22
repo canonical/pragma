@@ -28,6 +28,12 @@ const mcpCommand: CommandDefinition = {
       default: false,
     },
     {
+      name: "undo",
+      description: "Reverse a previous setup",
+      type: "boolean",
+      default: false,
+    },
+    {
       name: "yes",
       description: "Skip confirmation prompts",
       type: "boolean",
@@ -57,6 +63,7 @@ const mcpCommand: CommandDefinition = {
       "pragma setup mcp",
       "pragma setup mcp --claude-code",
       "pragma setup mcp --dry-run",
+      "pragma setup mcp --undo",
     ],
   },
   execute: async (
@@ -65,6 +72,7 @@ const mcpCommand: CommandDefinition = {
   ): Promise<CommandResult> =>
     runSetupTask(setupMcp(ctx.cwd, resolveForceHarness(params)), {
       dryRun: params.dryRun === true,
+      undo: params.undo === true,
       yes: params.yes === true,
       verbose: ctx.globalFlags.verbose,
       llm: ctx.globalFlags.llm,

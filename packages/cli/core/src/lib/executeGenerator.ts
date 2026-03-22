@@ -10,7 +10,7 @@ import type {
   GeneratorDefinition,
   PromptDefinition,
 } from "@canonical/summon-core";
-import { dryRun } from "@canonical/task";
+import { collectUndos, dryRun } from "@canonical/task";
 import createInteractiveResult from "./createInteractiveResult.js";
 import createOutputResult from "./createOutputResult.js";
 import {
@@ -141,6 +141,7 @@ export default async function executeGenerator(
 
   const verbose = ctx.globalFlags.verbose || params.verbose === true;
   const isDryRun = params.dryRun === true;
+  const isUndo = params.undo === true;
   const showFiles = params.showFiles === true;
 
   // Extract typed answers from CLI params
@@ -174,6 +175,23 @@ export default async function executeGenerator(
     return createOutputResult(data, {
       plain: (d) => `${JSON.stringify(d, null, 2)}\n`,
     });
+  }
+
+  // Undo dry-run: show what undo would do
+  if (isUndo && isDryRun && hasAllAnswers) {
+    const task = gen.generate(answersWithDefaults);
+    const undos = collectUndos(task);
+    if (undos.length === 0) {
+      return createOutputResult("Nothing to undo.\n", { plain: (s) => s });
+    }
+    const lines = [
+      "",
+      `Undo would reverse ${undos.length} step${undos.length === 1 ? "" : "s"}.`,
+      "",
+      "Dry-run complete. No changes were made.",
+      "",
+    ];
+    return createOutputResult(lines.join("\n"), { plain: (s) => s });
   }
 
   // Dry-run with all answers: formatted effect lines
@@ -223,6 +241,7 @@ export default async function executeGenerator(
     partialAnswers: cliAnswers,
     options: {
       dryRunOnly: isDryRun,
+      undo: isUndo,
       verbose,
       stamp,
       preview: params.preview !== false,
