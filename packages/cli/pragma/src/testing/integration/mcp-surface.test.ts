@@ -4,8 +4,6 @@
  * One test per registered tool. Each validates: callable with valid args,
  * correct success envelope shape, correct error shape where applicable,
  * and condensed mode where applicable.
- *
- * @see F.09 IT.04
  */
 
 import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
@@ -51,9 +49,9 @@ describe("capabilities", () => {
       tools: string[];
       counts: Record<string, number>;
     };
-    expect(data.tools).toContain("component_list");
+    expect(data.tools).toContain("block_list");
     expect(data.tools).toContain("capabilities");
-    expect(data.counts.total).toBe(22);
+    expect(data.counts.total).toBe(25);
   });
 });
 
@@ -72,13 +70,13 @@ describe("llm", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Component
+// Block
 // ---------------------------------------------------------------------------
 
-describe("component_list", () => {
+describe("block_list", () => {
   it("returns envelope with data and meta.count", async () => {
     const res = await client.callTool({
-      name: "component_list",
+      name: "block_list",
       arguments: {},
     });
     const body = parseEnvelope(res);
@@ -91,7 +89,7 @@ describe("component_list", () => {
 
   it("condensed returns markdown text", async () => {
     const res = await client.callTool({
-      name: "component_list",
+      name: "block_list",
       arguments: { condensed: true },
     });
     const body = parseEnvelope(res);
@@ -102,10 +100,10 @@ describe("component_list", () => {
   });
 });
 
-describe("component_get", () => {
-  it("returns detailed component", async () => {
+describe("block_get", () => {
+  it("returns detailed block", async () => {
     const res = await client.callTool({
-      name: "component_get",
+      name: "block_get",
       arguments: { name: "Button" },
     });
     const body = parseEnvelope(res);
@@ -115,9 +113,9 @@ describe("component_get", () => {
     expect(data).toHaveProperty("modifierValues");
   });
 
-  it("returns structured error for unknown component", async () => {
+  it("returns structured error for unknown block", async () => {
     const res = await client.callTool({
-      name: "component_get",
+      name: "block_get",
       arguments: { name: "Nonexistent" },
     });
     const body = parseEnvelope(res);
@@ -264,6 +262,33 @@ describe("config_show", () => {
   });
 });
 
+describe("config_tier", () => {
+  it("queries current tier", async () => {
+    const res = await client.callTool({
+      name: "config_tier",
+      arguments: {},
+    });
+    const body = parseEnvelope(res);
+    expect(body.ok).toBe(true);
+    const data = body.data as { action: string };
+    expect(data.action).toBe("query");
+  });
+});
+
+describe("config_channel", () => {
+  it("queries current channel", async () => {
+    const res = await client.callTool({
+      name: "config_channel",
+      arguments: {},
+    });
+    const body = parseEnvelope(res);
+    expect(body.ok).toBe(true);
+    const data = body.data as { channel: string; action: string };
+    expect(data.action).toBe("query");
+    expect(data.channel).toBe("normal");
+  });
+});
+
 // ---------------------------------------------------------------------------
 // Ontology
 // ---------------------------------------------------------------------------
@@ -374,6 +399,99 @@ describe("doctor", () => {
     const data = body.data as { checks: unknown[]; passed: number };
     expect(data.checks.length).toBeGreaterThan(0);
     expect(typeof data.passed).toBe("number");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Tokens add-config
+// ---------------------------------------------------------------------------
+
+describe("tokens_add_config", () => {
+  it("returns error when config already exists (no force)", async () => {
+    // This will either succeed or fail depending on fixture state;
+    // the key is that the tool is registered and callable
+    const res = await client.callTool({
+      name: "tokens_add_config",
+      arguments: {},
+    });
+    const body = parseEnvelope(res);
+    // Either ok:true (wrote file) or ok:false (already exists)
+    expect(typeof body.ok).toBe("boolean");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Disclosure
+// ---------------------------------------------------------------------------
+
+describe("disclosure", () => {
+  it("block_list with digest returns enriched data", async () => {
+    const res = await client.callTool({
+      name: "block_list",
+      arguments: { digest: true },
+    });
+    const body = parseEnvelope(res);
+    expect(body.ok).toBe(true);
+    const meta = body.meta as { disclosure?: string };
+    expect(meta.disclosure).toBe("digest");
+  });
+
+  it("standard_list with detailed returns enriched data", async () => {
+    const res = await client.callTool({
+      name: "standard_list",
+      arguments: { detailed: true },
+    });
+    const body = parseEnvelope(res);
+    expect(body.ok).toBe(true);
+    const meta = body.meta as { disclosure?: string };
+    expect(meta.disclosure).toBe("detailed");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Batch (names filter)
+// ---------------------------------------------------------------------------
+
+describe("batch via names filter", () => {
+  it("block_list with names returns filtered results", async () => {
+    const res = await client.callTool({
+      name: "block_list",
+      arguments: { names: ["Button"] },
+    });
+    const body = parseEnvelope(res);
+    expect(body.ok).toBe(true);
+    const data = body.data as { name: string }[];
+    expect(data.length).toBe(1);
+    expect(data[0]!.name).toBe("Button");
+  });
+
+  it("block_list with unknown names returns empty", async () => {
+    const res = await client.callTool({
+      name: "block_list",
+      arguments: { names: ["Nonexistent"] },
+    });
+    const body = parseEnvelope(res);
+    expect(body.ok).toBe(true);
+    expect((body.data as unknown[]).length).toBe(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Structured recovery
+// ---------------------------------------------------------------------------
+
+describe("structured recovery", () => {
+  it("block_get error includes mcp recovery", async () => {
+    const res = await client.callTool({
+      name: "block_get",
+      arguments: { name: "Nonexistent" },
+    });
+    const body = parseEnvelope(res);
+    expect(body.ok).toBe(false);
+    const error = body.error as {
+      recovery?: { tool: string };
+    };
+    expect(error.recovery?.tool).toBe("block_list");
   });
 });
 

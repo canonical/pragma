@@ -1,5 +1,7 @@
 /**
  * `pragma standard list` command definition.
+ *
+ * Supports progressive disclosure via --digest and --detailed flags.
  */
 
 import {
@@ -10,8 +12,10 @@ import {
 import { PragmaError } from "#error";
 import type { PragmaContext } from "../../shared/context.js";
 import { selectFormatter } from "../../shared/formatters.js";
+import type { Disclosure, StandardDetailed } from "../../shared/types.js";
 import { listFormatters } from "../formatters/index.js";
-import { listStandards } from "../operations/index.js";
+import type { StandardListOutput } from "../formatters/types.js";
+import { getStandard, listStandards } from "../operations/index.js";
 
 export default function buildListCommand(
   ctx: PragmaContext,
@@ -30,12 +34,26 @@ export default function buildListCommand(
         description: "Search in name and description",
         type: "string",
       },
+      {
+        name: "digest",
+        description: "Show description and first example for each standard",
+        type: "boolean",
+        default: false,
+      },
+      {
+        name: "detailed",
+        description: "Show full dos/donts for each standard",
+        type: "boolean",
+        default: false,
+      },
     ],
     meta: {
       examples: [
         "pragma standard list",
         "pragma standard list --category react",
         'pragma standard list --search "folder"',
+        "pragma standard list --digest",
+        "pragma standard list --detailed",
         "pragma standard list --llm",
       ],
     },
@@ -52,11 +70,37 @@ export default function buildListCommand(
       if (standards.length === 0) {
         throw PragmaError.emptyResults("standards", {
           filters: buildActiveFilters(filters),
-          recovery: "Run `pragma standard list` to see all standards.",
+          recovery: {
+            message: "List all standards without filters.",
+            cli: "pragma standard list",
+            mcp: { tool: "standard_list" },
+          },
         });
       }
 
-      return createOutputResult(standards, {
+      const disclosure: Disclosure = params.detailed
+        ? { level: "detailed" }
+        : params.digest
+          ? { level: "digest" }
+          : { level: "summary" };
+
+      let details: (StandardDetailed | null)[] | undefined;
+
+      if (disclosure.level !== "summary") {
+        details = await Promise.all(
+          standards.map((s) =>
+            getStandard(ctx.store, s.name).catch(() => null),
+          ),
+        );
+      }
+
+      const output: StandardListOutput = {
+        items: standards,
+        details,
+        disclosure,
+      };
+
+      return createOutputResult(output, {
         plain: selectFormatter(ctx, listFormatters),
       });
     },

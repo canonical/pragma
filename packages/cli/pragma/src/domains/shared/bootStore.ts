@@ -5,7 +5,6 @@
  * creates the store with registered prefixes, and wraps errors.
  *
  * @note Impure — reads filesystem, creates ke store.
- * @see CF.01, CF.02 in B.08.CONFIG
  */
 
 import { join } from "node:path";
@@ -19,8 +18,6 @@ import { PREFIX_MAP } from "./prefixes.js";
 /**
  * Resolve default TTL sources from the package registry.
  * Package-manager agnostic — works with bun, npm, pnpm, and yarn.
- *
- * @see CF.02
  */
 export function defaultSources(): SourceSpec[] {
   const sources: SourceSpec[] = [];
@@ -70,8 +67,10 @@ export async function bootStore(
     throw PragmaError.storeError(
       error instanceof Error ? error.message : String(error),
       {
-        recovery:
-          "Ensure design system packages are installed: bun add -D @canonical/design-system @canonical/code-standards @canonical/anatomy-dsl",
+        recovery: {
+          message:
+            "Ensure design system packages are installed: bun add -D @canonical/design-system @canonical/code-standards @canonical/anatomy-dsl",
+        },
       },
     );
   }

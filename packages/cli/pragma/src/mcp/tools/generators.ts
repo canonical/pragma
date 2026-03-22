@@ -8,8 +8,8 @@ import type { AnyGenerator } from "@canonical/summon-core";
 import { generators as packageGenerators } from "@canonical/summon-package";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
+import { PragmaError } from "#error";
 import type { PragmaRuntime } from "../../domains/shared/runtime.js";
-import { PragmaError } from "../../error/PragmaError.js";
 import { wrapTool } from "../utils/index.js";
 
 const componentGeneratorMap: Record<string, AnyGenerator> = {

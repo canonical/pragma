@@ -5,13 +5,11 @@
  * envelope. This ensures consistent `{ ok, data, meta }` success responses,
  * `{ ok, condensed, text, tokens }` condensed responses, and
  * `{ ok: false, error }` error responses across all tools.
- *
- * @see F.06 RS.06
  */
 
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
+import { PragmaError } from "#error";
 import type { PragmaRuntime } from "../../domains/shared/runtime.js";
-import { PragmaError } from "../../error/PragmaError.js";
 import serializeErrorPayload from "../error/serializeErrorPayload.js";
 import type { ToolPayload } from "../types.js";
 

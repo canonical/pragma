@@ -5,8 +5,6 @@ import { P } from "../prefixes.js";
  *
  * Setting a tier activates a parent chain filter.
  * `"apps/lxd"` -> visible tiers: `global`, `apps`, `apps/lxd`.
- *
- * @see CF.05 in B.08.CONFIG
  */
 
 /**

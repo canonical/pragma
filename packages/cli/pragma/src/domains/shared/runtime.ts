@@ -7,7 +7,6 @@
  * assembling store + config.
  *
  * @note Impure — reads config from filesystem and boots ke store (WASM + TTL).
- * @see F.05 BT.01, BT.02
  */
 
 import type { SourceSpec, Store } from "@canonical/ke";

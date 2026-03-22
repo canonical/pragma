@@ -1,7 +1,5 @@
 /**
  * Collect summary statistics from a ke store via SPARQL.
- *
- * @see IN.04 in B.11.INSTALL
  */
 
 import type { Store } from "@canonical/ke";

@@ -2,8 +2,6 @@
  * `pragma config show` command definition.
  *
  * Display the resolved configuration.
- *
- * @see CF.03, CF.04 in B.08.CONFIG
  */
 
 import {

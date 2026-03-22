@@ -4,7 +4,6 @@
  * Upgrades the pragma CLI via the detected package manager.
  *
  * @note Impure — detects PM, queries registry, spawns child process.
- * @see IN.05, IN.06, IN.08 in B.11.INSTALL
  */
 
 import { execSync } from "node:child_process";

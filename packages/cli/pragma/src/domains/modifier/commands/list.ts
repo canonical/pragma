@@ -21,8 +21,10 @@ export default function listCommand(ctx: PragmaContext): CommandDefinition {
 
       if (families.length === 0) {
         throw PragmaError.emptyResults("modifier", {
-          recovery:
-            "Ensure design system packages are installed: bun add -D @canonical/ds-global",
+          recovery: {
+            message:
+              "Ensure design system packages are installed: bun add -D @canonical/ds-global",
+          },
         });
       }
 

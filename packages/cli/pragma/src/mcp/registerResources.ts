@@ -5,17 +5,17 @@
  * Reading a resource returns the entity's properties with level-1 object
  * relations resolved to summaries (label and description from PROPERTY_MAP).
  *
- * MR.01–MR.04 — graph-driven resources
+ * Graph-driven resources.
  */
 
 import type { Store } from "@canonical/ke";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { PragmaError } from "#error";
 import { PROPERTY_MAP } from "../constants.js";
 import resolveUri from "../domains/graph/helpers/resolveUri.js";
 import { buildQuery } from "../domains/shared/buildQuery.js";
 import type { PragmaRuntime } from "../domains/shared/runtime.js";
-import { PragmaError } from "../error/PragmaError.js";
 
 // =============================================================================
 // Types
@@ -178,8 +178,12 @@ async function readEntity(
 
   if (result.type !== "select" || result.bindings.length === 0) {
     throw PragmaError.notFound("entity", compactUri(fullUri, prefixes), {
-      recovery:
-        "Check the URI is correct. Run `pragma graph query` with a SELECT to find valid URIs.",
+      recovery: {
+        message:
+          "Check the URI is correct and run a SPARQL query to find valid URIs.",
+        cli: "pragma graph query 'SELECT ?s WHERE { ?s ?p ?o } LIMIT 10'",
+        mcp: { tool: "graph_query" },
+      },
     });
   }
 

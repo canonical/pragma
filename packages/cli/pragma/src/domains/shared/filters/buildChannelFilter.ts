@@ -3,8 +3,6 @@
  *
  * Maps channel settings to the set of visible release levels.
  * Components without a release annotation are treated as stable.
- *
- * @see CF.06 in B.08.CONFIG
  */
 
 import type { Channel } from "#constants";

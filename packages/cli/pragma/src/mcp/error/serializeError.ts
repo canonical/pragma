@@ -2,11 +2,11 @@
  * Serialize a PragmaError into an MCP tool error response.
  *
  * Returns `{ content, isError: true }` — the shape expected by
- * MCP tool handlers when reporting tool-level errors (MC.03, MC.04, ER.08).
+ * MCP tool handlers when reporting tool-level errors.
  */
 
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
-import type { PragmaError } from "../../error/PragmaError.js";
+import type { PragmaError } from "#error";
 import buildRecovery from "./buildRecovery.js";
 import type { McpErrorPayload } from "./types.js";
 

@@ -2,8 +2,6 @@
  * List all standard categories with standard counts.
  *
  * Pure function: Store → CategorySummary[].
- *
- * @see ST.05
  */
 
 import type { Store } from "@canonical/ke";

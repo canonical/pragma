@@ -3,12 +3,10 @@
  *
  * Validates runtime creation, config resolution, and store content
  * consistency from the canonical fixture.
- *
- * @see F.09 IT.03
  */
 
 import { afterAll, describe, expect, it } from "vitest";
-import { listComponents } from "../../domains/component/operations/index.js";
+import { listBlocks } from "../../domains/block/operations/index.js";
 import type { PragmaRuntime } from "../../domains/shared/runtime.js";
 import createTestRuntime from "../helpers/createTestRuntime.js";
 
@@ -28,7 +26,7 @@ describe("PragmaRuntime boot", () => {
     expect(rt.config.channel).toBe("normal");
   });
 
-  it("boots in under 100ms (FX.01)", async () => {
+  it("boots in under 100ms", async () => {
     const start = performance.now();
     const rt = await createTestRuntime();
     const elapsed = performance.now() - start;
@@ -49,7 +47,7 @@ describe("PragmaRuntime boot", () => {
     const rt = await createTestRuntime({ config: "filtered-config.json" });
     runtimes.push(rt);
 
-    const components = await listComponents(rt.store, rt.config);
+    const components = await listBlocks(rt.store, rt.config);
     const names = components.map((c) => c.name);
     // apps/lxd tier includes LXD Panel (its own) plus inherited global components
     expect(names).toContain("LXD Panel");
@@ -61,8 +59,8 @@ describe("PragmaRuntime boot", () => {
     const rt2 = await createTestRuntime();
     runtimes.push(rt1, rt2);
 
-    const r1 = await listComponents(rt1.store, rt1.config);
-    const r2 = await listComponents(rt2.store, rt2.config);
+    const r1 = await listBlocks(rt1.store, rt1.config);
+    const r2 = await listBlocks(rt2.store, rt2.config);
 
     expect(r1).toEqual(r2);
   });

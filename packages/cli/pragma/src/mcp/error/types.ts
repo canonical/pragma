@@ -5,7 +5,7 @@
  * error serialization pipeline.
  */
 
-import type { ErrorCode } from "../../error/types.js";
+import type { ErrorCode } from "#error";
 
 // ---------------------------------------------------------------------------
 // Recovery
@@ -13,12 +13,11 @@ import type { ErrorCode } from "../../error/types.js";
 
 /**
  * MCP recovery object — tells the AI agent what tool to try next.
- * Included in error responses per MC.03.
+ * Extracted directly from the structured `Recovery.mcp` field.
  */
 export interface McpRecovery {
   readonly tool: string;
-  readonly params: Record<string, unknown>;
-  readonly description: string;
+  readonly params?: Record<string, unknown>;
 }
 
 // ---------------------------------------------------------------------------

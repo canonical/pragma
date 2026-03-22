@@ -2,8 +2,6 @@
  * Orthogonal filter combination.
  *
  * Both tier and channel filters apply simultaneously as AND constraints.
- *
- * @see CF.07 in B.08.CONFIG
  */
 
 import type { FilterConfig } from "../types.js";

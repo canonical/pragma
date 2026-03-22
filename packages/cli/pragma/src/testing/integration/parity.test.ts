@@ -3,18 +3,13 @@
  *
  * Each test calls the same query through both the operation layer
  * (what CLI uses) and the MCP tool (what agents use), then asserts
- * data equality. CI-blocking per OD.08.
- *
- * @see F.09 IT.05, F.06 RS.05
+ * data equality.
  */
 
 import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { listFormatters as componentListFmt } from "../../domains/component/formatters/index.js";
-import {
-  getComponent,
-  listComponents,
-} from "../../domains/component/operations/index.js";
+import { listFormatters as blockListFmt } from "../../domains/block/formatters/index.js";
+import { getBlock, listBlocks } from "../../domains/block/operations/index.js";
 import {
   getModifier,
   listModifiers,
@@ -45,25 +40,25 @@ afterAll(async () => {
 });
 
 // ---------------------------------------------------------------------------
-// Component parity
+// Block parity
 // ---------------------------------------------------------------------------
 
-describe("component parity", () => {
-  it("component_list: operation matches MCP data", async () => {
-    const opResult = await listComponents(rt.store, rt.config);
+describe("block parity", () => {
+  it("block_list: operation matches MCP data", async () => {
+    const opResult = await listBlocks(rt.store, rt.config);
     const mcpRes = await client.callTool({
-      name: "component_list",
+      name: "block_list",
       arguments: {},
     });
     assertParity(opResult, mcpRes);
   });
 
-  it("component_list condensed: matches llm formatter", async () => {
-    const opResult = await listComponents(rt.store, rt.config);
-    const expectedText = componentListFmt.llm(opResult);
+  it("block_list condensed: matches llm formatter", async () => {
+    const opResult = await listBlocks(rt.store, rt.config);
+    const expectedText = blockListFmt.llm(opResult);
 
     const mcpRes = await client.callTool({
-      name: "component_list",
+      name: "block_list",
       arguments: { condensed: true },
     });
     const content = mcpRes.content as unknown[];
@@ -72,10 +67,10 @@ describe("component parity", () => {
     expect(body.text).toBe(expectedText);
   });
 
-  it("component_get: detailed fields match", async () => {
-    const opResult = await getComponent(rt.store, "Button", rt.config);
+  it("block_get: detailed fields match", async () => {
+    const opResult = await getBlock(rt.store, "Button", rt.config);
     const mcpRes = await client.callTool({
-      name: "component_get",
+      name: "block_get",
       arguments: { name: "Button" },
     });
     assertParity(opResult, mcpRes);

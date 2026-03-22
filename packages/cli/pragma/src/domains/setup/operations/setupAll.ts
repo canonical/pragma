@@ -4,8 +4,6 @@
  * Each step is guarded by a promptConfirm gate. Running with --yes
  * skips all prompts. The steps run in sequence so prompts appear
  * one at a time.
- *
- * @see SU.04 in B.15.SETUP
  */
 
 import { $, gen, info, promptConfirm, type Task, when } from "@canonical/task";

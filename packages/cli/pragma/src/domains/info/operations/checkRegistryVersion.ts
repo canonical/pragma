@@ -2,10 +2,9 @@
  * Check the npm registry for the latest version of a package.
  *
  * Returns undefined when offline or when the registry does not respond
- * within 3 seconds (IN.08).
+ * within 3 seconds.
  *
  * @note Impure — performs an HTTP fetch to the npm registry.
- * @see IN.06, IN.08 in B.11.INSTALL
  */
 
 import type { Channel } from "#constants";

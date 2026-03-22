@@ -35,7 +35,11 @@ export default async function getModifier(
 
   if (result.type !== "select" || result.bindings.length === 0) {
     throw PragmaError.notFound("modifier", name, {
-      recovery: "Run `pragma modifier list` to see available modifiers.",
+      recovery: {
+        message: "List available modifiers.",
+        cli: "pragma modifier list",
+        mcp: { tool: "modifier_list" },
+      },
     });
   }
 

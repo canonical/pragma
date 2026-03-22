@@ -15,24 +15,25 @@ type Channel = (typeof VALID_CHANNELS)[number];
  */
 interface OntologyPropertyMap {
   readonly label: string;
-  readonly description: string;
+  readonly description?: string;
+  readonly definition?: string;
 }
 
 /**
  * Maps namespace prefix → property URIs for human-readable label and
  * description. Used by MCP resource handlers and domain operations to
  * resolve cross-ontology properties uniformly.
- *
- * @see F.04 OP.05
  */
 const PROPERTY_MAP: Record<string, OntologyPropertyMap> = {
   ds: {
     label: `${PREFIX_MAP.ds}name`,
     description: `${PREFIX_MAP.ds}summary`,
+    definition: `${PREFIX_MAP.ds}definition`,
   },
   cs: {
     label: `${PREFIX_MAP.cs}name`,
     description: `${PREFIX_MAP.cs}description`,
+    definition: `${PREFIX_MAP.cs}definition`,
   },
   rdfs: {
     label: `${PREFIX_MAP.rdfs}label`,
@@ -41,6 +42,13 @@ const PROPERTY_MAP: Record<string, OntologyPropertyMap> = {
   owl: {
     label: `${PREFIX_MAP.rdfs}label`,
     description: `${PREFIX_MAP.rdfs}comment`,
+  },
+  skos: {
+    label: `${PREFIX_MAP.skos}prefLabel`,
+    definition: `${PREFIX_MAP.skos}definition`,
+  },
+  anatomy: {
+    label: `${PREFIX_MAP.ds}name`,
   },
 };
 

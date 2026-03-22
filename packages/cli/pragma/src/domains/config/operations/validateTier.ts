@@ -1,7 +1,5 @@
 /**
  * Validate a tier path against the ontology.
- *
- * @see CF.03 in B.08.CONFIG
  */
 
 import type { Store } from "@canonical/ke";
@@ -26,7 +24,11 @@ export default async function validateTier(
     const validPaths = tiers.map((t) => t.path);
     throw PragmaError.invalidInput("tier", tierPath, {
       validOptions: validPaths,
-      recovery: "pragma config tier --reset",
+      recovery: {
+        message: "Reset tier configuration.",
+        cli: "pragma config tier --reset",
+        mcp: { tool: "config_tier", params: { reset: true } },
+      },
     });
   }
 

@@ -1,25 +1,23 @@
 /**
  * Static decision trees for `pragma llm`.
- *
- * @see LO.03 in B.29.LLM_ORIENTATION
  */
 
 import type { DecisionTree } from "../types.js";
 
 export const DECISION_TREES: readonly DecisionTree[] = [
   {
-    intent: "Build a component",
+    intent: "Build a block",
     tree: `? Know name?
-  yes → component get <name> --detailed  [~500]
-        → component get <name> --standards [~300] Σ800
-  no  → component list [~200] → pick → get`,
+  yes → block get <name> --detailed  [~500]
+        → block get <name> --standards [~300] Σ800
+  no  → block list [~200] → pick → get`,
   },
   {
     intent: "Audit standards",
     tree: `? Know standard?
   yes → standard get <name> --detailed [~400]
-  no  → ? Know component?
-        yes → component get <name> --standards [~300]
+  no  → ? Know block?
+        yes → block get <name> --standards [~300]
               → standard get <std> --detailed [~400] Σ700
         no  → standard list --category <cat> [~100]
               → standard get <std> --detailed [~400] Σ500`,

@@ -5,11 +5,16 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import type { PragmaRuntime } from "../../domains/shared/runtime.js";
+import type {
+  Disclosure,
+  StandardDetailed,
+} from "../../domains/shared/types.js";
 import {
   categoriesFormatters as standardCatFmt,
   getFormatters as standardGetFmt,
   listFormatters as standardListFmt,
 } from "../../domains/standard/formatters/index.js";
+import type { StandardListOutput } from "../../domains/standard/formatters/types.js";
 import {
   getStandard,
   listCategories,
@@ -28,41 +33,91 @@ export function registerStandardTools(
     "standard_list",
     {
       description:
-        "List code standards. Optionally filter by category or search term.",
+        "List code standards. Optionally filter by category or search term. Use digest/detailed for progressive disclosure.",
       inputSchema: z.object({
         category: z.string().optional().describe("Filter by category name"),
+        names: z
+          .array(z.string())
+          .optional()
+          .describe(
+            "Filter to specific standard names. Returns partial results for unknown names.",
+          ),
         search: z
           .string()
           .optional()
           .describe("Search in name and description"),
+        digest: z
+          .boolean()
+          .optional()
+          .describe("Show description and first example for each standard"),
+        detailed: z
+          .boolean()
+          .optional()
+          .describe("Show full dos/donts for each standard"),
         condensed: z.boolean().optional().describe("Token-optimized output"),
       }),
       annotations: { readOnlyHint: true, openWorldHint: false },
     },
-    wrapTool(runtime, async (rt, { category, search, condensed }) => {
-      let result = await listStandards(rt.store);
+    wrapTool(
+      runtime,
+      async (rt, { category, names, search, digest, detailed, condensed }) => {
+        let result = await listStandards(rt.store);
 
-      if (category) {
-        const cat = (category as string).toLowerCase();
-        result = result.filter((s) => s.category.toLowerCase() === cat);
-      }
+        if (names && Array.isArray(names) && names.length > 0) {
+          const nameSet = new Set(names as string[]);
+          result = result.filter((s) => nameSet.has(s.name));
+        }
 
-      if (search) {
-        const term = (search as string).toLowerCase();
-        result = result.filter(
-          (s) =>
-            s.name.toLowerCase().includes(term) ||
-            s.description.toLowerCase().includes(term),
-        );
-      }
+        if (category) {
+          const cat = (category as string).toLowerCase();
+          result = result.filter((s) => s.category.toLowerCase() === cat);
+        }
 
-      if (condensed) {
-        const text = standardListFmt.llm(result);
-        return { condensed: true, text, tokens: estimateTokens(text) };
-      }
+        if (search) {
+          const term = (search as string).toLowerCase();
+          result = result.filter(
+            (s) =>
+              s.name.toLowerCase().includes(term) ||
+              s.description.toLowerCase().includes(term),
+          );
+        }
 
-      return { data: result, meta: { count: result.length } };
-    }),
+        const disclosure: Disclosure = detailed
+          ? { level: "detailed" }
+          : digest
+            ? { level: "digest" }
+            : { level: "summary" };
+
+        let details: (StandardDetailed | null)[] | undefined;
+
+        if (disclosure.level !== "summary") {
+          details = await Promise.all(
+            result.map((s) => getStandard(rt.store, s.name).catch(() => null)),
+          );
+        }
+
+        const output: StandardListOutput = {
+          items: result,
+          details,
+          disclosure,
+        };
+
+        if (condensed) {
+          const text = standardListFmt.llm(output);
+          return { condensed: true, text, tokens: estimateTokens(text) };
+        }
+
+        if (disclosure.level === "summary") {
+          return { data: result, meta: { count: result.length } };
+        }
+
+        // Return enriched data for digest/detailed
+        return {
+          data: JSON.parse(standardListFmt.json(output)),
+          meta: { count: result.length, disclosure: disclosure.level },
+        };
+      },
+    ),
   );
 
   server.registerTool(

@@ -36,7 +36,11 @@ export default async function getToken(
 
   if (result.type !== "select" || result.bindings.length === 0) {
     throw PragmaError.notFound("token", name, {
-      recovery: "Run `pragma token list` to see available tokens.",
+      recovery: {
+        message: "List available tokens.",
+        cli: "pragma token list",
+        mcp: { tool: "token_list" },
+      },
     });
   }
 

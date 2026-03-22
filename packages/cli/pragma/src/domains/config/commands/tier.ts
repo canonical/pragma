@@ -2,8 +2,6 @@
  * `pragma config tier` command definition.
  *
  * Set, reset, or query the active tier.
- *
- * @see CF.03 in B.08.CONFIG
  */
 
 import {

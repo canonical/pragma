@@ -5,9 +5,26 @@
  * so formatters conform to the `Formatters<T>` contract.
  */
 
-import type { StandardDetailed } from "../../shared/types.js";
+import type {
+  Disclosure,
+  StandardDetailed,
+  StandardSummary,
+} from "../../shared/types.js";
 
 export interface StandardGetInput {
   readonly standard: StandardDetailed;
   readonly detailed: boolean;
+}
+
+/**
+ * Input for the list formatter with progressive disclosure.
+ *
+ * - summary: items only (name + category + description)
+ * - digest: items enriched with first do example
+ * - detailed: items enriched with full dos/donts
+ */
+export interface StandardListOutput {
+  readonly items: readonly StandardSummary[];
+  readonly details?: readonly (StandardDetailed | null)[];
+  readonly disclosure: Disclosure;
 }

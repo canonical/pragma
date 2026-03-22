@@ -3,8 +3,6 @@
  *
  * Detects the user's shell from $SHELL and writes the appropriate
  * completion script. Override with --zsh, --bash, or --fish.
- *
- * @see SU.03 in B.15.SETUP
  */
 
 import { dirname } from "node:path";

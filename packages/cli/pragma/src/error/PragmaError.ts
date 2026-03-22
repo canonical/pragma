@@ -1,10 +1,10 @@
-import type { ErrorCode, PragmaErrorData } from "./types.js";
+import type { ErrorCode, PragmaErrorData, Recovery } from "./types.js";
 
 class PragmaError extends Error {
   readonly code: ErrorCode;
   readonly entity: PragmaErrorData["entity"];
   readonly suggestions: string[];
-  readonly recovery: string | string[] | undefined;
+  readonly recovery: Recovery | undefined;
   readonly filters: Record<string, string> | undefined;
   readonly validOptions: string[] | undefined;
 
@@ -24,7 +24,7 @@ class PragmaError extends Error {
     entityName: string,
     opts: {
       suggestions?: string[];
-      recovery?: string | string[];
+      recovery?: Recovery;
     } = {},
   ): PragmaError {
     return new PragmaError({
@@ -40,7 +40,7 @@ class PragmaError extends Error {
     entityType: string,
     opts: {
       filters?: Record<string, string>;
-      recovery?: string | string[];
+      recovery?: Recovery;
     } = {},
   ): PragmaError {
     return new PragmaError({
@@ -56,7 +56,7 @@ class PragmaError extends Error {
     value: string,
     opts: {
       validOptions?: string[];
-      recovery?: string | string[];
+      recovery?: Recovery;
     } = {},
   ): PragmaError {
     return new PragmaError({
@@ -69,7 +69,7 @@ class PragmaError extends Error {
 
   static storeError(
     reason: string,
-    opts: { recovery?: string | string[] } = {},
+    opts: { recovery?: Recovery } = {},
   ): PragmaError {
     return new PragmaError({
       code: "STORE_ERROR",
@@ -82,7 +82,7 @@ class PragmaError extends Error {
     reason: string,
     opts: {
       validOptions?: string[];
-      recovery?: string | string[];
+      recovery?: Recovery;
     } = {},
   ): PragmaError {
     return new PragmaError({
@@ -97,7 +97,7 @@ class PragmaError extends Error {
     return new PragmaError({
       code: "INTERNAL_ERROR",
       message: `Internal error: ${reason}`,
-      recovery: "Please report this issue.",
+      recovery: { message: "Please report this issue." },
     });
   }
 }

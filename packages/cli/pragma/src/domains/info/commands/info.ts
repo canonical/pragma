@@ -1,7 +1,5 @@
 /**
  * `pragma info` command definition.
- *
- * @see IN.04, IN.06, IN.08 in B.11.INSTALL
  */
 
 import type { CommandDefinition, CommandResult } from "@canonical/cli-core";

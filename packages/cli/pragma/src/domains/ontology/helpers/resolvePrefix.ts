@@ -16,7 +16,11 @@ export default function resolvePrefix(
 
     throw PragmaError.invalidInput("namespace", prefixOrUri, {
       validOptions: Object.values(prefixes),
-      recovery: "Run `pragma ontology list` to see loaded namespaces.",
+      recovery: {
+        message: "List loaded ontology namespaces.",
+        cli: "pragma ontology list",
+        mcp: { tool: "ontology_list" },
+      },
     });
   }
 
@@ -24,7 +28,11 @@ export default function resolvePrefix(
   if (namespace === undefined) {
     throw PragmaError.invalidInput("prefix", prefixOrUri, {
       validOptions: Object.keys(prefixes),
-      recovery: "Run `pragma ontology list` to see loaded ontologies.",
+      recovery: {
+        message: "List loaded ontologies.",
+        cli: "pragma ontology list",
+        mcp: { tool: "ontology_list" },
+      },
     });
   }
 

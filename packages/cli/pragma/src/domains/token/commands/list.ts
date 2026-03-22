@@ -34,8 +34,15 @@ export default function listCommand(ctx: PragmaContext): CommandDefinition {
         throw PragmaError.emptyResults("token", {
           filters: category ? { category } : undefined,
           recovery: category
-            ? "Run `pragma token list` to see all tokens."
-            : "Ensure design system packages are installed: bun add -D @canonical/ds-global",
+            ? {
+                message: "List all tokens without category filter.",
+                cli: "pragma token list",
+                mcp: { tool: "token_list" },
+              }
+            : {
+                message:
+                  "Ensure design system packages are installed: bun add -D @canonical/ds-global",
+              },
         });
       }
 

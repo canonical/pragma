@@ -97,8 +97,10 @@ export default function buildComponentCommand(): CommandDefinition {
       if (!framework) {
         throw PragmaError.invalidInput("framework", "(missing)", {
           validOptions: ["react", "svelte", "lit"],
-          recovery:
-            "Provide a framework: `pragma create component react --component-path src/components/Button`",
+          recovery: {
+            message: "Provide a framework for component generation.",
+            cli: "pragma create component react --component-path src/components/Button",
+          },
         });
       }
 
@@ -106,7 +108,9 @@ export default function buildComponentCommand(): CommandDefinition {
       if (!gen) {
         throw PragmaError.invalidInput("framework", framework, {
           validOptions: Object.keys(GENERATOR_MAP),
-          recovery: `Valid frameworks: ${Object.keys(GENERATOR_MAP).join(", ")}`,
+          recovery: {
+            message: `Valid frameworks: ${Object.keys(GENERATOR_MAP).join(", ")}`,
+          },
         });
       }
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { PragmaError } from "#error";
 import type { PragmaRuntime } from "../../domains/shared/runtime.js";
-import { PragmaError } from "../../error/PragmaError.js";
 import wrapTool from "./wrapTool.js";
 
 const stubRuntime = {
@@ -63,7 +63,11 @@ describe("wrapTool", () => {
     const handler = wrapTool(stubRuntime, async () => {
       throw PragmaError.notFound("component", "Buton", {
         suggestions: ["Button"],
-        recovery: "pragma component list",
+        recovery: {
+          message: "List available components.",
+          cli: "pragma block list",
+          mcp: { tool: "block_list" },
+        },
       });
     });
 

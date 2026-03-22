@@ -3,8 +3,6 @@
  *
  * Runs all setup steps (completions, lsp, mcp) as a single
  * composed Task with confirmation gates.
- *
- * @see SU.04 in B.15.SETUP
  */
 
 import type { CommandDefinition, CommandResult } from "@canonical/cli-core";

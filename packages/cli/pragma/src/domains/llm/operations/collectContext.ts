@@ -6,7 +6,7 @@
  */
 
 import type { Store } from "@canonical/ke";
-import { listComponents } from "../../component/operations/index.js";
+import { listBlocks } from "../../block/operations/index.js";
 import { listModifiers } from "../../modifier/operations/index.js";
 import { listOntologies } from "../../ontology/operations/index.js";
 import { resolveTierChain } from "../../shared/filters/buildTierFilter.js";
@@ -19,21 +19,20 @@ export default async function collectContext(
   store: Store,
   config: FilterConfig,
 ): Promise<LlmContext> {
-  const [components, standards, modifiers, tokens, ontologies] =
-    await Promise.all([
-      listComponents(store, config),
-      listStandards(store),
-      listModifiers(store),
-      listTokens(store),
-      listOntologies(store),
-    ]);
+  const [blocks, standards, modifiers, tokens, ontologies] = await Promise.all([
+    listBlocks(store, config),
+    listStandards(store),
+    listModifiers(store),
+    listTokens(store),
+    listOntologies(store),
+  ]);
 
   return {
     tier: config.tier,
     tierChain: resolveTierChain(config.tier),
     channel: config.channel,
     counts: {
-      components: components.length,
+      blocks: blocks.length,
       standards: standards.length,
       modifierFamilies: modifiers.length,
       tokens: tokens.length,

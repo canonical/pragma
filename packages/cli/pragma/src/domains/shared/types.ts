@@ -1,19 +1,17 @@
 /**
- * TB.01 — Shared operation return types.
+ * Shared operation return types.
  *
  * Contract between the operations layer (D3) and CLI/MCP adapters.
  * Same data, different presentations.
- *
- * @see B.24.TYPE_BOUNDARIES
  */
 
 import type { URI } from "@canonical/ke";
 
 // =============================================================================
-// Component
+// Block
 // =============================================================================
 
-export interface ComponentSummary {
+export interface BlockSummary {
   readonly uri: URI;
   readonly name: string;
   readonly tier: string;
@@ -37,7 +35,7 @@ export interface AnatomyTree {
   readonly root: AnatomyNode;
 }
 
-export interface ComponentDetailed extends ComponentSummary {
+export interface BlockDetailed extends BlockSummary {
   readonly anatomy: AnatomyTree | null;
   readonly modifierValues: readonly {
     family: string;
@@ -190,4 +188,26 @@ export interface OntologyDetailed {
 export interface FilterConfig {
   readonly tier: string | undefined;
   readonly channel: "normal" | "experimental" | "prerelease";
+}
+
+// =============================================================================
+// Disclosure
+// =============================================================================
+
+export type Disclosure =
+  | { readonly level: "summary" }
+  | { readonly level: "digest"; readonly maxExampleLength?: number }
+  | { readonly level: "detailed" };
+
+// =============================================================================
+// Batch
+// =============================================================================
+
+export interface BatchResult<T> {
+  readonly results: readonly T[];
+  readonly errors: readonly {
+    name: string;
+    code: string;
+    message: string;
+  }[];
 }

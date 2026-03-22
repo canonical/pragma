@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { PragmaError } from "../../error/PragmaError.js";
+import { PragmaError } from "#error";
 import serializeErrorPayload from "./serializeErrorPayload.js";
 
 describe("serializeErrorPayload", () => {

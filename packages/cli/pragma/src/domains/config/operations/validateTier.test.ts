@@ -44,13 +44,13 @@ describe("validateTier", () => {
       const pragmaErr = err as {
         code: string;
         validOptions: string[];
-        recovery: string;
+        recovery: { message: string; cli: string };
       };
       expect(pragmaErr.code).toBe("INVALID_INPUT");
       expect(pragmaErr.validOptions).toContain("global");
       expect(pragmaErr.validOptions).toContain("apps");
       expect(pragmaErr.validOptions).toContain("apps/lxd");
-      expect(pragmaErr.recovery).toBe("pragma config tier --reset");
+      expect(pragmaErr.recovery.cli).toBe("pragma config tier --reset");
     }
   });
 });

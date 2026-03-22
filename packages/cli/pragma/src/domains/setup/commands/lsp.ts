@@ -2,8 +2,6 @@
  * `pragma setup lsp` command definition.
  *
  * Installs the Terrazzo LSP VS Code extension.
- *
- * @see SU.01 in B.15.SETUP
  */
 
 import type { CommandDefinition, CommandResult } from "@canonical/cli-core";

@@ -11,7 +11,7 @@ describe("renderErrorPlain", () => {
     const err = PragmaError.internalError("something broke");
     const out = renderErrorPlain(err);
     expect(out).toContain("Error: Internal error: something broke");
-    expect(out).toContain("Run `Please report this issue.`");
+    expect(out).toContain("Please report this issue.");
   });
 
   it("renders suggestions", () => {
@@ -24,7 +24,7 @@ describe("renderErrorPlain", () => {
     expect(out).toContain("  - ButtonGroup");
   });
 
-  it("renders filters (ER.05)", () => {
+  it("renders filters", () => {
     const err = PragmaError.emptyResults("component", {
       filters: { tier: "apps/lxd", channel: "normal" },
     });
@@ -42,21 +42,26 @@ describe("renderErrorPlain", () => {
     expect(out).toContain("Valid options: normal, experimental, prerelease");
   });
 
-  it("renders recovery as string", () => {
+  it("renders recovery with cli command", () => {
     const err = PragmaError.notFound("component", "Foo", {
-      recovery: "pragma component list",
+      recovery: {
+        message: "List available components.",
+        cli: "pragma block list",
+        mcp: { tool: "block_list" },
+      },
     });
     const out = renderErrorPlain(err);
-    expect(out).toContain("Run `pragma component list`");
+    expect(out).toContain("Run `pragma block list`");
   });
 
-  it("renders recovery as array", () => {
+  it("renders recovery with message only (no cli)", () => {
     const err = PragmaError.emptyResults("component", {
-      recovery: ["pragma component list --all-tiers", "pragma config show"],
+      recovery: {
+        message: "Ensure design system packages are installed.",
+      },
     });
     const out = renderErrorPlain(err);
-    expect(out).toContain("  - pragma component list --all-tiers");
-    expect(out).toContain("  - pragma config show");
+    expect(out).toContain("Ensure design system packages are installed.");
   });
 });
 
@@ -64,13 +69,17 @@ describe("renderErrorLlm", () => {
   it("renders structured markdown", () => {
     const err = PragmaError.notFound("component", "Buton", {
       suggestions: ["Button", "ButtonGroup"],
-      recovery: "pragma component list",
+      recovery: {
+        message: "List available components.",
+        cli: "pragma block list",
+        mcp: { tool: "block_list" },
+      },
     });
     const out = renderErrorLlm(err);
     expect(out).toContain("## Error: ENTITY_NOT_FOUND");
     expect(out).toContain('component "Buton" not found.');
     expect(out).toContain("Suggestions: Button, ButtonGroup");
-    expect(out).toContain("Recovery: `pragma component list`");
+    expect(out).toContain("Recovery: `pragma block list`");
   });
 
   it("renders filters", () => {
@@ -89,14 +98,14 @@ describe("renderErrorLlm", () => {
     expect(out).toContain("Valid options: normal, experimental");
   });
 
-  it("renders recovery as array", () => {
+  it("renders recovery message when no cli", () => {
     const err = PragmaError.emptyResults("component", {
-      recovery: ["pragma component list", "pragma config show"],
+      recovery: {
+        message: "Install packages first.",
+      },
     });
     const out = renderErrorLlm(err);
-    expect(out).toContain(
-      "Recovery: `pragma component list`, `pragma config show`",
-    );
+    expect(out).toContain("Recovery: Install packages first.");
   });
 });
 
@@ -104,14 +113,22 @@ describe("renderErrorJson", () => {
   it("produces valid JSON with all fields", () => {
     const err = PragmaError.notFound("component", "Buton", {
       suggestions: ["Button"],
-      recovery: "pragma component list",
+      recovery: {
+        message: "List available components.",
+        cli: "pragma block list",
+        mcp: { tool: "block_list" },
+      },
     });
     const parsed = JSON.parse(renderErrorJson(err));
     expect(parsed.code).toBe("ENTITY_NOT_FOUND");
     expect(parsed.message).toBe('component "Buton" not found.');
     expect(parsed.entity).toEqual({ type: "component", name: "Buton" });
     expect(parsed.suggestions).toEqual(["Button"]);
-    expect(parsed.recovery).toBe("pragma component list");
+    expect(parsed.recovery).toEqual({
+      message: "List available components.",
+      cli: "pragma block list",
+      mcp: { tool: "block_list" },
+    });
   });
 
   it("includes filters and validOptions", () => {

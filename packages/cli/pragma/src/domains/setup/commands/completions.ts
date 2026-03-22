@@ -2,8 +2,6 @@
  * `pragma setup completions` command definition.
  *
  * Installs shell completion scripts for bash, zsh, or fish.
- *
- * @see SU.03 in B.15.SETUP
  */
 
 import type { CommandDefinition, CommandResult } from "@canonical/cli-core";

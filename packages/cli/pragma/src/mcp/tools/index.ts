@@ -2,13 +2,11 @@
  * MCP tool registration orchestrator.
  *
  * Delegates to domain-specific registration modules.
- *
- * @see F.06 RS.06, F.02 NM.02, F.03 SF
  */
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { PragmaRuntime } from "../../domains/shared/runtime.js";
-import { registerComponentTools } from "./component.js";
+import { registerBlockTools } from "./block.js";
 import { registerConfigTools } from "./config.js";
 import { registerDiagnosticTools } from "./diagnostics.js";
 import { registerGeneratorTools } from "./generators.js";
@@ -28,7 +26,7 @@ export default function registerAllTools(
   server: McpServer,
   runtime: PragmaRuntime,
 ): void {
-  registerComponentTools(server, runtime);
+  registerBlockTools(server, runtime);
   registerStandardTools(server, runtime);
   registerModifierTools(server, runtime);
   registerTokenTools(server, runtime);

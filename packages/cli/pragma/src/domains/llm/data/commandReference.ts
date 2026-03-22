@@ -1,15 +1,13 @@
 /**
  * Command reference with token estimates for `pragma llm`.
- *
- * @see LO.04 in B.29.LLM_ORIENTATION
  */
 
 import type { CommandRefEntry } from "../types.js";
 
 export const COMMAND_REFERENCE: readonly CommandRefEntry[] = [
-  { command: "component list", tokens: "~200" },
-  { command: "component get <name> --detailed", tokens: "~500" },
-  { command: "component get <name> --standards", tokens: "~300" },
+  { command: "block list", tokens: "~200" },
+  { command: "block get <name> --detailed", tokens: "~500" },
+  { command: "block get <name> --standards", tokens: "~300" },
   { command: "standard list --category <cat>", tokens: "~100" },
   { command: "standard get <name> --detailed", tokens: "~400" },
   { command: "standard categories", tokens: "~50" },

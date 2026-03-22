@@ -65,7 +65,7 @@ describe("buildLlmCommand", () => {
     expect(text).toContain("apps/lxd");
     expect(text).toContain("normal");
     expect(value.context.tierChain).toEqual(["global", "apps", "apps/lxd"]);
-    expect(value.context.counts.components).toBeGreaterThan(0);
+    expect(value.context.counts.blocks).toBeGreaterThan(0);
     expect(value.context.counts.standards).toBeGreaterThan(0);
     expect(value.context.counts.modifierFamilies).toBeGreaterThan(0);
     expect(value.context.counts.tokens).toBeGreaterThan(0);
@@ -77,7 +77,7 @@ describe("buildLlmCommand", () => {
     const cmd = buildLlmCommand(ctx);
     const { value, text } = await executeOutput(cmd, ctx);
     expect(value.decisionTrees).toHaveLength(5);
-    expect(text).toContain("Build a component");
+    expect(text).toContain("Build a block");
     expect(text).toContain("Audit standards");
     expect(text).toContain("Find a token");
     expect(text).toContain("Explore the design system");

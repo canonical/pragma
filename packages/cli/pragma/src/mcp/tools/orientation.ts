@@ -16,8 +16,8 @@ import { buildFilters } from "./helpers.js";
 /** All registered tool names, categorized for the capabilities response. */
 const toolNames = {
   read: [
-    "component_list",
-    "component_get",
+    "block_list",
+    "block_get",
     "standard_list",
     "standard_get",
     "standard_categories",
@@ -33,7 +33,13 @@ const toolNames = {
     "graph_inspect",
     "skill_list",
   ],
-  write: ["create_component", "create_package"],
+  write: [
+    "config_tier",
+    "config_channel",
+    "tokens_add_config",
+    "create_component",
+    "create_package",
+  ],
   orientation: ["llm", "capabilities"],
   diagnostic: ["doctor", "info"],
 };

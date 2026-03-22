@@ -1,7 +1,5 @@
 /**
  * Types for the doctor domain.
- *
- * @see IN.07 in B.11.INSTALL
  */
 
 export interface CheckResult {

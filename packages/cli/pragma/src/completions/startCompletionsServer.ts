@@ -6,7 +6,6 @@
  * project-scoped Unix domain socket. Auto-exits after 10 seconds of idle.
  *
  * @note Impure — boots ke store, binds Unix socket, manages process lifecycle.
- * @see F.05 BT.05
  */
 
 import { existsSync, unlinkSync } from "node:fs";

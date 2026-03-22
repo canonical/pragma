@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { PragmaError } from "../../error/PragmaError.js";
+import { PragmaError } from "#error";
 import serializeError from "./serializeError.js";
 import type { McpErrorPayload } from "./types.js";
 
@@ -9,10 +9,14 @@ function parsePayload(result: { content: unknown[] }): McpErrorPayload {
 }
 
 describe("serializeError", () => {
-  it("serializes ENTITY_NOT_FOUND with recovery from backtick-wrapped command", () => {
+  it("serializes ENTITY_NOT_FOUND with structured recovery", () => {
     const error = PragmaError.notFound("component", "Buton", {
       suggestions: ["Button", "ButtonGroup"],
-      recovery: "Run `pragma component list` to see available components.",
+      recovery: {
+        message: "List available components.",
+        cli: "pragma block list",
+        mcp: { tool: "block_list" },
+      },
     });
 
     const result = serializeError(error);
@@ -24,54 +28,40 @@ describe("serializeError", () => {
     expect(payload.code).toBe("ENTITY_NOT_FOUND");
     expect(payload.message).toContain("Buton");
     expect(payload.suggestions).toEqual(["Button", "ButtonGroup"]);
-    expect(payload.recovery).toEqual({
-      tool: "component_list",
-      params: {},
-      description: "to see available components.",
-    });
+    expect(payload.recovery).toEqual({ tool: "block_list" });
   });
 
-  it("parses --all-tiers flag into recovery params", () => {
+  it("extracts mcp recovery with params", () => {
     const error = PragmaError.emptyResults("component", {
-      recovery: "Run `pragma component list --all-tiers` to search all tiers.",
+      recovery: {
+        message: "Widen the search to show all tiers.",
+        cli: "pragma block list --all-tiers",
+        mcp: { tool: "block_list", params: { allTiers: true } },
+      },
     });
 
     const payload = parsePayload(serializeError(error));
-    expect(payload.recovery?.tool).toBe("component_list");
+    expect(payload.recovery?.tool).toBe("block_list");
     expect(payload.recovery?.params).toEqual({ allTiers: true });
-    expect(payload.recovery?.description).toBe("to search all tiers.");
   });
 
-  it("serializes EMPTY_RESULTS with filters and array recovery", () => {
+  it("serializes EMPTY_RESULTS with filters", () => {
     const error = PragmaError.emptyResults("component", {
       filters: { tier: "apps/lxd", channel: "normal" },
-      recovery: [
-        "Run `pragma component list --all-tiers` to search all tiers.",
-        "Run `pragma config show` to see filter settings.",
-      ],
+      recovery: {
+        message: "Widen the search to show all tiers.",
+        cli: "pragma block list --all-tiers",
+        mcp: { tool: "block_list", params: { allTiers: true } },
+      },
     });
 
     const payload = parsePayload(serializeError(error));
     expect(payload.code).toBe("EMPTY_RESULTS");
     expect(payload.filters).toEqual({ tier: "apps/lxd", channel: "normal" });
-    // First parseable entry from array
-    expect(payload.recovery?.tool).toBe("component_list");
-    expect(payload.recovery?.params).toEqual({ allTiers: true });
+    expect(payload.recovery?.tool).toBe("block_list");
   });
 
-  it("skips unparseable recovery entries in array", () => {
-    const error = PragmaError.notFound("standard", "x", {
-      recovery: [
-        "Please report this issue.",
-        "Run `pragma standard list` to see available standards.",
-      ],
-    });
-
-    const payload = parsePayload(serializeError(error));
-    expect(payload.recovery?.tool).toBe("standard_list");
-  });
-
-  it("omits recovery when string is unparseable", () => {
+  it("omits recovery when no mcp field", () => {
     const error = PragmaError.internalError("unexpected failure");
 
     const payload = parsePayload(serializeError(error));
@@ -79,17 +69,17 @@ describe("serializeError", () => {
     expect(payload.recovery).toBeUndefined();
   });
 
-  it("parses plain recovery command (no backticks)", () => {
+  it("extracts mcp recovery from modifier error", () => {
     const error = PragmaError.notFound("modifier", "x", {
-      recovery: "pragma modifier list",
+      recovery: {
+        message: "List available modifiers.",
+        cli: "pragma modifier list",
+        mcp: { tool: "modifier_list" },
+      },
     });
 
     const payload = parsePayload(serializeError(error));
-    expect(payload.recovery).toEqual({
-      tool: "modifier_list",
-      params: {},
-      description: "Run pragma modifier list",
-    });
+    expect(payload.recovery).toEqual({ tool: "modifier_list" });
   });
 
   it("omits recovery when undefined", () => {

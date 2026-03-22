@@ -1,22 +1,15 @@
 /**
- * Build a recovery object from PragmaError.recovery.
+ * Build an MCP recovery object from the structured Recovery type.
  *
- * When recovery is an array, returns the first parseable entry.
+ * Extracts `recovery.mcp` directly — no regex parsing needed.
  */
 
-import parseRecovery from "./parseRecovery.js";
+import type { Recovery } from "#error";
 import type { McpRecovery } from "./types.js";
 
 export default function buildRecovery(
-  recovery: string | string[] | undefined,
+  recovery: Recovery | undefined,
 ): McpRecovery | undefined {
-  if (!recovery) return undefined;
-
-  const candidates = Array.isArray(recovery) ? recovery : [recovery];
-  for (const candidate of candidates) {
-    const parsed = parseRecovery(candidate);
-    if (parsed) return parsed;
-  }
-
-  return undefined;
+  if (!recovery?.mcp) return undefined;
+  return recovery.mcp;
 }
