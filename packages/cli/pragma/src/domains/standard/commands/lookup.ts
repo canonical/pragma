@@ -1,5 +1,5 @@
 /**
- * `pragma standard get <name>` command definition.
+ * `pragma standard lookup <name>` command definition.
  */
 
 import {
@@ -9,13 +9,15 @@ import {
 } from "@canonical/cli-core";
 import type { PragmaContext } from "../../shared/context.js";
 import { selectFormatter } from "../../shared/formatters.js";
-import { getFormatters } from "../formatters/index.js";
-import { getStandard } from "../operations/index.js";
+import { lookupFormatters } from "../formatters/index.js";
+import { lookupStandard } from "../operations/index.js";
 
-export default function buildGetCommand(ctx: PragmaContext): CommandDefinition {
+export default function buildLookupCommand(
+  ctx: PragmaContext,
+): CommandDefinition {
   return {
-    path: ["standard", "get"],
-    description: "Get detailed information for a standard",
+    path: ["standard", "lookup"],
+    description: "Look up detailed information for a standard",
     parameters: [
       {
         name: "name",
@@ -33,9 +35,9 @@ export default function buildGetCommand(ctx: PragmaContext): CommandDefinition {
     ],
     meta: {
       examples: [
-        "pragma standard get react/component/folder-structure",
-        "pragma standard get react/component/folder-structure --detailed",
-        "pragma standard get react/component/folder-structure --llm",
+        "pragma standard lookup react/component/folder-structure",
+        "pragma standard lookup react/component/folder-structure --detailed",
+        "pragma standard lookup react/component/folder-structure --llm",
       ],
     },
     execute: async (
@@ -43,12 +45,12 @@ export default function buildGetCommand(ctx: PragmaContext): CommandDefinition {
     ): Promise<CommandResult> => {
       const name = params.name as string;
       const detailed = (params.detailed as boolean) ?? false;
-      const standard = await getStandard(ctx.store, name);
+      const standard = await lookupStandard(ctx.store, name);
 
       return createOutputResult(
         { standard, detailed },
         {
-          plain: selectFormatter(ctx, getFormatters),
+          plain: selectFormatter(ctx, lookupFormatters),
         },
       );
     },

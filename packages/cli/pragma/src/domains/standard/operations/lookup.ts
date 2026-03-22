@@ -1,5 +1,5 @@
 /**
- * Get detailed information for a single standard.
+ * Look up detailed information for a single standard.
  *
  * Pure function: Store + name → StandardDetailed.
  *
@@ -13,7 +13,7 @@ import { buildQuery } from "../../shared/buildQuery.js";
 import { P } from "../../shared/prefixes.js";
 import type { CodeBlock, StandardDetailed } from "../../shared/types.js";
 
-export default async function getStandard(
+export default async function lookupStandard(
   store: Store,
   name: string,
 ): Promise<StandardDetailed> {

@@ -1,5 +1,5 @@
 /**
- * Get detailed information for a single token.
+ * Look up detailed information for a single token.
  *
  * @throws PragmaError.notFound if the token does not exist.
  */
@@ -11,7 +11,7 @@ import { buildQuery } from "../../shared/buildQuery.js";
 import { P } from "../../shared/prefixes.js";
 import type { TokenDetailed } from "../../shared/types.js";
 
-export default async function getToken(
+export default async function lookupToken(
   store: Store,
   name: string,
 ): Promise<TokenDetailed> {

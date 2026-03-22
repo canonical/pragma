@@ -15,7 +15,7 @@ import { selectFormatter } from "../../shared/formatters.js";
 import type { Disclosure, StandardDetailed } from "../../shared/types.js";
 import { listFormatters } from "../formatters/index.js";
 import type { StandardListOutput } from "../formatters/types.js";
-import { getStandard, listStandards } from "../operations/index.js";
+import { listStandards, lookupStandard } from "../operations/index.js";
 
 export default function buildListCommand(
   ctx: PragmaContext,
@@ -89,7 +89,7 @@ export default function buildListCommand(
       if (disclosure.level !== "summary") {
         details = await Promise.all(
           standards.map((s) =>
-            getStandard(ctx.store, s.name).catch(() => null),
+            lookupStandard(ctx.store, s.name).catch(() => null),
           ),
         );
       }

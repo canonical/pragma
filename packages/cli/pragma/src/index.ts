@@ -49,8 +49,8 @@ export type {
 // — Domain Operations —————————————————————————————————————————————————————————
 
 export {
-  getBlock,
   listBlocks,
+  lookupBlock,
 } from "./domains/block/operations/index.js";
 export { runChecks } from "./domains/doctor/operations/index.js";
 export {
@@ -58,8 +58,8 @@ export {
   inspectUri,
 } from "./domains/graph/operations/index.js";
 export {
-  getModifier,
   listModifiers,
+  lookupModifier,
 } from "./domains/modifier/operations/index.js";
 export {
   listOntologies,
@@ -71,12 +71,12 @@ export {
   listSkills,
 } from "./domains/skill/operations/index.js";
 export {
-  getStandard,
   listCategories,
   listStandards,
+  lookupStandard,
 } from "./domains/standard/operations/index.js";
 export { listTiers } from "./domains/tier/operations/index.js";
-export { getToken, listTokens } from "./domains/token/operations/index.js";
+export { listTokens, lookupToken } from "./domains/token/operations/index.js";
 
 // — Domain Types ——————————————————————————————————————————————————————————————
 

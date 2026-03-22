@@ -1,5 +1,5 @@
 /**
- * Get detailed information for a single block.
+ * Look up detailed information for a single block.
  *
  * Pure function: Store + name + FilterConfig → BlockDetailed.
  * Consumed by CLI commands and MCP adapter.
@@ -21,7 +21,7 @@ import type {
   TokenRef,
 } from "../../shared/types.js";
 
-export default async function getBlock(
+export default async function lookupBlock(
   store: Store,
   name: string,
   filters: FilterConfig,

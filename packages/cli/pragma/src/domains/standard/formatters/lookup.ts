@@ -1,13 +1,13 @@
 /**
- * Formatters for `pragma standard get` output.
+ * Formatters for `pragma standard lookup` output.
  *
- * Pure functions: StandardGetInput → string.
+ * Pure functions: StandardLookupInput → string.
  */
 
 import type { Formatters } from "../../shared/formatters.js";
-import type { StandardGetInput } from "./types.js";
+import type { StandardLookupInput } from "./types.js";
 
-const formatters: Formatters<StandardGetInput> = {
+const formatters: Formatters<StandardLookupInput> = {
   plain({ standard, detailed }) {
     const lines: string[] = [];
     lines.push(standard.name);

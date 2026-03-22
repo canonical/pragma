@@ -2,7 +2,7 @@ import type { Store } from "@canonical/ke";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { PragmaError } from "#error";
 import { createTestStore, DS_ALL_TTL } from "#testing";
-import getStandard from "./get.js";
+import lookupStandard from "./lookup.js";
 
 let store: Store;
 let cleanup: () => void;
@@ -15,9 +15,12 @@ beforeAll(async () => {
 
 afterAll(() => cleanup());
 
-describe("getStandard", () => {
+describe("lookupStandard", () => {
   it("returns detailed data with dos and donts", async () => {
-    const result = await getStandard(store, "react/component/folder-structure");
+    const result = await lookupStandard(
+      store,
+      "react/component/folder-structure",
+    );
     expect(result.name).toBe("react/component/folder-structure");
     expect(result.category).toBe("react");
     expect(result.dos.length).toBeGreaterThan(0);
@@ -25,12 +28,12 @@ describe("getStandard", () => {
   });
 
   it("throws PragmaError.notFound for unknown standard", async () => {
-    await expect(getStandard(store, "nonexistent")).rejects.toThrow(
+    await expect(lookupStandard(store, "nonexistent")).rejects.toThrow(
       PragmaError,
     );
 
     try {
-      await getStandard(store, "nonexistent");
+      await lookupStandard(store, "nonexistent");
     } catch (e) {
       expect((e as PragmaError).code).toBe("ENTITY_NOT_FOUND");
     }

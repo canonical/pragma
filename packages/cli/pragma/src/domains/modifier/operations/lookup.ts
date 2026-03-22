@@ -1,5 +1,5 @@
 /**
- * Get a single modifier family by name.
+ * Look up a single modifier family by name.
  *
  * @throws PragmaError.notFound if the modifier family does not exist.
  */
@@ -11,7 +11,7 @@ import { buildQuery } from "../../shared/buildQuery.js";
 import { P } from "../../shared/prefixes.js";
 import type { ModifierFamily } from "../../shared/types.js";
 
-export default async function getModifier(
+export default async function lookupModifier(
   store: Store,
   name: string,
 ): Promise<ModifierFamily> {

@@ -9,16 +9,22 @@
 import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { listFormatters as blockListFmt } from "../../domains/block/formatters/index.js";
-import { getBlock, listBlocks } from "../../domains/block/operations/index.js";
 import {
-  getModifier,
+  listBlocks,
+  lookupBlock,
+} from "../../domains/block/operations/index.js";
+import {
   listModifiers,
+  lookupModifier,
 } from "../../domains/modifier/operations/index.js";
 import { listOntologies } from "../../domains/ontology/operations/index.js";
 import type { PragmaRuntime } from "../../domains/shared/runtime.js";
 import { listStandards } from "../../domains/standard/operations/index.js";
 import { listTiers } from "../../domains/tier/operations/index.js";
-import { getToken, listTokens } from "../../domains/token/operations/index.js";
+import {
+  listTokens,
+  lookupToken,
+} from "../../domains/token/operations/index.js";
 import assertParity from "../helpers/assertParity.js";
 import createTestMcpClient from "../helpers/createTestMcpClient.js";
 import createTestRuntime from "../helpers/createTestRuntime.js";
@@ -67,10 +73,10 @@ describe("block parity", () => {
     expect(body.text).toBe(expectedText);
   });
 
-  it("block_get: detailed fields match", async () => {
-    const opResult = await getBlock(rt.store, "Button", rt.config);
+  it("block_lookup: detailed fields match", async () => {
+    const opResult = await lookupBlock(rt.store, "Button", rt.config);
     const mcpRes = await client.callTool({
-      name: "block_get",
+      name: "block_lookup",
       arguments: { name: "Button" },
     });
     assertParity(opResult, mcpRes);
@@ -121,10 +127,10 @@ describe("modifier parity", () => {
     assertParity(opResult, mcpRes);
   });
 
-  it("modifier_get: values match", async () => {
-    const opResult = await getModifier(rt.store, "importance");
+  it("modifier_lookup: values match", async () => {
+    const opResult = await lookupModifier(rt.store, "importance");
     const mcpRes = await client.callTool({
-      name: "modifier_get",
+      name: "modifier_lookup",
       arguments: { name: "importance" },
     });
     assertParity(opResult, mcpRes);
@@ -145,10 +151,10 @@ describe("token parity", () => {
     assertParity(opResult, mcpRes);
   });
 
-  it("token_get: values match", async () => {
-    const opResult = await getToken(rt.store, "color.primary");
+  it("token_lookup: values match", async () => {
+    const opResult = await lookupToken(rt.store, "color.primary");
     const mcpRes = await client.callTool({
-      name: "token_get",
+      name: "token_lookup",
       arguments: { name: "color.primary" },
     });
     assertParity(opResult, mcpRes);

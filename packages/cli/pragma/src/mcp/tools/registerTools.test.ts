@@ -42,9 +42,9 @@ function parseData(result: { content: unknown[] }): unknown {
 // =============================================================================
 
 describe("tool listing", () => {
-  it("registers 25 tools", async () => {
+  it("registers 29 tools", async () => {
     const { tools } = await client.listTools();
-    expect(tools).toHaveLength(25);
+    expect(tools).toHaveLength(29);
   });
 
   it("all tools have descriptions", async () => {
@@ -59,14 +59,18 @@ describe("tool listing", () => {
     const names = tools.map((t) => t.name);
     // Existing tools
     expect(names).toContain("block_list");
-    expect(names).toContain("block_get");
+    expect(names).toContain("block_lookup");
+    expect(names).toContain("block_batch_lookup");
     expect(names).toContain("standard_list");
-    expect(names).toContain("standard_get");
+    expect(names).toContain("standard_lookup");
+    expect(names).toContain("standard_batch_lookup");
     expect(names).toContain("standard_categories");
     expect(names).toContain("modifier_list");
-    expect(names).toContain("modifier_get");
+    expect(names).toContain("modifier_lookup");
+    expect(names).toContain("modifier_batch_lookup");
     expect(names).toContain("token_list");
-    expect(names).toContain("token_get");
+    expect(names).toContain("token_lookup");
+    expect(names).toContain("token_batch_lookup");
     expect(names).toContain("tier_list");
     expect(names).toContain("config_show");
     expect(names).toContain("config_tier");
@@ -112,7 +116,7 @@ describe("envelope shape", () => {
 
   it("error response has ok: false and error object", async () => {
     const result = await client.callTool({
-      name: "block_get",
+      name: "block_lookup",
       arguments: { name: "NonExistent" },
     });
     expect(result.isError).toBe(true);
@@ -193,10 +197,10 @@ describe("block_list", () => {
   });
 });
 
-describe("block_get", () => {
+describe("block_lookup", () => {
   it("returns detailed block data by default", async () => {
     const result = await client.callTool({
-      name: "block_get",
+      name: "block_lookup",
       arguments: { name: "Button" },
     });
     const data = parseData(result) as Record<string, unknown>;
@@ -208,7 +212,7 @@ describe("block_get", () => {
 
   it("returns summary when detailed=false", async () => {
     const result = await client.callTool({
-      name: "block_get",
+      name: "block_lookup",
       arguments: { name: "Button", detailed: false },
     });
     const data = parseData(result) as Record<string, unknown>;
@@ -219,7 +223,7 @@ describe("block_get", () => {
 
   it("returns error with recovery for unknown block", async () => {
     const result = await client.callTool({
-      name: "block_get",
+      name: "block_lookup",
       arguments: { name: "NonExistent" },
     });
     expect(result.isError).toBe(true);
@@ -285,7 +289,7 @@ describe("standard_list", () => {
   });
 });
 
-describe("standard_get", () => {
+describe("standard_lookup", () => {
   it("returns detailed standard by default", async () => {
     const list = await client.callTool({
       name: "standard_list",
@@ -296,7 +300,7 @@ describe("standard_get", () => {
     const standardName = standards[0]?.name ?? "";
 
     const result = await client.callTool({
-      name: "standard_get",
+      name: "standard_lookup",
       arguments: { name: standardName },
     });
     const data = parseData(result) as Record<string, unknown>;
@@ -314,7 +318,7 @@ describe("standard_get", () => {
     const standardName = standards[0]?.name ?? "";
 
     const result = await client.callTool({
-      name: "standard_get",
+      name: "standard_lookup",
       arguments: { name: standardName, detailed: false },
     });
     const data = parseData(result) as Record<string, unknown>;
@@ -324,7 +328,7 @@ describe("standard_get", () => {
 
   it("returns error for unknown standard", async () => {
     const result = await client.callTool({
-      name: "standard_get",
+      name: "standard_lookup",
       arguments: { name: "nonexistent/standard" },
     });
     expect(result.isError).toBe(true);
@@ -362,10 +366,10 @@ describe("modifier_list", () => {
   });
 });
 
-describe("modifier_get", () => {
+describe("modifier_lookup", () => {
   it("returns modifier values", async () => {
     const result = await client.callTool({
-      name: "modifier_get",
+      name: "modifier_lookup",
       arguments: { name: "importance" },
     });
     const data = parseData(result) as { name: string; values: string[] };
@@ -375,7 +379,7 @@ describe("modifier_get", () => {
 
   it("returns error for unknown modifier", async () => {
     const result = await client.callTool({
-      name: "modifier_get",
+      name: "modifier_lookup",
       arguments: { name: "nonexistent" },
     });
     expect(result.isError).toBe(true);
@@ -400,10 +404,10 @@ describe("token_list", () => {
   });
 });
 
-describe("token_get", () => {
+describe("token_lookup", () => {
   it("returns token with theme values", async () => {
     const result = await client.callTool({
-      name: "token_get",
+      name: "token_lookup",
       arguments: { name: "color.primary" },
     });
     const data = parseData(result) as {
@@ -416,7 +420,7 @@ describe("token_get", () => {
 
   it("returns error for unknown token", async () => {
     const result = await client.callTool({
-      name: "token_get",
+      name: "token_lookup",
       arguments: { name: "nonexistent.token" },
     });
     expect(result.isError).toBe(true);
@@ -550,10 +554,10 @@ describe("llm", () => {
 describe("error handling", () => {
   it("all entity-not-found errors include recovery objects", async () => {
     const notFoundCalls = [
-      { name: "block_get", arguments: { name: "X" } },
-      { name: "modifier_get", arguments: { name: "X" } },
-      { name: "token_get", arguments: { name: "X" } },
-      { name: "standard_get", arguments: { name: "X" } },
+      { name: "block_lookup", arguments: { name: "X" } },
+      { name: "modifier_lookup", arguments: { name: "X" } },
+      { name: "token_lookup", arguments: { name: "X" } },
+      { name: "standard_lookup", arguments: { name: "X" } },
     ] as const;
 
     for (const call of notFoundCalls) {
@@ -762,7 +766,7 @@ describe("capabilities", () => {
     };
     expect(data.tools).toContain("block_list");
     expect(data.tools).toContain("capabilities");
-    expect(data.counts.total).toBe(25);
+    expect(data.counts.total).toBe(29);
     expect(data.counts.read).toBeGreaterThan(0);
     expect(data.counts.write).toBe(5);
     expect(data.counts.orientation).toBe(2);

@@ -1,12 +1,12 @@
 import type { Formatters } from "../../shared/formatters.js";
 import type { TokenDetailed } from "../../shared/types.js";
 
-export interface TokenGetFormatterOptions {
+export interface TokenLookupFormatterOptions {
   readonly detailed: boolean;
 }
 
-export function createGetFormatters(
-  options: TokenGetFormatterOptions,
+export function createLookupFormatters(
+  options: TokenLookupFormatterOptions,
 ): Formatters<TokenDetailed> {
   const { detailed } = options;
 

@@ -1,5 +1,5 @@
 /**
- * `pragma block get` command definition.
+ * `pragma block lookup` command definition.
  */
 
 import {
@@ -10,15 +10,17 @@ import {
 import { PragmaError } from "#error";
 import type { PragmaContext } from "../../shared/context.js";
 import { selectFormatter } from "../../shared/formatters.js";
-import { getFormatters } from "../formatters/index.js";
+import { lookupFormatters } from "../formatters/index.js";
 import { resolveAspects } from "../helpers/index.js";
-import { getBlock, listBlocks } from "../operations/index.js";
+import { listBlocks, lookupBlock } from "../operations/index.js";
 import type { AspectFlags } from "../types.js";
 
-export default function buildGetCommand(ctx: PragmaContext): CommandDefinition {
+export default function buildLookupCommand(
+  ctx: PragmaContext,
+): CommandDefinition {
   return {
-    path: ["block", "get"],
-    description: "Get block details",
+    path: ["block", "lookup"],
+    description: "Look up block details",
     parameters: [
       {
         name: "name",
@@ -70,10 +72,10 @@ export default function buildGetCommand(ctx: PragmaContext): CommandDefinition {
     },
     meta: {
       examples: [
-        "pragma block get Button",
-        "pragma block get Button --detailed",
-        "pragma block get Button --anatomy --modifiers",
-        "pragma block get Button --detailed --llm",
+        "pragma block lookup Button",
+        "pragma block lookup Button --detailed",
+        "pragma block lookup Button --anatomy --modifiers",
+        "pragma block lookup Button --detailed --llm",
       ],
     },
     execute: async (
@@ -106,12 +108,12 @@ export default function buildGetCommand(ctx: PragmaContext): CommandDefinition {
       const showDetailed = detailed || (isAspectSelected ?? false);
       const aspects = resolveAspects(aspectInput);
 
-      const block = await getBlock(ctx.store, name, ctx.config);
+      const block = await lookupBlock(ctx.store, name, ctx.config);
 
       return createOutputResult(
         { block, detailed: showDetailed, aspects },
         {
-          plain: selectFormatter(ctx, getFormatters),
+          plain: selectFormatter(ctx, lookupFormatters),
         },
       );
     },

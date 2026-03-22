@@ -51,7 +51,7 @@ describe("capabilities", () => {
     };
     expect(data.tools).toContain("block_list");
     expect(data.tools).toContain("capabilities");
-    expect(data.counts.total).toBe(25);
+    expect(data.counts.total).toBe(29);
   });
 });
 
@@ -100,10 +100,10 @@ describe("block_list", () => {
   });
 });
 
-describe("block_get", () => {
+describe("block_lookup", () => {
   it("returns detailed block", async () => {
     const res = await client.callTool({
-      name: "block_get",
+      name: "block_lookup",
       arguments: { name: "Button" },
     });
     const body = parseEnvelope(res);
@@ -115,7 +115,7 @@ describe("block_get", () => {
 
   it("returns structured error for unknown block", async () => {
     const res = await client.callTool({
-      name: "block_get",
+      name: "block_lookup",
       arguments: { name: "Nonexistent" },
     });
     const body = parseEnvelope(res);
@@ -142,10 +142,10 @@ describe("standard_list", () => {
   });
 });
 
-describe("standard_get", () => {
+describe("standard_lookup", () => {
   it("returns detailed standard with dos/donts", async () => {
     const res = await client.callTool({
-      name: "standard_get",
+      name: "standard_lookup",
       arguments: { name: "react/component/folder-structure" },
     });
     const body = parseEnvelope(res);
@@ -185,10 +185,10 @@ describe("modifier_list", () => {
   });
 });
 
-describe("modifier_get", () => {
+describe("modifier_lookup", () => {
   it("returns modifier with values", async () => {
     const res = await client.callTool({
-      name: "modifier_get",
+      name: "modifier_lookup",
       arguments: { name: "importance" },
     });
     const body = parseEnvelope(res);
@@ -214,10 +214,10 @@ describe("token_list", () => {
   });
 });
 
-describe("token_get", () => {
+describe("token_lookup", () => {
   it("returns token with values", async () => {
     const res = await client.callTool({
-      name: "token_get",
+      name: "token_lookup",
       arguments: { name: "color.primary" },
     });
     const body = parseEnvelope(res);
@@ -449,30 +449,49 @@ describe("disclosure", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Batch (names filter)
+// Batch lookup
 // ---------------------------------------------------------------------------
 
-describe("batch via names filter", () => {
-  it("block_list with names returns filtered results", async () => {
+describe("batch lookup", () => {
+  it("block_batch_lookup returns results and errors", async () => {
     const res = await client.callTool({
-      name: "block_list",
-      arguments: { names: ["Button"] },
+      name: "block_batch_lookup",
+      arguments: { names: ["Button", "Nonexistent"] },
     });
     const body = parseEnvelope(res);
     expect(body.ok).toBe(true);
-    const data = body.data as { name: string }[];
-    expect(data.length).toBe(1);
-    expect(data[0]!.name).toBe("Button");
+    const data = body.data as {
+      results: { name: string }[];
+      errors: { name: string; code: string }[];
+    };
+    expect(data.results.length).toBe(1);
+    expect(data.results[0]?.name).toBe("Button");
+    expect(data.errors.length).toBe(1);
+    expect(data.errors[0]?.name).toBe("Nonexistent");
+    expect(data.errors[0]?.code).toBe("ENTITY_NOT_FOUND");
   });
 
-  it("block_list with unknown names returns empty", async () => {
+  it("standard_batch_lookup returns results", async () => {
+    const listRes = await client.callTool({
+      name: "standard_list",
+      arguments: {},
+    });
+    const listBody = parseEnvelope(listRes);
+    const standards = listBody.data as { name: string }[];
+    const firstName = standards[0]?.name;
+
     const res = await client.callTool({
-      name: "block_list",
-      arguments: { names: ["Nonexistent"] },
+      name: "standard_batch_lookup",
+      arguments: { names: [firstName, "nonexistent/standard"] },
     });
     const body = parseEnvelope(res);
     expect(body.ok).toBe(true);
-    expect((body.data as unknown[]).length).toBe(0);
+    const data = body.data as {
+      results: unknown[];
+      errors: { name: string }[];
+    };
+    expect(data.results.length).toBe(1);
+    expect(data.errors.length).toBe(1);
   });
 });
 
@@ -481,9 +500,9 @@ describe("batch via names filter", () => {
 // ---------------------------------------------------------------------------
 
 describe("structured recovery", () => {
-  it("block_get error includes mcp recovery", async () => {
+  it("block_lookup error includes mcp recovery", async () => {
     const res = await client.callTool({
-      name: "block_get",
+      name: "block_lookup",
       arguments: { name: "Nonexistent" },
     });
     const body = parseEnvelope(res);

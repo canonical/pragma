@@ -1,7 +1,7 @@
 import type { URI } from "@canonical/ke";
 import { describe, expect, it } from "vitest";
 import type { TokenDetailed } from "../../shared/types.js";
-import { createGetFormatters } from "./get.js";
+import { createLookupFormatters } from "./lookup.js";
 
 const DETAILED: TokenDetailed = {
   uri: "http://example.com/t1" as URI,
@@ -13,9 +13,9 @@ const DETAILED: TokenDetailed = {
   ],
 };
 
-describe("token get formatters", () => {
+describe("token lookup formatters", () => {
   describe("detailed: false", () => {
-    const fmt = createGetFormatters({ detailed: false });
+    const fmt = createLookupFormatters({ detailed: false });
 
     it("plain renders summary without values", () => {
       const text = fmt.plain(DETAILED);
@@ -32,7 +32,7 @@ describe("token get formatters", () => {
   });
 
   describe("detailed: true", () => {
-    const fmt = createGetFormatters({ detailed: true });
+    const fmt = createLookupFormatters({ detailed: true });
 
     it("plain renders values", () => {
       const text = fmt.plain(DETAILED);
@@ -54,7 +54,7 @@ describe("token get formatters", () => {
   });
 
   it("plain renders dash for empty category", () => {
-    const fmt = createGetFormatters({ detailed: false });
+    const fmt = createLookupFormatters({ detailed: false });
     const text = fmt.plain({ ...DETAILED, category: "" });
     expect(text).toContain("Category: —");
   });
