@@ -4,7 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { DS_ALL_TTL } from "../../../testing/dsFixtures.js";
 import { createTestStore } from "../../../testing/store.js";
 import type { PragmaContext } from "../shared/context.js";
-import buildLlmCommand from "./llmCommand.js";
+import { buildLlmCommand } from "./commands/index.js";
 import type { LlmData } from "./types.js";
 
 let store: Store;

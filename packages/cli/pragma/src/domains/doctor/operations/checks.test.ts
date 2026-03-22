@@ -6,7 +6,7 @@ vi.mock("../../../configExists.js", () => ({
 vi.mock("../../shared/bootStore.js", () => ({
   bootStore: vi.fn(),
 }));
-vi.mock("../../info/collectStoreSummary.js", () => ({
+vi.mock("../../info/operations/collectStoreSummary.js", () => ({
   collectStoreSummary: vi.fn(),
 }));
 vi.mock("@canonical/harnesses", () => ({
@@ -19,7 +19,7 @@ vi.mock("@canonical/task", () => ({
 
 import { detectHarnesses, readMcpConfig } from "@canonical/harnesses";
 import configExists from "../../../configExists.js";
-import { collectStoreSummary } from "../../info/collectStoreSummary.js";
+import { collectStoreSummary } from "../../info/operations/index.js";
 import { bootStore } from "../../shared/bootStore.js";
 import {
   checkConfigFile,
@@ -30,7 +30,7 @@ import {
   checkShellCompletions,
   checkSkillsSymlinked,
   checkTerrazzo,
-} from "./checks.js";
+} from "./checks/index.js";
 
 const ctx = { cwd: "/test/project" };
 

@@ -8,8 +8,8 @@
  */
 
 import type { PragmaConfig } from "../../../config.js";
-import { CHANNEL_RELEASES } from "../../filters/buildChannelFilter.js";
-import { resolveTierChain } from "../../filters/buildTierFilter.js";
+import { CHANNEL_RELEASES } from "../../shared/filters/buildChannelFilter.js";
+import { resolveTierChain } from "../../shared/filters/buildTierFilter.js";
 import type { ConfigShowData } from "./types.js";
 
 /**

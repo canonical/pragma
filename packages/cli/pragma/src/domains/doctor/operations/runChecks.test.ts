@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-vi.mock("./checks.js", () => ({
+vi.mock("./checks/index.js", () => ({
   checkNodeVersion: vi.fn(),
   checkPragmaVersion: vi.fn(),
   checkConfigFile: vi.fn(),
@@ -20,7 +20,7 @@ import {
   checkShellCompletions,
   checkSkillsSymlinked,
   checkTerrazzo,
-} from "./checks.js";
+} from "./checks/index.js";
 import runChecks from "./runChecks.js";
 
 const pass = (name: string) => ({

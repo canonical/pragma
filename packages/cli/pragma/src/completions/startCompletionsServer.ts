@@ -15,7 +15,7 @@ import { buildCompleters } from "@canonical/cli-core";
 import type { PragmaContext } from "../domains/shared/context.js";
 import type { PragmaRuntime } from "../domains/shared/runtime.js";
 import { bootPragma } from "../domains/shared/runtime.js";
-import { collectCommands } from "../lib/runCli.js";
+import collectCommands from "../lib/collectCommands.js";
 import computeSocketPath from "./computeSocketPath.js";
 import { IDLE_TIMEOUT_MS } from "./constants.js";
 import handleQuery from "./handleQuery.js";

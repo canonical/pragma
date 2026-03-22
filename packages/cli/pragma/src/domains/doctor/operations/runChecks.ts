@@ -17,7 +17,7 @@ import {
   checkShellCompletions,
   checkSkillsSymlinked,
   checkTerrazzo,
-} from "./checks.js";
+} from "./checks/index.js";
 import type { CheckContext, CheckResult, DoctorData } from "./types.js";
 
 export default async function runChecks(

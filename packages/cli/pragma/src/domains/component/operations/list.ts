@@ -6,11 +6,11 @@
  */
 
 import type { Store, URI } from "@canonical/ke";
-import { buildFilters } from "../../filters/buildFilters.js";
 import { buildQuery } from "../../shared/buildQuery.js";
+import extractLocalName from "../../shared/extractLocalName.js";
+import { buildFilters } from "../../shared/filters/buildFilters.js";
 import { P } from "../../shared/prefixes.js";
 import type { ComponentSummary, FilterConfig } from "../../shared/types.js";
-import extractLocalName from "../helpers/extractLocalName.js";
 
 export default async function listComponents(
   store: Store,
