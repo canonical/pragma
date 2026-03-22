@@ -5,8 +5,10 @@
  */
 
 import { stat } from "node:fs/promises";
-import { resolve } from "node:path";
-import { SKILL_SOURCES, SOURCE_PACKAGE_MAP } from "../constants.js";
+import {
+  type SkillSource as SkillSourceDef,
+  resolveSkillSources,
+} from "../helpers/index.js";
 import type { DiscoveredSkill, SkillSource } from "../types.js";
 import discoverSkills from "./discover.js";
 
@@ -17,18 +19,19 @@ export interface SkillListResult {
 
 export default async function listSkills(
   cwd: string,
+  overrideSources?: SkillSourceDef[],
 ): Promise<SkillListResult> {
-  const skills = await discoverSkills(cwd);
+  const resolved = overrideSources ?? resolveSkillSources();
+  const skills = await discoverSkills(cwd, resolved);
 
   const sources: SkillSource[] = await Promise.all(
-    SKILL_SOURCES.map(async (source) => {
-      const dir = resolve(cwd, source);
-      const available = await stat(dir)
+    resolved.map(async (source) => {
+      const available = await stat(source.dir)
         .then((s) => s.isDirectory())
         .catch(() => false);
       return {
-        path: source,
-        packageName: SOURCE_PACKAGE_MAP[source] ?? source,
+        path: source.relativePath,
+        packageName: source.packageName,
         available,
       };
     }),
