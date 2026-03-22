@@ -7,6 +7,7 @@
 
 import { Command, type OptionValues } from "commander";
 import { convertCamelToKebab } from "./convertCase.js";
+import { formatNounHelp, formatVerbHelp } from "./help.js";
 import type {
   CommandContext,
   CommandDefinition,
@@ -103,9 +104,19 @@ export default function registerAll(
         parent.description(`${noun} commands`);
       }
 
+      // Attach noun-level help (e.g. `pragma component --help`)
+      const programName = program.name();
+      const allCommands = commands;
+      const nounParent = parent;
+      parent.addHelpText("beforeAll", (_ctx) => {
+        if (_ctx.command !== nounParent) return "";
+        return formatNounHelp(programName, noun, allCommands);
+      });
+      parent.configureHelp({ formatHelp: () => "" });
+
       for (const cmd of multiSegment) {
         const verb = cmd.path.slice(1).join(" ");
-        attachCommand(parent, { ...cmd, path: [verb] }, ctx);
+        attachCommand(parent, { ...cmd, path: [verb] }, ctx, cmd);
       }
     }
   }
@@ -115,6 +126,7 @@ function attachCommand(
   parent: Command,
   cmd: CommandDefinition,
   ctx: CommandContext,
+  originalCmd?: CommandDefinition,
 ): void {
   const name = cmd.path[cmd.path.length - 1];
   if (!name) return;
@@ -126,6 +138,16 @@ function attachCommand(
 
   const fullName = positionalSuffix ? `${name} ${positionalSuffix}` : name;
   const sub = parent.command(fullName).description(cmd.description);
+
+  // Attach verb-level help (e.g. `pragma component list --help`)
+  const helpCmd = originalCmd ?? cmd;
+  const rootProgram = findRootProgram(parent);
+  const verbCommand = sub;
+  sub.addHelpText("beforeAll", (_ctx) => {
+    if (_ctx.command !== verbCommand) return "";
+    return formatVerbHelp(rootProgram.name(), helpCmd);
+  });
+  sub.configureHelp({ formatHelp: () => "" });
 
   for (const param of cmd.parameters) {
     if (param.positional) continue;
@@ -186,4 +208,12 @@ function handleResult(result: CommandResult): void {
 
 function findSubcommand(parent: Command, name: string): Command | undefined {
   return parent.commands.find((c) => c.name() === name);
+}
+
+function findRootProgram(cmd: Command): Command {
+  let current = cmd;
+  while (current.parent) {
+    current = current.parent;
+  }
+  return current;
 }

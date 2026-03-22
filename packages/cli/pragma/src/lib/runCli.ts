@@ -77,7 +77,10 @@ function createProgram(
   program.option("--format <type>", "Output format (text or json)", "text");
   program.option("--verbose", "Diagnostic output to stderr", false);
 
-  program.addHelpText("beforeAll", () => {
+  program.addHelpText("beforeAll", (_ctx) => {
+    // Only show root-level help when the help is for the root program itself.
+    // Subcommand help is handled by registerAll via formatNounHelp/formatVerbHelp.
+    if (_ctx.command !== program) return "";
     if (ctx.globalFlags.llm) {
       return formatLlmHelp(PROGRAM_NAME, commands);
     }
