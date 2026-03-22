@@ -5,6 +5,7 @@ import Component from "./DateInput.js";
 const meta = {
   title: "Field/inputs/Date",
   component: Component,
+  tags: ["autodocs"],
   decorators: [decorators.form()],
 } satisfies Meta<typeof Component>;
 

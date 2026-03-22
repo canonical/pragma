@@ -14,6 +14,7 @@ import Component from "./Field.js";
 const meta = {
   title: "Field",
   component: Component,
+  tags: ["autodocs"],
   decorators: [decorators.form()],
 } satisfies Meta<typeof Component>;
 

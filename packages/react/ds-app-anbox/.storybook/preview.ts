@@ -5,6 +5,8 @@ import "./styles.css";
 
 const preview: Preview = {
   ...previewConfig,
+  // https://github.com/storybookjs/storybook/issues/31842
+  tags: ["autodocs"],
 };
 
 export default preview;

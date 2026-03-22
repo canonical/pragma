@@ -11,6 +11,7 @@ import Component from "./Error.js";
 const meta = {
   title: "common/Wrapper/Error",
   component: Component,
+  tags: ["autodocs"],
 } satisfies Meta<typeof Component>;
 
 export default meta;

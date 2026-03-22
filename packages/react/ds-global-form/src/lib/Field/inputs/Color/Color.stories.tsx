@@ -5,6 +5,7 @@ import Component from "./Color.js";
 const meta = {
   title: "Field/inputs/Color",
   component: Component,
+  tags: ["autodocs"],
   decorators: [decorators.form()],
 } satisfies Meta<typeof Component>;
 

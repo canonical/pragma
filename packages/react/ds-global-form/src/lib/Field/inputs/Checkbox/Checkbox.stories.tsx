@@ -6,6 +6,7 @@ import Component from "./Checkbox.js";
 const meta = {
   title: "Field/inputs/Checkbox",
   component: Component,
+  tags: ["autodocs"],
 } satisfies Meta<typeof Component>;
 
 export default meta;

@@ -5,6 +5,7 @@ import Component from "./Icon.js";
 const meta = {
   title: "Stable/Icon",
   component: Component,
+  tags: ["autodocs"],
   argTypes: {
     icon: {
       options: ICON_NAMES,

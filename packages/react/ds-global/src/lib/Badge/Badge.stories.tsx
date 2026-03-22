@@ -5,6 +5,7 @@ import Component from "./Badge.js";
 const meta = {
   title: "Experimental/Badge",
   component: Component,
+  tags: ["autodocs"],
   parameters: {
     docs: {
       description: {

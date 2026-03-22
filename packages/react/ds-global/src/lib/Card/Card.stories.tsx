@@ -8,6 +8,7 @@ const CARD_EMPHASIS_OPTIONS: CardEmphasis[] = ["neutral", "highlighted"];
 const meta = {
   title: "Stable/Card",
   component: Component,
+  tags: ["autodocs"],
   argTypes: {
     children: {
       control: { type: "text" },

@@ -5,6 +5,7 @@ import Component from "./TimeInput.js";
 const meta = {
   title: "Field/inputs/Time",
   component: Component,
+  tags: ["autodocs"],
   decorators: [decorators.form()],
 } satisfies Meta<typeof Component>;
 

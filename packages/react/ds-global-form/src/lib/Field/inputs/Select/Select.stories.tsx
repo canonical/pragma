@@ -13,6 +13,7 @@ import Component from "./Select.js";
 const meta = {
   title: "Field/inputs/Select",
   component: Component,
+  tags: ["autodocs"],
   decorators: [decorators.form()],
 } satisfies Meta<typeof Component>;
 

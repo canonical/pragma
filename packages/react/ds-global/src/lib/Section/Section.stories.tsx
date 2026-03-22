@@ -5,6 +5,7 @@ import Component from "./Section.js";
 const meta = {
   title: "Experimental/Section",
   component: Component,
+  tags: ["autodocs"],
   argTypes: {
     children: {
       control: { type: "text" },

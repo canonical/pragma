@@ -12,6 +12,7 @@ import Component from "./Text.js";
 const meta = {
   title: "Field/inputs/Text",
   component: Component,
+  tags: ["autodocs"],
   decorators: [decorators.form()],
 } satisfies Meta<typeof Component>;
 

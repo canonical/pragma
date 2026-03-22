@@ -6,6 +6,7 @@ import Component from "./Choices.js";
 const meta = {
   title: "Field/inputs/Choices",
   component: Component,
+  tags: ["autodocs"],
   decorators: [decorators.form()],
 } satisfies Meta<typeof Component>;
 
