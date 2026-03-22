@@ -1,41 +1,23 @@
+/**
+ * Public API surface for @canonical/pragma.
+ *
+ * Exports types, boot functions, domain operations, and the MCP adapter.
+ * Internal formatters, command builders, and infrastructure are not exported.
+ */
+
+// — Config & Error ————————————————————————————————————————————————————————————
+
 export type { PragmaConfig } from "./config.js";
 export { readConfig } from "./config.js";
-export { default as configExists } from "./configExists.js";
-export type { Channel, OntologyPropertyMap } from "./constants.js";
-export {
-  PROGRAM_DESCRIPTION,
-  PROGRAM_NAME,
-  PROPERTY_MAP,
-  VALID_CHANNELS,
-  VERSION,
-} from "./constants.js";
 export type { ErrorCode, PragmaErrorData } from "./error/index.js";
-export { ERROR_CODES, PragmaError } from "./error/index.js";
-export {
-  formatField,
-  formatHeading,
-  formatList,
-  formatSection,
-} from "./lib/formatTerminal.js";
-export { EXIT_CODES, mapExitCode } from "./lib/mapExitCode.js";
-export {
-  renderErrorJson,
-  renderErrorLlm,
-  renderErrorPlain,
-} from "./lib/renderError.js";
-export type { PackageManager } from "./pm.js";
-export {
-  detectLocalInstall,
-  detectPackageManager,
-  PM_COMMANDS,
-} from "./pm.js";
-export { default as resolveConfigPath } from "./resolveConfigPath.js";
-export type { ConfigUpdate } from "./writeConfig.js";
-export { default as writeConfig } from "./writeConfig.js";
+export { PragmaError } from "./error/index.js";
 
-// =============================================================================
-// D3 — Shared Operation Types (TB.01)
-// =============================================================================
+// — Runtime ———————————————————————————————————————————————————————————————————
+
+export type { PragmaRuntime } from "./domains/shared/runtime.js";
+export { bootPragma } from "./domains/shared/runtime.js";
+
+// — Shared Types (TB.01) —————————————————————————————————————————————————————
 
 export type {
   AnatomyNode,
@@ -62,14 +44,13 @@ export type {
   TokenSummary,
 } from "./domains/shared/types.js";
 
-// =============================================================================
-// D3 — Shared Operations
-// =============================================================================
+// — Domain Operations —————————————————————————————————————————————————————————
 
 export {
   getComponent,
   listComponents,
 } from "./domains/component/operations/index.js";
+export { runChecks } from "./domains/doctor/operations/index.js";
 export {
   executeQuery,
   inspectUri,
@@ -84,6 +65,10 @@ export {
   showOntologyRaw,
 } from "./domains/ontology/operations/index.js";
 export {
+  discoverSkills,
+  listSkills,
+} from "./domains/skill/operations/index.js";
+export {
   getStandard,
   listCategories,
   listStandards,
@@ -91,151 +76,32 @@ export {
 export { listTiers } from "./domains/tier/operations/index.js";
 export { getToken, listTokens } from "./domains/token/operations/index.js";
 
-// =============================================================================
-// D6 — Config Operations
-// =============================================================================
+// — Domain Types ——————————————————————————————————————————————————————————————
 
 export type { ConfigShowData } from "./domains/config/operations/index.js";
-export {
-  resolveConfigShow,
-  validateChannel,
-  validateTier,
-} from "./domains/config/operations/index.js";
-
-// =============================================================================
-// Shared Infrastructure
-// =============================================================================
-
-export type { PragmaContext } from "./domains/shared/context.js";
-export type { Formatters } from "./domains/shared/formatters.js";
-export { selectFormatter } from "./domains/shared/formatters.js";
-
-// =============================================================================
-// D3 — Store Bootstrap
-// =============================================================================
-
-export { bootStore, DEFAULT_SOURCES } from "./domains/shared/bootStore.js";
-export { buildQuery } from "./domains/shared/buildQuery.js";
-export { PREFIX_MAP } from "./domains/shared/prefixes.js";
-export type { PragmaRuntime } from "./domains/shared/runtime.js";
-export { bootPragma } from "./domains/shared/runtime.js";
-
-// =============================================================================
-// D3 — Filters
-// =============================================================================
-
-export {
-  buildChannelFilter,
-  CHANNEL_RELEASES,
-} from "./domains/filters/buildChannelFilter.js";
-export { buildFilters } from "./domains/filters/buildFilters.js";
-export {
-  buildTierFilter,
-  resolveTierChain,
-} from "./domains/filters/buildTierFilter.js";
-
-// =============================================================================
-// D9 — Info + Upgrade
-// =============================================================================
-
-export { default as checkRegistryVersion } from "./domains/info/checkRegistryVersion.js";
-export { collectStoreSummary } from "./domains/info/collectStoreSummary.js";
-export { DIST_TAG_MAP, REGISTRY_TIMEOUT_MS } from "./domains/info/constants.js";
-export { default as infoCommand } from "./domains/info/infoCommand.js";
-export {
-  renderInfoJson,
-  renderInfoLlm,
-  renderInfoPlain,
-} from "./domains/info/renderInfo.js";
-export {
-  renderUpgradeJson,
-  renderUpgradeLlm,
-  renderUpgradePlain,
-} from "./domains/info/renderUpgrade.js";
+export type {
+  CheckContext,
+  CheckResult,
+  DoctorData,
+} from "./domains/doctor/operations/index.js";
 export type {
   InfoData,
   RegistryCheckResult,
   StoreSummary,
   UpgradeData,
 } from "./domains/info/types.js";
-export { default as upgradeCommand } from "./domains/info/upgradeCommand.js";
-
-// =============================================================================
-// D8 — Modifier, Tier, Token Domains
-// =============================================================================
-
-export { commands as modifierCommands } from "./domains/modifier/index.js";
-export { commands as tierCommands } from "./domains/tier/index.js";
-export { commands as tokenCommands } from "./domains/token/index.js";
-export type { AddConfigResult } from "./domains/token/operations/index.js";
-export { resolveAddConfig } from "./domains/token/operations/index.js";
-
-// =============================================================================
-// D14 — Create Commands
-// =============================================================================
-
-export { commands as createCommands } from "./domains/create/index.js";
-
-// =============================================================================
-// v0.3-04 — Doctor
-// =============================================================================
-
-export { doctorCommand } from "./domains/doctor/commands/index.js";
-export type {
-  CheckContext,
-  CheckResult,
-  DoctorData,
-} from "./domains/doctor/operations/index.js";
-export { runChecks } from "./domains/doctor/operations/index.js";
-
-// =============================================================================
-// D09 — Skills
-// =============================================================================
-
-export {
-  SKILL_SOURCES,
-  SOURCE_PACKAGE_MAP,
-} from "./domains/skill/constants.js";
-export { commands as skillCommands } from "./domains/skill/index.js";
 export type { SkillListResult } from "./domains/skill/operations/index.js";
-export {
-  discoverSkills,
-  listSkills,
-} from "./domains/skill/operations/index.js";
 export type {
   DiscoveredSkill,
   SkillFrontmatter,
   SkillSource,
 } from "./domains/skill/types.js";
 
-// =============================================================================
-// D09 — Setup
-// =============================================================================
-
-export { commands as setupCommands } from "./domains/setup/index.js";
-export { setupSkills } from "./domains/setup/operations/index.js";
-export type {
-  SetupSkillsResult,
-  SymlinkAction,
-} from "./domains/setup/types.js";
-
-// =============================================================================
-// D11 — MCP Adapter
-// =============================================================================
+// — MCP Adapter ——————————————————————————————————————————————————————————————
 
 export {
   createMcpServer,
   createMcpServerFromRuntime,
 } from "./mcp/createMcpServer.js";
-export { default as registerTools } from "./mcp/registerTools.js";
-export { default as serializeError } from "./mcp/serializeError.js";
+export { default as registerAllTools } from "./mcp/tools/index.js";
 export type { McpErrorPayload, McpRecovery } from "./mcp/types.js";
-
-// =============================================================================
-// D10 — Completions Server
-// =============================================================================
-
-export { default as computeSocketPath } from "./completions/computeSocketPath.js";
-export { default as handleQuery } from "./completions/handleQuery.js";
-export { default as queryCompletions } from "./completions/queryCompletions.js";
-export { default as startCompletionsServer } from "./completions/startCompletionsServer.js";

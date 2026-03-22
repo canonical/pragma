@@ -1,0 +1,42 @@
+/**
+ * `pragma info` command definition.
+ *
+ * @see IN.04, IN.06, IN.08 in B.11.INSTALL
+ */
+
+import type { CommandDefinition, CommandResult } from "@canonical/cli-core";
+import {
+  renderInfoJson,
+  renderInfoLlm,
+  renderInfoPlain,
+} from "../formatters/index.js";
+import collectInfo from "../operations/collectInfo.js";
+import type { InfoData } from "../types.js";
+
+function selectInfoRenderer(flags: {
+  llm: boolean;
+  format: "text" | "json";
+}): (data: InfoData) => string {
+  if (flags.format === "json") return renderInfoJson;
+  if (flags.llm) return renderInfoLlm;
+  return renderInfoPlain;
+}
+
+const infoCommand: CommandDefinition = {
+  path: ["info"],
+  description: "Show version, config, update status, and store summary",
+  parameters: [],
+  execute: async (
+    _params: Record<string, unknown>,
+    ctx: {
+      cwd: string;
+      globalFlags: { llm: boolean; format: "text" | "json" };
+    },
+  ): Promise<CommandResult> => {
+    const data = await collectInfo(ctx.cwd);
+    const render = selectInfoRenderer(ctx.globalFlags);
+    return { tag: "output", value: data, render: { plain: render } };
+  },
+};
+
+export default infoCommand;

@@ -10,8 +10,9 @@
 import type { Store, URI } from "@canonical/ke";
 import { escapeSparqlValue } from "@canonical/ke";
 import { PragmaError } from "../../../error/index.js";
-import { buildFilters } from "../../filters/buildFilters.js";
 import { buildQuery } from "../../shared/buildQuery.js";
+import extractLocalName from "../../shared/extractLocalName.js";
+import { buildFilters } from "../../shared/filters/buildFilters.js";
 import { P } from "../../shared/prefixes.js";
 import type {
   ComponentDetailed,
@@ -19,7 +20,6 @@ import type {
   StandardRef,
   TokenRef,
 } from "../../shared/types.js";
-import extractLocalName from "../helpers/extractLocalName.js";
 
 export default async function getComponent(
   store: Store,

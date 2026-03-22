@@ -1,4 +1,4 @@
-export { default as extractLocalName } from "./extractLocalName.js";
+export { default as extractLocalName } from "../../shared/extractLocalName.js";
 export { default as findNamespace } from "./findNamespace.js";
 export { default as queryClasses } from "./queryClasses.js";
 export { default as queryProperties } from "./queryProperties.js";

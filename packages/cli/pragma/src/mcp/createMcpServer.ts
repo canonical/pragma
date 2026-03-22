@@ -13,7 +13,7 @@ import { VERSION } from "../constants.js";
 import type { PragmaRuntime } from "../domains/shared/runtime.js";
 import { bootPragma } from "../domains/shared/runtime.js";
 import registerResources from "./registerResources.js";
-import registerTools from "./registerTools.js";
+import registerAllTools from "./tools/index.js";
 
 /**
  * Create a fully configured MCP server with its own runtime.
@@ -41,7 +41,7 @@ export function createMcpServerFromRuntime(runtime: PragmaRuntime): {
   server: McpServer;
 } {
   const server = new McpServer({ name: "pragma", version: VERSION });
-  registerTools(server, runtime);
+  registerAllTools(server, runtime);
   registerResources(server, runtime);
   return { server };
 }
