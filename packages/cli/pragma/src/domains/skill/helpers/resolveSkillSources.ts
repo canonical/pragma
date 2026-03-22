@@ -1,13 +1,10 @@
 /**
- * Resolve skill source directories by locating each package via require.resolve.
+ * Resolve skill source directories from the shared package registry.
  * Package-manager agnostic — works with bun, npm, pnpm, yarn.
  */
 
-import { createRequire } from "node:module";
-import { dirname, join } from "node:path";
-import { SKILL_PACKAGES } from "../constants.js";
-
-const require = createRequire(import.meta.url);
+import { join } from "node:path";
+import { PACKAGES, resolvePackages } from "../../shared/packages.js";
 
 export interface SkillSource {
   /** Absolute path to the skills directory. */
@@ -20,19 +17,16 @@ export interface SkillSource {
 
 export default function resolveSkillSources(): SkillSource[] {
   const sources: SkillSource[] = [];
+  const resolved = resolvePackages();
 
-  for (const { pkg, subpath } of SKILL_PACKAGES) {
-    let pkgDir: string;
-    try {
-      pkgDir = dirname(require.resolve(`${pkg}/package.json`));
-    } catch {
-      continue;
-    }
+  for (const { pkg, dir } of resolved) {
+    const def = PACKAGES.find((p) => p.pkg === pkg);
+    if (!def?.skills) continue;
 
     sources.push({
-      dir: join(pkgDir, subpath),
+      dir: join(dir, def.skills),
       packageName: pkg,
-      relativePath: `node_modules/${pkg}/${subpath}`,
+      relativePath: `node_modules/${pkg}/${def.skills}`,
     });
   }
 
