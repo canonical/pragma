@@ -23,6 +23,7 @@ import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import { type GeneratorDefinition, template } from "@canonical/summon-core";
 import { debug, info, mkdir, sequence_, when } from "@canonical/task";
+import pkg from "../../package.json" with { type: "json" };
 
 import {
   appendExportToParentIndex,
@@ -66,7 +67,7 @@ const reactTemplates = {
 export const generator = {
   meta: {
     name: "component/react",
-    displayName: "@canonical/summon:component-react",
+    displayName: `${pkg.name}-react`,
     description:
       "Generate a React component with TypeScript, tests, stories, and styles",
     version: "0.1.0",

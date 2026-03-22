@@ -354,7 +354,7 @@ const configureGeneratorCommand = (
       const stampEnabled = actualOptions.generatedStamp !== false;
       const stamp: StampConfig | undefined = stampEnabled
         ? {
-            generator: generator.meta.displayName ?? generator.meta.name,
+            generator: generator.meta.displayName,
             version: generator.meta.version,
           }
         : undefined;
