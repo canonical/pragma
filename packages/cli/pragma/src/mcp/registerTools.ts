@@ -18,26 +18,28 @@ import type { AnyGenerator } from "@canonical/summon-core";
 import { generators as packageGenerators } from "@canonical/summon-package";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { listFormatters as componentListFmt } from "../domains/component/formatters/index.js";
-import { getFormatters as componentGetFmt } from "../domains/component/formatters/index.js";
+import { VERSION } from "../constants.js";
+import {
+  getFormatters as componentGetFmt,
+  listFormatters as componentListFmt,
+} from "../domains/component/formatters/index.js";
 import {
   getComponent,
   listComponents,
 } from "../domains/component/operations/index.js";
 import { doctorFormatters as doctorFmt } from "../domains/doctor/formatters/index.js";
 import { runChecks } from "../domains/doctor/operations/index.js";
-import {
-  executeQuery,
-  inspectUri,
-} from "../domains/graph/operations/index.js";
-import { renderInfoLlm } from "../domains/info/renderInfo.js";
+import { executeQuery, inspectUri } from "../domains/graph/operations/index.js";
 import { collectStoreSummary } from "../domains/info/collectStoreSummary.js";
+import { renderInfoLlm } from "../domains/info/renderInfo.js";
 import type { InfoData } from "../domains/info/types.js";
 import collectLlmContext from "../domains/llm/collectLlmContext.js";
 import { COMMAND_REFERENCE, DECISION_TREES } from "../domains/llm/constants.js";
 import type { LlmData } from "../domains/llm/types.js";
-import { listFormatters as modifierListFmt } from "../domains/modifier/formatters/index.js";
-import { getFormatters as modifierGetFmt } from "../domains/modifier/formatters/index.js";
+import {
+  getFormatters as modifierGetFmt,
+  listFormatters as modifierListFmt,
+} from "../domains/modifier/formatters/index.js";
 import {
   getModifier,
   listModifiers,
@@ -50,9 +52,11 @@ import type { PragmaRuntime } from "../domains/shared/runtime.js";
 import type { FilterConfig } from "../domains/shared/types.js";
 import { listFormatters as skillListFmt } from "../domains/skill/formatters/index.js";
 import { listSkills } from "../domains/skill/operations/index.js";
-import { listFormatters as standardListFmt } from "../domains/standard/formatters/index.js";
-import { getFormatters as standardGetFmt } from "../domains/standard/formatters/index.js";
-import { categoriesFormatters as standardCatFmt } from "../domains/standard/formatters/index.js";
+import {
+  categoriesFormatters as standardCatFmt,
+  getFormatters as standardGetFmt,
+  listFormatters as standardListFmt,
+} from "../domains/standard/formatters/index.js";
 import {
   getStandard,
   listCategories,
@@ -60,10 +64,11 @@ import {
 } from "../domains/standard/operations/index.js";
 import { listFormatters as tierListFmt } from "../domains/tier/formatters/index.js";
 import { listTiers } from "../domains/tier/operations/index.js";
-import { listFormatters as tokenListFmt } from "../domains/token/formatters/index.js";
-import { createGetFormatters as createTokenGetFmt } from "../domains/token/formatters/index.js";
+import {
+  createGetFormatters as createTokenGetFmt,
+  listFormatters as tokenListFmt,
+} from "../domains/token/formatters/index.js";
 import { getToken, listTokens } from "../domains/token/operations/index.js";
-import { VERSION } from "../constants.js";
 import { PragmaError } from "../error/PragmaError.js";
 import { estimateTokens, wrapTool } from "./wrapTool.js";
 
@@ -155,17 +160,36 @@ export default function registerTools(
         const text = componentGetFmt.llm({
           component: result,
           detailed: showDetailed,
-          aspects: { anatomy: true, modifiers: true, tokens: true, implementations: true },
+          aspects: {
+            anatomy: true,
+            modifiers: true,
+            tokens: true,
+            implementations: true,
+          },
         });
         return { condensed: true, text, tokens: estimateTokens(text) };
       }
 
       if (!showDetailed) {
         const {
-          uri, name: n, tier, modifiers, implementations, nodeCount, tokenCount,
+          uri,
+          name: n,
+          tier,
+          modifiers,
+          implementations,
+          nodeCount,
+          tokenCount,
         } = result;
         return {
-          data: { uri, name: n, tier, modifiers, implementations, nodeCount, tokenCount },
+          data: {
+            uri,
+            name: n,
+            tier,
+            modifiers,
+            implementations,
+            nodeCount,
+            tokenCount,
+          },
         };
       }
 
@@ -242,7 +266,10 @@ export default function registerTools(
       const showDetailed = (detailed as boolean | undefined) ?? true;
 
       if (condensed) {
-        const text = standardGetFmt.llm({ standard: result, detailed: showDetailed });
+        const text = standardGetFmt.llm({
+          standard: result,
+          detailed: showDetailed,
+        });
         return { condensed: true, text, tokens: estimateTokens(text) };
       }
 
@@ -539,7 +566,9 @@ export default function registerTools(
       description:
         "Inspect a URI in the knowledge graph. Returns all predicates and objects for the given subject.",
       inputSchema: z.object({
-        uri: z.string().describe("URI to inspect (full or prefixed, e.g. 'ds:Button')"),
+        uri: z
+          .string()
+          .describe("URI to inspect (full or prefixed, e.g. 'ds:Button')"),
         condensed: z.boolean().optional().describe("Token-optimized output"),
       }),
       annotations: { readOnlyHint: true, openWorldHint: false },
@@ -570,8 +599,7 @@ export default function registerTools(
   server.registerTool(
     "skill_list",
     {
-      description:
-        "List available agent skills from design system packages.",
+      description: "List available agent skills from design system packages.",
       inputSchema: z.object({
         condensed: z.boolean().optional().describe("Token-optimized output"),
       }),
@@ -622,8 +650,7 @@ export default function registerTools(
   server.registerTool(
     "info",
     {
-      description:
-        "Show pragma version, configuration, and store summary.",
+      description: "Show pragma version, configuration, and store summary.",
       inputSchema: z.object({
         condensed: z.boolean().optional().describe("Token-optimized output"),
       }),
@@ -661,14 +688,21 @@ export default function registerTools(
   /** All registered tool names, categorized for the capabilities response. */
   const toolNames = {
     read: [
-      "component_list", "component_get",
-      "standard_list", "standard_get", "standard_categories",
-      "modifier_list", "modifier_get",
-      "token_list", "token_get",
+      "component_list",
+      "component_get",
+      "standard_list",
+      "standard_get",
+      "standard_categories",
+      "modifier_list",
+      "modifier_get",
+      "token_list",
+      "token_get",
       "tier_list",
       "config_show",
-      "ontology_list", "ontology_show",
-      "graph_query", "graph_inspect",
+      "ontology_list",
+      "ontology_show",
+      "graph_query",
+      "graph_inspect",
       "skill_list",
     ],
     write: ["create_component", "create_package"],
@@ -817,8 +851,7 @@ export default function registerTools(
     },
     wrapTool(runtime, async (_rt, params) => {
       const gen = packageGenerators.package as AnyGenerator | undefined;
-      if (!gen)
-        throw PragmaError.internalError("Package generator not found");
+      if (!gen) throw PragmaError.internalError("Package generator not found");
 
       const genParams: Record<string, unknown> = {
         name: params.name,

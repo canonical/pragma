@@ -13,8 +13,8 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { PROPERTY_MAP } from "../constants.js";
 import resolveUri from "../domains/graph/helpers/resolveUri.js";
-import type { PragmaRuntime } from "../domains/shared/runtime.js";
 import { buildQuery } from "../domains/shared/buildQuery.js";
+import type { PragmaRuntime } from "../domains/shared/runtime.js";
 import { PragmaError } from "../error/PragmaError.js";
 
 // =============================================================================

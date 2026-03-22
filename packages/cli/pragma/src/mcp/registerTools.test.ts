@@ -20,7 +20,9 @@ afterAll(async () => {
  * Parse the envelope from a tool response.
  * Returns the full envelope object (with `ok`, `data`, `meta`, etc.).
  */
-function parseEnvelope(result: { content: unknown[] }): Record<string, unknown> {
+function parseEnvelope(result: {
+  content: unknown[];
+}): Record<string, unknown> {
   const first = result.content[0] as { type: string; text: string };
   expect(first.type).toBe("text");
   return JSON.parse(first.text) as Record<string, unknown>;

@@ -10,8 +10,8 @@
  */
 
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
-import { PragmaError } from "../error/PragmaError.js";
 import type { PragmaRuntime } from "../domains/shared/runtime.js";
+import { PragmaError } from "../error/PragmaError.js";
 import buildRecovery from "./buildRecovery.js";
 import type { McpErrorPayload, ToolPayload } from "./types.js";
 

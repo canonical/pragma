@@ -37,9 +37,7 @@ function readConfig(cwd: string = process.cwd()): PragmaConfig {
   try {
     parsed = JSON.parse(trimmed) as Record<string, unknown>;
   } catch {
-    throw PragmaError.configError(
-      `Invalid JSON in ${configPath}.`,
-    );
+    throw PragmaError.configError(`Invalid JSON in ${configPath}.`);
   }
 
   const tier = typeof parsed.tier === "string" ? parsed.tier : undefined;

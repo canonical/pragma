@@ -37,9 +37,9 @@ export async function createMcpServer(options?: {
  *
  * Used in testing where the test controls the runtime lifecycle.
  */
-export function createMcpServerFromRuntime(
-  runtime: PragmaRuntime,
-): { server: McpServer } {
+export function createMcpServerFromRuntime(runtime: PragmaRuntime): {
+  server: McpServer;
+} {
   const server = new McpServer({ name: "pragma", version: VERSION });
   registerTools(server, runtime);
   registerResources(server, runtime);

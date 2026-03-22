@@ -54,7 +54,11 @@ export type ToolPayload =
         readonly filters?: Record<string, string>;
       };
     }
-  | { readonly condensed: true; readonly text: string; readonly tokens: string };
+  | {
+      readonly condensed: true;
+      readonly text: string;
+      readonly tokens: string;
+    };
 
 // ---------------------------------------------------------------------------
 // Response envelopes (serialized into MCP content)

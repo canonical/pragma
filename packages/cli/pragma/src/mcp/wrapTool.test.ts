@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { PragmaError } from "../error/PragmaError.js";
 import type { PragmaRuntime } from "../domains/shared/runtime.js";
+import { PragmaError } from "../error/PragmaError.js";
 import { estimateTokens, serializeErrorPayload, wrapTool } from "./wrapTool.js";
 
 const stubRuntime = {
