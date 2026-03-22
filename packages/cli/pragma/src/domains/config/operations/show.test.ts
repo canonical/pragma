@@ -27,7 +27,7 @@ describe("resolveConfigShow", () => {
       { tier: undefined, channel: "normal" },
       {
         packageManager: "npm",
-        installSource: "local install",
+        installSource: "bun (local)",
         configFilePath: "/tmp/pragma.config.json",
         configFileExists: false,
       },

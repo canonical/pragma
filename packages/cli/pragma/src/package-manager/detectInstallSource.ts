@@ -51,20 +51,45 @@ function isLocalCheckout(path: string): boolean {
   return findPackageName(path) === "@canonical/pragma";
 }
 
+function detectRuntimePackageManager(): InstallSource["packageManager"] {
+  const execPath = process.execPath;
+  const npmExecPath = process.env.npm_execpath;
+  const userAgent = process.env.npm_config_user_agent ?? "";
+
+  if (execPath) {
+    const fromExec = detectPackageManager(execPath);
+    if (fromExec !== "npm") return fromExec;
+  }
+
+  if (npmExecPath) {
+    const fromNpmExec = detectPackageManager(npmExecPath);
+    if (fromNpmExec !== "npm") return fromNpmExec;
+  }
+
+  if (userAgent.startsWith("bun/")) return "bun";
+  if (userAgent.startsWith("pnpm/")) return "pnpm";
+  if (userAgent.startsWith("yarn/")) return "yarn";
+
+  return "npm";
+}
+
 export default function detectInstallSource(
   binPath: string = process.argv[1] ?? "",
 ): InstallSource {
   const resolved = resolvePath(binPath);
-  const packageManager = detectPackageManager(binPath);
+  const localCheckout = isLocalCheckout(resolved);
+  const packageManager = localCheckout
+    ? detectRuntimePackageManager()
+    : detectPackageManager(binPath);
 
   if (
     (resolved.includes("node_modules/.bin") && !isGlobalPrefix(resolved)) ||
-    isLocalCheckout(resolved)
+    localCheckout
   ) {
     return {
       packageManager,
       scope: "local",
-      label: "local install",
+      label: `${packageManager} (local)`,
     };
   }
 

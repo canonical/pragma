@@ -6,6 +6,7 @@
  */
 
 import { VERSION } from "#constants";
+import { detectInstallSource } from "#package-manager";
 import { renderInfoLlm } from "../../info/formatters/index.js";
 import { collectStoreSummary } from "../../info/operations/index.js";
 import type { InfoData } from "../../info/types.js";
@@ -54,11 +55,12 @@ const specs: readonly ToolSpec[] = [
     readOnly: true,
     async execute(rt, params) {
       const storeSummary = await collectStoreSummary(rt.store);
+      const install = detectInstallSource();
 
       const data: InfoData = {
         version: VERSION,
-        pm: "unknown",
-        installSource: "local install",
+        pm: install.packageManager,
+        installSource: install.label,
         configPath: "pragma.config.json",
         tier: rt.config.tier,
         tierChain: [],

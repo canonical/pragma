@@ -9,7 +9,7 @@ describe("detectInstallSource", () => {
     );
 
     expect(result.scope).toBe("local");
-    expect(result.label).toBe("local install");
+    expect(result.label).toBe("bun (local)");
   });
 
   it("returns global install for a global bun path", () => {

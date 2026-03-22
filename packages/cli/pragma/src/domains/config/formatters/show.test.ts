@@ -19,7 +19,7 @@ const WITHOUT_TIER: ConfigShowData = {
   channel: "normal",
   includedReleases: ["stable"],
   packageManager: "npm",
-  installSource: "local install",
+  installSource: "bun (local)",
   configFilePath: "/project/pragma.config.json",
   configFileExists: false,
 };
@@ -48,7 +48,7 @@ describe("formatters.plain", () => {
     const output = formatters.plain(WITHOUT_TIER);
     expect(output).toContain("tier: (none — all tiers visible)");
     expect(output).toContain("channel: normal (stable)");
-    expect(output).toContain("installed via: local install");
+    expect(output).toContain("installed via: bun (local)");
     expect(output).toContain("config file: (not found)");
   });
 

@@ -32,9 +32,9 @@ describe("renderInfoPlain", () => {
 
   it("supports local install output", () => {
     const output = renderInfoPlain(
-      createInfoData({ installSource: "local install" }),
+      createInfoData({ installSource: "bun (local)" }),
     );
-    expect(output).toContain("local install");
+    expect(output).toContain("bun (local)");
   });
 
   it("includes tier chain", () => {
