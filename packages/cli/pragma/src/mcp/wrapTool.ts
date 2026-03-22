@@ -1,5 +1,5 @@
 /**
- * Envelope construction and error serialization for MCP tool handlers.
+ * Envelope construction for MCP tool handlers.
  *
  * Every MCP tool is wrapped by `wrapTool` — no tool constructs its own
  * envelope. This ensures consistent `{ ok, data, meta }` success responses,
@@ -12,32 +12,8 @@
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import type { PragmaRuntime } from "../domains/shared/runtime.js";
 import { PragmaError } from "../error/PragmaError.js";
-import buildRecovery from "./buildRecovery.js";
-import type { McpErrorPayload, ToolPayload } from "./types.js";
-
-/**
- * Serialize a PragmaError into the `ok: false` error envelope fields.
- * Extracts code, message, suggestions, recovery, filters, and validOptions.
- */
-export function serializeErrorPayload(error: PragmaError): McpErrorPayload {
-  const recovery = buildRecovery(error.recovery);
-
-  return {
-    code: error.code,
-    message: error.message,
-    ...(error.suggestions.length > 0 && { suggestions: error.suggestions }),
-    ...(recovery && { recovery }),
-    ...(error.filters && { filters: error.filters }),
-    ...(error.validOptions && { validOptions: error.validOptions }),
-  };
-}
-
-/**
- * Estimate token count from text length using ~4 chars/token heuristic.
- */
-export function estimateTokens(text: string): string {
-  return `~${Math.ceil(text.length / 4)}`;
-}
+import serializeErrorPayload from "./serializeErrorPayload.js";
+import type { ToolPayload } from "./types.js";
 
 /**
  * Wrap a tool handler function with envelope construction and error handling.
@@ -51,7 +27,7 @@ export function estimateTokens(text: string): string {
  *   returns a `ToolPayload` (either `{ data, meta }` or `{ condensed, text, tokens }`).
  * @returns An MCP tool handler function.
  */
-export function wrapTool(
+export default function wrapTool(
   runtime: PragmaRuntime,
   fn: (
     rt: PragmaRuntime,

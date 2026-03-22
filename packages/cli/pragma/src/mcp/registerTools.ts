@@ -70,7 +70,8 @@ import {
 } from "../domains/token/formatters/index.js";
 import { getToken, listTokens } from "../domains/token/operations/index.js";
 import { PragmaError } from "../error/PragmaError.js";
-import { estimateTokens, wrapTool } from "./wrapTool.js";
+import estimateTokens from "./estimateTokens.js";
+import wrapTool from "./wrapTool.js";
 
 /**
  * Build filters from runtime config, optionally widening tier.

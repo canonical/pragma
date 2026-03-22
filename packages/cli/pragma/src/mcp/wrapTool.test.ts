@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { PragmaRuntime } from "../domains/shared/runtime.js";
 import { PragmaError } from "../error/PragmaError.js";
-import { estimateTokens, serializeErrorPayload, wrapTool } from "./wrapTool.js";
+import wrapTool from "./wrapTool.js";
 
 const stubRuntime = {
   store: {} as PragmaRuntime["store"],
@@ -14,10 +14,6 @@ function parseEnvelope(result: { content: unknown[] }): unknown {
   const first = result.content[0] as { type: string; text: string };
   return JSON.parse(first.text);
 }
-
-// ---------------------------------------------------------------------------
-// wrapTool
-// ---------------------------------------------------------------------------
 
 describe("wrapTool", () => {
   it("wraps data payload in success envelope", async () => {
@@ -98,64 +94,11 @@ describe("wrapTool", () => {
     }));
 
     const result = await handler({ name: "Button" });
-    const envelope = parseEnvelope(result) as { data: Record<string, unknown> };
+    const envelope = parseEnvelope(result) as {
+      data: Record<string, unknown>;
+    };
 
     expect(envelope.data.cwd).toBe("/test");
     expect(envelope.data.name).toBe("Button");
-  });
-});
-
-// ---------------------------------------------------------------------------
-// serializeErrorPayload
-// ---------------------------------------------------------------------------
-
-describe("serializeErrorPayload", () => {
-  it("includes code and message", () => {
-    const error = PragmaError.emptyResults("component");
-    const payload = serializeErrorPayload(error);
-
-    expect(payload.code).toBe("EMPTY_RESULTS");
-    expect(payload.message).toContain("component");
-  });
-
-  it("includes filters when present", () => {
-    const error = PragmaError.emptyResults("component", {
-      filters: { tier: "global" },
-    });
-    const payload = serializeErrorPayload(error);
-
-    expect(payload.filters).toEqual({ tier: "global" });
-  });
-
-  it("includes validOptions when present", () => {
-    const error = PragmaError.invalidInput("channel", "beta", {
-      validOptions: ["normal", "experimental"],
-    });
-    const payload = serializeErrorPayload(error);
-
-    expect(payload.validOptions).toEqual(["normal", "experimental"]);
-  });
-
-  it("omits empty suggestions", () => {
-    const error = PragmaError.storeError("fail");
-    const payload = serializeErrorPayload(error);
-
-    expect(payload).not.toHaveProperty("suggestions");
-  });
-});
-
-// ---------------------------------------------------------------------------
-// estimateTokens
-// ---------------------------------------------------------------------------
-
-describe("estimateTokens", () => {
-  it("estimates ~1 token per 4 chars", () => {
-    expect(estimateTokens("abcd")).toBe("~1");
-    expect(estimateTokens("abcdefgh")).toBe("~2");
-    expect(estimateTokens("a")).toBe("~1");
-  });
-
-  it("rounds up", () => {
-    expect(estimateTokens("abcde")).toBe("~2");
   });
 });
