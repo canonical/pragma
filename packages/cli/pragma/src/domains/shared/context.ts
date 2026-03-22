@@ -5,8 +5,6 @@
  * access store, config, cwd, and output preferences uniformly via `ctx`.
  *
  * cli-core remains unaware of Store or FilterConfig.
- *
- * @see F.05 BT.03
  */
 
 import type { GlobalFlags } from "@canonical/cli-core";

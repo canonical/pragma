@@ -1,7 +1,5 @@
 /**
  * Command reference with token estimates for `pragma llm`.
- *
- * @see LO.04 in B.29.LLM_ORIENTATION
  */
 
 import type { CommandRefEntry } from "../types.js";

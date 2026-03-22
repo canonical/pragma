@@ -6,7 +6,6 @@
  *
  * @note Impure — delegates to runChecks which performs filesystem and
  * process checks.
- * @see IN.07 in B.11.INSTALL
  */
 
 import type { CommandContext } from "@canonical/cli-core";

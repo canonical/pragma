@@ -86,7 +86,7 @@ describe("tool listing", () => {
     expect(names).toContain("capabilities");
   });
 
-  it("no tool names contain pragma_ prefix (NM.02)", async () => {
+  it("no tool names contain pragma_ prefix", async () => {
     const { tools } = await client.listTools();
     for (const tool of tools) {
       expect(tool.name).not.toMatch(/^pragma_/);
@@ -194,7 +194,7 @@ describe("block_list", () => {
 });
 
 describe("block_get", () => {
-  it("returns detailed block data by default (MC.02)", async () => {
+  it("returns detailed block data by default", async () => {
     const result = await client.callTool({
       name: "block_get",
       arguments: { name: "Button" },
@@ -286,7 +286,7 @@ describe("standard_list", () => {
 });
 
 describe("standard_get", () => {
-  it("returns detailed standard by default (MC.02)", async () => {
+  it("returns detailed standard by default", async () => {
     const list = await client.callTool({
       name: "standard_list",
       arguments: {},
@@ -570,7 +570,7 @@ describe("error handling", () => {
 });
 
 // =============================================================================
-// Ontology tools (SF.06)
+// Ontology tools
 // =============================================================================
 
 describe("ontology_list", () => {
@@ -623,7 +623,7 @@ describe("ontology_show", () => {
 });
 
 // =============================================================================
-// Graph tools (SF.07)
+// Graph tools
 // =============================================================================
 
 describe("graph_query", () => {
@@ -681,7 +681,7 @@ describe("graph_inspect", () => {
 });
 
 // =============================================================================
-// Skill tools (SF.09)
+// Skill tools
 // =============================================================================
 
 describe("skill_list", () => {
@@ -700,7 +700,7 @@ describe("skill_list", () => {
 });
 
 // =============================================================================
-// Doctor tool (SF.11)
+// Doctor tool
 // =============================================================================
 
 describe("doctor", () => {
@@ -720,7 +720,7 @@ describe("doctor", () => {
 });
 
 // =============================================================================
-// Info tool (SF.11)
+// Info tool
 // =============================================================================
 
 describe("info", () => {
@@ -741,7 +741,7 @@ describe("info", () => {
 });
 
 // =============================================================================
-// Capabilities tool (SF.10, OD.02)
+// Capabilities tool
 // =============================================================================
 
 describe("capabilities", () => {
@@ -771,7 +771,7 @@ describe("capabilities", () => {
 });
 
 // =============================================================================
-// Condensed responses (RS.03)
+// Condensed responses
 // =============================================================================
 
 describe("condensed parameter", () => {

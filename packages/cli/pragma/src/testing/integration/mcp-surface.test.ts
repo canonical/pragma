@@ -4,8 +4,6 @@
  * One test per registered tool. Each validates: callable with valid args,
  * correct success envelope shape, correct error shape where applicable,
  * and condensed mode where applicable.
- *
- * @see F.09 IT.04
  */
 
 import type { Client } from "@modelcontextprotocol/sdk/client/index.js";

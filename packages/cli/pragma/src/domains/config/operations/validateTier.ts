@@ -1,7 +1,5 @@
 /**
  * Validate a tier path against the ontology.
- *
- * @see CF.03 in B.08.CONFIG
  */
 
 import type { Store } from "@canonical/ke";

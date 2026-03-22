@@ -2,8 +2,6 @@
  * List all code standards, optionally filtered by category or search term.
  *
  * Pure function: Store + filters → StandardSummary[].
- *
- * @see ST.05
  */
 
 import type { Store, URI } from "@canonical/ke";

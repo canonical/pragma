@@ -3,8 +3,6 @@
  *
  * Boots the pragma runtime, creates the McpServer, and registers all tools
  * and resources. Returns the server with a dispose handle for cleanup.
- *
- * @see F.05 BT.04
  */
 
 import type { SourceSpec } from "@canonical/ke";

@@ -4,8 +4,6 @@
  * Detects installed harnesses (Claude Code, Cursor, etc.), prompts for
  * each, and writes the pragma MCP server entry into their config files.
  * When a harness ID is forced, detection is bypassed.
- *
- * @see SU.02, HR.05 in B.15.SETUP / B.17.HARNESS
  */
 
 import type { McpServerConfig } from "@canonical/harnesses";

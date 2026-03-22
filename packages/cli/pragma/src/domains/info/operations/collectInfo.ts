@@ -2,7 +2,6 @@
  * Collect all data for the `pragma info` command.
  *
  * @note Impure — reads config, queries registry, queries store.
- * @see IN.04, IN.06, IN.08 in B.11.INSTALL
  */
 
 import { readConfig } from "#config";

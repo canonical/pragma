@@ -2,8 +2,6 @@
  * `pragma config channel` command definition.
  *
  * Set, reset, or query the release channel.
- *
- * @see CF.04 in B.08.CONFIG
  */
 
 import {

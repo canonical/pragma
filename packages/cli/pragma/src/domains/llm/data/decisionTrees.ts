@@ -1,7 +1,5 @@
 /**
  * Static decision trees for `pragma llm`.
- *
- * @see LO.03 in B.29.LLM_ORIENTATION
  */
 
 import type { DecisionTree } from "../types.js";

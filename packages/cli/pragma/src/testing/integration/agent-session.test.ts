@@ -3,8 +3,6 @@
  *
  * Multi-step journeys that walk through the decision trees the
  * orientation advertises. Each scenario simulates an agent's workflow.
- *
- * @see F.09 IT.06
  */
 
 import type { Client } from "@modelcontextprotocol/sdk/client/index.js";

@@ -3,8 +3,6 @@
  *
  * Pure data assembly — no store access needed. Tier chain is resolved
  * from the configured path string, not from the ontology.
- *
- * @see CF.03, CF.04 in B.08.CONFIG
  */
 
 import type { PragmaConfig } from "#config";

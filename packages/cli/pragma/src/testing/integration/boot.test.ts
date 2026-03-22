@@ -3,8 +3,6 @@
  *
  * Validates runtime creation, config resolution, and store content
  * consistency from the canonical fixture.
- *
- * @see F.09 IT.03
  */
 
 import { afterAll, describe, expect, it } from "vitest";
@@ -28,7 +26,7 @@ describe("PragmaRuntime boot", () => {
     expect(rt.config.channel).toBe("normal");
   });
 
-  it("boots in under 100ms (FX.01)", async () => {
+  it("boots in under 100ms", async () => {
     const start = performance.now();
     const rt = await createTestRuntime();
     const elapsed = performance.now() - start;

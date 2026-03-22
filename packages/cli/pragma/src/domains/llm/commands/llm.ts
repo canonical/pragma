@@ -1,7 +1,5 @@
 /**
  * `pragma llm` command definition.
- *
- * @see CL.07, LO.01–LO.07 in B.29.LLM_ORIENTATION
  */
 
 import {

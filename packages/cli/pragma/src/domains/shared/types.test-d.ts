@@ -1,10 +1,8 @@
 /**
- * TB.03 — Compile-time type tests.
+ * Compile-time type tests.
  *
- * Asserts that shared operation return types match TB.01 contracts.
+ * Asserts that shared operation return types match their contracts.
  * Checked by `tsc --noEmit`, not executed at runtime.
- *
- * @see B.24.TYPE_BOUNDARIES
  */
 
 import type { Store, URI } from "@canonical/ke";
@@ -37,7 +35,7 @@ import type {
 } from "./types.js";
 
 // =============================================================================
-// TB.01 — Type structure assertions
+// Type structure assertions
 // =============================================================================
 
 // BlockSummary
@@ -101,7 +99,7 @@ expectTypeOf<FilterConfig["channel"]>().toEqualTypeOf<
 >();
 
 // =============================================================================
-// TB.03 — Operation return type assertions
+// Operation return type assertions
 // =============================================================================
 
 declare const store: Store;

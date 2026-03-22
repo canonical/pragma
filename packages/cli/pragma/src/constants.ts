@@ -23,8 +23,6 @@ interface OntologyPropertyMap {
  * Maps namespace prefix → property URIs for human-readable label and
  * description. Used by MCP resource handlers and domain operations to
  * resolve cross-ontology properties uniformly.
- *
- * @see F.04 OP.05
  */
 const PROPERTY_MAP: Record<string, OntologyPropertyMap> = {
   ds: {

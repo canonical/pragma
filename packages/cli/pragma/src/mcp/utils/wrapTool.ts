@@ -5,8 +5,6 @@
  * envelope. This ensures consistent `{ ok, data, meta }` success responses,
  * `{ ok, condensed, text, tokens }` condensed responses, and
  * `{ ok: false, error }` error responses across all tools.
- *
- * @see F.06 RS.06
  */
 
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";

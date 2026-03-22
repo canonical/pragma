@@ -3,9 +3,7 @@
  *
  * Each test calls the same query through both the operation layer
  * (what CLI uses) and the MCP tool (what agents use), then asserts
- * data equality. CI-blocking per OD.08.
- *
- * @see F.09 IT.05, F.06 RS.05
+ * data equality.
  */
 
 import type { Client } from "@modelcontextprotocol/sdk/client/index.js";

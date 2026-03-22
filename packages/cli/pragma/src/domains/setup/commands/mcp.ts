@@ -2,8 +2,6 @@
  * `pragma setup mcp` command definition.
  *
  * Configures the pragma MCP server for detected AI harnesses.
- *
- * @see SU.02, HR.05 in B.15.SETUP / B.17.HARNESS
  */
 
 import type { CommandDefinition, CommandResult } from "@canonical/cli-core";

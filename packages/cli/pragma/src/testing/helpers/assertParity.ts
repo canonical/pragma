@@ -3,8 +3,6 @@
  *
  * Unwraps the MCP response envelope and deep-compares `data` against
  * the raw operation result. Fails with a clear diff on mismatch.
- *
- * @see F.06 RS.05
  */
 
 import { expect } from "vitest";

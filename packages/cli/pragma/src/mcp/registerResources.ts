@@ -5,7 +5,7 @@
  * Reading a resource returns the entity's properties with level-1 object
  * relations resolved to summaries (label and description from PROPERTY_MAP).
  *
- * MR.01–MR.04 — graph-driven resources
+ * Graph-driven resources.
  */
 
 import type { Store } from "@canonical/ke";

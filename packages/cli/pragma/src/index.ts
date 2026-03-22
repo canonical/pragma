@@ -17,7 +17,7 @@ export { PragmaError } from "./error/index.js";
 export type { PragmaRuntime } from "./domains/shared/runtime.js";
 export { bootPragma } from "./domains/shared/runtime.js";
 
-// — Shared Types (TB.01) —————————————————————————————————————————————————————
+// — Shared Types —————————————————————————————————————————————————————————————
 
 export type {
   AnatomyNode,

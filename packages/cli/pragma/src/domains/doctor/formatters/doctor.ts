@@ -2,8 +2,6 @@
  * Formatters for `pragma doctor` output.
  *
  * Pure functions: DoctorData → string.
- *
- * @see IN.07 in B.11.INSTALL
  */
 
 import chalk from "chalk";

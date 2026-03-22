@@ -1,10 +1,8 @@
 /**
- * TB.01 — Shared operation return types.
+ * Shared operation return types.
  *
  * Contract between the operations layer (D3) and CLI/MCP adapters.
  * Same data, different presentations.
- *
- * @see B.24.TYPE_BOUNDARIES
  */
 
 import type { URI } from "@canonical/ke";

@@ -4,8 +4,6 @@
  * Runs `bunx @canonical/terrazzo-lsp-extension` which installs the
  * bundled VSIX into VS Code.  Bun is guaranteed available since the
  * pragma CLI uses a `#!/usr/bin/env bun` shebang.
- *
- * @see SU.01 in B.15.SETUP
  */
 
 import { $, exec, gen, info, type Task } from "@canonical/task";

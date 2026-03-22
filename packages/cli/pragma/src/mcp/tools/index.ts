@@ -2,8 +2,6 @@
  * MCP tool registration orchestrator.
  *
  * Delegates to domain-specific registration modules.
- *
- * @see F.06 RS.06, F.02 NM.02, F.03 SF
  */
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";

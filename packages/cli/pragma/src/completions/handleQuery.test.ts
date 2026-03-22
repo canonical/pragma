@@ -87,11 +87,7 @@ describe("handleQuery", () => {
   });
 
   it("returns empty string for verb with no completers", async () => {
-    const result = await handleQuery(
-      "block list something",
-      makeTree(),
-      ctx,
-    );
+    const result = await handleQuery("block list something", makeTree(), ctx);
     expect(result).toBe("");
   });
 });

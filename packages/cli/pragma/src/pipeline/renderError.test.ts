@@ -24,7 +24,7 @@ describe("renderErrorPlain", () => {
     expect(out).toContain("  - ButtonGroup");
   });
 
-  it("renders filters (ER.05)", () => {
+  it("renders filters", () => {
     const err = PragmaError.emptyResults("component", {
       filters: { tier: "apps/lxd", channel: "normal" },
     });

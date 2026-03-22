@@ -5,7 +5,6 @@
  * results into a DoctorData summary.
  *
  * @note Impure — delegates to individual check functions.
- * @see IN.07 in B.11.INSTALL
  */
 
 import {
