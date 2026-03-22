@@ -12,6 +12,7 @@ import Component from "./Textarea.js";
 const meta = {
   title: "Field/inputs/Textarea",
   component: Component,
+  tags: ["autodocs"],
   decorators: [decorators.form()],
 } satisfies Meta<typeof Component>;
 

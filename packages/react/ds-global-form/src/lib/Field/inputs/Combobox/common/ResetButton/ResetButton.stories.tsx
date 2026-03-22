@@ -11,6 +11,7 @@ import Component from "./ResetButton.js";
 const meta = {
   title: "Field/inputs/Combobox/common/ResetButton",
   component: Component,
+  tags: ["autodocs"],
 } satisfies Meta<typeof Component>;
 
 export default meta;

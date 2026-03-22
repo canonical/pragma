@@ -12,6 +12,7 @@ import Component from "./Range.js";
 const meta = {
   title: "Field/inputs/Range",
   component: Component,
+  tags: ["autodocs"],
   decorators: [
     decorators.form({
       defaultValues: {

@@ -11,6 +11,7 @@ import Component from "./Description.js";
 const meta = {
   title: "common/Wrapper/Description",
   component: Component,
+  tags: ["autodocs"],
 } satisfies Meta<typeof Component>;
 
 export default meta;

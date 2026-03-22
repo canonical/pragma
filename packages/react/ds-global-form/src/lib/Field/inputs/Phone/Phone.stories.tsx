@@ -5,6 +5,7 @@ import Component from "./Phone.js";
 const meta = {
   title: "Field/inputs/Phone",
   component: Component,
+  tags: ["autodocs"],
   decorators: [decorators.form()],
 } satisfies Meta<typeof Component>;
 

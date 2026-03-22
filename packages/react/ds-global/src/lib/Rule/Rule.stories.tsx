@@ -7,6 +7,7 @@ import type { RuleProps } from "./types.js";
 const meta = {
   title: "Experimental/Rule",
   component: Component,
+  tags: ["autodocs"],
   argTypes: {
     emphasis: {
       options: MODIFIER_FAMILIES.emphasis,

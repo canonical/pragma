@@ -12,6 +12,7 @@ import Component from "./Combobox.js";
 const meta = {
   title: "Field/inputs/Combobox",
   component: Component,
+  tags: ["autodocs"],
   decorators: [
     decorators.form({
       defaultValues: {

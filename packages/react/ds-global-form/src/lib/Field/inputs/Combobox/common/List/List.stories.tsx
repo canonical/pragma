@@ -14,6 +14,7 @@ import Component from "./List.js";
 const meta = {
   title: "Field/inputs/Combobox/common/List",
   component: Component,
+  tags: ["autodocs"],
 } satisfies Meta<typeof Component>;
 
 export default meta;

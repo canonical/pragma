@@ -37,6 +37,21 @@ const config = createConfig("react"); // or "svelte"
 export default config;
 ```
 
+## Design tokens
+
+Theme colors are defined in `src/theme/tokens.ts` and sourced from
+[`@canonical/design-tokens`](https://github.com/canonical/design-tokens).
+
+**All values must be hex.** Storybook's UI uses
+[polished.js](https://polished.js.org/) (`opacify`, `darken`, `lighten`,
+`transparentize`) pervasively in styled-components throughout the manager —
+not just in the theme conversion layer but in buttons, tooltips, tabs, etc.
+polished.js only supports hex, rgb, rgba, hsl, and hsla. CSS `var()` and
+`oklch()` will crash at runtime.
+
+Each token is annotated with its CSS custom property name from
+`@canonical/design-tokens` for traceability.
+
 ## Customization
 
 The addon allows you to customize the Project Name and Logo displayed in the Storybook sidebar via environment variables.

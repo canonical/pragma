@@ -13,6 +13,7 @@ import Component from "./SimpleChoices.js";
 const meta = {
   title: "Field/inputs/SimpleChoices",
   component: Component,
+  tags: ["autodocs"],
   decorators: [decorators.form()],
 } satisfies Meta<typeof Component>;
 

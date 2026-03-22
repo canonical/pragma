@@ -6,6 +6,7 @@ import Component from "./Hidden.js";
 const meta = {
   title: "Field/inputs/Hidden",
   component: Component,
+  tags: ["autodocs"],
   decorators: [
     decorators.form({
       defaultValues: {

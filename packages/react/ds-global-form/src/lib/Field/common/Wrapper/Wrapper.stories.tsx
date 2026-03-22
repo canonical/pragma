@@ -16,6 +16,7 @@ import Component from "./Wrapper.js";
 const meta = {
   title: "common/Wrapper",
   component: Component,
+  tags: ["autodocs"],
   decorators: [decorators.form()],
 } satisfies Meta<typeof Component>;
 
