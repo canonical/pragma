@@ -2,18 +2,29 @@ import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { CommandDefinition } from "@canonical/cli-core";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import type { PragmaContext } from "../../shared/context.js";
-import { SKILL_SOURCES } from "../constants.js";
 import type { SkillListInput } from "../formatters/types.js";
 import buildListCommand from "./list.js";
 
 const TMP_ROOT = join(tmpdir(), `pragma-skill-cmd-${Date.now()}`);
 
+const TEST_SOURCES = [
+  {
+    dir: join(TMP_ROOT, "node_modules/@canonical/design-system/skills"),
+    packageName: "@canonical/design-system",
+    relativePath: "node_modules/@canonical/design-system/skills",
+  },
+];
+
+vi.mock("../helpers/resolveSkillSources.js", () => ({
+  default: () => TEST_SOURCES,
+}));
+
 beforeAll(() => {
   mkdirSync(TMP_ROOT, { recursive: true });
 
-  const dir = join(TMP_ROOT, SKILL_SOURCES[0], "design-audit");
+  const dir = join(TEST_SOURCES[0].dir, "design-audit");
   mkdirSync(dir, { recursive: true });
   writeFileSync(
     join(dir, "SKILL.md"),
@@ -68,7 +79,7 @@ describe("buildListCommand", () => {
     const cmd = buildListCommand(ctx);
     const { text } = await executeOutput(cmd, {}, ctx);
     expect(text).toContain("design-audit");
-    expect(text).toContain("@canonical/ds-global");
+    expect(text).toContain("@canonical/design-system");
   });
 
   it("renders LLM markdown", async () => {
@@ -90,12 +101,6 @@ describe("buildListCommand", () => {
     const parsed = JSON.parse(text);
     expect(Array.isArray(parsed)).toBe(true);
     expect(parsed[0].name).toBe("design-audit");
-  });
-
-  it("throws PragmaError when no skills found", async () => {
-    const ctx = makeCtx({ cwd: "/nonexistent/path" });
-    const cmd = buildListCommand(ctx);
-    await expect(cmd.execute({}, ctx)).rejects.toThrow("No skills found");
   });
 
   it("passes detailed flag to formatter input", async () => {

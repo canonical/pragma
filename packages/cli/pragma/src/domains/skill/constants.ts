@@ -1,17 +1,13 @@
 /**
  * Skill domain constants.
  *
- * SK.02 — hardcoded skill source paths. Not configurable in pragma.config.json.
+ * SK.02 — skill source package definitions.
  */
 
-export const SKILL_SOURCES = [
-  "node_modules/@canonical/ds-global/skills",
-  "node_modules/@canonical/anatomy-dsl/skills",
-  "node_modules/@canonical/pragma/skills",
+/** Packages that may contain a `skills/` directory. */
+export const SKILL_PACKAGES = [
+  { pkg: "@canonical/design-system", subpath: "skills" },
+  { pkg: "@canonical/anatomy-dsl", subpath: "skills" },
+  { pkg: "@canonical/code-standards", subpath: "skills" },
+  { pkg: "@canonical/pragma", subpath: "skills" },
 ] as const;
-
-export const SOURCE_PACKAGE_MAP: Readonly<Record<string, string>> = {
-  "node_modules/@canonical/ds-global/skills": "@canonical/ds-global",
-  "node_modules/@canonical/anatomy-dsl/skills": "@canonical/anatomy-dsl",
-  "node_modules/@canonical/pragma/skills": "@canonical/pragma",
-};

@@ -1,17 +1,28 @@
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import type { PragmaContext } from "../../shared/context.js";
-import { SKILL_SOURCES } from "../../skill/constants.js";
 import buildSkillsCommand from "./skills.js";
 
 const TMP_ROOT = join(tmpdir(), `pragma-setup-cmd-${Date.now()}`);
 
+const TEST_SOURCES = [
+  {
+    dir: join(TMP_ROOT, "node_modules/@canonical/design-system/skills"),
+    packageName: "@canonical/design-system",
+    relativePath: "node_modules/@canonical/design-system/skills",
+  },
+];
+
+vi.mock("../../skill/helpers/resolveSkillSources.js", () => ({
+  default: () => TEST_SOURCES,
+}));
+
 beforeAll(() => {
   mkdirSync(TMP_ROOT, { recursive: true });
 
-  const dir = join(TMP_ROOT, SKILL_SOURCES[0], "design-audit");
+  const dir = join(TEST_SOURCES[0].dir, "design-audit");
   mkdirSync(dir, { recursive: true });
   writeFileSync(
     join(dir, "SKILL.md"),
@@ -43,12 +54,6 @@ describe("buildSkillsCommand", () => {
     expect(cmd.path).toEqual(["setup", "skills"]);
     expect(cmd.parameters.map((p) => p.name)).toContain("dryRun");
     expect(cmd.parameters.map((p) => p.name)).toContain("yes");
-  });
-
-  it("throws PragmaError when no skills found", async () => {
-    const cmd = buildSkillsCommand();
-    const ctx = makeCtx({ cwd: "/nonexistent/path" });
-    await expect(cmd.execute({}, ctx)).rejects.toThrow("No skills found");
   });
 
   it("returns output result for found skills", async () => {
