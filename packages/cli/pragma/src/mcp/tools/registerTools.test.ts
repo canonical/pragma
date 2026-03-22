@@ -495,12 +495,10 @@ describe("config_show", () => {
 
 describe("config_tier", () => {
   it("sets, queries, and resets tier in workspace config", async () => {
-    const originalCwd = process.cwd();
     const dir = mkdtempSync(join(tmpdir(), "pragma-mcp-tier-"));
 
     try {
-      process.chdir(dir);
-      const scoped = await createTestMcpClient();
+      const scoped = await createTestMcpClient({ cwd: dir });
 
       try {
         const setResult = await scoped.client.callTool({
@@ -536,7 +534,6 @@ describe("config_tier", () => {
         await scoped.cleanup();
       }
     } finally {
-      process.chdir(originalCwd);
       rmSync(dir, { recursive: true, force: true });
     }
   });
@@ -544,12 +541,10 @@ describe("config_tier", () => {
 
 describe("config_channel", () => {
   it("sets, queries, and resets channel in workspace config", async () => {
-    const originalCwd = process.cwd();
     const dir = mkdtempSync(join(tmpdir(), "pragma-mcp-channel-"));
 
     try {
-      process.chdir(dir);
-      const scoped = await createTestMcpClient();
+      const scoped = await createTestMcpClient({ cwd: dir });
 
       try {
         const setResult = await scoped.client.callTool({
@@ -582,7 +577,6 @@ describe("config_channel", () => {
         await scoped.cleanup();
       }
     } finally {
-      process.chdir(originalCwd);
       rmSync(dir, { recursive: true, force: true });
     }
   });
@@ -601,12 +595,10 @@ describe("config_channel", () => {
 
 describe("tokens_add_config", () => {
   it("writes a token config file and reports its path", async () => {
-    const originalCwd = process.cwd();
     const dir = mkdtempSync(join(tmpdir(), "pragma-mcp-token-config-"));
 
     try {
-      process.chdir(dir);
-      const scoped = await createTestMcpClient();
+      const scoped = await createTestMcpClient({ cwd: dir });
 
       try {
         const result = await scoped.client.callTool({
@@ -628,20 +620,17 @@ describe("tokens_add_config", () => {
         await scoped.cleanup();
       }
     } finally {
-      process.chdir(originalCwd);
       rmSync(dir, { recursive: true, force: true });
     }
   });
 
   it("returns recovery metadata when config already exists", async () => {
-    const originalCwd = process.cwd();
     const dir = mkdtempSync(join(tmpdir(), "pragma-mcp-token-existing-"));
     const configPath = join(dir, "tokens.config.mjs");
 
     try {
       writeFileSync(configPath, "// existing\n", "utf-8");
-      process.chdir(dir);
-      const scoped = await createTestMcpClient();
+      const scoped = await createTestMcpClient({ cwd: dir });
 
       try {
         const result = await scoped.client.callTool({
@@ -658,20 +647,17 @@ describe("tokens_add_config", () => {
         await scoped.cleanup();
       }
     } finally {
-      process.chdir(originalCwd);
       rmSync(dir, { recursive: true, force: true });
     }
   });
 
   it("overwrites an existing config when force=true", async () => {
-    const originalCwd = process.cwd();
     const dir = mkdtempSync(join(tmpdir(), "pragma-mcp-token-force-"));
     const configPath = join(dir, "tokens.config.mjs");
 
     try {
       writeFileSync(configPath, "// existing\n", "utf-8");
-      process.chdir(dir);
-      const scoped = await createTestMcpClient();
+      const scoped = await createTestMcpClient({ cwd: dir });
 
       try {
         const result = await scoped.client.callTool({
@@ -687,7 +673,6 @@ describe("tokens_add_config", () => {
         await scoped.cleanup();
       }
     } finally {
-      process.chdir(originalCwd);
       rmSync(dir, { recursive: true, force: true });
     }
   });

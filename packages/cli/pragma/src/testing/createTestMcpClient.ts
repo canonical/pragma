@@ -19,19 +19,21 @@ import type { TestMcpClientResult } from "./types.js";
 export default async function createTestMcpClient(options?: {
   ttl?: string;
   config?: PragmaConfig;
+  cwd?: string;
 }): Promise<TestMcpClientResult> {
   const ttl = options?.ttl ?? DS_ALL_TTL;
   const config: PragmaConfig = options?.config ?? {
     tier: undefined,
     channel: "normal",
   };
+  const cwd = options?.cwd ?? process.cwd();
 
   const { store, cleanup: cleanupStore } = await createTestStore({ ttl });
 
   const runtime: PragmaRuntime = {
     store,
     config,
-    cwd: process.cwd(),
+    cwd,
     dispose: () => cleanupStore(),
   };
 
