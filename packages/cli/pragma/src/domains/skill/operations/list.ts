@@ -6,8 +6,8 @@
 
 import { stat } from "node:fs/promises";
 import {
-  type SkillSource as SkillSourceDef,
   resolveSkillSources,
+  type SkillSource as SkillSourceDef,
 } from "../helpers/index.js";
 import type { DiscoveredSkill, SkillSource } from "../types.js";
 import discoverSkills from "./discover.js";

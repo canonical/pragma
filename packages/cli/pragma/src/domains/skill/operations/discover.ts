@@ -9,9 +9,9 @@
 import { readdir, readFile, stat } from "node:fs/promises";
 import { resolve } from "node:path";
 import {
-  type SkillSource,
   parseFrontmatter,
   resolveSkillSources,
+  type SkillSource,
 } from "../helpers/index.js";
 import type { DiscoveredSkill } from "../types.js";
 
