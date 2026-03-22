@@ -8,6 +8,7 @@ const WITH_TIER: ConfigShowData = {
   channel: "experimental",
   includedReleases: ["stable", "experimental"],
   packageManager: "bun",
+  installSource: "bun (global)",
   configFilePath: "/project/pragma.config.json",
   configFileExists: true,
 };
@@ -18,6 +19,7 @@ const WITHOUT_TIER: ConfigShowData = {
   channel: "normal",
   includedReleases: ["stable"],
   packageManager: "npm",
+  installSource: "local install",
   configFilePath: "/project/pragma.config.json",
   configFileExists: false,
 };
@@ -28,6 +30,7 @@ const PRERELEASE: ConfigShowData = {
   channel: "prerelease",
   includedReleases: ["stable", "experimental", "alpha", "beta"],
   packageManager: "pnpm",
+  installSource: "pnpm (global)",
   configFilePath: "/project/pragma.config.json",
   configFileExists: true,
 };
@@ -37,7 +40,7 @@ describe("formatters.plain", () => {
     const output = formatters.plain(WITH_TIER);
     expect(output).toContain("tier: apps/lxd (global → apps → apps/lxd)");
     expect(output).toContain("channel: experimental (stable + experimental)");
-    expect(output).toContain("installed via: bun");
+    expect(output).toContain("installed via: bun (global)");
     expect(output).toContain("config file: /project/pragma.config.json");
   });
 
@@ -45,6 +48,7 @@ describe("formatters.plain", () => {
     const output = formatters.plain(WITHOUT_TIER);
     expect(output).toContain("tier: (none — all tiers visible)");
     expect(output).toContain("channel: normal (stable)");
+    expect(output).toContain("installed via: local install");
     expect(output).toContain("config file: (not found)");
   });
 

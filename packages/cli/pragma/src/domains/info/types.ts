@@ -5,6 +5,7 @@
 export interface InfoData {
   readonly version: string;
   readonly pm: string;
+  readonly installSource: string;
   readonly configPath: string;
   readonly tier: string | undefined;
   readonly tierChain: readonly string[];

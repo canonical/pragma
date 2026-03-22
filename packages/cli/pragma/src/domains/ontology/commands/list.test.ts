@@ -53,6 +53,7 @@ describe("ontology list command", () => {
 
     expect(text).toContain("ds");
     expect(text).toContain("classes:");
+    expect(text).toContain("anatomy:");
   });
 
   it("renders llm output", async () => {
@@ -64,6 +65,7 @@ describe("ontology list command", () => {
 
     expect(text).toContain("## Ontologies");
     expect(text).toContain("**ds:**");
+    expect(text).toContain("anatomy:");
   });
 
   it("renders json output", async () => {

@@ -12,6 +12,10 @@ import { P } from "../../shared/prefixes.js";
 import type { OntologySummary } from "../../shared/types.js";
 import findNamespace from "../helpers/findNamespace.js";
 
+function isAnatomyTerm(uri: string): boolean {
+  return uri.toLowerCase().includes("anatomy");
+}
+
 export default async function listOntologies(
   store: Store,
 ): Promise<OntologySummary[]> {
@@ -35,6 +39,7 @@ export default async function listOntologies(
   const prefixEntries = Object.entries(store.prefixes);
   const classCounts = new Map<string, Set<string>>();
   const propCounts = new Map<string, Set<string>>();
+  const anatomyCounts = new Map<string, Set<string>>();
 
   if (classResult.type === "select") {
     for (const b of classResult.bindings) {
@@ -44,6 +49,12 @@ export default async function listOntologies(
         const set = classCounts.get(ns.prefix) ?? new Set();
         set.add(uri);
         classCounts.set(ns.prefix, set);
+
+        if (isAnatomyTerm(uri)) {
+          const anatomySet = anatomyCounts.get(ns.prefix) ?? new Set();
+          anatomySet.add(uri);
+          anatomyCounts.set(ns.prefix, anatomySet);
+        }
       }
     }
   }
@@ -56,11 +67,21 @@ export default async function listOntologies(
         const set = propCounts.get(ns.prefix) ?? new Set();
         set.add(uri);
         propCounts.set(ns.prefix, set);
+
+        if (isAnatomyTerm(uri)) {
+          const anatomySet = anatomyCounts.get(ns.prefix) ?? new Set();
+          anatomySet.add(uri);
+          anatomyCounts.set(ns.prefix, anatomySet);
+        }
       }
     }
   }
 
-  const allPrefixes = new Set([...classCounts.keys(), ...propCounts.keys()]);
+  const allPrefixes = new Set([
+    ...classCounts.keys(),
+    ...propCounts.keys(),
+    ...anatomyCounts.keys(),
+  ]);
 
   return [...allPrefixes].sort().map((prefix) => {
     const namespace = prefixEntries.find(([p]) => p === prefix)?.[1] ?? "";
@@ -69,6 +90,7 @@ export default async function listOntologies(
       namespace,
       classCount: classCounts.get(prefix)?.size ?? 0,
       propertyCount: propCounts.get(prefix)?.size ?? 0,
+      anatomyCount: anatomyCounts.get(prefix)?.size ?? 0,
     };
   });
 }

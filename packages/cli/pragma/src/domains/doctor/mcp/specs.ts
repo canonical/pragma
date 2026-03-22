@@ -58,6 +58,7 @@ const specs: readonly ToolSpec[] = [
       const data: InfoData = {
         version: VERSION,
         pm: "unknown",
+        installSource: "local install",
         configPath: "pragma.config.json",
         tier: rt.config.tier,
         tierChain: [],

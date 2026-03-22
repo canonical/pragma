@@ -15,6 +15,7 @@ export interface ConfigShowData {
   readonly channel: Channel;
   readonly includedReleases: readonly string[];
   readonly packageManager: string;
+  readonly installSource: string;
   readonly configFilePath: string;
   readonly configFileExists: boolean;
 }

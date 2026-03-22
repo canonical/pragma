@@ -155,6 +155,7 @@ export interface OntologySummary {
   readonly namespace: string;
   readonly classCount: number;
   readonly propertyCount: number;
+  readonly anatomyCount: number;
 }
 
 /** A class in an ontology's class hierarchy. */

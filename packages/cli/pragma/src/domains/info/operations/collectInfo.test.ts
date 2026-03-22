@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const readConfigMock = vi.fn();
-const detectPackageManagerMock = vi.fn();
+const detectInstallSourceMock = vi.fn();
 const bootStoreMock = vi.fn();
 const checkRegistryVersionMock = vi.fn();
 const collectStoreSummaryMock = vi.fn();
@@ -11,7 +11,7 @@ vi.mock("#config", () => ({
 }));
 
 vi.mock("#package-manager", () => ({
-  detectPackageManager: detectPackageManagerMock,
+  detectInstallSource: detectInstallSourceMock,
   PM_COMMANDS: {
     bun: {
       update: (pkg: string) => `bun update ${pkg}`,
@@ -34,7 +34,11 @@ vi.mock("./collectStoreSummary.js", () => ({
 describe("collectInfo", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    detectPackageManagerMock.mockReturnValue("bun");
+    detectInstallSourceMock.mockReturnValue({
+      packageManager: "bun",
+      scope: "global",
+      label: "bun (global)",
+    });
     readConfigMock.mockReturnValue({ tier: "apps/lxd", channel: "normal" });
   });
 
@@ -58,6 +62,7 @@ describe("collectInfo", () => {
       latest: "9.9.9",
       command: "bun update @canonical/pragma",
     });
+    expect(result.installSource).toBe("bun (global)");
     expect(result.updateSkipped).toBe(false);
     expect(result.store).toEqual({ tripleCount: 42, graphNames: ["default"] });
     expect(result.tierChain.length).toBeGreaterThan(0);
