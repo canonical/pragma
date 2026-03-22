@@ -29,6 +29,12 @@ const completionsCommand: CommandDefinition = {
       default: false,
     },
     {
+      name: "undo",
+      description: "Reverse a previous setup",
+      type: "boolean",
+      default: false,
+    },
+    {
       name: "zsh",
       description: "Force zsh completions",
       type: "boolean",
@@ -52,6 +58,7 @@ const completionsCommand: CommandDefinition = {
       "pragma setup completions",
       "pragma setup completions --zsh",
       "pragma setup completions --dry-run",
+      "pragma setup completions --undo",
     ],
   },
   execute: async (
@@ -60,6 +67,7 @@ const completionsCommand: CommandDefinition = {
   ): Promise<CommandResult> =>
     runSetupTask(setupCompletions(resolveForceShell(params)), {
       dryRun: params.dryRun === true,
+      undo: params.undo === true,
       verbose: ctx.globalFlags.verbose,
       llm: ctx.globalFlags.llm,
       format: ctx.globalFlags.format,

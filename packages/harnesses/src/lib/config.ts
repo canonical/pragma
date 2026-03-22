@@ -96,6 +96,7 @@ export const writeMcpConfig = (
   config: McpServerConfig,
 ): Task<void> => {
   const configPath = harness.configPath(projectRoot);
+  const undoTask = removeMcpConfig(harness, projectRoot, serverName);
 
   if (harness.configFormat === "toml") {
     const fields: Record<string, unknown> = { command: config.command };
@@ -111,12 +112,13 @@ export const writeMcpConfig = (
           serverName,
           fields,
         );
-        return writeFile(configPath, merged);
+        return writeFile(configPath, merged, { undo: undoTask });
       }),
       flatMap(mkdir(dirname(configPath), true), () =>
         writeFile(
           configPath,
           serializeTomlSection(harness.mcpKey, { [serverName]: fields }),
+          { undo: undoTask },
         ),
       ),
     );
@@ -129,12 +131,13 @@ export const writeMcpConfig = (
       const servers = (parsed[harness.mcpKey] ?? {}) as Record<string, unknown>;
       servers[serverName] = config;
       parsed[harness.mcpKey] = servers;
-      return writeFile(configPath, formatJson(parsed));
+      return writeFile(configPath, formatJson(parsed), { undo: undoTask });
     }),
     flatMap(mkdir(dirname(configPath), true), () =>
       writeFile(
         configPath,
         formatJson({ [harness.mcpKey]: { [serverName]: config } }),
+        { undo: undoTask },
       ),
     ),
   );

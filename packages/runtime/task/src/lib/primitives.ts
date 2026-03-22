@@ -20,6 +20,7 @@ import {
   readContextEffect,
   readFileEffect,
   symlinkEffect,
+  type UndoOptions,
   writeContextEffect,
   writeFileEffect,
 } from "./effect.js";
@@ -38,51 +39,72 @@ export const readFile = (path: string): Task<string> =>
 
 /**
  * Write content to a file.
+ * Default undo: delete the file.
  */
-export const writeFile = (path: string, content: string): Task<void> =>
-  effect(writeFileEffect(path, content));
+export const writeFile = (
+  path: string,
+  content: string,
+  opts?: UndoOptions,
+): Task<void> => effect(writeFileEffect(path, content, opts));
 
 /**
  * Append content to a file.
+ * No default undo — provide `{ undo: yourTask }` to make it undoable.
  * @param path - Path to the file
  * @param content - Content to append
  * @param createIfMissing - Create the file if it doesn't exist (default: true)
+ * @param opts - Undo options
  */
 export const appendFile = (
   path: string,
   content: string,
   createIfMissing = true,
-): Task<void> => effect(appendFileEffect(path, content, createIfMissing));
+  opts?: UndoOptions,
+): Task<void> => effect(appendFileEffect(path, content, createIfMissing, opts));
 
 /**
  * Copy a file from source to destination.
+ * Default undo: delete the destination file.
  */
-export const copyFile = (source: string, dest: string): Task<void> =>
-  effect(copyFileEffect(source, dest));
+export const copyFile = (
+  source: string,
+  dest: string,
+  opts?: UndoOptions,
+): Task<void> => effect(copyFileEffect(source, dest, opts));
 
 /**
  * Copy a directory recursively from source to destination.
+ * Default undo: delete the destination directory.
  */
-export const copyDirectory = (source: string, dest: string): Task<void> =>
-  effect(copyDirectoryEffect(source, dest));
+export const copyDirectory = (
+  source: string,
+  dest: string,
+  opts?: UndoOptions,
+): Task<void> => effect(copyDirectoryEffect(source, dest, opts));
 
 /**
  * Delete a file.
+ * No default undo — provide `{ undo: yourTask }` to make it undoable.
  */
-export const deleteFile = (path: string): Task<void> =>
-  effect(deleteFileEffect(path));
+export const deleteFile = (path: string, opts?: UndoOptions): Task<void> =>
+  effect(deleteFileEffect(path, opts));
 
 /**
  * Delete a directory recursively.
+ * No default undo — provide `{ undo: yourTask }` to make it undoable.
  */
-export const deleteDirectory = (path: string): Task<void> =>
-  effect(deleteDirectoryEffect(path));
+export const deleteDirectory = (path: string, opts?: UndoOptions): Task<void> =>
+  effect(deleteDirectoryEffect(path, opts));
 
 /**
  * Create a directory (recursively by default).
+ * Default undo: delete the directory.
  */
-export const mkdir = (path: string, recursive = true): Task<void> =>
-  effect(makeDirEffect(path, recursive));
+export const mkdir = (
+  path: string,
+  recursive = true,
+  opts?: UndoOptions,
+): Task<void> => effect(makeDirEffect(path, recursive, opts));
 
 /**
  * Check if a file or directory exists.
@@ -92,11 +114,15 @@ export const exists = (path: string): Task<boolean> =>
 
 /**
  * Create a symbolic link.
+ * Default undo: delete the symlink.
  * @param target - The target path the symlink points to
  * @param linkPath - The path where the symlink is created
  */
-export const symlink = (target: string, linkPath: string): Task<void> =>
-  effect(symlinkEffect(target, linkPath));
+export const symlink = (
+  target: string,
+  linkPath: string,
+  opts?: UndoOptions,
+): Task<void> => effect(symlinkEffect(target, linkPath, opts));
 
 /**
  * Find files matching a glob pattern.
@@ -280,12 +306,14 @@ export const sortFileLines = (
 
 /**
  * Execute a command with arguments.
+ * No default undo — provide `{ undo: yourTask }` to make it undoable.
  */
 export const exec = (
   command: string,
   args: string[],
   cwd?: string,
-): Task<ExecResult> => effect(execEffect(command, args, cwd));
+  opts?: UndoOptions,
+): Task<ExecResult> => effect(execEffect(command, args, cwd, opts));
 
 /**
  * Execute a simple command string (split on spaces).
@@ -293,10 +321,11 @@ export const exec = (
 export const execSimple = (
   commandLine: string,
   cwd?: string,
+  opts?: UndoOptions,
 ): Task<ExecResult> => {
   const parts = commandLine.split(" ");
   const [command, ...args] = parts;
-  return exec(command, args, cwd);
+  return exec(command, args, cwd, opts);
 };
 
 // =============================================================================

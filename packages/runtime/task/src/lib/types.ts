@@ -103,30 +103,42 @@ export type Effect =
   /** Read file contents as UTF-8 string */
   | { _tag: "ReadFile"; path: string }
   /** Write content to file, creating parent directories */
-  | { _tag: "WriteFile"; path: string; content: string }
+  | { _tag: "WriteFile"; path: string; content: string; undo?: Task<void> }
   /** Append content to file */
   | {
       _tag: "AppendFile";
       path: string;
       content: string;
       createIfMissing: boolean;
+      undo?: Task<void>;
     }
   /** Copy a single file */
-  | { _tag: "CopyFile"; source: string; dest: string }
+  | { _tag: "CopyFile"; source: string; dest: string; undo?: Task<void> }
   /** Recursively copy a directory */
-  | { _tag: "CopyDirectory"; source: string; dest: string }
+  | {
+      _tag: "CopyDirectory";
+      source: string;
+      dest: string;
+      undo?: Task<void>;
+    }
   /** Delete a file */
-  | { _tag: "DeleteFile"; path: string }
+  | { _tag: "DeleteFile"; path: string; undo?: Task<void> }
   /** Recursively delete a directory */
-  | { _tag: "DeleteDirectory"; path: string }
+  | { _tag: "DeleteDirectory"; path: string; undo?: Task<void> }
   /** Create directory and parents */
-  | { _tag: "MakeDir"; path: string; recursive: boolean }
+  | { _tag: "MakeDir"; path: string; recursive: boolean; undo?: Task<void> }
   /** Check if path exists */
   | { _tag: "Exists"; path: string }
   /** Find files matching glob pattern */
   | { _tag: "Glob"; pattern: string; cwd: string }
   /** Execute shell command */
-  | { _tag: "Exec"; command: string; args: string[]; cwd?: string }
+  | {
+      _tag: "Exec";
+      command: string;
+      args: string[];
+      cwd?: string;
+      undo?: Task<void>;
+    }
   /** Interactive prompt */
   | { _tag: "Prompt"; question: PromptQuestion }
   /** Log message at specified level */
@@ -138,7 +150,7 @@ export type Effect =
   /** Run tasks in parallel */
   | { _tag: "Parallel"; tasks: Task<unknown>[] }
   /** Create a symbolic link */
-  | { _tag: "Symlink"; target: string; path: string }
+  | { _tag: "Symlink"; target: string; path: string; undo?: Task<void> }
   /** Race tasks, return first to complete */
   | { _tag: "Race"; tasks: Task<unknown>[] };
 

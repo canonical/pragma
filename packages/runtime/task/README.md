@@ -378,7 +378,7 @@ Call `.unwrap()` to extract the underlying `Task<A>` when you need to pass it to
 
 ### Interpreters
 
-Tasks are inert data until an interpreter walks the structure and decides what to do with each effect. The package ships two interpreters:
+Tasks are inert data until an interpreter walks the structure and decides what to do with each effect. The package ships three interpreters:
 
 #### Production interpreter (`runTask`)
 
@@ -487,6 +487,66 @@ getAffectedFiles(effects);
 // ["a.txt", "b.txt", "output/"] — sorted, deduplicated
 ```
 
+#### Undo interpreter (`runUndo`)
+
+Walks the task tree with mocked forward effects (like `dryRun`), collects the `undo` task attached to each effect, then executes them in reverse (LIFO) order. This enables `--undo` on any CLI command without storing state — the same task definition plus the same answers yields deterministic undo.
+
+```typescript
+import { runUndo, collectUndos } from "@canonical/task";
+
+// Forward run:
+await runTask(generator.generate(answers));
+
+// Undo (later, same answers):
+await runUndo(generator.generate(answers));
+```
+
+##### How undo metadata works
+
+Write-capable effects carry an optional `undo?: Task<void>` field. Primitives supply sensible defaults:
+
+| Primitive | Default undo |
+|-----------|-------------|
+| `writeFile` | `deleteFile(path)` |
+| `mkdir` | `deleteDirectory(path)` |
+| `copyFile` | `deleteFile(dest)` |
+| `copyDirectory` | `deleteDirectory(dest)` |
+| `symlink` | `deleteFile(linkPath)` |
+| `appendFile` | none — provide custom |
+| `deleteFile` | none — provide custom |
+| `exec` | none — provide custom |
+
+##### Custom undo
+
+Override the default undo or provide one where no default exists:
+
+```typescript
+// Custom undo for append
+appendFile(indexPath, exportLine, true, {
+  undo: removeLineFromFile(indexPath, exportLine),
+});
+
+// Disable default undo
+writeFile(tempPath, content, { undo: null });
+```
+
+##### Collecting undos without executing
+
+```typescript
+const undos = collectUndos(myTask);
+// undos: Task<void>[] — undo tasks in forward execution order
+// (runUndo reverses them automatically)
+```
+
+##### Composability
+
+Undo composes automatically with all existing combinators:
+
+- `when(false, writeFile(...))` — skipped effects produce no undos
+- `sequence_([...])` — undos collected in sequence, executed in reverse
+- `parallel([...])` — undos collected from all children
+- `gen(function* () { ... })` — works identically
+
 ##### Test assertions
 
 ```typescript
@@ -532,6 +592,7 @@ result.toNotWriteFile("output/secret.key");
 | **Utilities** | `tap`, `tapError`, `delay`, `timeout`, `fold`, `zip`, `zip3` |
 | **Production interpreter** | `runTask`, `run`, `executeEffect`, `TaskExecutionError`, `RunTaskOptions` |
 | **Dry-run interpreter** | `dryRun`, `dryRunWith`, `mockEffect`, `collectEffects`, `countEffects`, `filterEffects`, `getFileWrites`, `getAffectedFiles`, `assertEffects`, `assertFileWrites`, `expectTask` |
+| **Undo interpreter** | `runUndo`, `collectUndos`, `UndoResult`, `UndoOptions` |
 | **Effect constructors** | `readFileEffect`, `writeFileEffect`, `appendFileEffect`, `copyFileEffect`, `copyDirectoryEffect`, `deleteFileEffect`, `deleteDirectoryEffect`, `makeDirEffect`, `existsEffect`, `symlinkEffect`, `globEffect`, `execEffect`, `promptEffect`, `logEffect`, `readContextEffect`, `writeContextEffect`, `parallelEffect`, `raceEffect` |
 | **Effect utilities** | `describeEffect`, `isWriteEffect`, `getAffectedPaths` |
 
