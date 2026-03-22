@@ -6,5 +6,10 @@
     "types": ["node", "react", "react-dom"],
     "noEmit": true
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx", ".storybook/*.ts", "vite.config.ts"]
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    ".storybook/*.ts",
+    "vite.config.ts"
+  ]
 }
