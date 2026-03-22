@@ -70,8 +70,10 @@ export async function bootStore(
     throw PragmaError.storeError(
       error instanceof Error ? error.message : String(error),
       {
-        recovery:
-          "Ensure design system packages are installed: bun add -D @canonical/design-system @canonical/code-standards @canonical/anatomy-dsl",
+        recovery: {
+          message:
+            "Ensure design system packages are installed: bun add -D @canonical/design-system @canonical/code-standards @canonical/anatomy-dsl",
+        },
       },
     );
   }

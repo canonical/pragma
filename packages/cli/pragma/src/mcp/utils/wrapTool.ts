@@ -10,8 +10,8 @@
  */
 
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
+import { PragmaError } from "#error";
 import type { PragmaRuntime } from "../../domains/shared/runtime.js";
-import { PragmaError } from "../../error/PragmaError.js";
 import serializeErrorPayload from "../error/serializeErrorPayload.js";
 import type { ToolPayload } from "../types.js";
 

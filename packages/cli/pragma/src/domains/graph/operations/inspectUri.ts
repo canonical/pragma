@@ -29,8 +29,12 @@ export default async function inspectUri(
 
   if (result.type !== "select" || result.bindings.length === 0) {
     throw PragmaError.notFound("entity", uri, {
-      recovery:
-        "Check the URI is correct. Run `pragma graph query` with a SELECT to find valid URIs.",
+      recovery: {
+        message:
+          "Check the URI is correct and run a SPARQL query to find valid URIs.",
+        cli: "pragma graph query 'SELECT ?s WHERE { ?s ?p ?o } LIMIT 10'",
+        mcp: { tool: "graph_query" },
+      },
     });
   }
 

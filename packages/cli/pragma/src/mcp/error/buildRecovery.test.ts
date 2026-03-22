@@ -6,35 +6,32 @@ describe("buildRecovery", () => {
     expect(buildRecovery(undefined)).toBeUndefined();
   });
 
-  it("parses a single recovery string", () => {
-    const result = buildRecovery(
-      "Run `pragma token list` to see available tokens.",
-    );
-    expect(result?.tool).toBe("token_list");
+  it("returns undefined when recovery has no mcp field", () => {
+    expect(
+      buildRecovery({
+        message: "Please report this issue.",
+      }),
+    ).toBeUndefined();
   });
 
-  it("returns first parseable entry from array", () => {
-    const result = buildRecovery([
-      "Run `pragma component list --all-tiers` to search all tiers.",
-      "Run `pragma config show` to see filter settings.",
-    ]);
-    expect(result?.tool).toBe("component_list");
-    expect(result?.params).toEqual({ allTiers: true });
+  it("extracts mcp recovery object", () => {
+    const result = buildRecovery({
+      message: "List available tokens.",
+      cli: "pragma token list",
+      mcp: { tool: "token_list" },
+    });
+    expect(result).toEqual({ tool: "token_list" });
   });
 
-  it("skips unparseable entries in array", () => {
-    const result = buildRecovery([
-      "Please report this issue.",
-      "Run `pragma standard list` to see available standards.",
-    ]);
-    expect(result?.tool).toBe("standard_list");
-  });
-
-  it("returns undefined when all entries are unparseable", () => {
-    const result = buildRecovery([
-      "Please report this issue.",
-      "Contact support.",
-    ]);
-    expect(result).toBeUndefined();
+  it("extracts mcp recovery with params", () => {
+    const result = buildRecovery({
+      message: "Widen the search.",
+      cli: "pragma block list --all-tiers",
+      mcp: { tool: "block_list", params: { allTiers: true } },
+    });
+    expect(result).toEqual({
+      tool: "block_list",
+      params: { allTiers: true },
+    });
   });
 });

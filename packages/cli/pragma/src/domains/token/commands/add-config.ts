@@ -28,8 +28,11 @@ export default function addConfigCommand(): CommandDefinition {
 
       if (result.alreadyExists && !force) {
         throw PragmaError.invalidInput("tokens.config.mjs", "already exists", {
-          recovery:
-            "Use `pragma tokens add-config --force` to overwrite the existing file.",
+          recovery: {
+            message: "Overwrite existing config file.",
+            cli: "pragma tokens add-config --force",
+            mcp: { tool: "tokens_add_config", params: { force: true } },
+          },
         });
       }
 

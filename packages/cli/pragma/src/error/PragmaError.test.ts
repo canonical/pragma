@@ -6,7 +6,11 @@ describe("PragmaError", () => {
     it("creates an ENTITY_NOT_FOUND error with entity info", () => {
       const err = PragmaError.notFound("component", "Buton", {
         suggestions: ["Button", "ButtonGroup"],
-        recovery: "pragma component list",
+        recovery: {
+          message: "List available components.",
+          cli: "pragma block list",
+          mcp: { tool: "block_list" },
+        },
       });
 
       expect(err).toBeInstanceOf(PragmaError);
@@ -14,7 +18,11 @@ describe("PragmaError", () => {
       expect(err.message).toBe('component "Buton" not found.');
       expect(err.entity).toEqual({ type: "component", name: "Buton" });
       expect(err.suggestions).toEqual(["Button", "ButtonGroup"]);
-      expect(err.recovery).toBe("pragma component list");
+      expect(err.recovery).toEqual({
+        message: "List available components.",
+        cli: "pragma block list",
+        mcp: { tool: "block_list" },
+      });
     });
 
     it("defaults suggestions to empty array", () => {
@@ -28,16 +36,21 @@ describe("PragmaError", () => {
     it("creates an EMPTY_RESULTS error with filters", () => {
       const err = PragmaError.emptyResults("component", {
         filters: { tier: "apps/lxd", channel: "normal" },
-        recovery: ["pragma component list --all-tiers", "pragma config show"],
+        recovery: {
+          message: "Widen the search to show all tiers.",
+          cli: "pragma block list --all-tiers",
+          mcp: { tool: "block_list", params: { allTiers: true } },
+        },
       });
 
       expect(err.code).toBe("EMPTY_RESULTS");
       expect(err.message).toBe("No components found.");
       expect(err.filters).toEqual({ tier: "apps/lxd", channel: "normal" });
-      expect(err.recovery).toEqual([
-        "pragma component list --all-tiers",
-        "pragma config show",
-      ]);
+      expect(err.recovery).toEqual({
+        message: "Widen the search to show all tiers.",
+        cli: "pragma block list --all-tiers",
+        mcp: { tool: "block_list", params: { allTiers: true } },
+      });
     });
   });
 
@@ -60,12 +73,18 @@ describe("PragmaError", () => {
   describe("storeError", () => {
     it("creates a STORE_ERROR with reason and recovery", () => {
       const err = PragmaError.storeError("WASM module failed to load", {
-        recovery: "pragma doctor",
+        recovery: {
+          message: "Run pragma doctor to diagnose.",
+          cli: "pragma doctor",
+        },
       });
 
       expect(err.code).toBe("STORE_ERROR");
       expect(err.message).toContain("WASM module failed to load");
-      expect(err.recovery).toBe("pragma doctor");
+      expect(err.recovery).toEqual({
+        message: "Run pragma doctor to diagnose.",
+        cli: "pragma doctor",
+      });
     });
   });
 
@@ -88,7 +107,9 @@ describe("PragmaError", () => {
 
       expect(err.code).toBe("INTERNAL_ERROR");
       expect(err.message).toContain("Unexpected null");
-      expect(err.recovery).toBe("Please report this issue.");
+      expect(err.recovery).toEqual({
+        message: "Please report this issue.",
+      });
     });
   });
 

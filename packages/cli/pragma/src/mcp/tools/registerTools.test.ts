@@ -42,9 +42,9 @@ function parseData(result: { content: unknown[] }): unknown {
 // =============================================================================
 
 describe("tool listing", () => {
-  it("registers 22 tools", async () => {
+  it("registers 25 tools", async () => {
     const { tools } = await client.listTools();
-    expect(tools).toHaveLength(22);
+    expect(tools).toHaveLength(25);
   });
 
   it("all tools have descriptions", async () => {
@@ -58,8 +58,8 @@ describe("tool listing", () => {
     const { tools } = await client.listTools();
     const names = tools.map((t) => t.name);
     // Existing tools
-    expect(names).toContain("component_list");
-    expect(names).toContain("component_get");
+    expect(names).toContain("block_list");
+    expect(names).toContain("block_get");
     expect(names).toContain("standard_list");
     expect(names).toContain("standard_get");
     expect(names).toContain("standard_categories");
@@ -69,6 +69,9 @@ describe("tool listing", () => {
     expect(names).toContain("token_get");
     expect(names).toContain("tier_list");
     expect(names).toContain("config_show");
+    expect(names).toContain("config_tier");
+    expect(names).toContain("config_channel");
+    expect(names).toContain("tokens_add_config");
     expect(names).toContain("create_component");
     expect(names).toContain("create_package");
     expect(names).toContain("llm");
@@ -98,7 +101,7 @@ describe("tool listing", () => {
 describe("envelope shape", () => {
   it("success response has ok: true, data, and meta", async () => {
     const result = await client.callTool({
-      name: "component_list",
+      name: "block_list",
       arguments: {},
     });
     const envelope = parseEnvelope(result);
@@ -109,7 +112,7 @@ describe("envelope shape", () => {
 
   it("error response has ok: false and error object", async () => {
     const result = await client.callTool({
-      name: "component_get",
+      name: "block_get",
       arguments: { name: "NonExistent" },
     });
     expect(result.isError).toBe(true);
@@ -123,7 +126,7 @@ describe("envelope shape", () => {
 
   it("list operations include count in meta", async () => {
     const result = await client.callTool({
-      name: "component_list",
+      name: "block_list",
       arguments: {},
     });
     const envelope = parseEnvelope(result);
@@ -133,7 +136,7 @@ describe("envelope shape", () => {
 
   it("list operations include filters in meta", async () => {
     const result = await client.callTool({
-      name: "component_list",
+      name: "block_list",
       arguments: {},
     });
     const envelope = parseEnvelope(result);
@@ -145,13 +148,13 @@ describe("envelope shape", () => {
 });
 
 // =============================================================================
-// Component tools
+// Block tools
 // =============================================================================
 
-describe("component_list", () => {
-  it("returns components", async () => {
+describe("block_list", () => {
+  it("returns blocks", async () => {
     const result = await client.callTool({
-      name: "component_list",
+      name: "block_list",
       arguments: {},
     });
     const data = parseData(result) as unknown[];
@@ -167,7 +170,7 @@ describe("component_list", () => {
     });
     try {
       const without = await restricted.client.callTool({
-        name: "component_list",
+        name: "block_list",
         arguments: {},
       });
       const withoutNames = (parseData(without) as { name: string }[]).map(
@@ -176,7 +179,7 @@ describe("component_list", () => {
       expect(withoutNames).not.toContain("LXD Panel");
 
       const withAll = await restricted.client.callTool({
-        name: "component_list",
+        name: "block_list",
         arguments: { allTiers: true },
       });
       const withAllNames = (parseData(withAll) as { name: string }[]).map(
@@ -190,10 +193,10 @@ describe("component_list", () => {
   });
 });
 
-describe("component_get", () => {
-  it("returns detailed component data by default (MC.02)", async () => {
+describe("block_get", () => {
+  it("returns detailed block data by default (MC.02)", async () => {
     const result = await client.callTool({
-      name: "component_get",
+      name: "block_get",
       arguments: { name: "Button" },
     });
     const data = parseData(result) as Record<string, unknown>;
@@ -205,7 +208,7 @@ describe("component_get", () => {
 
   it("returns summary when detailed=false", async () => {
     const result = await client.callTool({
-      name: "component_get",
+      name: "block_get",
       arguments: { name: "Button", detailed: false },
     });
     const data = parseData(result) as Record<string, unknown>;
@@ -214,9 +217,9 @@ describe("component_get", () => {
     expect(data).not.toHaveProperty("implementationPaths");
   });
 
-  it("returns error with recovery for unknown component", async () => {
+  it("returns error with recovery for unknown block", async () => {
     const result = await client.callTool({
-      name: "component_get",
+      name: "block_get",
       arguments: { name: "NonExistent" },
     });
     expect(result.isError).toBe(true);
@@ -225,7 +228,7 @@ describe("component_get", () => {
     const error = envelope.error as McpErrorPayload;
     expect(error.code).toBe("ENTITY_NOT_FOUND");
     expect(error.recovery).toBeDefined();
-    expect(error.recovery?.tool).toBe("component_list");
+    expect(error.recovery?.tool).toBe("block_list");
   });
 });
 
@@ -532,7 +535,7 @@ describe("llm", () => {
       decisionTrees: { intent: string }[];
       commandReference: { command: string }[];
     };
-    expect(data.context.counts.components).toBeGreaterThan(0);
+    expect(data.context.counts.blocks).toBeGreaterThan(0);
     expect(data.context.counts.standards).toBeGreaterThan(0);
     expect(data.context.namespaces.length).toBeGreaterThan(0);
     expect(data.decisionTrees).toHaveLength(5);
@@ -547,7 +550,7 @@ describe("llm", () => {
 describe("error handling", () => {
   it("all entity-not-found errors include recovery objects", async () => {
     const notFoundCalls = [
-      { name: "component_get", arguments: { name: "X" } },
+      { name: "block_get", arguments: { name: "X" } },
       { name: "modifier_get", arguments: { name: "X" } },
       { name: "token_get", arguments: { name: "X" } },
       { name: "standard_get", arguments: { name: "X" } },
@@ -757,11 +760,11 @@ describe("capabilities", () => {
         diagnostic: number;
       };
     };
-    expect(data.tools).toContain("component_list");
+    expect(data.tools).toContain("block_list");
     expect(data.tools).toContain("capabilities");
-    expect(data.counts.total).toBe(22);
+    expect(data.counts.total).toBe(25);
     expect(data.counts.read).toBeGreaterThan(0);
-    expect(data.counts.write).toBe(2);
+    expect(data.counts.write).toBe(5);
     expect(data.counts.orientation).toBe(2);
     expect(data.counts.diagnostic).toBe(2);
   });
@@ -772,9 +775,9 @@ describe("capabilities", () => {
 // =============================================================================
 
 describe("condensed parameter", () => {
-  it("component_list returns condensed text", async () => {
+  it("block_list returns condensed text", async () => {
     const result = await client.callTool({
-      name: "component_list",
+      name: "block_list",
       arguments: { condensed: true },
     });
     const envelope = parseEnvelope(result);

@@ -18,8 +18,11 @@ export default async function executeQuery(
     throw new PragmaError({
       code: "STORE_ERROR",
       message: `Failed to execute query. ${error instanceof Error ? error.message : String(error)}`,
-      recovery:
-        "Check your SPARQL syntax. Run `pragma ontology list` to see loaded namespaces.",
+      recovery: {
+        message: "Check your SPARQL syntax and see loaded namespaces.",
+        cli: "pragma ontology list",
+        mcp: { tool: "ontology_list" },
+      },
     });
   }
 }

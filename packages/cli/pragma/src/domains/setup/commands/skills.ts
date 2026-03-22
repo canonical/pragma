@@ -55,8 +55,11 @@ export default function buildSkillsCommand(): CommandDefinition {
       const skills = await discoverSkills(cwd);
       if (skills.length === 0) {
         throw PragmaError.emptyResults("skill", {
-          recovery:
-            "Install @canonical packages first, then run `pragma setup skills`",
+          recovery: {
+            message:
+              "Install @canonical packages first, then run pragma setup skills.",
+            cli: "pragma setup skills",
+          },
         });
       }
 

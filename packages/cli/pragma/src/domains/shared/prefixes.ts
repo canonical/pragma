@@ -12,6 +12,7 @@ export const PREFIX_MAP = {
   cs: "http://pragma.canonical.com/codestandards#",
   rdfs: "http://www.w3.org/2000/01/rdf-schema#",
   owl: "http://www.w3.org/2002/07/owl#",
+  skos: "http://www.w3.org/2004/02/skos/core#",
 } as const satisfies PrefixMap;
 
 /**

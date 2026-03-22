@@ -26,8 +26,10 @@ export default function resolveUri(
   const colonIdx = uri.indexOf(":");
   if (colonIdx === -1) {
     throw PragmaError.invalidInput("uri", uri, {
-      recovery:
-        'Use a prefixed URI (e.g., "ds:button") or a full URI (e.g., "https://ds.canonical.com/button").',
+      recovery: {
+        message:
+          'Use a prefixed URI (e.g., "ds:button") or a full URI (e.g., "https://ds.canonical.com/button").',
+      },
     });
   }
 
@@ -38,7 +40,11 @@ export default function resolveUri(
   if (namespace === undefined) {
     throw PragmaError.invalidInput("prefix", prefix, {
       validOptions: Object.keys(prefixes),
-      recovery: "Run `pragma ontology list` to see known prefixes.",
+      recovery: {
+        message: "List known ontology prefixes.",
+        cli: "pragma ontology list",
+        mcp: { tool: "ontology_list" },
+      },
     });
   }
 
@@ -54,7 +60,7 @@ export default function resolveUri(
 function assertSafeIri(uri: string): void {
   if (UNSAFE_IRI_PATTERN.test(uri)) {
     throw PragmaError.invalidInput("uri", uri, {
-      recovery: "URI contains characters not allowed in IRIs.",
+      recovery: { message: "URI contains characters not allowed in IRIs." },
     });
   }
 }

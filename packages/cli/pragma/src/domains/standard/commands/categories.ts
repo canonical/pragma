@@ -30,8 +30,10 @@ export default function buildCategoriesCommand(
 
       if (categories.length === 0) {
         throw PragmaError.emptyResults("categories", {
-          recovery:
-            "Ensure code standards packages are installed: bun add -D @canonical/code-standards",
+          recovery: {
+            message:
+              "Ensure code standards packages are installed: bun add -D @canonical/code-standards",
+          },
         });
       }
 

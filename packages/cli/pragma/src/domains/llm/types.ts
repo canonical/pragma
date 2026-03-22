@@ -7,7 +7,7 @@ export interface LlmContext {
   readonly tierChain: readonly string[];
   readonly channel: string;
   readonly counts: {
-    readonly components: number;
+    readonly blocks: number;
     readonly standards: number;
     readonly modifierFamilies: number;
     readonly tokens: number;

@@ -33,7 +33,11 @@ export default async function showOntologyRaw(
 
   if (result.type !== "construct" || result.triples.length === 0) {
     throw PragmaError.notFound("ontology", prefixOrUri, {
-      recovery: "Run `pragma ontology list` to see loaded ontologies.",
+      recovery: {
+        message: "List loaded ontologies.",
+        cli: "pragma ontology list",
+        mcp: { tool: "ontology_list" },
+      },
     });
   }
 

@@ -26,7 +26,11 @@ export default async function validateTier(
     const validPaths = tiers.map((t) => t.path);
     throw PragmaError.invalidInput("tier", tierPath, {
       validOptions: validPaths,
-      recovery: "pragma config tier --reset",
+      recovery: {
+        message: "Reset tier configuration.",
+        cli: "pragma config tier --reset",
+        mcp: { tool: "config_tier", params: { reset: true } },
+      },
     });
   }
 

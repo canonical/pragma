@@ -37,7 +37,11 @@ export default async function getStandard(
 
   if (baseResult.type !== "select" || baseResult.bindings.length === 0) {
     throw PragmaError.notFound("standard", name, {
-      recovery: "Run `pragma standard list` to see available standards.",
+      recovery: {
+        message: "List available standards.",
+        cli: "pragma standard list",
+        mcp: { tool: "standard_list" },
+      },
     });
   }
 

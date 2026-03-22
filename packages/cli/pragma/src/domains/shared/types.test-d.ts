@@ -9,7 +9,7 @@
 
 import type { Store, URI } from "@canonical/ke";
 import { expectTypeOf } from "expect-type";
-import { getComponent, listComponents } from "../component/operations/index.js";
+import { getBlock, listBlocks } from "../block/operations/index.js";
 import { getModifier, listModifiers } from "../modifier/operations/index.js";
 import {
   getStandard,
@@ -21,10 +21,10 @@ import { getToken, listTokens } from "../token/operations/index.js";
 import type {
   AnatomyNode,
   AnatomyTree,
+  BlockDetailed,
+  BlockSummary,
   CategorySummary,
   CodeBlock,
-  ComponentDetailed,
-  ComponentSummary,
   FilterConfig,
   ModifierFamily,
   StandardDetailed,
@@ -40,25 +40,19 @@ import type {
 // TB.01 — Type structure assertions
 // =============================================================================
 
-// ComponentSummary
-expectTypeOf<ComponentSummary["uri"]>().toEqualTypeOf<URI>();
-expectTypeOf<ComponentSummary["name"]>().toBeString();
-expectTypeOf<ComponentSummary["tier"]>().toBeString();
-expectTypeOf<ComponentSummary["modifiers"]>().toEqualTypeOf<
-  readonly string[]
->();
-expectTypeOf<ComponentSummary["nodeCount"]>().toBeNumber();
-expectTypeOf<ComponentSummary["tokenCount"]>().toBeNumber();
+// BlockSummary
+expectTypeOf<BlockSummary["uri"]>().toEqualTypeOf<URI>();
+expectTypeOf<BlockSummary["name"]>().toBeString();
+expectTypeOf<BlockSummary["tier"]>().toBeString();
+expectTypeOf<BlockSummary["modifiers"]>().toEqualTypeOf<readonly string[]>();
+expectTypeOf<BlockSummary["nodeCount"]>().toBeNumber();
+expectTypeOf<BlockSummary["tokenCount"]>().toBeNumber();
 
-// ComponentDetailed extends ComponentSummary
-expectTypeOf<ComponentDetailed>().toMatchTypeOf<ComponentSummary>();
-expectTypeOf<
-  ComponentDetailed["anatomy"]
->().toEqualTypeOf<AnatomyTree | null>();
-expectTypeOf<ComponentDetailed["tokens"]>().toEqualTypeOf<
-  readonly TokenRef[]
->();
-expectTypeOf<ComponentDetailed["standards"]>().toEqualTypeOf<
+// BlockDetailed extends BlockSummary
+expectTypeOf<BlockDetailed>().toMatchTypeOf<BlockSummary>();
+expectTypeOf<BlockDetailed["anatomy"]>().toEqualTypeOf<AnatomyTree | null>();
+expectTypeOf<BlockDetailed["tokens"]>().toEqualTypeOf<readonly TokenRef[]>();
+expectTypeOf<BlockDetailed["standards"]>().toEqualTypeOf<
   readonly StandardRef[]
 >();
 
@@ -113,10 +107,8 @@ expectTypeOf<FilterConfig["channel"]>().toEqualTypeOf<
 declare const store: Store;
 declare const filters: FilterConfig;
 
-expectTypeOf(listComponents).returns.resolves.toEqualTypeOf<
-  ComponentSummary[]
->();
-expectTypeOf(getComponent).returns.resolves.toEqualTypeOf<ComponentDetailed>();
+expectTypeOf(listBlocks).returns.resolves.toEqualTypeOf<BlockSummary[]>();
+expectTypeOf(getBlock).returns.resolves.toEqualTypeOf<BlockDetailed>();
 expectTypeOf(listStandards).returns.resolves.toEqualTypeOf<StandardSummary[]>();
 expectTypeOf(getStandard).returns.resolves.toEqualTypeOf<StandardDetailed>();
 expectTypeOf(listCategories).returns.resolves.toEqualTypeOf<

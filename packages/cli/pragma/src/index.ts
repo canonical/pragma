@@ -9,7 +9,7 @@
 
 export type { PragmaConfig } from "./config/index.js";
 export { readConfig } from "./config/index.js";
-export type { ErrorCode, PragmaErrorData } from "./error/index.js";
+export type { ErrorCode, PragmaErrorData, Recovery } from "./error/index.js";
 export { PragmaError } from "./error/index.js";
 
 // — Runtime ———————————————————————————————————————————————————————————————————
@@ -22,10 +22,12 @@ export { bootPragma } from "./domains/shared/runtime.js";
 export type {
   AnatomyNode,
   AnatomyTree,
+  BatchResult,
+  BlockDetailed,
+  BlockSummary,
   CategorySummary,
   CodeBlock,
-  ComponentDetailed,
-  ComponentSummary,
+  Disclosure,
   FilterConfig,
   InspectResult,
   ModifierFamily,
@@ -47,9 +49,9 @@ export type {
 // — Domain Operations —————————————————————————————————————————————————————————
 
 export {
-  getComponent,
-  listComponents,
-} from "./domains/component/operations/index.js";
+  getBlock,
+  listBlocks,
+} from "./domains/block/operations/index.js";
 export { runChecks } from "./domains/doctor/operations/index.js";
 export {
   executeQuery,

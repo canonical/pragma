@@ -28,12 +28,10 @@ function renderErrorPlain(error: PragmaError): string {
 
   if (error.recovery) {
     lines.push("");
-    if (Array.isArray(error.recovery)) {
-      for (const r of error.recovery) {
-        lines.push(`  - ${r}`);
-      }
+    if (error.recovery.cli) {
+      lines.push(`Run \`${error.recovery.cli}\``);
     } else {
-      lines.push(`Run \`${error.recovery}\``);
+      lines.push(error.recovery.message);
     }
   }
 
@@ -62,12 +60,10 @@ function renderErrorLlm(error: PragmaError): string {
   }
 
   if (error.recovery) {
-    if (Array.isArray(error.recovery)) {
-      lines.push(
-        `Recovery: ${error.recovery.map((r) => `\`${r}\``).join(", ")}`,
-      );
+    if (error.recovery.cli) {
+      lines.push(`Recovery: \`${error.recovery.cli}\``);
     } else {
-      lines.push(`Recovery: \`${error.recovery}\``);
+      lines.push(`Recovery: ${error.recovery.message}`);
     }
   }
 

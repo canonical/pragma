@@ -6,7 +6,7 @@
  */
 
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
-import type { PragmaError } from "../../error/PragmaError.js";
+import type { PragmaError } from "#error";
 import buildRecovery from "./buildRecovery.js";
 import type { McpErrorPayload } from "./types.js";
 

@@ -54,22 +54,22 @@ describe("agent sessions", () => {
       decisionTrees: { intent: string }[];
     };
     const buildTree = llmData.decisionTrees.find(
-      (t) => t.intent === "Build a component",
+      (t) => t.intent === "Build a block",
     );
     expect(buildTree).toBeDefined();
 
-    // 3. Discover components
+    // 3. Discover blocks
     const list = parseEnvelope(
-      await client.callTool({ name: "component_list", arguments: {} }),
+      await client.callTool({ name: "block_list", arguments: {} }),
     );
-    const components = list.data as { name: string }[];
-    expect(components.length).toBeGreaterThan(0);
+    const blocks = list.data as { name: string }[];
+    expect(blocks.length).toBeGreaterThan(0);
 
-    // 4. Get component detail
-    const firstName = components[0]!.name;
+    // 4. Get block detail
+    const firstName = blocks[0]!.name;
     const detail = parseEnvelope(
       await client.callTool({
-        name: "component_get",
+        name: "block_get",
         arguments: { name: firstName },
       }),
     );
@@ -79,7 +79,7 @@ describe("agent sessions", () => {
     // 5. Error recovery — bad name returns structured error
     const err = parseEnvelope(
       await client.callTool({
-        name: "component_get",
+        name: "block_get",
         arguments: { name: "XXXXX" },
       }),
     );

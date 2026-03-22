@@ -25,7 +25,11 @@ export default async function showOntology(
 
   if (classes.length === 0 && properties.length === 0) {
     throw PragmaError.notFound("ontology", prefixOrUri, {
-      recovery: "Run `pragma ontology list` to see loaded ontologies.",
+      recovery: {
+        message: "List loaded ontologies.",
+        cli: "pragma ontology list",
+        mcp: { tool: "ontology_list" },
+      },
     });
   }
 

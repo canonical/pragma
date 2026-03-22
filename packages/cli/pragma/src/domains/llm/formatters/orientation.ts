@@ -21,7 +21,7 @@ export default function renderLlmOrientation(data: LlmData): string {
   lines.push("## Context");
   lines.push(`tier: ${tierDisplay} | channel: ${ctx.channel}`);
   lines.push(
-    `data: ${ctx.counts.components} components, ${ctx.counts.standards} standards, ${ctx.counts.modifierFamilies} modifier families, ${ctx.counts.tokens} tokens`,
+    `data: ${ctx.counts.blocks} blocks, ${ctx.counts.standards} standards, ${ctx.counts.modifierFamilies} modifier families, ${ctx.counts.tokens} tokens`,
   );
   lines.push(`namespaces: ${ctx.namespaces.join(", ")}`);
   lines.push("");

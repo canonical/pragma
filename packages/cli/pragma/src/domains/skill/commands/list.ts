@@ -45,9 +45,11 @@ export default function buildListCommand(
       if (skills.length === 0) {
         const allUnavailable = sources.every((s) => !s.available);
         throw PragmaError.emptyResults("skill", {
-          recovery: allUnavailable
-            ? "Install @canonical packages first"
-            : "No SKILL.md files found in source packages",
+          recovery: {
+            message: allUnavailable
+              ? "Install @canonical packages first"
+              : "No SKILL.md files found in source packages",
+          },
         });
       }
 
