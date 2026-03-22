@@ -13,7 +13,11 @@
  */
 
 import { mockEffect } from "./dry-run.js";
-import { type RunTaskOptions, TaskExecutionError, runTask } from "./interpreter.js";
+import {
+  type RunTaskOptions,
+  runTask,
+  TaskExecutionError,
+} from "./interpreter.js";
 import type { Task } from "./types.js";
 
 // =============================================================================

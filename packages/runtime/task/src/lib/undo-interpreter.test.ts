@@ -1,11 +1,10 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { sequence_, when } from "./combinators.js";
 import { dryRun } from "./dry-run.js";
 import {
   appendFile,
   copyDirectory,
   copyFile,
-  deleteFile,
   exec,
   exists,
   info,
@@ -14,7 +13,7 @@ import {
   symlink,
   writeFile,
 } from "./primitives.js";
-import { flatMap, gen, $, pure } from "./task.js";
+import { $, gen, pure } from "./task.js";
 import { collectUndos, runUndo } from "./undo-interpreter.js";
 
 // =============================================================================

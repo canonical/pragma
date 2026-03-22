@@ -6,7 +6,6 @@
  */
 
 import {
-  type UndoOptions,
   appendFileEffect,
   copyDirectoryEffect,
   copyFileEffect,
@@ -21,6 +20,7 @@ import {
   readContextEffect,
   readFileEffect,
   symlinkEffect,
+  type UndoOptions,
   writeContextEffect,
   writeFileEffect,
 } from "./effect.js";
@@ -93,10 +93,8 @@ export const deleteFile = (path: string, opts?: UndoOptions): Task<void> =>
  * Delete a directory recursively.
  * No default undo — provide `{ undo: yourTask }` to make it undoable.
  */
-export const deleteDirectory = (
-  path: string,
-  opts?: UndoOptions,
-): Task<void> => effect(deleteDirectoryEffect(path, opts));
+export const deleteDirectory = (path: string, opts?: UndoOptions): Task<void> =>
+  effect(deleteDirectoryEffect(path, opts));
 
 /**
  * Create a directory (recursively by default).

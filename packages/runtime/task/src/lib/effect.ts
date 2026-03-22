@@ -64,10 +64,7 @@ export const writeFileEffect = (
   _tag: "WriteFile",
   path,
   content,
-  undo: resolveUndo(
-    opts?.undo,
-    bareTask({ _tag: "DeleteFile", path }),
-  ),
+  undo: resolveUndo(opts?.undo, bareTask({ _tag: "DeleteFile", path })),
 });
 
 export const appendFileEffect = (
@@ -91,10 +88,7 @@ export const copyFileEffect = (
   _tag: "CopyFile",
   source,
   dest,
-  undo: resolveUndo(
-    opts?.undo,
-    bareTask({ _tag: "DeleteFile", path: dest }),
-  ),
+  undo: resolveUndo(opts?.undo, bareTask({ _tag: "DeleteFile", path: dest })),
 });
 
 export const copyDirectoryEffect = (
@@ -111,10 +105,7 @@ export const copyDirectoryEffect = (
   ),
 });
 
-export const deleteFileEffect = (
-  path: string,
-  opts?: UndoOptions,
-): Effect => ({
+export const deleteFileEffect = (path: string, opts?: UndoOptions): Effect => ({
   _tag: "DeleteFile",
   path,
   undo: resolveUndo(opts?.undo, undefined),
@@ -137,10 +128,7 @@ export const makeDirEffect = (
   _tag: "MakeDir",
   path,
   recursive,
-  undo: resolveUndo(
-    opts?.undo,
-    bareTask({ _tag: "DeleteDirectory", path }),
-  ),
+  undo: resolveUndo(opts?.undo, bareTask({ _tag: "DeleteDirectory", path })),
 });
 
 export const existsEffect = (path: string): Effect => ({
@@ -156,10 +144,7 @@ export const symlinkEffect = (
   _tag: "Symlink",
   target,
   path,
-  undo: resolveUndo(
-    opts?.undo,
-    bareTask({ _tag: "DeleteFile", path }),
-  ),
+  undo: resolveUndo(opts?.undo, bareTask({ _tag: "DeleteFile", path })),
 });
 
 export const globEffect = (pattern: string, cwd: string): Effect => ({
