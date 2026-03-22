@@ -6,4 +6,5 @@ export function commands(ctx: PragmaContext): CommandDefinition[] {
   return [listCommand(ctx), lookupCommand(ctx)];
 }
 
+export { specs as mcpSpecs } from "./mcp/index.js";
 export { listModifiers, lookupModifier } from "./operations/index.js";

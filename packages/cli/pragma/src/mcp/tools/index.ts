@@ -1,23 +1,41 @@
 /**
  * MCP tool registration orchestrator.
  *
- * Delegates to domain-specific registration modules.
+ * Collects declarative ToolSpec arrays from each domain and registers
+ * them on the MCP server via the registerFromSpec adapter.
  */
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { specs as blockSpecs } from "../../domains/block/mcp/index.js";
+import { specs as configSpecs } from "../../domains/config/mcp/index.js";
+import { specs as createSpecs } from "../../domains/create/mcp/index.js";
+import { specs as diagnosticSpecs } from "../../domains/doctor/mcp/index.js";
+import { specs as graphSpecs } from "../../domains/graph/mcp/index.js";
+import { specs as orientationSpecs } from "../../domains/llm/mcp/index.js";
+import { specs as modifierSpecs } from "../../domains/modifier/mcp/index.js";
+import { specs as ontologySpecs } from "../../domains/ontology/mcp/index.js";
 import type { PragmaRuntime } from "../../domains/shared/runtime.js";
-import { registerBlockTools } from "./block.js";
-import { registerConfigTools } from "./config.js";
-import { registerDiagnosticTools } from "./diagnostics.js";
-import { registerGeneratorTools } from "./generators.js";
-import { registerGraphTools } from "./graph.js";
-import { registerModifierTools } from "./modifier.js";
-import { registerOntologyTools } from "./ontology.js";
-import { registerOrientationTools } from "./orientation.js";
-import { registerSkillTools } from "./skill.js";
-import { registerStandardTools } from "./standard.js";
-import { registerTierTools } from "./tier.js";
-import { registerTokenTools } from "./token.js";
+import type { ToolSpec } from "../../domains/shared/ToolSpec.js";
+import { specs as skillSpecs } from "../../domains/skill/mcp/index.js";
+import { specs as standardSpecs } from "../../domains/standard/mcp/index.js";
+import { specs as tierSpecs } from "../../domains/tier/mcp/index.js";
+import { specs as tokenSpecs } from "../../domains/token/mcp/index.js";
+import registerFromSpec from "./registerFromSpec.js";
+
+const allSpecs: readonly ToolSpec[] = [
+  ...blockSpecs,
+  ...standardSpecs,
+  ...modifierSpecs,
+  ...tokenSpecs,
+  ...tierSpecs,
+  ...configSpecs,
+  ...ontologySpecs,
+  ...graphSpecs,
+  ...skillSpecs,
+  ...diagnosticSpecs,
+  ...orientationSpecs,
+  ...createSpecs,
+];
 
 /**
  * Register all MCP tools on the server.
@@ -26,16 +44,7 @@ export default function registerAllTools(
   server: McpServer,
   runtime: PragmaRuntime,
 ): void {
-  registerBlockTools(server, runtime);
-  registerStandardTools(server, runtime);
-  registerModifierTools(server, runtime);
-  registerTokenTools(server, runtime);
-  registerTierTools(server, runtime);
-  registerConfigTools(server, runtime);
-  registerOntologyTools(server, runtime);
-  registerGraphTools(server, runtime);
-  registerSkillTools(server, runtime);
-  registerDiagnosticTools(server, runtime);
-  registerOrientationTools(server, runtime);
-  registerGeneratorTools(server, runtime);
+  for (const spec of allSpecs) {
+    registerFromSpec(server, runtime, spec);
+  }
 }
