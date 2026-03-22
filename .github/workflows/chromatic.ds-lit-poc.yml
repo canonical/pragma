@@ -1,4 +1,4 @@
-name: "lit-poc/chromatic"
+name: "lit-ds-prototype/chromatic"
 on:
   pull_request:
     paths:
@@ -7,7 +7,7 @@ on:
       - packages/tokens/**
       - packages/styles/**
       - packages/utils/**
-      - packages/lit/poc/**
+      - packages/lit/ds-prototype/**
   push:
     branches:
       - main
@@ -17,14 +17,14 @@ on:
       - packages/tokens/**
       - packages/styles/**
       - packages/utils/**
-      - packages/lit/poc/**
+      - packages/lit/ds-prototype/**
 jobs:
   test-compile:
     uses: ./.github/workflows/chromatic._template.yml
     secrets:
       CHROMATIC_PROJECT_TOKEN: ${{ secrets.CHROMATIC_TOKEN_CANONICAL_LIT_POC }}
     with:
-      working-directory: packages/lit/poc
+      working-directory: packages/lit/ds-prototype
       externals: '[
         "configs/storybook/**",
         "packages/ds-assets/**",
