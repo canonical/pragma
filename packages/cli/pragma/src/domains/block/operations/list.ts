@@ -30,7 +30,7 @@ export default async function listBlocks(
              (COUNT(DISTINCT ?node) AS ?nodeCount)
              (COUNT(DISTINCT ?token) AS ?tokenCount)
       WHERE {
-        VALUES ?blockType { ${P.ds}Component ${P.ds}Pattern ${P.ds}Layout }
+        VALUES ?blockType { ${P.ds}Component ${P.ds}Pattern ${P.ds}Layout ${P.ds}Subcomponent }
         ?component a ?blockType ;
                    ${P.ds}name ?name ;
                    ${P.ds}tier ?tier .

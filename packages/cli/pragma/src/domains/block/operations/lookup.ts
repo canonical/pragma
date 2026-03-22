@@ -39,7 +39,7 @@ export default async function lookupBlock(
     buildQuery(`
       SELECT ?component ?tier
       WHERE {
-        VALUES ?blockType { ${P.ds}Component ${P.ds}Pattern ${P.ds}Layout }
+        VALUES ?blockType { ${P.ds}Component ${P.ds}Pattern ${P.ds}Layout ${P.ds}Subcomponent }
         ?component a ?blockType ;
                    ${P.ds}name ${escaped} ;
                    ${P.ds}tier ?tier .
