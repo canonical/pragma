@@ -1,7 +1,3 @@
-/**
- * `pragma ontology show` command definition.
- */
-
 import {
   type CommandDefinition,
   type CommandResult,
@@ -13,6 +9,15 @@ import { selectFormatter } from "../../shared/formatters.js";
 import { showFormatters } from "../formatters/index.js";
 import { listOntologies, showOntology } from "../operations/index.js";
 
+/**
+ * Builds the `pragma ontology show` command definition.
+ *
+ * Displays detailed schema (classes and properties) for a given ontology
+ * prefix. Provides tab-completion for the prefix parameter.
+ *
+ * @param ctx - Pragma runtime context providing the ke store and config.
+ * @returns A command definition for `ontology show`.
+ */
 export default function buildShowCommand(
   ctx: PragmaContext,
 ): CommandDefinition {

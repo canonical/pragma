@@ -1,13 +1,3 @@
-/**
- * `pragma doctor` command definition.
- *
- * Environment health check: validates Node version, pragma installation,
- * config, ke store, shell completions, terrazzo-lsp, MCP, and skills.
- *
- * @note Impure — delegates to runChecks which performs filesystem and
- * process checks.
- */
-
 import type { CommandContext } from "@canonical/cli-core";
 import {
   type CommandDefinition,
@@ -18,6 +8,15 @@ import { selectFormatter } from "../../shared/formatters.js";
 import { doctorFormatters } from "../formatters/index.js";
 import { runChecks } from "../operations/index.js";
 
+/**
+ * `pragma doctor` command definition.
+ *
+ * Runs all environment health checks (Node version, pragma installation,
+ * config file, ke store, shell completions, terrazzo-lsp, MCP, skills)
+ * and sets exit code 1 when any check fails.
+ *
+ * @note Impure
+ */
 const doctorCommand: CommandDefinition = {
   path: ["doctor"],
   description: "Check environment health",

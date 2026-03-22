@@ -1,17 +1,22 @@
-/**
- * Get raw Turtle triples for a namespace via CONSTRUCT.
- *
- * Returns triples where the subject or predicate starts with the namespace URI.
- *
- * @throws PragmaError.invalidInput if the prefix or namespace is unknown.
- * @throws PragmaError.notFound if the namespace yields no triples.
- */
-
 import type { Store, Triple } from "@canonical/ke";
 import { PragmaError } from "#error";
 import { buildQuery } from "../../shared/buildQuery.js";
 import resolvePrefix from "../helpers/resolvePrefix.js";
 
+/**
+ * Retrieves raw triples for a namespace via a SPARQL CONSTRUCT query.
+ *
+ * Returns all triples where the subject or predicate starts with the
+ * resolved namespace URI.
+ *
+ * @note Queries ke store
+ *
+ * @param store - The ke store to query.
+ * @param prefixOrUri - A short prefix or full namespace URI.
+ * @returns An array of raw {@link Triple} objects.
+ * @throws PragmaError.invalidInput if the prefix or namespace is unknown.
+ * @throws PragmaError.notFound if the namespace yields no triples.
+ */
 export default async function showOntologyRaw(
   store: Store,
   prefixOrUri: string,

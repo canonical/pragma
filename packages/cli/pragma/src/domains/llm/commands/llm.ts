@@ -1,7 +1,3 @@
-/**
- * `pragma llm` command definition.
- */
-
 import {
   type CommandDefinition,
   type CommandResult,
@@ -13,6 +9,15 @@ import renderLlmOrientation from "../formatters/orientation.js";
 import collectContext from "../operations/collectContext.js";
 import type { LlmData } from "../types.js";
 
+/**
+ * Builds the `pragma llm` command definition.
+ *
+ * Produces an LLM orientation document containing live context (entity counts,
+ * tier/channel), static decision trees, and a command reference table.
+ *
+ * @param ctx - Pragma runtime context providing the ke store and config.
+ * @returns A command definition for `llm`.
+ */
 export default function buildLlmCommand(ctx: PragmaContext): CommandDefinition {
   return {
     path: ["llm"],

@@ -1,10 +1,3 @@
-/**
- * Collect dynamic context for `pragma llm` orientation output.
- *
- * Queries the store for entity counts and config state.
- * All queries run in parallel via Promise.all.
- */
-
 import type { Store } from "@canonical/ke";
 import { listBlocks } from "../../block/operations/index.js";
 import { listModifiers } from "../../modifier/operations/index.js";
@@ -15,6 +8,18 @@ import { listStandards } from "../../standard/operations/index.js";
 import { listTokens } from "../../token/operations/index.js";
 import type { LlmContext } from "../types.js";
 
+/**
+ * Collects dynamic context for the `pragma llm` orientation output.
+ *
+ * Queries the store in parallel for block, standard, modifier, token, and
+ * ontology counts, and combines them with tier/channel config state.
+ *
+ * @note Queries ke store
+ *
+ * @param store - The ke store to query.
+ * @param config - Filter config providing tier and channel settings.
+ * @returns An {@link LlmContext} with entity counts and namespace list.
+ */
 export default async function collectContext(
   store: Store,
   config: FilterConfig,

@@ -1,20 +1,17 @@
-/**
- * Resolve data for `pragma config show`.
- *
- * Pure data assembly — no store access needed. Tier chain is resolved
- * from the configured path string, not from the ontology.
- */
-
 import type { PragmaConfig } from "#config";
 import { CHANNEL_RELEASES } from "../../shared/filters/buildChannelFilter.js";
 import { resolveTierChain } from "../../shared/filters/buildTierFilter.js";
 import type { ConfigShowData } from "./types.js";
 
 /**
- * Resolve data for `pragma config show`.
+ * Assemble the data needed for `pragma config show` output.
  *
- * Pure data assembly — no store access needed. Tier chain is resolved
- * from the configured path string, not from the ontology.
+ * Pure data assembly -- the tier chain is resolved from the path
+ * string, not from the ontology.
+ *
+ * @param config - The resolved pragma config.
+ * @param opts - Additional context: package manager, config file path, and existence flag.
+ * @returns The fully resolved ConfigShowData.
  */
 export default function resolveConfigShow(
   config: PragmaConfig,

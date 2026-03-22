@@ -1,11 +1,3 @@
-/**
- * `pragma upgrade` command definition.
- *
- * Upgrades the pragma CLI via the detected package manager.
- *
- * @note Impure — detects PM, queries registry, spawns child process.
- */
-
 import { execSync } from "node:child_process";
 import type { CommandDefinition, CommandResult } from "@canonical/cli-core";
 import { readConfig } from "#config";
@@ -20,6 +12,12 @@ import {
 import checkRegistryVersion from "../operations/checkRegistryVersion.js";
 import type { UpgradeData } from "../types.js";
 
+/**
+ * Selects the appropriate upgrade renderer based on global CLI flags.
+ *
+ * @param flags - Global flags indicating output format.
+ * @returns A render function mapping {@link UpgradeData} to a string.
+ */
 function selectUpgradeRenderer(flags: {
   llm: boolean;
   format: "text" | "json";
@@ -29,6 +27,13 @@ function selectUpgradeRenderer(flags: {
   return renderUpgradePlain;
 }
 
+/**
+ * Wraps upgrade data in a command result with the selected renderer.
+ *
+ * @param data - The upgrade outcome data.
+ * @param flags - Global flags indicating output format.
+ * @returns A command result ready for display.
+ */
 function buildUpgradeResult(
   data: UpgradeData,
   flags: { llm: boolean; format: "text" | "json" },
@@ -37,6 +42,17 @@ function buildUpgradeResult(
   return { tag: "output", value: data, render: { plain: render } };
 }
 
+/**
+ * Executes the upgrade workflow: checks the registry, optionally runs the
+ * package-manager update command, and returns the result.
+ *
+ * @note Impure
+ *
+ * @param params - Command parameters (`dryRun` boolean).
+ * @param ctx - Execution context with `cwd` and `globalFlags`.
+ * @returns A command result describing the upgrade outcome.
+ * @throws PragmaError if the upgrade shell command fails.
+ */
 async function executeUpgrade(
   params: Record<string, unknown>,
   ctx: { cwd: string; globalFlags: { llm: boolean; format: "text" | "json" } },
@@ -110,6 +126,13 @@ async function executeUpgrade(
   );
 }
 
+/**
+ * The `pragma upgrade` command definition.
+ *
+ * Upgrades the pragma CLI to the latest version via the detected package manager.
+ *
+ * @note Impure
+ */
 const upgradeCommand: CommandDefinition = {
   path: ["upgrade"],
   description: "Upgrade the pragma CLI to the latest version",

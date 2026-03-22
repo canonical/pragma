@@ -1,9 +1,3 @@
-/**
- * Collect all CLI command definitions from domain modules.
- *
- * Extracted from runCli so the completions server can import independently.
- */
-
 import type { CommandDefinition } from "@canonical/cli-core";
 import { commands as blockCommands } from "../domains/block/index.js";
 import { commands as configCommands } from "../domains/config/index.js";
@@ -21,6 +15,15 @@ import { commands as standardCommands } from "../domains/standard/index.js";
 import { commands as tierCommands } from "../domains/tier/index.js";
 import { commands as tokenCommands } from "../domains/token/index.js";
 
+/**
+ * Collect all CLI command definitions from domain modules.
+ *
+ * Extracted from runCli so the completions server can import
+ * the command list independently without running the full CLI pipeline.
+ *
+ * @param ctx - The pragma context providing store, config, and global flags.
+ * @returns The full array of command definitions for all domains.
+ */
 export default function collectCommands(
   ctx: PragmaContext,
 ): CommandDefinition[] {

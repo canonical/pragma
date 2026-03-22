@@ -1,9 +1,3 @@
-/**
- * `pragma config show` command definition.
- *
- * Display the resolved configuration.
- */
-
 import {
   type CommandDefinition,
   type CommandResult,
@@ -16,6 +10,16 @@ import { selectFormatter } from "../../shared/formatters.js";
 import { showFormatters } from "../formatters/index.js";
 import { resolveConfigShow } from "../operations/index.js";
 
+/**
+ * Build the `pragma config show` command definition.
+ *
+ * Displays the resolved configuration including tier, channel,
+ * package manager, and config file location.
+ *
+ * @param ctx - Pragma context providing cwd and formatter selection.
+ * @returns The command definition for `pragma config show`.
+ * @note Impure
+ */
 export default function buildShowCommand(
   ctx: PragmaContext,
 ): CommandDefinition {

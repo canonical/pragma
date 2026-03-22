@@ -1,8 +1,10 @@
 /**
- * Public API surface for @canonical/pragma.
+ * Public API surface for `@canonical/pragma`.
  *
  * Exports types, boot functions, domain operations, and the MCP adapter.
  * Internal formatters, command builders, and infrastructure are not exported.
+ *
+ * @module
  */
 
 // — Config & Error ————————————————————————————————————————————————————————————

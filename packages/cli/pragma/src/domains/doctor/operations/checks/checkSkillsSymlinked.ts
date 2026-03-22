@@ -1,14 +1,17 @@
-/**
- * Check that skills are symlinked for detected harnesses.
- * @note Impure — reads filesystem, detects harnesses.
- */
-
 import { existsSync } from "node:fs";
 import type { DetectedHarness } from "@canonical/harnesses";
 import { detectHarnesses } from "@canonical/harnesses";
 import { runTask } from "@canonical/task";
 import type { CheckContext, CheckResult } from "../types.js";
 
+/**
+ * Check that skill directories exist for each detected AI harness.
+ * Skipped when no harnesses are detected.
+ *
+ * @param ctx - Check context with the working directory.
+ * @returns A CheckResult indicating pass, fail, or skip.
+ * @note Impure
+ */
 export default async function checkSkillsSymlinked(
   ctx: CheckContext,
 ): Promise<CheckResult> {

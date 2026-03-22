@@ -1,3 +1,10 @@
+/**
+ * @module Tier domain — CLI commands and operations.
+ *
+ * Commands: `pragma tier list`.
+ * Operations: {@link listTiers}.
+ */
+
 import type { CommandDefinition } from "@canonical/cli-core";
 import type { PragmaContext } from "../shared/context.js";
 import { listCommand } from "./commands/index.js";

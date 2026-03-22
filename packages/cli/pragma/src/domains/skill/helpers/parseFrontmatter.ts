@@ -1,15 +1,14 @@
-/**
- * Parse YAML frontmatter from a SKILL.md file.
- *
- * Extracts the `---`-delimited YAML block at the start of the file
- * and validates required fields per the agentskills.io spec.
- * Returns null for missing or malformed frontmatter.
- */
-
 import type { SkillFrontmatter } from "../types.js";
 
+/** Regex matching the `---`-delimited YAML frontmatter block. */
 const FRONTMATTER_RE = /^---\r?\n([\s\S]*?)\r?\n---/;
 
+/**
+ * Parse a single YAML scalar value (string, boolean, number, or inline array).
+ *
+ * @param raw - Raw string value from a YAML line.
+ * @returns The parsed JavaScript value.
+ */
 function parseYamlValue(raw: string): unknown {
   const trimmed = raw.trim();
 
@@ -30,6 +29,12 @@ function parseYamlValue(raw: string): unknown {
   return trimmed.replace(/^["']|["']$/g, "");
 }
 
+/**
+ * Parse a simple subset of YAML supporting top-level keys and one level of nesting.
+ *
+ * @param block - The YAML block content (without `---` delimiters).
+ * @returns A record of parsed key-value pairs.
+ */
 function parseSimpleYaml(block: string): Record<string, unknown> {
   const result: Record<string, unknown> = {};
   let currentKey: string | null = null;
@@ -71,6 +76,15 @@ function parseSimpleYaml(block: string): Record<string, unknown> {
   return result;
 }
 
+/**
+ * Extract and validate YAML frontmatter from a SKILL.md file.
+ *
+ * Requires `name` and `description` fields. Returns null for missing
+ * or malformed frontmatter.
+ *
+ * @param content - Full SKILL.md file content.
+ * @returns Parsed frontmatter, or null if invalid.
+ */
 export default function parseFrontmatter(
   content: string,
 ): SkillFrontmatter | null {

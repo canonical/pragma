@@ -1,13 +1,19 @@
 /**
- * Graph domain — CLI commands and operations.
+ * @module Graph domain barrel.
  *
- * Commands: `pragma graph query <sparql>`, `pragma graph inspect <uri>`
+ * Provides raw SPARQL querying and URI inspection against the ke store.
  */
 
 import type { CommandDefinition } from "@canonical/cli-core";
 import type { PragmaContext } from "../shared/context.js";
 import { inspectCommand, queryCommand } from "./commands/index.js";
 
+/**
+ * Returns all command definitions for the graph domain.
+ *
+ * @param ctx - Pragma runtime context.
+ * @returns An array of command definitions (`graph query`, `graph inspect`).
+ */
 export function commands(ctx: PragmaContext): CommandDefinition[] {
   return [queryCommand(ctx), inspectCommand(ctx)];
 }

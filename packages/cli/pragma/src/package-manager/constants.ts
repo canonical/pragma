@@ -1,5 +1,6 @@
 import type { PackageManager } from "./types.js";
 
+/** Per-package-manager CLI command templates for global install and update. */
 const PM_COMMANDS: Record<
   PackageManager,
   {

@@ -1,7 +1,17 @@
+/**
+ * Resolves the terrazzo tokens config content and target path.
+ *
+ * Performs filesystem checks and package-manager detection but does not
+ * write files itself -- the caller is responsible for writing.
+ *
+ * @note Impure
+ */
+
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { detectPackageManager, PM_COMMANDS } from "#package-manager";
 
+/** Result of resolving a tokens config, including content and write metadata. */
 export interface AddConfigResult {
   readonly configPath: string;
   readonly configContent: string;

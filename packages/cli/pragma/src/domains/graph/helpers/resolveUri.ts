@@ -1,19 +1,23 @@
-/**
- * Resolve a potentially prefixed URI (e.g., `ds:UIBlock`) to a full URI.
- * If the URI is already a full URI (starts with `http`), validates IRI safety
- * and returns as-is.
- *
- * @throws PragmaError.invalidInput if the URI format is invalid or prefix unknown.
- */
-
 import { PragmaError } from "#error";
 
 /**
  * Characters not allowed inside `<IRI>` in SPARQL.
- * Mirrors `validateIri` from `@canonical/ke` — use that import once ke is rebuilt.
+ * Mirrors `validateIri` from `@canonical/ke`.
  */
 const UNSAFE_IRI_PATTERN = /[<>"{}|\\^`\s]/;
 
+/**
+ * Resolves a potentially prefixed URI (e.g. `ds:UIBlock`) to a full URI.
+ *
+ * If the URI is already a full URI (starts with `http`), validates IRI safety
+ * and returns it as-is. Otherwise, expands the prefix using the provided
+ * prefix map.
+ *
+ * @param uri - A full or prefixed URI string.
+ * @param prefixes - Registered prefix-to-namespace mapping from the store.
+ * @returns The fully expanded URI string.
+ * @throws PragmaError.invalidInput if the URI format is invalid or the prefix is unknown.
+ */
 export default function resolveUri(
   uri: string,
   prefixes: Readonly<Record<string, string>>,

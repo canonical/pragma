@@ -1,5 +1,9 @@
 /**
- * `pragma block list` command definition.
+ * Wires the `pragma block list` CLI command.
+ *
+ * Lists all blocks visible under the current tier and channel filters.
+ * Supports progressive disclosure via `--digest` and `--detailed` flags,
+ * and an `--all-tiers` flag to widen the search.
  */
 
 import {

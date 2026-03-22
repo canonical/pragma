@@ -1,7 +1,3 @@
-/**
- * `pragma graph query` command definition.
- */
-
 import {
   type CommandDefinition,
   type CommandResult,
@@ -13,6 +9,14 @@ import { selectFormatter } from "../../shared/formatters.js";
 import { queryFormatters } from "../formatters/index.js";
 import { executeQuery } from "../operations/index.js";
 
+/**
+ * Builds the `pragma graph query` command definition.
+ *
+ * Accepts a raw SPARQL query string and executes it against the ke store.
+ *
+ * @param ctx - Pragma runtime context providing the ke store and config.
+ * @returns A command definition for `graph query`.
+ */
 export default function buildQueryCommand(
   ctx: PragmaContext,
 ): CommandDefinition {

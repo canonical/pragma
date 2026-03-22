@@ -1,8 +1,14 @@
 /**
- * Formatters for `pragma block lookup` output.
+ * Three-mode formatter for `pragma block lookup` output.
  *
- * Pure functions: BlockLookupInput → string.
- * Supports aspect filtering via the `aspects` field.
+ * - **plain** — styled terminal output with chalk; shows summary or
+ *   detailed view depending on the `detailed` / aspect flags.
+ * - **llm** — condensed Markdown consumed by LLM agents and reused
+ *   by the MCP adapter when `condensed: true`.
+ * - **json** — structured JSON for programmatic consumption.
+ *
+ * Supports aspect filtering (anatomy, modifiers, tokens, implementations)
+ * via the `aspects` field on {@link BlockLookupInput}.
  */
 
 import chalk from "chalk";

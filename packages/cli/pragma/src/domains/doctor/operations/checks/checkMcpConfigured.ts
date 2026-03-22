@@ -1,13 +1,15 @@
-/**
- * Check that at least one AI harness has pragma configured as an MCP server.
- * @note Impure — reads filesystem, detects harnesses.
- */
-
 import type { DetectedHarness } from "@canonical/harnesses";
 import { detectHarnesses, readMcpConfig } from "@canonical/harnesses";
 import { runTask } from "@canonical/task";
 import type { CheckContext, CheckResult } from "../types.js";
 
+/**
+ * Check that at least one AI harness has pragma configured as an MCP server.
+ *
+ * @param ctx - Check context with the working directory.
+ * @returns A CheckResult listing configured harnesses, or fail with remedy.
+ * @note Impure
+ */
 export default async function checkMcpConfigured(
   ctx: CheckContext,
 ): Promise<CheckResult> {

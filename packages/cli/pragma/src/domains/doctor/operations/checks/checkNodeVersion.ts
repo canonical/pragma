@@ -1,12 +1,13 @@
-/**
- * Check that Node.js version meets the minimum requirement.
- * @note Impure — reads process.versions.
- */
-
 import type { CheckResult } from "../types.js";
 
 const MIN_NODE_MAJOR = 20;
 
+/**
+ * Check that the Node.js major version is at least {@link MIN_NODE_MAJOR}.
+ *
+ * @returns A CheckResult with the current version and pass/fail status.
+ * @note Impure
+ */
 export default async function checkNodeVersion(): Promise<CheckResult> {
   const version = process.versions.node;
   const major = Number.parseInt(version.split(".")[0] ?? "0", 10);

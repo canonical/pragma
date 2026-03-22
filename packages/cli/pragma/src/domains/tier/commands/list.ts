@@ -1,3 +1,10 @@
+/**
+ * Wires the `pragma tier list` CLI command.
+ *
+ * Lists all tiers defined in the design system ontology. Throws a
+ * structured recovery error when no tiers are found.
+ */
+
 import {
   type CommandDefinition,
   createOutputResult,

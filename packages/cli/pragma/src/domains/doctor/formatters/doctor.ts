@@ -1,23 +1,31 @@
-/**
- * Formatters for `pragma doctor` output.
- *
- * Pure functions: DoctorData → string.
- */
-
 import chalk from "chalk";
 import type { Formatters } from "../../shared/formatters.js";
 import type { CheckResult, DoctorData } from "../operations/types.js";
 
+/** Status icons for pass/fail/skip check results. */
 const STATUS_ICONS = {
   pass: chalk.green("✓"),
   fail: chalk.red("✗"),
   skip: chalk.yellow("○"),
 } as const;
 
+/**
+ * Format a single check result as a styled terminal line.
+ *
+ * @param check - The check result to format.
+ * @returns A single-line string with status icon, name, and detail.
+ */
 function formatCheckPlain(check: CheckResult): string {
   return `${STATUS_ICONS[check.status]} ${check.name} ${chalk.dim(check.detail)}`;
 }
 
+/**
+ * Formatters for `pragma doctor` output.
+ *
+ * - **plain** renders a check list with chalk icons and remedial commands.
+ * - **llm** renders a markdown list with remedial section.
+ * - **json** serializes the raw DoctorData.
+ */
 const formatters: Formatters<DoctorData> = {
   plain(data) {
     const lines: string[] = [];

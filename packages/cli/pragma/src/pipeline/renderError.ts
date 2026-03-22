@@ -1,5 +1,22 @@
+/**
+ * Error rendering functions for different output surfaces.
+ *
+ * Each renderer takes a PragmaError and produces a formatted string
+ * suitable for its target: human-readable plain text, LLM-oriented
+ * Markdown, or machine-readable JSON.
+ */
+
 import type { PragmaError } from "../error/index.js";
 
+/**
+ * Render a PragmaError as human-readable plain text for terminal output.
+ *
+ * Includes suggestions, active filters, valid options, and recovery hints
+ * when present.
+ *
+ * @param error - The structured error to render.
+ * @returns Multi-line plain text string.
+ */
 function renderErrorPlain(error: PragmaError): string {
   const lines: string[] = [];
 
@@ -38,6 +55,12 @@ function renderErrorPlain(error: PragmaError): string {
   return lines.join("\n");
 }
 
+/**
+ * Render a PragmaError as condensed Markdown for LLM consumption.
+ *
+ * @param error - The structured error to render.
+ * @returns Markdown-formatted string.
+ */
 function renderErrorLlm(error: PragmaError): string {
   const lines: string[] = [];
 
@@ -70,6 +93,12 @@ function renderErrorLlm(error: PragmaError): string {
   return lines.join("\n");
 }
 
+/**
+ * Render a PragmaError as a JSON string for machine consumption.
+ *
+ * @param error - The structured error to render.
+ * @returns JSON-serialized string of the error payload.
+ */
 function renderErrorJson(error: PragmaError): string {
   return JSON.stringify({
     code: error.code,

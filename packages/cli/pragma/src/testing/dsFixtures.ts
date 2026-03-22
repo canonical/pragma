@@ -145,12 +145,22 @@ cs:description a owl:DatatypeProperty ;
   rdfs:domain cs:CodeStandard ;
   rdfs:range xsd:string .
 
-cs:dos a owl:DatatypeProperty ;
+cs:Example a owl:Class .
+
+cs:do a owl:ObjectProperty ;
   rdfs:domain cs:CodeStandard ;
+  rdfs:range cs:Example .
+
+cs:dont a owl:ObjectProperty ;
+  rdfs:domain cs:CodeStandard ;
+  rdfs:range cs:Example .
+
+cs:language a owl:DatatypeProperty ;
+  rdfs:domain cs:Example ;
   rdfs:range xsd:string .
 
-cs:donts a owl:DatatypeProperty ;
-  rdfs:domain cs:CodeStandard ;
+cs:code a owl:DatatypeProperty ;
+  rdfs:domain cs:Example ;
   rdfs:range xsd:string .
 
 cs:extends a owl:ObjectProperty ;
@@ -273,23 +283,51 @@ cs:react_folder a cs:CodeStandard ;
   cs:name "react/component/folder-structure" ;
   cs:hasCategory cs:react_category ;
   cs:description "Components must follow the standard folder layout" ;
-  cs:dos "Place component files in src/lib/ComponentName/" ;
-  cs:dos "Include index.ts barrel export" ;
-  cs:donts "Use flat directory with all components at same level" .
+  cs:do [
+    cs:description "Place component files in src/lib/ComponentName/" ;
+    cs:language "typescript" ;
+    cs:code "src/lib/Button/Button.tsx"
+  ] ;
+  cs:do [
+    cs:description "Include index.ts barrel export" ;
+    cs:language "typescript" ;
+    cs:code "export { default } from './Button.js';"
+  ] ;
+  cs:dont [
+    cs:description "Use flat directory with all components at same level" ;
+    cs:language "typescript" ;
+    cs:code "src/lib/Button.tsx"
+  ] .
 
 cs:react_props a cs:CodeStandard ;
   cs:name "react/component/props" ;
   cs:hasCategory cs:react_category ;
   cs:description "Props must extend the base HTML element type" ;
-  cs:dos "Extend HTMLAttributes<HTMLElement>" ;
-  cs:donts "Define props without extending HTML attributes" .
+  cs:do [
+    cs:description "Extend HTMLAttributes<HTMLElement>" ;
+    cs:language "typescript" ;
+    cs:code "interface ButtonProps extends HTMLAttributes<HTMLButtonElement> {}"
+  ] ;
+  cs:dont [
+    cs:description "Define props without extending HTML attributes" ;
+    cs:language "typescript" ;
+    cs:code "interface ButtonProps { onClick: () => void }"
+  ] .
 
 cs:code_purity a cs:CodeStandard ;
   cs:name "code/function/purity" ;
   cs:hasCategory cs:code_category ;
   cs:description "Functions should be pure where possible" ;
-  cs:dos "Return same output for same input" ;
-  cs:donts "Modify external state without annotation" .
+  cs:do [
+    cs:description "Return same output for same input" ;
+    cs:language "typescript" ;
+    cs:code "function add(a: number, b: number) { return a + b; }"
+  ] ;
+  cs:dont [
+    cs:description "Modify external state without annotation" ;
+    cs:language "typescript" ;
+    cs:code "let count = 0; function increment() { count++; }"
+  ] .
 `;
 
 // =============================================================================

@@ -1,16 +1,22 @@
-/**
- * Inspect a URI: show all triples where the URI is the subject,
- * grouped by predicate.
- *
- * @throws PragmaError.notFound if the URI has no triples.
- */
-
 import type { Store } from "@canonical/ke";
 import { PragmaError } from "#error";
 import { buildQuery } from "../../shared/buildQuery.js";
 import type { InspectResult, PredicateGroup } from "../../shared/types.js";
 import resolveUri from "../helpers/resolveUri.js";
 
+/**
+ * Inspects a URI by retrieving all triples where it is the subject,
+ * grouped by predicate.
+ *
+ * Resolves prefixed URIs (e.g. `ds:Button`) to full URIs before querying.
+ *
+ * @note Queries ke store
+ *
+ * @param store - The ke store to query.
+ * @param uri - A full or prefixed URI to inspect.
+ * @returns An {@link InspectResult} with the resolved URI and predicate groups.
+ * @throws PragmaError.notFound if the URI has no triples in the store.
+ */
 export default async function inspectUri(
   store: Store,
   uri: string,

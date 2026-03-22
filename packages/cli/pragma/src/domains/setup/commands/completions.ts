@@ -1,14 +1,14 @@
-/**
- * `pragma setup completions` command definition.
- *
- * Installs shell completion scripts for bash, zsh, or fish.
- */
-
 import type { CommandDefinition, CommandResult } from "@canonical/cli-core";
 import type { ShellId } from "../helpers/detectShell.js";
 import runSetupTask from "../helpers/runSetupTask.js";
 import setupCompletions from "../operations/setupCompletions.js";
 
+/**
+ * Map boolean shell flags to a ShellId.
+ *
+ * @param params - Command parameters containing optional shell flags.
+ * @returns The forced ShellId, or undefined to auto-detect.
+ */
 function resolveForceShell(
   params: Record<string, unknown>,
 ): ShellId | undefined {
@@ -18,6 +18,14 @@ function resolveForceShell(
   return undefined;
 }
 
+/**
+ * `pragma setup completions` command definition.
+ *
+ * Installs shell completion scripts for bash, zsh, or fish.
+ * Auto-detects the shell unless overridden with --zsh, --bash, or --fish.
+ *
+ * @note Impure
+ */
 const completionsCommand: CommandDefinition = {
   path: ["setup", "completions"],
   description: "Install shell completion scripts",

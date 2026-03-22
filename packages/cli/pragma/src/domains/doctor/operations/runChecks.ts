@@ -1,12 +1,3 @@
-/**
- * Orchestrate all environment health checks for `pragma doctor`.
- *
- * Runs checks sequentially (order matters for display) and collects
- * results into a DoctorData summary.
- *
- * @note Impure — delegates to individual check functions.
- */
-
 import {
   checkConfigFile,
   checkKeStore,
@@ -19,6 +10,14 @@ import {
 } from "./checks/index.js";
 import type { CheckContext, CheckResult, DoctorData } from "./types.js";
 
+/**
+ * Orchestrate all environment health checks sequentially and return
+ * a DoctorData summary with pass/fail/skip counts.
+ *
+ * @param ctx - Check context containing the working directory.
+ * @returns Aggregated check results.
+ * @note Impure
+ */
 export default async function runChecks(
   ctx: CheckContext,
 ): Promise<DoctorData> {

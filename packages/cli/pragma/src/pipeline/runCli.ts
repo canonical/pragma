@@ -1,16 +1,3 @@
-/**
- * Main CLI entry point.
- *
- * Pipeline stages:
- * 1. parseGlobalFlags(argv)
- * 2. resolveCommandKind(argv)
- * 3. Pattern match on kind → early exit or bootPragma()
- * 4. collectCommands(ctx) + createProgram(commands, ctx)
- * 5. program.parseAsync(argv) with error handling + dispose
- *
- * @note Impure — boots ke store, reads config, writes to stdout/stderr, sets exit code.
- */
-
 import type { GlobalFlags } from "@canonical/cli-core";
 import { CommanderError } from "commander";
 import { commands as setupCommands } from "../domains/setup/index.js";
@@ -144,6 +131,20 @@ function handleProgramError(err: unknown, globalFlags: GlobalFlags): void {
 
 // — Main orchestrator —————————————————————————————————————————————————————————
 
+/**
+ * Main CLI orchestrator.
+ *
+ * Pipeline stages:
+ * 1. `parseGlobalFlags(argv)`
+ * 2. `resolveCommandKind(argv)`
+ * 3. Pattern match on kind -- early exit or `bootPragma()`
+ * 4. `collectCommands(ctx)` + `createProgram(commands, ctx)`
+ * 5. `program.parseAsync(argv)` with error handling + dispose
+ *
+ * @param argv - The raw process.argv array.
+ *
+ * @note Impure
+ */
 export default async function runCli(argv: readonly string[]): Promise<void> {
   const globalFlags = parseGlobalFlags(argv);
   const commandKind = resolveCommandKind(argv);

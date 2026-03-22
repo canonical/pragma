@@ -1,3 +1,10 @@
+/**
+ * Wires the `pragma token lookup <name>` CLI command.
+ *
+ * Retrieves detailed information for a single design token, including
+ * per-theme values when `--detailed` is passed.
+ */
+
 import {
   type CommandDefinition,
   createOutputResult,

@@ -1,10 +1,15 @@
 /**
  * Look up detailed information for a single block.
  *
- * Pure function: Store + name + FilterConfig → BlockDetailed.
- * Consumed by CLI commands and MCP adapter.
+ * Queries modifiers, implementations, tokens, and anatomy node count
+ * via multiple SPARQL queries, then assembles a {@link BlockDetailed} object.
  *
- * @throws PragmaError.notFound if the block does not exist.
+ * @param store - ke store to query
+ * @param name - block name (e.g. "Button")
+ * @param filters - tier and channel filter configuration
+ * @returns fully populated block detail
+ * @throws PragmaError.notFound if the block does not exist
+ * @note Queries ke store
  */
 
 import type { Store, URI } from "@canonical/ke";

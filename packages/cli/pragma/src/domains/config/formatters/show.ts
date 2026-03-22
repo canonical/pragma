@@ -1,12 +1,13 @@
-/**
- * Formatters for `pragma config show` output.
- *
- * Pure functions: ConfigShowData → string.
- */
-
 import type { Formatters } from "../../shared/formatters.js";
 import type { ConfigShowData } from "../operations/types.js";
 
+/**
+ * Formatters for `pragma config show` output.
+ *
+ * - **plain** renders tier chain, channel, package manager, and config path.
+ * - **llm** renders a markdown section with bullet points.
+ * - **json** serializes the raw ConfigShowData.
+ */
 const formatters: Formatters<ConfigShowData> = {
   plain(data) {
     const lines: string[] = [];

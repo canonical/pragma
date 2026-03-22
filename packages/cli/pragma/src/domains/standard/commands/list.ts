@@ -1,7 +1,9 @@
 /**
- * `pragma standard list` command definition.
+ * Wires the `pragma standard list` CLI command.
  *
- * Supports progressive disclosure via --digest and --detailed flags.
+ * Lists all code standards with optional category and search filters.
+ * Supports progressive disclosure via `--digest` (summary + first example)
+ * and `--detailed` (full dos/donts) flags.
  */
 
 import {

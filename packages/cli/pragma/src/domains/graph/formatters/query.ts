@@ -1,10 +1,14 @@
-/**
- * Formatters for `pragma graph query` output.
- */
-
 import type { QueryResult } from "@canonical/ke";
 import type { Formatters } from "../../shared/formatters.js";
 
+/**
+ * Formatters for `pragma graph query` output.
+ *
+ * - **plain**: tab-separated table for SELECT results, `ASK: true/false` for ASK
+ *   queries, JSON fallback for CONSTRUCT.
+ * - **llm**: indented JSON for all query types.
+ * - **json**: serialized {@link QueryResult} as indented JSON.
+ */
 const formatters: Formatters<QueryResult> = {
   plain(result) {
     if (result.type === "select") {

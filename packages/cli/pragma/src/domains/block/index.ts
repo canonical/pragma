@@ -1,7 +1,8 @@
 /**
- * Block domain — CLI commands and operations.
+ * @module Block domain — CLI commands and operations.
  *
- * Commands: `pragma block list`, `pragma block lookup <name>`
+ * Commands: `pragma block list`, `pragma block lookup <name>`.
+ * Operations: {@link lookupBlock}, {@link listBlocks}.
  */
 
 import type { CommandDefinition } from "@canonical/cli-core";

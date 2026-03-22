@@ -1,13 +1,13 @@
-/**
- * `pragma setup mcp` command definition.
- *
- * Configures the pragma MCP server for detected AI harnesses.
- */
-
 import type { CommandDefinition, CommandResult } from "@canonical/cli-core";
 import runSetupTask from "../helpers/runSetupTask.js";
 import setupMcp from "../operations/setupMcp.js";
 
+/**
+ * Map boolean harness flags to a harness ID string.
+ *
+ * @param params - Command parameters containing optional harness flags.
+ * @returns The forced harness ID, or undefined to auto-detect.
+ */
 function resolveForceHarness(
   params: Record<string, unknown>,
 ): string | undefined {
@@ -17,6 +17,15 @@ function resolveForceHarness(
   return undefined;
 }
 
+/**
+ * `pragma setup mcp` command definition.
+ *
+ * Configures the pragma MCP server for detected AI harnesses.
+ * Auto-detects harnesses unless overridden with --claude-code, --cursor,
+ * or --windsurf.
+ *
+ * @note Impure
+ */
 const mcpCommand: CommandDefinition = {
   path: ["setup", "mcp"],
   description: "Configure pragma MCP server for AI harnesses",

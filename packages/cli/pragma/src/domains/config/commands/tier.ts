@@ -1,9 +1,3 @@
-/**
- * `pragma config tier` command definition.
- *
- * Set, reset, or query the active tier.
- */
-
 import {
   type CommandDefinition,
   type CommandResult,
@@ -15,6 +9,16 @@ import { selectFormatter } from "../../shared/formatters.js";
 import { tierFormatters } from "../formatters/index.js";
 import { validateTier } from "../operations/index.js";
 
+/**
+ * Build the `pragma config tier` command definition.
+ *
+ * Supports three modes: set a tier path (validated against the ontology),
+ * reset to default, or query the current tier.
+ *
+ * @param ctx - Pragma context providing cwd, store, and formatter selection.
+ * @returns The command definition for `pragma config tier`.
+ * @note Impure
+ */
 export default function buildTierCommand(
   ctx: PragmaContext,
 ): CommandDefinition {

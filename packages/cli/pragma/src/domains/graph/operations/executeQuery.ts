@@ -1,13 +1,17 @@
-/**
- * Execute a raw SPARQL query against the store.
- *
- * @throws PragmaError with code STORE_ERROR on query failure.
- */
-
 import type { QueryResult, Store } from "@canonical/ke";
 import { PragmaError } from "#error";
 import { buildQuery } from "../../shared/buildQuery.js";
 
+/**
+ * Executes a raw SPARQL query against the ke store.
+ *
+ * @note Queries ke store
+ *
+ * @param store - The ke store to query.
+ * @param sparql - A raw SPARQL query string.
+ * @returns The query result (select bindings, ask boolean, or construct triples).
+ * @throws PragmaError with code `STORE_ERROR` on query failure.
+ */
 export default async function executeQuery(
   store: Store,
   sparql: string,

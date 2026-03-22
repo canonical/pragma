@@ -1,13 +1,3 @@
-/**
- * Test runtime factory — creates a `PragmaRuntime` backed by the
- * canonical fixture and a temporary config directory.
- *
- * Each call creates an independent runtime. The caller owns disposal.
- * Uses the real `bootPragma()` to exercise the actual boot path.
- *
- * @note Impure — creates temp directory, reads fixture files, boots ke store.
- */
-
 import { copyFileSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -24,11 +14,15 @@ type ConfigName = "canonical-config.json" | "filtered-config.json";
  *
  * Stages the selected config as `pragma.config.json` in a temp directory
  * and calls the real `bootPragma()` with a sources override pointing at
- * `testing/fixtures/canonical.ttl`. No mocks.
+ * `testing/fixtures/canonical.ttl`. No mocks. Each call creates an
+ * independent runtime. The caller owns disposal.
  *
+ * @param options - Optional configuration overrides.
  * @param options.config - Config file name within the fixtures directory.
  *   Defaults to `"canonical-config.json"` (tier=global, channel=normal).
  *   Use `"filtered-config.json"` for tier-filtering tests (apps/lxd).
+ * @returns A fully booted PragmaRuntime whose `dispose` also cleans up
+ *   the temporary directory.
  *
  * @example
  * const rt = await createTestRuntime();
@@ -40,6 +34,8 @@ type ConfigName = "canonical-config.json" | "filtered-config.json";
  * const rt = await createTestRuntime({ config: "filtered-config.json" });
  * expect(rt.config.tier).toBe("apps/lxd");
  * rt.dispose();
+ *
+ * @note Impure
  */
 export default async function createTestRuntime(options?: {
   config?: ConfigName;

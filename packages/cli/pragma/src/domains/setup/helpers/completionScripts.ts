@@ -1,16 +1,15 @@
-/**
- * Shell-specific completion script content and install paths.
- *
- * Each script delegates to `pragma completions <shell>` at runtime
- * so the completion logic stays in the CLI, not in the shell script.
- */
-
 import type { ShellId } from "./detectShell.js";
 
 const HOME = process.env.HOME ?? "";
 
 /**
- * Generate the completion script content for a shell.
+ * Generate the shell-specific completion script content.
+ *
+ * Each script delegates to `pragma completions <shell>` at runtime
+ * so the completion logic stays in the CLI, not in the shell script.
+ *
+ * @param shell - Target shell identifier.
+ * @returns The completion script content as a string.
  */
 export function completionScriptContent(shell: ShellId): string {
   switch (shell) {
@@ -59,7 +58,10 @@ export function completionScriptContent(shell: ShellId): string {
 }
 
 /**
- * Standard install path for a shell's completion script.
+ * Return the standard filesystem path where the completion script should be installed.
+ *
+ * @param shell - Target shell identifier.
+ * @returns Absolute path to the completion script location.
  */
 export function completionScriptPath(shell: ShellId): string {
   switch (shell) {
@@ -73,7 +75,10 @@ export function completionScriptPath(shell: ShellId): string {
 }
 
 /**
- * Post-install hint shown to the user after completion setup.
+ * Return a post-install hint instructing the user how to activate completions.
+ *
+ * @param shell - Target shell identifier.
+ * @returns A human-readable activation hint.
  */
 export function postInstallHint(shell: ShellId): string {
   switch (shell) {

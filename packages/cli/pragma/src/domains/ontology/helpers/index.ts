@@ -1,3 +1,5 @@
+/** @module Barrel for ontology helpers. */
+
 export { default as extractLocalName } from "../../shared/extractLocalName.js";
 export { default as findNamespace } from "./findNamespace.js";
 export { default as queryClasses } from "./queryClasses.js";

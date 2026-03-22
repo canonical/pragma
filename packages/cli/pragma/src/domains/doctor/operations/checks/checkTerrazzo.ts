@@ -1,14 +1,16 @@
-/**
- * Check that terrazzo-lsp is installed, but only if tokens.config.mjs exists
- * in the working directory. Skipped otherwise.
- * @note Impure — reads filesystem, spawns process.
- */
-
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { detectPackageManager, PM_COMMANDS } from "#package-manager";
 import type { CheckContext, CheckResult } from "../types.js";
 
+/**
+ * Check that `terrazzo-lsp` is installed. Skipped when no
+ * `tokens.config.mjs` exists in the working directory.
+ *
+ * @param ctx - Check context with the working directory.
+ * @returns A CheckResult indicating pass, fail, or skip.
+ * @note Impure
+ */
 export default async function checkTerrazzo(
   ctx: CheckContext,
 ): Promise<CheckResult> {

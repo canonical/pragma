@@ -1,21 +1,15 @@
-/**
- * `pragma setup all` — composed monad running all setup steps.
- *
- * Each step is guarded by a promptConfirm gate. Running with --yes
- * skips all prompts. The steps run in sequence so prompts appear
- * one at a time.
- */
-
 import { $, gen, info, promptConfirm, type Task, when } from "@canonical/task";
 import setupCompletions from "./setupCompletions.js";
 import setupLsp from "./setupLsp.js";
 import setupMcp from "./setupMcp.js";
 
 /**
- * Compose a Task that runs all setup steps in sequence with
- * confirmation gates.
+ * Compose a Task that runs completions, LSP, and MCP setup in sequence,
+ * each guarded by a promptConfirm gate.
  *
  * @param root - Project root directory.
+ * @returns A Task that yields void on completion.
+ * @note Impure
  */
 export default function setupAll(root: string): Task<void> {
   return gen(function* () {

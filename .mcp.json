@@ -17,6 +17,13 @@
       "env": {},
       "type": "stdio"
     },
+    "pragma": {
+      "args": [
+        "mcp"
+      ],
+      "command": "pragma",
+      "type": "stdio"
+    },
     "sem": {
       "args": [
         "mcp"

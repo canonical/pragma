@@ -1,7 +1,10 @@
 /**
- * Formatters for `pragma standard categories` output.
+ * Three-mode formatter for `pragma standard categories` output.
  *
- * Pure functions: CategorySummary[] → string.
+ * - **plain** — one line per category with standard count.
+ * - **llm** — condensed Markdown consumed by LLM agents and reused
+ *   by the MCP adapter when `condensed: true`.
+ * - **json** — structured JSON array for programmatic consumption.
  */
 
 import type { Formatters } from "../../shared/formatters.js";

@@ -1,14 +1,14 @@
-/**
- * Formatters for `pragma skill list` output.
- *
- * Pure functions: SkillListInput → string.
- */
-
 import chalk from "chalk";
 import type { Formatters } from "../../shared/formatters.js";
 import type { DiscoveredSkill } from "../types.js";
 import type { SkillListInput } from "./types.js";
 
+/**
+ * Group discovered skills by their source package name.
+ *
+ * @param skills - Skills to group.
+ * @returns A Map keyed by package name.
+ */
 function groupBySource(
   skills: readonly DiscoveredSkill[],
 ): Map<string, DiscoveredSkill[]> {
@@ -21,6 +21,13 @@ function groupBySource(
   return groups;
 }
 
+/**
+ * Formatters for `pragma skill list` output.
+ *
+ * - **plain** renders skills grouped by source package with chalk styling.
+ * - **llm** renders a markdown document with package headings.
+ * - **json** serializes a flat skill array with metadata.
+ */
 const formatters: Formatters<SkillListInput> = {
   plain({ skills, sources, detailed }) {
     const lines: string[] = [];

@@ -10,6 +10,14 @@ import type { CommandKind } from "./types.js";
 /** Commands that do not require the ke store to be booted. */
 const STORE_SKIP_COMMANDS = new Set(["setup", "mcp"]);
 
+/**
+ * Classify the CLI invocation into a {@link CommandKind} discriminated union.
+ *
+ * Runs before any store boot to decide the pipeline path.
+ *
+ * @param argv - Raw process.argv array.
+ * @returns Discriminated union indicating the command category.
+ */
 export default function resolveCommandKind(
   argv: readonly string[],
 ): CommandKind {

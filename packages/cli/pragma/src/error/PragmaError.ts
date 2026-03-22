@@ -1,13 +1,29 @@
 import type { ErrorCode, PragmaErrorData, Recovery } from "./types.js";
 
+/**
+ * Structured error for all pragma domain operations.
+ *
+ * Carries a machine-readable {@link ErrorCode}, optional recovery hints,
+ * and contextual metadata (suggestions, valid options, active filters)
+ * so that CLI and MCP adapters can render actionable diagnostics.
+ */
 class PragmaError extends Error {
+  /** Machine-readable error classification. */
   readonly code: ErrorCode;
+  /** Entity that triggered the error (type + name), if applicable. */
   readonly entity: PragmaErrorData["entity"];
+  /** Fuzzy-matched alternative names the user may have intended. */
   readonly suggestions: string[];
+  /** Structured recovery hint with optional CLI command or MCP tool call. */
   readonly recovery: Recovery | undefined;
+  /** Active filters at the time of the error, for diagnostic context. */
   readonly filters: Record<string, string> | undefined;
+  /** Enumerated valid options when input was rejected. */
   readonly validOptions: string[] | undefined;
 
+  /**
+   * @param data - Structured error payload.
+   */
   constructor(data: PragmaErrorData) {
     super(data.message);
     this.name = "PragmaError";
@@ -19,6 +35,14 @@ class PragmaError extends Error {
     this.validOptions = data.validOptions;
   }
 
+  /**
+   * Factory: entity not found by name.
+   *
+   * @param entityType - Kind of entity (e.g., `"block"`, `"token"`).
+   * @param entityName - Name the user supplied.
+   * @param opts - Optional suggestions and recovery hint.
+   * @returns PragmaError with code `ENTITY_NOT_FOUND`.
+   */
   static notFound(
     entityType: string,
     entityName: string,
@@ -36,6 +60,13 @@ class PragmaError extends Error {
     });
   }
 
+  /**
+   * Factory: query returned zero results.
+   *
+   * @param entityType - Kind of entity being listed.
+   * @param opts - Optional active filters and recovery hint.
+   * @returns PragmaError with code `EMPTY_RESULTS`.
+   */
   static emptyResults(
     entityType: string,
     opts: {
@@ -51,6 +82,14 @@ class PragmaError extends Error {
     });
   }
 
+  /**
+   * Factory: user-supplied input is invalid.
+   *
+   * @param field - Name of the invalid field or argument.
+   * @param value - The rejected value.
+   * @param opts - Optional valid alternatives and recovery hint.
+   * @returns PragmaError with code `INVALID_INPUT`.
+   */
   static invalidInput(
     field: string,
     value: string,
@@ -67,6 +106,13 @@ class PragmaError extends Error {
     });
   }
 
+  /**
+   * Factory: ke store failed to initialize or query.
+   *
+   * @param reason - Human-readable failure description.
+   * @param opts - Optional recovery hint.
+   * @returns PragmaError with code `STORE_ERROR`.
+   */
   static storeError(
     reason: string,
     opts: { recovery?: Recovery } = {},
@@ -78,6 +124,13 @@ class PragmaError extends Error {
     });
   }
 
+  /**
+   * Factory: configuration file is invalid or contains bad values.
+   *
+   * @param reason - Human-readable description of the config problem.
+   * @param opts - Optional valid alternatives and recovery hint.
+   * @returns PragmaError with code `CONFIG_ERROR`.
+   */
   static configError(
     reason: string,
     opts: {
@@ -93,6 +146,12 @@ class PragmaError extends Error {
     });
   }
 
+  /**
+   * Factory: unexpected internal failure (bug).
+   *
+   * @param reason - Description of the internal error.
+   * @returns PragmaError with code `INTERNAL_ERROR` and a "please report" recovery.
+   */
   static internalError(reason: string): PragmaError {
     return new PragmaError({
       code: "INTERNAL_ERROR",

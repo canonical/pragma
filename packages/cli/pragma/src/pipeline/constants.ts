@@ -1,5 +1,6 @@
 import type { ErrorCode } from "../error/types.js";
 
+/** Map from error codes to numeric process exit codes. */
 const EXIT_CODES: Record<ErrorCode, number> = {
   ENTITY_NOT_FOUND: 1,
   EMPTY_RESULTS: 2,

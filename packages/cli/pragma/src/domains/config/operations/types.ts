@@ -1,14 +1,6 @@
-/**
- * Config domain types.
- *
- * Shared across config operations, commands, and formatters.
- */
-
 import type { Channel } from "#constants";
 
-/**
- * Data returned by `pragma config show`.
- */
+/** Data returned by `pragma config show`, including resolved tier chain and channel releases. */
 export interface ConfigShowData {
   readonly tier: string | undefined;
   readonly tierChain: readonly string[];

@@ -1,5 +1,8 @@
 /**
- * `pragma standard lookup <name>` command definition.
+ * Wires the `pragma standard lookup <name>` CLI command.
+ *
+ * Retrieves detailed information for a single code standard, including
+ * optional dos/donts code blocks when `--detailed` is passed.
  */
 
 import {

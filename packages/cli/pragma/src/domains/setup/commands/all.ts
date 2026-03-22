@@ -1,14 +1,15 @@
+import type { CommandDefinition, CommandResult } from "@canonical/cli-core";
+import runSetupTask from "../helpers/runSetupTask.js";
+import setupAll from "../operations/setupAll.js";
+
 /**
  * `pragma setup all` command definition.
  *
  * Runs all setup steps (completions, lsp, mcp) as a single
  * composed Task with confirmation gates.
+ *
+ * @note Impure
  */
-
-import type { CommandDefinition, CommandResult } from "@canonical/cli-core";
-import runSetupTask from "../helpers/runSetupTask.js";
-import setupAll from "../operations/setupAll.js";
-
 const allCommand: CommandDefinition = {
   path: ["setup", "all"],
   description: "Run all setup steps (completions, lsp, mcp)",

@@ -73,6 +73,16 @@ function detectRuntimePackageManager(): InstallSource["packageManager"] {
   return "npm";
 }
 
+/**
+ * Detect whether pragma is running from a global install, local
+ * `node_modules`, or a local source checkout, and which package
+ * manager owns the installation.
+ *
+ * @param binPath - The `process.argv[1]` binary path (defaults to current).
+ * @returns Install source with package manager, scope, and display label.
+ *
+ * @note Impure
+ */
 export default function detectInstallSource(
   binPath: string = process.argv[1] ?? "",
 ): InstallSource {

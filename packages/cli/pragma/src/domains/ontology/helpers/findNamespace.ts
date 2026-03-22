@@ -1,8 +1,12 @@
 /**
- * Find the namespace prefix for a given URI by matching against registered
- * prefix entries. Selects the longest matching namespace.
+ * Finds the namespace prefix for a given URI by matching against registered
+ * prefix entries. When multiple prefixes match, selects the longest
+ * (most specific) namespace.
+ *
+ * @param uri - The full URI to look up.
+ * @param prefixEntries - Array of `[prefix, namespace]` tuples from the store.
+ * @returns The matching `{ prefix, namespace }` or `undefined` if no prefix matches.
  */
-
 export default function findNamespace(
   uri: string,
   prefixEntries: [string, string][],

@@ -1,10 +1,4 @@
-/**
- * Skill domain types.
- *
- * Types for the agentskills.io skill discovery and listing system.
- */
-
-/** YAML frontmatter extracted from a SKILL.md file per agentskills.io spec. */
+/** YAML frontmatter extracted from a SKILL.md file per the agentskills.io spec. */
 export interface SkillFrontmatter {
   readonly name: string;
   readonly description: string;

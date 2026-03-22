@@ -1,7 +1,3 @@
-/**
- * `pragma skill list` command definition.
- */
-
 import {
   type CommandDefinition,
   type CommandResult,
@@ -14,6 +10,16 @@ import { listFormatters } from "../formatters/index.js";
 import type { SkillListInput } from "../formatters/types.js";
 import { listSkills } from "../operations/index.js";
 
+/**
+ * Build the `pragma skill list` command definition.
+ *
+ * Discovers skills from installed packages and formats the result.
+ * Throws when no skills are found, with a recovery hint.
+ *
+ * @param ctx - Pragma context providing cwd and formatter selection.
+ * @returns The command definition for `pragma skill list`.
+ * @note Impure
+ */
 export default function buildListCommand(
   ctx: PragmaContext,
 ): CommandDefinition {

@@ -1,7 +1,4 @@
-/**
- * Types for the doctor domain.
- */
-
+/** Result of a single doctor check. */
 export interface CheckResult {
   readonly name: string;
   readonly status: "pass" | "fail" | "skip";
@@ -9,10 +6,12 @@ export interface CheckResult {
   readonly remedy?: string;
 }
 
+/** Context passed to each doctor check, providing the working directory. */
 export interface CheckContext {
   readonly cwd: string;
 }
 
+/** Aggregated results from all doctor checks. */
 export interface DoctorData {
   readonly checks: readonly CheckResult[];
   readonly passed: number;

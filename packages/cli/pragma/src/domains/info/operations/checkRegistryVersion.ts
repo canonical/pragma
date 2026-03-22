@@ -1,16 +1,19 @@
-/**
- * Check the npm registry for the latest version of a package.
- *
- * Returns undefined when offline or when the registry does not respond
- * within 3 seconds.
- *
- * @note Impure — performs an HTTP fetch to the npm registry.
- */
-
 import type { Channel } from "#constants";
 import { DIST_TAG_MAP, REGISTRY_TIMEOUT_MS } from "../constants.js";
 import type { RegistryCheckResult } from "../types.js";
 
+/**
+ * Checks the npm registry for the latest published version of a package.
+ *
+ * Returns `undefined` when offline or when the registry does not respond
+ * within the configured timeout ({@link REGISTRY_TIMEOUT_MS}).
+ *
+ * @note Impure
+ *
+ * @param packageName - The npm package name (e.g. `@canonical/pragma`).
+ * @param channel - The release channel determining which dist-tag to check.
+ * @returns A {@link RegistryCheckResult} with the latest version, or `undefined` on failure.
+ */
 async function checkRegistryVersion(
   packageName: string,
   channel: Channel,

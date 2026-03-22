@@ -1,3 +1,12 @@
+/**
+ * Wires the `pragma tokens add-config` CLI command.
+ *
+ * Generates a `tokens.config.mjs` file for the terrazzo token pipeline.
+ * Refuses to overwrite an existing config unless `--force` is passed.
+ *
+ * @note Impure
+ */
+
 import { writeFileSync } from "node:fs";
 import {
   type CommandContext,

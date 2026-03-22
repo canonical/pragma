@@ -1,8 +1,12 @@
 /**
- * Resolve aspect flags for block detail views.
+ * Resolves partial aspect flags into a complete {@link AspectFlags} object.
  *
- * If no aspect is set, all are shown. If any is set,
- * only those selected are shown.
+ * When no individual aspect is selected, all aspects default to `true` so
+ * the full detail view is shown. When at least one aspect is explicitly
+ * selected, only the selected aspects are enabled.
+ *
+ * @param flags - partial aspect selection from CLI flags
+ * @returns fully resolved aspect flags
  */
 
 import type { AspectFlags } from "../types.js";

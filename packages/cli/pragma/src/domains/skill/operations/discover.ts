@@ -1,11 +1,3 @@
-/**
- * Discover skills from resolved source packages.
- *
- * Scans each skill source directory for immediate subdirectories
- * containing a valid SKILL.md file. Skips missing source paths
- * and invalid frontmatter gracefully.
- */
-
 import { readdir, readFile, stat } from "node:fs/promises";
 import { resolve } from "node:path";
 import {
@@ -15,6 +7,16 @@ import {
 } from "../helpers/index.js";
 import type { DiscoveredSkill } from "../types.js";
 
+/**
+ * Discover skills by scanning source package directories for subdirectories
+ * containing a valid `SKILL.md` file. Missing source paths and invalid
+ * frontmatter are skipped gracefully.
+ *
+ * @param _cwd - Working directory (unused, sources are resolved globally).
+ * @param overrideSources - Optional override for skill source definitions.
+ * @returns Array of discovered skills with parsed frontmatter.
+ * @note Impure
+ */
 export default async function discoverSkills(
   _cwd: string,
   overrideSources?: SkillSource[],

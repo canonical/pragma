@@ -1,12 +1,15 @@
-/**
- * Formatters for `pragma ontology show` output.
- */
-
 import chalk from "chalk";
 import { formatHeading, formatSection } from "#pipeline";
 import type { Formatters } from "../../shared/formatters.js";
 import type { OntologyDetailed } from "../../shared/types.js";
 
+/**
+ * Formatters for `pragma ontology show` output.
+ *
+ * - **plain**: chalk-styled heading with Classes and Properties sections.
+ * - **llm**: condensed Markdown with `### Classes` and `### Properties` sub-headings.
+ * - **json**: serialized {@link OntologyDetailed} as indented JSON.
+ */
 const formatters: Formatters<OntologyDetailed> = {
   plain(data) {
     const lines: string[] = [];

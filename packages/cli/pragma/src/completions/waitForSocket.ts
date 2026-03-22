@@ -5,10 +5,14 @@ import { POLL_INTERVAL_MS } from "./constants.js";
 /**
  * Poll for a Unix socket file to appear on disk.
  *
- * Checks at POLL_INTERVAL_MS intervals until the file exists or
- * timeoutMs elapses. Returns true if the socket appeared, false on timeout.
+ * Checks at `POLL_INTERVAL_MS` intervals until the file exists or
+ * the timeout elapses.
  *
- * @note Impure — reads filesystem, sleeps between polls.
+ * @param path - Absolute path to the expected socket file.
+ * @param timeoutMs - Maximum time to wait in milliseconds.
+ * @returns `true` if the socket appeared, `false` on timeout.
+ *
+ * @note Impure
  */
 export default async function waitForSocket(
   path: string,

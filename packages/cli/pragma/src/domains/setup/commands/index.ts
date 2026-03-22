@@ -1,3 +1,4 @@
+/** @module Setup command definitions for `pragma setup`. */
 export { default as allCommand } from "./all.js";
 export { default as completionsCommand } from "./completions.js";
 export { default as lspCommand } from "./lsp.js";

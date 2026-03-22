@@ -1,14 +1,3 @@
-/**
- * Component generator command with framework dispatch.
- *
- * Wraps the three component generators (react/svelte/lit) from
- * @canonical/summon-component behind a single `create component` command
- * with `framework` as a required positional parameter.
- *
- * GN.01 — pragma create replaces summon
- * PA.13 — selective generator inclusion
- */
-
 import {
   type CommandDefinition,
   executeGenerator,
@@ -31,15 +20,18 @@ const GENERATOR_MAP: Record<string, AnyGenerator> = {
   lit: generators["component/lit"],
 };
 
-/** Reference generator for deriving shared prompt parameters. */
+/** Reference generator used to derive shared prompt parameters. */
 const referenceGenerator = generators["component/react"];
 
 /**
- * Build the `pragma create component` command.
+ * Build the `pragma create component` command definition.
  *
  * Uses a dispatch pattern: `framework` is a required positional select
  * parameter. The execute function looks up the matching generator and
  * delegates to `executeGenerator` from cli-core.
+ *
+ * @returns The command definition for `pragma create component`.
+ * @note Impure
  */
 export default function buildComponentCommand(): CommandDefinition {
   const frameworkParam: ParameterDefinition = {

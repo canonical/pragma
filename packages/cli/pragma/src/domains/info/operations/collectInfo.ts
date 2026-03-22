@@ -1,9 +1,3 @@
-/**
- * Collect all data for the `pragma info` command.
- *
- * @note Impure — reads config, queries registry, queries store.
- */
-
 import { readConfig } from "#config";
 import { VERSION } from "#constants";
 import { detectInstallSource, PM_COMMANDS } from "#package-manager";
@@ -14,6 +8,17 @@ import type { InfoData } from "../types.js";
 import checkRegistryVersion from "./checkRegistryVersion.js";
 import { collectStoreSummary } from "./collectStoreSummary.js";
 
+/**
+ * Collects all data for the `pragma info` command.
+ *
+ * Reads local config, detects the package manager, checks the npm registry
+ * for updates, boots a ke store, and gathers store summary statistics.
+ *
+ * @note Impure
+ *
+ * @param cwd - The current working directory used to locate `pragma.config.json`.
+ * @returns A fully populated {@link InfoData} object.
+ */
 export default async function collectInfo(cwd: string): Promise<InfoData> {
   const install = detectInstallSource();
   const pm = install.packageManager;

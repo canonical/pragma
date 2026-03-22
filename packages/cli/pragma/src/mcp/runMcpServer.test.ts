@@ -58,6 +58,9 @@ describe("runMcpServer", () => {
 
     expect(result.error).toBeUndefined();
     expect(result.signal).toBeNull();
+    if (result.status !== 0) {
+      console.error("pragma mcp stderr:", result.stderr);
+    }
     expect(result.status).toBe(0);
   });
 });

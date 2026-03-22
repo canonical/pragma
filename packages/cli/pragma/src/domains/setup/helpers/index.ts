@@ -1,3 +1,4 @@
+/** @module Shared helpers for setup commands: shell detection, completion scripts, and task execution. */
 export {
   completionScriptContent,
   completionScriptPath,

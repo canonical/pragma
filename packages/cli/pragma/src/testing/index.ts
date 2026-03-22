@@ -1,3 +1,4 @@
+/** @module Test infrastructure: CLI subprocess runner, MCP test client, fixtures, and test store factory. */
 export type { CommandResult } from "./cli.js";
 export { runCommand } from "./cli.js";
 export { default as createTestMcpClient } from "./createTestMcpClient.js";
