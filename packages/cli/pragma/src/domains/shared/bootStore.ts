@@ -8,25 +8,59 @@
  * @see CF.01, CF.02 in B.08.CONFIG
  */
 
+import { createRequire } from "node:module";
+import { dirname, join } from "node:path";
 import type { SourceSpec, Store } from "@canonical/ke";
 import { createStore } from "@canonical/ke";
 import type { PragmaConfig } from "../../config.js";
 import { PragmaError } from "../../error/index.js";
 import { PREFIX_MAP } from "./prefixes.js";
 
+const require = createRequire(import.meta.url);
+
 /**
- * Default TTL source patterns when pragma.config.json has no `sources` field.
- * Point at published packages in node_modules.
+ * Source package definitions — each entry maps a package name to the glob
+ * patterns (relative to its package root) that contain TTL data.
  *
  * @see CF.02
  */
-export const DEFAULT_SOURCES: readonly string[] = [
-  "node_modules/@canonical/design-system/definitions/ontology.ttl",
-  "node_modules/@canonical/design-system/data/**/*.ttl",
-  "node_modules/@canonical/anatomy-dsl/definitions/**/*.ttl",
-  "node_modules/@canonical/code-standards/definitions/**/*.ttl",
-  "node_modules/@canonical/code-standards/data/**/*.ttl",
-];
+const SOURCE_PACKAGES = [
+  {
+    pkg: "@canonical/design-system",
+    globs: ["definitions/ontology.ttl", "data/**/*.ttl"],
+  },
+  {
+    pkg: "@canonical/anatomy-dsl",
+    globs: ["definitions/**/*.ttl"],
+  },
+  {
+    pkg: "@canonical/code-standards",
+    globs: ["definitions/**/*.ttl", "data/**/*.ttl"],
+  },
+] as const;
+
+/**
+ * Resolve default TTL sources by locating each package via require.resolve.
+ * This is package-manager agnostic — works with bun, npm, pnpm, and yarn
+ * regardless of hoisting strategy.
+ */
+export function defaultSources(): SourceSpec[] {
+  const sources: SourceSpec[] = [];
+
+  for (const { pkg, globs } of SOURCE_PACKAGES) {
+    let pkgDir: string;
+    try {
+      pkgDir = dirname(require.resolve(`${pkg}/package.json`));
+    } catch {
+      continue; // package not installed — skip
+    }
+    for (const glob of globs) {
+      sources.push(join(pkgDir, glob));
+    }
+  }
+
+  return sources;
+}
 
 export interface BootStoreOptions {
   /** Override config (skip reading from disk). */
@@ -47,13 +81,14 @@ export interface BootStoreOptions {
 export async function bootStore(
   options: BootStoreOptions = {},
 ): Promise<Store> {
-  const sources = options.sources ?? [...DEFAULT_SOURCES];
+  const sources = options.sources ?? defaultSources();
 
   try {
     const store = await createStore({
       sources,
       prefixes: PREFIX_MAP,
       cache: options.cache,
+      cwd: options.cwd,
     });
     return store;
   } catch (error) {

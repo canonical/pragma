@@ -116,7 +116,7 @@ function normalizeSource(spec: SourceSpec): SourceConfig {
  *
  * @note Impure — reads filesystem to resolve glob patterns and check existence.
  */
-function resolveGlobsSync(patterns: string[]): string[] {
+function resolveGlobsSync(patterns: string[], cwd: string): string[] {
   const files: string[] = [];
   for (const pattern of patterns) {
     // Detect glob patterns by the presence of wildcard characters
@@ -125,12 +125,12 @@ function resolveGlobsSync(patterns: string[]): string[] {
       pattern.includes("?") ||
       pattern.includes("[")
     ) {
-      for (const file of globSync(pattern)) {
-        files.push(resolve(file));
+      for (const file of globSync(pattern, { cwd })) {
+        files.push(resolve(cwd, file));
       }
     } else {
       // Literal file path — resolve to absolute and verify it exists
-      const absPath = resolve(pattern);
+      const absPath = resolve(cwd, pattern);
       if (existsSync(absPath)) {
         files.push(absPath);
       }
@@ -145,12 +145,12 @@ function resolveGlobsSync(patterns: string[]): string[] {
  *
  * @note Impure — reads file contents from disk.
  */
-function resolveSources(specs: SourceSpec[]): ResolvedSource[] {
+function resolveSources(specs: SourceSpec[], cwd: string): ResolvedSource[] {
   const resolved: ResolvedSource[] = [];
 
   for (const spec of specs) {
     const config = normalizeSource(spec);
-    const files = resolveGlobsSync(config.patterns);
+    const files = resolveGlobsSync(config.patterns, cwd);
 
     for (const filePath of files) {
       const format = config.format ?? inferFormat(filePath);
@@ -480,7 +480,10 @@ class KeStore implements Store {
     );
 
     // Re-resolve sources from disk (files may have changed)
-    const sources = resolveSources(this.config.sources);
+    const sources = resolveSources(
+      this.config.sources,
+      this.config.cwd ?? process.cwd(),
+    );
 
     for (const source of sources) {
       // Run onLoad plugins for each source
@@ -674,6 +677,7 @@ export default async function createStore(config: StoreConfig): Promise<Store> {
   const oxigraph = await loadOxigraph();
   const oxStore = new oxigraph.Store();
 
+  const cwd = config.cwd ?? process.cwd();
   const prefixes = config.prefixes ?? {};
   const plugins = config.plugins ?? [];
 
@@ -688,7 +692,7 @@ export default async function createStore(config: StoreConfig): Promise<Store> {
 
   // No cache hit — resolve sources, run plugins, load into Oxigraph
   if (!loadedFromCache) {
-    const sources = resolveSources(config.sources);
+    const sources = resolveSources(config.sources, cwd);
 
     for (const source of sources) {
       // Run onLoad plugin hooks before Oxigraph parses the content
