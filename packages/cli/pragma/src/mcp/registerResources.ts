@@ -3,7 +3,7 @@
  *
  * Every subject URI in the ke graph becomes a discoverable MCP resource.
  * Reading a resource returns the entity's properties with level-1 object
- * relations resolved to summaries (label from LABEL_PROPERTY map).
+ * relations resolved to summaries (label and description from PROPERTY_MAP).
  *
  * MR.01–MR.04 — graph-driven resources
  */
@@ -11,10 +11,10 @@
 import type { Store } from "@canonical/ke";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { PragmaConfig } from "../config.js";
-import { LABEL_PROPERTY } from "../constants.js";
+import { PROPERTY_MAP } from "../constants.js";
 import resolveUri from "../domains/graph/helpers/resolveUri.js";
 import { buildQuery } from "../domains/shared/buildQuery.js";
+import type { PragmaRuntime } from "../domains/shared/runtime.js";
 import { PragmaError } from "../error/PragmaError.js";
 
 // =============================================================================
@@ -46,6 +46,7 @@ interface ResourceEntity {
   readonly prefixed: string;
   readonly types: string[];
   readonly label: string | null;
+  readonly description: string | null;
   readonly properties: PropertyGroup[];
 }
 
@@ -85,31 +86,54 @@ function findPrefix(
 }
 
 /**
- * Fetch the human-readable label for a URI using the LABEL_PROPERTY map.
+ * Fetch a single property value for a URI using the PROPERTY_MAP.
+ */
+async function fetchProperty(
+  store: Store,
+  fullUri: string,
+  prefixes: Readonly<Record<string, string>>,
+  field: "label" | "description",
+): Promise<string | null> {
+  const prefix = findPrefix(fullUri, prefixes);
+  if (!prefix) return null;
+
+  const propUri = PROPERTY_MAP[prefix]?.[field];
+  if (!propUri) return null;
+
+  const result = await store.query(
+    buildQuery(`
+      SELECT ?val
+      WHERE { <${fullUri}> <${propUri}> ?val }
+      LIMIT 1
+    `),
+  );
+
+  if (result.type === "select" && result.bindings.length > 0) {
+    return result.bindings[0]?.val ?? null;
+  }
+  return null;
+}
+
+/**
+ * Fetch the human-readable label for a URI using the PROPERTY_MAP.
  */
 async function fetchLabel(
   store: Store,
   fullUri: string,
   prefixes: Readonly<Record<string, string>>,
 ): Promise<string | null> {
-  const prefix = findPrefix(fullUri, prefixes);
-  if (!prefix) return null;
+  return fetchProperty(store, fullUri, prefixes, "label");
+}
 
-  const labelProp = LABEL_PROPERTY[prefix];
-  if (!labelProp) return null;
-
-  const result = await store.query(
-    buildQuery(`
-      SELECT ?label
-      WHERE { <${fullUri}> <${labelProp}> ?label }
-      LIMIT 1
-    `),
-  );
-
-  if (result.type === "select" && result.bindings.length > 0) {
-    return result.bindings[0]?.label ?? null;
-  }
-  return null;
+/**
+ * Fetch the human-readable description for a URI using the PROPERTY_MAP.
+ */
+async function fetchDescription(
+  store: Store,
+  fullUri: string,
+  prefixes: Readonly<Record<string, string>>,
+): Promise<string | null> {
+  return fetchProperty(store, fullUri, prefixes, "description");
 }
 
 /**
@@ -189,7 +213,10 @@ async function readEntity(
     groupMap.set(compactPred, existing);
   }
 
-  const label = await fetchLabel(store, fullUri, prefixes);
+  const [label, description] = await Promise.all([
+    fetchLabel(store, fullUri, prefixes),
+    fetchDescription(store, fullUri, prefixes),
+  ]);
 
   const properties: PropertyGroup[] = [...groupMap.entries()].map(
     ([predicate, values]) => ({ predicate, values }),
@@ -200,6 +227,7 @@ async function readEntity(
     prefixed: compactUri(fullUri, prefixes),
     types,
     label,
+    description,
     properties,
   };
 }
@@ -213,9 +241,9 @@ async function readEntity(
  */
 export default function registerResources(
   server: McpServer,
-  store: Store,
-  _config: PragmaConfig,
+  runtime: PragmaRuntime,
 ): void {
+  const { store } = runtime;
   const prefixes = store.prefixes;
 
   const template = new ResourceTemplate("pragma:{+uri}", {

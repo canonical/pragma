@@ -42,8 +42,8 @@ describe("config show command", () => {
 
   it("renders show output with configured values", async () => {
     writeFileSync(
-      join(dir, "pragma.config.toml"),
-      'tier = "apps/lxd"\nchannel = "experimental"\n',
+      join(dir, "pragma.config.json"),
+      '{"tier":"apps/lxd","channel":"experimental"}',
     );
 
     const ctx = makeCtx(dir);

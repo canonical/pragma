@@ -1,8 +1,7 @@
 import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
-import { parse } from "smol-toml";
 import { type Channel, VALID_CHANNELS } from "./constants.js";
 import { PragmaError } from "./error/PragmaError.js";
+import resolveConfigPath from "./resolveConfigPath.js";
 
 interface PragmaConfig {
   tier: string | undefined;
@@ -13,8 +12,14 @@ function isValidChannel(value: unknown): value is Channel {
   return typeof value === "string" && VALID_CHANNELS.includes(value as Channel);
 }
 
+/**
+ * Read pragma config from `pragma.config.json` in the given directory.
+ *
+ * @note Impure — reads config from filesystem.
+ * @throws PragmaError with code CONFIG_ERROR if JSON is invalid or channel is unrecognized.
+ */
 function readConfig(cwd: string = process.cwd()): PragmaConfig {
-  const configPath = resolve(cwd, "pragma.config.toml");
+  const configPath = resolveConfigPath(cwd);
 
   let raw: string;
   try {
@@ -23,7 +28,17 @@ function readConfig(cwd: string = process.cwd()): PragmaConfig {
     return { tier: undefined, channel: "normal" };
   }
 
-  const parsed: Record<string, unknown> = parse(raw);
+  const trimmed = raw.trim();
+  if (trimmed === "") {
+    return { tier: undefined, channel: "normal" };
+  }
+
+  let parsed: Record<string, unknown>;
+  try {
+    parsed = JSON.parse(trimmed) as Record<string, unknown>;
+  } catch {
+    throw PragmaError.configError(`Invalid JSON in ${configPath}.`);
+  }
 
   const tier = typeof parsed.tier === "string" ? parsed.tier : undefined;
 

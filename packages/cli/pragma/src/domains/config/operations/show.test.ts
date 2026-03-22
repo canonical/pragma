@@ -7,7 +7,7 @@ describe("resolveConfigShow", () => {
       { tier: "apps/lxd", channel: "experimental" },
       {
         packageManager: "bun",
-        configFilePath: "/tmp/pragma.config.toml",
+        configFilePath: "/tmp/pragma.config.json",
         configFileExists: true,
       },
     );
@@ -25,7 +25,7 @@ describe("resolveConfigShow", () => {
       { tier: undefined, channel: "normal" },
       {
         packageManager: "npm",
-        configFilePath: "/tmp/pragma.config.toml",
+        configFilePath: "/tmp/pragma.config.json",
         configFileExists: false,
       },
     );
@@ -41,7 +41,7 @@ describe("resolveConfigShow", () => {
       { tier: undefined, channel: "prerelease" },
       {
         packageManager: "pnpm",
-        configFilePath: "/tmp/pragma.config.toml",
+        configFilePath: "/tmp/pragma.config.json",
         configFileExists: true,
       },
     );

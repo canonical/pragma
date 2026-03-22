@@ -1,10 +1,11 @@
 export type { PragmaConfig } from "./config.js";
 export { readConfig } from "./config.js";
 export { default as configExists } from "./configExists.js";
-export type { Channel } from "./constants.js";
+export type { Channel, OntologyPropertyMap } from "./constants.js";
 export {
   PROGRAM_DESCRIPTION,
   PROGRAM_NAME,
+  PROPERTY_MAP,
   VALID_CHANNELS,
   VERSION,
 } from "./constants.js";
@@ -116,6 +117,8 @@ export { selectFormatter } from "./domains/shared/formatters.js";
 export { bootStore, DEFAULT_SOURCES } from "./domains/shared/bootStore.js";
 export { buildQuery } from "./domains/shared/buildQuery.js";
 export { PREFIX_MAP } from "./domains/shared/prefixes.js";
+export type { PragmaRuntime } from "./domains/shared/runtime.js";
+export { bootPragma } from "./domains/shared/runtime.js";
 
 // =============================================================================
 // D3 — Filters
@@ -220,7 +223,10 @@ export type {
 // D11 — MCP Adapter
 // =============================================================================
 
-export { default as createMcpServer } from "./mcp/createMcpServer.js";
+export {
+  createMcpServer,
+  createMcpServerFromRuntime,
+} from "./mcp/createMcpServer.js";
 export { default as registerTools } from "./mcp/registerTools.js";
 export { default as serializeError } from "./mcp/serializeError.js";
 export type { McpErrorPayload, McpRecovery } from "./mcp/types.js";

@@ -1,5 +1,4 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
-import { parse, stringify } from "smol-toml";
 import type { Channel } from "./constants.js";
 import resolveConfigPath from "./resolveConfigPath.js";
 
@@ -9,9 +8,9 @@ interface ConfigUpdate {
 }
 
 /**
- * Write config updates to pragma.config.toml.
+ * Write config updates to pragma.config.json.
  *
- * Merges updates into existing TOML. A field set to `undefined` removes it.
+ * Merges updates into existing JSON. A field set to `undefined` removes it.
  * Creates the file if it doesn't exist.
  *
  * @note Impure — writes to the filesystem.
@@ -22,7 +21,7 @@ export default function writeConfig(cwd: string, update: ConfigUpdate): void {
   let existing: Record<string, unknown> = {};
   try {
     const raw = readFileSync(configPath, "utf-8");
-    existing = parse(raw);
+    existing = JSON.parse(raw) as Record<string, unknown>;
   } catch (err: unknown) {
     // Only swallow "file not found" — surface parse or permission errors.
     const isNotFound =
@@ -48,7 +47,7 @@ export default function writeConfig(cwd: string, update: ConfigUpdate): void {
 
   const hasFields = Object.keys(existing).length > 0;
   if (hasFields) {
-    writeFileSync(configPath, `${stringify(existing)}\n`);
+    writeFileSync(configPath, `${JSON.stringify(existing, null, 2)}\n`);
   } else if (existsSync(configPath)) {
     writeFileSync(configPath, "");
   }

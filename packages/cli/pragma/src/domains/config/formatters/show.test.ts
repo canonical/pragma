@@ -8,7 +8,7 @@ const WITH_TIER: ConfigShowData = {
   channel: "experimental",
   includedReleases: ["stable", "experimental"],
   packageManager: "bun",
-  configFilePath: "/project/pragma.config.toml",
+  configFilePath: "/project/pragma.config.json",
   configFileExists: true,
 };
 
@@ -18,7 +18,7 @@ const WITHOUT_TIER: ConfigShowData = {
   channel: "normal",
   includedReleases: ["stable"],
   packageManager: "npm",
-  configFilePath: "/project/pragma.config.toml",
+  configFilePath: "/project/pragma.config.json",
   configFileExists: false,
 };
 
@@ -28,7 +28,7 @@ const PRERELEASE: ConfigShowData = {
   channel: "prerelease",
   includedReleases: ["stable", "experimental", "alpha", "beta"],
   packageManager: "pnpm",
-  configFilePath: "/project/pragma.config.toml",
+  configFilePath: "/project/pragma.config.json",
   configFileExists: true,
 };
 
@@ -38,7 +38,7 @@ describe("formatters.plain", () => {
     expect(output).toContain("tier: apps/lxd (global → apps → apps/lxd)");
     expect(output).toContain("channel: experimental (stable + experimental)");
     expect(output).toContain("installed via: bun");
-    expect(output).toContain("config file: /project/pragma.config.toml");
+    expect(output).toContain("config file: /project/pragma.config.json");
   });
 
   it("renders config without tier", () => {
@@ -76,7 +76,7 @@ describe("formatters.llm", () => {
 
   it("renders config file path in backticks", () => {
     const output = formatters.llm(WITH_TIER);
-    expect(output).toContain("`/project/pragma.config.toml`");
+    expect(output).toContain("`/project/pragma.config.json`");
   });
 
   it("renders no tier message", () => {

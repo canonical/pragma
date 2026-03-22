@@ -9,22 +9,46 @@ const VALID_CHANNELS = ["normal", "experimental", "prerelease"] as const;
 type Channel = (typeof VALID_CHANNELS)[number];
 
 /**
- * Maps namespace prefix → property URI used to fetch a human-readable label
- * for instances in that namespace. Used by MCP resource handlers to resolve
- * level-1 object relations to summaries.
+ * Per-namespace property URIs for semantically equivalent fields.
+ * Each ontology uses different property names for the same concept
+ * (name/label, description/summary/comment).
  */
-const LABEL_PROPERTY: Record<string, string> = {
-  ds: `${PREFIX_MAP.ds}name`,
-  cs: `${PREFIX_MAP.cs}name`,
-  rdfs: `${PREFIX_MAP.rdfs}label`,
-  owl: `${PREFIX_MAP.rdfs}label`,
+interface OntologyPropertyMap {
+  readonly label: string;
+  readonly description: string;
+}
+
+/**
+ * Maps namespace prefix → property URIs for human-readable label and
+ * description. Used by MCP resource handlers and domain operations to
+ * resolve cross-ontology properties uniformly.
+ *
+ * @see F.04 OP.05
+ */
+const PROPERTY_MAP: Record<string, OntologyPropertyMap> = {
+  ds: {
+    label: `${PREFIX_MAP.ds}name`,
+    description: `${PREFIX_MAP.ds}summary`,
+  },
+  cs: {
+    label: `${PREFIX_MAP.cs}name`,
+    description: `${PREFIX_MAP.cs}description`,
+  },
+  rdfs: {
+    label: `${PREFIX_MAP.rdfs}label`,
+    description: `${PREFIX_MAP.rdfs}comment`,
+  },
+  owl: {
+    label: `${PREFIX_MAP.rdfs}label`,
+    description: `${PREFIX_MAP.rdfs}comment`,
+  },
 };
 
 export {
-  LABEL_PROPERTY,
   PROGRAM_DESCRIPTION,
   PROGRAM_NAME,
+  PROPERTY_MAP,
   VALID_CHANNELS,
   VERSION,
 };
-export type { Channel };
+export type { Channel, OntologyPropertyMap };

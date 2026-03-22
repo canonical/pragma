@@ -51,8 +51,8 @@ describe("config channel command", () => {
 
   it("resets channel via --reset flag", async () => {
     writeFileSync(
-      join(dir, "pragma.config.toml"),
-      'channel = "experimental"\n',
+      join(dir, "pragma.config.json"),
+      '{"channel":"experimental"}',
     );
 
     const ctx = makeCtx(dir);
@@ -77,7 +77,7 @@ describe("config channel command", () => {
   });
 
   it("shows current channel when no args", async () => {
-    writeFileSync(join(dir, "pragma.config.toml"), 'channel = "prerelease"\n');
+    writeFileSync(join(dir, "pragma.config.json"), '{"channel":"prerelease"}');
 
     const ctx = makeCtx(dir);
     const cmd = buildChannelCommand(ctx);
