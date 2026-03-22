@@ -1,7 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 
-vi.mock("../../../configExists.js", () => ({
-  default: vi.fn(),
+vi.mock("#config", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("#config")>()),
+  configExists: vi.fn(),
 }));
 vi.mock("../../shared/bootStore.js", () => ({
   bootStore: vi.fn(),
@@ -18,7 +19,7 @@ vi.mock("@canonical/task", () => ({
 }));
 
 import { detectHarnesses, readMcpConfig } from "@canonical/harnesses";
-import configExists from "../../../configExists.js";
+import { configExists } from "#config";
 import { collectStoreSummary } from "../../info/operations/index.js";
 import { bootStore } from "../../shared/bootStore.js";
 import {

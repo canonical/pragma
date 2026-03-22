@@ -9,8 +9,7 @@ import {
   showOntology,
 } from "../../domains/ontology/operations/index.js";
 import type { PragmaRuntime } from "../../domains/shared/runtime.js";
-import estimateTokens from "../estimateTokens.js";
-import wrapTool from "../wrapTool.js";
+import { estimateTokens, wrapTool } from "../utils/index.js";
 
 /**
  * Register ontology_list and ontology_show tools.

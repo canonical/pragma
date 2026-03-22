@@ -9,10 +9,10 @@
 
 import { execSync } from "node:child_process";
 import type { CommandDefinition, CommandResult } from "@canonical/cli-core";
-import { readConfig } from "../../../config.js";
-import { VERSION } from "../../../constants.js";
-import { PragmaError } from "../../../error/index.js";
-import { detectPackageManager, PM_COMMANDS } from "../../../pm.js";
+import { readConfig } from "#config";
+import { VERSION } from "#constants";
+import { PragmaError } from "#error";
+import { detectPackageManager, PM_COMMANDS } from "#package-manager";
 import {
   renderUpgradeJson,
   renderUpgradeLlm,

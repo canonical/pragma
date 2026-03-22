@@ -5,7 +5,7 @@
  */
 
 import type { QueryResult, Store } from "@canonical/ke";
-import { PragmaError } from "../../../error/index.js";
+import { PragmaError } from "#error";
 import { buildQuery } from "../../shared/buildQuery.js";
 
 export default async function executeQuery(

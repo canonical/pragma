@@ -10,8 +10,7 @@ import {
   listFormatters as tokenListFmt,
 } from "../../domains/token/formatters/index.js";
 import { getToken, listTokens } from "../../domains/token/operations/index.js";
-import estimateTokens from "../estimateTokens.js";
-import wrapTool from "../wrapTool.js";
+import { estimateTokens, wrapTool } from "../utils/index.js";
 
 /**
  * Register token_list and token_get tools.

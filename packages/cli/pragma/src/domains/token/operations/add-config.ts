@@ -1,6 +1,6 @@
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
-import { detectPackageManager, PM_COMMANDS } from "../../../pm.js";
+import { detectPackageManager, PM_COMMANDS } from "#package-manager";
 
 export interface AddConfigResult {
   readonly configPath: string;

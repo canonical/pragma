@@ -15,7 +15,7 @@ import { buildCompleters } from "@canonical/cli-core";
 import type { PragmaContext } from "../domains/shared/context.js";
 import type { PragmaRuntime } from "../domains/shared/runtime.js";
 import { bootPragma } from "../domains/shared/runtime.js";
-import collectCommands from "../lib/collectCommands.js";
+import collectCommands from "../pipeline/collectCommands.js";
 import computeSocketPath from "./computeSocketPath.js";
 import { IDLE_TIMEOUT_MS } from "./constants.js";
 import handleQuery from "./handleQuery.js";
@@ -26,6 +26,9 @@ const COMPLETIONS_FLAGS: GlobalFlags = {
   verbose: false,
 };
 
+/**
+ * @note Impure — boots ke store, binds Unix socket, manages process lifecycle.
+ */
 export default async function startCompletionsServer(): Promise<void> {
   const runtime: PragmaRuntime = await bootPragma();
 

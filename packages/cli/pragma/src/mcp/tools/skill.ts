@@ -7,8 +7,7 @@ import { z } from "zod";
 import type { PragmaRuntime } from "../../domains/shared/runtime.js";
 import { listFormatters as skillListFmt } from "../../domains/skill/formatters/index.js";
 import { listSkills } from "../../domains/skill/operations/index.js";
-import estimateTokens from "../estimateTokens.js";
-import wrapTool from "../wrapTool.js";
+import { estimateTokens, wrapTool } from "../utils/index.js";
 
 /**
  * Register skill_list tool.

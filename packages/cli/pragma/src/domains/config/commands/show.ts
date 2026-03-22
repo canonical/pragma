@@ -11,10 +11,8 @@ import {
   type CommandResult,
   createOutputResult,
 } from "@canonical/cli-core";
-import { readConfig } from "../../../config.js";
-import configExists from "../../../configExists.js";
-import { detectPackageManager } from "../../../pm.js";
-import resolveConfigPath from "../../../resolveConfigPath.js";
+import { configExists, readConfig, resolveConfigPath } from "#config";
+import { detectPackageManager } from "#package-manager";
 import type { PragmaContext } from "../../shared/context.js";
 import { selectFormatter } from "../../shared/formatters.js";
 import { showFormatters } from "../formatters/index.js";

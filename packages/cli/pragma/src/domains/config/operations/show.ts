@@ -7,7 +7,7 @@
  * @see CF.03, CF.04 in B.08.CONFIG
  */
 
-import type { PragmaConfig } from "../../../config.js";
+import type { PragmaConfig } from "#config";
 import { CHANNEL_RELEASES } from "../../shared/filters/buildChannelFilter.js";
 import { resolveTierChain } from "../../shared/filters/buildTierFilter.js";
 import type { ConfigShowData } from "./types.js";

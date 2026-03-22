@@ -7,7 +7,7 @@ import {
   type CommandResult,
   createOutputResult,
 } from "@canonical/cli-core";
-import { PragmaError } from "../../../error/index.js";
+import { PragmaError } from "#error";
 import type { PragmaContext } from "../../shared/context.js";
 import { selectFormatter } from "../../shared/formatters.js";
 import { listFormatters } from "../formatters/index.js";

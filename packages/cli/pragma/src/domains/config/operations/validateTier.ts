@@ -5,7 +5,7 @@
  */
 
 import type { Store } from "@canonical/ke";
-import { PragmaError } from "../../../error/index.js";
+import { PragmaError } from "#error";
 import type { TierEntry } from "../../shared/types.js";
 import { listTiers } from "../../tier/operations/index.js";
 

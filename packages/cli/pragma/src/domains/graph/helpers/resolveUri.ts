@@ -6,7 +6,7 @@
  * @throws PragmaError.invalidInput if the URI format is invalid or prefix unknown.
  */
 
-import { PragmaError } from "../../../error/index.js";
+import { PragmaError } from "#error";
 
 /**
  * Characters not allowed inside `<IRI>` in SPARQL.

@@ -11,8 +11,7 @@ import { renderInfoLlm } from "../../domains/info/formatters/index.js";
 import { collectStoreSummary } from "../../domains/info/operations/index.js";
 import type { InfoData } from "../../domains/info/types.js";
 import type { PragmaRuntime } from "../../domains/shared/runtime.js";
-import estimateTokens from "../estimateTokens.js";
-import wrapTool from "../wrapTool.js";
+import { estimateTokens, wrapTool } from "../utils/index.js";
 
 /**
  * Register doctor and info tools.

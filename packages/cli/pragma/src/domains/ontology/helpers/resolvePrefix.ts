@@ -4,7 +4,7 @@
  * @throws PragmaError.invalidInput if the prefix is unknown.
  */
 
-import { PragmaError } from "../../../error/index.js";
+import { PragmaError } from "#error";
 
 export default function resolvePrefix(
   prefixOrUri: string,

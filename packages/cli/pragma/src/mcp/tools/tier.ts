@@ -7,8 +7,7 @@ import { z } from "zod";
 import type { PragmaRuntime } from "../../domains/shared/runtime.js";
 import { listFormatters as tierListFmt } from "../../domains/tier/formatters/index.js";
 import { listTiers } from "../../domains/tier/operations/index.js";
-import estimateTokens from "../estimateTokens.js";
-import wrapTool from "../wrapTool.js";
+import { estimateTokens, wrapTool } from "../utils/index.js";
 
 /**
  * Register tier_list tool.

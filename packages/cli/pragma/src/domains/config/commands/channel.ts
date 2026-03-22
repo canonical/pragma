@@ -11,8 +11,7 @@ import {
   type CommandResult,
   createOutputResult,
 } from "@canonical/cli-core";
-import { readConfig } from "../../../config.js";
-import writeConfig from "../../../writeConfig.js";
+import { readConfig, writeConfig } from "#config";
 import type { PragmaContext } from "../../shared/context.js";
 import { selectFormatter } from "../../shared/formatters.js";
 import { channelFormatters } from "../formatters/index.js";

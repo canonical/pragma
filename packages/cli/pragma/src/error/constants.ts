@@ -8,7 +8,4 @@ const ERROR_CODES = [
   "INTERNAL_ERROR",
 ] as const;
 
-type ErrorCode = (typeof ERROR_CODES)[number];
-
 export { ERROR_CODES };
-export type { ErrorCode };

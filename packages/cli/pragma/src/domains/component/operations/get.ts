@@ -9,7 +9,7 @@
 
 import type { Store, URI } from "@canonical/ke";
 import { escapeSparqlValue } from "@canonical/ke";
-import { PragmaError } from "../../../error/index.js";
+import { PragmaError } from "#error";
 import { buildQuery } from "../../shared/buildQuery.js";
 import extractLocalName from "../../shared/extractLocalName.js";
 import { buildFilters } from "../../shared/filters/buildFilters.js";

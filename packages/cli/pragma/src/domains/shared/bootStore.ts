@@ -11,7 +11,7 @@
 import { join } from "node:path";
 import type { SourceSpec, Store } from "@canonical/ke";
 import { createStore } from "@canonical/ke";
-import type { PragmaConfig } from "../../config.js";
+import type { PragmaConfig } from "#config";
 import { PragmaError } from "../../error/index.js";
 import { PACKAGES, resolvePackages } from "./packages.js";
 import { PREFIX_MAP } from "./prefixes.js";

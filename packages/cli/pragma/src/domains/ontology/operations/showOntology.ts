@@ -8,7 +8,7 @@
  */
 
 import type { Store } from "@canonical/ke";
-import { PragmaError } from "../../../error/index.js";
+import { PragmaError } from "#error";
 import type { OntologyDetailed } from "../../shared/types.js";
 import queryClasses from "../helpers/queryClasses.js";
 import queryProperties from "../helpers/queryProperties.js";

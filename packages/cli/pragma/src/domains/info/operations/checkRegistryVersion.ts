@@ -8,7 +8,7 @@
  * @see IN.06, IN.08 in B.11.INSTALL
  */
 
-import type { Channel } from "../../../constants.js";
+import type { Channel } from "#constants";
 import { DIST_TAG_MAP, REGISTRY_TIMEOUT_MS } from "../constants.js";
 import type { RegistryCheckResult } from "../types.js";
 

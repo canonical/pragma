@@ -1,6 +1,6 @@
 import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import createTestMcpClient from "../../testing/createTestMcpClient.js";
+import { createTestMcpClient } from "#testing";
 import { P } from "../domains/shared/prefixes.js";
 
 let client: Client;
