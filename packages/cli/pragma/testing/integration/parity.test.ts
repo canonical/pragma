@@ -23,7 +23,10 @@ import { listOntologies } from "../../src/domains/ontology/operations/index.js";
 import type { PragmaRuntime } from "../../src/domains/shared/runtime.js";
 import { listStandards } from "../../src/domains/standard/operations/index.js";
 import { listTiers } from "../../src/domains/tier/operations/index.js";
-import { listTokens } from "../../src/domains/token/operations/index.js";
+import {
+  getToken,
+  listTokens,
+} from "../../src/domains/token/operations/index.js";
 import { createTestMcpClient } from "../helpers/mcp.js";
 import assertParity from "../helpers/parity.js";
 import { createTestRuntime } from "../helpers/runtime.js";
@@ -146,6 +149,15 @@ describe("token parity", () => {
     const mcpRes = await client.callTool({
       name: "token_list",
       arguments: {},
+    });
+    assertParity(opResult, mcpRes);
+  });
+
+  it("token_get: values match", async () => {
+    const opResult = await getToken(rt.store, "color.primary");
+    const mcpRes = await client.callTool({
+      name: "token_get",
+      arguments: { name: "color.primary" },
     });
     assertParity(opResult, mcpRes);
   });
