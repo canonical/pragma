@@ -8,7 +8,7 @@
 import type { BlockDetailed } from "../../shared/types.js";
 import type { AspectFlags } from "../types.js";
 
-export interface BlockGetInput {
+export interface BlockLookupInput {
   readonly block: BlockDetailed;
   readonly detailed: boolean;
   readonly aspects: AspectFlags;

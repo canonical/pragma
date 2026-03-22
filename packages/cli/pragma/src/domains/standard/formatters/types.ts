@@ -11,7 +11,7 @@ import type {
   StandardSummary,
 } from "../../shared/types.js";
 
-export interface StandardGetInput {
+export interface StandardLookupInput {
   readonly standard: StandardDetailed;
   readonly detailed: boolean;
 }

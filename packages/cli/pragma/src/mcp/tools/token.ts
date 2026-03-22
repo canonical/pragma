@@ -1,5 +1,5 @@
 /**
- * MCP token tools — token_list, token_get, tokens_add_config.
+ * MCP token tools — token_list, token_lookup, token_batch_lookup, tokens_add_config.
  */
 
 import { writeFileSync } from "node:fs";
@@ -7,19 +7,20 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { PragmaError } from "#error";
 import type { PragmaRuntime } from "../../domains/shared/runtime.js";
+import type { BatchResult, TokenDetailed } from "../../domains/shared/types.js";
 import {
-  createGetFormatters as createTokenGetFmt,
+  createLookupFormatters as createTokenLookupFmt,
   listFormatters as tokenListFmt,
 } from "../../domains/token/formatters/index.js";
 import {
-  getToken,
   listTokens,
+  lookupToken,
   resolveAddConfig,
 } from "../../domains/token/operations/index.js";
 import { estimateTokens, wrapTool } from "../utils/index.js";
 
 /**
- * Register token_list, token_get, and tokens_add_config tools.
+ * Register token_list, token_lookup, and tokens_add_config tools.
  */
 export function registerTokenTools(
   server: McpServer,
@@ -35,23 +36,14 @@ export function registerTokenTools(
           .string()
           .optional()
           .describe("Filter by token type (e.g., Color, Dimension)"),
-        names: z
-          .array(z.string())
-          .optional()
-          .describe("Filter to specific token names"),
         condensed: z.boolean().optional().describe("Token-optimized output"),
       }),
       annotations: { readOnlyHint: true, openWorldHint: false },
     },
-    wrapTool(runtime, async (rt, { category, names, condensed }) => {
-      let result = await listTokens(rt.store, {
+    wrapTool(runtime, async (rt, { category, condensed }) => {
+      const result = await listTokens(rt.store, {
         category: category as string | undefined,
       });
-
-      if (names && Array.isArray(names) && names.length > 0) {
-        const nameSet = new Set(names as string[]);
-        result = result.filter((t) => nameSet.has(t.name));
-      }
 
       if (condensed) {
         const text = tokenListFmt.llm(result);
@@ -63,7 +55,7 @@ export function registerTokenTools(
   );
 
   server.registerTool(
-    "token_get",
+    "token_lookup",
     {
       description:
         "Get detailed information about a design token including theme values.",
@@ -74,15 +66,52 @@ export function registerTokenTools(
       annotations: { readOnlyHint: true, openWorldHint: false },
     },
     wrapTool(runtime, async (rt, { name, condensed }) => {
-      const result = await getToken(rt.store, name as string);
+      const result = await lookupToken(rt.store, name as string);
 
       if (condensed) {
-        const fmt = createTokenGetFmt({ detailed: true });
+        const fmt = createTokenLookupFmt({ detailed: true });
         const text = fmt.llm(result);
         return { condensed: true, text, tokens: estimateTokens(text) };
       }
 
       return { data: result };
+    }),
+  );
+
+  server.registerTool(
+    "token_batch_lookup",
+    {
+      description:
+        "Look up multiple tokens by name in a single call. Returns results and errors for names that were not found.",
+      inputSchema: z.object({
+        names: z
+          .array(z.string())
+          .describe(
+            "Token names to look up (e.g. ['color.primary', 'spacing.md'])",
+          ),
+      }),
+      annotations: { readOnlyHint: true, openWorldHint: false },
+    },
+    wrapTool(runtime, async (rt, { names }) => {
+      const results: TokenDetailed[] = [];
+      const errors: { name: string; code: string; message: string }[] = [];
+
+      await Promise.all(
+        (names as string[]).map(async (name) => {
+          try {
+            results.push(await lookupToken(rt.store, name));
+          } catch (err) {
+            if (err instanceof PragmaError) {
+              errors.push({ name, code: err.code, message: err.message });
+            } else {
+              throw err;
+            }
+          }
+        }),
+      );
+
+      const batch: BatchResult<TokenDetailed> = { results, errors };
+      return { data: batch, meta: { count: results.length } };
     }),
   );
 

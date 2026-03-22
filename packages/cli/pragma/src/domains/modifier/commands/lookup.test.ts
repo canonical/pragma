@@ -4,7 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { PragmaError } from "#error";
 import { createTestStore, DS_ALL_TTL } from "#testing";
 import type { PragmaContext } from "../../shared/context.js";
-import getCommand from "./get.js";
+import lookupCommand from "./lookup.js";
 
 let store: Store;
 let cleanup: () => void;
@@ -33,10 +33,10 @@ function makeCtx(
   };
 }
 
-describe("modifier get command", () => {
+describe("modifier lookup command", () => {
   it("returns a family with values", async () => {
     const ctx = makeCtx();
-    const cmd = getCommand(ctx);
+    const cmd = lookupCommand(ctx);
     const result = await cmd.execute({ name: "density" }, ctx);
     expect(result.tag).toBe("output");
 
@@ -49,7 +49,7 @@ describe("modifier get command", () => {
 
   it("throws ENTITY_NOT_FOUND for unknown modifier", async () => {
     const ctx = makeCtx();
-    const cmd = getCommand(ctx);
+    const cmd = lookupCommand(ctx);
     try {
       await cmd.execute({ name: "nonexistent" }, ctx);
       expect.fail("Should have thrown");
@@ -61,7 +61,7 @@ describe("modifier get command", () => {
 
   it("renders LLM format with --llm", async () => {
     const ctx = makeCtx({ llm: true });
-    const cmd = getCommand(ctx);
+    const cmd = lookupCommand(ctx);
     const result = await cmd.execute({ name: "importance" }, ctx);
     const output = result as CommandOutputResult;
     const text = output.render.plain(output.value);
@@ -71,7 +71,7 @@ describe("modifier get command", () => {
 
   it("renders JSON with --format json", async () => {
     const ctx = makeCtx({ format: "json" });
-    const cmd = getCommand(ctx);
+    const cmd = lookupCommand(ctx);
     const result = await cmd.execute({ name: "importance" }, ctx);
     const output = result as CommandOutputResult;
     const text = output.render.plain(output.value);

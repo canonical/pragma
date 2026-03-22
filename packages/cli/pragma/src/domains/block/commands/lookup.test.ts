@@ -4,7 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { PragmaError } from "#error";
 import { createTestStore, DS_ALL_TTL } from "#testing";
 import type { PragmaContext } from "../../shared/context.js";
-import buildGetCommand from "./get.js";
+import buildLookupCommand from "./lookup.js";
 
 let store: Store;
 let cleanup: () => void;
@@ -39,10 +39,10 @@ async function executeOutput(
   return { value: result.value, text };
 }
 
-describe("buildGetCommand", () => {
+describe("buildLookupCommand", () => {
   it("returns summary by default", async () => {
     const ctx = makeCtx();
-    const cmd = buildGetCommand(ctx);
+    const cmd = buildLookupCommand(ctx);
     const { text } = await executeOutput(cmd, { name: "Button" }, ctx);
     expect(text).toContain("Button");
     expect(text).toContain("global");
@@ -50,7 +50,7 @@ describe("buildGetCommand", () => {
 
   it("returns detailed view with --detailed", async () => {
     const ctx = makeCtx();
-    const cmd = buildGetCommand(ctx);
+    const cmd = buildLookupCommand(ctx);
     const { text } = await executeOutput(
       cmd,
       { name: "Button", detailed: true },
@@ -63,7 +63,7 @@ describe("buildGetCommand", () => {
 
   it("shows only selected aspects (--modifiers)", async () => {
     const ctx = makeCtx();
-    const cmd = buildGetCommand(ctx);
+    const cmd = buildLookupCommand(ctx);
     const { text } = await executeOutput(
       cmd,
       { name: "Button", modifiers: true },
@@ -77,7 +77,7 @@ describe("buildGetCommand", () => {
 
   it("composes aspect flags (--modifiers --tokens)", async () => {
     const ctx = makeCtx();
-    const cmd = buildGetCommand(ctx);
+    const cmd = buildLookupCommand(ctx);
     const { text } = await executeOutput(
       cmd,
       { name: "Button", modifiers: true, tokens: true },
@@ -91,7 +91,7 @@ describe("buildGetCommand", () => {
     const ctx = makeCtx({
       globalFlags: { llm: true, format: "text" as const, verbose: false },
     });
-    const cmd = buildGetCommand(ctx);
+    const cmd = buildLookupCommand(ctx);
     const { text } = await executeOutput(cmd, { name: "Button" }, ctx);
     expect(text).toContain("## Button");
     expect(text).toContain("Tier: global");
@@ -101,7 +101,7 @@ describe("buildGetCommand", () => {
     const ctx = makeCtx({
       globalFlags: { llm: false, format: "json" as const, verbose: false },
     });
-    const cmd = buildGetCommand(ctx);
+    const cmd = buildLookupCommand(ctx);
     const { text } = await executeOutput(cmd, { name: "Button" }, ctx);
     const parsed = JSON.parse(text);
     expect(parsed.name).toBe("Button");
@@ -112,7 +112,7 @@ describe("buildGetCommand", () => {
     const ctx = makeCtx({
       globalFlags: { llm: false, format: "json" as const, verbose: false },
     });
-    const cmd = buildGetCommand(ctx);
+    const cmd = buildLookupCommand(ctx);
     const { text } = await executeOutput(
       cmd,
       { name: "Button", detailed: true },
@@ -127,7 +127,7 @@ describe("buildGetCommand", () => {
     const ctx = makeCtx({
       globalFlags: { llm: false, format: "json" as const, verbose: false },
     });
-    const cmd = buildGetCommand(ctx);
+    const cmd = buildLookupCommand(ctx);
     const { text } = await executeOutput(cmd, { name: "Button" }, ctx);
     const parsed = JSON.parse(text);
     expect(parsed.nodeCount).toBe(3);
@@ -135,7 +135,7 @@ describe("buildGetCommand", () => {
 
   it("throws ENTITY_NOT_FOUND for unknown block", async () => {
     const ctx = makeCtx();
-    const cmd = buildGetCommand(ctx);
+    const cmd = buildLookupCommand(ctx);
     await expect(cmd.execute({ name: "NonExistent" }, ctx)).rejects.toThrow(
       PragmaError,
     );
@@ -151,7 +151,7 @@ describe("buildGetCommand", () => {
 
   it("throws INVALID_INPUT for empty name", async () => {
     const ctx = makeCtx();
-    const cmd = buildGetCommand(ctx);
+    const cmd = buildLookupCommand(ctx);
     await expect(cmd.execute({ name: "" }, ctx)).rejects.toThrow(PragmaError);
 
     try {
@@ -164,7 +164,7 @@ describe("buildGetCommand", () => {
 
   it("provides tab completion candidates", async () => {
     const ctx = makeCtx();
-    const cmd = buildGetCommand(ctx);
+    const cmd = buildLookupCommand(ctx);
     const nameParam = cmd.parameters.find((p) => p.name === "name");
     expect(nameParam?.complete).toBeDefined();
 

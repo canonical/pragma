@@ -67,7 +67,7 @@ describe("agent sessions", () => {
     const firstName = blocks[0]!.name;
     const detail = parseEnvelope(
       await client.callTool({
-        name: "block_get",
+        name: "block_lookup",
         arguments: { name: firstName },
       }),
     );
@@ -77,7 +77,7 @@ describe("agent sessions", () => {
     // 5. Error recovery — bad name returns structured error
     const err = parseEnvelope(
       await client.callTool({
-        name: "block_get",
+        name: "block_lookup",
         arguments: { name: "XXXXX" },
       }),
     );
@@ -106,7 +106,7 @@ describe("agent sessions", () => {
     // 3. Get standard detail — verify dos and donts exist
     const detail = parseEnvelope(
       await client.callTool({
-        name: "standard_get",
+        name: "standard_lookup",
         arguments: { name: stdList[0]!.name },
       }),
     );

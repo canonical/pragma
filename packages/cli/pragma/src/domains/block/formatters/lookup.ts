@@ -1,7 +1,7 @@
 /**
- * Formatters for `pragma block get` output.
+ * Formatters for `pragma block lookup` output.
  *
- * Pure functions: BlockGetInput → string.
+ * Pure functions: BlockLookupInput → string.
  * Supports aspect filtering via the `aspects` field.
  */
 
@@ -15,9 +15,9 @@ import {
 import type { Formatters } from "../../shared/formatters.js";
 import type { AnatomyNode, BlockDetailed } from "../../shared/types.js";
 import type { AspectFlags } from "../types.js";
-import type { BlockGetInput } from "./types.js";
+import type { BlockLookupInput } from "./types.js";
 
-const formatters: Formatters<BlockGetInput> = {
+const formatters: Formatters<BlockLookupInput> = {
   plain({ block: component, detailed, aspects }) {
     if (!detailed) return formatSummary(component);
     return formatDetailed(component, aspects);

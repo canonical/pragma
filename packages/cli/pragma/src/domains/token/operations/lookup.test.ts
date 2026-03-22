@@ -2,7 +2,7 @@ import type { Store } from "@canonical/ke";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { PragmaError } from "#error";
 import { createTestStore, DS_ALL_TTL } from "#testing";
-import getToken from "./get.js";
+import lookupToken from "./lookup.js";
 
 let store: Store;
 let cleanup: () => void;
@@ -15,9 +15,9 @@ beforeAll(async () => {
 
 afterAll(() => cleanup());
 
-describe("getToken", () => {
+describe("lookupToken", () => {
   it("returns detailed data with theme values", async () => {
-    const result = await getToken(store, "color.primary");
+    const result = await lookupToken(store, "color.primary");
     expect(result.name).toBe("color.primary");
     expect(result.values.length).toBe(2);
 
@@ -29,10 +29,12 @@ describe("getToken", () => {
   });
 
   it("throws PragmaError.notFound for unknown token", async () => {
-    await expect(getToken(store, "nonexistent")).rejects.toThrow(PragmaError);
+    await expect(lookupToken(store, "nonexistent")).rejects.toThrow(
+      PragmaError,
+    );
 
     try {
-      await getToken(store, "nonexistent");
+      await lookupToken(store, "nonexistent");
     } catch (e) {
       expect((e as PragmaError).code).toBe("ENTITY_NOT_FOUND");
     }

@@ -4,7 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { PragmaError } from "#error";
 import { createTestStore, DS_ALL_TTL } from "#testing";
 import type { PragmaContext } from "../../shared/context.js";
-import buildGetCommand from "./get.js";
+import buildLookupCommand from "./lookup.js";
 
 let store: Store;
 let cleanup: () => void;
@@ -39,10 +39,10 @@ async function executeOutput(
   return { value: result.value, text };
 }
 
-describe("buildGetCommand", () => {
+describe("buildLookupCommand", () => {
   it("returns summary by default", async () => {
     const ctx = makeCtx();
-    const cmd = buildGetCommand(ctx);
+    const cmd = buildLookupCommand(ctx);
     const { text } = await executeOutput(
       cmd,
       { name: "react/component/folder-structure" },
@@ -55,7 +55,7 @@ describe("buildGetCommand", () => {
 
   it("returns dos and donts with --detailed", async () => {
     const ctx = makeCtx();
-    const cmd = buildGetCommand(ctx);
+    const cmd = buildLookupCommand(ctx);
     const { text } = await executeOutput(
       cmd,
       { name: "react/component/folder-structure", detailed: true },
@@ -67,7 +67,7 @@ describe("buildGetCommand", () => {
 
   it("throws ENTITY_NOT_FOUND for unknown standard", async () => {
     const ctx = makeCtx();
-    const cmd = buildGetCommand(ctx);
+    const cmd = buildLookupCommand(ctx);
     try {
       await cmd.execute({ name: "nonexistent" }, ctx);
       expect.fail("Should have thrown");
@@ -81,7 +81,7 @@ describe("buildGetCommand", () => {
     const ctx = makeCtx({
       globalFlags: { llm: true, format: "text" as const, verbose: false },
     });
-    const cmd = buildGetCommand(ctx);
+    const cmd = buildLookupCommand(ctx);
     const { text } = await executeOutput(
       cmd,
       { name: "react/component/folder-structure", detailed: true },
@@ -95,7 +95,7 @@ describe("buildGetCommand", () => {
     const ctx = makeCtx({
       globalFlags: { llm: false, format: "json" as const, verbose: false },
     });
-    const cmd = buildGetCommand(ctx);
+    const cmd = buildLookupCommand(ctx);
     const { text } = await executeOutput(
       cmd,
       { name: "react/component/folder-structure", detailed: true },
@@ -111,7 +111,7 @@ describe("buildGetCommand", () => {
     const ctx = makeCtx({
       globalFlags: { llm: false, format: "json" as const, verbose: false },
     });
-    const cmd = buildGetCommand(ctx);
+    const cmd = buildLookupCommand(ctx);
     const { text } = await executeOutput(
       cmd,
       { name: "react/component/folder-structure" },

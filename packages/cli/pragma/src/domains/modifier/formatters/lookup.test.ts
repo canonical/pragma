@@ -1,7 +1,7 @@
 import type { URI } from "@canonical/ke";
 import { describe, expect, it } from "vitest";
 import type { ModifierFamily } from "../../shared/types.js";
-import formatters from "./get.js";
+import formatters from "./lookup.js";
 
 const FAMILY: ModifierFamily = {
   uri: "http://example.com/f1" as URI,
@@ -9,7 +9,7 @@ const FAMILY: ModifierFamily = {
   values: ["default", "primary", "secondary"],
 };
 
-describe("modifier get formatters", () => {
+describe("modifier lookup formatters", () => {
   it("plain renders family name and indented values", () => {
     const text = formatters.plain(FAMILY);
     expect(text).toContain("importance");

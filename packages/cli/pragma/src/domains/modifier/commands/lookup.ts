@@ -4,13 +4,15 @@ import {
 } from "@canonical/cli-core";
 import type { PragmaContext } from "../../shared/context.js";
 import { selectFormatter } from "../../shared/formatters.js";
-import { getFormatters } from "../formatters/index.js";
-import { getModifier } from "../operations/index.js";
+import { lookupFormatters } from "../formatters/index.js";
+import { lookupModifier } from "../operations/index.js";
 
-export default function getCommand(ctx: PragmaContext): CommandDefinition {
+export default function buildLookupCommand(
+  ctx: PragmaContext,
+): CommandDefinition {
   return {
-    path: ["modifier", "get"],
-    description: "Get a modifier family and its values",
+    path: ["modifier", "lookup"],
+    description: "Look up a modifier family and its values",
     parameters: [
       {
         name: "name",
@@ -22,16 +24,16 @@ export default function getCommand(ctx: PragmaContext): CommandDefinition {
     ],
     meta: {
       examples: [
-        "pragma modifier get importance",
-        "pragma modifier get importance --llm",
+        "pragma modifier lookup importance",
+        "pragma modifier lookup importance --llm",
       ],
     },
     async execute(params: Record<string, unknown>) {
       const name = params.name as string;
-      const family = await getModifier(ctx.store, name);
+      const family = await lookupModifier(ctx.store, name);
 
       return createOutputResult(family, {
-        plain: selectFormatter(ctx, getFormatters),
+        plain: selectFormatter(ctx, lookupFormatters),
       });
     },
   };

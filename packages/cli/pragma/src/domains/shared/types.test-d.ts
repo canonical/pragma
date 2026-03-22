@@ -7,15 +7,15 @@
 
 import type { Store, URI } from "@canonical/ke";
 import { expectTypeOf } from "expect-type";
-import { getBlock, listBlocks } from "../block/operations/index.js";
-import { getModifier, listModifiers } from "../modifier/operations/index.js";
+import { listBlocks, lookupBlock } from "../block/operations/index.js";
+import { listModifiers, lookupModifier } from "../modifier/operations/index.js";
 import {
-  getStandard,
   listCategories,
   listStandards,
+  lookupStandard,
 } from "../standard/operations/index.js";
 import { listTiers } from "../tier/operations/index.js";
-import { getToken, listTokens } from "../token/operations/index.js";
+import { listTokens, lookupToken } from "../token/operations/index.js";
 import type {
   AnatomyNode,
   AnatomyTree,
@@ -106,14 +106,14 @@ declare const store: Store;
 declare const filters: FilterConfig;
 
 expectTypeOf(listBlocks).returns.resolves.toEqualTypeOf<BlockSummary[]>();
-expectTypeOf(getBlock).returns.resolves.toEqualTypeOf<BlockDetailed>();
+expectTypeOf(lookupBlock).returns.resolves.toEqualTypeOf<BlockDetailed>();
 expectTypeOf(listStandards).returns.resolves.toEqualTypeOf<StandardSummary[]>();
-expectTypeOf(getStandard).returns.resolves.toEqualTypeOf<StandardDetailed>();
+expectTypeOf(lookupStandard).returns.resolves.toEqualTypeOf<StandardDetailed>();
 expectTypeOf(listCategories).returns.resolves.toEqualTypeOf<
   CategorySummary[]
 >();
 expectTypeOf(listModifiers).returns.resolves.toEqualTypeOf<ModifierFamily[]>();
-expectTypeOf(getModifier).returns.resolves.toEqualTypeOf<ModifierFamily>();
+expectTypeOf(lookupModifier).returns.resolves.toEqualTypeOf<ModifierFamily>();
 expectTypeOf(listTokens).returns.resolves.toEqualTypeOf<TokenSummary[]>();
-expectTypeOf(getToken).returns.resolves.toEqualTypeOf<TokenDetailed>();
+expectTypeOf(lookupToken).returns.resolves.toEqualTypeOf<TokenDetailed>();
 expectTypeOf(listTiers).returns.resolves.toEqualTypeOf<TierEntry[]>();

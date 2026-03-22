@@ -1,29 +1,31 @@
 /**
- * MCP standard tools — standard_list, standard_get, standard_categories.
+ * MCP standard tools — standard_list, standard_lookup, standard_batch_lookup, standard_categories.
  */
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
+import { PragmaError } from "#error";
 import type { PragmaRuntime } from "../../domains/shared/runtime.js";
 import type {
+  BatchResult,
   Disclosure,
   StandardDetailed,
 } from "../../domains/shared/types.js";
 import {
   categoriesFormatters as standardCatFmt,
-  getFormatters as standardGetFmt,
   listFormatters as standardListFmt,
+  lookupFormatters as standardLookupFmt,
 } from "../../domains/standard/formatters/index.js";
 import type { StandardListOutput } from "../../domains/standard/formatters/types.js";
 import {
-  getStandard,
   listCategories,
   listStandards,
+  lookupStandard,
 } from "../../domains/standard/operations/index.js";
 import { estimateTokens, wrapTool } from "../utils/index.js";
 
 /**
- * Register standard_list, standard_get, and standard_categories tools.
+ * Register standard_list, standard_lookup, and standard_categories tools.
  */
 export function registerStandardTools(
   server: McpServer,
@@ -36,12 +38,6 @@ export function registerStandardTools(
         "List code standards. Optionally filter by category or search term. Use digest/detailed for progressive disclosure.",
       inputSchema: z.object({
         category: z.string().optional().describe("Filter by category name"),
-        names: z
-          .array(z.string())
-          .optional()
-          .describe(
-            "Filter to specific standard names. Returns partial results for unknown names.",
-          ),
         search: z
           .string()
           .optional()
@@ -60,13 +56,8 @@ export function registerStandardTools(
     },
     wrapTool(
       runtime,
-      async (rt, { category, names, search, digest, detailed, condensed }) => {
+      async (rt, { category, search, digest, detailed, condensed }) => {
         let result = await listStandards(rt.store);
-
-        if (names && Array.isArray(names) && names.length > 0) {
-          const nameSet = new Set(names as string[]);
-          result = result.filter((s) => nameSet.has(s.name));
-        }
 
         if (category) {
           const cat = (category as string).toLowerCase();
@@ -92,7 +83,9 @@ export function registerStandardTools(
 
         if (disclosure.level !== "summary") {
           details = await Promise.all(
-            result.map((s) => getStandard(rt.store, s.name).catch(() => null)),
+            result.map((s) =>
+              lookupStandard(rt.store, s.name).catch(() => null),
+            ),
           );
         }
 
@@ -121,7 +114,7 @@ export function registerStandardTools(
   );
 
   server.registerTool(
-    "standard_get",
+    "standard_lookup",
     {
       description:
         "Get detailed information about a code standard including dos and donts with code examples.",
@@ -140,11 +133,11 @@ export function registerStandardTools(
       annotations: { readOnlyHint: true, openWorldHint: false },
     },
     wrapTool(runtime, async (rt, { name, detailed, condensed }) => {
-      const result = await getStandard(rt.store, name as string);
+      const result = await lookupStandard(rt.store, name as string);
       const showDetailed = (detailed as boolean | undefined) ?? true;
 
       if (condensed) {
-        const text = standardGetFmt.llm({
+        const text = standardLookupFmt.llm({
           standard: result,
           detailed: showDetailed,
         });
@@ -178,6 +171,39 @@ export function registerStandardTools(
       }
 
       return { data: result, meta: { count: result.length } };
+    }),
+  );
+
+  server.registerTool(
+    "standard_batch_lookup",
+    {
+      description:
+        "Look up multiple standards by name in a single call. Returns results and errors for names that were not found.",
+      inputSchema: z.object({
+        names: z.array(z.string()).describe("Standard names to look up"),
+      }),
+      annotations: { readOnlyHint: true, openWorldHint: false },
+    },
+    wrapTool(runtime, async (rt, { names }) => {
+      const results: StandardDetailed[] = [];
+      const errors: { name: string; code: string; message: string }[] = [];
+
+      await Promise.all(
+        (names as string[]).map(async (name) => {
+          try {
+            results.push(await lookupStandard(rt.store, name));
+          } catch (err) {
+            if (err instanceof PragmaError) {
+              errors.push({ name, code: err.code, message: err.message });
+            } else {
+              throw err;
+            }
+          }
+        }),
+      );
+
+      const batch: BatchResult<StandardDetailed> = { results, errors };
+      return { data: batch, meta: { count: results.length } };
     }),
   );
 }

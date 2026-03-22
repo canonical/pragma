@@ -17,7 +17,7 @@ import type {
   FilterConfig,
 } from "../../shared/types.js";
 import { listFormatters } from "../formatters/index.js";
-import { getBlock, listBlocks } from "../operations/index.js";
+import { listBlocks, lookupBlock } from "../operations/index.js";
 
 export default function buildListCommand(
   ctx: PragmaContext,
@@ -90,7 +90,7 @@ export default function buildListCommand(
         });
       }
 
-      // Digest or detailed: enrich each block via getBlock
+      // Digest or detailed: enrich each block via lookupBlock
       const enriched = await enrichBlocks(
         components,
         ctx.store,
@@ -113,19 +113,19 @@ function describeFilters(filters: FilterConfig): Record<string, string> {
 }
 
 /**
- * Enrich block summaries with detail from getBlock.
+ * Enrich block summaries with detail from lookupBlock.
  *
  * - digest: summary fields + implementations detail
  * - detailed: full BlockDetailed objects
  */
 async function enrichBlocks(
   summaries: readonly BlockSummary[],
-  store: Parameters<typeof getBlock>[0],
+  store: Parameters<typeof lookupBlock>[0],
   filters: FilterConfig,
   disclosure: Disclosure,
 ): Promise<(BlockSummary | BlockDetailed)[]> {
   const details = await Promise.all(
-    summaries.map((s) => getBlock(store, s.name, filters)),
+    summaries.map((s) => lookupBlock(store, s.name, filters)),
   );
 
   if (disclosure.level === "detailed") {
