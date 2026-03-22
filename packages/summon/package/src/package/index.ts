@@ -12,6 +12,7 @@ import {
   template,
 } from "@canonical/summon-core";
 import { exec, flatMap, info, mkdir, sequence_, when } from "@canonical/task";
+import pkg from "../../package.json" with { type: "json" };
 
 import {
   createTemplateContext,
@@ -121,6 +122,7 @@ const prompts: PromptDefinition[] = [
 export const generator: GeneratorDefinition<PackageAnswers> = {
   meta: {
     name: "package",
+    displayName: `${pkg.name}`,
     description:
       "Generate a new npm package with proper configuration for the pragma monorepo",
     version: "0.1.0",
