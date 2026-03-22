@@ -1,3 +1,12 @@
+import {
+  existsSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createTestMcpClient } from "#testing";
@@ -402,6 +411,16 @@ describe("token_list", () => {
     const data = parseData(result) as { name: string }[];
     expect(data.length).toBeGreaterThan(0);
   });
+
+  it("filters tokens by names", async () => {
+    const result = await client.callTool({
+      name: "token_list",
+      arguments: { names: ["color.primary"] },
+    });
+    const data = parseData(result) as { name: string }[];
+    expect(data).toHaveLength(1);
+    expect(data[0]?.name).toBe("color.primary");
+  });
 });
 
 describe("token_lookup", () => {
@@ -460,6 +479,217 @@ describe("config_show", () => {
     };
     expect(data.channel).toBe("normal");
     expect(data.tier).toBeNull();
+  });
+
+  it("returns condensed config text", async () => {
+    const result = await client.callTool({
+      name: "config_show",
+      arguments: { condensed: true },
+    });
+    const envelope = parseEnvelope(result);
+    expect(envelope.ok).toBe(true);
+    expect(envelope.condensed).toBe(true);
+    expect(envelope.text).toBe("Config: tier=(none) channel=normal");
+  });
+});
+
+describe("config_tier", () => {
+  it("sets, queries, and resets tier in workspace config", async () => {
+    const originalCwd = process.cwd();
+    const dir = mkdtempSync(join(tmpdir(), "pragma-mcp-tier-"));
+
+    try {
+      process.chdir(dir);
+      const scoped = await createTestMcpClient();
+
+      try {
+        const setResult = await scoped.client.callTool({
+          name: "config_tier",
+          arguments: { path: "global" },
+        });
+        expect(parseData(setResult)).toEqual({ tier: "global", action: "set" });
+
+        const queryResult = await scoped.client.callTool({
+          name: "config_tier",
+          arguments: {},
+        });
+        expect(parseData(queryResult)).toEqual({
+          tier: "global",
+          action: "query",
+        });
+
+        const resetResult = await scoped.client.callTool({
+          name: "config_tier",
+          arguments: { reset: true },
+        });
+        expect(parseData(resetResult)).toEqual({ tier: null, action: "reset" });
+
+        const queriedAfterReset = await scoped.client.callTool({
+          name: "config_tier",
+          arguments: {},
+        });
+        expect(parseData(queriedAfterReset)).toEqual({
+          tier: null,
+          action: "query",
+        });
+      } finally {
+        await scoped.cleanup();
+      }
+    } finally {
+      process.chdir(originalCwd);
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("config_channel", () => {
+  it("sets, queries, and resets channel in workspace config", async () => {
+    const originalCwd = process.cwd();
+    const dir = mkdtempSync(join(tmpdir(), "pragma-mcp-channel-"));
+
+    try {
+      process.chdir(dir);
+      const scoped = await createTestMcpClient();
+
+      try {
+        const setResult = await scoped.client.callTool({
+          name: "config_channel",
+          arguments: { value: "experimental" },
+        });
+        expect(parseData(setResult)).toEqual({
+          channel: "experimental",
+          action: "set",
+        });
+
+        const queryResult = await scoped.client.callTool({
+          name: "config_channel",
+          arguments: {},
+        });
+        expect(parseData(queryResult)).toEqual({
+          channel: "experimental",
+          action: "query",
+        });
+
+        const resetResult = await scoped.client.callTool({
+          name: "config_channel",
+          arguments: { reset: true },
+        });
+        expect(parseData(resetResult)).toEqual({
+          channel: "normal",
+          action: "reset",
+        });
+      } finally {
+        await scoped.cleanup();
+      }
+    } finally {
+      process.chdir(originalCwd);
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("returns an error for invalid channel input", async () => {
+    const result = await client.callTool({
+      name: "config_channel",
+      arguments: { value: "beta" },
+    });
+    expect(result.isError).toBe(true);
+    const envelope = parseEnvelope(result);
+    const error = envelope.error as McpErrorPayload;
+    expect(error.code).toBe("INVALID_INPUT");
+  });
+});
+
+describe("tokens_add_config", () => {
+  it("writes a token config file and reports its path", async () => {
+    const originalCwd = process.cwd();
+    const dir = mkdtempSync(join(tmpdir(), "pragma-mcp-token-config-"));
+
+    try {
+      process.chdir(dir);
+      const scoped = await createTestMcpClient();
+
+      try {
+        const result = await scoped.client.callTool({
+          name: "tokens_add_config",
+          arguments: {},
+        });
+        const data = parseData(result) as {
+          configPath: string;
+          tokenSources: string[];
+          installHint: string;
+        };
+        expect(data.configPath).toBe(join(dir, "tokens.config.mjs"));
+        expect(data.tokenSources).toContain(
+          "node_modules/@canonical/ds-global/tokens/**/*.json",
+        );
+        expect(data.installHint).toContain("@canonical/terrazzo-lsp");
+        expect(existsSync(data.configPath)).toBe(true);
+      } finally {
+        await scoped.cleanup();
+      }
+    } finally {
+      process.chdir(originalCwd);
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("returns recovery metadata when config already exists", async () => {
+    const originalCwd = process.cwd();
+    const dir = mkdtempSync(join(tmpdir(), "pragma-mcp-token-existing-"));
+    const configPath = join(dir, "tokens.config.mjs");
+
+    try {
+      writeFileSync(configPath, "// existing\n", "utf-8");
+      process.chdir(dir);
+      const scoped = await createTestMcpClient();
+
+      try {
+        const result = await scoped.client.callTool({
+          name: "tokens_add_config",
+          arguments: {},
+        });
+        expect(result.isError).toBe(true);
+        const envelope = parseEnvelope(result);
+        const error = envelope.error as McpErrorPayload;
+        expect(error.code).toBe("INVALID_INPUT");
+        expect(error.recovery?.tool).toBe("tokens_add_config");
+        expect(error.recovery?.params).toEqual({ force: true });
+      } finally {
+        await scoped.cleanup();
+      }
+    } finally {
+      process.chdir(originalCwd);
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("overwrites an existing config when force=true", async () => {
+    const originalCwd = process.cwd();
+    const dir = mkdtempSync(join(tmpdir(), "pragma-mcp-token-force-"));
+    const configPath = join(dir, "tokens.config.mjs");
+
+    try {
+      writeFileSync(configPath, "// existing\n", "utf-8");
+      process.chdir(dir);
+      const scoped = await createTestMcpClient();
+
+      try {
+        const result = await scoped.client.callTool({
+          name: "tokens_add_config",
+          arguments: { force: true },
+        });
+        const data = parseData(result) as { configPath: string };
+        expect(data.configPath).toBe(configPath);
+        expect(readFileSync(configPath, "utf-8")).toContain(
+          'import { defineConfig } from "@canonical/terrazzo";',
+        );
+      } finally {
+        await scoped.cleanup();
+      }
+    } finally {
+      process.chdir(originalCwd);
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });
 
@@ -624,6 +854,17 @@ describe("ontology_show", () => {
     const envelope = parseEnvelope(result);
     expect(envelope.ok).toBe(false);
   });
+
+  it("returns condensed ontology details", async () => {
+    const result = await client.callTool({
+      name: "ontology_show",
+      arguments: { prefix: "ds", condensed: true },
+    });
+    const envelope = parseEnvelope(result);
+    expect(envelope.ok).toBe(true);
+    expect(envelope.condensed).toBe(true);
+    expect(envelope.text).toEqual(expect.stringContaining("## ds:"));
+  });
 });
 
 // =============================================================================
@@ -646,6 +887,20 @@ describe("graph_query", () => {
       arguments: { sparql: "NOT VALID SPARQL" },
     });
     expect(result.isError).toBe(true);
+  });
+
+  it("returns condensed graph query output", async () => {
+    const result = await client.callTool({
+      name: "graph_query",
+      arguments: {
+        sparql: "SELECT ?s WHERE { ?s ?p ?o } LIMIT 1",
+        condensed: true,
+      },
+    });
+    const envelope = parseEnvelope(result);
+    expect(envelope.ok).toBe(true);
+    expect(envelope.condensed).toBe(true);
+    expect(envelope.text).toEqual(expect.stringContaining("bindings"));
   });
 });
 
@@ -681,6 +936,26 @@ describe("graph_inspect", () => {
       arguments: { uri: "https://example.com/nonexistent" },
     });
     expect(result.isError).toBe(true);
+  });
+
+  it("returns condensed graph inspection output", async () => {
+    const queryResult = await client.callTool({
+      name: "graph_query",
+      arguments: { sparql: "SELECT ?s WHERE { ?s ?p ?o } LIMIT 1" },
+    });
+    const queryData = parseData(queryResult) as {
+      bindings: { s?: string }[];
+    };
+    const validUri = queryData.bindings[0]?.s;
+
+    const result = await client.callTool({
+      name: "graph_inspect",
+      arguments: { uri: validUri!, condensed: true },
+    });
+    const envelope = parseEnvelope(result);
+    expect(envelope.ok).toBe(true);
+    expect(envelope.condensed).toBe(true);
+    expect(envelope.text).toEqual(expect.stringContaining("## "));
   });
 });
 
@@ -843,5 +1118,16 @@ describe("condensed parameter", () => {
     expect(envelope.ok).toBe(true);
     expect(envelope.condensed).toBe(true);
     expect((envelope.text as string).length).toBeGreaterThan(0);
+  });
+
+  it("token_get returns condensed text", async () => {
+    const result = await client.callTool({
+      name: "token_get",
+      arguments: { name: "color.primary", condensed: true },
+    });
+    const envelope = parseEnvelope(result);
+    expect(envelope.ok).toBe(true);
+    expect(envelope.condensed).toBe(true);
+    expect(typeof envelope.text).toBe("string");
   });
 });
