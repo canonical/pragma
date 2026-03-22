@@ -24,6 +24,7 @@ describe("PragmaRuntime boot", () => {
     runtimes.push(rt);
 
     expect(rt.store).toBeDefined();
+    expect(rt.config.tier).toBe("global");
     expect(rt.config.channel).toBe("normal");
   });
 

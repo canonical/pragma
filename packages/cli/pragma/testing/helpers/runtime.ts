@@ -3,18 +3,17 @@
  * canonical fixture and a temporary config directory.
  *
  * Each call creates an independent runtime. The caller owns disposal.
- * Uses the real `bootPragma()` — no mocks.
+ * Uses the real `bootPragma()` to exercise the actual boot path.
  *
- * @note Impure — creates temp directory, reads fixture files, boots ke store.
+ * @note Impure — creates temp directory, writes fixture files, boots ke store.
  */
 
-import { copyFileSync, mkdtempSync, rmSync } from "node:fs";
+import { copyFileSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { PragmaRuntime } from "../../src/domains/shared/runtime.js";
 import { bootPragma } from "../../src/domains/shared/runtime.js";
 import { DS_ALL_TTL } from "../dsFixtures.js";
-import { createTestStore } from "../store.js";
 
 const FIXTURES_DIR = new URL("../fixtures/", import.meta.url).pathname;
 
@@ -23,8 +22,12 @@ type ConfigName = "canonical-config.json" | "filtered-config.json";
 /**
  * Create a PragmaRuntime backed by the canonical test fixture.
  *
+ * Stages the selected config as `pragma.config.json` in a temp directory
+ * and calls the real `bootPragma()` with a sources override pointing at
+ * the canonical TTL fixture. No mocks.
+ *
  * @param options.config - Config file name within the fixtures directory.
- *   Defaults to `"canonical-config.json"` (no tier, normal channel).
+ *   Defaults to `"canonical-config.json"` (tier=global, channel=normal).
  *   Use `"filtered-config.json"` for tier-filtering tests (apps/lxd).
  *
  * @example
@@ -43,25 +46,26 @@ export async function createTestRuntime(options?: {
 }): Promise<PragmaRuntime> {
   const configFile = options?.config ?? "canonical-config.json";
 
-  // Stage a temp directory with pragma.config.json so bootPragma's
-  // readConfig() finds it via the real config lookup path.
+  // Stage a temp directory with pragma.config.json and the canonical
+  // TTL fixture so bootPragma exercises the real config + store path.
   const tmpDir = mkdtempSync(join(tmpdir(), "pragma-test-"));
   copyFileSync(
     join(FIXTURES_DIR, configFile),
     join(tmpDir, "pragma.config.json"),
   );
 
-  const { store, cleanup } = await createTestStore({ ttl: DS_ALL_TTL });
+  const ttlPath = join(tmpDir, "canonical.ttl");
+  writeFileSync(ttlPath, DS_ALL_TTL);
 
-  const runtime: PragmaRuntime = {
-    store,
-    config: (await import("../../src/config.js")).readConfig(tmpDir),
-    cwd: tmpDir,
+  const runtime = await bootPragma({ cwd: tmpDir, sources: [ttlPath] });
+
+  // Wrap dispose to also clean up the temp directory.
+  const originalDispose = runtime.dispose.bind(runtime);
+  return {
+    ...runtime,
     dispose: () => {
-      cleanup();
+      originalDispose();
       rmSync(tmpDir, { recursive: true, force: true });
     },
   };
-
-  return runtime;
 }
