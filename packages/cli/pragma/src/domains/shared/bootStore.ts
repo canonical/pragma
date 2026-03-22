@@ -8,54 +8,29 @@
  * @see CF.01, CF.02 in B.08.CONFIG
  */
 
-import { createRequire } from "node:module";
-import { dirname, join } from "node:path";
+import { join } from "node:path";
 import type { SourceSpec, Store } from "@canonical/ke";
 import { createStore } from "@canonical/ke";
 import type { PragmaConfig } from "../../config.js";
 import { PragmaError } from "../../error/index.js";
+import { PACKAGES, resolvePackages } from "./packages.js";
 import { PREFIX_MAP } from "./prefixes.js";
 
-const require = createRequire(import.meta.url);
-
 /**
- * Source package definitions — each entry maps a package name to the glob
- * patterns (relative to its package root) that contain TTL data.
+ * Resolve default TTL sources from the package registry.
+ * Package-manager agnostic — works with bun, npm, pnpm, and yarn.
  *
  * @see CF.02
  */
-const SOURCE_PACKAGES = [
-  {
-    pkg: "@canonical/design-system",
-    globs: ["definitions/ontology.ttl", "data/**/*.ttl"],
-  },
-  {
-    pkg: "@canonical/anatomy-dsl",
-    globs: ["definitions/**/*.ttl"],
-  },
-  {
-    pkg: "@canonical/code-standards",
-    globs: ["definitions/**/*.ttl", "data/**/*.ttl"],
-  },
-] as const;
-
-/**
- * Resolve default TTL sources by locating each package via require.resolve.
- * This is package-manager agnostic — works with bun, npm, pnpm, and yarn
- * regardless of hoisting strategy.
- */
 export function defaultSources(): SourceSpec[] {
   const sources: SourceSpec[] = [];
+  const resolved = resolvePackages();
 
-  for (const { pkg, globs } of SOURCE_PACKAGES) {
-    let pkgDir: string;
-    try {
-      pkgDir = dirname(require.resolve(`${pkg}/package.json`));
-    } catch {
-      continue; // package not installed — skip
-    }
-    for (const glob of globs) {
-      sources.push(join(pkgDir, glob));
+  for (const { pkg, dir } of resolved) {
+    const def = PACKAGES.find((p) => p.pkg === pkg);
+    if (!def) continue;
+    for (const glob of def.ttl) {
+      sources.push(join(dir, glob));
     }
   }
 
