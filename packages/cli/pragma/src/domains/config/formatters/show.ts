@@ -20,7 +20,7 @@ const formatters: Formatters<ConfigShowData> = {
 
     const releases = data.includedReleases.join(" + ");
     lines.push(`channel: ${data.channel} (${releases})`);
-    lines.push(`installed via: ${data.packageManager}`);
+    lines.push(`installed via: ${data.installSource}`);
 
     if (data.configFileExists) {
       lines.push(`config file: ${data.configFilePath}`);
@@ -46,7 +46,7 @@ const formatters: Formatters<ConfigShowData> = {
 
     const releases = data.includedReleases.join(", ");
     lines.push(`- **Channel:** ${data.channel} (${releases})`);
-    lines.push(`- **Package manager:** ${data.packageManager}`);
+    lines.push(`- **Installed via:** ${data.installSource}`);
 
     if (data.configFileExists) {
       lines.push(`- **Config file:** \`${data.configFilePath}\``);

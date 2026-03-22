@@ -6,6 +6,7 @@ function createInfoData(overrides: Partial<InfoData> = {}): InfoData {
   return {
     version: "0.18.0",
     pm: "bun",
+    installSource: "bun (global)",
     configPath: "pragma.config.json",
     tier: "apps/lxd",
     tierChain: ["global", "apps", "apps/lxd"],
@@ -27,6 +28,13 @@ describe("renderInfoPlain", () => {
   it("includes install method", () => {
     const output = renderInfoPlain(createInfoData());
     expect(output).toContain("bun (global)");
+  });
+
+  it("supports local install output", () => {
+    const output = renderInfoPlain(
+      createInfoData({ installSource: "bun (local)" }),
+    );
+    expect(output).toContain("bun (local)");
   });
 
   it("includes tier chain", () => {

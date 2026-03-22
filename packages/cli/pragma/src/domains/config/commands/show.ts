@@ -10,7 +10,7 @@ import {
   createOutputResult,
 } from "@canonical/cli-core";
 import { configExists, readConfig, resolveConfigPath } from "#config";
-import { detectPackageManager } from "#package-manager";
+import { detectInstallSource } from "#package-manager";
 import type { PragmaContext } from "../../shared/context.js";
 import { selectFormatter } from "../../shared/formatters.js";
 import { showFormatters } from "../formatters/index.js";
@@ -28,12 +28,13 @@ export default function buildShowCommand(
     },
     execute: async (): Promise<CommandResult> => {
       const config = readConfig(ctx.cwd);
-      const pm = detectPackageManager();
+      const install = detectInstallSource();
       const cfgPath = resolveConfigPath(ctx.cwd);
       const cfgExists = configExists(ctx.cwd);
 
       const data = resolveConfigShow(config, {
-        packageManager: pm,
+        packageManager: install.packageManager,
+        installSource: install.label,
         configFilePath: cfgPath,
         configFileExists: cfgExists,
       });

@@ -18,3 +18,5 @@ export interface SetupSkillsResult {
   readonly skillCount: number;
   readonly warnings: readonly string[];
 }
+
+export type LogLevel = "debug" | "info" | "warn" | "error";

@@ -6,7 +6,7 @@
 
 import { readConfig } from "#config";
 import { VERSION } from "#constants";
-import { detectPackageManager, PM_COMMANDS } from "#package-manager";
+import { detectInstallSource, PM_COMMANDS } from "#package-manager";
 import { bootStore } from "../../shared/bootStore.js";
 import { CHANNEL_RELEASES } from "../../shared/filters/buildChannelFilter.js";
 import { resolveTierChain } from "../../shared/filters/buildTierFilter.js";
@@ -15,7 +15,8 @@ import checkRegistryVersion from "./checkRegistryVersion.js";
 import { collectStoreSummary } from "./collectStoreSummary.js";
 
 export default async function collectInfo(cwd: string): Promise<InfoData> {
-  const pm = detectPackageManager();
+  const install = detectInstallSource();
+  const pm = install.packageManager;
   const config = readConfig(cwd);
   const tierChain = resolveTierChain(config.tier);
   const channelReleases = CHANNEL_RELEASES[config.channel];
@@ -49,6 +50,7 @@ export default async function collectInfo(cwd: string): Promise<InfoData> {
   return {
     version: VERSION,
     pm,
+    installSource: install.label,
     configPath: "pragma.config.json",
     tier: config.tier,
     tierChain,

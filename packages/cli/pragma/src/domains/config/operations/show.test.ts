@@ -7,6 +7,7 @@ describe("resolveConfigShow", () => {
       { tier: "apps/lxd", channel: "experimental" },
       {
         packageManager: "bun",
+        installSource: "bun (global)",
         configFilePath: "/tmp/pragma.config.json",
         configFileExists: true,
       },
@@ -17,6 +18,7 @@ describe("resolveConfigShow", () => {
     expect(data.channel).toBe("experimental");
     expect(data.includedReleases).toEqual(["stable", "experimental"]);
     expect(data.packageManager).toBe("bun");
+    expect(data.installSource).toBe("bun (global)");
     expect(data.configFileExists).toBe(true);
   });
 
@@ -25,6 +27,7 @@ describe("resolveConfigShow", () => {
       { tier: undefined, channel: "normal" },
       {
         packageManager: "npm",
+        installSource: "bun (local)",
         configFilePath: "/tmp/pragma.config.json",
         configFileExists: false,
       },
@@ -41,6 +44,7 @@ describe("resolveConfigShow", () => {
       { tier: undefined, channel: "prerelease" },
       {
         packageManager: "pnpm",
+        installSource: "pnpm (global)",
         configFilePath: "/tmp/pragma.config.json",
         configFileExists: true,
       },

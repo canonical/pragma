@@ -25,6 +25,7 @@ describe("listOntologies", () => {
     expect(ds?.namespace).toBe(PREFIX_MAP.ds);
     expect(ds?.classCount).toBeGreaterThan(0);
     expect(ds?.propertyCount).toBeGreaterThan(0);
+    expect(ds?.anatomyCount).toBeGreaterThan(0);
   });
 
   it("includes cs namespace", async () => {
@@ -32,6 +33,7 @@ describe("listOntologies", () => {
     const cs = result.find((o) => o.prefix === "cs");
     expect(cs).toBeDefined();
     expect(cs?.classCount).toBeGreaterThan(0);
+    expect(cs?.anatomyCount).toBe(0);
   });
 
   it("returns sorted by prefix", async () => {

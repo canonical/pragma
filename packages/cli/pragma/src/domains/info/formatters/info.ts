@@ -16,7 +16,7 @@ function renderInfoPlain(data: InfoData): string {
 
   lines.push(`pragma v${data.version}`);
 
-  lines.push(formatField("  Installed via:", `${data.pm} (global)`));
+  lines.push(formatField("  Installed via:", data.installSource));
 
   lines.push(formatField("  Config:", data.configPath));
 
@@ -69,7 +69,7 @@ function renderInfoLlm(data: InfoData): string {
   const lines: string[] = [];
 
   lines.push(`# pragma v${data.version}`);
-  lines.push(`- Installed via: ${data.pm} (global)`);
+  lines.push(`- Installed via: ${data.installSource}`);
 
   if (data.tier) {
     lines.push(`- Tier: ${data.tier} (${data.tierChain.join(" → ")})`);

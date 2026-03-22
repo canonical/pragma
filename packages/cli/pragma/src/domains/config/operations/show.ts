@@ -20,6 +20,7 @@ export default function resolveConfigShow(
   config: PragmaConfig,
   opts: {
     packageManager: string;
+    installSource: string;
     configFilePath: string;
     configFileExists: boolean;
   },
@@ -37,6 +38,7 @@ export default function resolveConfigShow(
     channel: config.channel,
     includedReleases,
     packageManager: opts.packageManager,
+    installSource: opts.installSource,
     configFilePath: opts.configFilePath,
     configFileExists: opts.configFileExists,
   };

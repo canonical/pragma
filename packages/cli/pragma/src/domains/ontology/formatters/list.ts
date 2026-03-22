@@ -11,7 +11,7 @@ const formatters: Formatters<readonly OntologySummary[]> = {
     return ontologies
       .map(
         (o) =>
-          `${chalk.bold(o.prefix)} ${chalk.dim(`(${o.namespace})`)} classes: ${o.classCount} properties: ${o.propertyCount}`,
+          `${chalk.bold(o.prefix)} ${chalk.dim(`(${o.namespace})`)} classes: ${o.classCount} properties: ${o.propertyCount} anatomy: ${o.anatomyCount}`,
       )
       .join("\n");
   },
@@ -20,7 +20,7 @@ const formatters: Formatters<readonly OntologySummary[]> = {
     const lines = ["## Ontologies", ""];
     for (const o of ontologies) {
       lines.push(
-        `- **${o.prefix}:** (${o.namespace}) | classes: ${o.classCount} | properties: ${o.propertyCount}`,
+        `- **${o.prefix}:** (${o.namespace}) | classes: ${o.classCount} | properties: ${o.propertyCount} | anatomy: ${o.anatomyCount}`,
       );
     }
     return lines.join("\n");
