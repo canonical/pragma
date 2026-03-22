@@ -1,46 +1,22 @@
 #!/usr/bin/env bun
 /**
- * check-publish-status.ts
+ * publish-status.ts
  *
- * Lists all workspace packages and checks whether each is published on npm.
- * Outputs: package name | local version | published? | latest npm version
+ * Compares local workspace package versions against the npm registry.
+ * Reports whether each package is published, outdated, new, or private.
  *
- * Usage: bun scripts/check-publish-status.ts
+ * Usage: bun scripts/publish-status.ts
  */
 
-import { execSync } from "node:child_process";
-import { existsSync, readdirSync, readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { readFileSync } from "node:fs";
+import { join, resolve } from "node:path";
 
-const ROOT = new URL("..", import.meta.url).pathname;
-
-// -------------------------------------------------------------------
-// Collect all workspace package.json paths
-// -------------------------------------------------------------------
-
-const rootPkg = JSON.parse(readFileSync(resolve(ROOT, "package.json"), "utf8"));
-const workspaceGlobs: string[] = rootPkg.workspaces ?? [];
-
-const packageJsonPaths: string[] = [];
-for (const pattern of workspaceGlobs) {
-  const parts = pattern.split("/");
-  const baseDir = resolve(ROOT, ...parts.slice(0, -1));
-  const last = parts[parts.length - 1];
-  if (last === "*") {
-    let entries: string[] = [];
-    try { entries = readdirSync(baseDir); } catch { continue; }
-    for (const entry of entries) {
-      const pkgJson = resolve(baseDir, entry, "package.json");
-      if (existsSync(pkgJson)) packageJsonPaths.push(pkgJson);
-    }
-  } else {
-    const pkgJson = resolve(ROOT, pattern, "package.json");
-    if (existsSync(pkgJson)) packageJsonPaths.push(pkgJson);
-  }
-}
+const root = resolve(import.meta.dirname, "..");
+const rootPkg = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
+const patterns: string[] = rootPkg.workspaces ?? [];
 
 // -------------------------------------------------------------------
-// Read local package metadata
+// Collect workspace packages via Bun.Glob
 // -------------------------------------------------------------------
 
 interface PackageMeta {
@@ -49,47 +25,81 @@ interface PackageMeta {
   private: boolean;
 }
 
-const packages: PackageMeta[] = packageJsonPaths
-  .map((p) => {
-    const pkg = JSON.parse(readFileSync(p, "utf8"));
-    return { name: pkg.name, version: pkg.version, private: pkg.private === true };
-  })
-  .filter((p) => p.name)
-  .sort((a, b) => a.name.localeCompare(b.name));
+const packages: PackageMeta[] = [];
+
+for (const pattern of patterns) {
+  const parentGlob = new Bun.Glob(pattern);
+  for (const match of parentGlob.scanSync({ cwd: root, onlyFiles: false })) {
+    try {
+      const pkg = JSON.parse(readFileSync(join(root, match, "package.json"), "utf8"));
+      if (pkg.name) {
+        packages.push({ name: pkg.name, version: pkg.version, private: pkg.private === true });
+      }
+    } catch {
+      // Not a package directory
+    }
+  }
+}
+
+packages.sort((a, b) => a.name.localeCompare(b.name));
 
 // -------------------------------------------------------------------
-// Query npm for each package
+// Output
 // -------------------------------------------------------------------
 
-const RESET = "\x1b[0m";
-const BOLD  = "\x1b[1m";
-const GREEN = "\x1b[32m";
-const RED   = "\x1b[31m";
-const DIM   = "\x1b[2m";
-const CYAN  = "\x1b[36m";
+const RESET  = "\x1b[0m";
+const BOLD   = "\x1b[1m";
+const GREEN  = "\x1b[32m";
+const YELLOW = "\x1b[33m";
+const RED    = "\x1b[31m";
+const DIM    = "\x1b[2m";
+const CYAN   = "\x1b[36m";
 
 const col = (str: string, width: number): string => str.padEnd(width);
 
 const NAME_W   = 52;
 const LOCAL_W  = 10;
 const STATUS_W = 12;
-const LATEST_W = 12;
+const NPM_W    = 12;
 
 const header = [
   BOLD + col("Package", NAME_W),
   col("Local", LOCAL_W),
-  col("Published?", STATUS_W),
-  col("Latest on npm", LATEST_W) + RESET,
+  col("Status", STATUS_W),
+  col("npm", NPM_W) + RESET,
 ].join("  ");
 
-const divider = "─".repeat(NAME_W + LOCAL_W + STATUS_W + LATEST_W + 6);
+const divider = "─".repeat(NAME_W + LOCAL_W + STATUS_W + NPM_W + 6);
 
 console.log(`\n${header}`);
 console.log(divider);
 
-let published = 0;
-let unpublished = 0;
+let publishedCount = 0;
+let outdatedCount = 0;
+let newCount = 0;
 let privateCount = 0;
+
+// Query npm registry in parallel for all public packages
+const publicPackages = packages.filter((p) => !p.private);
+const registryVersions = await Promise.all(
+  publicPackages.map(async (pkg) => {
+    try {
+      const proc = Bun.spawn(["npm", "view", pkg.name, "version", "--json"], {
+        stdout: "pipe",
+        stderr: "ignore",
+      });
+      const output = await new Response(proc.stdout).text();
+      const code = await proc.exited;
+      if (code !== 0) return null;
+      return JSON.parse(output.trim()) as string;
+    } catch {
+      return null;
+    }
+  }),
+);
+
+const registryMap = new Map<string, string | null>();
+publicPackages.forEach((pkg, i) => registryMap.set(pkg.name, registryVersions[i]));
 
 for (const pkg of packages) {
   if (pkg.private) {
@@ -99,38 +109,32 @@ for (const pkg of packages) {
         DIM + col(pkg.name, NAME_W),
         col(pkg.version ?? "—", LOCAL_W),
         col("private", STATUS_W),
-        col("—", LATEST_W) + RESET,
+        col("—", NPM_W) + RESET,
       ].join("  "),
     );
     continue;
   }
 
-  let latestVersion: string | null = null;
-  let isPublished = false;
+  const registryVersion = registryMap.get(pkg.name) ?? null;
+  let statusLabel: string;
 
-  try {
-    const result = execSync(`npm view ${pkg.name} version --json 2>/dev/null`, {
-      encoding: "utf8",
-      timeout: 10_000,
-    }).trim();
-    latestVersion = JSON.parse(result);
-    isPublished = true;
-    published++;
-  } catch {
-    isPublished = false;
-    unpublished++;
+  if (!registryVersion) {
+    newCount++;
+    statusLabel = RED + col("new", STATUS_W) + RESET;
+  } else if (registryVersion === pkg.version) {
+    publishedCount++;
+    statusLabel = GREEN + col("published", STATUS_W) + RESET;
+  } else {
+    outdatedCount++;
+    statusLabel = YELLOW + col("outdated", STATUS_W) + RESET;
   }
-
-  const statusLabel = isPublished
-    ? GREEN + col("yes", STATUS_W) + RESET
-    : RED   + col("no", STATUS_W)  + RESET;
 
   console.log(
     [
       col(pkg.name, NAME_W),
       col(pkg.version ?? "—", LOCAL_W),
       statusLabel,
-      CYAN + col(latestVersion ?? "—", LATEST_W) + RESET,
+      CYAN + col(registryVersion ?? "—", NPM_W) + RESET,
     ].join("  "),
   );
 }
@@ -138,7 +142,8 @@ for (const pkg of packages) {
 console.log(divider);
 console.log(
   `\n${BOLD}${packages.length} packages${RESET}  ` +
-  `${GREEN}${published} published${RESET}  ` +
-  `${RED}${unpublished} unpublished${RESET}  ` +
+  `${GREEN}${publishedCount} published${RESET}  ` +
+  `${YELLOW}${outdatedCount} outdated${RESET}  ` +
+  `${RED}${newCount} new${RESET}  ` +
   `${DIM}${privateCount} private${RESET}\n`,
 );
