@@ -28,7 +28,7 @@ describe("collectCommands", () => {
     const paths = commands.map((command) => command.path.join(" "));
 
     expect(paths).toContain("block list");
-    expect(paths).toContain("block get");
+    expect(paths).toContain("block lookup");
     expect(paths).toContain("ontology list");
     expect(paths).toContain("ontology show");
     expect(paths).toContain("graph query");

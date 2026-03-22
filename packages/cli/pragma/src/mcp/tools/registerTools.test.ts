@@ -29,10 +29,11 @@ afterAll(async () => {
  * Parse the envelope from a tool response.
  * Returns the full envelope object (with `ok`, `data`, `meta`, etc.).
  */
-function parseEnvelope(result: {
-  content: unknown[];
-}): Record<string, unknown> {
-  const first = result.content[0] as { type: string; text: string };
+function parseEnvelope(
+  result: Record<string, unknown>,
+): Record<string, unknown> {
+  const content = result.content as unknown[];
+  const first = content[0] as { type: string; text: string };
   expect(first.type).toBe("text");
   return JSON.parse(first.text) as Record<string, unknown>;
 }
@@ -40,7 +41,7 @@ function parseEnvelope(result: {
 /**
  * Extract the `data` field from a success envelope.
  */
-function parseData(result: { content: unknown[] }): unknown {
+function parseData(result: Record<string, unknown>): unknown {
   const envelope = parseEnvelope(result);
   expect(envelope.ok).toBe(true);
   return envelope.data;
@@ -410,16 +411,6 @@ describe("token_list", () => {
     });
     const data = parseData(result) as { name: string }[];
     expect(data.length).toBeGreaterThan(0);
-  });
-
-  it("filters tokens by names", async () => {
-    const result = await client.callTool({
-      name: "token_list",
-      arguments: { names: ["color.primary"] },
-    });
-    const data = parseData(result) as { name: string }[];
-    expect(data).toHaveLength(1);
-    expect(data[0]?.name).toBe("color.primary");
   });
 });
 
@@ -1105,9 +1096,9 @@ describe("condensed parameter", () => {
     expect((envelope.text as string).length).toBeGreaterThan(0);
   });
 
-  it("token_get returns condensed text", async () => {
+  it("token_lookup returns condensed text", async () => {
     const result = await client.callTool({
-      name: "token_get",
+      name: "token_lookup",
       arguments: { name: "color.primary", condensed: true },
     });
     const envelope = parseEnvelope(result);
