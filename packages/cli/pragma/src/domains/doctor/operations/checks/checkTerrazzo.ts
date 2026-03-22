@@ -6,7 +6,7 @@
 
 import { existsSync } from "node:fs";
 import { join } from "node:path";
-import { detectPackageManager, PM_COMMANDS } from "../../../../pm.js";
+import { detectPackageManager, PM_COMMANDS } from "#package-manager";
 import type { CheckContext, CheckResult } from "../types.js";
 
 export default async function checkTerrazzo(

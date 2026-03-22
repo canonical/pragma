@@ -11,8 +11,7 @@
  */
 
 import type { SourceSpec, Store } from "@canonical/ke";
-import type { PragmaConfig } from "../../config.js";
-import { readConfig } from "../../config.js";
+import { type PragmaConfig, readConfig } from "#config";
 import { bootStore } from "./bootStore.js";
 
 /**

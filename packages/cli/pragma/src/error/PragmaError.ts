@@ -1,5 +1,4 @@
-import type { ErrorCode } from "./constants.js";
-import type { PragmaErrorData } from "./PragmaErrorData.js";
+import type { ErrorCode, PragmaErrorData } from "./types.js";
 
 class PragmaError extends Error {
   readonly code: ErrorCode;

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { detectLocalInstall, detectPackageManager, PM_COMMANDS } from "./pm.js";
+import { PM_COMMANDS } from "./constants.js";
+import detectPackageManager from "./detectPackageManager.js";
 
 describe("detectPackageManager", () => {
   it("detects bun from bin path", () => {
@@ -44,20 +45,6 @@ describe("detectPackageManager", () => {
 
   it("defaults to npm when path cannot be resolved", () => {
     expect(detectPackageManager("/nonexistent/path/to/pragma")).toBe("npm");
-  });
-});
-
-describe("detectLocalInstall", () => {
-  it("returns undefined for global installs", () => {
-    expect(
-      detectLocalInstall(
-        "/home/user/.bun/install/global/node_modules/.bin/pragma",
-      ),
-    ).toBeUndefined();
-  });
-
-  it("returns undefined when path cannot be resolved", () => {
-    expect(detectLocalInstall("/nonexistent/path/pragma")).toBeUndefined();
   });
 });
 

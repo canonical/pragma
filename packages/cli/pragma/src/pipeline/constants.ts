@@ -1,4 +1,4 @@
-import type { ErrorCode } from "../error/index.js";
+import type { ErrorCode } from "../error/types.js";
 
 const EXIT_CODES: Record<ErrorCode, number> = {
   ENTITY_NOT_FOUND: 1,
@@ -10,8 +10,4 @@ const EXIT_CODES: Record<ErrorCode, number> = {
   INTERNAL_ERROR: 127,
 };
 
-function mapExitCode(code: ErrorCode): number {
-  return EXIT_CODES[code];
-}
-
-export { EXIT_CODES, mapExitCode };
+export { EXIT_CODES };

@@ -3,7 +3,7 @@
  * @note Impure — reads filesystem.
  */
 
-import configExists from "../../../../configExists.js";
+import { configExists } from "#config";
 import type { CheckContext, CheckResult } from "../types.js";
 
 export default async function checkConfigFile(

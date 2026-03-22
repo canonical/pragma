@@ -5,7 +5,7 @@
  * objects. All MCP tools return one of these envelope shapes via `wrapTool`.
  */
 
-import type { ErrorCode } from "../error/constants.js";
+import type { ErrorCode } from "../error/types.js";
 
 // ---------------------------------------------------------------------------
 // Recovery

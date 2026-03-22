@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 
-import { runCli } from "./lib/runCli.js";
-import { detectLocalInstall } from "./pm.js";
+import { detectLocalInstall } from "./package-manager/index.js";
+import runCli from "./pipeline/runCli.js";
 
 const localWarning = detectLocalInstall();
 if (localWarning) {

@@ -1,7 +1,6 @@
 {
   "extends": "@canonical/typescript-config",
   "compilerOptions": {
-    "baseUrl": "src",
     "types": ["node", "@types/bun"],
     "resolveJsonModule": true,
     "noUncheckedIndexedAccess": true,

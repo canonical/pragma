@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { CommandContext } from "@canonical/cli-core";
 import { describe, expect, it } from "vitest";
-import { PragmaError } from "../../../error/index.js";
+import { PragmaError } from "#error";
 import addConfigCommand from "./add-config.js";
 
 function makeCtx(cwd: string): CommandContext {

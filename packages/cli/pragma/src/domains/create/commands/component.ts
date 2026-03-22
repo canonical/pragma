@@ -17,7 +17,7 @@ import {
 } from "@canonical/cli-core";
 import { generators } from "@canonical/summon-component";
 import type { AnyGenerator } from "@canonical/summon-core";
-import { PragmaError } from "../../../error/index.js";
+import { PragmaError } from "#error";
 
 const FRAMEWORK_CHOICES = [
   { label: "react", value: "react" },

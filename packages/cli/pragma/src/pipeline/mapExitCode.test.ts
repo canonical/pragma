@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { ERROR_CODES } from "../error/index.js";
-import { EXIT_CODES, mapExitCode } from "./mapExitCode.js";
+import { EXIT_CODES } from "./constants.js";
+import mapExitCode from "./mapExitCode.js";
 
 describe("mapExitCode", () => {
   it("maps ENTITY_NOT_FOUND to 1", () => {

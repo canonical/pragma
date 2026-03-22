@@ -1,6 +1,6 @@
 import type { CommandContext, CommandDefinition } from "@canonical/cli-core";
 import { describe, expect, it } from "vitest";
-import { PragmaError } from "../../../error/index.js";
+import { PragmaError } from "#error";
 import buildComponentCommand from "./component.js";
 
 const ctx: CommandContext = {

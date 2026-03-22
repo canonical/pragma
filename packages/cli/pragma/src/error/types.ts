@@ -1,4 +1,6 @@
-import type { ErrorCode } from "./constants.js";
+import type { ERROR_CODES } from "./constants.js";
+
+type ErrorCode = (typeof ERROR_CODES)[number];
 
 interface PragmaErrorData {
   code: ErrorCode;
@@ -10,4 +12,4 @@ interface PragmaErrorData {
   validOptions?: string[];
 }
 
-export type { PragmaErrorData };
+export type { ErrorCode, PragmaErrorData };

@@ -7,7 +7,7 @@
  * @see CF.06 in B.08.CONFIG
  */
 
-import type { Channel } from "../../../constants.js";
+import type { Channel } from "#constants";
 import { P } from "../prefixes.js";
 
 /**

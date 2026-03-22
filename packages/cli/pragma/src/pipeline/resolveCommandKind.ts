@@ -5,15 +5,10 @@
  * Store-skip commands are listed declaratively in STORE_SKIP_COMMANDS.
  */
 
+import type { CommandKind } from "./types.js";
+
 /** Commands that do not require the ke store to be booted. */
 const STORE_SKIP_COMMANDS = new Set(["setup", "mcp"]);
-
-type CommandKind =
-  | { kind: "completions-client"; partial: string }
-  | { kind: "completions-server" }
-  | { kind: "doctor" }
-  | { kind: "store-skip"; command: string }
-  | { kind: "store-required" };
 
 export default function resolveCommandKind(
   argv: readonly string[],
@@ -44,5 +39,3 @@ export default function resolveCommandKind(
 
   return { kind: "store-required" };
 }
-
-export type { CommandKind };

@@ -4,7 +4,7 @@
  * Shared across config operations, commands, and formatters.
  */
 
-import type { Channel } from "../../../constants.js";
+import type { Channel } from "#constants";
 
 /**
  * Data returned by `pragma config show`.

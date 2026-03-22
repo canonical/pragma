@@ -1,8 +1,8 @@
 import type { Store } from "@canonical/ke";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { PragmaError } from "#error";
 import { DS_ALL_TTL } from "../../../../testing/dsFixtures.js";
 import { createTestStore } from "../../../../testing/store.js";
-import { PragmaError } from "../../../error/index.js";
 import { PREFIX_MAP } from "../../shared/prefixes.js";
 import showOntology from "./showOntology.js";
 

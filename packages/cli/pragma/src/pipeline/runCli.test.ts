@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { VERSION } from "../constants.js";
-import { createProgram, parseGlobalFlags } from "./runCli.js";
+import createProgram from "./createProgram.js";
+import parseGlobalFlags from "./parseGlobalFlags.js";
 
 describe("parseGlobalFlags", () => {
   it("parses defaults", () => {

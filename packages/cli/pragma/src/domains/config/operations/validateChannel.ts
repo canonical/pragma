@@ -4,8 +4,8 @@
  * @see CF.04 in B.08.CONFIG
  */
 
-import { type Channel, VALID_CHANNELS } from "../../../constants.js";
-import { PragmaError } from "../../../error/index.js";
+import { type Channel, VALID_CHANNELS } from "#constants";
+import { PragmaError } from "#error";
 
 /**
  * Validate a channel value.

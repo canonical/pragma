@@ -1,12 +1,8 @@
 import { readFileSync } from "node:fs";
-import { type Channel, VALID_CHANNELS } from "./constants.js";
-import { PragmaError } from "./error/PragmaError.js";
+import { type Channel, VALID_CHANNELS } from "../constants.js";
+import { PragmaError } from "../error/PragmaError.js";
 import resolveConfigPath from "./resolveConfigPath.js";
-
-interface PragmaConfig {
-  tier: string | undefined;
-  channel: Channel;
-}
+import type { PragmaConfig } from "./types.js";
 
 function isValidChannel(value: unknown): value is Channel {
   return typeof value === "string" && VALID_CHANNELS.includes(value as Channel);
@@ -18,7 +14,7 @@ function isValidChannel(value: unknown): value is Channel {
  * @note Impure — reads config from filesystem.
  * @throws PragmaError with code CONFIG_ERROR if JSON is invalid or channel is unrecognized.
  */
-function readConfig(cwd: string = process.cwd()): PragmaConfig {
+export default function readConfig(cwd: string = process.cwd()): PragmaConfig {
   const configPath = resolveConfigPath(cwd);
 
   let raw: string;
@@ -55,6 +51,3 @@ function readConfig(cwd: string = process.cwd()): PragmaConfig {
 
   return { tier, channel };
 }
-
-export { readConfig };
-export type { PragmaConfig };

@@ -11,7 +11,7 @@ import {
 } from "@canonical/cli-core";
 import { detectHarnesses } from "@canonical/harnesses";
 import { collectEffects, runTask } from "@canonical/task";
-import { PragmaError } from "../../../error/index.js";
+import { PragmaError } from "#error";
 import type { PragmaContext } from "../../shared/context.js";
 import { selectFormatter } from "../../shared/formatters.js";
 import { discoverSkills } from "../../skill/operations/index.js";

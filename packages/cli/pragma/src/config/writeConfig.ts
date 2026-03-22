@@ -1,11 +1,6 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
-import type { Channel } from "./constants.js";
 import resolveConfigPath from "./resolveConfigPath.js";
-
-interface ConfigUpdate {
-  tier?: string | undefined;
-  channel?: Channel | undefined;
-}
+import type { ConfigUpdate } from "./types.js";
 
 /**
  * Write config updates to pragma.config.json.
@@ -52,5 +47,3 @@ export default function writeConfig(cwd: string, update: ConfigUpdate): void {
     writeFileSync(configPath, "");
   }
 }
-
-export type { ConfigUpdate };

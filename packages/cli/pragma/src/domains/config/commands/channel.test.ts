@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { Store } from "@canonical/ke";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { readConfig } from "../../../config.js";
+import { readConfig } from "#config";
 import type { PragmaContext } from "../../shared/context.js";
 import buildChannelCommand from "./channel.js";
 

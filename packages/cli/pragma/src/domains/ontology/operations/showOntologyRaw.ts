@@ -8,7 +8,7 @@
  */
 
 import type { Store, Triple } from "@canonical/ke";
-import { PragmaError } from "../../../error/index.js";
+import { PragmaError } from "#error";
 import { buildQuery } from "../../shared/buildQuery.js";
 import resolvePrefix from "../helpers/resolvePrefix.js";
 

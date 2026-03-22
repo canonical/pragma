@@ -24,6 +24,13 @@
     "url": "https://github.com/canonical/pragma/issues"
   },
   "homepage": "https://github.com/canonical/pragma#readme",
+  "imports": {
+    "#config": "./src/config/index.ts",
+    "#constants": "./src/constants.ts",
+    "#error": "./src/error/index.ts",
+    "#package-manager": "./src/package-manager/index.ts",
+    "#pipeline": "./src/pipeline/index.ts"
+  },
   "scripts": {
     "build": "echo 'No build needed - runs directly from TypeScript'",
     "build:compile": "bun build --compile --minify src/bin.ts --outfile dist/pragma",

@@ -8,7 +8,7 @@
  */
 
 import chalk from "chalk";
-import { formatField, formatHeading } from "../../../lib/formatTerminal.js";
+import { formatField, formatHeading } from "#pipeline";
 import type { InfoData } from "../types.js";
 
 function renderInfoPlain(data: InfoData): string {

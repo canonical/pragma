@@ -6,7 +6,7 @@
  */
 
 import type { Store } from "@canonical/ke";
-import { PragmaError } from "../../../error/index.js";
+import { PragmaError } from "#error";
 import { buildQuery } from "../../shared/buildQuery.js";
 import type { InspectResult, PredicateGroup } from "../../shared/types.js";
 import resolveUri from "../helpers/resolveUri.js";

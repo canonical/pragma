@@ -11,7 +11,7 @@ import {
   formatHeading,
   formatList,
   formatSection,
-} from "../../../lib/formatTerminal.js";
+} from "#pipeline";
 import type { Formatters } from "../../shared/formatters.js";
 import type { AnatomyNode, ComponentDetailed } from "../../shared/types.js";
 import type { AspectFlags } from "../types.js";

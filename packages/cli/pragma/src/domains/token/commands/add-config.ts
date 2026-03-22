@@ -4,7 +4,7 @@ import {
   type CommandDefinition,
   createOutputResult,
 } from "@canonical/cli-core";
-import { PragmaError } from "../../../error/index.js";
+import { PragmaError } from "#error";
 import { resolveAddConfig } from "../operations/index.js";
 
 export default function addConfigCommand(): CommandDefinition {

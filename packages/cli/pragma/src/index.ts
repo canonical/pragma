@@ -7,8 +7,8 @@
 
 // — Config & Error ————————————————————————————————————————————————————————————
 
-export type { PragmaConfig } from "./config.js";
-export { readConfig } from "./config.js";
+export type { PragmaConfig } from "./config/index.js";
+export { readConfig } from "./config/index.js";
 export type { ErrorCode, PragmaErrorData } from "./error/index.js";
 export { PragmaError } from "./error/index.js";
 
@@ -102,6 +102,6 @@ export type {
 export {
   createMcpServer,
   createMcpServerFromRuntime,
-} from "./mcp/createMcpServer.js";
+} from "./mcp/index.js";
 export { default as registerAllTools } from "./mcp/tools/index.js";
 export type { McpErrorPayload, McpRecovery } from "./mcp/types.js";

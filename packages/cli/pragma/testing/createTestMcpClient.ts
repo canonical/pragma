@@ -5,7 +5,7 @@
 
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
-import type { PragmaConfig } from "../src/config.js";
+import type { PragmaConfig } from "../src/config/index.js";
 import type { PragmaRuntime } from "../src/domains/shared/runtime.js";
 import { createMcpServerFromRuntime } from "../src/mcp/createMcpServer.js";
 import { DS_ALL_TTL } from "./dsFixtures.js";
