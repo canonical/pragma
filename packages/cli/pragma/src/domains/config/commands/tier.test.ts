@@ -29,8 +29,8 @@ describe("config tier command", () => {
 
   it("resets tier via --reset flag", async () => {
     writeFileSync(
-      join(dir, "pragma.config.toml"),
-      'tier = "apps/lxd"\nchannel = "normal"\n',
+      join(dir, "pragma.config.json"),
+      '{"tier":"apps/lxd","channel":"normal"}',
     );
 
     const ctx = makeCtx(dir);
@@ -56,7 +56,7 @@ describe("config tier command", () => {
   });
 
   it("shows current tier when no args", async () => {
-    writeFileSync(join(dir, "pragma.config.toml"), 'tier = "apps"\n');
+    writeFileSync(join(dir, "pragma.config.json"), '{"tier":"apps"}');
 
     const ctx = makeCtx(dir);
     const cmd = buildTierCommand(ctx);

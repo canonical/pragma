@@ -71,7 +71,7 @@ async function executeInfo(
   const data: InfoData = {
     version: VERSION,
     pm,
-    configPath: "pragma.config.toml",
+    configPath: "pragma.config.json",
     tier: config.tier,
     tierChain,
     channel: config.channel,

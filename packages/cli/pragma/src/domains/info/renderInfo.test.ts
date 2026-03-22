@@ -10,7 +10,7 @@ function createInfoData(overrides: Partial<InfoData> = {}): InfoData {
   return {
     version: "0.18.0",
     pm: "bun",
-    configPath: "pragma.config.toml",
+    configPath: "pragma.config.json",
     tier: "apps/lxd",
     tierChain: ["global", "apps", "apps/lxd"],
     channel: "normal",

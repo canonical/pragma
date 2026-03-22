@@ -10,7 +10,7 @@ const allPass: DoctorData = {
       status: "pass",
       detail: "v0.18.0 (installed via bun, global)",
     },
-    { name: "pragma.config.toml", status: "pass", detail: "found" },
+    { name: "pragma.config.json", status: "pass", detail: "found" },
     {
       name: "ke store",
       status: "pass",
@@ -26,7 +26,7 @@ const mixed: DoctorData = {
   checks: [
     { name: "Node version", status: "pass", detail: "v24.1.0" },
     {
-      name: "pragma.config.toml",
+      name: "pragma.config.json",
       status: "fail",
       detail: "not found",
       remedy: "pragma config tier <tier>",

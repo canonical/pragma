@@ -1,5 +1,5 @@
 /**
- * Boot a ke store from pragma.config.toml sources.
+ * Boot a ke store from pragma.config.json sources.
  *
  * Reads configuration, resolves sources (defaults or overridden),
  * creates the store with registered prefixes, and wraps errors.
@@ -15,7 +15,7 @@ import { PragmaError } from "../../error/index.js";
 import { PREFIX_MAP } from "./prefixes.js";
 
 /**
- * Default TTL source patterns when pragma.config.toml has no `sources` field.
+ * Default TTL source patterns when pragma.config.json has no `sources` field.
  * Point at published packages in node_modules.
  *
  * @see CF.02

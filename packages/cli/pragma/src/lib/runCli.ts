@@ -5,9 +5,7 @@ import {
   type GlobalFlags,
   registerAll,
 } from "@canonical/cli-core";
-import type { Store } from "@canonical/ke";
 import { Command, CommanderError } from "commander";
-import { readConfig } from "../config.js";
 import { PROGRAM_DESCRIPTION, PROGRAM_NAME, VERSION } from "../constants.js";
 import { commands as componentCommands } from "../domains/component/index.js";
 import { commands as configCommands } from "../domains/config/index.js";
@@ -18,9 +16,9 @@ import upgradeCommand from "../domains/info/upgradeCommand.js";
 import buildLlmCommand from "../domains/llm/llmCommand.js";
 import { commands as modifierCommands } from "../domains/modifier/index.js";
 import { commands as setupCommands } from "../domains/setup/index.js";
-import { bootStore } from "../domains/shared/bootStore.js";
 import type { PragmaContext } from "../domains/shared/context.js";
-import type { FilterConfig } from "../domains/shared/types.js";
+import type { PragmaRuntime } from "../domains/shared/runtime.js";
+import { bootPragma } from "../domains/shared/runtime.js";
 import { commands as skillCommands } from "../domains/skill/index.js";
 import { commands as standardCommands } from "../domains/standard/index.js";
 import { commands as tierCommands } from "../domains/tier/index.js";
@@ -117,6 +115,11 @@ function renderError(error: PragmaError, flags: GlobalFlags): string {
   return renderErrorPlain(error);
 }
 
+/**
+ * Main CLI entry point — parses argv, boots runtime, runs command, disposes.
+ *
+ * @note Impure — boots ke store, reads config, writes to stdout/stderr, sets exit code.
+ */
 async function runCli(argv: readonly string[]): Promise<void> {
   const globalFlags = parseGlobalFlags(argv);
 
@@ -157,21 +160,19 @@ async function runCli(argv: readonly string[]): Promise<void> {
     return;
   }
 
-  let cwd: string;
-  let config: FilterConfig;
+  // Setup and MCP commands don't need the ke store — skip boot for them
+  const needsStore = !argv.includes("setup") && !argv.includes("mcp");
+
+  let runtime: PragmaRuntime | undefined;
   try {
-    const rawConfig = readConfig();
-    config = { tier: rawConfig.tier, channel: rawConfig.channel };
-    cwd = process.cwd();
-    if (globalFlags.verbose) {
-      const tier = config.tier ?? "(none)";
-      process.stderr.write(`Config: tier=${tier} channel=${config.channel}\n`);
+    if (needsStore) {
+      runtime = await bootPragma();
     }
   } catch (err) {
     const pragmaErr =
       err instanceof PragmaError
         ? err
-        : PragmaError.configError(
+        : PragmaError.storeError(
             err instanceof Error ? err.message : String(err),
           );
     process.stderr.write(`${renderError(pragmaErr, globalFlags)}\n`);
@@ -179,41 +180,25 @@ async function runCli(argv: readonly string[]): Promise<void> {
     return;
   }
 
-  // Setup and MCP commands don't need the ke store — skip boot for them
-  const needsStore = !argv.includes("setup") && !argv.includes("mcp");
-
-  let store: Store | undefined;
-  if (needsStore) {
-    try {
-      store = await bootStore({ cwd });
-    } catch (err) {
-      const pragmaErr =
-        err instanceof PragmaError
-          ? err
-          : PragmaError.storeError(
-              err instanceof Error ? err.message : String(err),
-            );
-      process.stderr.write(`${renderError(pragmaErr, globalFlags)}\n`);
-      process.exitCode = mapExitCode(pragmaErr.code);
-      return;
-    }
-  }
-
   try {
-    const dummyStore = { dispose: () => {} } as Store;
-    const ctx: PragmaContext = {
-      cwd,
-      globalFlags,
-      store: store ?? dummyStore,
-      config,
-    };
-    const commands = [
-      ...setupCommands(),
-      ...(store ? collectCommands(ctx) : []),
-    ];
-    const program = createProgram(commands, ctx);
-
-    await program.parseAsync(argv);
+    if (runtime) {
+      const ctx: PragmaContext = { ...runtime, globalFlags };
+      const commands = collectCommands(ctx);
+      const program = createProgram(commands, ctx);
+      await program.parseAsync(argv);
+    } else {
+      // Store-skip path: only setup commands available
+      const stubCtx: PragmaContext = {
+        store: {} as PragmaRuntime["store"],
+        config: { tier: undefined, channel: "normal" },
+        cwd: process.cwd(),
+        dispose: () => {},
+        globalFlags,
+      };
+      const commands = [...setupCommands()];
+      const program = createProgram(commands, stubCtx);
+      await program.parseAsync(argv);
+    }
   } catch (err) {
     if (err instanceof CommanderError) {
       if (
@@ -239,7 +224,7 @@ async function runCli(argv: readonly string[]): Promise<void> {
     process.stderr.write(`${renderError(wrapped, globalFlags)}\n`);
     process.exitCode = 127;
   } finally {
-    store?.dispose();
+    runtime?.dispose();
   }
 }
 

@@ -5,10 +5,9 @@
 
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { PragmaConfig } from "../src/config.js";
-import registerResources from "../src/mcp/registerResources.js";
-import registerTools from "../src/mcp/registerTools.js";
+import { createMcpServerFromRuntime } from "../src/mcp/createMcpServer.js";
+import type { PragmaRuntime } from "../src/domains/shared/runtime.js";
 import { DS_ALL_TTL } from "./dsFixtures.js";
 import { createTestStore } from "./store.js";
 import type { TestMcpClientResult } from "./types.js";
@@ -29,9 +28,14 @@ export default async function createTestMcpClient(options?: {
 
   const { store, cleanup: cleanupStore } = await createTestStore({ ttl });
 
-  const server = new McpServer({ name: "pragma-test", version: "0.0.0" });
-  registerTools(server, store, config);
-  registerResources(server, store, config);
+  const runtime: PragmaRuntime = {
+    store,
+    config,
+    cwd: process.cwd(),
+    dispose: () => cleanupStore(),
+  };
+
+  const { server } = createMcpServerFromRuntime(runtime);
 
   const [serverTransport, clientTransport] =
     InMemoryTransport.createLinkedPair();
@@ -48,7 +52,7 @@ export default async function createTestMcpClient(options?: {
         await client.close();
         await server.close();
       } finally {
-        cleanupStore();
+        runtime.dispose();
       }
     },
   };

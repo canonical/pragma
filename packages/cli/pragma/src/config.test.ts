@@ -24,8 +24,8 @@ describe("readConfig", () => {
 
   it("parses tier and channel", () => {
     writeFileSync(
-      join(dir, "pragma.config.toml"),
-      'tier = "apps/lxd"\nchannel = "experimental"\n',
+      join(dir, "pragma.config.json"),
+      '{"tier":"apps/lxd","channel":"experimental"}',
     );
     const config = readConfig(dir);
     expect(config.tier).toBe("apps/lxd");
@@ -33,27 +33,27 @@ describe("readConfig", () => {
   });
 
   it("parses tier only, defaults channel to normal", () => {
-    writeFileSync(join(dir, "pragma.config.toml"), 'tier = "global"\n');
+    writeFileSync(join(dir, "pragma.config.json"), '{"tier":"global"}');
     const config = readConfig(dir);
     expect(config.tier).toBe("global");
     expect(config.channel).toBe("normal");
   });
 
   it("parses channel only, tier is undefined", () => {
-    writeFileSync(join(dir, "pragma.config.toml"), 'channel = "prerelease"\n');
+    writeFileSync(join(dir, "pragma.config.json"), '{"channel":"prerelease"}');
     const config = readConfig(dir);
     expect(config.tier).toBeUndefined();
     expect(config.channel).toBe("prerelease");
   });
 
   it("handles empty file", () => {
-    writeFileSync(join(dir, "pragma.config.toml"), "");
+    writeFileSync(join(dir, "pragma.config.json"), "");
     const config = readConfig(dir);
     expect(config).toEqual({ tier: undefined, channel: "normal" });
   });
 
   it("throws PragmaError on invalid channel", () => {
-    writeFileSync(join(dir, "pragma.config.toml"), 'channel = "aggressive"\n');
+    writeFileSync(join(dir, "pragma.config.json"), '{"channel":"aggressive"}');
     expect(() => readConfig(dir)).toThrow(PragmaError);
     try {
       readConfig(dir);
@@ -69,7 +69,7 @@ describe("readConfig", () => {
   });
 
   it("ignores non-string tier", () => {
-    writeFileSync(join(dir, "pragma.config.toml"), "tier = 42\n");
+    writeFileSync(join(dir, "pragma.config.json"), '{"tier":42}');
     const config = readConfig(dir);
     expect(config.tier).toBeUndefined();
   });
@@ -101,7 +101,7 @@ describe("writeConfig", () => {
   });
 
   it("merges tier into existing config", () => {
-    writeFileSync(join(dir, "pragma.config.toml"), 'channel = "prerelease"\n');
+    writeFileSync(join(dir, "pragma.config.json"), '{"channel":"prerelease"}');
     writeConfig(dir, { tier: "global" });
     const config = readConfig(dir);
     expect(config.tier).toBe("global");
@@ -110,8 +110,8 @@ describe("writeConfig", () => {
 
   it("removes tier when set to undefined", () => {
     writeFileSync(
-      join(dir, "pragma.config.toml"),
-      'tier = "apps"\nchannel = "normal"\n',
+      join(dir, "pragma.config.json"),
+      '{"tier":"apps","channel":"normal"}',
     );
     writeConfig(dir, { tier: undefined });
     const config = readConfig(dir);
@@ -121,8 +121,8 @@ describe("writeConfig", () => {
 
   it("removes channel when set to undefined", () => {
     writeFileSync(
-      join(dir, "pragma.config.toml"),
-      'tier = "apps"\nchannel = "experimental"\n',
+      join(dir, "pragma.config.json"),
+      '{"tier":"apps","channel":"experimental"}',
     );
     writeConfig(dir, { channel: undefined });
     const config = readConfig(dir);
@@ -139,14 +139,14 @@ describe("writeConfig", () => {
   });
 
   it("writes empty file when all fields removed", () => {
-    writeFileSync(join(dir, "pragma.config.toml"), 'tier = "apps"\n');
+    writeFileSync(join(dir, "pragma.config.json"), '{"tier":"apps"}');
     writeConfig(dir, { tier: undefined });
-    const raw = readFileSync(join(dir, "pragma.config.toml"), "utf-8");
+    const raw = readFileSync(join(dir, "pragma.config.json"), "utf-8");
     expect(raw).toBe("");
   });
 
   it("throws on unparseable existing config instead of silently overwriting", () => {
-    writeFileSync(join(dir, "pragma.config.toml"), "invalid = [toml");
+    writeFileSync(join(dir, "pragma.config.json"), "{invalid json");
     expect(() => writeConfig(dir, { tier: "apps" })).toThrow();
   });
 });
