@@ -1,59 +1,62 @@
 /**
- * MCP block tools — block_list, block_lookup, block_batch_lookup.
+ * MCP tool specs for the block domain.
+ *
+ * Declarative definitions — no MCP imports. The adapter layer
+ * converts these into registered MCP tools via `registerFromSpec()`.
  */
 
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { z } from "zod";
 import { PragmaError } from "#error";
+import {
+  buildFilterConfig,
+  describeFilters,
+} from "../../shared/filters/index.js";
+import type { ToolSpec } from "../../shared/ToolSpec.js";
+import type { BatchResult, BlockDetailed } from "../../shared/types.js";
 import {
   listFormatters as blockListFmt,
   lookupFormatters as blockLookupFmt,
-} from "../../domains/block/formatters/index.js";
-import {
-  listBlocks,
-  lookupBlock,
-} from "../../domains/block/operations/index.js";
-import type { PragmaRuntime } from "../../domains/shared/runtime.js";
-import type { BatchResult, BlockDetailed } from "../../domains/shared/types.js";
-import { estimateTokens, wrapTool } from "../utils/index.js";
-import { buildFilters, describeFilters } from "./helpers.js";
+} from "../formatters/index.js";
+import { listBlocks, lookupBlock } from "../operations/index.js";
 
-/**
- * Register block_list, block_lookup, and block_batch_lookup tools.
- */
-export function registerBlockTools(
-  server: McpServer,
-  runtime: PragmaRuntime,
-): void {
-  server.registerTool(
-    "block_list",
-    {
-      description:
-        "List design system blocks visible under current tier and channel configuration.",
-      inputSchema: z.object({
-        allTiers: z
-          .boolean()
-          .optional()
-          .describe("Show blocks from all tiers, ignoring tier filter"),
-        digest: z
-          .boolean()
-          .optional()
-          .describe("Include implementations per block"),
-        detailed: z
-          .boolean()
-          .optional()
-          .describe("Include full details per block"),
-        condensed: z.boolean().optional().describe("Token-optimized output"),
-      }),
-      annotations: { readOnlyHint: true, openWorldHint: false },
+const specs: readonly ToolSpec[] = [
+  {
+    name: "block_list",
+    description:
+      "List design system blocks visible under current tier and channel configuration.",
+    params: {
+      allTiers: {
+        type: "boolean",
+        description: "Show blocks from all tiers, ignoring tier filter",
+        optional: true,
+      },
+      digest: {
+        type: "boolean",
+        description: "Include implementations per block",
+        optional: true,
+      },
+      detailed: {
+        type: "boolean",
+        description: "Include full details per block",
+        optional: true,
+      },
+      condensed: {
+        type: "boolean",
+        description: "Token-optimized output",
+        optional: true,
+      },
     },
-    wrapTool(runtime, async (rt, { allTiers, digest, detailed, condensed }) => {
-      const filters = buildFilters(rt, allTiers as boolean | undefined);
+    readOnly: true,
+    async execute(rt, { allTiers, digest, detailed, condensed }) {
+      const filters = buildFilterConfig(rt, allTiers as boolean | undefined);
       const summaries = await listBlocks(rt.store, filters);
 
       if (condensed) {
         const text = blockListFmt.llm(summaries);
-        return { condensed: true, text, tokens: estimateTokens(text) };
+        return {
+          condensed: true,
+          text,
+          tokens: `~${Math.ceil(text.length / 4)}`,
+        };
       }
 
       if (detailed) {
@@ -98,26 +101,33 @@ export function registerBlockTools(
         data: summaries,
         meta: { count: summaries.length, filters: describeFilters(filters) },
       };
-    }),
-  );
-
-  server.registerTool(
-    "block_lookup",
-    {
-      description:
-        "Get detailed information about a design system block including anatomy, modifiers, tokens, and applicable standards.",
-      inputSchema: z.object({
-        name: z.string().describe("Block name (e.g. 'Button')"),
-        detailed: z
-          .boolean()
-          .optional()
-          .describe("Return full details (default: true for MCP)"),
-        condensed: z.boolean().optional().describe("Token-optimized output"),
-      }),
-      annotations: { readOnlyHint: true, openWorldHint: false },
     },
-    wrapTool(runtime, async (rt, { name, detailed, condensed }) => {
-      const filters = buildFilters(rt);
+  },
+
+  {
+    name: "block_lookup",
+    description:
+      "Get detailed information about a design system block including anatomy, modifiers, tokens, and applicable standards.",
+    params: {
+      name: {
+        type: "string",
+        description: "Block name (e.g. 'Button')",
+        optional: false,
+      },
+      detailed: {
+        type: "boolean",
+        description: "Return full details (default: true for MCP)",
+        optional: true,
+      },
+      condensed: {
+        type: "boolean",
+        description: "Token-optimized output",
+        optional: true,
+      },
+    },
+    readOnly: true,
+    async execute(rt, { name, detailed, condensed }) {
+      const filters = buildFilterConfig(rt);
       const result = await lookupBlock(rt.store, name as string, filters);
       const showDetailed = (detailed as boolean | undefined) ?? true;
 
@@ -132,7 +142,11 @@ export function registerBlockTools(
             implementations: true,
           },
         });
-        return { condensed: true, text, tokens: estimateTokens(text) };
+        return {
+          condensed: true,
+          text,
+          tokens: `~${Math.ceil(text.length / 4)}`,
+        };
       }
 
       if (!showDetailed) {
@@ -159,23 +173,23 @@ export function registerBlockTools(
       }
 
       return { data: result };
-    }),
-  );
-
-  server.registerTool(
-    "block_batch_lookup",
-    {
-      description:
-        "Look up multiple blocks by name in a single call. Returns results and errors for names that were not found.",
-      inputSchema: z.object({
-        names: z
-          .array(z.string())
-          .describe("Block names to look up (e.g. ['Button', 'Card'])"),
-      }),
-      annotations: { readOnlyHint: true, openWorldHint: false },
     },
-    wrapTool(runtime, async (rt, { names }) => {
-      const filters = buildFilters(rt);
+  },
+
+  {
+    name: "block_batch_lookup",
+    description:
+      "Look up multiple blocks by name in a single call. Returns results and errors for names that were not found.",
+    params: {
+      names: {
+        type: "string[]",
+        description: "Block names to look up (e.g. ['Button', 'Card'])",
+        optional: false,
+      },
+    },
+    readOnly: true,
+    async execute(rt, { names }) {
+      const filters = buildFilterConfig(rt);
       const results: BlockDetailed[] = [];
       const errors: { name: string; code: string; message: string }[] = [];
 
@@ -195,6 +209,8 @@ export function registerBlockTools(
 
       const batch: BatchResult<BlockDetailed> = { results, errors };
       return { data: batch, meta: { count: results.length } };
-    }),
-  );
-}
+    },
+  },
+] as const;
+
+export default specs;
