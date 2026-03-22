@@ -19,7 +19,7 @@ import type {
   PromptDefinition,
   StampConfig,
 } from "@canonical/summon-core";
-import { dryRun } from "@canonical/task";
+import { dryRun, runUndo } from "@canonical/task";
 import chalk from "chalk";
 import type { Command } from "commander";
 import { render } from "ink";
@@ -359,6 +359,26 @@ const configureGeneratorCommand = (
           }
         : undefined;
 
+      // Undo mode (non-interactive batch)
+      if (hasAllAnswers && actualOptions.undo && !isTTY) {
+        const task = generator.generate(answersWithDefaults);
+        try {
+          const result = await runUndo(task);
+          if (result.undoCount === 0) {
+            console.log("Nothing to undo.");
+          } else {
+            console.log(
+              `Undo complete (${result.undoCount} step${result.undoCount === 1 ? "" : "s"} reversed).`,
+            );
+          }
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err);
+          console.error(`Undo failed: ${message}`);
+          process.exitCode = 1;
+        }
+        return;
+      }
+
       if (hasAllAnswers && actualOptions.dryRun && !isTTY) {
         // Batch dry-run mode (non-interactive)
         const verbose = actualOptions.verbose === true;
@@ -436,6 +456,7 @@ const configureGeneratorCommand = (
             generator={generator}
             preview={shouldShowPreview}
             dryRunOnly={actualOptions.dryRun as boolean}
+            undo={actualOptions.undo as boolean}
             verbose={actualOptions.verbose as boolean}
             answers={passedAnswers}
             stamp={stamp}
@@ -494,6 +515,7 @@ export default function registerFromBarrel(
         .command(commandSpec)
         .description(entry.generator.meta.description)
         .option("-d, --dry-run", "Preview without writing files")
+        .option("--undo", "Reverse a previously executed generator")
         .option("-y, --yes", "Skip confirmation prompts and preview")
         .option("-v, --verbose", "Show debug output")
         .option("--show-files", "Show file contents in dry-run")

@@ -13,6 +13,7 @@ import type {
 import {
   dryRun,
   type Effect,
+  runUndo,
   type Task,
   type TaskError,
 } from "@canonical/task";
@@ -782,6 +783,8 @@ export interface AppProps {
   preview?: boolean;
   /** Whether to run in dry-run mode only */
   dryRunOnly?: boolean;
+  /** Whether to reverse a previously executed generator */
+  undo?: boolean;
   /** Whether to show debug output */
   verbose?: boolean;
   /** Pre-filled answers (for non-interactive mode) */
@@ -794,6 +797,7 @@ export const App = ({
   generator,
   preview = true,
   dryRunOnly = false,
+  undo = false,
   verbose = false,
   answers: prefilledAnswers,
   stamp,
@@ -813,6 +817,36 @@ export const App = ({
 
       // Generate the task
       const task = generator.generate(promptAnswers);
+
+      // Undo mode: run undo directly
+      if (undo) {
+        (async () => {
+          try {
+            const result = await runUndo(task);
+            setState({
+              phase: "complete",
+              effects: [],
+              duration: 0,
+            });
+            if (result.undoCount === 0) {
+              setState({
+                phase: "error",
+                error: { code: "NOTHING_TO_UNDO", message: "Nothing to undo." },
+              });
+            }
+          } catch (err) {
+            setState({
+              phase: "error",
+              error:
+                err instanceof Error
+                  ? { code: "UNDO_ERROR", message: err.message }
+                  : { code: "UNKNOWN_ERROR", message: String(err) },
+              answers: promptAnswers,
+            });
+          }
+        })();
+        return;
+      }
 
       if (dryRunOnly || preview) {
         // Run dry-run to collect effects
@@ -841,7 +875,7 @@ export const App = ({
         setState({ phase: "executing", task });
       }
     },
-    [generator, preview, dryRunOnly],
+    [generator, preview, dryRunOnly, undo],
   );
 
   const handleConfirm = useCallback(() => {
