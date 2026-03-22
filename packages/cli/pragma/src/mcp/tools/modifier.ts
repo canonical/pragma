@@ -13,8 +13,7 @@ import {
   listModifiers,
 } from "../../domains/modifier/operations/index.js";
 import type { PragmaRuntime } from "../../domains/shared/runtime.js";
-import estimateTokens from "../estimateTokens.js";
-import wrapTool from "../wrapTool.js";
+import { estimateTokens, wrapTool } from "../utils/index.js";
 
 /**
  * Register modifier_list and modifier_get tools.

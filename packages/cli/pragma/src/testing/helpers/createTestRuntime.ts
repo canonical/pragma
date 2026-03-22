@@ -11,8 +11,8 @@
 import { copyFileSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { PragmaRuntime } from "../../src/domains/shared/runtime.js";
-import { bootPragma } from "../../src/domains/shared/runtime.js";
+import type { PragmaRuntime } from "../../domains/shared/runtime.js";
+import { bootPragma } from "../../domains/shared/runtime.js";
 
 const FIXTURES_DIR = new URL("../fixtures/", import.meta.url).pathname;
 const CANONICAL_TTL = join(FIXTURES_DIR, "canonical.ttl");

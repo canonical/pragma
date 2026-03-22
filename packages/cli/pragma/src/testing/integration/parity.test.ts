@@ -10,23 +10,20 @@
 
 import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { listFormatters as componentListFmt } from "../../src/domains/component/formatters/index.js";
+import { listFormatters as componentListFmt } from "../../domains/component/formatters/index.js";
 import {
   getComponent,
   listComponents,
-} from "../../src/domains/component/operations/index.js";
+} from "../../domains/component/operations/index.js";
 import {
   getModifier,
   listModifiers,
-} from "../../src/domains/modifier/operations/index.js";
-import { listOntologies } from "../../src/domains/ontology/operations/index.js";
-import type { PragmaRuntime } from "../../src/domains/shared/runtime.js";
-import { listStandards } from "../../src/domains/standard/operations/index.js";
-import { listTiers } from "../../src/domains/tier/operations/index.js";
-import {
-  getToken,
-  listTokens,
-} from "../../src/domains/token/operations/index.js";
+} from "../../domains/modifier/operations/index.js";
+import { listOntologies } from "../../domains/ontology/operations/index.js";
+import type { PragmaRuntime } from "../../domains/shared/runtime.js";
+import { listStandards } from "../../domains/standard/operations/index.js";
+import { listTiers } from "../../domains/tier/operations/index.js";
+import { getToken, listTokens } from "../../domains/token/operations/index.js";
 import assertParity from "../helpers/assertParity.js";
 import createTestMcpClient from "../helpers/createTestMcpClient.js";
 import createTestRuntime from "../helpers/createTestRuntime.js";

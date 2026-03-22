@@ -5,8 +5,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import type { PragmaRuntime } from "../../domains/shared/runtime.js";
-import estimateTokens from "../estimateTokens.js";
-import wrapTool from "../wrapTool.js";
+import { estimateTokens, wrapTool } from "../utils/index.js";
 
 /**
  * Register config_show tool.

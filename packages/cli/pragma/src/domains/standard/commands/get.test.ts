@@ -2,8 +2,7 @@ import type { CommandDefinition } from "@canonical/cli-core";
 import type { Store } from "@canonical/ke";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { PragmaError } from "#error";
-import { DS_ALL_TTL } from "../../../../testing/dsFixtures.js";
-import { createTestStore } from "../../../../testing/store.js";
+import { createTestStore, DS_ALL_TTL } from "#testing";
 import type { PragmaContext } from "../../shared/context.js";
 import buildGetCommand from "./get.js";
 

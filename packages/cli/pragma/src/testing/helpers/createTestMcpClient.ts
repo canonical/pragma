@@ -12,8 +12,8 @@
 
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
-import type { PragmaRuntime } from "../../src/domains/shared/runtime.js";
-import { createMcpServerFromRuntime } from "../../src/mcp/createMcpServer.js";
+import type { PragmaRuntime } from "../../domains/shared/runtime.js";
+import { createMcpServerFromRuntime } from "../../mcp/createMcpServer.js";
 import type { TestMcpClientResult } from "../types.js";
 
 /**

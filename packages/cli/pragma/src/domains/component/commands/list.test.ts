@@ -1,8 +1,7 @@
 import type { CommandDefinition } from "@canonical/cli-core";
 import type { Store } from "@canonical/ke";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { DS_ALL_TTL } from "../../../../testing/dsFixtures.js";
-import { createTestStore } from "../../../../testing/store.js";
+import { createTestStore, DS_ALL_TTL } from "#testing";
 import type { PragmaContext } from "../../shared/context.js";
 import type { ComponentSummary } from "../../shared/types.js";
 import buildListCommand from "./list.js";

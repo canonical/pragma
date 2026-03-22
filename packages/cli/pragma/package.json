@@ -29,7 +29,8 @@
     "#constants": "./src/constants.ts",
     "#error": "./src/error/index.ts",
     "#package-manager": "./src/package-manager/index.ts",
-    "#pipeline": "./src/pipeline/index.ts"
+    "#pipeline": "./src/pipeline/index.ts",
+    "#testing": "./src/testing/index.ts"
   },
   "scripts": {
     "build": "echo 'No build needed - runs directly from TypeScript'",

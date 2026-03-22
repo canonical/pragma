@@ -8,7 +8,7 @@ interface CommandResult {
 }
 
 function runCommand(args: string[], cwd?: string): CommandResult {
-  const binPath = resolve(import.meta.dirname, "../src/bin.ts");
+  const binPath = resolve(import.meta.dirname, "../bin.ts");
   const result = spawnSync("bun", ["run", binPath, ...args], {
     cwd,
     encoding: "utf-8",

@@ -9,7 +9,7 @@
 
 import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import type { PragmaRuntime } from "../../src/domains/shared/runtime.js";
+import type { PragmaRuntime } from "../../domains/shared/runtime.js";
 import createTestMcpClient from "../helpers/createTestMcpClient.js";
 import createTestRuntime from "../helpers/createTestRuntime.js";
 

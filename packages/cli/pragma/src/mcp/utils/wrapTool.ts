@@ -10,10 +10,10 @@
  */
 
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
-import type { PragmaRuntime } from "../domains/shared/runtime.js";
-import { PragmaError } from "../error/PragmaError.js";
-import serializeErrorPayload from "./serializeErrorPayload.js";
-import type { ToolPayload } from "./types.js";
+import type { PragmaRuntime } from "../../domains/shared/runtime.js";
+import { PragmaError } from "../../error/PragmaError.js";
+import serializeErrorPayload from "../error/serializeErrorPayload.js";
+import type { ToolPayload } from "../types.js";
 
 /**
  * Wrap a tool handler function with envelope construction and error handling.

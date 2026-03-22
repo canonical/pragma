@@ -1,11 +1,7 @@
 import type { Store } from "@canonical/ke";
 import type { TestStoreResult } from "@canonical/ke/testing";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import {
-  DS_ONTOLOGY_TTL,
-  DS_TIERS_TTL,
-} from "../../../../testing/dsFixtures.js";
-import { createTestStore } from "../../../../testing/store.js";
+import { createTestStore, DS_ONTOLOGY_TTL, DS_TIERS_TTL } from "#testing";
 import validateTier from "./validateTier.js";
 
 const TIERS_TTL = [DS_ONTOLOGY_TTL, DS_TIERS_TTL].join("\n");

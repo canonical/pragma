@@ -9,8 +9,7 @@ import {
   inspectUri,
 } from "../../domains/graph/operations/index.js";
 import type { PragmaRuntime } from "../../domains/shared/runtime.js";
-import estimateTokens from "../estimateTokens.js";
-import wrapTool from "../wrapTool.js";
+import { estimateTokens, wrapTool } from "../utils/index.js";
 
 /**
  * Register graph_query and graph_inspect tools.

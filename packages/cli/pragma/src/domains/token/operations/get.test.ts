@@ -1,8 +1,7 @@
 import type { Store } from "@canonical/ke";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { PragmaError } from "#error";
-import { DS_ALL_TTL } from "../../../../testing/dsFixtures.js";
-import { createTestStore } from "../../../../testing/store.js";
+import { createTestStore, DS_ALL_TTL } from "#testing";
 import getToken from "./get.js";
 
 let store: Store;

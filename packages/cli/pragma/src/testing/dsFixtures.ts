@@ -8,7 +8,7 @@
  * a namespace rename in PREFIX_MAP propagates here automatically.
  */
 
-import { PREFIX_MAP, TTL_PREFIXES } from "../src/domains/shared/prefixes.js";
+import { PREFIX_MAP, TTL_PREFIXES } from "../domains/shared/prefixes.js";
 
 /** Turtle @prefix block for ds: only (most data fixtures). */
 const dsPrefix = `@prefix ds: <${PREFIX_MAP.ds}> .`;

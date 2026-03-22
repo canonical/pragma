@@ -10,7 +10,7 @@ import {
 import { collectContext as collectLlmContext } from "../../domains/llm/operations/index.js";
 import type { LlmData } from "../../domains/llm/types.js";
 import type { PragmaRuntime } from "../../domains/shared/runtime.js";
-import wrapTool from "../wrapTool.js";
+import { wrapTool } from "../utils/index.js";
 import { buildFilters } from "./helpers.js";
 
 /** All registered tool names, categorized for the capabilities response. */
