@@ -18,12 +18,12 @@ import type { AspectFlags } from "../types.js";
 import type { BlockGetInput } from "./types.js";
 
 const formatters: Formatters<BlockGetInput> = {
-  plain({ component, detailed, aspects }) {
+  plain({ block: component, detailed, aspects }) {
     if (!detailed) return formatSummary(component);
     return formatDetailed(component, aspects);
   },
 
-  llm({ component, detailed, aspects }) {
+  llm({ block: component, detailed, aspects }) {
     const lines: string[] = [];
 
     lines.push(`## ${component.name}`);
@@ -80,7 +80,7 @@ const formatters: Formatters<BlockGetInput> = {
     return lines.join("\n");
   },
 
-  json({ component, detailed, aspects }) {
+  json({ block: component, detailed, aspects }) {
     if (!detailed) {
       return JSON.stringify(
         {

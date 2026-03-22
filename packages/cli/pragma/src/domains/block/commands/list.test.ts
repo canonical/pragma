@@ -3,7 +3,7 @@ import type { Store } from "@canonical/ke";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createTestStore, DS_ALL_TTL } from "#testing";
 import type { PragmaContext } from "../../shared/context.js";
-import type { ComponentSummary } from "../../shared/types.js";
+import type { BlockSummary } from "../../shared/types.js";
 import buildListCommand from "./list.js";
 
 let store: Store;
@@ -44,7 +44,7 @@ describe("buildListCommand", () => {
     const ctx = makeCtx();
     const cmd = buildListCommand(ctx);
     const { value } = await executeOutput(cmd, {}, ctx);
-    const names = (value as ComponentSummary[]).map((c) => c.name);
+    const names = (value as BlockSummary[]).map((c) => c.name);
     expect(names).toContain("Button");
     expect(names).toContain("Card");
   });
@@ -75,9 +75,7 @@ describe("buildListCommand", () => {
     const { text } = await executeOutput(cmd, {}, ctx);
     const parsed = JSON.parse(text);
     expect(Array.isArray(parsed)).toBe(true);
-    expect(parsed.some((c: ComponentSummary) => c.name === "Button")).toBe(
-      true,
-    );
+    expect(parsed.some((c: BlockSummary) => c.name === "Button")).toBe(true);
   });
 
   it("respects tier filter from config", async () => {
@@ -86,7 +84,7 @@ describe("buildListCommand", () => {
     });
     const cmd = buildListCommand(ctx);
     const { value } = await executeOutput(cmd, {}, ctx);
-    const names = (value as ComponentSummary[]).map((c) => c.name);
+    const names = (value as BlockSummary[]).map((c) => c.name);
     expect(names).toContain("Button");
     expect(names).not.toContain("LXD Panel");
   });
@@ -97,7 +95,7 @@ describe("buildListCommand", () => {
     });
     const cmd = buildListCommand(ctx);
     const { value } = await executeOutput(cmd, { allTiers: true }, ctx);
-    const names = (value as ComponentSummary[]).map((c) => c.name);
+    const names = (value as BlockSummary[]).map((c) => c.name);
     expect(names).toContain("Button");
     expect(names).toContain("LXD Panel");
   });

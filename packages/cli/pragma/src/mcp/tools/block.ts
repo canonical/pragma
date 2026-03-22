@@ -132,7 +132,7 @@ export function registerBlockTools(
 
       if (condensed) {
         const text = blockGetFmt.llm({
-          component: result,
+          block: result,
           detailed: showDetailed,
           aspects: {
             anatomy: true,

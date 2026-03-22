@@ -32,8 +32,8 @@ type ConfigName = "canonical-config.json" | "filtered-config.json";
  *
  * @example
  * const rt = await createTestRuntime();
- * const components = await listComponents(rt.store, rt.config);
- * expect(components.some((c) => c.name === "Button")).toBe(true);
+ * const blocks = await listBlocks(rt.store, rt.config);
+ * expect(blocks.some((c) => c.name === "Button")).toBe(true);
  * rt.dispose();
  *
  * @example

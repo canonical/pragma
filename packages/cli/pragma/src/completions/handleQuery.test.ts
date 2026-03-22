@@ -15,18 +15,18 @@ const ctx: CommandContext = {
 function makeTree(): CompletionTree {
   const commands: CommandDefinition[] = [
     {
-      path: ["component", "list"],
-      description: "List components",
+      path: ["block", "list"],
+      description: "List blocks",
       parameters: [],
       execute: async () => createExitResult(0),
     },
     {
-      path: ["component", "get"],
-      description: "Get component details",
+      path: ["block", "get"],
+      description: "Get block details",
       parameters: [
         {
           name: "name",
-          description: "Component name",
+          description: "Block name",
           type: "string",
           positional: true,
           required: true,
@@ -53,31 +53,31 @@ function makeTree(): CompletionTree {
 describe("handleQuery", () => {
   it("returns all nouns for empty input", async () => {
     const result = await handleQuery("", makeTree(), ctx);
-    expect(result).toBe("component\nstandard");
+    expect(result).toBe("block\nstandard");
   });
 
   it("returns filtered nouns for partial input", async () => {
-    const result = await handleQuery("com", makeTree(), ctx);
-    expect(result).toBe("component");
+    const result = await handleQuery("blo", makeTree(), ctx);
+    expect(result).toBe("block");
   });
 
   it("returns all verbs when noun is complete with trailing space", async () => {
-    const result = await handleQuery("component ", makeTree(), ctx);
+    const result = await handleQuery("block ", makeTree(), ctx);
     expect(result).toBe("get\nlist");
   });
 
   it("returns filtered verbs for partial verb", async () => {
-    const result = await handleQuery("component g", makeTree(), ctx);
+    const result = await handleQuery("block g", makeTree(), ctx);
     expect(result).toBe("get");
   });
 
   it("invokes level 3 completer for argument completion", async () => {
-    const result = await handleQuery("component get Bu", makeTree(), ctx);
+    const result = await handleQuery("block get Bu", makeTree(), ctx);
     expect(result).toBe("Button");
   });
 
   it("returns all level 3 candidates for empty argument partial", async () => {
-    const result = await handleQuery("component get ", makeTree(), ctx);
+    const result = await handleQuery("block get ", makeTree(), ctx);
     expect(result).toBe("Button\nCard\nModal");
   });
 
@@ -88,7 +88,7 @@ describe("handleQuery", () => {
 
   it("returns empty string for verb with no completers", async () => {
     const result = await handleQuery(
-      "component list something",
+      "block list something",
       makeTree(),
       ctx,
     );

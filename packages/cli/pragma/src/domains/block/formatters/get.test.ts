@@ -1,11 +1,11 @@
 import type { URI } from "@canonical/ke";
 import { describe, expect, it } from "vitest";
 import { PREFIX_MAP } from "../../shared/prefixes.js";
-import type { ComponentDetailed } from "../../shared/types.js";
+import type { BlockDetailed } from "../../shared/types.js";
 import type { AspectFlags } from "../types.js";
 import formatters from "./get.js";
 
-const BUTTON_DETAILED: ComponentDetailed = {
+const BUTTON_DETAILED: BlockDetailed = {
   uri: `${PREFIX_MAP.ds}button` as URI,
   name: "Button",
   tier: "global",
@@ -52,7 +52,7 @@ const ALL_ASPECTS: AspectFlags = {
 describe("formatters.plain (summary)", () => {
   it("includes block name and tier", () => {
     const text = formatters.plain({
-      component: BUTTON_DETAILED,
+      block: BUTTON_DETAILED,
       detailed: false,
       aspects: ALL_ASPECTS,
     });
@@ -62,7 +62,7 @@ describe("formatters.plain (summary)", () => {
 
   it("includes modifier names", () => {
     const text = formatters.plain({
-      component: BUTTON_DETAILED,
+      block: BUTTON_DETAILED,
       detailed: false,
       aspects: ALL_ASPECTS,
     });
@@ -71,7 +71,7 @@ describe("formatters.plain (summary)", () => {
 
   it("includes available implementations", () => {
     const text = formatters.plain({
-      component: BUTTON_DETAILED,
+      block: BUTTON_DETAILED,
       detailed: false,
       aspects: ALL_ASPECTS,
     });
@@ -80,7 +80,7 @@ describe("formatters.plain (summary)", () => {
 
   it("includes node and token counts", () => {
     const text = formatters.plain({
-      component: BUTTON_DETAILED,
+      block: BUTTON_DETAILED,
       detailed: false,
       aspects: ALL_ASPECTS,
     });
@@ -92,7 +92,7 @@ describe("formatters.plain (summary)", () => {
 describe("formatters.plain (detailed)", () => {
   it("includes summary counts in detailed view", () => {
     const text = formatters.plain({
-      component: BUTTON_DETAILED,
+      block: BUTTON_DETAILED,
       detailed: true,
       aspects: ALL_ASPECTS,
     });
@@ -102,7 +102,7 @@ describe("formatters.plain (detailed)", () => {
 
   it("shows modifiers section with values", () => {
     const text = formatters.plain({
-      component: BUTTON_DETAILED,
+      block: BUTTON_DETAILED,
       detailed: true,
       aspects: ALL_ASPECTS,
     });
@@ -114,7 +114,7 @@ describe("formatters.plain (detailed)", () => {
 
   it("shows implementations section", () => {
     const text = formatters.plain({
-      component: BUTTON_DETAILED,
+      block: BUTTON_DETAILED,
       detailed: true,
       aspects: ALL_ASPECTS,
     });
@@ -125,7 +125,7 @@ describe("formatters.plain (detailed)", () => {
 
   it("shows tokens section", () => {
     const text = formatters.plain({
-      component: BUTTON_DETAILED,
+      block: BUTTON_DETAILED,
       detailed: true,
       aspects: ALL_ASPECTS,
     });
@@ -135,7 +135,7 @@ describe("formatters.plain (detailed)", () => {
 
   it("shows anatomy section", () => {
     const text = formatters.plain({
-      component: BUTTON_DETAILED,
+      block: BUTTON_DETAILED,
       detailed: true,
       aspects: ALL_ASPECTS,
     });
@@ -153,7 +153,7 @@ describe("formatters.plain (detailed)", () => {
       implementations: false,
     };
     const text = formatters.plain({
-      component: BUTTON_DETAILED,
+      block: BUTTON_DETAILED,
       detailed: true,
       aspects,
     });
@@ -168,7 +168,7 @@ describe("formatters.plain (detailed)", () => {
 describe("formatters.llm", () => {
   it("formats summary as markdown", () => {
     const text = formatters.llm({
-      component: BUTTON_DETAILED,
+      block: BUTTON_DETAILED,
       detailed: false,
       aspects: ALL_ASPECTS,
     });
@@ -179,7 +179,7 @@ describe("formatters.llm", () => {
 
   it("formats detailed with all sections", () => {
     const text = formatters.llm({
-      component: BUTTON_DETAILED,
+      block: BUTTON_DETAILED,
       detailed: true,
       aspects: ALL_ASPECTS,
     });
@@ -197,7 +197,7 @@ describe("formatters.llm", () => {
       implementations: false,
     };
     const text = formatters.llm({
-      component: BUTTON_DETAILED,
+      block: BUTTON_DETAILED,
       detailed: true,
       aspects,
     });
@@ -210,7 +210,7 @@ describe("formatters.llm", () => {
 describe("formatters.json", () => {
   it("returns valid JSON for summary", () => {
     const text = formatters.json({
-      component: BUTTON_DETAILED,
+      block: BUTTON_DETAILED,
       detailed: false,
       aspects: ALL_ASPECTS,
     });
@@ -222,7 +222,7 @@ describe("formatters.json", () => {
 
   it("returns valid JSON for detailed with all aspects", () => {
     const text = formatters.json({
-      component: BUTTON_DETAILED,
+      block: BUTTON_DETAILED,
       detailed: true,
       aspects: ALL_ASPECTS,
     });
@@ -245,7 +245,7 @@ describe("formatters.json", () => {
       implementations: false,
     };
     const text = formatters.json({
-      component: BUTTON_DETAILED,
+      block: BUTTON_DETAILED,
       detailed: true,
       aspects,
     });

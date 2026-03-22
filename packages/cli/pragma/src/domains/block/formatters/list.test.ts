@@ -1,10 +1,10 @@
 import type { URI } from "@canonical/ke";
 import { describe, expect, it } from "vitest";
 import { PREFIX_MAP } from "../../shared/prefixes.js";
-import type { ComponentSummary } from "../../shared/types.js";
+import type { BlockSummary } from "../../shared/types.js";
 import formatters from "./list.js";
 
-const BUTTON: ComponentSummary = {
+const BUTTON: BlockSummary = {
   uri: `${PREFIX_MAP.ds}button` as URI,
   name: "Button",
   tier: "global",
@@ -17,7 +17,7 @@ const BUTTON: ComponentSummary = {
   tokenCount: 1,
 };
 
-const CARD: ComponentSummary = {
+const CARD: BlockSummary = {
   uri: `${PREFIX_MAP.ds}card` as URI,
   name: "Card",
   tier: "global",

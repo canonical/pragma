@@ -106,10 +106,10 @@ export default function buildGetCommand(ctx: PragmaContext): CommandDefinition {
       const showDetailed = detailed || (isAspectSelected ?? false);
       const aspects = resolveAspects(aspectInput);
 
-      const component = await getBlock(ctx.store, name, ctx.config);
+      const block = await getBlock(ctx.store, name, ctx.config);
 
       return createOutputResult(
-        { component, detailed: showDetailed, aspects },
+        { block, detailed: showDetailed, aspects },
         {
           plain: selectFormatter(ctx, getFormatters),
         },
