@@ -23,6 +23,7 @@ import {
   runUndo,
   type Task,
 } from "@canonical/task";
+import type { LogLevel } from "../types.js";
 
 export interface SetupTaskOptions {
   readonly dryRun?: boolean;
@@ -172,10 +173,7 @@ export default async function runSetupTask(
       ? autoConfirmHandler
       : interactivePromptHandler;
 
-    const onLog = (
-      level: "debug" | "info" | "warn" | "error",
-      message: string,
-    ): void => {
+    const onLog = (level: LogLevel, message: string): void => {
       if (level === "debug" && !verbose) return;
       process.stderr.write(`${message}\n`);
     };
@@ -202,10 +200,7 @@ export default async function runSetupTask(
     ? autoConfirmHandler
     : interactivePromptHandler;
 
-  const onLog = (
-    level: "debug" | "info" | "warn" | "error",
-    message: string,
-  ): void => {
+  const onLog = (level: LogLevel, message: string): void => {
     if (level === "debug" && !verbose) return;
     process.stderr.write(`${message}\n`);
   };
