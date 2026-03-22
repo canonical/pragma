@@ -10,7 +10,8 @@ import type {
   GeneratorDefinition,
   PromptDefinition,
 } from "@canonical/summon-core";
-import { collectUndos, dryRun } from "@canonical/task";
+import { collectUndos, dryRun, runUndo } from "@canonical/task";
+import createExitResult from "./createExitResult.js";
 import createInteractiveResult from "./createInteractiveResult.js";
 import createOutputResult from "./createOutputResult.js";
 import {
@@ -192,6 +193,26 @@ export default async function executeGenerator(
       "",
     ];
     return createOutputResult(lines.join("\n"), { plain: (s) => s });
+  }
+
+  // Undo execution: run undo with all answers
+  if (isUndo && hasAllAnswers) {
+    const task = gen.generate(answersWithDefaults);
+    try {
+      const result = await runUndo(task);
+      if (result.undoCount === 0) {
+        return createOutputResult("Nothing to undo.\n", { plain: (s) => s });
+      }
+      return createOutputResult(
+        `Undo complete (${result.undoCount} step${result.undoCount === 1 ? "" : "s"} reversed).\n`,
+        { plain: (s) => s },
+      );
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      return createOutputResult(`Undo failed: ${message}\n`, {
+        plain: (s) => s,
+      });
+    }
   }
 
   // Dry-run with all answers: formatted effect lines
