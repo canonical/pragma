@@ -21,7 +21,7 @@ export interface GeneratorMeta {
   /**
    * Name used in generated file stamp comments.
    * Use this when the stamp should differ from the CLI command path
-   * (e.g., "@canonical/summon:component-react" vs "component/react").
+   * (e.g., "@canonical/summon-component:react" vs "component/react").
    */
   displayName: string;
   /** One-line description shown in generator listings */

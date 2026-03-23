@@ -84,7 +84,7 @@ const litPrompts = [
 export const generator = {
   meta: {
     name: "component/lit",
-    displayName: `${pkg.name}-lit`,
+    displayName: `${pkg.name}:lit`,
     description:
       "Generate a Lit web component with TypeScript, tests, stories, and styles",
     version: "0.1.0",
