@@ -43,6 +43,7 @@
     "check:fix": "lerna run check:fix",
     "test": "lerna run test",
     "test:coverage": "lerna run test:coverage",
+    "publish:status": "bun scripts/publish-status.ts",
     "special:clean": "bun run nx reset && lerna clean --yes && rm -rf node_modules **/dist **/node_modules"
   },
   "devDependencies": {

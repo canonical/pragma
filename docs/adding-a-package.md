@@ -307,6 +307,8 @@ New packages integrate into CI automatically through Lerna. The PR workflow runs
 
 The tag workflow publishes all public packages to npm. Packages with `"private": true` in package.json are excluded from publishing but still participate in builds and tests.
 
+If your PR introduces a brand-new npm package, the first publish must be done manually before regular release automation can pick it up. From inside the package directory, run `npm publish --access public` when the package is ready. After publishing, run `bun run publish:status` from the repository root to confirm the package appears in the registry.
+
 Chromatic workflows require explicit configuration because they run per-package with path filtering. If your package has a Storybook, create a workflow file that triggers on changes to the package and its dependencies. The workflow template at `.github/workflows/chromatic._template.yml` provides the common structure.
 
 ## Checklist
@@ -335,3 +337,4 @@ Integration:
 - Version matches current monorepo version
 - License matches ruleset requirements (LGPL-3.0 for library, GPL-3.0 for tool)
 - check:webarchitect script uses the correct ruleset
+- First-time publish for new packages completed manually by running `npm publish --access public` from inside the package directory, then verified with `bun run publish:status`
