@@ -18,6 +18,12 @@ import type { Task } from "@canonical/task";
 export interface GeneratorMeta {
   /** Generator name, used in CLI path (e.g., "component/react") */
   name: string;
+  /**
+   * Name used in generated file stamp comments.
+   * Use this when the stamp should differ from the CLI command path
+   * (e.g., "@canonical/summon-component:react" vs "component/react").
+   */
+  displayName: string;
   /** One-line description shown in generator listings */
   description: string;
   /** Semantic version of the generator */

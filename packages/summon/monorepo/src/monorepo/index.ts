@@ -14,6 +14,7 @@ import {
   template,
 } from "@canonical/summon-core";
 import { exec, flatMap, info, mkdir, sequence_, when } from "@canonical/task";
+import pkg from "../../package.json" with { type: "json" };
 
 import {
   createTemplateContext,
@@ -138,6 +139,7 @@ const prompts: PromptDefinition[] = [
 export const generator: GeneratorDefinition<MonorepoAnswers> = {
   meta: {
     name: "monorepo",
+    displayName: `${pkg.name}`,
     description:
       "Generate a new Bun + Lerna monorepo with CI, release, and shared config",
     version: "0.1.0",

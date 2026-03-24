@@ -41,6 +41,11 @@ describe("generators barrel", () => {
     expect(generators["component/svelte"]).toBeDefined();
     expect(generators["component/svelte"].meta.name).toBe("component/svelte");
   });
+
+  it("exports component/lit generator", () => {
+    expect(generators["component/lit"]).toBeDefined();
+    expect(generators["component/lit"].meta.name).toBe("component/lit");
+  });
 });
 
 describe("component/react generator", () => {
