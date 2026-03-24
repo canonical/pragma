@@ -7,6 +7,8 @@ export * from "./Card/index.js";
 export * from "./Chip/index.js";
 export * from "./grid/index.js";
 export * from "./Icon/index.js";
+export * from "./KeyboardKey/index.js";
+export * from "./KeyboardKeys/index.js";
 export * from "./Label/index.js";
 export * from "./Link/index.js";
 export * from "./patterns/index.js";

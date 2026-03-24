@@ -1,0 +1,5 @@
+.ds.keyboard-keys {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-horizontal-xsmall);
+}

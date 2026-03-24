@@ -1,0 +1,27 @@
+:root {
+  --keyboard-key-color-background: var(--color-foreground-secondary);
+  --keyboard-key-color-text: var(--color-text);
+
+  --keyboard-key-border-radius: 0.25rem;
+  --keyboard-key-font-size: var(--font-size-xsmall);
+  --keyboard-key-font-weight: var(--font-weight-bold);
+  --keyboard-key-line-height: var(--line-height-xsmall);
+  --keyboard-key-border-width: var(--spacing-border-width);
+  --keyboard-key-padding-horizontal: var(--spacing-horizontal-small);
+}
+
+.ds.keyboard-key {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  color: var(--keyboard-key-color-text);
+  background-color: var(--keyboard-key-color-background);
+
+  font-size: var(--keyboard-key-font-size);
+  font-weight: var(--keyboard-key-font-weight);
+
+  border-radius: var(--keyboard-key-border-radius);
+
+  padding-inline: var(--keyboard-key-padding-horizontal);
+}
