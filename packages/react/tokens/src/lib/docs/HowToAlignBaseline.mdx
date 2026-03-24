@@ -1,0 +1,124 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+
+<Meta title="Foundation/Design Tokens/How to/Align to the Baseline Grid" />
+
+# How to align to the baseline grid
+
+This guide shows you how to use the 8px baseline grid to create consistent vertical rhythm across headings, body text, and spacing. The baseline grid ensures that text lines up across columns and that spacing between elements feels intentional.
+
+## Prerequisites
+
+- `@canonical/styles` imported in your project
+- Familiarity with CSS `padding`, `margin`, and `line-height`
+- Understanding of the [spacing scale](?path=/docs/foundation-design-tokens-understanding-the-spacing-scale--docs)
+
+## Steps
+
+### 1. Understand the baseline unit
+
+The baseline grid uses an 8px (0.5rem) unit. Every vertical measurement — line-height, padding, margin, gap — should resolve to a multiple of 8px. When this is true, text across adjacent columns aligns on the same horizontal lines, and the spacing between sections maintains a visual cadence.
+
+```css
+/* These values sit on the 8px grid */
+padding: var(--dimension-100);      /* 8px — 1 baseline unit */
+padding: var(--dimension-200);      /* 16px — 2 baseline units */
+gap: var(--dimension-300);          /* 24px — 3 baseline units */
+margin-bottom: var(--dimension-400); /* 32px — 4 baseline units */
+```
+
+### 2. Use the typography tokens
+
+The typography system pre-computes line-heights that align with the baseline grid. Use typography tokens instead of setting `font-size` and `line-height` manually:
+
+```css
+.ds.my-heading {
+  font-family: var(--typography-heading-3-font-family);
+  font-size: var(--typography-heading-3-font-size);
+  font-weight: var(--typography-heading-3-font-weight);
+  line-height: var(--typography-heading-3-line-height);
+}
+```
+
+The typography tokens are coordinated sets — the line-height for each heading level is chosen so that the total block height (line-height × number of lines) lands on an 8px boundary.
+
+### 3. Apply baseline nudge tokens (advanced)
+
+Some typography sizes don't produce line-heights that land exactly on the 8px grid. The system provides **baseline nudge** tokens that add sub-pixel padding to realign:
+
+```css
+.ds.my-heading {
+  font-family: var(--typography-heading-3-font-family);
+  font-size: var(--typography-heading-3-font-size);
+  font-weight: var(--typography-heading-3-font-weight);
+  line-height: var(--typography-heading-3-line-height);
+  padding-bottom: var(--dimension-baseline-nudge-bottom-500);
+}
+```
+
+Baseline nudge tokens are small values (0–7px) that compensate for the difference between the actual line-height and the nearest 8px multiple. They are indexed by font-size step — the `500` in `baseline-nudge-bottom-500` corresponds to the `--dimension-size-font-size-500` that heading 3 uses.
+
+> **Note:** Baseline nudge tokens are infrastructure. The design system's typography components apply them automatically. You only need them when building custom typography components from scratch.
+
+### 4. Keep spacing on-grid
+
+When adding vertical spacing between elements, use dimension tokens that are multiples of 8px:
+
+```css
+/* On the baseline grid — all multiples of 8px */
+.section + .section {
+  margin-top: var(--dimension-400);  /* 32px */
+}
+
+.paragraph + .paragraph {
+  margin-top: var(--dimension-200);  /* 16px */
+}
+
+/* Off the baseline grid — avoid for vertical spacing */
+.paragraph + .paragraph {
+  margin-top: var(--dimension-175);  /* 14px — breaks alignment */
+}
+```
+
+Half-step tokens (`--dimension-050`, `--dimension-150`, `--dimension-175`, `--dimension-225`, `--dimension-250`) are designed for _horizontal_ spacing (padding inside buttons, icon-to-text gaps) where baseline alignment is not a concern. For _vertical_ spacing, prefer full-step tokens.
+
+### 5. Verify alignment visually
+
+In Storybook, enable the baseline grid addon to overlay an 8px grid on your stories. Check that:
+
+- Text baselines across adjacent columns align
+- Spacing between sections is consistent
+- Headings and body text sit on grid lines
+
+In browser DevTools, you can also add a temporary background to verify:
+
+```css
+/* Temporary debug overlay */
+body {
+  background-image: linear-gradient(
+    to bottom,
+    rgba(255, 0, 0, 0.1) 1px,
+    transparent 1px
+  );
+  background-size: 100% 8px;
+}
+```
+
+## Troubleshooting
+
+### Text doesn't align across columns
+
+Check that both columns use typography tokens with matching line-heights. If one column uses a custom `line-height`, it may drift off the baseline grid.
+
+### Spacing between sections is inconsistent
+
+Verify that all vertical margins and paddings use full-step dimension tokens. A single `14px` gap between two `16px` gaps will be visible as a rhythm break.
+
+### Baseline nudge makes text look shifted
+
+Baseline nudge tokens add `padding-bottom`, which shifts the text block upward within its container. This is intentional — it moves the _baseline_ of the last line onto the grid. If the shift looks wrong, check that the nudge token index matches the font-size step being used.
+
+## Related
+
+- [Understanding the spacing scale](?path=/docs/foundation-design-tokens-understanding-the-spacing-scale--docs): the dimension token system
+- [How to find the right token](?path=/docs/foundation-design-tokens-how-to-find-the-right-token--docs): choosing dimension tokens
+- [Token Explorer](?path=/docs/foundation-design-tokens-explorer--docs): browse typography and dimension tokens

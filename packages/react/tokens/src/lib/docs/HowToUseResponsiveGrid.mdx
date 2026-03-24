@@ -1,0 +1,170 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+
+<Meta title="Foundation/Design Tokens/How to/Use the Responsive Grid" />
+
+# How to use the responsive grid
+
+This guide shows you how to build page-level layouts using the breakpoint-driven responsive grid. The responsive grid provides 4 columns on mobile, 8 on tablet, and 12 on desktop.
+
+## Prerequisites
+
+- `@canonical/styles` imported in your project
+- Basic CSS Grid knowledge (what `grid-column` does)
+
+## Steps
+
+### 1. Apply the grid classes
+
+Add `.grid.responsive` to the layout container:
+
+```html
+<div class="grid responsive">
+  <main>Page content</main>
+  <aside>Sidebar</aside>
+</div>
+```
+
+This establishes a responsive grid context. The container now has `display: grid` with breakpoint-driven columns.
+
+### 2. Place children on the grid
+
+Use `grid-column` to control how children span columns:
+
+```css
+.page-layout > main {
+  grid-column: 1 / -1;          /* Full width on mobile (4 cols) */
+}
+
+.page-layout > aside {
+  grid-column: 1 / -1;          /* Full width on mobile */
+}
+
+@media (min-width: 768px) {
+  .page-layout > main {
+    grid-column: 1 / 7;         /* 6 of 8 columns on tablet */
+  }
+
+  .page-layout > aside {
+    grid-column: 7 / -1;        /* Remaining 2 columns */
+  }
+}
+
+@media (min-width: 1280px) {
+  .page-layout > main {
+    grid-column: 1 / 10;        /* 9 of 12 columns on desktop */
+  }
+
+  .page-layout > aside {
+    grid-column: 10 / -1;       /* Remaining 3 columns */
+  }
+}
+```
+
+### 3. Adjust the gap (if needed)
+
+The default gap is `1rem`. Override it with `--grid-gap`:
+
+```css
+.compact-layout {
+  --grid-gap: var(--dimension-1);  /* 0.5rem / 8px */
+}
+```
+
+```html
+<div class="grid responsive compact-layout">
+  <!-- Tighter spacing between columns -->
+</div>
+```
+
+Use spacing tokens (`--dimension-*`) for gap values to stay on the spacing scale.
+
+### 4. Use subgrid for aligned children
+
+When a grid child needs its own children to align with the parent grid, use `.subgrid`:
+
+```html
+<div class="grid responsive">
+  <div class="subgrid" style="grid-column: 1 / -1">
+    <div style="grid-column: 1 / 5">Aligned to parent column 1–4</div>
+    <div style="grid-column: 5 / 9">Aligned to parent column 5–8</div>
+  </div>
+</div>
+```
+
+The subgrid inherits its parent's column tracks, so children align precisely. This is essential for forms where labels and inputs must align across rows.
+
+### 5. Control subgrid span
+
+By default, `.subgrid` spans all parent columns (`1 / -1`). To span a subset, set `--subgrid-span`:
+
+```css
+.partial-subgrid {
+  --subgrid-span: 1 / 7;  /* Span columns 1–6 of the parent */
+}
+```
+
+```html
+<div class="grid responsive">
+  <div class="subgrid partial-subgrid">
+    <!-- Only inherits columns 1–6 from parent -->
+  </div>
+</div>
+```
+
+## Variations
+
+### Full-bleed children
+
+To make a child break out of the grid and span the full viewport:
+
+```css
+.full-bleed {
+  grid-column: 1 / -1;
+  margin-inline: calc(-1 * var(--grid-gap, 1rem));
+}
+```
+
+### Centering content within columns
+
+To center a content block that doesn't span the full grid:
+
+```css
+@media (min-width: 1280px) {
+  .centered-content {
+    grid-column: 3 / 11;  /* 8 of 12 columns, centered */
+  }
+}
+```
+
+### Custom column count at a breakpoint
+
+If a specific layout needs a different column count, override `--modifier-grid-template`:
+
+```css
+.three-column-layout {
+  --modifier-grid-template: repeat(3, 1fr);
+}
+```
+
+This replaces the responsive breakpoints entirely. Use this sparingly — most layouts should use the standard 4/8/12 progression.
+
+## Troubleshooting
+
+### Children aren't placed on the grid
+
+Ensure the container has both `.grid` and `.responsive`. The `.grid` class sets `display: grid`; the `.responsive` class sets the column template. Without `.grid`, there is no grid context.
+
+### Gap looks wrong
+
+Check that you are setting `--grid-gap`, not `gap` directly. The `.grid` class reads `var(--grid-gap, 1rem)`, so setting the custom property ensures consistent behavior.
+
+### Subgrid children don't align
+
+Verify that the parent is using `.grid` (not just a plain `display: grid` element). The subgrid needs to inherit column tracks from a CSS Grid parent. Also verify browser support — `subgrid` is supported in Chrome 117+, Firefox 71+, Safari 16+.
+
+## Related
+
+- [How to use the intrinsic grid](?path=/docs/foundation-design-tokens-how-to-use-the-intrinsic-grid--docs): fluid content grids
+- [Understanding the grid system](?path=/docs/foundation-design-tokens-understanding-the-grid-system--docs): why responsive vs. intrinsic
+- [Grid classes reference](?path=/docs/foundation-design-tokens-reference-grid-classes--docs): all classes and properties
+- [Your first grid layout](?path=/docs/foundation-design-tokens-learn-your-first-grid-layout--docs): end-to-end tutorial

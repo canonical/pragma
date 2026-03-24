@@ -1,0 +1,258 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+
+<Meta title="Foundation/Design Tokens/Learn/Your First Grid Layout" />
+
+# Your first grid layout
+
+> In this tutorial, you will build a complete page layout with a responsive grid, place content into columns, nest an intrinsic card grid inside it, and use subgrid for form alignment. By the end, you will understand how the grid classes compose.
+
+## Prerequisites
+
+- A Pragma monorepo checkout with `bun install` completed
+- A package that imports `@canonical/styles`
+- Completion of the [first token-aware component](?path=/docs/foundation-design-tokens-learn-your-first-token-aware-component--docs) tutorial is recommended but not required
+
+## What you'll build
+
+A dashboard page with:
+
+- A responsive 12-column grid for the page structure
+- A sidebar and main content area that reflow at breakpoints
+- An intrinsic card grid for a set of status cards
+- A subgrid form where labels and inputs align across rows
+
+## Steps
+
+### 1. Create the page shell
+
+Start with the responsive grid:
+
+```tsx
+function DashboardPage() {
+  return (
+    <div className="grid responsive" style={{ padding: "var(--dimension-3)" }}>
+      <aside style={{ gridColumn: "1 / -1" }}>
+        <h2>Sidebar</h2>
+        <nav>Navigation links here</nav>
+      </aside>
+      <main style={{ gridColumn: "1 / -1" }}>
+        <h1>Dashboard</h1>
+        <p>Main content area</p>
+      </main>
+    </div>
+  );
+}
+```
+
+You should see: a stacked layout. Both the sidebar and main content span all available columns. On mobile (4 columns), this is the desired layout.
+
+### 2. Add breakpoint-specific placement
+
+Create a CSS file for the responsive placement:
+
+```css
+.ds.dashboard {
+  & > aside {
+    grid-column: 1 / -1;
+  }
+
+  & > main {
+    grid-column: 1 / -1;
+  }
+
+  @media (min-width: 768px) {
+    & > aside {
+      grid-column: 1 / 3;    /* 2 of 8 columns */
+    }
+
+    & > main {
+      grid-column: 3 / -1;   /* Remaining 6 columns */
+    }
+  }
+
+  @media (min-width: 1280px) {
+    & > aside {
+      grid-column: 1 / 3;    /* 2 of 12 columns */
+    }
+
+    & > main {
+      grid-column: 3 / -1;   /* Remaining 10 columns */
+    }
+  }
+}
+```
+
+Update the component:
+
+```tsx
+import "./Dashboard.css";
+
+function DashboardPage() {
+  return (
+    <div className="ds dashboard grid responsive">
+      <aside>
+        <h2>Sidebar</h2>
+        <nav>Navigation links here</nav>
+      </aside>
+      <main>
+        <h1>Dashboard</h1>
+        <p>Main content area</p>
+      </main>
+    </div>
+  );
+}
+```
+
+You should see: on desktop (≥ 1280px), a narrow sidebar on the left and a wide main area on the right. On tablet (768px–1279px), the sidebar is 2 of 8 columns. On mobile, both stack vertically.
+
+Resize your browser window to verify the breakpoints.
+
+### 3. Add an intrinsic card grid inside main
+
+Inside the main content area, add a set of status cards using the intrinsic grid:
+
+```tsx
+<main>
+  <h1>Dashboard</h1>
+
+  <div className="grid intrinsic" style={{ marginTop: "var(--dimension-2)" }}>
+    <div className="surface" style={{
+      padding: "var(--dimension-2)",
+      borderRadius: "0.75rem",
+    }}>
+      <h3>Users</h3>
+      <p>1,247 active</p>
+    </div>
+    <div className="surface" style={{
+      padding: "var(--dimension-2)",
+      borderRadius: "0.75rem",
+    }}>
+      <h3>Revenue</h3>
+      <p>$42,300</p>
+    </div>
+    <div className="surface" style={{
+      padding: "var(--dimension-2)",
+      borderRadius: "0.75rem",
+    }}>
+      <h3>Uptime</h3>
+      <p>99.97%</p>
+    </div>
+    <div className="surface" style={{
+      padding: "var(--dimension-2)",
+      borderRadius: "0.75rem",
+    }}>
+      <h3>Deploys</h3>
+      <p>14 today</p>
+    </div>
+  </div>
+</main>
+```
+
+You should see: four cards in a fluid row. As you narrow the window, they wrap to fewer columns automatically. Each card has a surface background (slightly shifted from the page background because it's inside a `.surface` container).
+
+Notice that the intrinsic grid is _inside_ the main area, which is _inside_ the responsive grid. The two grid types nest naturally — they are independent grid contexts.
+
+### 4. Add a subgrid form
+
+Below the cards, add a form that uses subgrid to align labels and inputs:
+
+```tsx
+<main>
+  {/* ... cards from step 3 ... */}
+
+  <section style={{ marginTop: "var(--dimension-3)" }}>
+    <h2>Settings</h2>
+    <div
+      className="grid responsive"
+      style={{ marginTop: "var(--dimension-2)" }}
+    >
+      <div className="subgrid" style={{ gridColumn: "1 / -1" }}>
+        <label style={{ gridColumn: "1 / 3" }}>Display name</label>
+        <input
+          type="text"
+          style={{ gridColumn: "3 / 7" }}
+          defaultValue="Adrian"
+        />
+      </div>
+      <div className="subgrid" style={{ gridColumn: "1 / -1" }}>
+        <label style={{ gridColumn: "1 / 3" }}>Email</label>
+        <input
+          type="email"
+          style={{ gridColumn: "3 / 7" }}
+          defaultValue="adrian@example.com"
+        />
+      </div>
+      <div className="subgrid" style={{ gridColumn: "1 / -1" }}>
+        <label style={{ gridColumn: "1 / 3" }}>Role</label>
+        <select style={{ gridColumn: "3 / 7" }}>
+          <option>Administrator</option>
+          <option>Editor</option>
+        </select>
+      </div>
+    </div>
+  </section>
+</main>
+```
+
+You should see: a form where all labels align in columns 1–2 and all inputs align in columns 3–6. This alignment is inherited from the parent responsive grid — the subgrid doesn't define its own columns, it uses the parent's. If you change the parent grid's column widths, the form adapts automatically.
+
+### 5. Combine with surface depth
+
+Wrap the entire page in a `.surface` to activate depth tracking:
+
+```tsx
+function DashboardPage() {
+  return (
+    <div className="surface" style={{ padding: "var(--dimension-3)" }}>
+      <div className="ds dashboard grid responsive">
+        <aside className="surface" style={{
+          padding: "var(--dimension-2)",
+          borderRadius: "0.75rem",
+        }}>
+          <h2>Sidebar</h2>
+          <nav>Navigation links here</nav>
+        </aside>
+        <main>
+          {/* Cards and form from previous steps */}
+        </main>
+      </div>
+    </div>
+  );
+}
+```
+
+You should see: the sidebar has a depth-2 surface background (it's `.surface` inside `.surface`). The status cards are also at depth 2 (they already have `.surface` from step 3). The page-level wrapper at depth 1 provides the base context.
+
+### 6. Test across viewports
+
+Resize the browser through all three breakpoints:
+
+- **≤ 767px**: 4 columns. Sidebar and main stack. Cards wrap to 1–2 per row.
+- **768px – 1279px**: 8 columns. Sidebar takes 2 columns, main takes 6. Cards may show 2–4 per row.
+- **≥ 1280px**: 12 columns. Full desktop layout. Cards show 4 per row.
+
+You should see: the responsive grid restructures the page at each breakpoint. The intrinsic card grid adapts fluidly within whatever space the main area provides. The subgrid form maintains label-input alignment at every width.
+
+### 7. Switch themes and verify
+
+Toggle between light and dark mode.
+
+You should see: the grid structure is unchanged — layout does not depend on theme. Surface backgrounds shift according to the theme. Text and border colors adapt. The grid system and the token system are independent.
+
+## What you learned
+
+You've built a complete page layout using all three grid classes. You now know:
+
+- `.grid.responsive` provides breakpoint-driven columns for page structure
+- `.grid.intrinsic` provides fluid wrapping for content grids
+- `.subgrid` inherits parent columns for cross-row alignment
+- Grids nest naturally — intrinsic inside responsive, subgrid inside either
+- Grids compose with surfaces and modifiers without conflict
+- Layout is viewport-driven; tokens are context-driven — they are independent systems
+
+## Next steps
+
+- [Understanding the grid system](?path=/docs/foundation-design-tokens-understanding-the-grid-system--docs): why responsive and intrinsic coexist
+- [How to use the responsive grid](?path=/docs/foundation-design-tokens-how-to-use-the-responsive-grid--docs): deeper responsive patterns
+- [How to use the intrinsic grid](?path=/docs/foundation-design-tokens-how-to-use-the-intrinsic-grid--docs): advanced fluid layouts
+- [Adding surface depth](?path=/docs/foundation-design-tokens-learn-adding-surface-depth--docs): more on surface nesting

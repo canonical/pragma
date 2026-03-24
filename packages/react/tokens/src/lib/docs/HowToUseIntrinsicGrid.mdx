@@ -1,0 +1,152 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+
+<Meta title="Foundation/Design Tokens/How to/Use the Intrinsic Grid" />
+
+# How to use the intrinsic grid
+
+This guide shows you how to build fluid content layouts using the intrinsic grid. The intrinsic grid wraps items automatically based on available space, without breakpoints.
+
+## Prerequisites
+
+- `@canonical/styles` imported in your project
+- Basic CSS Grid knowledge
+
+## Steps
+
+### 1. Apply the grid classes
+
+Add `.grid.intrinsic` to the container:
+
+```html
+<div class="grid intrinsic">
+  <div class="card">Card 1</div>
+  <div class="card">Card 2</div>
+  <div class="card">Card 3</div>
+  <div class="card">Card 4</div>
+  <div class="card">Card 5</div>
+</div>
+```
+
+The grid will show as many groups of 4 columns as the container width allows, wrapping to fewer columns in narrower spaces.
+
+### 2. Control the minimum column width
+
+The default minimum column width is `100px`. Override it with `--grid-col-min`:
+
+```css
+.wide-cards {
+  --grid-col-min: 200px;
+}
+```
+
+```html
+<div class="grid intrinsic wide-cards">
+  <!-- Cards won't shrink below 200px each -->
+</div>
+```
+
+Larger `--grid-col-min` values cause wrapping to happen sooner. Smaller values allow more columns in tight spaces.
+
+### 3. Adjust the gap
+
+As with the responsive grid, use `--grid-gap`:
+
+```css
+.tight-cards {
+  --grid-gap: var(--dimension-050);  /* 0.25rem / 4px */
+}
+```
+
+```html
+<div class="grid intrinsic tight-cards">
+  <!-- Minimal spacing between cards -->
+</div>
+```
+
+### 4. Let items span multiple columns
+
+Individual items can span multiple columns using `grid-column`:
+
+```css
+.featured-card {
+  grid-column: span 2;
+}
+```
+
+```html
+<div class="grid intrinsic">
+  <div class="card featured-card">Featured — spans 2 columns</div>
+  <div class="card">Card 2</div>
+  <div class="card">Card 3</div>
+</div>
+```
+
+When the grid wraps to fewer columns, the featured card will still span 2, adapting naturally to the available space.
+
+## Variations
+
+### Dashboard widget grid
+
+For a dashboard with mixed-size widgets:
+
+```css
+.dashboard {
+  --grid-col-min: 180px;
+  --grid-gap: var(--dimension-2);  /* 1rem / 16px */
+}
+
+.widget--wide {
+  grid-column: span 2;
+}
+
+.widget--tall {
+  grid-row: span 2;
+}
+```
+
+### Thumbnail gallery
+
+For a tight image grid:
+
+```css
+.gallery {
+  --grid-col-min: 120px;
+  --grid-gap: var(--dimension-050);  /* 0.25rem / 4px */
+}
+```
+
+### Combining with responsive at different levels
+
+The intrinsic grid can nest inside a responsive grid:
+
+```html
+<div class="grid responsive">
+  <main style="grid-column: 1 / -1">
+    <div class="grid intrinsic">
+      <!-- Cards flow within the main content area -->
+    </div>
+  </main>
+</div>
+```
+
+The responsive grid controls page structure; the intrinsic grid controls content flow within a section. They compose without conflict because each is an independent grid context.
+
+## Troubleshooting
+
+### All items are in a single column
+
+Check that the container is wide enough for the minimum column width. If `--grid-col-min` is `200px` and the container is `300px`, only one group of columns can fit. Reduce `--grid-col-min` or widen the container.
+
+### Items don't wrap evenly
+
+The intrinsic grid groups columns in sets of 4. If you have 5 items, the 5th will start a new row with 1 item. This is by design — the grouping maintains visual rhythm. If you need different grouping, override `--modifier-grid-template` with a custom `repeat(auto-fill, ...)`.
+
+### Items have unequal heights
+
+CSS Grid rows are sized by the tallest item in each row. If cards have varying content lengths, consider setting a `min-height` or using `align-items: start` on the grid container to prevent shorter cards from stretching.
+
+## Related
+
+- [How to use the responsive grid](?path=/docs/foundation-design-tokens-how-to-use-the-responsive-grid--docs): breakpoint-driven layouts
+- [Understanding the grid system](?path=/docs/foundation-design-tokens-understanding-the-grid-system--docs): why two grid strategies exist
+- [Grid classes reference](?path=/docs/foundation-design-tokens-reference-grid-classes--docs): all classes and properties

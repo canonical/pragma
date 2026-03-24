@@ -1,0 +1,219 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+
+<Meta title="Foundation/Design Tokens/Reference/Cascade Layers" />
+
+# Cascade layers reference
+
+The token system uses CSS `@layer` to establish a strict resolution order. This page documents every layer, what it contains, and how they interact.
+
+## Layer ordering
+
+```css
+@layer ds.tokens;       /* 1 — Lowest precedence */
+@layer ds.modifiers;    /* 2 */
+@layer ds.surfaces;     /* 3 */
+@layer ds.states;       /* 4 */
+@layer ds.components;   /* 5 — Highest precedence */
+```
+
+A later layer _always_ overrides an earlier layer, regardless of selector specificity. This is the core guarantee that makes the system predictable.
+
+## Layer details
+
+<div className="ds token-page">
+  <section className="panel">
+    <div className="stack">
+      <article className="rule">
+        <strong><code>@layer ds.tokens</code></strong>
+        <p>
+          <strong>Contains:</strong> Primitive palette values, semantic token defaults, and theme-paired values.
+          <br />
+          <strong>Generated files:</strong> <code>sets.primitive.css</code>, <code>modifiers.theme.css</code>
+          <br />
+          <strong>Sets:</strong> Base <code>--color-*</code> tokens, <code>--dimension-*</code> tokens, <code>--typography-*</code> tokens, delta variables.
+          <br />
+          <strong>Role:</strong> Provides the default values that every other layer can override. This is where semantic tokens get their "no context" values.
+        </p>
+      </article>
+      <article className="rule">
+        <strong><code>@layer ds.modifiers</code></strong>
+        <p>
+          <strong>Contains:</strong> Modifier channel variable overrides.
+          <br />
+          <strong>Generated files:</strong> <code>modifiers.criticality.css</code>, <code>modifiers.emphasis.css</code>, <code>modifiers.anticipation.css</code>, <code>modifiers.importance.css</code>, <code>modifiers.typography.css</code>
+          <br />
+          <strong>Sets:</strong> <code>--modifier-color-*</code> variables when a modifier class (<code>.error</code>, <code>.success</code>, <code>.branded</code>, etc.) is applied to an ancestor.
+          <br />
+          <strong>Role:</strong> Rebinds color channels so descendant components shift their output without code changes. Overrides <code>ds.tokens</code>.
+        </p>
+      </article>
+      <article className="rule">
+        <strong><code>@layer ds.surfaces</code></strong>
+        <p>
+          <strong>Contains:</strong> Surface depth compounding rules.
+          <br />
+          <strong>Generated file:</strong> <code>modifiers.surfaces.css</code>
+          <br />
+          <strong>Sets:</strong> <code>--surface-color-*</code> variables using compound descendant selectors (<code>.surface</code>, <code>.surface .surface</code>, <code>.surface .surface .surface</code>).
+          <br />
+          <strong>Role:</strong> Provides depth-aware backgrounds and foreground colors. Can override modifier values when surface-specific colors are needed. Overrides <code>ds.modifiers</code>.
+        </p>
+      </article>
+      <article className="rule">
+        <strong><code>@layer ds.states</code></strong>
+        <p>
+          <strong>Contains:</strong> Interaction state derivations.
+          <br />
+          <strong>Generated file:</strong> <code>states.css</code>
+          <br />
+          <strong>Sets:</strong> <code>--hover--*</code>, <code>--active--*</code>, <code>--disabled--*</code> variables using <code>oklch()</code> relative color syntax and <code>color-mix()</code>.
+          <br />
+          <strong>Role:</strong> Derives hover, active, and disabled colors from the current token context. Overrides everything else. Highest color-related precedence.
+        </p>
+      </article>
+      <article className="rule">
+        <strong><code>@layer ds.components</code></strong>
+        <p>
+          <strong>Contains:</strong> Structural patterns — grid system, layout utilities.
+          <br />
+          <strong>Source file:</strong> <code>grid.css</code>
+          <br />
+          <strong>Sets:</strong> <code>display: grid</code>, <code>grid-template-columns</code>, <code>subgrid</code> behavior.
+          <br />
+          <strong>Role:</strong> Provides layout structure. Does not set color tokens. Highest overall precedence so component structure can't be overridden by token or modifier layers.
+        </p>
+      </article>
+    </div>
+  </section>
+</div>
+
+## Resolution example
+
+Consider a button inside `.error` on `.surface .surface`:
+
+```css
+.ds.button {
+  background: var(
+    --hover--color-foreground-primary,     /* ds.states */
+    var(--modifier-color-foreground-primary,  /* ds.modifiers */
+      var(--surface-color-foreground-primary, /* ds.surfaces */
+        var(--color-foreground-primary)))     /* ds.tokens */
+  );
+}
+```
+
+At rest (no hover):
+
+1. `--hover--color-foreground-primary` is **unset** → skip
+2. `--modifier-color-foreground-primary` is **set** by `.error` → resolves to `var(--color-foreground-primary-error)` → **used**
+3. `--surface-color-foreground-primary` and `--color-foreground-primary` are never reached
+
+On hover:
+
+1. `--hover--color-foreground-primary` is **set** by the state layer → computed from the modifier value via oklch shift → **used**
+2. All other variables are never reached
+
+The fallback chain and the cascade layer ordering work together: the chain defines _which variables to try_, and the layers ensure that _if multiple are set, the correct one has priority_.
+
+## Modifier families and their channels
+
+<div className="ds token-page">
+  <section className="panel">
+    <div className="header">
+      <h3>Modifier families</h3>
+      <p>Each family sets the same channel variables to different intent-specific semantic tokens.</p>
+    </div>
+    <div className="stack">
+      <article className="rule">
+        <strong>Criticality</strong>
+        <p>
+          <strong>Classes:</strong> <code>.success</code>, <code>.error</code>, <code>.warning</code>, <code>.information</code>
+          <br />
+          <strong>Channels set:</strong> <code>--modifier-color-border</code>, <code>--modifier-color-focusRing</code>, <code>--modifier-color-foreground-input</code>, <code>--modifier-color-foreground-secondary</code>, <code>--modifier-color-icon</code>, <code>--modifier-color-text</code>
+          <br />
+          <strong>Purpose:</strong> Feedback states for forms and validation.
+        </p>
+      </article>
+      <article className="rule">
+        <strong>Emphasis</strong>
+        <p>
+          <strong>Classes:</strong> <code>.muted</code>, <code>.branded</code>
+          <br />
+          <strong>Channels set:</strong> <code>--modifier-color-border</code>, <code>--modifier-color-icon</code>, <code>--modifier-color-text</code>; <code>.branded</code> also sets <code>--modifier-color-foreground-ghost</code>, <code>--modifier-color-foreground-primary</code>, <code>--modifier-color-foreground-secondary</code>
+          <br />
+          <strong>Purpose:</strong> Visual prominence adjustment — de-emphasize or brand-highlight content.
+        </p>
+      </article>
+      <article className="rule">
+        <strong>Anticipation</strong>
+        <p>
+          <strong>Classes:</strong> <code>.constructive</code>, <code>.destructive</code>, <code>.caution</code>
+          <br />
+          <strong>Channels set:</strong> <code>--modifier-color-border</code>, <code>--modifier-color-foreground-ghost</code>, <code>--modifier-color-foreground-primary</code>, <code>--modifier-color-icon</code>, <code>--modifier-color-text</code>
+          <br />
+          <strong>Purpose:</strong> Communicates the expected outcome of an action — confirmation, danger, or careful attention.
+        </p>
+      </article>
+      <article className="rule">
+        <strong>Importance</strong>
+        <p>
+          <strong>Classes:</strong> (currently empty — reserved for future use)
+          <br />
+          <strong>Purpose:</strong> Will control visual weight and hierarchy emphasis.
+        </p>
+      </article>
+    </div>
+  </section>
+</div>
+
+## Surface channels
+
+The surface system sets 15 channel variables at each of 3 depth levels:
+
+<div className="ds token-page">
+  <section className="panel">
+    <div className="header">
+      <h3>Surface channel variables</h3>
+      <p>Set by <code>.surface</code>, <code>.surface .surface</code>, and <code>.surface .surface .surface</code>.</p>
+    </div>
+    <div className="stack">
+      {[
+        "background",
+        "foreground-checkbox-checkmark",
+        "foreground-checkbox-unselected",
+        "foreground-ghost",
+        "foreground-ghost-branded",
+        "foreground-ghost-constructive",
+        "foreground-ghost-destructive",
+        "foreground-input",
+        "foreground-input-error",
+        "foreground-input-success",
+        "foreground-input-warning",
+        "foreground-navigation-primary",
+        "foreground-radio-checkmark",
+        "foreground-radio-unselected",
+        "foreground-switch-knob",
+      ].map((channel) => (
+        <div key={channel} style={{
+          display: "flex",
+          alignItems: "baseline",
+          gap: "0.5rem",
+          fontSize: "0.8125rem",
+          fontFamily: "ui-monospace, monospace",
+          padding: "0.125rem 0",
+        }}>
+          <code>--surface-color-{channel}</code>
+        </div>
+      ))}
+    </div>
+  </section>
+</div>
+
+At depth 1, these resolve to root values. At depth 2, they resolve to `-layer2` variants. At depth 3, they resolve to `-layer3` variants. Beyond depth 3, the pattern oscillates back to depth 1 values.
+
+## Related
+
+- [Token Architecture](?path=/docs/foundation-design-tokens-understanding-token-architecture--docs): why layers and channels exist
+- [The Modifier Contract](?path=/docs/foundation-design-tokens-understanding-modifier-contract--docs): the channel variable pattern
+- [Surface Depth Model](?path=/docs/foundation-design-tokens-understanding-surface-depth-model--docs): compound selectors for depth
+- [Grid classes reference](?path=/docs/foundation-design-tokens-reference-grid-classes--docs): the component layer

@@ -1,0 +1,133 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+
+<Meta title="Foundation/Design Tokens/How to/Debug Token Resolution" />
+
+# How to debug token resolution
+
+This guide shows you how to trace the resolution of a token value from the component's CSS through channel variables, modifiers, surfaces, and themes to the final computed color. Use this when a token isn't resolving as expected.
+
+## Prerequisites
+
+- Browser DevTools (Chrome, Firefox, or Safari)
+- A running Storybook or application using `@canonical/styles`
+- Familiarity with the [token architecture](?path=/docs/foundation-design-tokens-understanding-token-architecture--docs) (tiers and channels)
+
+## Steps
+
+### 1. Inspect the element
+
+Right-click the element whose color or spacing looks wrong and open DevTools → Elements (Chrome) or Inspector (Firefox).
+
+In the **Styles** panel, find the CSS rule that sets the property in question. For a button background, you might see:
+
+```css
+.ds.button {
+  background: var(
+    --modifier-color-foreground-primary,
+    var(--surface-color-foreground-primary,
+      var(--color-foreground-primary))
+  );
+}
+```
+
+This is the fallback chain. Read it right to left: the base semantic token is `--color-foreground-primary`, the surface channel is `--surface-color-foreground-primary`, and the modifier channel is `--modifier-color-foreground-primary`.
+
+### 2. Check which variable is active
+
+In the **Computed** panel (Chrome) or computed styles section (Firefox), search for the custom property names in the fallback chain:
+
+- **`--modifier-color-foreground-primary`**: If this has a value, a modifier class (`.error`, `.constructive`, etc.) is active on an ancestor. The value will point to an intent-specific semantic token like `var(--color-foreground-primary-destructive)`.
+- **`--surface-color-foreground-primary`**: If this has a value, the element is inside a `.surface` container. The value will point to a depth-specific token like `var(--color-foreground-primary-layer2)`.
+- **`--color-foreground-primary`**: This is the base semantic token. It always has a value (unless `@canonical/styles` is not loaded).
+
+The first non-empty variable in the chain determines the final computed value.
+
+### 3. Trace the resolution path
+
+For each variable that has a value, follow the chain deeper:
+
+```
+--modifier-color-foreground-primary
+  → var(--color-foreground-primary-destructive)
+    → oklch(56.29% 0.229 27.33)   [light mode]
+    → oklch(69.02% 0.187 28.45)   [dark mode]
+```
+
+In Chrome DevTools, you can click on a `var()` reference in the Styles panel to jump to the definition. In Firefox, hovering over a custom property shows its resolved value.
+
+### 4. Check the cascade layer
+
+If a variable is set but seems to be overridden, check the cascade layer. Open DevTools → Styles, and look for the `@layer` badge next to each rule:
+
+```
+@layer ds.tokens     → base semantic values
+@layer ds.modifiers  → modifier channel overrides
+@layer ds.surfaces   → surface depth compounding
+@layer ds.states     → interaction state derivations
+```
+
+A later layer always wins over an earlier layer, regardless of selector specificity. If a modifier value is being overridden by a surface value, that is the cascade layer system working as designed.
+
+### 5. Identify the theme context
+
+Check whether `.dark` or `.light` is applied to any ancestor of the element. In the Elements panel, walk up the DOM tree and look for theme classes.
+
+If no theme class is present, the element follows `prefers-color-scheme`. Toggle your system preference (or use the Storybook theme switcher) to verify that paired tokens switch values.
+
+### 6. Test by removing variables
+
+To isolate a problem, temporarily remove a channel variable in DevTools:
+
+1. In the Styles panel, find the rule that sets `--modifier-color-*` (typically on a `.error` or `.success` ancestor)
+2. Uncheck the checkbox next to the property to disable it
+3. Observe whether the element falls through to the next variable in the chain
+
+This technique quickly reveals whether the issue is in the modifier, the surface, or the base token.
+
+## Common diagnostic patterns
+
+### The element shows the wrong color
+
+**Check:** Is the element inside an unexpected modifier context? Walk up the DOM tree and look for `.error`, `.success`, `.warning`, `.constructive`, `.destructive`, `.caution`, `.branded`, `.muted`, or `.information` classes on any ancestor.
+
+### The element doesn't respond to a modifier
+
+**Check:** Is the component using the modifier channel in its CSS? Search the component's CSS for `--modifier-color-*`. If the component references `--color-text` directly without the `var(--modifier-color-text, ...)` wrapper, modifiers cannot intercept it.
+
+### The surface depth is wrong
+
+**Check:** Count the `.surface` ancestors. Each `.surface` class in the DOM ancestry increments the depth. A non-surface wrapper between two surfaces does not affect depth (it's a passthrough). If the depth is unexpected, a `.surface` class is either missing or present on an element that shouldn't have it.
+
+### Colors are identical in light and dark mode
+
+**Check:** The component may be using a primitive token instead of a semantic token. Primitive tokens (e.g., `--color-palette-gray-500`) are not paired — they have the same value in both themes. Replace with the semantic equivalent.
+
+### Hover state doesn't match the modifier context
+
+**Check:** The hover token should derive from the modifier channel, not the base token directly. The correct pattern is:
+
+```css
+background: var(
+  --hover--color-foreground-primary,
+  var(--modifier-color-foreground-primary,
+    var(--color-foreground-primary))
+);
+```
+
+If the hover token derives from `--color-foreground-primary` without the modifier intermediate, it will show the default hover color even inside a modifier context.
+
+## Firefox-specific: custom property viewer
+
+Firefox DevTools has a dedicated "Custom Properties" section in the inspector that lists all custom properties inherited by an element, grouped by source. This is often faster than manually searching the Computed panel.
+
+## Chrome-specific: CSS overview
+
+Chrome DevTools → More tools → CSS Overview provides a summary of all colors used on the page. This can help identify rogue hardcoded colors that should be tokens.
+
+## Related
+
+- [Token Architecture](?path=/docs/foundation-design-tokens-understanding-token-architecture--docs): the fallback chain model
+- [The Modifier Contract](?path=/docs/foundation-design-tokens-understanding-modifier-contract--docs): how channel variables work
+- [Surface Depth Model](?path=/docs/foundation-design-tokens-understanding-surface-depth-model--docs): compound selectors and depth tracking
+- [Theme Mechanics](?path=/docs/foundation-design-tokens-understanding-theme-mechanics--docs): paired values and delta variables
+- [How to find the right token](?path=/docs/foundation-design-tokens-how-to-find-the-right-token--docs): choosing the correct token from the start
