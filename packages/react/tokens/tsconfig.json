@@ -1,5 +1,5 @@
 {
-  "extends": "../../../configs/typescript-react/tsconfig.json",
+  "extends": "@canonical/typescript-config-react",
   "compilerOptions": {
     "baseUrl": "src",
     "jsx": "react-jsx",

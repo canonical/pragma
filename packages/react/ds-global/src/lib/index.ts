@@ -13,4 +13,6 @@ export * from "./SkipLink/index.js";
 export * from "./Tile/index.js";
 export * from "./Timeline/index.js";
 export * from "./Tooltip/index.js";
+export * from "./grid/index.js";
 export type * from "./types/index.js";
+export * from "./patterns/index.js";

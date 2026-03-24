@@ -6,17 +6,13 @@ export const rtl = () => (Story: ElementType) => (
   </div>
 );
 
-export const grid = () => (Story: ElementType) => (
-  <div
-    style={{
-      display: "grid",
-      gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
-      gap: "1em",
-    }}
-  >
-    <Story />
-  </div>
-);
+export const grid =
+  (intrinsic = true) =>
+  (Story: ElementType) => (
+    <div className={`grid ${intrinsic ? "intrinsic" : "responsive"}`}>
+      <Story />
+    </div>
+  );
 
 /**
  * Places the story before a `<main>` element. This is useful for stories that need to be placed before the rest of the page contents in reading order (such as a skip link).
