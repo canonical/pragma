@@ -20,6 +20,7 @@ import type {
   AnatomyNode,
   AnatomyTree,
   BlockDetailed,
+  BlockDigest,
   BlockSummary,
   CategorySummary,
   CodeBlock,
@@ -41,13 +42,20 @@ import type {
 // BlockSummary
 expectTypeOf<BlockSummary["uri"]>().toEqualTypeOf<URI>();
 expectTypeOf<BlockSummary["name"]>().toBeString();
+expectTypeOf<BlockSummary["type"]>().toEqualTypeOf<
+  "component" | "pattern" | "layout" | "subcomponent"
+>();
 expectTypeOf<BlockSummary["tier"]>().toBeString();
 expectTypeOf<BlockSummary["modifiers"]>().toEqualTypeOf<readonly string[]>();
 expectTypeOf<BlockSummary["nodeCount"]>().toBeNumber();
 expectTypeOf<BlockSummary["tokenCount"]>().toBeNumber();
 
+// BlockDigest extends BlockSummary
+expectTypeOf<BlockDigest>().toMatchTypeOf<BlockSummary>();
+expectTypeOf<BlockDigest["summary"]>().toEqualTypeOf<string | null>();
+
 // BlockDetailed extends BlockSummary
-expectTypeOf<BlockDetailed>().toMatchTypeOf<BlockSummary>();
+expectTypeOf<BlockDetailed>().toMatchTypeOf<BlockDigest>();
 expectTypeOf<BlockDetailed["anatomy"]>().toEqualTypeOf<AnatomyTree | null>();
 expectTypeOf<BlockDetailed["tokens"]>().toEqualTypeOf<readonly TokenRef[]>();
 expectTypeOf<BlockDetailed["standards"]>().toEqualTypeOf<

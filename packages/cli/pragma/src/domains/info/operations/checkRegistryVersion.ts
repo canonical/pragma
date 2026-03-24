@@ -10,7 +10,7 @@ import type { RegistryCheckResult } from "../types.js";
  *
  * @note Impure
  *
- * @param packageName - The npm package name (e.g. `@canonical/pragma`).
+ * @param packageName - The npm package name (e.g. `@canonical/pragma-cli`).
  * @param channel - The release channel determining which dist-tag to check.
  * @returns A {@link RegistryCheckResult} with the latest version, or `undefined` on failure.
  */

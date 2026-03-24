@@ -30,10 +30,9 @@ const CROSS_CLIENT_DIR = ".agents/skills";
 function symlinkOneSkill(
   skill: DiscoveredSkill,
   targetDir: string,
-  projectRoot: string,
   harnessName: string,
 ): Task<SymlinkAction> {
-  const target = resolve(projectRoot, skill.sourcePath);
+  const target = skill.sourcePath;
   const linkPath = resolve(targetDir, skill.folderName);
 
   return flatMap(exists(linkPath), (linkExists) => {
@@ -92,15 +91,12 @@ function symlinkOneSkill(
 function symlinkForTarget(
   skills: readonly DiscoveredSkill[],
   targetDir: string,
-  projectRoot: string,
   harnessName: string,
 ): Task<SymlinkAction[]> {
   return flatMap(mkdir(targetDir), () =>
     map(
       sequence(
-        skills.map((skill) =>
-          symlinkOneSkill(skill, targetDir, projectRoot, harnessName),
-        ),
+        skills.map((skill) => symlinkOneSkill(skill, targetDir, harnessName)),
       ),
       (actions) => [...actions],
     ),
@@ -142,9 +138,7 @@ export default function setupSkills(
 
   return map(
     sequence(
-      targets.map(({ dir, name }) =>
-        symlinkForTarget(skills, dir, projectRoot, name),
-      ),
+      targets.map(({ dir, name }) => symlinkForTarget(skills, dir, name)),
     ),
     (actionGroups): SetupSkillsResult => {
       const allActions = actionGroups.flat();

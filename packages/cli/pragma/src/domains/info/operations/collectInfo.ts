@@ -27,7 +27,7 @@ export default async function collectInfo(cwd: string): Promise<InfoData> {
   const channelReleases = CHANNEL_RELEASES[config.channel];
 
   const registryResult = await checkRegistryVersion(
-    "@canonical/pragma",
+    "@canonical/pragma-cli",
     config.channel,
   );
 
@@ -37,7 +37,7 @@ export default async function collectInfo(cwd: string): Promise<InfoData> {
     update = {
       current: VERSION,
       latest: registryResult.latest,
-      command: PM_COMMANDS[pm].update("@canonical/pragma"),
+      command: PM_COMMANDS[pm].update("@canonical/pragma-cli"),
     };
   }
 

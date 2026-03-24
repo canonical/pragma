@@ -36,7 +36,7 @@ export default async function listSkills(
         .then((s) => s.isDirectory())
         .catch(() => false);
       return {
-        path: source.relativePath,
+        path: source.dir,
         packageName: source.packageName,
         available,
       };

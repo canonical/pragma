@@ -103,8 +103,11 @@ describe("formatters.plain — digest", () => {
     // Truncated to 20 chars (19 + ellipsis)
     const exampleLine = text.split("\n").find((l) => l.includes("Example:"));
     expect(exampleLine).toBeDefined();
+    if (!exampleLine) {
+      throw new Error("Expected example line");
+    }
     // 20 char max means the example text portion is at most 20 chars
-    const exampleText = exampleLine!.replace(/.*Example: /, "");
+    const exampleText = exampleLine.replace(/.*Example: /, "");
     expect(exampleText.length).toBeLessThanOrEqual(20);
   });
 

@@ -13,7 +13,6 @@ const TEST_SOURCES = [
   {
     dir: join(TMP_ROOT, "node_modules/@canonical/design-system/skills"),
     packageName: "@canonical/design-system",
-    relativePath: "node_modules/@canonical/design-system/skills",
   },
 ];
 

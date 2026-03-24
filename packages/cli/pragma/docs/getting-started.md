@@ -12,7 +12,7 @@ This guide walks you through installing pragma, configuring it for your project,
 Install globally:
 
 ```bash
-bun add -g @canonical/pragma
+bun add -g @canonical/pragma-cli
 ```
 
 Verify the installation:

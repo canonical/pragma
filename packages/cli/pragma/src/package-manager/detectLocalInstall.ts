@@ -39,5 +39,5 @@ export default function detectLocalInstall(
   if (isGlobalPrefix(resolved)) return undefined;
 
   const pm = detectPackageManager(binPath);
-  return `Warning: pragma is installed locally in this project.\nGlobal installation is recommended: ${PM_COMMANDS[pm].install("@canonical/pragma")}`;
+  return `Warning: pragma is installed locally in this project.\nGlobal installation is recommended: ${PM_COMMANDS[pm].install("@canonical/pragma-cli")}`;
 }

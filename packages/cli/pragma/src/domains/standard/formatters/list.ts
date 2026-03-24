@@ -43,8 +43,7 @@ function firstDoExample(
 function plain({ items, details, disclosure }: StandardListOutput): string {
   const lines: string[] = [];
 
-  for (let i = 0; i < items.length; i++) {
-    const s = items[i]!;
+  for (const [i, s] of items.entries()) {
     const cat = s.category ? ` [${s.category}]` : "";
     lines.push(`${s.name}${cat}`);
     lines.push(`  ${s.description}`);
@@ -88,8 +87,7 @@ function llm({ items, details, disclosure }: StandardListOutput): string {
   lines.push("## Standards");
   lines.push("");
 
-  for (let i = 0; i < items.length; i++) {
-    const s = items[i]!;
+  for (const [i, s] of items.entries()) {
     const cat = s.category ? ` [${s.category}]` : "";
     lines.push(`- **${s.name}**${cat}: ${s.description}`);
 

@@ -12,17 +12,14 @@ const TEST_SOURCES: SkillSource[] = [
   {
     dir: join(TMP_ROOT, "node_modules/@canonical/design-system/skills"),
     packageName: "@canonical/design-system",
-    relativePath: "node_modules/@canonical/design-system/skills",
   },
   {
     dir: join(TMP_ROOT, "node_modules/@canonical/anatomy-dsl/skills"),
     packageName: "@canonical/anatomy-dsl",
-    relativePath: "node_modules/@canonical/anatomy-dsl/skills",
   },
   {
-    dir: join(TMP_ROOT, "node_modules/@canonical/pragma/skills"),
-    packageName: "@canonical/pragma",
-    relativePath: "node_modules/@canonical/pragma/skills",
+    dir: join(TMP_ROOT, "node_modules/@canonical/pragma-cli/skills"),
+    packageName: "@canonical/pragma-cli",
   },
 ];
 
@@ -126,9 +123,7 @@ describe("discoverSkills", () => {
     const audit = skills.find((s) => s.name === "design-audit");
     expect(audit?.sourcePackage).toBe("@canonical/design-system");
     expect(audit?.folderName).toBe("design-audit");
-    expect(audit?.sourcePath).toBe(
-      `${TEST_SOURCES[0].relativePath}/design-audit`,
-    );
+    expect(audit?.sourcePath).toBe(join(TEST_SOURCES[0].dir, "design-audit"));
   });
 
   it("preserves frontmatter metadata", async () => {
@@ -142,7 +137,6 @@ describe("discoverSkills", () => {
       {
         dir: "/nonexistent/path/skills",
         packageName: "@canonical/nope",
-        relativePath: "node_modules/@canonical/nope/skills",
       },
     ];
     const skills = await discoverSkills("/nonexistent", emptySources);

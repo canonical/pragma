@@ -48,23 +48,28 @@ describe("escapeSparqlValue", () => {
     expect(escapeSparqlValue(undefined)).toBe('""');
   });
 
-  it("rejects strings with curly braces (injection)", () => {
-    expect(() => escapeSparqlValue("} UNION {")).toThrow("dangerous");
-    expect(() => escapeSparqlValue("value}")).toThrow("dangerous");
-    expect(() => escapeSparqlValue("{value")).toThrow("dangerous");
+  it("allows curly braces inside quoted string values", () => {
+    expect(escapeSparqlValue('{ type: "a" }')).toBe('"{ type: \\"a\\" }"');
   });
 
   it("rejects strings with UNION keyword", () => {
+    expect(() => escapeSparqlValue("} UNION {")).toThrow("dangerous");
     expect(() => escapeSparqlValue("UNION")).toThrow("dangerous");
     expect(() => escapeSparqlValue("union")).toThrow("dangerous");
+  });
+
+  it("allows words containing dangerous keywords as substrings", () => {
+    expect(escapeSparqlValue("Addison")).toBe('"Addison"');
+    expect(escapeSparqlValue("CreateElement")).toBe('"CreateElement"');
+    expect(escapeSparqlValue("CopyToClipboard")).toBe('"CopyToClipboard"');
   });
 
   it("rejects strings with semicolons at end", () => {
     expect(() => escapeSparqlValue("value; ")).toThrow("dangerous");
   });
 
-  it("rejects strings with SPARQL comments", () => {
-    expect(() => escapeSparqlValue("value # comment")).toThrow("dangerous");
+  it("allows hash characters inside quoted string values", () => {
+    expect(escapeSparqlValue("value # comment")).toBe('"value # comment"');
   });
 
   it("rejects strings with INSERT/DELETE keywords", () => {

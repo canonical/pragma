@@ -6,7 +6,6 @@ import {
   checkPragmaVersion,
   checkShellCompletions,
   checkSkillsSymlinked,
-  checkTerrazzo,
 } from "./checks/index.js";
 import type { CheckContext, CheckResult, DoctorData } from "./types.js";
 
@@ -28,7 +27,6 @@ export default async function runChecks(
   checks.push(await checkConfigFile(ctx));
   checks.push(await checkKeStore(ctx));
   checks.push(await checkShellCompletions());
-  checks.push(await checkTerrazzo(ctx));
   checks.push(await checkMcpConfigured(ctx));
   checks.push(await checkSkillsSymlinked(ctx));
 

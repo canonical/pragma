@@ -48,7 +48,7 @@ function isLocalCheckout(path: string): boolean {
     return false;
   }
 
-  return findPackageName(path) === "@canonical/pragma";
+  return findPackageName(path) === "@canonical/pragma-cli";
 }
 
 function detectRuntimePackageManager(): InstallSource["packageManager"] {

@@ -6,4 +6,3 @@ export { default as checkNodeVersion } from "./checkNodeVersion.js";
 export { default as checkPragmaVersion } from "./checkPragmaVersion.js";
 export { default as checkShellCompletions } from "./checkShellCompletions.js";
 export { default as checkSkillsSymlinked } from "./checkSkillsSymlinked.js";
-export { default as checkTerrazzo } from "./checkTerrazzo.js";

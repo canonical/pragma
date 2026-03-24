@@ -893,10 +893,13 @@ describe("graph_inspect", () => {
     };
     const validUri = queryData.bindings[0]?.s;
     expect(validUri).toBeDefined();
+    if (!validUri) {
+      throw new Error("Expected a valid URI");
+    }
 
     const result = await client.callTool({
       name: "graph_inspect",
-      arguments: { uri: validUri! },
+      arguments: { uri: validUri },
     });
     const data = parseData(result) as {
       uri: string;
@@ -923,10 +926,14 @@ describe("graph_inspect", () => {
       bindings: { s?: string }[];
     };
     const validUri = queryData.bindings[0]?.s;
+    expect(validUri).toBeDefined();
+    if (!validUri) {
+      throw new Error("Expected a valid URI");
+    }
 
     const result = await client.callTool({
       name: "graph_inspect",
-      arguments: { uri: validUri!, condensed: true },
+      arguments: { uri: validUri, condensed: true },
     });
     const envelope = parseEnvelope(result);
     expect(envelope.ok).toBe(true);

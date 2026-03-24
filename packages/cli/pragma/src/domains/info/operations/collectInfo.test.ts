@@ -6,18 +6,25 @@ const bootStoreMock = vi.fn();
 const checkRegistryVersionMock = vi.fn();
 const collectStoreSummaryMock = vi.fn();
 
-vi.mock("#config", () => ({
+vi.mock("#config", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("#config")>()),
   readConfig: readConfigMock,
 }));
 
-vi.mock("#package-manager", () => ({
-  detectInstallSource: detectInstallSourceMock,
-  PM_COMMANDS: {
-    bun: {
-      update: (pkg: string) => `bun update ${pkg}`,
+vi.mock("#package-manager", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("#package-manager")>();
+  return {
+    ...actual,
+    detectInstallSource: detectInstallSourceMock,
+    PM_COMMANDS: {
+      ...actual.PM_COMMANDS,
+      bun: {
+        ...actual.PM_COMMANDS.bun,
+        update: (pkg: string) => `bun update ${pkg}`,
+      },
     },
-  },
-}));
+  };
+});
 
 vi.mock("../../shared/bootStore.js", () => ({
   bootStore: bootStoreMock,
@@ -60,7 +67,7 @@ describe("collectInfo", () => {
     expect(result.update).toEqual({
       current: expect.any(String),
       latest: "9.9.9",
-      command: "bun update @canonical/pragma",
+      command: "bun update @canonical/pragma-cli",
     });
     expect(result.installSource).toBe("bun (global)");
     expect(result.updateSkipped).toBe(false);

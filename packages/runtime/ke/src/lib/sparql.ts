@@ -26,19 +26,17 @@ import validateIri from "./validateIri.js";
 // ---------------------------------------------------------------------------
 
 const DANGEROUS_PATTERNS = [
-  /[{}]/, // Graph pattern delimiters — could close/open WHERE clauses
   /;\s*$/, // Trailing semicolons — could terminate a triple pattern
-  /UNION/i, // UNION — could inject alternative graph patterns
-  /INSERT/i, // SPARQL Update operations — could mutate the store
-  /DELETE/i,
-  /DROP/i,
-  /CLEAR/i,
-  /LOAD/i,
-  /CREATE/i,
-  /COPY/i,
-  /MOVE/i,
-  /ADD\s/i, // ADD followed by whitespace (avoids false positives on "Addison")
-  /#/, // Comments — could comment out the rest of the query
+  /\bUNION\b/i, // UNION — could inject alternative graph patterns
+  /\bINSERT\b/i, // SPARQL Update operations — could mutate the store
+  /\bDELETE\b/i,
+  /\bDROP\b/i,
+  /\bCLEAR\b/i,
+  /\bLOAD\b/i,
+  /\bCREATE\b/i,
+  /\bCOPY\b/i,
+  /\bMOVE\b/i,
+  /\bADD\b/i,
 ];
 
 // ---------------------------------------------------------------------------

@@ -61,7 +61,7 @@ describe("renderInfoPlain", () => {
         update: {
           current: "0.18.0",
           latest: "0.19.0",
-          command: "bun update -g @canonical/pragma",
+          command: "bun update -g @canonical/pragma-cli",
         },
       }),
     );
@@ -117,7 +117,7 @@ describe("renderInfoLlm", () => {
         update: {
           current: "0.18.0",
           latest: "0.19.0",
-          command: "bun update -g @canonical/pragma",
+          command: "bun update -g @canonical/pragma-cli",
         },
       }),
     );
@@ -164,7 +164,7 @@ describe("renderInfoJson", () => {
       update: {
         current: "0.18.0",
         latest: "0.19.0",
-        command: "bun update -g @canonical/pragma",
+        command: "bun update -g @canonical/pragma-cli",
       },
     });
     const parsed = JSON.parse(renderInfoJson(data));

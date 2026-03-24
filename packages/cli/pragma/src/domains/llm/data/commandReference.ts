@@ -8,7 +8,6 @@ import type { CommandRefEntry } from "../types.js";
 export const COMMAND_REFERENCE: readonly CommandRefEntry[] = [
   { command: "block list", tokens: "~200" },
   { command: "block lookup <name> --detailed", tokens: "~500" },
-  { command: "block lookup <name> --standards", tokens: "~300" },
   { command: "standard list --category <cat>", tokens: "~100" },
   { command: "standard lookup <name> --detailed", tokens: "~400" },
   { command: "standard categories", tokens: "~50" },

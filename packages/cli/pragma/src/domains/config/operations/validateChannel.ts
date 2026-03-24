@@ -15,5 +15,10 @@ export default function validateChannel(value: string): Channel {
 
   throw PragmaError.invalidInput("channel", value, {
     validOptions: [...VALID_CHANNELS],
+    recovery: {
+      message: "Reset channel configuration.",
+      cli: "pragma config channel --reset",
+      mcp: { tool: "config_channel", params: { reset: true } },
+    },
   });
 }

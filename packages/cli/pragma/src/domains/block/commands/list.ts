@@ -140,7 +140,9 @@ async function enrichBlocks(
   return details.map((d) => ({
     uri: d.uri,
     name: d.name,
+    type: d.type,
     tier: d.tier,
+    summary: d.summary,
     modifiers: d.modifiers,
     implementations: d.implementations,
     nodeCount: d.nodeCount,

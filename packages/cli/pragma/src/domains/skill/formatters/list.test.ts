@@ -18,8 +18,8 @@ const MOCK_SKILLS: readonly DiscoveredSkill[] = [
   {
     name: "scaffold-story",
     description: "Generate a Storybook story from anatomy",
-    sourcePath: "node_modules/@canonical/pragma/skills/scaffold-story",
-    sourcePackage: "@canonical/pragma",
+    sourcePath: "/tmp/node_modules/@canonical/pragma-cli/skills/scaffold-story",
+    sourcePackage: "@canonical/pragma-cli",
     folderName: "scaffold-story",
     frontmatter: {
       name: "scaffold-story",
@@ -40,8 +40,8 @@ const MOCK_SOURCES: readonly SkillSource[] = [
     available: false,
   },
   {
-    path: "node_modules/@canonical/pragma/skills",
-    packageName: "@canonical/pragma",
+    path: "/tmp/node_modules/@canonical/pragma-cli/skills",
+    packageName: "@canonical/pragma-cli",
     available: true,
   },
 ];
@@ -55,7 +55,7 @@ describe("skill list formatters", () => {
         detailed: false,
       });
       expect(output).toContain("@canonical/ds-global");
-      expect(output).toContain("@canonical/pragma");
+      expect(output).toContain("@canonical/pragma-cli");
       expect(output).toContain("design-audit");
       expect(output).toContain("scaffold-story");
     });

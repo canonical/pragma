@@ -138,11 +138,11 @@ describe("writeConfig", () => {
     expect(config.channel).toBe("prerelease");
   });
 
-  it("writes empty file when all fields removed", () => {
+  it("writes valid empty JSON when all fields removed", () => {
     writeFileSync(join(dir, "pragma.config.json"), '{"tier":"apps"}');
     writeConfig(dir, { tier: undefined });
     const raw = readFileSync(join(dir, "pragma.config.json"), "utf-8");
-    expect(raw).toBe("");
+    expect(raw).toBe("{}\n");
   });
 
   it("throws on unparseable existing config instead of silently overwriting", () => {

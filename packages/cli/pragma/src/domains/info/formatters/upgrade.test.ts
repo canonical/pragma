@@ -11,7 +11,7 @@ function createUpgradeData(overrides: Partial<UpgradeData> = {}): UpgradeData {
     pm: "bun",
     current: "0.18.0",
     latest: "0.19.0",
-    command: "bun update -g @canonical/pragma",
+    command: "bun update -g @canonical/pragma-cli",
     dryRun: false,
     alreadyLatest: false,
     offline: false,
@@ -61,20 +61,20 @@ describe("renderUpgradePlain", () => {
     const output = renderUpgradePlain(
       createUpgradeData({
         pm: "npm",
-        command: "npm update -g @canonical/pragma",
+        command: "npm update -g @canonical/pragma-cli",
       }),
     );
-    expect(output).toContain("npm update -g @canonical/pragma");
+    expect(output).toContain("npm update -g @canonical/pragma-cli");
   });
 
   it("uses yarn command for yarn PM", () => {
     const output = renderUpgradePlain(
       createUpgradeData({
         pm: "yarn",
-        command: "yarn global upgrade @canonical/pragma",
+        command: "yarn global upgrade @canonical/pragma-cli",
       }),
     );
-    expect(output).toContain("yarn global upgrade @canonical/pragma");
+    expect(output).toContain("yarn global upgrade @canonical/pragma-cli");
   });
 });
 

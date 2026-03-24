@@ -41,6 +41,11 @@ export const PACKAGES: readonly PackageDefinition[] = [
     ttl: ["definitions/**/*.ttl", "data/**/*.ttl"],
     skills: "skills",
   },
+  {
+    pkg: "@canonical/pragma-cli",
+    ttl: [],
+    skills: "skills",
+  },
 ];
 
 export interface ResolvedPackage {

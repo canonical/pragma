@@ -21,18 +21,25 @@ vi.mock("node:child_process", () => ({
   execSync: vi.fn(),
 }));
 
-vi.mock("#config", () => ({
+vi.mock("#config", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("#config")>()),
   readConfig: readConfigMock,
 }));
 
-vi.mock("#package-manager", () => ({
-  detectPackageManager: detectPackageManagerMock,
-  PM_COMMANDS: {
-    bun: {
-      update: (pkg: string) => `bun update ${pkg}`,
+vi.mock("#package-manager", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("#package-manager")>();
+  return {
+    ...actual,
+    detectPackageManager: detectPackageManagerMock,
+    PM_COMMANDS: {
+      ...actual.PM_COMMANDS,
+      bun: {
+        ...actual.PM_COMMANDS.bun,
+        update: (pkg: string) => `bun update ${pkg}`,
+      },
     },
-  },
-}));
+  };
+});
 
 vi.mock("../formatters/index.js", () => ({
   renderUpgradeJson: renderUpgradeJsonMock,
@@ -142,7 +149,7 @@ describe("upgradeCommand", () => {
       { cwd: "/workspace", globalFlags: { llm: false, format: "text" } },
     );
 
-    expect(execSync).toHaveBeenCalledWith("bun update @canonical/pragma", {
+    expect(execSync).toHaveBeenCalledWith("bun update @canonical/pragma-cli", {
       stdio: "inherit",
     });
     expect(result.tag).toBe("output");
@@ -159,7 +166,10 @@ describe("upgradeCommand", () => {
       latest: "9.9.9",
       distTag: "latest",
     });
-    vi.mocked(execSync).mockImplementation(() => {
+    const execSyncMock = execSync as unknown as {
+      mockImplementation: (fn: () => never) => unknown;
+    };
+    execSyncMock.mockImplementation(() => {
       throw new Error("permission denied");
     });
 

@@ -26,7 +26,7 @@ function renderUpgradePlain(data: UpgradeData): string {
 
   lines.push("");
   lines.push(
-    `@canonical/pragma  ${data.current} → ${chalk.green(data.latest)}`,
+    `@canonical/pragma-cli  ${data.current} → ${chalk.green(data.latest)}`,
   );
   lines.push("");
 

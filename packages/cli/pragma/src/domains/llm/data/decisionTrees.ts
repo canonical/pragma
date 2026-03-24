@@ -11,7 +11,6 @@ export const DECISION_TREES: readonly DecisionTree[] = [
     intent: "Build a block",
     tree: `? Know name?
   yes → block lookup <name> --detailed  [~500]
-        → block lookup <name> --standards [~300] Σ800
   no  → block list [~200] → pick → lookup`,
   },
   {
@@ -19,8 +18,8 @@ export const DECISION_TREES: readonly DecisionTree[] = [
     tree: `? Know standard?
   yes → standard lookup <name> --detailed [~400]
   no  → ? Know block?
-        yes → block lookup <name> --standards [~300]
-              → standard lookup <std> --detailed [~400] Σ700
+      yes → block lookup <name> --detailed [~500]
+        → inspect related guidance manually Σ500
         no  → standard list --category <cat> [~100]
               → standard lookup <std> --detailed [~400] Σ500`,
   },

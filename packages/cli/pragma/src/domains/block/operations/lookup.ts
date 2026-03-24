@@ -26,6 +26,19 @@ import type {
   TokenRef,
 } from "../../shared/types.js";
 
+function normalizeBlockType(value: string | undefined): BlockDetailed["type"] {
+  const localName = extractLocalName(value ?? "").toLowerCase();
+
+  switch (localName) {
+    case "pattern":
+    case "layout":
+    case "subcomponent":
+      return localName;
+    default:
+      return "component";
+  }
+}
+
 export default async function lookupBlock(
   store: Store,
   name: string,
@@ -37,9 +50,10 @@ export default async function lookupBlock(
   // Base query: find the block
   const baseResult = await store.query(
     buildQuery(`
-      SELECT ?component ?tier
+      SELECT ?component ?type ?tier
       WHERE {
-        ?component a ${P.ds}Component ;
+        VALUES ?type { ${P.ds}Component ${P.ds}Pattern ${P.ds}Layout ${P.ds}Subcomponent }
+        ?component a ?type ;
                    ${P.ds}name ${escaped} ;
                    ${P.ds}tier ?tier .
         ${filterClauses}
@@ -160,16 +174,27 @@ export default async function lookupBlock(
   return {
     uri: (componentUri ?? "") as URI,
     name,
+    type: normalizeBlockType(base.type),
     tier: extractLocalName(base.tier ?? ""),
     modifiers: [...modifierMap.keys()],
     implementations,
+    summary: null,
     nodeCount,
     tokenCount: tokens.length,
+    whenToUse: null,
+    whenNotToUse: null,
+    guidelines: null,
+    anatomyDsl: null,
+    anatomyClassic: null,
+    figmaLink: null,
     anatomy: null,
     modifierValues: [...modifierMap.entries()].map(([family, values]) => ({
       family,
       values,
     })),
+    modifierFamilies: [],
+    properties: [],
+    subcomponents: [],
     implementationPaths,
     tokens,
     standards,

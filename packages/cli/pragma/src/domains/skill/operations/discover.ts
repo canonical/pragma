@@ -56,7 +56,7 @@ export default async function discoverSkills(
       skills.push({
         name: frontmatter.name,
         description: frontmatter.description,
-        sourcePath: `${source.relativePath}/${entry}`,
+        sourcePath: entryPath,
         sourcePackage: source.packageName,
         folderName: entry,
         frontmatter,
