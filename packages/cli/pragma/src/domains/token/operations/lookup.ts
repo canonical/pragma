@@ -27,8 +27,8 @@ export default async function lookupToken(
     buildQuery(`
       SELECT ?token ?typeName ?valueLight ?valueDark
       WHERE {
-        ?token a ${P.ds}Token ;
-               ${P.ds}tokenId ${escaped} .
+        ?token a ${P.ds}Token .
+        FILTER(STRENDS(STR(?token), ${escaped}))
         OPTIONAL {
           ?token ${P.ds}tokenType ?type .
           ?type ${P.rdfs}label ?typeName .

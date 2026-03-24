@@ -18,11 +18,9 @@ export const DECISION_TREES: readonly DecisionTree[] = [
     intent: "Audit standards",
     tree: `? Know standard?
   yes → standard lookup <name> --detailed [~400]
-  no  → ? Know block?
-        yes → block lookup <name> --standards [~300]
-              → standard lookup <std> --detailed [~400] Σ700
-        no  → standard list --category <cat> [~100]
-              → standard lookup <std> --detailed [~400] Σ500`,
+  no  → standard categories [~80] → pick category
+        → standard list --category <cat> [~100] → pick standard
+        → standard lookup <std> --detailed [~400] Σ580`,
   },
   {
     intent: "Find a token",

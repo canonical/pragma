@@ -1,3 +1,12 @@
+/**
+ * Orchestrate all environment health checks for `pragma doctor`.
+ *
+ * Runs checks in parallel via Promise.allSettled and collects
+ * results into a DoctorData summary (order is stable).
+ *
+ * @note Impure — delegates to individual check functions.
+ */
+
 import {
   checkConfigFile,
   checkKeStore,
@@ -10,27 +19,24 @@ import {
 } from "./checks/index.js";
 import type { CheckContext, CheckResult, DoctorData } from "./types.js";
 
-/**
- * Orchestrate all environment health checks sequentially and return
- * a DoctorData summary with pass/fail/skip counts.
- *
- * @param ctx - Check context containing the working directory.
- * @returns Aggregated check results.
- * @note Impure
- */
 export default async function runChecks(
   ctx: CheckContext,
 ): Promise<DoctorData> {
-  const checks: CheckResult[] = [];
+  const settled = await Promise.allSettled([
+    checkNodeVersion(),
+    checkPragmaVersion(),
+    checkConfigFile(ctx),
+    checkKeStore(ctx),
+    checkShellCompletions(),
+    checkTerrazzo(ctx),
+    checkMcpConfigured(ctx),
+    checkSkillsSymlinked(ctx),
+  ]);
 
-  checks.push(await checkNodeVersion());
-  checks.push(await checkPragmaVersion());
-  checks.push(await checkConfigFile(ctx));
-  checks.push(await checkKeStore(ctx));
-  checks.push(await checkShellCompletions());
-  checks.push(await checkTerrazzo(ctx));
-  checks.push(await checkMcpConfigured(ctx));
-  checks.push(await checkSkillsSymlinked(ctx));
+  const checks: CheckResult[] = settled.map((s) => {
+    if (s.status === "fulfilled") return s.value;
+    return { name: "unknown", status: "fail" as const, message: String(s.reason) };
+  });
 
   const passed = checks.filter((c) => c.status === "pass").length;
   const failed = checks.filter((c) => c.status === "fail").length;

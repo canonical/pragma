@@ -191,7 +191,7 @@ const specs: readonly ToolSpec[] = [
     async execute(rt, { names }) {
       const filters = buildFilterConfig(rt);
       const results: BlockDetailed[] = [];
-      const errors: { name: string; code: string; message: string }[] = [];
+      const errors: { name: string; code: string; message: string; recovery?: { tool: string } }[] = [];
 
       await Promise.all(
         (names as string[]).map(async (name) => {
@@ -199,7 +199,7 @@ const specs: readonly ToolSpec[] = [
             results.push(await lookupBlock(rt.store, name, filters));
           } catch (err) {
             if (err instanceof PragmaError) {
-              errors.push({ name, code: err.code, message: err.message });
+              errors.push({ name, code: err.code, message: err.message, recovery: { tool: "block_list" } });
             } else {
               throw err;
             }

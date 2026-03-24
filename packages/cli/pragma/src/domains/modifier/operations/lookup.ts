@@ -25,8 +25,8 @@ export default async function lookupModifier(
     buildQuery(`
       SELECT ?family (GROUP_CONCAT(DISTINCT ?valueName; separator="|") AS ?values)
       WHERE {
-        ?family a ${P.ds}ModifierFamily ;
-                ${P.ds}name ${escaped} .
+        ?family a ${P.ds}ModifierFamily .
+        FILTER(STRENDS(STR(?family), ${escaped}))
         OPTIONAL {
           ?mod a ${P.ds}Modifier ;
                ${P.ds}modifierFamily ?family ;

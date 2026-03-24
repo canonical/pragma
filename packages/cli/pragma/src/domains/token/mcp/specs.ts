@@ -104,7 +104,7 @@ const specs: readonly ToolSpec[] = [
     readOnly: true,
     async execute(rt, { names }) {
       const results: TokenDetailed[] = [];
-      const errors: { name: string; code: string; message: string }[] = [];
+      const errors: { name: string; code: string; message: string; recovery?: { tool: string } }[] = [];
 
       await Promise.all(
         (names as string[]).map(async (name) => {
@@ -112,7 +112,7 @@ const specs: readonly ToolSpec[] = [
             results.push(await lookupToken(rt.store, name));
           } catch (err) {
             if (err instanceof PragmaError) {
-              errors.push({ name, code: err.code, message: err.message });
+              errors.push({ name, code: err.code, message: err.message, recovery: { tool: "token_list" } });
             } else {
               throw err;
             }
