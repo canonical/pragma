@@ -29,8 +29,8 @@ export default async function lookupStandard(
       SELECT ?standard ?categoryName ?description
       WHERE {
         ?standard a ${P.cs}CodeStandard ;
-                  ${P.cs}name ${escaped} ;
                   ${P.cs}description ?description .
+        FILTER(STRENDS(STR(?standard), ${escaped}))
         OPTIONAL {
           ?standard ${P.cs}hasCategory ?cat .
           ?cat ${P.cs}slug ?categoryName .
