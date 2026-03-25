@@ -11,7 +11,7 @@
       "import": "./dist/index.js",
       "svelte": "./dist/index.js"
     },
-    "./styles.css": "./src/lib/index.css"
+    "./styles.css": "./dist/index.css"
   },
   "files": [
     "dist"
