@@ -51,6 +51,20 @@ describe("lookupBlock", () => {
   it("populates nodeCount from anatomy nodes", async () => {
     const result = await lookupBlock(store, "Button", noFilter);
     expect(result.nodeCount).toBe(3);
+    expect(result.anatomy?.root.name).toBe("button");
+  });
+
+  it("returns enriched summary, properties, and subcomponents", async () => {
+    const result = await lookupBlock(store, "Button", noFilter);
+    expect(result.summary).toContain("Primary action trigger");
+    expect(result.whenToUse).toContain("high-priority actions");
+    expect(result.properties.map((property) => property.name)).toEqual(
+      expect.arrayContaining(["disabled", "loading"]),
+    );
+    expect(result.subcomponents[0]?.name).toBe("Button Icon");
+    expect(result.modifierFamilies.map((family) => family.name)).toEqual(
+      expect.arrayContaining(["importance", "density"]),
+    );
   });
 
   it("throws PragmaError.notFound for unknown block", async () => {
@@ -70,5 +84,25 @@ describe("lookupBlock", () => {
     await expect(
       lookupBlock(store, "Beta Widget", normalChannel),
     ).rejects.toThrow(PragmaError);
+  });
+
+  it("resolves prefixed IRIs", async () => {
+    const result = await lookupBlock(
+      store,
+      "ds:global.component.button",
+      noFilter,
+    );
+    expect(result.name).toBe("Button");
+    expect(result.uri).toBe("https://ds.canonical.com/global.component.button");
+  });
+
+  it("resolves full IRIs", async () => {
+    const result = await lookupBlock(
+      store,
+      "https://ds.canonical.com/global.component.button",
+      noFilter,
+    );
+    expect(result.name).toBe("Button");
+    expect(result.uri).toBe("https://ds.canonical.com/global.component.button");
   });
 });

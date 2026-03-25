@@ -38,4 +38,21 @@ describe("lookupStandard", () => {
       expect((e as PragmaError).code).toBe("ENTITY_NOT_FOUND");
     }
   });
+
+  it("resolves prefixed IRIs and compacts extends", async () => {
+    const result = await lookupStandard(store, "cs:react_props");
+    expect(result.name).toBe("react/component/props");
+    expect(result.extends).toBe("cs:react_folder");
+  });
+
+  it("resolves full IRIs", async () => {
+    const result = await lookupStandard(
+      store,
+      "http://pragma.canonical.com/codestandards#react_props",
+    );
+    expect(result.name).toBe("react/component/props");
+    expect(result.uri).toBe(
+      "http://pragma.canonical.com/codestandards#react_props",
+    );
+  });
 });

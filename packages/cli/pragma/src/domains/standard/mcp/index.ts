@@ -1,2 +1,2 @@
-/** @module Standard domain MCP barrel — standard_list, standard_lookup, standard_categories, standard_batch_lookup. */
+/** @module Standard domain MCP barrel — standard_list, standard_lookup, standard_categories. */
 export { default as specs } from "./specs.js";

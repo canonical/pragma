@@ -59,6 +59,11 @@ export function extractParams(
   for (let i = 0; i < positionals.length && i < args.length; i++) {
     const param = positionals[i];
     if (param) {
+      const isLastPositional = i === positionals.length - 1;
+      if (param.type === "multiselect" && isLastPositional) {
+        result[param.name] = args.slice(i);
+        break;
+      }
       result[param.name] = args[i];
     }
   }
@@ -135,9 +140,7 @@ function attachCommand(
   if (!name) return;
 
   const positionals = cmd.parameters.filter((p) => p.positional);
-  const positionalSuffix = positionals
-    .map((p) => (p.required ? `<${p.name}>` : `[${p.name}]`))
-    .join(" ");
+  const positionalSuffix = positionals.map(formatPositionalParam).join(" ");
 
   const fullName = positionalSuffix ? `${name} ${positionalSuffix}` : name;
   const sub = parent.command(fullName).description(cmd.description);
@@ -174,6 +177,10 @@ function attachCommand(
     for (const arg of actionArgs) {
       if (typeof arg === "string") {
         positionalArgs.push(arg);
+      } else if (Array.isArray(arg)) {
+        positionalArgs.push(
+          ...arg.filter((value): value is string => typeof value === "string"),
+        );
       } else if (arg instanceof Command) {
         // skip the Command object
       } else if (typeof arg === "object" && arg !== null) {
@@ -212,6 +219,15 @@ function handleResult(result: CommandResult): void {
 
 function findSubcommand(parent: Command, name: string): Command | undefined {
   return parent.commands.find((c) => c.name() === name);
+}
+
+function formatPositionalParam(param: ParameterDefinition): string {
+  const isVariadic = param.type === "multiselect";
+  const suffix = isVariadic ? "..." : "";
+
+  return param.required
+    ? `<${param.name}${suffix}>`
+    : `[${param.name}${suffix}]`;
 }
 
 function findRootProgram(cmd: Command): Command {

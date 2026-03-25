@@ -984,7 +984,7 @@
       "name": "@canonical/styles",
       "version": "0.18.0",
       "dependencies": {
-        "@canonical/design-tokens": "^0.5.0",
+        "@canonical/design-tokens": "^0.5.2",
         "@canonical/styles-typography": "^0.18.0",
         "normalize.css": "^8.0.1",
       },
@@ -1000,7 +1000,7 @@
         "extract-font-data": "./src/scripts/extractFontData.ts",
       },
       "dependencies": {
-        "@canonical/design-tokens": "^0.5.0",
+        "@canonical/design-tokens": "^0.5.2",
         "opentype.js": "^1.3.4",
       },
       "devDependencies": {
@@ -1278,7 +1278,7 @@
 
     "@canonical/design-system": ["@canonical/design-system@0.1.2", "", { "dependencies": { "ajv": "^8.17.1", "jsonld": "^9.0.0", "n3": "^2.0.1" }, "bin": { "collect-implementations": "src/collect-implementations.ts" } }, "sha512-uLfk3ul9dkk+4wV54uo1RqDU/++9lir+fBn0lCfwb+U+eZ97tg1yuQCiHaiMWTewW6nXNO82t7mgkMKf9h33nQ=="],
 
-    "@canonical/design-tokens": ["@canonical/design-tokens@0.5.0", "", { "dependencies": { "@canonical/terrazzo-lsp": "^0.5.0" }, "bin": { "terrazzo-lsp": "bin/terrazzo-lsp.mjs" } }, "sha512-VqedUFE1TOtW4nyCtWwDemFv1hzVfgLCdarr25oAxGAXQluJyUlQwx1Zf9t/0dRIk8dB1pR8JgMh/DLaT14DJg=="],
+    "@canonical/design-tokens": ["@canonical/design-tokens@0.5.2", "", { "dependencies": { "@canonical/terrazzo-lsp": "^0.5.2" }, "bin": { "terrazzo-lsp": "bin/terrazzo-lsp.mjs" } }, "sha512-yXhwQobtRSuROrnvnYLsf2sKvVaBXemjM5e3ei0Qe9cTN+DE80ftiNTzdrduI3Mq8aDj1AIfEXiP/qOznI+EBA=="],
 
     "@canonical/ds-assets": ["@canonical/ds-assets@workspace:packages/ds-assets"],
 
@@ -1372,9 +1372,9 @@
 
     "@canonical/task": ["@canonical/task@workspace:packages/runtime/task"],
 
-    "@canonical/terrazzo-lsp": ["@canonical/terrazzo-lsp@0.5.0", "", { "dependencies": { "@canonical/token-types": "^0.5.0", "@lezer/common": "^1.3.0", "@lezer/css": "^1.3.0", "colorjs.io": "^0.6.1" }, "bin": { "terrazzo-lsp": "dist/esm/cli.js" } }, "sha512-25JJOYzEWcbU5D4u89RBmt0a5G/qM3ZnAqEBcPE+T8r2ACepQEqiRNr/WMvT1zuWoIMqjJawfvg90GKVur4QbA=="],
+    "@canonical/terrazzo-lsp": ["@canonical/terrazzo-lsp@0.5.2", "", { "dependencies": { "@canonical/token-types": "^0.5.2", "@lezer/common": "^1.3.0", "@lezer/css": "^1.3.0", "colorjs.io": "^0.6.1" }, "bin": { "terrazzo-lsp": "dist/esm/cli.js" } }, "sha512-VSry6Fnk+sKPMJzCVQP4B/vm/MKS8vs1B0oQZeGsp/PebNKV9RNUxITpOHEsqF/J3IX+M5r63ASRdacK7PF5tA=="],
 
-    "@canonical/token-types": ["@canonical/token-types@0.5.0", "", {}, "sha512-Cdf6Ja3l6pcIebaoeNPeVbPhrlz3IyVIYRIGd7JYAK3rv6TNY/lb0Jmv6ezoCf2codee4XTPYBKWzY6QlaidDQ=="],
+    "@canonical/token-types": ["@canonical/token-types@0.5.2", "", {}, "sha512-KnjCcnGmGWNWbwvN9tffnZr2AtH+E1+0lNtb9VCqyW9bnpAYHL2udY+ot4Iwc7fnddhOWJ4ozINMjqLEH+A00w=="],
 
     "@canonical/tokens": ["@canonical/tokens@0.10.0-experimental.4", "", { "dependencies": { "style-dictionary": "^4.3.3" } }, "sha512-RKMMpMbMk0yj1CQc9ZJOYV8go6GJiLkp3UVS1bZAY6Q+Ph7M63AfT7262xv68Xjm/Y++1TYmj8GGyu01XiERFQ=="],
 

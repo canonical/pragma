@@ -51,7 +51,7 @@ describe("capabilities", () => {
     };
     expect(data.tools).toContain("block_list");
     expect(data.tools).toContain("capabilities");
-    expect(data.counts.total).toBe(29);
+    expect(data.counts.total).toBe(25);
   });
 });
 
@@ -104,25 +104,43 @@ describe("block_lookup", () => {
   it("returns detailed block", async () => {
     const res = await client.callTool({
       name: "block_lookup",
-      arguments: { name: "Button" },
+      arguments: { names: ["Button"] },
     });
     const body = parseEnvelope(res);
     expect(body.ok).toBe(true);
-    const data = body.data as Record<string, unknown>;
-    expect(data.name).toBe("Button");
-    expect(data).toHaveProperty("modifierValues");
+    const data = body.data as { results: Record<string, unknown>[] };
+    expect(data.results[0]?.name).toBe("Button");
+    expect(data.results[0]).toHaveProperty("modifierValues");
   });
 
-  it("returns structured error for unknown block", async () => {
+  it("resolves block lookup by prefixed IRI", async () => {
     const res = await client.callTool({
       name: "block_lookup",
-      arguments: { name: "Nonexistent" },
+      arguments: { names: ["ds:global.component.button"] },
     });
     const body = parseEnvelope(res);
-    expect(body.ok).toBe(false);
-    const error = body.error as Record<string, unknown>;
-    expect(error.code).toBe("ENTITY_NOT_FOUND");
-    expect(error.recovery).toBeDefined();
+    expect(body.ok).toBe(true);
+    const data = body.data as { results: { name: string; uri: string }[] };
+    expect(data.results[0]?.name).toBe("Button");
+    expect(data.results[0]?.uri).toBe(
+      "https://ds.canonical.com/global.component.button",
+    );
+  });
+
+  it("returns structured per-query errors for unknown blocks", async () => {
+    const res = await client.callTool({
+      name: "block_lookup",
+      arguments: { names: ["Nonexistent"] },
+    });
+    const body = parseEnvelope(res);
+    expect(body.ok).toBe(true);
+    const data = body.data as {
+      results: unknown[];
+      errors: { code: string; query: string }[];
+    };
+    expect(data.results).toHaveLength(0);
+    expect(data.errors[0]?.code).toBe("ENTITY_NOT_FOUND");
+    expect(data.errors[0]?.query).toBe("Nonexistent");
   });
 });
 
@@ -146,13 +164,27 @@ describe("standard_lookup", () => {
   it("returns detailed standard with dos/donts", async () => {
     const res = await client.callTool({
       name: "standard_lookup",
-      arguments: { name: "react/component/folder-structure" },
+      arguments: { names: ["react/component/folder-structure"] },
     });
     const body = parseEnvelope(res);
     expect(body.ok).toBe(true);
-    const data = body.data as Record<string, unknown>;
-    expect(data).toHaveProperty("dos");
-    expect(data).toHaveProperty("donts");
+    const data = body.data as { results: Record<string, unknown>[] };
+    expect(data.results[0]).toHaveProperty("dos");
+    expect(data.results[0]).toHaveProperty("donts");
+  });
+
+  it("resolves standard lookup by prefixed IRI", async () => {
+    const res = await client.callTool({
+      name: "standard_lookup",
+      arguments: { names: ["cs:react_props"] },
+    });
+    const body = parseEnvelope(res);
+    expect(body.ok).toBe(true);
+    const data = body.data as {
+      results: { name: string; extends?: string }[];
+    };
+    expect(data.results[0]?.name).toBe("react/component/props");
+    expect(data.results[0]?.extends).toBe("cs:react_folder");
   });
 });
 
@@ -189,12 +221,12 @@ describe("modifier_lookup", () => {
   it("returns modifier with values", async () => {
     const res = await client.callTool({
       name: "modifier_lookup",
-      arguments: { name: "importance" },
+      arguments: { names: ["importance"] },
     });
     const body = parseEnvelope(res);
     expect(body.ok).toBe(true);
-    const data = body.data as { values: string[] };
-    expect(data.values).toContain("primary");
+    const data = body.data as { results: { values: string[] }[] };
+    expect(data.results[0]?.values).toContain("primary");
   });
 });
 
@@ -218,13 +250,15 @@ describe("token_lookup", () => {
   it("returns token with values", async () => {
     const res = await client.callTool({
       name: "token_lookup",
-      arguments: { name: "color.primary" },
+      arguments: { names: ["color.primary"] },
     });
     const body = parseEnvelope(res);
     expect(body.ok).toBe(true);
-    const data = body.data as { name: string; values: unknown[] };
-    expect(data.name).toBe("color.primary");
-    expect(data.values.length).toBeGreaterThan(0);
+    const data = body.data as {
+      results: { name: string; values: unknown[] }[];
+    };
+    expect(data.results[0]?.name).toBe("color.primary");
+    expect((data.results[0]?.values ?? []).length).toBeGreaterThan(0);
   });
 });
 
@@ -453,29 +487,29 @@ describe("disclosure", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Batch lookup
+// Multi-lookup
 // ---------------------------------------------------------------------------
 
-describe("batch lookup", () => {
-  it("block_batch_lookup returns results and errors", async () => {
+describe("multi lookup", () => {
+  it("block_lookup returns results and errors for mixed queries", async () => {
     const res = await client.callTool({
-      name: "block_batch_lookup",
+      name: "block_lookup",
       arguments: { names: ["Button", "Nonexistent"] },
     });
     const body = parseEnvelope(res);
     expect(body.ok).toBe(true);
     const data = body.data as {
       results: { name: string }[];
-      errors: { name: string; code: string }[];
+      errors: { query: string; code: string }[];
     };
     expect(data.results.length).toBe(1);
     expect(data.results[0]?.name).toBe("Button");
     expect(data.errors.length).toBe(1);
-    expect(data.errors[0]?.name).toBe("Nonexistent");
+    expect(data.errors[0]?.query).toBe("Nonexistent");
     expect(data.errors[0]?.code).toBe("ENTITY_NOT_FOUND");
   });
 
-  it("standard_batch_lookup returns results", async () => {
+  it("standard_lookup returns results for mixed queries", async () => {
     const listRes = await client.callTool({
       name: "standard_list",
       arguments: {},
@@ -485,14 +519,14 @@ describe("batch lookup", () => {
     const firstName = standards[0]?.name;
 
     const res = await client.callTool({
-      name: "standard_batch_lookup",
+      name: "standard_lookup",
       arguments: { names: [firstName, "nonexistent/standard"] },
     });
     const body = parseEnvelope(res);
     expect(body.ok).toBe(true);
     const data = body.data as {
       results: unknown[];
-      errors: { name: string }[];
+      errors: { query: string }[];
     };
     expect(data.results.length).toBe(1);
     expect(data.errors.length).toBe(1);
@@ -504,17 +538,17 @@ describe("batch lookup", () => {
 // ---------------------------------------------------------------------------
 
 describe("structured recovery", () => {
-  it("block_lookup error includes mcp recovery", async () => {
+  it("list tools remain the recovery target for lookup misses", async () => {
     const res = await client.callTool({
-      name: "block_lookup",
-      arguments: { name: "Nonexistent" },
+      name: "config_channel",
+      arguments: { value: "invalid" },
     });
     const body = parseEnvelope(res);
     expect(body.ok).toBe(false);
     const error = body.error as {
       recovery?: { tool: string };
     };
-    expect(error.recovery?.tool).toBe("block_list");
+    expect(error.recovery?.tool).toBe("config_channel");
   });
 });
 

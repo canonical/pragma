@@ -18,8 +18,8 @@ afterAll(() => cleanup());
 
 describe("inspectUri", () => {
   it("returns grouped triples for a known URI", async () => {
-    const result = await inspectUri(store, `${P.ds}button`);
-    expect(result.uri).toBe(`${PREFIX_MAP.ds}button`);
+    const result = await inspectUri(store, `${P.ds}global.component.button`);
+    expect(result.uri).toBe(`${PREFIX_MAP.ds}global.component.button`);
     expect(result.groups.length).toBeGreaterThan(0);
 
     const predicates = result.groups.map((g) => g.predicate);
@@ -29,18 +29,21 @@ describe("inspectUri", () => {
   });
 
   it("resolves prefixed URIs", async () => {
-    const result = await inspectUri(store, `${P.ds}button`);
-    expect(result.uri).toBe(`${PREFIX_MAP.ds}button`);
+    const result = await inspectUri(store, `${P.ds}global.component.button`);
+    expect(result.uri).toBe(`${PREFIX_MAP.ds}global.component.button`);
   });
 
   it("accepts full URIs", async () => {
-    const result = await inspectUri(store, `${PREFIX_MAP.ds}button`);
-    expect(result.uri).toBe(`${PREFIX_MAP.ds}button`);
+    const result = await inspectUri(
+      store,
+      `${PREFIX_MAP.ds}global.component.button`,
+    );
+    expect(result.uri).toBe(`${PREFIX_MAP.ds}global.component.button`);
     expect(result.groups.length).toBeGreaterThan(0);
   });
 
   it("groups objects by predicate", async () => {
-    const result = await inspectUri(store, `${P.ds}button`);
+    const result = await inspectUri(store, `${P.ds}global.component.button`);
     const modifierGroup = result.groups.find((g) =>
       g.predicate.includes("modifier"),
     );

@@ -37,6 +37,10 @@ const formatters: Formatters<BlockLookupInput> = {
     lines.push(`- URI: ${component.uri}`);
     lines.push(`- Tier: ${component.tier}`);
 
+    if (component.summary) {
+      lines.push(`- Summary: ${component.summary}`);
+    }
+
     if (component.modifiers.length > 0) {
       lines.push(`- Modifiers: ${component.modifiers.join(", ")}`);
     }
@@ -53,11 +57,53 @@ const formatters: Formatters<BlockLookupInput> = {
 
     if (!detailed) return lines.join("\n");
 
+    if (component.whenToUse) {
+      lines.push("");
+      lines.push("### When to use");
+      lines.push(component.whenToUse);
+    }
+
+    if (component.whenNotToUse) {
+      lines.push("");
+      lines.push("### When not to use");
+      lines.push(component.whenNotToUse);
+    }
+
+    if (component.guidelines) {
+      lines.push("");
+      lines.push("### Guidelines");
+      lines.push(component.guidelines);
+    }
+
     if (aspects.modifiers && component.modifierValues.length > 0) {
       lines.push("");
       lines.push("### Modifiers");
       for (const m of component.modifierValues) {
         lines.push(`- **${m.family}**: ${m.values.join(", ")}`);
+      }
+    }
+
+    if (component.properties.length > 0) {
+      lines.push("");
+      lines.push("### Properties");
+      for (const property of component.properties) {
+        const bits = [property.propertyType || "unknown"];
+        bits.push(property.optional ? "optional" : "required");
+        if (property.defaultValue) {
+          bits.push(`default=${property.defaultValue}`);
+        }
+        if (property.constraints) {
+          bits.push(property.constraints);
+        }
+        lines.push(`- **${property.name}**: ${bits.join("; ")}`);
+      }
+    }
+
+    if (component.subcomponents.length > 0) {
+      lines.push("");
+      lines.push("### Subcomponents");
+      for (const subcomponent of component.subcomponents) {
+        lines.push(`- ${subcomponent.name} (${subcomponent.uri})`);
       }
     }
 
@@ -81,6 +127,10 @@ const formatters: Formatters<BlockLookupInput> = {
       lines.push("");
       lines.push("### Anatomy");
       lines.push(formatAnatomyTreeLlm(component.anatomy.root, 0));
+    } else if (aspects.anatomy && component.anatomyDsl) {
+      lines.push("");
+      lines.push("### Anatomy DSL");
+      lines.push(component.anatomyDsl);
     }
 
     return lines.join("\n");
@@ -92,6 +142,7 @@ const formatters: Formatters<BlockLookupInput> = {
         {
           uri: component.uri,
           name: component.name,
+          summary: component.summary,
           tier: component.tier,
           modifiers: component.modifiers,
           implementations: component.implementations,
@@ -103,21 +154,23 @@ const formatters: Formatters<BlockLookupInput> = {
       );
     }
 
-    const result: Record<string, unknown> = {
-      uri: component.uri,
-      name: component.name,
-      tier: component.tier,
-      modifiers: component.modifiers,
-      implementations: component.implementations,
-      nodeCount: component.nodeCount,
-      tokenCount: component.tokenCount,
-    };
+    const result: Record<string, unknown> = { ...component };
 
-    if (aspects.modifiers) result.modifierValues = component.modifierValues;
-    if (aspects.implementations)
-      result.implementationPaths = component.implementationPaths;
-    if (aspects.tokens) result.tokens = component.tokens;
-    if (aspects.anatomy) result.anatomy = component.anatomy;
+    if (!aspects.modifiers) {
+      delete result.modifierValues;
+      delete result.modifierFamilies;
+    }
+    if (!aspects.implementations) {
+      delete result.implementationPaths;
+    }
+    if (!aspects.tokens) {
+      delete result.tokens;
+    }
+    if (!aspects.anatomy) {
+      delete result.anatomy;
+      delete result.anatomyDsl;
+      delete result.anatomyClassic;
+    }
 
     return JSON.stringify(result, null, 2);
   },
@@ -136,6 +189,10 @@ function formatSummary(component: BlockDetailed): string {
   lines.push("");
   lines.push(formatField("URI:", component.uri));
   lines.push(formatField("Tier:", component.tier));
+
+  if (component.summary) {
+    lines.push(formatField("Summary:", component.summary));
+  }
 
   if (component.modifiers.length > 0) {
     lines.push(formatField("Modifiers:", component.modifiers.join(", ")));
@@ -164,8 +221,26 @@ function formatDetailed(
   lines.push("");
   lines.push(formatField("URI:", component.uri));
   lines.push(formatField("Tier:", component.tier));
+  if (component.summary) {
+    lines.push(formatField("Summary:", component.summary));
+  }
   lines.push(formatField("Anatomy nodes:", String(component.nodeCount)));
   lines.push(formatField("Tokens:", String(component.tokenCount)));
+
+  if (component.whenToUse) {
+    lines.push("");
+    lines.push(formatSection("When to use", component.whenToUse));
+  }
+
+  if (component.whenNotToUse) {
+    lines.push("");
+    lines.push(formatSection("When not to use", component.whenNotToUse));
+  }
+
+  if (component.guidelines) {
+    lines.push("");
+    lines.push(formatSection("Guidelines", component.guidelines));
+  }
 
   if (aspects.modifiers && component.modifierValues.length > 0) {
     lines.push("");
@@ -200,11 +275,53 @@ function formatDetailed(
     );
   }
 
+  if (component.properties.length > 0) {
+    lines.push("");
+    lines.push(
+      formatSection(
+        "Properties",
+        formatList(
+          component.properties.map((property) => {
+            const parts = [
+              chalk.bold(property.name),
+              property.propertyType || "unknown",
+              property.optional ? "optional" : "required",
+            ];
+            if (property.defaultValue) {
+              parts.push(`default=${property.defaultValue}`);
+            }
+            if (property.constraints) {
+              parts.push(property.constraints);
+            }
+            return parts.join(" — ");
+          }),
+        ),
+      ),
+    );
+  }
+
+  if (component.subcomponents.length > 0) {
+    lines.push("");
+    lines.push(
+      formatSection(
+        "Subcomponents",
+        formatList(
+          component.subcomponents.map(
+            (subcomponent) => `${subcomponent.name}: ${subcomponent.uri}`,
+          ),
+        ),
+      ),
+    );
+  }
+
   if (aspects.anatomy && component.anatomy) {
     lines.push("");
     lines.push(
       formatSection("Anatomy", formatAnatomyTree(component.anatomy.root, 0)),
     );
+  } else if (aspects.anatomy && component.anatomyDsl) {
+    lines.push("");
+    lines.push(formatSection("Anatomy (DSL)", component.anatomyDsl));
   }
 
   return lines.join("\n");

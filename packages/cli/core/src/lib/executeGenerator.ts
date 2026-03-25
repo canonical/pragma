@@ -11,7 +11,6 @@ import type {
   PromptDefinition,
 } from "@canonical/summon-core";
 import { collectUndos, dryRun, runUndo } from "@canonical/task";
-import createExitResult from "./createExitResult.js";
 import createInteractiveResult from "./createInteractiveResult.js";
 import createOutputResult from "./createOutputResult.js";
 import {

@@ -77,9 +77,14 @@ describe("block parity", () => {
     const opResult = await lookupBlock(rt.store, "Button", rt.config);
     const mcpRes = await client.callTool({
       name: "block_lookup",
-      arguments: { name: "Button" },
+      arguments: { names: ["Button"] },
     });
-    assertParity(opResult, mcpRes);
+    const content = mcpRes.content as unknown[];
+    const first = content[0] as { text: string };
+    const body = JSON.parse(first.text) as {
+      data: { results: unknown[] };
+    };
+    expect(body.data.results[0]).toEqual(opResult);
   });
 });
 
@@ -131,9 +136,14 @@ describe("modifier parity", () => {
     const opResult = await lookupModifier(rt.store, "importance");
     const mcpRes = await client.callTool({
       name: "modifier_lookup",
-      arguments: { name: "importance" },
+      arguments: { names: ["importance"] },
     });
-    assertParity(opResult, mcpRes);
+    const content = mcpRes.content as unknown[];
+    const first = content[0] as { text: string };
+    const body = JSON.parse(first.text) as {
+      data: { results: unknown[] };
+    };
+    expect(body.data.results[0]).toEqual(opResult);
   });
 });
 
@@ -155,9 +165,14 @@ describe("token parity", () => {
     const opResult = await lookupToken(rt.store, "color.primary");
     const mcpRes = await client.callTool({
       name: "token_lookup",
-      arguments: { name: "color.primary" },
+      arguments: { names: ["color.primary"] },
     });
-    assertParity(opResult, mcpRes);
+    const content = mcpRes.content as unknown[];
+    const first = content[0] as { text: string };
+    const body = JSON.parse(first.text) as {
+      data: { results: unknown[] };
+    };
+    expect(body.data.results[0]).toEqual(opResult);
   });
 });
 

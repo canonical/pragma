@@ -73,21 +73,25 @@ describe("agent sessions", () => {
     const detail = parseEnvelope(
       await client.callTool({
         name: "block_lookup",
-        arguments: { name: firstName },
+        arguments: { names: [firstName] },
       }),
     );
     expect(detail.ok).toBe(true);
-    expect((detail.data as { name: string }).name).toBe(firstName);
+    expect(
+      (detail.data as { results: { name: string }[] }).results[0]?.name,
+    ).toBe(firstName);
 
-    // 5. Error recovery — bad name returns structured error
+    // 5. Multi-query lookup reports misses without failing the request
     const err = parseEnvelope(
       await client.callTool({
         name: "block_lookup",
-        arguments: { name: "XXXXX" },
+        arguments: { names: ["XXXXX"] },
       }),
     );
-    expect(err.ok).toBe(false);
-    expect((err.error as { code: string }).code).toBe("ENTITY_NOT_FOUND");
+    expect(err.ok).toBe(true);
+    expect((err.data as { errors: { code: string }[] }).errors[0]?.code).toBe(
+      "ENTITY_NOT_FOUND",
+    );
   });
 
   it("journey: audit standards", async () => {
@@ -112,11 +116,13 @@ describe("agent sessions", () => {
     const detail = parseEnvelope(
       await client.callTool({
         name: "standard_lookup",
-        arguments: { name: stdList[0]?.name },
+        arguments: { names: [stdList[0]?.name] },
       }),
     );
     expect(detail.ok).toBe(true);
-    const std = detail.data as { dos: unknown[]; donts: unknown[] };
+    const std = (
+      detail.data as { results: { dos: unknown[]; donts: unknown[] }[] }
+    ).results[0] as { dos: unknown[]; donts: unknown[] };
     expect(std.dos).toBeDefined();
     expect(std.donts).toBeDefined();
   });

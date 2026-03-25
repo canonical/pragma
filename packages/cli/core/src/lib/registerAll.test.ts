@@ -126,6 +126,20 @@ describe("registerAll", () => {
       expect(result).toEqual({ name: "Button", detailed: true });
     });
 
+    it("captures trailing positional multiselect values", () => {
+      const params: ParameterDefinition[] = [
+        {
+          name: "names",
+          description: "Component names",
+          type: "multiselect",
+          positional: true,
+        },
+      ];
+
+      const result = extractParams({}, ["Button", "Card"], params);
+      expect(result).toEqual({ names: ["Button", "Card"] });
+    });
+
     it("ignores undefined options without defaults", () => {
       const params: ParameterDefinition[] = [
         { name: "category", description: "Category", type: "string" },
@@ -326,6 +340,43 @@ describe("registerAll", () => {
       }
 
       expect(chunks.join("")).toContain("hello");
+    });
+
+    it("accepts multiple positional args for trailing multiselect params", async () => {
+      let captured: Record<string, unknown> = {};
+
+      const commands: CommandDefinition[] = [
+        {
+          path: ["token", "lookup"],
+          description: "Lookup tokens",
+          parameters: [
+            {
+              name: "names",
+              description: "Token names",
+              type: "multiselect",
+              positional: true,
+              required: true,
+            },
+          ],
+          execute: async (params) => {
+            captured = params;
+            return createExitResult(0);
+          },
+        },
+      ];
+
+      const program = new Command();
+      program.exitOverride();
+      registerAll(program, commands, testCtx);
+
+      await program.parseAsync(
+        ["token", "lookup", "color.primary", "spacing.sm"],
+        {
+          from: "user",
+        },
+      );
+
+      expect(captured).toEqual({ names: ["color.primary", "spacing.sm"] });
     });
   });
 });

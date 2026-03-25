@@ -37,7 +37,7 @@ async function executeOutput(
 }
 
 describe("graph inspect command", () => {
-  const uri = `${PREFIX_MAP.ds}button`;
+  const uri = `${PREFIX_MAP.ds}global.component.button`;
 
   it("returns inspect results", async () => {
     const ctx = makeCtx();

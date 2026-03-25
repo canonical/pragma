@@ -39,6 +39,13 @@ ds:ImplementationLibrary a owl:Class ;
 ds:ImplementationObject a owl:Class ;
   rdfs:label "Implementation Object" .
 
+ds:BlockProperty a owl:Class ;
+  rdfs:label "Block Property" .
+
+ds:Subcomponent a owl:Class ;
+  rdfs:subClassOf ds:UIBlock ;
+  rdfs:label "Subcomponent" .
+
 cs:CodeStandard a owl:Class ;
   rdfs:label "Code Standard" .
 
@@ -111,6 +118,58 @@ ds:usesToken a owl:ObjectProperty ;
 ds:anatomyNode a owl:ObjectProperty ;
   rdfs:domain ds:UIBlock .
 
+ds:summary a owl:DatatypeProperty ;
+  rdfs:domain ds:UIBlock ;
+  rdfs:range xsd:string .
+
+ds:whenToUse a owl:DatatypeProperty ;
+  rdfs:domain ds:UIBlock ;
+  rdfs:range xsd:string .
+
+ds:whenNotToUse a owl:DatatypeProperty ;
+  rdfs:domain ds:UIBlock ;
+  rdfs:range xsd:string .
+
+ds:guidelines a owl:DatatypeProperty ;
+  rdfs:domain ds:UIBlock ;
+  rdfs:range xsd:string .
+
+ds:anatomyDsl a owl:DatatypeProperty ;
+  rdfs:domain ds:UIBlock ;
+  rdfs:range xsd:string .
+
+ds:anatomyClassic a owl:DatatypeProperty ;
+  rdfs:domain ds:UIBlock ;
+  rdfs:range xsd:string .
+
+ds:figmaLink a owl:DatatypeProperty ;
+  rdfs:domain ds:UIBlock ;
+  rdfs:range xsd:string .
+
+ds:hasProperty a owl:ObjectProperty ;
+  rdfs:domain ds:UIBlock ;
+  rdfs:range ds:BlockProperty .
+
+ds:propertyType a owl:DatatypeProperty ;
+  rdfs:domain ds:BlockProperty ;
+  rdfs:range xsd:string .
+
+ds:optional a owl:DatatypeProperty ;
+  rdfs:domain ds:BlockProperty ;
+  rdfs:range xsd:boolean .
+
+ds:defaultValue a owl:DatatypeProperty ;
+  rdfs:domain ds:BlockProperty ;
+  rdfs:range xsd:string .
+
+ds:constraints a owl:DatatypeProperty ;
+  rdfs:domain ds:BlockProperty ;
+  rdfs:range xsd:string .
+
+ds:hasSubcomponent a owl:ObjectProperty ;
+  rdfs:domain ds:UIBlock ;
+  rdfs:range ds:Subcomponent .
+
 cs:name a owl:DatatypeProperty ;
   rdfs:domain cs:CodeStandard ;
   rdfs:range xsd:string .
@@ -172,37 +231,75 @@ ds:beta a ds:ReleaseChannel .
 
 @prefix ds: <https://ds.canonical.com/> .
 
-ds:button a ds:Component ;
+ds:global.component.button a ds:Component ;
   ds:name "Button" ;
   ds:tier ds:global ;
   ds:release ds:stable ;
+  ds:summary "Primary action trigger with optional icon and label." ;
+  ds:whenToUse "Use for high-priority actions in forms and flows." ;
+  ds:whenNotToUse "Avoid for low-emphasis tertiary actions." ;
+  ds:guidelines "Keep labels concise and pair icons with text when possible." ;
+  ds:anatomyDsl "root: button; children: label, icon" ;
+  ds:anatomyClassic "button > label + icon" ;
+  ds:figmaLink "https://figma.com/design/example/Button" ;
   ds:hasModifierFamily ds:modifier_family.importance ;
   ds:hasModifierFamily ds:modifier_family.density ;
   ds:usesToken ds:token.color.primary ;
-  ds:anatomyNode ds:button_node.root ;
-  ds:anatomyNode ds:button_node.label ;
-  ds:anatomyNode ds:button_node.icon .
+  ds:anatomyNode ds:global.component.button.node.root ;
+  ds:anatomyNode ds:global.component.button.node.label ;
+  ds:anatomyNode ds:global.component.button.node.icon ;
+  ds:hasProperty [
+    a ds:BlockProperty ;
+    ds:name "disabled" ;
+    ds:propertyType "boolean" ;
+    ds:optional true ;
+    ds:defaultValue "false" ;
+    ds:constraints "Disables click and keyboard activation."
+  ] , [
+    a ds:BlockProperty ;
+    ds:name "loading" ;
+    ds:propertyType "boolean" ;
+    ds:optional true ;
+    ds:defaultValue "false" ;
+    ds:constraints "Shows busy state and suppresses duplicate actions."
+  ] ;
+  ds:hasSubcomponent ds:global.subcomponent.button.icon .
 
-ds:button_node.root a ds:AnatomyNode ;
+ds:global.component.button.node.root a ds:AnatomyNode ;
   ds:name "button" .
 
-ds:button_node.label a ds:AnatomyNode ;
+ds:global.component.button.node.label a ds:AnatomyNode ;
   ds:name "label" .
 
-ds:button_node.icon a ds:AnatomyNode ;
+ds:global.component.button.node.icon a ds:AnatomyNode ;
   ds:name "icon" .
 
-ds:card a ds:Component ;
-  ds:name "Card" ;
+ds:global.subcomponent.button.icon a ds:Subcomponent ;
+  ds:name "Button Icon" ;
   ds:tier ds:global ;
   ds:release ds:stable .
 
-ds:lxd_panel a ds:Component ;
+ds:global.component.card a ds:Component ;
+  ds:name "Card" ;
+  ds:tier ds:global ;
+  ds:release ds:stable ;
+  ds:summary "Contained surface for related content and actions." ;
+  ds:anatomyDsl "root: card; children: header, body" ;
+  ds:hasProperty [
+    a ds:BlockProperty ;
+    ds:name "padding" ;
+    ds:propertyType "dimension" ;
+    ds:optional true ;
+    ds:defaultValue "spacing.md" ;
+    ds:constraints "Use design token references for spacing values."
+  ] .
+
+ds:apps.lxd.component.panel a ds:Component ;
   ds:name "LXD Panel" ;
   ds:tier ds:apps_lxd ;
   ds:release ds:stable .
 
-ds:beta_widget a ds:Component ;
+ds:global.component.beta-widget a ds:Component ;
   ds:name "Beta Widget" ;
   ds:tier ds:global ;
   ds:release ds:beta .
@@ -215,11 +312,11 @@ ds:impl.react a ds:ImplementationLibrary ;
   ds:platform "react" ;
   ds:hasImplementation [
     a ds:ImplementationObject ;
-    ds:implementsBlock ds:button ;
+    ds:implementsBlock ds:global.component.button ;
     ds:headLink "src/lib/Button/Button.tsx"
   ] , [
     a ds:ImplementationObject ;
-    ds:implementsBlock ds:card ;
+    ds:implementsBlock ds:global.component.card ;
     ds:headLink "src/lib/Card/Card.tsx"
   ] .
 
@@ -259,6 +356,7 @@ cs:react_folder a cs:CodeStandard ;
 cs:react_props a cs:CodeStandard ;
   cs:name "react/component/props" ;
   cs:hasCategory cs:react_category ;
+  cs:extends cs:react_folder ;
   cs:description "Props must extend the base HTML element type" ;
   cs:do [
     cs:description "Extend HTMLAttributes<HTMLElement>" ;

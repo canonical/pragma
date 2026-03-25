@@ -5,6 +5,7 @@ import { PragmaError } from "#error";
 import { PROPERTY_MAP } from "../constants.js";
 import resolveUri from "../domains/graph/helpers/resolveUri.js";
 import { buildQuery } from "../domains/shared/buildQuery.js";
+import compactUri from "../domains/shared/compactUri.js";
 import type { PragmaRuntime } from "../domains/shared/runtime.js";
 
 // =============================================================================
@@ -45,22 +46,6 @@ interface ResourceEntity {
 // =============================================================================
 
 const RDF_TYPE = "http://www.w3.org/1999/02/22-rdf-syntax-ns#type";
-
-/**
- * Convert a full URI to its compact prefixed form (e.g. `ds:button`).
- * Falls back to the full URI if no prefix matches.
- */
-function compactUri(
-  fullUri: string,
-  prefixes: Readonly<Record<string, string>>,
-): string {
-  for (const [prefix, namespace] of Object.entries(prefixes)) {
-    if (fullUri.startsWith(namespace)) {
-      return `${prefix}:${fullUri.slice(namespace.length)}`;
-    }
-  }
-  return fullUri;
-}
 
 /**
  * Determine the namespace prefix for a full URI.

@@ -16,3 +16,10 @@ export function commands(ctx: PragmaContext): CommandDefinition[] {
 export { blockConfig } from "./blockConfig.js";
 export { specs as mcpSpecs } from "./mcp/index.js";
 export { listBlocks, lookupBlock } from "./operations/index.js";
+export {
+  blockEmptyError,
+  buildBlockFilters,
+  enrichBlocks,
+  resolveBlockList,
+  resolveBlockLookup,
+} from "./orchestration/index.js";

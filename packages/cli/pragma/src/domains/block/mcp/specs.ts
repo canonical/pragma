@@ -1,22 +1,20 @@
 /**
- * MCP tool specs for the block domain — block_list, block_lookup, block_batch_lookup.
+ * MCP tool specs for the block domain — block_list, block_lookup.
  *
  * Declarative definitions — no MCP imports. The adapter layer
  * converts these into registered MCP tools via `registerFromSpec()`.
  */
 
-import { PragmaError } from "#error";
-import {
-  buildFilterConfig,
-  describeFilters,
-} from "../../shared/filters/index.js";
 import type { ToolSpec } from "../../shared/ToolSpec.js";
-import type { BatchResult, BlockDetailed } from "../../shared/types.js";
 import {
   listFormatters as blockListFmt,
   lookupFormatters as blockLookupFmt,
 } from "../formatters/index.js";
-import { listBlocks, lookupBlock } from "../operations/index.js";
+import {
+  buildBlockFilters,
+  resolveBlockList,
+  resolveBlockLookup,
+} from "../orchestration/index.js";
 
 const specs: readonly ToolSpec[] = [
   {
@@ -47,11 +45,14 @@ const specs: readonly ToolSpec[] = [
     },
     readOnly: true,
     async execute(rt, { allTiers, digest, detailed, condensed }) {
-      const filters = buildFilterConfig(rt, allTiers as boolean | undefined);
-      const summaries = await listBlocks(rt.store, filters);
+      const contract = await resolveBlockList(rt, {
+        allTiers: allTiers === true,
+        digest: digest === true,
+        detailed: detailed === true,
+      });
 
       if (condensed) {
-        const text = blockListFmt.llm(summaries);
+        const text = blockListFmt.llm(contract.result.items);
         return {
           condensed: true,
           text,
@@ -59,47 +60,34 @@ const specs: readonly ToolSpec[] = [
         };
       }
 
-      if (detailed) {
-        const enriched = await Promise.all(
-          summaries.map((s) => lookupBlock(rt.store, s.name, filters)),
-        );
+      if (contract.result.disclosure.level === "detailed") {
         return {
-          data: enriched,
+          data: contract.result.items,
           meta: {
-            count: enriched.length,
+            count: contract.result.items.length,
             disclosure: "detailed",
-            filters: describeFilters(filters),
+            filters: contract.result.filters,
           },
         };
       }
 
-      if (digest) {
-        const enriched = await Promise.all(
-          summaries.map((s) => lookupBlock(rt.store, s.name, filters)),
-        );
-        const digestData = enriched.map((d) => ({
-          uri: d.uri,
-          name: d.name,
-          tier: d.tier,
-          modifiers: d.modifiers,
-          implementations: d.implementations,
-          nodeCount: d.nodeCount,
-          tokenCount: d.tokenCount,
-          implementationPaths: d.implementationPaths,
-        }));
+      if (contract.result.disclosure.level === "digest") {
         return {
-          data: digestData,
+          data: contract.result.items,
           meta: {
-            count: digestData.length,
+            count: contract.result.items.length,
             disclosure: "digest",
-            filters: describeFilters(filters),
+            filters: contract.result.filters,
           },
         };
       }
 
       return {
-        data: summaries,
-        meta: { count: summaries.length, filters: describeFilters(filters) },
+        data: contract.result.items,
+        meta: {
+          count: contract.result.items.length,
+          filters: contract.result.filters,
+        },
       };
     },
   },
@@ -107,11 +95,12 @@ const specs: readonly ToolSpec[] = [
   {
     name: "block_lookup",
     description:
-      "Get detailed information about a design system block including anatomy, modifiers, tokens, and applicable standards.",
+      "Get detailed information about one or more design system blocks including anatomy, modifiers, tokens, and applicable standards.",
     params: {
-      name: {
-        type: "string",
-        description: "Block name (e.g. 'Button')",
+      names: {
+        type: "string[]",
+        description:
+          "Block names or IRIs to look up (e.g. ['Button', 'ds:global.component.card'])",
         optional: false,
       },
       detailed: {
@@ -126,89 +115,83 @@ const specs: readonly ToolSpec[] = [
       },
     },
     readOnly: true,
-    async execute(rt, { name, detailed, condensed }) {
-      const filters = buildFilterConfig(rt);
-      const result = await lookupBlock(rt.store, name as string, filters);
+    async execute(rt, { names, detailed, condensed }) {
+      const queries = names as string[];
       const showDetailed = (detailed as boolean | undefined) ?? true;
+      const contract = await resolveBlockLookup(
+        rt.store,
+        queries,
+        buildBlockFilters(rt),
+      );
+      const result = contract.result;
 
       if (condensed) {
-        const text = blockLookupFmt.llm({
-          block: result,
-          detailed: showDetailed,
-          aspects: {
-            anatomy: true,
-            modifiers: true,
-            tokens: true,
-            implementations: true,
-          },
-        });
+        const textParts = result.results.map((block) =>
+          blockLookupFmt.llm({
+            block,
+            detailed: showDetailed,
+            aspects: {
+              anatomy: true,
+              modifiers: true,
+              tokens: true,
+              implementations: true,
+            },
+          }),
+        );
+
+        if (result.errors.length > 0) {
+          textParts.push(
+            [
+              "### Errors",
+              ...result.errors.map(
+                (error) => `- ${error.query}: ${error.message}`,
+              ),
+            ].join("\n"),
+          );
+        }
+
         return {
           condensed: true,
-          text,
-          tokens: `~${Math.ceil(text.length / 4)}`,
+          text: textParts.join("\n\n"),
+          tokens: `~${Math.ceil(textParts.join("\n\n").length / 4)}`,
         };
       }
 
       if (!showDetailed) {
-        const {
-          uri,
-          name: n,
-          tier,
-          modifiers,
-          implementations,
-          nodeCount,
-          tokenCount,
-        } = result;
-        return {
-          data: {
+        const summaries = result.results.map(
+          ({
             uri,
-            name: n,
+            name,
+            type,
             tier,
             modifiers,
             implementations,
             nodeCount,
             tokenCount,
+            summary,
+          }) => ({
+            uri,
+            name,
+            type,
+            tier,
+            modifiers,
+            implementations,
+            nodeCount,
+            tokenCount,
+            summary,
+          }),
+        );
+
+        return {
+          data: {
+            results: summaries,
+            errors: result.errors,
           },
+          meta: { count: summaries.length },
         };
       }
 
-      return { data: result };
-    },
-  },
-
-  {
-    name: "block_batch_lookup",
-    description:
-      "Look up multiple blocks by name in a single call. Returns results and errors for names that were not found.",
-    params: {
-      names: {
-        type: "string[]",
-        description: "Block names to look up (e.g. ['Button', 'Card'])",
-        optional: false,
-      },
-    },
-    readOnly: true,
-    async execute(rt, { names }) {
-      const filters = buildFilterConfig(rt);
-      const results: BlockDetailed[] = [];
-      const errors: { name: string; code: string; message: string }[] = [];
-
-      await Promise.all(
-        (names as string[]).map(async (name) => {
-          try {
-            results.push(await lookupBlock(rt.store, name, filters));
-          } catch (err) {
-            if (err instanceof PragmaError) {
-              errors.push({ name, code: err.code, message: err.message });
-            } else {
-              throw err;
-            }
-          }
-        }),
-      );
-
-      const batch: BatchResult<BlockDetailed> = { results, errors };
-      return { data: batch, meta: { count: results.length } };
+      return { data: result, meta: { count: result.results.length } };
     },
   },
 ] as const;

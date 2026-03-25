@@ -1,5 +1,5 @@
 /**
- * Wires the `pragma modifier lookup <name>` CLI command.
+ * Wires the `pragma modifier lookup <name...>` CLI command.
  *
  * Retrieves a single modifier family by name and renders its values.
  */
@@ -9,9 +9,14 @@ import {
   createOutputResult,
 } from "@canonical/cli-core";
 import type { PragmaContext } from "../../shared/context.js";
-import { selectFormatter } from "../../shared/formatters.js";
+import type { LookupResult } from "../../shared/contracts.js";
 import { lookupFormatters } from "../formatters/index.js";
-import { lookupModifier } from "../operations/index.js";
+import type { lookupModifier } from "../operations/index.js";
+import { resolveModifierLookup } from "../orchestration/index.js";
+
+interface ModifierLookupOutput {
+  readonly result: LookupResult<Awaited<ReturnType<typeof lookupModifier>>>;
+}
 
 export default function buildLookupCommand(
   ctx: PragmaContext,
@@ -21,9 +26,9 @@ export default function buildLookupCommand(
     description: "Look up a modifier family and its values",
     parameters: [
       {
-        name: "name",
-        description: "Modifier family name (e.g., importance)",
-        type: "string",
+        name: "names",
+        description: "Modifier family names or IRIs",
+        type: "multiselect",
         positional: true,
         required: true,
       },
@@ -31,16 +36,70 @@ export default function buildLookupCommand(
     meta: {
       examples: [
         "pragma modifier lookup importance",
+        "pragma modifier lookup importance density",
         "pragma modifier lookup importance --llm",
       ],
     },
     async execute(params: Record<string, unknown>) {
-      const name = params.name as string;
-      const family = await lookupModifier(ctx.store, name);
+      const names = normalizeNames(params.names, params.name);
+      const contract = await resolveModifierLookup(ctx.store, names);
 
-      return createOutputResult(family, {
-        plain: selectFormatter(ctx, lookupFormatters),
-      });
+      return createOutputResult<ModifierLookupOutput>(
+        { result: contract.result },
+        { plain: renderModifierLookupOutput(ctx) },
+      );
     },
+  };
+}
+
+function normalizeNames(names: unknown, legacyName?: unknown): string[] {
+  if (Array.isArray(names)) {
+    return names.filter(
+      (name): name is string => typeof name === "string" && name.length > 0,
+    );
+  }
+  if (typeof legacyName === "string" && legacyName.length > 0) {
+    return [legacyName];
+  }
+  return [];
+}
+
+function renderModifierLookupOutput(
+  ctx: PragmaContext,
+): (data: ModifierLookupOutput) => string {
+  return ({ result }) => {
+    const formatOne =
+      ctx.globalFlags.format === "json"
+        ? lookupFormatters.json
+        : ctx.globalFlags.llm
+          ? lookupFormatters.llm
+          : lookupFormatters.plain;
+
+    if (ctx.globalFlags.format === "json") {
+      if (result.results.length === 1 && result.errors.length === 0) {
+        const only = result.results[0];
+        return only
+          ? lookupFormatters.json(only)
+          : JSON.stringify({ results: [], errors: result.errors }, null, 2);
+      }
+
+      return JSON.stringify(
+        { results: result.results, errors: result.errors },
+        null,
+        2,
+      );
+    }
+
+    const parts = result.results.map((family) => formatOne(family));
+    if (result.errors.length > 0) {
+      parts.push(
+        [
+          "Errors:",
+          ...result.errors.map((error) => `- ${error.query}: ${error.message}`),
+        ].join("\n"),
+      );
+    }
+
+    return parts.join("\n\n");
   };
 }

@@ -52,9 +52,9 @@ function parseData(result: Record<string, unknown>): unknown {
 // =============================================================================
 
 describe("tool listing", () => {
-  it("registers 29 tools", async () => {
+  it("registers 25 tools", async () => {
     const { tools } = await client.listTools();
-    expect(tools).toHaveLength(29);
+    expect(tools).toHaveLength(25);
   });
 
   it("all tools have descriptions", async () => {
@@ -70,17 +70,13 @@ describe("tool listing", () => {
     // Existing tools
     expect(names).toContain("block_list");
     expect(names).toContain("block_lookup");
-    expect(names).toContain("block_batch_lookup");
     expect(names).toContain("standard_list");
     expect(names).toContain("standard_lookup");
-    expect(names).toContain("standard_batch_lookup");
     expect(names).toContain("standard_categories");
     expect(names).toContain("modifier_list");
     expect(names).toContain("modifier_lookup");
-    expect(names).toContain("modifier_batch_lookup");
     expect(names).toContain("token_list");
     expect(names).toContain("token_lookup");
-    expect(names).toContain("token_batch_lookup");
     expect(names).toContain("tier_list");
     expect(names).toContain("config_show");
     expect(names).toContain("config_tier");
@@ -126,8 +122,8 @@ describe("envelope shape", () => {
 
   it("error response has ok: false and error object", async () => {
     const result = await client.callTool({
-      name: "block_lookup",
-      arguments: { name: "NonExistent" },
+      name: "config_channel",
+      arguments: { value: "beta" },
     });
     expect(result.isError).toBe(true);
     const envelope = parseEnvelope(result);
@@ -211,38 +207,42 @@ describe("block_lookup", () => {
   it("returns detailed block data by default", async () => {
     const result = await client.callTool({
       name: "block_lookup",
-      arguments: { name: "Button" },
+      arguments: { names: ["Button"] },
     });
-    const data = parseData(result) as Record<string, unknown>;
-    expect(data.name).toBe("Button");
-    expect(data).toHaveProperty("modifierValues");
-    expect(data).toHaveProperty("implementationPaths");
-    expect(data).toHaveProperty("tokens");
+    const data = parseData(result) as {
+      results: Record<string, unknown>[];
+    };
+    expect(data.results[0]?.name).toBe("Button");
+    expect(data.results[0]).toHaveProperty("modifierValues");
+    expect(data.results[0]).toHaveProperty("implementationPaths");
+    expect(data.results[0]).toHaveProperty("tokens");
   });
 
   it("returns summary when detailed=false", async () => {
     const result = await client.callTool({
       name: "block_lookup",
-      arguments: { name: "Button", detailed: false },
+      arguments: { names: ["Button"], detailed: false },
     });
-    const data = parseData(result) as Record<string, unknown>;
-    expect(data.name).toBe("Button");
-    expect(data).not.toHaveProperty("modifierValues");
-    expect(data).not.toHaveProperty("implementationPaths");
+    const data = parseData(result) as {
+      results: Record<string, unknown>[];
+    };
+    expect(data.results[0]?.name).toBe("Button");
+    expect(data.results[0]).not.toHaveProperty("modifierValues");
+    expect(data.results[0]).not.toHaveProperty("implementationPaths");
   });
 
-  it("returns error with recovery for unknown block", async () => {
+  it("returns structured per-query errors for unknown blocks", async () => {
     const result = await client.callTool({
       name: "block_lookup",
-      arguments: { name: "NonExistent" },
+      arguments: { names: ["NonExistent"] },
     });
-    expect(result.isError).toBe(true);
-    const envelope = parseEnvelope(result);
-    expect(envelope.ok).toBe(false);
-    const error = envelope.error as McpErrorPayload;
-    expect(error.code).toBe("ENTITY_NOT_FOUND");
-    expect(error.recovery).toBeDefined();
-    expect(error.recovery?.tool).toBe("block_list");
+    const data = parseData(result) as {
+      results: unknown[];
+      errors: { code: string; query: string }[];
+    };
+    expect(data.results).toHaveLength(0);
+    expect(data.errors[0]?.code).toBe("ENTITY_NOT_FOUND");
+    expect(data.errors[0]?.query).toBe("NonExistent");
   });
 });
 
@@ -311,12 +311,14 @@ describe("standard_lookup", () => {
 
     const result = await client.callTool({
       name: "standard_lookup",
-      arguments: { name: standardName },
+      arguments: { names: [standardName] },
     });
-    const data = parseData(result) as Record<string, unknown>;
-    expect(data.name).toBe(standardName);
-    expect(data).toHaveProperty("dos");
-    expect(data).toHaveProperty("donts");
+    const data = parseData(result) as {
+      results: Record<string, unknown>[];
+    };
+    expect(data.results[0]?.name).toBe(standardName);
+    expect(data.results[0]).toHaveProperty("dos");
+    expect(data.results[0]).toHaveProperty("donts");
   });
 
   it("returns summary when detailed=false", async () => {
@@ -329,22 +331,24 @@ describe("standard_lookup", () => {
 
     const result = await client.callTool({
       name: "standard_lookup",
-      arguments: { name: standardName, detailed: false },
+      arguments: { names: [standardName], detailed: false },
     });
-    const data = parseData(result) as Record<string, unknown>;
-    expect(data).not.toHaveProperty("dos");
-    expect(data).not.toHaveProperty("donts");
+    const data = parseData(result) as {
+      results: Record<string, unknown>[];
+    };
+    expect(data.results[0]).not.toHaveProperty("dos");
+    expect(data.results[0]).not.toHaveProperty("donts");
   });
 
-  it("returns error for unknown standard", async () => {
+  it("returns per-query errors for unknown standard", async () => {
     const result = await client.callTool({
       name: "standard_lookup",
-      arguments: { name: "nonexistent/standard" },
+      arguments: { names: ["nonexistent/standard"] },
     });
-    expect(result.isError).toBe(true);
-    const envelope = parseEnvelope(result);
-    const error = envelope.error as McpErrorPayload;
-    expect(error.code).toBe("ENTITY_NOT_FOUND");
+    const data = parseData(result) as {
+      errors: { code: string }[];
+    };
+    expect(data.errors[0]?.code).toBe("ENTITY_NOT_FOUND");
   });
 });
 
@@ -380,22 +384,24 @@ describe("modifier_lookup", () => {
   it("returns modifier values", async () => {
     const result = await client.callTool({
       name: "modifier_lookup",
-      arguments: { name: "importance" },
+      arguments: { names: ["importance"] },
     });
-    const data = parseData(result) as { name: string; values: string[] };
-    expect(data.name).toBe("importance");
-    expect(data.values).toContain("primary");
+    const data = parseData(result) as {
+      results: { name: string; values: string[] }[];
+    };
+    expect(data.results[0]?.name).toBe("importance");
+    expect(data.results[0]?.values).toContain("primary");
   });
 
-  it("returns error for unknown modifier", async () => {
+  it("returns per-query errors for unknown modifier", async () => {
     const result = await client.callTool({
       name: "modifier_lookup",
-      arguments: { name: "nonexistent" },
+      arguments: { names: ["nonexistent"] },
     });
-    expect(result.isError).toBe(true);
-    const envelope = parseEnvelope(result);
-    const error = envelope.error as McpErrorPayload;
-    expect(error.code).toBe("ENTITY_NOT_FOUND");
+    const data = parseData(result) as {
+      errors: { code: string }[];
+    };
+    expect(data.errors[0]?.code).toBe("ENTITY_NOT_FOUND");
   });
 });
 
@@ -418,22 +424,27 @@ describe("token_lookup", () => {
   it("returns token with theme values", async () => {
     const result = await client.callTool({
       name: "token_lookup",
-      arguments: { name: "color.primary" },
+      arguments: { names: ["color.primary"] },
     });
     const data = parseData(result) as {
-      name: string;
-      values: { theme: string; value: string }[];
+      results: {
+        name: string;
+        values: { theme: string; value: string }[];
+      }[];
     };
-    expect(data.name).toBe("color.primary");
-    expect(data.values.length).toBeGreaterThan(0);
+    expect(data.results[0]?.name).toBe("color.primary");
+    expect((data.results[0]?.values ?? []).length).toBeGreaterThan(0);
   });
 
-  it("returns error for unknown token", async () => {
+  it("returns per-query errors for unknown token", async () => {
     const result = await client.callTool({
       name: "token_lookup",
-      arguments: { name: "nonexistent.token" },
+      arguments: { names: ["nonexistent.token"] },
     });
-    expect(result.isError).toBe(true);
+    const data = parseData(result) as {
+      errors: { code: string }[];
+    };
+    expect(data.errors[0]?.code).toBe("ENTITY_NOT_FOUND");
   });
 });
 
@@ -760,21 +771,18 @@ describe("llm", () => {
 describe("error handling", () => {
   it("all entity-not-found errors include recovery objects", async () => {
     const notFoundCalls = [
-      { name: "block_lookup", arguments: { name: "X" } },
-      { name: "modifier_lookup", arguments: { name: "X" } },
-      { name: "token_lookup", arguments: { name: "X" } },
-      { name: "standard_lookup", arguments: { name: "X" } },
+      { name: "block_lookup", arguments: { names: ["X"] } },
+      { name: "modifier_lookup", arguments: { names: ["X"] } },
+      { name: "token_lookup", arguments: { names: ["X"] } },
+      { name: "standard_lookup", arguments: { names: ["X"] } },
     ] as const;
 
     for (const call of notFoundCalls) {
       const result = await client.callTool(call);
-      expect(result.isError).toBe(true);
-      const envelope = parseEnvelope(result);
-      expect(envelope.ok).toBe(false);
-      const error = envelope.error as McpErrorPayload;
-      expect(error.code).toBe("ENTITY_NOT_FOUND");
-      expect(error.recovery).toBeDefined();
-      expect(error.recovery?.tool).toMatch(/^\w+_list$/);
+      const data = parseData(result) as {
+        errors: { code: string }[];
+      };
+      expect(data.errors[0]?.code).toBe("ENTITY_NOT_FOUND");
     }
   });
 });
@@ -1024,7 +1032,7 @@ describe("capabilities", () => {
     };
     expect(data.tools).toContain("block_list");
     expect(data.tools).toContain("capabilities");
-    expect(data.counts.total).toBe(29);
+    expect(data.counts.total).toBe(25);
     expect(data.counts.read).toBeGreaterThan(0);
     expect(data.counts.write).toBe(5);
     expect(data.counts.orientation).toBe(2);
@@ -1106,7 +1114,7 @@ describe("condensed parameter", () => {
   it("token_lookup returns condensed text", async () => {
     const result = await client.callTool({
       name: "token_lookup",
-      arguments: { name: "color.primary", condensed: true },
+      arguments: { names: ["color.primary"], condensed: true },
     });
     const envelope = parseEnvelope(result);
     expect(envelope.ok).toBe(true);

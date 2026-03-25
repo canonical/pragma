@@ -8,16 +8,15 @@
 import { writeFileSync } from "node:fs";
 import { PragmaError } from "#error";
 import type { ToolSpec } from "../../shared/ToolSpec.js";
-import type { BatchResult, TokenDetailed } from "../../shared/types.js";
 import {
   createLookupFormatters as createTokenLookupFmt,
   listFormatters as tokenListFmt,
 } from "../formatters/index.js";
+import { resolveAddConfig } from "../operations/index.js";
 import {
-  listTokens,
-  lookupToken,
-  resolveAddConfig,
-} from "../operations/index.js";
+  resolveTokenList,
+  resolveTokenLookup,
+} from "../orchestration/index.js";
 
 const specs: readonly ToolSpec[] = [
   {
@@ -38,12 +37,12 @@ const specs: readonly ToolSpec[] = [
     },
     readOnly: true,
     async execute(rt, { category, condensed }) {
-      const result = await listTokens(rt.store, {
+      const resolution = await resolveTokenList(rt, {
         category: category as string | undefined,
       });
 
       if (condensed) {
-        const text = tokenListFmt.llm(result);
+        const text = tokenListFmt.llm([...resolution.items]);
         return {
           condensed: true,
           text,
@@ -51,18 +50,21 @@ const specs: readonly ToolSpec[] = [
         };
       }
 
-      return { data: result, meta: { count: result.length } };
+      return {
+        data: resolution.items,
+        meta: { count: resolution.items.length },
+      };
     },
   },
 
   {
     name: "token_lookup",
     description:
-      "Get detailed information about a design token including theme values.",
+      "Get detailed information about one or more design tokens including theme values.",
     params: {
-      name: {
-        type: "string",
-        description: "Token name (e.g. 'color.primary')",
+      names: {
+        type: "string[]",
+        description: "Token names or IRIs to look up (e.g. ['color.primary'])",
         optional: false,
       },
       condensed: {
@@ -72,56 +74,33 @@ const specs: readonly ToolSpec[] = [
       },
     },
     readOnly: true,
-    async execute(rt, { name, condensed }) {
-      const result = await lookupToken(rt.store, name as string);
+    async execute(rt, { names, condensed }) {
+      const contract = await resolveTokenLookup(rt.store, names as string[]);
+      const result = contract.result;
 
       if (condensed) {
         const fmt = createTokenLookupFmt({ detailed: true });
-        const text = fmt.llm(result);
+        const textParts = result.results.map((token) => fmt.llm(token));
+
+        if (result.errors.length > 0) {
+          textParts.push(
+            [
+              "### Errors",
+              ...result.errors.map(
+                (error) => `- ${error.query}: ${error.message}`,
+              ),
+            ].join("\n"),
+          );
+        }
+
         return {
           condensed: true,
-          text,
-          tokens: `~${Math.ceil(text.length / 4)}`,
+          text: textParts.join("\n\n"),
+          tokens: `~${Math.ceil(textParts.join("\n\n").length / 4)}`,
         };
       }
 
-      return { data: result };
-    },
-  },
-
-  {
-    name: "token_batch_lookup",
-    description:
-      "Look up multiple tokens by name in a single call. Returns results and errors for names that were not found.",
-    params: {
-      names: {
-        type: "string[]",
-        description:
-          "Token names to look up (e.g. ['color.primary', 'spacing.md'])",
-        optional: false,
-      },
-    },
-    readOnly: true,
-    async execute(rt, { names }) {
-      const results: TokenDetailed[] = [];
-      const errors: { name: string; code: string; message: string }[] = [];
-
-      await Promise.all(
-        (names as string[]).map(async (name) => {
-          try {
-            results.push(await lookupToken(rt.store, name));
-          } catch (err) {
-            if (err instanceof PragmaError) {
-              errors.push({ name, code: err.code, message: err.message });
-            } else {
-              throw err;
-            }
-          }
-        }),
-      );
-
-      const batch: BatchResult<TokenDetailed> = { results, errors };
-      return { data: batch, meta: { count: results.length } };
+      return { data: result, meta: { count: result.results.length } };
     },
   },
 

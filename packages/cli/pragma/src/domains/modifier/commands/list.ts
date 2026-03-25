@@ -9,11 +9,10 @@ import {
   type CommandDefinition,
   createOutputResult,
 } from "@canonical/cli-core";
-import { PragmaError } from "#error";
 import type { PragmaContext } from "../../shared/context.js";
 import { selectFormatter } from "../../shared/formatters.js";
 import { listFormatters } from "../formatters/index.js";
-import { listModifiers } from "../operations/index.js";
+import { resolveModifierList } from "../orchestration/index.js";
 
 export default function listCommand(ctx: PragmaContext): CommandDefinition {
   return {
@@ -24,18 +23,9 @@ export default function listCommand(ctx: PragmaContext): CommandDefinition {
       examples: ["pragma modifier list", "pragma modifier list --llm"],
     },
     async execute() {
-      const families = await listModifiers(ctx.store);
+      const resolution = await resolveModifierList(ctx);
 
-      if (families.length === 0) {
-        throw PragmaError.emptyResults("modifier", {
-          recovery: {
-            message:
-              "Ensure design system packages are installed: bun add -D @canonical/ds-global",
-          },
-        });
-      }
-
-      return createOutputResult(families, {
+      return createOutputResult([...resolution.items], {
         plain: selectFormatter(ctx, listFormatters),
       });
     },

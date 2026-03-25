@@ -15,6 +15,7 @@ const formatters: Formatters<StandardLookupInput> = {
   plain({ standard, detailed }) {
     const lines: string[] = [];
     lines.push(standard.name);
+    lines.push(`URI: ${standard.uri}`);
     lines.push(`Category: ${standard.category || "—"}`);
     lines.push(`Description: ${standard.description}`);
     if (standard.extends) {
@@ -45,7 +46,11 @@ const formatters: Formatters<StandardLookupInput> = {
   llm({ standard, detailed }) {
     const lines: string[] = [];
     lines.push(`## ${standard.name}`);
+    lines.push(`URI: ${standard.uri}`);
     lines.push(`Category: ${standard.category || "—"}`);
+    if (standard.extends) {
+      lines.push(`Extends: ${standard.extends}`);
+    }
     lines.push(standard.description);
 
     if (detailed) {
