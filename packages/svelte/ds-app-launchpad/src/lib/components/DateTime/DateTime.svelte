@@ -20,7 +20,6 @@
 <!-- @component
 `DateTime` component formats and displays dates and times.
 
-## defaultDateTimeFormatter
 ```svelte
 <DateTime date={new Date()} />
 <DateTime date="2023-10-01T12:00:00Z" /> 

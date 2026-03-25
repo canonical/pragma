@@ -20,12 +20,9 @@ export function getOptimalRelativeTimeFormatValue(
   nextUpdateIn: number;
 } {
   const absElapsed = Math.abs(elapsed);
-  const match = units.find(([_, millis]) => absElapsed >= millis);
-  if (!match) {
-    throw new Error(
-      `elapsed ${elapsed}ms is below the smallest unit threshold`,
-    );
-  }
+  const match =
+    units.find(([_, millis]) => absElapsed >= millis) ??
+    units[units.length - 1];
   const [unit, millis] = match;
   const value = Math.trunc(elapsed / millis);
   const nextUpdateIn = millis - (absElapsed % millis);

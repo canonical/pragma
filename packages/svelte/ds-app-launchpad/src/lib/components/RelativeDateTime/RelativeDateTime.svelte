@@ -23,11 +23,10 @@
   const isOutsideThreshold = (elapsed: number) =>
     Math.abs(elapsed) >= nowThreshold;
 
-  // We intentionally capture only the initial `rtfValue` here, and then update it in an effect below. If `time` changes, the effect will re-run and update `rtfValue` accordingly.
+  // We intentionally capture only the initial `rtfValue` here, and then update it in an effect below. If `date` changes, the effect will re-run and update `rtfValue` accordingly.
   // Capturing the initial value here avoids flashing incorrect content during SSR.
   // svelte-ignore state_referenced_locally
   const initialElapsed = date.getTime() - Date.now();
-  // svelte-ignore state_referenced_locally
   let rtfValue = $state<RelativeTimeFormatValue | null>(
     isOutsideThreshold(initialElapsed)
       ? getOptimalRelativeTimeFormatValue(initialElapsed)
@@ -39,6 +38,11 @@
     return relativeTimeFormatter.format(rtfValue.value, rtfValue.unit);
   });
 
+  /**
+   * Periodically recalculates `rtfValue` based on the current time, scheduling
+   * the next update at the interval most appropriate for the current magnitude
+   * of elapsed time. Cleans up the timeout on teardown.
+   */
   $effect(() => {
     let timeout: ReturnType<typeof setTimeout> | null = null;
 

@@ -1,4 +1,3 @@
-// TODO: Remove hardcoded locale when i18n implemented
 const locale = "en-US";
 
 export const relativeTimeFormatter = new Intl.RelativeTimeFormat(locale, {

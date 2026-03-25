@@ -1,9 +1,8 @@
 /* @canonical/generator-ds 0.17.1 */
 
 import type { SvelteHTMLElements } from "svelte/elements";
-import type { WithoutChildren } from "type-utils";
 
-type BaseProps = WithoutChildren<SvelteHTMLElements["time"]>;
+type BaseProps = Omit<SvelteHTMLElements["time"], "children">;
 
 export interface RelativeDateTimeProps extends BaseProps {
   /**
