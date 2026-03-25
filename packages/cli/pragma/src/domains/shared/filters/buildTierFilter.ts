@@ -21,8 +21,10 @@ import { P } from "../prefixes.js";
 export function resolveTierChain(tierPath: string | undefined): string[] {
   if (tierPath === undefined) return [];
 
+  const normalizedTierPath = tierPath.trim().toLowerCase();
+
   const chain: string[] = ["global"];
-  const segments = tierPath.split("/");
+  const segments = normalizedTierPath.split("/");
 
   for (let i = 0; i < segments.length; i++) {
     const path = segments.slice(0, i + 1).join("/");
@@ -42,7 +44,7 @@ export function resolveTierChain(tierPath: string | undefined): string[] {
  * @returns Underscore-separated local name suitable for URI construction.
  */
 export function tierPathToLocal(tierPath: string): string {
-  return tierPath.replace(/\//g, "_");
+  return tierPath.trim().toLowerCase().replace(/\//g, "_");
 }
 
 /**

@@ -32,9 +32,9 @@ const mixed: DoctorData = {
       remedy: "pragma config tier <tier>",
     },
     {
-      name: "terrazzo-lsp",
+      name: "skills",
       status: "skip",
-      detail: "no tokens.config.mjs found",
+      detail: "no harnesses detected",
     },
     {
       name: "Shell completions",
@@ -67,7 +67,7 @@ describe("doctor formatters", () => {
     it("renders skipped checks with ○", () => {
       const output = formatters.plain(mixed);
       expect(output).toContain("○");
-      expect(output).toContain("terrazzo-lsp");
+      expect(output).toContain("skills");
     });
 
     it("does not render remedies section when all pass", () => {

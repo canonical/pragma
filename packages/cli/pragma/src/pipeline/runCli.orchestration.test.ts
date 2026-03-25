@@ -102,6 +102,20 @@ describe("runCli orchestration", () => {
     expect(dispose).toHaveBeenCalledTimes(1);
   });
 
+  it("shows root help when no command is given", async () => {
+    const parseAsync = vi.fn(async () => undefined);
+
+    collectCommandsMock.mockReturnValue([] as CommandDefinition[]);
+    createProgramMock.mockReturnValue({ parseAsync });
+
+    const { default: runCli } = await import("./runCli.js");
+    await runCli(["node", "pragma", "--verbose"]);
+
+    expect(resolveCommandKindMock).not.toHaveBeenCalled();
+    expect(bootPragmaMock).not.toHaveBeenCalled();
+    expect(parseAsync).toHaveBeenCalledWith(["node", "pragma", "--help"]);
+  });
+
   it("renders boot errors and maps exit code", async () => {
     const stderrSpy = vi
       .spyOn(process.stderr, "write")

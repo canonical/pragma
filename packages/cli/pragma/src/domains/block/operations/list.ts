@@ -17,6 +17,19 @@ import { buildFilters } from "../../shared/filters/buildFilters.js";
 import { P } from "../../shared/prefixes.js";
 import type { BlockSummary, FilterConfig } from "../../shared/types.js";
 
+function normalizeBlockType(value: string | undefined): BlockSummary["type"] {
+  const localName = extractLocalName(value ?? "").toLowerCase();
+
+  switch (localName) {
+    case "pattern":
+    case "layout":
+    case "subcomponent":
+      return localName;
+    default:
+      return "component";
+  }
+}
+
 export default async function listBlocks(
   store: Store,
   filters: FilterConfig,
@@ -25,12 +38,13 @@ export default async function listBlocks(
 
   const result = await store.query(
     buildQuery(`
-      SELECT ?component ?name ?tier
+      SELECT ?component ?type ?name ?tier
              (GROUP_CONCAT(DISTINCT ?modName; separator="|") AS ?modifiers)
              (COUNT(DISTINCT ?node) AS ?nodeCount)
              (COUNT(DISTINCT ?token) AS ?tokenCount)
       WHERE {
-        ?component a ${P.ds}Component ;
+        VALUES ?type { ${P.ds}Component ${P.ds}Pattern ${P.ds}Layout ${P.ds}Subcomponent }
+        ?component a ?type ;
                    ${P.ds}name ?name ;
                    ${P.ds}tier ?tier .
         ${filterClauses}
@@ -38,7 +52,7 @@ export default async function listBlocks(
         OPTIONAL { ?component ${P.ds}anatomyNode ?node }
         OPTIONAL { ?component ${P.ds}usesToken ?token }
       }
-      GROUP BY ?component ?name ?tier
+      GROUP BY ?component ?type ?name ?tier
       ORDER BY ?name
     `),
   );
@@ -48,6 +62,7 @@ export default async function listBlocks(
   return result.bindings.map((b) => ({
     uri: (b.component ?? "") as URI,
     name: b.name ?? "",
+    type: normalizeBlockType(b.type),
     tier: extractLocalName(b.tier ?? ""),
     modifiers: b.modifiers ? b.modifiers.split("|").filter(Boolean) : [],
     implementations: [],

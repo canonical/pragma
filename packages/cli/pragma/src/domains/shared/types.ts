@@ -17,6 +17,8 @@ export interface BlockSummary {
   readonly uri: URI;
   /** Human-readable name (local name extracted from URI). */
   readonly name: string;
+  /** Normalized ontology type for the block. */
+  readonly type: "component" | "pattern" | "layout" | "subcomponent";
   /** Tier path this block belongs to (e.g., `"global"`, `"apps/lxd"`). */
   readonly tier: string;
   /** Active modifier names applied to this block. */
@@ -30,6 +32,12 @@ export interface BlockSummary {
   readonly nodeCount: number;
   /** Number of design tokens referenced by this block. */
   readonly tokenCount: number;
+}
+
+/** Digest view of a block for richer summary displays. */
+export interface BlockDigest extends BlockSummary {
+  /** Summary guidance when present in the graph. */
+  readonly summary: string | null;
 }
 
 /** Single node in a block's anatomy tree (recursive). */
@@ -50,14 +58,45 @@ export interface AnatomyTree {
   readonly root: AnatomyNode;
 }
 
-/** Detailed view of a block, extending the summary with anatomy, tokens, and standards. */
-export interface BlockDetailed extends BlockSummary {
+/** Detailed view of a block, extending the digest with anatomy, tokens, and standards. */
+export interface BlockDetailed extends BlockDigest {
+  /** Guidance on when the block should be used. */
+  readonly whenToUse: string | null;
+  /** Guidance on when the block should not be used. */
+  readonly whenNotToUse: string | null;
+  /** Additional usage guidance. */
+  readonly guidelines: string | null;
+  /** YAML anatomy DSL payload when present. */
+  readonly anatomyDsl: string | null;
+  /** Legacy anatomy payload when present. */
+  readonly anatomyClassic: string | null;
+  /** Figma reference link when present. */
+  readonly figmaLink: string | null;
   /** Full anatomy tree, or `null` if the block declares no anatomy. */
   readonly anatomy: AnatomyTree | null;
   /** Modifier families with their allowed values. */
   readonly modifierValues: readonly {
     family: string;
     values: readonly string[];
+  }[];
+  /** Modifier families resolved as richer objects. */
+  readonly modifierFamilies: readonly {
+    uri: URI;
+    name: string;
+    values: readonly string[];
+  }[];
+  /** Property metadata resolved from blank nodes. */
+  readonly properties: readonly {
+    name: string;
+    propertyType: string;
+    optional: boolean;
+    defaultValue: string | null;
+    constraints: string | null;
+  }[];
+  /** Direct subcomponents of the block. */
+  readonly subcomponents: readonly {
+    uri: URI;
+    name: string;
   }[];
   /** File paths to framework-specific implementations. */
   readonly implementationPaths: readonly { framework: string; path: string }[];

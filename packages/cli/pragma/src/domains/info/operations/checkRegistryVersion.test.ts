@@ -21,11 +21,14 @@ describe("checkRegistryVersion", () => {
         }),
     });
 
-    const result = await checkRegistryVersion("@canonical/pragma", "normal");
+    const result = await checkRegistryVersion(
+      "@canonical/pragma-cli",
+      "normal",
+    );
 
     expect(result).toEqual({ latest: "0.19.0", distTag: "latest" });
     expect(globalThis.fetch).toHaveBeenCalledWith(
-      "https://registry.npmjs.org/%40canonical%2Fpragma",
+      "https://registry.npmjs.org/%40canonical%2Fpragma-cli",
       expect.objectContaining({
         headers: { Accept: "application/json" },
       }),
@@ -42,7 +45,7 @@ describe("checkRegistryVersion", () => {
     });
 
     const result = await checkRegistryVersion(
-      "@canonical/pragma",
+      "@canonical/pragma-cli",
       "experimental",
     );
 
@@ -62,7 +65,7 @@ describe("checkRegistryVersion", () => {
     });
 
     const result = await checkRegistryVersion(
-      "@canonical/pragma",
+      "@canonical/pragma-cli",
       "prerelease",
     );
 
@@ -72,7 +75,10 @@ describe("checkRegistryVersion", () => {
   it("returns undefined when registry responds with non-ok status", async () => {
     globalThis.fetch = vi.fn().mockResolvedValue({ ok: false, status: 404 });
 
-    const result = await checkRegistryVersion("@canonical/pragma", "normal");
+    const result = await checkRegistryVersion(
+      "@canonical/pragma-cli",
+      "normal",
+    );
 
     expect(result).toBeUndefined();
   });
@@ -84,7 +90,7 @@ describe("checkRegistryVersion", () => {
     });
 
     const result = await checkRegistryVersion(
-      "@canonical/pragma",
+      "@canonical/pragma-cli",
       "prerelease",
     );
 
@@ -94,7 +100,10 @@ describe("checkRegistryVersion", () => {
   it("returns undefined when fetch throws (offline)", async () => {
     globalThis.fetch = vi.fn().mockRejectedValue(new Error("network error"));
 
-    const result = await checkRegistryVersion("@canonical/pragma", "normal");
+    const result = await checkRegistryVersion(
+      "@canonical/pragma-cli",
+      "normal",
+    );
 
     expect(result).toBeUndefined();
   });
@@ -105,7 +114,10 @@ describe("checkRegistryVersion", () => {
       json: () => Promise.resolve({}),
     });
 
-    const result = await checkRegistryVersion("@canonical/pragma", "normal");
+    const result = await checkRegistryVersion(
+      "@canonical/pragma-cli",
+      "normal",
+    );
 
     expect(result).toBeUndefined();
   });

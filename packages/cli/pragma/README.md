@@ -1,11 +1,11 @@
-# @canonical/pragma
+# @canonical/pragma-cli
 
 CLI and MCP server for Canonical's design system. Query blocks, standards, modifiers, tokens, tiers, ontologies, and skills from the terminal or your AI editor.
 
 ## Installation
 
 ```bash
-bun add -g @canonical/pragma
+bun add -g @canonical/pragma-cli
 ```
 
 ## Quick Start

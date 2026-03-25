@@ -12,7 +12,7 @@ import { runChecks } from "../operations/index.js";
  * `pragma doctor` command definition.
  *
  * Runs all environment health checks (Node version, pragma installation,
- * config file, ke store, shell completions, terrazzo-lsp, MCP, skills)
+ * config file, ke store, shell completions, MCP, skills)
  * and sets exit code 1 when any check fails.
  *
  * @note Impure

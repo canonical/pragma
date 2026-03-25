@@ -1,6 +1,6 @@
 # Domain Structure Conventions
 
-Canonical structure for all command and operation domains in `@canonical/pragma`.
+Canonical structure for all command and operation domains in `@canonical/pragma-cli`.
 
 ---
 

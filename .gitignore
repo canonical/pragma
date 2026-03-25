@@ -17,6 +17,7 @@ Thumbs.db
 session/
 session*/
 .gemini/
+.agents/
 pragma.code-workspace
 
 # [cache] Cache and backup
@@ -79,3 +80,4 @@ sem.toml
 sem_modules/
 .claude/
 .kg/
+node_modules

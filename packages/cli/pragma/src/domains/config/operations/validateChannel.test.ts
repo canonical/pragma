@@ -19,13 +19,18 @@ describe("validateChannel", () => {
       validateChannel("nope");
       expect.unreachable("should have thrown");
     } catch (err: unknown) {
-      const pragmaErr = err as { code: string; validOptions: string[] };
+      const pragmaErr = err as {
+        code: string;
+        validOptions: string[];
+        recovery?: { cli?: string };
+      };
       expect(pragmaErr.code).toBe("INVALID_INPUT");
       expect(pragmaErr.validOptions).toEqual([
         "normal",
         "experimental",
         "prerelease",
       ]);
+      expect(pragmaErr.recovery?.cli).toBe("pragma config channel --reset");
     }
   });
 });

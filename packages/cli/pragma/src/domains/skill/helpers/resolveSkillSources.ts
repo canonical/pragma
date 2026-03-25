@@ -7,8 +7,6 @@ export interface SkillSource {
   readonly dir: string;
   /** Package name this source belongs to. */
   readonly packageName: string;
-  /** Relative path for sourcePath construction. */
-  readonly relativePath: string;
 }
 
 /**
@@ -29,7 +27,6 @@ export default function resolveSkillSources(): SkillSource[] {
     sources.push({
       dir: join(dir, def.skills),
       packageName: pkg,
-      relativePath: `node_modules/${pkg}/${def.skills}`,
     });
   }
 

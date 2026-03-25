@@ -16,6 +16,28 @@ import {
 } from "./renderError.js";
 import resolveCommandKind from "./resolveCommandKind.js";
 
+function hasCommandArg(argv: readonly string[]): boolean {
+  const args = argv.slice(2);
+
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    if (!arg) continue;
+
+    if (arg === "--format") {
+      i += 1;
+      continue;
+    }
+
+    if (arg.startsWith("-")) {
+      continue;
+    }
+
+    return true;
+  }
+
+  return false;
+}
+
 // — Helpers ———————————————————————————————————————————————————————————————————
 
 function renderError(error: PragmaError, flags: GlobalFlags): string {
@@ -46,6 +68,24 @@ async function handleDoctor(globalFlags: GlobalFlags): Promise<void> {
   const result = await doctorCommand.execute({}, ctx);
   if (result.tag === "output") {
     process.stdout.write(`${result.render.plain(result.value)}\n`);
+  }
+}
+
+async function handleRootHelp(globalFlags: GlobalFlags): Promise<void> {
+  const stubCtx: PragmaContext = {
+    store: {} as PragmaRuntime["store"],
+    config: { tier: undefined, channel: "normal" },
+    cwd: process.cwd(),
+    dispose: () => {},
+    globalFlags,
+  };
+  const commands = collectCommands(stubCtx);
+  const program = createProgram(commands, stubCtx);
+
+  try {
+    await program.parseAsync(["node", "pragma", "--help"]);
+  } catch (err) {
+    handleProgramError(err, globalFlags);
   }
 }
 
@@ -147,6 +187,17 @@ function handleProgramError(err: unknown, globalFlags: GlobalFlags): void {
  */
 export default async function runCli(argv: readonly string[]): Promise<void> {
   const globalFlags = parseGlobalFlags(argv);
+  const explicitHelpOrVersion = argv
+    .slice(2)
+    .some(
+      (arg) =>
+        arg === "--help" || arg === "-h" || arg === "--version" || arg === "-V",
+    );
+
+  if (!hasCommandArg(argv) && !explicitHelpOrVersion) {
+    return handleRootHelp(globalFlags);
+  }
+
   const commandKind = resolveCommandKind(argv);
 
   switch (commandKind.kind) {

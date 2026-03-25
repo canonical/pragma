@@ -60,10 +60,10 @@ async function executeUpgrade(
   const dryRun = params.dryRun === true;
   const pm = detectPackageManager();
   const config = readConfig(ctx.cwd);
-  const command = PM_COMMANDS[pm].update("@canonical/pragma");
+  const command = PM_COMMANDS[pm].update("@canonical/pragma-cli");
 
   const registryResult = await checkRegistryVersion(
-    "@canonical/pragma",
+    "@canonical/pragma-cli",
     config.channel,
   );
 

@@ -1,5 +1,5 @@
 /**
- * Public API surface for `@canonical/pragma`.
+ * Public API surface for `@canonical/pragma-cli`.
  *
  * Exports types, boot functions, domain operations, and the MCP adapter.
  * Internal formatters, command builders, and infrastructure are not exported.
@@ -22,10 +22,26 @@ export { bootPragma } from "./domains/shared/runtime.js";
 // — Shared Types —————————————————————————————————————————————————————————————
 
 export type {
+  ColumnDef,
+  EntityDisplayConfig,
+  ListContract,
+  ListParams,
+  ListResult,
+  LookupContract,
+  LookupParams,
+  LookupResult,
+  MutateContract,
+  SectionDef,
+  SectionKind,
+  ShowContract,
+} from "./domains/shared/contracts.js";
+
+export type {
   AnatomyNode,
   AnatomyTree,
   BatchResult,
   BlockDetailed,
+  BlockDigest,
   BlockSummary,
   CategorySummary,
   CodeBlock,

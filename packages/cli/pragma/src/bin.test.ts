@@ -3,7 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const detectLocalInstallMock = vi.fn();
 const runCliMock = vi.fn(async () => undefined);
 
-vi.mock("./package-manager/index.js", () => ({
+vi.mock("./package-manager/index.js", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("./package-manager/index.js")>()),
   detectLocalInstall: detectLocalInstallMock,
 }));
 

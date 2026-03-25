@@ -70,7 +70,7 @@ export default function buildListCommand(
       const standards = await listStandards(ctx.store, filters);
 
       if (standards.length === 0) {
-        throw PragmaError.emptyResults("standards", {
+        throw PragmaError.emptyResults("standard", {
           filters: buildActiveFilters(filters),
           recovery: {
             message: "List all standards without filters.",

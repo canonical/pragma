@@ -64,7 +64,12 @@ describe("agent sessions", () => {
     expect(blocks.length).toBeGreaterThan(0);
 
     // 4. Get block detail
-    const firstName = blocks[0]!.name;
+    const firstBlock = blocks[0];
+    expect(firstBlock).toBeDefined();
+    if (!firstBlock) {
+      throw new Error("Expected at least one block");
+    }
+    const firstName = firstBlock.name;
     const detail = parseEnvelope(
       await client.callTool({
         name: "block_lookup",
@@ -97,7 +102,7 @@ describe("agent sessions", () => {
     const standards = parseEnvelope(
       await client.callTool({
         name: "standard_list",
-        arguments: { category: categories[0]!.name },
+        arguments: { category: categories[0]?.name },
       }),
     );
     const stdList = standards.data as { name: string }[];
@@ -107,7 +112,7 @@ describe("agent sessions", () => {
     const detail = parseEnvelope(
       await client.callTool({
         name: "standard_lookup",
-        arguments: { name: stdList[0]!.name },
+        arguments: { name: stdList[0]?.name },
       }),
     );
     expect(detail.ok).toBe(true);
@@ -131,7 +136,7 @@ describe("agent sessions", () => {
     const data = result.data as { bindings: { name?: string }[] };
     // Canonical fixture has 4 components
     expect(data.bindings.length).toBe(4);
-    expect(data.bindings[0]!.name).toBe("Beta Widget");
-    expect(data.bindings[1]!.name).toBe("Button");
+    expect(data.bindings[0]?.name).toBe("Beta Widget");
+    expect(data.bindings[1]?.name).toBe("Button");
   });
 });

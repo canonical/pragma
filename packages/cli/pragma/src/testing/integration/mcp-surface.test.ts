@@ -354,10 +354,14 @@ describe("graph_inspect", () => {
     });
     const qBody = parseEnvelope(q);
     const uri = (qBody.data as { bindings: { s?: string }[] }).bindings[0]?.s;
+    expect(uri).toBeDefined();
+    if (!uri) {
+      throw new Error("Expected a URI from graph_query");
+    }
 
     const res = await client.callTool({
       name: "graph_inspect",
-      arguments: { uri: uri! },
+      arguments: { uri },
     });
     const body = parseEnvelope(res);
     expect(body.ok).toBe(true);

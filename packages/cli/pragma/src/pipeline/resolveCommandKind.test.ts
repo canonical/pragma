@@ -54,4 +54,15 @@ describe("resolveCommandKind", () => {
     const result = resolveCommandKind(["node", "pragma", "--llm", "doctor"]);
     expect(result).toEqual({ kind: "doctor" });
   });
+
+  it("skips the --format value when finding the command argument", () => {
+    const result = resolveCommandKind([
+      "node",
+      "pragma",
+      "--format",
+      "json",
+      "doctor",
+    ]);
+    expect(result).toEqual({ kind: "doctor" });
+  });
 });

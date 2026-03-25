@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("#config", async (importOriginal) => ({
   ...(await importOriginal<typeof import("#config")>()),
@@ -30,10 +30,13 @@ import {
   checkPragmaVersion,
   checkShellCompletions,
   checkSkillsSymlinked,
-  checkTerrazzo,
 } from "./checks/index.js";
 
 const ctx = { cwd: "/test/project" };
+
+beforeEach(() => {
+  vi.clearAllMocks();
+});
 
 describe("checkNodeVersion", () => {
   it("passes for current Node version", async () => {
@@ -96,13 +99,6 @@ describe("checkShellCompletions", () => {
   it("returns pass or fail without throwing", async () => {
     const result = await checkShellCompletions();
     expect(["pass", "fail"]).toContain(result.status);
-  });
-});
-
-describe("checkTerrazzo", () => {
-  it("skips when no tokens.config.mjs exists", async () => {
-    const result = await checkTerrazzo({ cwd: "/nonexistent/path" });
-    expect(result.status).toBe("skip");
   });
 });
 

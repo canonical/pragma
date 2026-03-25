@@ -50,32 +50,32 @@ describe("detectPackageManager", () => {
 
 describe("PM_COMMANDS", () => {
   it("generates correct bun install command", () => {
-    expect(PM_COMMANDS.bun.install("@canonical/pragma")).toBe(
-      "bun add -g @canonical/pragma",
+    expect(PM_COMMANDS.bun.install("@canonical/pragma-cli")).toBe(
+      "bun add -g @canonical/pragma-cli",
     );
   });
 
   it("generates correct npm update command", () => {
-    expect(PM_COMMANDS.npm.update("@canonical/pragma")).toBe(
-      "npm update -g @canonical/pragma",
+    expect(PM_COMMANDS.npm.update("@canonical/pragma-cli")).toBe(
+      "npm update -g @canonical/pragma-cli",
     );
   });
 
   it("generates correct pnpm install command", () => {
-    expect(PM_COMMANDS.pnpm.install("@canonical/pragma")).toBe(
-      "pnpm add -g @canonical/pragma",
+    expect(PM_COMMANDS.pnpm.install("@canonical/pragma-cli")).toBe(
+      "pnpm add -g @canonical/pragma-cli",
     );
   });
 
   it("generates correct yarn install command", () => {
-    expect(PM_COMMANDS.yarn.install("@canonical/pragma")).toBe(
-      "yarn global add @canonical/pragma",
+    expect(PM_COMMANDS.yarn.install("@canonical/pragma-cli")).toBe(
+      "yarn global add @canonical/pragma-cli",
     );
   });
 
   it("generates correct yarn update command", () => {
-    expect(PM_COMMANDS.yarn.update("@canonical/pragma")).toBe(
-      "yarn global upgrade @canonical/pragma",
+    expect(PM_COMMANDS.yarn.update("@canonical/pragma-cli")).toBe(
+      "yarn global upgrade @canonical/pragma-cli",
     );
   });
 });

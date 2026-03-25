@@ -1,4 +1,8 @@
-import type { CommandDefinition, CommandResult } from "@canonical/cli-core";
+import {
+  type CommandDefinition,
+  type CommandResult,
+  createOutputResult,
+} from "@canonical/cli-core";
 import runSetupTask from "../helpers/runSetupTask.js";
 import setupMcp from "../operations/setupMcp.js";
 
@@ -15,6 +19,14 @@ function resolveForceHarness(
   if (params.cursor === true) return "cursor";
   if (params.windsurf === true) return "windsurf";
   return undefined;
+}
+
+function buildSuccessMessage(forceHarnessId: string | undefined): string {
+  if (forceHarnessId) {
+    return `✓ MCP configured for ${forceHarnessId}.`;
+  }
+
+  return "✓ MCP configured for detected harnesses.";
 }
 
 /**
@@ -78,15 +90,30 @@ const mcpCommand: CommandDefinition = {
   execute: async (
     params: Record<string, unknown>,
     ctx,
-  ): Promise<CommandResult> =>
-    runSetupTask(setupMcp(ctx.cwd, resolveForceHarness(params)), {
+  ): Promise<CommandResult> => {
+    const forceHarnessId = resolveForceHarness(params);
+    const result = await runSetupTask(setupMcp(ctx.cwd, forceHarnessId), {
       dryRun: params.dryRun === true,
       undo: params.undo === true,
       yes: params.yes === true,
       verbose: ctx.globalFlags.verbose,
       llm: ctx.globalFlags.llm,
       format: ctx.globalFlags.format,
-    }),
+    });
+
+    if (
+      params.dryRun !== true &&
+      params.undo !== true &&
+      result.tag === "exit" &&
+      result.code === 0
+    ) {
+      return createOutputResult(buildSuccessMessage(forceHarnessId), {
+        plain: (text) => text,
+      });
+    }
+
+    return result;
+  },
 };
 
 export default mcpCommand;

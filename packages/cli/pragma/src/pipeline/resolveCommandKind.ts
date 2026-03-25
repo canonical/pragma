@@ -10,6 +10,28 @@ import type { CommandKind } from "./types.js";
 /** Commands that do not require the ke store to be booted. */
 const STORE_SKIP_COMMANDS = new Set(["setup", "mcp"]);
 
+function findCommandArg(argv: readonly string[]): string | undefined {
+  const args = argv.slice(2);
+
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    if (!arg) continue;
+
+    if (arg === "--format") {
+      i += 1;
+      continue;
+    }
+
+    if (arg.startsWith("-")) {
+      continue;
+    }
+
+    return arg;
+  }
+
+  return undefined;
+}
+
 /**
  * Classify the CLI invocation into a {@link CommandKind} discriminated union.
  *
@@ -28,7 +50,7 @@ export default function resolveCommandKind(
     return { kind: "completions-client", partial };
   }
 
-  const commandArg = argv.slice(2).find((a) => !a.startsWith("-"));
+  const commandArg = findCommandArg(argv);
 
   // Completions server — boots its own store with cache.
   if (commandArg === "_completions-server") {

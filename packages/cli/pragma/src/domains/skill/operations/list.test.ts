@@ -11,17 +11,14 @@ const TEST_SOURCES: SkillSource[] = [
   {
     dir: join(TMP_ROOT, "node_modules/@canonical/design-system/skills"),
     packageName: "@canonical/design-system",
-    relativePath: "node_modules/@canonical/design-system/skills",
   },
   {
     dir: join(TMP_ROOT, "node_modules/@canonical/anatomy-dsl/skills"),
     packageName: "@canonical/anatomy-dsl",
-    relativePath: "node_modules/@canonical/anatomy-dsl/skills",
   },
   {
-    dir: join(TMP_ROOT, "node_modules/@canonical/pragma/skills"),
-    packageName: "@canonical/pragma",
-    relativePath: "node_modules/@canonical/pragma/skills",
+    dir: join(TMP_ROOT, "node_modules/@canonical/pragma-cli/skills"),
+    packageName: "@canonical/pragma-cli",
   },
 ];
 

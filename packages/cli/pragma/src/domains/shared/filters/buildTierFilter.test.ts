@@ -66,6 +66,10 @@ describe("buildTierFilter", () => {
     );
   });
 
+  it("normalizes mixed-case tier paths from config", () => {
+    expect(buildTierFilter("Global")).toBe(`FILTER(?tier IN (${P.ds}global))`);
+  });
+
   it("uses custom variable name", () => {
     expect(buildTierFilter("apps", "t")).toBe(
       `FILTER(?t IN (${P.ds}global, ${P.ds}apps))`,

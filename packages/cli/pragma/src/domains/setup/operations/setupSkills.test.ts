@@ -9,7 +9,8 @@ const MOCK_SKILLS: readonly DiscoveredSkill[] = [
   {
     name: "design-audit",
     description: "Audit a component against DS specs",
-    sourcePath: "node_modules/@canonical/ds-global/skills/design-audit",
+    sourcePath:
+      "/project/node_modules/@canonical/ds-global/skills/design-audit",
     sourcePackage: "@canonical/ds-global",
     folderName: "design-audit",
     frontmatter: {
@@ -20,8 +21,9 @@ const MOCK_SKILLS: readonly DiscoveredSkill[] = [
   {
     name: "scaffold-story",
     description: "Generate a Storybook story from anatomy",
-    sourcePath: "node_modules/@canonical/pragma/skills/scaffold-story",
-    sourcePackage: "@canonical/pragma",
+    sourcePath:
+      "/project/node_modules/@canonical/pragma-cli/skills/scaffold-story",
+    sourcePackage: "@canonical/pragma-cli",
     folderName: "scaffold-story",
     frontmatter: {
       name: "scaffold-story",
@@ -99,7 +101,7 @@ describe("setupSkills", () => {
             if (linkPath.includes("scaffold-story")) {
               return {
                 stdout:
-                  "/project/node_modules/@canonical/pragma/skills/scaffold-story",
+                  "/project/node_modules/@canonical/pragma-cli/skills/scaffold-story",
                 stderr: "",
                 exitCode: 0,
               };

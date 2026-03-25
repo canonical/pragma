@@ -13,7 +13,8 @@ const MOCK_RESULT: SetupSkillsResult = {
     },
     {
       skillName: "scaffold-story",
-      target: "/project/node_modules/@canonical/pragma/skills/scaffold-story",
+      target:
+        "/project/node_modules/@canonical/pragma-cli/skills/scaffold-story",
       linkPath: "/project/.claude/skills/scaffold-story",
       action: "created",
       harnessName: "Claude Code",

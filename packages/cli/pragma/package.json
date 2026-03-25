@@ -1,5 +1,5 @@
 {
-  "name": "@canonical/pragma",
+  "name": "@canonical/pragma-cli",
   "description": "CLI and MCP server for Canonical's design system.",
   "version": "0.18.0",
   "type": "module",

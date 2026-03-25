@@ -78,6 +78,7 @@ export default function registerAll(
   commands: readonly CommandDefinition[],
   ctx: CommandContext,
 ): void {
+  program.enablePositionalOptions();
   const groups = new Map<string, CommandDefinition[]>();
 
   for (const cmd of commands) {
@@ -103,6 +104,8 @@ export default function registerAll(
         parent = program.command(noun);
         parent.description(`${noun} commands`);
       }
+
+      parent.enablePositionalOptions();
 
       // Attach noun-level help (e.g. `pragma component --help`)
       const programName = program.name();
@@ -138,6 +141,7 @@ function attachCommand(
 
   const fullName = positionalSuffix ? `${name} ${positionalSuffix}` : name;
   const sub = parent.command(fullName).description(cmd.description);
+  sub.enablePositionalOptions();
 
   // Attach verb-level help (e.g. `pragma component list --help`)
   const helpCmd = originalCmd ?? cmd;

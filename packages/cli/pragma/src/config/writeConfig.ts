@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { readFileSync, renameSync, writeFileSync } from "node:fs";
 import resolveConfigPath from "./resolveConfigPath.js";
 import type { ConfigUpdate } from "./types.js";
 
@@ -15,6 +15,7 @@ import type { ConfigUpdate } from "./types.js";
  */
 export default function writeConfig(cwd: string, update: ConfigUpdate): void {
   const configPath = resolveConfigPath(cwd);
+  const tempPath = `${configPath}.tmp`;
 
   let existing: Record<string, unknown> = {};
   try {
@@ -43,10 +44,6 @@ export default function writeConfig(cwd: string, update: ConfigUpdate): void {
     delete existing.channel;
   }
 
-  const hasFields = Object.keys(existing).length > 0;
-  if (hasFields) {
-    writeFileSync(configPath, `${JSON.stringify(existing, null, 2)}\n`);
-  } else if (existsSync(configPath)) {
-    writeFileSync(configPath, "");
-  }
+  writeFileSync(tempPath, `${JSON.stringify(existing, null, 2)}\n`);
+  renameSync(tempPath, configPath);
 }
