@@ -4,9 +4,6 @@
  *   @import url("@canonical/styles");
  */
 
-/* Fonts — Ubuntu from Google Fonts CDN */
-@import url("./fonts.css");
-
 /* Layer ordering — deterministic cascade (spec §C.2) */
 @layer normalize, ds.reset, ds.modifiers, ds.components;
 
