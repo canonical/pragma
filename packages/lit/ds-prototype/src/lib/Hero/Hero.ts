@@ -27,6 +27,11 @@ export default class Hero extends LitElement implements HeroProps {
 
   @state() private _hasMedia = false;
 
+  connectedCallback() {
+    super.connectedCallback();
+    this._hasMedia = !!this.querySelector('[slot="media"]');
+  }
+  
   private _onMediaSlotChange(e: Event) {
     const slot = e.target as HTMLSlotElement;
     this._hasMedia = slot.assignedElements().length > 0;
