@@ -1,0 +1,133 @@
+:host {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: subgrid;
+  --grid-row-8-cols: repeat(8, 1fr);
+}
+
+/* --- Shared / Component Wide --- */
+.ds.tiered-list {
+  /* Default Padding */
+  padding-bottom: var(--spacing-vertical-xxlarge);
+
+  /* Modifiers */
+  &.p-section--deep {
+    padding-bottom: var(--spacing-vertical-xxxlarge);
+  }
+  &.p-section--shallow {
+    padding-bottom: var(--spacing-vertical-xlarge);
+  }
+
+  grid-column: 1 / -1;
+
+  /* Responsive Grid Positioning */
+  @media (min-width: 768px) {
+    grid-column: 2 / -1;
+  }
+  @media (min-width: 1280px) {
+    grid-column: 2 / 8;
+  }
+
+  /* Consolidated Tablet/Mobile Overrides (Shared between header, cta, and vars) */
+  @media (max-width: 1035px) {
+    --item-description-column: 1 / -1;
+    --item-title-column: 1 / -1;
+
+    .header .title,
+    .header .description,
+    .cta .p-cta-block {
+      grid-column: 1 / -1;
+    }
+  }
+
+  & .header {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
+    padding-bottom: var(--spacing-vertical-xlarge);
+
+    & .title h2 {
+      font-size: 2.5rem !important;
+      font-weight: 180 !important;
+      line-height: 3rem;
+      margin-top: 0;
+    }
+  }
+
+  /* Full width list override */
+  &.full-width-list-on-tablet ::slotted(ds-tiered-list-item) {
+    @media (max-width: 1035px) {
+      --item-title-column: 1 / 5;
+      --item-description-column: 5 / -1;
+    }
+  }
+}
+
+/* --- CTA --- */
+.ds.tiered-list .cta {
+  display: grid;
+  grid-template-columns: var(--grid-row-8-cols);
+
+  & .p-cta-block {
+    grid-column: 5 / -1;
+
+    ::slotted(*) {
+      display: block;
+      width: 100%;
+    }
+  }
+}
+
+/* --- Child Item --- */
+.ds.tiered-list__item {
+  display: grid;
+  grid-template-columns: var(--grid-row-8-cols);
+
+  & .item__title {
+    grid-column: var(--item-title-column, 3 / 5);
+    @media (min-width: 1280px) {
+      grid-column: var(--item-title-column, 2 / 4);
+    }
+  }
+
+  & .item__description {
+    grid-column: var(--item-description-column, 5 / -1);
+  }
+
+  & hr {
+    grid-column: 2 / -1;
+    width: 100%;
+    margin: var(--spacing-vertical-large) 0;
+    border: none;
+    border-top: 1px solid var(--tmp-color-palette-gray-14, #ccc);
+
+    @media (max-width: 1035px) {
+      grid-column: 1 / -1;
+    }
+  }
+}
+
+/* Global slotted h3 */
+::slotted(h3[slot="item-title"]) {
+  font-size: 1rem !important;
+  font-weight: 550 !important;
+}
+
+/* Full Width Description Override */
+.ds.tiered-list.full-width-description-on-desktop .header {
+  grid-template-columns: var(--grid-row-8-cols);
+  .title {
+    grid-column: 1 / -1;
+  }
+  .description {
+    grid-row: 2;
+    grid-column: 5 / -1;
+    @media (max-width: 1035px) {
+      grid-column: 1 / -1;
+    }
+  }
+}
+
+/* Conditional removal of last HR */
+:host(ds-tiered-list-item:last-of-type) hr {
+  display: none;
+}
