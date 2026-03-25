@@ -1,0 +1,109 @@
+/* @canonical/styles — Spacing architecture tokens
+ *
+ * Provisional tokens implementing the spacing architecture spec v0.4.
+ * Two modes: element-owned (editorial) and container-owned (app UI).
+ * Will migrate to @canonical/design-tokens once validated.
+ *
+ * Terminology:
+ *   block  = vertical axis   (block-start = top, block-end = bottom)
+ *   inline = horizontal axis (inline-start = left in LTR, right in RTL)
+ *
+ * Convention: ALL available custom properties are listed here.
+ * Commented-out properties are valid extension points that consumers
+ * or themes may set; they are documented so the full API surface
+ * is visible in one place.
+ */
+
+:root {
+  /* ── Baseline grid ──────────────────────────────────────────────── */
+  --space-baseline: var(--dimension-size-height-baseline, 0.5rem); /* 8px — bU */
+
+  /* ── Spacing scale (semantic aliases) ───────────────────────────── */
+  --space-0: 0;
+  --space-025: var(--dimension-025); /* 0.125rem /  2px — micro    */
+  --space-050: var(--dimension-050); /* 0.25rem  /  4px — xxs      */
+  --space-100: var(--dimension-100); /* 0.5rem   /  8px — xs (1bU) */
+  --space-150: var(--dimension-150); /* 0.75rem  / 12px — sm       */
+  --space-200: var(--dimension-200); /* 1rem     / 16px — md (2bU) */
+  --space-300: var(--dimension-300); /* 1.5rem   / 24px — lg (3bU) */
+  --space-400: var(--dimension-400); /* 2rem     / 32px — xl (4bU) */
+  --space-600: var(--dimension-600); /* 3rem     / 48px — 2xl      */
+  --space-800: var(--dimension-800); /* 4rem     / 64px — 3xl      */
+
+  /* ── Element-owned spacing (margin-block-end) ───────────────────── */
+  /* Direction: block-end (downward in horizontal writing modes).       */
+  /*                                                                    */
+  /* For typographic elements (h1-h6, p), space-after is implemented   */
+  /* in @canonical/styles-typography mapper.css as a unitless           */
+  /* --space-after variable (in baseline-height units) consumed by     */
+  /* the baseline engine:                                               */
+  /*   margin-bottom: calc(bottom-nudge + space-after × baseline-height) */
+  /*                                                                    */
+  /* Current values in mapper.css:                                      */
+  /*   h1, h2: --space-after: 2  (= 2 × 0.5rem = 1rem = 16px)        */
+  /*   h3-h6, p: --space-after: 1 (= 1 × 0.5rem = 0.5rem = 8px)     */
+  /*                                                                    */
+  /* The tokens below are for NON-typographic elements.                 */
+  /* When the spacing architecture is finalised, the typography         */
+  /* mapper should read FROM these tokens instead of hardcoding.        */
+  --spaceAfter-button: var(--space-200); /* 1rem / 16px — block-end margin */
+  /* --spaceAfter-figure: var(--space-300); */ /* block-end margin for figures */
+  /* --spaceAfter-list:   var(--space-200); */ /* block-end margin for ul/ol   */
+  /* --spaceAfter-table:  var(--space-300); */ /* block-end margin for tables  */
+  /* --spaceAfter-hr:     var(--space-400); */ /* block-end margin for <hr>    */
+
+  /* ── Container-owned spacing (gap values) ───────────────────────── */
+  /* Used in application UI contexts: forms, dashboards, cards.        */
+  /* These are axis-agnostic by default — containers apply them to     */
+  /* whichever axis they need (block-direction gap for stacked forms,  */
+  /* inline-direction gap for button rows, both for grids).            */
+  --container-gap-tight: var(--space-050); /*  4px — dense key-value pairs  */
+  --container-gap-default: var(--space-200); /* 16px — standard card/form gap */
+  --container-gap-loose: var(--space-300); /* 24px — sections, visual break */
+
+  /* Per-axis container gap overrides (set by consumers, not defined here): */
+  /* --container-gap-block:  … ; */ /* block-direction gap override  */
+  /* --container-gap-inline: … ; */ /* inline-direction gap override */
+
+  /* ── Intra-component spacing ────────────────────────────────────── */
+  /* Component-owned: internal padding regardless of context.           */
+  --component-padding-block: var(--space-100); /*  8px — block (vertical)  padding */
+  --component-padding-inline: var(
+    --space-200
+  ); /* 16px — inline (horizontal) padding */
+
+  /* Per-side component padding overrides (set by themes/consumers): */
+  /* --component-padding-block-start:  … ; */ /* top padding override     */
+  /* --component-padding-block-end:    … ; */ /* bottom padding override  */
+  /* --component-padding-inline-start: … ; */ /* left (LTR) padding      */
+  /* --component-padding-inline-end:   … ; */ /* right (LTR) padding     */
+
+  /* ── Layout grid ────────────────────────────────────────────────── */
+  --grid-gutter: var(
+    --space-300
+  ); /* 24px / 1.5rem — column gutters (inline-direction) */
+  --grid-margin: var(
+    --space-400
+  ); /* 32px / 2rem   — outer page margin (inline-direction) */
+
+  /* Grid gap axis overrides (consumed by grid.css): */
+  /* --grid-gap:        … ; */ /* shorthand: sets both row-gap and column-gap */
+  /* --grid-row-gap:    … ; */ /* block-direction gap between grid rows       */
+  /* --grid-column-gap: … ; */ /* inline-direction gap between grid columns   */
+
+  /* ── Heading alignment ──────────────────────────────────────────── */
+  /* Inline padding for headings to align with padded blocks.           */
+  /* --heading-padding-inline: … ; */ /* set by layout context, default 0 */
+}
+
+/* ── Content-flow container ─────────────────────────────────────── */
+
+@layer ds.components {
+  /* Content-flow container: establishes element-owned spacing context.
+   * Children use their own margin-bottom; last child is reset to 0
+   * to prevent double spacing at the container boundary.
+   */
+  .content-flow > :last-child {
+    margin-bottom: 0;
+  }
+}

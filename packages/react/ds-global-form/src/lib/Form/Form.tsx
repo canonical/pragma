@@ -21,7 +21,9 @@ function FormShell({
     <FormProvider {...methods}>
       <form
         id={id}
-        className={[componentCssClassName, className].filter(Boolean).join(" ")}
+        className={[componentCssClassName, "subgrid", className]
+              .filter(Boolean)
+              .join(" ")}
         style={style}
         onSubmit={methods.handleSubmit(onSubmit)}
       >

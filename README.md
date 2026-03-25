@@ -223,7 +223,7 @@ The following table lists all packages in the monorepo with their location and p
 | `@canonical/webarchitect` | `packages/webarchitect` | Architecture validation CLI with JSON Schema rulesets |
 | `@canonical/generator-ds` | `packages/generator-ds` | Yeoman generator for scaffolding components |
 | `@canonical/storybook-addon-msw` | `packages/storybook/addon-msw` | Mock Service Worker integration for Storybook |
-| `@canonical/storybook-addon-baseline-grid` | `packages/storybook/addon-baseline-grid` | Baseline grid overlay for typography verification |
+| `@canonical/storybook-addon-utils` | `packages/storybook/addon-utils` | Debug and layout utilities: grid mode, color scheme, baseline grid, outlines |
 
 ### Configuration
 

@@ -3,6 +3,10 @@
   "description": "Canonical Design System global stylesheet. Aggregates normalize, typography, and design tokens.",
   "version": "0.20.0",
   "main": "src/index.css",
+  "exports": {
+    ".": "./src/index.css",
+    "./fonts": "./src/fonts.css"
+  },
   "files": [
     "src"
   ],

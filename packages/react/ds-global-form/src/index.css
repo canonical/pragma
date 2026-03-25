@@ -1,43 +1,128 @@
+/* @canonical/react-ds-global-form — Form component tokens
+ *
+ * All available custom properties are listed below.
+ * Commented-out properties are valid extension points that
+ * themes or consumers may set.
+ *
+ * Terminology:
+ *   block  = vertical axis   (block-start = top, block-end = bottom)
+ *   inline = horizontal axis (inline-start = left in LTR, right in RTL)
+ */
+
 :root {
-  /* Input chrome */
-  --form-input-padding-block: var(--tmp-space-input-block);
-  --form-input-padding-inline: var(--tmp-space-input-inline);
-  --form-input-border-width: var(--dimension-stroke-thickness-medium);
+  /* ── Form grid layout ───────────────────────────────────────────── */
+  /* Forms are subgrids: they inherit columns from a parent .grid      */
+  /* context (either .grid.responsive or .grid.intrinsic).             */
+
+  /* Field position within form grid — default: full width */
+  --form-field-columns: 1 / -1;
+
+  /* Label and payload column placement — stacked by default */
+  --form-label-columns: 1 / -1;
+  --form-payload-columns: 1 / -1;
+
+  /* Side layout (set on form wrapper to switch all fields): */
+  /* --form-label-columns:   1 / 3;   */ /* label in first 2 cols  */
+  /* --form-payload-columns: 3 / -1;  */ /* payload in remaining   */
+
+  /* Per-field column overrides (set via style prop on individual fields): */
+  /* --form-field-columns: 1 / 7;  */ /* field spans first 6 columns */
+  /* --form-field-columns: 7 / -1; */ /* field spans last 6 columns  */
+
+  /* ── Field layout spacing ───────────────────────────────────────── */
+  /* Container-owned: the form/field wrapper controls all spacing.     */
+
+  --form-field-block-gap: var(
+    --container-gap-loose
+  ); /* 24px — block-direction (vertical) gap between fields */
+  --form-field-inline-gap: var(
+    --container-gap-default
+  ); /* 16px — inline-direction (horizontal) gap: label ↔ input */
+  --form-group-gap: var(
+    --space-050
+  ); /* 4px — block-direction gap: desc/error ↔ input */
+
+  /* ── Input chrome ───────────────────────────────────────────────── */
+  /* Component-owned: internal padding regardless of context.           */
+
+  --form-input-padding-block: var(
+    --component-padding-block
+  ); /*  8px — block (vertical)    */
+  --form-input-padding-inline: var(
+    --component-padding-inline
+  ); /* 16px — inline (horizontal) */
+
+  /* Per-side input padding overrides: */
+  /* --form-input-padding-block-start:  … ; */ /* top padding    */
+  /* --form-input-padding-block-end:    … ; */ /* bottom padding */
+  /* --form-input-padding-inline-start: … ; */ /* left padding   */
+  /* --form-input-padding-inline-end:   … ; */ /* right padding  */
+
+  /* ── Borders ────────────────────────────────────────────────────── */
+
+  --form-input-border-width: var(--dimension-stroke-thickness-medium); /* 1px  */
   --form-input-border-color: var(--color-border);
-  --form-input-border-radius: var(--dimension-radius-small);
+  --form-input-border-radius: var(--dimension-radius-small); /* 0 */
+
+  /* Per-side border overrides — NOT defined here; undefined by default.
+   * When undefined, var() falls through to the base value above.
+   * Themes set ONLY the sides that differ from the base.
+   *
+   * Available per-side tokens:                                         */
+  /* --form-input-border-color-top:    … ; */ /* top border color    */
+  /* --form-input-border-color-right:  … ; */ /* right border color  */
+  /* --form-input-border-color-bottom: … ; */ /* bottom border color */
+  /* --form-input-border-color-left:   … ; */ /* left border color   */
+  /* --form-input-border-width-top:    … ; */ /* top border width    */
+  /* --form-input-border-width-right:  … ; */ /* right border width  */
+  /* --form-input-border-width-bottom: … ; */ /* bottom border width */
+  /* --form-input-border-width-left:   … ; */ /* left border width   */
+
+  /* Per-corner radius overrides: */
+  /* --form-input-border-radius-top-left:     … ; */
+  /* --form-input-border-radius-top-right:    … ; */
+  /* --form-input-border-radius-bottom-right: … ; */
+  /* --form-input-border-radius-bottom-left:  … ; */
+
+  /* ── Colors ─────────────────────────────────────────────────────── */
+
   --form-input-background: var(--color-foreground-input);
   --form-input-color: var(--color-text);
   --form-input-font-size: var(--typography-text-primary-font-size);
   --form-input-line-height: var(--typography-text-primary-line-height);
 
-  /* Field layout */
-  --form-field-gap: var(--tmp-space-field-gap);
-  --form-field-inline-gap: var(--tmp-space-field-inline);
-  --form-group-gap: var(--tmp-space-group-gap);
+  /* ── Label ──────────────────────────────────────────────────────── */
 
-  /* Label */
   --form-label-font-weight: var(--typography-text-primary-font-weight-bold);
   --form-label-font-size: var(--typography-text-primary-font-size);
   --form-label-color: var(--color-text);
+  /* --form-label-padding-block:  … ; */ /* block padding for label  */
+  /* --form-label-padding-inline: … ; */ /* inline padding for label */
 
-  /* Description */
+  /* ── Description ────────────────────────────────────────────────── */
+
   --form-description-font-size: var(--typography-text-secondary-font-size);
   --form-description-color: var(--color-text-muted);
 
-  /* Error */
+  /* ── Error ──────────────────────────────────────────────────────── */
+
   --form-error-font-size: var(--typography-text-secondary-font-size);
   --form-error-color: var(--modifier-color-text, var(--color-text-error));
 
-  /* State colors */
+  /* ── State colors ───────────────────────────────────────────────── */
+
   --form-input-border-color-focus: var(--color-focusRing);
   --form-input-border-color-error: var(--color-border-error);
   --form-input-background-disabled: var(--color-foreground-input-disabled);
   --form-input-color-disabled: var(--disabled--color-text);
   --form-input-border-color-disabled: var(--disabled--color-border);
 
-  /* Focus ring */
+  /* ── Focus ring ─────────────────────────────────────────────────── */
+
   --form-focus-ring-color: var(--color-focusRing);
   --form-focus-ring-color-error: var(--color-focusRing-error);
+  /* --form-focus-ring-width:  … ; */ /* focus ring thickness (default: 1px via box-shadow) */
+  /* --form-focus-ring-offset: … ; */ /* focus ring offset from border */
 }
 
 /* ── .ds.input.chrome — shared input chrome ─────────────────────────
@@ -50,7 +135,46 @@
   width: 100%;
   padding-block: var(--form-input-padding-block);
   padding-inline: var(--form-input-padding-inline);
+
+  /* Base border — uniform default */
   border: var(--form-input-border-width) solid var(--form-input-border-color);
+
+  /* Per-side overrides — only effective when a theme defines them.
+   * When undefined, var() falls through to the base shorthand. */
+  border-top-color: var(
+    --form-input-border-color-top,
+    var(--form-input-border-color)
+  );
+  border-right-color: var(
+    --form-input-border-color-right,
+    var(--form-input-border-color)
+  );
+  border-bottom-color: var(
+    --form-input-border-color-bottom,
+    var(--form-input-border-color)
+  );
+  border-left-color: var(
+    --form-input-border-color-left,
+    var(--form-input-border-color)
+  );
+
+  border-top-width: var(
+    --form-input-border-width-top,
+    var(--form-input-border-width)
+  );
+  border-right-width: var(
+    --form-input-border-width-right,
+    var(--form-input-border-width)
+  );
+  border-bottom-width: var(
+    --form-input-border-width-bottom,
+    var(--form-input-border-width)
+  );
+  border-left-width: var(
+    --form-input-border-width-left,
+    var(--form-input-border-width)
+  );
+
   border-radius: var(--form-input-border-radius);
   background-color: var(--form-input-background);
   color: var(--form-input-color);
@@ -93,4 +217,23 @@
 .danger > .payload .ds.input.chrome:focus-within {
   border-color: var(--form-focus-ring-color-error);
   box-shadow: 0 0 0 1px var(--form-focus-ring-color-error);
+}
+
+/* ── .ds.form — form as subgrid ───────────────────────────────────── */
+.ds.form {
+  display: grid;
+  grid-template-columns: subgrid;
+  grid-column: 1 / -1;
+  row-gap: var(--form-field-block-gap);
+}
+
+/* ── Layout presets ───────────────────────────────────────────────── */
+
+@layer ds.components {
+  /* Side layout: label beside input.
+   * Apply on the form or a wrapper to switch all fields to side layout. */
+  .form-layout-side {
+    --form-label-columns: 1 / 3;
+    --form-payload-columns: 3 / -1;
+  }
 }

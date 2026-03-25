@@ -20,6 +20,9 @@
     },
     "./baseline-grid": {
       "import": "./src/baseline-grid.css"
+    },
+    "./outlines": {
+      "import": "./src/outlines.css"
     }
   },
   "license": "LGPL-3.0",

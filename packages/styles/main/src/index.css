@@ -26,5 +26,5 @@
 /* Grid layout presets */
 @import url("./grid.css");
 
-/* Temporary semantic tokens (candidates for design-tokens) */
-@import url("./tmp.css");
+/* Spacing architecture tokens */
+@import url("./spacing.css");

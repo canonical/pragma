@@ -21,7 +21,7 @@
   list-style: none;
 
   & > li {
-    padding: var(--tmp-space-input-block) var(--tmp-space-input-inline);
+    padding: var(--component-padding-block) var(--component-padding-inline);
     cursor: pointer;
     transition: background-color 100ms ease;
 

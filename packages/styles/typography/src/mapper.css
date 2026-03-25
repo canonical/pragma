@@ -23,6 +23,11 @@
  * The line-height-multiplier is computed using round() to snap the typographic
  * line-height (font-size × unitless ratio) to the nearest baseline-grid unit:
  *   round(up, font-size × line-height-ratio / baseline-height, 1)
+ *
+ * Heading padding-inline:
+ *   Headings receive --heading-padding-inline (default: 0) so they can
+ *   optionally align with padded blocks (cards, inputs, containers).
+ *   Set --heading-padding-inline on a layout context to activate.
  */
 
 /* ── Headings ── */
@@ -34,8 +39,7 @@ h1 {
     up,
     calc(
       var(--typography-heading-1-font-size) *
-      var(--typography-heading-1-line-height) /
-      var(--baseline-height)
+        var(--typography-heading-1-line-height) / var(--baseline-height)
     ),
     1
   );
@@ -43,6 +47,7 @@ h1 {
   font-family: var(--typography-heading-1-font-family);
   font-weight: var(--font-weight);
   letter-spacing: var(--typography-heading-1-letter-spacing);
+  padding-inline: var(--heading-padding-inline, 0);
 }
 
 h2 {
@@ -52,8 +57,7 @@ h2 {
     up,
     calc(
       var(--typography-heading-2-font-size) *
-      var(--typography-heading-2-line-height) /
-      var(--baseline-height)
+        var(--typography-heading-2-line-height) / var(--baseline-height)
     ),
     1
   );
@@ -61,6 +65,7 @@ h2 {
   font-family: var(--typography-heading-2-font-family);
   font-weight: var(--font-weight);
   letter-spacing: var(--typography-heading-2-letter-spacing);
+  padding-inline: var(--heading-padding-inline, 0);
 }
 
 h3 {
@@ -70,8 +75,7 @@ h3 {
     up,
     calc(
       var(--typography-heading-3-font-size) *
-      var(--typography-heading-3-line-height) /
-      var(--baseline-height)
+        var(--typography-heading-3-line-height) / var(--baseline-height)
     ),
     1
   );
@@ -79,6 +83,7 @@ h3 {
   font-family: var(--typography-heading-3-font-family);
   font-weight: var(--font-weight);
   letter-spacing: var(--typography-heading-3-letter-spacing);
+  padding-inline: var(--heading-padding-inline, 0);
 }
 
 h4 {
@@ -88,8 +93,7 @@ h4 {
     up,
     calc(
       var(--typography-heading-4-font-size) *
-      var(--typography-heading-4-line-height) /
-      var(--baseline-height)
+        var(--typography-heading-4-line-height) / var(--baseline-height)
     ),
     1
   );
@@ -97,6 +101,7 @@ h4 {
   font-family: var(--typography-heading-4-font-family);
   font-weight: var(--font-weight);
   letter-spacing: var(--typography-heading-4-letter-spacing);
+  padding-inline: var(--heading-padding-inline, 0);
 }
 
 h5 {
@@ -106,8 +111,7 @@ h5 {
     up,
     calc(
       var(--typography-heading-5-font-size) *
-      var(--typography-heading-5-line-height) /
-      var(--baseline-height)
+        var(--typography-heading-5-line-height) / var(--baseline-height)
     ),
     1
   );
@@ -115,6 +119,7 @@ h5 {
   font-family: var(--typography-heading-5-font-family);
   font-weight: var(--font-weight);
   letter-spacing: var(--typography-heading-5-letter-spacing);
+  padding-inline: var(--heading-padding-inline, 0);
 }
 
 h6 {
@@ -124,8 +129,7 @@ h6 {
     up,
     calc(
       var(--typography-heading-6-font-size) *
-      var(--typography-heading-6-line-height) /
-      var(--baseline-height)
+        var(--typography-heading-6-line-height) / var(--baseline-height)
     ),
     1
   );
@@ -133,6 +137,7 @@ h6 {
   font-family: var(--typography-heading-6-font-family);
   font-weight: var(--font-weight);
   letter-spacing: var(--typography-heading-6-letter-spacing);
+  padding-inline: var(--heading-padding-inline, 0);
 }
 
 /* ── Text ── */
@@ -144,8 +149,7 @@ p {
     up,
     calc(
       var(--typography-text-primary-font-size) *
-      var(--typography-text-primary-line-height) /
-      var(--baseline-height)
+        var(--typography-text-primary-line-height) / var(--baseline-height)
     ),
     1
   );
