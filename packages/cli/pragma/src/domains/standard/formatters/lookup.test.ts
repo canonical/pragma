@@ -19,6 +19,7 @@ describe("formatters.plain", () => {
   it("renders summary without dos/donts by default", () => {
     const text = formatters.plain({ standard: DETAILED, detailed: false });
     expect(text).toContain("react/component/folder-structure");
+    expect(text).toContain("URI: http://example.com/s1");
     expect(text).toContain("Category: react");
     expect(text).toContain("Description:");
     expect(text).not.toContain("Do:");
@@ -54,7 +55,16 @@ describe("formatters.llm", () => {
   it("renders markdown heading", () => {
     const text = formatters.llm({ standard: DETAILED, detailed: false });
     expect(text).toContain("## react/component/folder-structure");
+    expect(text).toContain("URI: http://example.com/s1");
     expect(text).not.toContain("### Do");
+  });
+
+  it("renders extends in llm output when present", () => {
+    const text = formatters.llm({
+      standard: { ...DETAILED, extends: "cs:react_base" },
+      detailed: false,
+    });
+    expect(text).toContain("Extends: cs:react_base");
   });
 
   it("renders do/dont sections when detailed", () => {

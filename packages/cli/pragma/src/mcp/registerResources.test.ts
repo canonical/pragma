@@ -41,8 +41,8 @@ describe("resource listing", () => {
   it("lists resources including known entities", async () => {
     const { resources } = await client.listResources();
     const uris = resources.map((r) => r.uri);
-    expect(uris).toContain(`pragma:${P.ds}button`);
-    expect(uris).toContain(`pragma:${P.ds}card`);
+    expect(uris).toContain(`pragma:${P.ds}global.component.button`);
+    expect(uris).toContain(`pragma:${P.ds}global.component.card`);
     expect(uris).toContain(`pragma:${P.ds}global`);
   });
 
@@ -62,7 +62,9 @@ describe("resource listing", () => {
 
   it("uses label as resource name when available", async () => {
     const { resources } = await client.listResources();
-    const button = resources.find((r) => r.uri === `pragma:${P.ds}button`);
+    const button = resources.find(
+      (r) => r.uri === `pragma:${P.ds}global.component.button`,
+    );
     expect(button?.name).toBe("Button");
   });
 });
@@ -74,7 +76,7 @@ describe("resource listing", () => {
 describe("read component instance", () => {
   it("returns entity with types and label", async () => {
     const result = await client.readResource({
-      uri: `pragma:${P.ds}button`,
+      uri: `pragma:${P.ds}global.component.button`,
     });
     const entity = parseContents(result) as {
       uri: string;
@@ -83,14 +85,14 @@ describe("read component instance", () => {
       label: string | null;
       properties: { predicate: string; values: unknown[] }[];
     };
-    expect(entity.prefixed).toBe(`${P.ds}button`);
+    expect(entity.prefixed).toBe(`${P.ds}global.component.button`);
     expect(entity.types).toContain(`${P.ds}Component`);
     expect(entity.label).toBe("Button");
   });
 
   it("resolves level-1 URI objects to summaries", async () => {
     const result = await client.readResource({
-      uri: `pragma:${P.ds}button`,
+      uri: `pragma:${P.ds}global.component.button`,
     });
     const entity = parseContents(result) as {
       properties: {
@@ -115,7 +117,7 @@ describe("read component instance", () => {
 
   it("includes literal values", async () => {
     const result = await client.readResource({
-      uri: `pragma:${P.ds}button`,
+      uri: `pragma:${P.ds}global.component.button`,
     });
     const entity = parseContents(result) as {
       properties: {

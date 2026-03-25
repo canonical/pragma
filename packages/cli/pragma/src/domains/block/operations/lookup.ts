@@ -1,8 +1,9 @@
 /**
  * Look up detailed information for a single block.
  *
- * Queries modifiers, implementations, tokens, and anatomy node count
- * via multiple SPARQL queries, then assembles a {@link BlockDetailed} object.
+ * Queries the base block, then resolves related modifiers, implementations,
+ * tokens, anatomy nodes, blank-node properties, and direct subcomponents.
+ * The result is assembled into a {@link BlockDetailed} object.
  *
  * @param store - ke store to query
  * @param name - block name (e.g. "Button")
@@ -15,6 +16,7 @@
 import type { Store, URI } from "@canonical/ke";
 import { escapeSparqlValue } from "@canonical/ke";
 import { PragmaError } from "#error";
+import resolveUri from "../../graph/helpers/resolveUri.js";
 import { buildQuery } from "../../shared/buildQuery.js";
 import extractLocalName from "../../shared/extractLocalName.js";
 import { buildFilters } from "../../shared/filters/buildFilters.js";
@@ -41,21 +43,36 @@ function normalizeBlockType(value: string | undefined): BlockDetailed["type"] {
 
 export default async function lookupBlock(
   store: Store,
-  name: string,
+  nameOrUri: string,
   filters: FilterConfig,
 ): Promise<BlockDetailed> {
-  const escaped = escapeSparqlValue(name);
   const filterClauses = buildFilters(filters);
+  const subjectClause = buildLookupSubjectClause(nameOrUri, store.prefixes);
+  const bindClause =
+    subjectClause === null ? "" : `BIND(${subjectClause} AS ?component)`;
+  const matchClause =
+    subjectClause === null
+      ? `?component ${P.ds}name ${escapeSparqlValue(nameOrUri)} .`
+      : "";
 
   // Base query: find the block
   const baseResult = await store.query(
     buildQuery(`
-      SELECT ?component ?type ?tier
+      SELECT ?component ?name ?type ?tier ?summary ?whenToUse ?whenNotToUse ?guidelines ?anatomyDsl ?anatomyClassic ?figmaLink
       WHERE {
         VALUES ?type { ${P.ds}Component ${P.ds}Pattern ${P.ds}Layout ${P.ds}Subcomponent }
+        ${bindClause}
         ?component a ?type ;
-                   ${P.ds}name ${escaped} ;
+                   ${P.ds}name ?name ;
                    ${P.ds}tier ?tier .
+        ${matchClause}
+        OPTIONAL { ?component ${P.ds}summary ?summary }
+        OPTIONAL { ?component ${P.ds}whenToUse ?whenToUse }
+        OPTIONAL { ?component ${P.ds}whenNotToUse ?whenNotToUse }
+        OPTIONAL { ?component ${P.ds}guidelines ?guidelines }
+        OPTIONAL { ?component ${P.ds}anatomyDsl ?anatomyDsl }
+        OPTIONAL { ?component ${P.ds}anatomyClassic ?anatomyClassic }
+        OPTIONAL { ?component ${P.ds}figmaLink ?figmaLink }
         ${filterClauses}
       }
       LIMIT 1
@@ -63,7 +80,7 @@ export default async function lookupBlock(
   );
 
   if (baseResult.type !== "select" || baseResult.bindings.length === 0) {
-    throw PragmaError.notFound("block", name, {
+    throw PragmaError.notFound("block", nameOrUri, {
       recovery: {
         message: "List available blocks.",
         cli: "pragma block list",
@@ -76,10 +93,10 @@ export default async function lookupBlock(
   const base = baseResult.bindings[0] as (typeof baseResult.bindings)[number];
   const componentUri = base.component;
 
-  // Modifiers with values
+  // Modifier families with values
   const modResult = await store.query(
     buildQuery(`
-      SELECT ?modName ?value
+      SELECT ?family ?modName ?value
       WHERE {
         <${componentUri}> ${P.ds}hasModifierFamily ?family .
         ?family ${P.ds}name ?modName .
@@ -94,13 +111,26 @@ export default async function lookupBlock(
   );
 
   const modifierMap = new Map<string, string[]>();
+  const modifierFamilyUriMap = new Map<string, URI>();
   if (modResult.type === "select") {
     for (const b of modResult.bindings) {
       const existing = modifierMap.get(b.modName ?? "") ?? [];
-      existing.push(b.value ?? "");
+      if (b.value) {
+        existing.push(b.value);
+      }
       modifierMap.set(b.modName ?? "", existing);
+
+      if (b.modName && b.family) {
+        modifierFamilyUriMap.set(b.modName, b.family as URI);
+      }
     }
   }
+
+  const modifierFamilies = [...modifierMap.entries()].map(([name, values]) => ({
+    uri: modifierFamilyUriMap.get(name) ?? ("" as URI),
+    name,
+    values,
+  }));
 
   // Implementations
   const implResult = await store.query(
@@ -152,20 +182,74 @@ export default async function lookupBlock(
         }))
       : [];
 
-  // Anatomy node count
-  const nodeResult = await store.query(
+  // Anatomy nodes
+  const anatomyResult = await store.query(
     buildQuery(`
-      SELECT (COUNT(DISTINCT ?node) AS ?nodeCount)
+      SELECT DISTINCT ?node ?name
       WHERE {
         <${componentUri}> ${P.ds}anatomyNode ?node .
+        OPTIONAL { ?node ${P.ds}name ?name }
       }
+      ORDER BY ?node
     `),
   );
 
-  const nodeCount =
-    nodeResult.type === "select" && nodeResult.bindings.length > 0
-      ? Number.parseInt(nodeResult.bindings[0]?.nodeCount ?? "0", 10) || 0
-      : 0;
+  const anatomyNodes =
+    anatomyResult.type === "select"
+      ? anatomyResult.bindings.map((binding) => ({
+          uri: (binding.node ?? "") as URI,
+          name: binding.name,
+        }))
+      : [];
+  const nodeCount = anatomyNodes.length;
+  const anatomy = buildAnatomyTree(anatomyNodes);
+
+  // Component properties from blank nodes
+  const propertiesResult = await store.query(
+    buildQuery(`
+      SELECT ?property ?name ?propertyType ?optional ?defaultValue ?constraints
+      WHERE {
+        <${componentUri}> ${P.ds}hasProperty ?property .
+        ?property ${P.ds}name ?name .
+        OPTIONAL { ?property ${P.ds}propertyType ?propertyType }
+        OPTIONAL { ?property ${P.ds}optional ?optional }
+        OPTIONAL { ?property ${P.ds}defaultValue ?defaultValue }
+        OPTIONAL { ?property ${P.ds}constraints ?constraints }
+      }
+      ORDER BY ?name
+    `),
+  );
+
+  const properties =
+    propertiesResult.type === "select"
+      ? propertiesResult.bindings.map((binding) => ({
+          name: binding.name ?? "",
+          propertyType: binding.propertyType ?? "",
+          optional: binding.optional === "true",
+          defaultValue: binding.defaultValue ?? null,
+          constraints: binding.constraints ?? null,
+        }))
+      : [];
+
+  // Direct subcomponents
+  const subcomponentsResult = await store.query(
+    buildQuery(`
+      SELECT ?subcomponent ?name
+      WHERE {
+        <${componentUri}> ${P.ds}hasSubcomponent ?subcomponent .
+        ?subcomponent ${P.ds}name ?name .
+      }
+      ORDER BY ?name
+    `),
+  );
+
+  const subcomponents =
+    subcomponentsResult.type === "select"
+      ? subcomponentsResult.bindings.map((binding) => ({
+          uri: (binding.subcomponent ?? "") as URI,
+          name: binding.name ?? "",
+        }))
+      : [];
 
   // Standards (not linked directly to blocks in current ontology;
   // will be populated via @follows in v0.3)
@@ -173,32 +257,86 @@ export default async function lookupBlock(
 
   return {
     uri: (componentUri ?? "") as URI,
-    name,
+    name: base.name ?? nameOrUri,
     type: normalizeBlockType(base.type),
     tier: extractLocalName(base.tier ?? ""),
     modifiers: [...modifierMap.keys()],
     implementations,
-    summary: null,
+    summary: base.summary ?? null,
     nodeCount,
     tokenCount: tokens.length,
-    whenToUse: null,
-    whenNotToUse: null,
-    guidelines: null,
-    anatomyDsl: null,
-    anatomyClassic: null,
-    figmaLink: null,
-    anatomy: null,
+    whenToUse: base.whenToUse ?? null,
+    whenNotToUse: base.whenNotToUse ?? null,
+    guidelines: base.guidelines ?? null,
+    anatomyDsl: base.anatomyDsl ?? null,
+    anatomyClassic: base.anatomyClassic ?? null,
+    figmaLink: base.figmaLink ?? null,
+    anatomy,
     modifierValues: [...modifierMap.entries()].map(([family, values]) => ({
       family,
       values,
     })),
-    modifierFamilies: [],
-    properties: [],
-    subcomponents: [],
+    modifierFamilies,
+    properties,
+    subcomponents,
     implementationPaths,
     tokens,
     standards,
   };
+}
+
+function buildLookupSubjectClause(
+  query: string,
+  prefixes: Readonly<Record<string, string>>,
+): string | null {
+  if (!looksLikeUri(query)) {
+    return null;
+  }
+
+  return `<${resolveUri(query, prefixes)}>`;
+}
+
+function looksLikeUri(query: string): boolean {
+  return (
+    query.startsWith("http://") ||
+    query.startsWith("https://") ||
+    query.includes(":")
+  );
+}
+
+function buildAnatomyTree(
+  nodes: readonly { uri: URI; name?: string }[],
+): BlockDetailed["anatomy"] {
+  if (nodes.length === 0) {
+    return null;
+  }
+
+  const sorted = [...nodes].sort(
+    (left, right) => scoreAnatomyNode(right) - scoreAnatomyNode(left),
+  );
+  const [root, ...children] = sorted;
+  return {
+    root: {
+      name: root?.name ?? extractLocalName(root?.uri ?? "node"),
+      type: root?.name ? "named" : "anonymous",
+      children: children.map((node) => ({
+        name: node.name ?? extractLocalName(node.uri),
+        type: node.name ? "named" : "anonymous",
+        children: [],
+      })),
+    },
+  };
+}
+
+function scoreAnatomyNode(node: { uri: URI; name?: string }): number {
+  const uri = String(node.uri);
+  if (uri.endsWith(".root") || node.name === "button" || node.name === "card") {
+    return 2;
+  }
+  if (node.name) {
+    return 1;
+  }
+  return 0;
 }
 
 /**

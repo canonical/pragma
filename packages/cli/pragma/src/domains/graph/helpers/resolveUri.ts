@@ -32,7 +32,7 @@ export default function resolveUri(
     throw PragmaError.invalidInput("uri", uri, {
       recovery: {
         message:
-          'Use a prefixed URI (e.g., "ds:button") or a full URI (e.g., "https://ds.canonical.com/button").',
+          'Use a prefixed URI (e.g., "ds:global.component.button") or a full URI (e.g., "https://ds.canonical.com/global.component.button").',
       },
     });
   }

@@ -67,9 +67,12 @@ export type {
 // — Domain Operations —————————————————————————————————————————————————————————
 
 export {
+  buildBlockFilters,
   listBlocks,
   lookupBlock,
-} from "./domains/block/operations/index.js";
+  resolveBlockList,
+  resolveBlockLookup,
+} from "./domains/block/index.js";
 export { runChecks } from "./domains/doctor/operations/index.js";
 export {
   executeQuery,
@@ -78,7 +81,10 @@ export {
 export {
   listModifiers,
   lookupModifier,
-} from "./domains/modifier/operations/index.js";
+  modifierEmptyError,
+  resolveModifierList,
+  resolveModifierLookup,
+} from "./domains/modifier/index.js";
 export {
   listOntologies,
   showOntology,
@@ -92,9 +98,17 @@ export {
   listCategories,
   listStandards,
   lookupStandard,
-} from "./domains/standard/operations/index.js";
+  resolveStandardList,
+  resolveStandardLookup,
+} from "./domains/standard/index.js";
 export { listTiers } from "./domains/tier/operations/index.js";
-export { listTokens, lookupToken } from "./domains/token/operations/index.js";
+export {
+  listTokens,
+  lookupToken,
+  resolveTokenList,
+  resolveTokenLookup,
+  tokenEmptyError,
+} from "./domains/token/index.js";
 
 // — Domain Types ——————————————————————————————————————————————————————————————
 

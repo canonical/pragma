@@ -1,7 +1,6 @@
 import type { CommandDefinition } from "@canonical/cli-core";
 import type { Store } from "@canonical/ke";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { PragmaError } from "#error";
 import { createTestStore, DS_ALL_TTL } from "#testing";
 import type { PragmaContext } from "../../shared/context.js";
 import buildLookupCommand from "./lookup.js";
@@ -45,7 +44,7 @@ describe("buildLookupCommand", () => {
     const cmd = buildLookupCommand(ctx);
     const { text } = await executeOutput(
       cmd,
-      { name: "react/component/folder-structure" },
+      { names: ["react/component/folder-structure"] },
       ctx,
     );
     expect(text).toContain("react/component/folder-structure");
@@ -58,7 +57,7 @@ describe("buildLookupCommand", () => {
     const cmd = buildLookupCommand(ctx);
     const { text } = await executeOutput(
       cmd,
-      { name: "react/component/folder-structure", detailed: true },
+      { names: ["react/component/folder-structure"], detailed: true },
       ctx,
     );
     expect(text).toContain("Do:");
@@ -68,13 +67,12 @@ describe("buildLookupCommand", () => {
   it("throws ENTITY_NOT_FOUND for unknown standard", async () => {
     const ctx = makeCtx();
     const cmd = buildLookupCommand(ctx);
-    try {
-      await cmd.execute({ name: "nonexistent" }, ctx);
-      expect.fail("Should have thrown");
-    } catch (e) {
-      expect(e).toBeInstanceOf(PragmaError);
-      expect((e as PragmaError).code).toBe("ENTITY_NOT_FOUND");
+    const result = await cmd.execute({ names: ["nonexistent"] }, ctx);
+    expect(result.tag).toBe("output");
+    if (result.tag !== "output") {
+      expect.fail("Expected output result");
     }
+    expect(result.render.plain(result.value)).toContain("Errors:");
   });
 
   it("renders LLM format with --llm", async () => {
@@ -84,7 +82,7 @@ describe("buildLookupCommand", () => {
     const cmd = buildLookupCommand(ctx);
     const { text } = await executeOutput(
       cmd,
-      { name: "react/component/folder-structure", detailed: true },
+      { names: ["react/component/folder-structure"], detailed: true },
       ctx,
     );
     expect(text).toContain("## react/component/folder-structure");
@@ -98,7 +96,7 @@ describe("buildLookupCommand", () => {
     const cmd = buildLookupCommand(ctx);
     const { text } = await executeOutput(
       cmd,
-      { name: "react/component/folder-structure", detailed: true },
+      { names: ["react/component/folder-structure"], detailed: true },
       ctx,
     );
     const parsed = JSON.parse(text);
@@ -114,12 +112,24 @@ describe("buildLookupCommand", () => {
     const cmd = buildLookupCommand(ctx);
     const { text } = await executeOutput(
       cmd,
-      { name: "react/component/folder-structure" },
+      { names: ["react/component/folder-structure"] },
       ctx,
     );
     const parsed = JSON.parse(text);
     expect(parsed.name).toBe("react/component/folder-structure");
     expect(parsed.dos).toBeUndefined();
     expect(parsed.donts).toBeUndefined();
+  });
+
+  it("renders multiple standards together", async () => {
+    const ctx = makeCtx();
+    const cmd = buildLookupCommand(ctx);
+    const { text } = await executeOutput(
+      cmd,
+      { names: ["react/component/folder-structure", "react/component/props"] },
+      ctx,
+    );
+    expect(text).toContain("react/component/folder-structure");
+    expect(text).toContain("react/component/props");
   });
 });

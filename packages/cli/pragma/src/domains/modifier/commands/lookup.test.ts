@@ -1,7 +1,6 @@
 import type { CommandOutputResult } from "@canonical/cli-core";
 import type { Store } from "@canonical/ke";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { PragmaError } from "#error";
 import { createTestStore, DS_ALL_TTL } from "#testing";
 import type { PragmaContext } from "../../shared/context.js";
 import lookupCommand from "./lookup.js";
@@ -37,7 +36,7 @@ describe("modifier lookup command", () => {
   it("returns a family with values", async () => {
     const ctx = makeCtx();
     const cmd = lookupCommand(ctx);
-    const result = await cmd.execute({ name: "density" }, ctx);
+    const result = await cmd.execute({ names: ["density"] }, ctx);
     expect(result.tag).toBe("output");
 
     const output = result as CommandOutputResult;
@@ -50,19 +49,18 @@ describe("modifier lookup command", () => {
   it("throws ENTITY_NOT_FOUND for unknown modifier", async () => {
     const ctx = makeCtx();
     const cmd = lookupCommand(ctx);
-    try {
-      await cmd.execute({ name: "nonexistent" }, ctx);
-      expect.fail("Should have thrown");
-    } catch (e) {
-      expect(e).toBeInstanceOf(PragmaError);
-      expect((e as PragmaError).code).toBe("ENTITY_NOT_FOUND");
+    const result = await cmd.execute({ names: ["nonexistent"] }, ctx);
+    expect(result.tag).toBe("output");
+    if (result.tag !== "output") {
+      expect.fail("Expected output result");
     }
+    expect(result.render.plain(result.value)).toContain("Errors:");
   });
 
   it("renders LLM format with --llm", async () => {
     const ctx = makeCtx({ llm: true });
     const cmd = lookupCommand(ctx);
-    const result = await cmd.execute({ name: "importance" }, ctx);
+    const result = await cmd.execute({ names: ["importance"] }, ctx);
     const output = result as CommandOutputResult;
     const text = output.render.plain(output.value);
     expect(text).toContain("## importance");
@@ -72,11 +70,22 @@ describe("modifier lookup command", () => {
   it("renders JSON with --format json", async () => {
     const ctx = makeCtx({ format: "json" });
     const cmd = lookupCommand(ctx);
-    const result = await cmd.execute({ name: "importance" }, ctx);
+    const result = await cmd.execute({ names: ["importance"] }, ctx);
     const output = result as CommandOutputResult;
     const text = output.render.plain(output.value);
     const parsed = JSON.parse(text);
     expect(parsed.name).toBe("importance");
     expect(parsed.values).toContain("primary");
+  });
+
+  it("renders multiple families together", async () => {
+    const ctx = makeCtx();
+    const cmd = lookupCommand(ctx);
+    const result = await cmd.execute({ names: ["importance", "density"] }, ctx);
+    expect(result.tag).toBe("output");
+    const output = result as CommandOutputResult;
+    const text = output.render.plain(output.value);
+    expect(text).toContain("importance");
+    expect(text).toContain("density");
   });
 });

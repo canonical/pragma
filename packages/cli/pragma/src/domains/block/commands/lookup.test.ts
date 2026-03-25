@@ -43,7 +43,7 @@ describe("buildLookupCommand", () => {
   it("returns summary by default", async () => {
     const ctx = makeCtx();
     const cmd = buildLookupCommand(ctx);
-    const { text } = await executeOutput(cmd, { name: "Button" }, ctx);
+    const { text } = await executeOutput(cmd, { names: ["Button"] }, ctx);
     expect(text).toContain("Button");
     expect(text).toContain("global");
   });
@@ -53,7 +53,7 @@ describe("buildLookupCommand", () => {
     const cmd = buildLookupCommand(ctx);
     const { text } = await executeOutput(
       cmd,
-      { name: "Button", detailed: true },
+      { names: ["Button"], detailed: true },
       ctx,
     );
     expect(text).toContain("Button");
@@ -66,7 +66,7 @@ describe("buildLookupCommand", () => {
     const cmd = buildLookupCommand(ctx);
     const { text } = await executeOutput(
       cmd,
-      { name: "Button", modifiers: true },
+      { names: ["Button"], modifiers: true },
       ctx,
     );
     expect(text).toContain("Modifiers");
@@ -80,7 +80,7 @@ describe("buildLookupCommand", () => {
     const cmd = buildLookupCommand(ctx);
     const { text } = await executeOutput(
       cmd,
-      { name: "Button", modifiers: true, tokens: true },
+      { names: ["Button"], modifiers: true, tokens: true },
       ctx,
     );
     expect(text).toContain("Modifiers");
@@ -92,7 +92,7 @@ describe("buildLookupCommand", () => {
       globalFlags: { llm: true, format: "text" as const, verbose: false },
     });
     const cmd = buildLookupCommand(ctx);
-    const { text } = await executeOutput(cmd, { name: "Button" }, ctx);
+    const { text } = await executeOutput(cmd, { names: ["Button"] }, ctx);
     expect(text).toContain("## Button");
     expect(text).toContain("Tier: global");
   });
@@ -102,7 +102,7 @@ describe("buildLookupCommand", () => {
       globalFlags: { llm: false, format: "json" as const, verbose: false },
     });
     const cmd = buildLookupCommand(ctx);
-    const { text } = await executeOutput(cmd, { name: "Button" }, ctx);
+    const { text } = await executeOutput(cmd, { names: ["Button"] }, ctx);
     const parsed = JSON.parse(text);
     expect(parsed.name).toBe("Button");
     expect(parsed.tier).toBe("global");
@@ -115,7 +115,7 @@ describe("buildLookupCommand", () => {
     const cmd = buildLookupCommand(ctx);
     const { text } = await executeOutput(
       cmd,
-      { name: "Button", detailed: true },
+      { names: ["Button"], detailed: true },
       ctx,
     );
     const parsed = JSON.parse(text);
@@ -128,34 +128,45 @@ describe("buildLookupCommand", () => {
       globalFlags: { llm: false, format: "json" as const, verbose: false },
     });
     const cmd = buildLookupCommand(ctx);
-    const { text } = await executeOutput(cmd, { name: "Button" }, ctx);
+    const { text } = await executeOutput(cmd, { names: ["Button"] }, ctx);
     const parsed = JSON.parse(text);
     expect(parsed.nodeCount).toBe(3);
+  });
+
+  it("renders multiple lookup results together", async () => {
+    const ctx = makeCtx();
+    const cmd = buildLookupCommand(ctx);
+    const { text } = await executeOutput(
+      cmd,
+      { names: ["Button", "Card"] },
+      ctx,
+    );
+    expect(text).toContain("Button");
+    expect(text).toContain("Card");
   });
 
   it("throws ENTITY_NOT_FOUND for unknown block", async () => {
     const ctx = makeCtx();
     const cmd = buildLookupCommand(ctx);
-    await expect(cmd.execute({ name: "NonExistent" }, ctx)).rejects.toThrow(
-      PragmaError,
-    );
+    const result = await cmd.execute({ names: ["NonExistent"] }, ctx);
+    expect(result.tag).toBe("output");
 
-    try {
-      await cmd.execute({ name: "NonExistent" }, ctx);
-    } catch (e) {
-      expect(e).toBeInstanceOf(PragmaError);
-      expect((e as PragmaError).code).toBe("ENTITY_NOT_FOUND");
-      expect((e as PragmaError).recovery?.cli).toBe("pragma block list");
+    if (result.tag !== "output") {
+      expect.fail("Expected output result");
     }
+
+    const text = result.render.plain(result.value);
+    expect(text).toContain("Errors:");
+    expect(text).toContain("NonExistent");
   });
 
   it("throws INVALID_INPUT for empty name", async () => {
     const ctx = makeCtx();
     const cmd = buildLookupCommand(ctx);
-    await expect(cmd.execute({ name: "" }, ctx)).rejects.toThrow(PragmaError);
+    await expect(cmd.execute({ names: [] }, ctx)).rejects.toThrow(PragmaError);
 
     try {
-      await cmd.execute({ name: "" }, ctx);
+      await cmd.execute({ names: [] }, ctx);
     } catch (e) {
       expect(e).toBeInstanceOf(PragmaError);
       expect((e as PragmaError).code).toBe("INVALID_INPUT");
@@ -165,7 +176,7 @@ describe("buildLookupCommand", () => {
   it("provides tab completion candidates", async () => {
     const ctx = makeCtx();
     const cmd = buildLookupCommand(ctx);
-    const nameParam = cmd.parameters.find((p) => p.name === "name");
+    const nameParam = cmd.parameters.find((p) => p.name === "names");
     expect(nameParam?.complete).toBeDefined();
 
     if (nameParam?.complete) {

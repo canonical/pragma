@@ -6,16 +6,24 @@ import type { AspectFlags } from "../types.js";
 import formatters from "./lookup.js";
 
 const BUTTON_DETAILED: BlockDetailed = {
-  uri: `${PREFIX_MAP.ds}button` as URI,
+  uri: `${PREFIX_MAP.ds}global.component.button` as URI,
   name: "Button",
+  type: "component",
   tier: "global",
   modifiers: ["importance", "density"],
+  summary: "Primary action trigger with optional icon and label.",
   implementations: [
     { framework: "react", available: true },
     { framework: "svelte", available: false },
   ],
   nodeCount: 3,
   tokenCount: 1,
+  whenToUse: "Use for high-priority actions in forms and flows.",
+  whenNotToUse: "Avoid for low-emphasis tertiary actions.",
+  guidelines: "Keep labels concise and pair icons with text when possible.",
+  anatomyDsl: "root: button; children: label, icon",
+  anatomyClassic: "button > label + icon",
+  figmaLink: "https://figma.com/design/example/Button",
   anatomy: {
     root: {
       name: "button",
@@ -29,6 +37,28 @@ const BUTTON_DETAILED: BlockDetailed = {
   modifierValues: [
     { family: "importance", values: ["default", "primary", "secondary"] },
     { family: "density", values: ["default", "compact"] },
+  ],
+  modifierFamilies: [
+    {
+      uri: `${PREFIX_MAP.ds}modifier_family.importance` as URI,
+      name: "importance",
+      values: ["default", "primary", "secondary"],
+    },
+  ],
+  properties: [
+    {
+      name: "disabled",
+      propertyType: "boolean",
+      optional: true,
+      defaultValue: "false",
+      constraints: "Disables click and keyboard activation.",
+    },
+  ],
+  subcomponents: [
+    {
+      uri: `${PREFIX_MAP.ds}global.subcomponent.button.icon` as URI,
+      name: "Button Icon",
+    },
   ],
   implementationPaths: [
     { framework: "react", path: "src/lib/Button/Button.tsx" },
@@ -58,6 +88,17 @@ describe("formatters.plain (summary)", () => {
     });
     expect(text).toContain("Button");
     expect(text).toContain("global");
+  });
+
+  it("includes summary when present", () => {
+    const text = formatters.plain({
+      block: BUTTON_DETAILED,
+      detailed: false,
+      aspects: ALL_ASPECTS,
+    });
+    expect(text).toContain(
+      "Primary action trigger with optional icon and label.",
+    );
   });
 
   it("includes modifier names", () => {
@@ -145,6 +186,20 @@ describe("formatters.plain (detailed)", () => {
     expect(text).toContain("icon");
   });
 
+  it("shows guidance, properties, and subcomponents", () => {
+    const text = formatters.plain({
+      block: BUTTON_DETAILED,
+      detailed: true,
+      aspects: ALL_ASPECTS,
+    });
+    expect(text).toContain("When to use");
+    expect(text).toContain("Guidelines");
+    expect(text).toContain("Properties");
+    expect(text).toContain("disabled");
+    expect(text).toContain("Subcomponents");
+    expect(text).toContain("Button Icon");
+  });
+
   it("respects aspect filter — modifiers only", () => {
     const aspects: AspectFlags = {
       anatomy: false,
@@ -174,6 +229,9 @@ describe("formatters.llm", () => {
     });
     expect(text).toContain("## Button");
     expect(text).toContain("- Tier: global");
+    expect(text).toContain(
+      "- Summary: Primary action trigger with optional icon and label.",
+    );
     expect(text).not.toContain("### Modifiers");
   });
 
@@ -187,6 +245,8 @@ describe("formatters.llm", () => {
     expect(text).toContain("### Implementations");
     expect(text).toContain("### Tokens");
     expect(text).toContain("### Anatomy");
+    expect(text).toContain("### Properties");
+    expect(text).toContain("### Subcomponents");
   });
 
   it("formats detailed with aspect filter", () => {
