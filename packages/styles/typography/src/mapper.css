@@ -30,6 +30,16 @@
  *   Set --heading-padding-inline on a layout context to activate.
  */
 
+/* ── TEMP FIX: design-tokens naming mismatch ──────────────────────
+ * modifiers.typography.css references --typography-font-family-default (kebab)
+ * but sets.primitive.css defines --typography-fontFamily-default (camelCase).
+ * This shim bridges the gap until the tokens package is fixed upstream.
+ */
+:root {
+  --typography-font-family-default: var(--typography-fontFamily-default);
+  --typography-font-family-code: var(--typography-fontFamily-code);
+}
+
 /* ── Headings ── */
 
 h1 {

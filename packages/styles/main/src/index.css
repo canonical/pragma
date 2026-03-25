@@ -4,6 +4,9 @@
  *   @import url("@canonical/styles");
  */
 
+/* Fonts — must come before @layer for CSS spec compliance */
+@import url("./fonts.css");
+
 /* Layer ordering — deterministic cascade (spec §C.2) */
 @layer normalize, ds.reset, ds.modifiers, ds.components;
 
@@ -28,3 +31,4 @@
 
 /* Spacing architecture tokens */
 @import url("./spacing.css");
+
