@@ -36,6 +36,14 @@
     "check:biome": "biome check",
     "check:biome:fix": "biome check --write"
   },
+  "peerDependencies": {
+    "@canonical/design-tokens": ">=0.4.0"
+  },
+  "peerDependenciesMeta": {
+    "@canonical/design-tokens": {
+      "optional": true
+    }
+  },
   "devDependencies": {
     "@biomejs/biome": "2.4.6",
     "@canonical/biome-config": "^0.20.0"

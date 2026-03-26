@@ -1,7 +1,8 @@
 .with-debug-outlines {
-  --debug-outline-color: light-dark(
-    rgba(0, 128, 80, 0.25),
-    rgba(80, 220, 140, 0.25)
+  --debug-outline-color: color-mix(
+    in oklch,
+    var(--color-border-constructive, oklch(55.1% 0.1575 144.01)) 50%,
+    transparent
   );
 }
 

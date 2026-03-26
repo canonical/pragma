@@ -5,7 +5,7 @@ import {
   RulerIcon,
 } from "@storybook/icons";
 import { createElement, type FC, memo, useCallback, useEffect } from "react";
-import { IconButton, Select } from "storybook/internal/components";
+import { Select, ToggleButton } from "storybook/internal/components";
 import {
   type API,
   useGlobals,
@@ -161,22 +161,24 @@ export const Tool: FC<{ api: API }> = memo(function UtilsToolbar({ api }) {
 
     // Baseline toggle
     createElement(
-      IconButton,
+      ToggleButton,
       {
         title: "Toggle baseline grid",
-        active: baseline,
+        pressed: baseline,
         onClick: toggleBaseline,
+        size: "small",
       },
       createElement(RulerIcon),
     ),
 
     // Outlines toggle
     createElement(
-      IconButton,
+      ToggleButton,
       {
         title: "Toggle debug outlines",
-        active: outlines,
+        pressed: outlines,
         onClick: toggleOutlines,
+        size: "small",
       },
       createElement(OutlineIcon),
     ),

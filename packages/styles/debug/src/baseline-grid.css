@@ -1,5 +1,12 @@
 .with-baseline-grid {
-  --addon-baseline-grid-color: var(--baseline-grid-color, rgba(255, 0, 0, 0.2));
+  --addon-baseline-grid-color: var(
+    --baseline-grid-color,
+    color-mix(
+      in oklch,
+      var(--color-border-branded, oklch(64.05% 0.1941 37.76)) 50%,
+      transparent
+    )
+  );
   --addon-baseline-height: var(--baseline-height, 0.5rem);
   --addon-baseline-shift: var(--baseline-shift, 0);
 
