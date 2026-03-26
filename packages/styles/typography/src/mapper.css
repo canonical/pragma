@@ -40,6 +40,11 @@
   --typography-font-family-code: var(--typography-fontFamily-code);
 }
 
+/* Base font — inherited by all elements unless overridden */
+body {
+  font-family: var(--typography-text-primary-font-family);
+}
+
 /* ── Headings ── */
 
 h1 {
