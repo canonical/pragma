@@ -1,7 +1,5 @@
-import type { Key } from "./types.js";
-
 /** Display labels for keys that render differently from their identifier */
-export const KEY_LABELS: Partial<Record<Key, string>> = {
+export const KEY_LABELS = {
   a: "A",
   b: "B",
   c: "C",
@@ -61,13 +59,13 @@ export const KEY_LABELS: Partial<Record<Key, string>> = {
   end: "End",
   pageup: "PgUp",
   pagedown: "PgDn",
-};
+} as const;
 
 /** Accessible labels for keys whose label is a symbol */
-export const ARIA_LABELS: Partial<Record<Key, string>> = {
+export const ARIA_LABELS: Partial<Record<keyof typeof KEY_LABELS, string>> = {
   enter: "Enter",
   up: "Up",
   down: "Down",
   left: "Left",
   right: "Right",
-};
+} as const;
