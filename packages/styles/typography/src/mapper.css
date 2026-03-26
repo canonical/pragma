@@ -36,8 +36,15 @@
  * This shim bridges the gap until the tokens package is fixed upstream.
  */
 :root {
+  /* Level 1: kebab → camelCase (modifiers.typography → sets.primitive) */
   --typography-font-family-default: var(--typography-fontFamily-default);
   --typography-font-family-code: var(--typography-fontFamily-code);
+
+  /* Level 2: sets.primitive defines fontFamily-default as
+   * var(--typography-font-family-sans-serif) (kebab), but the actual
+   * font stack is at --typography-fontFamily-sansSerif (camelCase). */
+  --typography-font-family-sans-serif: var(--typography-fontFamily-sansSerif);
+  --typography-font-family-monospace: var(--typography-fontFamily-monospace);
 }
 
 /* Base font — inherited by all elements unless overridden */
