@@ -1091,7 +1091,7 @@
     },
     "packages/svelte/ds-app-launchpad": {
       "name": "@canonical/svelte-ds-app-launchpad",
-      "version": "0.20.0",
+      "version": "0.20.1",
       "dependencies": {
         "@canonical/launchpad-design-tokens": "^1.0.23",
         "@canonical/storybook-config": "^0.18.0",

@@ -3,6 +3,18 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.20.1](https://github.com/canonical/pragma/compare/v0.20.0...v0.20.1) (2026-03-26)
+
+
+### Bug Fixes
+
+* **svelte-ds-app-launchpad:** Change modifier-families imports to relative ([#562](https://github.com/canonical/pragma/issues/562)) ([e0376ee](https://github.com/canonical/pragma/commit/e0376eef10ceb3ff7c9695d8f2130aea44844169))
+* **svelte-ds-app-launchpad:** downgrade vite version to ^7.3.1 ([#561](https://github.com/canonical/pragma/issues/561)) ([b9afd74](https://github.com/canonical/pragma/commit/b9afd74250862db637db9cdafe89ce5124609a7b))
+
+
+
+
+
 # [0.20.0](https://github.com/canonical/pragma/compare/v0.19.0...v0.20.0) (2026-03-26)
 
 
