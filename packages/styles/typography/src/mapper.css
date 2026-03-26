@@ -66,7 +66,8 @@ h1 {
     up,
     calc(
       var(--typography-heading-1-font-size) *
-        var(--typography-heading-1-line-height) / var(--baseline-height)
+      var(--typography-heading-1-line-height) /
+      var(--baseline-height)
     ),
     1
   );
@@ -84,7 +85,8 @@ h2 {
     up,
     calc(
       var(--typography-heading-2-font-size) *
-        var(--typography-heading-2-line-height) / var(--baseline-height)
+      var(--typography-heading-2-line-height) /
+      var(--baseline-height)
     ),
     1
   );
@@ -102,7 +104,8 @@ h3 {
     up,
     calc(
       var(--typography-heading-3-font-size) *
-        var(--typography-heading-3-line-height) / var(--baseline-height)
+      var(--typography-heading-3-line-height) /
+      var(--baseline-height)
     ),
     1
   );
@@ -120,7 +123,8 @@ h4 {
     up,
     calc(
       var(--typography-heading-4-font-size) *
-        var(--typography-heading-4-line-height) / var(--baseline-height)
+      var(--typography-heading-4-line-height) /
+      var(--baseline-height)
     ),
     1
   );
@@ -138,7 +142,8 @@ h5 {
     up,
     calc(
       var(--typography-heading-5-font-size) *
-        var(--typography-heading-5-line-height) / var(--baseline-height)
+      var(--typography-heading-5-line-height) /
+      var(--baseline-height)
     ),
     1
   );
@@ -156,7 +161,8 @@ h6 {
     up,
     calc(
       var(--typography-heading-6-font-size) *
-        var(--typography-heading-6-line-height) / var(--baseline-height)
+      var(--typography-heading-6-line-height) /
+      var(--baseline-height)
     ),
     1
   );
@@ -176,7 +182,8 @@ p {
     up,
     calc(
       var(--typography-text-primary-font-size) *
-        var(--typography-text-primary-line-height) / var(--baseline-height)
+      var(--typography-text-primary-line-height) /
+      var(--baseline-height)
     ),
     1
   );
