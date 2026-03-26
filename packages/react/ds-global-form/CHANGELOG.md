@@ -3,6 +3,31 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.19.0](https://github.com/canonical/pragma/compare/v0.18.0...v0.19.0) (2026-03-26)
+
+
+### Bug Fixes
+
+* **ci:** add missing build step to push workflow, replace workspace: protocol ([#521](https://github.com/canonical/pragma/issues/521)) ([0e88312](https://github.com/canonical/pragma/commit/0e883120c96034d180de0ebdde6e9740d97609fe)), closes [#512](https://github.com/canonical/pragma/issues/512)
+* **react-ds-global-form:** fix runtime bugs, add Form component and testing utils ([#481](https://github.com/canonical/pragma/issues/481)) ([8a3bcc7](https://github.com/canonical/pragma/commit/8a3bcc734ab10c39a854ef9beeea492a3eff6280))
+
+
+### Features
+
+* **ds-global-form:** add Date,   FileUpload, Color, Phone, and Choices inputs (P3 pt3) ([#499](https://github.com/canonical/pragma/issues/499)) ([9ea831d](https://github.com/canonical/pragma/commit/9ea831dd9c581b003f3e2baabcc21ad23e862897))
+* **ds-global-form:** add token layer, input chrome, and semantic class rename ([#496](https://github.com/canonical/pragma/issues/496)) ([00c6f16](https://github.com/canonical/pragma/commit/00c6f16e862ced706f93f1cfb37e59cb0ec2e8ae))
+* **ds-global-form:** styles pt1 and addon-form ([#493](https://github.com/canonical/pragma/issues/493)) ([b1b2068](https://github.com/canonical/pragma/commit/b1b2068f2541df5b47e9f462b9124cefa4a28efb)), closes [storybookjs/storybook#31842](https://github.com/storybookjs/storybook/issues/31842)
+* **storybook:** unified Storybook hub for all React packages ([#529](https://github.com/canonical/pragma/issues/529)) ([3a2d56c](https://github.com/canonical/pragma/commit/3a2d56cdceb43bdd5b8c4578d40283518bfce80d)), closes [#31842](https://github.com/canonical/pragma/issues/31842)
+
+
+### Performance Improvements
+
+* upgrade vite 7 → 8 (Rolldown) for ~10% faster builds ([#527](https://github.com/canonical/pragma/issues/527)) ([04ebac0](https://github.com/canonical/pragma/commit/04ebac09e2f571a611533ebf98ceba3e47fbb8f9))
+
+
+
+
+
 # [0.18.0](https://github.com/canonical/pragma/compare/v0.17.1...v0.18.0) (2026-03-11)
 
 **Note:** Version bump only for package @canonical/react-ds-global-form

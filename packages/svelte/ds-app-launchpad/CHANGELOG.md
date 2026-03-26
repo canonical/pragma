@@ -3,6 +3,28 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.19.0](https://github.com/canonical/pragma/compare/v0.18.0...v0.19.0) (2026-03-26)
+
+
+### Bug Fixes
+
+* **ds-app-launchpad:** update styles.css path in package.json to point to dist directory ([#556](https://github.com/canonical/pragma/issues/556)) ([ed3d928](https://github.com/canonical/pragma/commit/ed3d92853df523093ecf00500985bf523a816268))
+
+
+### Features
+
+* **storybook:** unified Storybook hub for all React packages ([#529](https://github.com/canonical/pragma/issues/529)) ([3a2d56c](https://github.com/canonical/pragma/commit/3a2d56cdceb43bdd5b8c4578d40283518bfce80d)), closes [#31842](https://github.com/canonical/pragma/issues/31842)
+* **svelte-ds-app-launchpad:** Upstream DescriptionList Component ([#469](https://github.com/canonical/pragma/issues/469)) ([15ce28e](https://github.com/canonical/pragma/commit/15ce28ef530cf01f6ac8ad882d8c7625fc0e6236))
+
+
+### Performance Improvements
+
+* upgrade vite 7 → 8 (Rolldown) for ~10% faster builds ([#527](https://github.com/canonical/pragma/issues/527)) ([04ebac0](https://github.com/canonical/pragma/commit/04ebac09e2f571a611533ebf98ceba3e47fbb8f9))
+
+
+
+
+
 # [0.18.0](https://github.com/canonical/pragma/compare/v0.17.1...v0.18.0) (2026-03-11)
 
 
