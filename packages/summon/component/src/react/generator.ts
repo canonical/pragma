@@ -129,7 +129,7 @@ For example, 'src/components/Button' creates a 'Button' component.`,
       debug("Creating test file"),
       template({
         source: reactTemplates.test,
-        dest: path.join(componentDir, `${componentName}.test.tsx`),
+        dest: path.join(componentDir, `${componentName}.tests.tsx`),
         vars: ctx,
       }),
 
@@ -138,7 +138,7 @@ For example, 'src/components/Button' creates a 'Button' component.`,
         answers.withSsrTests,
         template({
           source: reactTemplates.ssrTest,
-          dest: path.join(componentDir, `${componentName}.ssr.test.tsx`),
+          dest: path.join(componentDir, `${componentName}.ssr.tests.tsx`),
           vars: ctx,
         }),
       ),

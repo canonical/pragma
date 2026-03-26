@@ -1,0 +1,48 @@
+/**
+ * Announcement styles
+ * @implements dso:global.announcement
+ *
+ * DSL anatomy mapping:
+ * layout.type: flow                        → display: flex
+ * layout.direction: horizontal             → flex-direction: row
+ * layout.align: center                     → align-items: center
+ * layout.justify: center                   → justify-content: center
+ * size.width: fill                         → width: 100%
+ * spacing.internal: spacing/medium         → gap: var(--spacing-medium)
+ * appearance.background: color/surface/announcement → background-color
+ * [message] typography.size: font/size/small       → font-size
+ * [message] typography.color: color/text/on-announcement → color
+ */
+
+:root {
+  --announcement-color-background: var(
+    --color-surface-announcement,
+    var(--color-foreground-ghost)
+  );
+  --announcement-color-text: var(
+    --color-text-on-announcement,
+    var(--color-text)
+  );
+  --announcement-font-size: var(--font-size-small);
+  --announcement-color-border: var(--color-border);
+  --announcement-padding-vertical: var(--spacing-input-padding-vertical);
+  --announcement-padding-horizontal: var(--spacing-horizontal-large);
+  --announcement-border-width: var(--spacing-border-width);
+}
+
+.ds.announcement {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+
+  color: var(--announcement-color-text);
+  background-color: var(--announcement-color-background);
+
+  border-style: solid;
+  border-color: var(--announcement-color-border);
+  border-width: var(--announcement-border-width);
+
+  font-size: var(--announcement-font-size, var(--font-size-small, 0.75rem));
+  padding: var(--announcement-padding, var(--spacing-medium, 1rem));
+}
