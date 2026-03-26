@@ -1,5 +1,6 @@
 import type { ProjectAnnotations, Renderer } from "storybook/internal/types";
 
+import "@canonical/styles/fonts";
 import "@canonical/styles-debug";
 
 import {
