@@ -36,15 +36,20 @@
  * This shim bridges the gap until the tokens package is fixed upstream.
  */
 :root {
-  /* Level 1: kebab → camelCase (modifiers.typography → sets.primitive) */
+  /* ── Font family shims ──────────────────────────────────────────
+   * modifiers.typography.css uses kebab-case references but
+   * sets.primitive.css defines camelCase tokens. */
   --typography-font-family-default: var(--typography-fontFamily-default);
   --typography-font-family-code: var(--typography-fontFamily-code);
-
-  /* Level 2: sets.primitive defines fontFamily-default as
-   * var(--typography-font-family-sans-serif) (kebab), but the actual
-   * font stack is at --typography-fontFamily-sansSerif (camelCase). */
   --typography-font-family-sans-serif: var(--typography-fontFamily-sansSerif);
   --typography-font-family-monospace: var(--typography-fontFamily-monospace);
+
+  /* ── Font weight shims ──────────────────────────────────────────
+   * Per-element weight tokens reference kebab-case (semi-bold,
+   * extra-bold, extra-light) but primitives use camelCase. */
+  --typography-weight-semi-bold: var(--typography-weight-semiBold);
+  --typography-weight-extra-bold: var(--typography-weight-extraBold);
+  --typography-weight-extra-light: var(--typography-weight-extraLight);
 }
 
 /* Base font — inherited by all elements unless overridden */

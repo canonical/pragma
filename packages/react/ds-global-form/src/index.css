@@ -94,7 +94,7 @@
 
   /* ── Label ──────────────────────────────────────────────────────── */
 
-  --form-label-font-weight: var(--typography-text-primary-font-weight-bold);
+  --form-label-font-weight: var(--typography-text-primary-bold-font-weight);
   --form-label-font-size: var(--typography-text-primary-font-size);
   --form-label-color: var(--color-text);
   /* --form-label-padding-block:  … ; */ /* block padding for label  */
