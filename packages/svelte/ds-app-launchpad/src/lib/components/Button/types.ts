@@ -1,5 +1,5 @@
-import type { ModifierFamilyValues } from "modifier-families";
 import type { Snippet } from "svelte";
+import type { ModifierFamilyValues } from "../../modifier-families/index.js";
 import type { ButtonPrimitiveProps } from "../common/ButtonPrimitive";
 
 export type ButtonProps = ButtonPrimitiveProps & {
