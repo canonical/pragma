@@ -84,7 +84,7 @@ const publicPackages = packages.filter((p) => !p.private);
 const registryVersions = await Promise.all(
   publicPackages.map(async (pkg) => {
     try {
-      const proc = Bun.spawn(["npm", "view", pkg.name, "version", "--json"], {
+      const proc = Bun.spawn(["npm", "view", pkg.name, "version", "--json", "--prefer-online"], {
         stdout: "pipe",
         stderr: "ignore",
       });
