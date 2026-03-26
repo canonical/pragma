@@ -64,15 +64,16 @@
   --form-input-border-color: var(--color-border);
   --form-input-border-radius: var(--dimension-radius-small); /* 0 */
 
-  /* Per-side border overrides — NOT defined here; undefined by default.
-   * When undefined, var() falls through to the base value above.
-   * Themes set ONLY the sides that differ from the base.
-   *
-   * Available per-side tokens:                                         */
-  /* --form-input-border-color-top:    … ; */ /* top border color    */
-  /* --form-input-border-color-right:  … ; */ /* right border color  */
+  /* ── Canonical theme: bottom-border-only inputs ──────────────── */
+  /* Only the sides that DIFFER from the base are declared.         */
+  /* Bottom border inherits --form-input-border-color (no override) */
+  --form-input-border-color-top: transparent;
+  --form-input-border-color-right: transparent;
+  --form-input-border-color-left: transparent;
+
+  /* Per-side border overrides — themes set only sides that differ.
+   * When undefined, var() falls through to the base value above.   */
   /* --form-input-border-color-bottom: … ; */ /* bottom border color */
-  /* --form-input-border-color-left:   … ; */ /* left border color   */
   /* --form-input-border-width-top:    … ; */ /* top border width    */
   /* --form-input-border-width-right:  … ; */ /* right border width  */
   /* --form-input-border-width-bottom: … ; */ /* bottom border width */

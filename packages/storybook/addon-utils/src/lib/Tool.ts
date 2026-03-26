@@ -5,8 +5,16 @@ import {
   RulerIcon,
 } from "@storybook/icons";
 import { createElement, type FC, memo, useCallback, useEffect } from "react";
-import { Button } from "storybook/internal/components";
-import { type API, useGlobals } from "storybook/manager-api";
+import {
+  IconButton,
+  TooltipLinkList,
+  WithTooltip,
+} from "storybook/internal/components";
+import {
+  type API,
+  useGlobals,
+  useParameter,
+} from "storybook/manager-api";
 import {
   ADDON_ID,
   GRID_MODES,
@@ -20,44 +28,66 @@ import {
 } from "../constants.js";
 
 const gridLabels: Record<GridMode, string> = {
-  none: "Grid: off",
-  intrinsic: "Grid: intrinsic",
-  responsive: "Grid: responsive",
+  none: "Off",
+  intrinsic: "Intrinsic",
+  responsive: "Responsive",
 };
 
 const schemeLabels: Record<SchemeMode, string> = {
-  none: "Scheme: system",
-  light: "Scheme: light",
-  dark: "Scheme: dark",
+  none: "System",
+  light: "Light",
+  dark: "Dark",
 };
 
-export const Tool: FC<{ api: API }> = memo(function DebugToolbar({ api }) {
+export const Tool: FC<{ api: API }> = memo(function UtilsToolbar({ api }) {
   const [globals, updateGlobals] = useGlobals();
 
-  const gridMode: GridMode = globals[KEY_GRID] ?? "none";
-  const scheme: SchemeMode = globals[KEY_SCHEME] ?? "none";
+  // Read story-level parameter defaults
+  const paramGrid = useParameter<GridMode>(KEY_GRID);
+  const paramScheme = useParameter<SchemeMode>(KEY_SCHEME);
+
+  // Effective value: explicit global > story parameter > "none"
+  const rawGrid: GridMode = globals[KEY_GRID] ?? "none";
+  const rawScheme: SchemeMode = globals[KEY_SCHEME] ?? "none";
+  const gridMode: GridMode =
+    rawGrid !== "none" ? rawGrid : paramGrid ?? "none";
+  const scheme: SchemeMode =
+    rawScheme !== "none" ? rawScheme : paramScheme ?? "none";
   const baseline: boolean = globals[KEY_BASELINE] ?? false;
   const outlines: boolean = globals[KEY_OUTLINES] ?? false;
 
+  const setGrid = useCallback(
+    (mode: GridMode) => updateGlobals({ [KEY_GRID]: mode }),
+    [updateGlobals],
+  );
+
+  const setScheme = useCallback(
+    (mode: SchemeMode) => updateGlobals({ [KEY_SCHEME]: mode }),
+    [updateGlobals],
+  );
+
+  const toggleBaseline = useCallback(
+    () => updateGlobals({ [KEY_BASELINE]: !baseline }),
+    [baseline, updateGlobals],
+  );
+
+  const toggleOutlines = useCallback(
+    () => updateGlobals({ [KEY_OUTLINES]: !outlines }),
+    [outlines, updateGlobals],
+  );
+
+  // Keyboard shortcuts — cycle through modes
   const cycleGrid = useCallback(() => {
     const next =
       GRID_MODES[(GRID_MODES.indexOf(gridMode) + 1) % GRID_MODES.length];
-    updateGlobals({ [KEY_GRID]: next });
-  }, [gridMode, updateGlobals]);
+    setGrid(next);
+  }, [gridMode, setGrid]);
 
   const cycleScheme = useCallback(() => {
     const next =
       SCHEME_MODES[(SCHEME_MODES.indexOf(scheme) + 1) % SCHEME_MODES.length];
-    updateGlobals({ [KEY_SCHEME]: next });
-  }, [scheme, updateGlobals]);
-
-  const toggleBaseline = useCallback(() => {
-    updateGlobals({ [KEY_BASELINE]: !baseline });
-  }, [baseline, updateGlobals]);
-
-  const toggleOutlines = useCallback(() => {
-    updateGlobals({ [KEY_OUTLINES]: !outlines });
-  }, [outlines, updateGlobals]);
+    setScheme(next);
+  }, [scheme, setScheme]);
 
   useEffect(() => {
     api.setAddonShortcut(ADDON_ID, {
@@ -103,52 +133,78 @@ export const Tool: FC<{ api: API }> = memo(function DebugToolbar({ api }) {
     "div",
     { style: { display: "flex", alignItems: "center", gap: 2 } },
 
-    createElement(
-      Button,
-      {
-        variant: gridMode !== "none" ? "solid" : "ghost",
-        size: "small",
-        ariaLabel: false,
-        onClick: cycleGrid,
-      },
-      createElement(GridIcon),
-      gridLabels[gridMode],
-    ),
+    // Grid dropdown
+    createElement(WithTooltip, {
+      placement: "bottom",
+      closeOnOutsideClick: true,
+      tooltip: ({ onHide }: { onHide: () => void }) =>
+        createElement(TooltipLinkList, {
+          links: GRID_MODES.map((mode) => ({
+            id: mode,
+            title: gridLabels[mode],
+            active: gridMode === mode,
+            onClick: () => {
+              setGrid(mode);
+              onHide();
+            },
+          })),
+        }),
+      children: createElement(
+        IconButton,
+        {
+          title: `Grid: ${gridLabels[gridMode]}`,
+          active: gridMode !== "none",
+        },
+        createElement(GridIcon),
+      ),
+    }),
 
-    createElement(
-      Button,
-      {
-        variant: scheme !== "none" ? "solid" : "ghost",
-        size: "small",
-        ariaLabel: false,
-        onClick: cycleScheme,
-      },
-      createElement(ContrastIcon),
-      schemeLabels[scheme],
-    ),
+    // Scheme dropdown
+    createElement(WithTooltip, {
+      placement: "bottom",
+      closeOnOutsideClick: true,
+      tooltip: ({ onHide }: { onHide: () => void }) =>
+        createElement(TooltipLinkList, {
+          links: SCHEME_MODES.map((mode) => ({
+            id: mode,
+            title: schemeLabels[mode],
+            active: scheme === mode,
+            onClick: () => {
+              setScheme(mode);
+              onHide();
+            },
+          })),
+        }),
+      children: createElement(
+        IconButton,
+        {
+          title: `Scheme: ${schemeLabels[scheme]}`,
+          active: scheme !== "none",
+        },
+        createElement(ContrastIcon),
+      ),
+    }),
 
+    // Baseline toggle
     createElement(
-      Button,
+      IconButton,
       {
-        variant: baseline ? "solid" : "ghost",
-        size: "small",
-        ariaLabel: false,
+        title: "Toggle baseline grid",
+        active: baseline,
         onClick: toggleBaseline,
       },
       createElement(RulerIcon),
-      "Baseline",
     ),
 
+    // Outlines toggle
     createElement(
-      Button,
+      IconButton,
       {
-        variant: outlines ? "solid" : "ghost",
-        size: "small",
-        ariaLabel: false,
+        title: "Toggle debug outlines",
+        active: outlines,
         onClick: toggleOutlines,
       },
       createElement(OutlineIcon),
-      "Outlines",
     ),
   );
 });

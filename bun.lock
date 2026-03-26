@@ -1001,6 +1001,12 @@
         "@biomejs/biome": "2.4.6",
         "@canonical/biome-config": "^0.18.0",
       },
+      "peerDependencies": {
+        "@canonical/ds-assets": ">=0.18.0",
+      },
+      "optionalPeers": [
+        "@canonical/ds-assets",
+      ],
     },
     "packages/styles/typography": {
       "name": "@canonical/styles-typography",

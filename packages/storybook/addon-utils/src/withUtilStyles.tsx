@@ -14,23 +14,29 @@ import {
   type SchemeMode,
 } from "./constants.js";
 
-export const withDebugStyles = (
+export const withUtilStyles = (
   StoryFn: StoryFunction<Renderer>,
   context: StoryContext<Renderer>,
 ) => {
   const [globals] = useGlobals();
-  const debugParams = context.parameters?.debug as
-    | { baseline?: boolean; outlines?: boolean }
-    | undefined;
 
+  // Globals take precedence. When a global is at its default ("none"/false),
+  // fall back to story-level parameters so stories can declare their
+  // preferred mode (e.g. `parameters: { grid: "intrinsic" }`).
+  const rawGrid = globals[KEY_GRID] as GridMode | undefined;
   const gridMode: GridMode =
-    globals[KEY_GRID] ?? (context.parameters?.grid as GridMode) ?? "none";
+    rawGrid && rawGrid !== "none"
+      ? rawGrid
+      : (context.parameters?.grid as GridMode) ?? "none";
+
+  const rawScheme = globals[KEY_SCHEME] as SchemeMode | undefined;
   const scheme: SchemeMode =
-    globals[KEY_SCHEME] ?? (context.parameters?.scheme as SchemeMode) ?? "none";
-  const baseline: boolean =
-    globals[KEY_BASELINE] ?? debugParams?.baseline ?? false;
-  const outlines: boolean =
-    globals[KEY_OUTLINES] ?? debugParams?.outlines ?? false;
+    rawScheme && rawScheme !== "none"
+      ? rawScheme
+      : (context.parameters?.scheme as SchemeMode) ?? "none";
+
+  const baseline: boolean = globals[KEY_BASELINE] ?? false;
+  const outlines: boolean = globals[KEY_OUTLINES] ?? false;
 
   useEffect(() => {
     const { classList } = document.body;

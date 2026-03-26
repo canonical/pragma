@@ -1,19 +1,48 @@
-/* @canonical/styles — Font loading (Ubuntu from Google Fonts)
+/* @canonical/styles — Font loading (Ubuntu Sans, self-hosted)
  *
- * Opt-in: import this file BEFORE @canonical/styles if you want
- * the Ubuntu font family loaded from Google Fonts CDN.
+ * Variable fonts from @canonical/ds-assets.
+ * Licensed under Ubuntu Font License v1.0.
+ *
+ * Opt-in: import this file to load the Ubuntu Sans font family.
  *
  *   @import url("@canonical/styles/fonts");
  *   @import url("@canonical/styles");
- *
- * Fonts loaded:
- *   Ubuntu       — Light 300, Regular 400, Medium 500, Bold 700 (+ italics)
- *   Ubuntu Mono  — Regular 400, Bold 700 (+ italics)
- *
- * Privacy note: Google Fonts CDN sends the user's IP address to Google.
- * For privacy-sensitive contexts, consider self-hosting the fonts instead.
- * A future fonts-local.css variant may provide bundled .woff2 files.
  */
 
-/* Ubuntu: Light 300, Regular 400, Medium 500, Bold 700 */
-@import url("https://fonts.googleapis.com/css2?family=Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&family=Ubuntu+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap");
+@font-face {
+  font-family: "Ubuntu Sans";
+  src: url("@canonical/ds-assets/fonts/ubuntu-sans/UbuntuSans[wdth,wght].woff2")
+    format("woff2-variations");
+  font-weight: 100 900;
+  font-stretch: 62.5% 100%;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Ubuntu Sans";
+  src: url("@canonical/ds-assets/fonts/ubuntu-sans/UbuntuSans-Italic[wdth,wght].woff2")
+    format("woff2-variations");
+  font-weight: 100 900;
+  font-stretch: 62.5% 100%;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Ubuntu Sans Mono";
+  src: url("@canonical/ds-assets/fonts/ubuntu-sans/UbuntuSansMono[wght].woff2")
+    format("woff2-variations");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Ubuntu Sans Mono";
+  src: url("@canonical/ds-assets/fonts/ubuntu-sans/UbuntuSansMono-Italic[wght].woff2")
+    format("woff2-variations");
+  font-weight: 100 900;
+  font-style: italic;
+  font-display: swap;
+}

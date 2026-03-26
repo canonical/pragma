@@ -8,15 +8,15 @@ import {
   KEY_OUTLINES,
   KEY_SCHEME,
 } from "./constants.js";
-import { withDebugStyles } from "./withDebugStyles.js";
+import { withUtilStyles } from "./withUtilStyles.js";
 
 const preview: ProjectAnnotations<Renderer> = {
-  decorators: [withDebugStyles],
+  decorators: [withUtilStyles],
   initialGlobals: {
-    [KEY_GRID]: undefined,
-    [KEY_SCHEME]: undefined,
-    [KEY_BASELINE]: undefined,
-    [KEY_OUTLINES]: undefined,
+    [KEY_GRID]: "none",
+    [KEY_SCHEME]: "none",
+    [KEY_BASELINE]: false,
+    [KEY_OUTLINES]: false,
   },
 };
 
