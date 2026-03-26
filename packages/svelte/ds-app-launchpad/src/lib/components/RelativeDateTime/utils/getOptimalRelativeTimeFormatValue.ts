@@ -7,8 +7,6 @@ import { units } from "./constants.js";
  * `nextUpdateIn` is the ms until the value/unit would differ.
  *
  * @param elapsed Milliseconds relative to now (+future, -past).
- * Must be >= the smallest unit threshold (1000ms); sub-threshold values
- * should be handled by the caller before invoking this function.
  *
  * @example
  * getOptimalRelativeTimeFormatValue(-90 * 60 * 1000);
