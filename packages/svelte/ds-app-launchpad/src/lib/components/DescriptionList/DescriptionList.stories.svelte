@@ -2,6 +2,7 @@
   import { defineMeta } from "@storybook/addon-svelte-csf";
   import type { ComponentProps } from "svelte";
   import { Chip } from "../Chip/index.js";
+  import { DateTime } from "../DateTime/index.js";
   import { Link } from "../Link/index.js";
   import { DescriptionList } from "./index.js";
 
@@ -17,7 +18,7 @@
     <DescriptionList.Item name="ID">134</DescriptionList.Item>
     <DescriptionList.Item name="Requested by">Jane Doe</DescriptionList.Item>
     <DescriptionList.Item name="Created">
-      2023-10-01T12:00:00Z
+      <DateTime date="2023-10-01T12:00:00Z" />
     </DescriptionList.Item>
     <DescriptionList.Item name="A very long term name to test layout behavior">
       This is a description for a term with a very long name to see how the
