@@ -62,3 +62,12 @@ export const KEY_LABELS: Partial<Record<Key, string>> = {
   pageup: "PgUp",
   pagedown: "PgDn",
 };
+
+/** Accessible labels for keys whose label is a symbol */
+export const ARIA_LABELS: Partial<Record<Key, string>> = {
+  enter: "Enter",
+  up: "Up",
+  down: "Down",
+  left: "Left",
+  right: "Right",
+};

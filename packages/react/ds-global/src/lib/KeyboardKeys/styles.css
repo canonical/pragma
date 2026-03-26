@@ -2,4 +2,5 @@
   display: inline-flex;
   align-items: center;
   gap: var(--spacing-horizontal-xsmall);
+  margin-inline: var(--spacing-horizontal-xsmall);
 }

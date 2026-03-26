@@ -12,9 +12,7 @@
 }
 
 .ds.keyboard-key {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  display: inline-block;
 
   color: var(--keyboard-key-color-text);
   background-color: var(--keyboard-key-color-background);

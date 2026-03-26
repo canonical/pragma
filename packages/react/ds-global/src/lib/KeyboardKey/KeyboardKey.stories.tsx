@@ -106,12 +106,3 @@ export const FunctionKeys: StoryFn<typeof Component> = () => (
   </div>
 );
 FunctionKeys.argTypes = { keyValue: { table: { disable: true } } };
-
-export const InlineUsage: StoryFn<typeof Component> = () => (
-  <div>
-    Press <Component keyValue="ctrl" /> + <Component keyValue="c" /> to copy.
-    <br />
-    Press <Component keyValue="ctrl" /> + <Component keyValue="v" /> to paste.
-  </div>
-);
-InlineUsage.argTypes = { keyValue: { table: { disable: true } } };

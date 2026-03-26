@@ -1,5 +1,5 @@
 import type React from "react";
-import { KEY_LABELS } from "./constants.js";
+import { ARIA_LABELS, KEY_LABELS } from "./constants.js";
 import type { KeyboardKeyProps } from "./types.js";
 import "./styles.css";
 
@@ -23,6 +23,7 @@ const KeyboardKey = ({
 }: KeyboardKeyProps): React.ReactElement => (
   <kbd
     className={[componentCssClassName, className].filter(Boolean).join(" ")}
+    aria-label={ARIA_LABELS[keyValue]}
     {...props}
   >
     {KEY_LABELS[keyValue] ?? keyValue}
