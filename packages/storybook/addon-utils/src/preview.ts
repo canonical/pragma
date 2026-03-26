@@ -13,8 +13,8 @@ import { withUtilStyles } from "./withUtilStyles.js";
 const preview: ProjectAnnotations<Renderer> = {
   decorators: [withUtilStyles],
   initialGlobals: {
-    [KEY_GRID]: "none",
-    [KEY_SCHEME]: "none",
+    [KEY_GRID]: undefined,
+    [KEY_SCHEME]: undefined,
     [KEY_BASELINE]: false,
     [KEY_OUTLINES]: false,
   },

@@ -5,11 +5,7 @@ import {
   RulerIcon,
 } from "@storybook/icons";
 import { createElement, type FC, memo, useCallback, useEffect } from "react";
-import {
-  IconButton,
-  TooltipLinkList,
-  WithTooltip,
-} from "storybook/internal/components";
+import { IconButton, Select } from "storybook/internal/components";
 import {
   type API,
   useGlobals,
@@ -27,17 +23,17 @@ import {
   type SchemeMode,
 } from "../constants.js";
 
-const gridLabels: Record<GridMode, string> = {
-  none: "Off",
-  intrinsic: "Intrinsic",
-  responsive: "Responsive",
-};
+const gridOptions = GRID_MODES.map((mode) => ({
+  value: mode,
+  title: { none: "Off", intrinsic: "Intrinsic", responsive: "Responsive" }[
+    mode
+  ],
+}));
 
-const schemeLabels: Record<SchemeMode, string> = {
-  none: "System",
-  light: "Light",
-  dark: "Dark",
-};
+const schemeOptions = SCHEME_MODES.map((mode) => ({
+  value: mode,
+  title: { none: "System", light: "Light", dark: "Dark" }[mode],
+}));
 
 export const Tool: FC<{ api: API }> = memo(function UtilsToolbar({ api }) {
   const [globals, updateGlobals] = useGlobals();
@@ -46,13 +42,15 @@ export const Tool: FC<{ api: API }> = memo(function UtilsToolbar({ api }) {
   const paramGrid = useParameter<GridMode>(KEY_GRID);
   const paramScheme = useParameter<SchemeMode>(KEY_SCHEME);
 
-  // Effective value: explicit global > story parameter > "none"
-  const rawGrid: GridMode = globals[KEY_GRID] ?? "none";
-  const rawScheme: SchemeMode = globals[KEY_SCHEME] ?? "none";
+  // undefined = user hasn't touched → fall back to story parameter
+  // any string (including "none") = user explicitly chose
+  const rawGrid = globals[KEY_GRID] as GridMode | undefined;
+  const rawScheme = globals[KEY_SCHEME] as SchemeMode | undefined;
   const gridMode: GridMode =
-    rawGrid !== "none" ? rawGrid : paramGrid ?? "none";
+    rawGrid !== undefined ? rawGrid : paramGrid ?? "none";
   const scheme: SchemeMode =
-    rawScheme !== "none" ? rawScheme : paramScheme ?? "none";
+    rawScheme !== undefined ? rawScheme : paramScheme ?? "none";
+
   const baseline: boolean = globals[KEY_BASELINE] ?? false;
   const outlines: boolean = globals[KEY_OUTLINES] ?? false;
 
@@ -133,57 +131,33 @@ export const Tool: FC<{ api: API }> = memo(function UtilsToolbar({ api }) {
     "div",
     { style: { display: "flex", alignItems: "center", gap: 2 } },
 
-    // Grid dropdown
-    createElement(WithTooltip, {
-      placement: "bottom",
-      closeOnOutsideClick: true,
-      tooltip: ({ onHide }: { onHide: () => void }) =>
-        createElement(TooltipLinkList, {
-          links: GRID_MODES.map((mode) => ({
-            id: mode,
-            title: gridLabels[mode],
-            active: gridMode === mode,
-            onClick: () => {
-              setGrid(mode);
-              onHide();
-            },
-          })),
-        }),
-      children: createElement(
-        IconButton,
-        {
-          title: `Grid: ${gridLabels[gridMode]}`,
-          active: gridMode !== "none",
-        },
-        createElement(GridIcon),
-      ),
-    }),
+    // Grid select (same component as viewport selector)
+    createElement(
+      Select,
+      {
+        ariaLabel: "Grid layout mode",
+        tooltip: "Grid layout",
+        icon: createElement(GridIcon),
+        defaultOptions: gridMode,
+        options: gridOptions,
+        onSelect: (value) => setGrid(value as GridMode),
+      },
+      gridMode !== "none" ? gridOptions.find((o) => o.value === gridMode)?.title : null,
+    ),
 
-    // Scheme dropdown
-    createElement(WithTooltip, {
-      placement: "bottom",
-      closeOnOutsideClick: true,
-      tooltip: ({ onHide }: { onHide: () => void }) =>
-        createElement(TooltipLinkList, {
-          links: SCHEME_MODES.map((mode) => ({
-            id: mode,
-            title: schemeLabels[mode],
-            active: scheme === mode,
-            onClick: () => {
-              setScheme(mode);
-              onHide();
-            },
-          })),
-        }),
-      children: createElement(
-        IconButton,
-        {
-          title: `Scheme: ${schemeLabels[scheme]}`,
-          active: scheme !== "none",
-        },
-        createElement(ContrastIcon),
-      ),
-    }),
+    // Scheme select
+    createElement(
+      Select,
+      {
+        ariaLabel: "Color scheme",
+        tooltip: "Color scheme",
+        icon: createElement(ContrastIcon),
+        defaultOptions: scheme,
+        options: schemeOptions,
+        onSelect: (value) => setScheme(value as SchemeMode),
+      },
+      scheme !== "none" ? schemeOptions.find((o) => o.value === scheme)?.title : null,
+    ),
 
     // Baseline toggle
     createElement(

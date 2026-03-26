@@ -20,18 +20,17 @@ export const withUtilStyles = (
 ) => {
   const [globals] = useGlobals();
 
-  // Globals take precedence. When a global is at its default ("none"/false),
-  // fall back to story-level parameters so stories can declare their
-  // preferred mode (e.g. `parameters: { grid: "intrinsic" }`).
+  // undefined = user hasn't touched the dropdown → fall back to story parameters
+  // any string (including "none") = user explicitly chose → use it
   const rawGrid = globals[KEY_GRID] as GridMode | undefined;
   const gridMode: GridMode =
-    rawGrid && rawGrid !== "none"
+    rawGrid !== undefined
       ? rawGrid
       : (context.parameters?.grid as GridMode) ?? "none";
 
   const rawScheme = globals[KEY_SCHEME] as SchemeMode | undefined;
   const scheme: SchemeMode =
-    rawScheme && rawScheme !== "none"
+    rawScheme !== undefined
       ? rawScheme
       : (context.parameters?.scheme as SchemeMode) ?? "none";
 
