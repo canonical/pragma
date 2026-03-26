@@ -31,6 +31,7 @@ export const Tool = memo(function MyAddonSelector(_props: { api: API }) {
     ToggleButton,
     {
       key: TOOL_ID,
+      variant: "ghost",
       pressed: isActive,
       disabled: isLocked,
       title: isActive ? "MSW Active" : "MSW Inactive",

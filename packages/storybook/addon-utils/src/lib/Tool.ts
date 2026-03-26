@@ -163,6 +163,7 @@ export const Tool: FC<{ api: API }> = memo(function UtilsToolbar({ api }) {
     createElement(
       ToggleButton,
       {
+        variant: "ghost",
         title: "Toggle baseline grid",
         pressed: baseline,
         onClick: toggleBaseline,
@@ -175,6 +176,7 @@ export const Tool: FC<{ api: API }> = memo(function UtilsToolbar({ api }) {
     createElement(
       ToggleButton,
       {
+        variant: "ghost",
         title: "Toggle debug outlines",
         pressed: outlines,
         onClick: toggleOutlines,
