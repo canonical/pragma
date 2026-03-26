@@ -1,6 +1,6 @@
 <script lang="ts" module>
   import { defineMeta } from "@storybook/addon-svelte-csf";
-  import { MODIFIER_FAMILIES } from "../../modifier-families";
+  import { MODIFIER_FAMILIES } from "../../modifier-families/index.js";
   import NumberInput from "./NumberInput.svelte";
 
   const { Story } = defineMeta({

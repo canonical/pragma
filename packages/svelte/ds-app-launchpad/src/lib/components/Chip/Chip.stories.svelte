@@ -4,7 +4,7 @@
   import { ArchiveIcon } from "@canonical/svelte-icons";
   import { defineMeta } from "@storybook/addon-svelte-csf";
   import { fn } from "storybook/test";
-  import { MODIFIER_FAMILIES } from "../../modifier-families";
+  import { MODIFIER_FAMILIES } from "../../modifier-families/index.js";
   import { Badge } from "../Badge/index.js";
   import Chip from "./Chip.svelte";
 

@@ -1,4 +1,4 @@
-import type { ModifierFamily } from "modifier-families";
+import type { ModifierFamily } from "../../modifier-families/index.js";
 import type { TextInputPrimitiveProps } from "../common/index.js";
 
 export interface TextInputProps
