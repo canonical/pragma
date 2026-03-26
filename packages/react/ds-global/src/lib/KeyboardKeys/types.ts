@@ -1,6 +1,3 @@
-import type { HTMLAttributes, ReactNode } from "react";
+import type { HTMLAttributes } from "react";
 
-export interface KeyboardKeysProps extends HTMLAttributes<HTMLDivElement> {
-  /** Content to render inside the component */
-  children?: ReactNode;
-}
+export interface KeyboardKeysProps extends HTMLAttributes<HTMLElement> {}
