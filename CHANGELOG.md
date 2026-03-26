@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.20.0](https://github.com/canonical/pragma/compare/v0.19.0...v0.20.0) (2026-03-26)
+
+
+### Features
+
+* **svelte-ds-app-launchpad:** Upstream DateTime Components ([#548](https://github.com/canonical/pragma/issues/548)) ([5528d41](https://github.com/canonical/pragma/commit/5528d415d307c07459d1cd14ae257d6767c17fc3))
+
+
+
+
+
 # [0.19.0](https://github.com/canonical/pragma/compare/v0.18.0...v0.19.0) (2026-03-26)
 
 

@@ -1,7 +1,7 @@
 {
   "name": "@canonical/summon",
   "description": "Summon CLI binary: interactive code generator with Ink UI, shell completion, and Commander registration.",
-  "version": "0.19.0",
+  "version": "0.20.0",
   "type": "module",
   "module": "src/bin.tsx",
   "bin": {
@@ -36,9 +36,9 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@canonical/cli-core": "^0.19.0",
-    "@canonical/summon-core": "^0.19.0",
-    "@canonical/task": "^0.19.0",
+    "@canonical/cli-core": "^0.20.0",
+    "@canonical/summon-core": "^0.20.0",
+    "@canonical/task": "^0.20.0",
     "chalk": "^5.6.2",
     "commander": "^14.0.3",
     "ink": "^6.8.0",
@@ -50,8 +50,8 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.6",
-    "@canonical/biome-config": "^0.19.0",
-    "@canonical/typescript-config": "^0.19.0",
+    "@canonical/biome-config": "^0.20.0",
+    "@canonical/typescript-config": "^0.20.0",
     "@types/bun": "^1.3.10",
     "@types/node": "^24.12.0",
     "@types/omelette": "^0.4.5",
