@@ -244,10 +244,7 @@ describe("collectUndos", () => {
   });
 
   it("collects custom undo that is itself a sequence", () => {
-    const compositeUndo = sequence_([
-      info("step 1"),
-      info("step 2"),
-    ]);
+    const compositeUndo = sequence_([info("step 1"), info("step 2")]);
     const task = writeFile("/a.txt", "a", { undo: compositeUndo });
     const undos = collectUndos(task);
 
