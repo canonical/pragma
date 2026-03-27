@@ -1,8 +1,8 @@
 import { pure } from "@canonical/task";
 import { describe, expect, it } from "vitest";
+import type StampConfig from "../types/StampConfig.js";
 import applyStamp from "./applyStamp.js";
 import runTaskWithStamp from "./runTaskWithStamp.js";
-import type StampConfig from "../types/StampConfig.js";
 
 const stamp: StampConfig = { generator: "test-gen", version: "1.0.0" };
 

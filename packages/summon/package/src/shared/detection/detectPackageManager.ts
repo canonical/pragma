@@ -1,10 +1,5 @@
 import * as path from "node:path";
-import {
-  exists,
-  ifElseM,
-  pure,
-  type Task,
-} from "@canonical/task";
+import { exists, ifElseM, pure, type Task } from "@canonical/task";
 import type { PackageManager } from "../types.js";
 
 /**
@@ -12,7 +7,9 @@ import type { PackageManager } from "../types.js";
  *
  * @note Impure — probes the filesystem for lock files.
  */
-export default function detectPackageManager(cwd: string): Task<PackageManager> {
+export default function detectPackageManager(
+  cwd: string,
+): Task<PackageManager> {
   const bunLock = path.join(cwd, "bun.lockb");
   const bunLock2 = path.join(cwd, "bun.lock");
   const yarnLock = path.join(cwd, "yarn.lock");

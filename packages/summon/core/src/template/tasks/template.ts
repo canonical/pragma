@@ -1,5 +1,5 @@
 import * as path from "node:path";
-import { mkdir, readFile, task, type Task, writeFile } from "@canonical/task";
+import { mkdir, readFile, type Task, task, writeFile } from "@canonical/task";
 import ejsEngine from "../ejsEngine.js";
 import renderString from "../renderString.js";
 import type { TemplateOptions } from "./types.js";

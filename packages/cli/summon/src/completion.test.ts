@@ -89,8 +89,18 @@ describe("isPathPrompt", () => {
 describe("getArgumentCompletions", () => {
   const prompts: PromptDefinition[] = [
     { name: "componentPath", type: "text", message: "Component path:" },
-    { name: "withStyles", type: "confirm", message: "Include styles?", default: true },
-    { name: "withStories", type: "confirm", message: "Include stories?", default: true },
+    {
+      name: "withStyles",
+      type: "confirm",
+      message: "Include styles?",
+      default: true,
+    },
+    {
+      name: "withStories",
+      type: "confirm",
+      message: "Include stories?",
+      default: true,
+    },
     {
       name: "type",
       type: "select",
@@ -104,20 +114,32 @@ describe("getArgumentCompletions", () => {
   ];
 
   it("returns flag completions when completing a flag name", () => {
-    const completions = getArgumentCompletions(prompts, "summon test --comp", "--comp");
+    const completions = getArgumentCompletions(
+      prompts,
+      "summon test --comp",
+      "--comp",
+    );
 
     expect(completions).toContain("--component-path");
   });
 
   it("shows --no-X for confirm prompts with default true", () => {
-    const completions = getArgumentCompletions(prompts, "summon test --no-", "--no-");
+    const completions = getArgumentCompletions(
+      prompts,
+      "summon test --no-",
+      "--no-",
+    );
 
     expect(completions).toContain("--no-with-styles");
     expect(completions).toContain("--no-with-stories");
   });
 
   it("returns select choices when completing a flag value", () => {
-    const completions = getArgumentCompletions(prompts, "summon test --type=", "");
+    const completions = getArgumentCompletions(
+      prompts,
+      "summon test --type=",
+      "",
+    );
 
     expect(completions).toContain("library");
     expect(completions).toContain("tool-ts");
@@ -125,7 +147,11 @@ describe("getArgumentCompletions", () => {
   });
 
   it("filters select choices by partial value", () => {
-    const completions = getArgumentCompletions(prompts, "summon test --type=lib", "");
+    const completions = getArgumentCompletions(
+      prompts,
+      "summon test --type=lib",
+      "",
+    );
 
     expect(completions).toContain("library");
     expect(completions).not.toContain("tool-ts");
@@ -133,13 +159,22 @@ describe("getArgumentCompletions", () => {
   });
 
   it("includes built-in flags", () => {
-    const completions = getArgumentCompletions(prompts, "summon test --dry", "--dry");
+    const completions = getArgumentCompletions(
+      prompts,
+      "summon test --dry",
+      "--dry",
+    );
 
     expect(completions).toContain("--dry-run");
   });
 
   it("shows all flags when showAll is true", () => {
-    const completions = getArgumentCompletions(prompts, "summon test", "", true);
+    const completions = getArgumentCompletions(
+      prompts,
+      "summon test",
+      "",
+      true,
+    );
 
     expect(completions).toContain("--component-path");
     expect(completions).toContain("--dry-run");
@@ -147,7 +182,11 @@ describe("getArgumentCompletions", () => {
   });
 
   it("returns empty array when no matches", () => {
-    const completions = getArgumentCompletions(prompts, "summon test --zzz", "--zzz");
+    const completions = getArgumentCompletions(
+      prompts,
+      "summon test --zzz",
+      "--zzz",
+    );
 
     expect(completions).toHaveLength(0);
   });

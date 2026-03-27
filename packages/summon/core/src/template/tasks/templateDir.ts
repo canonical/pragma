@@ -1,5 +1,5 @@
 import * as path from "node:path";
-import { glob, sequence_, task, type Task } from "@canonical/task";
+import { glob, sequence_, type Task, task } from "@canonical/task";
 import ejsEngine from "../ejsEngine.js";
 import renderString from "../renderString.js";
 import template from "./template.js";

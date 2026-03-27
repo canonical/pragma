@@ -1,11 +1,5 @@
 import * as path from "node:path";
-import {
-  exists,
-  flatMap,
-  pure,
-  readFile,
-  type Task,
-} from "@canonical/task";
+import { exists, flatMap, pure, readFile, type Task } from "@canonical/task";
 import type { MonorepoInfo } from "../types.js";
 
 /**

@@ -8,8 +8,7 @@ describe("appendExportToParentIndex", () => {
     const result = dryRunWithFileState(
       appendExportToParentIndex("src/components", "Button"),
       {
-        "src/components/index.ts":
-          'export * from "./Other/index.js";\n',
+        "src/components/index.ts": 'export * from "./Other/index.js";\n',
       },
     );
 
@@ -24,8 +23,7 @@ describe("appendExportToParentIndex", () => {
     const result = dryRunWithFileState(
       appendExportToParentIndex("src/components", "Button"),
       {
-        "src/components/index.ts":
-          'export * from "./Button/index.js";\n',
+        "src/components/index.ts": 'export * from "./Button/index.js";\n',
       },
     );
 

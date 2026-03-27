@@ -39,8 +39,7 @@ describe("removeExportFromParentIndex", () => {
     const result = dryRunWithFileState(
       removeExportFromParentIndex("src/components", "Button"),
       {
-        "src/components/index.ts":
-          'export * from "./Button/index.js";\n',
+        "src/components/index.ts": 'export * from "./Button/index.js";\n',
       },
     );
 

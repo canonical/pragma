@@ -3,9 +3,7 @@ import type { PackageType } from "../types.js";
 /**
  * Get package entry points based on type.
  */
-export default function getEntryPoints(
-  type: PackageType,
-): {
+export default function getEntryPoints(type: PackageType): {
   module: string;
   types: string | null;
   files: string[];

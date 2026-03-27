@@ -26,18 +26,21 @@ export type {
 // Stamps (generated file stamp comments)
 // =============================================================================
 
+export type { RunTaskWithStampOptions } from "./stamp/index.js";
 export {
   applyStamp,
   runTaskWithStamp,
-} from "./stamp/index.js";
-export type {
-  RunTaskWithStampOptions,
 } from "./stamp/index.js";
 
 // =============================================================================
 // Templates
 // =============================================================================
 
+export type {
+  TemplateDirOptions,
+  TemplateOptions,
+  TemplatingEngine,
+} from "./template/index.js";
 export {
   ejsEngine,
   generateStamp,
@@ -51,11 +54,6 @@ export {
   templateDir,
   templateHelpers,
   withHelpers,
-} from "./template/index.js";
-export type {
-  TemplateDirOptions,
-  TemplateOptions,
-  TemplatingEngine,
 } from "./template/index.js";
 
 // =============================================================================
