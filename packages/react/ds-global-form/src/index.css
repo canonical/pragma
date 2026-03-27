@@ -60,7 +60,9 @@
 
   /* ── Borders ────────────────────────────────────────────────────── */
 
-  --form-input-border-width: var(--dimension-stroke-thickness-medium); /* 1px  */
+  --form-input-border-width: var(
+    --dimension-stroke-thickness-medium
+  ); /* 1px  */
   --form-input-border-color: var(--color-border);
   --form-input-border-radius: var(--dimension-radius-small); /* 0 */
 

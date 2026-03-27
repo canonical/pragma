@@ -82,10 +82,7 @@
       --grid-column-gap,
       var(--grid-gap, var(--grid-gutter, 1.5rem))
     );
-    row-gap: var(
-      --grid-row-gap,
-      var(--grid-gap, var(--grid-gutter, 1.5rem))
-    );
+    row-gap: var(--grid-row-gap, var(--grid-gap, var(--grid-gutter, 1.5rem)));
   }
 
   .responsive {

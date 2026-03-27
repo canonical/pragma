@@ -16,7 +16,10 @@
 
 :root {
   /* ── Baseline grid ──────────────────────────────────────────────── */
-  --space-baseline: var(--dimension-size-height-baseline, 0.5rem); /* 8px — bU */
+  --space-baseline: var(
+    --dimension-size-height-baseline,
+    0.5rem
+  ); /* 8px — bU */
 
   /* ── Spacing scale (semantic aliases) ───────────────────────────── */
   --space-0: 0;
@@ -67,7 +70,9 @@
 
   /* ── Intra-component spacing ────────────────────────────────────── */
   /* Component-owned: internal padding regardless of context.           */
-  --component-padding-block: var(--space-100); /*  8px — block (vertical)  padding */
+  --component-padding-block: var(
+    --space-100
+  ); /*  8px — block (vertical)  padding */
   --component-padding-inline: var(
     --space-200
   ); /* 16px — inline (horizontal) padding */

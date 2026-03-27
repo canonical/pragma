@@ -6,11 +6,7 @@ import {
 } from "@storybook/icons";
 import { createElement, type FC, memo, useCallback, useEffect } from "react";
 import { Select, ToggleButton } from "storybook/internal/components";
-import {
-  type API,
-  useGlobals,
-  useParameter,
-} from "storybook/manager-api";
+import { type API, useGlobals, useParameter } from "storybook/manager-api";
 import {
   ADDON_ID,
   GRID_MODES,
@@ -47,9 +43,9 @@ export const Tool: FC<{ api: API }> = memo(function UtilsToolbar({ api }) {
   const rawGrid = globals[KEY_GRID] as GridMode | undefined;
   const rawScheme = globals[KEY_SCHEME] as SchemeMode | undefined;
   const gridMode: GridMode =
-    rawGrid !== undefined ? rawGrid : paramGrid ?? "none";
+    rawGrid !== undefined ? rawGrid : (paramGrid ?? "none");
   const scheme: SchemeMode =
-    rawScheme !== undefined ? rawScheme : paramScheme ?? "none";
+    rawScheme !== undefined ? rawScheme : (paramScheme ?? "none");
 
   const baseline: boolean = globals[KEY_BASELINE] ?? false;
   const outlines: boolean = globals[KEY_OUTLINES] ?? false;
@@ -142,7 +138,9 @@ export const Tool: FC<{ api: API }> = memo(function UtilsToolbar({ api }) {
         options: gridOptions,
         onSelect: (value) => setGrid(value as GridMode),
       },
-      gridMode !== "none" ? gridOptions.find((o) => o.value === gridMode)?.title : null,
+      gridMode !== "none"
+        ? gridOptions.find((o) => o.value === gridMode)?.title
+        : null,
     ),
 
     // Scheme select
@@ -156,7 +154,9 @@ export const Tool: FC<{ api: API }> = memo(function UtilsToolbar({ api }) {
         options: schemeOptions,
         onSelect: (value) => setScheme(value as SchemeMode),
       },
-      scheme !== "none" ? schemeOptions.find((o) => o.value === scheme)?.title : null,
+      scheme !== "none"
+        ? schemeOptions.find((o) => o.value === scheme)?.title
+        : null,
     ),
 
     // Baseline toggle

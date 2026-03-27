@@ -65,6 +65,4 @@ export const Side: StoryFn<TemplateProps> = Template.bind({});
 Side.args = {
   fieldMap: fieldMaps.base,
 };
-Side.decorators = [
-  decorators.form({ className: "form-layout-side" }),
-];
+Side.decorators = [decorators.form({ className: "form-layout-side" })];

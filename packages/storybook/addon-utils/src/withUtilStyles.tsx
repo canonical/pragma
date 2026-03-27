@@ -26,13 +26,13 @@ export const withUtilStyles = (
   const gridMode: GridMode =
     rawGrid !== undefined
       ? rawGrid
-      : (context.parameters?.grid as GridMode) ?? "none";
+      : ((context.parameters?.grid as GridMode) ?? "none");
 
   const rawScheme = globals[KEY_SCHEME] as SchemeMode | undefined;
   const scheme: SchemeMode =
     rawScheme !== undefined
       ? rawScheme
-      : (context.parameters?.scheme as SchemeMode) ?? "none";
+      : ((context.parameters?.scheme as SchemeMode) ?? "none");
 
   const baseline: boolean = globals[KEY_BASELINE] ?? false;
   const outlines: boolean = globals[KEY_OUTLINES] ?? false;
