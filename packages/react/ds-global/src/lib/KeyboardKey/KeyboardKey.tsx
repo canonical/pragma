@@ -14,7 +14,12 @@ const componentCssClassName = "ds keyboard-key";
  * instructional or reference content. It is non-interactive and purely
  * informational.
  *
- * @implements dso:global.component.keyboard_key
+ * This component renders a `<kbd>` element and is designed to contain
+ * other `<kbd>` elements (e.g., individual keys) as children, forming a
+ * single grouped keystroke.
+ *
+ * @see https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/kbd#representing_keystrokes_within_an_input
+ * @implements dso:global.group.keyboard_keys
  */
 const KeyboardKey = ({
   keyValue,

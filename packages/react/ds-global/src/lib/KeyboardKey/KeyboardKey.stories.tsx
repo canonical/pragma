@@ -1,6 +1,11 @@
 import type { Meta, StoryFn, StoryObj } from "@storybook/react-vite";
 import Component from "./KeyboardKey.js";
-import type { Key } from "./types.js";
+import {
+  ACTION_KEYS,
+  FUNCTION_KEYS,
+  MODIFIER_KEYS,
+  NAVIGATION_KEYS,
+} from "./constants.js";
 
 const meta = {
   title: "Experimental/KeyboardKey",
@@ -20,53 +25,11 @@ export const Default: Story = {
   },
 };
 
-const MODIFIER_KEYS: Key[] = [
-  "shift",
-  "ctrl",
-  "cmd",
-  "option",
-  "alt",
-  "capslock",
-  "meta",
-];
-const ACTION_KEYS: Key[] = [
-  "tab",
-  "space",
-  "backspace",
-  "delete",
-  "escape",
-  "enter",
-];
-const NAVIGATION_KEYS: Key[] = [
-  "up",
-  "down",
-  "left",
-  "right",
-  "home",
-  "end",
-  "pageup",
-  "pagedown",
-];
-const FUNCTION_KEYS: Key[] = [
-  "f1",
-  "f2",
-  "f3",
-  "f4",
-  "f5",
-  "f6",
-  "f7",
-  "f8",
-  "f9",
-  "f10",
-  "f11",
-  "f12",
-];
-
 export const ModifierKeys: StoryFn<typeof Component> = () => (
   <div
     style={{ display: "inline-flex", gap: "var(--spacing-horizontal-small)" }}
   >
-    {MODIFIER_KEYS.map((key) => (
+    {(Object.keys(MODIFIER_KEYS) as Array<keyof typeof MODIFIER_KEYS>).map((key) => (
       <Component key={key} keyValue={key} />
     ))}
   </div>
@@ -78,7 +41,7 @@ export const ActionKeys: StoryFn<typeof Component> = () => (
   <div
     style={{ display: "inline-flex", gap: "var(--spacing-horizontal-small)" }}
   >
-    {ACTION_KEYS.map((key) => (
+    {(Object.keys(ACTION_KEYS) as Array<keyof typeof ACTION_KEYS>).map((key) => (
       <Component key={key} keyValue={key} />
     ))}
   </div>
@@ -89,7 +52,7 @@ export const NavigationKeys: StoryFn<typeof Component> = () => (
   <div
     style={{ display: "inline-flex", gap: "var(--spacing-horizontal-small)" }}
   >
-    {NAVIGATION_KEYS.map((key) => (
+    {(Object.keys(NAVIGATION_KEYS) as Array<keyof typeof NAVIGATION_KEYS>).map((key) => (
       <Component key={key} keyValue={key} />
     ))}
   </div>
@@ -100,7 +63,7 @@ export const FunctionKeys: StoryFn<typeof Component> = () => (
   <div
     style={{ display: "inline-flex", gap: "var(--spacing-horizontal-small)" }}
   >
-    {FUNCTION_KEYS.map((key) => (
+    {(Object.keys(FUNCTION_KEYS) as Array<keyof typeof FUNCTION_KEYS>).map((key) => (
       <Component key={key} keyValue={key} />
     ))}
   </div>

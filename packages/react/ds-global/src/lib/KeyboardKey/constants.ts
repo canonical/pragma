@@ -1,5 +1,4 @@
-/** Display labels for keys that render differently from their identifier */
-export const KEY_LABELS = {
+export const LETTER_KEYS = {
   a: "A",
   b: "B",
   c: "C",
@@ -26,6 +25,9 @@ export const KEY_LABELS = {
   x: "X",
   y: "Y",
   z: "Z",
+} as const;
+
+export const FUNCTION_KEYS = {
   f1: "F1",
   f2: "F2",
   f3: "F3",
@@ -38,11 +40,18 @@ export const KEY_LABELS = {
   f10: "F10",
   f11: "F11",
   f12: "F12",
+} as const;
+
+export const ACTION_KEYS = {
   tab: "Tab",
   space: "Space",
   backspace: "Backspace",
   delete: "Del",
   escape: "Esc",
+  enter: "↵",
+} as const;
+
+export const MODIFIER_KEYS = {
   shift: "Shift",
   ctrl: "Ctrl",
   alt: "Alt",
@@ -50,7 +59,9 @@ export const KEY_LABELS = {
   option: "Option",
   meta: "Meta",
   capslock: "Caps Lock",
-  enter: "↵",
+} as const;
+
+export const NAVIGATION_KEYS = {
   up: "↑",
   down: "↓",
   left: "←",
@@ -59,6 +70,15 @@ export const KEY_LABELS = {
   end: "End",
   pageup: "PgUp",
   pagedown: "PgDn",
+} as const;
+
+/** All key display labels, derived from individual key groups */
+export const KEY_LABELS = {
+  ...LETTER_KEYS,
+  ...FUNCTION_KEYS,
+  ...ACTION_KEYS,
+  ...MODIFIER_KEYS,
+  ...NAVIGATION_KEYS,
 } as const;
 
 /** Accessible labels for keys whose label is a symbol */
