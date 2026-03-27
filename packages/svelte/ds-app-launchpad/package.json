@@ -74,7 +74,7 @@
     "vitest-browser-svelte": "^2.0.2"
   },
   "dependencies": {
-    "@canonical/launchpad-design-tokens": "^1.0.23",
+    "@canonical/launchpad-design-tokens": "^1.1.1",
     "@canonical/storybook-config": "^0.20.0",
     "@canonical/svelte-icons": "^0.0.9",
     "@floating-ui/dom": "^1.7.6"
