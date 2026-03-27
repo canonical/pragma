@@ -14,7 +14,7 @@ const Category = ({
   className,
   children,
   title,
-  items,
+  items = [],
   ...props
 }: CategoryProps): React.ReactNode => {
   return (
