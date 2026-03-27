@@ -53,6 +53,7 @@
   "devDependencies": {
     "@biomejs/biome": "2.4.6",
     "@canonical/biome-config": "^0.20.0",
+    "@canonical/design-tokens": "^0.5.2",
     "@canonical/storybook-helpers": "^0.20.0",
     "@canonical/svelte-ssr-test": "^0.20.0",
     "@canonical/typescript-config-svelte": "^0.20.0",

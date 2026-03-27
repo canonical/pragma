@@ -391,6 +391,7 @@
       "devDependencies": {
         "@biomejs/biome": "2.4.6",
         "@canonical/biome-config": "^0.18.0",
+        "@canonical/design-tokens": "^0.5.2",
         "@canonical/storybook-helpers": "^0.18.0",
         "@canonical/typescript-config-react": "^0.18.0",
         "@canonical/webarchitect": "^0.18.0",
@@ -426,6 +427,7 @@
       "devDependencies": {
         "@biomejs/biome": "2.4.6",
         "@canonical/biome-config": "^0.18.0",
+        "@canonical/design-tokens": "^0.5.2",
         "@canonical/storybook-helpers": "^0.18.0",
         "@canonical/typescript-config-react": "^0.18.0",
         "@canonical/webarchitect": "^0.18.0",
@@ -461,6 +463,7 @@
       "devDependencies": {
         "@biomejs/biome": "2.4.6",
         "@canonical/biome-config": "^0.18.0",
+        "@canonical/design-tokens": "^0.5.2",
         "@canonical/storybook-helpers": "^0.18.0",
         "@canonical/typescript-config-react": "^0.18.0",
         "@canonical/webarchitect": "^0.18.0",
@@ -502,6 +505,7 @@
       "devDependencies": {
         "@biomejs/biome": "2.4.6",
         "@canonical/biome-config": "^0.18.0",
+        "@canonical/design-tokens": "^0.5.2",
         "@canonical/storybook-helpers": "^0.18.0",
         "@canonical/typescript-config-react": "^0.18.0",
         "@canonical/webarchitect": "^0.18.0",
@@ -538,6 +542,7 @@
       "devDependencies": {
         "@biomejs/biome": "2.4.6",
         "@canonical/biome-config": "^0.18.0",
+        "@canonical/design-tokens": "^0.5.2",
         "@canonical/storybook-helpers": "^0.18.0",
         "@canonical/typescript-config-react": "^0.18.0",
         "@canonical/webarchitect": "^0.18.0",
@@ -573,6 +578,7 @@
       "devDependencies": {
         "@biomejs/biome": "2.4.6",
         "@canonical/biome-config": "^0.18.0",
+        "@canonical/design-tokens": "^0.5.2",
         "@canonical/storybook-helpers": "^0.18.0",
         "@canonical/typescript-config-react": "^0.18.0",
         "@canonical/webarchitect": "^0.18.0",
@@ -610,6 +616,7 @@
       "devDependencies": {
         "@biomejs/biome": "2.4.6",
         "@canonical/biome-config": "^0.18.0",
+        "@canonical/design-tokens": "^0.5.2",
         "@canonical/ds-types": "^0.18.0",
         "@canonical/storybook-helpers": "^0.18.0",
         "@canonical/typescript-config-react": "^0.18.0",
@@ -649,6 +656,7 @@
       "devDependencies": {
         "@biomejs/biome": "2.4.6",
         "@canonical/biome-config": "^0.18.0",
+        "@canonical/design-tokens": "^0.5.2",
         "@canonical/storybook-addon-form-state": "^0.18.0",
         "@canonical/storybook-addon-msw": "^0.18.0",
         "@canonical/storybook-helpers": "^0.18.0",
@@ -714,6 +722,7 @@
       "devDependencies": {
         "@biomejs/biome": "2.4.6",
         "@canonical/biome-config": "^0.18.0",
+        "@canonical/design-tokens": "^0.5.2",
         "@canonical/ds-types": "^0.18.0",
         "@canonical/typescript-config-react": "^0.18.0",
         "@canonical/webarchitect": "^0.18.0",
@@ -1109,6 +1118,7 @@
       "devDependencies": {
         "@biomejs/biome": "2.4.6",
         "@canonical/biome-config": "^0.18.0",
+        "@canonical/design-tokens": "^0.5.2",
         "@canonical/storybook-helpers": "^0.18.0",
         "@canonical/svelte-ssr-test": "^0.18.0",
         "@canonical/typescript-config-svelte": "^0.18.0",

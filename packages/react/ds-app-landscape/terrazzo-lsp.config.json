@@ -1,0 +1,4 @@
+{
+  "artifacts": ["@canonical/design-tokens/dist/tokens.json"],
+  "globalStylesheets": ["@canonical/styles/src/index.css"]
+}

@@ -52,6 +52,7 @@
   "devDependencies": {
     "@biomejs/biome": "2.4.6",
     "@canonical/biome-config": "^0.20.0",
+    "@canonical/design-tokens": "^0.5.2",
     "@canonical/storybook-addon-form-state": "^0.20.0",
     "@canonical/storybook-addon-msw": "^0.20.0",
     "@canonical/storybook-helpers": "^0.20.0",
