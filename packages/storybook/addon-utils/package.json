@@ -46,7 +46,6 @@
   "devDependencies": {
     "@biomejs/biome": "2.4.6",
     "@canonical/biome-config": "^0.20.0",
-    "@canonical/storybook-config": "^0.20.0",
     "@canonical/styles": "^0.20.0",
     "@canonical/typescript-config-react": "^0.20.0",
     "@storybook/addon-docs": "^10.3.1",
