@@ -29,8 +29,9 @@ export default class ButtonLink extends LitElement implements ButtonLinkProps {
   @property({ type: String }) variant: "default" | "primary" | "secondary" =
     "default";
   @property({ type: String }) target?: string;
-  @property({ type: String, attribute: "aria-label" }) ariaLabel: string | null =
-    null;
+  @property({ type: String, attribute: "aria-label" }) ariaLabel:
+    | string
+    | null = null;
 
   render() {
     return html`

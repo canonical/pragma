@@ -35,13 +35,15 @@ export default class CtaSection extends LitElement implements CtaSectionProps {
     return html`
       <hr class="rule" />
       <section class="${componentCssClassName}">
-        ${this.layout === "25-75"
-          ? html`
+        ${
+          this.layout === "25-75"
+            ? html`
               <div class="grid-row">
                 <div class="offset-content">${this._renderVariant()}</div>
               </div>
             `
-          : html`<div class="fixed-width">${this._renderVariant()}</div>`}
+            : html`<div class="fixed-width">${this._renderVariant()}</div>`
+        }
       </section>
     `;
   }

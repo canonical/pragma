@@ -8,12 +8,6 @@
   grid-column: 1 / -1;
   padding-block: var(--spacing-deep, 3.5rem);
 
-  & .rule {
-    border: 0;
-    border-top: 1px solid var(--color-border-default, #cdcdcd);
-    margin: 0;
-  }
-
   & .fixed-width {
     max-width: var(--grid-max-width, 80rem);
     margin-inline: auto;
