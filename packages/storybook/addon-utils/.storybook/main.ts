@@ -1,15 +1,10 @@
-import { dirname } from "node:path";
-import { fileURLToPath } from "node:url";
-import { createConfig } from "@canonical/storybook-config";
+import type { StorybookConfig } from "@storybook/react-vite";
 
-function getAddonPath(value: string): string {
-  return dirname(fileURLToPath(import.meta.resolve(`${value}/manager`)));
-}
+const config: StorybookConfig = {
+  stories: ["../src/**/*.mdx", "../src/**/*.stories.@(js|jsx|ts|tsx)"],
+  addons: ["./local-preset.cjs"],
+  framework: "@storybook/react-vite",
+  core: { disableTelemetry: true },
+};
 
-const config = createConfig("react", {
-  staticDirs: [],
-  extraAddons: ["./local-preset.cjs"],
-  disabledAddons: [getAddonPath("@canonical/storybook-addon-utils")],
-});
-
-export default { ...config };
+export default config;
