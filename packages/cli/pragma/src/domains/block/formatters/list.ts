@@ -1,55 +1,41 @@
-/**
- * Three-mode formatter for `pragma block list` output.
- *
- * - **plain** — styled terminal output with chalk; one line per block
- *   showing name, tier, modifiers, and available implementations.
- * - **llm** — condensed Markdown consumed by LLM agents and reused
- *   by the MCP adapter when `condensed: true`.
- * - **json** — structured JSON array for programmatic consumption.
- */
-
-import chalk from "chalk";
 import type { Formatters } from "../../shared/formatters.js";
-import type { BlockSummary } from "../../shared/types.js";
+import { renderListPlain } from "../../shared/renderers.js";
+import type { BlockSummary } from "../../shared/types/index.js";
+import { blockConfig } from "../blockConfig.js";
 
+/** Three-mode formatter for `pragma block list` output. */
 const formatters: Formatters<readonly BlockSummary[]> = {
-  plain(components) {
-    const lines: string[] = [];
+  plain: (blocks) =>
+    renderListPlain(blocks, {
+      heading: "Blocks",
+      columns: blockConfig.listColumns,
+    }),
 
-    for (const c of components) {
-      const tier = chalk.dim(`[${c.tier}]`);
-      const mods =
-        c.modifiers.length > 0 ? chalk.dim(` (${c.modifiers.join(", ")})`) : "";
-      const impl = c.implementations
-        .filter((i) => i.available)
-        .map((i) => i.framework);
-      const implStr = impl.length > 0 ? chalk.dim(` → ${impl.join(", ")}`) : "";
+  llm(blocks) {
+    const lines = ["## Blocks", ""];
 
-      lines.push(`${chalk.bold(c.name)} ${tier}${mods}${implStr}`);
-    }
+    for (const block of blocks) {
+      const parts = [`**${block.name}**`, `tier: ${block.tier}`];
 
-    return lines.join("\n");
-  },
-
-  llm(components) {
-    const lines: string[] = [];
-
-    lines.push("## Blocks");
-    lines.push("");
-
-    for (const c of components) {
-      const parts = [`**${c.name}**`, `tier: ${c.tier}`];
-      if (c.modifiers.length > 0) {
-        parts.push(`modifiers: ${c.modifiers.join(", ")}`);
+      if (block.modifiers.length > 0) {
+        parts.push(`modifiers: ${block.modifiers.join(", ")}`);
       }
-      const impl = c.implementations
-        .filter((i) => i.available)
-        .map((i) => i.framework);
-      if (impl.length > 0) {
-        parts.push(`implementations: ${impl.join(", ")}`);
+
+      const implementations = block.implementations
+        .filter((implementation) => implementation.available)
+        .map((implementation) => implementation.framework);
+      if (implementations.length > 0) {
+        parts.push(`implementations: ${implementations.join(", ")}`);
       }
-      if (c.nodeCount > 0) parts.push(`nodes: ${c.nodeCount}`);
-      if (c.tokenCount > 0) parts.push(`tokens: ${c.tokenCount}`);
+
+      if (block.nodeCount > 0) {
+        parts.push(`nodes: ${block.nodeCount}`);
+      }
+
+      if (block.tokenCount > 0) {
+        parts.push(`tokens: ${block.tokenCount}`);
+      }
+
       lines.push(`- ${parts.join(" | ")}`);
     }
 

@@ -12,6 +12,7 @@ import type {
   CommandContext,
   CommandDefinition,
   CommandResult,
+  InteractiveSpec,
   ParameterDefinition,
 } from "./types.js";
 
@@ -190,11 +191,11 @@ function attachCommand(
 
     const params = extractParams(opts, positionalArgs, cmd.parameters);
     const result = await cmd.execute(params, ctx);
-    handleResult(result);
+    handleResult(result, cmd);
   });
 }
 
-function handleResult(result: CommandResult): void {
+function handleResult(result: CommandResult, cmd?: CommandDefinition): void {
   switch (result.tag) {
     case "output": {
       const text = result.render.plain(result.value);
@@ -204,9 +205,8 @@ function handleResult(result: CommandResult): void {
       break;
     }
     case "interactive": {
-      process.stderr.write(
-        "Interactive mode not available in this binary. Provide all required flags.\n",
-      );
+      const message = formatInteractiveUnavailableMessage(result.spec, cmd);
+      process.stderr.write(`${message}\n`);
       process.exitCode = 3;
       break;
     }
@@ -214,6 +214,139 @@ function handleResult(result: CommandResult): void {
       process.exitCode = result.code;
       break;
     }
+  }
+}
+
+function formatInteractiveUnavailableMessage(
+  spec: InteractiveSpec,
+  cmd?: CommandDefinition,
+): string {
+  const missing = findMissingInteractiveParameters(spec, cmd);
+  const lines = ["Interactive mode not available in this binary."];
+
+  if (missing.length === 0) {
+    lines.push("Provide all required flags.");
+    return lines.join(" ");
+  }
+
+  lines.push("Missing required flags:");
+  lines.push(
+    ...missing.map((parameter) => `  ${formatParameterUsage(parameter)}`),
+  );
+
+  const example = cmd ? buildInteractiveExample(spec, cmd, missing) : null;
+  if (example) {
+    lines.push("Example:");
+    lines.push(`  ${example}`);
+  }
+
+  return lines.join("\n");
+}
+
+function findMissingInteractiveParameters(
+  spec: InteractiveSpec,
+  cmd?: CommandDefinition,
+): ParameterDefinition[] {
+  if (!cmd) {
+    return [];
+  }
+
+  return spec.generator.prompts.flatMap((prompt) => {
+    if (prompt.default !== undefined || prompt.name in spec.partialAnswers) {
+      return [];
+    }
+
+    const parameter = cmd.parameters.find(
+      (entry) => entry.name === prompt.name,
+    );
+    return parameter ? [parameter] : [];
+  });
+}
+
+function buildInteractiveExample(
+  spec: InteractiveSpec,
+  cmd: CommandDefinition,
+  missing: readonly ParameterDefinition[],
+): string {
+  const commandPath = cmd.path.join(" ");
+  const providedArgs = cmd.parameters.flatMap((parameter) => {
+    const value = spec.partialAnswers[parameter.name];
+    if (value === undefined) {
+      return [];
+    }
+
+    return formatParameterExample(parameter, value);
+  });
+
+  const missingArgs = missing.flatMap((parameter) =>
+    formatParameterExample(parameter, inferExampleValue(parameter)),
+  );
+
+  return ["pragma", commandPath, ...providedArgs, ...missingArgs].join(" ");
+}
+
+function formatParameterUsage(parameter: ParameterDefinition): string {
+  if (parameter.positional) {
+    return formatPositionalParam(parameter);
+  }
+
+  const flag = `--${convertCamelToKebab(parameter.name)}`;
+  switch (parameter.type) {
+    case "boolean":
+      return flag;
+    case "multiselect":
+      return `${flag} <values...>`;
+    default:
+      return `${flag} <value>`;
+  }
+}
+
+function formatParameterExample(
+  parameter: ParameterDefinition,
+  value: unknown,
+): string[] {
+  if (parameter.type === "boolean") {
+    return value === true && !parameter.positional
+      ? [`--${convertCamelToKebab(parameter.name)}`]
+      : [];
+  }
+
+  const values = Array.isArray(value) ? value.map(String) : [String(value)];
+  if (parameter.positional) {
+    return values;
+  }
+
+  return [`--${convertCamelToKebab(parameter.name)}`, ...values];
+}
+
+function inferExampleValue(
+  parameter: ParameterDefinition,
+): string | string[] | boolean {
+  switch (parameter.type) {
+    case "boolean":
+      return true;
+    case "multiselect":
+      return [
+        inferExampleScalar(parameter.name),
+        `${inferExampleScalar(parameter.name)}-2`,
+      ];
+    default:
+      return inferExampleScalar(parameter.name);
+  }
+}
+
+function inferExampleScalar(name: string): string {
+  switch (name) {
+    case "componentPath":
+      return "src/components/Button";
+    case "name":
+      return "@canonical/example-package";
+    case "description":
+      return "Example package";
+    case "type":
+      return "tool-ts";
+    default:
+      return `<${convertCamelToKebab(name)}>`;
   }
 }
 

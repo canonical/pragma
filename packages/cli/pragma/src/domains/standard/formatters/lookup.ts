@@ -1,78 +1,43 @@
-/**
- * Three-mode formatter for `pragma standard lookup` output.
- *
- * - **plain** — terminal text showing name, category, description, and
- *   optional dos/donts when detailed.
- * - **llm** — condensed Markdown consumed by LLM agents and reused
- *   by the MCP adapter when `condensed: true`.
- * - **json** — structured JSON; omits dos/donts unless detailed.
- */
-
 import type { Formatters } from "../../shared/formatters.js";
+import { renderLookupLlm, renderLookupPlain } from "../../shared/renderers.js";
+import { standardConfig } from "../standardConfig.js";
 import type { StandardLookupInput } from "./types.js";
 
+/** Three-mode formatter for `pragma standard lookup` output. */
 const formatters: Formatters<StandardLookupInput> = {
-  plain({ standard, detailed }) {
-    const lines: string[] = [];
-    lines.push(standard.name);
-    lines.push(`URI: ${standard.uri}`);
-    lines.push(`Category: ${standard.category || "—"}`);
-    lines.push(`Description: ${standard.description}`);
-    if (standard.extends) {
-      lines.push(`Extends: ${standard.extends}`);
-    }
+  plain: ({ standard, detailed }) =>
+    renderLookupPlain(standard, {
+      title: (entry) => entry.name,
+      fields: [
+        { label: "URI", value: (entry) => entry.uri },
+        { label: "Category", value: (entry) => entry.category || "—" },
+        { label: "Description", value: (entry) => entry.description },
+        { label: "Extends", value: (entry) => entry.extends },
+      ],
+      sections: detailed
+        ? standardConfig.lookupSections.filter(
+            (section) => section.key === "dos" || section.key === "donts",
+          )
+        : [],
+      sectionOverrides: standardSectionOverrides,
+    }),
 
-    if (detailed) {
-      if (standard.dos.length > 0) {
-        lines.push("");
-        lines.push("Do:");
-        for (const d of standard.dos) {
-          lines.push(`  ${d.code}`);
-        }
-      }
-
-      if (standard.donts.length > 0) {
-        lines.push("");
-        lines.push("Don't:");
-        for (const d of standard.donts) {
-          lines.push(`  ${d.code}`);
-        }
-      }
-    }
-
-    return lines.join("\n");
-  },
-
-  llm({ standard, detailed }) {
-    const lines: string[] = [];
-    lines.push(`## ${standard.name}`);
-    lines.push(`URI: ${standard.uri}`);
-    lines.push(`Category: ${standard.category || "—"}`);
-    if (standard.extends) {
-      lines.push(`Extends: ${standard.extends}`);
-    }
-    lines.push(standard.description);
-
-    if (detailed) {
-      if (standard.dos.length > 0) {
-        lines.push("");
-        lines.push("### Do");
-        for (const d of standard.dos) {
-          lines.push(`- ${d.code}`);
-        }
-      }
-
-      if (standard.donts.length > 0) {
-        lines.push("");
-        lines.push("### Don't");
-        for (const d of standard.donts) {
-          lines.push(`- ${d.code}`);
-        }
-      }
-    }
-
-    return lines.join("\n");
-  },
+  llm: ({ standard, detailed }) =>
+    renderLookupLlm(standard, {
+      title: (entry) => entry.name,
+      fields: [
+        { label: "URI", value: (entry) => entry.uri },
+        { label: "Category", value: (entry) => entry.category || "—" },
+        { label: "Description", value: (entry) => entry.description },
+        { label: "Extends", value: (entry) => entry.extends },
+      ],
+      sections: detailed
+        ? standardConfig.lookupSections.filter(
+            (section) => section.key === "dos" || section.key === "donts",
+          )
+        : [],
+      sectionOverrides: standardSectionOverrides,
+    }),
 
   json({ standard, detailed }) {
     if (detailed) {
@@ -84,3 +49,26 @@ const formatters: Formatters<StandardLookupInput> = {
 };
 
 export default formatters;
+
+const standardSectionOverrides = {
+  dos: {
+    plain: (entry: StandardLookupInput["standard"]) =>
+      entry.dos.length > 0
+        ? entry.dos.map((item) => `  ${item.code}`).join("\n")
+        : null,
+    llm: (entry: StandardLookupInput["standard"]) =>
+      entry.dos.length > 0
+        ? entry.dos.map((item) => `- ${item.code}`).join("\n")
+        : null,
+  },
+  donts: {
+    plain: (entry: StandardLookupInput["standard"]) =>
+      entry.donts.length > 0
+        ? entry.donts.map((item) => `  ${item.code}`).join("\n")
+        : null,
+    llm: (entry: StandardLookupInput["standard"]) =>
+      entry.donts.length > 0
+        ? entry.donts.map((item) => `- ${item.code}`).join("\n")
+        : null,
+  },
+};

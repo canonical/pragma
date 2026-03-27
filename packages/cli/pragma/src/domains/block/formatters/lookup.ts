@@ -1,140 +1,18 @@
-/**
- * Three-mode formatter for `pragma block lookup` output.
- *
- * - **plain** — styled terminal output with chalk; shows summary or
- *   detailed view depending on the `detailed` / aspect flags.
- * - **llm** — condensed Markdown consumed by LLM agents and reused
- *   by the MCP adapter when `condensed: true`.
- * - **json** — structured JSON for programmatic consumption.
- *
- * Supports aspect filtering (anatomy, modifiers, tokens, implementations)
- * via the `aspects` field on {@link BlockLookupInput}.
- */
-
-import chalk from "chalk";
-import {
-  formatField,
-  formatHeading,
-  formatList,
-  formatSection,
-} from "#pipeline";
+import type { RenderLookupOptions } from "../../shared/contracts.js";
 import type { Formatters } from "../../shared/formatters.js";
-import type { AnatomyNode, BlockDetailed } from "../../shared/types.js";
+import { renderLookupLlm, renderLookupPlain } from "../../shared/renderers.js";
+import type { BlockDetailed } from "../../shared/types/index.js";
+import { blockConfig } from "../blockConfig.js";
 import type { AspectFlags } from "../types.js";
 import type { BlockLookupInput } from "./types.js";
 
+/** Three-mode formatter for `pragma block lookup` output. */
 const formatters: Formatters<BlockLookupInput> = {
-  plain({ block: component, detailed, aspects }) {
-    if (!detailed) return formatSummary(component);
-    return formatDetailed(component, aspects);
-  },
+  plain: ({ block, detailed, aspects }) =>
+    renderLookupPlain(block, createLookupOptions(detailed, aspects)),
 
-  llm({ block: component, detailed, aspects }) {
-    const lines: string[] = [];
-
-    lines.push(`## ${component.name}`);
-    lines.push("");
-    lines.push(`- URI: ${component.uri}`);
-    lines.push(`- Tier: ${component.tier}`);
-
-    if (component.summary) {
-      lines.push(`- Summary: ${component.summary}`);
-    }
-
-    if (component.modifiers.length > 0) {
-      lines.push(`- Modifiers: ${component.modifiers.join(", ")}`);
-    }
-
-    const impl = component.implementations
-      .filter((i) => i.available)
-      .map((i) => i.framework);
-    if (impl.length > 0) {
-      lines.push(`- Implementations: ${impl.join(", ")}`);
-    }
-
-    lines.push(`- Anatomy nodes: ${component.nodeCount}`);
-    lines.push(`- Tokens: ${component.tokenCount}`);
-
-    if (!detailed) return lines.join("\n");
-
-    if (component.whenToUse) {
-      lines.push("");
-      lines.push("### When to use");
-      lines.push(component.whenToUse);
-    }
-
-    if (component.whenNotToUse) {
-      lines.push("");
-      lines.push("### When not to use");
-      lines.push(component.whenNotToUse);
-    }
-
-    if (component.guidelines) {
-      lines.push("");
-      lines.push("### Guidelines");
-      lines.push(component.guidelines);
-    }
-
-    if (aspects.modifiers && component.modifierValues.length > 0) {
-      lines.push("");
-      lines.push("### Modifiers");
-      for (const m of component.modifierValues) {
-        lines.push(`- **${m.family}**: ${m.values.join(", ")}`);
-      }
-    }
-
-    if (component.properties.length > 0) {
-      lines.push("");
-      lines.push("### Properties");
-      for (const property of component.properties) {
-        const bits = [property.propertyType || "unknown"];
-        bits.push(property.optional ? "optional" : "required");
-        if (property.defaultValue) {
-          bits.push(`default=${property.defaultValue}`);
-        }
-        if (property.constraints) {
-          bits.push(property.constraints);
-        }
-        lines.push(`- **${property.name}**: ${bits.join("; ")}`);
-      }
-    }
-
-    if (component.subcomponents.length > 0) {
-      lines.push("");
-      lines.push("### Subcomponents");
-      for (const subcomponent of component.subcomponents) {
-        lines.push(`- ${subcomponent.name} (${subcomponent.uri})`);
-      }
-    }
-
-    if (aspects.implementations && component.implementationPaths.length > 0) {
-      lines.push("");
-      lines.push("### Implementations");
-      for (const i of component.implementationPaths) {
-        lines.push(`- ${i.framework}: \`${i.path}\``);
-      }
-    }
-
-    if (aspects.tokens && component.tokens.length > 0) {
-      lines.push("");
-      lines.push("### Tokens");
-      for (const t of component.tokens) {
-        lines.push(`- ${t.name}`);
-      }
-    }
-
-    if (aspects.anatomy && component.anatomy) {
-      lines.push("");
-      lines.push("### Anatomy");
-      lines.push(formatAnatomyTreeLlm(component.anatomy.root, 0));
-    } else if (aspects.anatomy && component.anatomyDsl) {
-      lines.push("");
-      lines.push("### Anatomy DSL");
-      lines.push(component.anatomyDsl);
-    }
-
-    return lines.join("\n");
-  },
+  llm: ({ block, detailed, aspects }) =>
+    renderLookupLlm(block, createLookupOptions(detailed, aspects)),
 
   json({ block: component, detailed, aspects }) {
     if (!detailed) {
@@ -178,177 +56,93 @@ const formatters: Formatters<BlockLookupInput> = {
 
 export default formatters;
 
-// =============================================================================
-// Helpers
-// =============================================================================
-
-function formatSummary(component: BlockDetailed): string {
-  const lines: string[] = [];
-
-  lines.push(formatHeading(component.name));
-  lines.push("");
-  lines.push(formatField("URI:", component.uri));
-  lines.push(formatField("Tier:", component.tier));
-
-  if (component.summary) {
-    lines.push(formatField("Summary:", component.summary));
-  }
-
-  if (component.modifiers.length > 0) {
-    lines.push(formatField("Modifiers:", component.modifiers.join(", ")));
-  }
-
-  const impl = component.implementations
-    .filter((i) => i.available)
-    .map((i) => i.framework);
-  if (impl.length > 0) {
-    lines.push(formatField("Implementations:", impl.join(", ")));
-  }
-
-  lines.push(formatField("Anatomy nodes:", String(component.nodeCount)));
-  lines.push(formatField("Tokens:", String(component.tokenCount)));
-
-  return lines.join("\n");
-}
-
-function formatDetailed(
-  component: BlockDetailed,
+function createLookupOptions(
+  detailed: boolean,
   aspects: AspectFlags,
-): string {
-  const lines: string[] = [];
-
-  lines.push(formatHeading(component.name));
-  lines.push("");
-  lines.push(formatField("URI:", component.uri));
-  lines.push(formatField("Tier:", component.tier));
-  if (component.summary) {
-    lines.push(formatField("Summary:", component.summary));
-  }
-  lines.push(formatField("Anatomy nodes:", String(component.nodeCount)));
-  lines.push(formatField("Tokens:", String(component.tokenCount)));
-
-  if (component.whenToUse) {
-    lines.push("");
-    lines.push(formatSection("When to use", component.whenToUse));
-  }
-
-  if (component.whenNotToUse) {
-    lines.push("");
-    lines.push(formatSection("When not to use", component.whenNotToUse));
-  }
-
-  if (component.guidelines) {
-    lines.push("");
-    lines.push(formatSection("Guidelines", component.guidelines));
-  }
-
-  if (aspects.modifiers && component.modifierValues.length > 0) {
-    lines.push("");
-    lines.push(
-      formatSection(
-        "Modifiers",
-        component.modifierValues
-          .map((m) => `  ${chalk.bold(m.family)}: ${m.values.join(", ")}`)
-          .join("\n"),
-      ),
-    );
-  }
-
-  if (aspects.implementations && component.implementationPaths.length > 0) {
-    lines.push("");
-    lines.push(
-      formatSection(
-        "Implementations",
-        formatList(
-          component.implementationPaths.map(
-            (i) => `${chalk.bold(i.framework)}: ${i.path}`,
-          ),
-        ),
-      ),
-    );
-  }
-
-  if (aspects.tokens && component.tokens.length > 0) {
-    lines.push("");
-    lines.push(
-      formatSection("Tokens", formatList(component.tokens.map((t) => t.name))),
-    );
-  }
-
-  if (component.properties.length > 0) {
-    lines.push("");
-    lines.push(
-      formatSection(
-        "Properties",
-        formatList(
-          component.properties.map((property) => {
-            const parts = [
-              chalk.bold(property.name),
-              property.propertyType || "unknown",
-              property.optional ? "optional" : "required",
-            ];
-            if (property.defaultValue) {
-              parts.push(`default=${property.defaultValue}`);
-            }
-            if (property.constraints) {
-              parts.push(property.constraints);
-            }
-            return parts.join(" — ");
-          }),
-        ),
-      ),
-    );
-  }
-
-  if (component.subcomponents.length > 0) {
-    lines.push("");
-    lines.push(
-      formatSection(
-        "Subcomponents",
-        formatList(
-          component.subcomponents.map(
-            (subcomponent) => `${subcomponent.name}: ${subcomponent.uri}`,
-          ),
-        ),
-      ),
-    );
-  }
-
-  if (aspects.anatomy && component.anatomy) {
-    lines.push("");
-    lines.push(
-      formatSection("Anatomy", formatAnatomyTree(component.anatomy.root, 0)),
-    );
-  } else if (aspects.anatomy && component.anatomyDsl) {
-    lines.push("");
-    lines.push(formatSection("Anatomy (DSL)", component.anatomyDsl));
-  }
-
-  return lines.join("\n");
+): RenderLookupOptions<BlockDetailed> {
+  return {
+    title: (block) => block.name,
+    fields: [
+      { label: "IRI", value: (block) => block.uri },
+      { label: "Type", value: (block) => block.type },
+      { label: "Tier", value: (block) => block.tier },
+      ...(detailed
+        ? []
+        : ([
+            {
+              label: "Summary",
+              value: (block: BlockDetailed) => block.summary,
+            },
+          ] as const)),
+      { label: "Modifiers", value: (block) => block.modifiers },
+      {
+        label: "Implementations",
+        value: (block) =>
+          block.implementations
+            .filter((implementation) => implementation.available)
+            .map((implementation) => implementation.framework),
+      },
+      { label: "Anatomy nodes", value: (block) => block.nodeCount },
+      { label: "Tokens", value: (block) => block.tokenCount },
+    ],
+    sections: selectLookupSections(detailed, aspects),
+    sectionOverrides: {
+      modifierFamilies: {
+        plain: (block) =>
+          block.modifierValues.length > 0
+            ? block.modifierValues
+                .map(
+                  (modifier) =>
+                    `  ${modifier.family}: ${modifier.values.join(", ")}`,
+                )
+                .join("\n")
+            : null,
+        llm: (block) =>
+          block.modifierValues.length > 0
+            ? block.modifierValues
+                .map(
+                  (modifier) =>
+                    `- **${modifier.family}**: ${modifier.values.join(", ")}`,
+                )
+                .join("\n")
+            : null,
+      },
+    },
+    codeLanguage: (_section, value) =>
+      typeof value === "string" && value.includes("@prefix") ? "ttl" : "yaml",
+  };
 }
 
-function formatAnatomyTree(node: AnatomyNode, depth: number): string {
-  const indent = "  ".repeat(depth);
-  const typeTag = node.type === "anonymous" ? chalk.dim(" (anon)") : "";
-  const slotTag = node.slot ? chalk.dim(` slot=${node.slot}`) : "";
-  let result = `${indent}${node.name}${typeTag}${slotTag}`;
+function selectLookupSections(
+  detailed: boolean,
+  aspects: AspectFlags,
+): typeof blockConfig.lookupSections {
+  const sections = detailed
+    ? blockConfig.lookupSections
+    : blockConfig.lookupSections.filter(
+        (section) => section.key === "subcomponents",
+      );
 
-  for (const child of node.children) {
-    result += `\n${formatAnatomyTree(child, depth + 1)}`;
-  }
+  return sections.filter((section) => {
+    if (
+      !aspects.anatomy &&
+      ["anatomy", "anatomyDsl", "anatomyClassic"].includes(section.key)
+    ) {
+      return false;
+    }
 
-  return result;
-}
+    if (!aspects.modifiers && section.key === "modifierFamilies") {
+      return false;
+    }
 
-function formatAnatomyTreeLlm(node: AnatomyNode, depth: number): string {
-  const indent = "  ".repeat(depth);
-  const typeTag = node.type === "anonymous" ? " (anonymous)" : "";
-  const slotTag = node.slot ? ` [slot: ${node.slot}]` : "";
-  let result = `${indent}- ${node.name}${typeTag}${slotTag}`;
+    if (!aspects.implementations && section.key === "implementationPaths") {
+      return false;
+    }
 
-  for (const child of node.children) {
-    result += `\n${formatAnatomyTreeLlm(child, depth + 1)}`;
-  }
+    if (!aspects.tokens && section.key === "tokens") {
+      return false;
+    }
 
-  return result;
+    return true;
+  });
 }

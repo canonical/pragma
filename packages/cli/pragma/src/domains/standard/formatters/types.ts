@@ -9,7 +9,7 @@ import type {
   Disclosure,
   StandardDetailed,
   StandardSummary,
-} from "../../shared/types.js";
+} from "../../shared/types/index.js";
 
 /** Input payload for the standard-lookup formatter, pairing data with a detail flag. */
 export interface StandardLookupInput {

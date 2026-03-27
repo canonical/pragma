@@ -1,5 +1,5 @@
 import { PragmaError } from "#error";
-import type { StandardListFilters } from "../../shared/types.js";
+import type { StandardListFilters } from "../../shared/types/index.js";
 
 export default function standardEmptyError(
   filters: StandardListFilters,

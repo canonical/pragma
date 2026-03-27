@@ -4,7 +4,7 @@ import createTestRuntime from "../../../testing/helpers/createTestRuntime.js";
 import type { PragmaContext } from "../../shared/context.js";
 import { PREFIX_MAP } from "../../shared/prefixes.js";
 import type { PragmaRuntime } from "../../shared/runtime.js";
-import type { InspectResult } from "../../shared/types.js";
+import type { InspectResult } from "../../shared/types/index.js";
 import buildInspectCommand from "./inspect.js";
 
 let runtime: PragmaRuntime;

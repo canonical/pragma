@@ -3,7 +3,7 @@ import type { Store } from "@canonical/ke";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createTestStore, DS_ALL_TTL } from "#testing";
 import type { PragmaContext } from "../../shared/context.js";
-import type { BlockSummary } from "../../shared/types.js";
+import type { BlockSummary } from "../../shared/types/index.js";
 import buildListCommand from "./list.js";
 
 let store: Store;

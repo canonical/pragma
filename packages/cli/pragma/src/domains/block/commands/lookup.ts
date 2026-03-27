@@ -14,6 +14,7 @@ import {
 import { PragmaError } from "#error";
 import type { PragmaContext } from "../../shared/context.js";
 import type { LookupResult } from "../../shared/contracts.js";
+import { renderLookupResults } from "../../shared/formatters.js";
 import { lookupFormatters } from "../formatters/index.js";
 import { resolveAspects } from "../helpers/index.js";
 import { listBlocks, type lookupBlock } from "../operations/index.js";
@@ -132,7 +133,19 @@ export default function buildLookupCommand(
 
       return createOutputResult<BlockLookupOutput>(
         { result: contract.result, detailed: showDetailed, aspects },
-        { plain: renderBlockLookupOutput(ctx) },
+        {
+          plain: ({ result, detailed: isDetailed, aspects: selectedAspects }) =>
+            renderLookupResults({
+              ctx,
+              result,
+              formatters: lookupFormatters,
+              mapResult: (block) => ({
+                block,
+                detailed: isDetailed,
+                aspects: selectedAspects,
+              }),
+            }),
+        },
       );
     },
   };
@@ -148,52 +161,4 @@ function normalizeNames(names: unknown, legacyName?: unknown): string[] {
     return [legacyName];
   }
   return [];
-}
-
-function renderBlockLookupOutput(
-  ctx: PragmaContext,
-): (data: BlockLookupOutput) => string {
-  return ({ result, detailed, aspects }) => {
-    const formatOne =
-      ctx.globalFlags.format === "json"
-        ? lookupFormatters.json
-        : ctx.globalFlags.llm
-          ? lookupFormatters.llm
-          : lookupFormatters.plain;
-
-    if (ctx.globalFlags.format === "json") {
-      if (result.results.length === 1 && result.errors.length === 0) {
-        const only = result.results[0];
-        return only
-          ? lookupFormatters.json({ block: only, detailed, aspects })
-          : JSON.stringify({ results: [], errors: result.errors }, null, 2);
-      }
-
-      return JSON.stringify(
-        {
-          results: result.results.map((block) =>
-            JSON.parse(lookupFormatters.json({ block, detailed, aspects })),
-          ),
-          errors: result.errors,
-        },
-        null,
-        2,
-      );
-    }
-
-    const parts = result.results.map((block) =>
-      formatOne({ block, detailed, aspects }),
-    );
-
-    if (result.errors.length > 0) {
-      parts.push(
-        [
-          "Errors:",
-          ...result.errors.map((error) => `- ${error.query}: ${error.message}`),
-        ].join("\n"),
-      );
-    }
-
-    return parts.join("\n\n");
-  };
 }

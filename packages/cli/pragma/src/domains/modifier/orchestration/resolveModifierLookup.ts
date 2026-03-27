@@ -1,7 +1,7 @@
 import type { LookupContract, LookupResult } from "../../shared/contracts.js";
 import lookupMany from "../../shared/lookupMany.js";
 import type { PragmaRuntime } from "../../shared/runtime.js";
-import type { ModifierFamily } from "../../shared/types.js";
+import type { ModifierFamily } from "../../shared/types/index.js";
 import { lookupModifier } from "../operations/index.js";
 
 export default async function resolveModifierLookup(

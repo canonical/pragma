@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { CategorySummary } from "../../shared/types.js";
+import type { CategorySummary } from "../../shared/types/index.js";
 import formatters from "./categories.js";
 
 const CATEGORIES: CategorySummary[] = [

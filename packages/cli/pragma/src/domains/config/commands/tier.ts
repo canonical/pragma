@@ -3,11 +3,13 @@ import {
   type CommandResult,
   createOutputResult,
 } from "@canonical/cli-core";
-import { readConfig, writeConfig } from "#config";
+import { runTask } from "@canonical/task";
+import { readConfig } from "#config";
 import type { PragmaContext } from "../../shared/context.js";
 import { selectFormatter } from "../../shared/formatters.js";
 import { tierFormatters } from "../formatters/index.js";
 import { validateTier } from "../operations/index.js";
+import { setTierTask } from "../tasks/index.js";
 
 /**
  * Build the `pragma config tier` command definition.
@@ -17,7 +19,7 @@ import { validateTier } from "../operations/index.js";
  *
  * @param ctx - Pragma context providing cwd, store, and formatter selection.
  * @returns The command definition for `pragma config tier`.
- * @note Impure
+ * @note - Impure — validates tier against the ke store and writes config to disk.
  */
 export default function buildTierCommand(
   ctx: PragmaContext,
@@ -49,7 +51,7 @@ export default function buildTierCommand(
       const tierPath = params.path as string | undefined;
 
       if (reset) {
-        writeConfig(ctx.cwd, { tier: undefined });
+        await runTask(setTierTask(ctx.cwd, undefined));
         const format = selectFormatter(ctx, tierFormatters.reset);
         return createOutputResult("Reset tier to default.", {
           plain: format,
@@ -67,7 +69,7 @@ export default function buildTierCommand(
       // Validate tier against ontology
       await validateTier(ctx.store, tierPath);
 
-      writeConfig(ctx.cwd, { tier: tierPath });
+      await runTask(setTierTask(ctx.cwd, tierPath));
       const format = selectFormatter(ctx, tierFormatters.set);
       return createOutputResult(
         { field: "tier", value: tierPath },

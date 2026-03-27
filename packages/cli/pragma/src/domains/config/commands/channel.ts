@@ -3,11 +3,13 @@ import {
   type CommandResult,
   createOutputResult,
 } from "@canonical/cli-core";
-import { readConfig, writeConfig } from "#config";
+import { runTask } from "@canonical/task";
+import { readConfig } from "#config";
 import type { PragmaContext } from "../../shared/context.js";
 import { selectFormatter } from "../../shared/formatters.js";
 import { channelFormatters } from "../formatters/index.js";
 import { validateChannel } from "../operations/index.js";
+import { setChannelTask } from "../tasks/index.js";
 
 /**
  * Build the `pragma config channel` command definition.
@@ -17,7 +19,7 @@ import { validateChannel } from "../operations/index.js";
  *
  * @param ctx - Pragma context providing cwd and formatter selection.
  * @returns The command definition for `pragma config channel`.
- * @note Impure
+ * @note - Impure — validates channel and writes config to disk.
  */
 export default function buildChannelCommand(
   ctx: PragmaContext,
@@ -52,7 +54,7 @@ export default function buildChannelCommand(
       const value = params.value as string | undefined;
 
       if (reset) {
-        writeConfig(ctx.cwd, { channel: undefined });
+        await runTask(setChannelTask(ctx.cwd, undefined));
         const format = selectFormatter(ctx, channelFormatters.reset);
         return createOutputResult("Reset channel to default.", {
           plain: format,
@@ -69,7 +71,7 @@ export default function buildChannelCommand(
 
       const channel = validateChannel(value);
 
-      writeConfig(ctx.cwd, { channel });
+      await runTask(setChannelTask(ctx.cwd, channel));
       const format = selectFormatter(ctx, channelFormatters.set);
       return createOutputResult(
         { field: "channel", value: channel },

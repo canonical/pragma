@@ -1,7 +1,7 @@
 import type { URI } from "@canonical/ke";
 import { describe, expect, it } from "vitest";
 import { PREFIX_MAP } from "../../shared/prefixes.js";
-import type { BlockSummary } from "../../shared/types.js";
+import type { BlockSummary } from "../../shared/types/index.js";
 import formatters from "./list.js";
 
 const BUTTON: BlockSummary = {

@@ -4,7 +4,7 @@ import type {
   StandardDetailed,
   StandardListFilters,
   StandardSummary,
-} from "../shared/types.js";
+} from "../shared/types/index.js";
 
 export interface StandardListResolution {
   readonly params: ListParams & StandardListFilters;

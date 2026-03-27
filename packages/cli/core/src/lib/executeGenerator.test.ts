@@ -116,7 +116,7 @@ describe("executeGenerator — JSON mode", () => {
       const text = result.render.plain(result.value);
       const parsed = JSON.parse(text);
       expect(parsed.generator.name).toBe("test-gen");
-      expect(parsed.files).toHaveProperty("src/Button.ts");
+      expect(parsed.files["src/Button.ts"]).toBe("export {};\n");
     }
   });
 

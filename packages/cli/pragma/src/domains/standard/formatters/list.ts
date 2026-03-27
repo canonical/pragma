@@ -1,19 +1,5 @@
-/**
- * Three-mode formatter for `pragma standard list` output.
- *
- * - **plain** — terminal text with progressive disclosure.
- * - **llm** — condensed Markdown consumed by LLM agents and reused
- *   by the MCP adapter when `condensed: true`.
- * - **json** — structured JSON; enrichment varies by disclosure level.
- *
- * Disclosure levels:
- *   - summary  — name + category + description (default)
- *   - digest   — summary + first do example (truncated)
- *   - detailed — summary + full dos/donts
- */
-
 import type { Formatters } from "../../shared/formatters.js";
-import type { CodeBlock, StandardDetailed } from "../../shared/types.js";
+import type { CodeBlock, StandardDetailed } from "../../shared/types/index.js";
 import type { StandardListOutput } from "./types.js";
 
 // ---------------------------------------------------------------------------
@@ -21,6 +7,17 @@ import type { StandardListOutput } from "./types.js";
 // ---------------------------------------------------------------------------
 
 const DEFAULT_MAX_EXAMPLE_LENGTH = 120;
+
+interface StandardListRow {
+  readonly uri: StandardDetailed["uri"];
+  readonly name: StandardDetailed["name"];
+  readonly category: StandardDetailed["category"];
+  readonly description: StandardDetailed["description"];
+  readonly extends?: StandardDetailed["extends"];
+  readonly example?: string;
+  readonly dos?: StandardDetailed["dos"];
+  readonly donts?: StandardDetailed["donts"];
+}
 
 function truncate(text: string, max: number): string {
   const oneLine = text.replace(/\n/g, " ").trim();
@@ -40,82 +37,21 @@ function firstDoExample(
 // Plain
 // ---------------------------------------------------------------------------
 
-function plain({ items, details, disclosure }: StandardListOutput): string {
-  const lines: string[] = [];
-
-  for (const [i, s] of items.entries()) {
-    const cat = s.category ? ` [${s.category}]` : "";
-    lines.push(`${s.name}${cat}`);
-    lines.push(`  ${s.description}`);
-
-    if (disclosure.level === "digest") {
-      const maxLen = disclosure.maxExampleLength ?? DEFAULT_MAX_EXAMPLE_LENGTH;
-      const example = firstDoExample(details?.[i], maxLen);
-      if (example) {
-        lines.push(`  Example: ${example}`);
-      }
-    }
-
-    if (disclosure.level === "detailed") {
-      const detail = details?.[i];
-      if (detail) {
-        if (detail.dos.length > 0) {
-          lines.push("  Do:");
-          for (const d of detail.dos) {
-            lines.push(`    ${d.code}`);
-          }
-        }
-        if (detail.donts.length > 0) {
-          lines.push("  Don't:");
-          for (const d of detail.donts) {
-            lines.push(`    ${d.code}`);
-          }
-        }
-      }
-    }
-  }
-
-  return lines.join("\n");
+function plain(output: StandardListOutput): string {
+  return buildRows(output)
+    .map((row) => formatPlainRow(row, output.disclosure.level))
+    .join("\n\n");
 }
 
 // ---------------------------------------------------------------------------
 // LLM
 // ---------------------------------------------------------------------------
 
-function llm({ items, details, disclosure }: StandardListOutput): string {
-  const lines: string[] = [];
-  lines.push("## Standards");
-  lines.push("");
+function llm(output: StandardListOutput): string {
+  const lines = ["## Standards", ""];
 
-  for (const [i, s] of items.entries()) {
-    const cat = s.category ? ` [${s.category}]` : "";
-    lines.push(`- **${s.name}**${cat}: ${s.description}`);
-
-    if (disclosure.level === "digest") {
-      const maxLen = disclosure.maxExampleLength ?? DEFAULT_MAX_EXAMPLE_LENGTH;
-      const example = firstDoExample(details?.[i], maxLen);
-      if (example) {
-        lines.push(`  - Example: \`${example}\``);
-      }
-    }
-
-    if (disclosure.level === "detailed") {
-      const detail = details?.[i];
-      if (detail) {
-        if (detail.dos.length > 0) {
-          lines.push("  - **Do**:");
-          for (const d of detail.dos) {
-            lines.push(`    - ${d.code}`);
-          }
-        }
-        if (detail.donts.length > 0) {
-          lines.push("  - **Don't**:");
-          for (const d of detail.donts) {
-            lines.push(`    - ${d.code}`);
-          }
-        }
-      }
-    }
+  for (const row of buildRows(output)) {
+    lines.push(formatLlmRow(row, output.disclosure.level));
   }
 
   return lines.join("\n");
@@ -151,6 +87,98 @@ function json({ items, details, disclosure }: StandardListOutput): string {
 // Export
 // ---------------------------------------------------------------------------
 
+/** Three-mode formatter for `pragma standard list` output. */
 const formatters: Formatters<StandardListOutput> = { plain, llm, json };
 
 export default formatters;
+
+function buildRows({
+  items,
+  details,
+  disclosure,
+}: StandardListOutput): readonly StandardListRow[] {
+  if (disclosure.level === "summary") {
+    return items;
+  }
+
+  if (disclosure.level === "digest") {
+    const maxLen = disclosure.maxExampleLength ?? DEFAULT_MAX_EXAMPLE_LENGTH;
+    return items.map((item, index) => ({
+      ...item,
+      extends: details?.[index]?.extends,
+      example: firstDoExample(details?.[index], maxLen),
+    }));
+  }
+
+  return items.map((item, index) => ({
+    ...item,
+    extends: details?.[index]?.extends,
+    dos: details?.[index]?.dos,
+    donts: details?.[index]?.donts,
+  }));
+}
+
+function formatPlainRow(
+  row: StandardListRow,
+  level: StandardListOutput["disclosure"]["level"],
+): string {
+  const lines = [formatHeading(row), `  ${row.description}`];
+
+  if (row.extends) {
+    lines.push(`  Extends: ${row.extends}`);
+  }
+
+  if (level === "digest" && row.example) {
+    lines.push(`  Example: ${row.example}`);
+  }
+
+  if (level === "detailed") {
+    if (row.dos && row.dos.length > 0) {
+      lines.push("  Do:");
+      lines.push(...row.dos.map((item) => `    ${item.code}`));
+    }
+
+    if (row.donts && row.donts.length > 0) {
+      lines.push("  Don't:");
+      lines.push(...row.donts.map((item) => `    ${item.code}`));
+    }
+  }
+
+  return lines.join("\n");
+}
+
+function formatLlmRow(
+  row: StandardListRow,
+  level: StandardListOutput["disclosure"]["level"],
+): string {
+  const lines = [
+    `- **${row.name}**${row.category ? ` [${row.category}]` : ""}`,
+  ];
+  lines.push(`  ${row.description}`);
+
+  if (row.extends) {
+    lines.push(`  Extends: ${row.extends}`);
+  }
+
+  if (level === "digest" && row.example) {
+    lines.push(`  Example: \`${row.example}\``);
+  }
+
+  if (level === "detailed") {
+    if (row.dos && row.dos.length > 0) {
+      lines.push("  **Do**:");
+      lines.push(...row.dos.map((item) => `  - ${item.code}`));
+    }
+
+    if (row.donts && row.donts.length > 0) {
+      lines.push("  **Don't**:");
+      lines.push(...row.donts.map((item) => `  - ${item.code}`));
+    }
+  }
+
+  return lines.join("\n");
+}
+
+function formatHeading(row: StandardListRow): string {
+  return row.category ? `${row.name} [${row.category}]` : row.name;
+}

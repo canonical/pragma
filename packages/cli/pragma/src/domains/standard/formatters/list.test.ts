@@ -1,6 +1,9 @@
 import type { URI } from "@canonical/ke";
 import { describe, expect, it } from "vitest";
-import type { StandardDetailed, StandardSummary } from "../../shared/types.js";
+import type {
+  StandardDetailed,
+  StandardSummary,
+} from "../../shared/types/index.js";
 import formatters from "./list.js";
 import type { StandardListOutput } from "./types.js";
 

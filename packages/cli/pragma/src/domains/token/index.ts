@@ -30,3 +30,4 @@ export {
   resolveTokenLookup,
   tokenEmptyError,
 } from "./orchestration/index.js";
+export { tokenConfig } from "./tokenConfig.js";

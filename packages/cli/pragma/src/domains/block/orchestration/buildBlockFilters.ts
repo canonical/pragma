@@ -1,5 +1,5 @@
 import type { PragmaRuntime } from "../../shared/runtime.js";
-import type { FilterConfig } from "../../shared/types.js";
+import type { FilterConfig } from "../../shared/types/index.js";
 
 export default function buildBlockFilters(
   rt: Pick<PragmaRuntime, "config">,

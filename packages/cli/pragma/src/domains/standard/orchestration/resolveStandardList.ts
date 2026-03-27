@@ -1,6 +1,9 @@
 import type { ListParams } from "../../shared/contracts.js";
 import type { PragmaRuntime } from "../../shared/runtime.js";
-import type { Disclosure, StandardListFilters } from "../../shared/types.js";
+import type {
+  Disclosure,
+  StandardListFilters,
+} from "../../shared/types/index.js";
 import { listStandards, lookupStandard } from "../operations/index.js";
 import type { StandardListResolution } from "../types.js";
 import buildStandardFilters from "./buildStandardFilters.js";

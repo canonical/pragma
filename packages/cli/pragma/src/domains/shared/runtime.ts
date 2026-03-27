@@ -1,34 +1,19 @@
 /**
  * Unified boot path for pragma CLI, MCP, and completions server.
  *
- * `PragmaRuntime` encapsulates all boot-time state (store, config, cwd).
- * `bootPragma()` is the single factory function that creates it. All three
- * surfaces (CLI, MCP, completions) call `bootPragma()` instead of manually
- * assembling store + config.
+ * `bootPragma()` is the single factory function that creates a
+ * `PragmaRuntime`. All three surfaces (CLI, MCP, completions) call it
+ * instead of manually assembling store + config.
  *
  * @note Impure — reads config from filesystem and boots ke store (WASM + TTL).
  */
 
-import type { SourceSpec, Store } from "@canonical/ke";
-import { type PragmaConfig, readConfig } from "#config";
+import type { SourceSpec } from "@canonical/ke";
+import { readConfig } from "#config";
 import { bootStore } from "./bootStore.js";
+import type { PragmaRuntime } from "./types/index.js";
 
-/**
- * Boot-time state shared by CLI, MCP, and completions server.
- *
- * Four members:
- * - `store` — the ke triple store, loaded and ready for SPARQL queries.
- * - `config` — resolved pragma config (tier, channel).
- * - `cwd` — working directory used for config and source resolution.
- * - `dispose()` — tears down the store and frees WASM memory. Must be
- *   called exactly once; calling operations after dispose is undefined.
- */
-export interface PragmaRuntime {
-  readonly store: Store;
-  readonly config: PragmaConfig;
-  readonly cwd: string;
-  dispose(): void;
-}
+export type { PragmaRuntime } from "./types/index.js";
 
 /**
  * Create a fully initialized `PragmaRuntime`.

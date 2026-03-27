@@ -3,7 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import createTestRuntime from "../../../testing/helpers/createTestRuntime.js";
 import type { PragmaContext } from "../../shared/context.js";
 import type { PragmaRuntime } from "../../shared/runtime.js";
-import type { OntologyDetailed } from "../../shared/types.js";
+import type { OntologyDetailed } from "../../shared/types/index.js";
 import buildShowCommand from "./show.js";
 
 let runtime: PragmaRuntime;

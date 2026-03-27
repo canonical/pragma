@@ -1,7 +1,7 @@
 import type { URI } from "@canonical/ke";
 import { describe, expect, it } from "vitest";
 import { PREFIX_MAP } from "../../shared/prefixes.js";
-import type { BlockDetailed } from "../../shared/types.js";
+import type { BlockDetailed } from "../../shared/types/index.js";
 import type { AspectFlags } from "../types.js";
 import formatters from "./lookup.js";
 

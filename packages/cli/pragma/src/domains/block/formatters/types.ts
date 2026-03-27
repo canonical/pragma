@@ -5,7 +5,7 @@
  * so formatters conform to the `Formatters<T>` contract.
  */
 
-import type { BlockDetailed } from "../../shared/types.js";
+import type { BlockDetailed } from "../../shared/types/index.js";
 import type { AspectFlags } from "../types.js";
 
 /** Input payload for the block-lookup formatter, pairing data with display flags. */

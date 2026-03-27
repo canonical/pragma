@@ -62,7 +62,7 @@ export type {
   TokenDetailed,
   TokenRef,
   TokenSummary,
-} from "./domains/shared/types.js";
+} from "./domains/shared/types/index.js";
 
 // — Domain Operations —————————————————————————————————————————————————————————
 

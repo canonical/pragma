@@ -30,3 +30,4 @@ export {
   resolveStandardLookup,
   standardEmptyError,
 } from "./orchestration/index.js";
+export { standardConfig } from "./standardConfig.js";

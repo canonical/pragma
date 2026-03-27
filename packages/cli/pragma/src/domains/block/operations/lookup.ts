@@ -2,7 +2,7 @@
  * Look up detailed information for a single block.
  *
  * Queries the base block, then resolves related modifiers, implementations,
- * tokens, anatomy nodes, blank-node properties, and direct subcomponents.
+ * tokens, anatomy nodes, blank-node properties, and recursive subcomponents.
  * The result is assembled into a {@link BlockDetailed} object.
  *
  * @param store - ke store to query
@@ -23,10 +23,11 @@ import { buildFilters } from "../../shared/filters/buildFilters.js";
 import { P } from "../../shared/prefixes.js";
 import type {
   BlockDetailed,
+  BlockSubcomponent,
   FilterConfig,
   StandardRef,
   TokenRef,
-} from "../../shared/types.js";
+} from "../../shared/types/index.js";
 
 function normalizeBlockType(value: string | undefined): BlockDetailed["type"] {
   const localName = extractLocalName(value ?? "").toLowerCase();
@@ -231,24 +232,31 @@ export default async function lookupBlock(
         }))
       : [];
 
-  // Direct subcomponents
+  // Recursive subcomponents
   const subcomponentsResult = await store.query(
     buildQuery(`
-      SELECT ?subcomponent ?name
+      SELECT DISTINCT ?parent ?subcomponent ?name
       WHERE {
-        <${componentUri}> ${P.ds}hasSubcomponent ?subcomponent .
+        <${componentUri}> (${P.ds}hasSubcomponent|^${P.ds}parentComponent)+ ?subcomponent .
+        ?parent (${P.ds}hasSubcomponent|^${P.ds}parentComponent) ?subcomponent .
         ?subcomponent ${P.ds}name ?name .
+        FILTER(
+          ?parent = <${componentUri}> ||
+          EXISTS {
+            <${componentUri}> (${P.ds}hasSubcomponent|^${P.ds}parentComponent)+ ?parent
+          }
+        )
       }
-      ORDER BY ?name
+      ORDER BY ?parent ?name
     `),
   );
 
   const subcomponents =
     subcomponentsResult.type === "select"
-      ? subcomponentsResult.bindings.map((binding) => ({
-          uri: (binding.subcomponent ?? "") as URI,
-          name: binding.name ?? "",
-        }))
+      ? buildSubcomponentTree(
+          (componentUri ?? "") as URI,
+          subcomponentsResult.bindings,
+        )
       : [];
 
   // Standards (not linked directly to blocks in current ontology;
@@ -356,4 +364,65 @@ async function listAllFrameworks(store: Store): Promise<string[]> {
 
   if (result.type !== "select") return [];
   return result.bindings.map((b) => b.framework ?? "");
+}
+
+function buildSubcomponentTree(
+  rootUri: URI,
+  bindings: readonly Record<string, string>[],
+): readonly BlockSubcomponent[] {
+  const nodeMap = new Map<string, BlockSubcomponent>();
+  const childrenByParent = new Map<string, string[]>();
+
+  for (const binding of bindings) {
+    const uri = (binding.subcomponent ?? "") as URI;
+    const parent = (binding.parent ?? "") as URI;
+    if (!uri || !parent) {
+      continue;
+    }
+
+    nodeMap.set(String(uri), {
+      uri,
+      name: binding.name ?? extractLocalName(String(uri)),
+      children: [],
+    });
+
+    const siblings = childrenByParent.get(String(parent)) ?? [];
+    if (!siblings.includes(String(uri))) {
+      siblings.push(String(uri));
+      childrenByParent.set(String(parent), siblings);
+    }
+  }
+
+  return buildSubcomponentChildren(String(rootUri), childrenByParent, nodeMap);
+}
+
+function buildSubcomponentChildren(
+  parentUri: string,
+  childrenByParent: ReadonlyMap<string, readonly string[]>,
+  nodeMap: ReadonlyMap<string, BlockSubcomponent>,
+  visited = new Set<string>(),
+): readonly BlockSubcomponent[] {
+  const childUris = childrenByParent.get(parentUri) ?? [];
+
+  return childUris.flatMap((childUri) => {
+    const node = nodeMap.get(childUri);
+    if (!node || visited.has(childUri)) {
+      return [];
+    }
+
+    const nextVisited = new Set(visited);
+    nextVisited.add(childUri);
+
+    return [
+      {
+        ...node,
+        children: buildSubcomponentChildren(
+          childUri,
+          childrenByParent,
+          nodeMap,
+          nextVisited,
+        ),
+      },
+    ];
+  });
 }

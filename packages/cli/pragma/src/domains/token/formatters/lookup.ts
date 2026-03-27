@@ -1,65 +1,79 @@
-/**
- * Three-mode formatter factory for `pragma token lookup` output.
- *
- * - **plain** — terminal text showing token name, category, and optional
- *   per-theme values when detailed.
- * - **llm** — condensed Markdown consumed by LLM agents and reused
- *   by the MCP adapter when `condensed: true`.
- * - **json** — structured JSON; omits values unless detailed.
- */
-
 import type { Formatters } from "../../shared/formatters.js";
-import type { TokenDetailed } from "../../shared/types.js";
+import { renderLookupLlm, renderLookupPlain } from "../../shared/renderers.js";
+import type { TokenDetailed } from "../../shared/types/index.js";
+import { tokenConfig } from "../tokenConfig.js";
 
 /** Options controlling detail level for the token-lookup formatter. */
-export interface TokenLookupFormatterOptions {
+interface TokenLookupFormatterOptions {
   readonly detailed: boolean;
 }
 
 /**
- * Creates a three-mode formatter set for a single token, capturing the
- * detail level in the closure so callers only pass the token data.
+ * Create a three-mode formatter set for a single token.
+ *
+ * Captures the detail level in the closure so callers only pass the token data.
  *
  * @param options - detail-level options
  * @returns plain/llm/json formatters for {@link TokenDetailed}
  */
-export function createLookupFormatters(
+export default function createLookupFormatters(
   options: TokenLookupFormatterOptions,
 ): Formatters<TokenDetailed> {
   const { detailed } = options;
+  const sections = detailed ? tokenConfig.lookupSections : [];
 
   return {
-    plain: (token) => {
-      const lines: string[] = [];
-      lines.push(token.name);
-      lines.push(`Category: ${token.category || "—"}`);
+    plain: (token) =>
+      renderLookupPlain(token, {
+        title: (entry) => entry.name,
+        fields: [
+          { label: "URI", value: (entry) => entry.uri },
+          { label: "Category", value: (entry) => entry.category || "—" },
+        ],
+        sections,
+        sectionOverrides: {
+          values: {
+            plain: (entry) =>
+              entry.values.length > 0
+                ? entry.values
+                    .map((value) => `  ${value.theme}: ${value.value}`)
+                    .join("\n")
+                : null,
+            llm: (entry) =>
+              entry.values.length > 0
+                ? entry.values
+                    .map((value) => `- ${value.theme}: \`${value.value}\``)
+                    .join("\n")
+                : null,
+          },
+        },
+      }),
 
-      if (detailed && token.values.length > 0) {
-        lines.push("");
-        lines.push("Values:");
-        for (const v of token.values) {
-          lines.push(`  ${v.theme}: ${v.value}`);
-        }
-      }
-
-      return lines.join("\n");
-    },
-
-    llm: (token) => {
-      const lines: string[] = [];
-      lines.push(`## ${token.name}`);
-      lines.push(`Category: ${token.category || "—"}`);
-
-      if (detailed && token.values.length > 0) {
-        lines.push("");
-        lines.push("### Values");
-        for (const v of token.values) {
-          lines.push(`- ${v.theme}: \`${v.value}\``);
-        }
-      }
-
-      return lines.join("\n");
-    },
+    llm: (token) =>
+      renderLookupLlm(token, {
+        title: (entry) => entry.name,
+        fields: [
+          { label: "URI", value: (entry) => entry.uri },
+          { label: "Category", value: (entry) => entry.category || "—" },
+        ],
+        sections,
+        sectionOverrides: {
+          values: {
+            plain: (entry) =>
+              entry.values.length > 0
+                ? entry.values
+                    .map((value) => `  ${value.theme}: ${value.value}`)
+                    .join("\n")
+                : null,
+            llm: (entry) =>
+              entry.values.length > 0
+                ? entry.values
+                    .map((value) => `- ${value.theme}: \`${value.value}\``)
+                    .join("\n")
+                : null,
+          },
+        },
+      }),
 
     json: (token) => {
       if (detailed) {

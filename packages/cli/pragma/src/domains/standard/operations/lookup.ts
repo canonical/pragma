@@ -18,7 +18,7 @@ import resolveUri from "../../graph/helpers/resolveUri.js";
 import { buildQuery } from "../../shared/buildQuery.js";
 import compactUri from "../../shared/compactUri.js";
 import { P } from "../../shared/prefixes.js";
-import type { CodeBlock, StandardDetailed } from "../../shared/types.js";
+import type { CodeBlock, StandardDetailed } from "../../shared/types/index.js";
 
 export default async function lookupStandard(
   store: Store,

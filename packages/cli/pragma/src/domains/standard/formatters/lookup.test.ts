@@ -1,6 +1,6 @@
 import type { URI } from "@canonical/ke";
 import { describe, expect, it } from "vitest";
-import type { StandardDetailed } from "../../shared/types.js";
+import type { StandardDetailed } from "../../shared/types/index.js";
 import formatters from "./lookup.js";
 
 const DETAILED: StandardDetailed = {

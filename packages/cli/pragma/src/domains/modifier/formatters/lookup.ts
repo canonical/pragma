@@ -1,36 +1,31 @@
-/**
- * Three-mode formatter for `pragma modifier lookup` output.
- *
- * - **plain** — terminal text showing the family name and its values.
- * - **llm** — condensed Markdown consumed by LLM agents and reused
- *   by the MCP adapter when `condensed: true`.
- * - **json** — structured JSON for programmatic consumption.
- */
-
 import type { Formatters } from "../../shared/formatters.js";
-import type { ModifierFamily } from "../../shared/types.js";
+import { renderLookupLlm, renderLookupPlain } from "../../shared/renderers.js";
+import type { ModifierFamily } from "../../shared/types/index.js";
+import { modifierConfig } from "../modifierConfig.js";
 
+/** Three-mode formatter for `pragma modifier lookup` output. */
 const formatters: Formatters<ModifierFamily> = {
-  plain: (family) => {
-    const lines: string[] = [];
-    lines.push(family.name);
-    lines.push("");
-    lines.push("Values:");
-    for (const v of family.values) {
-      lines.push(`  ${v}`);
-    }
-    return lines.join("\n");
-  },
+  plain: (family) =>
+    renderLookupPlain(family, {
+      title: (entry) => entry.name,
+      fields: [{ label: "IRI", value: (entry) => entry.uri }],
+      sections: modifierConfig.lookupSections,
+      sectionOverrides: {
+        values: {
+          plain: (entry) =>
+            entry.values.length > 0
+              ? entry.values.map((value) => `  ${value}`).join("\n")
+              : null,
+        },
+      },
+    }),
 
-  llm: (family) => {
-    const lines: string[] = [];
-    lines.push(`## ${family.name}`);
-    lines.push("");
-    for (const v of family.values) {
-      lines.push(`- ${v}`);
-    }
-    return lines.join("\n");
-  },
+  llm: (family) =>
+    renderLookupLlm(family, {
+      title: (entry) => entry.name,
+      fields: [{ label: "IRI", value: (entry) => entry.uri }],
+      sections: modifierConfig.lookupSections,
+    }),
 
   json: (family) => JSON.stringify(family, null, 2),
 };

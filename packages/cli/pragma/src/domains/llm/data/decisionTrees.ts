@@ -9,31 +9,31 @@ import type { DecisionTree } from "../types.js";
 export const DECISION_TREES: readonly DecisionTree[] = [
   {
     intent: "Build a block",
-    tree: `? Know name?
-  yes → block lookup <name> --detailed  [~500]
-  no  → block list [~200] → pick → lookup`,
+    tree: `? Know IRI or name?
+  yes → block lookup <name-or-iri> --detailed  [~500]
+  no  → block list [~200] → pick compact IRI → lookup`,
   },
   {
     intent: "Audit standards",
-    tree: `? Know standard?
-  yes → standard lookup <name> --detailed [~400]
-  no  → ? Know block?
-      yes → block lookup <name> --detailed [~500]
+    tree: `? Know standard IRI or name?
+  yes → standard lookup <name-or-iri> --detailed [~400]
+  no  → ? Know block IRI or name?
+      yes → block lookup <name-or-iri> --detailed [~500]
         → inspect related guidance manually Σ500
         no  → standard list --category <cat> [~100]
-              → standard lookup <std> --detailed [~400] Σ500`,
+              → standard lookup <std-iri> --detailed [~400] Σ500`,
   },
   {
     intent: "Find a token",
-    tree: `? Know name?
-  yes → token lookup <name> --detailed [~150]
+    tree: `? Know token IRI or name?
+  yes → token lookup <name-or-iri> --detailed [~150]
   no  → token list --category <cat> [~100]
-        → token lookup <name> --detailed [~150] Σ250`,
+        → token lookup <name-or-iri> --detailed [~150] Σ250`,
   },
   {
     intent: "Explore the design system",
     tree: `high-level → ontology list [~80] → ontology show <ns> [~300]
-modifiers  → modifier list [~100] → modifier lookup <name> [~80]
+modifiers  → modifier list [~100] → modifier lookup <name-or-iri> [~80]
 tiers      → tier list [~50]
 raw        → graph query "SELECT ..." → graph inspect <uri> [~200]`,
   },

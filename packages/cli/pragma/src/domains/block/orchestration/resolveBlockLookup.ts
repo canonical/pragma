@@ -1,7 +1,7 @@
 import type { LookupContract, LookupResult } from "../../shared/contracts.js";
 import lookupMany from "../../shared/lookupMany.js";
 import type { PragmaRuntime } from "../../shared/runtime.js";
-import type { BlockDetailed, FilterConfig } from "../../shared/types.js";
+import type { BlockDetailed, FilterConfig } from "../../shared/types/index.js";
 import { lookupBlock } from "../operations/index.js";
 
 export default async function resolveBlockLookup(

@@ -1,7 +1,7 @@
 import type { URI } from "@canonical/ke";
 import { describe, expect, it } from "vitest";
-import type { TokenDetailed } from "../../shared/types.js";
-import { createLookupFormatters } from "./lookup.js";
+import type { TokenDetailed } from "../../shared/types/index.js";
+import createLookupFormatters from "./lookup.js";
 
 const DETAILED: TokenDetailed = {
   uri: "http://example.com/t1" as URI,

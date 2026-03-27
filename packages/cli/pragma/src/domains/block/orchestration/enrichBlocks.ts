@@ -4,7 +4,7 @@ import type {
   BlockSummary,
   Disclosure,
   FilterConfig,
-} from "../../shared/types.js";
+} from "../../shared/types/index.js";
 import { lookupBlock } from "../operations/index.js";
 import type { BlockListDigest } from "../types.js";
 

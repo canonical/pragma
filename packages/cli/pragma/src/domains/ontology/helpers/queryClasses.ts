@@ -2,7 +2,7 @@ import type { Store } from "@canonical/ke";
 import { buildQuery } from "../../shared/buildQuery.js";
 import extractLocalName from "../../shared/extractLocalName.js";
 import { P } from "../../shared/prefixes.js";
-import type { OntologyClass } from "../../shared/types.js";
+import type { OntologyClass } from "../../shared/types/index.js";
 
 /**
  * Queries all `owl:Class` definitions within a namespace.

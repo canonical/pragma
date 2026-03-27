@@ -1,7 +1,9 @@
 import chalk from "chalk";
 import { formatHeading, formatSection } from "#pipeline";
+import compactUri from "../../shared/compactUri.js";
 import type { Formatters } from "../../shared/formatters.js";
-import type { OntologyDetailed } from "../../shared/types.js";
+import { PREFIX_MAP } from "../../shared/prefixes.js";
+import type { OntologyDetailed } from "../../shared/types/index.js";
 
 /**
  * Formatters for `pragma ontology show` output.
@@ -14,13 +16,19 @@ const formatters: Formatters<OntologyDetailed> = {
   plain(data) {
     const lines: string[] = [];
 
-    lines.push(formatHeading(`${data.prefix}: (${data.namespace})`));
+    lines.push(
+      formatHeading(
+        `${data.prefix}: ${compactUri(data.namespace, PREFIX_MAP)}`,
+      ),
+    );
 
     if (data.classes.length > 0) {
       const classLines = data.classes
         .map((c) => {
-          const sup = c.superclass ? chalk.dim(` extends ${c.superclass}`) : "";
-          return `  ${chalk.bold(c.label)}${sup}`;
+          const sup = c.superclass
+            ? chalk.dim(` extends ${compactUri(c.superclass, PREFIX_MAP)}`)
+            : "";
+          return `  ${chalk.bold(c.label)} ${chalk.dim(`(${compactUri(c.uri, PREFIX_MAP)})`)}${sup}`;
         })
         .join("\n");
       lines.push("");
@@ -30,9 +38,13 @@ const formatters: Formatters<OntologyDetailed> = {
     if (data.properties.length > 0) {
       const propLines = data.properties
         .map((p) => {
-          const domain = p.domain ? chalk.dim(` domain: ${p.domain}`) : "";
-          const range = p.range ? chalk.dim(` range: ${p.range}`) : "";
-          return `  ${chalk.bold(p.label)} (${p.type})${domain}${range}`;
+          const domain = p.domain
+            ? chalk.dim(` domain: ${compactUri(p.domain, PREFIX_MAP)}`)
+            : "";
+          const range = p.range
+            ? chalk.dim(` range: ${compactUri(p.range, PREFIX_MAP)}`)
+            : "";
+          return `  ${chalk.bold(p.label)} ${chalk.dim(`(${compactUri(p.uri, PREFIX_MAP)})`)} (${p.type})${domain}${range}`;
         })
         .join("\n");
       lines.push("");
@@ -43,13 +55,20 @@ const formatters: Formatters<OntologyDetailed> = {
   },
 
   llm(data) {
-    const lines = [`## ${data.prefix}: (${data.namespace})`, ""];
+    const lines = [
+      `## ${data.prefix}: ${compactUri(data.namespace, PREFIX_MAP)}`,
+      "",
+    ];
 
     if (data.classes.length > 0) {
       lines.push("### Classes");
       for (const c of data.classes) {
-        const sup = c.superclass ? ` extends ${c.superclass}` : "";
-        lines.push(`- **${c.label}**${sup}`);
+        const sup = c.superclass
+          ? ` extends ${compactUri(c.superclass, PREFIX_MAP)}`
+          : "";
+        lines.push(
+          `- \`${compactUri(c.uri, PREFIX_MAP)}\` — **${c.label}**${sup}`,
+        );
       }
       lines.push("");
     }
@@ -57,9 +76,15 @@ const formatters: Formatters<OntologyDetailed> = {
     if (data.properties.length > 0) {
       lines.push("### Properties");
       for (const p of data.properties) {
-        const domain = p.domain ? ` domain: ${p.domain}` : "";
-        const range = p.range ? ` range: ${p.range}` : "";
-        lines.push(`- **${p.label}** (${p.type})${domain}${range}`);
+        const domain = p.domain
+          ? ` domain: ${compactUri(p.domain, PREFIX_MAP)}`
+          : "";
+        const range = p.range
+          ? ` range: ${compactUri(p.range, PREFIX_MAP)}`
+          : "";
+        lines.push(
+          `- \`${compactUri(p.uri, PREFIX_MAP)}\` — **${p.label}** (${p.type})${domain}${range}`,
+        );
       }
     }
 

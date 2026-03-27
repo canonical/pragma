@@ -8,7 +8,7 @@
  */
 
 import type { Formatters } from "../../shared/formatters.js";
-import type { CategorySummary } from "../../shared/types.js";
+import type { CategorySummary } from "../../shared/types/index.js";
 
 const formatters: Formatters<readonly CategorySummary[]> = {
   plain(categories) {

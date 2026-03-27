@@ -1,6 +1,6 @@
 import type { Store } from "@canonical/ke";
 import { PragmaError } from "#error";
-import type { OntologyDetailed } from "../../shared/types.js";
+import type { OntologyDetailed } from "../../shared/types/index.js";
 import queryClasses from "../helpers/queryClasses.js";
 import queryProperties from "../helpers/queryProperties.js";
 import resolvePrefix from "../helpers/resolvePrefix.js";

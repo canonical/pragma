@@ -8,7 +8,7 @@
  */
 
 import type { GlobalFlags } from "@canonical/cli-core";
-import type { PragmaRuntime } from "./runtime.js";
+import type { PragmaRuntime } from "./types/index.js";
 
 export interface PragmaContext extends PragmaRuntime {
   readonly globalFlags: GlobalFlags;

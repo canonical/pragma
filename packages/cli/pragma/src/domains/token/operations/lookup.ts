@@ -15,7 +15,7 @@ import { escapeSparqlValue } from "@canonical/ke";
 import { PragmaError } from "#error";
 import { buildQuery } from "../../shared/buildQuery.js";
 import { P } from "../../shared/prefixes.js";
-import type { TokenDetailed } from "../../shared/types.js";
+import type { TokenDetailed } from "../../shared/types/index.js";
 
 export default async function lookupToken(
   store: Store,

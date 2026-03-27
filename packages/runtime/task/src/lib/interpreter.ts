@@ -84,7 +84,20 @@ export const executeEffect = async (
     }
 
     case "DeleteFile": {
-      await fs.unlink(effect.path);
+      try {
+        await fs.unlink(effect.path);
+      } catch (error) {
+        if (
+          !(
+            error &&
+            typeof error === "object" &&
+            "code" in error &&
+            error.code === "ENOENT"
+          )
+        ) {
+          throw error;
+        }
+      }
       return undefined;
     }
 

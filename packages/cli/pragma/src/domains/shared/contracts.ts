@@ -4,7 +4,7 @@
  * These types provide the structural common ground for CLI and MCP surfaces.
  */
 
-import type { FilterConfig } from "./types.js";
+import type { FilterConfig } from "./types/index.js";
 
 export interface ColumnDef<T> {
   readonly key: keyof T & string;
@@ -82,6 +82,45 @@ export interface LookupContract<TDetailed> {
   readonly params: LookupParams;
   readonly result: LookupResult<TDetailed>;
 }
+
+// ---------------------------------------------------------------------------
+// Renderer contracts
+// ---------------------------------------------------------------------------
+
+/** A single inline field rendered in a lookup heading block. */
+export interface LookupField<T> {
+  readonly label: string;
+  readonly value: (entity: T) => unknown;
+}
+
+/** Per-mode override callbacks for a lookup section. */
+export interface LookupSectionOverride<T> {
+  readonly plain?: (entity: T, section: SectionDef<T>) => string | null;
+  readonly llm?: (entity: T, section: SectionDef<T>) => string | null;
+}
+
+/** Options controlling the generic list renderer. */
+export interface RenderListOptions<T> {
+  readonly heading: string;
+  readonly columns: readonly ColumnDef<T>[];
+  readonly prefixes?: Readonly<Record<string, string>>;
+}
+
+/** Options controlling the generic lookup renderer. */
+export interface RenderLookupOptions<T> {
+  readonly title: (entity: T) => string;
+  readonly fields: readonly LookupField<T>[];
+  readonly sections: readonly SectionDef<T>[];
+  readonly prefixes?: Readonly<Record<string, string>>;
+  readonly sectionOverrides?: Partial<
+    Record<keyof T & string, LookupSectionOverride<T>>
+  >;
+  readonly codeLanguage?: (section: SectionDef<T>, value: unknown) => string;
+}
+
+// ---------------------------------------------------------------------------
+// Entity display configuration
+// ---------------------------------------------------------------------------
 
 export interface EntityDisplayConfig<
   TSummary,

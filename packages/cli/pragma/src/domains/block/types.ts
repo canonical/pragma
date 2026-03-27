@@ -5,7 +5,7 @@
  */
 
 import type { ListContract } from "../shared/contracts.js";
-import type { BlockDetailed, BlockSummary } from "../shared/types.js";
+import type { BlockDetailed, BlockSummary } from "../shared/types/index.js";
 
 /** Flags controlling which detail aspects are included in block output. */
 export interface AspectFlags {

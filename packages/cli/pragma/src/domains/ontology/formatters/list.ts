@@ -1,6 +1,8 @@
 import chalk from "chalk";
+import compactUri from "../../shared/compactUri.js";
 import type { Formatters } from "../../shared/formatters.js";
-import type { OntologySummary } from "../../shared/types.js";
+import { PREFIX_MAP } from "../../shared/prefixes.js";
+import type { OntologySummary } from "../../shared/types/index.js";
 
 /**
  * Formatters for `pragma ontology list` output.
@@ -14,7 +16,7 @@ const formatters: Formatters<readonly OntologySummary[]> = {
     return ontologies
       .map(
         (o) =>
-          `${chalk.bold(o.prefix)} ${chalk.dim(`(${o.namespace})`)} classes: ${o.classCount} properties: ${o.propertyCount} anatomy: ${o.anatomyCount}`,
+          `${chalk.bold(`${o.prefix}:`)} ${compactUri(o.namespace, PREFIX_MAP)} classes: ${o.classCount} properties: ${o.propertyCount} anatomy: ${o.anatomyCount}`,
       )
       .join("\n");
   },
@@ -23,7 +25,7 @@ const formatters: Formatters<readonly OntologySummary[]> = {
     const lines = ["## Ontologies", ""];
     for (const o of ontologies) {
       lines.push(
-        `- **${o.prefix}:** (${o.namespace}) | classes: ${o.classCount} | properties: ${o.propertyCount} | anatomy: ${o.anatomyCount}`,
+        `- **${o.prefix}:** \`${compactUri(o.namespace, PREFIX_MAP)}\` | classes: ${o.classCount} | properties: ${o.propertyCount} | anatomy: ${o.anatomyCount}`,
       );
     }
     return lines.join("\n");

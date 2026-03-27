@@ -10,6 +10,7 @@ import {
 } from "@canonical/cli-core";
 import type { PragmaContext } from "../../shared/context.js";
 import type { LookupResult } from "../../shared/contracts.js";
+import { renderLookupResults } from "../../shared/formatters.js";
 import { lookupFormatters } from "../formatters/index.js";
 import type { lookupModifier } from "../operations/index.js";
 import { resolveModifierLookup } from "../orchestration/index.js";
@@ -46,7 +47,15 @@ export default function buildLookupCommand(
 
       return createOutputResult<ModifierLookupOutput>(
         { result: contract.result },
-        { plain: renderModifierLookupOutput(ctx) },
+        {
+          plain: ({ result }) =>
+            renderLookupResults({
+              ctx,
+              result,
+              formatters: lookupFormatters,
+              mapResult: (family) => family,
+            }),
+        },
       );
     },
   };
@@ -62,44 +71,4 @@ function normalizeNames(names: unknown, legacyName?: unknown): string[] {
     return [legacyName];
   }
   return [];
-}
-
-function renderModifierLookupOutput(
-  ctx: PragmaContext,
-): (data: ModifierLookupOutput) => string {
-  return ({ result }) => {
-    const formatOne =
-      ctx.globalFlags.format === "json"
-        ? lookupFormatters.json
-        : ctx.globalFlags.llm
-          ? lookupFormatters.llm
-          : lookupFormatters.plain;
-
-    if (ctx.globalFlags.format === "json") {
-      if (result.results.length === 1 && result.errors.length === 0) {
-        const only = result.results[0];
-        return only
-          ? lookupFormatters.json(only)
-          : JSON.stringify({ results: [], errors: result.errors }, null, 2);
-      }
-
-      return JSON.stringify(
-        { results: result.results, errors: result.errors },
-        null,
-        2,
-      );
-    }
-
-    const parts = result.results.map((family) => formatOne(family));
-    if (result.errors.length > 0) {
-      parts.push(
-        [
-          "Errors:",
-          ...result.errors.map((error) => `- ${error.query}: ${error.message}`),
-        ].join("\n"),
-      );
-    }
-
-    return parts.join("\n\n");
-  };
 }
