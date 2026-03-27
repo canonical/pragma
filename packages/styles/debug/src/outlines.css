@@ -1,0 +1,11 @@
+.with-debug-outlines {
+  --debug-outline-color: color-mix(
+    in oklch,
+    var(--color-border-constructive, oklch(55.1% 0.1575 144.01)) 50%,
+    transparent
+  );
+}
+
+.with-debug-outlines * {
+  outline: 1px solid var(--debug-outline-color);
+}

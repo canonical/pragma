@@ -1,0 +1,48 @@
+/* @canonical/styles — Font loading (Ubuntu Sans, self-hosted)
+ *
+ * Variable fonts from @canonical/ds-assets.
+ * Licensed under Ubuntu Font License v1.0.
+ *
+ * Opt-in: import this file to load the Ubuntu Sans font family.
+ *
+ *   @import url("@canonical/styles/fonts");
+ *   @import url("@canonical/styles");
+ */
+
+@font-face {
+  font-family: "Ubuntu Sans";
+  src: url("@canonical/ds-assets/fonts/ubuntu-sans/UbuntuSans[wdth,wght].woff2")
+    format("woff2-variations");
+  font-weight: 100 900;
+  font-stretch: 62.5% 100%;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Ubuntu Sans";
+  src: url("@canonical/ds-assets/fonts/ubuntu-sans/UbuntuSans-Italic[wdth,wght].woff2")
+    format("woff2-variations");
+  font-weight: 100 900;
+  font-stretch: 62.5% 100%;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Ubuntu Sans Mono";
+  src: url("@canonical/ds-assets/fonts/ubuntu-sans/UbuntuSansMono[wght].woff2")
+    format("woff2-variations");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Ubuntu Sans Mono";
+  src: url("@canonical/ds-assets/fonts/ubuntu-sans/UbuntuSansMono-Italic[wght].woff2")
+    format("woff2-variations");
+  font-weight: 100 900;
+  font-style: italic;
+  font-display: swap;
+}

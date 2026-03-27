@@ -3,7 +3,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding-inline: var(--tmp-space-input-inline);
+  padding-inline: var(--component-padding-inline);
   cursor: pointer;
   color: var(--color-text-muted);
   font-size: 1rem;

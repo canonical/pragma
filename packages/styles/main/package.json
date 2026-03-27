@@ -3,6 +3,10 @@
   "description": "Canonical Design System global stylesheet. Aggregates normalize, typography, and design tokens.",
   "version": "0.20.0",
   "main": "src/index.css",
+  "exports": {
+    ".": "./src/index.css",
+    "./fonts": "./src/fonts.css"
+  },
   "files": [
     "src"
   ],
@@ -29,5 +33,13 @@
     "@canonical/design-tokens": "^0.5.2",
     "@canonical/styles-typography": "^0.20.0",
     "normalize.css": "^8.0.1"
+  },
+  "peerDependencies": {
+    "@canonical/ds-assets": ">=0.18.0"
+  },
+  "peerDependenciesMeta": {
+    "@canonical/ds-assets": {
+      "optional": true
+    }
   }
 }

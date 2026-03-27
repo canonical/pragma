@@ -3,14 +3,19 @@ import type React from "react";
 import { useEffect } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 
+const formCssClassName = "ds form";
+
 interface FormDecoratorParams {
   defaultValues?: Record<string, unknown>;
   touchedFields?: string[];
+  /** Extra class name(s) for the form element (e.g. "form-layout-side") */
+  className?: string;
 }
 
 export const form = ({
   defaultValues = {},
   touchedFields = [],
+  className,
 }: FormDecoratorParams = {}) => {
   return (Story: React.ElementType) => {
     const FormWrapper: React.ElementType = () => {
@@ -34,7 +39,12 @@ export const form = ({
 
       return (
         <FormProvider {...methods}>
-          <form onSubmit={methods.handleSubmit(() => {})}>
+          <form
+            className={[formCssClassName, "subgrid", className]
+              .filter(Boolean)
+              .join(" ")}
+            onSubmit={methods.handleSubmit(() => {})}
+          >
             <Story />
           </form>
         </FormProvider>
@@ -42,19 +52,5 @@ export const form = ({
     };
 
     return <FormWrapper />;
-  };
-};
-
-export const grid = () => {
-  return (
-    Story: React.ElementType,
-    context: { globals?: { grid?: string } },
-  ) => {
-    const modifier = context.globals?.grid ?? "intrinsic";
-    return (
-      <div className={`grid ${modifier}`}>
-        <Story />
-      </div>
-    );
   };
 };

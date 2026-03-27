@@ -7,8 +7,8 @@
     grid-column: 1 / -1;
     display: flex;
     flex-wrap: wrap;
-    gap: var(--tmp-space-group-gap);
-    margin-block-end: var(--tmp-space-group-gap);
+    gap: var(--space-050);
+    margin-block-end: var(--space-050);
 
     &:empty {
       display: none;
@@ -21,8 +21,8 @@
     anchor-name: --combobox-input;
     box-sizing: border-box;
     width: 100%;
-    padding-block: var(--tmp-space-input-block);
-    padding-inline: var(--tmp-space-input-inline);
+    padding-block: var(--component-padding-block);
+    padding-inline: var(--component-padding-inline);
     padding-inline-end: 2.5rem;
     border: var(--dimension-stroke-thickness-medium) solid var(--color-border);
     border-radius: var(--dimension-radius-small);

@@ -1,4 +1,3 @@
-import { withThemeByClassName } from "@storybook/addon-themes";
 import type { Preview as ReactPreview } from "@storybook/react-vite";
 import type { Preview as SveltePreview } from "@storybook/svelte-vite";
 import type { Preview as LitPreview } from "@storybook/web-components-vite";
@@ -11,25 +10,14 @@ import type { Preview as LitPreview } from "@storybook/web-components-vite";
 type Preview = ReactPreview & SveltePreview & LitPreview;
 
 /**
- * Theme decorator for Pragma design system Storybooks.
- * Provides light, dark, and paper theme switching.
- */
-export const themeDecorator = withThemeByClassName({
-  themes: {
-    light: "light",
-    dark: "dark",
-  },
-  defaultTheme: "light",
-});
-
-/**
  * Shared preview configuration for Pragma design system Storybooks.
- * Provides consistent story sorting with Introduction always first,
- * theme switching, and autodocs.
+ * Provides consistent story sorting with Introduction always first and autodocs.
+ *
+ * Color scheme toggling is handled by @canonical/storybook-addon-utils
+ * which provides .light/.dark class toggling via its toolbar control.
  */
 export const previewConfig: Partial<Preview> = {
   tags: ["autodocs"],
-  decorators: [themeDecorator],
   parameters: {
     options: {
       storySort: {

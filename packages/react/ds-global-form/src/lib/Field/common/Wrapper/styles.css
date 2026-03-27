@@ -1,7 +1,7 @@
 .ds.field {
   display: grid;
   grid-template-columns: subgrid;
-  grid-column: var(--wrapper-columns, 1 / -1);
+  grid-column: var(--form-field-columns, 1 / -1);
   gap: var(--form-field-inline-gap);
   align-items: baseline;
 

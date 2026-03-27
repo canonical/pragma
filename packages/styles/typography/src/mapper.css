@@ -23,7 +23,39 @@
  * The line-height-multiplier is computed using round() to snap the typographic
  * line-height (font-size × unitless ratio) to the nearest baseline-grid unit:
  *   round(up, font-size × line-height-ratio / baseline-height, 1)
+ *
+ * Heading padding-inline:
+ *   Headings receive --heading-padding-inline (default: 0) so they can
+ *   optionally align with padded blocks (cards, inputs, containers).
+ *   Set --heading-padding-inline on a layout context to activate.
  */
+
+/* ── TEMP FIX: design-tokens naming mismatch ──────────────────────
+ * modifiers.typography.css references --typography-font-family-default (kebab)
+ * but sets.primitive.css defines --typography-fontFamily-default (camelCase).
+ * This shim bridges the gap until the tokens package is fixed upstream.
+ */
+:root {
+  /* ── Font family shims ──────────────────────────────────────────
+   * modifiers.typography.css uses kebab-case references but
+   * sets.primitive.css defines camelCase tokens. */
+  --typography-font-family-default: var(--typography-fontFamily-default);
+  --typography-font-family-code: var(--typography-fontFamily-code);
+  --typography-font-family-sans-serif: var(--typography-fontFamily-sansSerif);
+  --typography-font-family-monospace: var(--typography-fontFamily-monospace);
+
+  /* ── Font weight shims ──────────────────────────────────────────
+   * Per-element weight tokens reference kebab-case (semi-bold,
+   * extra-bold, extra-light) but primitives use camelCase. */
+  --typography-weight-semi-bold: var(--typography-weight-semiBold);
+  --typography-weight-extra-bold: var(--typography-weight-extraBold);
+  --typography-weight-extra-light: var(--typography-weight-extraLight);
+}
+
+/* Base font — inherited by all elements unless overridden */
+body {
+  font-family: var(--typography-text-primary-font-family);
+}
 
 /* ── Headings ── */
 
@@ -43,6 +75,7 @@ h1 {
   font-family: var(--typography-heading-1-font-family);
   font-weight: var(--font-weight);
   letter-spacing: var(--typography-heading-1-letter-spacing);
+  padding-inline: var(--heading-padding-inline, 0);
 }
 
 h2 {
@@ -61,6 +94,7 @@ h2 {
   font-family: var(--typography-heading-2-font-family);
   font-weight: var(--font-weight);
   letter-spacing: var(--typography-heading-2-letter-spacing);
+  padding-inline: var(--heading-padding-inline, 0);
 }
 
 h3 {
@@ -79,6 +113,7 @@ h3 {
   font-family: var(--typography-heading-3-font-family);
   font-weight: var(--font-weight);
   letter-spacing: var(--typography-heading-3-letter-spacing);
+  padding-inline: var(--heading-padding-inline, 0);
 }
 
 h4 {
@@ -97,6 +132,7 @@ h4 {
   font-family: var(--typography-heading-4-font-family);
   font-weight: var(--font-weight);
   letter-spacing: var(--typography-heading-4-letter-spacing);
+  padding-inline: var(--heading-padding-inline, 0);
 }
 
 h5 {
@@ -115,6 +151,7 @@ h5 {
   font-family: var(--typography-heading-5-font-family);
   font-weight: var(--font-weight);
   letter-spacing: var(--typography-heading-5-letter-spacing);
+  padding-inline: var(--heading-padding-inline, 0);
 }
 
 h6 {
@@ -133,6 +170,7 @@ h6 {
   font-family: var(--typography-heading-6-font-family);
   font-weight: var(--font-weight);
   letter-spacing: var(--typography-heading-6-letter-spacing);
+  padding-inline: var(--heading-padding-inline, 0);
 }
 
 /* ── Text ── */

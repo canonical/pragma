@@ -20,6 +20,9 @@
     },
     "./baseline-grid": {
       "import": "./src/baseline-grid.css"
+    },
+    "./outlines": {
+      "import": "./src/outlines.css"
     }
   },
   "license": "LGPL-3.0",
@@ -32,6 +35,14 @@
     "check:fix": "bun run check:biome:fix",
     "check:biome": "biome check",
     "check:biome:fix": "biome check --write"
+  },
+  "peerDependencies": {
+    "@canonical/design-tokens": ">=0.4.0"
+  },
+  "peerDependenciesMeta": {
+    "@canonical/design-tokens": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.6",

@@ -1,7 +1,11 @@
-import { createConfig } from "@canonical/storybook-config";
+import type { StorybookConfig } from "@storybook/react-vite";
 
-export default createConfig("react", {
-  // TODO - The static dir public should be required - but it seems `mockServiceWorker.js` is served nonetheless. Unsure where it comes from.
+const config: StorybookConfig = {
+  stories: ["../src/**/*.mdx", "../src/**/*.stories.@(js|jsx|ts|tsx)"],
+  addons: ["./local-preset.js"],
+  framework: "@storybook/react-vite",
+  core: { disableTelemetry: true },
   staticDirs: ["../public"],
-  extraAddons: ["./local-preset.js"],
-});
+};
+
+export default config;

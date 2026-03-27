@@ -1,0 +1,82 @@
+{
+  "name": "@canonical/storybook-addon-utils",
+  "version": "0.20.0",
+  "type": "module",
+  "files": [
+    "dist"
+  ],
+  "types": "dist/types/index.d.ts",
+  "author": "Bartek Szopka <bartek.szopka@canonical.com>",
+  "description": "Storybook addon: grid mode, color scheme, baseline grid, element outlines",
+  "keywords": [
+    "storybook-addons",
+    "storybook-addons"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/canonical/pragma"
+  },
+  "bugs": {
+    "url": "https://github.com/canonical/pragma/issues"
+  },
+  "license": "LGPL-3.0",
+  "exports": {
+    ".": "./dist/esm/index.js",
+    "./preview": "./dist/esm/preview.js",
+    "./preset": "./dist/esm/preset.js",
+    "./manager": "./dist/esm/manager.js",
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "build": "bun run build:package",
+    "build:all": "bun run build:package",
+    "build:package": "bun run build:package:tsc",
+    "build:package:tsc": "tsc -p tsconfig.build.json",
+    "storybook": "storybook dev -p 6007 --no-open --host 0.0.0.0",
+    "check": "bun run check:biome && bun run check:ts",
+    "check:fix": "bun run check:biome:fix && bun run check:ts",
+    "check:biome": "biome check",
+    "check:biome:fix": "biome check --write",
+    "check:ts": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@canonical/styles-debug": "^0.20.0",
+    "@storybook/icons": "^2.0.1"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.4.6",
+    "@canonical/biome-config": "^0.20.0",
+    "@canonical/styles": "^0.20.0",
+    "@canonical/typescript-config-react": "^0.20.0",
+    "@storybook/addon-docs": "^10.3.1",
+    "@storybook/react-vite": "^10.3.1",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.1.4",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "storybook": "^10.3.1",
+    "typescript": "^5.9.3",
+    "vite": "^8.0.1"
+  },
+  "peerDependencies": {
+    "react": "^18.0.0 || ^19.0.0",
+    "react-dom": "^18.0.0 || ^19.0.0",
+    "storybook": "^10.3.1"
+  },
+  "storybook": {
+    "displayName": "DS Utils",
+    "supportedFrameworks": [
+      "react",
+      "vue",
+      "angular",
+      "web-components",
+      "ember",
+      "html",
+      "svelte",
+      "preact",
+      "react-native"
+    ],
+    "icon": "https://user-images.githubusercontent.com/321738/63501763-88dbf600-c4cc-11e9-96cd-94adadc2fd72.png"
+  }
+}

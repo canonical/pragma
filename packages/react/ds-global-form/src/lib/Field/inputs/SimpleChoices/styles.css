@@ -4,13 +4,13 @@
   margin: 0;
   display: flex;
   flex-wrap: wrap;
-  gap: var(--tmp-space-field-inline) var(--tmp-space-field-gap);
+  gap: var(--space-100) var(--container-gap-loose);
 
   & > .option {
     direction: inherit;
     display: flex;
     align-items: center;
-    gap: var(--tmp-space-field-inline);
+    gap: var(--space-100);
     cursor: pointer;
 
     &.disabled {

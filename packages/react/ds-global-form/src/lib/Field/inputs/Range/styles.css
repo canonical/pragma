@@ -57,5 +57,5 @@
   text-align: center;
   font-size: var(--typography-text-secondary-font-size);
   color: var(--color-text-muted);
-  margin-block-start: var(--tmp-space-group-gap);
+  margin-block-start: var(--space-050);
 }

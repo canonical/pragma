@@ -70,14 +70,14 @@ export const base = [
     inputType: "number",
     description: "This is a telephone field",
     label: "Area Code",
-    className: "special-area",
+    style: { "--form-field-columns": "1 / 3" },
   },
   {
     name: "telephone_field_number",
     inputType: "tel",
     description: "This is a telephone field",
     label: "Phone Number",
-    className: "special-number",
+    style: { "--form-field-columns": "3 / -1" },
   },
 ];
 
@@ -103,7 +103,7 @@ export const phone = [
     name: "telephone_field_area",
     inputType: "number",
     label: "Area Code",
-    className: "special-width",
+    style: { "--form-field-columns": "1 / 3" },
   },
   {
     name: "telephone_field_number",

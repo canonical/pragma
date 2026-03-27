@@ -1,19 +1,67 @@
 /* @canonical/styles — Grid layout presets
  *
- * .grid            — establishes a grid context
- * .grid.responsive — 4 / 8 / 12 column responsive grid (breakpoint-driven)
- * .grid.intrinsic  — fluid auto-fill grid (groups of 4)
- * .subgrid         — subgrid child, inherits parent columns
+ * ┌─────────────────────────────────────────────────────────────┐
+ * │  Three grid modes                                           │
+ * ├──────────────┬──────────────────────────────────────────────┤
+ * │ .responsive  │ Breakpoint-driven: 4-col / 8-col / 12-col   │
+ * │ .intrinsic   │ Fluid auto-fill, groups of 4 columns         │
+ * │ (bare)       │ No preset — bring your own columns            │
+ * └──────────────┴──────────────────────────────────────────────┘
  *
- * The .grid class subscribes to --modifier-grid-template.
- * If no modifier is set, grid-template-columns is not declared
- * and the grid behaves as a plain block-level grid context.
+ * Classes:
+ *   .grid            Base grid context (display: grid)
+ *   .grid.responsive Breakpoint-driven column grid
+ *   .grid.intrinsic  Fluid auto-fill grid
+ *   .subgrid         CSS subgrid child — inherits parent columns
  *
- * Usage:
- *   <div class="grid responsive">   — 8-col fixed
- *   <div class="grid intrinsic">    — fluid auto-fill
- *   <div class="grid">              — bare context, bring your own columns
- *   <div class="subgrid">           — inherits parent columns
+ * Customization:
+ *   --grid-gap        Shorthand: sets both row-gap and column-gap (default: var(--grid-gutter))
+ *   --grid-row-gap    Block-direction (vertical) gap between rows
+ *   --grid-column-gap Inline-direction (horizontal) gap between columns
+ *   --grid-col-min    Minimum column width for intrinsic mode (default: 100px)
+ *   --subgrid-span    Column span for subgrid children (default: 1 / -1, full width)
+ *
+ * Breakpoints (responsive mode):
+ *   < 768px          4 columns  (mobile)
+ *   768px – 1279px   8 columns  (tablet)
+ *   ≥ 1280px         12 columns (desktop)
+ *
+ * Relationship to spacing architecture:
+ *   The grid provides horizontal structure. Vertical spacing between
+ *   grid items is handled by the spacing architecture tokens
+ *   (--container-gap-* for app UI, element margin-bottom for editorial).
+ *   The --grid-gap property controls both axes unless overridden
+ *   per-axis with --grid-row-gap or --grid-column-gap.
+ *
+ * Usage examples:
+ *
+ *   <!-- Responsive 12-column layout -->
+ *   <div class="grid responsive">
+ *     <main style="grid-column: span 8">Content</main>
+ *     <aside style="grid-column: span 4">Sidebar</aside>
+ *   </div>
+ *
+ *   <!-- Fluid card grid -->
+ *   <div class="grid intrinsic">
+ *     <article>Card 1</article>
+ *     <article>Card 2</article>
+ *   </div>
+ *
+ *   <!-- Subgrid for aligned form fields -->
+ *   <div class="grid responsive">
+ *     <form class="subgrid">
+ *       <div class="subgrid" style="grid-column: span 6">
+ *         <label>Name</label>
+ *         <input />
+ *       </div>
+ *     </form>
+ *   </div>
+ *
+ *   <!-- Custom gap -->
+ *   <div class="grid responsive" style="--grid-gap: 2rem">...</div>
+ *
+ *   <!-- Separate row/column gaps -->
+ *   <div class="grid responsive" style="--grid-row-gap: 1.5rem; --grid-column-gap: 1rem">...</div>
  */
 
 @layer ds.components {
@@ -30,7 +78,11 @@
   .grid {
     display: grid;
     grid-template-columns: var(--modifier-grid-template);
-    gap: var(--grid-gap, 1rem);
+    column-gap: var(
+      --grid-column-gap,
+      var(--grid-gap, var(--grid-gutter, 1.5rem))
+    );
+    row-gap: var(--grid-row-gap, var(--grid-gap, var(--grid-gutter, 1.5rem)));
   }
 
   .responsive {
