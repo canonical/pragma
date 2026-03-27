@@ -9,38 +9,43 @@
  */
 
 // =============================================================================
-// Generator Types
+// Types
 // =============================================================================
 
 export type {
   AnyGenerator,
+  ForbidReserved,
   GeneratorDefinition,
   GeneratorMeta,
   PromptDefinition,
-} from "./types.js";
+  ReservedOption,
+  StampConfig,
+} from "./types/index.js";
 
 // =============================================================================
 // Stamps (generated file stamp comments)
 // =============================================================================
 
-export type { RunTaskWithStampOptions, StampConfig } from "./stamp.js";
-export { applyStamp, runTaskWithStamp } from "./stamp.js";
+export type { RunTaskWithStampOptions } from "./stamp/index.js";
+export {
+  applyStamp,
+  runTaskWithStamp,
+} from "./stamp/index.js";
 
 // =============================================================================
 // Templates
 // =============================================================================
 
 export type {
-  StampOptions,
   TemplateDirOptions,
   TemplateOptions,
   TemplatingEngine,
-} from "./template.js";
+} from "./template/index.js";
 export {
   ejsEngine,
   generateStamp,
   generatorComment,
-  generatorHtmlComment,
+  getCommentStyle,
   prependStamp,
   renderFile,
   renderString,
@@ -49,13 +54,7 @@ export {
   templateDir,
   templateHelpers,
   withHelpers,
-} from "./template.js";
-
-// =============================================================================
-// CLI Types (for generator authors)
-// =============================================================================
-
-export type { ForbidReserved, ReservedOption } from "./cli-types.js";
+} from "./template/index.js";
 
 // =============================================================================
 // Discovery (generator tree algorithm + types)

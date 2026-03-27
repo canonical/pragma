@@ -38,6 +38,9 @@
     "typescript": "^5.9.3",
     "vitest": "^4.0.18"
   },
+  "dependencies": {
+    "@canonical/utils": "^0.20.0"
+  },
   "peerDependencies": {
     "@canonical/summon-core": "^0.18.0",
     "@canonical/task": "^0.18.0"

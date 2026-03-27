@@ -11,7 +11,7 @@
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import chalk from "chalk";
-import type { GeneratorDefinition } from "../types.js";
+import type { GeneratorDefinition } from "../types/index.js";
 import { generatorCache } from "./generatorCache.js";
 import type { GeneratorNode, GeneratorOrigin } from "./types.js";
 

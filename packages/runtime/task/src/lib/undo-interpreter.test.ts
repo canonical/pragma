@@ -190,6 +190,86 @@ describe("collectUndos", () => {
     // Only mkdir and writeFile have default undos
     expect(undos).toHaveLength(2);
   });
+
+  it("returns empty undos for pure task", () => {
+    const undos = collectUndos(pure(undefined));
+    expect(undos).toHaveLength(0);
+  });
+
+  it("collects undos from deeply nested sequences", () => {
+    const task = sequence_([
+      sequence_([writeFile("/a.txt", "a"), writeFile("/b.txt", "b")]),
+      sequence_([mkdir("/dir"), writeFile("/dir/c.txt", "c")]),
+    ]);
+    const undos = collectUndos(task);
+
+    expect(undos).toHaveLength(4);
+  });
+
+  it("collects mixed custom and default undos in same sequence", () => {
+    const customUndo = info("remove b line");
+    const task = sequence_([
+      writeFile("/a.txt", "x"),
+      appendFile("/b.txt", "y\n", true, { undo: customUndo }),
+      mkdir("/c"),
+    ]);
+    const undos = collectUndos(task);
+
+    expect(undos).toHaveLength(3);
+
+    // First undo: default deleteFile for writeFile(/a.txt)
+    const eff0 = dryRun(undos[0]).effects;
+    expect(eff0[0]._tag).toBe("DeleteFile");
+
+    // Second undo: custom undo (info log)
+    const eff1 = dryRun(undos[1]).effects;
+    expect(eff1[0]._tag).toBe("Log");
+
+    // Third undo: default deleteDirectory for mkdir(/c)
+    const eff2 = dryRun(undos[2]).effects;
+    expect(eff2[0]._tag).toBe("DeleteDirectory");
+  });
+
+  it("skipped when(false) with custom undo produces no undos", () => {
+    const customUndo = info("should not appear");
+    const task = sequence_([
+      writeFile("/a.txt", "a"),
+      when(false, appendFile("/b.txt", "y\n", true, { undo: customUndo })),
+      writeFile("/c.txt", "c"),
+    ]);
+    const undos = collectUndos(task);
+
+    // Only a.txt and c.txt — the when(false) branch is skipped
+    expect(undos).toHaveLength(2);
+  });
+
+  it("collects custom undo that is itself a sequence", () => {
+    const compositeUndo = sequence_([info("step 1"), info("step 2")]);
+    const task = writeFile("/a.txt", "a", { undo: compositeUndo });
+    const undos = collectUndos(task);
+
+    expect(undos).toHaveLength(1);
+    // The composite undo produces 2 Log effects
+    const undoEffects = dryRun(undos[0]).effects;
+    expect(undoEffects).toHaveLength(2);
+    expect(undoEffects[0]._tag).toBe("Log");
+    expect(undoEffects[1]._tag).toBe("Log");
+  });
+
+  it("handles gen() with multiple yields and mixed undo types", () => {
+    const task = gen(function* () {
+      yield* $(info("starting"));
+      yield* $(mkdir("/dir"));
+      yield* $(writeFile("/dir/a.txt", "a"));
+      yield* $(appendFile("/dir/b.txt", "b\n"));
+      yield* $(writeFile("/dir/c.txt", "c"));
+      yield* $(info("done"));
+    });
+    const undos = collectUndos(task);
+
+    // mkdir=1 + writeFile(a)=1 + appendFile=0 + writeFile(c)=1 = 3
+    expect(undos).toHaveLength(3);
+  });
 });
 
 // =============================================================================

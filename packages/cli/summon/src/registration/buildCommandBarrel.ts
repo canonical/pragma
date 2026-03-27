@@ -9,7 +9,7 @@
 
 import type { GeneratorNode } from "@canonical/summon-core";
 import chalk from "chalk";
-import loadGenerator from "../discovery/loadGenerator.js";
+import { loadGenerator } from "../discovery/index.js";
 import type { CommandEntry } from "./types.js";
 
 export default async function buildCommandBarrel(

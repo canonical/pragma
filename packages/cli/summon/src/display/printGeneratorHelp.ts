@@ -8,15 +8,10 @@
 
 import { formatGeneratorLlmHelp } from "@canonical/cli-core";
 import type { GeneratorNode } from "@canonical/summon-core";
+import { toKebabCase } from "@canonical/utils";
 import chalk from "chalk";
-import loadGenerator from "../discovery/loadGenerator.js";
+import { loadGenerator } from "../discovery/index.js";
 import printNode from "./printNode.js";
-
-/**
- * Convert camelCase to kebab-case.
- */
-const toKebabCase = (str: string): string =>
-  str.replace(/([a-z])([A-Z])/g, "$1-$2").toLowerCase();
 
 export default async function printGeneratorHelp(
   node: GeneratorNode,

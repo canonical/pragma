@@ -81,7 +81,7 @@ const litPrompts = [
  *
  * @see {@link https://summon.dev/generators/component/lit} for documentation
  */
-export const generator = {
+const generator = {
   meta: {
     name: "component/lit",
     displayName: `${pkg.name}:lit`,
@@ -177,3 +177,5 @@ with the custom element tag 'button'.`,
     ]);
   },
 } as const satisfies GeneratorDefinition<LitAnswers>;
+
+export default generator;
