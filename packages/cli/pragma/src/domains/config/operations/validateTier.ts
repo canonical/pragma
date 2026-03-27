@@ -1,6 +1,6 @@
 import type { Store } from "@canonical/ke";
 import { PragmaError } from "#error";
-import type { TierEntry } from "../../shared/types.js";
+import type { TierEntry } from "../../shared/types/index.js";
 import { listTiers } from "../../tier/operations/index.js";
 
 /**

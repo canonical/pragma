@@ -1,7 +1,7 @@
 import type { LookupContract, LookupResult } from "../../shared/contracts.js";
 import lookupMany from "../../shared/lookupMany.js";
 import type { PragmaRuntime } from "../../shared/runtime.js";
-import type { TokenDetailed } from "../../shared/types.js";
+import type { TokenDetailed } from "../../shared/types/index.js";
 import { lookupToken } from "../operations/index.js";
 
 export default async function resolveTokenLookup(

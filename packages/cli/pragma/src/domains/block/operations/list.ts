@@ -15,7 +15,7 @@ import { buildQuery } from "../../shared/buildQuery.js";
 import extractLocalName from "../../shared/extractLocalName.js";
 import { buildFilters } from "../../shared/filters/buildFilters.js";
 import { P } from "../../shared/prefixes.js";
-import type { BlockSummary, FilterConfig } from "../../shared/types.js";
+import type { BlockSummary, FilterConfig } from "../../shared/types/index.js";
 
 function normalizeBlockType(value: string | undefined): BlockSummary["type"] {
   const localName = extractLocalName(value ?? "").toLowerCase();

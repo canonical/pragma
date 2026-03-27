@@ -11,7 +11,7 @@ import type { Store, URI } from "@canonical/ke";
 import { escapeSparqlValue } from "@canonical/ke";
 import { buildQuery } from "../../shared/buildQuery.js";
 import { P } from "../../shared/prefixes.js";
-import type { TokenSummary } from "../../shared/types.js";
+import type { TokenSummary } from "../../shared/types/index.js";
 
 /** Optional filters for the token list operation. */
 export interface TokenListFilters {

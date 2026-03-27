@@ -14,7 +14,7 @@ import { P } from "../../shared/prefixes.js";
 import type {
   StandardListFilters,
   StandardSummary,
-} from "../../shared/types.js";
+} from "../../shared/types/index.js";
 
 export default async function listStandards(
   store: Store,

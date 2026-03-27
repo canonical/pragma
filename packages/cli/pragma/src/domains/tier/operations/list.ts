@@ -9,7 +9,7 @@
 import type { Store, URI } from "@canonical/ke";
 import { buildQuery } from "../../shared/buildQuery.js";
 import { P } from "../../shared/prefixes.js";
-import type { TierEntry } from "../../shared/types.js";
+import type { TierEntry } from "../../shared/types/index.js";
 
 export default async function listTiers(store: Store): Promise<TierEntry[]> {
   const result = await store.query(

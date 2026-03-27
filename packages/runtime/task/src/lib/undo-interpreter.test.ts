@@ -1,3 +1,6 @@
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { sequence_, when } from "./combinators.js";
 import { dryRun } from "./dry-run.js";
@@ -239,5 +242,18 @@ describe("runUndo", () => {
     const result = await runUndo(task);
 
     expect(result.undoCount).toBe(0);
+  });
+
+  it("ignores missing files when undoing generated writes", async () => {
+    const tempDir = mkdtempSync(join(tmpdir(), "task-undo-"));
+    const filePath = join(tempDir, "MySth", "MySth.stories.tsx");
+
+    try {
+      const result = await runUndo(writeFile(filePath, "story contents"));
+
+      expect(result.undoCount).toBe(1);
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
   });
 });

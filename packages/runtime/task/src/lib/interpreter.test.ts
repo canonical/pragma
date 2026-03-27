@@ -1,3 +1,6 @@
+import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { parallel, sequence_ } from "./combinators.js";
 import {
@@ -474,6 +477,40 @@ describe("Interpreter - executeEffect for Context", () => {
     await executeEffect(effect, context);
 
     expect(context.get("key")).toBe("new");
+  });
+});
+
+// =============================================================================
+// executeEffect - File deletion
+// =============================================================================
+
+describe("Interpreter - executeEffect for DeleteFile", () => {
+  it("ignores missing files", async () => {
+    const tempDir = mkdtempSync(join(tmpdir(), "task-delete-file-"));
+    const filePath = join(tempDir, "missing.txt");
+
+    try {
+      await expect(
+        executeEffect({ _tag: "DeleteFile", path: filePath }, new Map()),
+      ).resolves.toBeUndefined();
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  it("deletes existing files", async () => {
+    const tempDir = mkdtempSync(join(tmpdir(), "task-delete-file-"));
+    const filePath = join(tempDir, "present.txt");
+
+    try {
+      writeFileSync(filePath, "hello", "utf8");
+
+      await executeEffect({ _tag: "DeleteFile", path: filePath }, new Map());
+
+      expect(existsSync(filePath)).toBe(false);
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
   });
 });
 

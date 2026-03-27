@@ -12,6 +12,7 @@ import {
 } from "@canonical/cli-core";
 import type { PragmaContext } from "../../shared/context.js";
 import type { LookupResult } from "../../shared/contracts.js";
+import { renderLookupResults } from "../../shared/formatters.js";
 import { lookupFormatters } from "../formatters/index.js";
 import type { lookupStandard } from "../operations/index.js";
 import { resolveStandardLookup } from "../orchestration/index.js";
@@ -60,7 +61,15 @@ export default function buildLookupCommand(
 
       return createOutputResult<StandardLookupOutput>(
         { result: contract.result, detailed },
-        { plain: renderStandardLookupOutput(ctx) },
+        {
+          plain: ({ result, detailed: isDetailed }) =>
+            renderLookupResults({
+              ctx,
+              result,
+              formatters: lookupFormatters,
+              mapResult: (standard) => ({ standard, detailed: isDetailed }),
+            }),
+        },
       );
     },
   };
@@ -76,52 +85,4 @@ function normalizeNames(names: unknown, legacyName?: unknown): string[] {
     return [legacyName];
   }
   return [];
-}
-
-function renderStandardLookupOutput(
-  ctx: PragmaContext,
-): (data: StandardLookupOutput) => string {
-  return ({ result, detailed }) => {
-    const formatOne =
-      ctx.globalFlags.format === "json"
-        ? lookupFormatters.json
-        : ctx.globalFlags.llm
-          ? lookupFormatters.llm
-          : lookupFormatters.plain;
-
-    if (ctx.globalFlags.format === "json") {
-      if (result.results.length === 1 && result.errors.length === 0) {
-        const only = result.results[0];
-        return only
-          ? lookupFormatters.json({ standard: only, detailed })
-          : JSON.stringify({ results: [], errors: result.errors }, null, 2);
-      }
-
-      return JSON.stringify(
-        {
-          results: result.results.map((standard) =>
-            JSON.parse(lookupFormatters.json({ standard, detailed })),
-          ),
-          errors: result.errors,
-        },
-        null,
-        2,
-      );
-    }
-
-    const parts = result.results.map((standard) =>
-      formatOne({ standard, detailed }),
-    );
-
-    if (result.errors.length > 0) {
-      parts.push(
-        [
-          "Errors:",
-          ...result.errors.map((error) => `- ${error.query}: ${error.message}`),
-        ].join("\n"),
-      );
-    }
-
-    return parts.join("\n\n");
-  };
 }

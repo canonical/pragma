@@ -9,7 +9,7 @@
 import type { Store } from "@canonical/ke";
 import { buildQuery } from "../../shared/buildQuery.js";
 import { P } from "../../shared/prefixes.js";
-import type { CategorySummary } from "../../shared/types.js";
+import type { CategorySummary } from "../../shared/types/index.js";
 
 export default async function listCategories(
   store: Store,

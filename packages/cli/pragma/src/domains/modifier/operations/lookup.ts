@@ -13,7 +13,7 @@ import { escapeSparqlValue } from "@canonical/ke";
 import { PragmaError } from "#error";
 import { buildQuery } from "../../shared/buildQuery.js";
 import { P } from "../../shared/prefixes.js";
-import type { ModifierFamily } from "../../shared/types.js";
+import type { ModifierFamily } from "../../shared/types/index.js";
 
 export default async function lookupModifier(
   store: Store,

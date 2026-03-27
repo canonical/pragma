@@ -65,7 +65,7 @@ export {
 // Completions
 // =============================================================================
 
-export { buildCompleters, resolveCompletion } from "./lib/completions.js";
+export { buildCompleters, resolveCompletion } from "./lib/completions/index.js";
 
 // =============================================================================
 // Help Formatting

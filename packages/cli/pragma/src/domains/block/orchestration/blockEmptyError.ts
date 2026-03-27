@@ -1,6 +1,6 @@
 import { PragmaError } from "#error";
 import { describeFilters } from "../../shared/filters/index.js";
-import type { FilterConfig } from "../../shared/types.js";
+import type { FilterConfig } from "../../shared/types/index.js";
 
 export default function blockEmptyError(
   filters: FilterConfig,

@@ -6,7 +6,7 @@
  * envelopes, and `server.registerTool()` calls.
  */
 
-import type { PragmaRuntime } from "./runtime.js";
+import type { PragmaRuntime } from "./types/index.js";
 
 /**
  * Parameter definition for a tool — neutral format.

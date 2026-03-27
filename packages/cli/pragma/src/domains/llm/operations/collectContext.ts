@@ -3,7 +3,7 @@ import { listBlocks } from "../../block/operations/index.js";
 import { listModifiers } from "../../modifier/operations/index.js";
 import { listOntologies } from "../../ontology/operations/index.js";
 import { resolveTierChain } from "../../shared/filters/buildTierFilter.js";
-import type { FilterConfig } from "../../shared/types.js";
+import type { FilterConfig } from "../../shared/types/index.js";
 import { listStandards } from "../../standard/operations/index.js";
 import { listTokens } from "../../token/operations/index.js";
 import type { LlmContext } from "../types.js";

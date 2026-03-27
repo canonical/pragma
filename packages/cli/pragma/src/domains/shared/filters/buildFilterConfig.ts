@@ -2,8 +2,7 @@
  * Build a FilterConfig from runtime config, optionally widening tier.
  */
 
-import type { PragmaRuntime } from "../runtime.js";
-import type { FilterConfig } from "../types.js";
+import type { FilterConfig, PragmaRuntime } from "../types/index.js";
 
 export default function buildFilterConfig(
   runtime: PragmaRuntime,

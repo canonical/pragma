@@ -1,7 +1,7 @@
 import type { Store } from "@canonical/ke";
 import { buildQuery } from "../../shared/buildQuery.js";
 import { P } from "../../shared/prefixes.js";
-import type { OntologySummary } from "../../shared/types.js";
+import type { OntologySummary } from "../../shared/types/index.js";
 import findNamespace from "../helpers/findNamespace.js";
 
 /** Check whether a URI belongs to the anatomy namespace. */

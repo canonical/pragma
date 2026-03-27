@@ -2,7 +2,7 @@ import type { Store } from "@canonical/ke";
 import { buildQuery } from "../../shared/buildQuery.js";
 import extractLocalName from "../../shared/extractLocalName.js";
 import { P } from "../../shared/prefixes.js";
-import type { OntologyProperty } from "../../shared/types.js";
+import type { OntologyProperty } from "../../shared/types/index.js";
 
 /**
  * Queries all `owl:ObjectProperty` and `owl:DatatypeProperty` definitions

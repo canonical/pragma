@@ -4,7 +4,7 @@
  * Both tier and channel filters apply simultaneously as AND constraints.
  */
 
-import type { FilterConfig } from "../types.js";
+import type { FilterConfig } from "../types/index.js";
 import { buildChannelFilter } from "./buildChannelFilter.js";
 import { buildTierFilter } from "./buildTierFilter.js";
 

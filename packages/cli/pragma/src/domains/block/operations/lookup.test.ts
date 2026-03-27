@@ -2,7 +2,7 @@ import type { Store } from "@canonical/ke";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { PragmaError } from "#error";
 import { createTestStore, DS_ALL_TTL } from "#testing";
-import type { FilterConfig } from "../../shared/types.js";
+import type { FilterConfig } from "../../shared/types/index.js";
 import lookupBlock from "./lookup.js";
 
 let store: Store;

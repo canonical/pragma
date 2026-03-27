@@ -1,6 +1,6 @@
 import type { ListParams } from "../../shared/contracts.js";
 import type { PragmaRuntime } from "../../shared/runtime.js";
-import type { Disclosure } from "../../shared/types.js";
+import type { Disclosure } from "../../shared/types/index.js";
 import { listBlocks } from "../operations/index.js";
 import type { BlockListContract } from "../types.js";
 import blockEmptyError from "./blockEmptyError.js";

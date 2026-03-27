@@ -1,35 +1,22 @@
-/**
- * Three-mode formatter for `pragma token list` output.
- *
- * - **plain** — one line per token showing name and optional category.
- * - **llm** — condensed Markdown consumed by LLM agents and reused
- *   by the MCP adapter when `condensed: true`.
- * - **json** — structured JSON array for programmatic consumption.
- */
-
 import type { Formatters } from "../../shared/formatters.js";
-import type { TokenSummary } from "../../shared/types.js";
+import { renderListLlm } from "../../shared/renderers.js";
+import type { TokenSummary } from "../../shared/types/index.js";
+import { tokenConfig } from "../tokenConfig.js";
 
+/** Three-mode formatter for `pragma token list` output. */
 const formatters: Formatters<TokenSummary[]> = {
-  plain: (tokens) => {
-    const lines: string[] = [];
-    for (const t of tokens) {
-      const cat = t.category ? ` [${t.category}]` : "";
-      lines.push(`${t.name}${cat}`);
-    }
-    return lines.join("\n");
-  },
+  plain: (tokens) =>
+    tokens
+      .map((token) =>
+        token.category ? `${token.name} [${token.category}]` : token.name,
+      )
+      .join("\n"),
 
-  llm: (tokens) => {
-    const lines: string[] = [];
-    lines.push("## Design Tokens");
-    lines.push("");
-    for (const t of tokens) {
-      const cat = t.category ? ` [${t.category}]` : "";
-      lines.push(`- **${t.name}**${cat}`);
-    }
-    return lines.join("\n");
-  },
+  llm: (tokens) =>
+    renderListLlm(tokens, {
+      heading: "Design Tokens",
+      columns: tokenConfig.listColumns,
+    }),
 
   json: (tokens) => JSON.stringify(tokens, null, 2),
 };

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildCompleters, resolveCompletion } from "./completions.js";
+import { buildCompleters, resolveCompletion } from "./completions/index.js";
 import createExitResult from "./createExitResult.js";
 import type {
   CommandContext,

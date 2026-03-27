@@ -11,6 +11,7 @@ import {
 } from "@canonical/cli-core";
 import type { PragmaContext } from "../../shared/context.js";
 import type { LookupResult } from "../../shared/contracts.js";
+import { renderLookupResults } from "../../shared/formatters.js";
 import { createLookupFormatters } from "../formatters/index.js";
 import type { lookupToken } from "../operations/index.js";
 import { resolveTokenLookup } from "../orchestration/index.js";
@@ -56,7 +57,15 @@ export default function buildLookupCommand(
 
       return createOutputResult<TokenLookupOutput>(
         { result: contract.result, detailed },
-        { plain: renderTokenLookupOutput(ctx) },
+        {
+          plain: ({ result, detailed: isDetailed }) =>
+            renderLookupResults({
+              ctx,
+              result,
+              formatters: createLookupFormatters({ detailed: isDetailed }),
+              mapResult: (token) => token,
+            }),
+        },
       );
     },
   };
@@ -72,50 +81,4 @@ function normalizeNames(names: unknown, legacyName?: unknown): string[] {
     return [legacyName];
   }
   return [];
-}
-
-function renderTokenLookupOutput(
-  ctx: PragmaContext,
-): (data: TokenLookupOutput) => string {
-  return ({ result, detailed }) => {
-    const formatters = createLookupFormatters({ detailed });
-    const formatOne =
-      ctx.globalFlags.format === "json"
-        ? formatters.json
-        : ctx.globalFlags.llm
-          ? formatters.llm
-          : formatters.plain;
-
-    if (ctx.globalFlags.format === "json") {
-      if (result.results.length === 1 && result.errors.length === 0) {
-        const only = result.results[0];
-        return only
-          ? formatters.json(only)
-          : JSON.stringify({ results: [], errors: result.errors }, null, 2);
-      }
-
-      return JSON.stringify(
-        {
-          results: result.results.map((token) =>
-            JSON.parse(formatters.json(token)),
-          ),
-          errors: result.errors,
-        },
-        null,
-        2,
-      );
-    }
-
-    const parts = result.results.map((token) => formatOne(token));
-    if (result.errors.length > 0) {
-      parts.push(
-        [
-          "Errors:",
-          ...result.errors.map((error) => `- ${error.query}: ${error.message}`),
-        ].join("\n"),
-      );
-    }
-
-    return parts.join("\n\n");
-  };
 }

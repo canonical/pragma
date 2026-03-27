@@ -1,4 +1,4 @@
-import type { StandardListFilters } from "../../shared/types.js";
+import type { StandardListFilters } from "../../shared/types/index.js";
 
 export default function buildStandardFilters(params: {
   category?: string;

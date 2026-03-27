@@ -2,7 +2,7 @@
  * Describe active filters as human-readable key-value pairs.
  */
 
-import type { FilterConfig } from "../types.js";
+import type { FilterConfig } from "../types/index.js";
 
 export default function describeFilters(
   filters: FilterConfig,
