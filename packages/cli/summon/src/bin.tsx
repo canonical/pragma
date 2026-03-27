@@ -23,7 +23,7 @@ import {
   isCompletionRequest,
   isSetupRequest,
 } from "./completion.js";
-import loadGenerator from "./discovery/loadGenerator.js";
+import { loadGenerator } from "./discovery/index.js";
 import { printGeneratorHelp, printNode } from "./display/index.js";
 import {
   buildCommandBarrel,
