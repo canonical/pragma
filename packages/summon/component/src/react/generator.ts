@@ -64,7 +64,7 @@ const reactTemplates = {
  *
  * @see {@link https://summon.dev/generators/component/react} for documentation
  */
-export const generator = {
+const generator = {
   meta: {
     name: "component/react",
     displayName: `${pkg.name}:react`,
@@ -170,3 +170,5 @@ For example, 'src/components/Button' creates a 'Button' component.`,
     ]);
   },
 } as const satisfies GeneratorDefinition<ReactComponentAnswers>;
+
+export default generator;

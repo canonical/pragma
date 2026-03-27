@@ -6,7 +6,7 @@
  * without coupling library code to binary-only modules.
  */
 
-import type { GeneratorDefinition } from "../types.js";
+import type { GeneratorDefinition } from "../types/index.js";
 
 /**
  * Key is the command path (e.g., "component/react").

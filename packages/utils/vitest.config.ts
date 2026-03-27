@@ -12,10 +12,15 @@ export default mergeConfig(
             name: "client",
             // include vite globals for terser test code
             globals: true,
-            include: ["src/**/*.tests.ts"],
+            include: ["src/**/*.tests.ts", "src/**/*.test.ts"],
           },
         },
       ],
+      coverage: {
+        provider: "v8",
+        include: ["src/**/*.ts"],
+        exclude: ["**/index.ts", "**/*.test.ts", "**/*.tests.ts", "**/*.d.ts"],
+      },
     },
   }),
 );

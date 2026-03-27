@@ -1,4 +1,4 @@
-import { casing } from "@canonical/utils";
+import { toCamelCase } from "@canonical/utils";
 import { type Document, type Element, NodeWithChildren } from "domhandler";
 import { parseDocument } from "htmlparser2";
 import React from "react";
@@ -72,7 +72,7 @@ class Extractor {
    */
   protected convertKeyToReactKey(key: string): string {
     const reactKey = REACT_KEYS_DICTIONARY[key.toLowerCase()];
-    return reactKey ? reactKey : casing.toCamelCase(key);
+    return reactKey ? reactKey : toCamelCase(key);
   }
 
   /**

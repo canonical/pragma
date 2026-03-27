@@ -67,7 +67,7 @@ const svelteTemplates = {
  *
  * @see {@link https://summon.dev/generators/component/svelte} for documentation
  */
-export const generator = {
+const generator = {
   meta: {
     name: "component/svelte",
     displayName: `${pkg.name}:svelte`,
@@ -201,3 +201,5 @@ For example, 'src/lib/components/Button' creates a 'Button' component.`,
     ]);
   },
 } as const satisfies GeneratorDefinition<SvelteComponentAnswers>;
+
+export default generator;
