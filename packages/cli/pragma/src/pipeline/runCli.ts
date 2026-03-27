@@ -8,7 +8,7 @@ import { PragmaError } from "../error/index.js";
 import collectCommands from "./collectCommands.js";
 import createProgram from "./createProgram.js";
 import mapExitCode from "./mapExitCode.js";
-import parseGlobalFlags from "./parseGlobalFlags.js";
+import parseGlobalFlags, { stripGlobalFlags } from "./parseGlobalFlags.js";
 import {
   renderErrorJson,
   renderErrorLlm,
@@ -114,7 +114,7 @@ async function bootAndRun(
     const ctx: PragmaContext = { ...runtime, globalFlags };
     const commands = collectCommands(ctx);
     const program = createProgram(commands, ctx);
-    await program.parseAsync(argv);
+    await program.parseAsync(stripGlobalFlags(argv));
   } catch (err) {
     handleProgramError(err, globalFlags);
   } finally {
@@ -137,7 +137,7 @@ async function runStoreSkip(
   const program = createProgram(commands, stubCtx);
 
   try {
-    await program.parseAsync(argv);
+    await program.parseAsync(stripGlobalFlags(argv));
   } catch (err) {
     handleProgramError(err, globalFlags);
   }

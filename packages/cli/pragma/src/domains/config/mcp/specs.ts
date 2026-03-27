@@ -1,10 +1,19 @@
 /**
  * MCP tool specs for the config domain.
+ *
+ * config_show uses the shared resolveConfigShow() operation so that
+ * MCP data matches what the CLI produces (tierChain, includedReleases, etc.).
  */
 
 import { readConfig, writeConfig } from "#config";
+import { detectInstallSource } from "#package-manager";
 import type { ToolSpec } from "../../shared/ToolSpec.js";
-import { validateChannel, validateTier } from "../operations/index.js";
+import { showFormatters } from "../formatters/index.js";
+import {
+  resolveConfigShow,
+  validateChannel,
+  validateTier,
+} from "../operations/index.js";
 
 const specs: readonly ToolSpec[] = [
   {
@@ -20,13 +29,16 @@ const specs: readonly ToolSpec[] = [
     },
     readOnly: true,
     async execute(rt, { condensed }) {
-      const data = {
-        tier: rt.config.tier ?? null,
-        channel: rt.config.channel,
-      };
+      const install = detectInstallSource();
+      const data = resolveConfigShow(rt.config, {
+        packageManager: install.packageManager,
+        installSource: install.label,
+        configFilePath: "pragma.config.json",
+        configFileExists: true,
+      });
 
       if (condensed) {
-        const text = `Config: tier=${data.tier ?? "(none)"} channel=${data.channel}`;
+        const text = showFormatters.llm(data);
         return {
           condensed: true,
           text,

@@ -32,6 +32,7 @@ vi.mock("./mapExitCode.js", () => ({
 
 vi.mock("./parseGlobalFlags.js", () => ({
   default: parseGlobalFlagsMock,
+  stripGlobalFlags: (argv: readonly string[]) => [...argv],
 }));
 
 vi.mock("./resolveCommandKind.js", () => ({
