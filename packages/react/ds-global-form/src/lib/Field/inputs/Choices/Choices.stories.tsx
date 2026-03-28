@@ -61,7 +61,29 @@ export const Default: Story = {
         ) as React.ReactNode,
       },
     ],
-    columns: 4,
+  },
+};
+
+export const SpanFourColumns: Story = {
+  args: {
+    name: "ubuntu_version_4col",
+    label: "Choose your Ubuntu version (span 4)",
+    style: { "--choices-span": "span 4" } as React.CSSProperties,
+    options: Default.args!.options,
+  },
+};
+
+export const FullWidth: Story = {
+  args: {
+    name: "release_fullwidth",
+    label: "Release channel (full width cards)",
+    style: { "--choices-span": "1 / -1" } as React.CSSProperties,
+    options: [
+      { value: "stable", label: "Stable" as React.ReactNode },
+      { value: "candidate", label: "Candidate" as React.ReactNode },
+      { value: "beta", label: "Beta" as React.ReactNode },
+      { value: "edge", label: "Edge" as React.ReactNode },
+    ],
   },
 };
 
@@ -77,7 +99,6 @@ export const OperatingSystem: Story = {
       { value: "arch", label: "Arch Linux" as React.ReactNode },
       { value: "alpine", label: "Alpine" as React.ReactNode },
     ],
-    columns: 3,
   },
 };
 
@@ -94,7 +115,6 @@ export const MultipleSelection: Story = {
       { value: "juju", label: "Juju" as React.ReactNode },
       { value: "maas", label: "MAAS" as React.ReactNode },
     ],
-    columns: 3,
   },
 };
 
@@ -116,21 +136,6 @@ export const PartiallyDisabled: Story = {
         disabled: true,
       },
     ],
-    columns: 4,
-  },
-};
-
-export const TwoColumns: Story = {
-  args: {
-    name: "arch",
-    label: "Target architecture",
-    options: [
-      { value: "amd64", label: "AMD64 / x86_64" as React.ReactNode },
-      { value: "arm64", label: "ARM64 / AArch64" as React.ReactNode },
-      { value: "riscv64", label: "RISC-V 64" as React.ReactNode },
-      { value: "s390x", label: "s390x (IBM Z)" as React.ReactNode },
-    ],
-    columns: 2,
   },
 };
 
@@ -143,6 +148,5 @@ export const Disabled: Story = {
       { value: "ubuntu", label: "Ubuntu" as React.ReactNode },
       { value: "debian", label: "Debian" as React.ReactNode },
     ],
-    columns: 2,
   },
 };

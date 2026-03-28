@@ -4,7 +4,7 @@
  */
 .ds.input.phone {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   padding: 0;
 
   & > .country-select {
@@ -12,8 +12,8 @@
     border: none;
     background: transparent;
     color: inherit;
-    font: inherit;
-    padding-block: var(--form-input-padding-block);
+    font-family: inherit;
+    /* .p class provides font-size, line-height, baseline nudges */
     padding-inline: var(--form-input-padding-inline);
     padding-inline-end: var(--form-field-inline-gap);
     border-inline-end: var(--form-input-border-width) solid
@@ -42,9 +42,9 @@
     border: none;
     background: transparent;
     color: inherit;
-    font: inherit;
+    font-family: inherit;
     outline: none;
-    padding-block: var(--form-input-padding-block);
+    /* .p class provides font-size, line-height, baseline nudges */
     padding-inline: var(--form-input-padding-inline);
 
     &:disabled {

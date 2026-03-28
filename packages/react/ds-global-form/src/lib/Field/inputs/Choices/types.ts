@@ -28,9 +28,6 @@ type AdditionalChoicesProps = {
 
   /** Whether all options are disabled */
   disabled?: boolean;
-
-  /** Number of columns in the option grid */
-  columns?: number;
 };
 
 export type ChoicesProps = InputProps<AdditionalChoicesProps>;

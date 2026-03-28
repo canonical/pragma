@@ -24,7 +24,9 @@ const Textarea = ({
     <textarea
       id={id}
       style={style}
-      className={[componentCssClassName, className].filter(Boolean).join(" ")}
+      className={[componentCssClassName, "p", className]
+        .filter(Boolean)
+        .join(" ")}
       {...otherProps}
       {...register(name, registerProps)}
     />

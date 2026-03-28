@@ -127,15 +127,18 @@ const SingleCombobox = ({
       style={style}
       className={[componentCssClassName, className].filter(Boolean).join(" ")}
     >
-      <input
-        {...getInputProps({
-          disabled,
-          placeholder,
-          onBlur,
-          ref: combinedRef,
-        })}
-      />
-      <ResetButton onClick={resetAndFocusInput} />
+      <div className="ds input combobox-input chrome">
+        <input
+          className="p"
+          {...getInputProps({
+            disabled,
+            placeholder,
+            onBlur,
+            ref: combinedRef,
+          })}
+        />
+        <ResetButton onClick={resetAndFocusInput} />
+      </div>
       <List
         isOpen={isOpen}
         getMenuProps={getMenuProps}

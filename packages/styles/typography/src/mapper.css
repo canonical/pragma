@@ -3,7 +3,7 @@
  * Bridges the gap between the semantic typography tokens emitted by
  * @canonical/design-tokens (--typography-heading-{N}-*, --typography-text-{tier}-*)
  * and the engine variables consumed by the baseline alignment engines
- * (--font-size, --line-height-multiplier, --font-weight, --space-after, etc.).
+ * (--font-size, --line-height, --font-weight, --space-after, etc.).
  *
  * The design-tokens modifier provides:
  *   --typography-heading-{1-6}-font-size      → e.g. var(--dimension-size-fontSize-700)
@@ -14,15 +14,15 @@
  *   (same pattern for text.primary, text.secondary, text.tertiary)
  *
  * The engine expects per-element:
- *   --font-size              → <length>
- *   --line-height-multiplier → <number> in baseline-height units
- *   --font-weight            → <number>
- *   --space-after            → <number> in baseline-height units
- *   --baseline-height        → set at :root (default: 0.5rem)
+ *   --font-size       → <length>
+ *   --line-height     → <length> snapped to the baseline grid
+ *   --font-weight     → <number>
+ *   --space-after     → <number> in baseline-height units
+ *   --baseline-height → set at :root (default: 0.5rem)
  *
- * The line-height-multiplier is computed using round() to snap the typographic
- * line-height (font-size × unitless ratio) to the nearest baseline-grid unit:
- *   round(up, font-size × line-height-ratio / baseline-height, 1)
+ * The --line-height is computed using round() to snap the typographic
+ * line-height (font-size × unitless ratio) up to the nearest baseline unit:
+ *   round(up, font-size × line-height-ratio, baseline-height)
  *
  * Heading padding-inline:
  *   Headings receive --heading-padding-inline (default: 0) so they can
@@ -31,25 +31,46 @@
  */
 
 /* ── TEMP FIX: design-tokens naming mismatch ──────────────────────
- * modifiers.typography.css references --typography-font-family-default (kebab)
- * but sets.primitive.css defines --typography-fontFamily-default (camelCase).
- * This shim bridges the gap until the tokens package is fixed upstream.
+ * modifiers.typography.css uses kebab-case references but
+ * sets.primitive.css defines camelCase tokens. This shim bridges the
+ * gap until the tokens package is fixed upstream.
  */
 :root {
-  /* ── Font family shims ──────────────────────────────────────────
-   * modifiers.typography.css uses kebab-case references but
-   * sets.primitive.css defines camelCase tokens. */
+  /* ── Font family shims ────────────────────────────────────────── */
   --typography-font-family-default: var(--typography-fontFamily-default);
   --typography-font-family-code: var(--typography-fontFamily-code);
   --typography-font-family-sans-serif: var(--typography-fontFamily-sansSerif);
   --typography-font-family-monospace: var(--typography-fontFamily-monospace);
 
-  /* ── Font weight shims ──────────────────────────────────────────
-   * Per-element weight tokens reference kebab-case (semi-bold,
-   * extra-bold, extra-light) but primitives use camelCase. */
+  /* ── Font weight shims ────────────────────────────────────────── */
   --typography-weight-semi-bold: var(--typography-weight-semiBold);
   --typography-weight-extra-bold: var(--typography-weight-extraBold);
   --typography-weight-extra-light: var(--typography-weight-extraLight);
+
+  /* ── Font size shims ──────────────────────────────────────────── */
+  --dimension-size-font-size-250: var(--dimension-size-fontSize-250);
+  --dimension-size-font-size-300: var(--dimension-size-fontSize-300);
+  --dimension-size-font-size-350: var(--dimension-size-fontSize-350);
+  --dimension-size-font-size-400: var(--dimension-size-fontSize-400);
+  --dimension-size-font-size-500: var(--dimension-size-fontSize-500);
+  --dimension-size-font-size-600: var(--dimension-size-fontSize-600);
+  --dimension-size-font-size-700: var(--dimension-size-fontSize-700);
+
+  /* ── Letter spacing shims ─────────────────────────────────────── */
+  --dimension-letter-spacing-default: var(--dimension-letterSpacing-default);
+  --dimension-letter-spacing-wide: var(--dimension-letterSpacing-wide);
+
+  /* ── Line height shims ────────────────────────────────────────── *
+   * number.tokens.json defines these as $type:"number" but the
+   * terrazzo plugin does not emit them in sets.primitive.css.
+   * Hardcoded here until the build pipeline includes number tokens. */
+  --number-line-height-250: 1.3333;
+  --number-line-height-300: 1.4286;
+  --number-line-height-350: 1.5;
+  --number-line-height-400: 1.3333;
+  --number-line-height-500: 1.3333;
+  --number-line-height-600: 1.25;
+  --number-line-height-700: 1.1429;
 }
 
 /* Base font — inherited by all elements unless overridden */
@@ -62,16 +83,15 @@ body {
 h1 {
   --font-size: var(--typography-heading-1-font-size);
   --font-weight: var(--typography-heading-1-font-weight);
-  --line-height-multiplier: round(
+  --line-height: round(
     up,
     calc(
       var(--typography-heading-1-font-size) *
-      var(--typography-heading-1-line-height) /
-      var(--baseline-height)
+      var(--typography-heading-1-line-height)
     ),
-    1
+    var(--baseline-height)
   );
-  --space-after: 2;
+  --space-after: 0;
   font-family: var(--typography-heading-1-font-family);
   font-weight: var(--font-weight);
   letter-spacing: var(--typography-heading-1-letter-spacing);
@@ -81,16 +101,15 @@ h1 {
 h2 {
   --font-size: var(--typography-heading-2-font-size);
   --font-weight: var(--typography-heading-2-font-weight);
-  --line-height-multiplier: round(
+  --line-height: round(
     up,
     calc(
       var(--typography-heading-2-font-size) *
-      var(--typography-heading-2-line-height) /
-      var(--baseline-height)
+      var(--typography-heading-2-line-height)
     ),
-    1
+    var(--baseline-height)
   );
-  --space-after: 2;
+  --space-after: 0;
   font-family: var(--typography-heading-2-font-family);
   font-weight: var(--font-weight);
   letter-spacing: var(--typography-heading-2-letter-spacing);
@@ -100,16 +119,15 @@ h2 {
 h3 {
   --font-size: var(--typography-heading-3-font-size);
   --font-weight: var(--typography-heading-3-font-weight);
-  --line-height-multiplier: round(
+  --line-height: round(
     up,
     calc(
       var(--typography-heading-3-font-size) *
-      var(--typography-heading-3-line-height) /
-      var(--baseline-height)
+      var(--typography-heading-3-line-height)
     ),
-    1
+    var(--baseline-height)
   );
-  --space-after: 1;
+  --space-after: 0;
   font-family: var(--typography-heading-3-font-family);
   font-weight: var(--font-weight);
   letter-spacing: var(--typography-heading-3-letter-spacing);
@@ -119,16 +137,15 @@ h3 {
 h4 {
   --font-size: var(--typography-heading-4-font-size);
   --font-weight: var(--typography-heading-4-font-weight);
-  --line-height-multiplier: round(
+  --line-height: round(
     up,
     calc(
       var(--typography-heading-4-font-size) *
-      var(--typography-heading-4-line-height) /
-      var(--baseline-height)
+      var(--typography-heading-4-line-height)
     ),
-    1
+    var(--baseline-height)
   );
-  --space-after: 1;
+  --space-after: 0;
   font-family: var(--typography-heading-4-font-family);
   font-weight: var(--font-weight);
   letter-spacing: var(--typography-heading-4-letter-spacing);
@@ -138,16 +155,15 @@ h4 {
 h5 {
   --font-size: var(--typography-heading-5-font-size);
   --font-weight: var(--typography-heading-5-font-weight);
-  --line-height-multiplier: round(
+  --line-height: round(
     up,
     calc(
       var(--typography-heading-5-font-size) *
-      var(--typography-heading-5-line-height) /
-      var(--baseline-height)
+      var(--typography-heading-5-line-height)
     ),
-    1
+    var(--baseline-height)
   );
-  --space-after: 1;
+  --space-after: 0;
   font-family: var(--typography-heading-5-font-family);
   font-weight: var(--font-weight);
   letter-spacing: var(--typography-heading-5-letter-spacing);
@@ -157,16 +173,15 @@ h5 {
 h6 {
   --font-size: var(--typography-heading-6-font-size);
   --font-weight: var(--typography-heading-6-font-weight);
-  --line-height-multiplier: round(
+  --line-height: round(
     up,
     calc(
       var(--typography-heading-6-font-size) *
-      var(--typography-heading-6-line-height) /
-      var(--baseline-height)
+      var(--typography-heading-6-line-height)
     ),
-    1
+    var(--baseline-height)
   );
-  --space-after: 1;
+  --space-after: 0;
   font-family: var(--typography-heading-6-font-family);
   font-weight: var(--font-weight);
   letter-spacing: var(--typography-heading-6-letter-spacing);
@@ -175,20 +190,27 @@ h6 {
 
 /* ── Text ── */
 
-p {
+p, .p {
   --font-size: var(--typography-text-primary-font-size);
   --font-weight: var(--typography-text-primary-font-weight);
-  --line-height-multiplier: round(
+  --line-height: round(
     up,
     calc(
       var(--typography-text-primary-font-size) *
-      var(--typography-text-primary-line-height) /
-      var(--baseline-height)
+      var(--typography-text-primary-line-height)
     ),
-    1
+    var(--baseline-height)
   );
-  --space-after: 1;
+  --space-after: 0;
   font-family: var(--typography-text-primary-font-family);
   font-weight: var(--font-weight);
   letter-spacing: var(--typography-text-primary-letter-spacing);
+}
+
+
+
+.editorial {
+  h1, h2 { --space-after: 2; }
+  h3, h4, h5, h6 { --space-after: 1; }
+  p, .p { --space-after: 1; }
 }

@@ -39,8 +39,8 @@
     --container-gap-default
   ); /* 16px — inline-direction (horizontal) gap: label ↔ input */
   --form-group-gap: var(
-    --space-050
-  ); /* 4px — block-direction gap: desc/error ↔ input */
+    --space-100
+  ); /* 8px — block-direction gap: desc/error ↔ input */
 
   /* ── Input chrome ───────────────────────────────────────────────── */
   /* Component-owned: internal padding regardless of context.           */
@@ -48,6 +48,9 @@
   --form-input-padding-block: var(
     --component-padding-block
   ); /*  8px — block (vertical)    */
+
+  /* Chrome height snapped to baseline grid — border-box includes border */
+  --form-input-height: calc(var(--space-baseline) * 6); /* 40px — 5bU */
   --form-input-padding-inline: var(
     --component-padding-inline
   ); /* 16px — inline (horizontal) */
@@ -104,12 +107,12 @@
 
   /* ── Description ────────────────────────────────────────────────── */
 
-  --form-description-font-size: var(--typography-text-secondary-font-size);
+  --form-description-font-size: var(--typography-text-primary-font-size);
   --form-description-color: var(--color-text-muted);
 
   /* ── Error ──────────────────────────────────────────────────────── */
 
-  --form-error-font-size: var(--typography-text-secondary-font-size);
+  --form-error-font-size: var(--typography-text-primary-font-size);
   --form-error-color: var(--modifier-color-text, var(--color-text-error));
 
   /* ── State colors ───────────────────────────────────────────────── */
@@ -136,10 +139,12 @@
   display: block;
   box-sizing: border-box;
   width: 100%;
+  /* Explicit height snapped to baseline grid — border-box includes border */
+  height: var(--form-input-height);
   padding-block: var(--form-input-padding-block);
   padding-inline: var(--form-input-padding-inline);
 
-  /* Base border — uniform default */
+  /* Base border */
   border: var(--form-input-border-width) solid var(--form-input-border-color);
 
   /* Per-side overrides — only effective when a theme defines them.
@@ -195,23 +200,30 @@
     );
   }
 
+  /* Focus — all four borders become visible */
   &:focus-visible,
   &:focus-within {
     outline: none;
     border-color: var(--form-input-border-color-focus);
+    border-top-color: var(--form-input-border-color-focus);
+    border-right-color: var(--form-input-border-color-focus);
+    border-left-color: var(--form-input-border-color-focus);
     box-shadow: 0 0 0 1px var(--form-focus-ring-color);
   }
 
   &:disabled,
   &:has(input:disabled) {
     border-color: var(--form-input-border-color-disabled);
+    border-top-color: var(--form-input-border-color-disabled);
+    border-right-color: var(--form-input-border-color-disabled);
+    border-left-color: var(--form-input-border-color-disabled);
     background-color: var(--form-input-background-disabled);
     color: var(--form-input-color-disabled);
     cursor: not-allowed;
   }
 }
 
-/* ── Danger — set on .ds.field ancestor via .danger class ─────────── */
+/* ── Danger — bottom border only (matches normal theme); focus shows all four */
 .danger > .payload .ds.input.chrome {
   border-color: var(--form-input-border-color-error);
 }
@@ -219,6 +231,9 @@
 .danger > .payload .ds.input.chrome:focus-visible,
 .danger > .payload .ds.input.chrome:focus-within {
   border-color: var(--form-focus-ring-color-error);
+  border-top-color: var(--form-focus-ring-color-error);
+  border-right-color: var(--form-focus-ring-color-error);
+  border-left-color: var(--form-focus-ring-color-error);
   box-shadow: 0 0 0 1px var(--form-focus-ring-color-error);
 }
 

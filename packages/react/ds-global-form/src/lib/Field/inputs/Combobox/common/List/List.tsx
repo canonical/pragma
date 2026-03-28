@@ -60,6 +60,7 @@ const List = ({
           <li
             {...getItemProps({ item, index })}
             className={[
+              "p",
               highlightedIndex === index && "highlighted",
               isSelected && "selected",
             ]

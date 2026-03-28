@@ -151,15 +151,16 @@ const MultipleCombobox = ({
         ))}
       </div>
 
-      {/* Input field for searching and selecting */}
-      <input
-        {...getInputProps(getDropdownProps({ preventKeyAction: isOpen }))}
-        placeholder={placeholder}
-        disabled={disabled}
-      />
-
-      {/* Reset button to clear selections */}
-      <ResetButton onClick={resetSelection} />
+      {/* Input field with reset button in chrome wrapper */}
+      <div className="ds input combobox-input chrome">
+        <input
+          className="p"
+          {...getInputProps(getDropdownProps({ preventKeyAction: isOpen }))}
+          placeholder={placeholder}
+          disabled={disabled}
+        />
+        <ResetButton onClick={resetSelection} />
+      </div>
 
       {/* Dropdown list of available options */}
       <List

@@ -19,6 +19,9 @@ type AdditionalSimpleChoicesProps = OptionsProps & {
 
   /** Whether the input is disabled */
   disabled?: boolean;
+
+  /** Layout: "inline" wraps options horizontally, "stacked" puts each on its own line */
+  layout?: "inline" | "stacked";
 };
 
 export type SimpleChoicesProps = InputProps<AdditionalSimpleChoicesProps>;

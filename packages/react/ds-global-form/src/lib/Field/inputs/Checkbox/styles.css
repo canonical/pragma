@@ -1,7 +1,9 @@
 .ds.form-checkbox {
   appearance: none;
-  width: 1.25rem;
-  height: 1.25rem;
+  box-sizing: border-box;
+  margin-inline: var(--form-input-padding-inline);
+  width: calc(var(--space-baseline) * 2); /* 16px — 2bU */
+  height: calc(var(--space-baseline) * 2); /* 16px — 2bU */
   border: var(--dimension-stroke-thickness-medium) solid var(--color-border);
   border-radius: var(--dimension-radius-small);
   background: var(--color-foreground-checkbox-unselected);

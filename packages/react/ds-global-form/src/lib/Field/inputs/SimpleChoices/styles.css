@@ -1,15 +1,22 @@
 .ds.form-simple-choices {
   border: none;
   padding: 0;
+  padding-inline: var(--form-input-padding-inline);
   margin: 0;
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-100) var(--container-gap-loose);
+  gap: 0 var(--container-gap-loose);
+
+  /* Stacked: one option per line */
+  &.stacked {
+    flex-direction: column;
+    flex-wrap: nowrap;
+  }
 
   & > .option {
     direction: inherit;
     display: flex;
-    align-items: center;
+    align-items: baseline;
     gap: var(--space-100);
     cursor: pointer;
 
@@ -20,8 +27,9 @@
 
     & > input[type="radio"] {
       appearance: none;
-      width: 1.25rem;
-      height: 1.25rem;
+      box-sizing: border-box;
+      width: calc(var(--space-baseline) * 2); /* 16px — 2bU */
+      height: calc(var(--space-baseline) * 2); /* 16px — 2bU */
       border: var(--dimension-stroke-thickness-medium) solid var(--color-border);
       border-radius: 50%;
       background-color: var(--color-foreground-radio-unselected);
@@ -60,8 +68,9 @@
 
     & > input[type="checkbox"] {
       appearance: none;
-      width: 1.25rem;
-      height: 1.25rem;
+      box-sizing: border-box;
+      width: calc(var(--space-baseline) * 2); /* 16px — 2bU */
+      height: calc(var(--space-baseline) * 2); /* 16px — 2bU */
       border: var(--dimension-stroke-thickness-medium) solid var(--color-border);
       border-radius: var(--dimension-radius-small);
       background-color: var(--color-foreground-checkbox-unselected);

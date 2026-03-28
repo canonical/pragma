@@ -41,6 +41,23 @@ export const Multiple: Story = {
   },
 };
 
+export const Stacked: Story = {
+  args: {
+    name: "select_stacked",
+    options: fixtures.continents,
+    layout: "stacked",
+  },
+};
+
+export const StackedMultiple: Story = {
+  args: {
+    name: "select_stacked_multiple",
+    options: fixtures.continents,
+    isMultiple: true,
+    layout: "stacked",
+  },
+};
+
 /*
   Function-based story
   Direct arguments passed to the component

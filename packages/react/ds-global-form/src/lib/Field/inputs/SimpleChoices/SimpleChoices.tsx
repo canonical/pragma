@@ -34,7 +34,9 @@ const Option = ({
         {...ariaProps.input}
       />
       {/* biome-ignore lint/a11y/noLabelWithoutControl : is indeed provided but undetected*/}
-      <label {...ariaProps.label}>{label}</label>
+      <label className="p" {...ariaProps.label}>
+        {label}
+      </label>
     </div>
   );
 };
@@ -50,6 +52,7 @@ const SimpleChoices = ({
   name,
   isMultiple = false,
   disabled = false,
+  layout = "inline",
   options,
   registerProps,
 }: SimpleChoicesProps): React.ReactElement => {
@@ -58,11 +61,12 @@ const SimpleChoices = ({
   const type = isMultiple ? "checkbox" : "radio";
 
   return (
-    // Open for discussion, shall we use a fieldset or a div?
     <fieldset
       id={id}
       style={style}
-      className={[componentCssClassName, className].filter(Boolean).join(" ")}
+      className={[componentCssClassName, layout, className]
+        .filter(Boolean)
+        .join(" ")}
     >
       {options.map((option) => (
         <Option

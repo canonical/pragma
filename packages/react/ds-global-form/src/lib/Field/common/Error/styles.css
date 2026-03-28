@@ -1,6 +1,4 @@
 .ds.field-error {
-  font-size: var(--form-error-font-size);
   color: var(--form-error-color);
-  margin: 0;
-  margin-block-start: var(--form-group-gap);
+  padding-inline: var(--form-input-padding-inline);
 }

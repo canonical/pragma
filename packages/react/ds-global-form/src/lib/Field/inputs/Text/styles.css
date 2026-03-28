@@ -1,7 +1,7 @@
 .ds.input.text {
   direction: inherit;
   display: flex;
-  align-items: center;
+  align-items: stretch;
   position: relative;
   padding: 0;
 
@@ -11,9 +11,10 @@
     border: none;
     background: transparent;
     color: inherit;
-    font: inherit;
+    font-family: inherit;
     outline: none;
-    padding-block: var(--form-input-padding-block);
+    /* Baseline engine provides font-size, line-height, padding-top,
+       padding-bottom via the .p class */
     padding-inline: var(--form-input-padding-inline);
   }
 

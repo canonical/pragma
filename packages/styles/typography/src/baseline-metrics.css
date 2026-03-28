@@ -11,7 +11,8 @@
  *     --descender: <number>;
  *     --units-per-em: <number>;
  *   }
- *   element { --font-size: <length>; --line-height-multiplier: <number>; }
+ *   element { --font-size: <length>; --line-height: <length>; }
+ *   (fallback: --line-height-multiplier: <number> if --line-height is unset)
  */
 
 /* Typography scale tokens from design-tokens */
@@ -35,18 +36,24 @@ h3,
 h4,
 h5,
 h6,
-p {
-  margin: 0;
+p,
+.p {
+  margin-block: 0;
 }
 
-/* Baseline alignment — classic engine */
+/* Baseline alignment — classic engine
+ *
+ * Both nudges use padding (not margin) so the element's border-box block size
+ * participates correctly in flex and grid layouts. margin-block-end is reserved
+ * solely for --space-after (editorial element-owned spacing, default 0).
+ */
 h1,
 h2,
 h3,
 h4,
 h5,
 h6,
-p {
+p, .p {
   --computed-line-height: var(
     --line-height,
     calc(var(--baseline-height) * var(--line-height-multiplier))
@@ -69,15 +76,16 @@ p {
     ((var(--computed-line-height) - var(--line-height-scale)) / 2) +
     var(--ascender-scale)
   );
-  --top-nudge: calc(
+  --start-nudge: calc(
     var(--baseline-height) -
     mod(var(--baseline-position), var(--baseline-height))
   );
-  --bottom-nudge: calc(var(--baseline-height) - var(--top-nudge));
-  padding-top: var(--top-nudge);
-  margin-bottom: calc(
-    var(--bottom-nudge) +
-    var(--space-after, 0) *
-    var(--baseline-height)
-  );
+  --end-nudge: calc(var(--baseline-height) - var(--start-nudge));
+
+  /* Nudges as padding — inside the box for flex/grid compatibility */
+  padding-block-start: var(--start-nudge);
+  padding-block-end: var(--end-nudge);
+
+  /* Element-owned spacing — only active in .editorial contexts */
+  margin-block-end: calc(var(--space-after, 0) * var(--baseline-height));
 }

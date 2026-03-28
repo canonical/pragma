@@ -20,6 +20,7 @@
     --dimension-size-height-baseline,
     0.5rem
   ); /* 8px — bU */
+  --baseline-height: var(--space-baseline); /* alias consumed by typography engine */
 
   /* ── Spacing scale (semantic aliases) ───────────────────────────── */
   --space-0: 0;
@@ -36,13 +37,14 @@
   /* ── Element-owned spacing (margin-block-end) ───────────────────── */
   /* Direction: block-end (downward in horizontal writing modes).       */
   /*                                                                    */
-  /* For typographic elements (h1-h6, p), space-after is implemented   */
-  /* in @canonical/styles-typography mapper.css as a unitless           */
-  /* --space-after variable (in baseline-height units) consumed by     */
-  /* the baseline engine:                                               */
+  /* For typographic elements (h1-h6, p, .p), space-after is           */
+  /* implemented in @canonical/styles-typography mapper.css as a        */
+  /* unitless --space-after variable (in baseline-height units)         */
+  /* consumed by the baseline engine:                                   */
   /*   margin-bottom: calc(bottom-nudge + space-after × baseline-height) */
   /*                                                                    */
-  /* Current values in mapper.css:                                      */
+  /* Default: --space-after: 0 on all elements (app UI contexts).      */
+  /* Editorial/prose contexts opt in via the .editorial class:          */
   /*   h1, h2: --space-after: 2  (= 2 × 0.5rem = 1rem = 16px)        */
   /*   h3-h6, p: --space-after: 1 (= 1 × 0.5rem = 0.5rem = 8px)     */
   /*                                                                    */
@@ -85,8 +87,8 @@
 
   /* ── Layout grid ────────────────────────────────────────────────── */
   --grid-gutter: var(
-    --space-300
-  ); /* 24px / 1.5rem — column gutters (inline-direction) */
+    --space-200
+  ); /* 16px / 1rem — column gutters (inline-direction) */
   --grid-margin: var(
     --space-400
   ); /* 32px / 2rem   — outer page margin (inline-direction) */

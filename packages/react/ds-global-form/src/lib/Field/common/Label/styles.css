@@ -1,7 +1,7 @@
 .ds.field-label {
   font-weight: var(--form-label-font-weight, bold);
-  font-size: var(--form-label-font-size);
   color: var(--form-label-color);
+  padding-inline: var(--form-input-padding-inline);
 
   & > .required {
     color: var(--color-text-error);

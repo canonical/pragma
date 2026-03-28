@@ -37,7 +37,7 @@ const Range = ({
         {...otherProps}
         {...register(name, registerProps)}
       />
-      <output htmlFor={id} className="ds range-output">
+      <output htmlFor={id} className="ds range-output p">
         {value}
       </output>
     </>
