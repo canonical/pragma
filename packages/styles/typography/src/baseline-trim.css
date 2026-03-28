@@ -37,7 +37,8 @@ h3,
 h4,
 h5,
 h6,
-p, .p {
+p,
+.p {
   --computed-line-height: var(
     --line-height,
     calc(var(--baseline-height) * var(--line-height-multiplier))

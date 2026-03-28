@@ -190,7 +190,8 @@ h6 {
 
 /* ── Text ── */
 
-p, .p {
+p,
+.p {
   --font-size: var(--typography-text-primary-font-size);
   --font-weight: var(--typography-text-primary-font-weight);
   --line-height: round(
@@ -207,10 +208,19 @@ p, .p {
   letter-spacing: var(--typography-text-primary-letter-spacing);
 }
 
-
-
 .editorial {
-  h1, h2 { --space-after: 2; }
-  h3, h4, h5, h6 { --space-after: 1; }
-  p, .p { --space-after: 1; }
+  h1,
+  h2 {
+    --space-after: 2;
+  }
+  h3,
+  h4,
+  h5,
+  h6 {
+    --space-after: 1;
+  }
+  p,
+  .p {
+    --space-after: 1;
+  }
 }
