@@ -20,7 +20,9 @@
     --dimension-size-height-baseline,
     0.5rem
   ); /* 8px — bU */
-  --baseline-height: var(--space-baseline); /* alias consumed by typography engine */
+  --baseline-height: var(
+    --space-baseline
+  ); /* alias consumed by typography engine */
 
   /* ── Spacing scale (semantic aliases) ───────────────────────────── */
   --space-0: 0;
