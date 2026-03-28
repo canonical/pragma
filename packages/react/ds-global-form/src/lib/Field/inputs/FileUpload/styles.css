@@ -7,13 +7,18 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 8rem;
-    padding: var(--form-input-padding-block) var(--form-input-padding-inline);
+    box-sizing: border-box;
+    min-height: calc(var(--space-baseline) * 16); /* 128px — 16bU */
+    /* Compensate padding for border so total stays on baseline grid */
+    padding: calc(
+        var(--form-input-padding-block) -
+        var(--form-input-border-width)
+      )
+      var(--form-input-padding-inline);
     border: var(--form-input-border-width) dashed var(--form-input-border-color);
     border-radius: var(--form-input-border-radius);
     background-color: var(--form-input-background);
     color: var(--color-text-muted);
-    font-size: var(--form-input-font-size);
     cursor: pointer;
     transition:
       border-color 150ms ease,
@@ -68,18 +73,20 @@
 
   & > .file-list > .file-item {
     display: flex;
-    align-items: center;
+    align-items: baseline;
     gap: var(--form-field-inline-gap);
-    padding: var(--form-group-gap) var(--form-input-padding-inline);
+    box-sizing: border-box;
+    height: var(--form-input-height);
+    padding-block: 0;
+    padding-inline: var(--form-input-padding-inline);
     border: var(--form-input-border-width) solid var(--form-input-border-color);
     border-radius: var(--form-input-border-radius);
     background-color: var(--form-input-background);
-    font-size: var(--form-description-font-size);
   }
 
   & > .file-list > .file-item > .file-preview {
-    width: 2rem;
-    height: 2rem;
+    width: calc(var(--space-baseline) * 4); /* 32px — 4bU */
+    height: calc(var(--space-baseline) * 4); /* 32px — 4bU */
     object-fit: cover;
     border-radius: var(--form-input-border-radius);
     flex-shrink: 0;
@@ -104,8 +111,6 @@
     background: none;
     color: var(--color-text-muted);
     cursor: pointer;
-    font-size: 1.25em;
-    line-height: 1;
     padding: 0 0.25rem;
 
     &:hover {

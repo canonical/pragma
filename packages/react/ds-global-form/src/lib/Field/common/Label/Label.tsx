@@ -30,7 +30,9 @@ const Label = ({
       id={id}
       style={style}
       htmlFor={Element === "label" ? htmlFor : undefined}
-      className={[componentCssClassName, className].filter(Boolean).join(" ")}
+      className={[componentCssClassName, "p", className]
+        .filter(Boolean)
+        .join(" ")}
     >
       {children || name}
       {isOptional && <span> ({messages.optional()})</span>}

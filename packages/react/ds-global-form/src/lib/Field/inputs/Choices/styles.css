@@ -3,11 +3,14 @@
   padding: 0;
   margin: 0;
   display: grid;
-  grid-template-columns: repeat(var(--choices-columns, 3), 1fr);
-  gap: var(--form-group-gap);
+  grid-template-columns: subgrid;
+  grid-column: 1 / -1;
+  row-gap: var(--form-group-gap);
 
   & > .choice {
+    grid-column: var(--choices-span, auto);
     position: relative;
+    display: flex;
 
     /* Hide the native input */
     & > input {
@@ -24,14 +27,26 @@
     & > label {
       display: flex;
       flex-direction: column;
+      flex: 1;
+      box-sizing: border-box;
       gap: var(--form-group-gap);
-      padding: var(--form-input-padding-inline);
+      padding-inline: var(--form-input-padding-inline);
+      /* Block padding: chrome padding + baseline nudges, minus border */
+      padding-block-start: calc(
+        var(--form-input-padding-block) +
+        var(--start-nudge, 0px) -
+        var(--form-input-border-width)
+      );
+      padding-block-end: calc(
+        var(--form-input-padding-block) +
+        var(--end-nudge, 0px) -
+        var(--form-input-border-width)
+      );
       border: var(--form-input-border-width) solid
         var(--form-input-border-color);
       border-radius: var(--form-input-border-radius);
       background-color: var(--form-input-background);
       color: var(--form-input-color);
-      font-size: var(--form-input-font-size);
       cursor: pointer;
       transition:
         border-color 150ms ease,

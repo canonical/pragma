@@ -36,6 +36,13 @@ export const base = [
     options: options.fruits,
   },
   {
+    name: "combobox_field",
+    inputType: "combobox",
+    label: "Search a fruit",
+    description: "This is a combobox field",
+    options: options.fruits,
+  },
+  {
     name: "range_field",
     inputType: "range",
     label: "Quantity to order",
@@ -66,18 +73,46 @@ export const base = [
     options: options.continents,
   },
   {
+    name: "date_field",
+    inputType: "date",
+    label: "Date",
+    description: "Choose a date",
+  },
+  {
+    name: "time_field",
+    inputType: "time",
+    label: "Time",
+    description: "Choose a time",
+  },
+  // {
+  //   name: "color_field",
+  //   inputType: "color",
+  //   label: "Colour",
+  //   description: "Pick a colour",
+  // },
+  {
+    name: "file_field",
+    inputType: "file",
+    label: "Upload files",
+    description: "Drag and drop or click to browse",
+  },
+  {
+    name: "phone_field",
+    inputType: "phone",
+    label: "Phone",
+    description: "Enter your phone number",
+  },
+  {
     name: "telephone_field_area",
     inputType: "number",
-    description: "This is a telephone field",
     label: "Area Code",
-    style: { "--form-field-columns": "1 / 3" },
+    style: { "--form-field-columns": "1 / 5" },
   },
   {
     name: "telephone_field_number",
     inputType: "tel",
-    description: "This is a telephone field",
     label: "Phone Number",
-    style: { "--form-field-columns": "3 / -1" },
+    style: { "--form-field-columns": "5 / -1" },
   },
 ];
 
@@ -103,11 +138,12 @@ export const phone = [
     name: "telephone_field_area",
     inputType: "number",
     label: "Area Code",
-    style: { "--form-field-columns": "1 / 3" },
+    style: { "--form-field-columns": "1 / 5" },
   },
   {
     name: "telephone_field_number",
     inputType: "tel",
     label: "Phone Number",
+    style: { "--form-field-columns": "5 / -1" },
   },
 ];

@@ -1,4 +1,3 @@
-import { createElement } from "react";
 import { useEffect, useGlobals } from "storybook/internal/preview-api";
 import type {
   Renderer,
@@ -38,20 +37,27 @@ export const withUtilStyles = (
   const outlines: boolean = globals[KEY_OUTLINES] ?? false;
 
   useEffect(() => {
-    const { classList } = document.body;
-    classList.toggle("with-baseline-grid", baseline);
-    classList.toggle("with-debug-outlines", outlines);
+    const root = document.getElementById("storybook-root");
+    if (!root) return;
+    root.classList.toggle("with-baseline-grid", baseline);
+    root.classList.toggle("with-debug-outlines", outlines);
   }, [baseline, outlines]);
+
+  useEffect(() => {
+    const root = document.getElementById("storybook-root");
+    if (!root) return;
+    // Remove previous grid mode classes
+    root.classList.remove("grid", "responsive", "intrinsic");
+    if (gridMode !== "none") {
+      root.classList.add("grid", gridMode);
+    }
+  }, [gridMode]);
 
   useEffect(() => {
     const { classList } = document.documentElement;
     classList.toggle("light", scheme === "light");
     classList.toggle("dark", scheme === "dark");
   }, [scheme]);
-
-  if (gridMode !== "none") {
-    return createElement("div", { className: `grid ${gridMode}` }, StoryFn());
-  }
 
   return StoryFn();
 };

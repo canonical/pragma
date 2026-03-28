@@ -1,4 +1,13 @@
 .ds.input.textarea {
-  min-height: calc(3lh + var(--form-input-padding-block) * 2);
+  /* Combine chrome padding with baseline engine nudges */
+  padding-block-start: calc(
+    var(--form-input-padding-block) +
+    var(--start-nudge, 0px)
+  );
+  padding-block-end: calc(
+    var(--form-input-padding-block) +
+    var(--end-nudge, 0px)
+  );
+  min-height: calc(5lh + var(--form-input-padding-block) * 2);
   resize: vertical;
 }

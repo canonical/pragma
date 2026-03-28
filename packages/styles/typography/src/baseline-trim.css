@@ -6,7 +6,8 @@
  *
  * Consumer contract:
  *   :root { --baseline-height: <length>; }
- *   element { --font-size: <length>; --line-height-multiplier: <number>; }
+ *   element { --font-size: <length>; --line-height: <length>; }
+ *   (fallback: --line-height-multiplier: <number> if --line-height is unset)
  */
 
 /* Typography scale tokens from design-tokens */
@@ -19,18 +20,25 @@ h3,
 h4,
 h5,
 h6,
-p {
-  margin: 0;
+p,
+.p {
+  margin-block: 0;
 }
 
-/* Baseline alignment — text-trim engine */
+/* Baseline alignment — text-trim engine
+ *
+ * Both nudges use padding (not margin) so the element's border-box block size
+ * participates correctly in flex and grid layouts. margin-block-end is reserved
+ * solely for --space-after (editorial element-owned spacing, default 0).
+ */
 h1,
 h2,
 h3,
 h4,
 h5,
 h6,
-p {
+p,
+.p {
   --computed-line-height: var(
     --line-height,
     calc(var(--baseline-height) * var(--line-height-multiplier))
@@ -39,11 +47,14 @@ p {
   font-size: var(--font-size);
 
   text-box: trim-both cap alphabetic;
-  padding-top: mod(calc(-1 * 1cap), var(--baseline-height));
-  margin-bottom: calc(
+
+  /* Nudges as padding — inside the box for flex/grid compatibility */
+  padding-block-start: mod(calc(-1 * 1cap), var(--baseline-height));
+  padding-block-end: calc(
     var(--baseline-height) -
-    mod(calc(-1 * 1cap), var(--baseline-height)) +
-    var(--space-after, 0) *
-    var(--baseline-height)
+    mod(calc(-1 * 1cap), var(--baseline-height))
   );
+
+  /* Element-owned spacing — only active in .editorial contexts */
+  margin-block-end: calc(var(--space-after, 0) * var(--baseline-height));
 }

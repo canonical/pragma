@@ -31,6 +31,7 @@ const Text = ({
     >
       {prefix && <span className="prefix">{prefix}</span>}
       <input
+        className="p"
         type={inputType}
         {...otherProps}
         {...register(name, registerProps)}

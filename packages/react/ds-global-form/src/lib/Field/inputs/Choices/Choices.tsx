@@ -29,7 +29,9 @@ const ChoiceOption = ({
         {...ariaProps.input}
       />
       {/* biome-ignore lint/a11y/noLabelWithoutControl : htmlFor provided via ariaProps */}
-      <label {...ariaProps.label}>{label}</label>
+      <label className="p" {...ariaProps.label}>
+        {label}
+      </label>
     </div>
   );
 };
@@ -46,7 +48,6 @@ const Choices = ({
   isMultiple = false,
   disabled = false,
   options,
-  columns,
   registerProps,
 }: ChoicesProps): React.ReactElement => {
   const { register } = useFormContext();
@@ -55,12 +56,7 @@ const Choices = ({
   return (
     <fieldset
       id={id}
-      style={
-        {
-          ...style,
-          ...(columns ? { "--choices-columns": columns } : {}),
-        } as React.CSSProperties
-      }
+      style={style}
       className={[componentCssClassName, className].filter(Boolean).join(" ")}
     >
       {options.map((option) => (

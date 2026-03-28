@@ -154,7 +154,7 @@ const FileUpload = ({
         disabled={disabled}
         {...otherProps}
       >
-        <span className="drop-zone-text">
+        <span className="drop-zone-text p">
           {isDragOver
             ? "Drop files here"
             : "Drop files here or click to browse"}
@@ -182,8 +182,8 @@ const FileUpload = ({
                   className="file-preview"
                 />
               )}
-              <span className="file-name">{file.name}</span>
-              <span className="file-size">{formatFileSize(file.size)}</span>
+              <span className="file-name p">{file.name}</span>
+              <span className="file-size p">{formatFileSize(file.size)}</span>
               <button
                 type="button"
                 className="file-remove"
@@ -191,7 +191,7 @@ const FileUpload = ({
                 aria-label={`Remove ${file.name}`}
                 disabled={disabled}
               >
-                &times;
+                <span className="p">&times;</span>
               </button>
             </li>
           ))}

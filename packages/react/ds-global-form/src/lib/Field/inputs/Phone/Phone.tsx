@@ -113,7 +113,7 @@ const Phone = ({
       className={[componentCssClassName, className].filter(Boolean).join(" ")}
     >
       <select
-        className="country-select"
+        className="country-select p"
         value={selectedCountry}
         onChange={handleCountryChange}
         disabled={disabled}
@@ -128,7 +128,7 @@ const Phone = ({
       </select>
       <input
         type="tel"
-        className="number-input"
+        className="number-input p"
         inputMode="tel"
         value={getCurrentNumber()}
         onChange={handleNumberChange}

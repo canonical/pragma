@@ -69,7 +69,9 @@ const Wrapper = <ComponentProps extends BaseInputProps>({
         {label}
       </Label>
       <div className="payload">
-        <Description {...ariaProps.description}>{description}</Description>
+        {description && (
+          <Description {...ariaProps.description}>{description}</Description>
+        )}
         <Component {...componentProps} />
         {isError && (
           <FieldError {...ariaProps.error}>

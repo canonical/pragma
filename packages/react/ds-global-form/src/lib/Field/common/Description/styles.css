@@ -1,6 +1,4 @@
 .ds.field-description {
-  font-size: var(--form-description-font-size);
   color: var(--form-description-color);
-  margin: 0;
-  margin-block-start: var(--form-group-gap);
+  padding-inline: var(--form-input-padding-inline);
 }
