@@ -13,6 +13,7 @@ import { specs as configSpecs } from "../../domains/config/mcp/index.js";
 import { specs as createSpecs } from "../../domains/create/mcp/index.js";
 import { specs as diagnosticSpecs } from "../../domains/doctor/mcp/index.js";
 import { specs as graphSpecs } from "../../domains/graph/mcp/index.js";
+import { specs as infoSpecs } from "../../domains/info/mcp/index.js";
 import { specs as orientationSpecs } from "../../domains/llm/mcp/index.js";
 import { specs as modifierSpecs } from "../../domains/modifier/mcp/index.js";
 import { specs as ontologySpecs } from "../../domains/ontology/mcp/index.js";
@@ -35,6 +36,7 @@ const allSpecs: readonly ToolSpec[] = [
   ...graphSpecs,
   ...skillSpecs,
   ...diagnosticSpecs,
+  ...infoSpecs,
   ...orientationSpecs,
   ...createSpecs,
 ];

@@ -35,6 +35,9 @@ export default function createProgram(
     writeErr: (str) => process.stderr.write(str),
   });
 
+  // Global flags (--llm, --format, --verbose) are pre-parsed by
+  // parseGlobalFlags() and stripped from argv before Commander sees it.
+  // Declaring them here keeps them visible in --help output.
   program.option(
     "--llm",
     "Condensed Markdown output for LLM consumption",
@@ -42,6 +45,8 @@ export default function createProgram(
   );
   program.option("--format <type>", "Output format (text or json)", "text");
   program.option("--verbose", "Diagnostic output to stderr", false);
+  // Commander will never see these flags in argv (they're stripped),
+  // so enablePositionalOptions() scoping can't reject them.
 
   program.addHelpText("beforeAll", (_ctx) => {
     // Only show root-level help when the help is for the root program itself.

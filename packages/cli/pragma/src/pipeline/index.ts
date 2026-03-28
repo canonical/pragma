@@ -8,7 +8,10 @@ export {
   formatSection,
 } from "./formatTerminal.js";
 export { default as mapExitCode } from "./mapExitCode.js";
-export { default as parseGlobalFlags } from "./parseGlobalFlags.js";
+export {
+  default as parseGlobalFlags,
+  stripGlobalFlags,
+} from "./parseGlobalFlags.js";
 export {
   renderErrorJson,
   renderErrorLlm,

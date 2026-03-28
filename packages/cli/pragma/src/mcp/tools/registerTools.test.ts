@@ -476,11 +476,15 @@ describe("config_show", () => {
       arguments: {},
     });
     const data = parseData(result) as {
-      tier: string | null;
+      tier: string | undefined;
       channel: string;
+      tierChain: string[];
+      includedReleases: string[];
     };
     expect(data.channel).toBe("normal");
-    expect(data.tier).toBeNull();
+    expect(data.tier).toBeUndefined();
+    expect(data.tierChain).toEqual([]);
+    expect(data.includedReleases).toContain("stable");
   });
 
   it("returns condensed config text", async () => {
@@ -491,7 +495,8 @@ describe("config_show", () => {
     const envelope = parseEnvelope(result);
     expect(envelope.ok).toBe(true);
     expect(envelope.condensed).toBe(true);
-    expect(envelope.text).toBe("Config: tier=(none) channel=normal");
+    expect(typeof envelope.text).toBe("string");
+    expect(envelope.text as string).toContain("Configuration");
   });
 });
 
