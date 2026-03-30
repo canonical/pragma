@@ -1,7 +1,28 @@
-import type { HTMLButtonAttributes } from "svelte/elements";
+import type { Attachment } from "svelte/attachments";
+import type {
+  HTMLAnchorAttributes,
+  HTMLButtonAttributes,
+} from "svelte/elements";
 
-export interface ButtonPrimitiveProps
-  extends Omit<HTMLButtonAttributes, "href"> {
+interface BaseProps {
   ref?: HTMLElement;
-  href?: string;
+  [key: symbol]: Attachment<HTMLElement> | false | undefined | null;
 }
+
+interface ButtonPrimitiveAnchorAttributes
+  extends Omit<HTMLAnchorAttributes, "type" | "href" | keyof BaseProps>,
+    BaseProps {
+  href: HTMLAnchorAttributes["href"];
+  type?: never;
+  disabled?: HTMLButtonAttributes["disabled"];
+}
+
+interface ButtonPrimitiveButtonAttributes
+  extends Omit<HTMLButtonAttributes, keyof BaseProps>,
+    BaseProps {
+  href?: never;
+}
+
+export type ButtonPrimitiveProps =
+  | ButtonPrimitiveButtonAttributes
+  | ButtonPrimitiveAnchorAttributes;
