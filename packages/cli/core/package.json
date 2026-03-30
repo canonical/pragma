@@ -47,7 +47,7 @@
     "commander": "^14.0.3"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.4.6",
+    "@biomejs/biome": "2.4.9",
     "@canonical/biome-config": "^0.20.0",
     "@canonical/typescript-config": "^0.20.0",
     "@canonical/webarchitect": "^0.20.0",
