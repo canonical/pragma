@@ -7,6 +7,4 @@ interface InstallSource {
   readonly label: string;
 }
 
-export type { PackageManager };
-
-export type { InstallSource };
+export type { InstallSource, PackageManager };

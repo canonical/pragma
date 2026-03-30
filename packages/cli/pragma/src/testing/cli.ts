@@ -39,5 +39,5 @@ function runCommand(args: string[], cwd?: string): CommandResult {
   };
 }
 
-export { runCommand };
 export type { CommandResult };
+export { runCommand };

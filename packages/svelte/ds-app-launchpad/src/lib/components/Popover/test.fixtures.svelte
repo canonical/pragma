@@ -5,9 +5,8 @@
   const triggerCloseText = "Close Popover";
   const childrenText = "This is content of the popover.";
 
-  export { childrenText, triggerCloseText, triggerOpenText };
   // biome-ignore lint/style/useExportType: False positive, presumably due to "cross-language" export
-  export { children, trigger };
+  export { children, childrenText, trigger, triggerCloseText, triggerOpenText };
 </script>
 
 {#snippet trigger(triggerProps: PopoverTriggerProps, open: boolean)}

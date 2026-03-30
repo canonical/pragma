@@ -68,6 +68,7 @@ const PROPERTY_MAP: Record<string, OntologyPropertyMap> = {
   },
 };
 
+export type { Channel, OntologyPropertyMap };
 export {
   PROGRAM_DESCRIPTION,
   PROGRAM_NAME,
@@ -75,4 +76,3 @@ export {
   VALID_CHANNELS,
   VERSION,
 };
-export type { Channel, OntologyPropertyMap };
