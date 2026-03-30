@@ -67,6 +67,6 @@
     "vitest": "^4.0.18"
   },
   "dependencies": {
-    "oxigraph": "^0.4.8"
+    "oxigraph": "^0.5.0"
   }
 }
