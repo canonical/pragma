@@ -19,9 +19,8 @@ export default class TieredList extends LitElement implements TieredListProps {
   static styles = styles;
 
   @property({ type: String }) title = "";
-  @property({ type: String }) description = "";
-  @property({ type: Boolean }) is_description_full_width_on_desktop = false;
-  @property({ type: Boolean }) is_list_full_width_on_tablet = false;
+  @property({ type: Boolean }) isDescriptionFullWidthOnDesktop = false;
+  @property({ type: Boolean }) isListFullWidthOnTablet = false;
   @property({ type: String })
   padding: "deep" | "shallow" | "default" = "default";
 
@@ -35,11 +34,9 @@ export default class TieredList extends LitElement implements TieredListProps {
   render() {
     const sectionClasses = {
       [componentCssClassName]: true,
-      "full-width-description-on-desktop":
-        this.is_description_full_width_on_desktop,
-      "full-width-list-on-tablet": this.is_list_full_width_on_tablet,
-      "p-section": this.padding === "default",
-      [`p-section--${this.padding}`]: this.padding !== "default",
+      "full-width-description-on-desktop": this.isDescriptionFullWidthOnDesktop,
+      "full-width-list-on-tablet": this.isListFullWidthOnTablet,
+      [`is-${this.padding}`]: this.padding !== "default",
     };
 
     return html`
@@ -64,21 +61,5 @@ export default class TieredList extends LitElement implements TieredListProps {
         </div>
       </section>
     `;
-  }
-}
-
-@customElement("ds-tiered-list-item")
-export class TieredListItem extends LitElement {
-  static styles = styles;
-
-  render() {
-    return html`
-      <div class="${componentCssClassName}__item">
-        <div class="item__title"><slot name="item-title"></slot></div>
-        <div class="item__description">
-          <slot name="item-description"></slot>
-        </div>
-        <hr />
-      </div>`;
   }
 }
