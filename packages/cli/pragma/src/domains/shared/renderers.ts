@@ -9,8 +9,6 @@
 import compactUri from "./compactUri.js";
 import type {
   ColumnDef,
-  LookupField,
-  LookupSectionOverride,
   RenderListOptions,
   RenderLookupOptions,
   SectionDef,

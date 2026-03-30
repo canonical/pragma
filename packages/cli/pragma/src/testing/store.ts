@@ -35,5 +35,5 @@ async function createTestStore(
   });
 }
 
-export { createTestStore };
 export type { PragmaTestStoreOptions };
+export { createTestStore };
