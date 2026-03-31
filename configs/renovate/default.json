@@ -36,6 +36,24 @@
       "excludePackagePrefixes": ["@canonical/typescript-config-"]
     },
     {
+      "description": "Group Lit ecosystem",
+      "matchPackageNames": ["lit"],
+      "matchPackagePrefixes": ["@lit/", "@lit-labs/"],
+      "groupName": "lit"
+    },
+    {
+      "description": "Group Storybook ecosystem",
+      "matchPackageNames": ["storybook"],
+      "matchPackagePrefixes": ["@storybook/"],
+      "groupName": "storybook"
+    },
+    {
+      "description": "Group React ecosystem",
+      "matchPackageNames": ["react", "react-dom"],
+      "matchPackagePrefixes": ["@types/react"],
+      "groupName": "react"
+    },
+    {
       "description": "Automerge patch/minor devDependencies",
       "matchDepTypes": ["devDependencies"],
       "matchUpdateTypes": ["patch", "minor"],
