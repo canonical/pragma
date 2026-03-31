@@ -9,19 +9,19 @@ describe("completionScriptContent", () => {
   it("produces zsh completion with compdef", () => {
     const script = completionScriptContent("zsh");
     expect(script).toContain("#compdef pragma");
-    expect(script).toContain("pragma completions zsh");
+    expect(script).toContain("pragma --completions");
   });
 
   it("produces bash completion with complete -F", () => {
     const script = completionScriptContent("bash");
     expect(script).toContain("complete -F _pragma pragma");
-    expect(script).toContain("pragma completions bash");
+    expect(script).toContain("pragma --completions");
   });
 
   it("produces fish completion with complete -c", () => {
     const script = completionScriptContent("fish");
     expect(script).toContain("complete -c pragma");
-    expect(script).toContain("pragma completions fish");
+    expect(script).toContain("pragma --completions");
   });
 });
 
