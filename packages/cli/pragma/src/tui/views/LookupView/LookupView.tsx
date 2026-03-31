@@ -28,7 +28,10 @@ export default function LookupView<T>({
     const bodyLines: string[] = [];
 
     // 2 (left pad) + labelWidth + 2 (gap) = value column offset
-    const valueIndent = " ".repeat(2 + labelWidth + 2);
+    const valueOffset = 2 + labelWidth + 2;
+    const valueIndent = " ".repeat(valueOffset);
+    const innerWidth = Math.max(termWidth - 4, 20);
+    const maxValueWidth = innerWidth - valueOffset;
 
     for (const field of options.fields) {
       const value = field.value(entity);
@@ -36,10 +39,10 @@ export default function LookupView<T>({
       const raw = formatInlineValue(value, prefixes);
       const formatted = typeof value === "string" ? formatMarkdown(raw) : raw;
       const label = chalk.bold(field.label.padEnd(labelWidth));
-      const lines = formatted.split("\n");
-      bodyLines.push(`  ${label}  ${lines[0]}`);
-      for (let l = 1; l < lines.length; l++) {
-        bodyLines.push(`${valueIndent}${lines[l]}`);
+      const wrapped = wrapText(formatted, maxValueWidth);
+      bodyLines.push(`  ${label}  ${wrapped[0]}`);
+      for (let l = 1; l < wrapped.length; l++) {
+        bodyLines.push(`${valueIndent}${wrapped[l]}`);
       }
     }
 
@@ -208,4 +211,34 @@ function looksLikeUri(value: string): boolean {
     value.startsWith("https://") ||
     /^[a-z][a-z0-9+.-]*:/i.test(value)
   );
+}
+
+/**
+ * Wrap text at word boundaries to fit within maxWidth.
+ * Splits on existing newlines first, then wraps each segment.
+ */
+function wrapText(text: string, maxWidth: number): string[] {
+  const segments = text.split("\n");
+  return segments.flatMap((segment) => wrapSegment(segment, maxWidth));
+}
+
+function wrapSegment(text: string, maxWidth: number): string[] {
+  if (text.length <= maxWidth) return [text];
+
+  const words = text.split(/\s+/);
+  const lines: string[] = [];
+  let current = "";
+
+  for (const word of words) {
+    const candidate = current.length === 0 ? word : `${current} ${word}`;
+    if (candidate.length > maxWidth && current.length > 0) {
+      lines.push(current);
+      current = word;
+    } else {
+      current = candidate;
+    }
+  }
+  if (current.length > 0) lines.push(current);
+
+  return lines;
 }

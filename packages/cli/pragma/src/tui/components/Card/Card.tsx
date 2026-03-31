@@ -41,14 +41,7 @@ export default function buildCard(
 
   const expandedLines = bodyLines.flatMap((line) => line.split("\n"));
   const borderedBody = expandedLines.map((line) => {
-    const visible = stripAnsi(line);
-    const visibleWidth = visible.length;
-    if (visibleWidth > innerWidth) {
-      // Truncate by visible width — use the plain text version
-      const truncatedVisible = `${visible.slice(0, innerWidth - 1)}…`;
-      const pad = Math.max(innerWidth - truncatedVisible.length, 0);
-      return `${BOX.vertical} ${truncatedVisible}${" ".repeat(pad)} ${BOX.vertical}`;
-    }
+    const visibleWidth = stripAnsi(line).length;
     const pad = Math.max(innerWidth - visibleWidth, 0);
     return `${BOX.vertical} ${line}${" ".repeat(pad)} ${BOX.vertical}`;
   });
