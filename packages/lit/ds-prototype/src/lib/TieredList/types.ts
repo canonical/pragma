@@ -6,11 +6,11 @@
  */
 export interface TieredListProps {
   /** Heading text for the section. */
-  title?: string;
+  title: string;
   /** Whether the description element should be full-width on desktop */
-  is_description_full_width_on_desktop?: boolean;
+  isDescriptionFullWidthOnDesktop?: boolean;
   /** Whether the list element should be full-width on tablet */
-  is_list_full_width_on_tablet?: boolean;
+  isListFullWidthOnTablet?: boolean;
   /** Padding variant for the section */
   padding?: "deep" | "shallow" | "default";
 }
