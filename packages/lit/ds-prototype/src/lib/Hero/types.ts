@@ -8,4 +8,6 @@ export type HeroProps = {
   title?: string;
   /** Descriptive text displayed beside the heading. */
   description?: string;
+  /** Layout variant when media is present. "side" places media beside content (default), "stacked" places media below content at full width. */
+  layout?: "side" | "stacked";
 };

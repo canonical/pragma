@@ -2,11 +2,10 @@
 
 import { html, LitElement } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
+import { classMap } from "lit/directives/class-map.js";
 import { when } from "lit/directives/when.js";
 import styles from "./styles.css";
 import type { HeroProps } from "./types.js";
-
-const componentCssClassName = "ds hero";
 
 /**
  * Hero is a prominent full-width banner pattern used at the top of pages to
@@ -24,22 +23,33 @@ export default class Hero extends LitElement implements HeroProps {
 
   @property({ type: String }) title = "";
   @property({ type: String }) description = "";
+  @property({ type: String, reflect: true }) layout: "side" | "stacked" = "side";
 
-  @state() private _hasMedia = false;
+  /** Default true so SSR renders the media slot visible. slotchange refines on client. */
+  @state() private _hasMedia = true;
 
-  connectedCallback() {
-    super.connectedCallback();
-    this._hasMedia = !!this.querySelector('[slot="media"]');
+  // Check for assigned nodes in the media slot on first update to determine if media content is present, refining the default true value set for SSR.
+  protected firstUpdated() {
+    const slot = this.renderRoot.querySelector('slot[name="media"]') as HTMLSlotElement | null;
+    if (slot) {
+      this._hasMedia = slot.assignedNodes({ flatten: true }).length > 0;
+    }
   }
-  
+
+  // as media won't be added/removed dinatically, we could probably remove this 
   private _onMediaSlotChange(e: Event) {
     const slot = e.target as HTMLSlotElement;
-    this._hasMedia = slot.assignedElements().length > 0;
+    this._hasMedia = slot.assignedNodes({ flatten: true }).length > 0;
   }
 
   render() {
+    const classes = {
+      ds: true,
+      hero: true,
+      "no-media": !this._hasMedia,
+    };
     return html`
-      <section class=${componentCssClassName + (this._hasMedia ? "" : " no-media")}>
+      <section class=${classMap(classes)}>
         <div class="content">
           <div class="header">
             <h1>${this.title}</h1>
@@ -49,7 +59,7 @@ export default class Hero extends LitElement implements HeroProps {
             <slot name="cta"></slot>
           </div>
         </div>
-        <div class="media" ?hidden=${!this._hasMedia}>
+        <div class="media">
           <slot name="media" @slotchange=${this._onMediaSlotChange}></slot>
         </div>
       </section>
