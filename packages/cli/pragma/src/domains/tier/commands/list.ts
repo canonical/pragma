@@ -10,10 +10,19 @@ import {
   createOutputResult,
 } from "@canonical/cli-core";
 import { PragmaError } from "#error";
+import { createListView } from "#tui";
 import type { PragmaContext } from "../../shared/context.js";
+import type { ColumnDef } from "../../shared/contracts.js";
 import { selectFormatter } from "../../shared/formatters.js";
+import type { TierEntry } from "../../shared/types/tier.js";
 import { listFormatters } from "../formatters/index.js";
 import { listTiers } from "../operations/index.js";
+
+const tierListColumns: readonly ColumnDef<TierEntry>[] = [
+  { key: "uri", label: "IRI" },
+  { key: "path", label: "Path" },
+  { key: "parent", label: "Parent" },
+];
 
 export default function listCommand(ctx: PragmaContext): CommandDefinition {
   return {
@@ -37,6 +46,13 @@ export default function listCommand(ctx: PragmaContext): CommandDefinition {
 
       return createOutputResult(tiers, {
         plain: selectFormatter(ctx, listFormatters),
+        ink: (data) =>
+          createListView({
+            heading: "Tiers",
+            domain: "tier",
+            items: data,
+            columns: tierListColumns,
+          }),
       });
     },
   };

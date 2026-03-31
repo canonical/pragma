@@ -2,10 +2,11 @@
   "extends": "@canonical/typescript-config",
   "compilerOptions": {
     "types": ["node", "@types/bun"],
+    "jsx": "react-jsx",
     "resolveJsonModule": true,
     "noUncheckedIndexedAccess": true,
     "skipLibCheck": true
   },
-  "include": ["src/**/*.ts"],
-  "exclude": ["src/**/*.test.ts"]
+  "include": ["src/**/*.ts", "src/**/*.tsx"],
+  "exclude": ["src/**/*.test.ts", "src/**/*.test.tsx"]
 }

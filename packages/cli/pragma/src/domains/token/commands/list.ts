@@ -9,10 +9,12 @@ import {
   type CommandDefinition,
   createOutputResult,
 } from "@canonical/cli-core";
+import { createListView } from "#tui";
 import type { PragmaContext } from "../../shared/context.js";
 import { selectFormatter } from "../../shared/formatters.js";
 import { listFormatters } from "../formatters/index.js";
 import { resolveTokenList } from "../orchestration/index.js";
+import { tokenConfig } from "../tokenConfig.js";
 
 export default function listCommand(ctx: PragmaContext): CommandDefinition {
   return {
@@ -39,6 +41,13 @@ export default function listCommand(ctx: PragmaContext): CommandDefinition {
 
       return createOutputResult([...resolution.items], {
         plain: selectFormatter(ctx, listFormatters),
+        ink: (data) =>
+          createListView({
+            heading: "Tokens",
+            domain: "token",
+            items: data,
+            columns: tokenConfig.listColumns,
+          }),
       });
     },
   };

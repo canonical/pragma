@@ -1,3 +1,4 @@
+import type { RenderLookupOptions } from "../../shared/contracts.js";
 import type { Formatters } from "../../shared/formatters.js";
 import { renderLookupLlm, renderLookupPlain } from "../../shared/renderers.js";
 import type { TokenDetailed } from "../../shared/types/index.js";
@@ -82,5 +83,25 @@ export default function createLookupFormatters(
       const { values: _values, ...summary } = token;
       return JSON.stringify(summary, null, 2);
     },
+  };
+}
+
+/**
+ * Build lookup rendering options for the Ink TUI view.
+ *
+ * @param options - detail-level options
+ * @returns Options compatible with the LookupView component.
+ */
+export function createInkLookupOptions(
+  options: TokenLookupFormatterOptions,
+): RenderLookupOptions<TokenDetailed> {
+  const sections = options.detailed ? tokenConfig.lookupSections : [];
+  return {
+    title: (entry) => entry.name,
+    fields: [
+      { label: "URI", value: (entry) => entry.uri },
+      { label: "Category", value: (entry) => entry.category || "—" },
+    ],
+    sections,
   };
 }

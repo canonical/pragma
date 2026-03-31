@@ -11,8 +11,10 @@ import {
   type CommandResult,
   createOutputResult,
 } from "@canonical/cli-core";
+import { createListView } from "#tui";
 import type { PragmaContext } from "../../shared/context.js";
 import { selectFormatter } from "../../shared/formatters.js";
+import { blockConfig } from "../blockConfig.js";
 import { listFormatters } from "../formatters/index.js";
 import { resolveBlockList } from "../orchestration/index.js";
 
@@ -63,6 +65,18 @@ export default function buildListCommand(
 
       return createOutputResult(contract.result.items, {
         plain: selectFormatter(ctx, listFormatters),
+        ink: (data) =>
+          createListView({
+            heading: "Blocks",
+            domain: "block",
+            items: data,
+            columns: blockConfig.listColumns.filter(
+              (col) =>
+                col.key !== "implementations" &&
+                col.key !== "nodeCount" &&
+                col.key !== "tokenCount",
+            ),
+          }),
       });
     },
   };

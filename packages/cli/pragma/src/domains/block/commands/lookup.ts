@@ -12,11 +12,12 @@ import {
   createOutputResult,
 } from "@canonical/cli-core";
 import { PragmaError } from "#error";
+import { createLookupView } from "#tui";
 import type { PragmaContext } from "../../shared/context.js";
 import type { LookupResult } from "../../shared/contracts.js";
 import { renderLookupResults } from "../../shared/formatters.js";
 import type { BlockDetailed } from "../../shared/types/index.js";
-import { lookupFormatters } from "../formatters/index.js";
+import { createLookupOptions, lookupFormatters } from "../formatters/index.js";
 import { resolveAspects } from "../helpers/index.js";
 import { listBlocks } from "../operations/index.js";
 import {
@@ -145,6 +146,13 @@ export default function buildLookupCommand(
                 detailed: isDetailed,
                 aspects: selectedAspects,
               }),
+            }),
+          ink: ({ result, detailed: isDetailed, aspects: selectedAspects }) =>
+            createLookupView({
+              results: result.results,
+              errors: result.errors,
+              domain: "block",
+              options: createLookupOptions(isDetailed, selectedAspects),
             }),
         },
       );

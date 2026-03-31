@@ -56,7 +56,7 @@ const formatters: Formatters<BlockLookupInput> = {
 
 export default formatters;
 
-function createLookupOptions(
+export function createLookupOptions(
   detailed: boolean,
   aspects: AspectFlags,
 ): RenderLookupOptions<BlockDetailed> {
