@@ -1,8 +1,9 @@
-import { Text } from "ink";
 import chalk from "chalk";
+import { Text } from "ink";
 import compactUri from "../../../domains/shared/compactUri.js";
 import { PREFIX_MAP } from "../../../domains/shared/prefixes.js";
 import { buildCard } from "../../components/Card/index.js";
+import { formatMarkdown, syntaxColor } from "../../helpers/index.js";
 import type { LookupViewProps } from "./types.js";
 
 /**
@@ -22,6 +23,7 @@ export default function LookupView<T>({
   const prefixes = options.prefixes ?? PREFIX_MAP;
   const total = results.length;
   const labelWidth = computeLabelWidth(options.fields);
+  const termWidth = process.stdout.columns ?? 80;
 
   const cards = results.map((entity, i) => {
     const bodyLines: string[] = [];
@@ -32,7 +34,8 @@ export default function LookupView<T>({
     for (const field of options.fields) {
       const value = field.value(entity);
       if (isEmpty(value)) continue;
-      const formatted = formatInlineValue(value, prefixes);
+      const raw = formatInlineValue(value, prefixes);
+      const formatted = typeof value === "string" ? formatMarkdown(raw) : raw;
       const label = chalk.bold(field.label.padEnd(labelWidth));
       const lines = formatted.split("\n");
       bodyLines.push(`  ${label}  ${lines[0]}`);
@@ -56,7 +59,13 @@ export default function LookupView<T>({
     }
 
     const badge = total > 1 ? `[${i + 1} of ${total}]` : undefined;
-    return buildCard(options.title(entity), domain, bodyLines, badge);
+    return buildCard(
+      options.title(entity),
+      domain,
+      bodyLines,
+      termWidth,
+      badge,
+    );
   });
 
   const errorLines =
@@ -114,15 +123,17 @@ function formatSectionValue(
   switch (kind) {
     case "field":
       return typeof value === "string" && value.trim().length > 0
-        ? value
+        ? formatMarkdown(value)
         : null;
     case "code":
       return typeof value === "string" && value.trim().length > 0
-        ? value
+        ? syntaxColor(value, "yaml")
         : null;
     case "list":
       if (!Array.isArray(value) || value.length === 0) return null;
-      return value.map((item) => `• ${formatScalar(item, prefixes)}`).join("\n");
+      return value
+        .map((item) => `• ${formatScalar(item, prefixes)}`)
+        .join("\n");
     case "table":
     case "nested-table":
       if (!Array.isArray(value) || value.length === 0) return null;
@@ -162,7 +173,12 @@ function formatTree(
       : null;
   }
 
-  const node = value as { root?: unknown; name?: string; uri?: string; children?: unknown };
+  const node = value as {
+    root?: unknown;
+    name?: string;
+    uri?: string;
+    children?: unknown;
+  };
   if (node.root) return formatTree(node.root, prefixes, depth);
 
   const label =

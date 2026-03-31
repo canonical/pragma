@@ -1,7 +1,6 @@
 import chalk from "chalk";
 import { BOX, DOMAIN_COLORS } from "../../constants.js";
 import { truncateText } from "../../helpers/index.js";
-import { useTerminalSize } from "../../hooks/index.js";
 
 /**
  * Build a bordered card string for a single lookup result.
@@ -14,6 +13,7 @@ import { useTerminalSize } from "../../hooks/index.js";
  * @param title - Card title for the header bar.
  * @param domain - Domain name for color lookup.
  * @param bodyLines - Pre-formatted body lines to wrap with borders.
+ * @param termWidth - Terminal width in columns.
  * @param badge - Optional right-aligned badge text (e.g., "[1 of 2]").
  * @returns A fully bordered card as a single string.
  */
@@ -21,9 +21,9 @@ export default function buildCard(
   title: string,
   domain: string,
   bodyLines: readonly string[],
+  termWidth: number,
   badge?: string,
 ): string {
-  const { columns: termWidth } = useTerminalSize();
   const innerWidth = Math.max(termWidth - 4, 20);
   const colors = DOMAIN_COLORS[domain];
   const colorFn = resolveChalkColor(colors?.instanceFg);
@@ -34,7 +34,8 @@ export default function buildCard(
   const titlePad = innerWidth - displayTitle.length - badgeText.length;
 
   const topBorder = `${BOX.topLeft}${BOX.horizontal.repeat(innerWidth + 2)}${BOX.topRight}`;
-  const titleLine = `${BOX.vertical} ${chalk.bold(colorFn(displayTitle))}${" ".repeat(Math.max(titlePad, 0))}${badge ? chalk.dim(badgeText) : ""} ${BOX.vertical}`;
+  const badgePart = badge ? chalk.dim(badgeText) : "";
+  const titleLine = `${BOX.vertical} ${chalk.bold(colorFn(displayTitle))}${" ".repeat(Math.max(titlePad, 0))}${badgePart} ${BOX.vertical}`;
   const divider = `${BOX.dividerLeft}${BOX.dividerHorizontal.repeat(innerWidth + 2)}${BOX.dividerRight}`;
   const bottomBorder = `${BOX.bottomLeft}${BOX.horizontal.repeat(innerWidth + 2)}${BOX.bottomRight}`;
 
@@ -42,12 +43,10 @@ export default function buildCard(
   const borderedBody = expandedLines.map((line) => {
     const visible = stripAnsi(line);
     const truncated =
-      visible.length > innerWidth
-        ? line.slice(0, innerWidth - 1) + "…"
-        : line;
+      visible.length > innerWidth ? `${line.slice(0, innerWidth - 1)}…` : line;
     const truncatedVisible =
       visible.length > innerWidth
-        ? visible.slice(0, innerWidth - 1) + "…"
+        ? `${visible.slice(0, innerWidth - 1)}…`
         : visible;
     const pad = Math.max(innerWidth - truncatedVisible.length, 0);
     return `${BOX.vertical} ${truncated}${" ".repeat(pad)} ${BOX.vertical}`;

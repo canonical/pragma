@@ -1,5 +1,5 @@
-import { Text } from "ink";
 import chalk from "chalk";
+import { Text } from "ink";
 import compactUri from "../../../domains/shared/compactUri.js";
 import { PREFIX_MAP } from "../../../domains/shared/prefixes.js";
 import { COL_GAP, DOMAIN_COLORS } from "../../constants.js";
@@ -29,16 +29,19 @@ export default function ListView<T>({
 }: ListViewProps<T>) {
   const { columns: termWidth } = useTerminalSize();
   const prefixMap = prefixes ?? PREFIX_MAP;
+  const colors = DOMAIN_COLORS[domain];
+  const colorFn = resolveChalkColor(colors?.instanceFg);
+
+  if (items.length === 0) {
+    const output = `${chalk.bold(colorFn(`${heading} (0)`))}\n${chalk.dim("No results.")}`;
+    return <Text>{output}</Text>;
+  }
 
   const visibleColumns = fitColumns(columns, termWidth);
   const widths = computeWidths(visibleColumns, items, termWidth);
-  const colors = DOMAIN_COLORS[domain];
   const gap = " ".repeat(COL_GAP);
-  const colorFn = resolveChalkColor(colors?.instanceFg);
 
-  const headingLine = chalk.bold(
-    colorFn(`${heading} (${items.length})`),
-  );
+  const headingLine = chalk.bold(colorFn(`${heading} (${items.length})`));
 
   const headerLine = chalk.bold(
     visibleColumns
@@ -98,5 +101,7 @@ function resolveChalkColor(
 ): (text: string) => string {
   if (!colorName) return (text) => text;
   const fn = chalk[colorName as keyof typeof chalk];
-  return typeof fn === "function" ? (fn as (text: string) => string) : (text) => text;
+  return typeof fn === "function"
+    ? (fn as (text: string) => string)
+    : (text) => text;
 }

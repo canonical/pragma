@@ -13,6 +13,7 @@ import {
 } from "@canonical/cli-core";
 import { createListView } from "#tui";
 import type { PragmaContext } from "../../shared/context.js";
+import type { ColumnDef } from "../../shared/contracts.js";
 import { selectFormatter } from "../../shared/formatters.js";
 import { blockConfig } from "../blockConfig.js";
 import { listFormatters } from "../formatters/index.js";
@@ -70,14 +71,26 @@ export default function buildListCommand(
             heading: "Blocks",
             domain: "block",
             items: data,
-            columns: blockConfig.listColumns.filter(
-              (col) =>
-                col.key !== "implementations" &&
-                col.key !== "nodeCount" &&
-                col.key !== "tokenCount",
-            ),
+            columns: reorderColumns(blockConfig.listColumns, [
+              "name",
+              "type",
+              "tier",
+              "modifiers",
+              "uri",
+            ]),
           }),
       });
     },
   };
+}
+
+function reorderColumns<T>(
+  columns: readonly ColumnDef<T>[],
+  order: readonly string[],
+): readonly ColumnDef<T>[] {
+  const byKey = new Map(columns.map((col) => [col.key, col]));
+  return order.flatMap((key) => {
+    const col = byKey.get(key as keyof T & string);
+    return col ? [col] : [];
+  });
 }
