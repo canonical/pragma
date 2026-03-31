@@ -91,7 +91,6 @@
         "@canonical/react-ds-app-portal": "^0.20.0",
         "@canonical/react-ds-global": "^0.20.0",
         "@canonical/react-ds-global-form": "^0.20.0",
-        "@canonical/react-tokens": "^0.20.0",
         "@canonical/storybook-addon-form-state": "^0.20.0",
         "@canonical/storybook-addon-msw": "^0.20.0",
         "@canonical/storybook-config": "^0.20.0",

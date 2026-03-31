@@ -17,7 +17,6 @@ const packages = [
   { dir: "ds-app-launchpad", title: "App Launchpad" },
   { dir: "ds-app-lxd", title: "App LXD" },
   { dir: "ds-app-portal", title: "App Portal" },
-  { dir: "tokens", title: "Tokens" },
 ] as const;
 
 const config = createConfig("react", {
@@ -35,7 +34,7 @@ const config = createConfig("react", {
 export default {
   ...config,
   stories: [
-    { directory: "../src", titlePrefix: "Hub" },
+    { directory: "../src", titlePrefix: "" },
     ...packages.map(({ dir, title }) => ({
       directory: `${PACKAGES_ROOT}/${dir}/src`,
       titlePrefix: title,

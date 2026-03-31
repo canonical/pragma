@@ -1,8 +1,12 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+
+<Meta title="Guides/Creating Middleware" />
+
 # Creating Middleware
 
-This guide explains how to create middleware functions that extend field behavior through HOC composition.
+This guide covers how to create middleware functions that extend field behavior through HOC composition.
 
-## Middleware Concept
+## Middleware concept
 
 Middleware wraps field components to add cross-cutting functionality without modifying the field itself. Common use cases include:
 
@@ -22,11 +26,11 @@ type Middleware<ComponentProps> = (
 
 A middleware receives a component and returns a new component with enhanced behavior.
 
-## Built-in Middleware
+## Built-in middleware
 
 The package includes two middleware for common patterns:
 
-**addRESTOptions** - Fetches options from an API and injects them as the `options` prop:
+**addRESTOptions** fetches options from an API and injects them as the `options` prop:
 
 ```typescript
 import { addRESTOptions } from "@canonical/react-ds-global-form";
@@ -37,14 +41,14 @@ import { addRESTOptions } from "@canonical/react-ds-global-form";
   middleware={[
     addRESTOptions("/api/countries", {
       method: "GET",
-      headers: { "Accept": "application/json" },
+      headers: { Accept: "application/json" },
       transformData: (data) => data.countries,
     }),
   ]}
 />
 ```
 
-**addRESTValidation** - Validates field values against an API endpoint:
+**addRESTValidation** validates field values against an API endpoint:
 
 ```typescript
 import { addRESTValidation } from "@canonical/react-ds-global-form";
@@ -65,9 +69,9 @@ import { addRESTValidation } from "@canonical/react-ds-global-form";
 />
 ```
 
-## Creating Custom Middleware
+## Creating custom middleware
 
-### Basic Structure
+### Basic structure
 
 A middleware factory function returns the actual middleware:
 
@@ -82,9 +86,9 @@ function myMiddleware(options: MyOptions): Middleware<any> {
 }
 ```
 
-### API Fetch Example
+### API fetch example
 
-Here's a complete example that fetches related data when a field value changes:
+A complete example that fetches related data when a field value changes:
 
 ```typescript
 import { createElement, useState, useEffect } from "react";
@@ -186,7 +190,7 @@ Usage:
 
 When the `country` field changes, this middleware fetches cities and injects them as options.
 
-## Middleware Composition
+## Middleware composition
 
 Multiple middleware compose in array order. The first middleware becomes the outermost wrapper:
 
@@ -196,8 +200,8 @@ Multiple middleware compose in array order. The first middleware becomes the out
   inputType="combobox"
   middleware={[
     withAnalytics("product-search"),  // Outermost
-    addRESTOptions("/api/products"),  // Middle
-    withDebounce(300),                // Innermost
+    addRESTOptions("/api/products"),   // Middle
+    withDebounce(300),                 // Innermost
   ]}
 />
 ```
@@ -209,7 +213,7 @@ The execution flow:
 3. `withDebounce` receives props, wraps...
 4. Original field component renders
 
-### Accessing Form Context
+### Accessing form context
 
 Use `useFormContext` from react-hook-form to interact with form state:
 
@@ -239,7 +243,7 @@ Common hooks from `useFormContext`:
 | `clearErrors(name)` | Clear validation errors |
 | `getValues()` | Get all form values |
 
-## Debouncing API Calls
+## Debouncing API calls
 
 For middleware that makes API calls on value changes, always debounce:
 
@@ -267,7 +271,7 @@ function withDebouncedFetch(url: string, wait = 300): Middleware<any> {
             setError(name, { type: "manual", message: "Network error" });
           }
         }, wait),
-        [name]
+        [name],
       );
 
       useEffect(() => {
@@ -282,7 +286,7 @@ function withDebouncedFetch(url: string, wait = 300): Middleware<any> {
 }
 ```
 
-## Error Handling
+## Error handling
 
 Middleware should handle errors gracefully:
 
@@ -325,7 +329,7 @@ function withSelectEnhancement(): Middleware<SelectProps> {
       // TypeScript knows props has SelectProps shape
       const { options, ...rest } = props;
       const sortedOptions = [...options].sort((a, b) =>
-        a.label.localeCompare(b.label)
+        a.label.localeCompare(b.label),
       );
       return <WrappedComponent {...rest} options={sortedOptions} />;
     };
