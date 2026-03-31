@@ -49,7 +49,7 @@
   "devDependencies": {
     "@biomejs/biome": "2.4.9",
     "@canonical/biome-config": "^0.20.0",
-    "@canonical/design-tokens": "^0.5.2",
+    "@canonical/design-tokens": "^0.6.0",
     "@canonical/storybook-helpers": "^0.20.0",
     "@canonical/typescript-config-react": "^0.20.0",
     "@canonical/webarchitect": "^0.20.0",
