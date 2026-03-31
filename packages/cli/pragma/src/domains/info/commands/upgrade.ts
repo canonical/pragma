@@ -3,7 +3,7 @@ import type { CommandDefinition, CommandResult } from "@canonical/cli-core";
 import { readConfig } from "#config";
 import { VERSION } from "#constants";
 import { PragmaError } from "#error";
-import { detectPackageManager, PM_COMMANDS } from "#package-manager";
+import { detectInstallSource, PM_COMMANDS } from "#package-manager";
 import {
   renderUpgradeJson,
   renderUpgradeLlm,
@@ -58,9 +58,12 @@ async function executeUpgrade(
   ctx: { cwd: string; globalFlags: { llm: boolean; format: "text" | "json" } },
 ): Promise<CommandResult> {
   const dryRun = params.dryRun === true;
-  const pm = detectPackageManager();
+  const source = detectInstallSource();
+  const pm = source.label;
   const config = readConfig(ctx.cwd);
-  const command = PM_COMMANDS[pm].update("@canonical/pragma-cli");
+  const command = PM_COMMANDS[source.packageManager].update(
+    "@canonical/pragma-cli",
+  );
 
   const registryResult = await checkRegistryVersion(
     "@canonical/pragma-cli",
