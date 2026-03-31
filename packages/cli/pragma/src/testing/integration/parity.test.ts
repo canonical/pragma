@@ -147,7 +147,8 @@ describe("block parity", () => {
   });
 
   it("block_lookup condensed: matches llm formatter", async () => {
-    const opResult = await lookupBlock(rt.store, "Button", rt.config);
+    const opResults = await lookupBlock(rt.store, "Button", rt.config);
+    const opResult = opResults[0]!;
     const expectedText = blockLookupFmt.llm({
       block: opResult,
       detailed: true,

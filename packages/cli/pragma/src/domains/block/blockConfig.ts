@@ -54,8 +54,20 @@ export const blockConfig: EntityDisplayConfig<
               .join(", ")
           : "",
     },
-    { key: "nodeCount", label: "Nodes" },
-    { key: "tokenCount", label: "Tokens" },
+    {
+      key: "nodeCount",
+      label: "Nodes",
+      showWhenEmpty: false,
+      format: (value) =>
+        typeof value === "number" && value > 0 ? String(value) : "",
+    },
+    {
+      key: "tokenCount",
+      label: "Tokens",
+      showWhenEmpty: false,
+      format: (value) =>
+        typeof value === "number" && value > 0 ? String(value) : "",
+    },
   ],
   digestColumns: [{ key: "summary", label: "Summary", showWhenEmpty: false }],
   lookupSections: [
