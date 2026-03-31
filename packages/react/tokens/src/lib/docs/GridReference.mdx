@@ -1,0 +1,192 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+import { Unstyled } from "@storybook/addon-docs/blocks";
+
+<Meta title="Foundation/Design Tokens/Reference/Grid Classes" />
+
+# Grid classes reference
+
+This page documents every CSS class, custom property, and breakpoint in the grid system.
+
+## Classes
+
+<div className="ds token-page">
+  <section className="panel">
+    <div className="header">
+      <h3>Grid classes</h3>
+      <p>The four classes that compose to create any layout.</p>
+    </div>
+    <div className="stack">
+      <article className="rule">
+        <strong><code>.grid</code></strong>
+        <p>
+          Establishes a grid context. Sets <code>display: grid</code>,
+          reads <code>--modifier-grid-template</code> for columns, and
+          applies <code>var(--grid-gap, 1rem)</code> as the gap. Without a
+          modifier class, no columns are defined — the grid is a bare
+          block-level context for custom column definitions.
+        </p>
+      </article>
+      <article className="rule">
+        <strong><code>.grid.responsive</code></strong>
+        <p>
+          Breakpoint-driven columns.
+          Sets <code>--modifier-grid-template</code> to
+          4 columns (&lt; 768px),
+          8 columns (768px–1279px), or
+          12 columns (≥ 1280px).
+          Use for page-level layout.
+        </p>
+      </article>
+      <article className="rule">
+        <strong><code>.grid.intrinsic</code></strong>
+        <p>
+          Fluid auto-fill columns.
+          Sets <code>--modifier-grid-template</code> to
+          <code>repeat(auto-fill, minmax(var(--grid-col-min), 1fr) × 4)</code>.
+          Items wrap in groups of 4 based on available space.
+          Use for card grids, galleries, and dashboard widgets.
+        </p>
+      </article>
+      <article className="rule">
+        <strong><code>.subgrid</code></strong>
+        <p>
+          Inherits parent grid column tracks via CSS <code>subgrid</code>.
+          Spans <code>var(--subgrid-span, 1 / -1)</code> of the parent's columns.
+          Use for cross-row alignment (forms, tables).
+          Requires a CSS Grid parent.
+        </p>
+      </article>
+    </div>
+  </section>
+</div>
+
+## Custom properties
+
+<div className="ds token-page">
+  <section className="panel">
+    <div className="header">
+      <h3>Custom properties</h3>
+      <p>Properties that control grid behavior. Set these on the grid container or a parent element.</p>
+    </div>
+    <div className="stack">
+      <article className="rule">
+        <strong><code>--modifier-grid-template</code></strong>
+        <p>
+          Controls <code>grid-template-columns</code> on <code>.grid</code> elements.
+          Set by <code>.responsive</code> and <code>.intrinsic</code>, or override manually.
+          <br />
+          <strong>Default:</strong> unset (no columns defined)
+        </p>
+      </article>
+      <article className="rule">
+        <strong><code>--grid-gap</code></strong>
+        <p>
+          Controls the <code>gap</code> on <code>.grid</code> elements.
+          Use dimension tokens for values.
+          <br />
+          <strong>Default:</strong> <code>1rem</code>
+        </p>
+      </article>
+      <article className="rule">
+        <strong><code>--grid-col-min</code></strong>
+        <p>
+          Minimum column width for the intrinsic grid's <code>minmax()</code> function.
+          Affects when columns wrap.
+          <br />
+          <strong>Default:</strong> <code>100px</code>
+          <br />
+          <strong>Scope:</strong> <code>:root</code> (global), overridable per container.
+        </p>
+      </article>
+      <article className="rule">
+        <strong><code>--subgrid-span</code></strong>
+        <p>
+          Controls <code>grid-column</code> on <code>.subgrid</code> elements.
+          Determines how many parent columns the subgrid spans.
+          <br />
+          <strong>Default:</strong> <code>1 / -1</code> (all columns)
+        </p>
+      </article>
+    </div>
+  </section>
+</div>
+
+## Breakpoints
+
+<div className="ds token-page">
+  <section className="panel">
+    <div className="header">
+      <h3>Responsive breakpoints</h3>
+      <p>Used by <code>.responsive</code> to set column count.</p>
+    </div>
+    <div className="stack">
+      <article className="rule">
+        <strong>Mobile</strong>
+        <p>
+          <code>&lt; 768px</code> — 4 columns.
+          <code>--modifier-grid-template: repeat(4, 1fr)</code>
+        </p>
+      </article>
+      <article className="rule">
+        <strong>Tablet</strong>
+        <p>
+          <code>768px – 1279px</code> — 8 columns.
+          <code>--modifier-grid-template: repeat(8, 1fr)</code>
+        </p>
+      </article>
+      <article className="rule">
+        <strong>Desktop</strong>
+        <p>
+          <code>≥ 1280px</code> — 12 columns.
+          <code>--modifier-grid-template: repeat(12, 1fr)</code>
+        </p>
+      </article>
+    </div>
+  </section>
+</div>
+
+## Cascade layer
+
+The grid system is declared in `@layer ds.components`.
+
+```
+@layer ds.tokens;       /* Token values */
+@layer ds.modifiers;    /* Color modifier channels */
+@layer ds.surfaces;     /* Surface depth compounding */
+@layer ds.states;       /* Interaction state derivations */
+@layer ds.components;   /* Structural patterns (grid, typography blocks) */
+```
+
+Component-layer styles can be overridden by more specific component CSS without layer conflicts.
+
+## Source
+
+The grid implementation is in `@canonical/styles` at `packages/styles/main/src/grid.css`.
+
+## Browser support
+
+<div className="ds token-page">
+  <section className="panel">
+    <div className="stack">
+      <article className="rule">
+        <strong><code>.grid</code> and <code>.responsive</code></strong>
+        <p>CSS Grid Level 1. Supported in all modern browsers.</p>
+      </article>
+      <article className="rule">
+        <strong><code>.intrinsic</code></strong>
+        <p>CSS Grid Level 1 with <code>auto-fill</code>. Supported in all modern browsers.</p>
+      </article>
+      <article className="rule">
+        <strong><code>.subgrid</code></strong>
+        <p>CSS Grid Level 2 (Subgrid). Chrome 117+, Firefox 71+, Safari 16+. No IE or legacy Edge support.</p>
+      </article>
+    </div>
+  </section>
+</div>
+
+## Related
+
+- [Understanding the grid system](?path=/docs/foundation-design-tokens-understanding-the-grid-system--docs): design rationale
+- [How to use the responsive grid](?path=/docs/foundation-design-tokens-how-to-use-the-responsive-grid--docs): step-by-step guide
+- [How to use the intrinsic grid](?path=/docs/foundation-design-tokens-how-to-use-the-intrinsic-grid--docs): step-by-step guide
+- [Cascade layers reference](?path=/docs/foundation-design-tokens-reference-cascade-layers--docs): the full layer ordering

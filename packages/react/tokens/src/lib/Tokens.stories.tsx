@@ -600,6 +600,316 @@ export const InteractionStates = {
   ),
 };
 
+export const SpacingScale = {
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "The complete dimension token scale with visual bars showing relative size. Use this page for quick spacing lookup and comparison.",
+      },
+    },
+  },
+  render: () => {
+    const spacingTokens = [
+      { name: "--dimension-025", rem: 0.125, px: 2 },
+      { name: "--dimension-050", rem: 0.25, px: 4 },
+      { name: "--dimension-100", rem: 0.5, px: 8 },
+      { name: "--dimension-150", rem: 0.75, px: 12 },
+      { name: "--dimension-175", rem: 0.875, px: 14 },
+      { name: "--dimension-200", rem: 1, px: 16 },
+      { name: "--dimension-225", rem: 1.125, px: 18 },
+      { name: "--dimension-250", rem: 1.25, px: 20 },
+      { name: "--dimension-300", rem: 1.5, px: 24 },
+      { name: "--dimension-400", rem: 2, px: 32 },
+      { name: "--dimension-500", rem: 2.5, px: 40 },
+      { name: "--dimension-600", rem: 3, px: 48 },
+      { name: "--dimension-700", rem: 3.5, px: 56 },
+      { name: "--dimension-800", rem: 4, px: 64 },
+      { name: "--dimension-900", rem: 4.5, px: 72 },
+      { name: "--dimension-1000", rem: 5, px: 80 },
+      { name: "--dimension-1100", rem: 5.5, px: 88 },
+    ];
+
+    const baselineMultiples = new Set([8, 16, 24, 32, 40, 48, 56, 64, 72, 80, 88]);
+
+    return (
+      <div className="ds token-page">
+        <section className="panel">
+          <div className="header">
+            <h3>Spacing scale</h3>
+            <p>
+              All 17 dimension tokens with visual bars. Values marked with ◆ are
+              on the 8px baseline grid. Pixel equivalents assume a 16px root font
+              size.
+            </p>
+          </div>
+          <div className="stack">
+            {spacingTokens.map(({ name, rem, px }) => (
+              <div
+                key={name}
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "11rem 4.5rem 4rem 1.5rem 1fr",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                  fontSize: "0.8125rem",
+                  padding: "0.25rem 0",
+                  borderBottom: "1px solid var(--token-story-border, color-mix(in srgb, #171717 6%, transparent))",
+                }}
+              >
+                <code style={{ fontFamily: "ui-monospace, monospace", fontSize: "0.75rem" }}>
+                  {name}
+                </code>
+                <span style={{ fontFamily: "ui-monospace, monospace", fontSize: "0.75rem" }}>
+                  {rem}rem
+                </span>
+                <span style={{ color: "color-mix(in srgb, currentColor 60%, transparent)", fontSize: "0.75rem" }}>
+                  {px}px
+                </span>
+                <span style={{ fontSize: "0.625rem", opacity: baselineMultiples.has(px) ? 1 : 0.2 }}>
+                  {baselineMultiples.has(px) ? "◆" : "·"}
+                </span>
+                <div
+                  style={{
+                    height: "8px",
+                    width: `${rem}rem`,
+                    background: "var(--color-foreground-primary, #e95420)",
+                    borderRadius: "2px",
+                    minWidth: "2px",
+                  }}
+                />
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="panel">
+          <div className="header">
+            <h3>Common spacing patterns</h3>
+            <p>Quick reference for the most frequently used spacing values.</p>
+          </div>
+          <div className="rule-grid">
+            <article className="rule">
+              <strong>Tight internal padding</strong>
+              <p>
+                <code>var(--dimension-050)</code> — 4px.
+                Badges, tags, inline chips.
+              </p>
+            </article>
+            <article className="rule">
+              <strong>Compact padding</strong>
+              <p>
+                <code>var(--dimension-100)</code> — 8px.
+                Table cells, small buttons, tight list items.
+              </p>
+            </article>
+            <article className="rule">
+              <strong>Standard padding</strong>
+              <p>
+                <code>var(--dimension-200)</code> — 16px.
+                Cards, panels, form groups, dialog bodies.
+              </p>
+            </article>
+            <article className="rule">
+              <strong>Section spacing</strong>
+              <p>
+                <code>var(--dimension-400)</code> — 32px.
+                Between major page sections.
+              </p>
+            </article>
+            <article className="rule">
+              <strong>Grid gap</strong>
+              <p>
+                <code>var(--grid-gap, 1rem)</code> — 16px default.
+                Override with dimension tokens.
+              </p>
+            </article>
+            <article className="rule">
+              <strong>Page inset</strong>
+              <p>
+                <code>var(--dimension-300)</code> — 24px.
+                Page-level horizontal and vertical padding.
+              </p>
+            </article>
+          </div>
+        </section>
+
+        <TokenTable
+          tokens={dimensions}
+          title="Dimension tokens in the explorer"
+          caption="All dimension tokens shown with the standard explorer columns."
+          columns={["token", "swatch", "value", "stability"]}
+          searchable
+        />
+      </div>
+    );
+  },
+};
+
+export const TypographyScale = {
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Typography tokens for headings (1–6), text styles (primary, secondary, tertiary), and their variants (bold, code, prose, smallcaps). Each style is shown as a live preview.",
+      },
+    },
+  },
+  render: () => {
+    const headingStyles = [
+      { name: "Heading 1", prefix: "--typography-heading-1", sample: "The quick brown fox" },
+      { name: "Heading 2", prefix: "--typography-heading-2", sample: "The quick brown fox" },
+      { name: "Heading 3", prefix: "--typography-heading-3", sample: "The quick brown fox jumps" },
+      { name: "Heading 4", prefix: "--typography-heading-4", sample: "The quick brown fox jumps over" },
+      { name: "Heading 5", prefix: "--typography-heading-5", sample: "The quick brown fox jumps over the lazy dog" },
+      { name: "Heading 6", prefix: "--typography-heading-6", sample: "The quick brown fox jumps over the lazy dog" },
+    ];
+
+    const textStyles = [
+      { name: "Text Primary", prefix: "--typography-text-primary", sample: "Body text at the primary reading size. This is the default for most content." },
+      { name: "Text Secondary", prefix: "--typography-text-secondary", sample: "Smaller body text for captions, metadata, and supplementary information." },
+      { name: "Text Tertiary", prefix: "--typography-text-tertiary", sample: "The smallest body text for fine print and legal copy." },
+    ];
+
+    return (
+      <div className="ds token-page">
+        <section className="panel">
+          <div className="header">
+            <h3>Heading scale</h3>
+            <p>
+              Each heading level uses coordinated font-family, font-size, font-weight,
+              line-height, and letter-spacing tokens. Headings are available in
+              regular and bold variants.
+            </p>
+          </div>
+          <div className="stack">
+            {headingStyles.map(({ name, prefix, sample }) => (
+              <div key={prefix} style={{
+                display: "grid",
+                gap: "0.25rem",
+                padding: "0.75rem 0",
+                borderBottom: "1px solid var(--token-story-border, color-mix(in srgb, #171717 6%, transparent))",
+              }}>
+                <div style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "baseline",
+                }}>
+                  <span className="eyebrow">{name}</span>
+                  <code style={{
+                    fontFamily: "ui-monospace, monospace",
+                    fontSize: "0.6875rem",
+                    color: "color-mix(in srgb, currentColor 55%, transparent)",
+                  }}>
+                    {prefix}-*
+                  </code>
+                </div>
+                <p style={{
+                  margin: 0,
+                  fontFamily: `var(${prefix}-font-family, inherit)`,
+                  fontSize: `var(${prefix}-font-size, inherit)`,
+                  fontWeight: `var(${prefix}-font-weight, inherit)`,
+                  lineHeight: `var(${prefix}-line-height, inherit)`,
+                  letterSpacing: `var(${prefix}-letter-spacing, inherit)`,
+                }}>
+                  {sample}
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="panel">
+          <div className="header">
+            <h3>Text styles</h3>
+            <p>
+              Body text styles with regular, bold, code, and prose variants.
+              Text styles follow the same token structure as headings.
+            </p>
+          </div>
+          <div className="stack">
+            {textStyles.map(({ name, prefix, sample }) => (
+              <div key={prefix} style={{
+                display: "grid",
+                gap: "0.375rem",
+                padding: "0.75rem 0",
+                borderBottom: "1px solid var(--token-story-border, color-mix(in srgb, #171717 6%, transparent))",
+              }}>
+                <div style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "baseline",
+                }}>
+                  <span className="eyebrow">{name}</span>
+                  <code style={{
+                    fontFamily: "ui-monospace, monospace",
+                    fontSize: "0.6875rem",
+                    color: "color-mix(in srgb, currentColor 55%, transparent)",
+                  }}>
+                    {prefix}-*
+                  </code>
+                </div>
+                <p style={{
+                  margin: 0,
+                  fontFamily: `var(${prefix}-font-family, inherit)`,
+                  fontSize: `var(${prefix}-font-size, inherit)`,
+                  fontWeight: `var(${prefix}-font-weight, inherit)`,
+                  lineHeight: `var(${prefix}-line-height, inherit)`,
+                  letterSpacing: `var(${prefix}-letter-spacing, inherit)`,
+                }}>
+                  {sample}
+                </p>
+                <p style={{
+                  margin: 0,
+                  fontFamily: `var(${prefix}-bold-font-family, inherit)`,
+                  fontSize: `var(${prefix}-bold-font-size, inherit)`,
+                  fontWeight: `var(${prefix}-bold-font-weight, inherit)`,
+                  lineHeight: `var(${prefix}-bold-line-height, inherit)`,
+                  letterSpacing: `var(${prefix}-bold-letter-spacing, inherit)`,
+                }}>
+                  <strong>Bold:</strong> {sample}
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="panel">
+          <div className="header">
+            <h3>Token structure</h3>
+            <p>
+              Every typography style is composed of 5 tokens. The naming pattern is
+              consistent across all styles.
+            </p>
+          </div>
+          <div className="rule-grid">
+            <article className="rule">
+              <strong><code>*-font-family</code></strong>
+              <p>The font stack. Resolves to <code>var(--typography-font-family-default)</code> or <code>var(--typography-font-family-code)</code>.</p>
+            </article>
+            <article className="rule">
+              <strong><code>*-font-size</code></strong>
+              <p>The size. Resolves to a <code>--dimension-size-font-size-*</code> token from the spacing scale.</p>
+            </article>
+            <article className="rule">
+              <strong><code>*-font-weight</code></strong>
+              <p>The weight. Resolves to a <code>--typography-weight-*</code> value (light, regular, medium, semi-bold, bold, extra-bold).</p>
+            </article>
+            <article className="rule">
+              <strong><code>*-line-height</code></strong>
+              <p>The line height. Resolves to a <code>--number-line-height-*</code> value tuned for the 8px baseline grid.</p>
+            </article>
+            <article className="rule">
+              <strong><code>*-letter-spacing</code></strong>
+              <p>The tracking. Resolves to <code>--dimension-letter-spacing-default</code> or <code>--dimension-letter-spacing-wide</code>.</p>
+            </article>
+          </div>
+        </section>
+      </div>
+    );
+  },
+};
+
 export const ConsumerGuidance = {
   parameters: {
     docs: {

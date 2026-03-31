@@ -11,7 +11,63 @@ libraries in the Canonical design system.
 
 This hub composes all individual Storybook instances across the monorepo into a single
 navigable interface. Each section in the sidebar corresponds to a separate component
-library:
+library or documentation area.
+
+## Documentation
+
+Documentation in the **Tokens** section follows the [Diátaxis](https://diataxis.fr/)
+framework — four distinct types of content, each serving a different need.
+
+### 🎓 Learn (Tutorials)
+
+Step-by-step guided builds. Start here if you are new to the system.
+
+- **Tutorial: First Component** — build a themed card from scratch
+- **Tutorial: Surface Depth** — layer surfaces with automatic depth compounding
+- **Tutorial: First Grid** — assemble a responsive dashboard layout
+
+### 🔧 How to (Guides)
+
+Task-oriented recipes. Each guide solves one specific problem and assumes you
+already understand the basics.
+
+- **How to Find a Token** — search strategies for the token catalogue
+- **How to Support Modifiers** — wire modifier channels into a component
+- **How to Handle Changes** — manage breaking changes during pre-1.0
+- **How to Use Responsive Grid** — breakpoint-driven column layouts
+- **How to Use Intrinsic Grid** — fluid content-driven layouts
+- **How to Force Theme** — override dark / light in a subtree
+- **How to Debug Tokens** — trace any visual anomaly back to its token
+- **How to Align to Baseline** — snap type and spacing to the 8px grid
+
+### 💡 Understanding (Explanations)
+
+Conceptual deep-dives. Read these to understand *why* the system works the way
+it does.
+
+- **Token Architecture** — tiers, stability guarantees, naming conventions
+- **Modifier Contract** — how channel custom properties compose
+- **Surface Depth Model** — background compounding and depth semantics
+- **Theme Mechanics** — dark / light resolution via media and class cascade
+- **Grid System** — why responsive, intrinsic, and subgrid each exist
+- **Spacing Scale** — the 8px base unit, rem rationale, and token scale
+
+### 📖 Reference
+
+Lookup tables and exhaustive listings. Use these while coding.
+
+- **Overview** — token KPIs, tier distribution, system summary
+- **Explorer** — searchable, filterable token table
+- **Modifiers** — all modifier families and their channels
+- **Surfaces** — surface depth stack and compounding preview
+- **Interaction States** — hover, active, disabled state tokens
+- **Spacing Scale** — visual bar chart of all 17 dimension tokens
+- **Typography Scale** — live heading and text style previews
+- **Grid Reference** — all grid classes, custom properties, breakpoints
+- **Cascade Layers Reference** — the 5-layer architecture with all channels
+- **Consumer Guidance** — quick consumption rules and stability policy
+
+## Component libraries
 
 | Library | Framework | Description |
 |---------|-----------|-------------|
@@ -23,21 +79,22 @@ library:
 | **App LXD** | React | LXD-specific components |
 | **App Portal** | React | Portal-specific components |
 | **App Anbox** | React | Anbox-specific components |
-| **Tokens** | React | Design token showcase |
+| **Tokens** | React | Design token showcase and documentation |
 | **Lit PoC** | Lit | Web Components proof of concept |
 | **Svelte App Launchpad** | Svelte | Svelte Launchpad components |
 | **Demo Site** | React | Full demo application |
 
 ## Design principles
 
-The design system is built on a **modifier-based ontology** with three axes:
+The design system is built on a **modifier-based ontology** with four semantic axes:
 
-- **Importance**: primary, secondary, tertiary
-- **Anticipation**: constructive, caution, destructive
-- **Variant**: link, ghost, etc.
+- **Importance**: primary, secondary, tertiary — controls visual emphasis
+- **Anticipation**: constructive, caution, destructive — signals the outcome of an action
+- **Criticality**: success, error, warning, information — system-level feedback
+- **Emphasis**: muted, branded — surface-level adjustments
 
-Components express these modifiers consistently, enabling predictable composition
-across the entire system.
+Components express these modifiers through CSS custom-property channels, enabling
+predictable composition across the entire system.
 
 ## Getting started
 

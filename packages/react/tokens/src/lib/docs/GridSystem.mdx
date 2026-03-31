@@ -1,0 +1,172 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+import { Unstyled } from "@storybook/addon-docs/blocks";
+
+<Meta title="Foundation/Design Tokens/Understanding/The Grid System" />
+
+# Understanding the grid system
+
+The grid system provides layout structure for every page and component in the design system. It is intentionally minimal — four CSS classes and two custom properties — because layout is a solved problem that benefits from constraint, not from abstraction.
+
+This page explains _why_ the grid is designed the way it is. For practical steps, see [How to use the responsive grid](?path=/docs/foundation-design-tokens-how-to-use-the-responsive-grid--docs) or [How to use the intrinsic grid](?path=/docs/foundation-design-tokens-how-to-use-the-intrinsic-grid--docs).
+
+## What the grid solves
+
+Every interface needs columns. A dashboard needs a 12-column grid for its main content area. A card grid needs to wrap items fluidly based on available space. A form inside a card needs to inherit its parent's column structure.
+
+Without a shared system, each of these cases spawns its own ad-hoc grid — inline styles, component-scoped `grid-template-columns`, and utility classes that conflict with each other. The result is a layout surface that cannot be reasoned about globally.
+
+The grid system provides three answers to three different layout questions:
+
+| Question | Answer | Class |
+|---|---|---|
+| "I need a fixed-column responsive layout" | Breakpoint-driven 4 → 8 → 12 columns | `.grid.responsive` |
+| "I need fluid wrapping for a set of cards" | Auto-fill groups of 4, minimum width per column | `.grid.intrinsic` |
+| "I need to align to my parent's columns" | CSS subgrid inheritance | `.subgrid` |
+
+## Two grid strategies, one contract
+
+The distinction between `.responsive` and `.intrinsic` reflects a fundamental tension in layout design: should columns be controlled by the viewport or by the content?
+
+### Responsive: the viewport decides
+
+The responsive grid follows the classic breakpoint model:
+
+- **Mobile** (< 768px): 4 columns
+- **Tablet** (768px – 1279px): 8 columns
+- **Desktop** (≥ 1280px): 12 columns
+
+This is the right choice for page-level layout — navigation rails, main content areas, sidebars — where the _structure_ of the page changes at breakpoints. A 12-column desktop layout that collapses to a 4-column mobile layout is a structural decision, not a content decision.
+
+The breakpoints are set through `@media` queries on a single custom property:
+
+```css
+.responsive {
+  --modifier-grid-template: repeat(4, 1fr);
+
+  @media (min-width: 768px) {
+    --modifier-grid-template: repeat(8, 1fr);
+  }
+
+  @media (min-width: 1280px) {
+    --modifier-grid-template: repeat(12, 1fr);
+  }
+}
+```
+
+Notice that the responsive class does not set `grid-template-columns` directly. It sets `--modifier-grid-template`, which the base `.grid` class reads. This indirection is the same modifier pattern used throughout the token system — it means a parent container can override the grid template without fighting CSS specificity.
+
+### Intrinsic: the content decides
+
+The intrinsic grid uses `auto-fill` to let the browser decide how many columns fit:
+
+```css
+.intrinsic {
+  --modifier-grid-template: repeat(
+    auto-fill,
+    minmax(var(--grid-col-min), 1fr)
+    minmax(var(--grid-col-min), 1fr)
+    minmax(var(--grid-col-min), 1fr)
+    minmax(var(--grid-col-min), 1fr)
+  );
+}
+```
+
+The items are grouped in sets of 4 — each group of 4 `minmax()` tracks fills or wraps as a unit. `--grid-col-min` (default: `100px`) controls the minimum column width before wrapping occurs.
+
+This is the right choice for content-driven layouts — card grids, gallery views, dashboard widgets — where the number of items varies and the layout should adapt to the container, not the viewport.
+
+### Why not just one?
+
+The two strategies serve different masters. A page layout with a sidebar and a main content area _must_ change structure at breakpoints — it cannot simply wrap. A card grid _must not_ be locked to breakpoint-driven column counts — it should use all available space regardless of viewport width.
+
+Trying to serve both needs with a single mechanism leads to either over-constrained cards (locked to viewport breakpoints when they should flow) or under-constrained page layouts (wrapping when they should restructure).
+
+## The modifier pattern in grid
+
+The grid uses the same `--modifier-*` custom property pattern as the color token system. The base `.grid` class reads `--modifier-grid-template`:
+
+```css
+.grid {
+  display: grid;
+  grid-template-columns: var(--modifier-grid-template);
+  gap: var(--grid-gap, 1rem);
+}
+```
+
+This means `.responsive` and `.intrinsic` are _modifier classes_ — they set the custom property that `.grid` reads. The same pattern enables custom grid configurations:
+
+```css
+/* A custom 3-column grid for a specific layout */
+.my-layout {
+  --modifier-grid-template: 240px 1fr 320px;
+}
+```
+
+This custom layout class composes with `.grid` exactly as `.responsive` does, because it uses the same contract: set `--modifier-grid-template`, and `.grid` will apply it.
+
+## Why subgrid
+
+CSS Subgrid lets a child element inherit its parent's column tracks. Without subgrid, nested grids create their _own_ column definitions, which means inner content cannot align with outer content.
+
+```css
+.subgrid {
+  display: grid;
+  grid-template-columns: subgrid;
+  grid-column: var(--subgrid-span, 1 / -1);
+}
+```
+
+The `--subgrid-span` property controls how many parent columns the subgrid spans. The default (`1 / -1`) spans all columns, which is the most common case: a row inside a grid that needs its children to align with the grid's columns.
+
+Subgrid is essential for forms, tables, and any layout where label-to-input alignment across rows matters. Without it, each row would need to independently define its column widths, and alignment would be a manual coordination problem.
+
+## Why `@layer ds.components`
+
+The grid is declared in `@layer ds.components`, not `@layer ds.tokens` or `@layer ds.modifiers`. This is deliberate:
+
+- **Tokens** define values (colors, dimensions, typography).
+- **Modifiers** rebind token channels contextually (error, success, emphasis).
+- **Components** provide structural patterns (grid, surfaces, typography blocks).
+
+The grid provides _structure_, not _values_. It is a pattern that uses the modifier custom property convention but is not itself a modifier. Placing it in the component layer means it can be overridden by component-specific styles without layer conflicts.
+
+## Gap and the spacing scale
+
+The grid gap defaults to `1rem` via `var(--grid-gap, 1rem)`. This can be overridden per grid context:
+
+```css
+.tight-grid {
+  --grid-gap: var(--dimension-1);  /* 0.5rem / 8px */
+}
+
+.spacious-grid {
+  --grid-gap: var(--dimension-4);  /* 2rem / 32px */
+}
+```
+
+Gap uses the spacing scale tokens (`--dimension-*`) when overridden, keeping grid spacing consistent with the rest of the spacing system. See [Understanding the spacing scale](?path=/docs/foundation-design-tokens-understanding-the-spacing-scale--docs) for why these values exist.
+
+## Design decisions and alternatives
+
+### Why not a utility-class system?
+
+Grid utility classes (`.col-span-4`, `.col-start-2`, etc.) were considered and rejected. They move layout decisions into HTML, making them harder to manage at scale and impossible to change responsively without duplicating classes for each breakpoint. The custom property approach keeps layout in CSS where it belongs, while HTML expresses only the structural intent (`.grid.responsive`).
+
+### Why not CSS Container Queries for responsive?
+
+Container queries let elements respond to their _container's_ size rather than the viewport. This is powerful for components, but page-level layout genuinely needs viewport awareness — a sidebar should collapse based on the browser width, not its own container. The responsive grid uses `@media` queries because page structure is a viewport concern.
+
+For component-level responsive behavior, container queries are the right tool — but they operate at a different level than the grid system.
+
+### Why groups of 4 in intrinsic?
+
+The intrinsic grid groups 4 `minmax()` tracks together. This means items wrap in multiples of 4 — the grid shows 4, 8, 12, or more columns depending on space. The grouping prevents odd single-column stragglers and maintains visual rhythm. The number 4 aligns with the responsive grid's smallest breakpoint (4 columns on mobile), creating consistency between the two strategies.
+
+## Further reading
+
+- [How to use the responsive grid](?path=/docs/foundation-design-tokens-how-to-use-the-responsive-grid--docs): step-by-step guide for page layouts
+- [How to use the intrinsic grid](?path=/docs/foundation-design-tokens-how-to-use-the-intrinsic-grid--docs): step-by-step guide for content grids
+- [Your first grid layout](?path=/docs/foundation-design-tokens-learn-your-first-grid-layout--docs): hands-on tutorial building a complete layout
+- [Grid classes reference](?path=/docs/foundation-design-tokens-reference-grid-classes--docs): all classes, properties, and breakpoints
+- [Understanding the spacing scale](?path=/docs/foundation-design-tokens-understanding-the-spacing-scale--docs): the dimension tokens used for gap
+- [Token Architecture](?path=/docs/foundation-design-tokens-understanding-token-architecture--docs): how the modifier pattern works system-wide

@@ -1,0 +1,161 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+
+<Meta title="Foundation/Design Tokens/How to/Force a Theme on a Subtree" />
+
+# How to force a theme on a subtree
+
+This guide shows you how to force light or dark mode on a section of your interface, overriding the user's system preference. This is useful for sidebars, hero sections, footers, or any region that should maintain a specific appearance regardless of the global theme.
+
+## Prerequisites
+
+- `@canonical/styles` imported in your project
+- Familiarity with CSS custom properties
+- Understanding of how [theme mechanics](?path=/docs/foundation-design-tokens-understanding-theme-mechanics--docs) work
+
+## Steps
+
+### 1. Apply the theme class
+
+Add `.dark` or `.light` to the container element:
+
+```html
+<body>
+  <!-- This section follows the system preference -->
+  <main>
+    <p>Adapts to light/dark automatically</p>
+  </main>
+
+  <!-- This sidebar is always dark -->
+  <aside class="dark">
+    <nav>Always rendered in dark mode</nav>
+  </aside>
+</body>
+```
+
+Every token inside the `.dark` container resolves to its dark-mode value. Every token inside `.light` resolves to its light-mode value. The class can be applied to any element — `<div>`, `<section>`, `<aside>`, `<footer>`, or even a `<span>`.
+
+### 2. Ensure surface tokens resolve correctly
+
+If the forced-theme region also uses surfaces, apply `.surface` as you normally would:
+
+```html
+<aside class="dark">
+  <div class="surface">
+    <!-- Dark surface layer 1 -->
+    <div class="surface">
+      <!-- Dark surface layer 2 — shifted background in dark mode -->
+    </div>
+  </div>
+</aside>
+```
+
+Surface tokens inside a forced-theme region use the forced theme's values. The cascade order (tokens → modifiers → surfaces → states) applies identically — the theme class only changes _which values_ the token layer provides.
+
+### 3. Handle transitions at the theme boundary
+
+The boundary between theme regions may need visual separation. Use a border or shadow to mark the transition:
+
+```css
+.dark-sidebar {
+  border-inline-start: 1px solid var(--color-border-subtle);
+}
+```
+
+The `--color-border-subtle` token inside the `.dark` region resolves to the dark-mode border color, which works against the dark background.
+
+### 4. Test native form controls
+
+When forcing a theme, set `color-scheme` to ensure native form controls (scrollbars, checkboxes, selects) match:
+
+```css
+.dark {
+  color-scheme: dark;
+}
+
+.light {
+  color-scheme: light;
+}
+```
+
+The generated CSS from `@canonical/styles` already includes this, but if you are building a custom theme override, ensure `color-scheme` is set alongside the theme class.
+
+### 5. Test modifier composition
+
+Modifiers work identically inside forced-theme regions:
+
+```html
+<aside class="dark">
+  <div class="error">
+    <p>Error text in dark mode</p>
+  </div>
+</aside>
+```
+
+The `.error` modifier sets `--modifier-color-text` to `var(--color-text-error)`. Inside `.dark`, `--color-text-error` resolves to its dark-mode value. No special handling is needed.
+
+## Variations
+
+### Hero section in dark mode on a light page
+
+```html
+<body class="light">
+  <section class="dark hero">
+    <h1>Welcome</h1>
+    <p>This hero is always dark, even on a light page</p>
+  </section>
+  <main>
+    <p>Normal light-mode content</p>
+  </main>
+</body>
+```
+
+### Inline dark region (code block, terminal preview)
+
+```html
+<article>
+  <p>Regular article text</p>
+  <div class="dark surface" style="padding: var(--dimension-2); border-radius: 0.5rem;">
+    <pre><code>Terminal-style code preview on a dark background</code></pre>
+  </div>
+  <p>More article text</p>
+</article>
+```
+
+### Nested theme forcing (rare)
+
+Theme classes can nest. The innermost class wins:
+
+```html
+<div class="dark">
+  <!-- Dark region -->
+  <div class="light">
+    <!-- Light island inside the dark region -->
+    <div class="dark">
+      <!-- Dark island inside the light island -->
+    </div>
+  </div>
+</div>
+```
+
+This works because CSS custom properties inherit to the closest ancestor that sets them. Each theme class re-sets all semantic tokens to its theme values. Use sparingly — deeply nested theme flips are confusing for users.
+
+## Troubleshooting
+
+### Colors inside the forced region don't change
+
+Verify that `@canonical/styles` is imported. The `.dark` and `.light` classes are defined in the generated CSS — without it, the classes have no effect.
+
+### Native controls (scrollbars, selects) are in the wrong theme
+
+Add `color-scheme: dark` or `color-scheme: light` to the forced region. This tells the browser to render native UI elements in the matching theme.
+
+### Interaction states look wrong
+
+Interaction states (hover, active, disabled) use delta variables that are theme-aware. Inside a `.dark` region, hover deltas shift in the opposite direction from light mode. This is automatic — if deltas aren't working, check that the state tokens are being consumed from the generated CSS, not hardcoded.
+
+## Related
+
+- [Theme Mechanics](?path=/docs/foundation-design-tokens-understanding-theme-mechanics--docs): how paired values, deltas, and `color-scheme` work
+- [Surface Depth Model](?path=/docs/foundation-design-tokens-understanding-surface-depth-model--docs): surfaces inside forced-theme regions
+- [The Modifier Contract](?path=/docs/foundation-design-tokens-understanding-modifier-contract--docs): modifiers are theme-independent
+- [How to debug token resolution](?path=/docs/foundation-design-tokens-how-to-debug-token-resolution--docs): tracing values through forced themes

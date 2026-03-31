@@ -1,0 +1,146 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+
+<Meta title="Foundation/Design Tokens/Understanding/The Spacing Scale" />
+
+# Understanding the spacing scale
+
+Spacing in the design system is a closed set of dimension tokens. Every `padding`, `margin`, `gap`, and size value in the system draws from the same scale. This page explains _why_ the scale exists, how it relates to the 8px baseline grid, and why the values are what they are.
+
+For practical usage, see [How to find the right token](?path=/docs/foundation-design-tokens-how-to-find-the-right-token--docs).
+
+## What the spacing scale solves
+
+Without a shared scale, spacing drifts. One component uses `12px` padding, another uses `14px`, a third uses `0.8rem`. The differences are imperceptible individually but collectively they produce an interface that feels unresolved — elements don't align, cards have inconsistent insets, and vertical rhythm breaks down.
+
+The spacing scale eliminates drift by providing exactly 18 values. If a value isn't in the scale, it isn't used. This constraint is the point — it forces every spacing decision through a shared vocabulary.
+
+## The scale
+
+The dimension token scale follows a progression from `0.125rem` (2px) to `5.5rem` (88px):
+
+<div className="ds token-page">
+  <section className="panel">
+    <div className="header">
+      <h3>Dimension token scale</h3>
+      <p>Each step is a primitive dimension token. Pixel equivalents assume a 16px root font size.</p>
+    </div>
+    <div className="stack">
+      {[
+        { token: "--dimension-025", rem: "0.125", px: "2" },
+        { token: "--dimension-050", rem: "0.25", px: "4" },
+        { token: "--dimension-100", rem: "0.5", px: "8" },
+        { token: "--dimension-150", rem: "0.75", px: "12" },
+        { token: "--dimension-175", rem: "0.875", px: "14" },
+        { token: "--dimension-200", rem: "1", px: "16" },
+        { token: "--dimension-225", rem: "1.125", px: "18" },
+        { token: "--dimension-250", rem: "1.25", px: "20" },
+        { token: "--dimension-300", rem: "1.5", px: "24" },
+        { token: "--dimension-400", rem: "2", px: "32" },
+        { token: "--dimension-500", rem: "2.5", px: "40" },
+        { token: "--dimension-600", rem: "3", px: "48" },
+        { token: "--dimension-700", rem: "3.5", px: "56" },
+        { token: "--dimension-800", rem: "4", px: "64" },
+        { token: "--dimension-900", rem: "4.5", px: "72" },
+        { token: "--dimension-1000", rem: "5", px: "80" },
+        { token: "--dimension-1100", rem: "5.5", px: "88" },
+      ].map(({ token, rem, px }) => (
+        <div key={token} style={{
+          display: "grid",
+          gridTemplateColumns: "12rem 5rem 4rem 1fr",
+          alignItems: "center",
+          gap: "0.5rem",
+          fontSize: "0.8125rem",
+          fontFamily: "ui-monospace, monospace",
+          padding: "0.25rem 0",
+        }}>
+          <code>{token}</code>
+          <span>{rem}rem</span>
+          <span style={{ color: "color-mix(in srgb, currentColor 60%, transparent)" }}>{px}px</span>
+          <div style={{
+            height: "8px",
+            width: `${rem}rem`,
+            background: "var(--color-foreground-primary, #e95420)",
+            borderRadius: "2px",
+            minWidth: "2px",
+          }} />
+        </div>
+      ))}
+    </div>
+  </section>
+</div>
+
+## Why these specific values
+
+The scale is not arbitrary. It follows three overlapping principles:
+
+### 1. 8px base unit
+
+The core of the scale is multiples of 8px (0.5rem): `--dimension-100` (8px), `--dimension-200` (16px), `--dimension-300` (24px), `--dimension-400` (32px), and so on. Eight pixels is the baseline grid unit — it divides cleanly into screen pixels, works well with common font sizes (16px body text sits on exactly 2 baseline units), and creates visually balanced spacing at every viewport size.
+
+The 8px grid is widely adopted because it produces spacing that _looks_ intentional. Human visual perception is sensitive to alignment on a regular grid — 8px provides enough granularity for fine work without the chaos of pixel-level freedom.
+
+### 2. Half-step refinements
+
+Between the 8px multiples, the scale includes half-steps for fine control: `--dimension-025` (2px), `--dimension-050` (4px), `--dimension-150` (12px), `--dimension-175` (14px), `--dimension-225` (18px), `--dimension-250` (20px). These exist because strict 8px adherence is too coarse for certain elements:
+
+- **2px** (`--dimension-025`): hairline gaps, border compensation, icon-to-text nudges
+- **4px** (`--dimension-050`): tight internal padding in compact elements (badges, tags)
+- **12px** (`--dimension-150`): button padding that is tighter than 16px but not as cramped as 8px
+- **14px** (`--dimension-175`): supplementary font size, aligned with common typographic tradition
+
+The half-steps are deliberately sparse. Having _some_ intermediate values provides escape hatches without undermining the grid.
+
+### 3. Naming encodes scale position
+
+Token names use a numeric suffix that encodes the scale position, not the pixel value. `--dimension-200` is 1rem (16px), not 200px. The hundreds-based naming leaves room for future intermediate values without renaming existing tokens — `--dimension-125` could be inserted between `100` and `150` without disruption.
+
+## Rem, not pixels
+
+Every dimension token is defined in `rem`, not `px`. This is a deliberate accessibility choice:
+
+- Users who set a larger default font size in their browser get proportionally larger spacing, maintaining the visual relationship between text and whitespace.
+- Users who zoom the page scale everything uniformly — `rem` values scale with the root font size, while `px` values scale independently of text.
+- The system can adapt to different root font sizes per breakpoint. The `small` breakpoint uses a 16px root; the `xLarge` breakpoint uses 18px. All dimension tokens scale proportionally.
+
+This is why the dimension token descriptions include pixel equivalents as documentation aids ("Primitive dimension 200 (16px)") — the pixel value assumes a 16px root and is provided for mental model purposes only. The actual value is always `rem`.
+
+## Spacing tokens are not modifier-aware
+
+Unlike color tokens, dimension tokens do not participate in the modifier channel system. There is no `--modifier-dimension-*` or `--surface-dimension-*`. This is a deliberate design constraint:
+
+- **Color changes with context.** An error state needs red text. A surface layer needs a shifted background. Color is inherently contextual.
+- **Spacing does not change with context.** A card has the same padding in an error state as in a success state. A surface layer has the same gap as the root. Spacing is structural, not contextual.
+
+If a component needs different spacing in different states, that is a component-specific concern — it should be handled with component-level CSS, not with a system-wide modifier channel.
+
+## The baseline grid and typography
+
+The spacing scale connects to typography through the baseline grid. The system defines a baseline of 8px (matching `--dimension-100`), and typography line-heights are tuned to sit on this grid:
+
+- **Heading 1**: `--dimension-size-font-size-700` with a line-height that produces a total block height divisible by 8px
+- **Body text**: `--dimension-size-font-size-350` with a line-height of approximately 24px (3 × 8px)
+
+When line-heights don't land exactly on the 8px grid (because font metrics vary), the system provides **baseline nudge tokens** — small sub-pixel adjustments that push an element's top or bottom padding to re-align subsequent content with the baseline grid.
+
+Baseline nudge tokens (e.g., `--dimension-baseline-nudge-bottom-350`) are infrastructure — they are consumed by typography components, not by application code. Most developers will never need to use them directly.
+
+See [How to align to the baseline grid](?path=/docs/foundation-design-tokens-how-to-align-to-the-baseline-grid--docs) for practical steps.
+
+## Semantic vs. primitive dimensions
+
+The dimension tokens described above are **primitive** — raw values in the scale. The system also defines **semantic** dimension tokens that carry meaning:
+
+- `--dimension-size-font-size-350`: "the font size for primary body text" — resolves to a dimension primitive, but its name carries typographic intent
+- `--dimension-size-font-size-700`: "the font size for heading 1" — a different semantic assignment from the same primitive scale
+
+Semantic dimension tokens follow the same principle as semantic color tokens: they express _intent_ rather than _value_. The intent is stable even when the underlying value changes (for example, if `heading-1` shifts from 2rem to 2.25rem in a future design iteration).
+
+For spacing, most usage is direct primitive references (`--dimension-2` for standard padding) because spacing intent is usually self-evident from context. For typography, semantic references are preferred because the relationship between font size, line-height, and baseline nudge is a coordinated set.
+
+## Further reading
+
+- [How to find the right token](?path=/docs/foundation-design-tokens-how-to-find-the-right-token--docs): decision tree including dimension tokens
+- [How to align to the baseline grid](?path=/docs/foundation-design-tokens-how-to-align-to-the-baseline-grid--docs): using nudge tokens in practice
+- [Understanding the grid system](?path=/docs/foundation-design-tokens-understanding-the-grid-system--docs): how spacing and grid gap interact
+- [Token Architecture](?path=/docs/foundation-design-tokens-understanding-token-architecture--docs): the three-tier model for all tokens
+- [Token Explorer](?path=/docs/foundation-design-tokens-explorer--docs): browse dimension tokens with visual previews
