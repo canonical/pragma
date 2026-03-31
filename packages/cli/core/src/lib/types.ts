@@ -20,6 +20,8 @@ export interface CommandContext {
   readonly cwd: string;
   /** Global flags parsed from the CLI invocation */
   readonly globalFlags: GlobalFlags;
+  /** Optional binary-specific interactive renderer/runner */
+  readonly interactive?: InteractiveHandler | undefined;
 }
 
 /**
@@ -154,6 +156,19 @@ export interface InteractiveOptions {
   /** Preview generated files before writing */
   readonly preview: boolean;
 }
+
+/** Context passed to an interactive handler implementation. */
+export interface InteractiveHandlerRequest {
+  readonly spec: InteractiveSpec;
+  readonly command: CommandDefinition;
+  readonly params: Readonly<Record<string, unknown>>;
+  readonly ctx: CommandContext;
+}
+
+/** Binary-specific interactive runner for shared command registration. */
+export type InteractiveHandler = (
+  request: InteractiveHandlerRequest,
+) => Promise<CommandResult | null | undefined>;
 
 // =============================================================================
 // Command Result

@@ -1,3 +1,6 @@
+import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import type {
   GeneratorDefinition,
   PromptDefinition,
@@ -212,6 +215,109 @@ describe("executeGenerator — interactive", () => {
     );
     if (result.tag === "interactive") {
       expect(result.spec.options.stamp).toBeUndefined();
+    }
+  });
+});
+
+describe("executeGenerator — batch execution", () => {
+  it("runs the generator when all answers are available", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "pragma-execute-generator-"));
+
+    try {
+      const gen = makeGen(simplePrompts);
+      const result = await executeGenerator(
+        gen,
+        { name: "Button" },
+        { ...baseCtx, cwd: dir },
+      );
+
+      expect(result.tag).toBe("output");
+      if (result.tag === "output") {
+        const text = result.render.plain(result.value);
+        expect(text).toContain("src/Button.ts");
+        expect(text).toContain("Generation complete.");
+      }
+
+      const outputFile = join(dir, "src", "Button.ts");
+      expect(existsSync(outputFile)).toBe(true);
+      expect(readFileSync(outputFile, "utf-8")).toBe("export {};\n");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("prefers interactive mode in a TTY when only defaults would be used", async () => {
+    const gen = makeGen([
+      {
+        name: "name",
+        message: "Component name",
+        type: "text",
+        default: "Button",
+      },
+    ]);
+
+    const stdinDescriptor = Object.getOwnPropertyDescriptor(
+      process.stdin,
+      "isTTY",
+    );
+    const stdoutDescriptor = Object.getOwnPropertyDescriptor(
+      process.stdout,
+      "isTTY",
+    );
+
+    Object.defineProperty(process.stdin, "isTTY", {
+      configurable: true,
+      value: true,
+    });
+    Object.defineProperty(process.stdout, "isTTY", {
+      configurable: true,
+      value: true,
+    });
+
+    try {
+      const result = await executeGenerator(gen, {}, baseCtx);
+      expect(result.tag).toBe("interactive");
+    } finally {
+      if (stdinDescriptor) {
+        Object.defineProperty(process.stdin, "isTTY", stdinDescriptor);
+      }
+      if (stdoutDescriptor) {
+        Object.defineProperty(process.stdout, "isTTY", stdoutDescriptor);
+      }
+    }
+  });
+
+  it("prefers interactive mode in a TTY even when some answers were provided", async () => {
+    const gen = makeGen(simplePrompts);
+
+    const stdinDescriptor = Object.getOwnPropertyDescriptor(
+      process.stdin,
+      "isTTY",
+    );
+    const stdoutDescriptor = Object.getOwnPropertyDescriptor(
+      process.stdout,
+      "isTTY",
+    );
+
+    Object.defineProperty(process.stdin, "isTTY", {
+      configurable: true,
+      value: true,
+    });
+    Object.defineProperty(process.stdout, "isTTY", {
+      configurable: true,
+      value: true,
+    });
+
+    try {
+      const result = await executeGenerator(gen, { name: "Button" }, baseCtx);
+      expect(result.tag).toBe("interactive");
+    } finally {
+      if (stdinDescriptor) {
+        Object.defineProperty(process.stdin, "isTTY", stdinDescriptor);
+      }
+      if (stdoutDescriptor) {
+        Object.defineProperty(process.stdout, "isTTY", stdoutDescriptor);
+      }
     }
   });
 });

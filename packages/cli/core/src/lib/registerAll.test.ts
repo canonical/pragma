@@ -342,6 +342,57 @@ describe("registerAll", () => {
       expect(chunks.join("")).toContain("hello");
     });
 
+    it("delegates interactive results to the context interactive handler", async () => {
+      const commands: CommandDefinition[] = [
+        {
+          path: ["scaffold"],
+          description: "Scaffold something",
+          parameters: [],
+          execute: async () => ({
+            tag: "interactive",
+            spec: {
+              generator: {
+                meta: { name: "gen", version: "1.0.0" },
+                prompts: [],
+                generate: () => undefined,
+              },
+              partialAnswers: {},
+              options: {
+                dryRunOnly: false,
+                undo: false,
+                verbose: false,
+                stamp: undefined,
+                preview: true,
+              },
+            },
+          }),
+        },
+      ];
+
+      const program = new Command();
+      program.exitOverride();
+      registerAll(program, commands, {
+        ...testCtx,
+        interactive: async () =>
+          createOutputResult("interactive handled", { plain: (s) => s }),
+      });
+
+      const chunks: string[] = [];
+      const originalWrite = process.stdout.write;
+      process.stdout.write = ((chunk: string) => {
+        chunks.push(chunk);
+        return true;
+      }) as typeof process.stdout.write;
+
+      try {
+        await program.parseAsync(["scaffold"], { from: "user" });
+      } finally {
+        process.stdout.write = originalWrite;
+      }
+
+      expect(chunks.join("")).toContain("interactive handled");
+    });
+
     it("accepts multiple positional args for trailing multiselect params", async () => {
       let captured: Record<string, unknown> = {};
 

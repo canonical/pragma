@@ -25,6 +25,8 @@ export type {
   CompletionTree,
   GlobalFlags,
   InteractiveGenerator,
+  InteractiveHandler,
+  InteractiveHandlerRequest,
   InteractiveOptions,
   InteractiveSpec,
   OutputAdapter,

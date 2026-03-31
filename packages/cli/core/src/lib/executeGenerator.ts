@@ -10,7 +10,7 @@ import type {
   GeneratorDefinition,
   PromptDefinition,
 } from "@canonical/summon-core";
-import { collectUndos, dryRun, runUndo } from "@canonical/task";
+import { collectUndos, dryRun, runTask, runUndo } from "@canonical/task";
 import createInteractiveResult from "./createInteractiveResult.js";
 import createOutputResult from "./createOutputResult.js";
 import {
@@ -103,6 +103,69 @@ const hasAllRequiredAnswers = (
   return true;
 };
 
+/**
+ * Render visible task effects into line-based CLI output.
+ */
+const renderEffectsOutput = (
+  effects: ReturnType<typeof dryRun>["effects"],
+  options: {
+    readonly verbose: boolean;
+    readonly showFiles: boolean;
+    readonly completionMessage: string;
+    readonly showFilesTip?: boolean;
+  },
+): string => {
+  const seenDirPaths = new Set<string>();
+  const visibleEffects = effects.filter((effect) => {
+    if (!isVisibleEffect(effect, options.verbose)) return false;
+    if (effect._tag === "MakeDir") {
+      if (seenDirPaths.has(effect.path)) return false;
+      seenDirPaths.add(effect.path);
+    }
+    return true;
+  });
+
+  const lines: string[] = [""];
+  for (const [i, effect] of visibleEffects.entries()) {
+    const isLast = i === visibleEffects.length - 1;
+    lines.push(
+      options.showFiles
+        ? formatEffectWithContent(effect, isLast)
+        : formatEffectLine(effect, isLast),
+    );
+  }
+  lines.push("");
+  lines.push(options.completionMessage);
+  if (options.showFilesTip === true && !options.showFiles) {
+    lines.push("Tip: Use --show-files to see generated file contents");
+  }
+  lines.push("");
+
+  return lines.join("\n");
+};
+
+/**
+ * Temporarily run a task in the command context working directory.
+ */
+const runInCwd = async <T>(cwd: string, work: () => Promise<T>): Promise<T> => {
+  const previousCwd = process.cwd();
+  if (previousCwd === cwd) {
+    return work();
+  }
+
+  process.chdir(cwd);
+  try {
+    return await work();
+  } finally {
+    process.chdir(previousCwd);
+  }
+};
+
+const suppressTaskLogs = (): void => {
+  // Intentionally swallow raw task log effects during generator execution.
+  // The CLI already renders a structured summary from the dry-run preview.
+};
+
 // =============================================================================
 // Main dispatch
 // =============================================================================
@@ -114,7 +177,8 @@ const hasAllRequiredAnswers = (
  * 1. LLM mode (--llm or globalFlags.llm) → dry-run + markdown output
  * 2. JSON mode (--format json or globalFlags.format=json) → dry-run + JSON output
  * 3. Dry-run with all answers → formatted effect output
- * 4. Otherwise → interactive result (binary handles execution)
+ * 4. Interactive TTY session with no explicit generator answers → interactive result
+ * 5. Otherwise → batch execution or interactive fallback
  */
 export default async function executeGenerator(
   gen: GeneratorDefinition,
@@ -148,6 +212,12 @@ export default async function executeGenerator(
   const cliAnswers = extractTypedAnswers(params, gen.prompts);
   const answersWithDefaults = applyDefaults(gen.prompts, cliAnswers);
   const hasAllAnswers = hasAllRequiredAnswers(gen.prompts, answersWithDefaults);
+  const shouldPreferInteractive =
+    !isLlm &&
+    !isJson &&
+    params.yes !== true &&
+    process.stdin.isTTY === true &&
+    process.stdout.isTTY === true;
 
   // LLM mode: dry-run + markdown
   if (isLlm && hasAllAnswers) {
@@ -198,7 +268,9 @@ export default async function executeGenerator(
   if (isUndo && hasAllAnswers) {
     const task = gen.generate(answersWithDefaults);
     try {
-      const result = await runUndo(task);
+      const result = await runInCwd(ctx.cwd, () =>
+        runUndo(task, { onLog: suppressTaskLogs }),
+      );
       if (result.undoCount === 0) {
         return createOutputResult("Nothing to undo.\n", { plain: (s) => s });
       }
@@ -214,39 +286,53 @@ export default async function executeGenerator(
     }
   }
 
+  // Interactive TTY session: prefer prompting/previews over silently
+  // accepting defaults or auto-confirming the plan.
+  if (shouldPreferInteractive) {
+    const stampEnabled = params.generatedStamp !== false;
+    const stamp = stampEnabled
+      ? { generator: gen.meta.name, version: gen.meta.version }
+      : undefined;
+
+    return createInteractiveResult({
+      generator: gen,
+      partialAnswers: cliAnswers,
+      options: {
+        dryRunOnly: false,
+        undo: false,
+        verbose,
+        stamp,
+        preview: params.preview !== false,
+      },
+    });
+  }
+
   // Dry-run with all answers: formatted effect lines
   if (isDryRun && hasAllAnswers) {
     const task = gen.generate(answersWithDefaults);
     const result = dryRun(task);
 
-    // Filter and deduplicate effects
-    const seenDirPaths = new Set<string>();
-    const visibleEffects = result.effects.filter((e) => {
-      if (!isVisibleEffect(e, verbose)) return false;
-      if (e._tag === "MakeDir") {
-        if (seenDirPaths.has(e.path)) return false;
-        seenDirPaths.add(e.path);
-      }
-      return true;
+    const output = renderEffectsOutput(result.effects, {
+      verbose,
+      showFiles,
+      completionMessage: "Dry-run complete. No files were modified.",
+      showFilesTip: true,
     });
+    return createOutputResult(output, { plain: (s) => s });
+  }
 
-    const lines: string[] = [""];
-    for (const [i, effect] of visibleEffects.entries()) {
-      const isLast = i === visibleEffects.length - 1;
-      lines.push(
-        showFiles
-          ? formatEffectWithContent(effect, isLast)
-          : formatEffectLine(effect, isLast),
-      );
-    }
-    lines.push("");
-    lines.push("Dry-run complete. No files were modified.");
-    if (!showFiles) {
-      lines.push("Tip: Use --show-files to see generated file contents");
-    }
-    lines.push("");
+  // Batch execution with all answers: run the task immediately.
+  if (hasAllAnswers) {
+    const task = gen.generate(answersWithDefaults);
+    const preview = dryRun(task);
 
-    const output = lines.join("\n");
+    await runInCwd(ctx.cwd, () => runTask(task, { onLog: suppressTaskLogs }));
+
+    const output = renderEffectsOutput(preview.effects, {
+      verbose,
+      showFiles,
+      completionMessage: "Generation complete.",
+    });
     return createOutputResult(output, { plain: (s) => s });
   }
 
