@@ -3,13 +3,12 @@ import harnesses from "./harnesses.js";
 
 describe("harnesses registry", () => {
   it("contains all known harnesses", () => {
-    expect(harnesses).toHaveLength(9);
+    expect(harnesses).toHaveLength(8);
     const ids = harnesses.map((h) => h.id);
     expect(ids).toEqual([
       "claude-code",
       "cursor",
       "windsurf",
-      "cline",
       "roo-code",
       "opencode",
       "gemini-cli",

@@ -82,8 +82,8 @@ function createLookupOptions(
             .filter((implementation) => implementation.available)
             .map((implementation) => implementation.framework),
       },
-      { label: "Anatomy nodes", value: (block) => block.nodeCount },
-      { label: "Tokens", value: (block) => block.tokenCount },
+      { label: "Anatomy nodes", value: (block) => block.nodeCount || null },
+      { label: "Tokens", value: (block) => block.tokenCount || null },
     ],
     sections: selectLookupSections(detailed, aspects),
     sectionOverrides: {

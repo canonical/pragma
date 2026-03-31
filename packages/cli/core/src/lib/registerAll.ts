@@ -191,20 +191,39 @@ function attachCommand(
 
     const params = extractParams(opts, positionalArgs, cmd.parameters);
     const result = await cmd.execute(params, ctx);
-    handleResult(result, cmd);
+    await handleResult(result, cmd, ctx, params);
   });
 }
 
-function handleResult(result: CommandResult, cmd?: CommandDefinition): void {
+async function handleResult(
+  result: CommandResult,
+  cmd?: CommandDefinition,
+  ctx?: CommandContext,
+  params?: Record<string, unknown>,
+): Promise<void> {
   switch (result.tag) {
     case "output": {
       const text = result.render.plain(result.value);
       if (text) {
-        process.stdout.write(`${text}\n`);
+        writeChunked(process.stdout, `${text}\n`);
       }
       break;
     }
     case "interactive": {
+      if (cmd && ctx && params && ctx.interactive) {
+        const rerunResult = await ctx.interactive({
+          spec: result.spec,
+          command: cmd,
+          params,
+          ctx,
+        });
+
+        if (rerunResult) {
+          await handleResult(rerunResult, cmd, ctx, params);
+          break;
+        }
+      }
+
       const message = formatInteractiveUnavailableMessage(result.spec, cmd);
       process.stderr.write(`${message}\n`);
       process.exitCode = 3;
@@ -369,4 +388,22 @@ function findRootProgram(cmd: Command): Command {
     current = current.parent;
   }
   return current;
+}
+
+/**
+ * Write a string to a writable stream in chunks to work around a Bun
+ * runtime segfault that occurs when writing large strings to stdout in
+ * a single call.
+ */
+const CHUNK_SIZE = 4096;
+
+function writeChunked(stream: NodeJS.WritableStream, text: string): void {
+  if (text.length <= CHUNK_SIZE) {
+    stream.write(text);
+    return;
+  }
+
+  for (let offset = 0; offset < text.length; offset += CHUNK_SIZE) {
+    stream.write(text.slice(offset, offset + CHUNK_SIZE));
+  }
 }

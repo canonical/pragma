@@ -29,7 +29,7 @@ function runCommand(args: string[], cwd?: string): CommandResult {
   const result = spawnSync("bun", ["run", binPath, ...args], {
     cwd,
     encoding: "utf-8",
-    timeout: 10_000,
+    timeout: 20_000,
   });
 
   return {

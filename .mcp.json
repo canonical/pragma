@@ -18,11 +18,11 @@
       "type": "stdio"
     },
     "pragma": {
+      "command": "pragma",
       "args": [
         "mcp"
       ],
-      "command": "pragma",
-      "type": "stdio"
+      "cwd": "/home/adrian/code/cn/pragma"
     },
     "sem": {
       "args": [

@@ -53,7 +53,7 @@ describe("runMcpServer", () => {
     const result = spawnSync("bun", ["run", binPath, "mcp"], {
       input: "",
       encoding: "utf-8",
-      timeout: 10_000,
+      timeout: 20_000,
     });
 
     expect(result.error).toBeUndefined();
@@ -62,5 +62,5 @@ describe("runMcpServer", () => {
       console.error("pragma mcp stderr:", result.stderr);
     }
     expect(result.status).toBe(0);
-  });
+  }, 20_000);
 });

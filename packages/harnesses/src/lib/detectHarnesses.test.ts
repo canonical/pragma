@@ -106,15 +106,15 @@ describe("detectHarnesses", () => {
     }
   });
 
-  it("detects Cline when .vscode directory exists", () => {
+  // Cline is disabled: it shares .vscode/mcp.json with VS Code
+  it("does not detect Cline (disabled harness)", () => {
     const result = dryRunWith(
       detectHarnesses("/project"),
       mocks((path) => path.includes(".vscode")),
     );
 
     const cline = result.value.find((d) => d.harness.id === "cline");
-    expect(cline).toBeDefined();
-    expect(cline?.confidence).toBe("high");
+    expect(cline).toBeUndefined();
   });
 
   it("reports configExists as false when config file is missing", () => {

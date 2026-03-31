@@ -27,9 +27,9 @@ describe("buildPackageCommand", () => {
     expect(result.tag).toBe("output");
   });
 
-  it("with missing required params returns interactive", async () => {
+  it("with missing required params returns batch output outside a TTY", async () => {
     const cmd = buildPackageCommand();
     const result = await cmd.execute({}, ctx);
-    expect(result.tag).toBe("interactive");
+    expect(result.tag).toBe("output");
   });
 });

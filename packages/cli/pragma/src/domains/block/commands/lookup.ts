@@ -15,9 +15,10 @@ import { PragmaError } from "#error";
 import type { PragmaContext } from "../../shared/context.js";
 import type { LookupResult } from "../../shared/contracts.js";
 import { renderLookupResults } from "../../shared/formatters.js";
+import type { BlockDetailed } from "../../shared/types/index.js";
 import { lookupFormatters } from "../formatters/index.js";
 import { resolveAspects } from "../helpers/index.js";
-import { listBlocks, type lookupBlock } from "../operations/index.js";
+import { listBlocks } from "../operations/index.js";
 import {
   buildBlockFilters,
   resolveBlockLookup,
@@ -25,7 +26,7 @@ import {
 import type { AspectFlags } from "../types.js";
 
 interface BlockLookupOutput {
-  readonly result: LookupResult<Awaited<ReturnType<typeof lookupBlock>>>;
+  readonly result: LookupResult<BlockDetailed>;
   readonly detailed: boolean;
   readonly aspects: AspectFlags;
 }

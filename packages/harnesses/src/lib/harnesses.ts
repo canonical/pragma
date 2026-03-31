@@ -46,19 +46,21 @@ const harnesses: readonly HarnessDefinition[] = [
     mcpKey: "mcpServers",
     skillsPath: (root) => `${root}/.windsurf/skills`,
   },
-  {
-    id: "cline",
-    name: "Cline",
-    version: "*",
-    detect: [
-      { type: "directory", path: ".vscode" },
-      { type: "extension", id: "saoudrizwan.claude-dev" },
-    ],
-    configPath: (root) => `${root}/.vscode/mcp.json`,
-    configFormat: "json",
-    mcpKey: "mcpServers",
-    skillsPath: (root) => `${root}/.agents/skills`,
-  },
+  // Cline is disabled: it shares .vscode/mcp.json with VS Code, causing
+  // duplicate prompts and double-writes during `pragma setup mcp`.
+  // {
+  //   id: "cline",
+  //   name: "Cline",
+  //   version: "*",
+  //   detect: [
+  //     { type: "directory", path: ".vscode" },
+  //     { type: "extension", id: "saoudrizwan.claude-dev" },
+  //   ],
+  //   configPath: (root) => `${root}/.vscode/mcp.json`,
+  //   configFormat: "json",
+  //   mcpKey: "mcpServers",
+  //   skillsPath: (root) => `${root}/.agents/skills`,
+  // },
   {
     id: "roo-code",
     name: "Roo Code",

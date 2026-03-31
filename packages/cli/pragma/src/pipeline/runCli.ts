@@ -15,6 +15,7 @@ import {
   renderErrorPlain,
 } from "./renderError.js";
 import resolveCommandKind from "./resolveCommandKind.js";
+import runInteractiveCommand from "./runInteractiveCommand.js";
 
 function hasCommandArg(argv: readonly string[]): boolean {
   const args = argv.slice(2);
@@ -78,6 +79,7 @@ async function handleRootHelp(globalFlags: GlobalFlags): Promise<void> {
     cwd: process.cwd(),
     dispose: () => {},
     globalFlags,
+    interactive: runInteractiveCommand,
   };
   const commands = collectCommands(stubCtx);
   const program = createProgram(commands, stubCtx);
@@ -111,7 +113,11 @@ async function bootAndRun(
   }
 
   try {
-    const ctx: PragmaContext = { ...runtime, globalFlags };
+    const ctx: PragmaContext = {
+      ...runtime,
+      globalFlags,
+      interactive: runInteractiveCommand,
+    };
     const commands = collectCommands(ctx);
     const program = createProgram(commands, ctx);
     await program.parseAsync(stripGlobalFlags(argv));
@@ -132,6 +138,7 @@ async function runStoreSkip(
     cwd: process.cwd(),
     dispose: () => {},
     globalFlags,
+    interactive: runInteractiveCommand,
   };
   const commands = [...setupCommands()];
   const program = createProgram(commands, stubCtx);
