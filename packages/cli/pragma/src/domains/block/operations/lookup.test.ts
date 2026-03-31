@@ -23,7 +23,8 @@ describe("lookupBlock", () => {
   it("returns detailed data for Button", async () => {
     const results = await lookupBlock(store, "Button", noFilter);
     expect(results.length).toBeGreaterThan(0);
-    const result = results[0]!;
+    const result = results[0];
+    expect(result).toBeDefined();
     expect(result.name).toBe("Button");
     expect(result.tier).toBe("global");
     expect(result.modifierValues.length).toBeGreaterThan(0);
@@ -37,7 +38,8 @@ describe("lookupBlock", () => {
 
   it("includes implementation paths", async () => {
     const results = await lookupBlock(store, "Button", noFilter);
-    const result = results[0]!;
+    const result = results[0];
+    expect(result).toBeDefined();
     const react = result.implementationPaths.find(
       (i) => i.framework === "react",
     );
@@ -47,21 +49,24 @@ describe("lookupBlock", () => {
 
   it("includes token references", async () => {
     const results = await lookupBlock(store, "Button", noFilter);
-    const result = results[0]!;
+    const result = results[0];
+    expect(result).toBeDefined();
     expect(result.tokens.length).toBe(1);
     expect(result.tokens[0].name).toBe("color.primary");
   });
 
   it("populates nodeCount from anatomy nodes", async () => {
     const results = await lookupBlock(store, "Button", noFilter);
-    const result = results[0]!;
+    const result = results[0];
+    expect(result).toBeDefined();
     expect(result.nodeCount).toBe(3);
     expect(result.anatomy?.root.name).toBe("button");
   });
 
   it("returns enriched summary, properties, and subcomponents", async () => {
     const results = await lookupBlock(store, "Button", noFilter);
-    const result = results[0]!;
+    const result = results[0];
+    expect(result).toBeDefined();
     expect(result.summary).toContain("Primary action trigger");
     expect(result.whenToUse).toContain("high-priority actions");
     expect(result.properties.map((property) => property.name)).toEqual(
@@ -98,7 +103,8 @@ describe("lookupBlock", () => {
       "ds:global.component.button",
       noFilter,
     );
-    const result = results[0]!;
+    const result = results[0];
+    expect(result).toBeDefined();
     expect(result.name).toBe("Button");
     expect(result.uri).toBe("https://ds.canonical.com/global.component.button");
   });
@@ -109,7 +115,8 @@ describe("lookupBlock", () => {
       "https://ds.canonical.com/global.component.button",
       noFilter,
     );
-    const result = results[0]!;
+    const result = results[0];
+    expect(result).toBeDefined();
     expect(result.name).toBe("Button");
     expect(result.uri).toBe("https://ds.canonical.com/global.component.button");
   });
@@ -117,6 +124,6 @@ describe("lookupBlock", () => {
   it("is case-insensitive for name lookup", async () => {
     const results = await lookupBlock(store, "button", noFilter);
     expect(results.length).toBeGreaterThan(0);
-    expect(results[0]!.name).toBe("Button");
+    expect(results[0]?.name).toBe("Button");
   });
 });

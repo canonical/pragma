@@ -137,6 +137,7 @@ describe("block parity", () => {
 
   it("block_lookup: detailed result matches", async () => {
     const opResults = await lookupBlock(rt.store, "Button", rt.config);
+    expect(opResults.length).toBeGreaterThan(0);
     const opResult = opResults[0];
     const mcpRes = await client.callTool({
       name: "block_lookup",
@@ -148,7 +149,8 @@ describe("block parity", () => {
 
   it("block_lookup condensed: matches llm formatter", async () => {
     const opResults = await lookupBlock(rt.store, "Button", rt.config);
-    const opResult = opResults[0]!;
+    expect(opResults.length).toBeGreaterThan(0);
+    const opResult = opResults[0];
     const expectedText = blockLookupFmt.llm({
       block: opResult,
       detailed: true,
