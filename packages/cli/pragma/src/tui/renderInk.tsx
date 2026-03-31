@@ -1,31 +1,18 @@
-import type React from "react";
-
 /**
- * Render a React element via Ink's renderToString and write to stdout.
+ * Write TUI-rendered output to stdout.
  *
- * Uses Ink's synchronous `renderToString` since all pragma TUI views
- * are static (single frame, no interaction). Strips trailing whitespace
- * from each line to avoid Ink's column-width padding creating blank gaps.
- * Dynamically imports Ink so the React/Ink bundle is never parsed
- * for non-TTY or machine-readable invocations.
+ * The ink renderers in pragma produce chalk-styled strings directly
+ * (not React elements), so this function simply writes the string
+ * to stdout. The dynamic import boundary is preserved so that domain
+ * command files can reference the `#tui` barrel without pulling in
+ * React/Ink at parse time for non-TTY invocations.
  *
- * @param element - A React element (typically a ListView or LookupView).
+ * @param output - A chalk-styled string produced by a TUI view.
  *
- * @note Impure — writes to process.stdout via Ink's renderToString.
+ * @note Impure — writes to process.stdout.
  */
-export default async function renderInk(
-  element: React.ReactElement,
-): Promise<void> {
-  const { renderToString } = await import("ink");
-  const raw = renderToString(element, {
-    columns: process.stdout.columns ?? 80,
-  });
-  if (raw) {
-    const cleaned = raw
-      .split("\n")
-      .map((line) => line.trimEnd())
-      .join("\n")
-      .trimEnd();
-    process.stdout.write(`${cleaned}\n`);
+export default async function renderInk(output: unknown): Promise<void> {
+  if (typeof output === "string" && output.length > 0) {
+    process.stdout.write(`${output}\n`);
   }
 }

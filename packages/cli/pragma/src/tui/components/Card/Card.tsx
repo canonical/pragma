@@ -42,14 +42,15 @@ export default function buildCard(
   const expandedLines = bodyLines.flatMap((line) => line.split("\n"));
   const borderedBody = expandedLines.map((line) => {
     const visible = stripAnsi(line);
-    const truncated =
-      visible.length > innerWidth ? `${line.slice(0, innerWidth - 1)}…` : line;
-    const truncatedVisible =
-      visible.length > innerWidth
-        ? `${visible.slice(0, innerWidth - 1)}…`
-        : visible;
-    const pad = Math.max(innerWidth - truncatedVisible.length, 0);
-    return `${BOX.vertical} ${truncated}${" ".repeat(pad)} ${BOX.vertical}`;
+    const visibleWidth = visible.length;
+    if (visibleWidth > innerWidth) {
+      // Truncate by visible width — use the plain text version
+      const truncatedVisible = `${visible.slice(0, innerWidth - 1)}…`;
+      const pad = Math.max(innerWidth - truncatedVisible.length, 0);
+      return `${BOX.vertical} ${truncatedVisible}${" ".repeat(pad)} ${BOX.vertical}`;
+    }
+    const pad = Math.max(innerWidth - visibleWidth, 0);
+    return `${BOX.vertical} ${line}${" ".repeat(pad)} ${BOX.vertical}`;
   });
 
   return [topBorder, titleLine, divider, ...borderedBody, bottomBorder].join(

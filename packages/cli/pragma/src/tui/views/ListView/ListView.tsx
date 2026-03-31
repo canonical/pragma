@@ -1,14 +1,13 @@
 import chalk from "chalk";
-import { Text } from "ink";
 import compactUri from "../../../domains/shared/compactUri.js";
 import { PREFIX_MAP } from "../../../domains/shared/prefixes.js";
 import { COL_GAP, DOMAIN_COLORS } from "../../constants.js";
 import {
   computeWidths,
   fitColumns,
+  getTerminalSize,
   truncateText,
 } from "../../helpers/index.js";
-import { useTerminalSize } from "../../hooks/index.js";
 import type { ListViewProps } from "./types.js";
 
 /**
@@ -27,14 +26,13 @@ export default function ListView<T>({
   columns,
   prefixes,
 }: ListViewProps<T>) {
-  const { columns: termWidth } = useTerminalSize();
+  const { columns: termWidth } = getTerminalSize();
   const prefixMap = prefixes ?? PREFIX_MAP;
   const colors = DOMAIN_COLORS[domain];
   const colorFn = resolveChalkColor(colors?.instanceFg);
 
   if (items.length === 0) {
-    const output = `${chalk.bold(colorFn(`${heading} (0)`))}\n${chalk.dim("No results.")}`;
-    return <Text>{output}</Text>;
+    return `${chalk.bold(colorFn(`${heading} (0)`))}\n${chalk.dim("No results.")}`;
   }
 
   const visibleColumns = fitColumns(columns, termWidth);
@@ -71,8 +69,7 @@ export default function ListView<T>({
       .join(gap),
   );
 
-  const output = [headingLine, headerLine, separator, ...dataLines].join("\n");
-  return <Text>{output}</Text>;
+  return [headingLine, headerLine, separator, ...dataLines].join("\n");
 }
 
 function formatCellValue(

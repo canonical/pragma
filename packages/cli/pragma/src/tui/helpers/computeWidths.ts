@@ -24,7 +24,7 @@ export default function computeWidths<T>(
   if (columns.length === 0) return [];
 
   const totalGaps = (columns.length - 1) * COL_GAP;
-  const available = terminalWidth - totalGaps;
+  const available = terminalWidth - totalGaps - 1;
 
   const naturalWidths = columns.map((col) => {
     const labelWidth = col.label.length;

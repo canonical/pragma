@@ -1,5 +1,4 @@
 import chalk from "chalk";
-import { Text } from "ink";
 import compactUri from "../../../domains/shared/compactUri.js";
 import { PREFIX_MAP } from "../../../domains/shared/prefixes.js";
 import { buildCard } from "../../components/Card/index.js";
@@ -77,8 +76,7 @@ export default function LookupView<T>({
         ]
       : [];
 
-  const output = [...cards, ...errorLines].join("\n\n");
-  return <Text>{output}</Text>;
+  return [...cards, ...errorLines].join("\n\n");
 }
 
 function computeLabelWidth<T>(
