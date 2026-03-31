@@ -200,7 +200,7 @@ function handleResult(result: CommandResult, cmd?: CommandDefinition): void {
     case "output": {
       const text = result.render.plain(result.value);
       if (text) {
-        process.stdout.write(`${text}\n`);
+        writeChunked(process.stdout, `${text}\n`);
       }
       break;
     }
@@ -369,4 +369,25 @@ function findRootProgram(cmd: Command): Command {
     current = current.parent;
   }
   return current;
+}
+
+/**
+ * Write a string to a writable stream in chunks to work around a Bun
+ * runtime segfault that occurs when writing large strings to stdout in
+ * a single call.
+ */
+const CHUNK_SIZE = 4096;
+
+function writeChunked(
+  stream: NodeJS.WritableStream,
+  text: string,
+): void {
+  if (text.length <= CHUNK_SIZE) {
+    stream.write(text);
+    return;
+  }
+
+  for (let offset = 0; offset < text.length; offset += CHUNK_SIZE) {
+    stream.write(text.slice(offset, offset + CHUNK_SIZE));
+  }
 }
