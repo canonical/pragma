@@ -9,10 +9,16 @@ export default async function resolveBlockLookup(
   queries: readonly string[],
   filters: FilterConfig,
 ): Promise<LookupContract<BlockDetailed>> {
-  const result: LookupResult<BlockDetailed> = await lookupMany(
+  const nested: LookupResult<BlockDetailed[]> = await lookupMany(
     queries,
     (query) => lookupBlock(store, query, filters),
   );
+
+  // lookupBlock returns BlockDetailed[] (multiple matches per name) — flatten
+  const result: LookupResult<BlockDetailed> = {
+    results: nested.results.flat(),
+    errors: nested.errors,
+  };
 
   return {
     params: { names: queries },

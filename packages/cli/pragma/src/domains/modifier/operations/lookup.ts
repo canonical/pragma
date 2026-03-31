@@ -19,14 +19,15 @@ export default async function lookupModifier(
   store: Store,
   name: string,
 ): Promise<ModifierFamily> {
-  const escaped = escapeSparqlValue(name);
+  const escaped = escapeSparqlValue(name.toLowerCase());
 
   const result = await store.query(
     buildQuery(`
       SELECT ?family (GROUP_CONCAT(DISTINCT ?valueName; separator="|") AS ?values)
       WHERE {
         ?family a ${P.ds}ModifierFamily ;
-                ${P.ds}name ${escaped} .
+                ${P.ds}name ?familyName .
+        FILTER(LCASE(STR(?familyName)) = ${escaped})
         OPTIONAL {
           ?mod a ${P.ds}Modifier ;
                ${P.ds}modifierFamily ?family ;

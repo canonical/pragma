@@ -136,7 +136,8 @@ describe("block parity", () => {
   });
 
   it("block_lookup: detailed result matches", async () => {
-    const opResult = await lookupBlock(rt.store, "Button", rt.config);
+    const opResults = await lookupBlock(rt.store, "Button", rt.config);
+    const opResult = opResults[0];
     const mcpRes = await client.callTool({
       name: "block_lookup",
       arguments: { names: ["Button"] },

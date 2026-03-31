@@ -14,8 +14,12 @@ export default async function enrichBlocks(
   filters: FilterConfig,
   disclosure: Disclosure,
 ): Promise<readonly (BlockListDigest | BlockDetailed)[]> {
-  const details = await Promise.all(
+  const nested = await Promise.all(
     summaries.map((summary) => lookupBlock(store, summary.name, filters)),
+  );
+  // lookupBlock returns BlockDetailed[] — take the first match per summary
+  const details: BlockDetailed[] = nested.flatMap((matches) =>
+    matches[0] ? [matches[0]] : [],
   );
 
   if (disclosure.level === "detailed") {

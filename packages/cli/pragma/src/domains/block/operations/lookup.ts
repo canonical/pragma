@@ -46,17 +46,17 @@ export default async function lookupBlock(
   store: Store,
   nameOrUri: string,
   filters: FilterConfig,
-): Promise<BlockDetailed> {
+): Promise<BlockDetailed[]> {
   const filterClauses = buildFilters(filters);
   const subjectClause = buildLookupSubjectClause(nameOrUri, store.prefixes);
   const bindClause =
     subjectClause === null ? "" : `BIND(${subjectClause} AS ?component)`;
   const matchClause =
     subjectClause === null
-      ? `?component ${P.ds}name ${escapeSparqlValue(nameOrUri)} .`
+      ? `?component ${P.ds}name ?name . FILTER(LCASE(STR(?name)) = ${escapeSparqlValue(nameOrUri.toLowerCase())})`
       : "";
 
-  // Base query: find the block
+  // Base query: find the block(s) — no LIMIT so ambiguous names return all matches
   const baseResult = await store.query(
     buildQuery(`
       SELECT ?component ?name ?type ?tier ?summary ?whenToUse ?whenNotToUse ?guidelines ?anatomyDsl ?anatomyClassic ?figmaLink
@@ -76,7 +76,6 @@ export default async function lookupBlock(
         OPTIONAL { ?component ${P.ds}figmaLink ?figmaLink }
         ${filterClauses}
       }
-      LIMIT 1
     `),
   );
 
@@ -90,8 +89,18 @@ export default async function lookupBlock(
     });
   }
 
-  // Safe: length check above guarantees bindings[0] exists
-  const base = baseResult.bindings[0] as (typeof baseResult.bindings)[number];
+  const results: BlockDetailed[] = [];
+  for (const base of baseResult.bindings) {
+    results.push(await resolveBlockDetail(store, base, nameOrUri));
+  }
+  return results;
+}
+
+async function resolveBlockDetail(
+  store: Store,
+  base: Record<string, string>,
+  nameOrUri: string,
+): Promise<BlockDetailed> {
   const componentUri = base.component;
 
   // Modifier families with values
