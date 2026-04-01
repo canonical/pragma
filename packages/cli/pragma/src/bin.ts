@@ -8,6 +8,7 @@
  * @note Impure
  */
 
+import "./embedWasm.js";
 import { detectLocalInstall } from "./package-manager/index.js";
 import runCli from "./pipeline/runCli.js";
 
