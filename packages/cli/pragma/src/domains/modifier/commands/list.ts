@@ -9,9 +9,11 @@ import {
   type CommandDefinition,
   createOutputResult,
 } from "@canonical/cli-core";
+import { createListView } from "#tui";
 import type { PragmaContext } from "../../shared/context.js";
 import { selectFormatter } from "../../shared/formatters.js";
 import { listFormatters } from "../formatters/index.js";
+import { modifierConfig } from "../modifierConfig.js";
 import { resolveModifierList } from "../orchestration/index.js";
 
 export default function listCommand(ctx: PragmaContext): CommandDefinition {
@@ -27,6 +29,13 @@ export default function listCommand(ctx: PragmaContext): CommandDefinition {
 
       return createOutputResult([...resolution.items], {
         plain: selectFormatter(ctx, listFormatters),
+        ink: (data) =>
+          createListView({
+            heading: "Modifiers",
+            domain: "modifier",
+            items: data,
+            columns: modifierConfig.listColumns,
+          }),
       });
     },
   };

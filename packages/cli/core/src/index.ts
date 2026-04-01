@@ -24,6 +24,7 @@ export type {
   CompletionResult,
   CompletionTree,
   GlobalFlags,
+  HandleResultOptions,
   InteractiveGenerator,
   InteractiveHandler,
   InteractiveHandlerRequest,

@@ -56,7 +56,7 @@ const formatters: Formatters<BlockLookupInput> = {
 
 export default formatters;
 
-function createLookupOptions(
+export function createLookupOptions(
   detailed: boolean,
   aspects: AspectFlags,
 ): RenderLookupOptions<BlockDetailed> {
@@ -120,13 +120,14 @@ function selectLookupSections(
   const sections = detailed
     ? blockConfig.lookupSections
     : blockConfig.lookupSections.filter(
-        (section) => section.key === "subcomponents",
+        (section) =>
+          section.key === "subcomponents" || section.key === "anatomyDsl",
       );
 
   return sections.filter((section) => {
     if (
       !aspects.anatomy &&
-      ["anatomy", "anatomyDsl", "anatomyClassic"].includes(section.key)
+      ["anatomy", "anatomyClassic"].includes(section.key)
     ) {
       return false;
     }

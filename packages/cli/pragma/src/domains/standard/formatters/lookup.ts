@@ -1,5 +1,7 @@
+import type { RenderLookupOptions } from "../../shared/contracts.js";
 import type { Formatters } from "../../shared/formatters.js";
 import { renderLookupLlm, renderLookupPlain } from "../../shared/renderers.js";
+import type { StandardDetailed } from "../../shared/types/index.js";
 import { standardConfig } from "../standardConfig.js";
 import type { StandardLookupInput } from "./types.js";
 
@@ -49,6 +51,31 @@ const formatters: Formatters<StandardLookupInput> = {
 };
 
 export default formatters;
+
+/**
+ * Build lookup rendering options for the Ink TUI view.
+ *
+ * @param detailed - whether to include dos/donts sections
+ * @returns Options compatible with the LookupView component.
+ */
+export function createInkLookupOptions(
+  detailed: boolean,
+): RenderLookupOptions<StandardDetailed> {
+  return {
+    title: (entry) => entry.name,
+    fields: [
+      { label: "URI", value: (entry) => entry.uri },
+      { label: "Category", value: (entry) => entry.category || "—" },
+      { label: "Description", value: (entry) => entry.description },
+      { label: "Extends", value: (entry) => entry.extends },
+    ],
+    sections: detailed
+      ? standardConfig.lookupSections.filter(
+          (section) => section.key === "dos" || section.key === "donts",
+        )
+      : [],
+  };
+}
 
 const standardSectionOverrides = {
   dos: {
