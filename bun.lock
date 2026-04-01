@@ -1096,8 +1096,8 @@
         "vitest": "^4.0.18",
       },
       "peerDependencies": {
-        "@canonical/summon-core": "^0.18.0",
-        "@canonical/task": "^0.18.0",
+        "@canonical/summon-core": "^0.18.0 || ^0.20.0",
+        "@canonical/task": "^0.18.0 || ^0.20.0",
       },
     },
     "packages/summon/package": {
@@ -1217,6 +1217,9 @@
         "typescript": "^5.9.3",
       },
     },
+  },
+  "patchedDependencies": {
+    "ejs@5.0.1": "patches/ejs@5.0.1.patch",
   },
   "packages": {
     "@acemir/cssom": ["@acemir/cssom@0.9.31", "", {}, "sha512-ZnR3GSaH+/vJ0YlHau21FjfLYjMpYVIzTD8M8vIEQvIGxeOXyXdzCI140rrCY862p/C/BbzWsjc1dgnM9mkoTA=="],
