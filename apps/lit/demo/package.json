@@ -1,5 +1,5 @@
 {
-  "name": "@canonical/lit-boilerplate-vite",
+  "name": "@canonical/lit-demo",
   "private": true,
   "version": "0.18.0",
   "type": "module",

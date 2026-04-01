@@ -1,6 +1,7 @@
-# Lit SSR Boilerplate
+# Lit SSR Demo
 
-A minimal server-side rendering setup for Lit web components using Vite and Express.
+A minimal server-side rendering setup for a Lit web components web app prototype, that
+emulates Canonical's Ubuntu Server bubble, using Vite and Express.
 
 ## Architecture
 
