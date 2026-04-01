@@ -4,7 +4,8 @@ import { html, LitElement } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import { classMap } from "lit/directives/class-map.js";
 import styles from "./styles.css";
-import type { BasicSectionProps } from "./types.js";
+import type { BasicSectionProps, ContentBlock } from "./types.js";
+import "../List/List.js";
 
 const componentCssClassName = "ds basic-section";
 
@@ -37,6 +38,7 @@ export default class BasicSection
   topRule: "highlighted" | "muted" | "none" | "default" = "default";
   @property({ type: Boolean })
   isSplitOnMedium = false;
+  @property({ type: Array }) contentBlocks: ContentBlock[] = [];
 
   renderTitle() {
     const titleContent =
@@ -50,6 +52,23 @@ export default class BasicSection
   renderSubtitle() {
     const headingLevel = this.subtitle?.headingLevel ?? 4;
     return html`<p class="subtitle heading-${headingLevel}">${this.subtitle.text}</p>`;
+  }
+
+  renderListBlock(list: ContentBlock["item"]) {
+    return html`
+      <ds-list listType="${list.listType}" .items=${list.items} divider=${list.divider} ></ds-list>
+    `;
+  }
+
+  renderContentBlocks() {
+    return this.contentBlocks.map((block) => {
+      switch (block.type) {
+        case "list":
+          return this.renderListBlock(block.item);
+        default:
+          return html``;
+      }
+    });
   }
 
   render() {
@@ -68,6 +87,7 @@ export default class BasicSection
         </div>
         <div class="content">
           ${this.renderSubtitle()}
+          ${this.renderContentBlocks()}
         </div>
       </div>
     `;

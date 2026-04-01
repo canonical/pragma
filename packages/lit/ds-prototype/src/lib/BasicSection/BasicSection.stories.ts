@@ -96,3 +96,59 @@ export const SplitLayout: Story = {
   render: (args) =>
     html`<ds-basic-section .sectionTitle="${args.sectionTitle}" .subtitle=${args.subtitle} isSplitOnMedium=${args.isSplitOnMedium}></ds-basic-section>`,
 };
+
+export const ContentBlocks: Story = {
+  args: {
+    sectionTitle: {
+      text: "List Variants",
+      linkAttrs: {
+        href: "#",
+      },
+    },
+    subtitle: {
+      text: "This example shows different list types and configurations.",
+      headingLevel: 4,
+    },
+    isSplitOnMedium: true,
+    contentBlocks: [
+      {
+        type: "list",
+        item: {
+          listType: "unordered",
+          divider: true,
+          items: [
+            { text: "Bullet list item 1" },
+            { text: "Bullet list item 2" },
+            { text: "Bullet list item 3" },
+          ],
+        },
+      },
+      {
+        type: "list",
+        item: {
+          listType: "unordered",
+          divider: true,
+          items: [
+            { text: "Tick list item 1", ticked: true },
+            { text: "Tick list item 2", ticked: true },
+            { text: "Tick list item 3", ticked: false },
+          ],
+        },
+      },
+      {
+        type: "list",
+        item: {
+          listType: "ordered",
+          divider: true,
+          items: [
+            { text: "Numbered list item 1", ticked: true },
+            { text: "Numbered list item 2", ticked: true },
+            { text: "Numbered list item 3", ticked: false },
+          ],
+        },
+      },
+    ],
+  },
+  render: (args) =>
+    html`<ds-basic-section .sectionTitle="${args.sectionTitle}" .subtitle=${args.subtitle} isSplitOnMedium=${args.isSplitOnMedium} .contentBlocks=${args.contentBlocks}></ds-basic-section>`,
+};
