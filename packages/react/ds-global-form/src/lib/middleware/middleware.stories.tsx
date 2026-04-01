@@ -3,8 +3,8 @@
 // Needed for template-based story, safe to remove otherwise
 import type { Meta, StoryFn, StoryObj } from "@storybook/react-vite";
 import { http } from "msw";
-import * as decorators from "storybook/decorators.js";
 import * as fixtures from "storybook/fixtures.options.js";
+import * as decorators from "#storybook/decorators.js";
 import { Field } from "../Field/index.js";
 import * as middleware from "./index.js";
 

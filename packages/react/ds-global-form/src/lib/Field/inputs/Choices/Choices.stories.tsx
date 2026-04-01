@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import type React from "react";
-import * as decorators from "storybook/decorators.js";
+import * as decorators from "#storybook/decorators.js";
 import Component from "./Choices.js";
 
 const meta = {

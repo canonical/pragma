@@ -3,7 +3,7 @@
 // Needed for function-based story, safe to remove otherwise
 // import type { RangeProps } from './types.js'
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import * as decorators from "storybook/decorators.js";
+import * as decorators from "#storybook/decorators.js";
 import Component from "./Range.js";
 
 // Needed for template-based story, safe to remove otherwise

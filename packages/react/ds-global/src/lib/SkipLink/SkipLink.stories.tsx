@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import * as decorators from "storybook/decorators.js";
 import { expect } from "storybook/test";
+import * as decorators from "#storybook/decorators.js";
 import Component from "./SkipLink.js";
 
 const MainContents = () => (

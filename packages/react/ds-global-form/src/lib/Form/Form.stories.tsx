@@ -1,6 +1,6 @@
 import type { Meta, StoryFn } from "@storybook/react-vite";
-import * as decorators from "storybook/decorators.js";
 import * as fieldMaps from "storybook/fixtures.fields.js";
+import * as decorators from "#storybook/decorators.js";
 import { Field } from "../Field/index.js";
 import type { FieldProps } from "../Field/types.js";
 
