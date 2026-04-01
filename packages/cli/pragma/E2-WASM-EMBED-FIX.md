@@ -2,7 +2,7 @@
 
 **Date:** 2026-04-01
 **Branch:** chore/cli-fix
-**Status:** FIXED — Oxigraph WASM correctly embedded via explicit `readFileSync` patching
+**Status:** FIXED — Oxigraph WASM correctly embedded via dynamic file import + `readFileSync` patching
 
 ---
 
@@ -45,17 +45,24 @@ literal (`` `${__dirname}/node_bg.wasm` ``) but the behaviour is the same.
 
 ## Fix
 
-`packages/cli/pragma/src/embedWasm.ts` — imported first in `bin.ts`:
+`packages/cli/pragma/src/embedWasm.ts` — imported first in `bin.ts` and
+`compile-validation.ts`:
 
-1. **Embed** the WASM using `import ... with { type: "file" }`, which bun
-   recognises and stores in its `$bunfs` virtual filesystem inside the binary.
-2. **Read** the embedded bytes at module init via `readFileSync(embeddedPath)`.
+1. **Embed** the WASM via `await import("oxigraph/node_bg.wasm", { with: { type: "file" } })`.
+   This is the only mechanism bun supports for embedding arbitrary files
+   into compiled binaries. It stores the bytes in bun's `$bunfs` virtual
+   filesystem. A dynamic `import()` is used instead of a static `import`
+   declaration so the module also works in interpreted/test contexts.
+2. **Read** the embedded bytes at module init via `readFileSync(wasmPath)`.
 3. **Patch** the CJS `require("fs").readFileSync` so that any call targeting
    `node_bg.wasm` returns the pre-read embedded bytes instead of hitting disk.
 
-This works transparently in both interpreted mode (WASM exists on disk, patch
-is a no-op because the original `readFileSync` succeeds before the path check
-matters) and compiled mode (WASM is served from `$bunfs`).
+`oxigraph` is added as a direct dependency of `@canonical/pragma-cli` so
+that `oxigraph/node_bg.wasm` resolves correctly regardless of hoisting.
+
+In interpreted mode the dynamic import resolves to the real filesystem path.
+The patch still runs but is a no-op (same bytes, just cached). In compiled
+mode the WASM is served from `$bunfs`.
 
 ## Validation
 
@@ -68,7 +75,7 @@ mv node_modules/.bun/oxigraph@*/node_modules/oxigraph/node_bg.wasm /tmp/backup
 mv /tmp/backup node_modules/.bun/oxigraph@*/node_modules/oxigraph/node_bg.wasm
 ```
 
-Binary size increased ~3.4 MB (the WASM payload) from ~97.6 MB to ~100.9 MB.
+Binary size increased ~3.4 MB (the WASM payload) from ~102.4 MB to ~106.3 MB.
 
 ## E1 Correction
 

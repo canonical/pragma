@@ -11,17 +11,14 @@
  * It then patches CJS `readFileSync` so that oxigraph's WASM loader
  * returns the pre-loaded bytes instead of reading from a stale path.
  *
- * In interpreted mode, the dynamic import resolves to the real filesystem
- * path and the patch is effectively a no-op (reads the same file).
+ * In interpreted mode the dynamic import resolves to the real filesystem
+ * path and the patch is effectively a no-op (reads the same bytes).
  *
  * This module MUST be imported before any code that loads oxigraph.
  */
 
 import { readFileSync } from "node:fs";
 
-// Dynamic import with { type: "file" } — bun embeds the WASM in compiled
-// binaries and returns a $bunfs path; in interpreted mode it returns the
-// real filesystem path. Either way, readFileSync can read from it.
 // @ts-expect-error — bun-specific import attribute for file embedding
 const { default: wasmPath } = await import("oxigraph/node_bg.wasm", {
   with: { type: "file" },
