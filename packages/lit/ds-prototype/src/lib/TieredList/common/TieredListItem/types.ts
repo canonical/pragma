@@ -3,4 +3,4 @@
 /**
  * Props for the TieredListItem component.
  */
-export type TieredListItemProps = {};
+export type TieredListItemProps = Record<string, never>;

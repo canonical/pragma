@@ -7,12 +7,12 @@ import "@lit-labs/ssr-client/lit-element-hydrate-support.js";
 // Register all components
 import "@canonical/lit-ds-prototype";
 
-import { render } from "lit";
 import { hydrate } from "@lit-labs/ssr-client";
+import { render } from "lit";
+import { hyperscalePage } from "../pages/hyperscale.js";
 // [multi-page] For a single page, import only that page's template and pass
 // it directly to render() below, removing the routes map entirely.
 import { serverPage } from "../pages/server.js";
-import { hyperscalePage } from "../pages/hyperscale.js";
 import "../index.css";
 
 /**

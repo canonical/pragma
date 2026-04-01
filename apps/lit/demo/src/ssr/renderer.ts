@@ -9,7 +9,12 @@ async function resolveTemplatePath(): Promise<string> {
     return resolvedTemplatePath;
   }
 
-  const prodTemplatePath = path.join(process.cwd(), "dist", "client", "index.html");
+  const prodTemplatePath = path.join(
+    process.cwd(),
+    "dist",
+    "client",
+    "index.html",
+  );
   try {
     await fs.access(prodTemplatePath);
     resolvedTemplatePath = prodTemplatePath;
@@ -22,7 +27,9 @@ async function resolveTemplatePath(): Promise<string> {
 
 async function getTemplate(): Promise<string> {
   const templatePath = await resolveTemplatePath();
-  const isProdTemplate = templatePath.includes(path.join("dist", "client", "index.html"));
+  const isProdTemplate = templatePath.includes(
+    path.join("dist", "client", "index.html"),
+  );
 
   if (isProdTemplate) {
     // Cache the built template in production/server mode.

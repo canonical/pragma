@@ -12,7 +12,7 @@
     },
     "apps/lit/demo": {
       "name": "@canonical/lit-demo",
-      "version": "0.18.0",
+      "version": "0.21.0",
       "dependencies": {
         "@canonical/lit-ds-prototype": "^0.18.0",
         "@canonical/styles": "^0.18.0",

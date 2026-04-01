@@ -28,14 +28,14 @@
     grid-column: 2;
   }
 
-  &.no-media .media {
-    display: none;
-  }
-
   & .media {
     grid-column: 2;
     margin: 0;
     overflow: hidden;
+  }
+
+  &.no-media .media {
+    display: none;
   }
 
   ::slotted([slot="media"]) {
@@ -43,7 +43,6 @@
     height: auto;
     display: block;
   }
-
 }
 
 @media only screen and (min-width: 620px) {

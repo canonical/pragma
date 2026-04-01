@@ -8,10 +8,18 @@ import "./TieredList.js";
 import type TieredList from "./TieredList.js";
 
 import "../Button/Button.js";
+import "../SiteLayout/SiteLayout.js";
 
 const meta = {
   title: "Web Components/TieredList",
   tags: ["autodocs"],
+  decorators: [
+    (story) => html`
+			<ds-site-layout>
+				${story()}
+			</ds-site-layout>
+		`,
+  ],
 } satisfies Meta<TieredList>;
 
 export default meta;

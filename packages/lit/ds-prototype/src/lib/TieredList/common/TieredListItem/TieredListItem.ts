@@ -3,7 +3,6 @@
 import { html, LitElement } from "lit";
 import { customElement } from "lit/decorators.js";
 import styles from "./styles.css";
-import type { TieredListItemProps } from "./types.js";
 
 const componentCssClassName = "ds tiered-list-item";
 

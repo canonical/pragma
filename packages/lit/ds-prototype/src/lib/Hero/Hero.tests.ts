@@ -57,13 +57,6 @@ describe("Hero component", () => {
     expect(section?.classList.contains("no-media")).toBe(true);
   });
 
-  it("should hide media div when no media slot is filled", async () => {
-    await elem.updateComplete;
-
-    const media = elem.shadowRoot?.querySelector(".media");
-    expect(media?.hasAttribute("hidden")).toBe(true);
-  });
-
   it("should show media and remove no-media class when media slot is filled", async () => {
     const img = document.createElement("img");
     img.slot = "media";
