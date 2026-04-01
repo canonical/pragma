@@ -10,8 +10,8 @@
         "nx": "^22.5.4",
       },
     },
-    "apps/lit/boilerplate-vite": {
-      "name": "@canonical/lit-boilerplate-vite",
+    "apps/lit/demo": {
+      "name": "@canonical/lit-demo",
       "version": "0.18.0",
       "dependencies": {
         "@canonical/lit-ds-prototype": "^0.18.0",
@@ -1453,7 +1453,7 @@
 
     "@canonical/launchpad-design-tokens": ["@canonical/launchpad-design-tokens@1.1.1", "", {}, "sha512-rOrV4TxC9bOyA4DlgxNAwssFfsA/h5XHPqM0plmYbaODodd7EakntM3ZOSHnoNqViskxieVSc7TEbZY+JyFHoA=="],
 
-    "@canonical/lit-boilerplate-vite": ["@canonical/lit-boilerplate-vite@workspace:apps/lit/boilerplate-vite"],
+    "@canonical/lit-demo": ["@canonical/lit-demo@workspace:apps/lit/demo"],
 
     "@canonical/lit-ds-prototype": ["@canonical/lit-ds-prototype@workspace:packages/lit/ds-prototype"],
 
