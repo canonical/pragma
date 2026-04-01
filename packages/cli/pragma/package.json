@@ -76,6 +76,7 @@
     "@canonical/cli-core": "^0.21.0",
     "@canonical/harnesses": "^0.21.0",
     "@canonical/ke": "^0.21.0",
+    "oxigraph": "^0.5.0",
     "@canonical/summon-component": "^0.21.0",
     "@canonical/summon-core": "^0.21.0",
     "@canonical/summon-package": "^0.21.0",

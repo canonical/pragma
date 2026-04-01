@@ -12,6 +12,8 @@ vi.mock("./pipeline/runCli.js", () => ({
   default: runCliMock,
 }));
 
+vi.mock("./embedWasm.js", () => ({}));
+
 describe("bin", () => {
   const originalArgv = process.argv;
 
