@@ -1,0 +1,108 @@
+import { Meta, Canvas, Source } from "@storybook/addon-docs/blocks";
+import * as Stories from "./GettingStarted.stories";
+
+<Meta title="Docs/Getting Started" />
+
+# Getting Started
+
+This guide walks you through adding Pragma to a React project. By the end, you will have components rendering with correct styles, fonts, and theming.
+
+## Prerequisites
+
+- **Node.js** 22.12+ or 24+
+- **React** 19+
+- A bundler that resolves `node_modules` CSS imports (Vite, webpack, Next.js, etc.)
+
+## 1. Install packages
+
+The minimum set of packages for using components:
+
+```bash
+bun add @canonical/react-ds-global @canonical/styles @canonical/ds-assets
+```
+
+`@canonical/styles` aggregates the CSS reset, design tokens, modifier classes, grid utilities, and spacing scale into a single import. `@canonical/ds-assets` provides the Ubuntu Sans font files and icon assets.
+
+If you also need form components:
+
+```bash
+bun add @canonical/react-ds-global-form
+```
+
+## 2. Import styles
+
+In your application entry point (e.g., `main.tsx` or `App.tsx`), import the global stylesheet and fonts:
+
+```tsx
+import "@canonical/styles/fonts";
+import "@canonical/styles";
+```
+
+**Order matters.** The fonts import loads the `@font-face` declarations for Ubuntu Sans and Ubuntu Sans Mono. The main styles import loads the CSS reset, design tokens, modifier classes, grid system, and spacing scale — all organized in cascade layers (`normalize`, `ds.reset`, `ds.modifiers`, `ds.components`) to guarantee deterministic precedence.
+
+These two imports are the only CSS you need. Individual component packages do not require separate CSS imports — their styles are co-located and bundled by your tool chain.
+
+## 3. Use components
+
+<Canvas of={Stories.QuickStart} />
+
+Import components from `@canonical/react-ds-global` and use them with modifier props:
+
+```tsx
+import { Button, Card, Badge } from "@canonical/react-ds-global";
+```
+
+Here is a more complete example combining several components with a grid layout:
+
+<Canvas of={Stories.FirstComponents} />
+
+Components accept standard HTML attributes on their underlying elements, plus modifier props (`importance`, `anticipation`, `criticality`) that map to CSS classes.
+
+## 4. Verify theming
+
+Pragma supports light and dark themes automatically through paired token values. Your OS dark mode preference is respected by default via `prefers-color-scheme`. To force a theme on a subtree, add `className="dark"` or `className="light"` to any ancestor element:
+
+<Canvas of={Stories.ThemeForcing} />
+
+No JavaScript runtime or theme provider is required.
+
+## Vite configuration
+
+Vite works out of the box with no special configuration. The CSS imports from `@canonical/styles` resolve through `node_modules` via Vite's built-in CSS handling.
+
+If you use a custom `css.transformer` or `css.modules` configuration, ensure that `@canonical/styles` is not processed as CSS Modules — it uses global class names by design.
+
+## Next.js configuration
+
+For Next.js projects, import styles in your root layout:
+
+```tsx
+// app/layout.tsx
+import "@canonical/styles/fonts";
+import "@canonical/styles";
+```
+
+## Package reference
+
+<table>
+  <thead>
+    <tr>
+      <th>Package</th>
+      <th>Purpose</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td><code>@canonical/styles</code></td><td>Global stylesheet: tokens, modifiers, grid, reset, spacing</td></tr>
+    <tr><td><code>@canonical/ds-assets</code></td><td>Ubuntu Sans fonts, icon SVGs</td></tr>
+    <tr><td><code>@canonical/react-ds-global</code></td><td>Core components (Button, Card, Badge, Icon, etc.)</td></tr>
+    <tr><td><code>@canonical/react-ds-global-form</code></td><td>Form system (Form, Field, 15 input types, middleware)</td></tr>
+    <tr><td><code>@canonical/ds-types</code></td><td>TypeScript types for modifier families</td></tr>
+    <tr><td><code>@canonical/react-ds-app</code></td><td>Application-level components (Navigation, Toolbar)</td></tr>
+  </tbody>
+</table>
+
+## Next steps
+
+- [Grid layout](?path=/docs/docs-grid--docs) — build a page with the grid system
+- [Modifiers](?path=/docs/docs-modifiers--docs) — apply semantic intent to components
+- [Forms](?path=/docs/global-form-getting-started--docs) — build validated forms

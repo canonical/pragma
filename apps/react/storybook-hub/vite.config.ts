@@ -10,7 +10,6 @@ const reactPackages = [
   "ds-app-launchpad",
   "ds-app-lxd",
   "ds-app-portal",
-  "tokens",
 ];
 
 export default defineConfig({

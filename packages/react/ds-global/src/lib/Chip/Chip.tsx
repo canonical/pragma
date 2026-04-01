@@ -11,7 +11,8 @@ const componentCssClassName = "ds chip";
  * @implements ds:global.component.chip
  */
 const Chip = ({
-  appearance = "neutral",
+  criticality,
+  release,
   lead,
   value,
   onClick,
@@ -26,7 +27,7 @@ const Chip = ({
     <Container
       id={id}
       style={style}
-      className={[componentCssClassName, appearance, className]
+      className={[componentCssClassName, criticality, release, className]
         .filter(Boolean)
         .join(" ")}
       onClick={onClick}

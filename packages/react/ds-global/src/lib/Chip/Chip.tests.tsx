@@ -19,13 +19,13 @@ describe("Chip component", () => {
     expect(chipElement).toContainElement(valueElement);
   });
 
-  it("applies positive appearance", () => {
-    render(<Component lead="Cloud" value="AWS" appearance="positive" />);
+  it("applies criticality modifier", () => {
+    render(<Component lead="Cloud" value="AWS" criticality="success" />);
 
     const leadElement = screen.getByText("Cloud");
     const chipElement = leadElement.closest(".ds.chip");
 
-    expect(chipElement).toHaveClass("positive");
+    expect(chipElement).toHaveClass("success");
   });
 
   it("calls onClick", () => {

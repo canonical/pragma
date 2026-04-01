@@ -43,4 +43,12 @@ export interface LabelProps extends HTMLAttributes<HTMLSpanElement> {
    * - information: Informational status
    */
   criticality?: ModifierFamily<"criticality">;
+  /**
+   * Lifecycle modifier - indicates temporal state
+   * - planned: Future/upcoming
+   * - in_progress: Active/ongoing
+   * - completed: Finished successfully
+   * - failed: Terminal failure
+   */
+  lifecycle?: ModifierFamily<"lifecycle">;
 }

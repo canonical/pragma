@@ -1,0 +1,212 @@
+import { Meta, Canvas } from "@storybook/addon-docs/blocks";
+import * as Stories from "./GettingStarted.stories";
+
+<Meta title="Getting Started" />
+
+# Getting Started with Forms
+
+The form system provides a `Form` wrapper and a `Field` router that handle form registration, validation, error display, and accessibility. It integrates with [react-hook-form](https://react-hook-form.com/) and uses CSS subgrid for layout.
+
+## Installation
+
+```bash
+bun add @canonical/react-ds-global-form
+```
+
+The form package depends on `@canonical/react-ds-global` and `@canonical/styles`. No additional CSS imports are required beyond the global `@canonical/styles` import.
+
+## Basic form
+
+A form needs a grid parent, a `Form` wrapper, and one or more `Field` components:
+
+<Canvas of={Stories.BasicForm} />
+
+### Why a grid parent?
+
+`Form` renders as a CSS subgrid (`grid-template-columns: subgrid; grid-column: 1 / -1`). It inherits column tracks from its parent grid rather than creating its own. This means the form's fields align with the page grid — labels, inputs, and error messages participate in the same column structure as surrounding content.
+
+## The Form component
+
+`Form` wraps children in a react-hook-form [`FormProvider`](https://react-hook-form.com/docs/formprovider). It has two modes:
+
+**Internal mode** (simple) — `Form` creates its own `useForm` instance:
+
+```tsx
+<Form onSubmit={handleSubmit} defaultValues={{ name: "" }} mode="onBlur">
+  {/* fields */}
+</Form>
+```
+
+**External mode** (advanced) — you provide your own `useForm` methods for scenarios like shared state or multi-step forms:
+
+```tsx
+import { useForm } from "react-hook-form";
+
+function MultiStepForm() {
+  const methods = useForm({ defaultValues: { step1: "", step2: "" } });
+
+  return (
+    <Form onSubmit={handleSubmit} methods={methods}>
+      {/* fields */}
+    </Form>
+  );
+}
+```
+
+## The Field component
+
+`Field` is a type-safe router. The `inputType` prop selects the underlying input component, and TypeScript enforces that only valid props for that input type are accepted:
+
+<Canvas of={Stories.InputTypes} />
+
+Each `Field` is wrapped internally by the `Wrapper` component, which provides:
+
+- Label rendering and `<label>` association
+- Description text (the `description` prop)
+- Error message display when validation fails
+- ARIA attributes (`aria-labelledby`, `aria-describedby`, `aria-errormessage`, `aria-invalid`)
+- Form registration via react-hook-form
+
+## Input types
+
+<table>
+  <thead>
+    <tr>
+      <th>inputType</th>
+      <th>Component</th>
+      <th>Purpose</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td><code>"text"</code></td><td>Text</td><td>Single-line text, also handles <code>"email"</code>, <code>"password"</code>, <code>"number"</code>, <code>"url"</code>, <code>"tel"</code></td></tr>
+    <tr><td><code>"textarea"</code></td><td>Textarea</td><td>Multi-line text</td></tr>
+    <tr><td><code>"select"</code></td><td>Select</td><td>Native dropdown with <code>options</code> array</td></tr>
+    <tr><td><code>"checkbox"</code></td><td>Checkbox</td><td>Single boolean toggle</td></tr>
+    <tr><td><code>"simple-choices"</code></td><td>SimpleChoices</td><td>Radio buttons (single) or checkboxes (multiple) from <code>options</code></td></tr>
+    <tr><td><code>"choices"</code></td><td>Choices</td><td>Radio/checkbox groups with rich <code>ReactNode</code> labels</td></tr>
+    <tr><td><code>"combobox"</code></td><td>Combobox</td><td>Searchable select with filtering, single or multiple</td></tr>
+    <tr><td><code>"range"</code></td><td>Range</td><td>Numeric slider with <code>min</code> and <code>max</code></td></tr>
+    <tr><td><code>"date"</code></td><td>DateInput</td><td>HTML5 date picker</td></tr>
+    <tr><td><code>"time"</code></td><td>TimeInput</td><td>HTML5 time picker</td></tr>
+    <tr><td><code>"datetime"</code></td><td>DateTimeInput</td><td>HTML5 datetime-local picker</td></tr>
+    <tr><td><code>"file"</code></td><td>FileUpload</td><td>File picker with validation (<code>accept</code>, <code>maxSize</code>, <code>maxFiles</code>)</td></tr>
+    <tr><td><code>"color"</code></td><td>Color</td><td>Color picker with swatches and optional hex input</td></tr>
+    <tr><td><code>"phone"</code></td><td>Phone</td><td>International phone with country selector</td></tr>
+    <tr><td><code>"hidden"</code></td><td>Hidden</td><td>Hidden form value (no visible UI)</td></tr>
+    <tr><td><code>"custom"</code></td><td>Your component</td><td>Custom input via <code>CustomComponent</code> prop</td></tr>
+  </tbody>
+</table>
+
+## Validation
+
+Validation uses react-hook-form's [`registerProps`](https://react-hook-form.com/docs/useform/register). Try submitting the form below with empty fields to see error states:
+
+<Canvas of={Stories.WithValidation} />
+
+When validation fails, the field's wrapper applies a `.danger` class that shifts the input border to the error color, and the error message is rendered below the input with proper ARIA association.
+
+### Optional fields
+
+By default, fields are required. Mark a field as optional with the `isOptional` prop.
+
+## Middleware
+
+Middleware wraps the input component to add cross-cutting behaviour. Each middleware is a function that receives a component and returns an enhanced component:
+
+```tsx
+import { Field, addRESTOptions, addRESTValidation } from "@canonical/react-ds-global-form";
+
+// Fetch options from an API
+<Field
+  name="country"
+  inputType="select"
+  label="Country"
+  middleware={[
+    addRESTOptions("/api/countries", {
+      transformData: (data) => data.countries.map(c => ({
+        value: c.code,
+        label: c.name,
+      })),
+    }),
+  ]}
+/>
+
+// Server-side validation with debouncing
+<Field
+  name="username"
+  inputType="text"
+  label="Username"
+  middleware={[
+    addRESTValidation("/api/check-username", {
+      debounceWait: 300,
+      minLength: 3,
+    }),
+  ]}
+/>
+```
+
+Middleware composes as an array. The first middleware in the array wraps outermost; the last wraps innermost (closest to the input). Custom middleware follows the same signature: `(Component) => EnhancedComponent`.
+
+## Conditional fields
+
+Fields can be shown or hidden based on other field values using the `condition` prop. Select "Company" below to reveal the company name field:
+
+<Canvas of={Stories.ConditionalField} />
+
+The `condition` prop takes a tuple: an array of field names to watch, and a predicate function. The field renders only when the predicate returns `true`.
+
+## Form layout
+
+Forms inherit their column structure from the parent grid via subgrid. By default, labels stack above inputs (full-width fields). For side-by-side layout, use the `.form-layout-side` class:
+
+<Canvas of={Stories.SideLayout} />
+
+The layout is controlled by CSS custom properties:
+
+<table>
+  <thead>
+    <tr>
+      <th>Variable</th>
+      <th>Default</th>
+      <th>Side layout</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td><code>--form-label-columns</code></td><td><code>1 / -1</code> (full width)</td><td><code>1 / 3</code></td></tr>
+    <tr><td><code>--form-payload-columns</code></td><td><code>1 / -1</code> (full width)</td><td><code>3 / -1</code></td></tr>
+    <tr><td><code>--form-field-columns</code></td><td><code>1 / -1</code></td><td>Same</td></tr>
+  </tbody>
+</table>
+
+## Error state styling
+
+Form error states use a CSS class-based mechanism rather than modifier channel variables. When a field has a validation error:
+
+1. The `Wrapper` component adds a `.danger` class to the field container
+2. CSS targets `.danger > .payload .ds.input.chrome` to shift the border to the error color
+3. The error message renders below the input with `aria-errormessage` association
+
+This is a deliberate architectural choice. Form validation states are binary (valid/invalid) and driven by react-hook-form, not by semantic modifier context. The form error mechanism and the modifier system are complementary but independent.
+
+## Custom fields
+
+For inputs not covered by the built-in types, use `inputType="custom"` with a `CustomComponent`:
+
+```tsx
+import { Field } from "@canonical/react-ds-global-form";
+import { MyDateRange } from "./MyDateRange";
+
+<Field
+  name="period"
+  inputType="custom"
+  CustomComponent={MyDateRange}
+  label="Date range"
+/>
+```
+
+Custom components must satisfy the `InputProps` type and integrate with react-hook-form via `useFormContext`. See the [Creating Custom Fields](?path=/docs/global-form-guides-creating-custom-fields--docs) guide for implementation details.
+
+## Further reading
+
+- [Creating Custom Fields](?path=/docs/global-form-guides-creating-custom-fields--docs) — step-by-step custom input implementation
+- [Creating Middleware](?path=/docs/global-form-guides-creating-middleware--docs) — writing custom middleware for API integration and cross-cutting concerns

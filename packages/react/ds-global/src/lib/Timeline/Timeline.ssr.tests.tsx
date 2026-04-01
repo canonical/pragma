@@ -38,10 +38,10 @@ describe("Timeline SSR", () => {
     const html = renderToString(
       <Timeline>
         <Timeline.Content>
-          <Timeline.Event criticality="critical">Critical event</Timeline.Event>
+          <Timeline.Event criticality="error">Error event</Timeline.Event>
         </Timeline.Content>
       </Timeline>,
     );
-    expect(html).toContain("critical");
+    expect(html).toContain("error");
   });
 });

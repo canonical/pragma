@@ -1,0 +1,227 @@
+import { Meta, Canvas } from "@storybook/addon-docs/blocks";
+import * as Stories from "./Modifiers.stories";
+
+<Meta title="Docs/Modifiers" />
+
+# Modifiers
+
+A modifier is a semantic annotation that changes a component's visual presentation without altering its structure. Applying `anticipation="constructive"` to a button makes it green; applying `criticality="error"` to a badge renders it red. The component's layout, behaviour, and DOM structure are unchanged — only its colour shifts.
+
+Modifiers are consumer choices. A developer applies a modifier to express authored intent: _this action is destructive_, _this feedback is a warning_, _this element is branded_. When no modifier is present, channel variables are uninitialised, the platform's fallback mechanism activates, and the component renders its default appearance. This **silent no-op** is a foundational property — components must never require a modifier to function correctly.
+
+## The contract
+
+The modifier architecture is defined by a formal contract (WD433) that specifies two sides:
+
+**The modifier side** — when a modifier class is applied, it sets a group of channel variables. These are CSS custom properties prefixed with `--modifier-` that point to intent-specific semantic tokens:
+
+```css
+/* Generated from the token file for .constructive (anticipation family) */
+.constructive {
+  --modifier-color-foreground-primary: var(--color-foreground-primary-constructive);
+  --modifier-color-foreground-ghost:   var(--color-foreground-ghost-constructive);
+  --modifier-color-text:               var(--color-text-constructive);
+  --modifier-color-icon:               var(--color-icon-constructive);
+  --modifier-color-border:             var(--color-border-constructive);
+  --modifier-color-focusRing:          var(--color-focusRing-constructive);
+}
+```
+
+**The component side** — a component subscribes to the channels it needs, with a fallback to its base token:
+
+```css
+/* Button subscribes to the primary foreground tier */
+.ds.button {
+  background-color: var(--modifier-color-foreground-primary, var(--button-color-background));
+  color:            var(--modifier-color-text, var(--button-color-text));
+  border-color:     var(--modifier-color-border, var(--button-color-border));
+}
+
+/* Badge subscribes to the secondary foreground tier */
+.ds.badge {
+  background-color: var(--modifier-color-foreground-secondary, var(--badge-color-background));
+  color:            var(--modifier-color-text, var(--badge-color-text));
+}
+
+/* Chip subscribes to the secondary foreground tier */
+.ds.chip {
+  background-color: var(--modifier-color-foreground-secondary, var(--chip-color-background));
+  color:            var(--modifier-color-text, var(--chip-color-text));
+  border-color:     var(--modifier-color-border, var(--chip-color-border));
+}
+```
+
+The indirection through channel variables is what makes the system compositional. A component that subscribes to `--modifier-color-text` works with `.error`, `.constructive`, `.branded`, and every future modifier — without distinguishing between them. Adding a new modifier family requires zero component CSS changes.
+
+## Modifier families
+
+A modifier family is a group of mutually exclusive modifiers that share a semantic axis. Within the criticality family, a component can be `error`, `warning`, `success`, or `information` — but not two simultaneously. Mutual exclusivity is enforced by the architecture: each modifier in a family writes to the same channel variables, so applying a second modifier from the same family overwrites the first.
+
+All families are peers — there is no hierarchy of categories.
+
+### Anticipation
+
+Expected consequence of an action, applied before the action occurs.
+
+<Canvas of={Stories.AnticipationOnButton} />
+
+<table>
+  <thead>
+    <tr>
+      <th>Modifier</th>
+      <th>CSS class</th>
+      <th>Semantic</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td><code>constructive</code></td><td><code>.constructive</code></td><td>Positive outcome — create, save, confirm</td></tr>
+    <tr><td><code>destructive</code></td><td><code>.destructive</code></td><td>Negative or irreversible outcome — delete, remove</td></tr>
+    <tr><td><code>caution</code></td><td><code>.caution</code></td><td>Potentially risky, requires attention</td></tr>
+  </tbody>
+</table>
+
+Anticipation modifiers set channels for the **primary foreground tier** (`--modifier-color-foreground-primary`), the **ghost foreground** (`--modifier-color-foreground-ghost`), text, icon, border, and focus ring. This makes them the primary modifier for filled interactive elements like buttons.
+
+### Criticality
+
+Feedback about an outcome or current state.
+
+<Canvas of={Stories.CriticalityOnBadge} />
+
+<table>
+  <thead>
+    <tr>
+      <th>Modifier</th>
+      <th>CSS class</th>
+      <th>Semantic</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td><code>success</code></td><td><code>.success</code></td><td>Positive outcome achieved</td></tr>
+    <tr><td><code>error</code></td><td><code>.error</code></td><td>Failure or invalid state</td></tr>
+    <tr><td><code>warning</code></td><td><code>.warning</code></td><td>Requires attention, not yet failed</td></tr>
+    <tr><td><code>information</code></td><td><code>.information</code></td><td>Neutral informational state</td></tr>
+  </tbody>
+</table>
+
+Criticality modifiers set channels for the **secondary foreground tier** (`--modifier-color-foreground-secondary`), **input foreground** (`--modifier-color-foreground-input`), text, icon, border, and focus ring. This makes them the primary modifier for status indicators (badges, chips) and form field states.
+
+### Lifecycle
+
+Temporal state of an entity.
+
+<Canvas of={Stories.LifecycleOnLabel} />
+
+<table>
+  <thead>
+    <tr>
+      <th>Modifier</th>
+      <th>CSS class</th>
+      <th>Semantic</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td><code>planned</code></td><td><code>.planned</code></td><td>Future or upcoming</td></tr>
+    <tr><td><code>in_progress</code></td><td><code>.inProgress</code></td><td>Active, ongoing</td></tr>
+    <tr><td><code>completed</code></td><td><code>.completed</code></td><td>Finished successfully</td></tr>
+    <tr><td><code>failed</code></td><td><code>.failed</code></td><td>Terminal failure</td></tr>
+  </tbody>
+</table>
+
+Lifecycle modifiers set the secondary foreground tier, text, icon, and border channels. They reuse criticality semantic tokens as colour mappings (planned/in-progress → information blue, completed → success green, failed → error red).
+
+### Release
+
+Maturity stage of a feature or component.
+
+<Canvas of={Stories.ReleaseOnChip} />
+
+<table>
+  <thead>
+    <tr>
+      <th>Modifier</th>
+      <th>CSS class</th>
+      <th>Semantic</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td><code>experimental</code></td><td><code>.experimental</code></td><td>Early exploration, may change significantly</td></tr>
+    <tr><td><code>alpha</code></td><td><code>.alpha</code></td><td>Functionally incomplete</td></tr>
+    <tr><td><code>beta</code></td><td><code>.beta</code></td><td>Feature-complete, not hardened</td></tr>
+    <tr><td><code>stable</code></td><td><code>.stable</code></td><td>Production-ready</td></tr>
+  </tbody>
+</table>
+
+Release modifiers set the secondary foreground tier, text, icon, and border channels. They reuse existing semantic tokens (experimental/alpha → warning amber, beta → information blue, stable → success green).
+
+### Families in progress
+
+The following families are defined in the architecture but not yet fully wired:
+
+**Emphasis** (`muted`, `branded`) — visual weight modulation without semantic change. CSS classes are generated and set text, icon, border, and foreground channels. The `branded` modifier has broader coverage than `muted`. Emphasis coverage normalisation across modifiers is an open design question.
+
+**Importance** (`primary`, `secondary`, `tertiary`) — structural hierarchy of actions and elements. Bound to the **hierarchy contract** rather than the colour contract — it governs structural properties (border weight, font weight) not colour. The importance CSS file is currently empty; the contract scope is under active design.
+
+**Severity** (`positive`, `negative`, `caution`, `information`) — degree of risk or importance. Token files exist and are registered in the resolver, but the semantic distinction from criticality needs clarification.
+
+## Foreground tiers
+
+The channel variables include two foreground tiers that correspond to different visual weight levels, not to modifier families:
+
+- **`--modifier-color-foreground-primary`** — the filled foreground (high saturation, step 520 in the palette). Used by buttons for their solid background.
+- **`--modifier-color-foreground-secondary`** — the tinted foreground (low saturation, step 100 in light / step 820 in dark). Used by badges and chips for their subtle background.
+
+Anticipation modifiers provide the primary tier. Criticality, lifecycle, and release modifiers provide the secondary tier. A component subscribes to the tier that matches its visual weight — this is a component design decision, not a modifier decision.
+
+## The `.ds` boundary
+
+Design system components (those with CSS selectors starting with `.ds`) reinitialise the channel variables at their boundary. This prevents modifier channels from bleeding uncontrollably through nested component trees. Each `.ds` component decides which channels it reads and provides its own fallback chain — the modifier context is consumed at the component boundary, not inherited through it.
+
+Only elements whose CSS explicitly reads the `--modifier-color-*` channels are affected. Plain HTML elements without design system styling will not respond to modifier contexts.
+
+## Nesting and overrides
+
+Modifiers compose through nesting. An `.error` context can contain a `.success` element:
+
+<Canvas of={Stories.NestingOverride} />
+
+The inner `.success` overrides `--modifier-color-text` for its descendants, while the outer `.error` continues to apply elsewhere. CSS custom property inheritance handles this automatically — the closest ancestor setting a channel variable wins.
+
+## What modifiers do not do
+
+Modifiers only affect **colour-related** channel variables (for colour-contract families) or structural properties (for the hierarchy contract). They do not change layout, spacing, or sizing. Colour is the visual property most affected by semantic context; layout is determined by the component's own specifications.
+
+Modifiers do not change the theme. Theme switching (light/dark) changes _which values_ semantic tokens resolve to. Modifiers change _which semantic tokens_ a component reads. An `.error` modifier works identically in both light and dark mode.
+
+Three concepts are explicitly **not** modifiers: native states (hover, active, focus, disabled) are runtime conditions derived from the rest value, not authored choices. Primitives (palette colours) are raw material. Component-specific props (size, variant) are internal to a component.
+
+## Resolution chain
+
+A concrete trace for a constructive button, showing the four-layer resolution:
+
+```
+Primitive:   color.palette.green.520 = oklch(0.55 0.15 142)
+               ↑ referenced by
+Semantic:    color.foreground.primary.constructive
+               = light: {color.palette.green.520}
+                 dark:  {color.palette.green.520}
+               ↑ aliased by modifier channel
+Channel:     --modifier-color-foreground-primary
+               = var(--color-foreground-primary-constructive)
+               ↑ read by component
+Component:   background-color: var(--modifier-color-foreground-primary,
+                                    var(--button-color-background))
+```
+
+Every modifier token file contains aliases to semantic tokens, never raw values. This is a critical invariant — if a modifier file contained a literal colour, it would bypass mode handling and break in dark mode.
+
+## Debugging
+
+In browser DevTools, you can trace the resolution chain:
+
+1. Select a component inside a modifier context
+2. In the Styles panel, look for `var(--modifier-color-text, ...)`
+3. In the Computed panel, `--modifier-color-text` resolves to `var(--color-text-error)` (or whichever intent is active)
+4. `--color-text-error` resolves to its paired light/dark value
+
+If a component does not respond to a modifier, its CSS is not reading the `--modifier-color-*` channel variables.

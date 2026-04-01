@@ -1,0 +1,75 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+
+<Meta title="Docs/Tooling/AI Editor Integration" />
+
+# AI Editor Integration
+
+The pragma CLI includes an MCP server that gives AI coding assistants structured access to the design system's knowledge graph. This means your AI editor can look up component specifications, code standards, modifier families, and tokens as authoritative data rather than guessing from documentation.
+
+## Supported editors
+
+<table>
+  <thead>
+    <tr>
+      <th>Editor</th>
+      <th>Protocol</th>
+      <th>Setup flag</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td>Claude Code</td><td>MCP</td><td><code>--claude-code</code></td></tr>
+    <tr><td>Cursor</td><td>MCP</td><td><code>--cursor</code></td></tr>
+    <tr><td>Windsurf</td><td>MCP</td><td><code>--windsurf</code></td></tr>
+  </tbody>
+</table>
+
+## Setup
+
+Run the setup command from the project root:
+
+```bash
+pragma setup mcp
+```
+
+This auto-detects which editors are installed and prompts for confirmation. To configure a specific editor:
+
+```bash
+pragma setup mcp --claude-code
+```
+
+The setup writes an MCP server entry that tells the editor to run `pragma mcp` as a subprocess. The editor then has access to all pragma tools.
+
+## What the AI can do
+
+Once configured, the AI assistant can call pragma tools as part of its reasoning:
+
+**Component lookup** — "What is a Badge?" triggers `block_lookup Badge`, returning the component's tier, modifier support, and summary.
+
+**Code standards** — "How should I write CSS selectors?" triggers `standard_lookup css/selectors/namespace`, returning the rule, rationale, and concrete code examples with dos and don'ts.
+
+**Token discovery** — "What color should error text use?" triggers `token_lookup color-text-error`, returning the token value per theme.
+
+**Modifier exploration** — "What anticipation values exist?" triggers `modifier_lookup anticipation`, returning the family definition with allowed values.
+
+**Diagnostics** — "Is the design system set up correctly?" triggers `doctor`, reporting the health of the configuration, knowledge store, and tooling.
+
+## Workflow example
+
+A developer asks their AI assistant to add a destructive confirmation dialog:
+
+1. The AI calls `modifier_lookup anticipation` to confirm that `destructive` is a valid modifier value
+2. It calls `block_lookup Button` to check Button's modifier support
+3. It calls `standard_lookup css/selectors/namespace` to verify the CSS naming convention
+4. It generates a component that uses `anticipation="destructive"` on the confirm button, with correctly namespaced CSS
+
+The AI's output aligns with the design system because it consulted the knowledge graph rather than relying on training data.
+
+## Verifying the integration
+
+After setup, check that the MCP connection is working:
+
+```bash
+pragma doctor
+```
+
+The MCP check should report the configured editors. From within the editor, try asking the AI to run `pragma modifier list` — it should return the full list of modifier families and values.
