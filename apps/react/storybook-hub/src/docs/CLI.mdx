@@ -1,0 +1,233 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+
+<Meta title="Docs/Tooling/CLI" />
+
+# pragma CLI
+
+`pragma` is a command-line tool and MCP server for querying the design system programmatically. It provides access to the component catalog, code standards, modifier families, design tokens, and the knowledge graph that underpins the ontology.
+
+The CLI is designed with two audiences in mind: developers exploring the system from a terminal, and AI coding assistants that consume the same information through MCP tools.
+
+## Installation
+
+`pragma` ships as `@canonical/pragma-cli`. In the monorepo, it is available via the workspace:
+
+```bash
+bunx pragma --help
+```
+
+For standalone projects, install globally or as a dev dependency:
+
+```bash
+bun add -d @canonical/pragma-cli
+```
+
+## Quick orientation
+
+```bash
+# What components exist?
+pragma block list
+
+# What code standards apply to CSS?
+pragma standard list --category css
+
+# What modifier families are available?
+pragma modifier list
+
+# What tokens exist?
+pragma token list
+
+# Is my environment healthy?
+pragma doctor
+```
+
+## Command domains
+
+### Blocks
+
+Blocks are the components, patterns, and primitives registered in the design system ontology.
+
+```bash
+# List all blocks in the current tier
+pragma block list
+
+# List across all tiers
+pragma block list --all-tiers
+
+# Look up a specific block
+pragma block lookup Button
+```
+
+`block list` returns the block name, tier, modifier bindings, and implementation count. `block lookup` returns detail including summary, anatomy, and linked tokens — though anatomy and token data is sparse in the current release.
+
+### Standards
+
+Code standards encode conventions for CSS, TypeScript, accessibility, and component structure as queryable rules with concrete dos and don'ts.
+
+```bash
+# List all standards
+pragma standard list
+
+# Filter by category
+pragma standard list --category css
+
+# List available categories
+pragma standard categories
+
+# Look up a specific standard
+pragma standard lookup css/selectors/namespace
+```
+
+`standard lookup` returns the standard's rationale, guidance, and concrete code examples (dos and don'ts with language-tagged code blocks).
+
+### Modifiers
+
+```bash
+# List all modifier families and their allowed values
+pragma modifier list
+
+# Look up a specific family
+pragma modifier lookup anticipation
+```
+
+### Tokens
+
+```bash
+# List all design tokens
+pragma token list
+
+# Look up a specific token
+pragma token lookup color-text
+```
+
+`token lookup` shows the token's value per theme (light/dark), its DTCG type, and the output file it appears in.
+
+### Configuration
+
+```bash
+# Show current configuration
+pragma config show
+
+# Set the active tier (determines which blocks and components are visible)
+pragma config tier global
+
+# Set the release channel
+pragma config channel experimental
+```
+
+### Ontology and graph
+
+For deeper exploration, query the knowledge graph directly:
+
+```bash
+# List loaded ontologies
+pragma ontology list
+
+# Inspect a specific ontology schema
+pragma ontology show ds
+
+# Execute a SPARQL query
+pragma graph query "SELECT ?s ?p ?o WHERE { ?s ?p ?o } LIMIT 10"
+
+# Inspect a specific URI
+pragma graph inspect ds:global.component.button
+```
+
+### Scaffolding
+
+```bash
+# Generate a new React component with styles, stories, and SSR tests
+pragma create component react
+
+# Generate a new package
+pragma create package
+```
+
+Both commands support `--dry-run` to preview what would be generated, and `--undo` to reverse a previous generation.
+
+### Health check
+
+```bash
+pragma doctor
+```
+
+Runs checks on: Node version, pragma version, config file, knowledge store, shell completions, MCP configuration, and skills symlinks. Reports pass/fail/skip for each.
+
+## Output modes
+
+Every command supports three output formats:
+
+<table>
+  <thead>
+    <tr>
+      <th>Flag</th>
+      <th>Format</th>
+      <th>Use</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td>(default)</td><td>Plain terminal</td><td>Human reading in a terminal</td></tr>
+    <tr><td><code>--llm</code></td><td>Condensed Markdown</td><td>Token-efficient output for AI assistants</td></tr>
+    <tr><td><code>--format json</code></td><td>Structured JSON</td><td>Programmatic consumption, piping</td></tr>
+  </tbody>
+</table>
+
+## MCP server
+
+`pragma` doubles as an MCP (Model Context Protocol) server. AI coding assistants like Claude Code, Cursor, and Windsurf can use the same query capabilities through structured tool calls.
+
+### Setup
+
+```bash
+# Auto-detect and configure installed AI editors
+pragma setup mcp
+
+# Configure a specific editor
+pragma setup mcp --claude-code
+pragma setup mcp --cursor
+pragma setup mcp --windsurf
+```
+
+This writes the MCP server configuration so that the editor can invoke `pragma mcp` as a subprocess.
+
+### Available MCP tools
+
+The MCP server exposes 30+ tools that mirror the CLI commands:
+
+- `block_list`, `block_lookup` — component catalog
+- `standard_list`, `standard_lookup`, `standard_categories` — code standards
+- `modifier_list`, `modifier_lookup` — modifier families
+- `token_list`, `token_lookup` — design tokens
+- `tier_list` — package tier hierarchy
+- `config_show`, `config_tier`, `config_channel` — configuration
+- `ontology_list`, `ontology_show` — ontology schemas
+- `graph_query`, `graph_inspect` — knowledge graph
+- `doctor`, `info` — diagnostics
+- `capabilities` — list all available tools
+- `create_component`, `create_package` — scaffolding
+
+### How AI editors use it
+
+When an AI assistant has access to the pragma MCP server, it can:
+
+1. **Look up component specifications** — "What modifier families does Button support?" → `block_lookup Button`
+2. **Check code standards** — "How should I namespace CSS selectors?" → `standard_lookup css/selectors/namespace`
+3. **Find the right token** — "What token should I use for error text?" → `token_lookup color-text-error`
+4. **Explore modifier families** — "What values can criticality take?" → `modifier_lookup criticality`
+5. **Diagnose setup issues** — "Is the design system configured correctly?" → `doctor`
+
+The AI does not need to search documentation or guess at conventions — it queries the knowledge graph for authoritative answers.
+
+## Shell completions
+
+```bash
+# Install shell completions (auto-detects shell)
+pragma setup completions
+
+# Install for a specific shell
+pragma setup completions --zsh
+pragma setup completions --bash
+pragma setup completions --fish
+```
+
+After installation, command names, subcommands, and flags complete with Tab.

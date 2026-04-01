@@ -31,14 +31,23 @@ type MyFieldProps = InputProps<{
 
 The base `InputProps` includes:
 
-| Prop | Type | Description |
-|------|------|-------------|
-| `name` | `string` | Field name for form registration |
-| `registerProps` | `RegisterOptions` | react-hook-form registration options |
-| `aria-labelledby` | `string` | ID of label element |
-| `aria-describedby` | `string` | ID of description element |
-| `aria-errormessage` | `string` | ID of error message element |
-| `aria-invalid` | `boolean` | Whether field has validation error |
+<table>
+  <thead>
+    <tr>
+      <th>Prop</th>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td><code>name</code></td><td><code>string</code></td><td>Field name for form registration</td></tr>
+    <tr><td><code>registerProps</code></td><td><code>RegisterOptions</code></td><td>react-hook-form registration options</td></tr>
+    <tr><td><code>aria-labelledby</code></td><td><code>string</code></td><td>ID of label element</td></tr>
+    <tr><td><code>aria-describedby</code></td><td><code>string</code></td><td>ID of description element</td></tr>
+    <tr><td><code>aria-errormessage</code></td><td><code>string</code></td><td>ID of error message element</td></tr>
+    <tr><td><code>aria-invalid</code></td><td><code>boolean</code></td><td>Whether field has validation error</td></tr>
+  </tbody>
+</table>
 
 ## The withWrapper HOC
 
@@ -69,7 +78,7 @@ type ColorPickerProps = InputProps<{
 
 ### 2. Create the component
 
-Use `useFormContext` from react-hook-form to register the field:
+Use [`useFormContext`](https://react-hook-form.com/docs/useformcontext) from react-hook-form to register the field:
 
 ```typescript
 import { useFormContext } from "react-hook-form";
@@ -225,7 +234,7 @@ export default withWrapper<MyFieldProps>(MyField, {
 
 ## Controlled vs uncontrolled
 
-The examples above use react-hook-form's uncontrolled approach with `register`. For controlled components (like third-party libraries that require a `value` prop), use the `Controller` component:
+The examples above use react-hook-form's uncontrolled approach with [`register`](https://react-hook-form.com/docs/useform/register). For controlled components (like third-party libraries that require a `value` prop), use the [`Controller`](https://react-hook-form.com/docs/usecontroller/controller) component:
 
 ```typescript
 import { Controller, useFormContext } from "react-hook-form";

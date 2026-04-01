@@ -15,6 +15,7 @@
     "check:ts": "tsc --noEmit"
   },
   "dependencies": {
+    "@canonical/ds-types": "^0.20.0",
     "@canonical/react-ds-app": "^0.20.0",
     "@canonical/react-ds-app-anbox": "^0.20.0",
     "@canonical/react-ds-app-landscape": "^0.20.0",
@@ -27,8 +28,8 @@
     "@canonical/storybook-addon-msw": "^0.20.0",
     "@canonical/storybook-config": "^0.20.0",
     "@canonical/styles": "^0.20.0",
-    "@canonical/styles-debug": "^0.20.0",
-    "@canonical/styles-old": "^0.20.0"
+    "@canonical/styles-old": "^0.20.0",
+    "@canonical/styles-debug": "^0.20.0"
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.9",

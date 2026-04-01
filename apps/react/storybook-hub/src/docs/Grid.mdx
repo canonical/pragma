@@ -1,0 +1,199 @@
+import { Meta, Canvas } from "@storybook/addon-docs/blocks";
+import * as Stories from "./Grid.stories";
+
+<Meta title="Docs/Grid" />
+
+# Grid and Layout
+
+Layout in Pragma is handled by CSS Grid with a strong opinion: one grid at the root, subgrid everywhere else, and no utility classes. This page covers the two grid modes, the subgrid principle, spacing tokens, and the baseline grid.
+
+## Two grid modes
+
+Every grid starts with the `.grid` class. You then pick a column strategy — responsive or intrinsic — depending on what you want to control.
+
+### Responsive
+
+`.grid.responsive` fixes the **number of columns** at each breakpoint. Column width is a consequence of the viewport.
+
+<Canvas of={Stories.ResponsiveGrid} />
+
+<table>
+  <thead>
+    <tr>
+      <th>Breakpoint</th>
+      <th>Width</th>
+      <th>Columns</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td>Small</td><td>&lt; 768px</td><td>4</td></tr>
+    <tr><td>Medium</td><td>768px – 1279px</td><td>8</td></tr>
+    <tr><td>Large</td><td>≥ 1280px</td><td>12</td></tr>
+  </tbody>
+</table>
+
+Use responsive for page-level structure: sidebar + main, header/footer, form regions — layouts where you need to control exactly how content reflows at specific widths.
+
+### Intrinsic
+
+`.grid.intrinsic` fixes the **minimum column width** instead. The column count is a consequence of the container.
+
+<Canvas of={Stories.IntrinsicBasic} />
+
+Under the hood, the intrinsic grid uses `repeat(auto-fill, minmax(var(--grid-col-min), 1fr) × 4)` — a group of four flexible columns repeated as many times as the container allows. Each child occupies one column by default. As the container narrows, column groups drop off; as it widens, new groups appear.
+
+The tradeoff between the two modes is complementary: with responsive you know how many columns you have but not how wide they are; with intrinsic you know the minimum width but not the count.
+
+The most common use case is a collection of items that wraps fluidly. Here, each card spans two columns:
+
+<Canvas of={Stories.IntrinsicCardGrid} />
+
+## One grid at the top, subgrid everywhere else
+
+This is Pragma's core layout principle. The `.grid.responsive` or `.grid.intrinsic` class is applied **once**, at the top level of a page or view canvas. Every component and pattern nested within uses `.subgrid` to inherit those column tracks. Components never create their own independent grid context.
+
+<Canvas of={Stories.SingleGridSubgridEverywhere} />
+
+The header, navigation, main area, and sections within main are all subgrids. Column tracks flow from the single root grid through every level of the component tree. This guarantees that a heading, a form field, and a sidebar all align to the same tracks.
+
+### Subgrid mechanics
+
+The `.subgrid` class sets `display: grid; grid-template-columns: subgrid; grid-column: 1 / -1`. A subgrid child inherits the column definitions of its parent grid rather than creating new ones:
+
+<Canvas of={Stories.SubgridLayout} />
+
+Forms rely on this heavily — `Form` renders with `subgrid` so that field labels and inputs align with the page grid. Sections and compound patterns use it to maintain alignment without introducing new grid contexts.
+
+## No utility classes
+
+Beyond the top-level mode setters (`.grid`, `.responsive`, `.intrinsic`, `.subgrid`), Pragma provides no grid utility classes. There are no `.col-span-4`, `.order-2`, or `.gap-lg` helpers.
+
+Grid placement — which columns an element spans, how it aligns, what order it appears in — belongs in the component's co-located CSS. This is deliberate: layout decisions should live in the stylesheet alongside the component's other visual behaviour, not scattered across class attributes in templates.
+
+Each component defines its own grid participation in its `styles.css`, making the relationship between structure and layout explicit and traceable. This aligns with the broader design principle that components are self-describing — the CSS is the single source of truth for how a component presents itself in a grid context.
+
+```css
+.ds.dashboard-card {
+  grid-column: 1 / -1;
+
+  @media (min-width: 768px) {
+    grid-column: span 4;
+  }
+}
+```
+
+Note the `min-width` media query. Pragma follows a **mobile-first** approach: base styles target the smallest viewport, and wider layouts are added progressively via `min-width` breakpoints. This matches how the responsive grid itself is defined — 4 columns by default, 8 at `min-width: 768px`, 12 at `min-width: 1280px`. Always use `min-width`, never `max-width`.
+
+## Customisation
+
+Grid gaps and intrinsic column width can be adjusted through CSS custom properties:
+
+<table>
+  <thead>
+    <tr>
+      <th>Variable</th>
+      <th>Default</th>
+      <th>Purpose</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td><code>--grid-gap</code></td><td><code>var(--grid-gutter)</code> (16px)</td><td>Shorthand for both row and column gap</td></tr>
+    <tr><td><code>--grid-row-gap</code></td><td>Inherits from <code>--grid-gap</code></td><td>Override row gap only</td></tr>
+    <tr><td><code>--grid-column-gap</code></td><td>Inherits from <code>--grid-gap</code></td><td>Override column gap only</td></tr>
+    <tr><td><code>--grid-col-min</code></td><td>100px</td><td>Minimum column width in intrinsic mode</td></tr>
+  </tbody>
+</table>
+
+## Spacing
+
+The grid handles horizontal structure. Vertical spacing between elements is handled by spacing tokens, all derived from a baseline unit of **0.5rem (8px)**.
+
+<table>
+  <thead>
+    <tr>
+      <th>Token</th>
+      <th>Value</th>
+      <th>Use</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td><code>--space-0</code></td><td>0</td><td>No space</td></tr>
+    <tr><td><code>--space-025</code></td><td>2px</td><td>Micro adjustments</td></tr>
+    <tr><td><code>--space-050</code></td><td>4px</td><td>Tight spacing</td></tr>
+    <tr><td><code>--space-100</code></td><td>8px (1 baseline unit)</td><td>Small gaps</td></tr>
+    <tr><td><code>--space-150</code></td><td>12px</td><td>Medium-small</td></tr>
+    <tr><td><code>--space-200</code></td><td>16px (2 baseline units)</td><td>Standard gaps</td></tr>
+    <tr><td><code>--space-300</code></td><td>24px</td><td>Section gaps</td></tr>
+    <tr><td><code>--space-400</code></td><td>32px</td><td>Large gaps</td></tr>
+    <tr><td><code>--space-600</code></td><td>48px</td><td>Extra-large</td></tr>
+    <tr><td><code>--space-800</code></td><td>64px</td><td>Page-level</td></tr>
+  </tbody>
+</table>
+
+For common container patterns, three gap presets are available:
+
+<table>
+  <thead>
+    <tr>
+      <th>Token</th>
+      <th>Value</th>
+      <th>Use</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td><code>--container-gap-tight</code></td><td>4px</td><td>Dense key-value pairs, compact lists</td></tr>
+    <tr><td><code>--container-gap-default</code></td><td>16px</td><td>Standard card/form gap</td></tr>
+    <tr><td><code>--container-gap-loose</code></td><td>24px</td><td>Sections, visual breaks</td></tr>
+  </tbody>
+</table>
+
+### Two spacing models
+
+Pragma supports two approaches to vertical spacing, and the choice matters:
+
+- **Container-owned** (default) — containers set `gap` values; elements have no margins. This is the standard mode for app UI: dashboards, forms, structured layouts. The container decides the rhythm.
+- **Element-owned** (opt-in) — elements control their own `margin-block-end` via `--space-after`. Activate with the `.editorial` class on a container. This mode is for prose content — articles, documentation — where headings and paragraphs need typographic spacing that follows the content structure rather than a fixed gap.
+
+## Baseline grid
+
+Typography snaps to the 8px baseline grid. Line heights are rounded up to the nearest baseline unit, ensuring vertical rhythm across headings, body text, and form elements. The baseline grid is invisible by default.
+
+## Storybook integration
+
+### Toolbar
+
+The addon-utils toolbar provides grid and layout debugging:
+
+<table>
+  <thead>
+    <tr>
+      <th>Shortcut</th>
+      <th>Toggle</th>
+      <th>What it shows</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td><strong>G</strong></td><td>Grid mode</td><td>Cycles: none → intrinsic → responsive</td></tr>
+    <tr><td><strong>S</strong></td><td>Color scheme</td><td>Cycles: system → light → dark</td></tr>
+    <tr><td><strong>B</strong></td><td>Baseline grid</td><td>8px horizontal rule overlay</td></tr>
+    <tr><td><strong>O</strong></td><td>Debug outlines</td><td>1px outline on all elements</td></tr>
+  </tbody>
+</table>
+
+### Story parameters
+
+Instead of wrapping your story in a `.grid.responsive` div, you can declare the grid mode via story parameters. The addon applies the grid class to the storybook root automatically:
+
+```tsx
+export const MyStory: Story = {
+  parameters: { grid: "responsive" },
+  render: () => (
+    <section className="subgrid" style={{ gridColumn: "1 / -1" }}>
+      <h2 style={{ gridColumn: "1 / 4" }}>Title</h2>
+      <p style={{ gridColumn: "4 / -1" }}>Content</p>
+    </section>
+  ),
+};
+```
+
+Available values: `"responsive"`, `"intrinsic"`, or `"none"` (default). The same API works for `scheme` (`"light"`, `"dark"`, `"none"`).

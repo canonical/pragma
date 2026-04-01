@@ -4,48 +4,87 @@ import { Meta } from "@storybook/addon-docs/blocks";
 
 # Pragma Design System
 
-Welcome to the **Pragma Design System Hub** — the unified entry point for all component
-libraries in the Canonical design system.
+Pragma is Canonical's design system for building consistent, accessible web interfaces. It provides React components, a token-driven styling architecture, and tooling that bridges design decisions to working code.
 
-## What's here
-
-This hub composes all individual Storybook instances across the monorepo into a single
-navigable interface. Each section in the sidebar corresponds to a separate component
-library:
-
-| Library | Framework | Description |
-|---------|-----------|-------------|
-| **Global** | React | Core components: Button, Badge, Card, Chip, Icon, Link, etc. |
-| **Global Form** | React | Form components: Field, Checkbox, Combobox, Select, etc. |
-| **App** | React | Shared application-level components |
-| **App Landscape** | React | Landscape-specific components |
-| **App Launchpad** | React | Launchpad-specific: MarkdownEditor, FileTree, GitDiffViewer |
-| **App LXD** | React | LXD-specific components |
-| **App Portal** | React | Portal-specific components |
-| **App Anbox** | React | Anbox-specific components |
-| **Lit PoC** | Lit | Web Components proof of concept |
-| **Svelte App Launchpad** | Svelte | Svelte Launchpad components |
-| **Demo Site** | React | Full demo application |
-
-## Design principles
-
-The design system is built on a **modifier-based ontology** with three axes:
-
-- **Importance**: primary, secondary, tertiary
-- **Anticipation**: constructive, caution, destructive
-- **Variant**: link, ghost, etc.
-
-Components express these modifiers consistently, enabling predictable composition
-across the entire system.
-
-## Getting started
-
-Each composed Storybook runs independently. In development, start the instances you
-need alongside this hub:
+## Quick start
 
 ```bash
-# Start specific instances + the hub
-nx run-many -t storybook --projects=ds-global,ds-global-form,storybook-hub
+bun add @canonical/react-ds-global @canonical/styles @canonical/ds-assets
 ```
 
-In production builds, this hub points to the Chromatic-hosted versions of each library.
+```tsx
+import "@canonical/styles/fonts";
+import "@canonical/styles";
+import { Button } from "@canonical/react-ds-global";
+
+function App() {
+  return (
+    <Button anticipation="constructive">
+      Save changes
+    </Button>
+  );
+}
+```
+
+See [Getting Started](?path=/docs/docs-getting-started--docs) for the full installation guide.
+
+## Component libraries
+
+This hub composes all component libraries into a single navigable interface. Each sidebar section corresponds to a separate package:
+
+<table>
+  <thead>
+    <tr>
+      <th>Library</th>
+      <th>Package</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td><strong>Global</strong></td><td><code>@canonical/react-ds-global</code></td><td>Core components: Button, Badge, Card, Chip, Icon, Label, Link, etc.</td></tr>
+    <tr><td><strong>Global Form</strong></td><td><code>@canonical/react-ds-global-form</code></td><td>Form system: 15 input types, validation, middleware</td></tr>
+    <tr><td><strong>App</strong></td><td><code>@canonical/react-ds-app</code></td><td>Shared application-level components</td></tr>
+    <tr><td><strong>App Landscape</strong></td><td><code>@canonical/react-ds-app-landscape</code></td><td>Landscape-specific components</td></tr>
+    <tr><td><strong>App Launchpad</strong></td><td><code>@canonical/react-ds-app-launchpad</code></td><td>Launchpad-specific components</td></tr>
+    <tr><td><strong>App LXD</strong></td><td><code>@canonical/react-ds-app-lxd</code></td><td>LXD-specific components</td></tr>
+    <tr><td><strong>App Portal</strong></td><td><code>@canonical/react-ds-app-portal</code></td><td>Portal-specific components</td></tr>
+    <tr><td><strong>App Anbox</strong></td><td><code>@canonical/react-ds-app-anbox</code></td><td>Anbox-specific components</td></tr>
+  </tbody>
+</table>
+
+## Concepts
+
+The design system rests on a set of interlocking architectural ideas. Understanding a few of them early will make the rest of the documentation more readable:
+
+**Modifier families** — Components express semantic intent through orthogonal modifier axes (importance, anticipation, criticality, emphasis, lifecycle, release). A single ancestor CSS class shifts the visual output of every descendant without prop drilling. See [Modifiers](?path=/docs/docs-modifiers--docs).
+
+**Token architecture** — Colors flow through a three-tier system (primitives, semantic tokens, channel variables) that handles light/dark theming, modifier contexts, and surface depth through the CSS cascade. Components never hardcode color values.
+
+**Surface depth** — Nested `.surface` containers create visual layers (card on page, popover on card) using compound descendant selectors. No JavaScript, no depth props. See [Surfaces & Themes](?path=/docs/docs-surfaces--docs).
+
+**Subgrid layout** — The grid system and form layout use CSS subgrid for column inheritance, enabling flexible compositions without rigid containers. See [Grid](?path=/docs/docs-grid--docs).
+
+**Ontology-driven specifications** — Components implement specifications from a semantic knowledge graph (the Design System Ontology). Each component has a formal anatomy, modifier bindings, and token contracts defined in the ontology before implementation begins.
+
+**Tiered package architecture** — Packages are organised in tiers (global → global-form → app → app-specific). Each tier extends the one above. Higher tiers may re-export lower tiers so consumers import from a single entry point.
+
+**Code standards** — A standards system (`@canonical/code-standards`) encodes conventions for CSS, TypeScript, accessibility, and component structure as queryable rules with concrete dos and don'ts.
+
+## Documentation
+
+<table>
+  <thead>
+    <tr>
+      <th>Section</th>
+      <th>What you'll find</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td><a href="?path=/docs/docs-getting-started--docs">Getting Started</a></td><td>Installation, styles, fonts, project setup</td></tr>
+    <tr><td><a href="?path=/docs/docs-modifiers--docs">Modifiers</a></td><td>How modifier families work and how to use them</td></tr>
+    <tr><td><a href="?path=/docs/docs-surfaces--docs">Surfaces &amp; Themes</a></td><td>Surface depth, light/dark theming</td></tr>
+    <tr><td><a href="?path=/docs/docs-grid--docs">Grid</a></td><td>Responsive and intrinsic grid, subgrid, spacing</td></tr>
+    <tr><td><a href="?path=/docs/global-form-getting-started--docs">Forms</a></td><td>Form + Field pattern, validation, middleware</td></tr>
+    <tr><td><a href="?path=/docs/docs-tooling-cli--docs">CLI &amp; Tooling</a></td><td>pragma CLI, MCP tools, programmatic exploration</td></tr>
+  </tbody>
+</table>

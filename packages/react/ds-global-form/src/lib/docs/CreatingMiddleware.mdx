@@ -4,62 +4,118 @@ import { Meta } from "@storybook/addon-docs/blocks";
 
 # Creating Middleware
 
-This guide covers how to create middleware functions that extend field behavior through HOC composition.
+Middleware lets you extend field behaviour without modifying field components. It is the form system's mechanism for cross-cutting concerns: fetching options from an API, validating against a server, reacting to changes in other fields, adding analytics, or injecting loading states.
 
-## Middleware concept
+This guide covers the middleware model, the two built-in middleware functions, and how to write your own.
 
-Middleware wraps field components to add cross-cutting functionality without modifying the field itself. Common use cases include:
+## How middleware works
 
-- Fetching data from APIs
-- Server-side validation
-- Dependent field updates
-- Analytics tracking
-- Loading states
-
-The middleware signature is:
+A middleware is a higher-order component (HOC) factory. It receives the input component and returns an enhanced version of it. The enhanced component can add state, side effects, or transformed props — then renders the original component with whatever modifications it needs.
 
 ```typescript
+// The middleware type signature
 type Middleware<ComponentProps> = (
   Component: React.ComponentType<ComponentProps>
 ) => React.ComponentType<ComponentProps>;
 ```
 
-A middleware receives a component and returns a new component with enhanced behavior.
+Middleware is applied at the `Field` level through the `middleware` prop, which takes an array:
+
+```tsx
+<Field
+  name="country"
+  inputType="select"
+  label="Country"
+  middleware={[myMiddleware, anotherMiddleware]}
+/>
+```
+
+### Where middleware sits in the component tree
+
+Middleware wraps the input component _inside_ the Wrapper. The composition order is:
+
+```
+Field
+  └─ Wrapper (label, description, error, ARIA)
+       └─ Middleware[0]        ← outermost middleware
+            └─ Middleware[1]   ← next middleware
+                 └─ ...
+                      └─ Input component   ← the actual input
+```
+
+The first middleware in the array is the outermost wrapper. Each middleware receives the result of the next one as its `Component` argument. The innermost middleware receives the original input component.
+
+This ordering is handled by `withWrapper`, which reverses the array and reduces it:
+
+```typescript
+[...middleware]
+  .reverse()
+  .reduce((Accumulated, hoc) => hoc(Accumulated), InputComponent);
+```
 
 ## Built-in middleware
 
-The package includes two middleware for common patterns:
+The form package ships two middleware for common API integration patterns.
 
-**addRESTOptions** fetches options from an API and injects them as the `options` prop:
+### addRESTOptions
 
-```typescript
-import { addRESTOptions } from "@canonical/react-ds-global-form";
+Fetches options from an API endpoint and injects them as the `options` prop. Useful for select, combobox, and choice fields whose options come from a server.
+
+```tsx
+import { Field, addRESTOptions } from "@canonical/react-ds-global-form";
 
 <Field
   name="country"
   inputType="select"
+  label="Country"
   middleware={[
     addRESTOptions("/api/countries", {
+      // HTTP method (default: "GET")
       method: "GET",
+
+      // Custom headers for the request
       headers: { Accept: "application/json" },
-      transformData: (data) => data.countries,
+
+      // Transform the API response into the { value, label } format
+      // that select/combobox/choices expect
+      transformData: (data) =>
+        data.countries.map((c) => ({
+          value: c.code,
+          label: c.name,
+        })),
     }),
   ]}
 />
 ```
 
-**addRESTValidation** validates field values against an API endpoint:
+The middleware manages loading and error states internally. While the fetch is in progress, it renders a loading indicator instead of the input. If the fetch fails, it renders an error message. Once the data arrives, the input renders with the fetched options.
 
-```typescript
-import { addRESTValidation } from "@canonical/react-ds-global-form";
+### addRESTValidation
+
+Validates the field value against an API endpoint with debouncing. Useful for checking uniqueness (usernames, email addresses) or applying server-side validation rules.
+
+```tsx
+import { Field, addRESTValidation } from "@canonical/react-ds-global-form";
 
 <Field
   name="username"
   inputType="text"
+  label="Username"
   middleware={[
     addRESTValidation("/api/check-username", {
-      debounceWait: 300,
+      // HTTP method (default: "POST")
+      method: "POST",
+
+      // Minimum input length before validation triggers (default: 3)
       minLength: 3,
+
+      // Debounce wait in milliseconds (default: 300)
+      debounceWait: 300,
+
+      // Format the request body (default: { value })
+      bodyFormatter: (value) => ({ username: value }),
+
+      // Extract the error message from a failed response
       errorExtractor: async (response) => {
         const data = await response.json();
         return data.message;
@@ -69,69 +125,123 @@ import { addRESTValidation } from "@canonical/react-ds-global-form";
 />
 ```
 
-## Creating custom middleware
+The middleware watches the field value via `useFormContext`. When the value changes and meets the minimum length, it debounces and sends a request. If the server returns a non-OK response, the middleware calls `setError` on the field, which triggers the `.danger` error state. If the server returns OK, it calls `clearErrors`.
 
-### Basic structure
+## Writing custom middleware
 
-A middleware factory function returns the actual middleware:
+### The factory pattern
+
+Custom middleware follows a factory pattern: an outer function accepts configuration, and returns the actual middleware HOC.
 
 ```typescript
-function myMiddleware(options: MyOptions): Middleware<any> {
+import { createElement } from "react";
+import type { Middleware } from "@canonical/react-ds-global-form";
+
+/**
+ * Middleware factory that adds analytics tracking to a field.
+ * Logs an event whenever the field value changes.
+ */
+function withAnalytics(eventName: string): Middleware<any> {
+  // Return the middleware HOC
   return (WrappedComponent) => {
-    return function EnhancedComponent(props) {
-      // Add your logic here
-      return <WrappedComponent {...props} />;
+    // Return the enhanced component
+    return function AnalyticsComponent(props) {
+      const { name } = props;
+      const { watch } = useFormContext();
+      const value = watch(name);
+
+      useEffect(() => {
+        if (value !== undefined) {
+          trackEvent(eventName, { field: name, value });
+        }
+      }, [value, name]);
+
+      // Render the original component unchanged
+      return createElement(WrappedComponent, props);
     };
   };
 }
 ```
 
-### API fetch example
+The three levels serve different purposes:
+- **Factory** (`withAnalytics(eventName)`) — captures configuration. Called once at field definition time.
+- **HOC** (`(WrappedComponent) => ...`) — receives the component to wrap. Called once during middleware composition.
+- **Enhanced component** (`function AnalyticsComponent(props)`) — renders on every update. This is where hooks, state, and side effects live.
 
-A complete example that fetches related data when a field value changes:
+### Accessing form context
+
+Middleware components run inside the `FormProvider`, so they have full access to react-hook-form's context via [`useFormContext`](https://react-hook-form.com/docs/useformcontext):
+
+<table>
+  <thead>
+    <tr>
+      <th>Hook</th>
+      <th>Purpose</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td><code>watch(name)</code></td><td>Subscribe to a field's value — re-renders when it changes</td></tr>
+    <tr><td><code>setValue(name, value)</code></td><td>Programmatically set a field's value</td></tr>
+    <tr><td><code>setError(name, error)</code></td><td>Set a validation error on a field</td></tr>
+    <tr><td><code>clearErrors(name)</code></td><td>Clear validation errors from a field</td></tr>
+    <tr><td><code>getValues()</code></td><td>Get all current form values (does not subscribe)</td></tr>
+  </tbody>
+</table>
+
+### Example: dependent field fetch
+
+A complete middleware that fetches data when another field changes — for instance, loading cities when a country is selected:
 
 ```typescript
 import { createElement, useState, useEffect } from "react";
 import { useFormContext } from "react-hook-form";
-import type { Middleware } from "@canonical/react-ds-global-form";
+import type { Middleware, Option } from "@canonical/react-ds-global-form";
 
 interface FetchRelatedOptions {
+  /** API endpoint to fetch from */
   endpoint: string;
+  /** Name of the field to watch for changes */
   watchField: string;
+  /** Prop name to inject the fetched data into (default: "options") */
   targetProp?: string;
-  transformData?: (data: any) => any;
+  /** Transform the raw API response into the shape the input expects */
+  transformData?: (data: any) => Option[];
 }
 
 function addFetchRelated(options: FetchRelatedOptions): Middleware<any> {
   const {
     endpoint,
     watchField,
-    targetProp = "relatedData",
+    targetProp = "options",
     transformData = (data) => data,
   } = options;
 
   return (WrappedComponent) => {
     return function FetchRelatedComponent(props) {
-      const [data, setData] = useState(null);
+      const [data, setData] = useState<Option[] | null>(null);
       const [loading, setLoading] = useState(false);
       const [error, setError] = useState<string | null>(null);
 
+      // Watch the other field's value via form context
       const { watch } = useFormContext();
       const watchValue = watch(watchField);
 
       useEffect(() => {
+        // Reset when the watched field is empty
         if (!watchValue) {
           setData(null);
           return;
         }
 
+        // Abort controller for cleanup on unmount or re-fetch
         const controller = new AbortController();
         setLoading(true);
         setError(null);
 
-        fetch(`${endpoint}?${watchField}=${encodeURIComponent(watchValue)}`, {
-          signal: controller.signal,
-        })
+        fetch(
+          `${endpoint}?${watchField}=${encodeURIComponent(watchValue)}`,
+          { signal: controller.signal },
+        )
           .then((response) => {
             if (!response.ok) throw new Error("Failed to fetch");
             return response.json();
@@ -147,17 +257,18 @@ function addFetchRelated(options: FetchRelatedOptions): Middleware<any> {
             }
           });
 
+        // Abort the in-flight request if the watched value changes
         return () => controller.abort();
       }, [watchValue]);
 
       if (loading) {
-        return createElement("div", { className: "field-loading" }, "Loading...");
+        return createElement("div", null, "Loading...");
       }
-
       if (error) {
-        return createElement("div", { className: "field-error" }, error);
+        return createElement("div", null, `Error: ${error}`);
       }
 
+      // Inject the fetched data as a prop on the wrapped component
       return createElement(WrappedComponent, {
         ...props,
         [targetProp]: data,
@@ -165,13 +276,18 @@ function addFetchRelated(options: FetchRelatedOptions): Middleware<any> {
     };
   };
 }
-
-export default addFetchRelated;
 ```
 
-Usage:
+Usage — a city select that populates when the country field changes:
 
 ```tsx
+<Field name="country" inputType="select" label="Country"
+  options={[
+    { value: "gb", label: "United Kingdom" },
+    { value: "fr", label: "France" },
+  ]}
+/>
+
 <Field
   name="city"
   inputType="select"
@@ -188,87 +304,44 @@ Usage:
 />
 ```
 
-When the `country` field changes, this middleware fetches cities and injects them as options.
+### Debouncing API calls
 
-## Middleware composition
-
-Multiple middleware compose in array order. The first middleware becomes the outermost wrapper:
-
-```tsx
-<Field
-  name="product"
-  inputType="combobox"
-  middleware={[
-    withAnalytics("product-search"),  // Outermost
-    addRESTOptions("/api/products"),   // Middle
-    withDebounce(300),                 // Innermost
-  ]}
-/>
-```
-
-The execution flow:
-
-1. `withAnalytics` receives props, wraps...
-2. `addRESTOptions` receives props, wraps...
-3. `withDebounce` receives props, wraps...
-4. Original field component renders
-
-### Accessing form context
-
-Use `useFormContext` from react-hook-form to interact with form state:
+Any middleware that makes API calls on value changes should debounce to avoid flooding the server. The form package uses the `debounce` utility from `@canonical/utils`:
 
 ```typescript
-import { useFormContext } from "react-hook-form";
-
-function withValidation(rules: ValidationRules): Middleware<any> {
-  return (WrappedComponent) => {
-    return function ValidatedComponent(props) {
-      const { setError, clearErrors } = useFormContext();
-
-      // Validation logic using setError/clearErrors
-
-      return <WrappedComponent {...props} />;
-    };
-  };
-}
-```
-
-Common hooks from `useFormContext`:
-
-| Hook | Purpose |
-|------|---------|
-| `watch(name)` | Subscribe to field value changes |
-| `setValue(name, value)` | Programmatically set field value |
-| `setError(name, error)` | Set a validation error |
-| `clearErrors(name)` | Clear validation errors |
-| `getValues()` | Get all form values |
-
-## Debouncing API calls
-
-For middleware that makes API calls on value changes, always debounce:
-
-```typescript
-import { useCallback, useEffect } from "react";
 import { debounce } from "@canonical/utils";
+import { useCallback, useEffect } from "react";
+import { useFormContext } from "react-hook-form";
+import type { Middleware } from "@canonical/react-ds-global-form";
 
-function withDebouncedFetch(url: string, wait = 300): Middleware<any> {
+function withDebouncedValidation(
+  url: string,
+  wait = 300,
+): Middleware<any> {
   return (WrappedComponent) => {
     return function DebouncedComponent(props) {
       const { name } = props;
       const { watch, setError, clearErrors } = useFormContext();
       const value = watch(name);
 
-      const debouncedFetch = useCallback(
+      // Create a stable debounced function
+      const validate = useCallback(
         debounce(async (val: string) => {
           try {
             const response = await fetch(`${url}?value=${val}`);
             if (!response.ok) {
-              setError(name, { type: "manual", message: "Validation failed" });
+              setError(name, {
+                type: "manual",
+                message: "Validation failed",
+              });
             } else {
               clearErrors(name);
             }
           } catch {
-            setError(name, { type: "manual", message: "Network error" });
+            setError(name, {
+              type: "manual",
+              message: "Network error",
+            });
           }
         }, wait),
         [name],
@@ -276,65 +349,63 @@ function withDebouncedFetch(url: string, wait = 300): Middleware<any> {
 
       useEffect(() => {
         if (value && value.length >= 3) {
-          debouncedFetch(value);
+          validate(value);
         }
-      }, [value, debouncedFetch]);
+      }, [value, validate]);
 
-      return <WrappedComponent {...props} />;
+      return createElement(WrappedComponent, props);
     };
   };
 }
 ```
 
-## Error handling
+## Composing multiple middleware
 
-Middleware should handle errors gracefully:
+When a field needs several middleware, pass them as an array. The composition order matters — the first middleware in the array is the outermost wrapper:
 
-```typescript
-function withErrorBoundary(): Middleware<any> {
-  return (WrappedComponent) => {
-    return function BoundedComponent(props) {
-      const [hasError, setHasError] = useState(false);
-
-      if (hasError) {
-        return (
-          <div className="field-error-boundary">
-            Field failed to load.
-            <button onClick={() => setHasError(false)}>Retry</button>
-          </div>
-        );
-      }
-
-      try {
-        return <WrappedComponent {...props} />;
-      } catch {
-        setHasError(true);
-        return null;
-      }
-    };
-  };
-}
+```tsx
+<Field
+  name="product"
+  inputType="combobox"
+  label="Product"
+  middleware={[
+    withAnalytics("product-search"),   // Outermost — sees all props
+    addRESTOptions("/api/products"),    // Middle — injects options
+    withDebouncedValidation("/api/v"), // Innermost — closest to input
+  ]}
+/>
 ```
 
-## TypeScript
+Each middleware receives the component returned by the next one. This means outer middleware can observe props set by inner middleware, but not vice versa.
 
-For type-safe middleware, specify the component props type:
+## Type safety
+
+For middleware that only works with specific input types, use a narrow type parameter instead of `any`:
 
 ```typescript
-import type { Middleware, SelectProps } from "@canonical/react-ds-global-form";
+import type { Middleware } from "@canonical/react-ds-global-form";
 
-function withSelectEnhancement(): Middleware<SelectProps> {
+// This interface matches what Select and Combobox expect
+interface WithOptions {
+  options: Array<{ value: string; label: string }>;
+  name: string;
+}
+
+// TypeScript enforces that this middleware is only used
+// with components that accept an options prop
+function withSortedOptions(): Middleware<WithOptions> {
   return (WrappedComponent) => {
-    return function EnhancedSelect(props: SelectProps) {
-      // TypeScript knows props has SelectProps shape
-      const { options, ...rest } = props;
-      const sortedOptions = [...options].sort((a, b) =>
+    return function SortedComponent(props: WithOptions) {
+      const sorted = [...props.options].sort((a, b) =>
         a.label.localeCompare(b.label),
       );
-      return <WrappedComponent {...rest} options={sortedOptions} />;
+      return createElement(WrappedComponent, {
+        ...props,
+        options: sorted,
+      });
     };
   };
 }
 ```
 
-Use `Middleware<any>` when the middleware works with any field type.
+Use `Middleware<any>` when the middleware works with any input type — this is the common case for middleware that only interacts with form context and does not touch input-specific props.
