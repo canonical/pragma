@@ -4,10 +4,10 @@ import { collectResult } from "@lit-labs/ssr/lib/render-result.js";
 // Register components in the SSR custom elements registry provided by @lit-labs/ssr
 import "@canonical/lit-ds-prototype";
 
+import { hyperscalePage } from "pages/hyperscale.js";
 // [multi-page] For a single page, only import that page's template and export
 // a single renderApp() function.
 import { serverPage } from "pages/server.js";
-import { hyperscalePage } from "pages/hyperscale.js";
 
 /**
  * Each function renders a page to an HTML string using Lit SSR.

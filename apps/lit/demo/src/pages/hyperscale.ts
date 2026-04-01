@@ -1,7 +1,7 @@
 import { html } from "lit";
+import { pageLayout } from "./pageLayout.js";
 
-export const hyperscalePage = html`
-    <ds-site-layout>
+export const hyperscalePage = pageLayout(html`
         <ds-hero title="Ubuntu leads in hyperscale" layout="stacked"
             description="Ubuntu is the hyperscale OS, natively powering scale-out workloads on a new wave of low-cost, ultra-dense hardware based on x86 and ARM processors."
         >
@@ -18,6 +18,4 @@ export const hyperscalePage = html`
                 alt="hyperscale" 
                 loading="lazy">
         </ds-hero>
-
-    </ds-site-layout>
-`;
+`);

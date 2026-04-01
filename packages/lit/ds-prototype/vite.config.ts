@@ -21,6 +21,7 @@ export default defineConfig({
     lib: {
       entry: "src/index.ts",
       formats: ["es"],
+      fileName: () => "esm/index.js",
     },
     rollupOptions: {
       external: [/^lit($|\/)/],

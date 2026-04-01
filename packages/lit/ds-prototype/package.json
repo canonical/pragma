@@ -3,13 +3,13 @@
   "description": "Prototype Web Components built with Lit for the Pragma design system.",
   "version": "0.27.0",
   "type": "module",
-  "module": "dist/lit-ds-prototype.js",
+  "module": "dist/esm/index.js",
   "types": "dist/types/index.d.ts",
   "sideEffects": true,
   "exports": {
     ".": {
       "types": "./dist/types/index.d.ts",
-      "import": "./dist/lit-ds-prototype.js"
+      "import": "./dist/esm/index.js"
     }
   },
   "files": [

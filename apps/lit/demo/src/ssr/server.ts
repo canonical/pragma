@@ -9,7 +9,7 @@ import process from "node:process";
 // @types/express can be removed from package.json.
 import express from "express";
 // [multi-page] For a single page, only import the one render function needed.
-import { renderServerPage, renderHyperscalePage } from "./entry-server.js";
+import { renderHyperscalePage, renderServerPage } from "./entry-server.js";
 import { renderPage } from "./renderer.js";
 
 const PORT = process.env.PORT || 5173;
@@ -27,14 +27,18 @@ app.get("/", (_req, res) => {
 app.get("/server", (_req, res, next) => {
   renderServerPage()
     .then(renderPage)
-    .then((html) => res.status(200).setHeader("Content-Type", "text/html").end(html))
+    .then((html) =>
+      res.status(200).setHeader("Content-Type", "text/html").end(html),
+    )
     .catch(next);
 });
 
 app.get("/server/hyperscale", (_req, res, next) => {
   renderHyperscalePage()
     .then(renderPage)
-    .then((html) => res.status(200).setHeader("Content-Type", "text/html").end(html))
+    .then((html) =>
+      res.status(200).setHeader("Content-Type", "text/html").end(html),
+    )
     .catch(next);
 });
 
