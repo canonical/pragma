@@ -9,18 +9,15 @@ export interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
   value: number;
 
   /**
-   * Visual appearance of the badge, typically reflecting status.
-   * Options include:
-   * - "positive": Indicates a positive status
-   * - "negative": Indicates a negative status
-   * - "caution": Indicates a cautionary status
-   * - "information": Indicates an informative status
-   * // TODO neutral intent is currently defined in a very button-centric way. It should unset other appearances, but it currently applies default button styling.
-   *      Possibly we will need to revisit this by binding component variables without component name prefix, so that neutral can reset components to their neutral state.
+   * Visual criticality modifier for the badge, reflecting status.
+   * - "success": Positive status
+   * - "error": Negative status
+   * - "warning": Cautionary status
+   * - "information": Informative status
    *
-   * When no appearance is specified, uses the default badge styling.
+   * When omitted, the badge uses its default styling.
    */
-  severity?: ModifierFamily<"severity">;
+  criticality?: ModifierFamily<"criticality">;
 
   /**
    * Options for humanizing the numeric value displayed in the badge.

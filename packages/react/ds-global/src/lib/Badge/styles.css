@@ -24,7 +24,10 @@
   --badge-chip-margin-tweak: 0.15rem;
 
   /* Base badge styles using tokens */
-  background-color: var(--modifier-color, var(--badge-color-background));
+  background-color: var(
+    --modifier-color-foreground-secondary,
+    var(--badge-color-background)
+  );
   border-radius: var(--badge-border-radius);
   box-sizing: content-box;
   color: var(--modifier-color-text, var(--badge-color-text));

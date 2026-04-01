@@ -63,7 +63,7 @@
     var(--tooltip-color-text, var(--color-text-default))
   );
   background-color: var(
-    --modifier-color,
+    --modifier-color-foreground-ghost,
     var(--tooltip-color-background, var(--color-background-default))
   );
   border-color: var(

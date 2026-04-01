@@ -1,8 +1,8 @@
 /* Component tokens — sourced from @canonical/design-tokens */
 :root {
-  --button-color-background: var(--color-foreground-ghost);
-  --button-color-background-hover: var(--color-foreground-ghost-hover);
-  --button-color-background-active: var(--color-foreground-ghost-active);
+  --button-color-background: var(--color-foreground-secondary);
+  --button-color-background-hover: var(--color-foreground-secondary-hover);
+  --button-color-background-active: var(--color-foreground-secondary-active);
   --button-color-text: var(--color-text);
   --button-color-border: var(--color-border-high-contrast);
   --button-color-border-hover: var(--button-color-border);
@@ -23,40 +23,12 @@
    ========================================================================== */
 
 /*
-  Component variables:
-    --button-color-background: background color of the button
-    --button-color-background-hover: background color of the button on hover
-    --button-color-background-active: background color of the button on active
-    --button-color-text: text color of the button
-    --button-color-border: border color of the button
-    --button-color-border-hover: border color of the button on hover
-    --button-color-border-active: border color of the button on active
-
-    --button-margin-left: left margin of the button
-    --button-margin-bottom: bottom margin of the button
-    --button-padding-vertical: vertical padding of the button
-    --button-padding-horizontal: horizontal padding of the button
-    --button-border-width: border width of the button
-    --button-font-size: font size of the button
-    --button-font-weight: font weight of the button
-    --button-line-height: line height of the button
-
-  Modifier variables (from importance):
-    --modifier-importance-background
-    --modifier-importance-background-hover
-    --modifier-importance-background-active
-    --modifier-importance-text
-    --modifier-importance-border
-    --modifier-importance-border-width
-
-  Modifier variables (from anticipation):
-    --modifier-color
-    --modifier-color-hover
-    --modifier-color-active
-    --modifier-color-text
-    --modifier-color-border
-    --modifier-color-border-hover
-    --modifier-color-border-active
+  Modifier channel variables (from @canonical/design-tokens):
+    --modifier-color-foreground-primary  filled background (constructive, destructive, caution)
+    --modifier-color-text                text colour
+    --modifier-color-border              border colour
+    --modifier-color-icon                icon colour
+    --modifier-color-focusRing           focus ring colour
 */
 
 .ds.button {
@@ -66,29 +38,14 @@
   gap: var(--spacing-horizontal-small, 0.5rem);
   cursor: pointer;
 
-  /*
-    Color resolution order:
-    1. Anticipation modifier (--modifier-color-*) takes precedence for semantic coloring
-    2. Importance modifier (--modifier-importance-*) for hierarchy styling
-    3. Base button tokens as fallback
-  */
-  color: var(
-    --modifier-color-text,
-    var(--modifier-importance-text, var(--button-color-text))
-  );
+  color: var(--modifier-color-text, var(--button-color-text));
   background-color: var(
-    --modifier-color,
-    var(--modifier-importance-background, var(--button-color-background))
+    --modifier-color-foreground-primary,
+    var(--button-color-background)
   );
-  border-color: var(
-    --modifier-color-border,
-    var(--modifier-importance-border, var(--button-color-border))
-  );
+  border-color: var(--modifier-color-border, var(--button-color-border));
   border-style: solid;
-  border-width: var(
-    --modifier-importance-border-width,
-    var(--button-border-width)
-  );
+  border-width: var(--button-border-width);
 
   font-size: var(--button-font-size);
   font-weight: var(--button-font-weight);
@@ -101,37 +58,16 @@
   text-align: center;
   text-decoration: none;
 
-  /* Hover state */
   &:hover:not(:disabled) {
-    background-color: var(
-      --modifier-color-hover,
-      var(
-        --modifier-importance-background-hover,
-        var(--button-color-background-hover)
-      )
-    );
-    border-color: var(
-      --modifier-color-border-hover,
-      var(--modifier-importance-border, var(--button-color-border-hover))
-    );
+    background-color: var(--button-color-background-hover);
+    border-color: var(--button-color-border-hover);
   }
 
-  /* Active state */
   &:active:not(:disabled) {
-    background-color: var(
-      --modifier-color-active,
-      var(
-        --modifier-importance-background-active,
-        var(--button-color-background-active)
-      )
-    );
-    border-color: var(
-      --modifier-color-border-active,
-      var(--modifier-importance-border, var(--button-color-border-active))
-    );
+    background-color: var(--button-color-background-active);
+    border-color: var(--button-color-border-active);
   }
 
-  /* Disabled state */
   &:disabled {
     cursor: not-allowed;
     opacity: 0.5;

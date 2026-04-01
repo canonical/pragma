@@ -1,3 +1,4 @@
+import type { ModifierFamily } from "@canonical/ds-types";
 import type React from "react";
 
 /**
@@ -5,10 +6,22 @@ import type React from "react";
  */
 export interface ChipProps {
   /**
-   * The chip’s appearance.
-   * @default "neutral"
+   * Criticality modifier for status indication.
+   * - "success": Positive status
+   * - "error": Negative status
+   * - "warning": Cautionary status
+   * - "information": Informative status
    */
-  appearance?: "neutral" | "positive" | "negative" | "caution" | "information";
+  criticality?: ModifierFamily<"criticality">;
+
+  /**
+   * Release stage modifier.
+   * - "experimental": Early exploration
+   * - "alpha": Functionally incomplete
+   * - "beta": Feature-complete, not hardened
+   * - "stable": Production-ready
+   */
+  release?: ModifierFamily<"release">;
 
   /** Text shown before the value. */
   lead?: string;
