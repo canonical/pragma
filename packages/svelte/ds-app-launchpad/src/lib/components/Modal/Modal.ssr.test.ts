@@ -88,7 +88,7 @@ describe("Modal SSR", () => {
         },
       });
       const modalId = componentLocator(page).getAttribute("id");
-      assert(modalId !== undefined);
+      assert(modalId !== null);
       expect(triggerLocator(page).getAttribute("commandfor")).toBe(modalId);
       expect(triggerLocator(page).getAttribute("command")).toBe("show-modal");
       expect(triggerLocator(page).getAttribute("aria-haspopup")).toBe("dialog");
@@ -102,7 +102,7 @@ describe("Modal SSR", () => {
         },
       });
       const modalId = componentLocator(page).getAttribute("id");
-      assert(modalId !== undefined);
+      assert(modalId !== null);
       const closeButton = page.getByRole("button", {
         name: closeButtonText,
         hidden: true,
