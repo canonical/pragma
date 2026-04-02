@@ -10,6 +10,7 @@
   let {
     class: className,
     "aria-label": ariaLabel = "Close",
+    type = "button",
     ...rest
   }: CloseButtonProps = $props();
 </script>
@@ -18,6 +19,7 @@
   class={[componentCssClassName, className]}
   aria-label={ariaLabel}
   severity="base"
+  {type}
   {...rest}
 >
   {#snippet iconLeft()}
