@@ -11,11 +11,13 @@ import {
   type CommandResult,
   createOutputResult,
 } from "@canonical/cli-core";
+import { createListView } from "#tui";
 import type { PragmaContext } from "../../shared/context.js";
 import { selectFormatter } from "../../shared/formatters.js";
 import { listFormatters } from "../formatters/index.js";
 import type { StandardListOutput } from "../formatters/types.js";
 import { resolveStandardList } from "../orchestration/index.js";
+import { standardConfig } from "../standardConfig.js";
 
 export default function buildListCommand(
   ctx: PragmaContext,
@@ -75,6 +77,13 @@ export default function buildListCommand(
 
       return createOutputResult(output, {
         plain: selectFormatter(ctx, listFormatters),
+        ink: (data) =>
+          createListView({
+            heading: "Standards",
+            domain: "standard",
+            items: data.items,
+            columns: standardConfig.listColumns,
+          }),
       });
     },
   };

@@ -23,7 +23,10 @@
     --modifier-color-text,
     var(--label-color, var(--color-text-secondary, inherit))
   );
-  background-color: var(--modifier-color, var(--label-background, transparent));
+  background-color: var(
+    --modifier-color-foreground-primary,
+    var(--label-background, transparent)
+  );
   padding-inline: var(--label-padding-inline, var(--spacing-xsmall, 0.25rem));
   padding-block: var(--label-padding-block, var(--spacing-xxsmall, 0.125rem));
   border-radius: var(

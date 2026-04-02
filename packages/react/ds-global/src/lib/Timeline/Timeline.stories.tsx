@@ -42,7 +42,11 @@ export const WithCriticality: Story = {
   args: {
     children: (
       <Timeline.Content>
-        <Timeline.Event actor="System" datetime="10:00 AM" criticality="info">
+        <Timeline.Event
+          actor="System"
+          datetime="10:00 AM"
+          criticality="information"
+        >
           Deployment started
         </Timeline.Event>
         <Timeline.Event
@@ -59,11 +63,7 @@ export const WithCriticality: Story = {
         >
           Performance degradation detected
         </Timeline.Event>
-        <Timeline.Event
-          actor="System"
-          datetime="10:15 AM"
-          criticality="critical"
-        >
+        <Timeline.Event actor="System" datetime="10:15 AM" criticality="error">
           Service unavailable - rollback initiated
         </Timeline.Event>
       </Timeline.Content>

@@ -1,0 +1,36 @@
+diff --git a/lib/esm/ejs.js b/lib/esm/ejs.js
+index 865d9a7f48586c6b8f706989e364b6fa04599e93..f9a17ddece8830c866f8a35466e4ca1a24a6bc65 100644
+--- a/lib/esm/ejs.js
++++ b/lib/esm/ejs.js
+@@ -922,7 +922,4 @@ if (typeof window != 'undefined') {
+   window.ejs = ejs;
+ }
+ 
+-if (typeof module != 'undefined') {
+-  module.exports = ejs;
+-}
+ export default ejs;
+diff --git a/lib/esm/parseargs.js b/lib/esm/parseargs.js
+index 59fcb0f14a8a16f8dd411f86d9e5027fa9902111..a470ada6b7ba78268fa04f2cb0edf1a8a1b819c7 100644
+--- a/lib/esm/parseargs.js
++++ b/lib/esm/parseargs.js
+@@ -133,7 +133,4 @@ parseargs.Parser.prototype = new function () {
+ 
+ };
+ 
+-if (typeof exports != 'undefined') {
+-  module.exports = parseargs;
+-}
+ export default parseargs;
+diff --git a/lib/esm/utils.js b/lib/esm/utils.js
+index a04b43c9e9d8bc470c3b463ced031d22a06dc94d..b7385c3935bec244e7af78c431af6e0cfd5b3b62 100644
+--- a/lib/esm/utils.js
++++ b/lib/esm/utils.js
+@@ -255,7 +255,4 @@ utils.hasOwnOnlyObject = function (obj) {
+   return o;
+ };
+ 
+-if (typeof exports != 'undefined') {
+-  module.exports = utils;
+-}
+ export default utils;

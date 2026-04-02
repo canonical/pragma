@@ -3,6 +3,29 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.21.0](https://github.com/canonical/pragma/compare/v0.20.1...v0.21.0) (2026-04-01)
+
+
+### Bug Fixes
+
+* **deps:** update dependency domhandler to v6 ([#547](https://github.com/canonical/pragma/issues/547)) ([d823ba0](https://github.com/canonical/pragma/commit/d823ba0e4d9518357049b78e18d571400792f2a3))
+* **deps:** update dependency ejs to v5 ([#452](https://github.com/canonical/pragma/issues/452)) ([d283bb4](https://github.com/canonical/pragma/commit/d283bb4d7b108597d7e87560a6c8b55622cf8604))
+* **deps:** update dependency oxigraph to ^0.5.0 ([#544](https://github.com/canonical/pragma/issues/544)) ([5db9693](https://github.com/canonical/pragma/commit/5db96933375e9e08aeff229403295ac3596d1ce9))
+
+
+### Features
+
+* **cli-core:** support interactive pragma generators ([#576](https://github.com/canonical/pragma/issues/576)) ([fc53e23](https://github.com/canonical/pragma/commit/fc53e237a70436cf2d9a0843e17801926c878f31))
+* **form,styles,typography:** baseline grid alignment for form fields ([#571](https://github.com/canonical/pragma/issues/571)) ([2f9c5aa](https://github.com/canonical/pragma/commit/2f9c5aafbd69815867a7449d16771d3d3c729912))
+* **pragma-cli:** compile to linux-x64 binary for npm publish ([#581](https://github.com/canonical/pragma/issues/581)) ([80648dc](https://github.com/canonical/pragma/commit/80648dca3dfd48694ee64a18e267496f93647569))
+* **pragma-cli:** rich TUI rendering for list and lookup commands ([#577](https://github.com/canonical/pragma/issues/577)) ([ebeb4e0](https://github.com/canonical/pragma/commit/ebeb4e023d92239614d281cb4825ded493bbaff5))
+* **react-ds-global:** KeyboardKey and KeyboardKeys ([#559](https://github.com/canonical/pragma/issues/559)) ([d96928c](https://github.com/canonical/pragma/commit/d96928c255d9481bb921af51a7170d3545d63bb3))
+* **styles:** spacing tokens, canonical borders, self-hosted fonts, addon-utils toolbar ([#552](https://github.com/canonical/pragma/issues/552)) ([b7f0adc](https://github.com/canonical/pragma/commit/b7f0adc3f83dabf95b7272ce60e01de3110706c4))
+
+
+
+
+
 ## [0.20.1](https://github.com/canonical/pragma/compare/v0.20.0...v0.20.1) (2026-03-26)
 
 

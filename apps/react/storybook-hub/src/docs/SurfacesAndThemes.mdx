@@ -1,0 +1,125 @@
+import { Meta, Canvas } from "@storybook/addon-docs/blocks";
+import * as Stories from "./SurfacesAndThemes.stories";
+
+<Meta title="Docs/Surfaces" />
+
+# Surfaces
+
+Surfaces create visual depth — a card on a page, a popover on a card — using compound CSS descendant selectors. No depth props, no JavaScript counters, no data attributes.
+
+## How depth tracking works
+
+The `.surface` class marks a container as a depth-participating element. Compound descendant selectors in `modifiers.surfaces.css` set surface channel variables at each nesting level:
+
+```css
+.surface              { --surface-color-background: var(--color-background); }
+.surface .surface     { --surface-color-background: var(--color-background-layer2); }
+.surface .surface .surface { --surface-color-background: var(--color-background-layer3); }
+```
+
+CSS specificity ensures the deepest match wins. About 15 surface channel variables follow this pattern — backgrounds, foregrounds, borders, and specialised tokens for inputs, checkboxes, and other interactive surfaces.
+
+## Consuming surface channels
+
+For surfaces to produce a visible effect, component CSS must **read** the surface channel variables through fallback chains:
+
+```css
+.ds.my-card {
+  background: var(--surface-color-background, var(--color-background));
+  color: var(--modifier-color-text, var(--color-text));
+}
+```
+
+The fallback chain means: use the surface channel if a `.surface` ancestor has set it; otherwise fall back to the base semantic token. This is the same pattern used for modifiers — components opt in to surface-awareness by referencing the channel variables.
+
+When components consume the channels, nested `.surface` containers produce visible depth shifts:
+
+<Canvas of={Stories.SurfaceDepth} />
+
+## Three levels and oscillation
+
+The system defines three depth levels, then oscillates:
+
+<table>
+  <thead>
+    <tr>
+      <th>Nesting</th>
+      <th>Visual effect</th>
+      <th>Light mode background</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td><code>.surface</code></td><td>Structural marker, same as root</td><td>White</td></tr>
+    <tr><td><code>.surface .surface</code></td><td>Tinted — visual separation</td><td>Light gray</td></tr>
+    <tr><td><code>.surface .surface .surface</code></td><td>Returns toward root values</td><td>White</td></tr>
+  </tbody>
+</table>
+
+Layer 1 is intentionally identical to root. Its purpose is structural — it declares "this container participates in the surface system" without changing appearance. The visible shift starts at layer 2.
+
+Oscillation prevents the interface from drifting progressively darker (or lighter) with each nesting level. Three levels cover the practical range — page, card, popover — and anything deeper loops back.
+
+## Passthrough containers
+
+Not every wrapper advances the depth counter. Layout grids, scroll containers, and generic `<div>` elements between surface layers simply pass through the current depth:
+
+<Canvas of={Stories.PassthroughContainer} />
+
+Only elements with the `.surface` class advance the depth. You can refactor layout wrappers freely without affecting surface depth.
+
+## Surfaces and modifiers together
+
+Surfaces and modifiers are independent cascade layers. A container can carry both `.surface` and a modifier class simultaneously:
+
+<Canvas of={Stories.SurfaceWithModifier} />
+
+The modifier sets `--modifier-color-text` to the intent text color. The surface sets `--surface-color-background` to the layer-2 background. Both resolve through their respective fallback chains without interference:
+
+```css
+.ds.my-component {
+  color: var(--modifier-color-text, var(--color-text));
+  background: var(--surface-color-background, var(--color-background));
+}
+```
+
+## Surface channel reference
+
+The surface system sets these channel variables at each depth level:
+
+<table>
+  <thead>
+    <tr>
+      <th>Channel</th>
+      <th>Consumed as</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td><code>--surface-color-background</code></td><td><code>var(--surface-color-background, var(--color-background))</code></td></tr>
+    <tr><td><code>--surface-color-background-layer2</code></td><td><code>var(--surface-color-background-layer2, var(--color-background-layer2))</code></td></tr>
+    <tr><td><code>--surface-color-foreground-ghost</code></td><td><code>var(--surface-color-foreground-ghost, var(--color-foreground-ghost))</code></td></tr>
+    <tr><td><code>--surface-color-foreground-input</code></td><td><code>var(--surface-color-foreground-input, var(--color-foreground-input))</code></td></tr>
+    <tr><td><code>--surface-color-foreground-primary</code></td><td><code>var(--surface-color-foreground-primary, var(--color-foreground-primary))</code></td></tr>
+  </tbody>
+</table>
+
+The full list includes about 15 channels. The pattern is uniform: `--surface-color-{role}` as the channel, `--color-{role}` as the fallback.
+
+## Interaction states
+
+Hover, active, and disabled states are derived from the current color context using CSS relative color syntax (oklch). The shift direction is theme-aware:
+
+- In light mode, hover **lightens** interactive surfaces
+- In dark mode, hover **darkens** them
+- The perceptual contrast from the resting state is consistent in both themes
+
+Disabled states use `color-mix()` to blend toward the background at reduced opacity, ensuring disabled elements appear faded against their actual surface. The disabled derivation reads `--surface-color-background` — without a surface providing it, disabled falls through to `--color-background` (root), which is correct for root-level components but incorrect inside layer 2 or layer 3.
+
+## Debugging
+
+In browser DevTools, surface channels are visible as custom properties on each `.surface` element:
+
+1. Select the element
+2. Look for `--surface-color-background` in the Computed tab
+3. Count `.surface` ancestors to determine the current depth level
+
+If a component does not respond to surface depth, its CSS is referencing `var(--color-background)` directly rather than `var(--surface-color-background, var(--color-background))`.

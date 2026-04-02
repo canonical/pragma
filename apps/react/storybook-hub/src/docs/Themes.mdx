@@ -1,0 +1,46 @@
+import { Meta, Canvas } from "@storybook/addon-docs/blocks";
+import * as Stories from "./Themes.stories";
+
+<Meta title="Docs/Themes" />
+
+# Themes
+
+Pragma supports light and dark themes through paired semantic tokens. Theming is pure CSS — no React context, no `ThemeProvider`, no `useTheme` hook. It works in SSR, static HTML, and any rendering framework.
+
+## Automatic switching
+
+Semantic tokens carry paired light and dark values via the CSS `light-dark()` function:
+
+```css
+--color-text: light-dark(oklch(12% 0 0), oklch(100% 0 0));
+```
+
+When the OS is set to dark mode, `prefers-color-scheme: dark` activates and every semantic token resolves to its dark value automatically. No code changes needed.
+
+## Forcing a theme
+
+To override the system preference for a subtree, add a `.light` or `.dark` class to any element:
+
+<Canvas of={Stories.ThemeForcing} />
+
+Theme forcing affects all descendants. Native form controls (inputs, selects) also switch correctly because the `color-scheme` CSS property is set alongside the class. This means you can have a dark sidebar next to a light main area, or a light preview panel inside a dark editor — at any level of nesting.
+
+## How it works
+
+The theme system uses three mechanisms:
+
+**Paired values** — every semantic token is defined with `light-dark()`, so both values are always present in the CSS. The browser picks the active one based on `color-scheme`.
+
+**Class forcing** — `.light` and `.dark` classes set `color-scheme: light` or `color-scheme: dark` on their element, overriding the system preference for the subtree. The `:where()` selector keeps specificity at zero so forcing never creates specificity conflicts.
+
+**Theme-aware deltas** — interaction states (hover, active) shift in opposite directions per theme. In light mode, hover lightens; in dark mode, hover darkens. The perceptual contrast from the resting state is consistent in both. These deltas are defined as CSS custom properties (`--delta-hover-color-foreground-primary`) and flipped by the theme class.
+
+## What themes do not do
+
+Themes change _which values_ semantic tokens resolve to. Modifiers change _which semantic tokens_ a component reads. These are independent axes — an `.error` modifier works identically in both light and dark mode because the error semantic tokens carry paired values just like every other token.
+
+Theme detection in JavaScript is almost never needed. If you find yourself checking `prefers-color-scheme` in code, reconsider — the CSS handles it.
+
+## Debugging
+
+Toggle the Storybook theme switcher (shortcut: **S**) to cycle between system, light, and dark. In DevTools, check whether the `<html>` element has `.light` or `.dark` to see which theme is active.

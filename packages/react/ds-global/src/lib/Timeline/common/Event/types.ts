@@ -1,10 +1,5 @@
+import type { ModifierFamily } from "@canonical/ds-types";
 import type { HTMLAttributes, ReactNode } from "react";
-
-/**
- * Criticality modifier values
- * Maps to DSL modifierFamily: criticality
- */
-export type Criticality = "info" | "success" | "warning" | "critical";
 
 /**
  * Props for the Timeline.Event subcomponent
@@ -39,5 +34,5 @@ export interface EventProps extends HTMLAttributes<HTMLDivElement> {
    * Visual criticality modifier for the event
    * Maps to DSL hasModifierFamily: criticality
    */
-  criticality?: Criticality;
+  criticality?: ModifierFamily<"criticality">;
 }

@@ -6,7 +6,7 @@
  * and queries correctly when embedded in a compiled Bun binary.
  *
  * Tests exercised:
- *   1. Dynamic import of @canonical/ke (triggers WASM loading)
+ *   1. Static import of @canonical/ke (triggers WASM loading)
  *   2. createStore() with file sources
  *   3. SPARQL SELECT query with prefix expansion
  *   4. sparql tagged template with branded URI interpolation
@@ -18,9 +18,11 @@
  * It is a build validation program, not a library module.
  */
 
+import "./embedWasm.js";
 import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { createNamespace, createStore, sparql } from "@canonical/ke";
 
 async function run() {
   const start = performance.now();
@@ -58,9 +60,6 @@ ex:charlie a schema:Person ;
   // --- 1. Load ke (triggers WASM) ---
   console.log("[validate] Loading @canonical/ke (triggers WASM)...");
   const wasmStart = performance.now();
-  const { createStore, sparql, createNamespace } = await import(
-    "@canonical/ke"
-  );
   console.log(
     `[validate] WASM loaded in ${(performance.now() - wasmStart).toFixed(1)}ms`,
   );

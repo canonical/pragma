@@ -263,7 +263,8 @@ describe("formatters.llm", () => {
     });
     expect(text).toContain("### Modifiers");
     expect(text).toContain("### Tokens");
-    expect(text).not.toContain("### Anatomy");
+    expect(text).toContain("### Anatomy (DSL)");
+    expect(text).not.toContain("### Anatomy\n");
   });
 });
 

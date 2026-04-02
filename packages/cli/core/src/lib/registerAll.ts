@@ -12,6 +12,7 @@ import type {
   CommandContext,
   CommandDefinition,
   CommandResult,
+  HandleResultOptions,
   InteractiveSpec,
   ParameterDefinition,
 } from "./types.js";
@@ -83,6 +84,7 @@ export default function registerAll(
   program: Command,
   commands: readonly CommandDefinition[],
   ctx: CommandContext,
+  resultOptions?: HandleResultOptions,
 ): void {
   program.enablePositionalOptions();
   const groups = new Map<string, CommandDefinition[]>();
@@ -101,7 +103,7 @@ export default function registerAll(
     const multiSegment = cmds.filter((c) => c.path.length > 1);
 
     for (const cmd of singleSegment) {
-      attachCommand(program, cmd, ctx);
+      attachCommand(program, cmd, ctx, undefined, resultOptions);
     }
 
     if (multiSegment.length > 0) {
@@ -125,7 +127,13 @@ export default function registerAll(
 
       for (const cmd of multiSegment) {
         const verb = cmd.path.slice(1).join(" ");
-        attachCommand(parent, { ...cmd, path: [verb] }, ctx, cmd);
+        attachCommand(
+          parent,
+          { ...cmd, path: [verb] },
+          ctx,
+          cmd,
+          resultOptions,
+        );
       }
     }
   }
@@ -136,6 +144,7 @@ function attachCommand(
   cmd: CommandDefinition,
   ctx: CommandContext,
   originalCmd?: CommandDefinition,
+  resultOptions?: HandleResultOptions,
 ): void {
   const name = cmd.path[cmd.path.length - 1];
   if (!name) return;
@@ -191,21 +200,38 @@ function attachCommand(
 
     const params = extractParams(opts, positionalArgs, cmd.parameters);
     const result = await cmd.execute(params, ctx);
-    await handleResult(result, cmd, ctx, params);
+    await handleResult(result, cmd, ctx, params, resultOptions);
   });
 }
 
+/**
+ * Dispatch a command result to the appropriate output channel.
+ *
+ * For output results: uses the ink renderer when available and mode is "ink",
+ * otherwise falls back to plain text via stdout. For interactive results:
+ * delegates to the binary's interactive handler when available, otherwise
+ * writes an unavailable message to stderr. For exit results: sets the exit code.
+ *
+ * @note Impure — writes to process.stdout/stderr, sets process.exitCode,
+ * and may invoke the Ink renderer or interactive handler.
+ */
 async function handleResult(
   result: CommandResult,
   cmd?: CommandDefinition,
   ctx?: CommandContext,
   params?: Record<string, unknown>,
+  options?: HandleResultOptions,
 ): Promise<void> {
   switch (result.tag) {
     case "output": {
-      const text = result.render.plain(result.value);
-      if (text) {
-        writeChunked(process.stdout, `${text}\n`);
+      if (options?.mode === "ink" && result.render.ink && options.renderInk) {
+        const element = result.render.ink(result.value);
+        await options.renderInk(element);
+      } else {
+        const text = result.render.plain(result.value);
+        if (text) {
+          writeChunked(process.stdout, `${text}\n`);
+        }
       }
       break;
     }
@@ -219,7 +245,7 @@ async function handleResult(
         });
 
         if (rerunResult) {
-          await handleResult(rerunResult, cmd, ctx, params);
+          await handleResult(rerunResult, cmd, ctx, params, options);
           break;
         }
       }

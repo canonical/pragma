@@ -9,16 +9,10 @@ const componentCssClassName = "ds rule";
  * @TODO implement fixed-width behavior after implementation of the Grid
  * @implements ds:site.component.rule
  */
-const Rule = ({
-  className,
-  emphasis,
-  ...props
-}: RuleProps): React.ReactElement => {
+const Rule = ({ className, ...props }: RuleProps): React.ReactElement => {
   return (
     <hr
-      className={[componentCssClassName, emphasis, className]
-        .filter(Boolean)
-        .join(" ")}
+      className={[componentCssClassName, className].filter(Boolean).join(" ")}
       {...props}
     />
   );

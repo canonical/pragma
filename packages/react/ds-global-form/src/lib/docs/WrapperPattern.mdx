@@ -1,0 +1,122 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+
+<Meta title="Guides/The Wrapper Pattern" />
+
+# The Wrapper Pattern
+
+Every input in the form system is wrapped by a `Wrapper` component that provides field-level chrome: the label, description, error message, ARIA attributes, form registration, and middleware composition. Understanding this pattern is essential for building custom fields or replacing the wrapper for specialised use cases.
+
+## What the Wrapper provides
+
+When you write `<Field name="email" inputType="text" label="Email" />`, the `Field` component routes to the `Text` input. But `Text` is not exported raw — it is wrapped with `withWrapper`, which composes it inside the `Wrapper` component. The actual DOM output looks like this:
+
+```html
+<div class="ds field">                           <!-- Wrapper root -->
+  <label for="email" id="email-label">Email</label>  <!-- Label -->
+  <div class="payload">                           <!-- Payload container -->
+    <input type="text" id="email" ... />           <!-- The actual input -->
+  </div>
+</div>
+```
+
+When the field has an error, the Wrapper adds the `.danger` class to the root `div`, renders the error message inside `.payload`, and sets `aria-invalid`, `aria-errormessage`, and `aria-describedby` on the input.
+
+The Wrapper handles:
+
+- **Form registration** — via [`useFormContext`](https://react-hook-form.com/docs/useformcontext) and the `useFieldWrapper` hook
+- **Label rendering** — with `<label>` element and proper `htmlFor` association
+- **Description text** — optional help text below the label
+- **Error display** — renders the error message from react-hook-form validation
+- **ARIA attributes** — `aria-labelledby`, `aria-describedby`, `aria-errormessage`, `aria-invalid` generated automatically via `useFieldAriaProperties`
+- **Middleware application** — the middleware array is reduced and composed between the Wrapper and the input
+- **Optional field marking** — handles the `isOptional` prop
+- **Unregister on unmount** — cleans up form registration when the field is removed
+
+## How withWrapper works
+
+`withWrapper` is a HOC that takes a raw input component and returns a component that renders inside the Wrapper:
+
+```typescript
+// Standard usage — wraps Text with the default Wrapper
+export default withWrapper<TextProps>(Text);
+```
+
+The returned component accepts all of the input's own props plus the Wrapper's props (`label`, `description`, `registerProps`, `middleware`, `condition`, etc.). When rendered, `withWrapper`:
+
+1. Memoizes the input component
+2. Applies middleware in reverse array order (first middleware = outermost)
+3. Passes the composed component to the Wrapper as the `Component` prop
+4. Wraps everything in `withConditionalDisplay` for the `condition` prop
+
+## Alternative wrappers
+
+Not every input needs the full field chrome. The `withWrapper` HOC accepts a third argument: an alternative Wrapper component.
+
+### InvisibleWrapper
+
+The `Hidden` input uses `InvisibleWrapper` — a minimal wrapper that handles form registration and ARIA without rendering any visible elements (no label, no description, no error, no `.ds.field` container):
+
+```typescript
+import { InvisibleWrapper, withWrapper } from "../../common/Wrapper/index.js";
+
+// Hidden input — registered in the form but invisible in the DOM
+export default withWrapper<HiddenProps>(Hidden, {}, InvisibleWrapper);
+```
+
+`InvisibleWrapper` calls the same `useFieldWrapper` hook for form registration, so the hidden field participates in validation and submission. It just skips the visual chrome.
+
+### When to use an alternative wrapper
+
+Use an alternative wrapper when your input needs form registration but the default field chrome (label above, error below, `.ds.field` container) doesn't fit:
+
+- **Hidden values** — data that should be submitted but not shown (use `InvisibleWrapper`)
+- **Inline inputs** — inputs embedded inside other components (a search box inside a toolbar) where the label comes from context rather than from the field
+- **Fieldset-based groups** — radio groups or checkbox groups that use `<fieldset>` and `<legend>` instead of `<div>` and `<label>`. The default Wrapper supports this via the `mockLabel` prop, which renders a `<legend>` instead of a `<label>`
+
+### Writing a custom wrapper
+
+A custom wrapper must accept `WrapperProps<ComponentProps>` and render the `Component` prop with the correct registration props. The simplest approach is to use `useFieldWrapper` for form registration and compose the visual chrome yourself:
+
+```typescript
+import { useFieldWrapper } from "@canonical/react-ds-global-form";
+
+const CompactWrapper = <ComponentProps extends BaseInputProps>({
+  name,
+  Component,
+  label,
+  registerProps: userRegisterProps,
+  ...otherProps
+}: WrapperProps<ComponentProps>) => {
+  const { isError, ariaProps, registerProps } = useFieldWrapper(name, {
+    label,
+    userRegisterProps,
+  });
+
+  const componentProps = {
+    name,
+    registerProps,
+    ...ariaProps.input,
+    ...otherProps,
+  } as ComponentProps;
+
+  return (
+    <div className={isError ? "compact-field error" : "compact-field"}>
+      <Component {...componentProps} />
+    </div>
+  );
+};
+
+// Use it with withWrapper
+export default withWrapper<MyInputProps>(MyInput, {}, CompactWrapper);
+```
+
+## Future direction
+
+Currently, input components are only exported in their wrapped form — you import `Text` from the form package and get the `withWrapper(Text)` result. In the future, raw input components will also be exported independently, allowing consumers to compose their own wrapper or use inputs outside the form system entirely. This will enable patterns like:
+
+```typescript
+// Future: import the raw input without wrapper chrome
+import { TextInput } from "@canonical/react-ds-global-form/inputs";
+```
+
+This is not yet available. For now, all inputs come pre-wrapped, and custom composition is done through alternative wrappers or the `inputType="custom"` escape hatch.

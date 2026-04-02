@@ -9,10 +9,14 @@ import {
   type CommandDefinition,
   createOutputResult,
 } from "@canonical/cli-core";
+import { createLookupView } from "#tui";
 import type { PragmaContext } from "../../shared/context.js";
 import type { LookupResult } from "../../shared/contracts.js";
 import { renderLookupResults } from "../../shared/formatters.js";
-import { createLookupFormatters } from "../formatters/index.js";
+import {
+  createLookupFormatters,
+  createTokenInkLookupOptions,
+} from "../formatters/index.js";
 import type { lookupToken } from "../operations/index.js";
 import { resolveTokenLookup } from "../orchestration/index.js";
 
@@ -64,6 +68,13 @@ export default function buildLookupCommand(
               result,
               formatters: createLookupFormatters({ detailed: isDetailed }),
               mapResult: (token) => token,
+            }),
+          ink: ({ result, detailed: isDetailed }) =>
+            createLookupView({
+              results: result.results,
+              errors: result.errors,
+              domain: "token",
+              options: createTokenInkLookupOptions({ detailed: isDetailed }),
             }),
         },
       );

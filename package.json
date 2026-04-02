@@ -55,5 +55,8 @@
     "workerDirectory": [
       "packages/storybook/addon-msw/public"
     ]
+  },
+  "patchedDependencies": {
+    "ejs@5.0.1": "patches/ejs@5.0.1.patch"
   }
 }

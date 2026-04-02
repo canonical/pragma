@@ -8,9 +8,9 @@ describe("Badge component", () => {
     expect(screen.getByText("15")).toHaveClass("ds badge");
   });
 
-  it("can set its appearance", () => {
-    render(<Component value={15} severity="negative" />);
-    expect(screen.getByText("15")).toHaveClass("ds badge negative");
+  it("can set its criticality", () => {
+    render(<Component value={15} criticality="error" />);
+    expect(screen.getByText("15")).toHaveClass("ds badge error");
   });
 
   it("displays exact truncated values for exactly representable values at or above the magnitude base", () => {

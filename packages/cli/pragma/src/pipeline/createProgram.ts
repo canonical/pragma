@@ -1,7 +1,9 @@
 import {
   type CommandDefinition,
+  detectRenderMode,
   formatHelp,
   formatLlmHelp,
+  type HandleResultOptions,
   registerAll,
 } from "@canonical/cli-core";
 import { Command } from "commander";
@@ -69,7 +71,19 @@ export default function createProgram(
       await runMcpServer();
     });
 
-  registerAll(program, commands, ctx);
+  const mode = detectRenderMode(ctx.globalFlags);
+  const resultOptions: HandleResultOptions = {
+    mode,
+    renderInk:
+      mode === "ink"
+        ? async (element: unknown) => {
+            const { renderInk } = await import("#tui");
+            await renderInk(element as import("react").ReactElement);
+          }
+        : undefined,
+  };
+
+  registerAll(program, commands, ctx, resultOptions);
 
   return program;
 }

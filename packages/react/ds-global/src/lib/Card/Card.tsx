@@ -17,13 +17,10 @@ const componentCssClassName = "ds card";
 const Card = ({
   className,
   children,
-  emphasis = "neutral",
   ...props
 }: CardProps): React.ReactElement => (
   <div
-    className={[componentCssClassName, emphasis, className]
-      .filter(Boolean)
-      .join(" ")}
+    className={[componentCssClassName, className].filter(Boolean).join(" ")}
     {...props}
   >
     {children}

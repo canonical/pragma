@@ -251,6 +251,29 @@ export interface CommandMeta {
 }
 
 // =============================================================================
+// Result Dispatch
+// =============================================================================
+
+/**
+ * Options controlling how command results are dispatched to output.
+ *
+ * When `mode` is `"ink"` and a result provides an ink renderer,
+ * the `renderInk` callback is invoked with the React element.
+ * Otherwise, the plain text renderer is used.
+ */
+export interface HandleResultOptions {
+  /** Current rendering mode — determines whether to use ink or plain */
+  readonly mode: RenderMode;
+  /**
+   * Callback that renders a React element via Ink.
+   * Only called when mode is "ink" and the result has an ink renderer.
+   *
+   * @note Impure — renders to process.stdout via Ink.
+   */
+  readonly renderInk?: (element: unknown) => Promise<void>;
+}
+
+// =============================================================================
 // Output Adapter
 // =============================================================================
 
@@ -258,7 +281,7 @@ export interface CommandMeta {
  * Rendering mode for output.
  *
  * - `plain`: Terminal text output via stdout
- * - `ink`: React TUI rendering (future)
+ * - `ink`: React TUI rendering via Ink, activated when stdout is a TTY
  */
 export type RenderMode = "plain" | "ink";
 

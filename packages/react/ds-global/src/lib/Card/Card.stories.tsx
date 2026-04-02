@@ -1,9 +1,7 @@
 import type { Meta, StoryFn, StoryObj } from "@storybook/react-vite";
 import * as decorators from "../../storybook/decorators.js";
 import Component from "./Card.js";
-import type { CardEmphasis, CardProps } from "./types.js";
-
-const CARD_EMPHASIS_OPTIONS: CardEmphasis[] = ["neutral", "highlighted"];
+import type { CardProps } from "./types.js";
 
 const meta = {
   title: "Stable/Card",
@@ -13,12 +11,6 @@ const meta = {
     children: {
       control: { type: "text" },
       description: "Content to display in the card.",
-    },
-    emphasis: {
-      options: CARD_EMPHASIS_OPTIONS,
-      control: { type: "radio" },
-      description:
-        "Emphasis modifier for the card. 'neutral' is the default; 'highlighted' provides increased visual prominence.",
     },
   },
   parameters: {
@@ -53,26 +45,6 @@ export const Default: StoryFn<CardProps> = (props) => (
   </Component>
 );
 
-export const Highlighted: Story = {
-  args: {
-    emphasis: "highlighted",
-    children: (
-      <Component.Content>
-        <h3>Highlighted Card</h3>
-        <p>This card has highlighted emphasis applied to the entire card.</p>
-      </Component.Content>
-    ),
-  },
-  parameters: {
-    docs: {
-      description: {
-        story:
-          "Apply the highlighted emphasis modifier to a card to further contrast it from surrounding content. This is especially useful when the card contains interactive content.",
-      },
-    },
-  },
-};
-
 export const WithThumbnail: StoryFn<CardProps> = (props) => (
   <Component {...props}>
     <Component.Thumbnail
@@ -91,14 +63,6 @@ export const WithThumbnail: StoryFn<CardProps> = (props) => (
   </Component>
 );
 
-WithThumbnail.parameters = {
-  docs: {
-    description: {
-      story: "A Card with a Thumbnail showing an image alongside content.",
-    },
-  },
-};
-
 export const GridLayout: StoryFn<CardProps> = () => (
   <>
     <Component>
@@ -111,7 +75,7 @@ export const GridLayout: StoryFn<CardProps> = () => (
         </p>
       </Component.Content>
     </Component>
-    <Component emphasis="highlighted">
+    <Component>
       <Component.Thumbnail
         imageProps={{
           src: "https://assets.ubuntu.com/v1/31bd2627-logo-raspberry-pi.svg",
@@ -135,60 +99,9 @@ export const GridLayout: StoryFn<CardProps> = () => (
           cloud, a Kubernetes cluster or a 50,000-node render farm, Ubuntu
           Server delivers the best value scale-out performance available.
         </p>
-        <p>
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed non
-          risus.
-        </p>
       </Component.Content>
-    </Component>
-    <Component>
-      <Component.Thumbnail
-        imageProps={{
-          src: "https://assets.ubuntu.com/v1/2d850f3f-CoF%2520Circle%2520New.svg",
-          alt: "Ubuntu logo",
-        }}
-      >
-        <h3>Ubuntu Desktop</h3>
-        <p>
-          Ubuntu Desktop is the modern, open source desktop operating system for
-          millions of PC and laptop users around the world.
-        </p>
-      </Component.Thumbnail>
-    </Component>
-    <Component emphasis="highlighted">
-      <Component.Content>
-        <h3>Canonical Kubernetes</h3>
-        <p>
-          Multi-cloud Kubernetes operations, simplified. Deploy and operate
-          consistently on AWS, Azure, Google Cloud, Oracle, OpenStack, VMware,
-          bare metal and edge.
-        </p>
-      </Component.Content>
-    </Component>
-    <Component>
-      <Component.Thumbnail
-        imageProps={{
-          src: "https://assets.ubuntu.com/v1/ac1c88fd-juju_logo.png",
-          alt: "Juju logo",
-        }}
-      >
-        <h3>Juju</h3>
-        <p>
-          Juju is an open source application modelling tool. Deploy, configure,
-          scale and operate your software on public and private clouds.
-        </p>
-      </Component.Thumbnail>
     </Component>
   </>
 );
 
 GridLayout.decorators = [decorators.grid()];
-
-GridLayout.parameters = {
-  docs: {
-    description: {
-      story:
-        "Wrap cards in a grid to ensure adjacent cards are evenly sized and spaced.",
-    },
-  },
-};

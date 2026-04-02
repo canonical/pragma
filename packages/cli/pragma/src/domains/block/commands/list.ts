@@ -11,8 +11,11 @@ import {
   type CommandResult,
   createOutputResult,
 } from "@canonical/cli-core";
+import { createListView } from "#tui";
 import type { PragmaContext } from "../../shared/context.js";
+import type { ColumnDef } from "../../shared/contracts.js";
 import { selectFormatter } from "../../shared/formatters.js";
+import { blockConfig } from "../blockConfig.js";
 import { listFormatters } from "../formatters/index.js";
 import { resolveBlockList } from "../orchestration/index.js";
 
@@ -63,7 +66,31 @@ export default function buildListCommand(
 
       return createOutputResult(contract.result.items, {
         plain: selectFormatter(ctx, listFormatters),
+        ink: (data) =>
+          createListView({
+            heading: "Blocks",
+            domain: "block",
+            items: data,
+            columns: reorderColumns(blockConfig.listColumns, [
+              "name",
+              "type",
+              "tier",
+              "modifiers",
+              "uri",
+            ]),
+          }),
       });
     },
   };
+}
+
+function reorderColumns<T>(
+  columns: readonly ColumnDef<T>[],
+  order: readonly string[],
+): readonly ColumnDef<T>[] {
+  const byKey = new Map(columns.map((col) => [col.key, col]));
+  return order.flatMap((key) => {
+    const col = byKey.get(key as keyof T & string);
+    return col ? [col] : [];
+  });
 }

@@ -1,8 +1,12 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+
+<Meta title="Guides/Creating Custom Fields" />
+
 # Creating Custom Fields
 
-This guide explains how to create custom field components for use with the `Field` component's `inputType="custom"` option.
+This guide covers how to create custom field components for use with the `Field` component's `inputType="custom"` option.
 
-## When to Create Custom Fields
+## When to create custom fields
 
 Use a custom field when the built-in input types don't cover your use case:
 
@@ -12,7 +16,7 @@ Use a custom field when the built-in input types don't cover your use case:
 
 For simple variations of existing inputs, consider middleware instead.
 
-## Type Requirements
+## Type requirements
 
 Custom fields must satisfy the `InputProps` type:
 
@@ -27,14 +31,23 @@ type MyFieldProps = InputProps<{
 
 The base `InputProps` includes:
 
-| Prop | Type | Description |
-|------|------|-------------|
-| `name` | `string` | Field name for form registration |
-| `registerProps` | `RegisterOptions` | react-hook-form registration options |
-| `aria-labelledby` | `string` | ID of label element |
-| `aria-describedby` | `string` | ID of description element |
-| `aria-errormessage` | `string` | ID of error message element |
-| `aria-invalid` | `boolean` | Whether field has validation error |
+<table>
+  <thead>
+    <tr>
+      <th>Prop</th>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td><code>name</code></td><td><code>string</code></td><td>Field name for form registration</td></tr>
+    <tr><td><code>registerProps</code></td><td><code>RegisterOptions</code></td><td>react-hook-form registration options</td></tr>
+    <tr><td><code>aria-labelledby</code></td><td><code>string</code></td><td>ID of label element</td></tr>
+    <tr><td><code>aria-describedby</code></td><td><code>string</code></td><td>ID of description element</td></tr>
+    <tr><td><code>aria-errormessage</code></td><td><code>string</code></td><td>ID of error message element</td></tr>
+    <tr><td><code>aria-invalid</code></td><td><code>boolean</code></td><td>Whether field has validation error</td></tr>
+  </tbody>
+</table>
 
 ## The withWrapper HOC
 
@@ -48,11 +61,11 @@ All custom fields must be wrapped with `withWrapper`. This HOC provides:
 
 Without `withWrapper`, your field won't integrate with the form system.
 
-## Step-by-Step Example
+## Step-by-step example
 
 Here's how to create a custom color picker field:
 
-### 1. Define the Props Type
+### 1. Define the props type
 
 ```typescript
 import type { InputProps } from "@canonical/react-ds-global-form";
@@ -63,9 +76,9 @@ type ColorPickerProps = InputProps<{
 }>;
 ```
 
-### 2. Create the Component
+### 2. Create the component
 
-Use `useFormContext` from react-hook-form to register the field:
+Use [`useFormContext`](https://react-hook-form.com/docs/useformcontext) from react-hook-form to register the field:
 
 ```typescript
 import { useFormContext } from "react-hook-form";
@@ -138,9 +151,7 @@ import { ColorPicker } from "./ColorPicker";
 />
 ```
 
-## Complete Example
-
-Here's a complete file for reference:
+## Complete example
 
 ```typescript
 // ColorPicker.tsx
@@ -211,7 +222,7 @@ const ColorPickerInput = ({
 export const ColorPicker = withWrapper<ColorPickerProps>(ColorPickerInput);
 ```
 
-## Wrapper Options
+## Wrapper options
 
 The `withWrapper` function accepts optional configuration:
 
@@ -221,9 +232,9 @@ export default withWrapper<MyFieldProps>(MyField, {
 });
 ```
 
-## Controlled vs Uncontrolled
+## Controlled vs uncontrolled
 
-The examples above use react-hook-form's uncontrolled approach with `register`. For controlled components (like third-party libraries that require a `value` prop), use the `Controller` component:
+The examples above use react-hook-form's uncontrolled approach with [`register`](https://react-hook-form.com/docs/useform/register). For controlled components (like third-party libraries that require a `value` prop), use the [`Controller`](https://react-hook-form.com/docs/usecontroller/controller) component:
 
 ```typescript
 import { Controller, useFormContext } from "react-hook-form";

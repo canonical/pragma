@@ -10,15 +10,20 @@ import type {
 } from "./types.js";
 
 /**
- * Detect the appropriate render mode from global flags.
+ * Detect the appropriate render mode from global flags and terminal state.
  *
- * v0.1: always returns "plain". Future versions may return "ink"
- * when stdout is a TTY and no machine-readable format is requested.
+ * Returns "ink" when stdout is an interactive terminal and no
+ * machine-readable format (`--llm`, `--format json`) is requested.
+ * Returns "plain" in all other cases: piped output, redirected
+ * files, CI environments, or explicit machine-readable flags.
+ *
+ * @note Impure — reads process.stdout.isTTY.
  */
 export function detectRenderMode(
   flags: Pick<GlobalFlags, "llm" | "format">,
 ): RenderMode {
-  void flags;
+  if (flags.llm || flags.format === "json") return "plain";
+  if (process.stdout.isTTY) return "ink";
   return "plain";
 }
 
@@ -38,7 +43,8 @@ export default function createOutputAdapter(mode: RenderMode): OutputAdapter {
           break;
         }
         case "ink": {
-          // Future: render via Ink React component — fall back to plain
+          // Ink rendering is handled by handleResult via HandleResultOptions.
+          // OutputAdapter.render() falls back to plain when called directly.
           const text = renderers.plain(data);
           if (text) {
             process.stdout.write(`${text}\n`);

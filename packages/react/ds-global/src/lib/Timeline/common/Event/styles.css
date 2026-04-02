@@ -26,7 +26,7 @@
   height: var(--timeline-marker-size, 12px);
   border-radius: 50%;
   background-color: var(
-    --modifier-color,
+    --modifier-color-foreground-primary,
     var(--timeline-marker-color, var(--color-border, #ccc))
   );
   border: var(--timeline-marker-border-width, 2px) solid
@@ -119,19 +119,6 @@
   flex-basis: 100%;
 }
 
-/* Criticality modifiers affect marker color */
-.ds.timeline-event.info > .marker {
-  background-color: var(--color-info, #0066cc);
-}
-
-.ds.timeline-event.success > .marker {
-  background-color: var(--color-success, #00a86b);
-}
-
-.ds.timeline-event.warning > .marker {
-  background-color: var(--color-warning, #f5a623);
-}
-
-.ds.timeline-event.critical > .marker {
-  background-color: var(--color-critical, #c7162b);
-}
+/* Criticality styling is handled by the modifier system:
+   .success, .error, .warning, .information classes set
+   --modifier-color-foreground-primary via design-tokens. */

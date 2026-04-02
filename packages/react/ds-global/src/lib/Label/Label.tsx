@@ -17,6 +17,7 @@ const Label = ({
   anticipation,
   importance,
   criticality,
+  lifecycle,
   className,
   ...props
 }: LabelProps): React.ReactElement => (
@@ -26,6 +27,7 @@ const Label = ({
       anticipation,
       importance,
       criticality,
+      lifecycle,
       className,
     ]
       .filter(Boolean)

@@ -5,13 +5,13 @@ import { PackageInfo } from "@canonical/storybook-helpers";
 
 # Form Components — React
 
-Forms are where users provide data — getting them right is critical for both usability and data quality. This package extends the Global tier with specialized input components, validation patterns, and accessible form structures that work consistently across all Canonical products.
+Forms are where users provide data — getting them right is critical for both usability and data quality. This package provides a `Form` wrapper, a `Field` router, 15 input types, a middleware system, and accessible form structures that work consistently across all Canonical products.
 
 ## Package
 
 <PackageInfo
   name="@canonical/react-ds-global-form"
-  version="0.11.0"
+  version="0.20.0"
   tier="global_form"
   framework="react"
   status="stable"
@@ -24,94 +24,83 @@ Forms are where users provide data — getting them right is critical for both u
 
 ## Architecture
 
-Form components build on Global tier primitives and add input-specific behavior, validation states, and accessibility patterns.
+The form system has four layers:
 
 ```
-@canonical/react-ds-global (dependency)
-         ↓
-@canonical/react-ds-global-form (this package)
-         ↓
-Your Application
+Form            react-hook-form provider + subgrid container
+  └─ Field      type-safe router — selects input by inputType prop
+       └─ Wrapper    label, description, error, ARIA, middleware
+            └─ Input     one of 15 built-in types or a custom component
 ```
 
-## Components
+`Form` wraps children in a `FormProvider` and renders as a CSS subgrid, inheriting columns from the parent `.grid` context. `Field` is a discriminated union — the `inputType` prop selects which input component renders, and TypeScript enforces the correct props for that type. `Wrapper` composes the field chrome (label, description, error message, ARIA attributes) and applies middleware. The input component handles the actual user interaction.
 
-### Field
-
-The `Field` component wraps inputs with labels, help text, and validation messages:
-
-```tsx
-import { Field } from "@canonical/react-ds-global-form";
-
-<Field label="Email" help="We'll never share your email" error={errors.email}>
-  <Field.Text type="email" name="email" required />
-</Field>
-```
-
-### Input Types
+## Input types
 
 <table>
   <thead>
     <tr>
-      <th>Input</th>
+      <th>inputType</th>
       <th>Purpose</th>
-      <th>Readiness</th>
     </tr>
   </thead>
   <tbody>
-    <tr><td>Text</td><td>Single-line text, email, password, url, tel</td><td>A</td></tr>
-    <tr><td>Textarea</td><td>Multi-line text</td><td>A</td></tr>
-    <tr><td>Select</td><td>Dropdown selection</td><td>A</td></tr>
-    <tr><td>Checkbox</td><td>Boolean or multiple selection</td><td>A</td></tr>
-    <tr><td>SimpleChoices</td><td>Radio buttons, checkbox groups</td><td>B</td></tr>
-    <tr><td>Range</td><td>Numeric slider</td><td>B</td></tr>
-    <tr><td>Combobox</td><td>Searchable dropdown</td><td>B</td></tr>
-    <tr><td>Hidden</td><td>Hidden form values</td><td>A</td></tr>
+    <tr><td><code>"text"</code></td><td>Single-line text — also handles email, password, number, url, tel</td></tr>
+    <tr><td><code>"textarea"</code></td><td>Multi-line text</td></tr>
+    <tr><td><code>"select"</code></td><td>Native dropdown</td></tr>
+    <tr><td><code>"checkbox"</code></td><td>Single boolean toggle</td></tr>
+    <tr><td><code>"simple-choices"</code></td><td>Radio buttons or checkbox groups</td></tr>
+    <tr><td><code>"choices"</code></td><td>Radio/checkbox groups with rich ReactNode labels</td></tr>
+    <tr><td><code>"combobox"</code></td><td>Searchable select, single or multiple</td></tr>
+    <tr><td><code>"range"</code></td><td>Numeric slider</td></tr>
+    <tr><td><code>"date"</code></td><td>Date picker</td></tr>
+    <tr><td><code>"time"</code></td><td>Time picker</td></tr>
+    <tr><td><code>"datetime"</code></td><td>Date and time picker</td></tr>
+    <tr><td><code>"file"</code></td><td>File upload with validation</td></tr>
+    <tr><td><code>"color"</code></td><td>Color picker with swatches</td></tr>
+    <tr><td><code>"phone"</code></td><td>International phone with country selector</td></tr>
+    <tr><td><code>"hidden"</code></td><td>Hidden form value</td></tr>
+    <tr><td><code>"custom"</code></td><td>Your component via CustomComponent prop</td></tr>
   </tbody>
 </table>
 
-### Form
-
-Container for field groups with submission handling:
+## Quick example
 
 ```tsx
 import { Form, Field } from "@canonical/react-ds-global-form";
 
-<Form onSubmit={handleSubmit}>
-  <Field label="Name">
-    <Field.Text name="name" />
-  </Field>
-  <Field label="Bio">
-    <Field.Textarea name="bio" />
-  </Field>
-  <button type="submit">Submit</button>
-</Form>
+<div className="grid responsive">
+  <Form onSubmit={(data) => console.log(data)}>
+    <Field name="name" inputType="text" label="Name" />
+    <Field
+      name="email"
+      inputType="text"
+      label="Email"
+      registerProps={{ required: "Email is required" }}
+    />
+    <Field
+      name="role"
+      inputType="select"
+      label="Role"
+      options={[
+        { value: "dev", label: "Developer" },
+        { value: "design", label: "Designer" },
+      ]}
+    />
+    <button type="submit">Submit</button>
+  </Form>
+</div>
 ```
 
-## Validation States
+Forms require a `.grid` parent — `Form` renders as a subgrid and inherits the column structure. See [Getting Started](?path=/docs/global-form-getting-started--docs) for the full walkthrough.
 
-Fields communicate validation through visual states:
+## Validation
 
-```tsx
-// Error state
-<Field label="Email" error="Invalid email address">
-  <Field.Text type="email" />
-</Field>
+Validation integrates with [react-hook-form](https://react-hook-form.com/) through the [`registerProps`](https://react-hook-form.com/docs/useform/register) prop. Error states apply a `.danger` CSS class that shifts the input border to the error colour. See [Getting Started](?path=/docs/global-form-getting-started--docs) for details.
 
-// Required field
-<Field label="Name" required>
-  <Field.Text name="name" />
-</Field>
+## Middleware
 
-// Help text
-<Field label="Password" help="Minimum 8 characters">
-  <Field.Text type="password" />
-</Field>
-```
-
-## Accessibility
-
-Field components handle label-input association, error announcements, required field indication, and help text linking automatically.
+Middleware wraps input components to add cross-cutting behaviour — fetching options from an API, server-side validation, conditional display. See [Creating Middleware](?path=/docs/global-form-guides-creating-middleware--docs).
 
 ## Installation
 
@@ -119,9 +108,21 @@ Field components handle label-input association, error announcements, required f
 bun add @canonical/react-ds-global-form
 ```
 
-Requires `@canonical/react-ds-global` as a peer dependency.
+Requires `@canonical/react-ds-global` and `@canonical/styles` as peer dependencies.
 
-## Links
+## Documentation
 
-- [Source](https://github.com/canonical/pragma/tree/main/packages/react/ds-global-form)
-- [Design System Ontology](https://github.com/canonical/design-system)
+<table>
+  <thead>
+    <tr>
+      <th>Page</th>
+      <th>What you'll find</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td><a href="?path=/docs/global-form-getting-started--docs">Getting Started</a></td><td>Full tutorial — Form, Field, validation, layout, middleware, conditionals</td></tr>
+    <tr><td><a href="?path=/docs/global-form-guides-creating-custom-fields--docs">Creating Custom Fields</a></td><td>How to build custom input types with withWrapper</td></tr>
+    <tr><td><a href="?path=/docs/global-form-guides-creating-middleware--docs">Creating Middleware</a></td><td>How to write middleware for API integration</td></tr>
+    <tr><td><a href="?path=/docs/global-form-guides-the-wrapper-pattern--docs">The Wrapper Pattern</a></td><td>How field chrome works, alternative wrappers, InvisibleWrapper</td></tr>
+  </tbody>
+</table>
