@@ -8,7 +8,6 @@ on:
       - packages/styles/**
       - packages/utils/**
       - packages/react/**
-      - packages/svelte/**
       - apps/react/storybook-hub/**
   push:
     branches:
@@ -20,7 +19,6 @@ on:
       - packages/styles/**
       - packages/utils/**
       - packages/react/**
-      - packages/svelte/**
       - apps/react/storybook-hub/**
 jobs:
   test-compile:
@@ -36,5 +34,4 @@ jobs:
         "packages/styles/**",
         "packages/utils/**",
         "packages/react/**",
-        "packages/svelte/**"
       ]'
