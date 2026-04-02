@@ -1,0 +1,12 @@
+.ds.dialog-content-header {
+  display: flex;
+  align-items: start;
+  text-wrap: balance;
+
+  font: var(--lp-typography-h4);
+  color: var(--lp-color-text-default);
+
+  > .ds.dialog-content-close-button {
+    margin-inline-start: auto;
+  }
+}
