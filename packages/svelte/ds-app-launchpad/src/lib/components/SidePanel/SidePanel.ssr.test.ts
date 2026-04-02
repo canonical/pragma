@@ -90,7 +90,7 @@ describe("SidePanel SSR", () => {
         },
       });
       const sidePanelId = componentLocator(page).getAttribute("id");
-      assert(sidePanelId !== undefined);
+      assert(sidePanelId !== null);
       expect(triggerLocator(page).getAttribute("commandfor")).toBe(sidePanelId);
       expect(triggerLocator(page).getAttribute("command")).toBe("show-modal");
       expect(triggerLocator(page).getAttribute("aria-haspopup")).toBe("dialog");
@@ -104,7 +104,7 @@ describe("SidePanel SSR", () => {
         },
       });
       const sidePanelId = componentLocator(page).getAttribute("id");
-      assert(sidePanelId !== undefined);
+      assert(sidePanelId !== null);
       const closeButton = page.getByRole("button", {
         name: closeButtonText,
         hidden: true,
