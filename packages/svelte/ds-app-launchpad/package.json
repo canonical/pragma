@@ -54,6 +54,7 @@
     "@biomejs/biome": "2.4.9",
     "@canonical/biome-config": "^0.21.0",
     "@canonical/design-tokens": "^0.6.0",
+    "@canonical/storybook-config": "^0.21.0",
     "@canonical/storybook-helpers": "^0.21.0",
     "@canonical/svelte-ssr-test": "^0.21.0",
     "@canonical/typescript-config-svelte": "^0.21.0",
@@ -75,7 +76,6 @@
   },
   "dependencies": {
     "@canonical/launchpad-design-tokens": "^1.1.1",
-    "@canonical/storybook-config": "^0.21.0",
     "@canonical/svelte-icons": "^0.0.9",
     "@floating-ui/dom": "^1.7.6"
   },
