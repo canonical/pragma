@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.22.0-experimental.0](https://github.com/canonical/pragma/compare/v0.21.0...v0.22.0-experimental.0) (2026-04-02)
+
+
+### Features
+
+* **TieredList:** Implement TieredList webcomponent ([#553](https://github.com/canonical/pragma/issues/553)) ([c96b9df](https://github.com/canonical/pragma/commit/c96b9df9502bd5d68a4c051c6f1be30a5034fedf))
+
+
+
+
+
 # [0.21.0](https://github.com/canonical/pragma/compare/v0.20.1...v0.21.0) (2026-04-01)
 
 **Note:** Version bump only for package @canonical/lit-ds-prototype

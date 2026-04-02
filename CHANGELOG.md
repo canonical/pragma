@@ -3,6 +3,23 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.22.0-experimental.0](https://github.com/canonical/pragma/compare/v0.21.0...v0.22.0-experimental.0) (2026-04-02)
+
+
+### Bug Fixes
+
+* exclude svelte packages from storybook hub workflow ([#589](https://github.com/canonical/pragma/issues/589)) ([7fec857](https://github.com/canonical/pragma/commit/7fec8575d9eb134a5bc15ce6c36e3a6e0aafea45))
+* **pragma-cli:** embed oxigraph WASM in compiled binary ([#584](https://github.com/canonical/pragma/issues/584)) ([929dad6](https://github.com/canonical/pragma/commit/929dad6ee8f770b659b5fb1387419648bcc32fa0))
+
+
+### Features
+
+* **TieredList:** Implement TieredList webcomponent ([#553](https://github.com/canonical/pragma/issues/553)) ([c96b9df](https://github.com/canonical/pragma/commit/c96b9df9502bd5d68a4c051c6f1be30a5034fedf))
+
+
+
+
+
 # [0.21.0](https://github.com/canonical/pragma/compare/v0.20.1...v0.21.0) (2026-04-01)
 
 

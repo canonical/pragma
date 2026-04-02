@@ -240,7 +240,7 @@
     },
     "packages/cli/pragma": {
       "name": "@canonical/pragma-cli",
-      "version": "0.21.0",
+      "version": "0.22.0-experimental.0",
       "bin": {
         "pragma": "dist/pragma",
       },
@@ -341,7 +341,7 @@
     },
     "packages/lit/ds-prototype": {
       "name": "@canonical/lit-ds-prototype",
-      "version": "0.21.0",
+      "version": "0.22.0-experimental.0",
       "dependencies": {
         "@canonical/storybook-config": "^0.20.0",
         "lit": "^3.3.2",
@@ -1124,7 +1124,7 @@
     },
     "packages/svelte/ds-app-launchpad": {
       "name": "@canonical/svelte-ds-app-launchpad",
-      "version": "0.21.0",
+      "version": "0.22.0-experimental.0",
       "dependencies": {
         "@canonical/launchpad-design-tokens": "^1.1.1",
         "@canonical/svelte-icons": "^0.0.9",
