@@ -3,7 +3,7 @@
   import { Item } from "../common/index.js";
   import type { ExpandedItemsProps } from "./types.js";
   import "./styles.css";
-  import { useIsMounted } from "../../../../useIsMounted.svelte.js";
+  import { useIsMounted } from "../../../../useFunctions/index.js";
 
   const componentCssClassName = "ds expanded-items";
 

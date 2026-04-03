@@ -1,5 +1,5 @@
 <script lang="ts" generics="T">
-  import { useIsMounted } from "../../useIsMounted.svelte.js";
+  import { useIsMounted } from "../../useFunctions/index.js";
   import type { SwitchProps } from "./types.js";
   import "./styles.css";
 
