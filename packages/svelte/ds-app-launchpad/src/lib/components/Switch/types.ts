@@ -8,13 +8,13 @@ interface BaseProps
   type?: "checkbox";
 }
 
-interface CheckedControlledSwitchProps<T> extends BaseProps {
+export interface CheckedControlledSwitchProps<T> extends BaseProps {
   value?: T;
   group?: never;
   checked?: boolean;
 }
 
-interface GroupControlledSwitchProps<T> extends BaseProps {
+export interface GroupControlledSwitchProps<T> extends BaseProps {
   value: T;
   group: T[];
   checked?: never;
