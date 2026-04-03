@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.22.1](https://github.com/canonical/pragma/compare/v0.22.0...v0.22.1) (2026-04-03)
+
+
+### Bug Fixes
+
+* **svelte-ds-app-launchpad:** Fix export related issues ([#592](https://github.com/canonical/pragma/issues/592)) ([2269dd5](https://github.com/canonical/pragma/commit/2269dd567ae403337c18384609a2757e53ac871d))
+
+
+
+
+
 # [0.22.0](https://github.com/canonical/pragma/compare/v0.22.0-experimental.0...v0.22.0) (2026-04-03)
 
 
