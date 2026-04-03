@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.22.0](https://github.com/canonical/pragma/compare/v0.22.0-experimental.0...v0.22.0) (2026-04-03)
+
+
+### Bug Fixes
+
+* **ButtonPrimitive:** Fix ButtonPrimitive props type ([#591](https://github.com/canonical/pragma/issues/591)) ([2cb1e81](https://github.com/canonical/pragma/commit/2cb1e81d46bf11146650a9b93f608fbf0388abbc))
+
+
+
+
+
 # [0.22.0-experimental.0](https://github.com/canonical/pragma/compare/v0.21.0...v0.22.0-experimental.0) (2026-04-02)
 
 
