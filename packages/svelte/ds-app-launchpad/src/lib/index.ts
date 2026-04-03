@@ -7,4 +7,4 @@
 
 export * from "./components/index.js";
 export * from "./modifier-families/index.js";
-export * from "./usePositionArea.svelte.js";
+export * from "./useFunctions/index.js";

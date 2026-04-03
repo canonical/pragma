@@ -2,7 +2,7 @@
 
 <script lang="ts">
   import { createAttachmentKey } from "svelte/attachments";
-  import { usePositionArea } from "../../usePositionArea.svelte.js";
+  import { usePositionArea } from "../../useFunctions/index.js";
   import type { PopoverMethods, PopoverProps } from "./types.js";
   import "./styles.css";
 

@@ -6,7 +6,7 @@ import type { HTMLButtonAttributes, SvelteHTMLElements } from "svelte/elements";
 import type {
   PositionArea,
   PositionTryFallbacks,
-} from "../../usePositionArea.svelte.js";
+} from "../../useFunctions/index.js";
 
 type BaseProps = Omit<SvelteHTMLElements["div"], "children">;
 type PopoverTarget = NonNullable<HTMLButtonAttributes["popovertarget"]>;
