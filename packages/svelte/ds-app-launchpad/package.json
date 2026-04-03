@@ -11,7 +11,12 @@
       "import": "./dist/index.js",
       "svelte": "./dist/index.js"
     },
-    "./styles.css": "./dist/index.css"
+    "./styles.css": "./dist/index.css",
+    "./internal": {
+      "types": "./dist/internal.d.js",
+      "import": "./dist/internal.js",
+      "svelte": "./dist/internal.js"
+    }
   },
   "files": [
     "dist"
