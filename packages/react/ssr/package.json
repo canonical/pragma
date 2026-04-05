@@ -13,7 +13,8 @@
     "name": "Canonical Webteam"
   },
   "bin": {
-    "serve-express": "./dist/esm/server/serve-express.js"
+    "serve-express": "./dist/esm/bin/serve-express.js",
+    "serve-bun": "./dist/esm/bin/serve-bun.js"
   },
   "repository": {
     "type": "git",
@@ -24,6 +25,10 @@
     "url": "https://github.com/canonical/pragma/issues"
   },
   "homepage": "https://github.com/canonical/pragma#readme",
+  "imports": {
+    "#renderer": "./src/lib/renderer/index.ts",
+    "#server": "./src/lib/server/index.ts"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "build:all": "tsc -p tsconfig.build.json",
@@ -33,7 +38,9 @@
     "check:biome": "biome check",
     "check:biome:fix": "biome check --write",
     "check:ts": "tsc --noEmit",
-    "test": "echo 'No tests defined yet'"
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
   },
   "exports": {
     ".": {
@@ -41,16 +48,16 @@
       "types": "./dist/types/index.d.ts"
     },
     "./renderer": {
-      "import": "./dist/esm/renderer/index.js",
-      "types": "./dist/types/renderer/index.d.ts"
+      "import": "./dist/esm/lib/renderer/index.js",
+      "types": "./dist/types/lib/renderer/index.d.ts"
     },
     "./renderer/constants": {
-      "import": "./dist/esm/renderer/constants.js",
-      "types": "./dist/types/renderer/constants.d.ts"
+      "import": "./dist/esm/lib/renderer/constants.js",
+      "types": "./dist/types/lib/renderer/constants.d.ts"
     },
     "./server": {
-      "import": "./dist/esm/server/index.js",
-      "types": "./dist/types/server/index.d.ts"
+      "import": "./dist/esm/lib/server/index.js",
+      "types": "./dist/types/lib/server/index.d.ts"
     }
   },
   "devDependencies": {
@@ -62,14 +69,22 @@
     "@types/node": "^24.12.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
-    "typescript": "^5.9.3"
+    "@vitest/coverage-v8": "^4.0.18",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18"
   },
   "dependencies": {
     "@canonical/utils": "^0.22.0",
-    "domhandler": "^6.0.0",
-    "express": "^5.2.1",
     "htmlparser2": "^10.1.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4"
+  },
+  "peerDependencies": {
+    "express": "^5.2.1"
+  },
+  "peerDependenciesMeta": {
+    "express": {
+      "optional": true
+    }
   }
 }
