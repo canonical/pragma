@@ -603,6 +603,7 @@ export interface RouterOptions<
   TNotFound extends AnyRoute | undefined = undefined,
 > {
   readonly adapter?: PlatformAdapter;
+  readonly hydratedState?: RouterDehydratedState<any>;
   readonly initialUrl?: string | URL;
   readonly middleware?: readonly RouteMiddleware[];
   readonly notFound?: TNotFound;

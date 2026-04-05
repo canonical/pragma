@@ -1061,6 +1061,10 @@ export default function createRouter<
 
   let unsubscribeFromAdapter: (() => void) | undefined;
 
+  if (options?.hydratedState) {
+    hydrate(options.hydratedState as RouterDehydratedState<TRoutes>);
+  }
+
   if (adapter) {
     unsubscribeFromAdapter = adapter.subscribe((location) => {
       const href = toHref(location);
