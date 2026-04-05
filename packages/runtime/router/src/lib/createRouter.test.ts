@@ -824,6 +824,300 @@ describe("createRouter", () => {
     );
   });
 
+  it("prefetches data and lazy content without mutating router state", async () => {
+    const fetchSpy = vi.fn(async () => "settings-data");
+    const preloadSpy = vi.fn(async () => ({ default: "SettingsPage" }));
+    const content = Object.assign(
+      ({ data }: { data: unknown }) => String(data),
+      { preload: preloadSpy },
+    );
+    const router = createRouter({
+      home: route({
+        url: "/",
+        content: () => "home",
+      }),
+      settings: route({
+        url: "/settings",
+        fetch: fetchSpy,
+        content,
+      }),
+    });
+
+    await router.prefetch("settings");
+    await router.prefetch("settings");
+
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    expect(preloadSpy).toHaveBeenCalledTimes(1);
+    expect(router.getState().location.href).toBe("/");
+    expect(router.getState().navigation.state).toBe("idle");
+    expect(router.render()).toBeNull();
+
+    const result = await router.load("/settings");
+
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    expect(preloadSpy).toHaveBeenCalledTimes(1);
+    expect(router.render(result)).toBe("settings-data");
+
+    await router.prefetch("settings");
+
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+    expect(preloadSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("reuses an in-flight prefetch when a matching load starts", async () => {
+    let resolveFetch: ((value: string) => void) | null = null;
+    const fetchSpy = vi.fn(() => {
+      return new Promise<string>((resolve) => {
+        resolveFetch = resolve;
+      });
+    });
+    const preloadSpy = vi.fn(async () => ({ default: "DocsPage" }));
+    const content = Object.assign(
+      ({ data }: { data: unknown }) => String(data),
+      {
+        preload: preloadSpy,
+      },
+    );
+    const router = createRouter({
+      docs: route({
+        url: "/docs",
+        fetch: fetchSpy,
+        content,
+      }),
+    });
+
+    const prefetchPromise = router.prefetch("docs");
+    const loadPromise = router.load("/docs");
+
+    (resolveFetch as unknown as (value: string) => void)("docs-data");
+
+    await prefetchPromise;
+    const result = await loadPromise;
+
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    expect(preloadSpy).toHaveBeenCalledTimes(1);
+    expect(router.render(result)).toBe("docs-data");
+  });
+
+  it("deduplicates concurrent prefetch calls for the same href", async () => {
+    let resolveFetch: ((value: string) => void) | null = null;
+    const fetchSpy = vi.fn(() => {
+      return new Promise<string>((resolve) => {
+        resolveFetch = resolve;
+      });
+    });
+    const router = createRouter({
+      docs: route({
+        url: "/docs",
+        fetch: fetchSpy,
+        content: ({ data }) => String(data),
+      }),
+    });
+
+    const firstPrefetch = router.prefetch("docs");
+    const secondPrefetch = router.prefetch("docs");
+
+    (resolveFetch as unknown as (value: string) => void)("docs-data");
+
+    await Promise.all([firstPrefetch, secondPrefetch]);
+
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("surfaces non-redirect prefetch failures and clears the pending entry", async () => {
+    const fetchSpy = vi
+      .fn<() => Promise<string>>()
+      .mockRejectedValueOnce(new Error("prefetch-failure"))
+      .mockResolvedValueOnce("recovered");
+    const router = createRouter({
+      broken: route({
+        url: "/broken",
+        fetch: fetchSpy,
+        content: ({ data }) => String(data),
+      }),
+    });
+
+    await expect(router.prefetch("broken")).rejects.toThrow("prefetch-failure");
+    await expect(router.prefetch("broken")).resolves.toBeUndefined();
+
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+  });
+
+  it("aborts a load that is waiting on an in-flight prefetch when a newer load starts", async () => {
+    let resolveFetch: ((value: string) => void) | null = null;
+    const fetchSpy = vi.fn(() => {
+      return new Promise<string>((resolve) => {
+        resolveFetch = resolve;
+      });
+    });
+    const router = createRouter({
+      docs: route({
+        url: "/docs",
+        fetch: fetchSpy,
+        content: ({ data }) => String(data),
+      }),
+      home: route({
+        url: "/",
+        content: () => "home",
+      }),
+    });
+
+    const prefetchPromise = router.prefetch("docs");
+    const firstLoad = router.load("/docs");
+    const secondLoad = router.load("/");
+
+    (resolveFetch as unknown as (value: string) => void)("docs-data");
+
+    await prefetchPromise;
+
+    await expect(firstLoad).rejects.toThrow("aborted");
+    await expect(secondLoad).resolves.toMatchObject({
+      location: { href: "/" },
+      status: 200,
+    });
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("throws after an excessive redirect loop during prefetch", async () => {
+    const router = createRouter({
+      loop: route({
+        url: "/loop",
+        redirect: "/loop",
+        status: 308,
+      }),
+    });
+
+    await expect(router.prefetch("loop")).rejects.toThrow(
+      "Too many redirects during router.prefetch().",
+    );
+  });
+
+  it("drops cached preloaded modules when the finalization cleanup runs", async () => {
+    const originalFinalizationRegistry = globalThis.FinalizationRegistry;
+    let cleanupCallback: ((key: string) => void) | null = null;
+
+    class FakeFinalizationRegistry {
+      constructor(callback: (key: string) => void) {
+        cleanupCallback = callback;
+      }
+
+      register(): void {}
+    }
+
+    (
+      globalThis as unknown as {
+        FinalizationRegistry: typeof FinalizationRegistry;
+      }
+    ).FinalizationRegistry =
+      FakeFinalizationRegistry as unknown as typeof FinalizationRegistry;
+
+    try {
+      const preloadSpy = vi.fn(async () => ({ default: "DocsPage" }));
+      const router = createRouter({
+        docs: route({
+          url: "/docs",
+          fetch: async () => "docs-data",
+          content: Object.assign(
+            ({ data }: { data: unknown }) => String(data),
+            {
+              preload: preloadSpy,
+            },
+          ),
+        }),
+      });
+
+      await router.prefetch("docs");
+      await router.load("/docs");
+
+      (cleanupCallback as unknown as (key: string) => void)("docs");
+      await router.prefetch("docs");
+
+      expect(preloadSpy).toHaveBeenCalledTimes(2);
+    } finally {
+      (
+        globalThis as unknown as {
+          FinalizationRegistry: typeof FinalizationRegistry;
+        }
+      ).FinalizationRegistry = originalFinalizationRegistry;
+    }
+  });
+
+  it("preloads not-found content when the not-found route exposes a preload hook", async () => {
+    const preloadSpy = vi.fn(async () => ({ default: "NotFoundPage" }));
+    const router = createRouter(
+      {
+        home: route({
+          url: "/",
+          content: () => "home",
+        }),
+      },
+      {
+        notFound: route({
+          url: "/*",
+          content: Object.assign(() => "not-found", {
+            preload: preloadSpy,
+          }),
+        }),
+      },
+    );
+
+    await router.load("/missing");
+
+    expect(preloadSpy).toHaveBeenCalledTimes(1);
+    expect(router.render()).toBe("not-found");
+  });
+
+  it("follows static and thrown redirects during prefetch", async () => {
+    const modernFetch = vi.fn(async () => "modern-data");
+    const loginFetch = vi.fn(async () => "login-data");
+    const modernPreload = vi.fn(async () => ({ default: "ModernPage" }));
+    const loginPreload = vi.fn(async () => ({ default: "LoginPage" }));
+    const router = createRouter({
+      legacy: route({
+        url: "/legacy",
+        redirect: "/modern",
+        status: 308,
+      }),
+      modern: route({
+        url: "/modern",
+        fetch: modernFetch,
+        content: Object.assign(({ data }: { data: unknown }) => String(data), {
+          preload: modernPreload,
+        }),
+      }),
+      private: route({
+        url: "/private",
+        fetch: async (): Promise<string> => {
+          redirect("/login", 302);
+        },
+        content: () => "private",
+      }),
+      login: route({
+        url: "/login",
+        fetch: loginFetch,
+        content: Object.assign(({ data }: { data: unknown }) => String(data), {
+          preload: loginPreload,
+        }),
+      }),
+    });
+
+    await router.prefetch("legacy");
+    await router.prefetch("private");
+
+    expect(modernFetch).toHaveBeenCalledTimes(1);
+    expect(loginFetch).toHaveBeenCalledTimes(1);
+    expect(modernPreload).toHaveBeenCalledTimes(1);
+    expect(loginPreload).toHaveBeenCalledTimes(1);
+
+    const legacyResult = await router.load("/legacy");
+    const privateResult = await router.load("/private");
+
+    expect(modernFetch).toHaveBeenCalledTimes(1);
+    expect(loginFetch).toHaveBeenCalledTimes(1);
+    expect(router.render(legacyResult)).toBe("modern-data");
+    expect(router.render(privateResult)).toBe("login-data");
+  });
+
   it("syncs loads with a memory adapter and stops after dispose", async () => {
     const adapter = createMemoryAdapter("/users/42");
     const router = createRouter(

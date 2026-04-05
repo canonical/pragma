@@ -46,6 +46,8 @@ export interface NavigationContext {
   readonly signal: AbortSignal;
 }
 
+export type RouteModule = object;
+
 export interface RouteContentProps<
   TParams extends RouteParamValues | Record<string, never> = Record<
     string,
@@ -111,6 +113,31 @@ export interface RouteCodec<TPath extends string = string> {
 
 export type AnyWrapper = WrapperDefinition<unknown, unknown>;
 
+export type RouteContent<
+  TPath extends string = string,
+  TSearchSchema extends StandardSchemaLike<unknown> | undefined = undefined,
+  TData = void,
+  TRendered = unknown,
+> = BivariantCallback<
+  [
+    props: RouteContentProps<
+      RouteParams<TPath>,
+      InferSearch<TSearchSchema>,
+      TData
+    >,
+  ],
+  TRendered
+> & {
+  preload?: () => Promise<RouteModule>;
+};
+
+export type AnyRouteContent = BivariantCallback<
+  [props: RouteContentProps<RouteParamValues, unknown, unknown>],
+  unknown
+> & {
+  preload?: () => Promise<RouteModule>;
+};
+
 export interface DataRouteInput<
   TPath extends string = string,
   TSearchSchema extends StandardSchemaLike<unknown> | undefined = undefined,
@@ -119,16 +146,7 @@ export interface DataRouteInput<
   TWrappers extends readonly AnyWrapper[] = readonly [],
 > {
   readonly url: TPath;
-  readonly content: BivariantCallback<
-    [
-      props: RouteContentProps<
-        RouteParams<TPath>,
-        InferSearch<TSearchSchema>,
-        TData
-      >,
-    ],
-    TRendered
-  >;
+  readonly content: RouteContent<TPath, TSearchSchema, TData, TRendered>;
   readonly fetch?: BivariantCallback<
     [
       params: RouteParams<TPath>,
@@ -176,16 +194,7 @@ export interface DataRouteDefinition<
   TWrappers extends readonly AnyWrapper[] = readonly [],
 > extends RouteCodec<TPath> {
   readonly url: TPath;
-  readonly content: BivariantCallback<
-    [
-      props: RouteContentProps<
-        RouteParams<TPath>,
-        InferSearch<TSearchSchema>,
-        TData
-      >,
-    ],
-    TRendered
-  >;
+  readonly content: RouteContent<TPath, TSearchSchema, TData, TRendered>;
   readonly fetch?: BivariantCallback<
     [
       params: RouteParams<TPath>,
@@ -225,10 +234,7 @@ export type RouteDefinition<
 
 export interface AnyRoute {
   readonly url: string;
-  readonly content?: BivariantCallback<
-    [props: RouteContentProps<RouteParamValues, unknown, unknown>],
-    unknown
-  >;
+  readonly content?: AnyRouteContent;
   readonly fetch?: BivariantCallback<
     [params: unknown, search: unknown, context: NavigationContext],
     Promise<unknown>
@@ -316,6 +322,15 @@ export type NavigateFn<TRoutes extends RouteMap> = UnionToIntersection<
       name: TName,
       ...args: RouteArgs<TRoutes, TName>
     ) => RouteIntent<TRoutes, TName>;
+  }[RouteName<TRoutes>]
+>;
+
+export type PrefetchFn<TRoutes extends RouteMap> = UnionToIntersection<
+  {
+    [TName in RouteName<TRoutes>]: (
+      name: TName,
+      ...args: RouteArgs<TRoutes, TName>
+    ) => Promise<void>;
   }[RouteName<TRoutes>]
 >;
 
@@ -617,6 +632,7 @@ export interface Router<
   load(url: string | URL): Promise<RouterLoadResult<TRoutes, TNotFound>>;
   match(url: string | URL): RouterMatch<TRoutes, TNotFound> | null;
   navigate: NavigateFn<TRoutes>;
+  prefetch: PrefetchFn<TRoutes>;
   render(result?: RouterLoadResult<TRoutes, TNotFound> | null): unknown;
   subscribe(
     listener: (snapshot: RouterSnapshot<TRoutes, TNotFound>) => void,

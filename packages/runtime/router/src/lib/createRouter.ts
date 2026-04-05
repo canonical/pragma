@@ -11,8 +11,10 @@ import type {
   ParamsOf,
   PathBuildArgs,
   PlatformNavigateOptions,
+  PrefetchFn,
   RouteMap,
   RouteMiddleware,
+  RouteModule,
   RouteName,
   RouteOf,
   Router,
@@ -506,6 +508,26 @@ function createLoadResult<
   };
 }
 
+interface LoadFailure {
+  readonly error?: unknown;
+  readonly source?: "wrapper";
+  readonly wrapperIndex?: number;
+}
+
+interface ResolvedLoadData<
+  TRoutes extends RouteMap,
+  TNotFound extends AnyRoute | undefined,
+> {
+  readonly match: RouterMatch<TRoutes, TNotFound> | null;
+  readonly routeData: unknown;
+  readonly status: number;
+  readonly wrapperData: Readonly<Record<string, unknown>>;
+}
+
+function createIdleSignal(): AbortSignal {
+  return new AbortController().signal;
+}
+
 /** Create a typed router view over a complete flat route map. */
 export default function createRouter<
   const TRoutes extends RouteMap,
@@ -531,6 +553,197 @@ export default function createRouter<
   let currentLoadResult: RouterLoadResult<TRoutes, TNotFound> | null = null;
   let hydratedHref: string | null = null;
   let ignoredAdapterHref: string | null = null;
+  const pendingPrefetches = new Map<string, Promise<void>>();
+  const prefetchedLoads = new Map<
+    string,
+    ResolvedLoadData<TRoutes, TNotFound>
+  >();
+  const preloadedModules = new Map<string, WeakRef<RouteModule>>();
+  const preloadedModuleRegistry = new FinalizationRegistry<string>((key) => {
+    preloadedModules.delete(key);
+  });
+
+  function readPreloadedModule(key: string): RouteModule | null {
+    const module = preloadedModules.get(key)?.deref() ?? null;
+
+    if (!module) {
+      preloadedModules.delete(key);
+    }
+
+    return module;
+  }
+
+  function cachePreloadedModule(key: string, module: RouteModule): void {
+    preloadedModules.set(key, new WeakRef(module));
+    preloadedModuleRegistry.register(module, key);
+  }
+
+  async function preloadMatchedContent(
+    currentMatch: Exclude<
+      RouterMatch<TRoutes, TNotFound>,
+      { readonly kind: "redirect" }
+    > | null,
+  ): Promise<RouteModule | null> {
+    if (!currentMatch) {
+      return null;
+    }
+
+    const preloadKey =
+      currentMatch.kind === "route" ? currentMatch.name : "__notFound";
+    const preloader = currentMatch?.route.content?.preload;
+
+    if (!preloadKey || !preloader) {
+      return null;
+    }
+
+    const cachedModule = readPreloadedModule(preloadKey);
+
+    if (cachedModule) {
+      return cachedModule;
+    }
+
+    const loadedModule = await preloader();
+
+    cachePreloadedModule(preloadKey, loadedModule);
+
+    return loadedModule;
+  }
+
+  async function resolveLoadData(
+    currentMatch: RouterMatch<TRoutes, TNotFound> | null,
+    previousResult: RouterLoadResult<TRoutes, TNotFound> | null,
+    signal: AbortSignal,
+  ): Promise<ResolvedLoadData<TRoutes, TNotFound>> {
+    const wrapperData: Record<string, unknown> = {};
+    const previousRoute = previousResult?.match?.route;
+    const nextRoute = currentMatch?.route;
+    const wrapperPrefixLength = getWrapperPrefixLength(
+      previousRoute,
+      nextRoute,
+    );
+
+    if (previousResult && nextRoute) {
+      for (const currentWrapper of nextRoute.wrappers.slice(
+        0,
+        wrapperPrefixLength,
+      )) {
+        wrapperData[currentWrapper.id] =
+          previousResult.wrapperData[currentWrapper.id];
+      }
+    }
+
+    const wrapperLoads =
+      nextRoute?.wrappers
+        .slice(wrapperPrefixLength)
+        .map(async (currentWrapper, index) => {
+          if (!currentWrapper.fetch) {
+            return;
+          }
+
+          const currentParams = currentMatch?.params as ParamsOf<AnyRoute>;
+
+          try {
+            wrapperData[currentWrapper.id] = await currentWrapper.fetch(
+              currentParams,
+              {
+                signal,
+              },
+            );
+          } catch (error) {
+            throw {
+              error,
+              source: "wrapper",
+              wrapperIndex: wrapperPrefixLength + index,
+            } satisfies LoadFailure;
+          }
+        }) ?? [];
+
+    const routeLoad = (async () => {
+      if (!nextRoute?.fetch || !currentMatch) {
+        return undefined;
+      }
+
+      return await nextRoute.fetch(currentMatch.params, currentMatch.search, {
+        signal,
+      });
+    })();
+
+    await Promise.all([
+      preloadMatchedContent(
+        currentMatch as Exclude<
+          RouterMatch<TRoutes, TNotFound>,
+          { readonly kind: "redirect" }
+        > | null,
+      ),
+      Promise.all(wrapperLoads),
+    ]);
+    const routeData = await routeLoad;
+
+    return {
+      match: currentMatch,
+      routeData,
+      status: currentMatch?.status ?? 404,
+      wrapperData,
+    };
+  }
+
+  const prefetchHref = async (
+    input: string | URL,
+    redirectDepth = 0,
+  ): Promise<void> => {
+    if (redirectDepth > 10) {
+      throw new Error("Too many redirects during router.prefetch().");
+    }
+
+    const url = buildUrl(input);
+    const currentMatch = match(url);
+    const redirectMatch = currentMatch as unknown;
+
+    if (isRedirectMatch(redirectMatch)) {
+      await prefetchHref(redirectMatch.redirectTo, redirectDepth + 1);
+      return;
+    }
+
+    const href = toHref(url);
+
+    if (prefetchedLoads.has(href)) {
+      return;
+    }
+
+    const pendingPrefetch = pendingPrefetches.get(href);
+
+    if (pendingPrefetch) {
+      await pendingPrefetch;
+      return;
+    }
+
+    const prefetchPromise = (async () => {
+      try {
+        const prefetchedLoad = await resolveLoadData(
+          currentMatch,
+          currentLoadResult,
+          createIdleSignal(),
+        );
+
+        prefetchedLoads.set(href, prefetchedLoad);
+      } catch (thrownError) {
+        const failure = thrownError as LoadFailure;
+        const redirectError = failure.error ?? thrownError;
+
+        if (redirectError instanceof RouteRedirect) {
+          await prefetchHref(redirectError.to, redirectDepth + 1);
+          return;
+        }
+
+        throw redirectError;
+      } finally {
+        pendingPrefetches.delete(href);
+      }
+    })();
+
+    pendingPrefetches.set(href, prefetchPromise);
+    await prefetchPromise;
+  };
 
   function syncAdapterLocation(
     input: string | URL,
@@ -572,6 +785,19 @@ export default function createRouter<
 
     return intent;
   }) as NavigateFn<TRoutes>;
+
+  const prefetch: PrefetchFn<TRoutes> = ((
+    name: RouteName<TRoutes>,
+    ...args: unknown[]
+  ) => {
+    const intent = createIntent(
+      resolvedRoutes,
+      name,
+      args as unknown as PathBuildArgs<RouteOf<TRoutes, typeof name>>,
+    );
+
+    return prefetchHref(intent.href);
+  }) as PrefetchFn<TRoutes>;
 
   const match = (
     input: string | URL,
@@ -659,84 +885,42 @@ export default function createRouter<
     store.setNavigationState("loading");
 
     try {
-      const wrapperData: Record<string, unknown> = {};
-      const previousRoute = currentLoadResult?.match?.route;
-      const nextRoute = currentMatch?.route;
-      const wrapperPrefixLength = getWrapperPrefixLength(
-        previousRoute,
-        nextRoute,
-      );
+      const pendingPrefetch = pendingPrefetches.get(href);
 
-      if (currentLoadResult && nextRoute) {
-        for (const currentWrapper of nextRoute.wrappers.slice(
-          0,
-          wrapperPrefixLength,
-        )) {
-          wrapperData[currentWrapper.id] =
-            currentLoadResult.wrapperData[currentWrapper.id];
-        }
+      if (pendingPrefetch) {
+        await pendingPrefetch.catch(ignoreScheduledLoadError);
       }
 
-      const wrapperLoads =
-        nextRoute?.wrappers
-          .slice(wrapperPrefixLength)
-          .map(async (currentWrapper, index) => {
-            if (!currentWrapper.fetch) {
-              return;
-            }
+      if (abortController.signal.aborted) {
+        throw new Error("aborted");
+      }
 
-            const currentParams = currentMatch?.params as ParamsOf<AnyRoute>;
+      const prefetchedLoad = prefetchedLoads.get(href);
+      const resolvedLoad =
+        prefetchedLoad ??
+        (await resolveLoadData(
+          currentMatch,
+          currentLoadResult,
+          abortController.signal,
+        ));
 
-            try {
-              wrapperData[currentWrapper.id] = await currentWrapper.fetch(
-                currentParams,
-                {
-                  signal: abortController.signal,
-                },
-              );
-            } catch (error) {
-              throw {
-                error,
-                source: "wrapper",
-                wrapperIndex: wrapperPrefixLength + index,
-              };
-            }
-          }) ?? [];
-
-      const routeLoad = (async () => {
-        if (!nextRoute?.fetch || !currentMatch) {
-          return undefined;
-        }
-
-        return await nextRoute.fetch(currentMatch.params, currentMatch.search, {
-          signal: abortController.signal,
-        });
-      })();
-
-      const [, routeData] = await Promise.all([
-        Promise.all(wrapperLoads),
-        routeLoad,
-      ]);
+      prefetchedLoads.delete(href);
 
       const result = createLoadResult<TRoutes, TNotFound>({
         error: null,
         errorBoundary: null,
-        location: store.commit(url, currentMatch, currentMatch?.status ?? 404)
+        location: store.commit(url, resolvedLoad.match, resolvedLoad.status)
           .location,
-        match: currentMatch,
-        routeData,
-        status: currentMatch?.status ?? 404,
-        wrapperData,
+        match: resolvedLoad.match,
+        routeData: resolvedLoad.routeData,
+        status: resolvedLoad.status,
+        wrapperData: resolvedLoad.wrapperData,
       });
 
       currentLoadResult = result;
       return result;
     } catch (thrownError) {
-      const failureValue = thrownError as {
-        error?: unknown;
-        source?: "wrapper";
-        wrapperIndex?: number;
-      };
+      const failureValue = thrownError as LoadFailure;
       const failure =
         failureValue.source === "wrapper"
           ? {
@@ -1003,6 +1187,7 @@ export default function createRouter<
     load,
     match,
     navigate,
+    prefetch,
     render,
     subscribe(listener) {
       return store.subscribe(listener);
