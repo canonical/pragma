@@ -5,6 +5,7 @@ import group from "./group.js";
 import redirect from "./redirect.js";
 import route from "./route.js";
 import StatusResponse from "./StatusResponse.js";
+import type { AnyRoute, RouteMiddleware } from "./types.js";
 import wrapper from "./wrapper.js";
 
 describe("createRouter", () => {
@@ -598,6 +599,229 @@ describe("createRouter", () => {
     expect(stateListener).toHaveBeenCalledTimes(2);
     expect(pageListener).toHaveBeenCalledWith("1", null);
     expect(navigationListener).toHaveBeenCalledWith("loading", "idle");
+  });
+
+  it("applies middleware once at router creation time before matching and loading", async () => {
+    const fetchSpy = vi.fn(async () => "dashboard-data");
+    const middleware = vi.fn((currentRoute: AnyRoute) => {
+      if ("redirect" in currentRoute) {
+        return {
+          ...currentRoute,
+          url: `/app${currentRoute.url}`,
+        };
+      }
+
+      return {
+        ...currentRoute,
+        url: `/app${currentRoute.url}`,
+        fetch: currentRoute.fetch
+          ? async (params: unknown, search: unknown, context: unknown) => {
+              const data = await currentRoute.fetch?.(
+                params,
+                search,
+                context as never,
+              );
+
+              return `mw(${String(data)})`;
+            }
+          : undefined,
+      };
+    }) as RouteMiddleware;
+    const router = createRouter(
+      {
+        dashboard: route({
+          url: "/dashboard",
+          fetch: fetchSpy,
+          content: ({ data }) => String(data),
+        }),
+      },
+      {
+        middleware: [middleware],
+      },
+    );
+
+    expect(middleware).toHaveBeenCalledTimes(1);
+    expect(router.buildPath("dashboard")).toBe("/app/dashboard");
+    expect(router.getRoute("dashboard").parse("/app/dashboard")).toEqual({});
+    expect(router.match("/dashboard")).toBeNull();
+    expect(router.match("/app/dashboard")).toMatchObject({
+      kind: "route",
+      name: "dashboard",
+    });
+
+    const result = await router.load("/app/dashboard");
+
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    expect(middleware).toHaveBeenCalledTimes(1);
+    expect(result.routeData).toBe("mw(dashboard-data)");
+    expect(router.render(result)).toBe("mw(dashboard-data)");
+  });
+
+  it("dehydrates and hydrates successful route results without re-running loaders", async () => {
+    const fetchSpy = vi.fn(
+      async ({ slug }: { slug: string }) => `page:${slug}`,
+    );
+    const serverRouter = createRouter({
+      page: route({
+        url: "/pages/:slug",
+        fetch: fetchSpy,
+        content: ({ data }) => String(data),
+      }),
+    });
+    const loadResult = await serverRouter.load("/pages/hello");
+    const dehydratedState = serverRouter.dehydrate();
+
+    expect(loadResult.dehydrate()).toEqual({
+      href: "/pages/hello",
+      kind: "route",
+      routeData: "page:hello",
+      routeId: "page",
+      status: 200,
+      wrapperData: {},
+    });
+    expect(dehydratedState).toEqual(loadResult.dehydrate());
+
+    const clientRouter = createRouter({
+      page: route({
+        url: "/pages/:slug",
+        fetch: fetchSpy,
+        content: ({ data }) => String(data),
+      }),
+    });
+
+    clientRouter.hydrate(loadResult.dehydrate());
+
+    expect(clientRouter.render()).toBe("page:hello");
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+
+    const hydratedResult = await clientRouter.load("/pages/hello");
+
+    expect(hydratedResult.routeData).toBe("page:hello");
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+
+    await clientRouter.load("/pages/other");
+    await clientRouter.load("/pages/hello");
+
+    expect(fetchSpy).toHaveBeenCalledTimes(3);
+  });
+
+  it("dehydrates not-found and unmatched states and returns null before the first load", async () => {
+    const notFoundRoute = route({
+      url: "/*",
+      content: () => "not-found",
+    });
+    const notFoundRouter = createRouter(
+      {
+        home: route({
+          url: "/",
+          content: () => "home",
+        }),
+      },
+      {
+        notFound: notFoundRoute,
+      },
+    );
+    const unmatchedRouter = createRouter({
+      home: route({
+        url: "/",
+        content: () => "home",
+      }),
+    });
+
+    expect(unmatchedRouter.dehydrate()).toBeNull();
+
+    const notFoundResult = await notFoundRouter.load("/missing");
+    const unmatchedResult = await unmatchedRouter.load("/missing");
+
+    expect(notFoundResult.dehydrate()).toEqual({
+      href: "/missing",
+      kind: "not-found",
+      routeData: undefined,
+      routeId: null,
+      status: 404,
+      wrapperData: {},
+    });
+    expect(unmatchedResult.dehydrate()).toEqual({
+      href: "/missing",
+      kind: "unmatched",
+      routeData: undefined,
+      routeId: null,
+      status: 404,
+      wrapperData: {},
+    });
+
+    const hydratedNotFoundRouter = createRouter(
+      {
+        home: route({
+          url: "/",
+          content: () => "home",
+        }),
+      },
+      {
+        notFound: notFoundRoute,
+      },
+    );
+
+    hydratedNotFoundRouter.hydrate(notFoundResult.dehydrate());
+
+    expect(hydratedNotFoundRouter.render()).toBe("not-found");
+
+    const hydratedUnmatchedRouter = createRouter({
+      home: route({
+        url: "/",
+        content: () => "home",
+      }),
+    });
+
+    hydratedUnmatchedRouter.hydrate(unmatchedResult.dehydrate());
+
+    expect(hydratedUnmatchedRouter.render()).toBeNull();
+  });
+
+  it("rejects incompatible hydrated state", () => {
+    const router = createRouter({
+      home: route({
+        url: "/",
+        content: () => "home",
+      }),
+    });
+
+    expect(() => {
+      router.hydrate({
+        href: "/",
+        kind: "route",
+        routeData: "home",
+        routeId: "missing" as never,
+        status: 200,
+        wrapperData: {},
+      });
+    }).toThrow("Hydrated route state does not match the current route map.");
+
+    expect(() => {
+      router.hydrate({
+        href: "/",
+        kind: "unmatched",
+        routeData: undefined,
+        routeId: null,
+        status: 404,
+        wrapperData: {},
+      });
+    }).toThrow(
+      "Hydrated unmatched state does not match the current route map.",
+    );
+
+    expect(() => {
+      router.hydrate({
+        href: "/missing",
+        kind: "not-found",
+        routeData: undefined,
+        routeId: null,
+        status: 404,
+        wrapperData: {},
+      });
+    }).toThrow(
+      "Hydrated not-found state does not match the current route map.",
+    );
   });
 
   it("syncs loads with a memory adapter and stops after dispose", async () => {

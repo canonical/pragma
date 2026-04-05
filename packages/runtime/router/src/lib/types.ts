@@ -561,10 +561,20 @@ export interface RouterLoadErrorBoundary {
   readonly wrapperId: string | null;
 }
 
+export interface RouterDehydratedState<TRoutes extends RouteMap = RouteMap> {
+  readonly href: string;
+  readonly kind: "route" | "not-found" | "unmatched";
+  readonly routeId: RouteName<TRoutes> | null;
+  readonly routeData: unknown;
+  readonly status: number;
+  readonly wrapperData: Readonly<Record<string, unknown>>;
+}
+
 export interface RouterLoadResult<
   TRoutes extends RouteMap,
   TNotFound extends AnyRoute | undefined = undefined,
 > {
+  dehydrate(): RouterDehydratedState<TRoutes>;
   readonly error: unknown;
   readonly errorBoundary: RouterLoadErrorBoundary | null;
   readonly location: RouterLocationState;
@@ -579,6 +589,7 @@ export interface RouterOptions<
 > {
   readonly adapter?: PlatformAdapter;
   readonly initialUrl?: string | URL;
+  readonly middleware?: readonly RouteMiddleware[];
   readonly notFound?: TNotFound;
 }
 
@@ -598,7 +609,11 @@ export interface Router<
     onAccess: (key: RouterLocationKey) => void,
   ): TrackedLocation<RouterLocationState>;
   buildPath: BuildPathFn<TRoutes>;
+  dehydrate(): RouterDehydratedState<TRoutes> | null;
   dispose(): void;
+  hydrate(
+    state: RouterDehydratedState<TRoutes>,
+  ): RouterLoadResult<TRoutes, TNotFound>;
   load(url: string | URL): Promise<RouterLoadResult<TRoutes, TNotFound>>;
   match(url: string | URL): RouterMatch<TRoutes, TNotFound> | null;
   navigate: NavigateFn<TRoutes>;

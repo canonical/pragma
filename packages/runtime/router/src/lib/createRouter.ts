@@ -12,9 +12,11 @@ import type {
   PathBuildArgs,
   PlatformNavigateOptions,
   RouteMap,
+  RouteMiddleware,
   RouteName,
   RouteOf,
   Router,
+  RouterDehydratedState,
   RouterLoadResult,
   RouterMatch,
   RouterOptions,
@@ -309,6 +311,41 @@ function createIntent<
   };
 }
 
+function applyRouteMapMiddleware<TRoutes extends RouteMap>(
+  routes: TRoutes,
+  middleware: readonly RouteMiddleware[],
+): TRoutes {
+  if (middleware.length === 0) {
+    return routes;
+  }
+
+  return Object.fromEntries(
+    Object.entries(routes).map(([routeName, route]) => {
+      const transformedRoute = [...middleware]
+        .reverse()
+        .reduce<AnyRoute>((currentRoute, currentMiddleware) => {
+          return currentMiddleware(currentRoute);
+        }, route);
+
+      return [
+        routeName,
+        {
+          ...transformedRoute,
+          parse(input: string | URL) {
+            return matchPath(transformedRoute.url, buildUrl(input));
+          },
+          render(params: Record<string, string> | Record<string, never>) {
+            return renderPattern(
+              transformedRoute.url,
+              params as Record<string, string>,
+            );
+          },
+        },
+      ];
+    }),
+  ) as TRoutes;
+}
+
 function createRouteMatch<
   TRoutes extends RouteMap,
   TName extends RouteName<TRoutes>,
@@ -429,6 +466,46 @@ function isRedirectMatch(value: unknown): value is {
 
 function ignoreScheduledLoadError(_error: unknown): void {}
 
+function createDehydratedState<
+  TRoutes extends RouteMap,
+  TNotFound extends AnyRoute | undefined,
+>(
+  result: Pick<
+    RouterLoadResult<TRoutes, TNotFound>,
+    "location" | "match" | "routeData" | "status" | "wrapperData"
+  >,
+): RouterDehydratedState<TRoutes> {
+  const kind =
+    result.match?.kind === "route"
+      ? "route"
+      : result.match?.kind === "not-found"
+        ? "not-found"
+        : "unmatched";
+
+  return {
+    href: result.location.href,
+    kind,
+    routeData: result.routeData,
+    routeId: result.match?.kind === "route" ? result.match.name : null,
+    status: result.status,
+    wrapperData: result.wrapperData,
+  };
+}
+
+function createLoadResult<
+  TRoutes extends RouteMap,
+  TNotFound extends AnyRoute | undefined,
+>(
+  result: Omit<RouterLoadResult<TRoutes, TNotFound>, "dehydrate">,
+): RouterLoadResult<TRoutes, TNotFound> {
+  return {
+    ...result,
+    dehydrate() {
+      return createDehydratedState(result);
+    },
+  };
+}
+
 /** Create a typed router view over a complete flat route map. */
 export default function createRouter<
   const TRoutes extends RouteMap,
@@ -437,11 +514,14 @@ export default function createRouter<
   routes: TRoutes,
   options?: RouterOptions<TNotFound>,
 ): Router<TRoutes, TNotFound> {
-  assertUniqueWrapperIds(routes, options?.notFound);
+  const middleware = options?.middleware ?? [];
+  const resolvedRoutes = applyRouteMapMiddleware(routes, middleware);
+
+  assertUniqueWrapperIds(resolvedRoutes, options?.notFound);
 
   const adapter = options?.adapter ?? null;
 
-  const sortedRoutes = Object.entries(routes).sort(
+  const sortedRoutes = Object.entries(resolvedRoutes).sort(
     ([, leftRoute], [, rightRoute]) => {
       return compareRoutePriority(leftRoute.url, rightRoute.url);
     },
@@ -449,6 +529,7 @@ export default function createRouter<
 
   let activeAbortController: AbortController | null = null;
   let currentLoadResult: RouterLoadResult<TRoutes, TNotFound> | null = null;
+  let hydratedHref: string | null = null;
   let ignoredAdapterHref: string | null = null;
 
   function syncAdapterLocation(
@@ -468,7 +549,7 @@ export default function createRouter<
     ...args: unknown[]
   ) => {
     return createIntent(
-      routes,
+      resolvedRoutes,
       name,
       args as unknown as PathBuildArgs<RouteOf<TRoutes, typeof name>>,
     ).href;
@@ -479,7 +560,7 @@ export default function createRouter<
     ...args: unknown[]
   ) => {
     const intent = createIntent(
-      routes,
+      resolvedRoutes,
       name,
       args as unknown as PathBuildArgs<RouteOf<TRoutes, typeof name>>,
     );
@@ -537,6 +618,16 @@ export default function createRouter<
     }
 
     const url = buildUrl(input);
+    const href = toHref(url);
+
+    if (hydratedHref === href && currentLoadResult) {
+      return currentLoadResult;
+    }
+
+    if (hydratedHref && hydratedHref !== href) {
+      hydratedHref = null;
+    }
+
     const currentMatch = match(url);
     const redirectMatch = currentMatch as unknown;
 
@@ -627,7 +718,7 @@ export default function createRouter<
         routeLoad,
       ]);
 
-      const result: RouterLoadResult<TRoutes, TNotFound> = {
+      const result = createLoadResult<TRoutes, TNotFound>({
         error: null,
         errorBoundary: null,
         location: store.commit(url, currentMatch, currentMatch?.status ?? 404)
@@ -636,7 +727,7 @@ export default function createRouter<
         routeData,
         status: currentMatch?.status ?? 404,
         wrapperData,
-      };
+      });
 
       currentLoadResult = result;
       return result;
@@ -712,7 +803,7 @@ export default function createRouter<
                 : null;
             })();
       const status = getErrorStatus(failure.error);
-      const result: RouterLoadResult<TRoutes, TNotFound> = {
+      const result = createLoadResult<TRoutes, TNotFound>({
         error: failure.error,
         errorBoundary,
         location: store.commit(url, currentMatch, status).location,
@@ -723,7 +814,7 @@ export default function createRouter<
           currentLoadResult && currentLoadResult.match?.route === nextRoute
             ? currentLoadResult.wrapperData
             : {},
-      };
+      });
 
       currentLoadResult = result;
       return result;
@@ -739,6 +830,49 @@ export default function createRouter<
     input: string | URL,
   ): Promise<RouterLoadResult<TRoutes, TNotFound>> => {
     return performLoad(input);
+  };
+
+  const hydrate = (
+    state: RouterDehydratedState<TRoutes>,
+  ): RouterLoadResult<TRoutes, TNotFound> => {
+    const hydratedMatch = match(state.href);
+
+    if (state.kind === "route") {
+      if (
+        hydratedMatch?.kind !== "route" ||
+        hydratedMatch.name !== state.routeId
+      ) {
+        throw new Error(
+          "Hydrated route state does not match the current route map.",
+        );
+      }
+    } else if (state.kind === "not-found") {
+      if (hydratedMatch?.kind !== "not-found") {
+        throw new Error(
+          "Hydrated not-found state does not match the current route map.",
+        );
+      }
+    } else if (hydratedMatch !== null) {
+      throw new Error(
+        "Hydrated unmatched state does not match the current route map.",
+      );
+    }
+
+    const result = createLoadResult<TRoutes, TNotFound>({
+      error: null,
+      errorBoundary: null,
+      location: store.commit(state.href, hydratedMatch, state.status).location,
+      match: hydratedMatch,
+      routeData: state.routeData,
+      status: state.status,
+      wrapperData: state.wrapperData,
+    });
+
+    currentLoadResult = result;
+    hydratedHref = state.href;
+    store.setNavigationState("idle");
+
+    return result;
   };
 
   let unsubscribeFromAdapter: (() => void) | undefined;
@@ -845,11 +979,11 @@ export default function createRouter<
 
   return {
     adapter,
-    routes,
+    routes: resolvedRoutes,
     notFound: options?.notFound as TNotFound,
     store,
     getRoute(name) {
-      return routes[name];
+      return resolvedRoutes[name];
     },
     getState() {
       return store.getState();
@@ -858,10 +992,14 @@ export default function createRouter<
       return store.getTrackedLocation(onAccess);
     },
     buildPath,
+    dehydrate() {
+      return currentLoadResult?.dehydrate() ?? null;
+    },
     dispose() {
       activeAbortController?.abort();
       unsubscribeFromAdapter?.();
     },
+    hydrate,
     load,
     match,
     navigate,
