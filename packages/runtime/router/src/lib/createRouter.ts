@@ -1,3 +1,7 @@
+import FocusManager from "../a11y/FocusManager.js";
+import RouteAnnouncer from "../a11y/RouteAnnouncer.js";
+import ScrollManager from "../a11y/ScrollManager.js";
+import ViewTransitionManager from "../a11y/ViewTransitionManager.js";
 import createRouterStore from "./createRouterStore.js";
 import RouteRedirect from "./RouteRedirect.js";
 import StatusResponse from "./StatusResponse.js";
@@ -18,12 +22,16 @@ import type {
   RouteName,
   RouteOf,
   Router,
+  RouterAccessibilityContext,
+  RouterAccessibilityDocumentLike,
   RouterDehydratedState,
   RouterLoadResult,
   RouterMatch,
   RouterOptions,
   SearchOf,
 } from "./types.js";
+
+type NavigationMode = "initial" | "none" | "pop" | "push";
 
 function extractParamName(patternSegment: string): string {
   return patternSegment
@@ -48,6 +56,112 @@ function toHref(input: string | URL): string {
   const url = buildUrl(input);
 
   return `${url.pathname}${url.search}${url.hash}`;
+}
+
+function getGlobalDocument(): RouterAccessibilityDocumentLike | null {
+  return (
+    (globalThis as { document?: RouterAccessibilityDocumentLike }).document ??
+    null
+  );
+}
+
+function getGlobalScrollWindow(): {
+  readonly pageXOffset?: number;
+  readonly pageYOffset?: number;
+  readonly scrollX?: number;
+  readonly scrollY?: number;
+  readonly sessionStorage?: {
+    getItem(key: string): string | null;
+    setItem(key: string, value: string): void;
+  };
+  scrollTo(position: { left: number; top: number }): void;
+} | null {
+  return (
+    (
+      globalThis as {
+        window?: {
+          readonly pageXOffset?: number;
+          readonly pageYOffset?: number;
+          readonly scrollX?: number;
+          readonly scrollY?: number;
+          readonly sessionStorage?: {
+            getItem(key: string): string | null;
+            setItem(key: string, value: string): void;
+          };
+          scrollTo(position: { left: number; top: number }): void;
+        };
+      }
+    ).window ?? null
+  );
+}
+
+function getGlobalAnnouncerDocument(): {
+  readonly body?: { appendChild(child: unknown): void };
+  createElement(tagName: "div"): {
+    textContent: string;
+    setAttribute(name: string, value: string): void;
+  };
+} | null {
+  return (
+    (
+      globalThis as {
+        document?: {
+          readonly body?: { appendChild(child: unknown): void };
+          createElement(tagName: "div"): {
+            textContent: string;
+            setAttribute(name: string, value: string): void;
+          };
+        };
+      }
+    ).document ?? null
+  );
+}
+
+function getGlobalTransitionDocument(): {
+  startViewTransition?(
+    update: () => void | Promise<void>,
+  ): { finished?: Promise<void> } | undefined;
+} | null {
+  return (
+    (
+      globalThis as {
+        document?: {
+          startViewTransition?(
+            update: () => void | Promise<void>,
+          ): { finished?: Promise<void> } | undefined;
+        };
+      }
+    ).document ?? null
+  );
+}
+
+function resolveAccessibilityContext(
+  result: RouterLoadResult<RouteMap, AnyRoute | undefined>,
+): RouterAccessibilityContext {
+  return {
+    location: result.location,
+    match: result.match as RouterMatch<RouteMap, AnyRoute | undefined> | null,
+    status: result.status,
+  };
+}
+
+function resolveAnnouncement(
+  documentLike: RouterAccessibilityDocumentLike | null,
+  result: RouterLoadResult<RouteMap, AnyRoute | undefined>,
+): string {
+  const title = documentLike?.title.trim();
+
+  if (title) {
+    return title;
+  }
+
+  const heading = documentLike?.querySelector("h1")?.textContent?.trim();
+
+  if (heading) {
+    return heading;
+  }
+
+  return result.location.pathname;
 }
 
 function splitPathSegments(pathname: string): string[] {
@@ -542,6 +656,67 @@ export default function createRouter<
   assertUniqueWrapperIds(resolvedRoutes, options?.notFound);
 
   const adapter = options?.adapter ?? null;
+  const accessibilityDocument =
+    options?.accessibility?.document ?? getGlobalDocument();
+  const scrollWindow = getGlobalScrollWindow();
+  const announcerDocument = getGlobalAnnouncerDocument();
+  const transitionDocument = getGlobalTransitionDocument();
+  const scrollManager =
+    options?.accessibility?.scrollManager === false
+      ? null
+      : (options?.accessibility?.scrollManager ??
+        (scrollWindow
+          ? new ScrollManager(scrollWindow, {
+              document: accessibilityDocument
+                ? {
+                    getElementById(id) {
+                      const element = accessibilityDocument.querySelector(
+                        `#${id}`,
+                      );
+
+                      return element && "scrollIntoView" in element
+                        ? (element as { scrollIntoView(): void })
+                        : null;
+                    },
+                  }
+                : undefined,
+              sessionStorage: scrollWindow.sessionStorage,
+            })
+          : null));
+  const focusManager =
+    options?.accessibility?.focusManager === false
+      ? null
+      : (options?.accessibility?.focusManager ??
+        (accessibilityDocument
+          ? new FocusManager({
+              querySelector(selector) {
+                const element = accessibilityDocument.querySelector(selector);
+
+                return element &&
+                  "focus" in element &&
+                  "getAttribute" in element &&
+                  "setAttribute" in element
+                  ? (element as {
+                      focus(options?: { preventScroll?: boolean }): void;
+                      getAttribute(name: string): string | null;
+                      setAttribute(name: string, value: string): void;
+                    })
+                  : null;
+              },
+            })
+          : null));
+  const routeAnnouncer =
+    options?.accessibility?.routeAnnouncer === false
+      ? null
+      : (options?.accessibility?.routeAnnouncer ??
+        (announcerDocument ? new RouteAnnouncer(announcerDocument) : null));
+  const viewTransition =
+    options?.accessibility?.viewTransition === false
+      ? null
+      : (options?.accessibility?.viewTransition ??
+        (transitionDocument
+          ? new ViewTransitionManager(transitionDocument)
+          : null));
 
   const sortedRoutes = Object.entries(resolvedRoutes).sort(
     ([, leftRoute], [, rightRoute]) => {
@@ -757,6 +932,55 @@ export default function createRouter<
     currentAdapter.navigate(href, navigationOptions);
   }
 
+  function saveScrollPosition(): void {
+    scrollManager?.save(store.getState().location.href);
+  }
+
+  function scheduleAccessibilityEffects(
+    result: RouterLoadResult<TRoutes, TNotFound>,
+    mode: NavigationMode,
+  ): void {
+    if (mode !== "pop" && mode !== "push") {
+      return;
+    }
+
+    queueMicrotask(() => {
+      const context = resolveAccessibilityContext(
+        result as unknown as RouterLoadResult<RouteMap, AnyRoute | undefined>,
+      );
+      const nextTitle = options?.accessibility?.getTitle?.(context);
+
+      if (
+        nextTitle !== undefined &&
+        nextTitle !== null &&
+        accessibilityDocument
+      ) {
+        accessibilityDocument.title = nextTitle;
+      }
+
+      scrollManager?.restore(result.location.href, mode);
+      focusManager?.focus();
+      void routeAnnouncer?.announce(
+        resolveAnnouncement(
+          accessibilityDocument,
+          result as unknown as RouterLoadResult<RouteMap, AnyRoute | undefined>,
+        ),
+      );
+    });
+  }
+
+  async function runNavigationUpdate(
+    mode: NavigationMode,
+    update: () => void | Promise<void>,
+  ): Promise<void> {
+    if ((mode === "pop" || mode === "push") && viewTransition) {
+      await viewTransition.run(update);
+      return;
+    }
+
+    await update();
+  }
+
   const buildPath: BuildPathFn<TRoutes> = ((
     name: RouteName<TRoutes>,
     ...args: unknown[]
@@ -779,8 +1003,11 @@ export default function createRouter<
     );
 
     if (adapter) {
+      saveScrollPosition();
       syncAdapterLocation(intent.href);
-      void performLoad(intent.href, 0, true).catch(ignoreScheduledLoadError);
+      void performLoad(intent.href, 0, true, "push").catch(
+        ignoreScheduledLoadError,
+      );
     }
 
     return intent;
@@ -838,6 +1065,7 @@ export default function createRouter<
     input: string | URL,
     redirectDepth = 0,
     shouldSyncAdapter = false,
+    mode: NavigationMode = "none",
   ): Promise<RouterLoadResult<TRoutes, TNotFound>> => {
     if (redirectDepth > 10) {
       throw new Error("Too many redirects during router.load().");
@@ -862,6 +1090,7 @@ export default function createRouter<
         redirectMatch.redirectTo,
         redirectDepth + 1,
         shouldSyncAdapter,
+        mode,
       );
 
       if (
@@ -906,18 +1135,24 @@ export default function createRouter<
 
       prefetchedLoads.delete(href);
 
-      const result = createLoadResult<TRoutes, TNotFound>({
-        error: null,
-        errorBoundary: null,
-        location: store.commit(url, resolvedLoad.match, resolvedLoad.status)
-          .location,
-        match: resolvedLoad.match,
-        routeData: resolvedLoad.routeData,
-        status: resolvedLoad.status,
-        wrapperData: resolvedLoad.wrapperData,
-      });
+      let result!: RouterLoadResult<TRoutes, TNotFound>;
 
-      currentLoadResult = result;
+      await runNavigationUpdate(mode, () => {
+        result = createLoadResult<TRoutes, TNotFound>({
+          error: null,
+          errorBoundary: null,
+          location: store.commit(url, resolvedLoad.match, resolvedLoad.status)
+            .location,
+          match: resolvedLoad.match,
+          routeData: resolvedLoad.routeData,
+          status: resolvedLoad.status,
+          wrapperData: resolvedLoad.wrapperData,
+        });
+
+        currentLoadResult = result;
+      });
+      scheduleAccessibilityEffects(result, mode);
+
       return result;
     } catch (thrownError) {
       const failureValue = thrownError as LoadFailure;
@@ -939,6 +1174,7 @@ export default function createRouter<
           failure.error.to,
           redirectDepth + 1,
           shouldSyncAdapter,
+          mode,
         );
 
         if (
@@ -987,20 +1223,26 @@ export default function createRouter<
                 : null;
             })();
       const status = getErrorStatus(failure.error);
-      const result = createLoadResult<TRoutes, TNotFound>({
-        error: failure.error,
-        errorBoundary,
-        location: store.commit(url, currentMatch, status).location,
-        match: currentMatch,
-        routeData: undefined,
-        status,
-        wrapperData:
-          currentLoadResult && currentLoadResult.match?.route === nextRoute
-            ? currentLoadResult.wrapperData
-            : {},
-      });
+      let result!: RouterLoadResult<TRoutes, TNotFound>;
 
-      currentLoadResult = result;
+      await runNavigationUpdate(mode, () => {
+        result = createLoadResult<TRoutes, TNotFound>({
+          error: failure.error,
+          errorBoundary,
+          location: store.commit(url, currentMatch, status).location,
+          match: currentMatch,
+          routeData: undefined,
+          status,
+          wrapperData:
+            currentLoadResult && currentLoadResult.match?.route === nextRoute
+              ? currentLoadResult.wrapperData
+              : {},
+        });
+
+        currentLoadResult = result;
+      });
+      scheduleAccessibilityEffects(result, mode);
+
       return result;
     } finally {
       if (activeAbortController === abortController) {
@@ -1013,7 +1255,7 @@ export default function createRouter<
   const load = async (
     input: string | URL,
   ): Promise<RouterLoadResult<TRoutes, TNotFound>> => {
-    return performLoad(input);
+    return performLoad(input, 0, false, "none");
   };
 
   const hydrate = (
@@ -1074,12 +1316,15 @@ export default function createRouter<
         return;
       }
 
-      void performLoad(location, 0, true).catch(ignoreScheduledLoadError);
+      saveScrollPosition();
+      void performLoad(location, 0, true, "pop").catch(
+        ignoreScheduledLoadError,
+      );
     });
   }
 
   if (adapter) {
-    void performLoad(adapter.getLocation(), 0, true).catch(
+    void performLoad(adapter.getLocation(), 0, true, "initial").catch(
       ignoreScheduledLoadError,
     );
   }

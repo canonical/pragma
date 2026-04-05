@@ -603,10 +603,48 @@ export interface RouterOptions<
   TNotFound extends AnyRoute | undefined = undefined,
 > {
   readonly adapter?: PlatformAdapter;
-  readonly hydratedState?: RouterDehydratedState<any>;
+  readonly accessibility?: RouterAccessibilityOptions;
+  readonly hydratedState?: RouterDehydratedState<RouteMap>;
   readonly initialUrl?: string | URL;
   readonly middleware?: readonly RouteMiddleware[];
   readonly notFound?: TNotFound;
+}
+
+export interface RouterAccessibilityContext {
+  readonly location: RouterLocationState;
+  readonly match: RouterMatch<RouteMap, AnyRoute | undefined> | null;
+  readonly status: number;
+}
+
+export interface FocusManagerLike {
+  focus(): boolean;
+}
+
+export interface RouteAnnouncerLike {
+  announce(message: string): Promise<void> | void;
+}
+
+export interface ScrollManagerLike {
+  restore(location: string | URL, navigationType: "pop" | "push"): void;
+  save(location: string | URL): void;
+}
+
+export interface ViewTransitionManagerLike {
+  run(update: () => void | Promise<void>): Promise<void>;
+}
+
+export interface RouterAccessibilityDocumentLike {
+  title: string;
+  querySelector(selector: string): { textContent?: string | null } | null;
+}
+
+export interface RouterAccessibilityOptions {
+  readonly document?: RouterAccessibilityDocumentLike;
+  readonly focusManager?: FocusManagerLike | false;
+  readonly getTitle?: (context: RouterAccessibilityContext) => string | null;
+  readonly routeAnnouncer?: RouteAnnouncerLike | false;
+  readonly scrollManager?: ScrollManagerLike | false;
+  readonly viewTransition?: ViewTransitionManagerLike | false;
 }
 
 export interface Router<

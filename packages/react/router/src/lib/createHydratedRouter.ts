@@ -36,7 +36,8 @@ export default function createHydratedRouter<
   const router = createCoreRouter(routes, {
     ...routerOptions,
     adapter: createBrowserAdapter(browserWindow as never),
-    hydratedState: initialState ?? undefined,
+    hydratedState:
+      (initialState as unknown as RouterDehydratedState<RouteMap>) ?? undefined,
   });
 
   return router;

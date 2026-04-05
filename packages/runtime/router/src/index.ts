@@ -5,4 +5,5 @@
  * @packageDocumentation
  */
 
+export * from "./a11y/index.js";
 export * from "./lib/index.js";
