@@ -1,0 +1,11 @@
+{
+  "extends": "../../../configs/typescript/tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": "src",
+    "types": ["node"],
+    "resolveJsonModule": true,
+    "skipLibCheck": true
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["src/**/*.test.ts"]
+}

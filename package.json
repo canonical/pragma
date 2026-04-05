@@ -47,7 +47,7 @@
     "special:clean": "bun run nx reset && lerna clean --yes && rm -rf node_modules **/dist **/node_modules"
   },
   "devDependencies": {
-    "@vitest/coverage-v8": "^4.0.18",
+    "@vitest/coverage-v8": "4.1.2",
     "lerna": "^9.0.5",
     "nx": "^22.5.4"
   },

@@ -1,0 +1,879 @@
+import createRouterStore from "./createRouterStore.js";
+import RouteRedirect from "./RouteRedirect.js";
+import StatusResponse from "./StatusResponse.js";
+import type {
+  AnyRoute,
+  BuildPathFn,
+  NamedRouteMatch,
+  NavigateFn,
+  NavigationIntent,
+  NotFoundRouteMatch,
+  ParamsOf,
+  PathBuildArgs,
+  PlatformNavigateOptions,
+  RouteMap,
+  RouteName,
+  RouteOf,
+  Router,
+  RouterLoadResult,
+  RouterMatch,
+  RouterOptions,
+  SearchOf,
+} from "./types.js";
+
+function extractParamName(patternSegment: string): string {
+  return patternSegment
+    .slice(1)
+    .replace(/\(.+$/, "")
+    .replace(/[?*+]$/, "");
+}
+
+function buildUrl(input: string | URL): URL {
+  if (input instanceof URL) {
+    return input;
+  }
+
+  if (input.startsWith("http://") || input.startsWith("https://")) {
+    return new URL(input);
+  }
+
+  return new URL(input, "https://router.local");
+}
+
+function toHref(input: string | URL): string {
+  const url = buildUrl(input);
+
+  return `${url.pathname}${url.search}${url.hash}`;
+}
+
+function splitPathSegments(pathname: string): string[] {
+  if (pathname === "/") {
+    return [];
+  }
+
+  return pathname.split("/").filter(Boolean);
+}
+
+function getRoutePriority(path: string): {
+  readonly staticCount: number;
+  readonly parameterCount: number;
+  readonly wildcardCount: number;
+  readonly segmentCount: number;
+} {
+  const segments = splitPathSegments(path);
+
+  let staticCount = 0;
+  let parameterCount = 0;
+  let wildcardCount = 0;
+
+  for (const currentSegment of segments) {
+    if (currentSegment === "*") {
+      wildcardCount += 1;
+      continue;
+    }
+
+    if (currentSegment.startsWith(":")) {
+      parameterCount += 1;
+      continue;
+    }
+
+    staticCount += 1;
+  }
+
+  return {
+    staticCount,
+    parameterCount,
+    wildcardCount,
+    segmentCount: segments.length,
+  };
+}
+
+function compareRoutePriority(leftPath: string, rightPath: string): number {
+  const left = getRoutePriority(leftPath);
+  const right = getRoutePriority(rightPath);
+
+  if (right.staticCount !== left.staticCount) {
+    return right.staticCount - left.staticCount;
+  }
+
+  if (right.parameterCount !== left.parameterCount) {
+    return right.parameterCount - left.parameterCount;
+  }
+
+  if (left.wildcardCount !== right.wildcardCount) {
+    return left.wildcardCount - right.wildcardCount;
+  }
+
+  return 0;
+}
+
+function matchPath(
+  routePath: string,
+  inputUrl: URL,
+): Record<string, string> | null {
+  const routeSegments = splitPathSegments(routePath);
+  const pathSegments = splitPathSegments(inputUrl.pathname);
+  const params: Record<string, string> = {};
+
+  for (let index = 0; index < routeSegments.length; index += 1) {
+    const routeSegment = routeSegments[index];
+
+    if (routeSegment === "*") {
+      return params;
+    }
+
+    const pathSegment = pathSegments[index];
+
+    if (pathSegment === undefined) {
+      return null;
+    }
+
+    if (!routeSegment.startsWith(":")) {
+      if (routeSegment !== pathSegment) {
+        return null;
+      }
+
+      continue;
+    }
+
+    params[extractParamName(routeSegment)] = decodeURIComponent(pathSegment);
+  }
+
+  return pathSegments.length === routeSegments.length ? params : null;
+}
+
+function readSearchParams(
+  searchParams: URLSearchParams,
+): Record<string, string | readonly string[]> {
+  const rawSearch: Record<string, string | readonly string[]> = {};
+
+  for (const key of searchParams.keys()) {
+    const values = searchParams.getAll(key);
+
+    rawSearch[key] = values.length > 1 ? values : values[0];
+  }
+
+  return rawSearch;
+}
+
+function validateSearch<TRoute extends AnyRoute>(
+  route: TRoute,
+  url: URL,
+): SearchOf<TRoute> {
+  if (!route.search) {
+    return {} as SearchOf<TRoute>;
+  }
+
+  const rawSearch = readSearchParams(url.searchParams);
+  const validator = route.search["~standard"].validate;
+
+  if (!validator) {
+    return rawSearch as SearchOf<TRoute>;
+  }
+
+  return validator(rawSearch) as SearchOf<TRoute>;
+}
+
+function renderPattern(path: string, params: Record<string, string>): string {
+  const segments = splitPathSegments(path);
+
+  if (segments.length === 0) {
+    return "/";
+  }
+
+  const renderedSegments = segments.map((currentSegment) => {
+    if (currentSegment === "*") {
+      return "";
+    }
+
+    if (!currentSegment.startsWith(":")) {
+      return currentSegment;
+    }
+
+    const paramName = extractParamName(currentSegment);
+    const paramValue = params[paramName];
+
+    if (typeof paramValue !== "string") {
+      throw new Error(`Missing route param '${paramName}' for '${path}'.`);
+    }
+
+    return encodeURIComponent(paramValue);
+  });
+
+  return `/${renderedSegments.filter(Boolean).join("/")}`;
+}
+
+function buildHash(hash?: string): string {
+  if (!hash) {
+    return "";
+  }
+
+  return hash.startsWith("#") ? hash : `#${hash}`;
+}
+
+function buildSearch(search: Record<string, unknown>): string {
+  const searchParams = new URLSearchParams();
+
+  for (const [key, value] of Object.entries(search)) {
+    if (value === undefined) {
+      continue;
+    }
+
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        if (item === undefined) {
+          continue;
+        }
+
+        searchParams.append(key, String(item));
+      }
+
+      continue;
+    }
+
+    searchParams.append(key, String(value));
+  }
+
+  const serializedSearch = searchParams.toString();
+  return serializedSearch.length > 0 ? `?${serializedSearch}` : "";
+}
+
+function readBuildOptions<TRoute extends AnyRoute>(
+  args: PathBuildArgs<TRoute>,
+): {
+  params: ParamsOf<TRoute>;
+  search: SearchOf<TRoute>;
+  hash?: string;
+} {
+  const [options] = args;
+
+  return {
+    params: (options?.params ?? {}) as ParamsOf<TRoute>,
+    search: (options?.search ?? {}) as SearchOf<TRoute>,
+    hash: options?.hash,
+  };
+}
+
+function assertUniqueWrapperIds(routes: RouteMap, notFound?: AnyRoute): void {
+  const wrappersById = new Map<string, object>();
+  const routesToValidate = notFound
+    ? { ...routes, __notFound: notFound }
+    : routes;
+
+  for (const [routeName, currentRoute] of Object.entries(routesToValidate)) {
+    const seenIds = new Set<string>();
+
+    for (const currentWrapper of currentRoute.wrappers) {
+      if (seenIds.has(currentWrapper.id)) {
+        throw new Error(
+          `Route '${routeName}' contains wrapper id '${currentWrapper.id}' more than once.`,
+        );
+      }
+
+      seenIds.add(currentWrapper.id);
+
+      const existingWrapper = wrappersById.get(currentWrapper.id);
+
+      if (!existingWrapper) {
+        wrappersById.set(currentWrapper.id, currentWrapper as object);
+        continue;
+      }
+
+      if (existingWrapper !== currentWrapper) {
+        throw new Error(
+          `Wrapper id '${currentWrapper.id}' is attached to multiple wrapper definitions.`,
+        );
+      }
+    }
+  }
+}
+
+function createIntent<
+  TRoutes extends RouteMap,
+  TName extends RouteName<TRoutes>,
+>(
+  routes: TRoutes,
+  name: TName,
+  args: PathBuildArgs<RouteOf<TRoutes, TName>>,
+): NavigationIntent<TName, RouteOf<TRoutes, TName>> {
+  const currentRoute = routes[name];
+  const options = readBuildOptions(args);
+  const href = `${currentRoute.render(options.params)}${buildSearch(options.search as Record<string, unknown>)}${buildHash(options.hash)}`;
+
+  return {
+    name,
+    href,
+    params: options.params,
+    search: options.search,
+    hash: options.hash,
+  };
+}
+
+function createRouteMatch<
+  TRoutes extends RouteMap,
+  TName extends RouteName<TRoutes>,
+>(
+  name: TName,
+  route: RouteOf<TRoutes, TName>,
+  url: URL,
+  params: ParamsOf<RouteOf<TRoutes, TName>>,
+): NamedRouteMatch<TRoutes, TName> {
+  const search = validateSearch(route, url);
+
+  if ("redirect" in route) {
+    return {
+      kind: "redirect",
+      name,
+      route,
+      params,
+      search,
+      pathname: url.pathname,
+      redirectTo: renderPattern(
+        route.redirect as string,
+        params as Record<string, string>,
+      ),
+      status: route.status,
+      url,
+    } as unknown as NamedRouteMatch<TRoutes, TName>;
+  }
+
+  return {
+    kind: "route",
+    name,
+    route,
+    params,
+    search,
+    pathname: url.pathname,
+    status: 200,
+    url,
+  } as unknown as NamedRouteMatch<TRoutes, TName>;
+}
+
+function createNotFoundMatch<TNotFound extends AnyRoute>(
+  route: TNotFound,
+  url: URL,
+): NotFoundRouteMatch<TNotFound> {
+  return {
+    kind: "not-found",
+    name: null,
+    route,
+    params: {} as ParamsOf<TNotFound>,
+    search: validateSearch(route, url),
+    pathname: url.pathname,
+    status: 404,
+    url,
+  };
+}
+
+function getWrapperPrefixLength(
+  previousRoute: AnyRoute | undefined,
+  nextRoute: AnyRoute | undefined,
+): number {
+  if (!previousRoute || !nextRoute) {
+    return 0;
+  }
+
+  const previousWrappers = previousRoute.wrappers;
+  const nextWrappers = nextRoute.wrappers;
+  const maxLength = Math.min(previousWrappers.length, nextWrappers.length);
+
+  let prefixLength = 0;
+
+  while (
+    prefixLength < maxLength &&
+    previousWrappers[prefixLength]?.id === nextWrappers[prefixLength]?.id
+  ) {
+    prefixLength += 1;
+  }
+
+  return prefixLength;
+}
+
+function getErrorStatus(error: unknown): number {
+  if (error instanceof StatusResponse) {
+    return error.status;
+  }
+
+  if (error instanceof Response) {
+    return error.status;
+  }
+
+  return 500;
+}
+
+function findWrapperErrorBoundary(
+  route: AnyRoute,
+  startIndex = route.wrappers.length - 1,
+): string | null {
+  for (let index = startIndex; index >= 0; index -= 1) {
+    const currentWrapper = route.wrappers[index];
+
+    if (currentWrapper.error) {
+      return currentWrapper.id;
+    }
+  }
+
+  return null;
+}
+
+function isRedirectMatch(value: unknown): value is {
+  readonly kind: "redirect";
+  readonly redirectTo: string;
+} {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    (value as { readonly kind?: string }).kind === "redirect"
+  );
+}
+
+function ignoreScheduledLoadError(_error: unknown): void {}
+
+/** Create a typed router view over a complete flat route map. */
+export default function createRouter<
+  const TRoutes extends RouteMap,
+  const TNotFound extends AnyRoute | undefined = undefined,
+>(
+  routes: TRoutes,
+  options?: RouterOptions<TNotFound>,
+): Router<TRoutes, TNotFound> {
+  assertUniqueWrapperIds(routes, options?.notFound);
+
+  const adapter = options?.adapter ?? null;
+
+  const sortedRoutes = Object.entries(routes).sort(
+    ([, leftRoute], [, rightRoute]) => {
+      return compareRoutePriority(leftRoute.url, rightRoute.url);
+    },
+  ) as Array<[RouteName<TRoutes>, RouteOf<TRoutes, RouteName<TRoutes>>]>;
+
+  let activeAbortController: AbortController | null = null;
+  let currentLoadResult: RouterLoadResult<TRoutes, TNotFound> | null = null;
+  let ignoredAdapterHref: string | null = null;
+
+  function syncAdapterLocation(
+    input: string | URL,
+    navigationOptions?: PlatformNavigateOptions,
+  ): void {
+    const currentAdapter = adapter as NonNullable<typeof adapter>;
+
+    const href = toHref(input);
+
+    ignoredAdapterHref = href;
+    currentAdapter.navigate(href, navigationOptions);
+  }
+
+  const buildPath: BuildPathFn<TRoutes> = ((
+    name: RouteName<TRoutes>,
+    ...args: unknown[]
+  ) => {
+    return createIntent(
+      routes,
+      name,
+      args as unknown as PathBuildArgs<RouteOf<TRoutes, typeof name>>,
+    ).href;
+  }) as BuildPathFn<TRoutes>;
+
+  const navigate: NavigateFn<TRoutes> = ((
+    name: RouteName<TRoutes>,
+    ...args: unknown[]
+  ) => {
+    const intent = createIntent(
+      routes,
+      name,
+      args as unknown as PathBuildArgs<RouteOf<TRoutes, typeof name>>,
+    );
+
+    if (adapter) {
+      syncAdapterLocation(intent.href);
+      void performLoad(intent.href, 0, true).catch(ignoreScheduledLoadError);
+    }
+
+    return intent;
+  }) as NavigateFn<TRoutes>;
+
+  const match = (
+    input: string | URL,
+  ): RouterMatch<TRoutes, TNotFound> | null => {
+    const url = buildUrl(input);
+
+    for (const [name, currentRoute] of sortedRoutes) {
+      const params = matchPath(currentRoute.url, url);
+
+      if (!params) {
+        continue;
+      }
+
+      return createRouteMatch(
+        name,
+        currentRoute as RouteOf<TRoutes, typeof name>,
+        url,
+        params as ParamsOf<RouteOf<TRoutes, typeof name>>,
+      ) as RouterMatch<TRoutes, TNotFound>;
+    }
+
+    if (!options?.notFound) {
+      return null;
+    }
+
+    return createNotFoundMatch(options.notFound, url) as RouterMatch<
+      TRoutes,
+      TNotFound
+    >;
+  };
+
+  const store = createRouterStore<TRoutes, TNotFound>(
+    match,
+    adapter?.getLocation() ?? options?.initialUrl,
+  );
+
+  const performLoad = async (
+    input: string | URL,
+    redirectDepth = 0,
+    shouldSyncAdapter = false,
+  ): Promise<RouterLoadResult<TRoutes, TNotFound>> => {
+    if (redirectDepth > 10) {
+      throw new Error("Too many redirects during router.load().");
+    }
+
+    const url = buildUrl(input);
+    const currentMatch = match(url);
+    const redirectMatch = currentMatch as unknown;
+
+    if (isRedirectMatch(redirectMatch)) {
+      const redirectedResult = await performLoad(
+        redirectMatch.redirectTo,
+        redirectDepth + 1,
+        shouldSyncAdapter,
+      );
+
+      if (
+        shouldSyncAdapter &&
+        adapter &&
+        toHref(adapter.getLocation()) !== redirectedResult.location.href
+      ) {
+        syncAdapterLocation(redirectedResult.location.href, {
+          replace: true,
+        });
+      }
+
+      return redirectedResult;
+    }
+
+    const previousController = activeAbortController;
+    const abortController = new AbortController();
+
+    activeAbortController = abortController;
+    previousController?.abort();
+    store.setNavigationState("loading");
+
+    try {
+      const wrapperData: Record<string, unknown> = {};
+      const previousRoute = currentLoadResult?.match?.route;
+      const nextRoute = currentMatch?.route;
+      const wrapperPrefixLength = getWrapperPrefixLength(
+        previousRoute,
+        nextRoute,
+      );
+
+      if (currentLoadResult && nextRoute) {
+        for (const currentWrapper of nextRoute.wrappers.slice(
+          0,
+          wrapperPrefixLength,
+        )) {
+          wrapperData[currentWrapper.id] =
+            currentLoadResult.wrapperData[currentWrapper.id];
+        }
+      }
+
+      const wrapperLoads =
+        nextRoute?.wrappers
+          .slice(wrapperPrefixLength)
+          .map(async (currentWrapper, index) => {
+            if (!currentWrapper.fetch) {
+              return;
+            }
+
+            const currentParams = currentMatch?.params as ParamsOf<AnyRoute>;
+
+            try {
+              wrapperData[currentWrapper.id] = await currentWrapper.fetch(
+                currentParams,
+                {
+                  signal: abortController.signal,
+                },
+              );
+            } catch (error) {
+              throw {
+                error,
+                source: "wrapper",
+                wrapperIndex: wrapperPrefixLength + index,
+              };
+            }
+          }) ?? [];
+
+      const routeLoad = (async () => {
+        if (!nextRoute?.fetch || !currentMatch) {
+          return undefined;
+        }
+
+        return await nextRoute.fetch(currentMatch.params, currentMatch.search, {
+          signal: abortController.signal,
+        });
+      })();
+
+      const [, routeData] = await Promise.all([
+        Promise.all(wrapperLoads),
+        routeLoad,
+      ]);
+
+      const result: RouterLoadResult<TRoutes, TNotFound> = {
+        error: null,
+        errorBoundary: null,
+        location: store.commit(url, currentMatch, currentMatch?.status ?? 404)
+          .location,
+        match: currentMatch,
+        routeData,
+        status: currentMatch?.status ?? 404,
+        wrapperData,
+      };
+
+      currentLoadResult = result;
+      return result;
+    } catch (thrownError) {
+      const failureValue = thrownError as {
+        error?: unknown;
+        source?: "wrapper";
+        wrapperIndex?: number;
+      };
+      const failure =
+        failureValue.source === "wrapper"
+          ? {
+              error: failureValue.error,
+              source: "wrapper" as const,
+              wrapperIndex: failureValue.wrapperIndex,
+            }
+          : {
+              error: thrownError,
+              source: "route" as const,
+            };
+
+      if (failure.error instanceof RouteRedirect) {
+        abortController.abort();
+        const redirectedResult = await performLoad(
+          failure.error.to,
+          redirectDepth + 1,
+          shouldSyncAdapter,
+        );
+
+        if (
+          shouldSyncAdapter &&
+          adapter &&
+          toHref(adapter.getLocation()) !== redirectedResult.location.href
+        ) {
+          syncAdapterLocation(redirectedResult.location.href, {
+            replace: true,
+          });
+        }
+
+        return redirectedResult;
+      }
+
+      if (abortController.signal.aborted) {
+        throw failure.error;
+      }
+
+      const nextRoute = currentMatch?.route as AnyRoute;
+      const errorBoundary =
+        failure.source === "route"
+          ? nextRoute.error
+            ? { type: "route" as const, wrapperId: null }
+            : (() => {
+                const wrapperId = findWrapperErrorBoundary(nextRoute);
+
+                return wrapperId
+                  ? {
+                      type: "wrapper" as const,
+                      wrapperId,
+                    }
+                  : null;
+              })()
+          : (() => {
+              const wrapperId = findWrapperErrorBoundary(
+                nextRoute,
+                failure.wrapperIndex,
+              );
+
+              return wrapperId
+                ? {
+                    type: "wrapper" as const,
+                    wrapperId,
+                  }
+                : null;
+            })();
+      const status = getErrorStatus(failure.error);
+      const result: RouterLoadResult<TRoutes, TNotFound> = {
+        error: failure.error,
+        errorBoundary,
+        location: store.commit(url, currentMatch, status).location,
+        match: currentMatch,
+        routeData: undefined,
+        status,
+        wrapperData:
+          currentLoadResult && currentLoadResult.match?.route === nextRoute
+            ? currentLoadResult.wrapperData
+            : {},
+      };
+
+      currentLoadResult = result;
+      return result;
+    } finally {
+      if (activeAbortController === abortController) {
+        activeAbortController = null;
+        store.setNavigationState("idle");
+      }
+    }
+  };
+
+  const load = async (
+    input: string | URL,
+  ): Promise<RouterLoadResult<TRoutes, TNotFound>> => {
+    return performLoad(input);
+  };
+
+  let unsubscribeFromAdapter: (() => void) | undefined;
+
+  if (adapter) {
+    unsubscribeFromAdapter = adapter.subscribe((location) => {
+      const href = toHref(location);
+
+      if (ignoredAdapterHref === href) {
+        ignoredAdapterHref = null;
+        return;
+      }
+
+      void performLoad(location, 0, true).catch(ignoreScheduledLoadError);
+    });
+  }
+
+  if (adapter) {
+    void performLoad(adapter.getLocation(), 0, true).catch(
+      ignoreScheduledLoadError,
+    );
+  }
+
+  const render = (
+    result: RouterLoadResult<TRoutes, TNotFound> | null = currentLoadResult,
+  ): unknown => {
+    if (!result?.match) {
+      return null;
+    }
+
+    const currentRoute = result.match.route;
+    const locationHref = result.location.href;
+
+    if (result.error) {
+      if (result.errorBoundary?.type === "route" && currentRoute.error) {
+        return currentRoute.wrappers.reduceRight(
+          (children, currentWrapper) => {
+            return currentWrapper.component({
+              children,
+              data: result.wrapperData[currentWrapper.id],
+            });
+          },
+          currentRoute.error({
+            error: result.error,
+            params: result.match.params,
+            search: result.match.search,
+            status: result.status,
+            url: locationHref,
+          }),
+        );
+      }
+
+      if (
+        result.errorBoundary?.type === "wrapper" &&
+        result.errorBoundary.wrapperId
+      ) {
+        const boundaryIndex = currentRoute.wrappers.findIndex(
+          (currentWrapper) => {
+            return currentWrapper.id === result.errorBoundary?.wrapperId;
+          },
+        );
+        const boundaryWrapper = currentRoute.wrappers[
+          boundaryIndex
+        ] as AnyRoute["wrappers"][number];
+        const boundaryContent = boundaryWrapper.error?.({
+          error: result.error,
+          params: result.match.params,
+          search: result.match.search,
+          status: result.status,
+          url: locationHref,
+        });
+
+        return currentRoute.wrappers
+          .slice(0, boundaryIndex)
+          .reduceRight((children, currentWrapper) => {
+            return currentWrapper.component({
+              children,
+              data: result.wrapperData[currentWrapper.id],
+            });
+          }, boundaryContent);
+      }
+
+      return result.error;
+    }
+
+    if (!currentRoute.content) {
+      return null;
+    }
+
+    return currentRoute.wrappers.reduceRight(
+      (children, currentWrapper) => {
+        return currentWrapper.component({
+          children,
+          data: result.wrapperData[currentWrapper.id],
+        });
+      },
+      currentRoute.content({
+        data: result.routeData,
+        params: result.match.params,
+        search: result.match.search,
+      }),
+    );
+  };
+
+  return {
+    adapter,
+    routes,
+    notFound: options?.notFound as TNotFound,
+    store,
+    getRoute(name) {
+      return routes[name];
+    },
+    getState() {
+      return store.getState();
+    },
+    getTrackedLocation(onAccess) {
+      return store.getTrackedLocation(onAccess);
+    },
+    buildPath,
+    dispose() {
+      activeAbortController?.abort();
+      unsubscribeFromAdapter?.();
+    },
+    load,
+    match,
+    navigate,
+    render,
+    subscribe(listener) {
+      return store.subscribe(listener);
+    },
+    subscribeToNavigation(listener) {
+      return store.subscribeToNavigation(listener);
+    },
+    subscribeToSearchParam(key, listener) {
+      return store.subscribeToSearchParam(key, listener);
+    },
+  };
+}
