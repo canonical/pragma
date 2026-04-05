@@ -3,7 +3,7 @@ import { JSXRenderer } from "@canonical/react-ssr/renderer";
 import { serveStream } from "@canonical/react-ssr/server";
 import express from "express";
 import EntryServer from "./entry-server.js";
-import render, { htmlString } from "./renderer.js";
+import createRenderer, { htmlString } from "./renderer.js";
 
 const PORT = process.env.PORT || 5174;
 
@@ -11,28 +11,32 @@ const app = express();
 
 app.use(/^\/(assets|public)/, express.static("dist/client/assets"));
 
-app.get("/stream", (req, res, next) => {
-  const renderer = new JSXRenderer(
-    EntryServer,
-    {},
-    {
-      htmlString,
-      renderToPipeableStreamOptions: {
-        onShellReady: (): void => {
-          console.log("Shell ready");
-        },
-        // pass any error to Express's error handling
-        onShellError: (error) => next(error),
-      },
-    },
-  );
-  renderer.renderToStream(req, res);
+app.get("/stream", async (req, res, next) => {
+	const renderer = new JSXRenderer(
+		EntryServer,
+		{},
+		{
+			htmlString,
+			renderToPipeableStreamOptions: {
+				onShellReady: (): void => {
+					console.log("Shell ready");
+				},
+				onShellError: (error) => next(error),
+			},
+		},
+	);
+	const result = renderer.renderToPipeableStream();
+	await renderer.statusReady;
+	res.writeHead(renderer.statusCode, {
+		"Content-Type": "text/html; charset=utf-8",
+	});
+	result.pipe(res);
 });
 
-app.use(serveStream(render));
+app.use(serveStream(createRenderer));
 
 app.listen(PORT, () => {
-  console.log(`Server started on http://localhost:${PORT}/`);
+	console.log(`Server started on http://localhost:${PORT}/`);
 });
 
 export default app;
