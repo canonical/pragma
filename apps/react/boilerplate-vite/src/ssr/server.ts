@@ -1,15 +1,31 @@
 import * as process from "node:process";
-import { serveStream } from "@canonical/react-ssr/server";
 import express from "express";
-import createRenderer from "./renderer.js";
+import { getAuthRedirectHref, normalizeRequestHref } from "../routes.js";
+import prepareRender from "./renderer.js";
 
 const PORT = process.env.PORT || 5173;
 
 const app = express();
 
-app.use(/^\/(assets|public)/, express.static("dist/client/assets"));
+app.use(/^\/assets/, express.static("dist/client/assets"));
 
-app.use(serveStream(createRenderer));
+app.use(async (req, res, next) => {
+  try {
+    const requestHref = normalizeRequestHref(req.originalUrl || req.url || "/");
+    const redirectHref = getAuthRedirectHref(requestHref);
+
+    if (redirectHref) {
+      res.redirect(302, redirectHref);
+      return;
+    }
+
+    const { renderer } = await prepareRender(requestHref);
+
+    renderer.renderToStream(req, res);
+  } catch (error) {
+    next(error);
+  }
+});
 
 app.listen(PORT, () => {
   console.log(`Server started on http://localhost:${PORT}/`);

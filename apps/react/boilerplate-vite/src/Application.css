@@ -1,28 +1,121 @@
 #root {
-  max-width: 1280px;
+  min-height: 100vh;
+}
+
+.app-shell {
+  box-sizing: border-box;
+  display: grid;
+  gap: 2rem;
   margin: 0 auto;
+  max-width: 1120px;
+  min-height: 100vh;
+  padding: 3rem 1.5rem;
+}
+
+.shell-header {
+  align-items: start;
+  display: grid;
+  gap: 1.5rem;
+}
+
+.shell-title {
+  font-size: clamp(2rem, 4vw, 3rem);
+  margin: 0;
+}
+
+.shell-copy,
+.lede {
+  color: #4b5563;
+  font-size: 1.05rem;
+  line-height: 1.7;
+  margin: 0;
+}
+
+.shell-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.shell-nav a {
+  background: #ffffff;
+  border: 1px solid #d7dbe6;
+  border-radius: 999px;
+  color: #111827;
+  padding: 0.7rem 1rem;
+  text-decoration: none;
+  transition:
+    transform 120ms ease,
+    border-color 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.shell-nav a:hover,
+.shell-nav a:focus-visible {
+  border-color: #0f62fe;
+  box-shadow: 0 12px 32px rgba(15, 98, 254, 0.12);
+  outline: none;
+  transform: translateY(-1px);
+}
+
+.shell-main {
+  display: grid;
+}
+
+.route-panel {
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 1.5rem;
+  box-shadow: 0 24px 80px rgba(15, 23, 42, 0.08);
   padding: 2rem;
-  text-align: center;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
+.eyebrow {
+  color: #0f62fe;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  margin: 0;
+  text-transform: uppercase;
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
+.feature-list {
+  display: grid;
+  gap: 0.9rem;
+  margin: 0;
+  padding-left: 1.2rem;
+}
+
+.callout {
+  background: #eef4ff;
+  border: 1px solid #c7d7fe;
+  border-radius: 1rem;
+  color: #1f2937;
+  padding: 1rem 1.25rem;
+}
+
+.route-fallback {
+  color: #4b5563;
+  margin: 0;
+}
+
+.stack {
+  display: grid;
+  gap: 1rem;
+}
+
+.stack-tight {
+  display: grid;
+  gap: 0.5rem;
+}
+
+@media (min-width: 960px) {
+  .app-shell {
+    grid-template-columns: minmax(280px, 320px) minmax(0, 1fr);
+    padding: 4rem 2rem;
   }
-  to {
-    transform: rotate(360deg);
-  }
-}
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
+  .shell-main {
+    align-content: start;
   }
 }
