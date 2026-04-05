@@ -192,3 +192,13 @@ export interface SitemapConfig {
   /** Default `priority` applied to items that do not specify one (0.0 to 1.0). */
   defaultPriority?: number;
 }
+
+// ─── Text types ──────────────────────────────────────────────────────────────
+
+/**
+ * An async function that produces a string of text content.
+ *
+ * The `TextRenderer` accepts an array of getters, calls them sequentially
+ * (order matters for document structure), and concatenates the results.
+ */
+export type TextGetter = () => Promise<string>;
