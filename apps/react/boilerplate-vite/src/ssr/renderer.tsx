@@ -8,12 +8,6 @@ export const htmlString = await fs.readFile(
   "utf-8",
 );
 
-const Renderer = new JSXRenderer(
-  EntryServer,
-  {},
-  {
-    htmlString,
-  },
-);
-
-export default Renderer.renderToString;
+export default function createRenderer() {
+  return new JSXRenderer(EntryServer, {}, { htmlString });
+}

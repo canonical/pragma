@@ -4,5 +4,6 @@
     "baseUrl": "src",
     "types": ["node", "react", "react-dom", "express"]
   },
-  "include": ["src/**/*.ts"]
+  "include": ["src/**/*.ts"],
+  "exclude": ["src/bin/serve-bun.ts", "src/**/*.tests.ts"]
 }
