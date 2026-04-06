@@ -1,0 +1,54 @@
+{
+  "name": "@canonical/ssr-adapter-cloudflare",
+  "description": "Cloudflare Workers adapter for @canonical/react-ssr",
+  "version": "0.22.0",
+  "type": "module",
+  "module": "dist/esm/index.js",
+  "types": "dist/types/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "author": {
+    "email": "webteam@canonical.com",
+    "name": "Canonical Webteam"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/canonical/pragma"
+  },
+  "license": "LGPL-3.0",
+  "bugs": {
+    "url": "https://github.com/canonical/pragma/issues"
+  },
+  "homepage": "https://github.com/canonical/pragma#readme",
+  "exports": {
+    ".": {
+      "import": "./dist/esm/index.js",
+      "types": "./dist/types/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "build:all": "tsc -p tsconfig.build.json",
+    "check": "bun run check:biome && bun run check:ts",
+    "check:fix": "bun run check:biome:fix && bun run check:ts",
+    "check:biome": "biome check",
+    "check:biome:fix": "biome check --write",
+    "check:ts": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
+  },
+  "dependencies": {
+    "@canonical/react-ssr": "^0.22.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.4.9",
+    "@canonical/biome-config": "^0.22.0",
+    "@canonical/typescript-config": "^0.22.0",
+    "@cloudflare/workers-types": "^4.20250620.0",
+    "@vitest/coverage-v8": "^4.0.18",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18"
+  }
+}

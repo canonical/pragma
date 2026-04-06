@@ -702,6 +702,53 @@
         "express",
       ],
     },
+    "packages/react/ssr-adapter-cloudflare": {
+      "name": "@canonical/ssr-adapter-cloudflare",
+      "version": "0.22.0",
+      "dependencies": {
+        "@canonical/react-ssr": "^0.22.0",
+      },
+      "devDependencies": {
+        "@biomejs/biome": "2.4.9",
+        "@canonical/biome-config": "^0.22.0",
+        "@canonical/typescript-config": "^0.22.0",
+        "@cloudflare/workers-types": "^4.20250620.0",
+        "@vitest/coverage-v8": "^4.0.18",
+        "typescript": "^5.9.3",
+        "vitest": "^4.0.18",
+      },
+    },
+    "packages/react/ssr-adapter-deno": {
+      "name": "@canonical/ssr-adapter-deno",
+      "version": "0.22.0",
+      "dependencies": {
+        "@canonical/react-ssr": "^0.22.0",
+      },
+      "devDependencies": {
+        "@biomejs/biome": "2.4.9",
+        "@canonical/biome-config": "^0.22.0",
+        "@canonical/typescript-config": "^0.22.0",
+        "@vitest/coverage-v8": "^4.0.18",
+        "typescript": "^5.9.3",
+        "vitest": "^4.0.18",
+      },
+    },
+    "packages/react/ssr-adapter-vercel": {
+      "name": "@canonical/ssr-adapter-vercel",
+      "version": "0.22.0",
+      "dependencies": {
+        "@canonical/react-ssr": "^0.22.0",
+      },
+      "devDependencies": {
+        "@biomejs/biome": "2.4.9",
+        "@canonical/biome-config": "^0.22.0",
+        "@canonical/typescript-config": "^0.22.0",
+        "@types/node": "^24.12.0",
+        "@vitest/coverage-v8": "^4.0.18",
+        "typescript": "^5.9.3",
+        "vitest": "^4.0.18",
+      },
+    },
     "packages/react/tokens": {
       "name": "@canonical/react-tokens",
       "version": "0.22.0",
@@ -1358,6 +1405,12 @@
 
     "@canonical/renovate-config": ["@canonical/renovate-config@workspace:configs/renovate"],
 
+    "@canonical/ssr-adapter-cloudflare": ["@canonical/ssr-adapter-cloudflare@workspace:packages/react/ssr-adapter-cloudflare"],
+
+    "@canonical/ssr-adapter-deno": ["@canonical/ssr-adapter-deno@workspace:packages/react/ssr-adapter-deno"],
+
+    "@canonical/ssr-adapter-vercel": ["@canonical/ssr-adapter-vercel@workspace:packages/react/ssr-adapter-vercel"],
+
     "@canonical/storybook-addon-form-state": ["@canonical/storybook-addon-form-state@workspace:packages/storybook/addon-form-state"],
 
     "@canonical/storybook-addon-msw": ["@canonical/storybook-addon-msw@workspace:packages/storybook/addon-msw"],
@@ -1431,6 +1484,8 @@
     "@canonical/webarchitect": ["@canonical/webarchitect@workspace:packages/webarchitect"],
 
     "@chromatic-com/storybook": ["@chromatic-com/storybook@5.0.1", "", { "dependencies": { "@neoconfetti/react": "^1.0.0", "chromatic": "^13.3.4", "filesize": "^10.0.12", "jsonfile": "^6.1.0", "strip-ansi": "^7.1.0" }, "peerDependencies": { "storybook": "^0.0.0-0 || ^10.1.0 || ^10.1.0-0 || ^10.2.0-0 || ^10.3.0-0" } }, "sha512-v80QBwVd8W6acH5NtDgFlUevIBaMZAh1pYpBiB40tuNzS242NTHeQHBDGYwIAbWKDnt1qfjJpcpL6pj5kAr4LA=="],
+
+    "@cloudflare/workers-types": ["@cloudflare/workers-types@4.20260405.1", "", {}, "sha512-PokTmySa+D6MY01R1UfYH48korsN462NK/fl3aw47Hg7XuLuSo/RTpjT0vtWaJhJoFY5tHGOBBIbDcIc8wltLg=="],
 
     "@csstools/color-helpers": ["@csstools/color-helpers@6.0.2", "", {}, "sha512-LMGQLS9EuADloEFkcTBR3BwV/CGHV7zyDxVRtVDTwdI2Ca4it0CCVTT9wCkxSgokjE5Ho41hEPgb8OEUwoXr6Q=="],
 
