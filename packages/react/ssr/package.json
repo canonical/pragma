@@ -26,6 +26,7 @@
   },
   "homepage": "https://github.com/canonical/pragma#readme",
   "imports": {
+    "#adapter": "./src/lib/adapter/index.ts",
     "#renderer": "./src/lib/renderer/index.ts",
     "#server": "./src/lib/server/index.ts"
   },
@@ -58,6 +59,10 @@
     "./server": {
       "import": "./dist/esm/lib/server/index.js",
       "types": "./dist/types/lib/server/index.d.ts"
+    },
+    "./adapter": {
+      "import": "./dist/esm/lib/adapter/index.js",
+      "types": "./dist/types/lib/adapter/index.d.ts"
     }
   },
   "devDependencies": {
