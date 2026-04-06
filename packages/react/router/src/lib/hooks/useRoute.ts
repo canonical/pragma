@@ -5,7 +5,7 @@ import type {
   RouterLocationState,
   TrackedLocation,
 } from "@canonical/router-core";
-import { useRef, useSyncExternalStore } from "react";
+import { useCallback, useRef, useSyncExternalStore } from "react";
 import type { RegisteredNotFound, RegisteredRouteMap } from "../register.js";
 import useRouter from "./useRouter.js";
 
@@ -67,8 +67,8 @@ export default function useRoute<
 
   trackedKeysRef.current = new Set();
 
-  useSyncExternalStore(
-    (onStoreChange) => {
+  const subscribe = useCallback(
+    (onStoreChange: () => void) => {
       return router.subscribe(() => {
         const nextLocation = router.getState().location;
         const shouldNotify =
@@ -86,6 +86,11 @@ export default function useRoute<
         onStoreChange();
       });
     },
+    [router],
+  );
+
+  useSyncExternalStore(
+    subscribe,
     () => versionRef.current,
     () => versionRef.current,
   );

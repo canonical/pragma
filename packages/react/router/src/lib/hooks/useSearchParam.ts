@@ -1,5 +1,5 @@
 import type { AnyRoute, RouteMap } from "@canonical/router-core";
-import { useSyncExternalStore } from "react";
+import { useCallback, useSyncExternalStore } from "react";
 import type { RegisteredNotFound, RegisteredRouteMap } from "../register.js";
 import useRouter from "./useRouter.js";
 
@@ -18,17 +18,16 @@ export default function useSearchParam<
 >(key: string): string | null {
   const router = useRouter<TRoutes, TNotFound>();
 
-  const getSnapshot = (): string | null => {
-    return router.getState().location.searchParams.get(key);
-  };
-
-  return useSyncExternalStore(
-    (onStoreChange) => {
-      return router.subscribeToSearchParam(key, () => {
-        onStoreChange();
-      });
-    },
-    getSnapshot,
-    getSnapshot,
+  const getSnapshot = useCallback(
+    () => router.getState().location.searchParams.get(key),
+    [router, key],
   );
+
+  const subscribe = useCallback(
+    (onStoreChange: () => void) =>
+      router.subscribeToSearchParam(key, () => onStoreChange()),
+    [router, key],
+  );
+
+  return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 }

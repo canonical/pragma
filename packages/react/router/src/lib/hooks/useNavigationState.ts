@@ -3,7 +3,7 @@ import type {
   RouteMap,
   RouterNavigationState,
 } from "@canonical/router-core";
-import { useSyncExternalStore } from "react";
+import { useCallback, useSyncExternalStore } from "react";
 import type { RegisteredNotFound, RegisteredRouteMap } from "../register.js";
 import useRouter from "./useRouter.js";
 
@@ -20,17 +20,16 @@ export default function useNavigationState<
 >(): RouterNavigationState {
   const router = useRouter<TRoutes, TNotFound>();
 
-  const getSnapshot = (): RouterNavigationState => {
-    return router.getState().navigation.state;
-  };
-
-  return useSyncExternalStore(
-    (onStoreChange) => {
-      return router.subscribeToNavigation(() => {
-        onStoreChange();
-      });
-    },
-    getSnapshot,
-    getSnapshot,
+  const getSnapshot = useCallback(
+    () => router.getState().navigation.state,
+    [router],
   );
+
+  const subscribe = useCallback(
+    (onStoreChange: () => void) =>
+      router.subscribeToNavigation(() => onStoreChange()),
+    [router],
+  );
+
+  return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 }
