@@ -38,7 +38,7 @@
     display: none;
   }
 
-  ::slotted([slot="media"]) {
+  & .media img {
     max-width: 100%;
     height: auto;
     display: block;

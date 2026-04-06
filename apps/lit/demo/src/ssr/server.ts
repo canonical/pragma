@@ -4,12 +4,9 @@
 import "@lit-labs/ssr/lib/install-global-dom-shim.js";
 
 import process from "node:process";
-// [multi-page] Express is used here for its routing. For a single page,
-// this can be replaced with Node's built-in http module and express +
-// @types/express can be removed from package.json.
 import express from "express";
-// [multi-page] For a single page, only import the one render function needed.
-import { renderHyperscalePage, renderServerPage } from "./entry-server.js";
+import { isKnownRoute } from "routes.js";
+import { renderRoute } from "./entry-server.js";
 import { renderPage } from "./renderer.js";
 
 const PORT = process.env.PORT || 5173;
@@ -22,19 +19,13 @@ app.get("/", (_req, res) => {
   res.redirect("/server");
 });
 
-// [multi-page] For a single page, replace the route handlers below with a
-// single catch-all: app.use((_req, res, next) => { ... })
-app.get("/server", (_req, res, next) => {
-  renderServerPage()
-    .then(renderPage)
-    .then((html) =>
-      res.status(200).setHeader("Content-Type", "text/html").end(html),
-    )
-    .catch(next);
-});
+app.get(/^\/server(?:\/.*)?$/, (req, res, next) => {
+  if (!isKnownRoute(req.path)) {
+    res.status(404).setHeader("Content-Type", "text/html").end("Not Found");
+    return;
+  }
 
-app.get("/server/hyperscale", (_req, res, next) => {
-  renderHyperscalePage()
+  renderRoute(req.path)
     .then(renderPage)
     .then((html) =>
       res.status(200).setHeader("Content-Type", "text/html").end(html),

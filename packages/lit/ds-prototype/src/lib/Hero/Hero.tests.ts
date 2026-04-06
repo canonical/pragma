@@ -50,22 +50,23 @@ describe("Hero component", () => {
     expect(p).toBeNull();
   });
 
-  it("should have no-media class when no media slot is filled", async () => {
+  it("should have no-media class when media prop is not provided", async () => {
     await elem.updateComplete;
 
     const section = elem.shadowRoot?.querySelector("section");
     expect(section?.classList.contains("no-media")).toBe(true);
   });
 
-  it("should show media and remove no-media class when media slot is filled", async () => {
-    const img = document.createElement("img");
-    img.slot = "media";
-    elem.appendChild(img);
+  it("should show media and remove no-media class when media prop is provided", async () => {
+    elem.media = {
+      src: "https://assets.ubuntu.com/v1/a1dd867d-hero.jpg",
+      alt: "Canonical data centre",
+    };
     await elem.updateComplete;
 
     const section = elem.shadowRoot?.querySelector("section");
-    const media = elem.shadowRoot?.querySelector(".media");
+    const mediaImage = elem.shadowRoot?.querySelector(".media img");
     expect(section?.classList.contains("no-media")).toBe(false);
-    expect(media?.hasAttribute("hidden")).toBe(false);
+    expect(mediaImage).toBeTruthy();
   });
 });

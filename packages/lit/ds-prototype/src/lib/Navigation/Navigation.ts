@@ -21,17 +21,19 @@ export default class Navigation extends LitElement implements NavigationProps {
 
   render() {
     return html`
-      <div class="${componentCssClassName}">
+      <nav class="${componentCssClassName}">
         <a href="/" class="banner">
           <div class="logo">
             <img src="https://assets.ubuntu.com/v1/29985a98-ubuntu-logo32.png" alt="" width="16" height="16">
           </div>
           <span class="text">${this.brand}</span>
         </a>
-        <nav>
-          ${this.links.map((link) => html`<a href="${link.href}">${link.label}</a>`)}
-        </nav>
-      </div>
+        <ul class="links">
+          ${this.links.map(
+            (link) => html`<li><a href="${link.href}">${link.label}</a></li>`,
+          )}
+        </ul>
+      </nav>
     `;
   }
 }
