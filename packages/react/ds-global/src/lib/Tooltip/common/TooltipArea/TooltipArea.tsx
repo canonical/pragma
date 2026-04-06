@@ -1,10 +1,10 @@
 import type { ReactElement } from "react";
-import { usePopup } from "../../../hooks/index.js";
+import { FloatingAnchor } from "../../../FloatingAnchor/index.js";
+import type { FloatingAnchorRenderContentProps } from "../../../FloatingAnchor/types.js";
 import { Tooltip } from "../../index.js";
 import type { TooltipAreaProps } from "./types.js";
 
 import "./styles.css";
-import { createPortal } from "react-dom";
 
 const componentCssClassName = "ds tooltip-area";
 
@@ -27,22 +27,17 @@ const TooltipArea = ({
   autoFit,
   ...props
 }: TooltipAreaProps): ReactElement => {
-  const {
-    targetRef,
-    popupRef,
-    popupPositionStyle,
-    popupId,
+  const renderTooltipContent = ({
+    ref,
+    id,
     isOpen,
-    handleTriggerFocus,
-    handleTriggerBlur,
-    handleTriggerEnter,
-    handleTriggerLeave,
+    style: positionStyle,
     bestPosition,
-  } = usePopup({ distance, autoFit, ...props });
-
-  const TooltipMessageElement = (
+    onPointerEnter,
+    onFocus,
+  }: FloatingAnchorRenderContentProps) => (
     <Tooltip
-      id={popupId}
+      id={id}
       className={[
         bestPosition?.positionName,
         messageElementClassName,
@@ -50,12 +45,12 @@ const TooltipArea = ({
       ]
         .filter(Boolean)
         .join(" ")}
-      onPointerEnter={handleTriggerEnter}
-      onFocus={handleTriggerFocus}
-      ref={popupRef}
+      onPointerEnter={onPointerEnter}
+      onFocus={onFocus}
+      ref={ref}
       style={{
         ...messageElementStyle,
-        ...popupPositionStyle,
+        ...positionStyle,
         // @ts-expect-error allow binding arrow size to distance, as it is needed both in JS and CSS calculations
         "--tooltip-spacing-arrow-size": distance,
         ...(autoFit &&
@@ -71,34 +66,22 @@ const TooltipArea = ({
   );
 
   return (
-    // biome-ignore lint/a11y/noStaticElementInteractions: TODO this is kept as is to prevent breaking changes
-    <span
+    <FloatingAnchor
       className={[componentCssClassName, className].filter(Boolean).join(" ")}
       style={style}
-      onFocus={handleTriggerFocus}
-      onBlur={handleTriggerBlur}
-      onPointerEnter={handleTriggerEnter}
-      onPointerLeave={handleTriggerLeave}
+      distance={distance}
+      autoFit={autoFit}
+      trigger="hover"
+      ariaRelationship="describedby"
+      targetElementId={targetElementId}
+      targetElementClassName={targetElementClassName}
+      targetElementStyle={targetElementStyle}
+      parentElement={parentElement}
+      renderContent={renderTooltipContent}
+      {...props}
     >
-      <span
-        id={targetElementId}
-        style={targetElementStyle}
-        className={["target", targetElementClassName].filter(Boolean).join(" ")}
-        ref={targetRef}
-        aria-describedby={popupId}
-      >
-        {children}
-      </span>
-      {/*
-        Portal can only be rendered on the client
-      */}
-      {typeof window !== "undefined"
-        ? // Portals allow the tooltip to be rendered outside the parent element
-          // This is helpful when the parent element is a scrollable container or has bounds that may be
-          // overflown by the tooltip message.
-          createPortal(TooltipMessageElement, parentElement || document.body)
-        : TooltipMessageElement}
-    </span>
+      {children}
+    </FloatingAnchor>
   );
 };
 

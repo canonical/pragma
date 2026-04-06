@@ -1,0 +1,59 @@
+/* Component tokens — sourced from @canonical/design-tokens */
+:root {
+  --popover-color-background: var(--color-foreground-ghost);
+  --popover-color-background-hover: var(--color-foreground-ghost-hover);
+  --popover-color-background-active: var(--color-foreground-ghost-active);
+  --popover-color-text: var(--color-text);
+  --popover-color-border: var(--color-border-high-contrast);
+  --popover-color-border-hover: var(--popover-color-border);
+  --popover-color-border-active: var(--popover-color-border);
+
+  --popover-border-radius: 0;
+  --popover-padding-vertical: var(--spacing-input-padding-vertical);
+  --popover-padding-horizontal: var(--spacing-horizontal-large);
+  --popover-border-width: var(--spacing-border-width);
+  --popover-font-size: var(--font-size-default);
+  --popover-font-weight: var(--font-weight-default);
+  --popover-line-height: var(--line-height-default);
+}
+
+.ds.popover {
+  color: var(
+    --modifier-color-text,
+    var(--popover-color-text, var(--color-text-default))
+  );
+  background-color: var(
+    --modifier-color-foreground-ghost,
+    var(--popover-color-background, var(--color-background-default))
+  );
+  border-color: var(
+    --modifier-color-border,
+    var(--popover-color-border, transparent)
+  );
+  border-style: solid;
+  border-radius: var(--popover-border-radius);
+  border-width: var(--popover-border-width, 1px);
+  font-size: var(--popover-font-size, var(--font-size-default));
+  font-weight: var(--popover-font-weight, var(--font-weight-default));
+  line-height: var(--popover-line-height, var(--line-height-default));
+  padding-block: var(--popover-padding-vertical, 5px);
+  padding-inline: var(--popover-padding-horizontal, 10px);
+  text-align: left;
+  pointer-events: auto;
+  display: inline-block;
+  transition: opacity 0.1s ease-in-out;
+  position: fixed;
+  overflow: auto;
+
+  &[aria-hidden="true"] {
+    opacity: 0;
+    pointer-events: none;
+    visibility: hidden;
+  }
+
+  &[aria-hidden="false"] {
+    opacity: 1;
+    pointer-events: auto;
+    visibility: visible;
+  }
+}

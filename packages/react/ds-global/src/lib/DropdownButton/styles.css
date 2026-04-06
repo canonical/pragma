@@ -1,0 +1,113 @@
+/* Component tokens — sourced from @canonical/design-tokens */
+:root {
+  --button-color-background: var(--color-foreground-secondary);
+  --button-color-background-hover: var(--color-foreground-secondary-hover);
+  --button-color-background-active: var(--color-foreground-secondary-active);
+  --button-color-text: var(--color-text);
+  --button-color-border: var(--color-border-high-contrast);
+  --button-color-border-hover: var(--button-color-border);
+  --button-color-border-active: var(--button-color-border);
+
+  --button-margin-left: var(--spacing-horizontal-large);
+  --button-margin-bottom: var(--spacing-input-margin-bottom);
+  --button-padding-vertical: var(--spacing-input-padding-vertical);
+  --button-padding-horizontal: var(--spacing-horizontal-large);
+  --button-border-width: var(--spacing-border-width);
+  --button-font-size: var(--font-size-default);
+  --button-font-weight: var(--font-weight-default);
+  --button-line-height: var(--line-height-default);
+}
+
+/* ==========================================================================
+   Button Component Styles
+   ========================================================================== */
+
+/*
+  Modifier channel variables (from @canonical/design-tokens):
+    --modifier-color-foreground-primary  filled background (constructive, destructive, caution)
+    --modifier-color-text                text colour
+    --modifier-color-border              border colour
+    --modifier-color-icon                icon colour
+    --modifier-color-focusRing           focus ring colour
+*/
+
+.ds.dropdown-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+
+  color: var(--modifier-color-text, var(--button-color-text));
+  background-color: var(
+    --modifier-color-foreground-primary,
+    var(--button-color-background)
+  );
+  border-color: var(--modifier-color-border, var(--button-color-border));
+  border-style: solid;
+  border-width: var(--button-border-width);
+
+  font-size: var(--button-font-size);
+  font-weight: var(--button-font-weight);
+  line-height: var(--button-line-height);
+  margin-block-end: var(--button-margin-bottom);
+  margin-inline-end: var(--button-margin-left);
+  padding: var(--dimension-075, 0.375rem) var(--dimension-100, 0.5rem);
+
+  text-align: center;
+  text-decoration: none;
+
+  & .content {
+  	padding-inline: var(--space-100);
+  }
+
+  &:hover:not(:disabled) {
+    background-color: var(--button-color-background-hover);
+    border-color: var(--button-color-border-hover);
+  }
+
+  &:active:not(:disabled) {
+    background-color: var(--button-color-background-active);
+    border-color: var(--button-color-border-active);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+}
+
+.popover {
+	display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+
+  color: var(--modifier-color-text, var(--button-color-text));
+  background-color: var(
+    --modifier-color-foreground-primary,
+    var(--button-color-background)
+  );
+  border-color: var(--modifier-color-border, var(--button-color-border));
+  border-style: solid;
+  border-width: var(--button-border-width);
+
+  font-size: var(--button-font-size);
+  font-weight: var(--button-font-weight);
+  line-height: var(--button-line-height);
+  padding: var(--dimension-075, 0.375rem) var(--dimension-100, 0.5rem);
+
+  text-align: center;
+}
+
+/* ==========================================================================
+   Icon Slot
+   ========================================================================== */
+
+.ds.dropdown-button > .icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: var(--icon-size, 1em);
+  height: var(--icon-size, 1em);
+}

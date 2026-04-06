@@ -1,6 +1,7 @@
 import type {
   CSSProperties,
   FocusEventHandler,
+  MouseEventHandler,
   PointerEventHandler,
   RefObject,
 } from "react";
@@ -10,9 +11,18 @@ import type {
   UseWindowFitmentResult,
 } from "../useWindowFitment/index.js";
 
+/** Determines which interaction opens the popup. */
+export type PopupTrigger = "hover" | "click";
+
 export interface UsePopupProps
   extends UseWindowFitmentProps,
     UseDelayedToggleProps {
+  /**
+   * Which interaction opens the popup.
+   * - `"hover"` (default): opens on pointer-enter / focus, closes on pointer-leave / blur.
+   * - `"click"`: toggles on click, closes on click-outside or Escape.
+   */
+  trigger?: PopupTrigger;
   /** A callback to be called when the target element is focused. */
   onFocus?: FocusEventHandler;
   /** A callback to be called when the target element loses focus. */
@@ -74,4 +84,8 @@ export interface UsePopupResult extends UseWindowFitmentResult {
    * Event handler for when the mouse leaves the target element.
    */
   handleTriggerLeave: PointerEventHandler;
+  /**
+   * Event handler for click-to-toggle trigger mode.
+   */
+  handleTriggerClick: MouseEventHandler;
 }

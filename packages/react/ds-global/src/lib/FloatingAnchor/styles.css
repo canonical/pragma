@@ -1,0 +1,33 @@
+/* FloatingAnchor — generic positioning wrapper for floating content */
+
+.ds.floating-anchor {
+  position: relative;
+
+  & .target {
+    cursor: pointer;
+    position: relative;
+    display: inline-block;
+
+    & > * {
+      /* biome-ignore lint/complexity/noImportantStyles: Targets must have no margin for popup positioning to work correctly */
+      margin: 0 !important;
+    }
+  }
+}
+
+.ds.floating-anchor-content {
+  position: fixed;
+  pointer-events: auto;
+
+  &[aria-hidden="true"] {
+    opacity: 0;
+    pointer-events: none;
+    visibility: hidden;
+  }
+
+  &[aria-hidden="false"] {
+    opacity: 1;
+    pointer-events: auto;
+    visibility: visible;
+  }
+}

@@ -1,5 +1,6 @@
 import {
   type FocusEventHandler,
+  type MouseEventHandler,
   type PointerEventHandler,
   useCallback,
   useEffect,
@@ -33,6 +34,7 @@ const usePopup = ({
   isOpen: isOpenProp,
   deactivateDelay,
   activateDelay,
+  trigger = "hover",
   onEnter,
   onLeave,
   onFocus,
@@ -120,8 +122,44 @@ const usePopup = ({
     };
   }, [close, closeOnEscape, isOpen, isServer]);
 
+  // --- Click trigger: toggle on click ---
+  const handleTriggerClick: MouseEventHandler = useCallback(
+    (event) => {
+      if (isServer) return;
+      if (isOpen) {
+        close(event.nativeEvent);
+      } else {
+        open(event.nativeEvent);
+      }
+    },
+    [isOpen, open, close, isServer],
+  );
+
+  // --- Click trigger: close on click outside ---
+  useEffect(() => {
+    if (isServer || trigger !== "click" || !isOpen) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (
+        targetRef.current?.contains(target) ||
+        popupRef.current?.contains(target)
+      ) {
+        return;
+      }
+      close(event);
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [close, trigger, isOpen, isServer, targetRef, popupRef]);
+
   return {
     handleTriggerBlur,
+    handleTriggerClick,
     handleTriggerEnter,
     handleTriggerFocus,
     handleTriggerLeave,
