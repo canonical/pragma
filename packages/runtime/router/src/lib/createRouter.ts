@@ -928,16 +928,17 @@ export default function createRouter<
     name: RouteName<TRoutes>,
     ...args: unknown[]
   ) => {
-    const intent = createIntent(
-      resolvedRoutes,
-      name,
-      args as unknown as PathBuildArgs<RouteOf<TRoutes, typeof name>>,
-    );
+    const buildArgs = args as unknown as PathBuildArgs<
+      RouteOf<TRoutes, typeof name>
+    >;
+    const intent = createIntent(resolvedRoutes, name, buildArgs);
+    const replace = (buildArgs[0] as { replace?: boolean } | undefined)
+      ?.replace;
 
     if (adapter) {
       saveScrollPosition();
-      syncAdapterLocation(intent.href);
-      void performLoad(intent.href, 0, true, "push").catch(
+      syncAdapterLocation(intent.href, replace ? { replace: true } : undefined);
+      void performLoad(intent.href, 0, true, replace ? "pop" : "push").catch(
         ignoreScheduledLoadError,
       );
     }

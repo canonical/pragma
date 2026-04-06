@@ -20,6 +20,8 @@ import type {
 export type LinkBuildOptions<TRoute extends AnyRoute> = {
   /** Optional URL hash fragment without the leading `#`. */
   readonly hash?: string;
+  /** When true, the navigation replaces the current history entry. */
+  readonly replace?: boolean;
   /** Search data to encode into the destination URL. */
   readonly search?: SearchOf<TRoute>;
 } & (HasParams<TRoute> extends true
@@ -34,6 +36,8 @@ export type LinkProps<
   LinkBuildOptions<RouteOf<TRoutes, TName>> & {
     /** Content rendered inside the generated anchor element. */
     readonly children?: ReactNode;
+    /** Trigger a file download instead of client-side navigation. */
+    readonly download?: string;
     /** Optional click handler called before router interception runs. */
     readonly onClick?: MouseEventHandler<HTMLAnchorElement>;
     /** Optional hover handler called before router prefetching runs. */

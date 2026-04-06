@@ -368,6 +368,8 @@ export type HasParams<TRoute extends AnyRoute> = TRoute extends {
 export type PathBuildOptions<TRoute extends AnyRoute> = {
   readonly search?: NoInfer<SearchOf<TRoute>>;
   readonly hash?: string;
+  /** When true, the navigation replaces the current history entry. */
+  readonly replace?: boolean;
 } & (HasParams<TRoute> extends true
   ? { readonly params: NoInfer<ParamsOf<TRoute>> }
   : { readonly params?: NoInfer<ParamsOf<TRoute>> });

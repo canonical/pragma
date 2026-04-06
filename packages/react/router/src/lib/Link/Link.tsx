@@ -5,17 +5,14 @@ import type {
   RouteOf,
 } from "@canonical/router-core";
 import type { MouseEvent, ReactElement } from "react";
-import { forwardRef, useMemo } from "react";
+import { forwardRef } from "react";
+import useRoute from "../hooks/useRoute.js";
 import useRouter from "../hooks/useRouter.js";
 import type { RegisteredRouteMap } from "../register.js";
 import type { LinkBuildOptions, LinkProps } from "./types.js";
 
 function hasModifierKey(event: MouseEvent<HTMLAnchorElement>): boolean {
   return event.altKey || event.ctrlKey || event.metaKey || event.shiftKey;
-}
-
-function isBuildOptionsEmpty(options: Record<string, unknown>): boolean {
-  return Object.keys(options).length === 0;
 }
 
 function buildOptionsObject(
@@ -33,6 +30,8 @@ function buildOptionsObject(
  * params, search values, and hash. Primary-button clicks are intercepted and
  * routed through `router.navigate()`, while hover prefetches the destination
  * route data through `router.prefetch()`.
+ *
+ * Sets `aria-current="page"` when the link target matches the current location.
  */
 const Link = forwardRef(function Link<
   TRoutes extends RouteMap,
@@ -40,10 +39,12 @@ const Link = forwardRef(function Link<
 >(
   {
     children,
+    download,
     hash,
     onClick,
     onMouseEnter,
     params,
+    replace,
     search,
     target,
     to,
@@ -52,6 +53,7 @@ const Link = forwardRef(function Link<
   forwardedRef: LinkProps<TRoutes, TName>["ref"],
 ): ReactElement {
   const router = useRouter<TRoutes>();
+  const location = useRoute<TRoutes>();
   const buildPath = router.buildPath as (
     name: TName,
     options?: LinkBuildOptions<RouteOf<TRoutes, TName>>,
@@ -64,20 +66,24 @@ const Link = forwardRef(function Link<
     name: TName,
     options?: LinkBuildOptions<RouteOf<TRoutes, TName>>,
   ) => Promise<void>;
-  const buildOptions = useMemo(() => {
-    return buildOptionsObject({
-      hash,
-      params,
-      search,
-    } as LinkBuildOptions<AnyRoute>);
-  }, [hash, params, search]);
-  const href = isBuildOptionsEmpty(buildOptions)
-    ? buildPath(to)
-    : buildPath(to, buildOptions as LinkBuildOptions<RouteOf<TRoutes, TName>>);
+
+  const buildOptions = buildOptionsObject({
+    hash,
+    params,
+    replace,
+    search,
+  } as LinkBuildOptions<AnyRoute>);
+  const hasOptions = Object.keys(buildOptions).length > 0;
+  const href = hasOptions
+    ? buildPath(to, buildOptions as LinkBuildOptions<RouteOf<TRoutes, TName>>)
+    : buildPath(to);
+  const isCurrent = location.pathname === href.split("?")[0].split("#")[0];
 
   return (
     <a
       {...props}
+      aria-current={isCurrent ? "page" : undefined}
+      download={download}
       href={href}
       onClick={(event) => {
         onClick?.(event);
@@ -86,19 +92,22 @@ const Link = forwardRef(function Link<
           event.defaultPrevented ||
           event.button !== 0 ||
           hasModifierKey(event) ||
-          target === "_blank"
+          target === "_blank" ||
+          download !== undefined
         ) {
           return;
         }
 
         event.preventDefault();
 
-        if (isBuildOptionsEmpty(buildOptions)) {
+        if (hasOptions) {
+          navigate(
+            to,
+            buildOptions as LinkBuildOptions<RouteOf<TRoutes, TName>>,
+          );
+        } else {
           navigate(to);
-          return;
         }
-
-        navigate(to, buildOptions as LinkBuildOptions<RouteOf<TRoutes, TName>>);
       }}
       onMouseEnter={(event) => {
         onMouseEnter?.(event);
@@ -107,15 +116,14 @@ const Link = forwardRef(function Link<
           return;
         }
 
-        if (isBuildOptionsEmpty(buildOptions)) {
+        if (hasOptions) {
+          void prefetch(
+            to,
+            buildOptions as LinkBuildOptions<RouteOf<TRoutes, TName>>,
+          );
+        } else {
           void prefetch(to);
-          return;
         }
-
-        void prefetch(
-          to,
-          buildOptions as LinkBuildOptions<RouteOf<TRoutes, TName>>,
-        );
       }}
       ref={forwardedRef}
       target={target}
