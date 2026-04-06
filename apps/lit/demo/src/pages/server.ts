@@ -3,6 +3,10 @@ import { pageLayout } from "./pageLayout.js";
 
 export const serverPage = pageLayout(html`
         <ds-hero title="Scale out with Ubuntu Server"
+            .media=${{
+              src: "https://assets.ubuntu.com/v1/a1dd867d-hero.jpg",
+              alt: "Canonical data centre",
+            }}
             description="Ubuntu Server brings economic and technical scalability to your enterprise data center, public or private cloud. Whether you want to deploy an OpenStack cloud, a Kubernetes cluster, or a 50,000-node render farm, Ubuntu Server delivers the best value scale-out performance available."
         >
             <div slot="cta">
@@ -10,7 +14,6 @@ export const serverPage = pageLayout(html`
                 <ds-button class="constructive">Download Ubuntu Server</ds-button>
                 <a href="/server/hyperscale">See all features</a>
             </div>
-            <img slot="media" src="https://assets.ubuntu.com/v1/a1dd867d-hero.jpg" alt="Canonical data centre" loading="lazy">
         </ds-hero>
 
         <ds-tiered-list title="Why choose Ubuntu Server?">

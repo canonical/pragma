@@ -128,6 +128,8 @@ Adding a page requires a change in three places to keep server and client in syn
 Components are registered separately in each entry point because the server and
 client use different custom element registries.
 
+Note: If you add a new component to `@canonical/lit-ds-prototype`, you must rebuild that package first (`bun run build` in `packages/lit/ds-prototype`) so the component is included in its `dist/esm/index.js` barrel export before the demo can use it.
+
 ## How SSR + hydration works
 
 1. A request hits the Express server
