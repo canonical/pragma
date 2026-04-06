@@ -21,10 +21,14 @@
     "check:biome": "biome check",
     "check:biome:fix": "biome check --write",
     "check:ts": "tsc --noEmit",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "storybook": "storybook dev -p 6010 --no-open --host 0.0.0.0"
   },
   "dependencies": {
     "@canonical/react-ds-global": "^0.22.0",
+    "@canonical/router-core": "^0.22.0",
+    "@canonical/router-react": "^0.22.0",
     "@canonical/react-ssr": "^0.22.0",
     "@canonical/storybook-config": "^0.22.0",
     "@canonical/styles": "^0.22.0",
@@ -45,6 +49,7 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.0",
+    "@vitest/coverage-v8": "4.1.2",
     "globals": "^17.4.0",
     "storybook": "^10.3.1",
     "typescript": "^5.9.3",
