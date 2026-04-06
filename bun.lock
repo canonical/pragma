@@ -821,9 +821,9 @@
       "version": "0.22.0",
       "devDependencies": {
         "@biomejs/biome": "2.4.9",
-        "@canonical/biome-config": "^0.21.0",
-        "@canonical/typescript-config": "^0.21.0",
-        "@canonical/webarchitect": "^0.21.0",
+        "@canonical/biome-config": "^0.22.0",
+        "@canonical/typescript-config": "^0.22.0",
+        "@canonical/webarchitect": "^0.22.0",
         "@types/bun": "^1.3.10",
         "@types/node": "^24.12.0",
         "typescript": "^5.9.3",
@@ -1091,6 +1091,24 @@
         "typescript": "^5.9.3",
       },
     },
+    "packages/summon/application": {
+      "name": "@canonical/summon-application",
+      "version": "0.22.0",
+      "devDependencies": {
+        "@biomejs/biome": "2.4.9",
+        "@canonical/biome-config": "^0.22.0",
+        "@canonical/typescript-config": "^0.22.0",
+        "@canonical/typescript-config-react": "^0.22.0",
+        "@types/bun": "^1.3.10",
+        "@types/node": "^24.12.0",
+        "typescript": "^5.9.3",
+        "vitest": "^4.0.18",
+      },
+      "peerDependencies": {
+        "@canonical/summon-core": "^0.22.0",
+        "@canonical/task": "^0.22.0",
+      },
+    },
     "packages/summon/component": {
       "name": "@canonical/summon-component",
       "version": "0.22.0",
@@ -1116,16 +1134,16 @@
       "name": "@canonical/summon-core",
       "version": "0.22.0",
       "dependencies": {
-        "@canonical/task": "^0.21.0",
-        "@canonical/utils": "^0.21.0",
+        "@canonical/task": "^0.22.0",
+        "@canonical/utils": "^0.22.0",
         "chalk": "^5.6.2",
         "ejs": "^5.0.0",
       },
       "devDependencies": {
         "@biomejs/biome": "2.4.9",
-        "@canonical/biome-config": "^0.21.0",
-        "@canonical/typescript-config": "^0.21.0",
-        "@canonical/webarchitect": "^0.21.0",
+        "@canonical/biome-config": "^0.22.0",
+        "@canonical/typescript-config": "^0.22.0",
+        "@canonical/webarchitect": "^0.22.0",
         "@types/bun": "^1.3.10",
         "@types/ejs": "^3.1.5",
         "@types/node": "^24.12.0",
@@ -1440,6 +1458,8 @@
     "@canonical/styles-typography": ["@canonical/styles-typography@workspace:packages/styles/typography"],
 
     "@canonical/summon": ["@canonical/summon@workspace:packages/cli/summon"],
+
+    "@canonical/summon-application": ["@canonical/summon-application@workspace:packages/summon/application"],
 
     "@canonical/summon-component": ["@canonical/summon-component@workspace:packages/summon/component"],
 
