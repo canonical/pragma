@@ -406,6 +406,9 @@ describe("createRouter", () => {
       redirectTo: "/",
       status: 308,
     });
+    // Wildcard redirects replace the entire path with the target — the
+    // trailing segments after `*` are intentionally dropped. If a consumer
+    // needs to preserve them they should use a fetch-time redirect instead.
     expect(router.match("/legacy/2020/intro")).toMatchObject({
       kind: "redirect",
       name: "wildcardRedirect",
@@ -1637,5 +1640,53 @@ describe("createRouter", () => {
     }).toThrow(
       "Route 'broken' contains wrapper id 'app:layout' more than once.",
     );
+  });
+
+  it("aborts in-flight loads when dispose is called", async () => {
+    let capturedSignal: AbortSignal | undefined;
+
+    const slowRoute = route({
+      url: "/slow",
+      fetch: async (
+        _params: Record<string, never>,
+        _search: unknown,
+        context: { signal: AbortSignal },
+      ) => {
+        capturedSignal = context.signal;
+
+        return new Promise((resolve, reject) => {
+          const timer = setTimeout(resolve, 60_000);
+
+          context.signal.addEventListener("abort", () => {
+            clearTimeout(timer);
+            reject(new DOMException("Aborted", "AbortError"));
+          });
+        });
+      },
+      content: () => "slow",
+    });
+
+    const adapter = createMemoryAdapter("/");
+    const router = createRouter(
+      { slow: slowRoute },
+      { adapter },
+    );
+
+    const loadPromise = router.load("/slow");
+
+    expect(capturedSignal).toBeDefined();
+    expect(capturedSignal?.aborted).toBe(false);
+
+    router.dispose();
+
+    expect(capturedSignal?.aborted).toBe(true);
+
+    // The load may resolve (router catches AbortError internally) or reject
+    // depending on timing. Either way, the signal was aborted.
+    try {
+      await loadPromise;
+    } catch {
+      // AbortError propagation is acceptable
+    }
   });
 });

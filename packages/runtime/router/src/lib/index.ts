@@ -7,7 +7,7 @@ export { default as createServerAdapter } from "./createServerAdapter.js";
 export { default as createSubject } from "./createSubject.js";
 export { default as createTrackedLocation } from "./createTrackedLocation.js";
 export { default as group } from "./group.js";
-export { default as Redirect } from "./Redirect.js";
+export { default as Redirect } from "./RouteRedirect.js";
 export { default as redirect } from "./redirect.js";
 export { default as route } from "./route.js";
 export { default as StatusResponse } from "./StatusResponse.js";

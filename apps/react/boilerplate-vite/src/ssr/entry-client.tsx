@@ -6,20 +6,16 @@ import "../Application.css";
 import "../index.css";
 import Shell from "./Shell.js";
 
-const router = createHydratedAppRouter(window);
+const router = createHydratedAppRouter();
 
 hydrateRoot(
   document,
-  <Shell
-    lang={document.documentElement.lang || "en"}
-    navigation={
-      <RouterProvider router={router}>
-        <Navigation />
-      </RouterProvider>
-    }
-  >
-    <RouterProvider router={router}>
+  <RouterProvider router={router}>
+    <Shell
+      lang={document.documentElement.lang || "en"}
+      navigation={<Navigation />}
+    >
       <Outlet fallback={<p className="route-fallback">Loading route…</p>} />
-    </RouterProvider>
-  </Shell>,
+    </Shell>
+  </RouterProvider>,
 );

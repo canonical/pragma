@@ -82,6 +82,45 @@ describe("Link", () => {
     expect(router.getState().location.href).toBe("/");
   });
 
+  it("does not intercept clicks with altKey, ctrlKey, or shiftKey modifiers", () => {
+    const router = createRouter(routes, {
+      adapter: createMemoryAdapter("/"),
+    });
+
+    render(
+      <RouterProvider router={router}>
+        <Link<typeof routes> to="users">Users</Link>
+      </RouterProvider>,
+    );
+
+    const link = screen.getByRole("link", { name: "Users" });
+
+    for (const modifier of ["altKey", "ctrlKey", "shiftKey"] as const) {
+      fireEvent.click(link, { [modifier]: true });
+      expect(router.getState().location.href).toBe("/");
+    }
+  });
+
+  it("does not intercept clicks when target is _blank", () => {
+    const router = createRouter(routes, {
+      adapter: createMemoryAdapter("/"),
+    });
+
+    render(
+      <RouterProvider router={router}>
+        <Link<typeof routes> target="_blank" to="users">
+          Users
+        </Link>
+      </RouterProvider>,
+    );
+
+    const link = screen.getByRole("link", { name: "Users" });
+
+    fireEvent.click(link);
+
+    expect(router.getState().location.href).toBe("/");
+  });
+
   it("passes params, search, and hash to navigation helpers and skips prevented hovers", async () => {
     const optionPreloadSpy = vi.fn(async () => ({ default: "UserPage" }));
     const optionFetchSpy = vi.fn(

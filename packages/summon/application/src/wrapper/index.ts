@@ -1,12 +1,12 @@
 import * as path from "node:path";
-import type { GeneratorDefinition, PromptDefinition } from "../../../core/src/index.js";
+import type { GeneratorDefinition, PromptDefinition } from "@canonical/summon-core";
 import {
   appendFile,
   info,
   mkdir,
   sequence_,
   writeFile,
-} from "../../../../runtime/task/src/index.js";
+} from "@canonical/task";
 import pkg from "../../package.json" with { type: "json" };
 import { normalizeCommandPath, toCamelCase, toTitleCase } from "../shared/casing.js";
 

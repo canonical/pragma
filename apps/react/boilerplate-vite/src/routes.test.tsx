@@ -69,7 +69,7 @@ describe("app routes", () => {
       serverRouter.dehydrate();
     window.history.replaceState({}, "", "/guides/router-core");
 
-    const router = createHydratedAppRouter(window);
+    const router = createHydratedAppRouter();
 
     render(<div>{router.render() as ReactNode}</div>);
 
@@ -114,19 +114,21 @@ describe("app routes", () => {
     const wrappedProtectedRoute = middleware(bareProtectedRoute);
 
     expect(wrappedPublicRoute).toBe(publicRoute);
+
+    // Call the middleware-wrapped fetch directly. The middleware operates on
+    // `unknown` params/search internally, so we cast to exercise the auth
+    // check paths without satisfying the route's own strict param types.
+    const fetch = wrappedProtectedRoute.fetch as (
+      params: unknown,
+      search: unknown,
+      context: { signal: AbortSignal },
+    ) => Promise<unknown>;
+
     await expect(
-      wrappedProtectedRoute.fetch?.(
-        {},
-        { auth: "1" },
-        { signal: new AbortController().signal },
-      ),
+      fetch({}, { auth: "1" }, { signal: new AbortController().signal }),
     ).resolves.toBeNull();
     await expect(
-      wrappedProtectedRoute.fetch?.(
-        undefined,
-        {},
-        { signal: new AbortController().signal },
-      ),
+      fetch({}, {}, { signal: new AbortController().signal }),
     ).rejects.toMatchObject({
       status: 302,
       to: "/login?from=%2Faccount",

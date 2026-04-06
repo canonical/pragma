@@ -74,18 +74,16 @@ import {
 } from "@canonical/router-react";
 
 function Navigation() {
-  const navigationState = useNavigationState<typeof routes>();
-  const location = useRoute<typeof routes>();
-  const status = useRouterState<typeof routes>((state) => state.match?.status ?? 404);
-  const tab = useSearchParam<typeof routes>("tab");
-  const search = useSearchParams<typeof routes>();
+  const navigationState = useNavigationState();
+  const location = useRoute();
+  const status = useRouterState((state) => state.match?.status ?? 404);
+  const tab = useSearchParam("tab");
+  const search = useSearchParams();
 
   return (
     <nav>
-      <Link<typeof routes> to="home">
-        Home
-      </Link>
-      <Link<typeof routes> params={{ slug: "getting-started" }} to="docs">
+      <Link to="home">Home</Link>
+      <Link params={{ slug: "getting-started" }} to="docs">
         Docs
       </Link>
       <span>{navigationState}</span>
@@ -97,6 +95,18 @@ function Navigation() {
   );
 }
 ```
+
+All hooks and `Link` default to `RegisteredRouteMap`. Register your route map once in your router file to get full type inference without explicit generics:
+
+```ts
+declare module "@canonical/router-react" {
+  interface RouterRegister {
+    routes: typeof appRoutes;
+  }
+}
+```
+
+Explicit generics (`<typeof routes>`) still work as an escape hatch for multi-router apps or library code.
 
 Important distinction:
 

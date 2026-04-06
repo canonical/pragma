@@ -1,9 +1,19 @@
-import type { ReadableStream } from "node:stream/web";
 import { INITIAL_DATA_KEY } from "@canonical/react-ssr/renderer/constants";
 import type { AnyRoute, RouteMap, Router } from "@canonical/router-core";
 import { renderToReadableStream } from "react-dom/server";
 import ServerRouter from "./ServerRouter/ServerRouter.js";
 import type { RenderToStreamOptions, RenderToStreamResult } from "./types.js";
+
+/**
+ * Serialize data as JSON with characters escaped that could break an inline
+ * `<script>` context (`<`, `>`, U+2028, U+2029).
+ */
+function safeJsonStringify(data: unknown): string {
+  return JSON.stringify(data).replace(
+    /[<>\u2028\u2029]/g,
+    (c) => `\\u${c.charCodeAt(0).toString(16).padStart(4, "0")}`,
+  );
+}
 
 /**
  * Load a URL into a router and stream the matched React output.
@@ -33,7 +43,7 @@ export default async function renderToStream<
 
   return {
     bootstrapScriptContent: initialData
-      ? `window.${INITIAL_DATA_KEY} = ${JSON.stringify(initialData)}`
+      ? `window.${INITIAL_DATA_KEY} = ${safeJsonStringify(initialData)}`
       : null,
     initialData,
     loadResult,

@@ -1,4 +1,3 @@
-import type { ReadableStream } from "node:stream/web";
 import { createRouter, route } from "@canonical/router-core";
 import { renderToReadableStream } from "react-dom/server";
 import { describe, expect, it } from "vitest";

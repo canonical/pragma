@@ -1,5 +1,5 @@
 import * as path from "node:path";
-import type { GeneratorDefinition, PromptDefinition } from "../../../../core/src/index.js";
+import type { GeneratorDefinition, PromptDefinition } from "@canonical/summon-core";
 import {
   debug,
   exec,
@@ -9,7 +9,7 @@ import {
   sequence_,
   when,
   writeFile,
-} from "../../../../../runtime/task/src/index.js";
+} from "@canonical/task";
 import pkg from "../../../package.json" with { type: "json" };
 
 interface ApplicationAnswers {
@@ -277,15 +277,14 @@ export default function Shell({ children }: ShellProps): ReactElement {
 
 const navigationTsx = `import { Link } from "@canonical/router-react";
 import type { ReactElement } from "react";
-import type { AppRoutes } from "./router.js";
 
 export default function Navigation(): ReactElement {
   return (
     <nav aria-label="Primary" className="shell-nav">
-      <Link<AppRoutes> to="home">
+      <Link to="home">
         Home
       </Link>
-      <Link<AppRoutes> to="about">
+      <Link to="about">
         About
       </Link>
     </nav>
@@ -399,13 +398,14 @@ export const appRoutes = {
 export default appRoutes;
 `;
 
-const routerTsx = `// @ts-nocheck
-import {
+const routerTsx = `import {
   type AnyRoute,
   createRouter,
   type NavigationContext,
-  route,
+  type RouteMap,
+  type RouteMiddleware,
   type RouterDehydratedState,
+  route,
 } from "@canonical/router-core";
 import { createHydratedRouter } from "@canonical/router-react";
 import type { ReactElement } from "react";
@@ -414,8 +414,14 @@ import appRoutes from "./routes/index.js";
 export type AppRoutes = typeof appRoutes;
 export type AppInitialData = RouterDehydratedState<AppRoutes>;
 
-export function withI18n(defaultLocale: string): any {
-  return (currentRoute: AnyRoute) => {
+declare module "@canonical/router-react" {
+  interface RouterRegister {
+    routes: AppRoutes;
+  }
+}
+
+export function withI18n(defaultLocale: string): RouteMiddleware {
+  return ((currentRoute: AnyRoute) => {
     const currentFetch = currentRoute.fetch;
 
     if (!currentFetch) {
@@ -431,7 +437,7 @@ export function withI18n(defaultLocale: string): any {
         }, context);
       },
     };
-  };
+  }) as RouteMiddleware;
 }
 
 const notFoundRoute = route({
@@ -449,17 +455,18 @@ const notFoundRoute = route({
   },
 });
 
-export function createServerAppRouter(initialData?: AppInitialData) {
+export function createServerAppRouter(
+  initialData?: RouterDehydratedState<RouteMap>,
+) {
   return createRouter(appRoutes, {
-    hydratedState: initialData as RouterDehydratedState<any>,
+    hydratedState: initialData,
     middleware: [withI18n("en")],
     notFound: notFoundRoute,
   });
 }
 
-export function createHydratedAppRouter(browserWindow?: Window) {
+export function createHydratedAppRouter() {
   return createHydratedRouter(appRoutes, {
-    browserWindow: browserWindow as any,
     middleware: [withI18n("en")],
     notFound: notFoundRoute,
   });
@@ -501,7 +508,7 @@ import { createHydratedAppRouter } from "../router.js";
 import "../Application.css";
 import "../index.css";
 
-const router = createHydratedAppRouter(window);
+const router = createHydratedAppRouter();
 
 hydrateRoot(
   document,
@@ -513,15 +520,18 @@ hydrateRoot(
 );
 `;
 
-const entryServerTsx = `// @ts-nocheck
-import type { ServerEntrypoint } from "@canonical/react-ssr/renderer";
+const entryServerTsx = `import type { ServerEntrypoint } from "@canonical/react-ssr/renderer";
+import type { RouterDehydratedState, RouteMap } from "@canonical/router-core";
 import { RouterProvider, ServerRouter } from "@canonical/router-react";
 import Shell from "../Shell.js";
-import { createServerAppRouter, type AppInitialData } from "../router.js";
+import { createServerAppRouter } from "../router.js";
 import Document from "./Document.js";
 
 const EntryServer: ServerEntrypoint<Record<string, unknown>> = (props) => {
-  const router = createServerAppRouter(props.initialData as AppInitialData | undefined);
+  const initialData = props.initialData as
+    | RouterDehydratedState<RouteMap>
+    | undefined;
+  const router = createServerAppRouter(initialData);
 
   return (
     <Document {...props}>

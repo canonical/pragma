@@ -1,14 +1,18 @@
-// @ts-nocheck
 import {
   type AnyRoute,
   createRouter,
+  group,
   type NavigationContext,
+  type RouteMap,
+  type RouteMiddleware,
   type RouteParamValues,
+  type RouterDehydratedState,
   redirect,
   route,
+  wrapper,
 } from "@canonical/router-core";
 import { createHydratedRouter } from "@canonical/router-react";
-import type { ReactElement } from "react";
+import type { ReactElement, ReactNode } from "react";
 import accountRoutes from "./domains/account/routes.js";
 import marketingRoutes from "./domains/marketing/routes.js";
 
@@ -51,8 +55,8 @@ export function getAuthRedirectHref(input: string | URL): string | null {
   return `/login?from=${encodeURIComponent(url.pathname)}`;
 }
 
-export function withAuth(loginPath: string): any {
-  return (currentRoute: AnyRoute) => {
+export function withAuth(loginPath: string): RouteMiddleware {
+  return ((currentRoute: AnyRoute) => {
     if (!protectedPaths.has(currentRoute.url)) {
       return currentRoute;
     }
@@ -81,23 +85,34 @@ export function withAuth(loginPath: string): any {
         return null;
       },
     };
-  };
+  }) as RouteMiddleware;
 }
 
+const publicLayout = wrapper<void, ReactElement>({
+  id: "public-layout",
+  component: ({ children }: { children: ReactNode }): ReactElement => (
+    <div className="public-layout">{children}</div>
+  ),
+});
+
+const [guide, home] = group(publicLayout, [
+  marketingRoutes.guide,
+  marketingRoutes.home,
+] as const);
+
 export const appRoutes = {
-  ...marketingRoutes,
+  guide,
+  home,
   ...accountRoutes,
 } as const;
 
 export type AppRoutes = typeof appRoutes;
+export type AppInitialData = RouterDehydratedState<AppRoutes>;
 
-export interface AppInitialData extends Record<string, unknown> {
-  readonly href: string;
-  readonly kind: "route" | "not-found" | "unmatched";
-  readonly routeData: unknown;
-  readonly routeId: keyof typeof appRoutes | null;
-  readonly status: number;
-  readonly wrapperData: Readonly<Record<string, unknown>>;
+declare module "@canonical/router-react" {
+  interface RouterRegister {
+    routes: AppRoutes;
+  }
 }
 
 const notFoundRoute = route({
@@ -115,20 +130,21 @@ const notFoundRoute = route({
   },
 });
 
-export function createServerAppRouter(initialData?: AppInitialData) {
+export function createServerAppRouter(
+  initialData?: RouterDehydratedState<RouteMap>,
+) {
   return createRouter(appRoutes, {
-    hydratedState: initialData as any,
+    hydratedState: initialData,
     middleware: [withAuth("/login")],
     notFound: notFoundRoute,
-  } as any);
+  });
 }
 
-export function createHydratedAppRouter(browserWindow?: Window) {
+export function createHydratedAppRouter() {
   return createHydratedRouter(appRoutes, {
-    browserWindow: browserWindow as any,
     middleware: [withAuth("/login")],
     notFound: notFoundRoute,
-  } as any);
+  });
 }
 
 export function normalizeRequestHref(input: string | URL): string {

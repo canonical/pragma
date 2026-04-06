@@ -1,4 +1,3 @@
-import type { ReadableStream } from "node:stream/web";
 import type {
   AnyRoute,
   RouteMap,

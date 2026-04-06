@@ -1,6 +1,5 @@
 import { Link } from "@canonical/router-react";
 import type { ReactElement } from "react";
-import type { AppRoutes } from "./routes.js";
 
 export default function Navigation(): ReactElement {
   return (
@@ -13,12 +12,12 @@ export default function Navigation(): ReactElement {
         </p>
       </div>
       <nav aria-label="Primary" className="shell-nav">
-        <Link<AppRoutes> to="home">Home</Link>
-        <Link<AppRoutes> params={{ slug: "router-core" }} to="guide">
+        <Link to="home">Home</Link>
+        <Link params={{ slug: "router-core" }} to="guide">
           Guide
         </Link>
-        <Link<AppRoutes> to="account">Protected account</Link>
-        <Link<AppRoutes> search={{ auth: "1" }} to="account">
+        <Link to="account">Protected account</Link>
+        <Link search={{ auth: "1" }} to="account">
           Demo sign-in
         </Link>
       </nav>

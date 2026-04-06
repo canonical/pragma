@@ -45,7 +45,9 @@ function withAuth(loginPath: string) {
     return {
       ...currentRoute,
       fetch: async (params, search, context) => {
-        if (search.auth !== "1") {
+        const record = search as Record<string, unknown>;
+
+        if (record.auth !== "1") {
           const from = currentRoute.render((params ?? {}) as Record<string, string>);
           redirect(`${loginPath}?from=${encodeURIComponent(from)}`, 302);
         }

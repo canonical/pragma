@@ -40,4 +40,27 @@ describe("createMemoryAdapter", () => {
     });
     expect(listener).toHaveBeenCalledTimes(6);
   });
+
+  it("reports the correct location after each navigation step", () => {
+    const adapter = createMemoryAdapter("/start");
+
+    adapter.navigate("/first");
+
+    expect(adapter.getLocation().pathname).toBe("/first");
+
+    adapter.navigate("/second?tab=1");
+
+    expect(adapter.getLocation().pathname).toBe("/second");
+    expect(adapter.getLocation().search).toBe("?tab=1");
+
+    adapter.back();
+
+    expect(adapter.getLocation().pathname).toBe("/first");
+    expect(adapter.getLocation().search).toBe("");
+
+    adapter.forward();
+
+    expect(adapter.getLocation().pathname).toBe("/second");
+    expect(adapter.getLocation().search).toBe("?tab=1");
+  });
 });

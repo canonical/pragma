@@ -5,7 +5,7 @@ import ViewTransitionManager from "../a11y/ViewTransitionManager.js";
 import buildUrl from "./buildUrl.js";
 import createRouterStore from "./createRouterStore.js";
 import { matchPath, renderPattern, splitPathSegments } from "./pathUtils.js";
-import Redirect from "./Redirect.js";
+import RouteRedirect from "./RouteRedirect.js";
 import StatusResponse from "./StatusResponse.js";
 import type {
   AnyRoute,
@@ -837,7 +837,7 @@ export default function createRouter<
         const failure = thrownError as LoadFailure;
         const redirectError = failure.error ?? thrownError;
 
-        if (redirectError instanceof Redirect) {
+        if (redirectError instanceof RouteRedirect) {
           await prefetchHref(redirectError.to, redirectDepth + 1);
           return;
         }
@@ -1102,7 +1102,7 @@ export default function createRouter<
               source: "route" as const,
             };
 
-      if (failure.error instanceof Redirect) {
+      if (failure.error instanceof RouteRedirect) {
         abortController.abort();
         const redirectedResult = await performLoad(
           failure.error.to,

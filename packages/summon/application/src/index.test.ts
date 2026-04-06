@@ -1,4 +1,4 @@
-import { dryRun, type Effect } from "../../../runtime/task/src/index.js";
+import { dryRun, type Effect } from "@canonical/task";
 import { describe, expect, it } from "vitest";
 import { generators } from "./index.js";
 

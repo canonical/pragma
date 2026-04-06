@@ -78,7 +78,7 @@ interface RouteErrorProps<TPath extends string, TSearch> {
    readonly url: string;
 }
 
-interface DataRouteInput<TPath extends string, TSearchSchema, TData, TRendered> {
+interface DataRouteInput<TPath extends string, TSearchSchema, TData, TRendered, TWrappers extends readonly AnyWrapper[] = readonly []> {
    readonly url: TPath;
    readonly content: (props: RouteContentProps<...>) => TRendered;
    readonly fetch?: (
@@ -105,6 +105,21 @@ Practical reading:
 - `fetch` always receives `params`, `search`, and an abort `signal`
 - route `error` receives the thrown error, resolved status, params, search, and failing URL
 - static redirect routes are declaration-time redirects; dynamic redirects belong in `fetch()` via `redirect()`
+
+##### Lazy content and `content.preload`
+
+The content leg is the code-splitting boundary. Assign a dynamic import to `content` and attach a `preload` method so the router can prefetch the module on hover:
+
+```ts
+const lazyContent = Object.assign(
+  (props: RouteContentProps<...>) => import("./Page.js").then(m => m.default(props)),
+  { preload: () => import("./Page.js") },
+);
+
+route({ url: "/page", content: lazyContent });
+```
+
+When `prefetch()` is called (e.g. on link hover), the router calls `content.preload()` if present. The returned promise resolves the module so subsequent renders hit the module cache instead of triggering a network request.
 
 #### `wrapper(definition)`
 
@@ -205,9 +220,15 @@ The redirect error class thrown by `redirect()`.
 
 You normally do not instantiate this directly in app code.
 
-#### `StatusResponse`
+#### `StatusResponse<TData = unknown>`
 
-Error helper with an HTTP-like status code.
+Error helper with an HTTP-like status code and optional typed data.
+
+```ts
+new StatusResponse(status: number, data?: TData)
+```
+
+Properties: `status: number`, `data: TData | undefined`.
 
 Use it when a route or wrapper should fail with a structured status that can be rendered by route- or wrapper-level error boundaries.
 
@@ -300,9 +321,16 @@ Creates a static adapter for one server request URL.
 
 Use it when you want router matching and loading against an explicit server request location, without client-side navigation.
 
-#### `createRouterStore(routes, notFound?)`
+#### `createRouterStore(resolveMatch, initialUrl?)`
 
 Low-level state store used by the router implementation.
+
+```ts
+createRouterStore(
+  resolveMatch: (input: string | URL) => RouterMatch | null,
+  initialUrl: string | URL = "/",
+): RouterStore
+```
 
 Most app code should not call this directly. Reach for it only when you are extending router internals or building alternate bindings.
 
@@ -346,9 +374,9 @@ The router instance is the runtime boundary between route definitions and UI bin
 
 | Member | Meaning |
 |---|---|
-| `buildPath(name, options?)` | Builds a concrete href from route name, params, search, and hash. |
-| `navigate(name, options?)` | Builds a typed navigation intent and performs adapter navigation when available. |
-| `prefetch(name, options?)` | Preloads the route module and data. |
+| `buildPath(name, options?)` | Builds a concrete href from route name, params, search, and hash. Options are required when the route has path params (`HasParams<TRoute> extends true`). |
+| `navigate(name, options?)` | Builds a typed navigation intent and performs adapter navigation when available. Options are required when the route has path params. Supports `replace: boolean` to use `replaceState` instead of `pushState`. |
+| `prefetch(name, options?)` | Preloads the route module and data. Options are required when the route has path params. |
 | `load(url)` | Matches and resolves route data plus wrapper data for a URL. |
 | `render(result?)` | Renders the currently loaded match tree. |
 
@@ -656,11 +684,15 @@ Runtime exports:
 - `createServerAdapter`
 - `createSubject`
 - `createTrackedLocation`
+- `FocusManager`
 - `group`
 - `Redirect`
 - `redirect`
 - `route`
+- `RouteAnnouncer`
+- `ScrollManager`
 - `StatusResponse`
+- `ViewTransitionManager`
 - `wrapper`
 
 In addition, all public types are re-exported from `types.ts`.
@@ -891,6 +923,31 @@ Signature:
 function useNavigationState<TRoutes, TNotFound>(): "idle" | "loading"
 ```
 
+#### `useRouterState()`
+
+Power-user hook for subscribing to `router.getState()`.
+
+It supports two modes:
+
+- no selector: return the full `RouterState`
+- selector: return only the selected slice
+
+If your selector returns structured objects, pass `isEqual` to preserve the
+previous selection when the new value is semantically unchanged.
+
+Signatures:
+
+```ts
+function useRouterState<TRoutes, TNotFound>(): RouterState<TRoutes, TNotFound>
+
+function useRouterState<TRoutes, TNotFound, TSelected>(
+   selector: (state: RouterState<TRoutes, TNotFound>) => TSelected,
+   options?: {
+      isEqual?: (previous: TSelected, next: TSelected) => boolean;
+   },
+): TSelected
+```
+
 #### `useRoute()`
 
 Returns a tracked location proxy backed by the current router state.
@@ -928,6 +985,26 @@ Signature:
 function useSearchParam<TRoutes, TNotFound>(key: string): string | null
 ```
 
+#### `useSearchParams()`
+
+Subscribes to all search params or to a fixed subset of keys.
+
+Use it in one of two ways:
+
+- no arguments: return `URLSearchParams` and re-render for any query-string change
+- keyed selection: return an object of selected key/value pairs and re-render
+   only when one of those keys changes
+
+Signatures:
+
+```ts
+function useSearchParams<TRoutes, TNotFound>(): URLSearchParams
+
+function useSearchParams<TRoutes, TNotFound, TKeys extends readonly string[]>(
+   keys: TKeys,
+): Readonly<{ [K in TKeys[number]]: string | null }>
+```
+
 ### React package types
 
 | Type | Meaning |
@@ -944,6 +1021,8 @@ function useSearchParam<TRoutes, TNotFound>(key: string): string | null
 | `CreateHydratedRouterOptions` | `RouterOptions` plus optional `browserWindow`. |
 | `CreateHydratedRouterWindow` | Alias of `HydrationWindow`. |
 | `HydratedNavigationState` | Alias of core `RouterNavigationState`. |
+| `SearchParamValues` | Mapped values returned by keyed `useSearchParams()`. |
+| `UseRouterStateOptions` | Equality options for `useRouterState()`. |
 
 ### What is actually exported from `@canonical/router-react`
 
@@ -958,7 +1037,9 @@ Runtime exports:
 - `useNavigationState`
 - `useRoute`
 - `useRouter`
+- `useRouterState`
 - `useSearchParam`
+- `useSearchParams`
 
 In addition, all public React-facing types are re-exported from `types.ts`.
 

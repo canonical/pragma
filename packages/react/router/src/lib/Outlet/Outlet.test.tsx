@@ -45,4 +45,51 @@ describe("Outlet", () => {
       expect(screen.getByText("lazy")).toBeTruthy();
     });
   });
+
+  it("renders the not-found route when the URL is unmatched", async () => {
+    const notFoundRoute = route({
+      url: "/404",
+      content: () => <span>not found</span>,
+    });
+
+    const router = createRouter(routes, {
+      adapter: createMemoryAdapter("/unknown"),
+      notFound: notFoundRoute,
+    });
+
+    await router.load("/unknown");
+
+    render(
+      <RouterProvider router={router}>
+        <Outlet />
+      </RouterProvider>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("not found")).toBeTruthy();
+    });
+  });
+
+  it("renders nothing when no route has been loaded", () => {
+    const emptyRoutes = {
+      page: route({
+        url: "/page",
+        content: () => <span>page</span>,
+      }),
+    };
+
+    const router = createRouter(emptyRoutes, {
+      adapter: createMemoryAdapter("/unmatched"),
+    });
+
+    const { container } = render(
+      <RouterProvider router={router}>
+        <Outlet fallback={<span>loading</span>} />
+      </RouterProvider>,
+    );
+
+    // No load has been called and the URL doesn't match, so Outlet is empty.
+    expect(screen.queryByText("page")).toBeNull();
+    expect(container).toBeTruthy();
+  });
 });

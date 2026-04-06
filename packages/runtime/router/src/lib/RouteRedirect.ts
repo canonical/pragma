@@ -1,5 +1,5 @@
 /** Throwable redirect value used to short-circuit navigation. */
-export default class Redirect {
+export default class RouteRedirect {
   readonly to: string;
   readonly status: 301 | 302 | 307 | 308;
 
