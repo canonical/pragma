@@ -1,4 +1,4 @@
-export interface ButtonLinkProps {
+export interface LinkProps {
   /** URL the link points to. */
   href?: string;
   /**
@@ -15,4 +15,4 @@ export interface ButtonLinkProps {
   ariaLabel?: string | null;
 }
 
-export default ButtonLinkProps;
+export default LinkProps;

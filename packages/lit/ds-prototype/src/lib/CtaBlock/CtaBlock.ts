@@ -11,14 +11,14 @@ const componentCssClassName = "ds cta-block";
  * all three slots — empty slots generate no box in flex layout so partial
  * content works without any JavaScript or slot detection.
  *
- * Pair with `ds-button-link` for the appropriate visual variant:
- * - `primary` slot → `<ds-button-link variant="primary">`
- * - `secondary` slot → `<ds-button-link variant="secondary">`
- * - `link` slot → `<ds-button-link>` (default plain link)
+ * Pair with `ds-link` for the appropriate visual variant:
+ * - `primary` slot → `<ds-link variant="primary">`
+ * - `secondary` slot → `<ds-link variant="secondary">`
+ * - `link` slot → `<ds-link>` (default plain link)
  *
- * @slot primary - Primary (constructive) action, typically a `ds-button-link`.
- * @slot secondary - Secondary action, typically a `ds-button-link`.
- * @slot link - Plain text link action, typically a `ds-button-link`.
+ * @slot primary - Primary (constructive) action, typically a `ds-link`.
+ * @slot secondary - Secondary action, typically a `ds-link`.
+ * @slot link - Plain text link action, typically a `ds-link`.
  *
  * @implements ds:global.component.cta-block
  */

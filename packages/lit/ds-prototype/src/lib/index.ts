@@ -1,6 +1,6 @@
 export * from "./BasicSection/index.js";
 export * from "./Button/index.js";
-export * from "./ButtonLink/index.js";
+export * from "./Link/index.js";
 export * from "./CtaBlock/index.js";
 export * from "./CtaSection/index.js";
 export * from "./Example/index.js";

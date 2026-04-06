@@ -1,12 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import "./ButtonLink.js";
-import type ButtonLink from "./ButtonLink.js";
+import "./Link.js";
+import type Link from "./Link.js";
 
-describe("ButtonLink component", () => {
-  let elem: ButtonLink;
+describe("Link component", () => {
+  let elem: Link;
 
   beforeEach(() => {
-    elem = document.createElement("ds-button-link") as ButtonLink;
+    elem = document.createElement("ds-link") as Link;
     document.body.appendChild(elem);
   });
 
@@ -15,14 +15,14 @@ describe("ButtonLink component", () => {
   });
 
   it("should render component", async () => {
-    await customElements.whenDefined("ds-button-link");
+    await customElements.whenDefined("ds-link");
 
-    const anchor = elem.shadowRoot?.querySelector("a.ds.button-link");
+    const anchor = elem.shadowRoot?.querySelector("a.ds.link");
     expect(anchor).toBeTruthy();
   });
 
   it("should have correct tag name", () => {
-    expect(elem.tagName.toLowerCase()).toBe("ds-button-link");
+    expect(elem.tagName.toLowerCase()).toBe("ds-link");
   });
 
   it("should render an anchor element", async () => {

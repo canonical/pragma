@@ -36,14 +36,14 @@ describe("CtaBlock component", () => {
     expect(slotNames).toContain("link");
   });
 
-  it("should not render ds-button-link internally", async () => {
+  it("should not render ds-link internally", async () => {
     await elem.updateComplete;
 
-    expect(elem.shadowRoot?.querySelector("ds-button-link")).toBeNull();
+    expect(elem.shadowRoot?.querySelector("ds-link")).toBeNull();
   });
 
-  it("should accept a ds-button-link in the primary slot", async () => {
-    const link = document.createElement("ds-button-link");
+  it("should accept a ds-link in the primary slot", async () => {
+    const link = document.createElement("ds-link");
     link.slot = "primary";
     link.setAttribute("variant", "primary");
     link.textContent = "Get started";
@@ -51,6 +51,6 @@ describe("CtaBlock component", () => {
     await elem.updateComplete;
 
     const slotted = elem.querySelector('[slot="primary"]');
-    expect(slotted?.tagName.toLowerCase()).toBe("ds-button-link");
+    expect(slotted?.tagName.toLowerCase()).toBe("ds-link");
   });
 });

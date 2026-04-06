@@ -3,7 +3,7 @@ import { html } from "lit";
 
 import "./CtaSection.js";
 import "../CtaBlock/CtaBlock.js";
-import "../ButtonLink/ButtonLink.js";
+import "../Link/Link.js";
 import "../SiteLayout/SiteLayout.js";
 import type CtaSection from "./CtaSection.js";
 
@@ -49,9 +49,9 @@ export const BlockFull: Story = {
         of its versatility, reliability, regularly updated kernels and security updates.
       </p>
       <ds-cta-block slot="cta">
-        <ds-button-link slot="primary" variant="primary" href="#">Get in touch</ds-button-link>
-        <ds-button-link slot="secondary" variant="secondary" href="#">Download Ubuntu Server</ds-button-link>
-        <ds-button-link slot="link" href="#">Learn about Ubuntu Pro &rsaquo;</ds-button-link>
+        <ds-link slot="primary" variant="primary" href="#">Get in touch</ds-link>
+        <ds-link slot="secondary" variant="secondary" href="#">Download Ubuntu Server</ds-link>
+        <ds-link slot="link" href="#">Learn about Ubuntu Pro &rsaquo;</ds-link>
       </ds-cta-block>
     </ds-cta-section>
   `,
@@ -65,9 +65,9 @@ export const BlockOffset: Story = {
         of its versatility, reliability, regularly updated kernels and security updates.
       </p>
       <ds-cta-block slot="cta">
-        <ds-button-link slot="primary" variant="primary" href="#">Get in touch</ds-button-link>
-        <ds-button-link slot="secondary" variant="secondary" href="#">Download Ubuntu Server</ds-button-link>
-        <ds-button-link slot="link" href="#">Learn about Ubuntu Pro &rsaquo;</ds-button-link>
+        <ds-link slot="primary" variant="primary" href="#">Get in touch</ds-link>
+        <ds-link slot="secondary" variant="secondary" href="#">Download Ubuntu Server</ds-link>
+        <ds-link slot="link" href="#">Learn about Ubuntu Pro &rsaquo;</ds-link>
       </ds-cta-block>
     </ds-cta-section>
   `,
