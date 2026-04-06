@@ -50,6 +50,7 @@ export default class BasicSection
   }
 
   renderSubtitle() {
+    if (!this.subtitle?.text) return null;
     const headingLevel = this.subtitle?.headingLevel ?? 4;
     return html`<p class="subtitle heading-${headingLevel}">${this.subtitle.text}</p>`;
   }
@@ -79,7 +80,7 @@ export default class BasicSection
     };
 
     return html`
-      <div class=${classMap(sectionClasses)}>
+      <section class=${classMap(sectionClasses)}>
         <hr class="${this.topRule}" />
         <div class="header">
           <h3 class="label">${this.label}</h3>
@@ -89,7 +90,7 @@ export default class BasicSection
           ${this.renderSubtitle()}
           ${this.renderContentBlocks()}
         </div>
-      </div>
+      </section>
     `;
   }
 }
