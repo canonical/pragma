@@ -1,1 +1,17 @@
 @import url("@canonical/styles");
+
+:root {
+  background:
+    radial-gradient(circle at top, rgba(15, 98, 254, 0.12), transparent 28%),
+    linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%);
+  color: #111827;
+  font-family: Inter, "Segoe UI", sans-serif;
+}
+
+body {
+  margin: 0;
+}
+
+a {
+  color: inherit;
+}
