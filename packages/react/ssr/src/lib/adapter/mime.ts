@@ -8,6 +8,15 @@
  * No external dependencies — the lookup is a plain record.
  */
 
+/**
+ * `Cache-Control` value for immutable, content-hashed static assets (e.g. Vite
+ * build output). One year, immutable — the canonical policy every adapter
+ * applies when serving fingerprinted assets. Centralised here so the three
+ * deployment adapters cannot drift.
+ */
+export const IMMUTABLE_ASSET_CACHE_CONTROL =
+  "public, max-age=31536000, immutable";
+
 const MIME_TYPES: Record<string, string> = {
   ".html": "text/html; charset=utf-8",
   ".js": "application/javascript; charset=utf-8",
