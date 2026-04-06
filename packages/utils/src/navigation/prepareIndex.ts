@@ -12,6 +12,7 @@ export function prepareIndex(root: _Item): _Index {
   const stack: _Item[] = [root];
   while (stack.length > 0) {
     const item = stack.pop();
+    /* v8 ignore next: unreachable — while guard ensures stack is non-empty */
     if (!item) continue;
     const id = getItemId(item);
     index[id] = item;

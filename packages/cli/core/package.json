@@ -36,9 +36,9 @@
     "check:biome": "biome check",
     "check:biome:fix": "biome check --write",
     "check:ts": "tsc --noEmit",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test": "bun run test:vitest",
+    "test:vitest": "vitest run --coverage",
+    "test:vitest:watch": "vitest"
   },
   "dependencies": {
     "@canonical/summon-core": "^0.22.0",

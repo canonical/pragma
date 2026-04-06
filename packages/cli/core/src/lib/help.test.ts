@@ -161,6 +161,24 @@ describe("help", () => {
       expect(output).toContain("Usage: pragma component list [flags]");
       expect(output).not.toContain("<");
     });
+
+    it("shows optional positional args in brackets", () => {
+      const cmd: CommandDefinition = {
+        path: ["token", "lookup"],
+        description: "Lookup a token",
+        parameters: [
+          {
+            name: "name",
+            description: "Token name",
+            type: "string",
+            positional: true,
+          },
+        ],
+        execute: async () => createExitResult(0),
+      };
+      const output = formatVerbHelp("pragma", cmd);
+      expect(output).toContain("Usage: pragma token lookup [name] [flags]");
+    });
   });
 
   describe("formatHelp", () => {
@@ -248,6 +266,166 @@ describe("help", () => {
       const output = formatLlmHelp("pragma", makeCommands());
       expect(output).toContain("--detailed");
       expect(output).toContain("--anatomy");
+    });
+
+    it("shows optional positional args in brackets", () => {
+      const commands: CommandDefinition[] = [
+        {
+          path: ["token", "lookup"],
+          description: "Lookup a token",
+          parameters: [
+            {
+              name: "name",
+              description: "Token name",
+              type: "string",
+              positional: true,
+            },
+          ],
+          execute: async () => createExitResult(0),
+        },
+      ];
+      const output = formatLlmHelp("pragma", commands);
+      expect(output).toContain("[name]");
+    });
+
+    it("shows commands without flags", () => {
+      const commands: CommandDefinition[] = [
+        {
+          path: ["info"],
+          description: "Show info",
+          parameters: [],
+          execute: async () => createExitResult(0),
+        },
+      ];
+      const output = formatLlmHelp("pragma", commands);
+      expect(output).toContain("`pragma info`");
+      expect(output).not.toContain("flags:");
+    });
+  });
+
+  describe("formatVerbHelp — parameterGroups edge cases", () => {
+    it("skips group when all referenced params are positional", () => {
+      const cmd: CommandDefinition = {
+        path: ["test", "posgroup"],
+        description: "Test positional group",
+        parameters: [
+          {
+            name: "target",
+            description: "Target name",
+            type: "string",
+            positional: true,
+            required: true,
+          },
+          {
+            name: "verbose",
+            description: "Verbose output",
+            type: "boolean",
+          },
+        ],
+        execute: async () => createExitResult(0),
+        parameterGroups: {
+          "Positional group": ["target"],
+        },
+      };
+
+      const output = formatVerbHelp("pragma", cmd);
+      // "target" is positional so it won't appear in flags, meaning groupFlags is empty.
+      // The group header "Positional group:" should NOT appear.
+      expect(output).not.toContain("Positional group:");
+      // But ungrouped flags (verbose) should still appear under "Flags:"
+      expect(output).toContain("Flags:");
+      expect(output).toContain("--verbose");
+    });
+
+    it("omits ungrouped section when all flags are grouped", () => {
+      const cmd: CommandDefinition = {
+        path: ["test", "allgrouped"],
+        description: "Test all grouped",
+        parameters: [
+          {
+            name: "verbose",
+            description: "Verbose output",
+            type: "boolean",
+          },
+          {
+            name: "format",
+            description: "Output format",
+            type: "string",
+          },
+        ],
+        execute: async () => createExitResult(0),
+        parameterGroups: {
+          "Output options": ["verbose", "format"],
+        },
+      };
+
+      const output = formatVerbHelp("pragma", cmd);
+      // All flags are grouped under "Output options"
+      expect(output).toContain("Output options:");
+      expect(output).toContain("--verbose");
+      expect(output).toContain("--format");
+      // No "Flags:" section since ungrouped is empty
+      expect(output).not.toContain("Flags:");
+    });
+  });
+
+  describe("formatVerbHelp — extended help", () => {
+    it("shows extended help text when present", () => {
+      const cmd: CommandDefinition = {
+        path: ["test", "extended"],
+        description: "Short description",
+        parameters: [],
+        execute: async () => createExitResult(0),
+        meta: {
+          extendedHelp: "This is the extended help text with more details.",
+        },
+      };
+
+      const output = formatVerbHelp("pragma", cmd);
+      expect(output).toContain("Short description");
+      expect(output).toContain(
+        "This is the extended help text with more details.",
+      );
+    });
+  });
+
+  describe("formatFlagDisplay — multiselect", () => {
+    it("shows multiselect flag in verb help", () => {
+      const cmd: CommandDefinition = {
+        path: ["test", "multi"],
+        description: "Test multiselect",
+        parameters: [
+          {
+            name: "items",
+            description: "Items to select",
+            type: "multiselect",
+          },
+        ],
+        execute: async () => createExitResult(0),
+      };
+
+      const output = formatVerbHelp("pragma", cmd);
+      expect(output).toContain("--items <values...>");
+    });
+  });
+
+  describe("formatFlagDisplay — string/select", () => {
+    it("shows value placeholder for string flags", () => {
+      const cmd: CommandDefinition = {
+        path: ["test", "str"],
+        description: "Test string flag",
+        parameters: [
+          {
+            name: "category",
+            description: "Category filter",
+            type: "string",
+          },
+        ],
+        execute: async () => createExitResult(0),
+      };
+
+      const output = formatVerbHelp("pragma", cmd);
+      expect(output).toContain("--category <value>");
     });
   });
 });

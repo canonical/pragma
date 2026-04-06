@@ -21,4 +21,8 @@ describe("toPascalCase", () => {
   it("returns empty string for empty input", () => {
     expect(toPascalCase("")).toBe("");
   });
+
+  it("handles trailing separator", () => {
+    expect(toPascalCase("hello-")).toBe("Hello");
+  });
 });

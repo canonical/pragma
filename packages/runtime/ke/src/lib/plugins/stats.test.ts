@@ -206,5 +206,63 @@ ex:c a ex:Bar .
       expect(stats.getCount("http://example.org/Bar")?.direct).toBe(1);
       expect(stats.getCount("http://example.org/Bar")?.total).toBe(1);
     });
+
+    it("handles parent class with no direct instances", async () => {
+      testResult = await createTestStore({
+        ttl: `
+@prefix ex: <http://example.org/> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+ex:Child rdfs:subClassOf ex:Parent .
+ex:a a ex:Child .
+ex:b a ex:Child .
+`,
+        plugins: [statsPlugin()],
+      });
+      const stats = getStats(testResult);
+
+      // Parent has 0 direct instances but 2 via Child
+      expect(stats.getCount("http://example.org/Parent")?.direct).toBe(0);
+      expect(stats.getCount("http://example.org/Parent")?.total).toBe(2);
+      expect(stats.getCount("http://example.org/Child")?.direct).toBe(2);
+      expect(stats.getCount("http://example.org/Child")?.total).toBe(2);
+    });
+
+    it("handles circular hierarchy where cycle-detected class has no instances", async () => {
+      testResult = await createTestStore({
+        ttl: `
+@prefix ex: <http://example.org/> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+ex:A rdfs:subClassOf ex:B .
+ex:B rdfs:subClassOf ex:A .
+`,
+        plugins: [statsPlugin()],
+      });
+      const stats = getStats(testResult);
+
+      // Both classes have 0 direct and 0 total — cycle with no instances
+      expect(stats.getCount("http://example.org/A")?.direct).toBe(0);
+      expect(stats.getCount("http://example.org/A")?.total).toBe(0);
+      expect(stats.getCount("http://example.org/B")?.direct).toBe(0);
+      expect(stats.getCount("http://example.org/B")?.total).toBe(0);
+    });
+
+    it("handles circular rdfs:subClassOf hierarchy", async () => {
+      testResult = await createTestStore({
+        ttl: `
+@prefix ex: <http://example.org/> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+ex:A rdfs:subClassOf ex:B .
+ex:B rdfs:subClassOf ex:A .
+ex:x a ex:A .
+`,
+        plugins: [statsPlugin()],
+      });
+      const stats = getStats(testResult);
+
+      // Should not infinite loop — cycle detection breaks it
+      const countA = stats.getCount("http://example.org/A");
+      expect(countA).toBeDefined();
+      expect(countA?.direct).toBe(1);
+    });
   });
 });

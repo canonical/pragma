@@ -19,4 +19,37 @@ describe("serializeTomlSection", () => {
     expect(result).toContain("[mcp_servers.a]");
     expect(result).toContain("[mcp_servers.b]");
   });
+
+  it("handles empty entries object", () => {
+    const result = serializeTomlSection("mcp_servers", {});
+    expect(result).toBe("");
+  });
+
+  it("handles entry with empty fields", () => {
+    const result = serializeTomlSection("mcp_servers", {
+      empty: {},
+    });
+    expect(result).toContain("[mcp_servers.empty]");
+  });
+
+  it("serializes number values", () => {
+    const result = serializeTomlSection("mcp_servers", {
+      test: { port: 3000 },
+    });
+    expect(result).toContain("port = 3000");
+  });
+
+  it("serializes non-string non-bool non-number values as quoted strings", () => {
+    const result = serializeTomlSection("section", {
+      test: { key: undefined },
+    });
+    expect(result).toContain('key = "undefined"');
+  });
+
+  it("serializes boolean false", () => {
+    const result = serializeTomlSection("section", {
+      test: { disabled: false },
+    });
+    expect(result).toContain("disabled = false");
+  });
 });

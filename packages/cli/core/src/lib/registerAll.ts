@@ -60,14 +60,14 @@ export function extractParams(
   const positionals = parameters.filter((p) => p.positional);
   for (let i = 0; i < positionals.length && i < args.length; i++) {
     const param = positionals[i];
-    if (param) {
-      const isLastPositional = i === positionals.length - 1;
-      if (param.type === "multiselect" && isLastPositional) {
-        result[param.name] = args.slice(i);
-        break;
-      }
-      result[param.name] = args[i];
+    /* v8 ignore next — structurally guaranteed by loop bounds */
+    if (!param) throw new Error(`Expected positional parameter at index ${i}`);
+    const isLastPositional = i === positionals.length - 1;
+    if (param.type === "multiselect" && isLastPositional) {
+      result[param.name] = args.slice(i);
+      break;
     }
+    result[param.name] = args[i];
   }
 
   return result;
@@ -92,7 +92,8 @@ export default function registerAll(
   for (const cmd of commands) {
     if (cmd.path.length === 0) continue;
     const noun = cmd.path[0];
-    if (!noun) continue;
+    /* v8 ignore next — structurally guaranteed by path.length > 0 guard above */
+    if (!noun) throw new Error("Expected command path[0] to be defined");
     const existing = groups.get(noun) ?? [];
     existing.push(cmd);
     groups.set(noun, existing);
@@ -147,7 +148,9 @@ function attachCommand(
   resultOptions?: HandleResultOptions,
 ): void {
   const name = cmd.path[cmd.path.length - 1];
-  if (!name) return;
+  /* v8 ignore next 2 — structurally guaranteed: attachCommand only called with non-empty paths */
+  if (!name)
+    throw new Error("Expected command path to have at least one segment");
 
   const positionals = cmd.parameters.filter((p) => p.positional);
   const positionalSuffix = positionals.map(formatPositionalParam).join(" ");
@@ -161,6 +164,7 @@ function attachCommand(
   const rootProgram = findRootProgram(parent);
   const verbCommand = sub;
   sub.addHelpText("beforeAll", (_ctx) => {
+    /* v8 ignore next — guard for Commander help propagation to parent/sibling */
     if (_ctx.command !== verbCommand) return "";
     return formatVerbHelp(rootProgram.name(), helpCmd);
   });
@@ -266,8 +270,15 @@ function formatInteractiveUnavailableMessage(
   spec: InteractiveSpec,
   cmd?: CommandDefinition,
 ): string {
-  const missing = findMissingInteractiveParameters(spec, cmd);
   const lines = ["Interactive mode not available in this binary."];
+
+  /* v8 ignore next — optional `cmd` parameter guard (function signature allows undefined) */
+  if (!cmd) {
+    lines.push("Provide all required flags.");
+    return lines.join(" ");
+  }
+
+  const missing = findMissingInteractiveParameters(spec, cmd);
 
   if (missing.length === 0) {
     lines.push("Provide all required flags.");
@@ -279,23 +290,17 @@ function formatInteractiveUnavailableMessage(
     ...missing.map((parameter) => `  ${formatParameterUsage(parameter)}`),
   );
 
-  const example = cmd ? buildInteractiveExample(spec, cmd, missing) : null;
-  if (example) {
-    lines.push("Example:");
-    lines.push(`  ${example}`);
-  }
+  const example = buildInteractiveExample(spec, cmd, missing);
+  lines.push("Example:");
+  lines.push(`  ${example}`);
 
   return lines.join("\n");
 }
 
 function findMissingInteractiveParameters(
   spec: InteractiveSpec,
-  cmd?: CommandDefinition,
+  cmd: CommandDefinition,
 ): ParameterDefinition[] {
-  if (!cmd) {
-    return [];
-  }
-
   return spec.generator.prompts.flatMap((prompt) => {
     if (prompt.default !== undefined || prompt.name in spec.partialAnswers) {
       return [];

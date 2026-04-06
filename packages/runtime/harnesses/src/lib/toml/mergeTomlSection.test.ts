@@ -36,4 +36,14 @@ describe("mergeTomlSection", () => {
     });
     expect(result).toContain("[other_section]");
   });
+
+  it("replaces content when file only contains the target section", () => {
+    const onlySection = '[mcp_servers.only]\ncommand = "old"';
+    const result = mergeTomlSection(onlySection, "mcp_servers", "only", {
+      command: "new",
+    });
+    expect(result).toContain("[mcp_servers.only]");
+    expect(result).toContain('command = "new"');
+    expect(result).not.toContain('command = "old"');
+  });
 });

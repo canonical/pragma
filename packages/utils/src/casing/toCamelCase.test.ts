@@ -21,4 +21,8 @@ describe("toCamelCase", () => {
   it("returns empty string for empty input", () => {
     expect(toCamelCase("")).toBe("");
   });
+
+  it("handles trailing separator", () => {
+    expect(toCamelCase("hello-")).toBe("hello");
+  });
 });

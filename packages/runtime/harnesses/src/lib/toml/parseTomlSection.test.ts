@@ -48,4 +48,28 @@ describe("parseTomlSection", () => {
     const result = parseTomlSection(toml, "mcp_servers");
     expect(result.test.timeout).toBe(30);
   });
+
+  it("parses float values", () => {
+    const toml = "[mcp_servers.test]\nrate = 1.5";
+    const result = parseTomlSection(toml, "mcp_servers");
+    expect(result.test.rate).toBe(1.5);
+  });
+
+  it("returns raw value for unrecognized formats", () => {
+    const toml = "[mcp_servers.test]\nraw = some_bare_value";
+    const result = parseTomlSection(toml, "mcp_servers");
+    expect(result.test.raw).toBe("some_bare_value");
+  });
+
+  it("parses boolean false value", () => {
+    const toml = "[mcp_servers.test]\ndisabled = false";
+    const result = parseTomlSection(toml, "mcp_servers");
+    expect(result.test.disabled).toBe(false);
+  });
+
+  it("parses escaped quotes in string values", () => {
+    const toml = '[mcp_servers.test]\npath = "some\\"quoted\\"path"';
+    const result = parseTomlSection(toml, "mcp_servers");
+    expect(result.test.path).toBe('some"quoted"path');
+  });
 });

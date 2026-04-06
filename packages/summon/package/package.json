@@ -26,7 +26,9 @@
     "check:biome:fix": "biome check --write",
     "check:ts": "tsc --noEmit",
     "check:webarchitect": "webarchitect base",
-    "test": "vitest run"
+    "test": "bun run test:vitest",
+    "test:vitest": "vitest run --coverage",
+    "test:vitest:watch": "vitest"
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.9",

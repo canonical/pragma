@@ -86,5 +86,44 @@ describe("createOutputAdapter", () => {
 
       expect(chunks.join("")).toContain("test");
     });
+
+    it("ink mode does not write when plain renderer returns empty string", () => {
+      const adapter = createOutputAdapter("ink");
+      const render: RenderPair<null> = {
+        plain: () => "",
+      };
+
+      const spy = vi.spyOn(process.stdout, "write").mockReturnValue(true);
+      try {
+        adapter.render(null, render);
+        expect(spy).not.toHaveBeenCalled();
+      } finally {
+        spy.mockRestore();
+      }
+    });
+  });
+
+  describe("detectRenderMode — TTY detection", () => {
+    it("returns ink when stdout is a TTY and no machine-readable flags are set", () => {
+      const descriptor = Object.getOwnPropertyDescriptor(
+        process.stdout,
+        "isTTY",
+      );
+
+      Object.defineProperty(process.stdout, "isTTY", {
+        configurable: true,
+        value: true,
+      });
+
+      try {
+        expect(detectRenderMode({ llm: false, format: "text" })).toBe("ink");
+      } finally {
+        if (descriptor) {
+          Object.defineProperty(process.stdout, "isTTY", descriptor);
+        } else {
+          delete (process.stdout as Record<string, unknown>).isTTY;
+        }
+      }
+    });
   });
 });

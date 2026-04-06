@@ -1,4 +1,12 @@
-import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  readlinkSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
@@ -11,7 +19,7 @@ import {
 } from "./interpreter.js";
 import { info, succeed, warn } from "./primitives.js";
 import { effect, fail, flatMap, map, pure } from "./task.js";
-import type { Effect, TaskError } from "./types.js";
+import type { Effect, ExecResult, TaskError } from "./types.js";
 
 // Note: These tests focus on the interpreter's logic without actually
 // performing I/O. For real I/O testing, integration tests should be used.
@@ -796,5 +804,636 @@ describe("Interpreter - Integration", () => {
         expect(taskErr.suppressed).toBeUndefined();
       }
     });
+  });
+});
+
+// =============================================================================
+// executeEffect - ReadFile
+// =============================================================================
+
+describe("Interpreter - executeEffect for ReadFile", () => {
+  it("reads file content as utf-8", async () => {
+    const tempDir = mkdtempSync(join(tmpdir(), "task-read-"));
+
+    try {
+      const filePath = join(tempDir, "test.txt");
+      writeFileSync(filePath, "hello world", "utf8");
+
+      const result = await executeEffect(
+        { _tag: "ReadFile", path: filePath },
+        new Map(),
+      );
+
+      expect(result).toBe("hello world");
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+});
+
+// =============================================================================
+// executeEffect - WriteFile
+// =============================================================================
+
+describe("Interpreter - executeEffect for WriteFile", () => {
+  it("writes content to a file", async () => {
+    const tempDir = mkdtempSync(join(tmpdir(), "task-write-"));
+
+    try {
+      const filePath = join(tempDir, "output.txt");
+
+      await executeEffect(
+        { _tag: "WriteFile", path: filePath, content: "written content" },
+        new Map(),
+      );
+
+      expect(readFileSync(filePath, "utf8")).toBe("written content");
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  it("creates parent directories recursively", async () => {
+    const tempDir = mkdtempSync(join(tmpdir(), "task-write-"));
+
+    try {
+      const filePath = join(tempDir, "a", "b", "c", "deep.txt");
+
+      await executeEffect(
+        { _tag: "WriteFile", path: filePath, content: "deep" },
+        new Map(),
+      );
+
+      expect(readFileSync(filePath, "utf8")).toBe("deep");
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+});
+
+// =============================================================================
+// executeEffect - AppendFile
+// =============================================================================
+
+describe("Interpreter - executeEffect for AppendFile", () => {
+  it("appends to an existing file", async () => {
+    const tempDir = mkdtempSync(join(tmpdir(), "task-append-"));
+
+    try {
+      const filePath = join(tempDir, "log.txt");
+      writeFileSync(filePath, "line1\n", "utf8");
+
+      await executeEffect(
+        {
+          _tag: "AppendFile",
+          path: filePath,
+          content: "line2\n",
+          createIfMissing: false,
+        },
+        new Map(),
+      );
+
+      expect(readFileSync(filePath, "utf8")).toBe("line1\nline2\n");
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  it("creates file when createIfMissing is true and file does not exist", async () => {
+    const tempDir = mkdtempSync(join(tmpdir(), "task-append-"));
+
+    try {
+      const filePath = join(tempDir, "new.txt");
+
+      await executeEffect(
+        {
+          _tag: "AppendFile",
+          path: filePath,
+          content: "first line",
+          createIfMissing: true,
+        },
+        new Map(),
+      );
+
+      expect(readFileSync(filePath, "utf8")).toBe("first line");
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  it("appends when createIfMissing is true and file already exists", async () => {
+    const tempDir = mkdtempSync(join(tmpdir(), "task-append-"));
+
+    try {
+      const filePath = join(tempDir, "existing.txt");
+      writeFileSync(filePath, "existing\n", "utf8");
+
+      await executeEffect(
+        {
+          _tag: "AppendFile",
+          path: filePath,
+          content: "appended",
+          createIfMissing: true,
+        },
+        new Map(),
+      );
+
+      expect(readFileSync(filePath, "utf8")).toBe("existing\nappended");
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  it("creates parent directories", async () => {
+    const tempDir = mkdtempSync(join(tmpdir(), "task-append-"));
+
+    try {
+      const filePath = join(tempDir, "sub", "dir", "file.txt");
+
+      await executeEffect(
+        {
+          _tag: "AppendFile",
+          path: filePath,
+          content: "content",
+          createIfMissing: true,
+        },
+        new Map(),
+      );
+
+      expect(readFileSync(filePath, "utf8")).toBe("content");
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+});
+
+// =============================================================================
+// executeEffect - CopyFile
+// =============================================================================
+
+describe("Interpreter - executeEffect for CopyFile", () => {
+  it("copies a file to the destination", async () => {
+    const tempDir = mkdtempSync(join(tmpdir(), "task-copy-"));
+
+    try {
+      const src = join(tempDir, "source.txt");
+      writeFileSync(src, "copy me", "utf8");
+      const dest = join(tempDir, "dest.txt");
+
+      await executeEffect({ _tag: "CopyFile", source: src, dest }, new Map());
+
+      expect(readFileSync(dest, "utf8")).toBe("copy me");
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  it("creates parent directories for destination", async () => {
+    const tempDir = mkdtempSync(join(tmpdir(), "task-copy-"));
+
+    try {
+      const src = join(tempDir, "source.txt");
+      writeFileSync(src, "data", "utf8");
+      const dest = join(tempDir, "nested", "dir", "dest.txt");
+
+      await executeEffect({ _tag: "CopyFile", source: src, dest }, new Map());
+
+      expect(readFileSync(dest, "utf8")).toBe("data");
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+});
+
+// =============================================================================
+// executeEffect - CopyDirectory
+// =============================================================================
+
+describe("Interpreter - executeEffect for CopyDirectory", () => {
+  it("copies a directory recursively", async () => {
+    const tempDir = mkdtempSync(join(tmpdir(), "task-cpdir-"));
+
+    try {
+      const src = join(tempDir, "src");
+      mkdirSync(join(src, "sub"), { recursive: true });
+      writeFileSync(join(src, "a.txt"), "a", "utf8");
+      writeFileSync(join(src, "sub", "b.txt"), "b", "utf8");
+
+      const dest = join(tempDir, "dest");
+
+      await executeEffect(
+        { _tag: "CopyDirectory", source: src, dest },
+        new Map(),
+      );
+
+      expect(readFileSync(join(dest, "a.txt"), "utf8")).toBe("a");
+      expect(readFileSync(join(dest, "sub", "b.txt"), "utf8")).toBe("b");
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+});
+
+// =============================================================================
+// executeEffect - DeleteDirectory
+// =============================================================================
+
+describe("Interpreter - executeEffect for DeleteDirectory", () => {
+  it("removes a directory recursively", async () => {
+    const tempDir = mkdtempSync(join(tmpdir(), "task-deldir-"));
+
+    try {
+      const dir = join(tempDir, "target");
+      mkdirSync(join(dir, "sub"), { recursive: true });
+      writeFileSync(join(dir, "file.txt"), "x", "utf8");
+
+      await executeEffect({ _tag: "DeleteDirectory", path: dir }, new Map());
+
+      expect(existsSync(dir)).toBe(false);
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+});
+
+// =============================================================================
+// executeEffect - MakeDir
+// =============================================================================
+
+describe("Interpreter - executeEffect for MakeDir", () => {
+  it("creates a directory with recursive option", async () => {
+    const tempDir = mkdtempSync(join(tmpdir(), "task-mkdir-"));
+
+    try {
+      const dir = join(tempDir, "a", "b", "c");
+
+      await executeEffect(
+        { _tag: "MakeDir", path: dir, recursive: true },
+        new Map(),
+      );
+
+      expect(existsSync(dir)).toBe(true);
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  it("creates a single directory with recursive false", async () => {
+    const tempDir = mkdtempSync(join(tmpdir(), "task-mkdir-"));
+
+    try {
+      const dir = join(tempDir, "single");
+
+      await executeEffect(
+        { _tag: "MakeDir", path: dir, recursive: false },
+        new Map(),
+      );
+
+      expect(existsSync(dir)).toBe(true);
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+});
+
+// =============================================================================
+// executeEffect - Symlink
+// =============================================================================
+
+describe("Interpreter - executeEffect for Symlink", () => {
+  it("creates a symlink", async () => {
+    const tempDir = mkdtempSync(join(tmpdir(), "task-symlink-"));
+
+    try {
+      const target = join(tempDir, "target.txt");
+      writeFileSync(target, "target content", "utf8");
+      const link = join(tempDir, "link.txt");
+
+      await executeEffect({ _tag: "Symlink", target, path: link }, new Map());
+
+      expect(readlinkSync(link)).toBe(target);
+      expect(readFileSync(link, "utf8")).toBe("target content");
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  it("creates parent directories for symlink", async () => {
+    const tempDir = mkdtempSync(join(tmpdir(), "task-symlink-"));
+
+    try {
+      const target = join(tempDir, "target.txt");
+      writeFileSync(target, "data", "utf8");
+      const link = join(tempDir, "nested", "dir", "link.txt");
+
+      await executeEffect({ _tag: "Symlink", target, path: link }, new Map());
+
+      expect(readlinkSync(link)).toBe(target);
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+});
+
+// =============================================================================
+// executeEffect - Exists
+// =============================================================================
+
+describe("Interpreter - executeEffect for Exists", () => {
+  it("returns true for existing file", async () => {
+    const tempDir = mkdtempSync(join(tmpdir(), "task-exists-"));
+
+    try {
+      const filePath = join(tempDir, "exists.txt");
+      writeFileSync(filePath, "x", "utf8");
+
+      const result = await executeEffect(
+        { _tag: "Exists", path: filePath },
+        new Map(),
+      );
+
+      expect(result).toBe(true);
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  it("returns false for non-existing file", async () => {
+    const tempDir = mkdtempSync(join(tmpdir(), "task-exists-"));
+
+    try {
+      const result = await executeEffect(
+        { _tag: "Exists", path: join(tempDir, "missing.txt") },
+        new Map(),
+      );
+
+      expect(result).toBe(false);
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+});
+
+// =============================================================================
+// executeEffect - Glob (simpleGlob fallback)
+// =============================================================================
+
+describe("Interpreter - executeEffect for Glob", () => {
+  it("matches files with wildcard pattern", async () => {
+    const tempDir = mkdtempSync(join(tmpdir(), "task-glob-"));
+
+    try {
+      writeFileSync(join(tempDir, "foo.ts"), "", "utf8");
+      writeFileSync(join(tempDir, "bar.ts"), "", "utf8");
+      writeFileSync(join(tempDir, "baz.js"), "", "utf8");
+
+      const result = (await executeEffect(
+        { _tag: "Glob", pattern: "*.ts", cwd: tempDir },
+        new Map(),
+      )) as string[];
+
+      expect(result.sort()).toEqual(["bar.ts", "foo.ts"]);
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  it("matches files in subdirectories", async () => {
+    const tempDir = mkdtempSync(join(tmpdir(), "task-glob-"));
+
+    try {
+      mkdirSync(join(tempDir, "sub"), { recursive: true });
+      writeFileSync(join(tempDir, "sub", "deep.txt"), "", "utf8");
+      writeFileSync(join(tempDir, "sub", "other.js"), "", "utf8");
+
+      // Use a pattern that works with both Bun.Glob and the simpleGlob fallback
+      const result = (await executeEffect(
+        { _tag: "Glob", pattern: "sub/*", cwd: tempDir },
+        new Map(),
+      )) as string[];
+
+      expect(result.sort()).toEqual(["sub/deep.txt", "sub/other.js"]);
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  it("returns empty array when no matches", async () => {
+    const tempDir = mkdtempSync(join(tmpdir(), "task-glob-"));
+
+    try {
+      writeFileSync(join(tempDir, "file.js"), "", "utf8");
+
+      const result = (await executeEffect(
+        { _tag: "Glob", pattern: "*.ts", cwd: tempDir },
+        new Map(),
+      )) as string[];
+
+      expect(result).toEqual([]);
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+});
+
+// =============================================================================
+// executeEffect - Exec (Node.js fallback)
+// =============================================================================
+
+describe("Interpreter - executeEffect for Exec", () => {
+  it("executes a command and returns stdout", async () => {
+    const result = (await executeEffect(
+      { _tag: "Exec", command: "echo", args: ["hello"], cwd: undefined },
+      new Map(),
+    )) as ExecResult;
+
+    expect(result.stdout.trim()).toBe("hello");
+    expect(result.exitCode).toBe(0);
+  });
+
+  it("captures stderr", async () => {
+    const result = (await executeEffect(
+      {
+        _tag: "Exec",
+        command: "sh",
+        args: ["-c", "echo err >&2"],
+        cwd: undefined,
+      },
+      new Map(),
+    )) as ExecResult;
+
+    expect(result.stderr.trim()).toBe("err");
+  });
+
+  it("returns non-zero exit code", async () => {
+    const result = (await executeEffect(
+      {
+        _tag: "Exec",
+        command: "sh",
+        args: ["-c", "exit 42"],
+        cwd: undefined,
+      },
+      new Map(),
+    )) as ExecResult;
+
+    expect(result.exitCode).toBe(42);
+  });
+
+  it("returns zero exit code when process is killed by signal", async () => {
+    // When a process is killed by a signal, Node.js close event passes null code
+    const result = (await executeEffect(
+      {
+        _tag: "Exec",
+        command: "sh",
+        args: ["-c", "kill -9 $$"],
+        cwd: undefined,
+      },
+      new Map(),
+    )) as ExecResult;
+
+    // code ?? 0 — process killed by signal, code is null, falls back to 0
+    expect(result.exitCode).toBe(0);
+  });
+
+  it("respects cwd option", async () => {
+    const tempDir = mkdtempSync(join(tmpdir(), "task-exec-"));
+
+    try {
+      const result = (await executeEffect(
+        { _tag: "Exec", command: "pwd", args: [], cwd: tempDir },
+        new Map(),
+      )) as ExecResult;
+
+      expect(result.stdout.trim()).toBe(tempDir);
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+});
+
+// =============================================================================
+// executeEffect - DeleteFile error propagation
+// =============================================================================
+
+describe("Interpreter - executeEffect for DeleteFile error propagation", () => {
+  it("rethrows non-ENOENT errors", async () => {
+    const tempDir = mkdtempSync(join(tmpdir(), "task-del-err-"));
+
+    try {
+      // Trying to delete a directory with unlink should give EISDIR/EPERM
+      mkdirSync(join(tempDir, "dir"));
+
+      await expect(
+        executeEffect(
+          { _tag: "DeleteFile", path: join(tempDir, "dir") },
+          new Map(),
+        ),
+      ).rejects.toThrow();
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+});
+
+// =============================================================================
+// executeEffect - Log fallback for all levels
+// =============================================================================
+
+describe("Interpreter - executeEffect Log fallback for all levels", () => {
+  it.each([
+    "debug",
+    "warn",
+    "error",
+  ] as const)("logs %s level with prefix to console", async (level) => {
+    const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+
+    try {
+      await executeEffect({ _tag: "Log", level, message: "msg" }, new Map());
+
+      const prefix = { debug: "[DEBUG]", warn: "[WARN]", error: "[ERROR]" }[
+        level
+      ];
+      expect(consoleSpy).toHaveBeenCalledWith(`${prefix} msg`);
+    } finally {
+      consoleSpy.mockRestore();
+    }
+  });
+});
+
+// =============================================================================
+// runTask - Parallel with non-TaskExecutionError failures
+// =============================================================================
+
+describe("Interpreter - runTask Parallel with raw errors", () => {
+  it("wraps non-TaskExecutionError as INTERNAL code", async () => {
+    const throwingTask: Task<number> = {
+      _tag: "Effect",
+      effect: {
+        _tag: "ReadFile",
+        path: "/nonexistent/path/that/does/not/exist",
+      },
+      cont: () => pure(1),
+    };
+
+    const task = effect<unknown[]>({
+      _tag: "Parallel",
+      tasks: [throwingTask, pure(2)],
+    });
+
+    try {
+      await runTask(task);
+      expect.unreachable("should have thrown");
+    } catch (err) {
+      expect(err).toBeInstanceOf(TaskExecutionError);
+    }
+  });
+});
+
+// =============================================================================
+// TaskExecutionError - without stack
+// =============================================================================
+
+describe("Interpreter - TaskExecutionError without stack", () => {
+  it("does not override stack when taskError has no stack", () => {
+    const taskError: TaskError = { code: "ERR", message: "No stack" };
+    const err = new TaskExecutionError(taskError);
+
+    // The stack should be the default Error stack, not undefined
+    expect(err.stack).toBeDefined();
+    expect(err.stack).toContain("TaskExecutionError");
+  });
+});
+
+// =============================================================================
+// runTask - AbortSignal without reason
+// =============================================================================
+
+describe("Interpreter - AbortSignal without reason", () => {
+  it("includes default reason when abort is called without explicit reason", async () => {
+    const controller = new AbortController();
+    controller.abort();
+
+    try {
+      await runTask(pure(42), { signal: controller.signal });
+      expect.unreachable("should have thrown");
+    } catch (err) {
+      expect(err).toBeInstanceOf(TaskExecutionError);
+      expect((err as TaskExecutionError).code).toBe("TASK_INTERRUPTED");
+      // The signal.reason is truthy (AbortError), so the message includes it
+      expect((err as TaskExecutionError).message).toContain("Task interrupted");
+    }
+  });
+
+  it("produces generic message when reason is empty string", async () => {
+    // Create an AbortSignal with a falsy reason
+    const signal = AbortSignal.abort("");
+
+    try {
+      await runTask(pure(42), { signal });
+      expect.unreachable("should have thrown");
+    } catch (err) {
+      expect(err).toBeInstanceOf(TaskExecutionError);
+      expect((err as TaskExecutionError).message).toBe("Task interrupted");
+    }
   });
 });
