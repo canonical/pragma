@@ -6,8 +6,9 @@ import type {
 } from "@canonical/router-core";
 import type { MouseEvent, ReactElement } from "react";
 import { forwardRef, useMemo } from "react";
+import useRouter from "../hooks/useRouter.js";
+import type { RegisteredRouteMap } from "../register.js";
 import type { LinkBuildOptions, LinkProps } from "./types.js";
-import useRouter from "./useRouter.js";
 
 function hasModifierKey(event: MouseEvent<HTMLAnchorElement>): boolean {
   return event.altKey || event.ctrlKey || event.metaKey || event.shiftKey;
@@ -25,9 +26,16 @@ function buildOptionsObject(
   );
 }
 
+/**
+ * Render an anchor element that integrates with the router.
+ *
+ * `Link` builds the destination `href` from a typed route name plus optional
+ * params, search values, and hash. Primary-button clicks are intercepted and
+ * routed through `router.navigate()`, while hover prefetches the destination
+ * route data through `router.prefetch()`.
+ */
 const Link = forwardRef(function Link<
   TRoutes extends RouteMap,
-  TNotFound extends AnyRoute | undefined = undefined,
   TName extends RouteName<TRoutes> = RouteName<TRoutes>,
 >(
   {
@@ -43,7 +51,7 @@ const Link = forwardRef(function Link<
   }: LinkProps<TRoutes, TName>,
   forwardedRef: LinkProps<TRoutes, TName>["ref"],
 ): ReactElement {
-  const router = useRouter<TRoutes, TNotFound>();
+  const router = useRouter<TRoutes>();
   const buildPath = router.buildPath as (
     name: TName,
     options?: LinkBuildOptions<RouteOf<TRoutes, TName>>,
@@ -116,7 +124,7 @@ const Link = forwardRef(function Link<
     </a>
   );
 }) as <
-  TRoutes extends RouteMap,
+  TRoutes extends RouteMap = RegisteredRouteMap,
   TName extends RouteName<TRoutes> = RouteName<TRoutes>,
 >(
   props: LinkProps<TRoutes, TName>,

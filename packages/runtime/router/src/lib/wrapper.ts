@@ -1,8 +1,8 @@
-import type { WrapperDefinition, WrapperInput } from "./types.js";
+import type { WrapperDefinition } from "./types.js";
 
 /** Construct a wrapper with nominal identity. */
 export default function wrapper<TData = void, TRendered = unknown>(
-  definition: WrapperInput<TData, TRendered>,
+  definition: WrapperDefinition<TData, TRendered>,
 ): WrapperDefinition<TData, TRendered> {
   return definition;
 }

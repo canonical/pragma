@@ -21,6 +21,17 @@ function readInitialState<TRoutes extends RouteMap>(
     null) as RouterDehydratedState<TRoutes> | null;
 }
 
+/**
+ * Create a browser-backed router that reuses dehydrated server state.
+ *
+ * The function reads the initial router payload from the configured window,
+ * creates a browser adapter, and passes both into `createRouter()` so client
+ * hydration resumes from the server-rendered match instead of reloading it.
+ *
+ * @param routes - The application's route map.
+ * @param options - Router options plus an optional window-like object to read
+ * hydration state from.
+ */
 export default function createHydratedRouter<
   const TRoutes extends RouteMap,
   const TNotFound extends AnyRoute | undefined = undefined,

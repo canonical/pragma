@@ -2,7 +2,7 @@ import type { ReadableStream } from "node:stream/web";
 import { createRouter, route } from "@canonical/router-core";
 import { renderToReadableStream } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import RouterProvider from "./RouterProvider.js";
+import RouterProvider from "../RouterProvider/Provider.js";
 import useRoute from "./useRoute.js";
 
 const routes = {

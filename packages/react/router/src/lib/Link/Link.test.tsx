@@ -5,9 +5,9 @@ import {
 } from "@canonical/router-core";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import Outlet from "../Outlet/Outlet.js";
+import RouterProvider from "../RouterProvider/Provider.js";
 import Link from "./Link.js";
-import Outlet from "./Outlet.js";
-import RouterProvider from "./RouterProvider.js";
 
 const preloadSpy = vi.fn(async () => ({ default: "UsersPage" }));
 const fetchSpy = vi.fn(async () => "users");

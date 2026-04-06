@@ -1,3 +1,5 @@
+import buildUrl from "../lib/buildUrl.js";
+
 interface ScrollPosition {
   readonly x: number;
   readonly y: number;
@@ -28,18 +30,6 @@ interface ScrollManagerOptions {
   readonly document?: ScrollDocumentLike;
   readonly sessionStorage?: SessionStorageLike;
   readonly storageKey?: string;
-}
-
-function buildUrl(input: string | URL): URL {
-  if (input instanceof URL) {
-    return new URL(input.href);
-  }
-
-  if (input.startsWith("http://") || input.startsWith("https://")) {
-    return new URL(input);
-  }
-
-  return new URL(input, "https://router.local");
 }
 
 function readPositions(
@@ -82,9 +72,9 @@ export default class ScrollManager {
   }
 
   restore(location: string | URL, navigationType: "pop" | "push"): void {
-    const href = buildUrl(location).href;
+    const url = buildUrl(location);
     const savedPosition = readPositions(this.#sessionStorage, this.#storageKey)[
-      href
+      url.href
     ];
 
     if (navigationType === "pop" && savedPosition) {
@@ -94,8 +84,6 @@ export default class ScrollManager {
       });
       return;
     }
-
-    const url = buildUrl(location);
 
     if (url.hash.length > 1) {
       const target = this.#document?.getElementById(

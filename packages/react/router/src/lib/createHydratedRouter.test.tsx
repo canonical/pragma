@@ -2,8 +2,8 @@ import { createRouter, route } from "@canonical/router-core";
 import { render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import createHydratedRouter from "./createHydratedRouter.js";
-import Outlet from "./Outlet.js";
-import RouterProvider from "./RouterProvider.js";
+import Outlet from "./Outlet/Outlet.js";
+import RouterProvider from "./RouterProvider/Provider.js";
 
 const routes = {
   page: route({

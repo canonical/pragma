@@ -1,6 +1,7 @@
+import { ROUTER_LOCAL_BASE } from "./constants.js";
 import type { MemoryAdapter, PlatformNavigateOptions } from "./types.js";
 
-function buildUrl(input: string | URL, base: string | URL): URL {
+function resolveUrl(input: string | URL, base: string | URL): URL {
   if (input instanceof URL) {
     return new URL(input.href);
   }
@@ -17,7 +18,7 @@ export default function createMemoryAdapter(
   initialUrl: string | URL = "/",
 ): MemoryAdapter {
   const subscribers = new Set<(location: string | URL) => void>();
-  const entries = [buildUrl(initialUrl, "https://router.local")];
+  const entries = [resolveUrl(initialUrl, ROUTER_LOCAL_BASE)];
   let index = 0;
 
   function notify(): void {
@@ -32,7 +33,7 @@ export default function createMemoryAdapter(
     input: string | URL,
     navigationOptions?: PlatformNavigateOptions,
   ): void {
-    const nextUrl = buildUrl(input, entries[index]);
+    const nextUrl = resolveUrl(input, entries[index]);
 
     if (navigationOptions?.replace) {
       entries[index] = nextUrl;

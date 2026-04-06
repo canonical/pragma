@@ -5,8 +5,8 @@ import {
 } from "@canonical/router-core";
 import { act, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
+import RouterProvider from "../RouterProvider/Provider.js";
 import Outlet from "./Outlet.js";
-import RouterProvider from "./RouterProvider.js";
 
 const routes = {
   home: route({

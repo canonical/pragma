@@ -1,5 +1,6 @@
 import type { AnyRoute, RouteMap, RouterState } from "@canonical/router-core";
 import { useRef, useSyncExternalStore } from "react";
+import type { RegisteredNotFound, RegisteredRouteMap } from "../register.js";
 import type { UseRouterStateOptions } from "./types.js";
 import useRouter from "./useRouter.js";
 
@@ -16,20 +17,20 @@ function identity<TValue>(value: TValue): TValue {
  * the selector returns structured values that should be compared semantically.
  */
 export default function useRouterState<
-  TRoutes extends RouteMap,
-  TNotFound extends AnyRoute | undefined = undefined,
+  TRoutes extends RouteMap = RegisteredRouteMap,
+  TNotFound extends AnyRoute | undefined = RegisteredNotFound,
 >(): RouterState<TRoutes, TNotFound>;
 export default function useRouterState<
-  TRoutes extends RouteMap,
-  TNotFound extends AnyRoute | undefined = undefined,
+  TRoutes extends RouteMap = RegisteredRouteMap,
+  TNotFound extends AnyRoute | undefined = RegisteredNotFound,
   TSelected = RouterState<TRoutes, TNotFound>,
 >(
   selector: (state: RouterState<TRoutes, TNotFound>) => TSelected,
   options?: UseRouterStateOptions<TSelected>,
 ): TSelected;
 export default function useRouterState<
-  TRoutes extends RouteMap,
-  TNotFound extends AnyRoute | undefined = undefined,
+  TRoutes extends RouteMap = RegisteredRouteMap,
+  TNotFound extends AnyRoute | undefined = RegisteredNotFound,
   TSelected = RouterState<TRoutes, TNotFound>,
 >(
   selector?: (state: RouterState<TRoutes, TNotFound>) => TSelected,

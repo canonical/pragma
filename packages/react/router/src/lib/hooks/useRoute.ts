@@ -6,6 +6,7 @@ import type {
   TrackedLocation,
 } from "@canonical/router-core";
 import { useRef, useSyncExternalStore } from "react";
+import type { RegisteredNotFound, RegisteredRouteMap } from "../register.js";
 import useRouter from "./useRouter.js";
 
 function hasChanged(
@@ -27,14 +28,27 @@ function hasChanged(
   return previousLocation[key] !== nextLocation[key];
 }
 
+/**
+ * Return the current router location as a tracked proxy.
+ *
+ * Reading a location field such as `pathname`, `url`, or `searchParams`
+ * subscribes the caller to just that field. The hook only triggers a rerender
+ * when one of the accessed keys changes, while preserving a single stable proxy
+ * instance across renders.
+ */
 export default function useRoute<
-  TRoutes extends RouteMap,
-  TNotFound extends AnyRoute | undefined = undefined,
+  TRoutes extends RouteMap = RegisteredRouteMap,
+  TNotFound extends AnyRoute | undefined = RegisteredNotFound,
 >(): TrackedLocation<RouterLocationState> {
   const router = useRouter<TRoutes, TNotFound>();
   const trackedKeysRef = useRef<Set<RouterLocationKey>>(new Set());
   const previousLocationRef = useRef(router.getState().location);
   const versionRef = useRef(0);
+  // A Proxy is used instead of core's `createTrackedLocation` (which uses
+  // `Object.defineProperty`) because the Proxy catch-all `get` trap intercepts
+  // any string property access — including dynamic keys — and can filter out
+  // symbol accesses.  The defineProperty approach only tracks keys known at
+  // construction time.
   const trackedLocationRef = useRef<TrackedLocation<RouterLocationState>>(
     new Proxy({} as RouterLocationState, {
       get(_target, property) {

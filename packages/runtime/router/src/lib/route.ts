@@ -1,3 +1,5 @@
+import buildUrl from "./buildUrl.js";
+import { matchPath, renderPattern } from "./pathUtils.js";
 import type {
   AnyWrapper,
   DataRouteDefinition,
@@ -8,94 +10,6 @@ import type {
   RouteInput,
   RouteParams,
 } from "./types.js";
-
-function extractParamName(patternSegment: string): string {
-  return patternSegment
-    .slice(1)
-    .replace(/\(.+$/, "")
-    .replace(/[?*+]$/, "");
-}
-
-function getPathname(input: string | URL): string {
-  if (input instanceof URL) {
-    return input.pathname;
-  }
-
-  if (input.startsWith("http://") || input.startsWith("https://")) {
-    return new URL(input).pathname;
-  }
-
-  return new URL(input, "https://router.local").pathname;
-}
-
-function splitPathSegments(pathname: string): string[] {
-  if (pathname === "/") {
-    return [];
-  }
-
-  return pathname.split("/").filter(Boolean);
-}
-
-function matchPath<TPath extends string>(
-  routePath: TPath,
-  input: string | URL,
-): RouteParams<TPath> | null {
-  const routeSegments = splitPathSegments(routePath);
-  const pathSegments = splitPathSegments(getPathname(input));
-
-  if (routeSegments.length !== pathSegments.length) {
-    return null;
-  }
-
-  const params: Record<string, string> = {};
-
-  for (let index = 0; index < routeSegments.length; index += 1) {
-    const routeSegment = routeSegments[index];
-    const pathSegment = pathSegments[index];
-
-    if (!routeSegment.startsWith(":")) {
-      if (routeSegment !== pathSegment) {
-        return null;
-      }
-
-      continue;
-    }
-
-    params[extractParamName(routeSegment)] = decodeURIComponent(pathSegment);
-  }
-
-  return params as RouteParams<TPath>;
-}
-
-function buildPath<TPath extends string>(
-  routePath: TPath,
-  params: RouteParams<TPath>,
-): string {
-  const routeSegments = splitPathSegments(routePath);
-
-  if (routeSegments.length === 0) {
-    return "/";
-  }
-
-  const renderedSegments = routeSegments.map((routeSegment) => {
-    if (!routeSegment.startsWith(":")) {
-      return routeSegment;
-    }
-
-    const paramName = extractParamName(routeSegment) as keyof typeof params;
-    const paramValue = params[paramName];
-
-    if (typeof paramValue !== "string") {
-      throw new Error(
-        `Missing route param '${String(paramName)}' for '${routePath}'.`,
-      );
-    }
-
-    return encodeURIComponent(paramValue);
-  });
-
-  return `/${renderedSegments.join("/")}`;
-}
 
 function isRedirectRouteInput<
   TPath extends string,
@@ -145,10 +59,13 @@ export default function route<
       ...definition,
       wrappers: (definition.wrappers ?? []) as TWrappers,
       parse(input: string | URL) {
-        return matchPath(definition.url, input);
+        return matchPath(
+          definition.url,
+          buildUrl(input),
+        ) as RouteParams<TPath> | null;
       },
       render(params: RouteParams<TPath>) {
-        return buildPath(definition.url, params);
+        return renderPattern(definition.url, params as Record<string, string>);
       },
     };
   }
@@ -157,10 +74,13 @@ export default function route<
     ...definition,
     wrappers: (definition.wrappers ?? []) as TWrappers,
     parse(input: string | URL) {
-      return matchPath(definition.url, input);
+      return matchPath(
+        definition.url,
+        buildUrl(input),
+      ) as RouteParams<TPath> | null;
     },
     render(params: RouteParams<TPath>) {
-      return buildPath(definition.url, params);
+      return renderPattern(definition.url, params as Record<string, string>);
     },
   };
 }

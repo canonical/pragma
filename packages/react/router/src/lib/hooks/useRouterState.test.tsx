@@ -1,7 +1,7 @@
 import { createRouter, route } from "@canonical/router-core";
 import { act, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import RouterProvider from "./RouterProvider.js";
+import RouterProvider from "../RouterProvider/Provider.js";
 import useRouterState from "./useRouterState.js";
 
 const routes = {

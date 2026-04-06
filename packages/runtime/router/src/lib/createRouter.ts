@@ -2,8 +2,10 @@ import FocusManager from "../a11y/FocusManager.js";
 import RouteAnnouncer from "../a11y/RouteAnnouncer.js";
 import ScrollManager from "../a11y/ScrollManager.js";
 import ViewTransitionManager from "../a11y/ViewTransitionManager.js";
+import buildUrl from "./buildUrl.js";
 import createRouterStore from "./createRouterStore.js";
-import RouteRedirect from "./RouteRedirect.js";
+import { matchPath, renderPattern, splitPathSegments } from "./pathUtils.js";
+import Redirect from "./Redirect.js";
 import StatusResponse from "./StatusResponse.js";
 import type {
   AnyRoute,
@@ -32,25 +34,6 @@ import type {
 } from "./types.js";
 
 type NavigationMode = "initial" | "none" | "pop" | "push";
-
-function extractParamName(patternSegment: string): string {
-  return patternSegment
-    .slice(1)
-    .replace(/\(.+$/, "")
-    .replace(/[?*+]$/, "");
-}
-
-function buildUrl(input: string | URL): URL {
-  if (input instanceof URL) {
-    return input;
-  }
-
-  if (input.startsWith("http://") || input.startsWith("https://")) {
-    return new URL(input);
-  }
-
-  return new URL(input, "https://router.local");
-}
 
 function toHref(input: string | URL): string {
   const url = buildUrl(input);
@@ -164,19 +147,10 @@ function resolveAnnouncement(
   return result.location.pathname;
 }
 
-function splitPathSegments(pathname: string): string[] {
-  if (pathname === "/") {
-    return [];
-  }
-
-  return pathname.split("/").filter(Boolean);
-}
-
 function getRoutePriority(path: string): {
   readonly staticCount: number;
   readonly parameterCount: number;
   readonly wildcardCount: number;
-  readonly segmentCount: number;
 } {
   const segments = splitPathSegments(path);
 
@@ -198,12 +172,7 @@ function getRoutePriority(path: string): {
     staticCount += 1;
   }
 
-  return {
-    staticCount,
-    parameterCount,
-    wildcardCount,
-    segmentCount: segments.length,
-  };
+  return { staticCount, parameterCount, wildcardCount };
 }
 
 function compareRoutePriority(leftPath: string, rightPath: string): number {
@@ -225,50 +194,13 @@ function compareRoutePriority(leftPath: string, rightPath: string): number {
   return 0;
 }
 
-function matchPath(
-  routePath: string,
-  inputUrl: URL,
-): Record<string, string> | null {
-  const routeSegments = splitPathSegments(routePath);
-  const pathSegments = splitPathSegments(inputUrl.pathname);
-  const params: Record<string, string> = {};
-
-  for (let index = 0; index < routeSegments.length; index += 1) {
-    const routeSegment = routeSegments[index];
-
-    if (routeSegment === "*") {
-      return params;
-    }
-
-    const pathSegment = pathSegments[index];
-
-    if (pathSegment === undefined) {
-      return null;
-    }
-
-    if (!routeSegment.startsWith(":")) {
-      if (routeSegment !== pathSegment) {
-        return null;
-      }
-
-      continue;
-    }
-
-    params[extractParamName(routeSegment)] = decodeURIComponent(pathSegment);
-  }
-
-  return pathSegments.length === routeSegments.length ? params : null;
-}
-
 function readSearchParams(
   searchParams: URLSearchParams,
-): Record<string, string | readonly string[]> {
-  const rawSearch: Record<string, string | readonly string[]> = {};
+): Record<string, string> {
+  const rawSearch: Record<string, string> = {};
 
-  for (const key of searchParams.keys()) {
-    const values = searchParams.getAll(key);
-
-    rawSearch[key] = values.length > 1 ? values : values[0];
+  for (const key of new Set(searchParams.keys())) {
+    rawSearch[key] = searchParams.get(key) ?? "";
   }
 
   return rawSearch;
@@ -289,36 +221,27 @@ function validateSearch<TRoute extends AnyRoute>(
     return rawSearch as SearchOf<TRoute>;
   }
 
-  return validator(rawSearch) as SearchOf<TRoute>;
-}
+  const result = validator(rawSearch);
 
-function renderPattern(path: string, params: Record<string, string>): string {
-  const segments = splitPathSegments(path);
-
-  if (segments.length === 0) {
-    return "/";
+  if (
+    typeof result === "object" &&
+    result !== null &&
+    "issues" in result &&
+    Array.isArray((result as { issues: unknown }).issues)
+  ) {
+    const issues = (result as { issues: ReadonlyArray<{ message?: string }> })
+      .issues;
+    const messages = issues
+      .map((issue) => issue.message ?? "Validation error")
+      .join(", ");
+    throw new Error(`Search param validation failed: ${messages}`);
   }
 
-  const renderedSegments = segments.map((currentSegment) => {
-    if (currentSegment === "*") {
-      return "";
-    }
+  if (typeof result === "object" && result !== null && "value" in result) {
+    return (result as { value: unknown }).value as SearchOf<TRoute>;
+  }
 
-    if (!currentSegment.startsWith(":")) {
-      return currentSegment;
-    }
-
-    const paramName = extractParamName(currentSegment);
-    const paramValue = params[paramName];
-
-    if (typeof paramValue !== "string") {
-      throw new Error(`Missing route param '${paramName}' for '${path}'.`);
-    }
-
-    return encodeURIComponent(paramValue);
-  });
-
-  return `/${renderedSegments.filter(Boolean).join("/")}`;
+  return result as SearchOf<TRoute>;
 }
 
 function buildHash(hash?: string): string {
@@ -580,6 +503,15 @@ function isRedirectMatch(value: unknown): value is {
   );
 }
 
+/**
+ * Intentional no-op `.catch()` handler for fire-and-forget loads.
+ *
+ * Scheduled loads (navigate, prefetch, adapter pop) run asynchronously.  When a
+ * newer navigation supersedes an in-flight one, the earlier load is aborted and
+ * its rejection is harmless.  Attaching this handler prevents an unhandled
+ * promise rejection without swallowing errors that matter — the active load's
+ * result is always awaited directly where it is needed.
+ */
 function ignoreScheduledLoadError(_error: unknown): void {}
 
 function createDehydratedState<
@@ -905,7 +837,7 @@ export default function createRouter<
         const failure = thrownError as LoadFailure;
         const redirectError = failure.error ?? thrownError;
 
-        if (redirectError instanceof RouteRedirect) {
+        if (redirectError instanceof Redirect) {
           await prefetchHref(redirectError.to, redirectDepth + 1);
           return;
         }
@@ -1150,6 +1082,7 @@ export default function createRouter<
         });
 
         currentLoadResult = result;
+        prefetchedLoads.clear();
       });
       scheduleAccessibilityEffects(result, mode);
 
@@ -1168,7 +1101,7 @@ export default function createRouter<
               source: "route" as const,
             };
 
-      if (failure.error instanceof RouteRedirect) {
+      if (failure.error instanceof Redirect) {
         abortController.abort();
         const redirectedResult = await performLoad(
           failure.error.to,

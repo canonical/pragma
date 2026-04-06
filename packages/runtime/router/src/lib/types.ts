@@ -101,11 +101,6 @@ export interface WrapperDefinition<TData = void, TRendered = unknown> {
   readonly error?: BivariantCallback<[props: WrapperErrorProps], TRendered>;
 }
 
-export type WrapperInput<TData = void, TRendered = unknown> = WrapperDefinition<
-  TData,
-  TRendered
->;
-
 export interface RouteCodec<TPath extends string = string> {
   parse(url: string | URL): RouteParams<TPath> | null;
   render(params: RouteParams<TPath>): string;

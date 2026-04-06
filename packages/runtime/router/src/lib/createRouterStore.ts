@@ -1,3 +1,4 @@
+import buildUrl from "./buildUrl.js";
 import createSubject from "./createSubject.js";
 import createTrackedLocation from "./createTrackedLocation.js";
 import type {
@@ -13,18 +14,6 @@ import type {
   RouterStore,
   SearchParamChange,
 } from "./types.js";
-
-function buildUrl(input: string | URL): URL {
-  if (input instanceof URL) {
-    return input;
-  }
-
-  if (input.startsWith("http://") || input.startsWith("https://")) {
-    return new URL(input);
-  }
-
-  return new URL(input, "https://router.local");
-}
 
 function createLocationState(url: URL, status: number): RouterLocationState {
   return {

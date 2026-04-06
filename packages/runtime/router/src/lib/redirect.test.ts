@@ -1,17 +1,18 @@
 import { describe, expect, it } from "vitest";
-import RouteRedirect from "./RouteRedirect.js";
+import Redirect from "./Redirect.js";
+
 import redirect from "./redirect.js";
 
 describe("redirect", () => {
   it("throws a redirect value from the redirect helper", () => {
     expect(() => {
       redirect("/login", 307);
-    }).toThrow(RouteRedirect);
+    }).toThrow(Redirect);
 
     try {
       redirect("/login", 307);
     } catch (error) {
-      expect(error).toBeInstanceOf(RouteRedirect);
+      expect(error).toBeInstanceOf(Redirect);
       expect(error).toMatchObject({ to: "/login", status: 307 });
     }
   });
@@ -20,7 +21,7 @@ describe("redirect", () => {
     try {
       redirect("/signin");
     } catch (error) {
-      expect(error).toBeInstanceOf(RouteRedirect);
+      expect(error).toBeInstanceOf(Redirect);
       expect(error).toMatchObject({ to: "/signin", status: 302 });
     }
   });

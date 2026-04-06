@@ -1,5 +1,6 @@
 import type { AnyRoute, RouteMap } from "@canonical/router-core";
 import { useRef, useSyncExternalStore } from "react";
+import type { RegisteredNotFound, RegisteredRouteMap } from "../register.js";
 import type { SearchParamValues } from "./types.js";
 import useRouter from "./useRouter.js";
 
@@ -40,17 +41,17 @@ function createSelectedValues<TKeys extends readonly string[]>(
  * of the selected keys changes.
  */
 export default function useSearchParams<
-  _TRoutes extends RouteMap,
-  _TNotFound extends AnyRoute | undefined = undefined,
+  _TRoutes extends RouteMap = RegisteredRouteMap,
+  _TNotFound extends AnyRoute | undefined = RegisteredNotFound,
 >(): URLSearchParams;
 export default function useSearchParams<
-  _TRoutes extends RouteMap,
-  _TNotFound extends AnyRoute | undefined = undefined,
+  _TRoutes extends RouteMap = RegisteredRouteMap,
+  _TNotFound extends AnyRoute | undefined = RegisteredNotFound,
   const TKeys extends readonly string[] = readonly string[],
 >(keys: TKeys): SearchParamValues<TKeys>;
 export default function useSearchParams<
-  TRoutes extends RouteMap,
-  TNotFound extends AnyRoute | undefined = undefined,
+  TRoutes extends RouteMap = RegisteredRouteMap,
+  TNotFound extends AnyRoute | undefined = RegisteredNotFound,
   const TKeys extends readonly string[] = readonly string[],
 >(keys?: TKeys): URLSearchParams | SearchParamValues<TKeys> {
   const router = useRouter<TRoutes, TNotFound>();

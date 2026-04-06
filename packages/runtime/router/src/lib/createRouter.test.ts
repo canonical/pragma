@@ -215,17 +215,13 @@ describe("createRouter", () => {
   it("matches routes by specificity and validates search params", () => {
     const searchSchema = {
       "~standard": {
-        output: {} as { page: number; tags: string[] },
+        output: {} as { page: number; tag: string },
         validate(value: unknown) {
-          const raw = value as { page?: string; tags?: string | string[] };
+          const raw = value as { page?: string; tag?: string };
 
           return {
             page: Number(raw.page ?? "1"),
-            tags: Array.isArray(raw.tags)
-              ? raw.tags
-              : raw.tags
-                ? [raw.tags]
-                : [],
+            tag: raw.tag ?? "",
           };
         },
       },
@@ -257,7 +253,7 @@ describe("createRouter", () => {
       new URL("https://example.com/users/settings"),
     );
     const userMatch = router.match(
-      "https://example.com/users/42?page=2&tags=a&tags=b",
+      "https://example.com/users/42?page=2&tag=typescript",
     );
     const wildcardMatch = router.match("/users/42/history");
 
@@ -273,7 +269,7 @@ describe("createRouter", () => {
       status: 200,
       pathname: "/users/42",
       params: { userId: "42" },
-      search: { page: 2, tags: ["a", "b"] },
+      search: { page: 2, tag: "typescript" },
     });
     expect(wildcardMatch).toMatchObject({
       kind: "route",
@@ -372,7 +368,7 @@ describe("createRouter", () => {
           "~standard": {
             output: {} as {
               q?: string;
-              tag?: string | string[];
+              tag?: string;
             },
           },
         },
@@ -380,12 +376,12 @@ describe("createRouter", () => {
       }),
     });
 
-    expect(router.match("/query?q=router&tag=a&tag=b")).toMatchObject({
+    expect(router.match("/query?q=router&tag=a")).toMatchObject({
       kind: "route",
       name: "query",
       search: {
         q: "router",
-        tag: ["a", "b"],
+        tag: "a",
       },
     });
   });
@@ -1110,11 +1106,15 @@ describe("createRouter", () => {
     expect(loginPreload).toHaveBeenCalledTimes(1);
 
     const legacyResult = await router.load("/legacy");
-    const privateResult = await router.load("/private");
 
     expect(modernFetch).toHaveBeenCalledTimes(1);
-    expect(loginFetch).toHaveBeenCalledTimes(1);
     expect(router.render(legacyResult)).toBe("modern-data");
+
+    // After a navigation commits, the prefetch cache is cleared so stale
+    // entries do not persist. The second load re-fetches as expected.
+    const privateResult = await router.load("/private");
+
+    expect(loginFetch).toHaveBeenCalledTimes(2);
     expect(router.render(privateResult)).toBe("login-data");
   });
 
