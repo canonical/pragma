@@ -12,19 +12,19 @@
     },
     "apps/lit/demo": {
       "name": "@canonical/lit-demo",
-      "version": "0.21.0",
+      "version": "0.22.0",
       "dependencies": {
-        "@canonical/lit-ds-prototype": "^0.18.0",
-        "@canonical/styles": "^0.18.0",
-        "@canonical/styles-old": "^0.18.0",
+        "@canonical/lit-ds-prototype": "^0.22.0",
+        "@canonical/styles": "^0.22.0",
+        "@canonical/styles-old": "^0.22.0",
         "@lit-labs/ssr": "^3.3.0",
         "@lit-labs/ssr-client": "^1.1.7",
         "lit": "^3.3.2",
       },
       "devDependencies": {
         "@biomejs/biome": "2.4.6",
-        "@canonical/biome-config": "^0.18.0",
-        "@canonical/typescript-config-lit": "^0.18.0",
+        "@canonical/biome-config": "^0.22.0",
+        "@canonical/typescript-config-lit": "^0.22.0",
         "@types/express": "^5.0.6",
         "@types/node": "^24.12.0",
         "express": "^5.2.1",
@@ -172,8 +172,18 @@
       },
       "devDependencies": {
         "@biomejs/biome": "2.4.9",
+<<<<<<< HEAD
         "@canonical/biome-config": "^0.26.0",
         "@canonical/typescript-config-react": "^0.26.0",
+=======
+<<<<<<< HEAD
+        "@canonical/biome-config": "^0.25.0",
+        "@canonical/typescript-config-react": "^0.25.0",
+=======
+        "@canonical/biome-config": "^0.22.0",
+        "@canonical/typescript-config-react": "^0.22.0",
+>>>>>>> 9b1b5dca (update version)
+>>>>>>> ccc2f75e (update version)
         "@types/node": "^24.12.0",
         "@types/react": "^19.2.14",
         "@types/react-dom": "^19.2.3",
@@ -186,10 +196,24 @@
     },
     "configs/typescript": {
       "name": "@canonical/typescript-config",
+<<<<<<< HEAD
       "version": "0.27.0",
       "devDependencies": {
         "@biomejs/biome": "2.4.9",
         "@canonical/biome-config": "^0.27.0",
+=======
+<<<<<<< HEAD
+      "version": "0.26.0",
+      "devDependencies": {
+        "@biomejs/biome": "2.4.9",
+        "@canonical/biome-config": "^0.26.0",
+=======
+      "version": "0.22.0",
+      "devDependencies": {
+        "@biomejs/biome": "2.4.9",
+        "@canonical/biome-config": "^0.22.0",
+>>>>>>> 9b1b5dca (update version)
+>>>>>>> ccc2f75e (update version)
         "typescript": "^5.9.3",
       },
       "peerDependencies": {
@@ -198,13 +222,46 @@
     },
     "configs/typescript-lit": {
       "name": "@canonical/typescript-config-lit",
+<<<<<<< HEAD
       "version": "0.27.0",
+=======
+<<<<<<< HEAD
+      "version": "0.26.0",
+=======
+      "version": "0.22.0",
+>>>>>>> 9b1b5dca (update version)
+      "dependencies": {
+        "@canonical/typescript-config": "^0.22.0",
+      },
+      "devDependencies": {
+        "@biomejs/biome": "2.4.9",
+        "@canonical/biome-config": "^0.22.0",
+        "typescript": "^5.9.3",
+      },
+      "peerDependencies": {
+        "typescript": "^5.9.3",
+      },
+    },
+    "configs/typescript-react": {
+      "name": "@canonical/typescript-config-react",
+<<<<<<< HEAD
+      "version": "0.26.0",
+>>>>>>> ccc2f75e (update version)
       "dependencies": {
         "@canonical/typescript-config": "^0.25.0",
       },
       "devDependencies": {
         "@biomejs/biome": "2.4.9",
         "@canonical/biome-config": "^0.25.0",
+=======
+      "version": "0.22.0",
+      "dependencies": {
+        "@canonical/typescript-config": "^0.22.0",
+      },
+      "devDependencies": {
+        "@biomejs/biome": "2.4.9",
+        "@canonical/biome-config": "^0.22.0",
+>>>>>>> 9b1b5dca (update version)
         "typescript": "^5.9.3",
       },
       "peerDependencies": {
@@ -228,13 +285,21 @@
     },
     "configs/typescript-svelte": {
       "name": "@canonical/typescript-config-svelte",
+<<<<<<< HEAD
       "version": "0.27.0",
+=======
+<<<<<<< HEAD
+      "version": "0.26.0",
+=======
+      "version": "0.22.0",
+>>>>>>> 9b1b5dca (update version)
+>>>>>>> ccc2f75e (update version)
       "dependencies": {
-        "@canonical/typescript-config": "^0.23.0",
+        "@canonical/typescript-config": "^0.22.0",
       },
       "devDependencies": {
         "@biomejs/biome": "2.4.9",
-        "@canonical/biome-config": "^0.23.0",
+        "@canonical/biome-config": "^0.22.0",
       },
       "peerDependencies": {
         "svelte": "^5.0.0",
@@ -243,18 +308,26 @@
     },
     "packages/cli/core": {
       "name": "@canonical/cli-core",
+<<<<<<< HEAD
       "version": "0.27.0",
+=======
+<<<<<<< HEAD
+      "version": "0.26.0",
+=======
+      "version": "0.22.0",
+>>>>>>> 9b1b5dca (update version)
+>>>>>>> ccc2f75e (update version)
       "dependencies": {
-        "@canonical/summon-core": "^0.23.0",
-        "@canonical/task": "^0.23.0",
+        "@canonical/summon-core": "^0.22.0",
+        "@canonical/task": "^0.22.0",
         "chalk": "^5.4.1",
         "commander": "^14.0.3",
       },
       "devDependencies": {
         "@biomejs/biome": "2.4.9",
-        "@canonical/biome-config": "^0.23.0",
-        "@canonical/typescript-config": "^0.23.0",
-        "@canonical/webarchitect": "^0.23.0",
+        "@canonical/biome-config": "^0.22.0",
+        "@canonical/typescript-config": "^0.22.0",
+        "@canonical/webarchitect": "^0.22.0",
         "@types/bun": "^1.3.10",
         "@types/node": "^24.12.0",
         "typescript": "^5.9.3",
@@ -263,18 +336,26 @@
     },
     "packages/cli/pragma": {
       "name": "@canonical/pragma-cli",
+<<<<<<< HEAD
       "version": "0.27.0",
+=======
+<<<<<<< HEAD
+      "version": "0.26.0",
+=======
+      "version": "0.22.0",
+>>>>>>> 9b1b5dca (update version)
+>>>>>>> ccc2f75e (update version)
       "bin": {
         "pragma": "dist/pragma",
       },
       "dependencies": {
-        "@canonical/cli-core": "^0.23.0",
-        "@canonical/harnesses": "^0.23.0",
-        "@canonical/ke": "^0.23.0",
-        "@canonical/summon-component": "^0.23.0",
-        "@canonical/summon-core": "^0.23.0",
-        "@canonical/summon-package": "^0.23.0",
-        "@canonical/task": "^0.23.0",
+        "@canonical/cli-core": "^0.22.0",
+        "@canonical/harnesses": "^0.22.0",
+        "@canonical/ke": "^0.22.0",
+        "@canonical/summon-component": "^0.22.0",
+        "@canonical/summon-core": "^0.22.0",
+        "@canonical/summon-package": "^0.22.0",
+        "@canonical/task": "^0.22.0",
         "@modelcontextprotocol/sdk": "^1.12.0",
         "chalk": "^5.6.2",
         "commander": "^14.0.3",
@@ -285,9 +366,9 @@
       },
       "devDependencies": {
         "@biomejs/biome": "2.4.9",
-        "@canonical/biome-config": "^0.23.0",
-        "@canonical/typescript-config": "^0.23.0",
-        "@canonical/webarchitect": "^0.23.0",
+        "@canonical/biome-config": "^0.22.0",
+        "@canonical/typescript-config": "^0.22.0",
+        "@canonical/webarchitect": "^0.22.0",
         "@types/bun": "^1.3.10",
         "@types/node": "^24.12.0",
         "@types/react": "^19.2.14",
@@ -308,10 +389,10 @@
         "summon": "src/bin.tsx",
       },
       "dependencies": {
-        "@canonical/cli-core": "^0.23.0",
-        "@canonical/summon-core": "^0.23.0",
-        "@canonical/task": "^0.23.0",
-        "@canonical/utils": "^0.23.0",
+        "@canonical/cli-core": "^0.22.0",
+        "@canonical/summon-core": "^0.22.0",
+        "@canonical/task": "^0.22.0",
+        "@canonical/utils": "^0.22.0",
         "chalk": "^5.6.2",
         "commander": "^14.0.3",
         "ink": "^6.8.0",
@@ -323,8 +404,8 @@
       },
       "devDependencies": {
         "@biomejs/biome": "2.4.9",
-        "@canonical/biome-config": "^0.23.0",
-        "@canonical/typescript-config": "^0.23.0",
+        "@canonical/biome-config": "^0.22.0",
+        "@canonical/typescript-config": "^0.22.0",
         "@types/bun": "^1.3.10",
         "@types/node": "^24.12.0",
         "@types/omelette": "^0.4.5",
@@ -336,12 +417,44 @@
     },
     "packages/ds-assets": {
       "name": "@canonical/ds-assets",
+<<<<<<< HEAD
       "version": "0.27.0",
+=======
+<<<<<<< HEAD
+      "version": "0.26.0",
+      "devDependencies": {
+        "@biomejs/biome": "2.4.9",
+        "@canonical/biome-config": "^0.25.0",
+        "@canonical/typescript-config": "^0.25.0",
+        "@canonical/webarchitect": "^0.25.0",
+=======
+      "version": "0.22.0",
+      "devDependencies": {
+        "@biomejs/biome": "2.4.9",
+        "@canonical/biome-config": "^0.22.0",
+        "@canonical/typescript-config": "^0.22.0",
+        "@canonical/webarchitect": "^0.22.0",
+>>>>>>> 9b1b5dca (update version)
+        "@types/jsdom": "^28.0.0",
+        "@types/node": "^24.12.0",
+        "jsdom": "^28.1.0",
+        "typescript": "^5.9.3",
+        "vite": "^8.0.1",
+        "vite-tsconfig-paths": "^6.1.1",
+        "vitest": "^4.0.18",
+      },
+    },
+    "packages/ds-types": {
+      "name": "@canonical/ds-types",
+<<<<<<< HEAD
+      "version": "0.26.0",
+>>>>>>> ccc2f75e (update version)
       "devDependencies": {
         "@biomejs/biome": "2.4.9",
         "@canonical/biome-config": "^0.26.0",
         "@canonical/typescript-config": "^0.26.0",
         "@canonical/webarchitect": "^0.26.0",
+<<<<<<< HEAD
         "@types/jsdom": "^28.0.0",
         "@types/node": "^24.12.0",
         "jsdom": "^28.1.0",
@@ -358,23 +471,52 @@
         "@canonical/biome-config": "^0.27.0",
         "@canonical/typescript-config": "^0.27.0",
         "@canonical/webarchitect": "^0.27.0",
+=======
+=======
+      "version": "0.22.0",
+      "devDependencies": {
+        "@biomejs/biome": "2.4.9",
+        "@canonical/biome-config": "^0.22.0",
+        "@canonical/typescript-config": "^0.22.0",
+        "@canonical/webarchitect": "^0.22.0",
+>>>>>>> 9b1b5dca (update version)
+>>>>>>> ccc2f75e (update version)
         "typescript": "^5.9.3",
       },
     },
     "packages/lit/ds-prototype": {
       "name": "@canonical/lit-ds-prototype",
+<<<<<<< HEAD
       "version": "0.27.0",
       "dependencies": {
         "@canonical/storybook-config": "^0.25.0",
+=======
+<<<<<<< HEAD
+      "version": "0.26.0",
+=======
+      "version": "0.22.0",
+>>>>>>> 9b1b5dca (update version)
+      "dependencies": {
+        "@canonical/storybook-config": "^0.22.0",
+>>>>>>> ccc2f75e (update version)
         "lit": "^3.3.2",
       },
       "devDependencies": {
         "@biomejs/biome": "2.4.9",
+<<<<<<< HEAD
         "@canonical/biome-config": "^0.25.0",
         "@canonical/ds-types": "^0.25.0",
         "@canonical/styles": "^0.25.0",
         "@canonical/typescript-config-lit": "^0.25.0",
         "@canonical/webarchitect": "^0.25.0",
+=======
+        "@canonical/biome-config": "^0.22.0",
+        "@canonical/ds-types": "^0.22.0",
+        "@canonical/styles": "^0.22.0",
+        "@canonical/styles-old": "^0.22.0",
+        "@canonical/typescript-config-lit": "^0.22.0",
+        "@canonical/webarchitect": "^0.22.0",
+>>>>>>> ccc2f75e (update version)
         "@chromatic-com/storybook": "^5.0.1",
         "@storybook/web-components-vite": "^10.3.1",
         "@types/node": "^24.12.0",
@@ -387,21 +529,41 @@
     },
     "packages/react/ds-app": {
       "name": "@canonical/react-ds-app",
+<<<<<<< HEAD
       "version": "0.27.0",
       "dependencies": {
         "@canonical/react-ds-global": "^0.25.0",
         "@canonical/storybook-config": "^0.25.0",
         "@canonical/styles": "^0.25.0",
+=======
+<<<<<<< HEAD
+      "version": "0.26.0",
+=======
+      "version": "0.22.0",
+>>>>>>> 9b1b5dca (update version)
+      "dependencies": {
+        "@canonical/react-ds-global": "^0.22.0",
+        "@canonical/storybook-config": "^0.22.0",
+        "@canonical/styles": "^0.22.0",
+>>>>>>> ccc2f75e (update version)
         "react": "^19.2.4",
         "react-dom": "^19.2.4",
       },
       "devDependencies": {
         "@biomejs/biome": "2.4.9",
+<<<<<<< HEAD
         "@canonical/biome-config": "^0.25.0",
         "@canonical/design-tokens": "^0.6.0",
         "@canonical/storybook-helpers": "^0.25.0",
         "@canonical/typescript-config-react": "^0.25.0",
         "@canonical/webarchitect": "^0.25.0",
+=======
+        "@canonical/biome-config": "^0.22.0",
+        "@canonical/design-tokens": "^0.6.0",
+        "@canonical/storybook-helpers": "^0.22.0",
+        "@canonical/typescript-config-react": "^0.22.0",
+        "@canonical/webarchitect": "^0.22.0",
+>>>>>>> ccc2f75e (update version)
         "@chromatic-com/storybook": "^5.0.1",
         "@storybook/addon-docs": "^10.3.1",
         "@storybook/react-vite": "^10.3.1",
@@ -422,21 +584,41 @@
     },
     "packages/react/ds-app-anbox": {
       "name": "@canonical/react-ds-app-anbox",
+<<<<<<< HEAD
       "version": "0.27.0",
       "dependencies": {
         "@canonical/react-ds-global": "^0.25.0",
         "@canonical/storybook-config": "^0.25.0",
         "@canonical/styles": "^0.25.0",
+=======
+<<<<<<< HEAD
+      "version": "0.26.0",
+=======
+      "version": "0.22.0",
+>>>>>>> 9b1b5dca (update version)
+      "dependencies": {
+        "@canonical/react-ds-global": "^0.22.0",
+        "@canonical/storybook-config": "^0.22.0",
+        "@canonical/styles": "^0.22.0",
+>>>>>>> ccc2f75e (update version)
         "react": "^19.2.4",
         "react-dom": "^19.2.4",
       },
       "devDependencies": {
         "@biomejs/biome": "2.4.9",
+<<<<<<< HEAD
         "@canonical/biome-config": "^0.25.0",
         "@canonical/design-tokens": "^0.6.0",
         "@canonical/storybook-helpers": "^0.25.0",
         "@canonical/typescript-config-react": "^0.25.0",
         "@canonical/webarchitect": "^0.25.0",
+=======
+        "@canonical/biome-config": "^0.22.0",
+        "@canonical/design-tokens": "^0.6.0",
+        "@canonical/storybook-helpers": "^0.22.0",
+        "@canonical/typescript-config-react": "^0.22.0",
+        "@canonical/webarchitect": "^0.22.0",
+>>>>>>> ccc2f75e (update version)
         "@chromatic-com/storybook": "^5.0.1",
         "@storybook/addon-docs": "^10.3.1",
         "@storybook/react-vite": "^10.3.1",
@@ -457,21 +639,41 @@
     },
     "packages/react/ds-app-landscape": {
       "name": "@canonical/react-ds-app-landscape",
+<<<<<<< HEAD
       "version": "0.27.0",
       "dependencies": {
         "@canonical/react-ds-global": "^0.25.0",
         "@canonical/storybook-config": "^0.25.0",
         "@canonical/styles": "^0.25.0",
+=======
+<<<<<<< HEAD
+      "version": "0.26.0",
+=======
+      "version": "0.22.0",
+>>>>>>> 9b1b5dca (update version)
+      "dependencies": {
+        "@canonical/react-ds-global": "^0.22.0",
+        "@canonical/storybook-config": "^0.22.0",
+        "@canonical/styles": "^0.22.0",
+>>>>>>> ccc2f75e (update version)
         "react": "^19.2.4",
         "react-dom": "^19.2.4",
       },
       "devDependencies": {
         "@biomejs/biome": "2.4.9",
+<<<<<<< HEAD
         "@canonical/biome-config": "^0.25.0",
         "@canonical/design-tokens": "^0.6.0",
         "@canonical/storybook-helpers": "^0.25.0",
         "@canonical/typescript-config-react": "^0.25.0",
         "@canonical/webarchitect": "^0.25.0",
+=======
+        "@canonical/biome-config": "^0.22.0",
+        "@canonical/design-tokens": "^0.6.0",
+        "@canonical/storybook-helpers": "^0.22.0",
+        "@canonical/typescript-config-react": "^0.22.0",
+        "@canonical/webarchitect": "^0.22.0",
+>>>>>>> ccc2f75e (update version)
         "@chromatic-com/storybook": "^5.0.1",
         "@storybook/addon-docs": "^10.3.1",
         "@storybook/react-vite": "^10.3.1",
@@ -492,11 +694,23 @@
     },
     "packages/react/ds-app-launchpad": {
       "name": "@canonical/react-ds-app-launchpad",
+<<<<<<< HEAD
       "version": "0.27.0",
       "dependencies": {
         "@canonical/storybook-config": "^0.25.0",
         "@canonical/styles": "^0.25.0",
         "@canonical/utils": "^0.25.0",
+=======
+<<<<<<< HEAD
+      "version": "0.26.0",
+=======
+      "version": "0.22.0",
+>>>>>>> 9b1b5dca (update version)
+      "dependencies": {
+        "@canonical/storybook-config": "^0.22.0",
+        "@canonical/styles": "^0.22.0",
+        "@canonical/utils": "^0.22.0",
+>>>>>>> ccc2f75e (update version)
         "@js-temporal/polyfill": "^0.5.1",
         "highlight.js": "^11.11.1",
         "react": ">=18.0.0 <20.0.0",
@@ -508,11 +722,19 @@
       },
       "devDependencies": {
         "@biomejs/biome": "2.4.9",
+<<<<<<< HEAD
         "@canonical/biome-config": "^0.25.0",
         "@canonical/design-tokens": "^0.6.0",
         "@canonical/storybook-helpers": "^0.25.0",
         "@canonical/typescript-config-react": "^0.25.0",
         "@canonical/webarchitect": "^0.25.0",
+=======
+        "@canonical/biome-config": "^0.22.0",
+        "@canonical/design-tokens": "^0.6.0",
+        "@canonical/storybook-helpers": "^0.22.0",
+        "@canonical/typescript-config-react": "^0.22.0",
+        "@canonical/webarchitect": "^0.22.0",
+>>>>>>> ccc2f75e (update version)
         "@chromatic-com/storybook": "^5.0.1",
         "@storybook/addon-docs": "^10.3.1",
         "@storybook/react-vite": "^10.3.1",
@@ -534,21 +756,130 @@
     },
     "packages/react/ds-app-lxd": {
       "name": "@canonical/react-ds-app-lxd",
+<<<<<<< HEAD
       "version": "0.27.0",
       "dependencies": {
         "@canonical/react-ds-global": "^0.25.0",
         "@canonical/storybook-config": "^0.25.0",
         "@canonical/styles": "^0.25.0",
+=======
+<<<<<<< HEAD
+      "version": "0.26.0",
+=======
+      "version": "0.22.0",
+>>>>>>> 9b1b5dca (update version)
+      "dependencies": {
+        "@canonical/react-ds-global": "^0.22.0",
+        "@canonical/storybook-config": "^0.22.0",
+        "@canonical/styles": "^0.22.0",
         "react": "^19.2.4",
         "react-dom": "^19.2.4",
       },
       "devDependencies": {
         "@biomejs/biome": "2.4.9",
+        "@canonical/biome-config": "^0.22.0",
+        "@canonical/design-tokens": "^0.6.0",
+        "@canonical/storybook-helpers": "^0.22.0",
+        "@canonical/typescript-config-react": "^0.22.0",
+        "@canonical/webarchitect": "^0.22.0",
+        "@chromatic-com/storybook": "^5.0.1",
+        "@storybook/addon-docs": "^10.3.1",
+        "@storybook/react-vite": "^10.3.1",
+        "@testing-library/jest-dom": "^6.9.1",
+        "@testing-library/react": "^16.3.2",
+        "@types/node": "^24.12.0",
+        "@types/react": "^19.2.14",
+        "@types/react-dom": "^19.2.3",
+        "@vitejs/plugin-react": "^6.0.0",
+        "copyfiles": "^2.4.1",
+        "globals": "^17.4.0",
+        "jsdom": "^28.1.0",
+        "storybook": "^10.3.1",
+        "typescript": "^5.9.3",
+        "vite": "^8.0.1",
+        "vite-tsconfig-paths": "^6.1.1",
+        "vitest": "^4.0.18",
+      },
+    },
+    "packages/react/ds-app-portal": {
+      "name": "@canonical/react-ds-app-portal",
+<<<<<<< HEAD
+      "version": "0.26.0",
+=======
+      "version": "0.22.0",
+>>>>>>> 9b1b5dca (update version)
+      "dependencies": {
+        "@canonical/react-ds-global": "^0.22.0",
+        "@canonical/storybook-config": "^0.22.0",
+        "@canonical/styles": "^0.22.0",
+        "react": "^19.2.4",
+        "react-dom": "^19.2.4",
+      },
+      "devDependencies": {
+        "@biomejs/biome": "2.4.9",
+        "@canonical/biome-config": "^0.22.0",
+        "@canonical/design-tokens": "^0.6.0",
+        "@canonical/storybook-helpers": "^0.22.0",
+        "@canonical/typescript-config-react": "^0.22.0",
+        "@canonical/webarchitect": "^0.22.0",
+        "@chromatic-com/storybook": "^5.0.1",
+        "@storybook/addon-docs": "^10.3.1",
+        "@storybook/react-vite": "^10.3.1",
+        "@testing-library/jest-dom": "^6.9.1",
+        "@testing-library/react": "^16.3.2",
+        "@types/node": "^24.12.0",
+        "@types/react": "^19.2.14",
+        "@types/react-dom": "^19.2.3",
+        "@vitejs/plugin-react": "^6.0.0",
+        "copyfiles": "^2.4.1",
+        "globals": "^17.4.0",
+        "jsdom": "^28.1.0",
+        "storybook": "^10.3.1",
+        "typescript": "^5.9.3",
+        "vite": "^8.0.1",
+        "vite-tsconfig-paths": "^6.1.1",
+        "vitest": "^4.0.18",
+      },
+    },
+    "packages/react/ds-global": {
+      "name": "@canonical/react-ds-global",
+<<<<<<< HEAD
+      "version": "0.26.0",
+      "dependencies": {
+        "@canonical/ds-assets": "^0.25.0",
+        "@canonical/storybook-config": "^0.25.0",
+        "@canonical/styles": "^0.25.0",
+        "@canonical/styles-old": "^0.25.0",
+        "@canonical/utils": "^0.25.0",
+=======
+      "version": "0.22.0",
+      "dependencies": {
+        "@canonical/ds-assets": "^0.22.0",
+        "@canonical/storybook-config": "^0.22.0",
+        "@canonical/styles": "^0.22.0",
+        "@canonical/styles-old": "^0.22.0",
+        "@canonical/utils": "^0.22.0",
+>>>>>>> 9b1b5dca (update version)
+>>>>>>> ccc2f75e (update version)
+        "react": "^19.2.4",
+        "react-dom": "^19.2.4",
+      },
+      "devDependencies": {
+        "@biomejs/biome": "2.4.9",
+<<<<<<< HEAD
         "@canonical/biome-config": "^0.25.0",
         "@canonical/design-tokens": "^0.6.0",
         "@canonical/storybook-helpers": "^0.25.0",
         "@canonical/typescript-config-react": "^0.25.0",
         "@canonical/webarchitect": "^0.25.0",
+=======
+        "@canonical/biome-config": "^0.22.0",
+        "@canonical/design-tokens": "^0.6.0",
+        "@canonical/ds-types": "^0.22.0",
+        "@canonical/storybook-helpers": "^0.22.0",
+        "@canonical/typescript-config-react": "^0.22.0",
+        "@canonical/webarchitect": "^0.22.0",
+>>>>>>> 9b1b5dca (update version)
         "@chromatic-com/storybook": "^5.0.1",
         "@storybook/addon-docs": "^10.3.1",
         "@storybook/react-vite": "^10.3.1",
@@ -641,12 +972,30 @@
     },
     "packages/react/ds-global-form": {
       "name": "@canonical/react-ds-global-form",
+<<<<<<< HEAD
       "version": "0.27.0",
       "dependencies": {
         "@canonical/react-ds-global": "^0.26.0",
         "@canonical/storybook-config": "^0.26.0",
         "@canonical/styles": "^0.26.0",
         "@canonical/utils": "^0.26.0",
+=======
+<<<<<<< HEAD
+      "version": "0.26.0",
+      "dependencies": {
+        "@canonical/react-ds-global": "^0.25.0",
+        "@canonical/storybook-config": "^0.25.0",
+        "@canonical/styles": "^0.25.0",
+        "@canonical/utils": "^0.25.0",
+=======
+      "version": "0.22.0",
+      "dependencies": {
+        "@canonical/react-ds-global": "^0.22.0",
+        "@canonical/storybook-config": "^0.22.0",
+        "@canonical/styles": "^0.22.0",
+        "@canonical/utils": "^0.22.0",
+>>>>>>> 9b1b5dca (update version)
+>>>>>>> ccc2f75e (update version)
         "downshift": "^9.3.2",
         "react": "^19.2.4",
         "react-dom": "^19.2.4",
@@ -654,6 +1003,7 @@
       },
       "devDependencies": {
         "@biomejs/biome": "2.4.9",
+<<<<<<< HEAD
         "@canonical/biome-config": "^0.26.0",
         "@canonical/design-tokens": "^0.6.0",
         "@canonical/storybook-addon-form-state": "^0.26.0",
@@ -661,6 +1011,25 @@
         "@canonical/storybook-helpers": "^0.26.0",
         "@canonical/typescript-config-react": "^0.26.0",
         "@canonical/webarchitect": "^0.26.0",
+=======
+<<<<<<< HEAD
+        "@canonical/biome-config": "^0.25.0",
+        "@canonical/design-tokens": "^0.6.0",
+        "@canonical/storybook-addon-form-state": "^0.25.0",
+        "@canonical/storybook-addon-msw": "^0.25.0",
+        "@canonical/storybook-helpers": "^0.25.0",
+        "@canonical/typescript-config-react": "^0.25.0",
+        "@canonical/webarchitect": "^0.25.0",
+=======
+        "@canonical/biome-config": "^0.22.0",
+        "@canonical/design-tokens": "^0.6.0",
+        "@canonical/storybook-addon-form-state": "^0.22.0",
+        "@canonical/storybook-addon-msw": "^0.22.0",
+        "@canonical/storybook-helpers": "^0.22.0",
+        "@canonical/typescript-config-react": "^0.22.0",
+        "@canonical/webarchitect": "^0.22.0",
+>>>>>>> 9b1b5dca (update version)
+>>>>>>> ccc2f75e (update version)
         "@chromatic-com/storybook": "^5.0.1",
         "@storybook/addon-docs": "^10.3.1",
         "@storybook/react-vite": "^10.3.1",
@@ -681,6 +1050,7 @@
         "vitest": "^4.0.18",
       },
     },
+<<<<<<< HEAD
     "packages/react/head": {
       "name": "@canonical/react-head",
       "version": "0.27.0",
@@ -765,22 +1135,51 @@
     },
     "packages/react/ssr": {
       "name": "@canonical/react-ssr",
+<<<<<<< HEAD
       "version": "0.27.0",
+=======
+      "version": "0.26.0",
+=======
+    "packages/react/ssr": {
+      "name": "@canonical/react-ssr",
+      "version": "0.22.0",
+>>>>>>> 9b1b5dca (update version)
+>>>>>>> ccc2f75e (update version)
       "bin": {
         "serve-express": "./dist/esm/bin/serve-express.js",
         "serve-bun": "./dist/esm/bin/serve-bun.js",
       },
       "dependencies": {
+<<<<<<< HEAD
         "@canonical/utils": "^0.26.0",
+=======
+<<<<<<< HEAD
+        "@canonical/utils": "^0.25.0",
+=======
+        "@canonical/utils": "^0.22.0",
+>>>>>>> 9b1b5dca (update version)
+>>>>>>> ccc2f75e (update version)
         "htmlparser2": "^10.1.0",
         "react": "^19.2.4",
         "react-dom": "^19.2.4",
       },
       "devDependencies": {
         "@biomejs/biome": "2.4.9",
+<<<<<<< HEAD
         "@canonical/biome-config": "^0.26.0",
         "@canonical/typescript-config-react": "^0.26.0",
         "@canonical/webarchitect": "^0.26.0",
+=======
+<<<<<<< HEAD
+        "@canonical/biome-config": "^0.25.0",
+        "@canonical/typescript-config-react": "^0.25.0",
+        "@canonical/webarchitect": "^0.25.0",
+=======
+        "@canonical/biome-config": "^0.22.0",
+        "@canonical/typescript-config-react": "^0.22.0",
+        "@canonical/webarchitect": "^0.22.0",
+>>>>>>> 9b1b5dca (update version)
+>>>>>>> ccc2f75e (update version)
         "@types/express": "^5.0.6",
         "@types/node": "^24.12.0",
         "@types/react": "^19.2.14",
@@ -798,20 +1197,40 @@
     },
     "packages/react/tokens": {
       "name": "@canonical/react-tokens",
+<<<<<<< HEAD
       "version": "0.27.0",
       "dependencies": {
         "@canonical/storybook-config": "^0.25.0",
         "@canonical/styles": "^0.25.0",
+=======
+<<<<<<< HEAD
+      "version": "0.26.0",
+=======
+      "version": "0.22.0",
+>>>>>>> 9b1b5dca (update version)
+      "dependencies": {
+        "@canonical/storybook-config": "^0.22.0",
+        "@canonical/styles": "^0.22.0",
+        "@canonical/styles-old": "^0.22.0",
+>>>>>>> ccc2f75e (update version)
         "react": "^19.2.4",
         "react-dom": "^19.2.4",
       },
       "devDependencies": {
         "@biomejs/biome": "2.4.9",
+<<<<<<< HEAD
         "@canonical/biome-config": "^0.25.0",
         "@canonical/design-tokens": "^0.6.0",
         "@canonical/ds-types": "^0.25.0",
         "@canonical/typescript-config-react": "^0.25.0",
         "@canonical/webarchitect": "^0.25.0",
+=======
+        "@canonical/biome-config": "^0.22.0",
+        "@canonical/design-tokens": "^0.6.0",
+        "@canonical/ds-types": "^0.22.0",
+        "@canonical/typescript-config-react": "^0.22.0",
+        "@canonical/webarchitect": "^0.22.0",
+>>>>>>> ccc2f75e (update version)
         "@chromatic-com/storybook": "^5.0.1",
         "@storybook/addon-docs": "^10.3.1",
         "@storybook/react-vite": "^10.3.1",
@@ -832,15 +1251,23 @@
     },
     "packages/runtime/harnesses": {
       "name": "@canonical/harnesses",
+<<<<<<< HEAD
       "version": "0.27.0",
+=======
+<<<<<<< HEAD
+      "version": "0.26.0",
+=======
+      "version": "0.22.0",
+>>>>>>> 9b1b5dca (update version)
+>>>>>>> ccc2f75e (update version)
       "dependencies": {
-        "@canonical/task": "^0.23.0",
+        "@canonical/task": "^0.22.0",
       },
       "devDependencies": {
         "@biomejs/biome": "2.4.9",
-        "@canonical/biome-config": "^0.23.0",
-        "@canonical/typescript-config": "^0.23.0",
-        "@canonical/webarchitect": "^0.23.0",
+        "@canonical/biome-config": "^0.22.0",
+        "@canonical/typescript-config": "^0.22.0",
+        "@canonical/webarchitect": "^0.22.0",
         "@types/bun": "^1.3.10",
         "@types/node": "^24.12.0",
         "typescript": "^5.9.3",
@@ -849,15 +1276,23 @@
     },
     "packages/runtime/ke": {
       "name": "@canonical/ke",
+<<<<<<< HEAD
       "version": "0.27.0",
+=======
+<<<<<<< HEAD
+      "version": "0.26.0",
+=======
+      "version": "0.22.0",
+>>>>>>> 9b1b5dca (update version)
+>>>>>>> ccc2f75e (update version)
       "dependencies": {
         "oxigraph": "^0.5.0",
       },
       "devDependencies": {
         "@biomejs/biome": "2.4.9",
-        "@canonical/biome-config": "^0.23.0",
-        "@canonical/typescript-config": "^0.23.0",
-        "@canonical/webarchitect": "^0.23.0",
+        "@canonical/biome-config": "^0.22.0",
+        "@canonical/typescript-config": "^0.22.0",
+        "@canonical/webarchitect": "^0.22.0",
         "@types/bun": "^1.3.10",
         "@types/node": "^24.12.0",
         "expect-type": "^1.3.0",
@@ -865,6 +1300,7 @@
         "vitest": "^4.0.18",
       },
     },
+<<<<<<< HEAD
     "packages/runtime/router": {
       "name": "@canonical/router-core",
       "version": "0.27.0",
@@ -879,12 +1315,21 @@
     },
     "packages/runtime/task": {
       "name": "@canonical/task",
+<<<<<<< HEAD
       "version": "0.27.0",
+=======
+      "version": "0.26.0",
+=======
+    "packages/runtime/task": {
+      "name": "@canonical/task",
+      "version": "0.22.0",
+>>>>>>> 9b1b5dca (update version)
+>>>>>>> ccc2f75e (update version)
       "devDependencies": {
         "@biomejs/biome": "2.4.9",
-        "@canonical/biome-config": "^0.23.0",
-        "@canonical/typescript-config": "^0.23.0",
-        "@canonical/webarchitect": "^0.23.0",
+        "@canonical/biome-config": "^0.22.0",
+        "@canonical/typescript-config": "^0.22.0",
+        "@canonical/webarchitect": "^0.22.0",
         "@types/bun": "^1.3.10",
         "@types/node": "^24.12.0",
         "typescript": "^5.9.3",
@@ -893,12 +1338,30 @@
     },
     "packages/storybook/addon-canonical-shell-theme": {
       "name": "@canonical/storybook-addon-shell-theme",
+<<<<<<< HEAD
       "version": "0.27.0",
       "devDependencies": {
         "@biomejs/biome": "2.4.9",
         "@canonical/biome-config": "^0.26.0",
         "@canonical/typescript-config": "^0.26.0",
         "@canonical/webarchitect": "^0.26.0",
+=======
+<<<<<<< HEAD
+      "version": "0.26.0",
+      "devDependencies": {
+        "@biomejs/biome": "2.4.9",
+        "@canonical/biome-config": "^0.25.0",
+        "@canonical/typescript-config": "^0.25.0",
+        "@canonical/webarchitect": "^0.25.0",
+=======
+      "version": "0.22.0",
+      "devDependencies": {
+        "@biomejs/biome": "2.4.9",
+        "@canonical/biome-config": "^0.22.0",
+        "@canonical/typescript-config": "^0.22.0",
+        "@canonical/webarchitect": "^0.22.0",
+>>>>>>> 9b1b5dca (update version)
+>>>>>>> ccc2f75e (update version)
         "copyfiles": "^2.4.1",
         "storybook": "^10.3.1",
         "typescript": "^5.9.3",
@@ -911,11 +1374,27 @@
     },
     "packages/storybook/addon-form-state": {
       "name": "@canonical/storybook-addon-form-state",
+<<<<<<< HEAD
       "version": "0.27.0",
       "devDependencies": {
         "@biomejs/biome": "2.4.9",
         "@canonical/biome-config": "^0.26.0",
         "@canonical/typescript-config-react": "^0.26.0",
+=======
+<<<<<<< HEAD
+      "version": "0.26.0",
+      "devDependencies": {
+        "@biomejs/biome": "2.4.9",
+        "@canonical/biome-config": "^0.25.0",
+        "@canonical/typescript-config-react": "^0.25.0",
+=======
+      "version": "0.22.0",
+      "devDependencies": {
+        "@biomejs/biome": "2.4.9",
+        "@canonical/biome-config": "^0.22.0",
+        "@canonical/typescript-config-react": "^0.22.0",
+>>>>>>> 9b1b5dca (update version)
+>>>>>>> ccc2f75e (update version)
         "@storybook/react-vite": "^10.3.1",
         "@types/react": "^19.2.14",
         "@types/react-dom": "^19.2.3",
@@ -934,15 +1413,37 @@
     },
     "packages/storybook/addon-msw": {
       "name": "@canonical/storybook-addon-msw",
+<<<<<<< HEAD
       "version": "0.27.0",
       "dependencies": {
         "@canonical/styles-debug": "^0.26.0",
+=======
+<<<<<<< HEAD
+      "version": "0.26.0",
+      "dependencies": {
+        "@canonical/styles-debug": "^0.25.0",
+=======
+      "version": "0.22.0",
+      "dependencies": {
+        "@canonical/styles-debug": "^0.22.0",
+>>>>>>> 9b1b5dca (update version)
+>>>>>>> ccc2f75e (update version)
         "@storybook/icons": "^2.0.1",
       },
       "devDependencies": {
         "@biomejs/biome": "2.4.9",
+<<<<<<< HEAD
         "@canonical/biome-config": "^0.26.0",
         "@canonical/typescript-config-react": "^0.26.0",
+=======
+<<<<<<< HEAD
+        "@canonical/biome-config": "^0.25.0",
+        "@canonical/typescript-config-react": "^0.25.0",
+=======
+        "@canonical/biome-config": "^0.22.0",
+        "@canonical/typescript-config-react": "^0.22.0",
+>>>>>>> 9b1b5dca (update version)
+>>>>>>> ccc2f75e (update version)
         "@storybook/addon-docs": "^10.3.1",
         "@storybook/react-vite": "^10.3.1",
         "@types/node": "^24.12.0",
@@ -964,16 +1465,40 @@
     },
     "packages/storybook/addon-utils": {
       "name": "@canonical/storybook-addon-utils",
+<<<<<<< HEAD
       "version": "0.27.0",
       "dependencies": {
         "@canonical/styles-debug": "^0.26.0",
+=======
+<<<<<<< HEAD
+      "version": "0.26.0",
+      "dependencies": {
+        "@canonical/styles-debug": "^0.25.0",
+=======
+      "version": "0.22.0",
+      "dependencies": {
+        "@canonical/styles-debug": "^0.22.0",
+>>>>>>> 9b1b5dca (update version)
+>>>>>>> ccc2f75e (update version)
         "@storybook/icons": "^2.0.1",
       },
       "devDependencies": {
         "@biomejs/biome": "2.4.9",
+<<<<<<< HEAD
         "@canonical/biome-config": "^0.26.0",
         "@canonical/styles": "^0.26.0",
         "@canonical/typescript-config-react": "^0.26.0",
+=======
+<<<<<<< HEAD
+        "@canonical/biome-config": "^0.25.0",
+        "@canonical/styles": "^0.25.0",
+        "@canonical/typescript-config-react": "^0.25.0",
+=======
+        "@canonical/biome-config": "^0.22.0",
+        "@canonical/styles": "^0.22.0",
+        "@canonical/typescript-config-react": "^0.22.0",
+>>>>>>> 9b1b5dca (update version)
+>>>>>>> ccc2f75e (update version)
         "@storybook/addon-docs": "^10.3.1",
         "@storybook/react-vite": "^10.3.1",
         "@types/react": "^19.2.14",
@@ -993,17 +1518,41 @@
     },
     "packages/storybook/helpers": {
       "name": "@canonical/storybook-helpers",
+<<<<<<< HEAD
       "version": "0.27.0",
       "dependencies": {
         "@canonical/ds-types": "^0.26.0",
+=======
+<<<<<<< HEAD
+      "version": "0.26.0",
+      "dependencies": {
+        "@canonical/ds-types": "^0.25.0",
+=======
+      "version": "0.22.0",
+      "dependencies": {
+        "@canonical/ds-types": "^0.22.0",
+>>>>>>> 9b1b5dca (update version)
+>>>>>>> ccc2f75e (update version)
         "react": "^19.2.4",
         "react-dom": "^19.2.4",
       },
       "devDependencies": {
         "@biomejs/biome": "2.4.9",
+<<<<<<< HEAD
         "@canonical/biome-config": "^0.26.0",
         "@canonical/typescript-config-react": "^0.26.0",
         "@canonical/webarchitect": "^0.26.0",
+=======
+<<<<<<< HEAD
+        "@canonical/biome-config": "^0.25.0",
+        "@canonical/typescript-config-react": "^0.25.0",
+        "@canonical/webarchitect": "^0.25.0",
+=======
+        "@canonical/biome-config": "^0.22.0",
+        "@canonical/typescript-config-react": "^0.22.0",
+        "@canonical/webarchitect": "^0.22.0",
+>>>>>>> 9b1b5dca (update version)
+>>>>>>> ccc2f75e (update version)
         "@testing-library/jest-dom": "^6.9.1",
         "@testing-library/react": "^16.3.2",
         "@types/react": "^19.2.14",
@@ -1016,12 +1565,169 @@
         "vitest": "^4.0.18",
       },
     },
+<<<<<<< HEAD
     "packages/styles/debug": {
       "name": "@canonical/styles-debug",
       "version": "0.27.0",
       "devDependencies": {
         "@biomejs/biome": "2.4.9",
         "@canonical/biome-config": "^0.26.0",
+=======
+    "packages/styles-old/elements": {
+      "name": "@canonical/styles-elements",
+<<<<<<< HEAD
+      "version": "0.26.0",
+=======
+      "version": "0.22.0",
+>>>>>>> 9b1b5dca (update version)
+      "dependencies": {
+        "normalize.css": "^8.0.1",
+      },
+      "devDependencies": {
+        "@biomejs/biome": "2.4.9",
+<<<<<<< HEAD
+        "@canonical/biome-config": "^0.25.0",
+=======
+        "@canonical/biome-config": "^0.22.0",
+>>>>>>> 9b1b5dca (update version)
+      },
+    },
+    "packages/styles-old/main/canonical": {
+      "name": "@canonical/styles-old",
+<<<<<<< HEAD
+      "version": "0.26.0",
+      "dependencies": {
+        "@canonical/styles-elements": "^0.25.0",
+        "@canonical/styles-modes-canonical": "^0.25.0",
+        "@canonical/styles-modes-density": "^0.25.0",
+        "@canonical/styles-modes-intents": "^0.25.0",
+        "@canonical/styles-modes-motion": "^0.25.0",
+        "@canonical/styles-primitives-canonical": "^0.25.0",
+=======
+      "version": "0.22.0",
+      "dependencies": {
+        "@canonical/styles-elements": "^0.22.0",
+        "@canonical/styles-modes-canonical": "^0.22.0",
+        "@canonical/styles-modes-density": "^0.22.0",
+        "@canonical/styles-modes-intents": "^0.22.0",
+        "@canonical/styles-modes-motion": "^0.22.0",
+        "@canonical/styles-primitives-canonical": "^0.22.0",
+>>>>>>> 9b1b5dca (update version)
+        "normalize.css": "^8.0.1",
+      },
+      "devDependencies": {
+        "@biomejs/biome": "2.4.9",
+<<<<<<< HEAD
+        "@canonical/biome-config": "^0.25.0",
+=======
+        "@canonical/biome-config": "^0.22.0",
+>>>>>>> 9b1b5dca (update version)
+      },
+    },
+    "packages/styles-old/modes/canonical": {
+      "name": "@canonical/styles-modes-canonical",
+<<<<<<< HEAD
+      "version": "0.26.0",
+      "devDependencies": {
+        "@biomejs/biome": "2.4.9",
+        "@canonical/biome-config": "^0.25.0",
+=======
+      "version": "0.22.0",
+      "devDependencies": {
+        "@biomejs/biome": "2.4.9",
+        "@canonical/biome-config": "^0.22.0",
+>>>>>>> 9b1b5dca (update version)
+      },
+    },
+    "packages/styles-old/modes/density": {
+      "name": "@canonical/styles-modes-density",
+<<<<<<< HEAD
+      "version": "0.26.0",
+      "devDependencies": {
+        "@biomejs/biome": "2.4.9",
+        "@canonical/biome-config": "^0.25.0",
+=======
+      "version": "0.22.0",
+      "devDependencies": {
+        "@biomejs/biome": "2.4.9",
+        "@canonical/biome-config": "^0.22.0",
+>>>>>>> 9b1b5dca (update version)
+      },
+    },
+    "packages/styles-old/modes/intents": {
+      "name": "@canonical/styles-modes-intents",
+<<<<<<< HEAD
+      "version": "0.26.0",
+=======
+      "version": "0.22.0",
+>>>>>>> 9b1b5dca (update version)
+      "dependencies": {
+        "@canonical/tokens": "^0.10.0-experimental.4",
+      },
+      "devDependencies": {
+        "@biomejs/biome": "2.4.9",
+<<<<<<< HEAD
+        "@canonical/biome-config": "^0.25.0",
+=======
+        "@canonical/biome-config": "^0.22.0",
+>>>>>>> 9b1b5dca (update version)
+      },
+    },
+    "packages/styles-old/modes/motion": {
+      "name": "@canonical/styles-modes-motion",
+<<<<<<< HEAD
+      "version": "0.26.0",
+=======
+      "version": "0.22.0",
+>>>>>>> 9b1b5dca (update version)
+      "dependencies": {
+        "normalize.css": "^8.0.1",
+      },
+      "devDependencies": {
+        "@biomejs/biome": "2.4.9",
+<<<<<<< HEAD
+        "@canonical/biome-config": "^0.25.0",
+=======
+        "@canonical/biome-config": "^0.22.0",
+>>>>>>> 9b1b5dca (update version)
+      },
+    },
+    "packages/styles-old/primitives/canonical": {
+      "name": "@canonical/styles-primitives-canonical",
+<<<<<<< HEAD
+      "version": "0.26.0",
+=======
+      "version": "0.22.0",
+>>>>>>> 9b1b5dca (update version)
+      "dependencies": {
+        "@canonical/tokens": "^0.10.0-experimental.4",
+        "@canonical/typography": "^0.17.1",
+        "normalize.css": "^8.0.1",
+      },
+      "devDependencies": {
+        "@biomejs/biome": "2.4.9",
+<<<<<<< HEAD
+        "@canonical/biome-config": "^0.25.0",
+=======
+        "@canonical/biome-config": "^0.22.0",
+>>>>>>> 9b1b5dca (update version)
+        "@canonical/tokens": "^0.9.0",
+      },
+    },
+    "packages/styles/debug": {
+      "name": "@canonical/styles-debug",
+<<<<<<< HEAD
+      "version": "0.26.0",
+      "devDependencies": {
+        "@biomejs/biome": "2.4.9",
+        "@canonical/biome-config": "^0.25.0",
+=======
+      "version": "0.22.0",
+      "devDependencies": {
+        "@biomejs/biome": "2.4.9",
+        "@canonical/biome-config": "^0.22.0",
+>>>>>>> 9b1b5dca (update version)
+>>>>>>> ccc2f75e (update version)
       },
       "peerDependencies": {
         "@canonical/design-tokens": ">=0.4.0",
@@ -1032,15 +1738,37 @@
     },
     "packages/styles/main": {
       "name": "@canonical/styles",
+<<<<<<< HEAD
       "version": "0.27.0",
       "dependencies": {
         "@canonical/design-tokens": "^0.6.0",
         "@canonical/styles-typography": "^0.26.0",
+=======
+<<<<<<< HEAD
+      "version": "0.26.0",
+      "dependencies": {
+        "@canonical/design-tokens": "^0.6.0",
+        "@canonical/styles-typography": "^0.25.0",
+=======
+      "version": "0.22.0",
+      "dependencies": {
+        "@canonical/design-tokens": "^0.6.0",
+        "@canonical/styles-typography": "^0.22.0",
+>>>>>>> 9b1b5dca (update version)
+>>>>>>> ccc2f75e (update version)
         "normalize.css": "^8.0.1",
       },
       "devDependencies": {
         "@biomejs/biome": "2.4.9",
+<<<<<<< HEAD
         "@canonical/biome-config": "^0.26.0",
+=======
+<<<<<<< HEAD
+        "@canonical/biome-config": "^0.25.0",
+=======
+        "@canonical/biome-config": "^0.22.0",
+>>>>>>> 9b1b5dca (update version)
+>>>>>>> ccc2f75e (update version)
       },
       "peerDependencies": {
         "@canonical/ds-assets": ">=0.18.0",
@@ -1051,7 +1779,15 @@
     },
     "packages/styles/typography": {
       "name": "@canonical/styles-typography",
+<<<<<<< HEAD
       "version": "0.27.0",
+=======
+<<<<<<< HEAD
+      "version": "0.26.0",
+=======
+      "version": "0.22.0",
+>>>>>>> 9b1b5dca (update version)
+>>>>>>> ccc2f75e (update version)
       "bin": {
         "extract-font-data": "./src/scripts/extractFontData.ts",
       },
@@ -1061,8 +1797,18 @@
       },
       "devDependencies": {
         "@biomejs/biome": "2.4.9",
+<<<<<<< HEAD
         "@canonical/biome-config": "^0.26.0",
         "@canonical/typescript-config": "^0.26.0",
+=======
+<<<<<<< HEAD
+        "@canonical/biome-config": "^0.25.0",
+        "@canonical/typescript-config": "^0.25.0",
+=======
+        "@canonical/biome-config": "^0.22.0",
+        "@canonical/typescript-config": "^0.22.0",
+>>>>>>> 9b1b5dca (update version)
+>>>>>>> ccc2f75e (update version)
         "@types/bun": "^1.3.10",
         "@types/node": "^24.12.0",
         "typescript": "^5.9.3",
@@ -1073,15 +1819,37 @@
     },
     "packages/summon/component": {
       "name": "@canonical/summon-component",
+<<<<<<< HEAD
       "version": "0.27.0",
+=======
+<<<<<<< HEAD
+      "version": "0.26.0",
+>>>>>>> ccc2f75e (update version)
       "dependencies": {
         "@canonical/utils": "^0.27.0",
       },
       "devDependencies": {
         "@biomejs/biome": "2.4.9",
+<<<<<<< HEAD
         "@canonical/biome-config": "^0.27.0",
         "@canonical/typescript-config": "^0.27.0",
         "@canonical/webarchitect": "^0.27.0",
+=======
+        "@canonical/biome-config": "^0.26.0",
+        "@canonical/typescript-config": "^0.26.0",
+        "@canonical/webarchitect": "^0.26.0",
+=======
+      "version": "0.22.0",
+      "dependencies": {
+        "@canonical/utils": "^0.22.0",
+      },
+      "devDependencies": {
+        "@biomejs/biome": "2.4.9",
+        "@canonical/biome-config": "^0.22.0",
+        "@canonical/typescript-config": "^0.22.0",
+        "@canonical/webarchitect": "^0.22.0",
+>>>>>>> 9b1b5dca (update version)
+>>>>>>> ccc2f75e (update version)
         "@types/bun": "^1.3.10",
         "@types/node": "^24.12.0",
         "typescript": "^5.9.3",
@@ -1094,18 +1862,26 @@
     },
     "packages/summon/core": {
       "name": "@canonical/summon-core",
+<<<<<<< HEAD
       "version": "0.27.0",
+=======
+<<<<<<< HEAD
+      "version": "0.26.0",
+=======
+      "version": "0.22.0",
+>>>>>>> 9b1b5dca (update version)
+>>>>>>> ccc2f75e (update version)
       "dependencies": {
-        "@canonical/task": "^0.23.0",
-        "@canonical/utils": "^0.23.0",
+        "@canonical/task": "^0.22.0",
+        "@canonical/utils": "^0.22.0",
         "chalk": "^5.6.2",
         "ejs": "^5.0.0",
       },
       "devDependencies": {
         "@biomejs/biome": "2.4.9",
-        "@canonical/biome-config": "^0.23.0",
-        "@canonical/typescript-config": "^0.23.0",
-        "@canonical/webarchitect": "^0.23.0",
+        "@canonical/biome-config": "^0.22.0",
+        "@canonical/typescript-config": "^0.22.0",
+        "@canonical/webarchitect": "^0.22.0",
         "@types/bun": "^1.3.10",
         "@types/ejs": "^3.1.5",
         "@types/node": "^24.12.0",
@@ -1115,12 +1891,30 @@
     },
     "packages/summon/monorepo": {
       "name": "@canonical/summon-monorepo",
+<<<<<<< HEAD
       "version": "0.27.0",
       "devDependencies": {
         "@biomejs/biome": "2.4.9",
         "@canonical/biome-config": "^0.27.0",
         "@canonical/typescript-config": "^0.27.0",
         "@canonical/webarchitect": "^0.27.0",
+=======
+<<<<<<< HEAD
+      "version": "0.26.0",
+      "devDependencies": {
+        "@biomejs/biome": "2.4.9",
+        "@canonical/biome-config": "^0.26.0",
+        "@canonical/typescript-config": "^0.26.0",
+        "@canonical/webarchitect": "^0.26.0",
+=======
+      "version": "0.22.0",
+      "devDependencies": {
+        "@biomejs/biome": "2.4.9",
+        "@canonical/biome-config": "^0.22.0",
+        "@canonical/typescript-config": "^0.22.0",
+        "@canonical/webarchitect": "^0.22.0",
+>>>>>>> 9b1b5dca (update version)
+>>>>>>> ccc2f75e (update version)
         "@types/bun": "^1.3.10",
         "@types/node": "^24.12.0",
         "typescript": "^5.9.3",
@@ -1133,15 +1927,37 @@
     },
     "packages/summon/package": {
       "name": "@canonical/summon-package",
+<<<<<<< HEAD
       "version": "0.27.0",
+=======
+<<<<<<< HEAD
+      "version": "0.26.0",
+>>>>>>> ccc2f75e (update version)
       "dependencies": {
         "@canonical/utils": "^0.27.0",
       },
       "devDependencies": {
         "@biomejs/biome": "2.4.9",
+<<<<<<< HEAD
         "@canonical/biome-config": "^0.27.0",
         "@canonical/typescript-config": "^0.27.0",
         "@canonical/webarchitect": "^0.27.0",
+=======
+        "@canonical/biome-config": "^0.26.0",
+        "@canonical/typescript-config": "^0.26.0",
+        "@canonical/webarchitect": "^0.26.0",
+=======
+      "version": "0.22.0",
+      "dependencies": {
+        "@canonical/utils": "^0.22.0",
+      },
+      "devDependencies": {
+        "@biomejs/biome": "2.4.9",
+        "@canonical/biome-config": "^0.22.0",
+        "@canonical/typescript-config": "^0.22.0",
+        "@canonical/webarchitect": "^0.22.0",
+>>>>>>> 9b1b5dca (update version)
+>>>>>>> ccc2f75e (update version)
         "@types/bun": "^1.3.10",
         "@types/node": "^24.12.0",
         "typescript": "^5.9.3",
@@ -1154,7 +1970,15 @@
     },
     "packages/svelte/ds-app-launchpad": {
       "name": "@canonical/svelte-ds-app-launchpad",
+<<<<<<< HEAD
       "version": "0.27.0",
+=======
+<<<<<<< HEAD
+      "version": "0.26.0",
+=======
+      "version": "0.22.1",
+>>>>>>> 9b1b5dca (update version)
+>>>>>>> ccc2f75e (update version)
       "dependencies": {
         "@canonical/launchpad-design-tokens": "^1.1.1",
         "@canonical/svelte-icons": "^0.0.9",
@@ -1162,13 +1986,13 @@
       },
       "devDependencies": {
         "@biomejs/biome": "2.4.9",
-        "@canonical/biome-config": "^0.23.0",
+        "@canonical/biome-config": "^0.22.0",
         "@canonical/design-tokens": "^0.6.0",
-        "@canonical/storybook-config": "^0.23.0",
-        "@canonical/storybook-helpers": "^0.23.0",
-        "@canonical/svelte-ssr-test": "^0.23.0",
-        "@canonical/typescript-config-svelte": "^0.23.0",
-        "@canonical/webarchitect": "^0.23.0",
+        "@canonical/storybook-config": "^0.22.0",
+        "@canonical/storybook-helpers": "^0.22.0",
+        "@canonical/svelte-ssr-test": "^0.22.0",
+        "@canonical/typescript-config-svelte": "^0.22.0",
+        "@canonical/webarchitect": "^0.22.0",
         "@storybook/addon-docs": "^10.3.1",
         "@storybook/addon-svelte-csf": "^5.0.11",
         "@sveltejs/package": "^2.5.7",
@@ -1190,15 +2014,23 @@
     },
     "packages/svelte/ssr-test": {
       "name": "@canonical/svelte-ssr-test",
+<<<<<<< HEAD
       "version": "0.27.0",
+=======
+<<<<<<< HEAD
+      "version": "0.26.0",
+=======
+      "version": "0.22.0",
+>>>>>>> 9b1b5dca (update version)
+>>>>>>> ccc2f75e (update version)
       "dependencies": {
         "@testing-library/dom": "^10.4.1",
         "jsdom": "^28.1.0",
       },
       "devDependencies": {
         "@biomejs/biome": "2.4.9",
-        "@canonical/biome-config": "^0.23.0",
-        "@canonical/typescript-config": "^0.23.0",
+        "@canonical/biome-config": "^0.22.0",
+        "@canonical/typescript-config": "^0.22.0",
         "@sveltejs/vite-plugin-svelte": "^7.0.0",
         "@types/jsdom": "^28.0.0",
         "typescript": "^5.9.3",
@@ -1211,15 +2043,37 @@
     },
     "packages/utils": {
       "name": "@canonical/utils",
+<<<<<<< HEAD
       "version": "0.27.0",
+=======
+<<<<<<< HEAD
+      "version": "0.26.0",
+>>>>>>> ccc2f75e (update version)
       "dependencies": {
         "@canonical/ds-types": "^0.27.0",
       },
       "devDependencies": {
         "@biomejs/biome": "2.4.9",
+<<<<<<< HEAD
         "@canonical/biome-config": "^0.27.0",
         "@canonical/typescript-config": "^0.27.0",
         "@canonical/webarchitect": "^0.27.0",
+=======
+        "@canonical/biome-config": "^0.26.0",
+        "@canonical/typescript-config": "^0.26.0",
+        "@canonical/webarchitect": "^0.26.0",
+=======
+      "version": "0.22.0",
+      "dependencies": {
+        "@canonical/ds-types": "^0.22.0",
+      },
+      "devDependencies": {
+        "@biomejs/biome": "2.4.9",
+        "@canonical/biome-config": "^0.22.0",
+        "@canonical/typescript-config": "^0.22.0",
+        "@canonical/webarchitect": "^0.22.0",
+>>>>>>> 9b1b5dca (update version)
+>>>>>>> ccc2f75e (update version)
         "@types/node": "^24.12.0",
         "globals": "^17.4.0",
         "typescript": "^5.9.3",
@@ -1229,7 +2083,15 @@
     },
     "packages/webarchitect": {
       "name": "@canonical/webarchitect",
+<<<<<<< HEAD
       "version": "0.27.0",
+=======
+<<<<<<< HEAD
+      "version": "0.26.0",
+=======
+      "version": "0.22.0",
+>>>>>>> 9b1b5dca (update version)
+>>>>>>> ccc2f75e (update version)
       "bin": {
         "webarchitect": "src/cli.ts",
       },
@@ -1240,8 +2102,18 @@
       },
       "devDependencies": {
         "@biomejs/biome": "2.4.9",
+<<<<<<< HEAD
         "@canonical/biome-config": "^0.27.0",
         "@canonical/typescript-config": "^0.27.0",
+=======
+<<<<<<< HEAD
+        "@canonical/biome-config": "^0.26.0",
+        "@canonical/typescript-config": "^0.26.0",
+=======
+        "@canonical/biome-config": "^0.22.0",
+        "@canonical/typescript-config": "^0.22.0",
+>>>>>>> 9b1b5dca (update version)
+>>>>>>> ccc2f75e (update version)
         "@types/json-schema": "^7.0.15",
         "@types/node": "^24.12.0",
         "typescript": "^5.9.3",
@@ -1259,7 +2131,7 @@
 
     "@alcalzone/ansi-tokenize": ["@alcalzone/ansi-tokenize@0.2.5", "", { "dependencies": { "ansi-styles": "^6.2.1", "is-fullwidth-code-point": "^5.0.0" } }, "sha512-3NX/MpTdroi0aKz134A6RC2Gb2iXVECN4QaAXnvCIxxIm3C3AVB1mkUe8NaaiyvOpDfsrqWhYtj+Q6a62RrTsw=="],
 
-    "@asamuzakjp/css-color": ["@asamuzakjp/css-color@5.1.9", "", { "dependencies": { "@csstools/css-calc": "^3.1.1", "@csstools/css-color-parser": "^4.0.2", "@csstools/css-parser-algorithms": "^4.0.0", "@csstools/css-tokenizer": "^4.0.0" } }, "sha512-zd9c/Wdso6v1U7v6w3i/hbAr4K7NaSHImdpvmLt+Y9ea5BhilnIGNkfhOJ7FEIuPipAnE9tZeDOll05WDT0kgg=="],
+    "@asamuzakjp/css-color": ["@asamuzakjp/css-color@5.1.5", "", { "dependencies": { "@csstools/css-calc": "^3.1.1", "@csstools/css-color-parser": "^4.0.2", "@csstools/css-parser-algorithms": "^4.0.0", "@csstools/css-tokenizer": "^4.0.0", "lru-cache": "^11.2.7" } }, "sha512-8cMAA1bE66Mb/tfmkhcfJLjEPgyT7SSy6lW6id5XL113ai1ky76d/1L27sGnXCMsLfq66DInAU3OzuahB4lu9Q=="],
 
     "@asamuzakjp/dom-selector": ["@asamuzakjp/dom-selector@6.8.1", "", { "dependencies": { "@asamuzakjp/nwsapi": "^2.3.9", "bidi-js": "^1.0.3", "css-tree": "^3.1.0", "is-potential-custom-element-name": "^1.0.1", "lru-cache": "^11.2.6" } }, "sha512-MvRz1nCqW0fsy8Qz4dnLIvhOlMzqDVBabZx6lH+YywFDdjXhMY37SmpV1XFX3JzG5GWHn63j6HX6QPr3lZXHvQ=="],
 
@@ -1377,19 +2249,18 @@
 
     "@canonical/react-ds-global-form": ["@canonical/react-ds-global-form@workspace:packages/react/ds-global-form"],
 
+<<<<<<< HEAD
     "@canonical/react-head": ["@canonical/react-head@workspace:packages/react/head"],
 
     "@canonical/react-hooks": ["@canonical/react-hooks@workspace:packages/react/hooks"],
 
+=======
+>>>>>>> 9b1b5dca (update version)
     "@canonical/react-ssr": ["@canonical/react-ssr@workspace:packages/react/ssr"],
 
     "@canonical/react-tokens": ["@canonical/react-tokens@workspace:packages/react/tokens"],
 
     "@canonical/renovate-config": ["@canonical/renovate-config@workspace:configs/renovate"],
-
-    "@canonical/router-core": ["@canonical/router-core@workspace:packages/runtime/router"],
-
-    "@canonical/router-react": ["@canonical/router-react@workspace:packages/react/router"],
 
     "@canonical/storybook-addon-form-state": ["@canonical/storybook-addon-form-state@workspace:packages/storybook/addon-form-state"],
 
@@ -1535,7 +2406,7 @@
 
     "@gar/promise-retry": ["@gar/promise-retry@1.0.3", "", {}, "sha512-GmzA9ckNokPypTg10pgpeHNQe7ph+iIKKmhKu3Ob9ANkswreCx7R3cKmY781K8QK3AqVL3xVh9A42JvIAbkkSA=="],
 
-    "@hono/node-server": ["@hono/node-server@1.19.13", "", { "peerDependencies": { "hono": "^4" } }, "sha512-TsQLe4i2gvoTtrHje625ngThGBySOgSK3Xo2XRYOdqGN1teR8+I7vchQC46uLJi8OF62YTYA3AhSpumtkhsaKQ=="],
+    "@hono/node-server": ["@hono/node-server@1.19.12", "", { "peerDependencies": { "hono": "^4" } }, "sha512-txsUW4SQ1iilgE0l9/e9VQWmELXifEFvmdA1j6WFh/aFPj99hIntrSsq/if0UWyGVkmrRPKA1wCeP+UCr1B9Uw=="],
 
     "@hutson/parse-repository-url": ["@hutson/parse-repository-url@3.0.2", "", {}, "sha512-H9XAx3hc0BQHY6l+IFSWHDySypcXsvsuLhgYLUGywmJ5pswRVQJUHpOsobnLYp2ZUaUlKiKDrgWWhosOwAEM8Q=="],
 
@@ -1625,7 +2496,7 @@
 
     "@jsonjoy.com/util": ["@jsonjoy.com/util@1.9.0", "", { "dependencies": { "@jsonjoy.com/buffers": "^1.0.0", "@jsonjoy.com/codegen": "^1.0.0" }, "peerDependencies": { "tslib": "2" } }, "sha512-pLuQo+VPRnN8hfPqUTLTHk126wuYdXVxE6aDmjSeV4NCAgyxWbiOIeNJVtID3h1Vzpoi9m4jXezf73I6LgabgQ=="],
 
-    "@lezer/common": ["@lezer/common@1.5.2", "", {}, "sha512-sxQE460fPZyU3sdc8lafxiPwJHBzZRy/udNFynGQky1SePYBdhkBl1kOagA9uT3pxR8K09bOrmTUqA9wb/PjSQ=="],
+    "@lezer/common": ["@lezer/common@1.5.1", "", {}, "sha512-6YRVG9vBkaY7p1IVxL4s44n5nUnaNnGM2/AckNgYOnxTG2kWh1vR8BMxPseWPjRNpb5VtXnMpeYAEAADoRV1Iw=="],
 
     "@lezer/css": ["@lezer/css@1.3.3", "", { "dependencies": { "@lezer/common": "^1.2.0", "@lezer/highlight": "^1.0.0", "@lezer/lr": "^1.3.0" } }, "sha512-RzBo8r+/6QJeow7aPHIpGVIH59xTcJXp399820gZoMo9noQDRVpJLheIBUicYwKcsbOYoBRoLZlf2720dG/4Tg=="],
 
@@ -1735,7 +2606,7 @@
 
     "@open-draft/until": ["@open-draft/until@2.1.0", "", {}, "sha512-U69T3ItWHvLwGg5eJ0n3I62nWuE6ilHlmz7zM0npLBRvPRd7e6NYmg54vvRtP5mZG7kZqZCFVdsTWo7BPtBujg=="],
 
-    "@oxc-project/types": ["@oxc-project/types@0.124.0", "", {}, "sha512-VBFWMTBvHxS11Z5Lvlr3IWgrwhMTXV+Md+EQF0Xf60+wAdsGFTBx7X7K/hP4pi8N7dcm1RvcHwDxZ16Qx8keUg=="],
+    "@oxc-project/types": ["@oxc-project/types@0.122.0", "", {}, "sha512-oLAl5kBpV4w69UtFZ9xqcmTi+GENWOcPF7FCrczTiBbmC0ibXxCwyvZGbO39rCVEuLGAZM84DH0pUIyyv/YJzA=="],
 
     "@parse5/tools": ["@parse5/tools@0.3.0", "", { "dependencies": { "parse5": "^7.0.0" } }, "sha512-zxRyTHkqb7WQMV8kTNBKWb1BeOFUKXBXTBWuxg9H9hfvQB3IwP6Iw2U75Ia5eyRxPNltmY7E8YAlz6zWwUnjKg=="],
 
@@ -1745,35 +2616,35 @@
 
     "@polka/url": ["@polka/url@1.0.0-next.29", "", {}, "sha512-wwQAWhWSuHaag8c4q/KN/vCoeOJYshAIvMQwD4GpSb3OiZklFfvAgmj0VCBBImRpuF/aFgIRzllXlVX93Jevww=="],
 
-    "@rolldown/binding-android-arm64": ["@rolldown/binding-android-arm64@1.0.0-rc.15", "", { "os": "android", "cpu": "arm64" }, "sha512-YYe6aWruPZDtHNpwu7+qAHEMbQ/yRl6atqb/AhznLTnD3UY99Q1jE7ihLSahNWkF4EqRPVC4SiR4O0UkLK02tA=="],
+    "@rolldown/binding-android-arm64": ["@rolldown/binding-android-arm64@1.0.0-rc.12", "", { "os": "android", "cpu": "arm64" }, "sha512-pv1y2Fv0JybcykuiiD3qBOBdz6RteYojRFY1d+b95WVuzx211CRh+ytI/+9iVyWQ6koTh5dawe4S/yRfOFjgaA=="],
 
-    "@rolldown/binding-darwin-arm64": ["@rolldown/binding-darwin-arm64@1.0.0-rc.15", "", { "os": "darwin", "cpu": "arm64" }, "sha512-oArR/ig8wNTPYsXL+Mzhs0oxhxfuHRfG7Ikw7jXsw8mYOtk71W0OkF2VEVh699pdmzjPQsTjlD1JIOoHkLP1Fg=="],
+    "@rolldown/binding-darwin-arm64": ["@rolldown/binding-darwin-arm64@1.0.0-rc.12", "", { "os": "darwin", "cpu": "arm64" }, "sha512-cFYr6zTG/3PXXF3pUO+umXxt1wkRK/0AYT8lDwuqvRC+LuKYWSAQAQZjCWDQpAH172ZV6ieYrNnFzVVcnSflAg=="],
 
-    "@rolldown/binding-darwin-x64": ["@rolldown/binding-darwin-x64@1.0.0-rc.15", "", { "os": "darwin", "cpu": "x64" }, "sha512-YzeVqOqjPYvUbJSWJ4EDL8ahbmsIXQpgL3JVipmN+MX0XnXMeWomLN3Fb+nwCmP/jfyqte5I3XRSm7OfQrbyxw=="],
+    "@rolldown/binding-darwin-x64": ["@rolldown/binding-darwin-x64@1.0.0-rc.12", "", { "os": "darwin", "cpu": "x64" }, "sha512-ZCsYknnHzeXYps0lGBz8JrF37GpE9bFVefrlmDrAQhOEi4IOIlcoU1+FwHEtyXGx2VkYAvhu7dyBf75EJQffBw=="],
 
-    "@rolldown/binding-freebsd-x64": ["@rolldown/binding-freebsd-x64@1.0.0-rc.15", "", { "os": "freebsd", "cpu": "x64" }, "sha512-9Erhx956jeQ0nNTyif1+QWAXDRD38ZNjr//bSHrt6wDwB+QkAfl2q6Mn1k6OBPerznjRmbM10lgRb1Pli4xZPw=="],
+    "@rolldown/binding-freebsd-x64": ["@rolldown/binding-freebsd-x64@1.0.0-rc.12", "", { "os": "freebsd", "cpu": "x64" }, "sha512-dMLeprcVsyJsKolRXyoTH3NL6qtsT0Y2xeuEA8WQJquWFXkEC4bcu1rLZZSnZRMtAqwtrF/Ib9Ddtpa/Gkge9Q=="],
 
-    "@rolldown/binding-linux-arm-gnueabihf": ["@rolldown/binding-linux-arm-gnueabihf@1.0.0-rc.15", "", { "os": "linux", "cpu": "arm" }, "sha512-cVwk0w8QbZJGTnP/AHQBs5yNwmpgGYStL88t4UIaqcvYJWBfS0s3oqVLZPwsPU6M0zlW4GqjP0Zq5MnAGwFeGA=="],
+    "@rolldown/binding-linux-arm-gnueabihf": ["@rolldown/binding-linux-arm-gnueabihf@1.0.0-rc.12", "", { "os": "linux", "cpu": "arm" }, "sha512-YqWjAgGC/9M1lz3GR1r1rP79nMgo3mQiiA+Hfo+pvKFK1fAJ1bCi0ZQVh8noOqNacuY1qIcfyVfP6HoyBRZ85Q=="],
 
-    "@rolldown/binding-linux-arm64-gnu": ["@rolldown/binding-linux-arm64-gnu@1.0.0-rc.15", "", { "os": "linux", "cpu": "arm64" }, "sha512-eBZ/u8iAK9SoHGanqe/jrPnY0JvBN6iXbVOsbO38mbz+ZJsaobExAm1Iu+rxa4S1l2FjG0qEZn4Rc6X8n+9M+w=="],
+    "@rolldown/binding-linux-arm64-gnu": ["@rolldown/binding-linux-arm64-gnu@1.0.0-rc.12", "", { "os": "linux", "cpu": "arm64" }, "sha512-/I5AS4cIroLpslsmzXfwbe5OmWvSsrFuEw3mwvbQ1kDxJ822hFHIx+vsN/TAzNVyepI/j/GSzrtCIwQPeKCLIg=="],
 
-    "@rolldown/binding-linux-arm64-musl": ["@rolldown/binding-linux-arm64-musl@1.0.0-rc.15", "", { "os": "linux", "cpu": "arm64" }, "sha512-ZvRYMGrAklV9PEkgt4LQM6MjQX2P58HPAuecwYObY2DhS2t35R0I810bKi0wmaYORt6m/2Sm+Z+nFgb0WhXNcQ=="],
+    "@rolldown/binding-linux-arm64-musl": ["@rolldown/binding-linux-arm64-musl@1.0.0-rc.12", "", { "os": "linux", "cpu": "arm64" }, "sha512-V6/wZztnBqlx5hJQqNWwFdxIKN0m38p8Jas+VoSfgH54HSj9tKTt1dZvG6JRHcjh6D7TvrJPWFGaY9UBVOaWPw=="],
 
-    "@rolldown/binding-linux-ppc64-gnu": ["@rolldown/binding-linux-ppc64-gnu@1.0.0-rc.15", "", { "os": "linux", "cpu": "ppc64" }, "sha512-VDpgGBzgfg5hLg+uBpCLoFG5kVvEyafmfxGUV0UHLcL5irxAK7PKNeC2MwClgk6ZAiNhmo9FLhRYgvMmedLtnQ=="],
+    "@rolldown/binding-linux-ppc64-gnu": ["@rolldown/binding-linux-ppc64-gnu@1.0.0-rc.12", "", { "os": "linux", "cpu": "ppc64" }, "sha512-AP3E9BpcUYliZCxa3w5Kwj9OtEVDYK6sVoUzy4vTOJsjPOgdaJZKFmN4oOlX0Wp0RPV2ETfmIra9x1xuayFB7g=="],
 
-    "@rolldown/binding-linux-s390x-gnu": ["@rolldown/binding-linux-s390x-gnu@1.0.0-rc.15", "", { "os": "linux", "cpu": "s390x" }, "sha512-y1uXY3qQWCzcPgRJATPSOUP4tCemh4uBdY7e3EZbVwCJTY3gLJWnQABgeUetvED+bt1FQ01OeZwvhLS2bpNrAQ=="],
+    "@rolldown/binding-linux-s390x-gnu": ["@rolldown/binding-linux-s390x-gnu@1.0.0-rc.12", "", { "os": "linux", "cpu": "s390x" }, "sha512-nWwpvUSPkoFmZo0kQazZYOrT7J5DGOJ/+QHHzjvNlooDZED8oH82Yg67HvehPPLAg5fUff7TfWFHQS8IV1n3og=="],
 
-    "@rolldown/binding-linux-x64-gnu": ["@rolldown/binding-linux-x64-gnu@1.0.0-rc.15", "", { "os": "linux", "cpu": "x64" }, "sha512-023bTPBod7J3Y/4fzAN6QtpkSABR0rigtrwaP+qSEabUh5zf6ELr9Nc7GujaROuPY3uwdSIXWrvhn1KxOvurWA=="],
+    "@rolldown/binding-linux-x64-gnu": ["@rolldown/binding-linux-x64-gnu@1.0.0-rc.12", "", { "os": "linux", "cpu": "x64" }, "sha512-RNrafz5bcwRy+O9e6P8Z/OCAJW/A+qtBczIqVYwTs14pf4iV1/+eKEjdOUta93q2TsT/FI0XYDP3TCky38LMAg=="],
 
-    "@rolldown/binding-linux-x64-musl": ["@rolldown/binding-linux-x64-musl@1.0.0-rc.15", "", { "os": "linux", "cpu": "x64" }, "sha512-witB2O0/hU4CgfOOKUoeFgQ4GktPi1eEbAhaLAIpgD6+ZnhcPkUtPsoKKHRzmOoWPZue46IThdSgdo4XneOLYw=="],
+    "@rolldown/binding-linux-x64-musl": ["@rolldown/binding-linux-x64-musl@1.0.0-rc.12", "", { "os": "linux", "cpu": "x64" }, "sha512-Jpw/0iwoKWx3LJ2rc1yjFrj+T7iHZn2JDg1Yny1ma0luviFS4mhAIcd1LFNxK3EYu3DHWCps0ydXQ5i/rrJ2ig=="],
 
-    "@rolldown/binding-openharmony-arm64": ["@rolldown/binding-openharmony-arm64@1.0.0-rc.15", "", { "os": "none", "cpu": "arm64" }, "sha512-UCL68NJ0Ud5zRipXZE9dF5PmirzJE4E4BCIOOssEnM7wLDsxjc6Qb0sGDxTNRTP53I6MZpygyCpY8Aa8sPfKPg=="],
+    "@rolldown/binding-openharmony-arm64": ["@rolldown/binding-openharmony-arm64@1.0.0-rc.12", "", { "os": "none", "cpu": "arm64" }, "sha512-vRugONE4yMfVn0+7lUKdKvN4D5YusEiPilaoO2sgUWpCvrncvWgPMzK00ZFFJuiPgLwgFNP5eSiUlv2tfc+lpA=="],
 
-    "@rolldown/binding-wasm32-wasi": ["@rolldown/binding-wasm32-wasi@1.0.0-rc.15", "", { "dependencies": { "@emnapi/core": "1.9.2", "@emnapi/runtime": "1.9.2", "@napi-rs/wasm-runtime": "^1.1.3" }, "cpu": "none" }, "sha512-ApLruZq/ig+nhaE7OJm4lDjayUnOHVUa77zGeqnqZ9pn0ovdVbbNPerVibLXDmWeUZXjIYIT8V3xkT58Rm9u5Q=="],
+    "@rolldown/binding-wasm32-wasi": ["@rolldown/binding-wasm32-wasi@1.0.0-rc.12", "", { "dependencies": { "@napi-rs/wasm-runtime": "^1.1.1" }, "cpu": "none" }, "sha512-ykGiLr/6kkiHc0XnBfmFJuCjr5ZYKKofkx+chJWDjitX+KsJuAmrzWhwyOMSHzPhzOHOy7u9HlFoa5MoAOJ/Zg=="],
 
-    "@rolldown/binding-win32-arm64-msvc": ["@rolldown/binding-win32-arm64-msvc@1.0.0-rc.15", "", { "os": "win32", "cpu": "arm64" }, "sha512-KmoUoU7HnN+Si5YWJigfTws1jz1bKBYDQKdbLspz0UaqjjFkddHsqorgiW1mxcAj88lYUE6NC/zJNwT+SloqtA=="],
+    "@rolldown/binding-win32-arm64-msvc": ["@rolldown/binding-win32-arm64-msvc@1.0.0-rc.12", "", { "os": "win32", "cpu": "arm64" }, "sha512-5eOND4duWkwx1AzCxadcOrNeighiLwMInEADT0YM7xeEOOFcovWZCq8dadXgcRHSf3Ulh1kFo/qvzoFiCLOL1Q=="],
 
-    "@rolldown/binding-win32-x64-msvc": ["@rolldown/binding-win32-x64-msvc@1.0.0-rc.15", "", { "os": "win32", "cpu": "x64" }, "sha512-3P2A8L+x75qavWLe/Dll3EYBJLQmtkJN8rfh+U/eR3MqMgL/h98PhYI+JFfXuDPgPeCB7iZAKiqii5vqOvnA0g=="],
+    "@rolldown/binding-win32-x64-msvc": ["@rolldown/binding-win32-x64-msvc@1.0.0-rc.12", "", { "os": "win32", "cpu": "x64" }, "sha512-PyqoipaswDLAZtot351MLhrlrh6lcZPo2LSYE+VDxbVk24LVKAGOuE4hb8xZQmrPAuEtTZW8E6D2zc5EUZX4Lw=="],
 
     "@rolldown/pluginutils": ["@rolldown/pluginutils@1.0.0-rc.7", "", {}, "sha512-qujRfC8sFVInYSPPMLQByRh7zhwkGFS4+tyMQ83srV1qrxL4g8E2tyxVVyxd0+8QeBM1mIk9KbWxkegRr76XzA=="],
 
@@ -1783,7 +2654,7 @@
 
     "@sigstore/core": ["@sigstore/core@3.2.0", "", {}, "sha512-kxHrDQ9YgfrWUSXU0cjsQGv8JykOFZQ9ErNKbFPWzk3Hgpwu8x2hHrQ9IdA8yl+j9RTLTC3sAF3Tdq1IQCP4oA=="],
 
-    "@sigstore/protobuf-specs": ["@sigstore/protobuf-specs@0.5.1", "", {}, "sha512-/ScWUhhoFasJsSRGTVBwId1loQjjnjAfE4djL6ZhrXRpNCmPTnUKF5Jokd58ILseOMjzET3UrMOtJPS9sYeI0g=="],
+    "@sigstore/protobuf-specs": ["@sigstore/protobuf-specs@0.5.0", "", {}, "sha512-MM8XIwUjN2bwvCg1QvrMtbBmpcSHrkhFSCu1D11NyPvDQ25HEc4oG5/OcQfd/Tlf/OxmKWERDj0zGE23jQaMwA=="],
 
     "@sigstore/sign": ["@sigstore/sign@4.1.1", "", { "dependencies": { "@gar/promise-retry": "^1.0.2", "@sigstore/bundle": "^4.0.0", "@sigstore/core": "^3.2.0", "@sigstore/protobuf-specs": "^0.5.0", "make-fetch-happen": "^15.0.4", "proc-log": "^6.1.0" } }, "sha512-Hf4xglukg0XXQ2RiD5vSoLjdPe8OBUPA8XeVjUObheuDcWdYWrnH/BNmxZCzkAy68MzmNCxXLeurJvs6hcP2OQ=="],
 
@@ -1795,37 +2666,37 @@
 
     "@standard-schema/spec": ["@standard-schema/spec@1.1.0", "", {}, "sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w=="],
 
-    "@storybook/addon-a11y": ["@storybook/addon-a11y@10.3.5", "", { "dependencies": { "@storybook/global": "^5.0.0", "axe-core": "^4.2.0" }, "peerDependencies": { "storybook": "^10.3.5" } }, "sha512-5k6lpgfIeLxvNhE8v3wEzdiu73ONKjF4gmH1AHvfqYd8kIVzQJai0KCDxgvqNncXHQhIWkaf1fg6+9hKaYJyaw=="],
+    "@storybook/addon-a11y": ["@storybook/addon-a11y@10.3.4", "", { "dependencies": { "@storybook/global": "^5.0.0", "axe-core": "^4.2.0" }, "peerDependencies": { "storybook": "^10.3.4" } }, "sha512-TylBS2+MUPRfgzBKiygL1JoUBnTqEKo5oCEfjHneJZKzYE1UNgdMdk/fiyanaGKTZBKBxWbShxZhT2gLs8kqMA=="],
 
-    "@storybook/addon-docs": ["@storybook/addon-docs@10.3.5", "", { "dependencies": { "@mdx-js/react": "^3.0.0", "@storybook/csf-plugin": "10.3.5", "@storybook/icons": "^2.0.1", "@storybook/react-dom-shim": "10.3.5", "react": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react-dom": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "ts-dedent": "^2.0.0" }, "peerDependencies": { "storybook": "^10.3.5" } }, "sha512-WuHbxia/o5TX4Rg/IFD0641K5qId/Nk0dxhmAUNoFs5L0+yfZUwh65XOBbzXqrkYmYmcVID4v7cgDRmzstQNkA=="],
+    "@storybook/addon-docs": ["@storybook/addon-docs@10.3.4", "", { "dependencies": { "@mdx-js/react": "^3.0.0", "@storybook/csf-plugin": "10.3.4", "@storybook/icons": "^2.0.1", "@storybook/react-dom-shim": "10.3.4", "react": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react-dom": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "ts-dedent": "^2.0.0" }, "peerDependencies": { "storybook": "^10.3.4" } }, "sha512-ohS8fX8UIP3LN6+mDZJLCDS4Qd2rsmGwes6V6fD0sbLOmIyCVY5y68r6NHMMGJKFRwadDQOmtOt8Vc6snExrIQ=="],
 
     "@storybook/addon-svelte-csf": ["@storybook/addon-svelte-csf@5.1.2", "", { "dependencies": { "@storybook/csf": "^0.1.13", "dedent": "^1.5.3", "es-toolkit": "^1.26.1", "esrap": "^1.2.2", "magic-string": "^0.30.12", "svelte-ast-print": "^0.4.0", "zimmerframe": "^1.1.2" }, "peerDependencies": { "@storybook/svelte": "^0.0.0-0 || ^8.2.0 || ^9.0.0 || ^9.1.0-0 || ^10.0.0-0 || ^10.1.0-0 || ^10.2.0-0 || ^10.3.0-0 || ^10.4.0-0", "@sveltejs/vite-plugin-svelte": "^4.0.0 || ^5.0.0 || ^6.0.0 || ^7.0.0", "storybook": "^0.0.0-0 || ^8.2.0 || ^9.0.0 || ^9.1.0-0 || ^10.0.0-0 || ^10.1.0-0 || ^10.2.0-0 || ^10.3.0-0 || ^10.4.0-0", "svelte": "^5.0.0", "vite": "^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0" } }, "sha512-NpImknEb48J7yr/ArTYpvhDSvGUrgm5Nuybu9PCicjSKTACsXX7cln2R19572ORtns399RTE+t20BBOKxSPm2g=="],
 
-    "@storybook/addon-vitest": ["@storybook/addon-vitest@10.3.5", "", { "dependencies": { "@storybook/global": "^5.0.0", "@storybook/icons": "^2.0.1" }, "peerDependencies": { "@vitest/browser": "^3.0.0 || ^4.0.0", "@vitest/browser-playwright": "^4.0.0", "@vitest/runner": "^3.0.0 || ^4.0.0", "storybook": "^10.3.5", "vitest": "^3.0.0 || ^4.0.0" }, "optionalPeers": ["@vitest/browser", "@vitest/browser-playwright", "@vitest/runner", "vitest"] }, "sha512-PQDeeMwoF55kvzlhFqVKOryBJskkVk71AbDh7F0y8PdRRxlGbTvIUkKXktHZWBdESo0dV6BkeVxGQ4ZpiFxirg=="],
+    "@storybook/addon-vitest": ["@storybook/addon-vitest@10.3.4", "", { "dependencies": { "@storybook/global": "^5.0.0", "@storybook/icons": "^2.0.1" }, "peerDependencies": { "@vitest/browser": "^3.0.0 || ^4.0.0", "@vitest/browser-playwright": "^4.0.0", "@vitest/runner": "^3.0.0 || ^4.0.0", "storybook": "^10.3.4", "vitest": "^3.0.0 || ^4.0.0" }, "optionalPeers": ["@vitest/browser", "@vitest/browser-playwright", "@vitest/runner", "vitest"] }, "sha512-lSn8opaHVzDxLtMy28FnSkyx6uP1oQVnGzodNunTjrbJ8Ue8JVK+fjWtC/JfErIio0avlq79mgC5tfHSWlPr9w=="],
 
-    "@storybook/builder-vite": ["@storybook/builder-vite@10.3.5", "", { "dependencies": { "@storybook/csf-plugin": "10.3.5", "ts-dedent": "^2.0.0" }, "peerDependencies": { "storybook": "^10.3.5", "vite": "^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0" } }, "sha512-i4KwCOKbhtlbQIbhm53+Kk7bMnxa0cwTn1pxmtA/x5wm1Qu7FrrBQV0V0DNjkUqzcSKo1CjspASJV/HlY0zYlw=="],
+    "@storybook/builder-vite": ["@storybook/builder-vite@10.3.4", "", { "dependencies": { "@storybook/csf-plugin": "10.3.4", "ts-dedent": "^2.0.0" }, "peerDependencies": { "storybook": "^10.3.4", "vite": "^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0" } }, "sha512-dNQyBZpBKvwmhSTpjrsuxxY8FqFCh0hgu5+46h2WbgQ2Te3pO458heWkGb+QO7mC6FmkXO6j6zgYzXticD6F2A=="],
 
     "@storybook/csf": ["@storybook/csf@0.1.13", "", { "dependencies": { "type-fest": "^2.19.0" } }, "sha512-7xOOwCLGB3ebM87eemep89MYRFTko+D8qE7EdAAq74lgdqRR5cOUtYWJLjO2dLtP94nqoOdHJo6MdLLKzg412Q=="],
 
-    "@storybook/csf-plugin": ["@storybook/csf-plugin@10.3.5", "", { "dependencies": { "unplugin": "^2.3.5" }, "peerDependencies": { "esbuild": "*", "rollup": "*", "storybook": "^10.3.5", "vite": "*", "webpack": "*" }, "optionalPeers": ["esbuild", "rollup", "vite", "webpack"] }, "sha512-qlEzNKxOjq86pvrbuMwiGD/bylnsXk1dg7ve0j77YFjEEchqtl7qTlrXvFdNaLA89GhW6D/EV6eOCu/eobPDgw=="],
+    "@storybook/csf-plugin": ["@storybook/csf-plugin@10.3.4", "", { "dependencies": { "unplugin": "^2.3.5" }, "peerDependencies": { "esbuild": "*", "rollup": "*", "storybook": "^10.3.4", "vite": "*", "webpack": "*" }, "optionalPeers": ["esbuild", "rollup", "vite", "webpack"] }, "sha512-WPP0Z39o82WiohPkhPOs6z+9yJ+bVvqPz4d+QUPfE6FMvOOBLojlwOcGx6Xmclyn5H/CKwywFrjuz4mBO/nHhA=="],
 
     "@storybook/global": ["@storybook/global@5.0.0", "", {}, "sha512-FcOqPAXACP0I3oJ/ws6/rrPT9WGhu915Cg8D02a9YxLo0DE9zI+a9A5gRGvmQ09fiWPukqI8ZAEoQEdWUKMQdQ=="],
 
     "@storybook/icons": ["@storybook/icons@2.0.1", "", { "peerDependencies": { "react": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react-dom": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0" } }, "sha512-/smVjw88yK3CKsiuR71vNgWQ9+NuY2L+e8X7IMrFjexjm6ZR8ULrV2DRkTA61aV6ryefslzHEGDInGpnNeIocg=="],
 
-    "@storybook/react": ["@storybook/react@10.3.5", "", { "dependencies": { "@storybook/global": "^5.0.0", "@storybook/react-dom-shim": "10.3.5", "react-docgen": "^8.0.2", "react-docgen-typescript": "^2.2.2" }, "peerDependencies": { "react": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react-dom": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "storybook": "^10.3.5", "typescript": ">= 4.9.x" }, "optionalPeers": ["typescript"] }, "sha512-tpLTLaVGoA6fLK3ReyGzZUricq7lyPaV2hLPpj5wqdXLV/LpRtAHClUpNoPDYSBjlnSjL81hMZijbkGC3mA+gw=="],
+    "@storybook/react": ["@storybook/react@10.3.4", "", { "dependencies": { "@storybook/global": "^5.0.0", "@storybook/react-dom-shim": "10.3.4", "react-docgen": "^8.0.2", "react-docgen-typescript": "^2.2.2" }, "peerDependencies": { "react": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react-dom": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "storybook": "^10.3.4", "typescript": ">= 4.9.x" }, "optionalPeers": ["typescript"] }, "sha512-I5ifYqjrqyuhOFjalpy47kMKMXX7QU/qmHj0h/547s9Bg6sEU7xRhJnneXx1RJsEJTySjC4SmGfEU+FJz4Foiw=="],
 
-    "@storybook/react-dom-shim": ["@storybook/react-dom-shim@10.3.5", "", { "peerDependencies": { "react": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react-dom": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "storybook": "^10.3.5" } }, "sha512-Gw8R7XZm0zSUH0XAuxlQJhmizsLzyD6x00KOlP6l7oW9eQHXGfxg3seNDG3WrSAcW07iP1/P422kuiriQlOv7g=="],
+    "@storybook/react-dom-shim": ["@storybook/react-dom-shim@10.3.4", "", { "peerDependencies": { "react": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react-dom": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "storybook": "^10.3.4" } }, "sha512-VIm9YzreGubnOtQOZ6iqEfj6KncHvAkrCR/IilqnJq7DidPWuykrFszyajTASRMiY+p+TElOW+O1PGpv55qNGw=="],
 
-    "@storybook/react-vite": ["@storybook/react-vite@10.3.5", "", { "dependencies": { "@joshwooding/vite-plugin-react-docgen-typescript": "^0.7.0", "@rollup/pluginutils": "^5.0.2", "@storybook/builder-vite": "10.3.5", "@storybook/react": "10.3.5", "empathic": "^2.0.0", "magic-string": "^0.30.0", "react-docgen": "^8.0.0", "resolve": "^1.22.8", "tsconfig-paths": "^4.2.0" }, "peerDependencies": { "react": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react-dom": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "storybook": "^10.3.5", "vite": "^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0" } }, "sha512-UB5sJHeh26bfd8sNMx2YPGYRYmErIdTRaLOT28m4bykQIa1l9IgVktsYg/geW7KsJU0lXd3oTbnUjLD+enpi3w=="],
+    "@storybook/react-vite": ["@storybook/react-vite@10.3.4", "", { "dependencies": { "@joshwooding/vite-plugin-react-docgen-typescript": "^0.7.0", "@rollup/pluginutils": "^5.0.2", "@storybook/builder-vite": "10.3.4", "@storybook/react": "10.3.4", "empathic": "^2.0.0", "magic-string": "^0.30.0", "react-docgen": "^8.0.0", "resolve": "^1.22.8", "tsconfig-paths": "^4.2.0" }, "peerDependencies": { "react": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react-dom": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "storybook": "^10.3.4", "vite": "^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0" } }, "sha512-xaMt7NdvlAb+CwXn5TOiluQ+0WkkMN3mZhCThocpblWGoyfmHH7bgQ5ZwzT+IIp8DGOsAi/HkNmSyS7Z8HRLJg=="],
 
-    "@storybook/svelte": ["@storybook/svelte@10.3.5", "", { "dependencies": { "ts-dedent": "^2.0.0", "type-fest": "~2.19" }, "peerDependencies": { "storybook": "^10.3.5", "svelte": "^5.0.0" } }, "sha512-QLNSnergsTlh6c92EkuHInaS99Lp9luOJIW9MuADwyKa6UriFEMoolhcdvKIOeRk9UIH051zykA/xlscNibbZA=="],
+    "@storybook/svelte": ["@storybook/svelte@10.3.4", "", { "dependencies": { "ts-dedent": "^2.0.0", "type-fest": "~2.19" }, "peerDependencies": { "storybook": "^10.3.4", "svelte": "^5.0.0" } }, "sha512-MnKFov6G1wKLIzYOFXCTUzYD3efEXRG0E093mz1j4fJUctRJVhHJ4aOD5dLVbEg3IKeOaE62yGVznOCtVEPtpg=="],
 
-    "@storybook/svelte-vite": ["@storybook/svelte-vite@10.3.5", "", { "dependencies": { "@storybook/builder-vite": "10.3.5", "@storybook/svelte": "10.3.5", "magic-string": "^0.30.0", "svelte2tsx": "^0.7.44", "typescript": "^4.9.4 || ^5.0.0" }, "peerDependencies": { "@sveltejs/vite-plugin-svelte": "^2.0.0 || ^3.0.0 || ^4.0.0 || ^5.0.0 || ^6.0.0 || ^7.0.0", "storybook": "^10.3.5", "svelte": "^5.0.0", "vite": "^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0" } }, "sha512-RzSnk5oWjOdp1LIX8JtxMBmUWfuEPUzzjN8dHowyvR5XvjV48pazWcExTe9TGbD0MSOhOr7bAUXMN9SWDI629w=="],
+    "@storybook/svelte-vite": ["@storybook/svelte-vite@10.3.4", "", { "dependencies": { "@storybook/builder-vite": "10.3.4", "@storybook/svelte": "10.3.4", "magic-string": "^0.30.0", "svelte2tsx": "^0.7.44", "typescript": "^4.9.4 || ^5.0.0" }, "peerDependencies": { "@sveltejs/vite-plugin-svelte": "^2.0.0 || ^3.0.0 || ^4.0.0 || ^5.0.0 || ^6.0.0 || ^7.0.0", "storybook": "^10.3.4", "svelte": "^5.0.0", "vite": "^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0" } }, "sha512-/a1Xup1I7QcPEtjkV17SqDvWXl0xUiZew5y/6S22hO3W17pboQZsE+TqVq580y3rQgKxH9e2ZcGFbgZhIo1BSg=="],
 
-    "@storybook/web-components": ["@storybook/web-components@10.3.5", "", { "dependencies": { "@storybook/global": "^5.0.0", "tiny-invariant": "^1.3.1", "ts-dedent": "^2.0.0" }, "peerDependencies": { "lit": "^2.0.0 || ^3.0.0", "storybook": "^10.3.5" } }, "sha512-tSppZagFCeZ+bWsaHUvdiw17ATWgfGDBz0mFicgEj0/eNuxQH2OvXyRIQUXY39b/55TBwSGeoIX3tOW91WIqpw=="],
+    "@storybook/web-components": ["@storybook/web-components@10.3.4", "", { "dependencies": { "@storybook/global": "^5.0.0", "tiny-invariant": "^1.3.1", "ts-dedent": "^2.0.0" }, "peerDependencies": { "lit": "^2.0.0 || ^3.0.0", "storybook": "^10.3.4" } }, "sha512-24Gscu6zHjpBOkPlq4qhMY8E3cMbE4DWScxemKaVSHZKN62ldt55rO+GIRKj87MnB2KoMvOJQlM0Lf1VxgQQmA=="],
 
-    "@storybook/web-components-vite": ["@storybook/web-components-vite@10.3.5", "", { "dependencies": { "@storybook/builder-vite": "10.3.5", "@storybook/web-components": "10.3.5" }, "peerDependencies": { "storybook": "^10.3.5" } }, "sha512-6uAw6KAUXFsAPzp8KchcMp3gatEnEAd8ylIvzoMzvsIMiHmzXwvDNmoFZnAJ2tmsQGvF4dZRDCBg7PvWdTx8Rg=="],
+    "@storybook/web-components-vite": ["@storybook/web-components-vite@10.3.4", "", { "dependencies": { "@storybook/builder-vite": "10.3.4", "@storybook/web-components": "10.3.4" }, "peerDependencies": { "storybook": "^10.3.4" } }, "sha512-FJo4AvhJOr4m61aHSgGiXJ0GSUgMqXzu2+W0FteMkIpgh8V8ELnXY84SEA0SkcxYguujcRjdQgy06guxAjPReA=="],
 
     "@sveltejs/acorn-typescript": ["@sveltejs/acorn-typescript@1.0.9", "", { "peerDependencies": { "acorn": "^8.9.0" } }, "sha512-lVJX6qEgs/4DOcRTpo56tmKzVPtoWAaVbL4hfO7t7NVwl9AAXzQR6cihesW1BmNMPl+bK6dreu2sOKBP2Q9CIA=="],
 
@@ -1933,31 +2804,31 @@
 
     "@types/ws": ["@types/ws@8.18.1", "", { "dependencies": { "@types/node": "*" } }, "sha512-ThVF6DCVhA8kUGy+aazFQ4kXQ7E1Ty7A3ypFOe0IcJV8O/M511G99AW24irKrW56Wt44yG9+ij8FaqoBGkuBXg=="],
 
-    "@typescript-eslint/types": ["@typescript-eslint/types@8.58.1", "", {}, "sha512-io/dV5Aw5ezwzfPBBWLoT+5QfVtP8O7q4Kftjn5azJ88bYyp/ZMCsyW1lpKK46EXJcaYMZ1JtYj+s/7TdzmQMw=="],
+    "@typescript-eslint/types": ["@typescript-eslint/types@8.58.0", "", {}, "sha512-O9CjxypDT89fbHxRfETNoAnHj/i6IpRK0CvbVN3qibxlLdo5p5hcLmUuCCrHMpxiWSwKyI8mCP7qRNYuOJ0Uww=="],
 
     "@ungap/structured-clone": ["@ungap/structured-clone@1.3.0", "", {}, "sha512-WmoN8qaIAo7WTYWbAZuG8PYEhn5fkz7dZrqTBZ7dtt//lL2Gwms1IcnQ5yHqjDfX8Ft5j4YzDM23f87zBfDe9g=="],
 
     "@vitejs/plugin-react": ["@vitejs/plugin-react@6.0.1", "", { "dependencies": { "@rolldown/pluginutils": "1.0.0-rc.7" }, "peerDependencies": { "@rolldown/plugin-babel": "^0.1.7 || ^0.2.0", "babel-plugin-react-compiler": "^1.0.0", "vite": "^8.0.0" }, "optionalPeers": ["@rolldown/plugin-babel", "babel-plugin-react-compiler"] }, "sha512-l9X/E3cDb+xY3SWzlG1MOGt2usfEHGMNIaegaUGFsLkb3RCn/k8/TOXBcab+OndDI4TBtktT8/9BwwW8Vi9KUQ=="],
 
-    "@vitest/browser": ["@vitest/browser@4.1.4", "", { "dependencies": { "@blazediff/core": "1.9.1", "@vitest/mocker": "4.1.4", "@vitest/utils": "4.1.4", "magic-string": "^0.30.21", "pngjs": "^7.0.0", "sirv": "^3.0.2", "tinyrainbow": "^3.1.0", "ws": "^8.19.0" }, "peerDependencies": { "vitest": "4.1.4" } }, "sha512-TrNaY/yVOwxtrxNsDUC/wQ56xSwplpytTeRAqF/197xV/ZddxxulBsxR6TrhVMyniJmp9in8d5u0AcDaNRY30w=="],
+    "@vitest/browser": ["@vitest/browser@4.1.2", "", { "dependencies": { "@blazediff/core": "1.9.1", "@vitest/mocker": "4.1.2", "@vitest/utils": "4.1.2", "magic-string": "^0.30.21", "pngjs": "^7.0.0", "sirv": "^3.0.2", "tinyrainbow": "^3.1.0", "ws": "^8.19.0" }, "peerDependencies": { "vitest": "4.1.2" } }, "sha512-CwdIf90LNf1Zitgqy63ciMAzmyb4oIGs8WZ40VGYrWkssQKeEKr32EzO8MKUrDPPcPVHFI9oQ5ni2Hp24NaNRQ=="],
 
-    "@vitest/browser-playwright": ["@vitest/browser-playwright@4.1.4", "", { "dependencies": { "@vitest/browser": "4.1.4", "@vitest/mocker": "4.1.4", "tinyrainbow": "^3.1.0" }, "peerDependencies": { "playwright": "*", "vitest": "4.1.4" } }, "sha512-q3PchVhZINX23Pv+RERgAtDlp6wzVkID/smOPnZ5YGWpeWUe3jMNYppeVh15j4il3G7JIJty1d1Kicpm0HSMig=="],
+    "@vitest/browser-playwright": ["@vitest/browser-playwright@4.1.2", "", { "dependencies": { "@vitest/browser": "4.1.2", "@vitest/mocker": "4.1.2", "tinyrainbow": "^3.1.0" }, "peerDependencies": { "playwright": "*", "vitest": "4.1.2" } }, "sha512-N0Z2HzMLvMR6k/tWPTS6Q/DaRscrkax/f2f9DIbNQr+Cd1l4W4wTf/I6S983PAMr0tNqqoTL+xNkLh9M5vbkLg=="],
 
-    "@vitest/coverage-v8": ["@vitest/coverage-v8@4.1.4", "", { "dependencies": { "@bcoe/v8-coverage": "^1.0.2", "@vitest/utils": "4.1.4", "ast-v8-to-istanbul": "^1.0.0", "istanbul-lib-coverage": "^3.2.2", "istanbul-lib-report": "^3.0.1", "istanbul-reports": "^3.2.0", "magicast": "^0.5.2", "obug": "^2.1.1", "std-env": "^4.0.0-rc.1", "tinyrainbow": "^3.1.0" }, "peerDependencies": { "@vitest/browser": "4.1.4", "vitest": "4.1.4" }, "optionalPeers": ["@vitest/browser"] }, "sha512-x7FptB5oDruxNPDNY2+S8tCh0pcq7ymCe1gTHcsp733jYjrJl8V1gMUlVysuCD9Kz46Xz9t1akkv08dPcYDs1w=="],
+    "@vitest/coverage-v8": ["@vitest/coverage-v8@4.1.2", "", { "dependencies": { "@bcoe/v8-coverage": "^1.0.2", "@vitest/utils": "4.1.2", "ast-v8-to-istanbul": "^1.0.0", "istanbul-lib-coverage": "^3.2.2", "istanbul-lib-report": "^3.0.1", "istanbul-reports": "^3.2.0", "magicast": "^0.5.2", "obug": "^2.1.1", "std-env": "^4.0.0-rc.1", "tinyrainbow": "^3.1.0" }, "peerDependencies": { "@vitest/browser": "4.1.2", "vitest": "4.1.2" }, "optionalPeers": ["@vitest/browser"] }, "sha512-sPK//PHO+kAkScb8XITeB1bf7fsk85Km7+rt4eeuRR3VS1/crD47cmV5wicisJmjNdfeokTZwjMk4Mj2d58Mgg=="],
 
-    "@vitest/expect": ["@vitest/expect@4.1.4", "", { "dependencies": { "@standard-schema/spec": "^1.1.0", "@types/chai": "^5.2.2", "@vitest/spy": "4.1.4", "@vitest/utils": "4.1.4", "chai": "^6.2.2", "tinyrainbow": "^3.1.0" } }, "sha512-iPBpra+VDuXmBFI3FMKHSFXp3Gx5HfmSCE8X67Dn+bwephCnQCaB7qWK2ldHa+8ncN8hJU8VTMcxjPpyMkUjww=="],
+    "@vitest/expect": ["@vitest/expect@4.1.2", "", { "dependencies": { "@standard-schema/spec": "^1.1.0", "@types/chai": "^5.2.2", "@vitest/spy": "4.1.2", "@vitest/utils": "4.1.2", "chai": "^6.2.2", "tinyrainbow": "^3.1.0" } }, "sha512-gbu+7B0YgUJ2nkdsRJrFFW6X7NTP44WlhiclHniUhxADQJH5Szt9mZ9hWnJPJ8YwOK5zUOSSlSvyzRf0u1DSBQ=="],
 
-    "@vitest/mocker": ["@vitest/mocker@4.1.4", "", { "dependencies": { "@vitest/spy": "4.1.4", "estree-walker": "^3.0.3", "magic-string": "^0.30.21" }, "peerDependencies": { "msw": "^2.4.9", "vite": "^6.0.0 || ^7.0.0 || ^8.0.0" }, "optionalPeers": ["msw", "vite"] }, "sha512-R9HTZBhW6yCSGbGQnDnH3QHfJxokKN4KB+Yvk9Q1le7eQNYwiCyKxmLmurSpFy6BzJanSLuEUDrD+j97Q+ZLPg=="],
+    "@vitest/mocker": ["@vitest/mocker@4.1.2", "", { "dependencies": { "@vitest/spy": "4.1.2", "estree-walker": "^3.0.3", "magic-string": "^0.30.21" }, "peerDependencies": { "msw": "^2.4.9", "vite": "^6.0.0 || ^7.0.0 || ^8.0.0" }, "optionalPeers": ["msw", "vite"] }, "sha512-Ize4iQtEALHDttPRCmN+FKqOl2vxTiNUhzobQFFt/BM1lRUTG7zRCLOykG/6Vo4E4hnUdfVLo5/eqKPukcWW7Q=="],
 
-    "@vitest/pretty-format": ["@vitest/pretty-format@4.1.4", "", { "dependencies": { "tinyrainbow": "^3.1.0" } }, "sha512-ddmDHU0gjEUyEVLxtZa7xamrpIefdEETu3nZjWtHeZX4QxqJ7tRxSteHVXJOcr8jhiLoGAhkK4WJ3WqBpjx42A=="],
+    "@vitest/pretty-format": ["@vitest/pretty-format@4.1.2", "", { "dependencies": { "tinyrainbow": "^3.1.0" } }, "sha512-dwQga8aejqeuB+TvXCMzSQemvV9hNEtDDpgUKDzOmNQayl2OG241PSWeJwKRH3CiC+sESrmoFd49rfnq7T4RnA=="],
 
-    "@vitest/runner": ["@vitest/runner@4.1.4", "", { "dependencies": { "@vitest/utils": "4.1.4", "pathe": "^2.0.3" } }, "sha512-xTp7VZ5aXP5ZJrn15UtJUWlx6qXLnGtF6jNxHepdPHpMfz/aVPx+htHtgcAL2mDXJgKhpoo2e9/hVJsIeFbytQ=="],
+    "@vitest/runner": ["@vitest/runner@4.1.2", "", { "dependencies": { "@vitest/utils": "4.1.2", "pathe": "^2.0.3" } }, "sha512-Gr+FQan34CdiYAwpGJmQG8PgkyFVmARK8/xSijia3eTFgVfpcpztWLuP6FttGNfPLJhaZVP/euvujeNYar36OQ=="],
 
-    "@vitest/snapshot": ["@vitest/snapshot@4.1.4", "", { "dependencies": { "@vitest/pretty-format": "4.1.4", "@vitest/utils": "4.1.4", "magic-string": "^0.30.21", "pathe": "^2.0.3" } }, "sha512-MCjCFgaS8aZz+m5nTcEcgk/xhWv0rEH4Yl53PPlMXOZ1/Ka2VcZU6CJ+MgYCZbcJvzGhQRjVrGQNZqkGPttIKw=="],
+    "@vitest/snapshot": ["@vitest/snapshot@4.1.2", "", { "dependencies": { "@vitest/pretty-format": "4.1.2", "@vitest/utils": "4.1.2", "magic-string": "^0.30.21", "pathe": "^2.0.3" } }, "sha512-g7yfUmxYS4mNxk31qbOYsSt2F4m1E02LFqO53Xpzg3zKMhLAPZAjjfyl9e6z7HrW6LvUdTwAQR3HHfLjpko16A=="],
 
-    "@vitest/spy": ["@vitest/spy@4.1.4", "", {}, "sha512-XxNdAsKW7C+FLydqFJLb5KhJtl3PGCMmYwFRfhvIgxJvLSXhhVI1zM8f1qD3Zg7RCjTSzDVyct6sghs9UEgBEQ=="],
+    "@vitest/spy": ["@vitest/spy@4.1.2", "", {}, "sha512-DU4fBnbVCJGNBwVA6xSToNXrkZNSiw59H8tcuUspVMsBDBST4nfvsPsEHDHGtWRRnqBERBQu7TrTKskmjqTXKA=="],
 
-    "@vitest/utils": ["@vitest/utils@4.1.4", "", { "dependencies": { "@vitest/pretty-format": "4.1.4", "convert-source-map": "^2.0.0", "tinyrainbow": "^3.1.0" } }, "sha512-13QMT+eysM5uVGa1rG4kegGYNp6cnQcsTc67ELFbhNLQO+vgsygtYJx2khvdt4gVQqSSpC/KT5FZZxUpP3Oatw=="],
+    "@vitest/utils": ["@vitest/utils@4.1.2", "", { "dependencies": { "@vitest/pretty-format": "4.1.2", "convert-source-map": "^2.0.0", "tinyrainbow": "^3.1.0" } }, "sha512-xw2/TiX82lQHA06cgbqRKFb5lCAy3axQ4H4SoUFhUsg+wztiet+co86IAMDtF6Vm1hc7J6j09oh/rgDn+JdKIQ=="],
 
     "@webcontainer/env": ["@webcontainer/env@1.1.1", "", {}, "sha512-6aN99yL695Hi9SuIk1oC88l9o0gmxL1nGWWQ/kNy81HigJ0FoaoTXpytCj6ItzgyCEwA9kF1wixsTuv5cjsgng=="],
 
@@ -2001,7 +2872,7 @@
 
     "argparse": ["argparse@2.0.1", "", {}, "sha512-8+9WqebbFzpX9OR+Wa6O29asIogeRMzcGtAINdpMHHyAg10f05aSFVBbcEqGf/PXw1EjAZ+q2/bEBg3DvurK3Q=="],
 
-    "aria-query": ["aria-query@5.3.0", "", { "dependencies": { "dequal": "^2.0.3" } }, "sha512-b0P0sZPKtyu8HkeRAfCq0IfURZK+SuwMjY1UXGBU27wpAiTwQAIlq56IbIO+ytk/JjS1fMR14ee5WBBfKi5J6A=="],
+    "aria-query": ["aria-query@5.3.2", "", {}, "sha512-COROpnaoap1E2F000S62r6A60uHZnmlvomhfyT2DlTcrY1OrBKn2UhH7qn5wTC9zMvD0AY7csdPSNwKP+7WiQw=="],
 
     "array-ify": ["array-ify@1.0.0", "", {}, "sha512-c5AMf34bKdvPhQ7tBGhqkgKNUzMr4WUs+WDtC2ZUGOUncbxKMTvqxYctiseW3+L4bA8ec+GcZ6/A/FW4m8ukng=="],
 
@@ -2035,7 +2906,7 @@
 
     "base64-js": ["base64-js@1.5.1", "", {}, "sha512-AKpaYlHn8t4SVbOHCy+b5+KKgvR4vrsD8vbvrbiQJps7fKDTkjkDry6ji0rUJjC0kzbNePLwzxq8iypo41qeWA=="],
 
-    "baseline-browser-mapping": ["baseline-browser-mapping@2.10.17", "", { "bin": { "baseline-browser-mapping": "dist/cli.cjs" } }, "sha512-HdrkN8eVG2CXxeifv/VdJ4A4RSra1DTW8dc/hdxzhGHN8QePs6gKaWM9pHPcpCoxYZJuOZ8drHmbdpLHjCYjLA=="],
+    "baseline-browser-mapping": ["baseline-browser-mapping@2.10.15", "", { "bin": { "baseline-browser-mapping": "dist/cli.cjs" } }, "sha512-1nfKCq9wuAZFTkA2ey/3OXXx7GzFjLdkTiFVNwlJ9WqdI706CZRIhEqjuwanjMIja+84jDLa9rcyZDPDiVkASQ=="],
 
     "before-after-hook": ["before-after-hook@2.2.3", "", {}, "sha512-NzUnlZexiaH/46WDhANlyR2bXRopNg4F/zuSA3OpZnllCUgRaOF2znDioDWrmbNVsuZk6l9pMquQB38cfBZwkQ=="],
 
@@ -2067,7 +2938,7 @@
 
     "cacache": ["cacache@20.0.4", "", { "dependencies": { "@npmcli/fs": "^5.0.0", "fs-minipass": "^3.0.0", "glob": "^13.0.0", "lru-cache": "^11.1.0", "minipass": "^7.0.3", "minipass-collect": "^2.0.1", "minipass-flush": "^1.0.5", "minipass-pipeline": "^1.2.4", "p-map": "^7.0.2", "ssri": "^13.0.0" } }, "sha512-M3Lab8NPYlZU2exsL3bMVvMrMqgwCnMWfdZbK28bn3pK6APT/Te/I8hjRPNu1uwORY9a1eEQoifXbKPQMfMTOA=="],
 
-    "call-bind": ["call-bind@1.0.9", "", { "dependencies": { "call-bind-apply-helpers": "^1.0.2", "es-define-property": "^1.0.1", "get-intrinsic": "^1.3.0", "set-function-length": "^1.2.2" } }, "sha512-a/hy+pNsFUTR+Iz8TCJvXudKVLAnz/DyeSUo10I5yvFDQJBFU2s9uqQpoSrJlroHUKoKqzg+epxyP9lqFdzfBQ=="],
+    "call-bind": ["call-bind@1.0.8", "", { "dependencies": { "call-bind-apply-helpers": "^1.0.0", "es-define-property": "^1.0.0", "get-intrinsic": "^1.2.4", "set-function-length": "^1.2.2" } }, "sha512-oKlSFMcMwpUg2ednkhQ454wfWiU/ul3CkJe/PEHcTKuiX6RpbehUiFMXu13HalGZxfUwCQzZG747YXBn1im9ww=="],
 
     "call-bind-apply-helpers": ["call-bind-apply-helpers@1.0.2", "", { "dependencies": { "es-errors": "^1.3.0", "function-bind": "^1.1.2" } }, "sha512-Sp1ablJ0ivDkSzjcaJdxEunN5/XvksFJ2sMBFfq6x0ryhQV/2b/KwFe21cMpmHtPOSij8K99/wSfoEuTObmuMQ=="],
 
@@ -2079,7 +2950,7 @@
 
     "camelcase-keys": ["camelcase-keys@6.2.2", "", { "dependencies": { "camelcase": "^5.3.1", "map-obj": "^4.0.0", "quick-lru": "^4.0.1" } }, "sha512-YrwaA0vEKazPBkn0ipTiMpSajYDSe+KjQfrjhcBMxJt/znbvlHd8Pw/Vamaz5EB4Wfhs3SUR3Z9mwRu/P3s3Yg=="],
 
-    "caniuse-lite": ["caniuse-lite@1.0.30001787", "", {}, "sha512-mNcrMN9KeI68u7muanUpEejSLghOKlVhRqS/Za2IeyGllJ9I9otGpR9g3nsw7n4W378TE/LyIteA0+/FOZm4Kg=="],
+    "caniuse-lite": ["caniuse-lite@1.0.30001786", "", {}, "sha512-4oxTZEvqmLLrERwxO76yfKM7acZo310U+v4kqexI2TL1DkkUEMT8UijrxxcnVdxR3qkVf5awGRX+4Z6aPHVKrA=="],
 
     "canonicalize": ["canonicalize@2.1.0", "", { "bin": { "canonicalize": "bin/canonicalize.js" } }, "sha512-F705O3xrsUtgt98j7leetNhTWPe+5S72rlL5O4jA1pKqBVQ/dT1O1D6PFxmSXvc0SUOinWS57DKx0I3CHrXJHQ=="],
 
@@ -2165,7 +3036,7 @@
 
     "console-control-strings": ["console-control-strings@1.1.0", "", {}, "sha512-ty/fTekppD2fIwRvnZAVdeOiGd1c7YXEixbgJTNzqcxJWKQnjJ/V1bNEEE6hygpM3WjwHFUVK6HTjWSzV4a8sQ=="],
 
-    "content-disposition": ["content-disposition@1.1.0", "", {}, "sha512-5jRCH9Z/+DRP7rkvY83B+yGIGX96OYdJmzngqnw2SBSxqCFPd0w2km3s5iawpGX8krnwSGmF0FW5Nhr0Hfai3g=="],
+    "content-disposition": ["content-disposition@1.0.1", "", {}, "sha512-oIXISMynqSqm241k6kcQ5UwttDILMK4BiurCfGEREw6+X9jkkpEe5T9FZaApyLGGOnFuyMWZpdolTXMtvEJ08Q=="],
 
     "content-type": ["content-type@1.0.5", "", {}, "sha512-nTjqfcBFEipKdXCv4YDQWCfmcLZKm81ldF0pAopTvyrFGVbcR6P/VAAd5G7N+0tTr8QqiU0tFadD6FK4NtJwOA=="],
 
@@ -2259,7 +3130,7 @@
 
     "detect-libc": ["detect-libc@2.1.2", "", {}, "sha512-Btj2BOOO83o3WyH59e8MgXsxEQVcarkUOpEYrubB0urwnN10yQ364rsiByU11nZlqWYZm05i/of7io4mzihBtQ=="],
 
-    "devalue": ["devalue@5.7.1", "", {}, "sha512-MUbZ586EgQqdRnC4yDrlod3BEdyvE4TapGYHMW2CiaW+KkkFmWEFqBUaLltEZCGi0iFXCEjRF0OjF0DV2QHjOA=="],
+    "devalue": ["devalue@5.6.4", "", {}, "sha512-Gp6rDldRsFh/7XuouDbxMH3Mx8GMCcgzIb1pDTvNyn8pZGQ22u+Wa+lGV9dQCltFQ7uVw0MhRyb8XDskNFOReA=="],
 
     "devlop": ["devlop@1.1.0", "", { "dependencies": { "dequal": "^2.0.0" } }, "sha512-RWmIqhcFf1lRYBvNmr7qTNuyCt/7/ns2jbpp1+PalgE/rDQcBT0fioSMUpJ93irlUhC5hrg4cYqe6U+0ImW0rA=="],
 
@@ -2291,7 +3162,7 @@
 
     "ejs": ["ejs@5.0.1", "", { "bin": { "ejs": "bin/cli.js" } }, "sha512-COqBPFMxuPTPspXl2DkVYaDS3HtrD1GpzOGkNTJ1IYkifq/r9h8SVEFrjA3D9/VJGOEoMQcrlhpntcSUrM8k6A=="],
 
-    "electron-to-chromium": ["electron-to-chromium@1.5.334", "", {}, "sha512-mgjZAz7Jyx1SRCwEpy9wefDS7GvNPazLthHg8eQMJ76wBdGQQDW33TCrUTvQ4wzpmOrv2zrFoD3oNufMdyMpog=="],
+    "electron-to-chromium": ["electron-to-chromium@1.5.331", "", {}, "sha512-IbxXrsTlD3hRodkLnbxAPP4OuJYdWCeM3IOdT+CpcMoIwIoDfCmRpEtSPfwBXxVkg9xmBeY7Lz2Eo2TDn/HC3Q=="],
 
     "emoji-regex": ["emoji-regex@8.0.0", "", {}, "sha512-MSjYzcWNOA0ewAHpz0MxpYFvwg6yjy1NG3xteoqz644VCo/RPgnr1/GGt+ic3iJTzQ8Eu3TdM14SawnVUmGE6A=="],
 
@@ -2499,7 +3370,7 @@
 
     "highlight.js": ["highlight.js@11.11.1", "", {}, "sha512-Xwwo44whKBVCYoliBQwaPvtd/2tYFkRQtXDWj1nackaV2JPXx3L0+Jvd8/qCJ2p+ML0/XVkJ2q+Mr+UVdpJK5w=="],
 
-    "hono": ["hono@4.12.12", "", {}, "sha512-p1JfQMKaceuCbpJKAPKVqyqviZdS0eUxH9v82oWo1kb9xjQ5wA6iP3FNVAPDFlz5/p7d45lO+BpSk1tuSZMF4Q=="],
+    "hono": ["hono@4.12.11", "", {}, "sha512-r4xbIa3mGGGoH9nN4A14DOg2wx7y2oQyJEb5O57C/xzETG/qx4c7CVDQ5WMeKHZ7ORk2W0hZ/sQKXTav3cmYBA=="],
 
     "hosted-git-info": ["hosted-git-info@9.0.2", "", { "dependencies": { "lru-cache": "^11.1.0" } }, "sha512-M422h7o/BR3rmCQ8UHi7cyyMqKltdP9Uo+J2fXK+RSAY+wTcKOIRyhTuKv4qn+DJf3g+PL890AzId5KZpX+CBg=="],
 
@@ -2751,7 +3622,7 @@
 
     "loupe": ["loupe@3.2.1", "", {}, "sha512-CdzqowRJCeLU72bHvWqwRBBlLcMEtIvGrlvef74kMnV2AolS9Y8xUv1I0U/MNAWMhBlKIoyuEgoJ0t/bbwHbLQ=="],
 
-    "lru-cache": ["lru-cache@11.3.3", "", {}, "sha512-JvNw9Y81y33E+BEYPr0U7omo+U9AySnsMsEiXgwT6yqd31VQWTLNQqmT4ou5eqPFUrTfIDFta2wKhB1hyohtAQ=="],
+    "lru-cache": ["lru-cache@11.3.0", "", {}, "sha512-sr8xPKE25m6vJVcrdn6NxtC0fVfuPowbscLypegRgOm0yXSqr5JNHCAY3hnusdJ7HRBW04j6Ip4khvHU778DuQ=="],
 
     "lz-string": ["lz-string@1.5.0", "", { "bin": { "lz-string": "bin/bin.js" } }, "sha512-h5bgJWpxJNswbU7qCrV0tIKQCaS3blPDrqKWx+QxzuzL1zGUzij9XCWLrSLsJPu5t+eWA/ycetzYAO5IOMcWAQ=="],
 
@@ -2907,7 +3778,7 @@
 
     "ms": ["ms@2.1.3", "", {}, "sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA=="],
 
-    "msw": ["msw@2.13.2", "", { "dependencies": { "@inquirer/confirm": "^5.0.0", "@mswjs/interceptors": "^0.41.2", "@open-draft/deferred-promise": "^2.2.0", "@types/statuses": "^2.0.6", "cookie": "^1.0.2", "graphql": "^16.12.0", "headers-polyfill": "^4.0.2", "is-node-process": "^1.2.0", "outvariant": "^1.4.3", "path-to-regexp": "^6.3.0", "picocolors": "^1.1.1", "rettime": "^0.10.1", "statuses": "^2.0.2", "strict-event-emitter": "^0.5.1", "tough-cookie": "^6.0.0", "type-fest": "^5.2.0", "until-async": "^3.0.2", "yargs": "^17.7.2" }, "peerDependencies": { "typescript": ">= 4.8.x" }, "optionalPeers": ["typescript"], "bin": { "msw": "cli/index.js" } }, "sha512-go2H1TIERKkC48pXiwec5l6sbNqYuvqOk3/vHGo1Zd+pq/H63oFawDQerH+WQdUw/flJFHDG7F+QdWMwhntA/A=="],
+    "msw": ["msw@2.12.14", "", { "dependencies": { "@inquirer/confirm": "^5.0.0", "@mswjs/interceptors": "^0.41.2", "@open-draft/deferred-promise": "^2.2.0", "@types/statuses": "^2.0.6", "cookie": "^1.0.2", "graphql": "^16.12.0", "headers-polyfill": "^4.0.2", "is-node-process": "^1.2.0", "outvariant": "^1.4.3", "path-to-regexp": "^6.3.0", "picocolors": "^1.1.1", "rettime": "^0.10.1", "statuses": "^2.0.2", "strict-event-emitter": "^0.5.1", "tough-cookie": "^6.0.0", "type-fest": "^5.2.0", "until-async": "^3.0.2", "yargs": "^17.7.2" }, "peerDependencies": { "typescript": ">= 4.8.x" }, "optionalPeers": ["typescript"], "bin": { "msw": "cli/index.js" } }, "sha512-4KXa4nVBIBjbDbd7vfQNuQ25eFxug0aropCQFoI0JdOBuJWamkT1yLVIWReFI8SiTRc+H1hKzaNk+cLk2N9rtQ=="],
 
     "mute-stream": ["mute-stream@2.0.0", "", {}, "sha512-WWdIxpyjEn+FhQJQQv9aQAYlHoNVdzIzUySNV1gHUPDSdZJ3yZn7pAAbQcV7B56Mvu881q9FZV+0Vx2xC44VWA=="],
 
@@ -3069,7 +3940,7 @@
 
     "possible-typed-array-names": ["possible-typed-array-names@1.1.0", "", {}, "sha512-/+5VFTchJDoVj3bhoqi6UeymcD00DAwb1nJwamzPvHEszJ4FpF6SNNbUbOS8yI56qHzdV8eK0qEfOSiodkTdxg=="],
 
-    "postcss": ["postcss@8.5.9", "", { "dependencies": { "nanoid": "^3.3.11", "picocolors": "^1.1.1", "source-map-js": "^1.2.1" } }, "sha512-7a70Nsot+EMX9fFU3064K/kdHWZqGVY+BADLyXc8Dfv+mTLLVl6JzJpPaCZ2kQL9gIJvKXSLMHhqdRRjwQeFtw=="],
+    "postcss": ["postcss@8.5.8", "", { "dependencies": { "nanoid": "^3.3.11", "picocolors": "^1.1.1", "source-map-js": "^1.2.1" } }, "sha512-OW/rX8O/jXnm82Ey1k44pObPtdblfiuWnrd8X7GJ7emImCOstunGbXUpp7HdBrFQX6rJzn3sPT397Wp5aCwCHg=="],
 
     "postcss-selector-parser": ["postcss-selector-parser@7.1.1", "", { "dependencies": { "cssesc": "^3.0.0", "util-deprecate": "^1.0.2" } }, "sha512-orRsuYpJVw8LdAwqqLykBj9ecS5/cRHlI5+nvTo8LcCKmzDmqVORXtOIYEEQuL9D4BxtA1lm5isAqzQZCoQ6Eg=="],
 
@@ -3105,7 +3976,7 @@
 
     "punycode": ["punycode@2.3.1", "", {}, "sha512-vYt7UD1U9Wg6138shLtLOvdAu+8DsC/ilFtEVHcH+wydcSpNE20AfSOduf6MkRFahL5FY7X1oU7nKVZFtfq8Fg=="],
 
-    "qs": ["qs@6.15.1", "", { "dependencies": { "side-channel": "^1.1.0" } }, "sha512-6YHEFRL9mfgcAvql/XhwTvf5jKcOiiupt2FiJxHkiX1z4j7WL8J/jRHYLluORvc1XxB5rV20KoeK00gVJamspg=="],
+    "qs": ["qs@6.15.0", "", { "dependencies": { "side-channel": "^1.1.0" } }, "sha512-mAZTtNCeetKMH+pSjrb76NAM8V9a05I9aBZOHztWy/UqcJdQYNsf59vrRKWnojAT9Y+GbIvoTBC++CPHqpDBhQ=="],
 
     "quick-lru": ["quick-lru@4.0.1", "", {}, "sha512-ARhCpm70fzdcvNQfPoy49IaanKkTlRWF2JMzqhcJbhSFRZv7nPTvZJdcY7301IPmvW+/p0RgIWnQDLJxifsQ7g=="],
 
@@ -3115,13 +3986,13 @@
 
     "rdf-canonize": ["rdf-canonize@5.0.0", "", { "dependencies": { "setimmediate": "^1.0.5" } }, "sha512-g8OUrgMXAR9ys/ZuJVfBr05sPPoMA7nHIVs8VEvg9QwM5W4GR2qSFEEHjsyHF1eWlBaf8Ev40WNjQFQ+nJTO3w=="],
 
-    "react": ["react@19.2.5", "", {}, "sha512-llUJLzz1zTUBrskt2pwZgLq59AemifIftw4aB7JxOqf1HY2FDaGDxgwpAPVzHU1kdWabH7FauP4i1oEeer2WCA=="],
+    "react": ["react@19.2.4", "", {}, "sha512-9nfp2hYpCwOjAN+8TZFGhtWEwgvWHXqESH8qT89AT/lWklpLON22Lc8pEtnpsZz7VmawabSU0gCjnj8aC0euHQ=="],
 
     "react-docgen": ["react-docgen@8.0.3", "", { "dependencies": { "@babel/core": "^7.28.0", "@babel/traverse": "^7.28.0", "@babel/types": "^7.28.2", "@types/babel__core": "^7.20.5", "@types/babel__traverse": "^7.20.7", "@types/doctrine": "^0.0.9", "@types/resolve": "^1.20.2", "doctrine": "^3.0.0", "resolve": "^1.22.1", "strip-indent": "^4.0.0" } }, "sha512-aEZ9qP+/M+58x2qgfSFEWH1BxLyHe5+qkLNJOZQb5iGS017jpbRnoKhNRrXPeA6RfBrZO5wZrT9DMC1UqE1f1w=="],
 
     "react-docgen-typescript": ["react-docgen-typescript@2.4.0", "", { "peerDependencies": { "typescript": ">= 4.3.x" } }, "sha512-ZtAp5XTO5HRzQctjPU0ybY0RRCQO19X/8fxn3w7y2VVTUbGHDKULPTL4ky3vB05euSgG5NpALhEhDPvQ56wvXg=="],
 
-    "react-dom": ["react-dom@19.2.5", "", { "dependencies": { "scheduler": "^0.27.0" }, "peerDependencies": { "react": "^19.2.5" } }, "sha512-J5bAZz+DXMMwW/wV3xzKke59Af6CHY7G4uYLN1OvBcKEsWOs4pQExj86BBKamxl/Ik5bx9whOrvBlSDfWzgSag=="],
+    "react-dom": ["react-dom@19.2.4", "", { "dependencies": { "scheduler": "^0.27.0" }, "peerDependencies": { "react": "^19.2.4" } }, "sha512-AXJdLo8kgMbimY95O2aKQqsz2iWi9jMgKJhRBAxECE4IFxfcazB2LmzloIoibJI3C12IlY20+KFaLv+71bUJeQ=="],
 
     "react-hook-form": ["react-hook-form@7.72.1", "", { "peerDependencies": { "react": "^16.8.0 || ^17 || ^18 || ^19" } }, "sha512-RhwBoy2ygeVZje+C+bwJ8g0NjTdBmDlJvAUHTxRjTmSUKPYsKfMphkS2sgEMotsY03bP358yEYlnUeZy//D9Ig=="],
 
@@ -3181,7 +4052,7 @@
 
     "rettime": ["rettime@0.10.1", "", {}, "sha512-uyDrIlUEH37cinabq0AX4QbgV4HbFZ/gqoiunWQ1UqBtRvTTytwhNYjE++pO/MjPTZL5KQCf2bEoJ/BJNVQ5Kw=="],
 
-    "rolldown": ["rolldown@1.0.0-rc.15", "", { "dependencies": { "@oxc-project/types": "=0.124.0", "@rolldown/pluginutils": "1.0.0-rc.15" }, "optionalDependencies": { "@rolldown/binding-android-arm64": "1.0.0-rc.15", "@rolldown/binding-darwin-arm64": "1.0.0-rc.15", "@rolldown/binding-darwin-x64": "1.0.0-rc.15", "@rolldown/binding-freebsd-x64": "1.0.0-rc.15", "@rolldown/binding-linux-arm-gnueabihf": "1.0.0-rc.15", "@rolldown/binding-linux-arm64-gnu": "1.0.0-rc.15", "@rolldown/binding-linux-arm64-musl": "1.0.0-rc.15", "@rolldown/binding-linux-ppc64-gnu": "1.0.0-rc.15", "@rolldown/binding-linux-s390x-gnu": "1.0.0-rc.15", "@rolldown/binding-linux-x64-gnu": "1.0.0-rc.15", "@rolldown/binding-linux-x64-musl": "1.0.0-rc.15", "@rolldown/binding-openharmony-arm64": "1.0.0-rc.15", "@rolldown/binding-wasm32-wasi": "1.0.0-rc.15", "@rolldown/binding-win32-arm64-msvc": "1.0.0-rc.15", "@rolldown/binding-win32-x64-msvc": "1.0.0-rc.15" }, "bin": { "rolldown": "bin/cli.mjs" } }, "sha512-Ff31guA5zT6WjnGp0SXw76X6hzGRk/OQq2hE+1lcDe+lJdHSgnSX6nK3erbONHyCbpSj9a9E+uX/OvytZoWp2g=="],
+    "rolldown": ["rolldown@1.0.0-rc.12", "", { "dependencies": { "@oxc-project/types": "=0.122.0", "@rolldown/pluginutils": "1.0.0-rc.12" }, "optionalDependencies": { "@rolldown/binding-android-arm64": "1.0.0-rc.12", "@rolldown/binding-darwin-arm64": "1.0.0-rc.12", "@rolldown/binding-darwin-x64": "1.0.0-rc.12", "@rolldown/binding-freebsd-x64": "1.0.0-rc.12", "@rolldown/binding-linux-arm-gnueabihf": "1.0.0-rc.12", "@rolldown/binding-linux-arm64-gnu": "1.0.0-rc.12", "@rolldown/binding-linux-arm64-musl": "1.0.0-rc.12", "@rolldown/binding-linux-ppc64-gnu": "1.0.0-rc.12", "@rolldown/binding-linux-s390x-gnu": "1.0.0-rc.12", "@rolldown/binding-linux-x64-gnu": "1.0.0-rc.12", "@rolldown/binding-linux-x64-musl": "1.0.0-rc.12", "@rolldown/binding-openharmony-arm64": "1.0.0-rc.12", "@rolldown/binding-wasm32-wasi": "1.0.0-rc.12", "@rolldown/binding-win32-arm64-msvc": "1.0.0-rc.12", "@rolldown/binding-win32-x64-msvc": "1.0.0-rc.12" }, "bin": { "rolldown": "bin/cli.mjs" } }, "sha512-yP4USLIMYrwpPHEFB5JGH1uxhcslv6/hL0OyvTuY+3qlOSJvZ7ntYnoWpehBxufkgN0cvXxppuTu5hHa/zPh+A=="],
 
     "router": ["router@2.2.0", "", { "dependencies": { "debug": "^4.4.0", "depd": "^2.0.0", "is-promise": "^4.0.0", "parseurl": "^1.3.3", "path-to-regexp": "^8.0.0" } }, "sha512-nLTrUKm2UyiL7rlhapu/Zl45FwNgkZGaCpZbIHajDYgwlJCOzLSk+cIPAnsEqV955GjILJnKbdQC1nVPz+gAYQ=="],
 
@@ -3223,7 +4094,7 @@
 
     "side-channel": ["side-channel@1.1.0", "", { "dependencies": { "es-errors": "^1.3.0", "object-inspect": "^1.13.3", "side-channel-list": "^1.0.0", "side-channel-map": "^1.0.1", "side-channel-weakmap": "^1.0.2" } }, "sha512-ZX99e6tRweoUXqR+VBrslhda51Nh5MTQwou5tnUDgbtyM0dBgmhEDtWGP/xbKn6hqfPRHujUNwz5fy/wbbhnpw=="],
 
-    "side-channel-list": ["side-channel-list@1.0.1", "", { "dependencies": { "es-errors": "^1.3.0", "object-inspect": "^1.13.4" } }, "sha512-mjn/0bi/oUURjc5Xl7IaWi/OJJJumuoJFQJfDDyO46+hBWsfaVM65TBHq2eoZBhzl9EchxOijpkbRC8SVBQU0w=="],
+    "side-channel-list": ["side-channel-list@1.0.0", "", { "dependencies": { "es-errors": "^1.3.0", "object-inspect": "^1.13.3" } }, "sha512-FCLHtRD/gnpCiCHEiJLOwdmFP+wzCmDEkc9y7NsYxeF4u7Btsn1ZuwgwJGxImImHicJArLP4R0yX4c2KCrMrTA=="],
 
     "side-channel-map": ["side-channel-map@1.0.1", "", { "dependencies": { "call-bound": "^1.0.2", "es-errors": "^1.3.0", "get-intrinsic": "^1.2.5", "object-inspect": "^1.13.3" } }, "sha512-VCjCNfgMsby3tTdo02nbjtM/ewra6jPHmpThenkTYh8pG9ucZ/1P8So4u4FGBek/BjpOVsDCMoLA/iuBKIFXRA=="],
 
@@ -3277,7 +4148,7 @@
 
     "std-env": ["std-env@4.0.0", "", {}, "sha512-zUMPtQ/HBY3/50VbpkupYHbRroTRZJPRLvreamgErJVys0ceuzMkD44J/QjqhHjOzK42GQ3QZIeFG1OYfOtKqQ=="],
 
-    "storybook": ["storybook@10.3.5", "", { "dependencies": { "@storybook/global": "^5.0.0", "@storybook/icons": "^2.0.1", "@testing-library/jest-dom": "^6.9.1", "@testing-library/user-event": "^14.6.1", "@vitest/expect": "3.2.4", "@vitest/spy": "3.2.4", "@webcontainer/env": "^1.1.1", "esbuild": "^0.18.0 || ^0.19.0 || ^0.20.0 || ^0.21.0 || ^0.22.0 || ^0.23.0 || ^0.24.0 || ^0.25.0 || ^0.26.0 || ^0.27.0", "open": "^10.2.0", "recast": "^0.23.5", "semver": "^7.7.3", "use-sync-external-store": "^1.5.0", "ws": "^8.18.0" }, "peerDependencies": { "prettier": "^2 || ^3" }, "optionalPeers": ["prettier"], "bin": "./dist/bin/dispatcher.js" }, "sha512-uBSZu/GZa9aEIW3QMGvdQPMZWhGxSe4dyRWU8B3/Vd47Gy/XLC7tsBxRr13txmmPOEDHZR94uLuq0H50fvuqBw=="],
+    "storybook": ["storybook@10.3.4", "", { "dependencies": { "@storybook/global": "^5.0.0", "@storybook/icons": "^2.0.1", "@testing-library/jest-dom": "^6.9.1", "@testing-library/user-event": "^14.6.1", "@vitest/expect": "3.2.4", "@vitest/spy": "3.2.4", "@webcontainer/env": "^1.1.1", "esbuild": "^0.18.0 || ^0.19.0 || ^0.20.0 || ^0.21.0 || ^0.22.0 || ^0.23.0 || ^0.24.0 || ^0.25.0 || ^0.26.0 || ^0.27.0", "open": "^10.2.0", "recast": "^0.23.5", "semver": "^7.7.3", "use-sync-external-store": "^1.5.0", "ws": "^8.18.0" }, "peerDependencies": { "prettier": "^2 || ^3" }, "optionalPeers": ["prettier"], "bin": "./dist/bin/dispatcher.js" }, "sha512-866YXZy9k59tLPl9SN3KZZOFeBC/swxkuBVtW8iQjJIzfCrvk7zXQd8RSQ4ignmCdArVvY4lGMCAT4yNaZSt1g=="],
 
     "stream": ["stream@0.0.3", "", { "dependencies": { "component-emitter": "^2.0.0" } }, "sha512-aMsbn7VKrl4A2T7QAQQbzgN7NVc70vgF5INQrBXqn4dCXN1zy3L9HGgLO5s7PExmdrzTJ8uR/27aviW8or8/+A=="],
 
@@ -3313,7 +4184,7 @@
 
     "supports-preserve-symlinks-flag": ["supports-preserve-symlinks-flag@1.0.0", "", {}, "sha512-ot0WnXS9fgdkgIcePe6RHNk1WA8+muPa6cSjeR3V8K27q9BB1rTE3R1p7Hv0z1ZyAc8s6Vvv8DIyWf681MAt0w=="],
 
-    "svelte": ["svelte@5.55.2", "", { "dependencies": { "@jridgewell/remapping": "^2.3.4", "@jridgewell/sourcemap-codec": "^1.5.0", "@sveltejs/acorn-typescript": "^1.0.5", "@types/estree": "^1.0.5", "@types/trusted-types": "^2.0.7", "acorn": "^8.12.1", "aria-query": "5.3.1", "axobject-query": "^4.1.0", "clsx": "^2.1.1", "devalue": "^5.6.4", "esm-env": "^1.2.1", "esrap": "^2.2.4", "is-reference": "^3.0.3", "locate-character": "^3.0.0", "magic-string": "^0.30.11", "zimmerframe": "^1.1.2" } }, "sha512-z41M/hi0ZPTzrwVKLvB/R1/Oo08gL1uIib8HZ+FncqxxtY9MLb01emg2fqk+WLZ/lNrrtNDFh7BZLDxAHvMgLw=="],
+    "svelte": ["svelte@5.55.1", "", { "dependencies": { "@jridgewell/remapping": "^2.3.4", "@jridgewell/sourcemap-codec": "^1.5.0", "@sveltejs/acorn-typescript": "^1.0.5", "@types/estree": "^1.0.5", "@types/trusted-types": "^2.0.7", "acorn": "^8.12.1", "aria-query": "5.3.1", "axobject-query": "^4.1.0", "clsx": "^2.1.1", "devalue": "^5.6.4", "esm-env": "^1.2.1", "esrap": "^2.2.4", "is-reference": "^3.0.3", "locate-character": "^3.0.0", "magic-string": "^0.30.11", "zimmerframe": "^1.1.2" } }, "sha512-QjvU7EFemf6mRzdMGlAFttMWtAAVXrax61SZYHdkD6yoVGQ89VeyKfZD4H1JrV1WLmJBxWhFch9H6ig/87VGjw=="],
 
     "svelte-ast-print": ["svelte-ast-print@0.4.2", "", { "dependencies": { "esrap": "1.2.2", "zimmerframe": "1.1.2" }, "peerDependencies": { "svelte": "^5.0.0" } }, "sha512-hRHHufbJoArFmDYQKCpCvc0xUuIEfwYksvyLYEQyH+1xb5LD5sM/IthfooCdXZQtOIqXz6xm7NmaqdfwG4kh6w=="],
 
@@ -3349,7 +4220,7 @@
 
     "tinycolor2": ["tinycolor2@1.6.0", "", {}, "sha512-XPaBkWQJdsf3pLKJV9p4qN/S+fm2Oj8AIPo1BTUhg5oxkvm9+SVEGFdhyOz7tTdUTfvxMiAs4sp6/eZO2Ew+pw=="],
 
-    "tinyexec": ["tinyexec@1.1.1", "", {}, "sha512-VKS/ZaQhhkKFMANmAOhhXVoIfBXblQxGX1myCQ2faQrfmobMftXeJPcZGp0gS07ocvGJWDLZGyOZDadDBqYIJg=="],
+    "tinyexec": ["tinyexec@1.0.4", "", {}, "sha512-u9r3uZC0bdpGOXtlxUIdwf9pkmvhqJdrVCH9fapQtgy/OeTTMZ1nqH7agtvEfmGui6e1XxjcdrlxvxJvc3sMqw=="],
 
     "tinyglobby": ["tinyglobby@0.2.12", "", { "dependencies": { "fdir": "^6.4.3", "picomatch": "^4.0.2" } }, "sha512-qkf4trmKSIiMTs/E63cxH+ojC2unam7rJ0WrauAzpT3ECNTxGRMlaXxVbfxMUC/w0LaYk6jQ4y/nGR9uBO3tww=="],
 
@@ -3457,11 +4328,11 @@
 
     "vfile-message": ["vfile-message@4.0.3", "", { "dependencies": { "@types/unist": "^3.0.0", "unist-util-stringify-position": "^4.0.0" } }, "sha512-QTHzsGd1EhbZs4AsQ20JX1rC3cOlt/IWJruk893DfLRr57lcnOeMaWG4K0JrRta4mIJZKth2Au3mM3u03/JWKw=="],
 
-    "vite": ["vite@8.0.8", "", { "dependencies": { "lightningcss": "^1.32.0", "picomatch": "^4.0.4", "postcss": "^8.5.8", "rolldown": "1.0.0-rc.15", "tinyglobby": "^0.2.15" }, "optionalDependencies": { "fsevents": "~2.3.3" }, "peerDependencies": { "@types/node": "^20.19.0 || >=22.12.0", "@vitejs/devtools": "^0.1.0", "esbuild": "^0.27.0 || ^0.28.0", "jiti": ">=1.21.0", "less": "^4.0.0", "sass": "^1.70.0", "sass-embedded": "^1.70.0", "stylus": ">=0.54.8", "sugarss": "^5.0.0", "terser": "^5.16.0", "tsx": "^4.8.1", "yaml": "^2.4.2" }, "optionalPeers": ["@types/node", "@vitejs/devtools", "esbuild", "jiti", "less", "sass", "sass-embedded", "stylus", "sugarss", "terser", "tsx", "yaml"], "bin": { "vite": "bin/vite.js" } }, "sha512-dbU7/iLVa8KZALJyLOBOQ88nOXtNG8vxKuOT4I2mD+Ya70KPceF4IAmDsmU0h1Qsn5bPrvsY9HJstCRh3hG6Uw=="],
+    "vite": ["vite@8.0.4", "", { "dependencies": { "lightningcss": "^1.32.0", "picomatch": "^4.0.4", "postcss": "^8.5.8", "rolldown": "1.0.0-rc.12", "tinyglobby": "^0.2.15" }, "optionalDependencies": { "fsevents": "~2.3.3" }, "peerDependencies": { "@types/node": "^20.19.0 || >=22.12.0", "@vitejs/devtools": "^0.1.0", "esbuild": "^0.27.0 || ^0.28.0", "jiti": ">=1.21.0", "less": "^4.0.0", "sass": "^1.70.0", "sass-embedded": "^1.70.0", "stylus": ">=0.54.8", "sugarss": "^5.0.0", "terser": "^5.16.0", "tsx": "^4.8.1", "yaml": "^2.4.2" }, "optionalPeers": ["@types/node", "@vitejs/devtools", "esbuild", "jiti", "less", "sass", "sass-embedded", "stylus", "sugarss", "terser", "tsx", "yaml"], "bin": { "vite": "bin/vite.js" } }, "sha512-baBr4jUVSLJ0RPyZ2nK0zS2+W8hNHbM4hEzfvllukmRPVS3xDG5ATTNtbRXrKIOE2b8/FsPWJAOnuIxcs7g3cw=="],
 
     "vitefu": ["vitefu@1.1.3", "", { "peerDependencies": { "vite": "^3.0.0 || ^4.0.0 || ^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0" }, "optionalPeers": ["vite"] }, "sha512-ub4okH7Z5KLjb6hDyjqrGXqWtWvoYdU3IGm/NorpgHncKoLTCfRIbvlhBm7r0YstIaQRYlp4yEbFqDcKSzXSSg=="],
 
-    "vitest": ["vitest@4.1.4", "", { "dependencies": { "@vitest/expect": "4.1.4", "@vitest/mocker": "4.1.4", "@vitest/pretty-format": "4.1.4", "@vitest/runner": "4.1.4", "@vitest/snapshot": "4.1.4", "@vitest/spy": "4.1.4", "@vitest/utils": "4.1.4", "es-module-lexer": "^2.0.0", "expect-type": "^1.3.0", "magic-string": "^0.30.21", "obug": "^2.1.1", "pathe": "^2.0.3", "picomatch": "^4.0.3", "std-env": "^4.0.0-rc.1", "tinybench": "^2.9.0", "tinyexec": "^1.0.2", "tinyglobby": "^0.2.15", "tinyrainbow": "^3.1.0", "vite": "^6.0.0 || ^7.0.0 || ^8.0.0", "why-is-node-running": "^2.3.0" }, "peerDependencies": { "@edge-runtime/vm": "*", "@opentelemetry/api": "^1.9.0", "@types/node": "^20.0.0 || ^22.0.0 || >=24.0.0", "@vitest/browser-playwright": "4.1.4", "@vitest/browser-preview": "4.1.4", "@vitest/browser-webdriverio": "4.1.4", "@vitest/coverage-istanbul": "4.1.4", "@vitest/coverage-v8": "4.1.4", "@vitest/ui": "4.1.4", "happy-dom": "*", "jsdom": "*" }, "optionalPeers": ["@edge-runtime/vm", "@opentelemetry/api", "@types/node", "@vitest/browser-playwright", "@vitest/browser-preview", "@vitest/browser-webdriverio", "@vitest/coverage-istanbul", "@vitest/coverage-v8", "@vitest/ui", "happy-dom", "jsdom"], "bin": { "vitest": "vitest.mjs" } }, "sha512-tFuJqTxKb8AvfyqMfnavXdzfy3h3sWZRWwfluGbkeR7n0HUev+FmNgZ8SDrRBTVrVCjgH5cA21qGbCffMNtWvg=="],
+    "vitest": ["vitest@4.1.2", "", { "dependencies": { "@vitest/expect": "4.1.2", "@vitest/mocker": "4.1.2", "@vitest/pretty-format": "4.1.2", "@vitest/runner": "4.1.2", "@vitest/snapshot": "4.1.2", "@vitest/spy": "4.1.2", "@vitest/utils": "4.1.2", "es-module-lexer": "^2.0.0", "expect-type": "^1.3.0", "magic-string": "^0.30.21", "obug": "^2.1.1", "pathe": "^2.0.3", "picomatch": "^4.0.3", "std-env": "^4.0.0-rc.1", "tinybench": "^2.9.0", "tinyexec": "^1.0.2", "tinyglobby": "^0.2.15", "tinyrainbow": "^3.1.0", "vite": "^6.0.0 || ^7.0.0 || ^8.0.0", "why-is-node-running": "^2.3.0" }, "peerDependencies": { "@edge-runtime/vm": "*", "@opentelemetry/api": "^1.9.0", "@types/node": "^20.0.0 || ^22.0.0 || >=24.0.0", "@vitest/browser-playwright": "4.1.2", "@vitest/browser-preview": "4.1.2", "@vitest/browser-webdriverio": "4.1.2", "@vitest/ui": "4.1.2", "happy-dom": "*", "jsdom": "*" }, "optionalPeers": ["@edge-runtime/vm", "@opentelemetry/api", "@types/node", "@vitest/browser-playwright", "@vitest/browser-preview", "@vitest/browser-webdriverio", "@vitest/ui", "happy-dom", "jsdom"], "bin": { "vitest": "vitest.mjs" } }, "sha512-xjR1dMTVHlFLh98JE3i/f/WePqJsah4A0FK9cc8Ehp9Udk0AZk6ccpIZhh1qJ/yxVWRZ+Q54ocnD8TXmkhspGg=="],
 
     "vitest-browser-svelte": ["vitest-browser-svelte@2.1.0", "", { "dependencies": { "@playwright/test": "^1.58.2", "@testing-library/svelte-core": "^1.0.0" }, "peerDependencies": { "svelte": "^3 || ^4 || ^5 || ^5.0.0-next.0", "vitest": "^4.0.0" } }, "sha512-Uqcqn9gKhYoNOn5uGOQHSPIEGHgIz25zPP6R63LQ5+yEVHfDXdOKBMba9pBlPIgp31AxYbV9h43j9+W+5M5y+A=="],
 
@@ -3545,15 +4416,7 @@
 
     "@bundled-es-modules/glob/glob": ["glob@10.5.0", "", { "dependencies": { "foreground-child": "^3.1.0", "jackspeak": "^3.1.2", "minimatch": "^9.0.4", "minipass": "^7.1.2", "package-json-from-dist": "^1.0.0", "path-scurry": "^1.11.1" }, "bin": { "glob": "dist/esm/bin.mjs" } }, "sha512-DfXN8DfhJ7NH3Oe7cFmu3NCu1wKbkReJ8TorzSAFbSKrlNaQSKfIzqYqVY8zlbs2NLBbWpRiU52GX2PbaBVNkg=="],
 
-    "@canonical/react-hooks/@canonical/biome-config": ["@canonical/biome-config@0.22.0", "", { "peerDependencies": { "@biomejs/biome": "2.4.9" } }, "sha512-0DRY1gh+FM2CPysbmW6tNWHoctCMDWALcKwivDSIPYVCdz5C+5uZmK26Od2KNQ0jd2HWTVad/EwPebK4IfyOLA=="],
-
-    "@canonical/react-hooks/@canonical/ds-types": ["@canonical/ds-types@0.22.0", "", {}, "sha512-p4VI6J5vuHUvXQUTNd8MxGzTEju8ddORmXom93xPxKLx+yVKG11pzNJxcW2tAXNfWYls2upU/MEIalQK9gHWKA=="],
-
-    "@canonical/react-hooks/@canonical/typescript-config": ["@canonical/typescript-config@0.22.0", "", { "peerDependencies": { "typescript": "^5.9.3" } }, "sha512-2EaALHQcHELmiuzY4N/BimYDPfLJjmd8LcOOjr+cb8WM0F9MqCGD+huQHtAkw2eM7fRJ2V4Hl0EhTx6oSmVRgg=="],
-
-    "@canonical/react-hooks/@canonical/typescript-config-react": ["@canonical/typescript-config-react@0.22.0", "", { "dependencies": { "@canonical/typescript-config": "^0.22.0" }, "peerDependencies": { "typescript": "^5.9.3" } }, "sha512-K065hSK6nzAPH3iK9MNCxMmzrl/111SdLXOYyeXvquSEDFQqoOtSZAN7yE2fw4vKGBf+5RJvRbkOUXHva0uj/g=="],
-
-    "@canonical/react-hooks/@canonical/webarchitect": ["@canonical/webarchitect@0.22.0", "", { "dependencies": { "ajv": "^8.18.0", "chalk": "^5.6.2", "commander": "^14.0.3" }, "bin": { "webarchitect": "src/cli.ts" } }, "sha512-HoiqlMgF9PsVyQCPEvV4gREQEa/SpJeeJxKHglpfEez+pKAkmAlah1i37a55hHUYDAREHguxlktAJ0UYGAiqzQ=="],
+    "@canonical/lit-demo/@biomejs/biome": ["@biomejs/biome@2.4.6", "", { "optionalDependencies": { "@biomejs/cli-darwin-arm64": "2.4.6", "@biomejs/cli-darwin-x64": "2.4.6", "@biomejs/cli-linux-arm64": "2.4.6", "@biomejs/cli-linux-arm64-musl": "2.4.6", "@biomejs/cli-linux-x64": "2.4.6", "@biomejs/cli-linux-x64-musl": "2.4.6", "@biomejs/cli-win32-arm64": "2.4.6", "@biomejs/cli-win32-x64": "2.4.6" }, "bin": { "biome": "bin/biome" } }, "sha512-QnHe81PMslpy3mnpL8DnO2M4S4ZnYPkjlGCLWBZT/3R9M6b5daArWMMtEfP52/n174RKnwRIf3oT8+wc9ihSfQ=="],
 
     "@digitalbazaar/http-client/undici": ["undici@6.24.1", "", {}, "sha512-sC+b0tB1whOCzbtlx20fx3WgCXwkW627p4EA9uM+/tNNPkSS+eSEld6pAs9nDv7WbY1UUljBMYPtu9BCOrCWKA=="],
 
@@ -3615,7 +4478,7 @@
 
     "@nx/devkit/semver": ["semver@7.7.4", "", { "bin": { "semver": "bin/semver.js" } }, "sha512-vFKC2IEtQnVhpT78h1Yp8wzwrf8CM+MzKMHGJZfBtzhZNycRFnXsHk6E5TxIkkMsgNS7mdX3AGB7x2QM2di4lA=="],
 
-    "@rolldown/binding-wasm32-wasi/@napi-rs/wasm-runtime": ["@napi-rs/wasm-runtime@1.1.3", "", { "dependencies": { "@tybys/wasm-util": "^0.10.1" }, "peerDependencies": { "@emnapi/core": "^1.7.1", "@emnapi/runtime": "^1.7.1" } }, "sha512-xK9sGVbJWYb08+mTJt3/YV24WxvxpXcXtP6B172paPZ+Ts69Re9dAr7lKwJoeIx8OoeuimEiRZ7umkiUVClmmQ=="],
+    "@rolldown/binding-wasm32-wasi/@napi-rs/wasm-runtime": ["@napi-rs/wasm-runtime@1.1.2", "", { "dependencies": { "@tybys/wasm-util": "^0.10.1" }, "peerDependencies": { "@emnapi/core": "^1.7.1", "@emnapi/runtime": "^1.7.1" } }, "sha512-sNXv5oLJ7ob93xkZ1XnxisYhGYXfaG9f65/ZgYuAu3qt7b3NadcOEhLvx28hv31PgX8SZJRYrAIPQilQmFpLVw=="],
 
     "@rollup/pluginutils/estree-walker": ["estree-walker@2.0.2", "", {}, "sha512-Rfkk/Mp/DL7JVje3u18FxFujQlTNR2q6QfMSMB7AvCBx91NGj/ba3kCfza0f6dVDbw7YlRf/nDrn7pQrCCyQ/w=="],
 
@@ -3628,6 +4491,8 @@
     "@storybook/svelte/type-fest": ["type-fest@2.19.0", "", {}, "sha512-RAH822pAdBgcNMAfWnCBU3CFZcfZ/i1eZjwFU/dsLKumyuuP3niueg2UAukXYF0E2AAoc82ZSSf9J0WQBinzHA=="],
 
     "@sveltejs/package/semver": ["semver@7.7.4", "", { "bin": { "semver": "bin/semver.js" } }, "sha512-vFKC2IEtQnVhpT78h1Yp8wzwrf8CM+MzKMHGJZfBtzhZNycRFnXsHk6E5TxIkkMsgNS7mdX3AGB7x2QM2di4lA=="],
+
+    "@testing-library/dom/aria-query": ["aria-query@5.3.0", "", { "dependencies": { "dequal": "^2.0.3" } }, "sha512-b0P0sZPKtyu8HkeRAfCq0IfURZK+SuwMjY1UXGBU27wpAiTwQAIlq56IbIO+ytk/JjS1fMR14ee5WBBfKi5J6A=="],
 
     "@testing-library/dom/dom-accessibility-api": ["dom-accessibility-api@0.5.16", "", {}, "sha512-X7BJ2yElsnOJ30pZF4uIIDfBEVgF4XEBxL9Bxhy6dnrm5hkzqmsWHGTiHqRiITNhMyFLyAiWndIJP7Z1NTteDg=="],
 
@@ -3665,8 +4530,6 @@
 
     "conventional-changelog-writer/semver": ["semver@7.7.4", "", { "bin": { "semver": "bin/semver.js" } }, "sha512-vFKC2IEtQnVhpT78h1Yp8wzwrf8CM+MzKMHGJZfBtzhZNycRFnXsHk6E5TxIkkMsgNS7mdX3AGB7x2QM2di4lA=="],
 
-    "copyfiles/minimatch": ["minimatch@3.1.5", "", { "dependencies": { "brace-expansion": "^1.1.7" } }, "sha512-VgjWUsnnT6n+NUk6eZq77zeFdpW2LWDzP6zFGrCbHXiYNul5Dzqk2HHQ5uFH2DNW5Xbp8+jVzaeNt94ssEEl4w=="],
-
     "copyfiles/yargs": ["yargs@16.2.0", "", { "dependencies": { "cliui": "^7.0.2", "escalade": "^3.1.1", "get-caller-file": "^2.0.5", "require-directory": "^2.1.1", "string-width": "^4.2.0", "y18n": "^5.0.5", "yargs-parser": "^20.2.2" } }, "sha512-D1mvvtDG0L5ft/jGWkLpG1+m0eQxOfaBvTNELraWj22wSVUMWxZUvYgJYcKh6jGGIkJFhH4IZPQhR4TKpc8mBw=="],
 
     "cross-spawn/which": ["which@2.0.2", "", { "dependencies": { "isexe": "^2.0.0" }, "bin": { "node-which": "./bin/node-which" } }, "sha512-BLI3Tl1TW3Pvl70l3yq3Y64i+awpwXqsGBYWkkqMtnbXgrMD+yj7rhW0kuEDxzJaYXGjEW5ogapKNMEKNMjibA=="],
@@ -3690,8 +4553,6 @@
     "get-pkg-repo/yargs": ["yargs@16.2.0", "", { "dependencies": { "cliui": "^7.0.2", "escalade": "^3.1.1", "get-caller-file": "^2.0.5", "require-directory": "^2.1.1", "string-width": "^4.2.0", "y18n": "^5.0.5", "yargs-parser": "^20.2.2" } }, "sha512-D1mvvtDG0L5ft/jGWkLpG1+m0eQxOfaBvTNELraWj22wSVUMWxZUvYgJYcKh6jGGIkJFhH4IZPQhR4TKpc8mBw=="],
 
     "git-semver-tags/semver": ["semver@7.7.4", "", { "bin": { "semver": "bin/semver.js" } }, "sha512-vFKC2IEtQnVhpT78h1Yp8wzwrf8CM+MzKMHGJZfBtzhZNycRFnXsHk6E5TxIkkMsgNS7mdX3AGB7x2QM2di4lA=="],
-
-    "glob/minimatch": ["minimatch@3.1.5", "", { "dependencies": { "brace-expansion": "^1.1.7" } }, "sha512-VgjWUsnnT6n+NUk6eZq77zeFdpW2LWDzP6zFGrCbHXiYNul5Dzqk2HHQ5uFH2DNW5Xbp8+jVzaeNt94ssEEl4w=="],
 
     "happy-dom/whatwg-mimetype": ["whatwg-mimetype@3.0.0", "", {}, "sha512-nt+N2dzIutVRxARx1nghPKGv1xHikU7HKdfafKkLNLindmPU/ch3U31NOCGGA/dmPcmb1VlofO0vnKAcsm0o/Q=="],
 
@@ -3767,7 +4628,7 @@
 
     "node-gyp/semver": ["semver@7.7.4", "", { "bin": { "semver": "bin/semver.js" } }, "sha512-vFKC2IEtQnVhpT78h1Yp8wzwrf8CM+MzKMHGJZfBtzhZNycRFnXsHk6E5TxIkkMsgNS7mdX3AGB7x2QM2di4lA=="],
 
-    "node-gyp/tinyglobby": ["tinyglobby@0.2.16", "", { "dependencies": { "fdir": "^6.5.0", "picomatch": "^4.0.4" } }, "sha512-pn99VhoACYR8nFHhxqix+uvsbXineAasWm5ojXoN8xEwK5Kd3/TrhNn1wByuD52UxWRLy8pu+kRMniEi6Eq9Zg=="],
+    "node-gyp/tinyglobby": ["tinyglobby@0.2.15", "", { "dependencies": { "fdir": "^6.5.0", "picomatch": "^4.0.3" } }, "sha512-j2Zq4NyQYG5XMST4cbs02Ak8iJUdxRM0XI5QyxXuZOzKOINmWurp3smXu3y5wDcJrptwpSjgXHzIQxR0omXljQ=="],
 
     "noms/readable-stream": ["readable-stream@1.0.34", "", { "dependencies": { "core-util-is": "~1.0.0", "inherits": "~2.0.1", "isarray": "0.0.1", "string_decoder": "~0.10.x" } }, "sha512-ok1qVCJuRkNmvebYikljxJA/UEsKwLl2nI1OmaqAu4/UE+h0wKCHok4XkL/gvi39OacXvw59RJUOFUkDib2rHg=="],
 
@@ -3851,7 +4712,7 @@
 
     "resolve-cwd/resolve-from": ["resolve-from@5.0.0", "", {}, "sha512-qYg9KP24dD5qka9J47d0aVky0N+b4fTU89LN9iDnjB5waksiC49rvMB0PrUJQGoTmH50XPiqOvAjDfaijGxYZw=="],
 
-    "rolldown/@rolldown/pluginutils": ["@rolldown/pluginutils@1.0.0-rc.15", "", {}, "sha512-UromN0peaE53IaBRe9W7CjrZgXl90fqGpK+mIZbA3qSTeYqg3pqpROBdIPvOG3F5ereDHNwoHBI2e50n1BDr1g=="],
+    "rolldown/@rolldown/pluginutils": ["@rolldown/pluginutils@1.0.0-rc.12", "", {}, "sha512-HHMwmarRKvoFsJorqYlFeFRzXZqCt2ETQlEDOb9aqssrnVBB1/+xgTGtuTrIk5vzLNX1MjMtTf7W9z3tsSbrxw=="],
 
     "router/path-to-regexp": ["path-to-regexp@8.4.2", "", {}, "sha512-qRcuIdP69NPm4qbACK+aDogI5CBDMi1jKe0ry5rSQJz8JVLsC7jV8XpiJjGRLLol3N+R5ihGYcrPLTno6pAdBA=="],
 
@@ -3891,11 +4752,13 @@
 
     "tsconfig-paths/strip-bom": ["strip-bom@3.0.0", "", {}, "sha512-vavAMRXOgBVNF6nyEEmL3DBK19iRpDcoIwW+swQ+CbGiu7lju6t+JklA1MHweoWtadgt4ISVUsXLyDq34ddcwA=="],
 
+    "tuf-js/make-fetch-happen": ["make-fetch-happen@15.0.5", "", { "dependencies": { "@gar/promise-retry": "^1.0.0", "@npmcli/agent": "^4.0.0", "@npmcli/redact": "^4.0.0", "cacache": "^20.0.1", "http-cache-semantics": "^4.1.1", "minipass": "^7.0.2", "minipass-fetch": "^5.0.0", "minipass-flush": "^1.0.5", "minipass-pipeline": "^1.2.4", "negotiator": "^1.0.0", "proc-log": "^6.0.0", "ssri": "^13.0.0" } }, "sha512-uCbIa8jWWmQZt4dSnEStkVC6gdakiinAm4PiGsywIkguF0eWMdcjDz0ECYhUolFU3pFLOev9VNPCEygydXnddg=="],
+
     "url/punycode": ["punycode@1.4.1", "", {}, "sha512-jmYNElW7yvO7TV33CjSmvSiE2yco3bV2czu/OzDKdMNVZQWfxCblURLhf+47syQRBntjfLdd/H0egrzIG+oaFQ=="],
 
-    "vite/tinyglobby": ["tinyglobby@0.2.16", "", { "dependencies": { "fdir": "^6.5.0", "picomatch": "^4.0.4" } }, "sha512-pn99VhoACYR8nFHhxqix+uvsbXineAasWm5ojXoN8xEwK5Kd3/TrhNn1wByuD52UxWRLy8pu+kRMniEi6Eq9Zg=="],
+    "vite/tinyglobby": ["tinyglobby@0.2.15", "", { "dependencies": { "fdir": "^6.5.0", "picomatch": "^4.0.3" } }, "sha512-j2Zq4NyQYG5XMST4cbs02Ak8iJUdxRM0XI5QyxXuZOzKOINmWurp3smXu3y5wDcJrptwpSjgXHzIQxR0omXljQ=="],
 
-    "vitest/tinyglobby": ["tinyglobby@0.2.16", "", { "dependencies": { "fdir": "^6.5.0", "picomatch": "^4.0.4" } }, "sha512-pn99VhoACYR8nFHhxqix+uvsbXineAasWm5ojXoN8xEwK5Kd3/TrhNn1wByuD52UxWRLy8pu+kRMniEi6Eq9Zg=="],
+    "vitest/tinyglobby": ["tinyglobby@0.2.15", "", { "dependencies": { "fdir": "^6.5.0", "picomatch": "^4.0.3" } }, "sha512-j2Zq4NyQYG5XMST4cbs02Ak8iJUdxRM0XI5QyxXuZOzKOINmWurp3smXu3y5wDcJrptwpSjgXHzIQxR0omXljQ=="],
 
     "widest-line/string-width": ["string-width@8.2.0", "", { "dependencies": { "get-east-asian-width": "^1.5.0", "strip-ansi": "^7.1.2" } }, "sha512-6hJPQ8N0V0P3SNmP6h2J99RLuzrWz2gvT7VnK5tKvrNqJoyS9W4/Fb8mo31UiPvy00z7DQXkP2hnKBVav76thw=="],
 
@@ -3916,6 +4779,22 @@
     "@bundled-es-modules/glob/glob/minimatch": ["minimatch@9.0.9", "", { "dependencies": { "brace-expansion": "^2.0.2" } }, "sha512-OBwBN9AL4dqmETlpS2zasx+vTeWclWzkblfZk7KTA5j3jeOONz/tRCnZomUyvNg83wL5Zv9Ss6HMJXAgL8R2Yg=="],
 
     "@bundled-es-modules/glob/glob/path-scurry": ["path-scurry@1.11.1", "", { "dependencies": { "lru-cache": "^10.2.0", "minipass": "^5.0.0 || ^6.0.2 || ^7.0.0" } }, "sha512-Xa4Nw17FS9ApQFJ9umLiJS4orGjm7ZzwUrwamcGQuHSzDyth9boKDaycYdDcZDuqYATXw4HFXgaqWTctW/v1HA=="],
+
+    "@canonical/lit-demo/@biomejs/biome/@biomejs/cli-darwin-arm64": ["@biomejs/cli-darwin-arm64@2.4.6", "", { "os": "darwin", "cpu": "arm64" }, "sha512-NW18GSyxr+8sJIqgoGwVp5Zqm4SALH4b4gftIA0n62PTuBs6G2tHlwNAOj0Vq0KKSs7Sf88VjjmHh0O36EnzrQ=="],
+
+    "@canonical/lit-demo/@biomejs/biome/@biomejs/cli-darwin-x64": ["@biomejs/cli-darwin-x64@2.4.6", "", { "os": "darwin", "cpu": "x64" }, "sha512-4uiE/9tuI7cnjtY9b07RgS7gGyYOAfIAGeVJWEfeCnAarOAS7qVmuRyX6d7JTKw28/mt+rUzMasYeZ+0R/U1Mw=="],
+
+    "@canonical/lit-demo/@biomejs/biome/@biomejs/cli-linux-arm64": ["@biomejs/cli-linux-arm64@2.4.6", "", { "os": "linux", "cpu": "arm64" }, "sha512-kMLaI7OF5GN1Q8Doymjro1P8rVEoy7BKQALNz6fiR8IC1WKduoNyteBtJlHT7ASIL0Cx2jR6VUOBIbcB1B8pew=="],
+
+    "@canonical/lit-demo/@biomejs/biome/@biomejs/cli-linux-arm64-musl": ["@biomejs/cli-linux-arm64-musl@2.4.6", "", { "os": "linux", "cpu": "arm64" }, "sha512-F/JdB7eN22txiTqHM5KhIVt0jVkzZwVYrdTR1O3Y4auBOQcXxHK4dxULf4z43QyZI5tsnQJrRBHZy7wwtL+B3A=="],
+
+    "@canonical/lit-demo/@biomejs/biome/@biomejs/cli-linux-x64": ["@biomejs/cli-linux-x64@2.4.6", "", { "os": "linux", "cpu": "x64" }, "sha512-oHXmUFEoH8Lql1xfc3QkFLiC1hGR7qedv5eKNlC185or+o4/4HiaU7vYODAH3peRCfsuLr1g6v2fK9dFFOYdyw=="],
+
+    "@canonical/lit-demo/@biomejs/biome/@biomejs/cli-linux-x64-musl": ["@biomejs/cli-linux-x64-musl@2.4.6", "", { "os": "linux", "cpu": "x64" }, "sha512-C9s98IPDu7DYarjlZNuzJKTjVHN03RUnmHV5htvqsx6vEUXCDSJ59DNwjKVD5XYoSS4N+BYhq3RTBAL8X6svEg=="],
+
+    "@canonical/lit-demo/@biomejs/biome/@biomejs/cli-win32-arm64": ["@biomejs/cli-win32-arm64@2.4.6", "", { "os": "win32", "cpu": "arm64" }, "sha512-xzThn87Pf3YrOGTEODFGONmqXpTwUNxovQb72iaUOdcw8sBSY3+3WD8Hm9IhMYLnPi0n32s3L3NWU6+eSjfqFg=="],
+
+    "@canonical/lit-demo/@biomejs/biome/@biomejs/cli-win32-x64": ["@biomejs/cli-win32-x64@2.4.6", "", { "os": "win32", "cpu": "x64" }, "sha512-7++XhnsPlr1HDbor5amovPjOH6vsrFOCdp93iKXhFn6bcMUI6soodj3WWKfgEO6JosKU1W5n3uky3WW9RlRjTg=="],
 
     "@inquirer/core/wrap-ansi/ansi-styles": ["ansi-styles@4.3.0", "", { "dependencies": { "color-convert": "^2.0.1" } }, "sha512-zbB9rCJAT1rbjiVDb2hqKFHNYLxgtk8NURxZ3IZwD3F6NtxbXZQCnnSi1Lkx+IDohdPlFp222wVALIheZJQSEg=="],
 
@@ -4079,6 +4958,14 @@
 
     "through2/readable-stream/string_decoder": ["string_decoder@1.1.1", "", { "dependencies": { "safe-buffer": "~5.1.0" } }, "sha512-n/ShnvDi6FHbbVfviro+WojiFzv+s8MPMHBczVePfUpDJLwoLT0ht1l4YwBCbi8pJAveEEdnkHyPyTP/mzRfwg=="],
 
+    "tuf-js/make-fetch-happen/@npmcli/redact": ["@npmcli/redact@4.0.0", "", {}, "sha512-gOBg5YHMfZy+TfHArfVogwgfBeQnKbbGo3pSUyK/gSI0AVu+pEiDVcKlQb0D8Mg1LNRZILZ6XG8I5dJ4KuAd9Q=="],
+
+    "tuf-js/make-fetch-happen/minipass-fetch": ["minipass-fetch@5.0.2", "", { "dependencies": { "minipass": "^7.0.3", "minipass-sized": "^2.0.0", "minizlib": "^3.0.1" }, "optionalDependencies": { "iconv-lite": "^0.7.2" } }, "sha512-2d0q2a8eCi2IRg/IGubCNRJoYbA1+YPXAzQVRFmB45gdGZafyivnZ5YSEfo3JikbjGxOdntGFvBQGqaSMXlAFQ=="],
+
+    "tuf-js/make-fetch-happen/proc-log": ["proc-log@6.1.0", "", {}, "sha512-iG+GYldRf2BQ0UDUAd6JQ/RwzaQy6mXmsk/IzlYyal4A4SNFw54MeH4/tLkF4I5WoWG9SQwuqWzS99jaFQHBuQ=="],
+
+    "tuf-js/make-fetch-happen/ssri": ["ssri@13.0.1", "", { "dependencies": { "minipass": "^7.0.3" } }, "sha512-QUiRf1+u9wPTL/76GTYlKttDEBWV1ga9ZXW8BG6kfdeyyM8LGPix9gROyg9V2+P0xNyF3X2Go526xKFdMZrHSQ=="],
+
     "wrap-ansi-cjs/strip-ansi/ansi-regex": ["ansi-regex@5.0.1", "", {}, "sha512-quJQXlTSUGL2LH9SUXo8VwsY4soanhgo6LNSm84E1LBcE8s3O0wpdiRzyR9z/ZZJMlMWv37qOOb9pdJlMUEKFQ=="],
 
     "wrap-ansi/string-width/emoji-regex": ["emoji-regex@10.6.0", "", {}, "sha512-toUI84YS5YmxW219erniWD0CIVOo46xGKColeNQRgOzDorgBi1v4D71/OFzgD9GO2UGKIv1C3Sp8DAn0+j5w7A=="],
@@ -4146,6 +5033,8 @@
     "pkg-dir/find-up/locate-path/p-locate": ["p-locate@4.1.0", "", { "dependencies": { "p-limit": "^2.2.0" } }, "sha512-R79ZZ/0wAxKGu3oYMlz8jy/kbhsNrS7SKZ7PxEHBgJ5+F2mtFW2fK2cOtBh1cHYkQsbzFV7I+EoRKe6Yt0oK7A=="],
 
     "storybook/@vitest/expect/@vitest/utils/@vitest/pretty-format": ["@vitest/pretty-format@3.2.4", "", { "dependencies": { "tinyrainbow": "^2.0.0" } }, "sha512-IVNZik8IVRJRTr9fxlitMKeJeXFFFN0JaB9PHPGQ8NKQbGpfjlTx9zO4RefN8gp7eqjNy8nyK3NZmBzOPeIxtA=="],
+
+    "tuf-js/make-fetch-happen/minipass-fetch/minipass-sized": ["minipass-sized@2.0.0", "", { "dependencies": { "minipass": "^7.1.2" } }, "sha512-zSsHhto5BcUVM2m1LurnXY6M//cGhVaegT71OfOXoprxT6o780GZd792ea6FfrQkuU4usHZIUczAQMRUE2plzA=="],
 
     "@bundled-es-modules/glob/glob/jackspeak/@isaacs/cliui/string-width": ["string-width@5.1.2", "", { "dependencies": { "eastasianwidth": "^0.2.0", "emoji-regex": "^9.2.2", "strip-ansi": "^7.0.1" } }, "sha512-HnLOCR3vjcY8beoNLtcjZ5/nxn2afmME6lhrDrebokqMap+XbeW8n9TXpPDOqdGK5qcI3oT0GKTW6wC7EMiVqA=="],
 
