@@ -773,6 +773,18 @@
         "vitest": "^4.0.18",
       },
     },
+    "packages/runtime/router": {
+      "name": "@canonical/router-core",
+      "version": "0.22.0",
+      "devDependencies": {
+        "@biomejs/biome": "2.4.9",
+        "@canonical/biome-config": "^0.22.0",
+        "@canonical/webarchitect": "^0.22.0",
+        "@types/node": "^24.12.0",
+        "typescript": "^5.9.3",
+        "vitest": "^4.0.18",
+      },
+    },
     "packages/runtime/task": {
       "name": "@canonical/task",
       "version": "0.22.0",
@@ -1357,6 +1369,8 @@
     "@canonical/react-tokens": ["@canonical/react-tokens@workspace:packages/react/tokens"],
 
     "@canonical/renovate-config": ["@canonical/renovate-config@workspace:configs/renovate"],
+
+    "@canonical/router-core": ["@canonical/router-core@workspace:packages/runtime/router"],
 
     "@canonical/storybook-addon-form-state": ["@canonical/storybook-addon-form-state@workspace:packages/storybook/addon-form-state"],
 
