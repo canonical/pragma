@@ -15,4 +15,3 @@ export interface LinkProps {
   ariaLabel?: string | null;
 }
 
-export default LinkProps;

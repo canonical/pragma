@@ -2,7 +2,7 @@ import { html, LitElement } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import { ifDefined } from "lit/directives/if-defined.js";
 import styles from "./styles.css";
-import type LinkProps from "./types.js";
+import type { LinkProps } from "./types.js";
 
 const componentCssClassName = "ds link";
 
@@ -17,7 +17,7 @@ const componentCssClassName = "ds link";
  *   `default` = plain underlined link, `primary` = constructive (green) button,
  *   `secondary` = default button (border, no fill). Defaults to `"default"`.
  * @prop {string} target - Equivalent to the native `target` attribute on `<a>`.
- * @prop {string} aria-label - Accessible label when slot content is not descriptive.
+ * @prop {string} ariaLabel - Accessible label when slot content is not descriptive (attribute: `aria-label`).
  *
  * @implements ds:global.component.link
  */
@@ -25,7 +25,7 @@ const componentCssClassName = "ds link";
 export default class Link extends LitElement implements LinkProps {
   static styles = styles;
 
-  @property({ type: String }) href = "";
+  @property({ type: String }) href?: string;
   @property({ type: String }) variant: "default" | "primary" | "secondary" =
     "default";
   @property({ type: String }) target?: string;
@@ -34,11 +34,15 @@ export default class Link extends LitElement implements LinkProps {
     | null = null;
 
   render() {
+    const rel =
+      this.target === "_blank" ? "noopener noreferrer" : undefined;
+
     return html`
       <a
         class="${componentCssClassName} ${this.variant}"
-        href="${this.href}"
+        href="${ifDefined(this.href)}"
         target="${ifDefined(this.target)}"
+        rel="${ifDefined(rel)}"
         aria-label="${ifDefined(this.ariaLabel ?? undefined)}"
       >
         <slot></slot>
