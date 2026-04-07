@@ -2,7 +2,7 @@
   "name": "@canonical/styles-old",
   "private": true,
   "description": "Canonical's base styles",
-  "version": "0.22.0",
+  "version": "0.23.0",
   "main": "src/index.css",
   "files": [
     "src"
@@ -28,15 +28,15 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.9",
-    "@canonical/biome-config": "^0.22.0"
+    "@canonical/biome-config": "^0.23.0"
   },
   "dependencies": {
-    "@canonical/styles-elements": "^0.22.0",
-    "@canonical/styles-modes-canonical": "^0.22.0",
-    "@canonical/styles-modes-density": "^0.22.0",
-    "@canonical/styles-modes-intents": "^0.22.0",
-    "@canonical/styles-modes-motion": "^0.22.0",
-    "@canonical/styles-primitives-canonical": "^0.22.0",
+    "@canonical/styles-elements": "^0.23.0",
+    "@canonical/styles-modes-canonical": "^0.23.0",
+    "@canonical/styles-modes-density": "^0.23.0",
+    "@canonical/styles-modes-intents": "^0.23.0",
+    "@canonical/styles-modes-motion": "^0.23.0",
+    "@canonical/styles-primitives-canonical": "^0.23.0",
     "normalize.css": "^8.0.1"
   }
 }

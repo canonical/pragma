@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.23.0](https://github.com/canonical/pragma/compare/v0.22.1...v0.23.0) (2026-04-07)
+
+
+### Bug Fixes
+
+* **svelte-ds-app-launchpad:** Fix typo in internal.ts file name ([#605](https://github.com/canonical/pragma/issues/605)) ([80a24c6](https://github.com/canonical/pragma/commit/80a24c68d56876db757609c90caaf7dc97465820))
+
+
+
+
+
 ## [0.22.1](https://github.com/canonical/pragma/compare/v0.22.0...v0.22.1) (2026-04-03)
 
 
