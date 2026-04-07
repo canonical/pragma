@@ -46,13 +46,12 @@ const FloatingAnchor = ({
     bestPosition,
   } = usePopup({ distance, autoFit, trigger, ...popupProps });
 
-  // --- Build the floating element ---
   const floatingElement = renderContent ? (
     renderContent({
       ref: popupRef,
       id: popupId,
       isOpen,
-      style: { ...contentStyle, ...popupPositionStyle },
+      style: { position: "fixed", ...contentStyle, ...popupPositionStyle },
       bestPosition,
       onPointerEnter: handleTriggerEnter,
       onFocus: handleTriggerFocus,
@@ -100,6 +99,15 @@ const FloatingAnchor = ({
       onPointerEnter={isHover ? handleTriggerEnter : undefined}
       onPointerLeave={isHover ? handleTriggerLeave : undefined}
       onClick={isClick ? handleTriggerClick : undefined}
+      onKeyDown={
+        isClick
+          ? (e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                handleTriggerClick(e as unknown as React.MouseEvent<Element>);
+              }
+            }
+          : undefined
+      }
     >
       <span
         id={targetElementId}

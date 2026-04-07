@@ -56,7 +56,8 @@ describe("Popover", () => {
       </Popover>,
     );
     const wrapper = screen.getByText("Trigger").closest(".ds.floating-anchor");
-    fireEvent.click(wrapper!);
+    if (!wrapper) throw new Error("wrapper not found");
+    fireEvent.click(wrapper);
     await waitFor(() => expect(screen.getByText("Panel")).toBeVisible());
   });
 
@@ -67,12 +68,11 @@ describe("Popover", () => {
       </Popover>,
     );
     const wrapper = screen.getByText("Trigger").closest(".ds.floating-anchor");
-    fireEvent.click(wrapper!);
+    if (!wrapper) throw new Error("wrapper not found");
+    fireEvent.click(wrapper);
     await waitFor(() => expect(screen.getByText("Panel")).toBeVisible());
     fireEvent.keyDown(document, { key: "Escape" });
-    await waitFor(() =>
-      expect(screen.queryByText("Panel")).not.toBeVisible(),
-    );
+    await waitFor(() => expect(screen.queryByText("Panel")).not.toBeVisible());
   });
 
   it("sets aria-controls and aria-expanded on the target", () => {

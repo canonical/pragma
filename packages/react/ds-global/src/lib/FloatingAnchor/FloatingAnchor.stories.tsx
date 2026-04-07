@@ -1,14 +1,14 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import FloatingAnchor from "./FloatingAnchor.js";
+import Component from "./FloatingAnchor.js";
 
 const meta = {
   title: "Experimental/FloatingAnchor",
-  component: FloatingAnchor,
+  component: Component,
   parameters: {
     layout: "centered",
   },
   tags: ["autodocs"],
-} satisfies Meta<typeof FloatingAnchor>;
+} satisfies Meta<typeof Component>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;

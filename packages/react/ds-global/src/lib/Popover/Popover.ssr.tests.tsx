@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
 import { renderToString } from "react-dom/server";
+import { describe, expect, it } from "vitest";
 import Popover from "./Popover.js";
 
 describe("Popover SSR", () => {

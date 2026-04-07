@@ -57,7 +57,7 @@
   text-decoration: none;
 
   & .content {
-  	padding-inline: var(--space-100);
+    padding-inline: var(--space-100);
   }
 
   &:hover:not(:disabled) {
@@ -77,7 +77,7 @@
 }
 
 .popover {
-	display: flex;
+  display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;

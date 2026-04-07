@@ -66,12 +66,20 @@ describe("FloatingAnchor", () => {
   describe("click trigger", () => {
     it("toggles content on click", async () => {
       render(
-        <FloatingAnchor content="Popover text" trigger="click" activateDelay={0} deactivateDelay={0}>
+        <FloatingAnchor
+          content="Popover text"
+          trigger="click"
+          activateDelay={0}
+          deactivateDelay={0}
+        >
           <button type="button">Click me</button>
         </FloatingAnchor>,
       );
-      const wrapper = screen.getByText("Click me").closest(".ds.floating-anchor");
-      fireEvent.click(wrapper!);
+      const wrapper = screen
+        .getByText("Click me")
+        .closest(".ds.floating-anchor");
+      if (!wrapper) throw new Error("wrapper not found");
+      fireEvent.click(wrapper);
       await waitFor(() =>
         expect(screen.getByText("Popover text")).toBeVisible(),
       );
@@ -79,12 +87,20 @@ describe("FloatingAnchor", () => {
 
     it("closes on Escape", async () => {
       render(
-        <FloatingAnchor content="Popover text" trigger="click" activateDelay={0} deactivateDelay={0}>
+        <FloatingAnchor
+          content="Popover text"
+          trigger="click"
+          activateDelay={0}
+          deactivateDelay={0}
+        >
           <button type="button">Click me</button>
         </FloatingAnchor>,
       );
-      const wrapper = screen.getByText("Click me").closest(".ds.floating-anchor");
-      fireEvent.click(wrapper!);
+      const wrapper = screen
+        .getByText("Click me")
+        .closest(".ds.floating-anchor");
+      if (!wrapper) throw new Error("wrapper not found");
+      fireEvent.click(wrapper);
       await waitFor(() =>
         expect(screen.getByText("Popover text")).toBeVisible(),
       );

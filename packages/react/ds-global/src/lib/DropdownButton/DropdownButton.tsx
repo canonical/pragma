@@ -2,11 +2,10 @@
 
 import type React from "react";
 import "./styles.css";
+import Button from "../Button/Button.js";
 import Icon from "../Icon/Icon.js";
-import Props from "./types.js";
-import { useState } from "react";
-import Popover from "lib/Popover/Popover.js";
-import Button from "lib/Button/Button.js";
+import Popover from "../Popover/Popover.js";
+import type Props from "./types.js";
 
 const componentCssClassName = "ds dropdown-button";
 
@@ -16,28 +15,24 @@ const componentCssClassName = "ds dropdown-button";
  * @implements ds:global.component.dropdown_button
  */
 const DropdownButton = ({
-  id,
   className,
   children,
   options,
-  style,
-  ...props
 }: Props): React.ReactElement => {
-  	// Derive aria-label from children if not explicitly provided
-	const ariaLabel =
-    props["aria-label"] ||
-    (typeof children === "string" ? children : undefined);
+  const icon = <Icon icon="chevron-down" />;
 
-	const [isOpen, setIsOpen] = useState(false);
-	const icon = <Icon icon="chevron-down" />;
-
-	return (
-		<Popover content="I'm the popover">
-			<Button icon={icon} iconPosition="end">
-					{children}
-			</Button>
-		</Popover>
-	);
+  return (
+    <Popover
+      className={[componentCssClassName, className].filter(Boolean).join(" ")}
+      content={options.map((option) => (
+        <div key={option.value}>{option.label}</div>
+      ))}
+    >
+      <Button icon={icon} iconPosition="end">
+        {children}
+      </Button>
+    </Popover>
+  );
 };
 
 export default DropdownButton;
