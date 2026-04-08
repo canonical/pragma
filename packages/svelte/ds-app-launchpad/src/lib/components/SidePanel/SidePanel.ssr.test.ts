@@ -29,6 +29,26 @@ describe("SidePanel SSR", () => {
         page.window.HTMLDialogElement,
       );
     });
+
+    it("renders children", () => {
+      const page = render(Component, {
+        props: {
+          ...baseProps,
+          children,
+        },
+      });
+      expect(page.getByText(contentText)).toBeDefined();
+    });
+
+    it("renders trigger", () => {
+      const page = render(Component, {
+        props: {
+          ...baseProps,
+          trigger,
+        },
+      });
+      expect(triggerLocator(page)).toBeDefined();
+    });
   });
 
   describe("attributes", () => {
@@ -56,28 +76,6 @@ describe("SidePanel SSR", () => {
         props: { ...baseProps, style: "color: orange;" },
       });
       expect(componentLocator(page).style.color).toBe("orange");
-    });
-  });
-
-  describe("basics", () => {
-    it("renders children", () => {
-      const page = render(Component, {
-        props: {
-          ...baseProps,
-          children,
-        },
-      });
-      expect(page.getByText(contentText)).toBeDefined();
-    });
-
-    it("renders trigger", () => {
-      const page = render(Component, {
-        props: {
-          ...baseProps,
-          trigger,
-        },
-      });
-      expect(triggerLocator(page)).toBeDefined();
     });
   });
 
