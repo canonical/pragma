@@ -1,0 +1,5 @@
+.ds.dialog-content-body {
+  /* Sanity reset, so that the dialog doesn't inherit unwanted styles from the context it's used in. */
+  font: var(--lp-typography-paragraph-default);
+  color: var(--lp-color-text-default);
+}
