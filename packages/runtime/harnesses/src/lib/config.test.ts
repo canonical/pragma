@@ -71,6 +71,18 @@ describe("readMcpConfig", () => {
     expect(result.value).toEqual({});
   });
 
+  it("returns empty object when config is a JSON array", () => {
+    const result = dryRunWith(
+      readMcpConfig(claude, "/project"),
+      buildMocks({
+        Exists: existsMock(() => true),
+        ReadFile: readFileMock("[1, 2, 3]"),
+      }),
+    );
+
+    expect(result.value).toEqual({});
+  });
+
   it("returns empty object when config is invalid JSON", () => {
     const result = dryRunWith(
       readMcpConfig(claude, "/project"),
@@ -235,6 +247,22 @@ describe("removeMcpConfig", () => {
     expect(written.mcpServers.figma).toEqual({ command: "figma-mcp" });
   });
 
+  it("handles removing from config with no mcpServers key", () => {
+    const result = dryRunWith(
+      removeMcpConfig(claude, "/project", "pragma"),
+      buildMocks({
+        Exists: existsMock(() => true),
+        ReadFile: readFileMock(JSON.stringify({ otherField: true })),
+        WriteFile: writeMock,
+      }),
+    );
+
+    const writeEffects = filterEffects(result.effects, "WriteFile");
+    expect(writeEffects.length).toBe(1);
+    const written = JSON.parse(writeEffects[0].content);
+    expect(written.mcpServers).toEqual({});
+  });
+
   it("dry run collects effects without executing", () => {
     const result = dryRun(removeMcpConfig(claude, "/project", "pragma"));
     expect(result.effects.length).toBeGreaterThan(0);
@@ -284,6 +312,68 @@ describe("TOML config (Codex)", () => {
     expect(writeEffects.length).toBe(1);
     expect(writeEffects[0].content).toContain("[mcp_servers.pragma]");
     expect(writeEffects[0].content).toContain('command = "pragma"');
+  });
+
+  it("writes TOML without optional args or cwd", () => {
+    const result = dryRunWith(
+      writeMcpConfig(codex, "/project", "simple", {
+        command: "simple-server",
+      }),
+      buildMocks({
+        Exists: existsMock(() => false),
+        MakeDir: mkdirMock,
+        WriteFile: writeMock,
+      }),
+    );
+
+    const writeEffects = filterEffects(result.effects, "WriteFile");
+    expect(writeEffects[0].content).toContain("[mcp_servers.simple]");
+    expect(writeEffects[0].content).toContain('command = "simple-server"');
+    expect(writeEffects[0].content).not.toContain("args");
+    expect(writeEffects[0].content).not.toContain("cwd");
+  });
+
+  it("merges into existing TOML config", () => {
+    const tomlContent = [
+      "[mcp_servers.figma]",
+      'url = "https://mcp.figma.com/mcp"',
+      "",
+    ].join("\n");
+
+    const result = dryRunWith(
+      writeMcpConfig(codex, "/project", "pragma", {
+        command: "pragma",
+        args: ["mcp"],
+      }),
+      buildMocks({
+        Exists: existsMock(() => true),
+        ReadFile: readFileMock(tomlContent),
+        WriteFile: writeMock,
+      }),
+    );
+
+    const writeEffects = filterEffects(result.effects, "WriteFile");
+    expect(writeEffects.length).toBe(1);
+    expect(writeEffects[0].content).toContain("[mcp_servers.pragma]");
+    expect(writeEffects[0].content).toContain('command = "pragma"');
+  });
+
+  it("writes TOML with cwd option", () => {
+    const result = dryRunWith(
+      writeMcpConfig(codex, "/project", "pragma", {
+        command: "pragma",
+        args: ["mcp"],
+        cwd: "/project",
+      }),
+      buildMocks({
+        Exists: existsMock(() => false),
+        MakeDir: mkdirMock,
+        WriteFile: writeMock,
+      }),
+    );
+
+    const writeEffects = filterEffects(result.effects, "WriteFile");
+    expect(writeEffects[0].content).toContain('cwd = "/project"');
   });
 
   it("removes mcp_servers entry from TOML", () => {

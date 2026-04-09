@@ -80,6 +80,17 @@ describe("debounce", () => {
     await expect(promise).rejects.toThrow("boom");
   });
 
+  it("cancel is a no-op when no timeout is pending", () => {
+    const fn = vi.fn();
+    const debounced = debounce(fn, 100);
+
+    // Cancel without ever calling the debounced function
+    debounced.cancel();
+
+    vi.advanceTimersByTime(200);
+    expect(fn).not.toHaveBeenCalled();
+  });
+
   it("works with async functions", async () => {
     const fn = vi.fn(async (x: string) => `hello ${x}`);
     const debounced = debounce(fn, 50);

@@ -10,5 +10,10 @@
     "types": ["node"]
   },
   "include": ["src/**/*.ts"],
-  "exclude": ["src/**/*.tests.ts", "vite.config.ts", "vitest.config.ts"]
+  "exclude": [
+    "src/**/*.test.ts",
+    "src/**/*.tests.ts",
+    "vite.config.ts",
+    "vitest.config.ts"
+  ]
 }

@@ -88,6 +88,55 @@ describe("humanizeNumber", () => {
     });
   });
 
+  describe("Overflow Indicator Variations", () => {
+    it("omits overflow indicator when explicitly set to empty string", () => {
+      const result = humanizeNumber(12345, { overflowIndicator: "" });
+      expect(result).toEqual({
+        displayValue: "12k",
+        value: 12345,
+        unit: "k",
+      });
+    });
+
+    it("omits overflow indicator on unit cap when set to empty string", () => {
+      const result = humanizeNumber(1e18, { overflowIndicator: "" });
+      expect(result).toEqual({
+        displayValue: "999T",
+        value: 1e18,
+        unit: "T",
+      });
+    });
+  });
+
+  describe("Empty / Missing Units", () => {
+    it("falls back to no unit suffix when units array is empty", () => {
+      const result = humanizeNumber(500, { units: [] });
+      expect(result).toEqual({
+        displayValue: "500",
+        value: 500,
+        unit: "",
+      });
+    });
+
+    it("falls back to no unit suffix when units is undefined", () => {
+      const result = humanizeNumber(500, { units: undefined });
+      expect(result).toEqual({
+        displayValue: "500",
+        value: 500,
+        unit: "",
+      });
+    });
+
+    it("caps at single empty-string unit for large values with empty units", () => {
+      const result = humanizeNumber(5000, { units: [] });
+      expect(result).toEqual({
+        displayValue: "999+",
+        value: 5000,
+        unit: "",
+      });
+    });
+  });
+
   describe("Edge Cases", () => {
     const testCases: TestCase[] = [
       {

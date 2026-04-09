@@ -50,8 +50,10 @@ export const isVisibleEffect = (effect: Effect, verbose = false): boolean => {
     case "Parallel":
     case "Race":
       return false;
+    /* v8 ignore start — exhaustive switch; all known effect tags handled above */
     default:
       return false;
+    /* v8 ignore stop */
   }
 };
 
@@ -597,7 +599,7 @@ export const formatLlmHelp = (
       case "confirm":
         return "`[boolean]`";
       case "select":
-        return `\`${prompt.choices?.map((c) => c.value).join("\\|") ?? ""}\``;
+        return `\`${(prompt.choices as Array<{ value: string }>).map((c) => c.value).join("\\|")}\``;
       case "multiselect":
         return "`[value,value,...]`";
       default:

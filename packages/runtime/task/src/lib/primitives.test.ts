@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { dryRun, dryRunWith } from "./dry-run.js";
 import {
+  appendFile,
   copyDirectory,
   copyFile,
   debug,
@@ -113,6 +114,30 @@ describe("Primitives - File System", () => {
       const task = writeFile("/data.json", json);
       const { effects } = dryRun(task);
       expect((effects[0] as { content: string }).content).toBe(json);
+    });
+  });
+
+  describe("appendFile", () => {
+    it("creates an AppendFile effect", () => {
+      const task = appendFile("/path/to/file.txt", "new content");
+      const { effects } = dryRun(task);
+
+      expect(effects.length).toBe(1);
+      expect(effects[0]._tag).toBe("AppendFile");
+      expect((effects[0] as { path: string }).path).toBe("/path/to/file.txt");
+      expect((effects[0] as { content: string }).content).toBe("new content");
+      // Default createIfMissing is true
+      expect((effects[0] as { createIfMissing: boolean }).createIfMissing).toBe(
+        true,
+      );
+    });
+
+    it("respects createIfMissing=false", () => {
+      const task = appendFile("/file.txt", "data", false);
+      const { effects } = dryRun(task);
+      expect((effects[0] as { createIfMissing: boolean }).createIfMissing).toBe(
+        false,
+      );
     });
   });
 
@@ -984,6 +1009,45 @@ c`;
 
       const writeEffect = effects[1] as { content: string };
       expect(writeEffect.content).toBe("// Header\na\nA\nB\nc");
+    });
+
+    it("preserves blank lines in their relative positions", () => {
+      const mockContent = "zebra\n\napple\nmango\n\nbanana";
+      const task = sortFileLines("/test.ts", { preserveBlankLines: true });
+
+      const { effects } = dryRunWith(task, createMocks(mockContent));
+
+      const writeEffect = effects[1] as { content: string };
+      const lines = writeEffect.content.split("\n");
+
+      // Blank lines at positions 1 and 4 (0-indexed) should be preserved
+      expect(lines[1]).toBe("");
+      expect(lines[4]).toBe("");
+      // Non-blank lines should be sorted
+      const nonBlank = lines.filter((l) => l.trim() !== "");
+      expect(nonBlank).toEqual(
+        [...nonBlank].sort((a, b) => a.localeCompare(b)),
+      );
+    });
+
+    it("preserves blank lines with unique option", () => {
+      const mockContent = "cherry\n\napple\ncherry\n\nbanana";
+      const task = sortFileLines("/test.ts", {
+        preserveBlankLines: true,
+        unique: true,
+      });
+
+      const { effects } = dryRunWith(task, createMocks(mockContent));
+
+      const writeEffect = effects[1] as { content: string };
+      const lines = writeEffect.content.split("\n");
+
+      // Blank lines preserved
+      expect(lines[1]).toBe("");
+      expect(lines[4]).toBe("");
+      // Non-blank should be sorted and deduplicated
+      const nonBlank = lines.filter((l) => l.trim() !== "");
+      expect(nonBlank).toEqual(["apple", "banana", "cherry"]);
     });
   });
 });
