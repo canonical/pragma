@@ -1,16 +1,17 @@
 import type { _Item, Item } from "@canonical/ds-types";
-import { annotateTree, prepareIndex } from "@canonical/utils";
 import { describe, expect, it } from "vitest";
+import { annotateTree } from "./annotateTree.js";
+import createNavigationReducer from "./createNavigationReducer.js";
+import findAncestorPath from "./findAncestorPath.js";
+import getFirstEnabledChild from "./getFirstEnabledChild.js";
+import getLastEnabledChild from "./getLastEnabledChild.js";
+import getParentItem from "./getParentItem.js";
 import {
-  createNavigationReducer,
-  findAncestorPath,
-  findRootItem,
-  getFirstEnabledChild,
-  getLastEnabledChild,
-  getParentItem,
-  resolveOrientation,
-} from "./reducer.js";
-import { NavigationActionType, type NavigationState } from "./types.js";
+  NavigationActionType,
+  type NavigationState,
+} from "./navigationTypes.js";
+import { prepareIndex } from "./prepareIndex.js";
+import resolveOrientation from "./resolveOrientation.js";
 
 // --- Test trees ---
 const testTree: Item = {
@@ -74,40 +75,6 @@ describe("findAncestorPath", () => {
   it("returns single item for root", () => {
     const path = findAncestorPath(index, annotatedRoot);
     expect(path).toHaveLength(1);
-  });
-});
-
-describe("findRootItem", () => {
-  it("finds the root even when it is not the first indexed item", () => {
-    const a = { url: "/a", label: "A", parentUrl: "root", depth: 1 } as _Item;
-    const root = {
-      key: "root",
-      label: "Root",
-      parentUrl: null,
-      depth: 0,
-      items: [a],
-    } as _Item;
-
-    const reorderedIndex = {
-      "/a": a,
-      root,
-    } as typeof index;
-
-    expect(findRootItem(reorderedIndex)).toBe(root);
-  });
-});
-
-describe("findRootItem", () => {
-  it("finds the root in an index", () => {
-    const root = findRootItem(index);
-    expect(root.parentUrl).toBeNull();
-    expect(root.key).toBe("root");
-  });
-
-  it("throws for empty index", () => {
-    expect(() => findRootItem({})).toThrow(
-      "No root item found in navigation index",
-    );
   });
 });
 
@@ -207,6 +174,7 @@ describe("getParentItem", () => {
 
 describe("vertical reducer", () => {
   const reduce = createNavigationReducer(index, {
+    rootItem: annotatedRoot,
     orientation: "vertical",
     wrap: false,
   });
@@ -564,6 +532,7 @@ describe("HOME/END when all siblings disabled", () => {
   const adRoot = annotateTree(allDisabledSiblingsTree);
   const adIdx = prepareIndex(adRoot);
   const reduce = createNavigationReducer(adIdx, {
+    rootItem: adRoot,
     orientation: "vertical",
     wrap: false,
   });
@@ -609,6 +578,7 @@ describe("HOME/END on all-disabled siblings", () => {
   const root = annotateTree(allDisabledTree);
   const idx = prepareIndex(root);
   const reduce = createNavigationReducer(idx, {
+    rootItem: root,
     orientation: "vertical",
     wrap: false,
   });
@@ -649,6 +619,7 @@ describe("PAGE_DOWN landing on disabled item", () => {
     // Use delta=1 to land exactly on the disabled item
     // handlePageJump with delta=1 from /first → index 0+1=1 → /disabled-mid (disabled) → return state
     const _reduce = createNavigationReducer(idx, {
+      rootItem: root,
       orientation: "vertical",
       wrap: false,
     });
@@ -686,6 +657,7 @@ describe("PAGE_DOWN landing on disabled (2-item tree)", () => {
   const root = annotateTree(twoItemTree);
   const idx = prepareIndex(root);
   const reduce = createNavigationReducer(idx, {
+    rootItem: root,
     orientation: "vertical",
     wrap: false,
   });
@@ -714,6 +686,7 @@ describe("tree with no enabled children", () => {
   const emptyRoot = annotateTree(emptyTree);
   const emptyIndex = prepareIndex(emptyRoot);
   const reduce = createNavigationReducer(emptyIndex, {
+    rootItem: emptyRoot,
     orientation: "vertical",
     wrap: false,
   });
@@ -761,6 +734,7 @@ describe("all siblings disabled with wrap", () => {
   const root = annotateTree(allDisabledTree);
   const idx = prepareIndex(root);
   const reduce = createNavigationReducer(idx, {
+    rootItem: root,
     orientation: "vertical",
     wrap: true,
   });
@@ -782,6 +756,7 @@ describe("all siblings disabled with wrap", () => {
 
 describe("root-highlighted edge cases", () => {
   const reduce = createNavigationReducer(index, {
+    rootItem: annotatedRoot,
     orientation: "vertical",
     wrap: false,
   });
@@ -842,6 +817,7 @@ describe("root-highlighted edge cases", () => {
 
 describe("horizontal reducer", () => {
   const reduce = createNavigationReducer(index, {
+    rootItem: annotatedRoot,
     orientation: "horizontal",
     wrap: true,
   });
@@ -938,6 +914,7 @@ describe("horizontal reducer", () => {
     const disabledRoot = annotateTree(disabledChildTree);
     const disabledIdx = prepareIndex(disabledRoot);
     const disabledReduce = createNavigationReducer(disabledIdx, {
+      rootItem: disabledRoot,
       orientation: "horizontal",
       wrap: true,
     });
@@ -978,6 +955,7 @@ describe("horizontal reducer", () => {
     const bdRoot = annotateTree(bothDisabledTree);
     const bdIdx = prepareIndex(bdRoot);
     const bdReduce = createNavigationReducer(bdIdx, {
+      rootItem: bdRoot,
       orientation: "horizontal",
       wrap: true,
     });
@@ -1017,6 +995,7 @@ describe("horizontal reducer", () => {
 
 describe("mixed orientation", () => {
   const reduce = createNavigationReducer(index, {
+    rootItem: annotatedRoot,
     orientation: (depth) => (depth <= 1 ? "horizontal" : "vertical"),
     wrap: false,
   });

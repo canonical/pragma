@@ -1,33 +1,45 @@
 import type { _Index, _Item } from "@canonical/ds-types";
+import findAncestorPath from "./findAncestorPath.js";
+import getFirstEnabledChild from "./getFirstEnabledChild.js";
+import getLastEnabledChild from "./getLastEnabledChild.js";
+import getParentItem from "./getParentItem.js";
 import {
   type NavigationAction,
   NavigationActionType,
   type NavigationState,
   type OrientationConfig,
-} from "./types.js";
+} from "./navigationTypes.js";
+import resolveOrientation from "./resolveOrientation.js";
 
-/** Options injected into the reducer factory */
-interface ReducerOptions {
+/** Options for the navigation reducer factory */
+export interface NavigationReducerOptions {
+  /** The annotated root item of the tree */
+  rootItem: _Item;
+  /** Arrow key orientation per depth */
   orientation: OrientationConfig;
+  /** Whether arrow keys wrap at list boundaries */
   wrap: boolean;
 }
 
 /**
- * Create a navigation state reducer parameterized by the tree index and options.
+ * Create a framework-agnostic navigation state reducer.
  *
  * The reducer implements the state machine defined in NV.03/NV.04/NV.05 of the
  * B.HOOKS ADR. Arrow keys are remapped based on orientation at the current depth.
  * Auto-drill fires when moving between horizontal siblings with a submenu open.
  *
+ * Works with React's useReducer, Svelte's $state, Lit reactive controllers, or
+ * any other state management that accepts a `(state, action) → state` function.
+ *
  * @param index - Flat lookup table for O(1) item access
- * @param options - Orientation config and wrap behavior
- * @returns A reducer function for use with useReducer
+ * @param options - Root item, orientation config, and wrap behavior
+ * @returns A reducer function: (state, action) → state
  */
-export function createNavigationReducer(
+export default function createNavigationReducer(
   index: _Index,
-  options: ReducerOptions,
+  options: NavigationReducerOptions,
 ): (state: NavigationState, action: NavigationAction) => NavigationState {
-  const { orientation, wrap } = options;
+  const { rootItem, orientation, wrap } = options;
 
   return (
     state: NavigationState,
@@ -55,7 +67,7 @@ export function createNavigationReducer(
       }
 
       case NavigationActionType.OPEN: {
-        const firstChild = getFirstEnabledChild(findRootItem(index));
+        const firstChild = getFirstEnabledChild(rootItem);
         return {
           ...state,
           isOpen: true,
@@ -85,7 +97,7 @@ export function createNavigationReducer(
             currentDepth: 0,
           };
         }
-        const firstChild = getFirstEnabledChild(findRootItem(index));
+        const firstChild = getFirstEnabledChild(rootItem);
         return {
           ...state,
           isOpen: true,
@@ -145,7 +157,7 @@ export function createNavigationReducer(
             }
           : {
               ...state,
-              selectedItems: [findRootItem(index)],
+              selectedItems: [rootItem],
               highlightedItems: [],
               currentDepth: 0,
               isOpen: false,
@@ -160,55 +172,7 @@ export function createNavigationReducer(
   };
 }
 
-// --- Exported helpers ---
-
-/** Walk parentUrl to build the ancestor path from root to item */
-export function findAncestorPath(index: _Index, item: _Item): _Item[] {
-  const path: _Item[] = [];
-  let current: _Item | undefined = item;
-  while (current) {
-    path.unshift(current);
-    current = current.parentUrl ? index[current.parentUrl] : undefined;
-  }
-  return path;
-}
-
-/** Find the root item (depth 0, parentUrl null) in the index */
-export function findRootItem(index: _Index): _Item {
-  for (const item of Object.values(index)) {
-    if (item.parentUrl === null) return item;
-  }
-  throw new Error("No root item found in navigation index");
-}
-
-/** Find the first non-disabled child of an item */
-export function getFirstEnabledChild(item: _Item): _Item | undefined {
-  return item.items?.find((child) => !child.disabled);
-}
-
-/** Find the last non-disabled child of an item */
-export function getLastEnabledChild(item: _Item): _Item | undefined {
-  if (!item.items) return undefined;
-  for (let i = item.items.length - 1; i >= 0; i--) {
-    if (!item.items[i].disabled) return item.items[i];
-  }
-  return undefined;
-}
-
-/** Resolve orientation for a given depth */
-export function resolveOrientation(
-  config: OrientationConfig,
-  depth: number,
-): "horizontal" | "vertical" {
-  return typeof config === "function" ? config(depth) : config;
-}
-
-/** Get the parent item from the index. Returns undefined for root items. */
-export function getParentItem(index: _Index, item: _Item): _Item | undefined {
-  return item.parentUrl ? index[item.parentUrl] : undefined;
-}
-
-// --- Arrow key orientation maps (module-level for v8 coverage) ---
+// --- Arrow key orientation maps ---
 
 const horizontalArrowMap = {
   [NavigationActionType.ARROW_LEFT]: "prev",
@@ -226,10 +190,6 @@ const verticalArrowMap = {
 
 // --- Internal helpers ---
 
-/**
- * Get the next/previous sibling, skipping disabled items.
- * direction: 1 for next, -1 for previous.
- */
 function getSibling(
   index: _Index,
   item: _Item,
@@ -260,9 +220,6 @@ function getSibling(
   return undefined;
 }
 
-/**
- * Handle arrow key navigation with orientation remapping and auto-drill.
- */
 function handleArrowKey(
   state: NavigationState,
   actionType: NavigationActionType,
@@ -281,7 +238,6 @@ function handleArrowKey(
     case "prev": {
       const sibling = getSibling(index, currentItem, -1, wrapEnabled);
       if (!sibling) return state;
-      // Auto-drill: if deeper and horizontal, drill into new sibling's first child
       if (
         orient === "horizontal" &&
         state.currentDepth > sibling.depth &&
@@ -306,7 +262,6 @@ function handleArrowKey(
     case "next": {
       const sibling = getSibling(index, currentItem, 1, wrapEnabled);
       if (!sibling) return state;
-      // Auto-drill
       if (
         orient === "horizontal" &&
         state.currentDepth > sibling.depth &&
@@ -351,7 +306,6 @@ function handleArrowKey(
   }
 }
 
-/** Handle Home/End — jump to first/last item at current depth */
 function handleHomeEnd(
   state: NavigationState,
   index: _Index,
@@ -376,7 +330,6 @@ function handleHomeEnd(
   };
 }
 
-/** Handle PageUp/PageDown — jump N items at current depth */
 function handlePageJump(
   state: NavigationState,
   index: _Index,
@@ -410,10 +363,6 @@ function handlePageJump(
   };
 }
 
-/**
- * Handle type-ahead: append character, match label prefix at current depth.
- * Single-character repeat cycles through items starting with that character.
- */
 function handleTypeAhead(
   state: NavigationState,
   index: _Index,
@@ -429,7 +378,6 @@ function handleTypeAhead(
   const siblings = parent.items.filter((i) => !i.disabled);
   const search = newKeysSoFar.toLowerCase();
 
-  // Single-character repeat: cycle through items starting with that character
   const isRepeatedChar =
     newKeysSoFar.length > 1 && new Set(newKeysSoFar).size === 1;
 
@@ -451,7 +399,6 @@ function handleTypeAhead(
     return { ...state, keysSoFar: newKeysSoFar };
   }
 
-  // Multi-character: match prefix
   const match = siblings.find((item) =>
     item.label?.toLowerCase().startsWith(search),
   );

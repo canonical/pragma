@@ -1,14 +1,7 @@
 /** @module Navigation tree hook and ARIA preset helpers */
 
 export * from "./aria/index.js";
-export {
-  findAncestorPath,
-  findRootItem,
-  getFirstEnabledChild,
-  getLastEnabledChild,
-  getParentItem,
-  resolveOrientation,
-} from "./reducer.js";
+
 export type {
   FocusStrategy,
   ItemProps,

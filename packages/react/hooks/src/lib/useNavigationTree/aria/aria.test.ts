@@ -1,14 +1,15 @@
 import type { _Index, _Item } from "@canonical/ds-types";
 import { describe, expect, it } from "vitest";
 import type { UseNavigationTreeResult } from "../types.js";
-import { disclosureItemProps, disclosureToggleProps } from "./disclosure.js";
-import {
-  menubarItemProps,
-  menubarListItemProps,
-  menubarMenuProps,
-} from "./menubar.js";
-import { navigationItemProps } from "./navigation.js";
-import { treeItemProps, treeListItemProps, treeMenuProps } from "./tree.js";
+import getDisclosureItemProps from "./getDisclosureItemProps.js";
+import getDisclosureToggleProps from "./getDisclosureToggleProps.js";
+import getMenubarItemProps from "./getMenubarItemProps.js";
+import getMenubarListItemProps from "./getMenubarListItemProps.js";
+import getMenubarMenuProps from "./getMenubarMenuProps.js";
+import getNavigationItemProps from "./getNavigationItemProps.js";
+import getTreeItemProps from "./getTreeItemProps.js";
+import getTreeListItemProps from "./getTreeListItemProps.js";
+import getTreeMenuProps from "./getTreeMenuProps.js";
 
 // Minimal mock of UseNavigationTreeResult for pure function testing
 function createMockNav(
@@ -74,14 +75,14 @@ function createMockNav(
 describe("menubar ARIA helpers", () => {
   it("menubarMenuProps returns menubar at depth 0", () => {
     const nav = createMockNav();
-    const result = menubarMenuProps(nav, { depth: 0, label: "Main" });
+    const result = getMenubarMenuProps(nav, { depth: 0, label: "Main" });
     expect(result.role).toBe("menubar");
     expect(result["aria-label"]).toBe("Main");
   });
 
   it("menubarMenuProps returns menu at depth 1+", () => {
     const nav = createMockNav();
-    const result = menubarMenuProps(nav, { depth: 1 });
+    const result = getMenubarMenuProps(nav, { depth: 1 });
     expect(result.role).toBe("menu");
     expect(result["aria-label"]).toBeUndefined();
   });
@@ -89,7 +90,7 @@ describe("menubar ARIA helpers", () => {
   it("menubarItemProps returns aria-haspopup on parent items", () => {
     const nav = createMockNav();
     const parentItem = nav.index["/a"];
-    const result = menubarItemProps(nav, parentItem);
+    const result = getMenubarItemProps(nav, parentItem);
     expect(result.role).toBe("menuitem");
     expect(result["aria-haspopup"]).toBe(true);
   });
@@ -97,7 +98,7 @@ describe("menubar ARIA helpers", () => {
   it("menubarItemProps omits aria-haspopup on leaf items", () => {
     const nav = createMockNav();
     const leafItem = nav.index["/b"];
-    const result = menubarItemProps(nav, leafItem);
+    const result = getMenubarItemProps(nav, leafItem);
     expect(result.role).toBe("menuitem");
     expect(result["aria-haspopup"]).toBeUndefined();
   });
@@ -114,7 +115,7 @@ describe("menubar ARIA helpers", () => {
     });
 
     const parentItem = nav.index["/a"];
-    const result = menubarItemProps(nav, parentItem);
+    const result = getMenubarItemProps(nav, parentItem);
     expect(result["aria-expanded"]).toBe(true);
   });
 
@@ -130,7 +131,7 @@ describe("menubar ARIA helpers", () => {
     });
 
     const parentItem = nav.index["/a"];
-    const result = menubarItemProps(nav, parentItem);
+    const result = getMenubarItemProps(nav, parentItem);
     expect(result["aria-expanded"]).toBe(false);
   });
 
@@ -147,37 +148,37 @@ describe("menubar ARIA helpers", () => {
     });
 
     const firstItem = nav.annotatedRoot.items![0];
-    const result = menubarItemProps(nav, firstItem);
+    const result = getMenubarItemProps(nav, firstItem);
     expect(result.tabIndex).toBe(0);
 
     const secondItem = nav.annotatedRoot.items![1];
-    const result2 = menubarItemProps(nav, secondItem);
+    const result2 = getMenubarItemProps(nav, secondItem);
     expect(result2.tabIndex).toBe(-1);
   });
 
   it("menubarListItemProps returns role none", () => {
-    expect(menubarListItemProps()).toEqual({ role: "none" });
+    expect(getMenubarListItemProps()).toEqual({ role: "none" });
   });
 });
 
 describe("tree ARIA helpers", () => {
   it("treeMenuProps returns tree at depth 0", () => {
     const nav = createMockNav();
-    const result = treeMenuProps(nav, { depth: 0, label: "Files" });
+    const result = getTreeMenuProps(nav, { depth: 0, label: "Files" });
     expect(result.role).toBe("tree");
     expect(result["aria-label"]).toBe("Files");
   });
 
   it("treeMenuProps returns group at depth 1+", () => {
     const nav = createMockNav();
-    const result = treeMenuProps(nav, { depth: 1 });
+    const result = getTreeMenuProps(nav, { depth: 1 });
     expect(result.role).toBe("group");
   });
 
   it("treeItemProps returns aria-expanded from opts on parent", () => {
     const nav = createMockNav();
     const parentItem = nav.index["/a"];
-    const result = treeItemProps(nav, parentItem, { expanded: true });
+    const result = getTreeItemProps(nav, parentItem, { expanded: true });
     expect(result.role).toBe("treeitem");
     expect(result["aria-expanded"]).toBe(true);
   });
@@ -185,7 +186,7 @@ describe("tree ARIA helpers", () => {
   it("treeItemProps omits aria-expanded on leaf", () => {
     const nav = createMockNav();
     const leafItem = nav.index["/b"];
-    const result = treeItemProps(nav, leafItem, { expanded: false });
+    const result = getTreeItemProps(nav, leafItem, { expanded: false });
     expect(result.role).toBe("treeitem");
     expect(result["aria-expanded"]).toBeUndefined();
   });
@@ -193,7 +194,7 @@ describe("tree ARIA helpers", () => {
   it("treeItemProps omits aria-expanded when opts not provided", () => {
     const nav = createMockNav();
     const parentItem = nav.index["/a"];
-    const result = treeItemProps(nav, parentItem);
+    const result = getTreeItemProps(nav, parentItem);
     expect(result["aria-expanded"]).toBeUndefined();
   });
 
@@ -210,16 +211,16 @@ describe("tree ARIA helpers", () => {
     });
 
     const firstItem = nav.annotatedRoot.items![0];
-    const result = treeItemProps(nav, firstItem);
+    const result = getTreeItemProps(nav, firstItem);
     expect(result.tabIndex).toBe(0);
 
     const secondItem = nav.annotatedRoot.items![1];
-    const result2 = treeItemProps(nav, secondItem);
+    const result2 = getTreeItemProps(nav, secondItem);
     expect(result2.tabIndex).toBe(-1);
   });
 
   it("treeListItemProps returns role none", () => {
-    expect(treeListItemProps()).toEqual({ role: "none" });
+    expect(getTreeListItemProps()).toEqual({ role: "none" });
   });
 });
 
@@ -234,13 +235,13 @@ describe("navigation ARIA helpers", () => {
       }),
     });
 
-    const result = navigationItemProps(nav, nav.index["/a"]);
+    const result = getNavigationItemProps(nav, nav.index["/a"]);
     expect(result["aria-current"]).toBe("page");
   });
 
   it("omits aria-current on non-selected item", () => {
     const nav = createMockNav();
-    const result = navigationItemProps(nav, nav.index["/a"]);
+    const result = getNavigationItemProps(nav, nav.index["/a"]);
     expect(result["aria-current"]).toBeUndefined();
   });
 });
@@ -248,7 +249,7 @@ describe("navigation ARIA helpers", () => {
 describe("disclosure ARIA helpers", () => {
   it("disclosureToggleProps returns expanded and controls", () => {
     const nav = createMockNav();
-    const result = disclosureToggleProps(nav, nav.index["/a"], {
+    const result = getDisclosureToggleProps(nav, nav.index["/a"], {
       expanded: true,
       controlsId: "section-a",
     });
@@ -258,7 +259,7 @@ describe("disclosure ARIA helpers", () => {
 
   it("disclosureToggleProps returns false when collapsed", () => {
     const nav = createMockNav();
-    const result = disclosureToggleProps(nav, nav.index["/a"], {
+    const result = getDisclosureToggleProps(nav, nav.index["/a"], {
       expanded: false,
       controlsId: "section-a",
     });
@@ -275,13 +276,13 @@ describe("disclosure ARIA helpers", () => {
       }),
     });
 
-    const result = disclosureItemProps(nav, nav.index["/b"]);
+    const result = getDisclosureItemProps(nav, nav.index["/b"]);
     expect(result["aria-current"]).toBe("page");
   });
 
   it("disclosureItemProps omits aria-current on non-selected", () => {
     const nav = createMockNav();
-    const result = disclosureItemProps(nav, nav.index["/b"]);
+    const result = getDisclosureItemProps(nav, nav.index["/b"]);
     expect(result["aria-current"]).toBeUndefined();
   });
 });

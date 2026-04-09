@@ -1,16 +1,20 @@
 import type { _Item } from "@canonical/ds-types";
-import { annotateTree, getItemId, prepareIndex } from "@canonical/utils";
-import { useCallback, useEffect, useMemo, useReducer, useRef } from "react";
-import { createNavigationReducer, findAncestorPath } from "./reducer.js";
+import type { NavigationState, NodeStatus } from "@canonical/utils";
 import {
-  type ItemProps,
-  type MenuProps,
+  annotateTree,
+  createNavigationReducer,
+  findAncestorPath,
+  getItemId,
   NavigationActionType,
-  type NavigationState,
-  type NodeStatus,
-  type ToggleProps,
-  type UseNavigationTreeProps,
-  type UseNavigationTreeResult,
+  prepareIndex,
+} from "@canonical/utils";
+import { useCallback, useEffect, useMemo, useReducer, useRef } from "react";
+import type {
+  ItemProps,
+  MenuProps,
+  ToggleProps,
+  UseNavigationTreeProps,
+  UseNavigationTreeResult,
 } from "./types.js";
 
 /**
@@ -54,7 +58,11 @@ export default function useNavigationTree(
   }, [annotatedRoot, index, initialUrl]);
 
   const composedReducer = useMemo(() => {
-    const baseReducer = createNavigationReducer(index, { orientation, wrap });
+    const baseReducer = createNavigationReducer(index, {
+      rootItem: annotatedRoot,
+      orientation,
+      wrap,
+    });
     if (!stateReducer) return baseReducer;
     return (
       state: NavigationState,
@@ -67,7 +75,7 @@ export default function useNavigationTree(
       const intermediate = baseReducer(state, action);
       return stateReducer(intermediate, action);
     };
-  }, [index, orientation, wrap, stateReducer]);
+  }, [annotatedRoot, index, orientation, wrap, stateReducer]);
 
   const [state, dispatch] = useReducer(composedReducer, initialState);
 
