@@ -22,7 +22,7 @@ describe("toCamelCase", () => {
     expect(toCamelCase("")).toBe("");
   });
 
-  it("handles trailing separator", () => {
+  it("handles trailing separators", () => {
     expect(toCamelCase("hello-")).toBe("hello");
   });
 });

@@ -22,7 +22,7 @@ describe("toPascalCase", () => {
     expect(toPascalCase("")).toBe("");
   });
 
-  it("handles trailing separator", () => {
+  it("handles trailing separators", () => {
     expect(toPascalCase("hello-")).toBe("Hello");
   });
 });
