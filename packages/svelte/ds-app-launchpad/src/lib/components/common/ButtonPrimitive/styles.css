@@ -1,7 +1,9 @@
+@import "../../../../../../../../packages/styles-old/primitives/canonical/src/tokens.css";
+
 .ds.button-primitive {
   --border-style-button: solid;
   --color-background-button-active: var(--lp-color-background-neutral-active);
-  --color-background-button-hover: var(--lp-color-background-neutral-hover);
+  --color-background-button-hover: var(--tmp-color-background-neutral-hover);
   --color-background-button: transparent;
   --color-border-button-active: var(--color-border-button);
   --color-border-button-hover: var(--color-border-button);

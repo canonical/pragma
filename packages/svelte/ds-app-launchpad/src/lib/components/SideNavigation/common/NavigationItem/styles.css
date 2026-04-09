@@ -1,0 +1,54 @@
+@import "../../../../../../../../../packages/styles-old/primitives/canonical/src/tokens.css";
+
+.ds.navigation-item {
+  display: grid;
+  position: relative;
+  grid-column: 1 / -1;
+  border: none;
+
+  --dimension-padding-inline-button: 0;
+  --dimension-padding-block-button: var(--lp-dimension-spacing-block-xxs);
+  --dimension-padding-inline-start-button-label: var(
+    --lp-dimension-spacing-inline-xs
+  );
+  --color-background-button-selected: var(
+    --tmp-color-background-neutral-active
+  );
+  --dimension-width-button-selected-indicator: var(
+    --lp-dimension-stroke-thickness-large
+  );
+  --color-background-button-selected-indicator: var(
+    --tmp-color-border-highlight
+  );
+
+  grid-template-columns: subgrid;
+}
+
+.ds.navigation-item > .icon {
+  grid-column: logo;
+  place-self: center;
+}
+
+.ds.navigation-item > .label {
+  grid-column: expanded-start / content-end;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-inline-start: var(--dimension-padding-inline-start-button-label);
+}
+
+.ds.navigation-item.selected {
+  --color-background-button: var(--color-background-button-selected);
+  --color-background-button-hover: var(--color-background-button-selected);
+  --color-background-button-active: var(--color-background-button-selected);
+}
+
+.ds.navigation-item.selected::before {
+  content: "";
+  position: absolute;
+  height: 100%;
+  width: var(--dimension-width-button-selected-indicator);
+  inset-inline-start: 0;
+  background-color: var(--color-background-button-selected-indicator);
+}

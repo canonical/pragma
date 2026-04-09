@@ -1,0 +1,126 @@
+@import "../../../../../../../packages/styles-old/primitives/canonical/src/tokens.css";
+
+.ds.side-navigation {
+  --color-background-side-navigation: var(--tmp-color-background-alt);
+  --transition-duration-side-navigation: var(--lp-transition-duration-brisk);
+  --transition-easing-side-navigation: var(--lp-transition-timing-ease-out);
+  --dimension-padding-side-navigation: var(--lp-dimension-spacing-inline-s);
+  --dimension-width-side-navigation-logo-column: 21px;
+  --dimension-width-side-navigation-expanded: 240px;
+  --dimension-padding-block-start-side-navigation-nav: 40px;
+  --dimension-padding-block-end-side-navigation-footer: var(
+    --lp-dimension-spacing-block-xs
+  );
+  --dimension-padding-block-end-side-navigation-nav: var(
+    --lp-dimension-spacing-block-xxl
+  );
+  --dimension-padding-block-side-navigation-item: var(
+    --lp-dimension-spacing-block-xxs
+  );
+  --typography-side-navigation: var(--lp-typography-paragraph-default);
+
+  width: var(--dimension-width-side-navigation-expanded);
+  background-color: var(--color-background-side-navigation);
+
+  position: sticky;
+  top: 0;
+  height: 100dvh;
+  display: grid;
+  overflow: hidden;
+  font: var(--typography-side-navigation);
+  grid-template-columns:
+    var(--dimension-padding-side-navigation)
+    [logo-start content-start] var(
+      --dimension-width-side-navigation-logo-column
+    )
+    [logo-end expanded-start] minmax(0, 1fr)
+    [expanded-end] auto [content-end] var(--dimension-padding-side-navigation);
+  grid-template-rows: [header-start] auto [header-end nav-start] 1fr [nav-end
+      footer-start] auto [footer-end];
+
+  transition: width var(--transition-duration-side-navigation)
+    var(--transition-easing-side-navigation);
+
+  & > .logo {
+    grid-column: logo-start / expanded-end;
+    min-width: max-content;
+    grid-row: header;
+  }
+
+  & > nav {
+    grid-row: nav;
+    grid-column: 1 / -1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    display: grid;
+    grid-template-columns: subgrid;
+    place-content: start stretch;
+
+    margin-block-start: var(
+      --dimension-padding-block-start-side-navigation-nav
+    );
+    padding-block-end: var(--dimension-padding-block-end-side-navigation-nav);
+    mask-image: linear-gradient(
+      to top,
+      transparent,
+      black var(--dimension-padding-block-end-side-navigation-nav)
+    );
+  }
+
+  & > .footer {
+    grid-row: footer;
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: subgrid;
+
+    padding-block-end: var(
+      --dimension-padding-block-end-side-navigation-footer
+    );
+  }
+
+  & .ds.side-navigation-expand-toggle {
+    grid-row: header;
+    grid-column: expanded-end / content-end;
+  }
+}
+
+/* Collapsed state */
+
+.ds.side-navigation.collapsed {
+  width: calc(
+    var(--dimension-width-side-navigation-logo-column) +
+    var(--dimension-padding-side-navigation) *
+    2
+  );
+
+  & .ds.side-navigation-expand-toggle {
+    grid-row: nav;
+    grid-column: 1 / -1;
+
+    grid-template-columns: subgrid;
+    align-self: self-start;
+
+    margin-block-start: var(--lp-dimension-spacing-block-m);
+
+    & .expand-icon {
+      grid-column: logo;
+    }
+  }
+}
+
+/* Footer items fade */
+
+.ds.side-navigation > .footer .navigation-item > .label {
+  transition: opacity var(--transition-duration-side-navigation)
+    var(--transition-easing-side-navigation);
+}
+
+.ds.side-navigation.expanded-changed > .footer .navigation-item > .label {
+  @starting-style {
+    opacity: 0;
+  }
+}
+
+.ds.side-navigation.collapsed > .footer .navigation-item > .label {
+  opacity: 0;
+}
