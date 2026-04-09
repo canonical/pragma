@@ -68,6 +68,14 @@ describe("debounce", () => {
     expect(fn).not.toHaveBeenCalled();
   });
 
+  it("cancel is safe to call when no timeout is pending", () => {
+    const fn = vi.fn();
+    const debounced = debounce(fn, 100);
+
+    // Cancel without ever calling the debounced function
+    expect(() => debounced.cancel()).not.toThrow();
+  });
+
   it("propagates errors from the debounced function", async () => {
     const fn = vi.fn(() => {
       throw new Error("boom");

@@ -181,5 +181,25 @@ describe("humanizeNumber", () => {
         expect(result).toEqual(expected);
       });
     });
+
+    it("falls back to no unit suffix when units array is empty", () => {
+      const result = humanizeNumber(1500, { units: [] });
+      expect(result.unit).toBe("");
+    });
+
+    it("omits overflow indicator when not provided and value is truncated", () => {
+      const result = humanizeNumber(12345, {
+        overflowIndicator: "",
+      });
+      // 12345 → 12K (truncated, no overflow indicator)
+      expect(result.displayValue).not.toContain("+");
+    });
+
+    it("omits overflow indicator at max unit when not provided", () => {
+      const result = humanizeNumber(1e18, {
+        overflowIndicator: "",
+      });
+      expect(result.displayValue).toBe("999T");
+    });
   });
 });
