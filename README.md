@@ -4,6 +4,49 @@ Pragma is Canonical's implementation of the [Design System](https://github.com/c
 
 ## Quick Start
 
+**Required:**
+- **workshop latest** [installation guide](https://github.com/canonical/workshop)
+
+```bash
+sudo snap login
+sudo snap install --classic workshop
+
+# or download and install the latest Workshop snap from the Releases page
+sudo snap install --dangerous --classic ./workshop_0.1.29_amd64.snap
+```
+
+Clone the repository and setup Pragma environment
+
+```bash
+git clone https://github.com/canonical/pragma
+cd pragma
+workshop launch pragma
+```
+**Usage**
+
+```bash
+workshop run pragma <action>
+```
+
+Available actions in `.workshop/pragma.yaml` map to `package.json` scripts and could be further extended.
+
+```yaml
+actions:
+  install: bun install
+  build: bun run build
+  clean: bun run special:clean
+  check: bun run check
+  fix: bun run check:fix
+  test: bun run test
+  coverage: bun run test:coverage
+  publish: bun run publish:status
+
+```
+
+To list available actions, you can run `workshop actions`.
+
+## Manual Setup
+
 Clone the repository and install dependencies. The installation step also builds all packages, which takes roughly 30 seconds on first run.
 
 ```bash

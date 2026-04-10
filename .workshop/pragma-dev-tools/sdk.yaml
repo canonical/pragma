@@ -1,0 +1,4 @@
+# Copyright 2026 Canonical Ltd.  All rights reserved.
+
+name: pragma-dev-tools
+base: ubuntu@24.04

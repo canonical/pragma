@@ -1,0 +1,17 @@
+# Copyright 2026 Canonical Ltd.  All rights reserved.
+
+name: pragma
+base: ubuntu@24.04
+
+sdks:
+- name: project-pragma-dev-tools
+
+actions:
+  install: bun install
+  build: bun run build
+  clean: bun run special:clean
+  lint: bun run check
+  fix: bun run check:fix
+  test: bun run test
+  coverage: bun run test:coverage
+  publish: bun run publish:status

@@ -82,3 +82,4 @@ sem_modules/
 .claude/
 .kg/
 node_modules
+.workshop.lock

@@ -1,0 +1,7 @@
+#!/bin/bash -ex
+# Copyright 2026 Canonical Ltd.  All rights reserved.
+
+bun install
+cd packages/summon && bun link
+cd ../summon-component && bun link
+cd ../summon-package && bun link

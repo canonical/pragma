@@ -1,0 +1,6 @@
+#!/bin/bash -ex
+# Copyright 2026 Canonical Ltd.  All rights reserved.
+
+curl -fsSL https://deb.nodesource.com/setup_24.x | bash -
+apt-get install -y nodejs
+npm install -g bun@1.3.11 lerna
