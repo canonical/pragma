@@ -3,6 +3,22 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.24.0](https://github.com/canonical/pragma/compare/v0.23.0...v0.24.0) (2026-04-13)
+
+
+### Bug Fixes
+
+* **svelte-ds-app-launchpad:** Increase specificity of button styles ([#611](https://github.com/canonical/pragma/issues/611)) ([ca84fd5](https://github.com/canonical/pragma/commit/ca84fd56bcc222cab102ce7624ab345b9b2bc7d0))
+
+
+### Features
+
+* **svelte-ds-app-launchpad:** Add Modal ([#588](https://github.com/canonical/pragma/issues/588)) ([e1ec629](https://github.com/canonical/pragma/commit/e1ec6293f5bbe1789b3baf6e8cd47da17bba2b2b))
+
+
+
+
+
 # [0.23.0](https://github.com/canonical/pragma/compare/v0.22.1...v0.23.0) (2026-04-07)
 
 

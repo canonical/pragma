@@ -1,6 +1,6 @@
 {
   "name": "@canonical/renovate-config",
-  "version": "0.23.0",
+  "version": "0.24.0",
   "description": "Shared Renovate configuration for Canonical monorepos. Provides batching families, weekly schedule, and devDep automerge.",
   "license": "GPL-3.0",
   "author": {
