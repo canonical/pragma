@@ -30,7 +30,7 @@
   ]}
   {...rest}
 >
-  <div class="marker" aria-hidden="true">
+  <div class="marker">
     {#if typeof marker === "function"}
       {@render marker()}
     {:else if marker}
