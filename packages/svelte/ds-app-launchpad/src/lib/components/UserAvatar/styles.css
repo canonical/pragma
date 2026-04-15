@@ -53,13 +53,14 @@
     }
   }
 
-  &.no-image {
+  &:is(abbr) {
     user-select: none;
     place-content: center;
+    text-transform: uppercase;
+    text-decoration: none;
+  }
 
-    > abbr {
-      text-transform: uppercase;
-      text-decoration: none;
-    }
+  &:is(div) {
+    place-content: center;
   }
 }

@@ -8,7 +8,7 @@
   const componentCssClassName = "ds user-avatar";
 
   const {
-    class: className,
+    class: classProp,
     userName: userNameProp,
     userAvatarUrl,
     size = "medium",
@@ -16,6 +16,7 @@
     ...rest
   }: UserAvatarProps = $props();
 
+  const className = $derived([componentCssClassName, size, classProp]);
   const userName = $derived(userNameProp?.trim() || null);
   const userInitials = $derived(userName ? getInitials(userName) : null);
 
@@ -30,7 +31,7 @@
 
 {#if userAvatarUrl && !imageError}
   <img
-    class={[componentCssClassName, size, className]}
+    class={className}
     src={userAvatarUrl}
     {alt}
     title={userName || undefined}
@@ -38,13 +39,13 @@
     onerror={() => (imageError = true)}
     {...rest}
   />
+{:else if userName}
+  <abbr class={className} title={userName} {...rest}>
+    {userInitials}
+  </abbr>
 {:else}
-  <div class={[componentCssClassName, "no-image", size, className]} {...rest}>
-    {#if userName}
-      <abbr title={userName}>{userInitials}</abbr>
-    {:else}
-      <UserIcon />
-    {/if}
+  <div class={className} {...rest}>
+    <UserIcon />
   </div>
 {/if}
 
