@@ -73,8 +73,7 @@
 
   &.secondary {
     background-color: var(--link-color-background);
-    border: solid var(--link-border-width)
-      var(--link-color-border);
+    border: solid var(--link-border-width) var(--link-color-border);
     color: var(--link-color-text);
     padding-block: var(--link-padding-vertical);
     padding-inline: var(--link-padding-horizontal);

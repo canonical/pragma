@@ -18,6 +18,14 @@ const meta = {
       </ds-site-layout>
     `,
   ],
+  render: (args) => html`
+    <ds-cta-section
+      title-text="${args.titleText}"
+      variant="${args.variant}"
+      layout="${args.layout}"
+      .blocks=${args.blocks}
+    ></ds-cta-section>
+  `,
 } satisfies Meta<CTASection>;
 
 export default meta;
@@ -33,20 +41,11 @@ export const DefaultFull: Story = {
         type: "cta",
         item: {
           type: "html",
-          content:
-            "<a href='#'>Download Ubuntu Server &rsaquo;</a>",
+          content: "<a href='#'>Download Ubuntu Server &rsaquo;</a>",
         },
       },
     ],
   },
-  render: (args) => html`
-    <ds-cta-section
-      title-text="${args.titleText}"
-      variant="${args.variant}"
-      layout="${args.layout}"
-      .blocks=${args.blocks}
-    ></ds-cta-section>
-  `,
 };
 
 export const DefaultOffset: Story = {
@@ -65,14 +64,6 @@ export const DefaultOffset: Story = {
       },
     ],
   },
-  render: (args) => html`
-    <ds-cta-section
-      title-text="${args.titleText}"
-      variant="${args.variant}"
-      layout="${args.layout}"
-      .blocks=${args.blocks}
-    ></ds-cta-section>
-  `,
 };
 
 export const BlockFull: Story = {
@@ -109,14 +100,6 @@ export const BlockFull: Story = {
       },
     ],
   },
-  render: (args) => html`
-    <ds-cta-section
-      title-text="${args.titleText}"
-      variant="${args.variant}"
-      layout="${args.layout}"
-      .blocks=${args.blocks}
-    ></ds-cta-section>
-  `,
 };
 
 export const BlockOffset: Story = {
@@ -153,12 +136,4 @@ export const BlockOffset: Story = {
       },
     ],
   },
-  render: (args) => html`
-    <ds-cta-section
-      title-text="${args.titleText}"
-      variant="${args.variant}"
-      layout="${args.layout}"
-      .blocks=${args.blocks}
-    ></ds-cta-section>
-  `,
 };

@@ -44,4 +44,3 @@ export interface CTASectionProps {
   /** Content blocks: description paragraphs and CTA actions. */
   blocks?: Block[];
 }
-

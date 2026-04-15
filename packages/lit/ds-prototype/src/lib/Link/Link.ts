@@ -34,8 +34,7 @@ export default class Link extends LitElement implements LinkProps {
     | null = null;
 
   render() {
-    const rel =
-      this.target === "_blank" ? "noopener noreferrer" : undefined;
+    const rel = this.target === "_blank" ? "noopener noreferrer" : undefined;
 
     return html`
       <a

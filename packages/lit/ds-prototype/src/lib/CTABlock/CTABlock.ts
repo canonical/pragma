@@ -26,25 +26,33 @@ export default class CTABlock extends LitElement implements CTABlockProps {
   @property({ type: Array }) secondaries?: LinkObject[];
   @property({ type: Object }) link?: LinkObject;
 
-  private _renderLink(
-    linkObj: LinkObject,
-    variant: "default" | "primary" | "secondary",
-  ) {
-    return html`
-      <ds-link href="${linkObj.attrs?.href ?? ""}" variant="${variant}"
-        >${unsafeHTML(linkObj.content_html)}</ds-link
-      >
-    `;
-  }
-
   render() {
     return html`
       <div class="${componentCssClassName}">
-        ${this.primary ? this._renderLink(this.primary, "primary") : nothing}
-        ${this.secondaries
-          ? this.secondaries.map((s) => this._renderLink(s, "secondary"))
-          : nothing}
-        ${this.link ? this._renderLink(this.link, "default") : nothing}
+        ${
+          this.primary
+            ? html`<ds-link href="${this.primary.attrs?.href ?? ""}" variant="primary"
+              >${unsafeHTML(this.primary.content_html)}</ds-link
+            >`
+            : nothing
+        }
+        ${
+          this.secondaries
+            ? this.secondaries.map(
+                (s) =>
+                  html`<ds-link href="${s.attrs?.href ?? ""}" variant="secondary"
+                  >${unsafeHTML(s.content_html)}</ds-link
+                >`,
+              )
+            : nothing
+        }
+        ${
+          this.link
+            ? html`<ds-link href="${this.link.attrs?.href ?? ""}" variant="default"
+              >${unsafeHTML(this.link.content_html)}</ds-link
+            >`
+            : nothing
+        }
       </div>
     `;
   }

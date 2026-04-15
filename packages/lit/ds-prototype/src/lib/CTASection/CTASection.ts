@@ -84,9 +84,7 @@ export default class CTASection extends LitElement implements CTASectionProps {
     return html`
       <h2>
         ${this.titleText ? html`${this.titleText}<br />` : nothing}
-        ${ctaBlock
-          ? unsafeHTML(ctaBlock.item.content)
-          : nothing}
+        ${ctaBlock ? unsafeHTML(ctaBlock.item.content) : nothing}
       </h2>
     `;
   }
@@ -107,13 +105,15 @@ export default class CTASection extends LitElement implements CTASectionProps {
     return html`
       <hr class="rule" />
       <section class="${componentCssClassName}">
-        ${this.layout === "25/75"
-          ? html`
+        ${
+          this.layout === "25/75"
+            ? html`
               <div class="grid-row">
                 <div class="offset-content">${content}</div>
               </div>
             `
-          : html`<div class="fixed-width">${content}</div>`}
+            : html`<div class="fixed-width">${content}</div>`
+        }
       </section>
     `;
   }

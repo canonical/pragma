@@ -16,4 +16,3 @@ export interface CTABlockProps {
   /** Plain text link action. */
   link?: LinkObject;
 }
-

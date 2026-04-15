@@ -14,4 +14,3 @@ export interface LinkProps {
   /** Accessible label when slot content is not descriptive. */
   ariaLabel?: string | null;
 }
-
