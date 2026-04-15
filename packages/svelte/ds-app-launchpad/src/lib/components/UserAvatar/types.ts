@@ -13,4 +13,6 @@ export interface UserAvatarProps
   extends Omit<HTMLAttributes<HTMLElement>, "children">,
     UserOptions {
   size?: "small" | "medium" | "large";
+  /** The alt text for the avatar image, if available */
+  alt?: string;
 }

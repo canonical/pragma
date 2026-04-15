@@ -12,6 +12,7 @@
     userName: userNameProp,
     userAvatarUrl,
     size = "medium",
+    alt,
     ...rest
   }: UserAvatarProps = $props();
 
@@ -31,7 +32,7 @@
   <img
     class={[componentCssClassName, size, className]}
     src={userAvatarUrl}
-    alt={userName ? `${userName}'s avatar` : "User avatar"}
+    {alt}
     title={userName || undefined}
     data-initials={userInitials}
     onerror={() => (imageError = true)}
@@ -42,7 +43,7 @@
     {#if userName}
       <abbr title={userName}>{userInitials}</abbr>
     {:else}
-      <UserIcon aria-label="User avatar icon" />
+      <UserIcon />
     {/if}
   </div>
 {/if}
