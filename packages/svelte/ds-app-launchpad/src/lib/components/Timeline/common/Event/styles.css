@@ -30,8 +30,10 @@
   &.with-title-row {
     /* Only calculate this if necessary */
     --marker-title-row-alignment-difference: calc(
-      var(--typography-line-height-timeline-event-title-row) / 2 -
-        var(--marker-size) / 2
+      var(--typography-line-height-timeline-event-title-row) /
+      2 -
+      var(--marker-size) /
+      2
     );
 
     /* If the marker is bigger that the title row, there's no need to adjust its alignment */
@@ -58,8 +60,9 @@
     &:first-child::before {
       /* Start the line at the marker */
       height: calc(
-        100% + var(--dimension-gap-row-timeline) -
-          var(--marker-alignment-adjustment)
+        100% +
+        var(--dimension-gap-row-timeline) -
+        var(--marker-alignment-adjustment)
       );
       margin-block-start: var(--marker-alignment-adjustment);
     }
