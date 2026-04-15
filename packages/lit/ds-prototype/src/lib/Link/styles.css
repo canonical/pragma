@@ -1,0 +1,89 @@
+:host([hidden]) {
+  display: none;
+}
+
+:host {
+  --link-color-background: var(--color-background-default);
+  --link-color-background-hover: var(--color-foreground-ghost-hover);
+  --link-color-background-active: var(--color-foreground-ghost-active);
+  --link-color-text: var(--color-text);
+  --link-color-border: var(--color-border-high-contrast);
+
+  --link-padding-vertical: var(--spacing-input-padding-vertical);
+  --link-padding-horizontal: var(--spacing-horizontal-large);
+  --link-border-width: var(--spacing-border-width);
+  --link-font-size: var(--font-size-default);
+  --link-font-weight: var(--font-weight-default);
+  --link-line-height: var(--line-height-default);
+  --link-margin-bottom: var(--spacing-input-margin-bottom);
+  --link-margin-right: var(--spacing-horizontal-large);
+
+  display: inline-flex;
+}
+
+.ds.link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font: inherit;
+  cursor: pointer;
+  text-decoration: none;
+
+  font-size: var(--link-font-size);
+  font-weight: var(--link-font-weight);
+  line-height: var(--link-line-height);
+  margin-block-end: var(--link-margin-bottom);
+  margin-inline-end: var(--link-margin-right);
+
+  &.default {
+    background-color: transparent;
+    border: none;
+    padding-inline: 0;
+    color: var(--color-text-link, currentColor);
+    text-decoration: underline;
+    text-underline-offset: var(--tmp-dimension-underline-offset-link, 0.075em);
+    margin-inline-end: 0;
+
+    &:hover {
+      text-decoration-thickness: var(
+        --tmp-dimension-decoration-thickness-link,
+        1px
+      );
+    }
+  }
+
+  &.primary {
+    background-color: var(--color-background-positive-default);
+    border: solid var(--link-border-width)
+      var(--color-background-positive-default);
+    color: var(--color-background-positive-text);
+    padding-block: var(--link-padding-vertical);
+    padding-inline: var(--link-padding-horizontal);
+
+    &:hover {
+      background-color: var(--color-background-positive-hover);
+      border-color: var(--color-background-positive-hover);
+    }
+
+    &:active {
+      background-color: var(--color-background-positive-active);
+      border-color: var(--color-background-positive-active);
+    }
+  }
+
+  &.secondary {
+    background-color: var(--link-color-background);
+    border: solid var(--link-border-width) var(--link-color-border);
+    color: var(--link-color-text);
+    padding-block: var(--link-padding-vertical);
+    padding-inline: var(--link-padding-horizontal);
+
+    &:hover {
+      background-color: var(--link-color-background-hover);
+    }
+
+    &:active {
+      background-color: var(--link-color-background-active);
+    }
+  }
+}
