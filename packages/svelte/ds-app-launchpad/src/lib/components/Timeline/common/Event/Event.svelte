@@ -21,11 +21,11 @@
   class={[
     componentCssClassName,
     className,
-    marker === undefined
-      ? "marker-empty"
-      : markerSize === "small"
+    marker
+      ? markerSize === "small"
         ? "marker-small"
-        : "marker-large",
+        : "marker-large"
+      : "marker-empty",
     { "with-title-row": titleRow },
   ]}
   {...rest}
