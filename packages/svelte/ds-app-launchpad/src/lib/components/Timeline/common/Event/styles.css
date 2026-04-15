@@ -30,10 +30,8 @@
   &.with-title-row {
     /* Only calculate this if necessary */
     --marker-title-row-alignment-difference: calc(
-      var(--typography-line-height-timeline-event-title-row) /
-      2 -
-      var(--marker-size) /
-      2
+      var(--typography-line-height-timeline-event-title-row) / 2 -
+        var(--marker-size) / 2
     );
 
     /* If the marker is bigger that the title row, there's no need to adjust its alignment */
@@ -43,32 +41,33 @@
     );
   }
 
-  &::before {
-    content: "";
-    display: block;
-    grid-column: marker;
-    grid-row: 1;
-    background-color: var(--color-background-timeline-line);
-    width: var(--dimension-width-timeline-line);
-    justify-self: center;
+  &:not(:only-child) {
+    &::before {
+      content: "";
+      display: block;
+      grid-column: marker;
+      grid-row: 1;
+      background-color: var(--color-background-timeline-line);
+      width: var(--dimension-width-timeline-line);
+      justify-self: center;
 
-    /* Span the whole height of the event and reach over the gap to the next one */
-    height: calc(100% + var(--dimension-gap-row-timeline));
-  }
+      /* Span the whole height of the event and reach over the gap to the next one */
+      height: calc(100% + var(--dimension-gap-row-timeline));
+    }
 
-  &:first-child::before {
-    /* Start the line at the marker */
-    height: calc(
-      100% +
-      var(--dimension-gap-row-timeline) -
-      var(--marker-alignment-adjustment)
-    );
-    margin-block-start: var(--marker-alignment-adjustment);
-  }
+    &:first-child::before {
+      /* Start the line at the marker */
+      height: calc(
+        100% + var(--dimension-gap-row-timeline) -
+          var(--marker-alignment-adjustment)
+      );
+      margin-block-start: var(--marker-alignment-adjustment);
+    }
 
-  &:last-child::before {
-    /* End the line at the marker */
-    height: var(--marker-alignment-adjustment);
+    &:last-child::before {
+      /* End the line at the marker */
+      height: var(--marker-alignment-adjustment);
+    }
   }
 
   > .marker {
