@@ -3,6 +3,23 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.25.0](https://github.com/canonical/pragma/compare/v0.24.0...v0.25.0) (2026-04-17)
+
+
+### Bug Fixes
+
+* **svelte-ds-app-launchpad:** Exclude tests and stories from publishing to npm ([#612](https://github.com/canonical/pragma/issues/612)) ([c120ef0](https://github.com/canonical/pragma/commit/c120ef0b3d301fdc9fc0372de052e40119ab1992))
+
+
+### Features
+
+* **List, BasicSection:** Implement List and BasicSection webcomponents ([#583](https://github.com/canonical/pragma/issues/583)) ([e760458](https://github.com/canonical/pragma/commit/e760458b4109be0fb68d11759a2f453d143c72a3))
+* **lit:** implement ds-button-link, ds-cta-block and ds-cta-section web components ([#566](https://github.com/canonical/pragma/issues/566)) ([c6e67fb](https://github.com/canonical/pragma/commit/c6e67fbae5782507924c7de978c7388167fb3311))
+
+
+
+
+
 # [0.24.0](https://github.com/canonical/pragma/compare/v0.23.0...v0.24.0) (2026-04-13)
 
 

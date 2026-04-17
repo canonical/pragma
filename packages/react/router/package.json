@@ -1,7 +1,7 @@
 {
   "name": "@canonical/router-react",
   "description": "React bindings for @canonical/router-core",
-  "version": "0.24.0",
+  "version": "0.25.0",
   "type": "module",
   "module": "dist/esm/index.js",
   "types": "dist/types/index.d.ts",
@@ -41,16 +41,16 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "@canonical/react-ssr": "^0.24.0",
-    "@canonical/router-core": "^0.24.0",
+    "@canonical/react-ssr": "^0.25.0",
+    "@canonical/router-core": "^0.25.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4"
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.9",
-    "@canonical/biome-config": "^0.24.0",
-    "@canonical/typescript-config-react": "^0.24.0",
-    "@canonical/webarchitect": "^0.24.0",
+    "@canonical/biome-config": "^0.25.0",
+    "@canonical/typescript-config-react": "^0.25.0",
+    "@canonical/webarchitect": "^0.25.0",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@types/node": "^24.12.0",
