@@ -5,5 +5,11 @@
     "skipLibCheck": true,
     "moduleResolution": "nodenext"
   },
-  "include": ["src/**/*.ts", "src/**/*.svelte", "src/**/*.d.ts"]
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.svelte",
+    ".storybook/**/*.ts",
+    ".storybook/**/*.svelte",
+    "src/**/*.d.ts"
+  ]
 }
