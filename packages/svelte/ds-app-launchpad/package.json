@@ -19,7 +19,10 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "!dist/**/*.test.*",
+    "!dist/**/*.fixtures.*",
+    "!dist/**/*.stories.*"
   ],
   "author": {
     "email": "webteam@canonical.com",
@@ -36,7 +39,7 @@
   "homepage": "https://github.com/canonical/pragma/tree/main/packages/svelte/ds-app-launchpad#readme",
   "scripts": {
     "build:all": "bun run build",
-    "build": "svelte-package -o dist -i src/lib --tsconfig ./tsconfig.json",
+    "build": "svelte-package -o dist -i src/lib --tsconfig ./tsconfig.build.json",
     "build:storybook": "storybook build",
     "check": "bun run check:biome && bun run check:ts && bun run check:webarchitect",
     "check:fix": "bun run check:biome:fix && bun run check:ts",
