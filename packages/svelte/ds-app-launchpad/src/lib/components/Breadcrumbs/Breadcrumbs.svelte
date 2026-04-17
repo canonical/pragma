@@ -2,7 +2,7 @@
 
 <script lang="ts">
   import { CollapsedItems, ExpandedItems } from "./common/index.js";
-  import type { BreadcrumbsProps, PossiblyCollapsedSegment } from "./types";
+  import type { BreadcrumbsProps, PossiblyCollapsedSegment } from "./types.js";
   import "./styles.css";
 
   const componentCssClassName = "ds breadcrumbs";

@@ -2,7 +2,7 @@
 
 <script lang="ts">
   import { CloseIcon } from "@canonical/svelte-icons";
-  import type { ChipProps } from "./types";
+  import type { ChipProps } from "./types.js";
   import "./styles.css";
 
   const componentCssClassName = "ds chip";

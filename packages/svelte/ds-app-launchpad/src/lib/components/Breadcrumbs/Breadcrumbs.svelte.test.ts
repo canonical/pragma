@@ -6,7 +6,7 @@ import type { Locator } from "vitest/browser";
 import { page as pageContext, userEvent } from "vitest/browser";
 import type { RenderResult } from "vitest-browser-svelte";
 import { render } from "vitest-browser-svelte";
-import { tabToNextFocusable } from "../../test-utils.js";
+import { tabToNextFocusable } from "../../../../testing/tabToNextFocusable.js";
 import Component from "./Breadcrumbs.svelte";
 import type { Segment } from "./types.js";
 

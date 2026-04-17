@@ -10,7 +10,7 @@
 </script>
 
 <script lang="ts">
-  import type { BadgeProps } from "./types";
+  import type { BadgeProps } from "./types.js";
   import "./styles.css";
 
   const componentCssClassName = "ds badge";

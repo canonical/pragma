@@ -1,11 +1,16 @@
 {
   "extends": "@canonical/typescript-config-svelte",
   "compilerOptions": {
-    "baseUrl": "src/lib",
     "verbatimModuleSyntax": true,
     "skipLibCheck": true,
-    "module": "esnext",
-    "moduleResolution": "bundler"
+    "moduleResolution": "nodenext"
   },
-  "include": ["src/**/*.ts", "src/**/*.svelte", "src/**/*.d.ts"]
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.svelte",
+    "src/**/*.d.ts",
+    ".storybook/**/*.ts",
+    ".storybook/**/*.svelte",
+    "testing/**/*.ts"
+  ]
 }
