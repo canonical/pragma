@@ -8,8 +8,9 @@
   "include": [
     "src/**/*.ts",
     "src/**/*.svelte",
+    "src/**/*.d.ts",
     ".storybook/**/*.ts",
     ".storybook/**/*.svelte",
-    "src/**/*.d.ts"
+    "testing/**/*.ts"
   ]
 }

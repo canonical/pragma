@@ -2,7 +2,7 @@ import { userEvent } from "vitest/browser";
 
 // macOS WebKit (Safari) requires Option+Tab to focus links;
 // plain Tab only cycles form controls.
-export const isWebkitMacOS =
+const isWebkitMacOS =
   /Macintosh/.test(navigator.userAgent) &&
   /AppleWebKit/.test(navigator.userAgent) &&
   !/Chrome|Chromium|Firefox/.test(navigator.userAgent);
