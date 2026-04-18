@@ -1,6 +1,7 @@
 name: "ds-demo-site/chromatic"
 on:
   pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
     paths:
       - configs/storybook/**
       - packages/styles/**
