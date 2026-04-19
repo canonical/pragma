@@ -1372,4 +1372,156 @@ describe("createRouter", () => {
       // AbortError propagation is acceptable
     }
   });
+
+  it("merges search params into the current URL via setSearchParams", async () => {
+    const router = createRouter(
+      {
+        list: route({
+          url: "/list",
+          content: () => "list",
+        }),
+      },
+      { adapter: createMemoryAdapter("/list?sort=name") },
+    );
+
+    await router.load("/list?sort=name");
+    router.setSearchParams({ page: "2" });
+
+    await vi.waitFor(() => {
+      expect(router.getState().location.searchParams.get("sort")).toBe("name");
+      expect(router.getState().location.searchParams.get("page")).toBe("2");
+    });
+  });
+
+  it("removes search params when set to null via setSearchParams", async () => {
+    const router = createRouter(
+      {
+        list: route({
+          url: "/list",
+          content: () => "list",
+        }),
+      },
+      { adapter: createMemoryAdapter("/list?sort=name&page=2") },
+    );
+
+    await router.load("/list?sort=name&page=2");
+    router.setSearchParams({ page: null });
+
+    await vi.waitFor(() => {
+      expect(router.getState().location.searchParams.get("sort")).toBe("name");
+      expect(router.getState().location.searchParams.has("page")).toBe(false);
+    });
+  });
+
+  it("blocks navigation when an active blocker is registered", async () => {
+    const router = createRouter(
+      {
+        home: route({ url: "/", content: () => "home" }),
+        about: route({ url: "/about", content: () => "about" }),
+      },
+      { adapter: createMemoryAdapter("/") },
+    );
+
+    await router.load("/");
+
+    router.registerBlocker({ id: "form", isActive: () => true });
+    router.navigate("about");
+
+    expect(router.blockerState).toBe("blocked");
+    expect(router.getState().location.pathname).toBe("/");
+
+    router.proceedNavigation();
+
+    await vi.waitFor(() => {
+      expect(router.getState().location.pathname).toBe("/about");
+    });
+
+    expect(router.blockerState).toBe("idle");
+  });
+
+  it("cancels blocked navigation and stays on the current page", async () => {
+    const router = createRouter(
+      {
+        home: route({ url: "/", content: () => "home" }),
+        about: route({ url: "/about", content: () => "about" }),
+      },
+      { adapter: createMemoryAdapter("/") },
+    );
+
+    await router.load("/");
+
+    router.registerBlocker({ id: "form", isActive: () => true });
+    router.navigate("about");
+
+    expect(router.blockerState).toBe("blocked");
+    router.cancelNavigation();
+
+    expect(router.blockerState).toBe("idle");
+    expect(router.getState().location.pathname).toBe("/");
+  });
+
+  it("allows navigation when no active blocker is registered", async () => {
+    const router = createRouter(
+      {
+        home: route({ url: "/", content: () => "home" }),
+        about: route({ url: "/about", content: () => "about" }),
+      },
+      { adapter: createMemoryAdapter("/") },
+    );
+
+    await router.load("/");
+
+    router.registerBlocker({ id: "form", isActive: () => false });
+    router.navigate("about");
+
+    expect(router.blockerState).toBe("idle");
+
+    await vi.waitFor(() => {
+      expect(router.getState().location.pathname).toBe("/about");
+    });
+  });
+
+  it("removes blockers on unregister", async () => {
+    const router = createRouter(
+      {
+        home: route({ url: "/", content: () => "home" }),
+        about: route({ url: "/about", content: () => "about" }),
+      },
+      { adapter: createMemoryAdapter("/") },
+    );
+
+    await router.load("/");
+
+    router.registerBlocker({ id: "form", isActive: () => true });
+    router.unregisterBlocker("form");
+    router.navigate("about");
+
+    expect(router.blockerState).toBe("idle");
+
+    await vi.waitFor(() => {
+      expect(router.getState().location.pathname).toBe("/about");
+    });
+  });
+
+  it("supports functional updates via setSearchParams", async () => {
+    const router = createRouter(
+      {
+        list: route({
+          url: "/list",
+          content: () => "list",
+        }),
+      },
+      { adapter: createMemoryAdapter("/list?page=1") },
+    );
+
+    await router.load("/list?page=1");
+    router.setSearchParams((current) => ({
+      ...current,
+      page: String(Number(current.page ?? "0") + 1),
+    }));
+
+    await vi.waitFor(() => {
+      expect(router.getState().location.searchParams.get("page")).toBe("2");
+    });
+  });
 });

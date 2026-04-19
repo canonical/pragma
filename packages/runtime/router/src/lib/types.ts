@@ -491,6 +491,11 @@ export interface RouterStore<
   ): () => void;
 }
 
+export interface RouterBlocker {
+  readonly id: string;
+  readonly isActive: () => boolean;
+}
+
 export interface PlatformNavigateOptions {
   readonly replace?: boolean;
   readonly state?: unknown;
@@ -598,7 +603,18 @@ export interface Router<
   match(url: string | URL): RouterMatch<TRoutes, TNotFound> | null;
   navigate: NavigateFn<TRoutes>;
   prefetch: PrefetchFn<TRoutes>;
+  registerBlocker(blocker: RouterBlocker): void;
+  unregisterBlocker(id: string): void;
+  readonly blockerState: "idle" | "blocked";
+  proceedNavigation(): void;
+  cancelNavigation(): void;
   render(result?: RouterLoadResult<TRoutes, TNotFound> | null): unknown;
+  setSearchParams(
+    params:
+      | Record<string, string | null>
+      | ((current: Record<string, string>) => Record<string, string | null>),
+    options?: { readonly replace?: boolean },
+  ): void;
   subscribe(
     listener: (snapshot: RouterSnapshot<TRoutes, TNotFound>) => void,
   ): () => void;

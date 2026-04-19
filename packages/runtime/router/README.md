@@ -145,6 +145,53 @@ const loginRequired = route({
 });
 ```
 
+## Search param mutation
+
+`setSearchParams()` patches the current URL's search params without requiring the route name:
+
+```ts
+// Merge into current search params
+router.setSearchParams({ page: "2" });
+
+// Functional update
+router.setSearchParams((current) => ({
+  ...current,
+  page: String(Number(current.page ?? "0") + 1),
+}));
+
+// Remove a param (set to null)
+router.setSearchParams({ filter: null });
+
+// Replace history entry instead of pushing
+router.setSearchParams({ page: "2" }, { replace: true });
+```
+
+## Navigation blocking
+
+Register blockers to prevent navigation when there is unsaved state. Blockers are checked before any navigation proceeds:
+
+```ts
+const blockerId = "edit-form";
+
+// Register a blocker that checks whether to block
+router.registerBlocker({
+  id: blockerId,
+  isActive: () => formHasUnsavedChanges,
+});
+
+// When navigation is attempted while a blocker is active:
+router.blockerState; // "blocked"
+
+// The consumer decides whether to proceed or cancel
+router.proceedNavigation(); // continue the blocked navigation
+router.cancelNavigation();  // stay on the current page
+
+// Remove the blocker when the form is submitted or discarded
+router.unregisterBlocker(blockerId);
+```
+
+For React, use the `useBlocker()` hook from `@canonical/router-react` instead of these core primitives.
+
 ## Middleware
 
 Middleware runs once, before the router is created. Apply it to route definitions with `applyMiddleware()`:

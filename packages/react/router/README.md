@@ -165,6 +165,97 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
 
 The boilerplate reference app provides a complete `RouteErrorBoundary` implementation to copy and adapt.
 
+## Search param mutation
+
+Update search params from any component via the router instance:
+
+```tsx
+function FilterBar() {
+  const router = useRouter();
+  const sort = useSearchParam("sort");
+
+  return (
+    <select
+      value={sort ?? "name"}
+      onChange={(event) => {
+        router.setSearchParams({ sort: event.target.value }, { replace: true });
+      }}
+    >
+      <option value="name">Name</option>
+      <option value="date">Date</option>
+    </select>
+  );
+}
+```
+
+`setSearchParams` merges into the current URL. Set a key to `null` to remove it. Pass `{ replace: true }` to replace the history entry instead of pushing.
+
+## Navigation blocking
+
+`useBlocker()` prevents navigation when the component has unsaved state. The hook returns a state object — the consumer controls the confirmation UI:
+
+```tsx
+import { useBlocker } from "@canonical/router-react";
+import { useState } from "react";
+
+function EditForm() {
+  const [isDirty, setIsDirty] = useState(false);
+  const blocker = useBlocker(isDirty);
+
+  return (
+    <>
+      <form onChange={() => setIsDirty(true)}>
+        <textarea placeholder="Start typing to mark as dirty..." />
+        <button
+          type="submit"
+          onClick={(event) => {
+            event.preventDefault();
+            setIsDirty(false);
+          }}
+        >
+          Save
+        </button>
+      </form>
+
+      {blocker.state === "blocked" && (
+        <div role="alertdialog" aria-modal="true">
+          <h2>Unsaved changes</h2>
+          <p>You have unsaved changes. Do you want to leave this page?</p>
+          <button onClick={blocker.cancel}>Stay on page</button>
+          <button onClick={blocker.proceed}>Leave page</button>
+        </div>
+      )}
+    </>
+  );
+}
+```
+
+For a quick `window.confirm` approach instead of a custom dialog:
+
+```tsx
+import { useBlocker } from "@canonical/router-react";
+import { useEffect, useState } from "react";
+
+function QuickEditForm() {
+  const [isDirty, setIsDirty] = useState(false);
+  const blocker = useBlocker(isDirty);
+
+  useEffect(() => {
+    if (blocker.state === "blocked") {
+      if (window.confirm("You have unsaved changes. Leave anyway?")) {
+        blocker.proceed();
+      } else {
+        blocker.cancel();
+      }
+    }
+  }, [blocker]);
+
+  return <form onChange={() => setIsDirty(true)}>...</form>;
+}
+```
+
+The blocker registers on mount and unregisters on unmount — when the form is submitted or the component is removed, blocking stops automatically.
+
 ## Creating routes and matching URLs
 
 ### Route creation
@@ -280,19 +371,22 @@ hydrateRoot(
 
 ### Hooks
 
-- `useRouter()` returns the router instance from context.
-- `useRouterState()` is the power-user hook for subscribing to selected slices of `router.getState()`.
+- `useBlocker(isActive)` blocks navigation when `isActive` is `true`. Returns `{ state, proceed, cancel }`.
+- `useNavigationState()` subscribes to the router loading state.
 - `useRoute()` returns a tracked location proxy and rerenders only when an accessed location key changes.
+- `useRouter()` returns the router instance from context. Use `useRouter().setSearchParams()` for search param mutation.
+- `useRouterState()` is the power-user hook for subscribing to selected slices of `router.getState()`.
 - `useSearchParam()` subscribes to one query-string key.
 - `useSearchParams()` subscribes either to the full query string or to a fixed set of keys.
-- `useNavigationState()` subscribes to the router loading state.
 
 Typical selection strategy:
 
+- reach for `useBlocker()` when a form has unsaved state
 - reach for `useNavigationState()` when you only need loading lifecycle
 - reach for `useSearchParam()` for one query-string key
 - reach for `useSearchParams()` for a fixed key set or the full query string
 - reach for `useRoute()` for pathname, hash, or full URL reads
+- reach for `useRouter()` for search param mutation or direct router access
 - reach for `useRouterState()` when you need `match`, `navigation`, or other advanced state in one selector
 
 ## Boilerplate reference
@@ -314,6 +408,7 @@ The reference integration lives in [apps/react/boilerplate-vite](../../../apps/r
 - `Link` — render a typed anchor that navigates and prefetches through the router.
 - `Outlet` — render the current matched subtree.
 - `RouterProvider` — place a router instance into React context.
+- `useBlocker()` — block navigation when the component has unsaved state.
 - `useNavigationState()` — subscribe to the navigation lifecycle state.
 - `useRoute()` — subscribe to a tracked location object.
 - `useRouter()` — read the router instance from context.
