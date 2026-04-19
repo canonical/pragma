@@ -672,6 +672,9 @@
     "packages/react/head": {
       "name": "@canonical/react-head",
       "version": "0.25.0",
+      "dependencies": {
+        "react": "^19.2.4",
+      },
       "devDependencies": {
         "@biomejs/biome": "2.4.9",
         "@canonical/biome-config": "^0.25.0",
@@ -690,9 +693,6 @@
         "typescript": "^5.9.3",
         "vite": "^8.0.1",
         "vitest": "^4.0.18",
-      },
-      "peerDependencies": {
-        "react": "^19.0.0",
       },
     },
     "packages/react/hooks": {
