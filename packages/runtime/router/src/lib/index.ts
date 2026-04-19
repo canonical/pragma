@@ -1,6 +1,8 @@
 export { default as applyMiddleware } from "./applyMiddleware.js";
 export { default as createBrowserAdapter } from "./createBrowserAdapter.js";
+export { default as createHistoryAdapter } from "./createHistoryAdapter.js";
 export { default as createMemoryAdapter } from "./createMemoryAdapter.js";
+export { default as createNavigationAdapter } from "./createNavigationAdapter.js";
 export { default as createRouter } from "./createRouter.js";
 export { default as createRouterStore } from "./createRouterStore.js";
 export { default as createServerAdapter } from "./createServerAdapter.js";
