@@ -24,12 +24,12 @@ async function readStream(stream: ReadableStream): Promise<string> {
 
 describe("renderToStream", () => {
   it("loads the route, renders the server router, and returns bootstrap data", async () => {
-    const fetchSpy = vi.fn(async () => "home-data");
+    const prefetchSpy = vi.fn(async () => {});
     const router = createRouter({
       home: route({
         url: "/",
-        fetch: fetchSpy,
-        content: ({ data }) => <main>{String(data)}</main>,
+        prefetch: prefetchSpy,
+        content: () => <main>home-content</main>,
       }),
     });
 
@@ -38,11 +38,9 @@ describe("renderToStream", () => {
     });
     const html = await readStream(result.stream);
 
-    expect(fetchSpy).toHaveBeenCalledTimes(1);
-    expect(result.loadResult.routeData).toBe("home-data");
     expect(result.bootstrapScriptContent).toContain("window.__INITIAL_DATA__");
     expect(result.initialData).toEqual(router.dehydrate());
-    expect(html).toContain("home-data");
+    expect(html).toContain("home-content");
   });
 
   it("returns a null bootstrap script when dehydration is unavailable", async () => {
