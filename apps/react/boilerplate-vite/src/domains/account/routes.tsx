@@ -66,7 +66,7 @@ const accountRoutes = {
   account: route({
     url: "/account",
     search: accountSearchSchema,
-    content: () => <Account />,
+    content: Account,
   }),
   login: route({
     url: "/login",

@@ -27,7 +27,7 @@ function Guide({ slug }: { slug: string }): ReactElement {
 const marketingRoutes = {
   home: route({
     url: "/",
-    content: () => <Home />,
+    content: Home,
   }),
   guide: route({
     url: "/guides/:slug",
