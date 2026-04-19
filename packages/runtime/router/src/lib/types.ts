@@ -54,51 +54,25 @@ export interface RouteContentProps<
     never
   >,
   TSearch = Record<string, never>,
-  TData = void,
 > {
   readonly params: TParams;
   readonly search: TSearch;
-  readonly data: TData;
 }
 
-export interface RouteErrorProps<
-  TPath extends string = string,
-  TSearch = Record<string, never>,
-> {
-  readonly error: unknown;
-  readonly status: number;
-  readonly params: RouteParams<TPath>;
-  readonly search: TSearch;
-  readonly url: string;
-}
-
-export interface WrapperComponentProps<TData = void, TRendered = unknown> {
-  readonly data: TData;
+export interface WrapperComponentProps<TRendered = unknown> {
   readonly children: TRendered;
 }
 
-export interface WrapperErrorProps<
-  TParams extends RouteParamValues = RouteParamValues,
-  TSearch = unknown,
-> {
-  readonly error: unknown;
-  readonly status: number;
-  readonly params: TParams;
-  readonly search: TSearch;
-  readonly url: string;
-}
-
-export interface WrapperDefinition<TData = void, TRendered = unknown> {
+export interface WrapperDefinition<TRendered = unknown> {
   readonly id: string;
   readonly component: BivariantCallback<
-    [props: WrapperComponentProps<TData, TRendered>],
+    [props: WrapperComponentProps<TRendered>],
     TRendered
   >;
-  readonly fetch?: BivariantCallback<
+  readonly prefetch?: BivariantCallback<
     [params: RouteParamValues, context: NavigationContext],
-    Promise<TData>
+    void | Promise<void>
   >;
-  readonly error?: BivariantCallback<[props: WrapperErrorProps], TRendered>;
 }
 
 export interface RouteCodec<TPath extends string = string> {
@@ -106,28 +80,21 @@ export interface RouteCodec<TPath extends string = string> {
   render(params: RouteParams<TPath>): string;
 }
 
-export type AnyWrapper = WrapperDefinition<unknown, unknown>;
+export type AnyWrapper = WrapperDefinition<unknown>;
 
 export type RouteContent<
   TPath extends string = string,
   TSearchSchema extends StandardSchemaLike<unknown> | undefined = undefined,
-  TData = void,
   TRendered = unknown,
 > = BivariantCallback<
-  [
-    props: RouteContentProps<
-      RouteParams<TPath>,
-      InferSearch<TSearchSchema>,
-      TData
-    >,
-  ],
+  [props: RouteContentProps<RouteParams<TPath>, InferSearch<TSearchSchema>>],
   TRendered
 > & {
   preload?: () => Promise<RouteModule>;
 };
 
 export type AnyRouteContent = BivariantCallback<
-  [props: RouteContentProps<RouteParamValues, unknown, unknown>],
+  [props: RouteContentProps<RouteParamValues, unknown>],
   unknown
 > & {
   preload?: () => Promise<RouteModule>;
@@ -136,25 +103,20 @@ export type AnyRouteContent = BivariantCallback<
 export interface DataRouteInput<
   TPath extends string = string,
   TSearchSchema extends StandardSchemaLike<unknown> | undefined = undefined,
-  TData = void,
   TRendered = unknown,
   TWrappers extends readonly AnyWrapper[] = readonly [],
 > {
   readonly url: TPath;
-  readonly content: RouteContent<TPath, TSearchSchema, TData, TRendered>;
-  readonly fetch?: BivariantCallback<
+  readonly content: RouteContent<TPath, TSearchSchema, TRendered>;
+  readonly prefetch?: BivariantCallback<
     [
       params: RouteParams<TPath>,
       search: InferSearch<TSearchSchema>,
       context: NavigationContext,
     ],
-    Promise<TData>
+    void | Promise<void>
   >;
   readonly search?: TSearchSchema;
-  readonly error?: BivariantCallback<
-    [props: RouteErrorProps<TPath, InferSearch<TSearchSchema>>],
-    TRendered
-  >;
   readonly wrappers?: TWrappers;
 }
 
@@ -174,35 +136,29 @@ export interface RedirectRouteInput<
 export type RouteInput<
   TPath extends string = string,
   TSearchSchema extends StandardSchemaLike<unknown> | undefined = undefined,
-  TData = void,
   TRendered = unknown,
   TWrappers extends readonly AnyWrapper[] = readonly [],
 > =
-  | DataRouteInput<TPath, TSearchSchema, TData, TRendered, TWrappers>
+  | DataRouteInput<TPath, TSearchSchema, TRendered, TWrappers>
   | RedirectRouteInput<TPath, string, TWrappers>;
 
 export interface DataRouteDefinition<
   TPath extends string = string,
   TSearchSchema extends StandardSchemaLike<unknown> | undefined = undefined,
-  TData = void,
   TRendered = unknown,
   TWrappers extends readonly AnyWrapper[] = readonly [],
 > extends RouteCodec<TPath> {
   readonly url: TPath;
-  readonly content: RouteContent<TPath, TSearchSchema, TData, TRendered>;
-  readonly fetch?: BivariantCallback<
+  readonly content: RouteContent<TPath, TSearchSchema, TRendered>;
+  readonly prefetch?: BivariantCallback<
     [
       params: RouteParams<TPath>,
       search: InferSearch<TSearchSchema>,
       context: NavigationContext,
     ],
-    Promise<TData>
+    void | Promise<void>
   >;
   readonly search?: TSearchSchema;
-  readonly error?: BivariantCallback<
-    [props: RouteErrorProps<TPath, InferSearch<TSearchSchema>>],
-    TRendered
-  >;
   readonly wrappers: TWrappers;
 }
 
@@ -220,25 +176,20 @@ export interface RedirectRouteDefinition<
 export type RouteDefinition<
   TPath extends string = string,
   TSearchSchema extends StandardSchemaLike<unknown> | undefined = undefined,
-  TData = void,
   TRendered = unknown,
   TWrappers extends readonly AnyWrapper[] = readonly [],
 > =
-  | DataRouteDefinition<TPath, TSearchSchema, TData, TRendered, TWrappers>
+  | DataRouteDefinition<TPath, TSearchSchema, TRendered, TWrappers>
   | RedirectRouteDefinition<TPath, string, TWrappers>;
 
 export interface AnyRoute {
   readonly url: string;
   readonly content?: AnyRouteContent;
-  readonly fetch?: BivariantCallback<
+  readonly prefetch?: BivariantCallback<
     [params: unknown, search: unknown, context: NavigationContext],
-    Promise<unknown>
+    void | Promise<void>
   >;
   readonly search?: StandardSchemaLike<unknown>;
-  readonly error?: BivariantCallback<
-    [props: RouteErrorProps<string, unknown>],
-    unknown
-  >;
   readonly redirect?: string;
   readonly status?: number;
   readonly wrappers: readonly AnyWrapper[];
@@ -340,22 +291,10 @@ export type SearchOf<TRoute extends AnyRoute> =
     string,
     infer TSearchSchema,
     unknown,
-    unknown,
     readonly AnyWrapper[]
   >
     ? InferSearch<TSearchSchema>
     : Record<string, never>;
-
-export type DataOf<TRoute extends AnyRoute> =
-  TRoute extends DataRouteDefinition<
-    string,
-    StandardSchemaLike<unknown> | undefined,
-    infer TData,
-    unknown,
-    readonly AnyWrapper[]
-  >
-    ? TData
-    : never;
 
 export type HasParams<TRoute extends AnyRoute> = TRoute extends {
   readonly url: infer TPath extends string;
@@ -568,18 +507,11 @@ export interface MemoryAdapter extends PlatformAdapter {
   forward(): void;
 }
 
-export interface RouterLoadErrorBoundary {
-  readonly type: "route" | "wrapper";
-  readonly wrapperId: string | null;
-}
-
 export interface RouterDehydratedState<TRoutes extends RouteMap = RouteMap> {
   readonly href: string;
   readonly kind: "route" | "not-found" | "unmatched";
   readonly routeId: RouteName<TRoutes> | null;
-  readonly routeData: unknown;
   readonly status: number;
-  readonly wrapperData: Readonly<Record<string, unknown>>;
 }
 
 export interface RouterLoadResult<
@@ -588,12 +520,9 @@ export interface RouterLoadResult<
 > {
   dehydrate(): RouterDehydratedState<TRoutes>;
   readonly error: unknown;
-  readonly errorBoundary: RouterLoadErrorBoundary | null;
   readonly location: RouterLocationState;
   readonly match: RouterMatch<TRoutes, TNotFound> | null;
-  readonly routeData: unknown;
   readonly status: number;
-  readonly wrapperData: Readonly<Record<string, unknown>>;
 }
 
 export interface RouterOptions<

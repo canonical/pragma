@@ -1,65 +1,24 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import createBrowserAdapter from "./createBrowserAdapter.js";
 
-function createFakeBrowserWindow(initialHref = "https://example.com/") {
-  let popstateListener: (() => void) | null = null;
-  const browserWindow = {
-    history: {
-      pushState(_state: unknown, _unused: string, url?: string | URL | null) {
-        browserWindow.location.href = new URL(
-          String(url ?? browserWindow.location.href),
-          browserWindow.location.href,
-        ).href;
-      },
-      replaceState(
-        _state: unknown,
-        _unused: string,
-        url?: string | URL | null,
-      ) {
-        browserWindow.location.href = new URL(
-          String(url ?? browserWindow.location.href),
-          browserWindow.location.href,
-        ).href;
-      },
-    },
-    location: {
-      href: initialHref,
-    },
-    addEventListener(_type: "popstate", listener: () => void) {
-      popstateListener = listener;
-    },
-    removeEventListener(_type: "popstate", listener: () => void) {
-      if (popstateListener === listener) {
-        popstateListener = null;
-      }
-    },
-    dispatchPopState(nextHref: string) {
-      browserWindow.location.href = nextHref;
-      popstateListener?.();
-    },
-  };
-
-  return browserWindow;
-}
-
-describe("createBrowserAdapter", () => {
-  it("throws when no window-like object is available", () => {
-    expect(() => {
-      createBrowserAdapter();
-    }).toThrow("Browser adapter requires a window-like object.");
-  });
-
-  it("uses the global window-like object by default when available", () => {
+describe("createBrowserAdapter (auto-detecting)", () => {
+  it("returns a History API adapter when Navigation API is unavailable", () => {
     const originalWindow = (globalThis as { window?: unknown }).window;
 
-    (globalThis as { window?: unknown }).window = createFakeBrowserWindow(
-      "https://example.com/default",
-    );
+    (globalThis as { window?: unknown }).window = {
+      history: {
+        pushState() {},
+        replaceState() {},
+      },
+      location: { href: "https://example.com/" },
+      addEventListener() {},
+      removeEventListener() {},
+    };
 
     try {
       const adapter = createBrowserAdapter();
 
-      expect(adapter.getLocation()).toMatchObject({ pathname: "/default" });
+      expect(adapter.getLocation()).toMatchObject({ pathname: "/" });
     } finally {
       if (originalWindow === undefined) {
         delete (globalThis as { window?: unknown }).window;
@@ -69,44 +28,29 @@ describe("createBrowserAdapter", () => {
     }
   });
 
-  it("publishes push and replace navigations to subscribers", () => {
-    const browserWindow = createFakeBrowserWindow();
-    const adapter = createBrowserAdapter(browserWindow);
-    const listener = vi.fn<(location: string | URL) => void>();
+  it("returns a Navigation API adapter when Navigation API is available", () => {
+    const originalWindow = (globalThis as { window?: unknown }).window;
 
-    adapter.subscribe(listener);
-    adapter.navigate("/docs");
-    adapter.navigate("/docs?page=2", { replace: true, state: { page: 2 } });
+    (globalThis as { window?: unknown }).window = {
+      navigation: {
+        currentEntry: { url: "https://example.com/nav" },
+        navigate() {},
+        addEventListener() {},
+        removeEventListener() {},
+      },
+      location: { href: "https://example.com/nav" },
+    };
 
-    expect(adapter.getLocation()).toMatchObject({
-      pathname: "/docs",
-      search: "?page=2",
-    });
-    expect(listener).toHaveBeenCalledTimes(2);
-  });
+    try {
+      const adapter = createBrowserAdapter();
 
-  it("relays popstate updates and detaches listeners after unsubscribe", () => {
-    const browserWindow = createFakeBrowserWindow("https://example.com/start");
-    const adapter = createBrowserAdapter(browserWindow);
-    const firstListener = vi.fn<(location: string | URL) => void>();
-    const secondListener = vi.fn<(location: string | URL) => void>();
-
-    const unsubscribeFirst = adapter.subscribe(firstListener);
-    const unsubscribeSecond = adapter.subscribe(secondListener);
-
-    browserWindow.dispatchPopState("https://example.com/back");
-    unsubscribeFirst();
-    browserWindow.dispatchPopState("https://example.com/next");
-    unsubscribeSecond();
-    browserWindow.dispatchPopState("https://example.com/ignored");
-
-    expect(firstListener).toHaveBeenCalledTimes(1);
-    expect(secondListener).toHaveBeenCalledTimes(2);
-    expect(firstListener).toHaveBeenCalledWith(
-      expect.objectContaining({ pathname: "/back" }),
-    );
-    expect(secondListener).toHaveBeenLastCalledWith(
-      expect.objectContaining({ pathname: "/next" }),
-    );
+      expect(adapter.getLocation()).toMatchObject({ pathname: "/nav" });
+    } finally {
+      if (originalWindow === undefined) {
+        delete (globalThis as { window?: unknown }).window;
+      } else {
+        (globalThis as { window?: unknown }).window = originalWindow;
+      }
+    }
   });
 });

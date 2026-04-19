@@ -441,30 +441,6 @@ function createNotFoundMatch<TNotFound extends AnyRoute>(
   };
 }
 
-function getWrapperPrefixLength(
-  previousRoute: AnyRoute | undefined,
-  nextRoute: AnyRoute | undefined,
-): number {
-  if (!previousRoute || !nextRoute) {
-    return 0;
-  }
-
-  const previousWrappers = previousRoute.wrappers;
-  const nextWrappers = nextRoute.wrappers;
-  const maxLength = Math.min(previousWrappers.length, nextWrappers.length);
-
-  let prefixLength = 0;
-
-  while (
-    prefixLength < maxLength &&
-    previousWrappers[prefixLength]?.id === nextWrappers[prefixLength]?.id
-  ) {
-    prefixLength += 1;
-  }
-
-  return prefixLength;
-}
-
 function getErrorStatus(error: unknown): number {
   if (error instanceof StatusResponse) {
     return error.status;
@@ -475,21 +451,6 @@ function getErrorStatus(error: unknown): number {
   }
 
   return 500;
-}
-
-function findWrapperErrorBoundary(
-  route: AnyRoute,
-  startIndex = route.wrappers.length - 1,
-): string | null {
-  for (let index = startIndex; index >= 0; index -= 1) {
-    const currentWrapper = route.wrappers[index];
-
-    if (currentWrapper.error) {
-      return currentWrapper.id;
-    }
-  }
-
-  return null;
 }
 
 function isRedirectMatch(value: unknown): value is {
@@ -520,7 +481,7 @@ function createDehydratedState<
 >(
   result: Pick<
     RouterLoadResult<TRoutes, TNotFound>,
-    "location" | "match" | "routeData" | "status" | "wrapperData"
+    "location" | "match" | "status"
   >,
 ): RouterDehydratedState<TRoutes> {
   const kind =
@@ -533,10 +494,8 @@ function createDehydratedState<
   return {
     href: result.location.href,
     kind,
-    routeData: result.routeData,
     routeId: result.match?.kind === "route" ? result.match.name : null,
     status: result.status,
-    wrapperData: result.wrapperData,
   };
 }
 
@@ -554,20 +513,12 @@ function createLoadResult<
   };
 }
 
-interface LoadFailure {
-  readonly error?: unknown;
-  readonly source?: "wrapper";
-  readonly wrapperIndex?: number;
-}
-
 interface ResolvedLoadData<
   TRoutes extends RouteMap,
   TNotFound extends AnyRoute | undefined,
 > {
   readonly match: RouterMatch<TRoutes, TNotFound> | null;
-  readonly routeData: unknown;
   readonly status: number;
-  readonly wrapperData: Readonly<Record<string, unknown>>;
 }
 
 function createIdleSignal(): AbortSignal {
@@ -718,79 +669,43 @@ export default function createRouter<
 
   async function resolveLoadData(
     currentMatch: RouterMatch<TRoutes, TNotFound> | null,
-    previousResult: RouterLoadResult<TRoutes, TNotFound> | null,
     signal: AbortSignal,
   ): Promise<ResolvedLoadData<TRoutes, TNotFound>> {
-    const wrapperData: Record<string, unknown> = {};
-    const previousRoute = previousResult?.match?.route;
     const nextRoute = currentMatch?.route;
-    const wrapperPrefixLength = getWrapperPrefixLength(
-      previousRoute,
-      nextRoute,
-    );
 
-    if (previousResult && nextRoute) {
-      for (const currentWrapper of nextRoute.wrappers.slice(
-        0,
-        wrapperPrefixLength,
-      )) {
-        wrapperData[currentWrapper.id] =
-          previousResult.wrapperData[currentWrapper.id];
+    // Fire prefetch hooks as fire-and-forget side effects.
+    // Wrapper prefetches run for all wrappers (no caching/reuse).
+    // Route prefetch runs if defined. None block rendering.
+    if (nextRoute) {
+      for (const currentWrapper of nextRoute.wrappers) {
+        if (currentWrapper.prefetch) {
+          const currentParams = currentMatch?.params as ParamsOf<AnyRoute>;
+
+          void Promise.resolve(
+            currentWrapper.prefetch(currentParams, { signal }),
+          ).catch(ignoreScheduledLoadError);
+        }
+      }
+
+      if (nextRoute.prefetch && currentMatch) {
+        void Promise.resolve(
+          nextRoute.prefetch(currentMatch.params, currentMatch.search, {
+            signal,
+          }),
+        ).catch(ignoreScheduledLoadError);
       }
     }
 
-    const wrapperLoads =
-      nextRoute?.wrappers
-        .slice(wrapperPrefixLength)
-        .map(async (currentWrapper, index) => {
-          if (!currentWrapper.fetch) {
-            return;
-          }
-
-          const currentParams = currentMatch?.params as ParamsOf<AnyRoute>;
-
-          try {
-            wrapperData[currentWrapper.id] = await currentWrapper.fetch(
-              currentParams,
-              {
-                signal,
-              },
-            );
-          } catch (error) {
-            throw {
-              error,
-              source: "wrapper",
-              wrapperIndex: wrapperPrefixLength + index,
-            } satisfies LoadFailure;
-          }
-        }) ?? [];
-
-    const routeLoad = (async () => {
-      if (!nextRoute?.fetch || !currentMatch) {
-        return undefined;
-      }
-
-      return await nextRoute.fetch(currentMatch.params, currentMatch.search, {
-        signal,
-      });
-    })();
-
-    await Promise.all([
-      preloadMatchedContent(
-        currentMatch as Exclude<
-          RouterMatch<TRoutes, TNotFound>,
-          { readonly kind: "redirect" }
-        > | null,
-      ),
-      Promise.all(wrapperLoads),
-    ]);
-    const routeData = await routeLoad;
+    await preloadMatchedContent(
+      currentMatch as Exclude<
+        RouterMatch<TRoutes, TNotFound>,
+        { readonly kind: "redirect" }
+      > | null,
+    );
 
     return {
       match: currentMatch,
-      routeData,
       status: currentMatch?.status ?? 404,
-      wrapperData,
     };
   }
 
@@ -828,21 +743,17 @@ export default function createRouter<
       try {
         const prefetchedLoad = await resolveLoadData(
           currentMatch,
-          currentLoadResult,
           createIdleSignal(),
         );
 
         prefetchedLoads.set(href, prefetchedLoad);
       } catch (thrownError) {
-        const failure = thrownError as LoadFailure;
-        const redirectError = failure.error ?? thrownError;
-
-        if (redirectError instanceof RouteRedirect) {
-          await prefetchHref(redirectError.to, redirectDepth + 1);
+        if (thrownError instanceof RouteRedirect) {
+          await prefetchHref(thrownError.to, redirectDepth + 1);
           return;
         }
 
-        throw redirectError;
+        throw thrownError;
       } finally {
         pendingPrefetches.delete(href);
       }
@@ -1060,11 +971,7 @@ export default function createRouter<
       const prefetchedLoad = prefetchedLoads.get(href);
       const resolvedLoad =
         prefetchedLoad ??
-        (await resolveLoadData(
-          currentMatch,
-          currentLoadResult,
-          abortController.signal,
-        ));
+        (await resolveLoadData(currentMatch, abortController.signal));
 
       prefetchedLoads.delete(href);
 
@@ -1073,13 +980,10 @@ export default function createRouter<
       await runNavigationUpdate(mode, () => {
         result = createLoadResult<TRoutes, TNotFound>({
           error: null,
-          errorBoundary: null,
           location: store.commit(url, resolvedLoad.match, resolvedLoad.status)
             .location,
           match: resolvedLoad.match,
-          routeData: resolvedLoad.routeData,
           status: resolvedLoad.status,
-          wrapperData: resolvedLoad.wrapperData,
         });
 
         currentLoadResult = result;
@@ -1089,23 +993,10 @@ export default function createRouter<
 
       return result;
     } catch (thrownError) {
-      const failureValue = thrownError as LoadFailure;
-      const failure =
-        failureValue.source === "wrapper"
-          ? {
-              error: failureValue.error,
-              source: "wrapper" as const,
-              wrapperIndex: failureValue.wrapperIndex,
-            }
-          : {
-              error: thrownError,
-              source: "route" as const,
-            };
-
-      if (failure.error instanceof RouteRedirect) {
+      if (thrownError instanceof RouteRedirect) {
         abortController.abort();
         const redirectedResult = await performLoad(
-          failure.error.to,
+          thrownError.to,
           redirectDepth + 1,
           shouldSyncAdapter,
           mode,
@@ -1125,52 +1016,18 @@ export default function createRouter<
       }
 
       if (abortController.signal.aborted) {
-        throw failure.error;
+        throw thrownError;
       }
 
-      const nextRoute = currentMatch?.route as AnyRoute;
-      const errorBoundary =
-        failure.source === "route"
-          ? nextRoute.error
-            ? { type: "route" as const, wrapperId: null }
-            : (() => {
-                const wrapperId = findWrapperErrorBoundary(nextRoute);
-
-                return wrapperId
-                  ? {
-                      type: "wrapper" as const,
-                      wrapperId,
-                    }
-                  : null;
-              })()
-          : (() => {
-              const wrapperId = findWrapperErrorBoundary(
-                nextRoute,
-                failure.wrapperIndex,
-              );
-
-              return wrapperId
-                ? {
-                    type: "wrapper" as const,
-                    wrapperId,
-                  }
-                : null;
-            })();
-      const status = getErrorStatus(failure.error);
+      const status = getErrorStatus(thrownError);
       let result!: RouterLoadResult<TRoutes, TNotFound>;
 
       await runNavigationUpdate(mode, () => {
         result = createLoadResult<TRoutes, TNotFound>({
-          error: failure.error,
-          errorBoundary,
+          error: thrownError,
           location: store.commit(url, currentMatch, status).location,
           match: currentMatch,
-          routeData: undefined,
           status,
-          wrapperData:
-            currentLoadResult && currentLoadResult.match?.route === nextRoute
-              ? currentLoadResult.wrapperData
-              : {},
         });
 
         currentLoadResult = result;
@@ -1220,12 +1077,9 @@ export default function createRouter<
 
     const result = createLoadResult<TRoutes, TNotFound>({
       error: null,
-      errorBoundary: null,
       location: store.commit(state.href, hydratedMatch, state.status).location,
       match: hydratedMatch,
-      routeData: state.routeData,
       status: state.status,
-      wrapperData: state.wrapperData,
     });
 
     currentLoadResult = result;
@@ -1271,59 +1125,6 @@ export default function createRouter<
     }
 
     const currentRoute = result.match.route;
-    const locationHref = result.location.href;
-
-    if (result.error) {
-      if (result.errorBoundary?.type === "route" && currentRoute.error) {
-        return currentRoute.wrappers.reduceRight(
-          (children, currentWrapper) => {
-            return currentWrapper.component({
-              children,
-              data: result.wrapperData[currentWrapper.id],
-            });
-          },
-          currentRoute.error({
-            error: result.error,
-            params: result.match.params,
-            search: result.match.search,
-            status: result.status,
-            url: locationHref,
-          }),
-        );
-      }
-
-      if (
-        result.errorBoundary?.type === "wrapper" &&
-        result.errorBoundary.wrapperId
-      ) {
-        const boundaryIndex = currentRoute.wrappers.findIndex(
-          (currentWrapper) => {
-            return currentWrapper.id === result.errorBoundary?.wrapperId;
-          },
-        );
-        const boundaryWrapper = currentRoute.wrappers[
-          boundaryIndex
-        ] as AnyRoute["wrappers"][number];
-        const boundaryContent = boundaryWrapper.error?.({
-          error: result.error,
-          params: result.match.params,
-          search: result.match.search,
-          status: result.status,
-          url: locationHref,
-        });
-
-        return currentRoute.wrappers
-          .slice(0, boundaryIndex)
-          .reduceRight((children, currentWrapper) => {
-            return currentWrapper.component({
-              children,
-              data: result.wrapperData[currentWrapper.id],
-            });
-          }, boundaryContent);
-      }
-
-      return result.error;
-    }
 
     if (!currentRoute.content) {
       return null;
@@ -1333,11 +1134,9 @@ export default function createRouter<
       (children, currentWrapper) => {
         return currentWrapper.component({
           children,
-          data: result.wrapperData[currentWrapper.id],
         });
       },
       currentRoute.content({
-        data: result.routeData,
         params: result.match.params,
         search: result.match.search,
       }),
