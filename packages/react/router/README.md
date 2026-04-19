@@ -300,29 +300,38 @@ Routes stay flat even when the UI is nested. Shared layout lives in wrappers fro
 
 ### Server side
 
-Wire your own render tree using standard React SSR primitives. The router does not provide a convenience render function — you control the component tree:
+Wire your own render tree using standard React SSR primitives. Use `createStaticRouter` for server rendering — it matches on construction and fires `prefetch()` eagerly so caches start warming before React renders:
 
 ```tsx
-import { createRouter, createServerAdapter } from "@canonical/router-core";
+import { createStaticRouter } from "@canonical/router-core";
+import { createHeadCollector, HeadProvider } from "@canonical/react-head";
 import { Outlet, RouterProvider } from "@canonical/router-react";
 import { renderToPipeableStream } from "react-dom/server";
 
-app.get("*", async (req, res) => {
-  const router = createRouter(routes, {
-    adapter: createServerAdapter(req.url),
-  });
+app.get("*", (req, res) => {
+  const router = createStaticRouter(routes, req.url);
+  const headCollector = createHeadCollector();
 
-  await router.load(req.url);
+  // Check match for status code before rendering
+  if (!router.match) {
+    res.status(404);
+  } else if (router.match.kind === "redirect") {
+    return res.redirect(router.match.status, router.match.redirectTo);
+  }
 
   const { pipe } = renderToPipeableStream(
-    <RouterProvider router={router}>
-      <Shell>
-        <Outlet />
-      </Shell>
-    </RouterProvider>,
+    <HeadProvider collector={headCollector}>
+      <RouterProvider router={router}>
+        <Shell>
+          <Outlet />
+        </Shell>
+      </RouterProvider>
+    </HeadProvider>,
     {
       onShellReady() {
+        const headHtml = headCollector.toHtml();
         res.setHeader("content-type", "text/html");
+        res.write(`<!doctype html><html><head>${headHtml}</head><body>`);
         pipe(res);
       },
     },
@@ -330,24 +339,44 @@ app.get("*", async (req, res) => {
 });
 ```
 
+The router dehydrates navigation state only. Data dehydration is the cache library's responsibility (dual dehydration):
+
+```tsx
+// In onShellReady or after render:
+const routerState = router.dehydrate();
+const cacheState = queryClient.dehydrate(); // TanStack Query, Relay, etc.
+
+// Inject both into the HTML template
+res.write(`<script>
+  window.__ROUTER_STATE__ = ${JSON.stringify(routerState)};
+  window.__QUERY_DATA__ = ${JSON.stringify(cacheState)};
+</script>`);
+```
+
 ### Client side
 
 ```tsx
-import { createHydratedRouter, Outlet, RouterProvider } from "@canonical/router-react";
+import { createBrowserRouter } from "@canonical/router-core";
+import { HeadProvider } from "@canonical/react-head";
+import { Outlet, RouterProvider } from "@canonical/router-react";
 
-const router = createHydratedRouter(routes);
+const router = createBrowserRouter(routes, {
+  hydratedState: window.__ROUTER_STATE__,
+});
 
 hydrateRoot(
   document,
-  <RouterProvider router={router}>
-    <Shell>
-      <Outlet />
-    </Shell>
-  </RouterProvider>,
+  <HeadProvider>
+    <RouterProvider router={router}>
+      <Shell>
+        <Outlet />
+      </Shell>
+    </RouterProvider>
+  </HeadProvider>,
 );
 ```
 
-`createHydratedRouter()` reads the dehydrated navigation state from the browser window, creates a browser adapter, and resumes from the server-rendered route match.
+`createBrowserRouter` uses the Navigation API when available (Baseline Newly Available since January 2026), falling back to the History API.
 
 ## Progressive disclosure
 
