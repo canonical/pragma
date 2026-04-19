@@ -26,6 +26,7 @@ import type {
   Router,
   RouterAccessibilityContext,
   RouterAccessibilityDocumentLike,
+  RouterBlocker,
   RouterDehydratedState,
   RouterLoadResult,
   RouterMatch,
@@ -835,6 +836,12 @@ export default function createRouter<
     ).href;
   }) as BuildPathFn<TRoutes>;
 
+  let pendingNavigation: {
+    href: string;
+    replace: boolean;
+    resolve: () => void;
+  } | null = null;
+
   const navigate: NavigateFn<TRoutes> = ((
     name: RouteName<TRoutes>,
     ...args: unknown[]
@@ -847,6 +854,29 @@ export default function createRouter<
       ?.replace;
 
     if (adapter) {
+      if (isBlocked()) {
+        pendingNavigation = {
+          href: intent.href,
+          replace: replace ?? false,
+          resolve: () => {
+            pendingNavigation = null;
+            saveScrollPosition();
+            syncAdapterLocation(
+              intent.href,
+              replace ? { replace: true } : undefined,
+            );
+            void performLoad(
+              intent.href,
+              0,
+              true,
+              replace ? "pop" : "push",
+            ).catch(ignoreScheduledLoadError);
+          },
+        };
+
+        return intent;
+      }
+
       saveScrollPosition();
       syncAdapterLocation(intent.href, replace ? { replace: true } : undefined);
       void performLoad(intent.href, 0, true, replace ? "pop" : "push").catch(
@@ -856,6 +886,59 @@ export default function createRouter<
 
     return intent;
   }) as NavigateFn<TRoutes>;
+
+  const blockers = new Map<string, RouterBlocker>();
+
+  function isBlocked(): boolean {
+    for (const blocker of blockers.values()) {
+      if (blocker.isActive()) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  function setSearchParams(
+    params:
+      | Record<string, string | null>
+      | ((current: Record<string, string>) => Record<string, string | null>),
+    options?: { readonly replace?: boolean },
+  ): void {
+    const currentState = store.getState();
+    const currentUrl = buildUrl(currentState.location.href);
+    const currentSearch: Record<string, string> = {};
+
+    for (const key of new Set(currentUrl.searchParams.keys())) {
+      currentSearch[key] = currentUrl.searchParams.get(key) ?? "";
+    }
+
+    const nextParams =
+      typeof params === "function" ? params(currentSearch) : params;
+
+    const nextUrl = buildUrl(currentUrl.href);
+
+    nextUrl.search = "";
+
+    for (const [key, value] of Object.entries({
+      ...currentSearch,
+      ...nextParams,
+    })) {
+      if (value !== null) {
+        nextUrl.searchParams.set(key, value);
+      }
+    }
+
+    const href = toHref(nextUrl);
+    const replace = options?.replace ?? false;
+
+    if (adapter) {
+      syncAdapterLocation(href, replace ? { replace: true } : undefined);
+      void performLoad(href, 0, true, replace ? "pop" : "push").catch(
+        ignoreScheduledLoadError,
+      );
+    }
+  }
 
   const prefetch: PrefetchFn<TRoutes> = ((
     name: RouteName<TRoutes>,
@@ -1170,7 +1253,27 @@ export default function createRouter<
     match,
     navigate,
     prefetch,
+    get blockerState() {
+      return pendingNavigation ? ("blocked" as const) : ("idle" as const);
+    },
+    proceedNavigation() {
+      pendingNavigation?.resolve();
+    },
+    cancelNavigation() {
+      pendingNavigation = null;
+    },
+    registerBlocker(blocker: RouterBlocker) {
+      blockers.set(blocker.id, blocker);
+    },
+    unregisterBlocker(id: string) {
+      blockers.delete(id);
+
+      if (pendingNavigation) {
+        pendingNavigation = null;
+      }
+    },
     render,
+    setSearchParams,
     subscribe(listener) {
       return store.subscribe(listener);
     },
