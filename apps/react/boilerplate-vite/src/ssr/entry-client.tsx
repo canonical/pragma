@@ -1,8 +1,24 @@
+import { HeadProvider } from "@canonical/react-head";
+import { Outlet, RouterProvider } from "@canonical/router-react";
 import { hydrateRoot } from "react-dom/client";
 import "../index.css";
-import Shell from "./Shell.js";
+import Navigation from "../Navigation.js";
+import { createClientAppRouter } from "../routes.js";
 
-// entry-server page must match exactly the hydrated page in entry-client
-hydrateRoot(document, <Shell />);
+const router = createClientAppRouter();
 
-console.log("hydrated");
+hydrateRoot(
+  document,
+  <HeadProvider>
+    <RouterProvider router={router}>
+      <div className="app-shell">
+        <header className="shell-header">
+          <Navigation />
+        </header>
+        <main>
+          <Outlet fallback={<p>Loading…</p>} />
+        </main>
+      </div>
+    </RouterProvider>
+  </HeadProvider>,
+);

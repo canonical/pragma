@@ -1,13 +1,4 @@
-import fs from "node:fs/promises";
-import path from "node:path";
-import { JSXRenderer } from "@canonical/react-ssr/renderer";
-import EntryServer from "./entry-server.js";
-
-export const htmlString = await fs.readFile(
-  path.join(process.cwd(), "dist", "client", "index.html"),
-  "utf-8",
-);
-
-export default function createRenderer() {
-  return new JSXRenderer(EntryServer, {}, { htmlString });
-}
+// This file is kept for backward compatibility with the CLI render pipeline.
+// The primary SSR flow now uses renderToPipeableStream directly in server.ts.
+// See entry-server.tsx for the SSR tree setup.
+export {};
