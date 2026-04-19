@@ -13,13 +13,13 @@ function Home(): ReactElement {
   );
 }
 
-function Guide({ slug }: { slug: string }): ReactElement {
-  useHead({ title: `${slug} — Guides` });
+function Guide({ params }: { params: { slug: string } }): ReactElement {
+  useHead({ title: `${params.slug} — Guides` });
 
   return (
     <section aria-labelledby="guide-title">
-      <h1 id="guide-title">{slug}</h1>
-      <p>Guide content for {slug}.</p>
+      <h1 id="guide-title">{params.slug}</h1>
+      <p>Guide content for {params.slug}.</p>
     </section>
   );
 }
@@ -31,7 +31,7 @@ const marketingRoutes = {
   }),
   guide: route({
     url: "/guides/:slug",
-    content: ({ params }) => <Guide slug={params.slug} />,
+    content: Guide,
   }),
 } as const;
 

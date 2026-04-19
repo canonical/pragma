@@ -47,7 +47,7 @@ function Account(): ReactElement {
   );
 }
 
-function Login({ from }: { from?: string }): ReactElement {
+function Login({ search }: { search: LoginSearch }): ReactElement {
   useHead({ title: "Login — Boilerplate" });
 
   return (
@@ -57,7 +57,9 @@ function Login({ from }: { from?: string }): ReactElement {
         Demo login. Add <code>?auth=1</code> to any protected URL to simulate
         authentication.
       </p>
-      {from && <p>You will be redirected to {from} after login.</p>}
+      {search.from && (
+        <p>You will be redirected to {search.from} after login.</p>
+      )}
     </section>
   );
 }
@@ -71,7 +73,7 @@ const accountRoutes = {
   login: route({
     url: "/login",
     search: loginSearchSchema,
-    content: ({ search }) => <Login from={search.from} />,
+    content: Login,
   }),
 } as const;
 
