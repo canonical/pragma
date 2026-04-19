@@ -215,16 +215,45 @@ const router = createRouter(routes);
 
 See [docs/how-to-guides/ROUTER_MIDDLEWARE_COOKBOOK.md](../../../docs/how-to-guides/ROUTER_MIDDLEWARE_COOKBOOK.md) for more patterns.
 
+## Router factories
+
+Convenience functions that create a router with a pre-configured platform adapter:
+
+```ts
+import {
+  createBrowserRouter,
+  createStaticRouter,
+  createMemoryRouter,
+} from "@canonical/router-core";
+
+// Client — auto-detects Navigation API with History fallback
+const router = createBrowserRouter(routes);
+
+// Server — matches URL on construction, exposes router.match for status codes
+const serverRouter = createStaticRouter(routes, req.url);
+
+if (!serverRouter.match) { res.status(404); }
+else if (serverRouter.match.kind === "redirect") {
+  return res.redirect(serverRouter.match.status, serverRouter.match.redirectTo);
+}
+
+// Testing — in-memory adapter, supports navigation
+const testRouter = createMemoryRouter(routes, "/users/42");
+```
+
+`createStaticRouter` fires `prefetch()` eagerly on construction, so caches start warming before React renders.
+
+The low-level `createRouter(routes, { adapter })` is still available for cases that need explicit adapter control.
+
 ## SSR and hydration
 
 The router dehydrates navigation state only (matched route, params, search, URL). Data dehydration is the cache library's responsibility.
 
 ```ts
-const serverRouter = createRouter(routes);
-await serverRouter.load("/users/42");
+const serverRouter = createStaticRouter(routes, "/users/42");
 const navigationState = serverRouter.dehydrate();
 
-const clientRouter = createRouter(routes, {
+const clientRouter = createBrowserRouter(routes, {
   hydratedState: navigationState ?? undefined,
 });
 ```
@@ -233,7 +262,7 @@ For a full React SSR flow, see [packages/react/router/README.md](../../react/rou
 
 ## Platform adapters
 
-The router uses platform adapters to interact with the browser's URL.
+The router factories use platform adapters internally. You can also use them directly with `createRouter()`:
 
 - `createBrowserAdapter()` — auto-detects the best API: uses the Navigation API (`window.navigation`) when available, falls back to the History API (`pushState` / `popstate`) for older browsers.
 - `createNavigationAdapter()` — explicitly use the Navigation API. Baseline Newly Available since January 2026.
@@ -266,12 +295,15 @@ Override or disable them through `RouterOptions.accessibility`.
 
 - `applyMiddleware()`
 - `createBrowserAdapter()`
+- `createBrowserRouter()`
 - `createHistoryAdapter()`
 - `createMemoryAdapter()`
+- `createMemoryRouter()`
 - `createNavigationAdapter()`
 - `createRouter()`
 - `createRouterStore()`
 - `createServerAdapter()`
+- `createStaticRouter()`
 - `createSubject()`
 - `createTrackedLocation()`
 - `group()`
