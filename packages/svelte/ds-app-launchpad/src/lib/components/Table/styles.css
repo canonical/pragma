@@ -1,0 +1,46 @@
+.ds.table {
+  border-collapse: collapse;
+
+  --border-table-row: var(--lp-dimension-stroke-thickness-default) solid
+    var(--lp-color-border-low-contrast);
+  --dimension-padding-block-table-cell: var(--lp-dimension-spacing-block-xs);
+  --dimension-padding-inline-table-cell: var(--lp-dimension-spacing-inline-xs);
+
+  th,
+  td {
+    padding-inline: var(--dimension-padding-inline-table-cell);
+    padding-block: var(--dimension-padding-block-table-cell);
+  }
+
+  th {
+    text-align: start;
+    font: var(--lp-typography-paragraph-s-strong);
+  }
+
+  td {
+    font: var(--lp-typography-paragraph-s);
+  }
+
+  thead,
+  tr:not(:last-child) {
+    border-bottom: var(--border-table-row);
+  }
+
+  tfoot {
+    border-top: var(--border-table-row);
+  }
+
+  thead th {
+    position: relative;
+
+    &:not(:last-child)::after {
+      content: "";
+      position: absolute;
+      height: calc(100% - var(--dimension-padding-block-table-cell) * 2);
+      width: var(--lp-dimension-stroke-thickness-default);
+      inset-inline-end: calc(var(--lp-dimension-stroke-thickness-default) / -2);
+      inset-block-start: var(--dimension-padding-block-table-cell);
+      background-color: var(--lp-color-border-default);
+    }
+  }
+}

@@ -1,0 +1,22 @@
+.ds.table-th {
+  div {
+    display: flex;
+    flex-flow: row wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--lp-dimension-spacing-inline-xxs);
+  }
+
+  &:not([aria-sort]),
+  &[aria-sort="none"] {
+    .ds.table-th-sort:not(:focus-visible) {
+      opacity: 0;
+    }
+
+    &:hover {
+      .ds.table-th-sort {
+        opacity: 1;
+      }
+    }
+  }
+}
