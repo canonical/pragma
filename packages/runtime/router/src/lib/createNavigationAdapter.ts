@@ -62,11 +62,16 @@ export default function createNavigationAdapter(
       return;
     }
 
-    if (event.navigationType === "push" || event.navigationType === "replace") {
-      return;
-    }
+    // Intercept all same-origin navigations to prevent full page reloads.
+    // The router handles the URL update and re-render internally.
+    event.intercept();
 
-    notify();
+    if (
+      event.navigationType === "traverse" ||
+      event.navigationType === "reload"
+    ) {
+      notify();
+    }
   }
 
   return {

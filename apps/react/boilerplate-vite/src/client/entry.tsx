@@ -11,7 +11,7 @@ const router = createBrowserRouter(appRoutes, {
 });
 
 hydrateRoot(
-  document,
+  document.getElementById("root")!,
   <HeadProvider>
     <RouterProvider router={router}>
       <Outlet fallback={<p>Loading…</p>} />
