@@ -10,6 +10,7 @@
 }
 
 .shell-header nav {
+  grid-column: 1 / -1;
   display: flex;
   gap: var(--container-gap-default, 1rem);
 }

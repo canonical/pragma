@@ -74,11 +74,11 @@ export function withAuth(loginPath: string): RouteMiddleware {
 const publicLayout = wrapper<ReactElement>({
   id: "public-layout",
   component: ({ children }: { children: ReactNode }) => (
-    <div className="app-shell">
-      <header className="shell-header">
+    <div className="subgrid app-shell">
+      <header className="subgrid shell-header">
         <Navigation />
       </header>
-      <main className="grid responsive">{children}</main>
+      <main className="subgrid">{children}</main>
     </div>
   ),
 });
