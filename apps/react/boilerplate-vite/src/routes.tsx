@@ -1,7 +1,5 @@
 import {
   type AnyRoute,
-  createBrowserRouter,
-  createStaticRouter,
   group,
   type NavigationContext,
   type RouteMiddleware,
@@ -120,18 +118,6 @@ declare module "@canonical/router-react" {
   }
 }
 
-export function createServerAppRouter(url: string | URL) {
-  return createStaticRouter(appRoutes, url, {
-    middleware: [withAuth("/login")],
-    notFound: notFoundRoute,
-  });
-}
-
-export function createClientAppRouter() {
-  return createBrowserRouter(appRoutes, {
-    middleware: [withAuth("/login")],
-    notFound: notFoundRoute,
-  });
-}
+export const middleware = [withAuth("/login")] as const;
 
 export { appRoutes, notFoundRoute };

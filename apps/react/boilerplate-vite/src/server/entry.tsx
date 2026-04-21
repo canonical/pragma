@@ -1,7 +1,8 @@
 import { HeadProvider } from "@canonical/react-head";
 import type { ServerEntrypointProps } from "@canonical/react-ssr/renderer";
+import { createStaticRouter } from "@canonical/router-core";
 import { Outlet, RouterProvider } from "@canonical/router-react";
-import { createServerAppRouter } from "../routes.js";
+import { appRoutes, middleware, notFoundRoute } from "../routes.js";
 import "#styles/app.css";
 
 interface InitialData extends Record<string, unknown> {
@@ -10,7 +11,10 @@ interface InitialData extends Record<string, unknown> {
 
 export default function EntryServer(props: ServerEntrypointProps<InitialData>) {
   const url = props.initialData?.url ?? "/";
-  const router = createServerAppRouter(url);
+  const router = createStaticRouter(appRoutes, url, {
+    middleware: [...middleware],
+    notFound: notFoundRoute,
+  });
 
   return (
     <html lang={props.lang}>

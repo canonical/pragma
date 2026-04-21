@@ -32,22 +32,27 @@ app.get("/sitemap.xml", async (_req, res) => {
   pipe(res);
 });
 
+app.use((req, res, next) => {
+  const requestUrl = req.url || "/";
+  const authRedirect = getAuthRedirectHref(requestUrl);
+
+  if (authRedirect) {
+    res.redirect(302, authRedirect);
+
+    return;
+  }
+
+  next();
+});
+
 app.use(
   serveStream((req) => {
     const requestUrl = req.url || "/";
-    const authRedirect = getAuthRedirectHref(requestUrl);
-
-    if (authRedirect) {
-      // serveStream doesn't support redirects — handled before reaching here
-      // in practice, add a middleware before serveStream for auth redirects
-    }
 
     return new JSXRenderer(
       EntryServer,
       { url: requestUrl } satisfies InitialData,
-      {
-        htmlString,
-      },
+      { htmlString },
     );
   }),
 );

@@ -1,10 +1,14 @@
 import { HeadProvider } from "@canonical/react-head";
+import { createBrowserRouter } from "@canonical/router-core";
 import { Outlet, RouterProvider } from "@canonical/router-react";
 import { hydrateRoot } from "react-dom/client";
+import { appRoutes, middleware, notFoundRoute } from "../routes.js";
 import "#styles/index.css";
-import { createClientAppRouter } from "../routes.js";
 
-const router = createClientAppRouter();
+const router = createBrowserRouter(appRoutes, {
+  middleware: [...middleware],
+  notFound: notFoundRoute,
+});
 
 hydrateRoot(
   document,

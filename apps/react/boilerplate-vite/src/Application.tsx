@@ -16,7 +16,7 @@ function App() {
   const [count, setCount] = useState(0);
 
   return (
-    <>
+    <div className="grid responsive">
       <div>
         <a
           href="https://canonical.com"
@@ -48,7 +48,7 @@ function App() {
           Edit <code>src/App.tsx</code> and save to test HMR
         </p>
       </div>
-    </>
+    </div>
   );
 }
 

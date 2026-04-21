@@ -16,6 +16,7 @@
       "dependencies": {
         "@canonical/react-ds-global": "^0.25.0",
         "@canonical/react-head": "^0.25.0",
+        "@canonical/react-hooks": "^0.25.0",
         "@canonical/react-ssr": "^0.25.0",
         "@canonical/router-core": "^0.25.0",
         "@canonical/router-react": "^0.25.0",
@@ -704,7 +705,7 @@
       "version": "0.25.0",
       "dependencies": {
         "@canonical/ds-types": "^0.22.0",
-        "@canonical/utils": "^0.23.0",
+        "@canonical/utils": "^0.25.0",
         "react": "^19.2.4",
         "react-dom": "^19.2.4",
       },
