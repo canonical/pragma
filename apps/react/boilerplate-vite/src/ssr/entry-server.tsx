@@ -1,7 +1,6 @@
 import { createHeadCollector, HeadProvider } from "@canonical/react-head";
 import { Outlet, RouterProvider } from "@canonical/router-react";
 import type { ReactElement } from "react";
-import Navigation from "../lib/Navigation/index.js";
 import { createServerAppRouter } from "../routes.js";
 
 export interface SSRResult {
@@ -20,14 +19,7 @@ export function prepareSSR(url: string): SSRResult {
     tree: (
       <HeadProvider collector={headCollector}>
         <RouterProvider router={router}>
-          <div className="app-shell">
-            <header className="shell-header">
-              <Navigation />
-            </header>
-            <main>
-              <Outlet fallback={<p>Loading…</p>} />
-            </main>
-          </div>
+          <Outlet fallback={<p>Loading…</p>} />
         </RouterProvider>
       </HeadProvider>
     ),
