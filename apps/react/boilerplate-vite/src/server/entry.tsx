@@ -1,15 +1,16 @@
 import { HeadProvider } from "@canonical/react-head";
 import type { ServerEntrypointProps } from "@canonical/react-ssr/renderer";
-import type { AnyRoute, RouteMap, Router } from "@canonical/router-core";
 import { Outlet, RouterProvider } from "@canonical/router-react";
+import { createServerAppRouter } from "../routes.js";
 import "#styles/app.css";
 
 interface InitialData extends Record<string, unknown> {
-  readonly router?: Router<RouteMap, AnyRoute | undefined>;
+  readonly url: string;
 }
 
 export default function EntryServer(props: ServerEntrypointProps<InitialData>) {
-  const router = props.initialData?.router;
+  const url = props.initialData?.url ?? "/";
+  const router = createServerAppRouter(url);
 
   return (
     <html lang={props.lang}>
@@ -20,15 +21,11 @@ export default function EntryServer(props: ServerEntrypointProps<InitialData>) {
       </head>
       <body>
         <div id="root">
-          {router ? (
-            <HeadProvider>
-              <RouterProvider router={router}>
-                <Outlet fallback={<p>Loading…</p>} />
-              </RouterProvider>
-            </HeadProvider>
-          ) : (
-            <p>No router provided.</p>
-          )}
+          <HeadProvider>
+            <RouterProvider router={router}>
+              <Outlet fallback={<p>Loading…</p>} />
+            </RouterProvider>
+          </HeadProvider>
         </div>
       </body>
     </html>

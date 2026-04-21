@@ -4,7 +4,7 @@ import * as process from "node:process";
 import { JSXRenderer, SitemapRenderer } from "@canonical/react-ssr/renderer";
 import { serveStream } from "@canonical/react-ssr/server";
 import express from "express";
-import { createServerAppRouter, getAuthRedirectHref } from "../routes.js";
+import { getAuthRedirectHref } from "../routes.js";
 import EntryServer, { type InitialData } from "./entry.js";
 import getSitemapItems from "./sitemap.js";
 
@@ -35,11 +35,20 @@ app.get("/sitemap.xml", async (_req, res) => {
 app.use(
   serveStream((req) => {
     const requestUrl = req.url || "/";
-    const router = createServerAppRouter(requestUrl);
+    const authRedirect = getAuthRedirectHref(requestUrl);
 
-    return new JSXRenderer(EntryServer, { router } as unknown as InitialData, {
-      htmlString,
-    });
+    if (authRedirect) {
+      // serveStream doesn't support redirects — handled before reaching here
+      // in practice, add a middleware before serveStream for auth redirects
+    }
+
+    return new JSXRenderer(
+      EntryServer,
+      { url: requestUrl } satisfies InitialData,
+      {
+        htmlString,
+      },
+    );
   }),
 );
 

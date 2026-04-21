@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import * as process from "node:process";
 import { JSXRenderer, SitemapRenderer } from "@canonical/react-ssr/renderer";
-import { createServerAppRouter, getAuthRedirectHref } from "../routes.js";
+import { getAuthRedirectHref } from "../routes.js";
 import EntryServer, { type InitialData } from "./entry.js";
 import getSitemapItems from "./sitemap.js";
 
@@ -51,13 +51,10 @@ Bun.serve({
       return Response.redirect(new URL(authRedirect, url.origin), 302);
     }
 
-    const router = createServerAppRouter(requestUrl);
     const renderer = new JSXRenderer(
       EntryServer,
-      { router } as unknown as InitialData,
-      {
-        htmlString,
-      },
+      { url: requestUrl } satisfies InitialData,
+      { htmlString },
     );
     const stream = await renderer.renderToReadableStream(req.signal);
 
