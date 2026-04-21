@@ -1,14 +1,29 @@
 import * as process from "node:process";
+import { SitemapRenderer } from "@canonical/react-ssr/renderer";
 import express from "express";
 import { renderToPipeableStream } from "react-dom/server";
 import { getAuthRedirectHref } from "../routes.js";
-import { prepareSSR } from "./entry-server.js";
+import { prepareSSR } from "./entry.js";
+import getSitemapItems from "./sitemap.js";
 
 const PORT = process.env.PORT || 5173;
 
 const app = express();
 
 app.use(/^\/(assets|public)/, express.static("dist/client/assets"));
+
+app.get("/sitemap.xml", async (_req, res) => {
+  const renderer = new SitemapRenderer([getSitemapItems], {
+    baseUrl: `http://localhost:${PORT}`,
+    defaultChangefreq: "monthly",
+  });
+  const { pipe } = renderer.renderToPipeableStream();
+
+  await renderer.statusReady;
+  res.setHeader("content-type", "application/xml; charset=utf-8");
+  res.status(renderer.statusCode);
+  pipe(res);
+});
 
 app.use(async (req, res, next) => {
   try {
