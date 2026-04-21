@@ -1,7 +1,7 @@
 import { HeadProvider } from "@canonical/react-head";
 import { Outlet, RouterProvider } from "@canonical/router-react";
 import { hydrateRoot } from "react-dom/client";
-import "../index.css";
+import "#styles/index.css";
 import { createClientAppRouter } from "../routes.js";
 
 const router = createClientAppRouter();

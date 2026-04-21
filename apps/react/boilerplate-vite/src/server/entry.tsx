@@ -1,27 +1,38 @@
-import { createHeadCollector, HeadProvider } from "@canonical/react-head";
+import { HeadProvider } from "@canonical/react-head";
+import type { ServerEntrypointProps } from "@canonical/react-ssr/renderer";
+import type { AnyRoute, RouteMap, Router } from "@canonical/router-core";
 import { Outlet, RouterProvider } from "@canonical/router-react";
-import type { ReactElement } from "react";
-import { createServerAppRouter } from "../routes.js";
+import "#styles/app.css";
 
-export interface SSRResult {
-  readonly router: ReturnType<typeof createServerAppRouter>;
-  readonly headCollector: ReturnType<typeof createHeadCollector>;
-  readonly tree: ReactElement;
+interface InitialData extends Record<string, unknown> {
+  readonly router?: Router<RouteMap, AnyRoute | undefined>;
 }
 
-export function prepareSSR(url: string): SSRResult {
-  const router = createServerAppRouter(url);
-  const headCollector = createHeadCollector();
+export default function EntryServer(props: ServerEntrypointProps<InitialData>) {
+  const router = props.initialData?.router;
 
-  return {
-    router,
-    headCollector,
-    tree: (
-      <HeadProvider collector={headCollector}>
-        <RouterProvider router={router}>
-          <Outlet fallback={<p>Loading…</p>} />
-        </RouterProvider>
-      </HeadProvider>
-    ),
-  };
+  return (
+    <html lang={props.lang}>
+      <head>
+        {props.otherHeadElements}
+        {props.scriptElements}
+        {props.linkElements}
+      </head>
+      <body>
+        <div id="root">
+          {router ? (
+            <HeadProvider>
+              <RouterProvider router={router}>
+                <Outlet fallback={<p>Loading…</p>} />
+              </RouterProvider>
+            </HeadProvider>
+          ) : (
+            <p>No router provided.</p>
+          )}
+        </div>
+      </body>
+    </html>
+  );
 }
+
+export type { InitialData };

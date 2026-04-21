@@ -11,9 +11,9 @@ import {
   wrapper,
 } from "@canonical/router-core";
 import type { ReactElement, ReactNode } from "react";
-import accountRoutes from "./domains/account/routes.js";
-import marketingRoutes from "./domains/marketing/routes.js";
-import Navigation from "./lib/Navigation/index.js";
+import accountRoutes from "#domains/account/routes.js";
+import marketingRoutes from "#domains/marketing/routes.js";
+import Navigation from "#lib/Navigation/index.js";
 
 const protectedPaths = new Set(["/account"]);
 
