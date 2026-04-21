@@ -10,23 +10,33 @@
 import { join } from "node:path";
 import type { SourceSpec, Store } from "@canonical/ke";
 import { createStore } from "@canonical/ke";
-import type { PragmaConfig } from "#config";
+import type { PackageRef } from "../refs/operations/parseRef.js";
 import { PragmaError } from "../../error/index.js";
-import { PACKAGES, resolvePackages } from "./packages.js";
+import { resolvePackages } from "./packages.js";
 import { PREFIX_MAP } from "./prefixes.js";
 
-/**
- * Resolve default TTL sources from the package registry.
- * Package-manager agnostic — works with bun, npm, pnpm, and yarn.
- */
-export function defaultSources(): SourceSpec[] {
-  const sources: SourceSpec[] = [];
-  const resolved = resolvePackages();
+/** Default TTL glob patterns — convention-based auto-detection. */
+const DEFAULT_TTL_GLOBS: readonly string[] = [
+  "definitions/**/*.ttl",
+  "data/**/*.ttl",
+];
 
-  for (const { pkg, dir } of resolved) {
-    const def = PACKAGES.find((p) => p.pkg === pkg);
-    if (!def) continue;
-    for (const glob of def.ttl) {
+/**
+ * Resolve default TTL sources from resolved packages.
+ *
+ * Uses convention-based TTL discovery: definitions and data globs
+ * relative to each package root.
+ *
+ * @param refs - Parsed package references. Omit for defaults.
+ */
+export function defaultSources(
+  refs?: ReadonlyArray<PackageRef>,
+): SourceSpec[] {
+  const sources: SourceSpec[] = [];
+  const resolved = resolvePackages(refs);
+
+  for (const { dir } of resolved) {
+    for (const glob of DEFAULT_TTL_GLOBS) {
       sources.push(join(dir, glob));
     }
   }
@@ -35,14 +45,14 @@ export function defaultSources(): SourceSpec[] {
 }
 
 export interface BootStoreOptions {
-  /** Override config (skip reading from disk). */
-  config?: PragmaConfig;
-  /** Override sources (skip config sources field). */
+  /** Override sources (skip filesystem resolution). */
   sources?: SourceSpec[];
   /** Working directory for resolving relative paths. */
   cwd?: string;
   /** Cache path for serialized store. */
   cache?: string;
+  /** Parsed package references for ref-based resolution. */
+  refs?: ReadonlyArray<PackageRef>;
 }
 
 /**
@@ -53,7 +63,7 @@ export interface BootStoreOptions {
 export async function bootStore(
   options: BootStoreOptions = {},
 ): Promise<Store> {
-  const sources = options.sources ?? defaultSources();
+  const sources = options.sources ?? defaultSources(options.refs);
 
   try {
     const store = await createStore({

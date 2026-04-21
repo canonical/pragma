@@ -1,5 +1,6 @@
 import type { GlobalFlags } from "@canonical/cli-core";
 import { CommanderError } from "commander";
+import { commands as refsCommands } from "../domains/refs/index.js";
 import { commands as setupCommands } from "../domains/setup/index.js";
 import type { PragmaContext } from "../domains/shared/context.js";
 import type { PragmaRuntime } from "../domains/shared/runtime.js";
@@ -140,7 +141,7 @@ async function runStoreSkip(
     globalFlags,
     interactive: runInteractiveCommand,
   };
-  const commands = [...setupCommands()];
+  const commands = [...setupCommands(), ...refsCommands()];
   const program = createProgram(commands, stubCtx);
 
   try {
