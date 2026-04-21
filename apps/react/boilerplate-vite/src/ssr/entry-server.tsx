@@ -1,7 +1,7 @@
 import { createHeadCollector, HeadProvider } from "@canonical/react-head";
 import { Outlet, RouterProvider } from "@canonical/router-react";
 import type { ReactElement } from "react";
-import Navigation from "../Navigation.js";
+import Navigation from "../lib/Navigation/index.js";
 import { createServerAppRouter } from "../routes.js";
 
 export interface SSRResult {

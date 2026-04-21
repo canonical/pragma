@@ -1,19 +1,15 @@
-import { useHead } from "@canonical/react-head";
 import { route } from "@canonical/router-core";
-import type { ReactElement } from "react";
+import AccountPage from "./AccountPage.js";
+import LoginPage from "./LoginPage.js";
 
 function readString(value: unknown): string | undefined {
   return typeof value === "string" ? value : undefined;
 }
 
-interface AccountSearch {
-  readonly auth?: string;
-}
-
 const accountSearchSchema = {
   "~standard": {
-    output: {} as AccountSearch,
-    validate(value: unknown): AccountSearch {
+    output: {} as { readonly auth?: string },
+    validate(value: unknown): { readonly auth?: string } {
       const record = value as Record<string, unknown>;
 
       return { auth: readString(record.auth) };
@@ -21,14 +17,10 @@ const accountSearchSchema = {
   },
 };
 
-interface LoginSearch {
-  readonly from?: string;
-}
-
 const loginSearchSchema = {
   "~standard": {
-    output: {} as LoginSearch,
-    validate(value: unknown): LoginSearch {
+    output: {} as { readonly from?: string },
+    validate(value: unknown): { readonly from?: string } {
       const record = value as Record<string, unknown>;
 
       return { from: readString(record.from) };
@@ -36,45 +28,17 @@ const loginSearchSchema = {
   },
 };
 
-function Account(): ReactElement {
-  useHead({ title: "Account — Boilerplate" });
-
-  return (
-    <section aria-labelledby="account-title">
-      <h1 id="account-title">Account</h1>
-      <p>Protected account page. You are signed in.</p>
-    </section>
-  );
-}
-
-function Login({ search }: { search: LoginSearch }): ReactElement {
-  useHead({ title: "Login — Boilerplate" });
-
-  return (
-    <section aria-labelledby="login-title">
-      <h1 id="login-title">Login</h1>
-      <p>
-        Demo login. Add <code>?auth=1</code> to any protected URL to simulate
-        authentication.
-      </p>
-      {search.from && (
-        <p>You will be redirected to {search.from} after login.</p>
-      )}
-    </section>
-  );
-}
-
-const accountRoutes = {
+const routes = {
   account: route({
     url: "/account",
     search: accountSearchSchema,
-    content: Account,
+    content: AccountPage,
   }),
   login: route({
     url: "/login",
     search: loginSearchSchema,
-    content: Login,
+    content: LoginPage,
   }),
 } as const;
 
-export default accountRoutes;
+export default routes;
