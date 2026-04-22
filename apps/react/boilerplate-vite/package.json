@@ -6,7 +6,7 @@
   "license": "GPL-3.0-only",
   "scripts": {
     "dev": "vite",
-    "dev:ssr": "tsx src/server/server.dev.ts",
+    "dev:ssr": "tsx src/server/server.express.dev.ts",
     "build": "bun run build:client && bun run build:server",
     "build:all": "bun run build:client && bun run build:server && bun run build:storybook",
     "build:storybook": "storybook build",

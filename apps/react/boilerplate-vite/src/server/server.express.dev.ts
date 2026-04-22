@@ -22,41 +22,27 @@ async function start() {
     appType: "custom",
   });
 
-  // Vite's dev middleware handles client HMR, module transforms, and static assets
   app.use(vite.middlewares);
 
-  app.use("*", async (req, res, next) => {
-    const url = req.originalUrl;
+  app.use(async (req, res, next) => {
+    const url = req.originalUrl || "/";
 
     try {
-      // Read and transform the HTML template on every request (HMR-aware)
       const template = fs.readFileSync("index.html", "utf-8");
       const html = await vite.transformIndexHtml(url, template);
 
-      // Load the server entry via Vite's SSR transform pipeline.
-      // This gives us HMR on the server — module changes are picked up
-      // without restarting the process.
       const { default: EntryServer } = await vite.ssrLoadModule(
         "/src/server/entry.tsx",
       );
-      const { type: InitialDataType } = await vite.ssrLoadModule(
-        "/src/server/entry.tsx",
-      );
-
       const { JSXRenderer } = await vite.ssrLoadModule(
         "@canonical/react-ssr/renderer",
       );
 
       const renderer = new JSXRenderer(
         EntryServer,
-        { url } as Record<string, unknown>,
+        { url },
         { htmlString: html },
       );
-
-      const { renderToPipeableStream } =
-        await vite.ssrLoadModule("react-dom/server");
-
-      // Use JSXRenderer's pipeable stream for Express
       const result = renderer.renderToPipeableStream();
 
       await renderer.statusReady;
@@ -70,7 +56,7 @@ async function start() {
   });
 
   app.listen(PORT, () => {
-    console.log(`Dev server started on http://localhost:${PORT}/`);
+    console.log(`Dev SSR server on http://localhost:${PORT}/`);
   });
 }
 
