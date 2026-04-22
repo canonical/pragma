@@ -43,6 +43,14 @@ function renderInfoPlain(data: InfoData): string {
     lines.push("  Up to date.");
   }
 
+  if (data.packageRefs && data.packageRefs.length > 0) {
+    lines.push("");
+    lines.push(formatHeading("Packages"));
+    for (const ref of data.packageRefs) {
+      lines.push(formatField(`  ${ref.pkg}:`, `${ref.source} (${ref.detail})`));
+    }
+  }
+
   if (data.store) {
     lines.push("");
     lines.push(formatHeading("Store"));
@@ -91,6 +99,13 @@ function renderInfoLlm(data: InfoData): string {
     lines.push("- Update: check skipped (offline)");
   } else {
     lines.push("- Update: up to date");
+  }
+
+  if (data.packageRefs && data.packageRefs.length > 0) {
+    lines.push("## Packages");
+    for (const ref of data.packageRefs) {
+      lines.push(`- ${ref.pkg}: ${ref.source} (${ref.detail})`);
+    }
   }
 
   if (data.store) {
