@@ -1,5 +1,5 @@
 import type { Snippet } from "svelte";
-import type { ButtonPrimitiveProps } from "../../../../components/common";
+import type { ButtonPrimitiveProps } from "../../../common/index.js";
 
 export type NavigationItemProps = ButtonPrimitiveProps & {
   /**

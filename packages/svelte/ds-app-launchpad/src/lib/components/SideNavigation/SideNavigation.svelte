@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { cssControlledFade } from "../../transistions/cssControlledFade.js";
+  import { cssControlledFade } from "../../transitions/cssControlledFade.js";
   import "./styles.css";
   import type { SideNavigationProps } from "./types.js";
 

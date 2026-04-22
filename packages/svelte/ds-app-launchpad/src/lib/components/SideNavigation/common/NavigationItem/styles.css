@@ -1,5 +1,3 @@
-@import "../../../../../../../../../packages/styles-old/primitives/canonical/src/tokens.css";
-
 .ds.navigation-item {
   display: grid;
   position: relative;

@@ -1,5 +1,3 @@
-@import "../../../../../../../../packages/styles-old/primitives/canonical/src/tokens.css";
-
 .ds.button-primitive {
   --border-style-button: solid;
   --color-background-button-active: var(--lp-color-background-neutral-active);

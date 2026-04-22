@@ -17,7 +17,6 @@ const SideNavigation = SideNavigationRoot as typeof SideNavigationRoot & {
 SideNavigation.NavigationItem = NavigationItem;
 SideNavigation.ExpandToggle = ExpandToggle;
 
+export type { NavigationItemProps as SideNavigationItemProps } from "./common/index.js";
 export * from "./types.js";
 export { SideNavigation };
-
-export type { NavigationItemProps as SideNavigationItemProps } from "./common/index.js";

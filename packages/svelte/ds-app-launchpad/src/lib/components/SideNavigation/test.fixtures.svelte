@@ -1,4 +1,5 @@
 <script lang="ts" module>
+  // biome-ignore lint/style/useExportType: snippets are runtime values, not types
   export { children, expandToggle, footer, logo };
 </script>
 
