@@ -7,6 +7,7 @@
  * @note Impure — reads filesystem, creates ke store.
  */
 
+import { existsSync } from "node:fs";
 import { join } from "node:path";
 import type { SourceSpec, Store } from "@canonical/ke";
 import { createStore } from "@canonical/ke";
@@ -15,17 +16,22 @@ import type { PackageRef } from "../refs/operations/parseRef.js";
 import { resolvePackages } from "./packages.js";
 import { PREFIX_MAP } from "./prefixes.js";
 
-/** Default TTL glob patterns — convention-based auto-detection. */
-const DEFAULT_TTL_GLOBS: readonly string[] = [
-  "definitions/**/*.ttl",
-  "data/**/*.ttl",
+/**
+ * Convention-based TTL directories to scan in each package.
+ * Only directories that exist are globbed — packages that lack
+ * a `data/` or `definitions/` dir are silently skipped.
+ */
+const TTL_DIRS: readonly { dir: string; glob: string }[] = [
+  { dir: "definitions", glob: "definitions/**/*.ttl" },
+  { dir: "data", glob: "data/**/*.ttl" },
 ];
 
 /**
  * Resolve default TTL sources from resolved packages.
  *
  * Uses convention-based TTL discovery: definitions and data globs
- * relative to each package root.
+ * relative to each package root. Only adds globs for directories
+ * that actually exist in the package.
  *
  * @param refs - Parsed package references. Omit for defaults.
  */
@@ -34,8 +40,10 @@ export function defaultSources(refs?: ReadonlyArray<PackageRef>): SourceSpec[] {
   const resolved = resolvePackages(refs);
 
   for (const { dir } of resolved) {
-    for (const glob of DEFAULT_TTL_GLOBS) {
-      sources.push(join(dir, glob));
+    for (const entry of TTL_DIRS) {
+      if (existsSync(join(dir, entry.dir))) {
+        sources.push(join(dir, entry.glob));
+      }
     }
   }
 
