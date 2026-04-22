@@ -22,6 +22,7 @@
   "dependencies": {
     "@canonical/react-ds-global": "^0.25.0",
     "@canonical/react-head": "^0.25.0",
+    "@canonical/react-hooks": "^0.25.0",
     "@canonical/react-ssr": "^0.25.0",
     "@canonical/router-core": "^0.25.0",
     "@canonical/router-react": "^0.25.0",
