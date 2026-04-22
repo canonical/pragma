@@ -5,9 +5,12 @@
  * consistency from the canonical fixture.
  */
 
+import { mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { afterAll, describe, expect, it } from "vitest";
 import { listBlocks } from "../../domains/block/operations/index.js";
 import type { PragmaRuntime } from "../../domains/shared/runtime.js";
+import { bootPragma } from "../../domains/shared/runtime.js";
 import createTestRuntime from "../helpers/createTestRuntime.js";
 
 describe("PragmaRuntime boot", () => {
@@ -52,6 +55,38 @@ describe("PragmaRuntime boot", () => {
     // apps/lxd tier includes LXD Panel (its own) plus inherited global components
     expect(names).toContain("LXD Panel");
     expect(names).toContain("Button");
+  });
+
+  it("boots with file:// package ref", async () => {
+    // Create a temp "package" with TTL in the convention structure
+    const { mkdirSync, copyFileSync, writeFileSync } = await import("node:fs");
+    const { join } = await import("node:path");
+
+    const fixturesDir = new URL("../fixtures/", import.meta.url).pathname;
+    const tmpPkg = mkdtempSync(join(tmpdir(), "pragma-ref-pkg-"));
+    const dataDir = join(tmpPkg, "data");
+    mkdirSync(dataDir, { recursive: true });
+    copyFileSync(join(fixturesDir, "canonical.ttl"), join(dataDir, "canonical.ttl"));
+
+    // Create a temp project dir with config pointing to the file:// package
+    const tmpProject = mkdtempSync(join(tmpdir(), "pragma-ref-project-"));
+    writeFileSync(
+      join(tmpProject, "pragma.config.json"),
+      JSON.stringify({
+        packages: [{ name: "@test/fixture", source: `file://${tmpPkg}` }],
+      }),
+    );
+
+    const rt = await bootPragma({ cwd: tmpProject });
+    runtimes.push(rt);
+
+    expect(rt.store).toBeDefined();
+    expect(rt.config.packages).toHaveLength(1);
+
+    // Clean up
+    const { rmSync } = await import("node:fs");
+    rmSync(tmpPkg, { recursive: true, force: true });
+    rmSync(tmpProject, { recursive: true, force: true });
   });
 
   it("two runtimes produce identical store content", async () => {
