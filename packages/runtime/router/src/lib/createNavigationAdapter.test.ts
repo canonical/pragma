@@ -103,7 +103,7 @@ describe("createNavigationAdapter (Navigation API)", () => {
     );
   });
 
-  it("ignores push and replace navigate events (handled by navigate method)", () => {
+  it("intercepts push and replace events without notifying subscribers", () => {
     const navigationWindow = createFakeNavigationWindow();
     const adapter = createNavigationAdapter(navigationWindow);
     const listener = vi.fn<(location: string | URL) => void>();
@@ -112,6 +112,8 @@ describe("createNavigationAdapter (Navigation API)", () => {
     navigationWindow.dispatchNavigate("https://example.com/push", "push");
     navigationWindow.dispatchNavigate("https://example.com/replace", "replace");
 
+    // Push/replace events are intercepted (preventing full reload) but don't
+    // notify subscribers — the router's navigate() method handles notification.
     expect(listener).toHaveBeenCalledTimes(0);
   });
 

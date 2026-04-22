@@ -22,6 +22,7 @@
   "homepage": "https://github.com/canonical/pragma#readme",
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
+    "build:all": "bun run build",
     "check": "bun run check:biome && bun run check:ts && bun run check:webarchitect",
     "check:webarchitect": "webarchitect library",
     "check:fix": "bun run check:biome:fix && bun run check:ts",
