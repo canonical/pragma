@@ -1,3 +1,10 @@
+/** Summary of how a single package is resolved. */
+export interface PackageRefSummary {
+  readonly pkg: string;
+  readonly source: "npm" | "file" | "git";
+  readonly detail: string;
+}
+
 /** Data collected by `pragma info` for rendering. */
 export interface InfoData {
   readonly version: string;
@@ -19,6 +26,7 @@ export interface InfoData {
   readonly store:
     | { readonly tripleCount: number; readonly graphNames: readonly string[] }
     | undefined;
+  readonly packageRefs?: readonly PackageRefSummary[];
 }
 
 /** Data collected by `pragma upgrade` for rendering. */

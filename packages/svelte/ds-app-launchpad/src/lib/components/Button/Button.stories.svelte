@@ -4,7 +4,7 @@
   import { fn } from "storybook/test";
   import { MODIFIER_FAMILIES } from "../../modifier-families/index.js";
   import Button from "./Button.svelte";
-  import type { ButtonProps } from "./types";
+  import type { ButtonProps } from "./types.js";
 
   const BUTTON_SEVERITIES = [
     "brand",

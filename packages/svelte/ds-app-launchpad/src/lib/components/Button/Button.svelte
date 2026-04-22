@@ -1,8 +1,8 @@
 <script lang="ts">
   import { ButtonPrimitive } from "../common/ButtonPrimitive/index.js";
   import { Spinner } from "../Spinner/index.js";
-  import { Content } from "./common/Content";
-  import type { ButtonProps } from "./types";
+  import { Content } from "./common/Content/index.js";
+  import type { ButtonProps } from "./types.js";
   import "./styles.css";
 
   const componentCssClassName = "ds button";
@@ -24,25 +24,25 @@
 </script>
 
 <ButtonPrimitive
-	bind:ref
-	class={[
-		componentCssClassName,
-		className,
-		severity,
-		density,
-		{ loading, "explicit-disabled": disabled },
-	]}
-	disabled={isDisabled}
-	{...rest}
+  bind:ref
+  class={[
+    componentCssClassName,
+    className,
+    severity,
+    density,
+    { loading, "explicit-disabled": disabled },
+  ]}
+  disabled={isDisabled}
+  {...rest}
 >
-	<Content {iconLeft} {iconRight}>
-		{@render children?.()}
-	</Content>
-	{#if loading}
-		<span class="loader">
-			<Spinner />
-		</span>
-	{/if}
+  <Content {iconLeft} {iconRight}>
+    {@render children?.()}
+  </Content>
+  {#if loading}
+    <span class="loader">
+      <Spinner />
+    </span>
+  {/if}
 </ButtonPrimitive>
 
 <!-- @component

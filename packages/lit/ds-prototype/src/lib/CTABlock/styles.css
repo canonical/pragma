@@ -1,0 +1,10 @@
+:host {
+  display: contents;
+}
+
+.ds.cta-block {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-small, 0.5rem);
+}

@@ -161,10 +161,12 @@ const runInCwd = async <T>(cwd: string, work: () => Promise<T>): Promise<T> => {
   }
 };
 
+/* v8 ignore start — intentional no-op callback invoked by task runtime */
 const suppressTaskLogs = (): void => {
   // Intentionally swallow raw task log effects during generator execution.
   // The CLI already renders a structured summary from the dry-run preview.
 };
+/* v8 ignore stop */
 
 // =============================================================================
 // Main dispatch

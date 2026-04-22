@@ -3,6 +3,25 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.25.0](https://github.com/canonical/pragma/compare/v0.24.0...v0.25.0) (2026-04-17)
+
+**Note:** Version bump only for package @canonical/react-ssr
+
+
+
+
+
+# [0.24.0](https://github.com/canonical/pragma/compare/v0.23.0...v0.24.0) (2026-04-13)
+
+
+### Features
+
+* **react-ssr:** add shared adapter types, MIME utility, and pattern matching ([#596](https://github.com/canonical/pragma/issues/596)) ([0eb130a](https://github.com/canonical/pragma/commit/0eb130a55429596b39ca40b2496159ce23020a2b))
+
+
+
+
+
 # [0.23.0](https://github.com/canonical/pragma/compare/v0.22.1...v0.23.0) (2026-04-07)
 
 

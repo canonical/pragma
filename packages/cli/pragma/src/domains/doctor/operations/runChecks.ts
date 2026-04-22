@@ -3,6 +3,7 @@ import {
   checkKeStore,
   checkMcpConfigured,
   checkNodeVersion,
+  checkPackageRefs,
   checkPragmaVersion,
   checkShellCompletions,
   checkSkillsSymlinked,
@@ -25,6 +26,7 @@ export default async function runChecks(
   checks.push(await checkNodeVersion());
   checks.push(await checkPragmaVersion());
   checks.push(await checkConfigFile(ctx));
+  checks.push(await checkPackageRefs(ctx));
   checks.push(await checkKeStore(ctx));
   checks.push(await checkShellCompletions());
   checks.push(await checkMcpConfigured(ctx));

@@ -2,7 +2,6 @@ import { describe, expect, expectTypeOf, it, vi } from "vitest";
 import createMemoryAdapter from "./createMemoryAdapter.js";
 import createRouter from "./createRouter.js";
 import group from "./group.js";
-import redirect from "./redirect.js";
 import route from "./route.js";
 import StatusResponse from "./StatusResponse.js";
 import type { AnyRoute, RouteMiddleware } from "./types.js";
@@ -601,7 +600,6 @@ describe("createRouter", () => {
   });
 
   it("applies middleware once at router creation time before matching and loading", async () => {
-    const fetchSpy = vi.fn(async () => "dashboard-data");
     const middleware = vi.fn((currentRoute: AnyRoute) => {
       if ("redirect" in currentRoute) {
         return {
@@ -613,25 +611,13 @@ describe("createRouter", () => {
       return {
         ...currentRoute,
         url: `/app${currentRoute.url}`,
-        fetch: currentRoute.fetch
-          ? async (params: unknown, search: unknown, context: unknown) => {
-              const data = await currentRoute.fetch?.(
-                params,
-                search,
-                context as never,
-              );
-
-              return `mw(${String(data)})`;
-            }
-          : undefined,
       };
     }) as RouteMiddleware;
     const router = createRouter(
       {
         dashboard: route({
           url: "/dashboard",
-          fetch: fetchSpy,
-          content: ({ data }) => String(data),
+          content: () => "dashboard",
         }),
       },
       {
@@ -650,21 +636,15 @@ describe("createRouter", () => {
 
     const result = await router.load("/app/dashboard");
 
-    expect(fetchSpy).toHaveBeenCalledTimes(1);
     expect(middleware).toHaveBeenCalledTimes(1);
-    expect(result.routeData).toBe("mw(dashboard-data)");
-    expect(router.render(result)).toBe("mw(dashboard-data)");
+    expect(router.render(result)).toBe("dashboard");
   });
 
   it("dehydrates and hydrates successful route results without re-running loaders", async () => {
-    const fetchSpy = vi.fn(
-      async ({ slug }: { slug: string }) => `page:${slug}`,
-    );
     const serverRouter = createRouter({
       page: route({
         url: "/pages/:slug",
-        fetch: fetchSpy,
-        content: ({ data }) => String(data),
+        content: ({ params }) => `page:${params.slug}`,
       }),
     });
     const loadResult = await serverRouter.load("/pages/hello");
@@ -673,35 +653,28 @@ describe("createRouter", () => {
     expect(loadResult.dehydrate()).toEqual({
       href: "/pages/hello",
       kind: "route",
-      routeData: "page:hello",
       routeId: "page",
       status: 200,
-      wrapperData: {},
     });
     expect(dehydratedState).toEqual(loadResult.dehydrate());
 
     const clientRouter = createRouter({
       page: route({
         url: "/pages/:slug",
-        fetch: fetchSpy,
-        content: ({ data }) => String(data),
+        content: ({ params }) => `page:${params.slug}`,
       }),
     });
 
     clientRouter.hydrate(loadResult.dehydrate());
 
     expect(clientRouter.render()).toBe("page:hello");
-    expect(fetchSpy).toHaveBeenCalledTimes(1);
 
     const hydratedResult = await clientRouter.load("/pages/hello");
 
-    expect(hydratedResult.routeData).toBe("page:hello");
-    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    expect(hydratedResult.status).toBe(200);
 
     await clientRouter.load("/pages/other");
     await clientRouter.load("/pages/hello");
-
-    expect(fetchSpy).toHaveBeenCalledTimes(3);
   });
 
   it("dehydrates not-found and unmatched states and returns null before the first load", async () => {
@@ -735,18 +708,14 @@ describe("createRouter", () => {
     expect(notFoundResult.dehydrate()).toEqual({
       href: "/missing",
       kind: "not-found",
-      routeData: undefined,
       routeId: null,
       status: 404,
-      wrapperData: {},
     });
     expect(unmatchedResult.dehydrate()).toEqual({
       href: "/missing",
       kind: "unmatched",
-      routeData: undefined,
       routeId: null,
       status: 404,
-      wrapperData: {},
     });
 
     const hydratedNotFoundRouter = createRouter(
@@ -789,10 +758,8 @@ describe("createRouter", () => {
       router.hydrate({
         href: "/",
         kind: "route",
-        routeData: "home",
         routeId: "missing" as never,
         status: 200,
-        wrapperData: {},
       });
     }).toThrow("Hydrated route state does not match the current route map.");
 
@@ -800,10 +767,8 @@ describe("createRouter", () => {
       router.hydrate({
         href: "/",
         kind: "unmatched",
-        routeData: undefined,
         routeId: null,
         status: 404,
-        wrapperData: {},
       });
     }).toThrow(
       "Hydrated unmatched state does not match the current route map.",
@@ -813,23 +778,20 @@ describe("createRouter", () => {
       router.hydrate({
         href: "/missing",
         kind: "not-found",
-        routeData: undefined,
         routeId: null,
         status: 404,
-        wrapperData: {},
       });
     }).toThrow(
       "Hydrated not-found state does not match the current route map.",
     );
   });
 
-  it("prefetches data and lazy content without mutating router state", async () => {
-    const fetchSpy = vi.fn(async () => "settings-data");
+  it("prefetches lazy content without mutating router state", async () => {
+    const prefetchSpy = vi.fn(async () => {});
     const preloadSpy = vi.fn(async () => ({ default: "SettingsPage" }));
-    const content = Object.assign(
-      ({ data }: { data: unknown }) => String(data),
-      { preload: preloadSpy },
-    );
+    const content = Object.assign(() => "settings", {
+      preload: preloadSpy,
+    });
     const router = createRouter({
       home: route({
         url: "/",
@@ -837,7 +799,7 @@ describe("createRouter", () => {
       }),
       settings: route({
         url: "/settings",
-        fetch: fetchSpy,
+        prefetch: prefetchSpy,
         content,
       }),
     });
@@ -845,7 +807,6 @@ describe("createRouter", () => {
     await router.prefetch("settings");
     await router.prefetch("settings");
 
-    expect(fetchSpy).toHaveBeenCalledTimes(1);
     expect(preloadSpy).toHaveBeenCalledTimes(1);
     expect(router.getState().location.href).toBe("/");
     expect(router.getState().navigation.state).toBe("idle");
@@ -853,34 +814,27 @@ describe("createRouter", () => {
 
     const result = await router.load("/settings");
 
-    expect(fetchSpy).toHaveBeenCalledTimes(1);
     expect(preloadSpy).toHaveBeenCalledTimes(1);
-    expect(router.render(result)).toBe("settings-data");
+    expect(router.render(result)).toBe("settings");
 
     await router.prefetch("settings");
 
-    expect(fetchSpy).toHaveBeenCalledTimes(2);
     expect(preloadSpy).toHaveBeenCalledTimes(1);
   });
 
   it("reuses an in-flight prefetch when a matching load starts", async () => {
-    let resolveFetch: ((value: string) => void) | null = null;
-    const fetchSpy = vi.fn(() => {
-      return new Promise<string>((resolve) => {
-        resolveFetch = resolve;
+    let resolvePreload: ((value: { default: string }) => void) | null = null;
+    const preloadSpy = vi.fn(() => {
+      return new Promise<{ default: string }>((resolve) => {
+        resolvePreload = resolve;
       });
     });
-    const preloadSpy = vi.fn(async () => ({ default: "DocsPage" }));
-    const content = Object.assign(
-      ({ data }: { data: unknown }) => String(data),
-      {
-        preload: preloadSpy,
-      },
-    );
+    const content = Object.assign(() => "docs", {
+      preload: preloadSpy,
+    });
     const router = createRouter({
       docs: route({
         url: "/docs",
-        fetch: fetchSpy,
         content,
       }),
     });
@@ -888,72 +842,72 @@ describe("createRouter", () => {
     const prefetchPromise = router.prefetch("docs");
     const loadPromise = router.load("/docs");
 
-    (resolveFetch as unknown as (value: string) => void)("docs-data");
+    (resolvePreload as unknown as (value: { default: string }) => void)({
+      default: "DocsPage",
+    });
 
     await prefetchPromise;
     const result = await loadPromise;
 
-    expect(fetchSpy).toHaveBeenCalledTimes(1);
     expect(preloadSpy).toHaveBeenCalledTimes(1);
-    expect(router.render(result)).toBe("docs-data");
+    expect(router.render(result)).toBe("docs");
   });
 
   it("deduplicates concurrent prefetch calls for the same href", async () => {
-    let resolveFetch: ((value: string) => void) | null = null;
-    const fetchSpy = vi.fn(() => {
-      return new Promise<string>((resolve) => {
-        resolveFetch = resolve;
+    let resolvePreload: ((value: { default: string }) => void) | null = null;
+    const preloadSpy = vi.fn(() => {
+      return new Promise<{ default: string }>((resolve) => {
+        resolvePreload = resolve;
       });
     });
     const router = createRouter({
       docs: route({
         url: "/docs",
-        fetch: fetchSpy,
-        content: ({ data }) => String(data),
+        content: Object.assign(() => "docs", { preload: preloadSpy }),
       }),
     });
 
     const firstPrefetch = router.prefetch("docs");
     const secondPrefetch = router.prefetch("docs");
 
-    (resolveFetch as unknown as (value: string) => void)("docs-data");
+    (resolvePreload as unknown as (value: { default: string }) => void)({
+      default: "DocsPage",
+    });
 
     await Promise.all([firstPrefetch, secondPrefetch]);
 
-    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    expect(preloadSpy).toHaveBeenCalledTimes(1);
   });
 
   it("surfaces non-redirect prefetch failures and clears the pending entry", async () => {
-    const fetchSpy = vi
-      .fn<() => Promise<string>>()
+    const preloadSpy = vi
+      .fn<() => Promise<{ default: string }>>()
       .mockRejectedValueOnce(new Error("prefetch-failure"))
-      .mockResolvedValueOnce("recovered");
+      .mockResolvedValueOnce({ default: "RecoveredPage" });
     const router = createRouter({
       broken: route({
         url: "/broken",
-        fetch: fetchSpy,
-        content: ({ data }) => String(data),
+        content: Object.assign(() => "broken", { preload: preloadSpy }),
       }),
     });
 
     await expect(router.prefetch("broken")).rejects.toThrow("prefetch-failure");
     await expect(router.prefetch("broken")).resolves.toBeUndefined();
 
-    expect(fetchSpy).toHaveBeenCalledTimes(2);
+    expect(preloadSpy).toHaveBeenCalledTimes(2);
   });
 
   it("aborts a load that is waiting on an in-flight prefetch when a newer load starts", async () => {
-    let resolveFetch: ((value: string) => void) | null = null;
-    const fetchSpy = vi.fn(() => {
-      return new Promise<string>((resolve) => {
-        resolveFetch = resolve;
+    let resolvePreload: ((value: { default: string }) => void) | null = null;
+    const preloadSpy = vi.fn(() => {
+      return new Promise<{ default: string }>((resolve) => {
+        resolvePreload = resolve;
       });
     });
     const router = createRouter({
       docs: route({
         url: "/docs",
-        fetch: fetchSpy,
-        content: ({ data }) => String(data),
+        content: Object.assign(() => "docs", { preload: preloadSpy }),
       }),
       home: route({
         url: "/",
@@ -965,7 +919,9 @@ describe("createRouter", () => {
     const firstLoad = router.load("/docs");
     const secondLoad = router.load("/");
 
-    (resolveFetch as unknown as (value: string) => void)("docs-data");
+    (resolvePreload as unknown as (value: { default: string }) => void)({
+      default: "DocsPage",
+    });
 
     await prefetchPromise;
 
@@ -974,7 +930,7 @@ describe("createRouter", () => {
       location: { href: "/" },
       status: 200,
     });
-    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    expect(preloadSpy).toHaveBeenCalledTimes(1);
   });
 
   it("throws after an excessive redirect loop during prefetch", async () => {
@@ -1015,13 +971,9 @@ describe("createRouter", () => {
       const router = createRouter({
         docs: route({
           url: "/docs",
-          fetch: async () => "docs-data",
-          content: Object.assign(
-            ({ data }: { data: unknown }) => String(data),
-            {
-              preload: preloadSpy,
-            },
-          ),
+          content: Object.assign(() => "docs", {
+            preload: preloadSpy,
+          }),
         }),
       });
 
@@ -1066,11 +1018,8 @@ describe("createRouter", () => {
     expect(router.render()).toBe("not-found");
   });
 
-  it("follows static and thrown redirects during prefetch", async () => {
-    const modernFetch = vi.fn(async () => "modern-data");
-    const loginFetch = vi.fn(async () => "login-data");
+  it("follows static redirects during prefetch", async () => {
     const modernPreload = vi.fn(async () => ({ default: "ModernPage" }));
-    const loginPreload = vi.fn(async () => ({ default: "LoginPage" }));
     const router = createRouter({
       legacy: route({
         url: "/legacy",
@@ -1079,46 +1028,19 @@ describe("createRouter", () => {
       }),
       modern: route({
         url: "/modern",
-        fetch: modernFetch,
-        content: Object.assign(({ data }: { data: unknown }) => String(data), {
+        content: Object.assign(() => "modern", {
           preload: modernPreload,
-        }),
-      }),
-      private: route({
-        url: "/private",
-        fetch: async (): Promise<string> => {
-          redirect("/login", 302);
-        },
-        content: () => "private",
-      }),
-      login: route({
-        url: "/login",
-        fetch: loginFetch,
-        content: Object.assign(({ data }: { data: unknown }) => String(data), {
-          preload: loginPreload,
         }),
       }),
     });
 
     await router.prefetch("legacy");
-    await router.prefetch("private");
 
-    expect(modernFetch).toHaveBeenCalledTimes(1);
-    expect(loginFetch).toHaveBeenCalledTimes(1);
     expect(modernPreload).toHaveBeenCalledTimes(1);
-    expect(loginPreload).toHaveBeenCalledTimes(1);
 
     const legacyResult = await router.load("/legacy");
 
-    expect(modernFetch).toHaveBeenCalledTimes(1);
-    expect(router.render(legacyResult)).toBe("modern-data");
-
-    // After a navigation commits, the prefetch cache is cleared so stale
-    // entries do not persist. The second load re-fetches as expected.
-    const privateResult = await router.load("/private");
-
-    expect(loginFetch).toHaveBeenCalledTimes(2);
-    expect(router.render(privateResult)).toBe("login-data");
+    expect(router.render(legacyResult)).toBe("modern");
   });
 
   it("syncs loads with a memory adapter and stops after dispose", async () => {
@@ -1131,8 +1053,7 @@ describe("createRouter", () => {
         }),
         user: route({
           url: "/users/:userId",
-          fetch: async ({ userId }) => `user:${userId}`,
-          content: ({ data }) => String(data),
+          content: ({ params }) => `user:${params.userId}`,
         }),
       },
       {
@@ -1169,7 +1090,7 @@ describe("createRouter", () => {
     expect(router.getState().location.href).toBe("/users/42");
   });
 
-  it("keeps the adapter location in sync with static and thrown redirects", async () => {
+  it("keeps the adapter location in sync with static redirects", async () => {
     const adapter = createMemoryAdapter("/legacy");
     const router = createRouter(
       {
@@ -1182,17 +1103,6 @@ describe("createRouter", () => {
           url: "/modern",
           content: () => "modern",
         }),
-        private: route({
-          url: "/private",
-          fetch: async (): Promise<string> => {
-            redirect("/login", 302);
-          },
-          content: () => "private",
-        }),
-        login: route({
-          url: "/login",
-          content: () => "login",
-        }),
       },
       {
         adapter,
@@ -1202,14 +1112,7 @@ describe("createRouter", () => {
     await vi.waitFor(() => {
       expect(router.getState().location.href).toBe("/modern");
       expect(adapter.getLocation()).toMatchObject({ pathname: "/modern" });
-    });
-
-    router.navigate("private");
-
-    await vi.waitFor(() => {
-      expect(router.getState().location.href).toBe("/login");
-      expect(adapter.getLocation()).toMatchObject({ pathname: "/login" });
-      expect(router.render()).toBe("login");
+      expect(router.render()).toBe("modern");
     });
   });
 
@@ -1236,26 +1139,21 @@ describe("createRouter", () => {
     expect(adapter.getLocation()).toMatchObject({ pathname: "/loop" });
   });
 
-  it("loads route and wrapper data, then renders via wrapper continuations", async () => {
+  it("renders route content through wrapper continuations", async () => {
     const appLayout = wrapper({
       id: "app:layout",
-      component: ({ children, data }) =>
-        `app(${String(data)}:${String(children)})`,
-      fetch: async () => "app-data",
+      component: ({ children }) => `app(${String(children)})`,
     });
 
     const sectionLayout = wrapper({
       id: "section:layout",
-      component: ({ children, data }) =>
-        `section(${String(data)}:${String(children)})`,
-      fetch: async () => "section-data",
+      component: ({ children }) => `section(${String(children)})`,
     });
 
     const sectionRoutes = group(sectionLayout, [
       route({
         url: "/users/:userId",
-        fetch: async ({ userId }) => `user:${userId}`,
-        content: ({ data }) => `content(${String(data)})`,
+        content: ({ params }) => `content(user:${params.userId})`,
       }),
     ] as const);
     const [detailsRoute] = group(appLayout, sectionRoutes);
@@ -1268,127 +1166,71 @@ describe("createRouter", () => {
 
     expect(result).toMatchObject({
       error: null,
-      routeData: "user:42",
       status: 200,
-      wrapperData: {
-        "app:layout": "app-data",
-        "section:layout": "section-data",
-      },
     });
-    expect(router.render(result)).toBe(
-      "app(app-data:section(section-data:content(user:42)))",
-    );
+    expect(router.render(result)).toBe("app(section(content(user:42)))");
   });
 
-  it("reuses shared wrapper data across sibling navigations", async () => {
-    const sharedFetch = vi.fn(async () => "shared-data");
-    const routeFetch = vi.fn(async ({ userId }: { userId: string }) => userId);
-    const sharedLayout = wrapper({
-      id: "shared:layout",
-      component: ({ children }) => children,
-      fetch: sharedFetch,
-    });
-
-    const [firstRoute] = group(sharedLayout, [
-      route({
-        url: "/users/:userId",
-        fetch: routeFetch,
-        content: ({ data }) => data,
-      }),
-    ] as const);
-
-    const [secondRoute] = group(sharedLayout, [
-      route({
-        url: "/profiles/:userId",
-        fetch: routeFetch,
-        content: ({ data }) => data,
-      }),
-    ] as const);
-
-    const router = createRouter({
-      first: firstRoute,
-      second: secondRoute,
-    });
-
-    const firstResult = await router.load("/users/42");
-    const secondResult = await router.load("/profiles/84");
-
-    expect(sharedFetch).toHaveBeenCalledTimes(1);
-    expect(routeFetch).toHaveBeenCalledTimes(2);
-    expect(firstResult.wrapperData["shared:layout"]).toBe("shared-data");
-    expect(secondResult.wrapperData["shared:layout"]).toBe("shared-data");
-  });
-
-  it("follows static and thrown redirects client-side", async () => {
+  it("follows static redirects client-side", async () => {
     const router = createRouter({
       oldHome: route({
         url: "/old-home",
         redirect: "/home",
         status: 308,
       }),
-      private: route({
-        url: "/private",
-        fetch: async (): Promise<string> => {
-          redirect("/login", 302);
-        },
-        content: () => "private",
-      }),
       home: route({
         url: "/home",
         content: () => "home",
       }),
-      login: route({
-        url: "/login",
-        content: () => "login",
-      }),
     });
 
     const staticRedirectResult = await router.load("/old-home");
-    const thrownRedirectResult = await router.load("/private");
 
     expect(staticRedirectResult.location.href).toBe("/home");
     expect(staticRedirectResult.match).toMatchObject({
       kind: "route",
       name: "home",
     });
-    expect(thrownRedirectResult.location.href).toBe("/login");
-    expect(thrownRedirectResult.match).toMatchObject({
-      kind: "route",
-      name: "login",
-    });
   });
 
-  it("aborts the previous navigation when a new load starts", async () => {
+  it("commits the latest load result even when an earlier load resolves later", async () => {
+    let resolvePreload: (() => void) | null = null;
+    const slowPreload = vi.fn(
+      () =>
+        new Promise<{ default: string }>((resolve) => {
+          resolvePreload = () => resolve({ default: "SlowPage" });
+        }),
+    );
     const router = createRouter({
       slow: route({
         url: "/slow",
-        fetch: async (_params, _search, context) => {
-          return await new Promise<string>((resolve, reject) => {
-            context.signal.addEventListener("abort", () => {
-              reject(new Error("aborted"));
-            });
-
-            setTimeout(() => {
-              resolve("slow");
-            }, 50);
-          });
-        },
-        content: ({ data }) => data,
+        content: Object.assign(() => "slow", { preload: slowPreload }),
       }),
       fast: route({
         url: "/fast",
-        fetch: async () => "fast",
-        content: ({ data }) => data,
+        content: () => "fast",
       }),
     });
 
     const firstLoad = router.load("/slow");
+
+    // Ensure the slow preload has started
+    expect(slowPreload).toHaveBeenCalledTimes(1);
+
     const secondLoad = router.load("/fast");
 
-    await expect(firstLoad).rejects.toThrow("aborted");
     await expect(secondLoad).resolves.toMatchObject({
       location: { href: "/fast" },
-      routeData: "fast",
+      status: 200,
+    });
+
+    // Resolve the slow preload after the fast load committed
+    resolvePreload?.();
+
+    const firstResult = await firstLoad;
+
+    expect(firstResult).toMatchObject({
+      location: { href: "/slow" },
       status: 200,
     });
     expect(router.getState().navigation.state).toBe("idle");
@@ -1412,169 +1254,22 @@ describe("createRouter", () => {
     expect(router.render(result)).toBeNull();
   });
 
-  it("renders route and wrapper error boundaries from load failures", async () => {
-    const appLayout = wrapper({
-      id: "app:layout",
-      component: ({ children }) => `app(${String(children)})`,
-    });
-    const guardedLayout = wrapper({
-      id: "guard:layout",
-      component: ({ children }) => `guard(${String(children)})`,
-      fetch: async (): Promise<string> => {
-        throw new Response("Unauthorized", { status: 401 });
-      },
-      error: ({ status }) => `guard-error(${status})`,
-    });
-
-    const guardedRoutes = group(guardedLayout, [
-      route({
-        url: "/guarded",
-        content: () => "guarded",
-      }),
-    ] as const);
-    const [guardedRoute] = group(appLayout, guardedRoutes);
-
-    const routerWithWrapperError = createRouter({
-      guarded: guardedRoute,
-    });
-    const wrapperErrorResult = await routerWithWrapperError.load("/guarded");
-
-    expect(wrapperErrorResult).toMatchObject({
-      errorBoundary: { type: "wrapper", wrapperId: "guard:layout" },
-      status: 401,
-    });
-    expect(routerWithWrapperError.render(wrapperErrorResult)).toBe(
-      "app(guard-error(401))",
-    );
-
-    const routerWithRouteError = createRouter({
-      broken: group(appLayout, [
-        route({
-          url: "/broken",
-          fetch: async (): Promise<string> => {
-            throw new StatusResponse(503, { message: "Back soon" });
-          },
-          content: () => "broken",
-          error: ({ status }) => `route-error(${status})`,
-        }),
-      ] as const)[0],
-    });
-    const routeErrorResult = await routerWithRouteError.load("/broken");
-
-    expect(routeErrorResult).toMatchObject({
-      errorBoundary: { type: "route", wrapperId: null },
-      status: 503,
-    });
-    expect(routerWithRouteError.render(routeErrorResult)).toBe(
-      "app(route-error(503))",
-    );
-  });
-
-  it("bubbles route load errors to wrapper boundaries when the route has no error renderer", async () => {
-    const shell = wrapper({
-      id: "shell:layout",
-      component: ({ children }) => `shell(${String(children)})`,
-      error: ({ status }) => `shell-error(${status})`,
-    });
-    const [brokenRoute] = group(shell, [
-      route({
-        url: "/broken",
-        fetch: async (): Promise<string> => {
-          throw new Response("Not found", { status: 404 });
-        },
-        content: () => "broken",
-      }),
-    ] as const);
-    const router = createRouter({
-      broken: brokenRoute,
-    });
-
-    const result = await router.load("/broken");
-
-    expect(result.errorBoundary).toEqual({
-      type: "wrapper",
-      wrapperId: "shell:layout",
-    });
-    expect(router.render(result)).toBe("shell-error(404)");
-  });
-
-  it("reuses wrapper data when a later load on the same route fails", async () => {
-    const shellFetch = vi
-      .fn<() => Promise<string>>()
-      .mockResolvedValue("shell-data");
-    const routeFetch = vi
-      .fn<(params: { slug: string }) => Promise<string>>()
-      .mockResolvedValueOnce("first")
-      .mockRejectedValueOnce(new Error("boom"));
-    const shell = wrapper({
-      id: "shell:layout",
-      component: ({ children, data }) =>
-        `shell(${String(data)}:${String(children)})`,
-      fetch: shellFetch,
-    });
-    const [pageRoute] = group(shell, [
-      route({
-        url: "/pages/:slug",
-        fetch: routeFetch,
-        content: ({ data }) => String(data),
-      }),
-    ] as const);
-    const router = createRouter({
-      page: pageRoute,
-    });
-
-    await router.load("/pages/one");
-    const errorResult = await router.load("/pages/one");
-
-    expect(shellFetch).toHaveBeenCalledTimes(1);
-    expect(errorResult.wrapperData).toEqual({
-      "shell:layout": "shell-data",
-    });
-    expect(router.render(errorResult)).toBeInstanceOf(Error);
-  });
-
-  it("returns raw errors from render when no error boundary exists", async () => {
+  it("surfaces content preload errors through the error property", async () => {
     const router = createRouter({
       broken: route({
         url: "/broken",
-        fetch: async (): Promise<string> => {
-          throw "no-boundary";
-        },
-        content: () => "broken",
+        content: Object.assign(() => "broken", {
+          preload: async () => {
+            throw new StatusResponse(503, { message: "Back soon" });
+          },
+        }),
       }),
     });
 
     const result = await router.load("/broken");
-    const rendered = router.render(result);
 
-    expect(result.errorBoundary).toBeNull();
-    expect(rendered).toBe("no-boundary");
-  });
-
-  it("returns raw wrapper-load errors when no wrapper boundary exists", async () => {
-    const shell = wrapper({
-      id: "shell:layout",
-      component: ({ children }) => children,
-      fetch: async (): Promise<string> => {
-        throw new Error("wrapper-failure");
-      },
-    });
-    const [brokenRoute] = group(shell, [
-      route({
-        url: "/broken",
-        content: () => "broken",
-      }),
-    ] as const);
-    const router = createRouter({
-      broken: brokenRoute,
-    });
-
-    const result = await router.load("/broken");
-    const rendered = router.render(result);
-
-    expect(result.errorBoundary).toBeNull();
-    expect(rendered).toBeInstanceOf(Error);
-    expect((rendered as Error).message).toBe("wrapper-failure");
+    expect(result.status).toBe(503);
+    expect(result.error).toBeInstanceOf(StatusResponse);
   });
 
   it("returns null when asked to render a redirect match payload", () => {
@@ -1590,7 +1285,6 @@ describe("createRouter", () => {
     expect(
       router.render({
         error: null,
-        errorBoundary: null,
         location: {
           hash: "",
           href: "/legacy",
@@ -1600,9 +1294,7 @@ describe("createRouter", () => {
           url: new URL("https://example.com/legacy"),
         },
         match: redirectMatch,
-        routeData: undefined,
         status: 308,
-        wrapperData: {},
       } as never),
     ).toBeNull();
   });
@@ -1643,27 +1335,16 @@ describe("createRouter", () => {
   });
 
   it("aborts in-flight loads when dispose is called", async () => {
-    let capturedSignal: AbortSignal | undefined;
+    let resolvePreload: (() => void) | null = null;
 
     const slowRoute = route({
       url: "/slow",
-      fetch: async (
-        _params: Record<string, never>,
-        _search: unknown,
-        context: { signal: AbortSignal },
-      ) => {
-        capturedSignal = context.signal;
-
-        return new Promise((resolve, reject) => {
-          const timer = setTimeout(resolve, 60_000);
-
-          context.signal.addEventListener("abort", () => {
-            clearTimeout(timer);
-            reject(new DOMException("Aborted", "AbortError"));
-          });
-        });
-      },
-      content: () => "slow",
+      content: Object.assign(() => "slow", {
+        preload: () =>
+          new Promise<{ default: string }>((resolve) => {
+            resolvePreload = () => resolve({ default: "SlowPage" });
+          }),
+      }),
     });
 
     const adapter = createMemoryAdapter("/");
@@ -1671,19 +1352,176 @@ describe("createRouter", () => {
 
     const loadPromise = router.load("/slow");
 
-    expect(capturedSignal).toBeDefined();
-    expect(capturedSignal?.aborted).toBe(false);
+    // Wait a tick for the preload to start
+    await new Promise((resolve) => {
+      setTimeout(resolve, 0);
+    });
+
+    expect(resolvePreload).toBeDefined();
 
     router.dispose();
 
-    expect(capturedSignal?.aborted).toBe(true);
+    // Resolve the preload so the promise settles
+    resolvePreload?.();
 
     // The load may resolve (router catches AbortError internally) or reject
-    // depending on timing. Either way, the signal was aborted.
+    // depending on timing. Either way, the router was disposed.
     try {
       await loadPromise;
     } catch {
       // AbortError propagation is acceptable
     }
+  });
+
+  it("merges search params into the current URL via setSearchParams", async () => {
+    const router = createRouter(
+      {
+        list: route({
+          url: "/list",
+          content: () => "list",
+        }),
+      },
+      { adapter: createMemoryAdapter("/list?sort=name") },
+    );
+
+    await router.load("/list?sort=name");
+    router.setSearchParams({ page: "2" });
+
+    await vi.waitFor(() => {
+      expect(router.getState().location.searchParams.get("sort")).toBe("name");
+      expect(router.getState().location.searchParams.get("page")).toBe("2");
+    });
+  });
+
+  it("removes search params when set to null via setSearchParams", async () => {
+    const router = createRouter(
+      {
+        list: route({
+          url: "/list",
+          content: () => "list",
+        }),
+      },
+      { adapter: createMemoryAdapter("/list?sort=name&page=2") },
+    );
+
+    await router.load("/list?sort=name&page=2");
+    router.setSearchParams({ page: null });
+
+    await vi.waitFor(() => {
+      expect(router.getState().location.searchParams.get("sort")).toBe("name");
+      expect(router.getState().location.searchParams.has("page")).toBe(false);
+    });
+  });
+
+  it("blocks navigation when an active blocker is registered", async () => {
+    const router = createRouter(
+      {
+        home: route({ url: "/", content: () => "home" }),
+        about: route({ url: "/about", content: () => "about" }),
+      },
+      { adapter: createMemoryAdapter("/") },
+    );
+
+    await router.load("/");
+
+    router.registerBlocker({ id: "form", isActive: () => true });
+    router.navigate("about");
+
+    expect(router.blockerState).toBe("blocked");
+    expect(router.getState().location.pathname).toBe("/");
+
+    router.proceedNavigation();
+
+    await vi.waitFor(() => {
+      expect(router.getState().location.pathname).toBe("/about");
+    });
+
+    expect(router.blockerState).toBe("idle");
+  });
+
+  it("cancels blocked navigation and stays on the current page", async () => {
+    const router = createRouter(
+      {
+        home: route({ url: "/", content: () => "home" }),
+        about: route({ url: "/about", content: () => "about" }),
+      },
+      { adapter: createMemoryAdapter("/") },
+    );
+
+    await router.load("/");
+
+    router.registerBlocker({ id: "form", isActive: () => true });
+    router.navigate("about");
+
+    expect(router.blockerState).toBe("blocked");
+    router.cancelNavigation();
+
+    expect(router.blockerState).toBe("idle");
+    expect(router.getState().location.pathname).toBe("/");
+  });
+
+  it("allows navigation when no active blocker is registered", async () => {
+    const router = createRouter(
+      {
+        home: route({ url: "/", content: () => "home" }),
+        about: route({ url: "/about", content: () => "about" }),
+      },
+      { adapter: createMemoryAdapter("/") },
+    );
+
+    await router.load("/");
+
+    router.registerBlocker({ id: "form", isActive: () => false });
+    router.navigate("about");
+
+    expect(router.blockerState).toBe("idle");
+
+    await vi.waitFor(() => {
+      expect(router.getState().location.pathname).toBe("/about");
+    });
+  });
+
+  it("removes blockers on unregister", async () => {
+    const router = createRouter(
+      {
+        home: route({ url: "/", content: () => "home" }),
+        about: route({ url: "/about", content: () => "about" }),
+      },
+      { adapter: createMemoryAdapter("/") },
+    );
+
+    await router.load("/");
+
+    router.registerBlocker({ id: "form", isActive: () => true });
+    router.unregisterBlocker("form");
+    router.navigate("about");
+
+    expect(router.blockerState).toBe("idle");
+
+    await vi.waitFor(() => {
+      expect(router.getState().location.pathname).toBe("/about");
+    });
+  });
+
+  it("supports functional updates via setSearchParams", async () => {
+    const router = createRouter(
+      {
+        list: route({
+          url: "/list",
+          content: () => "list",
+        }),
+      },
+      { adapter: createMemoryAdapter("/list?page=1") },
+    );
+
+    await router.load("/list?page=1");
+    router.setSearchParams((current) => ({
+      ...current,
+      page: String(Number(current.page ?? "0") + 1),
+    }));
+
+    await vi.waitFor(() => {
+      expect(router.getState().location.searchParams.get("page")).toBe("2");
+    });
   });
 });

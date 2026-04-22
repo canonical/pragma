@@ -3,7 +3,7 @@
     HTMLAnchorAttributes,
     HTMLButtonAttributes,
   } from "svelte/elements";
-  import type { ButtonPrimitiveProps } from "./types";
+  import type { ButtonPrimitiveProps } from "./types.js";
   import "./styles.css";
 
   const componentCssClassName = "ds button-primitive";

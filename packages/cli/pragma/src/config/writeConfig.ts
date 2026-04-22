@@ -44,6 +44,12 @@ export default function writeConfig(cwd: string, update: ConfigUpdate): void {
     delete existing.channel;
   }
 
+  if (update.packages !== undefined) {
+    existing.packages = update.packages;
+  } else if ("packages" in update) {
+    delete existing.packages;
+  }
+
   writeFileSync(tempPath, `${JSON.stringify(existing, null, 2)}\n`);
   renameSync(tempPath, configPath);
 }

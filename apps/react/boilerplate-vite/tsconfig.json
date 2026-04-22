@@ -2,15 +2,21 @@
   "extends": "@canonical/typescript-config-react",
   "compilerOptions": {
     "baseUrl": "src",
-    "skipLibCheck": true, // Remove if not using storybook
+    "skipLibCheck": true,
     "types": [
+      "bun-types",
       "node",
       "react",
       "react-dom",
       "vitest/globals",
       "@testing-library/jest-dom"
     ],
-    "noEmit": true
+    "noEmit": true,
+    "paths": {
+      "#lib/*": ["./lib/*"],
+      "#domains/*": ["./domains/*"],
+      "#styles/*": ["./styles/*"]
+    }
   },
   "include": [
     "src/**/*.ts",

@@ -1,6 +1,6 @@
 {
   "name": "@canonical/storybook-addon-utils",
-  "version": "0.23.0",
+  "version": "0.25.0",
   "type": "module",
   "files": [
     "dist"
@@ -40,14 +40,14 @@
     "check:ts": "tsc --noEmit"
   },
   "dependencies": {
-    "@canonical/styles-debug": "^0.23.0",
+    "@canonical/styles-debug": "^0.25.0",
     "@storybook/icons": "^2.0.1"
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.9",
-    "@canonical/biome-config": "^0.23.0",
-    "@canonical/styles": "^0.23.0",
-    "@canonical/typescript-config-react": "^0.23.0",
+    "@canonical/biome-config": "^0.25.0",
+    "@canonical/styles": "^0.25.0",
+    "@canonical/typescript-config-react": "^0.25.0",
     "@storybook/addon-docs": "^10.3.1",
     "@storybook/react-vite": "^10.3.1",
     "@types/react": "^19.2.14",

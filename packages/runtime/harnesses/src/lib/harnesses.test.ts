@@ -65,4 +65,60 @@ describe("harnesses registry", () => {
       expect(h.version).toBe("*");
     }
   });
+
+  it("every harness configPath and skillsPath return strings", () => {
+    const root = "/test/project";
+    for (const h of harnesses) {
+      expect(typeof h.configPath(root)).toBe("string");
+      expect(typeof h.skillsPath(root)).toBe("string");
+    }
+  });
+
+  it("windsurf configPath uses HOME env", () => {
+    const windsurf = harnesses.find((h) => h.id === "windsurf");
+    const path = windsurf?.configPath("/project");
+    expect(path).toContain("mcp_config.json");
+  });
+
+  it("cursor configPath is at .cursor/mcp.json", () => {
+    const cursor = harnesses.find((h) => h.id === "cursor");
+    expect(cursor?.configPath("/project")).toBe("/project/.cursor/mcp.json");
+    expect(cursor?.skillsPath("/project")).toBe("/project/.cursor/skills");
+  });
+
+  it("gemini-cli configPath is at .gemini/settings.json", () => {
+    const gemini = harnesses.find((h) => h.id === "gemini-cli");
+    expect(gemini?.configPath("/project")).toBe(
+      "/project/.gemini/settings.json",
+    );
+    expect(gemini?.skillsPath("/project")).toBe("/project/.agents/skills");
+  });
+
+  it("codex configPath is at .codex/config.toml", () => {
+    const codex = harnesses.find((h) => h.id === "codex");
+    expect(codex?.configPath("/project")).toBe("/project/.codex/config.toml");
+    expect(codex?.skillsPath("/project")).toBe("/project/.agents/skills");
+  });
+
+  it("vscode configPath is at .vscode/mcp.json", () => {
+    const vscode = harnesses.find((h) => h.id === "vscode");
+    expect(vscode?.configPath("/project")).toBe("/project/.vscode/mcp.json");
+    expect(vscode?.skillsPath("/project")).toBe("/project/.agents/skills");
+  });
+
+  it("opencode configPath and skillsPath", () => {
+    const oc = harnesses.find((h) => h.id === "opencode");
+    expect(oc?.configPath("/project")).toBe("/project/opencode.json");
+    expect(oc?.skillsPath("/project")).toBe("/project/.agents/skills");
+  });
+
+  it("roo-code skillsPath", () => {
+    const roo = harnesses.find((h) => h.id === "roo-code");
+    expect(roo?.skillsPath("/project")).toBe("/project/.roo/skills");
+  });
+
+  it("windsurf skillsPath", () => {
+    const windsurf = harnesses.find((h) => h.id === "windsurf");
+    expect(windsurf?.skillsPath("/project")).toBe("/project/.windsurf/skills");
+  });
 });

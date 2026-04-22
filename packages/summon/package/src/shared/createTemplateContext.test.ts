@@ -30,6 +30,16 @@ describe("createTemplateContext", () => {
     expect(ctx.version).toBe("0.1.0");
   });
 
+  it("falls back to 0.1.0 when monorepo has no version", () => {
+    const monorepoInfo: MonorepoInfo = {
+      isMonorepo: true,
+      version: undefined,
+    };
+    const ctx = createTemplateContext(baseAnswers, monorepoInfo);
+
+    expect(ctx.version).toBe("0.1.0");
+  });
+
   it("handles unscoped package names", () => {
     const unscopedAnswers: PackageAnswers = {
       ...baseAnswers,

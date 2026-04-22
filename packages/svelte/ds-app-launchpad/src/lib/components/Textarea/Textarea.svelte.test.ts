@@ -4,7 +4,7 @@ import type { Locator } from "vitest/browser";
 import type { RenderResult } from "vitest-browser-svelte";
 import { render } from "vitest-browser-svelte";
 import Component from "./Textarea.svelte";
-import type { TextareaProps } from "./types";
+import type { TextareaProps } from "./types.js";
 
 describe("Textarea component", () => {
   const baseProps = {} satisfies ComponentProps<typeof Component>;

@@ -128,7 +128,7 @@ export const executeEffect = async (
     }
 
     case "Glob": {
-      // Use Bun's glob if available, otherwise fall back to fs.readdir
+      /* v8 ignore next 7 -- Bun.Glob branch; only reachable under Bun runtime */
       if (typeof Bun !== "undefined" && Bun.Glob) {
         const globber = new Bun.Glob(effect.pattern);
         const matches: string[] = [];
@@ -142,6 +142,7 @@ export const executeEffect = async (
     }
 
     case "Exec": {
+      /* v8 ignore next 12 -- Bun.spawn branch; only reachable under Bun runtime */
       if (typeof Bun !== "undefined") {
         const proc = Bun.spawn([effect.command, ...effect.args], {
           cwd: effect.cwd,

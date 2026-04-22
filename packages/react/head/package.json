@@ -1,0 +1,65 @@
+{
+  "name": "@canonical/react-head",
+  "description": "Declarative head management for React with SSR collection",
+  "version": "0.25.0",
+  "type": "module",
+  "module": "dist/esm/index.js",
+  "types": "dist/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/esm/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "author": {
+    "email": "webteam@canonical.com",
+    "name": "Canonical Webteam"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/canonical/pragma"
+  },
+  "license": "LGPL-3.0",
+  "bugs": {
+    "url": "https://github.com/canonical/pragma/issues"
+  },
+  "homepage": "https://github.com/canonical/pragma#readme",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "build:all": "bun run build",
+    "check": "bun run check:biome && bun run check:ts && bun run check:webarchitect",
+    "check:webarchitect": "webarchitect package-react",
+    "check:fix": "bun run check:biome:fix && bun run check:ts",
+    "check:biome": "biome check",
+    "check:biome:fix": "biome check --write",
+    "check:ts": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
+  },
+  "dependencies": {
+    "react": "^19.2.4"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.4.9",
+    "@canonical/biome-config": "^0.25.0",
+    "@canonical/typescript-config-react": "^0.25.0",
+    "@canonical/webarchitect": "^0.25.0",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@types/node": "^24.12.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.0",
+    "@vitest/coverage-v8": "^4.0.18",
+    "jsdom": "^28.1.0",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "typescript": "^5.9.3",
+    "vite": "^8.0.1",
+    "vitest": "^4.0.18"
+  }
+}

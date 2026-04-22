@@ -40,8 +40,10 @@ const harnesses: readonly HarnessDefinition[] = [
       { type: "directory", path: ".windsurf" },
       { type: "file", path: "~/.codeium/windsurf/mcp_config.json" },
     ],
+    /* v8 ignore start -- ?? "" defensive: HOME is always set in test environments */
     configPath: () =>
       `${process.env.HOME ?? ""}/.codeium/windsurf/mcp_config.json`,
+    /* v8 ignore stop */
     configFormat: "json",
     mcpKey: "mcpServers",
     skillsPath: (root) => `${root}/.windsurf/skills`,

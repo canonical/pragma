@@ -46,11 +46,13 @@ export function formatNounHelp(
 
   // Calculate padding for alignment
   const maxVerbLen = Math.max(
-    ...verbCommands.map((c) => (c.path[1] ?? "").length),
+    ...verbCommands.map((c) => (c.path[1] as string).length),
   );
 
   for (const cmd of verbCommands) {
-    const verb = cmd.path[1] ?? "";
+    const verb = cmd.path[1];
+    /* v8 ignore next — structurally guaranteed: verbCommands filtered to path.length > 1 */
+    if (!verb) throw new Error("Expected verb in command path");
     const padding = " ".repeat(maxVerbLen - verb.length + 4);
     lines.push(`  ${verb}${padding}${cmd.description}`);
   }
@@ -178,7 +180,8 @@ export function formatHelp(
   const nounDescriptions = new Map<string, string>();
   for (const cmd of commands) {
     const noun = cmd.path[0];
-    if (!noun) continue;
+    /* v8 ignore next — commands always have at least one path segment */
+    if (!noun) throw new Error("Expected command path[0] to be defined");
     if (!nounDescriptions.has(noun)) {
       // Use the first command's description or a generic one
       if (cmd.path.length === 1) {
@@ -193,7 +196,9 @@ export function formatHelp(
     // Use provided semantic grouping
     for (const group of groups) {
       for (const noun of group.nouns) {
-        const desc = nounDescriptions.get(noun) ?? "";
+        const desc = nounDescriptions.get(noun);
+        /* v8 ignore next — noun was populated in the loop above */
+        if (!desc) throw new Error(`Expected description for noun "${noun}"`);
         const maxLen = Math.max(
           ...[...nounDescriptions.keys()].map((n) => n.length),
         );
@@ -244,7 +249,8 @@ export function formatLlmHelp(
   const byNoun = new Map<string, CommandDefinition[]>();
   for (const cmd of commands) {
     const noun = cmd.path[0];
-    if (!noun) continue;
+    /* v8 ignore next — commands always have at least one path segment */
+    if (!noun) throw new Error("Expected command path[0] to be defined");
     const existing = byNoun.get(noun) ?? [];
     existing.push(cmd);
     byNoun.set(noun, existing);

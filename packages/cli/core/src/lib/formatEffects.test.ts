@@ -126,6 +126,24 @@ describe("isVisibleEffect", () => {
   it("shows Symlink effects", () => {
     expect(isVisibleEffect(symlink)).toBe(true);
   });
+
+  it("hides Glob, ReadContext, WriteContext, Parallel, Race effects", () => {
+    const glob: Effect = { _tag: "Glob", pattern: "**/*.ts", cwd: "." };
+    const readCtx: Effect = { _tag: "ReadContext", key: "k" };
+    const writeCtx: Effect = { _tag: "WriteContext", key: "k", value: "v" };
+    const parallel: Effect = { _tag: "Parallel", tasks: [] };
+    const race: Effect = { _tag: "Race", tasks: [] };
+    expect(isVisibleEffect(glob)).toBe(false);
+    expect(isVisibleEffect(readCtx)).toBe(false);
+    expect(isVisibleEffect(writeCtx)).toBe(false);
+    expect(isVisibleEffect(parallel)).toBe(false);
+    expect(isVisibleEffect(race)).toBe(false);
+  });
+
+  it("shows warn and error log effects", () => {
+    expect(isVisibleEffect(logWarn)).toBe(true);
+    expect(isVisibleEffect(logError)).toBe(true);
+  });
 });
 
 // =============================================================================
@@ -149,6 +167,20 @@ describe("getActionLabel", () => {
     [logError, "Error"],
   ])("returns correct label for %s", (effect, expected) => {
     expect(getActionLabel(effect as Effect)).toBe(expected);
+  });
+
+  it("returns Log for unknown log level", () => {
+    const unknownLog: Effect = {
+      _tag: "Log",
+      level: "trace" as never,
+      message: "x",
+    };
+    expect(getActionLabel(unknownLog)).toBe("Log");
+  });
+
+  it("returns tag name for unknown effect types", () => {
+    const unknownEffect = { _tag: "ReadFile", path: "foo" } as Effect;
+    expect(getActionLabel(unknownEffect)).toBe("ReadFile");
   });
 });
 
@@ -174,6 +206,11 @@ describe("getActionColor", () => {
   ])("returns correct color for %s", (effect, expected) => {
     expect(getActionColor(effect as Effect)).toBe(expected);
   });
+
+  it("returns undefined for unknown effect types", () => {
+    const unknownEffect = { _tag: "ReadFile", path: "foo" } as Effect;
+    expect(getActionColor(unknownEffect)).toBeUndefined();
+  });
 });
 
 // =============================================================================
@@ -184,6 +221,12 @@ describe("getEffectPayload", () => {
   it("returns path for file effects", () => {
     expect(getEffectPayload(writeFile)).toBe("src/index.ts");
     expect(getEffectPayload(deleteFile)).toBe("old.ts");
+  });
+
+  it("returns path for appendFile, makeDir, deleteDir", () => {
+    expect(getEffectPayload(appendFile)).toBe("log.txt");
+    expect(getEffectPayload(makeDir)).toBe("src/lib");
+    expect(getEffectPayload(deleteDir)).toBe("old/");
   });
 
   it("returns source → dest for copy effects", () => {
@@ -201,6 +244,11 @@ describe("getEffectPayload", () => {
 
   it("returns message for log", () => {
     expect(getEffectPayload(logInfo)).toBe("Installing");
+  });
+
+  it("returns tag name for unknown effect types", () => {
+    const unknownEffect = { _tag: "ReadFile", path: "foo" } as Effect;
+    expect(getEffectPayload(unknownEffect)).toBe("ReadFile");
   });
 });
 
@@ -225,6 +273,12 @@ describe("formatEffectLine", () => {
     expect(line).toContain("Execute");
     expect(line).toContain("npm install");
   });
+
+  it("uses identity function for effects with no color", () => {
+    const line = formatEffectLine(logDebug, false);
+    expect(line).toContain("Debug");
+    expect(line).toContain("Verbose detail");
+  });
 });
 
 // =============================================================================
@@ -238,9 +292,20 @@ describe("formatEffectWithContent", () => {
     expect(result).toContain("export {};");
   });
 
+  it("shows content preview for AppendFile", () => {
+    const result = formatEffectWithContent(appendFile, true);
+    expect(result).toContain("log.txt");
+    expect(result).toContain("line");
+  });
+
   it("shows no content for Exec", () => {
     const result = formatEffectWithContent(exec, true);
     expect(result).toBe(formatEffectLine(exec, true));
+  });
+
+  it("uses pipe indent for non-last items", () => {
+    const result = formatEffectWithContent(writeFile, false);
+    expect(result).toContain("│");
   });
 });
 
@@ -266,6 +331,12 @@ describe("formatContentPreview", () => {
     expect(result).toContain("line3");
     expect(result).toContain("7 more lines omitted");
     expect(result).not.toContain("line4");
+  });
+
+  it("truncates long lines exceeding MAX_LINE_WIDTH", () => {
+    const longLine = "x".repeat(200);
+    const result = formatContentPreview(longLine);
+    expect(result).toContain("...");
   });
 });
 
@@ -294,18 +365,52 @@ describe("getLanguageHint", () => {
 describe("getLlmActionLabel", () => {
   it("returns lowercase labels for LLM output", () => {
     expect(getLlmActionLabel(writeFile)).toBe("create");
-    expect(getLlmActionLabel(symlink)).toBe("symlink");
+    expect(getLlmActionLabel(appendFile)).toBe("append");
+    expect(getLlmActionLabel(makeDir)).toBe("mkdir");
+    expect(getLlmActionLabel(copyFile)).toBe("copy");
+    expect(getLlmActionLabel(copyDir)).toBe("copy-dir");
+    expect(getLlmActionLabel(deleteFile)).toBe("delete");
+    expect(getLlmActionLabel(deleteDir)).toBe("rmdir");
     expect(getLlmActionLabel(exec)).toBe("exec");
+    expect(getLlmActionLabel(symlink)).toBe("symlink");
+    expect(getLlmActionLabel(logInfo)).toBe("info");
+  });
+
+  it("returns lowercased tag name for unknown effect types", () => {
+    const unknownEffect = { _tag: "ReadFile", path: "foo" } as Effect;
+    expect(getLlmActionLabel(unknownEffect)).toBe("readfile");
   });
 });
 
 describe("getLlmEffectPath", () => {
   it("returns path for file effects", () => {
     expect(getLlmEffectPath(writeFile)).toBe("src/index.ts");
+    expect(getLlmEffectPath(appendFile)).toBe("log.txt");
+    expect(getLlmEffectPath(makeDir)).toBe("src/lib");
+    expect(getLlmEffectPath(deleteFile)).toBe("old.ts");
+    expect(getLlmEffectPath(deleteDir)).toBe("old/");
+  });
+
+  it("returns source -> dest for copy effects", () => {
+    expect(getLlmEffectPath(copyFile)).toBe("a.ts -> b.ts");
+    expect(getLlmEffectPath(copyDir)).toBe("src/ -> dist/");
   });
 
   it("returns target -> path for symlink", () => {
     expect(getLlmEffectPath(symlink)).toBe("../shared/utils -> src/utils");
+  });
+
+  it("returns command string for exec", () => {
+    expect(getLlmEffectPath(exec)).toBe("npm install");
+  });
+
+  it("returns message for log", () => {
+    expect(getLlmEffectPath(logInfo)).toBe("Installing");
+  });
+
+  it("returns empty string for unknown effect types", () => {
+    const unknownEffect = { _tag: "ReadFile", path: "foo" } as Effect;
+    expect(getLlmEffectPath(unknownEffect)).toBe("");
   });
 });
 
@@ -335,6 +440,46 @@ describe("formatLlmMarkdown", () => {
     const result = formatLlmMarkdown(mockGen, {}, [symlink]);
     expect(result).toContain("| symlink | ../shared/utils -> src/utils |");
   });
+
+  it("deduplicates MakeDir effects in plan table", () => {
+    const effects: Effect[] = [makeDir, makeDir, writeFile];
+    const result = formatLlmMarkdown(mockGen, { name: "X" }, effects);
+    const lines = result
+      .split("\n")
+      .filter((l: string) => l.includes("| mkdir |"));
+    expect(lines).toHaveLength(1);
+  });
+
+  it("omits Answers section when no answers given", () => {
+    const result = formatLlmMarkdown(mockGen, {}, [writeFile]);
+    expect(result).not.toContain("## Answers");
+  });
+
+  it("includes AppendFile in files section", () => {
+    const result = formatLlmMarkdown(mockGen, {}, [appendFile]);
+    expect(result).toContain("### log.txt");
+    expect(result).toContain("line");
+  });
+
+  it("renders array answer values as comma-separated", () => {
+    const result = formatLlmMarkdown(mockGen, { features: ["a", "b"] }, [
+      writeFile,
+    ]);
+    expect(result).toContain("| features | a, b |");
+  });
+
+  it("includes verbose debug effects when verbose is true", () => {
+    const result = formatLlmMarkdown(mockGen, {}, [logDebug], true);
+    expect(result).toContain("debug");
+    expect(result).toContain("Verbose detail");
+  });
+
+  it("omits Plan and Files sections when no visible effects", () => {
+    const result = formatLlmMarkdown(mockGen, { name: "X" }, [readFile]);
+    expect(result).not.toContain("## Plan");
+    expect(result).not.toContain("## Files");
+    expect(result).toContain("Dry-run complete.");
+  });
 });
 
 // =============================================================================
@@ -361,6 +506,14 @@ describe("formatLlmJson", () => {
       action: "symlink",
       path: "../shared/utils -> src/utils",
     });
+  });
+
+  it("deduplicates MakeDir effects with the same path", () => {
+    const effects: Effect[] = [makeDir, makeDir, writeFile];
+    const result = formatLlmJson(mockGen, {}, effects);
+    const plan = result.plan as Array<Record<string, unknown>>;
+    const mkdirEntries = plan.filter((e) => e.action === "mkdir");
+    expect(mkdirEntries).toHaveLength(1);
   });
 });
 
@@ -389,6 +542,27 @@ describe("buildReplayCommand", () => {
     expect(result).not.toContain("--with-tests");
     expect(result).not.toContain("--no-with-tests");
   });
+
+  it("adds confirm flag when value is true and default is not true", () => {
+    const prompts = [
+      {
+        name: "verbose" as const,
+        message: "Verbose?",
+        type: "confirm" as const,
+        default: false,
+      },
+    ];
+    const answers = { verbose: true };
+    const result = buildReplayCommand("test-gen", answers, prompts);
+    expect(result).toContain("--verbose");
+    expect(result).not.toContain("--no-verbose");
+  });
+
+  it("skips empty multiselect values", () => {
+    const answers = { features: [] as string[] };
+    const result = buildReplayCommand("test-gen", answers, mockGen.prompts);
+    expect(result).not.toContain("--features");
+  });
 });
 
 // =============================================================================
@@ -415,5 +589,103 @@ describe("formatLlmHelp", () => {
     expect(result).toContain("## Workflow");
     expect(result).toContain("--llm");
     expect(result).toContain("--yes");
+  });
+
+  it("includes meta.help when present", () => {
+    const genWithHelp = {
+      ...mockGen,
+      meta: { ...mockGen.meta, help: "Extended help text for the generator." },
+    };
+    const result = formatLlmHelp(genWithHelp, "test-gen");
+    expect(result).toContain("Extended help text for the generator.");
+  });
+
+  it("includes meta.examples when present", () => {
+    const genWithExamples = {
+      ...mockGen,
+      meta: {
+        ...mockGen.meta,
+        examples: [
+          "test-gen --name Button",
+          "test-gen --name Card --style scss",
+        ],
+      },
+    };
+    const result = formatLlmHelp(genWithExamples, "test-gen");
+    expect(result).toContain("## Examples");
+    expect(result).toContain("test-gen --name Button");
+    expect(result).toContain("test-gen --name Card --style scss");
+  });
+
+  it("shows multiselect type hint in required options", () => {
+    const genWithRequiredMulti = {
+      ...mockGen,
+      prompts: [
+        {
+          name: "items",
+          message: "Items to select",
+          type: "multiselect" as const,
+          choices: [
+            { label: "A", value: "a" },
+            { label: "B", value: "b" },
+          ],
+        },
+      ],
+    };
+    const result = formatLlmHelp(genWithRequiredMulti, "test-gen");
+    expect(result).toContain("[value,value,...]");
+  });
+
+  it("shows select type hint with pipe-separated values", () => {
+    const genWithRequiredSelect = {
+      ...mockGen,
+      prompts: [
+        {
+          name: "style",
+          message: "Style",
+          type: "select" as const,
+          choices: [
+            { label: "CSS", value: "css" },
+            { label: "SCSS", value: "scss" },
+          ],
+        },
+      ],
+    };
+    const result = formatLlmHelp(genWithRequiredSelect, "test-gen");
+    expect(result).toContain("css\\|scss");
+  });
+
+  it("shows confirm type hint in optional options", () => {
+    const genWithConfirmDefault = {
+      ...mockGen,
+      prompts: [
+        {
+          name: "verbose",
+          message: "Verbose?",
+          type: "confirm" as const,
+          default: false,
+        },
+      ],
+    };
+    const result = formatLlmHelp(genWithConfirmDefault, "test-gen");
+    expect(result).toContain("[boolean]");
+  });
+
+  it("includes optional options with when conditions", () => {
+    const genWithWhen = {
+      ...mockGen,
+      prompts: [
+        { name: "name", message: "Name", type: "text" as const },
+        {
+          name: "path",
+          message: "Path",
+          type: "text" as const,
+          when: () => true,
+        },
+      ],
+    };
+    const result = formatLlmHelp(genWithWhen, "test-gen");
+    expect(result).toContain("## Required Options");
+    expect(result).toContain("## Optional Options");
   });
 });

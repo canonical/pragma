@@ -12,7 +12,8 @@
       "!**/node_modules",
       "!**/dist",
       "!**/*.gen.ts",
-      "!**/storybook-static"
+      "!**/storybook-static",
+      "!**/coverage"
     ]
   },
   "formatter": {

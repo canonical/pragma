@@ -8,8 +8,10 @@ import RouterProvider from "./RouterProvider/Provider.js";
 const routes = {
   page: route({
     url: "/pages/:slug",
-    fetch: vi.fn(async ({ slug }: { slug: string }) => `page:${slug}`),
-    content: ({ data }) => String(data),
+    prefetch: vi.fn(async ({ slug }: { slug: string }) => {
+      void slug;
+    }),
+    content: ({ params }) => `page:${params.slug}`,
   }),
 };
 
@@ -40,7 +42,7 @@ describe("createHydratedRouter", () => {
       expect(screen.getByText("page:hello")).toBeTruthy();
     });
 
-    expect(routes.page.fetch).toHaveBeenCalledTimes(1);
+    expect(router.getState().match?.kind).toBe("route");
   });
 
   it("returns a browser-backed router when no initial data is present", () => {

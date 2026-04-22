@@ -199,4 +199,34 @@ describe("generatorToCommand", () => {
     const cmd = generatorToCommand(["simple"], simpleGen);
     expect(cmd.parameterGroups).toBeUndefined();
   });
+
+  it("appends to existing group when multiple prompts share the same group", () => {
+    const genWithSharedGroup: GeneratorDefinition = {
+      meta: {
+        name: "shared-group",
+        description: "Shared group gen",
+        version: "1.0.0",
+      },
+      prompts: [
+        {
+          name: "withTests",
+          message: "Tests?",
+          type: "confirm",
+          default: true,
+          group: "Testing",
+        },
+        {
+          name: "testRunner",
+          message: "Runner?",
+          type: "text",
+          group: "Testing",
+        },
+      ],
+      generate: () => pure(undefined),
+    };
+    const cmd = generatorToCommand(["shared-group"], genWithSharedGroup);
+    expect(cmd.parameterGroups).toEqual({
+      Testing: ["withTests", "testRunner"],
+    });
+  });
 });

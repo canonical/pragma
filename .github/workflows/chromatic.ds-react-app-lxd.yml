@@ -1,6 +1,7 @@
 name: "react-ds-app-lxd/chromatic"
 on:
   pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
     paths:
       - configs/storybook/**
       - packages/ds-assets/**

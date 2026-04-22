@@ -82,8 +82,10 @@ async function computeStats(ctx: PluginContext): Promise<StatsApi> {
 
   const directCounts = new Map<string, number>();
   for (const binding of typeResult.bindings) {
+    /* v8 ignore start -- defensive ?? for SPARQL binding access; untestable without violating SPARQL contract */
     const cls = binding.class ?? "";
     const count = Number.parseInt(binding.count ?? "0", 10);
+    /* v8 ignore stop */
     directCounts.set(cls, count);
   }
 
@@ -97,13 +99,19 @@ async function computeStats(ctx: PluginContext): Promise<StatsApi> {
   const allClasses = new Set<string>([...directCounts.keys()]);
 
   for (const binding of hierarchyResult.bindings) {
+    /* v8 ignore start -- defensive ?? for SPARQL binding access; untestable without violating SPARQL contract */
     const sub = binding.sub ?? "";
     const sup = binding.super ?? "";
+    /* v8 ignore stop */
     allClasses.add(sub);
     allClasses.add(sup);
 
-    if (!childrenMap.has(sup)) childrenMap.set(sup, new Set());
-    childrenMap.get(sup)?.add(sub);
+    let children = childrenMap.get(sup);
+    if (!children) {
+      children = new Set();
+      childrenMap.set(sup, children);
+    }
+    children.add(sub);
   }
 
   // Step 3: Compute total counts (direct + all descendant instances)
@@ -112,7 +120,8 @@ async function computeStats(ctx: PluginContext): Promise<StatsApi> {
   const visiting = new Set<string>();
 
   function computeTotal(cls: string): number {
-    if (totalCounts.has(cls)) return totalCounts.get(cls) ?? 0;
+    const cached = totalCounts.get(cls);
+    if (cached !== undefined) return cached;
     if (visiting.has(cls)) return directCounts.get(cls) ?? 0; // cycle — break
 
     visiting.add(cls);
@@ -139,7 +148,7 @@ async function computeStats(ctx: PluginContext): Promise<StatsApi> {
   const triples: string[] = [];
   for (const cls of allClasses) {
     const direct = directCounts.get(cls) ?? 0;
-    const total = totalCounts.get(cls) ?? 0;
+    const total = computeTotal(cls); // already memoized — O(1) lookup
     triples.push(
       `  <${cls}> <${KE_STATS}directCount> ${direct} .`,
       `  <${cls}> <${KE_STATS}totalCount> ${total} .`,
@@ -161,7 +170,7 @@ ${triples.join("\n")}
     .map((cls) => ({
       classUri: cls,
       direct: directCounts.get(cls) ?? 0,
-      total: totalCounts.get(cls) ?? 0,
+      total: computeTotal(cls), // already memoized — O(1) lookup
     }))
     .sort((a, b) => b.total - a.total);
 

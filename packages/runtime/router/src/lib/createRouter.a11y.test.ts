@@ -532,7 +532,7 @@ describe("createRouter accessibility", () => {
         }),
         users: route({
           url: "/users",
-          content: ({ data }) => data,
+          content: () => "users",
         }),
       },
       {
@@ -540,10 +540,8 @@ describe("createRouter accessibility", () => {
         hydratedState: {
           href: "/users",
           kind: "route",
-          routeData: "users",
           routeId: "users",
           status: 200,
-          wrapperData: {},
         },
       },
     );

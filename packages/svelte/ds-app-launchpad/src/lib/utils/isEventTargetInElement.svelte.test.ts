@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { isEventTargetInElement } from "./isEventTargetInElement";
+import { isEventTargetInElement } from "./isEventTargetInElement.js";
 
 describe("isEventTargetInElement", () => {
   let parentElement: HTMLDivElement;
