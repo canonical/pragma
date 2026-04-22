@@ -1,8 +1,8 @@
 import { readFileSync } from "node:fs";
 import { type Channel, VALID_CHANNELS } from "../constants.js";
 import {
-  type RawPackageEntry,
   parsePackageEntry,
+  type RawPackageEntry,
 } from "../domains/refs/operations/parseRef.js";
 import { PragmaError } from "../error/PragmaError.js";
 import resolveConfigPath from "./resolveConfigPath.js";
@@ -86,7 +86,7 @@ function parsePackagesField(
 
   if (!Array.isArray(raw)) {
     throw PragmaError.configError(
-      "\"packages\" must be an array of strings or { name, source? } objects.",
+      '"packages" must be an array of strings or { name, source? } objects.',
     );
   }
 
@@ -100,7 +100,7 @@ function parsePackagesField(
       const obj = item as Record<string, unknown>;
       if (typeof obj.name !== "string" || obj.name.length === 0) {
         throw PragmaError.configError(
-          "Each object in \"packages\" must have a non-empty \"name\" string.",
+          'Each object in "packages" must have a non-empty "name" string.',
         );
       }
       const entry: { name: string; source?: string } = { name: obj.name };
@@ -118,7 +118,7 @@ function parsePackagesField(
       continue;
     }
     throw PragmaError.configError(
-      "Each entry in \"packages\" must be a string or { name, source? } object.",
+      'Each entry in "packages" must be a string or { name, source? } object.',
     );
   }
 

@@ -1,7 +1,10 @@
 import { readConfig } from "#config";
 import { VERSION } from "#constants";
 import { detectInstallSource, PM_COMMANDS } from "#package-manager";
-import { parsePackageEntry } from "../../refs/operations/parseRef.js";
+import {
+  type PackageRef,
+  parsePackageEntry,
+} from "../../refs/operations/parseRef.js";
 import readGlobalRefs from "../../refs/operations/readGlobalRefs.js";
 import { bootStore } from "../../shared/bootStore.js";
 import { CHANNEL_RELEASES } from "../../shared/filters/buildChannelFilter.js";
@@ -80,24 +83,15 @@ function collectPackageRefSummaries(
   >,
 ): PackageRefSummary[] {
   const entries = projectPackages ?? readGlobalRefs();
-  const raw =
-    entries.length > 0
-      ? entries
-      : DEFAULT_PACKAGES.map((pkg) => pkg);
+  const raw = entries.length > 0 ? entries : DEFAULT_PACKAGES.map((pkg) => pkg);
 
-  return raw.map((entry) => {
-    const ref = parsePackageEntry(entry);
-    switch (ref.kind) {
-      case "npm":
-        return { pkg: ref.pkg, source: "npm" as const, detail: "node_modules" };
-      case "file":
-        return { pkg: ref.pkg, source: "file" as const, detail: ref.path };
-      case "git":
-        return {
-          pkg: ref.pkg,
-          source: "git" as const,
-          detail: `${ref.url}#${ref.ref}`,
-        };
-    }
-  });
+  return raw.map((entry) => refToSummary(parsePackageEntry(entry)));
+}
+
+function refToSummary(ref: PackageRef): PackageRefSummary {
+  if (ref.kind === "file")
+    return { pkg: ref.pkg, source: "file", detail: ref.path };
+  if (ref.kind === "git")
+    return { pkg: ref.pkg, source: "git", detail: `${ref.url}#${ref.ref}` };
+  return { pkg: ref.pkg, source: "npm", detail: "node_modules" };
 }

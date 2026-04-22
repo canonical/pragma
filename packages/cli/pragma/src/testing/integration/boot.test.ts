@@ -66,7 +66,10 @@ describe("PragmaRuntime boot", () => {
     const tmpPkg = mkdtempSync(join(tmpdir(), "pragma-ref-pkg-"));
     const dataDir = join(tmpPkg, "data");
     mkdirSync(dataDir, { recursive: true });
-    copyFileSync(join(fixturesDir, "canonical.ttl"), join(dataDir, "canonical.ttl"));
+    copyFileSync(
+      join(fixturesDir, "canonical.ttl"),
+      join(dataDir, "canonical.ttl"),
+    );
 
     // Create a temp project dir with config pointing to the file:// package
     const tmpProject = mkdtempSync(join(tmpdir(), "pragma-ref-project-"));

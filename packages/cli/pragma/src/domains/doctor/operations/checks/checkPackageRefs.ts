@@ -8,8 +8,8 @@
 import { existsSync } from "node:fs";
 import { readConfig } from "#config";
 import {
-  type RawPackageEntry,
   parsePackageEntry,
+  type RawPackageEntry,
 } from "../../../refs/operations/parseRef.js";
 import { gitCacheDir } from "../../../refs/operations/paths.js";
 import readGlobalRefs from "../../../refs/operations/readGlobalRefs.js";

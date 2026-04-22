@@ -102,8 +102,7 @@ describe("parsePackageEntry", () => {
     it("parses git+ssh:// source", () => {
       const ref = parsePackageEntry({
         name: "@canonical/design-system",
-        source:
-          "git+ssh://git@github.com/canonical/design-system.git#main",
+        source: "git+ssh://git@github.com/canonical/design-system.git#main",
       });
       expect(ref).toEqual({
         kind: "git",
@@ -117,8 +116,7 @@ describe("parsePackageEntry", () => {
       expect(() =>
         parsePackageEntry({
           name: "@canonical/design-system",
-          source:
-            "git+https://github.com/canonical/design-system.git",
+          source: "git+https://github.com/canonical/design-system.git",
         }),
       ).toThrow(PragmaError);
     });
@@ -127,8 +125,7 @@ describe("parsePackageEntry", () => {
       expect(() =>
         parsePackageEntry({
           name: "@canonical/design-system",
-          source:
-            "git+https://github.com/canonical/design-system.git#",
+          source: "git+https://github.com/canonical/design-system.git#",
         }),
       ).toThrow(PragmaError);
     });
@@ -145,9 +142,7 @@ describe("parsePackageEntry", () => {
     });
 
     it("throws on empty name", () => {
-      expect(() =>
-        parsePackageEntry({ name: "" }),
-      ).toThrow(PragmaError);
+      expect(() => parsePackageEntry({ name: "" })).toThrow(PragmaError);
     });
 
     it("throws on non-string source", () => {

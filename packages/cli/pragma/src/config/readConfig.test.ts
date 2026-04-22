@@ -271,10 +271,7 @@ describe("writeConfig", () => {
     });
 
     it("merges packages into existing config without touching tier", () => {
-      writeFileSync(
-        join(dir, "pragma.config.json"),
-        '{"tier":"global"}',
-      );
+      writeFileSync(join(dir, "pragma.config.json"), '{"tier":"global"}');
       writeConfig(dir, { packages: ["@canonical/design-system"] });
       const config = readConfig(dir);
       expect(config.tier).toBe("global");

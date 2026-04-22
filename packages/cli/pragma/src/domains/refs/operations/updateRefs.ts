@@ -5,15 +5,15 @@
  * clones (first time) or fetches (subsequent). Reports per-package status.
  */
 
-import { existsSync, readdirSync, rmSync } from "node:fs";
+import { existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { readConfig } from "#config";
+import { DEFAULT_PACKAGES } from "../../shared/packages.js";
+import { cloneRef, fetchRef, pruneCache } from "./gitOps.js";
 import type { PackageRef, RawPackageEntry } from "./parseRef.js";
 import { parsePackageEntry } from "./parseRef.js";
 import { cacheRoot, gitCacheDir } from "./paths.js";
 import readGlobalRefs from "./readGlobalRefs.js";
-import { cloneRef, fetchRef, pruneCache } from "./gitOps.js";
-import { DEFAULT_PACKAGES } from "../../shared/packages.js";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -21,7 +21,13 @@ import { DEFAULT_PACKAGES } from "../../shared/packages.js";
 
 export interface UpdateResult {
   readonly pkg: string;
-  readonly kind: "cloned" | "updated" | "up-to-date" | "ok" | "skipped" | "error";
+  readonly kind:
+    | "cloned"
+    | "updated"
+    | "up-to-date"
+    | "ok"
+    | "skipped"
+    | "error";
   readonly detail: string;
 }
 
@@ -61,7 +67,11 @@ export default async function updateRefs(
         const dest = gitCacheDir(ref.pkg, ref.ref);
         try {
           if (existsSync(dest)) {
-            const { updated, oldHead, newHead } = fetchRef(ref.url, ref.ref, dest);
+            const { updated, oldHead, newHead } = fetchRef(
+              ref.url,
+              ref.ref,
+              dest,
+            );
             results.push({
               pkg: ref.pkg,
               kind: updated ? "updated" : "up-to-date",
@@ -167,7 +177,9 @@ function mergeEntries(
 function pruneOrphanedCaches(refs: PackageRef[]): string[] {
   const validDirs = new Set(
     refs
-      .filter((r): r is Extract<PackageRef, { kind: "git" }> => r.kind === "git")
+      .filter(
+        (r): r is Extract<PackageRef, { kind: "git" }> => r.kind === "git",
+      )
       .map((r) => gitCacheDir(r.pkg, r.ref)),
   );
 

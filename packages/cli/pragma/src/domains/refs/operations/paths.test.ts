@@ -65,7 +65,12 @@ describe("gitCacheDir", () => {
 
   it("returns cache path for a package and ref", () => {
     expect(gitCacheDir("@canonical/design-system", "main")).toBe(
-      join("/tmp/pragma-test-cache", "refs", "@canonical/design-system", "main"),
+      join(
+        "/tmp/pragma-test-cache",
+        "refs",
+        "@canonical/design-system",
+        "main",
+      ),
     );
   });
 

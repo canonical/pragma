@@ -11,9 +11,12 @@ export function commands(): CommandDefinition[] {
   return [updateRefsCommand];
 }
 
-export { parsePackageEntry } from "./operations/parseRef.js";
 export type { PackageRef, RawPackageEntry } from "./operations/parseRef.js";
+export { parsePackageEntry } from "./operations/parseRef.js";
 export { cacheRoot, gitCacheDir, globalConfigDir } from "./operations/paths.js";
 export { default as readGlobalRefs } from "./operations/readGlobalRefs.js";
+export type {
+  UpdateRefsOptions,
+  UpdateResult,
+} from "./operations/updateRefs.js";
 export { default as updateRefs } from "./operations/updateRefs.js";
-export type { UpdateResult, UpdateRefsOptions } from "./operations/updateRefs.js";

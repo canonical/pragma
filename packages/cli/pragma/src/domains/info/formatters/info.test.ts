@@ -103,9 +103,21 @@ describe("renderInfoPlain", () => {
     const output = renderInfoPlain(
       createInfoData({
         packageRefs: [
-          { pkg: "@canonical/design-system", source: "npm", detail: "node_modules" },
-          { pkg: "@canonical/code-standards", source: "file", detail: "/home/user/code/standards" },
-          { pkg: "@canonical/anatomy-dsl", source: "git", detail: "https://github.com/canonical/anatomy-dsl.git#main" },
+          {
+            pkg: "@canonical/design-system",
+            source: "npm",
+            detail: "node_modules",
+          },
+          {
+            pkg: "@canonical/code-standards",
+            source: "file",
+            detail: "/home/user/code/standards",
+          },
+          {
+            pkg: "@canonical/anatomy-dsl",
+            source: "git",
+            detail: "https://github.com/canonical/anatomy-dsl.git#main",
+          },
         ],
       }),
     );

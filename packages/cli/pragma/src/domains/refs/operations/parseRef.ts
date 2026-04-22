@@ -13,13 +13,20 @@ import { PragmaError } from "../../../error/index.js";
 // ---------------------------------------------------------------------------
 
 /** Raw entry shape accepted in pragma.config.json `packages` array. */
-export type RawPackageEntry = string | { readonly name: string; readonly source?: string };
+export type RawPackageEntry =
+  | string
+  | { readonly name: string; readonly source?: string };
 
 /** Parsed, validated package reference — discriminated by `kind`. */
 export type PackageRef =
   | { readonly kind: "npm"; readonly pkg: string }
   | { readonly kind: "file"; readonly pkg: string; readonly path: string }
-  | { readonly kind: "git"; readonly pkg: string; readonly url: string; readonly ref: string };
+  | {
+      readonly kind: "git";
+      readonly pkg: string;
+      readonly url: string;
+      readonly ref: string;
+    };
 
 // ---------------------------------------------------------------------------
 // Parser
@@ -41,11 +48,11 @@ export function parsePackageEntry(entry: RawPackageEntry): PackageRef {
 
   if (typeof name !== "string" || name.length === 0) {
     throw PragmaError.configError(
-      "Package entry must have a non-empty \"name\" field.",
+      'Package entry must have a non-empty "name" field.',
       {
         recovery: {
           message:
-            "Each object in the \"packages\" array requires a \"name\" string.",
+            'Each object in the "packages" array requires a "name" string.',
         },
       },
     );
@@ -85,8 +92,7 @@ export function parsePackageEntry(entry: RawPackageEntry): PackageRef {
         `Invalid source for "${name}": git URL must include a ref after #.`,
         {
           recovery: {
-            message:
-              "Example: git+https://github.com/org/repo.git#main",
+            message: "Example: git+https://github.com/org/repo.git#main",
           },
         },
       );

@@ -114,10 +114,7 @@ function resolveNpmPackages(pkgs: readonly string[]): ResolvedPackage[] {
 }
 
 /** Try to resolve a single package via require.resolve, push if found. */
-function resolveNpmFallback(
-  pkg: string,
-  resolved: ResolvedPackage[],
-): void {
+function resolveNpmFallback(pkg: string, resolved: ResolvedPackage[]): void {
   try {
     resolved.push({
       pkg,

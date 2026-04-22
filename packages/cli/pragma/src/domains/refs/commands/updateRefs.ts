@@ -6,8 +6,8 @@
  */
 
 import type { CommandDefinition } from "@canonical/cli-core";
-import updateRefs from "../operations/updateRefs.js";
 import formatUpdateResults from "../formatters/updateRefs.js";
+import updateRefs from "../operations/updateRefs.js";
 
 const updateRefsCommand: CommandDefinition = {
   path: ["update-refs"],
@@ -21,7 +21,8 @@ const updateRefsCommand: CommandDefinition = {
     },
     {
       name: "prune",
-      description: "Remove orphaned cache entries that no longer match any configured ref",
+      description:
+        "Remove orphaned cache entries that no longer match any configured ref",
       type: "boolean",
       default: false,
     },
@@ -44,9 +45,7 @@ const updateRefsCommand: CommandDefinition = {
     process.stdout.write(`${text}\n`);
 
     const hasErrors = results.some((r) => r.kind === "error");
-    if (hasErrors) process.exitCode = 1;
-
-    return { tag: "silent" as const };
+    return { tag: "exit" as const, code: hasErrors ? 1 : 0 };
   },
 };
 

@@ -43,8 +43,14 @@ describe("cloneRef + fetchRef (integration, requires git)", () => {
     // Push an initial commit to the bare repo via a temp working copy
     const workDir = join(tmpDir, "work");
     execFileSync("git", ["clone", bareRepo, workDir], { stdio: "pipe" });
-    execFileSync("git", ["-C", workDir, "config", "user.email", "test@test.com"], { stdio: "pipe" });
-    execFileSync("git", ["-C", workDir, "config", "user.name", "Test"], { stdio: "pipe" });
+    execFileSync(
+      "git",
+      ["-C", workDir, "config", "user.email", "test@test.com"],
+      { stdio: "pipe" },
+    );
+    execFileSync("git", ["-C", workDir, "config", "user.name", "Test"], {
+      stdio: "pipe",
+    });
     execFileSync(
       "git",
       ["-C", workDir, "commit", "--allow-empty", "-m", "initial"],

@@ -1,10 +1,5 @@
 import { execFileSync } from "node:child_process";
-import {
-  mkdirSync,
-  mkdtempSync,
-  rmSync,
-  writeFileSync,
-} from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -32,8 +27,12 @@ describe("updateRefs", () => {
 
     const workDir = join(tmpDir, "work");
     execFileSync("git", ["clone", bareRepo, workDir], { stdio: "pipe" });
-    execFileSync("git", ["-C", workDir, "config", "user.email", "t@t.com"], { stdio: "pipe" });
-    execFileSync("git", ["-C", workDir, "config", "user.name", "T"], { stdio: "pipe" });
+    execFileSync("git", ["-C", workDir, "config", "user.email", "t@t.com"], {
+      stdio: "pipe",
+    });
+    execFileSync("git", ["-C", workDir, "config", "user.name", "T"], {
+      stdio: "pipe",
+    });
     execFileSync(
       "git",
       ["-C", workDir, "commit", "--allow-empty", "-m", "init"],
@@ -95,9 +94,7 @@ describe("updateRefs", () => {
     writeFileSync(
       join(projectDir, "pragma.config.json"),
       JSON.stringify({
-        packages: [
-          { name: "@test/local", source: `file://${localPkg}` },
-        ],
+        packages: [{ name: "@test/local", source: `file://${localPkg}` }],
       }),
     );
 

@@ -12,8 +12,8 @@ import type { SourceSpec } from "@canonical/ke";
 import { readConfig } from "#config";
 import {
   type PackageRef,
-  type RawPackageEntry,
   parsePackageEntry,
+  type RawPackageEntry,
 } from "../refs/operations/parseRef.js";
 import readGlobalRefs from "../refs/operations/readGlobalRefs.js";
 import { bootStore } from "./bootStore.js";
@@ -44,7 +44,9 @@ export async function bootPragma(options?: {
   const config = readConfig(cwd);
 
   // Merge package refs: project overrides global, both override defaults.
-  const refs = options?.sources ? undefined : mergeAndParseRefs(config.packages);
+  const refs = options?.sources
+    ? undefined
+    : mergeAndParseRefs(config.packages);
 
   const store = await bootStore({
     cwd,

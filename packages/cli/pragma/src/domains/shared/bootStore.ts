@@ -10,8 +10,8 @@
 import { join } from "node:path";
 import type { SourceSpec, Store } from "@canonical/ke";
 import { createStore } from "@canonical/ke";
-import type { PackageRef } from "../refs/operations/parseRef.js";
 import { PragmaError } from "../../error/index.js";
+import type { PackageRef } from "../refs/operations/parseRef.js";
 import { resolvePackages } from "./packages.js";
 import { PREFIX_MAP } from "./prefixes.js";
 
@@ -29,9 +29,7 @@ const DEFAULT_TTL_GLOBS: readonly string[] = [
  *
  * @param refs - Parsed package references. Omit for defaults.
  */
-export function defaultSources(
-  refs?: ReadonlyArray<PackageRef>,
-): SourceSpec[] {
+export function defaultSources(refs?: ReadonlyArray<PackageRef>): SourceSpec[] {
   const sources: SourceSpec[] = [];
   const resolved = resolvePackages(refs);
 
