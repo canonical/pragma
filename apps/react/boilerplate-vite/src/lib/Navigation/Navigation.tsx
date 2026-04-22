@@ -1,6 +1,5 @@
 import { Link } from "@canonical/router-react";
 import type { ReactElement } from "react";
-import ThemeSelector from "../ThemeSelector/index.js";
 
 export default function Navigation(): ReactElement {
   return (
@@ -12,7 +11,6 @@ export default function Navigation(): ReactElement {
       <Link search={{ auth: "1" }} to="account">
         Demo sign-in
       </Link>
-      <ThemeSelector />
     </nav>
   );
 }
