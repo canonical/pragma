@@ -11,6 +11,12 @@ export function commands(): CommandDefinition[] {
   return [updateRefsCommand];
 }
 
+export type {
+  PackageRef,
+  RawPackageEntry,
+  UpdateRefsOptions,
+  UpdateResult,
+} from "./operations/index.js";
 export {
   cacheRoot,
   gitCacheDir,
@@ -18,10 +24,4 @@ export {
   parsePackageEntry,
   readGlobalRefs,
   updateRefs,
-} from "./operations/index.js";
-export type {
-  PackageRef,
-  RawPackageEntry,
-  UpdateRefsOptions,
-  UpdateResult,
 } from "./operations/index.js";
