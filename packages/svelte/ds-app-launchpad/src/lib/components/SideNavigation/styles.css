@@ -1,7 +1,5 @@
-@import "../../../../../../../packages/styles-old/primitives/canonical/src/tokens.css";
-
 .ds.side-navigation {
-  --color-background-side-navigation: var(--tmp-color-background-alt);
+  --color-background-side-navigation: var(--lp-color-background-alt);
   --transition-duration-side-navigation: var(--lp-transition-duration-brisk);
   --transition-easing-side-navigation: var(--lp-transition-timing-ease-out);
   --dimension-padding-side-navigation: var(--lp-dimension-spacing-inline-s);
