@@ -23,7 +23,9 @@ describe("updateRefs", () => {
 
     // Create a bare git repo for testing
     bareRepo = join(tmpDir, "origin.git");
-    execFileSync("git", ["init", "--bare", bareRepo], { stdio: "pipe" });
+    execFileSync("git", ["init", "--bare", "-b", "main", bareRepo], {
+      stdio: "pipe",
+    });
 
     const workDir = join(tmpDir, "work");
     execFileSync("git", ["clone", bareRepo, workDir], { stdio: "pipe" });

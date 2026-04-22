@@ -38,7 +38,9 @@ describe("cloneRef + fetchRef (integration, requires git)", () => {
 
     // Create a bare repo to clone from (avoids network)
     bareRepo = join(tmpDir, "origin.git");
-    execFileSync("git", ["init", "--bare", bareRepo], { stdio: "pipe" });
+    execFileSync("git", ["init", "--bare", "-b", "main", bareRepo], {
+      stdio: "pipe",
+    });
 
     // Push an initial commit to the bare repo via a temp working copy
     const workDir = join(tmpDir, "work");
