@@ -1,7 +1,6 @@
 import { createElement } from "react";
 import {
   type RenderToPipeableStreamOptions,
-  renderToPipeableStream as reactRenderToPipeableStream,
   renderToReadableStream as reactRenderToReadableStream,
   renderToString as reactRenderToString,
 } from "react-dom/server";
@@ -13,6 +12,35 @@ import type {
   ServerEntrypoint,
   ServerEntrypointProps,
 } from "./types.js";
+
+/**
+ * Conditionally imported `renderToPipeableStream` from `react-dom/server`.
+ *
+ * Bun's `react-dom/server` (`react-dom/server.bun.js`) does not export
+ * `renderToPipeableStream` because Node.js streams don't exist in the Bun
+ * runtime. Importing it unconditionally at the module level causes an
+ * immediate crash when JSXRenderer is loaded under Bun — even if only
+ * `renderToReadableStream` is actually called.
+ *
+ * This variable is populated via a dynamic import that catches the missing
+ * export gracefully. The `renderToPipeableStream()` method checks for its
+ * presence and throws a descriptive error if called in a runtime that
+ * doesn't support it.
+ */
+let reactRenderToPipeableStream:
+  | typeof import("react-dom/server").renderToPipeableStream
+  | undefined;
+
+try {
+  // Sync require wrapped in try/catch — succeeds in Node.js where
+  // renderToPipeableStream exists, silently fails in Bun where it doesn't.
+  const serverModule = require("react-dom/server");
+
+  reactRenderToPipeableStream = serverModule.renderToPipeableStream;
+} catch {
+  // Not available — Bun runtime or environment without Node.js streams.
+  // renderToPipeableStream() will throw a clear error if called.
+}
 
 /**
  * Server-side renderer for a React component.
@@ -276,6 +304,14 @@ export default class JSXRenderer<
    * @returns The pipe/abort handles for the rendered stream.
    */
   renderToPipeableStream = (): PipeableStreamResult => {
+    if (!reactRenderToPipeableStream) {
+      throw new Error(
+        "renderToPipeableStream is not available in this runtime. " +
+          "Bun does not support Node.js pipeable streams — use " +
+          "renderToReadableStream() instead.",
+      );
+    }
+
     const props = this.getComponentProps();
     const jsx = createElement(this.Component, props);
     const {
