@@ -1,9 +1,6 @@
 import { createElement } from "react";
-import {
-  type RenderToPipeableStreamOptions,
-  renderToReadableStream as reactRenderToReadableStream,
-  renderToString as reactRenderToString,
-} from "react-dom/server";
+import type { RenderToPipeableStreamOptions } from "react-dom/server";
+import * as ReactDOMServer from "react-dom/server";
 import { INITIAL_DATA_KEY } from "./constants.js";
 import Extractor from "./Extractor.js";
 import type {
@@ -13,34 +10,22 @@ import type {
   ServerEntrypointProps,
 } from "./types.js";
 
+const reactRenderToReadableStream = ReactDOMServer.renderToReadableStream;
+const reactRenderToString = ReactDOMServer.renderToString;
+
 /**
- * Conditionally imported `renderToPipeableStream` from `react-dom/server`.
+ * `renderToPipeableStream` from `react-dom/server`, or `undefined` if the
+ * current runtime doesn't export it.
  *
- * Bun's `react-dom/server` (`react-dom/server.bun.js`) does not export
- * `renderToPipeableStream` because Node.js streams don't exist in the Bun
- * runtime. Importing it unconditionally at the module level causes an
- * immediate crash when JSXRenderer is loaded under Bun — even if only
- * `renderToReadableStream` is actually called.
- *
- * This variable is populated via a dynamic import that catches the missing
- * export gracefully. The `renderToPipeableStream()` method checks for its
- * presence and throws a descriptive error if called in a runtime that
- * doesn't support it.
+ * Bun's `react-dom/server` (`react-dom/server.bun.js`) omits this export
+ * because Node.js streams don't exist in the Bun runtime. Using a namespace
+ * import (`import * as`) lets us access it as a property without crashing
+ * on missing named exports.
  */
-let reactRenderToPipeableStream:
+const reactRenderToPipeableStream = (ReactDOMServer as Record<string, unknown>)
+  .renderToPipeableStream as
   | typeof import("react-dom/server").renderToPipeableStream
   | undefined;
-
-try {
-  // Sync require wrapped in try/catch — succeeds in Node.js where
-  // renderToPipeableStream exists, silently fails in Bun where it doesn't.
-  const serverModule = require("react-dom/server");
-
-  reactRenderToPipeableStream = serverModule.renderToPipeableStream;
-} catch {
-  // Not available — Bun runtime or environment without Node.js streams.
-  // renderToPipeableStream() will throw a clear error if called.
-}
 
 /**
  * Server-side renderer for a React component.
