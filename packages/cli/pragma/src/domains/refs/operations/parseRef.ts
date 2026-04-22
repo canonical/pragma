@@ -77,8 +77,8 @@ export function parsePackageEntry(entry: RawPackageEntry): PackageRef {
     return { kind: "file", pkg: name, path };
   }
 
-  // git+https:// — git ref
-  if (source.startsWith("git+https://")) {
+  // git+<protocol>:// — git ref (https, ssh, file)
+  if (source.startsWith("git+")) {
     const hashIdx = source.indexOf("#");
     if (hashIdx === -1 || hashIdx === source.length - 1) {
       throw PragmaError.configError(
@@ -96,31 +96,12 @@ export function parsePackageEntry(entry: RawPackageEntry): PackageRef {
     return { kind: "git", pkg: name, url, ref };
   }
 
-  // git+ssh:// — git ref (SSH)
-  if (source.startsWith("git+ssh://")) {
-    const hashIdx = source.indexOf("#");
-    if (hashIdx === -1 || hashIdx === source.length - 1) {
-      throw PragmaError.configError(
-        `Invalid source for "${name}": git URL must include a ref after #.`,
-        {
-          recovery: {
-            message:
-              "Example: git+ssh://git@github.com/org/repo.git#main",
-          },
-        },
-      );
-    }
-    const url = source.slice(4, hashIdx);
-    const ref = source.slice(hashIdx + 1);
-    return { kind: "git", pkg: name, url, ref };
-  }
-
   throw PragmaError.configError(
-    `Invalid source for "${name}": "${source}". Expected file://, git+https://, or git+ssh://.`,
+    `Invalid source for "${name}": "${source}". Expected file://, git+https://, git+ssh://, or git+file://.`,
     {
       recovery: {
         message:
-          "Valid formats:\n  file:///absolute/path\n  git+https://host/repo.git#ref\n  git+ssh://git@host/repo.git#ref",
+          "Valid formats:\n  file:///absolute/path\n  git+https://host/repo.git#ref\n  git+ssh://git@host/repo.git#ref\n  git+file:///local/bare/repo.git#ref",
       },
     },
   );

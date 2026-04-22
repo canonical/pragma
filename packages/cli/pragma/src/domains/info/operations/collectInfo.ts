@@ -1,10 +1,13 @@
 import { readConfig } from "#config";
 import { VERSION } from "#constants";
 import { detectInstallSource, PM_COMMANDS } from "#package-manager";
+import { parsePackageEntry } from "../../refs/operations/parseRef.js";
+import readGlobalRefs from "../../refs/operations/readGlobalRefs.js";
 import { bootStore } from "../../shared/bootStore.js";
 import { CHANNEL_RELEASES } from "../../shared/filters/buildChannelFilter.js";
 import { resolveTierChain } from "../../shared/filters/buildTierFilter.js";
-import type { InfoData } from "../types.js";
+import { DEFAULT_PACKAGES } from "../../shared/packages.js";
+import type { InfoData, PackageRefSummary } from "../types.js";
 import checkRegistryVersion from "./checkRegistryVersion.js";
 import { collectStoreSummary } from "./collectStoreSummary.js";
 
@@ -52,6 +55,9 @@ export default async function collectInfo(cwd: string): Promise<InfoData> {
     keStore?.dispose();
   }
 
+  // Collect package ref summaries
+  const packageRefs = collectPackageRefSummaries(config.packages);
+
   return {
     version: VERSION,
     pm,
@@ -64,5 +70,34 @@ export default async function collectInfo(cwd: string): Promise<InfoData> {
     update,
     updateSkipped,
     store,
+    packageRefs,
   };
+}
+
+function collectPackageRefSummaries(
+  projectPackages?: ReadonlyArray<
+    string | { readonly name: string; readonly source?: string }
+  >,
+): PackageRefSummary[] {
+  const entries = projectPackages ?? readGlobalRefs();
+  const raw =
+    entries.length > 0
+      ? entries
+      : DEFAULT_PACKAGES.map((pkg) => pkg);
+
+  return raw.map((entry) => {
+    const ref = parsePackageEntry(entry);
+    switch (ref.kind) {
+      case "npm":
+        return { pkg: ref.pkg, source: "npm" as const, detail: "node_modules" };
+      case "file":
+        return { pkg: ref.pkg, source: "file" as const, detail: ref.path };
+      case "git":
+        return {
+          pkg: ref.pkg,
+          source: "git" as const,
+          detail: `${ref.url}#${ref.ref}`,
+        };
+    }
+  });
 }
