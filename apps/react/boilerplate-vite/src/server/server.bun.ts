@@ -1,68 +1,59 @@
-import fs from "node:fs/promises";
-import path from "node:path";
+/**
+ * Bun development server with SSR and streaming.
+ *
+ * Uses Bun.serve() for the HTTP layer and Vite in middleware mode for
+ * module transforms and client HMR. Server modules are loaded via
+ * vite.ssrLoadModule() — changes are picked up without restart.
+ *
+ * Production deployments use platform adapters (Vercel, Cloudflare, etc.),
+ * not this server.
+ */
+import fs from "node:fs";
 import * as process from "node:process";
-import { JSXRenderer, SitemapRenderer } from "@canonical/react-ssr/renderer";
-import { getAuthRedirectHref } from "../routes.js";
-import EntryServer, { type InitialData } from "./entry.js";
-import getSitemapItems from "./sitemap.js";
+import { createServer as createViteServer } from "vite";
 
-const PORT = Number(process.env.PORT) || 5173;
-const STATIC_DIR = path.join(process.cwd(), "dist", "client", "assets");
+const PORT = Number(process.env.PORT) || 5174;
 
-const htmlString = await fs.readFile(
-  path.join(process.cwd(), "dist", "client", "index.html"),
-  "utf-8",
-);
+const vite = await createViteServer({
+  server: { middlewareMode: true },
+  appType: "custom",
+});
 
 Bun.serve({
   port: PORT,
   async fetch(req: Request) {
     const url = new URL(req.url);
-
-    if (url.pathname.startsWith("/assets")) {
-      const filePath = path.join(
-        STATIC_DIR,
-        url.pathname.slice("/assets".length),
-      );
-      const file = Bun.file(filePath);
-
-      if (await file.exists()) {
-        return new Response(file);
-      }
-    }
-
-    if (url.pathname === "/sitemap.xml") {
-      const renderer = new SitemapRenderer([getSitemapItems], {
-        baseUrl: `http://localhost:${PORT}`,
-        defaultChangefreq: "monthly",
-      });
-      const sitemapStream = await renderer.renderToReadableStream();
-
-      return new Response(sitemapStream, {
-        status: renderer.statusCode,
-        headers: { "Content-Type": "application/xml; charset=utf-8" },
-      });
-    }
-
     const requestUrl = url.pathname + url.search;
-    const authRedirect = getAuthRedirectHref(requestUrl);
 
-    if (authRedirect) {
-      return Response.redirect(new URL(authRedirect, url.origin), 302);
+    try {
+      const template = fs.readFileSync("index.html", "utf-8");
+      const html = await vite.transformIndexHtml(requestUrl, template);
+
+      const { default: EntryServer } = await vite.ssrLoadModule(
+        "/src/server/entry.tsx",
+      );
+      const { JSXRenderer } = await vite.ssrLoadModule(
+        "@canonical/react-ssr/renderer",
+      );
+
+      const renderer = new JSXRenderer(
+        EntryServer,
+        { url: requestUrl },
+        { htmlString: html },
+      );
+      const stream = await renderer.renderToReadableStream(req.signal);
+
+      return new Response(stream, {
+        status: renderer.statusCode,
+        headers: { "Content-Type": "text/html; charset=utf-8" },
+      });
+    } catch (error) {
+      vite.ssrFixStacktrace(error as Error);
+      console.error(error);
+
+      return new Response("Internal server error", { status: 500 });
     }
-
-    const renderer = new JSXRenderer(
-      EntryServer,
-      { url: requestUrl } satisfies InitialData,
-      { htmlString },
-    );
-    const stream = await renderer.renderToReadableStream(req.signal);
-
-    return new Response(stream, {
-      status: renderer.statusCode,
-      headers: { "Content-Type": "text/html; charset=utf-8" },
-    });
   },
 });
 
-console.log(`Bun server started on http://localhost:${PORT}/`);
+console.log(`Bun dev server on http://localhost:${PORT}/`);
