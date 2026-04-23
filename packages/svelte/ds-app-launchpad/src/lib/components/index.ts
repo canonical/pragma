@@ -11,6 +11,7 @@ export * from "./NumberInput/index.js";
 export * from "./Popover/index.js";
 export * from "./Radio/index.js";
 export * from "./RelativeDateTime/index.js";
+export * from "./Select/index.js";
 export * from "./Spinner/index.js";
 export * from "./Switch/index.js";
 export * from "./Textarea/index.js";
