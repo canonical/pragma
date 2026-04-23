@@ -1,7 +1,7 @@
 {
   "name": "@canonical/cli-core",
   "description": "Shared CLI machinery: CommandDefinition, registerAll, completions, OutputAdapter.",
-  "version": "0.22.0",
+  "version": "0.25.0",
   "type": "module",
   "module": "dist/esm/index.js",
   "types": "dist/types/index.d.ts",
@@ -36,21 +36,21 @@
     "check:biome": "biome check",
     "check:biome:fix": "biome check --write",
     "check:ts": "tsc --noEmit",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test": "bun run test:vitest",
+    "test:vitest": "vitest run --coverage",
+    "test:vitest:watch": "vitest"
   },
   "dependencies": {
-    "@canonical/summon-core": "^0.22.0",
-    "@canonical/task": "^0.22.0",
+    "@canonical/summon-core": "^0.25.0",
+    "@canonical/task": "^0.25.0",
     "chalk": "^5.4.1",
     "commander": "^14.0.3"
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.9",
-    "@canonical/biome-config": "^0.22.0",
-    "@canonical/typescript-config": "^0.22.0",
-    "@canonical/webarchitect": "^0.22.0",
+    "@canonical/biome-config": "^0.25.0",
+    "@canonical/typescript-config": "^0.25.0",
+    "@canonical/webarchitect": "^0.25.0",
     "@types/bun": "^1.3.10",
     "@types/node": "^24.12.0",
     "typescript": "^5.9.3",

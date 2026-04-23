@@ -1,0 +1,452 @@
+# @canonical/router-react
+
+React bindings for `@canonical/router-core`. `@canonical/router-react` turns a core router into React context, hooks, links, outlets, and SSR helpers while preserving the flat-route model from the core package.
+
+## Installation
+
+```bash
+bun add @canonical/router-core @canonical/router-react
+```
+
+Requires `react` and `react-dom`.
+
+## Quick start
+
+### 1. Define routes in core
+
+```tsx
+import { createRouter, route } from "@canonical/router-core";
+
+export const routes = {
+  home: route({
+    url: "/",
+    content: () => <h1>Home</h1>,
+  }),
+  docs: route({
+    url: "/docs/:slug",
+    content: ({ params }) => <h1>{params.slug}</h1>,
+  }),
+} as const;
+
+export const router = createRouter(routes);
+```
+
+`@canonical/router-core` owns route definitions, matching, and typed navigation. `@canonical/router-react` layers React rendering and subscriptions on top.
+
+Route authoring story, in short:
+
+- define every route with `route()`
+- give it a `url` pattern such as `/docs/:slug`
+- optionally add `prefetch`, `content`, and `wrappers`
+- create one router from the full flat route map
+- let the router match incoming URLs — React renders the result
+
+### 2. Provide the router and render the current match
+
+```tsx
+import { Outlet, RouterProvider } from "@canonical/router-react";
+
+export default function Application() {
+  return (
+    <RouterProvider router={router}>
+      <Outlet />
+    </RouterProvider>
+  );
+}
+```
+
+`RouterProvider` makes the router instance available to hooks and components. `Outlet` renders the currently matched route subtree.
+
+### 3. Navigate with typed links and observe router state
+
+```tsx
+import {
+  Link,
+  useNavigationState,
+  useRoute,
+  useRouterState,
+  useSearchParam,
+  useSearchParams,
+} from "@canonical/router-react";
+
+function Navigation() {
+  const navigationState = useNavigationState();
+  const location = useRoute();
+  const status = useRouterState((state) => state.match?.status ?? 404);
+  const tab = useSearchParam("tab");
+  const search = useSearchParams();
+
+  return (
+    <nav>
+      <Link to="home">Home</Link>
+      <Link params={{ slug: "getting-started" }} to="docs">
+        Docs
+      </Link>
+      <span>{navigationState}</span>
+      <span>{status}</span>
+      <span>{location.pathname}</span>
+      <span>{tab ?? "overview"}</span>
+      <span>{search.toString()}</span>
+    </nav>
+  );
+}
+```
+
+All hooks and `Link` default to `RegisteredRouteMap`. Register your route map once in your router file to get full type inference without explicit generics:
+
+```ts
+declare module "@canonical/router-react" {
+  interface RouterRegister {
+    routes: typeof appRoutes;
+  }
+}
+```
+
+Explicit generics (`<typeof routes>`) still work as an escape hatch for multi-router apps or library code.
+
+Important distinction:
+
+- `useRouterState()` returns the full router state or a selected slice.
+- `useRoute()` returns the current tracked location object.
+- `useSearchParam()` returns the value of one query-string key.
+- `useSearchParams()` returns all search params or a selected subset of keys.
+- `useNavigationState()` returns the router's navigation lifecycle state.
+- `useRouter()` returns the router instance itself.
+
+## Data ownership
+
+The router does not own data. `content()` receives `params` and `search` — not data. Components fetch their own data from their cache library (Relay, TanStack Query, SWR, etc.).
+
+The optional `prefetch()` on routes is a fire-and-forget navigation-time hook. Use it to warm caches, preload assets, or run side effects before the component renders. It does not pass data to `content()`.
+
+```tsx
+const userRoute = route({
+  url: "/users/:id",
+  prefetch: async ({ id }) => {
+    await queryClient.prefetchQuery(["user", id], () => fetchUser(id));
+  },
+  content: ({ params }) => <UserProfile id={params.id} />,
+});
+
+function UserProfile({ id }: { id: string }) {
+  const { data } = useQuery(["user", id], () => fetchUser(id));
+  return <h1>{data.name}</h1>;
+}
+```
+
+## Error handling
+
+The router does not ship an error boundary component. When `prefetch()` throws, the error propagates into the React render tree and is caught by the nearest React error boundary.
+
+Use `StatusResponse` from `@canonical/router-core` to signal HTTP-like errors:
+
+```tsx
+import { StatusResponse } from "@canonical/router-core";
+
+function ErrorFallback({ error }: { error: unknown }) {
+  const status = error instanceof StatusResponse ? error.status : 500;
+
+  if (status === 404) return <NotFound />;
+  if (status === 401) return <LoginRedirect />;
+  return <ErrorPage status={status} />;
+}
+
+function DashboardLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <div>
+      <Sidebar />
+      <ErrorBoundary fallbackRender={({ error }) => <ErrorFallback error={error} />}>
+        {children}
+      </ErrorBoundary>
+    </div>
+  );
+}
+```
+
+The boilerplate reference app provides a complete `RouteErrorBoundary` implementation to copy and adapt.
+
+## Search param mutation
+
+Update search params from any component via the router instance:
+
+```tsx
+function FilterBar() {
+  const router = useRouter();
+  const sort = useSearchParam("sort");
+
+  return (
+    <select
+      value={sort ?? "name"}
+      onChange={(event) => {
+        router.setSearchParams({ sort: event.target.value }, { replace: true });
+      }}
+    >
+      <option value="name">Name</option>
+      <option value="date">Date</option>
+    </select>
+  );
+}
+```
+
+`setSearchParams` merges into the current URL. Set a key to `null` to remove it. Pass `{ replace: true }` to replace the history entry instead of pushing.
+
+## Navigation blocking
+
+`useBlocker()` prevents navigation when the component has unsaved state. The hook returns a state object — the consumer controls the confirmation UI:
+
+```tsx
+import { useBlocker } from "@canonical/router-react";
+import { useState } from "react";
+
+function EditForm() {
+  const [isDirty, setIsDirty] = useState(false);
+  const blocker = useBlocker(isDirty);
+
+  return (
+    <>
+      <form onChange={() => setIsDirty(true)}>
+        <textarea placeholder="Start typing to mark as dirty..." />
+        <button
+          type="submit"
+          onClick={(event) => {
+            event.preventDefault();
+            setIsDirty(false);
+          }}
+        >
+          Save
+        </button>
+      </form>
+
+      {blocker.state === "blocked" && (
+        <div role="alertdialog" aria-modal="true">
+          <h2>Unsaved changes</h2>
+          <p>You have unsaved changes. Do you want to leave this page?</p>
+          <button onClick={blocker.cancel}>Stay on page</button>
+          <button onClick={blocker.proceed}>Leave page</button>
+        </div>
+      )}
+    </>
+  );
+}
+```
+
+For a quick `window.confirm` approach instead of a custom dialog:
+
+```tsx
+import { useBlocker } from "@canonical/router-react";
+import { useEffect, useState } from "react";
+
+function QuickEditForm() {
+  const [isDirty, setIsDirty] = useState(false);
+  const blocker = useBlocker(isDirty);
+
+  useEffect(() => {
+    if (blocker.state === "blocked") {
+      if (window.confirm("You have unsaved changes. Leave anyway?")) {
+        blocker.proceed();
+      } else {
+        blocker.cancel();
+      }
+    }
+  }, [blocker]);
+
+  return <form onChange={() => setIsDirty(true)}>...</form>;
+}
+```
+
+The blocker registers on mount and unregisters on unmount — when the form is submitted or the component is removed, blocking stops automatically.
+
+## Creating routes and matching URLs
+
+### Route creation
+
+Each entry in the route map is a named call to `route()`.
+
+```tsx
+import { createRouter, route } from "@canonical/router-core";
+
+const routes = {
+  home: route({
+    url: "/",
+    content: () => <h1>Home</h1>,
+  }),
+  docs: route({
+    url: "/docs/:slug",
+    prefetch: async ({ slug }) => {
+      await queryClient.prefetchQuery(["doc", slug], () => fetchDoc(slug));
+    },
+    content: ({ params }) => <DocPage slug={params.slug} />,
+  }),
+  accountSettings: route({
+    url: "/account/settings",
+    content: () => <h1>Settings</h1>,
+  }),
+} as const;
+
+const router = createRouter(routes);
+```
+
+Important parts:
+
+- the route-map key such as `docs` is the typed navigation name used by `Link` and `router.navigate()`
+- the `url` string is the matcher used for incoming URLs
+- `:slug` segments become typed route params
+- `prefetch` runs at navigation time as a fire-and-forget hook
+- `content` renders the matched route, receiving `params` and `search`
+
+Routes stay flat even when the UI is nested. Shared layout lives in wrappers from the core package, not in a nested route tree.
+
+## SSR
+
+### Server side
+
+Wire your own render tree using standard React SSR primitives. Use `createStaticRouter` for server rendering — it matches on construction and fires `prefetch()` eagerly so caches start warming before React renders:
+
+```tsx
+import { createStaticRouter } from "@canonical/router-core";
+import { createHeadCollector, HeadProvider } from "@canonical/react-head";
+import { Outlet, RouterProvider } from "@canonical/router-react";
+import { renderToPipeableStream } from "react-dom/server";
+
+app.get("*", (req, res) => {
+  const router = createStaticRouter(routes, req.url);
+  const headCollector = createHeadCollector();
+
+  // Check match for status code before rendering
+  if (!router.match) {
+    res.status(404);
+  } else if (router.match.kind === "redirect") {
+    return res.redirect(router.match.status, router.match.redirectTo);
+  }
+
+  const { pipe } = renderToPipeableStream(
+    <HeadProvider collector={headCollector}>
+      <RouterProvider router={router}>
+        <Shell>
+          <Outlet />
+        </Shell>
+      </RouterProvider>
+    </HeadProvider>,
+    {
+      onShellReady() {
+        const headHtml = headCollector.toHtml();
+        res.setHeader("content-type", "text/html");
+        res.write(`<!doctype html><html><head>${headHtml}</head><body>`);
+        pipe(res);
+      },
+    },
+  );
+});
+```
+
+The router dehydrates navigation state only. Data dehydration is the cache library's responsibility (dual dehydration):
+
+```tsx
+// In onShellReady or after render:
+const routerState = router.dehydrate();
+const cacheState = queryClient.dehydrate(); // TanStack Query, Relay, etc.
+
+// Inject both into the HTML template
+res.write(`<script>
+  window.__ROUTER_STATE__ = ${JSON.stringify(routerState)};
+  window.__QUERY_DATA__ = ${JSON.stringify(cacheState)};
+</script>`);
+```
+
+### Client side
+
+```tsx
+import { createBrowserRouter } from "@canonical/router-core";
+import { HeadProvider } from "@canonical/react-head";
+import { Outlet, RouterProvider } from "@canonical/router-react";
+
+const router = createBrowserRouter(routes, {
+  hydratedState: window.__ROUTER_STATE__,
+});
+
+hydrateRoot(
+  document,
+  <HeadProvider>
+    <RouterProvider router={router}>
+      <Shell>
+        <Outlet />
+      </Shell>
+    </RouterProvider>
+  </HeadProvider>,
+);
+```
+
+`createBrowserRouter` uses the Navigation API when available (Baseline Newly Available since January 2026), falling back to the History API.
+
+## Progressive disclosure
+
+### `Link`
+
+`Link` builds typed hrefs from route names and optional route params, search data, and hash values. Primary-button clicks are intercepted and routed through the core router. Hover prefetches the destination.
+
+```tsx
+<Link<typeof routes> params={{ slug: "api" }} to="docs">
+  API docs
+</Link>
+```
+
+### `Outlet`
+
+`Outlet` subscribes to router state, calls `router.render()`, and wraps the matched subtree in `Suspense`.
+
+```tsx
+<Outlet fallback={<p>Loading route…</p>} />
+```
+
+### Hooks
+
+- `useBlocker(isActive)` blocks navigation when `isActive` is `true`. Returns `{ state, proceed, cancel }`.
+- `useNavigationState()` subscribes to the router loading state.
+- `useRoute()` returns a tracked location proxy and rerenders only when an accessed location key changes.
+- `useRouter()` returns the router instance from context. Use `useRouter().setSearchParams()` for search param mutation.
+- `useRouterState()` is the power-user hook for subscribing to selected slices of `router.getState()`.
+- `useSearchParam()` subscribes to one query-string key.
+- `useSearchParams()` subscribes either to the full query string or to a fixed set of keys.
+
+Typical selection strategy:
+
+- reach for `useBlocker()` when a form has unsaved state
+- reach for `useNavigationState()` when you only need loading lifecycle
+- reach for `useSearchParam()` for one query-string key
+- reach for `useSearchParams()` for a fixed key set or the full query string
+- reach for `useRoute()` for pathname, hash, or full URL reads
+- reach for `useRouter()` for search param mutation or direct router access
+- reach for `useRouterState()` when you need `match`, `navigation`, or other advanced state in one selector
+
+## Boilerplate reference
+
+The reference integration lives in [apps/react/boilerplate-vite](../../../apps/react/boilerplate-vite). It shows:
+
+- domain-colocated route modules
+- a shell-as-route-provider layout
+- SSR + hydration
+- hover prefetch
+- auth middleware redirect flow
+- error handling with `StatusResponse` and React error boundaries
+
+## Public API
+
+### Components and helpers
+
+- `createHydratedRouter()` — create a browser-backed router that resumes from dehydrated state.
+- `Link` — render a typed anchor that navigates and prefetches through the router.
+- `Outlet` — render the current matched subtree.
+- `RouterProvider` — place a router instance into React context.
+- `useBlocker()` — block navigation when the component has unsaved state.
+- `useNavigationState()` — subscribe to the navigation lifecycle state.
+- `useRoute()` — subscribe to a tracked location object.
+- `useRouter()` — read the router instance from context.
+- `useRouterState()` — subscribe to the full router state or a selected slice.
+- `useSearchParam()` — subscribe to one search-param key.
+- `useSearchParams()` — subscribe to all search params or a selected key set.
+
+### Reference docs
+
+- Full API reference: [docs/references/ROUTER_API.md](../../../docs/references/ROUTER_API.md)
+- Migration guide: [docs/how-to-guides/MIGRATE_FROM_TANSTACK_ROUTER.md](../../../docs/how-to-guides/MIGRATE_FROM_TANSTACK_ROUTER.md)
+- Middleware cookbook: [docs/how-to-guides/ROUTER_MIDDLEWARE_COOKBOOK.md](../../../docs/how-to-guides/ROUTER_MIDDLEWARE_COOKBOOK.md)

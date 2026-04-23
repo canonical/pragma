@@ -3,6 +3,57 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.25.0](https://github.com/canonical/pragma/compare/v0.24.0...v0.25.0) (2026-04-17)
+
+**Note:** Version bump only for package @canonical/react-ssr
+
+
+
+
+
+# [0.24.0](https://github.com/canonical/pragma/compare/v0.23.0...v0.24.0) (2026-04-13)
+
+
+### Features
+
+* **react-ssr:** add shared adapter types, MIME utility, and pattern matching ([#596](https://github.com/canonical/pragma/issues/596)) ([0eb130a](https://github.com/canonical/pragma/commit/0eb130a55429596b39ca40b2496159ce23020a2b))
+
+
+
+
+
+# [0.23.0](https://github.com/canonical/pragma/compare/v0.22.1...v0.23.0) (2026-04-07)
+
+
+### Features
+
+* **react-ssr:** add TextRenderer + migrate consumers to new API ([#594](https://github.com/canonical/pragma/issues/594)) ([78c9737](https://github.com/canonical/pragma/commit/78c973714ef6792bceec5a57c7426d9f24406cf6))
+* **react-ssr:** decouple renderers from HTTP, add web streams + sitemap ([#593](https://github.com/canonical/pragma/issues/593)) ([9050feb](https://github.com/canonical/pragma/commit/9050feb55484fad8f9035f0b2ca4fffa7592f7e3))
+
+
+### BREAKING CHANGES
+
+* **react-ssr:** renderToStream renamed to renderToPipeableStream,
+render methods return content instead of writing to res,
+serveStream/serveString accept factory functions.
+
+* fix: regenerate bun.lock for updated dependencies
+
+The lockfile was committed from a stale state before dependency changes
+(domhandler removed, express moved to peerDependencies, vitest added).
+
+* fix(demo, boilerplate-vite): migrate SSR consumers to new renderer API
+
+- serveStream now takes a factory (req) => Renderer
+- renderToStream renamed to renderToPipeableStream
+- Renderer constructed per-request via createRenderer factory
+
+* fix(demo, boilerplate-vite): fix biome formatting (tabs → spaces)
+
+
+
+
+
 # [0.22.0](https://github.com/canonical/pragma/compare/v0.22.0-experimental.0...v0.22.0) (2026-04-03)
 
 **Note:** Version bump only for package @canonical/react-ssr

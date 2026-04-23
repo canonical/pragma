@@ -56,6 +56,7 @@ export const mockEffect = (effect: Effect): unknown => {
         case "multiselect":
           return effect.question.default ?? [];
       }
+      /* v8 ignore next -- unreachable: all prompt types return above */
       break;
 
     case "ReadContext":

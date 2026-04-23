@@ -121,4 +121,58 @@ describe("createSparqlHandler", () => {
 
     expect(response.status).toBe(400);
   });
+
+  it("returns 400 for POST without content-type header", async () => {
+    testResult = await createTestStore();
+    const handler = createSparqlHandler(testResult.store);
+
+    // Construct a POST request that truly has no Content-Type header.
+    // Using a string body auto-sets text/plain, so we build manually.
+    const request = new Request("http://localhost/sparql", {
+      method: "POST",
+    });
+    const response = await handler(request);
+
+    expect(response.status).toBe(400);
+  });
+
+  it("returns 400 for POST with unsupported content-type", async () => {
+    testResult = await createTestStore();
+    const handler = createSparqlHandler(testResult.store);
+
+    const request = new Request("http://localhost/sparql", {
+      method: "POST",
+      headers: { "Content-Type": "text/plain" },
+      body: "SELECT ?s WHERE { ?s ?p ?o }",
+    });
+    const response = await handler(request);
+
+    expect(response.status).toBe(400);
+    const body = await response.json();
+    expect(body.error).toContain("Missing query");
+  });
+
+  it("returns generic message when query throws a non-Error value", async () => {
+    const fakeStore = {
+      query() {
+        throw "string error";
+      },
+      prefixes: {},
+      api: () => undefined,
+      reload: async () => {},
+      dispose: () => {},
+    };
+    const handler = createSparqlHandler(
+      fakeStore as unknown as import("../lib/types.js").Store,
+    );
+
+    const request = new Request(
+      "http://localhost/sparql?query=SELECT+%3Fs+WHERE+%7B+%3Fs+%3Fp+%3Fo+%7D",
+    );
+    const response = await handler(request);
+
+    expect(response.status).toBe(400);
+    const body = await response.json();
+    expect(body.error).toBe("Query execution failed");
+  });
 });

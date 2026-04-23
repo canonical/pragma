@@ -15,7 +15,7 @@ export default function resolveCompletion(
   tree: CompletionTree,
   words: readonly string[],
 ): CompletionResult {
-  const partial = words.length > 0 ? (words[words.length - 1] ?? "") : "";
+  const partial = words.length > 0 ? (words[words.length - 1] as string) : "";
 
   if (words.length <= 1) {
     const completer: Completer = async (p: string) => {
@@ -25,14 +25,19 @@ export default function resolveCompletion(
     return { completer, partial, level: 1 };
   }
 
-  const noun = words[0] ?? "";
+  const noun = words[0];
+  /* v8 ignore next — structurally guaranteed by words.length > 1 guard above */
+  if (noun === undefined) throw new Error("Expected words[0] to be defined");
   const nounEntry = tree.nouns.get(noun);
   if (!nounEntry) {
     return { completer: undefined, partial, level: 1 };
   }
 
   if (words.length === 2) {
-    const verbPartial = words[1] ?? "";
+    const verbPartial = words[1];
+    /* v8 ignore next 2 — structurally guaranteed by words.length === 2 guard */
+    if (verbPartial === undefined)
+      throw new Error("Expected words[1] to be defined");
     const completer: Completer = async (p: string) => {
       const lower = p.toLowerCase();
       return [...nounEntry.verbs.keys()]
@@ -42,7 +47,9 @@ export default function resolveCompletion(
     return { completer, partial: verbPartial, level: 2 };
   }
 
-  const verb = words[1] ?? "";
+  const verb = words[1];
+  /* v8 ignore next — structurally guaranteed by words.length > 2 reaching here */
+  if (verb === undefined) throw new Error("Expected words[1] to be defined");
   const argEntry = nounEntry.verbs.get(verb);
   if (!argEntry || argEntry.completers.length === 0) {
     return { completer: undefined, partial, level: 3 };

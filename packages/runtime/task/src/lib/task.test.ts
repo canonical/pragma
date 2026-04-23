@@ -454,6 +454,24 @@ describe("Task Monad - Monad Operations", () => {
       expect(t._tag).toBe("Effect");
     });
 
+    it("maps error through Effect continuation", () => {
+      const eff: Effect = { _tag: "ReadFile", path: "/test.txt" };
+      const t = mapError(effect<string>(eff), (e) => ({
+        ...e,
+        code: "MAPPED",
+      }));
+
+      expect(t._tag).toBe("Effect");
+      const effectTask = t as {
+        cont: (v: unknown) => Task<string>;
+      };
+      // Calling cont triggers line 129: mapError(task.cont(result), f)
+      const contResult = effectTask.cont("mock content");
+      // The continuation wraps the result in mapError
+      expect(contResult._tag).toBe("Pure");
+      expect((contResult as { value: string }).value).toBe("mock content");
+    });
+
     it("can add context to errors", () => {
       const error: TaskError = { code: "ERR", message: "error" };
       const t = mapError(fail<number>(error), (e) => ({

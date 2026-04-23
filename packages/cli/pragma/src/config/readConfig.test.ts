@@ -73,6 +73,105 @@ describe("readConfig", () => {
     const config = readConfig(dir);
     expect(config.tier).toBeUndefined();
   });
+
+  describe("packages field", () => {
+    it("parses string-only packages array", () => {
+      writeFileSync(
+        join(dir, "pragma.config.json"),
+        JSON.stringify({
+          packages: ["@canonical/design-system", "@canonical/code-standards"],
+        }),
+      );
+      const config = readConfig(dir);
+      expect(config.packages).toEqual([
+        "@canonical/design-system",
+        "@canonical/code-standards",
+      ]);
+    });
+
+    it("parses mixed string and object packages", () => {
+      writeFileSync(
+        join(dir, "pragma.config.json"),
+        JSON.stringify({
+          packages: [
+            "@canonical/design-system",
+            {
+              name: "@canonical/code-standards",
+              source: "file:///home/user/code/code-standards",
+            },
+          ],
+        }),
+      );
+      const config = readConfig(dir);
+      expect(config.packages).toEqual([
+        "@canonical/design-system",
+        {
+          name: "@canonical/code-standards",
+          source: "file:///home/user/code/code-standards",
+        },
+      ]);
+    });
+
+    it("parses object without source as npm", () => {
+      writeFileSync(
+        join(dir, "pragma.config.json"),
+        JSON.stringify({
+          packages: [{ name: "@canonical/design-system" }],
+        }),
+      );
+      const config = readConfig(dir);
+      expect(config.packages).toEqual([{ name: "@canonical/design-system" }]);
+    });
+
+    it("returns no packages field when absent", () => {
+      writeFileSync(join(dir, "pragma.config.json"), '{"tier":"global"}');
+      const config = readConfig(dir);
+      expect(config.packages).toBeUndefined();
+    });
+
+    it("throws on non-array packages", () => {
+      writeFileSync(
+        join(dir, "pragma.config.json"),
+        '{"packages":"not-an-array"}',
+      );
+      expect(() => readConfig(dir)).toThrow(PragmaError);
+    });
+
+    it("throws on object entry with empty name", () => {
+      writeFileSync(
+        join(dir, "pragma.config.json"),
+        JSON.stringify({ packages: [{ name: "" }] }),
+      );
+      expect(() => readConfig(dir)).toThrow(PragmaError);
+    });
+
+    it("throws on invalid source scheme", () => {
+      writeFileSync(
+        join(dir, "pragma.config.json"),
+        JSON.stringify({
+          packages: [
+            { name: "@canonical/ds", source: "https://example.com/foo.tar.gz" },
+          ],
+        }),
+      );
+      expect(() => readConfig(dir)).toThrow(PragmaError);
+    });
+
+    it("throws on git source without ref", () => {
+      writeFileSync(
+        join(dir, "pragma.config.json"),
+        JSON.stringify({
+          packages: [
+            {
+              name: "@canonical/ds",
+              source: "git+https://github.com/canonical/ds.git",
+            },
+          ],
+        }),
+      );
+      expect(() => readConfig(dir)).toThrow(PragmaError);
+    });
+  });
 });
 
 describe("writeConfig", () => {
@@ -148,5 +247,58 @@ describe("writeConfig", () => {
   it("throws on unparseable existing config instead of silently overwriting", () => {
     writeFileSync(join(dir, "pragma.config.json"), "{invalid json");
     expect(() => writeConfig(dir, { tier: "apps" })).toThrow();
+  });
+
+  describe("packages field", () => {
+    it("writes packages array", () => {
+      writeConfig(dir, {
+        packages: [
+          "@canonical/design-system",
+          {
+            name: "@canonical/code-standards",
+            source: "file:///home/user/code/code-standards",
+          },
+        ],
+      });
+      const config = readConfig(dir);
+      expect(config.packages).toEqual([
+        "@canonical/design-system",
+        {
+          name: "@canonical/code-standards",
+          source: "file:///home/user/code/code-standards",
+        },
+      ]);
+    });
+
+    it("merges packages into existing config without touching tier", () => {
+      writeFileSync(join(dir, "pragma.config.json"), '{"tier":"global"}');
+      writeConfig(dir, { packages: ["@canonical/design-system"] });
+      const config = readConfig(dir);
+      expect(config.tier).toBe("global");
+      expect(config.packages).toEqual(["@canonical/design-system"]);
+    });
+
+    it("removes packages when set to undefined", () => {
+      writeFileSync(
+        join(dir, "pragma.config.json"),
+        JSON.stringify({ packages: ["@canonical/design-system"] }),
+      );
+      writeConfig(dir, { packages: undefined });
+      const config = readConfig(dir);
+      expect(config.packages).toBeUndefined();
+    });
+
+    it("round-trips packages through write then read", () => {
+      const packages = [
+        "@canonical/design-system",
+        {
+          name: "@canonical/anatomy-dsl",
+          source: "git+https://github.com/canonical/anatomy-dsl.git#main",
+        },
+      ];
+      writeConfig(dir, { packages });
+      const config = readConfig(dir);
+      expect(config.packages).toEqual(packages);
+    });
   });
 });

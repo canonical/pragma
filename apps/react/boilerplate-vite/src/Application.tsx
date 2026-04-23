@@ -2,13 +2,13 @@ import { Button, TooltipArea } from "@canonical/react-ds-global";
 import { lazy, Suspense, useState } from "react";
 import canonicalLogo from "./assets/canonical.svg";
 import reactLogo from "./assets/react.svg";
-import "./Application.css";
+import "#styles/app.css";
 
 const LazyButton = lazy(
   () =>
     new Promise((resolve) => {
       // @ts-expect-error
-      setTimeout(() => resolve(import("./LazyComponent.js")), 2000);
+      setTimeout(() => resolve(import("./lib/LazyComponent/index.js")), 2000);
     }),
 );
 
@@ -16,7 +16,7 @@ function App() {
   const [count, setCount] = useState(0);
 
   return (
-    <>
+    <div className="grid responsive">
       <div>
         <a
           href="https://canonical.com"
@@ -48,7 +48,7 @@ function App() {
           Edit <code>src/App.tsx</code> and save to test HMR
         </p>
       </div>
-    </>
+    </div>
   );
 }
 

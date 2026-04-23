@@ -141,6 +141,34 @@ describe("completions", () => {
 
       expect(tree.nouns.size).toBe(0);
     });
+
+    it("creates noun entry for single-segment commands without verb", () => {
+      const tree = buildCompleters([
+        {
+          path: ["info"],
+          description: "Show info",
+          parameters: [],
+          execute: async () => createExitResult(0),
+        },
+      ]);
+
+      expect(tree.nouns.has("info")).toBe(true);
+      const info = tree.nouns.get("info");
+      expect(info?.verbs.size).toBe(0);
+    });
+
+    it("skips commands with falsy first path segment", () => {
+      const tree = buildCompleters([
+        {
+          path: [""],
+          description: "Invalid",
+          parameters: [],
+          execute: async () => createExitResult(0),
+        },
+      ]);
+
+      expect(tree.nouns.size).toBe(0);
+    });
   });
 
   describe("resolveCompletion", () => {
@@ -225,6 +253,30 @@ describe("completions", () => {
         "component",
         "list",
         "something",
+      ]);
+
+      expect(result.level).toBe(3);
+      expect(result.completer).toBeUndefined();
+    });
+
+    it("resolves level 1 for empty words array", async () => {
+      tree = buildCompleters(makeCommands());
+      const result = resolveCompletion(tree, []);
+
+      expect(result.level).toBe(1);
+      expect(result.partial).toBe("");
+      expect(result.completer).toBeDefined();
+
+      const candidates = await result.completer?.("", testCtx);
+      expect(candidates).toEqual(["component", "config", "standard"]);
+    });
+
+    it("returns undefined completer for unknown verb with args", () => {
+      tree = buildCompleters(makeCommands());
+      const result = resolveCompletion(tree, [
+        "component",
+        "nonexistent",
+        "arg",
       ]);
 
       expect(result.level).toBe(3);

@@ -1,7 +1,7 @@
 import previewConfig from "@canonical/storybook-config/preview";
 import type { Preview } from "@storybook/react-vite";
 
-import "index.css";
+import "../src/styles/index.css";
 
 const preview: Preview = {
   ...previewConfig,

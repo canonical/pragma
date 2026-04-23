@@ -3,6 +3,44 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.25.0](https://github.com/canonical/pragma/compare/v0.24.0...v0.25.0) (2026-04-17)
+
+
+### Bug Fixes
+
+* **svelte-ds-app-launchpad:** Exclude tests and stories from publishing to npm ([#612](https://github.com/canonical/pragma/issues/612)) ([c120ef0](https://github.com/canonical/pragma/commit/c120ef0b3d301fdc9fc0372de052e40119ab1992))
+
+
+
+
+
+# [0.24.0](https://github.com/canonical/pragma/compare/v0.23.0...v0.24.0) (2026-04-13)
+
+
+### Bug Fixes
+
+* **svelte-ds-app-launchpad:** Increase specificity of button styles ([#611](https://github.com/canonical/pragma/issues/611)) ([ca84fd5](https://github.com/canonical/pragma/commit/ca84fd56bcc222cab102ce7624ab345b9b2bc7d0))
+
+
+### Features
+
+* **svelte-ds-app-launchpad:** Add Modal ([#588](https://github.com/canonical/pragma/issues/588)) ([e1ec629](https://github.com/canonical/pragma/commit/e1ec6293f5bbe1789b3baf6e8cd47da17bba2b2b))
+
+
+
+
+
+# [0.23.0](https://github.com/canonical/pragma/compare/v0.22.1...v0.23.0) (2026-04-07)
+
+
+### Bug Fixes
+
+* **svelte-ds-app-launchpad:** Fix typo in internal.ts file name ([#605](https://github.com/canonical/pragma/issues/605)) ([80a24c6](https://github.com/canonical/pragma/commit/80a24c68d56876db757609c90caaf7dc97465820))
+
+
+
+
+
 ## [0.22.1](https://github.com/canonical/pragma/compare/v0.22.0...v0.22.1) (2026-04-03)
 
 

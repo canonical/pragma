@@ -21,4 +21,10 @@ describe("validatePackageName", () => {
   it("strips @canonical/ prefix for validation", () => {
     expect(validatePackageName("@canonical/my-package")).toBe(true);
   });
+
+  it("rejects names longer than 214 characters", () => {
+    const longName = `a${"b".repeat(214)}`;
+    expect(validatePackageName(longName)).not.toBe(true);
+    expect(validatePackageName(longName)).toContain("214");
+  });
 });

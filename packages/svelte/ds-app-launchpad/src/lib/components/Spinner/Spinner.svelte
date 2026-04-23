@@ -1,6 +1,6 @@
 <script lang="ts">
   import { SpinnerIcon } from "@canonical/svelte-icons";
-  import type { SpinnerProps } from "./types";
+  import type { SpinnerProps } from "./types.js";
   import "./styles.css";
 
   const componentCssClassName = "ds spinner";
@@ -9,10 +9,10 @@
 </script>
 
 <SpinnerIcon
-	name="spinner"
-	class={[componentCssClassName, className]}
-	aria-label="Loading"
-	{...rest}
+  name="spinner"
+  class={[componentCssClassName, className]}
+  aria-label="Loading"
+  {...rest}
 />
 
 <!-- @component

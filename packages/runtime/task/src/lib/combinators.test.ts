@@ -948,5 +948,15 @@ describe("Combinators - Edge Cases", () => {
       const { value } = dryRun(t);
       expect(value).toBe(42);
     });
+
+    it("falls back when handler value is undefined in Partial record", () => {
+      const handlers = { a: undefined } as unknown as Partial<
+        Record<"a", Task<string>>
+      >;
+      const t = switchMap<"a", string>(pure("a"), handlers, pure("fallback"));
+
+      const { value } = dryRun(t);
+      expect(value).toBe("fallback");
+    });
   });
 });

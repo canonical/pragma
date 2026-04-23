@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  appendFileEffect,
   copyDirectoryEffect,
   copyFileEffect,
   deleteDirectoryEffect,
@@ -523,6 +524,18 @@ describe("Effect Utilities - describeEffect", () => {
   it("describes WriteFile effect with byte count", () => {
     const effect = writeFileEffect("/output.txt", "Hello, World!");
     expect(describeEffect(effect)).toBe("Write file: /output.txt (13 bytes)");
+  });
+
+  it("describes AppendFile effect with createIfMissing", () => {
+    const effect = appendFileEffect("/log.txt", "entry\n", true);
+    expect(describeEffect(effect)).toBe(
+      "Append to file: /log.txt (6 bytes) [create if missing]",
+    );
+  });
+
+  it("describes AppendFile effect without createIfMissing", () => {
+    const effect = appendFileEffect("/log.txt", "entry\n", false);
+    expect(describeEffect(effect)).toBe("Append to file: /log.txt (6 bytes)");
   });
 
   it("describes CopyFile effect", () => {

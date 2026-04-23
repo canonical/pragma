@@ -3,6 +3,80 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.25.0](https://github.com/canonical/pragma/compare/v0.24.0...v0.25.0) (2026-04-17)
+
+
+### Bug Fixes
+
+* **svelte-ds-app-launchpad:** Exclude tests and stories from publishing to npm ([#612](https://github.com/canonical/pragma/issues/612)) ([c120ef0](https://github.com/canonical/pragma/commit/c120ef0b3d301fdc9fc0372de052e40119ab1992))
+
+
+### Features
+
+* **List, BasicSection:** Implement List and BasicSection webcomponents ([#583](https://github.com/canonical/pragma/issues/583)) ([e760458](https://github.com/canonical/pragma/commit/e760458b4109be0fb68d11759a2f453d143c72a3))
+* **lit:** implement ds-button-link, ds-cta-block and ds-cta-section web components ([#566](https://github.com/canonical/pragma/issues/566)) ([c6e67fb](https://github.com/canonical/pragma/commit/c6e67fbae5782507924c7de978c7388167fb3311))
+
+
+
+
+
+# [0.24.0](https://github.com/canonical/pragma/compare/v0.23.0...v0.24.0) (2026-04-13)
+
+
+### Bug Fixes
+
+* **svelte-ds-app-launchpad:** Increase specificity of button styles ([#611](https://github.com/canonical/pragma/issues/611)) ([ca84fd5](https://github.com/canonical/pragma/commit/ca84fd56bcc222cab102ce7624ab345b9b2bc7d0))
+
+
+### Features
+
+* **react-hooks:** preference hooks, navigation tree hook, and ARIA helpers ([#609](https://github.com/canonical/pragma/issues/609)) ([b3190b0](https://github.com/canonical/pragma/commit/b3190b0c3b6ac6ada32d84f4eb053539742541ec))
+* **react-ssr:** add shared adapter types, MIME utility, and pattern matching ([#596](https://github.com/canonical/pragma/issues/596)) ([0eb130a](https://github.com/canonical/pragma/commit/0eb130a55429596b39ca40b2496159ce23020a2b))
+* **svelte-ds-app-launchpad:** Add Modal ([#588](https://github.com/canonical/pragma/issues/588)) ([e1ec629](https://github.com/canonical/pragma/commit/e1ec6293f5bbe1789b3baf6e8cd47da17bba2b2b))
+
+
+
+
+
+# [0.23.0](https://github.com/canonical/pragma/compare/v0.22.1...v0.23.0) (2026-04-07)
+
+
+### Bug Fixes
+
+* **svelte-ds-app-launchpad:** Fix typo in internal.ts file name ([#605](https://github.com/canonical/pragma/issues/605)) ([80a24c6](https://github.com/canonical/pragma/commit/80a24c68d56876db757609c90caaf7dc97465820))
+
+
+### Features
+
+* **react-ssr:** add TextRenderer + migrate consumers to new API ([#594](https://github.com/canonical/pragma/issues/594)) ([78c9737](https://github.com/canonical/pragma/commit/78c973714ef6792bceec5a57c7426d9f24406cf6))
+* **react-ssr:** decouple renderers from HTTP, add web streams + sitemap ([#593](https://github.com/canonical/pragma/issues/593)) ([9050feb](https://github.com/canonical/pragma/commit/9050feb55484fad8f9035f0b2ca4fffa7592f7e3))
+* **router-core:** platform-agnostic router with typed navigation and SSR ([#601](https://github.com/canonical/pragma/issues/601)) ([ee26e29](https://github.com/canonical/pragma/commit/ee26e294fc255e8ea27767abd0f2663c11c0ee70))
+* **router-react:** React bindings for @canonical/router-core ([#602](https://github.com/canonical/pragma/issues/602)) ([86a4089](https://github.com/canonical/pragma/commit/86a40895f9dd83e9b38c13a5501e2e54dc9b99da))
+
+
+### BREAKING CHANGES
+
+* **react-ssr:** renderToStream renamed to renderToPipeableStream,
+render methods return content instead of writing to res,
+serveStream/serveString accept factory functions.
+
+* fix: regenerate bun.lock for updated dependencies
+
+The lockfile was committed from a stale state before dependency changes
+(domhandler removed, express moved to peerDependencies, vitest added).
+
+* fix(demo, boilerplate-vite): migrate SSR consumers to new renderer API
+
+- serveStream now takes a factory (req) => Renderer
+- renderToStream renamed to renderToPipeableStream
+- Renderer constructed per-request via createRenderer factory
+
+* fix(demo, boilerplate-vite): fix biome formatting (tabs → spaces)
+
+
+
+
+
 ## [0.22.1](https://github.com/canonical/pragma/compare/v0.22.0...v0.22.1) (2026-04-03)
 
 
