@@ -1,0 +1,48 @@
+{
+  "name": "<%= name %>",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "license": "GPL-3.0-only",
+  "scripts": {
+    "dev": "vite",
+    "dev:express": "node --import tsx src/server/server.express.ts",
+    "dev:bun": "bun src/server/server.bun.ts",
+    "build": "bun run build:client",
+    "build:all": "bun run build:client && bun run build:storybook",
+    "build:client": "vite build --ssrManifest --outDir dist/client",
+    "build:storybook": "storybook build",
+    "check": "bun run check:biome && bun run check:ts",
+    "check:fix": "bun run check:biome:fix && bun run check:ts",
+    "check:biome": "biome check",
+    "check:biome:fix": "biome check --write",
+    "check:ts": "tsc --noEmit",
+    "storybook": "storybook dev -p 6010 --no-open --host 0.0.0.0"
+  },
+  "dependencies": {
+    "@canonical/react-head": "^0.25.0",
+    "@canonical/react-ssr": "^0.25.0",
+    "@canonical/router-core": "^0.25.0",
+    "@canonical/router-react": "^0.25.0",
+    "@canonical/styles": "^0.25.0",
+    "express": "^5.2.1",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.4.9",
+    "@canonical/biome-config": "^0.25.0",
+    "@canonical/typescript-config-react": "^0.25.0",
+    "@types/express": "^5.0.6",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.0",
+    "bun-types": "^1.3.9",
+    "storybook": "^10.3.1",
+    "tsx": "^4.19.0",
+    "typescript": "^5.9.3",
+    "vite": "^8.0.1",
+    "vite-tsconfig-paths": "^6.1.1",
+    "vitest": "^4.0.18"
+  }
+}

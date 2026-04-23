@@ -26,14 +26,34 @@ describe("application/react generator", () => {
     expect(paths).toContain("my-app/src/server/entry.tsx");
     expect(paths).toContain("my-app/src/server/server.express.ts");
     expect(paths).toContain("my-app/src/server/server.bun.ts");
+    expect(paths).toContain("my-app/src/server/sitemap.ts");
     expect(paths).toContain("my-app/src/domains/marketing/HomePage.tsx");
     expect(paths).toContain("my-app/src/domains/marketing/routes.ts");
     expect(paths).toContain("my-app/src/routes.tsx");
     expect(paths).toContain("my-app/src/lib/Navigation/Navigation.tsx");
     expect(paths).toContain("my-app/src/lib/Navigation/index.ts");
+    expect(paths).toContain("my-app/src/lib/index.ts");
   });
 
-  it("creates MakeDir effects for all directories", () => {
+  it("reads EJS templates for each generated file", () => {
+    const result = dryRun(
+      generators["application/react"].generate({
+        appPath: "my-app",
+        ssr: true,
+        router: true,
+      }),
+    );
+
+    const readEffects = result.effects.filter((e) => e._tag === "ReadFile");
+    const paths = readEffects.map((e) => (e as { path: string }).path);
+
+    // Each template() call reads a .ejs source file
+    expect(paths.some((p) => p.endsWith("package.json.ejs"))).toBe(true);
+    expect(paths.some((p) => p.endsWith("vite.config.ts.ejs"))).toBe(true);
+    expect(paths.some((p) => p.endsWith("entry.tsx.ejs"))).toBe(true);
+  });
+
+  it("creates MakeDir effects for parent directories", () => {
     const result = dryRun(
       generators["application/react"].generate({
         appPath: "my-app",
@@ -45,13 +65,15 @@ describe("application/react generator", () => {
     const mkdirEffects = result.effects.filter((e) => e._tag === "MakeDir");
     const paths = mkdirEffects.map((e) => (e as { path: string }).path);
 
+    // template() auto-creates parent directories for each destination
     expect(paths).toContain("my-app");
-    expect(paths).toContain("my-app/src");
     expect(paths).toContain("my-app/src/client");
     expect(paths).toContain("my-app/src/server");
     expect(paths).toContain("my-app/src/styles");
     expect(paths).toContain("my-app/src/domains/marketing");
     expect(paths).toContain("my-app/src/lib/Navigation");
+    expect(paths).toContain("my-app/src/lib");
+    expect(paths).toContain("my-app/src");
   });
 
   it("throws when --ssr is false", () => {
