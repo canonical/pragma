@@ -2,6 +2,99 @@ import { dryRun } from "@canonical/task";
 import { describe, expect, it } from "vitest";
 import { generators } from "./index.js";
 
+describe("application/react generator", () => {
+  it("creates the expected files for a React application", () => {
+    const result = dryRun(
+      generators["application/react"].generate({
+        appPath: "my-app",
+        ssr: true,
+        router: true,
+      }),
+    );
+
+    const writeEffects = result.effects.filter((e) => e._tag === "WriteFile");
+    const paths = writeEffects.map((e) => (e as { path: string }).path);
+
+    expect(paths).toContain("my-app/package.json");
+    expect(paths).toContain("my-app/tsconfig.json");
+    expect(paths).toContain("my-app/vite.config.ts");
+    expect(paths).toContain("my-app/biome.json");
+    expect(paths).toContain("my-app/index.html");
+    expect(paths).toContain("my-app/src/styles/index.css");
+    expect(paths).toContain("my-app/src/styles/app.css");
+    expect(paths).toContain("my-app/src/client/entry.tsx");
+    expect(paths).toContain("my-app/src/server/entry.tsx");
+    expect(paths).toContain("my-app/src/server/server.express.ts");
+    expect(paths).toContain("my-app/src/server/server.bun.ts");
+    expect(paths).toContain("my-app/src/domains/marketing/HomePage.tsx");
+    expect(paths).toContain("my-app/src/domains/marketing/routes.ts");
+    expect(paths).toContain("my-app/src/routes.tsx");
+    expect(paths).toContain("my-app/src/lib/Navigation/Navigation.tsx");
+    expect(paths).toContain("my-app/src/lib/Navigation/index.ts");
+  });
+
+  it("creates MakeDir effects for all directories", () => {
+    const result = dryRun(
+      generators["application/react"].generate({
+        appPath: "my-app",
+        ssr: true,
+        router: true,
+      }),
+    );
+
+    const mkdirEffects = result.effects.filter((e) => e._tag === "MakeDir");
+    const paths = mkdirEffects.map((e) => (e as { path: string }).path);
+
+    expect(paths).toContain("my-app");
+    expect(paths).toContain("my-app/src");
+    expect(paths).toContain("my-app/src/client");
+    expect(paths).toContain("my-app/src/server");
+    expect(paths).toContain("my-app/src/styles");
+    expect(paths).toContain("my-app/src/domains/marketing");
+    expect(paths).toContain("my-app/src/lib/Navigation");
+  });
+
+  it("throws when --ssr is false", () => {
+    expect(() =>
+      dryRun(
+        generators["application/react"].generate({
+          appPath: "my-app",
+          ssr: false,
+          router: true,
+        }),
+      ),
+    ).toThrow();
+  });
+
+  it("throws when --router is false", () => {
+    expect(() =>
+      dryRun(
+        generators["application/react"].generate({
+          appPath: "my-app",
+          ssr: true,
+          router: false,
+        }),
+      ),
+    ).toThrow();
+  });
+
+  it("uses the appPath in generated file paths", () => {
+    const result = dryRun(
+      generators["application/react"].generate({
+        appPath: "custom-app",
+        ssr: true,
+        router: true,
+      }),
+    );
+
+    const writeEffects = result.effects.filter((e) => e._tag === "WriteFile");
+    const paths = writeEffects.map((e) => (e as { path: string }).path);
+
+    expect(paths).toContain("custom-app/package.json");
+    expect(paths).toContain("custom-app/src/client/entry.tsx");
+  });
+});
+
 describe("domain generator", () => {
   it("creates MainPage.tsx and routes.ts in src/domains/{name}/", () => {
     const result = dryRun(
