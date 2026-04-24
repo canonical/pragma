@@ -14,6 +14,7 @@ export * from "./RelativeDateTime/index.js";
 export * from "./SidePanel/index.js";
 export * from "./Spinner/index.js";
 export * from "./Switch/index.js";
+export * from "./Table/index.js";
 export * from "./Textarea/index.js";
 export * from "./TextInput/index.js";
 export * from "./Timeline/index.js";
