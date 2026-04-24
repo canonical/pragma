@@ -5,6 +5,6 @@ import type { ModifierFamilyValues } from "../../modifier-families/index.js";
 
 export interface SelectProps extends HTMLSelectAttributes {
   ref?: HTMLSelectElement;
-  density?: "dense" | "medium";
+  density?: Extract<ModifierFamilyValues["density"], "dense" | "medium">;
   severity?: ModifierFamilyValues["severity"] | "base";
 }
