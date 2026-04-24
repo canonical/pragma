@@ -1,11 +1,12 @@
 /* @canonical/generator-ds 0.10.0-experimental.5 */
 
 import type { ComponentProps } from "svelte";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import type { Locator } from "vitest/browser";
 import type { RenderResult } from "vitest-browser-svelte";
 import { render } from "vitest-browser-svelte";
 import Component from "./SearchBox.svelte";
+import { inheritedChildren, overriddenChildren } from "./test.fixtures.svelte";
 
 const baseProps = {
   "aria-label": "Search articles",
@@ -100,14 +101,47 @@ describe("SearchBox component", () => {
         .toBeInTheDocument();
     });
 
-    it("calls onSearchButtonClick when the button is clicked", async () => {
-      const onSearchButtonClick = vi.fn();
+    it("renders a default search button when children are not provided", async () => {
       const page = render(Component, {
         ...baseProps,
-        onSearchButtonClick,
       });
-      await buttonLocator(page).click();
-      expect(onSearchButtonClick).toHaveBeenCalled();
+      await expect
+        .element(page.getByRole("button", { name: baseProps["aria-label"] }))
+        .toBeInTheDocument();
+    });
+
+    it("composed SearchButton inherits aria-label from SearchBox context", async () => {
+      const page = render(Component, {
+        ...baseProps,
+        children: inheritedChildren,
+      });
+      await expect
+        .element(page.getByRole("button", { name: baseProps["aria-label"] }))
+        .toBeInTheDocument();
+    });
+
+    it("composed SearchButton inherits disabled from SearchBox context", async () => {
+      const page = render(Component, {
+        ...baseProps,
+        disabled: true,
+        children: inheritedChildren,
+      });
+      await expect.element(inputLocator(page)).toBeDisabled();
+      await expect
+        .element(page.getByRole("button", { name: baseProps["aria-label"] }))
+        .toBeDisabled();
+    });
+
+    it("composed SearchButton can override inherited aria-label and disabled", async () => {
+      const page = render(Component, {
+        ...baseProps,
+        disabled: true,
+        children: overriddenChildren,
+      });
+      await expect.element(inputLocator(page)).toBeDisabled();
+      await expect
+        .element(page.getByRole("button", { name: "Custom search button" }))
+        .toBeEnabled();
     });
   });
 });

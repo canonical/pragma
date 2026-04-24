@@ -1,23 +1,33 @@
 <!-- @canonical/generator-ds 0.10.0-experimental.4 -->
 
 <script lang="ts">
-  import { SearchIcon } from "@canonical/svelte-icons";
   import type { SearchBoxProps } from "./types.js";
   import "./styles.css";
-  import { ButtonPrimitive, InputPrimitive } from "../common/index.js";
+  import { InputPrimitive } from "../common/index.js";
+  import { SearchButton } from "./common/index.js";
+  import { setSearchBoxContext } from "./context.js";
 
   const componentCssClassName = "ds search-box";
 
   let {
     class: className,
     value = $bindable(),
+    children,
     "aria-label": ariaLabel,
     disabled,
-    invalidStyled,
-    onSearchButtonClick,
+    shouldRenderInvalidStyles,
     "data-testid": dataTestId,
     ...rest
   }: SearchBoxProps = $props();
+
+  setSearchBoxContext({
+    get disabled() {
+      return disabled;
+    },
+    get "aria-label"() {
+      return ariaLabel;
+    },
+  });
 </script>
 
 <div class={[componentCssClassName, className]} data-testid={dataTestId}>
@@ -26,28 +36,35 @@
     bind:value
     aria-label={ariaLabel}
     {disabled}
-    class={{ "no-invalid-styles": !invalidStyled }}
+    class={{ "no-invalid-styles": !shouldRenderInvalidStyles }}
     {...rest}
   />
-  <ButtonPrimitive
-    type="submit"
-    aria-label={ariaLabel}
-    {disabled}
-    onclick={onSearchButtonClick}
-  >
-    <SearchIcon />
-  </ButtonPrimitive>
+  {#if children}
+    {@render children()}
+  {:else}
+    <SearchButton />
+  {/if}
 </div>
 
 <!-- @component
-`SearchBox` is a text input field designed for search functionality. It includes a text input and a submit button.
+`SearchBox` is a text input field designed for search functionality.
 
-If the `SearchBox` is used within a form, it will be submitted when the button is clicked or when the user presses the Enter key while focused on the input. If not used within a form, you can provide an `onSearchButtonClick` handler to define custom behavior for the button interaction or `onkeydown` on the input for handling Enter key presses.
+By default, it renders an input and a submit button (`SearchBox.SearchButton`).
+You can override the default button by passing `children`.
+
+When `SearchBox.SearchButton` is used inside `SearchBox`, it inherits `aria-label` and `disabled` from `SearchBox` context by default. You can still override those values directly on `SearchBox.SearchButton` when needed.
 
 ## Example Usage
 ### Basic Example
 ```svelte
-<SearchBox aria-label="Search articles" placeholder="Ubuntu" onSearchButtonClick={handleClick} onkeydown={handleKeyDown} />
+<SearchBox aria-label="Search articles" placeholder="Ubuntu" />
+```
+
+### Customized SearchButton
+```svelte
+<SearchBox aria-label="Search articles" placeholder="Ubuntu">
+  <SearchBox.SearchButton onclick={handleClick} aria-label="Run search" />
+</SearchBox>
 ```
 
 ### As a search landmark

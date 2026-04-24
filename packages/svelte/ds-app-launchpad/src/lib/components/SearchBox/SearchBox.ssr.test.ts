@@ -5,6 +5,7 @@ import { render } from "@canonical/svelte-ssr-test";
 import type { ComponentProps } from "svelte";
 import { describe, expect, it } from "vitest";
 import Component from "./SearchBox.svelte";
+import { inheritedChildren, overriddenChildren } from "./test.fixtures.svelte";
 
 const baseProps = {
   "aria-label": "Search articles",
@@ -78,6 +79,33 @@ describe("SearchBox SSR", () => {
       });
       expect(page.getByRole("searchbox", { name: label })).toBeDefined();
       expect(page.getByRole("button", { name: label })).toBeDefined();
+    });
+
+    it("composed SearchButton inherits aria-label from SearchBox context", () => {
+      const page = render(Component, {
+        props: { ...baseProps, children: inheritedChildren },
+      });
+      expect(
+        page.getByRole("button", { name: baseProps["aria-label"] }),
+      ).toBeDefined();
+    });
+
+    it("composed SearchButton inherits disabled from SearchBox context", () => {
+      const page = render(Component, {
+        props: { ...baseProps, disabled: true, children: inheritedChildren },
+      });
+      expect(inputLocator(page).disabled).toBe(true);
+      expect(buttonLocator(page).disabled).toBe(true);
+    });
+
+    it("composed SearchButton can override inherited aria-label and disabled", () => {
+      const page = render(Component, {
+        props: { ...baseProps, disabled: true, children: overriddenChildren },
+      });
+      expect(inputLocator(page).disabled).toBe(true);
+      const button = page.getByRole("button", { name: "Custom search button" });
+      expect(button).toBeDefined();
+      expect((button as HTMLButtonElement).disabled).toBe(false);
     });
   });
 });

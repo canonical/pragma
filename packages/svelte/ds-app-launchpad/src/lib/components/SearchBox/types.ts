@@ -1,10 +1,10 @@
 /* @canonical/generator-ds 0.10.0-experimental.4 */
 
-import type { MouseEventHandler } from "svelte/elements";
+import type { Snippet } from "svelte";
+import type { HTMLInputAttributes } from "svelte/elements";
 import type { TextInputPrimitiveProps } from "../common/index.js";
 
-export interface SearchBoxProps
-  extends Omit<TextInputPrimitiveProps, "children" | "type"> {
+export interface SearchBoxProps extends Omit<TextInputPrimitiveProps, "type"> {
   /**
    * The accessible name for the input.
    *
@@ -12,14 +12,28 @@ export interface SearchBoxProps
    */
   "aria-label": string;
   /**
-   * Click event handler for the search button.
-   */
-  onSearchButtonClick?: MouseEventHandler<HTMLButtonElement>;
-  /**
    * Whether to apply the invalid styles to the input when it fails native validation (`:user-invalid`) or `aria-invalid="true"` is set.
    *
    * @default false
    * This is opt-in because search landmarks often have submission requirements, such as `required` and `minlength`, where you may want to block submission without showing a visual invalid state.
    */
-  invalidStyled?: boolean;
+  shouldRenderInvalidStyles?: boolean;
+  /**
+   * The content to render instead of the default `SearchBox.SearchButton`. This is useful when you want to customize the default button behavior, such as adding an `onclick` handler.
+   *
+   * If `disabled` or `aria-label` props are not provided to the `SearchBox.SearchButton`, it will inherit their respective values from SearchBox context.
+   *
+   * @example
+   * ```svelte
+   * <SearchBox aria-label="Search articles">
+   *   <SearchBox.SearchButton onclick={handleClick} />
+   * </SearchBox>
+   * ```
+   */
+  children?: Snippet<[]>;
 }
+
+export type SearchBoxContext = {
+  disabled: HTMLInputAttributes["disabled"];
+  "aria-label": string;
+};

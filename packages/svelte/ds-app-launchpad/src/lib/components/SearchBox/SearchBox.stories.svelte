@@ -1,6 +1,6 @@
 <script module lang="ts">
   import { defineMeta } from "@storybook/addon-svelte-csf";
-  import SearchBox from "./SearchBox.svelte";
+  import { SearchBox } from "./index.js";
 
   const { Story } = defineMeta({
     title: "Components/SearchBox",
@@ -26,9 +26,6 @@
         },
         defaultValue: "",
       },
-      onSearchButtonClick: {
-        control: { disable: true },
-      },
     },
     args: {
       "aria-label": "Search articles",
@@ -37,6 +34,14 @@
 </script>
 
 <Story name="Default" />
+
+<Story name="With customized search button">
+  {#snippet template(args)}
+    <SearchBox {...args}>
+      <SearchBox.SearchButton onclick={() => alert("Search button clicked")} />
+    </SearchBox>
+  {/snippet}
+</Story>
 
 <Story
   name="As a search landmark"
@@ -69,7 +74,7 @@
 <Story
   name="With invalid styles"
   args={{
-    invalidStyled: true,
+    shouldRenderInvalidStyles: true,
     placeholder: "Type less than 3 characters and unfocus",
     required: true,
     minlength: 3,
