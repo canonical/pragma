@@ -5,7 +5,7 @@ import type {
   PromptDefinition,
 } from "@canonical/summon-core";
 import { template, withHelpers } from "@canonical/summon-core";
-import { info, sequence_ } from "@canonical/task";
+import { copyFile, info, sequence_ } from "@canonical/task";
 import { normalizeCommandPath } from "../../shared/casing.js";
 
 interface ApplicationReactAnswers {
@@ -39,18 +39,11 @@ const prompts: PromptDefinition[] = [
   },
 ];
 
-/* ---------------------------------------------------------------------------
- * Template paths
- * --------------------------------------------------------------------------- */
-
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const templatesDir = path.join(__dirname, "templates");
 
-const t = (templatePath: string) => path.join(templatesDir, templatePath);
-
-/* ---------------------------------------------------------------------------
- * Generator
- * --------------------------------------------------------------------------- */
+/** Resolve a path inside the templates directory. */
+const src = (templatePath: string) => path.join(templatesDir, templatePath);
 
 export const generator: GeneratorDefinition<ApplicationReactAnswers> = {
   meta: {
@@ -61,9 +54,11 @@ export const generator: GeneratorDefinition<ApplicationReactAnswers> = {
     help: `Creates a full React application with:
   - Vite build + dev server
   - Server-side rendering (Express + Bun dev servers)
-  - File-based routing with @canonical/router-core
+  - Routing with @canonical/router-core
+  - Head management with @canonical/react-head
   - A marketing domain with a home page
-  - Navigation component
+  - Navigation component with typed Link
+  - Storybook with router decorator
   - Biome + TypeScript configuration
 
 Requires both --ssr and --router flags.`,
@@ -88,155 +83,64 @@ Requires both --ssr and --router flags.`,
     const vars = withHelpers({ name: appPath });
     const dest = (...segments: string[]) => path.join(appPath, ...segments);
 
+    /** Copy a static file from templates/ to the app directory. */
+    const copy = (filePath: string) => copyFile(src(filePath), dest(filePath));
+
     return sequence_([
       info(`Scaffolding React application in "${appPath}"...`),
 
-      // Root config files
+      // EJS templates (files that need interpolation)
       template({
-        source: t("package.json.ejs"),
+        source: src("package.json.ejs"),
         dest: dest("package.json"),
         vars,
       }),
+      template({ source: src("README.md.ejs"), dest: dest("README.md"), vars }),
+
+      // Static files (copied as-is)
+      copy("tsconfig.json"),
+      copy("vite.config.ts"),
       template({
-        source: t("tsconfig.json.ejs"),
-        dest: dest("tsconfig.json"),
-        vars,
-      }),
-      template({
-        source: t("vite.config.ts.ejs"),
-        dest: dest("vite.config.ts"),
-        vars,
-      }),
-      template({
-        source: t("biome.json.ejs"),
+        source: src("biome.json.ejs"),
         dest: dest("biome.json"),
         vars,
       }),
-      template({
-        source: t("index.html.ejs"),
-        dest: dest("index.html"),
-        vars,
-      }),
+      copy("index.html"),
+      copy(".gitignore"),
 
       // Styles
-      template({
-        source: t("src/styles/index.css.ejs"),
-        dest: dest("src", "styles", "index.css"),
-        vars,
-      }),
-      template({
-        source: t("src/styles/app.css.ejs"),
-        dest: dest("src", "styles", "app.css"),
-        vars,
-      }),
+      copy("src/styles/index.css"),
+      copy("src/styles/app.css"),
 
-      // Client entry
-      template({
-        source: t("src/client/entry.tsx.ejs"),
-        dest: dest("src", "client", "entry.tsx"),
-        vars,
-      }),
+      // Client
+      copy("src/client/entry.tsx"),
 
-      // Server entries
-      template({
-        source: t("src/server/entry.tsx.ejs"),
-        dest: dest("src", "server", "entry.tsx"),
-        vars,
-      }),
-      template({
-        source: t("src/server/server.express.ts.ejs"),
-        dest: dest("src", "server", "server.express.ts"),
-        vars,
-      }),
-      template({
-        source: t("src/server/server.bun.ts.ejs"),
-        dest: dest("src", "server", "server.bun.ts"),
-        vars,
-      }),
-      template({
-        source: t("src/server/sitemap.ts.ejs"),
-        dest: dest("src", "server", "sitemap.ts"),
-        vars,
-      }),
+      // Server
+      copy("src/server/entry.tsx"),
+      copy("src/server/server.express.ts"),
+      copy("src/server/server.bun.ts"),
+      copy("src/server/sitemap.ts"),
 
       // Domain: marketing
-      template({
-        source: t("src/domains/marketing/HomePage.tsx.ejs"),
-        dest: dest("src", "domains", "marketing", "HomePage.tsx"),
-        vars,
-      }),
-      template({
-        source: t("src/domains/marketing/routes.ts.ejs"),
-        dest: dest("src", "domains", "marketing", "routes.ts"),
-        vars,
-      }),
+      copy("src/domains/marketing/HomePage.tsx"),
+      copy("src/domains/marketing/routes.ts"),
 
-      // App routes
-      template({
-        source: t("src/routes.tsx.ejs"),
-        dest: dest("src", "routes.tsx"),
-        vars,
-      }),
+      // Routes
+      copy("src/routes.tsx"),
 
-      // Navigation component
-      template({
-        source: t("src/lib/Navigation/Navigation.tsx.ejs"),
-        dest: dest("src", "lib", "Navigation", "Navigation.tsx"),
-        vars,
-      }),
-      template({
-        source: t("src/lib/Navigation/index.ts.ejs"),
-        dest: dest("src", "lib", "Navigation", "index.ts"),
-        vars,
-      }),
+      // Lib
+      copy("src/lib/index.ts"),
+      copy("src/lib/Navigation/Navigation.tsx"),
+      copy("src/lib/Navigation/index.ts"),
 
-      // Lib barrel
-      template({
-        source: t("src/lib/index.ts.ejs"),
-        dest: dest("src", "lib", "index.ts"),
-        vars,
-      }),
-
-      // Vite env types
-      template({
-        source: t("src/vite-env.d.ts.ejs"),
-        dest: dest("src", "vite-env.d.ts"),
-        vars,
-      }),
-
-      // Dotfiles and docs
-      template({
-        source: t(".gitignore.ejs"),
-        dest: dest(".gitignore"),
-        vars,
-      }),
-      template({
-        source: t("README.md.ejs"),
-        dest: dest("README.md"),
-        vars,
-      }),
+      // Vite types
+      copy("src/vite-env.d.ts"),
 
       // Storybook
-      template({
-        source: t(".storybook/main.ts.ejs"),
-        dest: dest(".storybook", "main.ts"),
-        vars,
-      }),
-      template({
-        source: t(".storybook/preview.ts.ejs"),
-        dest: dest(".storybook", "preview.ts"),
-        vars,
-      }),
-      template({
-        source: t(".storybook/decorators/withRouter.tsx.ejs"),
-        dest: dest(".storybook", "decorators", "withRouter.tsx"),
-        vars,
-      }),
-      template({
-        source: t(".storybook/decorators/index.ts.ejs"),
-        dest: dest(".storybook", "decorators", "index.ts"),
-        vars,
-      }),
+      copy(".storybook/main.ts"),
+      copy(".storybook/preview.ts"),
+      copy(".storybook/decorators/withRouter.tsx"),
+      copy(".storybook/decorators/index.ts"),
 
       info(
         `Application "${appPath}" created. Run \`cd ${appPath} && bun install && bun run dev\` to start.`,
