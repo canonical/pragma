@@ -16,4 +16,5 @@ export * from "./Spinner/index.js";
 export * from "./Switch/index.js";
 export * from "./Textarea/index.js";
 export * from "./TextInput/index.js";
+export * from "./Timeline/index.js";
 export * from "./UserAvatar/index.js";
