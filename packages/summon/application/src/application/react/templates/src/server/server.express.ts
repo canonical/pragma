@@ -25,6 +25,26 @@ async function start() {
 
   app.use(vite.middlewares);
 
+  app.get("/sitemap.xml", async (_req, res) => {
+    const { SitemapRenderer } = await vite.ssrLoadModule(
+      "@canonical/react-ssr/renderer",
+    );
+    const { default: getSitemapItems } = await vite.ssrLoadModule(
+      "/src/server/sitemap.ts",
+    );
+
+    const renderer = new SitemapRenderer([getSitemapItems], {
+      baseUrl: `http://localhost:${PORT}`,
+      defaultChangefreq: "monthly",
+    });
+    const { pipe } = renderer.renderToPipeableStream();
+
+    await renderer.statusReady;
+    res.setHeader("content-type", "application/xml; charset=utf-8");
+    res.status(renderer.statusCode);
+    pipe(res);
+  });
+
   app.use(async (req, res, next) => {
     const url = req.originalUrl || "/";
 

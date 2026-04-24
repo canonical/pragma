@@ -26,6 +26,26 @@ Bun.serve({
     const requestUrl = url.pathname + url.search;
 
     try {
+      if (url.pathname === "/sitemap.xml") {
+        const { SitemapRenderer } = await vite.ssrLoadModule(
+          "@canonical/react-ssr/renderer",
+        );
+        const { default: getSitemapItems } = await vite.ssrLoadModule(
+          "/src/server/sitemap.ts",
+        );
+
+        const renderer = new SitemapRenderer([getSitemapItems], {
+          baseUrl: `http://localhost:${PORT}`,
+          defaultChangefreq: "monthly",
+        });
+        const sitemapStream = await renderer.renderToReadableStream();
+
+        return new Response(sitemapStream, {
+          status: renderer.statusCode,
+          headers: { "Content-Type": "application/xml; charset=utf-8" },
+        });
+      }
+
       const template = fs.readFileSync("index.html", "utf-8");
       const html = await vite.transformIndexHtml(requestUrl, template);
 
