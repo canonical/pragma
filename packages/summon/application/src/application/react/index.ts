@@ -197,6 +197,47 @@ Requires both --ssr and --router flags.`,
         vars,
       }),
 
+      // Vite env types
+      template({
+        source: t("src/vite-env.d.ts.ejs"),
+        dest: dest("src", "vite-env.d.ts"),
+        vars,
+      }),
+
+      // Dotfiles and docs
+      template({
+        source: t(".gitignore.ejs"),
+        dest: dest(".gitignore"),
+        vars,
+      }),
+      template({
+        source: t("README.md.ejs"),
+        dest: dest("README.md"),
+        vars,
+      }),
+
+      // Storybook
+      template({
+        source: t(".storybook/main.ts.ejs"),
+        dest: dest(".storybook", "main.ts"),
+        vars,
+      }),
+      template({
+        source: t(".storybook/preview.ts.ejs"),
+        dest: dest(".storybook", "preview.ts"),
+        vars,
+      }),
+      template({
+        source: t(".storybook/decorators/withRouter.tsx.ejs"),
+        dest: dest(".storybook", "decorators", "withRouter.tsx"),
+        vars,
+      }),
+      template({
+        source: t(".storybook/decorators/index.ts.ejs"),
+        dest: dest(".storybook", "decorators", "index.ts"),
+        vars,
+      }),
+
       info(
         `Application "${appPath}" created. Run \`cd ${appPath} && bun install && bun run dev\` to start.`,
       ),
