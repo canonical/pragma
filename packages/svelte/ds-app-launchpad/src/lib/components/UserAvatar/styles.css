@@ -1,0 +1,66 @@
+.ds.user-avatar {
+  display: inline-grid;
+  flex: none;
+
+  border: var(--lp-dimension-stroke-thickness-default) solid
+    var(--lp-color-border-default);
+  background-color: var(--lp-color-background-alt);
+  color: var(--lp-color-text-default);
+
+  width: var(--lp-dimension-size-m);
+  height: var(--lp-dimension-size-m);
+  font: var(--lp-typography-paragraph-default-strong);
+
+  &.small {
+    width: var(--lp-dimension-size-s);
+    height: var(--lp-dimension-size-s);
+    font: var(--lp-typography-paragraph-s-strong);
+  }
+
+  &.large {
+    width: var(--lp-dimension-size-l);
+    height: var(--lp-dimension-size-l);
+    font: var(--lp-typography-h5);
+  }
+
+  &:is(img) {
+    object-fit: cover;
+    position: relative;
+    overflow: hidden;
+
+    /*
+    A fallback for when there is no JS and the image cannot be loaded.
+     
+    When userName is provided, the initials are displayed. When userName is not provided, a "?" is displayed.
+    Ideally this would be a user icon instead of "?", but that would require either
+    - a base64 encoded SVG, that would bloat CSS (rather unnecessarily, for the rare case of no userName and image load failure),
+    - or a url to a static asset (difficult to achieve for a component library without making assumptions on the hosting app's bundler and asset management).
+    */
+    &::after {
+      position: absolute;
+      inset: 0;
+      background-color: inherit;
+      display: grid;
+      place-content: center;
+      text-transform: uppercase;
+      user-select: none;
+
+      content: "?";
+    }
+
+    &[data-initials]::after {
+      content: attr(data-initials);
+    }
+  }
+
+  &:is(abbr) {
+    user-select: none;
+    place-content: center;
+    text-transform: uppercase;
+    text-decoration: none;
+  }
+
+  &:is(div) {
+    place-content: center;
+  }
+}
