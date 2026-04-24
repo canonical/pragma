@@ -15,7 +15,7 @@ function isRedirectRouteInput<
   TPath extends string,
   TWrappers extends readonly AnyWrapper[],
 >(
-  definition: RouteInput<TPath, undefined, void, unknown, TWrappers>,
+  definition: RouteInput<TPath, undefined, unknown, TWrappers>,
 ): definition is RedirectRouteInput<TPath, string, TWrappers> {
   return "redirect" in definition;
 }
@@ -33,26 +33,24 @@ export default function route<
   TSearchSchema extends
     | { readonly "~standard": { readonly output?: unknown } }
     | undefined = undefined,
-  TData = void,
   TRendered = unknown,
   TWrappers extends readonly AnyWrapper[] = readonly [],
 >(
-  definition: DataRouteInput<TPath, TSearchSchema, TData, TRendered, TWrappers>,
-): DataRouteDefinition<TPath, TSearchSchema, TData, TRendered, TWrappers>;
+  definition: DataRouteInput<TPath, TSearchSchema, TRendered, TWrappers>,
+): DataRouteDefinition<TPath, TSearchSchema, TRendered, TWrappers>;
 export default function route<
   const TPath extends string,
   TSearchSchema extends
     | { readonly "~standard": { readonly output?: unknown } }
     | undefined = undefined,
-  TData = void,
   TRendered = unknown,
   TWrappers extends readonly AnyWrapper[] = readonly [],
 >(
-  definition: RouteInput<TPath, TSearchSchema, TData, TRendered, TWrappers>,
-): RouteDefinition<TPath, TSearchSchema, TData, TRendered, TWrappers> {
+  definition: RouteInput<TPath, TSearchSchema, TRendered, TWrappers>,
+): RouteDefinition<TPath, TSearchSchema, TRendered, TWrappers> {
   if (
     isRedirectRouteInput(
-      definition as RouteInput<TPath, undefined, void, unknown, TWrappers>,
+      definition as RouteInput<TPath, undefined, unknown, TWrappers>,
     )
   ) {
     return {

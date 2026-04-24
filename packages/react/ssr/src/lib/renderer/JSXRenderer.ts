@@ -1,10 +1,6 @@
 import { createElement } from "react";
-import {
-  type RenderToPipeableStreamOptions,
-  renderToPipeableStream as reactRenderToPipeableStream,
-  renderToReadableStream as reactRenderToReadableStream,
-  renderToString as reactRenderToString,
-} from "react-dom/server";
+import type { RenderToPipeableStreamOptions } from "react-dom/server";
+import * as ReactDOMServer from "react-dom/server";
 import { INITIAL_DATA_KEY } from "./constants.js";
 import Extractor from "./Extractor.js";
 import type {
@@ -13,6 +9,23 @@ import type {
   ServerEntrypoint,
   ServerEntrypointProps,
 } from "./types.js";
+
+const reactRenderToReadableStream = ReactDOMServer.renderToReadableStream;
+const reactRenderToString = ReactDOMServer.renderToString;
+
+/**
+ * `renderToPipeableStream` from `react-dom/server`, or `undefined` if the
+ * current runtime doesn't export it.
+ *
+ * Bun's `react-dom/server` (`react-dom/server.bun.js`) omits this export
+ * because Node.js streams don't exist in the Bun runtime. Using a namespace
+ * import (`import * as`) lets us access it as a property without crashing
+ * on missing named exports.
+ */
+const reactRenderToPipeableStream = (ReactDOMServer as Record<string, unknown>)
+  .renderToPipeableStream as
+  | typeof import("react-dom/server").renderToPipeableStream
+  | undefined;
 
 /**
  * Server-side renderer for a React component.
@@ -276,6 +289,14 @@ export default class JSXRenderer<
    * @returns The pipe/abort handles for the rendered stream.
    */
   renderToPipeableStream = (): PipeableStreamResult => {
+    if (!reactRenderToPipeableStream) {
+      throw new Error(
+        "renderToPipeableStream is not available in this runtime. " +
+          "Bun does not support Node.js pipeable streams — use " +
+          "renderToReadableStream() instead.",
+      );
+    }
+
     const props = this.getComponentProps();
     const jsx = createElement(this.Component, props);
     const {

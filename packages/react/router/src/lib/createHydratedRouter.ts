@@ -6,8 +6,8 @@ import type {
   RouterDehydratedState,
 } from "@canonical/router-core";
 import {
-  createBrowserAdapter,
   createRouter as createCoreRouter,
+  createHistoryAdapter,
 } from "@canonical/router-core";
 import type {
   CreateHydratedRouterOptions,
@@ -46,7 +46,7 @@ export default function createHydratedRouter<
   const initialState = readInitialState<TRoutes>(browserWindow);
   const router = createCoreRouter(routes, {
     ...routerOptions,
-    adapter: createBrowserAdapter(browserWindow as never),
+    adapter: createHistoryAdapter(browserWindow as never),
     hydratedState:
       (initialState as unknown as RouterDehydratedState<RouteMap>) ?? undefined,
   });

@@ -22,8 +22,7 @@ const routes = {
   }),
   account: route({
     url: "/account/:team",
-    fetch: async ({ team }) => ({ team }),
-    content: ({ data }) => `Account: ${data.team}`,
+    content: ({ params }) => `Account: ${params.team}`,
   }),
 } as const;
 ```
@@ -40,22 +39,21 @@ const router = createRouter(routes);
 router.buildPath("account", { params: { team: "web" } });
 // "/account/web"
 
-await router.load("/account/web");
 router.navigate("home");
 await router.prefetch("account", { params: { team: "web" } });
 ```
 
 ### 4. Render through your framework binding
 
-The core package intentionally stops at route matching, loading, state, dehydration, and accessibility orchestration. For React rendering, pair it with `@canonical/router-react`.
+The core package intentionally stops at route matching, state, dehydration, and accessibility orchestration. For React rendering, pair it with `@canonical/router-react`.
 
 ## Mental model
 
 - **Routes are flat.** Every route is declared with `route()`.
-- **Wrappers are annotations.** Reuse layout, data, and error handling with `wrapper()` and `group()`.
-- **Middleware is route-to-route transformation.** Use it to add auth, i18n, metrics, or shared wrapper policy before the router is created.
-- **Routing is data-first.** `load()` resolves route data and wrapper data before you render.
-- **SSR is built in.** `dehydrate()` and `hydrate()` preserve loader results across the server/client boundary.
+- **Wrappers are annotations.** Reuse layout with `wrapper()` and `group()`.
+- **Middleware is route-to-route transformation.** Use it to add auth, i18n, metrics, or shared wrapper policy. Middleware runs once, before the router is created.
+- **`prefetch()` is fire-and-forget.** It warms caches, preloads assets, or runs side effects at navigation time. It does not provide data to `content()` — components own their data via their cache library.
+- **SSR is built in.** `dehydrate()` preserves navigation state across the server/client boundary.
 
 ## Progressive disclosure
 
@@ -70,17 +68,21 @@ const settingsRoute = route({
 });
 ```
 
-### Route with data
+### Route with prefetch
+
+`prefetch()` is a fire-and-forget navigation-time hook. Use it to warm a cache, preload assets, fire analytics, or run permission checks. It does not return data to the component.
 
 ```tsx
 const userRoute = route({
   url: "/users/:id",
-  fetch: async ({ id }) => {
-    const response = await fetch(`https://example.com/users/${id}`);
-    return response.json();
+  prefetch: async ({ id }, _search, { signal }) => {
+    await queryClient.prefetchQuery({
+      queryKey: ["user", id],
+      queryFn: () => fetchUser(id),
+      signal,
+    });
   },
-  content: ({ data }) => `User: ${data.name}`,
-  error: ({ status }) => `Failed with ${status}`,
+  content: ({ params }) => `User: ${params.id}`,
 });
 ```
 
@@ -100,6 +102,35 @@ const [dashboardRoute, reportsRoute] = group(appShell, [
 ] as const);
 ```
 
+### Error handling
+
+The router does not ship an error boundary component. Errors from `prefetch()` are thrown into the React render tree and caught by standard React error boundaries. Use `StatusResponse` to signal HTTP-like errors:
+
+```tsx
+import { StatusResponse, route } from "@canonical/router-core";
+
+const protectedRoute = route({
+  url: "/admin",
+  prefetch: async () => {
+    if (!isAuthenticated()) {
+      throw new StatusResponse(401);
+    }
+  },
+  content: () => "Admin panel",
+});
+```
+
+In your React tree, catch these with any error boundary:
+
+```tsx
+import { StatusResponse } from "@canonical/router-core";
+
+function ErrorFallback({ error }) {
+  const status = error instanceof StatusResponse ? error.status : 500;
+  return <ErrorPage status={status} />;
+}
+```
+
 ### Redirects
 
 ```ts
@@ -107,18 +138,66 @@ import { redirect, route } from "@canonical/router-core";
 
 const loginRequired = route({
   url: "/private",
-  fetch: async () => {
+  prefetch: async () => {
     redirect("/login", 302);
   },
   content: () => "private",
 });
 ```
 
-## Middleware
+## Search param mutation
 
-Middleware runs once, before the router is created.
+`setSearchParams()` patches the current URL's search params without requiring the route name:
 
 ```ts
+// Merge into current search params
+router.setSearchParams({ page: "2" });
+
+// Functional update
+router.setSearchParams((current) => ({
+  ...current,
+  page: String(Number(current.page ?? "0") + 1),
+}));
+
+// Remove a param (set to null)
+router.setSearchParams({ filter: null });
+
+// Replace history entry instead of pushing
+router.setSearchParams({ page: "2" }, { replace: true });
+```
+
+## Navigation blocking
+
+Register blockers to prevent navigation when there is unsaved state. Blockers are checked before any navigation proceeds:
+
+```ts
+const blockerId = "edit-form";
+
+// Register a blocker that checks whether to block
+router.registerBlocker({
+  id: blockerId,
+  isActive: () => formHasUnsavedChanges,
+});
+
+// When navigation is attempted while a blocker is active:
+router.blockerState; // "blocked"
+
+// The consumer decides whether to proceed or cancel
+router.proceedNavigation(); // continue the blocked navigation
+router.cancelNavigation();  // stay on the current page
+
+// Remove the blocker when the form is submitted or discarded
+router.unregisterBlocker(blockerId);
+```
+
+For React, use the `useBlocker()` hook from `@canonical/router-react` instead of these core primitives.
+
+## Middleware
+
+Middleware runs once, before the router is created. Apply it to route definitions with `applyMiddleware()`:
+
+```ts
+import { applyMiddleware, createRouter } from "@canonical/router-core";
 import type { AnyRoute } from "@canonical/router-core";
 
 function withBasePath(basePath: string) {
@@ -130,39 +209,85 @@ function withBasePath(basePath: string) {
   };
 }
 
-const router = createRouter(routes, {
-  middleware: [withBasePath("/app")],
-});
+const routes = applyMiddleware([withBasePath("/app")], rawRoutes);
+const router = createRouter(routes);
 ```
 
 See [docs/how-to-guides/ROUTER_MIDDLEWARE_COOKBOOK.md](../../../docs/how-to-guides/ROUTER_MIDDLEWARE_COOKBOOK.md) for more patterns.
 
-## SSR and hydration
+## Router factories
 
-Use `load()` on the server, embed `dehydrate()`, then call `hydrate()` or pass `hydratedState` when you create the client router.
+Convenience functions that create a router with a pre-configured platform adapter:
 
 ```ts
-const serverRouter = createRouter(routes);
-await serverRouter.load("/users/42");
-const initialState = serverRouter.dehydrate();
+import {
+  createBrowserRouter,
+  createStaticRouter,
+  createMemoryRouter,
+} from "@canonical/router-core";
 
-const clientRouter = createRouter(routes, {
-  hydratedState: initialState ?? undefined,
+// Client — auto-detects Navigation API with History fallback
+const router = createBrowserRouter(routes);
+
+// Server — matches URL on construction, exposes router.match for status codes
+const serverRouter = createStaticRouter(routes, req.url);
+
+if (!serverRouter.match) { res.status(404); }
+else if (serverRouter.match.kind === "redirect") {
+  return res.redirect(serverRouter.match.status, serverRouter.match.redirectTo);
+}
+
+// Testing — in-memory adapter, supports navigation
+const testRouter = createMemoryRouter(routes, "/users/42");
+```
+
+`createStaticRouter` fires `prefetch()` eagerly on construction, so caches start warming before React renders.
+
+The low-level `createRouter(routes, { adapter })` is still available for cases that need explicit adapter control.
+
+## SSR and hydration
+
+The router dehydrates navigation state only (matched route, params, search, URL). Data dehydration is the cache library's responsibility.
+
+```ts
+const serverRouter = createStaticRouter(routes, "/users/42");
+const navigationState = serverRouter.dehydrate();
+
+const clientRouter = createBrowserRouter(routes, {
+  hydratedState: navigationState ?? undefined,
 });
 ```
 
 For a full React SSR flow, see [packages/react/router/README.md](../../react/router/README.md) and [apps/react/boilerplate-vite](../../../apps/react/boilerplate-vite).
 
+## Platform adapters
+
+The router factories use platform adapters internally. You can also use them directly with `createRouter()`:
+
+- `createBrowserAdapter()` — auto-detects the best API: uses the Navigation API (`window.navigation`) when available, falls back to the History API (`pushState` / `popstate`) for older browsers.
+- `createNavigationAdapter()` — explicitly use the Navigation API. Baseline Newly Available since January 2026.
+- `createHistoryAdapter()` — explicitly use the History API.
+- `createMemoryAdapter()` — in-memory adapter for testing.
+- `createServerAdapter()` — static URL for server-side rendering.
+
+```ts
+import { createRouter, createMemoryAdapter } from "@canonical/router-core";
+
+const testRouter = createRouter(routes, {
+  adapter: createMemoryAdapter("/users/42"),
+});
+```
+
 ## Accessibility
 
-Track D adds optional browser-side accessibility orchestration:
+The router auto-wires browser-side accessibility orchestration:
 
-- `ScrollManager`
-- `FocusManager`
-- `RouteAnnouncer`
-- `ViewTransitionManager`
+- `ScrollManager` — saves/restores scroll positions across navigations
+- `FocusManager` — moves focus to `<h1>` on route change
+- `RouteAnnouncer` — announces route changes to screen readers
+- `ViewTransitionManager` — wraps navigations in View Transitions when available
 
-The router auto-wires these when browser globals are available, and you can override or disable them through `RouterOptions.accessibility`.
+Override or disable them through `RouterOptions.accessibility`.
 
 ## Public API
 
@@ -170,10 +295,15 @@ The router auto-wires these when browser globals are available, and you can over
 
 - `applyMiddleware()`
 - `createBrowserAdapter()`
+- `createBrowserRouter()`
+- `createHistoryAdapter()`
 - `createMemoryAdapter()`
+- `createMemoryRouter()`
+- `createNavigationAdapter()`
 - `createRouter()`
 - `createRouterStore()`
 - `createServerAdapter()`
+- `createStaticRouter()`
 - `createSubject()`
 - `createTrackedLocation()`
 - `group()`

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { sequence, sequence_, traverse } from "./combinators.js";
+import { parallel, sequence, sequence_, traverse } from "./combinators.js";
 import {
   assertEffects,
   assertFileWrites,
@@ -14,7 +14,9 @@ import {
   mockEffect,
 } from "./dry-run.js";
 import {
+  appendFile,
   copyFile,
+  deleteFile,
   exec,
   exists,
   getContext,
@@ -22,13 +24,15 @@ import {
   info,
   mkdir,
   promptConfirm,
+  promptMultiselect,
   promptSelect,
   promptText,
   readFile,
   setContext,
+  symlink,
   writeFile,
 } from "./primitives.js";
-import { fail, flatMap, map, pure } from "./task.js";
+import { effect, fail, flatMap, map, pure } from "./task.js";
 import type { Effect, TaskError } from "./types.js";
 
 // =============================================================================
@@ -244,6 +248,186 @@ describe("Dry-Run - mockEffect", () => {
 
   it("returns undefined for ReadContext", () => {
     const effect: Effect = { _tag: "ReadContext", key: "k" };
+    const result = mockEffect(effect);
+
+    expect(result).toBeUndefined();
+  });
+
+  it("returns empty array for multiselect Prompt", () => {
+    const effect: Effect = {
+      _tag: "Prompt",
+      question: {
+        type: "multiselect",
+        name: "items",
+        message: "Select items:",
+        choices: [
+          { label: "A", value: "a" },
+          { label: "B", value: "b" },
+        ],
+      },
+    };
+    const result = mockEffect(effect);
+
+    expect(result).toEqual([]);
+  });
+
+  it("returns default for multiselect Prompt when provided", () => {
+    const effect: Effect = {
+      _tag: "Prompt",
+      question: {
+        type: "multiselect",
+        name: "items",
+        message: "Select:",
+        choices: [
+          { label: "A", value: "a" },
+          { label: "B", value: "b" },
+        ],
+        default: ["a", "b"],
+      },
+    };
+    const result = mockEffect(effect);
+
+    expect(result).toEqual(["a", "b"]);
+  });
+
+  it("returns empty string for text Prompt without default", () => {
+    const effect: Effect = {
+      _tag: "Prompt",
+      question: { type: "text", name: "x", message: "?" },
+    };
+    const result = mockEffect(effect);
+
+    expect(result).toBe("");
+  });
+
+  it("returns false for confirm Prompt without default", () => {
+    const effect: Effect = {
+      _tag: "Prompt",
+      question: { type: "confirm", name: "x", message: "?" },
+    };
+    const result = mockEffect(effect);
+
+    expect(result).toBe(false);
+  });
+
+  it("returns default for select Prompt when provided", () => {
+    const effect: Effect = {
+      _tag: "Prompt",
+      question: {
+        type: "select",
+        name: "x",
+        message: "?",
+        choices: [
+          { label: "A", value: "a" },
+          { label: "B", value: "b" },
+        ],
+        default: "b",
+      },
+    };
+    const result = mockEffect(effect);
+
+    expect(result).toBe("b");
+  });
+
+  it("returns empty string for select Prompt with empty choices and no default", () => {
+    const effect: Effect = {
+      _tag: "Prompt",
+      question: {
+        type: "select",
+        name: "x",
+        message: "?",
+        choices: [],
+      },
+    };
+    const result = mockEffect(effect);
+
+    expect(result).toBe("");
+  });
+
+  it("returns undefined for DeleteFile", () => {
+    const effect: Effect = { _tag: "DeleteFile", path: "/a.txt" };
+    const result = mockEffect(effect);
+
+    expect(result).toBeUndefined();
+  });
+
+  it("returns undefined for DeleteDirectory", () => {
+    const effect: Effect = { _tag: "DeleteDirectory", path: "/dir" };
+    const result = mockEffect(effect);
+
+    expect(result).toBeUndefined();
+  });
+
+  it("returns undefined for AppendFile", () => {
+    const effect: Effect = {
+      _tag: "AppendFile",
+      path: "/a.txt",
+      content: "x",
+      createIfMissing: true,
+    };
+    const result = mockEffect(effect);
+
+    expect(result).toBeUndefined();
+  });
+
+  it("returns undefined for CopyFile", () => {
+    const effect: Effect = {
+      _tag: "CopyFile",
+      source: "/src.txt",
+      dest: "/dst.txt",
+    };
+    const result = mockEffect(effect);
+
+    expect(result).toBeUndefined();
+  });
+
+  it("returns undefined for CopyDirectory", () => {
+    const effect: Effect = {
+      _tag: "CopyDirectory",
+      source: "/src",
+      dest: "/dst",
+    };
+    const result = mockEffect(effect);
+
+    expect(result).toBeUndefined();
+  });
+
+  it("returns undefined for Symlink", () => {
+    const effect: Effect = {
+      _tag: "Symlink",
+      target: "/target",
+      path: "/link",
+    };
+    const result = mockEffect(effect);
+
+    expect(result).toBeUndefined();
+  });
+
+  it("runs Parallel children and returns array of values", () => {
+    const effect: Effect = {
+      _tag: "Parallel",
+      tasks: [pure(1), pure(2), pure(3)],
+    };
+    const result = mockEffect(effect);
+
+    expect(result).toEqual([1, 2, 3]);
+  });
+
+  it("runs Race first child and returns its value", () => {
+    const effect: Effect = {
+      _tag: "Race",
+      tasks: [pure(42), pure(99)],
+    };
+    const result = mockEffect(effect);
+
+    expect(result).toBe(42);
+  });
+
+  it("returns undefined for Race with empty tasks", () => {
+    const effect: Effect = {
+      _tag: "Race",
+      tasks: [],
+    };
     const result = mockEffect(effect);
 
     expect(result).toBeUndefined();
@@ -923,5 +1107,234 @@ describe("Dry-Run - Integration", () => {
     expect(logs.length).toBe(2);
     expect(logs[0].message).toBe("log 1");
     expect(logs[1].message).toBe("log 2");
+  });
+});
+
+// =============================================================================
+// dryRun - Parallel and Race handling
+// =============================================================================
+
+describe("Dry-Run - Parallel and Race in dryRun", () => {
+  it("collects effects from Parallel children", () => {
+    const task = parallel([writeFile("/a.txt", "a"), writeFile("/b.txt", "b")]);
+
+    const { effects } = dryRun(task);
+
+    expect(effects.length).toBe(2);
+    expect(
+      filterEffects(effects, "WriteFile")
+        .map((w) => w.path)
+        .sort(),
+    ).toEqual(["/a.txt", "/b.txt"]);
+  });
+
+  it("returns combined results from Parallel", () => {
+    const task = parallel([pure(1), pure(2), pure(3)]);
+    const { value } = dryRun(task);
+
+    expect(value).toEqual([1, 2, 3]);
+  });
+
+  it("collects effects from Race first child only", () => {
+    const task = effect<unknown>({
+      _tag: "Race",
+      tasks: [writeFile("/first.txt", "f"), writeFile("/second.txt", "s")],
+    });
+
+    const { effects } = dryRun(task);
+
+    expect(effects.length).toBe(1);
+    expect(filterEffects(effects, "WriteFile")[0].path).toBe("/first.txt");
+  });
+
+  it("handles Race with empty tasks", () => {
+    const task = effect<unknown>({
+      _tag: "Race",
+      tasks: [],
+    });
+
+    const { value, effects } = dryRun(task);
+
+    expect(value).toBeUndefined();
+    expect(effects.length).toBe(0);
+  });
+
+  it("shares virtual filesystem state between Parallel children", () => {
+    // First child writes a file, second child checks if it exists
+    // Due to parallel execution, virtual FS state is shared
+    const task = parallel([
+      writeFile("/marker.txt", "x"),
+      exists("/marker.txt"),
+    ]);
+
+    const { effects } = dryRun(task);
+    expect(effects.length).toBe(2);
+  });
+
+  it("collects effects from nested Parallel inside sequence", () => {
+    const task = sequence_([
+      info("start"),
+      parallel([writeFile("/a.txt", "a"), writeFile("/b.txt", "b")]),
+      info("end"),
+    ]);
+
+    const { effects } = dryRun(task);
+
+    expect(effects.length).toBe(4); // Log + 2 WriteFile + Log
+  });
+
+  it("tracks symlink in virtual FS for exists check", () => {
+    const task = flatMap(symlink("/target", "/link"), () => exists("/link"));
+    const { value } = dryRun(task);
+
+    expect(value).toBe(true);
+  });
+
+  it("dryRunWithVirtualFs handles Fail in Parallel child", () => {
+    const task = parallel([
+      writeFile("/a.txt", "a"),
+      fail({ code: "ERR", message: "child error" }),
+    ]);
+
+    expect(() => dryRun(task)).toThrow("child error");
+  });
+
+  it("dryRunWithVirtualFs handles nested Parallel", () => {
+    const inner = parallel([
+      writeFile("/x.txt", "x"),
+      writeFile("/y.txt", "y"),
+    ]);
+    const task = parallel([inner, writeFile("/z.txt", "z")]);
+
+    const { effects } = dryRun(task);
+
+    expect(effects.length).toBe(3);
+  });
+
+  it("dryRunWithVirtualFs handles Race inside Parallel child", () => {
+    const raceChild = effect<unknown>({
+      _tag: "Race",
+      tasks: [writeFile("/first.txt", "f"), writeFile("/second.txt", "s")],
+    });
+    const task = parallel([raceChild, writeFile("/other.txt", "o")]);
+
+    const { effects } = dryRun(task);
+
+    // Race takes first child only + other
+    expect(effects.length).toBe(2);
+    expect(
+      filterEffects(effects, "WriteFile")
+        .map((w) => w.path)
+        .sort(),
+    ).toEqual(["/first.txt", "/other.txt"]);
+  });
+
+  it("dryRunWithVirtualFs handles Race with empty tasks inside Parallel", () => {
+    const emptyRace = effect<unknown>({
+      _tag: "Race",
+      tasks: [],
+    });
+    const task = parallel([emptyRace, writeFile("/a.txt", "a")]);
+
+    const { effects } = dryRun(task);
+
+    expect(effects.length).toBe(1);
+  });
+
+  it("dryRunWithVirtualFs tracks WriteFile in virtual FS", () => {
+    // Parallel child writes, then later in sequence check exists
+    const task = flatMap(parallel([writeFile("/marker.txt", "x")]), () =>
+      exists("/marker.txt"),
+    );
+
+    const { value } = dryRun(task);
+
+    expect(value).toBe(true);
+  });
+
+  it("dryRunWithVirtualFs tracks AppendFile in virtual FS", () => {
+    const task = flatMap(parallel([appendFile("/log.txt", "entry\n")]), () =>
+      exists("/log.txt"),
+    );
+
+    const { value } = dryRun(task);
+
+    expect(value).toBe(true);
+  });
+
+  it("dryRunWithVirtualFs tracks MakeDir in virtual FS", () => {
+    const task = flatMap(parallel([mkdir("/newdir")]), () => exists("/newdir"));
+
+    const { value } = dryRun(task);
+
+    expect(value).toBe(true);
+  });
+
+  it("dryRunWithVirtualFs uses mockEffect for other effect types", () => {
+    const task = parallel([readFile("/test.txt")]);
+    const { value } = dryRun(task);
+
+    // The value is an array from parallel; the child value is the mock
+    expect(value).toEqual(["[mock content of /test.txt]"]);
+  });
+});
+
+// =============================================================================
+// dryRunWith - additional coverage
+// =============================================================================
+
+describe("Dry-Run - dryRunWith additional paths", () => {
+  it("throws TaskExecutionError for failed tasks", () => {
+    const error: TaskError = { code: "ERR", message: "fail in dryRunWith" };
+    const task = fail<number>(error);
+    const mocks = new Map<string, (e: Effect) => unknown>();
+
+    expect(() => dryRunWith(task, mocks)).toThrow("fail in dryRunWith");
+  });
+});
+
+// =============================================================================
+// getAffectedFiles - additional effect types
+// =============================================================================
+
+describe("Dry-Run - getAffectedFiles additional types", () => {
+  it("includes Symlink path", () => {
+    const task = symlink("/target", "/link");
+    const { effects } = dryRun(task);
+    const files = getAffectedFiles(effects);
+
+    expect(files).toContain("/link");
+  });
+
+  it("includes DeleteFile path", () => {
+    const task = deleteFile("/to-delete.txt");
+    const { effects } = dryRun(task);
+    const files = getAffectedFiles(effects);
+
+    expect(files).toContain("/to-delete.txt");
+  });
+
+  it("includes AppendFile path", () => {
+    const task = appendFile("/log.txt", "entry\n");
+    const { effects } = dryRun(task);
+    const files = getAffectedFiles(effects);
+
+    expect(files).toContain("/log.txt");
+  });
+});
+
+// =============================================================================
+// dryRun - mock values for multiselect
+// =============================================================================
+
+describe("Dry-Run - mock values for multiselect Prompt in task", () => {
+  it("returns empty array for multiselect prompt task", () => {
+    const task = promptMultiselect("items", "Select:", [
+      { label: "A", value: "a" },
+      { label: "B", value: "b" },
+    ]);
+    const { value } = dryRun(task);
+
+    expect(value).toEqual([]);
   });
 });

@@ -24,25 +24,22 @@ export const routes = {
   }),
   docs: route({
     url: "/docs/:slug",
-    fetch: async ({ slug }) => ({ slug }),
-    content: ({ data }) => <h1>{data.slug}</h1>,
+    content: ({ params }) => <h1>{params.slug}</h1>,
   }),
 } as const;
 
 export const router = createRouter(routes);
 ```
 
-`@canonical/router-core` owns route definitions, matching, loading, and typed
-navigation. `@canonical/router-react` layers React rendering and subscriptions
-on top of that router instance.
+`@canonical/router-core` owns route definitions, matching, and typed navigation. `@canonical/router-react` layers React rendering and subscriptions on top.
 
 Route authoring story, in short:
 
 - define every route with `route()`
 - give it a `url` pattern such as `/docs/:slug`
-- optionally add `fetch`, `content`, `error`, and `wrappers`
+- optionally add `prefetch`, `content`, and `wrappers`
 - create one router from the full flat route map
-- let the router match incoming URLs and resolve route data before React renders
+- let the router match incoming URLs — React renders the result
 
 ### 2. Provide the router and render the current match
 
@@ -58,8 +55,7 @@ export default function Application() {
 }
 ```
 
-`RouterProvider` makes the router instance available to hooks and components.
-`Outlet` renders the currently matched route subtree.
+`RouterProvider` makes the router instance available to hooks and components. `Outlet` renders the currently matched route subtree.
 
 ### 3. Navigate with typed links and observe router state
 
@@ -117,18 +113,150 @@ Important distinction:
 - `useNavigationState()` returns the router's navigation lifecycle state.
 - `useRouter()` returns the router instance itself.
 
-## Consumer-first flow
+## Data ownership
 
-1. Define routes with `route()` in `@canonical/router-core`.
-2. Create a router with `createRouter()` or `createHydratedRouter()`.
-3. Pass the router to `RouterProvider`.
-4. Render matches with `Outlet`.
-5. Navigate with `Link`, `useRouter()`, `useRouterState()`, `useRoute()`, `useSearchParam()`, `useSearchParams()`, and `useNavigationState()`.
+The router does not own data. `content()` receives `params` and `search` — not data. Components fetch their own data from their cache library (Relay, TanStack Query, SWR, etc.).
+
+The optional `prefetch()` on routes is a fire-and-forget navigation-time hook. Use it to warm caches, preload assets, or run side effects before the component renders. It does not pass data to `content()`.
+
+```tsx
+const userRoute = route({
+  url: "/users/:id",
+  prefetch: async ({ id }) => {
+    await queryClient.prefetchQuery(["user", id], () => fetchUser(id));
+  },
+  content: ({ params }) => <UserProfile id={params.id} />,
+});
+
+function UserProfile({ id }: { id: string }) {
+  const { data } = useQuery(["user", id], () => fetchUser(id));
+  return <h1>{data.name}</h1>;
+}
+```
+
+## Error handling
+
+The router does not ship an error boundary component. When `prefetch()` throws, the error propagates into the React render tree and is caught by the nearest React error boundary.
+
+Use `StatusResponse` from `@canonical/router-core` to signal HTTP-like errors:
+
+```tsx
+import { StatusResponse } from "@canonical/router-core";
+
+function ErrorFallback({ error }: { error: unknown }) {
+  const status = error instanceof StatusResponse ? error.status : 500;
+
+  if (status === 404) return <NotFound />;
+  if (status === 401) return <LoginRedirect />;
+  return <ErrorPage status={status} />;
+}
+
+function DashboardLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <div>
+      <Sidebar />
+      <ErrorBoundary fallbackRender={({ error }) => <ErrorFallback error={error} />}>
+        {children}
+      </ErrorBoundary>
+    </div>
+  );
+}
+```
+
+The boilerplate reference app provides a complete `RouteErrorBoundary` implementation to copy and adapt.
+
+## Search param mutation
+
+Update search params from any component via the router instance:
+
+```tsx
+function FilterBar() {
+  const router = useRouter();
+  const sort = useSearchParam("sort");
+
+  return (
+    <select
+      value={sort ?? "name"}
+      onChange={(event) => {
+        router.setSearchParams({ sort: event.target.value }, { replace: true });
+      }}
+    >
+      <option value="name">Name</option>
+      <option value="date">Date</option>
+    </select>
+  );
+}
+```
+
+`setSearchParams` merges into the current URL. Set a key to `null` to remove it. Pass `{ replace: true }` to replace the history entry instead of pushing.
+
+## Navigation blocking
+
+`useBlocker()` prevents navigation when the component has unsaved state. The hook returns a state object — the consumer controls the confirmation UI:
+
+```tsx
+import { useBlocker } from "@canonical/router-react";
+import { useState } from "react";
+
+function EditForm() {
+  const [isDirty, setIsDirty] = useState(false);
+  const blocker = useBlocker(isDirty);
+
+  return (
+    <>
+      <form onChange={() => setIsDirty(true)}>
+        <textarea placeholder="Start typing to mark as dirty..." />
+        <button
+          type="submit"
+          onClick={(event) => {
+            event.preventDefault();
+            setIsDirty(false);
+          }}
+        >
+          Save
+        </button>
+      </form>
+
+      {blocker.state === "blocked" && (
+        <div role="alertdialog" aria-modal="true">
+          <h2>Unsaved changes</h2>
+          <p>You have unsaved changes. Do you want to leave this page?</p>
+          <button onClick={blocker.cancel}>Stay on page</button>
+          <button onClick={blocker.proceed}>Leave page</button>
+        </div>
+      )}
+    </>
+  );
+}
+```
+
+For a quick `window.confirm` approach instead of a custom dialog:
+
+```tsx
+import { useBlocker } from "@canonical/router-react";
+import { useEffect, useState } from "react";
+
+function QuickEditForm() {
+  const [isDirty, setIsDirty] = useState(false);
+  const blocker = useBlocker(isDirty);
+
+  useEffect(() => {
+    if (blocker.state === "blocked") {
+      if (window.confirm("You have unsaved changes. Leave anyway?")) {
+        blocker.proceed();
+      } else {
+        blocker.cancel();
+      }
+    }
+  }, [blocker]);
+
+  return <form onChange={() => setIsDirty(true)}>...</form>;
+}
+```
+
+The blocker registers on mount and unregisters on unmount — when the form is submitted or the component is removed, blocking stops automatically.
 
 ## Creating routes and matching URLs
-
-Two recurring stories sit below the React layer: authoring routes and matching
-URLs.
 
 ### Route creation
 
@@ -144,8 +272,10 @@ const routes = {
   }),
   docs: route({
     url: "/docs/:slug",
-    fetch: async ({ slug }) => ({ slug }),
-    content: ({ data }) => <h1>{data.slug}</h1>,
+    prefetch: async ({ slug }) => {
+      await queryClient.prefetchQuery(["doc", slug], () => fetchDoc(slug));
+    },
+    content: ({ params }) => <DocPage slug={params.slug} />,
   }),
   accountSettings: route({
     url: "/account/settings",
@@ -156,123 +286,103 @@ const routes = {
 const router = createRouter(routes);
 ```
 
-Important parts of route creation:
+Important parts:
 
-- the route-map key such as `docs` is the typed navigation name used by `Link`
-  and `router.navigate()`
+- the route-map key such as `docs` is the typed navigation name used by `Link` and `router.navigate()`
 - the `url` string is the matcher used for incoming URLs
 - `:slug` segments become typed route params
-- `fetch` runs during loading and receives those params
-- `content` renders once the route has matched and data has been resolved
+- `prefetch` runs at navigation time as a fire-and-forget hook
+- `content` renders the matched route, receiving `params` and `search`
 
-Routes stay flat even when the UI is nested. Shared layout and shared data live
-in wrappers from the core package, not in a nested route tree.
-
-### Matching story
-
-Matching happens in the core router before `Outlet` renders.
-
-```ts
-await router.load("/docs/getting-started?tab=api");
-
-const state = router.getState();
-
-state.match?.name; // "docs"
-state.location.pathname; // "/docs/getting-started"
-state.location.searchParams.get("tab"); // "api"
-```
-
-Practical consequences:
-
-- `createRouter()` owns route ranking and URL matching
-- the current match is stored in router state
-- `Outlet` renders whatever route the router matched most recently
-- `useRoute()` lets React read the matched location
-- `useRouterState()` lets React read the match object itself when you need route
-  status, params, or advanced state
-
-If no route matches, the router falls back to its configured not-found behavior.
-The React bindings do not implement matching themselves; they subscribe to the
-core router's result.
-
-### Matching in components
-
-In React, you usually read matching results rather than perform matching
-manually.
-
-```tsx
-function RouteDebug() {
-  const location = useRoute<typeof routes>();
-  const matchName = useRouterState<typeof routes>((state) => state.match?.name ?? "not-found");
-
-  return (
-    <dl>
-      <dt>match</dt>
-      <dd>{matchName}</dd>
-      <dt>pathname</dt>
-      <dd>{location.pathname}</dd>
-    </dl>
-  );
-}
-```
-
-This is the recommended split:
-
-- define and match routes in `@canonical/router-core`
-- render and subscribe in `@canonical/router-react`
+Routes stay flat even when the UI is nested. Shared layout lives in wrappers from the core package, not in a nested route tree.
 
 ## SSR
 
 ### Server side
 
+Wire your own render tree using standard React SSR primitives. Use `createStaticRouter` for server rendering — it matches on construction and fires `prefetch()` eagerly so caches start warming before React renders:
+
 ```tsx
-import { createRouter, route } from "@canonical/router-core";
-import { renderToStream } from "@canonical/router-react";
+import { createStaticRouter } from "@canonical/router-core";
+import { createHeadCollector, HeadProvider } from "@canonical/react-head";
+import { Outlet, RouterProvider } from "@canonical/router-react";
+import { renderToPipeableStream } from "react-dom/server";
 
-const router = createRouter({
-  home: route({ url: "/", content: () => <h1>Home</h1> }),
+app.get("*", (req, res) => {
+  const router = createStaticRouter(routes, req.url);
+  const headCollector = createHeadCollector();
+
+  // Check match for status code before rendering
+  if (!router.match) {
+    res.status(404);
+  } else if (router.match.kind === "redirect") {
+    return res.redirect(router.match.status, router.match.redirectTo);
+  }
+
+  const { pipe } = renderToPipeableStream(
+    <HeadProvider collector={headCollector}>
+      <RouterProvider router={router}>
+        <Shell>
+          <Outlet />
+        </Shell>
+      </RouterProvider>
+    </HeadProvider>,
+    {
+      onShellReady() {
+        const headHtml = headCollector.toHtml();
+        res.setHeader("content-type", "text/html");
+        res.write(`<!doctype html><html><head>${headHtml}</head><body>`);
+        pipe(res);
+      },
+    },
+  );
 });
-
-const result = await renderToStream(router, "/");
 ```
 
-`renderToStream()` loads the URL into the router, renders the matched route tree, and returns:
+The router dehydrates navigation state only. Data dehydration is the cache library's responsibility (dual dehydration):
 
-- `stream`
-- `loadResult`
-- `initialData`
-- `bootstrapScriptContent`
+```tsx
+// In onShellReady or after render:
+const routerState = router.dehydrate();
+const cacheState = queryClient.dehydrate(); // TanStack Query, Relay, etc.
 
-`bootstrapScriptContent` contains the dehydrated router payload as an inline
-script assignment. `initialData` contains the same payload as plain JSON in case
-your SSR pipeline needs to inject it manually.
+// Inject both into the HTML template
+res.write(`<script>
+  window.__ROUTER_STATE__ = ${JSON.stringify(routerState)};
+  window.__QUERY_DATA__ = ${JSON.stringify(cacheState)};
+</script>`);
+```
 
 ### Client side
 
 ```tsx
-import { createHydratedRouter, Outlet, RouterProvider } from "@canonical/router-react";
+import { createBrowserRouter } from "@canonical/router-core";
+import { HeadProvider } from "@canonical/react-head";
+import { Outlet, RouterProvider } from "@canonical/router-react";
 
-const router = createHydratedRouter(routes);
+const router = createBrowserRouter(routes, {
+  hydratedState: window.__ROUTER_STATE__,
+});
 
 hydrateRoot(
   document,
-  <RouterProvider router={router}>
-    <Outlet />
-  </RouterProvider>,
+  <HeadProvider>
+    <RouterProvider router={router}>
+      <Shell>
+        <Outlet />
+      </Shell>
+    </RouterProvider>
+  </HeadProvider>,
 );
 ```
 
-`createHydratedRouter()` reads the dehydrated state from the browser window,
-creates a browser adapter, and resumes from the server-rendered route match
-instead of loading the initial URL a second time.
+`createBrowserRouter` uses the Navigation API when available (Baseline Newly Available since January 2026), falling back to the History API.
 
 ## Progressive disclosure
 
 ### `Link`
 
-`Link` builds typed hrefs from route names and optional route params, search
-data, and hash values. Primary-button clicks are intercepted and routed through
-the core router. Hover prefetches the destination.
+`Link` builds typed hrefs from route names and optional route params, search data, and hash values. Primary-button clicks are intercepted and routed through the core router. Hover prefetches the destination.
 
 ```tsx
 <Link<typeof routes> params={{ slug: "api" }} to="docs">
@@ -282,8 +392,7 @@ the core router. Hover prefetches the destination.
 
 ### `Outlet`
 
-`Outlet` subscribes to router state, calls `router.render()`, and wraps the
-matched subtree in `Suspense`.
+`Outlet` subscribes to router state, calls `router.render()`, and wraps the matched subtree in `Suspense`.
 
 ```tsx
 <Outlet fallback={<p>Loading route…</p>} />
@@ -291,24 +400,23 @@ matched subtree in `Suspense`.
 
 ### Hooks
 
-- `useRouter()` returns the router instance from context.
-- `useRouterState()` is the power-user hook for subscribing to selected slices
-  of `router.getState()`.
-- `useRoute()` returns a tracked location proxy and rerenders only when an
-  accessed location key changes.
-- `useSearchParam()` subscribes to one query-string key.
-- `useSearchParams()` subscribes either to the full query string or to a fixed
-  set of keys.
+- `useBlocker(isActive)` blocks navigation when `isActive` is `true`. Returns `{ state, proceed, cancel }`.
 - `useNavigationState()` subscribes to the router loading state.
+- `useRoute()` returns a tracked location proxy and rerenders only when an accessed location key changes.
+- `useRouter()` returns the router instance from context. Use `useRouter().setSearchParams()` for search param mutation.
+- `useRouterState()` is the power-user hook for subscribing to selected slices of `router.getState()`.
+- `useSearchParam()` subscribes to one query-string key.
+- `useSearchParams()` subscribes either to the full query string or to a fixed set of keys.
 
 Typical selection strategy:
 
+- reach for `useBlocker()` when a form has unsaved state
 - reach for `useNavigationState()` when you only need loading lifecycle
 - reach for `useSearchParam()` for one query-string key
 - reach for `useSearchParams()` for a fixed key set or the full query string
 - reach for `useRoute()` for pathname, hash, or full URL reads
-- reach for `useRouterState()` when you need `match`, `navigation`, or other
-  advanced state in one selector
+- reach for `useRouter()` for search param mutation or direct router access
+- reach for `useRouterState()` when you need `match`, `navigation`, or other advanced state in one selector
 
 ## Boilerplate reference
 
@@ -319,41 +427,23 @@ The reference integration lives in [apps/react/boilerplate-vite](../../../apps/r
 - SSR + hydration
 - hover prefetch
 - auth middleware redirect flow
+- error handling with `StatusResponse` and React error boundaries
 
 ## Public API
 
 ### Components and helpers
 
-- `createHydratedRouter()` — create a browser-backed router that resumes from
-  dehydrated state.
-- `Link` — render a typed anchor that navigates and prefetches through the
-  router.
+- `createHydratedRouter()` — create a browser-backed router that resumes from dehydrated state.
+- `Link` — render a typed anchor that navigates and prefetches through the router.
 - `Outlet` — render the current matched subtree.
 - `RouterProvider` — place a router instance into React context.
-- `renderToStream()` — load a URL and stream the rendered route tree.
+- `useBlocker()` — block navigation when the component has unsaved state.
 - `useNavigationState()` — subscribe to the navigation lifecycle state.
 - `useRoute()` — subscribe to a tracked location object.
 - `useRouter()` — read the router instance from context.
 - `useRouterState()` — subscribe to the full router state or a selected slice.
 - `useSearchParam()` — subscribe to one search-param key.
 - `useSearchParams()` — subscribe to all search params or a selected key set.
-
-### Types
-
-- `AnyReactRouter` — widened router type used by the React bindings.
-- `RouterProviderProps` — props for `RouterProvider`.
-- `LinkBuildOptions` — route params, search, and hash used to build links.
-- `LinkProps` — typed props for `Link`.
-- `OutletProps` — optional fallback for `Outlet`.
-- `RenderToStreamOptions` — options for streamed server rendering.
-- `RenderToStreamResult` — stream plus dehydration payload and load result.
-- `HydrationWindow` — minimal window-like object used during hydration.
-- `CreateHydratedRouterOptions` — router options accepted by
-  `createHydratedRouter()`.
-- `CreateHydratedRouterWindow` — alias for the hydration window shape.
-- `HydratedNavigationState` — alias for the router navigation state.
-- `SearchParamValues` — mapped values returned by keyed `useSearchParams()`.
-- `UseRouterStateOptions` — selector equality options for `useRouterState()`.
 
 ### Reference docs
 

@@ -10,7 +10,7 @@ import RouterProvider from "../RouterProvider/Provider.js";
 import Link from "./Link.js";
 
 const preloadSpy = vi.fn(async () => ({ default: "UsersPage" }));
-const fetchSpy = vi.fn(async () => "users");
+const prefetchSpy = vi.fn(async () => {});
 
 const routes = {
   home: route({
@@ -19,8 +19,8 @@ const routes = {
   }),
   users: route({
     url: "/users",
-    fetch: fetchSpy,
-    content: Object.assign(({ data }: { data: unknown }) => String(data), {
+    prefetch: prefetchSpy,
+    content: Object.assign(() => "users", {
       preload: preloadSpy,
     }),
   }),
@@ -50,7 +50,6 @@ describe("Link", () => {
     fireEvent.mouseEnter(link);
 
     await waitFor(() => {
-      expect(fetchSpy).toHaveBeenCalledTimes(1);
       expect(preloadSpy).toHaveBeenCalledTimes(1);
     });
 
@@ -60,7 +59,6 @@ describe("Link", () => {
       expect(screen.getByText("users")).toBeTruthy();
     });
 
-    expect(fetchSpy).toHaveBeenCalledTimes(1);
     expect(preloadSpy).toHaveBeenCalledTimes(1);
   });
 
@@ -123,16 +121,17 @@ describe("Link", () => {
 
   it("passes params, search, and hash to navigation helpers and skips prevented hovers", async () => {
     const optionPreloadSpy = vi.fn(async () => ({ default: "UserPage" }));
-    const optionFetchSpy = vi.fn(
-      async ({ id }: { id: string }) => `user:${id}`,
-    );
+    const optionPrefetchSpy = vi.fn(async () => {});
     const parameterizedRoutes = {
       user: route({
         url: "/users/:id",
-        fetch: optionFetchSpy,
-        content: Object.assign(({ data }: { data: unknown }) => String(data), {
-          preload: optionPreloadSpy,
-        }),
+        prefetch: optionPrefetchSpy,
+        content: Object.assign(
+          ({ params }: { params: { id: string } }) => `user:${params.id}`,
+          {
+            preload: optionPreloadSpy,
+          },
+        ),
       }),
     };
     const router = createRouter(parameterizedRoutes, {
@@ -168,7 +167,6 @@ describe("Link", () => {
     fireEvent.mouseEnter(preventedLink);
 
     await waitFor(() => {
-      expect(optionFetchSpy).toHaveBeenCalledTimes(0);
       expect(optionPreloadSpy).toHaveBeenCalledTimes(0);
     });
 
@@ -180,16 +178,13 @@ describe("Link", () => {
       expect(router.getState().location.searchParams.toString()).toBe("");
     });
 
-    expect(optionFetchSpy).toHaveBeenCalledTimes(1);
     expect(optionPreloadSpy).toHaveBeenCalledTimes(1);
 
-    const fetchCallCount = optionFetchSpy.mock.calls.length;
     const preloadCallCount = optionPreloadSpy.mock.calls.length;
 
     fireEvent.mouseEnter(link);
 
     await waitFor(() => {
-      expect(optionFetchSpy).toHaveBeenCalledTimes(fetchCallCount + 1);
       expect(optionPreloadSpy).toHaveBeenCalledTimes(preloadCallCount);
     });
   });

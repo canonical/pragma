@@ -1,4 +1,4 @@
-.ds.button {
+.ds.button.button-primitive {
   --color-background-button-active: var(
     --lp-color-background-active-context,
     var(--lp-color-background-neutral-active)

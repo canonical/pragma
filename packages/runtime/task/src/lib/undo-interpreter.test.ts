@@ -2,8 +2,9 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { sequence_, when } from "./combinators.js";
+import { parallel, sequence_, when } from "./combinators.js";
 import { dryRun } from "./dry-run.js";
+import { TaskExecutionError } from "./interpreter.js";
 import {
   appendFile,
   copyDirectory,
@@ -16,7 +17,8 @@ import {
   symlink,
   writeFile,
 } from "./primitives.js";
-import { $, gen, pure } from "./task.js";
+import { $, effect, fail, gen, pure } from "./task.js";
+import type { Task } from "./types.js";
 import { collectUndos, runUndo } from "./undo-interpreter.js";
 
 // =============================================================================
@@ -273,6 +275,185 @@ describe("collectUndos", () => {
     // mkdir=1 + writeFile(a)=1 + appendFile=0 + writeFile(c)=1 = 3
     expect(undos).toHaveLength(3);
   });
+
+  it("throws TaskExecutionError for Fail nodes", () => {
+    const task = fail({ code: "ERR", message: "boom" });
+
+    expect(() => collectUndos(task)).toThrow(TaskExecutionError);
+  });
+
+  it("collects undos from Parallel children", () => {
+    const task = parallel([
+      writeFile("/a.txt", "a"),
+      writeFile("/b.txt", "b"),
+      mkdir("/dir"),
+    ]);
+    const undos = collectUndos(task);
+
+    // Each child has a default undo (DeleteFile for writes, DeleteDirectory for mkdir)
+    expect(undos).toHaveLength(3);
+  });
+
+  it("collects undos from Race — only first child", () => {
+    const task = effect<unknown>({
+      _tag: "Race",
+      tasks: [writeFile("/a.txt", "a"), writeFile("/b.txt", "b")],
+    });
+    const undos = collectUndos(task);
+
+    // Only the first child is walked
+    expect(undos).toHaveLength(1);
+    const eff = dryRun(undos[0]).effects;
+    expect(eff[0]._tag).toBe("DeleteFile");
+    if (eff[0]._tag === "DeleteFile") {
+      expect(eff[0].path).toBe("/a.txt");
+    }
+  });
+
+  it("collects no undos from Race with empty tasks", () => {
+    const task = effect<unknown>({
+      _tag: "Race",
+      tasks: [],
+    });
+    const undos = collectUndos(task);
+
+    expect(undos).toHaveLength(0);
+  });
+
+  it("tracks virtual filesystem state for Exists through writeFile", () => {
+    // A task that writes a file, then checks if it exists
+    const task = gen(function* () {
+      yield* $(writeFile("/tmp/marker.txt", "x"));
+      const found = yield* $(exists("/tmp/marker.txt"));
+      if (found) {
+        yield* $(writeFile("/tmp/result.txt", "found"));
+      }
+    });
+    const undos = collectUndos(task);
+
+    // writeFile(marker) + writeFile(result) each produce an undo
+    expect(undos).toHaveLength(2);
+  });
+
+  it("tracks virtual filesystem state for Exists through mkdir", () => {
+    const task = gen(function* () {
+      yield* $(mkdir("/tmp/newdir"));
+      const found = yield* $(exists("/tmp/newdir"));
+      if (found) {
+        yield* $(writeFile("/tmp/newdir/file.txt", "content"));
+      }
+    });
+    const undos = collectUndos(task);
+
+    // mkdir + writeFile
+    expect(undos).toHaveLength(2);
+  });
+
+  it("tracks virtual filesystem state for Exists through symlink", () => {
+    const task = gen(function* () {
+      yield* $(symlink("/target", "/tmp/link"));
+      const found = yield* $(exists("/tmp/link"));
+      if (found) {
+        yield* $(writeFile("/tmp/done.txt", "yes"));
+      }
+    });
+    const undos = collectUndos(task);
+
+    // symlink + writeFile
+    expect(undos).toHaveLength(2);
+  });
+
+  it("tracks virtual filesystem state for Exists through appendFile", () => {
+    const task = gen(function* () {
+      yield* $(appendFile("/tmp/log.txt", "entry\n"));
+      const found = yield* $(exists("/tmp/log.txt"));
+      if (found) {
+        yield* $(writeFile("/tmp/done.txt", "yes"));
+      }
+    });
+    const undos = collectUndos(task);
+
+    // appendFile has no default undo, writeFile does
+    expect(undos).toHaveLength(1);
+  });
+
+  it("collects undos from nested Parallel within a sequence", () => {
+    const task = sequence_([
+      writeFile("/a.txt", "a"),
+      parallel([writeFile("/b.txt", "b"), mkdir("/dir")]),
+      writeFile("/c.txt", "c"),
+    ]);
+    const undos = collectUndos(task);
+
+    // writeFile(a) + writeFile(b) + mkdir + writeFile(c)
+    expect(undos).toHaveLength(4);
+  });
+
+  it("collects undos from Parallel child that has Fail — throws", () => {
+    const task = parallel([
+      writeFile("/a.txt", "a"),
+      fail({ code: "ERR", message: "child fail" }),
+    ]);
+
+    expect(() => collectUndos(task)).toThrow(TaskExecutionError);
+  });
+
+  it("collects undos from Race child with nested sequence", () => {
+    const task = effect<unknown>({
+      _tag: "Race",
+      tasks: [
+        sequence_([writeFile("/a.txt", "a"), writeFile("/b.txt", "b")]),
+        writeFile("/c.txt", "c"),
+      ],
+    });
+    const undos = collectUndos(task);
+
+    // Only first child is walked: writeFile(a) + writeFile(b)
+    expect(undos).toHaveLength(2);
+  });
+
+  it("handles Parallel inside Parallel child (nested)", () => {
+    const inner = parallel([
+      writeFile("/x.txt", "x"),
+      writeFile("/y.txt", "y"),
+    ]);
+    const task = parallel([inner, writeFile("/z.txt", "z")]);
+    const undos = collectUndos(task);
+
+    // inner children: x, y + outer child: z
+    expect(undos).toHaveLength(3);
+  });
+
+  it("handles Race inside collectUndosWithVirtualFs (via Parallel child)", () => {
+    const raceChild = effect<unknown>({
+      _tag: "Race",
+      tasks: [writeFile("/first.txt", "f"), writeFile("/second.txt", "s")],
+    });
+    const task = parallel([raceChild, writeFile("/other.txt", "o")]);
+    const undos = collectUndos(task);
+
+    // Race takes first child: writeFile(first) + writeFile(other)
+    expect(undos).toHaveLength(2);
+  });
+
+  it("handles Race with empty tasks inside Parallel child", () => {
+    const emptyRace = effect<unknown>({
+      _tag: "Race",
+      tasks: [],
+    });
+    const task = parallel([emptyRace, writeFile("/a.txt", "a")]);
+    const undos = collectUndos(task);
+
+    // Only writeFile(a)
+    expect(undos).toHaveLength(1);
+  });
+
+  it("handles Fail inside collectUndosWithVirtualFs", () => {
+    const failTask: Task<void> = fail({ code: "ERR", message: "nested fail" });
+    const task = parallel([failTask]);
+
+    expect(() => collectUndos(task)).toThrow(TaskExecutionError);
+  });
 });
 
 // =============================================================================
@@ -283,38 +464,32 @@ describe("runUndo", () => {
   it("executes undo tasks in reverse (LIFO) order", async () => {
     const order: string[] = [];
 
-    // Create tasks that track execution order via custom undos
+    // Custom undos that log to context to track execution order
+    const makeUndoLogger = (label: string) =>
+      effect<void>({
+        _tag: "WriteContext",
+        key: `_undo_${label}`,
+        value: true,
+      });
+
+    const context = new Map<string, unknown>();
+    const onEffectComplete = (eff: import("./types.js").Effect) => {
+      if (eff._tag === "WriteContext" && typeof eff.key === "string") {
+        order.push(eff.key);
+      }
+    };
+
     const task = sequence_([
-      writeFile("/tmp/a.txt", "a", {
-        undo: gen(function* () {
-          order.push("undo-a");
-          yield* $(pure(undefined));
-        }),
-      }),
-      writeFile("/tmp/b.txt", "b", {
-        undo: gen(function* () {
-          order.push("undo-b");
-          yield* $(pure(undefined));
-        }),
-      }),
-      writeFile("/tmp/c.txt", "c", {
-        undo: gen(function* () {
-          order.push("undo-c");
-          yield* $(pure(undefined));
-        }),
-      }),
+      writeFile("/tmp/a.txt", "a", { undo: makeUndoLogger("a") }),
+      writeFile("/tmp/b.txt", "b", { undo: makeUndoLogger("b") }),
+      writeFile("/tmp/c.txt", "c", { undo: makeUndoLogger("c") }),
     ]);
 
-    // runUndo will try to execute real effects in the undo tasks,
-    // but our custom undos just push to the order array via gen()
-    // We need to mock the interpreter... let's use a simpler approach
-    const undos = collectUndos(task);
+    const result = await runUndo(task, { context, onEffectComplete });
 
-    // Verify they're collected in forward order
-    expect(undos).toHaveLength(3);
-
-    // The runUndo function reverses them — verify by inspecting collectUndos
-    // and checking that runUndo would reverse
+    expect(result.undoCount).toBe(3);
+    // LIFO: c, b, a
+    expect(order).toEqual(["_undo_c", "_undo_b", "_undo_a"]);
   });
 
   it("returns undoCount 0 for task with no undoable effects", async () => {

@@ -1,4 +1,4 @@
-import { collectUndos, dryRun } from "@canonical/task";
+import { collectUndos, dryRun, readFile } from "@canonical/task";
 import { describe, expect, it } from "vitest";
 import appendExportToParentIndex from "./appendExportToParentIndex.js";
 import dryRunWithFileState from "./dryRunWithFileState.js";
@@ -71,5 +71,12 @@ describe("appendExportToParentIndex", () => {
     expect(appendEffect).toBeDefined();
     expect("undo" in (appendEffect as Record<string, unknown>)).toBe(true);
     expect((appendEffect as Record<string, unknown>).undo).toBeDefined();
+  });
+});
+
+describe("dryRunWithFileState", () => {
+  it("returns empty string for missing files", () => {
+    const result = dryRunWithFileState(readFile("/missing/file.ts"), {});
+    expect(result.value).toBe("");
   });
 });

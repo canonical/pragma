@@ -33,7 +33,6 @@ describe("applyMiddleware", () => {
       enhancedRoute.content({
         params: {},
         search: {},
-        data: undefined,
       }),
     ).toBe("A(B(content))");
   });

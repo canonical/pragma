@@ -8,7 +8,7 @@
 import type { CommandKind } from "./types.js";
 
 /** Commands that do not require the ke store to be booted. */
-const STORE_SKIP_COMMANDS = new Set(["setup", "mcp"]);
+const STORE_SKIP_COMMANDS = new Set(["setup", "mcp", "update-refs"]);
 
 function findCommandArg(argv: readonly string[]): string | undefined {
   const args = argv.slice(2);

@@ -118,20 +118,20 @@ export default function createSparqlHandler(
       return url.searchParams.get("query");
     }
 
-    if (request.method === "POST") {
-      const contentType = request.headers.get("content-type") ?? "";
+    // POST — the handler guards method before calling extractQuery,
+    // so reaching here means method is POST.
+    const contentType = request.headers.get("content-type") ?? "";
 
-      // Direct SPARQL query in the POST body
-      if (contentType.includes("application/sparql-query")) {
-        return await request.text();
-      }
+    // Direct SPARQL query in the POST body
+    if (contentType.includes("application/sparql-query")) {
+      return await request.text();
+    }
 
-      // URL-encoded form with a query= field
-      if (contentType.includes("application/x-www-form-urlencoded")) {
-        const body = await request.text();
-        const params = new URLSearchParams(body);
-        return params.get("query");
-      }
+    // URL-encoded form with a query= field
+    if (contentType.includes("application/x-www-form-urlencoded")) {
+      const body = await request.text();
+      const params = new URLSearchParams(body);
+      return params.get("query");
     }
 
     return null;

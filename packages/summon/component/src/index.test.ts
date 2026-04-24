@@ -242,6 +242,16 @@ describe("component/svelte generator", () => {
       expect(prompt?.type).toBe("confirm");
       expect(prompt?.default).toBe(false);
     });
+
+    it("useTsStories prompt when condition checks withStories", () => {
+      const prompt = generator.prompts.find((p) => p.name === "useTsStories");
+      expect(
+        prompt?.when?.({ withStories: true } as Record<string, unknown>),
+      ).toBe(true);
+      expect(
+        prompt?.when?.({ withStories: false } as Record<string, unknown>),
+      ).toBe(false);
+    });
   });
 
   describe("generate", () => {

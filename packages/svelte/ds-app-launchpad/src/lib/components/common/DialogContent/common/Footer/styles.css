@@ -1,0 +1,8 @@
+.ds.dialog-content-footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  flex-wrap: wrap;
+
+  gap: var(--lp-dimension-spacing-inline-m);
+}

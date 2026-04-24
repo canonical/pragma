@@ -19,9 +19,11 @@ export default function generateStamp(
     return `${style.blockStart} ${stampText} ${style.blockEnd}`;
   }
 
+  /* v8 ignore next -- unreachable false branch: if we reach here, style.single is always truthy */
   if (style.single) {
     return `${style.single} ${stampText}`;
   }
 
-  return null;
+  /* v8 ignore next -- structurally unreachable: line 14 guards !style.single && !style.blockStart */
+  throw new Error(`No comment syntax for stamp in ${filePath}`);
 }

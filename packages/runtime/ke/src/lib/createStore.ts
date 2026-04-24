@@ -65,11 +65,18 @@ type OxStore = import("oxigraph").Store;
 // Oxigraph uses MIME types internally; we expose friendlier names in the API.
 // ---------------------------------------------------------------------------
 
-const FORMAT_MAP: Record<string, string> = {
+type RdfFormat = "turtle" | "ntriples" | "rdfxml";
+
+const FORMAT_MIME: Record<RdfFormat, string> = {
   turtle: "text/turtle",
   ntriples: "application/n-triples",
   rdfxml: "application/rdf+xml",
 };
+
+/** Resolve a format key to its MIME type. */
+function toMimeType(format: RdfFormat): string {
+  return FORMAT_MIME[format];
+}
 
 /**
  * Infer the RDF serialization format from a file's extension.
@@ -197,56 +204,48 @@ function parseRawResult(rawResult: unknown): QueryResult {
     return { type: "ask", result: rawResult } satisfies AskResult;
   }
 
-  // SELECT and CONSTRUCT both return arrays, but with different element types
-  if (Array.isArray(rawResult)) {
-    // Empty result — could be either. Default to select (more common).
-    if (rawResult.length === 0) {
-      return {
-        type: "select",
-        variables: [],
-        bindings: [],
-      } satisfies SelectResult;
-    }
+  // SELECT and CONSTRUCT both return arrays, but with different element types.
+  // After the boolean check, Oxigraph always returns an array.
+  const resultArray = rawResult as unknown[];
 
-    // SELECT returns Map<string, Term> entries
-    if (rawResult[0] instanceof Map) {
-      const bindings = rawResult as Map<string, OxTerm>[];
-      const variables: string[] =
-        bindings.length > 0
-          ? Array.from((bindings[0] as (typeof bindings)[number]).keys())
-          : [];
-      const mappedBindings: Binding[] = bindings.map((binding) => {
-        const obj: Binding = {};
-        for (const [key, value] of binding) {
-          obj[key] = termToString(value);
-        }
-        return obj;
-      });
-      return {
-        type: "select",
-        variables,
-        bindings: mappedBindings,
-      } satisfies SelectResult;
-    }
-
-    // CONSTRUCT/DESCRIBE returns Quad objects (have a .subject property)
-    if (typeof rawResult[0] === "object" && "subject" in rawResult[0]) {
-      const quads = rawResult as OxQuad[];
-      const triples: Triple[] = quads.map((quad) => ({
-        subject: termToString(quad.subject),
-        predicate: termToString(quad.predicate),
-        object: termToString(quad.object),
-      }));
-      return { type: "construct", triples } satisfies ConstructResult;
-    }
+  // Empty result — could be either. Default to select (more common).
+  if (resultArray.length === 0) {
+    return {
+      type: "select",
+      variables: [],
+      bindings: [],
+    } satisfies SelectResult;
   }
 
-  // Fallback — shouldn't happen with valid SPARQL
-  return {
-    type: "select",
-    variables: [],
-    bindings: [],
-  } satisfies SelectResult;
+  // SELECT returns Map<string, Term> entries
+  if (resultArray[0] instanceof Map) {
+    const bindings = resultArray as Map<string, OxTerm>[];
+    const variables: string[] = Array.from(
+      (bindings[0] as (typeof bindings)[number]).keys(),
+    );
+    const mappedBindings: Binding[] = bindings.map((binding) => {
+      const obj: Binding = {};
+      for (const [key, value] of binding) {
+        obj[key] = termToString(value);
+      }
+      return obj;
+    });
+    return {
+      type: "select",
+      variables,
+      bindings: mappedBindings,
+    } satisfies SelectResult;
+  }
+
+  // CONSTRUCT/DESCRIBE returns Quad objects (have a .subject property).
+  // After ruling out Map[], the remaining array type is always Quad[].
+  const quads = resultArray as OxQuad[];
+  const triples: Triple[] = quads.map((quad) => ({
+    subject: termToString(quad.subject),
+    predicate: termToString(quad.predicate),
+    object: termToString(quad.object),
+  }));
+  return { type: "construct", triples } satisfies ConstructResult;
 }
 
 // ---------------------------------------------------------------------------
@@ -292,16 +291,10 @@ function expandPrefixes(queryStr: string, prefixes: PrefixMap): string {
  * - BlankNode → "_:" prefixed (e.g., "_:b0")
  */
 function termToString(term: OxTerm): string {
-  switch (term.termType) {
-    case "NamedNode":
-      return term.value;
-    case "Literal":
-      return term.value;
-    case "BlankNode":
-      return `_:${term.value}`;
-    default:
-      return term.value;
+  if (term.termType === "BlankNode") {
+    return `_:${term.value}`;
   }
+  return term.value;
 }
 
 // ---------------------------------------------------------------------------
@@ -349,7 +342,7 @@ function createPluginContext(
         graph?: string;
       },
     ): void {
-      const mimeType = FORMAT_MAP[options?.format ?? "turtle"] ?? "text/turtle";
+      const mimeType = toMimeType(options?.format ?? "turtle");
       if (options?.graph) {
         oxStore.load(content, {
           format: mimeType,
@@ -544,7 +537,7 @@ function loadSource(
   oxNamedNode: (value: string) => OxNamedNode,
   source: ResolvedSource,
 ): void {
-  const mimeType = FORMAT_MAP[source.format] ?? "text/turtle";
+  const mimeType = toMimeType(source.format);
 
   if (source.graph) {
     oxStore.load(source.content, {
@@ -626,6 +619,7 @@ async function loadOxigraph() {
   try {
     return await import("oxigraph");
   } catch (error) {
+    /* v8 ignore next 3 -- only triggers if oxigraph is not installed */
     throw new Error(
       `Failed to load oxigraph. Make sure it is installed: ${error}`,
     );

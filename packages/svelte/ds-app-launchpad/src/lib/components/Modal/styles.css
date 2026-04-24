@@ -1,0 +1,39 @@
+.ds.modal {
+  /* TODO: Replace with a token */
+  --dimension-width-modal: 38rem;
+
+  position: fixed;
+  margin: auto;
+  width: min(100vw, var(--dimension-width-modal));
+
+  border: var(--lp-dimension-stroke-thickness-default) solid
+    var(--lp-color-border-high-contrast);
+
+  &,
+  &::backdrop {
+    opacity: 0;
+    transition-behavior: allow-discrete;
+    transition-property: display, opacity, overlay;
+    transition-duration: var(--lp-transition-duration-fast);
+  }
+
+  &::backdrop {
+    background-color: var(--lp-color-background-overlay);
+  }
+
+  /* 
+      [open] is a fallback for Safari that doesn't support the `:open`.
+
+      TODO(:open): Remove when Safari supports it (https://developer.mozilla.org/en-US/docs/Web/CSS/:open)
+    */
+  &:is(:open, [open]) {
+    &,
+    &::backdrop {
+      opacity: 1;
+
+      @starting-style {
+        opacity: 0;
+      }
+    }
+  }
+}

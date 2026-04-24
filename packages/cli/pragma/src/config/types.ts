@@ -6,6 +6,7 @@
  */
 
 import type { Channel } from "../constants.js";
+import type { RawPackageEntry } from "../domains/refs/operations/parseRef.js";
 
 /** Parsed contents of pragma.config.json. */
 interface PragmaConfig {
@@ -13,6 +14,12 @@ interface PragmaConfig {
   tier: string | undefined;
   /** Release channel controlling component visibility. */
   channel: Channel;
+  /**
+   * Semantic package sources. Each entry is a package name (npm) or an
+   * object with `{ name, source }` where source is `file://` or `git+https://`.
+   * When absent, the hardcoded defaults are used.
+   */
+  packages?: ReadonlyArray<RawPackageEntry> | undefined;
 }
 
 /** Partial update payload for writing config changes. */
@@ -21,6 +28,8 @@ interface ConfigUpdate {
   tier?: string | undefined;
   /** New channel, `undefined` to remove the channel field. */
   channel?: Channel | undefined;
+  /** New packages list, `undefined` to remove the field. */
+  packages?: ReadonlyArray<RawPackageEntry> | undefined;
 }
 
 export type { ConfigUpdate, PragmaConfig };

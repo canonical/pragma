@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { ContentProps } from "./types";
+  import type { ContentProps } from "./types.js";
   import "./styles.css";
 
   const componentCssClassName = "ds button-content";
@@ -14,17 +14,17 @@
 </script>
 
 <div class={[componentCssClassName, className]} {...rest}>
-	{#if iconLeft}
-		<span class="icon left">
-			{@render iconLeft()}
-		</span>
-	{/if}
-	<span class="text">
-		{@render children?.()}
-	</span>
-	{#if iconRight}
-		<span class="icon right">
-			{@render iconRight()}
-		</span>
-	{/if}
+  {#if iconLeft}
+    <span class="icon left">
+      {@render iconLeft()}
+    </span>
+  {/if}
+  <span class="text">
+    {@render children?.()}
+  </span>
+  {#if iconRight}
+    <span class="icon right">
+      {@render iconRight()}
+    </span>
+  {/if}
 </div>
