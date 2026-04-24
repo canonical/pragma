@@ -1,0 +1,38 @@
+.ds.timeline-title-row {
+  --dimension-gap-timeline-event-title-row: var(
+    --lp-dimension-spacing-inline-xs
+  );
+  /* TODO(@Enzo): Add a missing token */
+  --dimension-basis-timeline-event-title-row-description: 10rem;
+
+  display: flex;
+  align-items: baseline;
+
+  font: var(--lp-typography-paragraph-s);
+  line-height: var(--typography-line-height-timeline-event-title-row);
+  gap: var(--dimension-gap-timeline-event-title-row);
+
+  > .content {
+    display: flex;
+    flex-grow: 1;
+    align-items: baseline;
+    flex-wrap: wrap;
+
+    gap: var(--dimension-gap-timeline-event-title-row);
+
+    > .leading-text {
+      color: var(--lp-color-text-default);
+    }
+
+    > .description {
+      color: var(--lp-color-text-muted);
+      flex-basis: var(--dimension-basis-timeline-event-title-row-description);
+      flex-grow: 1;
+    }
+  }
+
+  > .date {
+    color: var(--lp-color-text-muted);
+    flex: none;
+  }
+}
