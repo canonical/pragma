@@ -4,8 +4,8 @@ import type {
   PromptDefinition,
 } from "@canonical/summon-core";
 import { info, mkdir, sequence_, writeFile } from "@canonical/task";
-import { toPascalCase } from "@canonical/utils";
-import { normalizeCommandPath, toTitleCase } from "../shared/casing.js";
+import { toPascalCase, toTitleCase } from "@canonical/utils";
+import { normalizeCommandPath } from "../shared/casing.js";
 
 interface DomainAnswers {
   readonly domainName: string;

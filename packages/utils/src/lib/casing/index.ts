@@ -5,3 +5,4 @@ export { default as toConstantCase } from "./toConstantCase.js";
 export { default as toKebabCase } from "./toKebabCase.js";
 export { default as toPascalCase } from "./toPascalCase.js";
 export { default as toSnakeCase } from "./toSnakeCase.js";
+export { default as toTitleCase } from "./toTitleCase.js";
