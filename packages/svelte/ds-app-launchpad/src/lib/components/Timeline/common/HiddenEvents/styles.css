@@ -1,0 +1,42 @@
+.ds.timeline-hidden-events {
+  position: relative;
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: subgrid;
+  font: var(--lp-typography-paragraph-xs-strong);
+
+  &:not(:last-child)::after {
+    /* Line spanning to the next element */
+    content: "";
+    position: absolute;
+    display: block;
+    grid-column: marker;
+    background-color: var(--color-background-timeline-line);
+    width: var(--dimension-width-timeline-line);
+    justify-self: center;
+    height: var(--dimension-gap-row-timeline);
+    top: 100%;
+  }
+
+  > div {
+    grid-column: 1 / -1;
+    justify-self: start;
+    display: flex;
+    padding-block: var(--lp-dimension-spacing-block-xs);
+    padding-inline: var(--lp-dimension-spacing-inline-m);
+    border-block: var(--lp-dimension-stroke-thickness-default) solid
+      var(--lp-color-border-default);
+  }
+
+  &:first-child {
+    > div {
+      border-block-start: none;
+    }
+  }
+
+  &:last-child {
+    > div {
+      border-block-end: none;
+    }
+  }
+}
