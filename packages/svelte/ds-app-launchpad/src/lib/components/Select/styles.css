@@ -91,7 +91,9 @@
 
     &:user-invalid,
     &[aria-invalid="true"] {
-      background-color: var(--lp-color-background-negative-default);
+      --color-background-select-input: var(
+        --lp-color-background-negative-default
+      );
       border-color: var(--lp-color-border-negative);
       outline-color: var(--lp-color-border-negative);
 
@@ -102,6 +104,24 @@
       &:active,
       &:focus {
         background-color: var(--lp-color-background-negative-active);
+      }
+    }
+
+    &:not([multiple]) {
+      option {
+        /* 
+          FIXME(steciuk): The colors currently used for the select background have some baked-in transparency.
+          This doesn't play well with how the select element is rendered in Chrome, making the options looked washed out and with very low contrast. This is a temporary workaround that aims to strip the transparency from the color while keeping similar visuals.
+
+          A better solution would be to update the design tokens to use solid colors, but the currently tokens and modifiers system are soon to be replaced anyway, so it might not be worth the effort.
+        */
+        background-color: var(--lp-color-background-default);
+        /* biome-ignore lint/suspicious/noDuplicateProperties: Fallback for older chrome versions */
+        background-color: color-mix(
+          in srgb,
+          rgb(from var(--color-background-select-input) r g b / 1) 20%,
+          var(--lp-color-background-default) 80%
+        );
       }
     }
 
@@ -127,6 +147,15 @@
 
     > select {
       border: none;
+    }
+
+    &:not([multiple]) {
+      > select {
+        option {
+          /* FIXME(steciuk): Pt. 2 of the transparency workaround */
+          background-color: var(--lp-color-background-default);
+        }
+      }
     }
   }
 }
