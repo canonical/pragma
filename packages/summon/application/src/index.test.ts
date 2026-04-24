@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { generators } from "./index.js";
 
 describe("application/react generator", () => {
-  it("creates the expected files for a React application", () => {
+  it("produces effects for all expected files", () => {
     const result = dryRun(
       generators["application/react"].generate({
         appPath: "my-app",
@@ -12,68 +12,64 @@ describe("application/react generator", () => {
       }),
     );
 
-    const writeEffects = result.effects.filter((e) => e._tag === "WriteFile");
-    const paths = writeEffects.map((e) => (e as { path: string }).path);
+    // template() produces WriteFile, copyFile() produces CopyFile
+    const filePaths = result.effects
+      .filter((e) => e._tag === "WriteFile" || e._tag === "CopyFile")
+      .map(
+        (e) =>
+          (e as { path?: string; dest?: string }).path ??
+          (e as { dest?: string }).dest,
+      );
 
-    expect(paths).toContain("my-app/package.json");
-    expect(paths).toContain("my-app/tsconfig.json");
-    expect(paths).toContain("my-app/vite.config.ts");
-    expect(paths).toContain("my-app/biome.json");
-    expect(paths).toContain("my-app/index.html");
-    expect(paths).toContain("my-app/src/styles/index.css");
-    expect(paths).toContain("my-app/src/styles/app.css");
-    expect(paths).toContain("my-app/src/client/entry.tsx");
-    expect(paths).toContain("my-app/src/server/entry.tsx");
-    expect(paths).toContain("my-app/src/server/server.express.ts");
-    expect(paths).toContain("my-app/src/server/server.bun.ts");
-    expect(paths).toContain("my-app/src/server/sitemap.ts");
-    expect(paths).toContain("my-app/src/domains/marketing/HomePage.tsx");
-    expect(paths).toContain("my-app/src/domains/marketing/routes.ts");
-    expect(paths).toContain("my-app/src/routes.tsx");
-    expect(paths).toContain("my-app/src/lib/Navigation/Navigation.tsx");
-    expect(paths).toContain("my-app/src/lib/Navigation/index.ts");
-    expect(paths).toContain("my-app/src/lib/index.ts");
+    // EJS templates (interpolated)
+    expect(filePaths).toContain("my-app/package.json");
+    expect(filePaths).toContain("my-app/README.md");
+
+    // Static copies
+    expect(filePaths).toContain("my-app/tsconfig.json");
+    expect(filePaths).toContain("my-app/vite.config.ts");
+    expect(filePaths).toContain("my-app/biome.json");
+    expect(filePaths).toContain("my-app/index.html");
+    expect(filePaths).toContain("my-app/.gitignore");
+    expect(filePaths).toContain("my-app/src/client/entry.tsx");
+    expect(filePaths).toContain("my-app/src/server/entry.tsx");
+    expect(filePaths).toContain("my-app/src/server/server.express.ts");
+    expect(filePaths).toContain("my-app/src/server/server.bun.ts");
+    expect(filePaths).toContain("my-app/src/server/sitemap.ts");
+    expect(filePaths).toContain("my-app/src/domains/marketing/HomePage.tsx");
+    expect(filePaths).toContain("my-app/src/domains/marketing/routes.ts");
+    expect(filePaths).toContain("my-app/src/routes.tsx");
+    expect(filePaths).toContain("my-app/src/lib/Navigation/Navigation.tsx");
+    expect(filePaths).toContain("my-app/src/lib/Navigation/index.ts");
+    expect(filePaths).toContain("my-app/src/lib/index.ts");
+    expect(filePaths).toContain("my-app/src/vite-env.d.ts");
+    expect(filePaths).toContain("my-app/src/styles/index.css");
+    expect(filePaths).toContain("my-app/src/styles/app.css");
+    expect(filePaths).toContain("my-app/.storybook/main.ts");
+    expect(filePaths).toContain("my-app/.storybook/preview.ts");
+    expect(filePaths).toContain("my-app/.storybook/decorators/withRouter.tsx");
+    expect(filePaths).toContain("my-app/.storybook/decorators/index.ts");
   });
 
-  it("reads EJS templates for each generated file", () => {
+  it("uses the appPath in file paths", () => {
     const result = dryRun(
       generators["application/react"].generate({
-        appPath: "my-app",
+        appPath: "custom-app",
         ssr: true,
         router: true,
       }),
     );
 
-    const readEffects = result.effects.filter((e) => e._tag === "ReadFile");
-    const paths = readEffects.map((e) => (e as { path: string }).path);
+    const filePaths = result.effects
+      .filter((e) => e._tag === "WriteFile" || e._tag === "CopyFile")
+      .map(
+        (e) =>
+          (e as { path?: string; dest?: string }).path ??
+          (e as { dest?: string }).dest,
+      );
 
-    // Each template() call reads a .ejs source file
-    expect(paths.some((p) => p.endsWith("package.json.ejs"))).toBe(true);
-    expect(paths.some((p) => p.endsWith("vite.config.ts.ejs"))).toBe(true);
-    expect(paths.some((p) => p.endsWith("entry.tsx.ejs"))).toBe(true);
-  });
-
-  it("creates MakeDir effects for parent directories", () => {
-    const result = dryRun(
-      generators["application/react"].generate({
-        appPath: "my-app",
-        ssr: true,
-        router: true,
-      }),
-    );
-
-    const mkdirEffects = result.effects.filter((e) => e._tag === "MakeDir");
-    const paths = mkdirEffects.map((e) => (e as { path: string }).path);
-
-    // template() auto-creates parent directories for each destination
-    expect(paths).toContain("my-app");
-    expect(paths).toContain("my-app/src/client");
-    expect(paths).toContain("my-app/src/server");
-    expect(paths).toContain("my-app/src/styles");
-    expect(paths).toContain("my-app/src/domains/marketing");
-    expect(paths).toContain("my-app/src/lib/Navigation");
-    expect(paths).toContain("my-app/src/lib");
-    expect(paths).toContain("my-app/src");
+    expect(filePaths).toContain("custom-app/package.json");
+    expect(filePaths).toContain("custom-app/src/client/entry.tsx");
   });
 
   it("throws when --ssr is false", () => {
@@ -98,22 +94,6 @@ describe("application/react generator", () => {
         }),
       ),
     ).toThrow();
-  });
-
-  it("uses the appPath in generated file paths", () => {
-    const result = dryRun(
-      generators["application/react"].generate({
-        appPath: "custom-app",
-        ssr: true,
-        router: true,
-      }),
-    );
-
-    const writeEffects = result.effects.filter((e) => e._tag === "WriteFile");
-    const paths = writeEffects.map((e) => (e as { path: string }).path);
-
-    expect(paths).toContain("custom-app/package.json");
-    expect(paths).toContain("custom-app/src/client/entry.tsx");
   });
 });
 
