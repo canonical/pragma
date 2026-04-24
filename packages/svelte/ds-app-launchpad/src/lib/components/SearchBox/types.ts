@@ -20,15 +20,6 @@ export interface SearchBoxProps extends Omit<TextInputPrimitiveProps, "type"> {
   shouldRenderInvalidStyles?: boolean;
   /**
    * The content to render instead of the default `SearchBox.SearchButton`. This is useful when you want to customize the default button behavior, such as adding an `onclick` handler.
-   *
-   * If `disabled` or `aria-label` props are not provided to the `SearchBox.SearchButton`, it will inherit their respective values from SearchBox context.
-   *
-   * @example
-   * ```svelte
-   * <SearchBox aria-label="Search articles">
-   *   <SearchBox.SearchButton onclick={handleClick} />
-   * </SearchBox>
-   * ```
    */
   children?: Snippet<[]>;
 }
