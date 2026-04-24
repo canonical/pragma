@@ -4,8 +4,8 @@ import type {
   PromptDefinition,
 } from "@canonical/summon-core";
 import { appendFile, info, mkdir, sequence_, writeFile } from "@canonical/task";
-import { toCamelCase, toPascalCase } from "@canonical/utils";
-import { normalizeCommandPath, toTitleCase } from "../shared/casing.js";
+import { toCamelCase, toPascalCase, toTitleCase } from "@canonical/utils";
+import { normalizeCommandPath } from "../shared/casing.js";
 
 interface RouteAnswers {
   readonly routePath: string;
