@@ -21,7 +21,8 @@ import type { SitemapItem } from "@canonical/react-ssr/renderer";
 export default async function getSitemapItems(): Promise<SitemapItem[]> {
   return [
     { loc: "/", changefreq: "weekly", priority: 1.0 },
-    // Add entries as you create routes:
-    // { loc: "/about", changefreq: "monthly", priority: 0.8 },
+    { loc: "/guides/router-core", changefreq: "monthly", priority: 0.8 },
+    { loc: "/account", changefreq: "monthly", priority: 0.5 },
+    { loc: "/login", changefreq: "yearly", priority: 0.3 },
   ];
 }
