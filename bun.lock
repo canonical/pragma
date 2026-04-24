@@ -1155,6 +1155,7 @@
       "dependencies": {
         "@canonical/summon-core": "^0.25.0",
         "@canonical/task": "^0.25.0",
+        "@canonical/utils": "^0.25.0",
       },
       "devDependencies": {
         "@biomejs/biome": "2.4.9",
