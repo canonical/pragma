@@ -69,13 +69,15 @@
     transition-property: background-color, border-color, outline-color;
     transition-timing-function: var(--lp-transition-timing-ease-in);
 
-    &:hover {
-      background-color: var(--color-background-select-input-hover);
-    }
+    :not(:disabled) {
+      &:hover {
+        background-color: var(--color-background-select-input-hover);
+      }
 
-    &:active,
-    &:focus {
-      background-color: var(--color-background-select-input-active);
+      &:active,
+      &:focus {
+        background-color: var(--color-background-select-input-active);
+      }
     }
 
     &:disabled {
