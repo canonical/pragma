@@ -1,43 +1,21 @@
 /**
- * Split a value into segments by common separators (/, _, -, +, space).
+ * Generator-specific casing utilities.
+ *
+ * For standard casing (camelCase, PascalCase, kebabCase), use
+ * `@canonical/utils` instead. These functions cover cases not
+ * provided by the shared utils package.
  */
-export function toSegments(value: string): string[] {
-  return value.split(/[/_\-+\s]+/).filter(Boolean);
-}
+
+import { capitalize } from "@canonical/utils";
 
 /**
- * Convert a value to PascalCase.
- */
-export function toPascalCase(value: string): string {
-  return toSegments(value)
-    .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
-    .join("");
-}
-
-/**
- * Convert a value to camelCase.
- */
-export function toCamelCase(value: string): string {
-  const pascal = toPascalCase(value);
-
-  return pascal.charAt(0).toLowerCase() + pascal.slice(1);
-}
-
-/**
- * Convert a value to kebab-case.
- */
-export function toKebabCase(value: string): string {
-  return toSegments(value)
-    .map((segment) => segment.toLowerCase())
-    .join("-");
-}
-
-/**
- * Convert a value to Title Case.
+ * Convert a value to Title Case (space-separated capitalized words).
  */
 export function toTitleCase(value: string): string {
-  return toSegments(value)
-    .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
+  return value
+    .split(/[/_\-+\s]+/)
+    .filter(Boolean)
+    .map((segment) => capitalize(segment))
     .join(" ");
 }
 

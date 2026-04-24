@@ -4,11 +4,8 @@ import type {
   PromptDefinition,
 } from "@canonical/summon-core";
 import { info, mkdir, sequence_, writeFile } from "@canonical/task";
-import {
-  normalizeCommandPath,
-  toCamelCase,
-  toPascalCase,
-} from "../shared/casing.js";
+import { toCamelCase, toPascalCase } from "@canonical/utils";
+import { normalizeCommandPath } from "../shared/casing.js";
 
 interface WrapperAnswers {
   readonly wrapperName: string;
