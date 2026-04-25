@@ -3,6 +3,7 @@
   "description": "Summon generators for application scaffolding: domain, route, and wrapper",
   "version": "0.25.0",
   "type": "module",
+  "main": "src/index.ts",
   "module": "src/index.ts",
   "types": "src/index.ts",
   "exports": {
