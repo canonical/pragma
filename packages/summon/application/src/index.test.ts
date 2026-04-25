@@ -9,6 +9,7 @@ describe("application/react generator", () => {
         appPath: "my-app",
         ssr: true,
         router: true,
+        runInstall: false,
       }),
     );
 
@@ -57,6 +58,7 @@ describe("application/react generator", () => {
         appPath: "custom-app",
         ssr: true,
         router: true,
+        runInstall: false,
       }),
     );
 
@@ -79,6 +81,7 @@ describe("application/react generator", () => {
           appPath: "my-app",
           ssr: false,
           router: true,
+          runInstall: false,
         }),
       ),
     ).toThrow();
@@ -91,6 +94,7 @@ describe("application/react generator", () => {
           appPath: "my-app",
           ssr: true,
           router: false,
+          runInstall: false,
         }),
       ),
     ).toThrow();
