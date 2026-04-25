@@ -6,6 +6,7 @@ import type {
 import { info, mkdir, sequence_, writeFile } from "@canonical/task";
 import { toPascalCase, toTitleCase } from "@canonical/utils";
 import { normalizeCommandPath } from "../shared/casing.js";
+import { printVersions } from "../shared/versions.js";
 
 interface DomainAnswers {
   readonly domainName: string;
@@ -83,6 +84,7 @@ Add more routes with: summon route <domain>/<route-name>`,
     const domainDir = path.join("src", "domains", name);
 
     return sequence_([
+      printVersions("domain"),
       info(`Creating domain "${name}"...`),
       mkdir(domainDir),
       writeFile(path.join(domainDir, "MainPage.tsx"), buildMainPage(name)),
