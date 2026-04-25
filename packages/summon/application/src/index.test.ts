@@ -51,6 +51,73 @@ describe("application/react generator", () => {
     expect(filePaths).toContain("my-app/.storybook/preview.ts");
     expect(filePaths).toContain("my-app/.storybook/decorators/withRouter.tsx");
     expect(filePaths).toContain("my-app/.storybook/decorators/index.ts");
+
+    // Account domain
+    expect(filePaths).toContain("my-app/src/domains/account/AccountPage.tsx");
+    expect(filePaths).toContain("my-app/src/domains/account/LoginPage.tsx");
+    expect(filePaths).toContain("my-app/src/domains/account/routes.ts");
+
+    // Contact domain NOT included when forms=false
+    expect(filePaths).not.toContain(
+      "my-app/src/domains/contact/ContactPage.tsx",
+    );
+    expect(filePaths).not.toContain("my-app/src/domains/contact/routes.ts");
+  });
+
+  it("includes contact domain when forms=true", () => {
+    const result = dryRun(
+      generators["application/react"].generate({
+        appPath: "my-app",
+        ssr: true,
+        router: true,
+        forms: true,
+        runInstall: false,
+      }),
+    );
+
+    const filePaths = result.effects
+      .filter((e) => e._tag === "WriteFile" || e._tag === "CopyFile")
+      .map(
+        (e) =>
+          (e as { path?: string; dest?: string }).path ??
+          (e as { dest?: string }).dest,
+      );
+
+    expect(filePaths).toContain("my-app/src/domains/contact/ContactPage.tsx");
+    expect(filePaths).toContain("my-app/src/domains/contact/routes.ts");
+
+    // routes.tsx should contain contact import (it's a template now)
+    const routesEffect = result.effects.find(
+      (e) =>
+        e._tag === "WriteFile" &&
+        (e as { path: string }).path === "my-app/src/routes.tsx",
+    ) as { content: string } | undefined;
+
+    expect(routesEffect).toBeDefined();
+    expect(routesEffect?.content).toContain("contactRoutes");
+    expect(routesEffect?.content).toContain("contact,");
+  });
+
+  it("excludes contact routes from routes.tsx when forms=false", () => {
+    const result = dryRun(
+      generators["application/react"].generate({
+        appPath: "my-app",
+        ssr: true,
+        router: true,
+        forms: false,
+        runInstall: false,
+      }),
+    );
+
+    const routesEffect = result.effects.find(
+      (e) =>
+        e._tag === "WriteFile" &&
+        (e as { path: string }).path === "my-app/src/routes.tsx",
+    ) as { content: string } | undefined;
+
+    expect(routesEffect).toBeDefined();
+    expect(routesEffect?.content).not.toContain("contactRoutes");
+    expect(routesEffect?.content).not.toContain("contact,");
   });
 
   it("uses the appPath in file paths", () => {
