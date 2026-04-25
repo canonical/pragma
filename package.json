@@ -27,10 +27,6 @@
     "packages/styles/*",
     "packages/svelte/*",
     "packages/lit/*",
-    "packages/styles-old/primitives/*",
-    "packages/styles-old/modes/*",
-    "packages/styles-old/elements",
-    "packages/styles-old/main/*",
     "apps/*",
     "apps/react/*"
   ],

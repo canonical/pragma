@@ -41,8 +41,6 @@
   "dependencies": {
     "@canonical/storybook-config": "^0.26.0",
     "@canonical/styles": "^0.26.0",
-    "@canonical/storybook-config": "^0.25.0",
-    "@canonical/styles": "^0.25.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4"
   },

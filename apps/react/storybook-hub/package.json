@@ -28,8 +28,7 @@
     "@canonical/storybook-addon-msw": "^0.26.0",
     "@canonical/storybook-config": "^0.26.0",
     "@canonical/styles": "^0.26.0",
-    "@canonical/styles-debug": "^0.26.0",
-    "@canonical/styles-old": "^0.26.0"
+    "@canonical/styles-debug": "^0.26.0"
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.9",
