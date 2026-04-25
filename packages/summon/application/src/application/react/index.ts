@@ -73,6 +73,7 @@ export const generator: GeneratorDefinition<ApplicationReactAnswers> = {
   - Routing with @canonical/router-core
   - Head management with @canonical/react-head
   - Two domains (marketing + account) with pages
+  - Contact domain with form components (when --forms is enabled)
   - Navigation, ThemeSelector, ExampleComponent
   - Storybook with router decorator
   - Biome + TypeScript configuration
@@ -80,7 +81,8 @@ export const generator: GeneratorDefinition<ApplicationReactAnswers> = {
 Requires both --ssr and --router flags.`,
     examples: [
       "summon application/react my-app",
-      "summon application/react --ssr --router my-app",
+      "summon application/react --forms my-app",
+      "summon application/react --ssr --router --forms my-app",
     ],
   },
 
@@ -92,7 +94,7 @@ Requires both --ssr and --router flags.`,
     if (!answers.ssr || !answers.router) {
       throw new Error(
         "The application/react generator requires both --ssr and --router. " +
-          "Standalone SPA mode is not yet supported.",
+          "Standalone SPA mode is not supported.",
       );
     }
 
@@ -149,8 +151,12 @@ Requires both --ssr and --router flags.`,
       when(answers.forms, copy("src/domains/contact/ContactPage.tsx")),
       when(answers.forms, copy("src/domains/contact/routes.ts")),
 
-      // Routes
-      copy("src/routes.tsx"),
+      // Routes (EJS — conditionally includes contact domain)
+      template({
+        source: src("src/routes.tsx.ejs"),
+        dest: dest("src/routes.tsx"),
+        vars,
+      }),
 
       // Lib: Navigation
       copy("src/lib/Navigation/Navigation.tsx"),

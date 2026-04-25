@@ -4,7 +4,7 @@ import type {
   PromptDefinition,
 } from "@canonical/summon-core";
 import { info, mkdir, sequence_, writeFile } from "@canonical/task";
-import { toPascalCase, toTitleCase } from "@canonical/utils";
+import { toCamelCase, toTitleCase } from "@canonical/utils";
 import { normalizeCommandPath } from "../shared/casing.js";
 import { printVersions } from "../shared/versions.js";
 
@@ -49,7 +49,7 @@ function buildRoutesFile(domainName: string): string {
 import MainPage from "./MainPage.js";
 
 const routes = {
-  ${toPascalCase(domainName).charAt(0).toLowerCase() + toPascalCase(domainName).slice(1)}: route({
+  ${toCamelCase(domainName)}: route({
     url: "${routeUrl}",
     content: MainPage,
   }),
