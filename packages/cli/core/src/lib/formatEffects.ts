@@ -148,9 +148,9 @@ export const getEffectPayload = (effect: Effect): string => {
     case "MakeDir":
       return effect.path;
     case "CopyFile":
-      return `${effect.source} → ${effect.dest}`;
+      return effect.dest;
     case "CopyDirectory":
-      return `${effect.source}/ → ${effect.dest}/`;
+      return `${effect.dest}/`;
     case "DeleteFile":
     case "DeleteDirectory":
       return effect.path;
