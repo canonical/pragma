@@ -1,8 +1,4 @@
-/* Coexistence: old styles loaded first, new styles override via cascade.
- * Remove @canonical/styles-old import once Phase 4 cleanup is complete. */
-@import url("@canonical/styles-old");
-/* For now, we are not importing the new styles as they do not properly render font size of headings */
-/*@import url("@canonical/styles");*/
+@import url("@canonical/styles");
 
 html {
   height: 100%;
