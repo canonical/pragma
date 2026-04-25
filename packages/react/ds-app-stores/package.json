@@ -1,7 +1,7 @@
 {
   "name": "@canonical/react-ds-app-stores",
   "description": "Stores-specific components for the Pragma design system (skeleton)",
-  "version": "0.25.0",
+  "version": "0.26.0",
   "type": "module",
   "module": "dist/esm/index.js",
   "types": "dist/types/index.d.ts",
@@ -33,12 +33,12 @@
     "test": "echo 'Skeleton package — no tests yet'"
   },
   "dependencies": {
-    "@canonical/react-ds-app": "^0.25.0"
+    "@canonical/react-ds-app": "^0.26.0"
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.9",
-    "@canonical/biome-config": "^0.25.0",
-    "@canonical/typescript-config-react": "^0.25.0",
+    "@canonical/biome-config": "^0.26.0",
+    "@canonical/typescript-config-react": "^0.26.0",
     "typescript": "^5.9.3"
   }
 }
