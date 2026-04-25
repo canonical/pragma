@@ -118,6 +118,7 @@ export interface DataRouteInput<
   >;
   readonly search?: TSearchSchema;
   readonly wrappers?: TWrappers;
+  readonly meta?: Readonly<Record<string, unknown>>;
 }
 
 export type StaticRedirectStatus = 301 | 308;
@@ -131,6 +132,7 @@ export interface RedirectRouteInput<
   readonly redirect: TTarget;
   readonly status: StaticRedirectStatus;
   readonly wrappers?: TWrappers;
+  readonly meta?: Readonly<Record<string, unknown>>;
 }
 
 export type RouteInput<
@@ -160,6 +162,7 @@ export interface DataRouteDefinition<
   >;
   readonly search?: TSearchSchema;
   readonly wrappers: TWrappers;
+  readonly meta?: Readonly<Record<string, unknown>>;
 }
 
 export interface RedirectRouteDefinition<
@@ -171,6 +174,7 @@ export interface RedirectRouteDefinition<
   readonly redirect: TTarget;
   readonly status: StaticRedirectStatus;
   readonly wrappers: TWrappers;
+  readonly meta?: Readonly<Record<string, unknown>>;
 }
 
 export type RouteDefinition<
@@ -193,6 +197,7 @@ export interface AnyRoute {
   readonly redirect?: string;
   readonly status?: number;
   readonly wrappers: readonly AnyWrapper[];
+  readonly meta?: Readonly<Record<string, unknown>>;
   parse(url: string | URL): RouteParamValues | Record<string, never> | null;
   render(params: RouteParamValues | Record<string, never>): string;
 }
