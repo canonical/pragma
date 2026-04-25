@@ -5,20 +5,14 @@ import {
   promptToParameter,
 } from "@canonical/cli-core";
 import { generators } from "@canonical/summon-component";
-import type { AnyGenerator } from "@canonical/summon-core";
 import { PragmaError } from "#error";
+import { COMPONENT_GENERATORS } from "../generators.js";
 
 const FRAMEWORK_CHOICES = [
   { label: "react", value: "react" },
   { label: "svelte", value: "svelte" },
   { label: "lit", value: "lit" },
 ] as const;
-
-const GENERATOR_MAP: Record<string, AnyGenerator> = {
-  react: generators["component/react"],
-  svelte: generators["component/svelte"],
-  lit: generators["component/lit"],
-};
 
 /** Reference generator used to derive shared prompt parameters. */
 const referenceGenerator = generators["component/react"];
@@ -101,12 +95,12 @@ export default function buildComponentCommand(): CommandDefinition {
         });
       }
 
-      const gen = GENERATOR_MAP[framework];
+      const gen = COMPONENT_GENERATORS[framework];
       if (!gen) {
         throw PragmaError.invalidInput("framework", framework, {
-          validOptions: Object.keys(GENERATOR_MAP),
+          validOptions: Object.keys(COMPONENT_GENERATORS),
           recovery: {
-            message: `Valid frameworks: ${Object.keys(GENERATOR_MAP).join(", ")}`,
+            message: `Valid frameworks: ${Object.keys(COMPONENT_GENERATORS).join(", ")}`,
           },
         });
       }
