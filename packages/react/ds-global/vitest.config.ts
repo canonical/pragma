@@ -1,3 +1,4 @@
+// Testing posture: Measured — Chromatic is primary visual gate; unit tests cover logic
 import { defineConfig, mergeConfig } from "vitest/config";
 import viteConfig from "./vite.config.js";
 

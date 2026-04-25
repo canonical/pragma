@@ -1,3 +1,4 @@
+// Testing posture: Measured — coverage tracked, no enforced threshold yet
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({

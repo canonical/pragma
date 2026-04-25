@@ -1,3 +1,4 @@
+// Testing posture: Measured — helper utilities, no enforced threshold yet
 import { defineConfig, mergeConfig } from "vitest/config";
 import viteConfig from "./vite.config.js";
 

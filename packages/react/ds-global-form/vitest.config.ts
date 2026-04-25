@@ -1,3 +1,4 @@
+// Testing posture: Measured — target 80% after Track M gap closure
 import { defineConfig, mergeConfig } from "vitest/config";
 import viteConfig from "./vite.config.js";
 
