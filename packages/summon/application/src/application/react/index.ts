@@ -5,13 +5,14 @@ import type {
   PromptDefinition,
 } from "@canonical/summon-core";
 import { template, withHelpers } from "@canonical/summon-core";
-import { copyFile, info, sequence_ } from "@canonical/task";
+import { copyFile, exec, info, sequence_, when } from "@canonical/task";
 import { normalizeCommandPath } from "../../shared/casing.js";
 
 interface ApplicationReactAnswers {
   readonly appPath: string;
   readonly ssr: boolean;
   readonly router: boolean;
+  readonly runInstall: boolean;
 }
 
 const prompts: PromptDefinition[] = [
@@ -34,6 +35,13 @@ const prompts: PromptDefinition[] = [
     name: "router",
     type: "confirm",
     message: "Include router?",
+    default: true,
+    group: "Application",
+  },
+  {
+    name: "runInstall",
+    type: "confirm",
+    message: "Run bun install?",
     default: true,
     group: "Application",
   },
@@ -164,8 +172,19 @@ Requires both --ssr and --router flags.`,
       copy(".storybook/decorators/withRouter.tsx"),
       copy(".storybook/decorators/index.ts"),
 
+      // Install dependencies
+      when(
+        answers.runInstall,
+        sequence_([
+          info("Installing dependencies..."),
+          exec("bun", ["install"], appPath),
+        ]),
+      ),
+
       info(
-        `Application "${appPath}" created. Run \`cd ${appPath} && bun install && bun run dev\` to start.`,
+        answers.runInstall
+          ? `Application "${appPath}" created. Run \`cd ${appPath} && bun run dev\` to start.`
+          : `Application "${appPath}" created. Run \`cd ${appPath} && bun install && bun run dev\` to start.`,
       ),
     ]);
   },
