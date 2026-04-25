@@ -545,19 +545,6 @@
         "vitest": "^4.0.18",
       },
     },
-    "packages/react/ds-app-maas": {
-      "name": "@canonical/react-ds-app-maas",
-      "version": "0.26.0",
-      "dependencies": {
-        "@canonical/react-ds-app": "^0.25.0",
-      },
-      "devDependencies": {
-        "@biomejs/biome": "2.4.9",
-        "@canonical/biome-config": "^0.25.0",
-        "@canonical/typescript-config-react": "^0.25.0",
-        "typescript": "^5.9.3",
-      },
-    },
     "packages/react/ds-app-portal": {
       "name": "@canonical/react-ds-app-portal",
       "version": "0.26.0",
@@ -591,32 +578,6 @@
         "typescript": "^5.9.3",
         "vite": "^8.0.1",
         "vitest": "^4.0.18",
-      },
-    },
-    "packages/react/ds-app-stores": {
-      "name": "@canonical/react-ds-app-stores",
-      "version": "0.26.0",
-      "dependencies": {
-        "@canonical/react-ds-app": "^0.25.0",
-      },
-      "devDependencies": {
-        "@biomejs/biome": "2.4.9",
-        "@canonical/biome-config": "^0.25.0",
-        "@canonical/typescript-config-react": "^0.25.0",
-        "typescript": "^5.9.3",
-      },
-    },
-    "packages/react/ds-app-wpe": {
-      "name": "@canonical/react-ds-app-wpe",
-      "version": "0.26.0",
-      "dependencies": {
-        "@canonical/react-ds-app": "^0.25.0",
-      },
-      "devDependencies": {
-        "@biomejs/biome": "2.4.9",
-        "@canonical/biome-config": "^0.25.0",
-        "@canonical/typescript-config-react": "^0.25.0",
-        "typescript": "^5.9.3",
       },
     },
     "packages/react/ds-global": {
@@ -1386,13 +1347,7 @@
 
     "@canonical/react-ds-app-lxd": ["@canonical/react-ds-app-lxd@workspace:packages/react/ds-app-lxd"],
 
-    "@canonical/react-ds-app-maas": ["@canonical/react-ds-app-maas@workspace:packages/react/ds-app-maas"],
-
     "@canonical/react-ds-app-portal": ["@canonical/react-ds-app-portal@workspace:packages/react/ds-app-portal"],
-
-    "@canonical/react-ds-app-stores": ["@canonical/react-ds-app-stores@workspace:packages/react/ds-app-stores"],
-
-    "@canonical/react-ds-app-wpe": ["@canonical/react-ds-app-wpe@workspace:packages/react/ds-app-wpe"],
 
     "@canonical/react-ds-global": ["@canonical/react-ds-global@workspace:packages/react/ds-global"],
 
