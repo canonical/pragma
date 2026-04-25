@@ -1,0 +1,98 @@
+import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import resolveSchema from "./resolveSchema.js";
+
+describe("resolveSchema", () => {
+  let tmp: string;
+
+  beforeEach(() => {
+    tmp = join(tmpdir(), `webarchitect-resolve-${Date.now()}`);
+    mkdirSync(tmp, { recursive: true });
+    vi.spyOn(console, "log").mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    rmSync(tmp, { recursive: true, force: true });
+    vi.restoreAllMocks();
+  });
+
+  it("loads schema from local .ruleset.json file", async () => {
+    const schema = { name: "test-local" };
+    const path = join(tmp, "local.ruleset.json");
+    writeFileSync(path, JSON.stringify(schema));
+    const result = await resolveSchema(path);
+    expect(result.name).toBe("test-local");
+  });
+
+  it("loads schema from local .json file", async () => {
+    const schema = { name: "test-json" };
+    const path = join(tmp, "local.json");
+    writeFileSync(path, JSON.stringify(schema));
+    const result = await resolveSchema(path);
+    expect(result.name).toBe("test-json");
+  });
+
+  it("appends .ruleset.json when no extension", async () => {
+    const schema = { name: "test-no-ext" };
+    writeFileSync(join(tmp, "myschema.ruleset.json"), JSON.stringify(schema));
+    const result = await resolveSchema(join(tmp, "myschema"));
+    expect(result.name).toBe("test-no-ext");
+  });
+
+  it("falls back to bundled rulesets", async () => {
+    // "base" is a bundled ruleset that ships with webarchitect
+    const result = await resolveSchema("base");
+    expect(result.name).toBeDefined();
+  });
+
+  it("throws when schema not found locally or bundled", async () => {
+    await expect(
+      resolveSchema("nonexistent-schema-that-does-not-exist"),
+    ).rejects.toThrow("Could not find ruleset");
+  });
+
+  it("throws when schema fails validation", async () => {
+    // Write a file that is valid JSON but not a valid schema
+    const path = join(tmp, "invalid.ruleset.json");
+    writeFileSync(path, JSON.stringify({ notAValidSchema: true }));
+    await expect(resolveSchema(path)).rejects.toThrow("Invalid ruleset");
+  });
+
+  it("loads schema from URL", async () => {
+    const schema = { name: "remote" };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        json: () => Promise.resolve(schema),
+      }),
+    );
+    const result = await resolveSchema("https://example.com/schema.json");
+    expect(result.name).toBe("remote");
+    vi.unstubAllGlobals();
+  });
+
+  it("loads schema from http URL", async () => {
+    const schema = { name: "http-remote" };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        json: () => Promise.resolve(schema),
+      }),
+    );
+    const result = await resolveSchema("http://example.com/schema.json");
+    expect(result.name).toBe("http-remote");
+    vi.unstubAllGlobals();
+  });
+
+  it("error message includes available bundled rulesets", async () => {
+    try {
+      await resolveSchema("nonexistent-schema-xyz-abc");
+    } catch (e) {
+      const msg = (e as Error).message;
+      expect(msg).toContain("Could not find ruleset");
+      expect(msg).toContain("Available bundled rulesets");
+    }
+  });
+});

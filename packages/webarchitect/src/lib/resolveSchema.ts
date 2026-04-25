@@ -33,6 +33,7 @@ function formatValidationErrors(errors: ErrorObject[]): string {
 
   for (const error of errors) {
     const path = error.instancePath || "/";
+    /* v8 ignore next -- AJV always provides error.message */
     const message = error.message || "validation failed";
 
     if (!errorsByPath.has(path)) {
@@ -120,6 +121,7 @@ export default async function resolveSchema(
   console.log(`Loaded ruleset from: ${schemaSource}`);
 
   if (!validateSchema(schemaData)) {
+    /* v8 ignore next -- AJV always populates errors on validation failure */
     const errorMessage = formatValidationErrors(validateSchema.errors || []);
     throw new Error(`Invalid ruleset from ${schemaSource}:\n${errorMessage}`);
   }

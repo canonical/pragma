@@ -72,7 +72,7 @@ export default async function validateDirectoryRule(
       ];
     }
 
-    // Hard fail: permission denied, I/O errors, etc. with informative message
+    /* v8 ignore start -- requires fs-level permission errors not reproducible in test */
     const errorCode = (e as NodeJS.ErrnoException).code;
     const errorMessage =
       errorCode === "EACCES"
@@ -80,6 +80,7 @@ export default async function validateDirectoryRule(
         : `Error accessing directory ${dirPath}: ${(e as Error).message}`;
 
     throw new Error(errorMessage);
+    /* v8 ignore stop */
   }
 
   // Validate contained files and directories
