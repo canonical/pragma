@@ -22,6 +22,7 @@ export default async function getSitemapItems(): Promise<SitemapItem[]> {
   return [
     { loc: "/", changefreq: "weekly", priority: 1.0 },
     { loc: "/guides/router-core", changefreq: "monthly", priority: 0.8 },
+    { loc: "/contact", changefreq: "monthly", priority: 0.7 },
     { loc: "/account", changefreq: "monthly", priority: 0.5 },
     { loc: "/login", changefreq: "yearly", priority: 0.3 },
   ];

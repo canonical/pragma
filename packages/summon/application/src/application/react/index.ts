@@ -12,6 +12,7 @@ interface ApplicationReactAnswers {
   readonly appPath: string;
   readonly ssr: boolean;
   readonly router: boolean;
+  readonly forms: boolean;
   readonly runInstall: boolean;
 }
 
@@ -36,6 +37,13 @@ const prompts: PromptDefinition[] = [
     type: "confirm",
     message: "Include router?",
     default: true,
+    group: "Application",
+  },
+  {
+    name: "forms",
+    type: "confirm",
+    message: "Include form components?",
+    default: false,
     group: "Application",
   },
   {
@@ -88,7 +96,7 @@ Requires both --ssr and --router flags.`,
       );
     }
 
-    const vars = withHelpers({ name: appPath });
+    const vars = withHelpers({ name: appPath, forms: answers.forms });
     const dest = (...segments: string[]) => path.join(appPath, ...segments);
     const copy = (filePath: string) => copyFile(src(filePath), dest(filePath));
 
@@ -136,6 +144,10 @@ Requires both --ssr and --router flags.`,
       copy("src/domains/account/AccountPage.tsx"),
       copy("src/domains/account/LoginPage.tsx"),
       copy("src/domains/account/routes.ts"),
+
+      // Domain: contact (when --forms is enabled)
+      when(answers.forms, copy("src/domains/contact/ContactPage.tsx")),
+      when(answers.forms, copy("src/domains/contact/routes.ts")),
 
       // Routes
       copy("src/routes.tsx"),

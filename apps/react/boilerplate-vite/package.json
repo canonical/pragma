@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@canonical/react-ds-global": "^0.27.1-experimental.0",
+    "@canonical/react-ds-global-form": "^0.27.1-experimental.0",
     "@canonical/react-head": "^0.27.1-experimental.0",
     "@canonical/react-hooks": "^0.27.1-experimental.0",
     "@canonical/react-ssr": "^0.27.1-experimental.0",
