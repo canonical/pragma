@@ -50,14 +50,14 @@ export const generator: GeneratorDefinition<ApplicationReactAnswers> = {
     name: "application/react",
     displayName: "@canonical/summon-application:application/react",
     description: "Scaffold a complete React application with SSR and routing",
-    version: "0.1.0",
+    version: "0.25.0",
     help: `Creates a full React application with:
   - Vite build + dev server
   - Server-side rendering (Express + Bun dev servers)
   - Routing with @canonical/router-core
   - Head management with @canonical/react-head
-  - A marketing domain with a home page
-  - Navigation component with typed Link
+  - Two domains (marketing + account) with pages
+  - Navigation, ThemeSelector, ExampleComponent
   - Storybook with router decorator
   - Biome + TypeScript configuration
 
@@ -82,29 +82,27 @@ Requires both --ssr and --router flags.`,
 
     const vars = withHelpers({ name: appPath });
     const dest = (...segments: string[]) => path.join(appPath, ...segments);
-
-    /** Copy a static file from templates/ to the app directory. */
     const copy = (filePath: string) => copyFile(src(filePath), dest(filePath));
 
     return sequence_([
       info(`Scaffolding React application in "${appPath}"...`),
 
-      // EJS templates (files that need interpolation)
+      // EJS templates (files needing interpolation)
       template({
         source: src("package.json.ejs"),
         dest: dest("package.json"),
         vars,
       }),
       template({ source: src("README.md.ejs"), dest: dest("README.md"), vars }),
-
-      // Static files (copied as-is)
-      copy("tsconfig.json"),
-      copy("vite.config.ts"),
       template({
         source: src("biome.json.ejs"),
         dest: dest("biome.json"),
         vars,
       }),
+
+      // Root config
+      copy("tsconfig.json"),
+      copy("vite.config.ts"),
       copy("index.html"),
       copy(".gitignore"),
 
@@ -123,15 +121,39 @@ Requires both --ssr and --router flags.`,
 
       // Domain: marketing
       copy("src/domains/marketing/HomePage.tsx"),
+      copy("src/domains/marketing/GuidePage.tsx"),
       copy("src/domains/marketing/routes.ts"),
+
+      // Domain: account
+      copy("src/domains/account/AccountPage.tsx"),
+      copy("src/domains/account/LoginPage.tsx"),
+      copy("src/domains/account/routes.ts"),
 
       // Routes
       copy("src/routes.tsx"),
 
-      // Lib
-      copy("src/lib/index.ts"),
+      // Lib: Navigation
       copy("src/lib/Navigation/Navigation.tsx"),
       copy("src/lib/Navigation/index.ts"),
+
+      // Lib: ThemeSelector
+      copy("src/lib/ThemeSelector/ThemeSelector.tsx"),
+      copy("src/lib/ThemeSelector/index.ts"),
+
+      // Lib: ExampleComponent
+      copy("src/lib/ExampleComponent/ExampleComponent.tsx"),
+      copy("src/lib/ExampleComponent/ExampleComponent.stories.tsx"),
+      copy("src/lib/ExampleComponent/ExampleComponent.tests.tsx"),
+      copy("src/lib/ExampleComponent/index.ts"),
+      copy("src/lib/ExampleComponent/types.ts"),
+      copy("src/lib/ExampleComponent/styles.css"),
+
+      // Lib: LazyComponent
+      copy("src/lib/LazyComponent/LazyComponent.tsx"),
+      copy("src/lib/LazyComponent/index.ts"),
+
+      // Lib barrel
+      copy("src/lib/index.ts"),
 
       // Vite types
       copy("src/vite-env.d.ts"),
