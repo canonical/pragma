@@ -229,9 +229,9 @@ describe("getEffectPayload", () => {
     expect(getEffectPayload(deleteDir)).toBe("old/");
   });
 
-  it("returns source → dest for copy effects", () => {
-    expect(getEffectPayload(copyFile)).toBe("a.ts → b.ts");
-    expect(getEffectPayload(copyDir)).toBe("src/ → dist/");
+  it("returns dest for copy effects", () => {
+    expect(getEffectPayload(copyFile)).toBe("b.ts");
+    expect(getEffectPayload(copyDir)).toBe("dist/");
   });
 
   it("returns target → path for symlink", () => {
