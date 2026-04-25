@@ -20,7 +20,9 @@
     "storybook": "storybook dev -p 6010 --no-open --host 0.0.0.0"
   },
   "dependencies": {
-    "@canonical/react-head": "^0.25.0",
+    "@canonical/react-ds-global": "^0.25.0",
+<% if (forms) { %>    "@canonical/react-ds-global-form": "^0.25.0",
+<% } %>    "@canonical/react-head": "^0.25.0",
     "@canonical/react-hooks": "^0.25.0",
     "@canonical/react-ssr": "^0.25.0",
     "@canonical/router-core": "^0.25.0",
