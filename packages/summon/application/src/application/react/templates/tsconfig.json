@@ -23,6 +23,8 @@
     "src/**/*.tsx",
     ".storybook/*.ts",
     ".storybook/*.tsx",
-    "vite.config.ts"
+    "vite.config.ts",
+    "vitest.setup.ts",
+    "vitest.config.ts"
   ]
 }
