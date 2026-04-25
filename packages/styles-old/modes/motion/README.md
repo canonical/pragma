@@ -1,4 +1,0 @@
-## Canonical Web Team Styles
-
-
-
