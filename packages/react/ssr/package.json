@@ -1,7 +1,7 @@
 {
   "name": "@canonical/react-ssr",
   "description": "TBD",
-  "version": "0.25.0",
+  "version": "0.26.0",
   "type": "module",
   "module": "dist/esm/index.js",
   "types": "dist/types/index.d.ts",
@@ -67,9 +67,9 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.9",
-    "@canonical/biome-config": "^0.25.0",
-    "@canonical/typescript-config-react": "^0.25.0",
-    "@canonical/webarchitect": "^0.25.0",
+    "@canonical/biome-config": "^0.26.0",
+    "@canonical/typescript-config-react": "^0.26.0",
+    "@canonical/webarchitect": "^0.26.0",
     "@types/express": "^5.0.6",
     "@types/node": "^24.12.0",
     "@types/react": "^19.2.14",
@@ -79,7 +79,7 @@
     "vitest": "^4.0.18"
   },
   "dependencies": {
-    "@canonical/utils": "^0.25.0",
+    "@canonical/utils": "^0.26.0",
     "htmlparser2": "^10.1.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4"

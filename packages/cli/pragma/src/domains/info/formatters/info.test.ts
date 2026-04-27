@@ -98,6 +98,40 @@ describe("renderInfoPlain", () => {
     expect(output).not.toContain("Triples");
     expect(output).not.toContain("Graphs");
   });
+
+  it("includes package refs section", () => {
+    const output = renderInfoPlain(
+      createInfoData({
+        packageRefs: [
+          {
+            pkg: "@canonical/design-system",
+            source: "npm",
+            detail: "node_modules",
+          },
+          {
+            pkg: "@canonical/code-standards",
+            source: "file",
+            detail: "/home/user/code/standards",
+          },
+          {
+            pkg: "@canonical/anatomy-dsl",
+            source: "git",
+            detail: "https://github.com/canonical/anatomy-dsl.git#main",
+          },
+        ],
+      }),
+    );
+    expect(output).toContain("Packages");
+    expect(output).toContain("@canonical/design-system");
+    expect(output).toContain("npm");
+    expect(output).toContain("file");
+    expect(output).toContain("git");
+  });
+
+  it("omits package refs section when absent", () => {
+    const output = renderInfoPlain(createInfoData());
+    expect(output).not.toContain("Packages");
+  });
 });
 
 describe("renderInfoLlm", () => {

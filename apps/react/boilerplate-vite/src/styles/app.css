@@ -1,0 +1,16 @@
+.app-shell {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding-inline: var(--grid-gap, 1.5rem);
+  padding-block: var(--container-gap-loose, 1.5rem);
+}
+
+.shell-header {
+  padding-block-end: var(--container-gap-default, 1rem);
+}
+
+.shell-header nav {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: var(--container-gap-default, 1rem);
+}

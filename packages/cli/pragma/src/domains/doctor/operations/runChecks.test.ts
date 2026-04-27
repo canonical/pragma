@@ -4,6 +4,7 @@ vi.mock("./checks/index.js", () => ({
   checkNodeVersion: vi.fn(),
   checkPragmaVersion: vi.fn(),
   checkConfigFile: vi.fn(),
+  checkPackageRefs: vi.fn(),
   checkKeStore: vi.fn(),
   checkShellCompletions: vi.fn(),
   checkMcpConfigured: vi.fn(),
@@ -15,6 +16,7 @@ import {
   checkKeStore,
   checkMcpConfigured,
   checkNodeVersion,
+  checkPackageRefs,
   checkPragmaVersion,
   checkShellCompletions,
   checkSkillsSymlinked,
@@ -43,29 +45,31 @@ describe("runChecks", () => {
     vi.mocked(checkNodeVersion).mockResolvedValue(pass("Node"));
     vi.mocked(checkPragmaVersion).mockResolvedValue(pass("pragma"));
     vi.mocked(checkConfigFile).mockResolvedValue(pass("config"));
+    vi.mocked(checkPackageRefs).mockResolvedValue(pass("refs"));
     vi.mocked(checkKeStore).mockResolvedValue(pass("store"));
     vi.mocked(checkShellCompletions).mockResolvedValue(pass("completions"));
     vi.mocked(checkMcpConfigured).mockResolvedValue(pass("mcp"));
     vi.mocked(checkSkillsSymlinked).mockResolvedValue(pass("skills"));
 
     const data = await runChecks({ cwd: "/test" });
-    expect(data.passed).toBe(7);
+    expect(data.passed).toBe(8);
     expect(data.failed).toBe(0);
     expect(data.skipped).toBe(0);
-    expect(data.checks).toHaveLength(7);
+    expect(data.checks).toHaveLength(8);
   });
 
   it("counts failures and skips correctly", async () => {
     vi.mocked(checkNodeVersion).mockResolvedValue(pass("Node"));
     vi.mocked(checkPragmaVersion).mockResolvedValue(pass("pragma"));
     vi.mocked(checkConfigFile).mockResolvedValue(fail("config"));
+    vi.mocked(checkPackageRefs).mockResolvedValue(pass("refs"));
     vi.mocked(checkKeStore).mockResolvedValue(fail("store"));
     vi.mocked(checkShellCompletions).mockResolvedValue(fail("completions"));
     vi.mocked(checkMcpConfigured).mockResolvedValue(pass("mcp"));
     vi.mocked(checkSkillsSymlinked).mockResolvedValue(skip("skills"));
 
     const data = await runChecks({ cwd: "/test" });
-    expect(data.passed).toBe(3);
+    expect(data.passed).toBe(4);
     expect(data.failed).toBe(3);
     expect(data.skipped).toBe(1);
   });
@@ -74,6 +78,7 @@ describe("runChecks", () => {
     vi.mocked(checkNodeVersion).mockResolvedValue(pass("Node"));
     vi.mocked(checkPragmaVersion).mockResolvedValue(pass("pragma"));
     vi.mocked(checkConfigFile).mockResolvedValue(pass("config"));
+    vi.mocked(checkPackageRefs).mockResolvedValue(pass("refs"));
     vi.mocked(checkKeStore).mockResolvedValue(pass("store"));
     vi.mocked(checkShellCompletions).mockResolvedValue(pass("completions"));
     vi.mocked(checkMcpConfigured).mockResolvedValue(pass("mcp"));
@@ -83,7 +88,8 @@ describe("runChecks", () => {
     expect(data.checks[0].name).toBe("Node");
     expect(data.checks[1].name).toBe("pragma");
     expect(data.checks[2].name).toBe("config");
-    expect(data.checks[3].name).toBe("store");
-    expect(data.checks[6].name).toBe("skills");
+    expect(data.checks[3].name).toBe("refs");
+    expect(data.checks[4].name).toBe("store");
+    expect(data.checks[7].name).toBe("skills");
   });
 });

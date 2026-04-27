@@ -179,6 +179,7 @@ The `docs/` folder contains guides for working with the monorepo:
 | [Adding a Package](docs/adding-a-package.md) | How to create new packages in the monorepo |
 | [Versioning](docs/versioning.md) | Commit message format and release process |
 | [CI/CD](docs/ci.md) | Continuous integration and deployment workflows |
+| [Code Ownership](docs/ownership.md) | What does it mean to own a package |
 
 ## Package Reference
 

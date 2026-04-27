@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.26.0](https://github.com/canonical/pragma/compare/v0.25.0...v0.26.0) (2026-04-24)
+
+
+### Features
+
+* **router:** migration guide and TanStack removal from demo ([#622](https://github.com/canonical/pragma/issues/622)) ([e3e9856](https://github.com/canonical/pragma/commit/e3e9856aeacf269acb8ed40db3b62dbdd220cde6))
+
+
+
+
+
 # [0.25.0](https://github.com/canonical/pragma/compare/v0.24.0...v0.25.0) (2026-04-17)
 
 **Note:** Version bump only for package @canonical/ds-demo-site

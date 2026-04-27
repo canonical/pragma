@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.26.0](https://github.com/canonical/pragma/compare/v0.25.0...v0.26.0) (2026-04-24)
+
+
+### Bug Fixes
+
+* **ci:** disable failing SkipLink Chromatic snapshot and add "no visual change" label skip ([#613](https://github.com/canonical/pragma/issues/613)) ([031fd89](https://github.com/canonical/pragma/commit/031fd89f70f61f2eabb14bc55012db11bef67807))
+
+
+
+
+
 # [0.25.0](https://github.com/canonical/pragma/compare/v0.24.0...v0.25.0) (2026-04-17)
 
 **Note:** Version bump only for package @canonical/react-ds-global

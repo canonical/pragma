@@ -40,10 +40,13 @@ function createLinkElement(attrs: Record<string, string>): HTMLLinkElement {
  *   title: `${data.name} — Profile`,
  *   meta: [{ name: "description", content: data.bio }],
  *   link: [{ rel: "canonical", href: canonicalUrl }],
- * });
+ * }, [data.name, data.bio, canonicalUrl]);
  * ```
  */
-export default function useHead(tags: HeadTags): void {
+export default function useHead(
+  tags: HeadTags,
+  deps?: readonly unknown[],
+): void {
   const id = useId();
   const { collector } = useContext(HeadContext);
   const managedElementsRef = useRef<Element[]>([]);
@@ -52,70 +55,74 @@ export default function useHead(tags: HeadTags): void {
     collector.add(id, tags);
   }
 
-  useEffect(() => {
-    if (collector) {
-      return () => {
-        collector.remove(id);
-      };
-    }
+  useEffect(
+    () => {
+      if (collector) {
+        return () => {
+          collector.remove(id);
+        };
+      }
 
-    const elements: Element[] = [];
+      const elements: Element[] = [];
 
-    applyTitleToDOM(tags.title);
+      applyTitleToDOM(tags.title);
 
-    if (tags.meta) {
-      for (const meta of tags.meta) {
-        const attrs: Record<string, string> = {};
+      if (tags.meta) {
+        for (const meta of tags.meta) {
+          const attrs: Record<string, string> = {};
 
-        if (meta.name) attrs.name = meta.name;
-        if (meta.property) attrs.property = meta.property;
-        if (meta.httpEquiv) attrs["http-equiv"] = meta.httpEquiv;
-        attrs.content = meta.content;
+          if (meta.name) attrs.name = meta.name;
+          if (meta.property) attrs.property = meta.property;
+          if (meta.httpEquiv) attrs["http-equiv"] = meta.httpEquiv;
+          attrs.content = meta.content;
 
-        const existing = meta.name
-          ? document.head.querySelector(`meta[name="${meta.name}"]`)
-          : meta.property
-            ? document.head.querySelector(`meta[property="${meta.property}"]`)
-            : null;
+          const existing = meta.name
+            ? document.head.querySelector(`meta[name="${meta.name}"]`)
+            : meta.property
+              ? document.head.querySelector(`meta[property="${meta.property}"]`)
+              : null;
 
-        if (existing) {
-          existing.setAttribute("content", meta.content);
-        } else {
-          const element = createMetaElement(attrs);
+          if (existing) {
+            existing.setAttribute("content", meta.content);
+          } else {
+            const element = createMetaElement(attrs);
+
+            document.head.appendChild(element);
+            elements.push(element);
+          }
+        }
+      }
+
+      if (tags.link) {
+        for (const link of tags.link) {
+          const attrs: Record<string, string> = {
+            rel: link.rel,
+            href: link.href,
+          };
+
+          if (link.type) attrs.type = link.type;
+          if (link.sizes) attrs.sizes = link.sizes;
+          if (link.media) attrs.media = link.media;
+          if (link.crossOrigin) attrs.crossorigin = link.crossOrigin;
+
+          const element = createLinkElement(attrs);
 
           document.head.appendChild(element);
           elements.push(element);
         }
       }
-    }
 
-    if (tags.link) {
-      for (const link of tags.link) {
-        const attrs: Record<string, string> = {
-          rel: link.rel,
-          href: link.href,
-        };
+      managedElementsRef.current = elements;
 
-        if (link.type) attrs.type = link.type;
-        if (link.sizes) attrs.sizes = link.sizes;
-        if (link.media) attrs.media = link.media;
-        if (link.crossOrigin) attrs.crossorigin = link.crossOrigin;
+      return () => {
+        for (const element of managedElementsRef.current) {
+          element.remove();
+        }
 
-        const element = createLinkElement(attrs);
-
-        document.head.appendChild(element);
-        elements.push(element);
-      }
-    }
-
-    managedElementsRef.current = elements;
-
-    return () => {
-      for (const element of managedElementsRef.current) {
-        element.remove();
-      }
-
-      managedElementsRef.current = [];
-    };
-  }, [collector, id, tags]);
+        managedElementsRef.current = [];
+      };
+    },
+    // biome-ignore lint/correctness/useExhaustiveDependencies: consumer controls update timing via deps
+    deps ? [collector, id, ...deps] : [collector, id, tags],
+  );
 }
