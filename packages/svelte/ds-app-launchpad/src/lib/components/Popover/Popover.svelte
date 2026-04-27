@@ -55,7 +55,7 @@
 {@render trigger(
   {
     popovertarget: id,
-    style: `anchor-name: ${anchorName}`,
+    style: `anchor-name: ${anchorName};`,
     [createAttachmentKey()]: triggerAttachment,
   },
   open,

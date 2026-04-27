@@ -1,0 +1,11 @@
+.ds.search-box-search-button.button-primitive {
+  justify-self: end;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  --color-background-button-hover: transparent;
+  --color-background-button-active: transparent;
+
+  width: var(--dimension-width-search-box-button);
+  margin-inline-end: var(--dimension-gap-search-box);
+}
