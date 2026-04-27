@@ -12,6 +12,7 @@ export * from "./Popover/index.js";
 export * from "./Radio/index.js";
 export * from "./RelativeDateTime/index.js";
 export * from "./SearchBox/index.js";
+export * from "./Select/index.js";
 export * from "./SidePanel/index.js";
 export * from "./Spinner/index.js";
 export * from "./Switch/index.js";
