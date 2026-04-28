@@ -1,0 +1,30 @@
+{
+  "extends": "@canonical/typescript-config-react",
+  "compilerOptions": {
+    "baseUrl": "src",
+    "skipLibCheck": true,
+    "types": [
+      "bun-types",
+      "node",
+      "react",
+      "react-dom",
+      "vitest/globals",
+      "@testing-library/jest-dom"
+    ],
+    "noEmit": true,
+    "paths": {
+      "#lib/*": ["./lib/*"],
+      "#domains/*": ["./domains/*"],
+      "#styles/*": ["./styles/*"]
+    }
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    ".storybook/*.ts",
+    ".storybook/*.tsx",
+    "vite.config.ts",
+    "vitest.setup.ts",
+    "vitest.config.ts"
+  ]
+}
