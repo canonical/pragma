@@ -71,6 +71,9 @@ describe("validate", () => {
     writeFileSync(schemaPath, JSON.stringify(schema));
 
     const results = await validate(tmp, schemaPath);
-    expect(results.some((r) => !r.passed)).toBe(true);
+    expect(results).toHaveLength(1);
+    expect(results[0].rule).toBe("pkg-check");
+    expect(results[0].passed).toBe(false);
+    expect(results[0].message).toContain("File not found");
   });
 });

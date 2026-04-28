@@ -34,7 +34,9 @@ describe("validateRule", () => {
       { directory: { name: "src" } },
       "dir-rule",
     );
-    expect(results.some((r) => r.passed)).toBe(true);
+    expect(results).toHaveLength(1);
+    expect(results[0].rule).toBe("dir-rule");
+    expect(results[0].passed).toBe(true);
   });
 
   it("throws for invalid rule type", async () => {

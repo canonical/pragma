@@ -39,7 +39,9 @@ describe("validateDirectoryRule", () => {
       { name: "src" },
       "src-dir",
     );
-    expect(results.some((r) => r.passed)).toBe(true);
+    expect(results).toHaveLength(1);
+    expect(results[0].rule).toBe("src-dir");
+    expect(results[0].passed).toBe(true);
   });
 
   it("soft-fails when directory not found", async () => {

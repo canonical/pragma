@@ -16,7 +16,9 @@ describe("constants", () => {
       existsSync: vi.fn().mockReturnValue(true),
     }));
     const { BUNDLED_RULESETS_DIR: dir } = await import("./constants.js");
+    // srcPath is join(dirname, "../rulesets") — one level up
     expect(dir).toMatch(/rulesets$/);
+    expect(dir).toBe(BUNDLED_RULESETS_DIR);
   });
 
   it("resolves to distPath when srcPath does not exist", async () => {
@@ -24,8 +26,8 @@ describe("constants", () => {
       existsSync: vi.fn().mockReturnValue(false),
     }));
     const { BUNDLED_RULESETS_DIR: dir } = await import("./constants.js");
+    // distPath is join(dirname, "../../rulesets") — two levels up, different from srcPath
     expect(dir).toMatch(/rulesets$/);
-    // distPath has an extra ../ compared to srcPath
     expect(dir).not.toBe(BUNDLED_RULESETS_DIR);
   });
 

@@ -81,6 +81,8 @@ describe("executeValidationRules", () => {
       },
     };
     const results = await executeValidationRules(tmp, schema);
-    expect(results.length).toBeGreaterThanOrEqual(1);
+    expect(results).toHaveLength(1);
+    expect(results[0].rule).toBe("src-structure");
+    expect(results[0].passed).toBe(true);
   });
 });
