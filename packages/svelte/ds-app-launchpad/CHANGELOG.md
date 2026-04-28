@@ -3,6 +3,20 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.26.0](https://github.com/canonical/pragma/compare/v0.25.0...v0.26.0) (2026-04-24)
+
+
+### Features
+
+* **svelte-ds-app-launchpad:** Add SidePanel ([#590](https://github.com/canonical/pragma/issues/590)) ([c796451](https://github.com/canonical/pragma/commit/c7964513341763d1614635ff3f0a1c3f40eb0495))
+* **svelte-ds-app-launchpad:** Add Table ([#619](https://github.com/canonical/pragma/issues/619)) ([7f611c7](https://github.com/canonical/pragma/commit/7f611c78991d7c9c99c183a92937200851cb053b))
+* **svelte-ds-app-launchpad:** Add Timeline ([#607](https://github.com/canonical/pragma/issues/607)) ([369b437](https://github.com/canonical/pragma/commit/369b437d0345757776f237e6f103a12471d48824))
+* **svelte-ds-app-launchpad:** Add UserAvatar component ([#606](https://github.com/canonical/pragma/issues/606)) ([0979fa1](https://github.com/canonical/pragma/commit/0979fa17610db3155c49c4f4ae737991656f4343))
+
+
+
+
+
 # [0.25.0](https://github.com/canonical/pragma/compare/v0.24.0...v0.25.0) (2026-04-17)
 
 

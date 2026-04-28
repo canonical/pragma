@@ -1,0 +1,161 @@
+.ds.select {
+  --color-background-select-input-hover: var(
+    --lp-color-background-secondary-hover-context,
+    var(--lp-color-background-hover)
+  );
+  --color-background-select-input-active: var(
+    --lp-color-background-secondary-active-context,
+    var(--lp-color-background-active)
+  );
+  --color-background-select-input: var(
+    --lp-color-background-secondary-context,
+    var(--lp-color-background-input)
+  );
+  --dimension-padding-inline-select-input: var(
+    --lp-dimension-spacing-inline-xs
+  );
+  --dimension-padding-block-select-input: var(
+    --lp-dimension-padding-block-context,
+    var(--lp-dimension-spacing-block-xxs)
+  );
+  --color-border-select-input: var(
+    --lp-color-border-secondary-context,
+    var(--lp-color-border-high-contrast)
+  );
+  --color-outline-select-input: var(
+    --lp-color-border-secondary-context,
+    var(--lp-color-border-focus)
+  );
+
+  color: var(--lp-color-text-default);
+  font: var(--lp-typography-paragraph-default);
+
+  display: inline-grid;
+  align-items: center;
+  grid-template-areas: "select";
+
+  > * {
+    grid-area: select;
+  }
+
+  > .chevron {
+    justify-self: end;
+    margin-inline-end: var(--dimension-padding-inline-select-input);
+    pointer-events: none;
+  }
+
+  > select {
+    appearance: none;
+    border: none;
+    cursor: pointer;
+    color: inherit;
+    font: inherit;
+
+    padding-inline-start: var(--dimension-padding-inline-select-input);
+    /* Padding + gap + icon size */
+    padding-inline-end: calc(
+      var(--dimension-padding-inline-select-input) +
+      var(--lp-dimension-spacing-inline-xxxs) +
+      1em
+    );
+    padding-block: var(--dimension-padding-block-select-input);
+    border-block-end: var(--lp-dimension-stroke-thickness-default) solid
+      var(--color-border-select-input);
+    background-color: var(--color-background-select-input);
+    outline-color: var(--color-outline-select-input);
+    border-radius: var(--lp-dimension-radius-none);
+
+    transition-duration: var(--lp-transition-duration-snap);
+    transition-property: background-color, border-color, outline-color;
+    transition-timing-function: var(--lp-transition-timing-ease-in);
+
+    :not(:disabled) {
+      &:hover {
+        background-color: var(--color-background-select-input-hover);
+      }
+
+      &:active,
+      &:focus {
+        background-color: var(--color-background-select-input-active);
+      }
+    }
+
+    &:disabled {
+      cursor: not-allowed;
+      opacity: var(--lp-opacity-muted);
+
+      + .chevron {
+        opacity: var(--lp-opacity-muted);
+      }
+    }
+
+    &:user-invalid,
+    &[aria-invalid="true"] {
+      --color-background-select-input: var(
+        --lp-color-background-negative-default
+      );
+      border-color: var(--lp-color-border-negative);
+      outline-color: var(--lp-color-border-negative);
+
+      &:hover {
+        background-color: var(--lp-color-background-negative-hover);
+      }
+
+      &:active,
+      &:focus {
+        background-color: var(--lp-color-background-negative-active);
+      }
+    }
+
+    &:not([multiple]) {
+      option {
+        /* 
+          FIXME(steciuk): The colors currently used for the select background have some baked-in transparency.
+          This doesn't play well with how the select element is rendered in Chrome, making the options looked washed out and with very low contrast. This is a temporary workaround that aims to strip the transparency from the color while keeping similar visuals.
+
+          A better solution would be to update the design tokens to use solid colors, but the currently tokens and modifiers system are soon to be replaced anyway, so it might not be worth the effort.
+        */
+        background-color: var(--lp-color-background-default);
+        /* biome-ignore lint/suspicious/noDuplicateProperties: Fallback for older chrome versions */
+        background-color: color-mix(
+          in srgb,
+          rgb(from var(--color-background-select-input) r g b / 1) 20%,
+          var(--lp-color-background-default) 80%
+        );
+      }
+    }
+
+    &[multiple] {
+      padding: 0;
+
+      option {
+        padding-block: var(--dimension-padding-block-select-input);
+        padding-inline: var(--dimension-padding-inline-select-input);
+
+        &:checked {
+          background-color: var(--color-background-select-input-active);
+        }
+      }
+    }
+  }
+
+  &.base {
+    --lp-color-background-secondary-hover-context: initial;
+    --lp-color-background-secondary-active-context: initial;
+    --lp-color-background-secondary-context: transparent;
+    --lp-color-border-secondary-context: initial;
+
+    > select {
+      border: none;
+    }
+
+    &:not([multiple]) {
+      > select {
+        option {
+          /* FIXME(steciuk): Pt. 2 of the transparency workaround */
+          background-color: var(--lp-color-background-default);
+        }
+      }
+    }
+  }
+}
