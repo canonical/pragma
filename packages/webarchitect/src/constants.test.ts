@@ -1,16 +1,38 @@
-import { existsSync } from "node:fs";
-import { describe, expect, it } from "vitest";
+import { readdir } from "node:fs/promises";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { BUNDLED_RULESETS_DIR } from "./constants.js";
 
 describe("constants", () => {
-  it("BUNDLED_RULESETS_DIR points to an existing directory", () => {
-    expect(existsSync(BUNDLED_RULESETS_DIR)).toBe(true);
+  beforeEach(() => {
+    vi.resetModules();
   });
 
-  it("BUNDLED_RULESETS_DIR contains ruleset files", async () => {
-    const { readdir } = await import("node:fs/promises");
+  afterEach(() => {
+    vi.doUnmock("node:fs");
+  });
+
+  it("resolves to srcPath when srcPath exists", async () => {
+    vi.doMock("node:fs", () => ({
+      existsSync: vi.fn().mockReturnValue(true),
+    }));
+    const { BUNDLED_RULESETS_DIR: dir } = await import("./constants.js");
+    expect(dir).toMatch(/rulesets$/);
+  });
+
+  it("resolves to distPath when srcPath does not exist", async () => {
+    vi.doMock("node:fs", () => ({
+      existsSync: vi.fn().mockReturnValue(false),
+    }));
+    const { BUNDLED_RULESETS_DIR: dir } = await import("./constants.js");
+    expect(dir).toMatch(/rulesets$/);
+    // distPath has an extra ../ compared to srcPath
+    expect(dir).not.toBe(BUNDLED_RULESETS_DIR);
+  });
+
+  it("resolved directory contains bundled ruleset files", async () => {
     const files = await readdir(BUNDLED_RULESETS_DIR);
     const rulesets = files.filter((f) => f.endsWith(".ruleset.json"));
     expect(rulesets.length).toBeGreaterThan(0);
+    expect(rulesets).toContain("base.ruleset.json");
   });
 });

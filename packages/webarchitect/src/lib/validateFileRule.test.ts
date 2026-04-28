@@ -1,8 +1,24 @@
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  type MockInstance,
+  vi,
+} from "vitest";
 import validateFileRule from "./validateFileRule.js";
+
+vi.mock("node:fs/promises", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("node:fs/promises")>();
+  return { ...actual, readFile: vi.fn().mockImplementation(actual.readFile) };
+});
+
+const mockReadFile = readFile as unknown as MockInstance;
 
 describe("validateFileRule", () => {
   let tmp: string;
@@ -99,5 +115,33 @@ describe("validateFileRule", () => {
     expect(results[0].context?.type).toBe("file");
     expect(results[0].context?.target).toBe(join(tmp, "data.json"));
     expect(results[0].context?.value).toEqual({ ok: true });
+  });
+});
+
+describe("validateFileRule error paths", () => {
+  it("throws permission denied for EACCES", async () => {
+    mockReadFile.mockRejectedValueOnce(
+      Object.assign(new Error("EACCES"), { code: "EACCES" }),
+    );
+    await expect(
+      validateFileRule(
+        "/project",
+        { name: "secret.json", contains: { type: "object" } },
+        "perm",
+      ),
+    ).rejects.toThrow("Permission denied accessing");
+  });
+
+  it("throws generic error for unknown error code", async () => {
+    mockReadFile.mockRejectedValueOnce(
+      Object.assign(new Error("Disk failure"), { code: "EIO" }),
+    );
+    await expect(
+      validateFileRule(
+        "/project",
+        { name: "broken.json", contains: { type: "object" } },
+        "io",
+      ),
+    ).rejects.toThrow("Error reading file");
   });
 });

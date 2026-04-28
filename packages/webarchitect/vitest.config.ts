@@ -1,6 +1,4 @@
-// Testing posture: Enforced — critical infrastructure
-// Lines: 100%. Branches/functions/statements: ~97% due to v8 ignore pragmas
-// on fs permission error paths (EACCES) that require root-level fs mocking.
+// Testing posture: Enforced — critical infrastructure, 100% coverage
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
@@ -17,10 +15,10 @@ export default defineConfig({
         "**/cli.ts",
       ],
       thresholds: {
-        branches: 95,
-        functions: 95,
+        branches: 100,
+        functions: 100,
         lines: 100,
-        statements: 99,
+        statements: 100,
       },
     },
   },

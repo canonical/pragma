@@ -96,3 +96,46 @@ describe("resolveSchema", () => {
     }
   });
 });
+
+describe("resolveSchema validation edge cases (mocked ajv)", () => {
+  let tmp: string;
+
+  beforeEach(() => {
+    tmp = join(tmpdir(), `webarchitect-resolve-edge-${Date.now()}`);
+    mkdirSync(tmp, { recursive: true });
+    vi.resetModules();
+    vi.spyOn(console, "log").mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    rmSync(tmp, { recursive: true, force: true });
+    vi.doUnmock("./ajv.js");
+    vi.restoreAllMocks();
+  });
+
+  it("uses fallback message when AJV error has no message", async () => {
+    const mockValidate = Object.assign(() => false, {
+      errors: [{ instancePath: "/bad", message: undefined }],
+    });
+    vi.doMock("./ajv.js", () => ({
+      default: { compile: vi.fn().mockReturnValue(mockValidate) },
+    }));
+    const schemaPath = join(tmp, "edge.ruleset.json");
+    writeFileSync(schemaPath, JSON.stringify({ name: "edge" }));
+    const { default: fn } = await import("./resolveSchema.js");
+    await expect(fn(schemaPath)).rejects.toThrow("validation failed");
+  });
+
+  it("handles null validateSchema.errors gracefully", async () => {
+    const mockValidate = Object.assign(() => false, {
+      errors: null,
+    });
+    vi.doMock("./ajv.js", () => ({
+      default: { compile: vi.fn().mockReturnValue(mockValidate) },
+    }));
+    const schemaPath = join(tmp, "null-errors.ruleset.json");
+    writeFileSync(schemaPath, JSON.stringify({ name: "null-errors" }));
+    const { default: fn } = await import("./resolveSchema.js");
+    await expect(fn(schemaPath)).rejects.toThrow("Invalid ruleset");
+  });
+});

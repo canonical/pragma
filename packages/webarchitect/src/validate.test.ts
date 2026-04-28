@@ -51,7 +51,8 @@ describe("validate", () => {
     writeFileSync(schemaPath, JSON.stringify(schema));
 
     const results = await validate(tmp, schemaPath);
-    expect(results.length).toBeGreaterThan(0);
+    expect(results).toHaveLength(1);
+    expect(results[0].rule).toBe("pkg-exists");
     expect(results[0].passed).toBe(true);
   });
 

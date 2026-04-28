@@ -25,7 +25,7 @@ export default function describeSchema(schema: JSONSchema7): string {
   if (schema.type) {
     if (typeof schema.type === "string") {
       descriptions.push(`must be ${schema.type}`);
-    } /* v8 ignore next */ else if (Array.isArray(schema.type)) {
+    } else if (Array.isArray(schema.type)) {
       descriptions.push(`must be one of: ${schema.type.join(", ")}`);
     }
   }

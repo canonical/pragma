@@ -44,6 +44,13 @@ describe("describeSchema", () => {
     ).toBe("validates 4 properties");
   });
 
+  it("ignores non-string non-array type", () => {
+    // type as a non-standard value (neither string nor array) — falls through both if/else-if
+    expect(describeSchema({ type: 42 } as any)).toBe(
+      "validates file content structure",
+    );
+  });
+
   it("returns default description for empty schema", () => {
     expect(describeSchema({})).toBe("validates file content structure");
   });

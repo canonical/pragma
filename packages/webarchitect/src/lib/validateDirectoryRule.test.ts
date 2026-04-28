@@ -1,8 +1,24 @@
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  type MockInstance,
+  vi,
+} from "vitest";
 import validateDirectoryRule from "./validateDirectoryRule.js";
+
+vi.mock("node:fs/promises", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("node:fs/promises")>();
+  return { ...actual, stat: vi.fn().mockImplementation(actual.stat) };
+});
+
+const mockStat = stat as unknown as MockInstance;
 
 describe("validateDirectoryRule", () => {
   let tmp: string;
@@ -184,6 +200,23 @@ describe("validateDirectoryRule", () => {
     expect(strictResult?.message).not.toContain("extra files");
   });
 
+  it("strict mode with expected directories passes", async () => {
+    mkdirSync(join(tmp, "withsub"));
+    mkdirSync(join(tmp, "withsub", "expected"));
+    const results = await validateDirectoryRule(
+      tmp,
+      {
+        name: "withsub",
+        strict: true,
+        contains: {
+          directories: [{ name: "expected" }],
+        },
+      },
+      "withsub-dir",
+    );
+    expect(results.every((r) => r.passed)).toBe(true);
+  });
+
   it("includes context with directory type", async () => {
     mkdirSync(join(tmp, "ctx"));
     const results = await validateDirectoryRule(
@@ -194,5 +227,25 @@ describe("validateDirectoryRule", () => {
     const passResult = results.find((r) => r.passed);
     expect(passResult?.context?.type).toBe("directory");
     expect(passResult?.context?.target).toBe(join(tmp, "ctx"));
+  });
+});
+
+describe("validateDirectoryRule error paths", () => {
+  it("throws permission denied for EACCES on stat", async () => {
+    mockStat.mockRejectedValueOnce(
+      Object.assign(new Error("EACCES"), { code: "EACCES" }),
+    );
+    await expect(
+      validateDirectoryRule("/project", { name: "restricted" }, "perm"),
+    ).rejects.toThrow("Permission denied accessing directory");
+  });
+
+  it("throws generic error for unknown stat error", async () => {
+    mockStat.mockRejectedValueOnce(
+      Object.assign(new Error("Disk failure"), { code: "EIO" }),
+    );
+    await expect(
+      validateDirectoryRule("/project", { name: "broken" }, "io"),
+    ).rejects.toThrow("Error accessing directory");
   });
 });

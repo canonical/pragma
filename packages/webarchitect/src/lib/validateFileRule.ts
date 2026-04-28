@@ -91,7 +91,6 @@ export default async function validateFileRule(
       ];
     }
 
-    /* v8 ignore start -- requires fs-level permission errors not reproducible in test */
     const errorCode = (readError as NodeJS.ErrnoException).code;
     const errorMessage =
       errorCode === "EACCES"
@@ -101,6 +100,5 @@ export default async function validateFileRule(
           : `Error reading file ${filePath}: ${(readError as Error).message}`;
 
     throw new Error(errorMessage);
-    /* v8 ignore stop */
   }
 }

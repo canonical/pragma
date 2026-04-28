@@ -2,11 +2,6 @@ import { describe, expect, it } from "vitest";
 import ajv from "./ajv.js";
 
 describe("ajv", () => {
-  it("exports a configured AJV instance", () => {
-    expect(ajv).toBeDefined();
-    expect(typeof ajv.compile).toBe("function");
-  });
-
   it("validates regex format with valid regex", () => {
     const validate = ajv.compile({
       type: "string",
