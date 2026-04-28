@@ -83,7 +83,7 @@ describe("loadFullSchema", () => {
     expect(rule.file.name).toBe("child.json");
   });
 
-  it("preserves $schema and name from child", async () => {
+  it("preserves $schema and name from child, strips extends", async () => {
     const parent = {
       $schema: "parent-schema",
       name: "parent",
@@ -100,6 +100,7 @@ describe("loadFullSchema", () => {
     const result = await loadFullSchema(join(tmp, "child.ruleset.json"));
     expect(result.$schema).toBe("child-schema");
     expect(result.name).toBe("child");
+    expect(result.extends).toBeUndefined();
   });
 
   it("handles multiple extends", async () => {
