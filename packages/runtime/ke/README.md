@@ -1,8 +1,10 @@
+<!-- Reference README: this is the voice standard for all package READMEs -->
+
 # @canonical/ke
 
 Headless triple store runtime built on [Oxigraph](https://oxigraph.org/) WASM. Load RDF data, query it with SPARQL, get typed results.
 
-ke is a library, not a server. You import it, call `createStore()`, and query in-process. No HTTP, no daemon, no port allocation. The consumer controls the lifecycle.
+ke is a library, not a server. Import it, call `createStore()`, and query in-process. No HTTP, no daemon, no port allocation. The consumer controls the lifecycle.
 
 ## Installation
 
@@ -10,7 +12,7 @@ ke is a library, not a server. You import it, call `createStore()`, and query in
 bun add @canonical/ke
 ```
 
-## Quick Start
+## Quick start
 
 ```typescript
 import { createStore, sparql } from "@canonical/ke";
@@ -32,7 +34,7 @@ const result = await store.query(
 
 ## Sources
 
-Sources tell ke where to find RDF data. Pass file paths, glob patterns, or detailed config objects:
+A store needs data. Sources tell ke where to find it---file paths, glob patterns, or detailed config objects:
 
 ```typescript
 const store = await createStore({
@@ -51,11 +53,13 @@ const store = await createStore({
 });
 ```
 
-Globs are resolved at creation time. Each file is read and parsed by Oxigraph. Format is auto-detected from extension (`.ttl` → Turtle, `.nt` → N-Triples, `.rdf` → RDF/XML).
+Globs are resolved at creation time. Each file is read and parsed by Oxigraph. Format is auto-detected from extension (`.ttl` → Turtle, `.nt` → N-Triples, `.rdf` → RDF/XML). For control over which graph receives the data, use the detailed form.
 
 ## Prefixes
 
-Register namespace prefixes once at store creation. They're automatically prepended as `PREFIX` declarations to every query:
+SPARQL queries require full IRIs by default: `<https://ds.canonical.com/UIBlock>`. Prefixes shorten that to `ds:UIBlock`.
+
+Register namespace prefixes once at store creation. They are prepended as `PREFIX` declarations to every query automatically:
 
 ```typescript
 const store = await createStore({
@@ -67,21 +71,17 @@ const store = await createStore({
   },
 });
 
-// No need to write PREFIX declarations in queries — they're added automatically
 const result = await store.query(
   sparql`SELECT ?name WHERE { ?c a ds:UIBlock ; ds:name ?name }`
 );
 
-// Inspect registered prefixes
 console.log(store.prefixes);
 // { ds: "https://ds.canonical.com/", cso: "http://pragma...", schema: "http://schema..." }
 ```
 
-Without prefixes, you'd need full IRIs: `<https://ds.canonical.com/UIBlock>`. Prefixes turn that into `ds:UIBlock`.
-
 ## Queries
 
-ke supports three SPARQL query forms, each returning a different result shape:
+ke supports three SPARQL query forms, each returning a different result shape.
 
 ### SELECT — variable bindings
 
@@ -126,9 +126,9 @@ const ask = await store.query(sparql`ASK { ?s ?p ?o }`);
 //     ^? AskResult — TypeScript knows this is an ASK
 ```
 
-## SPARQL Injection Protection
+## SPARQL injection protection
 
-The `sparql` tagged template escapes all interpolated values:
+User-supplied values in queries are a common injection vector. The `sparql` tagged template escapes all interpolated values:
 
 ```typescript
 import { createNamespace, sparql } from "@canonical/ke";
@@ -148,9 +148,9 @@ sparql`SELECT ?c WHERE { ?c ds:name ${"} UNION { ?x ?y ?z"} }`;
 // → throws: "Potentially dangerous SPARQL value rejected"
 ```
 
-## Namespace Helpers
+## Namespace helpers
 
-Create typed URI constructors for use in SPARQL interpolation:
+Full IRIs in code are verbose and error-prone. Namespace helpers create typed URI constructors:
 
 ```typescript
 import { createNamespace, sparql } from "@canonical/ke";
@@ -158,14 +158,13 @@ import { createNamespace, sparql } from "@canonical/ke";
 const ds = createNamespace("https://ds.canonical.com/");
 const rdf = createNamespace("http://www.w3.org/1999/02/22-rdf-syntax-ns#");
 
-// URIs created by namespace helpers are recognized by the sparql tag
 const query = sparql`SELECT ?name WHERE { ?c ${rdf("type")} ${ds("UIBlock")} ; ${ds("name")} ?name }`;
 // → SELECT ?name WHERE { ?c <http://www.w3.org/.../type> <https://ds.../UIBlock> ; <https://ds.../name> ?name }
 ```
 
 ## Plugins
 
-Plugins hook into the store lifecycle. Three hooks, called in array order:
+The store lifecycle is extensible through plugins. Three hooks, called in array order:
 
 ```typescript
 import { createStore, definePlugin } from "@canonical/ke";
@@ -193,7 +192,7 @@ const store = await createStore({
 
 ## Cache
 
-Serialise the store to N-Quads after first boot for faster subsequent loads:
+Parsing large TTL datasets on every boot is slow. The cache option serialises the store to N-Quads after first load, bypassing source resolution and parsing on subsequent boots:
 
 ```typescript
 const store = await createStore({
@@ -207,9 +206,9 @@ const store = await createStore({
 await store.reload({ force: true });
 ```
 
-## HTTP Handler
+## HTTP handler
 
-For serving SPARQL over HTTP, ke provides a composable fetch handler at `@canonical/ke/http`. You bring the server, ke brings the SPARQL Protocol handling:
+ke runs in-process by default, but the SPARQL Protocol handler at `@canonical/ke/http` exposes the store over HTTP when needed:
 
 ```typescript
 import { createStore } from "@canonical/ke";
@@ -223,9 +222,9 @@ Bun.serve({ fetch: handler, port: 3030 });
 
 Supports GET `?query=`, POST `application/sparql-query`, and POST form-urlencoded per the [W3C SPARQL Protocol](https://www.w3.org/TR/sparql11-protocol/).
 
-## Named Graphs
+## Named graphs
 
-Load sources into named graphs for provenance tracking:
+Named graphs track where data comes from. Load sources into separate graphs for provenance, then query across all of them or scope to a specific graph:
 
 ```typescript
 const store = await createStore({
@@ -246,6 +245,14 @@ const onlyData = await store.query(
 ```
 
 ## Testing
+
+| Aspect | Detail |
+|--------|--------|
+| Test files | 8 (unit + integration) |
+| Environment | Node (vitest) |
+| Coverage | 100% enforced (statements, branches, functions, lines) |
+| Posture | Enforced |
+| Visual regression | Not applicable (no UI) |
 
 ke provides test utilities at `@canonical/ke/testing`:
 
@@ -273,7 +280,7 @@ test("finds components", async () => {
 });
 ```
 
-## API Summary
+## API summary
 
 | Export | Description |
 |--------|-------------|
@@ -293,6 +300,10 @@ test("finds components", async () => {
 | `@canonical/ke/http` | SPARQL Protocol HTTP handler |
 | `@canonical/ke/testing` | Test utilities (createTestStore, matchers) |
 
-## License
+## Trade-offs
+
+ke uses Oxigraph compiled to WASM. This means the store runs anywhere JavaScript runs---Node, Bun, browsers---without native dependencies. The trade-off is a ~4MB WASM binary added to the bundle, and Oxigraph's SPARQL coverage, which implements SPARQL 1.1 Query but not SPARQL 1.1 Update (no INSERT/DELETE). Data mutation happens through `reload()`, not through SPARQL.
+
+## Licence
 
 LGPL-3.0
