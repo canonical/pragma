@@ -1,8 +1,55 @@
 # @canonical/summon-application
 
-Summon generators for scaffolding application structure: domains, routes, and wrappers. Produces code aligned with the [boilerplate reference app](../../../apps/react/boilerplate-vite/).
+Summon generators for scaffolding application structure: full applications, domains, routes, and wrappers. Produces code aligned with the [boilerplate reference app](../../../apps/react/boilerplate-vite/).
 
 ## Generators
+
+### `summon application/react <name>`
+
+Scaffolds a complete React application with SSR, routing, Storybook, and two starter domains.
+
+```bash
+summon application/react my-app
+summon application/react --forms my-app
+```
+
+Produces:
+
+```
+my-app/
+├── .storybook/
+│   ├── main.ts
+│   ├── preview.ts
+│   └── decorators/
+│       ├── withRouter.tsx    # Hash-based router decorator
+│       └── index.ts
+├── src/
+│   ├── client/entry.tsx      # Client hydration
+│   ├── server/
+│   │   ├── entry.tsx         # SSR render
+│   │   ├── server.express.ts # Express dev server
+│   │   ├── server.bun.ts     # Bun dev server
+│   │   └── sitemap.ts
+│   ├── domains/
+│   │   ├── marketing/        # HomePage, GuidePage, routes
+│   │   ├── account/          # AccountPage, LoginPage, routes
+│   │   └── contact/          # ContactPage, routes (--forms only)
+│   ├── lib/
+│   │   ├── Navigation/
+│   │   ├── ThemeSelector/
+│   │   ├── ExampleComponent/
+│   │   └── LazyComponent/
+│   ├── styles/
+│   ├── routes.tsx
+│   └── vite-env.d.ts
+├── biome.json
+├── index.html
+├── package.json
+├── tsconfig.json
+└── vite.config.ts
+```
+
+The `--forms` flag adds the contact domain with form components and wires `contactRoutes` into `routes.tsx`.
 
 ### `summon domain <name>`
 
@@ -94,9 +141,12 @@ src/
 │   │   ├── HomePage.tsx
 │   │   ├── GuidePage.tsx
 │   │   └── routes.ts
-│   └── account/
-│       ├── AccountPage.tsx
-│       ├── LoginPage.tsx
+│   ├── account/
+│   │   ├── AccountPage.tsx
+│   │   ├── LoginPage.tsx
+│   │   └── routes.ts
+│   └── contact/            # When --forms is enabled
+│       ├── ContactPage.tsx
 │       └── routes.ts
 ├── lib/                    # Shared components
 │   ├── Navigation/
@@ -135,6 +185,30 @@ export default routes;
 - No `fetch()` / `prefetch()` unless needed for cache warming
 - No `.error` — use React error boundaries
 - Route files are `.ts` (no JSX in route definitions)
+
+### Storybook decorators
+
+The generated application includes a `withRouter` decorator for stories that need a router context:
+
+```tsx
+import withRouter from "../decorators/withRouter.js";
+
+const meta = {
+  decorators: [withRouter()],
+} satisfies Meta;
+```
+
+Pass custom routes when the story depends on specific route shapes:
+
+```tsx
+import { appRoutes } from "../../routes.js";
+
+const meta = {
+  decorators: [withRouter({ routes: appRoutes })],
+} satisfies Meta;
+```
+
+The decorator uses `createHashRouter` from `@canonical/router-core`, which stores routes in `window.location.hash` — suitable for Storybook and static environments where no server handles URL paths.
 
 ### Wrappers
 
