@@ -5,7 +5,7 @@ import type { Attachment } from "svelte/attachments";
 import type { SvelteHTMLElements } from "svelte/elements";
 import type { PositionArea } from "../../useFunctions/usePositionArea.svelte.js";
 
-type BaseProps = SvelteHTMLElements["div"];
+type BaseProps = Omit<SvelteHTMLElements["div"], "children">;
 
 export type TooltipTriggerProps = {
   "aria-describedby": string;

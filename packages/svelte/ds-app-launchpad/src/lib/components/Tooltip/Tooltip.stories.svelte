@@ -1,5 +1,6 @@
 <script module lang="ts">
   import { defineMeta } from "@storybook/addon-svelte-csf";
+  import type { Attachment } from "svelte/attachments";
   import { Button } from "../Button/index.js";
   import Tooltip from "./Tooltip.svelte";
 
@@ -19,9 +20,12 @@
 </script>
 
 <script lang="ts">
-  function scrollToCenter(el: HTMLElement) {
-    el.scrollTo({ top: el.clientHeight / 2, left: el.clientWidth / 2 });
-  }
+  const scrollToCenter: Attachment<HTMLElement> = (el) =>
+    el.scrollTo({
+      top: el.clientHeight / 2,
+      left: el.clientWidth / 2,
+      behavior: "instant",
+    });
 </script>
 
 <Story name="Default">
@@ -70,7 +74,7 @@
     <div
       class="placeholder-box"
       style="height: 250px; overflow: auto;"
-      use:scrollToCenter
+      {@attach scrollToCenter}
     >
       <div
         style="height: 200%; width: 200%; display: grid; place-items: center; position: relative;"

@@ -1,23 +1,16 @@
 .ds.tooltip {
-  /* TODO(z-index-tokens): Should we tokenize z-indexes? What would they be used for except the tooltip? */
-  --z-index-tooltip: 10;
   --color-background-tooltip: var(--lp-color-background-alt-reversed);
-  --color-text-tooltip: var(--lp-color-text-reversed);
-  --dimension-padding-inline-tooltip: var(--lp-dimension-spacing-inline-m);
-  --dimension-padding-block-tooltip: var(--lp-dimension-spacing-block-xs);
-  --typography-tooltip: var(--lp-typography-paragraph-s);
-  --dimension-height-tooltip-arrow: var(--lp-dimension-size-xxxs);
   --dimension-offset-tooltip-arrow: var(--lp-dimension-spacing-inline-m);
-  --dimension-width-tooltip: max-content;
-
+  --dimension-height-tooltip-arrow: var(--lp-dimension-size-xxxs);
   position: absolute;
-  width: var(--dimension-width-tooltip);
-  z-index: var(--z-index-tooltip);
+  width: max-content;
+  /* TODO(z-index-tokens): Should we tokenize z-indexes? What would they be used for except the tooltip? */
+  z-index: 10;
   background-color: var(--color-background-tooltip);
-  font: var(--typography-tooltip);
-  color: var(--color-text-tooltip);
-  padding-inline: var(--dimension-padding-inline-tooltip);
-  padding-block: var(--dimension-padding-block-tooltip);
+  font: var(--lp-typography-paragraph-s);
+  color: var(--lp-color-text-reversed);
+  padding-inline: var(--lp-dimension-spacing-inline-m);
+  padding-block: var(--lp-dimension-spacing-block-xs);
 
   &::before {
     /* Filler to allow moving the hover from the trigger to the tooltip */

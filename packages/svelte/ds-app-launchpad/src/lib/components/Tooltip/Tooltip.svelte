@@ -45,28 +45,30 @@
 
   const listenersTriggerAttachment: Attachment<HTMLElement> = (element) => {
     triggerRef = element;
-    const onMouseEnter = () => (isTriggerHovered = true);
-    const onMouseLeave = (e: MouseEvent) => {
-      // Check if hover moved to the tooltip, to avoid any flicker before `mouseenter` on the tooltip is fired and handled
-      if (isEventTargetInElement(e.relatedTarget, tooltipRef)) {
-        isTooltipHovered = true;
-      }
-      isTriggerHovered = false;
-    };
-    const onFocus = () => (isTriggerFocused = true);
-    const onBlur = () => (isTriggerFocused = false);
-
-    element.addEventListener("mouseenter", onMouseEnter);
-    element.addEventListener("mouseleave", onMouseLeave);
-    element.addEventListener("focus", onFocus);
-    element.addEventListener("blur", onBlur);
-
+    const abortController = new AbortController();
+    element.addEventListener("mouseenter", () => (isTriggerHovered = true), {
+      signal: abortController.signal,
+    });
+    element.addEventListener(
+      "mouseleave",
+      (e) => {
+        // Check if hover moved to the tooltip, to avoid any flicker before `mouseenter` on the tooltip is fired and handled
+        if (isEventTargetInElement(e.relatedTarget, tooltipRef)) {
+          isTooltipHovered = true;
+        }
+        isTriggerHovered = false;
+      },
+      { signal: abortController.signal },
+    );
+    element.addEventListener("focus", () => (isTriggerFocused = true), {
+      signal: abortController.signal,
+    });
+    element.addEventListener("blur", () => (isTriggerFocused = false), {
+      signal: abortController.signal,
+    });
     return () => {
       triggerRef = undefined;
-      element.removeEventListener("mouseenter", onMouseEnter);
-      element.removeEventListener("mouseleave", onMouseLeave);
-      element.removeEventListener("focus", onFocus);
-      element.removeEventListener("blur", onBlur);
+      abortController.abort();
       isTriggerHovered = false;
       isTriggerFocused = false;
     };
