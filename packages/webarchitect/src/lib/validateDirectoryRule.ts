@@ -72,7 +72,6 @@ export default async function validateDirectoryRule(
       ];
     }
 
-    // Hard fail: permission denied, I/O errors, etc. with informative message
     const errorCode = (e as NodeJS.ErrnoException).code;
     const errorMessage =
       errorCode === "EACCES"

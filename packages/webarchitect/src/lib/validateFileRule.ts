@@ -91,7 +91,6 @@ export default async function validateFileRule(
       ];
     }
 
-    // Hard fail: permission denied, I/O errors, etc. with informative message
     const errorCode = (readError as NodeJS.ErrnoException).code;
     const errorMessage =
       errorCode === "EACCES"

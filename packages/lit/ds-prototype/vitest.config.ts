@@ -1,3 +1,4 @@
+// Testing posture: Measured — prototype package, Chromatic is primary gate
 import { defineConfig, mergeConfig } from "vitest/config";
 import viteConfig from "./vite.config.js";
 

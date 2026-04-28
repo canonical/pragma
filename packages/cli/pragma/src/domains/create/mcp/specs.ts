@@ -3,17 +3,11 @@
  */
 
 import { executeGenerator } from "@canonical/cli-core";
-import { generators as componentGenerators } from "@canonical/summon-component";
 import type { AnyGenerator } from "@canonical/summon-core";
 import { generators as packageGenerators } from "@canonical/summon-package";
 import { PragmaError } from "#error";
 import type { ToolSpec } from "../../shared/ToolSpec.js";
-
-const componentGeneratorMap: Record<string, AnyGenerator> = {
-  react: componentGenerators["component/react"],
-  svelte: componentGenerators["component/svelte"],
-  lit: componentGenerators["component/lit"],
-};
+import { COMPONENT_GENERATORS } from "../generators.js";
 
 const specs: readonly ToolSpec[] = [
   {
@@ -62,10 +56,10 @@ const specs: readonly ToolSpec[] = [
       };
 
       const framework = params.framework as string;
-      const gen = componentGeneratorMap[framework];
+      const gen = COMPONENT_GENERATORS[framework];
       if (!gen) {
         throw PragmaError.invalidInput("framework", framework, {
-          validOptions: Object.keys(componentGeneratorMap),
+          validOptions: Object.keys(COMPONENT_GENERATORS),
         });
       }
 

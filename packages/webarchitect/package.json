@@ -33,7 +33,7 @@
     "check:biome": "biome check",
     "check:biome:fix": "biome check --write",
     "check:ts": "tsc --noEmit",
-    "test": "echo 'No tests defined yet'",
+    "test": "vitest run",
     "check:webarchitect": "bun run src/cli.ts tool-ts"
   },
   "devDependencies": {
@@ -42,7 +42,8 @@
     "@canonical/typescript-config": "^0.26.0",
     "@types/json-schema": "^7.0.15",
     "@types/node": "^24.12.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18"
   },
   "dependencies": {
     "ajv": "^8.18.0",

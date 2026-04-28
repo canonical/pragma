@@ -42,7 +42,6 @@
     "@canonical/ds-assets": "^0.26.0",
     "@canonical/storybook-config": "^0.26.0",
     "@canonical/styles": "^0.26.0",
-    "@canonical/styles-old": "^0.26.0",
     "@canonical/utils": "^0.26.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4"
@@ -70,7 +69,6 @@
     "storybook": "^10.3.1",
     "typescript": "^5.9.3",
     "vite": "^8.0.1",
-    "vite-tsconfig-paths": "^6.1.1",
     "vitest": "^4.0.18"
   }
 }

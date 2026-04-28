@@ -28,8 +28,7 @@
     "@canonical/storybook-addon-msw": "^0.26.0",
     "@canonical/storybook-config": "^0.26.0",
     "@canonical/styles": "^0.26.0",
-    "@canonical/styles-debug": "^0.26.0",
-    "@canonical/styles-old": "^0.26.0"
+    "@canonical/styles-debug": "^0.26.0"
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.9",
@@ -44,7 +43,6 @@
     "react-dom": "^19.2.4",
     "storybook": "^10.3.1",
     "typescript": "^5.9.3",
-    "vite": "^8.0.0",
-    "vite-tsconfig-paths": "^6.1.1"
+    "vite": "^8.0.0"
   }
 }

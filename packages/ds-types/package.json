@@ -39,7 +39,7 @@
     "check:biome": "biome check",
     "check:biome:fix": "biome check --write",
     "check:ts": "tsc --noEmit",
-    "test": "echo 'No tests defined yet'"
+    "test": "echo 'Type-only package — no runtime tests'"
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.9",
