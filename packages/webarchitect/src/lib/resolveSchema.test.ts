@@ -15,6 +15,7 @@ describe("resolveSchema", () => {
 
   afterEach(() => {
     rmSync(tmp, { recursive: true, force: true });
+    vi.unstubAllGlobals();
     vi.restoreAllMocks();
   });
 
@@ -69,7 +70,6 @@ describe("resolveSchema", () => {
     );
     const result = await resolveSchema("https://example.com/schema.json");
     expect(result.name).toBe("remote");
-    vi.unstubAllGlobals();
   });
 
   it("loads schema from http URL", async () => {
@@ -82,7 +82,6 @@ describe("resolveSchema", () => {
     );
     const result = await resolveSchema("http://example.com/schema.json");
     expect(result.name).toBe("http-remote");
-    vi.unstubAllGlobals();
   });
 
   it("error message includes available bundled rulesets", async () => {

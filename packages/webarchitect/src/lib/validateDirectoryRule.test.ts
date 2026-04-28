@@ -165,6 +165,7 @@ describe("validateDirectoryRule", () => {
     const strictResult = results.find((r) =>
       r.message?.includes("extra files"),
     );
+    expect(strictResult).toBeDefined();
     expect(strictResult?.message).toContain("extra directories");
   });
 
@@ -230,9 +231,9 @@ describe("validateDirectoryRule", () => {
       { name: "ctx" },
       "ctx-dir",
     );
-    const passResult = results.find((r) => r.passed);
-    expect(passResult?.context?.type).toBe("directory");
-    expect(passResult?.context?.target).toBe(join(tmp, "ctx"));
+    expect(results).toHaveLength(1);
+    expect(results[0].context?.type).toBe("directory");
+    expect(results[0].context?.target).toBe(join(tmp, "ctx"));
   });
 });
 

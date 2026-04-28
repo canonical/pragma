@@ -111,7 +111,6 @@ describe("validateFileRule", () => {
       { name: "data.json", contains: { type: "object" } },
       "data",
     );
-    expect(results[0].context).toBeDefined();
     expect(results[0].context?.type).toBe("file");
     expect(results[0].context?.target).toBe(join(tmp, "data.json"));
     expect(results[0].context?.value).toEqual({ ok: true });
