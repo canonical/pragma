@@ -44,25 +44,15 @@ Subcomponents follow the same structure as top-level components. The `common/` d
 
 ## Creating Components
 
-The [component generator](../packages/generator-ds) creates new components with all required files following these conventions. From within a component package directory:
+The `summon` generator creates new components with all required files following these conventions. From within a component package directory:
 
 ```bash
-yo @canonical/ds:component src/ui/MyComponent
+summon component react --component-path src/lib/MyComponent --yes
 ```
 
-The generator creates the component file, types, barrel export, and unit tests by default. Use flags to include additional files:
+The generator creates the component file, types, styles, stories, unit tests, and SSR tests. The generated code follows all conventions described in this document, so you can start implementing immediately rather than setting up boilerplate.
 
-```bash
-# Include styles and stories
-yo @canonical/ds:component src/ui/MyComponent --withStyles --withStories
-
-# Skip SSR tests
-yo @canonical/ds:component src/ui/MyComponent --withoutSsrTests
-```
-
-The generated code follows all conventions described in this document, so you can start implementing immediately rather than setting up boilerplate.
-
-See the [generator-ds README](../packages/generator-ds/README.md) for installation and all available options.
+See the [summon-component README](../../packages/summon/component/README.md) for all available options.
 
 ## Why This Structure
 
