@@ -1,0 +1,23 @@
+---
+node:
+  uri: global.component.side-navigation
+  styles:
+    layout.type: stack
+    layout.direction: column
+    size.height: fill
+  edges:
+    - node:
+        uri: global.subcomponent.side-navigation-header
+      relation:
+        cardinality: "1"
+        slotName: header
+    - node:
+        uri: global.subcomponent.side-navigation-content
+      relation:
+        cardinality: "1"
+        slotName: default
+    - node:
+        uri: global.subcomponent.side-navigation-footer
+      relation:
+        cardinality: "1"
+        slotName: footer

@@ -1,0 +1,26 @@
+---
+node:
+  uri: global.subcomponent.side-navigation-header
+  styles:
+    layout.type: flow
+    layout.direction: row
+    layout.align: center
+    layout.justify: space-between
+    size.width: fill
+    spacing.internal: spacing/side-navigation/header?
+  edges:
+    - node:
+        role: brand
+        styles:
+          layout.type: flow
+          layout.direction: row
+          layout.align: center
+          layout.flex: 1 
+      relation:
+        cardinality: "1"
+        slotName: brand
+    - node:
+        role: collapse toggle
+      relation:
+        cardinality: "1"
+        slotName: collapse

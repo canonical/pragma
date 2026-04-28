@@ -1,0 +1,22 @@
+---
+node:
+  uri: global.subcomponent.side-navigation-footer
+  styles:
+    layout.type: stack
+    layout.direction: column
+    size.width: fill
+  edges:
+    - node:
+        role: nav item list
+        styles:
+          layout.type: stack
+          layout.direction: column
+          size.width: fill
+        edges:
+          - node:
+              uri: global.subcomponent.side-navigation-item
+            relation:
+              cardinality: "0..*"
+      relation:
+        cardinality: "1"
+        slotName: default
