@@ -447,6 +447,4 @@ The reference integration lives in [apps/react/boilerplate-vite](../../../apps/r
 
 ### Reference docs
 
-- Full API reference: [docs/references/ROUTER_API.md](../../../docs/references/ROUTER_API.md)
-- Migration guide: [docs/how-to-guides/MIGRATE_FROM_TANSTACK_ROUTER.md](../../../docs/how-to-guides/MIGRATE_FROM_TANSTACK_ROUTER.md)
-- Middleware cookbook: [docs/how-to-guides/ROUTER_MIDDLEWARE_COOKBOOK.md](../../../docs/how-to-guides/ROUTER_MIDDLEWARE_COOKBOOK.md)
+- Migration guide: [docs/how-to-guides/MIGRATE_TO_PRAGMA_ROUTER.md](../../../docs/how-to-guides/MIGRATE_TO_PRAGMA_ROUTER.md)

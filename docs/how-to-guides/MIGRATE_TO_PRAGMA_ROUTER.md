@@ -232,4 +232,3 @@ This gives you typed `<Link to="routeName">`, `router.navigate("routeName")`, an
 - [Router core README](../../packages/runtime/router/README.md)
 - [Router React README](../../packages/react/router/README.md)
 - [Boilerplate reference app](../../apps/react/boilerplate-vite/)
-- [Middleware cookbook](./ROUTER_MIDDLEWARE_COOKBOOK.md)

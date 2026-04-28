@@ -81,7 +81,7 @@ React components are organised into tiers based on their scope of applicability.
 | Tier | Package | Scope |
 |------|---------|-------|
 | Global | `@canonical/react-ds-global` | Universal components like Button, Badge, Card, and Chip that apply across all contexts. Components are grouped by maturity: **Stable** (production-ready), **Beta** (API may change), and **Experimental** (early-stage). |
-| Global Form | `@canonical/react-ds-global-form` | Form controls including Input, Select, and Checkbox, along with validation patterns. See [creating custom fields](packages/react/ds-global-form/docs/creating-custom-fields.md) and [creating middleware](packages/react/ds-global-form/docs/creating-middleware.md). |
+| Global Form | `@canonical/react-ds-global-form` | Form controls including Input, Select, and Checkbox, along with validation patterns. See the [package README](packages/react/ds-global-form/README.md) for usage and guides. |
 | Apps | `@canonical/react-ds-app` | Application-level UI such as Navigation and Toolbar, suited for internal tools. |
 | Apps/WPE | `@canonical/react-ds-app-launchpad` | Components specific to Launchpad and Workplace Engineering applications. |
 
@@ -113,11 +113,11 @@ Component styles live with their components rather than in the styles packages. 
 
 Three rulesets cover the common cases. The `library` ruleset enforces LGPL-3.0 licensing for reusable packages. The `tool` ruleset enforces GPL-3.0 for CLI tools and applications. The `tool-ts` ruleset handles TypeScript-only tools that run directly with Bun without a build step.
 
-**@canonical/generator-ds** scaffolds new components using Yeoman. Install it globally with `npm install -g yo @canonical/generator-ds`, then run `yo @canonical/ds:component src/MyComponent` from within a package directory. The generator creates the component file, types, styles, stories, unit tests, and SSR tests following the [standard structure](docs/component-folder-structure-and-conventions.md).
+**@canonical/generator-ds** scaffolds new components using Yeoman. Install it globally with `npm install -g yo @canonical/generator-ds`, then run `yo @canonical/ds:component src/MyComponent` from within a package directory. The generator creates the component file, types, styles, stories, unit tests, and SSR tests following the [standard structure](docs/explanations/COMPONENT_FOLDER_STRUCTURE.md).
 
 ## Component Structure
 
-Every React component follows the same folder structure. This consistency means that understanding one component teaches you how to navigate all components. See the [component folder structure guide](docs/component-folder-structure-and-conventions.md) for detailed conventions.
+Every React component follows the same folder structure. This consistency means that understanding one component teaches you how to navigate all components. See the [component folder structure guide](docs/explanations/COMPONENT_FOLDER_STRUCTURE.md) for detailed conventions.
 
 ```
 Button/
@@ -136,7 +136,7 @@ Styles use a `ds` namespace class combined with the component name: `className={
 
 The barrel export in `index.ts` explicitly names every export rather than using `export *`. This makes the public API visible at a glance and enables precise tree-shaking.
 
-SSR tests verify that components render correctly on the server without accessing browser APIs. They catch issues like missing `window` checks or non-deterministic IDs that cause hydration mismatches. The [component folder structure guide](docs/component-folder-structure-and-conventions.md) covers file naming and export conventions in detail.
+SSR tests verify that components render correctly on the server without accessing browser APIs. They catch issues like missing `window` checks or non-deterministic IDs that cause hydration mismatches. The [component folder structure guide](docs/explanations/COMPONENT_FOLDER_STRUCTURE.md) covers file naming and export conventions in detail.
 
 ## Development Workflow
 
@@ -164,7 +164,7 @@ Pull requests trigger a build matrix that tests against Node 22 and Node 24. The
 
 Chromatic workflows run visual regression tests for component packages. Each Storybook package has a dedicated Chromatic workflow filtered by path, so changes to `react-ds-global` only trigger visual tests for that package. This conserves Chromatic snapshots while ensuring visual changes are reviewed.
 
-The release workflow runs manually from GitHub Actions. It prompts for a release type (experimental, alpha, beta, rc, or stable), runs the full test suite, bumps versions using Lerna's conventional commit analysis, and publishes to npm. See the [versioning guide](docs/versioning.md) for commit message format and release process details.
+The release workflow runs manually from GitHub Actions. It prompts for a release type (experimental, alpha, beta, rc, or stable), runs the full test suite, bumps versions using Lerna's conventional commit analysis, and publishes to npm. See the [versioning guide](docs/VERSIONING.md) for commit message format and release process details.
 
 See the [webarchitect documentation](packages/webarchitect/README.md) for details on architecture validation and ruleset configuration.
 
@@ -174,12 +174,12 @@ The `docs/` folder contains guides for working with the monorepo:
 
 | Guide | Description |
 |-------|-------------|
-| [Philosophy](docs/philosophy.md) | Design principles and decision rationale |
-| [Component Folder Structure](docs/component-folder-structure-and-conventions.md) | Standard component anatomy and conventions |
-| [Adding a Package](docs/adding-a-package.md) | How to create new packages in the monorepo |
-| [Versioning](docs/versioning.md) | Commit message format and release process |
-| [CI/CD](docs/ci.md) | Continuous integration and deployment workflows |
-| [Code Ownership](docs/ownership.md) | What does it mean to own a package |
+| [Constitution](CONSTITUTION.md) | Design principles and decision rationale |
+| [Component Folder Structure](docs/explanations/COMPONENT_FOLDER_STRUCTURE.md) | Standard component anatomy and conventions |
+| [Adding a Package](docs/how-to-guides/ADDING_A_PACKAGE.md) | How to create new packages in the monorepo |
+| [Versioning](docs/VERSIONING.md) | Commit message format and release process |
+| [CI/CD](docs/CI.md) | Continuous integration and deployment workflows |
+| [Code Ownership](docs/OWNERSHIP.md) | What does it mean to own a package |
 
 ## Package Reference
 
@@ -190,7 +190,7 @@ The following table lists all packages in the monorepo with their location and p
 | Package | Path | Description |
 |---------|------|-------------|
 | `@canonical/react-ds-global` | `packages/react/ds-global` | Global tier components grouped by maturity: **Stable** (Accordion, Breadcrumbs, Card, Icon, Timeline), **Beta** (Button, Label, Tile), **Experimental** (Badge, Chip, Link, Rule, Section, SkipLink, Tooltip) |
-| `@canonical/react-ds-global-form` | `packages/react/ds-global-form` | Form components with react-hook-form integration. Guides: [custom fields](packages/react/ds-global-form/docs/creating-custom-fields.md), [middleware](packages/react/ds-global-form/docs/creating-middleware.md) |
+| `@canonical/react-ds-global-form` | `packages/react/ds-global-form` | Form components with react-hook-form integration. See [README](packages/react/ds-global-form/README.md) for guides |
 | `@canonical/react-ds-app` | `packages/react/ds-app` | Application tier components: Navigation, Toolbar |
 | `@canonical/react-ds-app-launchpad` | `packages/react/ds-app-launchpad` | Launchpad-specific: Markdown renderer, Tooltip variants |
 | `@canonical/react-ssr` | `packages/react/ssr` | Server-side rendering utilities |
