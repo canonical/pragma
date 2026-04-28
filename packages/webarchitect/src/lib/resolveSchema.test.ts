@@ -42,9 +42,8 @@ describe("resolveSchema", () => {
   });
 
   it("falls back to bundled rulesets", async () => {
-    // "base" is a bundled ruleset that ships with webarchitect
     const result = await resolveSchema("base");
-    expect(result.name).toBeDefined();
+    expect(result.name).toBe("base");
   });
 
   it("throws when schema not found locally or bundled", async () => {
@@ -87,13 +86,9 @@ describe("resolveSchema", () => {
   });
 
   it("error message includes available bundled rulesets", async () => {
-    try {
-      await resolveSchema("nonexistent-schema-xyz-abc");
-    } catch (e) {
-      const msg = (e as Error).message;
-      expect(msg).toContain("Could not find ruleset");
-      expect(msg).toContain("Available bundled rulesets");
-    }
+    await expect(resolveSchema("nonexistent-schema-xyz-abc")).rejects.toThrow(
+      /Could not find ruleset.*Available bundled rulesets/s,
+    );
   });
 });
 

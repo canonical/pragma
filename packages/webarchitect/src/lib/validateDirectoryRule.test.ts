@@ -92,6 +92,7 @@ describe("validateDirectoryRule", () => {
       },
       "pkg-dir",
     );
+    expect(results.length).toBeGreaterThan(0);
     expect(results.every((r) => r.passed)).toBe(true);
   });
 
@@ -107,6 +108,7 @@ describe("validateDirectoryRule", () => {
       },
       "recursive",
     );
+    expect(results.length).toBeGreaterThan(0);
     expect(results.every((r) => r.passed)).toBe(true);
   });
 
@@ -180,6 +182,7 @@ describe("validateDirectoryRule", () => {
       },
       "clean-dir",
     );
+    expect(results.length).toBeGreaterThan(0);
     expect(results.every((r) => r.passed)).toBe(true);
   });
 
@@ -216,6 +219,7 @@ describe("validateDirectoryRule", () => {
       },
       "withsub-dir",
     );
+    expect(results.length).toBeGreaterThan(0);
     expect(results.every((r) => r.passed)).toBe(true);
   });
 

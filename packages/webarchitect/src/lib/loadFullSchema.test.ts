@@ -30,7 +30,8 @@ describe("loadFullSchema", () => {
 
     const result = await loadFullSchema(schemaPath);
     expect(result.name).toBe("simple");
-    expect(result["my-rule"]).toBeDefined();
+    const rule = result["my-rule"] as { file: { name: string } };
+    expect(rule.file.name).toBe("test.json");
   });
 
   it("merges rules from extended schemas", async () => {
@@ -53,8 +54,10 @@ describe("loadFullSchema", () => {
 
     const result = await loadFullSchema(join(tmp, "child.ruleset.json"));
     expect(result.name).toBe("child");
-    expect(result["base-rule"]).toBeDefined();
-    expect(result["child-rule"]).toBeDefined();
+    const base = result["base-rule"] as { file: { name: string } };
+    const child = result["child-rule"] as { file: { name: string } };
+    expect(base.file.name).toBe("base.json");
+    expect(child.file.name).toBe("child.json");
   });
 
   it("child rules override parent rules with same name", async () => {
@@ -125,7 +128,9 @@ describe("loadFullSchema", () => {
     writeFileSync(join(tmp, "child.ruleset.json"), JSON.stringify(child));
 
     const result = await loadFullSchema(join(tmp, "child.ruleset.json"));
-    expect(result.rule1).toBeDefined();
-    expect(result.rule2).toBeDefined();
+    const r1 = result.rule1 as { file: { name: string } };
+    const r2 = result.rule2 as { file: { name: string } };
+    expect(r1.file.name).toBe("a.json");
+    expect(r2.file.name).toBe("b.json");
   });
 });
