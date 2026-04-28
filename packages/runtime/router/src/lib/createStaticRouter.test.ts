@@ -59,6 +59,19 @@ describe("createStaticRouter", () => {
     expect(router.match?.kind).toBe("not-found");
   });
 
+  it("accepts a URL object instead of a string", () => {
+    const router = createStaticRouter(
+      {
+        about: route({ url: "/about", content: () => "about" }),
+      },
+      new URL("https://example.com/about"),
+    );
+
+    expect(router.match).not.toBeNull();
+    expect(router.match?.kind).toBe("route");
+    expect(router.match?.name).toBe("about");
+  });
+
   it("does not support client-side navigation", () => {
     const router = createStaticRouter(
       {

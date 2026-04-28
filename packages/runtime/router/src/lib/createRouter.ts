@@ -201,7 +201,7 @@ function readSearchParams(
   const rawSearch: Record<string, string> = {};
 
   for (const key of new Set(searchParams.keys())) {
-    rawSearch[key] = searchParams.get(key) ?? "";
+    rawSearch[key] = searchParams.get(key)!;
   }
 
   return rawSearch;
@@ -910,7 +910,7 @@ export default function createRouter<
     const currentSearch: Record<string, string> = {};
 
     for (const key of new Set(currentUrl.searchParams.keys())) {
-      currentSearch[key] = currentUrl.searchParams.get(key) ?? "";
+      currentSearch[key] = currentUrl.searchParams.get(key)!;
     }
 
     const nextParams =
