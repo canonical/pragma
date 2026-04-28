@@ -45,6 +45,9 @@ function createFakeNavigationWindow(initialHref = "https://example.com/") {
         intercept: vi.fn(),
       });
     },
+    dispatchNavigateRaw(event: Parameters<NonNullable<typeof navigateListener>>[0]) {
+      navigateListener?.(event);
+    },
   };
 
   return navigationWindow;
@@ -114,6 +117,24 @@ describe("createNavigationAdapter (Navigation API)", () => {
 
     // Push/replace events are intercepted (preventing full reload) but don't
     // notify subscribers — the router's navigate() method handles notification.
+    expect(listener).toHaveBeenCalledTimes(0);
+  });
+
+  it("ignores hash-change navigate events", () => {
+    const navigationWindow = createFakeNavigationWindow();
+    const adapter = createNavigationAdapter(navigationWindow);
+    const listener = vi.fn<(location: string | URL) => void>();
+
+    adapter.subscribe(listener);
+
+    navigationWindow.dispatchNavigateRaw({
+      navigationType: "traverse",
+      destination: { url: "https://example.com/#section" },
+      canIntercept: true,
+      hashChange: true,
+      intercept: vi.fn(),
+    });
+
     expect(listener).toHaveBeenCalledTimes(0);
   });
 

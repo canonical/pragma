@@ -2,6 +2,7 @@ import { describe, expect, expectTypeOf, it, vi } from "vitest";
 import createMemoryAdapter from "./createMemoryAdapter.js";
 import createRouter from "./createRouter.js";
 import group from "./group.js";
+import redirect from "./redirect.js";
 import route from "./route.js";
 import StatusResponse from "./StatusResponse.js";
 import type { AnyRoute, RouteMiddleware } from "./types.js";
@@ -1522,6 +1523,303 @@ describe("createRouter", () => {
 
     await vi.waitFor(() => {
       expect(router.getState().location.searchParams.get("page")).toBe("2");
+    });
+  });
+
+  it("follows runtime redirects thrown from prefetch during load", async () => {
+    const router = createRouter(
+      {
+        guarded: route({
+          url: "/guarded",
+          content: () => "guarded",
+          prefetch: () => {
+            redirect("/login");
+          },
+        }),
+        login: route({ url: "/login", content: () => "login" }),
+      },
+      { adapter: createMemoryAdapter("/") },
+    );
+
+    const result = await router.load("/guarded");
+
+    expect(result.location.pathname).toBe("/login");
+    expect(result.match).toMatchObject({ kind: "route", name: "login" });
+  });
+
+  it("clears pending navigation when unregistering a blocker while blocked", async () => {
+    const router = createRouter(
+      {
+        home: route({ url: "/", content: () => "home" }),
+        about: route({ url: "/about", content: () => "about" }),
+      },
+      { adapter: createMemoryAdapter("/") },
+    );
+
+    await router.load("/");
+
+    router.registerBlocker({ id: "form", isActive: () => true });
+    router.navigate("about");
+
+    expect(router.blockerState).toBe("blocked");
+
+    // Unregistering while blocked should clear the pending navigation
+    router.unregisterBlocker("form");
+
+    expect(router.blockerState).toBe("idle");
+    // Navigation was cleared, not proceeded — should stay on "/"
+    expect(router.getState().location.pathname).toBe("/");
+  });
+
+  it("throws when search param validation returns issues", () => {
+    const failingSchema = {
+      "~standard": {
+        output: {} as { page: number },
+        validate() {
+          return { issues: [{ message: "page must be positive" }] };
+        },
+      },
+    };
+
+    const router = createRouter({
+      list: route({
+        url: "/list",
+        search: failingSchema,
+        content: () => "list",
+      }),
+    });
+
+    expect(() => router.match("/list?page=-1")).toThrow(
+      "Search param validation failed: page must be positive",
+    );
+  });
+
+  it("uses default message when validation issue has no message", () => {
+    const failingSchema = {
+      "~standard": {
+        output: {} as { page: number },
+        validate() {
+          return { issues: [{}] };
+        },
+      },
+    };
+
+    const router = createRouter({
+      list: route({
+        url: "/list",
+        search: failingSchema,
+        content: () => "list",
+      }),
+    });
+
+    expect(() => router.match("/list?page=-1")).toThrow(
+      "Search param validation failed: Validation error",
+    );
+  });
+
+  it("unwraps search validation result with value property", () => {
+    const wrappingSchema = {
+      "~standard": {
+        output: {} as { page: number },
+        validate(raw: unknown) {
+          const params = raw as { page?: string };
+
+          return { value: { page: Number(params.page ?? "1") } };
+        },
+      },
+    };
+
+    const router = createRouter({
+      list: route({
+        url: "/list",
+        search: wrappingSchema,
+        content: () => "list",
+      }),
+    });
+
+    const match = router.match("/list?page=5");
+
+    expect(match).not.toBeNull();
+    expect(match?.search).toEqual({ page: 5 });
+  });
+
+  it("extracts status from Response errors", async () => {
+    const router = createRouter(
+      {
+        failing: route({
+          url: "/failing",
+          content: () => "fail",
+          prefetch: () => {
+            throw new Response("Forbidden", { status: 403 });
+          },
+        }),
+      },
+      { adapter: createMemoryAdapter("/") },
+    );
+
+    const result = await router.load("/failing");
+
+    expect(result.status).toBe(403);
+  });
+
+  it("defaults to 500 for unknown error types", async () => {
+    const router = createRouter(
+      {
+        failing: route({
+          url: "/failing",
+          content: () => "fail",
+          prefetch: () => {
+            throw "string error";
+          },
+        }),
+      },
+      { adapter: createMemoryAdapter("/") },
+    );
+
+    const result = await router.load("/failing");
+
+    expect(result.status).toBe(500);
+  });
+
+  it("fires wrapper prefetch during load", async () => {
+    const wrapperPrefetch = vi.fn();
+
+    const layout = wrapper({
+      id: "layout",
+      component: ({ children }) => children,
+      prefetch: wrapperPrefetch,
+    });
+
+    const [home] = group(layout, [
+      route({ url: "/", content: () => "home" }),
+    ] as const);
+
+    const router = createRouter(
+      { home },
+      { adapter: createMemoryAdapter("/") },
+    );
+
+    await router.load("/");
+
+    await vi.waitFor(() => {
+      expect(wrapperPrefetch).toHaveBeenCalled();
+    });
+  });
+
+  it("follows runtime redirects during prefetch", async () => {
+    const router = createRouter(
+      {
+        guarded: route({
+          url: "/guarded",
+          content: () => "guarded",
+          prefetch: () => {
+            redirect("/login");
+          },
+        }),
+        login: route({ url: "/login", content: () => "login" }),
+      },
+      { adapter: createMemoryAdapter("/") },
+    );
+
+    await router.load("/");
+    await router.prefetch("guarded");
+
+    // After prefetch follows the redirect, navigating should land on login
+    const result = await router.load("/guarded");
+
+    expect(result.location.pathname).toBe("/login");
+  });
+
+  it("uses replace mode for navigate with replace option", async () => {
+    const adapter = createMemoryAdapter("/");
+    const router = createRouter(
+      {
+        home: route({ url: "/", content: () => "home" }),
+        about: route({ url: "/about", content: () => "about" }),
+      },
+      { adapter },
+    );
+
+    await router.load("/");
+    router.navigate("about", { replace: true });
+
+    await vi.waitFor(() => {
+      expect(router.getState().location.pathname).toBe("/about");
+    });
+  });
+
+  it("uses replace mode for setSearchParams with replace option", async () => {
+    const adapter = createMemoryAdapter("/list?page=1");
+    const router = createRouter(
+      {
+        list: route({ url: "/list", content: () => "list" }),
+      },
+      { adapter },
+    );
+
+    await router.load("/list?page=1");
+    router.setSearchParams({ page: "2" }, { replace: true });
+
+    await vi.waitFor(() => {
+      expect(router.getState().location.searchParams.get("page")).toBe("2");
+    });
+  });
+
+  it("proceeds blocked navigation with replace mode", async () => {
+    const adapter = createMemoryAdapter("/");
+    const router = createRouter(
+      {
+        home: route({ url: "/", content: () => "home" }),
+        about: route({ url: "/about", content: () => "about" }),
+      },
+      { adapter },
+    );
+
+    await router.load("/");
+    router.registerBlocker({ id: "form", isActive: () => true });
+    router.navigate("about", { replace: true });
+
+    expect(router.blockerState).toBe("blocked");
+    router.proceedNavigation();
+
+    await vi.waitFor(() => {
+      expect(router.getState().location.pathname).toBe("/about");
+    });
+  });
+
+  it("no-ops setSearchParams when no adapter is present", () => {
+    const router = createRouter({
+      list: route({ url: "/list", content: () => "list" }),
+    });
+
+    // Should not throw — just does nothing
+    router.setSearchParams({ page: "2" });
+
+    expect(router.getState().location.pathname).toBe("/");
+  });
+
+  it("syncs adapter location after runtime redirect during navigate", async () => {
+    const adapter = createMemoryAdapter("/");
+    const router = createRouter(
+      {
+        home: route({ url: "/", content: () => "home" }),
+        guarded: route({
+          url: "/guarded",
+          content: () => "guarded",
+          prefetch: () => {
+            redirect("/login");
+          },
+        }),
+        login: route({ url: "/login", content: () => "login" }),
+      },
+      { adapter },
+    );
+
+    await router.load("/");
+    router.navigate("guarded");
+
+    await vi.waitFor(() => {
+      expect(adapter.getLocation().pathname).toBe("/login");
     });
   });
 });
