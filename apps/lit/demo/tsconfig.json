@@ -1,0 +1,10 @@
+{
+  "extends": "@canonical/typescript-config-lit",
+  "compilerOptions": {
+    "baseUrl": "src",
+    "skipLibCheck": true,
+    "types": ["node"],
+    "noEmit": true
+  },
+  "include": ["src/**/*.ts", "vite.config.ts"]
+}

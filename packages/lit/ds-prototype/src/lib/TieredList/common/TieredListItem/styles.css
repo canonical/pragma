@@ -6,7 +6,7 @@
 
 .ds.tiered-list-item {
   display: grid;
-  grid-template-columns: var(--grid-row-8-cols);
+  grid-template-columns: var(--grid-row-8-cols, repeat(8, 1fr));
 
   & > .title {
     grid-column: var(--item-title-column, 3 / 5);

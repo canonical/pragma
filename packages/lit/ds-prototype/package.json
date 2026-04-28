@@ -30,6 +30,7 @@
   "homepage": "https://github.com/canonical/pragma#readme",
   "scripts": {
     "build": "vite build && tsc --emitDeclarationOnly -p tsconfig.build.json",
+    "build:watch": "vite build --watch",
     "build:all": "bun run build && bun run build:storybook",
     "build:storybook": "storybook build",
     "check": "bun run check:biome && bun run check:ts && bun run check:webarchitect",
