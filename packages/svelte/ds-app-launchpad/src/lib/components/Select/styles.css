@@ -69,7 +69,7 @@
     transition-property: background-color, border-color, outline-color;
     transition-timing-function: var(--lp-transition-timing-ease-in);
 
-    :not(:disabled) {
+    &:not(:disabled) {
       &:hover {
         background-color: var(--color-background-select-input-hover);
       }
@@ -140,17 +140,18 @@
   }
 
   &.base {
-    --lp-color-background-secondary-hover-context: initial;
-    --lp-color-background-secondary-active-context: initial;
-    --lp-color-background-secondary-context: transparent;
-    --lp-color-border-secondary-context: initial;
+    --color-background-select-input-hover: var(
+      --lp-color-background-neutral-hover
+    );
+    --color-background-select-input-active: var(
+      --lp-color-background-neutral-active
+    );
+    --color-background-select-input: transparent;
 
     > select {
       border: none;
-    }
 
-    &:not([multiple]) {
-      > select {
+      &:not([multiple]) {
         option {
           /* FIXME(steciuk): Pt. 2 of the transparency workaround */
           background-color: var(--lp-color-background-default);
