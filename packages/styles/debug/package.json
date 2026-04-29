@@ -1,7 +1,7 @@
 {
   "name": "@canonical/styles-debug",
   "description": "Canonical's debugging styles. These are not included with the rest of the styles, but can be used for debugging purposes.",
-  "version": "0.26.0",
+  "version": "0.27.0",
   "main": "src/index.css",
   "files": [
     "src"
@@ -46,6 +46,6 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.9",
-    "@canonical/biome-config": "^0.26.0"
+    "@canonical/biome-config": "^0.27.0"
   }
 }

@@ -3,6 +3,19 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.27.0](https://github.com/canonical/pragma/compare/v0.26.0...v0.27.0) (2026-04-29)
+
+
+### Features
+
+* **svelte-ds-app-launchpad:** Add SearchBox ([#625](https://github.com/canonical/pragma/issues/625)) ([4fe33f9](https://github.com/canonical/pragma/commit/4fe33f93f97acfe6e06fbc7c3ac939f567b8f981))
+* **svelte-ds-app-launchpad:** Add Select ([#624](https://github.com/canonical/pragma/issues/624)) ([5cb5539](https://github.com/canonical/pragma/commit/5cb5539b5d2e78c71241b5714918deec1f89e9d0))
+* **svelte-ds-app-launchpad:** WD-35462 Upstream Tooltip ([#620](https://github.com/canonical/pragma/issues/620)) ([6c0a42d](https://github.com/canonical/pragma/commit/6c0a42d9543d3251cf8168083f903e4f2b73f29d))
+
+
+
+
+
 # [0.26.0](https://github.com/canonical/pragma/compare/v0.25.0...v0.26.0) (2026-04-24)
 
 

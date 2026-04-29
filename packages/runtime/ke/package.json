@@ -1,7 +1,7 @@
 {
   "name": "@canonical/ke",
   "description": "Headless triple store runtime built on Oxigraph WASM",
-  "version": "0.26.0",
+  "version": "0.27.0",
   "type": "module",
   "module": "dist/esm/index.js",
   "types": "dist/types/index.d.ts",
@@ -57,9 +57,9 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.9",
-    "@canonical/biome-config": "^0.26.0",
-    "@canonical/typescript-config": "^0.26.0",
-    "@canonical/webarchitect": "^0.26.0",
+    "@canonical/biome-config": "^0.27.0",
+    "@canonical/typescript-config": "^0.27.0",
+    "@canonical/webarchitect": "^0.27.0",
     "@types/bun": "^1.3.10",
     "@types/node": "^24.12.0",
     "expect-type": "^1.3.0",
