@@ -20,4 +20,5 @@ export * from "./Table/index.js";
 export * from "./Textarea/index.js";
 export * from "./TextInput/index.js";
 export * from "./Timeline/index.js";
+export * from "./Tooltip/index.js";
 export * from "./UserAvatar/index.js";

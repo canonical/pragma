@@ -1,0 +1,111 @@
+.ds.tooltip {
+  --color-background-tooltip: var(--lp-color-background-alt-reversed);
+  --dimension-offset-tooltip-arrow: var(--lp-dimension-spacing-inline-m);
+  --dimension-height-tooltip-arrow: var(--lp-dimension-size-xxxs);
+  position: absolute;
+  width: max-content;
+  /* TODO(z-index-tokens): Should we tokenize z-indexes? What would they be used for except the tooltip? */
+  z-index: 10;
+  background-color: var(--color-background-tooltip);
+  font: var(--lp-typography-paragraph-s);
+  color: var(--lp-color-text-reversed);
+  padding-inline: var(--lp-dimension-spacing-inline-m);
+  padding-block: var(--lp-dimension-spacing-block-xs);
+
+  &::before {
+    /* Filler to allow moving the hover from the trigger to the tooltip */
+    /* TODO: The filler is always of tooltip width/height, which in case the tooltip is bigger than the trigger in cross axis, will cause it to not disappear even if mouse hover is perceived to be outside bounds of both elements. This doesn't seem to be a major problem, but ideally the filler would match the smaller element's dimensions */
+    content: "";
+    position: absolute;
+    display: block;
+  }
+
+  &::after {
+    /* Tooltip arrow */
+    content: "";
+    position: absolute;
+    border-width: var(--dimension-height-tooltip-arrow);
+    border-style: solid;
+    border-color: transparent;
+    pointer-events: none;
+  }
+
+  &[data-placement^="top"] {
+    /* top, top-start, top-end */
+    &::before {
+      bottom: calc(-1 * var(--distance-to-trigger));
+    }
+
+    &::after {
+      border-top-color: var(--color-background-tooltip);
+      top: 100%;
+    }
+  }
+
+  &[data-placement^="bottom"] {
+    /* bottom, bottom-start, bottom-end */
+    &::before {
+      top: calc(-1 * var(--distance-to-trigger));
+    }
+
+    &::after {
+      border-bottom-color: var(--color-background-tooltip);
+      bottom: 100%;
+    }
+  }
+
+  &[data-placement^="top"],
+  &[data-placement^="bottom"] {
+    &::before {
+      width: 100%;
+      left: 0;
+      height: var(--distance-to-trigger);
+    }
+
+    &[data-placement$="start"]::after {
+      left: var(--dimension-offset-tooltip-arrow);
+    }
+
+    &[data-placement$="end"]::after {
+      right: var(--dimension-offset-tooltip-arrow);
+    }
+  }
+
+  &[data-placement="top"]::after,
+  &[data-placement="bottom"]::after {
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  &[data-placement^="left"] {
+    &::before {
+      width: var(--distance-to-trigger);
+      right: calc(-1 * var(--distance-to-trigger));
+      height: 100%;
+      top: 0;
+    }
+
+    &::after {
+      border-left-color: var(--color-background-tooltip);
+      left: 100%;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+  }
+
+  &[data-placement^="right"] {
+    &::before {
+      width: var(--distance-to-trigger);
+      left: calc(-1 * var(--distance-to-trigger));
+      height: 100%;
+      top: 0;
+    }
+
+    &::after {
+      border-right-color: var(--color-background-tooltip);
+      right: 100%;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+  }
+}
