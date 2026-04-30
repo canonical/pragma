@@ -18,5 +18,8 @@ SideNavigation.NavigationItem = NavigationItem;
 SideNavigation.ExpandToggle = ExpandToggle;
 
 export type { NavigationItemProps as SideNavigationItemProps } from "./common/index.js";
-export * from "./types.js";
+export type {
+  ExpandToggleProps as SideNavigationExpandToggleProps,
+  SideNavigationProps,
+} from "./types.js";
 export { SideNavigation };

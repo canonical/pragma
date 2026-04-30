@@ -5,7 +5,6 @@ export * from "./Checkbox/index.js";
 export * from "./Chip/index.js";
 export * from "./DateTime/index.js";
 export * from "./DescriptionList/index.js";
-export * from "./icons/index.js";
 export * from "./Link/index.js";
 export * from "./Modal/index.js";
 export * from "./NumberInput/index.js";

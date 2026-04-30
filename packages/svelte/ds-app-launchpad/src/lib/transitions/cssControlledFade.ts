@@ -6,7 +6,7 @@ import type { TransitionConfig } from "svelte/transition";
  * The duration and easing are controlled by CSS custom properties on the element.
  */
 export function cssControlledFade(
-  node: HTMLElement,
+  node: HTMLElement | SVGElement,
   params: {
     durationVar: `--${string}`;
     easingVar: `--${string}`;

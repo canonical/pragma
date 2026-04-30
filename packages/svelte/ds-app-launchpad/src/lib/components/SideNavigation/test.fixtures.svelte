@@ -4,17 +4,21 @@
 </script>
 
 <script lang="ts">
-  import { HomeIcon, SettingsIcon, UserIcon } from "@canonical/svelte-icons";
-  import { ColorPaletteIcon } from "../icons/index.js";
+  import {
+    HighlightOffIcon,
+    HomeIcon,
+    SettingsIcon,
+    UserIcon,
+  } from "@canonical/svelte-icons";
   import { ExpandToggle, NavigationItem } from "./common/index.js";
-  import type { ExpandToggleProps } from "./types.js";
+  import type { SideNavigationExpandToggleProps } from "./index.js";
 </script>
 
 {#snippet logo()}
   <a href="/" aria-label="Logo link">Logo link</a>
 {/snippet}
 
-{#snippet expandToggle(toggleProps: ExpandToggleProps)}
+{#snippet expandToggle(toggleProps: SideNavigationExpandToggleProps)}
   <ExpandToggle {...toggleProps} />
 {/snippet}
 
@@ -37,7 +41,7 @@
   <NavigationItem>
     Button in footer
     {#snippet icon()}
-      <ColorPaletteIcon />
+      <HighlightOffIcon />
     {/snippet}
   </NavigationItem>
   <NavigationItem href="/profile">

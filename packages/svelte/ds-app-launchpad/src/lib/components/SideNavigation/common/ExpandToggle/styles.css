@@ -1,16 +1,14 @@
-.ds.side-navigation-expand-toggle {
+.ds.side-navigation-expand-toggle.button-primitive {
   display: grid;
   place-items: center;
   box-sizing: content-box;
-}
-
-.ds.side-navigation-expand-toggle[aria-expanded="true"] .expand-icon {
-  transform: rotate(180deg);
-}
-
-.ds.side-navigation-expand-toggle[aria-expanded="false"] {
-  min-height: 1lh;
-  --dimension-padding-block-button: var(
-    --dimension-padding-block-side-navigation-item
-  );
+  &[aria-expanded="true"] .expand-icon {
+    transform: rotate(180deg);
+  }
+  &[aria-expanded="false"] {
+    min-height: 1lh;
+    --dimension-padding-block-button: var(
+      --dimension-padding-block-side-navigation-item
+    );
+  }
 }

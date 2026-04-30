@@ -1,4 +1,4 @@
-.ds.navigation-item {
+.ds.navigation-item.button-primitive {
   display: grid;
   position: relative;
   grid-column: 1 / -1;
@@ -20,33 +20,33 @@
   );
 
   grid-template-columns: subgrid;
-}
 
-.ds.navigation-item > .icon {
-  grid-column: logo;
-  place-self: center;
-}
+  > .icon {
+    grid-column: logo;
+    place-self: center;
+  }
 
-.ds.navigation-item > .label {
-  grid-column: expanded-start / content-end;
-  text-align: left;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  padding-inline-start: var(--dimension-padding-inline-start-button-label);
-}
+  > .label {
+    grid-column: expanded-start / content-end;
+    text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding-inline-start: var(--dimension-padding-inline-start-button-label);
+  }
 
-.ds.navigation-item.selected {
-  --color-background-button: var(--color-background-button-selected);
-  --color-background-button-hover: var(--color-background-button-selected);
-  --color-background-button-active: var(--color-background-button-selected);
-}
+  &.selected {
+    --color-background-button: var(--color-background-button-selected);
+    --color-background-button-hover: var(--color-background-button-selected);
+    --color-background-button-active: var(--color-background-button-selected);
 
-.ds.navigation-item.selected::before {
-  content: "";
-  position: absolute;
-  height: 100%;
-  width: var(--dimension-width-button-selected-indicator);
-  inset-inline-start: 0;
-  background-color: var(--color-background-button-selected-indicator);
+    &::before {
+      content: "";
+      position: absolute;
+      height: 100%;
+      width: var(--dimension-width-button-selected-indicator);
+      inset-inline-start: 0;
+      background-color: var(--color-background-button-selected-indicator);
+    }
+  }
 }
