@@ -6,5 +6,7 @@ export * from "./Example/index.js";
 export * from "./Hero/index.js";
 export * from "./Link/index.js";
 export * from "./List/index.js";
+export * from "./LogoSection/index.js";
+export * from "./Navigation/index.js";
 export * from "./SiteLayout/index.js";
 export * from "./TieredList/index.js";

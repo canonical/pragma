@@ -28,7 +28,8 @@
     "packages/svelte/*",
     "packages/lit/*",
     "apps/*",
-    "apps/react/*"
+    "apps/react/*",
+    "apps/lit/*"
   ],
   "scripts": {
     "collect": "bun scripts/collect-implementations.ts",

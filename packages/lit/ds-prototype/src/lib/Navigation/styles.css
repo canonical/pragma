@@ -1,0 +1,50 @@
+:host {
+  display: block;
+}
+
+.ds.navigation {
+  display: grid;
+  grid-template-columns: 1fr 3fr;
+  align-items: center;
+  background-color: #2f2f2f;
+  position: sticky;
+  padding-inline: var(--spacing-horizontal-xlarge);
+  top: 0;
+  padding: 1rem;
+
+  & a {
+    color: #fff;
+    text-decoration: none;
+  }
+
+  & .links {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-horizontal-large);
+    padding: var(--spacing-horizontal-large);
+    margin: 0;
+    list-style: none;
+  }
+
+  & .banner {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-horizontal-large);
+  }
+
+  & .logo {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    background-color: #e95420;
+    height: 2.25rem;
+    width: 1.3rem;
+    position: absolute;
+    padding-bottom: 0.25rem;
+    top: 0;
+  }
+
+  & .text {
+    padding-left: 1.5rem;
+  }
+}

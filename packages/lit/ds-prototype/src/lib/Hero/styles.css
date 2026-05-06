@@ -34,23 +34,45 @@
     overflow: hidden;
   }
 
-  ::slotted([slot="media"]) {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
+  &.no-media .media {
+    display: none;
+  }
+
+  & .media img {
+    max-width: 100%;
+    height: auto;
     display: block;
   }
 }
 
 @media only screen and (min-width: 620px) {
-  .ds.hero.no-media {
+  .ds.hero.no-media,
+  :host([layout="stacked"]) .ds.hero {
     display: grid;
     grid-template-columns: 1fr 1fr;
+  }
+
+  :host([layout="stacked"]) .ds.hero .content {
+    display: contents;
+  }
+
+  :host([layout="stacked"]) .ds.hero .header {
+    grid-column: 1;
+  }
+
+  :host([layout="stacked"]) .ds.hero .body {
+    grid-column: 2;
+  }
+
+  :host([layout="stacked"]) .ds.hero .media {
+    grid-column: 1 / -1;
+    display: flex;
+    justify-content: center;
   }
 }
 
 @media only screen and (min-width: 1120px) {
-  .ds.hero {
+  :host(:not([layout="stacked"])) .ds.hero {
     display: grid;
     grid-template-columns: 1fr 1fr;
   }
