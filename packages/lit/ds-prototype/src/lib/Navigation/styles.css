@@ -10,6 +10,7 @@
   position: sticky;
   padding-inline: var(--spacing-horizontal-xlarge);
   top: 0;
+  padding: 1rem;
 
   & a {
     color: #fff;
