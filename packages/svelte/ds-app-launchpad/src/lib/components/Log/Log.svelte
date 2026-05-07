@@ -13,6 +13,7 @@
     hideTimestamps = false,
     wrapLines = false,
     timeZone = "UTC",
+    timestampFormatter,
     caption,
     ...rest
   }: LogProps = $props();
@@ -26,6 +27,9 @@
     },
     get wrapLines() {
       return wrapLines;
+    },
+    get timestampFormatter() {
+      return timestampFormatter;
     },
   });
 </script>
