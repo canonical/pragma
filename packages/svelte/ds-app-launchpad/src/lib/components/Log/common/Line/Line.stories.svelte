@@ -1,6 +1,6 @@
 <script module lang="ts">
-  import { Link } from "@canonical/svelte-ds-app-launchpad";
   import { defineMeta } from "@storybook/addon-svelte-csf";
+  import { Link } from "../../../Link/index.js";
   import { setLogContext } from "../../context.js";
   import { Log } from "../../index.js";
   import Line from "./Line.svelte";
