@@ -7,7 +7,13 @@ import { page as pageContext } from "vitest/browser";
 import type { RenderResult } from "vitest-browser-svelte";
 import { render } from "vitest-browser-svelte";
 import Component from "./Log.svelte";
-import { logs, logsProps, oneLog, oneLogProps } from "./test.fixtures.svelte";
+import {
+  logs,
+  logsProps,
+  longLog,
+  oneLog,
+  oneLogProps,
+} from "./test.fixtures.svelte";
 
 describe("Log component", () => {
   const baseProps = {
@@ -143,6 +149,40 @@ describe("Log component", () => {
       );
 
       expect(page.getByRole("time").query()).toBeNull();
+    });
+  });
+
+  describe("wrapLines", () => {
+    it("is horizontally scrollable when wrapLines is false", () => {
+      const page = render(Component, {
+        ...baseProps,
+        children: longLog,
+        hideTimestamps: true,
+        wrapLines: false,
+        style: "inline-size: 40ch;",
+      });
+
+      pageContext.viewport(1000, 800);
+
+      const tableElement = componentLocator(page).elements()[0];
+      expect(tableElement.scrollWidth).toBeGreaterThan(
+        tableElement.clientWidth,
+      );
+    });
+
+    it("is not horizontally scrollable when wrapLines is true", () => {
+      const page = render(Component, {
+        ...baseProps,
+        children: longLog,
+        hideTimestamps: true,
+        wrapLines: true,
+        style: "inline-size: 40ch;",
+      });
+
+      pageContext.viewport(1000, 800);
+
+      const tableElement = componentLocator(page).elements()[0];
+      expect(tableElement.scrollWidth).toBe(tableElement.clientWidth);
     });
   });
 });

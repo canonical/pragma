@@ -25,8 +25,15 @@
     },
   ] as const;
 
+  const longLogProps = {
+    line: 42,
+    timestamp: "2024-10-27T10:00:00.400Z",
+    message:
+      "This-is-a-very-long-log-line-without-natural-breakpoints-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  } as const;
+
   // biome-ignore lint/style/useExportType: False positive, presumably due to "cross-language" export
-  export { logs, logsProps, oneLog, oneLogProps };
+  export { logs, logsProps, longLog, longLogProps, oneLog, oneLogProps };
 </script>
 
 {#snippet logs()}
@@ -40,5 +47,11 @@
 {#snippet oneLog()}
   <Line {...oneLogProps}>
     {oneLogProps.message}
+  </Line>
+{/snippet}
+
+{#snippet longLog()}
+  <Line {...longLogProps}>
+    {longLogProps.message}
   </Line>
 {/snippet}

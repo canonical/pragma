@@ -112,8 +112,8 @@ describe("Log SSR", () => {
         expect(page.getByText(log.message)).toBeInstanceOf(
           page.window.HTMLTableCellElement,
         );
-        expect(page.getAllByRole("time")).toHaveLength(logsProps.length);
       });
+      expect(page.getAllByRole("time")).toHaveLength(logsProps.length);
     });
 
     it("doesn't render timestamps when hideTimestamps is true", () => {
