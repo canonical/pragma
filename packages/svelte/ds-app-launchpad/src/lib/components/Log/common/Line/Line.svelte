@@ -1,10 +1,13 @@
 <!-- @canonical/generator-ds 0.10.0-experimental.5 -->
+<script lang="ts" module>
+  const defaultFormatter = new TimestampFormatter();
+</script>
 
 <script lang="ts">
   import { getLogContext } from "../../context.js";
   import type { LineProps } from "./types.js";
-  import { formatTimestamp } from "./utils/formatTimestamp.js";
   import "./styles.css";
+  import { TimestampFormatter } from "./utils/TimestampFormatter.js";
 
   const componentCssClassName = "ds log-line";
 
@@ -18,11 +21,11 @@
 
   const logContext = getLogContext();
 
-  const timestampDate = $derived(new Date(timestamp));
-
-  const formattedTimestamp = $derived(
-    formatTimestamp(timestampDate, logContext.timeZone),
-  );
+  function formatTimestamp(timestamp: Date) {
+    return logContext.timestampFormatter
+      ? logContext.timestampFormatter.format(timestamp)
+      : defaultFormatter.format(timestamp, logContext.timeZone);
+  }
 </script>
 
 <tr class={[componentCssClassName, className]} {...rest}>
@@ -34,8 +37,15 @@
     {/if}
   </th>
   {#if !logContext.hideTimestamps}
+    <!-- If timestamps are hidden globally, don't render the timestamp column at all -->
     <td class="timestamp">
-      <time datetime={timestampDate.toISOString()}>{formattedTimestamp}</time>
+      <!-- If only this particular line doesn't have a timestamp, render the cell, but leave it empty -->
+      {#if timestamp !== undefined}
+        {@const timestampDate = new Date(timestamp)}
+        <time datetime={timestampDate.toISOString()}>
+          {formatTimestamp(timestampDate)}
+        </time>
+      {/if}
     </td>
   {/if}
   <td class={["content", { wrap: logContext.wrapLines }]}
