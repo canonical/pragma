@@ -33,7 +33,7 @@
       {@render line()}
     {/if}
   </th>
-  {#if !logContext.hideTimestamp}
+  {#if !logContext.hideTimestamps}
     <td class="timestamp">
       <time datetime={timestampDate.toISOString()}>{formattedTimestamp}</time>
     </td>

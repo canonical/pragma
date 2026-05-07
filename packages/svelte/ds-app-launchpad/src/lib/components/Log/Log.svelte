@@ -21,7 +21,7 @@
     get timeZone() {
       return timeZone;
     },
-    get hideTimestamp() {
+    get hideTimestamps() {
       return hideTimestamps;
     },
     get wrapLines() {

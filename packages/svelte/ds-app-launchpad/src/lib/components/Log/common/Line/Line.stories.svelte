@@ -22,7 +22,7 @@
 <script lang="ts">
   setLogContext({
     timeZone: "UTC",
-    hideTimestamp: false,
+    hideTimestamps: false,
     wrapLines: false,
   });
 

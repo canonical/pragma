@@ -31,7 +31,7 @@ export interface LogProps extends BaseProps {
 
 export type LogContext = {
   timeZone: TimeZone;
-  hideTimestamp: boolean;
+  hideTimestamps: boolean;
   wrapLines: boolean;
 };
 
