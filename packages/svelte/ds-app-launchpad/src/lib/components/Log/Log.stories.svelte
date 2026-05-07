@@ -482,7 +482,7 @@
   name="With custom timestamp formatter"
   args={{ timestampFormatter: { format: (date) => date.getTime().toString() } }}
 >
-  {#snippet template({ children: _, timeZone, ...args })}
+  {#snippet template({ children: _, timeZone: __, ...args })}
     <Log {...args} style="max-height: 600px;" tabindex={0}>
       {#each fakeLogs as { message, timestamp }, i (i)}
         <Log.Line line={i + 1} {timestamp}>

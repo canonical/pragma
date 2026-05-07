@@ -66,7 +66,7 @@ describe("TimestampFormatter", () => {
       expect(result).toBe("2024-01-15 14:30:45.123");
       expect(warn).toHaveBeenCalledTimes(1);
       expect(warn).toHaveBeenCalledWith(
-        'Invalid timezone "Invalid/TimeZone" provided to formatTimestamp. Falling back to UTC. Future warnings for this timezone will not be shown.',
+        'Invalid timezone "Invalid/TimeZone" provided to TimestampFormatter.format. Falling back to UTC. Future warnings for this timezone will not be shown.',
       );
     });
 

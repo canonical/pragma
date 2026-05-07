@@ -54,7 +54,7 @@ export class TimestampFormatter {
     } catch (error) {
       if (error instanceof RangeError && timeZone !== "UTC") {
         console.warn(
-          `Invalid timezone "${timeZone}" provided to formatTimestamp. Falling back to UTC. Future warnings for this timezone will not be shown.`,
+          `Invalid timezone "${timeZone}" provided to TimestampFormatter.format. Falling back to UTC. Future warnings for this timezone will not be shown.`,
         );
 
         const formatter = this.getFormatter("UTC");

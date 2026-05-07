@@ -1,5 +1,7 @@
 <!-- @canonical/generator-ds 0.10.0-experimental.5 -->
 <script lang="ts" module>
+  import { TimestampFormatter } from "./utils/TimestampFormatter.js";
+
   const defaultFormatter = new TimestampFormatter();
 </script>
 
@@ -7,7 +9,6 @@
   import { getLogContext } from "../../context.js";
   import type { LineProps } from "./types.js";
   import "./styles.css";
-  import { TimestampFormatter } from "./utils/TimestampFormatter.js";
 
   const componentCssClassName = "ds log-line";
 
