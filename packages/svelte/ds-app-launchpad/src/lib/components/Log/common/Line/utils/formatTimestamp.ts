@@ -53,10 +53,12 @@ function getFormatter(timeZone: TimeZone): Intl.DateTimeFormat {
   } catch (error) {
     if (error instanceof RangeError && timeZone !== "UTC") {
       console.warn(
-        `Invalid timezone "${timeZone}" provided to formatTimestamp. Falling back to UTC.`,
+        `Invalid timezone "${timeZone}" provided to formatTimestamp. Falling back to UTC. Future warnings for this timezone will not be shown.`,
       );
 
-      return getFormatter("UTC");
+      const formatter = getFormatter("UTC");
+      timeZoneFormatterCache.set(cacheKey, formatter);
+      return formatter;
     }
 
     throw error;

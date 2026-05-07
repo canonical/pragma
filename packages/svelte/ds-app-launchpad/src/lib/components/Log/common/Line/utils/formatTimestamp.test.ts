@@ -57,7 +57,21 @@ describe("formatTimestamp", () => {
       expect(result).toBe("2024-01-15 14:30:45.123");
       expect(warn).toHaveBeenCalledTimes(1);
       expect(warn).toHaveBeenCalledWith(
-        'Invalid timezone "Invalid/TimeZone" provided to formatTimestamp. Falling back to UTC.',
+        'Invalid timezone "Invalid/TimeZone" provided to formatTimestamp. Falling back to UTC. Future warnings for this timezone will not be shown.',
+      );
+    });
+
+    it("warns only once for the same invalid timezone", () => {
+      const warn = vi
+        .spyOn(console, "warn")
+        .mockImplementation(() => undefined);
+
+      formatTimestamp(date, "Repeated/Invalid");
+      formatTimestamp(date, "Repeated/Invalid");
+
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(warn).toHaveBeenCalledWith(
+        'Invalid timezone "Repeated/Invalid" provided to formatTimestamp. Falling back to UTC. Future warnings for this timezone will not be shown.',
       );
     });
 
