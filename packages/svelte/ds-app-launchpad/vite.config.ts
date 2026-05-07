@@ -6,6 +6,9 @@ export default defineConfig({
   plugins: [svelte({})],
   test: {
     environment: "node",
+    env: {
+      TZ: "America/Los_Angeles",
+    },
     include: ["src/**/*.tests.ts"],
     projects: [
       {

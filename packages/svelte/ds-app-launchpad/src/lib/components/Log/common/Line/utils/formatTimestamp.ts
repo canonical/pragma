@@ -1,38 +1,64 @@
 import type { TimeZone } from "../../../types.js";
 
-export function formatTimestamp(
-  date: Date,
-  timeZone: TimeZone = "UTC",
-): string {
-  return timeZone === "UTC"
-    ? formatToUTCString(date)
-    : formatToLocalString(date);
+const LOCAL_TZ_CACHE_KEY = Symbol("local");
+const timeZoneFormatterCache = new Map<
+  TimeZone | typeof LOCAL_TZ_CACHE_KEY,
+  Intl.DateTimeFormat
+>();
+
+/**
+ * Formats a date as `YYYY-MM-DD HH:mm:ss.SSS` in UTC, runtime local time, or an explicit timezone.
+ *
+ * Invalid explicit timezones fall back to UTC and emit a warning.
+ */
+export function formatTimestamp(date: Date, timeZone: TimeZone): string {
+  return format(date, getFormatter(timeZone));
 }
 
-function formatToLocalString(date: Date) {
-  const YYYY = date.getFullYear();
-  const MM = pad(date.getMonth() + 1);
-  const DD = pad(date.getDate());
-  const HH = pad(date.getHours());
-  const mm = pad(date.getMinutes());
-  const ss = pad(date.getSeconds());
-  const ms = pad(date.getMilliseconds(), 3);
+function format(date: Date, formatter: Intl.DateTimeFormat) {
+  const parts = formatter.formatToParts(date);
+  const partsObject = Object.fromEntries(
+    parts.map((part) => [part.type, part.value]),
+  );
 
-  return `${YYYY}-${MM}-${DD} ${HH}:${mm}:${ss}.${ms}`;
+  return `${partsObject.year}-${partsObject.month}-${partsObject.day} ${partsObject.hour}:${partsObject.minute}:${partsObject.second}.${partsObject.fractionalSecond}`;
 }
 
-function formatToUTCString(date: Date) {
-  const YYYY = date.getUTCFullYear();
-  const MM = pad(date.getUTCMonth() + 1);
-  const DD = pad(date.getUTCDate());
-  const HH = pad(date.getUTCHours());
-  const mm = pad(date.getUTCMinutes());
-  const ss = pad(date.getUTCSeconds());
-  const ms = pad(date.getUTCMilliseconds(), 3);
+function getFormatter(timeZone: TimeZone): Intl.DateTimeFormat {
+  const cacheKey = timeZone === "local" ? LOCAL_TZ_CACHE_KEY : timeZone;
 
-  return `${YYYY}-${MM}-${DD} ${HH}:${mm}:${ss}.${ms}`;
-}
+  const cachedFormatter = timeZoneFormatterCache.get(cacheKey);
+  if (cachedFormatter) return cachedFormatter;
 
-function pad(num: number, length = 2): string {
-  return String(num).padStart(length, "0");
+  const formatterOptions: Intl.DateTimeFormatOptions = {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    fractionalSecondDigits: 3,
+    hour12: false,
+  };
+
+  if (timeZone !== "local") {
+    formatterOptions.timeZone = timeZone;
+  }
+
+  try {
+    const formatter = new Intl.DateTimeFormat("en-US", formatterOptions);
+
+    timeZoneFormatterCache.set(cacheKey, formatter);
+    return formatter;
+  } catch (error) {
+    if (error instanceof RangeError && timeZone !== "UTC") {
+      console.warn(
+        `Invalid timezone "${timeZone}" provided to formatTimestamp. Falling back to UTC.`,
+      );
+
+      return getFormatter("UTC");
+    }
+
+    throw error;
+  }
 }

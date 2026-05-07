@@ -12,7 +12,11 @@ export interface LogProps extends BaseProps {
    */
   hideTimestamps?: boolean;
   /**
-   * Allows for displaying timestamps in either UTC or local time.
+   * Allows displaying timestamps in UTC, runtime local time, or an explicit timezone.
+   *
+   * In SSR, `local` resolves to the server runtime timezone and may differ from the browser timezone during hydration.
+   * For deterministic SSR output in a user timezone, pass an explicit timezone (for example `Europe/Warsaw`).
+   * Invalid timezones will fall back to UTC.
    *
    * @default "UTC"
    */
@@ -35,4 +39,9 @@ export type LogContext = {
   wrapLines: boolean;
 };
 
-export type TimeZone = "UTC" | "local";
+type ExplicitTimeZone = Exclude<
+  Intl.DateTimeFormatOptions["timeZone"],
+  undefined
+>;
+
+export type TimeZone = "UTC" | "local" | ({} & ExplicitTimeZone);
