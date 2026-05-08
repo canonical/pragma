@@ -1,9 +1,4 @@
 <!-- @canonical/generator-ds 0.10.0-experimental.5 -->
-<script lang="ts" module>
-  import { TimestampFormatter } from "./utils/TimestampFormatter.js";
-
-  const defaultFormatter = new TimestampFormatter();
-</script>
 
 <script lang="ts">
   import { getLogContext } from "../../context.js";
@@ -21,12 +16,6 @@
   }: LineProps = $props();
 
   const logContext = getLogContext();
-
-  function formatTimestamp(timestamp: Date) {
-    return logContext.timestampFormatter
-      ? logContext.timestampFormatter.format(timestamp)
-      : defaultFormatter.format(timestamp, logContext.timeZone);
-  }
 </script>
 
 <tr class={[componentCssClassName, className]} {...rest}>
@@ -44,7 +33,7 @@
       {#if timestamp !== undefined}
         {@const timestampDate = new Date(timestamp)}
         <time datetime={timestampDate.toISOString()}>
-          {formatTimestamp(timestampDate)}
+          {logContext.timestampFormatter.format(timestampDate)}
         </time>
       {/if}
     </td>

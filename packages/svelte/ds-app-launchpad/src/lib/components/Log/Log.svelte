@@ -4,6 +4,7 @@
   import { setLogContext } from "./context.js";
   import type { LogProps } from "./types.js";
   import "./styles.css";
+  import { useDefaultTimestampFormatter } from "./utils/useDefaultTimestampFormatter.svelte.js";
 
   const componentCssClassName = "ds log";
 
@@ -18,10 +19,9 @@
     ...rest
   }: LogProps = $props();
 
+  const defaultFormatter = useDefaultTimestampFormatter(() => timeZone);
+
   setLogContext({
-    get timeZone() {
-      return timeZone;
-    },
     get hideTimestamps() {
       return hideTimestamps;
     },
@@ -29,7 +29,7 @@
       return wrapLines;
     },
     get timestampFormatter() {
-      return timestampFormatter;
+      return timestampFormatter ?? defaultFormatter;
     },
   });
 </script>

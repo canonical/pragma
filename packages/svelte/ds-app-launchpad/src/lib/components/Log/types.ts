@@ -52,10 +52,9 @@ interface CustomFormatterLogProps extends CommonLogProps {
 export type LogProps = DefaultFormatterLogProps | CustomFormatterLogProps;
 
 export type LogContext = {
-  timeZone: TimeZone;
   hideTimestamps: boolean;
   wrapLines: boolean;
-  timestampFormatter?: { format: (date: Date) => string };
+  timestampFormatter: { format: (date: Date) => string };
 };
 
 type ExplicitTimeZone = Exclude<
