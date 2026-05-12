@@ -31,6 +31,7 @@ export type {
   OntologySummary,
 } from "./ontology.js";
 export type { PragmaRuntime } from "./runtime.js";
+export type { SampleOutput, SampleResult } from "./sample.js";
 export type {
   CategorySummary,
   CodeBlock,

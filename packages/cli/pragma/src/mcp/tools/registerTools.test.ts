@@ -52,9 +52,9 @@ function parseData(result: Record<string, unknown>): unknown {
 // =============================================================================
 
 describe("tool listing", () => {
-  it("registers 25 tools", async () => {
+  it("registers 29 tools", async () => {
     const { tools } = await client.listTools();
-    expect(tools).toHaveLength(25);
+    expect(tools).toHaveLength(29);
   });
 
   it("all tools have descriptions", async () => {
@@ -94,6 +94,11 @@ describe("tool listing", () => {
     expect(names).toContain("doctor");
     expect(names).toContain("info");
     expect(names).toContain("capabilities");
+    // Sample tools
+    expect(names).toContain("block_sample");
+    expect(names).toContain("standard_sample");
+    expect(names).toContain("token_sample");
+    expect(names).toContain("modifier_sample");
   });
 
   it("no tool names contain pragma_ prefix", async () => {
@@ -1020,13 +1025,16 @@ describe("info", () => {
 // =============================================================================
 
 describe("capabilities", () => {
-  it("returns accurate tool list and counts", async () => {
+  it("returns enriched tool catalog with counts", async () => {
     const result = await client.callTool({
       name: "capabilities",
       arguments: {},
     });
     const data = parseData(result) as {
-      tools: string[];
+      version: string;
+      conventions: Record<string, string>;
+      discovery_sequence: { stage: number; tool: string; purpose: string }[];
+      tools: { name: string; category: string; use_when: string }[];
       counts: {
         total: number;
         read: number;
@@ -1034,14 +1042,21 @@ describe("capabilities", () => {
         orientation: number;
         diagnostic: number;
       };
+      limits: Record<string, unknown>;
     };
-    expect(data.tools).toContain("block_list");
-    expect(data.tools).toContain("capabilities");
-    expect(data.counts.total).toBe(25);
+    const toolNames = data.tools.map((t) => t.name);
+    expect(toolNames).toContain("block_list");
+    expect(toolNames).toContain("capabilities");
+    expect(data.tools.every((t) => t.use_when.length > 0)).toBe(true);
+    expect(data.counts.total).toBe(29);
     expect(data.counts.read).toBeGreaterThan(0);
     expect(data.counts.write).toBe(5);
     expect(data.counts.orientation).toBe(2);
     expect(data.counts.diagnostic).toBe(2);
+    expect(data.version).toBeDefined();
+    expect(data.conventions).toBeDefined();
+    expect(data.discovery_sequence.length).toBe(3);
+    expect(data.limits).toBeDefined();
   });
 });
 
