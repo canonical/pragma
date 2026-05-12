@@ -152,8 +152,9 @@ function mergeEntries(
 
   const merged = new Map<string, RawPackageEntry>();
 
-  for (const pkg of DEFAULT_PACKAGES) {
-    merged.set(pkg, pkg);
+  for (const entry of DEFAULT_PACKAGES) {
+    const name = typeof entry === "string" ? entry : entry.name;
+    merged.set(name, entry);
   }
   for (const entry of globalEntries) {
     const name = typeof entry === "string" ? entry : entry.name;
