@@ -37,6 +37,7 @@ export default async function createTestMcpClient(options?: {
     store,
     config,
     cwd,
+    packages: [],
     dispose: () => cleanupStore(),
   };
 

@@ -1,6 +1,7 @@
 import type { LookupContract, LookupResult } from "../../shared/contracts.js";
 import lookupMany from "../../shared/lookupMany.js";
 import type { PragmaRuntime } from "../../shared/runtime.js";
+import { expandLookupQueries } from "../../shared/suggestions/index.js";
 import type { TokenDetailed } from "../../shared/types/index.js";
 import { lookupToken } from "../operations/index.js";
 
@@ -8,10 +9,21 @@ export default async function resolveTokenLookup(
   store: Pick<PragmaRuntime, "store">["store"],
   queries: readonly string[],
 ): Promise<LookupContract<TokenDetailed>> {
-  const result: LookupResult<TokenDetailed> = await lookupMany(
+  const { names, globErrors } = await expandLookupQueries(
     queries,
-    (query) => lookupToken(store, query),
+    store,
+    "token",
   );
+
+  const lookupResult: LookupResult<TokenDetailed> =
+    names.length > 0
+      ? await lookupMany(names, (query) => lookupToken(store, query))
+      : { results: [], errors: [] };
+
+  const result: LookupResult<TokenDetailed> = {
+    results: lookupResult.results,
+    errors: [...lookupResult.errors, ...globErrors],
+  };
 
   return {
     params: { names: queries },

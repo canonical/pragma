@@ -11,7 +11,12 @@ export default async function lookupMany<TResult>(
   queries: readonly string[],
   lookup: (query: string) => Promise<TResult>,
 ): Promise<LookupResult<TResult>> {
-  const errors: Array<{ query: string; code: string; message: string }> = [];
+  const errors: Array<{
+    query: string;
+    code: string;
+    message: string;
+    suggestions?: readonly string[];
+  }> = [];
   const settled = await Promise.allSettled(
     queries.map((query) => lookup(query)),
   );
@@ -35,6 +40,9 @@ export default async function lookupMany<TResult>(
         query,
         code: error.code,
         message: error.message,
+        ...(error.suggestions.length > 0 && {
+          suggestions: error.suggestions,
+        }),
       });
     } else {
       throw error;

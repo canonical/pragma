@@ -157,8 +157,8 @@ describe("updateRefs", () => {
 
   it("uses defaults when no config exists", async () => {
     const results = await updateRefs({ cwd: projectDir });
-    // All 4 defaults are npm, so all skipped
+    // All 3 defaults are npm, so all skipped
     expect(results.every((r) => r.kind === "skipped")).toBe(true);
-    expect(results).toHaveLength(4);
+    expect(results).toHaveLength(3);
   });
 });

@@ -20,6 +20,18 @@ interface Recovery {
   mcp?: { tool: string; params?: Record<string, unknown> };
 }
 
+/** Hint pointing the user/agent to a different domain when a name exists there. */
+interface CrossDomainRecovery {
+  /** Domain where the name was found (e.g., "modifier"). */
+  domain: string;
+  /** Entity type label for messages. */
+  entityType: string;
+  /** CLI command to run. */
+  cli: string;
+  /** MCP tool invocation. */
+  mcp: { tool: string; params: Record<string, unknown> };
+}
+
 /** Raw data payload used to construct a PragmaError. */
 interface PragmaErrorData {
   /** Machine-readable error classification. */
@@ -32,10 +44,12 @@ interface PragmaErrorData {
   suggestions?: string[];
   /** Recovery hint for CLI and MCP adapters. */
   recovery?: Recovery;
+  /** Cross-domain redirect when name exists in another domain. */
+  crossDomain?: CrossDomainRecovery;
   /** Active filters at the time of the error. */
   filters?: Record<string, string>;
   /** Enumerated valid options when input was rejected. */
   validOptions?: string[];
 }
 
-export type { ErrorCode, PragmaErrorData, Recovery };
+export type { CrossDomainRecovery, ErrorCode, PragmaErrorData, Recovery };

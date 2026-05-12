@@ -21,6 +21,11 @@ import { buildQuery } from "../../shared/buildQuery.js";
 import extractLocalName from "../../shared/extractLocalName.js";
 import { buildFilters } from "../../shared/filters/buildFilters.js";
 import { P } from "../../shared/prefixes.js";
+import {
+  detectCrossDomain,
+  listDomainNames,
+  suggestNames,
+} from "../../shared/suggestions/index.js";
 import type {
   BlockDetailed,
   BlockSubcomponent,
@@ -80,12 +85,16 @@ export default async function lookupBlock(
   );
 
   if (baseResult.type !== "select" || baseResult.bindings.length === 0) {
+    const candidates = await listDomainNames(store, "block");
+    const crossDomain = await detectCrossDomain(nameOrUri, "block", store);
     throw PragmaError.notFound("block", nameOrUri, {
+      suggestions: suggestNames(nameOrUri, candidates),
       recovery: {
         message: "List available blocks.",
         cli: "pragma block list",
         mcp: { tool: "block_list" },
       },
+      crossDomain: crossDomain ?? undefined,
     });
   }
 

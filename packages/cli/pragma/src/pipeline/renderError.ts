@@ -43,6 +43,14 @@ function renderErrorPlain(error: PragmaError): string {
     lines.push(`Valid options: ${error.validOptions.join(", ")}`);
   }
 
+  if (error.crossDomain) {
+    lines.push("");
+    lines.push(
+      `"${error.entity?.name ?? ""}" exists as a ${error.crossDomain.entityType}.`,
+    );
+    lines.push(`Run \`${error.crossDomain.cli}\``);
+  }
+
   if (error.recovery) {
     lines.push("");
     if (error.recovery.cli) {
@@ -82,6 +90,12 @@ function renderErrorLlm(error: PragmaError): string {
     lines.push(`Valid options: ${error.validOptions.join(", ")}`);
   }
 
+  if (error.crossDomain) {
+    lines.push(
+      `Cross-domain: "${error.entity?.name ?? ""}" exists as a ${error.crossDomain.entityType}. \`${error.crossDomain.cli}\``,
+    );
+  }
+
   if (error.recovery) {
     if (error.recovery.cli) {
       lines.push(`Recovery: \`${error.recovery.cli}\``);
@@ -106,6 +120,7 @@ function renderErrorJson(error: PragmaError): string {
     entity: error.entity,
     suggestions: error.suggestions,
     recovery: error.recovery,
+    crossDomain: error.crossDomain,
     filters: error.filters,
     validOptions: error.validOptions,
   });

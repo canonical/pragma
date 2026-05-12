@@ -1,9 +1,10 @@
 /**
- * Cross-platform path resolution for pragma cache and global config.
+ * Cross-platform path resolution for pragma cache, config, and data.
  *
  * Respects XDG Base Directory Specification:
  * - XDG_CACHE_HOME for cache (default: ~/.cache)
  * - XDG_CONFIG_HOME for global config (default: ~/.config)
+ * - XDG_DATA_HOME for persistent data (default: ~/.local/share)
  *
  * Override via PRAGMA_CACHE_DIR for CI and testing.
  * Uses os.homedir() for macOS/WSL/Linux portability.
@@ -39,6 +40,19 @@ export function cacheRoot(): string {
 export function globalConfigDir(): string {
   const xdg = process.env.XDG_CONFIG_HOME;
   const base = xdg ?? join(homedir(), ".config");
+  return join(base, "pragma");
+}
+
+/**
+ * Root directory for pragma persistent data (extracted skills, etc.).
+ *
+ * Resolution order:
+ * 1. XDG_DATA_HOME/pragma (XDG spec)
+ * 2. ~/.local/share/pragma (default)
+ */
+export function dataRoot(): string {
+  const xdg = process.env.XDG_DATA_HOME;
+  const base = xdg ?? join(homedir(), ".local", "share");
   return join(base, "pragma");
 }
 

@@ -14,10 +14,10 @@ export default async function checkKeStore(
   ctx: CheckContext,
 ): Promise<CheckResult> {
   const start = performance.now();
-  let store: Awaited<ReturnType<typeof bootStore>> | undefined;
+  let result: Awaited<ReturnType<typeof bootStore>> | undefined;
   try {
-    store = await bootStore({ cwd: ctx.cwd });
-    const summary = await collectStoreSummary(store);
+    result = await bootStore({ cwd: ctx.cwd });
+    const summary = await collectStoreSummary(result.store);
     const elapsed = Math.round(performance.now() - start);
     return {
       name: "ke store",
@@ -33,6 +33,6 @@ export default async function checkKeStore(
         "Ensure design system packages are installed: bun add -D @canonical/ds-global @canonical/code-standards",
     };
   } finally {
-    store?.dispose();
+    result?.store.dispose();
   }
 }

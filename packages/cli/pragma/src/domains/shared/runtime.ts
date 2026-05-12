@@ -48,7 +48,7 @@ export async function bootPragma(options?: {
     ? undefined
     : mergeAndParseRefs(config.packages);
 
-  const store = await bootStore({
+  const { store, packages } = await bootStore({
     cwd,
     sources: options?.sources,
     refs,
@@ -58,6 +58,7 @@ export async function bootPragma(options?: {
     store,
     config,
     cwd,
+    packages,
     dispose: () => store.dispose(),
   };
 }

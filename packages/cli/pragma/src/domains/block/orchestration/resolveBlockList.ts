@@ -20,7 +20,15 @@ export default async function resolveBlockList(
   const summaries = await listBlocks(rt.store, filters);
 
   if (summaries.length === 0) {
-    throw blockEmptyError(filters, params.allTiers);
+    const allItems = filters.tier
+      ? await listBlocks(rt.store, {
+          tier: undefined,
+          channel: filters.channel,
+        })
+      : [];
+    throw blockEmptyError(filters, params.allTiers === true, {
+      unfilteredCount: allItems.length,
+    });
   }
 
   const items =
