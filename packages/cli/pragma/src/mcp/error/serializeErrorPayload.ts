@@ -21,6 +21,13 @@ export default function serializeErrorPayload(
     message: error.message,
     ...(error.suggestions.length > 0 && { suggestions: error.suggestions }),
     ...(recovery && { recovery }),
+    ...(error.crossDomain && {
+      crossDomain: {
+        domain: error.crossDomain.domain,
+        tool: error.crossDomain.mcp.tool,
+        params: error.crossDomain.mcp.params,
+      },
+    }),
     ...(error.filters && { filters: error.filters }),
     ...(error.validOptions && { validOptions: error.validOptions }),
   };

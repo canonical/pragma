@@ -22,12 +22,11 @@ const require = createRequire(import.meta.url);
 // Default package registry (used when config.packages is absent)
 // ---------------------------------------------------------------------------
 
-/** Default semantic packages loaded when no config overrides are present. */
+/** Default semantic graph packages loaded when no config overrides are present. */
 export const DEFAULT_PACKAGES: readonly string[] = [
   "@canonical/design-system",
   "@canonical/anatomy-dsl",
   "@canonical/code-standards",
-  "@canonical/pragma-cli",
 ];
 
 // ---------------------------------------------------------------------------

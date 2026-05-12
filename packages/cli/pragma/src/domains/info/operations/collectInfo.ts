@@ -48,14 +48,14 @@ export default async function collectInfo(cwd: string): Promise<InfoData> {
   }
 
   let store: InfoData["store"];
-  let keStore: Awaited<ReturnType<typeof bootStore>> | undefined;
+  let bootResult: Awaited<ReturnType<typeof bootStore>> | undefined;
   try {
-    keStore = await bootStore({ cwd });
-    store = await collectStoreSummary(keStore);
+    bootResult = await bootStore({ cwd });
+    store = await collectStoreSummary(bootResult.store);
   } catch {
     // Store unavailable — show info without store section
   } finally {
-    keStore?.dispose();
+    bootResult?.store.dispose();
   }
 
   // Collect package ref summaries

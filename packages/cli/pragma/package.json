@@ -41,7 +41,7 @@
     "#tui": "./src/tui/index.ts"
   },
   "scripts": {
-    "build": "bun build --compile --minify --target=bun-linux-x64 src/bin.ts --outfile dist/pragma",
+    "build": "bun build --compile --minify --target=bun-linux-x64 src/bin.ts $(find node_modules/@canonical/design-system/definitions node_modules/@canonical/design-system/data node_modules/@canonical/code-standards/definitions node_modules/@canonical/code-standards/data node_modules/@canonical/anatomy-dsl/definitions -name '*.ttl' 2>/dev/null) $(find node_modules/@canonical/design-system/skills node_modules/@canonical/code-standards/skills -name '*.md' 2>/dev/null) node_modules/@canonical/design-system/package.json node_modules/@canonical/code-standards/package.json node_modules/@canonical/anatomy-dsl/package.json --outfile dist/pragma",
     "build:compile": "bun build --compile --minify --target=bun-linux-x64 src/bin.ts --outfile dist/pragma",
     "prepublishOnly": "bun run build",
     "check": "bun run check:biome && bun run check:ts && bun run check:webarchitect",
@@ -67,13 +67,11 @@
     "typescript": "^5.9.3",
     "vitest": "^4.0.18"
   },
-  "optionalDependencies": {
-    "@canonical/anatomy-dsl": "^0.2.2",
-    "@canonical/code-standards": "^0.1.2",
-    "@canonical/design-system": "^0.1.2"
-  },
   "dependencies": {
+    "@canonical/anatomy-dsl": "^0.2.2",
     "@canonical/cli-core": "^0.27.0",
+    "@canonical/code-standards": "^0.1.2",
+    "@canonical/design-system": "^0.1.2",
     "@canonical/harnesses": "^0.27.0",
     "@canonical/ke": "^0.27.0",
     "@canonical/summon-component": "^0.27.0",

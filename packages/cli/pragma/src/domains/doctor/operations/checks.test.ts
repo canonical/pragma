@@ -75,7 +75,10 @@ describe("checkKeStore", () => {
       query: vi.fn(),
       dispose: vi.fn(),
     };
-    vi.mocked(bootStore).mockResolvedValue(mockStore as never);
+    vi.mocked(bootStore).mockResolvedValue({
+      store: mockStore,
+      packages: [],
+    } as never);
     vi.mocked(collectStoreSummary).mockResolvedValue({
       tripleCount: 12847,
       graphNames: [],

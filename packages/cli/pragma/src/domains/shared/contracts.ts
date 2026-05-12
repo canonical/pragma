@@ -56,6 +56,7 @@ export interface LookupResult<T> {
     query: string;
     code: string;
     message: string;
+    suggestions?: readonly string[];
   }[];
 }
 
