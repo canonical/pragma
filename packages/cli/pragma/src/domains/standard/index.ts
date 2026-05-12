@@ -12,10 +12,16 @@ import {
   categoriesCommand,
   listCommand,
   lookupCommand,
+  sampleCommand,
 } from "./commands/index.js";
 
 export function commands(ctx: PragmaContext): CommandDefinition[] {
-  return [listCommand(ctx), lookupCommand(ctx), categoriesCommand(ctx)];
+  return [
+    listCommand(ctx),
+    lookupCommand(ctx),
+    categoriesCommand(ctx),
+    sampleCommand(ctx),
+  ];
 }
 
 export { specs as mcpSpecs } from "./mcp/index.js";
@@ -23,6 +29,7 @@ export {
   listCategories,
   listStandards,
   lookupStandard,
+  sampleStandards,
 } from "./operations/index.js";
 export {
   buildStandardFilters,

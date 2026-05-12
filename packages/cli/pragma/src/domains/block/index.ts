@@ -7,15 +7,15 @@
 
 import type { CommandDefinition } from "@canonical/cli-core";
 import type { PragmaContext } from "../shared/context.js";
-import { listCommand, lookupCommand } from "./commands/index.js";
+import { listCommand, lookupCommand, sampleCommand } from "./commands/index.js";
 
 export function commands(ctx: PragmaContext): CommandDefinition[] {
-  return [listCommand(ctx), lookupCommand(ctx)];
+  return [listCommand(ctx), lookupCommand(ctx), sampleCommand(ctx)];
 }
 
 export { blockConfig } from "./blockConfig.js";
 export { specs as mcpSpecs } from "./mcp/index.js";
-export { listBlocks, lookupBlock } from "./operations/index.js";
+export { listBlocks, lookupBlock, sampleBlocks } from "./operations/index.js";
 export {
   blockEmptyError,
   buildBlockFilters,
