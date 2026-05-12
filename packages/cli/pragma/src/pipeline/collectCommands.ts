@@ -5,7 +5,10 @@ import { commands as createCommands } from "../domains/create/index.js";
 import { doctorCommand } from "../domains/doctor/commands/index.js";
 import { commands as graphCommands } from "../domains/graph/index.js";
 import { infoCommand, upgradeCommand } from "../domains/info/index.js";
-import { buildLlmCommand } from "../domains/llm/index.js";
+import {
+  buildCapabilitiesCommand,
+  buildLlmCommand,
+} from "../domains/llm/index.js";
 import { commands as modifierCommands } from "../domains/modifier/index.js";
 import { commands as ontologyCommands } from "../domains/ontology/index.js";
 import { commands as setupCommands } from "../domains/setup/index.js";
@@ -43,5 +46,6 @@ export default function collectCommands(
     infoCommand,
     upgradeCommand,
     buildLlmCommand(ctx),
+    buildCapabilitiesCommand(),
   ];
 }
