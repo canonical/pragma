@@ -69,6 +69,7 @@ export async function bootStore(
       options.refs && options.refs.length > 0
         ? options.refs
         : DEFAULT_PACKAGES.map(parsePackageEntry);
+    // Precedence: local (file:// + node_modules) > git cache > bundled
     const loaders = [
       createLocalLoader(),
       createGitLoader(),

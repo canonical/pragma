@@ -157,8 +157,11 @@ describe("updateRefs", () => {
 
   it("uses defaults when no config exists", async () => {
     const results = await updateRefs({ cwd: projectDir });
-    // All 3 defaults are npm, so all skipped
-    expect(results.every((r) => r.kind === "skipped")).toBe(true);
+    // All 3 defaults are git refs
     expect(results).toHaveLength(3);
+    for (const r of results) {
+      // Each result is either cloned, up-to-date, or error (network)
+      expect(["cloned", "updated", "up-to-date", "error"]).toContain(r.kind);
+    }
   });
 });
