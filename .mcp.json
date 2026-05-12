@@ -21,8 +21,7 @@
       "command": "pragma",
       "args": [
         "mcp"
-      ],
-      "cwd": "/home/adrian/code/cn/pragma"
+      ]
     },
     "sem": {
       "args": [
