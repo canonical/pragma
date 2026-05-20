@@ -13,7 +13,7 @@ export interface LineProps extends BaseProps {
   /**
    * The timestamp of the log entry.
    */
-  timestamp: Date | string | number;
+  timestamp?: Date | string | number;
   /**
    * The message content of the log entry.
    */

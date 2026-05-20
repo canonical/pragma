@@ -185,6 +185,58 @@ describe("Log component", () => {
       expect(tableElement.scrollWidth).toBe(tableElement.clientWidth);
     });
   });
+
+  describe("timestampFormatter", () => {
+    const customFormatter = {
+      format: (date: Date) => date.getTime().toString(),
+    };
+
+    it("uses custom formatter for timestamp text content", async () => {
+      const page = render(Component, {
+        ...baseProps,
+        children: oneLog,
+        timestampFormatter: customFormatter,
+      });
+
+      const timeElement = page.getByRole("time");
+      await expect
+        .element(timeElement)
+        .toHaveTextContent(
+          new Date(oneLogProps.timestamp).getTime().toString(),
+        );
+    });
+
+    it("still uses ISO format for datetime attribute", async () => {
+      const page = render(Component, {
+        ...baseProps,
+        children: oneLog,
+        timestampFormatter: customFormatter,
+      });
+
+      await expect
+        .element(page.getByRole("time"))
+        .toHaveAttribute(
+          "datetime",
+          new Date(oneLogProps.timestamp).toISOString(),
+        );
+    });
+
+    it("uses custom formatter for all log lines", async () => {
+      const page = render(Component, {
+        ...baseProps,
+        children: logs,
+        timestampFormatter: customFormatter,
+      });
+
+      const timeElements = page.getByRole("time").elements();
+      expect(timeElements).toHaveLength(logsProps.length);
+      for (const [i, log] of logsProps.entries()) {
+        await expect
+          .element(page.getByRole("time").nth(i))
+          .toHaveTextContent(new Date(log.timestamp).getTime().toString());
+      }
+    });
+  });
 });
 
 function componentLocator(page: RenderResult<typeof Component>): Locator {

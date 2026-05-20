@@ -1,7 +1,6 @@
 <script module lang="ts">
   import { defineMeta } from "@storybook/addon-svelte-csf";
   import { Link } from "../../../Link/index.js";
-  import { setLogContext } from "../../context.js";
   import { Log } from "../../index.js";
   import Line from "./Line.svelte";
 
@@ -20,12 +19,6 @@
 </script>
 
 <script lang="ts">
-  setLogContext({
-    timeZone: "UTC",
-    hideTimestamps: false,
-    wrapLines: false,
-  });
-
   function highlightLine(hash: string | null) {
     if (!hash) return;
     location.hash = "#__storybook-reset__";
