@@ -45,7 +45,7 @@ interface CustomFormatterLogProps extends CommonLogProps {
    *
    * `timeZone` prop is ignored when using a custom formatter, as it's assumed that the custom formatter will handle timezones internally if needed.
    */
-  timestampFormatter: { format: (date: Date) => string };
+  timestampFormatter: Formatter;
   timeZone?: never;
 }
 
@@ -54,7 +54,7 @@ export type LogProps = DefaultFormatterLogProps | CustomFormatterLogProps;
 export type LogContext = {
   hideTimestamps: boolean;
   wrapLines: boolean;
-  timestampFormatter: { format: (date: Date) => string };
+  timestampFormatter: Formatter;
 };
 
 type ExplicitTimeZone = Exclude<
@@ -63,3 +63,5 @@ type ExplicitTimeZone = Exclude<
 >;
 
 export type TimeZone = "UTC" | "local" | ({} & ExplicitTimeZone);
+
+type Formatter = { format: (date: Date) => string };
