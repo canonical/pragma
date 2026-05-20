@@ -2,14 +2,14 @@ import { svelte } from "@sveltejs/vite-plugin-svelte";
 import { playwright } from "@vitest/browser-playwright";
 import { defineConfig } from "vitest/config";
 
-const TimeZone = "America/Los_Angeles";
+const TIME_ZONE = "America/Los_Angeles";
 
 export default defineConfig({
   plugins: [svelte({})],
   test: {
     environment: "node",
     env: {
-      TZ: TimeZone,
+      TZ: TIME_ZONE,
     },
     include: ["src/**/*.tests.ts"],
     projects: [
@@ -22,7 +22,7 @@ export default defineConfig({
             headless: true,
             provider: playwright({
               contextOptions: {
-                timezoneId: TimeZone,
+                timezoneId: TIME_ZONE,
               },
             }),
             instances: [
