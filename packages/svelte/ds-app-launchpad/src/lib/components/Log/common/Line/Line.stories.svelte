@@ -1,9 +1,7 @@
 <script module lang="ts">
   import { defineMeta } from "@storybook/addon-svelte-csf";
   import { Link } from "../../../Link/index.js";
-  import { setLogContext } from "../../context.js";
   import { Log } from "../../index.js";
-  import { useDefaultTimestampFormatter } from "../../utils/useDefaultTimestampFormatter.svelte.js";
   import Line from "./Line.svelte";
 
   const { Story } = defineMeta({
@@ -21,14 +19,6 @@
 </script>
 
 <script lang="ts">
-  const defaultFormatter = useDefaultTimestampFormatter(() => "UTC");
-
-  setLogContext({
-    hideTimestamps: false,
-    wrapLines: false,
-    timestampFormatter: defaultFormatter,
-  });
-
   function highlightLine(hash: string | null) {
     if (!hash) return;
     location.hash = "#__storybook-reset__";
