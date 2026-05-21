@@ -3,6 +3,9 @@
   "version": "0.27.0",
   "description": "Shared Renovate configuration for Canonical monorepos. Provides batching families, weekly schedule, and devDep automerge.",
   "license": "GPL-3.0",
+  "publishConfig": {
+    "access": "public"
+  },
   "author": {
     "email": "webteam@canonical.com",
     "name": "Canonical Webteam"

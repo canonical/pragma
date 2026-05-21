@@ -37,6 +37,9 @@
     "url": "https://github.com/canonical/pragma/issues"
   },
   "homepage": "https://github.com/canonical/pragma/tree/main/packages/svelte/ds-app-launchpad#readme",
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build:all": "bun run build",
     "build": "svelte-package -o dist -i src/lib --tsconfig ./tsconfig.build.json",

@@ -10,6 +10,9 @@
   "bin": {
     "extract-font-data": "./src/scripts/extractFontData.ts"
   },
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "dev": "bun --watch run ./example/serve.ts",
     "extract-font-data": "bun run ./src/scripts/extractFontData.ts",

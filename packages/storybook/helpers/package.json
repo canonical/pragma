@@ -21,6 +21,9 @@
     "url": "https://github.com/canonical/pragma/issues"
   },
   "homepage": "https://github.com/canonical/pragma#readme",
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "bun run build:tsc && bun run build:copycss",
     "build:tsc": "tsc -p tsconfig.build.json",

@@ -16,6 +16,9 @@
     "url": "https://github.com/canonical/pragma/issues"
   },
   "homepage": "https://github.com/canonical/pragma#readme",
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "check": "bun run check:biome",
     "check:fix": "bun run check:biome:fix",

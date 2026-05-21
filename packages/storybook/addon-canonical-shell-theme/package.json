@@ -32,6 +32,9 @@
     "./manager": "./dist/esm/manager.js",
     "./package.json": "./package.json"
   },
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "test": "vitest run",
     "build": "bun run build:vite && bun run build:types",

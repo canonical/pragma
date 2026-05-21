@@ -28,6 +28,9 @@
     "url": "https://github.com/canonical/pragma/issues"
   },
   "homepage": "https://github.com/canonical/pragma#readme",
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "vite build && tsc --emitDeclarationOnly -p tsconfig.build.json",
     "build:watch": "vite build --watch",

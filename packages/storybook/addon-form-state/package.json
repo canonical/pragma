@@ -33,6 +33,9 @@
     },
     "./package.json": "./package.json"
   },
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "bun run build:package",
     "build:all": "bun run build:package",
