@@ -1,7 +1,7 @@
 {
   "name": "@canonical/storybook-hub",
   "private": true,
-  "version": "0.28.0-experimental.0",
+  "version": "0.27.0",
   "type": "module",
   "license": "LGPL-3.0",
   "scripts": {
@@ -23,9 +23,9 @@
     "@canonical/react-ds-app-lxd": "^0.27.0",
     "@canonical/react-ds-app-portal": "^0.27.0",
     "@canonical/react-ds-global": "^0.27.0",
-    "@canonical/react-ds-global-form": "^0.28.0-experimental.0",
+    "@canonical/react-ds-global-form": "^0.27.0",
     "@canonical/storybook-addon-form-state": "^0.27.0",
-    "@canonical/storybook-addon-msw": "^0.28.0-experimental.0",
+    "@canonical/storybook-addon-msw": "^0.27.0",
     "@canonical/storybook-config": "^0.27.0",
     "@canonical/styles": "^0.27.0",
     "@canonical/styles-debug": "^0.27.0"
