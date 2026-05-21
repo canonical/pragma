@@ -1,6 +1,6 @@
 {
   "name": "@canonical/react-ds-global-form",
-  "version": "0.28.0-experimental.0",
+  "version": "0.27.0",
   "type": "module",
   "module": "dist/esm/index.js",
   "types": "dist/types/index.d.ts",
@@ -54,7 +54,7 @@
     "@canonical/biome-config": "^0.27.0",
     "@canonical/design-tokens": "^0.6.0",
     "@canonical/storybook-addon-form-state": "^0.27.0",
-    "@canonical/storybook-addon-msw": "^0.28.0-experimental.0",
+    "@canonical/storybook-addon-msw": "^0.27.0",
     "@canonical/storybook-helpers": "^0.27.0",
     "@canonical/typescript-config-react": "^0.27.0",
     "@canonical/webarchitect": "^0.27.0",
