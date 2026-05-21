@@ -3,6 +3,24 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.28.0-experimental.0](https://github.com/canonical/pragma/compare/v0.27.0...v0.28.0-experimental.0) (2026-05-21)
+
+
+### Bug Fixes
+
+* resolve release workflow checks ([#634](https://github.com/canonical/pragma/issues/634)) ([3ae035e](https://github.com/canonical/pragma/commit/3ae035ede3b570238c55ca29325e784aadd23daa))
+* **svelte-ds-app-launchpad:** Fix hover/active Select styles ([#630](https://github.com/canonical/pragma/issues/630)) ([55c4c8e](https://github.com/canonical/pragma/commit/55c4c8e3b497f35cba160baa9882697b04ce4841))
+
+
+### Features
+
+* **lit:** Ubuntu Server bubble demo + Navigation component ([#585](https://github.com/canonical/pragma/issues/585)) ([e6067f6](https://github.com/canonical/pragma/commit/e6067f67040593ac2b548e61894c47be6a9a21d1))
+* **svelte-ds-app-launchpad:** WD-35460 Upstream SideNavigation ([#608](https://github.com/canonical/pragma/issues/608)) ([a3e2491](https://github.com/canonical/pragma/commit/a3e24915e2c005023f92bf54cea9d9a63ac6ed41))
+
+
+
+
+
 # [0.27.0](https://github.com/canonical/pragma/compare/v0.26.0...v0.27.0) (2026-04-29)
 
 
