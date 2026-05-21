@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.28.0-experimental.0](https://github.com/canonical/pragma/compare/v0.27.0...v0.28.0-experimental.0) (2026-05-21)
+
+
+### Reverts
+
+* Revert "chore: version bump to v0.28.0-experimental.0" (#636) ([e8fdfdd](https://github.com/canonical/pragma/commit/e8fdfddfd97b7d231399963560a91039d18f8357)), closes [#636](https://github.com/canonical/pragma/issues/636)
+
+
+
+
+
 # [0.27.0](https://github.com/canonical/pragma/compare/v0.26.0...v0.27.0) (2026-04-29)
 
 **Note:** Version bump only for package @canonical/ds-demo-site
