@@ -1,6 +1,6 @@
 {
   "name": "@canonical/react-hooks",
-  "version": "0.27.0",
+  "version": "0.27.1-experimental.0",
   "type": "module",
   "module": "dist/esm/index.js",
   "types": "dist/types/index.d.ts",
@@ -38,7 +38,7 @@
   },
   "dependencies": {
     "@canonical/ds-types": "^0.22.0",
-    "@canonical/utils": "^0.27.0",
+    "@canonical/utils": "^0.27.1-experimental.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4"
   },
