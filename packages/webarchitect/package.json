@@ -25,6 +25,9 @@
     "url": "https://github.com/canonical/pragma/issues"
   },
   "homepage": "https://github.com/canonical/pragma#readme",
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "echo 'No build needed - runs directly from TypeScript'",
     "build:all": "bun run build",

@@ -117,4 +117,4 @@ jobs:
           registry-url: https://registry.npmjs.org
 
       - name: Publish packages
-        run: lerna publish --yes --no-private --access public from-package
+        run: lerna publish --yes --no-private from-package

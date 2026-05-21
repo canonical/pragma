@@ -40,6 +40,9 @@
     "#testing": "./src/testing/index.ts",
     "#tui": "./src/tui/index.ts"
   },
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "bun build --compile --minify --target=bun-linux-x64 src/bin.ts --outfile dist/pragma",
     "build:compile": "bun build --compile --minify --target=bun-linux-x64 src/bin.ts --outfile dist/pragma",

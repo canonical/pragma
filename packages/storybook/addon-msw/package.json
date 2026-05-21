@@ -1,6 +1,6 @@
 {
   "name": "@canonical/storybook-addon-msw",
-  "version": "0.28.0-experimental.0",
+  "version": "0.27.0",
   "type": "module",
   "files": [
     "dist",
@@ -30,6 +30,9 @@
     "./preset": "./dist/esm/preset.js",
     "./manager": "./dist/esm/manager.js",
     "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "scripts": {
     "build": "bun run build:package",

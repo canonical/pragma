@@ -30,6 +30,9 @@
     "#renderer": "./src/lib/renderer/index.ts",
     "#server": "./src/lib/server/index.ts"
   },
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "build:all": "tsc -p tsconfig.build.json",

@@ -19,6 +19,9 @@
     "url": "https://github.com/canonical/pragma"
   },
   "license": "LGPL-3.0",
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "check": "bun run check:biome",
     "check:fix": "bun run check:biome:fix",

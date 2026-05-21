@@ -1,7 +1,7 @@
 {
   "name": "@canonical/svelte-ds-app-launchpad",
   "description": "Launchpad-specific components for the Pragma design system.",
-  "version": "0.28.0-experimental.0",
+  "version": "0.27.0",
   "type": "module",
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -37,6 +37,9 @@
     "url": "https://github.com/canonical/pragma/issues"
   },
   "homepage": "https://github.com/canonical/pragma/tree/main/packages/svelte/ds-app-launchpad#readme",
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build:all": "bun run build",
     "build": "svelte-package -o dist -i src/lib --tsconfig ./tsconfig.build.json",
