@@ -7,20 +7,35 @@ This guide shows you how to publish a package from this repository to NPM.
 - You have publish access for the [@canonical](https://www.npmjs.com/org/canonical) NPM organization.
 - Your changes have been merged to the `main` branch.
 - You are familiar with [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/).
-- A valid NPM publishing token has been added to the repo secrets as `NODE_AUTH_TOKEN`. The current token will expire on 22 Feb 2026. To generate/update the token:
-  1. Go to the [Granular access tokens page](https://www.npmjs.com/settings/<NPM_USERNAME>/tokens/granular-access-tokens/new) (replace `<NPM_USERNAME>` with your NPM username).
-  2. Set the expiration to 90 days.
-  3. Set the package scopes to "Read and write" for the `@canonical` organisation.
-  4. Set the token as the `NODE_AUTH_TOKEN` GitHub secret for this repository. 
-  5. Select "Bypass two-factor authentication (2FA)".
 
-Note: GitHub has [recently tightened NPM token security](https://github.blog/changelog/2025-09-29-strengthening-npm-security-important-changes-to-authentication-and-token-management/). 
-Among the measures introduced is a reduction in maximum token lifetime from infinite to 90 days, 
-so the above process will need to be repeated every 90 days until [these steps](https://github.com/canonical/pragma/issues/374) 
-are completed to migrate to [OIDC trusted publishing](https://docs.npmjs.com/trusted-publishers#step-1-add-a-trusted-publisher-on-npmjscom).
+### Authentication: OIDC trusted publishing
+
+The automated release workflow (`tag.yml`) publishes via [npm OIDC trusted publishing](https://docs.npmjs.com/trusted-publishers).
+GitHub mints a short-lived npm token at publish time, so **no long-lived `NODE_AUTH_TOKEN` secret is required** for already-registered packages.
+
+For OIDC to work, each package must have a trusted publisher configured once on npmjs.com:
+
+1. Go to the package page on npmjs.com → **Settings** → **Trusted Publisher**.
+2. Select **GitHub Actions**.
+3. Set organisation/repository to `canonical/pragma`.
+4. Set the workflow file to `tag.yml`.
+5. Leave the environment field blank (the publish job uses no GitHub environment).
+
+The publish job in `tag.yml` grants `id-token: write` permission, which is what allows GitHub to mint the OIDC token.
+
+#### Disallow tokens (recommended)
+
+Once trusted publishing is configured, set the package's **Publishing access** to disallow long-lived tokens.
+On the package page → **Settings** → **Publishing access**, select:
+
+> **Require two-factor authentication and disallow tokens (recommended)**
+
+This ensures the package can only be published via OIDC trusted publishing or an interactive 2FA login, eliminating long-lived token risk. Apply this to every `@canonical/*` package after its trusted publisher is set up.
 
 ## Publishing a new package
 Follow these steps if your package has never been published to NPM before (for example, it was just merged to `main`).
+
+> **Note:** OIDC trusted publishing cannot be configured before a package's first publish, because the package settings page does not exist until the package is on npm. The first publish is therefore manual; configure the trusted publisher afterward so future releases are automated.
 
 1. **Log in to NPM**
    - Run `npm login` and enter your credentials for the [@canonical](https://www.npmjs.com/org/canonical) organization.
@@ -39,7 +54,11 @@ Follow these steps if your package has never been published to NPM before (for e
    - Run `npm publish --access public`. Note that the `--access public` flag is only required on first publish, subsequent invocations can omit it.
    - Confirm the package is now available on [NPM](https://npmjs.org).
 
-After the first manual publish, you can use the automated workflow for future releases.
+6. **Configure the trusted publisher and disallow tokens**
+   - On the new package's npmjs.com page, add the trusted publisher and set publishing access to disallow tokens as described in [Authentication: OIDC trusted publishing](#authentication-oidc-trusted-publishing) above.
+   - Without the trusted publisher, the automated workflow cannot publish future versions of the package.
+
+After the first manual publish and trusted-publisher configuration, use the automated workflow for future releases.
 
 ## Automated Publishing
 

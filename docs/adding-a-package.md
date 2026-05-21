@@ -309,6 +309,8 @@ The tag workflow publishes all public packages to npm. Packages with `"private":
 
 If your PR introduces a brand-new npm package, the first publish must be done manually before regular release automation can pick it up. From inside the package directory, run `npm publish --access public` when the package is ready. After publishing, run `bun run publish:status` from the repository root to confirm the package appears in the registry.
 
+The automated release workflow publishes via [OIDC trusted publishing](https://docs.npmjs.com/trusted-publishers), so after the first manual publish you must configure a trusted publisher for the new package on npmjs.com (repo `canonical/pragma`, workflow `tag.yml`) and set its publishing access to disallow tokens. Until the trusted publisher is configured, the tag workflow cannot publish new versions of the package. See [How to publish a package](./how-to-guides/PUBLISH_A_PACKAGE.md#authentication-oidc-trusted-publishing) for the full procedure.
+
 Chromatic workflows require explicit configuration because they run per-package with path filtering. If your package has a Storybook, create a workflow file that triggers on changes to the package and its dependencies. The workflow template at `.github/workflows/chromatic._template.yml` provides the common structure.
 
 ## Checklist
@@ -338,3 +340,4 @@ Integration:
 - License matches ruleset requirements (LGPL-3.0 for library, GPL-3.0 for tool)
 - check:webarchitect script uses the correct ruleset
 - First-time publish for new packages completed manually by running `npm publish --access public` from inside the package directory, then verified with `bun run publish:status`
+- Trusted publisher configured on npmjs.com for the new package (repo `canonical/pragma`, workflow `tag.yml`) and publishing access set to disallow tokens, so the automated workflow can publish future versions

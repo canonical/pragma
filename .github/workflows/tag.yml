@@ -95,6 +95,11 @@ jobs:
     name: Publish packages
     runs-on: ubuntu-latest
     needs: version
+    # OIDC trusted publishing: GitHub mints a short-lived npm token at publish
+    # time instead of using a long-lived NPM_AUTH_TOKEN secret.
+    permissions:
+      id-token: write
+      contents: read
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -112,6 +117,4 @@ jobs:
           registry-url: https://registry.npmjs.org
 
       - name: Publish packages
-        run: lerna publish --yes --no-private from-package
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
+        run: lerna publish --yes --no-private --access public from-package

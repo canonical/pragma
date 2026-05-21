@@ -12,15 +12,17 @@ These goals require certain infrastructure to be in place.
 
 ### Secrets
 
-- `NODE_AUTH_TOKEN` - npm Granular Access Token with publish permission for @canonical scope
 - `CHROMATIC_TOKEN_DS_GLOBAL` - Project token from Chromatic for ds-global
 - `CHROMATIC_TOKEN_DS_APP` - Project token for ds-app
 - `CHROMATIC_TOKEN_DS_APP_LAUNCHPAD` - Project token for ds-app-launchpad
+
+npm publishing requires **no token secret**. It uses [OIDC trusted publishing](https://docs.npmjs.com/trusted-publishers): the publish job has `id-token: write` permission and GitHub mints a short-lived npm token at publish time. Each package must have a trusted publisher configured once on npmjs.com (repo `canonical/pragma`, workflow `tag.yml`). See [How to publish a package](./how-to-guides/PUBLISH_A_PACKAGE.md#authentication-oidc-trusted-publishing).
 
 ### Repository Settings
 
 - Branch protection requiring `build-gate` as status check
 - Actions permissions for creating tags and pushing version commits
+- Trusted publisher configured per package on npmjs.com (enables OIDC publishing)
 
 ### Local Alignment
 
@@ -99,7 +101,7 @@ The workflow has three jobs:
 
 1. **build** runs checks and tests to verify the release candidate
 2. **version** bumps version numbers, generates changelogs, commits, and creates a git tag
-3. **publish** checks out the tagged commit, builds all packages, and publishes them to npm
+3. **publish** checks out the tagged commit, builds all packages, and publishes them to npm via OIDC trusted publishing (`id-token: write`; no `NODE_AUTH_TOKEN`)
 
 The version job uses Lerna's conventional commit analysis to determine version bumps. A `feat:` commit triggers a minor bump, a `fix:` commit triggers a patch bump, and a `BREAKING CHANGE:` footer triggers a major bump.
 
@@ -206,12 +208,17 @@ To recover:
 
 For partial publish failures, consider publishing the remaining packages manually with `lerna publish from-package --yes --no-private` after fixing the underlying issue.
 
-### Workflow cannot find secrets
+### npm publish fails with E404 / authentication errors
 
-Workflows require repository secrets for npm publishing (`NODE_AUTH_TOKEN`) and Chromatic (`CHROMATIC_TOKEN_*`). If secrets are missing or expired:
+npm publishing uses OIDC trusted publishing, not a token. An `E404 Not found` or auth failure on `lerna publish` usually means the OIDC trust is not set up correctly:
 
-1. For npm: Generate a new Granular Access Token at npmjs.com with publish permissions for @canonical scope. Add it as `NODE_AUTH_TOKEN` in repository secrets.
+1. Confirm the package has a trusted publisher configured on npmjs.com (repo `canonical/pragma`, workflow `tag.yml`, environment blank). See [How to publish a package](./how-to-guides/PUBLISH_A_PACKAGE.md#authentication-oidc-trusted-publishing).
+2. Confirm the publish job in `tag.yml` has `permissions: id-token: write`.
+3. Confirm the runner's npm is `>= 11.5.1` (Node 24 ships a compatible npm).
+4. For a brand-new package never published before, OIDC cannot be pre-configured — do the first publish manually, then add the trusted publisher.
 
-2. For Chromatic: Get the project token from Chromatic's project settings. Add it as the appropriate `CHROMATIC_TOKEN_*` secret.
+### Workflow cannot find Chromatic secrets
+
+Chromatic workflows require `CHROMATIC_TOKEN_*` repository secrets. If missing or expired, get the project token from Chromatic's project settings and add it as the appropriate `CHROMATIC_TOKEN_*` secret.
 
 Secrets are only available to workflows running in the repository context, not from forks. Pull requests from forks will not have access to secrets, which is why Chromatic workflows skip or fail gracefully for fork PRs.

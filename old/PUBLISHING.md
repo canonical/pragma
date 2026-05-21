@@ -141,20 +141,16 @@ For example:
 | C       | 1.0.0   | any      | 2.0.0       |
 | D       | 1.1.0   | any      | 2.0.0       |
 
-#### NPM Token
+#### NPM authentication (OIDC trusted publishing)
 
-The `NODE_AUTH_TOKEN` GitHub secret is used to publish to NPM.
+Publishing no longer uses a `NODE_AUTH_TOKEN` secret. The tag workflow publishes via
+[OIDC trusted publishing](https://docs.npmjs.com/trusted-publishers): the publish job has
+`id-token: write` permission and GitHub mints a short-lived npm token at publish time.
 
-To generate a new publishing token:
-
-1. Make sure you have read-write access to the [@canonical](https://www.npmjs.com/org/canonical) NPM organisation.
-2. Go to
-   the [Granular access tokens page](https://www.npmjs.com/settings/<NPM_USERNAME>/tokens/granular-access-tokens/new).
-   Replace `<NPM_USERNAME>` in this URL with your NPM username.
-3. Set the expiration to 1 year.
-4. Set the package scopes to "Read and write" for the `@canonical` organisation.
-
-The tokens last for 1 year. The current token will expire on 3 November 2025.
+Each package must have a trusted publisher configured once on npmjs.com (repo `canonical/pragma`,
+workflow `tag.yml`), with publishing access set to disallow tokens. See
+[How to publish a package](../docs/how-to-guides/PUBLISH_A_PACKAGE.md#authentication-oidc-trusted-publishing)
+for the current procedure.
 
 #### Formatting
 
