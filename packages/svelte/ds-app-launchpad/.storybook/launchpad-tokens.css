@@ -19,3 +19,9 @@
 .placeholder-box {
   border: 1px dashed var(--lp-color-border-default);
 }
+
+@media (prefers-reduced-motion: no-preference) {
+  * {
+    scroll-behavior: smooth;
+  }
+}
