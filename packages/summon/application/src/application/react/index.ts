@@ -126,6 +126,8 @@ Requires both --ssr and --router flags.`,
       // Root config
       copy("tsconfig.json"),
       copy("vite.config.ts"),
+      copy("vitest.config.ts"),
+      copy("vitest.setup.ts"),
       copy("index.html"),
       copy(".gitignore"),
 
