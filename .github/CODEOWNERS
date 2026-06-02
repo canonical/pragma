@@ -1,4 +1,5 @@
 /packages/svelte/ds-app-launchpad/   @canonical/launchpad-ui
+/packages/svelte/ds-app-wpe/         @canonical/workplace-engineering-ui
 
 /packages/svelte/ssr-test/    @canonical/launchpad-ui  @canonical/workplace-engineering-ui
 /configs/typescript-svelte/   @canonical/launchpad-ui  @canonical/workplace-engineering-ui

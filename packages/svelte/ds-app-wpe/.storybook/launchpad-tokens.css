@@ -1,0 +1,7 @@
+@import "@canonical/svelte-ds-app-launchpad/.storybook/launchpad-tokens.css";
+
+@media (prefers-reduced-motion: no-preference) {
+  * {
+    scroll-behavior: smooth;
+  }
+}
