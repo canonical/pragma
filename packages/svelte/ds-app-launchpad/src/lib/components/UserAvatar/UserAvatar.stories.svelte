@@ -43,6 +43,15 @@
 />
 
 <Story
+  name="With image attributes"
+  args={{
+    userName: "John Doe",
+    userAvatarUrl,
+    imageAttributes: { alt: "John Doe's avatar", loading: "lazy" },
+  }}
+/>
+
+<Story
   name="When avatar fails to load"
   args={{
     userName: "That's Not An Image",

@@ -12,7 +12,7 @@
     userName: userNameProp,
     userAvatarUrl,
     size = "medium",
-    alt,
+    imageAttributes,
     ...rest
   }: UserAvatarProps = $props();
 
@@ -33,11 +33,11 @@
   <img
     class={className}
     src={userAvatarUrl}
-    {alt}
     title={userName || undefined}
     data-initials={userInitials}
     onerror={() => (imageError = true)}
     {...rest}
+    {...imageAttributes}
   />
 {:else if userName}
   <abbr class={className} title={userName} {...rest}>
@@ -59,5 +59,16 @@ In case JavaScript is disabled, and the image at `userAvatarUrl` fails to load, 
 ## Example Usage
 ```svelte
 <UserAvatar userName="John Doe" userAvatarUrl="https://example.com/avatar.png" />
+```
+
+`<img>`-specific attributes (such as `alt` or `loading`) can be passed via `imageAttributes`.
+They only take effect when the avatar renders as an image.
+
+```svelte
+<UserAvatar
+  userName="John Doe"
+  userAvatarUrl="https://example.com/avatar.png"
+  imageAttributes={{ alt: "John Doe's avatar", loading: "lazy" }}
+/>
 ```
 -->
