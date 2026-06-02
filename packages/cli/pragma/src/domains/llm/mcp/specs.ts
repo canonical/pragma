@@ -2,74 +2,80 @@
  * MCP tool specs for llm domain — capabilities, llm.
  */
 
+import { VERSION } from "#constants";
 import { buildFilterConfig } from "../../shared/filters/index.js";
 import type { ToolSpec } from "../../shared/ToolSpec.js";
-import { COMMAND_REFERENCE, DECISION_TREES } from "../data/index.js";
+import {
+  COMMAND_REFERENCE,
+  DECISION_TREES,
+  TOOL_CATALOG,
+} from "../data/index.js";
 import { collectContext } from "../operations/index.js";
-import type { LlmData } from "../types.js";
+import type { CapabilitiesData, LlmData } from "../types.js";
 
-/** All registered tool names, categorized for the capabilities response. */
-const toolNames = {
-  read: [
-    "block_list",
-    "block_lookup",
-    "standard_list",
-    "standard_lookup",
-    "standard_categories",
-    "modifier_list",
-    "modifier_lookup",
-    "token_list",
-    "token_lookup",
-    "tier_list",
-    "config_show",
-    "ontology_list",
-    "ontology_show",
-    "graph_query",
-    "graph_inspect",
-    "skill_list",
-  ],
-  write: [
-    "config_tier",
-    "config_channel",
-    "tokens_add_config",
-    "create_component",
-    "create_package",
-  ],
-  orientation: ["llm", "capabilities"],
-  diagnostic: ["doctor", "info"],
-};
-const allToolNames = [
-  ...toolNames.read,
-  ...toolNames.write,
-  ...toolNames.orientation,
-  ...toolNames.diagnostic,
-];
+/** Build the static capabilities response. */
+function buildCapabilitiesData(): CapabilitiesData {
+  const counts = {
+    total: TOOL_CATALOG.length,
+    read: TOOL_CATALOG.filter((t) => t.category === "read").length,
+    write: TOOL_CATALOG.filter((t) => t.category === "write").length,
+    orientation: TOOL_CATALOG.filter((t) => t.category === "orientation")
+      .length,
+    diagnostic: TOOL_CATALOG.filter((t) => t.category === "diagnostic").length,
+  };
+
+  return {
+    version: VERSION,
+    conventions: {
+      system:
+        "Pragma is a CLI and MCP server for querying a design system knowledge graph — blocks, tokens, modifiers, standards, and ontologies.",
+      model:
+        "Data is scoped by tier (hierarchical, e.g. global > apps > apps/lxd) and channel (normal, experimental, prerelease). Set these via config_tier and config_channel.",
+      querying:
+        "All queries run against an RDF triple store. Prefixed IRIs (e.g. ds:global.component.button) identify entities. Use ontology_list to discover namespaces.",
+    },
+    discovery_sequence: [
+      {
+        stage: 1,
+        tool: "capabilities",
+        purpose: "Understand conventions, available tools, and how to navigate",
+      },
+      {
+        stage: 2,
+        tool: "*_sample",
+        purpose:
+          "Call block_sample, standard_sample, token_sample, or modifier_sample to see real data shapes before querying. Prevents guessing at property names.",
+      },
+      {
+        stage: 3,
+        tool: "domain tools",
+        purpose:
+          "Query specific entities — block_list, standard_lookup, token_list, etc. Use the use_when hints above to pick the right tool.",
+      },
+    ],
+    tools: TOOL_CATALOG,
+    counts,
+    limits: {
+      output_modes: ["text", "json", "llm"],
+      condensed_available: true,
+    },
+  };
+}
 
 const specs: readonly ToolSpec[] = [
   {
     name: "capabilities",
     description:
-      "List all available pragma MCP tools with counts by category. Call this first to discover what pragma can do. (~100 tokens)",
+      "Discover pragma conventions, available tools with behavioral hints, and discovery sequence. Call this first at session start.",
     readOnly: true,
     async execute() {
-      return {
-        data: {
-          tools: allToolNames,
-          counts: {
-            total: allToolNames.length,
-            read: toolNames.read.length,
-            write: toolNames.write.length,
-            orientation: toolNames.orientation.length,
-            diagnostic: toolNames.diagnostic.length,
-          },
-        },
-      };
+      return { data: buildCapabilitiesData() };
     },
   },
   {
     name: "llm",
     description:
-      "Get LLM orientation for the pragma design system CLI. Returns context, decision trees for common intents, and command reference with token costs. Call this first when starting a design system task.",
+      "Get live LLM orientation — context snapshot (tier, channel, entity counts), decision trees for common intents, and command reference with token costs. Call after capabilities when starting design system work.",
     readOnly: true,
     async execute(rt) {
       const filters = buildFilterConfig(rt);
@@ -84,4 +90,5 @@ const specs: readonly ToolSpec[] = [
   },
 ];
 
+export { buildCapabilitiesData };
 export default specs;

@@ -1,4 +1,9 @@
-import type { ErrorCode, PragmaErrorData, Recovery } from "./types.js";
+import type {
+  CrossDomainRecovery,
+  ErrorCode,
+  PragmaErrorData,
+  Recovery,
+} from "./types.js";
 
 /**
  * Structured error for all pragma domain operations.
@@ -16,6 +21,8 @@ class PragmaError extends Error {
   readonly suggestions: string[];
   /** Structured recovery hint with optional CLI command or MCP tool call. */
   readonly recovery: Recovery | undefined;
+  /** Cross-domain redirect when name exists in another domain. */
+  readonly crossDomain: CrossDomainRecovery | undefined;
   /** Active filters at the time of the error, for diagnostic context. */
   readonly filters: Record<string, string> | undefined;
   /** Enumerated valid options when input was rejected. */
@@ -31,6 +38,7 @@ class PragmaError extends Error {
     this.entity = data.entity;
     this.suggestions = data.suggestions ?? [];
     this.recovery = data.recovery;
+    this.crossDomain = data.crossDomain;
     this.filters = data.filters;
     this.validOptions = data.validOptions;
   }
@@ -49,6 +57,7 @@ class PragmaError extends Error {
     opts: {
       suggestions?: string[];
       recovery?: Recovery;
+      crossDomain?: CrossDomainRecovery;
     } = {},
   ): PragmaError {
     return new PragmaError({
@@ -57,6 +66,7 @@ class PragmaError extends Error {
       entity: { type: entityType, name: entityName },
       suggestions: opts.suggestions,
       recovery: opts.recovery,
+      crossDomain: opts.crossDomain,
     });
   }
 
@@ -70,15 +80,18 @@ class PragmaError extends Error {
   static emptyResults(
     entityType: string,
     opts: {
+      message?: string;
       filters?: Record<string, string>;
       recovery?: Recovery;
+      validOptions?: string[];
     } = {},
   ): PragmaError {
     return new PragmaError({
       code: "EMPTY_RESULTS",
-      message: `No ${entityType}s found.`,
+      message: opts.message ?? `No ${entityType}s found.`,
       filters: opts.filters,
       recovery: opts.recovery,
+      validOptions: opts.validOptions,
     });
   }
 

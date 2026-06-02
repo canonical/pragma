@@ -18,10 +18,16 @@ export default function setTier(
   value: string | undefined;
 }> {
   return gen(function* () {
+    // Merge onto the full existing config so other fields (e.g. `packages`,
+    // `trace`) survive. `readConfig` normalises defaults (tier: undefined,
+    // channel: "normal"); strip those to keep the file minimal, then apply
+    // the tier change (`undefined` resets it).
     const current = readConfig(cwd);
+    const { tier: _current, channel, ...rest } = current;
     const next = {
+      ...rest,
       ...(tier !== undefined ? { tier } : {}),
-      ...(current.channel !== undefined ? { channel: current.channel } : {}),
+      ...(channel !== "normal" ? { channel } : {}),
     };
 
     yield* $(

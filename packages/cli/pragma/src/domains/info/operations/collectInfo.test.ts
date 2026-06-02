@@ -51,7 +51,7 @@ describe("collectInfo", () => {
 
   it("includes update information and store summary when available", async () => {
     const dispose = vi.fn();
-    bootStoreMock.mockResolvedValue({ dispose });
+    bootStoreMock.mockResolvedValue({ store: { dispose }, packages: [] });
     checkRegistryVersionMock.mockResolvedValue({
       latest: "9.9.9",
       distTag: "latest",
@@ -91,7 +91,7 @@ describe("collectInfo", () => {
   it("omits the update section when already on the latest version", async () => {
     const { VERSION } = await import("#constants");
     const dispose = vi.fn();
-    bootStoreMock.mockResolvedValue({ dispose });
+    bootStoreMock.mockResolvedValue({ store: { dispose }, packages: [] });
     checkRegistryVersionMock.mockResolvedValue({
       latest: VERSION,
       distTag: "latest",

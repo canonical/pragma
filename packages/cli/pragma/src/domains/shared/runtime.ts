@@ -48,16 +48,18 @@ export async function bootPragma(options?: {
     ? undefined
     : mergeAndParseRefs(config.packages);
 
-  const store = await bootStore({
+  const { store, packages } = await bootStore({
     cwd,
     sources: options?.sources,
     refs,
+    trace: config.trace,
   });
 
   return {
     store,
     config,
     cwd,
+    packages,
     dispose: () => store.dispose(),
   };
 }
@@ -92,8 +94,9 @@ function mergeAndParseRefs(
   const merged = new Map<string, RawPackageEntry>();
 
   // Start with defaults (lowest priority)
-  for (const pkg of DEFAULT_PACKAGES) {
-    merged.set(pkg, pkg);
+  for (const entry of DEFAULT_PACKAGES) {
+    const name = typeof entry === "string" ? entry : entry.name;
+    merged.set(name, entry);
   }
 
   // Global overrides defaults

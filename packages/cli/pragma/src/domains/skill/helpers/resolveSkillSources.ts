@@ -1,7 +1,11 @@
-import { existsSync } from "node:fs";
-import { join } from "node:path";
-import type { PackageRef } from "../../refs/operations/parseRef.js";
-import { resolvePackages } from "../../shared/packages.js";
+import { parsePackageEntry } from "../../refs/operations/parseRef.js";
+import {
+  createGitLoader,
+  createLocalLoader,
+} from "../../shared/loaders/index.js";
+import { DEFAULT_PACKAGES } from "../../shared/packages.js";
+import type { SemanticPackage } from "../../shared/semanticPackage.js";
+import { resolveSemanticPackages } from "../../shared/semanticPackage.js";
 
 /** A resolved skill source directory from an installed package. */
 export interface SkillSource {
@@ -12,27 +16,56 @@ export interface SkillSource {
 }
 
 /**
- * Resolve skill source directories from resolved packages.
+ * Resolve skill source directories from semantic packages.
  *
- * Auto-detects skills by checking for a `skills/` subdirectory
- * in each resolved package root.
+ * When `packages` is provided (from PragmaRuntime), extracts skill entries
+ * directly. Otherwise, resolves packages using local and git loaders
+ * (bundled loader is excluded since it has no filesystem skills).
  *
- * @param refs - Parsed package references. Omit for defaults.
+ * @param packages - Pre-resolved semantic packages (from boot).
  * @returns Array of resolved skill sources with absolute paths.
- * @note Impure
+ * @note Impure when packages is omitted (reads filesystem).
  */
 export default function resolveSkillSources(
-  refs?: ReadonlyArray<PackageRef>,
+  packages?: readonly SemanticPackage[],
+): SkillSource[] {
+  if (packages) {
+    return extractSkillSources(packages);
+  }
+
+  // Fallback: resolve packages ourselves (skills need filesystem paths,
+  // so we skip the bundled loader here)
+  return resolveSkillSourcesFromRefs();
+}
+
+function extractSkillSources(
+  packages: readonly SemanticPackage[],
 ): SkillSource[] {
   const sources: SkillSource[] = [];
-  const resolved = resolvePackages(refs);
+  for (const pkg of packages) {
+    for (const skill of pkg.skills) {
+      sources.push({ dir: skill.dir, packageName: pkg.name });
+    }
+  }
+  return sources;
+}
 
-  for (const { pkg, dir } of resolved) {
-    const skillsDir = join(dir, "skills");
-    if (existsSync(skillsDir)) {
-      sources.push({ dir: skillsDir, packageName: pkg });
+function resolveSkillSourcesFromRefs(): SkillSource[] {
+  const refs = DEFAULT_PACKAGES.map(parsePackageEntry);
+  const loaders = [createLocalLoader(), createGitLoader()];
+
+  // resolveSemanticPackages is async but skills resolution is sync.
+  // Use local+git loaders which are both sync.
+  const packages: SemanticPackage[] = [];
+  for (const ref of refs) {
+    for (const loader of loaders) {
+      const resolved = loader.resolve(ref);
+      if (resolved && !(resolved instanceof Promise)) {
+        packages.push(resolved);
+        break;
+      }
     }
   }
 
-  return sources;
+  return extractSkillSources(packages);
 }

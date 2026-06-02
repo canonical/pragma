@@ -9,21 +9,22 @@ import type { DecisionTree } from "../types.js";
 export const DECISION_TREES: readonly DecisionTree[] = [
   {
     intent: "Build a block",
-    tree: `? Know IRI or name?
-  yes → block lookup <name-or-iri...> --detailed  [~500]
-        e.g. block lookup ds:global.component.button
-  no  → block list [~200] → pick compact IRI → lookup`,
+    tree: `? First time seeing block data?
+  yes → block sample [~600] → see actual shapes, then query
+  no  → ? Know IRI or name?
+    yes → block lookup <name-or-iri...> --detailed  [~500]
+          e.g. block lookup ds:global.component.button
+    no  → block list [~200] → pick compact IRI → lookup`,
   },
   {
     intent: "Audit standards",
-    tree: `? Know standard IRI or name?
-  yes → standard lookup <name-or-iri...> --detailed [~400]
-        e.g. standard lookup react/component/props
-  no  → ? Know block IRI or name?
-      yes → block lookup <name-or-iri...> --detailed [~500]
-        → inspect related guidance manually Σ500
-        no  → standard list --category <cat> [~100]
-              → standard lookup <std-iri...> --detailed [~400] Σ500`,
+    tree: `? First time seeing standard data?
+  yes → standard sample [~500] → see actual shapes, then query
+  no  → ? Know standard IRI or name?
+    yes → standard lookup <name-or-iri...> --detailed [~400]
+          e.g. standard lookup react/component/props
+    no  → standard list --category <cat> [~100]
+          → standard lookup <std-iri...> --detailed [~400] Σ500`,
   },
   {
     intent: "Find a token",
@@ -34,7 +35,8 @@ export const DECISION_TREES: readonly DecisionTree[] = [
   },
   {
     intent: "Explore the design system",
-    tree: `high-level → ontology list [~80] → ontology show <ns> [~300]
+    tree: `first time → block sample / token sample / modifier sample [~300] → see real shapes
+high-level → ontology list [~80] → ontology show <ns> [~300]
 modifiers  → modifier list [~100] → modifier lookup <name-or-iri...> [~80]
 tiers      → tier list [~50]
 raw        → graph query "SELECT ..." → graph inspect <uri> [~200]`,

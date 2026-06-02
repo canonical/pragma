@@ -7,15 +7,19 @@
 
 import type { CommandDefinition } from "@canonical/cli-core";
 import type { PragmaContext } from "../shared/context.js";
-import { listCommand, lookupCommand } from "./commands/index.js";
+import { listCommand, lookupCommand, sampleCommand } from "./commands/index.js";
 
 export function commands(ctx: PragmaContext): CommandDefinition[] {
-  return [listCommand(ctx), lookupCommand(ctx)];
+  return [listCommand(ctx), lookupCommand(ctx), sampleCommand(ctx)];
 }
 
 export { specs as mcpSpecs } from "./mcp/index.js";
 export { modifierConfig } from "./modifierConfig.js";
-export { listModifiers, lookupModifier } from "./operations/index.js";
+export {
+  listModifiers,
+  lookupModifier,
+  sampleModifiers,
+} from "./operations/index.js";
 export {
   modifierEmptyError,
   resolveModifierList,

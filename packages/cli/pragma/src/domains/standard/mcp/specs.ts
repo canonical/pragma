@@ -11,8 +11,9 @@ import {
   categoriesFormatters as standardCatFmt,
   listFormatters as standardListFmt,
   lookupFormatters as standardLookupFmt,
+  sampleFormatters as standardSampleFmt,
 } from "../formatters/index.js";
-import { listCategories } from "../operations/index.js";
+import { listCategories, sampleStandards } from "../operations/index.js";
 import {
   resolveStandardList,
   resolveStandardLookup,
@@ -190,6 +191,52 @@ const specs: readonly ToolSpec[] = [
       }
 
       return { data: result, meta: { count: result.length } };
+    },
+  },
+
+  {
+    name: "standard_sample",
+    description:
+      "Return 1–5 randomly selected complete code standard instances as exemplars. Use BEFORE writing queries to see actual data shapes, property names, and value formats. Each call returns different instances.",
+    params: {
+      count: {
+        type: "string",
+        description: "Number of samples (1–5, default 2)",
+        optional: true,
+      },
+      condensed: {
+        type: "boolean",
+        description: "Token-optimized output",
+        optional: true,
+      },
+    },
+    readOnly: true,
+    async execute(rt, { count, condensed }) {
+      const n = Number(count ?? 2);
+      const result = await sampleStandards(rt.store, n);
+      const nextSteps = [
+        `These are ${result.samples.length} of ${result.totalCount} total standards.`,
+        "Use standard_lookup to inspect specific standards by name.",
+        "Use standard_list with category param to filter by category.",
+      ];
+
+      if (condensed) {
+        const text = standardSampleFmt.llm({ ...result, nextSteps });
+        return {
+          condensed: true,
+          text,
+          tokens: `~${Math.ceil(text.length / 4)}`,
+        };
+      }
+
+      return {
+        data: {
+          samples: result.samples,
+          totalCount: result.totalCount,
+          nextSteps,
+        },
+        meta: { count: result.samples.length },
+      };
     },
   },
 ];

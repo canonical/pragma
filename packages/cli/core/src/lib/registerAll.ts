@@ -26,13 +26,14 @@ import type {
  */
 export function convertParameterToFlag(param: ParameterDefinition): string {
   const kebab = convertCamelToKebab(param.name);
+  const prefix = param.short ? `-${param.short}, ` : "";
   switch (param.type) {
     case "boolean":
-      return `--${kebab}`;
+      return `${prefix}--${kebab}`;
     case "multiselect":
-      return `--${kebab} <values...>`;
+      return `${prefix}--${kebab} <values...>`;
     default:
-      return `--${kebab} <value>`;
+      return `${prefix}--${kebab} <value>`;
   }
 }
 

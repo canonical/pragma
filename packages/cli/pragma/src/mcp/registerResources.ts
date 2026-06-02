@@ -135,6 +135,53 @@ async function listAllSubjects(store: Store): Promise<string[]> {
   return result.bindings.map((b) => b.s ?? "").filter((s) => isUri(s));
 }
 
+const RDFS_LABEL = "http://www.w3.org/2000/01/rdf-schema#label";
+
+/**
+ * Fetch the rdfs:label of the entity's rdf:type class.
+ *
+ * Returns the label of the first typed class that has one, or null.
+ */
+async function fetchTypeLabel(
+  store: Store,
+  fullUri: string,
+): Promise<string | null> {
+  const result = await store.query(
+    buildQuery(`
+      SELECT ?typeLabel
+      WHERE {
+        <${fullUri}> <${RDF_TYPE}> ?type .
+        ?type <${RDFS_LABEL}> ?typeLabel .
+      }
+      LIMIT 1
+    `),
+  );
+
+  if (result.type !== "select" || result.bindings.length === 0) return null;
+  return result.bindings[0]?.typeLabel ?? null;
+}
+
+/**
+ * Build a resource description from type label and graph description.
+ *
+ * Produces: "Component — Buttons are used to trigger…" or just "Component"
+ * when no description exists, or just the truncated description when no
+ * type is recognized.
+ */
+function buildResourceDescription(
+  typeLabel: string | null,
+  description: string | null,
+): string | undefined {
+  if (!typeLabel && !description) return undefined;
+  const truncated =
+    description && description.length > 120
+      ? `${description.slice(0, 117)}...`
+      : description;
+  if (!typeLabel) return truncated ?? undefined;
+  if (!truncated) return typeLabel;
+  return `${typeLabel} — ${truncated}`;
+}
+
 /**
  * Read a single entity: all its triples with level-1 object summaries.
  */
@@ -234,17 +281,23 @@ export default function registerResources(
   const { store } = runtime;
   const prefixes = store.prefixes;
 
-  const template = new ResourceTemplate("pragma:{+uri}", {
+  const template = new ResourceTemplate("{+uri}", {
     list: async () => {
       const subjects = await listAllSubjects(store);
       const resources = await Promise.all(
         subjects.map(async (fullUri) => {
           const prefixed = compactUri(fullUri, prefixes);
-          const label = await fetchLabel(store, fullUri, prefixes);
+          const [label, typeLabel, desc] = await Promise.all([
+            fetchLabel(store, fullUri, prefixes),
+            fetchTypeLabel(store, fullUri),
+            fetchDescription(store, fullUri, prefixes),
+          ]);
           return {
-            uri: `pragma:${prefixed}`,
+            uri: prefixed,
             name: label ?? prefixed,
+            description: buildResourceDescription(typeLabel, desc),
             mimeType: "application/json" as const,
+            annotations: { audience: ["assistant" as const] },
           };
         }),
       );
@@ -264,11 +317,7 @@ export default function registerResources(
   server.registerResource(
     "graph-entity",
     template,
-    {
-      description:
-        "An entity in the pragma knowledge graph. Returns all properties with level-1 relation summaries.",
-      mimeType: "application/json",
-    },
+    { mimeType: "application/json" },
     async (url, variables) => {
       try {
         const prefixedUri = variables.uri as string;

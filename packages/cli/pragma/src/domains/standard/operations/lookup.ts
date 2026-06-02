@@ -18,6 +18,11 @@ import resolveUri from "../../graph/helpers/resolveUri.js";
 import { buildQuery } from "../../shared/buildQuery.js";
 import compactUri from "../../shared/compactUri.js";
 import { P } from "../../shared/prefixes.js";
+import {
+  detectCrossDomain,
+  listDomainNames,
+  suggestNames,
+} from "../../shared/suggestions/index.js";
 import type { CodeBlock, StandardDetailed } from "../../shared/types/index.js";
 
 export default async function lookupStandard(
@@ -52,12 +57,16 @@ export default async function lookupStandard(
   );
 
   if (baseResult.type !== "select" || baseResult.bindings.length === 0) {
+    const candidates = await listDomainNames(store, "standard");
+    const crossDomain = await detectCrossDomain(nameOrUri, "standard", store);
     throw PragmaError.notFound("standard", nameOrUri, {
+      suggestions: suggestNames(nameOrUri, candidates),
       recovery: {
         message: "List available standards.",
         cli: "pragma standard list",
         mcp: { tool: "standard_list" },
       },
+      crossDomain: crossDomain ?? undefined,
     });
   }
 

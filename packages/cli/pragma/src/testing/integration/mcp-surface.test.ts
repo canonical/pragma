@@ -41,17 +41,23 @@ function parseEnvelope(
 // ---------------------------------------------------------------------------
 
 describe("capabilities", () => {
-  it("returns tool list with counts", async () => {
+  it("returns enriched tool catalog with conventions", async () => {
     const res = await client.callTool({ name: "capabilities", arguments: {} });
     const body = parseEnvelope(res);
     expect(body.ok).toBe(true);
     const data = body.data as {
-      tools: string[];
+      version: string;
+      conventions: Record<string, string>;
+      tools: { name: string; category: string; use_when: string }[];
       counts: Record<string, number>;
     };
-    expect(data.tools).toContain("block_list");
-    expect(data.tools).toContain("capabilities");
-    expect(data.counts.total).toBe(25);
+    const toolNames = data.tools.map((t) => t.name);
+    expect(toolNames).toContain("block_list");
+    expect(toolNames).toContain("capabilities");
+    expect(data.tools.every((t) => t.use_when.length > 0)).toBe(true);
+    expect(data.counts.total).toBe(29);
+    expect(data.conventions).toBeDefined();
+    expect(data.version).toBeDefined();
   });
 });
 

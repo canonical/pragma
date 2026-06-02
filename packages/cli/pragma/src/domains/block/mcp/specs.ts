@@ -9,7 +9,9 @@ import type { ToolSpec } from "../../shared/ToolSpec.js";
 import {
   listFormatters as blockListFmt,
   lookupFormatters as blockLookupFmt,
+  sampleFormatters as blockSampleFmt,
 } from "../formatters/index.js";
+import { sampleBlocks } from "../operations/index.js";
 import {
   buildBlockFilters,
   resolveBlockList,
@@ -192,6 +194,52 @@ const specs: readonly ToolSpec[] = [
       }
 
       return { data: result, meta: { count: result.results.length } };
+    },
+  },
+  {
+    name: "block_sample",
+    description:
+      "Return 1–5 randomly selected complete block instances as exemplars. Use BEFORE writing queries to see actual data shapes, property names, and value formats. Each call returns different instances.",
+    params: {
+      count: {
+        type: "string",
+        description: "Number of samples (1–5, default 2)",
+        optional: true,
+      },
+      condensed: {
+        type: "boolean",
+        description: "Token-optimized output",
+        optional: true,
+      },
+    },
+    readOnly: true,
+    async execute(rt, { count, condensed }) {
+      const n = Number(count ?? 2);
+      const filters = buildBlockFilters(rt);
+      const result = await sampleBlocks(rt.store, filters, n);
+      const nextSteps = [
+        `These are ${result.samples.length} of ${result.totalCount} total blocks.`,
+        "Use block_lookup to inspect specific blocks by name.",
+        "Use block_list to see all available blocks with filtering.",
+      ];
+
+      if (condensed) {
+        const text = blockSampleFmt.llm({ ...result, nextSteps });
+        return {
+          condensed: true,
+          text,
+          tokens: `~${Math.ceil(text.length / 4)}`,
+        };
+      }
+
+      return {
+        data: {
+          samples: result.samples,
+          totalCount: result.totalCount,
+          nextSteps,
+        },
+        meta: { count: result.samples.length },
+      };
     },
   },
 ] as const;

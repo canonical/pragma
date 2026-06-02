@@ -66,6 +66,26 @@ describe("registerAll", () => {
       };
       expect(convertParameterToFlag(param)).toBe("--all-tiers");
     });
+
+    it("prepends a short flag when `short` is set", () => {
+      const param: ParameterDefinition = {
+        name: "follow",
+        description: "Follow output",
+        type: "boolean",
+        short: "f",
+      };
+      expect(convertParameterToFlag(param)).toBe("-f, --follow");
+    });
+
+    it("prepends a short flag for value-taking flags", () => {
+      const param: ParameterDefinition = {
+        name: "output",
+        description: "Output path",
+        type: "string",
+        short: "o",
+      };
+      expect(convertParameterToFlag(param)).toBe("-o, --output <value>");
+    });
   });
 
   describe("extractParams", () => {

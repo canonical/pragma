@@ -15,6 +15,11 @@ import { escapeSparqlValue } from "@canonical/ke";
 import { PragmaError } from "#error";
 import { buildQuery } from "../../shared/buildQuery.js";
 import { P } from "../../shared/prefixes.js";
+import {
+  detectCrossDomain,
+  listDomainNames,
+  suggestNames,
+} from "../../shared/suggestions/index.js";
 import type { TokenDetailed } from "../../shared/types/index.js";
 
 export default async function lookupToken(
@@ -41,12 +46,16 @@ export default async function lookupToken(
   );
 
   if (result.type !== "select" || result.bindings.length === 0) {
+    const candidates = await listDomainNames(store, "token");
+    const crossDomain = await detectCrossDomain(name, "token", store);
     throw PragmaError.notFound("token", name, {
+      suggestions: suggestNames(name, candidates),
       recovery: {
         message: "List available tokens.",
         cli: "pragma token list",
         mcp: { tool: "token_list" },
       },
+      crossDomain: crossDomain ?? undefined,
     });
   }
 

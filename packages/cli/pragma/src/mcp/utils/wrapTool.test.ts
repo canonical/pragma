@@ -7,6 +7,7 @@ const stubRuntime = {
   store: {} as PragmaRuntime["store"],
   config: { tier: undefined, channel: "normal" },
   cwd: "/test",
+  packages: [],
   dispose: () => {},
 } as PragmaRuntime;
 

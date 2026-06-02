@@ -1,10 +1,12 @@
 import type { GlobalFlags } from "@canonical/cli-core";
 import { CommanderError } from "commander";
+import { buildCapabilitiesCommand } from "../domains/llm/index.js";
 import { commands as refsCommands } from "../domains/refs/index.js";
 import { commands as setupCommands } from "../domains/setup/index.js";
 import type { PragmaContext } from "../domains/shared/context.js";
 import type { PragmaRuntime } from "../domains/shared/runtime.js";
 import { bootPragma } from "../domains/shared/runtime.js";
+import { commands as traceCommands } from "../domains/trace/index.js";
 import { PragmaError } from "../error/index.js";
 import collectCommands from "./collectCommands.js";
 import createProgram from "./createProgram.js";
@@ -78,6 +80,7 @@ async function handleRootHelp(globalFlags: GlobalFlags): Promise<void> {
     store: {} as PragmaRuntime["store"],
     config: { tier: undefined, channel: "normal" },
     cwd: process.cwd(),
+    packages: [],
     dispose: () => {},
     globalFlags,
     interactive: runInteractiveCommand,
@@ -137,11 +140,17 @@ async function runStoreSkip(
     store: {} as PragmaRuntime["store"],
     config: { tier: undefined, channel: "normal" },
     cwd: process.cwd(),
+    packages: [],
     dispose: () => {},
     globalFlags,
     interactive: runInteractiveCommand,
   };
-  const commands = [...setupCommands(), ...refsCommands()];
+  const commands = [
+    ...setupCommands(),
+    ...refsCommands(),
+    ...traceCommands(),
+    buildCapabilitiesCommand(),
+  ];
   const program = createProgram(commands, stubCtx);
 
   try {

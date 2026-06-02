@@ -1,9 +1,10 @@
 /**
- * Cross-platform path resolution for pragma cache and global config.
+ * Cross-platform path resolution for pragma cache, config, and data.
  *
  * Respects XDG Base Directory Specification:
  * - XDG_CACHE_HOME for cache (default: ~/.cache)
  * - XDG_CONFIG_HOME for global config (default: ~/.config)
+ * - XDG_DATA_HOME for persistent data (default: ~/.local/share)
  *
  * Override via PRAGMA_CACHE_DIR for CI and testing.
  * Uses os.homedir() for macOS/WSL/Linux portability.
@@ -43,6 +44,19 @@ export function globalConfigDir(): string {
 }
 
 /**
+ * Root directory for pragma persistent data (extracted skills, etc.).
+ *
+ * Resolution order:
+ * 1. XDG_DATA_HOME/pragma (XDG spec)
+ * 2. ~/.local/share/pragma (default)
+ */
+export function dataRoot(): string {
+  const xdg = process.env.XDG_DATA_HOME;
+  const base = xdg ?? join(homedir(), ".local", "share");
+  return join(base, "pragma");
+}
+
+/**
  * Cache directory for a specific git-ref-resolved package.
  *
  * @param pkg - Package name (e.g., "@canonical/design-system").
@@ -52,6 +66,20 @@ export function globalConfigDir(): string {
 export function gitCacheDir(pkg: string, ref: string): string {
   const sanitizedRef = sanitizeRef(ref);
   return join(cacheRoot(), "refs", pkg, sanitizedRef);
+}
+
+/**
+ * Root directory for query trace logs.
+ *
+ * Resolution order:
+ * 1. PRAGMA_TRACE_DIR environment variable (CI/testing override)
+ * 2. XDG_DATA_HOME/pragma/traces (default)
+ */
+export function traceDir(): string {
+  if (process.env.PRAGMA_TRACE_DIR) {
+    return process.env.PRAGMA_TRACE_DIR;
+  }
+  return join(dataRoot(), "traces");
 }
 
 /**

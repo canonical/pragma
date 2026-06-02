@@ -28,11 +28,19 @@ export interface McpRecovery {
  * Structured MCP error payload embedded in tool response content.
  * Returned as JSON text content with `isError: true`.
  */
+/** Cross-domain redirect hint for agents. */
+export interface McpCrossDomainHint {
+  readonly domain: string;
+  readonly tool: string;
+  readonly params: Record<string, unknown>;
+}
+
 export interface McpErrorPayload {
   readonly code: ErrorCode;
   readonly message: string;
   readonly suggestions?: readonly string[];
   readonly recovery?: McpRecovery;
+  readonly crossDomain?: McpCrossDomainHint;
   readonly filters?: Record<string, string>;
   readonly validOptions?: readonly string[];
 }

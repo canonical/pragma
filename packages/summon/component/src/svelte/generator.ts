@@ -35,24 +35,35 @@ import {
   getParentDir,
   sharedPrompts,
 } from "../shared/index.js";
+import loadTemplate from "../shared/loadTemplate.js";
 import type { SvelteComponentAnswers } from "./types.js";
 
 // =============================================================================
-// Template Paths
+// Template Paths & Content (loaded eagerly via top-level await)
 // =============================================================================
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const templatesDir = path.join(__dirname, "..", "templates");
 
 const svelteTemplates = {
-  component: path.join(templatesDir, "svelte", "component.svelte.ejs"),
-  types: path.join(templatesDir, "svelte", "types.ts.ejs"),
-  index: path.join(templatesDir, "svelte", "index.ts.ejs"),
-  test: path.join(templatesDir, "svelte", "test.ts.ejs"),
-  ssrTest: path.join(templatesDir, "svelte", "ssr.test.ts.ejs"),
-  storiesSvelte: path.join(templatesDir, "svelte", "stories.svelte.ejs"),
-  storiesTs: path.join(templatesDir, "svelte", "stories.ts.ejs"),
-  styles: path.join(templatesDir, "shared", "styles.css.ejs"),
+  component: await loadTemplate(
+    path.join(templatesDir, "svelte", "component.svelte.ejs"),
+  ),
+  types: await loadTemplate(path.join(templatesDir, "svelte", "types.ts.ejs")),
+  index: await loadTemplate(path.join(templatesDir, "svelte", "index.ts.ejs")),
+  test: await loadTemplate(path.join(templatesDir, "svelte", "test.ts.ejs")),
+  ssrTest: await loadTemplate(
+    path.join(templatesDir, "svelte", "ssr.test.ts.ejs"),
+  ),
+  storiesSvelte: await loadTemplate(
+    path.join(templatesDir, "svelte", "stories.svelte.ejs"),
+  ),
+  storiesTs: await loadTemplate(
+    path.join(templatesDir, "svelte", "stories.ts.ejs"),
+  ),
+  styles: await loadTemplate(
+    path.join(templatesDir, "shared", "styles.css.ejs"),
+  ),
 };
 
 // =============================================================================
@@ -122,28 +133,32 @@ For example, 'src/lib/components/Button' creates a 'Button' component.`,
 
       debug("Creating main component file"),
       template({
-        source: svelteTemplates.component,
+        source: svelteTemplates.component.source,
+        content: svelteTemplates.component.content,
         dest: path.join(componentDir, `${componentName}.svelte`),
         vars: ctx,
       }),
 
       debug("Creating types file"),
       template({
-        source: svelteTemplates.types,
+        source: svelteTemplates.types.source,
+        content: svelteTemplates.types.content,
         dest: path.join(componentDir, "types.ts"),
         vars: ctx,
       }),
 
       debug("Creating index barrel file"),
       template({
-        source: svelteTemplates.index,
+        source: svelteTemplates.index.source,
+        content: svelteTemplates.index.content,
         dest: path.join(componentDir, "index.ts"),
         vars: ctx,
       }),
 
       debug("Creating test file"),
       template({
-        source: svelteTemplates.test,
+        source: svelteTemplates.test.source,
+        content: svelteTemplates.test.content,
         dest: path.join(componentDir, `${componentName}.svelte.test.ts`),
         vars: ctx,
       }),
@@ -152,7 +167,8 @@ For example, 'src/lib/components/Button' creates a 'Button' component.`,
       when(
         answers.withSsrTests,
         template({
-          source: svelteTemplates.ssrTest,
+          source: svelteTemplates.ssrTest.source,
+          content: svelteTemplates.ssrTest.content,
           dest: path.join(componentDir, `${componentName}.ssr.test.ts`),
           vars: ctx,
         }),
@@ -165,7 +181,8 @@ For example, 'src/lib/components/Button' creates a 'Button' component.`,
       when(
         answers.withStories && !answers.useTsStories,
         template({
-          source: svelteTemplates.storiesSvelte,
+          source: svelteTemplates.storiesSvelte.source,
+          content: svelteTemplates.storiesSvelte.content,
           dest: path.join(componentDir, `${componentName}.stories.svelte`),
           vars: ctx,
         }),
@@ -178,7 +195,8 @@ For example, 'src/lib/components/Button' creates a 'Button' component.`,
       when(
         answers.withStories && answers.useTsStories,
         template({
-          source: svelteTemplates.storiesTs,
+          source: svelteTemplates.storiesTs.source,
+          content: svelteTemplates.storiesTs.content,
           dest: path.join(componentDir, `${componentName}.stories.ts`),
           vars: ctx,
         }),
@@ -188,7 +206,8 @@ For example, 'src/lib/components/Button' creates a 'Button' component.`,
       when(
         answers.withStyles,
         template({
-          source: svelteTemplates.styles,
+          source: svelteTemplates.styles.source,
+          content: svelteTemplates.styles.content,
           dest: path.join(componentDir, "styles.css"),
           vars: ctx,
         }),

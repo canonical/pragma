@@ -50,6 +50,18 @@ export default function writeConfig(cwd: string, update: ConfigUpdate): void {
     delete existing.packages;
   }
 
+  if (update.trace !== undefined) {
+    existing.trace = update.trace;
+  } else if ("trace" in update) {
+    delete existing.trace;
+  }
+
+  if (update.framework !== undefined) {
+    existing.framework = update.framework;
+  } else if ("framework" in update) {
+    delete existing.framework;
+  }
+
   writeFileSync(tempPath, `${JSON.stringify(existing, null, 2)}\n`);
   renameSync(tempPath, configPath);
 }

@@ -1,85 +1,124 @@
 /**
- * Boot a ke store from pragma.config.json sources.
+ * Boot a ke store from resolved semantic packages.
  *
- * Reads configuration, resolves sources (defaults or overridden),
- * creates the store with registered prefixes, and wraps errors.
+ * Resolves packages via the loader chain (local > git > bundled),
+ * then loads all graph content into the store.
  *
  * @note Impure — reads filesystem, creates ke store.
  */
 
-import { existsSync } from "node:fs";
-import { join } from "node:path";
-import type { SourceSpec, Store } from "@canonical/ke";
-import { createStore } from "@canonical/ke";
+import {
+  createStore,
+  definePlugin,
+  type Plugin,
+  type SourceSpec,
+  type Store,
+} from "@canonical/ke";
 import { PragmaError } from "../../error/index.js";
 import type { PackageRef } from "../refs/operations/parseRef.js";
-import { resolvePackages } from "./packages.js";
+import { parsePackageEntry } from "../refs/operations/parseRef.js";
+import {
+  createBundledLoader,
+  createGitLoader,
+  createLocalLoader,
+} from "./loaders/index.js";
+import { DEFAULT_PACKAGES } from "./packages.js";
 import { PREFIX_MAP } from "./prefixes.js";
-
-/**
- * Convention-based TTL directories to scan in each package.
- * Only directories that exist are globbed — packages that lack
- * a `data/` or `definitions/` dir are silently skipped.
- */
-const TTL_DIRS: readonly { dir: string; glob: string }[] = [
-  { dir: "definitions", glob: "definitions/**/*.ttl" },
-  { dir: "data", glob: "data/**/*.ttl" },
-];
-
-/**
- * Resolve default TTL sources from resolved packages.
- *
- * Uses convention-based TTL discovery: definitions and data globs
- * relative to each package root. Only adds globs for directories
- * that actually exist in the package.
- *
- * @param refs - Parsed package references. Omit for defaults.
- */
-export function defaultSources(refs?: ReadonlyArray<PackageRef>): SourceSpec[] {
-  const sources: SourceSpec[] = [];
-  const resolved = resolvePackages(refs);
-
-  for (const { dir } of resolved) {
-    for (const entry of TTL_DIRS) {
-      if (existsSync(join(dir, entry.dir))) {
-        sources.push(join(dir, entry.glob));
-      }
-    }
-  }
-
-  return sources;
-}
+import type { GraphContent, SemanticPackage } from "./semanticPackage.js";
+import { resolveSemanticPackages } from "./semanticPackage.js";
 
 export interface BootStoreOptions {
-  /** Override sources (skip filesystem resolution). */
+  /** Override sources (skip package resolution — for testing). */
   sources?: SourceSpec[];
   /** Working directory for resolving relative paths. */
   cwd?: string;
   /** Cache path for serialized store. */
   cache?: string;
-  /** Parsed package references for ref-based resolution. */
+  /** Parsed package references for loader-based resolution. */
   refs?: ReadonlyArray<PackageRef>;
+  /** Enable query tracing (from config). Env var PRAGMA_TRACE=1 overrides. */
+  trace?: boolean;
+}
+
+export interface BootResult {
+  /** The initialized ke store. */
+  readonly store: Store;
+  /** Resolved semantic packages (empty when sources override is used). */
+  readonly packages: readonly SemanticPackage[];
 }
 
 /**
  * Boot a ke store from configuration.
  *
+ * When `sources` is provided, uses them directly (testing path).
+ * Otherwise, resolves packages via the loader chain and loads their
+ * graph content into the store.
+ *
  * @throws PragmaError with code STORE_ERROR on failure.
  */
 export async function bootStore(
   options: BootStoreOptions = {},
-): Promise<Store> {
-  const sources = options.sources ?? defaultSources(options.refs);
-
+): Promise<BootResult> {
   try {
+    // Testing/programmatic override — use explicit sources
+    if (options.sources) {
+      const store = await createStore({
+        sources: options.sources,
+        prefixes: PREFIX_MAP,
+        cache: options.cache,
+        cwd: options.cwd,
+      });
+      return { store, packages: [] };
+    }
+
+    // Resolve packages via loader chain: local > git > bundled
+    const refs =
+      options.refs && options.refs.length > 0
+        ? options.refs
+        : DEFAULT_PACKAGES.map(parsePackageEntry);
+    // Precedence: local (file:// + node_modules) > git cache > bundled
+    const loaders = [
+      createLocalLoader(),
+      createGitLoader(),
+      createBundledLoader(),
+    ];
+    const packages = await resolveSemanticPackages(refs, loaders);
+
+    // Collect all graph content from resolved packages
+    const allGraphs = packages.flatMap((pkg) => pkg.graphs);
+
+    // Use a ke plugin to load graph content during store creation.
+    // The onReady hook has access to ctx.load() which loads raw content.
+    const graphLoaderPlugin = definePlugin({
+      name: "pragma-graph-loader",
+      onReady(ctx) {
+        for (const graph of allGraphs) {
+          ctx.load(graph.content, { format: graph.format });
+        }
+      },
+    });
+
+    // biome-ignore lint: Plugin generic variance requires explicit unknown
+    const plugins: Plugin<any>[] = [graphLoaderPlugin];
+    const traceEnabled =
+      process.env.PRAGMA_TRACE === "1" || options.trace === true;
+    if (traceEnabled) {
+      const { createTracePlugin } = await import("../trace/tracePlugin.js");
+      const { traceDir } = await import("../refs/operations/paths.js");
+      plugins.push(createTracePlugin({ traceDir: traceDir() }));
+    }
+
     const store = await createStore({
-      sources,
+      sources: [],
       prefixes: PREFIX_MAP,
       cache: options.cache,
       cwd: options.cwd,
+      plugins,
     });
-    return store;
+
+    return { store, packages };
   } catch (error) {
+    if (error instanceof PragmaError) throw error;
     throw PragmaError.storeError(
       error instanceof Error ? error.message : String(error),
       {
