@@ -38,8 +38,8 @@ export function createHandler(config: DenoAdapterConfig) {
         const relativePath = url.pathname.slice(asset.urlPrefix.length);
         const filePath = `${asset.directory}${relativePath}`;
         try {
-          const file = await readFile(filePath);
-          return new Response(file, {
+          const body = await openFileStream(filePath);
+          return new Response(body, {
             headers: {
               "Content-Type": getMimeType(filePath),
               "Cache-Control": IMMUTABLE_ASSET_CACHE_CONTROL,
@@ -75,17 +75,32 @@ export function createHandler(config: DenoAdapterConfig) {
 }
 
 /**
- * Read a file from the filesystem.
+ * Open a file as a streaming response body.
  *
- * On Deno (incl. Deno Deploy) this uses the platform-native `Deno.readFile`,
- * the documented way to read deployment files. Under Node.js test environments
- * (where `Deno` is undefined) it falls back to `node:fs/promises`.
+ * On Deno (incl. Deno Deploy) this uses the platform-native `Deno.open().readable`,
+ * so the file is streamed rather than buffered fully into memory — the
+ * documented way to serve deployment files. Under Node.js test environments
+ * (where `Deno` is undefined) it falls back to reading via `node:fs/promises`
+ * and wrapping the bytes in a one-shot stream. Rejects when the file is absent.
  */
-async function readFile(path: string): Promise<Uint8Array> {
+async function openFileStream(
+  path: string,
+): Promise<ReadableStream<Uint8Array>> {
   const deno = (
-    globalThis as { Deno?: { readFile(p: string): Promise<Uint8Array> } }
+    globalThis as {
+      Deno?: {
+        open(p: string): Promise<{ readable: ReadableStream<Uint8Array> }>;
+      };
+    }
   ).Deno;
-  if (deno) return deno.readFile(path);
+  if (deno) return (await deno.open(path)).readable;
+
   const { readFile: nodeReadFile } = await import("node:fs/promises");
-  return new Uint8Array(await nodeReadFile(path));
+  const bytes = new Uint8Array(await nodeReadFile(path));
+  return new ReadableStream<Uint8Array>({
+    start(controller) {
+      controller.enqueue(bytes);
+      controller.close();
+    },
+  });
 }

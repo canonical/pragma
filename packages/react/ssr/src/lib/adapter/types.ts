@@ -77,21 +77,19 @@ export interface CacheConfig {
 }
 
 /**
- * Configuration for serving static assets (CSS, JS, images, fonts).
+ * Configuration for serving static assets (CSS, JS, images, fonts) from a
+ * runtime that has no static layer in front of the SSR handler.
  *
- * Each entry maps a URL prefix to a source directory. The adapter serves
- * matching requests from the source using the platform's optimal mechanism
- * (R2 on Cloudflare, CDN on Vercel, filesystem on Deno/Bun).
+ * Only the Deno/Bun adapters use this: their runtimes serve the SSR handler
+ * directly, so the handler reads matching files from the filesystem. Cloudflare
+ * and Vercel do NOT use it — those platforms serve static assets at the edge
+ * before the SSR function runs (Workers Static Assets / the Vercel CDN), so
+ * their adapters take no `staticAssets` config. See each adapter's README.
  */
 export interface StaticAssetConfig {
   /** URL path prefix (e.g. `"/assets"`). */
   urlPrefix: string;
 
-  /**
-   * Source directory or key prefix.
-   * - Cloudflare: R2 key prefix (e.g. `"assets"`)
-   * - Vercel: not used (static assets served by CDN from `.vercel/output/static/`)
-   * - Deno/Bun: filesystem path (e.g. `"dist/client/assets"`)
-   */
+  /** Filesystem path the prefix maps to (e.g. `"dist/client/assets"`). */
   directory: string;
 }

@@ -1,19 +1,17 @@
 import type {
   CacheConfig,
   RendererFactory,
-  StaticAssetConfig,
 } from "@canonical/react-ssr/adapter";
 
 /**
  * Cloudflare Workers environment bindings.
  *
- * The `ASSETS` binding is an R2 bucket used for serving static assets
- * (CSS, JS, images, fonts). Additional bindings can be added by
- * extending this interface.
+ * Static assets are served by Workers Static Assets (the `[assets]` block in
+ * `wrangler.toml`) at the edge, before the Worker runs — so no asset binding is
+ * required here. Add your own bindings (KV, D1, R2, secrets) by extending this
+ * interface.
  */
 export interface CloudflareEnv {
-  /** R2 bucket binding for static assets. */
-  ASSETS: R2Bucket;
   [key: string]: unknown;
 }
 
@@ -26,12 +24,6 @@ export interface CloudflareAdapterConfig {
    * The first matching route handles the request.
    */
   routes: readonly CloudflareRouteDefinition[];
-
-  /**
-   * Static asset configurations. Assets are served from R2 with
-   * immutable cache headers.
-   */
-  staticAssets?: readonly StaticAssetConfig[];
 
   /**
    * Enable Cloudflare Cache API for SSR responses.

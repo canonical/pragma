@@ -195,14 +195,19 @@ describe("createHandler", () => {
       expect(await responseToText(response)).toBe("dynamic");
     });
 
-    it("reads via the native Deno.readFile API when running on Deno (m2)", async () => {
+    it("streams via the native Deno.open().readable API when running on Deno (m2)", async () => {
       // Under Node the fallback path is exercised by the tests above; here we
-      // stub a Deno global to prove the platform-native branch is taken (so the
-      // JSDoc claim "In Deno, this uses Deno.readFile" is actually true).
-      const denoReadFile = vi.fn(async (_path: string) =>
-        new TextEncoder().encode("console.log('deno')"),
-      );
-      vi.stubGlobal("Deno", { readFile: denoReadFile });
+      // stub a Deno global to prove the platform-native streaming branch is
+      // taken (so the JSDoc claim "uses Deno.open().readable" is actually true).
+      const denoOpen = vi.fn(async (_path: string) => ({
+        readable: new ReadableStream<Uint8Array>({
+          start(controller) {
+            controller.enqueue(new TextEncoder().encode("console.log('deno')"));
+            controller.close();
+          },
+        }),
+      }));
+      vi.stubGlobal("Deno", { open: denoOpen });
 
       const handler = createHandler({
         routes: [{ pattern: "/*", factory: mockRendererFactory("page") }],
@@ -213,7 +218,7 @@ describe("createHandler", () => {
         new Request("http://localhost/assets/main.js"),
       );
       expect(response.status).toBe(200);
-      expect(denoReadFile).toHaveBeenCalledWith("assets/main.js");
+      expect(denoOpen).toHaveBeenCalledWith("assets/main.js");
       expect(await responseToText(response)).toBe("console.log('deno')");
     });
   });
