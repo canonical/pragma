@@ -107,17 +107,24 @@ Requires both --ssr and --router flags.`,
 
     // The app path is a directory path, not a route path — keep it as given
     // (absolute or relative), only trimming surrounding whitespace and any
-    // trailing slash. The package name is the final path segment.
+    // trailing slash.
     const appPath =
       (answers.appPath || "my-app").trim().replace(/\/+$/, "") || "my-app";
-    const name = path.basename(appPath);
 
-    // Validate the derived package name: npm package names are lowercase and
-    // limited to a safe character set.
-    if (!/^[a-z0-9][a-z0-9._-]*$/.test(name)) {
+    // The package name is the final path segment. For "." / "" / "/" (scaffold
+    // into the current dir) basename gives "."/"" — resolve against the real
+    // directory so the name is the actual folder name. Then slugify to an
+    // npm-safe form (lowercase, safe chars).
+    const rawName = path.basename(path.resolve(appPath));
+    const name = rawName
+      .toLowerCase()
+      .replace(/[^a-z0-9._-]+/g, "-")
+      .replace(/^[._-]+|[._-]+$/g, "");
+
+    if (!name) {
       throw new Error(
-        `Invalid application name "${name}" (from path "${appPath}"). ` +
-          "Use lowercase letters, digits, '.', '_' or '-', starting with a letter or digit.",
+        `Could not derive a valid application name from path "${appPath}". ` +
+          "Pass an explicit directory name (lowercase letters/digits).",
       );
     }
 
