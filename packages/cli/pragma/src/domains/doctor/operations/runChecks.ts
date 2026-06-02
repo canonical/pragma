@@ -13,7 +13,9 @@ import type { CheckContext, CheckResult, DoctorData } from "./types.js";
 /**
  * Each check paired with the display name used if it rejects. The checks are
  * mutually independent, so they run concurrently; this list also fixes the
- * stable display order of the results.
+ * stable display order of the results. The fallback name must match the
+ * `name` each check returns on success, so a thrown check reports the same
+ * label as a normal pass/fail and stays correlatable.
  */
 function buildChecks(
   ctx: CheckContext,
@@ -21,12 +23,12 @@ function buildChecks(
   return [
     ["Node version", checkNodeVersion()],
     ["pragma version", checkPragmaVersion()],
-    ["config file", checkConfigFile(ctx)],
+    ["pragma.config.json", checkConfigFile(ctx)],
     ["package refs", checkPackageRefs(ctx)],
     ["ke store", checkKeStore(ctx)],
-    ["shell completions", checkShellCompletions()],
+    ["Shell completions", checkShellCompletions()],
     ["MCP configured", checkMcpConfigured(ctx)],
-    ["skills symlinked", checkSkillsSymlinked(ctx)],
+    ["Skills symlinked", checkSkillsSymlinked(ctx)],
   ];
 }
 

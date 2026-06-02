@@ -142,7 +142,9 @@ describe("runChecks", () => {
     expect(data.failed).toBe(1);
     const failed = data.checks[2];
     expect(failed.status).toBe("fail");
-    expect(failed.name).toBe("config file");
+    // Fallback name matches checkConfigFile's own `name` so a thrown check
+    // reports the same label as a normal pass/fail.
+    expect(failed.name).toBe("pragma.config.json");
     expect(failed.detail).toContain("disk on fire");
     expect(failed.remedy).toBeDefined();
   });

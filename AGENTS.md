@@ -7,8 +7,8 @@ file is the PR workflow contract.
 ## Toolchain
 
 - **Bun is required** and is the canonical package manager/runner (`bun install`,
-  `bun run <script>`). Node.js 22.12+ or 24 must also be present (Lerna/Storybook
-  need it); avoid Node 23.
+  `bun run <script>`). Node.js 20+ must also be present (the floor `pragma doctor`
+  enforces and `old/CONTRIBUTING.md` documents); avoid Node 23.
 - **npm appears only for first-time package publishing** (`npm publish --access public`
   from inside a new package dir) — never for day-to-day dev. Don't use `npm install`.
 
