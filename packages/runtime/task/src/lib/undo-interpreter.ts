@@ -154,6 +154,7 @@ const mockEffectWithFs = (
   switch (eff._tag) {
     case "WriteFile":
     case "AppendFile":
+    case "TransformFile":
       virtualFs.add(eff.path);
       return undefined;
     case "MakeDir":

@@ -200,7 +200,7 @@ describe("domain generator", () => {
 });
 
 describe("route generator", () => {
-  it("creates {Name}Page.tsx and appends to routes.ts", () => {
+  it("creates {Name}Page.tsx and transforms routes.ts", () => {
     const result = dryRun(
       generators.route.generate({ routePath: "account/settings" }),
     );
@@ -210,10 +210,14 @@ describe("route generator", () => {
 
     expect(writePaths).toContain("src/domains/account/SettingsPage.tsx");
 
-    const appendEffects = result.effects.filter((e) => e._tag === "AppendFile");
-    const appendPaths = appendEffects.map((e) => (e as { path: string }).path);
+    // The route is wired into routes.ts via a TransformFile (AST insert), not
+    // an AppendFile of a TODO comment. The transform content is covered by
+    // insertRoute.test.ts.
+    const transformPaths = result.effects
+      .filter((e) => e._tag === "TransformFile")
+      .map((e) => (e as { path: string }).path);
 
-    expect(appendPaths).toContain("src/domains/account/routes.ts");
+    expect(transformPaths).toContain("src/domains/account/routes.ts");
   });
 
   it("includes correct content in the page component", () => {
@@ -232,23 +236,39 @@ describe("route generator", () => {
     expect(page?.content).toContain('useHead({ title: "Settings" })');
   });
 
-  it("appends import and route comment to routes.ts", () => {
+  it("wires the route via a reversible TransformFile (no TODO append)", () => {
     const result = dryRun(
       generators.route.generate({ routePath: "account/settings" }),
     );
 
-    const appendEffects = result.effects.filter((e) => e._tag === "AppendFile");
-    const routesAppend = appendEffects.find(
-      (e) => (e as { path: string }).path === "src/domains/account/routes.ts",
-    ) as { content: string } | undefined;
+    // No AppendFile TODO stub any more.
+    expect(result.effects.some((e) => e._tag === "AppendFile")).toBe(false);
 
-    expect(routesAppend).toBeDefined();
-    expect(routesAppend?.content).toContain(
-      'import SettingsPage from "./SettingsPage.js"',
-    );
-    expect(routesAppend?.content).toContain(
-      'settings: route({ url: "/account/settings", content: SettingsPage })',
-    );
+    const transform = result.effects.find(
+      (e) =>
+        e._tag === "TransformFile" &&
+        (e as { path: string }).path === "src/domains/account/routes.ts",
+    ) as { transform: (s: string) => string; undo?: unknown } | undefined;
+
+    expect(transform).toBeDefined();
+    // It carries an undo (the inverse removeRoute transform).
+    expect(transform?.undo).toBeDefined();
+
+    // The forward transform actually inserts the import + route entry.
+    const base = `import { route } from "@canonical/router-core";
+import MainPage from "./MainPage.js";
+
+const routes = {
+  account: route({ url: "/account", content: MainPage }),
+} as const;
+
+export default routes;
+`;
+    const out = transform?.transform(base) ?? "";
+    expect(out).toContain('import SettingsPage from "./SettingsPage.js";');
+    expect(out).toContain("settings: route({");
+    expect(out).toContain('url: "/account/settings",');
+    expect(out).toContain("content: SettingsPage,");
   });
 
   it("throws on single-segment path", () => {

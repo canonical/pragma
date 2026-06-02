@@ -77,6 +77,7 @@ export {
   readContextEffect,
   readFileEffect,
   symlinkEffect,
+  transformFileEffect,
   writeContextEffect,
   writeFileEffect,
 } from "./lib/effect.js";
@@ -113,6 +114,7 @@ export {
   sortFileLines,
   succeed,
   symlink,
+  transformFile,
   warn,
   withContext,
   writeFile,

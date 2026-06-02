@@ -20,6 +20,7 @@ import {
   readContextEffect,
   readFileEffect,
   symlinkEffect,
+  transformFileEffect,
   type UndoOptions,
   writeContextEffect,
   writeFileEffect,
@@ -61,6 +62,21 @@ export const appendFile = (
   createIfMissing = true,
   opts?: UndoOptions,
 ): Task<void> => effect(appendFileEffect(path, content, createIfMissing, opts));
+
+/**
+ * Read a file, apply a pure transform to its contents, and write it back.
+ * The transform must be pure (it is not executed during dry-run).
+ * No default undo — provide `{ undo: yourTask }` to make it reversible.
+ *
+ * @param path - Path to the file to transform
+ * @param transform - Pure `(source) => newSource` function
+ * @param opts - Undo options
+ */
+export const transformFile = (
+  path: string,
+  transform: (source: string) => string,
+  opts?: UndoOptions,
+): Task<void> => effect(transformFileEffect(path, transform, opts));
 
 /**
  * Copy a file from source to destination.

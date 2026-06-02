@@ -3,9 +3,16 @@ import type {
   GeneratorDefinition,
   PromptDefinition,
 } from "@canonical/summon-core";
-import { appendFile, info, mkdir, sequence_, writeFile } from "@canonical/task";
+import {
+  info,
+  mkdir,
+  sequence_,
+  transformFile,
+  writeFile,
+} from "@canonical/task";
 import { toCamelCase, toPascalCase, toTitleCase } from "@canonical/utils";
 import { normalizeCommandPath } from "../shared/casing.js";
+import { insertRoute, removeRoute } from "./insertRoute.js";
 
 interface RouteAnswers {
   readonly routePath: string;
@@ -39,16 +46,6 @@ export default function ${pageName}(): ReactElement {
     </section>
   );
 }
-`;
-}
-
-function buildRoutesAppend(domainName: string, routeName: string): string {
-  const pageName = `${toPascalCase(routeName)}Page`;
-  const fullUrl = `/${normalizeCommandPath(`${domainName}/${routeName}`)}`;
-  const routeKey = toCamelCase(routeName);
-
-  return `import ${pageName} from "./${pageName}.js";
-// TODO: Add to routes object: ${routeKey}: route({ url: "${fullUrl}", content: ${pageName} }),
 `;
 }
 
@@ -93,15 +90,32 @@ Create the domain first with: summon domain <name>`,
     const pageName = `${toPascalCase(routeName)}Page`;
     const domainDir = path.join("src", "domains", domainName);
     const routesFile = path.join(domainDir, "routes.ts");
+    const url = `/${normalized}`;
+    const routeKey = toCamelCase(routeName);
 
     return sequence_([
       info(`Adding route "${routeName}" to domain "${domainName}"...`),
       mkdir(domainDir),
       writeFile(path.join(domainDir, `${pageName}.tsx`), buildPage(routeName)),
-      appendFile(routesFile, buildRoutesAppend(domainName, routeName), true),
-      info(
-        `Route "${routeName}" created. Update ${routesFile} to add the route entry.`,
+      // Insert the import + route entry into the domain's routes object via a
+      // pure AST-located transform (no manual edit needed afterwards). Undo
+      // removes exactly the lines we added, rather than restoring a snapshot.
+      transformFile(
+        routesFile,
+        (source) =>
+          insertRoute(source, {
+            pageName,
+            importPath: `./${pageName}.js`,
+            routeKey,
+            url,
+          }),
+        {
+          undo: transformFile(routesFile, (source) =>
+            removeRoute(source, { pageName, routeKey }),
+          ),
+        },
       ),
+      info(`Route "${routeName}" wired into ${routesFile}.`),
     ]);
   },
 };

@@ -23,6 +23,7 @@ export const mockEffect = (effect: Effect): unknown => {
 
     case "WriteFile":
     case "AppendFile":
+    case "TransformFile":
     case "CopyFile":
     case "CopyDirectory":
     case "DeleteFile":
@@ -93,6 +94,7 @@ export const dryRun = <A>(task: Task<A>): DryRunResult<A> => {
     switch (effect._tag) {
       case "WriteFile":
       case "AppendFile":
+      case "TransformFile":
         virtualFs.add(effect.path);
         return undefined;
       case "MakeDir":
@@ -165,6 +167,7 @@ const dryRunWithVirtualFs = <A>(
     switch (effect._tag) {
       case "WriteFile":
       case "AppendFile":
+      case "TransformFile":
         virtualFs.add(effect.path);
         return undefined;
       case "MakeDir":
@@ -322,6 +325,7 @@ export const getAffectedFiles = (effects: Effect[]): string[] => {
     switch (effect._tag) {
       case "WriteFile":
       case "AppendFile":
+      case "TransformFile":
       case "DeleteFile":
         files.add(effect.path);
         break;
