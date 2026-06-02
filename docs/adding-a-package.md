@@ -307,7 +307,7 @@ New packages integrate into CI automatically through Lerna. The PR workflow runs
 
 The tag workflow publishes all public packages to npm. Packages with `"private": true` in package.json are excluded from publishing but still participate in builds and tests.
 
-If your PR introduces a brand-new npm package, the first publish must be done manually before regular release automation can pick it up. From inside the package directory, run `npm publish --access public` when the package is ready. After publishing, run `bun run publish:status` from the repository root to confirm the package appears in the registry.
+If your PR introduces a brand-new npm package, the first publish must be done manually before regular release automation can pick it up. **This is a manual human step — it requires interactive npm authentication (2FA) and access to npmjs.com, so it cannot be automated or performed by an AI agent.** From inside the package directory, run `npm publish --access public` when the package is ready. After publishing, run `bun run publish:status` from the repository root to confirm the package appears in the registry.
 
 The automated release workflow publishes via [OIDC trusted publishing](https://docs.npmjs.com/trusted-publishers), so after the first manual publish you must configure a trusted publisher for the new package on npmjs.com (repo `canonical/pragma`, workflow `tag.yml`) and set its publishing access to disallow tokens. Until the trusted publisher is configured, the tag workflow cannot publish new versions of the package. See [How to publish a package](./how-to-guides/PUBLISH_A_PACKAGE.md#authentication-oidc-trusted-publishing) for the full procedure.
 

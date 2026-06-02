@@ -104,3 +104,11 @@ a new file should be indistinguishable in style from its neighbours.
 - Add `no visual change` to skip Chromatic when there's no visual diff.
 - New package? First-time publish is manual (`npm publish --access public` from the
   package dir); verify with `bun run publish:status` from the root.
+- **New packages need OIDC trusted-publisher setup — a manual human step, agents cannot
+  do it.** Automated releases (`tag.yml`) publish via npm OIDC trusted publishing, but a
+  trusted publisher *cannot be configured until a package's first publish* (the npm
+  settings page doesn't exist yet). So a new package's first publish is manual, and a
+  human must then configure its trusted publisher on npmjs.com — until they do, the
+  automated workflow cannot publish future versions. Beware: merging a new package does
+  not make it releasable on its own. See
+  [`docs/how-to-guides/PUBLISH_A_PACKAGE.md`](docs/how-to-guides/PUBLISH_A_PACKAGE.md).
