@@ -36,6 +36,8 @@ This ensures the package can only be published via OIDC trusted publishing or an
 Follow these steps if your package has never been published to NPM before (for example, it was just merged to `main`).
 
 > **Note:** OIDC trusted publishing cannot be configured before a package's first publish, because the package settings page does not exist until the package is on npm. The first publish is therefore manual; configure the trusted publisher afterward so future releases are automated.
+>
+> **This is a manual human step — it cannot be automated or done by an AI agent.** It requires interactive npm authentication (2FA login) and access to the package's settings on npmjs.com. Beware when adding a new package: merging it to `main` does **not** make it releasable. Until a human runs the first publish and configures the trusted publisher, the automated `tag.yml` workflow will skip or fail to publish that package, and its version will silently lag the rest of the monorepo.
 
 1. **Log in to NPM**
    - Run `npm login` and enter your credentials for the [@canonical](https://www.npmjs.com/org/canonical) organization.
