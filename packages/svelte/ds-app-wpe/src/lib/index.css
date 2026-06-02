@@ -1,4 +1,2 @@
 /* TODO(jmuzina): remove this file once pragma tokens are ready and used in the project */
 @import "./styles/index.css";
-/* TODO(jmuzina): Remove once these are upstreamed to a core tier */
-@import "./modifier-families/styles/index.css";

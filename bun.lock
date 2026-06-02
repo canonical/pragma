@@ -1256,16 +1256,13 @@
     "packages/svelte/ds-app-wpe": {
       "name": "@canonical/svelte-ds-app-wpe",
       "version": "0.27.1-experimental.0",
-      "dependencies": {
-        "@canonical/svelte-ds-app-launchpad": "0.27.1-experimental.0",
-      },
       "devDependencies": {
         "@biomejs/biome": "2.4.9",
         "@canonical/biome-config": "^0.27.1-experimental.0",
-        "@canonical/design-tokens": "^0.6.0",
-        "@canonical/launchpad-design-tokens": "1.1.1",
+        "@canonical/ds-types": "^0.27.1-experimental.0",
         "@canonical/storybook-config": "^0.27.1-experimental.0",
         "@canonical/storybook-helpers": "^0.27.1-experimental.0",
+        "@canonical/styles": "^0.27.1-experimental.0",
         "@canonical/svelte-ssr-test": "^0.27.1-experimental.0",
         "@canonical/typescript-config-svelte": "^0.27.1-experimental.0",
         "@canonical/webarchitect": "^0.27.1-experimental.0",

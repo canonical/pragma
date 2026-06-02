@@ -17,7 +17,6 @@ This section documents non-trivial runtime dependencies in this package.
 
 | Dependency                                                       | Purpose                                                                                      | Rationale                                                                                                             | Long-term Plan                                          |
 |------------------------------------------------------------------|----------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------|
-| [`@canonical/svelte-ds-app-launchpad`](https://floating-ui.com/) | Temporary cross-team dependency while Svelte components are being upstreamed to global tier. | Allows WPE to build Svelte components on top of Launchpad's work pending the availability of a global Svelte package. | Remove once core package is stable and suits our needs. |
 
 ## Development
 

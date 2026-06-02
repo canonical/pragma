@@ -9,7 +9,6 @@ on:
       - packages/styles/**
       - packages/utils/**
       - packages/svelte/ds-global/**
-      - packages/svelte/ds-app-launchpad/**
       - packages/svelte/ds-app-wpe/**
   push:
     branches:
@@ -21,7 +20,6 @@ on:
       - packages/styles/**
       - packages/utils/**
       - packages/svelte/ds-global/**
-      - packages/svelte/ds-app-launchpad/**
       - packages/svelte/ds-app-wpe/**
 jobs:
   test-compile:
@@ -37,5 +35,4 @@ jobs:
         "packages/styles/**",
         "packages/utils/**",
         "packages/svelte/ds-global/**"
-        "packages/svelte/ds-app-launchpad/**"
       ]'

@@ -1,2 +1,1 @@
-/* TODO(jmuzina): Remove cross-team dependency when able to */
-@import "@canonical/svelte-ds-app-launchpad/styles.css";
+@import "@canonical/styles";
