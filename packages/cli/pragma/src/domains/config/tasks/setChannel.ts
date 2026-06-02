@@ -15,9 +15,15 @@ export default function setChannel(
   channel: string | undefined,
 ): Task<{ field: "channel"; value: string | undefined }> {
   return gen(function* () {
+    // Merge onto the full existing config so other fields (e.g. `packages`,
+    // `trace`) survive. `readConfig` normalises defaults (tier: undefined,
+    // channel: "normal"); strip those to keep the file minimal, then apply
+    // the channel change (`undefined` resets it).
     const current = readConfig(cwd);
+    const { tier, channel: _current, ...rest } = current;
     const next = {
-      ...(current.tier !== undefined ? { tier: current.tier } : {}),
+      ...rest,
+      ...(tier !== undefined ? { tier } : {}),
       ...(channel !== undefined ? { channel } : {}),
     };
 

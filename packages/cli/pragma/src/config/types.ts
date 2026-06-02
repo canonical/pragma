@@ -20,6 +20,8 @@ interface PragmaConfig {
    * When absent, the hardcoded defaults are used.
    */
   packages?: ReadonlyArray<RawPackageEntry> | undefined;
+  /** Whether query access tracing is enabled. Overridden by PRAGMA_TRACE env var. */
+  trace?: boolean | undefined;
 }
 
 /** Partial update payload for writing config changes. */
@@ -30,6 +32,8 @@ interface ConfigUpdate {
   channel?: Channel | undefined;
   /** New packages list, `undefined` to remove the field. */
   packages?: ReadonlyArray<RawPackageEntry> | undefined;
+  /** Enable/disable query tracing, `undefined` to remove the field. */
+  trace?: boolean | undefined;
 }
 
 export type { ConfigUpdate, PragmaConfig };

@@ -1,0 +1,136 @@
+/**
+ * Wires the `pragma trace` CLI command.
+ *
+ * Shows query trace records from the latest (or specified) session.
+ * Supports `--follow` / `-f` for real-time tailing.
+ */
+
+import {
+  type CommandDefinition,
+  createOutputResult,
+} from "@canonical/cli-core";
+import { traceDir } from "../../refs/operations/paths.js";
+import { selectFormatter } from "../../shared/formatters.js";
+import { showFormatters } from "../formatters/index.js";
+import {
+  followTraceLog,
+  listSessions,
+  readTraceLog,
+} from "../operations/index.js";
+
+function formatOneLine(r: import("../types.js").TraceRecord): string {
+  const d = new Date(r.ts);
+  const time = [
+    String(d.getHours()).padStart(2, "0"),
+    String(d.getMinutes()).padStart(2, "0"),
+    String(d.getSeconds()).padStart(2, "0"),
+  ].join(":");
+  const type = r.type.toUpperCase().padEnd(10);
+  const count =
+    r.type === "ask"
+      ? (r.ask ? "true" : "false").padEnd(12)
+      : `${r.count} row${r.count !== 1 ? "s" : ""}`.padEnd(12);
+  const ms = `${r.ms}ms`.padEnd(9);
+  const q = r.q.replace(/\s+/g, " ").trim();
+  const query = q.length > 100 ? `${q.slice(0, 97)}...` : q;
+  return `#${String(r.seq).padEnd(4)} ${time}  ${type}${count}${ms} ${r.qh}  ${query}`;
+}
+
+const showCommand: CommandDefinition = {
+  path: ["trace"],
+  description: "View query access traces",
+  parameters: [
+    {
+      name: "follow",
+      description: "Tail the log in real time",
+      type: "boolean",
+      short: "f",
+      default: false,
+    },
+    {
+      name: "session",
+      description: "Session ID to view (default: latest)",
+      type: "string",
+    },
+    {
+      name: "limit",
+      description: "Maximum number of records to show",
+      type: "string",
+      default: "50",
+    },
+  ],
+  meta: {
+    examples: [
+      "pragma trace",
+      "pragma trace -f",
+      "pragma trace --limit 20",
+      "pragma trace --session 20260512-143022-a7f3",
+    ],
+  },
+  async execute(params, ctx) {
+    const dir = traceDir();
+    const sessions = listSessions(dir);
+
+    if (sessions.length === 0) {
+      return createOutputResult(
+        { sessionId: "(none)", records: [] },
+        {
+          plain: () =>
+            "No trace sessions found.\n\nEnable tracing: PRAGMA_TRACE=1 pragma <command>\n                 or: pragma config trace on",
+        },
+      );
+    }
+
+    const sessionId =
+      typeof params.session === "string"
+        ? params.session
+        : sessions[0]?.sessionId;
+    const target = sessions.find((s) => s.sessionId === sessionId);
+
+    if (!target) {
+      return createOutputResult(
+        { sessionId: sessionId ?? "(unknown)", records: [] },
+        {
+          plain: () =>
+            `Session not found: ${sessionId}\n\nAvailable sessions: ${sessions.map((s) => s.sessionId).join(", ")}`,
+        },
+      );
+    }
+
+    // Follow mode — stream new records to stdout and block
+    if (params.follow === true) {
+      process.stdout.write(
+        `Following session ${target.sessionId} (ctrl+c to stop)\n\n`,
+      );
+
+      const stop = followTraceLog(target.path, (record) => {
+        process.stdout.write(`${formatOneLine(record)}\n`);
+      });
+
+      // Block until interrupted
+      await new Promise<void>((resolve) => {
+        const handler = () => {
+          stop();
+          resolve();
+        };
+        process.once("SIGINT", handler);
+        process.once("SIGTERM", handler);
+      });
+
+      return createOutputResult("", { plain: () => "" });
+    }
+
+    // Normal mode — read and format
+    const limit =
+      typeof params.limit === "string" ? Number.parseInt(params.limit, 10) : 50;
+
+    const records = readTraceLog({ path: target.path, limit });
+    const data = { sessionId: target.sessionId, records };
+
+    return createOutputResult(data, {
+      plain: selectFormatter(ctx, showFormatters),
+    });
+  },
+};
+
+export default showCommand;

@@ -13,6 +13,7 @@ const STORE_SKIP_COMMANDS = new Set([
   "mcp",
   "update-refs",
   "capabilities",
+  "trace",
 ]);
 
 function findCommandArg(argv: readonly string[]): string | undefined {

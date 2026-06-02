@@ -64,6 +64,8 @@ export interface ParameterDefinition {
   readonly positional?: boolean;
   /** If true, this parameter must be provided */
   readonly required?: boolean;
+  /** Single-character shorthand flag (e.g., "f" for `-f, --follow`) */
+  readonly short?: string;
   /**
    * Dynamic completion function for argument-level tab completion.
    * Returns candidate strings matching the partial input.

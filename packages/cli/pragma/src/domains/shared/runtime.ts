@@ -52,6 +52,7 @@ export async function bootPragma(options?: {
     cwd,
     sources: options?.sources,
     refs,
+    trace: config.trace,
   });
 
   return {

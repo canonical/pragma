@@ -6,6 +6,7 @@ import { commands as setupCommands } from "../domains/setup/index.js";
 import type { PragmaContext } from "../domains/shared/context.js";
 import type { PragmaRuntime } from "../domains/shared/runtime.js";
 import { bootPragma } from "../domains/shared/runtime.js";
+import { commands as traceCommands } from "../domains/trace/index.js";
 import { PragmaError } from "../error/index.js";
 import collectCommands from "./collectCommands.js";
 import createProgram from "./createProgram.js";
@@ -147,6 +148,7 @@ async function runStoreSkip(
   const commands = [
     ...setupCommands(),
     ...refsCommands(),
+    ...traceCommands(),
     buildCapabilitiesCommand(),
   ];
   const program = createProgram(commands, stubCtx);

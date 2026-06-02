@@ -64,9 +64,16 @@ export default function readConfig(cwd: string = process.cwd()): PragmaConfig {
     channel = parsed.channel;
   }
 
+  const trace = typeof parsed.trace === "boolean" ? parsed.trace : undefined;
+
   const packages = parsePackagesField(parsed.packages);
 
-  return packages ? { tier, channel, packages } : { tier, channel };
+  return {
+    tier,
+    channel,
+    ...(packages ? { packages } : {}),
+    ...(trace !== undefined ? { trace } : {}),
+  };
 }
 
 // ---------------------------------------------------------------------------

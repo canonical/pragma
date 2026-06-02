@@ -2,7 +2,12 @@
 
 import type { CommandDefinition } from "@canonical/cli-core";
 import type { PragmaContext } from "../shared/context.js";
-import { channelCommand, showCommand, tierCommand } from "./commands/index.js";
+import {
+  channelCommand,
+  showCommand,
+  tierCommand,
+  traceCommand,
+} from "./commands/index.js";
 
 /**
  * Return all config command definitions.
@@ -11,7 +16,12 @@ import { channelCommand, showCommand, tierCommand } from "./commands/index.js";
  * @returns An array of CommandDefinitions for the config subcommands.
  */
 export function commands(ctx: PragmaContext): CommandDefinition[] {
-  return [tierCommand(ctx), channelCommand(ctx), showCommand(ctx)];
+  return [
+    tierCommand(ctx),
+    channelCommand(ctx),
+    traceCommand(ctx),
+    showCommand(ctx),
+  ];
 }
 
 export { specs as mcpSpecs } from "./mcp/index.js";

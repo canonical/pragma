@@ -69,6 +69,20 @@ export function gitCacheDir(pkg: string, ref: string): string {
 }
 
 /**
+ * Root directory for query trace logs.
+ *
+ * Resolution order:
+ * 1. PRAGMA_TRACE_DIR environment variable (CI/testing override)
+ * 2. XDG_DATA_HOME/pragma/traces (default)
+ */
+export function traceDir(): string {
+  if (process.env.PRAGMA_TRACE_DIR) {
+    return process.env.PRAGMA_TRACE_DIR;
+  }
+  return join(dataRoot(), "traces");
+}
+
+/**
  * Sanitize a git ref for use as a directory name.
  * Replaces characters that are invalid or confusing in path segments.
  */
