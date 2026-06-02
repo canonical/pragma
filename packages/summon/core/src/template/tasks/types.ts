@@ -1,14 +1,19 @@
 import type TemplatingEngine from "../TemplatingEngine.js";
 
 export interface TemplateOptions {
-  /** Path to the template file */
+  /** Path to the template file. */
   source: string;
-  /** Destination path (can contain template variables) */
+  /** Destination path (can contain template variables). */
   dest: string;
-  /** Variables to pass to the template */
+  /** Variables to pass to the template. */
   vars: Record<string, unknown>;
-  /** Templating engine to use (defaults to EJS) */
+  /** Templating engine to use (defaults to EJS). */
   engine?: TemplatingEngine;
+  /**
+   * Inline template content. When provided, skips reading from `source`.
+   * Use this when the template is embedded or pre-loaded (e.g. compiled binaries).
+   */
+  content?: string;
 }
 
 export interface TemplateDirOptions {

@@ -44,7 +44,7 @@
     "access": "public"
   },
   "scripts": {
-    "build": "bun build --compile --minify --target=bun-linux-x64 src/bin.ts $(find node_modules/@canonical/design-system/definitions node_modules/@canonical/design-system/data node_modules/@canonical/code-standards/definitions node_modules/@canonical/code-standards/data node_modules/@canonical/anatomy-dsl/definitions -name '*.ttl' 2>/dev/null) $(find node_modules/@canonical/design-system/skills node_modules/@canonical/code-standards/skills -name '*.md' 2>/dev/null) node_modules/@canonical/design-system/package.json node_modules/@canonical/code-standards/package.json node_modules/@canonical/anatomy-dsl/package.json --outfile dist/pragma",
+    "build": "bun run scripts/build.ts",
     "build:compile": "bun build --compile --minify --target=bun-linux-x64 src/bin.ts --outfile dist/pragma",
     "prepublishOnly": "bun run build",
     "check": "bun run check:biome && bun run check:ts && bun run check:webarchitect",

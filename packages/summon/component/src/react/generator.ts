@@ -10,12 +10,6 @@
  * - `ComponentName.stories.tsx` - Storybook stories (optional)
  * - `styles.css` - CSS styles (optional)
  *
- * @example
- * ```bash
- * summon component react --component-path=src/components/Button
- * summon component react --component-path=src/components/Card --with-styles --with-stories
- * ```
- *
  * @module
  */
 
@@ -33,37 +27,38 @@ import {
   getParentDir,
   sharedPrompts,
 } from "../shared/index.js";
+import loadTemplate from "../shared/loadTemplate.js";
 import type { ReactComponentAnswers } from "./types.js";
 
 // =============================================================================
-// Template Paths
+// Template Paths & Content (loaded eagerly via top-level await)
 // =============================================================================
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const templatesDir = path.join(__dirname, "..", "templates");
 
 const reactTemplates = {
-  component: path.join(templatesDir, "react", "component.tsx.ejs"),
-  types: path.join(templatesDir, "react", "types.ts.ejs"),
-  index: path.join(templatesDir, "react", "index.ts.ejs"),
-  test: path.join(templatesDir, "react", "test.tsx.ejs"),
-  ssrTest: path.join(templatesDir, "react", "ssr.test.tsx.ejs"),
-  stories: path.join(templatesDir, "react", "stories.tsx.ejs"),
-  styles: path.join(templatesDir, "shared", "styles.css.ejs"),
+  component: await loadTemplate(
+    path.join(templatesDir, "react", "component.tsx.ejs"),
+  ),
+  types: await loadTemplate(path.join(templatesDir, "react", "types.ts.ejs")),
+  index: await loadTemplate(path.join(templatesDir, "react", "index.ts.ejs")),
+  test: await loadTemplate(path.join(templatesDir, "react", "test.tsx.ejs")),
+  ssrTest: await loadTemplate(
+    path.join(templatesDir, "react", "ssr.test.tsx.ejs"),
+  ),
+  stories: await loadTemplate(
+    path.join(templatesDir, "react", "stories.tsx.ejs"),
+  ),
+  styles: await loadTemplate(
+    path.join(templatesDir, "shared", "styles.css.ejs"),
+  ),
 };
 
 // =============================================================================
 // Generator Definition
 // =============================================================================
 
-/**
- * React component generator definition.
- *
- * This generator creates a complete React component with TypeScript support,
- * testing infrastructure, and optional Storybook stories and CSS styles.
- *
- * @see {@link https://summon.dev/generators/component/react} for documentation
- */
 const generator = {
   meta: {
     name: "component/react",
@@ -107,28 +102,32 @@ For example, 'src/components/Button' creates a 'Button' component.`,
 
       debug("Creating main component file"),
       template({
-        source: reactTemplates.component,
+        source: reactTemplates.component.source,
+        content: reactTemplates.component.content || undefined,
         dest: path.join(componentDir, `${componentName}.tsx`),
         vars: ctx,
       }),
 
       debug("Creating types file"),
       template({
-        source: reactTemplates.types,
+        source: reactTemplates.types.source,
+        content: reactTemplates.types.content || undefined,
         dest: path.join(componentDir, "types.ts"),
         vars: ctx,
       }),
 
       debug("Creating index barrel file"),
       template({
-        source: reactTemplates.index,
+        source: reactTemplates.index.source,
+        content: reactTemplates.index.content || undefined,
         dest: path.join(componentDir, "index.ts"),
         vars: ctx,
       }),
 
       debug("Creating test file"),
       template({
-        source: reactTemplates.test,
+        source: reactTemplates.test.source,
+        content: reactTemplates.test.content || undefined,
         dest: path.join(componentDir, `${componentName}.tests.tsx`),
         vars: ctx,
       }),
@@ -137,7 +136,8 @@ For example, 'src/components/Button' creates a 'Button' component.`,
       when(
         answers.withSsrTests,
         template({
-          source: reactTemplates.ssrTest,
+          source: reactTemplates.ssrTest.source,
+          content: reactTemplates.ssrTest.content || undefined,
           dest: path.join(componentDir, `${componentName}.ssr.tests.tsx`),
           vars: ctx,
         }),
@@ -147,7 +147,8 @@ For example, 'src/components/Button' creates a 'Button' component.`,
       when(
         answers.withStories,
         template({
-          source: reactTemplates.stories,
+          source: reactTemplates.stories.source,
+          content: reactTemplates.stories.content || undefined,
           dest: path.join(componentDir, `${componentName}.stories.tsx`),
           vars: ctx,
         }),
@@ -157,7 +158,8 @@ For example, 'src/components/Button' creates a 'Button' component.`,
       when(
         answers.withStyles,
         template({
-          source: reactTemplates.styles,
+          source: reactTemplates.styles.source,
+          content: reactTemplates.styles.content || undefined,
           dest: path.join(componentDir, "styles.css"),
           vars: ctx,
         }),

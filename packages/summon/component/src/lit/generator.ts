@@ -30,22 +30,29 @@ import {
   getComponentName,
   getParentDir,
 } from "../shared/index.js";
+import loadTemplate from "../shared/loadTemplate.js";
 import type { LitAnswers } from "./types.js";
 
 // =============================================================================
-// Template Paths
+// Template Paths & Content (loaded eagerly via top-level await)
 // =============================================================================
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const templatesDir = path.join(__dirname, "..", "templates");
 
 const litTemplates = {
-  component: path.join(templatesDir, "lit", "component.ts.ejs"),
-  index: path.join(templatesDir, "lit", "index.ts.ejs"),
-  types: path.join(templatesDir, "lit", "types.ts.ejs"),
-  tests: path.join(templatesDir, "lit", "tests.ts.ejs"),
-  stories: path.join(templatesDir, "lit", "stories.ts.ejs"),
-  styles: path.join(templatesDir, "lit", "styles.css.ejs"),
+  component: await loadTemplate(
+    path.join(templatesDir, "lit", "component.ts.ejs"),
+  ),
+  index: await loadTemplate(path.join(templatesDir, "lit", "index.ts.ejs")),
+  types: await loadTemplate(path.join(templatesDir, "lit", "types.ts.ejs")),
+  tests: await loadTemplate(path.join(templatesDir, "lit", "tests.ts.ejs")),
+  stories: await loadTemplate(
+    path.join(templatesDir, "lit", "stories.ts.ejs"),
+  ),
+  styles: await loadTemplate(
+    path.join(templatesDir, "lit", "styles.css.ejs"),
+  ),
 };
 
 // =============================================================================
@@ -124,28 +131,32 @@ with the custom element tag 'button'.`,
 
       debug("Creating main component file"),
       template({
-        source: litTemplates.component,
+        source: litTemplates.component.source,
+        content: litTemplates.component.content || undefined,
         dest: path.join(componentDir, `${componentName}.ts`),
         vars: ctx,
       }),
 
       debug("Creating index barrel file"),
       template({
-        source: litTemplates.index,
+        source: litTemplates.index.source,
+        content: litTemplates.index.content || undefined,
         dest: path.join(componentDir, "index.ts"),
         vars: ctx,
       }),
 
       debug("Creating types file"),
       template({
-        source: litTemplates.types,
+        source: litTemplates.types.source,
+        content: litTemplates.types.content || undefined,
         dest: path.join(componentDir, "types.ts"),
         vars: ctx,
       }),
 
       debug("Creating test file"),
       template({
-        source: litTemplates.tests,
+        source: litTemplates.tests.source,
+        content: litTemplates.tests.content || undefined,
         dest: path.join(componentDir, `${componentName}.tests.ts`),
         vars: ctx,
       }),
@@ -154,7 +165,8 @@ with the custom element tag 'button'.`,
       when(
         answers.withStories,
         template({
-          source: litTemplates.stories,
+          source: litTemplates.stories.source,
+          content: litTemplates.stories.content || undefined,
           dest: path.join(componentDir, `${componentName}.stories.ts`),
           vars: ctx,
         }),
@@ -164,7 +176,8 @@ with the custom element tag 'button'.`,
       when(
         answers.withStyles,
         template({
-          source: litTemplates.styles,
+          source: litTemplates.styles.source,
+          content: litTemplates.styles.content || undefined,
           dest: path.join(componentDir, "styles.css"),
           vars: ctx,
         }),

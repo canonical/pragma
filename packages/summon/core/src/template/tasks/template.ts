@@ -1,11 +1,22 @@
 import * as path from "node:path";
-import { mkdir, readFile, type Task, task, writeFile } from "@canonical/task";
+import {
+  mkdir,
+  pure,
+  readFile,
+  type Task,
+  task,
+  writeFile,
+} from "@canonical/task";
 import ejsEngine from "../ejsEngine.js";
 import renderString from "../renderString.js";
 import type { TemplateOptions } from "./types.js";
 
 /**
  * Render a single template file to a destination.
+ *
+ * When `options.content` is provided, uses it directly instead of
+ * reading from `options.source`. This supports compiled binaries
+ * where template files are embedded and pre-loaded.
  */
 export default function template(options: TemplateOptions): Task<void> {
   const engine = options.engine ?? ejsEngine;
@@ -14,8 +25,12 @@ export default function template(options: TemplateOptions): Task<void> {
   const destPath = renderString(options.dest, options.vars, engine);
   const destDir = path.dirname(destPath);
 
+  const readSource = options.content
+    ? task(pure(options.content))
+    : task(readFile(options.source));
+
   return task(mkdir(destDir))
-    .chain(() => task(readFile(options.source)))
+    .chain(() => readSource)
     .map((content) => renderString(content, options.vars, engine))
     .chain((rendered) => task(writeFile(destPath, rendered)))
     .unwrap();
