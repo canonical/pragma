@@ -132,7 +132,12 @@ Requires both --ssr and --router flags.`,
       copy(".gitignore"),
 
       // Styles
-      copy("src/styles/index.css"),
+      // styles (EJS — form stylesheet imported only when --forms)
+      template({
+        source: src("src/styles/index.css.ejs"),
+        dest: dest("src/styles/index.css"),
+        vars,
+      }),
       copy("src/styles/app.css"),
 
       // Client

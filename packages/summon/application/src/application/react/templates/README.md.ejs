@@ -40,5 +40,11 @@ src/
 ├── domains/        Feature domains (routes + pages)
 ├── lib/            Shared components
 ├── styles/         CSS
+├── assets/         Imported assets (bundled by Vite)
 └── routes.tsx      Root route map
+public/             Static files served as-is (favicon, robots.txt)
 ```
+
+> **Note:** this app ships both `src/assets/` (assets imported in code) and `public/`
+> (files served by fixed URL). Keeping both by default is provisional — you may remove
+> whichever your app doesn't use.
