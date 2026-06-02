@@ -195,6 +195,10 @@ Requires both --ssr and --router flags.`,
       copy(".storybook/decorators/withRouter.tsx"),
       copy(".storybook/decorators/index.ts"),
 
+      // Static asset dirs (kept by placeholder; both wired into Storybook staticDirs)
+      copy("src/assets/.gitkeep"),
+      copy("public/.gitkeep"),
+
       // Install dependencies
       when(
         answers.runInstall,
