@@ -197,6 +197,7 @@ Requires both --ssr and --router flags.`,
 
       // Lib: LazyComponent
       copy("src/lib/LazyComponent/LazyComponent.tsx"),
+      copy("src/lib/LazyComponent/LazyComponent.stories.tsx"),
       copy("src/lib/LazyComponent/index.ts"),
 
       // Lib barrel
