@@ -1,14 +1,38 @@
-# Adding a Package
+# Adding a package
 
-This guide explains how to add a new package to the Pragma monorepo. It covers when to create a new package rather than extend an existing one, where packages belong in the directory structure, and the configuration files that every package requires.
+This guide explains how to add a new package to the pragma monorepo. It covers when to create a new package rather than extend an existing one, where packages belong in the directory structure, and the configuration files that every package requires.
 
-## When to Create a New Package
+## Quick path: `pragma create package`
+
+The fastest way to add a package is through the generator. It produces all required files---`package.json`, `tsconfig.json`, `tsconfig.build.json`, `biome.json`, `vitest.config.ts`, barrel export, and README---configured for the monorepo with correct dependencies, scripts, and webarchitect ruleset.
+
+```bash
+pragma create package
+```
+
+The generator prompts for the package name, location, and type (library or tool). To skip prompts:
+
+```bash
+pragma create package --name my-utils --path packages/my-utils --type library --yes
+```
+
+After generation, install dependencies and verify:
+
+```bash
+bun install
+bun run --filter @canonical/my-utils check
+bun run --filter @canonical/my-utils test
+```
+
+The generated package is ordinary code with no special relationship to the generator. Every file can be modified. The rest of this guide explains what the generator produces and why, so that modifications are informed rather than guesswork.
+
+## When to create a new package
 
 Not every piece of functionality deserves its own package. The overhead of separate configuration, versioning, and maintenance means that new packages should earn their existence. Consider creating a new package when the functionality has consumers beyond a single application, when it represents a coherent unit that could be versioned independently, or when it belongs to a different architectural layer than existing packages.
 
 Extend an existing package instead when the functionality is specific to one consumer, when it depends heavily on the internals of an existing package, or when splitting it would create circular dependencies. The `@canonical/utils` package, for example, grows when new utilities prove useful across multiple packages. Adding a function to utils is simpler than creating a new package for that function alone.
 
-## Package Locations
+## Package locations
 
 Packages live in subdirectories of `packages/` based on their category. The location determines how consumers import the package and influences CI path filtering.
 
@@ -20,9 +44,9 @@ Style packages live in `packages/styles/`. The structure reflects the CSS layeri
 
 Storybook addons live in `packages/storybook/`. These packages extend Storybook with project-specific functionality like the baseline grid overlay and MSW integration.
 
-Developer tools live directly in `packages/`. The `webarchitect` and `generator-ds` packages are examples. If you are adding a new CLI tool or development utility, it belongs at this level.
+Developer tools live directly in `packages/`. The `webarchitect` package is an example. If you are adding a new CLI tool or development utility, it belongs at this level.
 
-## Webarchitect Rulesets
+## Webarchitect rulesets
 
 Every package must declare a webarchitect ruleset. Webarchitect validates that packages conform to architectural standards, including license requirements, export structure, and configuration file presence. The three rulesets serve different package categories.
 
@@ -32,7 +56,7 @@ The `tool` ruleset applies to compiled CLI tools and applications. Tools use GPL
 
 The `tool-ts` ruleset applies to TypeScript-only tools that run directly with Bun without a build step. These packages point `module` and `types` directly at TypeScript source files rather than compiled output. The `webarchitect` package itself uses this ruleset because it runs via `bun` and does not need compilation to JavaScript.
 
-## Creating a Library Package
+## Creating a library package
 
 Library packages are the most common type. This section walks through creating a new utility library as an example.
 
@@ -235,7 +259,7 @@ bun run check:webarchitect
 
 Webarchitect validates the package.json structure, license declaration, export configuration, and required scripts. Fix any validation errors before committing.
 
-## Creating a Tool Package
+## Creating a tool package
 
 Tool packages differ from libraries in three ways: they use GPL-3.0 licensing, they may not need a build step if they run directly with Bun, and they typically provide a CLI entry point.
 
@@ -267,7 +291,7 @@ The key differences: `module` and `types` point to TypeScript source files, `fil
 
 The `bin` field declares the CLI entry point. After installation, users can run the tool by name.
 
-## Creating a React Component Package
+## Creating a React component package
 
 React component packages add Storybook configuration and CSS handling. The package.json includes additional scripts and dependencies:
 
@@ -301,7 +325,7 @@ React component packages need Storybook configuration. See the existing `package
 
 For component packages with Storybook, consider adding a Chromatic workflow for visual regression testing. Copy an existing workflow from `.github/workflows/chromatic.*.yml` and modify the path filters to match the new package and its dependencies.
 
-## CI Integration
+## CI integration
 
 New packages integrate into CI automatically through Lerna. The PR workflow runs `lerna run build:all`, `bun run check`, and `bun run test` across all packages. No manual CI configuration is needed for basic library or tool packages.
 

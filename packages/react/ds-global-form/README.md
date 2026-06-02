@@ -93,7 +93,7 @@ import { MyColorPicker } from "./MyColorPicker";
 />
 ```
 
-Custom components must be wrapped with `withWrapper`. See [docs/creating-custom-fields.md](docs/creating-custom-fields.md) for the complete guide.
+Custom components must be wrapped with `withWrapper`. Custom components must satisfy the `InputProps` type and integrate with react-hook-form via `useFormContext`.
 
 ## Middleware Pattern
 
@@ -145,7 +145,7 @@ import { addRESTValidation } from "@canonical/react-ds-global-form";
 />
 ```
 
-See [docs/creating-middleware.md](docs/creating-middleware.md) for creating custom middleware.
+Custom middleware follows the same factory pattern: an outer function accepts configuration and returns a HOC.
 
 ## Conditional Display
 

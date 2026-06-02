@@ -5,7 +5,7 @@ This document explains the architectural decisions for Lit web components in Pra
 
 ## Component Folder Structure
 
-Web components follow the same structural principles as React components, as defined in [component folder structure and conventions](../component-folder-structure-and-conventions.md): co-location (everything related lives in one folder), predictable naming (file names match component names), and explicit exports (barrel files list public APIs).
+Web components follow the same structural principles as React components, as defined in [component folder structure and conventions](COMPONENT_FOLDER_STRUCTURE.md): co-location (everything related lives in one folder), predictable naming (file names match component names), and explicit exports (barrel files list public APIs).
 
 The structure adapts to web component specifics (`.ts` instead of `.tsx`):
 
@@ -84,7 +84,7 @@ export class CanButton extends LitElement {
 
 ### Why Separate CSS Files
 
-Keeping styles in `.css` files restores the full CSS authoring experience: syntax highlighting, IntelliSense, linting, and autocomplete all work as expected. It also keeps component files focused — logic stays in `.ts`, presentation stays in `.css` — which matches how every other package in the monorepo is structured and aligns with the conventions in [STANDARDS_FOR_STYLING.md](../references/STANDARDS_FOR_STYLING.md).
+Keeping styles in `.css` files restores the full CSS authoring experience: syntax highlighting, IntelliSense, linting, and autocomplete all work as expected. It also keeps component files focused — logic stays in `.ts`, presentation stays in `.css` — which matches how every other package in the monorepo is structured and aligns with the conventions in [styling standards](https://github.com/canonical/code-standards).
 
 
 ### Trade-offs Accepted
@@ -181,7 +181,7 @@ ds-button {
 
 **Decision:** Apply the `ds` namespace class **inside the component template**, not on the host element.
 
-Following [STANDARDS_FOR_STYLING.md](../references/STANDARDS_FOR_STYLING.md), this maintains consistency with React components while working within Shadow DOM constraints. 
+Following [styling standards](https://github.com/canonical/code-standards), this maintains consistency with React components while working within Shadow DOM constraints. 
 
 
 ## 5. Testing Architectural Considerations

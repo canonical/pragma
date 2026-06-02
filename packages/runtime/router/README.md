@@ -213,7 +213,7 @@ const routes = applyMiddleware([withBasePath("/app")], rawRoutes);
 const router = createRouter(routes);
 ```
 
-See [docs/how-to-guides/ROUTER_MIDDLEWARE_COOKBOOK.md](../../../docs/how-to-guides/ROUTER_MIDDLEWARE_COOKBOOK.md) for more patterns.
+See the [migration guide](../../../docs/how-to-guides/MIGRATE_TO_PRAGMA_ROUTER.md) for middleware patterns and migration from other routers.
 
 ## Router factories
 
@@ -319,6 +319,4 @@ Override or disable them through `RouterOptions.accessibility`.
 
 ### Reference docs
 
-- Full API reference: [docs/references/ROUTER_API.md](../../../docs/references/ROUTER_API.md)
-- Migration guide: [docs/how-to-guides/MIGRATE_FROM_TANSTACK_ROUTER.md](../../../docs/how-to-guides/MIGRATE_FROM_TANSTACK_ROUTER.md)
-- Middleware cookbook: [docs/how-to-guides/ROUTER_MIDDLEWARE_COOKBOOK.md](../../../docs/how-to-guides/ROUTER_MIDDLEWARE_COOKBOOK.md)
+- Migration guide: [docs/how-to-guides/MIGRATE_TO_PRAGMA_ROUTER.md](../../../docs/how-to-guides/MIGRATE_TO_PRAGMA_ROUTER.md)
