@@ -4,6 +4,11 @@
   "version": "0.0.0",
   "type": "module",
   "license": "GPL-3.0-only",
+  "imports": {
+    "#lib/*": "./src/lib/*",
+    "#domains/*": "./src/domains/*",
+    "#styles/*": "./src/styles/*"
+  },
   "scripts": {
     "dev": "vite",
     "dev:express": "node --import tsx src/server/server.express.ts",
@@ -53,7 +58,6 @@
     "tsx": "^4.19.0",
     "typescript": "^5.9.3",
     "vite": "^8.0.1",
-    "vite-tsconfig-paths": "^6.1.1",
     "vitest": "^4.0.18"
   }
 }
