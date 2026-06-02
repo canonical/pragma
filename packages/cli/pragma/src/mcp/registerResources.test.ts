@@ -35,37 +35,59 @@ describe("resource listing", () => {
   it("registers 1 resource template", async () => {
     const { resourceTemplates } = await client.listResourceTemplates();
     expect(resourceTemplates).toHaveLength(1);
-    expect(resourceTemplates[0]?.uriTemplate).toBe("pragma:{+uri}");
+    expect(resourceTemplates[0]?.uriTemplate).toBe("{+uri}");
   });
 
   it("lists resources including known entities", async () => {
     const { resources } = await client.listResources();
     const uris = resources.map((r) => r.uri);
-    expect(uris).toContain(`pragma:${P.ds}global.component.button`);
-    expect(uris).toContain(`pragma:${P.ds}global.component.card`);
-    expect(uris).toContain(`pragma:${P.ds}global`);
+    expect(uris).toContain(`${P.ds}global.component.button`);
+    expect(uris).toContain(`${P.ds}global.component.card`);
+    expect(uris).toContain(`${P.ds}global`);
   });
 
   it("lists OWL classes as resources", async () => {
     const { resources } = await client.listResources();
     const uris = resources.map((r) => r.uri);
-    expect(uris).toContain(`pragma:${P.ds}UIBlock`);
-    expect(uris).toContain(`pragma:${P.ds}Component`);
+    expect(uris).toContain(`${P.ds}UIBlock`);
+    expect(uris).toContain(`${P.ds}Component`);
   });
 
   it("lists code standards as resources", async () => {
     const { resources } = await client.listResources();
     const uris = resources.map((r) => r.uri);
-    expect(uris).toContain(`pragma:${P.cs}react_folder`);
-    expect(uris).toContain(`pragma:${P.cs}code_purity`);
+    expect(uris).toContain(`${P.cs}react_folder`);
+    expect(uris).toContain(`${P.cs}code_purity`);
   });
 
   it("uses label as resource name when available", async () => {
     const { resources } = await client.listResources();
     const button = resources.find(
-      (r) => r.uri === `pragma:${P.ds}global.component.button`,
+      (r) => r.uri === `${P.ds}global.component.button`,
     );
     expect(button?.name).toBe("Button");
+  });
+
+  it("includes type-aware description for components", async () => {
+    const { resources } = await client.listResources();
+    const button = resources.find(
+      (r) => r.uri === `${P.ds}global.component.button`,
+    );
+    expect(button?.description).toMatch(/^Component/);
+  });
+
+  it("includes type-aware description for code standards", async () => {
+    const { resources } = await client.listResources();
+    const standard = resources.find((r) => r.uri === `${P.cs}code_purity`);
+    expect(standard?.description).toMatch(/^Code Standard/);
+  });
+
+  it("marks resources with assistant audience", async () => {
+    const { resources } = await client.listResources();
+    const button = resources.find(
+      (r) => r.uri === `${P.ds}global.component.button`,
+    );
+    expect(button?.annotations?.audience).toEqual(["assistant"]);
   });
 });
 
@@ -76,7 +98,7 @@ describe("resource listing", () => {
 describe("read component instance", () => {
   it("returns entity with types and label", async () => {
     const result = await client.readResource({
-      uri: `pragma:${P.ds}global.component.button`,
+      uri: `${P.ds}global.component.button`,
     });
     const entity = parseContents(result) as {
       uri: string;
@@ -92,7 +114,7 @@ describe("read component instance", () => {
 
   it("resolves level-1 URI objects to summaries", async () => {
     const result = await client.readResource({
-      uri: `pragma:${P.ds}global.component.button`,
+      uri: `${P.ds}global.component.button`,
     });
     const entity = parseContents(result) as {
       properties: {
@@ -117,7 +139,7 @@ describe("read component instance", () => {
 
   it("includes literal values", async () => {
     const result = await client.readResource({
-      uri: `pragma:${P.ds}global.component.button`,
+      uri: `${P.ds}global.component.button`,
     });
     const entity = parseContents(result) as {
       properties: {
@@ -142,7 +164,7 @@ describe("read component instance", () => {
 describe("read OWL class", () => {
   it("returns class with rdfs:label", async () => {
     const result = await client.readResource({
-      uri: `pragma:${P.ds}UIBlock`,
+      uri: `${P.ds}UIBlock`,
     });
     const entity = parseContents(result) as {
       types: string[];
@@ -167,7 +189,7 @@ describe("read OWL class", () => {
 describe("read code standard", () => {
   it("returns standard with properties", async () => {
     const result = await client.readResource({
-      uri: `pragma:${P.cs}code_purity`,
+      uri: `${P.cs}code_purity`,
     });
     const entity = parseContents(result) as {
       types: string[];
@@ -202,7 +224,7 @@ describe("read code standard", () => {
 describe("read tier", () => {
   it("returns tier with name", async () => {
     const result = await client.readResource({
-      uri: `pragma:${P.ds}apps_lxd`,
+      uri: `${P.ds}apps_lxd`,
     });
     const entity = parseContents(result) as {
       types: string[];
@@ -227,7 +249,7 @@ describe("read tier", () => {
 describe("error handling", () => {
   it("returns text/plain error for unknown entity", async () => {
     const result = await client.readResource({
-      uri: `pragma:${P.ds}nonexistent`,
+      uri: `${P.ds}nonexistent`,
     });
     const first = result.contents[0] as ResourceContent;
     expect(first.mimeType).toBe("text/plain");
