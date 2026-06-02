@@ -39,6 +39,16 @@ export function createHandler(config: DenoAdapterConfig) {
       const prefix = asset.urlPrefix.replace(/\/$/, "");
       const relativePath = url.pathname.slice(prefix.length);
       if (url.pathname === prefix || relativePath.startsWith("/")) {
+        // Defence in depth: reject any ".." segment so a crafted path cannot
+        // escape the asset directory. Decode first so percent-encoded forms
+        // (e.g. "..%2f", "%2e%2e") are caught too; bail on malformed encoding.
+        let decoded: string;
+        try {
+          decoded = decodeURIComponent(relativePath);
+        } catch {
+          continue;
+        }
+        if (decoded.split(/[/\\]/).includes("..")) continue;
         const filePath = `${asset.directory}${relativePath}`;
         try {
           const body = await openFileStream(filePath);

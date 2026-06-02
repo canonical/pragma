@@ -215,6 +215,30 @@ describe("createHandler", () => {
       expect(denoOpen).not.toHaveBeenCalled();
     });
 
+    it("rejects path-traversal segments instead of reading outside the root", async () => {
+      const denoOpen = vi.fn();
+      vi.stubGlobal("Deno", { open: denoOpen });
+
+      const handler = createHandler({
+        routes: [{ pattern: "/*", factory: mockRendererFactory("dynamic") }],
+        staticAssets: [
+          { urlPrefix: "/assets", directory: "dist/client/assets" },
+        ],
+      });
+
+      // Encoded ".." and malformed percent-encoding must both be rejected
+      // (fall through to the renderer, never open a file).
+      for (const path of [
+        "/assets/..%2fsecret",
+        "/assets/%2e%2e/secret",
+        "/assets/%E0%A4%A", // malformed encoding → decode throws → reject
+      ]) {
+        const response = await handler(new Request(`http://localhost${path}`));
+        expect(await responseToText(response)).toBe("dynamic");
+      }
+      expect(denoOpen).not.toHaveBeenCalled();
+    });
+
     it("streams via the native Deno.open().readable API when running on Deno (m2)", async () => {
       // Under Node the fallback path is exercised by the tests above; here we
       // stub a Deno global to prove the platform-native streaming branch is

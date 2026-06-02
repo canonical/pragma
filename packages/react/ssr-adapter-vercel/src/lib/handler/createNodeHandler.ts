@@ -79,11 +79,20 @@ function incomingMessageToRequest(
       headers.set(key, Array.isArray(value) ? value.join(", ") : value);
     }
   }
-  return new Request(url.toString(), {
-    method: req.method ?? "GET",
-    headers,
-    signal,
-  });
+
+  const method = req.method ?? "GET";
+  // GET/HEAD must not carry a body; for other methods stream the Node request
+  // body through so renderers (form posts, API routes) see it, matching the
+  // other adapters that pass the original Request. `duplex: "half"` is required
+  // when a Request is constructed with a stream body.
+  const hasBody = method !== "GET" && method !== "HEAD";
+  const init: RequestInit & { duplex?: "half" } = { method, headers, signal };
+  if (hasBody) {
+    init.body = Readable.toWeb(req) as ReadableStream<Uint8Array>;
+    init.duplex = "half";
+  }
+
+  return new Request(url.toString(), init);
 }
 
 /**

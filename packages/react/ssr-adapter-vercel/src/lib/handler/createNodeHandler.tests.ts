@@ -189,6 +189,55 @@ describe("createNodeHandler", () => {
     expect(res.statusCode).toBe(200);
   });
 
+  it("forwards the request body for non-GET methods", async () => {
+    let receivedBody: string | undefined;
+    const factory = (request: Request) => {
+      return {
+        renderToReadableStream: async () => {
+          receivedBody = await request.text();
+          return new ReadableStream<Uint8Array>({
+            start(controller) {
+              controller.enqueue(new TextEncoder().encode("ok"));
+              controller.close();
+            },
+          });
+        },
+        statusCode: 200,
+        statusReady: Promise.resolve(),
+      };
+    };
+
+    const handler = createNodeHandler({ routes: [{ pattern: "/*", factory }] });
+    const { req, res } = createMockReqRes("/submit", "POST");
+    // Push a body into the IncomingMessage stream.
+    req.push("name=value");
+    req.push(null);
+
+    await handler(req, res);
+    expect(receivedBody).toBe("name=value");
+  });
+
+  it("does not attach a body for GET requests", async () => {
+    let hadBody: boolean | undefined;
+    const factory = (request: Request) => ({
+      renderToReadableStream: async () => {
+        hadBody = request.body !== null;
+        return new ReadableStream<Uint8Array>({
+          start(controller) {
+            controller.close();
+          },
+        });
+      },
+      statusCode: 200,
+      statusReady: Promise.resolve(),
+    });
+
+    const handler = createNodeHandler({ routes: [{ pattern: "/*", factory }] });
+    const { req, res } = createMockReqRes("/", "GET");
+    await handler(req, res);
+    expect(hadBody).toBe(false);
+  });
+
   it("forwards an AbortSignal to the renderer and the Request (M3)", async () => {
     let renderSignal: AbortSignal | undefined;
     let requestSignal: AbortSignal | null = null;
