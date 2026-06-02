@@ -195,6 +195,26 @@ describe("createHandler", () => {
       expect(await responseToText(response)).toBe("dynamic");
     });
 
+    it("matches the prefix on a path-segment boundary only", async () => {
+      // "/assets2/..." must NOT match the "/assets" prefix — if it did, the
+      // Deno.open below would be hit; instead it falls through to the renderer.
+      const denoOpen = vi.fn();
+      vi.stubGlobal("Deno", { open: denoOpen });
+
+      const handler = createHandler({
+        routes: [{ pattern: "/*", factory: mockRendererFactory("dynamic") }],
+        staticAssets: [
+          { urlPrefix: "/assets", directory: "dist/client/assets" },
+        ],
+      });
+
+      const response = await handler(
+        new Request("http://localhost/assets2/main.js"),
+      );
+      expect(await responseToText(response)).toBe("dynamic");
+      expect(denoOpen).not.toHaveBeenCalled();
+    });
+
     it("streams via the native Deno.open().readable API when running on Deno (m2)", async () => {
       // Under Node the fallback path is exercised by the tests above; here we
       // stub a Deno global to prove the platform-native streaming branch is

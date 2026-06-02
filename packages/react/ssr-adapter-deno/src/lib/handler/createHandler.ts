@@ -34,8 +34,11 @@ export function createHandler(config: DenoAdapterConfig) {
     const url = new URL(request.url);
 
     for (const asset of config.staticAssets ?? []) {
-      if (url.pathname.startsWith(asset.urlPrefix)) {
-        const relativePath = url.pathname.slice(asset.urlPrefix.length);
+      // Match on a path-segment boundary so "/assets" matches "/assets/x" but
+      // not "/assets2/x". relativePath then always starts with "/".
+      const prefix = asset.urlPrefix.replace(/\/$/, "");
+      const relativePath = url.pathname.slice(prefix.length);
+      if (url.pathname === prefix || relativePath.startsWith("/")) {
         const filePath = `${asset.directory}${relativePath}`;
         try {
           const body = await openFileStream(filePath);

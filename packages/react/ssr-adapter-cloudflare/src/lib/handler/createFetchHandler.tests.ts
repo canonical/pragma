@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createFetchHandler } from "./createFetchHandler.js";
 import type { CloudflareEnv } from "./types.js";
 
@@ -242,5 +242,3 @@ describe("createFetchHandler", () => {
     });
   });
 });
-
-import { beforeEach } from "vitest";
