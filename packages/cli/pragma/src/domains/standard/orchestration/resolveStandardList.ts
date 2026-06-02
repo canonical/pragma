@@ -4,11 +4,7 @@ import type {
   Disclosure,
   StandardListFilters,
 } from "../../shared/types/index.js";
-import {
-  listCategories,
-  listStandards,
-  lookupStandard,
-} from "../operations/index.js";
+import { listStandards, lookupStandard } from "../operations/index.js";
 import type { StandardListResolution } from "../types.js";
 import buildStandardFilters from "./buildStandardFilters.js";
 import standardEmptyError from "./standardEmptyError.js";
@@ -21,15 +17,7 @@ export default async function resolveStandardList(
   const items = await listStandards(rt.store, filters);
 
   if (items.length === 0) {
-    const hasFilters = Boolean(filters.category || filters.search);
-    const allItems = hasFilters ? await listStandards(rt.store) : [];
-    const categories = filters.category
-      ? await listCategories(rt.store)
-      : undefined;
-    throw standardEmptyError(filters, {
-      unfilteredCount: allItems.length,
-      availableCategories: categories?.map((c) => c.name),
-    });
+    throw standardEmptyError(filters);
   }
 
   const disclosure: Disclosure = params.detailed

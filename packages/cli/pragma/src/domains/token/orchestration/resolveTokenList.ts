@@ -10,10 +10,7 @@ export default async function resolveTokenList(
   const items = await listTokens(rt.store, { category: params.category });
 
   if (items.length === 0) {
-    const allItems = params.category ? await listTokens(rt.store) : [];
-    throw tokenEmptyError(params.category, {
-      unfilteredCount: allItems.length,
-    });
+    throw tokenEmptyError(params.category);
   }
 
   return { params, items };
