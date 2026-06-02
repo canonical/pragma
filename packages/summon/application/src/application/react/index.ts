@@ -140,7 +140,12 @@ Requires both --ssr and --router flags.`,
       copy("src/server/entry.tsx"),
       copy("src/server/server.express.ts"),
       copy("src/server/server.bun.ts"),
-      copy("src/server/sitemap.ts"),
+      // sitemap (EJS — /contact entry only when --forms)
+      template({
+        source: src("src/server/sitemap.ts.ejs"),
+        dest: dest("src/server/sitemap.ts"),
+        vars,
+      }),
 
       // Domain: marketing
       copy("src/domains/marketing/HomePage.tsx"),
@@ -163,8 +168,12 @@ Requires both --ssr and --router flags.`,
         vars,
       }),
 
-      // Lib: Navigation
-      copy("src/lib/Navigation/Navigation.tsx"),
+      // Lib: Navigation (EJS — contact link only when --forms)
+      template({
+        source: src("src/lib/Navigation/Navigation.tsx.ejs"),
+        dest: dest("src/lib/Navigation/Navigation.tsx"),
+        vars,
+      }),
       copy("src/lib/Navigation/index.ts"),
 
       // Lib: ThemeSelector
