@@ -5,8 +5,16 @@ import type {
   PromptDefinition,
 } from "@canonical/summon-core";
 import { template, withHelpers } from "@canonical/summon-core";
-import { copyFile, exec, info, sequence_, when } from "@canonical/task";
-import { normalizeCommandPath } from "../../shared/casing.js";
+import {
+  copyFile,
+  exec,
+  exists,
+  flatMap,
+  info,
+  sequence_,
+  warn,
+  when,
+} from "@canonical/task";
 import { PRAGMA_WORKSPACE_VERSION } from "../../shared/versions.js";
 
 interface ApplicationReactAnswers {
@@ -67,7 +75,7 @@ export const generator: GeneratorDefinition<ApplicationReactAnswers> = {
     name: "application/react",
     displayName: "@canonical/summon-application:application/react",
     description: "Scaffold a complete React application with SSR and routing",
-    version: "0.25.0",
+    version: "0.1.0",
     help: `Creates a full React application with:
   - Vite build + dev server
   - Server-side rendering (Express + Bun dev servers)
@@ -90,8 +98,6 @@ Requires both --ssr and --router flags.`,
   prompts,
 
   generate: (answers) => {
-    const appPath = normalizeCommandPath(answers.appPath || "my-app");
-
     if (!answers.ssr || !answers.router) {
       throw new Error(
         "The application/react generator requires both --ssr and --router. " +
@@ -99,8 +105,24 @@ Requires both --ssr and --router flags.`,
       );
     }
 
+    // The app path is a directory path, not a route path — keep it as given
+    // (absolute or relative), only trimming surrounding whitespace and any
+    // trailing slash. The package name is the final path segment.
+    const appPath =
+      (answers.appPath || "my-app").trim().replace(/\/+$/, "") || "my-app";
+    const name = path.basename(appPath);
+
+    // Validate the derived package name: npm package names are lowercase and
+    // limited to a safe character set.
+    if (!/^[a-z0-9][a-z0-9._-]*$/.test(name)) {
+      throw new Error(
+        `Invalid application name "${name}" (from path "${appPath}"). ` +
+          "Use lowercase letters, digits, '.', '_' or '-', starting with a letter or digit.",
+      );
+    }
+
     const vars = withHelpers({
-      name: appPath,
+      name,
       forms: answers.forms,
       pragmaVersion: PRAGMA_WORKSPACE_VERSION,
     });
@@ -108,6 +130,16 @@ Requires both --ssr and --router flags.`,
     const copy = (filePath: string) => copyFile(src(filePath), dest(filePath));
 
     return sequence_([
+      // Warn (don't block) if the destination already exists — scaffolding
+      // will overwrite files in place.
+      flatMap(exists(appPath), (present) =>
+        when(
+          present,
+          warn(
+            `"${appPath}" already exists — existing files may be overwritten.`,
+          ),
+        ),
+      ),
       info(`Scaffolding React application in "${appPath}"...`),
 
       // EJS templates (files needing interpolation)
@@ -128,7 +160,12 @@ Requires both --ssr and --router flags.`,
       copy("vite.config.ts"),
       copy("vitest.config.ts"),
       copy("vitest.setup.ts"),
-      copy("index.html"),
+      // index.html (EJS — <title> uses the app name)
+      template({
+        source: src("index.html.ejs"),
+        dest: dest("index.html"),
+        vars,
+      }),
       copy(".gitignore"),
 
       // Styles
