@@ -1,4 +1,24 @@
-@import "@canonical/svelte-ds-app-launchpad/.storybook/launchpad-tokens.css";
+@import "@canonical/launchpad-design-tokens/dist/css/dimension/responsive.css";
+@import "@canonical/launchpad-design-tokens/dist/css/typography/responsive.css";
+@import "@canonical/launchpad-design-tokens/dist/css/opacity/opacity.css";
+@import "@canonical/launchpad-design-tokens/dist/css/transition/preferred.css";
+@import "@canonical/launchpad-design-tokens/dist/css/color/modifier.css";
+
+.docs-story {
+  background-color: var(--lp-color-background-default);
+}
+
+.row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.placeholder-box {
+  border: 1px dashed var(--lp-color-border-default);
+}
 
 @media (prefers-reduced-motion: no-preference) {
   * {
