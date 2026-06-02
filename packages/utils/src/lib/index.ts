@@ -15,5 +15,3 @@ export { default as pluralize } from "./pluralize/index.js";
 export { default as throttle } from "./throttle.js";
 
 export type * from "./types.js";
-
-// nx cache invalidation: toTitleCase export added

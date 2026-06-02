@@ -45,7 +45,9 @@ function createFakeNavigationWindow(initialHref = "https://example.com/") {
         intercept: vi.fn(),
       });
     },
-    dispatchNavigateRaw(event: Parameters<NonNullable<typeof navigateListener>>[0]) {
+    dispatchNavigateRaw(
+      event: Parameters<NonNullable<typeof navigateListener>>[0],
+    ) {
       navigateListener?.(event);
     },
   };

@@ -8,7 +8,6 @@ import {
   fail,
   flatMap,
   info,
-  mkdir,
   sequence_,
   transformFile,
   writeFile,
@@ -105,7 +104,9 @@ route key already existed) would remove a route you already had.`,
 
     const scaffold = sequence_([
       info(`Adding route "${routeName}" to domain "${domainName}"...`),
-      mkdir(domainDir),
+      // No mkdir: this generator targets an *existing* domain (guarded below).
+      // mkdir's default undo is DeleteDirectory, which on `--undo` could remove
+      // a pre-existing domain folder.
       writeFile(pageFile, buildPage(routeName)),
       // Insert the import + route entry into the domain's routes object via a
       // pure AST-located transform (no manual edit needed afterwards). Undo
@@ -128,16 +129,24 @@ route key already existed) would remove a route you already had.`,
       info(`Route "${routeName}" wired into ${routesFile}.`),
     ]);
 
-    // Refuse to overwrite an existing page — the page write's default undo is
-    // a delete, so overwriting a hand-authored page then `--undo` would destroy
-    // the original (there is no snapshot). Bail out before touching anything.
-    return flatMap(exists(pageFile), (present) =>
-      present
+    // Guard before touching anything:
+    // - the domain must exist (this generator adds to an existing domain);
+    // - the page must NOT exist (its write's undo is a delete, so overwriting a
+    //   hand-authored page then `--undo` would destroy the original).
+    return flatMap(exists(routesFile), (domainPresent) =>
+      !domainPresent
         ? fail({
-            code: "ROUTE_PAGE_EXISTS",
-            message: `Page "${pageFile}" already exists. Choose a different route name or remove the file first.`,
+            code: "ROUTE_DOMAIN_MISSING",
+            message: `Domain "${domainName}" not found (${routesFile} missing). Create it first with: summon domain ${domainName}`,
           })
-        : scaffold,
+        : flatMap(exists(pageFile), (pagePresent) =>
+            pagePresent
+              ? fail({
+                  code: "ROUTE_PAGE_EXISTS",
+                  message: `Page "${pageFile}" already exists. Choose a different route name or remove the file first.`,
+                })
+              : scaffold,
+          ),
     );
   },
 };

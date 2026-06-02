@@ -3,8 +3,16 @@ import type {
   GeneratorDefinition,
   PromptDefinition,
 } from "@canonical/summon-core";
-import { info, mkdir, sequence_, writeFile } from "@canonical/task";
-import { toCamelCase, toPascalCase } from "@canonical/utils";
+import {
+  exists,
+  fail,
+  flatMap,
+  info,
+  mkdir,
+  sequence_,
+  writeFile,
+} from "@canonical/task";
+import { toKebabCase, toPascalCase } from "@canonical/utils";
 import { normalizeCommandPath } from "../shared/casing.js";
 
 interface WrapperAnswers {
@@ -24,7 +32,7 @@ const prompts: PromptDefinition[] = [
 
 function buildLayout(wrapperName: string): string {
   const layoutName = `${toPascalCase(wrapperName)}Layout`;
-  const className = `${toCamelCase(wrapperName)}-layout`;
+  const className = `${toKebabCase(wrapperName)}-layout`;
 
   return `import type { ReactNode, ReactElement } from "react";
 
@@ -68,13 +76,24 @@ Given a name like "settings", creates:
     const layoutName = `${toPascalCase(name)}Layout`;
     const layoutDir = path.join("src", "lib", layoutName);
 
-    return sequence_([
+    const scaffold = sequence_([
       info(`Creating wrapper "${layoutName}"...`),
       mkdir(layoutDir),
       writeFile(path.join(layoutDir, `${layoutName}.tsx`), buildLayout(name)),
       writeFile(path.join(layoutDir, "index.ts"), buildBarrel(name)),
       info(`Wrapper "${layoutName}" created at ${layoutDir}.`),
     ]);
+
+    // Refuse to run when the layout already exists — mkdir/writeFile undos are
+    // destructive, so overwriting then `--undo` could delete a pre-existing one.
+    return flatMap(exists(layoutDir), (present) =>
+      present
+        ? fail({
+            code: "WRAPPER_EXISTS",
+            message: `Wrapper "${layoutDir}" already exists. Choose a different name or remove it first.`,
+          })
+        : scaffold,
+    );
   },
 };
 

@@ -3,7 +3,15 @@ import type {
   GeneratorDefinition,
   PromptDefinition,
 } from "@canonical/summon-core";
-import { info, mkdir, sequence_, writeFile } from "@canonical/task";
+import {
+  exists,
+  fail,
+  flatMap,
+  info,
+  mkdir,
+  sequence_,
+  writeFile,
+} from "@canonical/task";
 import { toCamelCase, toTitleCase } from "@canonical/utils";
 import { normalizeCommandPath } from "../shared/casing.js";
 import { printVersions } from "../shared/versions.js";
@@ -83,7 +91,7 @@ Add more routes with: summon route <domain>/<route-name>`,
     const name = normalizeCommandPath(answers.domainName);
     const domainDir = path.join("src", "domains", name);
 
-    return sequence_([
+    const scaffold = sequence_([
       printVersions("domain"),
       info(`Creating domain "${name}"...`),
       mkdir(domainDir),
@@ -93,6 +101,18 @@ Add more routes with: summon route <domain>/<route-name>`,
         `Domain "${name}" created. Import its routes in src/routes.tsx and wire them with group().`,
       ),
     ]);
+
+    // Refuse to run when the domain already exists — mkdir/writeFile undos are
+    // destructive (DeleteDirectory / DeleteFile), so overwriting then `--undo`
+    // could delete a pre-existing domain.
+    return flatMap(exists(domainDir), (present) =>
+      present
+        ? fail({
+            code: "DOMAIN_EXISTS",
+            message: `Domain "${domainDir}" already exists. Choose a different name or remove it first.`,
+          })
+        : scaffold,
+    );
   },
 };
 

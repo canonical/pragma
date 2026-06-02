@@ -88,8 +88,9 @@ export const transformFileEffect = (
   _tag: "TransformFile",
   path,
   transform,
-  // No default undo: restoring requires the pre-transform contents, which the
-  // interpreter captures at run time. Provide `{ undo }` to make it reversible.
+  // No default undo: the original contents are not captured anywhere, so there
+  // is nothing to restore automatically. Provide `{ undo }` (e.g. an inverse
+  // transform) to make it reversible.
   undo: resolveUndo(opts?.undo, undefined),
 });
 
