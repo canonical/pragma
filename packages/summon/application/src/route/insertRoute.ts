@@ -98,10 +98,31 @@ export function insertRoute(source: string, ins: RouteInsertion): string {
     `${indent}${indent}content: ${ins.pageName},\n` +
     `${indent}}),\n`;
 
-  // Insert the route entry just before the object's closing brace.
-  // routesObject.end points at the char after `}`; the `}` is at end-1.
-  const closeBrace = source.lastIndexOf("}", routesObject.end - 1);
-  let out = source.slice(0, closeBrace) + entry + source.slice(closeBrace);
+  // Insert after the last existing property, or — for an empty object — just
+  // inside the braces. Use AST node bounds, never a brace text-scan (which can
+  // match a nested `route({ ... })` brace on a single-line object).
+  const props = routesObject.properties;
+  let out: string;
+  if (props.length > 0) {
+    const last = props[props.length - 1];
+    // Find the insertion point: just after the last property, including its
+    // trailing comma if it has one (so the existing comma stays attached to the
+    // existing property). If there's no trailing comma, add one.
+    let at = last.end;
+    let prefix = ",\n";
+    if (source[at] === ",") {
+      at += 1; // step past the existing comma
+      prefix = "\n";
+    }
+    out = `${source.slice(0, at)}${prefix}${entry.replace(/\n$/, "")}${source.slice(at)}`;
+  } else {
+    // Empty object: insert between the braces.
+    const openBrace =
+      routesObject.getStart(sf) +
+      source.slice(routesObject.getStart(sf)).indexOf("{") +
+      1;
+    out = `${source.slice(0, openBrace)}\n${entry}${source.slice(openBrace)}`;
+  }
 
   // Insert the import after the last existing import (offsets in the original
   // source are still valid because the route entry was added later in the file).
@@ -175,7 +196,12 @@ export function removeRoute(
   for (const stmt of sf2.statements) {
     if (
       ts.isImportDeclaration(stmt) &&
-      stmt.importClause?.name?.text === ins.pageName
+      stmt.importClause?.name?.text === ins.pageName &&
+      // Only remove a pure default import (`import Page from "..."`), which is
+      // exactly what insertRoute creates. If a user merged named bindings into
+      // it (`import Page, { x } from "..."`), leave it — removing the whole line
+      // would discard their bindings.
+      !stmt.importClause.namedBindings
     ) {
       result = removeFullLines(result, stmt.getStart(sf2), stmt.end);
       break;
