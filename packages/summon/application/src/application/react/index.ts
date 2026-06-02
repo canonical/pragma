@@ -44,7 +44,7 @@ const prompts: PromptDefinition[] = [
     name: "forms",
     type: "confirm",
     message: "Include form components?",
-    default: false,
+    default: true,
     group: "Application",
   },
   {
