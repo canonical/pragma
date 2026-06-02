@@ -24,8 +24,14 @@ export function listSessions(traceDir: string): TraceSession[] {
 
     try {
       const stat = statSync(filePath);
-      const content = readFileSync(filePath, "utf-8");
-      const lineCount = content.split("\n").filter((l) => l.length > 0).length;
+      // Count records by counting newline bytes on the raw Buffer. Each NDJSON
+      // record is one newline-terminated line, so this avoids decoding the
+      // whole file to a string and allocating a large split() array.
+      const buf = readFileSync(filePath);
+      let lineCount = 0;
+      for (let i = 0; i < buf.length; i++) {
+        if (buf[i] === 0x0a) lineCount++;
+      }
 
       sessions.push({
         sessionId,

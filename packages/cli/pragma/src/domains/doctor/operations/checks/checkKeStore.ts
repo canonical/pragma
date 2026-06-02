@@ -30,7 +30,7 @@ export default async function checkKeStore(
       status: "fail",
       detail: "failed to boot",
       remedy:
-        "Ensure design system packages are installed: bun add -D @canonical/ds-global @canonical/code-standards",
+        "Ensure design system packages are installed: bun add -D @canonical/design-system @canonical/anatomy-dsl @canonical/code-standards",
     };
   } finally {
     result?.store.dispose();

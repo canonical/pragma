@@ -25,9 +25,13 @@ export default function template(options: TemplateOptions): Task<void> {
   const destPath = renderString(options.dest, options.vars, engine);
   const destDir = path.dirname(destPath);
 
-  const readSource = options.content
-    ? task(pure(options.content))
-    : task(readFile(options.source));
+  // Key off `undefined`, not truthiness: a legitimately empty embedded
+  // template ("") must still use the provided content rather than falling
+  // back to reading from disk (which fails in compiled-binary mode).
+  const readSource =
+    options.content !== undefined
+      ? task(pure(options.content))
+      : task(readFile(options.source));
 
   return task(mkdir(destDir))
     .chain(() => readSource)

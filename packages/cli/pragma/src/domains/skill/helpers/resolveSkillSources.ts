@@ -1,6 +1,3 @@
-import { existsSync } from "node:fs";
-import { join } from "node:path";
-import type { PackageRef } from "../../refs/operations/parseRef.js";
 import { parsePackageEntry } from "../../refs/operations/parseRef.js";
 import {
   createGitLoader,

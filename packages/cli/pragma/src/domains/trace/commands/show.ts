@@ -11,7 +11,11 @@ import {
 } from "@canonical/cli-core";
 import { traceDir } from "../../refs/operations/paths.js";
 import { selectFormatter } from "../../shared/formatters.js";
-import { showFormatters } from "../formatters/index.js";
+import {
+  noSessionsFormatters,
+  sessionNotFoundFormatters,
+  showFormatters,
+} from "../formatters/index.js";
 import {
   followTraceLog,
   listSessions,
@@ -26,10 +30,19 @@ function formatOneLine(r: import("../types.js").TraceRecord): string {
     String(d.getSeconds()).padStart(2, "0"),
   ].join(":");
   const type = r.type.toUpperCase().padEnd(10);
-  const count =
+  // Match the non-follow formatter: ASK → true/false, CONSTRUCT → triples,
+  // SELECT (and anything else) → rows.
+  const plural = (n: number, word: string) =>
+    `${n} ${word}${n !== 1 ? "s" : ""}`;
+  const count = (
     r.type === "ask"
-      ? (r.ask ? "true" : "false").padEnd(12)
-      : `${r.count} row${r.count !== 1 ? "s" : ""}`.padEnd(12);
+      ? r.ask
+        ? "true"
+        : "false"
+      : r.type === "construct"
+        ? plural(r.count, "triple")
+        : plural(r.count, "row")
+  ).padEnd(12);
   const ms = `${r.ms}ms`.padEnd(9);
   const q = r.q.replace(/\s+/g, " ").trim();
   const query = q.length > 100 ? `${q.slice(0, 97)}...` : q;
@@ -72,13 +85,9 @@ const showCommand: CommandDefinition = {
     const sessions = listSessions(dir);
 
     if (sessions.length === 0) {
-      return createOutputResult(
-        { sessionId: "(none)", records: [] },
-        {
-          plain: () =>
-            "No trace sessions found.\n\nEnable tracing: PRAGMA_TRACE=1 pragma <command>\n                 or: pragma config trace on",
-        },
-      );
+      return createOutputResult(undefined, {
+        plain: selectFormatter(ctx, noSessionsFormatters),
+      });
     }
 
     const sessionId =
@@ -89,11 +98,11 @@ const showCommand: CommandDefinition = {
 
     if (!target) {
       return createOutputResult(
-        { sessionId: sessionId ?? "(unknown)", records: [] },
         {
-          plain: () =>
-            `Session not found: ${sessionId}\n\nAvailable sessions: ${sessions.map((s) => s.sessionId).join(", ")}`,
+          requested: sessionId ?? "(unknown)",
+          available: sessions.map((s) => s.sessionId),
         },
+        { plain: selectFormatter(ctx, sessionNotFoundFormatters) },
       );
     }
 

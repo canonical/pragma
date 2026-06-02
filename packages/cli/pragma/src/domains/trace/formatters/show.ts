@@ -96,4 +96,27 @@ const formatters: Formatters<ShowData> = {
     JSON.stringify({ sessionId, records }, null, 2),
 };
 
+/** Formatters for the "no trace sessions exist yet" state (all three modes). */
+export const noSessionsFormatters: Formatters<void> = {
+  plain: () =>
+    "No trace sessions found.\n\nEnable tracing: PRAGMA_TRACE=1 pragma <command>\n                 or: pragma config trace on",
+  llm: () =>
+    "No trace sessions found. Enable tracing with `PRAGMA_TRACE=1 pragma <command>` or `pragma config trace on`.",
+  json: () =>
+    JSON.stringify({ sessions: [], hint: "enable tracing to record queries" }),
+};
+
+/** Formatters for the "requested session does not exist" state (all three modes). */
+export const sessionNotFoundFormatters: Formatters<{
+  requested: string;
+  available: string[];
+}> = {
+  plain: ({ requested, available }) =>
+    `Session not found: ${requested}\n\nAvailable sessions: ${available.join(", ")}`,
+  llm: ({ requested, available }) =>
+    `Session not found: \`${requested}\`. Available sessions: ${available.map((s) => `\`${s}\``).join(", ")}.`,
+  json: ({ requested, available }) =>
+    JSON.stringify({ error: "session_not_found", requested, available }),
+};
+
 export default formatters;

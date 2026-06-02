@@ -19,7 +19,9 @@ const traceFormatters = {
   query: {
     plain: (status: string) => status,
     llm: (status: string) => status,
-    json: (status: string) => JSON.stringify({ field: "trace", value: status }),
+    // Emit the human-readable status under `status`, not `value`, so the JSON
+    // shape stays consistent with `set` (where `value` is the boolean state).
+    json: (status: string) => JSON.stringify({ field: "trace", status }),
   } satisfies Formatters<string>,
 };
 
