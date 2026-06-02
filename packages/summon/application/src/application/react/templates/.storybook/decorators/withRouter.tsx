@@ -1,9 +1,5 @@
 import { HeadProvider } from "@canonical/react-head";
-import {
-  createHashRouter,
-  route,
-  type RouteMap,
-} from "@canonical/router-core";
+import { createHashRouter, type RouteMap, route } from "@canonical/router-core";
 import { Outlet, RouterProvider } from "@canonical/router-react";
 import type { ElementType } from "react";
 

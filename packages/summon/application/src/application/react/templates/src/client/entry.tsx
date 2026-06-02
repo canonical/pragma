@@ -10,8 +10,13 @@ const router = createBrowserRouter(appRoutes, {
   notFound: notFoundRoute,
 });
 
+const root = document.getElementById("root");
+if (!root) {
+  throw new Error('Root element "#root" not found');
+}
+
 hydrateRoot(
-  document.getElementById("root")!,
+  root,
   <HeadProvider>
     <RouterProvider router={router}>
       <Outlet fallback={<p>Loading…</p>} />
