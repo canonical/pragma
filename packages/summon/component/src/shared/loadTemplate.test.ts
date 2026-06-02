@@ -51,7 +51,9 @@ describe("loadTemplate", () => {
     writeFileSync(path, "DISK WINS");
     (globalThis as { Bun?: unknown }).Bun = {
       embeddedFiles: [
-        Object.assign(new Blob(["EMBEDDED"]), { name: "types-deadbeef.ts.ejs" }),
+        Object.assign(new Blob(["EMBEDDED"]), {
+          name: "types-deadbeef.ts.ejs",
+        }),
       ],
     };
 

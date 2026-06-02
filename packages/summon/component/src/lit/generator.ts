@@ -47,12 +47,8 @@ const litTemplates = {
   index: await loadTemplate(path.join(templatesDir, "lit", "index.ts.ejs")),
   types: await loadTemplate(path.join(templatesDir, "lit", "types.ts.ejs")),
   tests: await loadTemplate(path.join(templatesDir, "lit", "tests.ts.ejs")),
-  stories: await loadTemplate(
-    path.join(templatesDir, "lit", "stories.ts.ejs"),
-  ),
-  styles: await loadTemplate(
-    path.join(templatesDir, "lit", "styles.css.ejs"),
-  ),
+  stories: await loadTemplate(path.join(templatesDir, "lit", "stories.ts.ejs")),
+  styles: await loadTemplate(path.join(templatesDir, "lit", "styles.css.ejs")),
 };
 
 // =============================================================================

@@ -49,12 +49,8 @@ const svelteTemplates = {
   component: await loadTemplate(
     path.join(templatesDir, "svelte", "component.svelte.ejs"),
   ),
-  types: await loadTemplate(
-    path.join(templatesDir, "svelte", "types.ts.ejs"),
-  ),
-  index: await loadTemplate(
-    path.join(templatesDir, "svelte", "index.ts.ejs"),
-  ),
+  types: await loadTemplate(path.join(templatesDir, "svelte", "types.ts.ejs")),
+  index: await loadTemplate(path.join(templatesDir, "svelte", "index.ts.ejs")),
   test: await loadTemplate(path.join(templatesDir, "svelte", "test.ts.ejs")),
   ssrTest: await loadTemplate(
     path.join(templatesDir, "svelte", "ssr.test.ts.ejs"),

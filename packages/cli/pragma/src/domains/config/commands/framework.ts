@@ -43,7 +43,10 @@ export default function buildFrameworkCommand(
       },
     ],
     meta: {
-      examples: ["pragma config framework react", "pragma config framework --reset"],
+      examples: [
+        "pragma config framework react",
+        "pragma config framework --reset",
+      ],
       extendedHelp:
         "Advisory only for now: the value is persisted but no command reads it yet. Reserved for future framework defaulting.",
     },

@@ -85,9 +85,7 @@ describe("config trace command", () => {
   it("throws INVALID_INPUT for an invalid value", async () => {
     const ctx = makeCtx(dir);
     const cmd = buildTraceCommand(ctx);
-    await expect(cmd.execute({ value: "yes" }, ctx)).rejects.toThrow(
-      /trace/i,
-    );
+    await expect(cmd.execute({ value: "yes" }, ctx)).rejects.toThrow(/trace/i);
   });
 
   // Regression guard for the data-loss bug: enabling/disabling trace must NOT
