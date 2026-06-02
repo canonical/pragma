@@ -26,7 +26,7 @@ The reference standards that this guide fulfils are maintained in the [code-stan
 bun run storybook
 ```
 6. Open the [storybook docs](http://localhost:6006/?path=/docs/button--docs) for your new component You should see that a component with our [standard React props](https://github.com/canonical/code-standards) has been generated. A "Docs" page contains high-level information about the component, a reference table of all of its props, and embeds each of the component's stories.
-![A screenshot of a Storybook project showing a starter "Button" component's documentation. An example of the component is rendered in a "Default" story, which is a simple line of text reading "Hello world!".](../assets/react-component-storybook-default.png)
+![A screenshot of a Storybook project showing a starter "Button" component's documentation. An example of the component is rendered in a "Default" story, which is a simple line of text reading "Hello world!".](assets/react-component-storybook-default.png)
 
 7. Edit the component files as needed to implement your desired functionality.
 
