@@ -1,6 +1,7 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import type { PackageRef } from "../../refs/operations/parseRef.js";
+import { parsePackageEntry } from "../../refs/operations/parseRef.js";
 import {
   createGitLoader,
   createLocalLoader,
@@ -8,7 +9,6 @@ import {
 import { DEFAULT_PACKAGES } from "../../shared/packages.js";
 import type { SemanticPackage } from "../../shared/semanticPackage.js";
 import { resolveSemanticPackages } from "../../shared/semanticPackage.js";
-import { parsePackageEntry } from "../../refs/operations/parseRef.js";
 
 /** A resolved skill source directory from an installed package. */
 export interface SkillSource {

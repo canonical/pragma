@@ -55,7 +55,9 @@ export interface PackageLoader {
   /** Loader identity for diagnostics. */
   readonly name: "local" | "git" | "bundled";
   /** Attempt to resolve a package reference. */
-  resolve(ref: PackageRef): SemanticPackage | undefined | Promise<SemanticPackage | undefined>;
+  resolve(
+    ref: PackageRef,
+  ): SemanticPackage | undefined | Promise<SemanticPackage | undefined>;
 }
 
 // ---------------------------------------------------------------------------

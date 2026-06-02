@@ -80,9 +80,7 @@ async function readEmbeddedGraphs(
         content,
         format: "turtle",
       });
-    } catch {
-      continue;
-    }
+    } catch {}
   }
 
   return graphs;
@@ -103,9 +101,7 @@ async function readEmbeddedVersion(
       const text = await blob.text();
       const parsed = JSON.parse(text) as { version?: string };
       if (parsed.version) return parsed.version;
-    } catch {
-      continue;
-    }
+    } catch {}
   }
 
   return "0.0.0";

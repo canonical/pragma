@@ -7,8 +7,13 @@
  * @note Impure — reads filesystem, creates ke store.
  */
 
-import { type SourceSpec, type Store, definePlugin } from "@canonical/ke";
-import { createStore } from "@canonical/ke";
+import {
+  createStore,
+  definePlugin,
+  type Plugin,
+  type SourceSpec,
+  type Store,
+} from "@canonical/ke";
 import { PragmaError } from "../../error/index.js";
 import type { PackageRef } from "../refs/operations/parseRef.js";
 import { parsePackageEntry } from "../refs/operations/parseRef.js";
@@ -31,6 +36,8 @@ export interface BootStoreOptions {
   cache?: string;
   /** Parsed package references for loader-based resolution. */
   refs?: ReadonlyArray<PackageRef>;
+  /** Enable query tracing (from config). Env var PRAGMA_TRACE=1 overrides. */
+  trace?: boolean;
 }
 
 export interface BootResult {
@@ -91,12 +98,22 @@ export async function bootStore(
       },
     });
 
+    // biome-ignore lint: Plugin generic variance requires explicit unknown
+    const plugins: Plugin<any>[] = [graphLoaderPlugin];
+    const traceEnabled =
+      process.env.PRAGMA_TRACE === "1" || options.trace === true;
+    if (traceEnabled) {
+      const { createTracePlugin } = await import("../trace/tracePlugin.js");
+      const { traceDir } = await import("../refs/operations/paths.js");
+      plugins.push(createTracePlugin({ traceDir: traceDir() }));
+    }
+
     const store = await createStore({
       sources: [],
       prefixes: PREFIX_MAP,
       cache: options.cache,
       cwd: options.cwd,
-      plugins: [graphLoaderPlugin],
+      plugins,
     });
 
     return { store, packages };
