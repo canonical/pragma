@@ -4,6 +4,7 @@ import type { CommandDefinition } from "@canonical/cli-core";
 import type { PragmaContext } from "../shared/context.js";
 import {
   channelCommand,
+  frameworkCommand,
   showCommand,
   tierCommand,
   traceCommand,
@@ -20,6 +21,7 @@ export function commands(ctx: PragmaContext): CommandDefinition[] {
     tierCommand(ctx),
     channelCommand(ctx),
     traceCommand(ctx),
+    frameworkCommand(ctx),
     showCommand(ctx),
   ];
 }
@@ -29,5 +31,6 @@ export type { ConfigShowData } from "./operations/index.js";
 export {
   resolveConfigShow,
   validateChannel,
+  validateFramework,
   validateTier,
 } from "./operations/index.js";

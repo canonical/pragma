@@ -5,7 +5,7 @@
  * so consumers can import types without pulling in filesystem code.
  */
 
-import type { Channel } from "../constants.js";
+import type { Channel, Framework } from "../constants.js";
 import type { RawPackageEntry } from "../domains/refs/operations/parseRef.js";
 
 /** Parsed contents of pragma.config.json. */
@@ -22,6 +22,11 @@ interface PragmaConfig {
   packages?: ReadonlyArray<RawPackageEntry> | undefined;
   /** Whether query access tracing is enabled. Overridden by PRAGMA_TRACE env var. */
   trace?: boolean | undefined;
+  /**
+   * Preferred UI framework (`react` | `svelte` | `lit`). Currently advisory
+   * only — no behaviour reads it yet; reserved for future framework defaulting.
+   */
+  framework?: Framework | undefined;
 }
 
 /** Partial update payload for writing config changes. */
@@ -34,6 +39,8 @@ interface ConfigUpdate {
   packages?: ReadonlyArray<RawPackageEntry> | undefined;
   /** Enable/disable query tracing, `undefined` to remove the field. */
   trace?: boolean | undefined;
+  /** New preferred framework, `undefined` to remove the field. */
+  framework?: Framework | undefined;
 }
 
 export type { ConfigUpdate, PragmaConfig };

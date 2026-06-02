@@ -24,6 +24,16 @@ const VALID_CHANNELS = ["normal", "experimental", "prerelease"] as const;
 /** A release channel name. */
 type Channel = (typeof VALID_CHANNELS)[number];
 
+/** Allowed values for the `framework` config field. */
+const VALID_FRAMEWORKS = ["react", "svelte", "lit"] as const;
+
+/**
+ * A preferred UI framework. Currently advisory only (a no-op); reserved for
+ * future use to default framework-specific behaviour (e.g. which generator
+ * `pragma`/`summon` scaffolds, which component tier is surfaced).
+ */
+type Framework = (typeof VALID_FRAMEWORKS)[number];
+
 /**
  * Per-namespace property URIs for semantically equivalent fields.
  * Each ontology uses different property names for the same concept
@@ -68,11 +78,12 @@ const PROPERTY_MAP: Record<string, OntologyPropertyMap> = {
   },
 };
 
-export type { Channel, OntologyPropertyMap };
+export type { Channel, Framework, OntologyPropertyMap };
 export {
   PROGRAM_DESCRIPTION,
   PROGRAM_NAME,
   PROPERTY_MAP,
   VALID_CHANNELS,
+  VALID_FRAMEWORKS,
   VERSION,
 };

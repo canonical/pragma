@@ -1,5 +1,10 @@
 import { readFileSync } from "node:fs";
-import { type Channel, VALID_CHANNELS } from "../constants.js";
+import {
+  type Channel,
+  type Framework,
+  VALID_CHANNELS,
+  VALID_FRAMEWORKS,
+} from "../constants.js";
 import {
   parsePackageEntry,
   type RawPackageEntry,
@@ -16,6 +21,18 @@ import type { PragmaConfig } from "./types.js";
  */
 function isValidChannel(value: unknown): value is Channel {
   return typeof value === "string" && VALID_CHANNELS.includes(value as Channel);
+}
+
+/**
+ * Type guard: check whether a value is a recognized framework string.
+ *
+ * @param value - Candidate value.
+ * @returns `true` if value is a valid Framework.
+ */
+function isValidFramework(value: unknown): value is Framework {
+  return (
+    typeof value === "string" && VALID_FRAMEWORKS.includes(value as Framework)
+  );
 }
 
 /**
@@ -66,6 +83,17 @@ export default function readConfig(cwd: string = process.cwd()): PragmaConfig {
 
   const trace = typeof parsed.trace === "boolean" ? parsed.trace : undefined;
 
+  let framework: Framework | undefined;
+  if (parsed.framework !== undefined) {
+    if (!isValidFramework(parsed.framework)) {
+      throw PragmaError.configError(
+        `Invalid framework "${String(parsed.framework)}".`,
+        { validOptions: [...VALID_FRAMEWORKS] },
+      );
+    }
+    framework = parsed.framework;
+  }
+
   const packages = parsePackagesField(parsed.packages);
 
   return {
@@ -73,6 +101,7 @@ export default function readConfig(cwd: string = process.cwd()): PragmaConfig {
     channel,
     ...(packages ? { packages } : {}),
     ...(trace !== undefined ? { trace } : {}),
+    ...(framework !== undefined ? { framework } : {}),
   };
 }
 
