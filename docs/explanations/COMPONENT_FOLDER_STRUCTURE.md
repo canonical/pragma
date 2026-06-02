@@ -311,4 +311,4 @@ The component structure implements patterns codified in the code-standards ontol
 
 **Class Name Construction** (react/component/class-name-construction): CSS classes are built from an array containing namespace, component class, modifiers, and consumer classes, filtered for truthiness and joined with spaces.
 
-These standards exist in machine-readable form at [github.com/canonical/code-standards](https://github.com/canonical/code-standards). Tooling can query the standards to generate scaffolding, validate implementations, or produce documentation.
+These standards exist in machine-readable form at [github.com/canonical/web-code-standards](https://github.com/canonical/web-code-standards). Tooling can query the standards to generate scaffolding, validate implementations, or produce documentation.

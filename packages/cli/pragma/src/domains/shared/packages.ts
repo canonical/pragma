@@ -22,6 +22,6 @@ export const DEFAULT_PACKAGES: readonly RawPackageEntry[] = [
   },
   {
     name: "@canonical/code-standards",
-    source: "git+https://github.com/canonical/code-standards.git#main",
+    source: "git+https://github.com/canonical/web-code-standards.git#main",
   },
 ];
