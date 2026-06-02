@@ -13,7 +13,7 @@ generate: (answers) => writeFile(`src/${answers.name}.ts`, code)
 ## Installation
 
 ```bash
-bun install -g @canonical/summon
+bun add -g @canonical/summon
 ```
 
 ## Using Generators
@@ -141,7 +141,7 @@ Generator packages follow the naming convention `summon-*` or `@scope/summon-*`:
 
 ```bash
 # Install a generator package
-bun install -g @canonical/summon-component
+bun add -g @canonical/summon-component
 
 # Now available (completions work immediately!)
 summon component react
