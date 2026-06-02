@@ -86,4 +86,15 @@ describe("loadTemplate", () => {
       /Template not found/,
     );
   });
+
+  it("throws when Bun is present but exposes no embeddedFiles", async () => {
+    // Running under the Bun runtime (not a compiled binary): `Bun` exists but
+    // `embeddedFiles` is undefined, so the embedded lookup is skipped.
+    const missingPath = join(dir, "wanted.ejs");
+    (globalThis as { Bun?: unknown }).Bun = {};
+
+    await expect(loadTemplate(missingPath)).rejects.toThrow(
+      /Template not found/,
+    );
+  });
 });

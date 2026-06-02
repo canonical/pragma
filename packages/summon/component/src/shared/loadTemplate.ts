@@ -48,7 +48,7 @@ export default async function loadTemplate(
       // those. Deferred — needs verification against a real compiled binary
       // (see pragma-adrs/session/J.CLI_MCP_FINISH.md). Interpreted mode (the
       // common path) reads from disk above and is unaffected.
-      const basename = source.split("/").pop() ?? "";
+      const basename = source.slice(source.lastIndexOf("/") + 1);
       for (const blob of blobs) {
         const dehashed = blob.name.replace(/-[a-z0-9]+\./, ".");
         if (dehashed === basename) {

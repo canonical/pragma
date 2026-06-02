@@ -40,6 +40,28 @@ describe("template task", () => {
     const mkdirEffect = effects.find((e) => e._tag === "MakeDir");
     expect((mkdirEffect as { path: string }).path).toBe("/deep/nested/path");
   });
+
+  it("uses provided content instead of reading from source", () => {
+    // The compiled-binary path: `content` is pre-loaded (e.g. from
+    // Bun.embeddedFiles), so no ReadFile effect should be emitted and the
+    // inline content is rendered directly.
+    const t = template({
+      source: "/templates/component.tsx.ejs",
+      content: "export const <%= name %> = () => null;",
+      dest: "/output/<%= name %>.tsx",
+      vars: { name: "Button" },
+    });
+
+    const { effects } = dryRun(t);
+    expect(effects.some((e) => e._tag === "ReadFile")).toBe(false);
+    expect(effects.some((e) => e._tag === "MakeDir")).toBe(true);
+    const writeEffect = effects.find((e) => e._tag === "WriteFile") as {
+      path: string;
+      content: string;
+    };
+    expect(writeEffect.path).toBe("/output/Button.tsx");
+    expect(writeEffect.content).toBe("export const Button = () => null;");
+  });
 });
 
 describe("templateDir task", () => {
