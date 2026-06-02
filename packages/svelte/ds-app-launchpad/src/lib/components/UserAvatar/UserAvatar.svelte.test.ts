@@ -55,15 +55,13 @@ describe("UserAvatar component", () => {
         ...baseProps,
         userAvatarUrl: avatarUrl,
         userName: "John Doe",
-        alt: "John Doe's avatar",
       });
 
       await expectIs("img", page);
 
-      const element = page.getByRole("img", { name: "John Doe's avatar" });
+      const element = page.getByRole("img");
       await expect.element(element).toBeVisible();
       await expect.element(element).toHaveAttribute("src", avatarUrl);
-      await expect.element(element).toHaveAttribute("alt", "John Doe's avatar");
       await expect.element(element).toHaveAttribute("title", "John Doe");
       await expect.element(element).toHaveAttribute("data-initials");
     });
@@ -72,15 +70,13 @@ describe("UserAvatar component", () => {
       const page = render(Component, {
         ...baseProps,
         userAvatarUrl: avatarUrl,
-        alt: "User avatar",
       });
 
       await expectIs("img", page);
 
-      const element = page.getByRole("img", { name: "User avatar" });
+      const element = page.getByRole("img");
       await expect.element(element).toBeVisible();
       await expect.element(element).toHaveAttribute("src", avatarUrl);
-      await expect.element(element).toHaveAttribute("alt", "User avatar");
       await expect.element(element).not.toHaveAttribute("title");
       await expect.element(element).not.toHaveAttribute("data-initials");
     });
@@ -103,16 +99,54 @@ describe("UserAvatar component", () => {
     });
   });
 
+  describe("imageAttributes", () => {
+    it("applies img-specific attributes to the avatar image", async () => {
+      const page = render(Component, {
+        ...baseProps,
+        userAvatarUrl: avatarUrl,
+        imageAttributes: { alt: "John Doe's avatar", loading: "lazy" },
+      });
+
+      const element = page.getByRole("img");
+      await expect.element(element).toHaveAttribute("alt", "John Doe's avatar");
+      await expect.element(element).toHaveAttribute("loading", "lazy");
+    });
+
+    it("are not applied when rendering as <abbr>", async () => {
+      const page = render(Component, {
+        ...baseProps,
+        userName: "John Doe",
+        imageAttributes: { alt: "John Doe's avatar", loading: "lazy" },
+      });
+
+      await expectIs("abbr", page);
+      const element = page.getByTestId("user-avatar");
+      await expect.element(element).not.toHaveAttribute("alt");
+      await expect.element(element).not.toHaveAttribute("loading");
+    });
+
+    it("are not applied when rendering as icon", async () => {
+      const page = render(Component, {
+        ...baseProps,
+        imageAttributes: { alt: "John Doe's avatar", loading: "lazy" },
+      });
+
+      await expectIs("svg", page);
+      const element = page.getByTestId("user-avatar");
+      await expect.element(element).not.toHaveAttribute("alt");
+      await expect.element(element).not.toHaveAttribute("loading");
+    });
+  });
+
   describe("fallback behaviors", () => {
     it("falls back to <abbr> when JS handles image error and userName is provided", async () => {
       const page = render(Component, {
         ...baseProps,
         userAvatarUrl: "invalid-url",
         userName: "John Doe",
-        alt: "John Doe's avatar",
       });
 
-      const imageElement = page.getByRole("img", { name: "John Doe's avatar" });
+      const imageElement = page.getByRole("img");
       imageElement.element().dispatchEvent(new Event("error"));
 
       await expectIs("abbr", page);
@@ -123,10 +157,9 @@ describe("UserAvatar component", () => {
       const page = render(Component, {
         ...baseProps,
         userAvatarUrl: "invalid-url",
-        alt: "User avatar",
       });
 
-      const imageElement = page.getByRole("img", { name: "User avatar" });
+      const imageElement = page.getByRole("img");
       imageElement.element().dispatchEvent(new Event("error"));
 
       await expectIs("svg", page);
@@ -138,13 +171,10 @@ describe("UserAvatar component", () => {
           ...baseProps,
           userAvatarUrl: `invalid-url`,
           userName: "John Doe",
-          alt: "John Doe's avatar",
           onerror: () => {},
         });
 
-        const imageElement = page.getByRole("img", {
-          name: "John Doe's avatar",
-        });
+        const imageElement = page.getByRole("img");
         imageElement.element().dispatchEvent(new Event("error"));
 
         await expect.element(imageElement).toHaveAttribute("data-initials");
@@ -155,13 +185,10 @@ describe("UserAvatar component", () => {
         const page = render(Component, {
           ...baseProps,
           userAvatarUrl: "invalid-url",
-          alt: "User avatar",
           onerror: () => {},
         });
 
-        const imageElement = page.getByRole("img", {
-          name: "User avatar",
-        });
+        const imageElement = page.getByRole("img");
         imageElement.element().dispatchEvent(new Event("error"));
 
         await expect.element(imageElement).not.toHaveAttribute("data-initials");

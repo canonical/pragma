@@ -17,15 +17,13 @@ describe("UserAvatar SSR", () => {
           ...baseProps,
           userAvatarUrl: avatarUrl,
           userName: "John Doe",
-          alt: "John Doe's avatar",
         },
       });
 
       expectIs("img", page);
 
-      const element = page.getByRole("img", { name: "John Doe's avatar" });
+      const element = page.getByRole("img");
       expect(element.getAttribute("src")).toBe(avatarUrl);
-      expect(element.getAttribute("alt")).toBe("John Doe's avatar");
       expect(element.getAttribute("title")).toBe("John Doe");
       expect(element.getAttribute("data-initials")).toBeTruthy();
     });
@@ -35,16 +33,14 @@ describe("UserAvatar SSR", () => {
         props: {
           ...baseProps,
           userAvatarUrl: avatarUrl,
-          alt: "User avatar",
         },
       });
 
       expectIs("img", page);
 
-      const element = page.getByRole("img", { name: "User avatar" });
+      const element = page.getByRole("img");
       expect(element).toBeInstanceOf(page.window.HTMLImageElement);
       expect(element.getAttribute("src")).toBe(avatarUrl);
-      expect(element.getAttribute("alt")).toBe("User avatar");
       expect(element.getAttribute("title")).toBeNull();
       expect(element.getAttribute("data-initials")).toBeNull();
     });
@@ -104,6 +100,51 @@ describe("UserAvatar SSR", () => {
     });
   });
 
+  describe("imageAttributes", () => {
+    it("applies img-specific attributes to the avatar image", () => {
+      const page = render(Component, {
+        props: {
+          ...baseProps,
+          userAvatarUrl: avatarUrl,
+          imageAttributes: { alt: "John Doe's avatar", loading: "lazy" },
+        },
+      });
+
+      const element = page.getByRole("img");
+      expect(element.getAttribute("alt")).toBe("John Doe's avatar");
+      expect(element.getAttribute("loading")).toBe("lazy");
+    });
+
+    it("are not applied when rendering as <abbr>", () => {
+      const page = render(Component, {
+        props: {
+          ...baseProps,
+          userName: "John Doe",
+          imageAttributes: { alt: "John Doe's avatar", loading: "lazy" },
+        },
+      });
+
+      const element = page.getByTestId("user-avatar");
+      expect(element.tagName).toBe("ABBR");
+      expect(element.getAttribute("alt")).toBeNull();
+      expect(element.getAttribute("loading")).toBeNull();
+    });
+
+    it("are not applied when rendering as icon", () => {
+      const page = render(Component, {
+        props: {
+          ...baseProps,
+          imageAttributes: { alt: "John Doe's avatar", loading: "lazy" },
+        },
+      });
+
+      const element = page.getByTestId("user-avatar");
+      expect(element.tagName).toBe("DIV");
+      expect(element.getAttribute("alt")).toBeNull();
+      expect(element.getAttribute("loading")).toBeNull();
+    });
+  });
+
   describe("fallback behaviors", () => {
     it("includes CSS fallback hooks for no-JS image failure when userName is provided", () => {
       const page = render(Component, {
@@ -111,10 +152,9 @@ describe("UserAvatar SSR", () => {
           ...baseProps,
           userAvatarUrl: avatarUrl,
           userName: "John Doe",
-          alt: "John Doe's avatar",
         },
       });
-      const element = page.getByRole("img", { name: "John Doe's avatar" });
+      const element = page.getByRole("img");
 
       expect(element.getAttribute("data-initials")).toBeTruthy();
       expect(element.getAttribute("title")).toBe("John Doe");
@@ -125,10 +165,9 @@ describe("UserAvatar SSR", () => {
         props: {
           ...baseProps,
           userAvatarUrl: avatarUrl,
-          alt: "User avatar",
         },
       });
-      const element = page.getByRole("img", { name: "User avatar" });
+      const element = page.getByRole("img");
 
       expect(element.getAttribute("data-initials")).toBeNull();
       expect(page.getByTestId("user-avatar").querySelector("abbr")).toBeNull();
