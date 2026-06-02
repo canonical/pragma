@@ -1,6 +1,6 @@
 # Constitution
 
-Twelve principles govern how pragma is built. Each principle is a constraint that resolves a recurring category of decision---when two valid approaches exist, these principles determine which one wins.
+Thirteen principles govern how pragma is built. Each principle is a constraint that resolves a recurring category of decision---when two valid approaches exist, these principles determine which one wins.
 
 The principles are not aspirational. They are operational. Code that violates a principle is a bug, not a style choice.
 
@@ -164,9 +164,21 @@ The cost is friction. Checks slow merges. Validation rejects valid-looking packa
 
 ---
 
+## XIII. Preference towards minimal tooling
+
+Every tool added to a system is a standing liability. It must be installed, configured, version-matched, learned, debugged when it misbehaves, and carried forward through every future migration. These costs are quiet and compounding: a build step that seems harmless in isolation becomes one more thing that can break, one more layer between what a developer writes and what runs, one more dependency whose maintenance is now the project's problem. The default posture is therefore reductive---reach for no tool before reaching for a tool, and treat the absence of tooling as a feature in its own right.
+
+This means the burden of proof falls on inclusion, never on omission. That a tool is popular, that a pattern is widespread, or that a capability already exists in the stack is not on its own a reason to adopt or keep it. Prevalence is not justification. Every adoption is a weighed trade-off where the convenience offered is measured against the permanent cost of carrying the tool, and in that weighing "no tooling" is always counted as a positive on the scale. A capability that can be achieved without a build step, a transform, or a dependency should be---a stylesheet compiled from a preprocessor, or styles assembled at runtime by a library, each buys expressiveness at the price of a layer between authoring and execution that pure CSS with custom properties does not require.
+
+The deeper expression of this spirit is to prevent the problem rather than to build machinery that cleans it up. A tool introduced to manage a mess is often evidence that the mess should not have been created. The discipline is to address the cause at the point of authorship: rather than adding a step that strips unused styles after the fact, write only the styles that are used; rather than tooling that detects and repairs drift, structure the work so the drift cannot arise. Tooling that exists to undo self-inflicted complexity is a signal to remove the complexity at its source, not to institutionalise the cleanup.
+
+The cost is restraint, and occasionally verbosity or manual effort where a tool would have automated it. That cost is accepted deliberately. A system with fewer moving parts is easier to understand, faster to build, cheaper to maintain, and simpler to hand to the next person---and those gains accrue for as long as the system lives, while the convenience of a tool is spent the moment it is used.
+
+---
+
 ## Summary
 
-These twelve principles form a coherent approach to building maintainable software:
+These thirteen principles form a coherent approach to building maintainable software:
 
 - Universal design enables inclusion.
 - Domains enable boundaries.
@@ -180,5 +192,6 @@ These twelve principles form a coherent approach to building maintainable softwa
 - Modern platforms enable clean code.
 - Structured data enables automation.
 - Predictable execution enables trust.
+- Minimal tooling enables longevity.
 
-The principles sometimes tension with each other. Explicitness can conflict with DRY when extracting repeated code would hide the explicit structure. Conventions can conflict with no-magic when enforcing conventions automatically. Universal design can conflict with no premature optimisation when accessibility work addresses needs that have not yet been measured as bottlenecks---but accessibility is not an optimisation, it is a baseline, and the tension resolves in favour of inclusion. Modern stack can conflict with universal design when dropping an old platform drops the users still on it---the mitigation is version pinning, not indefinite support, but the tension is real and should be felt. In all cases, the tension resolves by preferring the principle that keeps the system honest: visible behaviour, verifiable claims, and no silent compromises.
+The principles sometimes tension with each other. Explicitness can conflict with DRY when extracting repeated code would hide the explicit structure. Conventions can conflict with no-magic when enforcing conventions automatically. Universal design can conflict with no premature optimisation when accessibility work addresses needs that have not yet been measured as bottlenecks---but accessibility is not an optimisation, it is a baseline, and the tension resolves in favour of inclusion. Modern stack can conflict with universal design when dropping an old platform drops the users still on it---the mitigation is version pinning, not indefinite support, but the tension is real and should be felt. Minimal tooling can conflict with structured data over prose, since formal ontologies and schema-based rulesets are themselves tooling---the tension resolves where the structure must be queried, validated, or generated from, which earns the tool its keep, while ad-hoc convenience tooling does not. In all cases, the tension resolves by preferring the principle that keeps the system honest: visible behaviour, verifiable claims, and no silent compromises.
