@@ -25,25 +25,25 @@
     "storybook": "storybook dev -p 6010 --no-open --host 0.0.0.0"
   },
   "dependencies": {
-    "@canonical/react-ds-global": "^0.26.0",
+    "@canonical/react-ds-global": "<%= pragmaVersion %>",
 <% if (forms) { -%>
-    "@canonical/react-ds-global-form": "^0.26.0",
+    "@canonical/react-ds-global-form": "<%= pragmaVersion %>",
 <% } -%>
-    "@canonical/react-head": "^0.26.0",
-    "@canonical/react-hooks": "^0.26.0",
-    "@canonical/react-ssr": "^0.26.0",
-    "@canonical/router-core": "^0.26.0",
-    "@canonical/router-react": "^0.26.0",
-    "@canonical/storybook-config": "^0.26.0",
-    "@canonical/styles": "^0.26.0",
+    "@canonical/react-head": "<%= pragmaVersion %>",
+    "@canonical/react-hooks": "<%= pragmaVersion %>",
+    "@canonical/react-ssr": "<%= pragmaVersion %>",
+    "@canonical/router-core": "<%= pragmaVersion %>",
+    "@canonical/router-react": "<%= pragmaVersion %>",
+    "@canonical/storybook-config": "<%= pragmaVersion %>",
+    "@canonical/styles": "<%= pragmaVersion %>",
     "express": "^5.2.1",
     "react": "^19.2.4",
     "react-dom": "^19.2.4"
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.9",
-    "@canonical/biome-config": "^0.26.0",
-    "@canonical/typescript-config-react": "^0.26.0",
+    "@canonical/biome-config": "<%= pragmaVersion %>",
+    "@canonical/typescript-config-react": "<%= pragmaVersion %>",
     "@storybook/react-vite": "^10.3.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",

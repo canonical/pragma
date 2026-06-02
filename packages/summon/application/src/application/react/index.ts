@@ -7,6 +7,7 @@ import type {
 import { template, withHelpers } from "@canonical/summon-core";
 import { copyFile, exec, info, sequence_, when } from "@canonical/task";
 import { normalizeCommandPath } from "../../shared/casing.js";
+import { PRAGMA_WORKSPACE_VERSION } from "../../shared/versions.js";
 
 interface ApplicationReactAnswers {
   readonly appPath: string;
@@ -98,7 +99,11 @@ Requires both --ssr and --router flags.`,
       );
     }
 
-    const vars = withHelpers({ name: appPath, forms: answers.forms });
+    const vars = withHelpers({
+      name: appPath,
+      forms: answers.forms,
+      pragmaVersion: PRAGMA_WORKSPACE_VERSION,
+    });
     const dest = (...segments: string[]) => path.join(appPath, ...segments);
     const copy = (filePath: string) => copyFile(src(filePath), dest(filePath));
 

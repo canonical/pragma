@@ -239,3 +239,26 @@ declare module "@canonical/router-react" {
 ```
 
 This enables typed `<Link to="invoices">`, `router.navigate("invoices")`, and `router.buildPath("invoices")`.
+
+## Open questions
+
+Design decisions about the generated output that are not yet settled:
+
+- **Pinned pragma version is a hand-maintained constant.** Generated apps pin the pragma
+  workspace packages (`react-ds-global`, `router-core`, `styles`, …) at the range in
+  `PRAGMA_WORKSPACE_VERSION` (`src/shared/versions.ts`), which must be bumped in lockstep
+  with each lerna release. It is a literal constant, not read from a package.json at runtime,
+  because the generator ships as a compiled binary where such a read resolves to `"unknown"`.
+  **Open:** inject the version at binary-build time (a build-step `define`/codegen) so it
+  cannot drift from the release — deferred until the compile pipeline supports it, to avoid
+  adding build tooling prematurely. Note `@canonical/design-tokens` is versioned separately
+  and is *not* covered by this constant (it arrives transitively via `@canonical/styles`).
+
+- **Two static-asset folders (`src/assets/` + `public/`).** The generated app ships both,
+  and `.storybook/main.ts` lists `staticDirs: ["../src/assets", "../public"]` to match the
+  `@canonical/react-ds-global` convention. The two serve different roles under Vite —
+  `src/assets/` for assets *imported in code* (hashed/optimized, dropped if unused), `public/`
+  for files referenced by fixed URL (favicon, `robots.txt`, served as-is, unhashed). **Open:**
+  whether a scaffolded app genuinely needs both by default, or whether one (likely just
+  `public/` for a favicon) is enough and `src/assets/` should be added only when the app
+  actually imports an asset. Currently both ship with `.gitkeep` placeholders.
