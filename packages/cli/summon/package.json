@@ -40,6 +40,7 @@
   },
   "dependencies": {
     "@canonical/cli-core": "^0.27.1-experimental.0",
+    "@canonical/summon-application": "^0.27.1-experimental.0",
     "@canonical/summon-core": "^0.27.1-experimental.0",
     "@canonical/task": "^0.27.1-experimental.0",
     "@canonical/utils": "^0.27.1-experimental.0",

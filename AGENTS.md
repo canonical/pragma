@@ -81,6 +81,42 @@ That mirrors what CI runs, so green locally → green CI (modulo Chromatic visua
 and environment-only tests). If a single test fails for environment reasons unrelated to
 the diff, confirm it fails the same way on a clean `origin/main` before discounting it.
 
+> **Do not treat per-package green as push-ready.** CI runs `check`/`test` across **all
+> ~53 projects** via Nx, so a change can break a *dependent* package you didn't touch (a
+> bumped lint/biome version, a shared config, a coverage gate). The root `bun run check`
+> is the only thing that catches this. Running it once before the first push is cheaper
+> than a CI round-trip.
+
+## Revising before pushing to a PR
+
+CI round-trips are expensive — get the branch right locally first.
+
+1. **Sync to a moved base before pushing.** `git fetch origin main`; if the branch is
+   behind, **rebase** (never merge) onto `origin/main`. The lockfile is the usual conflict:
+   resolve `bun.lock` by regenerating (`bun install`) — never hand-merge it — and commit
+   the regenerated lockfile.
+2. **Re-run the full root gate after the rebase**, not just before. A rebase replays your
+   commits onto new code: a lint rule, biome version, or coverage threshold that moved on
+   `main` can now fail commits that were green on the old base.
+3. **Tidy the history.** Reword `WIP`/`fix typo` commits into Conventional-Commit subjects
+   and squash noise (`git rebase -i origin/main`) so each commit is atomic and the
+   Lerna-generated CHANGELOG reads cleanly. Do this *before* the first push when possible.
+4. **Push safely.** First push: plain `git push`. After a rebase/reword (history rewrite):
+   `git push --force-with-lease` — it refuses if someone else pushed to the branch
+   meanwhile (then rebase on their work first). Never plain `--force`.
+5. **Watch the actual CI run** after pushing. Green locally is necessary, not sufficient:
+   pull the failing job's log (`gh run view <id> --log-failed`), fix at the source, and
+   repeat from step 2. Don't push speculative "maybe this fixes CI" commits.
+
+**Gotchas this repo has actually hit:**
+- A biome **version bump** without updating `"$schema"` in a `biome.json` → `biome check`
+  fails to deserialize. Keep the schema string in lockstep with the `@biomejs/biome` version.
+- Trading a lint violation for coverage (e.g. a `!` non-null assertion to drop an
+  uncovered `?? ""` branch) trips `noNonNullAssertion`. Rewrite to satisfy **both**
+  (e.g. iterate `Map.entries()` instead of `keys()` + `get()`).
+- A **new package** needs a first manual `npm publish --access public` (a human step,
+  npm 2FA) before release automation works — merging it does not make it releasable.
+
 > Per-package `check` = `check:biome` (lint+format) → `check:ts` (`tsc --noEmit`) →
 > `check:webarchitect` (architecture ruleset). `check:fix` auto-fixes biome then
 > re-runs tsc. Every package must define `check`, `check:fix`, and `test`; packages

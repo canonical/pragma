@@ -200,8 +200,8 @@ function readSearchParams(
 ): Record<string, string> {
   const rawSearch: Record<string, string> = {};
 
-  for (const key of new Set(searchParams.keys())) {
-    rawSearch[key] = searchParams.get(key) ?? "";
+  for (const [key, value] of searchParams.entries()) {
+    rawSearch[key] = value;
   }
 
   return rawSearch;
@@ -909,8 +909,8 @@ export default function createRouter<
     const currentUrl = buildUrl(currentState.location.href);
     const currentSearch: Record<string, string> = {};
 
-    for (const key of new Set(currentUrl.searchParams.keys())) {
-      currentSearch[key] = currentUrl.searchParams.get(key) ?? "";
+    for (const [key, value] of currentUrl.searchParams.entries()) {
+      currentSearch[key] = value;
     }
 
     const nextParams =

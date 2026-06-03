@@ -80,6 +80,20 @@ export const appendFileEffect = (
   undo: resolveUndo(opts?.undo, undefined),
 });
 
+export const transformFileEffect = (
+  path: string,
+  transform: (source: string) => string,
+  opts?: UndoOptions,
+): Effect => ({
+  _tag: "TransformFile",
+  path,
+  transform,
+  // No default undo: the original contents are not captured anywhere, so there
+  // is nothing to restore automatically. Provide `{ undo }` (e.g. an inverse
+  // transform) to make it reversible.
+  undo: resolveUndo(opts?.undo, undefined),
+});
+
 export const copyFileEffect = (
   source: string,
   dest: string,
@@ -233,6 +247,8 @@ export const describeEffect = (effect: Effect): string => {
       return `Write file: ${effect.path} (${effect.content.length} bytes)`;
     case "AppendFile":
       return `Append to file: ${effect.path} (${effect.content.length} bytes)${effect.createIfMissing ? " [create if missing]" : ""}`;
+    case "TransformFile":
+      return `Transform file: ${effect.path}`;
     case "CopyFile":
       return `Copy file: ${effect.source} → ${effect.dest}`;
     case "CopyDirectory":
@@ -273,6 +289,7 @@ export const isWriteEffect = (effect: Effect): boolean => {
   switch (effect._tag) {
     case "WriteFile":
     case "AppendFile":
+    case "TransformFile":
     case "CopyFile":
     case "CopyDirectory":
     case "DeleteFile":
@@ -293,6 +310,7 @@ export const getAffectedPaths = (effect: Effect): string[] => {
     case "ReadFile":
     case "WriteFile":
     case "AppendFile":
+    case "TransformFile":
     case "DeleteFile":
     case "MakeDir":
     case "Exists":

@@ -71,6 +71,15 @@ export const executeEffect = async (
       return undefined;
     }
 
+    case "TransformFile": {
+      const original = await fs.readFile(effect.path, "utf-8");
+      const next = effect.transform(original);
+      if (next !== original) {
+        await fs.writeFile(effect.path, next, "utf-8");
+      }
+      return undefined;
+    }
+
     case "CopyFile": {
       const destDir = path.dirname(effect.dest);
       await fs.mkdir(destDir, { recursive: true });

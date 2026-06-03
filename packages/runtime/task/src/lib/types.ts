@@ -112,6 +112,18 @@ export type Effect =
       createIfMissing: boolean;
       undo?: Task<void>;
     }
+  /**
+   * Read a file, apply a pure transform to its contents, and write it back.
+   * The transform must be a pure `(source) => newSource` function with no side
+   * effects (it is not run during dry-run). There is no default undo — supply
+   * an explicit `undo` task (e.g. the inverse transform) to make it reversible.
+   */
+  | {
+      _tag: "TransformFile";
+      path: string;
+      transform: (source: string) => string;
+      undo?: Task<void>;
+    }
   /** Copy a single file */
   | { _tag: "CopyFile"; source: string; dest: string; undo?: Task<void> }
   /** Recursively copy a directory */
