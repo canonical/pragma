@@ -1,14 +1,6 @@
 @import url("@canonical/styles");
 
-html {
-  height: 100%;
-}
-
-body {
-  height: 100%;
-}
-
-#storybook-root,
-#root-inner {
-  height: 100%;
-}
+/*
+ * The full-height chain (html, body, #storybook-root, …) is now established
+ * centrally via previewHead in @canonical/storybook-config (createConfig).
+ */
