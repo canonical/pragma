@@ -791,9 +791,11 @@
       },
       "peerDependencies": {
         "express": "^5.2.1",
+        "vite": "^8.0.0",
       },
       "optionalPeers": [
         "express",
+        "vite",
       ],
     },
     "packages/react/ssr-adapter-cloudflare": {

@@ -1,15 +1,19 @@
 /**
  * Bun development server with SSR and streaming.
  *
- * Uses Bun.serve() for the HTTP layer and Vite in middleware mode for
- * module transforms and client HMR. Server modules are loaded via
- * vite.ssrLoadModule() — changes are picked up without restart.
+ * Uses Bun.serve() for the HTTP layer and Vite in middleware mode for module
+ * transforms and client HMR. Asset, module, and HMR requests (/@vite/client,
+ * /src/**, /@id/**, /@fs/**, /@react-refresh, /node_modules/.vite/**) are
+ * delegated to Vite via `viteFetchMiddleware`; everything else is
+ * server-rendered. Server modules are loaded via vite.ssrLoadModule() —
+ * changes are picked up without restart.
  *
  * Production deployments use platform adapters (Vercel, Cloudflare, etc.),
  * not this server.
  */
 import fs from "node:fs";
 import * as process from "node:process";
+import { viteFetchMiddleware } from "@canonical/react-ssr/server";
 import { createServer as createViteServer } from "vite";
 
 const PORT = Number(process.env.PORT) || 5174;
@@ -19,6 +23,9 @@ const vite = await createViteServer({
   appType: "custom",
 });
 
+// Serve Vite's client assets/HMR; returns null for page routes (→ SSR below).
+const handleAsset = viteFetchMiddleware(vite);
+
 Bun.serve({
   port: PORT,
   async fetch(req: Request) {
@@ -26,6 +33,9 @@ Bun.serve({
     const requestUrl = url.pathname + url.search;
 
     try {
+      const asset = await handleAsset(req);
+      if (asset) return asset;
+
       const template = fs.readFileSync("index.html", "utf-8");
       const html = await vite.transformIndexHtml(requestUrl, template);
 

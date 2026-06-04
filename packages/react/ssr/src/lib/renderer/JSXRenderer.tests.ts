@@ -328,6 +328,27 @@ describe("JSXRenderer", () => {
       expect(onShellError).toHaveBeenCalled();
       consoleSpy.mockRestore();
     });
+
+    it("throws when renderToPipeableStream is unavailable in the runtime (e.g. Bun)", async () => {
+      // Bun's react-dom/server omits renderToPipeableStream. The module
+      // captures it at import time, so mock the export and re-import fresh.
+      vi.resetModules();
+      vi.doMock("react-dom/server", async (importOriginal) => {
+        const actual =
+          await importOriginal<typeof import("react-dom/server")>();
+        return { ...actual, renderToPipeableStream: undefined };
+      });
+
+      const { default: FreshJSXRenderer } = await import("./JSXRenderer.js");
+      const renderer = new FreshJSXRenderer(TestComponent);
+
+      expect(() => renderer.renderToPipeableStream()).toThrow(
+        /renderToPipeableStream is not available|Bun does not support/,
+      );
+
+      vi.doUnmock("react-dom/server");
+      vi.resetModules();
+    });
   });
 
   describe("renderToString", () => {

@@ -88,10 +88,14 @@
     "react-dom": "^19.2.4"
   },
   "peerDependencies": {
-    "express": "^5.2.1"
+    "express": "^5.2.1",
+    "vite": "^8.0.0"
   },
   "peerDependenciesMeta": {
     "express": {
+      "optional": true
+    },
+    "vite": {
       "optional": true
     }
   }

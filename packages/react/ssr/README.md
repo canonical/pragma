@@ -33,6 +33,35 @@ The rest of the page is then streamed to the client as it is rendered on the ser
 
 This is accomplished by using `JSXRenderer.renderToStream()`.
 
+## Dev vs production SSR
+
+The renderer is the invariant of every SSR setup: it takes an `htmlString`
+shell, extracts the `<head>` `<script>`/`<link>` tags, and injects them into
+the streamed output. **It never reads from disk and never cares which mode you
+run in.** What changes between development and production is only two things —
+*where the HTML shell comes from* and *how client JS/CSS reach the browser*:
+
+| | **Development** (transform) | **Production** (compiled) |
+| --- | --- | --- |
+| HTML shell | root `index.html` → `vite.transformIndexHtml()` | built `dist/client/index.html` (hashed tags baked in) |
+| Server entry | `vite.ssrLoadModule()` (TypeScript, on the fly) | compiled `dist/server` bundle |
+| Client JS/CSS | served by Vite's middleware (source modules, HMR) | static files from `dist/client` |
+| Renderer | **same `JSXRenderer`** | **same `JSXRenderer`** |
+
+This means a dev SSR server and a production SSR server are *deliberately
+different* — the dev server transforms source on the fly (with HMR); the
+production server serves a pre-built client and a compiled renderer. Both feed
+the same renderer; only the shell and asset-serving differ.
+
+In development you mount Vite's middleware so that asset, module, and HMR
+requests (`/@vite/client`, `/src/**`, `/@id/**`, `/@fs/**`, `/@react-refresh`,
+`/node_modules/.vite/**`) are handled by Vite, and only page routes reach the
+renderer. With Express this is `app.use(vite.middlewares)`. For `fetch`-style
+servers (Bun, Deno, Workers) use [`viteFetchMiddleware`](#bun-server) — it
+bridges Vite's connect middleware into a `Request → Response` handler. Without
+it, those asset requests get server-rendered as the HTML page with the wrong
+`Content-Type`, the browser blocks the modules, and the page never hydrates.
+
 ## Express Server
 
 Create a renderer that wraps your server entry component:
@@ -72,46 +101,64 @@ node dist/server/server.js
 
 ## Bun Server
 
-The renderer works the same way. For Bun's native server, convert the pipeable stream:
+`Bun.serve` works with a Web `Request`/`Response` `fetch` handler, so it cannot
+mount Vite's connect middleware directly. `viteFetchMiddleware` bridges the two:
+it runs a `Request` through `vite.middlewares` and returns a `Response` if Vite
+handled it (assets, modules, HMR) or `null` for page routes you should render.
 
 ```ts
-// src/ssr/server-bun.ts
-import render from "./renderer.js";
-import { Readable } from "node:stream";
+// src/server/server.bun.ts — development
+import { JSXRenderer } from "@canonical/react-ssr/renderer";
+import { viteFetchMiddleware } from "@canonical/react-ssr/server";
+import { createServer as createViteServer } from "vite";
+import fs from "node:fs";
+
+const vite = await createViteServer({
+  server: { middlewareMode: true },
+  appType: "custom",
+});
+const handleAsset = viteFetchMiddleware(vite);
 
 Bun.serve({
-  port: 5173,
+  port: 5174,
   async fetch(req) {
+    // Vite handles /@vite/client, /src/**, CSS, HMR; null → page route → SSR.
+    const asset = await handleAsset(req);
+    if (asset) return asset;
+
     const url = new URL(req.url);
-
-    // Serve static assets
-    if (url.pathname.startsWith("/assets")) {
-      return new Response(Bun.file(`dist/client${url.pathname}`));
-    }
-
-    // SSR render
-    const { pipe } = render(req, null);
-    const readable = Readable.toWeb(Readable.from(pipeToIterable(pipe)));
-    return new Response(readable, {
+    const html = await vite.transformIndexHtml(
+      url.pathname + url.search,
+      fs.readFileSync("index.html", "utf-8"),
+    );
+    const { default: EntryServer } = await vite.ssrLoadModule(
+      "/src/server/entry.tsx",
+    );
+    const renderer = new JSXRenderer(
+      EntryServer,
+      { url: url.pathname + url.search },
+      { htmlString: html },
+    );
+    return new Response(await renderer.renderToReadableStream(req.signal), {
+      status: renderer.statusCode,
       headers: { "Content-Type": "text/html; charset=utf-8" },
     });
   },
 });
-
-function pipeToIterable(pipe: (dest: NodeJS.WritableStream) => void) {
-  const { Readable } = require("node:stream");
-  const passthrough = new (require("node:stream").PassThrough)();
-  pipe(passthrough);
-  return passthrough;
-}
 ```
 
-Or use Express compatibility mode with Bun:
+`viteFetchMiddleware` depends only on `node:http` and Web globals — no Bun APIs
+— so it works under any `fetch`-style runtime (Bun, Deno, Workers, Node's own
+`fetch` servers). The single Bun-specific call (`Bun.serve`) stays in your app.
 
-```ts
-// Bun can run Express directly
-import app from "./server.js";  // Your Express server
-export default app;
+For **production**, you do not run Vite at all. Build the client and a compiled
+renderer, then serve the built output with the `serve-bun` bin (static assets +
+your renderer factory):
+
+```bash
+vite build --ssrManifest --outDir dist/client
+vite build --ssr src/server/renderer.tsx --outDir dist/server
+serve-bun dist/server/renderer.js --static assets:dist/client/assets
 ```
 
 ## Entry Points
