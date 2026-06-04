@@ -43,7 +43,5 @@ export const withHashRouter =
   ({ routes = defaultRoutes }: WithHashRouterOptions = {}) =>
   (StoryFn: StoryFunction<Renderer>, _context: StoryContext<Renderer>) => {
     const router = createHashRouter(routes);
-    return (
-      <RouterProvider router={router}>{StoryFn()}</RouterProvider>
-    );
+    return <RouterProvider router={router}>{StoryFn()}</RouterProvider>;
   };

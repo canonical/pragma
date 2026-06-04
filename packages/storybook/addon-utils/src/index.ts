@@ -1,7 +1,7 @@
 export { withBaseLayer } from "./withBaseLayer.js";
 export {
-  withHashRouter,
   type WithHashRouterOptions,
+  withHashRouter,
 } from "./withHashRouter.js";
 
 // make it work with --isolatedModules
