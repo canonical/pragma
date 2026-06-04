@@ -389,9 +389,12 @@
       "name": "@canonical/react-ds-app",
       "version": "0.27.1-experimental.0",
       "dependencies": {
+        "@canonical/ds-types": "^0.27.1-experimental.0",
         "@canonical/react-ds-global": "^0.27.1-experimental.0",
+        "@canonical/react-hooks": "^0.27.1-experimental.0",
         "@canonical/storybook-config": "^0.27.1-experimental.0",
         "@canonical/styles": "^0.27.1-experimental.0",
+        "@canonical/utils": "^0.27.1-experimental.0",
         "react": "^19.2.4",
         "react-dom": "^19.2.4",
       },
@@ -399,6 +402,9 @@
         "@biomejs/biome": "2.4.9",
         "@canonical/biome-config": "^0.27.1-experimental.0",
         "@canonical/design-tokens": "^0.6.0",
+        "@canonical/router-core": "^0.27.1-experimental.0",
+        "@canonical/router-react": "^0.27.1-experimental.0",
+        "@canonical/storybook-addon-utils": "^0.27.1-experimental.0",
         "@canonical/storybook-helpers": "^0.27.1-experimental.0",
         "@canonical/typescript-config-react": "^0.27.1-experimental.0",
         "@canonical/webarchitect": "^0.27.1-experimental.0",
@@ -419,6 +425,14 @@
         "vite": "^8.0.1",
         "vitest": "^4.0.18",
       },
+      "peerDependencies": {
+        "@canonical/router-core": "^0.27.1-experimental.0",
+        "@canonical/router-react": "^0.27.1-experimental.0",
+      },
+      "optionalPeers": [
+        "@canonical/router-core",
+        "@canonical/router-react",
+      ],
     },
     "packages/react/ds-app-anbox": {
       "name": "@canonical/react-ds-app-anbox",
@@ -1022,6 +1036,8 @@
       "devDependencies": {
         "@biomejs/biome": "2.4.9",
         "@canonical/biome-config": "^0.27.1-experimental.0",
+        "@canonical/router-core": "^0.27.1-experimental.0",
+        "@canonical/router-react": "^0.27.1-experimental.0",
         "@canonical/styles": "^0.27.1-experimental.0",
         "@canonical/typescript-config-react": "^0.27.1-experimental.0",
         "@storybook/addon-docs": "^10.3.1",
@@ -1036,10 +1052,18 @@
         "vite": "^8.0.1",
       },
       "peerDependencies": {
+        "@canonical/router-core": "^0.27.1-experimental.0",
+        "@canonical/router-react": "^0.27.1-experimental.0",
+        "@canonical/styles": "^0.27.1-experimental.0",
         "react": "^18.0.0 || ^19.0.0",
         "react-dom": "^18.0.0 || ^19.0.0",
         "storybook": "^10.3.1",
       },
+      "optionalPeers": [
+        "@canonical/router-core",
+        "@canonical/router-react",
+        "@canonical/styles",
+      ],
     },
     "packages/storybook/helpers": {
       "name": "@canonical/storybook-helpers",

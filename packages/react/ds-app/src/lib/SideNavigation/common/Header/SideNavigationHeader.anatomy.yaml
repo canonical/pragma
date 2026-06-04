@@ -1,0 +1,28 @@
+---
+# SideNavigation.Header — top region holding the brand (logo/wordmark) at the
+# start and the collapse toggle at the end. Horizontal row, space-between.
+node:
+  uri: apps.subcomponent.side-navigation-header
+  styles:
+    layout.type: flow
+    layout.direction: row
+    layout.align: center
+    layout.justify: space-between
+    size.width: fill
+    spacing.internal: spacing/side-navigation/header?
+  edges:
+    - node:
+        role: brand
+        styles:
+          layout.type: flow
+          layout.direction: row
+          layout.align: center
+          layout.flex: 1
+      relation:
+        cardinality: "0..1"
+        slotName: brand
+    - node:
+        uri: apps.subcomponent.side-navigation-collapse-toggle
+      relation:
+        cardinality: "0..1"
+        slotName: collapse

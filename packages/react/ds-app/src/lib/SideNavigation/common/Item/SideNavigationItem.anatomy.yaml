@@ -1,0 +1,84 @@
+---
+# SideNavigation.Item — a single navigation row rendered from a WD405 Item.
+# A leaf item (has `url`) renders as a link; a grouping item (has `items`)
+# renders as a disclosure control that expands a nested nav item list.
+# Identity follows getItemId: `url` when present, otherwise `key`.
+node:
+  uri: apps.subcomponent.side-navigation-item
+  styles:
+    layout.type: stack
+    layout.direction: column
+    size.width: fill
+  edges:
+    # The row itself: a link (navigable) or a button (disclosure / action).
+    - node:
+        # The row: a link (navigable, has url) or a label (key-only). Carries
+        # the item's interaction states.
+        #
+        # NOTE (DSL limitation / future work): `appearance.background` can only
+        # express one value, but the row needs distinct base / hover / active
+        # backgrounds (color/foreground/navigation/primary[-hover|-active]).
+        # The implementation wires all three (see styles.css); the anatomy
+        # records only the base until the Anatomy DSL accepts per-state token
+        # values (e.g. a map keyed by interaction state).
+        role: row
+        styles:
+          layout.type: flow
+          layout.direction: row
+          layout.align: center
+          interaction.cursor: pointer
+          spacing.padding.vertical: dimension/150
+          spacing.padding.horizontal: dimension/200
+          spacing.gap: dimension/100
+          appearance.background: color/foreground/navigation/primary
+          typography.text: typography/text/primary
+          typography.color: color/text
+        edges:
+          - node:
+              role: icon
+              styles:
+                appearance.color: color/icon
+            relation:
+              cardinality: "0..1"
+              slotName: icon
+          - node:
+              role: label
+              styles:
+                layout.flex: 1
+            relation:
+              cardinality: "1"
+              slotName: label
+          # Trailing affordance depends on the item's internal kind: a leaf
+          # (no children) shows nothing; a group (has items) shows a disclosure
+          # indicator that toggles the nested list.
+          - switch:
+              "on": internal
+              cases:
+                - node:
+                    role: leaf
+                - node:
+                    role: disclosure indicator
+            relation:
+              cardinality: "1"
+      relation:
+        cardinality: "1"
+        slotName: default
+    # Nested children — present only for grouping items (Item.items). Recurses
+    # back into side-navigation-item, or a consumer-supplied component.
+    - node:
+        role: nested nav item list
+        styles:
+          layout.type: stack
+          layout.direction: column
+          size.width: fill
+        edges:
+          - switch:
+              "on": override
+              cases:
+                - uri: apps.subcomponent.side-navigation-item
+                - uri: $custom
+            relation:
+              cardinality: "0..*"
+              slotName: default
+      relation:
+        cardinality: "0..1"

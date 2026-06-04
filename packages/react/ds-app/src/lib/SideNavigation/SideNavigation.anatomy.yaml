@@ -1,0 +1,31 @@
+---
+# SideNavigation — apps-tier navigation pattern.
+# Full-height vertical shell partitioning its space among Header (optional),
+# Content (required, grows), and Footer (optional). Data-driven: Content and
+# Footer each render a WD405 Item tree supplied via their `root` prop.
+node:
+  uri: apps.pattern.side-navigation
+  styles:
+    layout.type: stack
+    layout.direction: column
+    size.height: fill
+    # Semantic token color.foreground.navigation.primary. Consumed in CSS via
+    # its surface CHANNEL (--surface-color-foreground-navigation-primary) so the
+    # `.surface` nesting auto-selects layer2/layer3 for nested lists. See ADR-T01.
+    appearance.background: color/foreground/navigation/primary
+  edges:
+    - node:
+        uri: apps.subcomponent.side-navigation-header
+      relation:
+        cardinality: "0..1"
+        slotName: header
+    - node:
+        uri: apps.subcomponent.side-navigation-content
+      relation:
+        cardinality: "1"
+        slotName: default
+    - node:
+        uri: apps.subcomponent.side-navigation-footer
+      relation:
+        cardinality: "0..1"
+        slotName: footer

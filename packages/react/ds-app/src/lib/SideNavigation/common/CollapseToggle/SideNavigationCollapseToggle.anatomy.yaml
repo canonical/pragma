@@ -1,0 +1,21 @@
+---
+# SideNavigation.CollapseToggle — icon-only button that expands/collapses the
+# navigation rail. Carries the disclosure ARIA contract (aria-expanded,
+# aria-controls pointing at the Content region).
+node:
+  uri: apps.subcomponent.side-navigation-collapse-toggle
+  styles:
+    layout.type: flow
+    layout.direction: row
+    layout.align: center
+    layout.justify: center
+    interaction.cursor: pointer
+    appearance.color: color/icon
+  edges:
+    - node:
+        role: icon
+        styles:
+          appearance.color: color/icon
+      relation:
+        cardinality: "1"
+        slotName: icon

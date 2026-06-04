@@ -40,16 +40,34 @@
     "test:vitest:watch": "vitest"
   },
   "dependencies": {
+    "@canonical/ds-types": "^0.27.1-experimental.0",
     "@canonical/react-ds-global": "^0.27.1-experimental.0",
+    "@canonical/react-hooks": "^0.27.1-experimental.0",
     "@canonical/storybook-config": "^0.27.1-experimental.0",
     "@canonical/styles": "^0.27.1-experimental.0",
+    "@canonical/utils": "^0.27.1-experimental.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4"
+  },
+  "peerDependencies": {
+    "@canonical/router-core": "^0.27.1-experimental.0",
+    "@canonical/router-react": "^0.27.1-experimental.0"
+  },
+  "peerDependenciesMeta": {
+    "@canonical/router-core": {
+      "optional": true
+    },
+    "@canonical/router-react": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.9",
     "@canonical/biome-config": "^0.27.1-experimental.0",
     "@canonical/design-tokens": "^0.6.0",
+    "@canonical/router-core": "^0.27.1-experimental.0",
+    "@canonical/router-react": "^0.27.1-experimental.0",
+    "@canonical/storybook-addon-utils": "^0.27.1-experimental.0",
     "@canonical/storybook-helpers": "^0.27.1-experimental.0",
     "@canonical/typescript-config-react": "^0.27.1-experimental.0",
     "@canonical/webarchitect": "^0.27.1-experimental.0",

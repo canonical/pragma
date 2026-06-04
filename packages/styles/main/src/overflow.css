@@ -1,0 +1,31 @@
+/* @canonical/styles — Scroll overflow affordance tokens
+ *
+ * Provides a "fade" gradient used at the scrollable edge of a container (e.g.
+ * the main navigation list) to hint that more content lies beyond.
+ *
+ * Usage:
+ *   - Paint `--surface-overflow-gradient` over the bottom edge of a scroll
+ *     container (e.g. a sticky/absolute ::after of height
+ *     `--overflow-gradient-height`).
+ *   - The container MUST reserve bottom padding (or an equivalent flex gap) of
+ *     at least `--overflow-gradient-height`, so the last item isn't permanently
+ *     obscured behind the fade.
+ *
+ * TODO: promote `--overflow-gradient-height` to a real semantic token in
+ * @canonical/design-tokens (currently hard-coded here, like the spacing scale).
+ */
+
+:root {
+  /* Height of the overflow fade. Defaults to 2rem. */
+  --overflow-gradient-height: 2rem;
+}
+
+.surface {
+  /* Fades from transparent to the current surface background, so it adapts to
+     whichever layer (.surface nesting) it paints over. */
+  --surface-overflow-gradient: linear-gradient(
+    to bottom,
+    transparent,
+    var(--surface-color-background)
+  );
+}
