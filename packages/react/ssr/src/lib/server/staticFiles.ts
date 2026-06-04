@@ -68,10 +68,26 @@ export function resolveStaticFile(
     return null;
   }
   // Reject any traversal segment (covers `..`, `%2e%2e`, and `%2f`-smuggled
-  // separators since `tail` is decoded above). Because `matchStaticRoute`
-  // guarantees `tail` is empty or starts with `/`, a tail free of `..` segments
-  // cannot escape the mount directory, so this single check is sufficient.
+  // separators since `tail` is decoded above).
   if (decoded.split(/[/\\]/).includes("..")) return null;
 
-  return path.join(mount.dir, tail);
+  // Strip the leading separator so `path.join` cannot treat an absolute-looking
+  // tail (e.g. `/etc/passwd`) as a root and discard the mount directory. Resolve
+  // against the mount and verify the result stays within it — a path that
+  // escapes (via absolute tail or otherwise) is rejected. This containment check
+  // is the real guard; the `..` rejection above is defence in depth.
+  const relative = decoded.replace(/^[/\\]+/, "");
+  const resolvedDir = path.resolve(mount.dir);
+  const resolved = path.resolve(resolvedDir, relative);
+  /* v8 ignore next 4 -- defensive backstop: the `..` rejection and leading-separator
+     strip above already prevent every known escape, so this containment check is
+     not reachable in tests; it stays as a last line of defence against future drift. */
+  if (
+    resolved !== resolvedDir &&
+    !resolved.startsWith(`${resolvedDir}${path.sep}`)
+  ) {
+    return null;
+  }
+
+  return resolved;
 }

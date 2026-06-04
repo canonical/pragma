@@ -110,15 +110,25 @@ export async function startServer(
 
   const stop = (): Promise<void> =>
     new Promise((resolve) => {
-      if (child.pid == null || child.exitCode != null) {
+      const { pid } = child;
+      if (pid == null || child.exitCode != null) {
         resolve();
         return;
       }
       child.once("exit", () => resolve());
       try {
-        // Negative PID → kill the whole process group (the script and the
-        // server it spawns), so nothing is left holding the port.
-        process.kill(-child.pid, "SIGKILL");
+        if (process.platform === "win32") {
+          // `process.kill(-pid)` (process-group kill) is POSIX-only and throws
+          // on Windows, which would leave the server holding its port. Use
+          // `taskkill /T` to terminate the child and its descendants instead.
+          spawn("taskkill", ["/pid", String(pid), "/T", "/F"], {
+            stdio: "ignore",
+          });
+        } else {
+          // Negative PID → kill the whole process group (the script and the
+          // server it spawns), so nothing is left holding the port.
+          process.kill(-pid, "SIGKILL");
+        }
       } catch {
         resolve();
       }

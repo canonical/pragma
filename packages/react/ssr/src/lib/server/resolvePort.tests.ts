@@ -15,11 +15,11 @@ describe("resolvePort", () => {
   });
 
   it("falls back to the default when neither is supplied", () => {
-    expect(resolvePort(undefined, undefined)).toBe(5173);
+    expect(resolvePort(undefined, undefined)).toBe(5174);
   });
 
   it("treats an empty string as not supplied", () => {
-    expect(resolvePort("", undefined)).toBe(5173);
+    expect(resolvePort("", undefined)).toBe(5174);
   });
 
   it("honours a custom fallback", () => {
