@@ -16,10 +16,10 @@ function Probe({
 }
 
 describe("usePreferredContrast SSR", () => {
-  it("renders with initialValue without errors", () => {
+  it("renders a server-provided initialValue as a stored preference", () => {
     const html = renderToString(<Probe initialValue="more" />);
     expect(html).toContain('data-value="more"');
-    expect(html).toContain('data-source="system"');
+    expect(html).toContain('data-source="stored"');
   });
 
   it("renders no-preference as default", () => {

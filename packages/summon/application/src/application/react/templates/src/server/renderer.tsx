@@ -17,6 +17,7 @@ import path from "node:path";
 import { JSXRenderer } from "@canonical/react-ssr/renderer";
 import { getRequestUrl } from "@canonical/react-ssr/server";
 import EntryServer from "./entry.js";
+import { resolveInitialData } from "./preferences.js";
 
 const htmlString = fs.readFileSync(
   path.join(process.cwd(), "dist", "client", "index.html"),
@@ -26,9 +27,10 @@ const htmlString = fs.readFileSync(
 /**
  * Per-request renderer factory consumed by the `serve-*` bins. Accepts either a
  * Web `Request` (`serve-bun`) or a Node `IncomingMessage` (`serve-express`),
- * deriving the URL so the static router resolves the right route.
+ * deriving the URL so the static router resolves the right route and reading the
+ * cookie-backed theme so the first paint matches the user's preference.
  */
 export default function createRenderer(request: Request | IncomingMessage) {
-  const url = getRequestUrl(request);
-  return new JSXRenderer(EntryServer, { url }, { htmlString });
+  const initialData = resolveInitialData(request, getRequestUrl(request));
+  return new JSXRenderer(EntryServer, initialData, { htmlString });
 }

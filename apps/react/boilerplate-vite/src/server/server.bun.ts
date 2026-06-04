@@ -45,10 +45,13 @@ Bun.serve({
       const { JSXRenderer } = await vite.ssrLoadModule(
         "@canonical/react-ssr/renderer",
       );
+      const { resolveInitialData } = await vite.ssrLoadModule(
+        "/src/server/preferences.ts",
+      );
 
       const renderer = new JSXRenderer(
         EntryServer,
-        { url: requestUrl },
+        resolveInitialData(req, requestUrl),
         { htmlString: html },
       );
       const stream = await renderer.renderToReadableStream(req.signal);

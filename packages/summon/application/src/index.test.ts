@@ -56,6 +56,7 @@ describe("application/react generator", () => {
     expect(filePaths).toContain("my-app/src/server/server.express.ts");
     expect(filePaths).toContain("my-app/src/server/server.bun.ts");
     expect(filePaths).toContain("my-app/src/server/renderer.tsx");
+    expect(filePaths).toContain("my-app/src/server/preferences.ts");
     expect(filePaths).toContain("my-app/src/server/sitemap.ts");
     expect(filePaths).toContain("my-app/vitest.e2e.config.ts");
     expect(filePaths).toContain("my-app/test/e2e/serverHarness.ts");

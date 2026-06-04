@@ -13,7 +13,7 @@ import * as process from "node:process";
 import express from "express";
 import { createServer as createViteServer } from "vite";
 
-const PORT = Number(process.env.PORT) || 5173;
+const PORT = Number(process.env.PORT) || 5174;
 
 async function start() {
   const app = express();
@@ -38,10 +38,13 @@ async function start() {
       const { JSXRenderer } = await vite.ssrLoadModule(
         "@canonical/react-ssr/renderer",
       );
+      const { resolveInitialData } = await vite.ssrLoadModule(
+        "/src/server/preferences.ts",
+      );
 
       const renderer = new JSXRenderer(
         EntryServer,
-        { url },
+        resolveInitialData(req, url),
         { htmlString: html },
       );
       const result = renderer.renderToPipeableStream();

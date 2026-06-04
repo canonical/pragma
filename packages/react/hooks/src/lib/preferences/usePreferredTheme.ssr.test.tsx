@@ -12,10 +12,12 @@ function Probe({ initialValue }: { initialValue?: "light" | "dark" }) {
 }
 
 describe("usePreferredTheme SSR", () => {
-  it("renders with initialValue without errors", () => {
+  it("renders a server-provided initialValue as a stored preference", () => {
     const html = renderToString(<Probe initialValue="dark" />);
     expect(html).toContain('data-value="dark"');
-    expect(html).toContain('data-source="system"');
+    // A server-provided initialValue comes from the request cookie → "stored",
+    // so the rendered control shows the chosen value rather than "System".
+    expect(html).toContain('data-source="stored"');
   });
 
   it("renders light as default when no initialValue", () => {

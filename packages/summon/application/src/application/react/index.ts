@@ -197,6 +197,7 @@ Requires both --ssr and --router flags.`,
       copy("src/server/server.express.ts"),
       copy("src/server/server.bun.ts"),
       copy("src/server/renderer.tsx"),
+      copy("src/server/preferences.ts"),
       // sitemap (EJS — /contact entry only when --forms)
       template({
         source: src("src/server/sitemap.ts.ejs"),
