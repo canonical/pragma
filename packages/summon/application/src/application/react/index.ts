@@ -198,6 +198,10 @@ Requires both --ssr and --router flags.`,
       copy("src/server/server.bun.ts"),
       copy("src/server/renderer.tsx"),
       copy("src/server/preferences.ts"),
+      copy("src/server/preview.bun.ts"),
+      copy("src/server/preview.express.ts"),
+      copy("src/server/static.ts"),
+      copy("src/server/generateSitemap.ts"),
       // sitemap (EJS — /contact entry only when --forms)
       template({
         source: src("src/server/sitemap.ts.ejs"),
@@ -266,6 +270,7 @@ Requires both --ssr and --router flags.`,
       // Static asset dirs (kept by placeholder; both wired into Storybook staticDirs)
       copy("src/assets/.gitkeep"),
       copy("public/.gitkeep"),
+      copy("public/robots.txt"),
 
       // Install dependencies
       when(
