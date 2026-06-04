@@ -3,9 +3,13 @@
 /**
  * Standalone Bun server for serving an SSR application with stream rendering.
  *
- * Uses `Bun.serve()` for the HTTP layer and `Bun.file()` for zero-copy
- * static file serving. The renderer module must export a factory function
- * that accepts a `Request` and returns a renderer with `renderToReadableStream`.
+ * Uses `Bun.serve()` for the HTTP layer and `Bun.file()` for zero-copy static
+ * file serving. The renderer module must default-export a factory that accepts a
+ * `Request` and returns a renderer with `renderToReadableStream`.
+ *
+ * Argument parsing, port resolution, and static-file matching live in
+ * `@canonical/react-ssr/server` (covered by unit tests); this bin is the thin
+ * Bun-specific shell around them.
  *
  * @example
  * ```sh
@@ -21,6 +25,11 @@
 
 import path from "node:path";
 import { parseArgs } from "node:util";
+import {
+  parseStaticPair,
+  resolvePort,
+  resolveStaticFile,
+} from "@canonical/react-ssr/server";
 
 // Minimal local declaration of the Bun globals this bin uses. Declaring them
 // here (rather than pulling in `bun-types` globally) keeps Bun's type overrides
@@ -35,32 +44,10 @@ declare const Bun: {
   file(path: string): Blob & { exists(): Promise<boolean> };
 };
 
-/**
- * Parse a `route:filepath` string into its constituent parts.
- *
- * @param pair - A string in the format `"route:filepath"`, e.g. `"assets:dist/client/assets"`.
- * @returns An object with the route prefix and the absolute filesystem path.
- */
-function parseStaticPair(pair: string): { route: string; dir: string } {
-  const separatorIndex = pair.indexOf(":");
-  if (separatorIndex === -1) {
-    return { route: `/${pair}`, dir: path.join(process.cwd(), pair) };
-  }
-  const route = pair.slice(0, separatorIndex);
-  const filepath = pair.slice(separatorIndex + 1);
-  return {
-    route: `/${route}`,
-    dir: path.join(process.cwd(), filepath),
-  };
-}
-
 const { values, positionals } = parseArgs({
   args: process.argv.slice(2),
   options: {
-    port: {
-      type: "string",
-      short: "p",
-    },
+    port: { type: "string", short: "p" },
     static: {
       type: "string",
       short: "s",
@@ -72,16 +59,16 @@ const { values, positionals } = parseArgs({
   allowPositionals: true,
 });
 
-// Precedence: --port / -p flag, then the PORT env var, then 5173.
-const port = Number(values.port ?? process.env.PORT) || 5173;
-const rendererFilePath = path.join(process.cwd(), positionals[0]);
-
-if (!rendererFilePath) {
+const rendererArg = positionals[0];
+if (!rendererArg) {
   console.error(
     "Usage: serve-bun <renderer-path> [--static route:path ...] [-p port]",
   );
   process.exit(1);
 }
+
+const port = resolvePort(values.port, process.env.PORT);
+const rendererFilePath = path.join(process.cwd(), rendererArg);
 
 const createRenderer = await import(rendererFilePath).then(
   (m) =>
@@ -97,16 +84,16 @@ if (typeof createRenderer !== "function") {
   );
 }
 
-const staticMounts = (values.static ?? []).map(parseStaticPair);
+const staticMounts = (values.static ?? []).map((pair) => parseStaticPair(pair));
 
 Bun.serve({
   port,
   async fetch(req) {
     const url = new URL(req.url);
 
-    for (const { route, dir } of staticMounts) {
-      if (url.pathname.startsWith(route)) {
-        const filePath = path.join(dir, url.pathname.slice(route.length));
+    for (const mount of staticMounts) {
+      const filePath = resolveStaticFile(url.pathname, mount);
+      if (filePath) {
         const file = Bun.file(filePath);
         if (await file.exists()) {
           return new Response(file);

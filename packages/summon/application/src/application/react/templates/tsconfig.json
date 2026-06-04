@@ -25,6 +25,8 @@
     ".storybook/*.tsx",
     "vite.config.ts",
     "vitest.setup.ts",
-    "vitest.config.ts"
+    "vitest.config.ts",
+    "vitest.e2e.config.ts",
+    "test/**/*.ts"
   ]
 }

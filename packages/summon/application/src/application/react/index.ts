@@ -167,6 +167,7 @@ Requires both --ssr and --router flags.`,
       copy("vite.config.ts"),
       copy("vitest.config.ts"),
       copy("vitest.setup.ts"),
+      copy("vitest.e2e.config.ts"),
       // index.html (EJS — <title> uses the app name)
       template({
         source: src("index.html.ejs"),
@@ -174,6 +175,10 @@ Requires both --ssr and --router flags.`,
         vars,
       }),
       copy(".gitignore"),
+
+      // E2e tests (the 2×3 server matrix + its spawn/teardown harness)
+      copy("test/e2e/serverHarness.ts"),
+      copy("test/e2e/servers.e2e.ts"),
 
       // Styles
       // styles (EJS — form stylesheet imported only when --forms)
@@ -191,6 +196,7 @@ Requires both --ssr and --router flags.`,
       copy("src/server/entry.tsx"),
       copy("src/server/server.express.ts"),
       copy("src/server/server.bun.ts"),
+      copy("src/server/renderer.tsx"),
       // sitemap (EJS — /contact entry only when --forms)
       template({
         source: src("src/server/sitemap.ts.ejs"),

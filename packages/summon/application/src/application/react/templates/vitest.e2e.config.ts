@@ -9,9 +9,8 @@ export default defineConfig({
     environment: "node",
     include: ["test/**/*.e2e.ts"],
     // Servers bind real ports and the preview build is heavy — run serially.
+    // fileParallelism:false pins maxWorkers to 1, so cells never run concurrently.
     fileParallelism: false,
-    pool: "forks",
-    poolOptions: { forks: { singleFork: true } },
     testTimeout: 300_000,
     hookTimeout: 300_000,
   },

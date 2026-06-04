@@ -80,11 +80,32 @@ export async function startServer(
 ): Promise<RunningServer> {
   const port = await getFreePort();
   const base = `http://localhost:${port}`;
+  // Capture stderr so a boot crash surfaces the real cause instead of an opaque
+  // readiness timeout.
   const child: ChildProcess = spawn("bun", ["run", script], {
     cwd,
     env: { ...process.env, PORT: String(port) },
     detached: true,
-    stdio: "ignore",
+    stdio: ["ignore", "ignore", "pipe"],
+  });
+
+  let stderrTail = "";
+  child.stderr?.on("data", (chunk: Buffer) => {
+    stderrTail = (stderrTail + chunk.toString()).slice(-4000);
+  });
+
+  // Reject readiness immediately if the child exits before it starts serving.
+  // Guarded so the exit fired by stop()'s SIGKILL (after readiness) is ignored.
+  let ready = false;
+  const exited = new Promise<never>((_, reject) => {
+    child.once("exit", (code) => {
+      if (ready) return;
+      reject(
+        new Error(
+          `\`${script}\` exited early (code ${code}) before serving.\n${stderrTail}`,
+        ),
+      );
+    });
   });
 
   const stop = (): Promise<void> =>
@@ -104,11 +125,19 @@ export async function startServer(
     });
 
   try {
-    await waitForServer(base, port, timeoutMs, Date.now());
+    // Whichever settles first: the server responds, or the child dies.
+    await Promise.race([
+      waitForServer(base, port, timeoutMs, Date.now()),
+      exited,
+    ]);
+    ready = true;
   } catch (error) {
     await stop();
     throw error;
   }
+
+  // Surface (and swallow) the now-irrelevant rejection so it isn't unhandled.
+  exited.catch(() => {});
 
   return { base, stop };
 }
