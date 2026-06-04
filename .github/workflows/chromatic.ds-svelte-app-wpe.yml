@@ -1,0 +1,38 @@
+name: "svelte-ds-app-wpe/chromatic"
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+    paths:
+      - configs/storybook/**
+      - packages/ds-assets/**
+      - packages/tokens/**
+      - packages/styles/**
+      - packages/utils/**
+      - packages/svelte/ds-global/**
+      - packages/svelte/ds-app-wpe/**
+  push:
+    branches:
+      - main
+    paths:
+      - configs/storybook/**
+      - packages/ds-assets/**
+      - packages/tokens/**
+      - packages/styles/**
+      - packages/utils/**
+      - packages/svelte/ds-global/**
+      - packages/svelte/ds-app-wpe/**
+jobs:
+  test-compile:
+    uses: ./.github/workflows/chromatic._template.yml
+    secrets:
+      CHROMATIC_PROJECT_TOKEN: ${{ secrets.CHROMATIC_TOKEN_CANONICAL_SVELTE_DS_APP_WPE }}
+    with:
+      working-directory: packages/svelte/ds-app-wpe
+      externals: '[
+        "configs/storybook/**",
+        "packages/ds-assets/**",
+        "packages/tokens/**",
+        "packages/styles/**",
+        "packages/utils/**",
+        "packages/svelte/ds-global/**"
+      ]'
