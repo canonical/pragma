@@ -63,6 +63,11 @@ function createConfig<T extends keyof typeof frameworks>(
       name: frameworks[framework].framework,
       options: {},
     },
+    // Establish the full-height chain in the preview iframe so components with
+    // `height: 100%` (e.g. application layouts, SideNavigation) resolve against
+    // a real height. Storybook does not set this by default.
+    previewHead: (head) =>
+      `${head}\n<style>html, body, #storybook-root, #root-inner, #root { height: 100%; }</style>`,
     core: {
       disableTelemetry: true,
     },
