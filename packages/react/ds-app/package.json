@@ -40,6 +40,7 @@
     "test:vitest:watch": "vitest"
   },
   "dependencies": {
+    "@canonical/ds-types": "^0.27.1-experimental.0",
     "@canonical/react-ds-global": "^0.27.1-experimental.0",
     "@canonical/storybook-config": "^0.27.1-experimental.0",
     "@canonical/styles": "^0.27.1-experimental.0",
