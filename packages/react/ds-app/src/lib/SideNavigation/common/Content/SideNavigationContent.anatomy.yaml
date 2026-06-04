@@ -1,14 +1,18 @@
 ---
-# SideNavigation.Content — required, scrollable main navigation region. Grows to
-# fill the space between Header and Footer. Renders the direct children of its
-# `root` Item (the root itself is a non-rendered container) as a nav item list.
+# SideNavigation.Content — required main navigation region. Grows to fill the
+# space between Header and Footer. Renders the direct children of its `root` Item
+# (the root itself is a non-rendered container) as a nav item list.
+#
+# The shell grows past the viewport (min-height), so the page scrolls rather than
+# this region: overflow is vertical-only as a safety valve, never horizontal.
 node:
   uri: apps.subcomponent.side-navigation-content
   styles:
     layout.type: stack
     layout.direction: column
     layout.flex: 1
-    layout.overflow: auto
+    layout.overflow.x: hidden
+    layout.overflow.y: auto
     size.width: fill
   edges:
     - node:

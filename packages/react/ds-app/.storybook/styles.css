@@ -1,5 +1,21 @@
 @import url("@canonical/styles");
 
+/*
+ * The shared full-height chain (previewHead in @canonical/storybook-config, #649)
+ * pins the mount nodes to `height: 100%`, which caps the canvas at the viewport.
+ * SideNavigation uses `min-height: 100%` so it can grow taller than the viewport
+ * and keep painting its background as the page scrolls — relax the canvas here so
+ * that overflow actually scrolls instead of being clipped.
+ */
+html,
+body,
+#storybook-root,
+#root-inner,
+#root {
+  height: auto;
+  min-height: 100%;
+}
+
 :root {
   /* For debug */
   --baseline-grid-color: orange;

@@ -7,21 +7,24 @@ import "./styles.css";
 const componentCssClassName = "ds side-navigation";
 
 /**
- * SideNavigation — full-height application navigation. Owns its expand/collapse
- * state (uncontrolled, seeded by `defaultExpanded`) and wires the header's
- * collapse toggle to the content region it controls.
+ * SideNavigation — full-height application navigation rendered from a WD405
+ * Item tree. Owns its expand/collapse (rail) state — uncontrolled, seeded by
+ * `defaultExpanded` — and wires the header's collapse toggle to the content
+ * region it controls.
  *
- * Only the uncontrolled circuit is official for now. The controlled path
- * (`expanded` + `onExpandedChange`) is wired but commented out below until it's
- * promoted.
+ * Routing-agnostic: navigable items render via `LinkComponent` (default `"a"`);
+ * pass a router `Link` to integrate client-side navigation. The active item is
+ * resolved from `currentUrl`.
  *
  * @implements ds:apps.pattern.side-navigation
  */
 const SideNavigation = ({
   className,
   brand,
-  children,
-  footer,
+  root,
+  footerRoot,
+  LinkComponent = "a",
+  currentUrl,
   // Controlled circuit — not official yet.
   // expanded: expandedProp,
   defaultExpanded = true,
@@ -64,8 +67,19 @@ const SideNavigation = ({
       >
         {brand}
       </Header>
-      <Content id={contentId}>{children}</Content>
-      {footer && <Footer>{footer}</Footer>}
+      <Content
+        id={contentId}
+        root={root}
+        LinkComponent={LinkComponent}
+        currentUrl={currentUrl}
+      />
+      {footerRoot && (
+        <Footer
+          root={footerRoot}
+          LinkComponent={LinkComponent}
+          currentUrl={currentUrl}
+        />
+      )}
     </div>
   );
 };

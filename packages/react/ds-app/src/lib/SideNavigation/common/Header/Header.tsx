@@ -15,28 +15,28 @@ const componentCssClassName = "ds header";
  * @implements ds:apps.subcomponent.side-navigation-header
  */
 const Header = ({
-	className,
-	children,
-	expanded,
-	onToggle,
-	collapseControls,
-	...props
+  className,
+  children,
+  expanded,
+  onToggle,
+  collapseControls,
+  ...props
 }: HeaderProps): React.ReactElement => {
-	return (
-		<div
-			className={[componentCssClassName, className].filter(Boolean).join(" ")}
-			{...props}
-		>
-			<div className="brand">{children}</div>
-			{onToggle && (
-				<CollapseToggle
-					expanded={expanded}
-					aria-controls={collapseControls}
-					onClick={onToggle}
-				/>
-			)}
-		</div>
-	);
+  return (
+    <div
+      className={[componentCssClassName, className].filter(Boolean).join(" ")}
+      {...props}
+    >
+      <div className="brand">{children}</div>
+      {onToggle && (
+        <CollapseToggle
+          expanded={expanded}
+          aria-controls={collapseControls}
+          onClick={onToggle}
+        />
+      )}
+    </div>
+  );
 };
 
 export default Header;

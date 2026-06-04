@@ -12,12 +12,25 @@ node:
   edges:
     # The row itself: a link (navigable) or a button (disclosure / action).
     - node:
+        # The row: a link (navigable, has url) or a label (key-only). Carries
+        # the item's interaction states.
+        #
+        # NOTE (DSL limitation / future work): `appearance.background` can only
+        # express one value, but the row needs distinct base / hover / active
+        # backgrounds (color/foreground/navigation/primary[-hover|-active]).
+        # The implementation wires all three (see styles.css); the anatomy
+        # records only the base until the Anatomy DSL accepts per-state token
+        # values (e.g. a map keyed by interaction state).
         role: row
         styles:
           layout.type: flow
           layout.direction: row
           layout.align: center
           interaction.cursor: pointer
+          spacing.padding.vertical: dimension/150
+          spacing.padding.horizontal: dimension/200
+          spacing.gap: dimension/100
+          appearance.background: color/foreground/navigation/primary
           typography.text: typography/text/primary
           typography.color: color/text
         edges:

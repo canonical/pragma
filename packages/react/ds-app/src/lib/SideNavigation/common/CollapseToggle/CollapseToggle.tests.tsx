@@ -16,7 +16,10 @@ describe("CollapseToggle", () => {
     ).toBeInTheDocument();
 
     rerender(<CollapseToggle expanded={false} />);
-    expect(screen.getByRole("button")).toHaveAttribute("aria-expanded", "false");
+    expect(screen.getByRole("button")).toHaveAttribute(
+      "aria-expanded",
+      "false",
+    );
     expect(
       screen.getByRole("button", { name: "Expand navigation" }),
     ).toBeInTheDocument();

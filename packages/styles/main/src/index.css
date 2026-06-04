@@ -28,3 +28,6 @@
 
 /* Spacing architecture tokens */
 @import url("./spacing.css");
+
+/* Scroll overflow affordance tokens */
+@import url("./overflow.css");
