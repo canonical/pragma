@@ -1,5 +1,19 @@
 @import url("@canonical/styles");
 
+/*
+ * TEMPORARY: local full-height chain so `height: 100%` components (SideNavigation)
+ * fill the canvas. Remove once canonical/pragma#649 lands — that PR establishes
+ * this centrally via previewHead in @canonical/storybook-config, after which this
+ * block is redundant.
+ */
+html,
+body,
+#storybook-root,
+#root-inner,
+#root {
+  height: 100%;
+}
+
 :root {
   /* For debug */
   --baseline-grid-color: orange;

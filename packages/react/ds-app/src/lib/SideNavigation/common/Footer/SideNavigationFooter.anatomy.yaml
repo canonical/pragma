@@ -1,6 +1,9 @@
 ---
+# SideNavigation.Footer — optional region pinned to the bottom, typically holding
+# account-level or global actions. Same root-item contract as Content; when the
+# nav is collapsed only the item icons remain visible.
 node:
-  uri: global.subcomponent.side-navigation-footer
+  uri: apps.subcomponent.side-navigation-footer
   styles:
     layout.type: stack
     layout.direction: column
@@ -13,10 +16,14 @@ node:
           layout.direction: column
           size.width: fill
         edges:
-          - node:
-              uri: global.subcomponent.side-navigation-item
+          - switch:
+              "on": override
+              cases:
+                - uri: apps.subcomponent.side-navigation-item
+                - uri: $custom
             relation:
               cardinality: "0..*"
+              slotName: default
       relation:
         cardinality: "1"
         slotName: default

@@ -1,6 +1,9 @@
 ---
+# SideNavigation.Content — required, scrollable main navigation region. Grows to
+# fill the space between Header and Footer. Renders the direct children of its
+# `root` Item (the root itself is a non-rendered container) as a nav item list.
 node:
-  uri: global.subcomponent.side-navigation-content
+  uri: apps.subcomponent.side-navigation-content
   styles:
     layout.type: stack
     layout.direction: column
@@ -15,10 +18,16 @@ node:
           layout.direction: column
           size.width: fill
         edges:
-          - node:
-              uri: global.subcomponent.side-navigation-item
+          # Each item is the standard Item, or a consumer-supplied component
+          # via the WD405 Item.Component substitution point.
+          - switch:
+              "on": override
+              cases:
+                - uri: apps.subcomponent.side-navigation-item
+                - uri: $custom
             relation:
               cardinality: "0..*"
+              slotName: default
       relation:
         cardinality: "1"
         slotName: default

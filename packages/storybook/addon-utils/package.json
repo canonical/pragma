@@ -21,10 +21,22 @@
   },
   "license": "LGPL-3.0",
   "exports": {
-    ".": "./dist/esm/index.js",
-    "./preview": "./dist/esm/preview.js",
-    "./preset": "./dist/esm/preset.js",
-    "./manager": "./dist/esm/manager.js",
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "default": "./dist/esm/index.js"
+    },
+    "./preview": {
+      "types": "./dist/types/preview.d.ts",
+      "default": "./dist/esm/preview.js"
+    },
+    "./preset": {
+      "types": "./dist/types/preset.d.ts",
+      "default": "./dist/esm/preset.js"
+    },
+    "./manager": {
+      "types": "./dist/types/manager.d.ts",
+      "default": "./dist/esm/manager.js"
+    },
     "./package.json": "./package.json"
   },
   "publishConfig": {
@@ -63,9 +75,15 @@
     "vite": "^8.0.1"
   },
   "peerDependencies": {
+    "@canonical/styles": "^0.27.1-experimental.0",
     "react": "^18.0.0 || ^19.0.0",
     "react-dom": "^18.0.0 || ^19.0.0",
     "storybook": "^10.3.1"
+  },
+  "peerDependenciesMeta": {
+    "@canonical/styles": {
+      "optional": true
+    }
   },
   "storybook": {
     "displayName": "DS Utils",
