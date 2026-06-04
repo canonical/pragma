@@ -6,12 +6,14 @@ import { defineConfig } from "vite";
 export default defineConfig({
   plugins: [react()],
   ssr: {
-    // @canonical/* packages ship a "module" field (no "main"/"exports") that
-    // Vite's SSR resolver — which does Node-style resolution — does not honour.
-    // Bundling them for SSR uses the resolver that reads "module", so
-    // ssrLoadModule resolves them instead of failing with
-    // ERR_RESOLVE_PACKAGE_ENTRY_FAIL. Only relevant when deps are installed
-    // from the registry (real directories); workspace symlinks resolve anyway.
+    // Bundle @canonical/* for SSR rather than externalising them, for two
+    // reasons: (1) some packages declare only a "module" entry (no
+    // "main"/"exports"), which Vite's SSR (Node-style) resolver ignores —
+    // externalising them fails with ERR_RESOLVE_PACKAGE_ENTRY_FAIL; (2) their
+    // built output imports CSS as a side effect (e.g. `import "./x.css"`),
+    // which Node cannot load (ERR_UNKNOWN_FILE_EXTENSION) but Vite's SSR
+    // transform no-ops. The regex covers the whole scope so any current or
+    // future @canonical dependency is handled.
     noExternal: [/^@canonical\//],
   },
 });

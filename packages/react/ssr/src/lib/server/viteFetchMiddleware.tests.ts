@@ -1,5 +1,5 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   type ViteMiddlewareServer,
   viteFetchMiddleware,
@@ -117,10 +117,132 @@ describe("viteFetchMiddleware", () => {
       }),
     );
 
-    await handle(new Request("http://localhost/a/b?x=1", { method: "POST" }));
+    await handle(new Request("http://localhost/a/b?x=1"));
 
-    expect(method).toBe("POST");
+    expect(method).toBe("GET");
     expect(url).toBe("/a/b?x=1");
+  });
+
+  it("bridges HEAD requests", async () => {
+    const handle = viteFetchMiddleware(
+      fakeVite((_req, res) => {
+        res.statusCode = 200;
+        res.end();
+      }),
+    );
+
+    const response = await handle(
+      new Request("http://localhost/asset.js", { method: "HEAD" }),
+    );
+
+    expect(response?.status).toBe(200);
+  });
+
+  it("returns null (passes through) for non-GET/HEAD requests without invoking Vite", async () => {
+    const middlewares = vi.fn();
+    const handle = viteFetchMiddleware({ middlewares });
+
+    const post = await handle(
+      new Request("http://localhost/api", { method: "POST", body: "x" }),
+    );
+    const del = await handle(
+      new Request("http://localhost/api", { method: "DELETE" }),
+    );
+
+    expect(post).toBeNull();
+    expect(del).toBeNull();
+    expect(middlewares).not.toHaveBeenCalled();
+  });
+
+  it("keeps the request's own Host header instead of deriving it from the URL", async () => {
+    let host: string | undefined;
+    const handle = viteFetchMiddleware(
+      fakeVite((req, res) => {
+        host = req.headers.host;
+        res.end("ok");
+      }),
+    );
+
+    await handle(
+      new Request("http://localhost/asset.js", {
+        headers: { Host: "explicit.example:1234" },
+      }),
+    );
+
+    expect(host).toBe("explicit.example:1234");
+  });
+
+  it("emits separate Set-Cookie headers for an array value", async () => {
+    const handle = viteFetchMiddleware(
+      fakeVite((_req, res) => {
+        res.setHeader("set-cookie", ["a=1", "b=2"]);
+        res.end("ok");
+      }),
+    );
+
+    const response = await handle(new Request("http://localhost/asset.js"));
+
+    expect(response?.headers.getSetCookie()).toEqual(["a=1", "b=2"]);
+  });
+
+  it("preserves headers set via writeHead", async () => {
+    const handle = viteFetchMiddleware(
+      fakeVite((_req, res) => {
+        res.writeHead(200, {
+          "Content-Type": "image/svg+xml",
+          "Cache-Control": "no-cache",
+        });
+        res.end("<svg/>");
+      }),
+    );
+
+    const response = await handle(new Request("http://localhost/logo.svg"));
+
+    expect(response?.status).toBe(200);
+    expect(response?.headers.get("content-type")).toBe("image/svg+xml");
+    expect(response?.headers.get("cache-control")).toBe("no-cache");
+  });
+
+  it("merges writeHead headers with setHeader headers", async () => {
+    const handle = viteFetchMiddleware(
+      fakeVite((_req, res) => {
+        res.setHeader("x-pre", "1");
+        res.writeHead(200, { "Content-Type": "text/javascript" });
+        res.end("x");
+      }),
+    );
+
+    const response = await handle(new Request("http://localhost/asset.js"));
+
+    expect(response?.headers.get("x-pre")).toBe("1");
+    expect(response?.headers.get("content-type")).toBe("text/javascript");
+  });
+
+  it("supports the writeHead(status, statusMessage, headers) overload", async () => {
+    const handle = viteFetchMiddleware(
+      fakeVite((_req, res) => {
+        res.writeHead(200, "OK", { "Content-Type": "text/css" });
+        res.end(".x{}");
+      }),
+    );
+
+    const response = await handle(new Request("http://localhost/style.css"));
+
+    expect(response?.headers.get("content-type")).toBe("text/css");
+  });
+
+  it("skips response headers whose value is null/undefined", async () => {
+    const handle = viteFetchMiddleware(
+      fakeVite((_req, res) => {
+        res.getHeaders = () => ({ "x-real": "yes", "x-empty": undefined });
+        res.end("ok");
+      }),
+    );
+
+    const response = await handle(new Request("http://localhost/asset.js"));
+
+    expect(response?.headers.get("x-real")).toBe("yes");
+    expect(response?.headers.has("x-empty")).toBe(false);
   });
 
   it("rejects when the middleware emits a response error", async () => {

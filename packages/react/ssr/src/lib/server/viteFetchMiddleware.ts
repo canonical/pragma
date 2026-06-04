@@ -50,9 +50,19 @@ export interface ViteMiddlewareServer {
  * `renderToReadableStream`, never this bridge) while introducing header-timing
  * and backpressure hazards, so it is deliberately avoided.
  *
+ * Headers set via `res.writeHead(status, headers)` are captured in addition to
+ * `res.getHeaders()` (Vite's static-file middleware sets `Content-Type` etc.
+ * that way for non-JS assets), and multi-value headers such as `set-cookie` are
+ * preserved as separate entries rather than comma-folded.
+ *
+ * Only `GET`/`HEAD` requests are bridged. A bare `IncomingMessage` carries no
+ * request body, so any middleware that reads one would hang; requests with a
+ * body (and other methods) return `null` so the caller handles them. This
+ * matches Vite's asset/module/HMR surface, which is entirely `GET`/`HEAD`.
+ *
  * @param vite - A Vite dev server created with `middlewareMode: true`.
  * @returns A function mapping a Web `Request` to a `Response` (Vite handled it)
- *   or `null` (pass through to SSR).
+ *   or `null` (a page route, a non-`GET`/`HEAD` request — pass through to SSR).
  *
  * @example
  * ```ts
@@ -77,8 +87,16 @@ export interface ViteMiddlewareServer {
 export function viteFetchMiddleware(
   vite: ViteMiddlewareServer,
 ): (request: Request) => Promise<Response | null> {
-  return (request) =>
-    new Promise<Response | null>((resolve, reject) => {
+  return (request) => {
+    // Asset-only contract: a bare IncomingMessage carries no request body, so a
+    // middleware that reads one (e.g. Vite's proxy when `server.proxy` is set)
+    // would hang. Asset/module/HMR requests are all GET/HEAD; pass anything else
+    // through to the caller (page POSTs are server-rendered, not bridged).
+    if (request.method !== "GET" && request.method !== "HEAD") {
+      return Promise.resolve(null);
+    }
+
+    return new Promise<Response | null>((resolve, reject) => {
       const url = new URL(request.url);
 
       // A bare IncomingMessage needs a socket and a populated, lower-cased
@@ -87,7 +105,7 @@ export function viteFetchMiddleware(
       const socket = new Socket();
       const req = new IncomingMessage(socket);
       req.url = url.pathname + url.search;
-      req.method = request.method || "GET";
+      req.method = request.method;
 
       const headers: Record<string, string> = {};
       request.headers.forEach((value, key) => {
@@ -101,9 +119,28 @@ export function viteFetchMiddleware(
       const chunks: Buffer[] = [];
       const originalWrite = res.write.bind(res);
       const originalEnd = res.end.bind(res);
+      const originalWriteHead = res.writeHead.bind(res);
+
+      // Headers passed to writeHead(status, [statusMessage,] headers) are NOT
+      // returned by res.getHeaders() unless also set via setHeader, so capture
+      // them here. Vite's static (sirv) middleware sets Content-Type, ETag,
+      // Cache-Control this way for non-JS assets (svg, fonts, images, maps).
+      let writeHeadHeaders:
+        | ReturnType<ServerResponse["getHeaders"]>
+        | undefined;
+
+      res.writeHead = ((statusCode: number, ...rest: unknown[]) => {
+        const last = rest[rest.length - 1];
+        if (last && typeof last === "object" && !Array.isArray(last)) {
+          writeHeadHeaders = last as ReturnType<ServerResponse["getHeaders"]>;
+        }
+        return (
+          originalWriteHead as unknown as (...args: unknown[]) => ServerResponse
+        )(statusCode, ...rest);
+      }) as ServerResponse["writeHead"];
 
       res.write = ((chunk: unknown, ...rest: unknown[]) => {
-        if (chunk != null) chunks.push(Buffer.from(chunk as Uint8Array));
+        chunks.push(Buffer.from(chunk as Uint8Array));
         return (originalWrite as (...args: unknown[]) => boolean)(
           chunk,
           ...rest,
@@ -118,10 +155,24 @@ export function viteFetchMiddleware(
           chunk,
           ...rest,
         );
-        const responseHeaders: Record<string, string> = {};
-        for (const [key, value] of Object.entries(res.getHeaders())) {
-          if (value != null) responseHeaders[key] = String(value);
+
+        // Merge setHeader() headers with writeHead() headers (the latter win),
+        // and preserve multi-value headers (e.g. set-cookie) as separate
+        // entries rather than comma-folding them via String().
+        const responseHeaders = new Headers();
+        const merged: Record<string, number | string | string[] | undefined> = {
+          ...res.getHeaders(),
+          ...writeHeadHeaders,
+        };
+        for (const [key, value] of Object.entries(merged)) {
+          if (value == null) continue;
+          if (Array.isArray(value)) {
+            for (const item of value) responseHeaders.append(key, String(item));
+          } else {
+            responseHeaders.set(key, String(value));
+          }
         }
+
         resolve(
           new Response(chunks.length ? Buffer.concat(chunks) : null, {
             status: res.statusCode,
@@ -136,4 +187,5 @@ export function viteFetchMiddleware(
       // `next()` → Vite did not handle it (a page route); the caller renders it.
       vite.middlewares(req, res, () => resolve(null));
     });
+  };
 }
