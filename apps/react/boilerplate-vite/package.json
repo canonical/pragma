@@ -15,17 +15,17 @@
     "dev:bun": "bun src/server/server.bun.ts",
     "build": "bun run build:client",
     "build:all": "bun run build:client && bun run build:storybook",
-    "build:storybook": "storybook build",
     "build:client": "vite build --ssrManifest --outDir dist/client",
+    "build:storybook": "storybook build",
     "check": "bun run check:biome && bun run check:ts",
     "check:fix": "bun run check:biome:fix && bun run check:ts",
     "check:biome": "biome check",
     "check:biome:fix": "biome check --write",
     "check:ts": "tsc --noEmit",
-    "storybook": "storybook dev -p 6010 --no-open --host 0.0.0.0",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "storybook": "storybook dev -p 6010 --no-open --host 0.0.0.0"
   },
   "dependencies": {
     "@canonical/react-ds-global": "^0.27.1-experimental.0",
@@ -45,7 +45,6 @@
     "@biomejs/biome": "2.4.9",
     "@canonical/biome-config": "^0.27.1-experimental.0",
     "@canonical/typescript-config-react": "^0.27.1-experimental.0",
-    "@chromatic-com/storybook": "^5.0.1",
     "@storybook/react-vite": "^10.3.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",

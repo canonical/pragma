@@ -23,13 +23,9 @@ function hasDemoAuth(search: unknown): boolean {
 }
 
 export function getAuthRedirectHref(input: string | URL): string | null {
+  // Absolute URLs are used as-is; relative paths resolve against a dummy base.
   const url =
-    input instanceof URL
-      ? input
-      : new URL(
-          input.startsWith("http") ? input : input,
-          "https://router.local",
-        );
+    input instanceof URL ? input : new URL(input, "https://router.local");
 
   if (
     !protectedPaths.has(url.pathname) ||
