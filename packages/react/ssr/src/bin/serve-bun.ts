@@ -22,6 +22,19 @@
 import path from "node:path";
 import { parseArgs } from "node:util";
 
+// Minimal local declaration of the Bun globals this bin uses. Declaring them
+// here (rather than pulling in `bun-types` globally) keeps Bun's type overrides
+// from clashing with `@types/node` in the rest of the package, while still
+// type-checking this Bun-only entry point. The file runs under `bun`.
+declare const Bun: {
+  serve(options: {
+    port: number;
+    fetch: (req: Request) => Response | Promise<Response>;
+  }): unknown;
+  // BunFile extends Blob, so it is a valid Response BodyInit.
+  file(path: string): Blob & { exists(): Promise<boolean> };
+};
+
 /**
  * Parse a `route:filepath` string into its constituent parts.
  *
@@ -46,12 +59,11 @@ const { values, positionals } = parseArgs({
   options: {
     port: {
       type: "string",
-      alias: "p",
-      default: "5173",
+      short: "p",
     },
     static: {
       type: "string",
-      alias: "s",
+      short: "s",
       multiple: true,
       default: ["assets:dist/client/assets"],
     },
@@ -60,7 +72,8 @@ const { values, positionals } = parseArgs({
   allowPositionals: true,
 });
 
-const port = Number(values.port) || 5173;
+// Precedence: --port / -p flag, then the PORT env var, then 5173.
+const port = Number(values.port ?? process.env.PORT) || 5173;
 const rendererFilePath = path.join(process.cwd(), positionals[0]);
 
 if (!rendererFilePath) {

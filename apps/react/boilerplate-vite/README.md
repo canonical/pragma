@@ -3,33 +3,42 @@
 This project provides a template that can be used to quickly create a React Vite
 application using the standard set of shared Canonical packages.
 
-#### Running the boilerplate
+## Running the app
 
-Run `bun run dev` to run a live development server with HMR.
+The server scripts form a **2×3 matrix** — two modes (development vs preview)
+across three targets (SPA, SSR on Bun, SSR on Node/Express):
 
-Run `bun run serve` to run a server-side rendered version of the app using the [React SSR](../../../packages/react/ssr) package.
+|                   | `dev` — transform, HMR                 | `preview` — compiled, production-faithful |
+| ----------------- | -------------------------------------- | ----------------------------------------- |
+| **SPA** (no SSR)  | `bun run dev`                          | `bun run preview`                         |
+| **SSR · Bun**     | `bun run dev:bun`                      | `bun run preview:bun`                     |
+| **SSR · Node**    | `bun run dev:express`                  | `bun run preview:express`                 |
 
-##### Build/Serve commands
+Naming rule: the bare name is the **SPA**; the `:bun` / `:express` suffix selects
+the **SSR** runtime. The `dev*` prefix is the fast inner loop (Vite transforms
+source on the fly, with HMR); the `preview*` prefix builds the client and runs a
+**compiled** renderer over the built assets — the same shape that deploys.
 
-Two mechanisms for building/serving the application are supported:
-- CLI-based: Invoke `@canonical/react-ssr`'s `serve-express` bin script to create an express server.
-- Middleware-based: Call `@canonical/react-ssr`'s `serveStream()` function to create a middleware that can be used with an existing express server.
+Use `dev:*` while building; run `preview:*` to verify the production bundle
+before you deploy.
 
-In both cases, the client is built the same way (`bun run build:client`).
-The server is built differently depending on the approach:
-- CLI-based: The server's SSR renderercd module is the entry point. Built with `bun run build:server:cli`, served with `bun run serve:cli`.
-- Middleware-based: The server's server script is the entry point. Built with `bun run build:server:middleware`, served with `bun run serve:middleware`.
+### How the two modes differ
 
-The current default behavior is to use the middleware-based approach. 
-So, `bun run build:server` and `bun run serve` will use the middleware scripts.
+- **`dev*`** — Vite serves the root `index.html`, transforms `/src/**` on the
+  fly, and serves client assets/HMR through Vite's middleware. No build step.
+- **`preview*`** — `build:client` produces `dist/client` (hashed assets + a
+  built `index.html`); `build:server` compiles the renderer to `dist/server`;
+  the [`@canonical/react-ssr`](../../../packages/react/ssr) `serve-bun` /
+  `serve-express` bin serves the built client statically and SSRs from the built
+  shell.
 
-In the future, it is intended that the CLI-based approach will be the default, 
-and the existing `server.ts` file will be moved to the SSR package as an example.
+The renderer (`src/server/entry.tsx`) is the same across every cell — only the
+HTML shell source and how assets are served change.
 
-##### Bin script issues
+### Build scripts
 
-You may run into an issue where `serve-express` is not linked in `node_modules/.bin` after running `bun i`.
-This will result in an error when running `bun run serve:cli`.
-
-To fix this, run `bun i` again.
-For more information, see [this documentation](https://github.com/jmuzina/bun-repro/tree/7c9f6eefae2843bc904eabc10db973b56f5e017f/repro/bin-scripts).
+- `bun run build` — alias for `build:client` (the client bundle).
+- `bun run build:client` — `vite build --ssrManifest` → `dist/client`.
+- `bun run build:server` — `vite build --ssr src/server/renderer.tsx` →
+  `dist/server` (only needed for `preview:*`).
+- `bun run build:all` — client bundle + Storybook.

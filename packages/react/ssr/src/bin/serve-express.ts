@@ -24,8 +24,12 @@
 
 import path from "node:path";
 import { parseArgs } from "node:util";
+// Import via the public self-referential path (resolved through "exports" to
+// dist/esm) rather than the "#server" internal alias, which points at the
+// TypeScript source — the serve-express bin runs under Node (its shebang),
+// which cannot load .ts.
+import { serveStream, serveString } from "@canonical/react-ssr/server";
 import express from "express";
-import { serveStream } from "#server";
 
 /**
  * Parse a `route:filepath` string into its constituent parts.
@@ -51,12 +55,11 @@ const { values, positionals } = parseArgs({
   options: {
     port: {
       type: "string",
-      alias: "p",
-      default: "5173",
+      short: "p",
     },
     static: {
       type: "string",
-      alias: "s",
+      short: "s",
       multiple: true,
       default: ["assets:dist/client/assets"],
     },
@@ -69,7 +72,8 @@ const { values, positionals } = parseArgs({
   allowPositionals: true,
 });
 
-const port = Number(values.port) || 5173;
+// Precedence: --port / -p flag, then the PORT env var, then 5173.
+const port = Number(values.port ?? process.env.PORT) || 5173;
 const rendererFilePath = path.join(process.cwd(), positionals[0]);
 
 if (!rendererFilePath) {
@@ -94,7 +98,9 @@ for (const pair of values.static ?? []) {
   app.use(route, express.static(dir));
 }
 
-app.use(serveStream(createRenderer));
+app.use(
+  values.streaming ? serveStream(createRenderer) : serveString(createRenderer),
+);
 
 app.listen(port, () => {
   console.log(`Server started on http://localhost:${port}/`);

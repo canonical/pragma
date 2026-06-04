@@ -5,5 +5,5 @@
     "types": ["node", "react", "react-dom", "express"]
   },
   "include": ["src/**/*.ts"],
-  "exclude": ["src/bin/serve-bun.ts", "src/**/*.tests.ts"]
+  "exclude": ["src/**/*.tests.ts"]
 }
