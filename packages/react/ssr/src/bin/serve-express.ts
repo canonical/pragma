@@ -3,9 +3,12 @@
 /**
  * Standalone Express server for serving an SSR application.
  *
- * Dynamically imports a renderer module that exports a factory function.
- * The factory receives a Node `IncomingMessage` and returns a renderer.
- * Supports both streaming and string rendering modes.
+ * Dynamically imports a renderer module that default-exports a factory. The
+ * factory receives a Node `IncomingMessage` and returns a renderer. Supports
+ * both streaming (`--streaming`) and string rendering modes.
+ *
+ * Argument parsing and port resolution live in `@canonical/react-ssr/server`
+ * (covered by unit tests); this bin is the thin Express-specific shell.
  *
  * @example
  * ```sh
@@ -24,60 +27,44 @@
 
 import path from "node:path";
 import { parseArgs } from "node:util";
+// Import via the public self-referential path (resolved through "exports" to
+// dist/esm) rather than the "#server" internal alias, which points at the
+// TypeScript source — the serve-express bin runs under Node (its shebang),
+// which cannot load .ts.
+import {
+  parseStaticPair,
+  resolvePort,
+  serveStream,
+  serveString,
+} from "@canonical/react-ssr/server";
 import express from "express";
-import { serveStream } from "#server";
-
-/**
- * Parse a `route:filepath` string into its constituent parts.
- *
- * @param pair - A string in the format `"route:filepath"`, e.g. `"assets:dist/client/assets"`.
- * @returns An object with the route prefix and the absolute filesystem path.
- */
-function parseStaticPair(pair: string): { route: string; dir: string } {
-  const separatorIndex = pair.indexOf(":");
-  if (separatorIndex === -1) {
-    return { route: `/${pair}`, dir: path.join(process.cwd(), pair) };
-  }
-  const route = pair.slice(0, separatorIndex);
-  const filepath = pair.slice(separatorIndex + 1);
-  return {
-    route: `/${route}`,
-    dir: path.join(process.cwd(), filepath),
-  };
-}
 
 const { values, positionals } = parseArgs({
   args: process.argv.slice(2),
   options: {
-    port: {
-      type: "string",
-      alias: "p",
-      default: "5173",
-    },
+    port: { type: "string", short: "p" },
     static: {
       type: "string",
-      alias: "s",
+      short: "s",
       multiple: true,
       default: ["assets:dist/client/assets"],
     },
-    streaming: {
-      type: "boolean",
-      default: false,
-    },
+    streaming: { type: "boolean", default: false },
   },
   strict: true,
   allowPositionals: true,
 });
 
-const port = Number(values.port) || 5173;
-const rendererFilePath = path.join(process.cwd(), positionals[0]);
-
-if (!rendererFilePath) {
+const rendererArg = positionals[0];
+if (!rendererArg) {
   console.error(
     "Usage: serve-express <renderer-path> [--static route:path ...] [--streaming] [-p port]",
   );
   process.exit(1);
 }
+
+const port = resolvePort(values.port, process.env.PORT);
+const rendererFilePath = path.join(process.cwd(), rendererArg);
 
 const createRenderer = await import(rendererFilePath).then((m) => m.default);
 
@@ -94,7 +81,9 @@ for (const pair of values.static ?? []) {
   app.use(route, express.static(dir));
 }
 
-app.use(serveStream(createRenderer));
+app.use(
+  values.streaming ? serveStream(createRenderer) : serveString(createRenderer),
+);
 
 app.listen(port, () => {
   console.log(`Server started on http://localhost:${port}/`);

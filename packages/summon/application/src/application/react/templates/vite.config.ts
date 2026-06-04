@@ -3,8 +3,14 @@ import { defineConfig } from "vite";
 
 // Path aliases (#lib, #domains, #styles) are declared as Node subpath imports
 // in package.json "imports" and resolved natively by Vite — no resolver plugin.
+const PORT = Number(process.env.PORT) || undefined;
+
 export default defineConfig({
   plugins: [react()],
+  // Honour the PORT env var for `dev` (SPA) and `preview` so all server scripts
+  // — including the SSR ones, which already read PORT — respond to it uniformly.
+  server: { port: PORT },
+  preview: { port: PORT },
   ssr: {
     // Bundle @canonical/* for SSR rather than externalising them, for two
     // reasons: (1) some packages declare only a "module" entry (no

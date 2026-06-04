@@ -1,3 +1,6 @@
+import { readdirSync, statSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { dryRun, sequence_ } from "@canonical/task";
 import { describe, expect, it } from "vitest";
 import { generators } from "./index.js";
@@ -52,7 +55,11 @@ describe("application/react generator", () => {
     expect(filePaths).toContain("my-app/src/server/entry.tsx");
     expect(filePaths).toContain("my-app/src/server/server.express.ts");
     expect(filePaths).toContain("my-app/src/server/server.bun.ts");
+    expect(filePaths).toContain("my-app/src/server/renderer.tsx");
     expect(filePaths).toContain("my-app/src/server/sitemap.ts");
+    expect(filePaths).toContain("my-app/vitest.e2e.config.ts");
+    expect(filePaths).toContain("my-app/test/e2e/serverHarness.ts");
+    expect(filePaths).toContain("my-app/test/e2e/servers.e2e.ts");
     expect(filePaths).toContain("my-app/src/domains/marketing/HomePage.tsx");
     expect(filePaths).toContain("my-app/src/domains/marketing/routes.ts");
     expect(filePaths).toContain("my-app/src/routes.tsx");
@@ -77,6 +84,50 @@ describe("application/react generator", () => {
       "my-app/src/domains/contact/ContactPage.tsx",
     );
     expect(filePaths).not.toContain("my-app/src/domains/contact/routes.ts");
+  });
+
+  it("scaffolds every file present in the templates directory", () => {
+    // Authoritative manifest-completeness guard: enumerate the templates dir on
+    // disk and assert each file is emitted by the generator. The manifest is a
+    // hand-maintained allow-list, so a new template file added without a matching
+    // copy()/template() entry would silently never reach generated apps — this
+    // test fails loudly when that happens.
+    const templatesDir = fileURLToPath(
+      new URL("./application/react/templates", import.meta.url),
+    );
+    const onDisk = readdirSync(templatesDir, { recursive: true })
+      .map((entry) => String(entry).split(path.sep).join("/"))
+      .filter((rel) => statSync(path.join(templatesDir, rel)).isFile())
+      // `.ejs` templates are emitted at the interpolated dest (suffix stripped).
+      .map((rel) =>
+        rel.endsWith(".ejs") ? rel.slice(0, -".ejs".length) : rel,
+      );
+
+    // Generate with all features on so conditionally-included templates emit.
+    const result = dryRun(
+      generators["application/react"].generate({
+        appPath: "my-app",
+        ssr: true,
+        router: true,
+        forms: true,
+        runInstall: false,
+      }),
+    );
+    const emitted = new Set(
+      result.effects
+        .filter((e) => e._tag === "WriteFile" || e._tag === "CopyFile")
+        .map(
+          (e) =>
+            (e as { path?: string; dest?: string }).path ??
+            (e as { dest?: string }).dest,
+        ),
+    );
+
+    const missing = onDisk.filter((rel) => !emitted.has(`my-app/${rel}`));
+    expect(
+      missing,
+      `templates not wired into the manifest: ${missing}`,
+    ).toEqual([]);
   });
 
   it("includes contact domain when forms=true", () => {
