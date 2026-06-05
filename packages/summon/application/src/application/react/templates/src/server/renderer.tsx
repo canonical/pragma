@@ -14,23 +14,34 @@
 import fs from "node:fs";
 import type { IncomingMessage } from "node:http";
 import path from "node:path";
+import { extractPreferences } from "@canonical/react-hooks";
 import { JSXRenderer } from "@canonical/react-ssr/renderer";
 import { getRequestUrl } from "@canonical/react-ssr/server";
-import EntryServer from "./entry.js";
-import { resolveInitialData } from "./preferences.js";
+import EntryServer, { type InitialData } from "./entry.js";
 
 const htmlString = fs.readFileSync(
   path.join(process.cwd(), "dist", "client", "index.html"),
   "utf-8",
 );
 
+/** Read the `Cookie` header from either a Web `Request` or a Node request. */
+function cookieHeader(request: Request | IncomingMessage): string | null {
+  return typeof (request as Request).headers?.get === "function"
+    ? (request as Request).headers.get("cookie")
+    : ((request as IncomingMessage).headers?.cookie ?? null);
+}
+
 /**
  * Per-request renderer factory consumed by the `serve-*` bins. Accepts either a
- * Web `Request` (`serve-bun`) or a Node `IncomingMessage` (`serve-express`),
- * deriving the URL so the static router resolves the right route and reading the
- * cookie-backed theme so the first paint matches the user's preference.
+ * Web `Request` (`serve-bun`) or a Node `IncomingMessage` (`serve-express`); it
+ * derives the URL for routing and the cookie-backed theme so the first paint
+ * matches the user's preference, passing both as the renderer's initial data.
  */
 export default function createRenderer(request: Request | IncomingMessage) {
-  const initialData = resolveInitialData(request, getRequestUrl(request));
+  const { theme } = extractPreferences(cookieHeader(request));
+  const initialData: InitialData = {
+    url: getRequestUrl(request),
+    theme: theme === "light" || theme === "dark" ? theme : undefined,
+  };
   return new JSXRenderer(EntryServer, initialData, { htmlString });
 }

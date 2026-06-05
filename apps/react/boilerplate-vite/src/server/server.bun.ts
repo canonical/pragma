@@ -45,13 +45,14 @@ Bun.serve({
       const { JSXRenderer } = await vite.ssrLoadModule(
         "@canonical/react-ssr/renderer",
       );
-      const { resolveInitialData } = await vite.ssrLoadModule(
-        "/src/server/preferences.ts",
+      const { extractPreferences } = await vite.ssrLoadModule(
+        "@canonical/react-hooks",
       );
 
+      const { theme } = extractPreferences(req.headers.get("cookie"));
       const renderer = new JSXRenderer(
         EntryServer,
-        resolveInitialData(req, requestUrl),
+        { url: requestUrl, theme: theme ?? undefined },
         { htmlString: html },
       );
       const stream = await renderer.renderToReadableStream(req.signal);

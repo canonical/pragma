@@ -197,15 +197,13 @@ Requires both --ssr and --router flags.`,
       copy("src/server/server.express.ts"),
       copy("src/server/server.bun.ts"),
       copy("src/server/renderer.tsx"),
-      copy("src/server/preferences.ts"),
-      copy("src/server/preview.bun.ts"),
-      copy("src/server/preview.express.ts"),
-      copy("src/server/static.ts"),
-      copy("src/server/generateSitemap.ts"),
-      // sitemap (EJS — /contact entry only when --forms)
+
+      // Sitemap (rendered route at /sitemap.xml)
+      copy("src/sitemap/renderer.ts"),
+      // sitemap getters (EJS — /contact entry only when --forms)
       template({
-        source: src("src/server/sitemap.ts.ejs"),
-        dest: dest("src/server/sitemap.ts"),
+        source: src("src/sitemap/getSitemapItems.ts.ejs"),
+        dest: dest("src/sitemap/getSitemapItems.ts"),
         vars,
       }),
 

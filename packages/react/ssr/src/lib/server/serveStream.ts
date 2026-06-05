@@ -39,6 +39,7 @@ export function serveStream(
     };
     statusCode: number;
     statusReady: Promise<void>;
+    contentType?: string;
   },
 ) {
   return async (req: IncomingMessage, res: ServerResponse) => {
@@ -47,7 +48,7 @@ export function serveStream(
       const result = renderer.renderToPipeableStream();
       await renderer.statusReady;
       res.writeHead(renderer.statusCode, {
-        "Content-Type": "text/html; charset=utf-8",
+        "Content-Type": renderer.contentType ?? "text/html; charset=utf-8",
       });
       result.pipe(res);
       /* v8 ignore next -- finish event fires after stream completes; not triggered in unit tests */

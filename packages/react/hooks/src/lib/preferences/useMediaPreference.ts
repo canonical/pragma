@@ -187,12 +187,11 @@ function resolveInitialSource<T extends string>(
   cookieName: string,
   allValues: readonly T[],
 ): PreferenceSource {
-  // A server-provided `initialValue` is resolved from the request's stored
-  // preference cookie, so the source is "stored" — including during SSR, where
-  // `document.cookie` is unavailable. This keeps the rendered control (e.g. a
-  // theme <select>) showing the chosen value rather than "System" on first
-  // paint, matching the value the same payload hydrates with on the client.
-  if (initialValue !== undefined) return "stored";
+  if (initialValue !== undefined) {
+    // If an initial value was provided, check if there's also a cookie
+    const cookie = readPreferenceCookie(cookieName);
+    return isPreferenceValue(cookie, allValues) ? "stored" : "system";
+  }
 
   const cookie = readPreferenceCookie(cookieName);
   return isPreferenceValue(cookie, allValues) ? "stored" : "system";

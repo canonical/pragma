@@ -16,10 +16,10 @@ function Probe({
 }
 
 describe("usePreferredMotion SSR", () => {
-  it("renders a server-provided initialValue as a stored preference", () => {
+  it("renders with initialValue without errors", () => {
     const html = renderToString(<Probe initialValue="reduce" />);
     expect(html).toContain('data-value="reduce"');
-    expect(html).toContain('data-source="stored"');
+    expect(html).toContain('data-source="system"');
   });
 
   it("renders no-preference as default", () => {

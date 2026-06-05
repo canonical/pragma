@@ -2,10 +2,6 @@ import { usePreferredTheme } from "@canonical/react-hooks";
 import type { ChangeEvent, ReactElement } from "react";
 
 export default function ThemeSelector(): ReactElement {
-  // `usePreferredTheme` reads the server-resolved theme from the InitialData
-  // context (mounted in both entrypoints), so the rendered <select> matches the
-  // server-painted theme and hydrates without a flash — no SSR wiring needed
-  // here.
   const { value, source, set, reset } = usePreferredTheme();
 
   function handleChange(event: ChangeEvent<HTMLSelectElement>) {

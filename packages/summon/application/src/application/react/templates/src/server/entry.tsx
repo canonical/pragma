@@ -1,5 +1,4 @@
 import { HeadProvider } from "@canonical/react-head";
-import { InitialDataProvider } from "@canonical/react-hooks";
 import type { ServerEntrypointProps } from "@canonical/react-ssr/renderer";
 import { createStaticRouter } from "@canonical/router-core";
 import { Outlet, RouterProvider } from "@canonical/router-react";
@@ -20,25 +19,23 @@ export default function EntryServer(props: ServerEntrypointProps<InitialData>) {
     notFound: notFoundRoute,
   });
 
-  // Apply the cookie-resolved theme to #root so the first server paint matches
-  // the user's preference (the design tokens' `.dark`/`.light` rules apply to
-  // any ancestor). `usePreferredTheme` keeps the class in sync after hydration.
+  // Paint the cookie-resolved theme on <html> for a flash-free first render —
+  // the same element `usePreferredTheme` toggles on the client, and one React
+  // does not hydrate (only `#root` is), so there is no mismatch to reconcile.
   return (
-    <html lang={props.lang}>
+    <html lang={props.lang} className={initialData.theme}>
       <head>
         {props.otherHeadElements}
         {props.scriptElements}
         {props.linkElements}
       </head>
       <body>
-        <div id="root" className={initialData.theme}>
-          <InitialDataProvider value={initialData}>
-            <HeadProvider>
-              <RouterProvider router={router}>
-                <Outlet fallback={<p>Loading…</p>} />
-              </RouterProvider>
-            </HeadProvider>
-          </InitialDataProvider>
+        <div id="root">
+          <HeadProvider>
+            <RouterProvider router={router}>
+              <Outlet fallback={<p>Loading…</p>} />
+            </RouterProvider>
+          </HeadProvider>
         </div>
       </body>
     </html>

@@ -67,14 +67,12 @@ describe("usePreferredTheme", () => {
     expect(result.current.source).toBe("system");
   });
 
-  it("uses initialValue for SSR hydration and reports it as stored", () => {
+  it("uses initialValue for SSR hydration", () => {
     const { result } = renderHook(() =>
       usePreferredTheme({ initialValue: "dark" }),
     );
     expect(result.current.value).toBe("dark");
-    // A server-provided initialValue is a stored preference (read from the
-    // request cookie), so the control reflects the value, not "System".
-    expect(result.current.source).toBe("stored");
+    expect(result.current.source).toBe("system");
   });
 
   it("reports stored source when initialValue is provided and cookie exists", () => {
