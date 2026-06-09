@@ -53,9 +53,11 @@ describe("application/react generator", () => {
     expect(filePaths).toContain("my-app/.gitignore");
     expect(filePaths).toContain("my-app/src/client/entry.tsx");
     expect(filePaths).toContain("my-app/src/server/entry.tsx");
+    expect(filePaths).toContain("my-app/src/server/renderer.tsx");
     expect(filePaths).toContain("my-app/src/server/server.express.ts");
     expect(filePaths).toContain("my-app/src/server/server.bun.ts");
-    expect(filePaths).toContain("my-app/src/server/renderer.tsx");
+    expect(filePaths).toContain("my-app/src/server/preview.express.ts");
+    expect(filePaths).toContain("my-app/src/server/preview.bun.ts");
     expect(filePaths).toContain("my-app/public/robots.txt");
     expect(filePaths).toContain("my-app/src/sitemap/renderer.ts");
     expect(filePaths).toContain("my-app/src/sitemap/getSitemapItems.ts");

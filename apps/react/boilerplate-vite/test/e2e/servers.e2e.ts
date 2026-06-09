@@ -29,15 +29,21 @@ interface Cell {
   script: string;
   /** Readiness budget for this cell's boot (and build, for preview*). */
   timeoutMs: number;
+  /**
+   * Whether this cell server-renders. The plain `dev`/`preview` cells are the
+   * Vite SPA path (no SSR), so they have no `/sitemap.xml` route; the four
+   * `*:bun`/`*:express` cells render it from the sitemap renderer.
+   */
+  ssr: boolean;
 }
 
 const MATRIX: Cell[] = [
-  { script: "dev", timeoutMs: DEV_READY_MS },
-  { script: "dev:bun", timeoutMs: DEV_READY_MS },
-  { script: "dev:express", timeoutMs: DEV_READY_MS },
-  { script: "preview", timeoutMs: PREVIEW_READY_MS },
-  { script: "preview:bun", timeoutMs: PREVIEW_READY_MS },
-  { script: "preview:express", timeoutMs: PREVIEW_READY_MS },
+  { script: "dev", timeoutMs: DEV_READY_MS, ssr: false },
+  { script: "dev:bun", timeoutMs: DEV_READY_MS, ssr: true },
+  { script: "dev:express", timeoutMs: DEV_READY_MS, ssr: true },
+  { script: "preview", timeoutMs: PREVIEW_READY_MS, ssr: false },
+  { script: "preview:bun", timeoutMs: PREVIEW_READY_MS, ssr: true },
+  { script: "preview:express", timeoutMs: PREVIEW_READY_MS, ssr: true },
 ];
 
 /** A JS/TS module or CSS-as-JS asset must never come back as the HTML page. */
@@ -71,6 +77,18 @@ describe("server matrix (2×3) serves correctly", () => {
           const asset = await fetch(new URL(scriptSrc as string, server.base));
           expect(asset.status).toBe(200);
           expect(asset.headers.get("content-type")).toMatch(JS_CONTENT_TYPE);
+
+          // 4. SSR cells render /sitemap.xml as XML from the sitemap renderer —
+          //    the second renderer, picked by path, never the HTML app. (The SPA
+          //    dev/preview cells have no SSR route, so they are exempt.)
+          if (cell.ssr) {
+            const sitemap = await fetch(`${server.base}/sitemap.xml`);
+            expect(sitemap.status).toBe(200);
+            expect(sitemap.headers.get("content-type")).toMatch(/xml/);
+            const xml = await sitemap.text();
+            expect(xml).toContain("<urlset");
+            expect(xml).toContain("<loc>");
+          }
         } finally {
           await server.stop();
         }

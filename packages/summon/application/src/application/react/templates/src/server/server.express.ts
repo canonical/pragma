@@ -1,12 +1,26 @@
 /**
  * Express development server with SSR and HMR.
  *
- * Vite handles client HMR and module transforms. Server modules are loaded
- * via vite.ssrLoadModule() — changes to routes, pages, or server code are
- * picked up without restarting the process.
+ * The request path is a chain of small, independent pieces snapped together —
+ * the first that can handle the request wins:
  *
- * Production deployments use platform adapters (Vercel, Cloudflare, etc.),
- * not this server.
+ *   1. `vite.middlewares` — Vite client assets, module transforms, HMR.
+ *   2. sitemap renderer   — `/sitemap.xml` → the XML `SitemapRenderer`.
+ *   3. JSX app renderer   — everything else → the HTML app.
+ *
+ * The two renderers are separate Lego bricks: the sitemap renderer
+ * (`src/sitemap/renderer.ts`) and the app renderer (`src/server/renderer.tsx`)
+ * know nothing about each other or about routing — this middleware is the only
+ * thing that looks at the URL and picks one. Add a `/robots.txt` brick or swap
+ * a renderer without touching the others. The same pieces, in the same order,
+ * appear in `server.bun.ts` and in the compiled server entrypoint
+ * (`src/server/index.ts`) the preview bins use, so dev and preview behave
+ * identically — only the transport differs (express streams via
+ * `renderToPipeableStream`, Bun via `renderToReadableStream`).
+ *
+ * Vite handles client HMR + module transforms; server modules load via
+ * vite.ssrLoadModule() so edits are picked up without a restart. Production
+ * deploys use platform adapters (Vercel, Cloudflare, …), not this server.
  */
 import fs from "node:fs";
 import * as process from "node:process";
@@ -29,6 +43,20 @@ async function start() {
     const url = req.originalUrl || "/";
 
     try {
+      if (url.split("?")[0] === "/sitemap.xml") {
+        const { default: createSitemapRenderer } = await vite.ssrLoadModule(
+          "/src/sitemap/renderer.ts",
+        );
+        const renderer = createSitemapRenderer();
+        const result = renderer.renderToPipeableStream();
+
+        await renderer.statusReady;
+        res.status(renderer.statusCode);
+        res.setHeader("content-type", renderer.contentType);
+        result.pipe(res);
+        return;
+      }
+
       const template = fs.readFileSync("index.html", "utf-8");
       const html = await vite.transformIndexHtml(url, template);
 

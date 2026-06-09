@@ -1,15 +1,28 @@
 /**
  * Bun development server with SSR and streaming.
  *
- * Uses Bun.serve() for the HTTP layer and Vite in middleware mode for module
- * transforms and client HMR. Asset, module, and HMR requests (/@vite/client,
- * /src/**, /@id/**, /@fs/**, /@react-refresh, /node_modules/.vite/**) are
- * delegated to Vite via `viteFetchMiddleware`; everything else is
- * server-rendered. Server modules are loaded via vite.ssrLoadModule() —
- * changes are picked up without restart.
+ * Read this `fetch` handler top-to-bottom as a chain of small, independent
+ * pieces snapped together — each tries to handle the request, and the first
+ * that can, wins:
  *
- * Production deployments use platform adapters (Vercel, Cloudflare, etc.),
- * not this server.
+ *   1. `handleAsset`     — Vite client assets + HMR (/@vite/client, /src/**,
+ *                          /@id/**, /@fs/**, /@react-refresh, /node_modules/.vite/**).
+ *   2. sitemap renderer  — `/sitemap.xml` → the XML `SitemapRenderer`.
+ *   3. JSX app renderer  — everything else → the HTML app.
+ *
+ * The two renderers are separate Lego bricks: the sitemap renderer
+ * (`src/sitemap/renderer.ts`) and the app renderer (`src/server/renderer.tsx`)
+ * know nothing about each other or about routing — this server is the only
+ * thing that looks at the URL and picks one. Swap a brick, add a `/robots.txt`
+ * brick, or reorder them without touching the others. The same three pieces
+ * appear in the same order in `server.express.ts` and in the compiled server
+ * entrypoint (`src/server/index.ts`) the preview bins use, so dev and preview
+ * behave identically.
+ *
+ * Bun.serve() is the HTTP layer; Vite runs in middleware mode for transforms +
+ * HMR; server modules load via vite.ssrLoadModule() so edits are picked up
+ * without a restart. Production deploys use platform adapters (Vercel,
+ * Cloudflare, …), not this server.
  */
 import fs from "node:fs";
 import * as process from "node:process";
@@ -35,6 +48,19 @@ Bun.serve({
     try {
       const asset = await handleAsset(req);
       if (asset) return asset;
+
+      if (url.pathname === "/sitemap.xml") {
+        const { default: createSitemapRenderer } = await vite.ssrLoadModule(
+          "/src/sitemap/renderer.ts",
+        );
+        const renderer = createSitemapRenderer();
+        const stream = await renderer.renderToReadableStream(req.signal);
+
+        return new Response(stream, {
+          status: renderer.statusCode,
+          headers: { "Content-Type": renderer.contentType },
+        });
+      }
 
       const template = fs.readFileSync("index.html", "utf-8");
       const html = await vite.transformIndexHtml(requestUrl, template);
