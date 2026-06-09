@@ -12,6 +12,11 @@
     "src/stories",
     "src/**/*.stories.ts",
     "src/**/*.stories.tsx",
+    "src/**/*.tests.ts",
+    "src/**/*.tests.tsx",
+    "vite.config.ts",
+    "vitest.config.ts",
+    "vitest.setup.ts",
     ".storybook"
   ]
 }
