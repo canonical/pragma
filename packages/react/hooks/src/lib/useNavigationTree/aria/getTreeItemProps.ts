@@ -1,4 +1,4 @@
-import type { _Item } from "@canonical/ds-types";
+import type { _Item, Item } from "@canonical/ds-types";
 import type { UseNavigationTreeResult } from "../types.js";
 import type { TreeItemPropsResult } from "./types.js";
 
@@ -13,9 +13,9 @@ import type { TreeItemPropsResult } from "./types.js";
  * @param opts - Consumer-provided expansion state
  * @returns ARIA attributes to spread on the item element
  */
-export default function getTreeItemProps(
-  nav: UseNavigationTreeResult,
-  item: _Item,
+export default function getTreeItemProps<T extends Item = Item>(
+  nav: UseNavigationTreeResult<T>,
+  item: _Item<T>,
   opts?: { expanded?: boolean },
 ): TreeItemPropsResult {
   const status = nav.getNodeStatus(item);

@@ -21,6 +21,7 @@ const componentCssClassName = "ds side-navigation";
 const SideNavigation = ({
   className,
   brand,
+  applicationName,
   root,
   footerRoot,
   LinkComponent = "a",
@@ -61,6 +62,7 @@ const SideNavigation = ({
       {...props}
     >
       <Header
+        applicationName={applicationName}
         expanded={expanded}
         onToggle={handleToggle}
         collapseControls={contentId}

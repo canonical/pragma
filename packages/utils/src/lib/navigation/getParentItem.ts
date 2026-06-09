@@ -1,4 +1,4 @@
-import type { _Index, _Item } from "@canonical/ds-types";
+import type { _Index, _Item, Item } from "@canonical/ds-types";
 
 /**
  * Get the parent item from the index by following the parentUrl reference.
@@ -9,9 +9,9 @@ import type { _Index, _Item } from "@canonical/ds-types";
  * @param item - The item whose parent to find
  * @returns The parent item, or undefined for root items
  */
-export default function getParentItem(
-  index: _Index,
-  item: _Item,
-): _Item | undefined {
+export default function getParentItem<T extends Item = Item>(
+  index: _Index<T>,
+  item: _Item<T>,
+): _Item<T> | undefined {
   return item.parentUrl ? index[item.parentUrl] : undefined;
 }

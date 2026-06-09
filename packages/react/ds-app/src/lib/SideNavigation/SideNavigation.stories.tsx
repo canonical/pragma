@@ -1,15 +1,16 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import {
-  Brand,
-  LiveSideNavigation,
-  navDecorators,
-} from "../../storybook/nav-story-utils.js";
-import {
   lxdContentRoot,
   lxdFooterRoot,
   maasContentRoot,
   maasFooterRoot,
-} from "./SideNavigation.fixtures.js";
+} from "#storybook/navigation/fixtures.js";
+import {
+  Brand,
+  navDecorators,
+  withNavigationRouterProps,
+  withNavLayout,
+} from "#storybook/navigation/story-utils.js";
 import SideNavigation from "./SideNavigation.js";
 
 const meta: Meta<typeof SideNavigation> = {
@@ -17,10 +18,13 @@ const meta: Meta<typeof SideNavigation> = {
   component: SideNavigation,
   tags: ["autodocs"],
   parameters: { layout: "fullscreen" },
-  decorators: navDecorators,
-  // LiveSideNavigation reads the router location (useRoute) and feeds it as
-  // currentUrl + supplies the HashLink, so the active item updates as you click.
-  render: (args) => <LiveSideNavigation {...args} />,
+  // withNavigationRouterProps injects currentUrl + LinkComponent from the live
+  // router and keys the story so active state follows navigation; withNavLayout
+  // frames it in a page grid. Stories supply only data (root / footerRoot).
+  // withNavigationRouterProps is self-contained (owns its RouterProvider), so
+  // decorator order isn't load-bearing here; navDecorators supplies the base
+  // surface and withNavLayout the page grid.
+  decorators: [...navDecorators, withNavigationRouterProps, withNavLayout],
   args: {
     brand: <Brand />,
   },

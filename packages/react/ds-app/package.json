@@ -4,6 +4,9 @@
   "type": "module",
   "module": "dist/esm/index.js",
   "types": "dist/types/index.d.ts",
+  "imports": {
+    "#storybook/*": "./src/storybook/*"
+  },
   "files": [
     "dist"
   ],
@@ -40,6 +43,7 @@
     "test:vitest:watch": "vitest"
   },
   "dependencies": {
+    "@canonical/ds-assets": "^0.27.1-experimental.0",
     "@canonical/ds-types": "^0.27.1-experimental.0",
     "@canonical/react-ds-global": "^0.27.1-experimental.0",
     "@canonical/react-hooks": "^0.27.1-experimental.0",

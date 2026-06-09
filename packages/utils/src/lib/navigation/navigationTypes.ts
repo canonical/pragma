@@ -1,4 +1,4 @@
-import type { _Item } from "@canonical/ds-types";
+import type { _Item, Item } from "@canonical/ds-types";
 
 /** Arrow key orientation at a given tree depth */
 export type Orientation = "horizontal" | "vertical";
@@ -28,18 +28,18 @@ export enum NavigationActionType {
 }
 
 /** A dispatched action with optional payload */
-export interface NavigationAction {
+export interface NavigationAction<T extends Item = Item> {
   type: NavigationActionType;
-  item?: _Item;
+  item?: _Item<T>;
   inputValue?: string;
 }
 
 /** The reducer's state shape */
-export interface NavigationState {
+export interface NavigationState<T extends Item = Item> {
   /** Items from root to current selection (ancestor path) */
-  selectedItems: _Item[];
+  selectedItems: _Item<T>[];
   /** Items from root to current highlight (ancestor path) */
-  highlightedItems: _Item[];
+  highlightedItems: _Item<T>[];
   /** Current keyboard/focus depth in the tree */
   currentDepth: number;
   /** Whether the navigation widget is expanded (for collapsible patterns) */

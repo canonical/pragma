@@ -1,11 +1,12 @@
-import type { Item } from "@canonical/ds-types";
 import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import SideNavigation from "./SideNavigation.js";
+import type { NavItem } from "./types.js";
 
-const root: Item = {
+// Level-1 group (unlabelled) holding a level-2 navigable link.
+const root: NavItem = {
   key: "root",
-  items: [{ url: "/machines", label: "Machines" }],
+  items: [{ key: "main", items: [{ url: "/machines", label: "Machines" }] }],
 };
 
 describe("SideNavigation SSR", () => {

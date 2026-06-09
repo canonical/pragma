@@ -132,6 +132,25 @@ sibling package/domain and match its layout, naming, error handling, and test
 placement — rather than inventing a new pattern. Match the surrounding code's idioms;
 a new file should be indistinguishable in style from its neighbours.
 
+### Subpath imports (`#` aliases)
+
+Packages may define **`#`-prefixed subpath imports** in their `package.json`
+`"imports"` map to avoid brittle deep-relative paths for package-internal modules,
+e.g.:
+
+```jsonc
+"imports": { "#storybook/*": "./src/storybook/*" }
+```
+
+then import as `#storybook/navigation/story-utils.js` instead of
+`../../../../storybook/...`. These are a **standard Node.js feature** (not a custom
+build hack), so they resolve everywhere we run code with **zero extra config**:
+TypeScript honours them because the shared config sets `module`/`moduleResolution:
+NodeNext`, and Vite/Storybook/Node read `package.json` `"imports"` natively. The `#`
+prefix marks the path as private to the package (never exposed to consumers). Use the
+`.js` extension in the specifier (NodeNext), and keep the target under a
+build-excluded folder if the alias points at story/dev-only code.
+
 ## PR mechanics
 
 - Branch from up-to-date `origin/main`; never push to `main` directly — **all changes

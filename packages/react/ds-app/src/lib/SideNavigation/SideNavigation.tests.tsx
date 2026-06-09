@@ -1,19 +1,28 @@
-import type { Item } from "@canonical/ds-types";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import SideNavigation from "./SideNavigation.js";
+import type { NavItem } from "./types.js";
 
-const root: Item = {
+// Level-1 items are groups; navigable links live at level 2. Here a single
+// unlabelled group holds the links (no header rendered).
+const root: NavItem = {
   key: "root",
   items: [
-    { url: "/machines", label: "Machines" },
-    { url: "/devices", label: "Devices" },
+    {
+      key: "main",
+      items: [
+        { url: "/machines", label: "Machines" },
+        { url: "/devices", label: "Devices" },
+      ],
+    },
   ],
 };
 
-const footerRoot: Item = {
+const footerRoot: NavItem = {
   key: "footer",
-  items: [{ url: "/settings", label: "Settings" }],
+  items: [
+    { key: "footer-group", items: [{ url: "/settings", label: "Settings" }] },
+  ],
 };
 
 describe("SideNavigation", () => {

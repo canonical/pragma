@@ -389,6 +389,7 @@
       "name": "@canonical/react-ds-app",
       "version": "0.27.1-experimental.0",
       "dependencies": {
+        "@canonical/ds-assets": "^0.27.1-experimental.0",
         "@canonical/ds-types": "^0.27.1-experimental.0",
         "@canonical/react-ds-global": "^0.27.1-experimental.0",
         "@canonical/react-hooks": "^0.27.1-experimental.0",
@@ -725,7 +726,7 @@
       "name": "@canonical/react-hooks",
       "version": "0.27.1-experimental.0",
       "dependencies": {
-        "@canonical/ds-types": "^0.22.0",
+        "@canonical/ds-types": "^0.27.1-experimental.0",
         "@canonical/utils": "^0.27.1-experimental.0",
         "react": "^19.2.4",
         "react-dom": "^19.2.4",
@@ -1042,14 +1043,19 @@
         "@canonical/typescript-config-react": "^0.27.1-experimental.0",
         "@storybook/addon-docs": "^10.3.1",
         "@storybook/react-vite": "^10.3.1",
+        "@testing-library/jest-dom": "^6.9.1",
+        "@testing-library/react": "^16.3.2",
+        "@types/node": "^24.12.0",
         "@types/react": "^19.2.14",
         "@types/react-dom": "^19.2.3",
         "@vitejs/plugin-react": "^6.0.0",
+        "jsdom": "^28.1.0",
         "react": "^19.2.4",
         "react-dom": "^19.2.4",
         "storybook": "^10.3.1",
         "typescript": "^5.9.3",
         "vite": "^8.0.1",
+        "vitest": "^4.0.18",
       },
       "peerDependencies": {
         "@canonical/router-core": "^0.27.1-experimental.0",
@@ -3781,8 +3787,6 @@
     "@bundled-es-modules/glob/glob": ["glob@10.5.0", "", { "dependencies": { "foreground-child": "^3.1.0", "jackspeak": "^3.1.2", "minimatch": "^9.0.4", "minipass": "^7.1.2", "package-json-from-dist": "^1.0.0", "path-scurry": "^1.11.1" }, "bin": { "glob": "dist/esm/bin.mjs" } }, "sha512-DfXN8DfhJ7NH3Oe7cFmu3NCu1wKbkReJ8TorzSAFbSKrlNaQSKfIzqYqVY8zlbs2NLBbWpRiU52GX2PbaBVNkg=="],
 
     "@canonical/react-hooks/@canonical/biome-config": ["@canonical/biome-config@0.22.0", "", { "peerDependencies": { "@biomejs/biome": "2.4.9" } }, "sha512-0DRY1gh+FM2CPysbmW6tNWHoctCMDWALcKwivDSIPYVCdz5C+5uZmK26Od2KNQ0jd2HWTVad/EwPebK4IfyOLA=="],
-
-    "@canonical/react-hooks/@canonical/ds-types": ["@canonical/ds-types@0.22.0", "", {}, "sha512-p4VI6J5vuHUvXQUTNd8MxGzTEju8ddORmXom93xPxKLx+yVKG11pzNJxcW2tAXNfWYls2upU/MEIalQK9gHWKA=="],
 
     "@canonical/react-hooks/@canonical/typescript-config": ["@canonical/typescript-config@0.22.0", "", { "peerDependencies": { "typescript": "^5.9.3" } }, "sha512-2EaALHQcHELmiuzY4N/BimYDPfLJjmd8LcOOjr+cb8WM0F9MqCGD+huQHtAkw2eM7fRJ2V4Hl0EhTx6oSmVRgg=="],
 

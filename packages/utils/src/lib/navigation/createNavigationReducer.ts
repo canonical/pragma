@@ -1,4 +1,4 @@
-import type { _Index, _Item } from "@canonical/ds-types";
+import type { _Index, _Item, Item } from "@canonical/ds-types";
 import findAncestorPath from "./findAncestorPath.js";
 import getFirstEnabledChild from "./getFirstEnabledChild.js";
 import getLastEnabledChild from "./getLastEnabledChild.js";
@@ -12,9 +12,9 @@ import {
 import resolveOrientation from "./resolveOrientation.js";
 
 /** Options for the navigation reducer factory */
-export interface NavigationReducerOptions {
+export interface NavigationReducerOptions<T extends Item = Item> {
   /** The annotated root item of the tree */
-  rootItem: _Item;
+  rootItem: _Item<T>;
   /** Arrow key orientation per depth */
   orientation: OrientationConfig;
   /** Whether arrow keys wrap at list boundaries */
@@ -35,16 +35,19 @@ export interface NavigationReducerOptions {
  * @param options - Root item, orientation config, and wrap behavior
  * @returns A reducer function: (state, action) → state
  */
-export default function createNavigationReducer(
-  index: _Index,
-  options: NavigationReducerOptions,
-): (state: NavigationState, action: NavigationAction) => NavigationState {
+export default function createNavigationReducer<T extends Item = Item>(
+  index: _Index<T>,
+  options: NavigationReducerOptions<T>,
+): (
+  state: NavigationState<T>,
+  action: NavigationAction<T>,
+) => NavigationState<T> {
   const { rootItem, orientation, wrap } = options;
 
   return (
-    state: NavigationState,
-    action: NavigationAction,
-  ): NavigationState => {
+    state: NavigationState<T>,
+    action: NavigationAction<T>,
+  ): NavigationState<T> => {
     switch (action.type) {
       case NavigationActionType.ITEM_SELECT: {
         if (!action.item) return state;
@@ -190,12 +193,12 @@ const verticalArrowMap = {
 
 // --- Internal helpers ---
 
-function getSibling(
-  index: _Index,
-  item: _Item,
+function getSibling<T extends Item = Item>(
+  index: _Index<T>,
+  item: _Item<T>,
   direction: 1 | -1,
   wrapEnabled: boolean,
-): _Item | undefined {
+): _Item<T> | undefined {
   const parent = getParentItem(index, item);
   if (!parent?.items) return undefined;
 
@@ -220,13 +223,13 @@ function getSibling(
   return undefined;
 }
 
-function handleArrowKey(
-  state: NavigationState,
+function handleArrowKey<T extends Item = Item>(
+  state: NavigationState<T>,
   actionType: NavigationActionType,
-  index: _Index,
+  index: _Index<T>,
   orientationConfig: OrientationConfig,
   wrapEnabled: boolean,
-): NavigationState {
+): NavigationState<T> {
   const currentItem = state.highlightedItems[state.highlightedItems.length - 1];
   if (!currentItem) return state;
 
@@ -306,11 +309,11 @@ function handleArrowKey(
   }
 }
 
-function handleHomeEnd(
-  state: NavigationState,
-  index: _Index,
+function handleHomeEnd<T extends Item = Item>(
+  state: NavigationState<T>,
+  index: _Index<T>,
   position: "first" | "last",
-): NavigationState {
+): NavigationState<T> {
   const currentItem = state.highlightedItems[state.highlightedItems.length - 1];
   if (!currentItem) return state;
 
@@ -330,12 +333,12 @@ function handleHomeEnd(
   };
 }
 
-function handlePageJump(
-  state: NavigationState,
-  index: _Index,
+function handlePageJump<T extends Item = Item>(
+  state: NavigationState<T>,
+  index: _Index<T>,
   delta: number,
   wrapEnabled: boolean,
-): NavigationState {
+): NavigationState<T> {
   const currentItem = state.highlightedItems[state.highlightedItems.length - 1];
   if (!currentItem) return state;
 
@@ -363,11 +366,11 @@ function handlePageJump(
   };
 }
 
-function handleTypeAhead(
-  state: NavigationState,
-  index: _Index,
+function handleTypeAhead<T extends Item = Item>(
+  state: NavigationState<T>,
+  index: _Index<T>,
   char: string,
-): NavigationState {
+): NavigationState<T> {
   const newKeysSoFar = state.keysSoFar + char;
   const currentItem = state.highlightedItems[state.highlightedItems.length - 1];
   if (!currentItem) return { ...state, keysSoFar: newKeysSoFar };

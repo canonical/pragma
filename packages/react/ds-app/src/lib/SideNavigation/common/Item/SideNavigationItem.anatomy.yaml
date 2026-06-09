@@ -1,8 +1,9 @@
 ---
-# SideNavigation.Item — a single navigation row rendered from a WD405 Item.
-# A leaf item (has `url`) renders as a link; a grouping item (has `items`)
-# renders as a disclosure control that expands a nested nav item list.
-# Identity follows getItemId: `url` when present, otherwise `key`.
+# SideNavigation.Item — a single, flat navigation row rendered from a NavItem.
+# A leaf item (has `url`) renders as a link; a key-only item renders as a
+# non-navigable label. The row is NOT recursive — tree traversal lives in
+# NavTree (level-1 groups → level-2 items). Identity follows getItemId: `url`
+# when present, otherwise `key`.
 node:
   uri: apps.subcomponent.side-navigation-item
   styles:
@@ -10,17 +11,16 @@ node:
     layout.direction: column
     size.width: fill
   edges:
-    # The row itself: a link (navigable) or a button (disclosure / action).
+    # The row: a link (navigable, has url) or a label (key-only). Laid out on the
+    # shared SideNavigation row grid — [start] [label] [end] — so the leading
+    # icon aligns with the header logo.
     - node:
-        # The row: a link (navigable, has url) or a label (key-only). Carries
-        # the item's interaction states.
-        #
-        # NOTE (DSL limitation / future work): `appearance.background` can only
-        # express one value, but the row needs distinct base / hover / active
-        # backgrounds (color/foreground/navigation/primary[-hover|-active]).
-        # The implementation wires all three (see styles.css); the anatomy
-        # records only the base until the Anatomy DSL accepts per-state token
-        # values (e.g. a map keyed by interaction state).
+        # NOTE: colour/visual state (base/hover/active backgrounds, text/icon
+        # colour) is intentionally NOT wired in PR1 (structure only). It lands in
+        # PR2 via token pairings; the tokens below record the intended target.
+        # The DSL limitation still applies — `appearance.background` expresses one
+        # value, but the row needs distinct base/hover/active; recorded here as
+        # base only until the Anatomy DSL accepts per-state token values.
         role: row
         styles:
           layout.type: flow
@@ -28,12 +28,13 @@ node:
           layout.align: center
           interaction.cursor: pointer
           spacing.padding.vertical: dimension/150
-          spacing.padding.horizontal: dimension/200
           spacing.gap: dimension/100
           appearance.background: color/foreground/navigation/primary
           typography.text: typography/text/primary
           typography.color: color/text
         edges:
+          # Start slot — leading icon. Always reserved (empty when absent) so
+          # labels align whether or not a row has an icon.
           - node:
               role: icon
               styles:
@@ -48,37 +49,19 @@ node:
             relation:
               cardinality: "1"
               slotName: label
-          # Trailing affordance depends on the item's internal kind: a leaf
-          # (no children) shows nothing; a group (has items) shows a disclosure
-          # indicator that toggles the nested list.
+          # End slot — derived from the item's internal kind: an item with
+          # subitems shows a disclosure caret (static in PR1; toggle behaviour
+          # deferred); a leaf shows its optional `slot` (e.g. a badge) or nothing.
           - switch:
               "on": internal
               cases:
                 - node:
-                    role: leaf
+                    role: caret
                 - node:
-                    role: disclosure indicator
+                    role: slot
             relation:
-              cardinality: "1"
+              cardinality: "0..1"
+              slotName: end
       relation:
         cardinality: "1"
         slotName: default
-    # Nested children — present only for grouping items (Item.items). Recurses
-    # back into side-navigation-item, or a consumer-supplied component.
-    - node:
-        role: nested nav item list
-        styles:
-          layout.type: stack
-          layout.direction: column
-          size.width: fill
-        edges:
-          - switch:
-              "on": override
-              cases:
-                - uri: apps.subcomponent.side-navigation-item
-                - uri: $custom
-            relation:
-              cardinality: "0..*"
-              slotName: default
-      relation:
-        cardinality: "0..1"

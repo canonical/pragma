@@ -5,7 +5,7 @@ import { CollapseToggle } from "../CollapseToggle/index.js";
 import type { HeaderProps } from "./types.js";
 import "./styles.css";
 
-const componentCssClassName = "ds header";
+const componentCssClassName = "ds side-navigation-header";
 
 /**
  * SideNavigation.Header — top region holding the brand (children, at the start)
@@ -17,17 +17,23 @@ const componentCssClassName = "ds header";
 const Header = ({
   className,
   children,
+  applicationName,
   expanded,
   onToggle,
   collapseControls,
   ...props
 }: HeaderProps): React.ReactElement => {
   return (
-    <div
+    <header
       className={[componentCssClassName, className].filter(Boolean).join(" ")}
       {...props}
     >
       <div className="brand">{children}</div>
+      {/* Optional, consumer-supplied; the grid's middle column is simply empty
+          when no application name is given. */}
+      {applicationName != null && (
+        <span className="title">{applicationName}</span>
+      )}
       {onToggle && (
         <CollapseToggle
           expanded={expanded}
@@ -35,7 +41,7 @@ const Header = ({
           onClick={onToggle}
         />
       )}
-    </div>
+    </header>
   );
 };
 

@@ -13,7 +13,7 @@ describe("Header", () => {
       <Header className="custom-class">Content</Header>,
     );
     const root = container.firstElementChild;
-    expect(root?.className).toContain("ds header");
+    expect(root?.className).toContain("ds side-navigation-header");
     expect(root?.className).toContain("custom-class");
   });
 

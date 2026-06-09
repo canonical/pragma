@@ -1,4 +1,4 @@
-import type { _Item } from "@canonical/ds-types";
+import type { _Item, Item } from "@canonical/ds-types";
 import type { NavigationState, NodeStatus } from "@canonical/utils";
 import {
   annotateTree,
@@ -27,9 +27,9 @@ import type {
  * @param props - Root item, focus strategy, orientation, and other options
  * @returns State, prop getters, node status query, and imperative actions
  */
-export default function useNavigationTree(
-  props: UseNavigationTreeProps,
-): UseNavigationTreeResult {
+export default function useNavigationTree<T extends Item = Item>(
+  props: UseNavigationTreeProps<T>,
+): UseNavigationTreeResult<T> {
   const {
     root,
     focus = "roving",
@@ -40,10 +40,10 @@ export default function useNavigationTree(
     typeAheadTimeout = 700,
   } = props;
 
-  const annotatedRoot = useMemo(() => annotateTree(root), [root]);
-  const index = useMemo(() => prepareIndex(annotatedRoot), [annotatedRoot]);
+  const annotatedRoot = useMemo(() => annotateTree<T>(root), [root]);
+  const index = useMemo(() => prepareIndex<T>(annotatedRoot), [annotatedRoot]);
 
-  const initialState = useMemo((): NavigationState => {
+  const initialState = useMemo((): NavigationState<T> => {
     const initialItem = initialUrl ? index[initialUrl] : undefined;
     return {
       selectedItems: initialItem
@@ -65,10 +65,10 @@ export default function useNavigationTree(
     });
     if (!stateReducer) return baseReducer;
     return (
-      state: NavigationState,
+      state: NavigationState<T>,
       action: {
         type: NavigationActionType;
-        item?: _Item;
+        item?: _Item<T>;
         inputValue?: string;
       },
     ) => {
@@ -84,7 +84,7 @@ export default function useNavigationTree(
   const itemRefsMap = useRef<Map<string, HTMLElement>>(new Map());
   const clearTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const rovingTarget = useMemo((): _Item | null => {
+  const rovingTarget = useMemo((): _Item<T> | null => {
     if (focus !== "roving") return null;
     const highlighted =
       state.highlightedItems[state.highlightedItems.length - 1];
@@ -96,7 +96,7 @@ export default function useNavigationTree(
   }, [focus, state.highlightedItems, state.selectedItems, annotatedRoot]);
 
   const getNodeStatus = useCallback(
-    (item: _Item): NodeStatus => ({
+    (item: _Item<T>): NodeStatus => ({
       selected: state.selectedItems.at(-1) === item,
       inSelectedBranch: state.selectedItems.includes(item),
       highlighted: state.highlightedItems.at(-1) === item,
@@ -106,17 +106,18 @@ export default function useNavigationTree(
   );
 
   const selectItem = useCallback(
-    (item: _Item) => dispatch({ type: NavigationActionType.ITEM_SELECT, item }),
+    (item: _Item<T>) =>
+      dispatch({ type: NavigationActionType.ITEM_SELECT, item }),
     [],
   );
 
   const highlightItem = useCallback(
-    (item: _Item) =>
+    (item: _Item<T>) =>
       dispatch({ type: NavigationActionType.ITEM_HIGHLIGHT, item }),
     [],
   );
 
-  const setHighlightedItems = useCallback((items: _Item[]) => {
+  const setHighlightedItems = useCallback((items: _Item<T>[]) => {
     if (items.length > 0) {
       dispatch({
         type: NavigationActionType.ITEM_HIGHLIGHT,
@@ -238,7 +239,7 @@ export default function useNavigationTree(
   );
 
   const getItemProps = useCallback(
-    (item: _Item, userProps?: Partial<ItemProps>): ItemProps => {
+    (item: _Item<T>, userProps?: Partial<ItemProps>): ItemProps => {
       const id = getItemId(item);
       const isRovingTarget = rovingTarget === item;
       return {

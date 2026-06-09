@@ -1,4 +1,4 @@
-import type { _Item } from "@canonical/ds-types";
+import type { _Item, Item } from "@canonical/ds-types";
 import type { UseNavigationTreeResult } from "../types.js";
 import type { MenubarItemPropsResult } from "./types.js";
 
@@ -12,9 +12,9 @@ import type { MenubarItemPropsResult } from "./types.js";
  * @param item - The annotated navigation item
  * @returns ARIA attributes to spread on the item element
  */
-export default function getMenubarItemProps(
-  nav: UseNavigationTreeResult,
-  item: _Item,
+export default function getMenubarItemProps<T extends Item = Item>(
+  nav: UseNavigationTreeResult<T>,
+  item: _Item<T>,
 ): MenubarItemPropsResult {
   const status = nav.getNodeStatus(item);
   const hasChildren = !!item.items?.length;

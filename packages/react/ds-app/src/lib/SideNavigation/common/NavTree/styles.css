@@ -1,0 +1,23 @@
+/*
+ * SideNavigation NavTree — domain styles for the rendered tree structure
+ * (level-1 groups → header + level-2 item list). Owned here so Content and
+ * Footer can compose NavTree without re-declaring its internals. Structural
+ * only; colour/visual tokens are deferred to PR2.
+ */
+.ds.nav-tree {
+  display: contents;
+
+  & > .group {
+    > .header {
+      display: block;
+    }
+
+    > .list {
+      display: flex;
+      flex-direction: column;
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+  }
+}
