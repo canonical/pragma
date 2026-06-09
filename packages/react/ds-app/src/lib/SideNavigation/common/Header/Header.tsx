@@ -5,7 +5,7 @@ import { CollapseToggle } from "../CollapseToggle/index.js";
 import type { HeaderProps } from "./types.js";
 import "./styles.css";
 
-const componentCssClassName = "ds header";
+const componentCssClassName = "ds side-navigation-header";
 
 /**
  * SideNavigation.Header — top region holding the brand (children, at the start)
@@ -23,11 +23,12 @@ const Header = ({
   ...props
 }: HeaderProps): React.ReactElement => {
   return (
-    <div
+    <header
       className={[componentCssClassName, className].filter(Boolean).join(" ")}
       {...props}
     >
       <div className="brand">{children}</div>
+      <span className="title">Application name</span>
       {onToggle && (
         <CollapseToggle
           expanded={expanded}
@@ -35,7 +36,7 @@ const Header = ({
           onClick={onToggle}
         />
       )}
-    </div>
+    </header>
   );
 };
 

@@ -8,5 +8,11 @@
   gap: 1rem;
   /* At least full-height, but free to grow taller than the viewport so the
      background keeps painting as the page scrolls. */
-  min-height: 100%;
+  max-height: 100%;
+
+  /* Shared row template: [start] [label/title] [end]. The Header and each Item
+     row use this so the logo aligns with the item icons down the rail. The
+     start column is a fixed width matching the icon box; the logo sits in it. */
+  --sidenav-start: 1.5rem;
+  --sidenav-row-columns: var(--sidenav-start) 1fr auto;
 }

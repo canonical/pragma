@@ -1,24 +1,42 @@
-import type { Item } from "@canonical/ds-types";
+import type { NavItem } from "./types.js";
 
 /**
  * Story/test fixtures for SideNavigation.
  *
- * Each fixture is a WD405 root `Item`: the root node itself is not rendered —
- * only its direct children form the nav item list (the same contract used by
- * SideNavigation.Content and SideNavigation.Footer). Grouping items use `key`
- * (no `url`); navigable leaves use `url`.
+ * Each fixture is a root `NavItem`: the root node itself is not rendered. Its
+ * direct children are **level-1 groups** (a label renders as a group header;
+ * no label → no header). Group children (level 2) are the navigable leaves
+ * (`url`) — these may carry a leading `icon` and, for leaves, a trailing `slot`
+ * (e.g. a badge).
  *
  * The MAAS and LXD trees mirror the real left-hand navigation of those
- * Canonical apps (faithful to canonical/maas-ui and canonical/lxd-ui), to give
- * stories a realistic information architecture.
+ * Canonical apps, to give stories a realistic information architecture.
  */
+
+/** A small count badge used in fixtures via a leaf's `slot`. */
+const badge = (value: number | string): NavItem["slot"] => (
+  <span
+    style={{
+      display: "inline-flex",
+      alignItems: "center",
+      justifyContent: "center",
+      minInlineSize: "1.25rem",
+      paddingInline: "0.375rem",
+      borderRadius: "0.625rem",
+      fontSize: "0.75rem",
+      background: "rgb(0 0 0 / 0.25)",
+    }}
+  >
+    {value}
+  </span>
+);
 
 // --- MAAS (Metal as a Service) -------------------------------------------
 // Mirrors maas-ui's grouped sidebar. Internal route paths; a real deployment
 // serves these under a base prefix (e.g. /MAAS/r/...).
 
 /** MAAS main navigation — grouped hardware/KVM/organisation/config/networking. */
-export const maasContentRoot: Item = {
+export const maasContentRoot: NavItem = {
   key: "maas-content-root",
   label: "MAAS navigation",
   items: [
@@ -26,161 +44,217 @@ export const maasContentRoot: Item = {
       key: "hardware",
       label: "Hardware",
       items: [
-        { url: "/machines", label: "Machines" },
-        { url: "/devices", label: "Devices" },
-        { url: "/controllers", label: "Controllers" },
+        {
+          url: "/machines",
+          label: "Machines",
+          icon: "machines",
+          slot: badge(42),
+        },
+        { url: "/devices", label: "Devices", icon: "units" },
+        { url: "/controllers", label: "Controllers", icon: "controllers" },
       ],
     },
     {
       key: "kvm",
       label: "KVM",
       items: [
-        { url: "/kvm/lxd", label: "LXD" },
-        { url: "/kvm/virsh", label: "Virsh" },
+        { url: "/kvm/lxd", label: "LXD", icon: "containers" },
+        { url: "/kvm/virsh", label: "Virsh", icon: "pods" },
       ],
     },
     {
       key: "organisation",
       label: "Organisation",
       items: [
-        { url: "/tags", label: "Tags" },
-        { url: "/zones", label: "AZs" },
-        { url: "/pools", label: "Pools" },
+        { url: "/tags", label: "Tags", icon: "tag" },
+        { url: "/zones", label: "AZs", icon: "cluster-host" },
+        { url: "/pools", label: "Pools", icon: "pods" },
       ],
     },
     {
       key: "configuration",
       label: "Configuration",
-      items: [{ url: "/images", label: "Images" }],
+      items: [{ url: "/images", label: "Images", icon: "image" }],
     },
     {
       key: "networking",
       label: "Networking",
       items: [
-        { url: "/networks", label: "Networks" },
-        { url: "/domains", label: "DNS" },
-        { url: "/network-discovery", label: "Network discovery" },
+        { url: "/networks", label: "Networks", icon: "connected" },
+        { url: "/domains", label: "DNS", icon: "code" },
+        {
+          url: "/network-discovery",
+          label: "Network discovery",
+          icon: "search",
+          slot: badge("new"),
+        },
       ],
     },
   ],
 };
 
 /** MAAS footer — admin settings and the logged-in user. */
-export const maasFooterRoot: Item = {
+export const maasFooterRoot: NavItem = {
   key: "maas-footer-root",
   label: "MAAS account",
   items: [
-    { url: "/settings", label: "Settings" },
-    { url: "/account/prefs", label: "Ada Lovelace" },
-    { key: "logout", label: "Log out" },
+    {
+      key: "maas-account-group",
+      items: [
+        { url: "/settings", label: "Settings", icon: "settings" },
+        { url: "/account/prefs", label: "Ada Lovelace", icon: "user" },
+        { key: "logout", label: "Log out" },
+      ],
+    },
   ],
 };
 
 // --- LXD UI --------------------------------------------------------------
-// Mirrors lxd-ui's project-scoped sidebar (default project). Accordion groups
-// for Networking / Storage / Images; Clustering shown only on clustered
-// servers.
+// Mirrors lxd-ui's project-scoped sidebar (default project).
 
 /** LXD main navigation — project-scoped, default project. */
-export const lxdContentRoot: Item = {
+export const lxdContentRoot: NavItem = {
   key: "lxd-content-root",
   label: "LXD navigation",
   items: [
-    { url: "/ui/project/default/instances", label: "Instances" },
-    { url: "/ui/project/default/profiles", label: "Profiles" },
+    {
+      key: "lxd-primary",
+      items: [
+        {
+          url: "/ui/project/default/instances",
+          label: "Instances",
+          icon: "containers",
+        },
+        {
+          url: "/ui/project/default/profiles",
+          label: "Profiles",
+          icon: "profiles",
+        },
+      ],
+    },
     {
       key: "networking",
       label: "Networking",
       items: [
-        { url: "/ui/project/default/networks", label: "Networks" },
-        { url: "/ui/project/default/network-acls", label: "ACLs" },
-        { url: "/ui/project/default/network-ipam", label: "IPAM" },
+        {
+          url: "/ui/project/default/networks",
+          label: "Networks",
+          icon: "connected",
+        },
+        {
+          url: "/ui/project/default/network-acls",
+          label: "ACLs",
+          icon: "locked",
+        },
+        {
+          url: "/ui/project/default/network-ipam",
+          label: "IPAM",
+          icon: "code",
+        },
       ],
     },
     {
       key: "storage",
       label: "Storage",
       items: [
-        { url: "/ui/project/default/storage/pools", label: "Pools" },
-        { url: "/ui/project/default/storage/volumes", label: "Volumes" },
-        { url: "/ui/project/default/storage/buckets", label: "Buckets" },
         {
-          url: "/ui/project/default/storage/custom-isos",
-          label: "Custom ISOs",
+          url: "/ui/project/default/storage/pools",
+          label: "Pools",
+          icon: "pods",
+        },
+        {
+          url: "/ui/project/default/storage/volumes",
+          label: "Volumes",
+          icon: "bundle",
+        },
+        {
+          url: "/ui/project/default/storage/buckets",
+          label: "Buckets",
+          icon: "archive",
         },
       ],
     },
     {
-      key: "images",
-      label: "Images",
+      key: "lxd-server",
+      label: "Server",
       items: [
-        { url: "/ui/project/default/local-images", label: "Local images" },
+        { url: "/ui/server", label: "Server", icon: "cluster-host" },
+        { url: "/ui/operations", label: "Operations", icon: "status" },
+        {
+          url: "/ui/warnings?status=new",
+          label: "Warnings",
+          icon: "warning",
+          slot: badge(3),
+        },
+        { url: "/ui/settings", label: "Settings", icon: "settings" },
       ],
     },
-    { url: "/ui/project/default/configuration", label: "Configuration" },
-    { url: "/ui/server", label: "Server" },
-    { url: "/ui/operations", label: "Operations" },
-    { url: "/ui/warnings?status=new", label: "Warnings" },
-    { url: "/ui/settings", label: "Settings" },
   ],
 };
 
 /** LXD footer — user, docs, and external links. */
-export const lxdFooterRoot: Item = {
+export const lxdFooterRoot: NavItem = {
   key: "lxd-footer-root",
   label: "LXD links",
   items: [
-    { key: "lxd-user", label: "admin" },
-    { url: "https://documentation.ubuntu.com/lxd/", label: "Documentation" },
     {
-      url: "https://discourse.ubuntu.com/c/lxd/126",
-      label: "Discussion",
+      key: "lxd-links-group",
+      items: [
+        { key: "lxd-user", label: "admin", icon: "user" },
+        {
+          url: "https://documentation.ubuntu.com/lxd/",
+          label: "Documentation",
+          icon: "book",
+        },
+        { key: "report-bug", label: "Report a bug", icon: "bug" },
+        { key: "lxd-logout", label: "Log out" },
+      ],
     },
-    { key: "report-bug", label: "Report a bug" },
-    { key: "lxd-logout", label: "Log out" },
   ],
 };
 
-// --- Generic fixtures (framework-agnostic edge cases) ---------------------
+// --- Generic fixtures (edge cases) ---------------------------------------
 
 /**
- * Minimal fixture — single flat list, no nesting.
- * Useful for testing base rendering without any tree logic.
+ * Minimal fixture — a single unlabelled level-1 group of leaves (no header).
+ * Visually flat; useful for base rendering without group headers.
  */
-export const flatRoot: Item = {
+export const flatRoot: NavItem = {
   key: "flat-root",
-  label: "Flat Navigation",
   items: [
-    { url: "/one", label: "One" },
-    { url: "/two", label: "Two" },
-    { url: "/three", label: "Three" },
-  ],
-};
-
-/**
- * Fixture exercising disabled items at both leaf and group level.
- */
-export const withDisabledRoot: Item = {
-  key: "disabled-root",
-  label: "Navigation with disabled items",
-  items: [
-    { url: "/available", label: "Available" },
-    { url: "/unavailable", label: "Unavailable", disabled: true },
     {
-      key: "all-projects",
-      label: "Project-scoped (disabled)",
-      disabled: true,
-      items: [{ url: "/scoped/thing", label: "Thing" }],
+      key: "flat-group",
+      items: [
+        { url: "/one", label: "One", icon: "home" },
+        { url: "/two", label: "Two", icon: "book", slot: badge(7) },
+        { url: "/three", label: "Three", icon: "tag" },
+      ],
     },
   ],
 };
 
-/**
- * Empty fixture — root with no children.
- * Useful for testing empty-state rendering.
- */
-export const emptyRoot: Item = {
+/** Fixture exercising a disabled leaf. */
+export const withDisabledRoot: NavItem = {
+  key: "disabled-root",
+  items: [
+    {
+      key: "disabled-group",
+      label: "States",
+      items: [
+        { url: "/available", label: "Available", icon: "checkmark" },
+        {
+          url: "/unavailable",
+          label: "Unavailable",
+          icon: "close",
+          disabled: true,
+        },
+      ],
+    },
+  ],
+};
+
+/** Empty fixture — root with no children. Useful for empty-state rendering. */
+export const emptyRoot: NavItem = {
   key: "empty-root",
-  label: "Empty Navigation",
   items: [],
 };

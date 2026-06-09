@@ -1,21 +1,17 @@
-import type { Item as NavItem } from "@canonical/ds-types";
-import type { ComponentType, ReactNode } from "react";
-import type { LinkComponentProps } from "../../types.js";
+import type { ComponentType } from "react";
+import type { LinkComponentProps, NavItem } from "../../types.js";
 
 /**
- * Props for the default SideNavigation item renderer.
+ * Props for the default SideNavigation item renderer — a flat leaf row.
  *
- * Spreads the WD405 `Item` fields directly (url, key, label, disabled, items, …)
- * plus presentational extras. Mirrors the Breadcrumbs.Item contract so a custom
- * `Component` can be substituted via the WD405 override.
+ * Spreads the NavItem fields directly (url, key, label, disabled, icon, slot,
+ * items, …) plus presentational extras. The item is NOT recursive: traversal
+ * lives in NavTree's two loops. The end slot is derived — an item with subitems
+ * shows a disclosure caret; a leaf shows its optional `slot`.
  */
 export interface ItemProps extends NavItem {
   /** Whether this item is the active (current) page. */
   active?: boolean;
-  /** Nesting depth (0 = first level). Used for indentation of children. */
-  depth?: number;
   /** Component used to render navigable items. Defaults to `"a"`. */
   LinkComponent?: ComponentType<LinkComponentProps> | "a";
-  /** Item content; falls back to `label`. */
-  children?: ReactNode;
 }

@@ -8,6 +8,6 @@ describe("Header SSR", () => {
   it("renders without hydration errors", () => {
     const html = renderToString(<Header>Test content</Header>);
     expect(html).toContain("Test content");
-    expect(html).toContain("ds header");
+    expect(html).toContain("ds side-navigation-header");
   });
 });

@@ -1,3 +1,4 @@
+import { Icon } from "@canonical/react-ds-global";
 import type React from "react";
 import type { ItemProps } from "./types.js";
 import "./styles.css";
@@ -5,37 +6,57 @@ import "./styles.css";
 const componentCssClassName = "ds side-navigation-item";
 
 /**
- * SideNavigation.Item — the default renderer for a single WD405 navigation item.
+ * SideNavigation.Item — the default renderer for a single navigation item.
  *
- * Presentational: it takes the item fields spread directly (url, key, label,
- * disabled, …) plus `active`, `depth`, and `LinkComponent`. An item with a `url`
- * renders as a link via `LinkComponent` (default `"a"`); otherwise a label. Any
- * nested list is passed in as `children` (the tree walk lives in NavTree), so a
- * custom `Component` can replace this renderer without owning traversal.
+ * A flat leaf row, NOT recursive: traversal lives in NavTree's two loops. The
+ * row is `[icon] [label] [end]` over a shared grid template (so the icon aligns
+ * with the header logo). An item with a `url` renders as a link via
+ * `LinkComponent` (default `"a"`); otherwise a non-navigable label.
+ *
+ * End slot is derived, not authored:
+ * - has subitems → a disclosure caret (static affordance in PR1; expand/collapse
+ *   behaviour is deferred);
+ * - leaf → the optional `slot` (a badge, count, …), or nothing.
  *
  * @implements ds:apps.subcomponent.side-navigation-item
  */
 const Item = ({
   url,
   label,
+  icon,
+  slot,
   disabled = false,
   active = false,
-  depth = 0,
   LinkComponent = "a",
-  children,
-  // WD405 Item fields not spread to the DOM.
+  // NavItem fields not spread to the DOM.
   key: _key,
-  items: _items,
+  items,
   displayItemsType: _displayItemsType,
   Component: _Component,
   className,
   ...props
 }: ItemProps): React.ReactElement => {
   const Link = LinkComponent;
+  const hasSubitems = (items?.length ?? 0) > 0;
+
+  const content = (
+    <>
+      {/* Start cell is always rendered (empty when no icon) so the label stays
+          in the middle column — labels align whether or not a row has an icon. */}
+      <span className="start">{icon ? <Icon icon={icon} /> : null}</span>
+      <span className="label">{label}</span>
+      {/* End slot: caret for groups (static in PR1), else the leaf slot. */}
+      {hasSubitems ? (
+        <Icon icon="chevron-down" className="end caret" />
+      ) : slot ? (
+        <span className="end slot">{slot}</span>
+      ) : null}
+    </>
+  );
+
   return (
     <li
       className={[componentCssClassName, className].filter(Boolean).join(" ")}
-      data-depth={depth}
       data-disabled={disabled || undefined}
       data-active={active || undefined}
       {...props}
@@ -46,14 +67,13 @@ const Item = ({
           href={disabled ? undefined : url}
           aria-current={active ? "page" : undefined}
         >
-          {label}
+          {content}
         </Link>
       ) : (
         <span className="row" aria-current={active ? "page" : undefined}>
-          {label}
+          {content}
         </span>
       )}
-      {children}
     </li>
   );
 };

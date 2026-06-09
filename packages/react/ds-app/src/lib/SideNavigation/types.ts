@@ -1,3 +1,4 @@
+import type { IconName } from "@canonical/ds-assets";
 import type { Item } from "@canonical/ds-types";
 import type { ComponentType, HTMLAttributes, ReactNode } from "react";
 
@@ -13,13 +14,34 @@ export interface LinkComponentProps {
   "aria-current"?: HTMLAttributes<HTMLElement>["aria-current"];
 }
 
+/**
+ * The SideNavigation item — the WD405 `Item` enhanced with the presentational
+ * extras this component understands:
+ *
+ * - `icon` — a leading icon (start slot), by ds-assets icon name.
+ * - `slot` — trailing content for **leaf** items (end slot): a badge, count,
+ *   etc. Ignored when the item has subitems — those show a disclosure caret
+ *   automatically (`end = hasSubitems ? caret : slot`).
+ *
+ * No discriminated union to author: the caret-vs-slot choice is structural,
+ * derived from whether the item has `items`.
+ */
+export interface NavItem extends Omit<Item, "items"> {
+  /** Leading icon (start slot), by ds-assets icon name. */
+  icon?: IconName;
+  /** Trailing content for leaf items (end slot). Ignored if the item has subitems. */
+  slot?: ReactNode;
+  /** Subitems. Presence drives the disclosure caret (vs the leaf `slot`). */
+  items?: NavItem[];
+}
+
 export interface SideNavigationProps extends HTMLAttributes<HTMLDivElement> {
   /** Brand content (logo/wordmark) rendered in the header. */
   brand?: ReactNode;
-  /** Main navigation, as a WD405 root Item. Its direct children are rendered. */
-  root?: Item;
-  /** Footer navigation, as a WD405 root Item. Pinned to the bottom. */
-  footerRoot?: Item;
+  /** Main navigation, as a root NavItem. Its direct children are rendered. */
+  root?: NavItem;
+  /** Footer navigation, as a root NavItem. Pinned to the bottom. */
+  footerRoot?: NavItem;
   /**
    * Component used to render navigable items (those with a `url`). Receives
    * `LinkComponentProps`. Defaults to `"a"`. Pass a router `Link` (e.g.
