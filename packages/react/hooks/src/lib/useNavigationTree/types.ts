@@ -20,9 +20,9 @@ export { NavigationActionType } from "@canonical/utils";
 export type FocusStrategy = "roving" | "taborder";
 
 /** Props for the useNavigationTree hook */
-export interface UseNavigationTreeProps {
-  /** The root navigation item (WD405 Item type) */
-  root: Item;
+export interface UseNavigationTreeProps<T extends Item = Item> {
+  /** The root navigation item (WD405 Item type, or an enhanced subtype) */
+  root: T;
   /** Focus management strategy. "roving": one tab stop, arrow-managed. "taborder": every item tabbable. Default: "roving". */
   focus?: FocusStrategy;
   /** Arrow key orientation per depth. Default: all vertical. */
@@ -31,9 +31,9 @@ export interface UseNavigationTreeProps {
   wrap?: boolean;
   /** Custom state reducer for intercepting/overriding transitions */
   stateReducer?: (
-    state: NavigationState,
-    action: NavigationAction,
-  ) => NavigationState;
+    state: NavigationState<T>,
+    action: NavigationAction<T>,
+  ) => NavigationState<T>;
   /** Initial URL to resolve selection from. Sets selectedItems on mount. */
   initialUrl?: string;
   /** Type-ahead reset timeout in milliseconds. Default: 700. */
@@ -67,27 +67,28 @@ export interface ItemProps {
 }
 
 /** Return value of the useNavigationTree hook */
-export interface UseNavigationTreeResult extends NavigationState {
+export interface UseNavigationTreeResult<T extends Item = Item>
+  extends NavigationState<T> {
   /** Annotated root item */
-  annotatedRoot: _Item;
+  annotatedRoot: _Item<T>;
   /** Flat index for O(1) lookup by URL or key */
-  index: _Index;
+  index: _Index<T>;
 
   /** Derive the structural status of a node from current state */
-  getNodeStatus: (item: _Item) => NodeStatus;
+  getNodeStatus: (item: _Item<T>) => NodeStatus;
   /** Props for the element that toggles open/close */
   getToggleProps: (props?: Partial<ToggleProps>) => ToggleProps;
   /** Props for the menu/list container */
   getMenuProps: (props?: Partial<MenuProps>) => MenuProps;
   /** Props for an individual item */
-  getItemProps: (item: _Item, props?: Partial<ItemProps>) => ItemProps;
+  getItemProps: (item: _Item<T>, props?: Partial<ItemProps>) => ItemProps;
 
   /** Set selection to this item's ancestor path */
-  selectItem: (item: _Item) => void;
+  selectItem: (item: _Item<T>) => void;
   /** Set highlight to this item's ancestor path */
-  highlightItem: (item: _Item) => void;
+  highlightItem: (item: _Item<T>) => void;
   /** Set the full highlighted path directly */
-  setHighlightedItems: (items: _Item[]) => void;
+  setHighlightedItems: (items: _Item<T>[]) => void;
   /** Set the current searchable-menu input value */
   setInputValue: (value: string) => void;
   /** Open the navigation widget */

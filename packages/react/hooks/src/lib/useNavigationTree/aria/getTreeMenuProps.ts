@@ -1,3 +1,4 @@
+import type { Item } from "@canonical/ds-types";
 import type { UseNavigationTreeResult } from "../types.js";
 import type { TreeMenuPropsResult } from "./types.js";
 
@@ -10,8 +11,8 @@ import type { TreeMenuPropsResult } from "./types.js";
  * @param opts - Depth of this container and accessible label
  * @returns ARIA attributes to spread on the container element
  */
-export default function getTreeMenuProps(
-  _nav: UseNavigationTreeResult,
+export default function getTreeMenuProps<T extends Item = Item>(
+  _nav: UseNavigationTreeResult<T>,
   opts: { depth: number; label?: string },
 ): TreeMenuPropsResult {
   return {

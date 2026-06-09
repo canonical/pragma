@@ -1,4 +1,4 @@
-import type { _Item } from "@canonical/ds-types";
+import type { _Item, Item } from "@canonical/ds-types";
 import type { UseNavigationTreeResult } from "../types.js";
 import type { NavigationItemPropsResult } from "./types.js";
 
@@ -11,9 +11,9 @@ import type { NavigationItemPropsResult } from "./types.js";
  * @param item - The annotated navigation item
  * @returns ARIA attributes to spread on the link element
  */
-export default function getNavigationItemProps(
-  nav: UseNavigationTreeResult,
-  item: _Item,
+export default function getNavigationItemProps<T extends Item = Item>(
+  nav: UseNavigationTreeResult<T>,
+  item: _Item<T>,
 ): NavigationItemPropsResult {
   const status = nav.getNodeStatus(item);
   return {

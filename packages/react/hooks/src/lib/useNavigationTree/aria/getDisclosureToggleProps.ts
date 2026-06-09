@@ -1,4 +1,4 @@
-import type { _Item } from "@canonical/ds-types";
+import type { _Item, Item } from "@canonical/ds-types";
 import type { UseNavigationTreeResult } from "../types.js";
 import type { DisclosureTogglePropsResult } from "./types.js";
 
@@ -10,9 +10,9 @@ import type { DisclosureTogglePropsResult } from "./types.js";
  * @param opts - Consumer-provided expansion state and target element ID
  * @returns ARIA attributes to spread on the toggle button
  */
-export default function getDisclosureToggleProps(
-  _nav: UseNavigationTreeResult,
-  _item: _Item,
+export default function getDisclosureToggleProps<T extends Item = Item>(
+  _nav: UseNavigationTreeResult<T>,
+  _item: _Item<T>,
   opts: { expanded: boolean; controlsId: string },
 ): DisclosureTogglePropsResult {
   return {

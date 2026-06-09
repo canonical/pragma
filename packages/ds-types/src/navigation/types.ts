@@ -76,7 +76,7 @@ export interface Item<C = DefaultComponent> {
  *
  * @template T - The item type being annotated (defaults to the base `Item`)
  */
-export type _Item<T extends Item = Item> = T & {
+export type _Item<T extends Item = Item> = Omit<T, "items"> & {
   /**
    * URL (or key) of the parent item in the navigation hierarchy.
    * e.g. '/parent' for a child item under '/parent', or null for the root.
@@ -92,6 +92,10 @@ export type _Item<T extends Item = Item> = T & {
   /**
    * Array of annotated child items, if any.
    * e.g. Prepared sub-items with their own parentUrl and depth.
+   *
+   * `T`'s own `items` is omitted before intersecting so this annotated form
+   * (`_Item<T>[]`) is the one surfaced when iterating children — otherwise the
+   * intersection would expose `T`'s base element type.
    */
   items?: _Item<T>[];
 };
