@@ -78,14 +78,20 @@ Bun.serve({
       const { theme } = extractPreferences(req.headers.get("cookie"));
       const renderer = new JSXRenderer(
         EntryServer,
-        { url: requestUrl, theme: theme ?? undefined },
+        // The cookie is client-controlled, so only the known theme values reach
+        // the SSR `<html class>` — anything else is dropped (matches the
+        // compiled renderer in `renderer.tsx`).
+        {
+          url: requestUrl,
+          theme: theme === "light" || theme === "dark" ? theme : undefined,
+        },
         { htmlString: html },
       );
       const stream = await renderer.renderToReadableStream(req.signal);
 
       return new Response(stream, {
         status: renderer.statusCode,
-        headers: { "Content-Type": "text/html; charset=utf-8" },
+        headers: { "Content-Type": renderer.contentType },
       });
     } catch (error) {
       vite.ssrFixStacktrace(error as Error);

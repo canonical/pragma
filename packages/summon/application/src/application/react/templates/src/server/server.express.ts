@@ -73,14 +73,20 @@ async function start() {
       const { theme } = extractPreferences(req.headers.cookie ?? null);
       const renderer = new JSXRenderer(
         EntryServer,
-        { url, theme: theme ?? undefined },
+        // The cookie is client-controlled, so only the known theme values reach
+        // the SSR `<html class>` — anything else is dropped (matches the
+        // compiled renderer in `renderer.tsx`).
+        {
+          url,
+          theme: theme === "light" || theme === "dark" ? theme : undefined,
+        },
         { htmlString: html },
       );
       const result = renderer.renderToPipeableStream();
 
       await renderer.statusReady;
       res.status(renderer.statusCode);
-      res.setHeader("content-type", "text/html; charset=utf-8");
+      res.setHeader("content-type", renderer.contentType);
       result.pipe(res);
     } catch (error) {
       vite.ssrFixStacktrace(error as Error);
