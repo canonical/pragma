@@ -1,15 +1,12 @@
-import { useRoute } from "@canonical/router-react";
+import { createHashRouter, route } from "@canonical/router-core";
+import { RouterProvider, useRoute } from "@canonical/router-react";
 import {
   withBaseLayer,
   withHashRouter,
 } from "@canonical/storybook-addon-utils";
 import type { Decorator } from "@storybook/react-vite";
 import type { ReactNode } from "react";
-import SideNavigation from "../../lib/SideNavigation/SideNavigation.js";
-import type {
-  LinkComponentProps,
-  SideNavigationProps,
-} from "../../lib/SideNavigation/types.js";
+import type { LinkComponentProps } from "../../lib/SideNavigation/types.js";
 
 /**
  * Shared Storybook helpers for SideNavigation stories — the brand asset, the
@@ -42,6 +39,76 @@ export const HashLink = ({ href, ...props }: LinkComponentProps): ReactNode => (
 /** Standard decorators for SideNavigation stories: base surface + hash router. */
 export const navDecorators: Decorator[] = [withBaseLayer, withHashRouter()];
 
+/** Minimal catch-all route so the hash router has somewhere to resolve to. */
+const navRoutes = { story: route({ url: "/", content: () => null }) } as const;
+
+/**
+ * Provides the router-derived props to a nav story from the live location.
+ *
+ * Self-contained: it renders its **own** `RouterProvider` (hash-based) around an
+ * inner bridge that calls `useRoute()` — so the provider is guaranteed to wrap
+ * the hook regardless of decorator order (no dependency on `withHashRouter`
+ * being positioned correctly). The bridge injects `currentUrl` + `LinkComponent`
+ * via the supported `Story({ args })` update and keys the story by pathname so
+ * the navigation hook re-seeds its selection on navigation. Lets the component
+ * stay router-agnostic while the story demonstrates URL-driven active state.
+ * Use on SideNavigation / Content / Footer; the story supplies only data
+ * (`root` / `footerRoot`).
+ */
+export const withNavigationRouterProps: Decorator = (Story, context) => {
+  const router = createHashRouter(navRoutes);
+  const RouterPropsBridge = (): ReactNode => {
+    const { pathname } = useRoute();
+    // Merge over the story's existing args explicitly (don't rely on SB's
+    // update semantics) so `root`/`footerRoot` survive the injection.
+    return (
+      <Story
+        key={pathname}
+        args={{
+          ...context.args,
+          currentUrl: pathname,
+          LinkComponent: HashLink,
+        }}
+      />
+    );
+  };
+  return (
+    <RouterProvider router={router}>
+      <RouterPropsBridge />
+    </RouterProvider>
+  );
+};
+
+/**
+ * Wraps a subcomponent story in the SideNavigation root context
+ * (`.ds.side-navigation`) so the shared row-grid custom property and the
+ * navigation surface tokens resolve — without it, Content/Footer/Header/Item
+ * render unstyled in isolation (they consume CSS defined on the root).
+ */
+export const withSideNavShell: Decorator = (Story) => (
+  <div className="ds side-navigation">
+    <Story />
+  </div>
+);
+
+/**
+ * Imposes a page-like grid so the nav is shown in a realistic context: the nav
+ * sits in the start column (responsive — full width under ~300px, fixed 300px
+ * above) with a placeholder main-content column filling the rest.
+ */
+export const withNavLayout: Decorator = (Story) => (
+  <div
+    style={{
+      display: "grid",
+      gridTemplateColumns: "minmax(100%, 300px) 1fr",
+      minBlockSize: "100vh",
+    }}
+  >
+    <Story />
+    <main style={{ padding: "1rem" }}>Page content</main>
+  </div>
+);
+
 /**
  * Mock Badge for stories — there is no real Badge component yet. Passed as a
  * leaf item's `slot` to exercise the Item end slot. Swap for the real component
@@ -64,18 +131,3 @@ export const MockBadge = ({ children }: { children: ReactNode }): ReactNode => (
     {children}
   </span>
 );
-
-/**
- * Live SideNavigation for stories: subscribes to the router location via
- * `useRoute()` and feeds it as `currentUrl`, so clicking a HashLink updates the
- * active item — demonstrating the URL-driven active state in the canvas. This is
- * the consumer's job in a real app; the component itself stays router-agnostic.
- */
-export const LiveSideNavigation = (
-  props: Omit<SideNavigationProps, "currentUrl" | "LinkComponent">,
-): ReactNode => {
-  const { pathname } = useRoute();
-  return (
-    <SideNavigation {...props} currentUrl={pathname} LinkComponent={HashLink} />
-  );
-};

@@ -7,8 +7,9 @@ import {
 } from "#storybook/navigation/fixtures.js";
 import {
   Brand,
-  LiveSideNavigation,
   navDecorators,
+  withNavigationRouterProps,
+  withNavLayout,
 } from "#storybook/navigation/story-utils.js";
 import SideNavigation from "./SideNavigation.js";
 
@@ -17,10 +18,13 @@ const meta: Meta<typeof SideNavigation> = {
   component: SideNavigation,
   tags: ["autodocs"],
   parameters: { layout: "fullscreen" },
-  decorators: navDecorators,
-  // LiveSideNavigation reads the router location (useRoute) and feeds it as
-  // currentUrl + supplies the HashLink, so the active item updates as you click.
-  render: (args) => <LiveSideNavigation {...args} />,
+  // withNavigationRouterProps injects currentUrl + LinkComponent from the live
+  // router and keys the story so active state follows navigation; withNavLayout
+  // frames it in a page grid. Stories supply only data (root / footerRoot).
+  // Order matters (first = outermost): the router provider (navDecorators) must
+  // wrap withNavigationRouterProps, which calls useRoute(); the page layout is
+  // innermost.
+  decorators: [...navDecorators, withNavigationRouterProps, withNavLayout],
   args: {
     brand: <Brand />,
   },
