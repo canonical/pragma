@@ -21,9 +21,9 @@ const meta: Meta<typeof SideNavigation> = {
   // withNavigationRouterProps injects currentUrl + LinkComponent from the live
   // router and keys the story so active state follows navigation; withNavLayout
   // frames it in a page grid. Stories supply only data (root / footerRoot).
-  // Order matters (first = outermost): the router provider (navDecorators) must
-  // wrap withNavigationRouterProps, which calls useRoute(); the page layout is
-  // innermost.
+  // withNavigationRouterProps is self-contained (owns its RouterProvider), so
+  // decorator order isn't load-bearing here; navDecorators supplies the base
+  // surface and withNavLayout the page grid.
   decorators: [...navDecorators, withNavigationRouterProps, withNavLayout],
   args: {
     brand: <Brand />,

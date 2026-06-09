@@ -38,6 +38,8 @@ export interface NavItem extends Omit<Item, "items"> {
 export interface SideNavigationProps extends HTMLAttributes<HTMLDivElement> {
   /** Brand content (logo/wordmark) rendered in the header. */
   brand?: ReactNode;
+  /** Optional application name/wordmark shown beside the brand in the header. */
+  applicationName?: ReactNode;
   /** Main navigation, as a root NavItem. Its direct children are rendered. */
   root?: NavItem;
   /** Footer navigation, as a root NavItem. Pinned to the bottom. */

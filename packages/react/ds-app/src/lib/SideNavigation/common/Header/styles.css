@@ -7,15 +7,23 @@
   align-items: center;
   gap: var(--dimension-100); /* 0.5rem */
 
+  /* Pin each part to its column explicitly so the toggle stays in the end
+     column even when the optional title is absent. */
   .brand {
-    /* Sits in the start column, aligned with the item icons below. */
+    /* Start column, aligned with the item icons below. */
+    grid-column: 1;
     display: flex;
     align-items: center;
   }
 
   .title {
-    /* Middle (1fr) column. */
+    /* Middle (1fr) column. Optional. */
+    grid-column: 2;
     min-width: 0;
   }
-  /* Toggle falls into the trailing (auto) column. */
+
+  & > .ds.collapse-toggle {
+    /* End column. */
+    grid-column: 3;
+  }
 }

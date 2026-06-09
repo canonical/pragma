@@ -17,6 +17,7 @@ const componentCssClassName = "ds side-navigation-header";
 const Header = ({
   className,
   children,
+  applicationName,
   expanded,
   onToggle,
   collapseControls,
@@ -28,7 +29,11 @@ const Header = ({
       {...props}
     >
       <div className="brand">{children}</div>
-      <span className="title">Application name</span>
+      {/* Optional, consumer-supplied; the grid's middle column is simply empty
+          when no application name is given. */}
+      {applicationName != null && (
+        <span className="title">{applicationName}</span>
+      )}
       {onToggle && (
         <CollapseToggle
           expanded={expanded}

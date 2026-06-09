@@ -11,10 +11,9 @@ const meta: Meta<typeof Footer> = {
   title: "Components/SideNavigation/Footer",
   component: Footer,
   tags: ["autodocs"],
-  // Order matters (first = outermost): the router provider (navDecorators) must
-  // wrap withNavigationRouterProps (useRoute). withSideNavShell (innermost)
-  // provides the .ds.side-navigation context so shared tokens resolve in
-  // isolation.
+  // withNavigationRouterProps is self-contained (owns its RouterProvider), so
+  // decorator order isn't load-bearing here. withSideNavShell provides the
+  // .ds.side-navigation context so shared tokens resolve in isolation.
   decorators: [...navDecorators, withNavigationRouterProps, withSideNavShell],
 };
 

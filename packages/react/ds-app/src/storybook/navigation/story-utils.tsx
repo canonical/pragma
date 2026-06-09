@@ -1,10 +1,6 @@
 import { createHashRouter, route } from "@canonical/router-core";
 import { RouterProvider, useRoute } from "@canonical/router-react";
-import {
-  Lorem,
-  withBaseLayer,
-  withHashRouter,
-} from "@canonical/storybook-addon-utils";
+import { Lorem, withBaseLayer } from "@canonical/storybook-addon-utils";
 import type { Decorator } from "@storybook/react-vite";
 import type { ReactNode } from "react";
 import type { LinkComponentProps } from "../../lib/SideNavigation/types.js";
@@ -30,15 +26,21 @@ export const Brand = (): ReactNode => (
 /**
  * Link adapter for the stories. SideNavigation is router-agnostic (it only sees
  * `LinkComponentProps`); this bridges its raw-URL nav items to the hash router
- * provided by `withHashRouter` — `createHashRouter` reads `location.hash`, so an
- * href into the fragment navigates client-side with no server.
+ * that `withNavigationRouterProps` provides — `createHashRouter` reads
+ * `location.hash`, so an href into the fragment navigates client-side with no
+ * server.
  */
 export const HashLink = ({ href, ...props }: LinkComponentProps): ReactNode => (
   <a href={href ? `#${href}` : undefined} {...props} />
 );
 
-/** Standard decorators for SideNavigation stories: base surface + hash router. */
-export const navDecorators: Decorator[] = [withBaseLayer, withHashRouter()];
+/**
+ * Standard decorators for SideNavigation stories: just the base `.surface`.
+ * The hash router is owned by `withNavigationRouterProps` (self-contained), so
+ * `navDecorators` must NOT also add `withHashRouter` — that would nest two
+ * routers and register duplicate hash listeners.
+ */
+export const navDecorators: Decorator[] = [withBaseLayer];
 
 /** Minimal catch-all route so the hash router has somewhere to resolve to. */
 const navRoutes = { story: route({ url: "/", content: () => null }) } as const;
