@@ -192,15 +192,21 @@ Requires both --ssr and --router flags.`,
       // Client
       copy("src/client/entry.tsx"),
 
-      // Server
+      // Server — dev (Vite + HMR) and preview (compiled) servers each route
+      // between the app + sitemap renderers; the renderers stay routing-agnostic.
       copy("src/server/entry.tsx"),
+      copy("src/server/renderer.tsx"),
       copy("src/server/server.express.ts"),
       copy("src/server/server.bun.ts"),
-      copy("src/server/renderer.tsx"),
-      // sitemap (EJS — /contact entry only when --forms)
+      copy("src/server/preview.express.ts"),
+      copy("src/server/preview.bun.ts"),
+
+      // Sitemap (rendered route at /sitemap.xml)
+      copy("src/sitemap/renderer.ts"),
+      // sitemap getters (EJS — /contact entry only when --forms)
       template({
-        source: src("src/server/sitemap.ts.ejs"),
-        dest: dest("src/server/sitemap.ts"),
+        source: src("src/sitemap/getSitemapItems.ts.ejs"),
+        dest: dest("src/sitemap/getSitemapItems.ts"),
         vars,
       }),
 
@@ -265,6 +271,7 @@ Requires both --ssr and --router flags.`,
       // Static asset dirs (kept by placeholder; both wired into Storybook staticDirs)
       copy("src/assets/.gitkeep"),
       copy("public/.gitkeep"),
+      copy("public/robots.txt"),
 
       // Install dependencies
       when(

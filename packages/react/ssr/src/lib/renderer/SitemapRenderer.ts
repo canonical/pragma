@@ -43,6 +43,9 @@ export default class SitemapRenderer {
    */
   public statusCode = 200;
 
+  /** MIME type of the rendered output, for the consumer's `Content-Type` header. */
+  public readonly contentType = "application/xml; charset=utf-8";
+
   /**
    * Resolves when `statusCode` is determined.
    *

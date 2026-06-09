@@ -1,8 +1,10 @@
 import { defineConfig, mergeConfig } from "vitest/config";
 import viteConfig from "./vite.config.js";
 
+// `vite.config` is a config function (it branches on `--mode server` for the
+// SSR build); resolve it for the default test run before merging.
 export default mergeConfig(
-  viteConfig,
+  viteConfig({ command: "serve", mode: "test" }),
   defineConfig({
     test: {
       // Browser-like environment for component tests

@@ -75,6 +75,7 @@ const createRenderer = await import(rendererFilePath).then(
     m.default as (req: Request) => {
       renderToReadableStream: (signal?: AbortSignal) => Promise<ReadableStream>;
       statusCode: number;
+      contentType?: string;
     },
 );
 
@@ -105,7 +106,9 @@ Bun.serve({
     const stream = await renderer.renderToReadableStream(req.signal);
     return new Response(stream, {
       status: renderer.statusCode,
-      headers: { "Content-Type": "text/html; charset=utf-8" },
+      headers: {
+        "Content-Type": renderer.contentType ?? "text/html; charset=utf-8",
+      },
     });
   },
 });

@@ -5,12 +5,32 @@ import { defineConfig } from "vite";
 // in package.json "imports" and resolved natively by Vite — no resolver plugin.
 const PORT = Number(process.env.PORT) || undefined;
 
-export default defineConfig({
+// `build:server` runs `vite build --mode server` to compile the two server
+// renderers in a single pass. Each is a separate, individually-instantiated
+// Lego brick, so they are named Rollup inputs — the build emits
+// `dist/server/renderer.js` (the JSX app) + `dist/server/sitemap.js` (the XML
+// sitemap), which the preview servers import directly. Every other command
+// (`dev`, `build:client`, `preview`) uses the default mode and the SPA client
+// build (`--ssrManifest --outDir dist/client`).
+export default defineConfig(({ mode }) => ({
   plugins: [react()],
   // Honour the PORT env var for `dev` (SPA) and `preview` so all server scripts
   // — including the SSR ones, which already read PORT — respond to it uniformly.
   server: { port: PORT },
   preview: { port: PORT },
+  build:
+    mode === "server"
+      ? {
+          ssr: true,
+          outDir: "dist/server",
+          rollupOptions: {
+            input: {
+              renderer: "src/server/renderer.tsx",
+              sitemap: "src/sitemap/renderer.ts",
+            },
+          },
+        }
+      : undefined,
   ssr: {
     // Bundle @canonical/* for SSR rather than externalising them, for two
     // reasons: (1) some packages declare only a "module" entry (no
@@ -22,4 +42,4 @@ export default defineConfig({
     // future @canonical dependency is handled.
     noExternal: [/^@canonical\//],
   },
-});
+}));

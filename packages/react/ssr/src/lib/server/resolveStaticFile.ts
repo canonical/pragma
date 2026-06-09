@@ -1,49 +1,21 @@
 import path from "node:path";
+import { matchStaticRoute } from "./matchStaticRoute.js";
+import type { StaticMount } from "./StaticMount.js";
 
-/**
- * A static mount: a URL route prefix mapped to a filesystem directory.
- */
-export interface StaticMount {
-  /** URL prefix, always leading-slashed, e.g. `/assets`. */
-  route: string;
-  /** Absolute directory the route serves from. */
-  dir: string;
-}
-
-/**
- * Parse a `route:filepath` pair (e.g. `"assets:dist/client/assets"`) into a
- * {@link StaticMount}. With no separator the whole string is both the route and
- * the (cwd-relative) directory. The directory is resolved against `cwd`.
- *
- * @param pair - A `"route:filepath"` or bare `"name"` string.
- * @param cwd - Base directory for resolving the filepath (default `process.cwd()`).
- */
-export function parseStaticPair(
-  pair: string,
-  cwd: string = process.cwd(),
-): StaticMount {
-  const separatorIndex = pair.indexOf(":");
-  if (separatorIndex === -1) {
-    return { route: `/${pair}`, dir: path.join(cwd, pair) };
-  }
-  const route = pair.slice(0, separatorIndex);
-  const filepath = pair.slice(separatorIndex + 1);
-  return { route: `/${route}`, dir: path.join(cwd, filepath) };
-}
-
-/**
- * Does `pathname` fall under `route`, matched on a path-segment boundary?
- *
- * `/assets` matches `/assets` and `/assets/x` but NOT `/assetsfoo/x` — a plain
- * `startsWith` would wrongly match the latter.
- */
-export function matchStaticRoute(pathname: string, route: string): boolean {
-  return pathname === route || pathname.startsWith(`${route}/`);
+/** True when the path's last segment carries a file extension (e.g. `.js`, `.txt`). */
+function hasFileExtension(pathname: string): boolean {
+  return /\.[a-z0-9]+$/i.test(pathname);
 }
 
 /**
  * Resolve the on-disk path for a request under a static mount, or `null` if the
- * request does not match the mount or attempts to escape its directory.
+ * request does not match the mount, is not a static-file request, or attempts to
+ * escape the mount directory.
+ *
+ * Only paths that carry a **file extension** are treated as static, so a root
+ * mount (`/`) serves `/robots.txt`, `/sitemap.xml`, `/favicon.ico`, and the
+ * hashed `/assets/*` while extensionless routes (`/`, `/about`) fall through to
+ * be server-rendered — `index.html` is never served in place of the SSR page.
  *
  * Guards against path traversal: the URL tail is decoded (so `%2e%2e`/`%2f`
  * forms are caught) and rejected if it contains a `..` segment; as defence in
@@ -57,8 +29,12 @@ export function resolveStaticFile(
   mount: StaticMount,
 ): string | null {
   if (!matchStaticRoute(pathname, mount.route)) return null;
+  if (!hasFileExtension(pathname)) return null;
 
-  const tail = pathname.slice(mount.route.length);
+  // A root mount serves from the mount dir itself; a prefixed mount strips the
+  // prefix so the remainder resolves under the dir.
+  const tail =
+    mount.route === "/" ? pathname : pathname.slice(mount.route.length);
 
   let decoded: string;
   try {
