@@ -1,9 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import {
-  HashLink,
-  navDecorators,
-} from "../../../../storybook/nav-story-utils.js";
-import { maasFooterRoot } from "../../SideNavigation.fixtures.js";
+import { maasFooterRoot } from "#storybook/navigation/fixtures.js";
+import { HashLink, navDecorators } from "#storybook/navigation/story-utils.js";
 import Footer from "./Footer.js";
 
 const meta: Meta<typeof Footer> = {

@@ -1,7 +1,9 @@
-import type { NavItem } from "./types.js";
+import type { NavItem } from "../../lib/SideNavigation/types.js";
+import { MockBadge } from "./story-utils.js";
 
 /**
- * Story/test fixtures for SideNavigation.
+ * Story fixtures for SideNavigation. Story-only (this folder is excluded from
+ * the package build); tests define their own minimal fixtures inline.
  *
  * Each fixture is a root `NavItem`: the root node itself is not rendered. Its
  * direct children are **level-1 groups** (a label renders as a group header;
@@ -13,22 +15,9 @@ import type { NavItem } from "./types.js";
  * Canonical apps, to give stories a realistic information architecture.
  */
 
-/** A small count badge used in fixtures via a leaf's `slot`. */
+/** A count badge used in fixtures via a leaf's `slot`. */
 const badge = (value: number | string): NavItem["slot"] => (
-  <span
-    style={{
-      display: "inline-flex",
-      alignItems: "center",
-      justifyContent: "center",
-      minInlineSize: "1.25rem",
-      paddingInline: "0.375rem",
-      borderRadius: "0.625rem",
-      fontSize: "0.75rem",
-      background: "rgb(0 0 0 / 0.25)",
-    }}
-  >
-    {value}
-  </span>
+  <MockBadge>{value}</MockBadge>
 );
 
 // --- MAAS (Metal as a Service) -------------------------------------------

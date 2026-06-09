@@ -1,6 +1,6 @@
 import { withBaseLayer } from "@canonical/storybook-addon-utils";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { HashLink } from "../../../../storybook/nav-story-utils.js";
+import { HashLink } from "#storybook/navigation/story-utils.js";
 import Item from "./Item.js";
 
 const meta: Meta<typeof Item> = {

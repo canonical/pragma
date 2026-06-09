@@ -1,7 +1,7 @@
 import { withBaseLayer } from "@canonical/storybook-addon-utils";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { fn } from "storybook/test";
-import { Brand } from "../../../../storybook/nav-story-utils.js";
+import { Brand } from "#storybook/navigation/story-utils.js";
 import Header from "./Header.js";
 
 const meta: Meta<typeof Header> = {

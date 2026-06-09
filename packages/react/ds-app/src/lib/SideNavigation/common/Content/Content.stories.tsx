@@ -1,9 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import {
-  HashLink,
-  navDecorators,
-} from "../../../../storybook/nav-story-utils.js";
-import { maasContentRoot } from "../../SideNavigation.fixtures.js";
+import { maasContentRoot } from "#storybook/navigation/fixtures.js";
+import { HashLink, navDecorators } from "#storybook/navigation/story-utils.js";
 import Content from "./Content.js";
 
 const meta: Meta<typeof Content> = {

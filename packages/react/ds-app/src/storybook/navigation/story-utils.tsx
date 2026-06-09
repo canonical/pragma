@@ -5,11 +5,11 @@ import {
 } from "@canonical/storybook-addon-utils";
 import type { Decorator } from "@storybook/react-vite";
 import type { ReactNode } from "react";
-import SideNavigation from "../lib/SideNavigation/SideNavigation.js";
+import SideNavigation from "../../lib/SideNavigation/SideNavigation.js";
 import type {
   LinkComponentProps,
   SideNavigationProps,
-} from "../lib/SideNavigation/types.js";
+} from "../../lib/SideNavigation/types.js";
 
 /**
  * Shared Storybook helpers for SideNavigation stories — the brand asset, the
@@ -41,6 +41,29 @@ export const HashLink = ({ href, ...props }: LinkComponentProps): ReactNode => (
 
 /** Standard decorators for SideNavigation stories: base surface + hash router. */
 export const navDecorators: Decorator[] = [withBaseLayer, withHashRouter()];
+
+/**
+ * Mock Badge for stories — there is no real Badge component yet. Passed as a
+ * leaf item's `slot` to exercise the Item end slot. Swap for the real component
+ * once it lands.
+ */
+export const MockBadge = ({ children }: { children: ReactNode }): ReactNode => (
+  <span
+    style={{
+      display: "inline-flex",
+      alignItems: "center",
+      justifyContent: "center",
+      minInlineSize: "1.25rem",
+      paddingInline: "0.375rem",
+      borderRadius: "0.625rem",
+      fontSize: "0.75rem",
+      lineHeight: 1.4,
+      background: "rgb(0 0 0 / 0.25)",
+    }}
+  >
+    {children}
+  </span>
+);
 
 /**
  * Live SideNavigation for stories: subscribes to the router location via

@@ -1,15 +1,15 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import {
-  Brand,
-  LiveSideNavigation,
-  navDecorators,
-} from "../../storybook/nav-story-utils.js";
-import {
   lxdContentRoot,
   lxdFooterRoot,
   maasContentRoot,
   maasFooterRoot,
-} from "./SideNavigation.fixtures.js";
+} from "#storybook/navigation/fixtures.js";
+import {
+  Brand,
+  LiveSideNavigation,
+  navDecorators,
+} from "#storybook/navigation/story-utils.js";
 import SideNavigation from "./SideNavigation.js";
 
 const meta: Meta<typeof SideNavigation> = {
