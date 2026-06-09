@@ -1,6 +1,7 @@
 import { createHashRouter, route } from "@canonical/router-core";
 import { RouterProvider, useRoute } from "@canonical/router-react";
 import {
+  Lorem,
   withBaseLayer,
   withHashRouter,
 } from "@canonical/storybook-addon-utils";
@@ -100,12 +101,21 @@ export const withNavLayout: Decorator = (Story) => (
   <div
     style={{
       display: "grid",
-      gridTemplateColumns: "minmax(100%, 300px) 1fr",
-      minBlockSize: "100vh",
+      gridTemplateColumns: "300px auto",
+      // The single row must be a DEFINITE height (not the default content-sized
+      // `auto`), otherwise the row grows to fit the nav and the nav's
+      // max-height:100% resolves against that grown height — no cap, no scroll.
+      // Pinning the row to the viewport bounds both cells so the nav (Content)
+      // and the main canvas each scroll internally.
+      gridTemplateRows: "100dvh",
     }}
   >
     <Story />
-    <main style={{ padding: "1rem" }}>Page content</main>
+    {/* The main canvas is its own scroll container so its content scrolls
+        independently of the navigation, demonstrating the app-shell layout. */}
+    <main style={{ minHeight: 0, overflow: "auto", padding: "1rem" }}>
+      <Lorem paragraphs={8} />
+    </main>
   </div>
 );
 

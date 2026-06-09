@@ -6,8 +6,9 @@
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  /* At least full-height, but free to grow taller than the viewport so the
-     background keeps painting as the page scrolls. */
+  /* Cap to the parent's height so the nav never overflows the screen; Header
+     and Footer pin (flex auto) and Content (flex:1, min-height:0) takes the
+     leftover space and scrolls internally. */
   max-height: 100%;
 
   /* Shared row template: [start] [label/title] [end]. The Header and each Item

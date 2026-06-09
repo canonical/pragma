@@ -3,8 +3,11 @@
 .ds.content {
   position: relative;
   flex: 1;
-  /* Page scrolls with the min-height shell; allow only a vertical safety-valve
-     and never horizontal overflow (long labels must not cause sideways scroll). */
+  /* min-height:0 lets this flex item shrink below its content height so it can
+     scroll internally (flex items default to min-height:auto, which refuses to
+     shrink and would push the whole nav taller instead). Vertical scroll only;
+     never horizontal (long labels must not cause sideways scroll). */
+  min-height: 0;
   overflow: hidden auto;
 
   /* Tree structure (.group/.header/.list) is owned by NavTree's own styles.
