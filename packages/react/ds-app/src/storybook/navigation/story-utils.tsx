@@ -24,6 +24,31 @@ export const Brand = (): ReactNode => (
 );
 
 /**
+ * Canonical logo placeholder for the brand slot: a portrait brand-orange
+ * rectangle (`--color-background-logo`) with the circle-of-friends mark anchored
+ * at the bottom — a stand-in for the real Canonical logo while we align the
+ * header rhythm. The rectangle fills the start column and the header's height,
+ * so the CoF marks the header baseline at its foot.
+ */
+export const CanonicalLogo = (): ReactNode => (
+  <a
+    href="/"
+    aria-label="Home"
+    style={{
+      display: "flex",
+      alignItems: "flex-end",
+      justifyContent: "center",
+      inlineSize: "var(--sidenav-start, 1.5rem)",
+      blockSize: "100%",
+      background: "var(--color-background-logo)",
+      paddingBlockEnd: "var(--dimension-050, 0.25rem)",
+    }}
+  >
+    <img src={CANONICAL_LOGO} alt="Canonical" width={16} height={16} />
+  </a>
+);
+
+/**
  * Link adapter for the stories. SideNavigation is router-agnostic (it only sees
  * `LinkComponentProps`); this bridges its raw-URL nav items to the hash router
  * that `withNavigationRouterProps` provides — `createHashRouter` reads

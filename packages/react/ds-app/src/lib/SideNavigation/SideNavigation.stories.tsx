@@ -6,7 +6,7 @@ import {
   maasFooterRoot,
 } from "#storybook/navigation/fixtures.js";
 import {
-  Brand,
+  CanonicalLogo,
   navDecorators,
   withNavigationRouterProps,
   withNavLayout,
@@ -26,7 +26,7 @@ const meta: Meta<typeof SideNavigation> = {
   // surface and withNavLayout the page grid.
   decorators: [...navDecorators, withNavigationRouterProps, withNavLayout],
   args: {
-    brand: <Brand />,
+    brand: <CanonicalLogo />,
     applicationName: "Canonical",
   },
 };
