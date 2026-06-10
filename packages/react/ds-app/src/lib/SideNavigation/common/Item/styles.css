@@ -11,13 +11,14 @@
   /* The row: link or label. Shares the SideNavigation row template so the
      leading icon aligns with the header logo. [icon] [label] [end].
      Baseline grid: a fixed 5bU/40px row height (matching the header) carries the
-     vertical rhythm, and align-items: baseline seats the label text baseline on
-     the grid (the .p label is baseline-snapped, the icon aligns to it). No
+     vertical rhythm. Cells STRETCH to the full row height (align-items: stretch)
+     so each container owns its block, and its child positions itself — the icon
+     centred in its cell, the label's baseline-snapped (.p) line on the grid. No
      block padding — the fixed height owns the row's height. */
   & > .row {
     display: grid;
     grid-template-columns: var(--sidenav-row-columns);
-    align-items: baseline;
+    align-items: stretch;
     gap: var(--dimension-100); /* 0.5rem */
     width: 100%;
     block-size: calc(var(--space-baseline) * 5); /* 40px — 5bU */
@@ -26,22 +27,30 @@
     text-decoration: none;
   }
 
-  /* Leading icon → start column. */
+  /* Leading icon → start column. Full-height cell; the icon is centred within
+     it (see ADR open question: centred vs baseline-aligned with the text). */
   & .start {
-    display: inline-flex;
+    display: flex;
     align-items: center;
     justify-content: center;
+    block-size: 100%;
   }
 
-  /* Label → middle (1fr) column. */
+  /* Label → middle (1fr) column. Full-height cell; the baseline-snapped (.p)
+     line sits centred so its baseline lands on the grid. */
   & .label {
+    display: flex;
+    align-items: center;
     min-width: 0;
+    block-size: 100%;
   }
 
-  /* Trailing caret / slot → end (auto) column. */
+  /* Trailing caret / slot → end (auto) column. Full-height cell, content
+     centred. */
   & .end {
-    display: inline-flex;
+    display: flex;
     align-items: center;
+    block-size: 100%;
   }
 
   /* Keyboard focus visibility (structural a11y; styling refined in PR2). */
