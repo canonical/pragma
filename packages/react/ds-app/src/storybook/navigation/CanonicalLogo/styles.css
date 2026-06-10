@@ -1,0 +1,30 @@
+/*
+ * CanonicalLogo — story placeholder brand mark.
+ *
+ * The rectangle is brand-orange (`--color-background-logo`), fills the start
+ * column, and spans the full header height: flush to the top (no top padding)
+ * and extending to the bottom. The circle-of-friends mark is pushed to the foot
+ * and seated on the baseline grid — its bottom edge is lifted by one baseline
+ * unit so it lands on a grid line rather than the box edge.
+ */
+.ds.canonical-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Fill the shared start column and the full header height. */
+  inline-size: var(--sidenav-start, 1.5rem);
+  block-size: 100%;
+  /* Flush to the top; the mark is seated near the bottom via its own offset. */
+  padding: 0;
+  background: var(--color-background-logo);
+
+  & > .mark {
+    display: block;
+    /* Mark box on a baseline multiple (2bU) so it snaps to the grid. */
+    inline-size: calc(var(--space-baseline) * 2);
+    block-size: calc(var(--space-baseline) * 2);
+    /* Push to the foot of the rectangle, then lift by one baseline unit so the
+       mark sits on the baseline grid inside the box. */
+    margin-block: auto var(--space-baseline);
+  }
+}

@@ -23,30 +23,9 @@ export const Brand = (): ReactNode => (
   </a>
 );
 
-/**
- * Canonical logo placeholder for the brand slot: a portrait brand-orange
- * rectangle (`--color-background-logo`) with the circle-of-friends mark anchored
- * at the bottom — a stand-in for the real Canonical logo while we align the
- * header rhythm. The rectangle fills the start column and the header's height,
- * so the CoF marks the header baseline at its foot.
- */
-export const CanonicalLogo = (): ReactNode => (
-  <a
-    href="/"
-    aria-label="Home"
-    style={{
-      display: "flex",
-      alignItems: "flex-end",
-      justifyContent: "center",
-      inlineSize: "var(--sidenav-start, 1.5rem)",
-      blockSize: "100%",
-      background: "var(--color-background-logo)",
-      paddingBlockEnd: "var(--dimension-050, 0.25rem)",
-    }}
-  >
-    <img src={CANONICAL_LOGO} alt="Canonical" width={16} height={16} />
-  </a>
-);
+// CanonicalLogo is generated (component/react) and re-exported here so stories
+// keep importing brand helpers from one place.
+export { CanonicalLogo } from "./CanonicalLogo/index.js";
 
 /**
  * Link adapter for the stories. SideNavigation is router-agnostic (it only sees
