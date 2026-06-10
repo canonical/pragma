@@ -36,8 +36,9 @@ grid-template-columns: 1fr min-content
 
 ### Slot discipline
 
-The aside slot is slot-agnostic: any ReactNode; the content owns its inline
-size and landmark semantics (e.g. `<aside>`).
+The aside slot is slot-agnostic: it accepts any ReactNode, and that slot
+content owns its inline size and its landmark semantics (e.g. an `<aside>`
+element). The layout only reserves the trailing `min-content` column.
 
 ---
 
