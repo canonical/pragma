@@ -8,8 +8,8 @@
       transparent
     )
   );
-  /* Every 4th line — a distinct, stronger (but still translucent) tint so groups
-     of 4 are countable. */
+  /* Every Nth line (see --baseline-grid-major-every) — a distinct, stronger
+     (but still translucent) tint so groups are countable. */
   --addon-baseline-grid-major-color: var(
     --baseline-grid-major-color,
     color-mix(
@@ -19,7 +19,12 @@
     )
   );
   --addon-baseline-height: var(--baseline-height, 0.5rem);
-  --addon-baseline-major: calc(var(--addon-baseline-height) * 4);
+  /* Major line every Nth baseline (configurable; default every 4). */
+  --addon-baseline-major-every: var(--baseline-grid-major-every, 4);
+  --addon-baseline-major: calc(
+    var(--addon-baseline-height) *
+    var(--addon-baseline-major-every)
+  );
   --addon-baseline-shift: var(--baseline-shift, 0);
 
   position: relative;
@@ -33,7 +38,8 @@
    * the fold.
    *
    * Two layers: a minor line every baseline unit, and a major (different colour)
-   * line every 4 units, listed first so it paints on top where they coincide.
+   * line every Nth unit (--baseline-grid-major-every), listed first so it paints
+   * on top where they coincide.
    */
   &::after {
     content: "";
