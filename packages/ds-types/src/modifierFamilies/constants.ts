@@ -7,6 +7,8 @@ export const MODIFIER_FAMILIES = {
   density: ["dense", "comfortable"],
   /** @implements ds:global.modifier_family.emphasis */
   emphasis: ["primary", "secondary", "tertiary"],
+  /** @implements ds:global.modifier_family.grid */
+  grid: ["responsive", "intrinsic"],
   /** @implements ds:global.modifier_family.importance */
   importance: ["primary", "secondary", "tertiary"],
   /** @implements ds:global.modifier_family.lifecycle */

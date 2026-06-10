@@ -9,19 +9,23 @@ const componentCssClassName = "ds content-layout";
 /**
  * ContentLayout — the responsive content grid of a view.
  *
- * Lays its children (default slot) on the design system's intrinsic grid
- * (fluid auto-fill in groups of four columns), per the ontology instance
- * `apps.layout.content_layout`. Children are grid items; span them via
- * `grid-column`/`grid-row` where a card needs more room.
+ * Lays its children (default slot) on one of the design system's grid
+ * presets, per the ontology instance `apps.layout.content_layout`:
+ * fixed-responsive breakpoint columns by default, or the intrinsic
+ * (fluid auto-fill) grid via `grid="intrinsic"`. Children are grid items;
+ * span them via `grid-column`/`grid-row` where a card needs more room.
  */
 const ContentLayout = ({
   className,
   children,
+  grid = "responsive",
   ...props
 }: ContentLayoutProps): React.ReactElement => {
   return (
     <div
-      className={[componentCssClassName, className].filter(Boolean).join(" ")}
+      className={[componentCssClassName, "grid", grid, className]
+        .filter(Boolean)
+        .join(" ")}
       {...props}
     >
       {children}

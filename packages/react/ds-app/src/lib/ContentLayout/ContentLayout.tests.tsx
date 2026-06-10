@@ -27,6 +27,24 @@ describe("ContentLayout", () => {
     expect(el?.className).toContain("custom-class");
   });
 
+  it("uses the fixed-responsive grid preset by default", () => {
+    const { container } = render(<ContentLayout>Content</ContentLayout>);
+    const el = container.firstElementChild;
+    expect(el?.className).toContain("grid");
+    expect(el?.className).toContain("responsive");
+    expect(el?.className).not.toContain("intrinsic");
+  });
+
+  it("switches to the intrinsic grid preset via the grid prop", () => {
+    const { container } = render(
+      <ContentLayout grid="intrinsic">Content</ContentLayout>,
+    );
+    const el = container.firstElementChild;
+    expect(el?.className).toContain("grid");
+    expect(el?.className).toContain("intrinsic");
+    expect(el?.className).not.toContain("responsive");
+  });
+
   it("passes through additional props", () => {
     render(<ContentLayout data-testid="test-component">Content</ContentLayout>);
     expect(screen.getByTestId("test-component")).toBeInTheDocument();

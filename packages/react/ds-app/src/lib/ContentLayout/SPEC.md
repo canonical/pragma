@@ -6,17 +6,21 @@
 
 ## 1. Anatomy
 
-The responsive content grid of a view. Children are direct grid items on the
-design system's intrinsic grid (fluid auto-fill, groups of four columns).
+The responsive content grid of a view. Children are direct grid items on one
+of the design system's grid presets, selected by the `grid` prop:
 
 ```
+grid="responsive" (default — fixed-responsive, breakpoint columns)
+┌──┬──┬──┬──┬──┬──┬──┬──┬──┬──┬──┬──┐
+│  │  │  │  │  │  │  │  │  │  │  │  │  4 cols <768px · 8 to 1279px ·
+└──┴──┴──┴──┴──┴──┴──┴──┴──┴──┴──┴──┘  12 from 1280px
+
+grid="intrinsic" (fluid auto-fill)
 ┌─────────┬─────────┬─────────┬─────────┐
-│ item    │ item    │ item    │ item    │
-├─────────┼─────────┼─────────┼─────────┤
+│ item    │ item    │ item    │ item    │  repeat(auto-fill,
+├─────────┼─────────┼─────────┼─────────┤  minmax(--grid-col-min, 1fr) × 4)
 │ item    │ item    │         │         │
 └─────────┴─────────┴─────────┴─────────┘
-grid-template-columns: var(--grid-intrinsic)
-(repeat(auto-fill, minmax(var(--grid-col-min), 1fr) × 4))
 ```
 
 | Anatomy file | URI |
@@ -27,7 +31,8 @@ grid-template-columns: var(--grid-intrinsic)
 
 | Property | Value | Notes |
 |---|---|---|
-| `layout.type` | `grid` | The `--grid-intrinsic` preset from `@canonical/styles` |
+| `layout.type` | `grid` | Composes the `.grid` presets from `@canonical/styles` (`.responsive` / `.intrinsic`) |
+| grid mode | `responsive` (default) \| `intrinsic` | `grid` prop; fixed-responsive breakpoint columns vs fluid auto-fill |
 | `spacing.gap` | `grid/gutter` | `--grid-gap` (or per-axis `--grid-row-gap`/`--grid-column-gap`) overrides |
 | content items | `0..*` · slot `default` | Direct grid items; span via `grid-column`/`grid-row` |
 | `align-content` | `start` | Rows size to content; scrolling belongs to the containing region |
@@ -58,6 +63,7 @@ No colour pairings: layouts divide space and paint nothing.
 | Prop | Type | Notes |
 |---|---|---|
 | `children` | `ReactNode` | Default slot — direct grid items |
+| `grid` | `"responsive" \| "intrinsic"` | Grid preset; defaults to `responsive` (fixed-responsive) |
 | …rest | `HTMLAttributes<HTMLDivElement>` | Spread onto the root |
 
 ---
@@ -73,8 +79,9 @@ document order — auto-fill reflows do not reorder the accessibility tree.
 
 Implements `apps.layout.content_layout` (design-system
 `data/apps/layout/content_layout.ttl`), `ds:domain "the content of the
-view"`. **Known divergence:** the instance's `ds:grid` records
-`repeat(auto-fit, …)` with a literal `100px` minimum; the implementation uses
-the `--grid-intrinsic` preset (`auto-fill`, tokenised `--grid-col-min`). Per
-L.01 GE.09(4), the instance is amended to match the validated implementation
-in the paired design-system commit.
+view"`. The instance's original `ds:grid` (`repeat(auto-fit, …)`, literal
+`100px` minimum) is amended per L.01 GE.09(4) to the validated intrinsic
+template (`auto-fill`, tokenised `--grid-col-min`). **Recorded gap:**
+`ds:grid` holds a single CSS template and cannot express either the grid-mode
+switch or the responsive preset's breakpointed templates — the intrinsic
+template is recorded and both modes are described in `ds:summary`.

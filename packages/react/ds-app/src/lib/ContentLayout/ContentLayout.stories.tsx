@@ -15,16 +15,36 @@ const meta: Meta<typeof ContentLayout> = {
 export default meta;
 type Story = StoryObj<typeof ContentLayout>;
 
-/** Cards (example content in the default slot) on the intrinsic grid. */
+/** Fixed-responsive grid (the default). */
 export const Default: Story = {
   args: {
     children: mockCards(10),
   },
+  render: (args) => (
+    <>
+      <p>
+        Fixed-responsive grid (default): breakpoint-driven columns — 4 below
+        768px, 8 to 1279px, 12 from 1280px. Each card spans one column.
+      </p>
+      <ContentLayout {...args} />
+    </>
+  ),
 };
 
-/** Many cards — resize the canvas to see the auto-fill columns reflow. */
-export const Fluid: Story = {
+/** Intrinsic grid — opt in via grid="intrinsic". */
+export const Intrinsic: Story = {
   args: {
+    grid: "intrinsic",
     children: mockCards(24),
   },
+  render: (args) => (
+    <>
+      <p>
+        Intrinsic grid: fluid auto-fill in groups of four minmax(--grid-col-min,
+        1fr) columns — the column count follows the available width, not
+        breakpoints. Resize the canvas to see the cards reflow.
+      </p>
+      <ContentLayout {...args} />
+    </>
+  ),
 };
