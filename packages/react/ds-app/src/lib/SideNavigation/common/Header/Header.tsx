@@ -32,7 +32,7 @@ const Header = ({
       {/* Optional, consumer-supplied; the grid's middle column is simply empty
           when no application name is given. */}
       {applicationName != null && (
-        <span className="title">{applicationName}</span>
+        <span className="title p">{applicationName}</span>
       )}
       {onToggle && (
         <CollapseToggle
