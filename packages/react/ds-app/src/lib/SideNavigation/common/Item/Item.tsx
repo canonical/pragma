@@ -43,7 +43,7 @@ const Item = ({
     <>
       {/* Start cell is always rendered (empty when no icon) so the label stays
           in the middle column — labels align whether or not a row has an icon. */}
-      <span className="start">{icon ? <Icon icon={icon} /> : null}</span>
+      <span className="start p">{icon ? <Icon icon={icon} /> : null}</span>
       <span className="label p">{label}</span>
       {/* End slot: caret for groups (static in PR1), else the leaf slot. */}
       {hasSubitems ? (
