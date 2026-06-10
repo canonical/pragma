@@ -6,7 +6,7 @@ import {
   maasFooterRoot,
 } from "#storybook/navigation/fixtures.js";
 import {
-  Brand,
+  CanonicalLogo,
   navDecorators,
   withNavigationRouterProps,
   withNavLayout,
@@ -26,7 +26,8 @@ const meta: Meta<typeof SideNavigation> = {
   // surface and withNavLayout the page grid.
   decorators: [...navDecorators, withNavigationRouterProps, withNavLayout],
   args: {
-    brand: <Brand />,
+    brand: <CanonicalLogo />,
+    applicationName: "Canonical",
   },
 };
 
@@ -36,6 +37,7 @@ type Story = StoryObj<typeof SideNavigation>;
 /** MAAS navigation: grouped hardware/KVM/organisation/config/networking. */
 export const MAAS: Story = {
   args: {
+    applicationName: "MAAS",
     root: maasContentRoot,
     footerRoot: maasFooterRoot,
   },
@@ -44,6 +46,7 @@ export const MAAS: Story = {
 /** LXD navigation: project-scoped instances/profiles/networking/storage/images. */
 export const LXD: Story = {
   args: {
+    applicationName: "LXD",
     root: lxdContentRoot,
     footerRoot: lxdFooterRoot,
   },
@@ -53,6 +56,7 @@ export const LXD: Story = {
 export const Collapsed: Story = {
   args: {
     defaultExpanded: false,
+    applicationName: "MAAS",
     root: maasContentRoot,
     footerRoot: maasFooterRoot,
   },

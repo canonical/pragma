@@ -8,15 +8,15 @@ import "./styles.css";
 const componentCssClassName = "ds side-navigation-header";
 
 /**
- * SideNavigation.Header — top region holding the brand (children, at the start)
- * and the collapse toggle (at the end). The toggle is omitted when no
+ * SideNavigation.Header — top region holding the brand (the `brand` node, at the
+ * start) and the collapse toggle (at the end). The toggle is omitted when no
  * `onToggle` handler is provided.
  *
  * @implements ds:apps.subcomponent.side-navigation-header
  */
 const Header = ({
   className,
-  children,
+  brand,
   applicationName,
   expanded,
   onToggle,
@@ -28,11 +28,11 @@ const Header = ({
       className={[componentCssClassName, className].filter(Boolean).join(" ")}
       {...props}
     >
-      <div className="brand">{children}</div>
+      <div className="brand">{brand}</div>
       {/* Optional, consumer-supplied; the grid's middle column is simply empty
           when no application name is given. */}
       {applicationName != null && (
-        <span className="title">{applicationName}</span>
+        <span className="title p">{applicationName}</span>
       )}
       {onToggle && (
         <CollapseToggle

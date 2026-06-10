@@ -22,3 +22,18 @@ body,
   /* Temporary, waiting for a better understanding */
   --baseline-shift: 1px;
 }
+
+/*
+ * Shared row-grid vars for SideNavigation subcomponents shown in isolation.
+ *
+ * These are authored on `.ds.side-navigation` in the component's own styles.css,
+ * but that file is only imported by the root SideNavigation component. The
+ * subcomponent stories (Header, Item, NavTree, …) render inside a bare
+ * `.ds.side-navigation` shell (withSideNavShell) without mounting the root, so
+ * the vars would be undefined and the shared row grid would collapse. Re-declare
+ * them here so the row template resolves on every isolated story.
+ */
+.ds.side-navigation {
+  --sidenav-start: calc(var(--space-baseline) * 3); /* 1.5rem — 3bU */
+  --sidenav-row-columns: var(--sidenav-start) 1fr auto;
+}

@@ -62,13 +62,12 @@ const SideNavigation = ({
       {...props}
     >
       <Header
+        brand={brand}
         applicationName={applicationName}
         expanded={expanded}
         onToggle={handleToggle}
         collapseControls={contentId}
-      >
-        {brand}
-      </Header>
+      />
       <Content
         id={contentId}
         root={root}

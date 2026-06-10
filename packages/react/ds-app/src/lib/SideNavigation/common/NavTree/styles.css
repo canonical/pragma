@@ -9,7 +9,15 @@
 
   & > .group {
     > .header {
-      display: block;
+      /* Group header sits on the baseline grid like a row: a fixed bU-multiple
+         height (4bU) with the .p label baseline-snapped, and inline padding that
+         aligns the header text with the item labels below (past the start column
+         + its gap). */
+      display: flex;
+      align-items: baseline;
+      block-size: calc(var(--space-baseline) * 4); /* 32px — 4bU */
+      box-sizing: border-box;
+      padding-inline-start: calc(var(--sidenav-start) + var(--dimension-100));
     }
 
     > .list {

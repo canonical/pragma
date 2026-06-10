@@ -1,35 +1,73 @@
 .with-baseline-grid {
+  /* Lines are partly transparent so content reads through the grid. */
   --addon-baseline-grid-color: var(
     --baseline-grid-color,
     color-mix(
       in oklch,
-      var(--color-border-branded, oklch(64.05% 0.1941 37.76)) 50%,
+      var(--color-border-branded, oklch(64.05% 0.1941 37.76)) 35%,
+      transparent
+    )
+  );
+  /* Every Nth line (see --baseline-grid-major-every) — a distinct, stronger
+     (but still translucent) tint so groups are countable. */
+  --addon-baseline-grid-major-color: var(
+    --baseline-grid-major-color,
+    color-mix(
+      in oklch,
+      var(--color-border-branded, oklch(64.05% 0.1941 37.76)) 60%,
       transparent
     )
   );
   --addon-baseline-height: var(--baseline-height, 0.5rem);
+  /* Major line every Nth baseline (configurable; default every 4). */
+  --addon-baseline-major-every: var(--baseline-grid-major-every, 4);
+  --addon-baseline-major: calc(
+    var(--addon-baseline-height) *
+    var(--addon-baseline-major-every)
+  );
   --addon-baseline-shift: var(--baseline-shift, 0);
 
   position: relative;
 
+  /*
+   * The grid is an ::after overlay (kept so it paints ON TOP and can cover the
+   * full page, not just behind content). To survive content TALLER than 100%
+   * (overflowing children), the pseudo grows with the host: min-block-size:100%
+   * fills the box, and because the host is position:relative and content-sized,
+   * the pseudo stretches over the whole content height rather than clipping at
+   * the fold.
+   *
+   * Two layers: a minor line every baseline unit, and a major (different colour)
+   * line every Nth unit (--baseline-grid-major-every), listed first so it paints
+   * on top where they coincide.
+   */
   &::after {
-    background: linear-gradient(
-      to top,
-      var(--addon-baseline-grid-color),
-      var(--addon-baseline-grid-color) 1px,
-      transparent 1px,
-      transparent
-    );
-    background-size: 100% var(--addon-baseline-height);
-    background-position: 0 var(--addon-baseline-shift);
-    bottom: 0;
     content: "";
-    display: block;
-    left: 0;
-    pointer-events: none;
     position: absolute;
-    right: 0;
-    top: 0;
+    inset: 0;
+    block-size: 100%;
+    min-block-size: 100%;
+    pointer-events: none;
     z-index: 200;
+    background-image:
+      linear-gradient(
+        to top,
+        var(--addon-baseline-grid-major-color),
+        var(--addon-baseline-grid-major-color) 1px,
+        transparent 1px,
+        transparent
+      ),
+      linear-gradient(
+        to top,
+        var(--addon-baseline-grid-color),
+        var(--addon-baseline-grid-color) 1px,
+        transparent 1px,
+        transparent
+      );
+    background-size:
+      100% var(--addon-baseline-major),
+      100% var(--addon-baseline-height);
+    background-position: 0 var(--addon-baseline-shift);
+    background-repeat: repeat;
   }
 }

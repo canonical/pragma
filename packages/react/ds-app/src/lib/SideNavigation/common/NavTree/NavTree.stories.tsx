@@ -1,31 +1,39 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { maasFooterRoot } from "#storybook/navigation/fixtures.js";
+import { flatRoot, maasContentRoot } from "#storybook/navigation/fixtures.js";
 import {
   navDecorators,
   withNavigationRouterProps,
   withSideNavShell,
 } from "#storybook/navigation/story-utils.js";
-import Footer from "./Footer.js";
+import { NavTree } from "./index.js";
 
-const meta: Meta<typeof Footer> = {
-  title: "Components/SideNavigation/Footer",
-  component: Footer,
+const meta: Meta<typeof NavTree> = {
+  title: "Components/SideNavigation/NavTree",
+  component: NavTree,
   tags: ["autodocs"],
   // Render flush to the canvas origin (no Storybook padding) so the baseline
   // overlay grid aligns to the component's own box.
   parameters: { layout: "fullscreen" },
   // withNavigationRouterProps is self-contained (owns its RouterProvider), so
   // decorator order isn't load-bearing here. withSideNavShell provides the
-  // .ds.side-navigation context so shared tokens resolve in isolation.
+  // .ds.side-navigation context so the shared row-grid var + surface tokens
+  // resolve when the tree renders in isolation.
   decorators: [...navDecorators, withNavigationRouterProps, withSideNavShell],
 };
 
 export default meta;
-type Story = StoryObj<typeof Footer>;
+type Story = StoryObj<typeof NavTree>;
 
-/** Renders the footer navigation from a WD405 root. */
-export const Default: Story = {
+/** Grouped tree: level-1 groups, each wrapping its level-2 items. */
+export const Grouped: Story = {
   args: {
-    root: maasFooterRoot,
+    root: maasContentRoot,
+  },
+};
+
+/** A single unlabelled group — a flat list of items. */
+export const Flat: Story = {
+  args: {
+    root: flatRoot,
   },
 };

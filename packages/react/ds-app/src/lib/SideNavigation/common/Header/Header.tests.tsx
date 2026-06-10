@@ -4,13 +4,13 @@ import Header from "./Header.js";
 
 describe("Header", () => {
   it("renders brand content", () => {
-    render(<Header>Test content</Header>);
+    render(<Header brand="Test content" />);
     expect(screen.getByText("Test content")).toBeInTheDocument();
   });
 
   it("applies the base and custom class to the root", () => {
     const { container } = render(
-      <Header className="custom-class">Content</Header>,
+      <Header className="custom-class" brand="Content" />,
     );
     const root = container.firstElementChild;
     expect(root?.className).toContain("ds side-navigation-header");
@@ -18,21 +18,24 @@ describe("Header", () => {
   });
 
   it("passes through additional props", () => {
-    render(<Header data-testid="test-component">Content</Header>);
+    render(<Header data-testid="test-component" brand="Content" />);
     expect(screen.getByTestId("test-component")).toBeInTheDocument();
   });
 
   it("does not render the collapse toggle without an onToggle handler", () => {
-    render(<Header>Content</Header>);
+    render(<Header brand="Content" />);
     expect(screen.queryByRole("button")).not.toBeInTheDocument();
   });
 
   it("renders the collapse toggle when onToggle is provided", () => {
     const onToggle = vi.fn();
     render(
-      <Header expanded onToggle={onToggle} collapseControls="nav-content">
-        Content
-      </Header>,
+      <Header
+        expanded
+        onToggle={onToggle}
+        collapseControls="nav-content"
+        brand="Content"
+      />,
     );
     const toggle = screen.getByRole("button");
     expect(toggle).toHaveAttribute("aria-controls", "nav-content");

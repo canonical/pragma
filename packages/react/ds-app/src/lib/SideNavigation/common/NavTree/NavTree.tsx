@@ -45,7 +45,9 @@ const NavTree = ({
         const items = group.items ?? [];
         return (
           <section className="group" key={groupId} data-depth={group.depth}>
-            {group.label ? <span className="header">{group.label}</span> : null}
+            {group.label ? (
+              <span className="header p">{group.label}</span>
+            ) : null}
             <ul className="list">
               {/* Loop 2 — level-2 items */}
               {items.map((item) => (

@@ -23,6 +23,10 @@ export const Brand = (): ReactNode => (
   </a>
 );
 
+// CanonicalLogo is generated (component/react) and re-exported here so stories
+// keep importing brand helpers from one place.
+export { CanonicalLogo } from "./CanonicalLogo/index.js";
+
 /**
  * Link adapter for the stories. SideNavigation is router-agnostic (it only sees
  * `LinkComponentProps`); this bridges its raw-URL nav items to the hash router
@@ -115,7 +119,9 @@ export const withNavLayout: Decorator = (Story) => (
     <Story />
     {/* The main canvas is its own scroll container so its content scrolls
         independently of the navigation, demonstrating the app-shell layout. */}
-    <main style={{ minHeight: 0, overflow: "auto", padding: "1rem" }}>
+    {/* Inline padding only (side gutters); no block padding so the canvas
+        content starts flush with the top and stays on the baseline grid. */}
+    <main style={{ minHeight: 0, overflow: "auto", paddingInline: "1rem" }}>
       <Lorem paragraphs={8} />
     </main>
   </div>
