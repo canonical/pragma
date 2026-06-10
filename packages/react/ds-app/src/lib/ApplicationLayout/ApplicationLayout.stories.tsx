@@ -4,10 +4,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import {
   LayoutSlot,
   layoutDecorators,
-  mockCards,
 } from "#storybook/layouts/story-utils.js";
-import ContentLayout from "../ContentLayout/ContentLayout.js";
-import ViewLayout from "../ViewLayout/ViewLayout.js";
 import ApplicationLayout from "./ApplicationLayout.js";
 
 const meta: Meta<typeof ApplicationLayout> = {
@@ -35,26 +32,5 @@ export const Default: Story = {
 export const WithoutNavigation: Story = {
   args: {
     children: <LayoutSlot name="default" />,
-  },
-};
-
-/**
- * The full layout grammar — ApplicationLayout > ViewLayout > ContentLayout.
- * Dashed rectangles mark slots; solid ones are example content (cards) on
- * the ContentLayout grid. Every placeholder is a nested surface, so depth
- * reads as shade.
- */
-export const Composed: Story = {
-  args: {
-    navigation: (
-      <LayoutSlot name="navigation" style={{ inlineSize: "16rem" }} />
-    ),
-    children: (
-      <ViewLayout
-        aside={<LayoutSlot name="aside" style={{ inlineSize: "20rem" }} />}
-      >
-        <ContentLayout>{mockCards(8)}</ContentLayout>
-      </ViewLayout>
-    ),
   },
 };
