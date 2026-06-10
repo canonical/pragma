@@ -15,16 +15,16 @@ const meta: Meta<typeof ContentLayout> = {
 export default meta;
 type Story = StoryObj<typeof ContentLayout>;
 
-/** A few cards (example content in the default slot) on the intrinsic grid. */
+/** Cards (example content in the default slot) on the intrinsic grid. */
 export const Default: Story = {
   args: {
-    children: mockCards(4),
+    children: mockCards(10),
   },
 };
 
 /** Many cards — resize the canvas to see the auto-fill columns reflow. */
 export const Fluid: Story = {
   args: {
-    children: mockCards(12),
+    children: mockCards(24),
   },
 };
