@@ -140,7 +140,9 @@ export const withNavLayout: Decorator = (Story) => (
     <Story />
     {/* The main canvas is its own scroll container so its content scrolls
         independently of the navigation, demonstrating the app-shell layout. */}
-    <main style={{ minHeight: 0, overflow: "auto", padding: "1rem" }}>
+    {/* Inline padding only (side gutters); no block padding so the canvas
+        content starts flush with the top and stays on the baseline grid. */}
+    <main style={{ minHeight: 0, overflow: "auto", paddingInline: "1rem" }}>
       <Lorem paragraphs={8} />
     </main>
   </div>
