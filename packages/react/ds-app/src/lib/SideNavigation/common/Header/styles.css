@@ -5,19 +5,22 @@
   display: grid;
   grid-template-columns: var(--sidenav-row-columns);
   /* Baseline grid: a fixed box height of whole baseline units (5bU/40px, the
-     same row height as the items below) keeps the header on the rail's rhythm;
-     align-items: baseline seats the title text baseline on the grid (the brand
-     image aligns to its own box baseline). */
+     same row height as the items below) keeps the header on the rail's rhythm.
+     align-items: start tops every cell so the brand rectangle fills from the
+     top and the title/toggle sit at the top of the row. */
   block-size: calc(var(--space-baseline) * 5); /* 40px — 5bU */
   box-sizing: border-box;
-  align-items: baseline;
+  align-items: start;
   gap: var(--dimension-100); /* 0.5rem */
 
   /* Pin each part to its column explicitly so the toggle stays in the end
      column even when the optional title is absent. */
   .brand {
-    /* Start column, aligned with the item icons below. */
+    /* Start column, aligned with the item icons below. Stretch to the full row
+       height (overriding the header's align-items: start) so the brand logo
+       fills the header top → bottom. */
     grid-column: 1;
+    align-self: stretch;
     display: flex;
     align-items: center;
   }
