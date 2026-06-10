@@ -14,7 +14,7 @@ const meta: Meta<typeof Header> = {
   // row-grid var resolves (logo aligns with item icons) + surface tokens.
   decorators: [withSideNavShell],
   args: {
-    children: <Brand />,
+    brand: <Brand />,
     onToggle: fn(),
   },
 };
