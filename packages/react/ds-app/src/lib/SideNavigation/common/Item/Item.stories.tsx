@@ -40,6 +40,15 @@ export const Link: Story = {
   },
 };
 
+/** A link item with a leading icon (icon ↔ label baseline alignment). */
+export const WithIcon: Story = {
+  args: {
+    url: "/machines",
+    label: "Machines",
+    icon: "machines",
+  },
+};
+
 /** The active (current) item. */
 export const Active: Story = {
   args: {
