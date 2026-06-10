@@ -32,7 +32,7 @@
     text-align: center;
 
     & > .ds.icon {
-      vertical-align: baseline;
+      vertical-align: sub;
     }
   }
 
