@@ -16,11 +16,10 @@
   /* Pin each part to its column explicitly so the toggle stays in the end
      column even when the optional title is absent. */
   .brand {
-    /* Start column, aligned with the item icons below. Stretch to the full row
-       height (overriding the header's align-items: start) so the brand logo
-       fills the header top → bottom. */
+    /* Start column, aligned with the item icons below. Tops-align with the rest
+       of the row (align-items: start); the brand's own margin/padding handles
+       its vertical placement, not a stretched cell. */
     grid-column: 1;
-    align-self: stretch;
     display: flex;
     align-items: center;
   }
