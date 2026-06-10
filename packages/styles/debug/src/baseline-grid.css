@@ -1,18 +1,20 @@
 .with-baseline-grid {
+  /* Lines are partly transparent so content reads through the grid. */
   --addon-baseline-grid-color: var(
     --baseline-grid-color,
     color-mix(
       in oklch,
-      var(--color-border-branded, oklch(64.05% 0.1941 37.76)) 50%,
+      var(--color-border-branded, oklch(64.05% 0.1941 37.76)) 35%,
       transparent
     )
   );
-  /* Every 4th line — a distinct, stronger tint so groups of 4 are countable. */
+  /* Every 4th line — a distinct, stronger (but still translucent) tint so groups
+     of 4 are countable. */
   --addon-baseline-grid-major-color: var(
     --baseline-grid-major-color,
     color-mix(
       in oklch,
-      var(--color-border-branded, oklch(64.05% 0.1941 37.76)) 85%,
+      var(--color-border-branded, oklch(64.05% 0.1941 37.76)) 60%,
       transparent
     )
   );
@@ -23,34 +25,43 @@
   position: relative;
 
   /*
-   * Paint the grid as a repeating BACKGROUND on the element itself rather than
-   * an absolutely-positioned ::after. A pseudo pinned to inset:0 is clipped to
-   * the element's rendered box, so any content TALLER than 100% (a scroll
-   * container, an overflowing child) loses the grid past the fold. A tiled
-   * background covers the full content/scroll height automatically.
+   * The grid is an ::after overlay (kept so it paints ON TOP and can cover the
+   * full page, not just behind content). To survive content TALLER than 100%
+   * (overflowing children), the pseudo grows with the host: min-block-size:100%
+   * fills the box, and because the host is position:relative and content-sized,
+   * the pseudo stretches over the whole content height rather than clipping at
+   * the fold.
    *
    * Two layers: a minor line every baseline unit, and a major (different colour)
-   * line every 4 units. The major layer is listed first so it paints on top
-   * where they coincide.
+   * line every 4 units, listed first so it paints on top where they coincide.
    */
-  background-image:
-    linear-gradient(
-      to top,
-      var(--addon-baseline-grid-major-color),
-      var(--addon-baseline-grid-major-color) 1px,
-      transparent 1px,
-      transparent
-    ),
-    linear-gradient(
-      to top,
-      var(--addon-baseline-grid-color),
-      var(--addon-baseline-grid-color) 1px,
-      transparent 1px,
-      transparent
-    );
-  background-size:
-    100% var(--addon-baseline-major),
-    100% var(--addon-baseline-height);
-  background-position: 0 var(--addon-baseline-shift);
-  background-repeat: repeat;
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    block-size: 100%;
+    min-block-size: 100%;
+    pointer-events: none;
+    z-index: 200;
+    background-image:
+      linear-gradient(
+        to top,
+        var(--addon-baseline-grid-major-color),
+        var(--addon-baseline-grid-major-color) 1px,
+        transparent 1px,
+        transparent
+      ),
+      linear-gradient(
+        to top,
+        var(--addon-baseline-grid-color),
+        var(--addon-baseline-grid-color) 1px,
+        transparent 1px,
+        transparent
+      );
+    background-size:
+      100% var(--addon-baseline-major),
+      100% var(--addon-baseline-height);
+    background-position: 0 var(--addon-baseline-shift);
+    background-repeat: repeat;
+  }
 }
