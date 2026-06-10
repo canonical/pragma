@@ -3,9 +3,12 @@
  *
  * The rectangle is brand-orange (`--color-background-logo`), fills the start
  * column, and tops-align with the header row. Its height is built from baseline
- * units plus a small extra so it overflows just past a grid line (an
- * intentional overshoot). The circle-of-friends mark is a baseline-unit square,
- * offset from the top by a baseline-unit margin.
+ * units plus a small extra so the orange overshoots a grid line (an intentional
+ * overshoot). To keep the HEADER height a whole multiple of the baseline, the
+ * overshoot is cancelled by an external bottom margin: rectangle + margin (the
+ * margin-box) sums back to a bU multiple, so the overflow is purely visual and
+ * doesn't push the header off-grid. The circle-of-friends mark is a baseline-
+ * unit square, offset from the top by a baseline-unit margin.
  */
 .ds.canonical-logo {
   /* Mark geometry in baseline units (bU = --space-baseline). */
@@ -14,7 +17,7 @@
 
   /* Rectangle height = bU multiples + a small overflow past the baseline. */
   --logo-height: 4; /* base height, in bU */
-  --logo-overflow: 0.25rem; /* extra so it overshoots the grid line */
+  --logo-overflow: 0.25rem; /* extra so the orange overshoots the grid line */
 
   display: flex;
   align-items: flex-start;
@@ -25,6 +28,9 @@
     var(--logo-height) +
     var(--logo-overflow)
   );
+  /* Cancel the overshoot so the margin-box lands back on the grid: the rectangle
+     (logo-height bU + overflow) plus this margin sums to (logo-height + 1) bU. */
+  margin-block-end: calc(var(--space-baseline) - var(--logo-overflow));
   padding: 0;
   background: var(--color-background-logo);
 
