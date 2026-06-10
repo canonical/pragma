@@ -20,12 +20,22 @@ export interface LayoutSlotProps {
   children?: ReactNode;
 }
 
+/** Shared base for the placeholder rectangles: own `.surface` (consuming the
+ * surface background channel from \@canonical/styles, so nesting steps down
+ * the layers), an outline, no padding. */
+const placeholderStyle: CSSProperties = {
+  background: "var(--surface-color-background)",
+  outlineOffset: "-1px",
+  minBlockSize: "var(--dimension-600, 3rem)",
+  blockSize: "100%",
+  boxSizing: "border-box",
+};
+
 /**
- * Story-only placeholder for slot content: a rectangle with an outline,
- * labelled `slotName:\n{name}`. It carries its own `.surface`, consuming the
- * surface background channel from \@canonical/styles — nested LayoutSlots
- * step down the surface layers (layer2/layer3) automatically, so depth in
- * the layout tree is visible as depth in shade.
+ * Story-only marker for an actual slot of a layout: a rectangle with a
+ * dashed outline, labelled `slotName:\n{name}` at the top-left. Marks slot
+ * regions only — content placed inside a slot is mocked with MockCard, not
+ * with a LayoutSlot.
  */
 export const LayoutSlot = ({
   name = "default",
@@ -35,36 +45,42 @@ export const LayoutSlot = ({
   <div
     className="surface"
     style={{
-      background: "var(--surface-color-background)",
+      ...placeholderStyle,
       outline: "1px dashed currentcolor",
-      outlineOffset: "-1px",
-      display: "grid",
-      placeItems: "center",
-      minBlockSize: "var(--dimension-600, 3rem)",
-      blockSize: "100%",
-      boxSizing: "border-box",
       ...style,
     }}
   >
-    <code style={{ whiteSpace: "pre", textAlign: "center" }}>
-      {`slotName:\n${name}`}
-    </code>
+    <span style={{ whiteSpace: "pre" }}>{`slotName:\n${name}`}</span>
     {children}
   </div>
 );
 
 /**
- * A run of card-shaped LayoutSlots for filling a ContentLayout in stories.
+ * Story-only example content (solid outline, unlabelled) — what a real
+ * application would place IN a slot, e.g. a card on the ContentLayout grid.
  */
-export const layoutSlotCards = (
-  count: number,
-  minBlockSize = "8rem",
-): ReactNode[] =>
+export const MockCard = ({
+  style,
+  children,
+}: Pick<LayoutSlotProps, "style" | "children">): ReactNode => (
+  <div
+    className="surface"
+    style={{
+      ...placeholderStyle,
+      outline: "1px solid currentcolor",
+      ...style,
+    }}
+  >
+    {children}
+  </div>
+);
+
+/** A run of MockCards for filling a ContentLayout in stories. */
+export const mockCards = (count: number, minBlockSize = "8rem"): ReactNode[] =>
   Array.from({ length: count }, (_, i) => (
-    <LayoutSlot
+    <MockCard
       // biome-ignore lint/suspicious/noArrayIndexKey: static placeholder list, never reordered
       key={`card-${i + 1}`}
-      name="default"
       style={{ minBlockSize }}
     />
   ));

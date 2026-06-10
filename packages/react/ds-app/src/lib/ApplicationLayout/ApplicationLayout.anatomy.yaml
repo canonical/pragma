@@ -11,9 +11,9 @@ node:
   styles:
     layout.type: grid
     size.height: fill
-    # Regions are flush by default (gap 0); consumers open them up via
-    # --application-layout-gap.
-    spacing.gap: 0
+    # Rail/content gutter per the #421 design reference (1rem), via the
+    # container gap token; --application-layout-gap overrides.
+    spacing.gap: container/gap/default
   edges:
     - node:
         role: navigation region

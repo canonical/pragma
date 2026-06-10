@@ -30,7 +30,7 @@ grid-template-columns: min-content 1fr
 |---|---|---|
 | `layout.type` | `grid` | `min-content 1fr` per the ontology instance (`ds:grid`) |
 | `size.height` | `fill` | Occupies 100% of parent block size |
-| `spacing.gap` | `0` | Regions flush by default; `--application-layout-gap` opens them up |
+| `spacing.gap` | `container/gap/default` | The 1rem gutter from the #421 design reference, tokenised; `--application-layout-gap` overrides (0 for a flush shell) |
 | navigation region | `0..1` · slot `navigation` | When absent, the rail column is dropped (`:has()`), content takes full width |
 | content region | `1` · slot `default` | `min-size: 0` so it scrolls internally |
 
@@ -48,7 +48,7 @@ content owns its inline size and its landmark semantics (e.g. `<nav>`).
 
 | Token | Applied to | Notes |
 |---|---|---|
-| `0` (literal) | Gap between rail and content | Canonical app shells are flush; override knob `--application-layout-gap` |
+| `container.gap.default` (`--container-gap-default`) | Gutter between rail and content | Tokenises the design reference's ad-hoc `--gap: 1rem` (#421); override knob `--application-layout-gap` (set `0` for a flush shell) |
 
 No colour pairings: layouts divide space and paint nothing. Backgrounds come
 from slot content and the surface cascade.

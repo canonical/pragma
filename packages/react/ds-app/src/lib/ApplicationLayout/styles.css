@@ -2,12 +2,12 @@
 
 .ds.application-layout {
   /* Application shell: navigation rail (min-content) + content (1fr), per
-	   the ontology instance apps.layout.application_layout. Regions are flush
-	   by default, as in Canonical app shells; --application-layout-gap opens
-	   them up where a design wants it. */
+	   the ontology instance apps.layout.application_layout. The rail/content
+	   gutter follows the design reference (#421: 1rem) via the container gap
+	   token; --application-layout-gap overrides (0 for a flush shell). */
   display: grid;
   grid-template-columns: min-content 1fr;
-  gap: var(--application-layout-gap, 0);
+  gap: var(--application-layout-gap, var(--container-gap-default, 1rem));
   block-size: 100%;
 }
 

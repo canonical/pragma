@@ -4,7 +4,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import {
   LayoutSlot,
   layoutDecorators,
-  layoutSlotCards,
+  mockCards,
 } from "#storybook/layouts/story-utils.js";
 import ContentLayout from "../ContentLayout/ContentLayout.js";
 import ViewLayout from "../ViewLayout/ViewLayout.js";
@@ -40,7 +40,9 @@ export const WithoutNavigation: Story = {
 
 /**
  * The full layout grammar — ApplicationLayout > ViewLayout > ContentLayout.
- * Each LayoutSlot is a nested surface, so depth reads as shade.
+ * Dashed rectangles mark slots; solid ones are example content (cards) on
+ * the ContentLayout grid. Every placeholder is a nested surface, so depth
+ * reads as shade.
  */
 export const Composed: Story = {
   args: {
@@ -51,7 +53,7 @@ export const Composed: Story = {
       <ViewLayout
         aside={<LayoutSlot name="aside" style={{ inlineSize: "20rem" }} />}
       >
-        <ContentLayout>{layoutSlotCards(8)}</ContentLayout>
+        <ContentLayout>{mockCards(8)}</ContentLayout>
       </ViewLayout>
     ),
   },
