@@ -1,0 +1,18 @@
+---
+# ContentLayout — apps-tier layout: the responsive content grid of a view.
+# Lays its children (default slot) on the design system's intrinsic grid —
+# fluid auto-fill in groups of four minmax(--grid-col-min, 1fr) columns, the
+# --grid-intrinsic preset from @canonical/styles. The column template is
+# recorded on the ontology instance (apps.layout.content_layout); children
+# are direct grid items and may span via grid-column/grid-row.
+node:
+  uri: apps.layout.content_layout
+  styles:
+    layout.type: grid
+    spacing.gap: grid/gutter
+  edges:
+    - node:
+        role: content item
+      relation:
+        cardinality: "0..*"
+        slotName: default

@@ -1,0 +1,27 @@
+---
+# ApplicationLayout — apps-tier layout: the application shell.
+# Divides the viewport between a navigation rail (named slot, min-content
+# column) and the main content area (default slot, 1fr column). The column
+# template is recorded on the ontology instance
+# (apps.layout.application_layout, ds:grid "min-content 1fr"); the anatomy
+# records structure. Slot-agnostic: the navigation slot accepts any component
+# (typically a SideNavigation) — nothing is imported or assumed here.
+node:
+  uri: apps.layout.application_layout
+  styles:
+    layout.type: grid
+    size.height: fill
+    # Regions are flush by default (gap 0); consumers open them up via
+    # --application-layout-gap.
+    spacing.gap: 0
+  edges:
+    - node:
+        role: navigation region
+      relation:
+        cardinality: "0..1"
+        slotName: navigation
+    - node:
+        role: content region
+      relation:
+        cardinality: "1"
+        slotName: default
