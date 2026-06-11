@@ -35,7 +35,7 @@ export const Default = () => {
           qui ratione voluptatem sequi nesciunt.
         </p>
       </DescriptionSection>
-      <CategoriesSection>Hello, CategoriesSection!</CategoriesSection>
+      <CategoriesSection />
       <IconSection title="Icons" />
       <div style={{ minHeight: "200px" }}>#</div>
     </>

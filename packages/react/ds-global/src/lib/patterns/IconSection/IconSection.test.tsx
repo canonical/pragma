@@ -6,20 +6,24 @@ import { describe, expect, it } from "vitest";
 import IconSection from "./IconSection.js";
 
 describe("IconSection", () => {
-  it("renders children", () => {
-    render(<IconSection>Test content</IconSection>);
-    expect(screen.getByText("Test content")).toBeInTheDocument();
+  it("renders the icon set", () => {
+    const { container } = render(<IconSection />);
+    expect(container.querySelectorAll(".icon-wrapper").length).toBeGreaterThan(
+      0,
+    );
   });
 
   it("applies custom className", () => {
-    render(<IconSection className="custom-class">Content</IconSection>);
-    const element = screen.getByText("Content");
-    expect(element.className).toContain("ds icon-section");
-    expect(element.className).toContain("custom-class");
+    const { container } = render(<IconSection className="custom-class" />);
+    expect(container.firstChild).toHaveClass(
+      "ds",
+      "icon-section",
+      "custom-class",
+    );
   });
 
   it("passes through additional props", () => {
-    render(<IconSection data-testid="test-component">Content</IconSection>);
+    render(<IconSection data-testid="test-component" />);
     expect(screen.getByTestId("test-component")).toBeInTheDocument();
   });
 });

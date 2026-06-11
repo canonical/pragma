@@ -17,14 +17,11 @@ export default meta;
 type Story = StoryObj<typeof IconSection>;
 
 export const Default: Story = {
-  args: {
-    children: "Hello, IconSection!",
-  },
+  args: {},
 };
 
 export const WithCustomClass: Story = {
   args: {
-    children: "Custom styled",
     className: "custom-class",
   },
 };

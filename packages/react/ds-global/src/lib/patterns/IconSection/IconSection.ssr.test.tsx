@@ -7,8 +7,8 @@ import IconSection from "./IconSection.js";
 
 describe("IconSection SSR", () => {
   it("renders without hydration errors", () => {
-    const html = renderToString(<IconSection>Test content</IconSection>);
-    expect(html).toContain("Test content");
+    const html = renderToString(<IconSection />);
+    expect(html).toContain("icon-wrapper");
     expect(html).toContain("ds icon-section");
   });
 });

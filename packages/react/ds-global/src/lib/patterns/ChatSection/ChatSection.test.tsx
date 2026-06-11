@@ -6,20 +6,24 @@ import { describe, expect, it } from "vitest";
 import ChatSection from "./ChatSection.js";
 
 describe("ChatSection", () => {
-  it("renders children", () => {
-    render(<ChatSection>Test content</ChatSection>);
-    expect(screen.getByText("Test content")).toBeInTheDocument();
+  it("renders the message form", () => {
+    render(<ChatSection />);
+    expect(
+      screen.getByPlaceholderText("Type your message here..."),
+    ).toBeInTheDocument();
   });
 
   it("applies custom className", () => {
-    render(<ChatSection className="custom-class">Content</ChatSection>);
-    const element = screen.getByText("Content");
-    expect(element.className).toContain("ds chat-section");
-    expect(element.className).toContain("custom-class");
+    const { container } = render(<ChatSection className="custom-class" />);
+    expect(container.firstChild).toHaveClass(
+      "ds",
+      "chat-section",
+      "custom-class",
+    );
   });
 
   it("passes through additional props", () => {
-    render(<ChatSection data-testid="test-component">Content</ChatSection>);
+    render(<ChatSection data-testid="test-component" />);
     expect(screen.getByTestId("test-component")).toBeInTheDocument();
   });
 });

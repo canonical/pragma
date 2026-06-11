@@ -7,8 +7,8 @@ import ChatSection from "./ChatSection.js";
 
 describe("ChatSection SSR", () => {
   it("renders without hydration errors", () => {
-    const html = renderToString(<ChatSection>Test content</ChatSection>);
-    expect(html).toContain("Test content");
+    const html = renderToString(<ChatSection />);
+    expect(html).toContain("Type your message here...");
     expect(html).toContain("ds chat-section");
   });
 });

@@ -6,28 +6,22 @@ import { describe, expect, it } from "vitest";
 import Category from "./Category.js";
 
 describe("Category", () => {
-  it("renders children", () => {
-    render(<Category items={[]}>Test content</Category>);
-    expect(screen.getByText("Test content")).toBeInTheDocument();
+  it("renders the title and items", () => {
+    render(<Category title="Cloud" items={["OpenStack", "MAAS"]} />);
+    expect(screen.getByText("Cloud")).toBeInTheDocument();
+    expect(screen.getByText("OpenStack")).toBeInTheDocument();
+    expect(screen.getByText("MAAS")).toBeInTheDocument();
   });
 
   it("applies custom className", () => {
-    render(
-      <Category items={[]} className="custom-class">
-        Content
-      </Category>,
+    const { container } = render(
+      <Category items={[]} className="custom-class" />,
     );
-    const element = screen.getByText("Content");
-    expect(element.className).toContain("ds category");
-    expect(element.className).toContain("custom-class");
+    expect(container.firstChild).toHaveClass("ds", "category", "custom-class");
   });
 
   it("passes through additional props", () => {
-    render(
-      <Category items={[]} data-testid="test-component">
-        Content
-      </Category>,
-    );
+    render(<Category items={[]} data-testid="test-component" />);
     expect(screen.getByTestId("test-component")).toBeInTheDocument();
   });
 });

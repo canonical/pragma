@@ -4,28 +4,29 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import CategoriesSection from "./CategoriesSection.js";
+import fixtures from "./fixtures.js";
 
 describe("CategoriesSection", () => {
-  it("renders children", () => {
-    render(<CategoriesSection>Test content</CategoriesSection>);
-    expect(screen.getByText("Test content")).toBeInTheDocument();
+  it("renders the category fixtures", () => {
+    render(<CategoriesSection />);
+    for (const category of fixtures) {
+      expect(screen.getByText(category.title)).toBeInTheDocument();
+    }
   });
 
   it("applies custom className", () => {
-    render(
-      <CategoriesSection className="custom-class">Content</CategoriesSection>,
+    const { container } = render(
+      <CategoriesSection className="custom-class" />,
     );
-    const element = screen.getByText("Content");
-    expect(element.className).toContain("ds categories-section");
-    expect(element.className).toContain("custom-class");
+    expect(container.firstChild).toHaveClass(
+      "ds",
+      "categories-section",
+      "custom-class",
+    );
   });
 
   it("passes through additional props", () => {
-    render(
-      <CategoriesSection data-testid="test-component">
-        Content
-      </CategoriesSection>,
-    );
+    render(<CategoriesSection data-testid="test-component" />);
     expect(screen.getByTestId("test-component")).toBeInTheDocument();
   });
 });

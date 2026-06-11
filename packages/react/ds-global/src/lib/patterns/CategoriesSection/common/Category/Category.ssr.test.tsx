@@ -7,8 +7,11 @@ import Category from "./Category.js";
 
 describe("Category SSR", () => {
   it("renders without hydration errors", () => {
-    const html = renderToString(<Category items={[]}>Test content</Category>);
-    expect(html).toContain("Test content");
+    const html = renderToString(
+      <Category title="Cloud" items={["OpenStack"]} />,
+    );
+    expect(html).toContain("Cloud");
+    expect(html).toContain("OpenStack");
     expect(html).toContain("ds category");
   });
 });

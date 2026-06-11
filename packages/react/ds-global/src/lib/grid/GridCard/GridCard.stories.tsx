@@ -14,14 +14,11 @@ export default meta;
 type Story = StoryObj<typeof GridCard>;
 
 export const Default: Story = {
-  args: {
-    children: "Hello, GridCard!",
-  },
+  args: {},
 };
 
 export const WithCustomClass: Story = {
   args: {
-    children: "Custom styled",
     className: "custom-class",
   },
 };

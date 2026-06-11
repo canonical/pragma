@@ -4,13 +4,12 @@
 import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import CategoriesSection from "./CategoriesSection.js";
+import fixtures from "./fixtures.js";
 
 describe("CategoriesSection SSR", () => {
   it("renders without hydration errors", () => {
-    const html = renderToString(
-      <CategoriesSection>Test content</CategoriesSection>,
-    );
-    expect(html).toContain("Test content");
+    const html = renderToString(<CategoriesSection />);
+    expect(html).toContain(fixtures[0].title);
     expect(html).toContain("ds categories-section");
   });
 });

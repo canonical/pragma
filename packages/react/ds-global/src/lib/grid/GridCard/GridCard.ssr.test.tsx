@@ -7,8 +7,8 @@ import { GridCard } from "./GridCard.js";
 
 describe("GridCard SSR", () => {
   it("renders without hydration errors", () => {
-    const html = renderToString(<GridCard>Test content</GridCard>);
-    expect(html).toContain("Test content");
+    const html = renderToString(<GridCard />);
+    expect(html).toContain("Represents a card within the grid");
     expect(html).toContain("grid-card");
   });
 });

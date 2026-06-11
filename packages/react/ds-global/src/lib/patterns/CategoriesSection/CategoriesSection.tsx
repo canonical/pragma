@@ -15,7 +15,6 @@ const componentCssClassName = "ds categories-section";
  */
 const CategoriesSection = ({
   className,
-  children,
   title,
   ...props
 }: CategoriesSectionProps): React.ReactNode => {

@@ -48,7 +48,6 @@ const iconSelection: IconName[] = [
  */
 const IconSection = ({
   className,
-  children,
   ...props
 }: IconSectionProps): React.ReactNode => {
   return (

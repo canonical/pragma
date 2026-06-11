@@ -12,7 +12,6 @@ const componentCssClassName = "ds category";
  */
 const Category = ({
   className,
-  children,
   title,
   items = [],
   ...props

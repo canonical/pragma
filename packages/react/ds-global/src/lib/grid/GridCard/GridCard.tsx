@@ -10,7 +10,6 @@ import "./styles.css";
  */
 export const GridCard = ({
   className,
-  children,
   ...props
 }: GridCardProps): React.ReactNode => {
   return (

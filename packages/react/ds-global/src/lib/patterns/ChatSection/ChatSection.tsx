@@ -13,7 +13,6 @@ const componentCssClassName = "ds chat-section";
  */
 const ChatSection = ({
   className,
-  children,
   title,
   ...props
 }: ChatSectionProps): React.ReactNode => {

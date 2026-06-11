@@ -6,20 +6,20 @@ import { describe, expect, it } from "vitest";
 import { GridCard } from "./GridCard.js";
 
 describe("GridCard", () => {
-  it("renders children", () => {
-    render(<GridCard>Test content</GridCard>);
-    expect(screen.getByText("Test content")).toBeInTheDocument();
+  it("renders the card placeholder", () => {
+    render(<GridCard />);
+    expect(
+      screen.getByText("Represents a card within the grid"),
+    ).toBeInTheDocument();
   });
 
   it("applies custom className", () => {
-    render(<GridCard className="custom-class">Content</GridCard>);
-    const element = screen.getByText("Content");
-    expect(element).toHaveClass("grid-card");
-    expect(element).toHaveClass("custom-class");
+    const { container } = render(<GridCard className="custom-class" />);
+    expect(container.firstChild).toHaveClass("grid-card", "custom-class");
   });
 
   it("passes through additional props", () => {
-    render(<GridCard data-testid="test-component">Content</GridCard>);
+    render(<GridCard data-testid="test-component" />);
     expect(screen.getByTestId("test-component")).toBeInTheDocument();
   });
 });

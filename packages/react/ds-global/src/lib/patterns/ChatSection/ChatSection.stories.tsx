@@ -18,14 +18,11 @@ export default meta;
 type Story = StoryObj<typeof ChatSection>;
 
 export const Default: Story = {
-  args: {
-    children: "Hello, ChatSection!",
-  },
+  args: {},
 };
 
 export const WithCustomClass: Story = {
   args: {
-    children: "Custom styled",
     className: "custom-class",
   },
 };
