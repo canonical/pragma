@@ -38,7 +38,7 @@
     "normalize.css": "^8.0.1"
   },
   "peerDependencies": {
-    "@canonical/ds-assets": ">=0.18.0"
+    "@canonical/ds-assets": "^0.27.1-experimental.0"
   },
   "peerDependenciesMeta": {
     "@canonical/ds-assets": {
