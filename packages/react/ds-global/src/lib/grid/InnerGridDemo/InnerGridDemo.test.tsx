@@ -12,10 +12,8 @@ describe("InnerGridDemo", () => {
   });
 
   it("applies custom className", () => {
-    render(<InnerGridDemo className="custom-class">Content</InnerGridDemo>);
-    const element = screen.getByText("Content");
-    expect(element).toHaveClass("grid-demo");
-    expect(element).toHaveClass("custom-class");
+    const { container } = render(<InnerGridDemo className="custom-class" />);
+    expect(container.firstChild).toHaveClass("ds", "grid-demo", "custom-class");
   });
 
   it("passes through additional props", () => {

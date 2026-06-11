@@ -12,10 +12,8 @@ describe("SettingsView", () => {
   });
 
   it("applies custom className", () => {
-    render(<SettingsView className="custom-class">Content</SettingsView>);
-    const element = screen.getByText("Content");
-    expect(element).toHaveClass("settings-view");
-    expect(element).toHaveClass("custom-class");
+    const { container } = render(<SettingsView className="custom-class" />);
+    expect(container.firstChild).toHaveClass("settings-view", "custom-class");
   });
 
   it("passes through additional props", () => {

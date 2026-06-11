@@ -12,12 +12,13 @@ describe("ApplicationLayout", () => {
   });
 
   it("applies custom className", () => {
-    render(
-      <ApplicationLayout className="custom-class">Content</ApplicationLayout>,
+    const { container } = render(
+      <ApplicationLayout className="custom-class" />,
     );
-    const element = screen.getByText("Content");
-    expect(element).toHaveClass("application-layout");
-    expect(element).toHaveClass("custom-class");
+    expect(container.firstChild).toHaveClass(
+      "application-layout",
+      "custom-class",
+    );
   });
 
   it("passes through additional props", () => {

@@ -12,12 +12,14 @@ describe("DescriptionSection", () => {
   });
 
   it("applies custom className", () => {
-    render(
-      <DescriptionSection className="custom-class">Content</DescriptionSection>,
+    const { container } = render(
+      <DescriptionSection className="custom-class" />,
     );
-    const element = screen.getByText("Content");
-    expect(element.className).toContain("ds description-section");
-    expect(element.className).toContain("custom-class");
+    expect(container.firstChild).toHaveClass(
+      "ds",
+      "description-section",
+      "custom-class",
+    );
   });
 
   it("passes through additional props", () => {

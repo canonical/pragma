@@ -12,10 +12,8 @@ describe("TSection", () => {
   });
 
   it("applies custom className", () => {
-    render(<TSection className="custom-class">Content</TSection>);
-    const element = screen.getByText("Content");
-    expect(element.className).toContain("ds section");
-    expect(element.className).toContain("custom-class");
+    const { container } = render(<TSection className="custom-class" />);
+    expect(container.firstChild).toHaveClass("ds", "section", "custom-class");
   });
 
   it("passes through additional props", () => {
