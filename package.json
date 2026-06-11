@@ -38,6 +38,7 @@
     "lerna": "lerna",
     "check": "lerna run check",
     "check:fix": "lerna run check:fix",
+    "check:ranges": "bun scripts/check-internal-ranges.ts",
     "test": "lerna run test",
     "test:coverage": "lerna run test:coverage",
     "publish:status": "bun scripts/publish-status.ts",

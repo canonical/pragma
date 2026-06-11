@@ -24,6 +24,9 @@ jobs:
           node-version: ${{ matrix.node-version }}
           build-command: bunx nx affected -t build:all --base=origin/${{ github.event.pull_request.base.ref }} --head=HEAD
 
+      - name: Internal range guard
+        run: bun run check:ranges
+
       - name: Code quality checks
         run: bunx nx affected -t check --base=origin/${{ github.event.pull_request.base.ref }} --head=HEAD
 
