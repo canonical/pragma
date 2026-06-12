@@ -1,0 +1,261 @@
+// =============================================================================
+// Incremental delivery support (KG.21), graphql v17.
+//
+// - executeLocal: graphql() for plain documents, experimentalExecuteIncrementally
+//   when the document uses @defer/@stream
+// - mergeIncremental: drain-and-merge fallback — folds every increment into
+//   one complete result (used by the handler for non-multipart clients and by
+//   Path B static extraction)
+// - relayFormatAdapter: translates v17's 2023 payload format
+//   (pending/id/incremental/completed) into Relay's legacy shape
+//   (path/label per payload, is_final extension)
+//
+// The structural types below mirror the v17 RC shapes rather than importing
+// them: the RC type surface is still settling, and the adapter is the single
+// file that would absorb a format change.
+// =============================================================================
+
+import {
+  type ExecutionResult,
+  execute,
+  experimentalExecuteIncrementally,
+  type GraphQLSchema,
+  parse,
+} from "graphql";
+import type { CompilerContext } from "../compiler/types.js";
+
+export interface PendingEntry {
+  id: string;
+  path: ReadonlyArray<string | number>;
+  label?: string;
+}
+
+export interface IncrementalEntry {
+  id: string;
+  data?: Record<string, unknown> | null;
+  items?: ReadonlyArray<unknown>;
+  subPath?: ReadonlyArray<string | number>;
+  errors?: ReadonlyArray<unknown>;
+}
+
+export interface CompletedEntry {
+  id: string;
+  errors?: ReadonlyArray<unknown>;
+}
+
+export interface InitialIncrementalResult extends ExecutionResult {
+  pending?: ReadonlyArray<PendingEntry>;
+  hasNext?: boolean;
+}
+
+export interface SubsequentIncrementalResult {
+  pending?: ReadonlyArray<PendingEntry>;
+  incremental?: ReadonlyArray<IncrementalEntry>;
+  completed?: ReadonlyArray<CompletedEntry>;
+  hasNext: boolean;
+}
+
+export interface IncrementalResults {
+  initialResult: InitialIncrementalResult;
+  subsequentResults: AsyncGenerator<SubsequentIncrementalResult, void, void>;
+}
+
+export type LocalExecutionResult = ExecutionResult | IncrementalResults;
+
+export const isIncrementalResults = (
+  result: LocalExecutionResult,
+): result is IncrementalResults =>
+  "initialResult" in result && "subsequentResults" in result;
+
+export interface ExecuteLocalArgs {
+  schema: GraphQLSchema;
+  source: string;
+  variableValues?: Record<string, unknown> | null;
+  contextValue: CompilerContext;
+  operationName?: string | null;
+}
+
+const usesIncrementalDirectives = (source: string): boolean =>
+  source.includes("@defer") || source.includes("@stream");
+
+/**
+ * Execute a query in-process. Documents using @defer/@stream go through the
+ * incremental executor; everything else through the regular one.
+ */
+export const executeLocal = async (
+  args: ExecuteLocalArgs,
+): Promise<LocalExecutionResult> => {
+  let document: ReturnType<typeof parse>;
+  try {
+    document = parse(args.source);
+  } catch (error) {
+    return {
+      errors: [
+        // graphql() would produce the same shape for a syntax error.
+        error,
+      ],
+    } as ExecutionResult;
+  }
+  const executionArgs = {
+    schema: args.schema,
+    document,
+    variableValues: args.variableValues ?? undefined,
+    contextValue: args.contextValue,
+    operationName: args.operationName ?? undefined,
+  };
+  if (usesIncrementalDirectives(args.source)) {
+    return (await experimentalExecuteIncrementally(
+      executionArgs,
+    )) as LocalExecutionResult;
+  }
+  return execute(executionArgs);
+};
+
+const setAtPath = (
+  target: Record<string, unknown>,
+  path: ReadonlyArray<string | number>,
+  merge: (parent: Record<string, unknown> | unknown[]) => void,
+): void => {
+  // Walk to the container at `path`; tolerate missing segments (defensive).
+  let cursor: unknown = target;
+  for (const segment of path) {
+    if (cursor == null || typeof cursor !== "object") {
+      return;
+    }
+    cursor = (cursor as Record<string | number, unknown>)[segment];
+  }
+  if (cursor != null && typeof cursor === "object") {
+    merge(cursor as Record<string, unknown> | unknown[]);
+  }
+};
+
+/**
+ * Drain every increment and fold it into one complete ExecutionResult.
+ * Correctness-preserving fallback: streaming is lost, data is identical.
+ */
+export const mergeIncremental = async (
+  results: IncrementalResults,
+): Promise<ExecutionResult> => {
+  const { initialResult, subsequentResults } = results;
+  const data = (initialResult.data ?? null) as Record<string, unknown> | null;
+  const errors: unknown[] = [...(initialResult.errors ?? [])];
+  const pendingById = new Map<string, PendingEntry>();
+  for (const pending of initialResult.pending ?? []) {
+    pendingById.set(pending.id, pending);
+  }
+
+  for await (const payload of subsequentResults) {
+    for (const pending of payload.pending ?? []) {
+      pendingById.set(pending.id, pending);
+    }
+    for (const entry of payload.incremental ?? []) {
+      const pending = pendingById.get(entry.id);
+      if (!pending || data === null) {
+        continue;
+      }
+      const path = [...pending.path, ...(entry.subPath ?? [])];
+      if (entry.data !== undefined && entry.data !== null) {
+        setAtPath(data, path, (container) => {
+          Object.assign(container as Record<string, unknown>, entry.data);
+        });
+      }
+      if (entry.items) {
+        setAtPath(data, path, (container) => {
+          if (Array.isArray(container)) {
+            container.push(...(entry.items as unknown[]));
+          }
+        });
+      }
+      if (entry.errors) {
+        errors.push(...entry.errors);
+      }
+    }
+    for (const completed of payload.completed ?? []) {
+      if (completed.errors) {
+        errors.push(...completed.errors);
+      }
+    }
+  }
+
+  return errors.length > 0
+    ? ({ data, errors } as ExecutionResult)
+    : ({ data } as ExecutionResult);
+};
+
+/** A payload in Relay's legacy incremental shape. */
+export interface RelayLegacyPayload {
+  data?: Record<string, unknown> | null;
+  errors?: ReadonlyArray<unknown>;
+  path?: ReadonlyArray<string | number>;
+  label?: string;
+  extensions?: Record<string, unknown>;
+}
+
+/**
+ * Translate graphql v17 incremental results into Relay's legacy payload
+ * stream: the initial payload plain, then one payload per deferred fragment /
+ * streamed item with path + label, and is_final on the last payload.
+ */
+export async function* relayFormatAdapter(
+  results: IncrementalResults,
+): AsyncGenerator<RelayLegacyPayload, void, void> {
+  const pendingById = new Map<string, PendingEntry>();
+  const streamCounters = new Map<string, number>();
+  for (const pending of results.initialResult.pending ?? []) {
+    pendingById.set(pending.id, pending);
+  }
+
+  yield {
+    data: (results.initialResult.data ?? null) as Record<
+      string,
+      unknown
+    > | null,
+    ...(results.initialResult.errors?.length
+      ? { errors: results.initialResult.errors }
+      : {}),
+  };
+
+  const buffered: RelayLegacyPayload[] = [];
+  for await (const payload of results.subsequentResults) {
+    for (const pending of payload.pending ?? []) {
+      pendingById.set(pending.id, pending);
+    }
+    for (const entry of payload.incremental ?? []) {
+      const pending = pendingById.get(entry.id);
+      if (!pending) {
+        continue;
+      }
+      if (entry.data !== undefined) {
+        buffered.push({
+          data: entry.data ?? null,
+          path: [...pending.path, ...(entry.subPath ?? [])],
+          ...(pending.label ? { label: pending.label } : {}),
+          ...(entry.errors?.length ? { errors: entry.errors } : {}),
+        });
+      }
+      for (const item of entry.items ?? []) {
+        const index = streamCounters.get(entry.id) ?? 0;
+        streamCounters.set(entry.id, index + 1);
+        buffered.push({
+          data: item as Record<string, unknown>,
+          path: [...pending.path, index],
+          ...(pending.label ? { label: pending.label } : {}),
+        });
+      }
+    }
+    // Flush all but the last buffered payload; the final one needs is_final.
+    if (payload.hasNext) {
+      while (buffered.length > 0) {
+        yield buffered.shift() as RelayLegacyPayload;
+      }
+    }
+  }
+
+  while (buffered.length > 1) {
+    yield buffered.shift() as RelayLegacyPayload;
+  }
+  const last = buffered.shift();
+  if (last) {
+    yield { ...last, extensions: { ...last.extensions, is_final: true } };
+  }
+}

@@ -16,6 +16,7 @@ export type {
   Plugin,
   PluginContext,
   PrefixMap,
+  Quad,
   QueryResult,
   ReloadOptions,
   ResolvedSource,
@@ -25,6 +26,8 @@ export type {
   SPARQL,
   Store,
   StoreConfig,
+  Term,
+  TermBinding,
   Triple,
   URI,
 } from "./types.js";
