@@ -319,8 +319,7 @@ function termToString(term: OxTerm): string {
 /** xsd:string is the implicit datatype of plain literals — omitted from Term. */
 const XSD_STRING = "http://www.w3.org/2001/XMLSchema#string";
 /** rdf:langString is implied by the presence of a language tag — omitted. */
-const RDF_LANG_STRING =
-  "http://www.w3.org/1999/02/22-rdf-syntax-ns#langString";
+const RDF_LANG_STRING = "http://www.w3.org/1999/02/22-rdf-syntax-ns#langString";
 
 /**
  * Convert an Oxigraph RDF/JS term to ke's term-preserving form (see types.ts).
