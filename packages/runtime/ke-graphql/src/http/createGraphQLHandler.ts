@@ -25,16 +25,17 @@ import {
   type ValidationRule,
   validate,
 } from "graphql";
-import type { CompilerContext } from "../compiler/types.js";
 import {
+  type CompilerContext,
   executeLocal,
   type IncrementalResults,
   isIncrementalResults,
   mergeIncremental,
   relayFormatAdapter,
-} from "../execution/incremental.js";
-import { graphiqlHtml } from "./graphiql.js";
+} from "../lib/index.js";
+import graphiqlHtml from "./graphiqlHtml.js";
 
+/** One executed operation, reported through the onOperation hook. */
 export interface OperationEvent {
   operation: string | null;
   duration: number;
@@ -42,6 +43,7 @@ export interface OperationEvent {
   persisted: boolean;
 }
 
+/** Options for createGraphQLHandler — every policy seam the handler offers. */
 export interface GraphQLHandlerOptions {
   /** Serve the GraphiQL IDE on GET without a query param. Default: dev only. */
   graphiql?: boolean;
@@ -92,7 +94,8 @@ interface GraphQLRequestBody {
 const isProduction = (): boolean =>
   typeof process === "undefined" || process.env.NODE_ENV === "production";
 
-const corsHeaders = (enabled: boolean): Record<string, string> =>
+/** Build the CORS header set ({} when CORS is disabled). */
+const buildCorsHeaders = (enabled: boolean): Record<string, string> =>
   enabled
     ? {
         "Access-Control-Allow-Origin": "*",
@@ -102,8 +105,9 @@ const corsHeaders = (enabled: boolean): Record<string, string> =>
     : {};
 
 /**
- * Tolerant Accept matching: media types may carry parameters (deferSpec=…,
- * q-values). Per RFC 9110, q=0 means "explicitly not acceptable".
+ * Check whether the request's Accept header admits a media type. Tolerant
+ * matching: media types may carry parameters (deferSpec=…, q-values). Per
+ * RFC 9110, q=0 means "explicitly not acceptable".
  */
 const accepts = (request: Request, mediaType: string): boolean =>
   (request.headers.get("accept") ?? "").split(",").some((part) => {
@@ -117,6 +121,7 @@ const accepts = (request: Request, mediaType: string): boolean =>
     return q === undefined || Number.parseFloat(q.slice(2)) > 0;
   });
 
+/** Strip the trailing "Did you mean …?" suggestion from an error message. */
 const stripSuggestions = (
   error: GraphQLFormattedError,
 ): GraphQLFormattedError => ({
@@ -124,10 +129,20 @@ const stripSuggestions = (
   message: error.message.replace(/ Did you mean .+\?$/, ""),
 });
 
-export const createGraphQLHandler = (
+/**
+ * Create a fetch-compatible GraphQL HTTP handler over a compiled schema:
+ * GraphQL-over-HTTP (GET with query param, POST JSON, persisted-query
+ * extension), optional GraphiQL, CORS preflight, validation-rule and
+ * persisted-query seams, and incremental delivery over multipart/mixed.
+ * The handler is a plain `(Request) => Promise<Response>` — no framework.
+ *
+ * @note Impure — the returned handler performs request/response I/O and
+ * executes operations against the store-backed context.
+ */
+export default function createGraphQLHandler(
   schema: GraphQLSchema,
   options: GraphQLHandlerOptions,
-): ((request: Request) => Promise<Response>) => {
+): (request: Request) => Promise<Response> {
   const graphiqlEnabled = options.graphiql ?? !isProduction();
   const introspectionEnabled = options.introspection ?? !isProduction();
   const hideSuggestions = options.hideFieldSuggestions ?? isProduction();
@@ -140,7 +155,7 @@ export const createGraphQLHandler = (
     return options.formatError ? options.formatError(stripped) : stripped;
   };
 
-  const json = (
+  const buildJsonResponse = (
     body: unknown,
     status: number,
     cors: boolean,
@@ -148,14 +163,15 @@ export const createGraphQLHandler = (
   ): Response =>
     new Response(JSON.stringify(body), {
       status,
-      headers: { "Content-Type": contentType, ...corsHeaders(cors) },
+      headers: { "Content-Type": contentType, ...buildCorsHeaders(cors) },
     });
 
-  const errorResponse = (
+  const buildErrorResponse = (
     message: string,
     status: number,
     cors: boolean,
-  ): Response => json({ errors: [formatOne({ message })] }, status, cors);
+  ): Response =>
+    buildJsonResponse({ errors: [formatOne({ message })] }, status, cors);
 
   // Parsed-document cache: query texts repeat (persisted queries, Relay
   // clients re-sending the same operations) — parsing is the dominant cost
@@ -168,7 +184,10 @@ export const createGraphQLHandler = (
     const cors = options.cors ?? false;
 
     if (request.method === "OPTIONS") {
-      return new Response(null, { status: 204, headers: corsHeaders(cors) });
+      return new Response(null, {
+        status: 204,
+        headers: buildCorsHeaders(cors),
+      });
     }
 
     // ── parse the GraphQL request ──
@@ -181,10 +200,10 @@ export const createGraphQLHandler = (
           const template = options.graphiqlHtml ?? graphiqlHtml;
           return new Response(template(url.pathname), {
             status: 200,
-            headers: { "Content-Type": "text/html", ...corsHeaders(cors) },
+            headers: { "Content-Type": "text/html", ...buildCorsHeaders(cors) },
           });
         }
-        return errorResponse("Missing query parameter", 400, cors);
+        return buildErrorResponse("Missing query parameter", 400, cors);
       }
       let variables: Record<string, unknown> | null = null;
       const rawVariables = url.searchParams.get("variables");
@@ -192,7 +211,7 @@ export const createGraphQLHandler = (
         try {
           variables = JSON.parse(rawVariables) as Record<string, unknown>;
         } catch {
-          return errorResponse("Invalid variables JSON", 400, cors);
+          return buildErrorResponse("Invalid variables JSON", 400, cors);
         }
       }
       body = {
@@ -204,10 +223,10 @@ export const createGraphQLHandler = (
       try {
         body = (await request.json()) as GraphQLRequestBody;
       } catch {
-        return errorResponse("Invalid JSON body", 400, cors);
+        return buildErrorResponse("Invalid JSON body", 400, cors);
       }
     } else {
-      return errorResponse("Method not allowed", 405, cors);
+      return buildErrorResponse("Method not allowed", 405, cors);
     }
 
     // ── persisted queries ──
@@ -220,7 +239,7 @@ export const createGraphQLHandler = (
         queryText = stored;
         persisted = true;
       } else if (!queryText) {
-        return json(
+        return buildJsonResponse(
           { errors: [formatOne({ message: "PersistedQueryNotFound" })] },
           200,
           cors,
@@ -228,13 +247,17 @@ export const createGraphQLHandler = (
       }
     }
     if (!queryText) {
-      return errorResponse("Missing query", 400, cors);
+      return buildErrorResponse("Missing query", 400, cors);
     }
     if (!persisted && !allowArbitrary && options.persistedQueries) {
-      return errorResponse("Only persisted queries are accepted", 400, cors);
+      return buildErrorResponse(
+        "Only persisted queries are accepted",
+        400,
+        cors,
+      );
     }
     if (queryText.length > maxQueryLength) {
-      return errorResponse(
+      return buildErrorResponse(
         `Query exceeds maximum length of ${maxQueryLength}`,
         413,
         cors,
@@ -255,7 +278,7 @@ export const createGraphQLHandler = (
         documentCache.set(queryText, document);
       }
     } catch (error) {
-      return json(
+      return buildJsonResponse(
         {
           errors: [
             formatOne(
@@ -280,7 +303,7 @@ export const createGraphQLHandler = (
     }
     const validationErrors = validate(schema, document, rules);
     if (validationErrors.length > 0) {
-      return json(
+      return buildJsonResponse(
         { errors: validationErrors.map((e) => formatOne(e.toJSON())) },
         400,
         cors,
@@ -325,7 +348,7 @@ export const createGraphQLHandler = (
           ),
         );
         report(errors);
-        return json(
+        return buildJsonResponse(
           errors.length > 0
             ? { data: merged.data, errors }
             : { data: merged.data },
@@ -334,7 +357,7 @@ export const createGraphQLHandler = (
         );
       }
       report([]);
-      return multipartResponse(
+      return buildMultipartResponse(
         result,
         options.incrementalFormat ?? "graphql17",
         cors,
@@ -343,17 +366,26 @@ export const createGraphQLHandler = (
 
     const errors = (result.errors ?? []).map((e) => formatOne(e.toJSON()));
     report(errors);
-    return json(errors.length > 0 ? { ...result, errors } : result, 200, cors);
+    return buildJsonResponse(
+      errors.length > 0 ? { ...result, errors } : result,
+      200,
+      cors,
+    );
   };
 
-  function multipartResponse(
+  /**
+   * Build a multipart/mixed streaming response from incremental results.
+   *
+   * @note Impure — streams the incremental payloads as they resolve.
+   */
+  function buildMultipartResponse(
     results: IncrementalResults,
     format: "graphql17" | "relay-legacy",
     cors: boolean,
   ): Response {
     const boundary = "graphql";
     const encoder = new TextEncoder();
-    const part = (payload: unknown): Uint8Array =>
+    const encodePart = (payload: unknown): Uint8Array =>
       encoder.encode(
         `\r\n--${boundary}\r\nContent-Type: application/json\r\n\r\n${JSON.stringify(payload)}`,
       );
@@ -363,12 +395,12 @@ export const createGraphQLHandler = (
         try {
           if (format === "relay-legacy") {
             for await (const payload of relayFormatAdapter(results)) {
-              controller.enqueue(part(payload));
+              controller.enqueue(encodePart(payload));
             }
           } else {
-            controller.enqueue(part(results.initialResult));
+            controller.enqueue(encodePart(results.initialResult));
             for await (const payload of results.subsequentResults) {
-              controller.enqueue(part(payload));
+              controller.enqueue(encodePart(payload));
             }
           }
           controller.enqueue(encoder.encode(`\r\n--${boundary}--\r\n`));
@@ -383,8 +415,8 @@ export const createGraphQLHandler = (
       status: 200,
       headers: {
         "Content-Type": `multipart/mixed; boundary="${boundary}"`,
-        ...corsHeaders(cors),
+        ...buildCorsHeaders(cors),
       },
     });
   }
-};
+}

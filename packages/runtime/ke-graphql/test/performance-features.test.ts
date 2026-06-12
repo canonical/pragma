@@ -8,7 +8,6 @@ import type { SPARQL, Store } from "@canonical/ke";
 import { createTestStore } from "@canonical/ke/testing";
 import { graphql } from "graphql";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { storeQueryFn } from "../src/compiler/index.js";
 import {
   compile,
   compileFromExtraction,
@@ -18,6 +17,7 @@ import {
   type SchemaPluginApi,
   serializeExtraction,
 } from "../src/index.js";
+import { storeQueryFn } from "../src/lib/compiler/index.js";
 import { DS_REALISTIC_TTL, MINIMAL_TTL, PREFIXES } from "./fixtures.js";
 
 type Cleanup = () => void;

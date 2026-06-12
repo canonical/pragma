@@ -7,9 +7,9 @@ import { createTestStore } from "@canonical/ke/testing";
 import type { ValidationRule } from "graphql";
 import { GraphQLError } from "graphql";
 import { afterEach, describe, expect, it } from "vitest";
-import { storeQueryFn } from "../src/compiler/index.js";
 import { createGraphQLHandler } from "../src/http/index.js";
 import { type CompilerResult, compile } from "../src/index.js";
+import { storeQueryFn } from "../src/lib/compiler/index.js";
 import { DS_REALISTIC_TTL, MINIMAL_TTL, PREFIXES } from "./fixtures.js";
 
 type Cleanup = () => void;

@@ -13,7 +13,7 @@ export default defineConfig({
         "**/*.test.ts",
         "**/*.d.ts",
         "**/types.ts",
-        "src/http/graphiql.ts",
+        "src/http/graphiqlHtml.ts",
       ],
       thresholds: {
         statements: 87,

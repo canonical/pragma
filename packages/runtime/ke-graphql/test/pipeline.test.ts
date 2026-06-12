@@ -6,8 +6,8 @@
 import { createTestStore } from "@canonical/ke/testing";
 import type { GraphQLObjectType } from "graphql";
 import { afterEach, describe, expect, it } from "vitest";
-import { storeQueryFn } from "../src/compiler/index.js";
 import { type CompilerResult, compile } from "../src/index.js";
+import { storeQueryFn } from "../src/lib/compiler/index.js";
 import {
   BLANK_NODES_TTL,
   DOMAINLESS_TTL,

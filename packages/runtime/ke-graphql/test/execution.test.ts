@@ -5,7 +5,6 @@
 
 import { createTestStore } from "@canonical/ke/testing";
 import { afterEach, describe, expect, it } from "vitest";
-import { storeQueryFn } from "../src/compiler/index.js";
 import {
   type CompilerContext,
   type CompilerResult,
@@ -16,6 +15,7 @@ import {
   mergeIncremental,
   relayFormatAdapter,
 } from "../src/index.js";
+import { storeQueryFn } from "../src/lib/compiler/index.js";
 import { DS_REALISTIC_TTL, MINIMAL_TTL, PREFIXES } from "./fixtures.js";
 
 type Cleanup = () => void;

@@ -6,12 +6,12 @@
 import { createTestStore } from "@canonical/ke/testing";
 import { type GraphQLSchema, graphql } from "graphql";
 import { afterEach, describe, expect, it } from "vitest";
-import { storeQueryFn } from "../src/compiler/index.js";
 import {
   type CompilerContext,
   type CompilerResult,
   compile,
 } from "../src/index.js";
+import { storeQueryFn } from "../src/lib/compiler/index.js";
 import {
   DS_REALISTIC_TTL,
   INHERITANCE_TTL,
