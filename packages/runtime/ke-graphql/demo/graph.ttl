@@ -1,0 +1,91 @@
+# Demo graph for the dev server (`bun run demo`) — ontology and instance
+# data in one file. This is the library ontology the README walks through,
+# with enough instances to exercise listings, pagination, interfaces,
+# embedded blank nodes, and inverse resolution.
+
+@prefix lib: <https://example.org/library/> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+# --- Ontology ---------------------------------------------------------------
+
+lib:Work a owl:Class .
+lib:Book a owl:Class ; rdfs:subClassOf lib:Work .
+lib:Film a owl:Class ; rdfs:subClassOf lib:Work .
+lib:Author a owl:Class .
+lib:Review a owl:Class .
+
+lib:title a owl:DatatypeProperty ; rdfs:domain lib:Work ; rdfs:range xsd:string .
+lib:pageCount a owl:DatatypeProperty ; rdfs:domain lib:Book ; rdfs:range xsd:integer .
+lib:inPrint a owl:DatatypeProperty ; rdfs:domain lib:Book ; rdfs:range xsd:boolean .
+lib:runtimeMinutes a owl:DatatypeProperty ; rdfs:domain lib:Film ; rdfs:range xsd:integer .
+lib:hasAuthor a owl:ObjectProperty ; rdfs:domain lib:Work ; rdfs:range lib:Author ;
+    owl:inverseOf lib:authored .
+lib:authored a owl:ObjectProperty ; rdfs:domain lib:Author ; rdfs:range lib:Work .
+lib:name a owl:DatatypeProperty ; rdfs:domain lib:Author ; rdfs:range xsd:string .
+lib:hasReview a owl:ObjectProperty ; rdfs:domain lib:Work ; rdfs:range lib:Review .
+lib:rating a owl:DatatypeProperty ; rdfs:domain lib:Review ; rdfs:range xsd:integer .
+lib:comment a owl:DatatypeProperty ; rdfs:domain lib:Review ; rdfs:range xsd:string .
+
+# --- Authors ----------------------------------------------------------------
+
+lib:herbert a lib:Author ; lib:name "Frank Herbert" .
+lib:leguin a lib:Author ; lib:name "Ursula K. Le Guin" .
+lib:lem a lib:Author ; lib:name "Stanisław Lem" .
+lib:villeneuve a lib:Author ; lib:name "Denis Villeneuve" .
+lib:tarkovsky a lib:Author ; lib:name "Andrei Tarkovsky" .
+
+# --- Books ------------------------------------------------------------------
+
+lib:dune a lib:Book ;
+    lib:title "Dune" ;
+    lib:pageCount 412 ;
+    lib:inPrint "true" ;  # string-typed boolean on purpose: the resolver coerces it
+    lib:hasAuthor lib:herbert ;
+    lib:hasReview [ a lib:Review ; lib:rating 5 ; lib:comment "A landmark of science fiction." ] .
+
+lib:dispossessed a lib:Book ;
+    lib:title "The Dispossessed" ;
+    lib:pageCount 387 ;
+    lib:inPrint true ;
+    lib:hasAuthor lib:leguin ;
+    lib:hasReview
+        [ a lib:Review ; lib:rating 5 ; lib:comment "An ambiguous utopia, fully earned." ] ,
+        [ a lib:Review ; lib:rating 4 ] .
+
+lib:left-hand-of-darkness a lib:Book ;
+    lib:title "The Left Hand of Darkness" ;
+    lib:pageCount 304 ;
+    lib:inPrint true ;
+    lib:hasAuthor lib:leguin .
+
+lib:solaris a lib:Book ;
+    lib:title "Solaris" ;
+    lib:pageCount 204 ;
+    lib:inPrint false ;
+    lib:hasAuthor lib:lem ;
+    lib:hasReview [ a lib:Review ; lib:rating 4 ; lib:comment "The ocean does not answer." ] .
+
+lib:earthsea a lib:Book ;
+    lib:title "A Wizard of Earthsea" ;
+    lib:pageCount 183 ;
+    lib:inPrint true .
+
+# --- Films ------------------------------------------------------------------
+
+lib:dune-part-one a lib:Film ;
+    lib:title "Dune: Part One" ;
+    lib:runtimeMinutes 155 ;
+    lib:hasAuthor lib:villeneuve ;
+    lib:hasReview [ a lib:Review ; lib:rating 4 ; lib:comment "The spice must flow." ] .
+
+lib:stalker a lib:Film ;
+    lib:title "Stalker" ;
+    lib:runtimeMinutes 162 ;
+    lib:hasAuthor lib:tarkovsky .
+
+# Asserted in the reverse direction only — resolution takes the union of
+# forward and reverse assertions for a declared inverse pair, so this still
+# answers from both earthsea.authors and leguin.works.
+lib:leguin lib:authored lib:earthsea .

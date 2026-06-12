@@ -388,9 +388,18 @@ Consumers that never serve — static extraction in CI, SSR-only processes, test
 ## Development
 
 ```bash
-bun run test     # 97 tests over the ADR §12 fixture suite, with coverage gates
+bun run demo     # GraphiQL on http://localhost:4000/graphql in under a second
+bun run test     # 98 tests over the ADR §12 fixture suite, with coverage gates
 bun run check    # biome + tsc + webarchitect
 bun run bench    # the numbers in this README
 ```
+
+`bun run demo` boots `demo/server.ts` against `demo/graph.ttl` — the library
+ontology from this README with a few shelves of data — logging ke's load
+activity (sources, triple counts), the compiler diagnostics, and a ready-made
+`curl`. It serves GraphQL + GraphiQL with `@defer` enabled, so every example
+above can be pasted straight in. The folder is type-checked and linted with
+the package but ships nowhere: it is excluded from the build and the npm
+tarball.
 
 The intermediate representations (`RawExtraction`, `OntologyIR`, `MappedIR`) are exported public contracts, not internals — tooling can consume them the way Prisma generators consume the DMMF. The spec they implement is `A.10.COMPILER` (KG.01–KG.23) in the pragma-adrs repository; spec and implementation were hardened against each other, and the golden SDL there is this compiler's snapshot target.

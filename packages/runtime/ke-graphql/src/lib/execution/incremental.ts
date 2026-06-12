@@ -44,6 +44,14 @@ export interface ExecuteLocalArgs {
 const usesIncrementalDirectives = (source: string): boolean =>
   source.includes("@defer") || source.includes("@stream");
 
+// graphql v17 RC's execute() throws on any schema that carries the @defer or
+// @stream directives — even for operations that use neither. Schemas compiled
+// with `incremental: true` must therefore always go through the experimental
+// executor (which still returns a plain ExecutionResult for plain operations).
+const schemaCarriesIncrementalDirectives = (schema: GraphQLSchema): boolean =>
+  schema.getDirective("defer") !== undefined ||
+  schema.getDirective("stream") !== undefined;
+
 /**
  * Execute a query in-process (SSR prefetch, tests, scripts — no HTTP, no
  * serialization). Documents using @defer/@stream go through the incremental
@@ -75,7 +83,10 @@ export const executeLocal = async (
     contextValue: args.contextValue,
     operationName: args.operationName ?? undefined,
   };
-  if (usesIncrementalDirectives(args.source)) {
+  if (
+    usesIncrementalDirectives(args.source) ||
+    schemaCarriesIncrementalDirectives(args.schema)
+  ) {
     return (await experimentalExecuteIncrementally(
       executionArgs,
     )) as LocalExecutionResult;

@@ -76,6 +76,22 @@ describe("executeLocal (KG.20 Path A)", () => {
     }
   });
 
+  it("executes plain documents against an incremental schema (v17 forbids execute() there)", async () => {
+    const { result, context } = await setup(DS_REALISTIC_TTL, dsOptions);
+    const execution = await executeLocal({
+      schema: result.schema,
+      source: `{ component(uri: "ds:global.component.button") { name } }`,
+      contextValue: context,
+    });
+    expect(isIncrementalResults(execution)).toBe(false);
+    if (!isIncrementalResults(execution)) {
+      expect(execution.errors).toBeUndefined();
+      expect((execution.data?.component as Record<string, unknown>).name).toBe(
+        "Button",
+      );
+    }
+  });
+
   it("returns errors for syntax errors without throwing", async () => {
     const { result, context } = await setup(MINIMAL_TTL);
     const execution = await executeLocal({
