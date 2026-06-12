@@ -18,7 +18,10 @@ describe("Icon component", () => {
   });
 
   it("treats an empty aria-label as decorative", () => {
-    const { container } = render(<Component icon={"user"} aria-label="" />);
+    const { container } = render(
+      // biome-ignore lint/a11y/useValidAriaValues: deliberately exercising the empty-label degenerate input
+      <Component icon={"user"} aria-label="" />,
+    );
     const svg = container.querySelector("svg");
     expect(svg).toHaveAttribute("aria-hidden", "true");
     expect(svg).not.toHaveAttribute("role");
