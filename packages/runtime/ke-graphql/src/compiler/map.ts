@@ -11,6 +11,7 @@ import {
   BidirectionalNameMap,
   camelCase,
   pluralize,
+  sanitizeGraphQLName,
   stripVerbPrefix,
 } from "./nameMap.js";
 import type {
@@ -44,6 +45,13 @@ const RESERVED_TYPE_NAMES = new Set([
   "OntologyClass",
   "OntologyProperty",
   "PropertyKind",
+  // built-in scalars — a class named String would otherwise hit an
+  // uncontrolled duplicate-type failure instead of an M004 rename
+  "String",
+  "Boolean",
+  "Int",
+  "Float",
+  "ID",
 ]);
 
 /** Field names the compiler owns on Node types (§4.4 rule 7). */
@@ -77,6 +85,17 @@ const resolveTypeNames = (state: MapperState): void => {
   for (const node of state.ir.classes.values()) {
     const custom = mappingFor(state, node.uri)?.graphqlName;
     let name = custom ?? localName(node.uri);
+    const sanitized = sanitizeGraphQLName(name);
+    if (sanitized !== name) {
+      state.diagnostics.push({
+        severity: "warning",
+        code: "M002",
+        message: `class local name "${name}" is not a legal GraphQL name - sanitized to ${sanitized}`,
+        source: node.uri,
+        phase: PHASE,
+      });
+      name = sanitized;
+    }
     if (taken.has(name) && !custom) {
       // Rule 6a: prefix with PascalCase namespace prefix (M004 info).
       const prefixed =
@@ -119,7 +138,7 @@ const fieldNameFor = (
   if (isList) {
     name = pluralize(name);
   }
-  return name;
+  return sanitizeGraphQLName(name);
 };
 
 const fieldTypeFor = (
@@ -167,7 +186,12 @@ const fieldTypeFor = (
 
 const concreteDescendants = (ir: OntologyIR, node: ClassNode): string[] => {
   const result: string[] = [];
+  const visited = new Set<string>();
   const walk = (uri: string) => {
+    if (visited.has(uri)) {
+      return; // subClassOf cycles (B001) must not overflow the stack
+    }
+    visited.add(uri);
     const current = ir.classes.get(uri);
     if (!current) {
       return;
@@ -207,8 +231,12 @@ const templateFor = (
   property: PropertyNode,
   singular: boolean,
   embedded: boolean,
+  fieldType: FieldTypeSpec,
 ): ResolverTemplate => {
-  if (property.kind !== "object") {
+  // Decide from the RESOLVED type: an object property whose range fell back
+  // to String (unknown range, B003) must resolve its URI values as strings,
+  // not hand Connection shapes to a String field.
+  if (property.kind !== "object" || fieldType.kind === "scalar") {
     return singular ? "datatype" : "datatype-list";
   }
   if (embedded) {
@@ -276,18 +304,21 @@ const fieldsFor = (
     // each side resolves the union of forward + reverse assertions (EC.05).
     // List sides switch to the inverse template; singular sides keep their
     // template but carry inverseOf for the reverse fallback.
+    const fieldType = fieldTypeFor(state, property);
     const declaredInverse =
-      property.kind === "object" && !embedded ? property.inverse : undefined;
+      property.kind === "object" && fieldType.kind === "type" && !embedded
+        ? property.inverse
+        : undefined;
     addField({
       owlUri: property.uri,
       graphqlName: name,
-      type: fieldTypeFor(state, property),
+      type: fieldType,
       nullable: !nonNull,
       list,
       resolverTemplate:
         declaredInverse && list
           ? "inverse"
-          : templateFor(property, singular, embedded),
+          : templateFor(property, singular, embedded, fieldType),
       propertyUri: property.uri,
       inverseOf: declaredInverse,
       shaclRequired: required,
@@ -405,10 +436,9 @@ export const map = (
       continue;
     }
     const fields = fieldsFor(state, node, typeName);
-    // Scoped reverse entries for _meta.field(name) lookups (EC.09).
-    for (const field of fields.values()) {
-      state.nameMap.set(field.owlUri, field.graphqlName);
-    }
+    // Field-name reverse lookups are scoped per type and served from
+    // MappedType.fields (EntityMeta.field resolves through it) — the
+    // global NameMap carries type names plus a best-effort property entry.
 
     if (node.isAbstract) {
       const parentInterfaces = node.ancestors

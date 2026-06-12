@@ -175,7 +175,12 @@ const allImplementorsEmbeddable = (
     return false;
   }
   const concrete: boolean[] = [];
+  const visited = new Set<string>();
   const walk = (uri: string) => {
+    if (visited.has(uri)) {
+      return; // subClassOf cycles (B001) must not overflow the stack
+    }
+    visited.add(uri);
     const current = mapped.ir.classes.get(uri);
     if (!current) {
       return;

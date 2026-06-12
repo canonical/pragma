@@ -90,7 +90,9 @@ export const validate = (ir: OntologyIR): PassResult<OntologyIR> => {
         source: property.uri,
       });
     }
-    // V003 — inverse asymmetry (forward declared, backward auto-completed)
+    // V003 — conflicting inverse declarations (A declares inverse B while
+    // B declares inverse C). One-sided declarations are normal OWL and are
+    // silently completed in Pass 2 — only contradictions warrant a warning.
     if (property.inverse) {
       const other = ir.properties.get(property.inverse);
       if (other && other.inverse !== property.uri) {

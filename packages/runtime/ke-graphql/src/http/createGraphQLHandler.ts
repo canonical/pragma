@@ -70,6 +70,12 @@ export interface GraphQLHandlerOptions {
   incremental?: boolean;
   /** Payload format for incremental parts. Default: 'graphql17'. */
   incrementalFormat?: "graphql17" | "relay-legacy";
+  /**
+   * Override the GraphiQL HTML. The default template loads the GraphiQL
+   * assets from esm.sh at runtime — air-gapped deployments supply their
+   * own template (e.g. with vendored assets) through this seam.
+   */
+  graphiqlHtml?: (endpoint: string) => string;
 }
 
 interface GraphQLRequestBody {
@@ -92,11 +98,21 @@ const corsHeaders = (enabled: boolean): Record<string, string> =>
       }
     : {};
 
-/** Tolerant Accept matching: media type may carry parameters (deferSpec=…). */
+/**
+ * Tolerant Accept matching: media types may carry parameters (deferSpec=…,
+ * q-values). Per RFC 9110, q=0 means "explicitly not acceptable".
+ */
 const accepts = (request: Request, mediaType: string): boolean =>
-  (request.headers.get("accept") ?? "")
-    .split(",")
-    .some((part) => part.trim().split(";")[0]?.trim() === mediaType);
+  (request.headers.get("accept") ?? "").split(",").some((part) => {
+    const [type, ...params] = part.trim().split(";");
+    if (type?.trim() !== mediaType) {
+      return false;
+    }
+    const q = params
+      .map((param) => param.trim())
+      .find((param) => param.startsWith("q="));
+    return q === undefined || Number.parseFloat(q.slice(2)) > 0;
+  });
 
 const stripSuggestions = (
   error: GraphQLFormattedError,
@@ -152,21 +168,26 @@ export const createGraphQLHandler = (
       const query = url.searchParams.get("query");
       if (!query) {
         if (graphiqlEnabled && accepts(request, "text/html")) {
-          return new Response(graphiqlHtml(url.pathname), {
+          const template = options.graphiqlHtml ?? graphiqlHtml;
+          return new Response(template(url.pathname), {
             status: 200,
             headers: { "Content-Type": "text/html", ...corsHeaders(cors) },
           });
         }
         return errorResponse("Missing query parameter", 400, cors);
       }
+      let variables: Record<string, unknown> | null = null;
+      const rawVariables = url.searchParams.get("variables");
+      if (rawVariables) {
+        try {
+          variables = JSON.parse(rawVariables) as Record<string, unknown>;
+        } catch {
+          return errorResponse("Invalid variables JSON", 400, cors);
+        }
+      }
       body = {
         query,
-        variables: url.searchParams.get("variables")
-          ? (JSON.parse(url.searchParams.get("variables") as string) as Record<
-              string,
-              unknown
-            >)
-          : null,
+        variables,
         operationName: url.searchParams.get("operationName"),
       };
     } else if (request.method === "POST") {
@@ -278,7 +299,11 @@ export const createGraphQLHandler = (
       if (!wantsMultipart) {
         const merged = await mergeIncremental(result);
         const errors = (merged.errors ?? []).map((e) =>
-          formatOne(e as GraphQLFormattedError),
+          formatOne(
+            e instanceof GraphQLError
+              ? e.toJSON()
+              : (e as GraphQLFormattedError),
+          ),
         );
         report(errors);
         return json(

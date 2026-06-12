@@ -55,6 +55,21 @@ export const isEntity = (
 ): value is EntityValue =>
   value !== null && !(value instanceof Error) && typeof value === "object";
 
+/**
+ * Unwrap a loadMany result: rethrow the first Error (a failed batch must
+ * surface as a GraphQL field error, not as an empty connection), drop nulls
+ * (missing or typeless entities are filtered, KG.07).
+ */
+export const unwrapEntities = (
+  results: ReadonlyArray<EntityValue | Error | null>,
+): EntityValue[] => {
+  const firstError = results.find((r): r is Error => r instanceof Error);
+  if (firstError) {
+    throw firstError;
+  }
+  return results.filter(isEntity);
+};
+
 export interface Sortable {
   uri: string | null;
 }

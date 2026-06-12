@@ -262,7 +262,17 @@ export const extract = async (
   }
   let anonymous = 0;
   for (const ns of discovered) {
-    const prefix = uriToPrefix.get(ns) ?? `ns${anonymous++ || ""}`;
+    let prefix = uriToPrefix.get(ns);
+    if (!prefix) {
+      prefix = `ns${anonymous++ || ""}`;
+      diagnostics.push({
+        severity: "warning",
+        code: "E001",
+        message: `namespace ${ns} has no registered prefix — assigned synthetic "${prefix}". Register it in StoreConfig.prefixes: it drives global IDs (KG.10)`,
+        source: ns,
+        phase: PHASE,
+      });
+    }
     namespaces.set(ns, prefix);
   }
 
@@ -484,6 +494,15 @@ export const extract = async (
       `ASK { ?a ?p ?b . ?b ?q ?c . FILTER(isBlank(?b) && isBlank(?c)) }`,
     );
     deepBlankNesting = deep.type === "ask" && deep.result;
+    if (deepBlankNesting) {
+      diagnostics.push({
+        severity: "warning",
+        code: "E001",
+        message:
+          "blank nodes nest deeper than 1 level in the store — the entity loader's single-hop closure (§5.3) will truncate them; extend the closure depth",
+        phase: PHASE,
+      });
+    }
   } catch (error) {
     diagnostics.push({
       severity: "error",

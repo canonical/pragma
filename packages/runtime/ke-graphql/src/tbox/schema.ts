@@ -32,7 +32,7 @@ import type {
   NamespaceInfo,
   PropertyNode,
 } from "../compiler/types.js";
-import { isEntity, toConnection } from "../resolver/connection.js";
+import { toConnection, unwrapEntities } from "../resolver/connection.js";
 
 interface ClassPropertyValue {
   propertyUri: string;
@@ -231,7 +231,7 @@ export const buildTBoxSchema = (
         resolve: async (c, args, ctx) => {
           const uris = await ctx.listLoader.load(c.uri);
           const entities = await ctx.entityLoader.loadMany(uris);
-          return toConnection(entities.filter(isEntity), args, true);
+          return toConnection(unwrapEntities(entities), args, true);
         },
       },
       instanceCount: {

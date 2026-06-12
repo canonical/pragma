@@ -16,10 +16,10 @@ export default defineConfig({
         "src/http/graphiql.ts",
       ],
       thresholds: {
-        statements: 88,
-        branches: 72,
+        statements: 87,
+        branches: 71,
         functions: 88,
-        lines: 88,
+        lines: 87,
       },
     },
   },

@@ -5,6 +5,7 @@ import {
   isEntity,
   toBase64,
   toConnection,
+  unwrapEntities,
 } from "./connection.js";
 
 const items = (uris: string[]) => uris.map((uri) => ({ uri }));
@@ -86,5 +87,13 @@ describe("helpers", () => {
     expect([entity, null, new Error("boom")].filter(isEntity)).toEqual([
       entity,
     ]);
+  });
+
+  it("unwrapEntities rethrows batch errors and drops nulls", () => {
+    const entity = { uri: "x", typename: "T", triples: new Map() };
+    expect(unwrapEntities([entity, null])).toEqual([entity]);
+    expect(() => unwrapEntities([entity, new Error("store down")])).toThrow(
+      "store down",
+    );
   });
 });

@@ -11,7 +11,7 @@
 // =============================================================================
 
 import { toFull } from "../dataloader/uris.js";
-import { isEntity, toConnection } from "../resolver/connection.js";
+import { toConnection, unwrapEntities } from "../resolver/connection.js";
 import type { FieldPlan, SchemaPlan } from "./emit.js";
 import type {
   CompilerContext,
@@ -154,7 +154,7 @@ export const wireRelay = (plan: SchemaPlan): PassResult<SchemaPlan> => {
         const uris = await ctx.listLoader.load(classUri);
         const entities = await ctx.entityLoader.loadMany(uris);
         // The list loader returns name-sorted URIs; keep that order.
-        return toConnection(entities.filter(isEntity), args, true);
+        return toConnection(unwrapEntities(entities), args, true);
       },
     });
   }

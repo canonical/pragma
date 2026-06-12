@@ -82,6 +82,24 @@ describe("request handling", () => {
     expect(await response.text()).toContain("GraphiQL");
   });
 
+  it("returns 400 for malformed GET variables JSON", async () => {
+    const { handler } = await setupHandler(MINIMAL_TTL);
+    const url = `http://localhost/graphql?query=${encodeURIComponent("{ __typename }")}&variables={bad`;
+    const response = await handler(new Request(url));
+    expect(response.status).toBe(400);
+  });
+
+  it("treats Accept q=0 as not acceptable (RFC 9110)", async () => {
+    const { handler } = await setupHandler(MINIMAL_TTL);
+    const response = await handler(
+      new Request("http://localhost/graphql", {
+        headers: { Accept: "text/html;q=0" },
+      }),
+    );
+    // GraphiQL must NOT be served; falls through to the missing-query error
+    expect(response.status).toBe(400);
+  });
+
   it("rejects invalid JSON, missing queries, and other methods", async () => {
     const { handler } = await setupHandler(MINIMAL_TTL);
     const bad = await handler(

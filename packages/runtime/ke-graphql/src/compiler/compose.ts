@@ -352,6 +352,9 @@ export const compose = (
   let schema: GraphQLSchema | null = null;
   let sdl = "";
   try {
+    // GraphQLObjectType constructors validate names eagerly; field thunks
+    // run during validateSchema — both belong under the C003 umbrella so a
+    // bad name surfaces as a diagnostic, not a raw GraphQLError.
     schema = new GraphQLSchema({
       query: queryType,
       types: allTypes,

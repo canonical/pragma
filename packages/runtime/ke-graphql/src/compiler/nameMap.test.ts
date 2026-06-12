@@ -3,6 +3,7 @@ import {
   BidirectionalNameMap,
   camelCase,
   pluralize,
+  sanitizeGraphQLName,
   stripVerbPrefix,
 } from "./nameMap.js";
 
@@ -40,6 +41,16 @@ describe("stripVerbPrefix (§4.4 rule 3)", () => {
     expect(stripVerbPrefix("name")).toBe("name");
     expect(stripVerbPrefix("history")).toBe("history"); // not "has" + Word
     expect(stripVerbPrefix("island")).toBe("island");
+  });
+});
+
+describe("sanitizeGraphQLName", () => {
+  it("replaces illegal characters and guards leading digits", () => {
+    expect(sanitizeGraphQLName("My-Class")).toBe("My_Class");
+    expect(sanitizeGraphQLName("has.thing")).toBe("has_thing");
+    expect(sanitizeGraphQLName("3d")).toBe("_3d");
+    expect(sanitizeGraphQLName("")).toBe("_");
+    expect(sanitizeGraphQLName("fine_Name0")).toBe("fine_Name0");
   });
 });
 

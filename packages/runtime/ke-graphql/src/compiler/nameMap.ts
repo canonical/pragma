@@ -94,3 +94,17 @@ export const stripVerbPrefix = (name: string): string => {
   }
   return name;
 };
+
+/**
+ * Make a string a legal GraphQL name: [_a-zA-Z][_a-zA-Z0-9]*.
+ * Invalid characters (dots, dashes, unicode) become underscores; a leading
+ * digit gets an underscore prefix; an empty result becomes "_". Callers emit
+ * a diagnostic when the result differs from the input.
+ */
+export const sanitizeGraphQLName = (name: string): string => {
+  const cleaned = name.replace(/[^_a-zA-Z0-9]/g, "_");
+  if (cleaned.length === 0) {
+    return "_";
+  }
+  return /^[_a-zA-Z]/.test(cleaned) ? cleaned : `_${cleaned}`;
+};

@@ -18,8 +18,8 @@ import { coerce, type ScalarName } from "./coerce.js";
 import {
   type ConnectionArgs,
   emptyConnection,
-  isEntity,
   toConnection,
+  unwrapEntities,
 } from "./connection.js";
 
 type Resolver = GraphQLFieldResolver<EntityValue, CompilerContext>;
@@ -53,10 +53,15 @@ export const datatypeResolver = (field: MappedField): Resolver => {
       return null;
     }
     const v = values[0];
-    if (v?.kind !== "literal") {
-      return null;
+    if (v?.kind === "literal") {
+      return coerce(v.value, scalar, field.propertyUri, ctx.warn);
     }
-    return coerce(v.value, scalar, field.propertyUri, ctx.warn);
+    // Object property with an unknown range mapped to String (B003): the
+    // value is a URI — honor the "mapped to String" contract.
+    if (v?.kind === "uri" && scalar === "String") {
+      return v.value;
+    }
+    return null;
   };
 };
 
@@ -68,15 +73,16 @@ export const datatypeListResolver = (field: MappedField): Resolver => {
       return [];
     }
     return values
-      .filter((v) => v.kind === "literal")
-      .map((v) =>
-        coerce(
-          (v as { value: string }).value,
-          scalar,
-          field.propertyUri,
-          ctx.warn,
-        ),
-      )
+      .map((v) => {
+        if (v.kind === "literal") {
+          return coerce(v.value, scalar, field.propertyUri, ctx.warn);
+        }
+        // B003 String fallback: URI values surface as their IRI strings.
+        if (v.kind === "uri" && scalar === "String") {
+          return v.value;
+        }
+        return null;
+      })
       .filter((v) => v !== null);
   };
 };
@@ -111,7 +117,7 @@ export const objectListResolver = (field: MappedField): Resolver => {
       .filter((v) => v.kind === "uri")
       .map((v) => (v as { value: string }).value);
     const entities = await ctx.entityLoader.loadMany(uris);
-    return toConnection(entities.filter(isEntity), args as ConnectionArgs);
+    return toConnection(unwrapEntities(entities), args as ConnectionArgs);
   };
 };
 
@@ -136,7 +142,7 @@ export const inverseResolver = (
       return emptyConnection();
     }
     const entities = await ctx.entityLoader.loadMany(uris);
-    return toConnection(entities.filter(isEntity), args as ConnectionArgs);
+    return toConnection(unwrapEntities(entities), args as ConnectionArgs);
   };
 };
 

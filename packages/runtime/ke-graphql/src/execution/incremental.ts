@@ -201,6 +201,19 @@ export async function* relayFormatAdapter(
 ): AsyncGenerator<RelayLegacyPayload, void, void> {
   const pendingById = new Map<string, PendingEntry>();
   const streamCounters = new Map<string, number>();
+  // @stream(initialCount: n): the first incremental item is list index n —
+  // seed each stream counter from the length of the array already delivered
+  // at the pending path in the initial result.
+  const seedCounter = (pending: PendingEntry): number => {
+    let cursor: unknown = results.initialResult.data ?? null;
+    for (const segment of pending.path) {
+      if (cursor == null || typeof cursor !== "object") {
+        return 0;
+      }
+      cursor = (cursor as Record<string | number, unknown>)[segment];
+    }
+    return Array.isArray(cursor) ? cursor.length : 0;
+  };
   for (const pending of results.initialResult.pending ?? []) {
     pendingById.set(pending.id, pending);
   }
@@ -234,7 +247,7 @@ export async function* relayFormatAdapter(
         });
       }
       for (const item of entry.items ?? []) {
-        const index = streamCounters.get(entry.id) ?? 0;
+        const index = streamCounters.get(entry.id) ?? seedCounter(pending);
         streamCounters.set(entry.id, index + 1);
         buffered.push({
           data: item as Record<string, unknown>,
@@ -242,6 +255,20 @@ export async function* relayFormatAdapter(
           ...(pending.label ? { label: pending.label } : {}),
         });
       }
+    }
+    // A deferred fragment that fails entirely is reported ONLY via
+    // completed[{id, errors}] — translate it so legacy clients see the error.
+    for (const completed of payload.completed ?? []) {
+      if (!completed.errors?.length) {
+        continue;
+      }
+      const pending = pendingById.get(completed.id);
+      buffered.push({
+        data: null,
+        errors: completed.errors,
+        ...(pending ? { path: pending.path } : {}),
+        ...(pending?.label ? { label: pending.label } : {}),
+      });
     }
     // Flush all but the last buffered payload; the final one needs is_final.
     if (payload.hasNext) {
@@ -257,5 +284,10 @@ export async function* relayFormatAdapter(
   const last = buffered.shift();
   if (last) {
     yield { ...last, extensions: { ...last.extensions, is_final: true } };
+  } else {
+    // Everything was flushed while hasNext was still true (or the final
+    // payload carried only completed[] bookkeeping) — legacy Relay needs
+    // SOME payload with is_final or it treats the operation as incomplete.
+    yield { data: null, extensions: { is_final: true } };
   }
 }
