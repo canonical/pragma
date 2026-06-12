@@ -3,6 +3,13 @@ export type { CommandResult } from "./cli.js";
 export { runCommand } from "./cli.js";
 export { default as createTestMcpClient } from "./createTestMcpClient.js";
 export { DS_ALL_TTL, DS_ONTOLOGY_TTL, DS_TIERS_TTL } from "./dsFixtures.js";
+export {
+  EX_NAMESPACE,
+  EX_PREFIX_ENTRY,
+  GRAPHQL_CLEAN_TTL,
+  GRAPHQL_ERROR_TTL,
+  GRAPHQL_FATAL_TTL,
+} from "./graphqlFixtures.js";
 export type { PragmaTestStoreOptions } from "./store.js";
 export { createTestStore } from "./store.js";
 export type { TestMcpClientResult } from "./types.js";

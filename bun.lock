@@ -275,6 +275,7 @@
         "@canonical/design-system": "^0.1.2",
         "@canonical/harnesses": "^0.27.1-experimental.0",
         "@canonical/ke": "^0.27.1-experimental.0",
+        "@canonical/ke-graphql": "^0.27.1-experimental.0",
         "@canonical/summon-component": "^0.27.1-experimental.0",
         "@canonical/summon-core": "^0.27.1-experimental.0",
         "@canonical/summon-package": "^0.27.1-experimental.0",
