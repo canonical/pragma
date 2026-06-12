@@ -12,4 +12,14 @@ describe("Button component", () => {
     render(<Component className="test-class">Hello world!</Component>);
     expect(screen.getByText("Hello world!")).toHaveClass("test-class");
   });
+
+  it("does not set aria-label for non-string children", () => {
+    render(
+      <Component>
+        <span>Save</span>
+      </Component>,
+    );
+    const button = screen.getByRole("button", { name: "Save" });
+    expect(button).not.toHaveAttribute("aria-label");
+  });
 });
