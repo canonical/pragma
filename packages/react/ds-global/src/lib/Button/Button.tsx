@@ -23,11 +23,16 @@ const Button = ({
   iconPosition = "start",
   ...props
 }: Props): React.ReactElement => {
+  // Booleans and nullish children render nothing; everything else (including
+  // the number 0) produces visible text that names the button.
+  const hasVisibleChildren =
+    children != null && typeof children !== "boolean" && children !== "";
+
   if (
     typeof process !== "undefined" &&
     process.env.NODE_ENV !== "production" &&
     icon &&
-    !children &&
+    !hasVisibleChildren &&
     !props["aria-label"] &&
     !props["aria-labelledby"]
   ) {

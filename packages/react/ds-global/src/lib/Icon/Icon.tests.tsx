@@ -17,6 +17,13 @@ describe("Icon component", () => {
     expect(svg).not.toHaveAttribute("aria-hidden");
   });
 
+  it("treats an empty aria-label as decorative", () => {
+    const { container } = render(<Component icon={"user"} aria-label="" />);
+    const svg = container.querySelector("svg");
+    expect(svg).toHaveAttribute("aria-hidden", "true");
+    expect(svg).not.toHaveAttribute("role");
+  });
+
   it("honours an explicit role", () => {
     render(<Component icon={"user"} role="presentation" />);
     const svg = screen.getByRole("presentation");

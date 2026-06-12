@@ -4,6 +4,10 @@ import "./styles.css";
 
 const componentCssClassName = "ds icon";
 
+/** An empty or whitespace-only label provides no accessible name. */
+const hasAccessibleName = (value: string | undefined): boolean =>
+  typeof value === "string" && value.trim() !== "";
+
 /**
  * Icon component that renders SVG icons from @canonical/ds-assets
  * @implements ds:global.component.icon
@@ -19,9 +23,11 @@ const Icon = ({
 }: IconProps): ReactElement => {
   // Icons are decorative by default and hidden from assistive technology.
   // Providing an accessible name (aria-label/aria-labelledby) or an explicit
-  // role exposes the icon as a named image instead.
+  // role exposes the icon as a named image instead. An empty label counts as
+  // decorative, mirroring the `alt=""` convention on images.
   const isLabelled =
-    props["aria-label"] !== undefined || props["aria-labelledby"] !== undefined;
+    hasAccessibleName(props["aria-label"]) ||
+    hasAccessibleName(props["aria-labelledby"]);
 
   return (
     // biome-ignore lint/a11y/noSvgWithoutTitle: decorative icons render aria-hidden="true"; labelled icons render role="img" with an aria-label/aria-labelledby (computed at runtime)

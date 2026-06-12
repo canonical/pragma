@@ -182,6 +182,12 @@ describe("Button component", () => {
       render(<Component icon={<span>+</span>}>Add</Component>);
       expect(warn).not.toHaveBeenCalled();
     });
+
+    it("does not warn when children is the number 0", () => {
+      const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+      render(<Component icon={<span>#</span>}>{0}</Component>);
+      expect(warn).not.toHaveBeenCalled();
+    });
   });
 
   describe("disabled state", () => {
