@@ -71,6 +71,26 @@ const result = await executeLocal({
   persisted-query / introspection seams, and multipart incremental delivery
   (`@defer`/`@stream`). Mirrors `@canonical/ke/http`.
 
+## Performance (measured: `bun run bench`, 250-entity graph)
+
+| Path | Cost |
+|---|---|
+| Schema boot from extraction artifact (`compileFromExtraction`) | ~10 ms — no store, no Pass 1 |
+| Live compile (Pass 1 + 2–7 + validate) | ~50–110 ms |
+| Detail page / `node()` (loaderCache: "process") | ~0.3 ms |
+| Listing `first: 24` (slice-before-hydrate) | ~0.7 ms warm |
+| TBox / ontology browsing | ~0.1 ms — **fully store-free** (reads the frozen IR) |
+
+The fast-boot recipe: `pragma graphql build` writes `schema.graphql` (for
+relay-compiler) and `extraction.json` (~2 KiB, with a `sourcesHash`
+fingerprint); `createSchemaPlugin({ extraction })` boots from it when fresh
+and falls back to a live compile when stale. `createContext` accepts a
+`Promise<Store>` — TBox queries answer before the TTL finishes parsing.
+For edge runtimes see `examples/cloudflare-worker` (ke inline sources +
+artifact boot ≈ 25–60 ms cold isolate); for 0 ms, front persisted queries
+(`createPersistedManifest`) with a CDN — responses are pure functions of
+(hash, variables) until the next deploy.
+
 ## Conventions produced
 
 - Relay global ID = the entity's prefixed URI (`ds:global.component.button`)
