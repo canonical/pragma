@@ -87,7 +87,10 @@ interface GraphQLRequestBody {
   };
 }
 
-const isProduction = (): boolean => process.env.NODE_ENV === "production";
+// `process` is absent on Workers/edge isolates — default to production
+// hardening there (no GraphiQL, no introspection) unless options say otherwise.
+const isProduction = (): boolean =>
+  typeof process === "undefined" || process.env.NODE_ENV === "production";
 
 const corsHeaders = (enabled: boolean): Record<string, string> =>
   enabled

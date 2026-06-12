@@ -47,6 +47,49 @@ describe("Store creation", () => {
     expect(result.bindings.length).toBe(2);
   });
 
+  it("creates a store from inline sources without touching the filesystem", async () => {
+    const store = await createStore({
+      sources: [
+        { content: '<http://example.org/a> <http://example.org/p> "one" .' },
+        {
+          content:
+            "<http://example.org/b> <http://example.org/p> <http://example.org/a> .",
+          format: "ntriples",
+          path: "bundle:data",
+          graph: "urn:test:inline",
+        },
+      ],
+    });
+    const result = await store.query(
+      sparql`SELECT ?s ?o WHERE { ?s <http://example.org/p> ?o }`,
+    );
+    expect(result.type).toBe("select");
+    expect((result as SelectResult).bindings.length).toBe(2);
+    store.dispose();
+  });
+
+  it("passes inline sources to onLoad with their label", async () => {
+    const seen: string[] = [];
+    const plugin = definePlugin({
+      name: "spy",
+      onLoad(source) {
+        seen.push(source.path);
+      },
+    });
+    const store = await createStore({
+      sources: [
+        { content: '<http://example.org/a> <http://example.org/p> "x" .' },
+        {
+          content: '<http://example.org/b> <http://example.org/p> "y" .',
+          path: "named",
+        },
+      ],
+      plugins: [plugin],
+    });
+    expect(seen).toEqual(["inline:0", "named"]);
+    store.dispose();
+  });
+
   it("creates a store with minimal TTL", async () => {
     testResult = await createTestStore({ ttl: MINIMAL_TTL });
     const { store } = testResult;

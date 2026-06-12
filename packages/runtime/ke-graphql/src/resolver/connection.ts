@@ -28,12 +28,28 @@ export interface Connection<T> {
   };
 }
 
-export const toBase64 = (value: string): string =>
-  Buffer.from(value, "utf-8").toString("base64");
+// Platform-neutral base64 (Workers/browsers have btoa/atob but no Buffer;
+// Node has both). Unicode-safe via TextEncoder/TextDecoder.
+export const toBase64 = (value: string): string => {
+  if (typeof Buffer !== "undefined") {
+    return Buffer.from(value, "utf-8").toString("base64");
+  }
+  const bytes = new TextEncoder().encode(value);
+  let binary = "";
+  for (const byte of bytes) {
+    binary += String.fromCharCode(byte);
+  }
+  return btoa(binary);
+};
 
 export const fromBase64 = (value: string): string => {
   try {
-    return Buffer.from(value, "base64").toString("utf-8");
+    if (typeof Buffer !== "undefined") {
+      return Buffer.from(value, "base64").toString("utf-8");
+    }
+    const binary = atob(value);
+    const bytes = Uint8Array.from(binary, (c) => c.charCodeAt(0));
+    return new TextDecoder().decode(bytes);
   } catch {
     return "";
   }

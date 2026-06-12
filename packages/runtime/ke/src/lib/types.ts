@@ -108,10 +108,27 @@ export interface SourceConfig {
 }
 
 /**
- * A source can be a simple file path/glob string, or a detailed SourceConfig.
- * Simple strings are normalized to `{ patterns: [theString] }` internally.
+ * Inline RDF content — no filesystem involved. This is the source form for
+ * runtimes without fs access (Cloudflare Workers, edge isolates) and for
+ * data that ships inside the bundle.
  */
-export type SourceSpec = string | SourceConfig;
+export interface InlineSource {
+  /** Raw RDF content (TTL, N-Triples, or RDF/XML as a string). */
+  content: string;
+  /** Serialization format. Defaults to "turtle". */
+  format?: "turtle" | "ntriples" | "rdfxml";
+  /** Named graph URI to load into (default graph when omitted). */
+  graph?: string;
+  /** Label for diagnostics and plugin onLoad hooks. Default: "inline". */
+  path?: string;
+}
+
+/**
+ * A source can be a simple file path/glob string, a detailed SourceConfig,
+ * or inline content. Simple strings are normalized to
+ * `{ patterns: [theString] }` internally.
+ */
+export type SourceSpec = string | SourceConfig | InlineSource;
 
 // ---------------------------------------------------------------------------
 // Store configuration

@@ -13,6 +13,7 @@ export type {
   ConstructResult,
   GraphName,
   InferQueryResult,
+  InlineSource,
   Plugin,
   PluginContext,
   PrefixMap,

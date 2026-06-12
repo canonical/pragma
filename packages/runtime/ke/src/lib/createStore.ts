@@ -31,6 +31,7 @@ import type {
   Binding,
   ConstructResult,
   InferQueryResult,
+  InlineSource,
   Plugin,
   PluginContext,
   PrefixMap,
@@ -112,8 +113,13 @@ function inferFormat(filePath: string): "turtle" | "ntriples" | "rdfxml" {
 // file content as a string, ready to be parsed by Oxigraph.
 // ---------------------------------------------------------------------------
 
-/** Convert a SourceSpec (string or SourceConfig) to a normalized SourceConfig. */
-function normalizeSource(spec: SourceSpec): SourceConfig {
+/** Inline sources carry their content directly — no glob/file resolution. */
+function isInlineSource(spec: SourceSpec): spec is InlineSource {
+  return typeof spec !== "string" && "content" in spec;
+}
+
+/** Convert a path/glob SourceSpec to a normalized SourceConfig. */
+function normalizeSource(spec: string | SourceConfig): SourceConfig {
   if (typeof spec === "string") {
     return { patterns: [spec] };
   }
@@ -157,8 +163,18 @@ function resolveGlobsSync(patterns: string[], cwd: string): string[] {
  */
 function resolveSources(specs: SourceSpec[], cwd: string): ResolvedSource[] {
   const resolved: ResolvedSource[] = [];
+  let inlineIndex = 0;
 
   for (const spec of specs) {
+    if (isInlineSource(spec)) {
+      resolved.push({
+        path: spec.path ?? `inline:${inlineIndex++}`,
+        graph: spec.graph,
+        format: spec.format ?? "turtle",
+        content: spec.content,
+      });
+      continue;
+    }
     const config = normalizeSource(spec);
     const files = resolveGlobsSync(config.patterns, cwd);
 

@@ -83,6 +83,10 @@ export {
   mergeIncremental,
   relayFormatAdapter,
 } from "./execution/incremental.js";
+export {
+  createPersistedManifest,
+  sha256Hex,
+} from "./execution/persisted.js";
 export { createSchemaPlugin, type SchemaPluginExtra } from "./plugin.js";
 export type { Connection, ConnectionArgs } from "./resolver/connection.js";
 export {
