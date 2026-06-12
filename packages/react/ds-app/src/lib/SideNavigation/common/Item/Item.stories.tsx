@@ -10,6 +10,9 @@ const meta: Meta<typeof Item> = {
   title: "Components/SideNavigation/Item",
   component: Item,
   tags: ["autodocs"],
+  // Render flush to the canvas origin (no Storybook padding) so the baseline
+  // overlay grid aligns to the component's own box.
+  parameters: { layout: "fullscreen" },
   // Item is presentational and renders inside a <ul>; withSideNavShell provides
   // the .ds.side-navigation context (shared row grid + surface), and the inner
   // <ul.list> gives valid list markup.
@@ -34,6 +37,15 @@ export const Link: Story = {
   args: {
     url: "/machines",
     label: "Machines",
+  },
+};
+
+/** A link item with a leading icon (icon ↔ label baseline alignment). */
+export const WithIcon: Story = {
+  args: {
+    url: "/machines",
+    label: "Machines",
+    icon: "machines",
   },
 };
 

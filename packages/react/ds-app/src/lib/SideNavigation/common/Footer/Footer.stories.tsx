@@ -11,6 +11,9 @@ const meta: Meta<typeof Footer> = {
   title: "Components/SideNavigation/Footer",
   component: Footer,
   tags: ["autodocs"],
+  // Render flush to the canvas origin (no Storybook padding) so the baseline
+  // overlay grid aligns to the component's own box.
+  parameters: { layout: "fullscreen" },
   // withNavigationRouterProps is self-contained (owns its RouterProvider), so
   // decorator order isn't load-bearing here. withSideNavShell provides the
   // .ds.side-navigation context so shared tokens resolve in isolation.

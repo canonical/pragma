@@ -9,33 +9,41 @@
   list-style: none;
 
   /* The row: link or label. Shares the SideNavigation row template so the
-     leading icon aligns with the header logo. [icon] [label] [end]. */
+     leading icon aligns with the header logo. [icon] [label] [end].
+     Baseline grid: a fixed 5bU/40px row height (matching the header) carries the
+     vertical rhythm. Every cell top-anchors (align-items: start) so the .p line
+     boxes (icon + label) start at the same row top with equal line-height — their
+     baselines line up on the grid. No block padding — the fixed height owns it. */
   & > .row {
     display: grid;
     grid-template-columns: var(--sidenav-row-columns);
-    align-items: center;
+    align-items: start;
     gap: var(--dimension-100); /* 0.5rem */
     width: 100%;
-    padding-block: var(--dimension-150); /* 0.75rem */
+    block-size: calc(var(--space-baseline) * 5); /* 40px — 5bU */
+    box-sizing: border-box;
+    padding-block: 0;
     text-decoration: none;
   }
 
-  /* Leading icon → start column. */
+  /* Leading icon → start column. A .p line box: the icon is inline and rides the
+     baseline-snapped line like a text glyph, so it shares the label baseline. */
   & .start {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+    text-align: center;
+
+    & > .ds.icon {
+      vertical-align: sub;
+    }
   }
 
-  /* Label → middle (1fr) column. */
+  /* Label → middle (1fr) column. .p line box, top-anchored like .start. */
   & .label {
     min-width: 0;
   }
 
-  /* Trailing caret / slot → end (auto) column. */
+  /* Trailing caret / slot → end (auto) column, top-anchored. */
   & .end {
-    display: inline-flex;
-    align-items: center;
+    text-align: center;
   }
 
   /* Keyboard focus visibility (structural a11y; styling refined in PR2). */

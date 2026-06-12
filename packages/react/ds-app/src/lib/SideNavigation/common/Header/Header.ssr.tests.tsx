@@ -6,7 +6,7 @@ import Header from "./Header.js";
 
 describe("Header SSR", () => {
   it("renders without hydration errors", () => {
-    const html = renderToString(<Header>Test content</Header>);
+    const html = renderToString(<Header brand="Test content" />);
     expect(html).toContain("Test content");
     expect(html).toContain("ds side-navigation-header");
   });

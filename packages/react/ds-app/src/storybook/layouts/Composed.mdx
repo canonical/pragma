@@ -1,0 +1,50 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+import {
+  ApplicationLayout,
+  ContentLayout,
+  ViewLayout,
+} from "../../lib/index.js";
+import { LayoutSlot, mockCards } from "./story-utils.js";
+
+<Meta title="Layouts/Composed" />
+
+# The layout grammar, composed
+
+The apps tier divides space with three nestable layouts, per the
+design-system ontology (`apps.layout.*`):
+
+- **ApplicationLayout** — the application shell: a navigation rail (named
+  `navigation` slot, `min-content`) beside the main content area (default
+  slot, `1fr`).
+- **ViewLayout** — a single view: content (default slot, `1fr`) beside an
+  optional contextual aside (named `aside` slot, `min-content`).
+- **ContentLayout** — the view's content grid: children are direct grid
+  items on a preset from `@canonical/styles`, fixed-responsive breakpoint
+  columns by default or the intrinsic auto-fill grid via
+  `grid="intrinsic"`.
+
+Layouts are slot-agnostic: they import no navigation or content components.
+In this composition, dashed rectangles mark **slots** and solid rectangles
+are **example content** (cards) placed in the default slot. Every
+placeholder carries its own `.surface`, so nesting depth reads as depth in
+shade (layer2/layer3).
+
+<div className="surface" style={{ blockSize: "40rem" }}>
+  <ApplicationLayout
+    navigation={<LayoutSlot name="navigation" style={{ inlineSize: "16rem" }} />}
+  >
+    <ViewLayout
+      aside={<LayoutSlot name="aside" style={{ inlineSize: "20rem" }} />}
+    >
+      <ContentLayout>{mockCards(8)}</ContentLayout>
+    </ViewLayout>
+  </ApplicationLayout>
+</div>
+
+```tsx
+<ApplicationLayout navigation={/* e.g. a SideNavigation */}>
+  <ViewLayout aside={/* e.g. a detail panel */}>
+    <ContentLayout>{/* cards */}</ContentLayout>
+  </ViewLayout>
+</ApplicationLayout>
+```
