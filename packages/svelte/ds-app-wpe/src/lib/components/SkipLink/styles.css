@@ -1,0 +1,37 @@
+/* Component tokens - sourced from @canonical/design-tokens */
+
+:root {
+  --skip-link-background: var(--color-background-layer2);
+  --skip-link-color: var(--color-text-link);
+  --skip-link-inset-inline-start: -999px;
+  --skip-link-top: -999px;
+  --skip-link-outline-offset: calc(
+    -1 *
+    var(--tmp-focusable-focused-outline-width)
+  );
+  --skip-link-focus-inset-inline-start: var(--spacing-horizontal-small);
+  --skip-link-focus-padding-block: var(--spacing-vertical-large);
+  --skip-link-focus-padding-inline: var(--spacing-horizontal-large);
+  --skip-link-focus-top: var(--spacing-vertical-small);
+  --skip-link-focus-z-index: 999999;
+}
+
+.ds.skip-link {
+  background: var(--skip-link-background);
+  color: var(--skip-link-color);
+  display: block;
+  inset-inline-start: var(--skip-link-inset-inline-start);
+  position: absolute;
+  top: var(--skip-link-top);
+
+  &:focus,
+  &:focus-visible {
+    inset-inline-start: var(--skip-link-focus-inset-inline-start);
+    outline-offset: var(--skip-link-outline-offset);
+    padding-block: var(--skip-link-focus-padding-block);
+    padding-inline: var(--skip-link-focus-padding-inline);
+    position: fixed;
+    top: var(--skip-link-focus-top);
+    z-index: var(--skip-link-focus-z-index);
+  }
+}
