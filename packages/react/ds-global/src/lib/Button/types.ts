@@ -8,9 +8,9 @@ export interface BaseProps {
   className?: string;
   /**
    * Button contents (label text).
-   * This will also be used for the `aria-label` if not explicitly provided.
-   * If this contains anything other than a string literal (such as a <p> element),
-   * you should specify an `aria-label` prop to ensure accessibility.
+   * The button's accessible name derives from its rendered text content,
+   * so no `aria-label` is set automatically. Pass an explicit `aria-label`
+   * (or `aria-labelledby`) for icon-only buttons without visible text.
    */
   children?: ReactNode;
   /**

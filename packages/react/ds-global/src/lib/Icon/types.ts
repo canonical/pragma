@@ -7,7 +7,12 @@ import type { SVGAttributes } from "react";
     See https://developer.mozilla.org/en-US/docs/Web/API/HTML_DOM_API for a full list of HTML elements interfaces.
 */
 export interface IconProps extends SVGAttributes<HTMLOrSVGElement> {
-  /* Name of the icon to display */
+  /**
+   * Name of the icon to display.
+   * Icons are decorative by default (`aria-hidden="true"`). Pass an
+   * `aria-label` (or `aria-labelledby`) when the icon conveys meaning on
+   * its own; it is then exposed as a named `img` element.
+   */
   icon: IconName;
   /** Root path to the icons (default: /icons). Must be exposed to the user. */
   rootPath?: string;

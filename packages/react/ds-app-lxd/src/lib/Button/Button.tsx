@@ -17,10 +17,13 @@ const Button = ({
         .filter(Boolean)
         .join(" ")}
       style={style}
-      // Apply custom aria label if provided, otherwise use children text.
-      // If the child is a JSX element (and not just a string), a custom aria-label should be used, otherwise the aria-label will be [object Object].
-      // toString() needed to avoid type error for non-string children
-      aria-label={props["aria-label"] || children?.toString()}
+      // Buttons derive their accessible name from their rendered text content.
+      // String children are mirrored into aria-label; for any other children
+      // the attribute is omitted so the name comes from the content itself.
+      aria-label={
+        props["aria-label"] ||
+        (typeof children === "string" ? children : undefined)
+      }
       {...props}
     >
       {children}

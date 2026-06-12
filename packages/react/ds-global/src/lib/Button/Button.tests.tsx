@@ -1,5 +1,5 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import Component from "./Button.js";
 
 describe("Button component", () => {
@@ -135,15 +135,17 @@ describe("Button component", () => {
   });
 
   describe("accessibility", () => {
-    it("uses children as aria-label when children is string", () => {
-      render(<Component>Submit</Component>);
-      expect(screen.getByRole("button")).toHaveAttribute(
-        "aria-label",
-        "Submit",
-      );
+    afterEach(() => {
+      vi.restoreAllMocks();
     });
 
-    it("uses explicit aria-label over children", () => {
+    it("derives its accessible name from string children without aria-label", () => {
+      render(<Component>Submit</Component>);
+      const button = screen.getByRole("button", { name: "Submit" });
+      expect(button).not.toHaveAttribute("aria-label");
+    });
+
+    it("applies an explicit aria-label", () => {
       render(<Component aria-label="Submit form">Submit</Component>);
       expect(screen.getByRole("button")).toHaveAttribute(
         "aria-label",
@@ -151,14 +153,34 @@ describe("Button component", () => {
       );
     });
 
-    it("does not set aria-label when children is not a string and no aria-label provided", () => {
+    it("derives its accessible name from non-string children content", () => {
       render(
         <Component>
           <span>Complex content</span>
         </Component>,
       );
-      // aria-label should be undefined (not set) when children is not a string
-      expect(screen.getByRole("button")).not.toHaveAttribute("aria-label");
+      const button = screen.getByRole("button", { name: "Complex content" });
+      expect(button).not.toHaveAttribute("aria-label");
+    });
+
+    it("warns in development for icon-only buttons without an accessible name", () => {
+      const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+      render(<Component icon={<span>+</span>} />);
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining("icon-only buttons"),
+      );
+    });
+
+    it("does not warn when an icon-only button has an aria-label", () => {
+      const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+      render(<Component icon={<span>+</span>} aria-label="Add" />);
+      expect(warn).not.toHaveBeenCalled();
+    });
+
+    it("does not warn when an icon button has visible text", () => {
+      const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+      render(<Component icon={<span>+</span>}>Add</Component>);
+      expect(warn).not.toHaveBeenCalled();
     });
   });
 

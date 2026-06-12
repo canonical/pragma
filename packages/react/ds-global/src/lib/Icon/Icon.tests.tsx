@@ -3,13 +3,30 @@ import { describe, expect, it } from "vitest";
 import Component from "./Icon.js";
 
 describe("Icon component", () => {
-  it("renders", () => {
-    render(<Component icon={"user"} />);
-    expect(screen.getByRole("img")).toBeInTheDocument();
+  it("renders decoratively by default", () => {
+    const { container } = render(<Component icon={"user"} />);
+    const svg = container.querySelector("svg");
+    expect(svg).toHaveAttribute("aria-hidden", "true");
+    expect(svg).not.toHaveAttribute("role");
+    expect(svg).not.toHaveAttribute("aria-label");
+  });
+
+  it("exposes a named image when aria-label is provided", () => {
+    render(<Component icon={"user"} aria-label="User profile" />);
+    const svg = screen.getByRole("img", { name: "User profile" });
+    expect(svg).not.toHaveAttribute("aria-hidden");
+  });
+
+  it("honours an explicit role", () => {
+    render(<Component icon={"user"} role="presentation" />);
+    const svg = screen.getByRole("presentation");
+    expect(svg).not.toHaveAttribute("aria-hidden");
   });
 
   it("applies className", () => {
-    render(<Component icon={"user"} className={"test-class"} />);
-    expect(screen.getByRole("img")).toHaveClass("test-class");
+    const { container } = render(
+      <Component icon={"user"} className={"test-class"} />,
+    );
+    expect(container.querySelector("svg")).toHaveClass("test-class");
   });
 });

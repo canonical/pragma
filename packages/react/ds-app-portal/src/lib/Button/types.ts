@@ -18,9 +18,9 @@ export interface BaseProps {
   className?: string;
   /**
    * Button contents.
-   * This will also be used for the `aria-label`.
-   * If this contains anything other than a string literal (such as a <p> element), you should specify an
-   * `aria-label` prop to ensure that the button label is applied properly. Otherwise, the label will be set to [object Object].
+   * String children are also applied as the button's `aria-label`. For
+   * non-string children the accessible name comes from the rendered text
+   * content; pass an explicit `aria-label` for icon-only buttons.
    * */
   children: ReactNode;
   /** The visual style of the button */

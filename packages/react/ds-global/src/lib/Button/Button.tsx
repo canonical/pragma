@@ -23,10 +23,18 @@ const Button = ({
   iconPosition = "start",
   ...props
 }: Props): React.ReactElement => {
-  // Derive aria-label from children if not explicitly provided
-  const ariaLabel =
-    props["aria-label"] ||
-    (typeof children === "string" ? children : undefined);
+  if (
+    typeof process !== "undefined" &&
+    process.env.NODE_ENV !== "production" &&
+    icon &&
+    !children &&
+    !props["aria-label"] &&
+    !props["aria-labelledby"]
+  ) {
+    console.warn(
+      "Button: icon-only buttons need an explicit `aria-label` or `aria-labelledby` to be accessible.",
+    );
+  }
 
   const iconElement = icon && <span className="icon">{icon}</span>;
 
@@ -43,7 +51,6 @@ const Button = ({
         .filter(Boolean)
         .join(" ")}
       style={style}
-      aria-label={ariaLabel}
       {...props}
     >
       {iconPosition === "start" ? (

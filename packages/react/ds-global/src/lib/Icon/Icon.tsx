@@ -14,16 +14,23 @@ const Icon = ({
   icon,
   className,
   rootPath = "/icons",
-  role = "img",
+  role,
   ...props
 }: IconProps): ReactElement => {
+  // Icons are decorative by default and hidden from assistive technology.
+  // Providing an accessible name (aria-label/aria-labelledby) or an explicit
+  // role exposes the icon as a named image instead.
+  const isLabelled =
+    props["aria-label"] !== undefined || props["aria-labelledby"] !== undefined;
+
   return (
+    // biome-ignore lint/a11y/noSvgWithoutTitle: decorative icons render aria-hidden="true"; labelled icons render role="img" with an aria-label/aria-labelledby (computed at runtime)
     <svg
       xmlns={xmlns}
       viewBox={viewBox}
       className={[componentCssClassName, className].filter(Boolean).join(" ")}
-      role={role}
-      aria-label={icon}
+      role={role ?? (isLabelled ? "img" : undefined)}
+      aria-hidden={isLabelled || role ? undefined : true}
       {...props}
     >
       <use href={`${rootPath}/${icon}.svg#${icon}`} />
