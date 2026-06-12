@@ -32,12 +32,34 @@ import type {
   NamespaceInfo,
   PropertyNode,
 } from "../compiler/types.js";
-import { toConnection, unwrapEntities } from "../resolver/connection.js";
+import { toFull, toPrefixed } from "../dataloader/uris.js";
+import {
+  connectionFromPage,
+  paginateUriWindow,
+  unwrapEntities,
+} from "../resolver/connection.js";
 
 interface ClassPropertyValue {
   propertyUri: string;
   classUri: string;
 }
+
+/**
+ * Annotation values live on PropertyNode (extracted in Pass 1) — the TBox
+ * schema is fully store-free at request time. Matched by local name so the
+ * convention works for any namespace's annotation properties.
+ */
+const annotationValue = (
+  property: PropertyNode,
+  localSuffix: string,
+): string | null => {
+  for (const [uri, value] of property.annotations) {
+    if (uri.endsWith(localSuffix)) {
+      return value;
+    }
+  }
+  return null;
+};
 
 export interface TBoxSchema {
   ontology: GraphQLObjectType;
@@ -118,13 +140,11 @@ export const buildTBoxSchema = (
       },
       acceptanceCriteria: {
         type: GraphQLString,
-        resolve: async (p, _args, ctx) =>
-          (await ctx.tboxLoader.load(p.uri))?.acceptanceCriteria ?? null,
+        resolve: (p) => annotationValue(p, "acceptanceCriteria"),
       },
       completionGuidance: {
         type: GraphQLString,
-        resolve: async (p, _args, ctx) =>
-          (await ctx.tboxLoader.load(p.uri))?.completionGuidance ?? null,
+        resolve: (p) => annotationValue(p, "completionGuidance"),
       },
       namespace: {
         type: new GraphQLNonNull(GraphQLString),
@@ -229,9 +249,15 @@ export const buildTBoxSchema = (
         description:
           "Named instances of this class (blank-node instances are embeddable and not standalone-resolvable).",
         resolve: async (c, args, ctx) => {
-          const uris = await ctx.listLoader.load(c.uri);
-          const entities = await ctx.entityLoader.loadMany(uris);
-          return toConnection(unwrapEntities(entities), args, true);
+          const fullUris = await ctx.listLoader.load(c.uri);
+          const prefixed = fullUris.map((uri) =>
+            toPrefixed(uri, mapped.namespaces),
+          );
+          const page = paginateUriWindow(prefixed, args);
+          const entities = await ctx.entityLoader.loadMany(
+            page.window.map((uri) => toFull(uri, mapped.namespaces) ?? uri),
+          );
+          return connectionFromPage(unwrapEntities(entities), page);
         },
       },
       instanceCount: {

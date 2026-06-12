@@ -487,6 +487,36 @@ export const extract = async (
     }
   }
 
+  // ── Annotation assertions (acceptanceCriteria/completionGuidance — EC.07).
+  //    Extracted so the TBox schema is fully store-free at request time. ──
+  const annotations = new Map<string, Map<string, string>>();
+  const annotationProps = [...propertyMap.values()]
+    .filter((prop) => prop.kind === "annotation")
+    .map((prop) => prop.uri);
+  if (annotationProps.length > 0) {
+    const values = annotationProps.map((uri) => `<${uri}>`).join(" ");
+    const rows = await select(
+      query,
+      `SELECT ?target ?prop ?value WHERE {
+        VALUES ?prop { ${values} }
+        ?target ?prop ?value .
+      }`,
+      diagnostics,
+      "annotation assertions",
+    );
+    for (const row of rows) {
+      const target = named(row.target);
+      const prop = named(row.prop);
+      const value = literal(row.value);
+      if (!target || !prop || value === undefined) {
+        continue;
+      }
+      const forTarget = annotations.get(target) ?? new Map<string, string>();
+      forTarget.set(prop, value);
+      annotations.set(target, forTarget);
+    }
+  }
+
   // ── Depth guard: blank nodes whose objects are themselves blank (§5.3) ──
   let deepBlankNesting = false;
   try {
@@ -526,6 +556,7 @@ export const extract = async (
       selfReferential,
       functionalViolations,
       undeclaredPredicates,
+      annotations,
       deepBlankNesting,
     },
     diagnostics,

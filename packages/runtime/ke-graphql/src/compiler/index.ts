@@ -8,9 +8,9 @@ import { createEntityLoader } from "../dataloader/entityLoader.js";
 import { createInverseLoader } from "../dataloader/inverseLoader.js";
 import { createListLoader } from "../dataloader/listLoader.js";
 import {
-  createTBoxLoader,
-  findAnnotationPredicates,
-} from "../dataloader/tboxLoader.js";
+  deserializeExtraction,
+  type SerializedExtraction,
+} from "./artifact.js";
 import { build } from "./build.js";
 import { compose } from "./compose.js";
 import { emit } from "./emit.js";
@@ -21,8 +21,10 @@ import type {
   CompilerContext,
   CompilerResult,
   Diagnostic,
+  EntityValue,
   MappedIR,
   QueryFn,
+  RawExtraction,
   RuntimeWarningHandler,
   SchemaPluginOptions,
 } from "./types.js";
@@ -48,27 +50,56 @@ const defaultWarningHandler = (): RuntimeWarningHandler => {
   };
 };
 
+export interface ContextFactory {
+  (store: Store | Promise<Store>): CompilerContext;
+  /** Drop the shared caches ("process" mode); no-op otherwise. */
+  clearCache(): void;
+}
+
 export const createContextFactory = (
   mapped: MappedIR,
   options: SchemaPluginOptions,
-): ((store: Store) => CompilerContext) => {
-  const annotationPredicates = findAnnotationPredicates(
-    [...mapped.ir.properties.values()]
-      .filter((p) => p.isAnnotation)
-      .map((p) => p.uri),
+): ContextFactory => {
+  // Process-lifetime loader caches (item: loaderCache "process"). Scoped to
+  // this CompilerResult: onReload recompiles and produces a new factory, so
+  // cache invalidation on data change is automatic.
+  const processCaches =
+    options.loaderCache === "process"
+      ? {
+          entity: new Map<string, Promise<EntityValue | null>>(),
+          list: new Map<string, Promise<string[]>>(),
+          inverse: new Map<string, Promise<string[]>>(),
+        }
+      : undefined;
+
+  const factory: ContextFactory = Object.assign(
+    (store: Store | Promise<Store>): CompilerContext => {
+      // Lazy-store gate: ABox loaders await the store at query time; TBox
+      // resolvers read the frozen IR and never touch it.
+      const query: QueryFn = async (q) =>
+        (await Promise.resolve(store)).query(q as SPARQL<string>);
+      return {
+        entityLoader: createEntityLoader(query, mapped, processCaches?.entity),
+        listLoader: createListLoader(query, mapped, processCaches?.list),
+        inverseLoader: createInverseLoader(
+          query,
+          mapped,
+          processCaches?.inverse,
+        ),
+        nameMap: mapped.nameMap,
+        store,
+        warn: options.onRuntimeWarning ?? defaultWarningHandler(),
+      };
+    },
+    {
+      clearCache(): void {
+        processCaches?.entity.clear();
+        processCaches?.list.clear();
+        processCaches?.inverse.clear();
+      },
+    },
   );
-  return (store: Store): CompilerContext => {
-    const query = storeQueryFn(store);
-    return {
-      entityLoader: createEntityLoader(query, mapped),
-      listLoader: createListLoader(query, mapped),
-      inverseLoader: createInverseLoader(query, mapped),
-      tboxLoader: createTBoxLoader(query, annotationPredicates),
-      nameMap: mapped.nameMap,
-      store,
-      warn: options.onRuntimeWarning ?? defaultWarningHandler(),
-    };
-  };
+  return factory;
 };
 
 /**
@@ -84,12 +115,37 @@ export const compile = async (
   prefixes: Readonly<Record<string, string>>,
   options: SchemaPluginOptions = {},
 ): Promise<CompilerResult> => {
-  const diagnostics: Diagnostic[] = [];
-
   const extracted = await extract(query, prefixes);
-  diagnostics.push(...extracted.diagnostics);
+  return runPasses(extracted.output, options, {
+    diagnostics: extracted.diagnostics,
+  });
+};
 
-  const built = build(extracted.output, options.mappings);
+/**
+ * Rebuild the executable schema from a precomputed extraction artifact —
+ * Passes 2-7 only, pure JS, no store. validateSchema/printSchema are skipped
+ * by default (assumeValid): the artifact was validated when it was built.
+ */
+export const compileFromExtraction = (
+  artifact: string | SerializedExtraction,
+  options: SchemaPluginOptions = {},
+  { assumeValid = true }: { assumeValid?: boolean } = {},
+): CompilerResult => {
+  const { extraction } = deserializeExtraction(artifact);
+  return runPasses(extraction, options, { skipValidation: assumeValid });
+};
+
+const runPasses = (
+  extraction: RawExtraction,
+  options: SchemaPluginOptions,
+  {
+    diagnostics: seed = [],
+    skipValidation = false,
+  }: { diagnostics?: Diagnostic[]; skipValidation?: boolean } = {},
+): CompilerResult => {
+  const diagnostics: Diagnostic[] = [...seed];
+
+  const built = build(extraction, options.mappings);
   diagnostics.push(...built.diagnostics);
 
   const validated = validate(built.output);
@@ -107,6 +163,7 @@ export const compile = async (
   const composed = compose(relayed.output, {
     extensions: options.extensions,
     incremental: options.incremental,
+    skipValidation,
   });
   diagnostics.push(...composed.diagnostics);
 
@@ -120,13 +177,16 @@ export const compile = async (
     throw new CompilationError(diagnostics);
   }
 
+  const factory = createContextFactory(mapped.output, options);
   return {
     schema: composed.output.schema,
     sdl: composed.output.sdl,
     diagnostics,
     nameMap: mapped.output.nameMap,
     mapped: mapped.output,
-    createContext: createContextFactory(mapped.output, options),
+    extraction,
+    createContext: factory,
+    clearLoaderCache: factory.clearCache,
   };
 };
 

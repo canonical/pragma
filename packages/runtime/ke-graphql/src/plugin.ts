@@ -8,9 +8,14 @@
 // the boot. All diagnostics are logged either way.
 // =============================================================================
 
-import { writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { definePlugin, type PluginContext, type SPARQL } from "@canonical/ke";
-import { compile } from "./compiler/index.js";
+import {
+  deserializeExtraction,
+  hashSources,
+  type SerializedExtraction,
+} from "./compiler/artifact.js";
+import { compile, compileFromExtraction } from "./compiler/index.js";
 import type {
   Diagnostic,
   QueryFn,
@@ -46,24 +51,63 @@ const pluginQueryFn =
  * const { schema, createContext } = store.api<SchemaPluginApi>("ke-graphql")!;
  * ```
  */
-export const createSchemaPlugin = (options: SchemaPluginOptions = {}) =>
-  definePlugin<SchemaPluginApi>({
+export interface SchemaPluginExtra {
+  /**
+   * Precomputed extraction artifact (path or parsed) — boots the schema
+   * without Pass 1 when its sourcesHash matches the loaded TTL; falls back
+   * to a live compile (with a warning) when stale.
+   */
+  extraction?: string | SerializedExtraction;
+}
+
+export const createSchemaPlugin = (
+  options: SchemaPluginOptions & SchemaPluginExtra = {},
+) => {
+  // Fingerprint the TTL sources as ke loads them — artifact freshness check.
+  const sourceContents: string[] = [];
+  return definePlugin<SchemaPluginApi>({
     name: "ke-graphql",
 
+    onLoad(source) {
+      sourceContents.push(source.content);
+    },
+
     async onReady(ctx) {
-      return compileForContext(ctx, options);
+      return compileForContext(ctx, options, sourceContents);
     },
 
     async onReload(ctx) {
-      return compileForContext(ctx, options);
+      return compileForContext(ctx, options, sourceContents);
     },
   });
+};
 
 const compileForContext = async (
   ctx: PluginContext,
-  options: SchemaPluginOptions,
+  options: SchemaPluginOptions & SchemaPluginExtra,
+  sourceContents: string[],
 ): Promise<SchemaPluginApi> => {
-  const result = await compile(pluginQueryFn(ctx), ctx.prefixes, options);
+  let result: Awaited<ReturnType<typeof compile>> | undefined;
+
+  if (options.extraction !== undefined) {
+    const artifact =
+      typeof options.extraction === "string"
+        ? (JSON.parse(
+            readFileSync(options.extraction, "utf-8"),
+          ) as SerializedExtraction)
+        : options.extraction;
+    const { sourcesHash } = deserializeExtraction(artifact);
+    const loadedHash = hashSources(sourceContents);
+    if (sourcesHash === loadedHash) {
+      result = compileFromExtraction(artifact, options);
+    } else {
+      console.warn(
+        `[ke-graphql] extraction artifact is stale (artifact ${sourcesHash}, sources ${loadedHash}) — falling back to a live compile. Regenerate it (pragma graphql build).`,
+      );
+    }
+  }
+
+  result ??= await compile(pluginQueryFn(ctx), ctx.prefixes, options);
   logDiagnostics(result.diagnostics);
 
   if (options.sdlOutput) {
@@ -76,5 +120,6 @@ const compileForContext = async (
     nameMap: result.nameMap,
     sdl: result.sdl,
     createContext: result.createContext,
+    clearLoaderCache: result.clearLoaderCache,
   };
 };

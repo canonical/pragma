@@ -158,6 +158,12 @@ export interface RawExtraction {
   functionalViolations: Set<string>;
   /** ABox predicates not declared in any loaded TBox (V014). */
   undeclaredPredicates: Set<string>;
+  /**
+   * Annotation-property assertions: target URI -> (annotation property URI
+   * -> value). Extracted here so the TBox schema never touches the store
+   * (acceptanceCriteria/completionGuidance live on PropertyNode).
+   */
+  annotations: Map<string, Map<string, string>>;
   /** True when some blank node's object is itself a blank node (§5.3 depth guard). */
   deepBlankNesting: boolean;
 }
@@ -248,6 +254,8 @@ export interface PropertyNode {
   /** Inverse property URI when declared via owl:inverseOf. */
   inverse?: string;
   isAnnotation: boolean;
+  /** Annotation values targeting THIS property (annotation prop URI -> value). */
+  annotations: ReadonlyMap<string, string>;
 }
 
 export interface OntologyIR {
@@ -367,21 +375,16 @@ export interface InverseKey {
   object: string;
 }
 
-export interface TBoxEntityData {
-  uri: string;
-  label?: string;
-  definition?: string;
-  acceptanceCriteria?: string;
-  completionGuidance?: string;
-}
-
 export interface CompilerContext {
   entityLoader: DataLoader<string, EntityValue | null>;
   listLoader: DataLoader<string, string[]>;
   inverseLoader: DataLoader<string, string[]>;
-  tboxLoader: DataLoader<string, TBoxEntityData | null>;
   nameMap: NameMap;
-  store: Store;
+  /**
+   * The ke store (escape hatch for extensions). May be a Promise for
+   * lazy-store boots: ABox loaders await it; TBox resolvers never touch it.
+   */
+  store: Store | Promise<Store>;
   /** Resolver-time warning channel (EC.03 coercion failures). */
   warn: RuntimeWarningHandler;
   /** Extension state (search index, back-link index, …) — consumer-owned. */
@@ -448,15 +451,33 @@ export interface SchemaPluginOptions {
   standardVocabFields?: Record<string, Record<string, string>>;
   /** Resolver-time warnings (coercion failures). Default: console.warn, deduplicated. */
   onRuntimeWarning?: RuntimeWarningHandler;
+  /**
+   * DataLoader cache scope. "request" (default): fresh caches per
+   * createContext call. "process": caches shared across contexts for the
+   * lifetime of this CompilerResult — sound because the store is immutable
+   * between reloads, and onReload produces a new result (auto-invalidation).
+   * Failed batches are evicted, never memoized.
+   */
+  loaderCache?: "request" | "process";
 }
 
 export interface CompilerResult {
   schema: GraphQLSchema;
   diagnostics: Diagnostic[];
   nameMap: NameMap;
+  /** Empty when compiled from an artifact with assumeValid (printSchema skipped). */
   sdl: string;
   mapped: MappedIR;
-  createContext(store: Store): CompilerContext;
+  /** The Pass 1 output — serializable via serializeExtraction (artifact boots). */
+  extraction: RawExtraction;
+  /**
+   * Fresh DataLoaders per call ("request" mode) or shared caches
+   * ("process" mode). Accepts a Promise for lazy-store boots: TBox
+   * queries answer before the store resolves; ABox loaders await it.
+   */
+  createContext(store: Store | Promise<Store>): CompilerContext;
+  /** Drop the shared caches ("process" mode); no-op otherwise. */
+  clearLoaderCache(): void;
 }
 
 export interface SchemaPluginApi {
@@ -469,7 +490,9 @@ export interface SchemaPluginApi {
    * store as an argument: ke's PluginContext is scoped to its lifecycle
    * hook and must not be retained for request-time queries.
    */
-  createContext(store: Store): CompilerContext;
+  createContext(store: Store | Promise<Store>): CompilerContext;
+  /** Drop the shared caches ("process" mode); no-op otherwise. */
+  clearLoaderCache(): void;
 }
 
 /**

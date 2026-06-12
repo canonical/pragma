@@ -14,8 +14,19 @@ export const encodeInverseKey = (property: string, object: string): string =>
 export const createInverseLoader = (
   query: QueryFn,
   mapped: MappedIR,
-): DataLoader<string, string[]> =>
-  new DataLoader(async (keys) => {
+  cacheMap?: Map<string, Promise<string[]>>,
+): DataLoader<string, string[]> => {
+  const loader: DataLoader<string, string[]> = new DataLoader(
+    (keys) =>
+      batch(keys).catch((error) => {
+        for (const key of keys) {
+          loader.clear(key);
+        }
+        throw error;
+      }),
+    cacheMap ? { cacheMap } : undefined,
+  );
+  const batch = async (keys: ReadonlyArray<string>) => {
     const pairs: string[] = [];
     for (const key of keys) {
       const space = key.indexOf(" ");
@@ -59,4 +70,7 @@ export const createInverseLoader = (
       const full = toFull(object, mapped.namespaces) ?? object;
       return byKey.get(encodeInverseKey(property, full)) ?? [];
     });
-  });
+  };
+
+  return loader;
+};

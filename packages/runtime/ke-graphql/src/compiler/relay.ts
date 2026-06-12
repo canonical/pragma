@@ -10,8 +10,12 @@
 // - root query fields: node(id), per-type lookup + listing
 // =============================================================================
 
-import { toFull } from "../dataloader/uris.js";
-import { toConnection, unwrapEntities } from "../resolver/connection.js";
+import { toFull, toPrefixed } from "../dataloader/uris.js";
+import {
+  connectionFromPage,
+  paginateUriWindow,
+  unwrapEntities,
+} from "../resolver/connection.js";
 import type { FieldPlan, SchemaPlan } from "./emit.js";
 import type {
   CompilerContext,
@@ -151,10 +155,17 @@ export const wireRelay = (plan: SchemaPlan): PassResult<SchemaPlan> => {
       type: { base: type.name, kind: "connection", list: false, nonNull: true },
       connectionArgs: true,
       resolve: async (_parent, args, ctx: CompilerContext) => {
-        const uris = await ctx.listLoader.load(classUri);
-        const entities = await ctx.entityLoader.loadMany(uris);
-        // The list loader returns name-sorted URIs; keep that order.
-        return toConnection(unwrapEntities(entities), args, true);
+        // Slice BEFORE hydration: cursors and pageInfo need only the
+        // (name-sorted) URI list; entities are loaded for the page alone.
+        const fullUris = await ctx.listLoader.load(classUri);
+        const prefixed = fullUris.map((uri) =>
+          toPrefixed(uri, mapped.namespaces),
+        );
+        const page = paginateUriWindow(prefixed, args);
+        const entities = await ctx.entityLoader.loadMany(
+          page.window.map((uri) => toFull(uri, mapped.namespaces) ?? uri),
+        );
+        return connectionFromPage(unwrapEntities(entities), page);
       },
     });
   }

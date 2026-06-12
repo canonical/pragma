@@ -21,8 +21,17 @@
  */
 
 export {
+  ARTIFACT_VERSION,
+  deserializeExtraction,
+  hashSources,
+  type SerializedExtraction,
+  serializeExtraction,
+} from "./compiler/artifact.js";
+export {
   CompilationError,
+  type ContextFactory,
   compile,
+  compileFromExtraction,
   createContextFactory,
   storeQueryFn,
 } from "./compiler/index.js";
@@ -57,7 +66,6 @@ export type {
   SchemaExtensionsInput,
   SchemaPluginApi,
   SchemaPluginOptions,
-  TBoxEntityData,
   TripleSet,
   TripleValue,
 } from "./compiler/types.js";
@@ -75,12 +83,16 @@ export {
   mergeIncremental,
   relayFormatAdapter,
 } from "./execution/incremental.js";
-export { createSchemaPlugin } from "./plugin.js";
+export { createSchemaPlugin, type SchemaPluginExtra } from "./plugin.js";
 export type { Connection, ConnectionArgs } from "./resolver/connection.js";
 export {
+  connectionFromPage,
   emptyConnection,
   fromBase64,
   isEntity,
+  paginateUriWindow,
   toBase64,
   toConnection,
+  type UriPage,
+  unwrapEntities,
 } from "./resolver/connection.js";

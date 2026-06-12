@@ -154,6 +154,13 @@ export const createGraphQLHandler = (
     cors: boolean,
   ): Response => json({ errors: [formatOne({ message })] }, status, cors);
 
+  // Parsed-document cache: query texts repeat (persisted queries, Relay
+  // clients re-sending the same operations) — parsing is the dominant cost
+  // of warm requests. Bounded; validation still runs per request (rules may
+  // be per-request).
+  const documentCache = new Map<string, DocumentNode>();
+  const DOCUMENT_CACHE_LIMIT = 500;
+
   return async (request: Request): Promise<Response> => {
     const cors = options.cors ?? false;
 
@@ -233,8 +240,17 @@ export const createGraphQLHandler = (
 
     // ── parse + validate ──
     let document: DocumentNode;
+    const cached = documentCache.get(queryText);
     try {
-      document = parse(queryText);
+      if (cached) {
+        document = cached;
+      } else {
+        document = parse(queryText);
+        if (documentCache.size >= DOCUMENT_CACHE_LIMIT) {
+          documentCache.clear();
+        }
+        documentCache.set(queryText, document);
+      }
     } catch (error) {
       return json(
         {

@@ -74,6 +74,76 @@ export interface Sortable {
   uri: string | null;
 }
 
+export interface UriPage {
+  /** The page's URIs, in cursor domain (prefixed form). */
+  window: string[];
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
+}
+
+/**
+ * Run the full pagination algorithm on the URI LIST, before any hydration:
+ * cursors are base64(uri), hasNextPage is array math — entities are only
+ * needed for the page itself. Input must already be in display order
+ * (root listings arrive name-sorted from the list loader).
+ */
+export const paginateUriWindow = (
+  uris: ReadonlyArray<string>,
+  args: ConnectionArgs,
+): UriPage => {
+  if (args.first != null && args.first < 0) {
+    throw new GraphQLError('Argument "first" must be a non-negative integer');
+  }
+  if (args.last != null && args.last < 0) {
+    throw new GraphQLError('Argument "last" must be a non-negative integer');
+  }
+  let start = 0;
+  let end = uris.length;
+  if (args.after) {
+    const idx = uris.indexOf(fromBase64(args.after));
+    if (idx !== -1) {
+      start = idx + 1;
+    }
+  }
+  if (args.before) {
+    const idx = uris.indexOf(fromBase64(args.before));
+    if (idx !== -1) {
+      end = Math.min(end, idx);
+    }
+  }
+  let hasNextPage = false;
+  let hasPreviousPage = false;
+  if (args.first != null && end - start > args.first) {
+    end = start + args.first;
+    hasNextPage = true;
+  }
+  if (args.last != null && end - start > args.last) {
+    start = end - args.last;
+    hasPreviousPage = true;
+  }
+  return { window: uris.slice(start, end), hasNextPage, hasPreviousPage };
+};
+
+/** Build a connection from an already-paginated, hydrated page. */
+export const connectionFromPage = <T extends Sortable>(
+  entities: T[],
+  page: UriPage,
+): Connection<T> => {
+  const edges = entities.map((node) => ({
+    node,
+    cursor: toBase64(node.uri ?? ""),
+  }));
+  return {
+    edges,
+    pageInfo: {
+      hasNextPage: page.hasNextPage,
+      hasPreviousPage: page.hasPreviousPage,
+      startCursor: edges[0]?.cursor ?? null,
+      endCursor: edges[edges.length - 1]?.cursor ?? null,
+    },
+  };
+};
+
 /**
  * Build a Relay connection from a full in-memory list. O(n) — fine for the
  * data scale (≤ ~1000 items per list).

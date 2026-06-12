@@ -56,6 +56,12 @@ const SCALARS: Record<string, GraphQLScalarType> = {
 export interface ComposeOptions {
   extensions?: SchemaExtensionsInput;
   incremental?: boolean;
+  /**
+   * Skip validateSchema + printSchema (artifact boots: the schema is a
+   * deterministic rebuild of an extraction that was validated when the
+   * artifact was produced; the SDL is a build artifact, not a runtime need).
+   */
+  skipValidation?: boolean;
 }
 
 export interface ComposedSchema {
@@ -360,19 +366,21 @@ export const compose = (
       types: allTypes,
       directives,
     });
-    const validationErrors = validateSchema(schema);
-    for (const error of validationErrors) {
-      diagnostics.push({
-        severity: "error",
-        code: "C003",
-        message: error.message,
-        phase: PHASE,
-      });
-    }
-    if (validationErrors.length > 0) {
-      schema = null;
-    } else {
-      sdl = printSchema(schema);
+    if (!options.skipValidation) {
+      const validationErrors = validateSchema(schema);
+      for (const error of validationErrors) {
+        diagnostics.push({
+          severity: "error",
+          code: "C003",
+          message: error.message,
+          phase: PHASE,
+        });
+      }
+      if (validationErrors.length > 0) {
+        schema = null;
+      } else {
+        sdl = printSchema(schema);
+      }
     }
   } catch (error) {
     diagnostics.push({

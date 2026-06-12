@@ -74,8 +74,21 @@ const mostSpecificTypename = (
 export const createEntityLoader = (
   query: QueryFn,
   mapped: MappedIR,
-): DataLoader<string, EntityValue | null> =>
-  new DataLoader(async (fullUris) => {
+  cacheMap?: Map<string, Promise<EntityValue | null>>,
+): DataLoader<string, EntityValue | null> => {
+  const loader: DataLoader<string, EntityValue | null> = new DataLoader(
+    (fullUris) =>
+      batch(fullUris).catch((error) => {
+        // A shared (process-lifetime) cache must not memoize failures:
+        // evict the keys of a failed batch before rethrowing.
+        for (const uri of fullUris) {
+          loader.clear(uri);
+        }
+        throw error;
+      }),
+    cacheMap ? { cacheMap } : undefined,
+  );
+  const batch = async (fullUris: ReadonlyArray<string>) => {
     const values = fullUris.map((uri) => `<${uri}>`).join(" ");
     const result = await query(
       `CONSTRUCT { ?s ?p ?o . ?o ?bp ?bo }
@@ -151,4 +164,7 @@ export const createEntityLoader = (
         triples,
       } satisfies EntityValue;
     });
-  });
+  };
+
+  return loader;
+};

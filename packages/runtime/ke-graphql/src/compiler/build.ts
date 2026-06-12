@@ -305,6 +305,7 @@ export const build = (
       functional,
       classCardinality,
       isAnnotation: raw.kind === "annotation",
+      annotations: extraction.annotations.get(raw.uri) ?? new Map(),
     });
   }
 

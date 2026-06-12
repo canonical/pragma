@@ -31,8 +31,19 @@ export const namePredicateFor = (
 export const createListLoader = (
   query: QueryFn,
   mapped: MappedIR,
-): DataLoader<string, string[]> =>
-  new DataLoader(async (classUris) => {
+  cacheMap?: Map<string, Promise<string[]>>,
+): DataLoader<string, string[]> => {
+  const loader: DataLoader<string, string[]> = new DataLoader(
+    (classUris) =>
+      batch(classUris).catch((error) => {
+        for (const uri of classUris) {
+          loader.clear(uri);
+        }
+        throw error;
+      }),
+    cacheMap ? { cacheMap } : undefined,
+  );
+  const batch = async (classUris: ReadonlyArray<string>) => {
     const pairs = classUris
       .map((uri) => `(<${uri}> <${namePredicateFor(mapped, uri)}>)`)
       .join(" ");
@@ -68,4 +79,7 @@ export const createListLoader = (
       }
     }
     return classUris.map((uri) => byClass.get(uri) ?? []);
-  });
+  };
+
+  return loader;
+};
