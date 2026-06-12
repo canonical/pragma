@@ -13,7 +13,8 @@ describe("TSection", () => {
 
   it("applies custom className", () => {
     render(<TSection className="custom-class">Content</TSection>);
-    const element = screen.getByText("Content");
+    // The root element carries the classes; children may render in a descendant.
+    const element = document.querySelector(".custom-class") as HTMLElement;
     expect(element.className).toContain("ds section");
     expect(element.className).toContain("custom-class");
   });
