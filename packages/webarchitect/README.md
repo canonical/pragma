@@ -135,8 +135,56 @@ webarchitect <ruleset> [options]
 ### Available Options
 
 - `--verbose`: Shows detailed information about each validation, including what files are being checked, what rules are being applied, and the actual content found. Essential for debugging validation failures or understanding exactly what the tool is checking.
--`--json`: Outputs results in JSON format instead of human-readable text. Required for integrating webarchitect into automated systems, CI/CD pipelines, or other tools that need to programmatically process validation results.
--`--help`: Displays comprehensive usage information, available options, and examples. Use this command to see the most current information about the tool's capabilities.
+- `--json`: Outputs results in JSON format instead of human-readable text. Required for integrating webarchitect into automated systems, CI/CD pipelines, or other tools that need to programmatically process validation results.
+- `--var <key=value>`: Overrides a ruleset [template variable](#template-variables) for this run. Repeatable, e.g. `--var prefix=@myorg/ --var foo=bar`.
+- `--prefix <value>`: Shorthand for `--var prefix=<value>`, since the package-name prefix is the most common variable to override.
+- `--list`: Lists all available rulesets (bundled and in the current directory) and exits.
+- `--help`: Displays comprehensive usage information, available options, and examples. Use this command to see the most current information about the tool's capabilities.
+
+### Template variables
+
+Rulesets can declare **template variables** so a single ruleset can be reused across organizations or relaxed per-project without duplicating it. Variables are declared under a top-level `variables` block, referenced as `${name}` anywhere inside a rule, and overridden at the command line with `--var`/`--prefix`.
+
+The built-in `package`, `tool-ts`, and `package-svelte` rulesets use this to enforce the package-name prefix. They declare:
+
+```jsonc
+{
+  "name": "package",
+  "variables": {
+    "prefix": {
+      "default": "@canonical/",        // used when no override is supplied
+      "schema": { "type": "string" }   // optional: validates override values
+    }
+  },
+  "package-structure": {
+    "file": {
+      "name": "package.json",
+      "contains": {
+        "properties": {
+          "name": { "type": "string", "pattern": "^${prefix}" }
+        }
+      }
+    }
+  }
+}
+```
+
+By default this enforces that the package name starts with `@canonical/`. Consumers can override it:
+
+```bash
+# Require a different org prefix
+webarchitect library --prefix @myorg/
+
+# Drop the prefix requirement entirely (empty prefix → pattern "^", matches any name)
+webarchitect library --prefix ""
+```
+
+Resolution rules:
+
+- An override value always wins over the declared `default`.
+- If a variable declares a `schema`, the override value is validated against it (via JSON Schema) before substitution.
+- Overriding a variable that the ruleset does not declare is an error, as is referencing an undeclared `${name}` token inside a rule — both surface typos early.
+- Variables declared in a parent ruleset are inherited by rulesets that `extends` it.
 
 ### Ruleset Resolution Mechanism
 

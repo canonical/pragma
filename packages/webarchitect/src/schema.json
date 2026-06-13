@@ -16,6 +16,25 @@
       "type": "array",
       "items": { "type": "string" },
       "description": "List of other rulesets this one extends from"
+    },
+    "variables": {
+      "type": "object",
+      "description": "Template variables substituted as ${name} within rules and overridable via the CLI --var/--prefix flags",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "default": {
+            "type": "string",
+            "description": "Value used when no override is provided"
+          },
+          "schema": {
+            "$ref": "http://json-schema.org/draft/2020-12/schema#",
+            "description": "Optional JSON Schema constraining override values"
+          }
+        },
+        "required": ["default"],
+        "additionalProperties": false
+      }
     }
   },
   "required": ["name"],

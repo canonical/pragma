@@ -10,7 +10,7 @@
         "properties": {
           "name": {
             "type": "string",
-            "pattern": "^@canonical/"
+            "pattern": "^${prefix}"
           },
           "version": {
             "type": "string"
