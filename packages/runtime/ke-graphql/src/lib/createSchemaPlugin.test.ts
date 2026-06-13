@@ -3,16 +3,50 @@
 // sdlOutput writing, extensions (object + factory), standardVocabFields.
 // =============================================================================
 
-import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import {
+  existsSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createTestStore } from "@canonical/ke/testing";
 import { GraphQLString, graphql } from "graphql";
-import { afterEach, describe, expect, it } from "vitest";
-import type { SchemaPluginApi } from "#compiler";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import {
+  compile,
+  createStoreQueryFn,
+  hashSources,
+  type SchemaPluginApi,
+  serializeExtraction,
+} from "#compiler";
 import type { EntityValue } from "#shared";
 import { MINIMAL_TTL, PREFIXES } from "#testing";
 import createSchemaPlugin from "./createSchemaPlugin.js";
+
+// A TTL whose compile emits diagnostics of every severity without failing
+// composition, plus at least one sourceless diagnostic so both arms of the
+// log line's `(source)` suffix are taken: V006 (info, boolean property),
+// V002 (warning, domainless property), three custom mappings onto one field
+// name (M001 error, non-fatal), and a union range (X003 info, sourceless).
+const DIAGNOSTIC_TTL = `
+@prefix ex: <http://example.org/> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+ex:Thing a owl:Class ; rdfs:label "Thing" .
+ex:Other a owl:Class ; rdfs:label "Other" .
+ex:active a owl:DatatypeProperty ; rdfs:domain ex:Thing ; rdfs:range xsd:boolean ; rdfs:label "active" .
+ex:foo a owl:DatatypeProperty ; rdfs:domain ex:Thing ; rdfs:range xsd:string ; rdfs:label "foo" .
+ex:bar a owl:DatatypeProperty ; rdfs:domain ex:Thing ; rdfs:range xsd:string ; rdfs:label "bar" .
+ex:baz a owl:DatatypeProperty ; rdfs:domain ex:Thing ; rdfs:range xsd:string ; rdfs:label "baz" .
+ex:orphan a owl:DatatypeProperty ; rdfs:range xsd:string ; rdfs:label "orphan" .
+ex:ref a owl:ObjectProperty ; rdfs:domain ex:Thing ; rdfs:range [ owl:unionOf ( ex:Thing ex:Other ) ] ; rdfs:label "ref" .
+ex:w a ex:Thing ; ex:active "true" ; ex:foo "f" ; ex:bar "b" ; ex:baz "z" .
+ex:o a ex:Other .
+`;
 
 type Cleanup = () => void;
 let cleanups: Cleanup[] = [];
@@ -171,5 +205,84 @@ describe("createSchemaPlugin", () => {
     });
     expect(result.errors).toBeUndefined();
     expect((result.data?.thing as { label: string }).label).toBe("The Widget");
+  });
+
+  it("logs diagnostics to the matching console channel by severity", async () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const info = vi.spyOn(console, "info").mockImplementation(() => {});
+    cleanups.push(() => {
+      error.mockRestore();
+      warn.mockRestore();
+      info.mockRestore();
+    });
+    const plugin = createSchemaPlugin({
+      mappings: {
+        "ex:foo": { graphqlName: "dup" },
+        "ex:bar": { graphqlName: "dup" },
+        "ex:baz": { graphqlName: "dup" },
+      },
+    });
+    const { cleanup } = await createTestStore({
+      ttl: DIAGNOSTIC_TTL,
+      prefixes: PREFIXES,
+      plugins: [plugin],
+    });
+    cleanups.push(cleanup);
+    expect(error).toHaveBeenCalledWith(expect.stringContaining("M001"));
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("V002"));
+    expect(info).toHaveBeenCalledWith(expect.stringContaining("V006"));
+    // The "(source)" suffix is appended only when a diagnostic carries a
+    // source: V006 has one, the union diagnostic (X003) does not.
+    expect(info).toHaveBeenCalledWith(expect.stringMatching(/V006:.+\(.+\)$/));
+    expect(info).toHaveBeenCalledWith(expect.stringMatching(/X003:[^()]*$/));
+  });
+
+  it("boots from an extraction artifact given as a file path", async () => {
+    // Derive a fresh artifact (matching sourcesHash) from a live compile.
+    const probe = await createTestStore({
+      ttl: MINIMAL_TTL,
+      prefixes: PREFIXES,
+    });
+    cleanups.push(probe.cleanup);
+    const artifactJson = serializeExtraction(
+      (await compile(createStoreQueryFn(probe.store), PREFIXES)).extraction,
+      hashSources([MINIMAL_TTL]),
+    );
+    const dir = mkdtempSync(join(tmpdir(), "ke-graphql-"));
+    cleanups.push(() => rmSync(dir, { recursive: true, force: true }));
+    const artifactPath = join(dir, "extraction.json");
+    writeFileSync(artifactPath, artifactJson, "utf-8");
+
+    const { store, cleanup } = await createTestStore({
+      ttl: MINIMAL_TTL,
+      prefixes: PREFIXES,
+      plugins: [createSchemaPlugin({ extraction: artifactPath })],
+    });
+    cleanups.push(cleanup);
+    const api = store.api<SchemaPluginApi>("ke-graphql");
+    // Artifact boot skips printSchema — empty SDL is the fast-path marker.
+    expect(api?.sdl).toBe("");
+    expect(api?.schema.getType("Thing")).toBeDefined();
+  });
+
+  it("recompiles on reload and keeps the api queryable", async () => {
+    const plugin = createSchemaPlugin();
+    const { store, cleanup } = await createTestStore({
+      ttl: MINIMAL_TTL,
+      prefixes: PREFIXES,
+      plugins: [plugin],
+    });
+    cleanups.push(cleanup);
+    await store.reload({ force: true });
+    const api = store.api<SchemaPluginApi>("ke-graphql");
+    expect(api?.schema.getType("Thing")).toBeDefined();
+    const result = await graphql({
+      schema: api?.schema as NonNullable<typeof api>["schema"],
+      source: `{ thing(uri: "ex:widget") { name } }`,
+      contextValue: api?.createContext(store),
+    });
+    expect(result.errors).toBeUndefined();
+    expect((result.data?.thing as { name: string }).name).toBe("Widget");
   });
 });

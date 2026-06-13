@@ -4,10 +4,24 @@
 // =============================================================================
 
 import { createTestStore } from "@canonical/ke/testing";
-import type { ValidationRule } from "graphql";
-import { GraphQLError } from "graphql";
+import type {
+  GraphQLFieldConfig,
+  GraphQLSchema,
+  ValidationRule,
+} from "graphql";
+import {
+  GraphQLDeferDirective,
+  GraphQLError,
+  GraphQLObjectType,
+  GraphQLScalarType,
+  GraphQLSchema as GraphQLSchemaClass,
+  GraphQLStreamDirective,
+  GraphQLString,
+  specifiedDirectives,
+} from "graphql";
 import { afterEach, describe, expect, it } from "vitest";
 import { type CompilerResult, compile, createStoreQueryFn } from "#compiler";
+import type { CompilerContext } from "#shared";
 import { DS_REALISTIC_TTL, MINIMAL_TTL, PREFIXES } from "#testing";
 import createGraphQLHandler from "./createGraphQLHandler.js";
 
@@ -50,6 +64,43 @@ const post = (body: unknown, headers: Record<string, string> = {}): Request =>
     headers: { "Content-Type": "application/json", ...headers },
     body: JSON.stringify(body),
   });
+
+// A minimal @defer-capable schema whose deferred `leaf` field is configured by
+// the caller. The store-backed schema cannot deterministically make a deferred
+// fragment error or emit a non-serializable payload, so these handler-mechanics
+// paths (incremental error formatting, multipart stream failure) use this
+// hand-built schema. The resolvers ignore the context.
+const buildDeferSchema = (
+  leaf: GraphQLFieldConfig<unknown, unknown>,
+): GraphQLSchema => {
+  const Inner = new GraphQLObjectType({
+    name: "Inner",
+    fields: {
+      ok: { type: GraphQLString, resolve: () => "fine" },
+      leaf,
+    },
+  });
+  return new GraphQLSchemaClass({
+    query: new GraphQLObjectType({
+      name: "Query",
+      fields: { root: { type: Inner, resolve: () => ({}) } },
+    }),
+    directives: [
+      ...specifiedDirectives,
+      GraphQLDeferDirective,
+      GraphQLStreamDirective,
+    ],
+  });
+};
+
+const deferContext = () => ({}) as unknown as CompilerContext;
+
+const DEFER_LEAF_QUERY = `
+  query Q {
+    root { ok ... D @defer(label: "d") }
+  }
+  fragment D on Inner { leaf }
+`;
 
 describe("request handling", () => {
   it("executes a POST query", async () => {
@@ -163,6 +214,31 @@ describe("request handling", () => {
     const validationError = await handler(post({ query: "{ noSuchField }" }));
     expect(validationError.status).toBe(400);
   });
+
+  it("reuses the parsed-document cache on a repeated query", async () => {
+    const { handler } = await setupHandler(MINIMAL_TTL);
+    const query = `{ thing(uri: "ex:widget") { name } }`;
+    const first = await handler(post({ query }));
+    // Second request with identical text hits the document cache.
+    const second = await handler(post({ query }));
+    expect(first.status).toBe(200);
+    expect(second.status).toBe(200);
+    const a = (await first.json()) as { data: { thing: { name: string } } };
+    const b = (await second.json()) as { data: { thing: { name: string } } };
+    expect(a.data.thing.name).toBe("Widget");
+    expect(b.data.thing.name).toBe("Widget");
+  });
+
+  it("clears the document cache once it reaches the size limit", async () => {
+    const { handler } = await setupHandler(MINIMAL_TTL);
+    // 501 distinct queries parse and cache, but fail validation (unknown
+    // field) before execution — fast. The 501st insertion trips the clear.
+    let last: Response | undefined;
+    for (let i = 0; i <= 500; i++) {
+      last = await handler(post({ query: `{ field${i} }` }));
+    }
+    expect(last?.status).toBe(400);
+  });
 });
 
 describe("hardening seams", () => {
@@ -211,6 +287,75 @@ describe("hardening seams", () => {
     expect(response.status).toBe(413);
   });
 
+  it("disables the depth-limit rule when maxDepth is 0", async () => {
+    const { handler } = await setupHandler(MINIMAL_TTL, {}, { maxDepth: 0 });
+    // A query deeper than the default limit still succeeds with the rule off.
+    const response = await handler(
+      post({ query: `{ thing(uri: "ex:widget") { name } }` }),
+    );
+    expect(response.status).toBe(200);
+  });
+
+  it("applies a consumer formatError to every error", async () => {
+    const { handler } = await setupHandler(
+      MINIMAL_TTL,
+      {},
+      {
+        formatError: (error) => ({
+          ...error,
+          message: `tagged: ${error.message}`,
+        }),
+      },
+    );
+    const response = await handler(post({ query: "{ noSuchField }" }));
+    expect(response.status).toBe(400);
+    const json = (await response.json()) as {
+      errors: Array<{ message: string }>;
+    };
+    expect(json.errors[0]?.message).toMatch(/^tagged: /);
+  });
+
+  it("accepts validationRules supplied as a per-request function", async () => {
+    const rejectAll: ValidationRule = (context) => ({
+      OperationDefinition(node) {
+        context.reportError(
+          new GraphQLError("rejected per-request", { nodes: node }),
+        );
+      },
+    });
+    const { handler } = await setupHandler(
+      MINIMAL_TTL,
+      {},
+      { validationRules: () => [rejectAll] },
+    );
+    const response = await handler(post({ query: "{ __typename }" }));
+    expect(response.status).toBe(400);
+    const json = (await response.json()) as {
+      errors: Array<{ message: string }>;
+    };
+    expect(json.errors[0]?.message).toBe("rejected per-request");
+  });
+
+  it("formats errors from a plain (non-incremental) execution", async () => {
+    const schema = buildDeferSchema({
+      type: GraphQLString,
+      resolve: () => {
+        throw new Error("resolver blew up");
+      },
+    });
+    const handler = createGraphQLHandler(schema, { context: deferContext });
+    // A non-@defer query returns a plain ExecutionResult; its errors take the
+    // data+errors branch of the final response.
+    const response = await handler(post({ query: `{ root { leaf } }` }));
+    expect(response.status).toBe(200);
+    const json = (await response.json()) as {
+      data: { root: { leaf: string | null } };
+      errors: Array<{ message: string }>;
+    };
+    expect(json.errors[0]?.message).toBe("resolver blew up");
+    expect(json.data.root.leaf).toBeNull();
+  });
+
   it("serves persisted queries by hash and can reject arbitrary ones", async () => {
     const manifest = new Map([
       ["abc123", `{ thing(uri: "ex:widget") { name } }`],
@@ -238,6 +383,52 @@ describe("hardening seams", () => {
     expect(missJson.errors[0]?.message).toBe("PersistedQueryNotFound");
     const arbitrary = await handler(post({ query: "{ __typename }" }));
     expect(arbitrary.status).toBe(400);
+  });
+
+  it("strips field suggestions when hideFieldSuggestions is set", async () => {
+    const { handler } = await setupHandler(
+      MINIMAL_TTL,
+      {},
+      { hideFieldSuggestions: true },
+    );
+    // A close typo ("thin" → "thing"/"things") normally yields a
+    // "Did you mean …?" suffix; the suggestion stripper removes it.
+    const response = await handler(
+      post({ query: `{ thin(uri: "ex:widget") { name } }` }),
+    );
+    expect(response.status).toBe(400);
+    const json = (await response.json()) as {
+      errors: Array<{ message: string }>;
+    };
+    expect(json.errors[0]?.message).toContain("Cannot query field");
+    expect(json.errors[0]?.message).not.toContain("Did you mean");
+  });
+
+  it("falls back to an inline query when a persisted hash misses", async () => {
+    const manifest = new Map<string, string>();
+    const { handler } = await setupHandler(
+      MINIMAL_TTL,
+      {},
+      {
+        persistedQueries: {
+          get: (hash) => manifest.get(hash) ?? null,
+          // dev default allows arbitrary queries, so the inline query runs.
+        },
+      },
+    );
+    // Hash misses (empty manifest) but the request carries a query too — the
+    // automatic-persisted-query register flow falls through and executes it.
+    const response = await handler(
+      post({
+        query: `{ thing(uri: "ex:widget") { name } }`,
+        extensions: { persistedQuery: { sha256Hash: "unregistered" } },
+      }),
+    );
+    expect(response.status).toBe(200);
+    const json = (await response.json()) as {
+      data: { thing: { name: string } };
+    };
+    expect(json.data.thing.name).toBe("Widget");
   });
 
   it("reports operations through onOperation", async () => {
@@ -310,5 +501,55 @@ describe("incremental delivery over HTTP", () => {
     };
     expect(json.data.component.name).toBe("Button");
     expect(json.data.component.summary).toBe("Primary action trigger.");
+  });
+
+  it("masks a deferred-fragment error in the drain-and-merge fallback", async () => {
+    const schema = buildDeferSchema({
+      type: GraphQLString,
+      resolve: () => {
+        throw new Error("connection refused: db://secret@host");
+      },
+    });
+    const handler = createGraphQLHandler(schema, {
+      context: deferContext,
+      maskErrors: true,
+    });
+    // No multipart Accept → the increments are drained and merged, and the
+    // deferred error is formatted (masked) into the single JSON response.
+    const response = await handler(post({ query: DEFER_LEAF_QUERY }));
+    expect(response.status).toBe(200);
+    const json = (await response.json()) as {
+      data: { root: { ok: string; leaf: string | null } };
+      errors: Array<{ message: string; extensions?: { code?: string } }>;
+    };
+    expect(json.data.root.ok).toBe("fine");
+    expect(json.errors).toHaveLength(1);
+    expect(json.errors[0]?.message).toBe("Internal server error");
+    expect(json.errors[0]?.extensions?.code).toBe("INTERNAL_SERVER_ERROR");
+  });
+
+  it("errors the multipart stream when a deferred payload is not serializable", async () => {
+    // A scalar that serializes to a BigInt: graphql emits it into the deferred
+    // payload, then JSON.stringify throws inside the stream, which surfaces as
+    // a stream error.
+    const BigIntScalar = new GraphQLScalarType({
+      name: "BigIntScalar",
+      serialize: () => 1n,
+    });
+    const schema = buildDeferSchema({
+      type: BigIntScalar,
+      resolve: () => "ignored",
+    });
+    const handler = createGraphQLHandler(schema, {
+      context: deferContext,
+      incremental: true,
+    });
+    const response = await handler(
+      post({ query: DEFER_LEAF_QUERY }, { Accept: "multipart/mixed" }),
+    );
+    expect(response.headers.get("content-type")).toContain("multipart/mixed");
+    // The initial part enqueues fine; draining the deferred part trips the
+    // JSON.stringify failure, erroring the stream.
+    await expect(response.text()).rejects.toThrow();
   });
 });

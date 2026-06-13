@@ -188,6 +188,9 @@ export default function createGraphQLHandler(
     error: GraphQLError | GraphQLFormattedError,
   ): GraphQLFormattedError =>
     formatOne(
+      // The `: error` arm is defensive — graphql-js execution and merge errors
+      // are always GraphQLError instances, never pre-formatted objects.
+      /* v8 ignore next 3 */
       error instanceof GraphQLError
         ? maskError(error, shouldMaskErrors)
         : error,
@@ -320,6 +323,9 @@ export default function createGraphQLHandler(
         {
           errors: [
             formatOne(
+              // The `: { message }` arm is defensive — parse() only ever throws
+              // GraphQLError, so a non-GraphQLError never reaches this catch.
+              /* v8 ignore next 3 */
               error instanceof GraphQLError
                 ? error.toJSON()
                 : { message: String(error) },

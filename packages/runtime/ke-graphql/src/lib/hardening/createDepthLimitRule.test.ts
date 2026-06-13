@@ -38,4 +38,11 @@ describe("createDepthLimitRule", () => {
     const query = `{ node { ...F } } fragment F on Node { child { ...F } }`;
     expect(() => depthErrors(query, 50)).not.toThrow();
   });
+
+  it("ignores a spread to an undefined fragment", () => {
+    // No fragment definition for `Missing` — the depth rule runs in isolation
+    // (no KnownFragmentNames rule), so the spread contributes no depth.
+    // node(1) name(2) => depth 2, within the limit.
+    expect(depthErrors(`{ node { name ...Missing } }`, 2)).toHaveLength(0);
+  });
 });

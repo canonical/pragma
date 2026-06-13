@@ -1,4 +1,4 @@
-import { GraphQLError } from "graphql";
+import { GraphQLError, parse } from "graphql";
 import { describe, expect, it } from "vitest";
 import maskError from "./maskError.js";
 
@@ -9,6 +9,20 @@ describe("maskError (production error masking)", () => {
     });
     const formatted = maskError(internal, true);
     expect(formatted.message).toBe("Internal server error");
+    expect(formatted.extensions?.code).toBe("INTERNAL_SERVER_ERROR");
+  });
+
+  it("retains locations and path on a masked internal error", () => {
+    const node = parse(`{ a { b } }`).definitions[0];
+    const internal = new GraphQLError("connection refused: db://secret@host", {
+      nodes: node,
+      path: ["a", "b"],
+      originalError: new Error("connection refused: db://secret@host"),
+    });
+    const formatted = maskError(internal, true);
+    expect(formatted.message).toBe("Internal server error");
+    expect(formatted.locations).toEqual([{ line: 1, column: 1 }]);
+    expect(formatted.path).toEqual(["a", "b"]);
     expect(formatted.extensions?.code).toBe("INTERNAL_SERVER_ERROR");
   });
 

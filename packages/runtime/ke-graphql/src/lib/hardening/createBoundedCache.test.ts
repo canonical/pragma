@@ -31,4 +31,13 @@ describe("createBoundedCache (bounded LRU)", () => {
     cache.delete("a");
     expect(cache.has("a")).toBe(false);
   });
+
+  it("does not evict when the LRU key is undefined (cannot distinguish from empty)", () => {
+    const cache = createBoundedCache<undefined, number>(1);
+    cache.set(undefined, 1); // LRU key is literally undefined
+    cache.set("x" as unknown as undefined, 2); // over capacity
+    // The eviction guard skips an undefined first key, so nothing is removed.
+    expect(cache.has(undefined)).toBe(true);
+    expect(cache.size).toBe(2);
+  });
 });
