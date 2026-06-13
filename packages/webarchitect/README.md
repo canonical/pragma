@@ -184,7 +184,8 @@ Resolution rules:
 - An override value always wins over the declared `default`.
 - If a variable declares a `schema`, the override value is validated against it (via JSON Schema) before substitution.
 - Overriding a variable that the ruleset does not declare is an error, as is referencing an undeclared `${name}` token inside a rule — both surface typos early. This means `--prefix`/`--var prefix=…` only apply to the prefix-family rulesets above; passing them to a ruleset without a `prefix` variable (e.g. `base`, `assets`) is rejected.
-- Variables declared in a parent ruleset are inherited by rulesets that `extends` it.
+- Variables declared in a parent ruleset are inherited by rulesets that `extends` it; a child may add or refine variables without dropping inherited ones.
+- Values substituted into a rule's `pattern` are treated as regular-expression fragments, not literals — so `--prefix "@my.org/"` matches `@my.org/` *and* `@myXorg/` (the `.` is a wildcard). Escape regex metacharacters if you need a literal match.
 
 ### Ruleset Resolution Mechanism
 
