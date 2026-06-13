@@ -1,0 +1,99 @@
+{
+  "name": "@canonical/ke-graphql",
+  "description": "OWL → GraphQL compiler for the ke triple store: typed IR, seven-pass pipeline, Relay conventions, incremental delivery",
+  "version": "0.27.1-experimental.0",
+  "type": "module",
+  "module": "dist/esm/index.js",
+  "types": "dist/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/esm/index.js"
+    }
+  },
+  "imports": {
+    "#compiler": {
+      "development": "./src/lib/compiler/index.ts",
+      "types": "./dist/types/lib/compiler/index.d.ts",
+      "default": "./dist/esm/lib/compiler/index.js"
+    },
+    "#dataloader": {
+      "development": "./src/lib/dataloader/index.ts",
+      "types": "./dist/types/lib/dataloader/index.d.ts",
+      "default": "./dist/esm/lib/dataloader/index.js"
+    },
+    "#hardening": {
+      "development": "./src/lib/hardening/index.ts",
+      "types": "./dist/types/lib/hardening/index.d.ts",
+      "default": "./dist/esm/lib/hardening/index.js"
+    },
+    "#resolver": {
+      "development": "./src/lib/resolver/index.ts",
+      "types": "./dist/types/lib/resolver/index.d.ts",
+      "default": "./dist/esm/lib/resolver/index.js"
+    },
+    "#tbox": {
+      "development": "./src/lib/tbox/index.ts",
+      "types": "./dist/types/lib/tbox/index.d.ts",
+      "default": "./dist/esm/lib/tbox/index.js"
+    },
+    "#testing": {
+      "development": "./src/testing/index.ts",
+      "types": "./src/testing/index.ts",
+      "default": "./src/testing/index.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "author": {
+    "email": "webteam@canonical.com",
+    "name": "Canonical Webteam"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/canonical/pragma"
+  },
+  "license": "LGPL-3.0",
+  "bugs": {
+    "url": "https://github.com/canonical/pragma/issues"
+  },
+  "homepage": "https://github.com/canonical/pragma#readme",
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "bun run build:package",
+    "build:all": "bun run build:package",
+    "build:package": "bun run build:package:tsc",
+    "build:package:tsc": "tsc -p tsconfig.build.json",
+    "check": "bun run check:biome && bun run check:ts && bun run check:webarchitect",
+    "check:fix": "bun run check:biome:fix && bun run check:ts",
+    "check:biome": "biome check",
+    "check:biome:fix": "biome check --write",
+    "check:ts": "tsc --noEmit",
+    "test": "bun run test:vitest",
+    "test:vitest": "vitest run --coverage",
+    "test:vitest:watch": "vitest",
+    "check:webarchitect": "webarchitect library",
+    "bench": "bun run build && node scripts/bench.mjs"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.4.9",
+    "@canonical/biome-config": "^0.27.1-experimental.0",
+    "@canonical/ke": "^0.27.1-experimental.0",
+    "@canonical/typescript-config": "^0.27.1-experimental.0",
+    "@types/bun": "^1.3.10",
+    "@types/node": "^24.12.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18",
+    "@canonical/webarchitect": "^0.27.1-experimental.0"
+  },
+  "peerDependencies": {
+    "@canonical/ke": "^0.27.1-experimental.0"
+  },
+  "dependencies": {
+    "dataloader": "^2.2.3",
+    "graphql": "17.0.0-rc.0"
+  }
+}
