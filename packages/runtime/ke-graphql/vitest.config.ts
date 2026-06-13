@@ -3,7 +3,7 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   test: {
     globals: true,
-    include: ["src/**/*.test.ts", "test/**/*.test.ts"],
+    include: ["src/**/*.test.ts"],
     environment: "node",
     coverage: {
       provider: "v8",
@@ -13,6 +13,7 @@ export default defineConfig({
         "**/*.test.ts",
         "**/*.d.ts",
         "**/types.ts",
+        "src/testing/**",
         "src/http/graphiqlHtml.ts",
       ],
       thresholds: {

@@ -10,15 +10,15 @@ import {
   type CompilerContext,
   type CompilerResult,
   compile,
-} from "../src/index.js";
-import { storeQueryFn } from "../src/lib/compiler/index.js";
+  storeQueryFn,
+} from "#compiler";
 import {
   DS_REALISTIC_TTL,
   INHERITANCE_TTL,
   MINIMAL_TTL,
   PREFIXES,
   SHACL_TTL,
-} from "./fixtures.js";
+} from "#testing";
 
 type Cleanup = () => void;
 let cleanups: Cleanup[] = [];

@@ -7,18 +7,15 @@ import { createTestStore } from "@canonical/ke/testing";
 import { type GraphQLSchema, graphql } from "graphql";
 import { afterEach, describe, expect, it } from "vitest";
 import {
-  type CompilerContext,
-  type CompilerResult,
-  compile,
-} from "../src/index.js";
-import { storeQueryFn } from "../src/lib/compiler/index.js";
-import {
   BLANK_NODES_TTL,
   DS_REALISTIC_TTL,
   EDGE_CASES_TTL,
   INVERSE_TTL,
   PREFIXES,
-} from "./fixtures.js";
+} from "#testing";
+import compile from "./compile.js";
+import storeQueryFn from "./storeQueryFn.js";
+import type { CompilerContext, CompilerResult } from "./types.js";
 
 type Cleanup = () => void;
 let cleanups: Cleanup[] = [];
