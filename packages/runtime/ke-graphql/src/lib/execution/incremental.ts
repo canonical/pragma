@@ -12,6 +12,7 @@
 // =============================================================================
 
 import {
+  type DocumentNode,
   type ExecutionResult,
   execute,
   experimentalExecuteIncrementally,
@@ -36,6 +37,12 @@ export const isIncrementalResults = (
 export interface ExecuteLocalArgs {
   schema: GraphQLSchema;
   source: string;
+  /**
+   * Pre-parsed document. When provided (e.g. the HTTP handler's cached,
+   * already-validated document), executeLocal skips its own parse — avoiding
+   * a second parse of the same query text on the warm request path.
+   */
+  document?: DocumentNode;
   variableValues?: Record<string, unknown> | null;
   contextValue: CompilerContext;
   operationName?: string | null;
@@ -65,16 +72,20 @@ const schemaCarriesIncrementalDirectives = (schema: GraphQLSchema): boolean =>
 export const executeLocal = async (
   args: ExecuteLocalArgs,
 ): Promise<LocalExecutionResult> => {
-  let document: ReturnType<typeof parse>;
-  try {
-    document = parse(args.source);
-  } catch (error) {
-    return {
-      errors: [
-        // graphql() would produce the same shape for a syntax error.
-        error,
-      ],
-    } as ExecutionResult;
+  let document: DocumentNode;
+  if (args.document) {
+    document = args.document;
+  } else {
+    try {
+      document = parse(args.source);
+    } catch (error) {
+      return {
+        errors: [
+          // graphql() would produce the same shape for a syntax error.
+          error,
+        ],
+      } as ExecutionResult;
+    }
   }
   const executionArgs = {
     schema: args.schema,

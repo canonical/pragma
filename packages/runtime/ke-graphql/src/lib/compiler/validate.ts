@@ -39,6 +39,20 @@ export default function validate(ir: OntologyIR): PassResult<OntologyIR> {
         source: node.uri,
       });
     }
+    // V015 — class forced abstract (by mapping) yet has direct instances.
+    // Those instances' only asserted type is now an interface, so they cannot
+    // resolve and are filtered at runtime — the data contradicts the mapping.
+    // (The automatic abstract heuristic can't trigger this: it only marks a
+    // class abstract when it has zero instances.)
+    const abstractStats = ir.extraction.instanceStats.get(node.uri);
+    if (node.isAbstract && (abstractStats?.total ?? 0) > 0) {
+      push({
+        severity: "warning",
+        code: "V015",
+        message: `${getLocalName(node.uri)} is marked abstract but has ${abstractStats?.total} direct instance(s) — those instances will not resolve`,
+        source: node.uri,
+      });
+    }
     // V009 — cross-vocabulary subClassOf
     for (const parent of node.superclasses) {
       if (!ir.classes.has(parent) && isStandardVocab(parent)) {

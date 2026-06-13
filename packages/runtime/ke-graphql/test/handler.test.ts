@@ -61,6 +61,33 @@ describe("request handling", () => {
     expect(json.data.thing.name).toBe("Widget");
   });
 
+  it("rejects queries deeper than maxDepth (hardening)", async () => {
+    const { handler } = await setupHandler(MINIMAL_TTL, {}, { maxDepth: 1 });
+    const response = await handler(
+      post({ query: `{ thing(uri: "ex:widget") { name } }` }), // depth 2
+    );
+    expect(response.status).toBe(400);
+    const json = (await response.json()) as { errors: { message: string }[] };
+    expect(json.errors[0]?.message).toMatch(/maximum depth/);
+  });
+
+  it("filters a SPARQL-injection attempt in a uri argument to null (hardening)", async () => {
+    const { handler } = await setupHandler(MINIMAL_TTL);
+    const response = await handler(
+      post({
+        query: `{ thing(uri: "ex:evil> } INSERT { ?s ?p ?o }") { name } }`,
+      }),
+    );
+    expect(response.status).toBe(200);
+    const json = (await response.json()) as {
+      data: { thing: unknown };
+      errors?: unknown;
+    };
+    // The unsafe IRI is dropped from the query and resolves to "not found".
+    expect(json.data.thing).toBeNull();
+    expect(json.errors).toBeUndefined();
+  });
+
   it("executes a GET query from the URL parameter", async () => {
     const { handler } = await setupHandler(MINIMAL_TTL);
     const url = `http://localhost/graphql?query=${encodeURIComponent(

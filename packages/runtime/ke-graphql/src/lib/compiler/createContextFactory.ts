@@ -74,6 +74,7 @@ export default function createContextFactory(
           processCaches?.inverse,
         ),
         nameMap: mapped.nameMap,
+        namespaces: mapped.namespaces,
         store,
         warn: options.onRuntimeWarning ?? createDefaultWarningHandler(),
       };

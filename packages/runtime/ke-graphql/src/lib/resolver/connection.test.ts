@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
+import { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE } from "../hardening/index.js";
 import {
   emptyConnection,
   fromBase64,
   isEntity,
+  paginateUriWindow,
   toBase64,
   toConnection,
   unwrapEntities,
@@ -65,6 +67,33 @@ describe("toConnection (§5.4, KG.18)", () => {
       after: toBase64("nope"),
     });
     expect(connection.edges).toHaveLength(2);
+  });
+});
+
+describe("page-size hardening (clamp)", () => {
+  const many = (n: number) =>
+    items(
+      Array.from({ length: n }, (_, i) => `u${String(i).padStart(4, "0")}`),
+    );
+
+  it("imposes the default page size when neither first nor last is given", () => {
+    const connection = toConnection(many(200), {});
+    expect(connection.edges).toHaveLength(DEFAULT_PAGE_SIZE);
+    expect(connection.pageInfo.hasNextPage).toBe(true);
+  });
+
+  it("caps an over-large first at the ceiling", () => {
+    expect(toConnection(many(200), { first: 10_000 }).edges).toHaveLength(
+      MAX_PAGE_SIZE,
+    );
+  });
+
+  it("clamps the URI window in paginateUriWindow as well", () => {
+    const uris = Array.from({ length: 200 }, (_, i) => `u${i}`);
+    expect(paginateUriWindow(uris, {}).window).toHaveLength(DEFAULT_PAGE_SIZE);
+    expect(paginateUriWindow(uris, { first: 10_000 }).window).toHaveLength(
+      MAX_PAGE_SIZE,
+    );
   });
 });
 

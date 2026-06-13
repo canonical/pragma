@@ -21,6 +21,7 @@ import {
   type TripleSet,
   type TripleValue,
 } from "../compiler/index.js";
+import { isSafeIri } from "../hardening/index.js";
 import { toPrefixed } from "./uris.js";
 
 /** Separator that cannot occur in IRIs or well-formed literals. */
@@ -60,7 +61,11 @@ const pickMostSpecificTypename = (
   let bestDepth = -1;
   for (const uri of typeUris) {
     const node = mapped.ir.classes.get(uri);
-    if (!node) {
+    // Only concrete classes are valid runtime typenames. Returning an abstract
+    // class's name makes graphql-js reject it in resolveType ("abstract type
+    // resolved to non-object type"), which nulls the whole field. An entity
+    // typed only as abstract classes resolves to undefined (filtered) instead.
+    if (!node || node.isAbstract) {
       continue;
     }
     if (node.ancestors.length > bestDepth) {
@@ -99,7 +104,13 @@ export default function createEntityLoader(
     cacheMap ? { cacheMap } : undefined,
   );
   const batch = async (fullUris: ReadonlyArray<string>) => {
-    const values = fullUris.map((uri) => `<${uri}>`).join(" ");
+    // Injection guard (KG.19): only IRIs safe to interpolate into an IRIREF
+    // reach the query. An unsafe global ID is simply absent from VALUES and
+    // resolves to null (not found), never to injected SPARQL.
+    const values = fullUris
+      .filter(isSafeIri)
+      .map((uri) => `<${uri}>`)
+      .join(" ");
     const result = await query(
       `CONSTRUCT { ?s ?p ?o . ?o ?bp ?bo }
        WHERE {

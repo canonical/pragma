@@ -14,9 +14,39 @@ import {
   RDF_TYPE,
   type TripleSet,
 } from "../compiler/index.js";
+import { toFull, toPrefixed } from "../dataloader/index.js";
 import { coerce } from "./coerce.js";
-import { emptyConnection, toConnection, unwrapEntities } from "./connection.js";
+import {
+  connectionFromPage,
+  emptyConnection,
+  paginateUriWindow,
+  unwrapEntities,
+} from "./connection.js";
 import type { ConnectionArgs, ScalarName } from "./types.js";
+
+/**
+ * Paginate an object connection BEFORE hydration: sort the deduplicated URI
+ * list into cursor order, window it (page size clamped by the hardening
+ * domain), then hydrate only the page. This bounds the per-field hydration
+ * cost to the page size regardless of how many URIs the parent references —
+ * a nested `authors(first: 10)` loads 10 entities, not all of them.
+ *
+ * @note Impure — hydrates the page through the context's entity loader.
+ */
+const paginateAndHydrate = async (
+  fullUris: string[],
+  args: ConnectionArgs,
+  ctx: CompilerContext,
+) => {
+  const prefixed = [...new Set(fullUris)]
+    .map((uri) => toPrefixed(uri, ctx.namespaces))
+    .sort((a, b) => a.localeCompare(b));
+  const page = paginateUriWindow(prefixed, args);
+  const entities = await ctx.entityLoader.loadMany(
+    page.window.map((uri) => toFull(uri, ctx.namespaces) ?? uri),
+  );
+  return connectionFromPage(unwrapEntities(entities), page);
+};
 
 type Resolver = GraphQLFieldResolver<EntityValue, CompilerContext>;
 
@@ -130,8 +160,7 @@ export const createObjectListResolver = (field: MappedField): Resolver => {
     const uris = values
       .filter((v) => v.kind === "uri")
       .map((v) => (v as { value: string }).value);
-    const entities = await ctx.entityLoader.loadMany(uris);
-    return toConnection(unwrapEntities(entities), args as ConnectionArgs);
+    return paginateAndHydrate(uris, args as ConnectionArgs, ctx);
   };
 };
 
@@ -152,12 +181,11 @@ export const createInverseResolver = (
     const reverse = parent.uri
       ? await ctx.inverseLoader.load(`${forwardProperty} ${parent.uri}`)
       : [];
-    const uris = [...new Set([...forward, ...reverse])];
+    const uris = [...forward, ...reverse];
     if (uris.length === 0) {
       return emptyConnection();
     }
-    const entities = await ctx.entityLoader.loadMany(uris);
-    return toConnection(unwrapEntities(entities), args as ConnectionArgs);
+    return paginateAndHydrate(uris, args as ConnectionArgs, ctx);
   };
 };
 

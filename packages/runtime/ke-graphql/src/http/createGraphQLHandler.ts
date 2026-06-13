@@ -27,6 +27,8 @@ import {
 } from "graphql";
 import {
   type CompilerContext,
+  createDepthLimitRule,
+  DEFAULT_MAX_QUERY_DEPTH,
   executeLocal,
   type IncrementalResults,
   isIncrementalResults,
@@ -51,6 +53,12 @@ export interface GraphQLHandlerOptions {
   cors?: boolean;
   /** Maximum query string length. Default: 50,000 characters. */
   maxQueryLength?: number;
+  /**
+   * Maximum selection-set nesting depth (hardening). Default:
+   * DEFAULT_MAX_QUERY_DEPTH. Set to 0 to disable. Bounds the unbounded
+   * recursion that cyclic types otherwise allow.
+   */
+  maxDepth?: number;
   /** Per-request context factory (fresh DataLoaders per call). */
   context: (request: Request) => CompilerContext | Promise<CompilerContext>;
   /** Extra graphql-js validation rules (static or per-request). */
@@ -147,6 +155,9 @@ export default function createGraphQLHandler(
   const introspectionEnabled = options.introspection ?? !isProduction();
   const hideSuggestions = options.hideFieldSuggestions ?? isProduction();
   const maxQueryLength = options.maxQueryLength ?? 50_000;
+  // Depth-limit rule (hardening): built once, reused across requests. 0 = off.
+  const maxDepth = options.maxDepth ?? DEFAULT_MAX_QUERY_DEPTH;
+  const depthRule = maxDepth > 0 ? createDepthLimitRule(maxDepth) : undefined;
   const allowArbitrary =
     options.persistedQueries?.allowArbitraryQueries ?? !isProduction();
 
@@ -301,6 +312,9 @@ export default function createGraphQLHandler(
     if (!introspectionEnabled) {
       rules.push(NoSchemaIntrospectionCustomRule);
     }
+    if (depthRule) {
+      rules.push(depthRule);
+    }
     const validationErrors = validate(schema, document, rules);
     if (validationErrors.length > 0) {
       return buildJsonResponse(
@@ -316,6 +330,8 @@ export default function createGraphQLHandler(
     const result = await executeLocal({
       schema,
       source: queryText,
+      // Reuse the parsed+validated document — no second parse on the warm path.
+      document,
       variableValues: body.variables ?? undefined,
       contextValue,
       operationName: body.operationName ?? undefined,

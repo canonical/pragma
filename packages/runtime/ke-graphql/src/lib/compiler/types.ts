@@ -47,6 +47,7 @@ export type DiagnosticCode =
   | "V012" // SHACL sh:in enum constraint — mapped to String
   | "V013" // property declares multiple rdfs:domain classes
   | "V014" // ABox predicate not declared in any loaded TBox
+  | "V015" // class forced abstract by mapping but has direct instances
   // Mapping
   | "M001" // name collision after GraphQL name mapping
   | "M002" // reserved GraphQL name conflict
@@ -452,6 +453,12 @@ export interface CompilerContext {
   listLoader: DataLoader<string, string[]>;
   inverseLoader: DataLoader<string, string[]>;
   nameMap: NameMap;
+  /**
+   * The compiled namespace inventory — resolvers use it for full-IRI ↔
+   * prefixed-URI conversion (e.g. paginating an object connection by its
+   * cursor-stable prefixed form before hydration).
+   */
+  namespaces: ReadonlyMap<string, NamespaceInfo>;
   /**
    * The ke store (escape hatch for extensions). May be a Promise for
    * lazy-store boots: ABox loaders await it; TBox resolvers never touch it.

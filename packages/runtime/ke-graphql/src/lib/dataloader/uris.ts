@@ -8,19 +8,25 @@ import type { NamespaceInfo } from "../compiler/index.js";
 
 /**
  * Convert a full IRI to its prefixed form ("ds:button") using the compiled
- * namespace inventory. Returns the input unchanged when no registered
- * namespace matches.
+ * namespace inventory. Picks the LONGEST matching namespace so that nested
+ * namespaces (e.g. "http://x/" and "http://x/sub/") yield a stable, canonical
+ * prefixed form regardless of namespace discovery order — Relay global IDs and
+ * cursors depend on this being deterministic (KG.10). Returns the input
+ * unchanged when no registered namespace matches.
  */
 export const toPrefixed = (
   fullUri: string,
   namespaces: ReadonlyMap<string, NamespaceInfo>,
 ): string => {
+  let best: string | undefined;
+  let bestLength = -1;
   for (const ns of namespaces.values()) {
-    if (fullUri.startsWith(ns.uri)) {
-      return `${ns.prefix}:${fullUri.slice(ns.uri.length)}`;
+    if (fullUri.startsWith(ns.uri) && ns.uri.length > bestLength) {
+      bestLength = ns.uri.length;
+      best = `${ns.prefix}:${fullUri.slice(ns.uri.length)}`;
     }
   }
-  return fullUri;
+  return best ?? fullUri;
 };
 
 /**

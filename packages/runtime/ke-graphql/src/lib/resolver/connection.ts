@@ -10,6 +10,7 @@
 
 import { GraphQLError } from "graphql";
 import type { EntityValue } from "../compiler/index.js";
+import { clampConnectionArgs } from "../hardening/index.js";
 import type { Connection, ConnectionArgs, Sortable, UriPage } from "./types.js";
 
 /**
@@ -88,34 +89,37 @@ export const paginateUriWindow = (
   uris: ReadonlyArray<string>,
   args: ConnectionArgs,
 ): UriPage => {
-  if (args.first != null && args.first < 0) {
+  // Hardening: impose a default page size and cap an over-large one before
+  // any windowing (negatives pass through and are rejected below).
+  const page = clampConnectionArgs(args);
+  if (page.first != null && page.first < 0) {
     throw new GraphQLError('Argument "first" must be a non-negative integer');
   }
-  if (args.last != null && args.last < 0) {
+  if (page.last != null && page.last < 0) {
     throw new GraphQLError('Argument "last" must be a non-negative integer');
   }
   let start = 0;
   let end = uris.length;
-  if (args.after) {
-    const idx = uris.indexOf(fromBase64(args.after));
+  if (page.after) {
+    const idx = uris.indexOf(fromBase64(page.after));
     if (idx !== -1) {
       start = idx + 1;
     }
   }
-  if (args.before) {
-    const idx = uris.indexOf(fromBase64(args.before));
+  if (page.before) {
+    const idx = uris.indexOf(fromBase64(page.before));
     if (idx !== -1) {
       end = Math.min(end, idx);
     }
   }
   let hasNextPage = false;
   let hasPreviousPage = false;
-  if (args.first != null && end - start > args.first) {
-    end = start + args.first;
+  if (page.first != null && end - start > page.first) {
+    end = start + page.first;
     hasNextPage = true;
   }
-  if (args.last != null && end - start > args.last) {
-    start = end - args.last;
+  if (page.last != null && end - start > page.last) {
+    start = end - page.last;
     hasPreviousPage = true;
   }
   return { window: uris.slice(start, end), hasNextPage, hasPreviousPage };
@@ -153,10 +157,13 @@ export const toConnection = <T extends Sortable>(
   args: ConnectionArgs,
   presorted = false,
 ): Connection<T> => {
-  if (args.first != null && args.first < 0) {
+  // Hardening: impose a default page size and cap an over-large one before
+  // slicing (negatives pass through and are rejected below).
+  const page = clampConnectionArgs(args);
+  if (page.first != null && page.first < 0) {
     throw new GraphQLError('Argument "first" must be a non-negative integer');
   }
-  if (args.last != null && args.last < 0) {
+  if (page.last != null && page.last < 0) {
     throw new GraphQLError('Argument "last" must be a non-negative integer');
   }
 
@@ -164,29 +171,29 @@ export const toConnection = <T extends Sortable>(
     ? [...allItems]
     : [...allItems].sort((a, b) => (a.uri ?? "").localeCompare(b.uri ?? ""));
 
-  if (args.after) {
-    const afterUri = fromBase64(args.after);
+  if (page.after) {
+    const afterUri = fromBase64(page.after);
     const idx = items.findIndex((i) => i.uri === afterUri);
     if (idx !== -1) {
       items = items.slice(idx + 1);
     }
   }
-  if (args.before) {
-    const beforeUri = fromBase64(args.before);
+  if (page.before) {
+    const beforeUri = fromBase64(page.before);
     const idx = items.findIndex((i) => i.uri === beforeUri);
     if (idx !== -1) {
       items = items.slice(0, idx);
     }
   }
 
-  const hasNextPage = args.first != null && items.length > args.first;
-  const hasPreviousPage = args.last != null && items.length > args.last;
+  const hasNextPage = page.first != null && items.length > page.first;
+  const hasPreviousPage = page.last != null && items.length > page.last;
 
-  if (args.first != null) {
-    items = items.slice(0, args.first);
+  if (page.first != null) {
+    items = items.slice(0, page.first);
   }
-  if (args.last != null) {
-    items = items.slice(Math.max(items.length - args.last, 0));
+  if (page.last != null) {
+    items = items.slice(Math.max(items.length - page.last, 0));
   }
 
   const edges = items.map((item) => ({

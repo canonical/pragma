@@ -72,6 +72,14 @@ export {
   sha256Hex,
 } from "./execution/index.js";
 export {
+  clampConnectionArgs,
+  createDepthLimitRule,
+  DEFAULT_MAX_QUERY_DEPTH,
+  DEFAULT_PAGE_SIZE,
+  isSafeIri,
+  MAX_PAGE_SIZE,
+} from "./hardening/index.js";
+export {
   type Connection,
   type ConnectionArgs,
   connectionFromPage,

@@ -4,6 +4,7 @@
 // =============================================================================
 
 import { createTestStore } from "@canonical/ke/testing";
+import { parse } from "graphql";
 import { afterEach, describe, expect, it } from "vitest";
 import {
   type CompilerContext,
@@ -89,6 +90,24 @@ describe("executeLocal (KG.20 Path A)", () => {
       expect((execution.data?.component as Record<string, unknown>).name).toBe(
         "Button",
       );
+    }
+  });
+
+  it("uses a pre-parsed document and skips its own parse", async () => {
+    const { result, context } = await setup(MINIMAL_TTL);
+    const document = parse(`{ thing(uri: "ex:widget") { name } }`);
+    // The source is deliberately unparseable: if executeLocal honored the
+    // document it succeeds; if it re-parsed `source` it would error.
+    const execution = await executeLocal({
+      schema: result.schema,
+      source: "this is not valid graphql",
+      document,
+      contextValue: context,
+    });
+    expect(isIncrementalResults(execution)).toBe(false);
+    if (!isIncrementalResults(execution)) {
+      expect(execution.errors).toBeUndefined();
+      expect(execution.data?.thing).toEqual({ name: "Widget" });
     }
   });
 
