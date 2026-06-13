@@ -85,7 +85,8 @@
     "test:vitest": "vitest run --coverage",
     "test:vitest:watch": "vitest",
     "check:webarchitect": "webarchitect library",
-    "bench": "bun run build && node scripts/bench.mjs"
+    "bench": "bun run build && node scripts/bench.mjs",
+    "demo": "bun demo/server.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.9",

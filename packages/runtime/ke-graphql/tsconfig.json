@@ -7,6 +7,6 @@
     "skipLibCheck": true,
     "customConditions": ["development"]
   },
-  "include": ["src/**/*.ts"],
+  "include": ["src/**/*.ts", "demo/**/*.ts"],
   "exclude": ["src/**/*.test.ts"]
 }
