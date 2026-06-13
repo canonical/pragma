@@ -13,12 +13,16 @@ export default defineConfig({
         "**/*.test.ts",
         "**/*.d.ts",
         "**/types.ts",
+        "**/constants.ts",
         "src/testing/**",
         "src/http/graphiqlHtml.ts",
       ],
-      // Coverage thresholds are enforced once the library is fully assembled
-      // (see the PR that completes the compiler). Earlier layers in the stack
-      // ship partial slices whose untested lines are covered downstream.
+      thresholds: {
+        statements: 100,
+        branches: 100,
+        functions: 100,
+        lines: 100,
+      },
     },
   },
 });
