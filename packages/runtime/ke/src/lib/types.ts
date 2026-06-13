@@ -108,10 +108,27 @@ export interface SourceConfig {
 }
 
 /**
- * A source can be a simple file path/glob string, or a detailed SourceConfig.
- * Simple strings are normalized to `{ patterns: [theString] }` internally.
+ * Inline RDF content — no filesystem involved. This is the source form for
+ * runtimes without fs access (Cloudflare Workers, edge isolates) and for
+ * data that ships inside the bundle.
  */
-export type SourceSpec = string | SourceConfig;
+export interface InlineSource {
+  /** Raw RDF content (TTL, N-Triples, or RDF/XML as a string). */
+  content: string;
+  /** Serialization format. Defaults to "turtle". */
+  format?: "turtle" | "ntriples" | "rdfxml";
+  /** Named graph URI to load into (default graph when omitted). */
+  graph?: string;
+  /** Label for diagnostics and plugin onLoad hooks. Default: "inline". */
+  path?: string;
+}
+
+/**
+ * A source can be a simple file path/glob string, a detailed SourceConfig,
+ * or inline content. Simple strings are normalized to
+ * `{ patterns: [theString] }` internally.
+ */
+export type SourceSpec = string | SourceConfig | InlineSource;
 
 // ---------------------------------------------------------------------------
 // Store configuration
@@ -162,7 +179,7 @@ export interface StoreConfig {
  * before loading, or log `path` for diagnostics.
  */
 export interface ResolvedSource {
-  /** Absolute path of the resolved file. */
+  /** Absolute file path, or a diagnostic label (e.g. "inline:0") for inline sources. */
   path: string;
 
   /** Named graph this source will be loaded into, if specified. */
@@ -214,6 +231,49 @@ export interface Triple {
   object: string;
 }
 
+// ---------------------------------------------------------------------------
+// Term-preserving results
+//
+// The string forms above are lossy: a NamedNode and a literal whose value
+// happens to be an IRI are indistinguishable, and literal datatype/language
+// annotations are dropped. Consumers that need the RDF term model — like
+// @canonical/ke-graphql's entity loader, which must tell object references
+// from string values and group blank-node children — read the parallel
+// term-preserving fields (`SelectResult.termBindings`, `ConstructResult.quads`).
+//
+// Conventions:
+// - BlankNode `value` carries the bare label (no "_:" prefix — the prefix is
+//   a serialization detail of the string form)
+// - Literal `datatype` is omitted for plain xsd:string literals (the default)
+// - Literal `language` is present only for language-tagged literals
+// ---------------------------------------------------------------------------
+
+/** An RDF term with its kind and literal annotations preserved. */
+export type Term =
+  | { termType: "NamedNode"; value: string }
+  | { termType: "BlankNode"; value: string }
+  | {
+      termType: "Literal";
+      value: string;
+      datatype?: string;
+      language?: string;
+      /** Base direction ("ltr"/"rtl") for RDF 1.2 directional literals. */
+      direction?: "ltr" | "rtl";
+    };
+
+/**
+ * A single RDF triple with term-preserving members. CONSTRUCT results are
+ * always in the default graph, so no graph member is exposed.
+ */
+export interface Quad {
+  subject: Term;
+  predicate: Term;
+  object: Term;
+}
+
+/** A SELECT binding row with terms preserved. Keys are variable names. */
+export type TermBinding = Record<string, Term>;
+
 /**
  * A single binding row from a SELECT query. Keys are variable names
  * (without the `?` prefix), values are the string representation of
@@ -226,12 +286,16 @@ export interface SelectResult {
   type: "select";
   variables: string[];
   bindings: Binding[];
+  /** Term-preserving view of `bindings` (same rows, same order). */
+  termBindings: TermBinding[];
 }
 
 /** Result of a CONSTRUCT or DESCRIBE query: a set of triples. */
 export interface ConstructResult {
   type: "construct";
   triples: Triple[];
+  /** Term-preserving view of `triples` (same quads, same order). */
+  quads: Quad[];
 }
 
 /** Result of an ASK query: a boolean. */

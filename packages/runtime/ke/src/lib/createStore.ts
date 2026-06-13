@@ -31,9 +31,11 @@ import type {
   Binding,
   ConstructResult,
   InferQueryResult,
+  InlineSource,
   Plugin,
   PluginContext,
   PrefixMap,
+  Quad,
   QueryResult,
   ReloadOptions,
   ResolvedSource,
@@ -43,6 +45,8 @@ import type {
   SPARQL,
   Store,
   StoreConfig,
+  Term,
+  TermBinding,
   Triple,
 } from "./types.js";
 
@@ -109,8 +113,13 @@ function inferFormat(filePath: string): "turtle" | "ntriples" | "rdfxml" {
 // file content as a string, ready to be parsed by Oxigraph.
 // ---------------------------------------------------------------------------
 
-/** Convert a SourceSpec (string or SourceConfig) to a normalized SourceConfig. */
-function normalizeSource(spec: SourceSpec): SourceConfig {
+/** Inline sources carry their content directly — no glob/file resolution. */
+function isInlineSource(spec: SourceSpec): spec is InlineSource {
+  return typeof spec !== "string" && "content" in spec;
+}
+
+/** Convert a path/glob SourceSpec to a normalized SourceConfig. */
+function normalizeSource(spec: string | SourceConfig): SourceConfig {
   if (typeof spec === "string") {
     return { patterns: [spec] };
   }
@@ -154,8 +163,18 @@ function resolveGlobsSync(patterns: string[], cwd: string): string[] {
  */
 function resolveSources(specs: SourceSpec[], cwd: string): ResolvedSource[] {
   const resolved: ResolvedSource[] = [];
+  let inlineIndex = 0;
 
   for (const spec of specs) {
+    if (isInlineSource(spec)) {
+      resolved.push({
+        path: spec.path ?? `inline:${inlineIndex++}`,
+        graph: spec.graph,
+        format: spec.format ?? "turtle",
+        content: spec.content,
+      });
+      continue;
+    }
     const config = normalizeSource(spec);
     const files = resolveGlobsSync(config.patterns, cwd);
 
@@ -214,6 +233,7 @@ function parseRawResult(rawResult: unknown): QueryResult {
       type: "select",
       variables: [],
       bindings: [],
+      termBindings: [],
     } satisfies SelectResult;
   }
 
@@ -223,29 +243,44 @@ function parseRawResult(rawResult: unknown): QueryResult {
     const variables: string[] = Array.from(
       (bindings[0] as (typeof bindings)[number]).keys(),
     );
-    const mappedBindings: Binding[] = bindings.map((binding) => {
+    const mappedBindings: Binding[] = [];
+    const termBindings: TermBinding[] = [];
+    for (const binding of bindings) {
       const obj: Binding = {};
+      const termObj: TermBinding = {};
       for (const [key, value] of binding) {
         obj[key] = termToString(value);
+        termObj[key] = toTerm(value);
       }
-      return obj;
-    });
+      mappedBindings.push(obj);
+      termBindings.push(termObj);
+    }
     return {
       type: "select",
       variables,
       bindings: mappedBindings,
+      termBindings,
     } satisfies SelectResult;
   }
 
   // CONSTRUCT/DESCRIBE returns Quad objects (have a .subject property).
   // After ruling out Map[], the remaining array type is always Quad[].
-  const quads = resultArray as OxQuad[];
-  const triples: Triple[] = quads.map((quad) => ({
-    subject: termToString(quad.subject),
-    predicate: termToString(quad.predicate),
-    object: termToString(quad.object),
-  }));
-  return { type: "construct", triples } satisfies ConstructResult;
+  const oxQuads = resultArray as OxQuad[];
+  const triples: Triple[] = [];
+  const quads: Quad[] = [];
+  for (const quad of oxQuads) {
+    triples.push({
+      subject: termToString(quad.subject),
+      predicate: termToString(quad.predicate),
+      object: termToString(quad.object),
+    });
+    quads.push({
+      subject: toTerm(quad.subject),
+      predicate: toTerm(quad.predicate),
+      object: toTerm(quad.object),
+    });
+  }
+  return { type: "construct", triples, quads } satisfies ConstructResult;
 }
 
 // ---------------------------------------------------------------------------
@@ -295,6 +330,52 @@ function termToString(term: OxTerm): string {
     return `_:${term.value}`;
   }
   return term.value;
+}
+
+/** xsd:string is the implicit datatype of plain literals — omitted from Term. */
+const XSD_STRING = "http://www.w3.org/2001/XMLSchema#string";
+/** rdf:langString is implied by the presence of a language tag — omitted. */
+const RDF_LANG_STRING = "http://www.w3.org/1999/02/22-rdf-syntax-ns#langString";
+const RDF_DIR_LANG_STRING =
+  "http://www.w3.org/1999/02/22-rdf-syntax-ns#dirLangString";
+
+/**
+ * Convert an Oxigraph RDF/JS term to ke's term-preserving form (see types.ts).
+ * Unlike termToString, this keeps the term kind and, for literals, the
+ * datatype IRI and language tag — required by consumers that must distinguish
+ * object references from string values (e.g. @canonical/ke-graphql).
+ */
+function toTerm(term: OxTerm): Term {
+  if (term.termType === "BlankNode") {
+    return { termType: "BlankNode", value: term.value };
+  }
+  if (term.termType === "Literal") {
+    const literal: Term = { termType: "Literal", value: term.value };
+    const datatype = (term as { datatype?: OxNamedNode }).datatype?.value;
+    // xsd:string, rdf:langString and rdf:dirLangString are implied by the
+    // language/direction tags — omit them to keep the term canonical.
+    if (
+      datatype &&
+      datatype !== XSD_STRING &&
+      datatype !== RDF_LANG_STRING &&
+      datatype !== RDF_DIR_LANG_STRING
+    ) {
+      literal.datatype = datatype;
+    }
+    const language = (term as { language?: string }).language;
+    if (language) {
+      literal.language = language;
+    }
+    const direction = (term as { direction?: string }).direction;
+    if (direction) {
+      literal.direction = direction as "ltr" | "rtl";
+    }
+    return literal;
+  }
+  // The remaining case is NamedNode. Variable / DefaultGraph / quoted-triple
+  // terms do not occur in SELECT bindings or CONSTRUCT subject/predicate/object,
+  // so they never reach here (termToString shares this assumption).
+  return { termType: "NamedNode", value: term.value };
 }
 
 // ---------------------------------------------------------------------------
