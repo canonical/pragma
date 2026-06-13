@@ -4,9 +4,9 @@ import {
   CompilationError,
   type CompilerResult,
   compile,
+  createStoreQueryFn,
   type Diagnostic,
   hashSources,
-  createStoreQueryFn,
 } from "@canonical/ke-graphql";
 import { PragmaError } from "#error";
 import { resolveSourceFiles } from "../helpers/index.js";
