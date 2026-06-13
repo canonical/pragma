@@ -55,14 +55,14 @@ export interface CustomMapping {
   singular?: boolean;
   abstract?: boolean;
   embeddable?: boolean;
-  /** Synthesize an inverse field on the property's range type (KG.02). */
+  /** Synthesize an inverse field on the property's range type. */
   inverse?: { graphqlName: string };
 }
 
 /** Custom mappings keyed by full IRI or prefixed name (e.g. "ds:tier"). */
 export type CustomMappings = Record<string, CustomMapping>;
 
-/** Per GraphQL type name: the field names promoted to non-null (KG.15). */
+/** Per GraphQL type name: the field names promoted to non-null. */
 export type NonNullOverrides = Record<string, string[]>;
 
 /** Consumer-supplied extension fields, keyed by GraphQL type name. */
@@ -92,13 +92,13 @@ export interface SchemaPluginOptions {
   extensions?: SchemaExtensionsInput;
   /** Wire the Node interface, global IDs, and connections. Default: true. */
   relay?: boolean;
-  /** Add @defer/@stream directives to the schema (KG.21). Default: false. */
+  /** Add @defer/@stream directives to the schema. Default: false. */
   incremental?: boolean;
   /** File path for SDL output. */
   sdlOutput?: string;
   nonNullOverrides?: NonNullOverrides;
   /**
-   * Opt-in instance-level standard-vocabulary fields (EC.15).
+   * Opt-in instance-level standard-vocabulary fields.
    * Per GraphQL type name: predicate URI → field name.
    */
   standardVocabFields?: Record<string, Record<string, string>>;

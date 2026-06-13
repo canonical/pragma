@@ -1,17 +1,17 @@
 // =============================================================================
-// The §4.4 GraphQL naming rules: pluralization, casing, verb stripping, and
+// The GraphQL naming rules: pluralization, casing, verb stripping, and
 // name sanitization. Grouped here because Pass 4 applies them together when
 // mapping OWL names to GraphQL names.
 // =============================================================================
 
-/** Irregular plurals the suffix rules cannot produce (§4.4 rule 5). */
+/** Irregular plurals the suffix rules cannot produce. */
 const IRREGULAR_PLURALS: Record<string, string> = {
   child: "children",
   person: "people",
 };
 
 /**
- * Pluralize a camelCase field name (§4.4 rule 5):
+ * Pluralize a camelCase field name:
  *   a. irregulars (child → children)
  *   b. already ends in 's' → unchanged (treated as plural: cases, donts)
  *   c. consonant + 'y' → 'ies' (category → categories)
@@ -52,7 +52,7 @@ export const pluralize = (name: string): string => {
 export const camelize = (name: string): string =>
   name.charAt(0).toLowerCase() + name.slice(1);
 
-/** Strip a leading "has"/"is" verb from a field name (§4.4 rule 3). */
+/** Strip a leading "has"/"is" verb from a field name. */
 export const stripVerbPrefix = (name: string): string => {
   for (const prefix of ["has", "is"]) {
     if (

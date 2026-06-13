@@ -5,7 +5,7 @@ Two entry points:
 - **`@canonical/ke-graphql`** — compiler, schema, resolvers, local execution (no HTTP).
 - **`@canonical/ke-graphql/http`** — the fetch handler and GraphiQL.
 
-Exhaustive types ship in the `.d.ts`; this document is the callable surface grouped by domain. See `docs/architecture.md` for the design and the `A.10.COMPILER` ADR (KG.01–KG.23) for rationale.
+Exhaustive types ship in the `.d.ts`; this document is the callable surface grouped by domain. See `docs/architecture.md` for the design and rationale.
 
 ---
 
@@ -99,7 +99,7 @@ Translate v17 incremental payloads to Relay's legacy `path`/`label`/`is_final` s
 ```ts
 extractStatic(options: { schema, mapped, context, queries: StaticQuery[] }): Promise<Map<string, ExecutionResult>>
 ```
-KG.20 Path B: run a fixed query set, keyed by name (queries with a single `uri` variable run once per instance, keyed `"name:uri"`). Throws on non-enumerable variables.
+Build-time static extraction: run a fixed query set, keyed by name (queries with a single `uri` variable run once per instance, keyed `"name:uri"`). Throws on non-enumerable variables.
 
 ### `createPersistedManifest(operations)` / `sha256Hex(text)`
 ```ts
@@ -135,7 +135,7 @@ createDepthLimitRule(maxDepth: number): (ctx: ValidationContext) => ASTVisitor  
 createBoundedCache<K,V>(maxSize: number): Map<K,V>                                // bounded LRU
 maskError(error: GraphQLError, mask: boolean): GraphQLFormattedError
 ```
-Constants: `DEFAULT_PAGE_SIZE` (50), `MAX_PAGE_SIZE` (100), `DEFAULT_MAX_QUERY_DEPTH` (20), `DEFAULT_PROCESS_CACHE_SIZE` (10000). See `docs/architecture.md` §8.
+Constants: `DEFAULT_PAGE_SIZE` (50), `MAX_PAGE_SIZE` (100), `DEFAULT_MAX_QUERY_DEPTH` (20), `DEFAULT_PROCESS_CACHE_SIZE` (10000). See the Hardening section of `docs/architecture.md`.
 
 ---
 

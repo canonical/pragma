@@ -1,5 +1,5 @@
 /**
- * Render the embedded GraphiQL HTML page for an endpoint (KG.12). Served on
+ * Render the embedded GraphiQL HTML page for an endpoint. Served on
  * GET without a query param when graphiql is enabled. Self-contained page;
  * the GraphiQL assets load as version-pinned UMD bundles from unpkg at
  * runtime in the browser (dev-tool surface, not a production dependency of

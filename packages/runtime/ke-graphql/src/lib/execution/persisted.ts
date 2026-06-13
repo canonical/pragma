@@ -1,5 +1,5 @@
 // =============================================================================
-// Persisted-query manifest (KG.19): hash → query text, generated at build
+// Persisted-query manifest: hash → query text, generated at build
 // time from the client's compiled operations (e.g. relay-compiler output).
 // In production the handler accepts only these (allowArbitraryQueries:
 // false), and — because the store is immutable between deploys — responses

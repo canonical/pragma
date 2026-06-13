@@ -283,7 +283,7 @@ export default async function extract(
       diagnostics.push({
         severity: "warning",
         code: "E001",
-        message: `namespace ${ns} has no registered prefix — assigned synthetic "${prefix}". Register it in StoreConfig.prefixes: it drives global IDs (KG.10)`,
+        message: `namespace ${ns} has no registered prefix — assigned synthetic "${prefix}". Register it in StoreConfig.prefixes: it drives the prefixed URIs used as Relay global IDs`,
         source: ns,
         phase: PHASE,
       });
@@ -502,7 +502,7 @@ export default async function extract(
     }
   }
 
-  // ── Annotation assertions (acceptanceCriteria/completionGuidance — EC.07).
+  // ── Annotation assertions (acceptanceCriteria/completionGuidance).
   //    Extracted so the TBox schema is fully store-free at request time. ──
   const annotations = new Map<string, Map<string, string>>();
   const annotationProps = [...propertyMap.values()]
@@ -532,7 +532,7 @@ export default async function extract(
     }
   }
 
-  // ── Depth guard: blank nodes whose objects are themselves blank (§5.3) ──
+  // ── Depth guard: blank nodes whose objects are themselves blank ──
   let deepBlankNesting = false;
   try {
     const deep = await query(
@@ -544,7 +544,7 @@ export default async function extract(
         severity: "warning",
         code: "E001",
         message:
-          "blank nodes nest deeper than 1 level in the store — the entity loader's single-hop closure (§5.3) will truncate them; extend the closure depth",
+          "blank nodes nest deeper than 1 level in the store — the entity loader's single-hop blank-node closure will truncate them; extend the closure depth",
         phase: PHASE,
       });
     }

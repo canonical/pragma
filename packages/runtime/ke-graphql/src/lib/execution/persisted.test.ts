@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createPersistedManifest, sha256Hex } from "./persisted.js";
 
-describe("persisted-query manifest (KG.19)", () => {
+describe("persisted-query manifest", () => {
   it("hashes with SHA-256 (Relay/Apollo convention)", async () => {
     // echo -n "{ __typename }" | sha256sum
     expect(await sha256Hex("{ __typename }")).toBe(

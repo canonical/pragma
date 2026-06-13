@@ -1,11 +1,12 @@
 // =============================================================================
 // Query execution against compiled schemas: resolution templates, node(),
-// pagination, _meta, coercion, dual-direction inverses (ADR §5, §12).
+// pagination, _meta, coercion, dual-direction inverses.
 // =============================================================================
 
 import { createTestStore } from "@canonical/ke/testing";
 import { type GraphQLSchema, graphql } from "graphql";
 import { afterEach, describe, expect, it } from "vitest";
+import { type CompilerResult, compile, createStoreQueryFn } from "#compiler";
 import type { CompilerContext } from "#shared";
 import {
   BLANK_NODES_TTL,
@@ -14,9 +15,6 @@ import {
   INVERSE_TTL,
   PREFIXES,
 } from "#testing";
-import compile from "./compile.js";
-import createStoreQueryFn from "./createStoreQueryFn.js";
-import type { CompilerResult } from "./types.js";
 
 type Cleanup = () => void;
 let cleanups: Cleanup[] = [];
@@ -93,7 +91,7 @@ describe("ds-realistic resolution", () => {
     expect(component.id).toBe("ds:global.component.button");
     expect(component.name).toBe("Button");
     expect((component.tier as { name: string }).name).toBe("global");
-    // embedded blank node with boolean-as-string coercion (EC.03)
+    // embedded blank node with boolean-as-string coercion
     const properties = component.properties as Array<Record<string, unknown>>;
     expect(properties).toHaveLength(1);
     expect(properties[0]?.name).toBe("disabled");
@@ -227,7 +225,7 @@ describe("ds-realistic resolution", () => {
   });
 });
 
-describe("dual-direction inverse resolution (EC.05)", () => {
+describe("dual-direction inverse resolution", () => {
   it("finds children even when only the reverse direction is asserted", async () => {
     const compiled = await setup(INVERSE_TTL);
     const result = await run(
@@ -246,7 +244,7 @@ describe("dual-direction inverse resolution (EC.05)", () => {
   });
 });
 
-describe("embedded blank nodes (§12.5)", () => {
+describe("embedded blank nodes", () => {
   it("resolves embedded values inline with optional fields as null", async () => {
     const compiled = await setup(BLANK_NODES_TTL);
     const result = await run(
@@ -262,7 +260,7 @@ describe("embedded blank nodes (§12.5)", () => {
   });
 });
 
-describe("coercion (EC.03, EC.06, EC.14)", () => {
+describe("coercion", () => {
   it("coerces booleans, strips language tags, preserves empty strings", async () => {
     const warnings: string[] = [];
     const compiled = await setup(EDGE_CASES_TTL, {
@@ -276,7 +274,7 @@ describe("coercion (EC.03, EC.06, EC.14)", () => {
     expect((summary.data?.item as { summary: string }).summary).toBe("");
   });
 
-  it("self-referential chains resolve without infinite recursion (EC.04)", async () => {
+  it("self-referential chains resolve without infinite recursion", async () => {
     const compiled = await setup(EDGE_CASES_TTL);
     const result = await run(
       compiled,

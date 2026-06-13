@@ -1,5 +1,5 @@
 // =============================================================================
-// The eight resolver templates (§5.2). Every generated field's resolve
+// The eight resolver templates. Every generated field's resolve
 // function is an instantiation of one of these. Parents are EntityValues;
 // embedded blank-node children become EntityValues with uri: null and a
 // per-value typename derived from the blank node's rdf:type when present
@@ -99,7 +99,7 @@ export const createDatatypeResolver = (field: MappedField): Resolver => {
 
 /**
  * Create a Template 2 resolver (datatype list field): coerces every literal
- * value, dropping the ones that fail coercion (KG.07).
+ * value, dropping the ones that fail coercion.
  */
 export const createDatatypeListResolver = (field: MappedField): Resolver => {
   const scalar = getScalarName(field);
@@ -125,7 +125,7 @@ export const createDatatypeListResolver = (field: MappedField): Resolver => {
 
 /**
  * Create a Template 3 resolver (singular object field): loads the referenced
- * entity; declared inverse pairs fall back to the reverse assertion (EC.05).
+ * entity; declared inverse pairs fall back to the reverse assertion.
  */
 export const createObjectSingularResolver = (field: MappedField): Resolver => {
   return async (parent, _args, ctx) => {
@@ -134,7 +134,7 @@ export const createObjectSingularResolver = (field: MappedField): Resolver => {
     if (v?.kind === "uri") {
       return ctx.entityLoader.load(v.value);
     }
-    // Declared inverse pair: fall back to the reverse assertion (EC.05).
+    // Declared inverse pair: fall back to the reverse assertion.
     if (field.inverseOf && parent.uri) {
       const reverse = await ctx.inverseLoader.load(
         `${field.inverseOf} ${parent.uri}`,
@@ -167,7 +167,8 @@ export const createObjectListResolver = (field: MappedField): Resolver => {
 /**
  * Create a Template 4 resolver (inverse fields — declared pairs and
  * synthetic inverses): union of forward triples and reverse assertions,
- * deduplicated by URI (EC.05 direction rule), as a Relay connection.
+ * deduplicated by URI (an owl:inverseOf pair may be asserted in either
+ * direction; each side resolves the union of both), as a Relay connection.
  */
 export const createInverseResolver = (
   field: MappedField,

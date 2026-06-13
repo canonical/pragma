@@ -1,5 +1,5 @@
 // =============================================================================
-// Plugin integration (§9): createSchemaPlugin via createStore, store.api,
+// Plugin integration: createSchemaPlugin via createStore, store.api,
 // sdlOutput writing, extensions (object + factory), standardVocabFields.
 // =============================================================================
 
@@ -24,7 +24,7 @@ afterEach(() => {
   cleanups = [];
 });
 
-describe("createSchemaPlugin (§9)", () => {
+describe("createSchemaPlugin", () => {
   it("compiles on onReady and exposes the api via store.api", async () => {
     const plugin = createSchemaPlugin();
     const { store, cleanup } = await createTestStore({
@@ -148,7 +148,7 @@ describe("createSchemaPlugin (§9)", () => {
     ).rejects.toThrow(/C001|composition failed/);
   });
 
-  it("generates instance-level standard-vocab fields (EC.15)", async () => {
+  it("generates instance-level standard-vocab fields", async () => {
     const ttl = `${MINIMAL_TTL}
       <http://example.org/widget> <http://www.w3.org/2000/01/rdf-schema#label> "The Widget"@en .
     `;

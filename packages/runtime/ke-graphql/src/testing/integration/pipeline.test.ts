@@ -1,11 +1,12 @@
 // =============================================================================
 // Pipeline tests (Passes 1–7) against fixture stores: schema shape,
-// diagnostics, golden SDL expectations (ADR §12).
+// diagnostics, golden SDL expectations.
 // =============================================================================
 
 import { createTestStore } from "@canonical/ke/testing";
 import type { GraphQLObjectType } from "graphql";
 import { afterEach, describe, expect, it } from "vitest";
+import { type CompilerResult, compile, createStoreQueryFn } from "#compiler";
 import {
   BLANK_NODES_TTL,
   DOMAINLESS_TTL,
@@ -17,9 +18,6 @@ import {
   PREFIXES,
   SHACL_TTL,
 } from "#testing";
-import compile from "./compile.js";
-import createStoreQueryFn from "./createStoreQueryFn.js";
-import type { CompilerResult } from "./types.js";
 
 type Cleanup = () => void;
 let cleanups: Cleanup[] = [];
@@ -46,7 +44,7 @@ const compileFixture = async (
 const codes = (result: CompilerResult): string[] =>
   result.diagnostics.map((d) => d.code);
 
-describe("minimal fixture (§12.2)", () => {
+describe("minimal fixture", () => {
   it("compiles one concrete type with root queries and Node membership", async () => {
     const result = await compileFixture(MINIMAL_TTL);
     expect(result.schema).toBeDefined();
@@ -73,7 +71,7 @@ describe("minimal fixture (§12.2)", () => {
   });
 });
 
-describe("inheritance fixture (§12.3)", () => {
+describe("inheritance fixture", () => {
   it("generates the interface chain with inherited fields", async () => {
     const result = await compileFixture(INHERITANCE_TTL);
     expect(result.sdl).toContain("interface Entity implements Node");
@@ -96,7 +94,7 @@ describe("inheritance fixture (§12.3)", () => {
   });
 });
 
-describe("inverse fixture (§12.4)", () => {
+describe("inverse fixture", () => {
   it("places one field per side with the irregular plural", async () => {
     const result = await compileFixture(INVERSE_TTL);
     const parent = result.schema.getType("Parent") as GraphQLObjectType;
@@ -105,7 +103,7 @@ describe("inverse fixture (§12.4)", () => {
     expect(String(parent.getFields().children?.type)).toBe("ChildConnection!");
     // childOf is functional → singular
     expect(String(child.getFields().childOf?.type)).toBe("Parent");
-    // no duplicated reverse fields (EC.05)
+    // no duplicated reverse fields
     expect(parent.getFields().childOf).toBeUndefined();
     expect(child.getFields().children).toBeUndefined();
   });
@@ -138,7 +136,7 @@ ex:d1 a ex:Dog ; ex:name "Rex" .
   });
 });
 
-describe("blank nodes fixture (§12.5)", () => {
+describe("blank nodes fixture", () => {
   it("marks blank-only classes embeddable: no Node, plain list", async () => {
     const result = await compileFixture(BLANK_NODES_TTL);
     expect(codes(result)).toContain("V001");
@@ -154,8 +152,8 @@ describe("blank nodes fixture (§12.5)", () => {
   });
 });
 
-describe("domainless fixture (§12.6)", () => {
-  it("assigns the property to every class in its namespace (KG.14)", async () => {
+describe("domainless fixture", () => {
+  it("assigns the property to every class in its namespace", async () => {
     const result = await compileFixture(DOMAINLESS_TTL);
     expect(codes(result)).toContain("V002");
     const foo = result.schema.getType("Foo") as GraphQLObjectType;
@@ -165,7 +163,7 @@ describe("domainless fixture (§12.6)", () => {
   });
 });
 
-describe("edge cases fixture (§12.7)", () => {
+describe("edge cases fixture", () => {
   it("emits the expected V-series diagnostics", async () => {
     const result = await compileFixture(EDGE_CASES_TTL);
     const found = codes(result);
@@ -187,7 +185,7 @@ describe("edge cases fixture (§12.7)", () => {
   });
 });
 
-describe("shacl fixture (§12.10)", () => {
+describe("shacl fixture", () => {
   it("resolves SHACL cardinality including sh:or and maxCount 0", async () => {
     const result = await compileFixture(SHACL_TTL);
     const found = codes(result);
@@ -205,7 +203,7 @@ describe("shacl fixture (§12.10)", () => {
   });
 });
 
-describe("ds-realistic fixture (§12.8)", () => {
+describe("ds-realistic fixture", () => {
   it("compiles the full hierarchy with synthetic inverses and overrides", async () => {
     const result = await compileFixture(DS_REALISTIC_TTL, {
       mappings: {

@@ -1,5 +1,5 @@
 // =============================================================================
-// Inverse loader (§5.3). Batches reverse-assertion lookups. Keys are encoded
+// Inverse loader. Batches reverse-assertion lookups. Keys are encoded
 // as "<propertyUri> <objectFullUri>" strings (DataLoader cache keys must be
 // primitives without a custom cacheKeyFn).
 // =============================================================================

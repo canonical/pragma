@@ -7,7 +7,7 @@ import {
   stripVerbPrefix,
 } from "./nameMap.js";
 
-describe("pluralize (§4.4 rule 5)", () => {
+describe("pluralize", () => {
   it("applies the suffix rules", () => {
     expect(pluralize("edge")).toBe("edges");
     expect(pluralize("style")).toBe("styles");
@@ -30,7 +30,7 @@ describe("pluralize (§4.4 rule 5)", () => {
   });
 });
 
-describe("stripVerbPrefix (§4.4 rule 3)", () => {
+describe("stripVerbPrefix", () => {
   it("strips has/is verb prefixes", () => {
     expect(stripVerbPrefix("hasEdge")).toBe("edge");
     expect(stripVerbPrefix("isDraft")).toBe("draft");

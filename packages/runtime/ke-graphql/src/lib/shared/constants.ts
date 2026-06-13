@@ -62,7 +62,7 @@ export const XSD_SCALARS: Record<
   [`${XSD}dateTime`]: "String",
 };
 
-/** Names the compiler owns; generated type names may not take them (§4.4 rule 6). */
+/** Names the compiler owns; generated type names may not take them. */
 export const RESERVED_TYPE_NAMES = new Set([
   "Node",
   "Query",
@@ -82,7 +82,7 @@ export const RESERVED_TYPE_NAMES = new Set([
   "ID",
 ]);
 
-/** Field names the compiler owns on Node types (§4.4 rule 7). */
+/** Field names the compiler owns on Node types. */
 export const RESERVED_FIELD_NAMES = new Set([
   "id",
   "uri",

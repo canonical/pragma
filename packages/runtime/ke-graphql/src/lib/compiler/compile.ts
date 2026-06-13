@@ -8,7 +8,8 @@ import type { CompilerResult, SchemaPluginOptions } from "./types.js";
  * PluginContext.query at plugin time, or createStoreQueryFn(store) directly).
  *
  * The schema is produced whenever composition succeeds — error diagnostics
- * from earlier passes do not abort compilation (tsc model, §2.2); the
+ * from earlier passes do not abort compilation (tsc model); only
+ * composition failure stops schema creation. The
  * consumer decides its failure policy. Throws CompilationError only when
  * composition fails.
  *

@@ -2,7 +2,7 @@
 // Pass 7 — Compose: SchemaPlan + TBox + extensions → GraphQLSchema
 //
 // The single place where graphql-js type objects are constructed (they are
-// immutable — see ADR §4.5/§4.6). Field thunks resolve circular references;
+// immutable once constructed). Field thunks resolve circular references;
 // connection types are created on demand per base type; every interface and
 // union gets resolveType reading EntityValue.typename; extensions (object or
 // factory form) are validated (C001/C002); the composed schema runs
@@ -155,7 +155,7 @@ export default function compose(
         ? getConnectionType(ref.base)
         : (findNamedType(ref.base) ?? GraphQLString);
     if (ref.kind !== "connection" && ref.list) {
-      // List fields are always [T!]! (KG.07): resolvers filter missing
+      // List fields are always [T!]!: resolvers filter missing
       // items rather than nulling them, and an empty list is the default.
       return new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(base)));
     }

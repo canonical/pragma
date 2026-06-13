@@ -4,7 +4,7 @@ import { coerce, mapXsdToScalar } from "./coerce.js";
 const warnings: Array<{ reason: string }> = [];
 const warn = (w: { reason: string }) => warnings.push(w);
 
-describe("coerce (EC.03)", () => {
+describe("coerce", () => {
   it("passes strings through", () => {
     expect(coerce("hello", "String", "p", warn)).toBe("hello");
     expect(coerce("", "String", "p", warn)).toBe("");
