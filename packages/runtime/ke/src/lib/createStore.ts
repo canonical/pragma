@@ -336,6 +336,8 @@ function termToString(term: OxTerm): string {
 const XSD_STRING = "http://www.w3.org/2001/XMLSchema#string";
 /** rdf:langString is implied by the presence of a language tag — omitted. */
 const RDF_LANG_STRING = "http://www.w3.org/1999/02/22-rdf-syntax-ns#langString";
+const RDF_DIR_LANG_STRING =
+  "http://www.w3.org/1999/02/22-rdf-syntax-ns#dirLangString";
 
 /**
  * Convert an Oxigraph RDF/JS term to ke's term-preserving form (see types.ts).
@@ -350,15 +352,29 @@ function toTerm(term: OxTerm): Term {
   if (term.termType === "Literal") {
     const literal: Term = { termType: "Literal", value: term.value };
     const datatype = (term as { datatype?: OxNamedNode }).datatype?.value;
-    if (datatype && datatype !== XSD_STRING && datatype !== RDF_LANG_STRING) {
+    // xsd:string, rdf:langString and rdf:dirLangString are implied by the
+    // language/direction tags — omit them to keep the term canonical.
+    if (
+      datatype &&
+      datatype !== XSD_STRING &&
+      datatype !== RDF_LANG_STRING &&
+      datatype !== RDF_DIR_LANG_STRING
+    ) {
       literal.datatype = datatype;
     }
     const language = (term as { language?: string }).language;
     if (language) {
       literal.language = language;
     }
+    const direction = (term as { direction?: string }).direction;
+    if (direction) {
+      literal.direction = direction as "ltr" | "rtl";
+    }
     return literal;
   }
+  // The remaining case is NamedNode. Variable / DefaultGraph / quoted-triple
+  // terms do not occur in SELECT bindings or CONSTRUCT subject/predicate/object,
+  // so they never reach here (termToString shares this assumption).
   return { termType: "NamedNode", value: term.value };
 }
 

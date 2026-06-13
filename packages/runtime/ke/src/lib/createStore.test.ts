@@ -197,6 +197,26 @@ describe("SPARQL query execution", () => {
     expect(blank?.value.startsWith("_:")).toBe(false);
   });
 
+  it("preserves base direction on RDF 1.2 directional literals", async () => {
+    testResult = await createTestStore({
+      ttl: `
+        @prefix ex: <http://example.org/> .
+        ex:thing ex:greeting "hello"@en--ltr .
+      `,
+    });
+    const { store } = testResult;
+    const result = (await store.query(
+      sparql`SELECT ?o WHERE { <http://example.org/thing> <http://example.org/greeting> ?o }`,
+    )) as SelectResult;
+    // language + direction kept; the implied rdf:dirLangString datatype omitted.
+    expect(result.termBindings[0]?.o).toEqual({
+      termType: "Literal",
+      value: "hello",
+      language: "en",
+      direction: "ltr",
+    });
+  });
+
   it("preserves terms in CONSTRUCT quads alongside stringified triples", async () => {
     testResult = await createTestStore({
       ttl: `
@@ -1005,6 +1025,7 @@ describe("Query result parsing", () => {
     );
     expect(result.type).toBe("select");
     expect((result as SelectResult).bindings.length).toBe(0);
+    expect((result as SelectResult).termBindings).toEqual([]);
   });
 });
 

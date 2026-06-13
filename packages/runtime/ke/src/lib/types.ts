@@ -179,7 +179,7 @@ export interface StoreConfig {
  * before loading, or log `path` for diagnostics.
  */
 export interface ResolvedSource {
-  /** Absolute path of the resolved file. */
+  /** Absolute file path, or a diagnostic label (e.g. "inline:0") for inline sources. */
   path: string;
 
   /** Named graph this source will be loaded into, if specified. */
@@ -257,9 +257,14 @@ export type Term =
       value: string;
       datatype?: string;
       language?: string;
+      /** Base direction ("ltr"/"rtl") for RDF 1.2 directional literals. */
+      direction?: "ltr" | "rtl";
     };
 
-/** A single RDF triple with term-preserving members. */
+/**
+ * A single RDF triple with term-preserving members. CONSTRUCT results are
+ * always in the default graph, so no graph member is exposed.
+ */
 export interface Quad {
   subject: Term;
   predicate: Term;
