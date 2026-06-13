@@ -5,6 +5,16 @@ import ajv from "./ajv.js";
 const TOKEN_PATTERN = /\$\{([^}]+)\}/g;
 
 /**
+ * Formats a set of variable names for inclusion in error messages.
+ *
+ * @param names - Declared variable names
+ * @returns A comma-separated list, or "none" when empty
+ */
+function declaredList(names: string[]): string {
+  return names.join(", ") || "none";
+}
+
+/**
  * Replaces every `${name}` token in a string with its resolved value.
  * Throws if a token references a variable that was never declared, which
  * surfaces ruleset typos instead of silently leaving the placeholder in place.
@@ -17,9 +27,8 @@ const TOKEN_PATTERN = /\$\{([^}]+)\}/g;
 function replaceTokens(value: string, values: Record<string, string>): string {
   return value.replace(TOKEN_PATTERN, (_match, name: string) => {
     if (!(name in values)) {
-      const declared = Object.keys(values).join(", ") || "none";
       throw new Error(
-        `Unknown template variable '\${${name}}'. Declared variables: ${declared}`,
+        `Unknown template variable '\${${name}}'. Declared variables: ${declaredList(Object.keys(values))}`,
       );
     }
     return values[name];
@@ -72,9 +81,8 @@ function resolveValues(
   // Reject overrides that target undeclared variables (typo or wrong ruleset).
   for (const key of Object.keys(overrides)) {
     if (!(key in declarations)) {
-      const declared = Object.keys(declarations).join(", ") || "none";
       throw new Error(
-        `Unknown variable '${key}' provided via --var/--prefix. Declared variables: ${declared}`,
+        `Unknown variable '${key}' provided via --var/--prefix. Declared variables: ${declaredList(Object.keys(declarations))}`,
       );
     }
   }
@@ -83,6 +91,8 @@ function resolveValues(
   for (const [name, declaration] of Object.entries(declarations)) {
     const value = name in overrides ? overrides[name] : declaration.default;
 
+    // ajv.validate caches compiled schemas by object reference; fine here since
+    // this runs once per CLI invocation over a handful of small value schemas.
     if (declaration.schema && !ajv.validate(declaration.schema, value)) {
       throw new Error(
         `Invalid value '${value}' for variable '${name}': ${ajv.errorsText(ajv.errors)}`,
@@ -130,7 +140,7 @@ export default function substituteVariables(
   schema: Schema,
   overrides: Record<string, string> = {},
 ): Schema {
-  const declarations = (schema.variables ?? {}) as VariableDeclarations;
+  const declarations = schema.variables ?? {};
   const values = resolveValues(declarations, overrides);
 
   const { variables: _variables, ...rules } = schema;

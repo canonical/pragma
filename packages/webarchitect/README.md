@@ -145,7 +145,7 @@ webarchitect <ruleset> [options]
 
 Rulesets can declare **template variables** so a single ruleset can be reused across organizations or relaxed per-project without duplicating it. Variables are declared under a top-level `variables` block, referenced as `${name}` anywhere inside a rule, and overridden at the command line with `--var`/`--prefix`.
 
-The built-in `package`, `tool-ts`, and `package-svelte` rulesets use this to enforce the package-name prefix. They declare:
+The built-in rulesets use this to enforce the package-name prefix: `package` and `tool-ts` declare a `prefix` variable, and `library`, `tool`, `package-react`, and `package-svelte` inherit it via `extends`. The declaration looks like:
 
 ```jsonc
 {
@@ -183,7 +183,7 @@ Resolution rules:
 
 - An override value always wins over the declared `default`.
 - If a variable declares a `schema`, the override value is validated against it (via JSON Schema) before substitution.
-- Overriding a variable that the ruleset does not declare is an error, as is referencing an undeclared `${name}` token inside a rule — both surface typos early.
+- Overriding a variable that the ruleset does not declare is an error, as is referencing an undeclared `${name}` token inside a rule — both surface typos early. This means `--prefix`/`--var prefix=…` only apply to the prefix-family rulesets above; passing them to a ruleset without a `prefix` variable (e.g. `base`, `assets`) is rejected.
 - Variables declared in a parent ruleset are inherited by rulesets that `extends` it.
 
 ### Ruleset Resolution Mechanism

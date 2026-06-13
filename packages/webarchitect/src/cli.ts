@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 import type { ErrorObject } from "ajv";
 import chalk from "chalk";
-import { Command } from "commander";
+import { Command, InvalidArgumentError } from "commander";
 import { discoverAllRulesets } from "./lib/index.js";
 import type { ValidationResult } from "./types.js";
 import validate from "./validate.js";
@@ -280,7 +280,9 @@ function collectVariable(
 ): Record<string, string> {
   const separator = raw.indexOf("=");
   if (separator === -1) {
-    throw new Error(`Invalid --var '${raw}', expected key=value`);
+    // InvalidArgumentError lets Commander format and exit cleanly, rather than
+    // surfacing a raw stack trace from inside the option parser.
+    throw new InvalidArgumentError(`Expected key=value, received '${raw}'.`);
   }
   acc[raw.slice(0, separator)] = raw.slice(separator + 1);
   return acc;
