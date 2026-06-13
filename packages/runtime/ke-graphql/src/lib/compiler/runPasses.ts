@@ -12,7 +12,7 @@ import wireRelay from "./wireRelay.js";
 /**
  * Run Passes 2–7 over a RawExtraction and assemble the CompilerResult.
  *
- * Per §2.2, only Pass 7 (composition) errors prevent schema creation —
+ * Only Pass 7 (composition) errors prevent schema creation —
  * C001/C002 extension conflicts and C003 validation failures throw a
  * CompilationError; earlier error diagnostics surface in the list without
  * aborting. Pure — every pass after extraction is store-free.
@@ -49,7 +49,7 @@ export default function runPasses(
   });
   diagnostics.push(...composed.diagnostics);
 
-  // §2.2: only Pass 7 (composition) errors prevent schema creation —
+  // Only Pass 7 (composition) errors prevent schema creation —
   // C001/C002 extension conflicts and C003 validation failures are fatal;
   // earlier error diagnostics surface in the list without aborting.
   const compositionErrors = composed.diagnostics.filter(

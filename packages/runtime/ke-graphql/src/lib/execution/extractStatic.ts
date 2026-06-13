@@ -1,5 +1,5 @@
 // =============================================================================
-// Path B — static extraction at build time (KG.20).
+// Path B — static extraction at build time.
 //
 // Runs every provided query against the compiled schema and returns the
 // results keyed by name (callers write them to disk as static JSON). Only
@@ -65,7 +65,7 @@ const listEntityUris = async (
  * results keyed by query name (queries with a single uri variable run once
  * per instance URI, keyed "name:uri"). Incremental payloads are drained and
  * merged. Throws on queries with non-enumerable variables rather than
- * shipping partial data (KG.20 Path B).
+ * shipping partial data.
  *
  * @note Impure — executes every query against the store-backed context.
  */
@@ -114,7 +114,7 @@ export default async function extractStatic(
     throw new Error(
       `extractStatic: query "${query.name}" has non-enumerable variables (${variableNames.join(
         ", ",
-      )}) — static extraction supports only a single uri variable (KG.20 Path B)`,
+      )}) — static extraction supports only a single uri variable`,
     );
   }
 

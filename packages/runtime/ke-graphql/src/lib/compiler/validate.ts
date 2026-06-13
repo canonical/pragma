@@ -61,7 +61,7 @@ export default function validate(ir: OntologyIR): PassResult<OntologyIR> {
     // typed as this class can hold a subclass instance, but graphql-js calls
     // no resolveType on a concrete object type, so the subclass's __typename
     // and fields are unreachable through it. Mark it abstract if it has no
-    // direct instances; the interface+companion fix is deferred (A.10 §13).
+    // direct instances; the interface+companion fix is a deferred option.
     if (!node.isAbstract && !node.embeddable && node.subclasses.length > 0) {
       push({
         severity: "warning",

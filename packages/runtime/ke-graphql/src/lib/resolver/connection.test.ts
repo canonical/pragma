@@ -12,7 +12,7 @@ import {
 
 const items = (uris: string[]) => uris.map((uri) => ({ uri }));
 
-describe("toConnection (§5.4, KG.18)", () => {
+describe("toConnection", () => {
   it("returns all items without arguments", () => {
     const connection = toConnection(items(["b", "a", "c"]), {});
     expect(connection.edges.map((e) => e.node.uri)).toEqual(["a", "b", "c"]);

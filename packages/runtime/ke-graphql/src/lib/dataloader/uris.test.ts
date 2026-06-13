@@ -14,7 +14,7 @@ const namespaces = new Map<string, NamespaceInfo>([
   ],
 ]);
 
-describe("toPrefixed / toFull (KG.10)", () => {
+describe("toPrefixed / toFull", () => {
   it("round-trips a prefixed URI", () => {
     const full = "https://ds.canonical.com/global.component.button";
     const prefixed = toPrefixed(full, namespaces);

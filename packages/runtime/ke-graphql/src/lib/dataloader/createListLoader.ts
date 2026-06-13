@@ -1,5 +1,5 @@
 // =============================================================================
-// List loader (§5.3). Batches instance-of queries per class with a per-class
+// List loader. Batches instance-of queries per class with a per-class
 // name predicate (paired VALUES) so the default name-sort works across
 // ontologies. Rows are deduplicated per instance (multi-valued names would
 // otherwise duplicate rows).

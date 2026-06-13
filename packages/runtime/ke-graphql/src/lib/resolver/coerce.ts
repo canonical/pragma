@@ -1,6 +1,6 @@
 // =============================================================================
-// Literal coercion: boolean-as-string (EC.03), numeric parsing, language-tag
-// stripping (EC.06). Runtime failures go to the context's warning channel.
+// Literal coercion: boolean-as-string, numeric parsing, language-tag
+// stripping. Runtime failures go to the context's warning channel.
 // =============================================================================
 
 import { type RuntimeWarningHandler, XSD } from "#shared";

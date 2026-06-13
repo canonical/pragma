@@ -1,11 +1,12 @@
 // =============================================================================
-// ke plugin entry (§9): onReady runs the compiler against the freshly loaded
+// ke plugin entry: onReady runs the compiler against the freshly loaded
 // store; onReload recompiles (note: with `cache:` configured, ke's reload()
 // short-circuits on a cache hit — pass { force: true } in dev flows).
 //
-// Failure policy: the schema is produced through non-composition errors
-// (§2.2); only a CompilationError (composition failed) propagates and fails
-// the boot. All diagnostics are logged either way.
+// Failure policy: the schema is produced even through non-composition
+// errors (the tsc model — diagnostics never abort the pipeline); only a
+// CompilationError (composition failed) propagates and fails the boot. All
+// diagnostics are logged either way.
 // =============================================================================
 
 import { readFileSync, writeFileSync } from "node:fs";

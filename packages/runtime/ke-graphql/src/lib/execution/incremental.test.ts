@@ -1,5 +1,5 @@
 // =============================================================================
-// Execution paths (KG.20/KG.21): local execution, @defer incremental
+// Execution paths: local execution, @defer incremental
 // delivery, drain-and-merge, the Relay format adapter, static extraction.
 // =============================================================================
 
@@ -60,7 +60,7 @@ const dsOptions = {
   },
 };
 
-describe("executeLocal (KG.20 Path A)", () => {
+describe("executeLocal (in-process execution)", () => {
   it("executes plain documents to a single result", async () => {
     const { result, context } = await setup(MINIMAL_TTL);
     const execution = await executeLocal({
@@ -141,7 +141,7 @@ describe("executeLocal (KG.20 Path A)", () => {
   });
 });
 
-describe("relayFormatAdapter (KG.21)", () => {
+describe("relayFormatAdapter", () => {
   it("translates v17 payloads to the Relay legacy shape", async () => {
     const { result, context } = await setup(DS_REALISTIC_TTL, dsOptions);
     const execution = await executeLocal({
@@ -175,7 +175,7 @@ describe("relayFormatAdapter (KG.21)", () => {
   });
 });
 
-describe("extractStatic (KG.20 Path B)", () => {
+describe("extractStatic (build-time static extraction)", () => {
   it("runs nullary queries once and uri queries per entity", async () => {
     const { result, context } = await setup(MINIMAL_TTL);
     const results = await extractStatic({
@@ -203,7 +203,7 @@ describe("extractStatic (KG.20 Path B)", () => {
     expect((widget?.data?.thing as { name: string }).name).toBe("Widget");
   });
 
-  it("fails loudly on non-enumerable variables (KG.20 pagination constraint)", async () => {
+  it("fails loudly on non-enumerable variables", async () => {
     const { result, context } = await setup(MINIMAL_TTL);
     await expect(
       extractStatic({

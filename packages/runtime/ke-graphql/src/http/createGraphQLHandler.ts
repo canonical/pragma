@@ -1,5 +1,6 @@
 // =============================================================================
-// Fetch-compatible GraphQL HTTP handler (KG.12, KG.19, KG.21).
+// Fetch-compatible GraphQL HTTP handler (GraphiQL, persisted queries,
+// incremental delivery).
 //
 // `(Request) => Promise<Response>` — same composition pattern as
 // @canonical/ke's createSparqlHandler. Mostly seam, not policy: extra
@@ -88,7 +89,7 @@ export interface GraphQLHandlerOptions {
    */
   maskErrors?: boolean;
   onOperation?: (event: OperationEvent) => void;
-  /** Incremental delivery over multipart/mixed (KG.21). Default: false. */
+  /** Incremental delivery over multipart/mixed. Default: false. */
   incremental?: boolean;
   /** Payload format for incremental parts. Default: 'graphql17'. */
   incrementalFormat?: "graphql17" | "relay-legacy";

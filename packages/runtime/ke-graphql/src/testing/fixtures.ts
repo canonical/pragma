@@ -1,6 +1,6 @@
 /**
  * Self-contained TTL fixtures for the compiler/pipeline/execution tests
- * (ADR §12). Each constant is a complete document — TBox + ABox together —
+ * Each constant is a complete document — TBox + ABox together —
  * that exercises one specific compiler behavior, kept minimal by design;
  * `PREFIXES` is the prefix map the fixture stores share. They live in one
  * file so a test can pull whichever scenario it needs from a single import.
@@ -13,7 +13,7 @@ export const PREFIXES = {
   cs: "http://pragma.canonical.com/codestandards#",
 };
 
-/** §12.2 — happy path: one class, two properties, one instance. */
+/** Happy path: one class, two properties, one instance. */
 export const MINIMAL_TTL = `
 @prefix ex: <http://example.org/> .
 @prefix owl: <http://www.w3.org/2002/07/owl#> .
@@ -40,7 +40,7 @@ ex:widget a ex:Thing ;
   ex:count 42 .
 `;
 
-/** §12.3 — class hierarchy and interface generation. */
+/** Class hierarchy and interface generation. */
 export const INHERITANCE_TTL = `
 @prefix ex: <http://example.org/> .
 @prefix owl: <http://www.w3.org/2002/07/owl#> .
@@ -60,7 +60,7 @@ ex:w1 a ex:Widget ; ex:name "Alpha" ; ex:weight 10 ; ex:color "red" .
 ex:g1 a ex:Gadget ; ex:name "Beta" ; ex:weight 5 .
 `;
 
-/** §12.4 — inverse pair: forward/inverse placement, irregular plural. */
+/** Inverse pair: forward/inverse placement, irregular plural. */
 export const INVERSE_TTL = `
 @prefix ex: <http://example.org/> .
 @prefix owl: <http://www.w3.org/2002/07/owl#> .
@@ -81,13 +81,14 @@ ex:name a owl:DatatypeProperty ;
   rdfs:domain ex:Parent ; rdfs:range xsd:string .
 
 # Data asserts ONLY the childOf direction — hasChild resolution must find
-# the children via the reverse assertions (EC.05 dual-direction rule).
+# the children via the reverse assertions (the dual-direction inverse rule:
+# each side resolves the union of forward and reverse assertions).
 ex:p1 a ex:Parent ; ex:name "Alice" .
 ex:c1 a ex:Child ; ex:childOf ex:p1 .
 ex:c2 a ex:Child ; ex:childOf ex:p1 .
 `;
 
-/** §12.5 — embedded blank-node types. */
+/** Embedded blank-node types. */
 export const BLANK_NODES_TTL = `
 @prefix ex: <http://example.org/> .
 @prefix owl: <http://www.w3.org/2002/07/owl#> .
@@ -114,7 +115,7 @@ ex:s1 a ex:Standard ;
   ] .
 `;
 
-/** §12.6 — domainless property (KG.14). */
+/** Domainless property (no rdfs:domain — assigned to every class in its namespace). */
 export const DOMAINLESS_TTL = `
 @prefix ex: <http://example.org/> .
 @prefix owl: <http://www.w3.org/2002/07/owl#> .
@@ -131,7 +132,7 @@ ex:f1 a ex:Foo ; ex:label "foo" ; ex:description "a foo" .
 ex:b1 a ex:Bar ; ex:description "a bar" .
 `;
 
-/** §12.7 — synthetic triggers for the V-series diagnostics. */
+/** Synthetic triggers for the V-series diagnostics. */
 export const EDGE_CASES_TTL = `
 @prefix ex: <http://example.org/> .
 @prefix owl: <http://www.w3.org/2002/07/owl#> .
@@ -141,33 +142,33 @@ export const EDGE_CASES_TTL = `
 @prefix skos: <http://www.w3.org/2004/02/skos/core#> .
 @prefix sh: <http://www.w3.org/ns/shacl#> .
 
-# EC.03 — boolean-as-string
+# boolean-as-string
 ex:Item a owl:Class .
 ex:active a owl:DatatypeProperty ; rdfs:domain ex:Item ; rdfs:range xsd:boolean .
 ex:i1 a ex:Item ; ex:active "true" .
 
-# EC.04 — self-referential relationship
+# self-referential relationship
 ex:extends a owl:ObjectProperty ; rdfs:domain ex:Item ; rdfs:range ex:Item .
 ex:i2 a ex:Item ; ex:extends ex:i2 .
 
-# EC.06 — language-tagged literal
+# language-tagged literal
 ex:label a owl:DatatypeProperty ; rdfs:domain ex:Item ; rdfs:range xsd:string .
 ex:i3 a ex:Item ; ex:label "Tagged"@en .
 
-# EC.07 — annotation property on rdf:Property
+# annotation property on rdf:Property
 ex:guidance a owl:AnnotationProperty ; rdfs:domain rdf:Property ; rdfs:range xsd:string .
 ex:active ex:guidance "Must be boolean" .
 
-# EC.08 — custom datatype
+# custom datatype
 ex:Version a rdfs:Datatype ; owl:onDatatype xsd:string .
 ex:ver a owl:DatatypeProperty ; rdfs:domain ex:Item ; rdfs:range ex:Version .
 ex:i4 a ex:Item ; ex:ver "1.0.0" .
 
-# EC.13 — cross-vocabulary subClassOf
+# cross-vocabulary subClassOf
 ex:Category a owl:Class ; rdfs:subClassOf skos:Concept .
 ex:c1 a ex:Category .
 
-# EC.14 — empty string value
+# empty string value
 ex:summary a owl:DatatypeProperty ; rdfs:domain ex:Item ; rdfs:range xsd:string .
 ex:i5 a ex:Item ; ex:summary "" .
 
@@ -180,7 +181,7 @@ ex:ItemShape a sh:NodeShape ;
   ] .
 ex:mode a owl:DatatypeProperty ; rdfs:domain ex:Item ; rdfs:range xsd:string .
 
-# V014 / EC.16 — ABox predicate not declared in the TBox
+# V014 — ABox predicate not declared in the TBox
 ex:i6 a ex:Item ; ex:undeclaredThing "x" .
 
 # V005 — functional property with multiple values
@@ -189,7 +190,7 @@ ex:rank a owl:DatatypeProperty , owl:FunctionalProperty ;
 ex:i7 a ex:Item ; ex:rank 1 , 2 .
 `;
 
-/** §12.10 — SHACL cardinality, sh:or XOR, maxCount 0. */
+/** SHACL cardinality, sh:or XOR, maxCount 0. */
 export const SHACL_TTL = `
 @prefix ex: <http://example.org/> .
 @prefix owl: <http://www.w3.org/2002/07/owl#> .
@@ -219,7 +220,7 @@ ex:HopShape a sh:NodeShape ; sh:targetClass ex:Hop ;
 ex:s1 a ex:Spec . ex:h1 a ex:Hop . ex:sw1 a ex:Sw .
 `;
 
-/** §12.8 — realistic ds: subset: hierarchy, inverses, blank nodes, booleans. */
+/** Realistic ds: subset: hierarchy, inverses, blank nodes, booleans. */
 export const DS_REALISTIC_TTL = `
 @prefix ds: <https://ds.canonical.com/> .
 @prefix owl: <http://www.w3.org/2002/07/owl#> .

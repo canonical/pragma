@@ -1,11 +1,12 @@
 // =============================================================================
 // @canonical/ke-graphql — Shared type contracts
 //
-// The intermediate representations of the seven-pass pipeline specified in
-// the A.10.COMPILER ADR, plus the resolver runtime values and the per-request
-// context. Everything before the IR is extraction; everything after it is
-// emission. These types are a public contract (Prisma-DMMF style): consumers
-// can inspect RawExtraction, OntologyIR, and MappedIR.
+// The intermediate representations of the seven-pass pipeline (extract →
+// build → validate → map → emit → wire-relay → compose), plus the resolver
+// runtime values and the per-request context. Everything before the IR is
+// extraction; everything after it is emission. These types are a public
+// contract (Prisma-DMMF style): consumers can inspect RawExtraction,
+// OntologyIR, and MappedIR.
 //
 // They live in the shared leaf (not the compiler) so the loader, resolver, and
 // TBox domains can depend on them without importing back from their
@@ -187,7 +188,9 @@ export interface RawExtraction {
    * (acceptanceCriteria/completionGuidance live on PropertyNode).
    */
   annotations: Map<string, Map<string, string>>;
-  /** True when some blank node's object is itself a blank node (§5.3 depth guard). */
+  /** True when some blank node's object is itself a blank node. The entity
+   * loader fetches only a single-hop blank-node closure, so deeper nesting
+   * would be truncated. */
   deepBlankNesting: boolean;
 }
 
@@ -220,7 +223,7 @@ export interface ClassNode {
   isAbstract: boolean;
   /**
    * Instances are exclusively blank nodes (from Pass 1 instanceStats) or
-   * forced via custom mapping (KG.13). Embeddable types implement no Node
+   * forced via custom mapping. Embeddable types implement no Node
    * interface and have no id/uri/_meta or root queries.
    */
   embeddable: boolean;
@@ -280,7 +283,11 @@ export interface PropertyNode {
   kind: PropertyKind;
   domains: readonly string[];
   range: RangeSpec;
-  /** Default cardinality (KG.17 precedence chain). True = singular. */
+  /**
+   * Default cardinality. True = singular. Resolved by precedence:
+   * custom mapping > owl:FunctionalProperty > owl:cardinality > SHACL
+   * maxCount 1 > kind default (datatype → singular, object → list).
+   */
   functional: boolean;
   /** Per-class cardinality overrides (SHACL). Key: class URI. */
   classCardinality: ReadonlyMap<string, CardinalitySpec>;
@@ -304,7 +311,7 @@ export interface OntologyIR {
 // Pass 4 output — MappedIR
 // ---------------------------------------------------------------------------
 
-/** Which of the eight resolver templates a mapped field instantiates (§5.2). */
+/** Which of the eight resolver templates a mapped field instantiates. */
 export type ResolverTemplate =
   | "datatype"
   | "datatype-list"
@@ -332,9 +339,9 @@ export interface MappedField {
   propertyUri: string;
   /** For inverse fields: the forward property whose assertions are reversed. */
   inverseOf?: string;
-  /** SHACL sh:minCount >= 1 — informational, not auto-promoted (KG.15). */
+  /** SHACL sh:minCount >= 1 — informational, not auto-promoted to non-null. */
   shaclRequired: boolean;
-  /** Consumer-promoted via NonNullOverrides (KG.15 Tier 3). */
+  /** Consumer-promoted to non-null via the NonNullOverrides option. */
   nonNull: boolean;
 }
 
@@ -443,13 +450,13 @@ export interface CompilerContext {
    * lazy-store boots: ABox loaders await it; TBox resolvers never touch it.
    */
   store: Store | Promise<Store>;
-  /** Resolver-time warning channel (EC.03 coercion failures). */
+  /** Resolver-time warning channel (e.g. literal coercion failures). */
   warn: RuntimeWarningHandler;
   /** Extension state (search index, back-link index, …) — consumer-owned. */
   [key: string]: unknown;
 }
 
-/** Receives resolver-time warnings (e.g. literal coercion failures, EC.03). */
+/** Receives resolver-time warnings (e.g. literal coercion failures). */
 export type RuntimeWarningHandler = (warning: {
   property: string;
   value: string;

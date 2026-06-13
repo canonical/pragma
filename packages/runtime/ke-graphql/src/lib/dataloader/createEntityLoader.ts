@@ -1,5 +1,5 @@
 // =============================================================================
-// Entity loader (§5.3). One batched CONSTRUCT fetches the requested entities'
+// Entity loader. One batched CONSTRUCT fetches the requested entities'
 // triples AND the closure of their blank-node children in the same query —
 // blank-node labels are only consistent within a single result set (a
 // follow-up query per blank node is invalid SPARQL: labels are existential
@@ -104,7 +104,7 @@ export default function createEntityLoader(
     cacheMap ? { cacheMap } : undefined,
   );
   const batch = async (fullUris: ReadonlyArray<string>) => {
-    // Injection guard (KG.19): only IRIs safe to interpolate into an IRIREF
+    // Injection guard: only IRIs safe to interpolate into an IRIREF
     // reach the query. An unsafe global ID is simply absent from VALUES and
     // resolves to null (not found), never to injected SPARQL.
     const values = fullUris

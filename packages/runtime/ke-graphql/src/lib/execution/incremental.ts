@@ -1,5 +1,5 @@
 // =============================================================================
-// Incremental delivery support (KG.21), graphql v17.
+// Incremental delivery support, graphql v17.
 //
 // - executeLocal: graphql() for plain documents, experimentalExecuteIncrementally
 //   when the document uses @defer/@stream

@@ -1,7 +1,7 @@
 /**
  * The execution domain: in-process query execution with incremental
- * delivery (KG.21), the Relay legacy-format adapter, build-time static
- * extraction (KG.20), and the persisted-query manifest builder (KG.19).
+ * delivery, the Relay legacy-format adapter, build-time static
+ * extraction, and the persisted-query manifest builder.
  *
  * @module execution
  */

@@ -1,5 +1,5 @@
 // =============================================================================
-// TBox schema (hand-written, §1.6/§11.4): Ontology, OntologyClass,
+// TBox schema (hand-written): Ontology, OntologyClass,
 // ClassProperty, OntologyProperty, PropertyKind, EntityMeta.
 //
 // Value conventions:
@@ -311,7 +311,7 @@ export default function buildTBoxSchema(
 
   const entityMeta = new GraphQLObjectType<EntityValue, CompilerContext>({
     name: "EntityMeta",
-    description: "Self-describing TBox access attached to ABox types (KG.03).",
+    description: "Self-describing TBox access attached to ABox types.",
     fields: () => ({
       type: {
         type: new GraphQLNonNull(ontologyClass),

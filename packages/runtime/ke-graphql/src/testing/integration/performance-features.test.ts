@@ -8,17 +8,17 @@ import type { SPARQL, Store } from "@canonical/ke";
 import { createTestStore } from "@canonical/ke/testing";
 import { graphql } from "graphql";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { DS_REALISTIC_TTL, MINIMAL_TTL, PREFIXES } from "#testing";
-import createSchemaPlugin from "../createSchemaPlugin.js";
 import {
+  compile,
+  compileFromExtraction,
+  createStoreQueryFn,
   deserializeExtraction,
   hashSources,
+  type SchemaPluginApi,
   serializeExtraction,
-} from "./artifact.js";
-import compile from "./compile.js";
-import compileFromExtraction from "./compileFromExtraction.js";
-import createStoreQueryFn from "./createStoreQueryFn.js";
-import type { SchemaPluginApi } from "./types.js";
+} from "#compiler";
+import { DS_REALISTIC_TTL, MINIMAL_TTL, PREFIXES } from "#testing";
+import createSchemaPlugin from "../../lib/createSchemaPlugin.js";
 
 type Cleanup = () => void;
 let cleanups: Cleanup[] = [];

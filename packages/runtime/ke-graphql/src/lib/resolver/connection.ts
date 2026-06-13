@@ -1,5 +1,5 @@
 // =============================================================================
-// Relay connection helpers (KG.18).
+// Relay connection helpers.
 //
 // Cursor = base64(prefixed URI), opaque to clients. Items are sorted by URI
 // before slicing so cursors remain stable regardless of triple order or
@@ -66,7 +66,7 @@ export const isEntity = (
 /**
  * Unwrap a loadMany result: rethrow the first Error (a failed batch must
  * surface as a GraphQL field error, not as an empty connection), drop nulls
- * (missing or typeless entities are filtered, KG.07).
+ * (missing or typeless entities are filtered).
  */
 export const unwrapEntities = (
   results: ReadonlyArray<EntityValue | Error | null>,

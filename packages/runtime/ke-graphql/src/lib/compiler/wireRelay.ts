@@ -29,7 +29,7 @@ const createIdField = (): FieldPlan => ({
   name: "id",
   type: { base: "ID", kind: "scalar", list: false, nonNull: true },
   resolve: (parent: EntityValue) => parent.uri,
-  description: "Relay global ID — the entity's prefixed URI (KG.10).",
+  description: "Relay global ID — the entity's prefixed URI.",
 });
 
 /** Create the uri field plan (uri: String!). */
@@ -39,12 +39,12 @@ const createUriField = (): FieldPlan => ({
   resolve: (parent: EntityValue) => parent.uri,
 });
 
-/** Create the _meta field plan (self-describing TBox access, KG.03). */
+/** Create the _meta field plan (self-describing TBox access). */
 const createMetaField = (): FieldPlan => ({
   name: "_meta",
   type: { base: "EntityMeta", kind: "named", list: false, nonNull: true },
   resolve: (parent: EntityValue) => parent,
-  description: "Self-describing TBox access for this entity (KG.03).",
+  description: "Self-describing TBox access for this entity.",
 });
 
 /**
@@ -70,7 +70,7 @@ export default function wireRelay(plan: SchemaPlan): PassResult<SchemaPlan> {
         targetType?.embeddable ??
         (targetInterface ? targetInterface.embeddableOnly : false);
       if (embeddableTarget) {
-        continue; // embedded lists stay plain lists (KG.13)
+        continue; // embedded lists stay plain lists
       }
       field.type = {
         base: field.type.base,

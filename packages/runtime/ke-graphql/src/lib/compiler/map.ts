@@ -105,7 +105,7 @@ const resolveTypeNames = (state: MapperState): void => {
   }
 };
 
-/** Compute the GraphQL field name for a property (§4.4 rules 1–5). */
+/** Compute the GraphQL field name for a property. */
 const computeFieldName = (
   state: MapperState,
   property: PropertyNode,
@@ -138,7 +138,7 @@ const computeFieldType = (
       const name =
         property.range.name ??
         `${getLocalName(property.uri).charAt(0).toUpperCase()}${getLocalName(property.uri).slice(1)}Union`;
-      // Abstract members expand to concrete descendants (KG.16).
+      // Abstract members expand to concrete descendants.
       const members: string[] = [];
       for (const member of property.range.members) {
         const node = state.ir.classes.get(member);
@@ -288,7 +288,7 @@ const buildFields = (
     const nonNull =
       state.options.nonNullOverrides?.[typeName]?.includes(name) ?? false;
     // Declared owl:inverseOf pair: the ABox may assert either direction, so
-    // each side resolves the union of forward + reverse assertions (EC.05).
+    // each side resolves the union of forward + reverse assertions.
     // List sides switch to the inverse template; singular sides keep their
     // template but carry inverseOf for the reverse fallback.
     const fieldType = computeFieldType(state, property);
@@ -328,7 +328,7 @@ const buildFields = (
     const declared = property.inverse
       ? state.ir.properties.get(property.inverse)
       : undefined;
-    // Declared pairs: each side keeps its own forward field (EC.05) — the
+    // Declared pairs: each side keeps its own forward field — the
     // dual-direction union happens in the resolver, not via an extra field.
     if (declared || !synthetic) {
       continue;
@@ -351,7 +351,7 @@ const buildFields = (
     });
   }
 
-  // Opt-in instance-level standard-vocab fields (EC.15).
+  // Opt-in instance-level standard-vocab fields.
   const vocabFields = state.options.standardVocabFields?.[typeName];
   if (vocabFields) {
     for (const [predicate, name] of Object.entries(vocabFields)) {

@@ -2,7 +2,7 @@
 
 OWL → GraphQL compiler for the [ke](../ke) triple store. Point it at a loaded store and it reads the ontology — classes, properties, domains and ranges, `subClassOf` chains, cardinality markers, SHACL shapes — and compiles a complete, executable `GraphQLSchema`: types, interfaces, field resolvers, batched data loading, and Relay server conventions. The ontology is the schema definition; there is nothing else to maintain.
 
-It is a compiler, not a middleware. OWL is not a database schema — a class with no instances should become an interface, an `owl:inverseOf` pair should produce one field per side rather than four, a blank-node-only class can't have a global ID. Mapping that faithfully takes semantic analysis, so the package is built like a compiler: seven passes over a typed intermediate representation, diagnostics with stable codes that never abort on the first problem, and a deterministic output you can snapshot. The full design rationale lives in the `A.10.COMPILER` architecture decision record (pragma-adrs, `session/A`).
+It is a compiler, not a middleware. OWL is not a database schema — a class with no instances should become an interface, an `owl:inverseOf` pair should produce one field per side rather than four, a blank-node-only class can't have a global ID. Mapping that faithfully takes semantic analysis, so the package is built like a compiler: seven passes over a typed intermediate representation, diagnostics with stable codes that never abort on the first problem, and a deterministic output you can snapshot. `docs/architecture.md` is the full design rationale.
 
 Like ke itself, the root export is a library, not a server: schema + resolvers + local execution, nothing that knows HTTP exists. The fetch handler and GraphiQL live behind the `./http` subpath, mirroring `@canonical/ke/http`.
 
@@ -130,7 +130,7 @@ type Query {
 
 Reading the output back against the input shows most of the compiler's rules at once:
 
-- **`Work` became an interface.** It has subclasses and no direct instances, so it's abstract — and because all of its concrete implementors are full entities, the interface itself implements `Node`, which is what lets Relay refetch a fragment written against `Work`. (A class with subclasses *and* direct instances of its own stays a concrete type and earns a `V016` warning: a supertype-typed field can't surface its subclasses' fields. Force it abstract with `{ abstract: true }` when it has no direct instances; the interface-plus-companion-type alternative is a deferred item, A.10 §13.)
+- **`Work` became an interface.** It has subclasses and no direct instances, so it's abstract — and because all of its concrete implementors are full entities, the interface itself implements `Node`, which is what lets Relay refetch a fragment written against `Work`. (A class with subclasses *and* direct instances of its own stays a concrete type and earns a `V016` warning: a supertype-typed field can't surface its subclasses' fields. Force it abstract with `{ abstract: true }` when it has no direct instances; the interface-plus-companion-type alternative is a deferred option.)
 - **`hasAuthor` became `authors`.** Field names strip a leading `has`/`is` verb; list fields are pluralized (`category → categories`, `child → children` — the pluralizer knows the irregulars).
 - **`reviews` is a plain list while `authors` is a connection.** `Review` instances are blank nodes: no URI means no global ID, no cursor, no standalone resolution. The compiler marks such classes *embeddable* and resolves them inline from the parent's own triples. Everything URI-addressable gets a paginated Relay connection instead.
 - **One field per side of the inverse pair, and direction doesn't matter.** `hasAuthor`/`authored` produce `Book.authors` and `Author.authoreds` — never the duplicates. At resolution time each side takes the union of forward and reverse assertions, so data written in either direction answers identically from both ends.
@@ -392,7 +392,7 @@ Consumers that never serve — static extraction in CI, SSR-only processes, test
 
 ```bash
 bun run demo     # GraphiQL on http://localhost:4000/graphql in under a second
-bun run test     # 98 tests over the ADR §12 fixture suite, with coverage gates
+bun run test     # the fixture-suite tests, with coverage gates
 bun run check    # biome + tsc + webarchitect
 bun run bench    # the numbers in this README
 ```
@@ -405,4 +405,4 @@ above can be pasted straight in. The folder is type-checked and linted with
 the package but ships nowhere: it is excluded from the build and the npm
 tarball.
 
-The intermediate representations (`RawExtraction`, `OntologyIR`, `MappedIR`) are exported public contracts, not internals — tooling can consume them the way Prisma generators consume the DMMF. The spec they implement is `A.10.COMPILER` (KG.01–KG.23) in the pragma-adrs repository; spec and implementation were hardened against each other, and the golden SDL there is this compiler's snapshot target.
+The intermediate representations (`RawExtraction`, `OntologyIR`, `MappedIR`) are exported public contracts, not internals — tooling can consume them the way Prisma generators consume the DMMF. They are pinned by the golden-SDL snapshot in the test suite, so changes to the emitted shape are caught.

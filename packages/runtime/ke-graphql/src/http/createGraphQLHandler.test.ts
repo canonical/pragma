@@ -1,5 +1,5 @@
 // =============================================================================
-// HTTP handler tests (KG.12/KG.19/KG.21): request parsing, GraphiQL,
+// HTTP handler tests: request parsing, GraphiQL,
 // hardening seams, persisted queries, multipart incremental + fallback.
 // =============================================================================
 
@@ -165,7 +165,7 @@ describe("request handling", () => {
   });
 });
 
-describe("hardening seams (KG.19)", () => {
+describe("hardening seams", () => {
   it("runs consumer validation rules", async () => {
     const rejectAll: ValidationRule = (context) => ({
       OperationDefinition(node) {
@@ -255,7 +255,7 @@ describe("hardening seams (KG.19)", () => {
   });
 });
 
-describe("incremental delivery over HTTP (KG.21)", () => {
+describe("incremental delivery over HTTP", () => {
   const deferQuery = `
     query Q {
       component(uri: "ds:global.component.button") {

@@ -1,5 +1,5 @@
 // =============================================================================
-// TBox schema surface (§1.6/§11.4): Ontology, OntologyClass, OntologyProperty,
+// TBox schema surface: Ontology, OntologyClass, OntologyProperty,
 // ClassProperty, EntityMeta lookups and edge cases.
 // =============================================================================
 

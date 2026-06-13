@@ -1,5 +1,5 @@
 // =============================================================================
-// Prefixed URI ↔ full IRI conversion (KG.10). The prefixed form is the
+// Prefixed URI ↔ full IRI conversion. The prefixed form is the
 // public identity (global IDs, EntityValue.uri); full IRIs are the loader
 // keys and SPARQL currency.
 // =============================================================================
@@ -11,7 +11,7 @@ import type { NamespaceInfo } from "#shared";
  * namespace inventory. Picks the LONGEST matching namespace so that nested
  * namespaces (e.g. "http://x/" and "http://x/sub/") yield a stable, canonical
  * prefixed form regardless of namespace discovery order — Relay global IDs and
- * cursors depend on this being deterministic (KG.10). Returns the input
+ * cursors depend on this being deterministic. Returns the input
  * unchanged when no registered namespace matches.
  */
 export const toPrefixed = (

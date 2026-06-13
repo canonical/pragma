@@ -33,7 +33,7 @@ const PHASE = "build";
 /**
  * Merge SHACL constraints for one (class, property) pair. Plain constraints
  * intersect (most specific wins); sh:or branches union to the most
- * permissive interpretation across alternatives (§4.2 step 5a).
+ * permissive interpretation across alternatives.
  */
 const mergeConstraints = (
   constraints: RawShaclConstraint[],
@@ -177,7 +177,7 @@ export default function build(
     }
   }
 
-  // ── 4. abstract + embeddable detection from instance stats (KG.Q1, KG.13) ──
+  // ── 4. abstract + embeddable detection from instance stats ──
   for (const node of classes.values()) {
     const stats = extraction.instanceStats.get(node.uri);
     const subclasses = subclassesOf.get(node.uri) ?? [];
@@ -279,7 +279,7 @@ export default function build(
       });
     }
 
-    // KG.17 precedence: custom > owl:FunctionalProperty > owl:cardinality
+    // Cardinality precedence: custom > owl:FunctionalProperty > owl:cardinality
     // (not present in current ontologies) > SHACL maxCount 1 > kind default.
     // Datatype properties default to SINGULAR (multi-valued literals are the
     // exception in RDF practice); only object properties default to list.
@@ -322,7 +322,7 @@ export default function build(
   const ownProperties = new Map<string, string[]>();
   for (const property of properties.values()) {
     if (property.isAnnotation) {
-      continue; // annotation properties route to the TBox schema (EC.07)
+      continue; // annotation properties route to the TBox schema
     }
     for (const domain of property.domains) {
       if (!classes.has(domain)) {
@@ -333,7 +333,7 @@ export default function build(
       ownProperties.set(domain, list);
     }
     if (property.domains.length === 0) {
-      // Domainless (KG.14): assign to every class in the property's namespace.
+      // Domainless: assign to every class in the property's namespace.
       for (const node of classes.values()) {
         if (node.namespace === property.namespace) {
           const list = ownProperties.get(node.uri) ?? [];

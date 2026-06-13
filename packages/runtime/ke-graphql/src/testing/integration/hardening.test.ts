@@ -6,9 +6,8 @@
 
 import { createTestStore } from "@canonical/ke/testing";
 import { afterEach, describe, expect, it } from "vitest";
+import { compile, createStoreQueryFn } from "#compiler";
 import { executeLocal, isIncrementalResults } from "#execution";
-import compile from "./compile.js";
-import createStoreQueryFn from "./createStoreQueryFn.js";
 
 const PREFIXES = { ex: "http://example.org/" };
 
