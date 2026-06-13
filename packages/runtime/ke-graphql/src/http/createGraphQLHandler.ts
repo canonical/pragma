@@ -73,9 +73,9 @@ export interface GraphQLHandlerOptions {
   /** Payload format for incremental parts. Default: 'graphql17'. */
   incrementalFormat?: "graphql17" | "relay-legacy";
   /**
-   * Override the GraphiQL HTML. The default template loads the GraphiQL
-   * assets from esm.sh at runtime — air-gapped deployments supply their
-   * own template (e.g. with vendored assets) through this seam.
+   * Override the GraphiQL HTML. The default template loads version-pinned
+   * GraphiQL UMD assets from unpkg at runtime — air-gapped deployments
+   * supply their own template (e.g. with vendored assets) through this seam.
    */
   graphiqlHtml?: (endpoint: string) => string;
 }

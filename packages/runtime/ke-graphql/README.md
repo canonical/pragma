@@ -297,7 +297,7 @@ Bun.serve({ fetch: handler });   // or compose with other handlers by pathname
 
 The handler is a plain `(Request) => Promise<Response>` — no framework, same composition pattern as `createSparqlHandler`. It implements GraphQL-over-HTTP (GET with query param, POST JSON, persisted-query extension), answers CORS preflight, honors `Accept` q-values, and serves nothing it wasn't asked to: the handler provides *seams*, the consumer provides *policy*. Build the persisted manifest from your client's compiled operations with `createPersistedManifest(operationTexts)` (SHA-256, the Relay/Apollo convention).
 
-GraphiQL's assets load from esm.sh; air-gapped deployments supply their own page through the `graphiqlHtml` option.
+GraphiQL's assets load as version-pinned UMD bundles from unpkg; air-gapped deployments supply their own page through the `graphiqlHtml` option.
 
 ## Incremental delivery (`@defer`)
 

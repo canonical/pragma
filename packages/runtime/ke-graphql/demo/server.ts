@@ -79,7 +79,22 @@ const handler = createGraphQLHandler(api.schema, {
   incremental: true,
 });
 
-Bun.serve({ port, fetch: handler });
+// Mounting is the host's job (the handler is path-agnostic by design):
+// serve GraphQL + GraphiQL on /graphql, redirect / there, 404 the rest
+// (browsers probe /favicon.ico on every visit).
+Bun.serve({
+  port,
+  fetch(request) {
+    const { pathname } = new URL(request.url);
+    if (pathname === "/graphql") {
+      return handler(request);
+    }
+    if (pathname === "/") {
+      return Response.redirect(`http://localhost:${port}/graphql`, 302);
+    }
+    return new Response(null, { status: 404 });
+  },
+});
 
 const boot = (performance.now() - started).toFixed(0);
 console.info(
