@@ -110,6 +110,33 @@ describe("inverse fixture (§12.4)", () => {
   });
 });
 
+describe("polymorphic flattening diagnostic (V016)", () => {
+  const SUPERTYPE_TTL = `
+@prefix ex: <http://example.org/> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+ex:Animal a owl:Class .
+ex:Dog a owl:Class ; rdfs:subClassOf ex:Animal .
+ex:name a owl:DatatypeProperty ; rdfs:domain ex:Animal ; rdfs:range xsd:string .
+ex:a1 a ex:Animal ; ex:name "Generic" .
+ex:d1 a ex:Dog ; ex:name "Rex" .
+`;
+
+  it("warns when a concrete class has subclasses (instantiable supertype)", async () => {
+    const result = await compileFixture(SUPERTYPE_TTL);
+    expect(codes(result)).toContain("V016");
+    // Animal keeps its direct instance, so it stays a concrete type.
+    expect(result.sdl).toContain("type Animal implements Node");
+  });
+
+  it("does not warn when the supertype is abstract (no direct instances)", async () => {
+    const result = await compileFixture(INHERITANCE_TTL);
+    expect(codes(result)).not.toContain("V016");
+  });
+});
+
 describe("blank nodes fixture (§12.5)", () => {
   it("marks blank-only classes embeddable: no Node, plain list", async () => {
     const result = await compileFixture(BLANK_NODES_TTL);

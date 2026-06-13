@@ -130,7 +130,7 @@ type Query {
 
 Reading the output back against the input shows most of the compiler's rules at once:
 
-- **`Work` became an interface.** It has subclasses and no direct instances, so it's abstract — and because all of its concrete implementors are full entities, the interface itself implements `Node`, which is what lets Relay refetch a fragment written against `Work`.
+- **`Work` became an interface.** It has subclasses and no direct instances, so it's abstract — and because all of its concrete implementors are full entities, the interface itself implements `Node`, which is what lets Relay refetch a fragment written against `Work`. (A class with subclasses *and* direct instances of its own stays a concrete type and earns a `V016` warning: a supertype-typed field can't surface its subclasses' fields. Force it abstract with `{ abstract: true }` when it has no direct instances; the interface-plus-companion-type alternative is a deferred item, A.10 §13.)
 - **`hasAuthor` became `authors`.** Field names strip a leading `has`/`is` verb; list fields are pluralized (`category → categories`, `child → children` — the pluralizer knows the irregulars).
 - **`reviews` is a plain list while `authors` is a connection.** `Review` instances are blank nodes: no URI means no global ID, no cursor, no standalone resolution. The compiler marks such classes *embeddable* and resolves them inline from the parent's own triples. Everything URI-addressable gets a paginated Relay connection instead.
 - **One field per side of the inverse pair, and direction doesn't matter.** `hasAuthor`/`authored` produce `Book.authors` and `Author.authoreds` — never the duplicates. At resolution time each side takes the union of forward and reverse assertions, so data written in either direction answers identically from both ends.
@@ -217,7 +217,7 @@ The compiler collects problems instead of aborting on the first one (the `tsc` m
 |---|---|---|
 | `E001` | extraction/SPARQL failure | query failed, unregistered namespace (synthetic prefix assigned), blank nodes nested deeper than the loader's closure |
 | `B001–B004` | build references | `subClassOf` cycle, unknown domain/range/inverse |
-| `V001–V014` | data/ontology validation | blank-node-only class (`V001`), domainless property (`V002`), boolean-as-string (`V006`), SHACL `sh:maxCount 0` omission (`V010`), undeclared ABox predicate (`V014`) |
+| `V001–V016` | data/ontology validation | blank-node-only class (`V001`), domainless property (`V002`), boolean-as-string (`V006`), SHACL `sh:maxCount 0` omission (`V010`), undeclared ABox predicate (`V014`), abstract mapping with direct instances (`V015`), concrete supertype flattening (`V016`) |
 | `M001–M004` | naming | unresolvable collision (`M001`, error), reserved-name rename (`M002`), unknown mapping (`M003`), auto-resolved type collision (`M004`) |
 | `X002–X003` | union emission | named / synthesized union created |
 | `C001–C003` | composition | extension targets unknown type, extension field conflict, `validateSchema` failure |

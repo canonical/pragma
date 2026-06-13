@@ -53,6 +53,19 @@ export default function validate(ir: OntologyIR): PassResult<OntologyIR> {
         source: node.uri,
       });
     }
+    // V016 — concrete class with subclasses (instantiable supertype). A field
+    // typed as this class can hold a subclass instance, but graphql-js calls
+    // no resolveType on a concrete object type, so the subclass's __typename
+    // and fields are unreachable through it. Mark it abstract if it has no
+    // direct instances; the interface+companion fix is deferred (A.10 §13).
+    if (!node.isAbstract && !node.embeddable && node.subclasses.length > 0) {
+      push({
+        severity: "warning",
+        code: "V016",
+        message: `${getLocalName(node.uri)} is a concrete type with ${node.subclasses.length} subclass(es) — values returned through a ${getLocalName(node.uri)} field expose only its own fields, not the subclass's`,
+        source: node.uri,
+      });
+    }
     // V009 — cross-vocabulary subClassOf
     for (const parent of node.superclasses) {
       if (!ir.classes.has(parent) && isStandardVocab(parent)) {

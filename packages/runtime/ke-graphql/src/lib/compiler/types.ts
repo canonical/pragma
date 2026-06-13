@@ -48,6 +48,7 @@ export type DiagnosticCode =
   | "V013" // property declares multiple rdfs:domain classes
   | "V014" // ABox predicate not declared in any loaded TBox
   | "V015" // class forced abstract by mapping but has direct instances
+  | "V016" // concrete class with subclasses — polymorphic returns flattened
   // Mapping
   | "M001" // name collision after GraphQL name mapping
   | "M002" // reserved GraphQL name conflict
