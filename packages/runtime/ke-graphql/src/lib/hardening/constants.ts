@@ -26,3 +26,12 @@ export const MAX_PAGE_SIZE = 100;
  * (work → authors → works → authors → …) otherwise allow.
  */
 export const DEFAULT_MAX_QUERY_DEPTH = 20;
+
+/**
+ * Default maximum entries per process-lifetime loader cache (LRU) when
+ * `loaderCache: "process"` is used. Bounds memory: enumerating distinct entity
+ * IDs (misses are cached too) can't grow the caches without limit. Evicted
+ * entries are simply re-queried — the store is immutable between reloads, so
+ * eviction never returns stale data.
+ */
+export const DEFAULT_PROCESS_CACHE_SIZE = 10_000;

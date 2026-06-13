@@ -76,8 +76,10 @@ export {
   createDepthLimitRule,
   DEFAULT_MAX_QUERY_DEPTH,
   DEFAULT_PAGE_SIZE,
+  DEFAULT_PROCESS_CACHE_SIZE,
   isSafeIri,
   MAX_PAGE_SIZE,
+  maskError,
 } from "./hardening/index.js";
 export {
   type Connection,

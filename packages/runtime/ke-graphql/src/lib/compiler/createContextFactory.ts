@@ -4,6 +4,10 @@ import {
   createInverseLoader,
   createListLoader,
 } from "../dataloader/index.js";
+import {
+  createBoundedCache,
+  DEFAULT_PROCESS_CACHE_SIZE,
+} from "../hardening/index.js";
 import type {
   ContextFactory,
   EntityValue,
@@ -49,13 +53,17 @@ export default function createContextFactory(
 ): ContextFactory {
   // Process-lifetime loader caches (item: loaderCache "process"). Scoped to
   // this CompilerResult: onReload recompiles and produces a new factory, so
-  // cache invalidation on data change is automatic.
+  // cache invalidation on data change is automatic. Bounded LRU (hardening) so
+  // ID enumeration can't grow them without limit.
+  const cacheSize = options.processCacheSize ?? DEFAULT_PROCESS_CACHE_SIZE;
   const processCaches =
     options.loaderCache === "process"
       ? {
-          entity: new Map<string, Promise<EntityValue | null>>(),
-          list: new Map<string, Promise<string[]>>(),
-          inverse: new Map<string, Promise<string[]>>(),
+          entity: createBoundedCache<string, Promise<EntityValue | null>>(
+            cacheSize,
+          ),
+          list: createBoundedCache<string, Promise<string[]>>(cacheSize),
+          inverse: createBoundedCache<string, Promise<string[]>>(cacheSize),
         }
       : undefined;
 

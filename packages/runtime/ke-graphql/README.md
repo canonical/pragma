@@ -279,8 +279,8 @@ const handler = createGraphQLHandler(schema, {
   graphiql: true,            // GET + Accept: text/html → GraphiQL (dev default)
   cors: true,
   introspection: true,       // default: dev on, production off
-  validationRules: [         // the universal graphql-js seam — bring your own policy
-    depthLimit({ maxDepth: 12 }),
+  maxDepth: 12,              // built-in depth limit (default 20; 0 disables)
+  validationRules: [         // add your own rules on top (e.g. cost analysis)
     createComplexityRule({ maximumComplexity: 1000, estimators: [...] }),
   ],
   persistedQueries: {        // strongest hardening: only build-time queries execute
@@ -288,6 +288,7 @@ const handler = createGraphQLHandler(schema, {
     allowArbitraryQueries: false,
   },
   hideFieldSuggestions: true,   // no "Did you mean…?" schema enumeration (prod default)
+  maskErrors: true,             // generic message for internal errors (prod default)
   formatError: (e) => redact(e),
   onOperation: ({ operation, duration, errors }) => metrics.record(...),
 });
@@ -296,6 +297,8 @@ Bun.serve({ fetch: handler });   // or compose with other handlers by pathname
 ```
 
 The handler is a plain `(Request) => Promise<Response>` — no framework, same composition pattern as `createSparqlHandler`. It implements GraphQL-over-HTTP (GET with query param, POST JSON, persisted-query extension), answers CORS preflight, honors `Accept` q-values, and serves nothing it wasn't asked to: the handler provides *seams*, the consumer provides *policy*. Build the persisted manifest from your client's compiled operations with `createPersistedManifest(operationTexts)` (SHA-256, the Relay/Apollo convention).
+
+**Built-in hardening defaults.** On top of those seams, the package ships a baseline production posture from its `hardening` domain (all named, exported, and tunable — never magic numbers buried in a resolver): every connection is page-size-clamped (`DEFAULT_PAGE_SIZE` 50, `MAX_PAGE_SIZE` 100), so a list is never unbounded and a client can't demand an oversized page; queries nested deeper than `maxDepth` (default `DEFAULT_MAX_QUERY_DEPTH`, 20) are rejected, bounding the recursion that cyclic types otherwise allow; IRIs that would break out of a SPARQL `IRIREF` are dropped before interpolation, so a crafted `node(id:)` resolves to `null` rather than injected SPARQL; and in production (`maskErrors`, default on) an unexpected internal error is returned as a generic message — store and SPARQL internals never reach the client, while deliberate validation/argument errors pass through. `loaderCache: "process"` uses bounded LRU caches (next section) so ID enumeration can't exhaust memory.
 
 GraphiQL's assets load as version-pinned UMD bundles from unpkg; air-gapped deployments supply their own page through the `graphiqlHtml` option.
 
@@ -372,7 +375,7 @@ Measured by the committed benchmark (`bun run bench`, 250-entity graph):
 | Listing `first: 24` | **~0.7 ms** warm — pagination runs on the URI list; only the page hydrates |
 | TBox / ontology browsing | ~0.1 ms — store-free |
 
-`loaderCache: "process"` shares DataLoader caches across requests — sound because the store is immutable between reloads, and a reload produces a new compile (automatic invalidation). Failed batches are evicted, never memoized. The default `"request"` keeps the textbook per-request isolation.
+`loaderCache: "process"` shares DataLoader caches across requests — sound because the store is immutable between reloads, and a reload produces a new compile (automatic invalidation). The shared caches are **bounded LRUs** (`processCacheSize`, default 10,000 entries each), so enumerating distinct IDs can't grow them without limit; evicted entries are simply re-queried, and failed batches are evicted, never memoized. The default `"request"` keeps the textbook per-request isolation.
 
 The ladder to zero: a warm process answers in microseconds; Lambda-style containers pay one ~80 ms boot per container with the artifact; Cloudflare Workers (WASM precompiled at deploy, TTL as ke inline sources — see `examples/cloudflare-worker`) cold-start in ~25–60 ms; and with persisted queries in front of a CDN, responses are pure functions of *(hash, variables)* until the next deploy — cacheable to 0 ms. For fully static deployments, `extractStatic` removes the runtime altogether.
 

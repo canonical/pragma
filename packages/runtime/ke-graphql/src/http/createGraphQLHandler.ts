@@ -2,10 +2,12 @@
 // Fetch-compatible GraphQL HTTP handler (KG.12, KG.19, KG.21).
 //
 // `(Request) => Promise<Response>` — same composition pattern as
-// @canonical/ke's createSparqlHandler. Seam, not policy: hardening arrives
-// through options (validationRules, persistedQueries, introspection,
-// hideFieldSuggestions, formatError, onOperation); the handler implements
-// no policy of its own.
+// @canonical/ke's createSparqlHandler. Mostly seam, not policy: extra
+// hardening arrives through options (validationRules, persistedQueries,
+// introspection, hideFieldSuggestions, formatError, onOperation). On top of
+// the seams it applies the hardening domain's safe defaults — query-depth
+// limit (maxDepth), connection page-size clamp, IRI-injection guard, and
+// production error masking (maskErrors) — each tunable or disablable.
 //
 // Incremental delivery: when enabled and the client accepts multipart/mixed,
 // @defer/@stream responses stream as multipart parts (graphql17 or
@@ -32,6 +34,7 @@ import {
   executeLocal,
   type IncrementalResults,
   isIncrementalResults,
+  maskError,
   mergeIncremental,
   relayFormatAdapter,
 } from "../lib/index.js";
@@ -75,6 +78,13 @@ export interface GraphQLHandlerOptions {
   /** Strip "Did you mean …" suggestions. Default: dev false, production true. */
   hideFieldSuggestions?: boolean;
   formatError?: (error: GraphQLFormattedError) => GraphQLFormattedError;
+  /**
+   * Mask internal/unexpected error messages (those wrapping a non-GraphQL
+   * throw, e.g. a store error) with a generic message, so store/SPARQL
+   * internals never reach the client. Default: production only. Deliberate
+   * GraphQLErrors (validation, argument errors) always pass through.
+   */
+  maskErrors?: boolean;
   onOperation?: (event: OperationEvent) => void;
   /** Incremental delivery over multipart/mixed (KG.21). Default: false. */
   incremental?: boolean;
@@ -158,6 +168,8 @@ export default function createGraphQLHandler(
   // Depth-limit rule (hardening): built once, reused across requests. 0 = off.
   const maxDepth = options.maxDepth ?? DEFAULT_MAX_QUERY_DEPTH;
   const depthRule = maxDepth > 0 ? createDepthLimitRule(maxDepth) : undefined;
+  // Mask internal error messages in production (hardening) unless overridden.
+  const shouldMaskErrors = options.maskErrors ?? isProduction();
   const allowArbitrary =
     options.persistedQueries?.allowArbitraryQueries ?? !isProduction();
 
@@ -165,6 +177,18 @@ export default function createGraphQLHandler(
     const stripped = hideSuggestions ? stripSuggestions(error) : error;
     return options.formatError ? options.formatError(stripped) : stripped;
   };
+
+  // Execution errors: mask internal ones (hardening) before stripping
+  // suggestions and applying the consumer's formatError. Validation errors
+  // (a separate, always-safe path) keep using formatOne directly.
+  const formatExecutionError = (
+    error: GraphQLError | GraphQLFormattedError,
+  ): GraphQLFormattedError =>
+    formatOne(
+      error instanceof GraphQLError
+        ? maskError(error, shouldMaskErrors)
+        : error,
+    );
 
   const buildJsonResponse = (
     body: unknown,
@@ -357,11 +381,7 @@ export default function createGraphQLHandler(
       if (!wantsMultipart) {
         const merged = await mergeIncremental(result);
         const errors = (merged.errors ?? []).map((e) =>
-          formatOne(
-            e instanceof GraphQLError
-              ? e.toJSON()
-              : (e as GraphQLFormattedError),
-          ),
+          formatExecutionError(e as GraphQLError | GraphQLFormattedError),
         );
         report(errors);
         return buildJsonResponse(
@@ -380,7 +400,7 @@ export default function createGraphQLHandler(
       );
     }
 
-    const errors = (result.errors ?? []).map((e) => formatOne(e.toJSON()));
+    const errors = (result.errors ?? []).map(formatExecutionError);
     report(errors);
     return buildJsonResponse(
       errors.length > 0 ? { ...result, errors } : result,

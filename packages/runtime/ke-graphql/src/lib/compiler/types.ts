@@ -548,12 +548,18 @@ export interface SchemaPluginOptions {
   onRuntimeWarning?: RuntimeWarningHandler;
   /**
    * DataLoader cache scope. "request" (default): fresh caches per
-   * createContext call. "process": caches shared across contexts for the
+   * createContext call. "process": LRU caches shared across contexts for the
    * lifetime of this CompilerResult — sound because the store is immutable
    * between reloads, and onReload produces a new result (auto-invalidation).
-   * Failed batches are evicted, never memoized.
+   * Bounded (see processCacheSize) so enumeration can't grow them without
+   * limit; failed batches are evicted, never memoized.
    */
   loaderCache?: "request" | "process";
+  /**
+   * Maximum entries per process-lifetime loader cache (LRU), used only when
+   * loaderCache is "process". Default: DEFAULT_PROCESS_CACHE_SIZE.
+   */
+  processCacheSize?: number;
 }
 
 /** Everything a successful compilation produces: schema, SDL, IR, context factory. */
