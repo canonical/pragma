@@ -7,10 +7,9 @@ import { createTestStore } from "@canonical/ke/testing";
 import type { ValidationRule } from "graphql";
 import { GraphQLError } from "graphql";
 import { afterEach, describe, expect, it } from "vitest";
-import { createGraphQLHandler } from "../src/http/index.js";
-import { type CompilerResult, compile } from "../src/index.js";
-import { storeQueryFn } from "../src/lib/compiler/index.js";
-import { DS_REALISTIC_TTL, MINIMAL_TTL, PREFIXES } from "./fixtures.js";
+import { type CompilerResult, compile, storeQueryFn } from "#compiler";
+import { DS_REALISTIC_TTL, MINIMAL_TTL, PREFIXES } from "#testing";
+import createGraphQLHandler from "./createGraphQLHandler.js";
 
 type Cleanup = () => void;
 let cleanups: Cleanup[] = [];

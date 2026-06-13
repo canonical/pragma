@@ -9,12 +9,9 @@ import { join } from "node:path";
 import { createTestStore } from "@canonical/ke/testing";
 import { GraphQLString, graphql } from "graphql";
 import { afterEach, describe, expect, it } from "vitest";
-import {
-  createSchemaPlugin,
-  type EntityValue,
-  type SchemaPluginApi,
-} from "../src/index.js";
-import { MINIMAL_TTL, PREFIXES } from "./fixtures.js";
+import type { EntityValue, SchemaPluginApi } from "#compiler";
+import { MINIMAL_TTL, PREFIXES } from "#testing";
+import createSchemaPlugin from "./createSchemaPlugin.js";
 
 type Cleanup = () => void;
 let cleanups: Cleanup[] = [];

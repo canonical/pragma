@@ -1,7 +1,11 @@
-// =============================================================================
-// Test fixtures (ADR §12): self-contained TTL documents, each exercising a
-// specific compiler behavior. TBox + ABox together; minimal by design.
-// =============================================================================
+/**
+ * Self-contained TTL fixtures for the compiler/pipeline/execution tests
+ * (ADR §12). Each constant is a complete document — TBox + ABox together —
+ * that exercises one specific compiler behavior, kept minimal by design;
+ * `PREFIXES` is the prefix map the fixture stores share. They live in one
+ * file so a test can pull whichever scenario it needs from a single import.
+ * Internal test data only: excluded from the build, never shipped in dist.
+ */
 
 export const PREFIXES = {
   ex: "http://example.org/",

@@ -6,8 +6,6 @@
 import { createTestStore } from "@canonical/ke/testing";
 import type { GraphQLObjectType } from "graphql";
 import { afterEach, describe, expect, it } from "vitest";
-import { type CompilerResult, compile } from "../src/index.js";
-import { storeQueryFn } from "../src/lib/compiler/index.js";
 import {
   BLANK_NODES_TTL,
   DOMAINLESS_TTL,
@@ -18,7 +16,10 @@ import {
   MINIMAL_TTL,
   PREFIXES,
   SHACL_TTL,
-} from "./fixtures.js";
+} from "#testing";
+import compile from "./compile.js";
+import storeQueryFn from "./storeQueryFn.js";
+import type { CompilerResult } from "./types.js";
 
 type Cleanup = () => void;
 let cleanups: Cleanup[] = [];

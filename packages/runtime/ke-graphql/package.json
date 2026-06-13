@@ -45,6 +45,11 @@
       "development": "./src/lib/tbox/index.ts",
       "types": "./dist/types/lib/tbox/index.d.ts",
       "default": "./dist/esm/lib/tbox/index.js"
+    },
+    "#testing": {
+      "development": "./src/testing/index.ts",
+      "types": "./src/testing/index.ts",
+      "default": "./src/testing/index.ts"
     }
   },
   "files": [

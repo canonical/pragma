@@ -10,14 +10,16 @@ import {
   type CompilerContext,
   type CompilerResult,
   compile,
+  storeQueryFn,
+} from "#compiler";
+import { DS_REALISTIC_TTL, MINIMAL_TTL, PREFIXES } from "#testing";
+import extractStatic from "./extractStatic.js";
+import {
   executeLocal,
-  extractStatic,
   isIncrementalResults,
   mergeIncremental,
   relayFormatAdapter,
-} from "../src/index.js";
-import { storeQueryFn } from "../src/lib/compiler/index.js";
-import { DS_REALISTIC_TTL, MINIMAL_TTL, PREFIXES } from "./fixtures.js";
+} from "./incremental.js";
 
 type Cleanup = () => void;
 let cleanups: Cleanup[] = [];
