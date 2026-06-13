@@ -145,6 +145,12 @@ export const RESERVED_FIELD_NAMES = new Set([
 ]);
 
 /**
+ * Extraction artifact format version. Bumped on any breaking change to the
+ * serialized shape; deserialization rejects mismatched artifacts.
+ */
+export const ARTIFACT_VERSION = 1;
+
+/**
  * The four Relay connection pagination arguments (first/after/last/before),
  * shared by every generated connection field and the TBox instances field.
  */

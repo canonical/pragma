@@ -9,6 +9,7 @@
  */
 
 export {
+  ARTIFACT_VERSION,
   type CardinalitySpec,
   type ClassNode,
   CompilationError,
@@ -18,11 +19,14 @@ export {
   type CustomMapping,
   type CustomMappings,
   compile,
+  compileFromExtraction,
   createContextFactory,
   type Diagnostic,
   type DiagnosticCode,
   type DiagnosticSeverity,
+  deserializeExtraction,
   type EntityValue,
+  hashSources,
   type InstanceStats,
   type MappedField,
   type MappedInterface,
@@ -43,11 +47,16 @@ export {
   type SchemaExtensionsInput,
   type SchemaPluginApi,
   type SchemaPluginOptions,
+  type SerializedExtraction,
+  serializeExtraction,
   storeQueryFn,
   type TripleSet,
   type TripleValue,
 } from "./compiler/index.js";
-export { default as createSchemaPlugin } from "./createSchemaPlugin.js";
+export {
+  default as createSchemaPlugin,
+  type SchemaPluginExtra,
+} from "./createSchemaPlugin.js";
 export { toFull, toPrefixed } from "./dataloader/index.js";
 export {
   createPersistedManifest,

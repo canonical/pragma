@@ -10,6 +10,7 @@
 import type { Store } from "@canonical/ke";
 import type DataLoader from "dataloader";
 import type { GraphQLFieldConfig, GraphQLSchema } from "graphql";
+import type { ARTIFACT_VERSION } from "./constants.js";
 
 // ---------------------------------------------------------------------------
 // Diagnostics
@@ -184,6 +185,31 @@ export interface RawExtraction {
    */
   annotations: Map<string, Map<string, string>>;
   /** True when some blank node's object is itself a blank node (§5.3 depth guard). */
+  deepBlankNesting: boolean;
+}
+
+/**
+ * The JSON shape of a serialized extraction artifact: RawExtraction with its
+ * Maps and Sets flattened to arrays, plus the artifact format version and
+ * the fingerprint of the TTL sources it was built from.
+ */
+export interface SerializedExtraction {
+  version: typeof ARTIFACT_VERSION;
+  /** Combined fingerprint of the TTL sources the extraction was built from. */
+  sourcesHash: string;
+  classes: RawExtraction["classes"];
+  properties: RawExtraction["properties"];
+  inverses: RawExtraction["inverses"];
+  functionals: string[];
+  datatypes: RawExtraction["datatypes"];
+  namespaces: Array<[string, string]>;
+  shaclConstraints: RawExtraction["shaclConstraints"];
+  unions: RawExtraction["unions"];
+  instanceStats: Array<[string, InstanceStats]>;
+  selfReferential: string[];
+  functionalViolations: string[];
+  undeclaredPredicates: string[];
+  annotations: Array<[string, Array<[string, string]>]>;
   deepBlankNesting: boolean;
 }
 
@@ -542,9 +568,10 @@ export interface CompilerResult {
   schema: GraphQLSchema;
   diagnostics: Diagnostic[];
   nameMap: NameMap;
+  /** Empty when compiled from an artifact with assumeValid (printSchema skipped). */
   sdl: string;
   mapped: MappedIR;
-  /** The Pass 1 output, carried on every CompilerResult. */
+  /** The Pass 1 output — serializable via serializeExtraction (artifact boots). */
   extraction: RawExtraction;
   /**
    * Fresh DataLoaders per call ("request" mode) or shared caches

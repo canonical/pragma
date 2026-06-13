@@ -24,7 +24,10 @@ import wireRelay from "./wireRelay.js";
 export default function runPasses(
   extraction: RawExtraction,
   options: SchemaPluginOptions,
-  { diagnostics: seed = [] }: { diagnostics?: Diagnostic[] } = {},
+  {
+    diagnostics: seed = [],
+    skipValidation = false,
+  }: { diagnostics?: Diagnostic[]; skipValidation?: boolean } = {},
 ): CompilerResult {
   const diagnostics: Diagnostic[] = [...seed];
 
@@ -46,6 +49,7 @@ export default function runPasses(
   const composed = compose(relayed.output, {
     extensions: options.extensions,
     incremental: options.incremental,
+    skipValidation,
   });
   diagnostics.push(...composed.diagnostics);
 

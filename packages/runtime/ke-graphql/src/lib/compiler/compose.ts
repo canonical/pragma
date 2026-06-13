@@ -54,10 +54,16 @@ const SCALARS: Record<string, GraphQLScalarType> = {
   ID: GraphQLID,
 };
 
-/** Options for the composition pass (extensions, directives). */
+/** Options for the composition pass (extensions, directives, validation). */
 export interface ComposeOptions {
   extensions?: SchemaExtensionsInput;
   incremental?: boolean;
+  /**
+   * Skip validateSchema + printSchema (artifact boots: the schema is a
+   * deterministic rebuild of an extraction that was validated when the
+   * artifact was produced; the SDL is a build artifact, not a runtime need).
+   */
+  skipValidation?: boolean;
 }
 
 /** Composition output: the schema (null on C003 failure) and its SDL. */
@@ -364,19 +370,21 @@ export default function compose(
       types: allTypes,
       directives,
     });
-    const validationErrors = validateSchema(schema);
-    for (const error of validationErrors) {
-      diagnostics.push({
-        severity: "error",
-        code: "C003",
-        message: error.message,
-        phase: PHASE,
-      });
-    }
-    if (validationErrors.length > 0) {
-      schema = null;
-    } else {
-      sdl = printSchema(schema);
+    if (!options.skipValidation) {
+      const validationErrors = validateSchema(schema);
+      for (const error of validationErrors) {
+        diagnostics.push({
+          severity: "error",
+          code: "C003",
+          message: error.message,
+          phase: PHASE,
+        });
+      }
+      if (validationErrors.length > 0) {
+        schema = null;
+      } else {
+        sdl = printSchema(schema);
+      }
     }
   } catch (error) {
     diagnostics.push({

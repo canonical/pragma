@@ -1,6 +1,7 @@
 // =============================================================================
-// Performance features: lazy store, process-lifetime loader cache,
-// slice-before-hydrate pagination, store-free TBox.
+// Performance features: extraction artifact (DMMF-style boot), lazy store,
+// process-lifetime loader cache, slice-before-hydrate pagination, store-free
+// TBox.
 // =============================================================================
 
 import type { SPARQL, Store } from "@canonical/ke";
@@ -8,8 +9,16 @@ import { createTestStore } from "@canonical/ke/testing";
 import { graphql } from "graphql";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { DS_REALISTIC_TTL, MINIMAL_TTL, PREFIXES } from "#testing";
+import createSchemaPlugin from "../createSchemaPlugin.js";
+import {
+  deserializeExtraction,
+  hashSources,
+  serializeExtraction,
+} from "./artifact.js";
 import compile from "./compile.js";
+import compileFromExtraction from "./compileFromExtraction.js";
 import storeQueryFn from "./storeQueryFn.js";
+import type { SchemaPluginApi } from "./types.js";
 
 type Cleanup = () => void;
 let cleanups: Cleanup[] = [];
@@ -40,6 +49,101 @@ const countingStore = (store: Store): { store: Store; count: () => number } => {
   };
   return { store: wrapped, count: () => queries };
 };
+
+describe("extraction artifact (DMMF-style boot)", () => {
+  it("round-trips: serialized extraction rebuilds an executable schema", async () => {
+    const store = await boot(MINIMAL_TTL);
+    const live = await compile(storeQueryFn(store), PREFIXES);
+
+    const artifact = serializeExtraction(live.extraction, hashSources(["x"]));
+    const rebuilt = compileFromExtraction(artifact);
+
+    // assumeValid skips printSchema — the SDL is a build-time artifact
+    expect(rebuilt.sdl).toBe("");
+    expect(rebuilt.schema.getType("Thing")).toBeDefined();
+
+    const result = await graphql({
+      schema: rebuilt.schema,
+      source: `{ thing(uri: "ex:widget") { name count } _meta: ontologyClass(uri: "http://example.org/Thing") { label } }`,
+      contextValue: rebuilt.createContext(store),
+    });
+    expect(result.errors).toBeUndefined();
+    expect((result.data?.thing as { name: string }).name).toBe("Widget");
+  });
+
+  it("preserves Sets/Maps through serialization", async () => {
+    const store = await boot(DS_REALISTIC_TTL);
+    const live = await compile(storeQueryFn(store), PREFIXES);
+    const { extraction } = deserializeExtraction(
+      serializeExtraction(live.extraction, "0"),
+    );
+    expect(extraction.functionals).toEqual(live.extraction.functionals);
+    expect(extraction.instanceStats).toEqual(live.extraction.instanceStats);
+    expect(extraction.annotations).toEqual(live.extraction.annotations);
+  });
+
+  it("rejects unknown artifact versions", () => {
+    expect(() =>
+      deserializeExtraction(JSON.stringify({ version: 99 })),
+    ).toThrow(/version 99/);
+  });
+
+  it("hashSources is order-independent and content-sensitive", () => {
+    expect(hashSources(["a", "b"])).toBe(hashSources(["b", "a"]));
+    expect(hashSources(["a"])).not.toBe(hashSources(["b"]));
+  });
+
+  it("plugin boots from a fresh artifact and falls back when stale", async () => {
+    // Build the artifact through the plugin so sourcesHash matches ke's load.
+    const probe = createSchemaPlugin();
+    const first = await createTestStore({
+      ttl: MINIMAL_TTL,
+      prefixes: PREFIXES,
+      plugins: [probe],
+    });
+    cleanups.push(first.cleanup);
+    // Recover the hash the plugin computed by re-deriving it from the file
+    // ke wrote: simplest faithful source is a second boot with the artifact.
+    const liveApi = first.store.api<SchemaPluginApi>("ke-graphql");
+    const ttlHash = hashSources([MINIMAL_TTL]);
+    const artifact = JSON.parse(
+      serializeExtraction(
+        (await compile(storeQueryFn(first.store), PREFIXES)).extraction,
+        ttlHash,
+      ),
+    );
+    expect(liveApi).toBeDefined();
+
+    const fresh = await createTestStore({
+      ttl: MINIMAL_TTL,
+      prefixes: PREFIXES,
+      plugins: [createSchemaPlugin({ extraction: artifact })],
+    });
+    cleanups.push(fresh.cleanup);
+    const freshApi = fresh.store.api<SchemaPluginApi>("ke-graphql");
+    // Artifact boot skips printSchema — that IS the fast path marker.
+    expect(freshApi?.sdl).toBe("");
+    expect(freshApi?.schema.getType("Thing")).toBeDefined();
+
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const stale = await createTestStore({
+      ttl: MINIMAL_TTL,
+      prefixes: PREFIXES,
+      plugins: [
+        createSchemaPlugin({
+          extraction: { ...artifact, sourcesHash: "deadbeef" },
+        }),
+      ],
+    });
+    cleanups.push(stale.cleanup);
+    const staleApi = stale.store.api<SchemaPluginApi>("ke-graphql");
+    // Fallback = full live compile, SDL present again.
+    expect(staleApi?.sdl).toContain("type Thing");
+    expect(
+      warn.mock.calls.some(([message]) => String(message).includes("stale")),
+    ).toBe(true);
+  });
+});
 
 describe("lazy store (TBox needs no store)", () => {
   it("answers TBox queries before the store resolves; ABox waits for it", async () => {
