@@ -13,8 +13,8 @@ import {
   type MappedField,
   RDF_TYPE,
   type TripleSet,
-} from "../compiler/index.js";
-import { toFull, toPrefixed } from "../dataloader/index.js";
+} from "#compiler";
+import { toFull, toPrefixed } from "#dataloader";
 import { coerce } from "./coerce.js";
 import {
   connectionFromPage,

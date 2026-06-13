@@ -33,7 +33,7 @@ import {
   specifiedDirectives,
   validateSchema,
 } from "graphql";
-import { buildTBoxSchema } from "../tbox/index.js";
+import { buildTBoxSchema } from "#tbox";
 import { CONNECTION_ARGS } from "./constants.js";
 import type { FieldPlan, SchemaPlan, TypeRef } from "./emit.js";
 import type {

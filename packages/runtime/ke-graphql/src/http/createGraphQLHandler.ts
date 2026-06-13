@@ -27,17 +27,19 @@ import {
   type ValidationRule,
   validate,
 } from "graphql";
+import type { CompilerContext } from "#compiler";
 import {
-  type CompilerContext,
-  createDepthLimitRule,
-  DEFAULT_MAX_QUERY_DEPTH,
   executeLocal,
   type IncrementalResults,
   isIncrementalResults,
-  maskError,
   mergeIncremental,
   relayFormatAdapter,
-} from "../lib/index.js";
+} from "#execution";
+import {
+  createDepthLimitRule,
+  DEFAULT_MAX_QUERY_DEPTH,
+  maskError,
+} from "#hardening";
 import graphiqlHtml from "./graphiqlHtml.js";
 
 /** One executed operation, reported through the onOperation hook. */

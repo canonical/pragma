@@ -3,11 +3,8 @@ import {
   createEntityLoader,
   createInverseLoader,
   createListLoader,
-} from "../dataloader/index.js";
-import {
-  createBoundedCache,
-  DEFAULT_PROCESS_CACHE_SIZE,
-} from "../hardening/index.js";
+} from "#dataloader";
+import { createBoundedCache, DEFAULT_PROCESS_CACHE_SIZE } from "#hardening";
 import type {
   ContextFactory,
   EntityValue,
