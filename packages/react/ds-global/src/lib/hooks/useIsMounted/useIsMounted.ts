@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import type { UseIsMountedResult } from "./types.js";
 
 /**
  * Returns `false` during server rendering and the initial client render,
@@ -7,7 +8,7 @@ import { useEffect, useState } from "react";
  * Useful for deferring client-only output (such as portals) until after
  * hydration, so the first client render matches the server-rendered HTML.
  */
-const useIsMounted = (): boolean => {
+const useIsMounted = (): UseIsMountedResult => {
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {

@@ -1,11 +1,19 @@
 import type { HeadTags } from "./types.js";
 
+/**
+ * Set the document title when one is provided.
+ * @note This function is impure — it writes `document.title`.
+ */
 function applyTitleToDOM(title: string | undefined): void {
   if (title !== undefined) {
     document.title = title;
   }
 }
 
+/**
+ * Create a `<meta>` element carrying the given attributes.
+ * @note This function is impure — it creates a DOM element via `document`.
+ */
 function createMetaElement(attrs: Record<string, string>): HTMLMetaElement {
   const element = document.createElement("meta");
 
@@ -16,6 +24,10 @@ function createMetaElement(attrs: Record<string, string>): HTMLMetaElement {
   return element;
 }
 
+/**
+ * Create a `<link>` element carrying the given attributes.
+ * @note This function is impure — it creates a DOM element via `document`.
+ */
 function createLinkElement(attrs: Record<string, string>): HTMLLinkElement {
   const element = document.createElement("link");
 
@@ -28,10 +40,14 @@ function createLinkElement(attrs: Record<string, string>): HTMLLinkElement {
 
 /**
  * Apply head tags to the live DOM, returning the elements that were created
- * so the caller can remove them on cleanup.
+ * so the caller can remove them on cleanup. Existing `<meta>` elements
+ * matching by `name`/`property` are updated in place rather than duplicated.
  *
  * Safe to call in environments without a DOM (edge runtimes, node test
  * environments): it is a no-op there and returns an empty array.
+ *
+ * @note This function is impure — it mutates `document.head` and
+ * `document.title`.
  */
 export default function applyHeadTagsToDOM(tags: HeadTags): Element[] {
   if (typeof document === "undefined") {
