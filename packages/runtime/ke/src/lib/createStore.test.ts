@@ -47,6 +47,49 @@ describe("Store creation", () => {
     expect(result.bindings.length).toBe(2);
   });
 
+  it("creates a store from inline sources without touching the filesystem", async () => {
+    const store = await createStore({
+      sources: [
+        { content: '<http://example.org/a> <http://example.org/p> "one" .' },
+        {
+          content:
+            "<http://example.org/b> <http://example.org/p> <http://example.org/a> .",
+          format: "ntriples",
+          path: "bundle:data",
+          graph: "urn:test:inline",
+        },
+      ],
+    });
+    const result = await store.query(
+      sparql`SELECT ?s ?o WHERE { ?s <http://example.org/p> ?o }`,
+    );
+    expect(result.type).toBe("select");
+    expect((result as SelectResult).bindings.length).toBe(2);
+    store.dispose();
+  });
+
+  it("passes inline sources to onLoad with their label", async () => {
+    const seen: string[] = [];
+    const plugin = definePlugin({
+      name: "spy",
+      onLoad(source) {
+        seen.push(source.path);
+      },
+    });
+    const store = await createStore({
+      sources: [
+        { content: '<http://example.org/a> <http://example.org/p> "x" .' },
+        {
+          content: '<http://example.org/b> <http://example.org/p> "y" .',
+          path: "named",
+        },
+      ],
+      plugins: [plugin],
+    });
+    expect(seen).toEqual(["inline:0", "named"]);
+    store.dispose();
+  });
+
   it("creates a store with minimal TTL", async () => {
     testResult = await createTestStore({ ttl: MINIMAL_TTL });
     const { store } = testResult;
@@ -111,6 +154,68 @@ describe("SPARQL query execution", () => {
     );
     expect(falseResult.type).toBe("ask");
     expect((falseResult as AskResult).result).toBe(false);
+  });
+
+  it("preserves term kinds, datatypes, and language tags in termBindings", async () => {
+    testResult = await createTestStore({
+      ttl: `
+        @prefix ex: <http://example.org/> .
+        @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+        ex:thing ex:label "Tagged"@en ;
+                 ex:count "42"^^xsd:integer ;
+                 ex:plain "plain" ;
+                 ex:ref ex:other ;
+                 ex:part [ ex:plain "embedded" ] .
+      `,
+    });
+    const { store } = testResult;
+    const result = (await store.query(
+      sparql`SELECT ?p ?o WHERE { <http://example.org/thing> ?p ?o }`,
+    )) as SelectResult;
+
+    expect(result.termBindings.length).toBe(result.bindings.length);
+    const objects = result.termBindings.map((b) => b.o);
+    expect(objects).toContainEqual({
+      termType: "Literal",
+      value: "Tagged",
+      language: "en",
+    });
+    expect(objects).toContainEqual({
+      termType: "Literal",
+      value: "42",
+      datatype: "http://www.w3.org/2001/XMLSchema#integer",
+    });
+    // plain xsd:string literal: datatype omitted
+    expect(objects).toContainEqual({ termType: "Literal", value: "plain" });
+    expect(objects).toContainEqual({
+      termType: "NamedNode",
+      value: "http://example.org/other",
+    });
+    const blank = objects.find((t) => t.termType === "BlankNode");
+    expect(blank).toBeDefined();
+    // bare label, no "_:" prefix in the term-preserving form
+    expect(blank?.value.startsWith("_:")).toBe(false);
+  });
+
+  it("preserves terms in CONSTRUCT quads alongside stringified triples", async () => {
+    testResult = await createTestStore({
+      ttl: `
+        @prefix ex: <http://example.org/> .
+        ex:s ex:p "lit" ; ex:q ex:o .
+      `,
+    });
+    const { store } = testResult;
+    const result = (await store.query(
+      sparql`CONSTRUCT { ?s ?p ?o } WHERE { ?s ?p ?o }`,
+    )) as ConstructResult;
+
+    expect(result.quads.length).toBe(result.triples.length);
+    for (const quad of result.quads) {
+      expect(quad.subject.termType).toBe("NamedNode");
+      expect(quad.predicate.termType).toBe("NamedNode");
+    }
+    const objectKinds = result.quads.map((q) => q.object.termType).sort();
+    expect(objectKinds).toEqual(["Literal", "NamedNode"]);
   });
 });
 
