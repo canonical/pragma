@@ -22,6 +22,11 @@
       "types": "./dist/types/lib/dataloader/index.d.ts",
       "default": "./dist/esm/lib/dataloader/index.js"
     },
+    "#execution": {
+      "development": "./src/lib/execution/index.ts",
+      "types": "./dist/types/lib/execution/index.d.ts",
+      "default": "./dist/esm/lib/execution/index.js"
+    },
     "#hardening": {
       "development": "./src/lib/hardening/index.ts",
       "types": "./dist/types/lib/hardening/index.d.ts",

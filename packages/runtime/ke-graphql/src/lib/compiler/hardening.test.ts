@@ -5,8 +5,8 @@
 // =============================================================================
 
 import { createTestStore } from "@canonical/ke/testing";
-import { graphql } from "graphql";
 import { afterEach, describe, expect, it } from "vitest";
+import { executeLocal, isIncrementalResults } from "#execution";
 import compile from "./compile.js";
 import storeQueryFn from "./storeQueryFn.js";
 
@@ -59,27 +59,32 @@ describe("forced abstract with direct instances (C1 + V015)", () => {
   it("filters the abstract-only instance instead of crashing resolveType", async () => {
     const { result, store } = await compileHierarchy();
     const context = result.createContext(store);
-    const execution = await graphql({
+    const execution = await executeLocal({
       schema: result.schema,
       source: `{ node(id: "ex:a1") { __typename } }`,
       contextValue: context,
     });
-    // No "Abstract type ... resolved to a non-object type" error.
-    expect(execution.errors).toBeUndefined();
-    expect(execution.data?.node).toBeNull();
+    expect(isIncrementalResults(execution)).toBe(false);
+    if (!isIncrementalResults(execution)) {
+      // No "Abstract type ... resolved to a non-object type" error.
+      expect(execution.errors).toBeUndefined();
+      expect(execution.data?.node).toBeNull();
+    }
   });
 
   it("still resolves a concrete subclass instance to its concrete type", async () => {
     const { result, store } = await compileHierarchy();
     const context = result.createContext(store);
-    const execution = await graphql({
+    const execution = await executeLocal({
       schema: result.schema,
       source: `{ node(id: "ex:d1") { __typename } }`,
       contextValue: context,
     });
-    expect(execution.errors).toBeUndefined();
-    expect((execution.data?.node as { __typename: string }).__typename).toBe(
-      "Dog",
-    );
+    if (!isIncrementalResults(execution)) {
+      expect(execution.errors).toBeUndefined();
+      expect((execution.data?.node as { __typename: string }).__typename).toBe(
+        "Dog",
+      );
+    }
   });
 });

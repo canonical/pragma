@@ -11,6 +11,7 @@
 
 import {
   GraphQLBoolean,
+  GraphQLDeferDirective,
   type GraphQLFieldConfig,
   type GraphQLFieldConfigArgumentMap,
   type GraphQLFieldConfigMap,
@@ -25,6 +26,7 @@ import {
   type GraphQLOutputType,
   type GraphQLScalarType,
   GraphQLSchema,
+  GraphQLStreamDirective,
   GraphQLString,
   GraphQLUnionType,
   printSchema,
@@ -52,9 +54,10 @@ const SCALARS: Record<string, GraphQLScalarType> = {
   ID: GraphQLID,
 };
 
-/** Options for the composition pass (extensions). */
+/** Options for the composition pass (extensions, directives). */
 export interface ComposeOptions {
   extensions?: SchemaExtensionsInput;
+  incremental?: boolean;
 }
 
 /** Composition output: the schema (null on C003 failure) and its SDL. */
@@ -346,7 +349,9 @@ export default function compose(
     tbox.entityMeta,
   ];
 
-  const directives = [...specifiedDirectives];
+  const directives = options.incremental
+    ? [...specifiedDirectives, GraphQLDeferDirective, GraphQLStreamDirective]
+    : [...specifiedDirectives];
 
   let schema: GraphQLSchema | null = null;
   let sdl = "";

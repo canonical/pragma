@@ -45,6 +45,7 @@ export default function runPasses(
 
   const composed = compose(relayed.output, {
     extensions: options.extensions,
+    incremental: options.incremental,
   });
   diagnostics.push(...composed.diagnostics);
 

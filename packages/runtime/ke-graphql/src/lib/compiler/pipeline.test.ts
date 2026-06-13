@@ -260,4 +260,10 @@ describe("failure modes", () => {
     expect(thing.getFields().id).toBeUndefined();
     expect(result.schema.getQueryType()?.getFields().node).toBeUndefined();
   });
+
+  it("incremental: true adds the defer and stream directives", async () => {
+    const result = await compileFixture(MINIMAL_TTL, { incremental: true });
+    expect(result.schema.getDirective("defer")).toBeDefined();
+    expect(result.schema.getDirective("stream")).toBeDefined();
+  });
 });

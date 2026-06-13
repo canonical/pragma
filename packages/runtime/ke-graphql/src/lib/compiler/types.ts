@@ -509,6 +509,8 @@ export interface SchemaPluginOptions {
   extensions?: SchemaExtensionsInput;
   /** Wire the Node interface, global IDs, and connections. Default: true. */
   relay?: boolean;
+  /** Add @defer/@stream directives to the schema (KG.21). Default: false. */
+  incremental?: boolean;
   /** File path for SDL output. */
   sdlOutput?: string;
   nonNullOverrides?: NonNullOverrides;

@@ -50,6 +50,19 @@ export {
 export { default as createSchemaPlugin } from "./createSchemaPlugin.js";
 export { toFull, toPrefixed } from "./dataloader/index.js";
 export {
+  createPersistedManifest,
+  executeLocal,
+  extractStatic,
+  type IncrementalResults,
+  isIncrementalResults,
+  type LocalExecutionResult,
+  mergeIncremental,
+  type RelayLegacyPayload,
+  relayFormatAdapter,
+  type StaticQuery,
+  sha256Hex,
+} from "./execution/index.js";
+export {
   clampConnectionArgs,
   createDepthLimitRule,
   DEFAULT_MAX_QUERY_DEPTH,
