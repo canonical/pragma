@@ -32,13 +32,13 @@ import {
   type MappedIR,
   type NamespaceInfo,
   type PropertyNode,
-} from "../compiler/index.js";
-import { toFull, toPrefixed } from "../dataloader/index.js";
+} from "#compiler";
+import { toFull, toPrefixed } from "#dataloader";
 import {
   connectionFromPage,
   paginateUriWindow,
   unwrapEntities,
-} from "../resolver/index.js";
+} from "#resolver";
 
 interface ClassPropertyValue {
   propertyUri: string;

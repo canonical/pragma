@@ -3,7 +3,7 @@
 // stripping (EC.06). Runtime failures go to the context's warning channel.
 // =============================================================================
 
-import { type RuntimeWarningHandler, XSD } from "../compiler/index.js";
+import { type RuntimeWarningHandler, XSD } from "#compiler";
 import type { ScalarName } from "./types.js";
 
 /**

@@ -20,8 +20,8 @@ import {
   RDF_TYPE,
   type TripleSet,
   type TripleValue,
-} from "../compiler/index.js";
-import { isSafeIri } from "../hardening/index.js";
+} from "#compiler";
+import { isSafeIri } from "#hardening";
 import { toPrefixed } from "./uris.js";
 
 /** Separator that cannot occur in IRIs or well-formed literals. */

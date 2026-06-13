@@ -16,7 +16,7 @@ import {
   createInverseResolver,
   createObjectListResolver,
   createObjectSingularResolver,
-} from "../resolver/index.js";
+} from "#resolver";
 import type {
   CompilerContext,
   Diagnostic,

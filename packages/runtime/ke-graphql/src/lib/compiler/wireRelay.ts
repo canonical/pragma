@@ -10,12 +10,12 @@
 // - root query fields: node(id), per-type lookup + listing
 // =============================================================================
 
-import { toFull, toPrefixed } from "../dataloader/index.js";
+import { toFull, toPrefixed } from "#dataloader";
 import {
   connectionFromPage,
   paginateUriWindow,
   unwrapEntities,
-} from "../resolver/index.js";
+} from "#resolver";
 import type { FieldPlan, SchemaPlan } from "./emit.js";
 import type {
   CompilerContext,

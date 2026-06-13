@@ -15,6 +15,38 @@
       "import": "./dist/esm/http/index.js"
     }
   },
+  "imports": {
+    "#compiler": {
+      "development": "./src/lib/compiler/index.ts",
+      "types": "./dist/types/lib/compiler/index.d.ts",
+      "default": "./dist/esm/lib/compiler/index.js"
+    },
+    "#dataloader": {
+      "development": "./src/lib/dataloader/index.ts",
+      "types": "./dist/types/lib/dataloader/index.d.ts",
+      "default": "./dist/esm/lib/dataloader/index.js"
+    },
+    "#execution": {
+      "development": "./src/lib/execution/index.ts",
+      "types": "./dist/types/lib/execution/index.d.ts",
+      "default": "./dist/esm/lib/execution/index.js"
+    },
+    "#hardening": {
+      "development": "./src/lib/hardening/index.ts",
+      "types": "./dist/types/lib/hardening/index.d.ts",
+      "default": "./dist/esm/lib/hardening/index.js"
+    },
+    "#resolver": {
+      "development": "./src/lib/resolver/index.ts",
+      "types": "./dist/types/lib/resolver/index.d.ts",
+      "default": "./dist/esm/lib/resolver/index.js"
+    },
+    "#tbox": {
+      "development": "./src/lib/tbox/index.ts",
+      "types": "./dist/types/lib/tbox/index.d.ts",
+      "default": "./dist/esm/lib/tbox/index.js"
+    }
+  },
   "files": [
     "dist"
   ],

@@ -19,7 +19,7 @@ import {
   type GraphQLSchema,
   parse,
 } from "graphql";
-import type { CompilerContext } from "../compiler/index.js";
+import type { CompilerContext } from "#compiler";
 import type {
   IncrementalResults,
   LocalExecutionResult,
