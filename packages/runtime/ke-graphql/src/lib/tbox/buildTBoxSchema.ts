@@ -371,7 +371,11 @@ export default function buildTBoxSchema(
       type: ontologyProperty,
       args: { uri: { type: new GraphQLNonNull(GraphQLString) } },
       resolve: (_parent, args: { uri: string }) =>
-        ir.properties.get(args.uri) ?? null,
+        ir.properties.get(args.uri) ??
+        [...ir.properties.values()].find(
+          (p) => `${p.namespace}:${p.uri.split(/[#/]/).pop()}` === args.uri,
+        ) ??
+        null,
     },
   };
 

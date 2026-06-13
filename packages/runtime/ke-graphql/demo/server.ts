@@ -51,10 +51,16 @@ const createActivityLogPlugin = (): Plugin =>
     },
   });
 
-// The same mapping the README walks through: rename the mechanical plural
-// on the inverse side of hasAuthor/authored.
+// The mappings the README walks through: rename the mechanical plural on
+// the inverse side of hasAuthor/authored, mark hasPublisher singular (no
+// owl:FunctionalProperty in the data), and synthesize reverse fields —
+// Publisher.works and Book.adaptations — that the ontology never declares.
 const graphql = createSchemaPlugin({
-  mappings: { "lib:authored": { graphqlName: "works" } },
+  mappings: {
+    "lib:authored": { graphqlName: "works" },
+    "lib:hasPublisher": { singular: true, inverse: { graphqlName: "works" } },
+    "lib:adaptationOf": { inverse: { graphqlName: "adaptations" } },
+  },
   incremental: true,
 });
 

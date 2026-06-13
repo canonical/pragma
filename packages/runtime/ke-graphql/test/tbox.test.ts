@@ -93,6 +93,7 @@ describe("Ontology and lookups", () => {
           inverse { uri }
         }
         missing: ontologyProperty(uri: "http://example.org/nope") { uri }
+        prefixed: ontologyProperty(uri: "ex:count") { uri }
       }`,
     );
     expect(result.errors).toBeUndefined();
@@ -103,6 +104,10 @@ describe("Ontology and lookups", () => {
     expect((property.domain as { label: string }).label).toBe("Thing");
     expect(property.inverse).toBeNull();
     expect(result.data?.missing).toBeNull();
+    // Prefixed form resolves like ontologyClass does.
+    expect((result.data?.prefixed as { uri: string }).uri).toBe(
+      "http://example.org/count",
+    );
   });
 
   it("walks superclass chains on OntologyClass", async () => {
