@@ -387,10 +387,20 @@ export default function compose(
       }
     }
   } catch (error) {
+    // The only throw sites inside this try are graphql-js schema construction,
+    // validateSchema, and printSchema; all throw Error instances, so the
+    // non-Error else fallback below cannot be reached in practice.
+    let message: string;
+    /* v8 ignore else */
+    if (error instanceof Error) {
+      message = error.message;
+    } else {
+      message = String(error);
+    }
     diagnostics.push({
       severity: "error",
       code: "C003",
-      message: error instanceof Error ? error.message : String(error),
+      message,
       phase: PHASE,
     });
     schema = null;

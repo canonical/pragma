@@ -28,6 +28,11 @@ describe("pluralize", () => {
     expect(pluralize("person")).toBe("people");
     expect(pluralize("grandChild")).toBe("grandChildren");
   });
+
+  it("preserves the case of a capitalized irregular", () => {
+    expect(pluralize("Child")).toBe("Children");
+    expect(pluralize("Person")).toBe("People");
+  });
 });
 
 describe("stripVerbPrefix", () => {

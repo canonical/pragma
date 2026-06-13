@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE } from "#hardening";
 import {
+  connectionFromPage,
   emptyConnection,
   fromBase64,
   isEntity,
@@ -68,6 +69,13 @@ describe("toConnection", () => {
     });
     expect(connection.edges).toHaveLength(2);
   });
+
+  it("ignores an unknown before cursor", () => {
+    const connection = toConnection(items(["a", "b"]), {
+      before: toBase64("nope"),
+    });
+    expect(connection.edges).toHaveLength(2);
+  });
 });
 
 describe("page-size hardening (clamp)", () => {
@@ -94,6 +102,63 @@ describe("page-size hardening (clamp)", () => {
     expect(paginateUriWindow(uris, { first: 10_000 }).window).toHaveLength(
       MAX_PAGE_SIZE,
     );
+  });
+});
+
+describe("paginateUriWindow", () => {
+  const uris = ["a", "b", "c", "d"];
+
+  it("trims the window at a before cursor", () => {
+    const page = paginateUriWindow(uris, { before: toBase64("c"), first: 10 });
+    expect(page.window).toEqual(["a", "b"]);
+    expect(page.hasNextPage).toBe(false);
+  });
+
+  it("ignores an unknown before cursor", () => {
+    const page = paginateUriWindow(uris, {
+      before: toBase64("zzz"),
+      first: 10,
+    });
+    expect(page.window).toEqual(uris);
+  });
+
+  it("ignores an unknown after cursor", () => {
+    const page = paginateUriWindow(uris, { after: toBase64("zzz"), first: 10 });
+    expect(page.window).toEqual(uris);
+  });
+
+  it("windows the tail with last (and reports a previous page)", () => {
+    const page = paginateUriWindow(uris, { last: 2 });
+    expect(page.window).toEqual(["c", "d"]);
+    expect(page.hasPreviousPage).toBe(true);
+  });
+
+  it("combines after and last", () => {
+    const page = paginateUriWindow(uris, { after: toBase64("a"), last: 2 });
+    expect(page.window).toEqual(["c", "d"]);
+    expect(page.hasPreviousPage).toBe(true);
+  });
+
+  it("throws on negative first/last (connection spec)", () => {
+    expect(() => paginateUriWindow(uris, { first: -1 })).toThrow(
+      /non-negative/,
+    );
+    expect(() => paginateUriWindow(uris, { last: -1 })).toThrow(/non-negative/);
+  });
+});
+
+describe("base64 platform-neutral fallback", () => {
+  it("round-trips via btoa/atob when Buffer is absent", () => {
+    const saved = globalThis.Buffer;
+    try {
+      // @ts-expect-error — force the non-Buffer (Workers/browser) branch.
+      globalThis.Buffer = undefined;
+      const encoded = toBase64("ds:global.component.button");
+      expect(fromBase64(encoded)).toBe("ds:global.component.button");
+      expect(fromBase64("!!!not-base64!!!")).toBe("");
+    } finally {
+      globalThis.Buffer = saved;
+    }
   });
 });
 
@@ -124,5 +189,22 @@ describe("helpers", () => {
     expect(() => unwrapEntities([entity, new Error("store down")])).toThrow(
       "store down",
     );
+  });
+
+  it("encodes a null uri as the empty-string cursor", () => {
+    // Embedded blank-node entities carry uri: null → toBase64("") cursor.
+    const page = { window: [], hasNextPage: false, hasPreviousPage: false };
+    const connection = connectionFromPage([{ uri: null }], page);
+    expect(connection.edges[0]?.cursor).toBe(toBase64(""));
+  });
+
+  it("sorts and cursors null uris (toConnection ?? '' fallbacks)", () => {
+    // Two null uris exercise both sides of the comparator's ?? "" fallbacks.
+    const connection = toConnection(
+      [{ uri: null }, { uri: null }, { uri: "a" }],
+      {},
+    );
+    expect(connection.edges.map((e) => e.node.uri)).toEqual([null, null, "a"]);
+    expect(connection.edges[0]?.cursor).toBe(toBase64(""));
   });
 });

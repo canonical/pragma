@@ -377,9 +377,10 @@ const buildFields = (
  * concrete descendant is embeddable (no uri/_meta on the interface then).
  */
 const isInterfaceEmbeddable = (ir: OntologyIR, node: ClassNode): boolean =>
-  collectConcreteDescendants(ir, node).every(
-    (uri) => ir.classes.get(uri)?.embeddable ?? false,
-  );
+  collectConcreteDescendants(ir, node).every((uri) => {
+    /* v8 ignore next -- descendant URIs come from the class map, so the lookup always resolves and the false fallback is unreachable */
+    return ir.classes.get(uri)?.embeddable ?? false;
+  });
 
 /**
  * Map the OntologyIR to the GraphQL-shaped MappedIR (Pass 4): resolved type
@@ -424,6 +425,7 @@ export default function map(
 
   for (const node of ir.classes.values()) {
     const typeName = state.typeNames.get(node.uri);
+    /* v8 ignore next 3 -- resolveTypeNames assigns a name to every class in this same map, so a class without a resolved type name is unreachable */
     if (!typeName) {
       continue;
     }
@@ -436,9 +438,11 @@ export default function map(
       const parentInterfaces = node.ancestors
         .map((a) => state.typeNames.get(a))
         .filter((n): n is string => n !== undefined)
-        .filter(
-          (n) => ir.classes.get(state.nameMap.toOWL(n) ?? "")?.isAbstract,
-        );
+        .filter((n) => {
+          /* v8 ignore next -- every resolved type name was registered in the name map alongside its URI, so the reverse lookup always resolves and the empty-string fallback is unreachable */
+          const ownerUri = state.nameMap.toOWL(n) ?? "";
+          return ir.classes.get(ownerUri)?.isAbstract;
+        });
       interfaces.set(typeName, {
         owlUri: node.uri,
         graphqlName: typeName,

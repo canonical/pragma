@@ -142,6 +142,7 @@ export default function build(
       return [];
     }
     const result: string[] = [];
+    /* v8 ignore next -- every uri reaching here is a known class, so it always has a rawSuperclasses entry; the empty-array fallback is unreachable */
     for (const parent of rawSuperclasses.get(uri) ?? []) {
       if (!classes.has(parent)) {
         continue; // cross-vocabulary parents handled in Pass 3 (V009)
@@ -188,9 +189,11 @@ export default function build(
     const embeddable =
       mapping?.embeddable ??
       (stats !== undefined && stats.total > 0 && stats.named === 0);
+    /* v8 ignore next -- node.uri was populated with its ancestors in the prior closure pass and is still present in the map, so the empty-array fallback is unreachable */
+    const ancestors = classes.get(node.uri)?.ancestors ?? [];
     classes.set(node.uri, {
       ...node,
-      ancestors: classes.get(node.uri)?.ancestors ?? [],
+      ancestors,
       subclasses,
       isAbstract,
       embeddable,
