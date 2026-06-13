@@ -20,12 +20,28 @@ export interface DirectoryRule {
 // Union type for rules
 export type Rule = { file: FileRule } | { directory: DirectoryRule };
 
+// Type for a single declared template variable
+export interface VariableDeclaration {
+  default: string; // Value used when no override is supplied
+  schema?: JSONSchema7; // Optional JSON Schema constraining override values
+}
+
+// Map of variable name to its declaration
+export type VariableDeclarations = Record<string, VariableDeclaration>;
+
 // Schema type with special properties and dynamic rule names
 export interface Schema {
   $schema?: string; // Optional meta-schema reference
   name: string; // Required schema name
   extends?: string[]; // Optional list of schemas to extend
-  [ruleName: string]: Rule | string | string[] | undefined; // Rules and special properties
+  variables?: VariableDeclarations; // Optional template variables substituted as ${name}
+  // Rules and special properties
+  [ruleName: string]:
+    | Rule
+    | string
+    | string[]
+    | VariableDeclarations
+    | undefined;
 }
 
 export interface ValidationResult {

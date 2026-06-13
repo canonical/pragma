@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
+import type { ValidateFunction } from "ajv";
 import type { FileRule, ValidationResult } from "../types.js";
 import ajv from "./ajv.js";
 import describeSchema from "./describeSchema.js";
@@ -45,6 +46,18 @@ export default async function validateFileRule(
     schema: fileRule.contains,
   };
 
+  // Compile the rule schema up front, outside the file-read try below, so an
+  // invalid schema (e.g. a malformed regex produced by variable substitution)
+  // is reported clearly instead of being mislabeled as a file-read error.
+  let validate: ValidateFunction;
+  try {
+    validate = ajv.compile(fileRule.contains);
+  } catch (compileError) {
+    throw new Error(
+      `Invalid rule schema for '${ruleName}' validating ${fileRule.name}: ${(compileError as Error).message}`,
+    );
+  }
+
   try {
     const content = await readFile(filePath, "utf-8");
 
@@ -59,7 +72,6 @@ export default async function validateFileRule(
     }
 
     // Soft fail: return validation result
-    const validate = ajv.compile(fileRule.contains);
     const valid = validate(json);
 
     return [

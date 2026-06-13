@@ -103,6 +103,31 @@ describe("loadFullSchema", () => {
     expect(result.extends).toBeUndefined();
   });
 
+  it("merges variables by key so a child keeps inherited variables", async () => {
+    const parent = {
+      name: "parent",
+      variables: {
+        prefix: { default: "@canonical/" },
+        suffix: { default: "-pkg" },
+      },
+    };
+    const child = {
+      name: "child",
+      extends: [join(tmp, "parent.ruleset.json")],
+      // Redeclares only `suffix`; `prefix` must still be inherited.
+      variables: { suffix: { default: "-lib" } },
+    };
+
+    writeFileSync(join(tmp, "parent.ruleset.json"), JSON.stringify(parent));
+    writeFileSync(join(tmp, "child.ruleset.json"), JSON.stringify(child));
+
+    const result = await loadFullSchema(join(tmp, "child.ruleset.json"));
+    expect(result.variables).toEqual({
+      prefix: { default: "@canonical/" },
+      suffix: { default: "-lib" },
+    });
+  });
+
   it("handles multiple extends", async () => {
     const base1 = {
       name: "base1",

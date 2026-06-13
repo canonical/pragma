@@ -10,6 +10,7 @@ export { default as executeValidationRules } from "./executeValidationRules.js";
 export { default as listDirectory } from "./listDirectory.js";
 export { default as loadFullSchema } from "./loadFullSchema.js";
 export { default as resolveSchema } from "./resolveSchema.js";
+export { default as substituteVariables } from "./substituteVariables.js";
 export { default as validateDirectoryRule } from "./validateDirectoryRule.js";
 export { default as validateFileRule } from "./validateFileRule.js";
 export { default as validateRule } from "./validateRule.js";

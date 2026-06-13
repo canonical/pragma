@@ -1,11 +1,13 @@
-import type { Schema } from "../types.js";
+import type { Schema, VariableDeclarations } from "../types.js";
 import resolveSchema from "./resolveSchema.js";
 
 /**
  * Loads a schema and recursively resolves all extended schemas.
  * Merges rules from parent schemas with child schemas, where child
- * rules override parent rules with the same name. Special properties
- * like $schema and name are preserved from the child schema.
+ * rules override parent rules with the same name. The `variables` block
+ * is merged by key (child variables override inherited ones) rather than
+ * replaced wholesale. Special properties like $schema and name are
+ * preserved from the child schema.
  *
  * @param schemaArg - Schema identifier (built-in name, file path, or URL)
  * @returns Promise that resolves to the fully merged schema with all extensions resolved
@@ -30,7 +32,22 @@ export default async function loadFullSchema(
       Object.assign(baseRules, rules);
     }
     const { $schema, name, extends: _, ...rules } = schema;
-    return Object.assign({}, baseRules, rules, { $schema, name });
+    const merged = Object.assign({}, baseRules, rules, {
+      $schema,
+      name,
+    }) as Schema;
+
+    // `variables` must merge by key (child overrides parent) rather than be
+    // wholesale-replaced by Object.assign, so a child ruleset can add or refine
+    // variables without dropping ones inherited from a parent ruleset.
+    const baseVariables = baseRules.variables as
+      | VariableDeclarations
+      | undefined;
+    if (baseVariables && schema.variables) {
+      merged.variables = { ...baseVariables, ...schema.variables };
+    }
+
+    return merged;
   }
   return schema;
 }

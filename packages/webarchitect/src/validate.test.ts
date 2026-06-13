@@ -76,4 +76,43 @@ describe("validate", () => {
     expect(results[0].passed).toBe(false);
     expect(results[0].message).toContain("File not found");
   });
+
+  it("applies template variable overrides to rules", async () => {
+    writeFileSync(
+      join(tmp, "package.json"),
+      JSON.stringify({ name: "@myorg/test" }),
+    );
+
+    const schema = {
+      name: "prefixed",
+      variables: { prefix: { default: "@canonical/" } },
+      "pkg-name": {
+        file: {
+          name: "package.json",
+          contains: {
+            type: "object",
+            // biome-ignore lint/suspicious/noTemplateCurlyInString: literal token resolved by substituteVariables
+            properties: { name: { type: "string", pattern: "^${prefix}" } },
+            required: ["name"],
+          },
+        },
+      },
+    };
+    const schemaPath = join(tmp, "prefixed.ruleset.json");
+    writeFileSync(schemaPath, JSON.stringify(schema));
+
+    // Default prefix rejects the @myorg/ name...
+    const withDefault = await validate(tmp, schemaPath);
+    expect(withDefault[0].passed).toBe(false);
+
+    // ...but an override accepts it.
+    const withOverride = await validate(tmp, schemaPath, {
+      prefix: "@myorg/",
+    });
+    expect(withOverride[0].passed).toBe(true);
+
+    // An empty prefix disables the constraint entirely.
+    const disabled = await validate(tmp, schemaPath, { prefix: "" });
+    expect(disabled[0].passed).toBe(true);
+  });
 });

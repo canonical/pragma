@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 import type { ErrorObject } from "ajv";
 import chalk from "chalk";
-import { Command } from "commander";
+import { Command, InvalidArgumentError } from "commander";
 import { discoverAllRulesets } from "./lib/index.js";
 import type { ValidationResult } from "./types.js";
 import validate from "./validate.js";
@@ -265,12 +265,42 @@ async function displayRulesetTree(): Promise<void> {
   }
 }
 
+/**
+ * Collects repeatable `--var key=value` options into a single record.
+ * Commander invokes this once per occurrence, threading the accumulator.
+ *
+ * @param raw - Raw `key=value` string from a single `--var` occurrence
+ * @param acc - Accumulator of previously parsed variable overrides
+ * @returns The accumulator with the new override added
+ * @throws Will throw if the value is missing an `=` separator
+ */
+function collectVariable(
+  raw: string,
+  acc: Record<string, string>,
+): Record<string, string> {
+  const separator = raw.indexOf("=");
+  if (separator === -1) {
+    // InvalidArgumentError lets Commander format and exit cleanly, rather than
+    // surfacing a raw stack trace from inside the option parser.
+    throw new InvalidArgumentError(`Expected key=value, received '${raw}'.`);
+  }
+  acc[raw.slice(0, separator)] = raw.slice(separator + 1);
+  return acc;
+}
+
 program
   .name("webarchitect")
   .argument("[ruleset]", "ruleset identifier, local path, or URL")
   .option("-v, --verbose", "show all validation results")
   .option("--json", "output results in JSON format")
   .option("--list", "list all available rulesets")
+  .option(
+    "--var <key=value>",
+    "override a ruleset template variable (repeatable)",
+    collectVariable,
+    {},
+  )
+  .option("--prefix <value>", "shortcut for --var prefix=<value>")
   .action(async (schemaArg, options) => {
     // Handle --list option
     if (options.list) {
@@ -287,7 +317,19 @@ program
       process.exit(1);
     }
     try {
-      const results = await validate(process.cwd(), schemaArg);
+      // Merge variable overrides; --prefix is sugar for --var prefix=<value>.
+      const variableOverrides: Record<string, string> = {
+        ...(options.var ?? {}),
+      };
+      if (options.prefix !== undefined) {
+        variableOverrides.prefix = options.prefix;
+      }
+
+      const results = await validate(
+        process.cwd(),
+        schemaArg,
+        variableOverrides,
+      );
 
       if (options.json) {
         formatJsonOutput(results);
