@@ -8,24 +8,25 @@
 // inheritance.
 // =============================================================================
 
-import { XSD, XSD_SCALARS } from "./constants.js";
-import getLocalName from "./getLocalName.js";
+import {
+  type CardinalitySpec,
+  type ClassNode,
+  type Diagnostic,
+  getLocalName,
+  type NamespaceInfo,
+  type OntologyIR,
+  type PassResult,
+  type PropertyNode,
+  type RangeSpec,
+  type RawExtraction,
+  type RawShaclConstraint,
+  type RawUnion,
+  XSD,
+  XSD_SCALARS,
+} from "#shared";
 import getNamespace from "./getNamespace.js";
 import isStandardVocab from "./isStandardVocab.js";
-import type {
-  CardinalitySpec,
-  ClassNode,
-  CustomMappings,
-  Diagnostic,
-  NamespaceInfo,
-  OntologyIR,
-  PassResult,
-  PropertyNode,
-  RangeSpec,
-  RawExtraction,
-  RawShaclConstraint,
-  RawUnion,
-} from "./types.js";
+import type { CustomMappings } from "./types.js";
 
 const PHASE = "build";
 

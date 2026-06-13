@@ -5,10 +5,14 @@
 // Never mutates the IR.
 // =============================================================================
 
-import { XSD } from "./constants.js";
-import getLocalName from "./getLocalName.js";
+import {
+  type Diagnostic,
+  getLocalName,
+  type OntologyIR,
+  type PassResult,
+  XSD,
+} from "#shared";
 import isStandardVocab from "./isStandardVocab.js";
-import type { Diagnostic, OntologyIR, PassResult } from "./types.js";
 
 const PHASE = "validate";
 

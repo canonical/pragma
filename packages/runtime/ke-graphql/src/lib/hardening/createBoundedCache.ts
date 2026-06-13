@@ -17,6 +17,7 @@ class BoundedCache<K, V> extends Map<K, V> {
     this.#maxSize = maxSize;
   }
 
+  /** @note Impure — mutates LRU recency order (a read promotes the key to most-recent). */
   get(key: K): V | undefined {
     if (!super.has(key)) {
       return undefined;

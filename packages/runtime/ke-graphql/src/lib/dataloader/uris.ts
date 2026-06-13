@@ -4,7 +4,7 @@
 // keys and SPARQL currency.
 // =============================================================================
 
-import type { NamespaceInfo } from "#compiler";
+import type { NamespaceInfo } from "#shared";
 
 /**
  * Convert a full IRI to its prefixed form ("ds:button") using the compiled

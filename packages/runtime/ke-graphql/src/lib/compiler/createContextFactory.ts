@@ -6,13 +6,12 @@ import {
 } from "#dataloader";
 import { createBoundedCache, DEFAULT_PROCESS_CACHE_SIZE } from "#hardening";
 import type {
-  ContextFactory,
   EntityValue,
   MappedIR,
   QueryFn,
   RuntimeWarningHandler,
-  SchemaPluginOptions,
-} from "./types.js";
+} from "#shared";
+import type { ContextFactory, SchemaPluginOptions } from "./types.js";
 
 /**
  * Create the default runtime-warning handler: logs each distinct

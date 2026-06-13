@@ -16,13 +16,13 @@ import {
   paginateUriWindow,
   unwrapEntities,
 } from "#resolver";
-import type { FieldPlan, SchemaPlan } from "./emit.js";
 import type {
   CompilerContext,
   Diagnostic,
   EntityValue,
   PassResult,
-} from "./types.js";
+} from "#shared";
+import type { FieldPlan, SchemaPlan } from "./emit.js";
 
 /** Create the Relay global-ID field plan (id: ID!). */
 const createIdField = (): FieldPlan => ({

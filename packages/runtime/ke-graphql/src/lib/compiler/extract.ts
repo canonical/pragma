@@ -10,6 +10,21 @@
 
 import type { SelectResult, Term } from "@canonical/ke";
 import {
+  type Diagnostic,
+  type InstanceStats,
+  type PassResult,
+  type QueryFn,
+  type RawClass,
+  type RawDatatype,
+  type RawExtraction,
+  type RawProperty,
+  type RawPropertyKind,
+  type RawShaclConstraint,
+  type RawUnion,
+  RDF_TYPE,
+  RDFS_LABEL,
+} from "#shared";
+import {
   OWL_ANNOTATION_PROPERTY,
   OWL_CLASS,
   OWL_DATATYPE_PROPERTY,
@@ -21,10 +36,8 @@ import {
   OWL_WITH_RESTRICTIONS,
   RDF_FIRST,
   RDF_REST,
-  RDF_TYPE,
   RDFS_COMMENT,
   RDFS_DOMAIN,
-  RDFS_LABEL,
   RDFS_RANGE,
   RDFS_SUBCLASS_OF,
   SH_IN,
@@ -39,19 +52,6 @@ import {
 } from "./constants.js";
 import getNamespace from "./getNamespace.js";
 import isStandardVocab from "./isStandardVocab.js";
-import type {
-  Diagnostic,
-  InstanceStats,
-  PassResult,
-  QueryFn,
-  RawClass,
-  RawDatatype,
-  RawExtraction,
-  RawProperty,
-  RawPropertyKind,
-  RawShaclConstraint,
-  RawUnion,
-} from "./types.js";
 
 const PHASE = "extract";
 

@@ -1,10 +1,11 @@
+import type { QueryFn } from "#shared";
 import extract from "./extract.js";
 import runPasses from "./runPasses.js";
-import type { CompilerResult, QueryFn, SchemaPluginOptions } from "./types.js";
+import type { CompilerResult, SchemaPluginOptions } from "./types.js";
 
 /**
  * Run the full seven-pass pipeline against a query surface (ke
- * PluginContext.query at plugin time, or storeQueryFn(store) directly).
+ * PluginContext.query at plugin time, or createStoreQueryFn(store) directly).
  *
  * The schema is produced whenever composition succeeds — error diagnostics
  * from earlier passes do not abort compilation (tsc model, §2.2); the

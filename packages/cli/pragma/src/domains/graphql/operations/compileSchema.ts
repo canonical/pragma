@@ -6,7 +6,7 @@ import {
   compile,
   type Diagnostic,
   hashSources,
-  storeQueryFn,
+  createStoreQueryFn,
 } from "@canonical/ke-graphql";
 import { PragmaError } from "#error";
 import { resolveSourceFiles } from "../helpers/index.js";
@@ -85,7 +85,7 @@ export default async function compileSchema(
   }
 
   try {
-    const compiled = await compile(storeQueryFn(store), options.prefixes);
+    const compiled = await compile(createStoreQueryFn(store), options.prefixes);
     return {
       status: "ok",
       diagnostics: compiled.diagnostics,

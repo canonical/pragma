@@ -21,6 +21,7 @@ export {
   compile,
   compileFromExtraction,
   createContextFactory,
+  createStoreQueryFn,
   type Diagnostic,
   type DiagnosticCode,
   type DiagnosticSeverity,
@@ -49,7 +50,6 @@ export {
   type SchemaPluginOptions,
   type SerializedExtraction,
   serializeExtraction,
-  storeQueryFn,
   type TripleSet,
   type TripleValue,
 } from "./compiler/index.js";

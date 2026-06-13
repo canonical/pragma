@@ -1,4 +1,4 @@
-import { STANDARD_NAMESPACES } from "./constants.js";
+import { STANDARD_NAMESPACES } from "#shared";
 
 /**
  * Check whether a URI belongs to a standard vocabulary namespace

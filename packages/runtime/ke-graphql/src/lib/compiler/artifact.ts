@@ -9,8 +9,9 @@
 // to a live compile when it no longer matches the loaded sources.
 // =============================================================================
 
+import type { RawExtraction } from "#shared";
 import { ARTIFACT_VERSION } from "./constants.js";
-import type { RawExtraction, SerializedExtraction } from "./types.js";
+import type { SerializedExtraction } from "./types.js";
 
 /** FNV-1a 64-bit hash of a string. Deterministic, dependency-free, platform-free. */
 const hashFnv1a64 = (input: string, seed = 0xcbf29ce484222325n): bigint => {

@@ -24,6 +24,12 @@ import {
   GraphQLObjectType,
   GraphQLString,
 } from "graphql";
+import { toFull, toPrefixed } from "#dataloader";
+import {
+  connectionFromPage,
+  paginateUriWindow,
+  unwrapEntities,
+} from "#resolver";
 import {
   type ClassNode,
   CONNECTION_ARGS,
@@ -32,13 +38,7 @@ import {
   type MappedIR,
   type NamespaceInfo,
   type PropertyNode,
-} from "#compiler";
-import { toFull, toPrefixed } from "#dataloader";
-import {
-  connectionFromPage,
-  paginateUriWindow,
-  unwrapEntities,
-} from "#resolver";
+} from "#shared";
 
 interface ClassPropertyValue {
   propertyUri: string;

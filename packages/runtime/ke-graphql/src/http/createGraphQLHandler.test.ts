@@ -7,7 +7,7 @@ import { createTestStore } from "@canonical/ke/testing";
 import type { ValidationRule } from "graphql";
 import { GraphQLError } from "graphql";
 import { afterEach, describe, expect, it } from "vitest";
-import { type CompilerResult, compile, storeQueryFn } from "#compiler";
+import { type CompilerResult, compile, createStoreQueryFn } from "#compiler";
 import { DS_REALISTIC_TTL, MINIMAL_TTL, PREFIXES } from "#testing";
 import createGraphQLHandler from "./createGraphQLHandler.js";
 
@@ -31,7 +31,11 @@ const setupHandler = async (
 }> => {
   const { store, cleanup } = await createTestStore({ ttl, prefixes: PREFIXES });
   cleanups.push(cleanup);
-  const result = await compile(storeQueryFn(store), PREFIXES, compileOptions);
+  const result = await compile(
+    createStoreQueryFn(store),
+    PREFIXES,
+    compileOptions,
+  );
   const handler = createGraphQLHandler(result.schema, {
     context: () => result.createContext(store),
     graphiql: true,

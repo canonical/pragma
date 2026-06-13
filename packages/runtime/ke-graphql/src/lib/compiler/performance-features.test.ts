@@ -17,7 +17,7 @@ import {
 } from "./artifact.js";
 import compile from "./compile.js";
 import compileFromExtraction from "./compileFromExtraction.js";
-import storeQueryFn from "./storeQueryFn.js";
+import createStoreQueryFn from "./createStoreQueryFn.js";
 import type { SchemaPluginApi } from "./types.js";
 
 type Cleanup = () => void;
@@ -53,7 +53,7 @@ const countingStore = (store: Store): { store: Store; count: () => number } => {
 describe("extraction artifact (DMMF-style boot)", () => {
   it("round-trips: serialized extraction rebuilds an executable schema", async () => {
     const store = await boot(MINIMAL_TTL);
-    const live = await compile(storeQueryFn(store), PREFIXES);
+    const live = await compile(createStoreQueryFn(store), PREFIXES);
 
     const artifact = serializeExtraction(live.extraction, hashSources(["x"]));
     const rebuilt = compileFromExtraction(artifact);
@@ -73,7 +73,7 @@ describe("extraction artifact (DMMF-style boot)", () => {
 
   it("preserves Sets/Maps through serialization", async () => {
     const store = await boot(DS_REALISTIC_TTL);
-    const live = await compile(storeQueryFn(store), PREFIXES);
+    const live = await compile(createStoreQueryFn(store), PREFIXES);
     const { extraction } = deserializeExtraction(
       serializeExtraction(live.extraction, "0"),
     );
@@ -108,7 +108,7 @@ describe("extraction artifact (DMMF-style boot)", () => {
     const ttlHash = hashSources([MINIMAL_TTL]);
     const artifact = JSON.parse(
       serializeExtraction(
-        (await compile(storeQueryFn(first.store), PREFIXES)).extraction,
+        (await compile(createStoreQueryFn(first.store), PREFIXES)).extraction,
         ttlHash,
       ),
     );
@@ -148,7 +148,7 @@ describe("extraction artifact (DMMF-style boot)", () => {
 describe("lazy store (TBox needs no store)", () => {
   it("answers TBox queries before the store resolves; ABox waits for it", async () => {
     const store = await boot(MINIMAL_TTL);
-    const result = await compile(storeQueryFn(store), PREFIXES);
+    const result = await compile(createStoreQueryFn(store), PREFIXES);
 
     let releaseStore: (s: Store) => void = () => {};
     const pending = new Promise<Store>((resolve) => {
@@ -188,7 +188,7 @@ describe("loaderCache: process", () => {
   it("shares entity/list caches across contexts and clears on demand", async () => {
     const raw = await boot(MINIMAL_TTL);
     const { store, count } = countingStore(raw);
-    const result = await compile(storeQueryFn(store), PREFIXES, {
+    const result = await compile(createStoreQueryFn(store), PREFIXES, {
       loaderCache: "process",
     });
     const baseline = count();
@@ -216,7 +216,7 @@ describe("loaderCache: process", () => {
   it("request mode (default) re-queries per context", async () => {
     const raw = await boot(MINIMAL_TTL);
     const { store, count } = countingStore(raw);
-    const result = await compile(storeQueryFn(store), PREFIXES);
+    const result = await compile(createStoreQueryFn(store), PREFIXES);
     const run = () =>
       graphql({
         schema: result.schema,
@@ -234,7 +234,7 @@ describe("slice-before-hydrate listings", () => {
   it("hydrates only the requested page and pages correctly via endCursor", async () => {
     const raw = await boot(DS_REALISTIC_TTL);
     const { store, count } = countingStore(raw);
-    const result = await compile(storeQueryFn(store), PREFIXES);
+    const result = await compile(createStoreQueryFn(store), PREFIXES);
 
     const page1 = await graphql({
       schema: result.schema,
@@ -276,7 +276,7 @@ describe("store-free TBox (tboxLoader removed)", () => {
       ttl: DS_REALISTIC_TTL,
       prefixes: PREFIXES,
     });
-    const result = await compile(storeQueryFn(store), PREFIXES);
+    const result = await compile(createStoreQueryFn(store), PREFIXES);
     const ctx = result.createContext(store);
     cleanup(); // disposes the store — TBox must not notice
 

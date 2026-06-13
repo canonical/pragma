@@ -33,16 +33,16 @@ import {
   specifiedDirectives,
   validateSchema,
 } from "graphql";
+import {
+  CONNECTION_ARGS,
+  type CompilerContext,
+  type Diagnostic,
+  type EntityValue,
+  type PassResult,
+} from "#shared";
 import { buildTBoxSchema } from "#tbox";
-import { CONNECTION_ARGS } from "./constants.js";
 import type { FieldPlan, SchemaPlan, TypeRef } from "./emit.js";
-import type {
-  CompilerContext,
-  Diagnostic,
-  EntityValue,
-  PassResult,
-  SchemaExtensionsInput,
-} from "./types.js";
+import type { SchemaExtensionsInput } from "./types.js";
 
 const PHASE = "compose";
 

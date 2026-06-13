@@ -1,5 +1,5 @@
 import type { SPARQL, Store } from "@canonical/ke";
-import type { QueryFn } from "./types.js";
+import type { QueryFn } from "#shared";
 
 /**
  * Adapt a ke Store to the QueryFn surface (string → branded SPARQL), for
@@ -8,6 +8,6 @@ import type { QueryFn } from "./types.js";
  * @note Impure — the returned function executes SPARQL queries against the
  * store.
  */
-export default function storeQueryFn(store: Store): QueryFn {
+export default function createStoreQueryFn(store: Store): QueryFn {
   return (query) => store.query(query as SPARQL<string>);
 }

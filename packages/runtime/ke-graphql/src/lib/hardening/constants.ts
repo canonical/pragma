@@ -1,7 +1,7 @@
 // =============================================================================
 // Hardening defaults. These are the package's production-safety knobs in one
 // named place (the hardening domain), not magic numbers scattered through the
-// handler and resolvers. The HTTP handler and connection helpers read them;
+// handler and resolvers. The HTTP layer and connection helpers read them;
 // consumers can override at their call sites.
 // =============================================================================
 
@@ -20,7 +20,7 @@ export const DEFAULT_PAGE_SIZE = 50;
 export const MAX_PAGE_SIZE = 100;
 
 /**
- * Default maximum selection-set nesting depth enforced by the HTTP handler's
+ * Default maximum selection-set nesting depth enforced by the HTTP layer's
  * depth-limit rule. High enough to admit the standard introspection query,
  * low enough to reject the unbounded recursion that cyclic types
  * (work → authors → works → authors → …) otherwise allow.

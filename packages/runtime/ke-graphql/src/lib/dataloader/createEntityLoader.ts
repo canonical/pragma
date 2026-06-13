@@ -13,6 +13,7 @@
 
 import type { Quad, Term } from "@canonical/ke";
 import DataLoader from "dataloader";
+import { isSafeIri } from "#hardening";
 import {
   type EntityValue,
   type MappedIR,
@@ -20,8 +21,7 @@ import {
   RDF_TYPE,
   type TripleSet,
   type TripleValue,
-} from "#compiler";
-import { isSafeIri } from "#hardening";
+} from "#shared";
 import { toPrefixed } from "./uris.js";
 
 /** Separator that cannot occur in IRIs or well-formed literals. */

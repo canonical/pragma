@@ -1,12 +1,14 @@
 /**
  * The OWL → GraphQL compiler domain: the seven-pass pipeline (compile and
  * its artifact-boot variant), the extraction artifact codec, the per-request
- * context factory, the shared vocabulary constants, and every IR type
- * contract.
+ * context factory, and the compiler API type contracts. The shared vocabulary
+ * constants and IR type contracts it builds on live in the shared leaf and are
+ * re-exported here for the package's public surface.
  *
  * @module compiler
  */
 
+export type * from "#shared";
 export {
   deserializeExtraction,
   hashSources,
@@ -15,8 +17,7 @@ export {
 export { default as CompilationError } from "./CompilationError.js";
 export { default as compile } from "./compile.js";
 export { default as compileFromExtraction } from "./compileFromExtraction.js";
-export * from "./constants.js";
+export { ARTIFACT_VERSION } from "./constants.js";
 export { default as createContextFactory } from "./createContextFactory.js";
-export { default as getLocalName } from "./getLocalName.js";
-export { default as storeQueryFn } from "./storeQueryFn.js";
+export { default as createStoreQueryFn } from "./createStoreQueryFn.js";
 export type * from "./types.js";

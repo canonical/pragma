@@ -10,8 +10,8 @@
 // =============================================================================
 
 import type { ExecutionResult, GraphQLSchema } from "graphql";
-import type { CompilerContext, MappedIR } from "#compiler";
 import { toPrefixed } from "#dataloader";
+import type { CompilerContext, MappedIR } from "#shared";
 import {
   executeLocal,
   isIncrementalResults,

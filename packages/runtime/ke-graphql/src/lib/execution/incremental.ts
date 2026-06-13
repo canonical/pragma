@@ -19,7 +19,7 @@ import {
   type GraphQLSchema,
   parse,
 } from "graphql";
-import type { CompilerContext } from "#compiler";
+import type { CompilerContext } from "#shared";
 import type {
   IncrementalResults,
   LocalExecutionResult,

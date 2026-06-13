@@ -8,7 +8,7 @@ import { createTestStore } from "@canonical/ke/testing";
 import { afterEach, describe, expect, it } from "vitest";
 import { executeLocal, isIncrementalResults } from "#execution";
 import compile from "./compile.js";
-import storeQueryFn from "./storeQueryFn.js";
+import createStoreQueryFn from "./createStoreQueryFn.js";
 
 const PREFIXES = { ex: "http://example.org/" };
 
@@ -44,7 +44,7 @@ const compileHierarchy = async () => {
     prefixes: PREFIXES,
   });
   cleanups.push(cleanup);
-  const result = await compile(storeQueryFn(store), PREFIXES, {
+  const result = await compile(createStoreQueryFn(store), PREFIXES, {
     mappings: { "http://example.org/Animal": { abstract: true } },
   });
   return { result, store };

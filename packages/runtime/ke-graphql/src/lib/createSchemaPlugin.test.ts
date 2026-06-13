@@ -9,7 +9,8 @@ import { join } from "node:path";
 import { createTestStore } from "@canonical/ke/testing";
 import { GraphQLString, graphql } from "graphql";
 import { afterEach, describe, expect, it } from "vitest";
-import type { EntityValue, SchemaPluginApi } from "#compiler";
+import type { SchemaPluginApi } from "#compiler";
+import type { EntityValue } from "#shared";
 import { MINIMAL_TTL, PREFIXES } from "#testing";
 import createSchemaPlugin from "./createSchemaPlugin.js";
 

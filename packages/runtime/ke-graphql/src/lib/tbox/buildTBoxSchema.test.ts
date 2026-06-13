@@ -6,12 +6,8 @@
 import { createTestStore } from "@canonical/ke/testing";
 import { type GraphQLSchema, graphql } from "graphql";
 import { afterEach, describe, expect, it } from "vitest";
-import {
-  type CompilerContext,
-  type CompilerResult,
-  compile,
-  storeQueryFn,
-} from "#compiler";
+import { type CompilerResult, compile, createStoreQueryFn } from "#compiler";
+import type { CompilerContext } from "#shared";
 import {
   DS_REALISTIC_TTL,
   INHERITANCE_TTL,
@@ -42,7 +38,7 @@ const setup = async (
 ): Promise<Compiled> => {
   const { store, cleanup } = await createTestStore({ ttl, prefixes: PREFIXES });
   cleanups.push(cleanup);
-  const result = await compile(storeQueryFn(store), PREFIXES, options);
+  const result = await compile(createStoreQueryFn(store), PREFIXES, options);
   return {
     result,
     schema: result.schema,

@@ -24,7 +24,7 @@ import type {
   MappedField,
   MappedIR,
   PassResult,
-} from "./types.js";
+} from "#shared";
 
 /** A reference to a (possibly not-yet-constructed) GraphQL type. */
 export interface TypeRef {

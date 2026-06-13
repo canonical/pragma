@@ -9,8 +9,8 @@
 // =============================================================================
 
 import { GraphQLError } from "graphql";
-import type { EntityValue } from "#compiler";
 import { clampConnectionArgs } from "#hardening";
+import type { EntityValue } from "#shared";
 import type { Connection, ConnectionArgs, Sortable, UriPage } from "./types.js";
 
 /**

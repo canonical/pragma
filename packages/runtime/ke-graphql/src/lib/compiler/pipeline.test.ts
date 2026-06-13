@@ -18,7 +18,7 @@ import {
   SHACL_TTL,
 } from "#testing";
 import compile from "./compile.js";
-import storeQueryFn from "./storeQueryFn.js";
+import createStoreQueryFn from "./createStoreQueryFn.js";
 import type { CompilerResult } from "./types.js";
 
 type Cleanup = () => void;
@@ -40,7 +40,7 @@ const compileFixture = async (
     prefixes: PREFIXES,
   });
   cleanups.push(cleanup);
-  return compile(storeQueryFn(store), PREFIXES, options);
+  return compile(createStoreQueryFn(store), PREFIXES, options);
 };
 
 const codes = (result: CompilerResult): string[] =>

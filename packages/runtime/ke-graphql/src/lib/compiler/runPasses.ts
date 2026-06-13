@@ -1,15 +1,11 @@
+import type { Diagnostic, RawExtraction } from "#shared";
 import build from "./build.js";
 import CompilationError from "./CompilationError.js";
 import compose from "./compose.js";
 import createContextFactory from "./createContextFactory.js";
 import emit from "./emit.js";
 import map from "./map.js";
-import type {
-  CompilerResult,
-  Diagnostic,
-  RawExtraction,
-  SchemaPluginOptions,
-} from "./types.js";
+import type { CompilerResult, SchemaPluginOptions } from "./types.js";
 import validate from "./validate.js";
 import wireRelay from "./wireRelay.js";
 

@@ -3,7 +3,7 @@
  * place — the IRI-injection guard for SPARQL interpolation, connection
  * page-size clamping, the query-depth validation rule, the bounded loader
  * cache, and production error masking. Defaults live in ./constants; the HTTP
- * handler, the connection helpers, and the context factory consume these so
+ * layer, the connection helpers, and the context factory consume these so
  * the policy is discoverable and tunable, never a magic number lurking in a
  * resolver.
  *

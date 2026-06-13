@@ -7,31 +7,31 @@
 // inverse fields, standard-vocab fields, non-null overrides.
 // =============================================================================
 
+import {
+  type ClassNode,
+  type Diagnostic,
+  type FieldTypeSpec,
+  getLocalName,
+  type MappedField,
+  type MappedInterface,
+  type MappedIR,
+  type MappedType,
+  type MappedUnion,
+  type OntologyIR,
+  type PassResult,
+  type PropertyNode,
+  RESERVED_FIELD_NAMES,
+  RESERVED_TYPE_NAMES,
+  type ResolverTemplate,
+} from "#shared";
 import BidirectionalNameMap from "./BidirectionalNameMap.js";
-import { RESERVED_FIELD_NAMES, RESERVED_TYPE_NAMES } from "./constants.js";
-import getLocalName from "./getLocalName.js";
 import {
   camelize,
   pluralize,
   sanitizeGraphQLName,
   stripVerbPrefix,
 } from "./nameMap.js";
-import type {
-  ClassNode,
-  CustomMapping,
-  Diagnostic,
-  FieldTypeSpec,
-  MappedField,
-  MappedInterface,
-  MappedIR,
-  MappedType,
-  MappedUnion,
-  OntologyIR,
-  PassResult,
-  PropertyNode,
-  ResolverTemplate,
-  SchemaPluginOptions,
-} from "./types.js";
+import type { CustomMapping, SchemaPluginOptions } from "./types.js";
 
 const PHASE = "map";
 

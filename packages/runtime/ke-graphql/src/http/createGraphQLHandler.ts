@@ -27,7 +27,6 @@ import {
   type ValidationRule,
   validate,
 } from "graphql";
-import type { CompilerContext } from "#compiler";
 import {
   executeLocal,
   type IncrementalResults,
@@ -40,6 +39,7 @@ import {
   DEFAULT_MAX_QUERY_DEPTH,
   maskError,
 } from "#hardening";
+import type { CompilerContext } from "#shared";
 import graphiqlHtml from "./graphiqlHtml.js";
 
 /** One executed operation, reported through the onOperation hook. */
