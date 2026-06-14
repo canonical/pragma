@@ -37,7 +37,14 @@ export const { locale, direction, t, formatters, setLocale } = createI18n(
 
 <a dir={$direction}>{$t("nav.home")}</a>
 <span>{$t("items", { count: 3 })}</span>
-<button on:click={() => setLocale("fr")}>FR</button>
+<!-- Accessible switcher: endonyms + a `lang` per option (`config` is your own). -->
+<select aria-label="Language" value={$locale} on:change={(e) => setLocale(e.currentTarget.value)}>
+  {#each config.locales as code}
+    <option value={code} lang={code}>
+      {new Intl.DisplayNames([code], { type: "language" }).of(code)}
+    </option>
+  {/each}
+</select>
 ```
 
 The shared `LocaleSource` means the same locale value — with its cookie

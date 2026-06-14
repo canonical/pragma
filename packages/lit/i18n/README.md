@@ -34,7 +34,18 @@ export class AppNav extends LitElement {
     return html`
       <a dir=${this.#i18n.direction}>${this.#i18n.t("nav.home")}</a>
       <span>${this.#i18n.t("items", { count: 3 })}</span>
-      <button @click=${() => this.#i18n.setLocale("fr")}>FR</button>
+      <select
+        aria-label="Language"
+        .value=${this.#i18n.locale}
+        @change=${(event: Event) =>
+          this.#i18n.setLocale((event.target as HTMLSelectElement).value)}
+      >
+        ${config.locales.map(
+          (code) => html`<option value=${code} lang=${code}>
+            ${new Intl.DisplayNames([code], { type: "language" }).of(code)}
+          </option>`,
+        )}
+      </select>
     `;
   }
 }
