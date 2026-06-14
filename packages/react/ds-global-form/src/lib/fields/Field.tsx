@@ -13,10 +13,10 @@ import {
   Range,
   Select,
   SimpleChoices,
-  Text,
   Textarea,
   TimeInput,
 } from "./inputs/index.js";
+import { TextField } from "./Text/index.js";
 import type { FieldProps } from "./types.js";
 
 /**
@@ -65,7 +65,7 @@ const Field = ({
       }
       return <CustomComponent {...props} />;
     default:
-      return <Text inputType={inputType} {...props} />;
+      return <TextField inputType={inputType} {...props} />;
   }
 };
 

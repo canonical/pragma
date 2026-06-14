@@ -11,9 +11,9 @@ import type {
   SelectProps,
   SimpleChoicesProps,
   TextareaProps,
-  TextProps,
   TimeInputProps,
 } from "./inputs/index.js";
+import type { TextProps } from "./Text/index.js";
 
 export type BaseProps = {
   id?: string;
