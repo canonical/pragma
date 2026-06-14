@@ -14,6 +14,7 @@ const STORE_SKIP_COMMANDS = new Set([
   "update-refs",
   "capabilities",
   "trace",
+  "graphql",
 ]);
 
 function findCommandArg(argv: readonly string[]): string | undefined {

@@ -1,5 +1,6 @@
 import type { GlobalFlags } from "@canonical/cli-core";
 import { CommanderError } from "commander";
+import { commands as graphqlCommands } from "../domains/graphql/index.js";
 import { buildCapabilitiesCommand } from "../domains/llm/index.js";
 import { commands as refsCommands } from "../domains/refs/index.js";
 import { commands as setupCommands } from "../domains/setup/index.js";
@@ -149,6 +150,7 @@ async function runStoreSkip(
     ...setupCommands(),
     ...refsCommands(),
     ...traceCommands(),
+    ...graphqlCommands(),
     buildCapabilitiesCommand(),
   ];
   const program = createProgram(commands, stubCtx);
