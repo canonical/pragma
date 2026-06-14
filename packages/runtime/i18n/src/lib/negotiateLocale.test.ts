@@ -33,6 +33,14 @@ describe("negotiateLocale", () => {
     expect(negotiateLocale(config, { acceptLanguage: "de,es" })).toBe("en");
   });
 
+  it("negotiates case-insensitively and returns the configured casing", () => {
+    const cased: I18nConfig = { locales: ["en", "fr-CA"], defaultLocale: "en" };
+    expect(negotiateLocale(cased, { acceptLanguage: "fr-CA,en;q=0.5" })).toBe(
+      "fr-CA",
+    );
+    expect(negotiateLocale(cased, { acceptLanguage: "fr-FR" })).toBe("en");
+  });
+
   it("uses a custom cookie name from config", () => {
     const custom: I18nConfig = { ...config, cookieName: "lang" };
     expect(negotiateLocale(custom, { cookieHeader: "lang=ar" })).toBe("ar");

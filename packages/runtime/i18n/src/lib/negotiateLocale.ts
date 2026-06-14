@@ -20,10 +20,15 @@ function matchSupported(
   config: I18nConfig,
   requested: readonly string[],
 ): Locale | undefined {
+  // Compare case-insensitively — `Accept-Language` tags arrive lowercased — but
+  // return the configured locale in its original casing, so catalog lookups
+  // keyed by `config.locales` (e.g. `"fr-CA"`) still resolve.
+  const lowered = config.locales.map((locale) => locale.toLowerCase());
   for (const tag of requested) {
-    const base = tag.split("-")[0];
-    if (isSupportedLocale(config, tag)) return tag;
-    if (isSupportedLocale(config, base)) return base;
+    const exact = lowered.indexOf(tag);
+    if (exact !== -1) return config.locales[exact];
+    const base = lowered.indexOf(tag.split("-")[0]);
+    if (base !== -1) return config.locales[base];
   }
   return undefined;
 }
