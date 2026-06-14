@@ -1,12 +1,62 @@
 /**
  * The public library surface of @canonical/ke-graphql, composed from the
- * domain barrels. This layer exposes the hardening domain and the resolution
- * layer (URI prefixing and the Relay connection helpers); the compiler, ke
- * plugin, and execution helpers are layered on top.
+ * domain barrels: the compiler pipeline and its artifact codec, and the
+ * connection helpers. The internal cross-domain surface (loaders, vocabulary
+ * constants, resolver templates) is deliberately not re-exported. Local/static
+ * execution and the ke plugin are layered on top of this core.
  *
  * @module lib
  */
 
+export {
+  ARTIFACT_VERSION,
+  type CardinalitySpec,
+  type ClassNode,
+  CompilationError,
+  type CompilerContext,
+  type CompilerResult,
+  type ContextFactory,
+  type CustomMapping,
+  type CustomMappings,
+  compile,
+  compileFromExtraction,
+  createContextFactory,
+  createStoreQueryFn,
+  type Diagnostic,
+  type DiagnosticCode,
+  type DiagnosticSeverity,
+  deserializeExtraction,
+  type EntityValue,
+  hashSources,
+  type InstanceStats,
+  type MappedField,
+  type MappedInterface,
+  type MappedIR,
+  type MappedType,
+  type NameMap,
+  type NamespaceInfo,
+  type NonNullOverrides,
+  type OntologyIR,
+  type PassResult,
+  type PropertyNode,
+  type QueryFn,
+  type RangeSpec,
+  type RawExtraction,
+  type ResolverTemplate,
+  type RuntimeWarningHandler,
+  type SchemaExtensions,
+  type SchemaExtensionsInput,
+  type SchemaPluginApi,
+  type SchemaPluginOptions,
+  type SerializedExtraction,
+  serializeExtraction,
+  type TripleSet,
+  type TripleValue,
+} from "./compiler/index.js";
+export {
+  default as createSchemaPlugin,
+  type SchemaPluginExtra,
+} from "./createSchemaPlugin.js";
 export { toFull, toPrefixed } from "./dataloader/index.js";
 export {
   clampConnectionArgs,
