@@ -56,27 +56,32 @@ function Price({ amount }: { amount: number }) {
   return <span>{f.currency(amount, "USD")}</span>;
 }
 
-function LocaleSwitcher() {
-  const { locale, setLocale, locales } = useLocale();
-  return (
-    <select
-      aria-label="Language"
-      value={locale}
-      onChange={(event) => setLocale(event.target.value)}
-    >
-      {locales.map((option) => (
-        <option key={option} value={option}>
-          {option}
-        </option>
-      ))}
-    </select>
-  );
-}
+```
+
+## Language switcher
+
+`LocaleSelector` is a ready-made, accessible `<select>`: it lists every
+configured locale by its **endonym** (the language's own name, via
+`Intl.DisplayNames`), tags each `<option lang>` so assistive tech uses the right
+voice, and switches the active locale on change.
+
+```tsx
+import { LocaleSelector } from "@canonical/i18n-react";
+
+// endonyms by default; translate aria-label for the active locale
+<LocaleSelector aria-label="Language" />;
+
+// …or override the displayed names
+<LocaleSelector labels={{ en: "English", fr: "Français", ar: "العربية" }} />;
 ```
 
 Changing the locale re-translates and re-formats every subscribed component and,
 in the browser, persists the choice to a cookie and flips `<html dir>` for RTL
-locales — all handled by the shared `@canonical/i18n-core` source.
+locales — all via the shared `@canonical/i18n-core` source.
+
+For a correct first paint, set `<html lang dir>` on the server from the
+negotiated locale with `documentAttrs` (see the
+[`@canonical/i18n-core` README](../../runtime/i18n#server-side-rendering)).
 
 ## License
 
