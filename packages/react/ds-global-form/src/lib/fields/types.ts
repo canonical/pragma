@@ -14,6 +14,7 @@ import type {
   DateTimeInputProps,
   TimeInputProps,
 } from "./Date/index.js";
+import type { DatePickerProps } from "./DatePicker/index.js";
 import type { FileUploadProps } from "./FileUpload/index.js";
 import type { HiddenProps } from "./Hidden/index.js";
 import type { PhoneProps } from "./Phone/index.js";
@@ -54,6 +55,7 @@ export type FieldProps =
   | ({ inputType: "date" } & DateInputProps)
   | ({ inputType: "time" } & TimeInputProps)
   | ({ inputType: "datetime" } & DateTimeInputProps)
+  | ({ inputType: "datepicker" } & DatePickerProps)
   | ({ inputType: "file" } & FileUploadProps)
   | ({ inputType: "color" } & ColorProps)
   | ({ inputType: "phone" } & PhoneProps)

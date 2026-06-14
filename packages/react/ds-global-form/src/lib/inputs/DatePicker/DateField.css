@@ -1,0 +1,91 @@
+/* DateField — segmented (month/day/year) spinbutton field.
+ * The wrapper reuses the shared input chrome tokens (border / radius /
+ * background / padding) so it visually matches native inputs, while the
+ * focusable children are individual segment <div>s.
+ */
+
+.ds.date-field {
+  display: inline-flex;
+  align-items: center;
+  box-sizing: border-box;
+
+  /* Input chrome, sourced from the shared --form-input-* tokens. */
+  border: var(--form-input-border-width) solid var(--form-input-border-color);
+  border-radius: var(--form-input-border-radius);
+  background-color: var(--form-input-background);
+  color: var(--form-input-color);
+  padding-inline: var(--form-input-padding-inline);
+
+  font-family: var(--typography-text-primary-font-family);
+  font-size: var(--form-input-font-size);
+  line-height: var(--form-input-line-height);
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease;
+
+  /* Focus ring on the group when any segment is focused. */
+  &:focus-within {
+    outline: none;
+    border-color: var(--form-input-border-color-focus);
+    box-shadow: 0 0 0 1px var(--form-focus-ring-color);
+  }
+
+  /* Disabled group. */
+  &[data-disabled="true"] {
+    border-color: var(--form-input-border-color-disabled);
+    background-color: var(--form-input-background-disabled);
+    color: var(--disabled--color-text);
+    cursor: not-allowed;
+  }
+
+  /* Editable segments — tight inline padding (the component padding tokens
+   * are too large for inline segments). */
+  .segment {
+    display: inline-block;
+    box-sizing: border-box;
+    padding-block: 1px;
+    padding-inline: 2px;
+    border-radius: var(--dimension-radius-small);
+    font-variant-numeric: tabular-nums;
+    text-align: center;
+    white-space: nowrap;
+    caret-color: transparent;
+    user-select: none;
+
+    /* react-aria's focused-segment highlight. */
+    &:focus {
+      background: var(--color-focusRing);
+      color: white;
+      outline: none;
+      border-radius: var(--dimension-radius-small);
+    }
+
+    /* Unset segments render their placeholder ("mm" / "dd" / "yyyy"). */
+    &.placeholder,
+    &[data-placeholder="true"] {
+      color: var(--color-text-muted);
+    }
+
+    /* Keep placeholder colouring legible while focused. */
+    &.placeholder:focus,
+    &[data-placeholder="true"]:focus {
+      color: white;
+    }
+  }
+
+  /* Literal separators (e.g. "/") between segments. */
+  .literal {
+    padding-inline: 1px;
+    user-select: none;
+  }
+
+  /* Disabled state cascades to segments. */
+  &[data-disabled="true"] .segment {
+    color: var(--disabled--color-text);
+  }
+
+  &[data-disabled="true"] .segment.placeholder,
+  &[data-disabled="true"] .segment[data-placeholder="true"] {
+    color: var(--disabled--color-text);
+  }
+}

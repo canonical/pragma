@@ -1,0 +1,51 @@
+.ds.date-picker {
+  display: inline-block;
+  position: relative;
+
+  & > .date-picker-control {
+    anchor-name: --date-picker-control;
+    display: flex;
+    align-items: center;
+    gap: var(--form-field-inline-gap);
+    padding-inline: var(--form-input-padding-inline);
+  }
+
+  & .date-picker-field {
+    flex: 1;
+    min-width: 0;
+  }
+
+  & .date-picker-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    background: transparent;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    padding: 0;
+
+    &:hover:not(:disabled) {
+      color: var(--color-text);
+    }
+
+    &:disabled {
+      color: var(--disabled--color-text);
+      cursor: not-allowed;
+    }
+  }
+}
+
+.ds.date-picker-popover {
+  position-anchor: --date-picker-control;
+  position-area: block-end span-inline-end;
+  margin: 0;
+  margin-block-start: var(--form-group-gap);
+  inset: auto;
+
+  border: var(--form-input-border-width) solid var(--form-input-border-color);
+  border-radius: var(--form-input-border-radius);
+  background-color: var(--color-background);
+  padding: var(--component-padding-block) var(--component-padding-inline);
+  box-shadow: 0 4px 12px rgb(0 0 0 / 0.1);
+}

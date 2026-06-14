@@ -9,6 +9,7 @@ import {
   DateTimeInputField,
   TimeInputField,
 } from "./Date/index.js";
+import { DatePickerField } from "./DatePicker/index.js";
 import { FileUploadField } from "./FileUpload/index.js";
 import { HiddenField } from "./Hidden/index.js";
 import { PhoneField } from "./Phone/index.js";
@@ -49,6 +50,8 @@ const Field = ({
       return <TimeInputField {...props} />;
     case "datetime":
       return <DateTimeInputField {...props} />;
+    case "datepicker":
+      return <DatePickerField {...props} />;
     case "file":
       return <FileUploadField {...props} />;
     case "color":

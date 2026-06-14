@@ -18,6 +18,12 @@ export type {
   TimeInputPresentationProps,
 } from "./Date/index.js";
 export { DateInput, DateTimeInput, TimeInput } from "./Date/index.js";
+export type {
+  CalendarProps,
+  DateFieldProps,
+  DatePickerPresentationProps,
+} from "./DatePicker/index.js";
+export { Calendar, DateField, DatePicker } from "./DatePicker/index.js";
 export type { FileUploadPresentationProps } from "./FileUpload/index.js";
 export { FileUpload } from "./FileUpload/index.js";
 export type { HiddenPresentationProps } from "./Hidden/index.js";
