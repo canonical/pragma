@@ -231,11 +231,11 @@
       "name": "@canonical/typescript-config-svelte",
       "version": "0.27.1-experimental.0",
       "dependencies": {
-        "@canonical/typescript-config": "^0.21.0",
+        "@canonical/typescript-config": "^0.27.1-experimental.0",
       },
       "devDependencies": {
         "@biomejs/biome": "2.4.9",
-        "@canonical/biome-config": "^0.21.0",
+        "@canonical/biome-config": "^0.27.1-experimental.0",
       },
       "peerDependencies": {
         "svelte": "^5.0.0",
@@ -384,6 +384,26 @@
         "typescript": "^5.9.3",
         "vite": "^8.0.1",
         "vitest": "^4.0.18",
+      },
+    },
+    "packages/lit/i18n": {
+      "name": "@canonical/i18n-lit",
+      "version": "0.27.1-experimental.0",
+      "dependencies": {
+        "@canonical/i18n-core": "^0.27.1-experimental.0",
+      },
+      "devDependencies": {
+        "@biomejs/biome": "2.4.9",
+        "@canonical/biome-config": "^0.27.1-experimental.0",
+        "@canonical/typescript-config-lit": "^0.27.1-experimental.0",
+        "@canonical/webarchitect": "^0.27.1-experimental.0",
+        "@types/node": "^24.12.0",
+        "lit": "^3.3.2",
+        "typescript": "^5.9.3",
+        "vitest": "^4.0.18",
+      },
+      "peerDependencies": {
+        "lit": "^3.3.2",
       },
     },
     "packages/react/ds-app": {
@@ -1378,6 +1398,26 @@
         "svelte": "^5.47.1",
       },
     },
+    "packages/svelte/i18n": {
+      "name": "@canonical/i18n-svelte",
+      "version": "0.27.1-experimental.0",
+      "dependencies": {
+        "@canonical/i18n-core": "^0.27.1-experimental.0",
+      },
+      "devDependencies": {
+        "@biomejs/biome": "2.4.9",
+        "@canonical/biome-config": "^0.27.1-experimental.0",
+        "@canonical/typescript-config-svelte": "^0.27.1-experimental.0",
+        "@canonical/webarchitect": "^0.27.1-experimental.0",
+        "@types/node": "^24.12.0",
+        "svelte": "^5.38.2",
+        "typescript": "^5.9.3",
+        "vitest": "^4.0.18",
+      },
+      "peerDependencies": {
+        "svelte": "^5.38.2",
+      },
+    },
     "packages/svelte/ssr-test": {
       "name": "@canonical/svelte-ssr-test",
       "version": "0.27.1-experimental.0",
@@ -1541,7 +1581,11 @@
 
     "@canonical/i18n-core": ["@canonical/i18n-core@workspace:packages/runtime/i18n"],
 
+    "@canonical/i18n-lit": ["@canonical/i18n-lit@workspace:packages/lit/i18n"],
+
     "@canonical/i18n-react": ["@canonical/i18n-react@workspace:packages/react/i18n"],
+
+    "@canonical/i18n-svelte": ["@canonical/i18n-svelte@workspace:packages/svelte/i18n"],
 
     "@canonical/ke": ["@canonical/ke@workspace:packages/runtime/ke"],
 
@@ -2633,7 +2677,7 @@
 
     "esprima": ["esprima@4.0.1", "", { "bin": { "esparse": "./bin/esparse.js", "esvalidate": "./bin/esvalidate.js" } }, "sha512-eGuFFw7Upda+g4p+QHvnW0RyTX/SVeJBDM/gCtMARO0cLuT2HcEKnTPvhjV6aGeqrCB/sbNop0Kszm0jsaWU4A=="],
 
-    "esrap": ["esrap@1.4.9", "", { "dependencies": { "@jridgewell/sourcemap-codec": "^1.4.15" } }, "sha512-3OMlcd0a03UGuZpPeUC1HxR3nA23l+HEyCiZw3b3FumJIN9KphoGzDJKMXI1S72jVS1dsenDyQC0kJlO1U9E1g=="],
+    "esrap": ["esrap@2.2.4", "", { "dependencies": { "@jridgewell/sourcemap-codec": "^1.4.15", "@typescript-eslint/types": "^8.2.0" } }, "sha512-suICpxAmZ9A8bzJjEl/+rLJiDKC0X4gYWUxT6URAWBLvlXmtbZd5ySMu/N2ZGEtMCAmflUDPSehrP9BQcsGcSg=="],
 
     "estree-util-is-identifier-name": ["estree-util-is-identifier-name@3.0.0", "", {}, "sha512-hFtqIDZTIUZ9BXLb8y4pYGyk6+wekIivNVTcmvk8NoOh+VeRn5y6cEHzbURrWbfp1fIqdVipilzj+lfaadNZmg=="],
 
@@ -3935,6 +3979,8 @@
 
     "@sigstore/sign/proc-log": ["proc-log@6.1.0", "", {}, "sha512-iG+GYldRf2BQ0UDUAd6JQ/RwzaQy6mXmsk/IzlYyal4A4SNFw54MeH4/tLkF4I5WoWG9SQwuqWzS99jaFQHBuQ=="],
 
+    "@storybook/addon-svelte-csf/esrap": ["esrap@1.4.9", "", { "dependencies": { "@jridgewell/sourcemap-codec": "^1.4.15" } }, "sha512-3OMlcd0a03UGuZpPeUC1HxR3nA23l+HEyCiZw3b3FumJIN9KphoGzDJKMXI1S72jVS1dsenDyQC0kJlO1U9E1g=="],
+
     "@storybook/builder-vite/@storybook/csf-plugin": ["@storybook/csf-plugin@10.3.1", "", { "dependencies": { "unplugin": "^2.3.5" }, "peerDependencies": { "esbuild": "*", "rollup": "*", "storybook": "^10.3.1", "vite": "*", "webpack": "*" }, "optionalPeers": ["esbuild", "rollup", "vite", "webpack"] }, "sha512-P1WUSoyueV+ULpNeip4eIjjDvOXDBQI4gaq/s1PdAg1Szz/0GhDPu/CXuwukgkmyHaJP3aVR3pHPvSfeLfMCrA=="],
 
     "@storybook/csf/type-fest": ["type-fest@2.19.0", "", {}, "sha512-RAH822pAdBgcNMAfWnCBU3CFZcfZ/i1eZjwFU/dsLKumyuuP3niueg2UAukXYF0E2AAoc82ZSSf9J0WQBinzHA=="],
@@ -4222,8 +4268,6 @@
     "stylus/semver": ["semver@6.3.1", "", { "bin": { "semver": "bin/semver.js" } }, "sha512-BR7VvDCVHO+q2xBEWskxS6DJE1qRnb7DxzUrogb71CWoSficBxYsiAGd+Kl0mmq/MprG9yArRkyrQxTO6XjMzA=="],
 
     "svelte/aria-query": ["aria-query@5.3.1", "", {}, "sha512-Z/ZeOgVl7bcSYZ/u/rh0fOpvEpq//LZmdbkXyc7syVzjPAhfOa9ebsdTSjEBDU4vs5nC98Kfduj1uFo0qyET3g=="],
-
-    "svelte/esrap": ["esrap@2.2.4", "", { "dependencies": { "@jridgewell/sourcemap-codec": "^1.4.15", "@typescript-eslint/types": "^8.2.0" } }, "sha512-suICpxAmZ9A8bzJjEl/+rLJiDKC0X4gYWUxT6URAWBLvlXmtbZd5ySMu/N2ZGEtMCAmflUDPSehrP9BQcsGcSg=="],
 
     "svelte-ast-print/esrap": ["esrap@1.2.2", "", { "dependencies": { "@jridgewell/sourcemap-codec": "^1.4.15", "@types/estree": "^1.0.1" } }, "sha512-F2pSJklxx1BlQIQgooczXCPHmcWpn6EsP5oo73LQfonG9fIlIENQ8vMmfGXeojP9MrkzUNAfyU5vdFlR9shHAw=="],
 
