@@ -4,13 +4,13 @@
 // import type { WrapperProps } from './types.js'
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import * as decorators from "storybook/decorators.js";
-import { Text } from "../../../inputs/index.js";
-import { Textarea as TextareaInput } from "../../inputs/index.js";
+import { Text, Textarea as TextareaInput } from "../../../inputs/index.js";
 import bindField from "../bindField.js";
 import Component from "./Wrapper.js";
 
 // The Wrapper renders a *bound* component (one that consumes name/registerProps).
 const BoundText = bindField(Text, "native");
+const BoundTextarea = bindField(TextareaInput, "native");
 
 // Needed for template-based story, safe to remove otherwise
 // import type { StoryFn } from '@storybook/react-vite'
@@ -41,7 +41,7 @@ export const Default: Story = {
 export const Textarea: Story = {
   args: {
     name: "description",
-    Component: TextareaInput,
+    Component: BoundTextarea,
   },
 };
 

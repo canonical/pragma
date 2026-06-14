@@ -5,22 +5,25 @@ import type {
   OptionsProps,
   TODONativeInputTypes,
 } from "../inputs/types.js";
+import type { CheckboxProps } from "./Checkbox/index.js";
 import type { ComboboxProps } from "./Combobox/index.js";
 import type {
-  CheckboxProps,
-  ChoicesProps,
-  ColorProps,
   DateInputProps,
   DateTimeInputProps,
+  TimeInputProps,
+} from "./Date/index.js";
+import type { HiddenProps } from "./Hidden/index.js";
+import type {
+  ChoicesProps,
+  ColorProps,
   FileUploadProps,
   PhoneProps,
-  RangeProps,
-  SelectProps,
   SimpleChoicesProps,
-  TextareaProps,
-  TimeInputProps,
 } from "./inputs/index.js";
+import type { RangeProps } from "./Range/index.js";
+import type { SelectProps } from "./Select/index.js";
 import type { TextProps } from "./Text/index.js";
+import type { TextareaProps } from "./Textarea/index.js";
 
 // Shared presentational types live in `../inputs/types.ts`; re-export them so
 // existing field-tier consumers keep importing them from here.
@@ -41,11 +44,10 @@ export type InputProps<
   AdditionalComponentProps extends Record<string, any> = {},
 > = BaseInputProps & AdditionalComponentProps;
 
-export type TODOUnion = CheckboxProps | TextProps;
-
 export type FieldProps =
   | ({ inputType: TODONativeInputTypes } & TextProps)
   | ({ inputType: "checkbox" } & CheckboxProps)
+  | ({ inputType: "hidden" } & HiddenProps)
   | ({ inputType: "range" } & RangeProps)
   | ({ inputType: "select" } & SelectProps)
   | ({ inputType: "combobox" } & ComboboxProps)

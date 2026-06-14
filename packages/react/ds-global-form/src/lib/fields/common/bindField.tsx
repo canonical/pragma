@@ -14,6 +14,12 @@ export interface BindFieldOptions {
    * Needed by inputs that render their own value (e.g. Range's `<output>`).
    */
   injectValue?: boolean;
+  /**
+   * Default value for the registered field (controlled mode only). Preserves the
+   * registration default that some inputs set in `useController` (e.g. Color
+   * `"#000000"`, FileUpload `[]`).
+   */
+  defaultValue?: unknown;
 }
 
 type FieldBindingProps = {
@@ -50,7 +56,13 @@ export default function bindField<P extends FieldBindingProps>(
 
   if (mode === "controlled") {
     Bound = ({ name, registerProps, ...rest }: P) => {
-      const { field } = useController({ name, rules: registerProps });
+      const { field } = useController({
+        name,
+        rules: registerProps,
+        ...(options.defaultValue !== undefined
+          ? { defaultValue: options.defaultValue }
+          : {}),
+      });
       return (
         <Presentational
           {...rest}

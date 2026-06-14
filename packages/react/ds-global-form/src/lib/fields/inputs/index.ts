@@ -1,12 +1,6 @@
-export * from "./Checkbox/index.js";
 export * from "./Choices/index.js";
 export * from "./Color/index.js";
-export * from "./Date/index.js";
 export * from "./FileUpload/index.js";
-export * from "./Hidden/index.js";
 export * from "./Phone/index.js";
-export * from "./Range/index.js";
-export * from "./Select/index.js";
 export * from "./SimpleChoices/index.js";
-export * from "./Textarea/index.js";
 export type * from "./types.js";

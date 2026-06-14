@@ -1,22 +1,24 @@
 /* @canonical/generator-ds 0.9.0-experimental.4 */
 import type React from "react";
+import { CheckboxField } from "./Checkbox/index.js";
 import { ComboboxField } from "./Combobox/index.js";
 import {
-  Checkbox,
+  DateInputField,
+  DateTimeInputField,
+  TimeInputField,
+} from "./Date/index.js";
+import { HiddenField } from "./Hidden/index.js";
+import {
   Choices,
   Color,
-  DateInput,
-  DateTimeInput,
   FileUpload,
-  Hidden,
   Phone,
-  Range,
-  Select,
   SimpleChoices,
-  Textarea,
-  TimeInput,
 } from "./inputs/index.js";
+import { RangeField } from "./Range/index.js";
+import { SelectField } from "./Select/index.js";
 import { TextField } from "./Text/index.js";
+import { TextareaField } from "./Textarea/index.js";
 import type { FieldProps } from "./types.js";
 
 /**
@@ -30,25 +32,25 @@ const Field = ({
 }: FieldProps): React.ReactElement => {
   switch (inputType) {
     case "textarea":
-      return <Textarea {...props} />;
+      return <TextareaField {...props} />;
     case "checkbox":
-      return <Checkbox {...props} />;
+      return <CheckboxField {...props} />;
     case "range":
-      return <Range {...props} />;
+      return <RangeField {...props} />;
     case "select":
-      return <Select {...props} />;
+      return <SelectField {...props} />;
     case "simple-choices":
       return <SimpleChoices {...props} />;
     case "combobox":
       return <ComboboxField {...props} />;
     case "hidden":
-      return <Hidden {...props} />;
+      return <HiddenField {...props} />;
     case "date":
-      return <DateInput {...props} />;
+      return <DateInputField {...props} />;
     case "time":
-      return <TimeInput {...props} />;
+      return <TimeInputField {...props} />;
     case "datetime":
-      return <DateTimeInput {...props} />;
+      return <DateTimeInputField {...props} />;
     case "file":
       return <FileUpload {...props} />;
     case "color":
