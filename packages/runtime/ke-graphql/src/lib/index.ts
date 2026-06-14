@@ -1,9 +1,9 @@
 /**
  * The public library surface of @canonical/ke-graphql, composed from the
- * domain barrels: the compiler pipeline and its artifact codec, and the
- * connection helpers. The internal cross-domain surface (loaders, vocabulary
- * constants, resolver templates) is deliberately not re-exported. Local/static
- * execution and the ke plugin are layered on top of this core.
+ * domain barrels: the compiler pipeline and its artifact codec, the ke
+ * plugin, local/static execution, and the connection helpers. The internal
+ * cross-domain surface (loaders, vocabulary constants, resolver templates)
+ * is deliberately not re-exported.
  *
  * @module lib
  */
@@ -58,6 +58,19 @@ export {
   type SchemaPluginExtra,
 } from "./createSchemaPlugin.js";
 export { toFull, toPrefixed } from "./dataloader/index.js";
+export {
+  createPersistedManifest,
+  executeLocal,
+  extractStatic,
+  type IncrementalResults,
+  isIncrementalResults,
+  type LocalExecutionResult,
+  mergeIncremental,
+  type RelayLegacyPayload,
+  relayFormatAdapter,
+  type StaticQuery,
+  sha256Hex,
+} from "./execution/index.js";
 export {
   clampConnectionArgs,
   createDepthLimitRule,
