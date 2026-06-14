@@ -76,7 +76,7 @@ export async function bootPragma(options?: {
  * Merging is by package name — a project entry for "@canonical/foo"
  * overrides the global entry for the same package.
  */
-function mergeAndParseRefs(
+export function mergeAndParseRefs(
   projectPackages?: ReadonlyArray<RawPackageEntry>,
 ): PackageRef[] {
   const globalEntries = readGlobalRefs();

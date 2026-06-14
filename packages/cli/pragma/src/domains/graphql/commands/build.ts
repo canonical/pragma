@@ -7,10 +7,9 @@ import {
   createOutputResult,
 } from "@canonical/cli-core";
 import { serializeExtraction } from "@canonical/ke-graphql";
-import { PragmaError } from "#error";
 import { selectFormatter } from "../../shared/formatters.js";
 import { reportFormatters } from "../formatters/index.js";
-import { parsePrefixes } from "../helpers/index.js";
+import { gatherSources, parsePrefixes } from "../helpers/index.js";
 import { compileSchema } from "../operations/index.js";
 import type { GraphqlCompileReport } from "../types.js";
 
@@ -37,10 +36,10 @@ const buildCommand: CommandDefinition = {
   parameters: [
     {
       name: "sources",
-      description: "TTL source files or glob patterns",
+      description:
+        "TTL files or globs (default: the configured semantic packages)",
       type: "multiselect",
       positional: true,
-      required: true,
     },
     {
       name: "sdl",
@@ -68,15 +67,10 @@ const buildCommand: CommandDefinition = {
     ],
   },
   async execute(params, ctx): Promise<CommandResult> {
-    const sources = readStringArray(params.sources);
-    if (sources.length === 0) {
-      throw PragmaError.invalidInput("sources", "(empty)", {
-        recovery: {
-          message: "Provide at least one TTL file or glob pattern.",
-        },
-      });
-    }
-
+    const sources = await gatherSources(
+      readStringArray(params.sources),
+      ctx.cwd,
+    );
     const prefixes = parsePrefixes(readStringArray(params.prefix));
     const outcome = await compileSchema({ sources, prefixes, cwd: ctx.cwd });
     const format = selectFormatter(ctx, reportFormatters);
