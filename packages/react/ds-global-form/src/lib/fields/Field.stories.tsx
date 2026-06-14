@@ -5,7 +5,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 // import type { FieldProps } from './types.js'
 import { useMemo } from "react";
 import * as decorators from "storybook/decorators.js";
-import type { FieldProps } from "../Field/types.js";
+import type { FieldProps } from "../fields/types.js";
 import Component from "./Field.js";
 
 // Needed for template-based story, safe to remove otherwise

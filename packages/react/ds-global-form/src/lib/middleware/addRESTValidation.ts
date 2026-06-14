@@ -1,5 +1,5 @@
 import { debounce } from "@canonical/utils";
-import type { Middleware } from "lib/Field/types.js";
+import type { Middleware } from "lib/fields/types.js";
 import { createElement, useCallback, useEffect } from "react";
 import { useFormContext } from "react-hook-form";
 
