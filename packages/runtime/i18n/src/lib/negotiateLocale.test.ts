@@ -39,6 +39,9 @@ describe("negotiateLocale", () => {
       "fr-CA",
     );
     expect(negotiateLocale(cased, { acceptLanguage: "fr-FR" })).toBe("en");
+    expect(negotiateLocale(cased, { cookieHeader: "locale=fr-ca" })).toBe(
+      "fr-CA",
+    );
   });
 
   it("uses a custom cookie name from config", () => {

@@ -56,6 +56,12 @@ export default function createLocaleSource(
   const subscribers = new Set<(locale: Locale) => void>();
   let current = initial;
 
+  // Reflect the initial locale onto `<html lang dir>` immediately (browser only;
+  // inert on the server). Without this, a page negotiated to a non-default
+  // locale keeps stale `<html lang dir>` until the first locale change — a WCAG
+  // 3.1.1 hole and wrong direction for RTL.
+  if (reflect) reflectDocument(current, directionOf(config, current));
+
   return {
     get: () => current,
     get direction(): Direction {

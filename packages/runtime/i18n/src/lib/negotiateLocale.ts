@@ -1,5 +1,4 @@
 import { DEFAULT_COOKIE_NAME } from "./constants.js";
-import isSupportedLocale from "./isSupportedLocale.js";
 import parseAcceptLanguage from "./parseAcceptLanguage.js";
 import readCookie from "./readCookie.js";
 import type { I18nConfig, Locale } from "./types.js";
@@ -13,31 +12,42 @@ export interface LocaleSources {
 }
 
 /**
+ * Find the configured locale that matches `value` case-insensitively, returned
+ * in its original configured casing — so downstream `catalogs[locale]` and
+ * `<html lang>` always use canonical BCP-47 tags (e.g. `"fr-CA"`).
+ */
+function findByLower(
+  config: I18nConfig,
+  value: string | undefined,
+): Locale | undefined {
+  if (value === undefined) return undefined;
+  const lower = value.toLowerCase();
+  return config.locales.find((locale) => locale.toLowerCase() === lower);
+}
+
+/**
  * Pick the first supported locale from a prioritized list of requested tags,
- * matching an exact tag first (`fr-ca`) then its base language (`fr`).
+ * matching an exact tag first (`fr-CA`) then its base language (`fr`).
  */
 function matchSupported(
   config: I18nConfig,
   requested: readonly string[],
 ): Locale | undefined {
-  // Compare case-insensitively — `Accept-Language` tags arrive lowercased — but
-  // return the configured locale in its original casing, so catalog lookups
-  // keyed by `config.locales` (e.g. `"fr-CA"`) still resolve.
-  const lowered = config.locales.map((locale) => locale.toLowerCase());
   for (const tag of requested) {
-    const exact = lowered.indexOf(tag);
-    if (exact !== -1) return config.locales[exact];
-    const base = lowered.indexOf(tag.split("-")[0]);
-    if (base !== -1) return config.locales[base];
+    const exact = findByLower(config, tag);
+    if (exact !== undefined) return exact;
+    const base = findByLower(config, tag.split("-")[0]);
+    if (base !== undefined) return base;
   }
   return undefined;
 }
 
 /**
  * Resolve the locale for an incoming request. An explicit cookie wins, then
- * `Accept-Language` negotiation, then {@link I18nConfig.defaultLocale}. Pure —
- * it takes raw header strings and returns a tag, so it is transport-agnostic
- * and runs the same on server and client (Constitution IV — functional core).
+ * `Accept-Language` negotiation, then {@link I18nConfig.defaultLocale}. Both
+ * inputs are matched case-insensitively. Pure — it takes raw header strings and
+ * returns a tag, so it is transport-agnostic and runs the same on server and
+ * client (Constitution IV — functional core).
  *
  * @param config - Active locale configuration.
  * @param sources - Raw request headers to negotiate from.
@@ -46,11 +56,11 @@ export default function negotiateLocale(
   config: I18nConfig,
   sources: LocaleSources = {},
 ): Locale {
-  const cookie = readCookie(
-    sources.cookieHeader,
-    config.cookieName ?? DEFAULT_COOKIE_NAME,
+  const cookie = findByLower(
+    config,
+    readCookie(sources.cookieHeader, config.cookieName ?? DEFAULT_COOKIE_NAME),
   );
-  if (isSupportedLocale(config, cookie)) return cookie;
+  if (cookie !== undefined) return cookie;
 
   return (
     matchSupported(config, parseAcceptLanguage(sources.acceptLanguage)) ??

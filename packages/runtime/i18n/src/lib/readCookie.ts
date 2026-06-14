@@ -17,7 +17,13 @@ export default function readCookie(
     const separator = part.indexOf("=");
     if (separator === -1) continue;
     if (part.slice(0, separator).trim() === name) {
-      return decodeURIComponent(part.slice(separator + 1).trim());
+      const value = part.slice(separator + 1).trim();
+      try {
+        return decodeURIComponent(value);
+      } catch {
+        // Malformed percent-encoding — treat the cookie as absent.
+        return undefined;
+      }
     }
   }
 

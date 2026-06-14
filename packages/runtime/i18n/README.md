@@ -95,6 +95,45 @@ const unsubscribe = source.subscribe((next) => render(next));
 source.set("ar"); // notifies subscribers; persists + reflects dir="rtl"
 ```
 
+On the server, create one source **per request** — the React/Svelte/Lit
+bindings already do this. A module-level singleton shared across concurrent
+requests leaks locale state between them.
+
+## Server-side rendering
+
+The source can only set `<html lang dir>` from the client. For a correct first
+paint and assistive technology, render `<html lang dir>` on the server from the
+negotiated locale with `documentAttrs`:
+
+```ts
+import { documentAttrs, negotiateLocale } from "@canonical/i18n-core";
+
+const locale = negotiateLocale(config, {
+  cookieHeader: request.headers.get("cookie"),
+  acceptLanguage: request.headers.get("accept-language"),
+});
+const { lang, dir } = documentAttrs(config, locale);
+// render: <html lang={lang} dir={dir}> … </html>
+```
+
+Pass the same `locale` to the client (`createLocaleSource({ initial: locale })`)
+so the server and first client render agree.
+
+## Right-to-left & accessibility
+
+`directionOf` resolves writing direction from `rtlLocales` (base languages); a
+sensible default set is `["ar", "he", "fa", "ur"]`. Flipping `dir` is necessary
+but not sufficient — author UI with CSS **logical properties**
+(`margin-inline-start`, `inset-inline`, `text-align: start`) and mirror
+directional icons so RTL is structural, not decorative.
+
+Values in `config.locales` must be valid BCP-47 tags — they are reflected to
+`<html lang>` and passed to `Intl`. A missing message key is returned verbatim
+(`"nav.home"`), which is visible *and* read aloud, so treat catalog completeness
+as an accessibility concern. `t()` returns plain strings that the framework
+escapes on render; never pipe its output into `dangerouslySetInnerHTML` /
+`unsafeHTML` / `{@html}`.
+
 ## License
 
 LGPL-3.0

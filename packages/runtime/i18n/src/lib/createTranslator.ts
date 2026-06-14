@@ -22,7 +22,7 @@ export default function createTranslator(
   const plural = new Intl.PluralRules(locale);
 
   return (key, vars = {}) => {
-    const entry = messages[key];
+    const entry = Object.hasOwn(messages, key) ? messages[key] : undefined;
     if (entry === undefined) return key;
 
     let template: string;

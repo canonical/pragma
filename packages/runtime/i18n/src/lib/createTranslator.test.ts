@@ -24,6 +24,12 @@ describe("createTranslator", () => {
     expect(t("does.not.exist")).toBe("does.not.exist");
   });
 
+  it("returns the key for inherited Object keys, never throwing", () => {
+    for (const key of ["toString", "constructor", "valueOf", "__proto__"]) {
+      expect(t(key)).toBe(key);
+    }
+  });
+
   it("returns a plain string entry", () => {
     expect(t("nav.home")).toBe("Home");
   });

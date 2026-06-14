@@ -22,4 +22,8 @@ describe("readCookie", () => {
   it("returns undefined when the name is absent", () => {
     expect(readCookie("theme=dark", "locale")).toBeUndefined();
   });
+
+  it("returns undefined for malformed percent-encoding", () => {
+    expect(readCookie("locale=%E0%A4%A", "locale")).toBeUndefined();
+  });
 });
