@@ -782,6 +782,32 @@
         "vitest": "^4.0.18",
       },
     },
+    "packages/react/i18n": {
+      "name": "@canonical/i18n-react",
+      "version": "0.27.1-experimental.0",
+      "dependencies": {
+        "@canonical/i18n-core": "^0.27.1-experimental.0",
+        "react": "^19.2.4",
+        "react-dom": "^19.2.4",
+      },
+      "devDependencies": {
+        "@biomejs/biome": "2.4.9",
+        "@canonical/biome-config": "^0.27.1-experimental.0",
+        "@canonical/typescript-config-react": "^0.27.1-experimental.0",
+        "@canonical/webarchitect": "^0.27.1-experimental.0",
+        "@testing-library/jest-dom": "^6.9.1",
+        "@testing-library/react": "^16.3.2",
+        "@types/node": "^24.12.0",
+        "@types/react": "^19.2.14",
+        "@types/react-dom": "^19.2.3",
+        "@vitejs/plugin-react": "^6.0.0",
+        "@vitest/coverage-v8": "^4.0.18",
+        "jsdom": "^28.1.0",
+        "typescript": "^5.9.3",
+        "vite": "^8.0.1",
+        "vitest": "^4.0.18",
+      },
+    },
     "packages/react/router": {
       "name": "@canonical/router-react",
       "version": "0.29.0",
@@ -1586,6 +1612,8 @@
     "@canonical/harnesses": ["@canonical/harnesses@workspace:packages/runtime/harnesses"],
 
     "@canonical/i18n-core": ["@canonical/i18n-core@workspace:packages/runtime/i18n"],
+
+    "@canonical/i18n-react": ["@canonical/i18n-react@workspace:packages/react/i18n"],
 
     "@canonical/ke": ["@canonical/ke@workspace:packages/runtime/ke"],
 
