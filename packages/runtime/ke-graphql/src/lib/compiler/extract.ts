@@ -307,11 +307,18 @@ export default async function extract(
     "Q7a shacl direct",
   );
 
-  // sh:in values are an RDF list; resolve them per constraint.
+  // sh:in values are an RDF list; resolve them per (targetClass, property) so
+  // two shapes that constrain the same property with different sh:in lists do
+  // not bleed into a single over-broad enumeration. The key uses the named
+  // targetClass + path (no blank-node identity to match across queries).
+  const shInKey = (targetClass: string, path: string): string =>
+    `${targetClass} ${path}`;
   const shIn = new Map<string, string[]>();
   const inListRows = await select(
     query,
-    `SELECT ?path ?value WHERE {
+    `SELECT ?targetClass ?path ?value WHERE {
+      ?shape <${SH_TARGET_CLASS}> ?targetClass ;
+             <${SH_PROPERTY}> ?propShape .
       ?propShape <${SH_PATH}> ?path ;
                  <${SH_IN}> ?list .
       ?list <${RDF_REST}>*/<${RDF_FIRST}> ?value .
@@ -320,14 +327,16 @@ export default async function extract(
     "Q7a sh:in values",
   );
   for (const row of inListRows) {
+    const targetClass = getNamedValue(row.targetClass);
     const path = getNamedValue(row.path);
     const value = getLiteralValue(row.value) ?? getNamedValue(row.value);
-    if (!path || value === undefined) {
+    if (!targetClass || !path || value === undefined) {
       continue;
     }
-    const values = shIn.get(path) ?? [];
+    const key = shInKey(targetClass, path);
+    const values = shIn.get(key) ?? [];
     values.push(value);
-    shIn.set(path, values);
+    shIn.set(key, values);
   }
 
   for (const row of directShaclRows) {
@@ -341,7 +350,7 @@ export default async function extract(
       property: path,
       minCount: getIntValue(row.minCount),
       maxCount: getIntValue(row.maxCount),
-      inValues: row.inList ? shIn.get(path) : undefined,
+      inValues: row.inList ? shIn.get(shInKey(targetClass, path)) : undefined,
     });
   }
 
