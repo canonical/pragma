@@ -4,6 +4,7 @@ import { commands as configCommands } from "../domains/config/index.js";
 import { commands as createCommands } from "../domains/create/index.js";
 import { doctorCommand } from "../domains/doctor/commands/index.js";
 import { commands as graphCommands } from "../domains/graph/index.js";
+import { commands as graphqlCommands } from "../domains/graphql/index.js";
 import { infoCommand, upgradeCommand } from "../domains/info/index.js";
 import {
   buildCapabilitiesCommand,
@@ -41,6 +42,7 @@ export default function collectCommands(
     ...blockCommands(ctx),
     ...ontologyCommands(ctx),
     ...graphCommands(ctx),
+    ...graphqlCommands(),
     ...skillCommands(ctx),
     doctorCommand,
     infoCommand,
