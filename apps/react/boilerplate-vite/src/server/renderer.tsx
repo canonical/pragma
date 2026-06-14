@@ -20,6 +20,7 @@ import path from "node:path";
 import { extractPreferences } from "@canonical/react-hooks";
 import { JSXRenderer } from "@canonical/react-ssr/renderer";
 import { getRequestUrl } from "@canonical/react-ssr/server";
+import { negotiateLocale } from "#lib/i18n/index.js";
 import EntryServer, { type InitialData } from "./entry.js";
 
 const htmlString = fs.readFileSync(
@@ -34,6 +35,17 @@ function cookieHeader(request: Request | IncomingMessage): string | null {
     : ((request as IncomingMessage).headers?.cookie ?? null);
 }
 
+/** Read the `Accept-Language` header from a Web `Request` or a Node request. */
+function acceptLanguageHeader(
+  request: Request | IncomingMessage,
+): string | null {
+  return typeof (request as Request).headers?.get === "function"
+    ? (request as Request).headers.get("accept-language")
+    : (((request as IncomingMessage).headers?.["accept-language"] as
+        | string
+        | undefined) ?? null);
+}
+
 /**
  * Per-request factory for the JSX app renderer. Accepts either a Web `Request`
  * (`serve-bun`) or a Node `IncomingMessage` (`serve-express`); it derives the
@@ -41,10 +53,16 @@ function cookieHeader(request: Request | IncomingMessage): string | null {
  * user's preference, passing both as the renderer's initial data.
  */
 export default function createAppRenderer(request: Request | IncomingMessage) {
-  const { theme } = extractPreferences(cookieHeader(request));
+  const cookie = cookieHeader(request);
+  const { theme } = extractPreferences(cookie);
+  const locale = negotiateLocale(cookie, acceptLanguageHeader(request));
   const initialData: InitialData = {
     url: getRequestUrl(request),
     theme: theme === "light" || theme === "dark" ? theme : undefined,
+    locale,
   };
-  return new JSXRenderer(EntryServer, initialData, { htmlString });
+  return new JSXRenderer(EntryServer, initialData, {
+    htmlString,
+    defaultLocale: locale,
+  });
 }

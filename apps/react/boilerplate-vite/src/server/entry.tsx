@@ -2,6 +2,7 @@ import { HeadProvider } from "@canonical/react-head";
 import type { ServerEntrypointProps } from "@canonical/react-ssr/renderer";
 import { createStaticRouter } from "@canonical/router-core";
 import { Outlet, RouterProvider } from "@canonical/router-react";
+import { dirForLocale } from "#lib/i18n/index.js";
 import { appRoutes, middleware, notFoundRoute } from "../routes.js";
 import "#styles/app.css";
 
@@ -9,6 +10,8 @@ interface InitialData extends Record<string, unknown> {
   readonly url?: string;
   /** Colour-scheme preference resolved from the request cookie, if any. */
   readonly theme?: "light" | "dark";
+  /** Locale resolved from the request cookie / Accept-Language, if any. */
+  readonly locale?: string;
 }
 
 export default function EntryServer(props: ServerEntrypointProps<InitialData>) {
@@ -23,7 +26,11 @@ export default function EntryServer(props: ServerEntrypointProps<InitialData>) {
   // the same element `usePreferredTheme` toggles on the client, and one React
   // does not hydrate (only `#root` is), so there is no mismatch to reconcile.
   return (
-    <html lang={props.lang} className={initialData.theme}>
+    <html
+      lang={props.lang}
+      dir={dirForLocale(props.lang)}
+      className={initialData.theme}
+    >
       <head>
         {props.otherHeadElements}
         {props.scriptElements}

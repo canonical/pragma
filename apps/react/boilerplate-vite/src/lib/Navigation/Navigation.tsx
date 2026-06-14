@@ -1,5 +1,6 @@
 import { Link } from "@canonical/router-react";
 import type { ReactElement } from "react";
+import LocaleSelector from "../LocaleSelector/index.js";
 import ThemeSelector from "../ThemeSelector/index.js";
 
 export default function Navigation(): ReactElement {
@@ -14,6 +15,7 @@ export default function Navigation(): ReactElement {
         Demo sign-in
       </Link>
       <ThemeSelector />
+      <LocaleSelector />
     </nav>
   );
 }

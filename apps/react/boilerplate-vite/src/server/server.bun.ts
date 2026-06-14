@@ -74,8 +74,16 @@ Bun.serve({
       const { extractPreferences } = await vite.ssrLoadModule(
         "@canonical/react-hooks",
       );
+      const { negotiateLocale } = await vite.ssrLoadModule(
+        "/src/lib/i18n/index.ts",
+      );
 
-      const { theme } = extractPreferences(req.headers.get("cookie"));
+      const cookie = req.headers.get("cookie");
+      const { theme } = extractPreferences(cookie);
+      const locale = negotiateLocale(
+        cookie,
+        req.headers.get("accept-language"),
+      );
       const renderer = new JSXRenderer(
         EntryServer,
         // The cookie is client-controlled, so only the known theme values reach
@@ -84,8 +92,9 @@ Bun.serve({
         {
           url: requestUrl,
           theme: theme === "light" || theme === "dark" ? theme : undefined,
+          locale,
         },
-        { htmlString: html },
+        { htmlString: html, defaultLocale: locale },
       );
       const stream = await renderer.renderToReadableStream(req.signal);
 
