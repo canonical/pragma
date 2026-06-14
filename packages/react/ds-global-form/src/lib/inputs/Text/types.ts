@@ -1,13 +1,8 @@
 import type React from "react";
+import type { TODONativeInputTypes } from "../types.js";
 
 /** Native text-like input types rendered by the Text input. */
-export type TextInputType =
-  | "text"
-  | "password"
-  | "email"
-  | "number"
-  | "tel"
-  | "url";
+export type TextInputType = TODONativeInputTypes;
 
 type NativeTextProps = React.InputHTMLAttributes<HTMLInputElement>;
 
