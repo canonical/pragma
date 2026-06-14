@@ -1,0 +1,8 @@
+name = "ke-graphql-example"
+main = "worker.mjs"
+compatibility_date = "2026-06-01"
+compatibility_flags = ["nodejs_compat"]
+
+[[rules]]
+type = "Text"
+globs = ["**/*.ttl"]
