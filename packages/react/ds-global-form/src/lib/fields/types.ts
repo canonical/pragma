@@ -1,5 +1,12 @@
 import type { RegisterOptions } from "react-hook-form";
 import type {
+  BaseProps,
+  Option,
+  OptionsProps,
+  TODONativeInputTypes,
+} from "../inputs/types.js";
+import type { ComboboxProps } from "./Combobox/index.js";
+import type {
   CheckboxProps,
   ChoicesProps,
   ColorProps,
@@ -15,11 +22,9 @@ import type {
 } from "./inputs/index.js";
 import type { TextProps } from "./Text/index.js";
 
-export type BaseProps = {
-  id?: string;
-  className?: string;
-  style?: React.CSSProperties;
-};
+// Shared presentational types live in `../inputs/types.ts`; re-export them so
+// existing field-tier consumers keep importing them from here.
+export type { BaseProps, Option, OptionsProps, TODONativeInputTypes };
 
 export type BaseInputProps = BaseProps & {
   name: string;
@@ -29,25 +34,6 @@ export type BaseInputProps = BaseProps & {
   "aria-errormessage"?: string;
   "aria-invalid"?: boolean;
 };
-
-export type Option = {
-  value: string;
-  label: string;
-  disabled?: boolean;
-};
-
-export type OptionsProps = {
-  options: Option[];
-};
-
-/** Represents the input types that are commonly associated with a text input */
-export type TODONativeInputTypes =
-  | "text"
-  | "password"
-  | "email"
-  | "number"
-  | "tel"
-  | "url";
 
 export type InputProps<
   // biome-ignore lint/complexity/noBannedTypes: Inputs might in some cases not add props to the base set
@@ -62,6 +48,7 @@ export type FieldProps =
   | ({ inputType: "checkbox" } & CheckboxProps)
   | ({ inputType: "range" } & RangeProps)
   | ({ inputType: "select" } & SelectProps)
+  | ({ inputType: "combobox" } & ComboboxProps)
   | ({ inputType: "simple-choices" } & SimpleChoicesProps)
   | ({ inputType: "textarea" } & TextareaProps)
   | ({ inputType: "date" } & DateInputProps)

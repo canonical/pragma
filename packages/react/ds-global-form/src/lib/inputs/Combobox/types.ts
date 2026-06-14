@@ -1,6 +1,13 @@
 /* @canonical/generator-ds 0.9.0-experimental.9 */
-import type { InputProps, Option, OptionsProps } from "../../types.js";
+import type { BaseProps, Option, OptionsProps } from "../types.js";
 import type * as utils from "./utils/index.js";
+
+/** Controlled value props — supplied by the field tier, or directly when standalone. */
+type ControlledProps = {
+  value?: string | string[];
+  onChange?: (value: string | string[] | undefined) => void;
+  onBlur?: () => void;
+};
 
 type CommonProps = {
   /** Whether the input is disabled */
@@ -11,6 +18,9 @@ type CommonProps = {
   valueKey?: keyof Option;
 
   openOnReset?: boolean;
+
+  /** When enabled, allows selecting multiple values (rendered as chips). */
+  isMultiple?: boolean;
 
   filterItems?: (options: Option[], inputValue: string) => Option[];
 
@@ -23,11 +33,8 @@ type CommonProps = {
   ) => ({ inputValue }: { inputValue: string }) => void;
 };
 
-type BaseComboboxProps = InputProps<OptionsProps & CommonProps>;
-
-type AdditionalComboboxProps = BaseComboboxProps & {
-  /** Whether the select should allow multiple selections. Is enabled, will be represented as a set of checkboxes, otherwise, radios */
-  isMultiple?: boolean;
-};
-
-export type ComboboxProps = InputProps<AdditionalComboboxProps>;
+/** Props for the presentational Combobox (controlled, no react-hook-form). */
+export type ComboboxPresentationProps = BaseProps &
+  OptionsProps &
+  CommonProps &
+  ControlledProps;

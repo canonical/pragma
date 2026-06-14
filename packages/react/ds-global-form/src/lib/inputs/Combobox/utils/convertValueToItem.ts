@@ -1,4 +1,4 @@
-import type { Option } from "../../../types.js";
+import type { Option } from "../../types.js";
 import { VALUE_KEY } from "../constants.js";
 
 function convertValueToItem(

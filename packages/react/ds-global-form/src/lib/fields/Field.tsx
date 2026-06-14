@@ -1,10 +1,10 @@
 /* @canonical/generator-ds 0.9.0-experimental.4 */
 import type React from "react";
+import { ComboboxField } from "./Combobox/index.js";
 import {
   Checkbox,
   Choices,
   Color,
-  Combobox,
   DateInput,
   DateTimeInput,
   FileUpload,
@@ -40,7 +40,7 @@ const Field = ({
     case "simple-choices":
       return <SimpleChoices {...props} />;
     case "combobox":
-      return <Combobox {...props} />;
+      return <ComboboxField {...props} />;
     case "hidden":
       return <Hidden {...props} />;
     case "date":

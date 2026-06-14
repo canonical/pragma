@@ -1,4 +1,4 @@
-import type { Option } from "../../../types.js";
+import type { Option } from "../../types.js";
 
 function filterItems(items: Option[], inputValue: string): Option[] {
   return items.filter(

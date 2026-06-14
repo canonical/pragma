@@ -1,11 +1,10 @@
 import { useCombobox, useMultipleSelection } from "downshift";
 import type React from "react";
 import { useCallback, useEffect, useState } from "react";
-import { useController } from "react-hook-form";
-import type { Option } from "../../types.js";
+import type { Option } from "../types.js";
 import { List, ResetButton } from "./common/index.js";
 import { VALUE_KEY } from "./constants.js";
-import type { ComboboxProps } from "./types.js";
+import type { ComboboxPresentationProps } from "./types.js";
 import {
   convertItemToString as defaultConvertItemToString,
   convertValueToItem as defaultConvertValueToItem,
@@ -16,19 +15,20 @@ import "./styles.css";
 const componentCssClassName = "ds form-combobox";
 
 /**
- * A multiple-select combobox component that allows selecting multiple items.
- * Uses Downshift's useMultipleSelection and useCombobox hooks for state management.
+ * Multiple-select combobox (presentational, controlled — no react-hook-form).
+ * Selected values are rendered as removable chips. Uses downshift's
+ * useMultipleSelection + useCombobox.
  *
- * @param {ComboboxProps} props - The component props
+ * @param {ComboboxPresentationProps} props - The component props
  * @returns {React.ReactElement} - Rendered MultipleCombobox component
  */
 const MultipleCombobox = ({
   id,
   className,
   style,
-  registerProps,
   options,
-  name,
+  value,
+  onChange,
   disabled = false,
   placeholder,
   valueKey = VALUE_KEY,
@@ -36,18 +36,10 @@ const MultipleCombobox = ({
   convertValueToItem = defaultConvertValueToItem,
   filterItems = defaultFilterItems,
   onInputValueChangeFactory,
-}: ComboboxProps): React.ReactElement => {
+}: ComboboxPresentationProps): React.ReactElement => {
   // State for selected items and filtered items
   const [selectedItems, setSelectedItems] = useState<Option[]>([]);
   const [items, setItems] = useState(options);
-
-  // React Hook Form integration
-  const {
-    field: { onChange, value: ReactHookFormValue },
-  } = useController({
-    name,
-    rules: registerProps,
-  });
 
   // Convert array of values to array of Option objects
   const convertValuesToItems = useCallback(
@@ -59,13 +51,13 @@ const MultipleCombobox = ({
     [convertValueToItem, options, valueKey],
   );
 
-  // Initialize selectedItems from ReactHookFormValue on mount or when it changes
+  // Initialise selectedItems from the controlled value on mount / when it changes
   useEffect(() => {
-    if (ReactHookFormValue && ReactHookFormValue.length > 0) {
-      const initialSelected = convertValuesToItems(ReactHookFormValue);
-      setSelectedItems(initialSelected);
+    const values = value as string[] | undefined;
+    if (values && values.length > 0) {
+      setSelectedItems(convertValuesToItems(values));
     }
-  }, [ReactHookFormValue, convertValuesToItems]);
+  }, [value, convertValuesToItems]);
 
   // Downshift's useMultipleSelection hook for managing multiple selections
   const {
@@ -79,7 +71,7 @@ const MultipleCombobox = ({
       if (newSelectedItems) {
         setSelectedItems(newSelectedItems);
         const newValue = newSelectedItems.map((item) => item[valueKey]);
-        onChange(newValue.length > 0 ? newValue : undefined);
+        onChange?.(newValue.length > 0 ? (newValue as string[]) : undefined);
       }
     },
   });
@@ -105,8 +97,6 @@ const MultipleCombobox = ({
     getInputProps,
     getItemProps,
     highlightedIndex,
-    // selectItem,
-    // inputValue, // Track input value
     setInputValue, // Function to set input value
   } = useCombobox({
     items,
@@ -127,7 +117,7 @@ const MultipleCombobox = ({
   const resetSelection = useCallback(() => {
     setSelectedItems([]);
     setInputValue("");
-    onChange(undefined);
+    onChange?.(undefined);
   }, [onChange, setInputValue]);
 
   return (

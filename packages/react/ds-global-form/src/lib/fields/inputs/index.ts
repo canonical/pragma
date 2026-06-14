@@ -1,7 +1,6 @@
 export * from "./Checkbox/index.js";
 export * from "./Choices/index.js";
 export * from "./Color/index.js";
-export * from "./Combobox/index.js";
 export * from "./Date/index.js";
 export * from "./FileUpload/index.js";
 export * from "./Hidden/index.js";

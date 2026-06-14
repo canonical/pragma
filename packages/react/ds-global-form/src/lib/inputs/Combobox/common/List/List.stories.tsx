@@ -5,7 +5,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import type { UseComboboxPropGetters } from "downshift";
 import * as fixtures from "storybook/fixtures.options.js";
-import type { Option } from "../../../../types.js";
+import type { Option } from "../../../types.js";
 import Component from "./List.js";
 
 // Needed for template-based story, safe to remove otherwise
