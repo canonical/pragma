@@ -6,22 +6,20 @@ import type {
   TODONativeInputTypes,
 } from "../inputs/types.js";
 import type { CheckboxProps } from "./Checkbox/index.js";
+import type { ChoicesProps } from "./Choices/index.js";
+import type { ColorProps } from "./Color/index.js";
 import type { ComboboxProps } from "./Combobox/index.js";
 import type {
   DateInputProps,
   DateTimeInputProps,
   TimeInputProps,
 } from "./Date/index.js";
+import type { FileUploadProps } from "./FileUpload/index.js";
 import type { HiddenProps } from "./Hidden/index.js";
-import type {
-  ChoicesProps,
-  ColorProps,
-  FileUploadProps,
-  PhoneProps,
-  SimpleChoicesProps,
-} from "./inputs/index.js";
+import type { PhoneProps } from "./Phone/index.js";
 import type { RangeProps } from "./Range/index.js";
 import type { SelectProps } from "./Select/index.js";
+import type { SimpleChoicesProps } from "./SimpleChoices/index.js";
 import type { TextProps } from "./Text/index.js";
 import type { TextareaProps } from "./Textarea/index.js";
 

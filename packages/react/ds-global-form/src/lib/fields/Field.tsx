@@ -1,22 +1,20 @@
 /* @canonical/generator-ds 0.9.0-experimental.4 */
 import type React from "react";
 import { CheckboxField } from "./Checkbox/index.js";
+import { ChoicesField } from "./Choices/index.js";
+import { ColorField } from "./Color/index.js";
 import { ComboboxField } from "./Combobox/index.js";
 import {
   DateInputField,
   DateTimeInputField,
   TimeInputField,
 } from "./Date/index.js";
+import { FileUploadField } from "./FileUpload/index.js";
 import { HiddenField } from "./Hidden/index.js";
-import {
-  Choices,
-  Color,
-  FileUpload,
-  Phone,
-  SimpleChoices,
-} from "./inputs/index.js";
+import { PhoneField } from "./Phone/index.js";
 import { RangeField } from "./Range/index.js";
 import { SelectField } from "./Select/index.js";
+import { SimpleChoicesField } from "./SimpleChoices/index.js";
 import { TextField } from "./Text/index.js";
 import { TextareaField } from "./Textarea/index.js";
 import type { FieldProps } from "./types.js";
@@ -40,7 +38,7 @@ const Field = ({
     case "select":
       return <SelectField {...props} />;
     case "simple-choices":
-      return <SimpleChoices {...props} />;
+      return <SimpleChoicesField {...props} />;
     case "combobox":
       return <ComboboxField {...props} />;
     case "hidden":
@@ -52,13 +50,13 @@ const Field = ({
     case "datetime":
       return <DateTimeInputField {...props} />;
     case "file":
-      return <FileUpload {...props} />;
+      return <FileUploadField {...props} />;
     case "color":
-      return <Color {...props} />;
+      return <ColorField {...props} />;
     case "phone":
-      return <Phone {...props} />;
+      return <PhoneField {...props} />;
     case "choices":
-      return <Choices {...props} />;
+      return <ChoicesField {...props} />;
     case "custom":
       if (!CustomComponent) {
         throw new Error(
