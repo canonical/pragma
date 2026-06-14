@@ -160,8 +160,39 @@ export default function build(
     return result;
   };
 
+  // The DFS yields the complete ancestor set, but in pre-order: a parent's
+  // whole chain is emitted before the next sibling parent, so in a diamond a
+  // grandparent can precede a not-yet-visited sibling parent. Re-walk the
+  // closure breadth-first to restore the "most specific first" contract
+  // (ancestors ordered by ascending distance from the class).
+  const orderByProximity = (
+    uri: string,
+    members: ReadonlySet<string>,
+  ): string[] => {
+    const ordered: string[] = [];
+    const seen = new Set<string>([uri]);
+    let frontier: string[] = [uri];
+    while (frontier.length > 0) {
+      const next: string[] = [];
+      for (const current of frontier) {
+        /* v8 ignore next -- current is the class itself or a known-class member, both of which carry a rawSuperclasses entry; the empty-array fallback is unreachable */
+        for (const parent of rawSuperclasses.get(current) ?? []) {
+          if (seen.has(parent) || !members.has(parent)) {
+            continue;
+          }
+          seen.add(parent);
+          ordered.push(parent);
+          next.push(parent);
+        }
+      }
+      frontier = next;
+    }
+    return ordered;
+  };
+
   for (const node of classes.values()) {
-    const ancestors = computeAncestors(node.uri, []);
+    const closure = computeAncestors(node.uri, []);
+    const ancestors = orderByProximity(node.uri, new Set(closure));
     classes.set(node.uri, { ...node, ancestors });
   }
 
