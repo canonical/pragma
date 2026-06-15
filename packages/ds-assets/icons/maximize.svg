@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+  <g id="maximize">
+    <path d="M7.53027 9.53027L3.81055 13.25H6V14.75H1.25V10H2.75V12.1895L6.46973 8.46973L7.53027 9.53027Z" fill="currentColor"/>
+    <path d="M14.75 6H13.25V3.81055L9.53027 7.53027L8.46973 6.46973L12.1895 2.75H10V1.25H14.75V6Z" fill="currentColor"/>
+  </g>
+</svg>
