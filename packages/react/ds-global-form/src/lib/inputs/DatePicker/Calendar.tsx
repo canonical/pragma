@@ -228,16 +228,18 @@ export const Calendar = ({
   /** Move the roving focus to `date` (clamped), focusing its cell if needed. */
   const moveFocus = useCallback(
     (date: CalendarDate) => {
-      const next = constrainValue(date, minValue, maxValue);
-      setFocusedDate(next);
-      if (isFocusWithinGrid.current) {
-        // The target cell may not exist yet if the month changed; defer focus
-        // until after the grid re-renders.
-        requestAnimationFrame(() => focusCell(next));
-      }
+      setFocusedDate(constrainValue(date, minValue, maxValue));
     },
-    [minValue, maxValue, focusCell],
+    [minValue, maxValue],
   );
+
+  // Move DOM focus to the focused cell *after* the grid commits, so the target
+  // cell exists even when navigation crosses into a new month (a rAF can fire
+  // before the new month's cells render). Gated on `isFocusWithinGrid` so it
+  // only steals focus once the user is already navigating inside the grid.
+  useEffect(() => {
+    if (isFocusWithinGrid.current) focusCell(focusedDate);
+  }, [focusedDate, focusCell]);
 
   const selectDate = useCallback(
     (date: CalendarDate) => {

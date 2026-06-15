@@ -286,14 +286,16 @@ export const RangeCalendar = ({
       if (anchorDate) {
         setHighlightedRange(orderedRange(anchorDate, next));
       }
-      if (isFocusWithinGrid.current) {
-        // The target cell may not exist yet if the month changed; defer focus
-        // until after the grid re-renders.
-        requestAnimationFrame(() => focusCell(next));
-      }
     },
-    [minValue, maxValue, focusCell, anchorDate],
+    [minValue, maxValue, anchorDate],
   );
+
+  // Move DOM focus to the focused cell *after* the grid commits, so the target
+  // cell exists even when navigation crosses into a new month. Gated on
+  // `isFocusWithinGrid` so it only steals focus while the user is navigating.
+  useEffect(() => {
+    if (isFocusWithinGrid.current) focusCell(focusedDate);
+  }, [focusedDate, focusCell]);
 
   /**
    * Two-click range selection. The first interactive day drops the anchor and
