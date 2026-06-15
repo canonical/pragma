@@ -18,7 +18,7 @@ bun add @canonical/i18n-svelte @canonical/i18n-core
 import { createLocaleSource } from "@canonical/i18n-core";
 import { createI18n } from "@canonical/i18n-svelte";
 
-const config = { locales: ["en", "fr", "ar"], defaultLocale: "en", rtlLocales: ["ar"] };
+export const config = { locales: ["en", "fr", "ar"], defaultLocale: "en", rtlLocales: ["ar"] };
 const catalogs = {
   en: { "nav.home": "Home", items: { one: "{count} item", other: "{count} items" } },
   fr: { "nav.home": "Accueil", items: { one: "{count} article", other: "{count} articles" } },
@@ -32,12 +32,12 @@ export const { locale, direction, t, formatters, setLocale } = createI18n(
 
 ```svelte
 <script>
-  import { t, locale, direction, setLocale } from "./i18n";
+  import { config, t, locale, direction, setLocale } from "./i18n";
 </script>
 
 <a dir={$direction}>{$t("nav.home")}</a>
 <span>{$t("items", { count: 3 })}</span>
-<!-- Accessible switcher: endonyms + a `lang` per option (`config` is your own). -->
+<!-- Accessible switcher: endonyms + a `lang` per option. -->
 <select aria-label="Language" value={$locale} on:change={(e) => setLocale(e.currentTarget.value)}>
   {#each config.locales as code}
     <option value={code} lang={code}>
