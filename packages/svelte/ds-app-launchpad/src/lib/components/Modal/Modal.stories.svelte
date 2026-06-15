@@ -118,3 +118,29 @@
     </Modal>
   {/snippet}
 </Story>
+
+<Story name="With a manually wired trigger">
+  {#snippet template({ children: _, trigger: __, ...args })}
+    <Button command="show-modal" commandfor="my-modal" aria-haspopup="dialog"
+      >Show modal</Button
+    >
+    <Modal {...args} id="my-modal">
+      <Modal.Content>
+        <Modal.Content.Header>
+          Modal with a manually wired trigger
+          <Modal.Content.Header.CloseButton
+            commandfor="my-modal"
+            command="close"
+          />
+        </Modal.Content.Header>
+        <Modal.Content.Body>
+          Modal can be wired to a trigger manually by using the <code
+            >commandfor</code
+          >
+          and
+          <code>command</code> attributes.
+        </Modal.Content.Body>
+      </Modal.Content>
+    </Modal>
+  {/snippet}
+</Story>
