@@ -28,6 +28,8 @@ export const ICON_NAMES = [
   "chevron-left",
   "chevron-right",
   "chevron-up",
+  "clipboard",
+  "clipboard-chart",
   "close",
   "cluster-host",
   "code",
