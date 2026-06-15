@@ -7,11 +7,11 @@ import useFormatters from "./useFormatters.js";
 import useLocale from "./useLocale.js";
 
 const config: I18nConfig = {
-  locales: ["en", "fr"],
-  defaultLocale: "en",
+  locales: ["en-US", "fr-FR"],
+  defaultLocale: "en-US",
 };
 
-const catalogs: Record<Locale, Messages> = { en: {}, fr: {} };
+const catalogs: Record<Locale, Messages> = { "en-US": {}, "fr-FR": {} };
 
 function wrapper({ children }: { children: ReactNode }): React.ReactElement {
   return (

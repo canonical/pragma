@@ -7,8 +7,11 @@ export interface LocaleSelectorBaseProps {
   labels?: Partial<Record<Locale, string>>;
 }
 
-/** Props for `LocaleSelector`. `value` is controlled by the active locale. */
+/**
+ * Props for `LocaleSelector`. `value`/`defaultValue` are omitted — the select is
+ * controlled by the active locale.
+ */
 type Props = LocaleSelectorBaseProps &
-  Omit<SelectHTMLAttributes<HTMLSelectElement>, "value">;
+  Omit<SelectHTMLAttributes<HTMLSelectElement>, "value" | "defaultValue">;
 
 export default Props;
