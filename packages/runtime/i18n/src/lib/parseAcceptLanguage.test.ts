@@ -20,8 +20,9 @@ describe("parseAcceptLanguage", () => {
     expect(parseAcceptLanguage("en;q=0.5,de")).toEqual(["de", "en"]);
   });
 
-  it("treats a malformed q-weight as zero", () => {
-    expect(parseAcceptLanguage("en;q=x,fr")).toEqual(["fr", "en"]);
+  it("drops q=0 and malformed-q entries (not acceptable)", () => {
+    expect(parseAcceptLanguage("en;q=0,fr")).toEqual(["fr"]);
+    expect(parseAcceptLanguage("en;q=x,fr")).toEqual(["fr"]);
   });
 
   it("drops empty segments", () => {

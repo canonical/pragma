@@ -30,6 +30,11 @@ describe("createTranslator", () => {
     }
   });
 
+  it("does not substitute inherited Object properties into placeholders", () => {
+    const proto = createTranslator("en", { msg: "{toString}-{constructor}" });
+    expect(proto("msg")).toBe("{toString}-{constructor}");
+  });
+
   it("returns a plain string entry", () => {
     expect(t("nav.home")).toBe("Home");
   });

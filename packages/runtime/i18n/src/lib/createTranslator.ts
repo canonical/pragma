@@ -37,7 +37,7 @@ export default function createTranslator(
     }
 
     return template.replace(PLACEHOLDER, (whole, name: string) =>
-      name in vars ? String(vars[name]) : whole,
+      Object.hasOwn(vars, name) ? String(vars[name]) : whole,
     );
   };
 }

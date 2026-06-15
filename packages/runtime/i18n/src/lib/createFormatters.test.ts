@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import createFormatters from "./createFormatters.js";
 
 describe("createFormatters", () => {
@@ -32,12 +32,23 @@ describe("createFormatters", () => {
     expect(fr.number(1234.5)).not.toBe(en.number(1234.5));
   });
 
-  it("reuses memoized formatters across repeated identical options", () => {
+  it("constructs one Intl instance per distinct options (memoized)", () => {
+    const RealNumberFormat = Intl.NumberFormat;
+    let constructed = 0;
+    class CountingNumberFormat extends RealNumberFormat {
+      constructor(...args: ConstructorParameters<typeof Intl.NumberFormat>) {
+        super(...args);
+        constructed += 1;
+      }
+    }
+    vi.stubGlobal("Intl", { ...Intl, NumberFormat: CountingNumberFormat });
+
     const formatters = createFormatters("en-US");
-    // The second call with the same options resolves the cached instance.
-    expect(formatters.number(1000)).toBe(formatters.number(1000));
-    expect(formatters.number(1000)).toBe("1,000");
-    expect(formatters.currency(5, "USD")).toBe(formatters.currency(5, "USD"));
-    expect(formatters.currency(5, "USD")).toBe("$5.00");
+    formatters.number(1000);
+    formatters.number(2000); // same default options → cached, no new instance
+    formatters.currency(5, "USD"); // distinct options → one more instance
+
+    vi.unstubAllGlobals();
+    expect(constructed).toBe(2);
   });
 });
