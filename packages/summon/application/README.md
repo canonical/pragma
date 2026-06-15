@@ -2,6 +2,11 @@
 
 Summon generators for scaffolding application structure: full applications, domains, routes, and wrappers. Produces code aligned with the [boilerplate reference app](../../../apps/react/boilerplate-vite/).
 
+> **Porting the boilerplate to another framework (e.g. Svelte)?** See
+> [`SPECIFICATION.md`](./SPECIFICATION.md) — a framework-agnostic extraction of the
+> boilerplate's decisions and capabilities, written as the parity contract an
+> `application/svelte` generator and a Svelte reference app should satisfy.
+
 ## Generators
 
 ### `summon application/react <name>`
