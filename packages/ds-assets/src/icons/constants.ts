@@ -30,6 +30,7 @@ export const ICON_NAMES = [
   "chevron-up",
   "clipboard",
   "clipboard-chart",
+  "clipboard-list",
   "close",
   "cluster-host",
   "code",
