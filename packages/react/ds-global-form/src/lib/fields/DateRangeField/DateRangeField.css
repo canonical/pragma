@@ -1,0 +1,53 @@
+.ds.date-range-field {
+  & .date-range-control {
+    anchor-name: --date-range-control;
+    display: flex;
+    align-items: center;
+    gap: var(--form-field-inline-gap);
+    padding-inline: var(--form-input-padding-inline);
+  }
+
+  & .range-separator {
+    color: var(--color-text-muted);
+    user-select: none;
+  }
+
+  & .date-range-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-inline-start: auto;
+    border: none;
+    background: transparent;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    padding: 0;
+
+    &:hover:not(:disabled) {
+      color: var(--color-text);
+    }
+
+    &:disabled {
+      color: var(--disabled--color-text);
+      cursor: not-allowed;
+    }
+  }
+
+  & .ds.field-error {
+    color: var(--form-error-color);
+  }
+}
+
+.ds.date-range-popover {
+  position-anchor: --date-range-control;
+  position-area: block-end span-inline-end;
+  margin: 0;
+  margin-block-start: var(--form-group-gap);
+  inset: auto;
+
+  border: var(--form-input-border-width) solid var(--form-input-border-color);
+  border-radius: var(--form-input-border-radius);
+  background-color: var(--color-background);
+  padding: var(--component-padding-block) var(--component-padding-inline);
+  box-shadow: 0 4px 12px rgb(0 0 0 / 0.1);
+}

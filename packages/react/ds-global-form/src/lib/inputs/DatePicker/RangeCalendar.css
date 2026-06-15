@@ -1,0 +1,171 @@
+/*
+ * RangeCalendar shares Calendar's look. The base grid / header / cell rules are
+ * duplicated here (scoped to `.range-calendar`) so the file is self-contained,
+ * then range-specific highlighting is layered on top:
+ *   - in-range days get a subtle ghost background,
+ *   - the range start / end endpoints get the focus-ring fill.
+ */
+.ds.calendar.range-calendar {
+  display: inline-flex;
+  flex-direction: column;
+  gap: var(--space-100);
+  padding: var(--space-100);
+  background: var(--color-background);
+  color: var(--color-text);
+  border-radius: var(--dimension-radius-small);
+  width: max-content;
+
+  & .calendar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-050);
+  }
+
+  & .calendar-title {
+    flex: 1;
+    margin: 0;
+    text-align: center;
+    font-size: 1rem;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  & .calendar-nav-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    padding: 0;
+    border: none;
+    border-radius: var(--dimension-radius-small);
+    background: transparent;
+    color: inherit;
+    font-size: 1.25rem;
+    line-height: 1;
+    cursor: pointer;
+
+    &:hover:not(:disabled) {
+      background: var(--color-foreground-ghost-hover);
+    }
+
+    &:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 2px var(--form-focus-ring-color);
+    }
+
+    &:disabled {
+      color: var(--disabled--color-text);
+      cursor: not-allowed;
+    }
+  }
+
+  & .calendar-grid {
+    display: flex;
+    flex-direction: column;
+    outline: none;
+  }
+
+  & .calendar-weekdays,
+  & .calendar-week {
+    display: grid;
+    grid-template-columns: repeat(7, 2rem);
+  }
+
+  & .calendar-weekday {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 2rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--color-text-muted, var(--color-text));
+    text-transform: capitalize;
+  }
+
+  & .calendar-cell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    padding: 0;
+    border: none;
+    border-radius: var(--dimension-radius-small);
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    line-height: 1;
+    cursor: pointer;
+
+    &:hover:not([aria-disabled="true"]) {
+      background: var(--color-foreground-ghost-hover);
+    }
+
+    &:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 2px var(--form-focus-ring-color);
+    }
+
+    /* Today marker — an outline ring distinct from selection / focus. */
+    &[data-today]:not([data-in-range]) {
+      outline: 1px solid var(--color-focusRing);
+      outline-offset: -1px;
+    }
+
+    /* In-range (interior) days: a subtle ghost fill spanning the selection. */
+    &[data-in-range] {
+      background: var(--color-foreground-ghost-hover);
+      border-radius: 0;
+    }
+
+    /* The two endpoints read as the primary selection. */
+    &[data-range-start],
+    &[data-range-end] {
+      background: var(--color-focusRing);
+      color: white;
+    }
+
+    /* Round the outer edges of the range so it reads as one pill. */
+    &[data-range-start] {
+      border-top-left-radius: var(--dimension-radius-small);
+      border-bottom-left-radius: var(--dimension-radius-small);
+    }
+
+    &[data-range-end] {
+      border-top-right-radius: var(--dimension-radius-small);
+      border-bottom-right-radius: var(--dimension-radius-small);
+    }
+
+    /* A single-day range (start === end) is fully rounded. */
+    &[data-range-start][data-range-end] {
+      border-radius: var(--dimension-radius-small);
+    }
+
+    /* Keep the endpoint fill on hover rather than the ghost hover color. */
+    &[data-range-start]:hover:not([aria-disabled="true"]),
+    &[data-range-end]:hover:not([aria-disabled="true"]) {
+      background: var(--color-focusRing);
+    }
+
+    &[aria-disabled="true"] {
+      color: var(--disabled--color-text);
+      cursor: not-allowed;
+    }
+
+    /* Outside-month padding cells stay aligned but visually recede / inert. */
+    &[data-outside-month] {
+      color: var(--disabled--color-text);
+      cursor: default;
+      visibility: hidden;
+    }
+  }
+
+  &[data-disabled] {
+    & .calendar-cell,
+    & .calendar-nav-button {
+      cursor: not-allowed;
+    }
+  }
+}

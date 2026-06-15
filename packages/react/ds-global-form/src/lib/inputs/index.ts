@@ -22,8 +22,15 @@ export type {
   CalendarProps,
   DateFieldProps,
   DatePickerPresentationProps,
+  DateRange,
+  RangeCalendarProps,
 } from "./DatePicker/index.js";
-export { Calendar, DateField, DatePicker } from "./DatePicker/index.js";
+export {
+  Calendar,
+  DateField,
+  DatePicker,
+  RangeCalendar,
+} from "./DatePicker/index.js";
 export type { FileUploadPresentationProps } from "./FileUpload/index.js";
 export { FileUpload } from "./FileUpload/index.js";
 export type { HiddenPresentationProps } from "./Hidden/index.js";
