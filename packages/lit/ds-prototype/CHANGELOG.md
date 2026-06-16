@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.28.0](https://github.com/canonical/pragma/compare/v0.27.1-experimental.0...v0.28.0) (2026-06-16)
+
+
+### Features
+
+* **storybook-config:** establish full-height chain via previewHead ([#649](https://github.com/canonical/pragma/issues/649)) ([99b8b52](https://github.com/canonical/pragma/commit/99b8b520edbf304cae0b3a8f30b9068fd069d160))
+
+
+
+
+
 ## [0.27.1-experimental.0](https://github.com/canonical/pragma/compare/v0.28.0-experimental.0...v0.27.1-experimental.0) (2026-05-21)
 
 

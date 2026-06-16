@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.28.0](https://github.com/canonical/pragma/compare/v0.27.1-experimental.0...v0.28.0) (2026-06-16)
+
+
+### Bug Fixes
+
+* **react:** accessible naming for Button and Icon ([#661](https://github.com/canonical/pragma/issues/661)) ([e856a20](https://github.com/canonical/pragma/commit/e856a20318912151ab77519dde359f67c13c59f3))
+
+
+
+
+
 ## [0.27.1-experimental.0](https://github.com/canonical/pragma/compare/v0.28.0-experimental.0...v0.27.1-experimental.0) (2026-05-21)
 
 

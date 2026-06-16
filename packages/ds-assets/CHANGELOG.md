@@ -3,6 +3,19 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.28.0](https://github.com/canonical/pragma/compare/v0.27.1-experimental.0...v0.28.0) (2026-06-16)
+
+
+### Features
+
+* **ds-app:** side navigation plumbing ([#651](https://github.com/canonical/pragma/issues/651)) ([089e4e0](https://github.com/canonical/pragma/commit/089e4e00442387b18fc62d41eedc294656be5d9d)), closes [#649](https://github.com/canonical/pragma/issues/649) [#649](https://github.com/canonical/pragma/issues/649)
+* **ds-assets:** add maximize, minimize, and clipboard icons ([#688](https://github.com/canonical/pragma/issues/688)) ([b1b8247](https://github.com/canonical/pragma/commit/b1b82476aee33897aa43845ac899c0e846ca2b53)), closes [#567](https://github.com/canonical/pragma/issues/567) [#567](https://github.com/canonical/pragma/issues/567) [#567](https://github.com/canonical/pragma/issues/567) [#567](https://github.com/canonical/pragma/issues/567) [#567](https://github.com/canonical/pragma/issues/567) [#567](https://github.com/canonical/pragma/issues/567)
+* **ds-assets:** add table, chart, and theme selector icons ([#687](https://github.com/canonical/pragma/issues/687)) ([6e142ce](https://github.com/canonical/pragma/commit/6e142ced9ecc31fb12cde7d4b010d3615e7f1a85)), closes [#653](https://github.com/canonical/pragma/issues/653) [#654](https://github.com/canonical/pragma/issues/654)
+
+
+
+
+
 ## [0.27.1-experimental.0](https://github.com/canonical/pragma/compare/v0.28.0-experimental.0...v0.27.1-experimental.0) (2026-05-21)
 
 

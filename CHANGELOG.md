@@ -3,6 +3,49 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.28.0](https://github.com/canonical/pragma/compare/v0.27.1-experimental.0...v0.28.0) (2026-06-16)
+
+
+### Bug Fixes
+
+* **react-ssr:** serve dev SSR assets and resolve module-only deps (viteFetchMiddleware) ([#648](https://github.com/canonical/pragma/issues/648)) ([662783d](https://github.com/canonical/pragma/commit/662783d6d4da18039d9a04e42bd118e1ad161815))
+* **react:** accessible naming for Button and Icon ([#661](https://github.com/canonical/pragma/issues/661)) ([e856a20](https://github.com/canonical/pragma/commit/e856a20318912151ab77519dde359f67c13c59f3))
+* **summon-component:** Fix Svelte component output failing type-checking ([#642](https://github.com/canonical/pragma/issues/642)) ([1331c96](https://github.com/canonical/pragma/commit/1331c963a5691f20b826bbb8b081ab283bde8584))
+
+
+### Features
+
+* add SSR deployment adapters for Cloudflare Workers, Vercel, and Deno ([#597](https://github.com/canonical/pragma/issues/597)) ([97e32fc](https://github.com/canonical/pragma/commit/97e32fc07403e04eef595d50a0343e9b22108e31)), closes [#596](https://github.com/canonical/pragma/issues/596)
+* **ds-app:** ApplicationLayout, ViewLayout, ContentLayout ([#656](https://github.com/canonical/pragma/issues/656)) ([b2f854a](https://github.com/canonical/pragma/commit/b2f854a127ae1a048de664d6c555475495b9cd70)), closes [#421](https://github.com/canonical/pragma/issues/421) [#421](https://github.com/canonical/pragma/issues/421) [#421](https://github.com/canonical/pragma/issues/421)
+* **ds-app:** side navigation plumbing ([#651](https://github.com/canonical/pragma/issues/651)) ([089e4e0](https://github.com/canonical/pragma/commit/089e4e00442387b18fc62d41eedc294656be5d9d)), closes [#649](https://github.com/canonical/pragma/issues/649) [#649](https://github.com/canonical/pragma/issues/649)
+* **ds-app:** SideNavigation baseline alignment ([#657](https://github.com/canonical/pragma/issues/657)) ([abbe034](https://github.com/canonical/pragma/commit/abbe034f4d810ca64d349c78a8504b1a38310fba))
+* **ds-app:** SideNavigation grouping, enhanced item & generic navigation hook ([#655](https://github.com/canonical/pragma/issues/655)) ([532fca3](https://github.com/canonical/pragma/commit/532fca339f8b3f960d739a5955ff57839515c3ea))
+* **ds-assets:** add maximize, minimize, and clipboard icons ([#688](https://github.com/canonical/pragma/issues/688)) ([b1b8247](https://github.com/canonical/pragma/commit/b1b82476aee33897aa43845ac899c0e846ca2b53)), closes [#567](https://github.com/canonical/pragma/issues/567) [#567](https://github.com/canonical/pragma/issues/567) [#567](https://github.com/canonical/pragma/issues/567) [#567](https://github.com/canonical/pragma/issues/567) [#567](https://github.com/canonical/pragma/issues/567) [#567](https://github.com/canonical/pragma/issues/567)
+* **ds-assets:** add table, chart, and theme selector icons ([#687](https://github.com/canonical/pragma/issues/687)) ([6e142ce](https://github.com/canonical/pragma/commit/6e142ced9ecc31fb12cde7d4b010d3615e7f1a85)), closes [#653](https://github.com/canonical/pragma/issues/653) [#654](https://github.com/canonical/pragma/issues/654)
+* **ke-graphql:** /http subpath — fetch handler, GraphiQL, multipart incremental ([#672](https://github.com/canonical/pragma/issues/672)) ([2ebe4e2](https://github.com/canonical/pragma/commit/2ebe4e290da44356cedcd777fa21c3ce010de8ba))
+* **ke-graphql:** compiler core + plugin (validate/wireRelay/compose, orchestration, tbox, schema plugin) ([#678](https://github.com/canonical/pragma/issues/678)) ([1b3db0b](https://github.com/canonical/pragma/commit/1b3db0bc87b24acb86c6dc7714a673a20a4fd099))
+* **ke-graphql:** compiler emit pass (MappedIR → GraphQL type plans) ([#681](https://github.com/canonical/pragma/issues/681)) ([c17351d](https://github.com/canonical/pragma/commit/c17351d7c91786a500a34471dd990a19b2ae8015))
+* **ke-graphql:** compiler extract + build passes (OWL → IR) ([#669](https://github.com/canonical/pragma/issues/669)) ([45e6453](https://github.com/canonical/pragma/commit/45e64531eecfdebbfe2e1b83d49ff1212a23bce9))
+* **ke-graphql:** compiler map pass (OntologyIR → MappedIR) ([#680](https://github.com/canonical/pragma/issues/680)) ([026eeea](https://github.com/canonical/pragma/commit/026eeea18aff9284aec35999809e150b1ab4af5a))
+* **ke-graphql:** demo dev server + benchmark script ([#673](https://github.com/canonical/pragma/issues/673)) ([152aaad](https://github.com/canonical/pragma/commit/152aaadcb37084d7c205bd2648ee99096d46d92a))
+* **ke-graphql:** library foundation — scaffold, shared + hardening, docs ([#667](https://github.com/canonical/pragma/issues/667)) ([0b39168](https://github.com/canonical/pragma/commit/0b391688c7c10f149d4b74e274ed7cefc0de0260))
+* **ke-graphql:** local + incremental execution ([#679](https://github.com/canonical/pragma/issues/679)) ([8e614d9](https://github.com/canonical/pragma/commit/8e614d9d47c96587075eb3233579f562908c91da))
+* **ke-graphql:** resolution layer — dataloaders + resolver templates and connection helpers ([#668](https://github.com/canonical/pragma/issues/668)) ([f6c8acc](https://github.com/canonical/pragma/commit/f6c8acce7c370b42adb2470bc81ec31f36ee1c45))
+* **ke:** term-preserving query results (A.0) ([#664](https://github.com/canonical/pragma/issues/664)) ([166c115](https://github.com/canonical/pragma/commit/166c11515538e5c93a0556e0b709092d364161ce))
+* **pragma:** parallel doctor checks + S-grade empty-result recovery hints ([#641](https://github.com/canonical/pragma/issues/641)) ([060b9f5](https://github.com/canonical/pragma/commit/060b9f5291aef1ad525744b625b4164ff25c3f7b)), closes [#543](https://github.com/canonical/pragma/issues/543)
+* **pragma:** trace, MCP resources, summon template loading, framework config ([#645](https://github.com/canonical/pragma/issues/645)) ([4f0a341](https://github.com/canonical/pragma/commit/4f0a341a050facbf3a87419ed7a9b3c29c0a9ade)), closes [#1](https://github.com/canonical/pragma/issues/1) [#551](https://github.com/canonical/pragma/issues/551) [#569](https://github.com/canonical/pragma/issues/569) [#641](https://github.com/canonical/pragma/issues/641) [#641](https://github.com/canonical/pragma/issues/641)
+* **react-hooks:** SSR theme wiring + Lighthouse-100 boilerplate ([#652](https://github.com/canonical/pragma/issues/652)) ([dd61a4d](https://github.com/canonical/pragma/commit/dd61a4d45f9e868a53b80ae0c77c029e13fede47))
+* **react-ssr:** compiled preview SSR path + 2x3 server matrix ([#650](https://github.com/canonical/pragma/issues/650)) ([b490591](https://github.com/canonical/pragma/commit/b490591e863c1d09d2b4b9b3d7eed1a2e467aaf2))
+* **storybook-config:** establish full-height chain via previewHead ([#649](https://github.com/canonical/pragma/issues/649)) ([99b8b52](https://github.com/canonical/pragma/commit/99b8b520edbf304cae0b3a8f30b9068fd069d160))
+* **summon-application:** add domain, route, and wrapper generators ([#626](https://github.com/canonical/pragma/issues/626)) ([6744b08](https://github.com/canonical/pragma/commit/6744b084236175b121f7aec36859976b5028a33e)), closes [#617](https://github.com/canonical/pragma/issues/617) [#643](https://github.com/canonical/pragma/issues/643)
+* **svelte-ds-app-launchpad:** Add Log component ([#631](https://github.com/canonical/pragma/issues/631)) ([99e5cf4](https://github.com/canonical/pragma/commit/99e5cf486edeb4042a6b544b787a3cec9e794e64)), closes [#632](https://github.com/canonical/pragma/issues/632)
+* **svelte-ds-app-launchpad:** Allow passing img-specific attributes to UserAvatar ([#638](https://github.com/canonical/pragma/issues/638)) ([84b9ae5](https://github.com/canonical/pragma/commit/84b9ae5f324769facb23cdf9882d0e0bd5755094))
+* **webarchitect:** add ruleset template variables with --var/--prefix flags ([#665](https://github.com/canonical/pragma/issues/665)) ([1b59742](https://github.com/canonical/pragma/commit/1b597422e09a5ce1c917d6b319344a9d8843ce02))
+
+
+
+
+
 ## [0.27.1-experimental.0](https://github.com/canonical/pragma/compare/v0.28.0-experimental.0...v0.27.1-experimental.0) (2026-05-21)
 
 

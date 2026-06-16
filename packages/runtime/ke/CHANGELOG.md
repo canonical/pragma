@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.28.0](https://github.com/canonical/pragma/compare/v0.27.1-experimental.0...v0.28.0) (2026-06-16)
+
+
+### Features
+
+* **ke:** term-preserving query results (A.0) ([#664](https://github.com/canonical/pragma/issues/664)) ([166c115](https://github.com/canonical/pragma/commit/166c11515538e5c93a0556e0b709092d364161ce))
+
+
+
+
+
 ## [0.27.1-experimental.0](https://github.com/canonical/pragma/compare/v0.28.0-experimental.0...v0.27.1-experimental.0) (2026-05-21)
 
 

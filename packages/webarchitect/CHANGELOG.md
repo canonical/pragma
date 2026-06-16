@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.28.0](https://github.com/canonical/pragma/compare/v0.27.1-experimental.0...v0.28.0) (2026-06-16)
+
+
+### Features
+
+* **webarchitect:** add ruleset template variables with --var/--prefix flags ([#665](https://github.com/canonical/pragma/issues/665)) ([1b59742](https://github.com/canonical/pragma/commit/1b597422e09a5ce1c917d6b319344a9d8843ce02))
+
+
+
+
+
 ## [0.27.1-experimental.0](https://github.com/canonical/pragma/compare/v0.28.0-experimental.0...v0.27.1-experimental.0) (2026-05-21)
 
 

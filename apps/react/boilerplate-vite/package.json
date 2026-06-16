@@ -1,7 +1,7 @@
 {
   "name": "@canonical/react-boilerplate-vite",
   "private": true,
-  "version": "0.27.1-experimental.0",
+  "version": "0.28.0",
   "type": "module",
   "license": "GPL-3.0-only",
   "imports": {
@@ -33,23 +33,23 @@
     "test:e2e": "vitest run --config vitest.e2e.config.ts"
   },
   "dependencies": {
-    "@canonical/react-ds-global": "^0.27.1-experimental.0",
-    "@canonical/react-ds-global-form": "^0.27.1-experimental.0",
-    "@canonical/react-head": "^0.27.1-experimental.0",
-    "@canonical/react-hooks": "^0.27.1-experimental.0",
-    "@canonical/react-ssr": "^0.27.1-experimental.0",
-    "@canonical/router-core": "^0.27.1-experimental.0",
-    "@canonical/router-react": "^0.27.1-experimental.0",
-    "@canonical/storybook-config": "^0.27.1-experimental.0",
-    "@canonical/styles": "^0.27.1-experimental.0",
+    "@canonical/react-ds-global": "^0.28.0",
+    "@canonical/react-ds-global-form": "^0.28.0",
+    "@canonical/react-head": "^0.28.0",
+    "@canonical/react-hooks": "^0.28.0",
+    "@canonical/react-ssr": "^0.28.0",
+    "@canonical/router-core": "^0.28.0",
+    "@canonical/router-react": "^0.28.0",
+    "@canonical/storybook-config": "^0.28.0",
+    "@canonical/styles": "^0.28.0",
     "express": "^5.2.1",
     "react": "^19.2.4",
     "react-dom": "^19.2.4"
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.9",
-    "@canonical/biome-config": "^0.27.1-experimental.0",
-    "@canonical/typescript-config-react": "^0.27.1-experimental.0",
+    "@canonical/biome-config": "^0.28.0",
+    "@canonical/typescript-config-react": "^0.28.0",
     "@chromatic-com/storybook": "^5.0.1",
     "@storybook/react-vite": "^10.3.1",
     "@testing-library/jest-dom": "^6.9.1",

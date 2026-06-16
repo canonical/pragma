@@ -3,6 +3,18 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.28.0](https://github.com/canonical/pragma/compare/v0.27.1-experimental.0...v0.28.0) (2026-06-16)
+
+
+### Features
+
+* **svelte-ds-app-launchpad:** Add Log component ([#631](https://github.com/canonical/pragma/issues/631)) ([99e5cf4](https://github.com/canonical/pragma/commit/99e5cf486edeb4042a6b544b787a3cec9e794e64)), closes [#632](https://github.com/canonical/pragma/issues/632)
+* **svelte-ds-app-launchpad:** Allow passing img-specific attributes to UserAvatar ([#638](https://github.com/canonical/pragma/issues/638)) ([84b9ae5](https://github.com/canonical/pragma/commit/84b9ae5f324769facb23cdf9882d0e0bd5755094))
+
+
+
+
+
 ## [0.27.1-experimental.0](https://github.com/canonical/pragma/compare/v0.28.0-experimental.0...v0.27.1-experimental.0) (2026-05-21)
 
 
