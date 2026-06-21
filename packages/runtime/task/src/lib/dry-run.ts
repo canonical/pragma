@@ -147,6 +147,19 @@ export const dryRun = <A>(task: Task<A>): DryRunResult<A> => {
         const mockResult = mockEffectWithFs(effect);
         return run(t.cont(mockResult) as Task<T>);
       }
+
+      case "FlatMap":
+        return run(t.f(run(t.inner)) as Task<T>);
+
+      case "Recover":
+        try {
+          return run(t.inner);
+        } catch (error) {
+          if (error instanceof TaskExecutionError) {
+            return run(t.handler(error.taskError));
+          }
+          throw error;
+        }
     }
   };
 
@@ -213,6 +226,19 @@ const dryRunWithVirtualFs = <A>(
         const mockResult = mockEffectWithFs(effect);
         return run(t.cont(mockResult) as Task<T>);
       }
+
+      case "FlatMap":
+        return run(t.f(run(t.inner)) as Task<T>);
+
+      case "Recover":
+        try {
+          return run(t.inner);
+        } catch (error) {
+          if (error instanceof TaskExecutionError) {
+            return run(t.handler(error.taskError));
+          }
+          throw error;
+        }
     }
   };
 
@@ -237,7 +263,7 @@ export const dryRunWith = <A>(
     return mockEffect(effect);
   };
 
-  const run = (t: Task<A>): A => {
+  const run = <T>(t: Task<T>): T => {
     switch (t._tag) {
       case "Pure":
         return t.value;
@@ -250,6 +276,19 @@ export const dryRunWith = <A>(
         const mockResult = getMock(t.effect);
         return run(t.cont(mockResult));
       }
+
+      case "FlatMap":
+        return run(t.f(run(t.inner)));
+
+      case "Recover":
+        try {
+          return run(t.inner);
+        } catch (error) {
+          if (error instanceof TaskExecutionError) {
+            return run(t.handler(error.taskError));
+          }
+          throw error;
+        }
     }
   };
 
@@ -268,19 +307,43 @@ export const dryRunWith = <A>(
 export const collectEffects = <A>(task: Task<A>): Effect[] => {
   const effects: Effect[] = [];
 
-  const collect = (t: Task<unknown>): void => {
+  const drive = (t: Task<unknown>): unknown => {
     switch (t._tag) {
       case "Pure":
+        return t.value;
+
       case "Fail":
-        return;
+        throw new TaskExecutionError(t.error);
 
       case "Effect":
         effects.push(t.effect);
-        collect(t.cont(mockEffect(t.effect)));
+        return drive(t.cont(mockEffect(t.effect)));
+
+      case "FlatMap":
+        return drive(t.f(drive(t.inner)));
+
+      case "Recover":
+        try {
+          return drive(t.inner);
+        } catch (error) {
+          if (error instanceof TaskExecutionError) {
+            return drive(t.handler(error.taskError));
+          }
+          throw error;
+        }
     }
   };
 
-  collect(task);
+  // Walk the task collecting each leaf effect, tolerating an unrecovered
+  // failure (the original short-circuits on a Fail rather than throwing).
+  try {
+    drive(task as Task<unknown>);
+  } catch (error) {
+    if (!(error instanceof TaskExecutionError)) {
+      throw error;
+    }
+  }
+
   return effects;
 };
 

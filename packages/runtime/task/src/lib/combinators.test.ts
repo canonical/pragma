@@ -28,7 +28,8 @@ import {
   zip,
   zip3,
 } from "./combinators.js";
-import { dryRun } from "./dry-run.js";
+import { dryRun, dryRunWith } from "./dry-run.js";
+import type { TaskExecutionError } from "./interpreter.js";
 import { info, mkdir, writeFile } from "./primitives.js";
 import { effect, fail, flatMap, map, pure } from "./task.js";
 import type { Effect, Task, TaskError } from "./types.js";
@@ -41,16 +42,14 @@ describe("Combinators - Sequencing", () => {
   describe("sequence", () => {
     it("sequences an empty array to an empty result", () => {
       const t = sequence([]);
-      expect(t._tag).toBe("Pure");
-      expect((t as { value: unknown[] }).value).toEqual([]);
+      expect(dryRun(t).value).toEqual([]);
     });
 
     it("sequences pure tasks and collects results", () => {
       const tasks = [pure(1), pure(2), pure(3)];
       const t = sequence(tasks);
 
-      expect(t._tag).toBe("Pure");
-      expect((t as { value: number[] }).value).toEqual([1, 2, 3]);
+      expect(dryRun(t).value).toEqual([1, 2, 3]);
     });
 
     it("short-circuits on failure", () => {
@@ -58,20 +57,19 @@ describe("Combinators - Sequencing", () => {
       const tasks = [pure(1), fail<number>(error), pure(3)];
       const t = sequence(tasks);
 
-      expect(t._tag).toBe("Fail");
-      expect((t as { error: TaskError }).error.code).toBe("ERR");
+      expect(() => dryRun(t)).toThrow();
+      try {
+        dryRun(t);
+      } catch (e) {
+        const te = e as TaskExecutionError;
+        expect(te.taskError.code).toBe("ERR");
+      }
     });
 
     it("preserves order", () => {
       const tasks = [pure("a"), pure("b"), pure("c"), pure("d"), pure("e")];
       const t = sequence(tasks);
-      expect((t as { value: string[] }).value).toEqual([
-        "a",
-        "b",
-        "c",
-        "d",
-        "e",
-      ]);
+      expect(dryRun(t).value).toEqual(["a", "b", "c", "d", "e"]);
     });
 
     it("handles tasks with effects", () => {
@@ -88,19 +86,26 @@ describe("Combinators - Sequencing", () => {
       const tasks = [pure(1), effect<string>(eff), pure(3)];
       const t = sequence(tasks);
 
-      expect(t._tag).toBe("Effect");
+      const { value, effects } = dryRunWith(
+        t,
+        new Map([["ReadFile", () => "file-contents"]]),
+      );
+      expect(value).toEqual([1, "file-contents", 3]);
+      expect(effects.length).toBe(1);
+      expect(effects[0]._tag).toBe("ReadFile");
     });
 
     it("handles single task", () => {
       const t = sequence([pure(42)]);
-      expect((t as { value: number[] }).value).toEqual([42]);
+      expect(dryRun(t).value).toEqual([42]);
     });
 
     it("handles large arrays", () => {
       const tasks = Array.from({ length: 100 }, (_, i) => pure(i));
       const t = sequence(tasks);
-      expect((t as { value: number[] }).value).toHaveLength(100);
-      expect((t as { value: number[] }).value[99]).toBe(99);
+      const { value } = dryRun(t);
+      expect(value).toHaveLength(100);
+      expect((value as number[])[99]).toBe(99);
     });
   });
 
@@ -109,8 +114,7 @@ describe("Combinators - Sequencing", () => {
       const tasks = [pure(1), pure(2), pure(3)];
       const t = sequence_(tasks);
 
-      expect(t._tag).toBe("Pure");
-      expect((t as { value: unknown }).value).toBeUndefined();
+      expect(dryRun(t).value).toBeUndefined();
     });
 
     it("still runs all effects", () => {
@@ -130,13 +134,18 @@ describe("Combinators - Sequencing", () => {
       const tasks = [pure(1), fail<number>(error), pure(3)];
       const t = sequence_(tasks);
 
-      expect(t._tag).toBe("Fail");
+      expect(() => dryRun(t)).toThrow();
+      try {
+        dryRun(t);
+      } catch (e) {
+        const te = e as TaskExecutionError;
+        expect(te.taskError.code).toBe("ERR");
+      }
     });
 
     it("handles empty array", () => {
       const t = sequence_([]);
-      expect(t._tag).toBe("Pure");
-      expect((t as { value: unknown }).value).toBeUndefined();
+      expect(dryRun(t).value).toBeUndefined();
     });
   });
 
@@ -145,20 +154,19 @@ describe("Combinators - Sequencing", () => {
       const items = [1, 2, 3];
       const t = traverse(items, (x) => pure(x * 2));
 
-      expect(t._tag).toBe("Pure");
-      expect((t as { value: number[] }).value).toEqual([2, 4, 6]);
+      expect(dryRun(t).value).toEqual([2, 4, 6]);
     });
 
     it("provides index to the function", () => {
       const items = ["a", "b", "c"];
       const t = traverse(items, (item, index) => pure(`${item}${index}`));
 
-      expect((t as { value: string[] }).value).toEqual(["a0", "b1", "c2"]);
+      expect(dryRun(t).value).toEqual(["a0", "b1", "c2"]);
     });
 
     it("handles empty array", () => {
       const t = traverse([], (x: number) => pure(x));
-      expect((t as { value: unknown[] }).value).toEqual([]);
+      expect(dryRun(t).value).toEqual([]);
     });
 
     it("short-circuits on failure", () => {
@@ -168,7 +176,13 @@ describe("Combinators - Sequencing", () => {
         x === 2 ? fail<number>(error) : pure(x),
       );
 
-      expect(t._tag).toBe("Fail");
+      expect(() => dryRun(t)).toThrow();
+      try {
+        dryRun(t);
+      } catch (e) {
+        const te = e as TaskExecutionError;
+        expect(te.taskError.code).toBe("ERR");
+      }
     });
 
     it("can create effects from items", () => {
@@ -183,24 +197,26 @@ describe("Combinators - Sequencing", () => {
   describe("traverse_", () => {
     it("applies function to each element and discards results", () => {
       const items = ["a", "b", "c"];
-      let _count = 0;
+      let count = 0;
       const t = traverse_(items, (_item) => {
-        _count++;
+        count++;
         return pure(undefined);
       });
 
-      expect(t._tag).toBe("Pure");
-      expect((t as { value: unknown }).value).toBeUndefined();
+      expect(dryRun(t).value).toBeUndefined();
+      expect(count).toBe(3);
     });
 
     it("provides index to the function", () => {
       const items = [1, 2, 3];
       const indices: number[] = [];
-      traverse_(items, (_item, index) => {
+      const t = traverse_(items, (_item, index) => {
         indices.push(index);
         return pure(undefined);
       });
-      // Note: indices won't be populated until dry-run/execution
+      // indices are populated only when the task runs
+      dryRun(t);
+      expect(indices).toEqual([0, 1, 2]);
     });
 
     it("handles effects", () => {
@@ -221,8 +237,7 @@ describe("Combinators - Parallel", () => {
   describe("parallel", () => {
     it("returns empty array for empty tasks", () => {
       const t = parallel([]);
-      expect(t._tag).toBe("Pure");
-      expect((t as { value: unknown[] }).value).toEqual([]);
+      expect(dryRun(t).value).toEqual([]);
     });
 
     it("creates a Parallel effect for non-empty tasks", () => {
@@ -245,8 +260,7 @@ describe("Combinators - Parallel", () => {
   describe("parallelN", () => {
     it("returns empty array for empty tasks", () => {
       const t = parallelN(2, []);
-      expect(t._tag).toBe("Pure");
-      expect((t as { value: unknown[] }).value).toEqual([]);
+      expect(dryRun(t).value).toEqual([]);
     });
 
     it("batches tasks by concurrency limit", () => {
@@ -281,8 +295,13 @@ describe("Combinators - Parallel", () => {
   describe("race", () => {
     it("fails for empty tasks", () => {
       const t = race([]);
-      expect(t._tag).toBe("Fail");
-      expect((t as { error: TaskError }).error.code).toBe("RACE_EMPTY");
+      expect(() => dryRun(t)).toThrow();
+      try {
+        dryRun(t);
+      } catch (e) {
+        const te = e as TaskExecutionError;
+        expect(te.taskError.code).toBe("RACE_EMPTY");
+      }
     });
 
     it("creates a Race effect for non-empty tasks", () => {
@@ -317,16 +336,14 @@ describe("Combinators - Conditional", () => {
 
     it("returns pure undefined when condition is false", () => {
       const task = when(false, info("not running"));
-      expect(task._tag).toBe("Pure");
-      expect((task as { value: unknown }).value).toBeUndefined();
-
-      const { effects } = dryRun(task);
+      const { value, effects } = dryRun(task);
+      expect(value).toBeUndefined();
       expect(effects.length).toBe(0);
     });
 
     it("handles pure tasks", () => {
       const task = when(true, pure(undefined));
-      expect(task._tag).toBe("Pure");
+      expect(dryRun(task).value).toBeUndefined();
     });
   });
 
@@ -338,9 +355,8 @@ describe("Combinators - Conditional", () => {
 
     it("returns pure undefined when condition is true", () => {
       const task = unless(true, info("not running"));
-      expect(task._tag).toBe("Pure");
-
-      const { effects } = dryRun(task);
+      const { value, effects } = dryRun(task);
+      expect(value).toBeUndefined();
       expect(effects.length).toBe(0);
     });
   });
@@ -348,17 +364,17 @@ describe("Combinators - Conditional", () => {
   describe("ifElse", () => {
     it("returns onTrue task when condition is true", () => {
       const t = ifElse(true, pure("yes"), pure("no"));
-      expect((t as { value: string }).value).toBe("yes");
+      expect(dryRun(t).value).toBe("yes");
     });
 
     it("returns onFalse task when condition is false", () => {
       const t = ifElse(false, pure("yes"), pure("no"));
-      expect((t as { value: string }).value).toBe("no");
+      expect(dryRun(t).value).toBe("no");
     });
 
     it("can have different types", () => {
       const t = ifElse(true, pure(42), pure("forty-two"));
-      expect((t as { value: number | string }).value).toBe(42);
+      expect(dryRun(t).value).toBe(42);
     });
 
     it("works with effects", () => {
@@ -398,7 +414,13 @@ describe("Combinators - Conditional", () => {
       const error: TaskError = { code: "ERR", message: "condition failed" };
       const t = ifElseM(fail<boolean>(error), pure("yes"), pure("no"));
 
-      expect(t._tag).toBe("Fail");
+      expect(() => dryRun(t)).toThrow();
+      try {
+        dryRun(t);
+      } catch (e) {
+        const te = e as TaskExecutionError;
+        expect(te.taskError.code).toBe("ERR");
+      }
     });
   });
 });
@@ -411,17 +433,17 @@ describe("Combinators - Error Handling", () => {
   describe("retry", () => {
     it("returns the task immediately if maxAttempts is 1", () => {
       const t = retry(pure(42), 1);
-      expect((t as { value: number }).value).toBe(42);
+      expect(dryRun(t).value).toBe(42);
     });
 
     it("returns the task immediately if maxAttempts is 0", () => {
       const t = retry(pure(42), 0);
-      expect((t as { value: number }).value).toBe(42);
+      expect(dryRun(t).value).toBe(42);
     });
 
     it("propagates success without retrying", () => {
       const t = retry(pure(42), 3);
-      expect((t as { value: number }).value).toBe(42);
+      expect(dryRun(t).value).toBe(42);
     });
 
     it("wraps failed task in recover for retry", () => {
@@ -429,28 +451,34 @@ describe("Combinators - Error Handling", () => {
       const t = retry(fail<number>(error), 2);
 
       // After all retries exhausted, it should still fail
-      expect(t._tag).toBe("Fail");
+      expect(() => dryRun(t)).toThrow();
+      try {
+        dryRun(t);
+      } catch (e) {
+        const te = e as TaskExecutionError;
+        expect(te.taskError.code).toBe("ERR");
+      }
     });
   });
 
   describe("retryWithBackoff", () => {
     it("behaves like retry (backoff is handled by interpreter)", () => {
       const t = retryWithBackoff(pure(42), 3, 100);
-      expect((t as { value: number }).value).toBe(42);
+      expect(dryRun(t).value).toBe(42);
     });
   });
 
   describe("orElse", () => {
     it("returns primary if it succeeds", () => {
       const t = orElse(pure(42), pure(0));
-      expect((t as { value: number }).value).toBe(42);
+      expect(dryRun(t).value).toBe(42);
     });
 
     it("returns fallback if primary fails", () => {
       const error: TaskError = { code: "ERR", message: "error" };
       const t = orElse(fail<number>(error), pure(99));
 
-      expect((t as { value: number }).value).toBe(99);
+      expect(dryRun(t).value).toBe(99);
     });
 
     it("propagates fallback failure", () => {
@@ -458,8 +486,13 @@ describe("Combinators - Error Handling", () => {
       const error2: TaskError = { code: "ERR2", message: "second" };
       const t = orElse(fail<number>(error1), fail<number>(error2));
 
-      expect(t._tag).toBe("Fail");
-      expect((t as { error: TaskError }).error.code).toBe("ERR2");
+      expect(() => dryRun(t)).toThrow();
+      try {
+        dryRun(t);
+      } catch (e) {
+        const te = e as TaskExecutionError;
+        expect(te.taskError.code).toBe("ERR2");
+      }
     });
 
     it("can chain multiple fallbacks", () => {
@@ -469,35 +502,42 @@ describe("Combinators - Error Handling", () => {
         pure(42),
       );
 
-      expect((t as { value: number }).value).toBe(42);
+      expect(dryRun(t).value).toBe(42);
     });
   });
 
   describe("optional", () => {
     it("returns the value if task succeeds", () => {
       const t = optional(pure(42));
-      expect((t as { value: number | undefined }).value).toBe(42);
+      expect(dryRun(t).value).toBe(42);
     });
 
     it("returns undefined if task fails", () => {
       const error: TaskError = { code: "ERR", message: "error" };
       const t = optional(fail<number>(error));
 
-      expect((t as { value: number | undefined }).value).toBeUndefined();
+      // optional never throws; failure resolves to undefined
+      expect(dryRun(t).value).toBeUndefined();
     });
 
     it("works with effects", () => {
       const eff: Effect = { _tag: "ReadFile", path: "/test.txt" };
       const t = optional(effect<string>(eff));
 
-      expect(t._tag).toBe("Effect");
+      const { value, effects } = dryRunWith(
+        t,
+        new Map([["ReadFile", () => "file-contents"]]),
+      );
+      expect(value).toBe("file-contents");
+      expect(effects.length).toBe(1);
+      expect(effects[0]._tag).toBe("ReadFile");
     });
   });
 
   describe("attempt", () => {
     it("returns ok result on success", () => {
       const t = attempt(pure(42));
-      const result = (t as { value: { ok: boolean; value?: number } }).value;
+      const result = dryRun(t).value as { ok: boolean; value?: number };
 
       expect(result.ok).toBe(true);
       expect(result.value).toBe(42);
@@ -506,7 +546,7 @@ describe("Combinators - Error Handling", () => {
     it("returns error result on failure", () => {
       const error: TaskError = { code: "ERR", message: "error" };
       const t = attempt(fail<number>(error));
-      const result = (t as { value: { ok: boolean; error?: TaskError } }).value;
+      const result = dryRun(t).value as { ok: boolean; error?: TaskError };
 
       expect(result.ok).toBe(false);
       expect(result.error?.code).toBe("ERR");
@@ -516,7 +556,8 @@ describe("Combinators - Error Handling", () => {
       const error: TaskError = { code: "ERR", message: "error" };
       const t = attempt(fail<number>(error));
 
-      expect(t._tag).toBe("Pure");
+      expect(() => dryRun(t)).not.toThrow();
+      expect(dryRun(t).value).toEqual({ ok: false, error });
     });
   });
 });
@@ -534,7 +575,7 @@ describe("Combinators - Resource Management", () => {
 
       const t = bracket(acquire, use, release);
 
-      expect((t as { value: number }).value).toBe(8);
+      expect(dryRun(t).value).toBe(8);
     });
 
     it("runs release on failure", () => {
@@ -545,8 +586,13 @@ describe("Combinators - Resource Management", () => {
 
       const t = bracket(acquire, use, release);
 
-      expect(t._tag).toBe("Fail");
-      expect((t as { error: TaskError }).error.code).toBe("USE_ERR");
+      expect(() => dryRun(t)).toThrow();
+      try {
+        dryRun(t);
+      } catch (e) {
+        const te = e as TaskExecutionError;
+        expect(te.taskError.code).toBe("USE_ERR");
+      }
     });
 
     it("propagates acquire failure without running use or release", () => {
@@ -560,8 +606,13 @@ describe("Combinators - Resource Management", () => {
 
       const t = bracket(acquire, use, release);
 
-      expect(t._tag).toBe("Fail");
-      expect((t as { error: TaskError }).error.code).toBe("ACQUIRE_ERR");
+      expect(() => dryRun(t)).toThrow();
+      try {
+        dryRun(t);
+      } catch (e) {
+        const te = e as TaskExecutionError;
+        expect(te.taskError.code).toBe("ACQUIRE_ERR");
+      }
     });
 
     it("works with effects", () => {
@@ -625,7 +676,13 @@ describe("Combinators - Utility", () => {
       const error: TaskError = { code: "ERR", message: "error" };
       const t = tap(fail<number>(error), () => info("side effect"));
 
-      expect(t._tag).toBe("Fail");
+      expect(() => dryRun(t)).toThrow();
+      try {
+        dryRun(t);
+      } catch (e) {
+        const te = e as TaskExecutionError;
+        expect(te.taskError.code).toBe("ERR");
+      }
     });
 
     it("propagates failure from side effect", () => {
@@ -635,7 +692,13 @@ describe("Combinators - Utility", () => {
       };
       const t = tap(pure(42), () => fail<void>(error));
 
-      expect(t._tag).toBe("Fail");
+      expect(() => dryRun(t)).toThrow();
+      try {
+        dryRun(t);
+      } catch (e) {
+        const te = e as TaskExecutionError;
+        expect(te.taskError.code).toBe("SIDE_ERR");
+      }
     });
   });
 
@@ -660,14 +723,14 @@ describe("Combinators - Utility", () => {
   describe("delay", () => {
     it("returns the task unchanged (delay handled by interpreter)", () => {
       const t = delay(pure(42), 1000);
-      expect((t as { value: number }).value).toBe(42);
+      expect(dryRun(t).value).toBe(42);
     });
   });
 
   describe("timeout", () => {
     it("returns the task unchanged (timeout handled by interpreter)", () => {
       const t = timeout(pure(42), 5000);
-      expect((t as { value: number }).value).toBe(42);
+      expect(dryRun(t).value).toBe(42);
     });
   });
 
@@ -679,7 +742,7 @@ describe("Combinators - Utility", () => {
         (e) => `error: ${e.code}`,
       );
 
-      expect((t as { value: string }).value).toBe("success: 42");
+      expect(dryRun(t).value).toBe("success: 42");
     });
 
     it("applies onFailure for failed task", () => {
@@ -690,7 +753,7 @@ describe("Combinators - Utility", () => {
         (e) => `error: ${e.code}`,
       );
 
-      expect((t as { value: string }).value).toBe("error: ERR");
+      expect(dryRun(t).value).toBe("error: ERR");
     });
 
     it("never fails - always returns Pure", () => {
@@ -701,30 +764,41 @@ describe("Combinators - Utility", () => {
         () => "failure",
       );
 
-      expect(t._tag).toBe("Pure");
+      expect(() => dryRun(t)).not.toThrow();
+      expect(dryRun(t).value).toBe("failure");
     });
   });
 
   describe("zip", () => {
     it("combines two tasks into a tuple", () => {
       const t = zip(pure(1), pure("a"));
-      expect((t as { value: [number, string] }).value).toEqual([1, "a"]);
+      expect(dryRun(t).value).toEqual([1, "a"]);
     });
 
     it("propagates first failure", () => {
       const error: TaskError = { code: "ERR1", message: "first" };
       const t = zip(fail<number>(error), pure("a"));
 
-      expect(t._tag).toBe("Fail");
-      expect((t as { error: TaskError }).error.code).toBe("ERR1");
+      expect(() => dryRun(t)).toThrow();
+      try {
+        dryRun(t);
+      } catch (e) {
+        const te = e as TaskExecutionError;
+        expect(te.taskError.code).toBe("ERR1");
+      }
     });
 
     it("propagates second failure", () => {
       const error: TaskError = { code: "ERR2", message: "second" };
       const t = zip(pure(1), fail<string>(error));
 
-      expect(t._tag).toBe("Fail");
-      expect((t as { error: TaskError }).error.code).toBe("ERR2");
+      expect(() => dryRun(t)).toThrow();
+      try {
+        dryRun(t);
+      } catch (e) {
+        const te = e as TaskExecutionError;
+        expect(te.taskError.code).toBe("ERR2");
+      }
     });
 
     it("works with effects", () => {
@@ -738,18 +812,20 @@ describe("Combinators - Utility", () => {
   describe("zip3", () => {
     it("combines three tasks into a tuple", () => {
       const t = zip3(pure(1), pure("a"), pure(true));
-      expect((t as { value: [number, string, boolean] }).value).toEqual([
-        1,
-        "a",
-        true,
-      ]);
+      expect(dryRun(t).value).toEqual([1, "a", true]);
     });
 
     it("propagates any failure", () => {
       const error: TaskError = { code: "ERR", message: "error" };
       const t = zip3(pure(1), fail<string>(error), pure(true));
 
-      expect(t._tag).toBe("Fail");
+      expect(() => dryRun(t)).toThrow();
+      try {
+        dryRun(t);
+      } catch (e) {
+        const te = e as TaskExecutionError;
+        expect(te.taskError.code).toBe("ERR");
+      }
     });
 
     it("works with effects", () => {
@@ -856,22 +932,22 @@ describe("Combinators - Edge Cases", () => {
   describe("Empty inputs", () => {
     it("traverse handles empty array", () => {
       const t = traverse([], (x: number) => pure(x * 2));
-      expect((t as { value: number[] }).value).toEqual([]);
+      expect(dryRun(t).value).toEqual([]);
     });
 
     it("sequence handles empty array", () => {
       const t = sequence([]);
-      expect((t as { value: unknown[] }).value).toEqual([]);
+      expect(dryRun(t).value).toEqual([]);
     });
 
     it("parallel handles empty array", () => {
       const t = parallel([]);
-      expect((t as { value: unknown[] }).value).toEqual([]);
+      expect(dryRun(t).value).toEqual([]);
     });
 
     it("parallelN handles empty array", () => {
       const t = parallelN(5, []);
-      expect((t as { value: unknown[] }).value).toEqual([]);
+      expect(dryRun(t).value).toEqual([]);
     });
   });
 

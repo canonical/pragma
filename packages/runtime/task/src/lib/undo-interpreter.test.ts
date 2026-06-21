@@ -17,7 +17,7 @@ import {
   symlink,
   writeFile,
 } from "./primitives.js";
-import { $, effect, fail, gen, pure } from "./task.js";
+import { $, effect, fail, flatMap, gen, map, pure, recover } from "./task.js";
 import type { Task } from "./types.js";
 import { collectUndos, runUndo } from "./undo-interpreter.js";
 
@@ -510,5 +510,61 @@ describe("runUndo", () => {
     } finally {
       rmSync(tempDir, { recursive: true, force: true });
     }
+  });
+});
+
+// =============================================================================
+// Lazy node handling (FlatMap / Recover)
+// =============================================================================
+
+describe("collectUndos - lazy node handling", () => {
+  const boom = (): never => {
+    throw new Error("raw");
+  };
+
+  it("collects undos through flatMap and recover nodes", () => {
+    const undoTask = pure<void>(undefined);
+    const writeWithUndo = effect<void>({
+      _tag: "WriteFile",
+      path: "f",
+      content: "c",
+      undo: undoTask,
+    });
+    const undos = collectUndos(
+      flatMap(writeWithUndo, () => recover(pure(1), () => pure(0))),
+    );
+    expect(undos).toHaveLength(1);
+    expect(undos[0]).toBe(undoTask);
+  });
+
+  it("recovers from a failed task while walking", () => {
+    expect(
+      collectUndos(
+        recover(fail<number>({ code: "E", message: "m" }), () => pure(0)),
+      ),
+    ).toEqual([]);
+  });
+
+  it("rethrows a non-task error raised inside a recovered task", () => {
+    expect(() =>
+      collectUndos(recover(map(pure(1), boom), () => pure(0))),
+    ).toThrow("raw");
+  });
+
+  it("walks flatMap/recover inside Parallel children", () => {
+    const undos = collectUndos(
+      parallel([
+        flatMap(pure(1), (x) => pure(x + 1)),
+        recover(fail<number>({ code: "E", message: "m" }), () => pure(0)),
+        recover(pure(5), () => pure(0)),
+      ]),
+    );
+    expect(undos).toEqual([]);
+  });
+
+  it("rethrows a non-task error from a Parallel child", () => {
+    expect(() =>
+      collectUndos(parallel([recover(map(pure(1), boom), () => pure(0))])),
+    ).toThrow("raw");
   });
 });

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { dryRun } from "./dry-run.js";
+import { dryRun, dryRunWith } from "./dry-run.js";
 import { readFileEffect, writeFileEffect } from "./effect.js";
+import type { TaskExecutionError } from "./interpreter.js";
 import {
   $,
   ap,
@@ -216,8 +217,7 @@ describe("Task Monad - Monad Operations", () => {
   describe("flatMap", () => {
     it("chains Pure tasks", () => {
       const t = flatMap(pure(5), (x) => pure(x + 3));
-      expect(t._tag).toBe("Pure");
-      expect((t as { value: number }).value).toBe(8);
+      expect(dryRun(t).value).toBe(8);
     });
 
     it("propagates Fail tasks without calling continuation", () => {
@@ -228,7 +228,7 @@ describe("Task Monad - Monad Operations", () => {
         return pure(0);
       });
 
-      expect(t._tag).toBe("Fail");
+      expect(() => dryRun(t)).toThrow();
       expect(called).toBe(false);
     });
 
@@ -238,21 +238,25 @@ describe("Task Monad - Monad Operations", () => {
         message: "continuation error",
       };
       const t = flatMap(pure(5), () => fail<number>(error));
-      expect(t._tag).toBe("Fail");
-      expect((t as { error: TaskError }).error.code).toBe("CONT_ERR");
+      expect(() => dryRun(t)).toThrow();
+      try {
+        dryRun(t);
+      } catch (e) {
+        const te = e as TaskExecutionError;
+        expect(te.taskError.code).toBe("CONT_ERR");
+      }
     });
 
     it("chains through Effect tasks", () => {
       const eff: Effect = { _tag: "ReadFile", path: "/test.txt" };
       const t = flatMap(effect<string>(eff), (content) => pure(content.length));
 
-      expect(t._tag).toBe("Effect");
-      const effectTask = t as {
-        _tag: "Effect";
-        cont: (result: unknown) => Task<number>;
-      };
-      const continued = effectTask.cont("hello");
-      expect((continued as { value: number }).value).toBe(5);
+      const { value, effects } = dryRunWith(
+        t,
+        new Map([["ReadFile", () => "hello"]]),
+      );
+      expect(effects[0]._tag).toBe("ReadFile");
+      expect(value).toBe(5);
     });
 
     it("chains multiple operations", () => {
@@ -260,22 +264,21 @@ describe("Task Monad - Monad Operations", () => {
         flatMap(pure(2), (x) => pure(x * 3)),
         (x) => pure(x + 1),
       );
-      expect((t as { value: number }).value).toBe(7);
+      expect(dryRun(t).value).toBe(7);
     });
 
     it("handles nested flatMaps", () => {
       const t = flatMap(pure(1), (a) =>
         flatMap(pure(2), (b) => flatMap(pure(3), (c) => pure(a + b + c))),
       );
-      expect((t as { value: number }).value).toBe(6);
+      expect(dryRun(t).value).toBe(6);
     });
   });
 
   describe("map", () => {
     it("transforms the value of a Pure task", () => {
       const t = map(pure(10), (x) => x * 2);
-      expect(t._tag).toBe("Pure");
-      expect((t as { value: number }).value).toBe(20);
+      expect(dryRun(t).value).toBe(20);
     });
 
     it("propagates Fail tasks without calling function", () => {
@@ -286,7 +289,7 @@ describe("Task Monad - Monad Operations", () => {
         return 0;
       });
 
-      expect(t._tag).toBe("Fail");
+      expect(() => dryRun(t)).toThrow();
       expect(called).toBe(false);
     });
 
@@ -294,17 +297,17 @@ describe("Task Monad - Monad Operations", () => {
       const eff: Effect = { _tag: "ReadFile", path: "/test.txt" };
       const t = map(effect<string>(eff), (s) => s.toUpperCase());
 
-      expect(t._tag).toBe("Effect");
-      const effectTask = t as {
-        cont: (result: unknown) => Task<string>;
-      };
-      const continued = effectTask.cont("hello");
-      expect((continued as { value: string }).value).toBe("HELLO");
+      const { value, effects } = dryRunWith(
+        t,
+        new Map([["ReadFile", () => "hello"]]),
+      );
+      expect(effects[0]._tag).toBe("ReadFile");
+      expect(value).toBe("HELLO");
     });
 
     it("can transform types", () => {
       const t = map(pure(42), (n) => String(n));
-      expect((t as { value: string }).value).toBe("42");
+      expect(dryRun(t).value).toBe("42");
     });
 
     it("can transform to complex types", () => {
@@ -312,22 +315,20 @@ describe("Task Monad - Monad Operations", () => {
         length: s.length,
         upper: s.toUpperCase(),
       }));
-      expect((t as { value: { length: number; upper: string } }).value).toEqual(
-        {
-          length: 5,
-          upper: "HELLO",
-        },
-      );
+      expect(dryRun(t).value).toEqual({
+        length: 5,
+        upper: "HELLO",
+      });
     });
 
     it("handles identity function", () => {
       const t = map(pure(42), (x) => x);
-      expect((t as { value: number }).value).toBe(42);
+      expect(dryRun(t).value).toBe(42);
     });
 
     it("handles constant function", () => {
       const t = map(pure(42), () => "constant");
-      expect((t as { value: string }).value).toBe("constant");
+      expect(dryRun(t).value).toBe("constant");
     });
   });
 
@@ -337,8 +338,7 @@ describe("Task Monad - Monad Operations", () => {
       const valTask = pure(21);
       const t = ap(fnTask, valTask);
 
-      expect(t._tag).toBe("Pure");
-      expect((t as { value: number }).value).toBe(42);
+      expect(dryRun(t).value).toBe(42);
     });
 
     it("propagates failure from function task", () => {
@@ -347,8 +347,13 @@ describe("Task Monad - Monad Operations", () => {
       const valTask = pure(21);
       const t = ap(fnTask, valTask);
 
-      expect(t._tag).toBe("Fail");
-      expect((t as { error: TaskError }).error.code).toBe("FN_ERR");
+      expect(() => dryRun(t)).toThrow();
+      try {
+        dryRun(t);
+      } catch (e) {
+        const te = e as TaskExecutionError;
+        expect(te.taskError.code).toBe("FN_ERR");
+      }
     });
 
     it("propagates failure from value task", () => {
@@ -357,8 +362,13 @@ describe("Task Monad - Monad Operations", () => {
       const valTask = fail<number>(error);
       const t = ap(fnTask, valTask);
 
-      expect(t._tag).toBe("Fail");
-      expect((t as { error: TaskError }).error.code).toBe("VAL_ERR");
+      expect(() => dryRun(t)).toThrow();
+      try {
+        dryRun(t);
+      } catch (e) {
+        const te = e as TaskExecutionError;
+        expect(te.taskError.code).toBe("VAL_ERR");
+      }
     });
 
     it("works with multi-argument functions via currying", () => {
@@ -366,23 +376,21 @@ describe("Task Monad - Monad Operations", () => {
       const t1 = ap(pure(add), pure(10));
       const t2 = ap(t1, pure(5));
 
-      expect((t2 as { value: number }).value).toBe(15);
+      expect(dryRun(t2).value).toBe(15);
     });
   });
 
   describe("recover", () => {
     it("does not affect Pure tasks", () => {
       const t = recover(pure(42), () => pure(0));
-      expect(t._tag).toBe("Pure");
-      expect((t as { value: number }).value).toBe(42);
+      expect(dryRun(t).value).toBe(42);
     });
 
     it("recovers from Fail tasks", () => {
       const error: TaskError = { code: "ERR", message: "error" };
       const t = recover(fail<number>(error), () => pure(99));
 
-      expect(t._tag).toBe("Pure");
-      expect((t as { value: number }).value).toBe(99);
+      expect(dryRun(t).value).toBe(99);
     });
 
     it("provides the error to the handler", () => {
@@ -391,7 +399,7 @@ describe("Task Monad - Monad Operations", () => {
         pure(`recovered: ${e.code}`),
       );
 
-      expect((t as { value: string }).value).toBe("recovered: ERR_42");
+      expect(dryRun(t).value).toBe("recovered: ERR_42");
     });
 
     it("can return another Fail from handler", () => {
@@ -399,15 +407,21 @@ describe("Task Monad - Monad Operations", () => {
       const error2: TaskError = { code: "ERR2", message: "second" };
       const t = recover(fail<number>(error1), () => fail<number>(error2));
 
-      expect(t._tag).toBe("Fail");
-      expect((t as { error: TaskError }).error.code).toBe("ERR2");
+      expect(() => dryRun(t)).toThrow();
+      try {
+        dryRun(t);
+      } catch (e) {
+        const te = e as TaskExecutionError;
+        expect(te.taskError.code).toBe("ERR2");
+      }
     });
 
     it("propagates through Effect tasks", () => {
       const eff: Effect = { _tag: "ReadFile", path: "/test.txt" };
       const t = recover(effect<string>(eff), () => pure("recovered"));
 
-      expect(t._tag).toBe("Effect");
+      const { effects } = dryRun(t);
+      expect(effects[0]._tag).toBe("ReadFile");
     });
 
     it("handles nested recover calls", () => {
@@ -419,15 +433,14 @@ describe("Task Monad - Monad Operations", () => {
         () => pure(42),
       );
 
-      expect((t as { value: number }).value).toBe(42);
+      expect(dryRun(t).value).toBe(42);
     });
   });
 
   describe("mapError", () => {
     it("does not affect Pure tasks", () => {
       const t = mapError(pure(42), (e) => ({ ...e, code: "MODIFIED" }));
-      expect(t._tag).toBe("Pure");
-      expect((t as { value: number }).value).toBe(42);
+      expect(dryRun(t).value).toBe(42);
     });
 
     it("transforms the error of Fail tasks", () => {
@@ -438,10 +451,14 @@ describe("Task Monad - Monad Operations", () => {
         message: `wrapped: ${e.message}`,
       }));
 
-      expect(t._tag).toBe("Fail");
-      const failTask = t as { error: TaskError };
-      expect(failTask.error.code).toBe("MODIFIED");
-      expect(failTask.error.message).toBe("wrapped: original");
+      expect(() => dryRun(t)).toThrow();
+      try {
+        dryRun(t);
+      } catch (e) {
+        const te = e as TaskExecutionError;
+        expect(te.taskError.code).toBe("MODIFIED");
+        expect(te.taskError.message).toBe("wrapped: original");
+      }
     });
 
     it("propagates through Effect tasks", () => {
@@ -451,7 +468,12 @@ describe("Task Monad - Monad Operations", () => {
         code: "MODIFIED",
       }));
 
-      expect(t._tag).toBe("Effect");
+      const { value, effects } = dryRunWith(
+        t,
+        new Map([["ReadFile", () => "mock content"]]),
+      );
+      expect(effects[0]._tag).toBe("ReadFile");
+      expect(value).toBe("mock content");
     });
 
     it("maps error through Effect continuation", () => {
@@ -461,15 +483,12 @@ describe("Task Monad - Monad Operations", () => {
         code: "MAPPED",
       }));
 
-      expect(t._tag).toBe("Effect");
-      const effectTask = t as {
-        cont: (v: unknown) => Task<string>;
-      };
-      // Calling cont triggers line 129: mapError(task.cont(result), f)
-      const contResult = effectTask.cont("mock content");
-      // The continuation wraps the result in mapError
-      expect(contResult._tag).toBe("Pure");
-      expect((contResult as { value: string }).value).toBe("mock content");
+      const { value, effects } = dryRunWith(
+        t,
+        new Map([["ReadFile", () => "mock content"]]),
+      );
+      expect(effects[0]._tag).toBe("ReadFile");
+      expect(value).toBe("mock content");
     });
 
     it("can add context to errors", () => {
@@ -479,11 +498,16 @@ describe("Task Monad - Monad Operations", () => {
         context: { operation: "test", timestamp: 12345 },
       }));
 
-      const failTask = t as { error: TaskError };
-      expect(failTask.error.context).toEqual({
-        operation: "test",
-        timestamp: 12345,
-      });
+      expect(() => dryRun(t)).toThrow();
+      try {
+        dryRun(t);
+      } catch (e) {
+        const te = e as TaskExecutionError;
+        expect(te.taskError.context).toEqual({
+          operation: "test",
+          timestamp: 12345,
+        });
+      }
     });
   });
 });
@@ -498,7 +522,7 @@ describe("Task Monad - TaskBuilder", () => {
       const result = of(10)
         .map((x) => x * 2)
         .unwrap();
-      expect((result as { value: number }).value).toBe(20);
+      expect(dryRun(result).value).toBe(20);
     });
 
     it("chains multiple maps", () => {
@@ -508,7 +532,7 @@ describe("Task Monad - TaskBuilder", () => {
         .map((x) => String(x))
         .unwrap();
 
-      expect((result as { value: string }).value).toBe("12");
+      expect(dryRun(result).value).toBe("12");
     });
   });
 
@@ -518,7 +542,7 @@ describe("Task Monad - TaskBuilder", () => {
         .flatMap((x) => pure(x * 2))
         .unwrap();
 
-      expect((result as { value: number }).value).toBe(20);
+      expect(dryRun(result).value).toBe(20);
     });
 
     it("allows mixing map and flatMap", () => {
@@ -528,7 +552,7 @@ describe("Task Monad - TaskBuilder", () => {
         .map((x) => x + 3)
         .unwrap();
 
-      expect((result as { value: number }).value).toBe(15);
+      expect(dryRun(result).value).toBe(15);
     });
   });
 
@@ -539,7 +563,7 @@ describe("Task Monad - TaskBuilder", () => {
         .chain((x) => of(x + 1))
         .unwrap();
 
-      expect((result as { value: number }).value).toBe(16);
+      expect(dryRun(result).value).toBe(16);
     });
   });
 
@@ -550,7 +574,7 @@ describe("Task Monad - TaskBuilder", () => {
         .recover(() => pure(42))
         .unwrap();
 
-      expect((result as { value: number }).value).toBe(42);
+      expect(dryRun(result).value).toBe(42);
     });
 
     it("does not affect successful tasks", () => {
@@ -558,7 +582,7 @@ describe("Task Monad - TaskBuilder", () => {
         .recover(() => pure(0))
         .unwrap();
 
-      expect((result as { value: number }).value).toBe(100);
+      expect(dryRun(result).value).toBe(100);
     });
   });
 
@@ -569,8 +593,13 @@ describe("Task Monad - TaskBuilder", () => {
         .mapError((e) => ({ ...e, code: "MODIFIED" }))
         .unwrap();
 
-      expect(result._tag).toBe("Fail");
-      expect((result as { error: TaskError }).error.code).toBe("MODIFIED");
+      expect(() => dryRun(result)).toThrow();
+      try {
+        dryRun(result);
+      } catch (e) {
+        const te = e as TaskExecutionError;
+        expect(te.taskError.code).toBe("MODIFIED");
+      }
     });
   });
 
@@ -584,7 +613,7 @@ describe("Task Monad - TaskBuilder", () => {
         })
         .unwrap();
 
-      expect((result as { value: number }).value).toBe(42);
+      expect(dryRun(result).value).toBe(42);
       // Note: side effect happens during dry-run/execution, not task construction
     });
   });
@@ -593,7 +622,7 @@ describe("Task Monad - TaskBuilder", () => {
     it("sequences tasks discarding first result", () => {
       const result = of(1).andThen(pure(2)).andThen(pure(3)).unwrap();
 
-      expect((result as { value: number }).value).toBe(3);
+      expect(dryRun(result).value).toBe(3);
     });
 
     it("propagates failure", () => {
@@ -603,7 +632,7 @@ describe("Task Monad - TaskBuilder", () => {
         .andThen(pure(3))
         .unwrap();
 
-      expect(result._tag).toBe("Fail");
+      expect(() => dryRun(result)).toThrow();
     });
   });
 
@@ -728,9 +757,7 @@ describe("Task Monad - Monad Laws", () => {
       const left = flatMap(pure(a), f);
       const right = f(a);
 
-      expect((left as { value: number }).value).toBe(
-        (right as { value: number }).value,
-      );
+      expect(dryRun(left).value).toBe(dryRun(right).value);
     });
 
     it("pure(a) >>= f ≡ f(a) for strings", () => {
@@ -740,9 +767,7 @@ describe("Task Monad - Monad Laws", () => {
       const left = flatMap(pure(a), f);
       const right = f(a);
 
-      expect((left as { value: string }).value).toBe(
-        (right as { value: string }).value,
-      );
+      expect(dryRun(left).value).toBe(dryRun(right).value);
     });
 
     it("pure(a) >>= f ≡ f(a) when f returns fail", () => {
@@ -752,10 +777,21 @@ describe("Task Monad - Monad Laws", () => {
       const left = flatMap(pure(a), f);
       const right = f(a);
 
-      expect(left._tag).toBe(right._tag);
-      expect((left as { error: TaskError }).error.code).toBe(
-        (right as { error: TaskError }).error.code,
-      );
+      expect(() => dryRun(left)).toThrow();
+      expect(() => dryRun(right)).toThrow();
+      let leftCode: string | undefined;
+      let rightCode: string | undefined;
+      try {
+        dryRun(left);
+      } catch (e) {
+        leftCode = (e as TaskExecutionError).taskError.code;
+      }
+      try {
+        dryRun(right);
+      } catch (e) {
+        rightCode = (e as TaskExecutionError).taskError.code;
+      }
+      expect(leftCode).toBe(rightCode);
     });
   });
 
@@ -765,9 +801,7 @@ describe("Task Monad - Monad Laws", () => {
       const m = pure(42);
       const result = flatMap(m, pure);
 
-      expect((result as { value: number }).value).toBe(
-        (m as { value: number }).value,
-      );
+      expect(dryRun(result).value).toBe(dryRun(m).value);
     });
 
     it("m >>= pure ≡ m for Fail tasks", () => {
@@ -775,8 +809,13 @@ describe("Task Monad - Monad Laws", () => {
       const m = fail<number>(error);
       const result = flatMap(m, pure);
 
-      expect(result._tag).toBe("Fail");
-      expect((result as { error: TaskError }).error.code).toBe(error.code);
+      expect(() => dryRun(result)).toThrow();
+      try {
+        dryRun(result);
+      } catch (e) {
+        const te = e as TaskExecutionError;
+        expect(te.taskError.code).toBe(error.code);
+      }
     });
   });
 
@@ -790,9 +829,7 @@ describe("Task Monad - Monad Laws", () => {
       const left = flatMap(flatMap(m, f), g);
       const right = flatMap(m, (x) => flatMap(f(x), g));
 
-      expect((left as { value: number }).value).toBe(
-        (right as { value: number }).value,
-      );
+      expect(dryRun(left).value).toBe(dryRun(right).value);
     });
 
     it("associativity holds with failure in first function", () => {
@@ -803,7 +840,8 @@ describe("Task Monad - Monad Laws", () => {
       const left = flatMap(flatMap(m, f), g);
       const right = flatMap(m, (x) => flatMap(f(x), g));
 
-      expect(left._tag).toBe(right._tag);
+      expect(() => dryRun(left)).toThrow();
+      expect(() => dryRun(right)).toThrow();
     });
 
     it("associativity holds with failure in second function", () => {
@@ -814,7 +852,8 @@ describe("Task Monad - Monad Laws", () => {
       const left = flatMap(flatMap(m, f), g);
       const right = flatMap(m, (x) => flatMap(f(x), g));
 
-      expect(left._tag).toBe(right._tag);
+      expect(() => dryRun(left)).toThrow();
+      expect(() => dryRun(right)).toThrow();
     });
   });
 });
@@ -830,9 +869,7 @@ describe("Task Monad - Functor Laws", () => {
       const m = pure(42);
       const result = map(m, (x) => x);
 
-      expect((result as { value: number }).value).toBe(
-        (m as { value: number }).value,
-      );
+      expect(dryRun(result).value).toBe(dryRun(m).value);
     });
 
     it("map(id) ≡ id for Fail tasks", () => {
@@ -840,7 +877,7 @@ describe("Task Monad - Functor Laws", () => {
       const m = fail<number>(error);
       const result = map(m, (x) => x);
 
-      expect(result._tag).toBe("Fail");
+      expect(() => dryRun(result)).toThrow();
     });
   });
 
@@ -854,9 +891,7 @@ describe("Task Monad - Functor Laws", () => {
       const left = map(m, (x) => f(g(x)));
       const right = map(map(m, g), f);
 
-      expect((left as { value: number }).value).toBe(
-        (right as { value: number }).value,
-      );
+      expect(dryRun(left).value).toBe(dryRun(right).value);
     });
   });
 });
@@ -909,7 +944,7 @@ describe("Task Monad - Edge Cases", () => {
       for (let i = 0; i < 100; i++) {
         t = flatMap(t, (x) => pure(x + 1));
       }
-      expect((t as { value: number }).value).toBe(100);
+      expect(dryRun(t).value).toBe(100);
     });
 
     it("handles deeply nested map", () => {
@@ -917,7 +952,7 @@ describe("Task Monad - Edge Cases", () => {
       for (let i = 0; i < 100; i++) {
         t = map(t, (x) => x + 1);
       }
-      expect((t as { value: number }).value).toBe(100);
+      expect(dryRun(t).value).toBe(100);
     });
 
     it("handles deeply nested TaskBuilder chains", () => {
@@ -925,14 +960,14 @@ describe("Task Monad - Edge Cases", () => {
       for (let i = 0; i < 100; i++) {
         builder = builder.map((x) => x + 1);
       }
-      expect((builder.unwrap() as { value: number }).value).toBe(100);
+      expect(dryRun(builder.unwrap()).value).toBe(100);
     });
   });
 
   describe("Type coercion", () => {
     it("preserves type through transformations", () => {
       const t = map(pure({ x: 1 }), (obj) => obj.x);
-      expect((t as { value: number }).value).toBe(1);
+      expect(dryRun(t).value).toBe(1);
     });
 
     it("handles union types", () => {

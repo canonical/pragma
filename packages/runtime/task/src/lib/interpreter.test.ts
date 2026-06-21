@@ -18,8 +18,18 @@ import {
   TaskExecutionError,
 } from "./interpreter.js";
 import { info, succeed, warn } from "./primitives.js";
-import { effect, fail, flatMap, map, pure } from "./task.js";
-import type { Effect, ExecResult, TaskError } from "./types.js";
+import {
+  $,
+  effect,
+  fail,
+  flatMap,
+  gen,
+  map,
+  mapError,
+  pure,
+  recover,
+} from "./task.js";
+import type { Effect, ExecResult, Task, TaskError } from "./types.js";
 
 // Note: These tests focus on the interpreter's logic without actually
 // performing I/O. For real I/O testing, integration tests should be used.
@@ -1435,5 +1445,126 @@ describe("Interpreter - AbortSignal without reason", () => {
       expect(err).toBeInstanceOf(TaskExecutionError);
       expect((err as TaskExecutionError).message).toBe("Task interrupted");
     }
+  });
+});
+
+// =============================================================================
+// runTask - Recover (error recovery realised on the interpreter stack)
+// =============================================================================
+
+describe("Interpreter - runTask with recover", () => {
+  it("recovers from a failed task", async () => {
+    const error: TaskError = { code: "ERR", message: "boom" };
+    const result = await runTask(recover(fail<number>(error), () => pure(42)));
+    expect(result).toBe(42);
+  });
+
+  it("passes the original error to the handler", async () => {
+    const error: TaskError = { code: "ERR_42", message: "boom" };
+    const result = await runTask(
+      recover(fail<string>(error), (e) => pure(`recovered: ${e.code}`)),
+    );
+    expect(result).toBe("recovered: ERR_42");
+  });
+
+  it("does not invoke the handler on success", async () => {
+    let called = false;
+    const result = await runTask(
+      recover(pure(7), () => {
+        called = true;
+        return pure(0);
+      }),
+    );
+    expect(result).toBe(7);
+    expect(called).toBe(false);
+  });
+
+  it("rethrows when the handler itself fails", async () => {
+    const make = () =>
+      recover(fail<number>({ code: "E1", message: "first" }), () =>
+        fail<number>({ code: "E2", message: "second" }),
+      );
+    await expect(runTask(make())).rejects.toThrow(TaskExecutionError);
+    try {
+      await runTask(make());
+      expect.unreachable("should have thrown");
+    } catch (e) {
+      expect((e as TaskExecutionError).code).toBe("E2");
+    }
+  });
+
+  it("supports nested recover (outer catches when inner handler fails)", async () => {
+    const result = await runTask(
+      recover(
+        recover(fail<number>({ code: "E1", message: "first" }), () =>
+          fail<number>({ code: "E2", message: "second" }),
+        ),
+        () => pure(99),
+      ),
+    );
+    expect(result).toBe(99);
+  });
+
+  it("recovers a failure raised after intervening binds", async () => {
+    // The Fail must unwind past the bind frames to reach the recovery frame.
+    const task = recover(
+      flatMap(
+        flatMap(pure(1), (x) => pure(x + 1)),
+        () => fail<number>({ code: "MID", message: "mid-chain failure" }),
+      ),
+      () => pure(-1),
+    );
+    expect(await runTask(task)).toBe(-1);
+  });
+
+  it("mapError transforms the error of a failed task", async () => {
+    const task = mapError(
+      fail<number>({ code: "ORIG", message: "m" }),
+      (e) => ({
+        ...e,
+        code: "WRAPPED",
+      }),
+    );
+    try {
+      await runTask(task);
+      expect.unreachable("should have thrown");
+    } catch (e) {
+      expect((e as TaskExecutionError).code).toBe("WRAPPED");
+    }
+  });
+});
+
+// =============================================================================
+// runTask - Stack safety (the trampoline runs deep chains in constant stack)
+// =============================================================================
+
+describe("Interpreter - runTask stack safety", () => {
+  const N = 100_000;
+
+  it("runs a very long flatMap chain without overflowing the stack", async () => {
+    let task: Task<number> = pure(0);
+    for (let i = 0; i < N; i++) {
+      task = flatMap(task, (x) => pure(x + 1));
+    }
+    expect(await runTask(task)).toBe(N);
+  });
+
+  it("runs a very long map chain without overflowing the stack", async () => {
+    let task: Task<number> = pure(0);
+    for (let i = 0; i < N; i++) {
+      task = map(task, (x) => x + 1);
+    }
+    expect(await runTask(task)).toBe(N);
+  });
+
+  it("runs a very long generator without overflowing the stack", async () => {
+    const task = gen(function* () {
+      let acc = 0;
+      for (let i = 0; i < N; i++) {
+        acc = yield* $(pure(acc + 1));
+      }
+      return acc;
+    });
+    expect(await runTask(task)).toBe(N);
   });
 });

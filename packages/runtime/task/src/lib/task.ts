@@ -9,6 +9,13 @@
  * - Composable: Tasks can be sequenced with flatMap/chain
  * - Testable: Effects can be collected without execution
  * - Type-safe: Full TypeScript inference for composed tasks
+ * - Stack-safe: `flatMap`/`recover` build internal trampoline nodes (`FlatMap`/
+ *   `Recover`) as data rather than recursing through continuations, so the
+ *   interpreter realises bind and recovery on an explicit stack and stays
+ *   stack-safe for arbitrarily long chains.
+ *
+ * The monad is parameterised over its leaf effect alphabet `E` (defaulting to
+ * the built-in {@link Effect}), so the kernel itself is effect-agnostic.
  */
 
 import type { Effect, Task, TaskError } from "./types.js";
@@ -20,7 +27,7 @@ import type { Effect, Task, TaskError } from "./types.js";
 /**
  * Lift a pure value into a Task.
  */
-export const pure = <A>(value: A): Task<A> => ({
+export const pure = <A, E = Effect>(value: A): Task<A, E> => ({
   _tag: "Pure",
   value,
 });
@@ -29,16 +36,16 @@ export const pure = <A>(value: A): Task<A> => ({
  * Create a Task from an Effect.
  * The continuation receives the result of executing the effect.
  */
-export const effect = <A>(eff: Effect): Task<A> => ({
+export const effect = <A = unknown, E = Effect>(eff: E): Task<A, E> => ({
   _tag: "Effect",
   effect: eff,
-  cont: (result) => pure(result as A),
+  cont: (result): Task<A, E> => pure(result as A),
 });
 
 /**
  * Create a failed Task with an error.
  */
-export const fail = <A = never>(error: TaskError): Task<A> => ({
+export const fail = <A = never, E = Effect>(error: TaskError): Task<A, E> => ({
   _tag: "Fail",
   error,
 });
@@ -46,7 +53,10 @@ export const fail = <A = never>(error: TaskError): Task<A> => ({
 /**
  * Create a failed Task from an error code and message.
  */
-export const failWith = <A = never>(code: string, message: string): Task<A> =>
+export const failWith = <A = never, E = Effect>(
+  code: string,
+  message: string,
+): Task<A, E> =>
   fail({
     code,
     message,
@@ -59,77 +69,61 @@ export const failWith = <A = never>(code: string, message: string): Task<A> =>
 /**
  * Monadic bind (flatMap).
  * Sequences two tasks, passing the result of the first to produce the second.
+ *
+ * Builds an internal `FlatMap` trampoline node rather than recursing through
+ * continuations, keeping arbitrarily long bind chains stack-safe; the
+ * interpreter realises the bind on an explicit continuation stack.
  */
-export const flatMap = <A, B>(task: Task<A>, f: (a: A) => Task<B>): Task<B> => {
-  switch (task._tag) {
-    case "Pure":
-      return f(task.value);
-    case "Fail":
-      return task as unknown as Task<B>;
-    case "Effect":
-      return {
-        _tag: "Effect",
-        effect: task.effect,
-        cont: (result) => flatMap(task.cont(result), f),
-      };
-  }
-};
+export const flatMap = <A, B, E = Effect>(
+  task: Task<A, E>,
+  f: (a: A) => Task<B, E>,
+): Task<B, E> => ({
+  _tag: "FlatMap",
+  inner: task as Task<unknown, E>,
+  f: f as (x: unknown) => Task<B, E>,
+});
 
 /**
  * Functor map.
  * Transform the result of a task with a pure function.
  */
-export const map = <A, B>(task: Task<A>, f: (a: A) => B): Task<B> =>
-  flatMap(task, (a) => pure(f(a)));
+export const map = <A, B, E = Effect>(
+  task: Task<A, E>,
+  f: (a: A) => B,
+): Task<B, E> => flatMap(task, (a) => pure(f(a)));
 
 /**
  * Apply a function wrapped in a Task to a value wrapped in a Task.
  */
-export const ap = <A, B>(taskF: Task<(a: A) => B>, taskA: Task<A>): Task<B> =>
-  flatMap(taskF, (f) => map(taskA, f));
+export const ap = <A, B, E = Effect>(
+  taskF: Task<(a: A) => B, E>,
+  taskA: Task<A, E>,
+): Task<B, E> => flatMap(taskF, (f) => map(taskA, f));
 
 /**
  * Error recovery.
  * If the task fails, the handler can produce a new task.
+ *
+ * Builds an internal `Recover` trampoline node; the interpreter routes a `Fail`
+ * raised while evaluating the inner task to the handler on its explicit
+ * handler-frame stack, so recovery is stack-safe like bind.
  */
-export const recover = <A>(
-  task: Task<A>,
-  handler: (error: TaskError) => Task<A>,
-): Task<A> => {
-  switch (task._tag) {
-    case "Pure":
-      return task;
-    case "Fail":
-      return handler(task.error);
-    case "Effect":
-      return {
-        _tag: "Effect",
-        effect: task.effect,
-        cont: (result) => recover(task.cont(result), handler),
-      };
-  }
-};
+export const recover = <A, E = Effect>(
+  task: Task<A, E>,
+  handler: (error: TaskError) => Task<A, E>,
+): Task<A, E> => ({
+  _tag: "Recover",
+  inner: task,
+  handler,
+});
 
 /**
  * Map over the error of a failed task.
  */
-export const mapError = <A>(
-  task: Task<A>,
+export const mapError = <A, E = Effect>(
+  task: Task<A, E>,
   f: (error: TaskError) => TaskError,
-): Task<A> => {
-  switch (task._tag) {
-    case "Pure":
-      return task;
-    case "Fail":
-      return fail(f(task.error));
-    case "Effect":
-      return {
-        _tag: "Effect",
-        effect: task.effect,
-        cont: (result) => mapError(task.cont(result), f),
-      };
-  }
-};
+): Task<A, E> => recover(task, (error) => fail(f(error)));
 
 // =============================================================================
 // Fluent Builder API
@@ -247,7 +241,9 @@ export const $ = <A>(task: Task<A>): TaskGen<A> => ({
  * Avoids nested flatMap chains for complex sequential tasks.
  *
  * Use `yield*` with `$(task)` to unwrap a task, getting back its value.
- * Under the hood this composes flatMap calls.
+ * Under the hood this composes flatMap calls; the resulting task is driven by
+ * the interpreter one step at a time, so even very long generators stay
+ * stack-safe.
  *
  * @example
  * ```typescript
@@ -283,23 +279,24 @@ export const gen = <A>(
 /**
  * Check if a task is pure (no effects).
  */
-export const isPure = <A>(t: Task<A>): t is { _tag: "Pure"; value: A } =>
-  t._tag === "Pure";
+export const isPure = <A, E = Effect>(
+  t: Task<A, E>,
+): t is { _tag: "Pure"; value: A } => t._tag === "Pure";
 
 /**
  * Check if a task has failed.
  */
-export const isFailed = <A>(
-  t: Task<A>,
+export const isFailed = <A, E = Effect>(
+  t: Task<A, E>,
 ): t is { _tag: "Fail"; error: TaskError } => t._tag === "Fail";
 
 /**
  * Check if a task has effects.
  */
-export const hasEffects = <A>(
-  t: Task<A>,
+export const hasEffects = <A, E = Effect>(
+  t: Task<A, E>,
 ): t is {
   _tag: "Effect";
-  effect: Effect;
-  cont: (result: unknown) => Task<A>;
+  effect: E;
+  cont: (result: unknown) => Task<A, E>;
 } => t._tag === "Effect";
