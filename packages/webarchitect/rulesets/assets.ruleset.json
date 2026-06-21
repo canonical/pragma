@@ -9,7 +9,7 @@
         "type": "object",
         "properties": {
           "license": {
-            "const": "LGPL-3.0"
+            "const": "${license}"
           }
         },
         "required": ["license"]

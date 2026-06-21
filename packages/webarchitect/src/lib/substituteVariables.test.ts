@@ -45,6 +45,35 @@ describe("substituteVariables", () => {
     expect(/^/.test("anything")).toBe(true);
   });
 
+  it("resolves a license variable into a package-license const (default LGPL-3.0, --license overrides)", () => {
+    const licenseSchema = (): Schema => ({
+      name: "library",
+      variables: {
+        license: { default: "LGPL-3.0", schema: { type: "string" } },
+      },
+      "package-license": {
+        file: {
+          name: "package.json",
+          contains: {
+            type: "object",
+            // biome-ignore lint/suspicious/noTemplateCurlyInString: literal token resolved by substituteVariables
+            properties: { license: { const: "${license}" } },
+          },
+        },
+      },
+    });
+    const licenseConst = (schema: Schema): unknown =>
+      (
+        schema["package-license"] as unknown as {
+          file: { contains: { properties: { license: { const: string } } } };
+        }
+      ).file.contains.properties.license.const;
+    expect(licenseConst(substituteVariables(licenseSchema()))).toBe("LGPL-3.0");
+    expect(
+      licenseConst(substituteVariables(licenseSchema(), { license: "MIT" })),
+    ).toBe("MIT");
+  });
+
   it("removes the variables block from the resolved schema", () => {
     expect(substituteVariables(baseSchema()).variables).toBeUndefined();
   });
