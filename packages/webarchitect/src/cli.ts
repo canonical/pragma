@@ -301,6 +301,7 @@ program
     {},
   )
   .option("--prefix <value>", "shortcut for --var prefix=<value>")
+  .option("--license <value>", "shortcut for --var license=<value>")
   .action(async (schemaArg, options) => {
     // Handle --list option
     if (options.list) {
@@ -317,12 +318,16 @@ program
       process.exit(1);
     }
     try {
-      // Merge variable overrides; --prefix is sugar for --var prefix=<value>.
+      // Merge variable overrides; --prefix / --license are sugar for
+      // --var prefix=<value> / --var license=<value>.
       const variableOverrides: Record<string, string> = {
         ...(options.var ?? {}),
       };
       if (options.prefix !== undefined) {
         variableOverrides.prefix = options.prefix;
+      }
+      if (options.license !== undefined) {
+        variableOverrides.license = options.license;
       }
 
       const results = await validate(
