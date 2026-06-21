@@ -132,6 +132,19 @@ export const collectUndos = <A>(task: Task<A>): Task<void>[] => {
         const mockResult = mockEffectWithFs(eff, virtualFs);
         return walk(t.cont(mockResult) as Task<T>);
       }
+
+      case "FlatMap":
+        return walk(t.f(walk(t.inner)) as Task<T>);
+
+      case "Recover":
+        try {
+          return walk(t.inner);
+        } catch (error) {
+          if (error instanceof TaskExecutionError) {
+            return walk(t.handler(error.taskError));
+          }
+          throw error;
+        }
     }
   };
 
@@ -219,6 +232,19 @@ const collectUndosWithVirtualFs = <A>(
         const mockResult = mockEffectWithFs(eff, virtualFs);
         return walk(t.cont(mockResult) as Task<T>);
       }
+
+      case "FlatMap":
+        return walk(t.f(walk(t.inner)) as Task<T>);
+
+      case "Recover":
+        try {
+          return walk(t.inner);
+        } catch (error) {
+          if (error instanceof TaskExecutionError) {
+            return walk(t.handler(error.taskError));
+          }
+          throw error;
+        }
     }
   };
 

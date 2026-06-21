@@ -213,19 +213,50 @@ export type BaseErrorCode =
  * A Task is a pure description of a computation that may:
  * - Return a value immediately (Pure)
  * - Perform an effect and continue (Effect)
+ * - Sequence another task via an internal trampoline node (FlatMap)
+ * - Install an error-recovery frame (Recover)
  * - Fail with an error (Fail)
  *
  * Tasks are lazy - they don't execute until interpreted by `runTask` or `dryRun`.
  *
+ * The public authoring surface is the three smart constructors `pure` / `effect`
+ * / `fail`. `FlatMap` and `Recover` are **internal trampoline nodes**: `flatMap`
+ * and `recover` build them as data rather than recursing through continuations,
+ * so the interpreter can realise bind and recovery on an explicit continuation
+ * stack and stay stack-safe to arbitrary depth. Authors never construct them
+ * directly.
+ *
+ * The monad is parameterised over its leaf effect alphabet `E` (defaulting to
+ * {@link Effect}), so the kernel is effect-agnostic; the built-in `Effect` union
+ * is one instantiation.
+ *
  * @typeParam A - The type of the value this task produces
+ * @typeParam E - The leaf effect alphabet (an object with a `_tag` field)
  */
-export type Task<A> =
+export type Task<A, E = Effect> =
   /** Pure value - computation complete */
   | { _tag: "Pure"; value: A }
   /** Effect with continuation - perform effect, then continue */
-  | { _tag: "Effect"; effect: Effect; cont: (result: unknown) => Task<A> }
+  | { _tag: "Effect"; effect: E; cont: (result: unknown) => Task<A, E> }
   /** Failure - computation failed with error */
-  | { _tag: "Fail"; error: TaskError };
+  | { _tag: "Fail"; error: TaskError }
+  /** Internal trampoline bind node (not part of the public authoring API) */
+  | {
+      _tag: "FlatMap";
+      inner: Task<unknown, E>;
+      f: (x: unknown) => Task<A, E>;
+    }
+  /**
+   * Internal error-handler node (not part of the public authoring API).
+   * Installs an error-recovery frame; the interpreter routes a `Fail` raised
+   * while evaluating `inner` to `handler`, realised on the interpreter's
+   * handler stack so recovery is stack-safe like bind.
+   */
+  | {
+      _tag: "Recover";
+      inner: Task<A, E>;
+      handler: (error: TaskError) => Task<A, E>;
+    };
 
 // =============================================================================
 // Execution Result

@@ -32,7 +32,7 @@ import {
   symlink,
   writeFile,
 } from "./primitives.js";
-import { effect, fail, flatMap, map, pure } from "./task.js";
+import { effect, fail, flatMap, map, pure, recover } from "./task.js";
 import type { Effect, TaskError } from "./types.js";
 
 // =============================================================================
@@ -609,6 +609,107 @@ describe("Dry-Run - collectEffects", () => {
     // collectEffects stops at Fail node, does not throw
     const effects = collectEffects(task);
     expect(effects.length).toBe(1);
+  });
+});
+
+// =============================================================================
+// Lazy node handling (FlatMap / Recover) across the dry-run interpreters
+// =============================================================================
+
+describe("Dry-Run - lazy node handling", () => {
+  const boom = (): never => {
+    throw new Error("raw");
+  };
+
+  it("drives flatMap chains and recovers failures", () => {
+    expect(dryRun(flatMap(pure(1), (x) => pure(x + 1))).value).toBe(2);
+    expect(
+      dryRun(recover(fail<number>({ code: "E", message: "m" }), () => pure(42)))
+        .value,
+    ).toBe(42);
+    expect(dryRun(recover(pure(7), () => pure(0))).value).toBe(7);
+  });
+
+  it("rethrows a non-task error raised inside a recovered task", () => {
+    expect(() => dryRun(recover(map(pure(1), boom), () => pure(0)))).toThrow(
+      "raw",
+    );
+  });
+
+  it("drives flatMap/recover inside Parallel children", () => {
+    const { value } = dryRun(
+      effect<unknown[]>({
+        _tag: "Parallel",
+        tasks: [
+          flatMap(pure(1), (x) => pure(x + 1)),
+          recover(fail<number>({ code: "E", message: "m" }), () => pure(3)),
+          recover(pure(5), () => pure(0)),
+        ],
+      }),
+    );
+    expect(value).toEqual([2, 3, 5]);
+  });
+
+  it("rethrows a non-task error from a Parallel child", () => {
+    expect(() =>
+      dryRun(
+        effect<unknown[]>({
+          _tag: "Parallel",
+          tasks: [recover(map(pure(1), boom), () => pure(0))],
+        }),
+      ),
+    ).toThrow("raw");
+  });
+
+  it("dryRunWith drives flatMap/recover and rethrows non-task errors", () => {
+    const mocks = new Map<string, (e: Effect) => unknown>([
+      ["ReadFile", () => "x"],
+    ]);
+    expect(
+      dryRunWith(
+        flatMap(pure(1), (x) => pure(x + 1)),
+        mocks,
+      ).value,
+    ).toBe(2);
+    expect(
+      dryRunWith(
+        recover(pure(1), () => pure(0)),
+        mocks,
+      ).value,
+    ).toBe(1);
+    expect(
+      dryRunWith(
+        recover(fail<number>({ code: "E", message: "m" }), () => pure(9)),
+        mocks,
+      ).value,
+    ).toBe(9);
+    expect(() =>
+      dryRunWith(
+        recover(map(pure(1), boom), () => pure(0)),
+        mocks,
+      ),
+    ).toThrow("raw");
+  });
+
+  it("collectEffects walks flatMap/recover and rethrows non-task errors", () => {
+    expect(
+      collectEffects(
+        flatMap(effect<string>({ _tag: "ReadFile", path: "a" }), () => pure(1)),
+      ),
+    ).toEqual([{ _tag: "ReadFile", path: "a" }]);
+    expect(
+      collectEffects(
+        recover(effect<string>({ _tag: "ReadFile", path: "b" }), () => pure(0)),
+      ),
+    ).toEqual([{ _tag: "ReadFile", path: "b" }]);
+    expect(
+      collectEffects(
+        recover(fail<number>({ code: "E", message: "m" }), () => pure(0)),
+      ),
+    ).toEqual([]);
+    expect(() =>
+      collectEffects(recover(map(pure(1), boom), () => pure(0))),
+    ).toThrow("raw");
   });
 });
 

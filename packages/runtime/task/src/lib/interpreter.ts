@@ -293,7 +293,20 @@ export interface RunTaskOptions {
 // =============================================================================
 
 /**
+ * A frame on the interpreter's explicit continuation stack: either a pending
+ * bind (the `f` of a `FlatMap`) or an installed error-recovery handler (the
+ * `handler` of a `Recover`).
+ */
+type Frame =
+  | { kind: "bind"; f: (x: unknown) => Task<unknown> }
+  | { kind: "recover"; handler: (error: TaskError) => Task<unknown> };
+
+/**
  * Run a task to completion, executing all effects.
+ *
+ * Bind and recovery are realised on an explicit continuation/handler-frame
+ * stack rather than by recursing through the task structure, so arbitrarily
+ * long `flatMap`/`gen` chains run in constant call-stack depth.
  */
 export const runTask = async <A>(
   task: Task<A>,
@@ -319,92 +332,131 @@ export const runTask = async <A>(
     }
   };
 
-  const runInternal = async <B>(t: Task<B>): Promise<B> => {
-    checkInterrupted();
+  // Perform a single effect and return its result. Structural Parallel/Race
+  // effects run their children through a fresh interpreter pass; every other
+  // effect is routed to executeEffect.
+  const perform = async (effect: Effect): Promise<unknown> => {
+    if (effect._tag === "Parallel") {
+      onEffectStart?.(effect);
+      const startTime = performance.now();
 
-    switch (t._tag) {
-      case "Pure":
-        return t.value;
+      const settled = await Promise.allSettled(
+        effect.tasks.map((child) => interpret(child)),
+      );
 
-      case "Fail":
-        throw new TaskExecutionError(t.error);
+      const errors: TaskError[] = [];
+      const results: unknown[] = [];
 
-      case "Effect": {
-        const effect = t.effect;
-
-        // Handle Parallel and Race effects specially to preserve options
-        if (effect._tag === "Parallel") {
-          onEffectStart?.(effect);
-          const startTime = performance.now();
-
-          const settled = await Promise.allSettled(
-            effect.tasks.map((task) => runInternal(task)),
+      for (const outcome of settled) {
+        if (outcome.status === "fulfilled") {
+          results.push(outcome.value);
+        } else {
+          const err = outcome.reason;
+          errors.push(
+            err instanceof TaskExecutionError
+              ? err.taskError
+              : { code: "INTERNAL", message: String(err) },
           );
+        }
+      }
 
-          const errors: TaskError[] = [];
-          const results: unknown[] = [];
+      if (errors.length > 0) {
+        const primary = errors[0];
+        throw new TaskExecutionError({
+          ...primary,
+          suppressed: errors.length > 1 ? errors.slice(1) : undefined,
+        });
+      }
 
-          for (const result of settled) {
-            if (result.status === "fulfilled") {
-              results.push(result.value);
-            } else {
-              const err = result.reason;
-              errors.push(
-                err instanceof TaskExecutionError
-                  ? err.taskError
-                  : { code: "INTERNAL", message: String(err) },
-              );
+      onEffectComplete?.(effect, performance.now() - startTime);
+      return results;
+    }
+
+    if (effect._tag === "Race") {
+      onEffectStart?.(effect);
+      const startTime = performance.now();
+
+      const result = await Promise.race(
+        effect.tasks.map((child) => interpret(child)),
+      );
+
+      onEffectComplete?.(effect, performance.now() - startTime);
+      return result;
+    }
+
+    onEffectStart?.(effect);
+    const startTime = performance.now();
+    const result = await executeEffect(effect, context, promptHandler, onLog);
+    onEffectComplete?.(effect, performance.now() - startTime);
+    return result;
+  };
+
+  // The trampoline: drive a task to its final value on an explicit stack of
+  // bind/recover frames, so no node type recurses through the host call stack.
+  const interpret = async (root: Task<unknown>): Promise<unknown> => {
+    const stack: Frame[] = [];
+    let cur: Task<unknown> = root;
+
+    for (;;) {
+      checkInterrupted();
+
+      switch (cur._tag) {
+        case "FlatMap":
+          stack.push({ kind: "bind", f: cur.f });
+          cur = cur.inner;
+          break;
+
+        case "Recover":
+          stack.push({ kind: "recover", handler: cur.handler });
+          cur = cur.inner;
+          break;
+
+        case "Effect": {
+          const result = await perform(cur.effect);
+          cur = cur.cont(result);
+          break;
+        }
+
+        case "Pure": {
+          // Success: unwind to the next bind frame, discarding recovery frames.
+          const value = cur.value;
+          let resumed = false;
+          while (stack.length > 0) {
+            const frame = stack.pop() as Frame;
+            if (frame.kind === "bind") {
+              cur = frame.f(value);
+              resumed = true;
+              break;
             }
           }
-
-          if (errors.length > 0) {
-            const primary = errors[0];
-            throw new TaskExecutionError({
-              ...primary,
-              suppressed: errors.length > 1 ? errors.slice(1) : undefined,
-            });
+          if (!resumed) {
+            return value;
           }
-
-          const duration = performance.now() - startTime;
-          onEffectComplete?.(effect, duration);
-
-          return runInternal(t.cont(results));
+          break;
         }
 
-        if (effect._tag === "Race") {
-          onEffectStart?.(effect);
-          const startTime = performance.now();
-
-          const result = await Promise.race(
-            effect.tasks.map((task) => runInternal(task)),
-          );
-
-          const duration = performance.now() - startTime;
-          onEffectComplete?.(effect, duration);
-
-          return runInternal(t.cont(result));
+        case "Fail": {
+          // Failure: unwind to the nearest recovery frame, discarding binds.
+          const error = cur.error;
+          let resumed = false;
+          while (stack.length > 0) {
+            const frame = stack.pop();
+            if (frame?.kind === "recover") {
+              cur = frame.handler(error);
+              resumed = true;
+              break;
+            }
+          }
+          if (!resumed) {
+            throw new TaskExecutionError(error);
+          }
+          break;
         }
-
-        // Handle all other effects
-        onEffectStart?.(effect);
-        const startTime = performance.now();
-
-        const result = await executeEffect(
-          effect,
-          context,
-          promptHandler,
-          onLog,
-        );
-
-        const duration = performance.now() - startTime;
-        onEffectComplete?.(effect, duration);
-
-        return runInternal(t.cont(result));
       }
     }
   };
 
-  return runInternal(task);
+  return interpret(task as Task<unknown>) as Promise<A>;
 };
 
 /**
