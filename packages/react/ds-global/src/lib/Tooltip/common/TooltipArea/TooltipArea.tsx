@@ -1,5 +1,5 @@
 import type { ReactElement } from "react";
-import { usePopup } from "../../../hooks/index.js";
+import { useIsMounted, usePopup } from "../../../hooks/index.js";
 import { Tooltip } from "../../index.js";
 import type { TooltipAreaProps } from "./types.js";
 
@@ -39,6 +39,8 @@ const TooltipArea = ({
     handleTriggerLeave,
     bestPosition,
   } = usePopup({ distance, autoFit, ...props });
+
+  const isMounted = useIsMounted();
 
   const TooltipMessageElement = (
     <Tooltip
@@ -90,13 +92,16 @@ const TooltipArea = ({
         {children}
       </span>
       {/*
-        Portal can only be rendered on the client
+        Portals allow the tooltip to be rendered outside the parent element.
+        This is helpful when the parent element is a scrollable container or
+        has bounds that may be overflown by the tooltip message.
+
+        The portal can only attach on the client, and the first client render
+        must produce the same tree as the server HTML for hydration to
+        succeed — so the message stays inline until the component has mounted.
       */}
-      {typeof window !== "undefined"
-        ? // Portals allow the tooltip to be rendered outside the parent element
-          // This is helpful when the parent element is a scrollable container or has bounds that may be
-          // overflown by the tooltip message.
-          createPortal(TooltipMessageElement, parentElement || document.body)
+      {isMounted
+        ? createPortal(TooltipMessageElement, parentElement || document.body)
         : TooltipMessageElement}
     </span>
   );

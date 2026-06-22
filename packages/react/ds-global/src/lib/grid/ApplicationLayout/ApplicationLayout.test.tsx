@@ -15,7 +15,8 @@ describe("ApplicationLayout", () => {
     render(
       <ApplicationLayout className="custom-class">Content</ApplicationLayout>,
     );
-    const element = screen.getByText("Content");
+    // The root element carries the classes; children may render in a descendant.
+    const element = document.querySelector(".custom-class") as HTMLElement;
     expect(element).toHaveClass("application-layout");
     expect(element).toHaveClass("custom-class");
   });
