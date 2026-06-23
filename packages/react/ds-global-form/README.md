@@ -59,31 +59,6 @@ function ContactForm() {
 }
 ```
 
-## Standalone inputs (without a form)
-
-Every input ships in two tiers:
-
-- **Presentational** — pure, controlled components with no react-hook-form
-  dependency, exported from the `/inputs` subpath. Usable anywhere (and
-  server-renderable):
-
-  ```tsx
-  import { Text, Combobox, Select } from "@canonical/react-ds-global-form/inputs";
-
-  function Example() {
-    const [value, setValue] = useState("");
-    return <Text name="email" inputType="email" value={value} onChange={(e) => setValue(e.target.value)} />;
-  }
-  ```
-
-- **Field-bound** — the same inputs wrapped with react-hook-form binding plus
-  label/description/error chrome, rendered by the `Field` router (below) inside
-  a `Form`.
-
-Reach for the `/inputs` components when you need an input outside the form
-system (custom layouts, your own state management, or progressive-enhancement
-shells); reach for `Field` when you want the full form integration.
-
 ## Field Switch Pattern
 
 The `Field` component uses `inputType` to select the appropriate input component:
