@@ -3,7 +3,7 @@ import type {
   BaseProps,
   Option,
   OptionsProps,
-  TODONativeInputTypes,
+  NativeInputType,
 } from "../inputs/types.js";
 import type { CheckboxProps } from "./Checkbox/index.js";
 import type { ChoicesProps } from "./Choices/index.js";
@@ -25,7 +25,7 @@ import type { TextareaProps } from "./Textarea/index.js";
 
 // Shared presentational types live in `../inputs/types.ts`; re-export them so
 // existing field-tier consumers keep importing them from here.
-export type { BaseProps, Option, OptionsProps, TODONativeInputTypes };
+export type { BaseProps, Option, OptionsProps, NativeInputType };
 
 export type BaseInputProps = BaseProps & {
   name: string;
@@ -43,7 +43,7 @@ export type InputProps<
 > = BaseInputProps & AdditionalComponentProps;
 
 export type FieldProps =
-  | ({ inputType: TODONativeInputTypes } & TextProps)
+  | ({ inputType: NativeInputType } & TextProps)
   | ({ inputType: "checkbox" } & CheckboxProps)
   | ({ inputType: "hidden" } & HiddenProps)
   | ({ inputType: "range" } & RangeProps)

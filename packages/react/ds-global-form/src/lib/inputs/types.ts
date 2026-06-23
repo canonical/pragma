@@ -21,7 +21,7 @@ export type OptionsProps = {
 };
 
 /** Native text-like input types associated with a text input. */
-export type TODONativeInputTypes =
+export type NativeInputType =
   | "text"
   | "password"
   | "email"

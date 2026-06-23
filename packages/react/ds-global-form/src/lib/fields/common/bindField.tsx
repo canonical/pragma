@@ -66,6 +66,7 @@ export default function bindField<P extends FieldBindingProps>(
       return (
         <Presentational
           {...rest}
+          name={name}
           value={field.value}
           onChange={field.onChange}
           onBlur={field.onBlur}
