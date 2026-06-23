@@ -7,12 +7,12 @@
   --skip-link-top: -999px;
   --skip-link-outline-offset: calc(
     -1 *
-    var(--tmp-focusable-focused-outline-width)
+    var(--dimension-stroke-thickness-large, 3px)
   );
-  --skip-link-focus-inset-inline-start: var(--spacing-horizontal-small);
-  --skip-link-focus-padding-block: var(--spacing-vertical-large);
-  --skip-link-focus-padding-inline: var(--spacing-horizontal-large);
-  --skip-link-focus-top: var(--spacing-vertical-small);
+  --skip-link-focus-inset-inline-start: var(--space-100, 0.5rem);
+  --skip-link-focus-padding-block: var(--space-200, 1rem);
+  --skip-link-focus-padding-inline: var(--space-200, 1rem);
+  --skip-link-focus-top: var(--space-100, 0.5rem);
   --skip-link-focus-z-index: 999999;
 }
 

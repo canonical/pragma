@@ -107,12 +107,12 @@
 
 <style>
 	.story-force-focused :global(.skip-link) {
-		inset-inline-start: var(--spacing-horizontal-small) !important;
-		outline-offset: calc(-1 * var(--tmp-focusable-focused-outline-width)) !important;
-		padding-block: var(--spacing-vertical-large) !important;
-		padding-inline: var(--spacing-horizontal-large) !important;
+		inset-inline-start: var(--space-100, 0.5rem) !important;
+		outline-offset: calc(-1 * var(--dimension-stroke-thickness-large, 3px)) !important;
+		padding-block: var(--space-200, 1rem) !important;
+		padding-inline: var(--space-200, 1rem) !important;
 		position: fixed !important;
-		top: var(--spacing-vertical-small) !important;
+		top: var(--space-100, 0.5rem) !important;
 		z-index: 999999 !important;
 	}
 </style>
