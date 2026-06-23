@@ -1,7 +1,7 @@
 import { Button } from "@canonical/react-ds-global";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import Field from "../Field/Field.js";
 import Form from "../Form/Form.js";
+import Field from "../fields/Field.js";
 
 const noop = (data: Record<string, unknown>) => console.log(data);
 
