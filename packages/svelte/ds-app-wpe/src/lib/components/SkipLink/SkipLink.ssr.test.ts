@@ -53,9 +53,10 @@ describe("SkipLink SSR", () => {
     const page = render(Component, {
       props: { class: "test-class" } satisfies ComponentProps<typeof Component>,
     });
-    expect(componentLocator(page).className).toContain(
-      "ds skip-link test-class",
-    );
+    const el = componentLocator(page);
+    expect(el.classList).toContain("ds");
+    expect(el.classList).toContain("skip-link");
+    expect(el.classList).toContain("test-class");
   });
 });
 
