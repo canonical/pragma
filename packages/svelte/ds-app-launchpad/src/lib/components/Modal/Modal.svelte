@@ -41,13 +41,6 @@
     isMounted.value && !("closedBy" in HTMLDialogElement.prototype),
   );
 
-  // TODO(Invoker Commands API): Remove this when Invoker Commands API is widely supported (https://caniuse.com/wf-invoker-commands)
-  const isInvokerCommandsFallbackNeeded = $derived(
-    isMounted.value &&
-      (!("commandForElement" in HTMLButtonElement.prototype) ||
-        !("command" in HTMLButtonElement.prototype)),
-  );
-
   const fallbackOnclick: typeof onclick = (e) => {
     onclick?.(e);
     if (
@@ -61,7 +54,6 @@
 </script>
 
 {@render trigger?.({
-  onclick: isInvokerCommandsFallbackNeeded ? showModal : undefined,
   commandfor: id,
   command: "show-modal",
   "aria-haspopup": "dialog",
