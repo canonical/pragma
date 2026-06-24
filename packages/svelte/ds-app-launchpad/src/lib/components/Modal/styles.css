@@ -3,7 +3,11 @@
   --dimension-width-modal: 38rem;
 
   position: fixed;
-  margin: auto;
+  inset: 0;
+  /* z-index on dialog is only relevant when opened as non-modal.
+  Modal dialogs are rendered on the top-layer anyways  */
+  /* TODO: Add z-index tokens */
+  z-index: 10;
   width: min(100vw, var(--dimension-width-modal));
 
   border: var(--lp-dimension-stroke-thickness-default) solid
@@ -17,11 +21,18 @@
     transition-duration: var(--lp-transition-duration-fast);
   }
 
+  &.no-transition {
+    &,
+    &::backdrop {
+      transition: none;
+    }
+  }
+
   &::backdrop {
     background-color: var(--lp-color-background-overlay);
   }
 
-  /* 
+  /*
       [open] is a fallback for Safari that doesn't support the `:open`.
 
       TODO(:open): Remove when Safari supports it (https://developer.mozilla.org/en-US/docs/Web/CSS/:open)
@@ -30,10 +41,29 @@
     &,
     &::backdrop {
       opacity: 1;
+    }
+  }
 
-      @starting-style {
+  /* Starting styles only for modal dialogs, so the SSR opened shows up immediately */
+  &:modal {
+    @starting-style {
+      &,
+      &::backdrop {
         opacity: 0;
       }
     }
+  }
+}
+
+.ds.modal-non-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: var(--lp-color-background-overlay);
+  display: none;
+  /* TODO: Add z-index tokens */
+  z-index: 10;
+
+  &:has(+ .ds.modal:is(:open, [open]):not(:modal)) {
+    display: block;
   }
 }

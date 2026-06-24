@@ -3,12 +3,7 @@
 import type { Snippet } from "svelte";
 import type { HTMLDialogAttributes } from "svelte/elements";
 
-/*
- `open` is omitted, as from the [MDN](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/dialog#html-only_dialog):
- > Dialogs that are displayed using the open attribute are non-modal.
- > It is possible to toggle the display of the dialog by adding or removing the boolean `open` attribute, but it is not the recommended practice.
-*/
-type BaseProps = Omit<HTMLDialogAttributes, "open" | "children">;
+type BaseProps = Omit<HTMLDialogAttributes, "children">;
 
 export type ModalTriggerProps = {
   commandfor: string;
@@ -41,6 +36,13 @@ export interface ModalProps extends BaseProps {
    * - `close`: A function to close the modal.
    */
   children?: Snippet<[commandfor: string, close: () => void]>;
+  /**
+   * `open` serves two purposes:
+   * - As an SSR mechanism to render the modal already open without client-side JS.
+   *   Note: a dialog displayed this way is non-modal, so the component styles emulate a modal and, once hydrated, upgrade it to a real one.
+   * - As a two-way bindable prop once hydrated: setting it maps to `showModal()` / `close()`, and it is updated back to reflect the state change triggered by other means (e.g., invoker commands, Escape press, outside click).
+   */
+  open?: BaseProps["open"];
 }
 
 export interface ModalMethods {
