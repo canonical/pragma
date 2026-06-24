@@ -1,6 +1,6 @@
 {
   "name": "@canonical/storybook-addon-utils",
-  "version": "0.28.0",
+  "version": "0.29.0-experimental.0",
   "type": "module",
   "files": [
     "dist"
@@ -64,8 +64,8 @@
   "devDependencies": {
     "@biomejs/biome": "2.4.9",
     "@canonical/biome-config": "^0.28.0",
-    "@canonical/router-core": "^0.28.0",
-    "@canonical/router-react": "^0.28.0",
+    "@canonical/router-core": "^0.29.0-experimental.0",
+    "@canonical/router-react": "^0.29.0-experimental.0",
     "@canonical/styles": "^0.28.0",
     "@canonical/typescript-config-react": "^0.28.0",
     "@storybook/addon-docs": "^10.3.1",

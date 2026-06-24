@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.29.0-experimental.0](https://github.com/canonical/pragma/compare/v0.28.0...v0.29.0-experimental.0) (2026-06-24)
+
+
+### Features
+
+* **webarchitect:** add --license parameter (defaults to LGPL-3.0) ([#690](https://github.com/canonical/pragma/issues/690)) ([0a6f795](https://github.com/canonical/pragma/commit/0a6f79529a47171c5015fa67e79ce65f63eca501))
+
+
+
+
+
 # [0.28.0](https://github.com/canonical/pragma/compare/v0.27.1-experimental.0...v0.28.0) (2026-06-16)
 
 

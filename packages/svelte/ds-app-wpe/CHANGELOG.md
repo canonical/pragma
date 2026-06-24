@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.29.0-experimental.0](https://github.com/canonical/pragma/compare/v0.28.0...v0.29.0-experimental.0) (2026-06-24)
+
+
+### Features
+
+* **svelte-wpe:** Add `SkipLink` component ([#659](https://github.com/canonical/pragma/issues/659)) ([26253e9](https://github.com/canonical/pragma/commit/26253e94a25ef8ff8a00816b71212a931288b248))
+
+
+
+
+
 # [0.28.0](https://github.com/canonical/pragma/compare/v0.27.1-experimental.0...v0.28.0) (2026-06-16)
 
 **Note:** Version bump only for package @canonical/svelte-ds-app-wpe

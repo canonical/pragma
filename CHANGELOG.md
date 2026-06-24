@@ -3,6 +3,19 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.29.0-experimental.0](https://github.com/canonical/pragma/compare/v0.28.0...v0.29.0-experimental.0) (2026-06-24)
+
+
+### Features
+
+* **svelte-wpe:** Add `SkipLink` component ([#659](https://github.com/canonical/pragma/issues/659)) ([26253e9](https://github.com/canonical/pragma/commit/26253e94a25ef8ff8a00816b71212a931288b248))
+* **task:** stack-safe trampoline interpreter + effect-alphabet generics ([#691](https://github.com/canonical/pragma/issues/691)) ([7dc66a3](https://github.com/canonical/pragma/commit/7dc66a3b6ca939bf9970903af241d947b6187fd0))
+* **webarchitect:** add --license parameter (defaults to LGPL-3.0) ([#690](https://github.com/canonical/pragma/issues/690)) ([0a6f795](https://github.com/canonical/pragma/commit/0a6f79529a47171c5015fa67e79ce65f63eca501))
+
+
+
+
+
 # [0.28.0](https://github.com/canonical/pragma/compare/v0.27.1-experimental.0...v0.28.0) (2026-06-16)
 
 
