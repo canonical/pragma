@@ -33,7 +33,7 @@
 			Click inside this example box, then press Tab to focus the skip
 			link.
 		</p>
-		<!-- biome-ignore lint/a11y/useValidAnchor: for demo only -->
+		<!-- svelte-ignore a11y_invalid_attribute: for demo only -->
 		<a href="#">After skipping to main content, this is next in focus order</a>
 	</main>
 </Story>
@@ -59,7 +59,7 @@
 			Click inside this example box, then press Tab to focus the skip
 			link.
 		</p>
-		<!-- biome-ignore lint/a11y/useValidAnchor: for demo only -->
+		<!-- svelte-ignore a11y_invalid_attribute: for demo only -->
 		<a href="#">After skipping to main content, this is next in focus order</a>
 	</main>
 </Story>
@@ -82,7 +82,7 @@
 			Click inside this example box, then press Tab to focus the skip
 			link.
 		</p>
-		<!-- biome-ignore lint/a11y/useValidAnchor: for demo only -->
+		<!-- svelte-ignore a11y_invalid_attribute: for demo only -->
 		<a href="#">After skipping to main content, this is next in focus order</a>
 	</main>
 </Story>
