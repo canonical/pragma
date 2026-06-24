@@ -1,8 +1,8 @@
 import type { Meta, StoryFn } from "@storybook/react-vite";
 import * as decorators from "storybook/decorators.js";
 import * as fieldMaps from "storybook/fixtures.fields.js";
-import { Field } from "../Field/index.js";
-import type { FieldProps } from "../Field/types.js";
+import { Field } from "../fields/index.js";
+import type { FieldProps } from "../fields/types.js";
 
 /**
  * ## Grid context
