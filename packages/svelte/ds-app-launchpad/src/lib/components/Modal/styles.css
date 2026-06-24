@@ -3,6 +3,7 @@
   --dimension-width-modal: 38rem;
 
   position: fixed;
+  margin: auto;
   inset: 0;
   /* z-index on dialog is only relevant when opened as non-modal.
   Modal dialogs are rendered on the top-layer anyways  */
@@ -29,7 +30,10 @@
   }
 
   &::backdrop {
-    background-color: var(--lp-color-background-overlay);
+    background-color: var(
+      --modal-backdrop-color,
+      var(--lp-color-background-overlay)
+    );
   }
 
   /*
@@ -58,7 +62,10 @@
 .ds.modal-non-modal-backdrop {
   position: fixed;
   inset: 0;
-  background-color: var(--lp-color-background-overlay);
+  background-color: var(
+    --modal-backdrop-color,
+    var(--lp-color-background-overlay)
+  );
   display: none;
   /* TODO: Add z-index tokens */
   z-index: 10;

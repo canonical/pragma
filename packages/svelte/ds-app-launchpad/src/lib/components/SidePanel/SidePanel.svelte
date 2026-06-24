@@ -7,7 +7,11 @@
 
   const componentCssClassName = "ds side-panel";
 
-  let { class: className, ...rest }: SidePanelProps = $props();
+  let {
+    class: className,
+    open = $bindable(),
+    ...rest
+  }: SidePanelProps = $props();
 
   let modalMethods = $state<SidePanelMethods>();
 
@@ -22,7 +26,9 @@
 
 <Modal
   bind:this={modalMethods}
+  bind:open
   class={[componentCssClassName, className]}
+  --modal-backdrop-color="transparent"
   {...rest}
 />
 

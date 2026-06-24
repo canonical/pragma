@@ -21,7 +21,10 @@
     */
   &:is(:open, [open]) {
     transform: translateX(0);
+  }
 
+  /* Starting styles only for modal dialogs, so the SSR opened shows up immediately */
+  &:modal {
     @starting-style {
       transform: translateX(100%);
     }
