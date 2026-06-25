@@ -1,0 +1,31 @@
+/* Component tokens — sourced from @canonical/design-tokens */
+:root {
+  --link-soft-selected-font-weight: var(--font-weight-bold);
+  --link-focus-outline-style: var(--tmp-focusable-focused-outline-style);
+  --link-focus-outline-width: var(--tmp-focusable-focused-outline-width);
+  --link-focus-outline-color: var(--tmp-focusable-focused-outline-color);
+}
+
+.ds.link {
+  &.soft {
+    /*
+      Soft links use normal text color and only reveal link color on hover.
+      TODO: because <a> tags have their color set in the styles package, we
+      need to set a specific color here. Otherwise, we could use `currentColor`
+      or only apply link color to non-soft links. Confirm this approach.
+    */
+    color: var(--color-text);
+
+    &:hover {
+      color: var(--color-text-link);
+    }
+
+    &:visited {
+      color: var(--color-text);
+    }
+
+    &[aria-current="page"] {
+      font-weight: var(--link-soft-selected-font-weight);
+    }
+  }
+}
