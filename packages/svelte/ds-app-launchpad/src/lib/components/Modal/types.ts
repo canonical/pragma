@@ -44,8 +44,3 @@ export interface ModalProps extends BaseProps {
    */
   open?: BaseProps["open"];
 }
-
-export interface ModalMethods {
-  showModal: () => void;
-  close: () => void;
-}

@@ -14,7 +14,6 @@ import {
   trigger,
   triggerText,
 } from "./test.fixtures.svelte";
-import type { ModalMethods } from "./types.js";
 
 describe("Modal component", () => {
   const baseProps = {
@@ -147,20 +146,6 @@ describe("Modal component", () => {
       await expect.poll(() => props.open).toBe(true);
     });
 
-    it("is opened by showModal() on the component instance", async () => {
-      const props = withOpen();
-      const page = render(Component, props);
-      await expect.element(componentLocator(page, true)).not.toBeVisible();
-      expect(props.open).toBe(undefined);
-
-      const component = page.component as unknown as ModalMethods;
-      component.showModal();
-      await expect.element(componentLocator(page)).toBeVisible();
-      await expect.element(componentLocator(page)).toHaveAttribute("open");
-      await expect.element(page.getByText(contentText)).toBeVisible();
-      await expect.poll(() => props.open).toBe(true);
-    });
-
     it("is opened by setting open to true", async () => {
       const props = withOpen();
       const page = render(Component, props);
@@ -208,21 +193,6 @@ describe("Modal component", () => {
       await expect.poll(() => props.open).toBe(true);
 
       await page.getByRole("button", { name: closeButtonText }).click();
-      await expect.element(componentLocator(page, true)).not.toBeVisible();
-      await expect
-        .element(componentLocator(page, true))
-        .not.toHaveAttribute("open");
-      await expect.poll(() => props.open).toBe(false);
-    });
-
-    it("is closed by close() on the component instance", async () => {
-      const props = withOpen();
-      const page = render(Component, props);
-      await showModal(page);
-      await expect.poll(() => props.open).toBe(true);
-
-      const component = page.component as unknown as ModalMethods;
-      component.close();
       await expect.element(componentLocator(page, true)).not.toBeVisible();
       await expect
         .element(componentLocator(page, true))
@@ -318,7 +288,7 @@ function triggerLocator(page: RenderResult<typeof Component>): Locator {
 }
 
 async function showModal(page: RenderResult<typeof Component>): Promise<void> {
-  (page.component as unknown as ModalMethods).showModal();
+  (componentLocator(page, true).element() as HTMLDialogElement).showModal();
   await expect.element(componentLocator(page)).toBeVisible();
   await expect.element(componentLocator(page)).toHaveAttribute("open");
 }

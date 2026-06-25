@@ -3,7 +3,7 @@
 <script lang="ts">
   import { useIsMounted } from "../../useFunctions/index.js";
   import { isEventTargetInElement } from "../../utils/index.js";
-  import type { ModalMethods, ModalProps } from "./types.js";
+  import type { ModalProps } from "./types.js";
   import "./styles.css";
 
   const componentCssClassName = "ds modal";
@@ -19,14 +19,6 @@
     open = $bindable(),
     ...rest
   }: ModalProps = $props();
-
-  export const showModal: ModalMethods["showModal"] = () => {
-    open = true;
-  };
-
-  export const close: ModalMethods["close"] = () => {
-    open = false;
-  };
 
   const fallbackId = $props.id();
   const id = $derived(idProp || fallbackId);
@@ -104,32 +96,25 @@
   {...rest}
 >
   <div style="display: contents;" bind:this={contentWrapperRef}>
-    {@render children?.(id, close)}
+    {@render children?.(id, () => (open = false))}
   </div>
 </dialog>
 
 <!-- @component
-`Modal` provides a mechanism for displaying content overlaying the main application. 
+`Modal` provides a mechanism for displaying content overlaying the main application.
 
-Modal can be imperatively controlled by the following methods available on the component instance:
-- `showModal`: Shows the modal.
-- `close`: Closes the modal.
+Modal is declaratively controlled by default through the [Invoker Commands API](https://developer.mozilla.org/en-US/docs/Web/API/Invoker_Commands_API) using `commandfor` and `command` attributes supplied via the `trigger` snippet. See [MDN](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/dialog) for more information.
 
-Modal is declaratively controlled by default through the [Invoker Commands API](https://developer.mozilla.org/en-US/docs/Web/API/Invoker_Commands_API) using `commandfor` and `command` attributes supplied via the `trigger` snippet. Imperative methods remain available for cases where opening or closing must be orchestrated in code. See [MDN](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/dialog) for more information.
-
-Modal can also be controlled through the bindable `open` prop. With `bind:open` it stays in sync with the modal in both directions: setting it opens or closes the modal, and it updates to reflect changes made by invoker commands, `Escape`, or an outside click. Setting `open` during SSR renders the dialog open on page load without client-side JS, and it is upgraded to a true modal once hydrated.
+For cases where opening or closing must be orchestrated in code, Modal can be controlled through the bindable `open` prop. With `bind:open` it stays in sync with the modal in both directions: setting it opens or closes the modal, and it updates to reflect changes made by invoker commands, `Escape`, or an outside click. Setting `open` during SSR renders the dialog open on page load without client-side JS, and it is upgraded to a true modal once hydrated.
 
 ## Example Usage
 ```svelte
 <script lang="ts">
-  let modal = $state<ModalMethods>();
-  // Imperative controls on the component instance
-  $effect(() => modal?.showModal())
   let open = $state(false);
 </script>
 
 <p>Modal is {open ? "open" : "closed"}</p>
-<Modal bind:this={modal} bind:open>
+<Modal bind:open>
   {#snippet trigger(triggerProps)}
     <button {...triggerProps}>
       Open Modal
