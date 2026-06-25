@@ -1,7 +1,6 @@
 <!-- @canonical/generator-ds 0.10.0-experimental.2 -->
 
 <script lang="ts">
-  import type { Attachment } from "svelte/attachments";
   import { useIsMounted } from "../../useFunctions/index.js";
   import { isEventTargetInElement } from "../../utils/index.js";
   import type { ModalMethods, ModalProps } from "./types.js";
@@ -53,36 +52,14 @@
     }
   };
 
-  // Capture the initial value of `open` for SSR paint. After hydration, the dialog's open attribute should never be set manually.
+  /** Capture the initial value of `open` for SSR paint. After hydration, the dialog's open attribute should never be set manually. */
   const initialOpen = open;
 
-  // Reflect the invoker commands, Escape, outside click changes back onto `open`.
+  /** Reflect the invoker commands, Escape, outside click changes back onto `open`. */
   const ontoggle: typeof ontoggleProp = (e) => {
     ontoggleProp?.(e);
     const newOpen = e.newState === "open";
     if (newOpen !== open) open = newOpen;
-  };
-
-  const manageOpenState: Attachment<HTMLDialogElement> = (dialogEl) => {
-    // Suppress the transition on mount so that when we upgrade to modal the open fade doesn't play.
-    dialogEl.classList.add("no-transition");
-
-    // Map `open` changes to `showModal`/`close`. First run upgrades the dialog to modal if `open` is true.
-    $effect(() => {
-      if (open) {
-        if (dialogEl.open && !dialogEl.matches(":modal")) {
-          // `open === true` during SSR case
-          // `showModal` throws when called on open non-modal dialog so we need to close it first.
-          dialogEl.close();
-        }
-        dialogEl.showModal();
-      } else {
-        dialogEl.close();
-      }
-
-      // Re-enable the transition after the first sync so that later changes animate.
-      dialogEl.classList.remove("no-transition");
-    });
   };
 </script>
 
@@ -103,7 +80,27 @@
   onclick={isClosedByFallbackNeeded ? fallbackOnclick : onclick}
   {ontoggle}
   open={initialOpen}
-  {@attach manageOpenState}
+  {@attach (dialogEl) => {
+    // Suppress the transition on mount so that when we upgrade to modal the open fade doesn't play.
+    dialogEl.classList.add("no-transition");
+
+    // Map `open` changes to `showModal`/`close`. First run upgrades the dialog to modal if `open` is true.
+    $effect(() => {
+      if (open) {
+        if (dialogEl.open && !dialogEl.matches(":modal")) {
+          // `open === true` during SSR case
+          // `showModal` throws when called on open non-modal dialog so we need to close it first.
+          dialogEl.close();
+        }
+        dialogEl.showModal();
+      } else {
+        dialogEl.close();
+      }
+
+      // Re-enable the transition after the first sync so that later changes animate.
+      dialogEl.classList.remove("no-transition");
+    });
+  }}
   {...rest}
 >
   <div style="display: contents;" bind:this={contentWrapperRef}>
