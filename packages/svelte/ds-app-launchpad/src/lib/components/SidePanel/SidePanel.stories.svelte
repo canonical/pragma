@@ -36,6 +36,8 @@
       }
     }, 1000);
   };
+
+  let open = $state(false);
 </script>
 
 <Story name="Default">
@@ -104,6 +106,34 @@
         <SidePanel.Content.Header>Timed Side Panel</SidePanel.Content.Header>
         <SidePanel.Content.Body>
           This side panel closes automatically in {timeLeft} seconds.
+        </SidePanel.Content.Body>
+      </SidePanel.Content>
+    </SidePanel>
+  {/snippet}
+</Story>
+
+<Story
+  name="Controlled via bindable open prop"
+  argTypes={{ open: { control: false } }}
+>
+  {#snippet template({ children: __, trigger: _, open: ___, ...args })}
+    <!-- 
+    <script>
+      let open = $state(false);
+    </script>
+    -->
+
+    <p style="margin-block-end: 0.5rem;">
+      Side panel is {open ? "open" : "closed"}
+    </p>
+    <Button onclick={() => (open = true)}>Show side panel</Button>
+    <SidePanel bind:open {...args}>
+      <SidePanel.Content>
+        <SidePanel.Content.Header
+          >Controlled Side Panel</SidePanel.Content.Header
+        >
+        <SidePanel.Content.Body>
+          The side panel is controlled via the bindable `open` prop.
         </SidePanel.Content.Body>
       </SidePanel.Content>
     </SidePanel>
