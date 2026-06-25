@@ -1,6 +1,6 @@
 /* @canonical/generator-ds 0.10.0-experimental.5 */
 
-import { flushSync, type ComponentProps } from "svelte";
+import { type ComponentProps, flushSync } from "svelte";
 import { describe, expect, it } from "vitest";
 import type { Locator } from "vitest/browser";
 import { userEvent } from "vitest/browser";
