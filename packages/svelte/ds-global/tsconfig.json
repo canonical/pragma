@@ -1,0 +1,16 @@
+{
+  "extends": "@canonical/typescript-config-svelte",
+  "compilerOptions": {
+    "verbatimModuleSyntax": true,
+    "skipLibCheck": true,
+    "moduleResolution": "nodenext"
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.svelte",
+    "src/**/*.d.ts",
+    ".storybook/**/*.ts",
+    ".storybook/**/*.svelte",
+    "testing/**/*.ts"
+  ]
+}
