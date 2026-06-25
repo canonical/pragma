@@ -7,9 +7,10 @@
   "include": [
     "src/**/*.ts",
     "src/**/*.svelte",
-    "src/**/*.d.ts",
     ".storybook/**/*.ts",
     ".storybook/**/*.svelte",
-    "testing/**/*.ts"
+    "vite.config.ts",
+    "vitest.setup.ts",
+    "vitest.config.ts"
   ]
 }

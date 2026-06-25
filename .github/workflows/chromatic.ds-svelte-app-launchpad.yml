@@ -8,7 +8,8 @@ on:
       - packages/tokens/**
       - packages/styles/**
       - packages/utils/**
-      - packages/svelte/ds-global/**
+      # TODO: Uncommment once lp package consumes ds-global package
+      # - packages/svelte/ds-global/**
       - packages/svelte/ds-app-launchpad/**
   push:
     branches:
@@ -19,7 +20,8 @@ on:
       - packages/tokens/**
       - packages/styles/**
       - packages/utils/**
-      - packages/svelte/ds-global/**
+      # TODO: Uncommment once lp package consumes ds-global package
+      # - packages/svelte/ds-global/**
       - packages/svelte/ds-app-launchpad/**
 jobs:
   test-compile:
@@ -28,11 +30,11 @@ jobs:
       CHROMATIC_PROJECT_TOKEN: ${{ secrets.CHROMATIC_TOKEN_CANONICAL_SVELTE_DS_APP_LAUNCHPAD }}
     with:
       working-directory: packages/svelte/ds-app-launchpad
+      # TODO: Add packages/svelte/ds-global once lp package consumes ds-global package
       externals: '[
         "configs/storybook/**",
         "packages/ds-assets/**",
         "packages/tokens/**",
         "packages/styles/**",
-        "packages/utils/**",
-        "packages/svelte/ds-global/**"
+        "packages/utils/**"
       ]'

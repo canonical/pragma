@@ -1,7 +1,6 @@
 {
   "extends": "@canonical/typescript-config-svelte",
   "compilerOptions": {
-    "verbatimModuleSyntax": true,
     "skipLibCheck": true,
     "moduleResolution": "nodenext"
   },

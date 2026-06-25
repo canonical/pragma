@@ -1,6 +1,7 @@
 {
   "extends": "@canonical/typescript-config",
   "compilerOptions": {
-    "types": ["svelte", "vite/client"]
+    "types": ["svelte", "vite/client"],
+    "verbatimModuleSyntax": true
   }
 }
