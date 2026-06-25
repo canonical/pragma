@@ -36,6 +36,8 @@
       }
     }, 1000);
   };
+
+  let open = $state(false);
 </script>
 
 <Story name="Default">
@@ -113,6 +115,30 @@
         <Modal.Content.Header>Timed Modal</Modal.Content.Header>
         <Modal.Content.Body>
           The modal will close automatically in {timeLeft} seconds.
+        </Modal.Content.Body>
+      </Modal.Content>
+    </Modal>
+  {/snippet}
+</Story>
+
+<Story
+  name="Controlled via bindable open prop"
+  argTypes={{ open: { control: false } }}
+>
+  {#snippet template({ children: __, trigger: _, open: ___, ...args })}
+    <!--
+    <script>
+      let open = $state(false);
+    </script>
+    -->
+
+    <p style="margin-block-end: 0.5rem;">Modal is {open ? "open" : "closed"}</p>
+    <Button onclick={() => (open = true)}>Show modal</Button>
+    <Modal bind:open {...args}>
+      <Modal.Content>
+        <Modal.Content.Header>Controlled Modal</Modal.Content.Header>
+        <Modal.Content.Body>
+          The modal is controlled via the bindable `open` prop.
         </Modal.Content.Body>
       </Modal.Content>
     </Modal>
