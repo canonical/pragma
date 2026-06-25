@@ -1,0 +1,35 @@
+name: "svelte-ds-global/chromatic"
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+    paths:
+      - configs/storybook/**
+      - packages/ds-assets/**
+      - packages/tokens/**
+      - packages/styles/**
+      - packages/utils/**
+      - packages/svelte/ds-global/**
+  push:
+    branches:
+      - main
+    paths:
+      - configs/storybook/**
+      - packages/ds-assets/**
+      - packages/tokens/**
+      - packages/styles/**
+      - packages/utils/**
+      - packages/svelte/ds-global/**
+jobs:
+  test-compile:
+    uses: ./.github/workflows/chromatic._template.yml
+    secrets:
+      CHROMATIC_PROJECT_TOKEN: ${{ secrets.CHROMATIC_TOKEN_CANONICAL_SVELTE_DS_GLOBAL }}
+    with:
+      working-directory: packages/svelte/ds-global
+      externals: '[
+        "configs/storybook/**",
+        "packages/ds-assets/**",
+        "packages/tokens/**",
+        "packages/styles/**",
+        "packages/utils/**"
+      ]'
