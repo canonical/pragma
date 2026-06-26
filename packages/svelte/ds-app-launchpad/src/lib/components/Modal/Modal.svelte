@@ -6,7 +6,9 @@
   import type { ModalProps } from "./types.js";
   import "./styles.css";
 
-  const componentCssClassName = "ds modal";
+  const componentCssClassNameBase = "modal";
+  const componentCssClassName = `ds ${componentCssClassNameBase}`;
+  const componentCssClassNameNonModalBackdrop = `ds ${componentCssClassNameBase}-non-modal-backdrop`;
 
   let {
     id: idProp,
@@ -63,7 +65,7 @@
 
 <!-- A non-modal dialog has no real `::backdrop` so we need to fake one. Can't be a pseudo-element, because a pseudo lives inside the dialog so `closeOnOutsideClick` wouldn't work. -->
 {#if initialOpen}
-  <div class={`${componentCssClassName}-non-modal-backdrop`}></div>
+  <div class={componentCssClassNameNonModalBackdrop}></div>
 {/if}
 <dialog
   {id}
