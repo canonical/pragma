@@ -2,7 +2,6 @@
   import { defineMeta } from "@storybook/addon-svelte-csf";
   import { Button } from "../Button/index.js";
   import { Modal } from "./index.js";
-  import type { ModalMethods } from "./types.js";
 
   const { Story } = defineMeta({
     title: "Components/Modal",
@@ -18,17 +17,17 @@
     },
   });
 
-  let modal = $state<ModalMethods>();
+  let open = $state(false);
   let interval: ReturnType<typeof setInterval> | null = null;
   let timeLeft = $state(0);
   const onclick = () => {
-    if (!modal) return;
-    modal.showModal();
+    if (interval) clearInterval(interval);
+    open = true;
     timeLeft = 5;
     interval = setInterval(() => {
       timeLeft -= 1;
       if (timeLeft <= 0) {
-        modal?.close();
+        open = false;
         if (interval) {
           clearInterval(interval);
           interval = null;
@@ -73,34 +72,40 @@
 </Story>
 
 <Story
-  name="Controlled via instance methods"
+  name="Controlled via bindable open prop"
   args={{ closeOnOutsideClick: false }}
+  argTypes={{ open: { control: false } }}
 >
-  {#snippet template({ children: __, trigger: _, ...args })}
+  {#snippet template({ children: _, trigger: __, open: ___, ...args })}
     <!-- 
-    let modal = $state<ModalMethods>();
-    let interval: ReturnType<typeof setInterval> | null = null;
-    let timeLeft = $state(0);
-    const onclick = () => {
-      if (!modal) return;
-      modal.showModal();
-      timeLeft = 5;
-      interval = setInterval(() => {
-        timeLeft -= 1;
-        if (timeLeft <= 0) {
-          modal?.close();
-          if (interval) {
-            clearInterval(interval);
-            interval = null;
-          }
-        }
-      }, 1000);
-    };
+      <script lang="ts">
+        let open = $state(false);
+        let interval: ReturnType<typeof setInterval> | null = null;
+        let timeLeft = $state(0);
+        const onclick = () => {
+          if (interval) clearInterval(interval);
+          open = true;
+          timeLeft = 5;
+          interval = setInterval(() => {
+            timeLeft -= 1;
+            if (timeLeft <= 0) {
+              open = false;
+              if (interval) {
+                clearInterval(interval);
+                interval = null;
+              }
+            }
+          }, 1000);
+        };
+      </script>
     -->
 
+    <p style="margin-block-end: 0.5rem;">
+      Modal is {open ? "open" : "closed"}
+    </p>
     <Button {onclick}>Show timed modal</Button>
     <Modal
-      bind:this={modal}
+      bind:open
       onclose={() => {
         if (interval) {
           clearInterval(interval);

@@ -2,27 +2,22 @@
 
 <script lang="ts">
   import { Modal } from "../Modal/index.js";
-  import type { SidePanelMethods, SidePanelProps } from "./types.js";
+  import type { SidePanelProps } from "./types.js";
   import "./styles.css";
 
   const componentCssClassName = "ds side-panel";
 
-  let { class: className, ...rest }: SidePanelProps = $props();
-
-  let modalMethods = $state<SidePanelMethods>();
-
-  export const showModal: SidePanelMethods["showModal"] = () => {
-    modalMethods?.showModal();
-  };
-
-  export const close: SidePanelMethods["close"] = () => {
-    modalMethods?.close();
-  };
+  let {
+    class: className,
+    open = $bindable(),
+    ...rest
+  }: SidePanelProps = $props();
 </script>
 
 <Modal
-  bind:this={modalMethods}
+  bind:open
   class={[componentCssClassName, className]}
+  --modal-backdrop-color="transparent"
   {...rest}
 />
 

@@ -52,14 +52,17 @@ describe("SidePanel SSR", () => {
   });
 
   describe("attributes", () => {
-    it.each([
+    it.each<[string, unknown, string?]>([
       ["id", "test-id"],
       ["aria-label", "test-aria-label"],
-    ])("applies %s", (attribute, expected) => {
+      ["open", true, ""],
+    ])("applies %s", (attribute, set, expected) => {
       const page = render(Component, {
-        props: { ...baseProps, [attribute]: expected },
+        props: { ...baseProps, [attribute]: set },
       });
-      expect(componentLocator(page).getAttribute(attribute)).toBe(expected);
+      expect(componentLocator(page).getAttribute(attribute)).toBe(
+        expected ?? set,
+      );
     });
 
     it("applies classes", () => {

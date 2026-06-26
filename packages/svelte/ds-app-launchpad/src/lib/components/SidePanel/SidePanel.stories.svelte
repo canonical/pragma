@@ -2,7 +2,6 @@
   import { defineMeta } from "@storybook/addon-svelte-csf";
   import { Button } from "../Button/index.js";
   import { SidePanel } from "./index.js";
-  import type { SidePanelMethods } from "./types.js";
 
   const { Story } = defineMeta({
     title: "Components/SidePanel",
@@ -18,17 +17,17 @@
     },
   });
 
-  let sidePanel = $state<SidePanelMethods>();
+  let open = $state(false);
   let interval: ReturnType<typeof setInterval> | null = null;
   let timeLeft = $state(0);
   const onclick = () => {
-    if (!sidePanel) return;
-    sidePanel.showModal();
+    if (interval) clearInterval(interval);
+    open = true;
     timeLeft = 5;
     interval = setInterval(() => {
       timeLeft -= 1;
       if (timeLeft <= 0) {
-        sidePanel?.close();
+        open = false;
         if (interval) {
           clearInterval(interval);
           interval = null;
@@ -64,34 +63,40 @@
 </Story>
 
 <Story
-  name="Controlled via instance methods"
+  name="Controlled via bindable open prop"
   args={{ closeOnOutsideClick: false }}
+  argTypes={{ open: { control: false } }}
 >
-  {#snippet template({ children: __, trigger: _, ...args })}
+  {#snippet template({ children: _, trigger: __, open: ___, ...args })}
     <!-- 
-    let sidePanel = $state<SidePanelMethods>();
-    let interval: ReturnType<typeof setInterval> | null = null;
-    let timeLeft = $state(0);
-    const onclick = () => {
-      if (!sidePanel) return;
-      sidePanel.showModal();
-      timeLeft = 5;
-      interval = setInterval(() => {
-        timeLeft -= 1;
-        if (timeLeft <= 0) {
-          sidePanel?.close();
-          if (interval) {
-            clearInterval(interval);
-            interval = null;
-          }
-        }
-      }, 1000);
-    };
+      <script lang="ts">
+        let open = $state(false);
+        let interval: ReturnType<typeof setInterval> | null = null;
+        let timeLeft = $state(0);
+        const onclick = () => {
+          if (interval) clearInterval(interval);
+          open = true;
+          timeLeft = 5;
+          interval = setInterval(() => {
+            timeLeft -= 1;
+            if (timeLeft <= 0) {
+              open = false;
+              if (interval) {
+                clearInterval(interval);
+                interval = null;
+              }
+            }
+          }, 1000);
+        };
+      </script>
     -->
 
+    <p style="margin-block-end: 0.5rem;">
+      Side panel is {open ? "open" : "closed"}
+    </p>
     <Button {onclick}>Show timed side panel</Button>
     <SidePanel
-      bind:this={sidePanel}
+      bind:open
       onclose={() => {
         if (interval) {
           clearInterval(interval);

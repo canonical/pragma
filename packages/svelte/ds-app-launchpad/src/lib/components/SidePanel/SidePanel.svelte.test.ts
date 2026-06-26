@@ -1,6 +1,6 @@
 /* @canonical/generator-ds 0.10.0-experimental.5 */
 
-import type { ComponentProps } from "svelte";
+import { type ComponentProps, flushSync } from "svelte";
 import { describe, expect, it } from "vitest";
 import type { Locator } from "vitest/browser";
 import { userEvent } from "vitest/browser";
@@ -14,13 +14,29 @@ import {
   trigger,
   triggerText,
 } from "./test.fixtures.svelte";
-import type { SidePanelMethods } from "./types.js";
 
 describe("SidePanel component", () => {
   const baseProps = {
     children,
     trigger,
   } satisfies ComponentProps<typeof Component>;
+
+  function withOpen({
+    open: initialOpen,
+    ...extra
+  }: Partial<ComponentProps<typeof Component>> = {}) {
+    let open = $state(initialOpen);
+    return {
+      ...baseProps,
+      ...extra,
+      get open() {
+        return open;
+      },
+      set open(value) {
+        open = value;
+      },
+    };
+  }
 
   it("renders", async () => {
     const page = render(Component, { ...baseProps });
@@ -107,117 +123,137 @@ describe("SidePanel component", () => {
 
   describe("Opening the SidePanel", () => {
     it("is opened when `showModal` on the dialog element is called", async () => {
-      const page = render(Component, {
-        ...baseProps,
-      });
+      const props = withOpen();
+      const page = render(Component, props);
       await expect.element(componentLocator(page, true)).not.toBeVisible();
+      expect(props.open).toBe(undefined);
 
       (componentLocator(page, true).element() as HTMLDialogElement).showModal();
       await expect.element(componentLocator(page)).toBeVisible();
       await expect.element(componentLocator(page)).toHaveAttribute("open");
       await expect.element(page.getByText(contentText)).toBeVisible();
+      await expect.poll(() => props.open).toBe(true);
     });
 
     it("is opened by trigger click", async () => {
-      const page = render(Component, {
-        ...baseProps,
-      });
+      const props = withOpen();
+      const page = render(Component, props);
       await expect.element(componentLocator(page, true)).not.toBeVisible();
+      expect(props.open).toBe(undefined);
 
       await triggerLocator(page).click();
       await expect.element(componentLocator(page)).toBeVisible();
       await expect.element(componentLocator(page)).toHaveAttribute("open");
       await expect.element(page.getByText(contentText)).toBeVisible();
+      await expect.poll(() => props.open).toBe(true);
     });
 
-    it("is opened by showModal() on the component instance", async () => {
-      const page = render(Component, {
-        ...baseProps,
-      });
+    it("is opened by setting open to true", async () => {
+      const props = withOpen();
+      const page = render(Component, props);
       await expect.element(componentLocator(page, true)).not.toBeVisible();
+      expect(props.open).toBe(undefined);
 
-      const component = page.component as unknown as SidePanelMethods;
-      component.showModal();
+      props.open = true;
       await expect.element(componentLocator(page)).toBeVisible();
       await expect.element(componentLocator(page)).toHaveAttribute("open");
       await expect.element(page.getByText(contentText)).toBeVisible();
+      await expect.poll(() => props.open).toBe(true);
+    });
+
+    it("upgrades a server-rendered open dialog to a true modal on mount", async () => {
+      const props = withOpen({ open: true });
+      const page = render(Component, props);
+
+      await expect.element(componentLocator(page)).toBeVisible();
+      await expect.element(componentLocator(page)).toHaveAttribute("open");
+      await expect.element(page.getByText(contentText)).toBeVisible();
+      flushSync();
+      expect(componentLocator(page).element().matches(":modal")).toBe(true);
     });
   });
 
   describe("Closing the SidePanel", () => {
     it("is closed when `close` on the dialog element is called", async () => {
-      const page = render(Component, { ...baseProps });
+      const props = withOpen();
+      const page = render(Component, props);
       await showSidePanel(page);
+      await expect.poll(() => props.open).toBe(true);
 
       (componentLocator(page).element() as HTMLDialogElement).close();
       await expect.element(componentLocator(page, true)).not.toBeVisible();
       await expect
         .element(componentLocator(page, true))
         .not.toHaveAttribute("open");
+      await expect.poll(() => props.open).toBe(false);
     });
 
     it("is closed by close() supplied via children snippet", async () => {
-      const page = render(Component, {
-        ...baseProps,
-      });
+      const props = withOpen();
+      const page = render(Component, props);
       await showSidePanel(page);
+      await expect.poll(() => props.open).toBe(true);
 
       await page.getByRole("button", { name: closeButtonText }).click();
       await expect.element(componentLocator(page, true)).not.toBeVisible();
       await expect
         .element(componentLocator(page, true))
         .not.toHaveAttribute("open");
-    });
-
-    it("is closed by close() on the component instance", async () => {
-      const page = render(Component, { ...baseProps });
-      await showSidePanel(page);
-
-      const component = page.component as unknown as SidePanelMethods;
-      component.close();
-      await expect.element(componentLocator(page, true)).not.toBeVisible();
-      await expect
-        .element(componentLocator(page, true))
-        .not.toHaveAttribute("open");
+      await expect.poll(() => props.open).toBe(false);
     });
 
     it("is closed by clicking outside the side panel when `closeOnOutsideClick` is true", async () => {
-      const page = render(Component, {
-        ...baseProps,
-        closeOnOutsideClick: true,
-      });
+      const props = withOpen({ closeOnOutsideClick: true });
+      const page = render(Component, props);
       await showSidePanel(page);
+      await expect.poll(() => props.open).toBe(true);
 
       await componentLocator(page).click({ position: { x: -10, y: 10 } });
       await expect.element(componentLocator(page, true)).not.toBeVisible();
       await expect
         .element(componentLocator(page, true))
         .not.toHaveAttribute("open");
+      await expect.poll(() => props.open).toBe(false);
     });
 
     it("is not closed by clicking outside the side panel when `closeOnOutsideClick` is false", async () => {
-      const page = render(Component, {
-        ...baseProps,
-        closeOnOutsideClick: false,
-      });
+      const props = withOpen({ closeOnOutsideClick: false });
+      const page = render(Component, props);
       await showSidePanel(page);
+      await expect.poll(() => props.open).toBe(true);
 
       await componentLocator(page).click({ position: { x: -10, y: 10 } });
       await expect.element(componentLocator(page)).toBeVisible();
       await expect.element(componentLocator(page)).toHaveAttribute("open");
+      await expect.poll(() => props.open).toBe(true);
     });
 
     it("is closed by pressing Escape", async () => {
-      const page = render(Component, {
-        ...baseProps,
-      });
+      const props = withOpen();
+      const page = render(Component, props);
       await showSidePanel(page);
+      await expect.poll(() => props.open).toBe(true);
 
       await userEvent.keyboard("{Escape}");
       await expect.element(componentLocator(page, true)).not.toBeVisible();
       await expect
         .element(componentLocator(page, true))
         .not.toHaveAttribute("open");
+      await expect.poll(() => props.open).toBe(false);
+    });
+
+    it("is closed by setting open to false", async () => {
+      const props = withOpen();
+      const page = render(Component, props);
+      await showSidePanel(page);
+      await expect.poll(() => props.open).toBe(true);
+
+      props.open = false;
+      await expect.element(componentLocator(page, true)).not.toBeVisible();
+      await expect
+        .element(componentLocator(page, true))
+        .not.toHaveAttribute("open");
+      await expect.poll(() => props.open).toBe(false);
     });
   });
 
@@ -270,7 +306,7 @@ function triggerLocator(page: RenderResult<typeof Component>): Locator {
 async function showSidePanel(
   page: RenderResult<typeof Component>,
 ): Promise<void> {
-  (page.component as unknown as SidePanelMethods).showModal();
+  (componentLocator(page, true).element() as HTMLDialogElement).showModal();
   await expect.element(componentLocator(page)).toBeVisible();
   await expect.element(componentLocator(page)).toHaveAttribute("open");
 }
