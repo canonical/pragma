@@ -136,6 +136,21 @@ describe("PhoneInput (presentational)", () => {
     expect(usOption?.textContent).not.toContain("United States");
   });
 
+  it("leaves a non-ISO-alpha-2 custom code unmapped (no garbage flag)", () => {
+    render(
+      <PhoneInput
+        countryDisplay="flag"
+        countries={[{ code: "XYZ", name: "Custom", dialCode: "+999" }]}
+        defaultCountry="XYZ"
+      />,
+    );
+    const option = screen
+      .getByLabelText("Country code")
+      .querySelector("option");
+    // Non-alpha-2 → returned as-is, not mapped into unrelated code points.
+    expect(option?.textContent?.trim()).toBe("+999 XYZ");
+  });
+
   it("shows the number as raw digits by default (mask off)", () => {
     render(<PhoneInput defaultCountry="US" value="+15551234567" />);
     expect(screen.getByLabelText("Phone number")).toHaveValue("5551234567");

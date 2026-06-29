@@ -12,14 +12,18 @@ import "./styles.css";
 const componentCssClassName = "ds input phone chrome";
 
 /**
- * Derive the emoji flag for an ISO 3166-1 alpha-2 code by mapping each letter to
- * its regional-indicator symbol (U+1F1E6–U+1F1FF).
+ * Derive the emoji flag for an ISO 3166-1 alpha-2 code by mapping each of its
+ * two letters to its regional-indicator symbol (U+1F1E6–U+1F1FF). Non-alpha-2
+ * codes (possible via the open `CountryCode` type or a custom dataset) are
+ * returned unchanged rather than mapped into unrelated code points.
  * @note Pure.
  */
 function flagEmoji(code: string): string {
-  return code
-    .toUpperCase()
-    .replace(/./g, (char) => String.fromCodePoint(127397 + char.charCodeAt(0)));
+  const upper = code.toUpperCase();
+  if (!/^[A-Z]{2}$/.test(upper)) return code;
+  return upper.replace(/[A-Z]/g, (char) =>
+    String.fromCodePoint(127397 + char.charCodeAt(0)),
+  );
 }
 
 /** Numeric dial code (e.g. "+44" -> 44) for sorting. @note Pure. */
