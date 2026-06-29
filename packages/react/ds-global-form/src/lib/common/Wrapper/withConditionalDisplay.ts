@@ -1,6 +1,6 @@
 import React from "react";
 import { useFormContext } from "react-hook-form";
-import type { BaseInputProps, WrappedComponentProps } from "../../types.js";
+import type { BaseInputProps, WrappedComponentProps } from "../types.js";
 
 type WrappedComponentPropsInternal<ComponentProps extends BaseInputProps> =
   Omit<WrappedComponentProps<ComponentProps>, "Component">;

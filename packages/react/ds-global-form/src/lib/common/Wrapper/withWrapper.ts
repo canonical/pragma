@@ -6,7 +6,7 @@ import type {
   Condition,
   WrappedComponentProps,
   WrapperProps,
-} from "../../types.js";
+} from "../types.js";
 import DefaultWrapper from "./Wrapper.js";
 import withConditionalDisplay from "./withConditionalDisplay.js";
 

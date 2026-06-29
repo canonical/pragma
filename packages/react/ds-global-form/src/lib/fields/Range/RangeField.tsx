@@ -1,6 +1,6 @@
+import bindField from "#lib/common/bindField.js";
+import withWrapper from "#lib/common/Wrapper/withWrapper.js";
 import { Range } from "../../inputs/Range/index.js";
-import bindField from "../common/bindField.js";
-import withWrapper from "../common/Wrapper/withWrapper.js";
 import type { RangeProps } from "./types.js";
 
 /**

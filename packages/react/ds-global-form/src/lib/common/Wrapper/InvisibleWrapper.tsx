@@ -1,6 +1,6 @@
 /* @canonical/generator-ds 0.9.0-experimental.9 */
 import type React from "react";
-import type { BaseInputProps, WrapperProps } from "../../types.js";
+import type { BaseInputProps, WrapperProps } from "../types.js";
 import { useFieldWrapper } from "./hooks/index.js";
 
 /**
