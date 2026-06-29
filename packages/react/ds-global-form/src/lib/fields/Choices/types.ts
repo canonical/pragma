@@ -1,5 +1,5 @@
 import type React from "react";
-import type { BaseProps } from "#lib/inputs/types.js";
+import type { BaseProps } from "#lib/subcomponent/types.js";
 import type { InputProps } from "../types.js";
 
 export type ChoiceOption = {

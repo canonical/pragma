@@ -1,5 +1,5 @@
 import type { InputProps } from "#lib/common/types.js";
-import type { NativeInputType } from "#lib/inputs/types.js";
+import type { NativeInputType } from "#lib/subcomponent/types.js";
 import type { CheckboxProps } from "./Checkbox/index.js";
 import type { ChoicesProps } from "./Choices/index.js";
 import type { ColorProps } from "./Color/index.js";
@@ -28,15 +28,16 @@ export type {
   WrapperHOCAdditionalProps,
   WrapperProps,
 } from "#lib/common/types.js";
-// Shared presentational types live in `inputs/types.ts`; the field-composition
-// machinery types live in `common/types.ts`. Both are re-exported here so the
-// existing field-tier consumers keep importing them from `fields/types`.
+// Shared presentational types live in `subcomponent/types.ts`; the
+// field-composition machinery types live in `common/types.ts`. Both are
+// re-exported here so existing field-tier consumers keep importing them from
+// `fields/types`.
 export type {
   BaseProps,
   NativeInputType,
   Option,
   OptionsProps,
-} from "#lib/inputs/types.js";
+} from "#lib/subcomponent/types.js";
 
 export type FieldProps =
   | ({ inputType: NativeInputType } & TextProps)

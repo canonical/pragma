@@ -1,6 +1,6 @@
 import type React from "react";
 import type { RegisterOptions } from "react-hook-form";
-import type { BaseProps } from "#lib/inputs/types.js";
+import type { BaseProps } from "#lib/subcomponent/types.js";
 
 // Field-composition machinery types, shared by `Wrapper` and `bindField` and by
 // every `*Field` component. Kept in `common/` (not a tier) so any tier may

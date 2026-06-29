@@ -1,0 +1,11 @@
+/* Date — native input wrapper with shared chrome.
+ * The .chrome class provides border, padding, focus, and state styles
+ * from index.css's .ds.input.chrome rule. Component-specific overrides below.
+ */
+
+.ds.input.date {
+  /* Suppress native calendar picker inconsistencies across browsers */
+  &::-webkit-inner-spin-button {
+    display: none;
+  }
+}

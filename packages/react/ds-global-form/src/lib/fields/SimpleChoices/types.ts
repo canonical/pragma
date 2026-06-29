@@ -1,5 +1,5 @@
 /* @canonical/generator-ds 0.9.0-experimental.9 */
-import type { BaseProps, OptionsProps } from "#lib/inputs/types.js";
+import type { BaseProps, OptionsProps } from "#lib/subcomponent/types.js";
 import type { InputProps } from "../types.js";
 
 type AdditionalSimpleChoicesProps = OptionsProps & {
