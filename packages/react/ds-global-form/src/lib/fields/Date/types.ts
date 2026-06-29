@@ -1,8 +1,6 @@
-import type {
-  DateInputPresentationProps,
-  DateTimeInputPresentationProps,
-  TimeInputPresentationProps,
-} from "../../inputs/Date/index.js";
+import type { DateInputPresentationProps } from "#lib/subcomponent/DateInput/index.js";
+import type { DateTimeInputPresentationProps } from "#lib/subcomponent/DateTimeInput/index.js";
+import type { TimeInputPresentationProps } from "#lib/subcomponent/TimeInput/index.js";
 import type { InputProps } from "../types.js";
 
 /** Props for the react-hook-form-bound date field (presentational + binding). */

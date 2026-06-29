@@ -1,7 +1,7 @@
 import { debounce } from "@canonical/utils";
-import type { Middleware } from "lib/fields/types.js";
 import { createElement, useCallback, useEffect } from "react";
 import { useFormContext } from "react-hook-form";
+import type { Middleware } from "#lib/common/types.js";
 
 interface ValidationOptions {
   method?: string;
