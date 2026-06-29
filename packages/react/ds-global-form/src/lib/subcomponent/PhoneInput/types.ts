@@ -1,21 +1,9 @@
+import type { CountryCode, CountryData } from "#lib/utils/countries/index.js";
 import type { BaseProps } from "../types.js";
 
-export type CountryData = {
-  /**
-   * **ISO 3166-1 alpha-2** code (two uppercase letters, e.g. `"US"`, `"GB"`).
-   * This MUST be a valid alpha-2 code: the `countryDisplay: "flag"` emoji is
-   * derived from it by mapping each letter to its Unicode regional-indicator
-   * symbol. A non-alpha-2 code (3-letter, lowercase, numeric, etc.) yields a
-   * broken or absent flag.
-   */
-  code: string;
-
-  /** Country name */
-  name: string;
-
-  /** Dial code (e.g. "+1") */
-  dialCode: string;
-};
+// The country dataset + codes live in `utils/countries`. Re-exported here so
+// existing PhoneInput consumers keep importing `CountryData` from this module.
+export type { CountryCode, CountryData } from "#lib/utils/countries/index.js";
 
 /** Props for the presentational Phone input (controlled, no react-hook-form). */
 export type PhoneInputProps = BaseProps & {
@@ -25,13 +13,19 @@ export type PhoneInputProps = BaseProps & {
   /** Called with the next value in the configured `valueFormat`. */
   onChange?: (value: string | PhoneValue) => void;
 
-  /** Default country code (ISO 3166-1 alpha-2) */
-  defaultCountry?: string;
+  /** Default country (ISO 3166-1 alpha-2). */
+  defaultCountry?: CountryCode;
 
-  /** Countries to show at top of selector */
-  preferredCountries?: string[];
+  /** Countries to show at the top of the selector (ISO 3166-1 alpha-2). */
+  preferredCountries?: CountryCode[];
 
-  /** Value format: E.164 string or structured object */
+  /**
+   * Custom country list. Defaults to the bundled `utils/countries` dataset.
+   * Codes must be ISO 3166-1 alpha-2 (see {@link CountryData.code}).
+   */
+  countries?: CountryData[];
+
+  /** Value format: E.164 string or structured object. */
   valueFormat?: "e164" | "structured";
 
   /**
@@ -46,7 +40,16 @@ export type PhoneInputProps = BaseProps & {
    */
   countryDisplay?: "name" | "flag";
 
-  /** Whether the input is disabled */
+  /**
+   * Opt in to live national-number formatting using the selected country's
+   * display mask (cosmetic spacing/dashes; see {@link CountryData.format}).
+   * Defaults to `false` — the number is shown as raw digits and the mask code
+   * is tree-shaken out. The submitted value is always raw digits / E.164
+   * regardless of this option.
+   */
+  mask?: boolean;
+
+  /** Whether the input is disabled. */
   disabled?: boolean;
 };
 

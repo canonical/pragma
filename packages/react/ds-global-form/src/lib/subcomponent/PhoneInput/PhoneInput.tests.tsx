@@ -101,4 +101,24 @@ describe("PhoneInput (presentational)", () => {
     expect(usOption?.textContent).toContain("🇺🇸");
     expect(usOption?.textContent).not.toContain("United States");
   });
+
+  it("shows the number as raw digits by default (mask off)", () => {
+    render(<PhoneInput defaultCountry="US" value="+15551234567" />);
+    expect(screen.getByLabelText("Phone number")).toHaveValue("5551234567");
+  });
+
+  it("formats the number with the country mask when mask is enabled", () => {
+    render(<PhoneInput defaultCountry="US" mask value="+15551234567" />);
+    // US mask "(###) ###-####"
+    expect(screen.getByLabelText("Phone number")).toHaveValue("(555) 123-4567");
+  });
+
+  it("still emits raw digits (E.164) even when masked", () => {
+    const onChange = vi.fn();
+    render(<PhoneInput defaultCountry="US" mask onChange={onChange} />);
+    fireEvent.change(screen.getByLabelText("Phone number"), {
+      target: { value: "(555) 123-4567" },
+    });
+    expect(onChange).toHaveBeenLastCalledWith("+15551234567");
+  });
 });

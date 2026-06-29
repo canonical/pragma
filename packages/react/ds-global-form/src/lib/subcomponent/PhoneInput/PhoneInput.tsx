@@ -1,7 +1,11 @@
 import type React from "react";
 import { useCallback, useMemo, useState } from "react";
-import defaultCountries from "./countries.js";
-import type { CountryData, PhoneInputProps, PhoneValue } from "./types.js";
+import {
+  applyPhoneMask,
+  type CountryData,
+  countries as defaultCountries,
+} from "#lib/utils/countries/index.js";
+import type { PhoneInputProps, PhoneValue } from "./types.js";
 import "./styles.css";
 
 const componentCssClassName = "ds input phone chrome";
@@ -41,8 +45,10 @@ export const PhoneInput = ({
   onChange,
   defaultCountry = "US",
   preferredCountries = [],
+  countries = defaultCountries,
   valueFormat = "e164",
   countryDisplay = "name",
+  mask = false,
   disabled = false,
 }: PhoneInputProps): React.ReactElement => {
   const [selectedCountry, setSelectedCountry] = useState<string>(() => {
@@ -60,7 +66,7 @@ export const PhoneInput = ({
       a.name.localeCompare(b.name);
     const preferred: CountryData[] = [];
     const rest: CountryData[] = [];
-    for (const country of defaultCountries) {
+    for (const country of countries) {
       if (preferredCountries.includes(country.code)) {
         preferred.push(country);
       } else {
@@ -74,13 +80,11 @@ export const PhoneInput = ({
     );
     rest.sort(byDialCode);
     return [...preferred, ...rest];
-  }, [preferredCountries]);
+  }, [preferredCountries, countries]);
 
   const currentCountryData = useMemo(
-    () =>
-      defaultCountries.find((c) => c.code === selectedCountry) ??
-      defaultCountries[0],
-    [selectedCountry],
+    () => countries.find((c) => c.code === selectedCountry) ?? countries[0],
+    [selectedCountry, countries],
   );
 
   const getCurrentNumber = useCallback((): string => {
@@ -99,15 +103,17 @@ export const PhoneInput = ({
   const emitValue = useCallback(
     (countryCode: string, number: string) => {
       const country =
-        defaultCountries.find((c) => c.code === countryCode) ??
-        defaultCountries[0];
+        countries.find((c) => c.code === countryCode) ?? countries[0];
+      // The emitted national number is always raw digits — the mask is purely a
+      // display concern, never part of the submitted value.
+      const digits = number.replace(/\D/g, "");
       if (valueFormat === "e164") {
-        onChange?.(number ? `${country.dialCode}${number}` : "");
+        onChange?.(digits ? `${country.dialCode}${digits}` : "");
       } else {
-        onChange?.({ countryCode, number });
+        onChange?.({ countryCode, number: digits });
       }
     },
-    [valueFormat, onChange],
+    [valueFormat, onChange, countries],
   );
 
   const handleCountryChange = useCallback(
@@ -125,6 +131,12 @@ export const PhoneInput = ({
     },
     [selectedCountry, emitValue],
   );
+
+  // Display value for the number field: masked per the country's format when
+  // `mask` is enabled, otherwise the raw digits.
+  const displayNumber = mask
+    ? applyPhoneMask(getCurrentNumber(), currentCountryData.format)
+    : getCurrentNumber();
 
   return (
     <div
@@ -150,7 +162,7 @@ export const PhoneInput = ({
         type="tel"
         className="number-input p"
         inputMode="tel"
-        value={getCurrentNumber()}
+        value={displayNumber}
         onChange={handleNumberChange}
         disabled={disabled}
         aria-label="Phone number"

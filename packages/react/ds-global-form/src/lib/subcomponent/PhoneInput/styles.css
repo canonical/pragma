@@ -33,6 +33,9 @@
     &:disabled {
       cursor: not-allowed;
       color: var(--form-input-color-disabled);
+      /* The separator ("middle bar") between the two controls must adopt the
+       * disabled border colour too. */
+      border-inline-end-color: var(--form-input-border-color-disabled);
     }
   }
 
