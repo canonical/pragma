@@ -8,6 +8,7 @@ export * from "./DateInputField/index.js";
 export * from "./DateTimeInputField/index.js";
 export * from "./FileUploadField/index.js";
 export * from "./HiddenField/index.js";
+export * from "./NumberField/index.js";
 export * from "./PasswordField/index.js";
 export * from "./PhoneField/index.js";
 export * from "./RangeField/index.js";

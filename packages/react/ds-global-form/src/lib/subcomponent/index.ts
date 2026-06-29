@@ -20,6 +20,8 @@ export type { FileUploadInputProps } from "./FileUploadInput/index.js";
 export { FileUploadInput } from "./FileUploadInput/index.js";
 export type { HiddenInputProps } from "./HiddenInput/index.js";
 export { HiddenInput } from "./HiddenInput/index.js";
+export type { NumberInputProps } from "./NumberInput/index.js";
+export { NumberInput } from "./NumberInput/index.js";
 export type { PasswordInputProps } from "./PasswordInput/index.js";
 export { PasswordInput } from "./PasswordInput/index.js";
 export type { PhoneInputProps, PhoneValue } from "./PhoneInput/index.js";

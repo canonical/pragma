@@ -8,6 +8,7 @@ import { DateInputField } from "#lib/component/DateInputField/index.js";
 import { DateTimeInputField } from "#lib/component/DateTimeInputField/index.js";
 import { FileUploadField } from "#lib/component/FileUploadField/index.js";
 import { HiddenField } from "#lib/component/HiddenField/index.js";
+import { NumberField } from "#lib/component/NumberField/index.js";
 import { PasswordField } from "#lib/component/PasswordField/index.js";
 import { PhoneField } from "#lib/component/PhoneField/index.js";
 import { RangeField } from "#lib/component/RangeField/index.js";
@@ -56,6 +57,8 @@ const Field = ({
       return <PhoneField {...props} />;
     case "password":
       return <PasswordField {...props} />;
+    case "number":
+      return <NumberField {...props} />;
     case "choices":
       return <ChoicesField {...props} />;
     case "custom":
