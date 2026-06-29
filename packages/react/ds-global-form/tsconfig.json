@@ -3,6 +3,10 @@
   "compilerOptions": {
     "baseUrl": "src",
     "skipLibCheck": true,
+    // Resolve the `#lib/*` self-imports against `src` during type-checking
+    // (matches the package `imports` `development` condition). At runtime the
+    // published package resolves `#lib/*` via `default` -> `./dist/esm/lib/*`.
+    "customConditions": ["development"],
     "types": [
       "node",
       "react",

@@ -1,13 +1,10 @@
-// Public `./inputs` subpath: presentational input components, usable without a
-// react-hook-form context. The field/RHF-bound versions live under `fields/`.
+// Internal barrel for the presentational input components (no react-hook-form
+// context). Not surfaced at the package root; the field/RHF-bound versions live
+// under `fields/`. Choice-style inputs are field-private (folded into their
+// fields), so they are not re-exported here.
 
 export type { CheckboxPresentationProps } from "./Checkbox/index.js";
 export { Checkbox } from "./Checkbox/index.js";
-export type {
-  ChoiceOption,
-  ChoicesPresentationProps,
-} from "./Choices/index.js";
-export { Choices } from "./Choices/index.js";
 export type { ColorPresentationProps, HexFormat } from "./Color/index.js";
 export { Color } from "./Color/index.js";
 export type { ComboboxPresentationProps } from "./Combobox/index.js";
@@ -31,8 +28,6 @@ export type { RangePresentationProps } from "./Range/index.js";
 export { Range } from "./Range/index.js";
 export type { SelectPresentationProps } from "./Select/index.js";
 export { Select } from "./Select/index.js";
-export type { SimpleChoicesPresentationProps } from "./SimpleChoices/index.js";
-export { SimpleChoices } from "./SimpleChoices/index.js";
 export type { TextInputType, TextPresentationProps } from "./Text/index.js";
 export { Text } from "./Text/index.js";
 export type { TextareaPresentationProps } from "./Textarea/index.js";
