@@ -57,6 +57,26 @@ export const PreferredCountries: Story = {
   args: { defaultCountry: "GB", preferredCountries: ["GB", "FR"] },
 };
 
+export const NameDisplay: Story = {
+  render: (args) => {
+    const [value, setValue] = useState<string | PhoneValue>("");
+    return (
+      <PhoneInput {...args} value={value} onChange={(next) => setValue(next)} />
+    );
+  },
+  args: { defaultCountry: "US", countryDisplay: "name" },
+};
+
+export const FilteredCountries: Story = {
+  render: (args) => {
+    const [value, setValue] = useState<string | PhoneValue>("");
+    return (
+      <PhoneInput {...args} value={value} onChange={(next) => setValue(next)} />
+    );
+  },
+  args: { defaultCountry: "FR", filteredCountries: ["FR", "DE", "ES", "IT"] },
+};
+
 export const Masked: Story = {
   render: (args) => {
     const [value, setValue] = useState<string | PhoneValue>("");

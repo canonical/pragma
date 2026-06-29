@@ -4,6 +4,7 @@ import {
   applyPhoneMask,
   type CountryData,
   countries as defaultCountries,
+  type KnownCountryCode,
 } from "#lib/utils/countries/index.js";
 import type { PhoneInputProps, PhoneValue } from "./types.js";
 import "./styles.css";
@@ -26,6 +27,16 @@ function dialCodeValue(dialCode: string): number {
   return Number.parseInt(dialCode.replace(/\D/g, ""), 10);
 }
 
+/** The selector label for a country after its dial code. @note Pure. */
+function countryLabel(
+  country: CountryData,
+  display: "code" | "name" | "flag",
+): string {
+  if (display === "flag") return flagEmoji(country.code);
+  if (display === "name") return country.name;
+  return country.code;
+}
+
 /**
  * Presentational phone input combining a country code selector with a telephone
  * number field — pure markup, no react-hook-form.
@@ -45,9 +56,10 @@ export const PhoneInput = ({
   onChange,
   defaultCountry = "US",
   preferredCountries = [],
+  filteredCountries,
   countries = defaultCountries,
   valueFormat = "e164",
-  countryDisplay = "name",
+  countryDisplay = "code",
   mask = false,
   disabled = false,
 }: PhoneInputProps): React.ReactElement => {
@@ -59,28 +71,38 @@ export const PhoneInput = ({
   });
 
   const sortedCountries = useMemo(() => {
-    // Sort by dial code (then name as a stable tiebreak for shared codes, e.g.
-    // US/CA both +1), with preferred countries hoisted to the top in order.
     const byDialCode = (a: CountryData, b: CountryData) =>
       dialCodeValue(a.dialCode) - dialCodeValue(b.dialCode) ||
       a.name.localeCompare(b.name);
+
+    // 1. `filteredCountries` (if given) restricts the visible universe to a
+    //    whitelist, kept in the order the consumer listed it. Otherwise the
+    //    full dataset is the universe, sorted by dial code.
+    const universe = filteredCountries
+      ? filteredCountries
+          .map((code) => countries.find((c) => c.code === code))
+          .filter((c): c is CountryData => Boolean(c))
+      : [...countries].sort(byDialCode);
+
+    // 2. `preferredCountries` hoists favourites to the top in the order given;
+    //    the rest keep the universe's order.
+    if (preferredCountries.length === 0) return universe;
     const preferred: CountryData[] = [];
     const rest: CountryData[] = [];
-    for (const country of countries) {
-      if (preferredCountries.includes(country.code)) {
+    for (const country of universe) {
+      if (preferredCountries.includes(country.code as KnownCountryCode)) {
         preferred.push(country);
       } else {
         rest.push(country);
       }
     }
-    // Preferred kept in the order the consumer listed them; the rest by dial code.
     preferred.sort(
       (a, b) =>
-        preferredCountries.indexOf(a.code) - preferredCountries.indexOf(b.code),
+        preferredCountries.indexOf(a.code as KnownCountryCode) -
+        preferredCountries.indexOf(b.code as KnownCountryCode),
     );
-    rest.sort(byDialCode);
     return [...preferred, ...rest];
-  }, [preferredCountries, countries]);
+  }, [preferredCountries, filteredCountries, countries]);
 
   const currentCountryData = useMemo(
     () => countries.find((c) => c.code === selectedCountry) ?? countries[0],
@@ -153,8 +175,7 @@ export const PhoneInput = ({
       >
         {sortedCountries.map((country) => (
           <option key={country.code} value={country.code}>
-            {country.dialCode}{" "}
-            {countryDisplay === "flag" ? flagEmoji(country.code) : country.name}
+            {country.dialCode} {countryLabel(country, countryDisplay)}
           </option>
         ))}
       </select>

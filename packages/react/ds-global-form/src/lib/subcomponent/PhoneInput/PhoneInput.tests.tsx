@@ -74,25 +74,59 @@ describe("PhoneInput (presentational)", () => {
     expect(dialValues).toEqual(sorted);
   });
 
-  it("shows the dial code before the country name", () => {
-    render(<PhoneInput />);
-    const option = screen
-      .getByLabelText("Country code")
-      .querySelector("option");
-    // e.g. "+1 Canada" — dial code first, then the name.
-    expect(option?.textContent?.trim()).toMatch(/^\+\d+\s+\S/);
+  it("shows the dial code before the ISO code by default", () => {
+    render(<PhoneInput defaultCountry="US" />);
+    const usOption = Array.from(
+      screen.getByLabelText("Country code").querySelectorAll("option"),
+    ).find((o) => o.value === "US");
+    // Default display = "code": "+1 US" — dial code first, then the ISO code,
+    // NOT the full country name.
+    expect(usOption?.textContent?.trim()).toBe("+1 US");
+    expect(usOption?.textContent).not.toContain("United States");
   });
 
-  it("keeps preferred countries first, in the order given", () => {
+  it("shows the full country name when countryDisplay='name'", () => {
+    render(<PhoneInput countryDisplay="name" defaultCountry="US" />);
+    const usOption = Array.from(
+      screen.getByLabelText("Country code").querySelectorAll("option"),
+    ).find((o) => o.value === "US");
+    expect(usOption?.textContent?.trim()).toBe("+1 United States");
+  });
+
+  it("hoists preferred countries to the top, in the order given", () => {
     render(<PhoneInput preferredCountries={["GB", "FR"]} />);
     const options = Array.from(
       screen.getByLabelText("Country code").querySelectorAll("option"),
     );
     expect(options[0]?.value).toBe("GB");
     expect(options[1]?.value).toBe("FR");
+    // preferred only hoists — the rest of the world is still present.
+    expect(options.length).toBeGreaterThan(2);
   });
 
-  it("renders an emoji flag instead of the name when countryDisplay='flag'", () => {
+  it("restricts the list to filteredCountries (whitelist, in order)", () => {
+    render(<PhoneInput filteredCountries={["FR", "DE", "ES"]} />);
+    const options = Array.from(
+      screen.getByLabelText("Country code").querySelectorAll("option"),
+    );
+    expect(options.map((o) => o.value)).toEqual(["FR", "DE", "ES"]);
+  });
+
+  it("composes filteredCountries (universe) with preferredCountries (hoist)", () => {
+    render(
+      <PhoneInput
+        filteredCountries={["FR", "DE", "ES"]}
+        preferredCountries={["ES"]}
+      />,
+    );
+    const options = Array.from(
+      screen.getByLabelText("Country code").querySelectorAll("option"),
+    );
+    expect(options[0]?.value).toBe("ES");
+    expect(options.map((o) => o.value).sort()).toEqual(["DE", "ES", "FR"]);
+  });
+
+  it("renders an emoji flag when countryDisplay='flag'", () => {
     render(<PhoneInput countryDisplay="flag" defaultCountry="US" />);
     const usOption = Array.from(
       screen.getByLabelText("Country code").querySelectorAll("option"),
