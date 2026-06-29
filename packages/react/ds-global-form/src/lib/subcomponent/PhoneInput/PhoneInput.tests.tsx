@@ -141,7 +141,8 @@ describe("PhoneInput (presentational)", () => {
       <PhoneInput
         countryDisplay="flag"
         countries={[{ code: "XYZ", name: "Custom", dialCode: "+999" }]}
-        defaultCountry="XYZ"
+        // `defaultCountry` is typed to known codes; cast for this custom-data edge case.
+        defaultCountry={"XYZ" as never}
       />,
     );
     const option = screen
