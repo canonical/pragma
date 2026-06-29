@@ -12,6 +12,17 @@ import "./styles.css";
 const componentCssClassName = "ds range-control";
 
 /**
+ * A range input can't represent "empty", so the slider mirror is clamped to a
+ * valid number — `min` when the source is blank/non-numeric/out of range.
+ * @returns {string} the clamped value as a string
+ */
+function clampToSlider(raw: string, min: number, max: number): string {
+  const n = Number.parseFloat(raw);
+  if (Number.isNaN(n)) return String(min);
+  return String(Math.min(Math.max(n, min), max));
+}
+
+/**
  * Presentational range control: a canonical NUMBER input paired with a slider
  * that mirrors it. Pure markup, no react-hook-form.
  *
@@ -50,7 +61,7 @@ export const RangeControl = forwardRef<HTMLInputElement, RangeControlProps>(
       min,
       max,
       step,
-      sliderLabel = "Slider",
+      sliderLabel,
       onChange,
       ...numberProps
     },
@@ -59,16 +70,24 @@ export const RangeControl = forwardRef<HTMLInputElement, RangeControlProps>(
     const numberRef = useRef<HTMLInputElement | null>(null);
     // Slider is client-only: no-JS users see just the canonical number input.
     const [mounted, setMounted] = useState(false);
+
     // Mirror of the current value used to drive the (controlled) slider.
+    const initial =
+      numberProps.value ?? numberProps.defaultValue ?? String(min);
     const [sliderValue, setSliderValue] = useState<string>(
-      numberProps.value != null
-        ? String(numberProps.value)
-        : numberProps.defaultValue != null
-          ? String(numberProps.defaultValue)
-          : "",
+      clampToSlider(String(initial), min, max),
     );
 
-    useEffect(() => setMounted(true), []);
+    // On mount, seed the slider from the number input's actual DOM value: in the
+    // react-hook-form `register()` path the initial value comes from RHF
+    // `defaultValues` applied to the node, which the props above don't see.
+    // biome-ignore lint/correctness/useExhaustiveDependencies: intentional mount-only sync — re-running on min/max changes would clobber the user's current value.
+    useEffect(() => {
+      setMounted(true);
+      if (numberRef.current?.value) {
+        setSliderValue(clampToSlider(numberRef.current.value, min, max));
+      }
+    }, []);
 
     // Compose the forwarded RHF ref with our local ref to the number input.
     const setNumberRef = (node: HTMLInputElement | null) => {
@@ -77,14 +96,20 @@ export const RangeControl = forwardRef<HTMLInputElement, RangeControlProps>(
       else if (ref) ref.current = node;
     };
 
+    // The slider's accessible name: explicit `sliderLabel`, else derived from the
+    // field `name` so multiple RangeFields aren't all just "Slider".
+    const resolvedSliderLabel =
+      sliderLabel ??
+      (numberProps.name ? `${numberProps.name} (slider)` : "Slider");
+
     const handleNumberChange = (e: ChangeEvent<HTMLInputElement>) => {
-      setSliderValue(e.target.value);
+      setSliderValue(clampToSlider(e.target.value, min, max));
       onChange?.(e);
     };
 
     const handleSliderChange = (e: ChangeEvent<HTMLInputElement>) => {
       const next = e.target.value;
-      setSliderValue(next);
+      setSliderValue(clampToSlider(next, min, max));
       // Write through to the canonical number input so react-hook-form (bound to
       // it) sees the change: set the value via the native setter and dispatch a
       // real `input` event, which React/RHF listen for.
@@ -119,7 +144,7 @@ export const RangeControl = forwardRef<HTMLInputElement, RangeControlProps>(
           <input
             type="range"
             className="ds range range-slider"
-            aria-label={sliderLabel}
+            aria-label={resolvedSliderLabel}
             min={min}
             max={max}
             step={step}

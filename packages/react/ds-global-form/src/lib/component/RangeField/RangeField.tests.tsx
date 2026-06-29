@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { FormProvider, useForm } from "react-hook-form";
 import { describe, expect, it, vi } from "vitest";
 import { renderWithForm } from "../../../testing/renderWithForm.js";
@@ -22,6 +22,18 @@ describe("RangeField", () => {
     expect(slider).toHaveAttribute("aria-label");
     // The slider must NOT carry the field name (it would double-submit).
     expect(slider).not.toHaveAttribute("name");
+  });
+
+  it("derives the slider aria-label from the field name when none is given", () => {
+    renderWithForm(
+      <RangeField name="volume" label="Volume" min={0} max={100} />,
+    );
+    // A generic "Slider" would make every RangeField's slider indistinguishable
+    // to assistive tech; the default is field-specific.
+    expect(screen.getByRole("slider")).toHaveAttribute(
+      "aria-label",
+      "volume (slider)",
+    );
   });
 
   it("forwards min/max/step to both controls", () => {
@@ -51,7 +63,9 @@ describe("RangeField", () => {
         </FormProvider>
       );
     }
-    renderWithForm(<Host />);
+    // Host already provides its own FormProvider + <form>, so render plainly
+    // rather than double-wrapping with renderWithForm.
+    render(<Host />);
     fireEvent.change(screen.getByRole("slider"), { target: { value: "42" } });
     // The number input mirrors the slider.
     expect(screen.getByLabelText("Volume")).toHaveValue(42);
