@@ -28,6 +28,12 @@ export type PhoneInputProps = BaseProps & {
   /** Value format: E.164 string or structured object */
   valueFormat?: "e164" | "structured";
 
+  /**
+   * How each country is labelled in the selector, after its dial code:
+   * `"name"` (default) shows the country name, `"flag"` shows its emoji flag.
+   */
+  countryDisplay?: "name" | "flag";
+
   /** Whether the input is disabled */
   disabled?: boolean;
 };

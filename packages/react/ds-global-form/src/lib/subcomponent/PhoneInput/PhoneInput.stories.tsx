@@ -36,3 +36,23 @@ export const StructuredValue: Story = {
   },
   args: { defaultCountry: "US", valueFormat: "structured" },
 };
+
+export const FlagDisplay: Story = {
+  render: (args) => {
+    const [value, setValue] = useState<string | PhoneValue>("");
+    return (
+      <PhoneInput {...args} value={value} onChange={(next) => setValue(next)} />
+    );
+  },
+  args: { defaultCountry: "US", countryDisplay: "flag" },
+};
+
+export const PreferredCountries: Story = {
+  render: (args) => {
+    const [value, setValue] = useState<string | PhoneValue>("");
+    return (
+      <PhoneInput {...args} value={value} onChange={(next) => setValue(next)} />
+    );
+  },
+  args: { defaultCountry: "GB", preferredCountries: ["GB", "FR"] },
+};

@@ -7,6 +7,22 @@ import "./styles.css";
 const componentCssClassName = "ds input phone chrome";
 
 /**
+ * Derive the emoji flag for an ISO 3166-1 alpha-2 code by mapping each letter to
+ * its regional-indicator symbol (U+1F1E6–U+1F1FF).
+ * @note Pure.
+ */
+function flagEmoji(code: string): string {
+  return code
+    .toUpperCase()
+    .replace(/./g, (char) => String.fromCodePoint(127397 + char.charCodeAt(0)));
+}
+
+/** Numeric dial code (e.g. "+44" -> 44) for sorting. @note Pure. */
+function dialCodeValue(dialCode: string): number {
+  return Number.parseInt(dialCode.replace(/\D/g, ""), 10);
+}
+
+/**
  * Presentational phone input combining a country code selector with a telephone
  * number field — pure markup, no react-hook-form.
  *
@@ -26,6 +42,7 @@ export const PhoneInput = ({
   defaultCountry = "US",
   preferredCountries = [],
   valueFormat = "e164",
+  countryDisplay = "name",
   disabled = false,
 }: PhoneInputProps): React.ReactElement => {
   const [selectedCountry, setSelectedCountry] = useState<string>(() => {
@@ -36,7 +53,11 @@ export const PhoneInput = ({
   });
 
   const sortedCountries = useMemo(() => {
-    if (preferredCountries.length === 0) return defaultCountries;
+    // Sort by dial code (then name as a stable tiebreak for shared codes, e.g.
+    // US/CA both +1), with preferred countries hoisted to the top in order.
+    const byDialCode = (a: CountryData, b: CountryData) =>
+      dialCodeValue(a.dialCode) - dialCodeValue(b.dialCode) ||
+      a.name.localeCompare(b.name);
     const preferred: CountryData[] = [];
     const rest: CountryData[] = [];
     for (const country of defaultCountries) {
@@ -46,6 +67,12 @@ export const PhoneInput = ({
         rest.push(country);
       }
     }
+    // Preferred kept in the order the consumer listed them; the rest by dial code.
+    preferred.sort(
+      (a, b) =>
+        preferredCountries.indexOf(a.code) - preferredCountries.indexOf(b.code),
+    );
+    rest.sort(byDialCode);
     return [...preferred, ...rest];
   }, [preferredCountries]);
 
@@ -114,7 +141,8 @@ export const PhoneInput = ({
       >
         {sortedCountries.map((country) => (
           <option key={country.code} value={country.code}>
-            {country.code} {country.dialCode}
+            {country.dialCode}{" "}
+            {countryDisplay === "flag" ? flagEmoji(country.code) : country.name}
           </option>
         ))}
       </select>

@@ -61,4 +61,44 @@ describe("PhoneInput (presentational)", () => {
     expect(screen.getByLabelText("Country code")).toBeDisabled();
     expect(screen.getByLabelText("Phone number")).toBeDisabled();
   });
+
+  it("sorts the country options by ascending dial code", () => {
+    render(<PhoneInput />);
+    const options = Array.from(
+      screen.getByLabelText("Country code").querySelectorAll("option"),
+    );
+    const dialValues = options.map((o) =>
+      Number.parseInt((o.textContent ?? "").replace(/\D/g, ""), 10),
+    );
+    const sorted = [...dialValues].sort((a, b) => a - b);
+    expect(dialValues).toEqual(sorted);
+  });
+
+  it("shows the dial code before the country name", () => {
+    render(<PhoneInput />);
+    const option = screen
+      .getByLabelText("Country code")
+      .querySelector("option");
+    // e.g. "+1 Canada" — dial code first, then the name.
+    expect(option?.textContent?.trim()).toMatch(/^\+\d+\s+\S/);
+  });
+
+  it("keeps preferred countries first, in the order given", () => {
+    render(<PhoneInput preferredCountries={["GB", "FR"]} />);
+    const options = Array.from(
+      screen.getByLabelText("Country code").querySelectorAll("option"),
+    );
+    expect(options[0]?.value).toBe("GB");
+    expect(options[1]?.value).toBe("FR");
+  });
+
+  it("renders an emoji flag instead of the name when countryDisplay='flag'", () => {
+    render(<PhoneInput countryDisplay="flag" defaultCountry="US" />);
+    const usOption = Array.from(
+      screen.getByLabelText("Country code").querySelectorAll("option"),
+    ).find((o) => o.value === "US");
+    // 🇺🇸 = regional indicators for U+S; the name "United States" must be gone.
+    expect(usOption?.textContent).toContain("🇺🇸");
+    expect(usOption?.textContent).not.toContain("United States");
+  });
 });
