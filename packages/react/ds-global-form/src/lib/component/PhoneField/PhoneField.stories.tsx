@@ -38,6 +38,14 @@ export const StructuredValue: Story = {
   },
 };
 
+export const FlagDisplay: Story = {
+  args: {
+    name: "phone_flag",
+    label: "Phone (flag display)",
+    countryDisplay: "flag",
+  },
+};
+
 export const Disabled: Story = {
   args: { name: "phone_disabled", label: "Phone (disabled)", disabled: true },
 };

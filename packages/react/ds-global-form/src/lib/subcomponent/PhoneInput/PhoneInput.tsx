@@ -1,10 +1,45 @@
 import type React from "react";
 import { useCallback, useMemo, useState } from "react";
-import defaultCountries from "./countries.js";
-import type { CountryData, PhoneInputProps, PhoneValue } from "./types.js";
+import {
+  applyPhoneMask,
+  type CountryData,
+  countries as defaultCountries,
+  type KnownCountryCode,
+} from "#lib/utils/countries/index.js";
+import type { PhoneInputProps, PhoneValue } from "./types.js";
 import "./styles.css";
 
 const componentCssClassName = "ds input phone chrome";
+
+/**
+ * Derive the emoji flag for an ISO 3166-1 alpha-2 code by mapping each of its
+ * two letters to its regional-indicator symbol (U+1F1E6–U+1F1FF). Non-alpha-2
+ * codes (possible via the open `CountryCode` type or a custom dataset) are
+ * returned unchanged rather than mapped into unrelated code points.
+ * @note Pure.
+ */
+function flagEmoji(code: string): string {
+  const upper = code.toUpperCase();
+  if (!/^[A-Z]{2}$/.test(upper)) return code;
+  return upper.replace(/[A-Z]/g, (char) =>
+    String.fromCodePoint(127397 + char.charCodeAt(0)),
+  );
+}
+
+/** Numeric dial code (e.g. "+44" -> 44) for sorting. @note Pure. */
+function dialCodeValue(dialCode: string): number {
+  return Number.parseInt(dialCode.replace(/\D/g, ""), 10);
+}
+
+/** The selector label for a country after its dial code. @note Pure. */
+function countryLabel(
+  country: CountryData,
+  display: "code" | "name" | "flag",
+): string {
+  if (display === "flag") return flagEmoji(country.code);
+  if (display === "name") return country.name;
+  return country.code;
+}
 
 /**
  * Presentational phone input combining a country code selector with a telephone
@@ -25,7 +60,11 @@ export const PhoneInput = ({
   onChange,
   defaultCountry = "US",
   preferredCountries = [],
+  filteredCountries,
+  countries = defaultCountries,
   valueFormat = "e164",
+  countryDisplay = "code",
+  mask = false,
   disabled = false,
 }: PhoneInputProps): React.ReactElement => {
   const [selectedCountry, setSelectedCountry] = useState<string>(() => {
@@ -36,24 +75,42 @@ export const PhoneInput = ({
   });
 
   const sortedCountries = useMemo(() => {
-    if (preferredCountries.length === 0) return defaultCountries;
+    const byDialCode = (a: CountryData, b: CountryData) =>
+      dialCodeValue(a.dialCode) - dialCodeValue(b.dialCode) ||
+      a.name.localeCompare(b.name);
+
+    // 1. `filteredCountries` (if given) restricts the visible universe to a
+    //    whitelist, kept in the order the consumer listed it. Otherwise the
+    //    full dataset is the universe, sorted by dial code.
+    const universe = filteredCountries
+      ? filteredCountries
+          .map((code) => countries.find((c) => c.code === code))
+          .filter((c): c is CountryData => Boolean(c))
+      : [...countries].sort(byDialCode);
+
+    // 2. `preferredCountries` hoists favourites to the top in the order given;
+    //    the rest keep the universe's order.
+    if (preferredCountries.length === 0) return universe;
     const preferred: CountryData[] = [];
     const rest: CountryData[] = [];
-    for (const country of defaultCountries) {
-      if (preferredCountries.includes(country.code)) {
+    for (const country of universe) {
+      if (preferredCountries.includes(country.code as KnownCountryCode)) {
         preferred.push(country);
       } else {
         rest.push(country);
       }
     }
+    preferred.sort(
+      (a, b) =>
+        preferredCountries.indexOf(a.code as KnownCountryCode) -
+        preferredCountries.indexOf(b.code as KnownCountryCode),
+    );
     return [...preferred, ...rest];
-  }, [preferredCountries]);
+  }, [preferredCountries, filteredCountries, countries]);
 
   const currentCountryData = useMemo(
-    () =>
-      defaultCountries.find((c) => c.code === selectedCountry) ??
-      defaultCountries[0],
-    [selectedCountry],
+    () => countries.find((c) => c.code === selectedCountry) ?? countries[0],
+    [selectedCountry, countries],
   );
 
   const getCurrentNumber = useCallback((): string => {
@@ -72,15 +129,17 @@ export const PhoneInput = ({
   const emitValue = useCallback(
     (countryCode: string, number: string) => {
       const country =
-        defaultCountries.find((c) => c.code === countryCode) ??
-        defaultCountries[0];
+        countries.find((c) => c.code === countryCode) ?? countries[0];
+      // The emitted national number is always raw digits — the mask is purely a
+      // display concern, never part of the submitted value.
+      const digits = number.replace(/\D/g, "");
       if (valueFormat === "e164") {
-        onChange?.(number ? `${country.dialCode}${number}` : "");
+        onChange?.(digits ? `${country.dialCode}${digits}` : "");
       } else {
-        onChange?.({ countryCode, number });
+        onChange?.({ countryCode, number: digits });
       }
     },
-    [valueFormat, onChange],
+    [valueFormat, onChange, countries],
   );
 
   const handleCountryChange = useCallback(
@@ -99,6 +158,12 @@ export const PhoneInput = ({
     [selectedCountry, emitValue],
   );
 
+  // Display value for the number field: masked per the country's format when
+  // `mask` is enabled, otherwise the raw digits.
+  const displayNumber = mask
+    ? applyPhoneMask(getCurrentNumber(), currentCountryData.format)
+    : getCurrentNumber();
+
   return (
     <div
       id={id}
@@ -114,7 +179,7 @@ export const PhoneInput = ({
       >
         {sortedCountries.map((country) => (
           <option key={country.code} value={country.code}>
-            {country.code} {country.dialCode}
+            {country.dialCode} {countryLabel(country, countryDisplay)}
           </option>
         ))}
       </select>
@@ -122,7 +187,7 @@ export const PhoneInput = ({
         type="tel"
         className="number-input p"
         inputMode="tel"
-        value={getCurrentNumber()}
+        value={displayNumber}
         onChange={handleNumberChange}
         disabled={disabled}
         aria-label="Phone number"

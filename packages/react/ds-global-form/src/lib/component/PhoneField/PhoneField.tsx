@@ -1,4 +1,4 @@
-import bindField from "#lib/common/bindField.js";
+import bindField from "#lib/common/bindField/index.js";
 import withWrapper from "#lib/common/Wrapper/withWrapper.js";
 import { PhoneInput } from "#lib/subcomponent/PhoneInput/index.js";
 import type { PhoneFieldProps } from "./types.js";

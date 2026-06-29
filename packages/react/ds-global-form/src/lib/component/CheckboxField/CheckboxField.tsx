@@ -1,4 +1,4 @@
-import bindField from "#lib/common/bindField.js";
+import bindField from "#lib/common/bindField/index.js";
 import withWrapper from "#lib/common/Wrapper/withWrapper.js";
 import { CheckboxInput } from "#lib/subcomponent/CheckboxInput/index.js";
 import type { CheckboxFieldProps } from "./types.js";

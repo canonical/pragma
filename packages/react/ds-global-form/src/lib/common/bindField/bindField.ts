@@ -1,38 +1,11 @@
-import type React from "react";
+import { type ComponentType, createElement, type FC } from "react";
 import {
   type RegisterOptions,
   useController,
   useFormContext,
   useWatch,
 } from "react-hook-form";
-
-export type BindMode = "native" | "controlled";
-
-export interface BindFieldOptions {
-  /**
-   * Inject the live field value as a `value` prop on the presentational input.
-   * Needed by inputs that render their own value (e.g. Range's `<output>`).
-   */
-  injectValue?: boolean;
-  /**
-   * Default value for the registered field (controlled mode only). Preserves the
-   * registration default that some inputs set in `useController` (e.g. Color
-   * `"#000000"`, FileUpload `[]`).
-   */
-  defaultValue?: unknown;
-  /**
-   * Base `register()` options merged UNDER the consumer's `registerProps` (the
-   * consumer wins on conflict). Lets a field set input-type defaults — e.g.
-   * Number passing `{ valueAsNumber: true }` so RHF stores a number, not the
-   * string the native `<input type="number">` reports.
-   */
-  registerDefaults?: RegisterOptions;
-}
-
-type FieldBindingProps = {
-  name: string;
-  registerProps?: RegisterOptions;
-};
+import type { BindFieldOptions, BindMode, FieldBindingProps } from "./types.js";
 
 /**
  * Adapts a presentational input (which knows nothing about react-hook-form)
@@ -47,13 +20,16 @@ type FieldBindingProps = {
  *
  * The binding mode is resolved once at factory time, so each returned component
  * calls its hooks unconditionally.
+ *
+ * @note Authored with `React.createElement` (no JSX) so this is a plain `.ts`
+ * module; behaviour is identical to the JSX form.
  */
 export default function bindField<P extends FieldBindingProps>(
   // biome-ignore lint/suspicious/noExplicitAny: presentational prop shapes vary per input
-  Presentational: React.ComponentType<any>,
+  Presentational: ComponentType<any>,
   mode: BindMode,
   options: BindFieldOptions = {},
-): React.FC<P> {
+): FC<P> {
   const label =
     (Presentational as { displayName?: string }).displayName ||
     Presentational.name ||
@@ -68,7 +44,7 @@ export default function bindField<P extends FieldBindingProps>(
   ): RegisterOptions =>
     ({ ...options.registerDefaults, ...registerProps }) as RegisterOptions;
 
-  let Bound: React.FC<P>;
+  let Bound: FC<P>;
 
   if (mode === "controlled") {
     Bound = ({ name, registerProps, ...rest }: P) => {
@@ -79,38 +55,32 @@ export default function bindField<P extends FieldBindingProps>(
           ? { defaultValue: options.defaultValue }
           : {}),
       });
-      return (
-        <Presentational
-          {...rest}
-          name={name}
-          value={field.value}
-          onChange={field.onChange}
-          onBlur={field.onBlur}
-          ref={field.ref}
-        />
-      );
+      return createElement(Presentational, {
+        ...rest,
+        name,
+        value: field.value,
+        onChange: field.onChange,
+        onBlur: field.onBlur,
+        ref: field.ref,
+      });
     };
   } else if (options.injectValue) {
     Bound = ({ name, registerProps, ...rest }: P) => {
       const { register } = useFormContext();
       const value = useWatch({ name });
-      return (
-        <Presentational
-          {...rest}
-          value={value}
-          {...register(name, mergeRegister(registerProps))}
-        />
-      );
+      return createElement(Presentational, {
+        ...rest,
+        value,
+        ...register(name, mergeRegister(registerProps)),
+      });
     };
   } else {
     Bound = ({ name, registerProps, ...rest }: P) => {
       const { register } = useFormContext();
-      return (
-        <Presentational
-          {...rest}
-          {...register(name, mergeRegister(registerProps))}
-        />
-      );
+      return createElement(Presentational, {
+        ...rest,
+        ...register(name, mergeRegister(registerProps)),
+      });
     };
   }
 

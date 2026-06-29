@@ -9,6 +9,13 @@ const componentCssClassName = "ds input datetime chrome";
  *
  * Usable standalone (controlled via `value`/`onChange`, or uncontrolled) or via
  * the field tier, which spreads react-hook-form's `register()` result onto it.
+ *
+ * @remarks
+ * This is a NATIVE `<input type="datetime-local">`. The **visible** date format
+ * and **12/24-hour** clock follow the user's locale/OS and **cannot be forced**
+ * — there is no HTML/CSS/JS lever for a native picker. The `value` is always
+ * ISO `yyyy-mm-ddTHH:mm`. Controlling the display would require a custom
+ * (non-native) control.
  * @returns {ReactElement} - Rendered DateTimeInput
  */
 export const DateTimeInput = forwardRef<HTMLInputElement, DateTimeInputProps>(
