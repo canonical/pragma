@@ -10,11 +10,13 @@ const preview = {
     ...previewConfig.parameters,
     options: {
       ...previewConfig.parameters?.options,
-      // Sidebar order by ontology tier (N.04): docs first, then the tiers, then
+      // Sidebar order by ontology tier (N.04): the Documentation folder first
+      // (Introduction, then Getting Started, then Guides), then the tiers, then
       // the non-tier machinery (common/utils) last.
       storySort: {
         order: [
-          "Getting Started",
+          "Documentation",
+          ["Introduction", "Getting Started", "Guides"],
           "subcomponents",
           "components",
           "patterns",
