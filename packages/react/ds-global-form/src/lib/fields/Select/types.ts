@@ -1,5 +1,0 @@
-import type { SelectInputProps } from "#lib/subcomponent/SelectInput/index.js";
-import type { InputProps } from "../types.js";
-
-/** Props for the react-hook-form-bound Select field (presentational + binding). */
-export type SelectProps = InputProps<SelectInputProps>;

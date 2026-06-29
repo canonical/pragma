@@ -10,9 +10,9 @@ export type { ColorInputProps, HexFormat } from "./ColorInput/index.js";
 export { ColorInput } from "./ColorInput/index.js";
 export type { ComboboxInputProps } from "./ComboboxInput/index.js";
 export { ComboboxInput } from "./ComboboxInput/index.js";
-export type { DateInputPresentationProps } from "./DateInput/index.js";
+export type { DateInputProps } from "./DateInput/index.js";
 export { DateInput } from "./DateInput/index.js";
-export type { DateTimeInputPresentationProps } from "./DateTimeInput/index.js";
+export type { DateTimeInputProps } from "./DateTimeInput/index.js";
 export { DateTimeInput } from "./DateTimeInput/index.js";
 // Field chrome subcomponents (Field.Label / Field.Description / Field.Error)
 export * from "./Field/index.js";
@@ -30,7 +30,7 @@ export type { TextareaInputProps } from "./TextareaInput/index.js";
 export { TextareaInput } from "./TextareaInput/index.js";
 export type { TextInputProps, TextInputType } from "./TextInput/index.js";
 export { TextInput } from "./TextInput/index.js";
-export type { TimeInputPresentationProps } from "./TimeInput/index.js";
+export type { TimeInputProps } from "./TimeInput/index.js";
 export { TimeInput } from "./TimeInput/index.js";
 // Shared subcomponent types (BaseProps, Option, OptionsProps, NativeInputType).
 export * from "./types.js";

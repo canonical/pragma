@@ -1,4 +1,4 @@
-import type { Option } from "../lib/fields/types.js";
+import type { Option } from "../lib/subcomponent/types.js";
 
 export const continents: Option[] = [
   { value: "africa", label: "Africa" },
