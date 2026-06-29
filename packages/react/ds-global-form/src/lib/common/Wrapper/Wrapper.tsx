@@ -1,10 +1,14 @@
 /* @canonical/generator-ds 0.9.0-experimental.4 */
 import type React from "react";
 import { useMemo } from "react";
-import type { BaseInputProps, WrapperProps } from "../../types.js";
+import { states } from "#lib/constants.js";
+import {
+  Description,
+  Error as FieldError,
+  Label,
+} from "#lib/subcomponent/Field/index.js";
+import type { BaseInputProps, WrapperProps } from "../types.js";
 import "./styles.css";
-import { states } from "../../../constants.js";
-import { Description, Error as FieldError, Label } from "../index.js";
 import { useFieldWrapper } from "./hooks/index.js";
 
 const componentCssClassName = "ds field";

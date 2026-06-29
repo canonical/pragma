@@ -1,7 +1,10 @@
 import { useEffect, useMemo } from "react";
 import { type RegisterOptions, useFormContext } from "react-hook-form";
 
-import { useFieldAriaProperties, useFieldError } from "../../../hooks/index.js";
+import {
+  useFieldAriaProperties,
+  useFieldError,
+} from "#lib/utils/hooks/index.js";
 import messages from "../messages.js";
 
 type UseFieldWrapperOptions = {
