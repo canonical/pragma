@@ -4,7 +4,7 @@ import { FileUploadField } from "./index.js";
 
 // Field-tier stories: the file upload bound to react-hook-form, inside a form.
 const meta = {
-  title: "Fields/FileUpload",
+  title: "components/FileUploadField",
   component: FileUploadField,
   tags: ["autodocs"],
   decorators: [decorators.form()],

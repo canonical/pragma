@@ -6,7 +6,7 @@ import { Combobox } from "./Combobox.js";
 
 // Presentational stories: the combobox is controlled directly, no form.
 const meta = {
-  title: "Inputs/Combobox",
+  title: "subcomponents/ComboboxInput",
   component: Combobox,
   tags: ["autodocs"],
 } satisfies Meta<typeof Combobox>;

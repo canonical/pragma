@@ -3,7 +3,7 @@ import * as decorators from "storybook/decorators.js";
 import { HiddenField } from "./index.js";
 
 const meta = {
-  title: "Fields/Hidden",
+  title: "components/HiddenField",
   component: HiddenField,
   tags: ["autodocs"],
   decorators: [

@@ -9,7 +9,7 @@ import { Field } from "../fields/index.js";
 import * as middleware from "./index.js";
 
 const meta = {
-  title: "middleware",
+  title: "utils/middleware",
   decorators: [decorators.form()],
   component: Field,
   parameters: {

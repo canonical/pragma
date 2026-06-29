@@ -9,7 +9,7 @@ import Component from "./Description.js";
 // import type { StoryFn } from '@storybook/react-vite'
 
 const meta = {
-  title: "common/Wrapper/Description",
+  title: "subcomponents/Field.Description",
   component: Component,
   tags: ["autodocs"],
 } satisfies Meta<typeof Component>;

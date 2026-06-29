@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { Range } from "./Range.js";
 
 const meta = {
-  title: "Inputs/Range",
+  title: "subcomponents/RangeInput",
   component: Range,
   tags: ["autodocs"],
 } satisfies Meta<typeof Range>;

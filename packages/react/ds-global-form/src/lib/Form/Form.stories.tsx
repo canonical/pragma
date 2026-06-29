@@ -21,7 +21,7 @@ import type { FieldProps } from "../fields/types.js";
  * ```
  */
 const meta = {
-  title: "Form",
+  title: "patterns/Form",
   parameters: { grid: "intrinsic" },
   decorators: [decorators.form()],
 } satisfies Meta;

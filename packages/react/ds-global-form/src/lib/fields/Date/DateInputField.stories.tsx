@@ -5,7 +5,7 @@ import { DateInputField } from "./index.js";
 // Field-tier stories run inside a form decorator (label/description/error +
 // react-hook-form state).
 const meta = {
-  title: "Fields/Date",
+  title: "components/DateInputField",
   component: DateInputField,
   tags: ["autodocs"],
   decorators: [decorators.form()],

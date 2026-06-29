@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { Hidden } from "./Hidden.js";
 
 const meta = {
-  title: "Inputs/Hidden",
+  title: "subcomponents/HiddenInput",
   component: Hidden,
   tags: ["autodocs"],
   parameters: { chromatic: { disableSnapshot: true } },

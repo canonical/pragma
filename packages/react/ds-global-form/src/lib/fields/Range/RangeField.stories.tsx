@@ -3,7 +3,7 @@ import * as decorators from "storybook/decorators.js";
 import { RangeField } from "./index.js";
 
 const meta = {
-  title: "Fields/Range",
+  title: "components/RangeField",
   component: RangeField,
   tags: ["autodocs"],
   decorators: [decorators.form({ defaultValues: { volume: 50 } })],

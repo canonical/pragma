@@ -3,7 +3,7 @@ import { DateInput } from "./DateInput.js";
 
 // Presentational stories render the input directly, with no form decorator.
 const meta = {
-  title: "Inputs/Date",
+  title: "subcomponents/DateInput",
   component: DateInput,
   tags: ["autodocs"],
 } satisfies Meta<typeof DateInput>;

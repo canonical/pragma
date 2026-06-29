@@ -9,7 +9,7 @@ import Component from "./Label.js";
 // import type { StoryFn } from '@storybook/react-vite'
 
 const meta = {
-  title: "common/Wrapper/Label",
+  title: "subcomponents/Field.Label",
   component: Component,
   tags: ["autodocs"],
 } satisfies Meta<typeof Component>;

@@ -4,7 +4,7 @@ import { Select } from "./Select.js";
 
 // Presentational stories render the input directly, with no form decorator.
 const meta = {
-  title: "Inputs/Select",
+  title: "subcomponents/SelectInput",
   component: Select,
   tags: ["autodocs"],
 } satisfies Meta<typeof Select>;

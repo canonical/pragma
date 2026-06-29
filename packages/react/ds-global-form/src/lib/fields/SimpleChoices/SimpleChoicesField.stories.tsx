@@ -6,7 +6,7 @@ import { SimpleChoicesField } from "./index.js";
 // Field-tier stories run inside a form decorator (label/description/error +
 // react-hook-form state).
 const meta = {
-  title: "Fields/SimpleChoices",
+  title: "components/SimpleChoicesField",
   component: SimpleChoicesField,
   tags: ["autodocs"],
   decorators: [decorators.form()],

@@ -5,7 +5,7 @@ import type { PhoneValue } from "./types.js";
 
 // Presentational stories: the phone input is controlled directly, no form.
 const meta = {
-  title: "Inputs/Phone",
+  title: "subcomponents/PhoneInput",
   component: Phone,
   tags: ["autodocs"],
 } satisfies Meta<typeof Phone>;

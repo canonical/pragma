@@ -12,7 +12,7 @@ import Component from "./List.js";
 // import type { StoryFn } from '@storybook/react-vite'
 
 const meta = {
-  title: "Field/inputs/Combobox/common/List",
+  title: "subcomponents/ComboboxInput/List",
   component: Component,
   tags: ["autodocs"],
 } satisfies Meta<typeof Component>;
