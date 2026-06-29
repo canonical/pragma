@@ -1,6 +1,6 @@
 import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { TextField as Text } from "#lib/fields/Text/index.js";
+import { TextField as Text } from "#lib/component/TextField/index.js";
 import { renderWithForm } from "../../../testing/renderWithForm.js";
 import type { BaseInputProps, Middleware } from "../types.js";
 
