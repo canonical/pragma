@@ -11,5 +11,9 @@ import type { NumberFieldProps } from "./types.js";
  * numeric value with optional min/max/step and prefix/suffix units.
  */
 export default withWrapper<NumberFieldProps>(
-  bindField<NumberFieldProps>(NumberInput, "native"),
+  // `valueAsNumber` so RHF stores a number, not the string the native
+  // `<input type="number">` reports (the consumer's registerProps still win).
+  bindField<NumberFieldProps>(NumberInput, "native", {
+    registerDefaults: { valueAsNumber: true },
+  }),
 );
