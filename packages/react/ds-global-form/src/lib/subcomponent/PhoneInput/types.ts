@@ -1,7 +1,13 @@
 import type { BaseProps } from "../types.js";
 
 export type CountryData = {
-  /** ISO 3166-1 alpha-2 code */
+  /**
+   * **ISO 3166-1 alpha-2** code (two uppercase letters, e.g. `"US"`, `"GB"`).
+   * This MUST be a valid alpha-2 code: the `countryDisplay: "flag"` emoji is
+   * derived from it by mapping each letter to its Unicode regional-indicator
+   * symbol. A non-alpha-2 code (3-letter, lowercase, numeric, etc.) yields a
+   * broken or absent flag.
+   */
   code: string;
 
   /** Country name */
@@ -31,6 +37,12 @@ export type PhoneInputProps = BaseProps & {
   /**
    * How each country is labelled in the selector, after its dial code:
    * `"name"` (default) shows the country name, `"flag"` shows its emoji flag.
+   *
+   * `"flag"` requires every country's `code` to be a valid **ISO 3166-1
+   * alpha-2** code (see {@link CountryData.code}) — the flag is built from the
+   * two letters' regional-indicator symbols. If you supply a custom country
+   * list with non-alpha-2 codes, the flags will not render correctly; prefer
+   * `"name"` in that case.
    */
   countryDisplay?: "name" | "flag";
 
