@@ -20,6 +20,13 @@ export interface BindFieldOptions {
    * `"#000000"`, FileUpload `[]`).
    */
   defaultValue?: unknown;
+  /**
+   * Base `register()` options merged UNDER the consumer's `registerProps` (the
+   * consumer wins on conflict). Lets a field set input-type defaults — e.g.
+   * Number passing `{ valueAsNumber: true }` so RHF stores a number, not the
+   * string the native `<input type="number">` reports.
+   */
+  registerDefaults?: RegisterOptions;
 }
 
 type FieldBindingProps = {
@@ -52,6 +59,15 @@ export default function bindField<P extends FieldBindingProps>(
     Presentational.name ||
     "Input";
 
+  // Merge the field's register defaults UNDER the consumer's registerProps. Cast
+  // once: RHF's RegisterOptions is a discriminated union (e.g. `valueAsNumber`
+  // excludes `pattern`), which an object spread cannot satisfy structurally even
+  // though the merged value is valid at runtime.
+  const mergeRegister = (
+    registerProps: RegisterOptions | undefined,
+  ): RegisterOptions =>
+    ({ ...options.registerDefaults, ...registerProps }) as RegisterOptions;
+
   let Bound: React.FC<P>;
 
   if (mode === "controlled") {
@@ -82,14 +98,19 @@ export default function bindField<P extends FieldBindingProps>(
         <Presentational
           {...rest}
           value={value}
-          {...register(name, registerProps)}
+          {...register(name, mergeRegister(registerProps))}
         />
       );
     };
   } else {
     Bound = ({ name, registerProps, ...rest }: P) => {
       const { register } = useFormContext();
-      return <Presentational {...rest} {...register(name, registerProps)} />;
+      return (
+        <Presentational
+          {...rest}
+          {...register(name, mergeRegister(registerProps))}
+        />
+      );
     };
   }
 

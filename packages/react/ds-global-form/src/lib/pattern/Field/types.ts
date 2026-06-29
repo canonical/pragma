@@ -7,6 +7,8 @@ import type { DateInputFieldProps } from "#lib/component/DateInputField/index.js
 import type { DateTimeInputFieldProps } from "#lib/component/DateTimeInputField/index.js";
 import type { FileUploadFieldProps } from "#lib/component/FileUploadField/index.js";
 import type { HiddenFieldProps } from "#lib/component/HiddenField/index.js";
+import type { NumberFieldProps } from "#lib/component/NumberField/index.js";
+import type { PasswordFieldProps } from "#lib/component/PasswordField/index.js";
 import type { PhoneFieldProps } from "#lib/component/PhoneField/index.js";
 import type { RangeFieldProps } from "#lib/component/RangeField/index.js";
 import type { SelectFieldProps } from "#lib/component/SelectField/index.js";
@@ -38,7 +40,11 @@ export type {
 } from "#lib/subcomponent/types.js";
 
 export type FieldProps =
-  | ({ inputType: NativeInputType } & TextFieldProps)
+  | ({
+      inputType: Exclude<NativeInputType, "password" | "number">;
+    } & TextFieldProps)
+  | ({ inputType: "password" } & PasswordFieldProps)
+  | ({ inputType: "number" } & NumberFieldProps)
   | ({ inputType: "checkbox" } & CheckboxFieldProps)
   | ({ inputType: "hidden" } & HiddenFieldProps)
   | ({ inputType: "range" } & RangeFieldProps)
