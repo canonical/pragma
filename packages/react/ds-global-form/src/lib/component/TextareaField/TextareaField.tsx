@@ -1,4 +1,4 @@
-import bindField from "#lib/common/bindField.js";
+import bindField from "#lib/common/bindField/index.js";
 import withWrapper from "#lib/common/Wrapper/withWrapper.js";
 import { TextareaInput } from "#lib/subcomponent/TextareaInput/index.js";
 import type { TextareaFieldProps } from "./types.js";

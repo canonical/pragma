@@ -1,4 +1,4 @@
-import bindField from "#lib/common/bindField.js";
+import bindField from "#lib/common/bindField/index.js";
 import withWrapper from "#lib/common/Wrapper/withWrapper.js";
 import { SimpleChoices } from "./SimpleChoices.js";
 import type { SimpleChoicesFieldProps } from "./types.js";
