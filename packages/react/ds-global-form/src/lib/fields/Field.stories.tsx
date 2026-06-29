@@ -12,7 +12,7 @@ import Component from "./Field.js";
 // import type { StoryFn } from '@storybook/react-vite'
 
 const meta = {
-  title: "Field",
+  title: "patterns/Field",
   component: Component,
   tags: ["autodocs"],
   decorators: [decorators.form()],

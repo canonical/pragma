@@ -5,7 +5,7 @@ import { TextareaField } from "./index.js";
 // Field-tier stories run inside a form decorator (label/description/error +
 // react-hook-form state).
 const meta = {
-  title: "Fields/Textarea",
+  title: "components/TextareaField",
   component: TextareaField,
   tags: ["autodocs"],
   decorators: [decorators.form()],

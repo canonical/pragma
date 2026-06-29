@@ -6,7 +6,7 @@ import Field from "../fields/Field.js";
 const noop = (data: Record<string, unknown>) => console.log(data);
 
 const meta = {
-  title: "Getting Started/Examples",
+  title: "Documentation/Getting Started/Examples",
   parameters: { layout: "padded" },
   decorators: [
     (Story) => (

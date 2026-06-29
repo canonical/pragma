@@ -4,7 +4,7 @@ import { FileUpload } from "./FileUpload.js";
 
 // Presentational stories: the file upload is controlled directly, no form.
 const meta = {
-  title: "Inputs/FileUpload",
+  title: "subcomponents/FileUploadInput",
   component: FileUpload,
   tags: ["autodocs"],
 } satisfies Meta<typeof FileUpload>;

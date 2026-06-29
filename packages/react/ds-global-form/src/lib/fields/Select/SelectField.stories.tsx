@@ -6,7 +6,7 @@ import { SelectField } from "./index.js";
 // Field-tier stories run inside a form decorator (label/description/error +
 // react-hook-form state).
 const meta = {
-  title: "Fields/Select",
+  title: "components/SelectField",
   component: SelectField,
   tags: ["autodocs"],
   decorators: [decorators.form()],

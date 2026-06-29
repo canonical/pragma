@@ -3,7 +3,7 @@ import { Text } from "./Text.js";
 
 // Presentational stories render the input directly, with no form decorator.
 const meta = {
-  title: "Inputs/Text",
+  title: "subcomponents/TextInput",
   component: Text,
   tags: ["autodocs"],
 } satisfies Meta<typeof Text>;

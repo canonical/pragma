@@ -5,7 +5,7 @@ import { Color } from "./Color.js";
 // Presentational stories render the input directly, with no form decorator.
 // State is owned by the story via `useState` (controlled value/onChange).
 const meta = {
-  title: "Inputs/Color",
+  title: "subcomponents/ColorInput",
   component: Color,
   tags: ["autodocs"],
   render: (args) => {

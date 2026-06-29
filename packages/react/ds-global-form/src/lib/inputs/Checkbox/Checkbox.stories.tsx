@@ -3,7 +3,7 @@ import { Checkbox } from "./Checkbox.js";
 
 // Presentational stories render the input directly, with no form decorator.
 const meta = {
-  title: "Inputs/Checkbox",
+  title: "subcomponents/CheckboxInput",
   component: Checkbox,
   tags: ["autodocs"],
 } satisfies Meta<typeof Checkbox>;

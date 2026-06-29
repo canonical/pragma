@@ -9,7 +9,7 @@ import Component from "./Error.js";
 // import type { StoryFn } from '@storybook/react-vite'
 
 const meta = {
-  title: "common/Wrapper/Error",
+  title: "subcomponents/Field.Error",
   component: Component,
   tags: ["autodocs"],
 } satisfies Meta<typeof Component>;

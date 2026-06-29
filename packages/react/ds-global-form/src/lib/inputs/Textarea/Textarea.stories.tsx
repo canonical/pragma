@@ -3,7 +3,7 @@ import { Textarea } from "./Textarea.js";
 
 // Presentational stories render the input directly, with no form decorator.
 const meta = {
-  title: "Inputs/Textarea",
+  title: "subcomponents/TextareaInput",
   component: Textarea,
   tags: ["autodocs"],
 } satisfies Meta<typeof Textarea>;

@@ -6,7 +6,7 @@ import { CheckboxField } from "./index.js";
 // Field-tier stories run inside a form decorator (label/description/error +
 // react-hook-form state).
 const meta = {
-  title: "Fields/Checkbox",
+  title: "components/CheckboxField",
   component: CheckboxField,
   tags: ["autodocs"],
   decorators: [decorators.form()],

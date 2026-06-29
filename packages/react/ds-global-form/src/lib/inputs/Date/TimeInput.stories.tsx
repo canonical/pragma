@@ -3,7 +3,7 @@ import { TimeInput } from "./TimeInput.js";
 
 // Presentational stories render the input directly, with no form decorator.
 const meta = {
-  title: "Inputs/Time",
+  title: "subcomponents/TimeInput",
   component: TimeInput,
   tags: ["autodocs"],
 } satisfies Meta<typeof TimeInput>;

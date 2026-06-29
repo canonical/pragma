@@ -4,7 +4,7 @@ import { PhoneField } from "./index.js";
 
 // Field-tier stories: the phone input bound to react-hook-form, inside a form.
 const meta = {
-  title: "Fields/Phone",
+  title: "components/PhoneField",
   component: PhoneField,
   tags: ["autodocs"],
   decorators: [decorators.form()],
