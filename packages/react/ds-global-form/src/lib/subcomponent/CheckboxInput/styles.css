@@ -1,7 +1,9 @@
 .ds.form-checkbox {
   appearance: none;
   box-sizing: border-box;
-  margin-inline: var(--form-input-padding-inline);
+  /* Align to the field edge like the label (no side margin by default), not to
+   * the input's inner padding. Overridable via the shared variable. */
+  margin-inline: var(--form-label-padding-inline, 0);
   width: calc(var(--space-baseline) * 2); /* 16px — 2bU */
   height: calc(var(--space-baseline) * 2); /* 16px — 2bU */
   border: var(--dimension-stroke-thickness-medium) solid var(--color-border);
