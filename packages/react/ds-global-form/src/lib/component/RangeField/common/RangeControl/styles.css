@@ -1,0 +1,24 @@
+/* A canonical number input stacked with its mirroring slider (the slider is
+ * appended on hydration). */
+.ds.range-control {
+  display: flex;
+  flex-direction: column;
+  gap: var(--form-group-gap);
+
+  /* The number input reuses the text-input chrome; no spinner arrows — the
+   * slider is the coarse control, the number is for precise entry. */
+  & > .range-number {
+    appearance: textfield;
+    -moz-appearance: textfield;
+
+    &::-webkit-outer-spin-button,
+    &::-webkit-inner-spin-button {
+      appearance: none;
+      margin: 0;
+    }
+  }
+
+  & > .range-slider {
+    width: 100%;
+  }
+}

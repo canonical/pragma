@@ -16,3 +16,17 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {
   args: { name: "volume", label: "Volume", min: 0, max: 100 },
 };
+
+export const Stepped: Story = {
+  args: { name: "volume", label: "Volume", min: 0, max: 100, step: 10 },
+};
+
+export const CustomSliderLabel: Story = {
+  args: {
+    name: "volume",
+    label: "Volume",
+    min: 0,
+    max: 100,
+    sliderLabel: "Volume (slider)",
+  },
+};
