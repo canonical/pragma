@@ -1,13 +1,18 @@
-/* A canonical number input stacked with its mirroring slider (the slider is
- * appended on hydration). */
+/* A canonical number input beside its mirroring slider (the slider is appended
+ * on hydration). The number sits to the side at a fixed width for precise
+ * entry; the slider flexes to fill the remaining track. */
 .ds.range-control {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  align-items: center;
   gap: var(--form-group-gap);
 
   /* The number input reuses the text-input chrome; no spinner arrows — the
-   * slider is the coarse control, the number is for precise entry. */
+   * slider is the coarse control, the number is for precise entry. Fixed,
+   * non-flexing width so the slider takes the slack. */
   & > .range-number {
+    flex: 0 0 var(--form-range-number-width, 5rem);
+    width: var(--form-range-number-width, 5rem);
     appearance: textfield;
     -moz-appearance: textfield;
 
@@ -18,7 +23,9 @@
     }
   }
 
+  /* The slider flexes to fill whatever space the number input leaves. */
   & > .range-slider {
-    width: 100%;
+    flex: 1 1 auto;
+    min-width: 0;
   }
 }
