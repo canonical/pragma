@@ -3,9 +3,19 @@
   width: 100%;
   height: var(--space-baseline); /* 8px — 1bU */
   background: var(--color-foreground-slider-track);
+  /* The bar is a flat track, no outline — strip the UA border that some
+   * engines keep on a range input even after `appearance: none`. */
+  border: none;
   border-radius: var(--dimension-radius-small);
   outline: none;
   cursor: pointer;
+
+  /* Firefox draws the track via its own pseudo-element, which carries its own
+   * UA border — zero it so the track matches the flat WebKit rendering. */
+  &::-moz-range-track {
+    border: none;
+    background: transparent;
+  }
 
   &::-webkit-slider-thumb {
     appearance: none;
