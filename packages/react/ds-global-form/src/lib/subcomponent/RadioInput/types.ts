@@ -2,7 +2,12 @@
 
 import type React from "react";
 
-type NativeRadioProps = React.InputHTMLAttributes<HTMLInputElement>;
+// `type` is omitted: the component always renders a radio, so exposing it would
+// be confusing/ineffective.
+type NativeRadioProps = Omit<
+  React.InputHTMLAttributes<HTMLInputElement>,
+  "type"
+>;
 
 /** Props for the presentational Radio input (no react-hook-form). */
 export type RadioInputProps = NativeRadioProps;

@@ -26,6 +26,7 @@ export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
       revealable = true,
       revealLabel = "Show password",
       maskLabel = "Hide password",
+      disabled,
       ...nativeProps
     },
     ref,
@@ -44,6 +45,7 @@ export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
           className="p"
           type={revealed ? "text" : "password"}
           ref={ref}
+          disabled={disabled}
           {...nativeProps}
         />
         {revealable && (
@@ -53,6 +55,9 @@ export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
             aria-label={revealed ? maskLabel : revealLabel}
             aria-controls={resolvedId}
             aria-pressed={revealed}
+            // Match the input's disabled state so the toggle isn't an
+            // interactive control on an otherwise-disabled field.
+            disabled={disabled}
             onClick={() => setRevealed((r) => !r)}
           >
             <span

@@ -24,10 +24,11 @@ export const RadioInput = forwardRef<HTMLInputElement, RadioInputProps>(
       <input
         id={id}
         style={style}
-        type="radio"
         className={[componentCssClassName, className].filter(Boolean).join(" ")}
         ref={ref}
         {...nativeProps}
+        // `type` last so a spread `type` prop can't change the radio contract.
+        type="radio"
       />
     );
   },

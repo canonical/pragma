@@ -55,8 +55,12 @@ describe("PasswordInput (presentational)", () => {
     expect(ref.current).toBeInstanceOf(HTMLInputElement);
   });
 
-  it("supports the disabled state", () => {
+  it("supports the disabled state (input AND reveal toggle)", () => {
     render(<PasswordInput name="secret" defaultValue="x" disabled />);
     expect(screen.getByDisplayValue("x")).toBeDisabled();
+    // The reveal toggle must not stay interactive on a disabled field.
+    expect(
+      screen.getByRole("button", { name: "Show password" }),
+    ).toBeDisabled();
   });
 });
