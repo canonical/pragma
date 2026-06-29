@@ -13,7 +13,9 @@
     flex-wrap: nowrap;
   }
 
-  & > .option {
+  /* Each option (common/Option, `.ds.option`) is styled here, scoped to this
+   * group so the generic class cannot collide with options elsewhere. */
+  & > .ds.option {
     direction: inherit;
     display: flex;
     align-items: baseline;

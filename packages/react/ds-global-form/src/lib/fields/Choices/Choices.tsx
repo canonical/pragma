@@ -1,53 +1,15 @@
 import type React from "react";
-import useOptionAriaProperties from "../common/useOptionAriaProperties.js";
-import type { ChoiceOption, ChoicesPresentationProps } from "./types.js";
+import { Option } from "./common/index.js";
+import type { ChoicesPresentationProps } from "./types.js";
 import "./styles.css";
 
 const componentCssClassName = "ds form-choices";
-
-type ChoiceOptionItemProps = {
-  name: string;
-  type: "checkbox" | "radio";
-  option: ChoiceOption;
-  checked: boolean;
-  disabled: boolean;
-  onChange: () => void;
-};
-
-const ChoiceOptionItem = ({
-  name,
-  type,
-  option,
-  checked,
-  disabled,
-  onChange,
-}: ChoiceOptionItemProps): React.ReactElement => {
-  const ariaProps = useOptionAriaProperties(name, option.value);
-  return (
-    <div
-      className={["choice", disabled && "disabled"].filter(Boolean).join(" ")}
-    >
-      <input
-        name={name}
-        value={option.value}
-        disabled={disabled}
-        type={type}
-        checked={checked}
-        onChange={onChange}
-        {...ariaProps.input}
-      />
-      {/* biome-ignore lint/a11y/noLabelWithoutControl : htmlFor provided via ariaProps */}
-      <label className="p" {...ariaProps.label}>
-        {option.label}
-      </label>
-    </div>
-  );
-};
 
 /**
  * Hidden-input fieldset with freely-styled labels (cards, icons, etc.).
  * Controlled and form-agnostic: the selected value(s) flow in via `value` and
  * out via `onChange` (a single value for radios, an array for checkboxes).
+ * Each option is rendered by the `Option` subcomponent (common/Option).
  * @returns {React.ReactElement} - Rendered Choices
  */
 export const Choices = ({
@@ -86,7 +48,7 @@ export const Choices = ({
           }
         };
         return (
-          <ChoiceOptionItem
+          <Option
             key={option.value}
             name={name}
             type={type}

@@ -7,7 +7,9 @@
   grid-column: 1 / -1;
   row-gap: var(--form-group-gap);
 
-  & > .choice {
+  /* Each option (common/Option, `.ds.option`) is styled here, scoped to this
+   * group so the generic class cannot collide with options elsewhere. */
+  & > .ds.option {
     grid-column: var(--choices-span, auto);
     position: relative;
     display: flex;

@@ -1,6 +1,6 @@
-import { Choices } from "../../inputs/Choices/index.js";
 import bindField from "../common/bindField.js";
 import withWrapper from "../common/Wrapper/withWrapper.js";
+import { Choices } from "./Choices.js";
 import type { ChoicesProps } from "./types.js";
 
 /**
