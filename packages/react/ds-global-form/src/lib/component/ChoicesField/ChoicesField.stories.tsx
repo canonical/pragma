@@ -4,12 +4,14 @@ import * as decorators from "storybook/decorators.js";
 import { ChoicesField } from "./index.js";
 
 // Field-tier stories run inside a form decorator (label/description/error +
-// react-hook-form state).
+// react-hook-form state). The grid decorator nests the form in a
+// `.grid.responsive`, so the form's subgrid has real column tracks for the
+// option cards to span via `--choices-span`.
 const meta = {
   title: "components/ChoicesField",
   component: ChoicesField,
   tags: ["autodocs"],
-  decorators: [decorators.form()],
+  decorators: [decorators.grid(), decorators.form()],
 } satisfies Meta<typeof ChoicesField>;
 
 export default meta;
