@@ -10,18 +10,17 @@
    * state from `aria-required` on the input, not an "asterisk". The marker glyph
    * and the gap after it are themeable; the gap stands in for the requested
    * non-breaking space and, being a margin, never wraps away from the label.
-   * Coloured with the form error/accent colour so it reads as a marker, not
-   * part of the label text. */
+   * Inherits the label colour by default (overridable via the variable). */
   &[data-required]::before {
     content: var(--form-required-marker, "*");
     margin-inline-end: var(--form-required-marker-gap, 0.25ch);
-    color: var(--form-required-marker-color, var(--form-error-color));
+    color: var(--form-required-marker-color, var(--form-label-color));
   }
 
   /* The "(optional)" suffix is a muted hint, visually subordinate to the label
    * (which is bold) — not the same weight/colour as the label text. */
   & > .optional {
-    font-weight: var(--font-weight-default, normal);
+    font-weight: var(--typography-text-primary-font-weight, normal);
     color: var(--color-text-muted);
   }
 }

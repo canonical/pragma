@@ -20,12 +20,18 @@
    * background-image: a background-image SVG can't be recoloured by CSS, so the
    * checkmark would ignore the theme. Masking + `background-color` lets the
    * glyph take the checkmark token (same technique as PasswordInput's eye
-   * icon). The box keeps its own `background` for the selected fill. */
+   * icon). The box keeps its own `background` for the selected fill.
+   *
+   * IMPORTANT: only the :checked / :indeterminate rules give the ::before a
+   * `mask-image` AND a `background-color`. The base ::before sets geometry only
+   * — with no mask-image the mask is `none`, which means NO clipping, so a
+   * `background-color` here would paint the WHOLE box as a solid square in the
+   * unchecked state (visible under any theme where the checkmark colour differs
+   * from the box). So the paint lives with the mask, never on its own. */
   &::before {
     content: "";
     position: absolute;
     inset: 0;
-    background-color: var(--color-foreground-checkbox-checkmark);
     mask-repeat: no-repeat;
     mask-position: center;
     mask-size: 75%;
@@ -40,6 +46,7 @@
     border-color: var(--color-foreground-checkbox-selected);
 
     &::before {
+      background-color: var(--color-foreground-checkbox-checkmark);
       mask-image: url("/icons/checkmark.svg#checkmark");
       -webkit-mask-image: url("/icons/checkmark.svg#checkmark");
     }
@@ -51,6 +58,7 @@
     border-color: var(--color-foreground-checkbox-selected);
 
     &::before {
+      background-color: var(--color-foreground-checkbox-checkmark);
       mask-image: url("/icons/minus.svg#minus");
       -webkit-mask-image: url("/icons/minus.svg#minus");
     }

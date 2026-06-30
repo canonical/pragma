@@ -80,6 +80,7 @@
     & > input[type="checkbox"] {
       appearance: none;
       box-sizing: border-box;
+      position: relative;
       width: calc(var(--space-baseline) * 2); /* 16px — 2bU */
       height: calc(var(--space-baseline) * 2); /* 16px — 2bU */
       border: var(--dimension-stroke-thickness-medium) solid var(--color-border);
@@ -90,13 +91,30 @@
         background-color 150ms ease,
         border-color 150ms ease;
 
+      /* Glyph as a masked pseudo-element so it takes the checkmark token
+       * (see CheckboxInput); the colour+mask live together under :checked so
+       * the unchecked box never paints a solid square. */
+      &::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        mask-repeat: no-repeat;
+        mask-position: center;
+        mask-size: 75%;
+        -webkit-mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        -webkit-mask-size: 75%;
+      }
+
       &:checked {
         background: var(--color-foreground-checkbox-selected);
         border-color: var(--color-foreground-checkbox-selected);
-        background-image: url("/icons/checkmark.svg#checkmark");
-        background-repeat: no-repeat;
-        background-position: center;
-        background-size: 75%;
+
+        &::before {
+          background-color: var(--color-foreground-checkbox-checkmark);
+          mask-image: url("/icons/checkmark.svg#checkmark");
+          -webkit-mask-image: url("/icons/checkmark.svg#checkmark");
+        }
       }
 
       &:hover:not(:disabled):not(:checked) {

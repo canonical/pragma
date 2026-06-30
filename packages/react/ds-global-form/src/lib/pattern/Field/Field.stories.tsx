@@ -140,7 +140,7 @@ export const ConditionalDisplay: Story = {
         name: "company",
         inputType: "text",
         label: "Company",
-        optional: true,
+        isOptional: true,
         condition: [
           ["email"],
           (values: string[]) => {
