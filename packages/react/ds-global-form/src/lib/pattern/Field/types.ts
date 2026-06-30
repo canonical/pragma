@@ -3,8 +3,8 @@ import type { CheckboxFieldProps } from "#lib/component/CheckboxField/index.js";
 import type { ChoicesFieldProps } from "#lib/component/ChoicesField/index.js";
 import type { ColorFieldProps } from "#lib/component/ColorField/index.js";
 import type { ComboboxFieldProps } from "#lib/component/ComboboxField/index.js";
-import type { DateInputFieldProps } from "#lib/component/DateInputField/index.js";
-import type { DateTimeInputFieldProps } from "#lib/component/DateTimeInputField/index.js";
+import type { DateFieldProps } from "#lib/component/DateField/index.js";
+import type { DateTimeFieldProps } from "#lib/component/DateTimeField/index.js";
 import type { FileUploadFieldProps } from "#lib/component/FileUploadField/index.js";
 import type { HiddenFieldProps } from "#lib/component/HiddenField/index.js";
 import type { NumberFieldProps } from "#lib/component/NumberField/index.js";
@@ -15,7 +15,7 @@ import type { SelectFieldProps } from "#lib/component/SelectField/index.js";
 import type { SimpleChoicesFieldProps } from "#lib/component/SimpleChoicesField/index.js";
 import type { TextareaFieldProps } from "#lib/component/TextareaField/index.js";
 import type { TextFieldProps } from "#lib/component/TextField/index.js";
-import type { TimeInputFieldProps } from "#lib/component/TimeInputField/index.js";
+import type { TimeFieldProps } from "#lib/component/TimeField/index.js";
 import type { NativeInputType } from "#lib/subcomponent/types.js";
 
 export type {
@@ -52,9 +52,9 @@ export type FieldProps =
   | ({ inputType: "combobox" } & ComboboxFieldProps)
   | ({ inputType: "simple-choices" } & SimpleChoicesFieldProps)
   | ({ inputType: "textarea" } & TextareaFieldProps)
-  | ({ inputType: "date" } & DateInputFieldProps)
-  | ({ inputType: "time" } & TimeInputFieldProps)
-  | ({ inputType: "datetime" } & DateTimeInputFieldProps)
+  | ({ inputType: "date" } & DateFieldProps)
+  | ({ inputType: "time" } & TimeFieldProps)
+  | ({ inputType: "datetime" } & DateTimeFieldProps)
   | ({ inputType: "file" } & FileUploadFieldProps)
   | ({ inputType: "color" } & ColorFieldProps)
   | ({ inputType: "phone" } & PhoneFieldProps)
