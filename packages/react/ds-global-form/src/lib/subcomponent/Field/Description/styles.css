@@ -1,4 +1,6 @@
 .ds.field-description {
   color: var(--form-description-color);
-  padding-inline: var(--form-input-padding-inline);
+  /* Align to the field edge like the label (no side padding by default), not
+   * to the input's inner padding. Overridable via the shared variable. */
+  padding-inline: var(--form-label-padding-inline, 0);
 }

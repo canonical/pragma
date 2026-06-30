@@ -1,0 +1,42 @@
+/* A canonical number input beside its mirroring slider (the slider is appended
+ * on hydration). The number sits at the inline-END (right in LTR, left in RTL)
+ * at a fixed width for precise entry; the slider flexes to fill the rest.
+ *
+ * The number input is kept FIRST in the DOM (it is the canonical, labelled,
+ * no-JS control, so it must lead in source order); we move it visually to the
+ * inline-end with `order`, which follows the writing direction automatically. */
+.ds.range-control {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--form-group-gap);
+
+  /* `.range-number` is the NumberInput WRAPPER (a <div>). Size/order the whole
+   * control here: fixed, non-flexing width so the slider takes the slack, and
+   * ordered last so it paints at the inline-end. */
+  & > .range-number {
+    order: 1;
+    flex: 0 0 var(--form-range-number-width, 5rem);
+    width: var(--form-range-number-width, 5rem);
+  }
+
+  /* Spinner removal targets the INNER <input> (the wrapper is a <div>, which
+   * has no spinner): the slider is the coarse control, the number is for
+   * precise entry, so no native steppers. */
+  & > .range-number > input {
+    appearance: textfield;
+    -moz-appearance: textfield;
+
+    &::-webkit-outer-spin-button,
+    &::-webkit-inner-spin-button {
+      appearance: none;
+      margin: 0;
+    }
+  }
+
+  /* The slider flexes to fill whatever space the number input leaves. */
+  & > .range-slider {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+}

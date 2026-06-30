@@ -1,4 +1,8 @@
 .ds.input.textarea {
+  /* This element IS the text-bearing leaf, so it carries the inline padding
+   * (`.ds.input.chrome` provides only the block padding). */
+  padding-inline: var(--form-input-padding-inline);
+
   /* Combine chrome padding with baseline engine nudges */
   padding-block-start: calc(
     var(--form-input-padding-block) +
