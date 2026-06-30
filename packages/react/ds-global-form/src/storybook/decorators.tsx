@@ -54,3 +54,18 @@ export const form = ({
     return <FormWrapper />;
   };
 };
+
+/**
+ * Wraps a story in a `.grid.responsive` context (the design-system 4/8/12-column
+ * responsive grid). A `.ds.form` is a `subgrid`, so it only resolves real column
+ * tracks when nested in a parent `.grid` — column-based field layouts (e.g.
+ * SimpleChoicesField's "columns", ChoicesField's `--choices-span`) need this to
+ * demonstrate correctly. Compose after `form()`: `[grid(), form()]`.
+ */
+export const grid =
+  () =>
+  (Story: React.ElementType): React.ReactElement => (
+    <div className="grid responsive">
+      <Story />
+    </div>
+  );

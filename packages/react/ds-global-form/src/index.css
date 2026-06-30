@@ -104,6 +104,11 @@
   --form-label-color: var(--color-text);
   /* --form-label-padding-block:  … ; */ /* block padding for label  */
   /* --form-label-padding-inline: … ; */ /* inline padding for label */
+  /* Required marker (shown before the label of required fields in the default
+   * "required" indicator mode): */
+  /* --form-required-marker:       "*";                    */ /* marker glyph    */
+  /* --form-required-marker-gap:   0.25ch;                 */ /* gap after marker*/
+  /* --form-required-marker-color: var(--form-label-color);*/ /* marker colour   */
 
   /* ── Description ────────────────────────────────────────────────── */
 

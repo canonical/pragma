@@ -13,8 +13,19 @@ type AdditionalSimpleChoicesProps = OptionsProps & {
   /** Whether the input is disabled */
   disabled?: boolean;
 
-  /** Layout: "inline" wraps options horizontally, "stacked" puts each on its own line */
-  layout?: "inline" | "stacked";
+  /**
+   * Layout of the option group:
+   *  - "inline" (default): options wrap horizontally, each as wide as its content
+   *  - "stacked": one option per line
+   *  - "columns": a grid of equal-width columns (see {@link columns})
+   */
+  layout?: "inline" | "stacked" | "columns";
+
+  /**
+   * Number of equal-width columns when `layout="columns"`. Defaults to 2.
+   * Ignored in the other layouts.
+   */
+  columns?: number;
 
   /** Selected value (string for radios, string[] for checkboxes) */
   value?: string | string[];

@@ -55,6 +55,49 @@ export const WithValidation: Story = {
   },
 };
 
+/**
+ * Default "required" marking: required fields get a "*" before the label (the
+ * marker is a CSS pseudo-element, so it stays out of the accessible name; the
+ * input carries `aria-required`).
+ */
+export const Required: Story = {
+  args: {
+    name: "required_field",
+    inputType: "text",
+    label: "Display name",
+  },
+};
+
+/**
+ * "optional" marking: the convention flips — optional fields are tagged
+ * "(optional)" after the label, and required fields are left unmarked.
+ */
+export const OptionalMarked: Story = {
+  args: {
+    name: "optional_field",
+    inputType: "text",
+    label: "Nickname",
+    isOptional: true,
+    requiredIndicator: "optional",
+  },
+};
+
+/**
+ * Error state: a required field that has been touched and left empty shows the
+ * field-error message and the `.danger` chrome (red border / focus ring).
+ */
+export const WithError: Story = {
+  decorators: [decorators.form({ touchedFields: ["email"] })],
+  args: {
+    name: "email",
+    inputType: "text",
+    label: "Email",
+    registerProps: {
+      required: { value: true, message: "Email is required" },
+    },
+  },
+};
+
 export const TypeTextarea: Story = {
   args: {
     name: "content",
@@ -97,7 +140,7 @@ export const ConditionalDisplay: Story = {
         name: "company",
         inputType: "text",
         label: "Company",
-        optional: true,
+        isOptional: true,
         condition: [
           ["email"],
           (values: string[]) => {

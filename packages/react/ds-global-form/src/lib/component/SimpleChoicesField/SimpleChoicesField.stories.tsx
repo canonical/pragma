@@ -51,3 +51,32 @@ export const StackedMultiple: Story = {
     layout: "stacked",
   },
 };
+
+/**
+ * Column layout: options are laid out in a grid of equal-width columns, so each
+ * option's width is column-based rather than sized to its content. Rendered in a
+ * `.grid.responsive` context (via the grid decorator) so the form's subgrid has
+ * real column tracks — matching how a form is laid out in a real page.
+ */
+export const Columns: Story = {
+  decorators: [decorators.grid(), decorators.form()],
+  args: {
+    name: "select_columns",
+    label: "Select a continent",
+    options: fixtures.continents,
+    layout: "columns",
+    columns: 3,
+  },
+};
+
+export const ColumnsMultiple: Story = {
+  decorators: [decorators.grid(), decorators.form()],
+  args: {
+    name: "select_columns_multiple",
+    label: "Select continents",
+    options: fixtures.continents,
+    isMultiple: true,
+    layout: "columns",
+    columns: 2,
+  },
+};

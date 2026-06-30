@@ -1,6 +1,8 @@
 .ds.form-checkbox {
   appearance: none;
   box-sizing: border-box;
+  /* Positioning context for the masked checkmark/minus glyph (`::before`). */
+  position: relative;
   /* Align to the field edge like the label (no side margin by default), not to
    * the input's inner padding. Overridable via the shared variable. */
   margin-inline: var(--form-label-padding-inline, 0);
@@ -14,22 +16,52 @@
     background-color 150ms ease,
     border-color 150ms ease;
 
+  /* The glyph is a masked pseudo-element layered over the box, NOT a
+   * background-image: a background-image SVG can't be recoloured by CSS, so the
+   * checkmark would ignore the theme. Masking + `background-color` lets the
+   * glyph take the checkmark token (same technique as PasswordInput's eye
+   * icon). The box keeps its own `background` for the selected fill.
+   *
+   * IMPORTANT: only the :checked / :indeterminate rules give the ::before a
+   * `mask-image` AND a `background-color`. The base ::before sets geometry only
+   * — with no mask-image the mask is `none`, which means NO clipping, so a
+   * `background-color` here would paint the WHOLE box as a solid square in the
+   * unchecked state (visible under any theme where the checkmark colour differs
+   * from the box). So the paint lives with the mask, never on its own. */
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    mask-repeat: no-repeat;
+    mask-position: center;
+    mask-size: 75%;
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    -webkit-mask-size: 75%;
+  }
+
   &:checked {
+    position: relative;
     background: var(--color-foreground-checkbox-selected);
     border-color: var(--color-foreground-checkbox-selected);
-    background-image: url("/icons/checkmark.svg#checkmark");
-    background-repeat: no-repeat;
-    background-position: center;
-    background-size: 75%;
+
+    &::before {
+      background-color: var(--color-foreground-checkbox-checkmark);
+      mask-image: url("/icons/checkmark.svg#checkmark");
+      -webkit-mask-image: url("/icons/checkmark.svg#checkmark");
+    }
   }
 
   &:indeterminate {
+    position: relative;
     background: var(--color-foreground-checkbox-selected);
     border-color: var(--color-foreground-checkbox-selected);
-    background-image: url("/icons/minus.svg#minus");
-    background-repeat: no-repeat;
-    background-position: center;
-    background-size: 75%;
+
+    &::before {
+      background-color: var(--color-foreground-checkbox-checkmark);
+      mask-image: url("/icons/minus.svg#minus");
+      -webkit-mask-image: url("/icons/minus.svg#minus");
+    }
   }
 
   &:hover:not(:disabled):not(:checked):not(:indeterminate) {
@@ -62,5 +94,9 @@
   &:indeterminate:disabled {
     background: var(--color-foreground-checkbox-selected-disabled);
     border-color: var(--color-foreground-checkbox-selected-disabled);
+
+    &::before {
+      background-color: var(--color-foreground-checkbox-checkmark-disabled);
+    }
   }
 }

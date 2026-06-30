@@ -27,6 +27,7 @@ const Wrapper = <ComponentProps extends BaseInputProps>({
   description,
   label,
   isOptional,
+  requiredIndicator,
   registerProps: userRegisterProps,
   nestedRegisterProps,
   unregisterOnUnmount,
@@ -67,6 +68,7 @@ const Wrapper = <ComponentProps extends BaseInputProps>({
       <Label
         name={name}
         isOptional={isOptional}
+        requiredIndicator={requiredIndicator}
         tag={mockLabel ? "legend" : undefined}
         {...ariaProps.label}
       >

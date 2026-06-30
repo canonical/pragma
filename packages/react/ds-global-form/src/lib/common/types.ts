@@ -1,5 +1,6 @@
 import type React from "react";
 import type { RegisterOptions } from "react-hook-form";
+import type { RequiredIndicator } from "#lib/subcomponent/Field/Label/types.js";
 import type { BaseProps } from "#lib/subcomponent/types.js";
 
 // Field-composition machinery types, shared by `Wrapper` and `bindField` and by
@@ -36,6 +37,10 @@ export type WrapperProps<ComponentProps> = BaseWrapperProps<ComponentProps> & {
 
   /* Is the field optional */
   isOptional?: boolean;
+
+  /* Which convention marks required/optional fields in the label. Default:
+   * "required" (a "*" marker before the label of required fields). */
+  requiredIndicator?: RequiredIndicator;
 
   /* TODO */
   nestedRegisterProps?: RegisterOptions;

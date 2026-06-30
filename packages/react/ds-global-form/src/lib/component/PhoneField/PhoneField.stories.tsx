@@ -46,6 +46,21 @@ export const FlagDisplay: Story = {
   },
 };
 
+/**
+ * Opt into live display masking with `mask`: the national number is formatted
+ * with the selected country's mask as you type (here US `(###) ###-####`). The
+ * mask is cosmetic only — the submitted value is always raw digits, regardless
+ * of `mask`.
+ */
+export const Masked: Story = {
+  args: {
+    name: "phone_masked",
+    label: "Phone (masked)",
+    defaultCountry: "US",
+    mask: true,
+  },
+};
+
 export const Disabled: Story = {
   args: { name: "phone_disabled", label: "Phone (disabled)", disabled: true },
 };

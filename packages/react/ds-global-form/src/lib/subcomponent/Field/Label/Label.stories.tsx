@@ -23,6 +23,10 @@ export default meta;
 */
 type Story = StoryObj<typeof meta>;
 
+/**
+ * Default ("required") marking: a required field gets a "*" marker before the
+ * label, drawn as a CSS pseudo-element so it never enters the accessible name.
+ */
 export const Default: Story = {
   args: {
     name: "email",
@@ -30,11 +34,28 @@ export const Default: Story = {
   },
 };
 
-export const Optional: Story = {
+/**
+ * In the default ("required") mode an optional field carries no marker at all —
+ * only the required ones are tagged.
+ */
+export const OptionalNoMarker: Story = {
   args: {
     name: "name",
     children: "What is your name ?",
     isOptional: true,
+  },
+};
+
+/**
+ * The alternate ("optional") convention: optional fields are tagged
+ * "(optional)" after the label, required ones are left unmarked.
+ */
+export const OptionalMarked: Story = {
+  args: {
+    name: "name",
+    children: "What is your name ?",
+    isOptional: true,
+    requiredIndicator: "optional",
   },
 };
 

@@ -21,16 +21,27 @@ export const SimpleChoices = ({
   isMultiple = false,
   disabled = false,
   layout = "inline",
+  columns,
   options,
   value,
   onChange,
 }: SimpleChoicesPresentationProps): React.ReactElement => {
   const type = isMultiple ? "checkbox" : "radio";
 
+  // In the "columns" layout the column count drives a CSS grid; the variable is
+  // unused (and so left unset) in the other layouts.
+  const layoutStyle =
+    layout === "columns" && columns
+      ? ({
+          ...style,
+          "--simple-choices-columns": columns,
+        } as React.CSSProperties)
+      : style;
+
   return (
     <fieldset
       id={id}
-      style={style}
+      style={layoutStyle}
       className={[componentCssClassName, layout, className]
         .filter(Boolean)
         .join(" ")}

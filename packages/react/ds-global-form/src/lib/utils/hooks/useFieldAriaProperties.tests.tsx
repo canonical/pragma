@@ -31,6 +31,20 @@ describe("useFieldAriaProperties", () => {
     expect(input["aria-invalid"]).toBe(false);
   });
 
+  it("sets aria-required from the required flag, independent of error state", () => {
+    // Required but not (yet) in error — aria-required must still be true.
+    const { result: required } = renderHook(() =>
+      useFieldAriaProperties("email", false, true),
+    );
+    expect(required.current.input["aria-required"]).toBe(true);
+
+    // Not required — aria-required is omitted (undefined), not false.
+    const { result: optional } = renderHook(() =>
+      useFieldAriaProperties("email", true, false),
+    );
+    expect(optional.current.input["aria-required"]).toBeUndefined();
+  });
+
   it("generates different IDs for different field names", () => {
     const { result: r1 } = renderHook(() =>
       useFieldAriaProperties("email", false),
