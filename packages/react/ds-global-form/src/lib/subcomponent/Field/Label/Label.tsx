@@ -47,7 +47,9 @@ const Label = ({
         .join(" ")}
     >
       {children || name}
-      {showOptionalSuffix && <span> ({messages.optional()})</span>}
+      {showOptionalSuffix && (
+        <span className="optional"> ({messages.optional()})</span>
+      )}
     </Element>
   );
 };
