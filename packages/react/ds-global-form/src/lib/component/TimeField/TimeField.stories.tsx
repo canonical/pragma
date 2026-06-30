@@ -1,15 +1,15 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import * as decorators from "storybook/decorators.js";
-import { DateTimeInputField } from "./index.js";
+import { TimeField } from "./index.js";
 
 // Field-tier stories run inside a form decorator (label/description/error +
 // react-hook-form state).
 const meta = {
-  title: "components/DateTimeInputField",
-  component: DateTimeInputField,
+  title: "components/TimeField",
+  component: TimeField,
   tags: ["autodocs"],
   decorators: [decorators.form()],
-} satisfies Meta<typeof DateTimeInputField>;
+} satisfies Meta<typeof TimeField>;
 
 export default meta;
 
@@ -17,24 +17,23 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   args: {
-    name: "event_datetime",
-    label: "Event date and time",
+    name: "meeting_time",
+    label: "Meeting time",
   },
 };
 
-export const WithMinMax: Story = {
+export const WithStep: Story = {
   args: {
-    name: "booking",
-    label: "Booking (constrained)",
-    min: "2024-01-01T00:00",
-    max: "2025-12-31T23:59",
+    name: "precise_time",
+    label: "Time (15min steps)",
+    step: 900,
   },
 };
 
 export const Disabled: Story = {
   args: {
-    name: "datetime_disabled",
-    label: "Date & time (disabled)",
+    name: "time_disabled",
+    label: "Time (disabled)",
     disabled: true,
   },
 };

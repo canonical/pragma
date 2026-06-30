@@ -1,15 +1,15 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import * as decorators from "storybook/decorators.js";
-import { DateInputField } from "./index.js";
+import { DateField } from "./index.js";
 
 // Field-tier stories run inside a form decorator (label/description/error +
 // react-hook-form state).
 const meta = {
-  title: "components/DateInputField",
-  component: DateInputField,
+  title: "components/DateField",
+  component: DateField,
   tags: ["autodocs"],
   decorators: [decorators.form()],
-} satisfies Meta<typeof DateInputField>;
+} satisfies Meta<typeof DateField>;
 
 export default meta;
 

@@ -4,8 +4,8 @@ import { CheckboxField } from "#lib/component/CheckboxField/index.js";
 import { ChoicesField } from "#lib/component/ChoicesField/index.js";
 import { ColorField } from "#lib/component/ColorField/index.js";
 import { ComboboxField } from "#lib/component/ComboboxField/index.js";
-import { DateInputField } from "#lib/component/DateInputField/index.js";
-import { DateTimeInputField } from "#lib/component/DateTimeInputField/index.js";
+import { DateField } from "#lib/component/DateField/index.js";
+import { DateTimeField } from "#lib/component/DateTimeField/index.js";
 import { FileUploadField } from "#lib/component/FileUploadField/index.js";
 import { HiddenField } from "#lib/component/HiddenField/index.js";
 import { NumberField } from "#lib/component/NumberField/index.js";
@@ -16,7 +16,7 @@ import { SelectField } from "#lib/component/SelectField/index.js";
 import { SimpleChoicesField } from "#lib/component/SimpleChoicesField/index.js";
 import { TextareaField } from "#lib/component/TextareaField/index.js";
 import { TextField } from "#lib/component/TextField/index.js";
-import { TimeInputField } from "#lib/component/TimeInputField/index.js";
+import { TimeField } from "#lib/component/TimeField/index.js";
 import type { FieldProps } from "./types.js";
 
 /**
@@ -44,11 +44,11 @@ const Field = ({
     case "hidden":
       return <HiddenField {...props} />;
     case "date":
-      return <DateInputField {...props} />;
+      return <DateField {...props} />;
     case "time":
-      return <TimeInputField {...props} />;
+      return <TimeField {...props} />;
     case "datetime":
-      return <DateTimeInputField {...props} />;
+      return <DateTimeField {...props} />;
     case "file":
       return <FileUploadField {...props} />;
     case "color":
