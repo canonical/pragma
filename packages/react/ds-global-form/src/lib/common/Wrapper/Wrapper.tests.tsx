@@ -16,8 +16,15 @@ describe("withWrapper", () => {
     expect(screen.getByRole("textbox")).toBeInTheDocument();
   });
 
-  it("renders the optional indicator", () => {
-    renderWithForm(<Text name="email" label="Email" isOptional />);
+  it("renders the optional indicator in optional-marking mode", () => {
+    renderWithForm(
+      <Text
+        name="email"
+        label="Email"
+        isOptional
+        requiredIndicator="optional"
+      />,
+    );
     expect(screen.getByText(/optional/)).toBeInTheDocument();
   });
 

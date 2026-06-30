@@ -5,7 +5,14 @@
    * input's inner padding. Overridable via the variable. */
   padding-inline: var(--form-label-padding-inline, 0);
 
-  & > .required {
+  /* Required marker. Drawn as a pseudo-element (NOT label text) so it never
+   * enters the accessible name — a screen reader announces the field's required
+   * state from `aria-required` on the input, not an "asterisk". The marker glyph
+   * and the gap after it are themeable; the gap stands in for the requested
+   * non-breaking space and, being a margin, never wraps away from the label. */
+  &[data-required]::before {
+    content: var(--form-required-marker, "*");
+    margin-inline-end: var(--form-required-marker-gap, 0.25ch);
     color: var(--color-text-error);
   }
 }

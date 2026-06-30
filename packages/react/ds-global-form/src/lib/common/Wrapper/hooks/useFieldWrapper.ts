@@ -36,7 +36,9 @@ const useFieldWrapper = (
 
   const isError = !!fieldError;
 
-  const ariaProps = useFieldAriaProperties(name, isError);
+  // Optionality is the source of truth for required-ness (see `registerProps`
+  // below, which maps `!isOptional` to RHF's `required` rule).
+  const ariaProps = useFieldAriaProperties(name, isError, !isOptional);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: Comparing the `name` suffices
   const registerProps = useMemo(() => {
