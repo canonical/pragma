@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
+import * as decorators from "storybook/decorators.js";
 import { PhoneInput } from "./PhoneInput.js";
 import type { PhoneValue } from "./types.js";
 
@@ -85,4 +86,14 @@ export const Masked: Story = {
     );
   },
   args: { defaultCountry: "US", mask: true },
+};
+
+/**
+ * Presentational error state: the bare input wrapped in the field `.danger`
+ * context (the visual layer the Wrapper applies on a real validation error).
+ * For the react-hook-form-driven error see PhoneField's `WithError`.
+ */
+export const ErrorState: Story = {
+  decorators: [decorators.danger()],
+  args: { defaultCountry: "US" },
 };

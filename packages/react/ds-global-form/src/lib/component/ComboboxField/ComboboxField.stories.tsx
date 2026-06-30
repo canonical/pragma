@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import * as decorators from "storybook/decorators.js";
+import { errorStory } from "storybook/errorStory.js";
 import * as fixtures from "storybook/fixtures.options.js";
 import { ComboboxField } from "./index.js";
 
@@ -34,3 +35,10 @@ export const Multiple: Story = {
     options: fixtures.fruits,
   },
 };
+
+/** Error state: touched + failing validation → the field shows `.danger` chrome + the error message. */
+export const WithError = errorStory({
+  name: "err_combobox",
+  label: "Fruit",
+  extraArgs: { options: fixtures.fruits },
+});

@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import * as decorators from "storybook/decorators.js";
+import { errorStory } from "storybook/errorStory.js";
 import { TimeField } from "./index.js";
 
 // Field-tier stories run inside a form decorator (label/description/error +
@@ -37,3 +38,6 @@ export const Disabled: Story = {
     disabled: true,
   },
 };
+
+/** Error state: touched + failing validation → the field shows `.danger` chrome + the error message. */
+export const WithError = errorStory({ name: "err_time", label: "Start time" });

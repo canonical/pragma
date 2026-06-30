@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import * as decorators from "storybook/decorators.js";
+import { errorStory } from "storybook/errorStory.js";
 import { NumberField } from "./index.js";
 
 // Field-tier stories run inside a form decorator (label/description/error +
@@ -33,3 +34,6 @@ export const WithRange: Story = {
 export const WithUnits: Story = {
   args: { name: "price", label: "Price", prefix: "$", suffix: "USD" },
 };
+
+/** Error state: touched + failing validation → the field shows `.danger` chrome + the error message. */
+export const WithError = errorStory({ name: "err_number", label: "Quantity" });
