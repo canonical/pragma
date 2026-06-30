@@ -25,22 +25,61 @@ export const Checked: Story = {
   args: { name: "subscribe_checked", label: "Checked" },
 };
 
-const IndeterminateHelper = () => {
+/**
+ * `indeterminate` is a DOM property (not an attribute), so it can't be passed
+ * as a prop — the helper sets it on the rendered input by `name` after mount.
+ */
+const IndeterminateField = ({
+  name,
+  label,
+  disabled,
+}: {
+  name: string;
+  label: string;
+  disabled?: boolean;
+}) => {
   useEffect(() => {
     const el = document.querySelector<HTMLInputElement>(
-      'input[name="subscribe_indeterminate"]',
+      `input[name="${name}"]`,
     );
     if (el) el.indeterminate = true;
-  }, []);
-  return <CheckboxField name="subscribe_indeterminate" label="Indeterminate" />;
+  }, [name]);
+  return <CheckboxField name={name} label={label} disabled={disabled} />;
 };
 
 export const Indeterminate: Story = {
   args: { name: "subscribe_indeterminate", label: "Indeterminate" },
   decorators: [decorators.form({ touchedFields: ["subscribe_indeterminate"] })],
-  render: () => <IndeterminateHelper />,
+  render: () => (
+    <IndeterminateField name="subscribe_indeterminate" label="Indeterminate" />
+  ),
 };
 
 export const Disabled: Story = {
   args: { name: "subscribe_disabled", label: "Disabled", disabled: true },
+};
+
+export const DisabledChecked: Story = {
+  decorators: [
+    decorators.form({ defaultValues: { subscribe_disabled_checked: true } }),
+  ],
+  args: {
+    name: "subscribe_disabled_checked",
+    label: "Disabled checked",
+    disabled: true,
+  },
+};
+
+export const DisabledIndeterminate: Story = {
+  args: { name: "subscribe_disabled_indeterminate", label: "Disabled" },
+  decorators: [
+    decorators.form({ touchedFields: ["subscribe_disabled_indeterminate"] }),
+  ],
+  render: () => (
+    <IndeterminateField
+      name="subscribe_disabled_indeterminate"
+      label="Disabled indeterminate"
+      disabled
+    />
+  ),
 };
