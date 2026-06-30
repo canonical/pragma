@@ -4,6 +4,10 @@
  */
 
 .ds.input.date {
+  /* This element IS the text-bearing leaf, so it carries the inline padding
+   * (`.ds.input.chrome` provides only the block padding). */
+  padding-inline: var(--form-input-padding-inline);
+
   /* Suppress native calendar picker inconsistencies across browsers */
   &::-webkit-inner-spin-button {
     display: none;

@@ -11,14 +11,19 @@
   align-items: center;
   gap: var(--form-group-gap);
 
-  /* The number input reuses the text-input chrome; no spinner arrows — the
-   * slider is the coarse control, the number is for precise entry. Fixed,
-   * non-flexing width so the slider takes the slack, and ordered last so it
-   * paints at the inline-end. */
+  /* `.range-number` is the NumberInput WRAPPER (a <div>). Size/order the whole
+   * control here: fixed, non-flexing width so the slider takes the slack, and
+   * ordered last so it paints at the inline-end. */
   & > .range-number {
     order: 1;
     flex: 0 0 var(--form-range-number-width, 5rem);
     width: var(--form-range-number-width, 5rem);
+  }
+
+  /* Spinner removal targets the INNER <input> (the wrapper is a <div>, which
+   * has no spinner): the slider is the coarse control, the number is for
+   * precise entry, so no native steppers. */
+  & > .range-number > input {
     appearance: textfield;
     -moz-appearance: textfield;
 

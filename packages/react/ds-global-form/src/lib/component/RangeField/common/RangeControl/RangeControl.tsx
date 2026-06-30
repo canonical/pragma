@@ -6,6 +6,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { NumberInput } from "#lib/subcomponent/NumberInput/index.js";
 import type { RangeControlProps } from "./types.js";
 import "./styles.css";
 
@@ -129,12 +130,16 @@ export const RangeControl = forwardRef<HTMLInputElement, RangeControlProps>(
         style={style}
         className={[componentCssClassName, className].filter(Boolean).join(" ")}
       >
-        <input
+        {/* Compose the real NumberInput (wrapper + inner <input class="p">) so
+            the number gets the exact chrome + baseline + inline-padding of every
+            other field, instead of a hand-rolled bare input. `id`/`ref` forward
+            to the inner <input> (the labelable, registered, write-through node);
+            `range-number` lands on the wrapper for sizing/order. */}
+        <NumberInput
           {...numberProps}
           id={id}
           ref={setNumberRef}
-          type="number"
-          className="ds input number chrome range-number p"
+          className="range-number"
           min={min}
           max={max}
           step={step}

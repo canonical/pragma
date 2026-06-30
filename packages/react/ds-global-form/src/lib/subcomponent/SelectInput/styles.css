@@ -5,5 +5,9 @@
   background-repeat: no-repeat;
   background-position: right var(--form-input-padding-inline) center;
   background-size: 1em;
+  /* This element IS the text-bearing leaf, so it carries the inline padding
+   * (`.ds.input.chrome` provides only the block padding). The end side leaves
+   * room for the chevron. */
+  padding-inline-start: var(--form-input-padding-inline);
   padding-inline-end: calc(var(--form-input-padding-inline) * 2 + 1em);
 }

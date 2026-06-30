@@ -134,6 +134,15 @@
 /* ── .ds.input.chrome — shared input chrome ─────────────────────────
  * Applied on native <textarea>/<select> directly, and on the
  * composite .ds.input.text wrapper for <input> + prefix/suffix.
+ *
+ * Inline padding is deliberately NOT set here. On composite wrappers the
+ * text-bearing leaf is the inner <input>, which carries its own
+ * `padding-inline`; if the wrapper ALSO had it the text would be inset twice
+ * (and prefix/suffix would sit off the edge). So the inline padding lives on
+ * the leaf in every case: the inner <input> for composite inputs (text,
+ * number, password, phone …), and the element itself for the direct-chrome
+ * inputs (date, time, datetime, select, textarea), which set it locally.
+ * Only the block padding (baseline-grid height) is shared here.
  */
 .ds.input.chrome {
   display: block;
@@ -142,7 +151,6 @@
   /* Explicit height snapped to baseline grid — border-box includes border */
   height: var(--form-input-height);
   padding-block: var(--form-input-padding-block);
-  padding-inline: var(--form-input-padding-inline);
 
   /* Base border */
   border: var(--form-input-border-width) solid var(--form-input-border-color);
