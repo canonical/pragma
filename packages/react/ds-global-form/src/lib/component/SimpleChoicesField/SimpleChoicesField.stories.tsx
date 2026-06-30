@@ -51,3 +51,28 @@ export const StackedMultiple: Story = {
     layout: "stacked",
   },
 };
+
+/**
+ * Column layout: options are laid out in a grid of equal-width columns, so each
+ * option's width is column-based rather than sized to its content.
+ */
+export const Columns: Story = {
+  args: {
+    name: "select_columns",
+    label: "Select a continent",
+    options: fixtures.continents,
+    layout: "columns",
+    columns: 3,
+  },
+};
+
+export const ColumnsMultiple: Story = {
+  args: {
+    name: "select_columns_multiple",
+    label: "Select continents",
+    options: fixtures.continents,
+    isMultiple: true,
+    layout: "columns",
+    columns: 2,
+  },
+};

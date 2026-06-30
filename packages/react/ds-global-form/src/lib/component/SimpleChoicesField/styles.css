@@ -13,6 +13,15 @@
     flex-wrap: nowrap;
   }
 
+  /* Columns: a grid of equal-width columns. Each option fills its cell, so the
+   * option WIDTH is column-based rather than content-based. The column count
+   * comes from `--simple-choices-columns` (set from the `columns` prop). */
+  &.columns {
+    display: grid;
+    grid-template-columns: repeat(var(--simple-choices-columns, 2), 1fr);
+    gap: var(--form-group-gap) var(--container-gap-loose);
+  }
+
   /* Each option (common/Option, `.ds.option`) is styled here, scoped to this
    * group so the generic class cannot collide with options elsewhere. */
   & > .ds.option {
