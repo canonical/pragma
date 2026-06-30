@@ -64,9 +64,10 @@ export const DisabledIndeterminate: Story = {
 };
 
 /**
- * Presentational error state: the bare input wrapped in the field `.danger`
- * context (the visual layer the Wrapper applies on a real validation error).
- * For the react-hook-form-driven error see CheckboxField's `WithError`.
+ * Presentational error state: the bare checkbox wrapped in the field `.danger`
+ * context. The checkbox control has no error border of its own — the error is
+ * conveyed by the `FieldError` message. For the react-hook-form-driven error
+ * see CheckboxField's `WithError`.
  */
 export const ErrorState: Story = {
   decorators: [decorators.danger()],

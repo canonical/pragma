@@ -58,8 +58,14 @@ export const Disabled: Story = {
   },
 };
 
-/** Error state: touched + failing validation → the field shows `.danger` chrome + the error message. */
+/**
+ * Error state: touched + failing validation → the field shows `.danger` chrome
+ * + the error message. ColorField always carries a non-empty value (it binds
+ * with a `#000000` default), so a plain `required` rule can't fail — this uses
+ * a `validate` rule to force the error instead.
+ */
 export const WithError = errorStory({
   name: "err_color",
   label: "Brand colour",
+  registerProps: { validate: () => "Pick a brand colour" },
 });

@@ -17,9 +17,11 @@ export const Default: Story = {
 };
 
 /**
- * Presentational error state: the bare input wrapped in the field `.danger`
- * context (the visual layer the Wrapper applies on a real validation error).
- * For the react-hook-form-driven error see RangeField's `WithError`.
+ * Presentational error state: the bare slider wrapped in the field `.danger`
+ * context. The slider has no error border of its own — the error is conveyed by
+ * the `FieldError` message (in RangeField the error chrome lands on the
+ * canonical number input, not the slider). For the react-hook-form-driven error
+ * see RangeField's `WithError`.
  */
 export const ErrorState: Story = {
   decorators: [decorators.danger()],

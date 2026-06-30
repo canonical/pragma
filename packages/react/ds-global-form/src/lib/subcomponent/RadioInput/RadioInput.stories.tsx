@@ -26,9 +26,11 @@ export const Disabled: Story = {
 };
 
 /**
- * Presentational error state: the bare input wrapped in the field `.danger`
- * context (the visual layer the Wrapper applies on a real validation error).
- * For the react-hook-form-driven error see RadioField's `WithError`.
+ * Presentational error state: the bare radio wrapped in the field `.danger`
+ * context. A single radio control has no error border of its own — the error is
+ * conveyed by the `FieldError` message (radio groups signal validity at the
+ * group/message level, not per control). For the react-hook-form-driven error
+ * on a radio group see ChoicesField / SimpleChoicesField's `WithError`.
  */
 export const ErrorState: Story = {
   decorators: [decorators.danger()],
