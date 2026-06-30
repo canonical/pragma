@@ -3,8 +3,8 @@ import type React from "react";
 import type { JSX } from "react";
 
 export interface LabelMessages {
-  /* The optional message, shown after the label in the "optional" indicator
-   * mode (rendered as " (<optional>)"). */
+  /* The optional message (e.g. "optional"), shown in parentheses after the
+   * label in the "optional" indicator mode — i.e. ` (optional)`. */
   optional: () => string;
 }
 

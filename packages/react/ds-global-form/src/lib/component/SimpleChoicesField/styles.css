@@ -135,6 +135,18 @@
         border-color: var(--color-border-disabled);
         background-color: var(--color-foreground-checkbox-unselected-disabled);
       }
+
+      /* A checked+disabled box must keep the SELECTED (not unselected) disabled
+       * fill — the generic `:disabled` above would otherwise leave the checkmark
+       * on the unselected-disabled background. Matches CheckboxInput. */
+      &:checked:disabled {
+        background: var(--color-foreground-checkbox-selected-disabled);
+        border-color: var(--color-foreground-checkbox-selected-disabled);
+
+        &::before {
+          background-color: var(--color-foreground-checkbox-checkmark-disabled);
+        }
+      }
     }
   }
 }
