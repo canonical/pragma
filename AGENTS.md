@@ -1,8 +1,12 @@
-# AGENTS.md — Working on a Pragma PR
+# Preface
 
-Guidance for AI agents (and humans) contributing to `canonical/pragma`. For deeper
-setup and monorepo mechanics see [`old/CONTRIBUTING.md`](old/CONTRIBUTING.md); this
-file is the PR workflow contract.
+`canonical/pragma` is a Bun/Lerna monorepo of design-system packages. This file is
+the **PR workflow contract** for agents and humans contributing here: toolchain,
+commit/branch conventions, the pre-push gate, and PR mechanics. Read it before
+opening a PR against this repo; skip it for tasks that don't touch this repo. Deeper
+setup and monorepo mechanics live in [`old/CONTRIBUTING.md`](old/CONTRIBUTING.md).
+
+Read the top-level `.kb/agents.md` file before continuing below.
 
 ## Toolchain
 
@@ -167,3 +171,8 @@ build-excluded folder if the alias points at story/dev-only code.
   automated workflow cannot publish future versions. Beware: merging a new package does
   not make it releasable on its own. See
   [`docs/how-to-guides/PUBLISH_A_PACKAGE.md`](docs/how-to-guides/PUBLISH_A_PACKAGE.md).
+
+# Documents
+
+- `.kb/agents.md` - General rules for reading and writing the knowledge base.
+- `packages/react/ds-global-form/AGENTS.md` - The React form package (`@canonical/react-ds-global-form`): tier architecture, field/RHF machinery, and Storybook conventions.
