@@ -47,7 +47,18 @@ p,
   );
   line-height: var(--computed-line-height);
   font-size: var(--font-size);
+}
 
+/* Block-level baseline trimming/nudges only — bare inline `.code` is excluded
+ * so it does not double-pad inside a paragraph. Combine `.p.code` for a block. */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+.p {
   text-box: trim-both cap alphabetic;
 
   /* Nudges as padding — inside the box for flex/grid compatibility */

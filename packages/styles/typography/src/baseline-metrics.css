@@ -84,7 +84,18 @@ p,
     mod(var(--baseline-position), var(--baseline-height))
   );
   --end-nudge: calc(var(--baseline-height) - var(--start-nudge));
+}
 
+/* Block-level baseline nudges only — bare inline `.code` is excluded so it
+ * does not double-pad inside a paragraph. Combine `.p.code` for a code block. */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+.p {
   /* Nudges as padding — inside the box for flex/grid compatibility */
   padding-block-start: var(--start-nudge);
   padding-block-end: var(--end-nudge);

@@ -64,7 +64,25 @@ p,
     mod(var(--baseline-position), var(--baseline-height))
   );
   --end-nudge: calc(var(--baseline-height) - var(--start-nudge));
+}
 
+/* Block-level baseline nudges.
+ *
+ * The padding-block nudges snap a BLOCK element's box onto the baseline grid.
+ * They must not apply to inline `.code` (e.g. InlineCode's <code> or
+ * KeyboardKey's <kbd>) nested in a paragraph — there the parent line already
+ * owns the baseline, and adding the nudge double-pads the top, breaking
+ * alignment. So bare `.code` is inline-only (typography, no nudges); combine
+ * `.p.code` for a standalone monospace code *block* that needs the nudges.
+ */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+.p {
   /* Nudges as padding — inside the box for flex/grid compatibility */
   padding-block-start: var(--start-nudge);
   padding-block-end: var(--end-nudge);

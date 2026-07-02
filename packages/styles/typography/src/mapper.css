@@ -210,10 +210,17 @@ p,
 
 /* ── Code ── */
 
-/* Monospace sibling of `.p`. Same baseline-grid engine, but mapped to the
-   `text-primary-code` typography tier (monospace family). Class-only —
-   consumers opt in with `class="code"` (e.g. InlineCode's <code>, KeyboardKey's
-   <kbd>); bare <code>/<kbd> are not targeted. */
+/* Monospace counterpart of `.p`, mapped to the `text-primary-code` typography
+   tier (monospace family). Class-only — consumers opt in with `class="code"`
+   (e.g. InlineCode's <code>, KeyboardKey's <kbd>); bare <code>/<kbd> are not
+   targeted.
+
+   `.code` alone is INLINE: it applies the monospace typography but NOT the
+   block-level baseline padding nudges (those live on `.p`/headings only), so an
+   inline <code> inside a paragraph inherits the parent line's baseline instead
+   of double-padding its top. For a standalone monospace code *block* that must
+   snap to the grid, combine both classes: `class="p code"` gives `.p`'s block
+   nudges plus `.code`'s monospace mapping. */
 .code {
   --font-size: var(--typography-text-primary-code-font-size);
   --font-weight: var(--typography-text-primary-code-font-weight);
