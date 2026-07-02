@@ -3,7 +3,10 @@
  *
  * Reads workspace globs from the root package.json, resolves every
  * non-private package, and reports whether the local version is
- * published, outdated, or new.
+ * published, outdated, or new — and whether the latest published version
+ * carries an npm provenance attestation (published via OIDC trusted
+ * publishing with `--provenance`). All data is from the public registry,
+ * so no login is required.
  */
 import { execSync } from "node:child_process";
 import { readFileSync } from "node:fs";
@@ -40,11 +43,19 @@ packages.sort((a, b) => a.name.localeCompare(b.name));
 const pad = Math.max(...packages.map((p) => `${p.name}@${p.version}`.length));
 
 for (const pkg of packages) {
-  let registry: string;
+  let registry = "unpublished";
+  // `dist.attestations.provenance` is present only when the latest version was
+  // published with OIDC `--provenance`. A single `npm view --json` gives both.
+  let provenance = "—";
   try {
-    registry = execSync(`npm view ${pkg.name} version 2>/dev/null`, {
+    const raw = execSync(`npm view ${pkg.name} --json 2>/dev/null`, {
       encoding: "utf8",
     }).trim();
+    const data = JSON.parse(raw);
+    registry = typeof data?.version === "string" ? data.version : "unpublished";
+    if (registry !== "unpublished") {
+      provenance = data?.dist?.attestations?.provenance ? "provenance" : "none";
+    }
   } catch {
     registry = "unpublished";
   }
@@ -57,5 +68,7 @@ for (const pkg of packages) {
       ? "published"
       : "outdated";
 
-  console.log(`${local.padEnd(pad)}  registry: ${registry.padEnd(12)}  ${status}`);
+  console.log(
+    `${local.padEnd(pad)}  registry: ${registry.padEnd(12)}  ${status.padEnd(11)}  ${provenance}`,
+  );
 }
