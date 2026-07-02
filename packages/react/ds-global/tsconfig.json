@@ -3,6 +3,10 @@
   "compilerOptions": {
     "baseUrl": "src",
     "skipLibCheck": true,
+    // Resolve the `#lib/*` self-imports against `src` during type-checking
+    // (matches the package `imports` `development` condition). At runtime the
+    // published package resolves `#lib/*` via `default` -> `./dist/esm/lib/*`.
+    "customConditions": ["development"],
     "types": [
       "node",
       "react",
@@ -19,10 +23,5 @@
     "vite.config.ts",
     "vitest.setup.ts",
     "vitest.config.ts"
-  ],
-  "exclude": [
-    "src/lib/Tokens.stories.tsx",
-    "src/lib/Typography.stories.tsx",
-    "src/lib/mockTokens.ts"
   ]
 }
