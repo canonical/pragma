@@ -54,12 +54,13 @@ export const StackedMultiple: Story = {
 
 /**
  * Column layout: options are laid out in a grid of equal-width columns, so each
- * option's width is column-based rather than sized to its content. Rendered in a
- * `.grid.responsive` context (via the grid decorator) so the form's subgrid has
- * real column tracks — matching how a form is laid out in a real page.
+ * option's width is column-based rather than sized to its content. The
+ * `grid: "responsive"` parameter (from @canonical/storybook-addon-utils) renders
+ * the story in a `.grid.responsive` context so the form's subgrid has real column
+ * tracks — matching how a form is laid out in a real page.
  */
 export const Columns: Story = {
-  decorators: [decorators.grid(), decorators.form()],
+  parameters: { grid: "responsive" },
   args: {
     name: "select_columns",
     label: "Select a continent",
@@ -70,7 +71,7 @@ export const Columns: Story = {
 };
 
 export const ColumnsMultiple: Story = {
-  decorators: [decorators.grid(), decorators.form()],
+  parameters: { grid: "responsive" },
   args: {
     name: "select_columns_multiple",
     label: "Select continents",

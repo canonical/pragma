@@ -59,6 +59,39 @@ function ContactForm() {
 }
 ```
 
+### Form modes
+
+`Form` wraps its children in a react-hook-form `FormProvider` and works in two modes:
+
+- **Internal mode** (above) — pass `onSubmit`, and optionally `defaultValues` and a
+  validation `mode`; `Form` creates the `useForm` instance for you. Best for a
+  self-contained form.
+- **External mode** — create the `useForm` instance yourself and pass it as
+  `methods`. Because you own it, you can read `formState` (e.g. `isSubmitting`) and
+  call its methods (`reset`, `setValue`, `watch`, …). Use this for async submits,
+  shared state, or multi-step forms.
+
+  ```tsx
+  import { useForm } from "react-hook-form";
+
+  const methods = useForm({ mode: "onBlur", defaultValues: { email: "" } });
+  const { reset, formState: { isSubmitting } } = methods;
+
+  <Form methods={methods} onSubmit={async (data) => { await save(data); reset(); }}>
+    <Field name="email" inputType="email" label="Email" />
+    <button type="submit" disabled={isSubmitting}>Send</button>
+  </Form>;
+  ```
+
+  When you pass `methods`, `Form`'s own `defaultValues`/`mode` props are ignored —
+  configure those on your `useForm` call.
+
+This library is a thin layer over [react-hook-form](https://react-hook-form.com/)
+(`^7.71`): validation rules (`registerProps`), `formState`, submission, field
+arrays, and schema resolvers are all RHF's API. See the **Getting Started** guide
+in Storybook for a full walkthrough with runnable examples, and the
+[react-hook-form docs](https://react-hook-form.com/docs) for the complete surface.
+
 ## Field Switch Pattern
 
 The `Field` component uses `inputType` to select the appropriate input component:
