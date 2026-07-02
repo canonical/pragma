@@ -31,3 +31,6 @@
 
 /* Scroll overflow affordance tokens */
 @import url("./overflow.css");
+
+/* Motion tokens (placeholder durations/easings) */
+@import url("./motion.css");
