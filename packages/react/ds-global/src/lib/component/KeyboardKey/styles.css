@@ -3,7 +3,7 @@
   --keyboard-key-color-text: var(--color-text-muted);
   --keyboard-key-color-border: var(--color-text-muted);
 
-  --keyboard-key-border-radius: 0.25rem;
+  --keyboard-key-border-radius: var(--dimension-radius-small);
   --keyboard-key-border-width: var(--dimension-stroke-thickness-medium);
   --keyboard-key-padding-inline: var(--dimension-050);
 }

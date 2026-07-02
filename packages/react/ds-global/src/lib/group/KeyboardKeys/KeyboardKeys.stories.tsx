@@ -20,12 +20,12 @@ export const Default: StoryFn<typeof Component> = () => (
 );
 
 export const ComposedCommand: StoryFn<typeof Component> = () => (
-  <div>
+  <p className="p">
     Press
     <Component>
       <KeyboardKey keyValue="ctrl" />
       <KeyboardKey keyValue="c" />
     </Component>
     to copy.
-  </div>
+  </p>
 );

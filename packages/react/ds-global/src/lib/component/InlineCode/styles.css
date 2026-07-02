@@ -2,6 +2,7 @@
   --inline-code-color-text: var(--color-text);
   --inline-code-color-background: var(--color-foreground-secondary);
   --inline-code-padding-inline: var(--dimension-050);
+  --inline-code-border-radius: var(--dimension-radius-small);
 }
 
 /* The `.code` baseline utility (from @canonical/styles) supplies the
@@ -13,4 +14,5 @@
   background-color: var(--inline-code-color-background);
 
   padding-inline: var(--inline-code-padding-inline);
+  border-radius: var(--inline-code-border-radius);
 }
