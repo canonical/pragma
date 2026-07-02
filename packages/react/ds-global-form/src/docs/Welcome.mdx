@@ -35,35 +35,6 @@ Form            react-hook-form provider + subgrid container
 
 `Form` wraps children in a `FormProvider` and renders as a CSS subgrid, inheriting columns from the parent `.grid` context. `Field` is a discriminated union — the `inputType` prop selects which input component renders, and TypeScript enforces the correct props for that type. `Wrapper` composes the field chrome (label, description, error message, ARIA attributes) and applies middleware. The input component handles the actual user interaction.
 
-## Input types
-
-<table>
-  <thead>
-    <tr>
-      <th>inputType</th>
-      <th>Purpose</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr><td><code>"text"</code></td><td>Single-line text — also handles email, password, number, url, tel</td></tr>
-    <tr><td><code>"textarea"</code></td><td>Multi-line text</td></tr>
-    <tr><td><code>"select"</code></td><td>Native dropdown</td></tr>
-    <tr><td><code>"checkbox"</code></td><td>Single boolean toggle</td></tr>
-    <tr><td><code>"simple-choices"</code></td><td>Radio buttons or checkbox groups</td></tr>
-    <tr><td><code>"choices"</code></td><td>Radio/checkbox groups with rich ReactNode labels</td></tr>
-    <tr><td><code>"combobox"</code></td><td>Searchable select, single or multiple</td></tr>
-    <tr><td><code>"range"</code></td><td>Numeric slider</td></tr>
-    <tr><td><code>"date"</code></td><td>Date picker</td></tr>
-    <tr><td><code>"time"</code></td><td>Time picker</td></tr>
-    <tr><td><code>"datetime"</code></td><td>Date and time picker</td></tr>
-    <tr><td><code>"file"</code></td><td>File upload with validation</td></tr>
-    <tr><td><code>"color"</code></td><td>Color picker with swatches</td></tr>
-    <tr><td><code>"phone"</code></td><td>International phone with country selector</td></tr>
-    <tr><td><code>"hidden"</code></td><td>Hidden form value</td></tr>
-    <tr><td><code>"custom"</code></td><td>Your component via CustomComponent prop</td></tr>
-  </tbody>
-</table>
-
 ## Quick example
 
 ```tsx
