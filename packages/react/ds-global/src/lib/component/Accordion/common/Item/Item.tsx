@@ -1,6 +1,5 @@
 import type React from "react";
-import { useCallback, useEffect, useId, useRef } from "react";
-import { useAccordion } from "../../hooks/index.js";
+import { useCallback } from "react";
 import type { ItemProps } from "./types.js";
 import "./styles.css";
 
@@ -9,20 +8,13 @@ const componentCssClassName = "ds accordion-item";
 /**
  * Accordion.Item subcomponent
  *
- * A collapsible content area within an Accordion.
- * Follows the DSL anatomy:
- * - Stack layout (vertical)
- * - Header tab with control (chevron) + heading
- * - Content panel
+ * A collapsible content area within an Accordion, rendered with native
+ * `<details>`/`<summary>` so the browser owns the open/close state and
+ * keyboard interaction (Enter/Space on the summary toggles it). No JavaScript
+ * state is required; `expanded`/`onExpandedChange` is an optional controlled
+ * overlay on the native `open` attribute.
  *
- * Keyboard support:
- * - Enter/Space: Toggle expand/collapse
- * - Arrow Down: Move focus to next accordion header
- * - Arrow Up: Move focus to previous accordion header
- * - Home: Move focus to first accordion header
- * - End: Move focus to last accordion header
- *
- * @implements ds:global.subcomponent.accordion-item
+ * @implements dso:global.subcomponent.accordion-item
  */
 const Item = ({
   heading,
@@ -32,72 +24,34 @@ const Item = ({
   className,
   ...props
 }: ItemProps): React.ReactElement => {
-  const headerId = useId();
-  const contentId = useId();
-  const headerRef = useRef<HTMLButtonElement>(null);
-  const accordion = useAccordion();
-
-  // Register this header for keyboard navigation
-  useEffect(() => {
-    if (accordion) {
-      return accordion.registerHeader(headerRef);
-    }
-  }, [accordion]);
-
-  const handleClick = useCallback(() => {
-    onExpandedChange?.(!expanded);
-  }, [expanded, onExpandedChange]);
-
-  const handleKeyDown = useCallback(
-    (event: React.KeyboardEvent) => {
-      // Toggle on Enter or Space
-      if (event.key === "Enter" || event.key === " ") {
-        event.preventDefault();
-        onExpandedChange?.(!expanded);
-        return;
-      }
-
-      // Arrow/Home/End navigation between accordion items
-      if (accordion) {
-        accordion.handleKeyNavigation(event, headerRef);
-      }
+  const handleToggle = useCallback(
+    (event: React.SyntheticEvent<HTMLDetailsElement>) => {
+      onExpandedChange?.(event.currentTarget.open);
     },
-    [expanded, onExpandedChange, accordion],
+    [onExpandedChange],
   );
 
   return (
-    <div
+    <details
       className={[componentCssClassName, className].filter(Boolean).join(" ")}
+      open={expanded}
+      onToggle={handleToggle}
       {...props}
     >
-      {/* Header tab (cardinality: 1) */}
-      <button
-        ref={headerRef}
-        type="button"
-        id={headerId}
-        className="header"
-        aria-expanded={expanded}
-        aria-controls={contentId}
-        onClick={handleClick}
-        onKeyDown={handleKeyDown}
-      >
-        {/* Control/Chevron indicator (cardinality: 1) */}
+      {/* Header tab — <summary> owns the button semantics + keyboard toggle.
+          The consumer supplies heading semantics inside `heading`. */}
+      <summary className="header">
+        {/* Control/chevron indicator (cardinality: 1) */}
         <span className="chevron" aria-hidden="true" />
-        {/* Heading (cardinality: 1) */}
         <span className="heading">{heading}</span>
-      </button>
+      </summary>
 
-      {/* Content panel (cardinality: 1) */}
-      <section
-        id={contentId}
-        aria-labelledby={headerId}
-        className="content"
-        hidden={!expanded}
-      >
-        {/* Content padding wrapper */}
-        <div className="content-inner">{children}</div>
-      </section>
-    </div>
+      {/* Content panel (cardinality: 1). `.editorial` is a prose context — it
+          gives child <p>/headings their baseline spacing without adding its own
+          baseline padding, so it doesn't double up on content that is already
+          `.p`. */}
+      <div className="content editorial">{children}</div>
+    </details>
   );
 };
 

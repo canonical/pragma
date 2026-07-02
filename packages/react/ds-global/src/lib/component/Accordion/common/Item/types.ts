@@ -13,10 +13,18 @@ import type { HTMLAttributes, ReactNode } from "react";
  *     - control (chevron, cardinality: 1)
  *     - heading (slotName: default, cardinality: 1)
  *   - content panel (slotName: default, cardinality: 1)
+ *
+ * Rendered with native `<details>`/`<summary>`, so the browser owns the
+ * open/close state and keyboard interaction. `expanded` (with
+ * `onExpandedChange`) is an optional controlled overlay on the native `open`
+ * attribute.
  */
-export interface ItemProps extends HTMLAttributes<HTMLDivElement> {
+export interface ItemProps
+  extends Omit<HTMLAttributes<HTMLDetailsElement>, "onToggle"> {
   /**
-   * The heading text displayed in the accordion item header
+   * The accordion item's heading. Pass a node — including the heading element
+   * (e.g. `<h3>…</h3>`) at the level appropriate for the page's document
+   * outline — so heading semantics stay the consumer's responsibility.
    * Maps to DSL role: heading (cardinality: 1)
    */
   heading: ReactNode;
@@ -26,12 +34,13 @@ export interface ItemProps extends HTMLAttributes<HTMLDivElement> {
    */
   children: ReactNode;
   /**
-   * Whether the accordion item is expanded
+   * Whether the accordion item is expanded. Controls the native `open`
+   * attribute; pair with `onExpandedChange` for a controlled item.
    * @default false
    */
   expanded?: boolean;
   /**
-   * Callback fired when the expanded state changes
+   * Callback fired when the expanded state changes (from the native toggle).
    */
   onExpandedChange?: (expanded: boolean) => void;
 }

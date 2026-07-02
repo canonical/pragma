@@ -2,140 +2,192 @@
  * Accordion.Item styles
  * @implements dso:global.subcomponent.accordion-item
  *
- * DSL anatomy mapping:
- * - layout.type: stack -> display: flex; flex-direction: column
- * - layout.direction: vertical -> flex-direction: column
+ * Rendered with native <details>/<summary>. Typography and baseline alignment
+ * come from the `.p` class on the heading and content. Tokens follow the Figma
+ * spec: header interactive background uses the ghost surface channel (which
+ * auto-steps on nested .surface contexts to layer2/layer3), text uses
+ * color-text, the chevron uses color-icon, and dividers use color-border-muted.
+ * Vertical padding is expressed in baseline multiples.
  */
-.ds.accordion-item {
-  /* layout.type: stack, layout.direction: vertical */
-  display: flex;
-  flex-direction: column;
+:root {
+  --accordion-item-color-text: var(--color-text);
+  --accordion-item-color-icon: var(--color-icon);
+  --accordion-item-color-border: var(--color-border-muted);
 
-  /* Divider between items (not explicitly in DSL but common pattern) */
-  border-bottom: var(--accordion-item-border-width, 1px)
-    var(--accordion-item-border-style, solid)
-    var(--accordion-item-border-color, var(--color-border));
+  /* Items have no side (inline) borders by default — the docs show only the
+     block-end divider. This token is an intentional extension point: it
+     references a currently-undefined colour, so it resolves to no border, but
+     a theme/consumer can supply `--accordion-item-border-inline-color` to turn
+     inline borders on without changing the component. */
+  --accordion-item-border-inline: var(--dimension-stroke-thickness-medium) solid
+    var(--accordion-item-border-inline-color);
 
-  &:last-child {
-    border-bottom: none;
-  }
+  /* Default header background (surface 1). The surface channel is applied on
+     the element below — NOT here — because a var() referencing
+     --surface-color-foreground-ghost resolved in :root would capture the :root
+     value (where no .surface is active) and never step. The surface layer only
+     re-channels the base ghost (no hover/active channel), so hover/active pair
+     to the non-layered ghost vars directly. */
+  --accordion-item-header-background: var(--color-foreground-ghost);
+  --accordion-item-header-background-hover: var(--color-foreground-ghost-hover);
+  --accordion-item-header-background-active: var(
+    --color-foreground-ghost-active
+  );
+
+  --accordion-item-header-gap: var(--dimension-100);
+  --accordion-item-header-padding-block: var(--dimension-100);
+  --accordion-item-header-padding-inline: var(--dimension-200);
+
+  --accordion-item-content-padding-inline: var(--dimension-200);
+  /* Vertical content padding in baseline multiples (dimension-100 = 1 bU). */
+  --accordion-item-content-padding-block: var(--dimension-100);
+
+  /* Fixed chevron size (per Figma) so every item reserves the same chevron
+     column width and all headings start at the same x-position, regardless of
+     heading level — no horizontal drift. */
+  --accordion-item-chevron-size: var(--dimension-200);
+
+  /* Indent the content so it aligns under the heading text, i.e. past the
+     header inline padding + chevron + the gap between chevron and heading. */
+  --accordion-item-content-indent: calc(
+    var(--accordion-item-header-padding-inline) +
+    var(--accordion-item-chevron-size) +
+    var(--accordion-item-header-gap)
+  );
 }
 
-/**
- * Header tab
- * DSL: layout.type: flow, layout.direction: horizontal, layout.align: center
- *      interaction.cursor: pointer
- */
+.ds.accordion-item {
+  /* Inline (side) borders — off by default, see the token above. */
+  border-inline: var(--accordion-item-border-inline);
+
+  /* Divider at the end of each item (Figma anatomy #6: "the divider at the end
+     of an accordion item indicates the end of an accordion item"). */
+  border-block-end: var(--dimension-stroke-thickness-medium) solid
+    var(--accordion-item-color-border);
+}
+
+/* Header tab — the native <summary>. The chevron is a fixed size, so a fixed
+   chevron column keeps all headings left-aligned; align-items:center centres
+   the fixed chevron on the header line. */
 .ds.accordion-item > .header {
-  /* layout.type: flow, layout.direction: horizontal */
   display: flex;
   flex-direction: row;
-
-  /* layout.align: center */
   align-items: center;
-  gap: var(--accordion-header-gap, var(--spacing-small, 0.5rem));
+  gap: var(--accordion-item-header-gap);
 
-  /* Full width */
-  width: 100%;
+  padding-block: var(--accordion-item-header-padding-block);
+  padding-inline: var(--accordion-item-header-padding-inline);
 
-  /* Spacing */
-  padding-block: var(
-    --accordion-header-padding-block,
-    var(--spacing-medium, 1rem)
+  color: var(--accordion-item-color-text);
+  /* Consume the ghost surface channel here on the element so it resolves in the
+     .surface context and auto-steps (surface 1 -> base, 2 -> layer2, 3 ->
+     layer3); outside any .surface it falls back to the surface-1 default. */
+  background-color: var(
+    --surface-color-foreground-ghost,
+    var(--accordion-item-header-background)
   );
-  padding-inline: var(
-    --accordion-header-padding-inline,
-    var(--spacing-medium, 1rem)
-  );
-
-  /* Background */
-  background: var(
-    --accordion-header-background,
-    var(--color-surface-interactive, transparent)
-  );
-
-  /* Reset button styles */
-  border: none;
-  font: inherit;
-  text-align: start;
-
-  /* interaction.cursor: pointer */
   cursor: pointer;
 
-  /* Typography */
-  font-weight: var(
-    --accordion-header-font-weight,
-    var(--font-weight-semibold, 600)
-  );
-  font-size: var(--accordion-header-font-size, var(--font-size-body, 1rem));
-  color: var(--accordion-header-color, var(--color-text-primary, inherit));
+  /* Hide the native disclosure triangle */
+  list-style: none;
 
-  /* Transition */
-  transition: background-color var(--transition-duration-fast, 150ms)
-    var(--transition-easing-standard, ease-out);
+  &::-webkit-details-marker {
+    display: none;
+  }
 
   &:hover {
-    background: var(
-      --accordion-header-background-hover,
-      var(--color-surface-interactive-hover, rgba(0, 0, 0, 0.04))
-    );
+    background-color: var(--accordion-item-header-background-hover);
   }
 
   &:active {
-    background: var(
-      --accordion-header-background-active,
-      var(--color-surface-interactive-active, rgba(0, 0, 0, 0.08))
-    );
-  }
-
-  &:focus-visible {
-    background: var(
-      --accordion-header-background-focus,
-      var(--color-surface-interactive-focus, rgba(0, 0, 0, 0.04))
-    );
-    outline: var(--focus-outline-width, 2px) solid
-      var(--focus-outline-color, var(--color-focus, #0066cc));
-    outline-offset: var(--focus-outline-offset, -2px);
+    background-color: var(--accordion-item-header-background-active);
   }
 }
 
-/**
- * Heading (role: heading)
- * DSL: cardinality: 1
- */
+/* The consumer supplies the heading content — plain text by default (rendered
+   as body copy) or an optional heading element (h1–h6), which renders at its
+   matching typography-heading tier (the real type scale). */
 .ds.accordion-item > .header > .heading {
   flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  min-width: 0;
+
+  /* Default: body copy for plain-text headings. */
+  font-family: var(--typography-text-primary-font-family);
+  font-size: var(--typography-text-primary-font-size);
+  font-weight: var(--typography-text-primary-font-weight);
+  line-height: var(--typography-text-primary-line-height);
+  letter-spacing: var(--typography-text-primary-letter-spacing);
+
+  & :is(h1, h2, h3, h4, h5, h6) {
+    margin: 0;
+  }
+
+  & h1 {
+    font-family: var(--typography-heading-1-font-family);
+    font-size: var(--typography-heading-1-font-size);
+    font-weight: var(--typography-heading-1-font-weight);
+    line-height: var(--typography-heading-1-line-height);
+    letter-spacing: var(--typography-heading-1-letter-spacing);
+  }
+
+  & h2 {
+    font-family: var(--typography-heading-2-font-family);
+    font-size: var(--typography-heading-2-font-size);
+    font-weight: var(--typography-heading-2-font-weight);
+    line-height: var(--typography-heading-2-line-height);
+    letter-spacing: var(--typography-heading-2-letter-spacing);
+  }
+
+  & h3 {
+    font-family: var(--typography-heading-3-font-family);
+    font-size: var(--typography-heading-3-font-size);
+    font-weight: var(--typography-heading-3-font-weight);
+    line-height: var(--typography-heading-3-line-height);
+    letter-spacing: var(--typography-heading-3-letter-spacing);
+  }
+
+  & h4 {
+    font-family: var(--typography-heading-4-font-family);
+    font-size: var(--typography-heading-4-font-size);
+    font-weight: var(--typography-heading-4-font-weight);
+    line-height: var(--typography-heading-4-line-height);
+    letter-spacing: var(--typography-heading-4-letter-spacing);
+  }
+
+  & h5 {
+    font-family: var(--typography-heading-5-font-family);
+    font-size: var(--typography-heading-5-font-size);
+    font-weight: var(--typography-heading-5-font-weight);
+    line-height: var(--typography-heading-5-line-height);
+    letter-spacing: var(--typography-heading-5-letter-spacing);
+  }
+
+  & h6 {
+    font-family: var(--typography-heading-6-font-family);
+    font-size: var(--typography-heading-6-font-size);
+    font-weight: var(--typography-heading-6-font-weight);
+    line-height: var(--typography-heading-6-line-height);
+    letter-spacing: var(--typography-heading-6-letter-spacing);
+  }
 }
 
-/**
- * Control indicator (role: control)
- * DSL: size.width: size/icon/small, size.height: size/icon/small
- *      cardinality: 1
- */
+/* Control indicator (chevron) — fixed size for consistent alignment. */
 .ds.accordion-item > .header > .chevron {
   flex-shrink: 0;
-  width: var(--accordion-chevron-size, var(--size-icon-small, 1rem));
-  height: var(--accordion-chevron-size, var(--size-icon-small, 1rem));
+  width: var(--accordion-item-chevron-size);
+  height: var(--accordion-item-chevron-size);
 
-  /* interaction.transform.collapsed: rotate(0deg), transition */
-  transform: rotate(0deg);
-  transition: transform var(--transition-duration-fast, 150ms)
-    var(--transition-easing-standard, ease-out);
+  /* Closed: chevron points right (the down-glyph rotated -90deg). */
+  transform: rotate(-90deg);
+  transition: transform var(--motion-duration-fast)
+    var(--motion-easing-standard);
 
-  /* Chevron icon using CSS mask */
   &::before {
     content: "";
     display: block;
     width: 100%;
     height: 100%;
-    /* appearance.color: color/icon/secondary */
-    background-color: var(
-      --accordion-chevron-color,
-      var(--color-icon-secondary, currentColor)
-    );
+    background-color: var(--accordion-item-color-icon);
     mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='currentColor' d='M4.47 5.47a.75.75 0 0 1 1.06 0L8 7.94l2.47-2.47a.75.75 0 1 1 1.06 1.06l-3 3a.75.75 0 0 1-1.06 0l-3-3a.75.75 0 0 1 0-1.06z'/%3E%3C/svg%3E");
     mask-repeat: no-repeat;
     mask-position: center;
@@ -143,54 +195,45 @@
   }
 }
 
-/* interaction.transform.expanded: rotate(180deg) */
-.ds.accordion-item > .header[aria-expanded="true"] > .chevron {
-  transform: rotate(180deg);
+/* Open: chevron points down (Figma: right when closed, down when open). */
+.ds.accordion-item[open] > .header > .chevron {
+  transform: rotate(0deg);
 }
 
-/**
- * Content panel (role: content panel)
- * DSL: layout.overflow: hidden
- *      cardinality: 1
- */
+@media (prefers-reduced-motion: reduce) {
+  .ds.accordion-item > .header > .chevron {
+    transition: none;
+  }
+}
+
+/* Content panel. Uses `.editorial` (a prose context) rather than `.p`, so the
+   wrapper doesn't add baseline padding that would double up with content that
+   is already `.p`. The wrapper owns its own vertical padding in baseline
+   multiples, and is indented inline to align under the heading. */
 .ds.accordion-item > .content {
-  display: block;
-  overflow: hidden;
-  background: var(
-    --accordion-content-background,
-    var(--color-surface-content, transparent)
-  );
+  color: var(--accordion-item-color-text);
 
-  /* Transition for height animation (requires JS for proper animation) */
-  transition:
-    height var(--transition-duration-medium, 200ms)
-    var(--transition-easing-decelerate, ease-out),
-    opacity var(--transition-duration-medium, 200ms)
-    var(--transition-easing-decelerate, ease-out);
+  padding-block: var(--accordion-item-content-padding-block);
+  padding-inline-start: var(--accordion-item-content-indent);
+  padding-inline-end: var(--accordion-item-content-padding-inline);
 }
 
-.ds.accordion-item > .content[hidden] {
-  display: none;
+/* 1px divider baseline compensation: subtract the divider thickness from the
+   block-end padding of whichever element sits directly above the item's
+   block-end border, so the item's border-box height stays a baseline multiple
+   (no drift down the list) without pulling the content up in the process.
+   - collapsed: only the header is shown -> compensate the header
+   - expanded:  the content is at the bottom -> compensate the content */
+.ds.accordion-item:not([open]) > .header {
+  padding-block-end: calc(
+    var(--accordion-item-header-padding-block) -
+    var(--dimension-stroke-thickness-medium)
+  );
 }
 
-/**
- * Content padding wrapper
- * (Implementation detail, not in DSL)
- */
-.ds.accordion-item > .content > .content-inner {
-  display: block;
-  padding-block: var(
-    --accordion-content-padding-block,
-    var(--spacing-large, 1.5rem)
-  );
-  padding-inline: var(
-    --accordion-content-padding-inline,
-    var(--spacing-medium, 1rem)
-  );
-  font-size: var(--accordion-content-font-size, var(--font-size-body, 1rem));
-  color: var(--accordion-content-color, var(--color-text-secondary, inherit));
-  line-height: var(
-    --accordion-content-line-height,
-    var(--font-line-height-relaxed, 1.6)
+.ds.accordion-item[open] > .content {
+  padding-block-end: calc(
+    var(--accordion-item-content-padding-block) -
+    var(--dimension-stroke-thickness-medium)
   );
 }

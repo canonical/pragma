@@ -28,7 +28,7 @@ describe("Accordion SSR", () => {
     expect(html).toContain("Section 3");
   });
 
-  it("renders expanded item content visible", () => {
+  it("renders an expanded item with the native open attribute", () => {
     const html = renderToString(
       <Accordion>
         <Accordion.Item heading="Expanded" expanded>
@@ -37,17 +37,19 @@ describe("Accordion SSR", () => {
       </Accordion>,
     );
 
+    expect(html).toContain("<details");
+    expect(html).toContain("open");
     expect(html).toContain("Visible Content");
-    expect(html).not.toContain('hidden=""');
   });
 
-  it("renders collapsed item with hidden attribute", () => {
+  it("renders a collapsed item without the open attribute", () => {
     const html = renderToString(
       <Accordion>
-        <Accordion.Item heading="Collapsed">Hidden Content</Accordion.Item>
+        <Accordion.Item heading="Collapsed">Content</Accordion.Item>
       </Accordion>,
     );
 
-    expect(html).toContain("hidden");
+    expect(html).toContain("<details");
+    expect(html).not.toContain("open");
   });
 });
