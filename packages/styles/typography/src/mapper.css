@@ -208,6 +208,29 @@ p,
   letter-spacing: var(--typography-text-primary-letter-spacing);
 }
 
+/* ── Code ── */
+
+/* Monospace sibling of `.p`. Same baseline-grid engine, but mapped to the
+   `text-primary-code` typography tier (monospace family). Class-only —
+   consumers opt in with `class="code"` (e.g. InlineCode's <code>, KeyboardKey's
+   <kbd>); bare <code>/<kbd> are not targeted. */
+.code {
+  --font-size: var(--typography-text-primary-code-font-size);
+  --font-weight: var(--typography-text-primary-code-font-weight);
+  --line-height: round(
+    up,
+    calc(
+      var(--typography-text-primary-code-font-size) *
+      var(--typography-text-primary-code-line-height)
+    ),
+    var(--baseline-height)
+  );
+  --space-after: 0;
+  font-family: var(--typography-text-primary-code-font-family);
+  font-weight: var(--font-weight);
+  letter-spacing: var(--typography-text-primary-code-letter-spacing);
+}
+
 .editorial {
   h1,
   h2 {
