@@ -1,9 +1,9 @@
 import type { Meta, StoryFn } from "@storybook/react-vite";
-import { KeyboardKey } from "../KeyboardKey/index.js";
+import { KeyboardKey } from "#lib/component/KeyboardKey/index.js";
 import Component from "./KeyboardKeys.js";
 
 const meta = {
-  title: "_work_in_progress/KeyboardKeys",
+  title: "groups/KeyboardKeys",
   component: Component,
   tags: ["autodocs"],
 } satisfies Meta<typeof Component>;
@@ -20,12 +20,12 @@ export const Default: StoryFn<typeof Component> = () => (
 );
 
 export const ComposedCommand: StoryFn<typeof Component> = () => (
-  <div>
+  <p className="p">
     Press
     <Component>
       <KeyboardKey keyValue="ctrl" />
       <KeyboardKey keyValue="c" />
     </Component>
     to copy.
-  </div>
+  </p>
 );

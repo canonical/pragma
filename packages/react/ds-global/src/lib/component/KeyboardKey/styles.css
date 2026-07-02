@@ -1,0 +1,29 @@
+:root {
+  --keyboard-key-color-background: var(--color-background);
+  --keyboard-key-color-text: var(--color-text-muted);
+  --keyboard-key-color-border: var(--color-text-muted);
+
+  --keyboard-key-border-radius: var(--dimension-radius-small);
+  --keyboard-key-border-width: var(--dimension-stroke-thickness-medium);
+  --keyboard-key-padding-inline: var(--dimension-050);
+}
+
+/* The `.code` baseline utility (from @canonical/styles) supplies the
+   monospace typography tier — font-family, font-size, font-weight and
+   line-height — plus the padding-block nudges that snap the box onto the
+   baseline grid. The component itself only adds inline padding and the
+   key-specific chrome (colour, border, radius); it must not redeclare the
+   typography properties, which would bypass the baseline-grid maths. */
+.ds.keyboard-key {
+  display: inline-block;
+
+  color: var(--keyboard-key-color-text);
+  background-color: var(--keyboard-key-color-background);
+
+  border-style: solid;
+  border-width: var(--keyboard-key-border-width);
+  border-color: var(--keyboard-key-color-border);
+  border-radius: var(--keyboard-key-border-radius);
+
+  padding-inline: var(--keyboard-key-padding-inline);
+}

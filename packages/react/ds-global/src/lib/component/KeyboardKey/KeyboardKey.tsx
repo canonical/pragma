@@ -22,7 +22,9 @@ const KeyboardKey = ({
   ...props
 }: KeyboardKeyProps): React.ReactElement => (
   <kbd
-    className={[componentCssClassName, className].filter(Boolean).join(" ")}
+    className={[componentCssClassName, "code", className]
+      .filter(Boolean)
+      .join(" ")}
     aria-label={ARIA_LABELS[keyValue]}
     {...props}
   >
