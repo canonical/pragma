@@ -15,6 +15,8 @@ GitHub mints a short-lived npm token at publish time, so **no long-lived `NODE_A
 
 For OIDC to work, each package must have a trusted publisher configured once on npmjs.com:
 
+> **The package must already exist on npm before you can do this.** The trusted-publisher settings live on the package's own settings page, which does not exist until the package has been published at least once. A brand-new package therefore needs a manual first publish (see [Publishing a new package](#publishing-a-new-package)) *before* OIDC can be configured — you cannot set it up in advance.
+
 1. Go to the package page on npmjs.com → **Settings** → **Trusted Publisher**.
 2. Select **GitHub Actions**.
 3. Set organisation/repository to `canonical/pragma`.
@@ -31,6 +33,22 @@ On the package page → **Settings** → **Publishing access**, select:
 > **Require two-factor authentication and disallow tokens (recommended)**
 
 This ensures the package can only be published via OIDC trusted publishing or an interactive 2FA login, eliminating long-lived token risk. Apply this to every `@canonical/*` package after its trusted publisher is set up.
+
+#### Verifying provenance
+
+To check which packages are actually publishing with provenance, run from the repository root:
+
+```bash
+bun run publish:status
+```
+
+The **Provenance** column reports the state of each package's latest published version:
+
+- `provenance ✓` — the latest version carries an npm provenance attestation, so it was published through the OIDC workflow with a trusted publisher configured. Nothing to do.
+- `none` — the latest published version has no attestation. This is expected for a package whose last release predates the OIDC workflow; it clears itself the next time the package publishes through `tag.yml`. If it persists after a release, the package is most likely **missing a trusted publisher** on npmjs.com — configure one as described above, then trigger a release.
+- `—` — the package is private or has never been published, so provenance does not apply yet.
+
+A package can also read `provenance ✓` on an old version while a newer local version has never shipped; check the **Status** column (`outdated`, `new`) alongside Provenance to see the full picture. Provenance on the latest version is the closest observable proxy for "a trusted publisher is configured" — npm exposes no direct way to query trusted-publisher configuration.
 
 ## Publishing a new package
 Follow these steps if your package has never been published to NPM before (for example, it was just merged to `main`).
@@ -59,6 +77,9 @@ Follow these steps if your package has never been published to NPM before (for e
 6. **Configure the trusted publisher and disallow tokens**
    - On the new package's npmjs.com page, add the trusted publisher and set publishing access to disallow tokens as described in [Authentication: OIDC trusted publishing](#authentication-oidc-trusted-publishing) above.
    - Without the trusted publisher, the automated workflow cannot publish future versions of the package.
+
+7. **Verify**
+   - Run `bun run publish:status` from the repository root. The new package should appear as `published`; its Provenance stays `none` until its first release *through* `tag.yml`, which is when the trusted publisher takes effect. See [Verifying provenance](#verifying-provenance).
 
 After the first manual publish and trusted-publisher configuration, use the automated workflow for future releases.
 
