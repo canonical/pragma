@@ -1,2 +1,2 @@
 export { default as ChoicesField } from "./ChoicesField.js";
-export type { ChoiceOption, ChoicesFieldProps } from "./types.js";
+export type { ChoicesFieldProps } from "./types.js";

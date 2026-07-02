@@ -18,7 +18,7 @@ const componentCssClassName = "ds form-combobox";
  * Single-select combobox (presentational, controlled — no react-hook-form).
  *
  * Disambiguation:
- * - `Option` is this library's option type, common to Select/SimpleChoices/Combobox.
+ * - `Option` is this library's option type, common to Select/Choices/Combobox.
  * - `Item` is the downshift-cast form of an Option.
  *
  * The forwarded ref (the field's ref when bound) is merged with the internal

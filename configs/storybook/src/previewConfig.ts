@@ -11,7 +11,13 @@ type Preview = ReactPreview & SveltePreview & LitPreview;
 
 /**
  * Shared preview configuration for Pragma design system Storybooks.
- * Provides consistent story sorting with Introduction always first and autodocs.
+ * Provides consistent story sorting by ontology tier and autodocs.
+ *
+ * Sidebar order: the `Documentation` folder first, then the ontology tiers
+ * (`subcomponents` → `components` → `patterns`), then the non-tier machinery
+ * (`common`, `utils`), and finally a `_work_in_progress` folder for stories not
+ * yet ready for their tier. Only top-level folders are listed; every story is
+ * expected to be foldered, so no wildcard catch-all is needed.
  *
  * Color scheme toggling is handled by @canonical/storybook-addon-utils
  * which provides .light/.dark class toggling via its toolbar control.
@@ -21,7 +27,15 @@ export const previewConfig: Partial<Preview> = {
   parameters: {
     options: {
       storySort: {
-        order: ["Introduction", "Stable", "Beta", "Experimental", "*"],
+        order: [
+          "Documentation",
+          "subcomponents",
+          "components",
+          "patterns",
+          "common",
+          "utils",
+          "_work_in_progress",
+        ],
       },
     },
     docs: {

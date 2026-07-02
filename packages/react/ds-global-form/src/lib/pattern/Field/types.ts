@@ -11,8 +11,8 @@ import type { NumberFieldProps } from "#lib/component/NumberField/index.js";
 import type { PasswordFieldProps } from "#lib/component/PasswordField/index.js";
 import type { PhoneFieldProps } from "#lib/component/PhoneField/index.js";
 import type { RangeFieldProps } from "#lib/component/RangeField/index.js";
+import type { RichChoicesFieldProps } from "#lib/component/RichChoicesField/index.js";
 import type { SelectFieldProps } from "#lib/component/SelectField/index.js";
-import type { SimpleChoicesFieldProps } from "#lib/component/SimpleChoicesField/index.js";
 import type { TextareaFieldProps } from "#lib/component/TextareaField/index.js";
 import type { TextFieldProps } from "#lib/component/TextField/index.js";
 import type { TimeFieldProps } from "#lib/component/TimeField/index.js";
@@ -50,7 +50,7 @@ export type FieldProps =
   | ({ inputType: "range" } & RangeFieldProps)
   | ({ inputType: "select" } & SelectFieldProps)
   | ({ inputType: "combobox" } & ComboboxFieldProps)
-  | ({ inputType: "simple-choices" } & SimpleChoicesFieldProps)
+  | ({ inputType: "choices" } & ChoicesFieldProps)
   | ({ inputType: "textarea" } & TextareaFieldProps)
   | ({ inputType: "date" } & DateFieldProps)
   | ({ inputType: "time" } & TimeFieldProps)
@@ -58,7 +58,7 @@ export type FieldProps =
   | ({ inputType: "file" } & FileUploadFieldProps)
   | ({ inputType: "color" } & ColorFieldProps)
   | ({ inputType: "phone" } & PhoneFieldProps)
-  | ({ inputType: "choices" } & ChoicesFieldProps)
+  | ({ inputType: "rich-choices" } & RichChoicesFieldProps)
   | ({
       inputType: "custom";
       // biome-ignore lint/suspicious/noExplicitAny: In the case of a custom component, we'd expect

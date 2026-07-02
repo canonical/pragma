@@ -7,9 +7,9 @@ import type { OptionProps } from "./types.js";
 const componentCssClassName = "ds option";
 
 /**
- * A single plain-label option within a `SimpleChoices` group: a styled native
- * radio/checkbox paired with its label. Controlled by the parent group via
- * `checked`/`onChange`.
+ * A single selectable option within a `RichChoices` group: a hidden native input
+ * paired with a freely-styled label (cards, icons, plain text…). Controlled by
+ * the parent group via `checked`/`onChange`.
  * @returns {React.ReactElement} - Rendered Option
  */
 const Option = ({
@@ -23,7 +23,7 @@ const Option = ({
   const ariaProps = useOptionAriaProperties(name, option.value);
   return (
     <div
-      className={[componentCssClassName, "grid", disabled && "disabled"]
+      className={[componentCssClassName, disabled && "disabled"]
         .filter(Boolean)
         .join(" ")}
     >
@@ -36,7 +36,7 @@ const Option = ({
         onChange={onChange}
         {...ariaProps.input}
       />
-      {/* biome-ignore lint/a11y/noLabelWithoutControl : is indeed provided but undetected*/}
+      {/* biome-ignore lint/a11y/noLabelWithoutControl : htmlFor provided via ariaProps */}
       <label className="p" {...ariaProps.label}>
         {option.label}
       </label>

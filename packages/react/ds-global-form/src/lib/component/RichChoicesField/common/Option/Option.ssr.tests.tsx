@@ -4,7 +4,7 @@ import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import Option from "./Option.js";
 
-describe("SimpleChoices Option SSR", () => {
+describe("RichChoices Option SSR", () => {
   it("renders without hydration errors", () => {
     const html = renderToString(
       <Option

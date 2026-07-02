@@ -1,0 +1,93 @@
+.ds.form-rich-choices {
+  border: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: subgrid;
+  grid-column: 1 / -1;
+  row-gap: var(--form-group-gap);
+
+  /* Each option (common/Option, `.ds.option`) is styled here, scoped to this
+   * group so the generic class cannot collide with options elsewhere. */
+  & > .ds.option {
+    grid-column: var(--rich-choices-span, auto);
+    position: relative;
+    display: flex;
+
+    /* Hide the native input */
+    & > input {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    /* Label is the visible card surface */
+    & > label {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      box-sizing: border-box;
+      gap: var(--form-group-gap);
+      padding-inline: var(--form-input-padding-inline);
+      /* Block padding: chrome padding + baseline nudges, minus border */
+      padding-block-start: calc(
+        var(--form-input-padding-block) +
+        var(--start-nudge, 0px) -
+        var(--form-input-border-width)
+      );
+      padding-block-end: calc(
+        var(--form-input-padding-block) +
+        var(--end-nudge, 0px) -
+        var(--form-input-border-width)
+      );
+      border: var(--form-input-border-width) solid
+        var(--form-input-border-color);
+      border-radius: var(--form-input-border-radius);
+      background-color: var(--form-input-background);
+      color: var(--form-input-color);
+      cursor: pointer;
+      transition:
+        border-color 150ms ease,
+        background-color 150ms ease,
+        box-shadow 150ms ease;
+      user-select: none;
+    }
+
+    /* Hover */
+    & > input:not(:disabled) + label:hover {
+      background-color: var(
+        --hover--color-foreground-input,
+        var(--color-foreground-input-hover)
+      );
+    }
+
+    /* Focus */
+    & > input:focus-visible + label {
+      outline: none;
+      border-color: var(--form-input-border-color-focus);
+      box-shadow: 0 0 0 1px var(--form-focus-ring-color);
+    }
+
+    /* Checked / selected */
+    & > input:checked + label {
+      border-color: var(--form-input-border-color-focus);
+      background-color: var(
+        --hover--color-foreground-input,
+        var(--color-foreground-input-hover)
+      );
+      box-shadow: 0 0 0 1px var(--form-input-border-color-focus);
+    }
+
+    /* Disabled */
+    & > input:disabled + label {
+      border-color: var(--form-input-border-color-disabled);
+      background-color: var(--form-input-background-disabled);
+      color: var(--form-input-color-disabled);
+      cursor: not-allowed;
+    }
+  }
+}
