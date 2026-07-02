@@ -94,9 +94,16 @@ import { Form, Field } from "@canonical/react-ds-global-form";
 
 Forms require a `.grid` parent — `Form` renders as a subgrid and inherits the column structure. See [Getting Started](?path=/docs/global-form-getting-started--docs) for the full walkthrough.
 
-## Validation
+## Built on react-hook-form
 
-Validation integrates with [react-hook-form](https://react-hook-form.com/) through the [`registerProps`](https://react-hook-form.com/docs/useform/register) prop. Error states apply a `.danger` CSS class that shifts the input border to the error colour. See [Getting Started](?path=/docs/global-form-getting-started--docs) for details.
+This package is a thin layer over [react-hook-form](https://react-hook-form.com/)
+(`^7.71`): `Form` provides the `FormProvider`, `Field` calls `register`, and
+everything beyond a single field — form state, validation, submission — is
+react-hook-form's API. Validation uses the [`registerProps`](https://react-hook-form.com/docs/useform/register)
+prop, and error states apply a `.danger` CSS class that shifts the input border to
+the error colour. The [Getting Started](?path=/docs/global-form-getting-started--docs)
+guide covers both `Form` modes (internal and external) and how to use the
+react-hook-form API for a full working form.
 
 ## Middleware
 
@@ -105,10 +112,21 @@ Middleware wraps input components to add cross-cutting behaviour — fetching op
 ## Installation
 
 ```bash
-bun add @canonical/react-ds-global-form
+bun add @canonical/react-ds-global-form @canonical/styles
 ```
 
-Requires `@canonical/react-ds-global` and `@canonical/styles` as peer dependencies.
+Then import **both** stylesheets in your application's root stylesheet — the
+global Pragma styles (which define the design tokens the form reads) and the form
+styles:
+
+```css
+@import url("@canonical/styles");
+@import url("@canonical/react-ds-global-form/dist/esm/index.css");
+```
+
+Without the global `@canonical/styles` import the form renders unstyled. The
+package also builds on `@canonical/react-ds-global`. See
+[Getting Started](?path=/docs/global-form-getting-started--docs) for the details.
 
 ## Documentation
 
