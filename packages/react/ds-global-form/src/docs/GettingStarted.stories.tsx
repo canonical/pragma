@@ -1,9 +1,30 @@
 import { Button } from "@canonical/react-ds-global";
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { useState } from "react";
+import { type FieldValues, useForm } from "react-hook-form";
 import Field from "#lib/pattern/Field/Field.js";
 import Form from "#lib/pattern/Form/Form.js";
 
 const noop = (data: Record<string, unknown>) => console.log(data);
+
+/** Small readout so the examples visibly show the submitted values. */
+function SubmittedValues({ data }: { data: Record<string, unknown> | null }) {
+  if (!data) return null;
+  return (
+    <pre
+      style={{
+        marginBlockStart: "1rem",
+        padding: "0.75rem",
+        background: "var(--color-background-neutral-subtle, #f4f4f4)",
+        borderRadius: "0.25rem",
+        fontSize: "0.85em",
+        overflowX: "auto",
+      }}
+    >
+      Submitted: {JSON.stringify(data, null, 2)}
+    </pre>
+  );
+}
 
 const meta = {
   title: "Documentation/Getting Started/Examples",
@@ -40,6 +61,81 @@ export const BasicForm: Story = {
       <Button type="submit">Send</Button>
     </Form>
   ),
+};
+
+export const InternalMode: Story = {
+  name: "Form — internal mode",
+  render: () => {
+    const [submitted, setSubmitted] = useState<Record<string, unknown> | null>(
+      null,
+    );
+    // `Form` owns the useForm instance — pass onSubmit, and optionally
+    // defaultValues and a validation mode. Simplest for a self-contained form.
+    return (
+      <>
+        <Form
+          onSubmit={setSubmitted}
+          defaultValues={{ name: "Ada", email: "" }}
+          mode="onBlur"
+        >
+          <Field name="name" inputType="text" label="Full name" />
+          <Field
+            name="email"
+            inputType="text"
+            label="Email address"
+            registerProps={{ required: "Email is required" }}
+          />
+          <Button type="submit">Send</Button>
+        </Form>
+        <SubmittedValues data={submitted} />
+      </>
+    );
+  },
+};
+
+export const ExternalMode: Story = {
+  name: "Form — external mode",
+  render: () => {
+    const [submitted, setSubmitted] = useState<Record<string, unknown> | null>(
+      null,
+    );
+    // You own the useForm instance, so you can read `formState` (e.g.
+    // `isSubmitting`) and call methods like `reset` — useful for async submits,
+    // shared/multi-step state, or a "reset" button.
+    const methods = useForm<FieldValues>({
+      mode: "onBlur",
+      defaultValues: { name: "", email: "" },
+    });
+    const {
+      reset,
+      formState: { isSubmitting },
+    } = methods;
+
+    const onSubmit = async (data: Record<string, unknown>) => {
+      // Simulate an async request so `isSubmitting` is observable.
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      setSubmitted(data);
+      reset(); // clear back to defaultValues after a successful submit
+    };
+
+    return (
+      <>
+        <Form methods={methods} onSubmit={onSubmit}>
+          <Field name="name" inputType="text" label="Full name" />
+          <Field
+            name="email"
+            inputType="text"
+            label="Email address"
+            registerProps={{ required: "Email is required" }}
+          />
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? "Saving…" : "Send"}
+          </Button>
+        </Form>
+        <SubmittedValues data={submitted} />
+      </>
+    );
+  },
 };
 
 export const InputTypes: Story = {

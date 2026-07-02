@@ -45,29 +45,74 @@ A form needs a grid parent, a `Form` wrapper, and one or more `Field` components
 
 `Form` wraps children in a react-hook-form [`FormProvider`](https://react-hook-form.com/docs/formprovider). It has two modes:
 
-**Internal mode** (simple) — `Form` creates its own `useForm` instance:
+**Internal mode** (simple) — `Form` creates its own `useForm` instance. Pass
+`onSubmit`, and optionally `defaultValues` and a validation `mode`. Use this for
+a self-contained form where you don't need direct access to the form state.
 
 ```tsx
-<Form onSubmit={handleSubmit} defaultValues={{ name: "" }} mode="onBlur">
-  {/* fields */}
+<Form
+  onSubmit={handleSubmit}
+  defaultValues={{ name: "Ada", email: "" }}
+  mode="onBlur"
+>
+  <Field name="name" inputType="text" label="Full name" />
+  <Field
+    name="email"
+    inputType="text"
+    label="Email address"
+    registerProps={{ required: "Email is required" }}
+  />
+  <Button type="submit">Send</Button>
 </Form>
 ```
 
-**External mode** (advanced) — you provide your own `useForm` methods for scenarios like shared state or multi-step forms:
+<Canvas of={Stories.InternalMode} />
+
+**External mode** (advanced) — you create the `useForm` instance and pass it as
+`methods`. Because you own it, you can read `formState` (e.g. `isSubmitting`) and
+call its methods (`reset`, `setValue`, `watch`, …). Reach for this when a submit
+is async, when the form state is shared across components, or for multi-step /
+wizard forms that keep one instance across steps.
 
 ```tsx
 import { useForm } from "react-hook-form";
 
-function MultiStepForm() {
-  const methods = useForm({ defaultValues: { step1: "", step2: "" } });
+function SignupForm() {
+  const methods = useForm({
+    mode: "onBlur",
+    defaultValues: { name: "", email: "" },
+  });
+  const {
+    reset,
+    formState: { isSubmitting },
+  } = methods;
+
+  const onSubmit = async (data) => {
+    await api.createUser(data); // your async call
+    reset(); // clear back to defaultValues after success
+  };
 
   return (
-    <Form onSubmit={handleSubmit} methods={methods}>
-      {/* fields */}
+    <Form methods={methods} onSubmit={onSubmit}>
+      <Field name="name" inputType="text" label="Full name" />
+      <Field
+        name="email"
+        inputType="text"
+        label="Email address"
+        registerProps={{ required: "Email is required" }}
+      />
+      <Button type="submit" disabled={isSubmitting}>
+        {isSubmitting ? "Saving…" : "Send"}
+      </Button>
     </Form>
   );
 }
 ```
+
+<Canvas of={Stories.ExternalMode} />
+
+When you pass `methods`, `Form`'s own `defaultValues` and `mode` props are
+ignored — configure those on your `useForm` call instead.
 
 ## Understanding react-hook-form
 
@@ -114,76 +159,12 @@ what the form is doing. The fields you will reach for most:
 
 ### Validation rules (`registerProps`)
 
-Each `Field` accepts a `registerProps` object passed straight to RHF's `register`.
-It is RHF's [validation rules](https://react-hook-form.com/docs/useform/register),
-not a bespoke API: `required`, `min`, `max`, `minLength`, `maxLength`, `pattern`,
-`validate` (a function, or an object of named validators — sync or async, each
-returning `true` or an error message), plus value transforms `valueAsNumber`,
-`valueAsDate`, and `setValueAs`.
-
-```tsx
-<Field
-  name="age"
-  inputType="text"
-  label="Age"
-  registerProps={{
-    required: "Age is required",
-    min: { value: 18, message: "Must be 18 or older" },
-    valueAsNumber: true,
-    validate: (v) => v < 130 || "That doesn't look right",
-  }}
-/>
-```
-
-> This library maps the `isOptional` prop to a `required` rule for you, so a
-> field is required by default. Pass `isOptional` to make it optional, or set
-> your own `required` message via `registerProps`.
-
-### Full example: submit, async, reset
-
-Use **external mode** to reach the methods you need beyond a single field —
-`formState` for `isSubmitting`, and `reset` after a successful submit:
-
-```tsx
-import { useForm } from "react-hook-form";
-import { Form, Field } from "@canonical/react-ds-global-form";
-
-type Values = { name: string; email: string };
-
-function SignupForm() {
-  const methods = useForm<Values>({
-    mode: "onBlur",
-    defaultValues: { name: "", email: "" },
-  });
-  const {
-    reset,
-    formState: { isSubmitting },
-  } = methods;
-
-  const onSubmit = async (data: Values) => {
-    await api.createUser(data); // your async call
-    reset(); // clear back to defaultValues
-  };
-
-  return (
-    <Form methods={methods} onSubmit={onSubmit}>
-      <Field name="name" inputType="text" label="Name" />
-      <Field
-        name="email"
-        inputType="text"
-        label="Email"
-        registerProps={{
-          required: "Email is required",
-          pattern: { value: /^[^@]+@[^@]+$/, message: "Enter a valid email" },
-        }}
-      />
-      <button type="submit" disabled={isSubmitting}>
-        {isSubmitting ? "Saving…" : "Sign up"}
-      </button>
-    </Form>
-  );
-}
-```
+A `Field`'s `registerProps` is RHF's
+[validation rules](https://react-hook-form.com/docs/useform/register) object,
+passed straight to `register`: `required`, `min`, `max`, `minLength`,
+`maxLength`, `pattern`, and `validate`, plus the value transforms `valueAsNumber`,
+`valueAsDate`, and `setValueAs`. See [Validation](#validation) below for a live
+example.
 
 ### Schema validation (optional)
 
