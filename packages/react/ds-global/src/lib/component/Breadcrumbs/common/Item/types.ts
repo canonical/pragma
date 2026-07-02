@@ -2,12 +2,16 @@ import type { Item } from "@canonical/ds-types";
 import type { ComponentType, HTMLAttributes, ReactNode } from "react";
 
 /**
- * Props passed to custom Link components
+ * Props passed to the custom `LinkComponent`. Kept router-agnostic and aligned
+ * with the SideNavigation contract so the same router `Link` (e.g.
+ * `@canonical/router-react`, Next.js, React Router) works across both. The
+ * component receives `aria-current` and must forward it to the rendered anchor.
  */
 export interface LinkComponentProps {
   href?: string;
   className?: string;
   children?: ReactNode;
+  "aria-current"?: HTMLAttributes<HTMLElement>["aria-current"];
 }
 
 /**

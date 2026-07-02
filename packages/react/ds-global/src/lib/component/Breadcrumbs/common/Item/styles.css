@@ -6,7 +6,20 @@
  * - layout.type: flow -> display: flex
  * - layout.direction: horizontal -> flex-direction: row
  * - layout.align: center -> align-items: center
+ *
+ * Tokens follow the Figma spec: links use color-text-link, the current item
+ * and the separator use color-text, and the separator margin uses the
+ * dimension scale (Figma specs 6px, which is not on the scale; the nearest
+ * token is dimension-100 = 8px).
  */
+:root {
+  --breadcrumbs-item-link-color: var(--color-text-link);
+  --breadcrumbs-item-current-color: var(--color-text);
+  --breadcrumbs-item-separator-color: var(--color-text);
+  --breadcrumbs-item-separator-margin: var(--dimension-100);
+  --breadcrumbs-item-focus-color: var(--color-text-link);
+}
+
 .ds.breadcrumbs-item {
   /* layout.type: flow, layout.direction: horizontal */
   display: flex;
@@ -18,60 +31,36 @@
   /* Remove list styling */
   list-style: none;
 
-  /**
-   * Link element
-   * DSL: role: link, typography.color: color/text/link
-   */
+  /* Link element — DSL role: link, typography.color: color/text/link */
   & > .link {
-    /* typography.color: color/text/link */
-    color: var(--breadcrumbs-link-color, var(--color-text-link, #0066cc));
+    color: var(--breadcrumbs-item-link-color);
     text-decoration: none;
 
+    /* Figma: typography-text-underline modifier on interaction. */
     &:hover {
       text-decoration: underline;
-      color: var(
-        --breadcrumbs-link-color-hover,
-        var(--color-text-link-hover, #004499)
-      );
     }
 
     &:focus-visible {
-      outline: var(--focus-outline-width, 2px) solid
-        var(--focus-outline-color, var(--color-focus, #0066cc));
-      outline-offset: var(--focus-outline-offset, 2px);
-      border-radius: var(--border-radius-small, 2px);
+      outline: var(--dimension-stroke-thickness-large) solid
+        var(--breadcrumbs-item-focus-color);
+      outline-offset: var(--dimension-025);
     }
   }
 
-  /**
-   * Separator element
-   * DSL: role: separator, spacing.external: spacing/small
-   * Hidden on last item using :last-of-type
-   */
+  /* Separator element — DSL role: separator. Hidden on the last item. */
   & > .separator {
-    /* spacing.external: spacing/small */
-    margin-inline: var(
-      --breadcrumbs-separator-spacing,
-      var(--spacing-small, 0.5rem)
-    );
-    color: var(
-      --breadcrumbs-separator-color,
-      var(--color-text-secondary, #666)
-    );
+    margin-inline: var(--breadcrumbs-item-separator-margin);
+    color: var(--breadcrumbs-item-separator-color);
   }
 
-  /* Hide separator on last item */
   &:last-of-type > .separator {
     display: none;
   }
 
   /* Current item (not a link) */
   &.current > .link {
-    color: var(--breadcrumbs-current-color, var(--color-text-primary, inherit));
-    font-weight: var(
-      --breadcrumbs-current-font-weight,
-      var(--font-weight-medium, 500)
-    );
+    color: var(--breadcrumbs-item-current-color);
     cursor: default;
 
     &:hover {

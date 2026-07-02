@@ -6,11 +6,11 @@
  * - layout.type: flow -> display: flex
  * - layout.direction: horizontal -> flex-direction: row
  * - layout.align: center -> align-items: center
+ *
+ * Typography and baseline alignment come from the `.p` class on the list
+ * (the typography-text-primary tier, per the Figma spec).
  */
 .ds.breadcrumbs {
-  /* Typography */
-  font-size: var(--breadcrumbs-font-size, var(--font-size-small, 0.875rem));
-
   & > .list {
     /* layout.type: flow, layout.direction: horizontal */
     display: flex;
