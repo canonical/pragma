@@ -4,15 +4,12 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import Option from "./Option.js";
 
 const meta: Meta<typeof Option> = {
-  title: "components/SimpleChoicesField/Option",
+  title: "components/RichChoicesField/Option",
   component: Option,
   tags: ["autodocs"],
   decorators: [
     (Story) => (
-      <fieldset
-        className="ds form-simple-choices inline"
-        style={{ border: "none" }}
-      >
+      <fieldset className="ds form-rich-choices" style={{ border: "none" }}>
         <Story />
       </fieldset>
     ),
@@ -24,7 +21,7 @@ type Story = StoryObj<typeof Option>;
 
 export const Default: Story = {
   args: {
-    name: "simple-choices",
+    name: "rich-choices",
     type: "radio",
     option: { value: "a", label: "Option A" },
     checked: false,

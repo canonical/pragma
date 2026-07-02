@@ -3,7 +3,7 @@ import { useId, useMemo } from "react";
 /**
  * Generates ARIA properties for a specific option in a choice-style field.
  * Pure (no react-hook-form) — lives in the presentational tier so option-group
- * inputs (Choices, SimpleChoices) can use it standalone.
+ * inputs (Choices, RichChoices) can use it standalone.
  * @param {string} name - The base name of the input field.
  * @param {string} optionValue - The value of the specific option.
  * @returns An object containing ARIA attributes for the option.

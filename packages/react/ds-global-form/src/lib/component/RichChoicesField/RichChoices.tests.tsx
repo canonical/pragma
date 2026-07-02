@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { SimpleChoices } from "./SimpleChoices.js";
+import { RichChoices } from "./RichChoices.js";
 
 // These tests render the presentational input with NO FormProvider, proving it
 // is usable standalone (outside of a <Form>) and driven purely by value/onChange.
@@ -10,39 +10,32 @@ const options = [
   { label: "Green", value: "green" },
 ];
 
-describe("SimpleChoices (presentational)", () => {
+describe("RichChoices (presentational)", () => {
   it("renders a fieldset of radio inputs by default", () => {
     const { container } = render(
-      <SimpleChoices name="color" options={options} />,
+      <RichChoices name="color" options={options} />,
     );
     expect(container.querySelector("fieldset")).toHaveClass(
       "ds",
-      "form-simple-choices",
+      "form-rich-choices",
     );
     expect(screen.getAllByRole("radio")).toHaveLength(3);
   });
 
   it("renders checkbox inputs when isMultiple", () => {
-    render(<SimpleChoices name="colors" options={options} isMultiple />);
+    render(<RichChoices name="colors" options={options} isMultiple />);
     expect(screen.getAllByRole("checkbox")).toHaveLength(3);
   });
 
   it("renders a label for each option", () => {
-    render(<SimpleChoices name="color" options={options} />);
+    render(<RichChoices name="color" options={options} />);
     expect(screen.getByText("Red")).toBeInTheDocument();
     expect(screen.getByText("Blue")).toBeInTheDocument();
     expect(screen.getByText("Green")).toBeInTheDocument();
   });
 
-  it("applies the layout class", () => {
-    const { container } = render(
-      <SimpleChoices name="color" options={options} layout="stacked" />,
-    );
-    expect(container.querySelector("fieldset")).toHaveClass("stacked");
-  });
-
   it("reflects the selected value (single)", () => {
-    render(<SimpleChoices name="color" options={options} value="blue" />);
+    render(<RichChoices name="color" options={options} value="blue" />);
     const radios = screen.getAllByRole("radio");
     expect(radios[0]).not.toBeChecked();
     expect(radios[1]).toBeChecked();
@@ -50,7 +43,7 @@ describe("SimpleChoices (presentational)", () => {
 
   it("reflects the selected values (multiple)", () => {
     render(
-      <SimpleChoices
+      <RichChoices
         name="colors"
         options={options}
         isMultiple
@@ -65,9 +58,7 @@ describe("SimpleChoices (presentational)", () => {
 
   it("calls onChange with the option value on click (single)", () => {
     const onChange = vi.fn();
-    render(
-      <SimpleChoices name="color" options={options} onChange={onChange} />,
-    );
+    render(<RichChoices name="color" options={options} onChange={onChange} />);
     fireEvent.click(screen.getAllByRole("radio")[1]);
     expect(onChange).toHaveBeenCalledWith("blue");
   });
@@ -75,7 +66,7 @@ describe("SimpleChoices (presentational)", () => {
   it("toggles a value into the array on click (multiple)", () => {
     const onChange = vi.fn();
     render(
-      <SimpleChoices
+      <RichChoices
         name="colors"
         options={options}
         isMultiple
@@ -90,7 +81,7 @@ describe("SimpleChoices (presentational)", () => {
   it("toggles a value out of the array on click (multiple)", () => {
     const onChange = vi.fn();
     render(
-      <SimpleChoices
+      <RichChoices
         name="colors"
         options={options}
         isMultiple
@@ -103,7 +94,7 @@ describe("SimpleChoices (presentational)", () => {
   });
 
   it("supports disabled state on all options", () => {
-    render(<SimpleChoices name="color" options={options} disabled />);
+    render(<RichChoices name="color" options={options} disabled />);
     for (const radio of screen.getAllByRole("radio")) {
       expect(radio).toBeDisabled();
     }
@@ -114,8 +105,7 @@ describe("SimpleChoices (presentational)", () => {
       ...options,
       { label: "Disabled", value: "disabled", disabled: true },
     ];
-    render(<SimpleChoices name="color" options={opts} />);
-    expect(screen.getAllByRole("radio")).toHaveLength(4);
+    render(<RichChoices name="color" options={opts} />);
     expect(screen.getAllByRole("radio")[3]).toBeDisabled();
   });
 });

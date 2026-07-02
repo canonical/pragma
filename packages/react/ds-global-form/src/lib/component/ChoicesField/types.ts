@@ -1,26 +1,31 @@
-import type React from "react";
+/* @canonical/generator-ds 0.9.0-experimental.9 */
+
 import type { InputProps } from "#lib/common/types.js";
-import type { BaseProps } from "#lib/subcomponent/types.js";
+import type { BaseProps, OptionsProps } from "#lib/subcomponent/types.js";
 
-export type ChoiceOption = {
-  value: string;
-  /** Freely-shaped label content (text, card, icon, etc.) */
-  label: React.ReactNode;
-  disabled?: boolean;
-};
-
-type AdditionalChoicesProps = {
+type AdditionalChoicesProps = OptionsProps & {
   /** Field name shared by every option input in the group */
   name: string;
 
-  /** Choice options with ReactNode labels */
-  options: ChoiceOption[];
-
-  /** Multiple selection (checkboxes) vs single (radios) */
+  /** Whether the select should allow multiple selections. Is enabled, will be represented as a set of checkboxes, otherwise, radios */
   isMultiple?: boolean;
 
-  /** Whether all options are disabled */
+  /** Whether the input is disabled */
   disabled?: boolean;
+
+  /**
+   * Layout of the option group:
+   *  - "inline" (default): options wrap horizontally, each as wide as its content
+   *  - "stacked": one option per line
+   *  - "columns": a grid of equal-width columns (see {@link columns})
+   */
+  layout?: "inline" | "stacked" | "columns";
+
+  /**
+   * Number of equal-width columns when `layout="columns"`. Defaults to 2.
+   * Ignored in the other layouts.
+   */
+  columns?: number;
 
   /** Selected value (string for radios, string[] for checkboxes) */
   value?: string | string[];

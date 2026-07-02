@@ -12,8 +12,8 @@ import { NumberField } from "#lib/component/NumberField/index.js";
 import { PasswordField } from "#lib/component/PasswordField/index.js";
 import { PhoneField } from "#lib/component/PhoneField/index.js";
 import { RangeField } from "#lib/component/RangeField/index.js";
+import { RichChoicesField } from "#lib/component/RichChoicesField/index.js";
 import { SelectField } from "#lib/component/SelectField/index.js";
-import { SimpleChoicesField } from "#lib/component/SimpleChoicesField/index.js";
 import { TextareaField } from "#lib/component/TextareaField/index.js";
 import { TextField } from "#lib/component/TextField/index.js";
 import { TimeField } from "#lib/component/TimeField/index.js";
@@ -37,8 +37,8 @@ const Field = ({
       return <RangeField {...props} />;
     case "select":
       return <SelectField {...props} />;
-    case "simple-choices":
-      return <SimpleChoicesField {...props} />;
+    case "choices":
+      return <ChoicesField {...props} />;
     case "combobox":
       return <ComboboxField {...props} />;
     case "hidden":
@@ -59,8 +59,8 @@ const Field = ({
       return <PasswordField {...props} />;
     case "number":
       return <NumberField {...props} />;
-    case "choices":
-      return <ChoicesField {...props} />;
+    case "rich-choices":
+      return <RichChoicesField {...props} />;
     case "custom":
       if (!CustomComponent) {
         throw new Error(

@@ -6,7 +6,7 @@ import Option from "./Option.js";
 
 const baseOption = { value: "a", label: "Option A" };
 
-describe("SimpleChoices Option", () => {
+describe("RichChoices Option", () => {
   it("renders the label and a native input of the given type", () => {
     render(
       <Option
@@ -54,7 +54,7 @@ describe("SimpleChoices Option", () => {
     expect(onChange).toHaveBeenCalledOnce();
   });
 
-  it("disables the input when disabled", () => {
+  it("disables the input and marks the wrapper when disabled", () => {
     render(
       <Option
         name="group"

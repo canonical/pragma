@@ -116,7 +116,7 @@ export const RESTValidation: Story = {
 //   render: () => {
 //     const choicesField: FieldProps = {
 //       name: "choices",
-//       inputType: "simple-choices",
+//       inputType: "choices",
 //       label: "Select an option",
 //       middleware: [
 //         middleware.addRESTOptions("https://TODO", {
