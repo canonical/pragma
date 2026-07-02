@@ -28,14 +28,10 @@ function SubmittedValues({ data }: { data: Record<string, unknown> | null }) {
 
 const meta = {
   title: "Documentation/Getting Started/Examples",
-  parameters: { layout: "padded" },
-  decorators: [
-    (Story) => (
-      <div className="grid responsive">
-        <Story />
-      </div>
-    ),
-  ],
+  // `grid: "responsive"` (from @canonical/storybook-addon-utils) renders each
+  // example inside a `.grid.responsive` so the form's subgrid resolves its
+  // columns — and the grid mode stays switchable from the toolbar.
+  parameters: { layout: "padded", grid: "responsive" },
 } satisfies Meta;
 
 export default meta;

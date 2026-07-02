@@ -4,14 +4,16 @@ import * as decorators from "storybook/decorators.js";
 import { RichChoicesField } from "./index.js";
 
 // Field-tier stories run inside a form decorator (label/description/error +
-// react-hook-form state). The grid decorator nests the form in a
-// `.grid.responsive`, so the form's subgrid has real column tracks for the
-// option cards to span via `--rich-choices-span`.
+// react-hook-form state). The `grid: "responsive"` parameter (from
+// @canonical/storybook-addon-utils) puts the story root in a `.grid.responsive`,
+// so the form's subgrid has real column tracks for the option cards to span via
+// `--rich-choices-span` — and the grid mode stays switchable from the toolbar.
 const meta = {
   title: "components/RichChoicesField",
   component: RichChoicesField,
   tags: ["autodocs"],
-  decorators: [decorators.grid(), decorators.form()],
+  parameters: { grid: "responsive" },
+  decorators: [decorators.form()],
 } satisfies Meta<typeof RichChoicesField>;
 
 export default meta;
