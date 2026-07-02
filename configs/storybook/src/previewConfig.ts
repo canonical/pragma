@@ -14,10 +14,10 @@ type Preview = ReactPreview & SveltePreview & LitPreview;
  * Provides consistent story sorting by ontology tier and autodocs.
  *
  * Sidebar order: the `Documentation` folder first, then the ontology tiers
- * (`subcomponents` → `components` → `patterns`), then the non-tier machinery
- * (`common`, `utils`), and finally a `_work_in_progress` folder for stories not
- * yet ready for their tier. Only top-level folders are listed; every story is
- * expected to be foldered, so no wildcard catch-all is needed.
+ * (`subcomponents` → `components` → `groups` → `patterns`), then the non-tier
+ * machinery (`common`, `utils`), and finally a `_work_in_progress` folder for
+ * stories not yet ready for their tier. Only top-level folders are listed;
+ * every story is expected to be foldered, so no wildcard catch-all is needed.
  *
  * Color scheme toggling is handled by @canonical/storybook-addon-utils
  * which provides .light/.dark class toggling via its toolbar control.
@@ -31,6 +31,7 @@ export const previewConfig: Partial<Preview> = {
           "Documentation",
           "subcomponents",
           "components",
+          "groups",
           "patterns",
           "common",
           "utils",

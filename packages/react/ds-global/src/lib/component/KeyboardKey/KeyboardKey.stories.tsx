@@ -8,7 +8,7 @@ import {
 import Component from "./KeyboardKey.js";
 
 const meta = {
-  title: "_work_in_progress/KeyboardKey",
+  title: "components/KeyboardKey",
   component: Component,
   tags: ["autodocs"],
   argTypes: {
