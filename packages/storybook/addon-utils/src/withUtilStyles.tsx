@@ -50,6 +50,12 @@ export const withUtilStyles = (
     root.classList.remove("grid", "responsive", "intrinsic");
     if (gridMode !== "none") {
       root.classList.add("grid", gridMode);
+      // The story root fills the preview height, so a grid there would stretch
+      // its (single) row and the story looks vertically centred. Top-align so
+      // rows take their natural height instead.
+      root.style.alignContent = "start";
+    } else {
+      root.style.removeProperty("align-content");
     }
   }, [gridMode]);
 
