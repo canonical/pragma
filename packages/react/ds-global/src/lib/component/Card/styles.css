@@ -1,37 +1,41 @@
-/* Component tokens (migrated from @canonical/styles-primitives-canonical tokens.css) */
+/**
+ * Card styles
+ * @implements dso:global.component.card
+ *
+ * The Card establishes its own `.surface` context (applied by the component),
+ * so its background reads the surface channel and auto-steps when a card is
+ * nested inside another surface or card (surface 1 -> base, 2 -> layer2,
+ * 3 -> layer3). Colour tokens follow the Figma spec.
+ */
 :root {
-  --card-border-style: solid;
-  --card-color-text: var(--tmp-color-text-default);
-  --card-color-background: var(--tmp-color-background-default);
-  --card-border-width: var(--spacing-border-width);
-
-  --card-section-padding-vertical: var(--spacing-vertical-large);
-  --card-section-padding-horizontal: var(--spacing-horizontal-large);
-  --card-section-separator-color: var(--tmp-color-border-default);
-  --card-section-separator-border-width: 1px;
-  --card-section-separator-border-style: solid;
-
-  --card-thumbnail-max-height: var(--tmp-dimension-heading-icon--small);
+  --card-color-border: var(--color-border-muted);
+  --card-border-width: var(--dimension-stroke-thickness-medium);
+  /* --dimension-radius-medium is currently 0; it is intended to resolve to 9. */
+  --card-border-radius: var(--dimension-radius-medium);
 }
 
 .ds.card {
-  /* prevent overflow of child margins */
-  overflow: auto;
+  display: flex;
+  flex-direction: column;
 
-  box-shadow: var(--modifier-box-shadow, var(--card-box-shadow));
-  color: var(--modifier-color-text, var(--card-color-text));
-  background-color: var(--modifier-color, var(--card-color-background));
-  border-width: var(--card-border-width);
-  border-style: var(--card-border-style);
-  border-color: var(--card-section-separator-color);
+  /* Background from the surface channel (the component adds `.surface`, so the
+     channel is established on this element and steps with nesting). */
+  background: var(--surface-color-background, var(--color-background));
 
-  & .card-section,
-  & .card-image {
-    /* Last section doesn't need a border (the Card itself has a border) */
-    &:not(:last-child) {
-      border-bottom: var(--card-section-separator-border-width)
-        var(--card-section-separator-border-style)
-        var(--card-section-separator-color);
-    }
+  border: var(--card-border-width) solid var(--card-color-border);
+  border-radius: var(--card-border-radius);
+
+  /* Clip section corners (e.g. full-bleed images) to the card radius. */
+  overflow: hidden;
+
+  /* Section separators: a divider between adjacent sections. The card frame
+     already provides the outer border, so the last section has none. The card
+     itself applies NO general padding — only the content-bearing sections
+     (Content, Header, Footer) pad themselves; media (Image) stays full-bleed. */
+  &
+    > :is(.card-header, .card-content, .card-footer, .card-image):not(
+      :last-child
+    ) {
+    border-block-end: var(--card-border-width) solid var(--card-color-border);
   }
 }

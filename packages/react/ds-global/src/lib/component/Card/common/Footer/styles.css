@@ -1,0 +1,21 @@
+/**
+ * Card.Footer styles
+ * @implements dso:global.subcomponent.card-footer
+ *
+ * A content-bearing section: it pads itself (the card frame applies no general
+ * padding). Vertical padding is in baseline multiples.
+ */
+:root {
+  --card-footer-gap: var(--dimension-100);
+  --card-footer-padding-block: var(--dimension-200);
+  --card-footer-padding-inline: var(--dimension-200);
+}
+
+.ds.card-footer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--card-footer-gap);
+
+  padding-block: var(--card-footer-padding-block);
+  padding-inline: var(--card-footer-padding-inline);
+}

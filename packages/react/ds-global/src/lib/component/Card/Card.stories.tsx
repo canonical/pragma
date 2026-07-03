@@ -7,99 +7,171 @@ const meta = {
   title: "components/Card",
   component: Component,
   tags: ["autodocs"],
-  argTypes: {
-    children: {
-      control: { type: "text" },
-      description: "Content to display in the card.",
-    },
-  },
-  parameters: {
-    docs: {
-      description: {
-        component:
-          "A `Card` component with subcomponents for different content types. `Card.Header` provides title and actions, `Card.Content` is the main content area, `Card.Thumbnail` embeds a small image with optional content, and `Card.Image` displays a full-width image.",
-      },
-    },
-  },
 } satisfies Meta<typeof Component>;
 
 export default meta;
 
+/**
+ * A typical blog-style card: a full-bleed image above a padded content block.
+ */
 export const Default: StoryFn<CardProps> = (props) => (
-  <Component {...props}>
+  <Component {...props} style={{ maxWidth: "24rem" }}>
     <Component.Image src="https://assets.ubuntu.com/v1/5ce214a4-rpi.png" />
     <Component.Content>
-      <h3>
-        Build your own bare metal cloud using a Raspberry Pi cluster with MAAS{" "}
-      </h3>
-      <p>Duration: 1:00</p>
-      <p>
-        The Raspberry Pi 4 (RPi) with it's relatively fast CPU cores, up to 8 GB
-        of RAM, and tiny physical footprint presents a great option to run a
-        cluster on. Provisioning all those RPis can be a pain however, and
-        people have wanted to use tools like <a href="https://maas.io">MAAS</a>.
+      <h3>Build a bare-metal cloud on a Raspberry Pi cluster with MAAS</h3>
+      <p className="p">
+        The Raspberry Pi 4, with its fast CPU cores, up to 8 GB of RAM and tiny
+        footprint, is a great option to run a cluster on. Provisioning is easy
+        with <a href="https://maas.io">MAAS</a>.
       </p>
     </Component.Content>
   </Component>
 );
 
+/**
+ * A card with a header, content and footer. Only the content-bearing sections
+ * pad themselves; the card frame applies no general padding and the image
+ * bleeds edge to edge. Dividers separate adjacent sections.
+ */
+export const HeaderContentFooter: StoryFn<CardProps> = (props) => (
+  <Component {...props} style={{ maxWidth: "24rem" }}>
+    <Component.Header>
+      <h3>Ubuntu 24.04 LTS</h3>
+      <span className="p">Noble Numbat</span>
+    </Component.Header>
+    <Component.Image src="https://assets.ubuntu.com/v1/08478b35-ubuntu-core-cybersecurity.png" />
+    <Component.Content>
+      <p className="p">
+        The latest long-term support release, with ten years of security
+        maintenance and a refreshed toolchain for developers and operators.
+      </p>
+    </Component.Content>
+    <Component.Footer>
+      <a href="https://ubuntu.com/download">Download</a>
+      <a href="https://ubuntu.com/blog">Release notes</a>
+    </Component.Footer>
+  </Component>
+);
+
+/**
+ * A compact horizontal card: a fixed-size thumbnail beside a title and excerpt,
+ * as used in blog sidebars and related-content lists.
+ */
 export const WithThumbnail: StoryFn<CardProps> = (props) => (
-  <Component {...props}>
+  <Component {...props} style={{ maxWidth: "28rem" }}>
     <Component.Thumbnail
       imageProps={{
         src: "https://assets.ubuntu.com/v1/31bd2627-logo-raspberry-pi.svg",
-        alt: "Raspberry Pi Logo",
+        alt: "Raspberry Pi logo",
       }}
     >
-      <h3>Raspberry Pi2 and Pi3</h3>
-      <p>
-        For fun, for education and for profit, the RPi makes device development
-        personal and entertaining. With support for both the Pi2 and the new
-        Pi3, Ubuntu Core supports the world's most beloved board.
+      <h3>Ubuntu Core on Raspberry Pi</h3>
+      <p className="p">
+        A secure, transactional OS for IoT devices. Ubuntu Core supports both
+        the Pi 2 and Pi 3, with confined snaps and automatic updates.
       </p>
     </Component.Thumbnail>
   </Component>
 );
 
+/**
+ * A grid of cards sharing the same structure, so attributes line up and can be
+ * scanned across the set — the primary use case for cards over the flexible
+ * Tile.
+ */
 export const GridLayout: StoryFn<CardProps> = () => (
   <>
     <Component>
-      <Component.Image src="https://assets.ubuntu.com/v1/5ce214a4-rpi.png" />
+      <Component.Image src="https://assets.ubuntu.com/v1/0aa26309-maas_banners_leaderboard.png" />
       <Component.Content>
-        <h3>Raspberry Pi Cluster with MAAS</h3>
-        <p>
-          Build your own bare metal cloud using a Raspberry Pi cluster with
-          MAAS. The RPi 4 presents a great option to run a cluster on.
+        <h3>MAAS</h3>
+        <p className="p">
+          Self-service, remote installation of Windows, CentOS, ESXi and Ubuntu
+          on real servers, turning your data centre into a bare-metal cloud.
         </p>
       </Component.Content>
+      <Component.Footer>
+        <a href="https://maas.io">maas.io</a>
+      </Component.Footer>
     </Component>
     <Component>
-      <Component.Thumbnail
-        imageProps={{
-          src: "https://assets.ubuntu.com/v1/31bd2627-logo-raspberry-pi.svg",
-          alt: "Raspberry Pi Logo",
-        }}
-      >
-        <h3>Raspberry Pi2 and Pi3</h3>
-        <p>
-          For fun, for education and for profit, the RPi makes device
-          development personal and entertaining. Ubuntu Core supports the Pi2
-          and Pi3.
-        </p>
-      </Component.Thumbnail>
-    </Component>
-    <Component>
+      <Component.Image src="https://assets.ubuntu.com/v1/2c7e3fab-juju-header-illustration.svg" />
       <Component.Content>
-        <h3>Ubuntu Server</h3>
-        <p>
-          Ubuntu Server brings economic and technical scalability to your
-          datacenter, public or private. Whether you want to deploy an OpenStack
-          cloud, a Kubernetes cluster or a 50,000-node render farm, Ubuntu
-          Server delivers the best value scale-out performance available.
+        <h3>Juju</h3>
+        <p className="p">
+          An open-source orchestration engine for software operators that
+          simplifies deployment, configuration and scaling of applications.
         </p>
       </Component.Content>
+      <Component.Footer>
+        <a href="https://juju.is">juju.is</a>
+      </Component.Footer>
+    </Component>
+    <Component>
+      <Component.Image src="https://assets.ubuntu.com/v1/20ace314-managed_services.png" />
+      <Component.Content>
+        <h3>Landscape</h3>
+        <p className="p">
+          Systems-management for Ubuntu estates: patching, compliance and
+          monitoring across physical, virtual and cloud instances at scale.
+        </p>
+      </Component.Content>
+      <Component.Footer>
+        <a href="https://ubuntu.com/landscape">ubuntu.com/landscape</a>
+      </Component.Footer>
     </Component>
   </>
 );
 
 GridLayout.decorators = [decorators.grid()];
+
+/**
+ * The Card establishes its own `.surface`, so its background steps as it is
+ * nested inside successive `.surface` contexts (surface 1 -> 2 -> 3). The
+ * wrappers set an explicit background from the matching layer token because
+ * `.surface` re-channels foreground tokens but sets no background of its own.
+ */
+export const OnSurfaces: StoryFn<CardProps> = () => {
+  const card = (
+    <Component>
+      <Component.Content>
+        <h3>Placeholder content</h3>
+        <p className="p">The card background steps with the surface level.</p>
+      </Component.Content>
+    </Component>
+  );
+
+  return (
+    <div style={{ display: "grid", gap: "var(--dimension-300)" }}>
+      <div
+        className="surface"
+        style={{
+          padding: "var(--dimension-200)",
+          background: "var(--color-background)",
+        }}
+      >
+        {card}
+        <div
+          className="surface"
+          style={{
+            marginBlockStart: "var(--dimension-200)",
+            padding: "var(--dimension-200)",
+            background: "var(--color-background-layer2)",
+          }}
+        >
+          {card}
+          <div
+            className="surface"
+            style={{
+              marginBlockStart: "var(--dimension-200)",
+              padding: "var(--dimension-200)",
+              background: "var(--color-background-layer3)",
+            }}
+          >
+            {card}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};

@@ -1,18 +1,22 @@
 /**
  * Card.Content styles
- * @implements ds:global.subcomponent.card-content
+ * @implements dso:global.subcomponent.card-content
  *
- * DSL anatomy:
- * - layout.type: stack
- * - layout.direction: vertical
- * - spacing.internal: spacing/medium
+ * DSL anatomy: layout.type stack, direction vertical.
+ * A content-bearing section: it pads itself (the card frame applies no general
+ * padding). Vertical padding is in baseline multiples.
  */
+:root {
+  --card-content-gap: var(--dimension-100);
+  --card-content-padding-block: var(--dimension-200);
+  --card-content-padding-inline: var(--dimension-200);
+}
+
 .ds.card-content {
-  /* layout.type: stack, layout.direction: vertical */
   display: flex;
   flex-direction: column;
+  gap: var(--card-content-gap);
 
-  /* spacing.internal: spacing/medium */
-  gap: var(--card-content-gap, var(--spacing-medium, 1rem));
-  padding: var(--card-content-padding, var(--spacing-medium, 1rem));
+  padding-block: var(--card-content-padding-block);
+  padding-inline: var(--card-content-padding-inline);
 }
