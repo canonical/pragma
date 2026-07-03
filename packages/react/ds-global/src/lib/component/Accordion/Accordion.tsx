@@ -1,7 +1,5 @@
 import type React from "react";
-import Context from "./Context.js";
 import { Item } from "./common/index.js";
-import { useAccordionState } from "./hooks/index.js";
 import type { AccordionProps } from "./types.js";
 import "./styles.css";
 
@@ -13,32 +11,24 @@ const componentCssClassName = "ds accordion";
  * or closed independently of its surrounding counterparts (i.e: multiple
  * accordions can be open at the same time).
  *
- * Implements WAI-ARIA Accordion Pattern keyboard navigation:
- * - Arrow Down: Move focus to next accordion header
- * - Arrow Up: Move focus to previous accordion header
- * - Home: Move focus to first accordion header
- * - End: Move focus to last accordion header
+ * Accordions can help browse different pieces of related content in a more
+ * efficient way. Be wary that they can also hide content from users and are
+ * not suitable when a user is meant to read all of the page content.
  *
- * @implements ds:global.component.accordion
+ * @implements dso:global.component.accordion
  */
 const Accordion = ({
   className,
   children,
   ...props
-}: AccordionProps): React.ReactElement => {
-  const state = useAccordionState();
-
-  return (
-    <Context.Provider value={state}>
-      <div
-        className={[componentCssClassName, className].filter(Boolean).join(" ")}
-        {...props}
-      >
-        {children}
-      </div>
-    </Context.Provider>
-  );
-};
+}: AccordionProps): React.ReactElement => (
+  <div
+    className={[componentCssClassName, className].filter(Boolean).join(" ")}
+    {...props}
+  >
+    {children}
+  </div>
+);
 
 Accordion.Item = Item;
 

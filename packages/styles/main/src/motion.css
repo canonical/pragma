@@ -1,0 +1,22 @@
+/* @canonical/styles — Motion tokens
+ *
+ * PLACEHOLDER durations and easings. These are provisional values chosen to be
+ * plausible defaults; they are NOT yet ratified by design and will migrate to
+ * @canonical/design-tokens once validated. Components should reference these
+ * tokens rather than hardcoding transition timings.
+ *
+ * Convention: ALL available custom properties are listed here so the full API
+ * surface is visible in one place.
+ */
+
+:root {
+  /* ── Durations ──────────────────────────────────────────────────── */
+  --motion-duration-fast: 0.165s; /* small state changes: chevrons, toggles */
+  --motion-duration-medium: 0.25s; /* panels, disclosures                    */
+  --motion-duration-slow: 0.4s; /* larger transitions, overlays           */
+
+  /* ── Easings ────────────────────────────────────────────────────── */
+  --motion-easing-standard: ease-out; /* enter/exit default            */
+  --motion-easing-decelerate: cubic-bezier(0, 0, 0.2, 1); /* entering  */
+  --motion-easing-accelerate: cubic-bezier(0.4, 0, 1, 1); /* exiting   */
+}

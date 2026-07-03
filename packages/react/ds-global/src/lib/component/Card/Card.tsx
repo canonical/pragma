@@ -1,18 +1,20 @@
 import type React from "react";
-import { Content, Header, Image, Thumbnail } from "./common/index.js";
+import { Content, Footer, Header, Image, Thumbnail } from "./common/index.js";
 import type { CardProps } from "./types.js";
 import "./styles.css";
 
-const componentCssClassName = "ds card";
+// The Card establishes its own `.surface` context so its background steps when
+// nested inside another surface or card.
+const componentCssClassName = "ds card surface";
 
 /**
- * The card component is a rigid, repeatable container used to represent
- * specific data objects within a collection. Unlike the flexible Tile, a
- * card follows a strict internal structure to ensure that when multiple
- * cards are displayed together, the user can scan and compare attributes
- * across the set with minimal cognitive effort.
+ * The card is a container that is designed to represent data objects that share
+ * the same structure. Unlike the more flexible Tile, a card is designed to have
+ * multiple units displayed beside one another. Because of this, the card has a
+ * predictable structure that allows the user to compare attributes across data
+ * objects.
  *
- * @implements ds:global.component.card
+ * @implements dso:global.component.card
  */
 const Card = ({
   className,
@@ -28,6 +30,7 @@ const Card = ({
 );
 
 Card.Content = Content;
+Card.Footer = Footer;
 Card.Header = Header;
 Card.Image = Image;
 Card.Thumbnail = Thumbnail;

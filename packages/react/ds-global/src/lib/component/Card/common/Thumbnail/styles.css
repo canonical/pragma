@@ -1,49 +1,39 @@
 /**
  * Card.Thumbnail styles
- * @implements ds:global.subcomponent.card-thumbnail
+ * @implements dso:global.subcomponent.card-thumbnail
  *
- * DSL anatomy:
- * - layout.type: flow
- * - layout.direction: horizontal
- * - layout.align: start
- * - spacing.internal: spacing/medium
+ * DSL anatomy: layout.type flow, horizontal, align start. A content-bearing
+ * section (image + text): it pads itself. The image is a fixed 4rem square
+ * (per the DSL) and does not bleed. Vertical padding is in baseline multiples.
  */
-.ds.card-thumbnail {
-  /* layout.type: flow, layout.direction: horizontal */
-  display: flex;
-  flex-direction: row;
-
-  /* layout.align: start */
-  align-items: flex-start;
-
-  /* spacing.internal: spacing/medium */
-  gap: var(--card-thumbnail-gap, var(--spacing-medium, 1rem));
-  padding: var(--card-thumbnail-padding, var(--spacing-medium, 1rem));
+:root {
+  --card-thumbnail-gap: var(--dimension-200);
+  --card-thumbnail-padding-block: var(--dimension-200);
+  --card-thumbnail-padding-inline: var(--dimension-200);
+  --card-thumbnail-image-size: var(--dimension-800);
 }
 
-/**
- * Image element
- * DSL: role: image (cardinality: 1)
- */
+.ds.card-thumbnail {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: var(--card-thumbnail-gap);
+
+  padding-block: var(--card-thumbnail-padding-block);
+  padding-inline: var(--card-thumbnail-padding-inline);
+}
+
+/* Image element — DSL: fixed 4rem square, object-fit contain, no shrink. */
 .ds.card-thumbnail > .image {
-  /* Constrain thumbnail size */
-  width: var(--card-thumbnail-image-size, 4rem);
-  height: var(--card-thumbnail-image-size, 4rem);
-  max-width: var(--card-thumbnail-image-max-width, 100%);
-
-  /* Maintain aspect ratio */
+  width: var(--card-thumbnail-image-size);
+  height: var(--card-thumbnail-image-size);
+  max-width: 100%;
   object-fit: contain;
-
-  /* Prevent shrinking */
   flex-shrink: 0;
 }
 
-/**
- * Content element
- * DSL: role: content (cardinality: 0..1, slotName: default)
- */
+/* Content element — grows to fill. */
 .ds.card-thumbnail > .content {
-  /* Allow content to grow */
   flex: 1;
   min-width: 0;
 }

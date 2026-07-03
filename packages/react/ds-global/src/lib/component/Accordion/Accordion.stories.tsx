@@ -1,266 +1,151 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { useState } from "react";
-import Accordion from "./Accordion.js";
+import Component from "./Accordion.js";
 
-const meta: Meta<typeof Accordion> = {
+const meta: Meta<typeof Component> = {
   title: "components/Accordion",
-  component: Accordion,
+  component: Component,
   tags: ["autodocs"],
-  parameters: {
-    docs: {
-      description: {
-        component:
-          "A vertically stacked content area which can be collapsed and expanded to reveal or hide its contents. Each Accordion.Item can be opened or closed independently. Implements dso:global.component.accordion.",
-      },
-    },
-  },
 };
 
 export default meta;
-type Story = StoryObj<typeof Accordion>;
+type Story = StoryObj<typeof Component>;
 
 export const Default: Story = {
-  render: () => {
-    const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>(
-      {
-        item1: true,
-      },
-    );
-
-    const handleExpandedChange = (id: string) => (expanded: boolean) => {
-      setExpandedItems((prev) => ({ ...prev, [id]: expanded }));
-    };
-
-    return (
-      <Accordion>
-        <Accordion.Item
-          heading="What is an Accordion?"
-          expanded={expandedItems.item1}
-          onExpandedChange={handleExpandedChange("item1")}
-        >
-          <p>
-            An accordion is a vertically stacked set of interactive headings
-            that each reveal a section of content. When used correctly,
-            accordions help users browse different pieces of related content
-            more efficiently.
-          </p>
-        </Accordion.Item>
-        <Accordion.Item
-          heading="When to use"
-          expanded={expandedItems.item2}
-          onExpandedChange={handleExpandedChange("item2")}
-        >
-          <p>
-            Use accordions when you have multiple sections of content that users
-            might want to compare, or when space is limited and you want to
-            reduce scrolling.
-          </p>
-        </Accordion.Item>
-        <Accordion.Item
-          heading="When not to use"
-          expanded={expandedItems.item3}
-          onExpandedChange={handleExpandedChange("item3")}
-        >
-          <p>
-            Avoid accordions when users need to read all the content, as they
-            hide information. Also avoid when there are only one or two sections
-            - use regular headings instead.
-          </p>
-        </Accordion.Item>
-      </Accordion>
-    );
-  },
+  render: () => (
+    <Component>
+      <Component.Item heading="What is an Accordion?" expanded>
+        <p className="p">
+          An accordion is a vertically stacked set of interactive headings that
+          each reveal a section of content. When used correctly, accordions help
+          users browse related content more efficiently.
+        </p>
+      </Component.Item>
+      <Component.Item heading="When to use">
+        <p className="p">
+          Use accordions when you have multiple sections of content that users
+          might want to compare, or when space is limited and you want to reduce
+          scrolling.
+        </p>
+      </Component.Item>
+      <Component.Item heading="When not to use">
+        <p className="p">
+          Avoid accordions when users need to read all of the content, since
+          they hide information.
+        </p>
+      </Component.Item>
+    </Component>
+  ),
 };
 
 export const SingleItem: Story = {
-  render: () => {
-    const [expanded, setExpanded] = useState(false);
-
-    return (
-      <Accordion>
-        <Accordion.Item
-          heading="Click to expand"
-          expanded={expanded}
-          onExpandedChange={setExpanded}
-        >
-          <p>
-            This is the content that appears when the accordion item is
-            expanded. It can contain any React elements.
-          </p>
-        </Accordion.Item>
-      </Accordion>
-    );
-  },
-};
-
-export const AllExpanded: Story = {
-  render: () => {
-    const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>(
-      {
-        item1: true,
-        item2: true,
-        item3: true,
-      },
-    );
-
-    const handleExpandedChange = (id: string) => (expanded: boolean) => {
-      setExpandedItems((prev) => ({ ...prev, [id]: expanded }));
-    };
-
-    return (
-      <Accordion>
-        <Accordion.Item
-          heading="First Section"
-          expanded={expandedItems.item1}
-          onExpandedChange={handleExpandedChange("item1")}
-        >
-          <p>Content for the first section.</p>
-        </Accordion.Item>
-        <Accordion.Item
-          heading="Second Section"
-          expanded={expandedItems.item2}
-          onExpandedChange={handleExpandedChange("item2")}
-        >
-          <p>Content for the second section.</p>
-        </Accordion.Item>
-        <Accordion.Item
-          heading="Third Section"
-          expanded={expandedItems.item3}
-          onExpandedChange={handleExpandedChange("item3")}
-        >
-          <p>Content for the third section.</p>
-        </Accordion.Item>
-      </Accordion>
-    );
-  },
-};
-
-export const WithRichContent: Story = {
-  render: () => {
-    const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>(
-      {
-        item1: true,
-      },
-    );
-
-    const handleExpandedChange = (id: string) => (expanded: boolean) => {
-      setExpandedItems((prev) => ({ ...prev, [id]: expanded }));
-    };
-
-    return (
-      <Accordion>
-        <Accordion.Item
-          heading="Rich Content Example"
-          expanded={expandedItems.item1}
-          onExpandedChange={handleExpandedChange("item1")}
-        >
-          <h4>Nested Heading</h4>
-          <p>Accordion items can contain rich content including:</p>
-          <ul>
-            <li>Lists</li>
-            <li>Links</li>
-            <li>Images</li>
-            <li>Other components</li>
-          </ul>
-          <p>
-            <a href="#example">Learn more</a>
-          </p>
-        </Accordion.Item>
-        <Accordion.Item
-          heading="Another Section"
-          expanded={expandedItems.item2}
-          onExpandedChange={handleExpandedChange("item2")}
-        >
-          <p>Simple text content is also fine.</p>
-        </Accordion.Item>
-      </Accordion>
-    );
-  },
+  render: () => (
+    <Component>
+      <Component.Item heading="Click to expand">
+        <p className="p">
+          Native <code className="code">&lt;details&gt;</code> owns the open
+          state, so no JavaScript is required to toggle this item.
+        </p>
+      </Component.Item>
+    </Component>
+  ),
 };
 
 /**
- * Demonstrates keyboard navigation between accordion headers.
- *
- * Focus any header and use:
- * - **Arrow Down**: Move to next header (wraps to first)
- * - **Arrow Up**: Move to previous header (wraps to last)
- * - **Home**: Move to first header
- * - **End**: Move to last header
- * - **Enter/Space**: Toggle expand/collapse
+ * The `heading` prop takes a node, so the consumer owns heading semantics and
+ * chooses the level appropriate for the page's document outline.
  */
-export const KeyboardNavigation: Story = {
-  render: () => {
-    const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>(
-      {},
-    );
+export const HeadingLevels: Story = {
+  render: () => (
+    <Component>
+      <Component.Item heading={<h1>Level 1 heading</h1>}>
+        <p className="p">This item's heading is an h1.</p>
+      </Component.Item>
+      <Component.Item heading={<h2>Level 2 heading</h2>}>
+        <p className="p">This item's heading is an h2.</p>
+      </Component.Item>
+      <Component.Item heading={<h3>Level 3 heading</h3>}>
+        <p className="p">This item's heading is an h3.</p>
+      </Component.Item>
+      <Component.Item heading={<h4>Level 4 heading</h4>}>
+        <p className="p">This item's heading is an h4.</p>
+      </Component.Item>
+      <Component.Item heading={<h5>Level 5 heading</h5>}>
+        <p className="p">This item's heading is an h5.</p>
+      </Component.Item>
+      <Component.Item heading={<h6>Level 6 heading</h6>}>
+        <p className="p">
+          This item's heading is an h6. Each level renders at its own heading
+          tier in the type scale; the chevron aligns to the first text line so
+          it stays put across sizes.
+        </p>
+      </Component.Item>
+    </Component>
+  ),
+};
 
-    const handleExpandedChange = (id: string) => (expanded: boolean) => {
-      setExpandedItems((prev) => ({ ...prev, [id]: expanded }));
-    };
+/**
+ * The accordion adapts to nested `.surface` contexts: its header background
+ * uses the ghost surface channel, which steps to layer 2 and layer 3 as the
+ * component is nested inside successive `.surface` containers.
+ */
+export const OnSurfaces: Story = {
+  render: () => (
+    // `.surface` re-channels the foreground tokens but does not set its own
+    // background, so each wrapper's background is hard-coded here from the
+    // matching layer token to make the levels visible.
+    <div style={{ display: "grid", gap: "var(--dimension-300)" }}>
+      <div
+        className="surface"
+        style={{
+          padding: "var(--dimension-200)",
+          background: "var(--color-background)",
+        }}
+      >
+        <Component>
+          <Component.Item heading="On a surface" expanded>
+            <p className="p">Header background at the base surface level.</p>
+          </Component.Item>
+          <Component.Item heading="Second item">
+            <p className="p">Content.</p>
+          </Component.Item>
+        </Component>
 
-    return (
-      <Accordion>
-        <Accordion.Item
-          heading="Step 1: Focus a header"
-          expanded={expandedItems.item1}
-          onExpandedChange={handleExpandedChange("item1")}
+        <div
+          className="surface"
+          style={{
+            marginBlockStart: "var(--dimension-200)",
+            padding: "var(--dimension-200)",
+            background: "var(--color-background-layer2)",
+          }}
         >
-          <p>
-            Click or Tab to focus any accordion header. The focused header will
-            show a visible outline.
-          </p>
-        </Accordion.Item>
-        <Accordion.Item
-          heading="Step 2: Navigate with arrows"
-          expanded={expandedItems.item2}
-          onExpandedChange={handleExpandedChange("item2")}
-        >
-          <p>
-            Press <kbd>Arrow Down</kbd> to move to the next header, or{" "}
-            <kbd>Arrow Up</kbd> to move to the previous one. Navigation wraps
-            around.
-          </p>
-        </Accordion.Item>
-        <Accordion.Item
-          heading="Step 3: Jump to ends"
-          expanded={expandedItems.item3}
-          onExpandedChange={handleExpandedChange("item3")}
-        >
-          <p>
-            Press <kbd>Home</kbd> to jump to the first header, or <kbd>End</kbd>{" "}
-            to jump to the last one.
-          </p>
-        </Accordion.Item>
-        <Accordion.Item
-          heading="Step 4: Toggle expansion"
-          expanded={expandedItems.item4}
-          onExpandedChange={handleExpandedChange("item4")}
-        >
-          <p>
-            Press <kbd>Enter</kbd> or <kbd>Space</kbd> to expand or collapse the
-            focused accordion item.
-          </p>
-        </Accordion.Item>
-        <Accordion.Item
-          heading="Step 5: Try it yourself!"
-          expanded={expandedItems.item5}
-          onExpandedChange={handleExpandedChange("item5")}
-        >
-          <p>
-            This accordion has 5 items. Practice navigating between them using
-            only your keyboard. Tab focuses the first header, then arrow keys
-            move between headers without needing to Tab repeatedly.
-          </p>
-        </Accordion.Item>
-      </Accordion>
-    );
-  },
-  parameters: {
-    docs: {
-      description: {
-        story:
-          "Implements WAI-ARIA Accordion Pattern keyboard navigation. Arrow keys move focus between headers, Home/End jump to first/last, Enter/Space toggles expansion.",
-      },
-    },
-  },
+          <Component>
+            <Component.Item heading="On surface layer 2" expanded>
+              <p className="p">Header background steps to layer 2.</p>
+            </Component.Item>
+            <Component.Item heading="Second item">
+              <p className="p">Content.</p>
+            </Component.Item>
+          </Component>
+
+          <div
+            className="surface"
+            style={{
+              marginBlockStart: "var(--dimension-200)",
+              padding: "var(--dimension-200)",
+              background: "var(--color-background-layer3)",
+            }}
+          >
+            <Component>
+              <Component.Item heading="On surface layer 3" expanded>
+                <p className="p">Header background steps to layer 3.</p>
+              </Component.Item>
+              <Component.Item heading="Second item">
+                <p className="p">Content.</p>
+              </Component.Item>
+            </Component>
+          </div>
+        </div>
+      </div>
+    </div>
+  ),
 };

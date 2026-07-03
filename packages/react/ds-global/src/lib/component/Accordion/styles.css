@@ -5,25 +5,29 @@
  * DSL anatomy mapping:
  * - layout.type: stack -> display: flex; flex-direction: column
  * - layout.direction: vertical -> flex-direction: column
- * - appearance.border: border/style/container
+ * - appearance.border: color-border-$root
+ *
+ * Tokens follow the Figma spec.
  */
+:root {
+  --accordion-border-radius: var(--dimension-radius-small);
+}
+
 .ds.accordion {
   /* layout.type: stack, layout.direction: vertical */
   display: flex;
   flex-direction: column;
 
-  /* appearance.border: border/style/container */
-  border: var(--accordion-border-width, 1px)
-    var(--accordion-border-style, solid)
-    var(--accordion-border-color, var(--color-border));
-  border-radius: var(--accordion-border-radius, var(--border-radius, 0.25rem));
+  /* The accordion background uses the surface channel, which auto-steps with
+     .surface nesting (surface 1 -> base, 2 -> layer2, 3 -> layer3). Referenced
+     here on the element (not in :root) so the value resolves in the element's
+     .surface context; outside any .surface it defaults to the base background. */
+  background: var(--surface-color-background, var(--color-background));
 
-  /* Background */
-  background-color: var(
-    --accordion-background,
-    var(--color-surface, transparent)
-  );
+  /* Per the Figma anatomy the accordion has no outer border/frame — only the
+     per-item dividers (see Accordion.Item). */
+  border-radius: var(--accordion-border-radius);
 
-  /* Prevent overflow */
+  /* Clip item corners to the accordion radius */
   overflow: hidden;
 }

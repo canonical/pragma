@@ -31,7 +31,7 @@ const Breadcrumbs = ({
     aria-label={ariaLabel}
     {...props}
   >
-    <ol className="list">
+    <ol className="list p">
       {items.map((item) => {
         const itemKey = getItemId(item);
         const { key: _key, ...itemProps } = item;
