@@ -5,16 +5,20 @@ import { PackageInfo } from "@canonical/storybook-helpers";
 
 # Global Tier — React
 
-The foundational layer of Pragma. Every interface at Canonical shares these components — buttons, badges, cards, accordions, tooltips. This package is the React implementation of specifications defined in the Design System Ontology, a semantic knowledge graph that bridges design decisions to working code.
+The foundational layer of Pragma: the components every interface at Canonical
+shares. This package is the React implementation of specifications defined in
+the Design System Ontology — a semantic knowledge graph that bridges design
+decisions to working code. Each component's source carries an `@implements`
+annotation linking it back to its specification.
 
 ## Package
 
 <PackageInfo
   name="@canonical/react-ds-global"
-  version="0.11.0"
+  version="0.29.0"
   tier="global"
   framework="react"
-  status="stable"
+  status="experimental"
   dependencies={["@canonical/ds-assets", "@canonical/styles", "@canonical/utils"]}
   links={{
     source: "https://github.com/canonical/pragma/tree/main/packages/react/ds-global",
@@ -22,9 +26,76 @@ The foundational layer of Pragma. Every interface at Canonical shares these comp
   }}
 />
 
-## Architecture
+## Available components
 
-Components implement specifications from the Design System Ontology. Each source file contains an `@implements` annotation linking it to its semantic specification.
+These components are ready to use. Everything else in the sidebar sits under
+**\_work_in_progress** while it is reconciled against the ontology and Figma.
+
+| Component | Tier | What it does |
+| --- | --- | --- |
+| **Accordion** | Component | Vertically stacked, collapsible content built on native `<details>`. |
+| **Breadcrumbs** | Pattern | Navigational trail showing where a page sits in the information hierarchy. |
+| **Icon** | Component | Renders an SVG icon from `@canonical/ds-assets` by name. |
+| **InlineCode** | Component | Inline monospace code, using the `.code` baseline utility. |
+| **KeyboardKey** | Component | A single keyboard key rendered as a `<kbd>`. |
+| **KeyboardKeys** | Group | A group of `KeyboardKey`s forming a keystroke combination. |
+
+## Installation
+
+```bash
+bun add @canonical/react-ds-global
+```
+
+Requires React 19+, and `@canonical/styles` for the design tokens and baseline
+grid (imported once at your app root).
+
+## Usage
+
+```tsx
+import {
+  Accordion,
+  Breadcrumbs,
+  Icon,
+  InlineCode,
+  KeyboardKey,
+  KeyboardKeys,
+} from "@canonical/react-ds-global";
+import "@canonical/styles";
+
+function Example() {
+  return (
+    <>
+      <Breadcrumbs
+        items={[
+          { label: "Docs", url: "/docs" },
+          { label: "Global", url: "/docs/global", current: true },
+        ]}
+      />
+
+      <Accordion>
+        <Accordion.Item heading="Installing the CLI">
+          <p className="p">
+            Run <InlineCode>snap install juju</InlineCode>, then press{" "}
+            <KeyboardKeys>
+              <KeyboardKey keyValue="ctrl" />
+              <KeyboardKey keyValue="c" />
+            </KeyboardKeys>{" "}
+            to copy the output.
+          </p>
+        </Accordion.Item>
+      </Accordion>
+
+      <Icon icon="share" />
+    </>
+  );
+}
+```
+
+Components accept the standard HTML attributes of their underlying element and
+are routing-agnostic where they render links (pass your router's `Link` via the
+`LinkComponent` prop).
+
+## Architecture
 
 ```
 Design System Ontology (specifications)
@@ -33,55 +104,6 @@ Design System Ontology (specifications)
          ↓
 Your Application
 ```
-
-## Modifier System
-
-Components support orthogonal modifier families for systematic variation:
-
-```tsx
-// Importance: visual hierarchy
-<Button importance="primary">Main action</Button>
-<Button importance="secondary">Supporting action</Button>
-<Button importance="tertiary">Subtle action</Button>
-
-// Anticipation: expected outcome
-<Button anticipation="constructive">Save</Button>
-<Button anticipation="caution">Reset</Button>
-<Button anticipation="destructive">Delete</Button>
-
-// Combined
-<Button importance="primary" anticipation="destructive">
-  Delete Account
-</Button>
-```
-
-Each component with modifier support includes a **Matrix** story showing all combinations.
-
-## Installation
-
-```bash
-bun add @canonical/react-ds-global
-```
-
-Requires React 19+. Depends on `@canonical/styles` for CSS.
-
-## Usage
-
-```tsx
-import { Button, Badge, Card } from "@canonical/react-ds-global";
-import "@canonical/styles";
-
-function Example() {
-  return (
-    <Card>
-      <Badge>New</Badge>
-      <Button importance="primary">Submit</Button>
-    </Card>
-  );
-}
-```
-
-Components accept standard HTML attributes for their underlying elements.
 
 ## Links
 
