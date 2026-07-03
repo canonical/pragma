@@ -3,7 +3,7 @@ import { SECTION_SPACING } from "./constants.js";
 import Component from "./Section.js";
 
 const meta = {
-  title: "_work_in_progress/Section",
+  title: "_work_in_progress/component/Section",
   component: Component,
   tags: ["autodocs"],
   argTypes: {

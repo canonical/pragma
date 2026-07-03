@@ -5,7 +5,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import IconSection from "./IconSection.js";
 
 const meta: Meta<typeof IconSection> = {
-  title: "_work_in_progress/IconSection",
+  title: "_work_in_progress/other/IconSection",
   component: IconSection,
   tags: ["autodocs"],
   parameters: {

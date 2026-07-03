@@ -4,7 +4,7 @@ import { fn } from "storybook/test";
 import Component from "./Chip.js";
 
 const meta = {
-  title: "components/Chip",
+  title: "_work_in_progress/component/Chip",
   component: Component,
   tags: ["autodocs"],
   argTypes: {

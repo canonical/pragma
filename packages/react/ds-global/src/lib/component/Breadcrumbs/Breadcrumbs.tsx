@@ -16,6 +16,8 @@ const componentCssClassName = "ds breadcrumbs";
  * applications with multiple levels of hierarchy and are particularly useful
  * when users might arrive at deep pages through search or external links.
  *
+ * `import { Breadcrumbs } from "@canonical/react-ds-global";`
+ *
  * @implements ds:global.pattern.breadcrumbs
  */
 const Breadcrumbs = ({

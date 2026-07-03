@@ -5,7 +5,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { ApplicationLayout } from "./ApplicationLayout.js";
 
 const meta: Meta<typeof ApplicationLayout> = {
-  title: "_work_in_progress/grid/ApplicationLayout",
+  title: "_work_in_progress/other/grid/ApplicationLayout",
   component: ApplicationLayout,
   tags: ["autodocs"],
   parameters: {

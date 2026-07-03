@@ -21,6 +21,8 @@ const componentCssClassName = "ds form-combobox";
  *
  * @param {ComboboxInputProps} props - The component props
  * @returns {React.ReactElement} - Rendered MultipleCombobox component
+ *
+ * `import { MultipleCombobox } from "@canonical/react-ds-global-form";`
  */
 const MultipleCombobox = ({
   id,

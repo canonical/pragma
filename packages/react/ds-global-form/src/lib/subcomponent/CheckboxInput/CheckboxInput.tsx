@@ -11,6 +11,8 @@ const componentCssClassName = "ds form-checkbox";
  * via the field tier, which spreads react-hook-form's `register()` result onto
  * it.
  * @returns {ReactElement} - Rendered Checkbox
+ *
+ * `import { CheckboxInput } from "@canonical/react-ds-global-form";`
  */
 export const CheckboxInput = forwardRef<HTMLInputElement, CheckboxInputProps>(
   function CheckboxInput(

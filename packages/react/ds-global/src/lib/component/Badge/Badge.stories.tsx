@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import Component from "./Badge.js";
 
 const meta = {
-  title: "components/Badge",
+  title: "_work_in_progress/component/Badge",
   component: Component,
   tags: ["autodocs"],
   argTypes: {

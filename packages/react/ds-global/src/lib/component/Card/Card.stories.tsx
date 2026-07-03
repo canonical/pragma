@@ -4,7 +4,7 @@ import Component from "./Card.js";
 import type { CardProps } from "./types.js";
 
 const meta = {
-  title: "components/Card",
+  title: "_work_in_progress/component/Card",
   component: Component,
   tags: ["autodocs"],
 } satisfies Meta<typeof Component>;

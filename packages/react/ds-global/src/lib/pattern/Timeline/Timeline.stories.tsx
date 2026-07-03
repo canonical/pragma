@@ -3,7 +3,7 @@ import Component from "./Timeline.js";
 import Timeline from "./Timeline.js";
 
 const meta = {
-  title: "patterns/Timeline",
+  title: "_work_in_progress/pattern/Timeline",
   component: Component,
   tags: ["autodocs"],
 } satisfies Meta<typeof Component>;

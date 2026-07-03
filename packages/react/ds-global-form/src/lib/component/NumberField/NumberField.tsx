@@ -9,6 +9,8 @@ import type { NumberFieldProps } from "./types.js";
  * NumberInput bound to react-hook-form, wrapped with field chrome (label,
  * description, error) and middleware/conditional-display support. Collects a
  * numeric value with optional min/max/step and prefix/suffix units.
+ *
+ * `import { NumberField } from "@canonical/react-ds-global-form";`
  */
 export default withWrapper<NumberFieldProps>(
   // `valueAsNumber` so RHF stores a number, not the string the native

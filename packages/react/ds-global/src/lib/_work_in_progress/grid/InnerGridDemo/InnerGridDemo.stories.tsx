@@ -5,7 +5,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { InnerGridDemo } from "./InnerGridDemo.js";
 
 const meta: Meta<typeof InnerGridDemo> = {
-  title: "_work_in_progress/grid/InnerGridDemo",
+  title: "_work_in_progress/other/grid/InnerGridDemo",
   component: InnerGridDemo,
   tags: ["autodocs"],
   parameters: {

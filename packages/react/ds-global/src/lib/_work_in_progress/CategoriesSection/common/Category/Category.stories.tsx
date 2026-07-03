@@ -5,7 +5,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import Category from "./Category.js";
 
 const meta: Meta<typeof Category> = {
-  title: "_work_in_progress/CategoriesSection.Category",
+  title: "_work_in_progress/other/CategoriesSection.Category",
   component: Category,
   tags: ["autodocs"],
 };

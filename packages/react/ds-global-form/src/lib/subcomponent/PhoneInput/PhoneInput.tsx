@@ -51,6 +51,8 @@ function countryLabel(
  * defaults defensively, so an undefined initial `value` renders the
  * `defaultCountry` with an empty number.
  * @returns {React.ReactElement} - Rendered Phone
+ *
+ * `import { PhoneInput } from "@canonical/react-ds-global-form";`
  */
 export const PhoneInput = ({
   id,

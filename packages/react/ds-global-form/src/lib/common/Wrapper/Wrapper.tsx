@@ -16,6 +16,8 @@ const componentCssClassName = "ds field";
 /**
  * description of the Wrapper component
  * @returns {React.ReactElement} - Rendered Wrapper
+ *
+ * `import { Wrapper } from "@canonical/react-ds-global-form";`
  */
 const Wrapper = <ComponentProps extends BaseInputProps>({
   id,

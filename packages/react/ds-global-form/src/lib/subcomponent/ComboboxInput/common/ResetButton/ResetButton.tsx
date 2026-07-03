@@ -10,6 +10,8 @@ const componentCssClassName = "ds combobox-reset-button";
 /**
  * description of the ResetButton component
  * @returns {React.ReactElement} - Rendered ResetButton
+ *
+ * `import { ResetButton } from "@canonical/react-ds-global-form";`
  */
 const ResetButton = ({
   id,

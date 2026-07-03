@@ -4,7 +4,7 @@ import { ColorField } from "./index.js";
 
 // Field-tier stories: the color input bound to react-hook-form, inside a form.
 const meta = {
-  title: "components/ColorField",
+  title: "_work_in_progress/component/ColorField",
   component: ColorField,
   tags: ["autodocs"],
   decorators: [decorators.form()],

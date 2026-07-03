@@ -6,7 +6,7 @@
 // - should he have a separate Storybook package, that would group all stories from different sources?
 
 const meta = {
-  title: "_work_in_progress/Typography",
+  title: "_work_in_progress/other/Typography",
   parameters: { layout: "fullscreen" },
 };
 

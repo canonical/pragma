@@ -5,7 +5,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import TSection from "./TSection.js";
 
 const meta: Meta<typeof TSection> = {
-  title: "_work_in_progress/TSection",
+  title: "_work_in_progress/other/TSection",
   component: TSection,
   tags: ["autodocs"],
   parameters: {

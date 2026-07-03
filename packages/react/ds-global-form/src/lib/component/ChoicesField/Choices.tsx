@@ -12,6 +12,8 @@ const componentCssClassName = "ds form-choices";
  * out via `onChange` (a single value for radios, an array for checkboxes).
  * Each option is rendered by the `Option` subcomponent (common/Option).
  * @returns {React.ReactElement} - Rendered Choices
+ *
+ * `import { Choices } from "@canonical/react-ds-global-form";`
  */
 export const Choices = ({
   id,
