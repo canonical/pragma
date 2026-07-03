@@ -10,6 +10,9 @@ const hasAccessibleName = (value: string | undefined): boolean =>
 
 /**
  * Icon component that renders SVG icons from @canonical/ds-assets
+ *
+ * `import { Icon } from "@canonical/react-ds-global";`
+ *
  * @implements ds:global.component.icon
  */
 const Icon = ({

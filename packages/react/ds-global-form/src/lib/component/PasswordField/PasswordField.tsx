@@ -9,6 +9,8 @@ import type { PasswordFieldProps } from "./types.js";
  * PasswordInput bound to react-hook-form, wrapped with field chrome (label,
  * description, error) and middleware/conditional-display support. Collects a
  * secret value, masked by default, with a reveal/mask toggle.
+ *
+ * `import { PasswordField } from "@canonical/react-ds-global-form";`
  */
 export default withWrapper<PasswordFieldProps>(
   bindField<PasswordFieldProps>(PasswordInput, "native"),

@@ -12,6 +12,8 @@ import type { RangeFieldProps } from "./types.js";
  * `RangeControl` for the full a11y / no-JS rationale; spec DE080).
  * `valueAsNumber` so the registered value is a number, not the string the
  * inputs report.
+ *
+ * `import { RangeField } from "@canonical/react-ds-global-form";`
  */
 export default withWrapper<RangeFieldProps>(
   bindField<RangeFieldProps>(RangeControl, "native", {

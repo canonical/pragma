@@ -16,6 +16,9 @@ const componentCssClassName = "ds keyboard-keys";
  * single grouped keystroke.
  *
  * @see https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/kbd#representing_keystrokes_within_an_input
+ *
+ * `import { KeyboardKeys } from "@canonical/react-ds-global";`
+ *
  * @implements dso:global.group.keyboard_keys
  */
 const KeyboardKeys = ({

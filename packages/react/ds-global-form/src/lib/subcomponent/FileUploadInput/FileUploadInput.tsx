@@ -10,6 +10,8 @@ const componentCssClassName = "ds input file-upload";
  * image preview. Controlled via `value`/`onChange` (no react-hook-form). The
  * field tier supplies the binding.
  * @returns {React.ReactElement} - Rendered FileUploadInput
+ *
+ * `import { FileUploadInput } from "@canonical/react-ds-global-form";`
  */
 export const FileUploadInput = ({
   id,

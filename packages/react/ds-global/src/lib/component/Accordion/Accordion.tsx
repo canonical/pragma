@@ -15,6 +15,8 @@ const componentCssClassName = "ds accordion";
  * efficient way. Be wary that they can also hide content from users and are
  * not suitable when a user is meant to read all of the page content.
  *
+ * `import { Accordion } from "@canonical/react-ds-global";`
+ *
  * @implements dso:global.component.accordion
  */
 const Accordion = ({

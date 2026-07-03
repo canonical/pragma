@@ -13,6 +13,8 @@ const defaultMessages = {
 /**
  * description of the Label component
  * @returns {React.ReactElement} - Rendered Label
+ *
+ * `import { Label } from "@canonical/react-ds-global-form";`
  */
 const Label = ({
   id,

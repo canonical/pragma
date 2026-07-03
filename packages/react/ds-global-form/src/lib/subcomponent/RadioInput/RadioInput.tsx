@@ -14,6 +14,8 @@ const componentCssClassName = "ds form-radio";
  * Usable standalone (controlled via `checked`/`onChange`, or uncontrolled) or
  * via a host that spreads its props onto it.
  * @returns {ReactElement} - Rendered RadioInput
+ *
+ * `import { RadioInput } from "@canonical/react-ds-global-form";`
  */
 export const RadioInput = forwardRef<HTMLInputElement, RadioInputProps>(
   function RadioInput(

@@ -14,6 +14,8 @@ const componentCssClassName = "ds keyboard-key";
  * instructional or reference content. It is non-interactive and purely
  * informational.
  *
+ * `import { KeyboardKey } from "@canonical/react-ds-global";`
+ *
  * @implements dso:global.component.keyboard_key
  */
 const KeyboardKey = ({

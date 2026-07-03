@@ -16,6 +16,8 @@ const componentCssClassName = "ds input password chrome";
  * Usable standalone (controlled via `value`/`onChange`, or uncontrolled) or via
  * the field tier, which spreads react-hook-form's `register()` result onto it.
  * @returns {ReactElement} - Rendered PasswordInput
+ *
+ * `import { PasswordInput } from "@canonical/react-ds-global-form";`
  */
 export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
   function PasswordInput(

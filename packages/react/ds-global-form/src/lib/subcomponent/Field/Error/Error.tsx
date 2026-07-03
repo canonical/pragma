@@ -8,6 +8,8 @@ const componentCssClassName = "ds field-error";
 /**
  * description of the Error component
  * @returns {React.ReactElement} - Rendered Error
+ *
+ * `import { Error } from "@canonical/react-ds-global-form";`
  */
 const FieldError = ({
   id,

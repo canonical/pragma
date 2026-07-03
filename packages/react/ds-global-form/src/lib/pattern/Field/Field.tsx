@@ -22,6 +22,8 @@ import type { FieldProps } from "./types.js";
 /**
  * description of the Field component
  * @returns {React.ReactElement} - Rendered Field
+ *
+ * `import { Field } from "@canonical/react-ds-global-form";`
  */
 const Field = ({
   inputType,

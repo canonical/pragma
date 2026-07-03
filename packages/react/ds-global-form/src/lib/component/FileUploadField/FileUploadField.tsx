@@ -7,6 +7,8 @@ import type { FileUploadFieldProps } from "./types.js";
  * FileUploadInput bound to react-hook-form (controlled), wrapped with field chrome.
  * The `defaultValue` preserves the registration default the original leaf set
  * in `useController` (`[]`).
+ *
+ * `import { FileUploadField } from "@canonical/react-ds-global-form";`
  */
 export default withWrapper<FileUploadFieldProps>(
   bindField<FileUploadFieldProps>(FileUploadInput, "controlled", {
