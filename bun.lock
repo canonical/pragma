@@ -12,7 +12,7 @@
     },
     "apps/lit/demo": {
       "name": "@canonical/lit-demo",
-      "version": "0.29.0",
+      "version": "0.29.1",
       "dependencies": {
         "@canonical/lit-ds-prototype": "^0.27.1-experimental.0",
         "@canonical/styles": "^0.27.1-experimental.0",
@@ -33,7 +33,7 @@
     },
     "apps/react/boilerplate-vite": {
       "name": "@canonical/react-boilerplate-vite",
-      "version": "0.29.0",
+      "version": "0.29.1",
       "dependencies": {
         "@canonical/react-ds-global": "^0.27.1-experimental.0",
         "@canonical/react-ds-global-form": "^0.27.1-experimental.0",
@@ -73,7 +73,7 @@
     },
     "apps/react/demo": {
       "name": "@canonical/ds-demo-site",
-      "version": "0.29.0",
+      "version": "0.29.1",
       "dependencies": {
         "@canonical/react-ds-global": "^0.27.1-experimental.0",
         "@canonical/react-ds-global-form": "^0.27.1-experimental.0",
@@ -107,7 +107,7 @@
     },
     "apps/react/storybook-hub": {
       "name": "@canonical/storybook-hub",
-      "version": "0.29.0",
+      "version": "0.29.1",
       "dependencies": {
         "@canonical/ds-types": "^0.27.1-experimental.0",
         "@canonical/react-ds-app": "^0.27.1-experimental.0",
@@ -156,7 +156,7 @@
     },
     "configs/storybook": {
       "name": "@canonical/storybook-config",
-      "version": "0.29.0",
+      "version": "0.29.1",
       "dependencies": {
         "@canonical/ds-assets": "^0.29.0-experimental.0",
         "@canonical/storybook-addon-shell-theme": "^0.29.0-experimental.0",
@@ -364,7 +364,7 @@
     },
     "packages/lit/ds-prototype": {
       "name": "@canonical/lit-ds-prototype",
-      "version": "0.29.0",
+      "version": "0.29.1",
       "dependencies": {
         "@canonical/storybook-config": "^0.27.1-experimental.0",
         "lit": "^3.3.2",
@@ -388,7 +388,7 @@
     },
     "packages/react/ds-app": {
       "name": "@canonical/react-ds-app",
-      "version": "0.29.0",
+      "version": "0.29.1",
       "dependencies": {
         "@canonical/ds-assets": "^0.27.1-experimental.0",
         "@canonical/ds-types": "^0.27.1-experimental.0",
@@ -438,7 +438,7 @@
     },
     "packages/react/ds-app-anbox": {
       "name": "@canonical/react-ds-app-anbox",
-      "version": "0.29.0",
+      "version": "0.29.1",
       "dependencies": {
         "@canonical/react-ds-global": "^0.27.1-experimental.0",
         "@canonical/storybook-config": "^0.27.1-experimental.0",
@@ -473,7 +473,7 @@
     },
     "packages/react/ds-app-landscape": {
       "name": "@canonical/react-ds-app-landscape",
-      "version": "0.29.0",
+      "version": "0.29.1",
       "dependencies": {
         "@canonical/react-ds-global": "^0.27.1-experimental.0",
         "@canonical/storybook-config": "^0.27.1-experimental.0",
@@ -508,7 +508,7 @@
     },
     "packages/react/ds-app-launchpad": {
       "name": "@canonical/react-ds-app-launchpad",
-      "version": "0.29.0",
+      "version": "0.29.1",
       "dependencies": {
         "@canonical/storybook-config": "^0.27.1-experimental.0",
         "@canonical/styles": "^0.27.1-experimental.0",
@@ -550,7 +550,7 @@
     },
     "packages/react/ds-app-lxd": {
       "name": "@canonical/react-ds-app-lxd",
-      "version": "0.29.0",
+      "version": "0.29.1",
       "dependencies": {
         "@canonical/react-ds-global": "^0.27.1-experimental.0",
         "@canonical/storybook-config": "^0.27.1-experimental.0",
@@ -585,7 +585,7 @@
     },
     "packages/react/ds-app-portal": {
       "name": "@canonical/react-ds-app-portal",
-      "version": "0.29.0",
+      "version": "0.29.1",
       "dependencies": {
         "@canonical/react-ds-global": "^0.27.1-experimental.0",
         "@canonical/storybook-config": "^0.27.1-experimental.0",
@@ -620,7 +620,7 @@
     },
     "packages/react/ds-global": {
       "name": "@canonical/react-ds-global",
-      "version": "0.29.0",
+      "version": "0.29.1",
       "dependencies": {
         "@canonical/ds-assets": "^0.27.1-experimental.0",
         "@canonical/storybook-config": "^0.27.1-experimental.0",
@@ -657,7 +657,7 @@
     },
     "packages/react/ds-global-form": {
       "name": "@canonical/react-ds-global-form",
-      "version": "0.29.0",
+      "version": "0.29.1",
       "dependencies": {
         "@canonical/react-ds-global": "^0.27.1-experimental.0",
         "@canonical/storybook-config": "^0.27.1-experimental.0",
@@ -864,7 +864,7 @@
     },
     "packages/react/tokens": {
       "name": "@canonical/react-tokens",
-      "version": "0.29.0",
+      "version": "0.29.1",
       "dependencies": {
         "@canonical/storybook-config": "^0.27.1-experimental.0",
         "@canonical/styles": "^0.27.1-experimental.0",
@@ -1274,7 +1274,7 @@
     },
     "packages/svelte/ds-app-launchpad": {
       "name": "@canonical/svelte-ds-app-launchpad",
-      "version": "0.29.0",
+      "version": "0.29.1",
       "dependencies": {
         "@canonical/launchpad-design-tokens": "^1.1.1",
         "@canonical/svelte-icons": "^0.0.9",
@@ -1310,7 +1310,7 @@
     },
     "packages/svelte/ds-app-wpe": {
       "name": "@canonical/svelte-ds-app-wpe",
-      "version": "0.29.0",
+      "version": "0.29.1",
       "devDependencies": {
         "@biomejs/biome": "2.4.9",
         "@canonical/biome-config": "^0.27.1-experimental.0",

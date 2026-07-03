@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.29.1](https://github.com/canonical/pragma/compare/v0.29.0...v0.29.1) (2026-07-03)
+
+
+### Bug Fixes
+
+* **storybook:** sidebar order + tier-scope stories to work-in-progress + docs ([#719](https://github.com/canonical/pragma/issues/719)) ([a26fe7f](https://github.com/canonical/pragma/commit/a26fe7ffdec6ed701fd242ae725461054a006c04)), closes [#31842](https://github.com/canonical/pragma/issues/31842) [storybookjs/storybook#31842](https://github.com/storybookjs/storybook/issues/31842)
+
+
+
+
+
 # [0.29.0](https://github.com/canonical/pragma/compare/v0.29.0-experimental.0...v0.29.0) (2026-07-03)
 
 
