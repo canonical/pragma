@@ -17,7 +17,7 @@ const MainContents = () => (
 );
 
 const meta = {
-  title: "_work_in_progress/SkipLink",
+  title: "_work_in_progress/pattern/SkipLink",
   component: Component,
   parameters: {
     // SkipLink is hidden by default until it is focused, so we disable the snapshot test by default. The `Focused` story, hidden from the sidebar, forces the SkipLink to visible so it can be visually tested.

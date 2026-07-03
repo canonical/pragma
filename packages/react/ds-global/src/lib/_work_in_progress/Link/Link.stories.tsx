@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import Component from "./Link.js";
 
 const meta = {
-  title: "_work_in_progress/Link",
+  title: "_work_in_progress/other/Link",
   component: Component,
   tags: ["autodocs"],
   argTypes: {

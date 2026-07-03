@@ -6,7 +6,7 @@ import type { BestPosition, WindowFitmentDirection } from "#lib/hooks/index.js";
 import Component from "./TooltipArea.js";
 
 const meta = {
-  title: "components/Tooltip/TooltipArea",
+  title: "_work_in_progress/component/Tooltip/TooltipArea",
   component: Component,
   // Add padding to all tooltips to allow their entire contents to be visible
   parameters: {

@@ -5,7 +5,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import ChatSection from "./ChatSection.js";
 
 const meta: Meta<typeof ChatSection> = {
-  title: "_work_in_progress/ChatSection",
+  title: "_work_in_progress/other/ChatSection",
   component: ChatSection,
   tags: ["autodocs"],
   parameters: {

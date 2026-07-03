@@ -2,7 +2,7 @@ import type { Meta, StoryFn } from "@storybook/react-vite";
 import Component from "./Content.js";
 
 const meta = {
-  title: "components/Card/Content",
+  title: "_work_in_progress/component/Card/Content",
   component: Component,
   tags: ["autodocs"],
   argTypes: {

@@ -8,7 +8,7 @@ import { DescriptionSection } from "#lib/_work_in_progress/DescriptionSection/in
 import { IconSection } from "#lib/_work_in_progress/IconSection/index.js";
 
 const meta: Meta = {
-  title: "_work_in_progress/GridTrial",
+  title: "_work_in_progress/other/GridTrial",
   parameters: {
     layout: "fullscreen",
     grid: "responsive",

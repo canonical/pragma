@@ -5,7 +5,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { SettingsView } from "./SettingsView.js";
 
 const meta: Meta<typeof SettingsView> = {
-  title: "_work_in_progress/grid/SettingsView",
+  title: "_work_in_progress/other/grid/SettingsView",
   component: SettingsView,
   tags: ["autodocs"],
   parameters: {
