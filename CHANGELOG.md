@@ -3,6 +3,59 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.29.0](https://github.com/canonical/pragma/compare/v0.29.0-experimental.0...v0.29.0) (2026-07-03)
+
+
+### Bug Fixes
+
+* **storybook-addon-utils:** force autodocs pages to light scheme ([#716](https://github.com/canonical/pragma/issues/716)) ([bb14644](https://github.com/canonical/pragma/commit/bb14644ab814f0a62ecb7467a587bf4b6f5e0a43))
+* **storybook-addon-utils:** top-align the grid on the story root ([#714](https://github.com/canonical/pragma/issues/714)) ([b32639b](https://github.com/canonical/pragma/commit/b32639b0f1ca81fe9ad252a9b2a8de122b9f8ff9))
+
+
+### Code Refactoring
+
+* **ds-global-form:** rename SimpleChoicesField→ChoicesField, ChoicesField→RichChoicesField ([#711](https://github.com/canonical/pragma/issues/711)) ([4a4a498](https://github.com/canonical/pragma/commit/4a4a4988a25df45f9f102f2540efa4ac958e82ae))
+
+
+### Features
+
+* **ds-global-form:** required/optional marking, checkbox checkmark colour, choices columns ([#706](https://github.com/canonical/pragma/issues/706)) ([85963c9](https://github.com/canonical/pragma/commit/85963c9235b3dec86ca0a78cb53f478f2ef9c5dd))
+* **ds-global:** InlineCode, .code baseline utility, KeyboardKey(s) tier + token rewire ([#717](https://github.com/canonical/pragma/issues/717)) ([9911f68](https://github.com/canonical/pragma/commit/9911f689c4193bee3fdbebea8f475c2dcd80d2d1))
+* **react-ds-global-form:** PhoneInput dial-code sort + emoji-flag option ([#703](https://github.com/canonical/pragma/issues/703)) ([2ff5643](https://github.com/canonical/pragma/commit/2ff564309418eb29a51f0865f40d996fe07bab02))
+* **react-ds-global-form:** RangeField synced number + slider (DE080) ([#705](https://github.com/canonical/pragma/issues/705)) ([7c3d59a](https://github.com/canonical/pragma/commit/7c3d59aeae7d616958c8a192ea9d28d6ec09a31a))
+* **scripts:** show npm provenance (OIDC) status in publish:status ([#708](https://github.com/canonical/pragma/issues/708)) ([da13740](https://github.com/canonical/pragma/commit/da13740c90f9692560635ce9ace5fdc2e699f593))
+* **svelte-ds-app-launchpad:** allow SSR-opened dialogs ([#695](https://github.com/canonical/pragma/issues/695)) ([2af3abe](https://github.com/canonical/pragma/commit/2af3abe90fcae84bf30d6f782dd48f5a6706948e))
+
+
+### BREAKING CHANGES
+
+* **ds-global-form:** the 'simple-choices'/'choices' inputType strings and the
+.ds.form-* class names change, so consumers selecting these via <Field> or
+theming the classes must update.
+
+tsc + biome + full suite (236) pass; storybook builds.
+
+* refactor(storybook-config): upstream the ontology-tier story order
+
+Move the sidebar story order from ds-global-form's local preview override into
+the shared @canonical/storybook-config, so every Storybook orders by ontology
+tier: Documentation, subcomponents, components, patterns, common, utils, and a
+trailing _work_in_progress folder for not-yet-tiered stories.
+
+Drop the non-folder entries from the order list — the nested
+[Introduction, Getting Started, Guides] docs sub-array (docs order is out of
+scope here) and the '*' wildcard — since every story is foldered. ds-global-form
+now inherits the order and no longer overrides storySort locally.
+
+Replaces the previous maturity order (Stable/Beta/Experimental) shared config
+default; this changes the sidebar order for all consumers.
+
+check passes for both packages; form storybook builds against the rebuilt config.
+
+
+
+
+
 # [0.29.0-experimental.0](https://github.com/canonical/pragma/compare/v0.28.0...v0.29.0-experimental.0) (2026-06-24)
 
 

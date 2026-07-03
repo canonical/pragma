@@ -1,7 +1,7 @@
 {
   "name": "@canonical/lit-demo",
   "private": true,
-  "version": "0.29.0-experimental.0",
+  "version": "0.29.0",
   "type": "module",
   "license": "GPL-3.0-only",
   "scripts": {
@@ -17,16 +17,16 @@
     "check:ts": "tsc --noEmit"
   },
   "dependencies": {
-    "@canonical/lit-ds-prototype": "^0.29.0-experimental.0",
-    "@canonical/styles": "^0.28.0",
+    "@canonical/lit-ds-prototype": "^0.29.0",
+    "@canonical/styles": "^0.29.0",
     "@lit-labs/ssr": "^3.3.0",
     "@lit-labs/ssr-client": "^1.1.7",
     "lit": "^3.3.2"
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.9",
-    "@canonical/biome-config": "^0.28.0",
-    "@canonical/typescript-config-lit": "^0.28.0",
+    "@canonical/biome-config": "^0.29.0",
+    "@canonical/typescript-config-lit": "^0.29.0",
     "@types/express": "^5.0.6",
     "@types/node": "^24.12.0",
     "express": "^5.2.1",

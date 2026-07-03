@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.29.0](https://github.com/canonical/pragma/compare/v0.29.0-experimental.0...v0.29.0) (2026-07-03)
+
+
+### Features
+
+* **ds-global:** InlineCode, .code baseline utility, KeyboardKey(s) tier + token rewire ([#717](https://github.com/canonical/pragma/issues/717)) ([9911f68](https://github.com/canonical/pragma/commit/9911f689c4193bee3fdbebea8f475c2dcd80d2d1))
+
+
+
+
+
 # [0.29.0-experimental.0](https://github.com/canonical/pragma/compare/v0.28.0...v0.29.0-experimental.0) (2026-06-24)
 
 **Note:** Version bump only for package @canonical/react-ds-global

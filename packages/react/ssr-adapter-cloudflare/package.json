@@ -1,7 +1,7 @@
 {
   "name": "@canonical/ssr-adapter-cloudflare",
   "description": "Cloudflare Workers adapter for @canonical/react-ssr",
-  "version": "0.29.0-experimental.0",
+  "version": "0.29.0",
   "private": true,
   "type": "module",
   "module": "dist/esm/index.js",
@@ -41,12 +41,12 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "@canonical/react-ssr": "^0.29.0-experimental.0"
+    "@canonical/react-ssr": "^0.29.0"
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.9",
-    "@canonical/biome-config": "^0.28.0",
-    "@canonical/typescript-config": "^0.28.0",
+    "@canonical/biome-config": "^0.29.0",
+    "@canonical/typescript-config": "^0.29.0",
     "@cloudflare/workers-types": "^4.20250620.0",
     "@vitest/coverage-v8": "^4.0.18",
     "typescript": "^5.9.3",

@@ -3,6 +3,18 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.29.0](https://github.com/canonical/pragma/compare/v0.29.0-experimental.0...v0.29.0) (2026-07-03)
+
+
+### Bug Fixes
+
+* **storybook-addon-utils:** force autodocs pages to light scheme ([#716](https://github.com/canonical/pragma/issues/716)) ([bb14644](https://github.com/canonical/pragma/commit/bb14644ab814f0a62ecb7467a587bf4b6f5e0a43))
+* **storybook-addon-utils:** top-align the grid on the story root ([#714](https://github.com/canonical/pragma/issues/714)) ([b32639b](https://github.com/canonical/pragma/commit/b32639b0f1ca81fe9ad252a9b2a8de122b9f8ff9))
+
+
+
+
+
 # [0.29.0-experimental.0](https://github.com/canonical/pragma/compare/v0.28.0...v0.29.0-experimental.0) (2026-06-24)
 
 **Note:** Version bump only for package @canonical/storybook-addon-utils

@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.29.0](https://github.com/canonical/pragma/compare/v0.29.0-experimental.0...v0.29.0) (2026-07-03)
+
+
+### Features
+
+* **svelte-ds-app-launchpad:** allow SSR-opened dialogs ([#695](https://github.com/canonical/pragma/issues/695)) ([2af3abe](https://github.com/canonical/pragma/commit/2af3abe90fcae84bf30d6f782dd48f5a6706948e))
+
+
+
+
+
 # [0.29.0-experimental.0](https://github.com/canonical/pragma/compare/v0.28.0...v0.29.0-experimental.0) (2026-06-24)
 
 **Note:** Version bump only for package @canonical/svelte-ds-app-launchpad

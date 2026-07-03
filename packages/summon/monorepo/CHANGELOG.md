@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.29.0](https://github.com/canonical/pragma/compare/v0.29.0-experimental.0...v0.29.0) (2026-07-03)
+
+
+### Features
+
+* **scripts:** show npm provenance (OIDC) status in publish:status ([#708](https://github.com/canonical/pragma/issues/708)) ([da13740](https://github.com/canonical/pragma/commit/da13740c90f9692560635ce9ace5fdc2e699f593))
+
+
+
+
+
 # [0.29.0-experimental.0](https://github.com/canonical/pragma/compare/v0.28.0...v0.29.0-experimental.0) (2026-06-24)
 
 **Note:** Version bump only for package @canonical/summon-monorepo
