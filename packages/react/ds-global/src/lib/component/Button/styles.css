@@ -1,17 +1,18 @@
 /* Component tokens — sourced from @canonical/design-tokens */
 :root {
-  --button-color-background: var(--color-foreground-secondary);
-  --button-color-background-hover: var(--color-foreground-secondary-hover);
-  --button-color-background-active: var(--color-foreground-secondary-active);
+  /* Fallbacks for the modifier channel, used when no importance modifier is
+     applied (a bare button reads as the ghost/neutral secondary look). */
+  --button-color-background: var(
+    --surface-color-foreground-ghost,
+    var(--color-foreground-ghost)
+  );
   --button-color-text: var(--color-text);
-  --button-color-border: var(--color-border-high-contrast);
-  --button-color-border-hover: var(--button-color-border);
-  --button-color-border-active: var(--button-color-border);
+  --button-color-border: var(--color-border);
 
-  /* Inline padding only — the block padding is owned by the `.p` baseline
-     utility, which snaps the box height to the baseline grid (see below).
-     Figma: dimension/100 (8px) inline. */
+  /* Inline padding + gap. Figma: dimension/100 (8px) inline, dimension/200
+     (16px) between the icon and the label. */
   --button-padding-horizontal: var(--dimension-100);
+  --button-gap: var(--dimension-200);
   --button-border-width: var(--dimension-stroke-thickness-medium);
   /* Label weight — the button label is medium, not the `.p` body weight. */
   --button-font-weight: var(--font-weight-medium, var(--font-weight-default));
@@ -22,12 +23,19 @@
    ========================================================================== */
 
 /*
-  Modifier channel variables (from @canonical/design-tokens):
-    --modifier-color-foreground-primary  filled background (constructive, destructive, caution)
-    --modifier-color-text                text colour
-    --modifier-color-border              border colour
-    --modifier-color-icon                icon colour
-    --modifier-color-focusRing           focus ring colour
+  The button reads the modifier CHANNEL generically — it is not aware of any
+  particular importance/anticipation class or combination:
+
+    --modifier-surface   which foreground fills the background (importance:
+                         filled for primary, ghost for secondary/tertiary).
+    --modifier-outline   1 when a border shows, 0 when it does not (importance).
+    --modifier-color-*   the colour itself (anticipation/emphasis): text, icon,
+                         border. `.primary` overrides text/icon with the on-fill
+                         contrast tokens.
+
+  Interaction states come free from `@canonical/design-tokens/dist/states.css`,
+  which derives `--hover--*` / `--active--*` / `--disabled--*` from whatever the
+  channel resolved to.
 */
 
 .ds.button {
@@ -35,17 +43,16 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: var(--spacing-horizontal-small, 0.5rem);
+  gap: var(--button-gap);
   cursor: pointer;
 
   color: var(--modifier-color-text, var(--button-color-text));
-  background-color: var(
-    --modifier-color-foreground-primary,
-    var(--button-color-background)
-  );
+  background-color: var(--modifier-surface, var(--button-color-background));
   border-color: var(--modifier-color-border, var(--button-color-border));
   border-style: solid;
-  border-width: var(--button-border-width);
+  /* The outline flag (0/1) toggles the border on: multiplying the width means
+     a borderless importance simply resolves to 0 with no separate rule. */
+  border-width: calc(var(--modifier-outline, 0) * var(--button-border-width));
 
   /* Typography and block padding come from the `.p` baseline utility on the
      element (font-size, snapped line-height, and the padding-block nudges that
@@ -59,19 +66,32 @@
   text-decoration: none;
 
   &:hover:not(:disabled) {
-    background-color: var(--button-color-background-hover);
-    border-color: var(--button-color-border-hover);
+    background-color: var(--modifier-surface-hover, var(--modifier-surface));
   }
 
   &:active:not(:disabled) {
-    background-color: var(--button-color-background-active);
-    border-color: var(--button-color-border-active);
+    background-color: var(--modifier-surface-active, var(--modifier-surface));
   }
 
   &:disabled {
     cursor: not-allowed;
-    opacity: 0.5;
+    color: var(--disabled--color-text);
+    background-color: var(--modifier-surface-disabled, transparent);
+    border-color: var(--disabled--color-border);
   }
+}
+
+/* ==========================================================================
+   Icon Slot
+   ========================================================================== */
+
+.ds.button > .icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: var(--icon-size, 1em);
+  height: var(--icon-size, 1em);
 }
 
 /* ==========================================================================
@@ -94,19 +114,6 @@
     align-items: center;
     justify-content: center;
   }
-}
-
-/* ==========================================================================
-   Icon Slot
-   ========================================================================== */
-
-.ds.button > .icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  width: var(--icon-size, 1em);
-  height: var(--icon-size, 1em);
 }
 
 /* ==========================================================================

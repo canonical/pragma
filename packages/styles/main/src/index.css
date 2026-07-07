@@ -21,6 +21,10 @@
 @import url("@canonical/design-tokens/dist/modifiers.criticality.css");
 @import url("@canonical/design-tokens/dist/modifiers.emphasis.css");
 @import url("@canonical/design-tokens/dist/modifiers.importance.css");
+/* TEMP shim: maps the (currently empty) importance modifiers to channel hints
+   so importance-driven components can render their hierarchy. Loaded after the
+   generated file; remove once importance tokens are generated upstream. */
+@import url("./modifiers.importance.shim.css");
 @import url("@canonical/design-tokens/dist/states.css");
 
 /* Grid layout presets */
