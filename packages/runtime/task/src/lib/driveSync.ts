@@ -28,18 +28,19 @@ type SyncFrame =
  * `TaskExecutionError`, matching the production interpreter. Any other thrown
  * value propagates unchanged.
  *
+ * @typeParam A - The task's result type.
  * @param root - The task to drive.
  * @param resolveEffect - Produces the result for each leaf effect.
  * @returns The task's final value.
  * @note Impure — `resolveEffect` typically records effects or mutates caller
  * state.
  */
-export default function driveSync(
-  root: Task<unknown>,
+export default function driveSync<A>(
+  root: Task<A>,
   resolveEffect: (effect: Effect) => unknown,
-): unknown {
+): A {
   const stack: SyncFrame[] = [];
-  let cur: Task<unknown> = root;
+  let cur: Task<unknown> = root as Task<unknown>;
 
   // Unwind to the nearest recovery frame, discarding pending binds. With no
   // recovery frame installed the error escapes as a TaskExecutionError.
@@ -93,7 +94,7 @@ export default function driveSync(
           }
         }
         if (!resumed) {
-          return value;
+          return value as A;
         }
         break;
       }

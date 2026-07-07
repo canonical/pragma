@@ -96,6 +96,6 @@ describe("driveSync", () => {
       task = flatMap(task, (x) => pure(x + 1));
     }
 
-    expect(driveSync(task as Task<unknown>, failIfCalled)).toBe(100_000);
+    expect(driveSync(task, failIfCalled)).toBe(100_000);
   });
 });

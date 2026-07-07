@@ -80,8 +80,11 @@ export const mockEffect = (effect: Effect): unknown => {
 
 /**
  * Mock an effect result while tracking virtual filesystem state, so an
- * `Exists` check reflects files a preceding effect would have created within
- * the same dry-run.
+ * `Exists` check reflects paths a preceding write-like effect (`WriteFile`,
+ * `AppendFile`, `TransformFile`, `MakeDir`, `Symlink`) would have created
+ * within the same dry-run. Copy destinations and deletions are not modelled —
+ * dry-run tracking is a best-effort preview of created paths, not a full
+ * virtual filesystem.
  *
  * @param effect - The effect to mock.
  * @param virtualFs - The set of paths created so far during the dry-run.
@@ -147,7 +150,7 @@ const dryRunWithVirtualFs = <A>(
     return mockEffectWithFs(effect, virtualFs);
   };
 
-  const value = driveSync(task as Task<unknown>, resolveEffect) as A;
+  const value = driveSync(task, resolveEffect);
   return { value, effects };
 };
 
@@ -173,7 +176,7 @@ export const dryRunWith = <A>(
     return customMock ? customMock(effect) : mockEffect(effect);
   };
 
-  const value = driveSync(task as Task<unknown>, resolveEffect) as A;
+  const value = driveSync(task, resolveEffect);
   return { value, effects };
 };
 
@@ -196,7 +199,7 @@ export const collectEffects = <A>(task: Task<A>): Effect[] => {
   // Walk the task collecting each leaf effect, tolerating an unrecovered
   // failure (a Fail short-circuits the walk rather than propagating).
   try {
-    driveSync(task as Task<unknown>, resolveEffect);
+    driveSync(task, resolveEffect);
   } catch (error) {
     if (!(error instanceof TaskExecutionError)) {
       throw error;
