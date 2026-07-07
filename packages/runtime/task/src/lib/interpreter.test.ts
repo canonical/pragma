@@ -1375,7 +1375,11 @@ describe("Interpreter - executeEffect Log fallback for all levels", () => {
 // =============================================================================
 
 describe("Interpreter - runTask Parallel with raw errors", () => {
-  it("wraps non-TaskExecutionError as INTERNAL code", async () => {
+  it("surfaces a parallel child's ENOENT read as FILE_NOT_FOUND", async () => {
+    // A raw ENOENT from a child effect is now normalised inside the child (like
+    // any effect exception), so the Parallel aggregator sees a structured
+    // FILE_NOT_FOUND rather than an opaque INTERNAL — consistent with a
+    // top-level read of a missing file.
     const throwingTask: Task<number> = {
       _tag: "Effect",
       effect: {
@@ -1395,6 +1399,7 @@ describe("Interpreter - runTask Parallel with raw errors", () => {
       expect.unreachable("should have thrown");
     } catch (err) {
       expect(err).toBeInstanceOf(TaskExecutionError);
+      expect((err as TaskExecutionError).code).toBe("FILE_NOT_FOUND");
     }
   });
 });
@@ -1566,5 +1571,242 @@ describe("Interpreter - runTask stack safety", () => {
       return acc;
     });
     expect(await runTask(task)).toBe(N);
+  });
+});
+
+// =============================================================================
+// runTask - effect exceptions route through the recovery channel (TASK-1)
+// =============================================================================
+
+describe("Interpreter - effect exceptions route through recovery", () => {
+  it("routes a real ENOENT read into recover as FILE_NOT_FOUND", async () => {
+    const missing = join(tmpdir(), "task-enoent-does-not-exist-xyz");
+    const task = recover(
+      effect<string>({ _tag: "ReadFile", path: missing }),
+      (err) => pure(err.code),
+    );
+
+    expect(await runTask(task)).toBe("FILE_NOT_FOUND");
+  });
+
+  it("routes a throwing Error transform into recover as INTERNAL, preserving cause and stack", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "task-transform-err-"));
+
+    try {
+      const path = join(dir, "f.txt");
+      writeFileSync(path, "original");
+      const thrown = new Error("boom");
+      let captured: TaskError | undefined;
+      const task = recover(
+        effect<void>({
+          _tag: "TransformFile",
+          path,
+          transform: () => {
+            throw thrown;
+          },
+        }),
+        (err) => {
+          captured = err;
+          return pure("recovered");
+        },
+      );
+
+      expect(await runTask(task)).toBe("recovered");
+      expect(captured?.code).toBe("INTERNAL");
+      expect(captured?.message).toBe("boom");
+      // The original throw is preserved as cause, and the Error stack carried
+      // through, so a handler can inspect the underlying failure.
+      expect(captured?.cause).toBe(thrown);
+      expect(captured?.stack).toBe(thrown.stack);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("normalises a non-Error throw, using String() and no stack", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "task-transform-str-"));
+
+    try {
+      const path = join(dir, "f.txt");
+      writeFileSync(path, "original");
+      const task = recover(
+        effect<void>({
+          _tag: "TransformFile",
+          path,
+          transform: () => {
+            throw "raw-string";
+          },
+        }),
+        (err) => pure(`${err.code}:${err.message}:${err.stack}`),
+      );
+
+      expect(await runTask(task)).toBe("INTERNAL:raw-string:undefined");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("normalises a thrown null as INTERNAL", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "task-transform-null-"));
+
+    try {
+      const path = join(dir, "f.txt");
+      writeFileSync(path, "original");
+      const task = recover(
+        effect<void>({
+          _tag: "TransformFile",
+          path,
+          transform: () => {
+            throw null;
+          },
+        }),
+        (err) => pure(err.code),
+      );
+
+      expect(await runTask(task)).toBe("INTERNAL");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("maps a non-ENOENT coded throw to INTERNAL, not FILE_NOT_FOUND", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "task-transform-eperm-"));
+
+    try {
+      const path = join(dir, "f.txt");
+      writeFileSync(path, "original");
+      const task = recover(
+        effect<void>({
+          _tag: "TransformFile",
+          path,
+          transform: () => {
+            throw { code: "EPERM", message: "denied" };
+          },
+        }),
+        (err) => pure(err.code),
+      );
+
+      expect(await runTask(task)).toBe("INTERNAL");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("passes a TaskExecutionError through recover unchanged", async () => {
+    const task = recover(
+      effect<unknown>({
+        _tag: "Prompt",
+        question: { type: "confirm", name: "ok", message: "Proceed?" },
+      }),
+      (err) => pure(err.code),
+    );
+
+    expect(await runTask(task)).toBe("NO_PROMPT_HANDLER");
+  });
+
+  it("wraps a raw continuation failure in a parallel child as INTERNAL", async () => {
+    const rawChild: Task<number> = {
+      _tag: "Effect",
+      effect: { _tag: "ReadContext", key: "unused" },
+      cont: () => {
+        throw new Error("raw continuation");
+      },
+    };
+    const task = effect<unknown[]>({
+      _tag: "Parallel",
+      tasks: [rawChild, pure(2)],
+    });
+
+    try {
+      await runTask(task);
+      expect.unreachable("should have thrown");
+    } catch (err) {
+      expect(err).toBeInstanceOf(TaskExecutionError);
+      expect((err as TaskExecutionError).code).toBe("INTERNAL");
+    }
+  });
+});
+
+// =============================================================================
+// runTask - un-recovered effect exceptions reject with a normalised code
+// =============================================================================
+
+describe("Interpreter - un-recovered effect exceptions reject with a normalised code", () => {
+  it("rejects a missing-file read as TaskExecutionError FILE_NOT_FOUND", async () => {
+    const missing = join(tmpdir(), "task-unrecovered-enoent-xyz");
+
+    try {
+      await runTask(effect<string>({ _tag: "ReadFile", path: missing }));
+      expect.unreachable("should have thrown");
+    } catch (err) {
+      expect(err).toBeInstanceOf(TaskExecutionError);
+      expect((err as TaskExecutionError).code).toBe("FILE_NOT_FOUND");
+    }
+  });
+
+  it("rejects a throwing transform as TaskExecutionError INTERNAL", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "task-unrecovered-internal-"));
+
+    try {
+      const path = join(dir, "f.txt");
+      writeFileSync(path, "original");
+      await runTask(
+        effect<void>({
+          _tag: "TransformFile",
+          path,
+          transform: () => {
+            throw new Error("nope");
+          },
+        }),
+      );
+      expect.unreachable("should have thrown");
+    } catch (err) {
+      expect(err).toBeInstanceOf(TaskExecutionError);
+      expect((err as TaskExecutionError).code).toBe("INTERNAL");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+// =============================================================================
+// runTask - interruption bypasses recovery
+// =============================================================================
+
+describe("Interpreter - interruption bypasses recovery", () => {
+  it("does not invoke a surrounding recover when a Parallel child is aborted mid-flight", async () => {
+    const controller = new AbortController();
+    let handlerCalls = 0;
+
+    // The child performs a prompt whose handler aborts the signal; the child's
+    // next loop-top guard then raises TASK_INTERRUPTED, which surfaces through
+    // the Parallel aggregator into the recover frame's effect catch.
+    const child = effect<boolean>({
+      _tag: "Prompt",
+      question: { type: "confirm", name: "go", message: "Proceed?" },
+    });
+    const task = recover(
+      effect<unknown[]>({ _tag: "Parallel", tasks: [child] }),
+      () => {
+        handlerCalls += 1;
+        return pure("recovered");
+      },
+    );
+
+    const promptHandler = async () => {
+      controller.abort("stop");
+      return true;
+    };
+
+    try {
+      await runTask(task, { signal: controller.signal, promptHandler });
+      expect.unreachable("should have thrown");
+    } catch (err) {
+      expect(err).toBeInstanceOf(TaskExecutionError);
+      expect((err as TaskExecutionError).code).toBe("TASK_INTERRUPTED");
+    }
+
+    // The interrupt bypassed the recover handler entirely.
+    expect(handlerCalls).toBe(0);
   });
 });

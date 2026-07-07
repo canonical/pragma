@@ -12,13 +12,10 @@
  * the same task definition + same answers = deterministic undo.
  */
 
-import { mockEffect } from "./dry-run.js";
-import {
-  type RunTaskOptions,
-  runTask,
-  TaskExecutionError,
-} from "./interpreter.js";
-import type { Task } from "./types.js";
+import driveSync from "./driveSync.js";
+import { mockEffectWithFs } from "./dry-run.js";
+import { type RunTaskOptions, runTask } from "./interpreter.js";
+import type { Effect, Task } from "./types.js";
 
 // =============================================================================
 // Undo Result
@@ -81,74 +78,8 @@ export const runUndo = async <A>(
  */
 export const collectUndos = <A>(task: Task<A>): Task<void>[] => {
   const undos: Task<void>[] = [];
-  // Track virtual filesystem state for exists() checks (same as dryRun)
-  const virtualFs = new Set<string>();
-
-  const walk = <T>(t: Task<T>): T => {
-    switch (t._tag) {
-      case "Pure":
-        return t.value;
-
-      case "Fail":
-        throw new TaskExecutionError(t.error);
-
-      case "Effect": {
-        const eff = t.effect;
-
-        // Collect undo if present
-        if ("undo" in eff && eff.undo) {
-          undos.push(eff.undo);
-        }
-
-        // Handle Parallel — walk all children
-        if (eff._tag === "Parallel") {
-          const results = eff.tasks.map((childTask) => {
-            const childUndos = collectUndosWithVirtualFs(childTask, virtualFs);
-            undos.push(...childUndos);
-            // Mock the child result
-            const childResult = mockEffectWithFs(
-              { _tag: "Parallel", tasks: [] },
-              virtualFs,
-            );
-            return childResult;
-          });
-          return walk(t.cont(results) as Task<T>);
-        }
-
-        // Handle Race — walk first child only (same as dryRun)
-        if (eff._tag === "Race") {
-          if (eff.tasks.length > 0) {
-            const childUndos = collectUndosWithVirtualFs(
-              eff.tasks[0],
-              virtualFs,
-            );
-            undos.push(...childUndos);
-          }
-          const mockResult = mockEffectWithFs(eff, virtualFs);
-          return walk(t.cont(mockResult) as Task<T>);
-        }
-
-        // Track virtual filesystem state for conditional branching
-        const mockResult = mockEffectWithFs(eff, virtualFs);
-        return walk(t.cont(mockResult) as Task<T>);
-      }
-
-      case "FlatMap":
-        return walk(t.f(walk(t.inner)) as Task<T>);
-
-      case "Recover":
-        try {
-          return walk(t.inner);
-        } catch (error) {
-          if (error instanceof TaskExecutionError) {
-            return walk(t.handler(error.taskError));
-          }
-          throw error;
-        }
-    }
-  };
-
-  walk(task);
+  // Track virtual filesystem state for exists() checks (same as dryRun).
+  collectUndosInto(task as Task<unknown>, new Set(), undos);
   return undos;
 };
 
@@ -157,97 +88,48 @@ export const collectUndos = <A>(task: Task<A>): Task<void>[] => {
 // =============================================================================
 
 /**
- * Mock an effect result, tracking virtual filesystem state.
- * Mirrors the logic in dry-run.ts.
+ * Walk a task tree with mocked forward effects over a shared virtual
+ * filesystem, appending each effect's `undo` task (in forward order) to
+ * `undos`, and returning the task's mocked forward value. Forward mocking
+ * mirrors `dryRun` exactly — `Parallel` resolves to the array of its children's
+ * mocked values and `Race` to its first child's — so a continuation that reads
+ * a concurrency result sees the same shape it would under `dryRun`.
+ * `Parallel`/`Race` children are walked against the same `virtualFs`, and the
+ * forward walk is trampolined via {@link driveSync}, so deep chains stay
+ * stack-safe.
+ *
+ * @param task - The task to collect undos from.
+ * @param virtualFs - Shared set of paths created so far during the walk.
+ * @param undos - Accumulator appended in forward execution order.
+ * @returns The task's mocked forward value.
+ * @note Impure — mutates the shared `virtualFs` set and `undos` accumulator.
  */
-const mockEffectWithFs = (
-  eff: import("./types.js").Effect,
+const collectUndosInto = (
+  task: Task<unknown>,
   virtualFs: Set<string>,
+  undos: Task<void>[],
 ): unknown => {
-  switch (eff._tag) {
-    case "WriteFile":
-    case "AppendFile":
-    case "TransformFile":
-      virtualFs.add(eff.path);
-      return undefined;
-    case "MakeDir":
-      virtualFs.add(eff.path);
-      return undefined;
-    case "Symlink":
-      virtualFs.add(eff.path);
-      return undefined;
-    case "Exists":
-      return virtualFs.has(eff.path);
-    default:
-      return mockEffect(eff);
-  }
-};
-
-/**
- * Collect undos from a child task, sharing virtual filesystem state.
- * Used for Parallel/Race child tasks.
- */
-const collectUndosWithVirtualFs = <A>(
-  task: Task<A>,
-  virtualFs: Set<string>,
-): Task<void>[] => {
-  const undos: Task<void>[] = [];
-
-  const walk = <T>(t: Task<T>): T => {
-    switch (t._tag) {
-      case "Pure":
-        return t.value;
-
-      case "Fail":
-        throw new TaskExecutionError(t.error);
-
-      case "Effect": {
-        const eff = t.effect;
-
-        if ("undo" in eff && eff.undo) {
-          undos.push(eff.undo);
-        }
-
-        if (eff._tag === "Parallel") {
-          const results = eff.tasks.map((childTask) => {
-            const childUndos = collectUndosWithVirtualFs(childTask, virtualFs);
-            undos.push(...childUndos);
-            return undefined;
-          });
-          return walk(t.cont(results) as Task<T>);
-        }
-
-        if (eff._tag === "Race") {
-          if (eff.tasks.length > 0) {
-            const childUndos = collectUndosWithVirtualFs(
-              eff.tasks[0],
-              virtualFs,
-            );
-            undos.push(...childUndos);
-          }
-          const mockResult = mockEffectWithFs(eff, virtualFs);
-          return walk(t.cont(mockResult) as Task<T>);
-        }
-
-        const mockResult = mockEffectWithFs(eff, virtualFs);
-        return walk(t.cont(mockResult) as Task<T>);
-      }
-
-      case "FlatMap":
-        return walk(t.f(walk(t.inner)) as Task<T>);
-
-      case "Recover":
-        try {
-          return walk(t.inner);
-        } catch (error) {
-          if (error instanceof TaskExecutionError) {
-            return walk(t.handler(error.taskError));
-          }
-          throw error;
-        }
+  const resolveEffect = (effect: Effect): unknown => {
+    if ("undo" in effect && effect.undo) {
+      undos.push(effect.undo);
     }
+
+    if (effect._tag === "Parallel") {
+      return effect.tasks.map((child) =>
+        collectUndosInto(child, virtualFs, undos),
+      );
+    }
+
+    if (effect._tag === "Race") {
+      const first = effect.tasks.at(0);
+      if (first !== undefined) {
+        return collectUndosInto(first, virtualFs, undos);
+      }
+      return undefined;
+    }
+
+    return mockEffectWithFs(effect, virtualFs);
   };
 
-  walk(task);
-  return undos;
+  return driveSync(task, resolveEffect);
 };

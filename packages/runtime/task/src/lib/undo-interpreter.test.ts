@@ -568,3 +568,31 @@ describe("collectUndos - lazy node handling", () => {
     ).toThrow("raw");
   });
 });
+
+// =============================================================================
+// collectUndos - Parallel result value is readable by a continuation
+// =============================================================================
+
+describe("collectUndos - Parallel result threaded to continuation", () => {
+  it("threads each child's real mocked forward value to a continuation", () => {
+    // The continuation must receive each child's real mocked forward value,
+    // mirroring dryRun: a ReadFile mocks to its content string, a WriteFile to
+    // undefined. Distinct, non-empty values are used deliberately so the
+    // assertion fails against any placeholder shape (e.g. an array of []).
+    let seenResults: unknown[] = [];
+    const task = flatMap(
+      parallel([readFile("/a.txt"), writeFile("/b.txt", "b")]),
+      (results) => {
+        seenResults = results as unknown[];
+        return writeFile("/c.txt", "c");
+      },
+    );
+
+    const undos = collectUndos(task);
+
+    expect(seenResults).toEqual(["[mock content of /a.txt]", undefined]);
+    // WriteFile /b and the continuation WriteFile /c are undoable; readFile is
+    // not, so exactly two undos are collected.
+    expect(undos).toHaveLength(2);
+  });
+});
