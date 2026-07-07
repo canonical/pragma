@@ -261,9 +261,9 @@ describe("useDisclosure", () => {
   });
 
   it("passes props through to useWindowFitment with the resolved isOpen", () => {
-    renderHook(() => useDisclosure({ preferredDirections: ["top"] }));
+    renderHook(() => useDisclosure({ preferredDirections: ["block-start"] }));
     expect(vi.mocked(useWindowFitment)).toHaveBeenCalledWith({
-      preferredDirections: ["top"],
+      preferredDirections: ["block-start"],
       isOpen: false,
     });
   });

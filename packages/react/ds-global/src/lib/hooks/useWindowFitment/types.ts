@@ -9,13 +9,16 @@ export interface UseWindowFitmentProps {
   autoFit?: boolean;
   /**
    * Ordered preferred placements for the popup. Each entry is either a bare
-   * direction (which implies `align: "center"`, the historical centred
-   * behaviour) or a `{ direction, align }` pair. The hook tries them in order
-   * and takes the first that naturally fits; alignment-flipping is expressed by
-   * listing e.g. `{right, start}` then `{right, end}`.
-   * Defaults to centred ['top', 'bottom', 'left', 'right'].
+   * logical side (`inline-start` | `inline-end` | `block-start` | `block-end`,
+   * implying `align: "center"`) or a `{ side, align }` pair. The hook resolves
+   * each logical side to a physical direction from the anchored element's
+   * writing direction — so `inline-*` mirrors automatically in RTL — then tries
+   * them in order and takes the first that naturally fits. Alignment-flipping is
+   * expressed by listing e.g. `{inline-end, start}` then `{inline-end, end}`.
+   * Defaults to centred ['block-start', 'block-end', 'inline-start',
+   * 'inline-end'] (= [top, bottom, left, right] in LTR).
    */
-  preferredDirections?: (WindowFitmentDirection | WindowFitmentPlacement)[];
+  preferredDirections?: (WindowFitmentSide | WindowFitmentPlacement)[];
   /**
    * The distance, in pixels between the target and the popup.
    * @TODO support non-px units. E.G., someone should be able to request '1em`.
@@ -44,26 +47,51 @@ export interface UseWindowFitmentProps {
   isOpen?: boolean;
 
   /**
+   * Override the writing direction used to resolve logical (`inline-*`)
+   * placements. Defaults to the document's `<html dir>` — the single source of
+   * truth for the app locale. Set this only to force a subtree to a direction
+   * that differs from the document.
+   */
+  direction?: "ltr" | "rtl";
+
+  /**
    * An optional callback to be called when the best position of the popup changes.
    */
   onBestPositionChange?: (bestPosition?: BestPosition) => void;
 }
 
+/**
+ * A PHYSICAL side — the resolved OUTPUT axis (keys the arrow CSS and fakeMargin).
+ * Callers supply logical sides (see {@link WindowFitmentSide}); the hook resolves
+ * them to a physical direction for the current writing direction.
+ */
 export type WindowFitmentDirection = "top" | "bottom" | "left" | "right";
 
 /**
+ * A LOGICAL side — the INPUT axis vocabulary. `inline-*` follows the anchored
+ * element's writing direction, so it mirrors in RTL: `inline-start` is the start
+ * of the line (LEFT in LTR / RIGHT in RTL) and `inline-end` is the trailing edge
+ * (RIGHT in LTR / LEFT in RTL). `block-*` is the vertical axis and is
+ * dir-invariant (`block-start` = top, `block-end` = bottom).
+ */
+export type WindowFitmentSide =
+  | "inline-start"
+  | "inline-end"
+  | "block-start"
+  | "block-end";
+
+/**
  * Where the popup sits along the cross-axis of its side (Floating-UI's alignment
- * axis). For a vertical side (`left`/`right`) this is the vertical axis: `start`
- * top-aligns the popup with the target (`popup.top = target.top`), `end`
- * bottom-aligns it, `center` centres it. For a horizontal side (`top`/`bottom`)
- * it is the horizontal axis: `start` left-aligns, `end` right-aligns, `center`
- * centres. Defaults to `center` — the historical behaviour the tooltip relies on.
+ * axis). For a vertical side this is the vertical axis: `start` top-aligns the
+ * popup with the target (`popup.top = target.top`), `end` bottom-aligns it,
+ * `center` centres it. For a horizontal side it is the horizontal axis. Defaults
+ * to `center` — the historical behaviour the tooltip relies on.
  */
 export type WindowFitmentAlign = "start" | "center" | "end";
 
-/** A fully-resolved placement: which side, and where along that side. */
+/** A LOGICAL placement supplied to the hook: which logical side, and where along it. */
 export interface WindowFitmentPlacement {
-  direction: WindowFitmentDirection;
+  side: WindowFitmentSide;
   align: WindowFitmentAlign;
 }
 
@@ -92,6 +120,13 @@ export interface UseWindowFitmentResult {
    * it. `undefined` until a position has been measured.
    */
   arrowOffset?: ArrowOffset;
+  /**
+   * The writing direction resolved from the anchored element (`ltr` on the
+   * server / before mount). Set it as `dir` on a PORTALLED popup so its contents
+   * (e.g. a submenu caret, text alignment) inherit the anchor's direction even
+   * though the portal escapes the anchor's DOM subtree.
+   */
+  direction: "ltr" | "rtl";
   //
   // /**
   //  * The distance, in pixels, between the target and the popup.

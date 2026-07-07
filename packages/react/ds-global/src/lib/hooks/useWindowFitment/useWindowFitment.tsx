@@ -4,6 +4,7 @@ import {
   useEffect,
   useMemo,
   useRef,
+  useState,
 } from "react";
 import { useResizeObserver } from "../useResizeObserver/index.js";
 import { useWindowDimensions } from "../useWindowDimensions/index.js";
@@ -16,13 +17,64 @@ import type {
   WindowFitmentAlign,
   WindowFitmentDirection,
   WindowFitmentPlacement,
+  WindowFitmentSide,
 } from "./types.js";
 
-/** Coerce a bare direction or a placement into a resolved placement. */
+/** A resolved PHYSICAL placement — what the fitment core consumes internally. */
+type PhysicalPlacement = {
+  direction: WindowFitmentDirection;
+  align: WindowFitmentAlign;
+};
+
+/** Coerce a bare logical side or a placement into a full logical placement. */
 export const toPlacement = (
-  entry: WindowFitmentDirection | WindowFitmentPlacement,
+  entry: WindowFitmentSide | WindowFitmentPlacement,
 ): WindowFitmentPlacement =>
-  typeof entry === "string" ? { direction: entry, align: "center" } : entry;
+  typeof entry === "string" ? { side: entry, align: "center" } : entry;
+
+/**
+ * Map a LOGICAL placement to a PHYSICAL one for a writing direction. The inline
+ * axis follows `dir` (mirrors in RTL); the block axis is dir-invariant.
+ *
+ * INVARIANT: `align` is passed through UNMODIFIED. This is only correct because
+ * every `inline-*` side has a dir-invariant (block/vertical) cross-axis, and
+ * every `block-*` side in use is `align: "center"` (dir-blind). If a future
+ * `block-*` placement ever needs `start`/`end`, that align becomes dir-dependent
+ * and MUST be flipped here for RTL — do not add one without handling it.
+ */
+export const resolveLogicalPlacement = (
+  placement: WindowFitmentPlacement,
+  dir: "ltr" | "rtl",
+): PhysicalPlacement => {
+  let direction: WindowFitmentDirection;
+  switch (placement.side) {
+    case "inline-start":
+      direction = dir === "rtl" ? "right" : "left";
+      break;
+    case "inline-end":
+      direction = dir === "rtl" ? "left" : "right";
+      break;
+    case "block-start":
+      direction = "top";
+      break;
+    default:
+      direction = "bottom";
+      break;
+  }
+  return { direction, align: placement.align };
+};
+
+/**
+ * Read the document's writing direction from the root `<html>` element — the
+ * single source of truth for the app's locale direction. Since the popup is
+ * portalled under `<html>` too, both the positioning and any CSS keyed on
+ * `html[dir="rtl"]` (e.g. a mirrored caret) agree without per-element reads.
+ * @note Impure — reads the DOM. Defaults `ltr` on the server.
+ */
+const readHtmlDirection = (): "ltr" | "rtl" => {
+  if (typeof document === "undefined") return "ltr";
+  return document.documentElement.dir === "rtl" ? "rtl" : "ltr";
+};
 
 /**
  * Compute the cross-axis displacement needed to keep an arrow pointing at the
@@ -73,7 +125,12 @@ export const computeArrowOffset = (
 };
 
 const useWindowFitment = ({
-  preferredDirections = ["top", "bottom", "left", "right"],
+  preferredDirections = [
+    "block-start",
+    "block-end",
+    "inline-start",
+    "inline-end",
+  ],
   distance = "0px",
   gutter = "0px",
   maxWidth = "350px",
@@ -81,11 +138,15 @@ const useWindowFitment = ({
   scrollDelay = 150,
   onBestPositionChange,
   autoFit = false,
+  direction: directionProp,
 }: UseWindowFitmentProps): UseWindowFitmentResult => {
   const isServer = typeof window === "undefined";
   const targetRef = useRef<HTMLDivElement | null>(null);
   const popupRef = useRef<HTMLDivElement | null>(null);
   const prevBestPosition = useRef<BestPosition | undefined>(undefined);
+  // Bumped when the anchored element's `dir` flips with no layout change, so the
+  // logical→physical resolution re-runs (see the MutationObserver effect below).
+  const [dirVersion, setDirVersion] = useState(0);
 
   const windowDimensions = useWindowDimensions({ resizeDelay, scrollDelay });
   const targetSize = useResizeObserver(targetRef?.current);
@@ -238,7 +299,7 @@ const useWindowFitment = ({
     (
       targetRect: DOMRect,
       popupRect: DOMRect,
-      placements: WindowFitmentPlacement[],
+      placements: PhysicalPlacement[],
     ): BestPosition | undefined => {
       if (isServer) return;
       let fallbackPosition: BestPosition | undefined;
@@ -334,7 +395,7 @@ const useWindowFitment = ({
     [calculateRelativePosition, fitsInWindow, isServer, autoFit, bounds],
   );
 
-  /** Normalise the mixed direction/placement list once (bare → centred). */
+  /** Normalise the mixed side/placement list once (bare side → centred). */
   const placements = useMemo(
     () => preferredDirections.map(toPlacement),
     [preferredDirections],
@@ -349,12 +410,19 @@ const useWindowFitment = ({
       windowDimensions &&
       popupSize &&
       targetSize
-    )
+    ) {
+      // Resolve logical → physical BEFORE findBestPosition so positionName stays
+      // a physical direction. The direction is the `direction` override if given,
+      // else the document's <html dir>. Re-runs on resize/scroll/content (deps)
+      // and on an <html dir> flip (dirVersion, from the observer below).
+      const dir = directionProp ?? readHtmlDirection();
+      const physical = placements.map((p) => resolveLogicalPlacement(p, dir));
       return findBestPosition(
         targetRef.current.getBoundingClientRect(),
         popupRef.current.getBoundingClientRect(),
-        placements,
+        physical,
       );
+    }
   }, [
     findBestPosition,
     placements,
@@ -362,7 +430,21 @@ const useWindowFitment = ({
     popupSize,
     targetSize,
     isServer,
+    directionProp,
+    dirVersion,
   ]);
+
+  // Re-resolve when the document's <html dir> flips (a language toggle) with no
+  // size/scroll change. A single observer on the root — the one source of truth.
+  useEffect(() => {
+    if (isServer || directionProp) return;
+    const observer = new MutationObserver(() => setDirVersion((v) => v + 1));
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["dir"],
+    });
+    return () => observer.disconnect();
+  }, [isServer, directionProp]);
 
   /**
    * The arrow offset that keeps an arrow pointing at the target centre, computed
@@ -439,12 +521,21 @@ const useWindowFitment = ({
     [bestPosition, maxWidth, fakeMargin],
   );
 
+  // The resolved writing direction — the `direction` override, else <html dir>.
+  // Exposed so a portalled popup can set `dir` on itself and any CSS keyed on
+  // `[dir="rtl"]` (e.g. a mirrored caret) works despite the portal.
+  const direction = useMemo(
+    () => directionProp ?? readHtmlDirection(),
+    [directionProp, dirVersion],
+  );
+
   return {
     targetRef,
     popupRef,
     bestPosition,
     popupPositionStyle,
     arrowOffset,
+    direction,
   };
 };
 

@@ -1,7 +1,7 @@
 import type { HTMLAttributes, ReactNode } from "react";
 import type {
   UseDisclosureProps,
-  WindowFitmentDirection,
+  WindowFitmentSide,
 } from "#lib/hooks/index.js";
 
 export interface PopoverProps
@@ -30,6 +30,9 @@ export interface PopoverProps
   open?: boolean;
   /** Called when the open state changes. */
   onOpenChange?: (open: boolean) => void;
-  /** Preferred placement of the popover relative to its trigger. */
-  preferredDirections?: WindowFitmentDirection[];
+  /**
+   * Preferred placement of the popover relative to its trigger, as logical sides
+   * (`inline-*` mirrors in RTL). Defaults to the reading-direction order.
+   */
+  preferredDirections?: WindowFitmentSide[];
 }

@@ -3,11 +3,7 @@ import { getItemId } from "@canonical/utils";
 import type React from "react";
 import { useMemo } from "react";
 import { createPortal } from "react-dom";
-import {
-  getReadingDirectionMenuPlacement,
-  readDocumentDirection,
-  useContextualMenu,
-} from "#lib/hooks/index.js";
+import { MENU_PLACEMENT, useContextualMenu } from "#lib/hooks/index.js";
 import MenuContext from "./common/MenuContext.js";
 import SubMenu from "./common/SubMenu/index.js";
 import type { ContextualMenuProps, MenuItem } from "./types.js";
@@ -48,21 +44,13 @@ const ContextualMenu = ({
     () => ({ key: "contextual-menu-root", items: groups }),
     [groups],
   );
-  // Likewise stable: a fresh placement array each render would re-run fitment.
-  const resolvedDirections = useMemo(
-    () =>
-      preferredDirections ??
-      getReadingDirectionMenuPlacement(readDocumentDirection()),
-    [preferredDirections],
-  );
-
   const menu = useContextualMenu({
     root,
     isOpen: open,
-    // Auto-fit by default, opening toward the trigger's leading edge, top-
-    // aligned (right-start LTR / left-start RTL), flipping side/alignment as
-    // space runs out.
-    preferredDirections: resolvedDirections,
+    // Open toward the trigger's leading edge, top-aligned, flipping side/
+    // alignment as space runs out. MENU_PLACEMENT is logical (inline-*), so the
+    // hook mirrors it in RTL automatically — no direction read here.
+    preferredDirections: preferredDirections ?? MENU_PLACEMENT,
     distance,
     gutter,
     maxWidth,

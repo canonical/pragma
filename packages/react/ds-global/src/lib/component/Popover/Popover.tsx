@@ -1,10 +1,6 @@
 import type React from "react";
 import { useCallback } from "react";
-import {
-  getReadingDirectionPlacement,
-  readDocumentDirection,
-  useDisclosure,
-} from "#lib/hooks/index.js";
+import { OVERLAY_PLACEMENT, useDisclosure } from "#lib/hooks/index.js";
 import type { PopoverProps } from "./types.js";
 import "./styles.css";
 
@@ -51,9 +47,8 @@ const Popover = ({
     mode: "click",
     isOpen: open,
     // Auto-fit by default, opening toward the reading direction first.
-    preferredDirections:
-      preferredDirections ??
-      getReadingDirectionPlacement(readDocumentDirection()),
+    // OVERLAY_PLACEMENT is logical (inline-*), so the hook mirrors it in RTL.
+    preferredDirections: preferredDirections ?? OVERLAY_PLACEMENT,
     distance,
     gutter,
     maxWidth,

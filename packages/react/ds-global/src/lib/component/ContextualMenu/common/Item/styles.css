@@ -57,9 +57,10 @@
   }
 
   /* The submenu caret sits on the trailing edge in a fixed icon box (Figma:
-     16px icon in a 24px-tall wrapper). It always follows the reading direction —
-     `›` in LTR, mirrored to `‹` in RTL — rather than flipping per-item with the
-     side the submenu happens to open on, so sibling carets stay consistent. */
+     16px chevron in a 24px-tall wrapper). It always follows the reading
+     direction — chevron-right in LTR, mirrored to point left in RTL — rather
+     than flipping per-item with the side the submenu opens on, so sibling carets
+     stay consistent. */
   > .caret {
     flex: 0 0 auto;
     margin-inline-start: auto;
@@ -68,11 +69,11 @@
     justify-content: center;
     inline-size: var(--dimension-200);
     block-size: var(--dimension-300);
-  }
 
-  [dir="rtl"] & > .caret {
-    /* Mirror the `›` glyph to `‹` for right-to-left reading. */
-    transform: scaleX(-1);
+    & > svg {
+      inline-size: var(--dimension-200, 16px);
+      block-size: var(--dimension-200, 16px);
+    }
   }
 
   &.disabled {
@@ -81,4 +82,12 @@
     cursor: not-allowed;
     pointer-events: none;
   }
+}
+
+/* Mirror the `›` caret glyph to `‹` for right-to-left reading. Keyed on any
+   `[dir="rtl"]` ANCESTOR of the item — which, because the menu is portalled to
+   the body, must be `<html>` or `<body>` (a wrapper `<div dir>` is escaped by
+   the portal). Set `dir="rtl"` on `<html>` (or `<body>`) and it mirrors. */
+[dir="rtl"] .ds.contextual-menu-item > .caret {
+  transform: scaleX(-1);
 }

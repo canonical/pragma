@@ -8,11 +8,7 @@ import {
   useState,
 } from "react";
 import { createPortal } from "react-dom";
-import {
-  getReadingDirectionMenuPlacement,
-  readDocumentDirection,
-  useWindowFitment,
-} from "#lib/hooks/index.js";
+import { MENU_PLACEMENT, useWindowFitment } from "#lib/hooks/index.js";
 import Item from "../Item/index.js";
 import { useMenuContext } from "../MenuContext.js";
 import type { MenuItem } from "../../types.js";
@@ -64,14 +60,10 @@ const SubMenuParent = ({ item }: { item: _Item<MenuItem> }): ReactElement => {
   const [hovered, setHovered] = useState(false);
   const open = keyboardOpen || hovered;
 
-  // A STABLE placement list — a fresh array each render would thrash the
-  // fitment memo (and, via its layout-effect measurement, risk a render loop).
-  const preferredDirections = useMemo(
-    () => getReadingDirectionMenuPlacement(readDocumentDirection()),
-    [],
-  );
+  // MENU_PLACEMENT is a stable module constant and logical, so the hook mirrors
+  // it in RTL from this item's own writing direction — no per-submenu dir read.
   const { targetRef, popupRef, popupPositionStyle, bestPosition } =
-    useWindowFitment({ preferredDirections, autoFit: true });
+    useWindowFitment({ preferredDirections: MENU_PLACEMENT, autoFit: true });
 
   // The item carries both the roving props and the fitment target ref.
   const itemProps = { ...getItemProps(item), ref: targetRef };

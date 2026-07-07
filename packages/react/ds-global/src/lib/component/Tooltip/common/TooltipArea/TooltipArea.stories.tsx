@@ -3,7 +3,7 @@ import type { Decorator, Meta, StoryFn, StoryObj } from "@storybook/react-vite";
 import { createContext, useContext, useRef, useState } from "react";
 import { Button } from "#lib/component/Button/index.js";
 import { Icon } from "#lib/component/Icon/index.js";
-import type { WindowFitmentDirection } from "#lib/hooks/index.js";
+import type { WindowFitmentSide } from "#lib/hooks/index.js";
 import Component from "./TooltipArea.js";
 import type { TooltipAreaProps } from "./types.js";
 
@@ -111,7 +111,7 @@ export const WithIcon: Story = {
   args: {
     icon: <Icon icon="information" />,
     Message: "The standard tooltip explains an icon or control.",
-    preferredDirections: ["top"],
+    preferredDirections: ["block-start"],
     children: <Button {...anchorButtonProps}>Icon tooltip</Button>,
   },
 };
@@ -125,7 +125,7 @@ export const Multiline: Story = {
     icon: <Icon icon="information" />,
     Message:
       "The standard tooltip explains an icon or control, or adds a short clarification that runs across several lines when the content is long.",
-    preferredDirections: ["top"],
+    preferredDirections: ["block-start"],
     children: <Button {...anchorButtonProps}>Long tooltip</Button>,
   },
 };
@@ -138,7 +138,7 @@ export const Multiline: Story = {
 export const MaxWidth: StoryFn<{ maxWidth: number }> = ({ maxWidth }) => (
   <Demo
     Message="The standard tooltip explains an icon or control, or adds a short clarification that wraps at the configured maximum width."
-    preferredDirections={["top"]}
+    preferredDirections={["block-start"]}
     messageElementStyle={{ maxWidth }}
   >
     <Button {...anchorButtonProps}>Max width: {maxWidth}px</Button>
@@ -178,7 +178,7 @@ export const AutoFit: StoryFn = () => {
           // Prefer right, then bottom, but allow flipping to the opposite side
           // (left/top) so a cell with no room on the right actually flips rather
           // than clamping against the edge.
-          preferredDirections={["right", "bottom", "left", "top"]}
+          preferredDirections={["inline-end", "block-end", "inline-start", "block-start"]}
           autoFit
           Message={
             "The standard tooltip explains an icon or control, or adds a longer clarification that runs across several lines and is wide enough that a cell near the right edge — like the ninth — has no room on its preferred side and flips to the opposite one."
@@ -255,7 +255,7 @@ export const AutoFitPlayground: StoryFn<{ x: number; y: number }> = ({
           Message="I stay on screen and my arrow stays pinned to the anchor."
           // All four sides, so auto-fit can flip to whichever fits — prefer top,
           // then bottom, then the sides — not just clamp a single direction.
-          preferredDirections={["top", "bottom", "right", "left"]}
+          preferredDirections={["block-start", "block-end", "inline-end", "inline-start"]}
           autoFit
         >
           <Button
@@ -289,11 +289,11 @@ AutoFitPlayground.argTypes = {
   y: { control: { type: "range", min: 0, max: 100, step: 1 } },
 };
 
-const changeableOptions: WindowFitmentDirection[] = [
-  "top",
-  "right",
-  "bottom",
-  "left",
+const changeableOptions: WindowFitmentSide[] = [
+  "block-start",
+  "inline-end",
+  "block-end",
+  "inline-start",
 ];
 
 export const Changeable: StoryFn = () => {
@@ -322,11 +322,11 @@ export const Changeable: StoryFn = () => {
  * into the canvas and none is clipped.
  */
 export const Placements: StoryFn = () => {
-  const quadrants: { direction: WindowFitmentDirection; label: string }[] = [
-    { direction: "top", label: "Top" },
-    { direction: "right", label: "Right" },
-    { direction: "left", label: "Left" },
-    { direction: "bottom", label: "Bottom" },
+  const quadrants: { side: WindowFitmentSide; label: string }[] = [
+    { side: "block-start", label: "Above" },
+    { side: "inline-end", label: "Inline end" },
+    { side: "inline-start", label: "Inline start" },
+    { side: "block-end", label: "Below" },
   ];
   return (
     <div
@@ -340,11 +340,11 @@ export const Placements: StoryFn = () => {
         blockSize: "min(72vh, 420px)",
       }}
     >
-      {quadrants.map(({ direction, label }) => (
+      {quadrants.map(({ side, label }) => (
         <Demo
-          key={direction}
-          Message={`Opens ${direction}`}
-          preferredDirections={[direction]}
+          key={side}
+          Message={`Opens ${label.toLowerCase()}`}
+          preferredDirections={[side]}
         >
           <Button {...primaryButtonProps}>{label}</Button>
         </Demo>

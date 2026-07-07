@@ -1,4 +1,5 @@
 import type React from "react";
+import { Icon } from "#lib/component/Icon/index.js";
 import type { ItemProps } from "./types.js";
 import "./styles.css";
 
@@ -43,11 +44,12 @@ const Item = ({ item, itemProps, onSelect }: ItemProps): React.ReactElement => {
         {icon ? <span className="icon">{icon}</span> : null}
         <span className="label">{label}</span>
         {slot ? <span className="slot">{slot}</span> : null}
-        {/* Submenu items show a trailing caret; a plain slot and a submenu caret
-            are mutually exclusive in the Figma spec. */}
+        {/* Submenu items show a trailing caret (Canonical chevron-right icon; a
+            plain slot and a submenu caret are mutually exclusive in the Figma
+            spec). It is mirrored to point left in RTL via CSS. */}
         {hasSubmenu ? (
           <span className="caret" aria-hidden="true">
-            ›
+            <Icon icon="chevron-right" />
           </span>
         ) : null}
       </>

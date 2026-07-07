@@ -2,8 +2,8 @@ import type { HTMLAttributes, ReactNode } from "react";
 import type {
   MenuItem,
   UseContextualMenuProps,
-  WindowFitmentDirection,
   WindowFitmentPlacement,
+  WindowFitmentSide,
 } from "#lib/hooks/index.js";
 
 export type { MenuItem } from "#lib/hooks/index.js";
@@ -28,10 +28,10 @@ export interface ContextualMenuProps
   label?: string;
   /**
    * Preferred placement of the menu relative to its trigger. Each entry is a
-   * bare direction (centred) or a `{ direction, align }` pair. Defaults to the
-   * reading-direction menu placement (leading-edge, top-aligned, with flips).
+   * bare logical side (centred) or a `{ side, align }` pair; `inline-*` mirrors
+   * in RTL. Defaults to the leading-edge, top-aligned placement (with flips).
    */
-  preferredDirections?: (WindowFitmentDirection | WindowFitmentPlacement)[];
+  preferredDirections?: (WindowFitmentSide | WindowFitmentPlacement)[];
   /** Called with an item's key/url when it is activated. */
   onSelect?: (item: MenuItem) => void;
   /** Controlled open state. */

@@ -91,10 +91,10 @@ describe("useContextualMenu", () => {
 
   it("passes positioning props through to useWindowFitment", () => {
     renderHook(() =>
-      useContextualMenu({ root: menu, preferredDirections: ["bottom"] }),
+      useContextualMenu({ root: menu, preferredDirections: ["block-end"] }),
     );
     expect(vi.mocked(useWindowFitment)).toHaveBeenCalledWith(
-      expect.objectContaining({ preferredDirections: ["bottom"] }),
+      expect.objectContaining({ preferredDirections: ["block-end"] }),
     );
   });
 
