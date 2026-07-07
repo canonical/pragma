@@ -10,10 +10,10 @@ import { getItemId } from "./getItemId.js";
 export function prepareIndex<T extends Item = Item>(root: _Item<T>): _Index<T> {
   const index: _Index<T> = {};
   const stack: _Item<T>[] = [root];
-  while (stack.length > 0) {
-    const item = stack.pop();
-    // The loop guard ensures the stack is non-empty, so pop() returns an item.
-    if (!item) throw new Error("prepareIndex: expected an item on the stack");
+  // Drain the stack by popping into the loop condition: `item` narrows to a
+  // defined `_Item<T>` inside the loop with no non-null assertion, and the
+  // only exit is the empty-stack `undefined` — no unreachable guard branch.
+  for (let item = stack.pop(); item !== undefined; item = stack.pop()) {
     const id = getItemId(item);
     index[id] = item;
     if (item.items) {
