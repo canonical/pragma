@@ -10,7 +10,8 @@
       "development": "./src/lib/*",
       "types": "./dist/types/lib/*",
       "default": "./dist/esm/lib/*"
-    }
+    },
+    "#storybook/*": "./src/storybook/*"
   },
   "files": [
     "dist"

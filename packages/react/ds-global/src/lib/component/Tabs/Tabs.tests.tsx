@@ -1,85 +1,88 @@
 import { render, screen } from "@testing-library/react";
+import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
 import type { LinkComponentProps } from "../../types/link.js";
 import Tabs from "./Tabs.js";
+import type { TabItem } from "./types.js";
+
+const root: TabItem = {
+  key: "root",
+  items: [
+    { url: "/overview", label: "Overview" },
+    { url: "/specs", label: "Specs" },
+    { url: "/reviews", label: "Reviews" },
+  ],
+};
 
 describe("Tabs", () => {
   it("renders a navigation landmark with its accessible name", () => {
-    render(
-      <Tabs aria-label="Sections">
-        <Tabs.Tab href="#overview">Overview</Tabs.Tab>
-      </Tabs>,
-    );
+    render(<Tabs aria-label="Sections" navigationRoot={root} />);
     expect(
       screen.getByRole("navigation", { name: "Sections" }),
     ).toBeInTheDocument();
   });
 
-  it("renders each tab as a list item", () => {
-    render(
-      <Tabs aria-label="Sections">
-        <Tabs.Tab href="#a">A</Tabs.Tab>
-        <Tabs.Tab href="#b">B</Tabs.Tab>
-      </Tabs>,
+  it("renders one tab per direct child of the navigation root", () => {
+    render(<Tabs aria-label="Sections" navigationRoot={root} />);
+    expect(screen.getAllByRole("listitem")).toHaveLength(3);
+    expect(screen.getByRole("link", { name: "Overview" })).toHaveAttribute(
+      "href",
+      "/overview",
     );
-    expect(screen.getAllByRole("listitem")).toHaveLength(2);
   });
 
-  it("renders a navigable tab as a link with its href", () => {
+  it("does not render the root node itself, only its children", () => {
     render(
-      <Tabs aria-label="Sections">
-        <Tabs.Tab href="/specs">Specs</Tabs.Tab>
-      </Tabs>,
+      <Tabs
+        aria-label="Sections"
+        navigationRoot={{ label: "Root label", items: root.items }}
+      />,
+    );
+    expect(screen.queryByText("Root label")).not.toBeInTheDocument();
+  });
+
+  it("marks the tab matching currentUrl as active", () => {
+    render(
+      <Tabs aria-label="Sections" navigationRoot={root} currentUrl="/specs" />,
     );
     expect(screen.getByRole("link", { name: "Specs" })).toHaveAttribute(
-      "href",
-      "/specs",
-    );
-  });
-
-  it("marks the active tab with aria-current=page", () => {
-    render(
-      <Tabs aria-label="Sections">
-        <Tabs.Tab href="#a" active>
-          A
-        </Tabs.Tab>
-        <Tabs.Tab href="#b">B</Tabs.Tab>
-      </Tabs>,
-    );
-    expect(screen.getByRole("link", { name: "A" })).toHaveAttribute(
       "aria-current",
       "page",
     );
-    expect(screen.getByRole("link", { name: "B" })).not.toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Overview" })).not.toHaveAttribute(
       "aria-current",
     );
   });
 
-  it("renders a tab without an href as inert text, not a link", () => {
+  it("renders an item without a url as inert text, not a link", () => {
     render(
-      <Tabs aria-label="Sections">
-        <Tabs.Tab>Disabled section</Tabs.Tab>
-      </Tabs>,
+      <Tabs
+        aria-label="Sections"
+        navigationRoot={{ items: [{ key: "soon", label: "Coming soon" }] }}
+      />,
     );
     expect(screen.queryByRole("link")).not.toBeInTheDocument();
-    expect(screen.getByText("Disabled section").tagName).toBe("SPAN");
+    expect(screen.getByText("Coming soon").tagName).toBe("SPAN");
   });
 
-  it("renders a navigable tab through a custom LinkComponent", () => {
-    const CustomLink = vi.fn(({ href, children }: LinkComponentProps) => (
-      <a href={href} data-custom>
-        {children}
-      </a>
-    ));
-    render(
-      <Tabs aria-label="Sections">
-        <Tabs.Tab href="/a" LinkComponent={CustomLink}>
-          A
-        </Tabs.Tab>
-      </Tabs>,
+  it("renders navigable tabs through a custom LinkComponent", () => {
+    const CustomLink = vi.fn(
+      ({ href, children }: LinkComponentProps): ReactNode => (
+        <a href={href} data-custom>
+          {children}
+        </a>
+      ),
     );
-    const link = screen.getByRole("link", { name: "A" });
-    expect(link).toHaveAttribute("data-custom");
+    render(
+      <Tabs
+        aria-label="Sections"
+        navigationRoot={root}
+        LinkComponent={CustomLink}
+      />,
+    );
+    expect(screen.getByRole("link", { name: "Overview" })).toHaveAttribute(
+      "data-custom",
+    );
     expect(CustomLink).toHaveBeenCalled();
   });
 
@@ -87,15 +90,22 @@ describe("Tabs", () => {
     render(
       <Tabs
         aria-label="Sections"
+        navigationRoot={root}
         className="custom-nav"
         listClassName="custom-list"
-      >
-        <Tabs.Tab href="#a">A</Tabs.Tab>
-      </Tabs>,
+      />,
     );
     const nav = screen.getByRole("navigation", { name: "Sections" });
     expect(nav.className).toContain("ds tabs");
     expect(nav.className).toContain("custom-nav");
     expect(nav.querySelector(".tabs-list")?.className).toContain("custom-list");
+  });
+
+  it("renders an empty strip when the root has no children", () => {
+    render(<Tabs aria-label="Sections" navigationRoot={{ key: "empty" }} />);
+    expect(
+      screen.getByRole("navigation", { name: "Sections" }),
+    ).toBeInTheDocument();
+    expect(screen.queryAllByRole("listitem")).toHaveLength(0);
   });
 });

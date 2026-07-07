@@ -1,51 +1,46 @@
-import { createHashRouter, route } from "@canonical/router-core";
-import { RouterProvider, useRoute } from "@canonical/router-react";
+import { useRoute } from "@canonical/router-react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import type { ReactNode } from "react";
-import type { LinkComponentProps } from "../../types/link.js";
-import Tabs from "./Tabs.js";
+import {
+  machineTabsRoot,
+  productTabsRoot,
+  productTabsWithInertRoot,
+  routerTabsRoot,
+} from "#storybook/tabs/fixtures.js";
+import { HashLink, withHashRouter } from "#storybook/tabs/story-utils.js";
+import Component from "./Tabs.js";
 
-const meta: Meta<typeof Tabs> = {
+const meta = {
   title: "components/Tabs",
-  component: Tabs,
+  component: Component,
   tags: ["autodocs"],
   args: {
     "aria-label": "Sections",
   },
-};
+} satisfies Meta<typeof Component>;
 
 export default meta;
-type Story = StoryObj<typeof Tabs>;
+type Story = StoryObj<typeof Component>;
 
 /**
- * Default: plain `<a>` links. Each tab points at a URL; the consumer marks the
- * active one.
+ * Default: tabs render as plain `<a>` links (no router). The fixture urls are
+ * hash-relative (`#/overview`), so activating a tab stays on the page. The tab
+ * matching `currentUrl` is marked active.
  */
 export const Default: Story = {
-  render: (args) => (
-    <Tabs {...args}>
-      <Tabs.Tab href="/overview" active>
-        Overview
-      </Tabs.Tab>
-      <Tabs.Tab href="/specifications">Specifications</Tabs.Tab>
-      <Tabs.Tab href="/reviews">Reviews</Tabs.Tab>
-    </Tabs>
-  ),
+  args: {
+    navigationRoot: productTabsRoot,
+    currentUrl: "#/overview",
+  },
 };
 
 /**
- * A tab without an `href` renders as inert text rather than a link.
+ * A tab whose item has no `url` renders as inert, muted text rather than a link.
  */
 export const WithInertTab: Story = {
-  render: (args) => (
-    <Tabs {...args}>
-      <Tabs.Tab href="/overview" active>
-        Overview
-      </Tabs.Tab>
-      <Tabs.Tab href="/specifications">Specifications</Tabs.Tab>
-      <Tabs.Tab>Coming soon</Tabs.Tab>
-    </Tabs>
-  ),
+  args: {
+    navigationRoot: productTabsWithInertRoot,
+    currentUrl: "#/overview",
+  },
 };
 
 /**
@@ -53,6 +48,10 @@ export const WithInertTab: Story = {
  * horizontally.
  */
 export const Overflow: Story = {
+  args: {
+    navigationRoot: machineTabsRoot,
+    currentUrl: "#/overview",
+  },
   decorators: [
     (Story) => (
       <div style={{ maxWidth: "20rem" }}>
@@ -60,75 +59,27 @@ export const Overflow: Story = {
       </div>
     ),
   ],
-  render: (args) => (
-    <Tabs {...args}>
-      <Tabs.Tab href="/overview" active>
-        Overview
-      </Tabs.Tab>
-      <Tabs.Tab href="/specifications">Specifications</Tabs.Tab>
-      <Tabs.Tab href="/networking">Networking</Tabs.Tab>
-      <Tabs.Tab href="/storage">Storage</Tabs.Tab>
-      <Tabs.Tab href="/reviews">Reviews</Tabs.Tab>
-    </Tabs>
-  ),
 };
 
 /**
- * Router integration via `LinkComponent`.
+ * Router integration via a custom `LinkComponent`.
  *
  * Tabs is router-agnostic — it only knows `LinkComponentProps`. This story
- * bridges its tabs to a lightweight **hash router** (`createHashRouter` reads
- * `location.hash`, so an href into the fragment navigates client-side with no
- * server). The active tab is derived from the live location, so selecting a tab
- * updates the URL and re-marks the active one — no server round trip.
+ * injects a `HashLink` adapter and derives `currentUrl` from the live route
+ * (`useRoute()`), so tabs navigate client-side and the active tab follows
+ * navigation. This is the pattern for wiring Tabs to a real router (e.g.
+ * `@canonical/router-react`, Next.js, React Router). The other stories use the
+ * default `<a>` and need no router.
  */
-const routerRoutes = {
-  overview: route({ url: "/overview", content: () => null }),
-  specifications: route({ url: "/specifications", content: () => null }),
-  reviews: route({ url: "/reviews", content: () => null }),
-} as const;
-
-/** Bridges a raw-URL tab to the hash router: an href into the fragment. */
-const HashLink = ({ href, ...props }: LinkComponentProps): ReactNode => (
-  <a href={href ? `#${href}` : undefined} {...props} />
-);
-
-const RouterTabs = ({ "aria-label": ariaLabel }: { "aria-label": string }) => {
-  const { pathname } = useRoute();
-  return (
-    <Tabs aria-label={ariaLabel}>
-      <Tabs.Tab
-        href="/overview"
-        active={pathname === "/overview"}
-        LinkComponent={HashLink}
-      >
-        Overview
-      </Tabs.Tab>
-      <Tabs.Tab
-        href="/specifications"
-        active={pathname === "/specifications"}
-        LinkComponent={HashLink}
-      >
-        Specifications
-      </Tabs.Tab>
-      <Tabs.Tab
-        href="/reviews"
-        active={pathname === "/reviews"}
-        LinkComponent={HashLink}
-      >
-        Reviews
-      </Tabs.Tab>
-    </Tabs>
-  );
-};
-
-export const WithRouter: Story = {
+export const WithRouterLink: Story = {
+  args: {
+    navigationRoot: routerTabsRoot,
+  },
+  decorators: [withHashRouter],
   render: (args) => {
-    const router = createHashRouter(routerRoutes);
+    const { pathname } = useRoute();
     return (
-      <RouterProvider router={router}>
-        <RouterTabs aria-label={args["aria-label"]} />
-      </RouterProvider>
+      <Component {...args} currentUrl={pathname} LinkComponent={HashLink} />
     );
   },
 };

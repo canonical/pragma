@@ -1,14 +1,12 @@
 import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import Tab from "./Tab.js";
+import Item from "./Item.js";
 
-describe("Tabs.Tab SSR", () => {
+describe("Tabs Item SSR", () => {
   it("renders to static markup without throwing", () => {
     const html = renderToString(
       <ul>
-        <Tab href="/a" active>
-          A
-        </Tab>
+        <Item item={{ url: "/a", label: "A" }} active LinkComponent="a" />
       </ul>,
     );
     expect(html).toContain("ds tabs-item");

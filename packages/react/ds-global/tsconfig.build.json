@@ -17,6 +17,7 @@
     "src/**/*.test.tsx",
     "src/**/*.tests.ts",
     "src/**/*.tests.tsx",
+    "src/storybook",
     "vite.config.ts",
     "vitest.setup.ts",
     "vitest.config.ts",
