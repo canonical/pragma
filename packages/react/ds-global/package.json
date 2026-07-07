@@ -11,7 +11,9 @@
       "types": "./dist/types/lib/*",
       "default": "./dist/esm/lib/*"
     },
-    "#storybook/*": "./src/storybook/*"
+    "#storybook/*": {
+      "development": "./src/storybook/*"
+    }
   },
   "files": [
     "dist"

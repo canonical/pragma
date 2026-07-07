@@ -33,9 +33,12 @@ const Tabs = ({
       {...props}
     >
       <ul className={["tabs-list", listClassName].filter(Boolean).join(" ")}>
-        {items.map((item) => (
+        {items.map((item, index) => (
           <Item
-            key={item.key ?? item.url ?? item.label}
+            // Prefer the item's own identity (key, then url — both meant to be
+            // unique); fall back to the positional index so keys stay unique
+            // even when two tabs share a label or a label changes.
+            key={item.key ?? item.url ?? index}
             item={item}
             active={item.url != null && item.url === currentUrl}
             LinkComponent={LinkComponent}
