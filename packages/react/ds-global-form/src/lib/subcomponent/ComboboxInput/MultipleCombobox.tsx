@@ -53,12 +53,13 @@ const MultipleCombobox = ({
     [convertValueToItem, options, valueKey],
   );
 
-  // Initialise selectedItems from the controlled value on mount / when it changes
+  // Keep selectedItems in sync with the controlled value — on mount and on every
+  // change. Must clear as well as populate: an empty/undefined `value` (e.g. after
+  // reset) has to drive `selectedItems` back to [], otherwise a later re-render
+  // that re-supplies the previous array would resurrect the cleared chips.
   useEffect(() => {
-    const values = value as string[] | undefined;
-    if (values && values.length > 0) {
-      setSelectedItems(convertValuesToItems(values));
-    }
+    const values = (value as string[] | undefined) ?? [];
+    setSelectedItems(values.length > 0 ? convertValuesToItems(values) : []);
   }, [value, convertValuesToItems]);
 
   // Downshift's useMultipleSelection hook for managing multiple selections
@@ -72,8 +73,11 @@ const MultipleCombobox = ({
     onSelectedItemsChange: ({ selectedItems: newSelectedItems }) => {
       if (newSelectedItems) {
         setSelectedItems(newSelectedItems);
+        // Emit [] (never undefined) when the list empties: with a react-hook-form
+        // Controller that has a defaultValue, onChange(undefined) reverts the field
+        // to that default, resurrecting the removed chips. [] clears cleanly.
         const newValue = newSelectedItems.map((item) => item[valueKey]);
-        onChange?.(newValue.length > 0 ? (newValue as string[]) : undefined);
+        onChange?.(newValue as string[]);
       }
     },
   });
@@ -115,11 +119,13 @@ const MultipleCombobox = ({
     itemToString: convertItemToString,
   });
 
-  // Reset function to clear selections and input
+  // Reset function to clear selections and input. Emits [] (not undefined) so a
+  // react-hook-form Controller with a defaultValue stores the cleared state
+  // rather than falling back to its default and repopulating the chips.
   const resetSelection = useCallback(() => {
     setSelectedItems([]);
     setInputValue("");
-    onChange?.(undefined);
+    onChange?.([]);
   }, [onChange, setInputValue]);
 
   return (
