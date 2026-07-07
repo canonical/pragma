@@ -20,9 +20,9 @@
 </Story>
 
 <Story
-  name="WithCustomClass"
+  name="WithCustomStyle"
   args={{
-    class: "custom-class",
+    class: "custom-style",
     id: "custom-id",
     style: "background-color: tomato;",
   }}
