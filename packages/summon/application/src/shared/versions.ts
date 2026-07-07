@@ -1,6 +1,6 @@
 import { createRequire } from "node:module";
-import type { Task } from "@canonical/task";
-import { exec, flatMap, info, map } from "@canonical/task";
+import type { ExecResult, Task } from "@canonical/task";
+import { exec, flatMap, info, map, pure, recover } from "@canonical/task";
 
 /**
  * Resolve the pragma workspace version range that a generated app should pin
@@ -70,10 +70,17 @@ const SEMVER = /^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/;
 export function resolvePragmaVersion(): Task<string> {
   const fallback = fallbackRange();
   return flatMap(
-    exec("npm", ["view", REPRESENTATIVE_PACKAGE, "version"], undefined, {
-      // Best-effort lookup — never let a registry miss undo prior file writes.
-      undo: null,
-    }),
+    // A missing `npm` binary makes the spawn reject (a task failure) rather
+    // than resolve with a nonzero exit code, so recover to a synthetic failed
+    // ExecResult. Both spawn errors and nonzero exits then flow through the
+    // single fallback branch below.
+    recover(
+      exec("npm", ["view", REPRESENTATIVE_PACKAGE, "version"], undefined, {
+        // Best-effort lookup — never let a registry miss undo prior file writes.
+        undo: null,
+      }),
+      () => pure<ExecResult>({ stdout: "", stderr: "", exitCode: 1 }),
+    ),
     (result) => {
       const latest = result.stdout.trim();
       if (result.exitCode === 0 && SEMVER.test(latest)) {

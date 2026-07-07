@@ -43,14 +43,20 @@ The server starts at http://localhost:6006. Each component package has its own S
 **Recommended:**
 
 - **MCP-capable environment** such as Claude Code, Cursor, or Windsurf. The repository includes an `.mcp.json` configuration that enables AI assistants to query the codebase semantically, access Nx workspace intelligence, and retrieve up-to-date documentation.
-- **Summon generators** for scaffolding new components, applications, and packages. The
-  `@canonical/summon` CLI bundles the component/application/domain/route/wrapper generators and
-  runs under plain Node (no Bun required):
+- **Summon generators** for scaffolding new applications, packages, and components. The
+  `@canonical/summon` CLI bundles the `application`, `domain`, `route`, and `wrapper`
+  generators and runs under plain Node (no Bun required):
   ```bash
   npm install -g @canonical/summon   # or: bun add -g @canonical/summon
   ```
-  Then use `summon component react src/lib/MyComponent` to scaffold components,
-  `summon application react my-app` to scaffold an app, or `summon --help` for all generators.
+  The component generators live in a separate package; install it into the same location to
+  add `summon component` (Summon discovers installed generator packages automatically):
+  ```bash
+  npm install -g @canonical/summon-component
+  ```
+  Then use `summon application react my-app` to scaffold an app,
+  `summon component react src/lib/MyComponent` to scaffold components, or `summon --help` for
+  all installed generators.
   (To iterate on the generators from this monorepo, run `bun packages/cli/summon/dist/src/bin.js`
   after `bun run build`, or `bun link` the built package.)
 

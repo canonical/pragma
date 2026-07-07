@@ -11,6 +11,7 @@ import {
   exists,
   flatMap,
   info,
+  pure,
   sequence_,
   warn,
   when,
@@ -59,7 +60,7 @@ const prompts: PromptDefinition[] = [
   {
     name: "runInstall",
     type: "confirm",
-    message: "Run bun install?",
+    message: "Install dependencies now?",
     default: true,
     group: "Application",
   },
@@ -144,13 +145,27 @@ Requires both --ssr and --router flags.`,
 
       // Detect an available package manager for both the (optional) install
       // step and the closing message, so the suggested commands reflect what's
-      // actually on the machine. Falls back to `bun` when none is detected.
+      // actually on the machine.
       const pm = pickPackageManager();
-      const runCmd = pm ?? "bun";
-      const didInstall = answers.runInstall && pm !== null;
-      const finalMessage = didInstall
-        ? `Application "${appPath}" created. Run \`cd ${appPath} && ${runCmd} run dev\` to start.`
-        : `Application "${appPath}" created. Run \`cd ${appPath} && ${runCmd} install && ${runCmd} run dev\` to start.`;
+      // Build the install task only when a package manager was actually found —
+      // this narrows `pm` to non-null, so the install command never invents a
+      // manager. `null` when we won't (or can't) install.
+      const installTask =
+        answers.runInstall && pm !== null
+          ? sequence_([
+              info(`Installing dependencies with ${pm}...`),
+              exec(pm, ["install"], appPath),
+            ])
+          : null;
+      // The closing command only names a package manager we actually found; if
+      // none was detected we don't invent one (previously this suggested `bun`
+      // even on a machine without bun), and instead point the user at the
+      // package-manager step.
+      const finalMessage = installTask
+        ? `Application "${appPath}" created. Run \`cd ${appPath} && ${pm} run dev\` to start.`
+        : pm
+          ? `Application "${appPath}" created. Run \`cd ${appPath} && ${pm} install && ${pm} run dev\` to start.`
+          : `Application "${appPath}" created. Install a package manager (bun, pnpm, npm, or yarn), then run \`cd ${appPath} && <pm> install && <pm> run dev\` to start.`;
 
       return sequence_([
         // Warn (don't block) if the destination already exists — scaffolding
@@ -296,16 +311,11 @@ Requires both --ssr and --router flags.`,
         copy("public/.gitkeep"),
         copy("public/robots.txt"),
 
-        // Install dependencies with whichever package manager is available,
-        // preferring bun. On a machine without any known manager, skip the
-        // install (don't hard-fail the scaffold) and tell the user what to run.
-        when(
-          didInstall,
-          sequence_([
-            info(`Installing dependencies with ${runCmd}...`),
-            exec(runCmd, ["install"], appPath),
-          ]),
-        ),
+        // Install dependencies with the detected package manager, or a no-op
+        // when none was found / the user declined. Built above where `pm` is
+        // narrowed to non-null, so the install command never invents a manager;
+        // the scaffold completes and the closing message says what to run.
+        installTask ?? pure(undefined),
 
         info(finalMessage),
       ]);
