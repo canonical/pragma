@@ -224,15 +224,23 @@ const useWindowFitment = ({
           popupRect,
         );
 
-        const absolutePosition = {
+        // The natural (unclamped) placement for this side.
+        const naturalPosition = {
           top: targetRect.top + relativePosition.top,
           left: targetRect.left + relativePosition.left,
         };
 
-        const autoFitOffset = { top: 0, left: 0 };
+        // Whether this side fits WITHOUT auto-fit clamping. This must be tested
+        // on the natural position — testing a clamped position would always
+        // report `fits: true`, so the loop would return the first direction and
+        // never flip to a side that actually has room.
+        const naturallyFits = fitsInWindow(naturalPosition, popupRect);
 
+        // Auto-fit produces a clamped variant (nudged back into bounds) used
+        // only as the fallback when no side fits naturally.
+        const absolutePosition = { ...naturalPosition };
+        const autoFitOffset = { top: 0, left: 0 };
         if (autoFit && bounds) {
-          // Adjust position if it overflows the bounds
           if (absolutePosition.top < bounds.top) {
             autoFitOffset.top = bounds.top - absolutePosition.top;
             absolutePosition.top = bounds.top;
@@ -252,20 +260,24 @@ const useWindowFitment = ({
           }
         }
 
-        const bestPositionForName: BestPosition = {
+        // A side that naturally fits wins immediately, at its exact position.
+        if (naturallyFits) {
+          return {
+            positionName: direction,
+            position: naturalPosition,
+            fits: true,
+            autoFitOffset: { top: 0, left: 0 },
+          };
+        }
+
+        // Otherwise remember the FIRST side's clamped position as the fallback,
+        // used only when no side fits naturally.
+        fallbackPosition ||= {
           positionName: direction,
           position: absolutePosition,
-          fits: fitsInWindow(absolutePosition, popupRect),
+          fits: false,
           autoFitOffset,
         };
-
-        // Save the calculated position as a fallback in case no other position fits.
-        fallbackPosition ||= bestPositionForName;
-
-        // If this position fits, use it.
-        if (bestPositionForName.fits) {
-          return bestPositionForName;
-        }
       }
 
       return fallbackPosition as BestPosition;
