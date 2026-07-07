@@ -30,6 +30,8 @@ export type { RadioInputProps } from "./RadioInput/index.js";
 export { RadioInput } from "./RadioInput/index.js";
 export type { RangeInputProps } from "./RangeInput/index.js";
 export { RangeInput } from "./RangeInput/index.js";
+export type { RatingInputProps, RatingScale } from "./RatingInput/index.js";
+export { RatingInput } from "./RatingInput/index.js";
 export type { SelectInputProps } from "./SelectInput/index.js";
 export { SelectInput } from "./SelectInput/index.js";
 export type { SwitchInputProps } from "./SwitchInput/index.js";

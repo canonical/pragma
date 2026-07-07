@@ -12,6 +12,7 @@ export * from "./NumberField/index.js";
 export * from "./PasswordField/index.js";
 export * from "./PhoneField/index.js";
 export * from "./RangeField/index.js";
+export * from "./RatingField/index.js";
 export * from "./RichChoicesField/index.js";
 export * from "./SelectField/index.js";
 export * from "./SwitchField/index.js";

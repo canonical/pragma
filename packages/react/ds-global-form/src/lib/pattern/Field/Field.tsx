@@ -12,6 +12,7 @@ import { NumberField } from "#lib/component/NumberField/index.js";
 import { PasswordField } from "#lib/component/PasswordField/index.js";
 import { PhoneField } from "#lib/component/PhoneField/index.js";
 import { RangeField } from "#lib/component/RangeField/index.js";
+import { RatingField } from "#lib/component/RatingField/index.js";
 import { RichChoicesField } from "#lib/component/RichChoicesField/index.js";
 import { SelectField } from "#lib/component/SelectField/index.js";
 import { SwitchField } from "#lib/component/SwitchField/index.js";
@@ -38,6 +39,8 @@ const Field = ({
       return <CheckboxField {...props} />;
     case "switch":
       return <SwitchField {...props} />;
+    case "rating":
+      return <RatingField {...props} />;
     case "range":
       return <RangeField {...props} />;
     case "select":
