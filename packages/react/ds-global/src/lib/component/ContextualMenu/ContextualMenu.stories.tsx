@@ -1,10 +1,35 @@
-import type { Meta, StoryObj } from "@storybook/react-vite";
+import type { Decorator, Meta, StoryObj } from "@storybook/react-vite";
 import Component from "./ContextualMenu.js";
 import type { MenuItem } from "./types.js";
+
+/**
+ * The menu is `position: fixed`, so it does not contribute to the story's flow
+ * height. Reserve a tall, centred stage — matching the Tooltip stories — so the
+ * open menu has room and the docs canvas is not cramped. The `.surface` class
+ * defines the `--surface-color-*` channels and the div paints itself with them
+ * (surfaces consume themselves), framing the menu on a real surface.
+ */
+const stage: Decorator = (Story) => (
+  <div
+    className="surface"
+    style={{
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      inlineSize: "min(88vw, 640px)",
+      minBlockSize: "440px",
+      background: "var(--surface-color-background)",
+      color: "var(--surface-color-text)",
+    }}
+  >
+    <Story />
+  </div>
+);
 
 const meta = {
   title: "_work_in_progress/component/ContextualMenu",
   component: Component,
+  decorators: [stage],
   tags: ["autodocs"],
   parameters: {
     // Centre the trigger in the story canvas so the (portalled) menu is framed.

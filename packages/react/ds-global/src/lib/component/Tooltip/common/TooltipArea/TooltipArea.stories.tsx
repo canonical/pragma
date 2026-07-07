@@ -1,19 +1,17 @@
 import type { Decorator, Meta, StoryFn, StoryObj } from "@storybook/react-vite";
 
-import { useRef, useState } from "react";
+import { createContext, useContext, useRef, useState } from "react";
 import { Button } from "#lib/component/Button/index.js";
 import { Icon } from "#lib/component/Icon/index.js";
 import type { WindowFitmentDirection } from "#lib/hooks/index.js";
 import Component from "./TooltipArea.js";
+import type { TooltipAreaProps } from "./types.js";
 
 /**
- * All story anchors use the same button style — a constructive tertiary — so the
+ * All story anchors use the same button style — a plain tertiary — so the
  * stories focus on tooltip behaviour, not button variety.
  */
-const anchorButtonProps = {
-  importance: "tertiary",
-  anticipation: "constructive",
-} as const;
+const anchorButtonProps = { importance: "tertiary" } as const;
 
 /**
  * The tooltip is `position: fixed`, so it does not contribute to the story's
@@ -22,8 +20,7 @@ const anchorButtonProps = {
  * meta-level decorator reserves a tall, centred stage AND makes it a real
  * surface: the `.surface` class defines the `--surface-color-*` channels and the
  * div paints itself with them (surfaces consume themselves), so the tooltip's
- * `.contrasted` message inverts against a genuine surface, as it would in an
- * app. Stories that bring their own large container simply centre inside it.
+ * `.contrasted` message inverts against a genuine surface, as it would in an app.
  */
 const stage: Decorator = (Story) => (
   <div
@@ -42,10 +39,38 @@ const stage: Decorator = (Story) => (
   </div>
 );
 
+/**
+ * Tooltips are `position: fixed` and portalled to the body, so on the long
+ * autodocs page (many previews stacked vertically) every open-by-default tooltip
+ * would pile up at the same viewport coordinates. `OpenInStoryContext` carries
+ * whether the current render is the isolated story view (open allowed) or the
+ * docs page (closed — hover to see). A decorator provides it from Storybook's
+ * `viewMode`; the `Demo` wrapper reads it for its `open` default.
+ */
+const OpenInStoryContext = createContext(true);
+const useOpenInStory = () => useContext(OpenInStoryContext);
+
+const openInStoryOnly: Decorator = (Story, context) => (
+  <OpenInStoryContext.Provider value={context.viewMode !== "docs"}>
+    <Story />
+  </OpenInStoryContext.Provider>
+);
+
+/**
+ * A TooltipArea whose `open` default follows the story/docs context: open in the
+ * isolated story view, closed on the docs page. An explicit `open` prop wins.
+ */
+const Demo = ({ open, ...props }: TooltipAreaProps) => {
+  const openInStory = useOpenInStory();
+  return <Component open={open ?? openInStory} {...props} />;
+};
+
 const meta = {
   title: "_work_in_progress/component/Tooltip/TooltipArea",
   component: Component,
-  decorators: [stage],
+  render: (args) => <Demo {...args} />,
+  // `openInStoryOnly` provides the docs/story flag; `stage` wraps the story.
+  decorators: [stage, openInStoryOnly],
   parameters: {
     layout: "centered",
   },
@@ -58,7 +83,6 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {
   args: {
     Message: "Hello world",
-    open: true,
     children: <Button {...anchorButtonProps}>Default</Button>,
   },
 };
@@ -73,8 +97,6 @@ export const WithIcon: Story = {
     icon: <Icon icon="information" />,
     Message: "The standard tooltip explains an icon or control.",
     preferredDirections: ["top"],
-    // Forced open so the tooltip (and its arrow) is visible without hovering.
-    open: true,
     children: <Button {...anchorButtonProps}>Icon tooltip</Button>,
   },
 };
@@ -89,7 +111,6 @@ export const Multiline: Story = {
     Message:
       "The standard tooltip explains an icon or control, or adds a short clarification that runs across several lines when the content is long.",
     preferredDirections: ["top"],
-    open: true,
     children: <Button {...anchorButtonProps}>Long tooltip</Button>,
   },
 };
@@ -100,24 +121,13 @@ export const Multiline: Story = {
  * is applied to the message element via `messageElementStyle`.
  */
 export const MaxWidth: StoryFn<{ maxWidth: number }> = ({ maxWidth }) => (
-  <div
-    style={{
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      inlineSize: "min(80vw, 640px)",
-      blockSize: "min(70vh, 400px)",
-    }}
+  <Demo
+    Message="The standard tooltip explains an icon or control, or adds a short clarification that wraps at the configured maximum width."
+    preferredDirections={["top"]}
+    messageElementStyle={{ maxWidth }}
   >
-    <Component
-      Message="The standard tooltip explains an icon or control, or adds a short clarification that wraps at the configured maximum width."
-      preferredDirections={["top"]}
-      open
-      messageElementStyle={{ maxWidth }}
-    >
-      <Button {...anchorButtonProps}>Max width: {maxWidth}px</Button>
-    </Component>
-  </div>
+    <Button {...anchorButtonProps}>Max width: {maxWidth}px</Button>
+  </Demo>
 );
 MaxWidth.args = { maxWidth: 284 };
 MaxWidth.argTypes = {
@@ -129,7 +139,7 @@ MaxWidth.argTypes = {
  * to open its tooltip to the bottom-right; the eight cells with room do exactly
  * that, but the bottom-right cell has no space bottom-right, so auto-fit flips
  * it to the opposite side. Same component, same props — only the available
- * space differs. The multiline message makes the flip obvious.
+ * space differs.
  */
 export const AutoFit: StoryFn = () => {
   const cells = Array.from({ length: 9 }, (_, i) => i);
@@ -146,19 +156,18 @@ export const AutoFit: StoryFn = () => {
       }}
     >
       {cells.map((i) => (
-        <Component
+        <Demo
           key={i}
           // Prefer bottom-right; auto-fit flips only where there is no room.
           preferredDirections={["right", "bottom"]}
           autoFit
-          open
           Message={
             "The standard tooltip explains an icon or control, or adds a short clarification that runs across several lines."
           }
           icon={<Icon icon="information" />}
         >
           <Button {...anchorButtonProps}>{i + 1}</Button>
-        </Component>
+        </Demo>
       ))}
     </div>
   );
@@ -180,8 +189,6 @@ export const AutoFitPlayground: StoryFn<{ x: number; y: number }> = ({
   const controlKey = `${x},${y}`;
   const lastControl = useRef(controlKey);
   if (lastControl.current !== controlKey) {
-    // Controls changed → adopt them (setState during render is legitimate for
-    // deriving state from props; React re-renders immediately without painting).
     lastControl.current = controlKey;
     setPos({ x, y });
   }
@@ -225,17 +232,23 @@ export const AutoFitPlayground: StoryFn<{ x: number; y: number }> = ({
           transform: "translate(-50%, -50%)",
         }}
       >
-        <Component
+        <Demo
           Message="I stay on screen and my arrow stays pinned to the anchor."
-          preferredDirections={["top"]}
+          // All four sides, so auto-fit can flip to whichever fits — prefer top,
+          // then bottom, then the sides — not just clamp a single direction.
+          preferredDirections={["top", "bottom", "right", "left"]}
           autoFit
-          open
         >
           <Button
             {...anchorButtonProps}
             // A move cursor signals the button is draggable; dragging updates
-            // the anchor position live.
-            style={{ cursor: "move" }}
+            // the anchor position live. A fixed width keeps the anchor from
+            // reflowing as it moves, so the tooltip tracks a stable target.
+            style={{
+              cursor: "move",
+              inlineSize: "9rem",
+              justifyContent: "center",
+            }}
             icon={<Icon icon="drag" />}
             onPointerDown={(e) => {
               setDragging(true);
@@ -244,7 +257,7 @@ export const AutoFitPlayground: StoryFn<{ x: number; y: number }> = ({
           >
             Move me
           </Button>
-        </Component>
+        </Demo>
       </div>
     </div>
   );
@@ -269,41 +282,28 @@ export const Changeable: StoryFn = () => {
   const preferredDirection = changeableOptions[index % changeableOptions.length];
 
   return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        inlineSize: "min(80vw, 640px)",
-        blockSize: "min(70vh, 400px)",
-      }}
+    <Component
+      Message={preferredDirection}
+      preferredDirections={[preferredDirection]}
     >
-      <Component
-        Message={preferredDirection}
-        preferredDirections={[preferredDirection]}
+      <Button
+        {...anchorButtonProps}
+        onClick={() => setIndex((prev) => prev + 1)}
       >
-        <Button
-          {...anchorButtonProps}
-          onClick={() => setIndex((prev) => prev + 1)}
-        >
-          Click to change direction
-        </Button>
-      </Component>
-    </div>
+        Click to change direction
+      </Button>
+    </Component>
   );
 };
 
 /**
  * The four placements at once: a 2×2 matrix of the same component, each button
- * with a manually-configured side (no auto-fit). Top-left points up, top-right
- * points right, bottom-left points left, bottom-right points down — so every
- * tooltip opens into the canvas and none is clipped.
+ * with a manually-configured side. Top-left points up, top-right points right,
+ * bottom-left points left, bottom-right points down — so every tooltip opens
+ * into the canvas and none is clipped.
  */
 export const Placements: StoryFn = () => {
-  const quadrants: {
-    direction: WindowFitmentDirection;
-    label: string;
-  }[] = [
+  const quadrants: { direction: WindowFitmentDirection; label: string }[] = [
     { direction: "top", label: "Top" },
     { direction: "right", label: "Right" },
     { direction: "left", label: "Left" },
@@ -322,15 +322,13 @@ export const Placements: StoryFn = () => {
       }}
     >
       {quadrants.map(({ direction, label }) => (
-        <Component
+        <Demo
           key={direction}
           Message={`Opens ${direction}`}
           preferredDirections={[direction]}
-          // All four open at once so the placements are visible without hover.
-          open
         >
           <Button {...anchorButtonProps}>{label}</Button>
-        </Component>
+        </Demo>
       ))}
     </div>
   );
