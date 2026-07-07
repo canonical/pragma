@@ -1,31 +1,63 @@
 /* RatingInput — a radio group of stars.
  *
- * DOM order is natural (star 1 first, left to right), so it matches the visual,
- * keyboard and screen-reader order. The fill is computed with `:has()` rather
- * than a reversed layout: a star is filled if it is checked, or if any star
- * after it is checked.
+ * There are always `count` visible stars, in natural DOM order (star 1 first,
+ * left to right), so the visual, keyboard and screen-reader order all agree.
+ * With `allowHalf` each star carries two overlaid radio targets (a left half and
+ * a right half); without it, one radio per star.
+ *
+ * The fill is masked. Each star renders an outline `starred-off` glyph; a solid
+ * `starred` glyph is layered over it (`.star::after`) and its width is clipped
+ * to 0%, 50% or 100% to show empty, half or full — so half-fill is one masked
+ * shape rather than a separate half-width star.
  */
 
 .ds.form-rating {
   display: inline-flex;
   gap: var(--dimension-025, 0.125rem);
 
-  /* Neutral (unselected) star colour and the filled colour. */
   --rating-color-empty: var(--color-text-muted, #b0b0b0);
   --rating-color-filled: var(--color-foreground-primary-warning, #f5a623);
   --rating-size: var(--rating-size-default, 1.5rem);
 }
 
 .ds.form-rating > .star {
-  display: inline-flex;
+  position: relative;
+  display: inline-block;
+  width: var(--rating-size);
+  height: var(--rating-size);
   cursor: pointer;
-  font-size: var(--rating-size);
-  line-height: 1;
-  color: var(--rating-color-empty);
 }
 
-/* The radio itself is visually hidden but stays in the a11y tree and keyboard
-   focus order (so arrow-key selection and focus rings still work). */
+/* Outline star (empty base). */
+.ds.form-rating > .star > .star-glyph {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background-color: var(--rating-color-empty);
+  mask: url("/icons/starred-off.svg#starred-off") no-repeat center / contain;
+  -webkit-mask:
+    url("/icons/starred-off.svg#starred-off") no-repeat center / contain;
+}
+
+/* Solid star (fill overlay), clipped to a fill amount that defaults to 0. */
+.ds.form-rating > .star::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: var(--star-fill, 0%);
+  overflow: hidden;
+  background-color: var(--rating-color-filled);
+  mask: url("/icons/starred.svg#starred") no-repeat left center / auto 100%;
+  -webkit-mask:
+    url("/icons/starred.svg#starred") no-repeat left center / auto 100%;
+  /* The mask must stay the full star width so clipping the box reveals a left
+     slice of the star, not a squashed star. */
+  mask-size: var(--rating-size) 100%;
+  -webkit-mask-size: var(--rating-size) 100%;
+  pointer-events: none;
+}
+
+/* Radios are visually hidden but keep a11y semantics and keyboard focus. */
 .ds.form-rating .star-input {
   position: absolute;
   width: 1px;
@@ -38,27 +70,64 @@
   white-space: nowrap;
 }
 
-.ds.form-rating .star-glyph {
-  display: block;
+/* Click targets. Full mode: one target covering the star. Half mode: a left
+   half and a right half, each an absolutely-positioned 50%-wide hit area. */
+.ds.form-rating > .star > .star-target {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+.ds.form-rating.half > .star > .star-target.left {
+  right: 50%;
+}
+.ds.form-rating.half > .star > .star-target.right {
+  left: 50%;
 }
 
-/* Fill: a star is filled when it is checked, or when any *later* star is
-   checked (so every star up to the selected one is filled). Natural order —
-   no reversed layout needed. */
-.ds.form-rating > .star:has(> .star-input:checked),
-.ds.form-rating > .star:has(~ .star > .star-input:checked) {
-  color: var(--rating-color-filled);
+/* --- Fill amount -------------------------------------------------------------
+   A star is FULL when its full radio is checked, or when any later star has a
+   radio checked. It is HALF when its half radio is checked (and no later star
+   is). CSS custom property `--star-fill` drives the ::after width. */
+
+/* Full: this star's whole-number radio is checked. */
+.ds.form-rating
+> .star:has(
+  > .star-input[data-rating$="0"]:checked,
+  > .star-input:not([data-rating*="."]):checked
+) {
+  --star-fill: 100%;
 }
 
-/* Hover preview: hovering a star previews the fill up to it (that star and the
-   ones before it), overriding the checked state until the pointer leaves. */
+/* Full: any later star has a checked radio → this star is fully filled. */
+.ds.form-rating > .star:has(~ .star .star-input:checked) {
+  --star-fill: 100%;
+}
+
+/* Half: this star's half radio (a `.5` value) is checked. Comes after the full
+   rules so, when both apply to different stars, each resolves independently. */
+.ds.form-rating.half
+> .star:has(> .star-input[data-rating$=".5"]:checked):not(
+  :has(~ .star .star-input:checked)
+) {
+  --star-fill: 50%;
+}
+
+/* Hover preview overrides the checked fill until the pointer leaves. */
 @media (hover: hover) {
   .ds.form-rating:hover > .star {
-    color: var(--rating-color-empty);
+    --star-fill: 0%;
   }
+  /* Hovering a right (or full) target fills that star and every earlier one. */
   .ds.form-rating > .star:hover,
   .ds.form-rating > .star:has(~ .star:hover) {
-    color: var(--rating-color-filled);
+    --star-fill: 100%;
+  }
+  /* Hovering a left half-target fills earlier stars fully and this one to 50%. */
+  .ds.form-rating.half > .star:has(> .star-target.left:hover) {
+    --star-fill: 50%;
+  }
+  .ds.form-rating.half > .star:has(~ .star > .star-target.left:hover) {
+    --star-fill: 100%;
   }
 }
 
@@ -70,21 +139,13 @@
   border-radius: var(--dimension-radius-small, 2px);
 }
 
-/* Disabled: dim and drop the pointer affordance. */
+/* Disabled. */
 .ds.form-rating:has(.star-input:disabled) > .star {
   cursor: not-allowed;
   opacity: 0.5;
 }
 
-/* Half-star steps: the half step is a half-width label that clips the glyph to
-   its leading (left) half, so a half rating fills only the left portion of the
-   star. The following full step overlaps it to complete the star outline. */
-.ds.form-rating.half > .star.star-half {
-  width: 0.5em;
-  overflow: hidden;
-}
-
-/* Local visually-hidden helper for the per-star text label. */
+/* Local visually-hidden helper for the per-target text label. */
 .ds.form-rating .ds-visually-hidden {
   position: absolute;
   width: 1px;
