@@ -13,8 +13,16 @@ import type {
   RelativePosition,
   UseWindowFitmentProps,
   UseWindowFitmentResult,
+  WindowFitmentAlign,
   WindowFitmentDirection,
+  WindowFitmentPlacement,
 } from "./types.js";
+
+/** Coerce a bare direction or a placement into a resolved placement. */
+export const toPlacement = (
+  entry: WindowFitmentDirection | WindowFitmentPlacement,
+): WindowFitmentPlacement =>
+  typeof entry === "string" ? { direction: entry, align: "center" } : entry;
 
 /**
  * Compute the cross-axis displacement needed to keep an arrow pointing at the
@@ -119,6 +127,7 @@ const useWindowFitment = ({
   const calculateRelativePosition = useCallback(
     (
       direction: WindowFitmentDirection,
+      align: WindowFitmentAlign,
       targetRect: DOMRect,
       popupRect: DOMRect,
     ): RelativePosition => {
@@ -137,11 +146,31 @@ const useWindowFitment = ({
         The fake margin is already included in `targetRect` dimensions, as it is rendered hidden at least once before the popup is shown.
         In cases where `targetRect` is not included in the calculation, we add `distanceAsPixelsNumber` to account for the fake margin.
        */
+
+      // Cross-axis offset along a side's cross-axis:
+      //   start  → target's leading edge (offset 0)
+      //   end    → target's trailing edge
+      //   center → centred (legacy; identical to the pre-align formula)
+      const crossAxisOffset = (
+        targetExtent: number,
+        popupExtent: number,
+      ): number => {
+        switch (align) {
+          case "start":
+            return 0;
+          case "end":
+            return targetExtent - popupExtent;
+          default:
+            return (targetExtent - popupExtent) / 2;
+        }
+      };
+
       // horizontal offset
       switch (direction) {
         case "top":
         case "bottom":
-          left = (targetRect.width - popupRect.width) / 2;
+          // horizontal is the CROSS axis here → align applies
+          left = crossAxisOffset(targetRect.width, popupRect.width);
           break;
         case "right":
           left = targetRect.width;
@@ -161,7 +190,8 @@ const useWindowFitment = ({
           break;
         case "right":
         case "left":
-          top = (targetRect.height - popupRect.height) / 2;
+          // vertical is the CROSS axis here → align applies
+          top = crossAxisOffset(targetRect.height, popupRect.height);
           break;
       }
 
@@ -208,18 +238,19 @@ const useWindowFitment = ({
     (
       targetRect: DOMRect,
       popupRect: DOMRect,
-      preferredDirections: WindowFitmentDirection[],
+      placements: WindowFitmentPlacement[],
     ): BestPosition | undefined => {
       if (isServer) return;
       let fallbackPosition: BestPosition | undefined;
 
-      if (!preferredDirections.length) {
+      if (!placements.length) {
         throw new Error("Preferred directions must not be empty.");
       }
 
-      for (const direction of preferredDirections) {
+      for (const { direction, align } of placements) {
         const relativePosition = calculateRelativePosition(
           direction,
+          align,
           targetRect,
           popupRect,
         );
@@ -232,7 +263,7 @@ const useWindowFitment = ({
 
         // Whether this side fits WITHOUT auto-fit clamping. This must be tested
         // on the natural position — testing a clamped position would always
-        // report `fits: true`, so the loop would return the first direction and
+        // report `fits: true`, so the loop would return the first placement and
         // never flip to a side that actually has room.
         const naturallyFits = fitsInWindow(naturalPosition, popupRect);
 
@@ -264,16 +295,18 @@ const useWindowFitment = ({
         if (naturallyFits) {
           return {
             positionName: direction,
+            align,
             position: naturalPosition,
             fits: true,
             autoFitOffset: { top: 0, left: 0 },
           };
         }
 
-        // Otherwise remember the FIRST side's clamped position as the fallback,
-        // used only when no side fits naturally.
+        // Otherwise remember the FIRST placement's clamped position as the
+        // fallback, used only when no side fits naturally.
         fallbackPosition ||= {
           positionName: direction,
+          align,
           position: absolutePosition,
           fits: false,
           autoFitOffset,
@@ -283,6 +316,12 @@ const useWindowFitment = ({
       return fallbackPosition as BestPosition;
     },
     [calculateRelativePosition, fitsInWindow, isServer, autoFit, bounds],
+  );
+
+  /** Normalise the mixed direction/placement list once (bare → centred). */
+  const placements = useMemo(
+    () => preferredDirections.map(toPlacement),
+    [preferredDirections],
   );
 
   /** The best possible position for the popup. */
@@ -298,11 +337,11 @@ const useWindowFitment = ({
       return findBestPosition(
         targetRef.current.getBoundingClientRect(),
         popupRef.current.getBoundingClientRect(),
-        preferredDirections,
+        placements,
       );
   }, [
     findBestPosition,
-    preferredDirections,
+    placements,
     windowDimensions,
     popupSize,
     targetSize,

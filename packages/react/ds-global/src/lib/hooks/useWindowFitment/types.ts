@@ -8,11 +8,14 @@ export interface UseWindowFitmentProps {
    */
   autoFit?: boolean;
   /**
-   * An array of preferred directions for the popup.
-   * The hook will try to position the popup in these directions in order.
-   * Defaults to ['top', 'bottom', 'left', 'right'].
+   * Ordered preferred placements for the popup. Each entry is either a bare
+   * direction (which implies `align: "center"`, the historical centred
+   * behaviour) or a `{ direction, align }` pair. The hook tries them in order
+   * and takes the first that naturally fits; alignment-flipping is expressed by
+   * listing e.g. `{right, start}` then `{right, end}`.
+   * Defaults to centred ['top', 'bottom', 'left', 'right'].
    */
-  preferredDirections?: WindowFitmentDirection[];
+  preferredDirections?: (WindowFitmentDirection | WindowFitmentPlacement)[];
   /**
    * The distance, in pixels between the target and the popup.
    * @TODO support non-px units. E.G., someone should be able to request '1em`.
@@ -47,6 +50,22 @@ export interface UseWindowFitmentProps {
 }
 
 export type WindowFitmentDirection = "top" | "bottom" | "left" | "right";
+
+/**
+ * Where the popup sits along the cross-axis of its side (Floating-UI's alignment
+ * axis). For a vertical side (`left`/`right`) this is the vertical axis: `start`
+ * top-aligns the popup with the target (`popup.top = target.top`), `end`
+ * bottom-aligns it, `center` centres it. For a horizontal side (`top`/`bottom`)
+ * it is the horizontal axis: `start` left-aligns, `end` right-aligns, `center`
+ * centres. Defaults to `center` — the historical behaviour the tooltip relies on.
+ */
+export type WindowFitmentAlign = "start" | "center" | "end";
+
+/** A fully-resolved placement: which side, and where along that side. */
+export interface WindowFitmentPlacement {
+  direction: WindowFitmentDirection;
+  align: WindowFitmentAlign;
+}
 
 export interface UseWindowFitmentResult {
   /**
@@ -99,7 +118,14 @@ export interface ArrowOffset {
 
 export interface BestPosition {
   position: RelativePosition;
+  /**
+   * The SIDE the popup was placed on — always one of the four base directions.
+   * Keys the arrow CSS, `computeArrowOffset`, and `fakeMargin`. Alignment never
+   * appears here (see `align`), so those consumers stay corner-free.
+   */
   positionName: WindowFitmentDirection;
+  /** The alignment that produced this position. `center` for legacy callers. */
+  align: WindowFitmentAlign;
   fits: boolean;
   autoFitOffset: RelativePosition;
 }

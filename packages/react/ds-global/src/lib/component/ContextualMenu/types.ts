@@ -3,6 +3,7 @@ import type {
   MenuItem,
   UseContextualMenuProps,
   WindowFitmentDirection,
+  WindowFitmentPlacement,
 } from "#lib/hooks/index.js";
 
 export type { MenuItem } from "#lib/hooks/index.js";
@@ -25,8 +26,12 @@ export interface ContextualMenuProps
   groups: MenuItem[];
   /** Accessible name for the menu. Falls back to labelling by the trigger. */
   label?: string;
-  /** Preferred placement of the menu relative to its trigger. */
-  preferredDirections?: WindowFitmentDirection[];
+  /**
+   * Preferred placement of the menu relative to its trigger. Each entry is a
+   * bare direction (centred) or a `{ direction, align }` pair. Defaults to the
+   * reading-direction menu placement (leading-edge, top-aligned, with flips).
+   */
+  preferredDirections?: (WindowFitmentDirection | WindowFitmentPlacement)[];
   /** Called with an item's key/url when it is activated. */
   onSelect?: (item: MenuItem) => void;
   /** Controlled open state. */

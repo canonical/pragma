@@ -2,7 +2,7 @@ import { getItemId } from "@canonical/utils";
 import type React from "react";
 import { createPortal } from "react-dom";
 import {
-  getReadingDirectionPlacement,
+  getReadingDirectionMenuPlacement,
   readDocumentDirection,
   useContextualMenu,
 } from "#lib/hooks/index.js";
@@ -42,9 +42,11 @@ const ContextualMenu = ({
     root: { key: "contextual-menu-root", items: groups },
     isOpen: open,
     // Auto-fit by default, opening toward the reading direction first.
+    // Open to the trigger's leading edge, top-aligned (right-start LTR /
+    // left-start RTL), flipping side/alignment as space runs out.
     preferredDirections:
       preferredDirections ??
-      getReadingDirectionPlacement(readDocumentDirection()),
+      getReadingDirectionMenuPlacement(readDocumentDirection()),
     distance,
     gutter,
     maxWidth,

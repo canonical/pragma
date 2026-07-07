@@ -175,10 +175,13 @@ export const AutoFit: StoryFn = () => {
         // grid isn't a wall of open tooltips and each can be inspected on hover.
         <Component
           key={i}
-          preferredDirections={["right", "bottom"]}
+          // Prefer right, then bottom, but allow flipping to the opposite side
+          // (left/top) so a cell with no room on the right actually flips rather
+          // than clamping against the edge.
+          preferredDirections={["right", "bottom", "left", "top"]}
           autoFit
           Message={
-            "The standard tooltip explains an icon or control, or adds a short clarification that runs across several lines."
+            "The standard tooltip explains an icon or control, or adds a longer clarification that runs across several lines and is wide enough that a cell near the right edge — like the ninth — has no room on its preferred side and flips to the opposite one."
           }
           icon={<Icon icon="information" />}
         >
@@ -257,11 +260,11 @@ export const AutoFitPlayground: StoryFn<{ x: number; y: number }> = ({
         >
           <Button
             {...anchorButtonProps}
-            // A move cursor signals the button is draggable; dragging updates
-            // the anchor position live. A fixed width keeps the anchor from
-            // reflowing as it moves, so the tooltip tracks a stable target.
+            // A grab cursor signals the button is draggable (grabbing while it is
+            // being dragged); dragging updates the anchor position live. A fixed
+            // width keeps the anchor from reflowing as it moves.
             style={{
-              cursor: "move",
+              cursor: dragging ? "grabbing" : "grab",
               inlineSize: "9rem",
               justifyContent: "center",
             }}
