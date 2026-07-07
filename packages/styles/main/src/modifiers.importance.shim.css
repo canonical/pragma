@@ -49,9 +49,14 @@
     --modifier-color-text-disabled: var(
       --color-text-onForegroundPrimary-disabled
     );
-    --modifier-color-icon: var(--color-icon-onForegroundPrimary);
+    /* The `--color-icon-onForegroundPrimary[-disabled]` tokens are broken
+       upstream (they reference a non-existent `on-foreground-primary` token);
+       use the working camelCase on-fill text tokens — the on-fill icon and
+       text share the same contrast colour. Remove once the icon tokens are
+       fixed upstream. */
+    --modifier-color-icon: var(--color-text-onForegroundPrimary);
     --modifier-color-icon-disabled: var(
-      --color-icon-onForegroundPrimary-disabled
+      --color-text-onForegroundPrimary-disabled
     );
   }
 
