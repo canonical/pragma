@@ -47,10 +47,33 @@ export const DisabledChecked: Story = {
   },
 };
 
+/**
+ * With only `label`, it is used as the inline label beside the toggle — the
+ * shape a uniform field map produces. No heading is rendered.
+ */
+export const InlineLabelOnly: Story = {
+  args: { name: "notifications_inline", label: "Enable email notifications" },
+};
+
+/**
+ * Providing both `label` and `controlLabel` renders the full toggle layout: the
+ * `label` becomes a heading above, and `controlLabel` is the inline label
+ * beside the toggle (which carries the `htmlFor` binding).
+ */
+export const WithHeading: Story = {
+  args: {
+    name: "notifications_heading",
+    label: "Notifications",
+    controlLabel: "Email updates",
+  },
+};
+
+/** Heading, description, then the toggle with its inline label. */
 export const WithDescription: Story = {
   args: {
     name: "notifications_described",
-    label: "Email notifications",
+    label: "Notifications",
+    controlLabel: "Email updates",
     description: "Send me product updates and security alerts.",
   },
 };

@@ -1,0 +1,28 @@
+/* Toggle field layout: an optional heading and a description stacked above a
+ * control row where the input sits inline with its label. */
+.ds.field.field-toggle {
+  display: flex;
+  flex-direction: column;
+  row-gap: var(--form-group-gap);
+
+  /* The heading is a mock label (a <legend>): reset the fieldset default so it
+     flows like the other block children. */
+  & > .field-toggle-heading {
+    padding: 0;
+  }
+
+  /* Control row: input then inline label, aligned on the text baseline. */
+  & > .field-toggle-control {
+    display: flex;
+    flex-direction: row;
+    align-items: baseline;
+    column-gap: var(--form-field-inline-gap);
+
+    /* The label takes the remaining width so long labels wrap beside the
+       control rather than pushing it. */
+    & > .ds.field-label {
+      flex: 1;
+      min-width: 0;
+    }
+  }
+}

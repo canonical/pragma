@@ -19,16 +19,16 @@
   /* Align to the field edge like the label, not the input's inner padding. */
   margin-inline: var(--form-label-padding-inline, 0);
 
-  /* Track: a 2:1 pill. */
+  /* Track: a 2:1 pill. No border, so the width/height are the exact track box
+     and the absolutely-positioned knob is measured against the same box (a
+     border under `box-sizing: border-box` would shrink the padding box the knob
+     is anchored to, throwing off the inset and slide). */
   width: var(--switch-track-width);
   height: var(--switch-track-height);
-  border: var(--dimension-stroke-thickness-medium) solid transparent;
   border-radius: var(--dimension-radius-full);
   background: var(--color-foreground-switch-unselected);
   cursor: pointer;
-  transition:
-    background-color 150ms ease,
-    border-color 150ms ease;
+  transition: background-color 150ms ease;
 
   /* Knob: a circle inset from the track edges, sliding on the inline axis. */
   &::before {
@@ -70,7 +70,6 @@
 
   &:focus-visible {
     outline: none;
-    border-color: var(--color-focusRing);
     box-shadow: 0 0 0 1px var(--color-focusRing);
   }
 

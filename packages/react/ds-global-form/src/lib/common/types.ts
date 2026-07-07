@@ -35,6 +35,12 @@ export type WrapperProps<ComponentProps> = BaseWrapperProps<ComponentProps> & {
   /* The name of input labelled */
   label?: string;
 
+  /* Toggle fields (checkbox, switch) only: the inline label rendered beside the
+   * control, which carries the real `htmlFor` binding. When omitted it falls
+   * back to `label`; when both are set, `label` becomes the heading above and
+   * `controlLabel` the inline control label. */
+  controlLabel?: string;
+
   /* Is the field optional */
   isOptional?: boolean;
 
