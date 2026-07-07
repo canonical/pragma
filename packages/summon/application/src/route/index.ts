@@ -16,7 +16,7 @@ import { toCamelCase, toPascalCase, toTitleCase } from "@canonical/utils";
 import { normalizeCommandPath } from "../shared/casing.js";
 import { insertRoute, removeRoute } from "./insertRoute.js";
 
-interface RouteAnswers {
+export interface RouteAnswers {
   readonly routePath: string;
 }
 

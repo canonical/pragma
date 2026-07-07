@@ -10,6 +10,7 @@
 
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
+import { fileURLToPath } from "node:url";
 import chalk from "chalk";
 import type { GeneratorDefinition } from "../types/index.js";
 import { generatorCache } from "./generatorCache.js";
@@ -60,7 +61,6 @@ const buildGeneratorTree = async (
     for (const entry of entries) {
       if (entry.isDirectory()) {
         const childDir = path.join(dir, entry.name);
-        const indexPath = path.join(childDir, "index.ts");
 
         const childNode: GeneratorNode = {
           name: entry.name,
@@ -69,12 +69,18 @@ const buildGeneratorTree = async (
           origin,
         };
 
-        // Check if this directory has an index.ts (is a runnable generator)
-        try {
-          await fs.access(indexPath);
-          childNode.indexPath = indexPath;
-        } catch {
-          // No index.ts, might still have children
+        // Check if this directory has a generator entry (is runnable). Prefer a
+        // compiled `index.js` (published/built output, runs under plain Node)
+        // and fall back to `index.ts` (running from source under bun in-repo).
+        for (const indexName of ["index.js", "index.ts"]) {
+          const indexPath = path.join(childDir, indexName);
+          try {
+            await fs.access(indexPath);
+            childNode.indexPath = indexPath;
+            break;
+          } catch {
+            // Try the next candidate.
+          }
         }
 
         // Recursively discover children
@@ -192,9 +198,22 @@ const processPackage = async (
       }
     }
   } catch (err) {
+    const message = (err as Error).message;
+    // A `summon-*` package that still ships raw TypeScript (rather than compiled
+    // `dist`) cannot be imported under plain Node — Node refuses to strip types
+    // for files under node_modules. That is the package's problem to fix, not
+    // something the end user can act on, so keep it quiet unless SUMMON_DEBUG is
+    // set. Genuine load errors still surface loudly.
+    const isUnstrippableTs =
+      message.includes("Stripping types") ||
+      message.includes("Unknown file extension") ||
+      message.includes("ERR_UNKNOWN_FILE_EXTENSION");
+    if (isUnstrippableTs && !process.env.SUMMON_DEBUG) {
+      return;
+    }
     console.error(
       chalk.yellow(`Warning: Could not load generators from '${pkgName}':`),
-      (err as Error).message,
+      message,
     );
   }
 };
@@ -443,8 +462,11 @@ export default async function discoverGeneratorTree(
 
   // Normal discovery mode (order matters: later sources override earlier)
 
-  // 1. Built-in generators (lowest priority)
-  const defaultBuiltinDir = path.join(__dirname, "..", "generators");
+  // 1. Built-in generators (lowest priority).
+  // Derive the module dir from import.meta.url — `__dirname` is a CommonJS
+  // global that is absent in ESM under Node (bun polyfills it, Node does not).
+  const moduleDir = path.dirname(fileURLToPath(import.meta.url));
+  const defaultBuiltinDir = path.join(moduleDir, "..", "generators");
   await buildGeneratorTree(builtinDir ?? defaultBuiltinDir, root, "builtin");
 
   // 2-3. Global packages and generators

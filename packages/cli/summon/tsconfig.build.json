@@ -1,0 +1,20 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    // Root spans both `src/` (CLI code) and `generators/` (built-in generator
+    // modules that are dynamically imported at runtime), so both land under
+    // dist/ preserving their relative layout: dist/src/bin.js and
+    // dist/generators/<name>/index.js. bin.js resolves the generators dir via
+    // `__dirname/../generators` → dist/generators.
+    "rootDir": ".",
+    "outDir": "dist",
+    "declaration": false,
+    "sourceMap": true
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx", "generators/**/*.ts"],
+  "exclude": [
+    "src/**/*.test.ts",
+    "src/**/*.test.tsx",
+    "generators/**/templates/**"
+  ]
+}

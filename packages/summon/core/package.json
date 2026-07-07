@@ -3,22 +3,22 @@
   "description": "Code generation framework: generator definitions, templates, stamps, discovery. Built on @canonical/task.",
   "version": "0.29.0",
   "type": "module",
-  "module": "src/index.ts",
-  "types": "src/index.ts",
+  "module": "dist/esm/index.js",
+  "types": "dist/types/index.d.ts",
   "exports": {
     ".": {
-      "types": "./src/index.ts",
-      "import": "./src/index.ts"
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/esm/index.js"
     }
   },
   "imports": {
-    "#types": "./src/types/index.ts",
-    "#stamp": "./src/stamp/index.ts",
-    "#template": "./src/template/index.ts",
-    "#discovery": "./src/discovery/index.ts"
+    "#types": "./dist/esm/types/index.js",
+    "#stamp": "./dist/esm/stamp/index.js",
+    "#template": "./dist/esm/template/index.js",
+    "#discovery": "./dist/esm/discovery/index.js"
   },
   "files": [
-    "src"
+    "dist"
   ],
   "author": {
     "email": "webteam@canonical.com",
@@ -37,14 +37,14 @@
     "access": "public"
   },
   "scripts": {
-    "build": "echo 'No build needed - runs directly from TypeScript'",
+    "build": "tsc -p tsconfig.build.json",
     "build:all": "bun run build",
     "check": "bun run check:biome && bun run check:ts && bun run check:webarchitect",
     "check:fix": "bun run check:biome:fix && bun run check:ts",
     "check:biome": "biome check",
     "check:biome:fix": "biome check --write",
     "check:ts": "tsc --noEmit",
-    "check:webarchitect": "webarchitect tool-ts",
+    "check:webarchitect": "webarchitect library --license GPL-3.0",
     "test": "bun run test:vitest",
     "test:vitest": "vitest run --coverage",
     "test:vitest:watch": "vitest"

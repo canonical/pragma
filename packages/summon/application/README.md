@@ -244,15 +244,15 @@ This enables typed `<Link to="invoices">`, `router.navigate("invoices")`, and `r
 
 Design decisions about the generated output that are not yet settled:
 
-- **Pinned pragma version is a hand-maintained constant.** Generated apps pin the pragma
-  workspace packages (`react-ds-global`, `router-core`, `styles`, …) at the range in
-  `PRAGMA_WORKSPACE_VERSION` (`src/shared/versions.ts`), which must be bumped in lockstep
-  with each lerna release. It is a literal constant, not read from a package.json at runtime,
-  because the generator ships as a compiled binary where such a read resolves to `"unknown"`.
-  **Open:** inject the version at binary-build time (a build-step `define`/codegen) so it
-  cannot drift from the release — deferred until the compile pipeline supports it, to avoid
-  adding build tooling prematurely. Note `@canonical/design-tokens` is versioned separately
-  and is *not* covered by this constant (it arrives transitively via `@canonical/styles`).
+- **Pinned pragma version is fetched at summon time.** Generated apps pin the pragma
+  workspace packages (`react-ds-global`, `router-core`, `styles`, …) at `^<latest>`, where
+  `<latest>` is queried from the npm registry when the app is scaffolded
+  (`resolvePragmaVersion` in `src/shared/versions.ts`, via `npm view`). If the registry is
+  unreachable it falls back to `^<installed generator version>` — safe because
+  `@canonical/summon-application` is released in lockstep with those packages. Note
+  `@canonical/design-tokens` is versioned separately and is *not* covered here (it arrives
+  transitively via `@canonical/styles`). **Open:** whether to cache the lookup or let users
+  pin explicitly for reproducible offline scaffolding.
 
 - **Two static-asset folders (`src/assets/` + `public/`).** The generated app ships both,
   and `.storybook/main.ts` lists `staticDirs: ["../src/assets", "../public"]` to match the

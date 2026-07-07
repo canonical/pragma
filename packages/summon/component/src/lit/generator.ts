@@ -21,7 +21,6 @@ import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import { type GeneratorDefinition, template } from "@canonical/summon-core";
 import { debug, info, mkdir, sequence_, when } from "@canonical/task";
-import pkg from "../../package.json" with { type: "json" };
 
 import {
   appendExportToParentIndex,
@@ -29,6 +28,7 @@ import {
   createTemplateContext,
   getComponentName,
   getParentDir,
+  PACKAGE_NAME,
 } from "../shared/index.js";
 import loadTemplate from "../shared/loadTemplate.js";
 import type { LitAnswers } from "./types.js";
@@ -87,7 +87,7 @@ const litPrompts = [
 const generator = {
   meta: {
     name: "component/lit",
-    displayName: `${pkg.name}:lit`,
+    displayName: `${PACKAGE_NAME}:lit`,
     description:
       "Generate a Lit web component with TypeScript, tests, stories, and styles",
     version: "0.1.0",

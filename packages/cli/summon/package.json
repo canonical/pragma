@@ -3,13 +3,12 @@
   "description": "Summon CLI binary: interactive code generator with Ink UI, shell completion, and Commander registration.",
   "version": "0.29.0",
   "type": "module",
-  "module": "src/bin.tsx",
+  "module": "dist/src/bin.js",
   "bin": {
-    "summon": "src/bin.tsx"
+    "summon": "dist/src/bin.js"
   },
   "files": [
-    "src",
-    "generators"
+    "dist"
   ],
   "author": {
     "email": "webteam@canonical.com",
@@ -28,13 +27,13 @@
     "access": "public"
   },
   "scripts": {
-    "build": "echo 'No build needed - runs directly from TypeScript'",
+    "build": "tsc -p tsconfig.build.json && bun ../../../scripts/copy-templates.ts generators dist/generators",
     "build:all": "bun run build",
     "check": "bun run check:biome && bun run check:ts",
     "check:fix": "bun run check:biome:fix && bun run check:ts",
     "check:biome": "biome check",
     "check:biome:fix": "biome check --write",
-    "check:ts": "tsc --noEmit",
+    "check:ts": "tsc -p tsconfig.build.json --noEmit",
     "test": "vitest run --passWithNoTests",
     "test:watch": "vitest"
   },

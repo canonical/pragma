@@ -9,6 +9,7 @@
  */
 
 import * as path from "node:path";
+import { fileURLToPath } from "node:url";
 import type { GeneratorDefinition } from "@canonical/summon-core";
 import { template, withHelpers } from "@canonical/summon-core";
 import type { Task } from "@canonical/task";
@@ -38,6 +39,9 @@ import {
 // =============================================================================
 // Types
 // =============================================================================
+
+// ESM-safe module dir — `__dirname` is a CommonJS global absent under Node ESM.
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 interface WebAppAnswers {
   name: string;
@@ -94,6 +98,7 @@ const _readConfigOrDefault = <T>(
 export const generator: GeneratorDefinition<WebAppAnswers> = {
   meta: {
     name: "webapp",
+    displayName: "summon:example/webapp",
     description:
       "Create a web application with configurable framework, styling, and features",
     version: "0.1.0",

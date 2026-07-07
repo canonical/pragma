@@ -17,7 +17,6 @@ import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import { type GeneratorDefinition, template } from "@canonical/summon-core";
 import { debug, info, mkdir, sequence_, when } from "@canonical/task";
-import pkg from "../../package.json" with { type: "json" };
 
 import {
   appendExportToParentIndex,
@@ -25,6 +24,7 @@ import {
   createTemplateContext,
   getComponentName,
   getParentDir,
+  PACKAGE_NAME,
   sharedPrompts,
 } from "../shared/index.js";
 import loadTemplate from "../shared/loadTemplate.js";
@@ -62,7 +62,7 @@ const reactTemplates = {
 const generator = {
   meta: {
     name: "component/react",
-    displayName: `${pkg.name}:react`,
+    displayName: `${PACKAGE_NAME}:react`,
     description:
       "Generate a React component with TypeScript, tests, stories, and styles",
     version: "0.1.0",

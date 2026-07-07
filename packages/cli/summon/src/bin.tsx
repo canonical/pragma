@@ -1,4 +1,4 @@
-#!/usr/bin/env bun
+#!/usr/bin/env node
 
 /**
  * Summon CLI — thin orchestrator.
@@ -10,6 +10,7 @@
  */
 
 import * as path from "node:path";
+import { fileURLToPath } from "node:url";
 import {
   discoverGeneratorTree,
   type GeneratorNode,
@@ -97,8 +98,12 @@ const main = async () => {
         ? process.argv[gIdx + 1]
         : undefined;
 
-  // Discover generators (needed for both completion and normal CLI)
-  const builtinDir = path.join(__dirname, "..", "generators");
+  // Discover generators (needed for both completion and normal CLI).
+  // Derive the module dir from import.meta.url — `__dirname` is a CommonJS
+  // global that is absent in ESM under Node (bun polyfills it, Node does not),
+  // which is exactly the portability gap this CLI needs to run under plain Node.
+  const moduleDir = path.dirname(fileURLToPath(import.meta.url));
+  const builtinDir = path.join(moduleDir, "..", "generators");
   const root = await discoverGeneratorTree(
     generatorsPath ? { explicitPath: generatorsPath } : { builtinDir },
   );

@@ -16,7 +16,7 @@ import { toCamelCase, toTitleCase } from "@canonical/utils";
 import { normalizeCommandPath } from "../shared/casing.js";
 import { printVersions } from "../shared/versions.js";
 
-interface DomainAnswers {
+export interface DomainAnswers {
   readonly domainName: string;
 }
 

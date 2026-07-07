@@ -13,7 +13,16 @@ generate: (answers) => writeFile(`src/${answers.name}.ts`, code)
 ## Installation
 
 ```bash
-bun add -g @canonical/summon
+npm install -g @canonical/summon   # or: bun add -g @canonical/summon
+```
+
+The CLI runs under plain Node — Bun is not required. It ships with the
+`application`, `domain`, `route`, and `wrapper` generators. Component generators
+live in a separate package; install it into the same location to get
+`summon component`:
+
+```bash
+npm install -g @canonical/summon-component
 ```
 
 ## Using Generators
@@ -98,8 +107,8 @@ echo 'summon --completion-fish | source' >> ~/.config/fish/config.fish
 After setup, restart your shell or source the config file. Then:
 
 ```bash
-summon <TAB>                    # Shows: component, init, ...
-summon component <TAB>          # Shows: react, svelte
+summon <TAB>                    # Shows: component, application, init, ...
+summon component <TAB>          # Shows: react, svelte, lit
 summon component react <TAB>    # Shows: --component-path, --no-with-styles, ...
 summon component react --comp<TAB>  # Completes to: --component-path
 ```
@@ -137,11 +146,15 @@ summon component react src/comp<TAB>  # Completes to: src/components/
 
 ### Installing Generator Packages
 
-Generator packages follow the naming convention `summon-*` or `@scope/summon-*`:
+The CLI bundles the `application`, `domain`, `route`, and `wrapper` generators.
+Other generators — including the official `@canonical/summon-component` — ship as
+separate packages following the `summon-*` or `@scope/summon-*` naming convention.
+Install one into the **same location** as the CLI (both global, or both project
+dependencies) and summon discovers it automatically:
 
 ```bash
-# Install a generator package
-bun add -g @canonical/summon-component
+# Component generators (react/svelte/lit)
+npm install -g @canonical/summon-component   # or: bun add -g ...
 
 # Now available (completions work immediately!)
 summon component react

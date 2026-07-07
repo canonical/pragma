@@ -15,9 +15,10 @@ import {
   warn,
   when,
 } from "@canonical/task";
-import { PRAGMA_WORKSPACE_VERSION } from "../../shared/versions.js";
+import { pickPackageManager } from "../../shared/packageManager.js";
+import { resolvePragmaVersion } from "../../shared/versions.js";
 
-interface ApplicationReactAnswers {
+export interface ApplicationReactAnswers {
   readonly appPath: string;
   readonly ssr: boolean;
   readonly router: boolean;
@@ -128,166 +129,187 @@ Requires both --ssr and --router flags.`,
       );
     }
 
-    const vars = withHelpers({
-      name,
-      forms: answers.forms,
-      pragmaVersion: PRAGMA_WORKSPACE_VERSION,
-    });
     const dest = (...segments: string[]) => path.join(appPath, ...segments);
     const copy = (filePath: string) => copyFile(src(filePath), dest(filePath));
 
-    return sequence_([
-      // Warn (don't block) if the destination already exists — scaffolding
-      // will overwrite files in place.
-      flatMap(exists(appPath), (present) =>
-        when(
-          present,
-          warn(
-            `"${appPath}" already exists — existing files may be overwritten.`,
+    // Resolve the @canonical/* version range first (latest from npm, with an
+    // offline fallback), then build the rest of the pipeline with it baked into
+    // the template vars.
+    return flatMap(resolvePragmaVersion(), (pragmaVersion) => {
+      const vars = withHelpers({
+        name,
+        forms: answers.forms,
+        pragmaVersion,
+      });
+
+      // Detect an available package manager for both the (optional) install
+      // step and the closing message, so the suggested commands reflect what's
+      // actually on the machine. Falls back to `bun` when none is detected.
+      const pm = pickPackageManager();
+      const runCmd = pm ?? "bun";
+      const didInstall = answers.runInstall && pm !== null;
+      const finalMessage = didInstall
+        ? `Application "${appPath}" created. Run \`cd ${appPath} && ${runCmd} run dev\` to start.`
+        : `Application "${appPath}" created. Run \`cd ${appPath} && ${runCmd} install && ${runCmd} run dev\` to start.`;
+
+      return sequence_([
+        // Warn (don't block) if the destination already exists — scaffolding
+        // will overwrite files in place.
+        flatMap(exists(appPath), (present) =>
+          when(
+            present,
+            warn(
+              `"${appPath}" already exists — existing files may be overwritten.`,
+            ),
           ),
         ),
-      ),
-      info(`Scaffolding React application in "${appPath}"...`),
+        info(`Scaffolding React application in "${appPath}"...`),
 
-      // EJS templates (files needing interpolation)
-      template({
-        source: src("package.json.ejs"),
-        dest: dest("package.json"),
-        vars,
-      }),
-      template({ source: src("README.md.ejs"), dest: dest("README.md"), vars }),
-      template({
-        source: src("biome.json.ejs"),
-        dest: dest("biome.json"),
-        vars,
-      }),
+        // EJS templates (files needing interpolation)
+        template({
+          source: src("package.json.ejs"),
+          dest: dest("package.json"),
+          vars,
+        }),
+        template({
+          source: src("README.md.ejs"),
+          dest: dest("README.md"),
+          vars,
+        }),
+        template({
+          source: src("biome.json.ejs"),
+          dest: dest("biome.json"),
+          vars,
+        }),
 
-      // Root config
-      copy("tsconfig.json"),
-      copy("vite.config.ts"),
-      copy("vitest.config.ts"),
-      copy("vitest.setup.ts"),
-      copy("vitest.e2e.config.ts"),
-      // index.html (EJS — <title> uses the app name)
-      template({
-        source: src("index.html.ejs"),
-        dest: dest("index.html"),
-        vars,
-      }),
-      copy(".gitignore"),
+        // Root config
+        copy("tsconfig.json"),
+        copy("vite.config.ts"),
+        copy("vitest.config.ts"),
+        copy("vitest.setup.ts"),
+        copy("vitest.e2e.config.ts"),
+        // index.html (EJS — <title> uses the app name)
+        template({
+          source: src("index.html.ejs"),
+          dest: dest("index.html"),
+          vars,
+        }),
+        // The template is stored as `gitignore` (no leading dot): npm strips a
+        // literal `.gitignore` from published tarballs, so we ship it dotless and
+        // restore the dot at write time.
+        copyFile(src("gitignore"), dest(".gitignore")),
 
-      // E2e tests (the 2×3 server matrix + its spawn/teardown harness)
-      copy("test/e2e/serverHarness.ts"),
-      copy("test/e2e/servers.e2e.ts"),
+        // E2e tests (the 2×3 server matrix + its spawn/teardown harness)
+        copy("test/e2e/serverHarness.ts"),
+        copy("test/e2e/servers.e2e.ts"),
 
-      // Styles
-      // styles (EJS — form stylesheet imported only when --forms)
-      template({
-        source: src("src/styles/index.css.ejs"),
-        dest: dest("src/styles/index.css"),
-        vars,
-      }),
-      copy("src/styles/app.css"),
+        // Styles
+        // styles (EJS — form stylesheet imported only when --forms)
+        template({
+          source: src("src/styles/index.css.ejs"),
+          dest: dest("src/styles/index.css"),
+          vars,
+        }),
+        copy("src/styles/app.css"),
 
-      // Client
-      copy("src/client/entry.tsx"),
+        // Client
+        copy("src/client/entry.tsx"),
 
-      // Server — dev (Vite + HMR) and preview (compiled) servers each route
-      // between the app + sitemap renderers; the renderers stay routing-agnostic.
-      copy("src/server/entry.tsx"),
-      copy("src/server/renderer.tsx"),
-      copy("src/server/server.express.ts"),
-      copy("src/server/server.bun.ts"),
-      copy("src/server/preview.express.ts"),
-      copy("src/server/preview.bun.ts"),
+        // Server — dev (Vite + HMR) and preview (compiled) servers each route
+        // between the app + sitemap renderers; the renderers stay routing-agnostic.
+        copy("src/server/entry.tsx"),
+        copy("src/server/renderer.tsx"),
+        copy("src/server/server.express.ts"),
+        copy("src/server/server.bun.ts"),
+        copy("src/server/preview.express.ts"),
+        copy("src/server/preview.bun.ts"),
 
-      // Sitemap (rendered route at /sitemap.xml)
-      copy("src/sitemap/renderer.ts"),
-      // sitemap getters (EJS — /contact entry only when --forms)
-      template({
-        source: src("src/sitemap/getSitemapItems.ts.ejs"),
-        dest: dest("src/sitemap/getSitemapItems.ts"),
-        vars,
-      }),
+        // Sitemap (rendered route at /sitemap.xml)
+        copy("src/sitemap/renderer.ts"),
+        // sitemap getters (EJS — /contact entry only when --forms)
+        template({
+          source: src("src/sitemap/getSitemapItems.ts.ejs"),
+          dest: dest("src/sitemap/getSitemapItems.ts"),
+          vars,
+        }),
 
-      // Domain: marketing
-      copy("src/domains/marketing/HomePage.tsx"),
-      copy("src/domains/marketing/GuidePage.tsx"),
-      copy("src/domains/marketing/routes.ts"),
+        // Domain: marketing
+        copy("src/domains/marketing/HomePage.tsx"),
+        copy("src/domains/marketing/GuidePage.tsx"),
+        copy("src/domains/marketing/routes.ts"),
 
-      // Domain: account
-      copy("src/domains/account/AccountPage.tsx"),
-      copy("src/domains/account/LoginPage.tsx"),
-      copy("src/domains/account/routes.ts"),
+        // Domain: account
+        copy("src/domains/account/AccountPage.tsx"),
+        copy("src/domains/account/LoginPage.tsx"),
+        copy("src/domains/account/routes.ts"),
 
-      // Domain: contact (when --forms is enabled)
-      when(answers.forms, copy("src/domains/contact/ContactPage.tsx")),
-      when(answers.forms, copy("src/domains/contact/routes.ts")),
+        // Domain: contact (when --forms is enabled)
+        when(answers.forms, copy("src/domains/contact/ContactPage.tsx")),
+        when(answers.forms, copy("src/domains/contact/routes.ts")),
 
-      // Routes (EJS — conditionally includes contact domain)
-      template({
-        source: src("src/routes.tsx.ejs"),
-        dest: dest("src/routes.tsx"),
-        vars,
-      }),
+        // Routes (EJS — conditionally includes contact domain)
+        template({
+          source: src("src/routes.tsx.ejs"),
+          dest: dest("src/routes.tsx"),
+          vars,
+        }),
 
-      // Lib: Navigation (EJS — contact link only when --forms)
-      template({
-        source: src("src/lib/Navigation/Navigation.tsx.ejs"),
-        dest: dest("src/lib/Navigation/Navigation.tsx"),
-        vars,
-      }),
-      copy("src/lib/Navigation/index.ts"),
+        // Lib: Navigation (EJS — contact link only when --forms)
+        template({
+          source: src("src/lib/Navigation/Navigation.tsx.ejs"),
+          dest: dest("src/lib/Navigation/Navigation.tsx"),
+          vars,
+        }),
+        copy("src/lib/Navigation/index.ts"),
 
-      // Lib: ThemeSelector
-      copy("src/lib/ThemeSelector/ThemeSelector.tsx"),
-      copy("src/lib/ThemeSelector/index.ts"),
+        // Lib: ThemeSelector
+        copy("src/lib/ThemeSelector/ThemeSelector.tsx"),
+        copy("src/lib/ThemeSelector/index.ts"),
 
-      // Lib: ExampleComponent
-      copy("src/lib/ExampleComponent/ExampleComponent.tsx"),
-      copy("src/lib/ExampleComponent/ExampleComponent.stories.tsx"),
-      copy("src/lib/ExampleComponent/ExampleComponent.tests.tsx"),
-      copy("src/lib/ExampleComponent/index.ts"),
-      copy("src/lib/ExampleComponent/types.ts"),
-      copy("src/lib/ExampleComponent/styles.css"),
+        // Lib: ExampleComponent
+        copy("src/lib/ExampleComponent/ExampleComponent.tsx"),
+        copy("src/lib/ExampleComponent/ExampleComponent.stories.tsx"),
+        copy("src/lib/ExampleComponent/ExampleComponent.tests.tsx"),
+        copy("src/lib/ExampleComponent/index.ts"),
+        copy("src/lib/ExampleComponent/types.ts"),
+        copy("src/lib/ExampleComponent/styles.css"),
 
-      // Lib: LazyComponent
-      copy("src/lib/LazyComponent/LazyComponent.tsx"),
-      copy("src/lib/LazyComponent/LazyComponent.stories.tsx"),
-      copy("src/lib/LazyComponent/index.ts"),
+        // Lib: LazyComponent
+        copy("src/lib/LazyComponent/LazyComponent.tsx"),
+        copy("src/lib/LazyComponent/LazyComponent.stories.tsx"),
+        copy("src/lib/LazyComponent/index.ts"),
 
-      // Lib barrel
-      copy("src/lib/index.ts"),
+        // Lib barrel
+        copy("src/lib/index.ts"),
 
-      // Vite types
-      copy("src/vite-env.d.ts"),
+        // Vite types
+        copy("src/vite-env.d.ts"),
 
-      // Storybook
-      copy(".storybook/main.ts"),
-      copy(".storybook/preview.ts"),
-      copy(".storybook/decorators/withRouter.tsx"),
-      copy(".storybook/decorators/index.ts"),
+        // Storybook
+        copy(".storybook/main.ts"),
+        copy(".storybook/preview.ts"),
+        copy(".storybook/decorators/withRouter.tsx"),
+        copy(".storybook/decorators/index.ts"),
 
-      // Static asset dirs (kept by placeholder; both wired into Storybook staticDirs)
-      copy("src/assets/.gitkeep"),
-      copy("public/.gitkeep"),
-      copy("public/robots.txt"),
+        // Static asset dirs (kept by placeholder; both wired into Storybook staticDirs)
+        copy("src/assets/.gitkeep"),
+        copy("public/.gitkeep"),
+        copy("public/robots.txt"),
 
-      // Install dependencies
-      when(
-        answers.runInstall,
-        sequence_([
-          info("Installing dependencies..."),
-          exec("bun", ["install"], appPath),
-        ]),
-      ),
+        // Install dependencies with whichever package manager is available,
+        // preferring bun. On a machine without any known manager, skip the
+        // install (don't hard-fail the scaffold) and tell the user what to run.
+        when(
+          didInstall,
+          sequence_([
+            info(`Installing dependencies with ${runCmd}...`),
+            exec(runCmd, ["install"], appPath),
+          ]),
+        ),
 
-      info(
-        answers.runInstall
-          ? `Application "${appPath}" created. Run \`cd ${appPath} && bun run dev\` to start.`
-          : `Application "${appPath}" created. Run \`cd ${appPath} && bun install && bun run dev\` to start.`,
-      ),
-    ]);
+        info(finalMessage),
+      ]);
+    });
   },
 };
 
