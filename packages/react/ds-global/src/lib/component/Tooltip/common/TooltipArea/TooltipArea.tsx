@@ -17,6 +17,8 @@ const TooltipArea = ({
   style,
   className,
   Message,
+  icon,
+  open,
   distance = "6px",
   targetElementId,
   targetElementClassName,
@@ -37,7 +39,15 @@ const TooltipArea = ({
     arrowOffset,
     getToggleProps,
     getContentProps,
-  } = useDisclosure({ distance, autoFit, ...props, mode: "hover" });
+    // `open` is the public alias for the hook's controlled `isOpen`; when set it
+    // overrides hover/focus so the tooltip stays in the given state.
+  } = useDisclosure({
+    distance,
+    autoFit,
+    ...props,
+    isOpen: open ?? props.isOpen,
+    mode: "hover",
+  });
 
   const triggerProps = getToggleProps();
   const contentProps = getContentProps();
@@ -58,6 +68,7 @@ const TooltipArea = ({
       className={[bestPosition?.positionName, messageElementClassName]
         .filter(Boolean)
         .join(" ")}
+      icon={icon}
       onPointerEnter={contentProps.onPointerEnter}
       ref={popupRef}
       style={{

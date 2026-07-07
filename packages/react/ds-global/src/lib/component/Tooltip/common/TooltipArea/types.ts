@@ -11,6 +11,18 @@ export interface TooltipAreaProps extends Omit<UseDisclosureProps, "mode"> {
    * The content of the tooltip. This can be a string or any valid React node.
    */
   Message: ReactNode;
+  /**
+   * An optional leading icon for the tooltip, rendered before the message
+   * (Figma: 16px glyph, dimension-100 gap). Purely decorative.
+   */
+  icon?: ReactNode;
+  /**
+   * Force the tooltip open (or closed), overriding hover/focus. When a boolean
+   * is passed the tooltip is fully controlled and ignores pointer/keyboard —
+   * useful for stories, visual tests, or driving the tooltip from outside.
+   * Leave undefined for the default hover behaviour.
+   */
+  open?: boolean;
   /** Styles applied to the tooltip area */
   style?: CSSProperties;
   /** Class name applied to the tooltip area */

@@ -1,17 +1,38 @@
-import type { Meta, StoryFn, StoryObj } from "@storybook/react-vite";
+import type { Decorator, Meta, StoryFn, StoryObj } from "@storybook/react-vite";
 
-import { useEffect, useState } from "react";
-import type {
-  BestPosition,
-  WindowFitmentDirection,
-} from "../../../../hooks/index.js";
-import { Button } from "../../../Button/index.js";
+import { useState } from "react";
+import { Button } from "#lib/component/Button/index.js";
+import { Icon } from "#lib/component/Icon/index.js";
+import type { WindowFitmentDirection } from "#lib/hooks/index.js";
 import Component from "./TooltipArea.js";
+
+/**
+ * The tooltip is `position: fixed`, so it does not contribute to the story's
+ * flow height — without this the Storybook (docs) Canvas collapses to just the
+ * anchor button and the tooltip renders in a cramped or clipped frame. This
+ * meta-level decorator reserves a tall, centred stage for every story so the
+ * tooltip always has room to open (and space on each side for directional
+ * placements). Stories that bring their own large container simply centre
+ * inside it.
+ */
+const stage: Decorator = (Story) => (
+  <div
+    style={{
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      inlineSize: "min(88vw, 640px)",
+      minBlockSize: "440px",
+    }}
+  >
+    <Story />
+  </div>
+);
 
 const meta = {
   title: "_work_in_progress/component/Tooltip/TooltipArea",
   component: Component,
-  // Add padding to all tooltips to allow their entire contents to be visible
+  decorators: [stage],
   parameters: {
     layout: "centered",
   },
@@ -52,7 +73,7 @@ export const Left: Story = {
 export const Right: Story = {
   args: {
     Message: "Hello world",
-    preferredDirections: ["right", "top"],
+    preferredDirections: ["right"],
     children: <Button>Right</Button>,
   },
 };
@@ -60,9 +81,195 @@ export const Right: Story = {
 export const Bottom: Story = {
   args: {
     Message: "Hello world",
-    preferredDirections: ["bottom", "top", "left", "right"],
+    preferredDirections: ["bottom"],
     children: <Button>Bottom</Button>,
   },
+};
+
+/**
+ * A tooltip can carry a leading icon (Figma: 16px glyph, dimension-100 gap,
+ * always before the text). The icon is decorative — the message carries the
+ * meaning.
+ */
+export const WithIcon: Story = {
+  args: {
+    icon: <Icon icon="information" />,
+    Message: "The standard tooltip explains an icon or control.",
+    preferredDirections: ["top"],
+    // Forced open so the tooltip (and its arrow) is visible without hovering.
+    open: true,
+    children: <Button>Icon tooltip</Button>,
+  },
+};
+
+/**
+ * Long messages wrap at the tooltip's max-width (Figma: 284px). Explicit
+ * newlines in the message are still honoured.
+ */
+export const Multiline: Story = {
+  args: {
+    icon: <Icon icon="information" />,
+    Message:
+      "The standard tooltip explains an icon or control, or adds a short clarification that runs across several lines when the content is long.",
+    preferredDirections: ["top"],
+    open: true,
+    children: <Button>Long tooltip</Button>,
+  },
+};
+
+/**
+ * The tooltip's max-width is a token (--tooltip-max-width, Figma 284px). This
+ * story exposes it as a control so the wrapping width can be tested. The value
+ * is applied to the message element via `messageElementStyle`.
+ */
+export const MaxWidth: StoryFn<{ maxWidth: number }> = ({ maxWidth }) => (
+  <div
+    style={{
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      inlineSize: "min(80vw, 640px)",
+      blockSize: "min(70vh, 400px)",
+    }}
+  >
+    <Component
+      Message="The standard tooltip explains an icon or control, or adds a short clarification that wraps at the configured maximum width."
+      preferredDirections={["top"]}
+      messageElementStyle={{ maxWidth }}
+    >
+      <Button>Max width: {maxWidth}px</Button>
+    </Component>
+  </div>
+);
+MaxWidth.args = { maxWidth: 284 };
+MaxWidth.argTypes = {
+  maxWidth: { control: { type: "range", min: 120, max: 480, step: 4 } },
+};
+
+/**
+ * Auto-fit, proven by a 3×3 grid of the **same** component. Every cell prefers
+ * to open its tooltip to the bottom-right; the eight cells with room do exactly
+ * that, but the bottom-right cell has no space bottom-right, so auto-fit flips
+ * it to the opposite side. Same component, same props — only the available
+ * space differs. The multiline message makes the flip obvious.
+ */
+export const AutoFit: StoryFn = () => {
+  const cells = Array.from({ length: 9 }, (_, i) => i);
+  return (
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(3, 1fr)",
+        gridTemplateRows: "repeat(3, 1fr)",
+        gap: "clamp(24px, 8vw, 96px)",
+        inlineSize: "min(92vw, 760px)",
+        blockSize: "min(84vh, 520px)",
+        placeItems: "center",
+      }}
+    >
+      {cells.map((i) => (
+        <Component
+          key={i}
+          // Prefer bottom-right; auto-fit flips only where there is no room.
+          preferredDirections={["right", "bottom"]}
+          autoFit
+          Message={
+            "The standard tooltip explains an icon or control, or adds a short clarification that runs across several lines."
+          }
+          icon={<Icon icon="information" />}
+        >
+          <Button>{i + 1}</Button>
+        </Component>
+      ))}
+    </div>
+  );
+};
+
+/**
+ * A single anchor you can drive to watch auto-fit flip and the arrow stay
+ * pinned. Drag the button anywhere in the stage (or use the X / Y controls), and
+ * push it toward an edge to see the tooltip flip to the opposite side while its
+ * arrow stays on the anchor. Rendered in its own fixed stage (it opts out of the
+ * shared centred decorator so absolute positioning is not re-centred).
+ */
+export const AutoFitPlayground: StoryFn<{ x: number; y: number }> = ({
+  x,
+  y,
+}) => {
+  const [pos, setPos] = useState({ x, y });
+  // Keep in sync when the controls change.
+  const controlKey = `${x},${y}`;
+  const lastControl = useRef(controlKey);
+  if (lastControl.current !== controlKey) {
+    lastControl.current = controlKey;
+    setPos({ x, y });
+  }
+
+  const stageRef = useRef<HTMLDivElement>(null);
+  const dragging = useRef(false);
+
+  const moveTo = (clientX: number, clientY: number) => {
+    const el = stageRef.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const nx = Math.max(0, Math.min(100, ((clientX - r.left) / r.width) * 100));
+    const ny = Math.max(0, Math.min(100, ((clientY - r.top) / r.height) * 100));
+    setPos({ x: Math.round(nx), y: Math.round(ny) });
+  };
+
+  return (
+    <div
+      ref={stageRef}
+      style={{
+        position: "relative",
+        inlineSize: "min(90vw, 720px)",
+        blockSize: "min(80vh, 480px)",
+        outline: "1px dashed rgba(255,255,255,0.35)",
+        touchAction: "none",
+      }}
+      onPointerMove={(e) => {
+        if (dragging.current) moveTo(e.clientX, e.clientY);
+      }}
+      onPointerUp={() => {
+        dragging.current = false;
+      }}
+    >
+      <div
+        style={{
+          position: "absolute",
+          left: `${pos.x}%`,
+          top: `${pos.y}%`,
+          transform: "translate(-50%, -50%)",
+        }}
+      >
+        <Component
+          Message="I stay on screen and my arrow stays pinned to the anchor."
+          preferredDirections={["top"]}
+          autoFit
+        >
+          <Button
+            // A move cursor signals the button is draggable; dragging updates
+            // the anchor position live.
+            style={{ cursor: "move" }}
+            onPointerDown={(e) => {
+              dragging.current = true;
+              e.currentTarget.setPointerCapture?.(e.pointerId);
+            }}
+          >
+            <Icon icon="drag" />
+            &nbsp;Move me
+          </Button>
+        </Component>
+      </div>
+    </div>
+  );
+};
+// Opt out of the shared centred stage so the absolute positioning is authoritative.
+AutoFitPlayground.decorators = [(Story) => <Story />];
+AutoFitPlayground.args = { x: 50, y: 15 };
+AutoFitPlayground.argTypes = {
+  x: { control: { type: "range", min: 0, max: 100, step: 1 } },
+  y: { control: { type: "range", min: 0, max: 100, step: 1 } },
 };
 
 const changeableOptions: WindowFitmentDirection[] = [
@@ -73,32 +280,69 @@ const changeableOptions: WindowFitmentDirection[] = [
 ];
 
 export const Changeable: StoryFn = () => {
-  const [bestPosition, setBestPosition] = useState<BestPosition | undefined>(
-    undefined,
-  );
-
-  const [preferredDirection, setPreferredDirection] = useState(
-    changeableOptions[0],
-  );
-
-  const [changeCount, setChangeCount] = useState(0);
-
-  useEffect(() => {
-    setPreferredDirection(
-      changeableOptions[changeCount % changeableOptions.length],
-    );
-  }, [changeCount]);
+  const [index, setIndex] = useState(0);
+  const preferredDirection = changeableOptions[index % changeableOptions.length];
 
   return (
-    <Component
-      Message={bestPosition?.positionName}
-      preferredDirections={[preferredDirection]}
-      onBestPositionChange={(p) => setBestPosition(p)}
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        inlineSize: "min(80vw, 640px)",
+        blockSize: "min(70vh, 400px)",
+      }}
     >
-      <Button onClick={() => setChangeCount((prev) => prev + 1)}>
-        Click to change direction
-      </Button>
-    </Component>
+      <Component
+        Message={preferredDirection}
+        preferredDirections={[preferredDirection]}
+      >
+        <Button onClick={() => setIndex((prev) => prev + 1)}>
+          Click to change direction
+        </Button>
+      </Component>
+    </div>
+  );
+};
+
+/**
+ * The four placements at once: a 2×2 matrix of the same component, each button
+ * with a manually-configured side (no auto-fit). Top-left points up, top-right
+ * points right, bottom-left points left, bottom-right points down — so every
+ * tooltip opens into the canvas and none is clipped.
+ */
+export const Placements: StoryFn = () => {
+  const quadrants: {
+    direction: WindowFitmentDirection;
+    label: string;
+  }[] = [
+    { direction: "top", label: "Top" },
+    { direction: "right", label: "Right" },
+    { direction: "left", label: "Left" },
+    { direction: "bottom", label: "Bottom" },
+  ];
+  return (
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(2, 1fr)",
+        gridTemplateRows: "repeat(2, 1fr)",
+        placeItems: "center",
+        gap: "clamp(48px, 12vw, 140px)",
+        inlineSize: "min(88vw, 640px)",
+        blockSize: "min(72vh, 420px)",
+      }}
+    >
+      {quadrants.map(({ direction, label }) => (
+        <Component
+          key={direction}
+          Message={`Opens ${direction}`}
+          preferredDirections={[direction]}
+        >
+          <Button>{label}</Button>
+        </Component>
+      ))}
+    </div>
   );
 };
 
@@ -113,18 +357,5 @@ export const Inline: StoryFn = () => {
       &nbsp;that needs further explanation, which will be provided via a
       tooltip.
     </p>
-  );
-};
-
-export const AutoFit: StoryFn = () => {
-  return (
-    <Component
-      Message={"This is autofit"}
-      preferredDirections={["top"]}
-      autoFit={true}
-      style={{ position: "absolute", bottom: 0, left: 0 }}
-    >
-      <Button>Autofit</Button>
-    </Component>
   );
 };

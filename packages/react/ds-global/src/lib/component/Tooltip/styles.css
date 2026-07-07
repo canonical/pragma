@@ -61,7 +61,12 @@
      built from two half-width transparent borders; the depth from the coloured
      border on the pointing side. */
   --tooltip-arrow-half-width: calc(var(--tooltip-arrow-width) / 2);
-  --tooltip-arrow-middle: calc(50% - var(--tooltip-arrow-half-width));
+  /* Centre of the edge. The arrow is a ZERO-width bordered pseudo-element, so
+     its two symmetric half-width borders make the triangle centre land exactly
+     on the box origin — i.e. on `left`/`top` itself. So the centre is plain
+     `50%`; subtracting the half-width (as if positioning a real 14px box) pushes
+     the arrow 7px off-centre. The magnetic offset then shifts from this centre. */
+  --tooltip-arrow-middle: 50%;
   --tooltip-arrow-edge: calc(-1 * var(--tooltip-arrow-depth));
   --tooltip-arrow-offset-left: 0px;
   --tooltip-arrow-offset-top: 0px;
@@ -79,13 +84,50 @@
   margin-inline-end: var(--tooltip-margin-left, 0);
   padding-block: var(--tooltip-padding-vertical, 5px);
   padding-inline: var(--tooltip-padding-horizontal, 10px);
-  white-space: pre;
   text-align: left;
   text-decoration: initial;
   pointer-events: auto;
+  /* The box stays `inline-block` — it is the positioning context for the arrow
+     `::before`, and its `50%` centring must resolve against this box. The
+     icon+text layout lives in an inner `.content` flex row so the pseudo-element
+     is never a flex item (which would shift the arrow and reserve gap for it). */
   display: inline-block;
+  max-width: var(--tooltip-max-width);
   position: fixed;
-  overflow: auto;
+  /* MUST stay `visible`: the arrow is a `::before` positioned just outside the
+     box (e.g. bottom: -8px). Any `overflow: auto | hidden | clip` clips it and
+     the triangle disappears entirely. */
+  overflow: visible;
+
+  /* Inner row: optional leading icon before the text, top-aligned with the
+     first line (Figma). Without an icon it is just the text. */
+  & > .content {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--tooltip-gap);
+  }
+
+  /* Leading icon: fixed 16px box, top-aligned with the first text line, purely
+     decorative (the text carries the meaning). */
+  & .icon {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    inline-size: var(--dimension-200, 16px);
+    block-size: var(--tooltip-line-height, 20px);
+
+    & > svg {
+      inline-size: var(--dimension-200, 16px);
+      block-size: var(--dimension-200, 16px);
+    }
+  }
+
+  /* The text wraps at max-width (Figma shows multi-line) while honouring any
+     explicit newlines in the message. */
+  & .text {
+    white-space: pre-wrap;
+  }
 
   /*
     CSS-only enter/exit animation. `allow-discrete` lets `visibility` (a discrete

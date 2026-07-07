@@ -16,6 +16,7 @@ const componentCssClassName = "ds tooltip contrasted";
 const Tooltip = ({
   id,
   children,
+  icon,
   className,
   style,
   ref,
@@ -39,7 +40,17 @@ const Tooltip = ({
         zIndex,
       }}
     >
-      {children}
+      {/* The icon+text row lives in an inner wrapper so the arrow `::before`
+          on the outer box is never a flex item (which would displace it). */}
+      <span className="content">
+        {/* The optional icon always precedes the text (Figma), decorative only. */}
+        {icon ? (
+          <span className="icon" aria-hidden="true">
+            {icon}
+          </span>
+        ) : null}
+        <span className="text">{children}</span>
+      </span>
     </div>
   );
 };

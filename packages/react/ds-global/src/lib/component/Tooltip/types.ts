@@ -13,6 +13,12 @@ export interface TooltipProps {
   className?: string;
   /* Child elements */
   children: ReactNode;
+  /**
+   * An optional leading icon, rendered before the text and top-aligned with the
+   * first line (Figma: 16px glyph, dimension-100 gap). Pass any glyph node
+   * (e.g. an `<Icon>` or inline SVG).
+   */
+  icon?: ReactNode;
   /* Inline styles */
   style?: CSSProperties;
   /** Whether the tooltip is open or not */

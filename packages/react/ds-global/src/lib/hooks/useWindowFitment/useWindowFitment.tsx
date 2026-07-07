@@ -30,6 +30,19 @@ export const computeArrowOffset = (
   direction: WindowFitmentDirection,
   targetRect: DOMRect,
   popupRect: DOMRect,
+  /**
+   * The authoritative popup position (top-left, viewport coordinates) as just
+   * computed by fitment. The popup's live `getBoundingClientRect()` lags one
+   * frame behind `bestPosition` (it still reflects the previous placement while
+   * the new `left`/`top` are applied), so measuring the centre from the live
+   * rect yields a stale offset and the arrow drifts off the anchor. Passing the
+   * authoritative position removes that lag; the rect is still used for the
+   * popup's stable width/height. Defaults to the rect's own top-left.
+   */
+  popupPosition: { top: number; left: number } = {
+    top: popupRect.top,
+    left: popupRect.left,
+  },
 ): ArrowOffset => {
   const isVerticalPlacement = direction === "top" || direction === "bottom";
   const axis = isVerticalPlacement ? "x" : "y";
@@ -38,8 +51,8 @@ export const computeArrowOffset = (
     ? targetRect.left + targetRect.width / 2
     : targetRect.top + targetRect.height / 2;
   const popupCentre = isVerticalPlacement
-    ? popupRect.left + popupRect.width / 2
-    : popupRect.top + popupRect.height / 2;
+    ? popupPosition.left + popupRect.width / 2
+    : popupPosition.top + popupRect.height / 2;
 
   const halfExtent = isVerticalPlacement
     ? popupRect.width / 2
@@ -303,6 +316,8 @@ const useWindowFitment = ({
       bestPosition.positionName,
       targetRef.current.getBoundingClientRect(),
       popupRef.current.getBoundingClientRect(),
+      // Authoritative placement — avoids the one-frame lag of the live popup rect.
+      bestPosition.position,
     );
   }, [bestPosition, isServer, targetSize, popupSize]);
 
