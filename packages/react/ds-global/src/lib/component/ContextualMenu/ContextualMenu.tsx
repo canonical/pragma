@@ -1,13 +1,16 @@
+import type { _Item } from "@canonical/ds-types";
 import { getItemId } from "@canonical/utils";
 import type React from "react";
+import { useMemo } from "react";
 import { createPortal } from "react-dom";
 import {
   getReadingDirectionMenuPlacement,
   readDocumentDirection,
   useContextualMenu,
 } from "#lib/hooks/index.js";
-import Item from "./common/Item/index.js";
-import type { ContextualMenuProps } from "./types.js";
+import MenuContext from "./common/MenuContext.js";
+import SubMenu from "./common/SubMenu/index.js";
+import type { ContextualMenuProps, MenuItem } from "./types.js";
 import "./styles.css";
 
 const componentCssClassName = "ds contextual-menu";
@@ -37,16 +40,29 @@ const ContextualMenu = ({
   onOpenChange,
   ...props
 }: ContextualMenuProps): React.ReactElement => {
-  const menu = useContextualMenu({
-    // A synthetic root holds the groups so the tree is menu -> group -> item.
-    root: { key: "contextual-menu-root", items: groups },
-    isOpen: open,
-    // Auto-fit by default, opening toward the reading direction first.
-    // Open to the trigger's leading edge, top-aligned (right-start LTR /
-    // left-start RTL), flipping side/alignment as space runs out.
-    preferredDirections:
+  // A synthetic root holds the groups so the tree is menu -> group -> item.
+  // MUST be stable across renders: the hook annotates it (memoised on `root`)
+  // and the open effect keys on the annotated root, so a fresh object each
+  // render re-fires that effect every render → dispatch → re-render → freeze.
+  const root = useMemo(
+    () => ({ key: "contextual-menu-root", items: groups }),
+    [groups],
+  );
+  // Likewise stable: a fresh placement array each render would re-run fitment.
+  const resolvedDirections = useMemo(
+    () =>
       preferredDirections ??
       getReadingDirectionMenuPlacement(readDocumentDirection()),
+    [preferredDirections],
+  );
+
+  const menu = useContextualMenu({
+    root,
+    isOpen: open,
+    // Auto-fit by default, opening toward the trigger's leading edge, top-
+    // aligned (right-start LTR / left-start RTL), flipping side/alignment as
+    // space runs out.
+    preferredDirections: resolvedDirections,
     distance,
     gutter,
     maxWidth,
@@ -65,6 +81,8 @@ const ContextualMenu = ({
     popupId,
     bestPosition,
     annotatedRoot,
+    getNodeStatus,
+    highlightItem,
     getTriggerProps,
     getMenuProps,
     getGroupProps,
@@ -73,6 +91,34 @@ const ContextualMenu = ({
 
   const triggerProps = getTriggerProps();
   const annotatedGroups = annotatedRoot.items ?? [];
+
+  // The shared menu API threaded to every (nested) level. One state, one
+  // highlight path, one keyboard handler — submenus are render-only. Memoised so
+  // the context value is stable across renders; an unstable value would re-render
+  // every SubMenu (and re-run their positioning) on every commit.
+  const menuContextValue = useMemo(
+    () => ({
+      getItemProps,
+      getMenuProps,
+      getGroupProps,
+      getNodeStatus,
+      highlightItem,
+      close,
+      onSelectItem: (item: _Item<MenuItem>) => {
+        onSelect?.(item);
+        close();
+      },
+    }),
+    [
+      getItemProps,
+      getMenuProps,
+      getGroupProps,
+      getNodeStatus,
+      highlightItem,
+      close,
+      onSelect,
+    ],
+  );
 
   // getMenuProps returns a generic prop bag from the headless navigation hook
   // (loose event-handler and ref types); it is spread onto the menu container.
@@ -106,15 +152,9 @@ const ContextualMenu = ({
           {...getGroupProps({ label: group.label })}
         >
           {(group.items ?? []).map((item) => (
-            <Item
-              key={getItemId(item)}
-              item={item}
-              itemProps={getItemProps(item)}
-              onSelect={() => {
-                onSelect?.(item);
-                close();
-              }}
-            />
+            // SubMenu renders the item and, if it is a submenu parent, its
+            // nested popup (recursively). Leaves render as a plain item.
+            <SubMenu key={getItemId(item)} item={item} />
           ))}
         </div>
       ))}
@@ -122,20 +162,22 @@ const ContextualMenu = ({
   );
 
   return (
-    <div
-      className={[componentCssClassName, className].filter(Boolean).join(" ")}
-      ref={targetRef}
-      {...props}
-    >
-      {/* getTriggerProps drives the disclosure (the source of truth for open)
-          and carries the menu ARIA wiring. */}
-      <button type="button" className="trigger" {...triggerProps}>
-        {trigger}
-      </button>
-      {typeof window !== "undefined"
-        ? createPortal(menuElement, document.body)
-        : menuElement}
-    </div>
+    <MenuContext.Provider value={menuContextValue}>
+      <div
+        className={[componentCssClassName, className].filter(Boolean).join(" ")}
+        ref={targetRef}
+        {...props}
+      >
+        {/* getTriggerProps drives the disclosure (the source of truth for open)
+            and carries the menu ARIA wiring. */}
+        <button type="button" className="trigger" {...triggerProps}>
+          {trigger}
+        </button>
+        {typeof window !== "undefined"
+          ? createPortal(menuElement, document.body)
+          : menuElement}
+      </div>
+    </MenuContext.Provider>
   );
 };
 

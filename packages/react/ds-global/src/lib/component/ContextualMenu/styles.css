@@ -58,4 +58,10 @@
     border-block-start: var(--contextual-menu-divider-width, 1px) solid
       var(--contextual-menu-color-divider);
   }
+
+  /* The submenu-anchor wraps a submenu-parent item for hover detection; it must
+     not disturb the vertical item flow, so it lays out like the item it wraps. */
+  .submenu-anchor {
+    display: block;
+  }
 }

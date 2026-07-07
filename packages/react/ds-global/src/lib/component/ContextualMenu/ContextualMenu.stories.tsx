@@ -180,3 +180,58 @@ export const CustomItems_NotCoreApi: Story = {
     ],
   },
 };
+
+/**
+ * Nested submenus. A menu item that has its own `items` becomes a submenu
+ * trigger (shown with a trailing caret); hovering it or pressing ArrowRight
+ * opens the submenu to the leading edge, top-aligned to the parent. ArrowLeft
+ * closes the submenu and returns to the parent. Submenus can nest arbitrarily.
+ */
+const nestedActions: MenuItem[] = [
+  {
+    key: "primary",
+    items: [
+      { key: "open", label: "Open", url: "#open" },
+      {
+        key: "share",
+        label: "Share",
+        // A submenu parent — its items open in a nested menu.
+        items: [
+          { key: "share-link", label: "Copy link", url: "#link" },
+          { key: "share-email", label: "Email", url: "#email" },
+          {
+            key: "share-teams",
+            label: "Send to team",
+            // A deeper submenu, to show arbitrary nesting.
+            items: [
+              { key: "team-eng", label: "Engineering", url: "#eng" },
+              { key: "team-design", label: "Design", url: "#design" },
+              { key: "team-ops", label: "Operations", url: "#ops" },
+            ],
+          },
+        ],
+      },
+      {
+        key: "export",
+        label: "Export as",
+        items: [
+          { key: "export-pdf", label: "PDF", url: "#pdf" },
+          { key: "export-csv", label: "CSV", url: "#csv" },
+          { key: "export-json", label: "JSON", url: "#json" },
+        ],
+      },
+    ],
+  },
+  {
+    key: "danger",
+    items: [{ key: "delete", label: "Delete", url: "#delete" }],
+  },
+];
+
+export const NestedSubmenus: Story = {
+  args: {
+    trigger: "Actions",
+    label: "Item actions",
+    groups: nestedActions,
+  },
+};
