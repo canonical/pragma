@@ -101,22 +101,6 @@ describe("Button component", () => {
       expect(labelElement).toBeInTheDocument();
     });
 
-    it("renders icon at end position", () => {
-      const icon = <span data-testid="icon">→</span>;
-      render(
-        <Component icon={icon} iconPosition="end">
-          Continue
-        </Component>,
-      );
-
-      const button = screen.getByRole("button");
-      const iconElement = screen.getByTestId("icon");
-
-      // Text should come before icon in DOM order
-      expect(button.textContent).toBe("Continue→");
-      expect(iconElement).toBeInTheDocument();
-    });
-
     it("renders icon-only button", () => {
       const icon = <span data-testid="icon">×</span>;
       render(<Component icon={icon} aria-label="Close" />);
@@ -194,6 +178,48 @@ describe("Button component", () => {
     it("can be disabled", () => {
       render(<Component disabled>Disabled</Component>);
       expect(screen.getByRole("button")).toBeDisabled();
+    });
+  });
+
+  describe("loading state", () => {
+    it("overlays a Spinner while loading", () => {
+      const { container } = render(<Component loading>Saving</Component>);
+      const spinner = container.querySelector(".loading-spinner .ds.spinner");
+      expect(spinner).toBeInTheDocument();
+    });
+
+    it("marks the button aria-busy and disabled", () => {
+      render(<Component loading>Saving</Component>);
+      const button = screen.getByRole("button");
+      expect(button).toHaveAttribute("aria-busy", "true");
+      expect(button).toBeDisabled();
+    });
+
+    it("keeps the label in the DOM while loading (preserves width, no collapse)", () => {
+      const { container } = render(<Component loading>Saving</Component>);
+      // The label stays rendered (hidden via CSS) so the button keeps its width.
+      const label = container.querySelector(".label");
+      expect(label).toHaveTextContent("Saving");
+    });
+
+    it("keeps the consumer icon in the DOM but adds the Spinner overlay", () => {
+      const { container } = render(
+        <Component loading icon={<span data-testid="icon">+</span>}>
+          Saving
+        </Component>,
+      );
+      // The icon remains (hidden via CSS), and the Spinner is overlaid on top.
+      expect(screen.getByTestId("icon")).toBeInTheDocument();
+      expect(
+        container.querySelector(".loading-spinner .ds.spinner"),
+      ).toBeInTheDocument();
+    });
+
+    it("is neither busy nor disabled when not loading", () => {
+      render(<Component>Idle</Component>);
+      const button = screen.getByRole("button");
+      expect(button).not.toHaveAttribute("aria-busy");
+      expect(button).not.toBeDisabled();
     });
   });
 

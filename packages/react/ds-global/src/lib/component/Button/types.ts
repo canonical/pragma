@@ -34,14 +34,18 @@ export interface BaseProps {
    */
   variant?: "link";
   /**
-   * Icon element to display alongside the label.
+   * Icon element to display before the label. The button has a single,
+   * leading icon slot — the right-side icon was removed when the select and
+   * dropdown affordances became their own components.
    */
   icon?: ReactNode;
   /**
-   * Position of the icon relative to the label.
-   * @default "start"
+   * Whether the button is in a loading (busy) state. Replaces the leading icon
+   * with a Spinner, marks the button `aria-busy`, and disables interaction so
+   * the action cannot be triggered again while it is in flight.
+   * @default false
    */
-  iconPosition?: "start" | "end";
+  loading?: boolean;
 }
 
 type Props = BaseProps & ButtonHTMLAttributes<HTMLButtonElement>;
