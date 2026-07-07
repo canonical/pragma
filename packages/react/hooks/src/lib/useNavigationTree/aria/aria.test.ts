@@ -37,10 +37,10 @@ function createMockNav(
 
   const index: _Index = {
     root,
-    "/a": root.items?.[0],
+    "/a": root.items?.[0] as _Item,
     "/a/1": root.items?.[0].items?.[0] as _Item,
     "/a/2": root.items?.[0].items?.[1] as _Item,
-    "/b": root.items?.[1],
+    "/b": root.items?.[1] as _Item,
   };
 
   return {
@@ -147,11 +147,11 @@ describe("menubar ARIA helpers", () => {
       }),
     });
 
-    const firstItem = nav.annotatedRoot.items?.[0];
+    const firstItem = nav.annotatedRoot.items?.[0] as _Item;
     const result = getMenubarItemProps(nav, firstItem);
     expect(result.tabIndex).toBe(0);
 
-    const secondItem = nav.annotatedRoot.items?.[1];
+    const secondItem = nav.annotatedRoot.items?.[1] as _Item;
     const result2 = getMenubarItemProps(nav, secondItem);
     expect(result2.tabIndex).toBe(-1);
   });
@@ -210,11 +210,11 @@ describe("tree ARIA helpers", () => {
       }),
     });
 
-    const firstItem = nav.annotatedRoot.items?.[0];
+    const firstItem = nav.annotatedRoot.items?.[0] as _Item;
     const result = getTreeItemProps(nav, firstItem);
     expect(result.tabIndex).toBe(0);
 
-    const secondItem = nav.annotatedRoot.items?.[1];
+    const secondItem = nav.annotatedRoot.items?.[1] as _Item;
     const result2 = getTreeItemProps(nav, secondItem);
     expect(result2.tabIndex).toBe(-1);
   });
