@@ -8,12 +8,48 @@ import {
 import { useResizeObserver } from "../useResizeObserver/index.js";
 import { useWindowDimensions } from "../useWindowDimensions/index.js";
 import type {
+  ArrowOffset,
   BestPosition,
   RelativePosition,
   UseWindowFitmentProps,
   UseWindowFitmentResult,
   WindowFitmentDirection,
 } from "./types.js";
+
+/**
+ * Compute the cross-axis displacement needed to keep an arrow pointing at the
+ * target's centre for a given placement. The arrow sits at the popup edge
+ * centre by default; this returns how far to shift it so it aligns with the
+ * target centre, clamped to the popup's half-extent so it never leaves the edge.
+ * @param direction The side of the target the popup is placed on.
+ * @param targetRect The bounding client rect of the target element.
+ * @param popupRect The bounding client rect of the popup element.
+ * @returns The arrow axis and offset in pixels.
+ */
+export const computeArrowOffset = (
+  direction: WindowFitmentDirection,
+  targetRect: DOMRect,
+  popupRect: DOMRect,
+): ArrowOffset => {
+  const isVerticalPlacement = direction === "top" || direction === "bottom";
+  const axis = isVerticalPlacement ? "x" : "y";
+
+  const targetCentre = isVerticalPlacement
+    ? targetRect.left + targetRect.width / 2
+    : targetRect.top + targetRect.height / 2;
+  const popupCentre = isVerticalPlacement
+    ? popupRect.left + popupRect.width / 2
+    : popupRect.top + popupRect.height / 2;
+
+  const halfExtent = isVerticalPlacement
+    ? popupRect.width / 2
+    : popupRect.height / 2;
+
+  const rawOffset = targetCentre - popupCentre;
+  const clampedOffset = Math.max(-halfExtent, Math.min(halfExtent, rawOffset));
+
+  return { axis, offset: clampedOffset };
+};
 
 const useWindowFitment = ({
   preferredDirections = ["top", "bottom", "left", "right"],
@@ -248,6 +284,28 @@ const useWindowFitment = ({
     isServer,
   ]);
 
+  /**
+   * The arrow offset that keeps an arrow pointing at the target centre, computed
+   * for every placement (not only when auto-fit clamps). Consumers without an
+   * arrow ignore it.
+   */
+  const arrowOffset: ArrowOffset | undefined = useMemo(() => {
+    if (
+      isServer ||
+      !bestPosition ||
+      !targetRef.current ||
+      !popupRef.current ||
+      !targetSize ||
+      !popupSize
+    )
+      return;
+    return computeArrowOffset(
+      bestPosition.positionName,
+      targetRef.current.getBoundingClientRect(),
+      popupRef.current.getBoundingClientRect(),
+    );
+  }, [bestPosition, isServer, targetSize, popupSize]);
+
   /** Notify the consumer when the best position changes. */
   useEffect(() => {
     if (bestPosition?.positionName !== prevBestPosition.current?.positionName) {
@@ -294,6 +352,7 @@ const useWindowFitment = ({
     popupRef,
     bestPosition,
     popupPositionStyle,
+    arrowOffset,
   };
 };
 

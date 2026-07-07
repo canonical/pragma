@@ -65,6 +65,14 @@ export interface UseWindowFitmentResult {
    * The style object to be applied to the popup element.
    */
   popupPositionStyle: CSSProperties;
+  /**
+   * The offset, in pixels, needed to keep an arrow pointing at the target's
+   * centre, along the cross-axis of the current placement (horizontal for
+   * `top`/`bottom`, vertical for `left`/`right`). Zero when the popup is
+   * centred on the target. Optional to consume: popups without an arrow ignore
+   * it. `undefined` until a position has been measured.
+   */
+  arrowOffset?: ArrowOffset;
   //
   // /**
   //  * The distance, in pixels, between the target and the popup.
@@ -77,6 +85,17 @@ export type RelativePosition = {
   top: number;
   left: number;
 };
+
+/**
+ * The displacement of an arrow from the centre of a popup edge so it points at
+ * the target. `axis` names which dimension the `offset` applies to: `x` shifts
+ * the arrow horizontally (for `top`/`bottom` placements), `y` vertically (for
+ * `left`/`right`).
+ */
+export interface ArrowOffset {
+  axis: "x" | "y";
+  offset: number;
+}
 
 export interface BestPosition {
   position: RelativePosition;

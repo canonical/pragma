@@ -29,9 +29,9 @@ export interface UsePopupProps
   closeOnEscape?: boolean;
 }
 
-export type DisableableElement = HTMLElement & {
-  disabled: boolean;
-};
+// Re-export the canonical definition from useDisclosure to avoid a duplicate
+// export from the hooks barrel.
+export type { DisableableElement } from "../useDisclosure/index.js";
 
 export interface UsePopupResult extends UseWindowFitmentResult {
   /**

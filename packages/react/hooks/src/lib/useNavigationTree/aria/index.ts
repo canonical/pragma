@@ -5,6 +5,9 @@ export { default as getDisclosureToggleProps } from "./getDisclosureToggleProps.
 export { default as getMenubarItemProps } from "./getMenubarItemProps.js";
 export { default as getMenubarListItemProps } from "./getMenubarListItemProps.js";
 export { default as getMenubarMenuProps } from "./getMenubarMenuProps.js";
+export { default as getMenuGroupProps } from "./getMenuGroupProps.js";
+export { default as getMenuItemProps } from "./getMenuItemProps.js";
+export { default as getMenuProps } from "./getMenuProps.js";
 export { default as getNavigationItemProps } from "./getNavigationItemProps.js";
 export { default as getTreeItemProps } from "./getTreeItemProps.js";
 export { default as getTreeListItemProps } from "./getTreeListItemProps.js";
@@ -16,6 +19,9 @@ export type {
   MenubarItemPropsResult,
   MenubarListItemPropsResult,
   MenubarMenuPropsResult,
+  MenuGroupPropsResult,
+  MenuItemPropsResult,
+  MenuPropsResult,
   NavigationItemPropsResult,
   TreeItemPropsResult,
   TreeListItemPropsResult,

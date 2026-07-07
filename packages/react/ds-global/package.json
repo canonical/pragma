@@ -52,6 +52,7 @@
   },
   "dependencies": {
     "@canonical/ds-assets": "^0.29.0",
+    "@canonical/react-hooks": "^0.29.0",
     "@canonical/storybook-config": "^0.29.1",
     "@canonical/styles": "^0.29.0",
     "@canonical/utils": "^0.29.0",
