@@ -10,7 +10,6 @@
   "files": [
     "dist"
   ],
-  "private": true,
   "author": {
     "email": "webteam@canonical.com",
     "name": "Canonical Webteam"
