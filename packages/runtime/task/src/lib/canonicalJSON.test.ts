@@ -112,3 +112,46 @@ describe("canonicalJSON", () => {
     });
   });
 });
+
+describe("canonicalJSON — injectivity edge cases", () => {
+  it("distinguishes a sparse hole from an empty array and from undefined", () => {
+    expect(canonicalJSON(new Array(1))).toBe("[hole]");
+    expect(canonicalJSON([])).toBe("[]");
+    expect(canonicalJSON(new Array(1))).not.toBe(canonicalJSON([]));
+    expect(canonicalJSON([undefined])).toBe("[undefined]");
+    expect(canonicalJSON([undefined])).not.toBe(canonicalJSON(new Array(1)));
+  });
+
+  it("encodes a DataView by its raw bytes, keeping distinct payloads distinct", () => {
+    const dv = new DataView(new Uint8Array([255, 1]).buffer);
+    expect(canonicalJSON(dv)).toBe("DataView(255,1)");
+    expect(canonicalJSON(dv)).not.toBe(
+      canonicalJSON(new DataView(new Uint8Array([0, 0]).buffer)),
+    );
+  });
+
+  it("tags Date and RegExp so distinct values stay distinct", () => {
+    expect(canonicalJSON(new Date(1_577_836_800_000))).toBe(
+      "Date(1577836800000)",
+    );
+    expect(canonicalJSON(new Date(1_577_836_800_000))).not.toBe(
+      canonicalJSON(new Date(1_609_459_200_000)),
+    );
+    expect(canonicalJSON(/abc/g)).not.toBe(canonicalJSON(/abd/g));
+  });
+
+  it("fails closed on a class instance rather than collapsing it to {}", () => {
+    const instance = new (class Widget {})();
+    expect(() => canonicalJSON(instance)).toThrow(TypeError);
+  });
+
+  it("fails closed on an object with symbol keys", () => {
+    expect(() => canonicalJSON({ [Symbol("x")]: 1 })).toThrow(TypeError);
+  });
+
+  it("encodes a null-prototype object as a plain record", () => {
+    const bare = Object.create(null) as Record<string, unknown>;
+    bare.a = 1;
+    expect(canonicalJSON(bare)).toBe('{"a":1}');
+  });
+});

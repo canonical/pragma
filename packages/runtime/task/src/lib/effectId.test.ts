@@ -18,29 +18,48 @@ const cases: Array<[string, Effect, unknown]> = [
   ],
   [
     "AppendFile",
-    { _tag: "AppendFile", path: "/a", content: "x", createIfMissing: true },
+    {
+      _tag: "AppendFile",
+      path: "/a",
+      content: "x",
+      createIfMissing: true,
+      undo: pure(undefined),
+    },
     { path: "/a", content: "x", createIfMissing: true },
   ],
   [
     "TransformFile",
-    { _tag: "TransformFile", path: "/a", transform: (s: string) => s },
+    {
+      _tag: "TransformFile",
+      path: "/a",
+      transform: (s: string) => s,
+      undo: pure(undefined),
+    },
     { path: "/a" },
   ],
   [
     "CopyFile",
-    { _tag: "CopyFile", source: "/a", dest: "/b" },
+    { _tag: "CopyFile", source: "/a", dest: "/b", undo: pure(undefined) },
     { source: "/a", dest: "/b" },
   ],
   [
     "CopyDirectory",
-    { _tag: "CopyDirectory", source: "/a", dest: "/b" },
+    { _tag: "CopyDirectory", source: "/a", dest: "/b", undo: pure(undefined) },
     { source: "/a", dest: "/b" },
   ],
-  ["DeleteFile", { _tag: "DeleteFile", path: "/a" }, { path: "/a" }],
-  ["DeleteDirectory", { _tag: "DeleteDirectory", path: "/a" }, { path: "/a" }],
+  [
+    "DeleteFile",
+    { _tag: "DeleteFile", path: "/a", undo: pure(undefined) },
+    { path: "/a" },
+  ],
+  [
+    "DeleteDirectory",
+    { _tag: "DeleteDirectory", path: "/a", undo: pure(undefined) },
+    { path: "/a" },
+  ],
   [
     "MakeDir",
-    { _tag: "MakeDir", path: "/a", recursive: true },
+    { _tag: "MakeDir", path: "/a", recursive: true, undo: pure(undefined) },
     { path: "/a", recursive: true },
   ],
   ["Exists", { _tag: "Exists", path: "/a" }, { path: "/a" }],
@@ -51,7 +70,13 @@ const cases: Array<[string, Effect, unknown]> = [
   ],
   [
     "Exec",
-    { _tag: "Exec", command: "ls", args: ["-l"], cwd: "/a" },
+    {
+      _tag: "Exec",
+      command: "ls",
+      args: ["-l"],
+      cwd: "/a",
+      undo: pure(undefined),
+    },
     { command: "ls", args: ["-l"], cwd: "/a" },
   ],
   [
@@ -81,7 +106,7 @@ const cases: Array<[string, Effect, unknown]> = [
   ],
   [
     "Symlink",
-    { _tag: "Symlink", target: "/t", path: "/l" },
+    { _tag: "Symlink", target: "/t", path: "/l", undo: pure(undefined) },
     { target: "/t", path: "/l" },
   ],
   ["Parallel", { _tag: "Parallel", tasks: [pure(1)] }, { taskCount: 1 }],
@@ -129,6 +154,15 @@ describe("computeEffectId", () => {
     const b = computeEffectId({ _tag: "ReadFile", path: "/a" }, "", 0);
     expect(a).toEqual(b);
     expect(a.kind).toBe("ReadFile");
+  });
+
+  it("carries the effect's tag into kind for a non-ReadFile effect", () => {
+    const id = computeEffectId(
+      { _tag: "Exec", command: "ls", args: ["-l"], cwd: "/a" },
+      "",
+      0,
+    );
+    expect(id.kind).toBe("Exec");
   });
 
   it("distinguishes different content", () => {
