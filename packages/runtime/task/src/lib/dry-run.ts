@@ -5,7 +5,7 @@
  * without actually executing their effects.
  */
 
-import { driveSync } from "./driveSync.js";
+import driveSync from "./driveSync.js";
 import { TaskExecutionError } from "./interpreter.js";
 import type { DryRunResult, Effect, Task } from "./types.js";
 

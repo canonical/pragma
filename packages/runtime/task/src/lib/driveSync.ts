@@ -40,10 +40,10 @@ type SyncFrame =
  * @note Impure — `resolveEffect` typically records effects or mutates caller
  * state.
  */
-export const driveSync = (
+export default function driveSync(
   root: Task<unknown>,
   resolveEffect: (effect: Effect) => unknown,
-): unknown => {
+): unknown {
   const stack: SyncFrame[] = [];
   let cur: Task<unknown> = root;
 
@@ -109,4 +109,4 @@ export const driveSync = (
         break;
     }
   }
-};
+}

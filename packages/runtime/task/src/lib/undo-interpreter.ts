@@ -12,7 +12,7 @@
  * the same task definition + same answers = deterministic undo.
  */
 
-import { driveSync } from "./driveSync.js";
+import driveSync from "./driveSync.js";
 import { mockEffectWithFs } from "./dry-run.js";
 import { type RunTaskOptions, runTask } from "./interpreter.js";
 import type { Effect, Task } from "./types.js";
