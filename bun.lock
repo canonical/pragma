@@ -309,7 +309,6 @@
       },
       "dependencies": {
         "@canonical/cli-core": "^0.29.0",
-        "@canonical/summon-application": "^0.29.0",
         "@canonical/summon-core": "^0.29.0",
         "@canonical/task": "^0.29.0",
         "@canonical/utils": "^0.29.0",
