@@ -1,16 +1,15 @@
-/* @canonical/generator-ds 0.9.0-experimental.4 */
-
 import type { Meta, StoryObj } from "@storybook/react-vite";
-// Needed for function-based story, safe to remove otherwise
-// import type { FieldProps } from './types.js'
 import { useMemo } from "react";
 import * as decorators from "storybook/decorators.js";
 import Component from "./Field.js";
 import type { FieldProps } from "./types.js";
 
-// Needed for template-based story, safe to remove otherwise
-// import type { StoryFn } from '@storybook/react-vite'
-
+/**
+ * `Field` is the type-safe entry point to every form input: it dispatches on
+ * `inputType` to the matching `*Field` component, so one component drives text,
+ * select, checkbox, range, date, custom inputs and more — with per-field
+ * validation, required/optional marking and conditional display.
+ */
 const meta = {
   title: "patterns/Field",
   component: Component,
@@ -19,12 +18,6 @@ const meta = {
 } satisfies Meta<typeof Component>;
 
 export default meta;
-
-/*
-  CSF3 story
-  Uses object-based story declarations with strong TS support (`Meta` and `StoryObj`).
-  Uses the latest storybook format.
-*/
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
@@ -112,13 +105,83 @@ export const TypeCheckbox: Story = {
   },
 };
 
-const CustomComponent = () => <span>SomeExotic Input</span>;
+/**
+ * The router dispatches on `inputType`. Beyond the text/textarea/checkbox cases
+ * above it covers the richer inputs — a few shown here so the single, type-safe
+ * `Field` entry point is visible across the family.
+ */
+export const TypeSelect: Story = {
+  args: {
+    name: "fruit",
+    inputType: "select",
+    label: "Favourite fruit",
+    options: [
+      { value: "apple", label: "Apple" },
+      { value: "banana", label: "Banana" },
+      { value: "cherry", label: "Cherry" },
+    ],
+  },
+};
+
+export const TypeRange: Story = {
+  args: {
+    name: "volume",
+    inputType: "range",
+    label: "Volume",
+    min: 0,
+    max: 100,
+  },
+};
+
+export const TypeDate: Story = {
+  args: { name: "starts_on", inputType: "date", label: "Start date" },
+};
+
+export const TypeColor: Story = {
+  args: { name: "brand", inputType: "color", label: "Brand colour" },
+};
+
+/**
+ * A custom input: `inputType: "custom"` renders the supplied `CustomComponent`,
+ * which receives the field's `InputProps` (name + react-hook-form registration)
+ * so it participates in the form like any built-in input. This example is a
+ * simple star-rating control wired through `onChange`.
+ */
+const StarRating = ({
+  value,
+  onChange,
+}: {
+  value?: number;
+  onChange?: (value: number) => void;
+}) => (
+  <div role="radiogroup" aria-label="Rating">
+    {[1, 2, 3, 4, 5].map((star) => (
+      <button
+        key={star}
+        type="button"
+        aria-label={`${star} star${star > 1 ? "s" : ""}`}
+        aria-pressed={(value ?? 0) >= star}
+        onClick={() => onChange?.(star)}
+        style={{
+          background: "none",
+          border: "none",
+          cursor: "pointer",
+          fontSize: "1.25rem",
+          color: (value ?? 0) >= star ? "#f5a623" : "#ccc",
+        }}
+      >
+        ★
+      </button>
+    ))}
+  </div>
+);
 
 export const TypeCustom: Story = {
   args: {
-    name: "exotic",
+    name: "rating",
     inputType: "custom",
-    CustomComponent,
+    label: "Rating",
+    CustomComponent: StarRating,
   },
 };
 
@@ -161,33 +224,3 @@ export const ConditionalDisplay: Story = {
     );
   },
 };
-
-/*
-  Function-based story
-  Direct arguments passed to the component
-  Simple, but can lead to repetition if used across multiple stories with similar configurations
-
-  export const Default = (args: FieldProps) => <Component {...args} />;
-  Default.args = { children: <span>Hello world!</span> };
-*/
-
-/*
-  Template-Based story
-  Uses a template function to bind story variations, making it more reusable
-  Slightly more boilerplate but more flexible for creating multiple stories with different configurations
-
-  const Template: StoryFn<typeof Component> = (args) => <Component {...args} />;
-  export const Default: StoryFn<typeof Component> = Template.bind({});
-  Default.args = {
-    children: <span>Hello world!</span>
-  };
-*/
-
-/*
-  Static story
-  Simple and straightforward, but offers the least flexibility and reusability
-
-  export const Default: StoryFn<typeof Component> = () => (
-    <Component><span>Hello world!</span></Component>
-  );
-*/
