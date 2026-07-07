@@ -9,6 +9,10 @@ const meta = {
   component: Component,
   tags: ["autodocs"],
   argTypes: {
+    importance: {
+      control: "select",
+      options: [undefined, ...MODIFIER_FAMILIES.importance],
+    },
     anticipation: {
       control: "select",
       options: [undefined, ...MODIFIER_FAMILIES.anticipation],
@@ -16,10 +20,6 @@ const meta = {
     variant: {
       control: "select",
       options: [undefined, "link"],
-    },
-    iconPosition: {
-      control: "select",
-      options: ["start", "end"],
     },
   },
   args: { onClick: fn() },
@@ -80,6 +80,18 @@ export const WithIcon: Story = {
     children: "Delete",
     icon: <TrashIcon />,
     anticipation: "destructive",
+  },
+};
+
+/**
+ * A loading button shows a Spinner in the leading icon slot, is marked
+ * `aria-busy`, and is disabled so the action cannot be triggered again while
+ * it is in flight.
+ */
+export const Loading: Story = {
+  args: {
+    children: "Saving",
+    loading: true,
   },
 };
 
