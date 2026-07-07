@@ -11,8 +11,12 @@
   --button-color-background-hover: var(--hover--color-foreground-primary);
   --button-color-background-active: var(--active--color-foreground-primary);
   --button-color-background-disabled: var(--disabled--color-foreground-primary);
-  --button-color-text: var(--color-text-onForegroundPrimary);
-  --button-color-border: var(--color-border);
+  /* Neutral text is the normal text colour. The filled default reads as
+     contrast on the fill because `.primary` (the default importance, applied by
+     the component) overrides text/icon to the on-fill contrast tokens; ghost
+     importances keep this normal colour, so they stay visible. */
+  --button-color-text: var(--color-text);
+  --button-color-border: var(--color-border-highlighted, var(--color-border));
 
   /* Inline padding (Figma):
      - end (right): always dimension-200 (16px) — the label always sits 16px
@@ -96,6 +100,14 @@
       --modifier-surface-active,
       var(--button-color-background-active)
     );
+  }
+
+  /* Keyboard focus ring — driven by the modifier focusRing channel so it
+     recolours per anticipation; falls back to the base focus ring token. */
+  &:focus-visible {
+    outline: var(--focus-outline-width, 2px) solid
+      var(--modifier-color-focusRing, var(--color-focusRing, currentColor));
+    outline-offset: var(--focus-outline-offset, 2px);
   }
 
   &:disabled {
