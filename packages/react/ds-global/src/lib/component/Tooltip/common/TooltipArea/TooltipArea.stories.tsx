@@ -42,35 +42,41 @@ const stage: Decorator = (Story) => (
 /**
  * Tooltips are `position: fixed` and portalled to the body, so on the long
  * autodocs page (many previews stacked vertically) every open-by-default tooltip
- * would pile up at the same viewport coordinates. `OpenInStoryContext` carries
- * whether the current render is the isolated story view (open allowed) or the
- * docs page (closed — hover to see). A decorator provides it from Storybook's
- * `viewMode`; the `Demo` wrapper reads it for its `open` default.
+ * would pile up at the same viewport coordinates. `InStoryViewContext` carries
+ * whether the current render is the isolated story view or the docs page. A
+ * decorator provides it from Storybook's `viewMode`; the `Demo` wrapper uses it
+ * to force-open ONLY in the isolated view — in docs it leaves the tooltip
+ * uncontrolled (undefined), so it stays closed but still opens on hover.
  */
-const OpenInStoryContext = createContext(true);
-const useOpenInStory = () => useContext(OpenInStoryContext);
+const InStoryViewContext = createContext(true);
+const useInStoryView = () => useContext(InStoryViewContext);
 
-const openInStoryOnly: Decorator = (Story, context) => (
-  <OpenInStoryContext.Provider value={context.viewMode !== "docs"}>
+const trackViewMode: Decorator = (Story, context) => (
+  <InStoryViewContext.Provider value={context.viewMode !== "docs"}>
     <Story />
-  </OpenInStoryContext.Provider>
+  </InStoryViewContext.Provider>
 );
 
 /**
- * A TooltipArea whose `open` default follows the story/docs context: open in the
- * isolated story view, closed on the docs page. An explicit `open` prop wins.
+ * A TooltipArea that force-opens in the isolated story view and stays
+ * hover-driven (uncontrolled) on the docs page. For a hover-only story, render
+ * `<Component>` directly (no `open` → uncontrolled); passing `open={false}` here
+ * would LOCK it closed (controlled) and disable hover. An explicit boolean
+ * `open` always wins over the view-mode default.
  */
 const Demo = ({ open, ...props }: TooltipAreaProps) => {
-  const openInStory = useOpenInStory();
-  return <Component open={open ?? openInStory} {...props} />;
+  const inStoryView = useInStoryView();
+  // In docs, `open` stays undefined → uncontrolled → hover works, no stacking.
+  const resolvedOpen = open ?? (inStoryView ? true : undefined);
+  return <Component open={resolvedOpen} {...props} />;
 };
 
 const meta = {
   title: "_work_in_progress/component/Tooltip/TooltipArea",
   component: Component,
   render: (args) => <Demo {...args} />,
-  // `openInStoryOnly` provides the docs/story flag; `stage` wraps the story.
-  decorators: [stage, openInStoryOnly],
+  // `trackViewMode` provides the docs/story flag; `stage` wraps the story.
+  decorators: [stage, trackViewMode],
   parameters: {
     layout: "centered",
   },
@@ -135,11 +141,11 @@ MaxWidth.argTypes = {
 };
 
 /**
- * Auto-fit, proven by a 3×3 grid of the **same** component. Every cell prefers
- * to open its tooltip to the bottom-right; the eight cells with room do exactly
- * that, but the bottom-right cell has no space bottom-right, so auto-fit flips
- * it to the opposite side. Same component, same props — only the available
- * space differs.
+ * Auto-fit, shown by a 3×3 grid of the **same** component. Every cell prefers to
+ * open its tooltip to the bottom-right; the cells with room do exactly that, but
+ * cells near an edge auto-flip to the opposite side. All closed by default —
+ * hover a button to open its tooltip and see where it lands. Same component,
+ * same props; only the available space differs.
  */
 export const AutoFit: StoryFn = () => {
   const cells = Array.from({ length: 9 }, (_, i) => i);
@@ -156,9 +162,10 @@ export const AutoFit: StoryFn = () => {
       }}
     >
       {cells.map((i) => (
-        <Demo
+        // Uncontrolled (no `open`): closed by default, opens on hover — so the
+        // grid isn't a wall of open tooltips and each can be inspected on hover.
+        <Component
           key={i}
-          // Prefer bottom-right; auto-fit flips only where there is no room.
           preferredDirections={["right", "bottom"]}
           autoFit
           Message={
@@ -167,7 +174,7 @@ export const AutoFit: StoryFn = () => {
           icon={<Icon icon="information" />}
         >
           <Button {...anchorButtonProps}>{i + 1}</Button>
-        </Demo>
+        </Component>
       ))}
     </div>
   );
