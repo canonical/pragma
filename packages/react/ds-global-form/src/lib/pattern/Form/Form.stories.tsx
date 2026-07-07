@@ -101,7 +101,9 @@ export const SignUp: Story = {
             inputType="checkbox"
             controlLabel="I agree to the terms of service"
           />
-          <Button type="submit">Create account</Button>
+          <Button importance="primary" type="submit">
+            Create account
+          </Button>
         </Component>
         <SubmittedValues data={submitted} />
       </>
@@ -139,7 +141,9 @@ export const Validation: Story = {
         }}
       />
       <Field name="bio" inputType="textarea" label="Bio" isOptional />
-      <Button type="submit">Submit</Button>
+      <Button importance="primary" type="submit">
+        Submit
+      </Button>
     </Component>
   ),
 };
@@ -175,7 +179,9 @@ export const EditRecord: Story = {
               { value: "team", label: "Team" },
             ]}
           />
-          <Button type="submit">Save changes</Button>
+          <Button importance="primary" type="submit">
+            Save changes
+          </Button>
         </Component>
         <SubmittedValues data={submitted} />
       </>
@@ -215,7 +221,9 @@ export const MultiColumnLayout: Story = {
           { value: "de", label: "Germany" },
         ]}
       />
-      <Button type="submit">Continue</Button>
+      <Button importance="primary" type="submit">
+        Continue
+      </Button>
     </Component>
   ),
 };
@@ -231,7 +239,44 @@ export const SideLayout: Story = {
       <Field name="first_name" inputType="text" label="First name" />
       <Field name="last_name" inputType="text" label="Last name" />
       <Field name="email" inputType="text" label="Email address" />
-      <Button type="submit">Save</Button>
+      <Field name="phone" inputType="phone" label="Phone number" isOptional />
+      <Field name="company" inputType="text" label="Company" isOptional />
+      <Field name="job_title" inputType="text" label="Job title" isOptional />
+      <Field
+        name="country"
+        inputType="select"
+        label="Country"
+        options={[
+          { value: "gb", label: "United Kingdom" },
+          { value: "us", label: "United States" },
+          { value: "de", label: "Germany" },
+        ]}
+      />
+      <Field
+        name="timezone"
+        inputType="select"
+        label="Timezone"
+        options={[
+          { value: "utc", label: "UTC" },
+          { value: "cet", label: "CET" },
+          { value: "pst", label: "PST" },
+        ]}
+      />
+      <Field
+        name="bio"
+        inputType="textarea"
+        label="About you"
+        description="A short description for your profile"
+        isOptional
+      />
+      <Field
+        name="newsletter"
+        inputType="checkbox"
+        controlLabel="Subscribe to the newsletter"
+      />
+      <Button importance="primary" type="submit">
+        Save
+      </Button>
     </Component>
   ),
 };
