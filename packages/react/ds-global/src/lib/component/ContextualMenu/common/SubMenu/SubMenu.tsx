@@ -56,7 +56,11 @@ const SubMenuParent = ({ item }: { item: _Item<MenuItem> }): ReactElement => {
 
   const children = item.items ?? [];
   const status = getNodeStatus(item);
-  const keyboardOpen = status.inHighlightedBranch;
+  // The submenu is keyboard-open when the highlight is in a DESCENDANT of this
+  // parent — not when the parent itself is the highlighted item. `inHighlighted
+  // Branch` is true in both cases, so subtract `highlighted`: otherwise ArrowLeft
+  // (which moves the highlight back onto the parent) would leave the submenu open.
+  const keyboardOpen = status.inHighlightedBranch && !status.highlighted;
   const [hovered, setHovered] = useState(false);
   const open = keyboardOpen || hovered;
 
@@ -113,6 +117,10 @@ const SubMenuParent = ({ item }: { item: _Item<MenuItem> }): ReactElement => {
         .filter(Boolean)
         .join(" ")}
       aria-hidden={false}
+      // Reveal visually only once positioned. The submenu mounts on open but
+      // `bestPosition` resolves a frame later; without this gate it paints for a
+      // frame at the fallback top:0/left:0 before snapping to the anchor.
+      data-positioned={bestPosition ? "true" : undefined}
       style={popupPositionStyle}
       ref={(el) => {
         surfaceRef.current = el;

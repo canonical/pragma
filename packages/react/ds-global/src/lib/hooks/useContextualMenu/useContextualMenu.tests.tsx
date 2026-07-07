@@ -120,4 +120,54 @@ describe("useContextualMenu", () => {
     });
     expect(result.current.highlightedItems.at(-1)?.key).toBe("b1");
   });
+
+  it("opens a submenu on ArrowRight and closes it on ArrowLeft", () => {
+    // A menu with a submenu parent ("parent" → "sub1"/"sub2").
+    const withSubmenu: MenuItem = {
+      key: "menu",
+      items: [
+        {
+          key: "group",
+          items: [
+            { key: "first", label: "First", url: "/first" },
+            {
+              key: "parent",
+              label: "Parent",
+              items: [
+                { key: "sub1", label: "Sub one", url: "/sub1" },
+                { key: "sub2", label: "Sub two", url: "/sub2" },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+    const { result } = renderHook(() =>
+      useContextualMenu({ root: withSubmenu }),
+    );
+
+    const parent = result.current.index.parent;
+    if (!parent) throw new Error("parent not found");
+    act(() => result.current.highlightItem(parent));
+
+    // While the parent itself is highlighted the submenu is CLOSED:
+    // inHighlightedBranch is true, but highlighted is also true.
+    expect(result.current.getNodeStatus(parent).inHighlightedBranch).toBe(true);
+    expect(result.current.getNodeStatus(parent).highlighted).toBe(true);
+
+    const key = (k: string) =>
+      ({ key: k, preventDefault: () => {} }) as unknown as React.KeyboardEvent;
+
+    // ArrowRight descends into the submenu → highlight moves to the first child.
+    act(() => result.current.getMenuProps().onKeyDown?.(key("ArrowRight")));
+    expect(result.current.highlightedItems.at(-1)?.key).toBe("sub1");
+    // Now the parent's submenu is OPEN: in the branch, but not the leaf.
+    expect(result.current.getNodeStatus(parent).inHighlightedBranch).toBe(true);
+    expect(result.current.getNodeStatus(parent).highlighted).toBe(false);
+
+    // ArrowLeft returns the highlight to the parent → submenu closes again.
+    act(() => result.current.getMenuProps().onKeyDown?.(key("ArrowLeft")));
+    expect(result.current.highlightedItems.at(-1)?.key).toBe("parent");
+    expect(result.current.getNodeStatus(parent).highlighted).toBe(true);
+  });
 });

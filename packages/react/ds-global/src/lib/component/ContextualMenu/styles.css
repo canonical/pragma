@@ -48,15 +48,27 @@
     }
   }
 
+  /* A submenu mounts on open but is positioned a frame later; keep it hidden
+     until `data-positioned` so it never paints at the fallback top:0/left:0. */
+  &.submenu[aria-hidden="false"]:not([data-positioned="true"]) {
+    opacity: 0;
+    visibility: hidden;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     transition: none;
   }
 
-  /* A muted divider separates one group from the next (Figma: group border-top,
-     color-border-muted, stroke-thickness-medium). */
-  .group + .group {
+  /* Every group reserves a 1px top border so group heights never shift when a
+     divider is / isn't drawn (no layout drift). It is transparent by default and
+     only coloured between groups, where the muted divider is wanted (Figma:
+     group border-top, color-border-muted, stroke-thickness-medium). */
+  .group {
     border-block-start: var(--contextual-menu-divider-width, 1px) solid
-      var(--contextual-menu-color-divider);
+      transparent;
+  }
+  .group + .group {
+    border-block-start-color: var(--contextual-menu-color-divider);
   }
 
   /* The submenu-anchor wraps a submenu-parent item for hover detection; it must

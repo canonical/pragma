@@ -1,4 +1,5 @@
 import type { Decorator, Meta, StoryObj } from "@storybook/react-vite";
+import { useEffect } from "react";
 import Component from "./ContextualMenu.js";
 import type { MenuItem } from "./types.js";
 
@@ -233,5 +234,67 @@ export const NestedSubmenus: Story = {
     trigger: "Actions",
     label: "Item actions",
     groups: nestedActions,
+  },
+};
+
+/**
+ * Sets the document to right-to-left for the duration of the story, so the menu
+ * opens to the trigger's leading edge (the LEFT, in RTL), submenus cascade
+ * leftward, and the submenu caret mirrors to `‹`. The menu portals to the body,
+ * so `dir` is set on the document element (a wrapper would not reach the portal).
+ */
+const rtl: Decorator = (Story) => {
+  useEffect(() => {
+    const el = document.documentElement;
+    const previous = el.dir;
+    el.dir = "rtl";
+    return () => {
+      el.dir = previous;
+    };
+  }, []);
+  return <Story />;
+};
+
+/**
+ * The contextual menu in a right-to-left language (Arabic). Everything mirrors:
+ * the menu opens to the left of the trigger, submenus cascade leftward, and the
+ * submenu caret points `‹`.
+ */
+const rtlActions: MenuItem[] = [
+  {
+    key: "primary",
+    items: [
+      { key: "open", label: "فتح", url: "#open" },
+      {
+        key: "share",
+        label: "مشاركة",
+        items: [
+          { key: "share-link", label: "نسخ الرابط", url: "#link" },
+          { key: "share-email", label: "بريد إلكتروني", url: "#email" },
+          {
+            key: "share-team",
+            label: "إرسال إلى الفريق",
+            items: [
+              { key: "team-eng", label: "الهندسة", url: "#eng" },
+              { key: "team-design", label: "التصميم", url: "#design" },
+            ],
+          },
+        ],
+      },
+      { key: "rename", label: "إعادة تسمية", url: "#rename" },
+    ],
+  },
+  {
+    key: "danger",
+    items: [{ key: "delete", label: "حذف", url: "#delete" }],
+  },
+];
+
+export const RightToLeft: Story = {
+  decorators: [rtl],
+  args: {
+    trigger: "الإجراءات",
+    label: "إجراءات العنصر",
+    groups: rtlActions,
   },
 };
