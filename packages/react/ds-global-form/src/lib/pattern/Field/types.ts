@@ -11,6 +11,7 @@ import type { NumberFieldProps } from "#lib/component/NumberField/index.js";
 import type { PasswordFieldProps } from "#lib/component/PasswordField/index.js";
 import type { PhoneFieldProps } from "#lib/component/PhoneField/index.js";
 import type { RangeFieldProps } from "#lib/component/RangeField/index.js";
+import type { RatingFieldProps } from "#lib/component/RatingField/index.js";
 import type { RichChoicesFieldProps } from "#lib/component/RichChoicesField/index.js";
 import type { SelectFieldProps } from "#lib/component/SelectField/index.js";
 import type { SwitchFieldProps } from "#lib/component/SwitchField/index.js";
@@ -50,6 +51,7 @@ export type FieldProps =
   | ({ inputType: "switch" } & SwitchFieldProps)
   | ({ inputType: "hidden" } & HiddenFieldProps)
   | ({ inputType: "range" } & RangeFieldProps)
+  | ({ inputType: "rating" } & RatingFieldProps)
   | ({ inputType: "select" } & SelectFieldProps)
   | ({ inputType: "combobox" } & ComboboxFieldProps)
   | ({ inputType: "choices" } & ChoicesFieldProps)
