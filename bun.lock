@@ -622,6 +622,7 @@
       "version": "0.29.1",
       "dependencies": {
         "@canonical/ds-assets": "^0.29.0",
+        "@canonical/react-hooks": "^0.29.0",
         "@canonical/storybook-config": "^0.29.1",
         "@canonical/styles": "^0.29.0",
         "@canonical/utils": "^0.29.0",
@@ -728,8 +729,8 @@
       "name": "@canonical/react-hooks",
       "version": "0.29.0",
       "dependencies": {
-        "@canonical/ds-types": "^0.27.1-experimental.0",
-        "@canonical/utils": "^0.27.1-experimental.0",
+        "@canonical/ds-types": "^0.29.0",
+        "@canonical/utils": "^0.29.0",
         "react": "^19.2.4",
         "react-dom": "^19.2.4",
       },
@@ -1179,15 +1180,15 @@
       "name": "@canonical/summon-application",
       "version": "0.29.0",
       "dependencies": {
-        "@canonical/summon-core": "^0.29.0",
-        "@canonical/task": "^0.29.0",
-        "@canonical/utils": "^0.29.0",
+        "@canonical/summon-core": "^0.27.1-experimental.0",
+        "@canonical/task": "^0.27.1-experimental.0",
+        "@canonical/utils": "^0.27.1-experimental.0",
         "typescript": "^5.9.3",
       },
       "devDependencies": {
         "@biomejs/biome": "2.4.9",
-        "@canonical/biome-config": "^0.29.0",
-        "@canonical/webarchitect": "^0.29.0",
+        "@canonical/biome-config": "^0.27.1-experimental.0",
+        "@canonical/webarchitect": "^0.27.1-experimental.0",
         "@types/node": "^24.12.0",
         "vitest": "^4.0.18",
       },
@@ -1209,8 +1210,8 @@
         "vitest": "^4.0.18",
       },
       "peerDependencies": {
-        "@canonical/summon-core": "^0.29.0",
-        "@canonical/task": "^0.29.0",
+        "@canonical/summon-core": "^0.18.0 || ^0.20.0",
+        "@canonical/task": "^0.18.0 || ^0.20.0",
       },
     },
     "packages/summon/core": {

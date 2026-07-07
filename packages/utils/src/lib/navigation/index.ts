@@ -1,4 +1,5 @@
 export { annotateTree } from "./annotateTree.js";
+export { default as createCrossGroupStateReducer } from "./createCrossGroupStateReducer.js";
 export type { NavigationReducerOptions } from "./createNavigationReducer.js";
 export { default as createNavigationReducer } from "./createNavigationReducer.js";
 export { default as findAncestorPath } from "./findAncestorPath.js";

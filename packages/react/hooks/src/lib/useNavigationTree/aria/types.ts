@@ -17,6 +17,29 @@ export interface MenubarListItemPropsResult {
   role: "none";
 }
 
+/** Props returned by the contextual-menu container helper */
+export interface MenuPropsResult {
+  role: "menu";
+  "aria-label"?: string;
+  "aria-labelledby"?: string;
+}
+
+/** Props returned by the contextual-menu group helper */
+export interface MenuGroupPropsResult {
+  role: "group";
+  "aria-label"?: string;
+  "aria-labelledby"?: string;
+}
+
+/** Props returned by the contextual-menu item helper */
+export interface MenuItemPropsResult {
+  role: "menuitem";
+  "aria-haspopup"?: true;
+  "aria-expanded"?: boolean;
+  "aria-disabled"?: true;
+  tabIndex: 0 | -1;
+}
+
 /** Props returned by tree container helpers */
 export interface TreeMenuPropsResult {
   role: "tree" | "group";
