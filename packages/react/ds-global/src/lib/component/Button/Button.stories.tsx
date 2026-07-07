@@ -157,13 +157,3 @@ export const Loading: Story = {
     loading: true,
   },
 };
-
-/**
- * Disabled button using design-tokens disabled state variables.
- */
-export const Disabled: Story = {
-  args: {
-    children: "Disabled",
-    disabled: true,
-  },
-};
