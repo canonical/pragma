@@ -10,7 +10,13 @@
     ".storybook/**/*.ts",
     ".storybook/**/*.svelte",
     "vite.config.ts",
-    "vitest.setup.ts",
-    "vitest.config.ts"
+    "vitest.setup.ts"
+  ],
+  "types": [
+    "node",
+    "svelte",
+    "vitest/globals",
+    "vite/client",
+    "@testing-library/jest-dom"
   ]
 }
