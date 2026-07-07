@@ -11,7 +11,9 @@ export function prepareIndex<T extends Item = Item>(root: _Item<T>): _Index<T> {
   const index: _Index<T> = {};
   const stack: _Item<T>[] = [root];
   while (stack.length > 0) {
-    const item = stack.pop()!;
+    const item = stack.pop();
+    // The loop guard ensures the stack is non-empty, so pop() returns an item.
+    if (!item) throw new Error("prepareIndex: expected an item on the stack");
     const id = getItemId(item);
     index[id] = item;
     if (item.items) {

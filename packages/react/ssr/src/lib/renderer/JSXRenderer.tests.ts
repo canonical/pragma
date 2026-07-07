@@ -1,8 +1,32 @@
 import React from "react";
+import type { RenderToPipeableStreamOptions } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import { INITIAL_DATA_KEY } from "./constants.js";
 import JSXRenderer from "./JSXRenderer.js";
 import type { ServerEntrypointProps } from "./types.js";
+
+/**
+ * The protected surface of `JSXRenderer` that these unit tests exercise
+ * directly. Casting the renderer to this type keeps the private methods
+ * type-checked (arguments and return values) instead of erasing them with `any`.
+ */
+interface JSXRendererInternals {
+  getComponentProps(): ServerEntrypointProps<Record<string, unknown>>;
+  getScriptSourcesByType(
+    scripts: React.ReactElement[],
+    type: "module" | "classic",
+  ): string[];
+  enrichRendererOptions(
+    props: ServerEntrypointProps<Record<string, unknown>>,
+  ): RenderToPipeableStreamOptions;
+}
+
+const asInternals = (
+  renderer: JSXRenderer<
+    React.ComponentType<ServerEntrypointProps<Record<string, unknown>>>,
+    Record<string, unknown>
+  >,
+): JSXRendererInternals => renderer as unknown as JSXRendererInternals;
 
 const TestComponent: React.FC<
   ServerEntrypointProps<Record<string, unknown>>
@@ -26,14 +50,14 @@ describe("JSXRenderer", () => {
         {},
         { htmlString: SAMPLE_HTML },
       );
-      const props = (renderer as any).getComponentProps();
+      const props = asInternals(renderer).getComponentProps();
       expect(props.scriptElements).toBeDefined();
       expect(props.linkElements).toBeDefined();
     });
 
     it("does not create an extractor when htmlString is not provided", () => {
       const renderer = new JSXRenderer(TestComponent);
-      const props = (renderer as any).getComponentProps();
+      const props = asInternals(renderer).getComponentProps();
       expect(props.scriptElements).toBeUndefined();
       expect(props.linkElements).toBeUndefined();
       expect(props.otherHeadElements).toBeUndefined();
@@ -75,7 +99,7 @@ describe("JSXRenderer", () => {
         { foo: "bar" },
         { htmlString: SAMPLE_HTML },
       );
-      const props = (renderer as any).getComponentProps();
+      const props = asInternals(renderer).getComponentProps();
       expect(props.lang).toBe("en");
       expect(props.initialData).toEqual({ foo: "bar" });
       expect(props.scriptElements).toHaveLength(2);
@@ -84,7 +108,7 @@ describe("JSXRenderer", () => {
 
     it("returns undefined elements without extractor", () => {
       const renderer = new JSXRenderer(TestComponent, { foo: "bar" });
-      const props = (renderer as any).getComponentProps();
+      const props = asInternals(renderer).getComponentProps();
       expect(props.lang).toBe("en");
       expect(props.initialData).toEqual({ foo: "bar" });
       expect(props.scriptElements).toBeUndefined();
@@ -99,8 +123,8 @@ describe("JSXRenderer", () => {
         {},
         { htmlString: SAMPLE_HTML },
       );
-      const props = (renderer as any).getComponentProps();
-      const modules = (renderer as any).getScriptSourcesByType(
+      const props = asInternals(renderer).getComponentProps();
+      const modules = asInternals(renderer).getScriptSourcesByType(
         props.scriptElements,
         "module",
       );
@@ -113,8 +137,8 @@ describe("JSXRenderer", () => {
         {},
         { htmlString: SAMPLE_HTML },
       );
-      const props = (renderer as any).getComponentProps();
-      const classic = (renderer as any).getScriptSourcesByType(
+      const props = asInternals(renderer).getComponentProps();
+      const classic = asInternals(renderer).getScriptSourcesByType(
         props.scriptElements,
         "classic",
       );
@@ -125,8 +149,8 @@ describe("JSXRenderer", () => {
       const html =
         '<html><head><script>console.log("inline")</script><script src="/real.js"></script></head></html>';
       const renderer = new JSXRenderer(TestComponent, {}, { htmlString: html });
-      const props = (renderer as any).getComponentProps();
-      const classic = (renderer as any).getScriptSourcesByType(
+      const props = asInternals(renderer).getComponentProps();
+      const classic = asInternals(renderer).getScriptSourcesByType(
         props.scriptElements,
         "classic",
       );
@@ -138,8 +162,8 @@ describe("JSXRenderer", () => {
     it("serializes initialData with XSS escaping", () => {
       const data = { xss: '</script><script>alert("xss")</script>' };
       const renderer = new JSXRenderer(TestComponent, data);
-      const props = (renderer as any).getComponentProps();
-      const options = (renderer as any).enrichRendererOptions(props);
+      const props = asInternals(renderer).getComponentProps();
+      const options = asInternals(renderer).enrichRendererOptions(props);
       expect(options.bootstrapScriptContent).toContain("\\u003c");
       expect(options.bootstrapScriptContent).not.toContain("</script>");
       expect(options.bootstrapScriptContent).toContain(
@@ -157,8 +181,8 @@ describe("JSXRenderer", () => {
           },
         },
       );
-      const props = (renderer as any).getComponentProps();
-      const options = (renderer as any).enrichRendererOptions(props);
+      const props = asInternals(renderer).getComponentProps();
+      const options = asInternals(renderer).enrichRendererOptions(props);
       expect(options.bootstrapScriptContent).toBe("custom content");
     });
 
@@ -173,8 +197,8 @@ describe("JSXRenderer", () => {
           },
         },
       );
-      const props = (renderer as any).getComponentProps();
-      const options = (renderer as any).enrichRendererOptions(props);
+      const props = asInternals(renderer).getComponentProps();
+      const options = asInternals(renderer).enrichRendererOptions(props);
       expect(options.bootstrapScripts).toEqual(["/custom.js"]);
     });
 
@@ -189,8 +213,8 @@ describe("JSXRenderer", () => {
           },
         },
       );
-      const props = (renderer as any).getComponentProps();
-      const options = (renderer as any).enrichRendererOptions(props);
+      const props = asInternals(renderer).getComponentProps();
+      const options = asInternals(renderer).enrichRendererOptions(props);
       expect(options.bootstrapModules).toEqual(["/custom-module.js"]);
     });
 
@@ -200,16 +224,19 @@ describe("JSXRenderer", () => {
         {} as Record<string, unknown>,
         { renderToPipeableStreamOptions: {} },
       );
-      const props = (renderer as any).getComponentProps();
-      const options = (renderer as any).enrichRendererOptions(props);
+      const props = asInternals(renderer).getComponentProps();
+      const options = asInternals(renderer).enrichRendererOptions(props);
       expect(options.bootstrapScriptContent).toBeDefined();
     });
 
     it("does not set bootstrapScriptContent when initialData is falsy", () => {
-      const renderer = new JSXRenderer(TestComponent, undefined as any);
-      const props = (renderer as any).getComponentProps();
+      const renderer = new JSXRenderer(
+        TestComponent,
+        undefined as unknown as Record<string, unknown>,
+      );
+      const props = asInternals(renderer).getComponentProps();
       props.initialData = undefined;
-      const options = (renderer as any).enrichRendererOptions(props);
+      const options = asInternals(renderer).enrichRendererOptions(props);
       expect(options.bootstrapScriptContent).toBeUndefined();
     });
 
@@ -219,16 +246,16 @@ describe("JSXRenderer", () => {
         {},
         { htmlString: SAMPLE_HTML },
       );
-      const props = (renderer as any).getComponentProps();
-      const options = (renderer as any).enrichRendererOptions(props);
+      const props = asInternals(renderer).getComponentProps();
+      const options = asInternals(renderer).enrichRendererOptions(props);
       expect(options.bootstrapScripts).toEqual(["/legacy.js"]);
       expect(options.bootstrapModules).toEqual(["/main.js"]);
     });
 
     it("does not set bootstrapScripts/Modules when no scriptElements", () => {
       const renderer = new JSXRenderer(TestComponent, {});
-      const props = (renderer as any).getComponentProps();
-      const options = (renderer as any).enrichRendererOptions(props);
+      const props = asInternals(renderer).getComponentProps();
+      const options = asInternals(renderer).enrichRendererOptions(props);
       expect(options.bootstrapScripts).toBeUndefined();
       expect(options.bootstrapModules).toBeUndefined();
     });
@@ -243,13 +270,15 @@ describe("JSXRenderer", () => {
     });
 
     it("sets statusCode to 500 on shell error", async () => {
-      const ErrorComponent: React.FC = () => {
+      const ErrorComponent: React.FC<
+        ServerEntrypointProps<Record<string, unknown>>
+      > = () => {
         throw new Error("Shell error");
       };
       const consoleSpy = vi
         .spyOn(console, "error")
         .mockImplementation(() => {});
-      const renderer = new JSXRenderer(ErrorComponent as any);
+      const renderer = new JSXRenderer(ErrorComponent);
       const stream = await renderer.renderToReadableStream();
       expect(stream).toBeInstanceOf(ReadableStream);
       expect(renderer.statusCode).toBe(500);
@@ -273,13 +302,15 @@ describe("JSXRenderer", () => {
     });
 
     it("sets statusCode to 500 on shell error", async () => {
-      const ErrorComponent: React.FC = () => {
+      const ErrorComponent: React.FC<
+        ServerEntrypointProps<Record<string, unknown>>
+      > = () => {
         throw new Error("Shell error");
       };
       const consoleSpy = vi
         .spyOn(console, "error")
         .mockImplementation(() => {});
-      const renderer = new JSXRenderer(ErrorComponent as any);
+      const renderer = new JSXRenderer(ErrorComponent);
       renderer.renderToPipeableStream();
       await renderer.statusReady;
       expect(renderer.statusCode).toBe(500);
@@ -311,7 +342,9 @@ describe("JSXRenderer", () => {
     });
 
     it("invokes user-provided onShellError callback", async () => {
-      const ErrorComponent: React.FC = () => {
+      const ErrorComponent: React.FC<
+        ServerEntrypointProps<Record<string, unknown>>
+      > = () => {
         throw new Error("Shell error");
       };
       const onShellError = vi.fn();
@@ -319,7 +352,7 @@ describe("JSXRenderer", () => {
         .spyOn(console, "error")
         .mockImplementation(() => {});
       const renderer = new JSXRenderer(
-        ErrorComponent as any,
+        ErrorComponent,
         {},
         { renderToPipeableStreamOptions: { onShellError } },
       );

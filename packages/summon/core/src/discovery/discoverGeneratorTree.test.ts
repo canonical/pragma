@@ -1,5 +1,6 @@
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import * as path from "node:path";
+import { invariant } from "@canonical/utils";
 import {
   afterAll,
   afterEach,
@@ -204,7 +205,8 @@ describe("discoverGeneratorTree", () => {
       });
 
       const root = await discoverGeneratorTree(dir);
-      const comp = root.children.get("component")!;
+      const comp = root.children.get("component");
+      invariant(comp, "component node should be present in the tree");
       expect(comp.children.has("react")).toBe(true);
       expect(comp.children.has("svelte")).toBe(true);
     });
@@ -295,9 +297,9 @@ describe("discoverGeneratorTree", () => {
       const root = await discoverGeneratorTree(REAL_PKG_DIR);
 
       const comp = root.children.get("component");
-      expect(comp).toBeDefined();
-      expect(comp?.children.has("react")).toBe(true);
-      expect(comp?.children.has("svelte")).toBe(true);
+      invariant(comp, "component node should be present in the tree");
+      expect(comp.children.has("react")).toBe(true);
+      expect(comp.children.has("svelte")).toBe(true);
 
       expect(generatorCache.has("component/react")).toBe(true);
       expect(generatorCache.has("component/svelte")).toBe(true);
@@ -305,7 +307,11 @@ describe("discoverGeneratorTree", () => {
       expect(generatorCache.has("invalid-entry")).toBe(false);
       expect(generatorCache.has("null-entry")).toBe(false);
 
-      const react = comp?.children.get("react")!;
+      const react = comp.children.get("react");
+      invariant(
+        react,
+        "react generator node should be present under component",
+      );
       expect(react.indexPath).toBe("cache:component/react");
       expect(react.origin).toBe("local");
     });
@@ -383,7 +389,6 @@ describe("discoverGeneratorTree", () => {
 
       const prevDebug = process.env.SUMMON_DEBUG;
       process.env.SUMMON_DEBUG = undefined;
-      // biome-ignore lint/performance/noDelete: restore the exact prior state
       delete process.env.SUMMON_DEBUG;
       const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
@@ -421,7 +426,6 @@ describe("discoverGeneratorTree", () => {
 
       errorSpy.mockRestore();
       if (prevDebug === undefined) {
-        // biome-ignore lint/performance/noDelete: restore the exact prior state
         delete process.env.SUMMON_DEBUG;
       } else {
         process.env.SUMMON_DEBUG = prevDebug;

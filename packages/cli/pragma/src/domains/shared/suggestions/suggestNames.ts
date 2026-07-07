@@ -63,35 +63,68 @@ function damerauLevenshtein(a: string, b: string): number {
   if (lenA === 0) return lenB;
   if (lenB === 0) return lenA;
 
+  // Fully allocated (lenA + 1) × (lenB + 1) grid: every row/column index in
+  // [0, lenA] × [0, lenB] below is provably in bounds, so `row.at(j)` never
+  // yields undefined for the indices we read.
   const matrix: number[][] = Array.from({ length: lenA + 1 }, () =>
     Array.from<number>({ length: lenB + 1 }).fill(0),
   );
 
   for (let i = 0; i <= lenA; i++) {
-    matrix[i]![0] = i;
+    getRow(matrix, i)[0] = i;
   }
+  const firstRow = getRow(matrix, 0);
   for (let j = 0; j <= lenB; j++) {
-    matrix[0]![j] = j;
+    firstRow[j] = j;
   }
 
   for (let i = 1; i <= lenA; i++) {
+    const prevRow = getRow(matrix, i - 1);
+    const row = getRow(matrix, i);
     for (let j = 1; j <= lenB; j++) {
       const cost = a[i - 1] === b[j - 1] ? 0 : 1;
 
-      matrix[i]![j] = Math.min(
-        matrix[i - 1]?.[j]! + 1, // deletion
-        matrix[i]?.[j - 1]! + 1, // insertion
-        matrix[i - 1]?.[j - 1]! + cost, // substitution
+      row[j] = Math.min(
+        getCell(prevRow, j) + 1, // deletion
+        getCell(row, j - 1) + 1, // insertion
+        getCell(prevRow, j - 1) + cost, // substitution
       );
 
       if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) {
-        matrix[i]![j] = Math.min(
-          matrix[i]?.[j]!,
-          matrix[i - 2]?.[j - 2]! + cost, // transposition
+        const prevPrevRow = getRow(matrix, i - 2);
+        row[j] = Math.min(
+          getCell(row, j),
+          getCell(prevPrevRow, j - 2) + cost, // transposition
         );
       }
     }
   }
 
-  return matrix[lenA]?.[lenB]!;
+  return getCell(getRow(matrix, lenA), lenB);
+}
+
+/**
+ * Read a matrix row that is structurally guaranteed to exist.
+ *
+ * @throws if the row is missing, signalling a broken allocation invariant.
+ */
+function getRow(matrix: number[][], index: number): number[] {
+  const row = matrix.at(index);
+  if (row === undefined) {
+    throw new Error(`matrix row ${index} is out of bounds`);
+  }
+  return row;
+}
+
+/**
+ * Read a matrix cell that is structurally guaranteed to exist.
+ *
+ * @throws if the cell is missing, signalling a broken allocation invariant.
+ */
+function getCell(row: number[], index: number): number {
+  const cell = row.at(index);
+  if (cell === undefined) {
+    throw new Error(`matrix cell ${index} is out of bounds`);
+  }
+  return cell;
 }

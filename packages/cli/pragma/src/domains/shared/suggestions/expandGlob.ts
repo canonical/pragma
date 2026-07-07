@@ -41,6 +41,7 @@ function globToRegex(glob: string): RegExp {
   for (const char of glob) {
     if (char === "*") {
       pattern += ".*";
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: regex meta-characters to escape, not a JS template
     } else if (".+^${}()|[]\\".includes(char)) {
       pattern += `\\${char}`;
     } else {

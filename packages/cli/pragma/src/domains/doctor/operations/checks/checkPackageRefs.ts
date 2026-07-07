@@ -23,13 +23,13 @@ export default async function checkPackageRefs(
   const config = readConfig(ctx.cwd);
   const globalEntries = readGlobalRefs();
 
-  const hasProjectRefs = config.packages && config.packages.length > 0;
-
-  const rawEntries = hasProjectRefs
-    ? config.packages!
-    : globalEntries.length > 0
-      ? globalEntries
-      : DEFAULT_PACKAGES;
+  const projectRefs = config.packages;
+  const rawEntries =
+    projectRefs && projectRefs.length > 0
+      ? projectRefs
+      : globalEntries.length > 0
+        ? globalEntries
+        : DEFAULT_PACKAGES;
 
   const refs = [...rawEntries].map(parsePackageEntry);
   const loaders = [
