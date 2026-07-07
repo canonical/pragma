@@ -56,12 +56,14 @@ const REAL_PKG_DIR = "/tmp/summon-test-pkg";
 const REAL_DEFAULT_PKG_DIR = "/tmp/summon-test-default";
 const REAL_BROKEN_PKG_DIR = "/tmp/summon-test-broken";
 const REAL_EMPTY_PKG_DIR = "/tmp/summon-test-empty";
+const REAL_TS_PKG_DIR = "/tmp/summon-test-rawts";
 
 const ALL_TEMP_DIRS = [
   REAL_PKG_DIR,
   REAL_DEFAULT_PKG_DIR,
   REAL_BROKEN_PKG_DIR,
   REAL_EMPTY_PKG_DIR,
+  REAL_TS_PKG_DIR,
 ];
 
 const GEN_TEMPLATE = (name: string) =>
@@ -96,6 +98,14 @@ beforeAll(() => {
   writeFileSync(
     path.join(REAL_BROKEN_PKG_DIR, "index.mjs"),
     `throw new Error("broken module");\n`,
+  );
+
+  // Package that mimics a raw-TypeScript summon-* dep under Node: importing it
+  // throws the "Stripping types" error Node raises for .ts under node_modules.
+  mkdirSync(REAL_TS_PKG_DIR, { recursive: true });
+  writeFileSync(
+    path.join(REAL_TS_PKG_DIR, "index.mjs"),
+    `throw new Error("Stripping types is currently unsupported for files under node_modules");\n`,
   );
 
   // Package with empty export
@@ -357,6 +367,65 @@ describe("discoverGeneratorTree", () => {
       expect(root.children.size).toBe(0);
       expect(errorSpy).toHaveBeenCalled();
       errorSpy.mockRestore();
+    });
+
+    it("silently skips a raw-TypeScript package that Node can't strip", async () => {
+      mockAccess.mockImplementation((p: string) => {
+        if (p === path.join(REAL_TS_PKG_DIR, "package.json"))
+          return Promise.resolve();
+        return notFound();
+      });
+      mockReadFile.mockImplementation((p: string) => {
+        if (p === path.join(REAL_TS_PKG_DIR, "package.json"))
+          return Promise.resolve(JSON.stringify({ main: "./index.mjs" }));
+        return notFound();
+      });
+
+      const prevDebug = process.env.SUMMON_DEBUG;
+      process.env.SUMMON_DEBUG = undefined;
+      // biome-ignore lint/performance/noDelete: restore the exact prior state
+      delete process.env.SUMMON_DEBUG;
+      const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+      const root = await discoverGeneratorTree(REAL_TS_PKG_DIR);
+
+      expect(root.children.size).toBe(0);
+      // The "Stripping types" failure is the package's problem, not the user's —
+      // it must not print a warning on every invocation.
+      expect(errorSpy).not.toHaveBeenCalled();
+
+      errorSpy.mockRestore();
+      if (prevDebug !== undefined) process.env.SUMMON_DEBUG = prevDebug;
+    });
+
+    it("surfaces the raw-TypeScript load failure when SUMMON_DEBUG is set", async () => {
+      mockAccess.mockImplementation((p: string) => {
+        if (p === path.join(REAL_TS_PKG_DIR, "package.json"))
+          return Promise.resolve();
+        return notFound();
+      });
+      mockReadFile.mockImplementation((p: string) => {
+        if (p === path.join(REAL_TS_PKG_DIR, "package.json"))
+          return Promise.resolve(JSON.stringify({ main: "./index.mjs" }));
+        return notFound();
+      });
+
+      const prevDebug = process.env.SUMMON_DEBUG;
+      process.env.SUMMON_DEBUG = "1";
+      const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+      const root = await discoverGeneratorTree(REAL_TS_PKG_DIR);
+
+      expect(root.children.size).toBe(0);
+      expect(errorSpy).toHaveBeenCalled();
+
+      errorSpy.mockRestore();
+      if (prevDebug === undefined) {
+        // biome-ignore lint/performance/noDelete: restore the exact prior state
+        delete process.env.SUMMON_DEBUG;
+      } else {
+        process.env.SUMMON_DEBUG = prevDebug;
+      }
     });
   });
 
