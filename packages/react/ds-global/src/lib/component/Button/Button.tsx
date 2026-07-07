@@ -19,7 +19,7 @@ const Button = ({
   className,
   children,
   style,
-  importance,
+  importance = "primary",
   anticipation,
   variant,
   icon,
