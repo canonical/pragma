@@ -24,12 +24,15 @@ export const SwitchInput = forwardRef<HTMLInputElement, SwitchInputProps>(
       <input
         id={id}
         style={style}
-        type="checkbox"
-        // biome-ignore lint/a11y/useAriaPropsForRole: a native checkbox exposes its checked state to the a11y tree, so role="switch" needs no explicit aria-checked.
-        role="switch"
         className={[componentCssClassName, className].filter(Boolean).join(" ")}
         ref={ref}
         {...nativeProps}
+        // `type`/`role` are the fixed switch semantics: spread `nativeProps`
+        // BEFORE them so they can never be overridden (belt-and-suspenders with
+        // omitting the keys from SwitchInputProps).
+        type="checkbox"
+        // biome-ignore lint/a11y/useAriaPropsForRole: a native checkbox exposes its checked state to the a11y tree, so role="switch" needs no explicit aria-checked.
+        role="switch"
       />
     );
   },

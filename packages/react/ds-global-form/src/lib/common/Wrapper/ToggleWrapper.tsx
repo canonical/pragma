@@ -1,5 +1,4 @@
 import type React from "react";
-import { useMemo } from "react";
 import { states } from "#lib/constants.js";
 import {
   Description,
@@ -66,16 +65,14 @@ const ToggleWrapper = <ComponentProps extends BaseInputProps>({
     },
   );
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: comparing name suffices
-  const componentProps = useMemo(
-    () => ({
-      name,
-      registerProps,
-      ...ariaProps.input,
-      ...otherProps,
-    }),
-    [name, registerProps, ariaProps.input],
-  ) as unknown as ComponentProps;
+  // Computed inline (not memoised) so `...otherProps` — disabled, onChange,
+  // etc. — never goes stale between renders.
+  const componentProps = {
+    name,
+    registerProps,
+    ...ariaProps.input,
+    ...otherProps,
+  } as unknown as ComponentProps;
 
   return (
     <div

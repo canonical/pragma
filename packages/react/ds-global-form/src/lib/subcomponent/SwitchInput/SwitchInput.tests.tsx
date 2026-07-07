@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { createRef } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { SwitchInput } from "./SwitchInput.js";
@@ -24,7 +24,10 @@ describe("SwitchInput (presentational)", () => {
   it("is controllable via checked/onChange", () => {
     const onChange = vi.fn();
     render(<SwitchInput name="notify" checked onChange={onChange} />);
-    expect(screen.getByRole("switch")).toBeChecked();
+    const toggle = screen.getByRole("switch");
+    expect(toggle).toBeChecked();
+    fireEvent.click(toggle);
+    expect(onChange).toHaveBeenCalledTimes(1);
   });
 
   it("forwards a ref to the underlying input", () => {
