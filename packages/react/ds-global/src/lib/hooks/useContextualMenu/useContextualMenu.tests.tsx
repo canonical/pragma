@@ -74,6 +74,21 @@ describe("useContextualMenu", () => {
     expect(result.current.isOpen).toBe(false);
   });
 
+  it("highlights the first enabled LEAF item on open, not a group", () => {
+    // Regression: the tree is root -> group -> item, so the shared reducer's
+    // OPEN highlights the first child — a structural GROUP — which leaves no
+    // menuitem as the roving tab stop and kills keyboard navigation. The hook
+    // must descend to the first real item ("a1") on open.
+    const { result } = renderHook(() => useContextualMenu({ root: menu }));
+
+    act(() => result.current.open());
+
+    const highlighted = result.current.highlightedItems.at(-1);
+    expect(highlighted?.key).toBe("a1");
+    // The full path is [root, group, item] — a leaf, not the group itself.
+    expect(result.current.highlightedItems.at(-2)?.key).toBe("group-a");
+  });
+
   it("passes positioning props through to useWindowFitment", () => {
     renderHook(() =>
       useContextualMenu({ root: menu, preferredDirections: ["bottom"] }),

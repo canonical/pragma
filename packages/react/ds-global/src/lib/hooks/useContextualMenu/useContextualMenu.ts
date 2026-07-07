@@ -5,7 +5,10 @@ import {
   getMenuItemProps,
   useNavigationTree,
 } from "@canonical/react-hooks";
-import { createCrossGroupStateReducer } from "@canonical/utils";
+import {
+  createCrossGroupStateReducer,
+  getFirstEnabledLeaf,
+} from "@canonical/utils";
 import { useCallback, useEffect, useMemo } from "react";
 import { useDisclosure } from "../useDisclosure/index.js";
 import type {
@@ -68,11 +71,27 @@ const useContextualMenu = ({
   });
 
   // The disclosure owns the open state (it drives positioning and dismissal);
-  // mirror it into the navigation tree so roving focus follows open/close.
+  // mirror it into the navigation tree so roving focus follows open/close. On
+  // open, highlight the first enabled LEAF (a real menuitem) rather than letting
+  // the shared reducer's OPEN land on the first child — which, for the menu's
+  // root -> group -> item tree, is a structural GROUP. Without a highlighted
+  // menuitem no item gets the roving `tabindex="0"` and arrow keys have no
+  // current item to move from, so keyboard navigation is dead.
   useEffect(() => {
-    if (isOpen) nav.openMenu();
-    else nav.closeMenu();
-  }, [isOpen, nav.openMenu, nav.closeMenu]);
+    if (isOpen) {
+      nav.openMenu();
+      const firstLeaf = getFirstEnabledLeaf(nav.annotatedRoot);
+      if (firstLeaf) nav.highlightItem(firstLeaf);
+    } else {
+      nav.closeMenu();
+    }
+  }, [
+    isOpen,
+    nav.openMenu,
+    nav.closeMenu,
+    nav.highlightItem,
+    nav.annotatedRoot,
+  ]);
 
   // Move DOM focus into the menu when it opens so arrow keys reach the roving
   // keyboard handler (WAI-ARIA menu button: opening focuses the first item).
