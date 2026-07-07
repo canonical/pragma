@@ -160,8 +160,15 @@
 
 /* Loading replaces the label with a Spinner but keeps the button's width: the
    icon and label stay in the DOM (hidden, so their box still reserves space)
-   and the Spinner is overlaid centred on top. */
+   and the Spinner is overlaid centred on top. A loading button is disabled (so
+   it can't be re-triggered), but it must not *read* as disabled — it is
+   working, not unavailable — so it keeps the enabled surface, text and border
+   colours, overriding the :disabled greying above. */
 .ds.button.loading {
+  color: var(--modifier-color-text, var(--button-color-text));
+  background-color: var(--modifier-surface, var(--button-color-background));
+  border-color: var(--modifier-color-border, var(--button-color-border));
+
   & > .icon,
   & > .label {
     visibility: hidden;
