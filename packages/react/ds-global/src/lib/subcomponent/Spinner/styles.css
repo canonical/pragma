@@ -1,0 +1,39 @@
+/**
+ * Spinner styles
+ * @implements dso:global.subcomponent.spinner
+ *
+ * The Spinner renders the `spinner` glyph and rotates it continuously. The
+ * rotation is a linear, infinite animation so the motion reads as steady
+ * rather than eased.
+ */
+
+/* A full 0→360deg turn. Keep it a full turn: Chromatic freezes infinite
+   animations at the last frame of the cycle, so a complete rotation lands on
+   360deg (visually identical to 0deg) and the snapshot stays deterministic. A
+   partial arc here would make visual tests flaky. */
+@keyframes ds-spinner-rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.ds.spinner {
+  /* A continuous spinner wants a longer, linear cycle than the eased
+     transition tokens describe. `--motion-duration-slow` is the closest
+     ratified value today; expose `--spinner-duration` so a consumer can tune
+     the cycle without overriding the whole animation. */
+  --spinner-duration: var(--motion-duration-slow, 0.4s);
+
+  animation: ds-spinner-rotate var(--spinner-duration) linear infinite;
+}
+
+/* Honour users who have asked for reduced motion: hold the icon still rather
+   than spinning it. The spinner remains visible as a static activity glyph. */
+@media (prefers-reduced-motion: reduce) {
+  .ds.spinner {
+    animation: none;
+  }
+}

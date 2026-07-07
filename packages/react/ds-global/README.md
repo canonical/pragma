@@ -57,6 +57,39 @@ import "@canonical/styles";
 
 `@canonical/styles` provides the global design tokens (colour, spacing, typography). Each component in this package co-locates its own component-level tokens in a `styles.css` file next to the component source. These component tokens reference the global tokens from `@canonical/design-tokens` and are included automatically when the component is imported.
 
+## Icon assets
+
+Components that render an icon — `Icon`, `Spinner`, and any component with an
+icon affordance (e.g. the `Accordion` caret) — reference SVGs from
+`@canonical/ds-assets` **at runtime**, not from the JavaScript bundle. Each
+glyph is fetched by URL, e.g. `/icons/spinner.svg#spinner`.
+
+Your application must therefore **serve the `@canonical/ds-assets` icons at
+`/icons`**. In most setups this means copying (or symlinking) the package's
+`icons/` directory into the app's static/public directory so the files are
+reachable at `/icons/*.svg`. If the icons are not served, icon-rendering
+components mount but appear empty (the SVG `<use>` resolves to nothing).
+
+If you serve the icons from a different path:
+
+- **`Icon` and `Spinner`** accept a `rootPath` prop (default `/icons`) to
+  override the location per instance:
+
+  ```tsx
+  <Spinner rootPath="/assets/icons" />
+  ```
+
+  There is currently no global default — the override is per component
+  instance.
+
+- **CSS-referenced icons** (such as the `Accordion` caret) are fixed at
+  `/icons` in the stylesheet and cannot be redirected via a prop. Serve the
+  icons at `/icons`, or override the relevant component CSS custom property in
+  your own styles.
+
+A single global source of truth for the icon root is planned; until then,
+serving the assets at `/icons` is the path of least resistance.
+
 ## Storybook
 
 Each component includes Storybook stories demonstrating usage patterns and variants:
