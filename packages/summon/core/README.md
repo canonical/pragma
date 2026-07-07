@@ -16,13 +16,14 @@ generate: (answers) => writeFile(`src/${answers.name}.ts`, code)
 npm install -g @canonical/summon   # or: bun add -g @canonical/summon
 ```
 
-The CLI runs under plain Node — Bun is not required. It ships with the
-`application`, `domain`, `route`, and `wrapper` generators. Component generators
-live in a separate package; install it into the same location to get
-`summon component`:
+The CLI runs under plain Node — Bun is not required. It ships only with an
+example generator and `summon init` (to scaffold your own generator). The real
+generators live in their own packages; install the ones you need into the same
+location and Summon discovers them automatically:
 
 ```bash
-npm install -g @canonical/summon-component
+npm install -g @canonical/summon-application   # summon application / domain / route / wrapper
+npm install -g @canonical/summon-component      # summon component
 ```
 
 ## Using Generators
