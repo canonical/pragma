@@ -1,5 +1,6 @@
 import { MODIFIER_FAMILIES } from "@canonical/ds-types";
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import type React from "react";
 import { Fragment } from "react";
 import { fn } from "storybook/test";
 
@@ -36,6 +37,52 @@ export const Default: Story = {
   },
 };
 
+/** The importance × anticipation grid: importance as rows, the neutral base
+ *  plus every anticipation as columns. Shared by the Matrix and DisabledMatrix
+ *  stories. */
+const MatrixGrid = (args: React.ComponentProps<typeof Component>) => (
+  <div
+    style={{
+      display: "grid",
+      gridTemplateColumns: `auto repeat(${
+        MODIFIER_FAMILIES.anticipation.length + 1
+      }, auto)`,
+      gap: "0.75rem 1rem",
+      alignItems: "center",
+      justifyItems: "start",
+    }}
+  >
+    {/* Header row: blank corner + column labels. */}
+    <span />
+    <span style={{ fontSize: "0.75rem", opacity: 0.6 }}>neutral</span>
+    {MODIFIER_FAMILIES.anticipation.map((a) => (
+      <span key={a} style={{ fontSize: "0.75rem", opacity: 0.6 }}>
+        {a}
+      </span>
+    ))}
+
+    {/* One row per importance. */}
+    {MODIFIER_FAMILIES.importance.map((importance) => (
+      <Fragment key={importance}>
+        <span style={{ fontSize: "0.75rem", opacity: 0.6 }}>{importance}</span>
+        <Component {...args} importance={importance}>
+          Button
+        </Component>
+        {MODIFIER_FAMILIES.anticipation.map((anticipation) => (
+          <Component
+            key={anticipation}
+            {...args}
+            importance={importance}
+            anticipation={anticipation}
+          >
+            Button
+          </Component>
+        ))}
+      </Fragment>
+    ))}
+  </div>
+);
+
 /**
  * The full variant matrix: each importance (rows) combined with the neutral
  * base and every anticipation (columns). Importance decides how the colour is
@@ -44,51 +91,18 @@ export const Default: Story = {
  * orthogonally.
  */
 export const Matrix: Story = {
-  render: (args) => (
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: `auto repeat(${
-          MODIFIER_FAMILIES.anticipation.length + 1
-        }, auto)`,
-        gap: "0.75rem 1rem",
-        alignItems: "center",
-        justifyItems: "start",
-      }}
-    >
-      {/* Header row: blank corner + column labels. */}
-      <span />
-      <span style={{ fontSize: "0.75rem", opacity: 0.6 }}>neutral</span>
-      {MODIFIER_FAMILIES.anticipation.map((a) => (
-        <span key={a} style={{ fontSize: "0.75rem", opacity: 0.6 }}>
-          {a}
-        </span>
-      ))}
-
-      {/* One row per importance. */}
-      {MODIFIER_FAMILIES.importance.map((importance) => (
-        <Fragment key={importance}>
-          <span style={{ fontSize: "0.75rem", opacity: 0.6 }}>
-            {importance}
-          </span>
-          <Component {...args} importance={importance}>
-            Button
-          </Component>
-          {MODIFIER_FAMILIES.anticipation.map((anticipation) => (
-            <Component
-              key={anticipation}
-              {...args}
-              importance={importance}
-              anticipation={anticipation}
-            >
-              Button
-            </Component>
-          ))}
-        </Fragment>
-      ))}
-    </div>
-  ),
+  render: (args) => <MatrixGrid {...args} />,
   args: { children: "Button" },
+};
+
+/**
+ * The same matrix in the disabled state — every importance × anticipation
+ * combination rendered `disabled`, so the disabled treatment is visible across
+ * the whole grid.
+ */
+export const DisabledMatrix: Story = {
+  render: (args) => <MatrixGrid {...args} />,
+  args: { children: "Button", disabled: true },
 };
 
 /**
