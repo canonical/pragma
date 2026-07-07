@@ -16,7 +16,8 @@ describe("Button SSR", () => {
 
   it("applies base classes", () => {
     const html = renderToString(<Component>Test</Component>);
-    expect(html).toContain('class="ds button"');
+    // `ds button` plus the `.p` baseline utility that aligns the box to the grid.
+    expect(html).toContain("ds button p");
   });
 
   it("applies custom className", () => {
