@@ -19,19 +19,23 @@ const anchorButtonProps = {
  * The tooltip is `position: fixed`, so it does not contribute to the story's
  * flow height — without this the Storybook (docs) Canvas collapses to just the
  * anchor button and the tooltip renders in a cramped or clipped frame. This
- * meta-level decorator reserves a tall, centred stage for every story so the
- * tooltip always has room to open (and space on each side for directional
- * placements). Stories that bring their own large container simply centre
- * inside it.
+ * meta-level decorator reserves a tall, centred stage AND makes it a real
+ * surface: the `.surface` class defines the `--surface-color-*` channels and the
+ * div paints itself with them (surfaces consume themselves), so the tooltip's
+ * `.contrasted` message inverts against a genuine surface, as it would in an
+ * app. Stories that bring their own large container simply centre inside it.
  */
 const stage: Decorator = (Story) => (
   <div
+    className="surface"
     style={{
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
       inlineSize: "min(88vw, 640px)",
       minBlockSize: "440px",
+      background: "var(--surface-color-background)",
+      color: "var(--surface-color-text)",
     }}
   >
     <Story />
@@ -44,11 +48,6 @@ const meta = {
   decorators: [stage],
   parameters: {
     layout: "centered",
-  },
-  globals: {
-    backgrounds: {
-      value: "dark",
-    },
   },
   tags: ["autodocs"],
 } satisfies Meta<typeof Component>;
@@ -202,11 +201,14 @@ export const AutoFitPlayground: StoryFn<{ x: number; y: number }> = ({
   return (
     <div
       ref={stageRef}
+      className="surface"
       style={{
         position: "relative",
         inlineSize: "min(90vw, 720px)",
         blockSize: "min(80vh, 480px)",
-        outline: "1px dashed rgba(255,255,255,0.35)",
+        background: "var(--surface-color-background)",
+        color: "var(--surface-color-text)",
+        outline: "1px dashed color-mix(in srgb, currentColor 25%, transparent)",
         touchAction: "none",
       }}
       onPointerMove={(e) => {
@@ -336,7 +338,7 @@ export const Placements: StoryFn = () => {
 
 export const Inline: StoryFn = () => {
   return (
-    <p style={{ color: "white" }}>
+    <p>
       I am a paragraph using a&nbsp;
       <Component Message="This is a tooltip describing the word">
         {/* biome-ignore lint/a11y/useValidAnchor: Allow invalid link href for showing a link in the story */}
