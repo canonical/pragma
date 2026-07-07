@@ -1,5 +1,4 @@
 import type { Decorator, Meta, StoryObj } from "@storybook/react-vite";
-import { useEffect } from "react";
 import Component from "./ContextualMenu.js";
 import type { MenuItem } from "./types.js";
 
@@ -238,22 +237,15 @@ export const NestedSubmenus: Story = {
 };
 
 /**
- * Sets the document to right-to-left for the duration of the story, so the menu
- * opens to the trigger's leading edge (the LEFT, in RTL), submenus cascade
- * leftward, and the submenu caret mirrors to `‹`. The menu portals to the body,
- * so `dir` is set on the document element (a wrapper would not reach the portal).
+ * Renders the story inside a right-to-left container (NOT the whole document, so
+ * it does not leak into the autodocs page or sibling stories). The trigger reads
+ * its writing direction from this wrapper; positioning mirrors accordingly.
  */
-const rtl: Decorator = (Story) => {
-  useEffect(() => {
-    const el = document.documentElement;
-    const previous = el.dir;
-    el.dir = "rtl";
-    return () => {
-      el.dir = previous;
-    };
-  }, []);
-  return <Story />;
-};
+const rtl: Decorator = (Story) => (
+  <div dir="rtl">
+    <Story />
+  </div>
+);
 
 /**
  * The contextual menu in a right-to-left language (Arabic). Everything mirrors:
