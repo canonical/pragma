@@ -56,7 +56,6 @@ const ContextualMenu = ({
 
   const {
     isOpen,
-    toggle,
     close,
     targetRef,
     popupRef,

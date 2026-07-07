@@ -96,11 +96,10 @@ describe("useContextualMenu", () => {
     expect(result.current.highlightedItems.at(-1)?.key).toBe("a2");
 
     // ArrowDown at the group edge should move into group B's first item.
-    // Minimal keyboard event carrying only what the menu handler reads.
     const arrowDownEvent = {
       key: "ArrowDown",
       preventDefault: () => {},
-    } as unknown as KeyboardEvent;
+    } as unknown as React.KeyboardEvent;
     act(() => {
       result.current.getMenuProps().onKeyDown?.(arrowDownEvent);
     });
