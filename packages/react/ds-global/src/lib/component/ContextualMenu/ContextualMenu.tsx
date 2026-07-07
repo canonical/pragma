@@ -1,7 +1,11 @@
 import { getItemId } from "@canonical/utils";
 import type React from "react";
 import { createPortal } from "react-dom";
-import { useContextualMenu } from "#lib/hooks/index.js";
+import {
+  getReadingDirectionPlacement,
+  readDocumentDirection,
+  useContextualMenu,
+} from "#lib/hooks/index.js";
 import Item from "./common/Item/index.js";
 import type { ContextualMenuProps } from "./types.js";
 import "./styles.css";
@@ -37,11 +41,14 @@ const ContextualMenu = ({
     // A synthetic root holds the groups so the tree is menu -> group -> item.
     root: { key: "contextual-menu-root", items: groups },
     isOpen: open,
-    preferredDirections,
+    // Auto-fit by default, opening toward the reading direction first.
+    preferredDirections:
+      preferredDirections ??
+      getReadingDirectionPlacement(readDocumentDirection()),
     distance,
     gutter,
     maxWidth,
-    autoFit,
+    autoFit: autoFit ?? true,
     wrap,
     onShow: () => onOpenChange?.(true),
     onHide: () => onOpenChange?.(false),

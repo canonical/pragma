@@ -7,7 +7,7 @@ const meta = {
   component: Component,
   tags: ["autodocs"],
   parameters: {
-    // Centre the menu in the story canvas so the (portalled) open menu is framed.
+    // Centre the trigger in the story canvas so the (portalled) menu is framed.
     layout: "centered",
   },
 } satisfies Meta<typeof Component>;
@@ -15,48 +15,66 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-const basicGroups: MenuItem[] = [
+/**
+ * A row-actions menu — the kind attached to an entry in a Landscape instances
+ * table or a MAAS machine list. Grouped, with a destructive action set apart.
+ */
+const rowActions: MenuItem[] = [
   {
-    key: "edit",
-    label: "Edit",
+    key: "manage",
+    label: "Manage",
     items: [
-      { key: "cut", label: "Cut", url: "#cut" },
-      { key: "copy", label: "Copy", url: "#copy" },
-      { key: "paste", label: "Paste", url: "#paste" },
+      { key: "view", label: "View details", url: "#view" },
+      { key: "edit", label: "Edit configuration", url: "#edit" },
+      { key: "tags", label: "Edit tags", url: "#tags" },
     ],
   },
   {
-    key: "view",
-    label: "View",
+    key: "power",
+    label: "Power",
     items: [
-      { key: "zoom-in", label: "Zoom in", url: "#zoom-in" },
-      { key: "zoom-out", label: "Zoom out", url: "#zoom-out" },
+      { key: "restart", label: "Restart", url: "#restart" },
+      { key: "shutdown", label: "Shut down", url: "#shutdown" },
     ],
+  },
+  {
+    key: "danger",
+    items: [{ key: "delete", label: "Delete", url: "#delete" }],
   },
 ];
 
+/**
+ * A trigger opens the menu on click. In the docs canvas the menus render closed
+ * (click a trigger to open one) so they do not stack on top of one another.
+ */
 export const Default: Story = {
   args: {
     trigger: "Actions",
-    label: "Actions",
-    open: true,
-    groups: basicGroups,
+    label: "Instance actions",
+    groups: rowActions,
   },
 };
 
-export const WithDisabledItem: Story = {
+/**
+ * An account menu, as you might find in the top navigation of a Canonical site
+ * or the Ubuntu Pro dashboard. The current, unavailable option is disabled.
+ */
+export const AccountMenu: Story = {
   args: {
-    trigger: "Actions",
-    label: "Actions",
-    open: true,
+    trigger: "abisola@canonical.com",
+    label: "Account",
     groups: [
       {
-        key: "file",
+        key: "account",
         items: [
-          { key: "new", label: "New", url: "#new" },
-          { key: "open", label: "Open", url: "#open" },
-          { key: "save", label: "Save", url: "#save", disabled: true },
+          { key: "profile", label: "Your profile", url: "#profile" },
+          { key: "subs", label: "Subscriptions", url: "#subscriptions" },
+          { key: "billing", label: "Billing", url: "#billing", disabled: true },
         ],
+      },
+      {
+        key: "session",
+        items: [{ key: "signout", label: "Sign out", url: "#signout" }],
       },
     ],
   },
@@ -65,22 +83,28 @@ export const WithDisabledItem: Story = {
 /**
  * NOT PART OF THE CORE API.
  *
- * The right-hand `slot` (for a badge or keyboard shortcut) is an extension of
- * the menu item, not part of the Figma core component. This story demonstrates
- * the capability; do not treat the slot as a stable part of the documented API.
+ * The right-hand `slot` (a badge or keyboard shortcut) is an extension of the
+ * menu item, not part of the Figma core component. Here it shows editor
+ * shortcuts, as an app such as a Juju dashboard might.
  */
-export const WithSlots_NotCoreApi: Story = {
+export const WithShortcuts_NotCoreApi: Story = {
   args: {
-    trigger: "File",
-    label: "File",
-    open: true,
+    trigger: "Edit",
+    label: "Edit",
     groups: [
       {
-        key: "file",
+        key: "edit",
         items: [
-          { key: "new", label: "New", url: "#new", slot: "⌘N" },
-          { key: "save", label: "Save", url: "#save", slot: "⌘S" },
-          { key: "print", label: "Print", url: "#print", slot: "⌘P" },
+          { key: "undo", label: "Undo", url: "#undo", slot: "⌘Z" },
+          { key: "redo", label: "Redo", url: "#redo", slot: "⇧⌘Z" },
+        ],
+      },
+      {
+        key: "clipboard",
+        items: [
+          { key: "cut", label: "Cut", url: "#cut", slot: "⌘X" },
+          { key: "copy", label: "Copy", url: "#copy", slot: "⌘C" },
+          { key: "paste", label: "Paste", url: "#paste", slot: "⌘V" },
         ],
       },
     ],
@@ -91,26 +115,36 @@ export const WithSlots_NotCoreApi: Story = {
  * NOT PART OF THE CORE API.
  *
  * A custom item renderer (`displayItemsType: "custom"` + `Component`) is an
- * escape hatch, not part of the Figma core component. Shown here to demonstrate
- * the capability.
+ * escape hatch, not part of the Figma core component — here a richer account
+ * switcher row with a secondary line.
  */
 export const CustomItems_NotCoreApi: Story = {
   args: {
-    trigger: "More",
-    label: "More",
-    open: true,
+    trigger: "Switch organisation",
+    label: "Organisations",
     groups: [
       {
-        key: "custom",
+        key: "orgs",
         items: [
           {
-            key: "profile",
-            label: "Profile",
+            key: "canonical",
+            label: "Canonical",
             displayItemsType: "custom",
             Component: ({ item }) => (
               <span style={{ display: "flex", flexDirection: "column" }}>
                 <strong>{item.label}</strong>
-                <small>View and edit your profile</small>
+                <small>Owner · 42 members</small>
+              </span>
+            ),
+          },
+          {
+            key: "community",
+            label: "Ubuntu Community",
+            displayItemsType: "custom",
+            Component: ({ item }) => (
+              <span style={{ display: "flex", flexDirection: "column" }}>
+                <strong>{item.label}</strong>
+                <small>Member · 1,208 members</small>
               </span>
             ),
           },

@@ -21,7 +21,11 @@ const Item = ({ item, itemProps, onSelect }: ItemProps): React.ReactElement => {
     className,
     displayItemsType,
     Component,
+    items,
   } = item;
+
+  // An item with children is a submenu trigger; it shows a trailing caret.
+  const hasSubmenu = !!items?.length;
 
   const handleKeyDown = (event: React.KeyboardEvent) => {
     if (event.key === "Enter" || event.key === " ") {
@@ -35,9 +39,17 @@ const Item = ({ item, itemProps, onSelect }: ItemProps): React.ReactElement => {
       <Component item={item} />
     ) : (
       <>
+        {/* Icon always precedes the text (Figma). */}
         {icon ? <span className="icon">{icon}</span> : null}
         <span className="label">{label}</span>
         {slot ? <span className="slot">{slot}</span> : null}
+        {/* Submenu items show a trailing caret; a plain slot and a submenu caret
+            are mutually exclusive in the Figma spec. */}
+        {hasSubmenu ? (
+          <span className="caret" aria-hidden="true">
+            ›
+          </span>
+        ) : null}
       </>
     );
 

@@ -1,15 +1,16 @@
-/* Component tokens — sourced from @canonical/design-tokens */
+/* Component tokens — sourced from @canonical/design-tokens.
+   Mapped strictly to the Figma "Contextual Menu" frame: white background
+   (color-background) on the modal surface, a drop shadow (no border), and a
+   muted 1px divider between groups. */
 :root {
-  --contextual-menu-color-background: var(
-    --surface-color-background,
-    var(--color-background)
-  );
-  --contextual-menu-color-border: var(--color-border);
-  --contextual-menu-border-width: var(--spacing-border-width);
-  --contextual-menu-border-radius: 0;
+  --contextual-menu-color-divider: var(--color-border-muted);
+  --contextual-menu-divider-width: var(--dimension-stroke-thickness-medium);
   --contextual-menu-min-width: 12rem;
   --contextual-menu-max-width: 20rem;
-  --contextual-menu-padding-block: var(--spacing-vertical-small);
+  /* Three-layer drop shadow from the Figma effect. */
+  --contextual-menu-shadow:
+    0 1px 1px 0 rgba(0, 0, 0, 0.15), 0 2px 2px -1px rgba(0, 0, 0, 0.15),
+    0 0 3px 0 rgba(0, 0, 0, 0.2);
   --contextual-menu-motion-duration: 0.12s;
 }
 
@@ -26,11 +27,10 @@
   z-index: var(--z-index-overlay, 100);
   min-width: var(--contextual-menu-min-width);
   max-width: var(--contextual-menu-max-width);
-  padding-block: var(--contextual-menu-padding-block);
-  background-color: var(--contextual-menu-color-background);
-  border: var(--contextual-menu-border-width, 1px) solid
-    var(--contextual-menu-color-border);
-  border-radius: var(--contextual-menu-border-radius);
+  /* Read the surface channel directly on this element so the `.modal` surface
+     applied here resolves (a :root intermediate would see it unset). */
+  background-color: var(--surface-color-background, var(--color-background));
+  box-shadow: var(--contextual-menu-shadow);
 
   /* CSS-only enter/exit animation. */
   opacity: 0;
@@ -52,9 +52,10 @@
     transition: none;
   }
 
-  /* A divider separates one group from the next. */
+  /* A muted divider separates one group from the next (Figma: group border-top,
+     color-border-muted, stroke-thickness-medium). */
   .group + .group {
-    border-block-start: var(--contextual-menu-border-width, 1px) solid
-      var(--contextual-menu-color-border);
+    border-block-start: var(--contextual-menu-divider-width, 1px) solid
+      var(--contextual-menu-color-divider);
   }
 }

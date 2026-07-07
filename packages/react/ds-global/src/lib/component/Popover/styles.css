@@ -1,15 +1,10 @@
 /* Component tokens — sourced from @canonical/design-tokens */
 :root {
-  --popover-color-background: var(
-    --surface-color-background,
-    var(--color-background)
-  );
-  --popover-color-text: var(--surface-color-text, var(--color-text));
   --popover-color-border: var(--color-border);
   --popover-border-radius: 0;
-  --popover-border-width: var(--spacing-border-width);
-  --popover-padding-vertical: var(--spacing-vertical-medium);
-  --popover-padding-horizontal: var(--spacing-horizontal-large);
+  --popover-border-width: 1px;
+  --popover-padding-vertical: var(--dimension-100);
+  --popover-padding-horizontal: var(--dimension-200);
   --popover-motion-duration: 0.12s;
 }
 
@@ -30,8 +25,11 @@
   > .content {
     position: fixed;
     z-index: var(--z-index-overlay, 100);
-    background-color: var(--popover-color-background);
-    color: var(--popover-color-text);
+    /* Read the surface channels directly on .content so the `.contrasted`
+       surface applied to this element resolves (a :root intermediate would see
+       them unset and fall back to the base colours). */
+    background-color: var(--surface-color-background, var(--color-background));
+    color: var(--surface-color-text, var(--color-text));
     border: var(--popover-border-width, 1px) solid var(--popover-color-border);
     border-radius: var(--popover-border-radius);
     padding-block: var(--popover-padding-vertical);

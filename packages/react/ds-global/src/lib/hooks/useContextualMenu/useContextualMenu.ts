@@ -74,6 +74,27 @@ const useContextualMenu = ({
     else nav.closeMenu();
   }, [isOpen, nav.openMenu, nav.closeMenu]);
 
+  // Move DOM focus into the menu when it opens so arrow keys reach the roving
+  // keyboard handler (WAI-ARIA menu button: opening focuses the first item).
+  // Fires only on open; the double rAF waits for the popup to render and the
+  // roving `tabindex="0"` to be applied before focus lands.
+  // @note Impure — moves DOM focus.
+  useEffect(() => {
+    if (typeof window === "undefined" || !isOpen) return;
+    const menu = popupRef.current;
+    if (!menu) return;
+    const focusMenu = () => {
+      const firstItem = menu.querySelector<HTMLElement>(
+        '[role="menuitem"]:not([aria-disabled="true"])',
+      );
+      // Prefer the first enabled menuitem; fall back to the menu container,
+      // which carries the keyboard handler.
+      (firstItem ?? menu).focus();
+    };
+    const id = requestAnimationFrame(() => requestAnimationFrame(focusMenu));
+    return () => cancelAnimationFrame(id);
+  }, [isOpen, popupRef]);
+
   // The trigger must drive the DISCLOSURE (the source of truth for open) while
   // keeping the disclosure's click/keyboard handlers. The tree's toggle is not
   // used for open/close here.
@@ -87,6 +108,28 @@ const useContextualMenu = ({
     [isOpen, popupId, getDisclosureToggleProps],
   );
 
+  // Bridge the tree's keyboard handling to the disclosure, which owns the open
+  // state. Escape and Tab close the menu and return focus to the trigger (WCAG /
+  // WAI-ARIA menu pattern); every other key (arrows, Home/End, type-ahead,
+  // Enter) is delegated to the navigation tree.
+  const handleMenuKeyDown = useCallback(
+    (
+      event: React.KeyboardEvent,
+      treeKeyDown?: (e: React.KeyboardEvent) => void,
+    ) => {
+      if (event.key === "Escape" || event.key === "Tab") {
+        // Tab must not move focus to the next control while the menu is open.
+        if (event.key === "Tab") event.preventDefault();
+        close();
+        // @note Impure — returns focus to the trigger.
+        targetRef.current?.focus();
+        return;
+      }
+      treeKeyDown?.(event);
+    },
+    [close, targetRef],
+  );
+
   // Menu-role ARIA getters, composing the base navigation prop-getters (for
   // roving tabindex + refs) with the contextual-menu ARIA presets.
   const getMenuProps = useCallback(
@@ -94,12 +137,20 @@ const useContextualMenu = ({
       label?: string;
       labelledBy?: string;
       ref?: React.Ref<HTMLElement>;
-    }) => ({
-      // Compose the positioning ref (if provided) with the navigation menu ref.
-      ...nav.getMenuProps(opts?.ref ? { ref: opts.ref } : undefined),
-      ...getMenuAriaProps(nav, opts),
-    }),
-    [nav],
+    }) => {
+      const baseProps = nav.getMenuProps(
+        opts?.ref ? { ref: opts.ref } : undefined,
+      );
+      const treeKeyDown = baseProps.onKeyDown;
+      return {
+        ...baseProps,
+        ...getMenuAriaProps(nav, opts),
+        "aria-modal": true,
+        onKeyDown: (event: React.KeyboardEvent) =>
+          handleMenuKeyDown(event, treeKeyDown),
+      };
+    },
+    [nav, handleMenuKeyDown],
   );
 
   const getGroupProps = useCallback(

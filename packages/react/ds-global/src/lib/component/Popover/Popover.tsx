@@ -1,10 +1,17 @@
 import type React from "react";
 import { useCallback } from "react";
-import { useDisclosure } from "#lib/hooks/index.js";
+import {
+  getReadingDirectionPlacement,
+  readDocumentDirection,
+  useDisclosure,
+} from "#lib/hooks/index.js";
 import type { PopoverProps } from "./types.js";
 import "./styles.css";
 
+// The popover content sits on the `contrasted` surface so it stands out from
+// the page behind it (dark chip on a light UI, light on a dark UI).
 const componentCssClassName = "ds popover";
+const contentSurfaceClassName = "contrasted";
 
 /**
  * A popover reveals supplementary content anchored to a trigger. It renders as a
@@ -43,11 +50,14 @@ const Popover = ({
   } = useDisclosure({
     mode: "click",
     isOpen: open,
-    preferredDirections,
+    // Auto-fit by default, opening toward the reading direction first.
+    preferredDirections:
+      preferredDirections ??
+      getReadingDirectionPlacement(readDocumentDirection()),
     distance,
     gutter,
     maxWidth,
-    autoFit,
+    autoFit: autoFit ?? true,
     closeOnEscape,
     closeOnOutsideClick,
     onShow: () => onOpenChange?.(true),
@@ -90,7 +100,7 @@ const Popover = ({
         {trigger}
       </summary>
       <div
-        className="content"
+        className={["content", contentSurfaceClassName].join(" ")}
         id={popupId}
         ref={popupRef}
         role="dialog"
