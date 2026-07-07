@@ -242,6 +242,7 @@ const useWindowFitment = ({
     ): BestPosition | undefined => {
       if (isServer) return;
       let fallbackPosition: BestPosition | undefined;
+      let fallbackScore = Number.POSITIVE_INFINITY;
 
       if (!placements.length) {
         throw new Error("Preferred directions must not be empty.");
@@ -302,15 +303,30 @@ const useWindowFitment = ({
           };
         }
 
-        // Otherwise remember the FIRST placement's clamped position as the
-        // fallback, used only when no side fits naturally.
-        fallbackPosition ||= {
+        // No side fits naturally → this placement is a fallback candidate. Score
+        // candidates and keep the best, rather than always taking the first:
+        //   1. Least clamping (smallest total auto-fit offset) — the placement
+        //      that overflows the viewport least sits closest to its ideal spot.
+        //   2. Tie-break AGAINST a popup forced taller than it is wide: a tall,
+        //      narrow column reads as cramped, so a placement that keeps the
+        //      popup at least as wide as it is tall is preferred. (The popup's
+        //      own dimensions are placement-invariant here, so this mainly steers
+        //      which clamped candidate wins when overflows are comparable.)
+        const candidate: BestPosition = {
           positionName: direction,
           align,
           position: absolutePosition,
           fits: false,
           autoFitOffset,
         };
+        const clampCost = (p: BestPosition) =>
+          Math.abs(p.autoFitOffset.top) + Math.abs(p.autoFitOffset.left);
+        const tallPenalty = popupRect.height > popupRect.width ? 1 : 0;
+        const score = clampCost(candidate) + tallPenalty;
+        if (!fallbackPosition || score < fallbackScore) {
+          fallbackPosition = candidate;
+          fallbackScore = score;
+        }
       }
 
       return fallbackPosition as BestPosition;
