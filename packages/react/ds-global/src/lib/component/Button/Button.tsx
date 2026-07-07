@@ -45,24 +45,21 @@ const Button = ({
     );
   }
 
-  // While loading, the Spinner takes the single leading icon slot; otherwise
-  // the consumer's icon (if any) does.
-  const leading = loading ? (
-    <span className="icon">
-      <Spinner />
-    </span>
-  ) : (
-    icon && <span className="icon">{icon}</span>
-  );
+  const iconElement = icon && <span className="icon">{icon}</span>;
 
   return (
     <button
       id={id}
       className={[
         componentCssClassName,
+        // The `.p` baseline utility supplies the body-text tier (font, snapped
+        // line-height) and the padding-block nudges that align the button box
+        // to the baseline grid — so the box height tracks the text inside.
+        "p",
         importance,
         anticipation,
         variant,
+        loading && "loading",
         className,
       ]
         .filter(Boolean)
@@ -73,8 +70,17 @@ const Button = ({
       disabled={disabled || loading}
       {...props}
     >
-      {leading}
-      {children}
+      {/* The icon and label stay in the DOM while loading so the button keeps
+          its width; CSS hides them (visibility:hidden) and the Spinner is
+          overlaid centered on top. The label is wrapped so it can be hidden
+          (a bare text child is not an element and cannot be). */}
+      {iconElement}
+      {hasVisibleChildren && <span className="label">{children}</span>}
+      {loading && (
+        <span className="loading-spinner" aria-hidden="true">
+          <Spinner />
+        </span>
+      )}
     </button>
   );
 };

@@ -8,14 +8,13 @@
   --button-color-border-hover: var(--button-color-border);
   --button-color-border-active: var(--button-color-border);
 
-  --button-margin-left: var(--spacing-horizontal-large);
-  --button-margin-bottom: var(--spacing-input-margin-bottom);
-  --button-padding-vertical: var(--spacing-input-padding-vertical);
-  --button-padding-horizontal: var(--spacing-horizontal-large);
-  --button-border-width: var(--spacing-border-width);
-  --button-font-size: var(--font-size-default);
-  --button-font-weight: var(--font-weight-default);
-  --button-line-height: var(--line-height-default);
+  /* Inline padding only — the block padding is owned by the `.p` baseline
+     utility, which snaps the box height to the baseline grid (see below).
+     Figma: dimension/100 (8px) inline. */
+  --button-padding-horizontal: var(--dimension-100);
+  --button-border-width: var(--dimension-stroke-thickness-medium);
+  /* Label weight — the button label is medium, not the `.p` body weight. */
+  --button-font-weight: var(--font-weight-medium, var(--font-weight-default));
 }
 
 /* ==========================================================================
@@ -32,6 +31,7 @@
 */
 
 .ds.button {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -47,12 +47,12 @@
   border-style: solid;
   border-width: var(--button-border-width);
 
-  font-size: var(--button-font-size);
+  /* Typography and block padding come from the `.p` baseline utility on the
+     element (font-size, snapped line-height, and the padding-block nudges that
+     align the box to the baseline grid). The button only overrides the label
+     weight and its own inline padding — declaring font-size/line-height/
+     padding-block here would bypass the baseline-grid maths. */
   font-weight: var(--button-font-weight);
-  line-height: var(--button-line-height);
-  margin-block-end: var(--button-margin-bottom);
-  margin-inline-end: var(--button-margin-left);
-  padding-block: var(--button-padding-vertical);
   padding-inline: var(--button-padding-horizontal);
 
   text-align: center;
@@ -71,6 +71,28 @@
   &:disabled {
     cursor: not-allowed;
     opacity: 0.5;
+  }
+}
+
+/* ==========================================================================
+   Loading State
+   ========================================================================== */
+
+/* Loading replaces the label with a Spinner but keeps the button's width: the
+   icon and label stay in the DOM (hidden, so their box still reserves space)
+   and the Spinner is overlaid centred on top. */
+.ds.button.loading {
+  & > .icon,
+  & > .label {
+    visibility: hidden;
+  }
+
+  & > .loading-spinner {
+    position: absolute;
+    inset: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
   }
 }
 

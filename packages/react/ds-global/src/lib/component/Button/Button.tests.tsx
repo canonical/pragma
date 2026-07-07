@@ -182,9 +182,9 @@ describe("Button component", () => {
   });
 
   describe("loading state", () => {
-    it("renders a Spinner in the icon slot", () => {
+    it("overlays a Spinner while loading", () => {
       const { container } = render(<Component loading>Saving</Component>);
-      const spinner = container.querySelector(".icon .ds.spinner");
+      const spinner = container.querySelector(".loading-spinner .ds.spinner");
       expect(spinner).toBeInTheDocument();
     });
 
@@ -195,14 +195,24 @@ describe("Button component", () => {
       expect(button).toBeDisabled();
     });
 
-    it("replaces the consumer icon with the Spinner while loading", () => {
+    it("keeps the label in the DOM while loading (preserves width, no collapse)", () => {
+      const { container } = render(<Component loading>Saving</Component>);
+      // The label stays rendered (hidden via CSS) so the button keeps its width.
+      const label = container.querySelector(".label");
+      expect(label).toHaveTextContent("Saving");
+    });
+
+    it("keeps the consumer icon in the DOM but adds the Spinner overlay", () => {
       const { container } = render(
         <Component loading icon={<span data-testid="icon">+</span>}>
           Saving
         </Component>,
       );
-      expect(screen.queryByTestId("icon")).not.toBeInTheDocument();
-      expect(container.querySelector(".ds.spinner")).toBeInTheDocument();
+      // The icon remains (hidden via CSS), and the Spinner is overlaid on top.
+      expect(screen.getByTestId("icon")).toBeInTheDocument();
+      expect(
+        container.querySelector(".loading-spinner .ds.spinner"),
+      ).toBeInTheDocument();
     });
 
     it("is neither busy nor disabled when not loading", () => {
