@@ -1,18 +1,27 @@
 /**
  * Tile.Content styles
- * @implements dso:global.subcomponent.tile-content
+ * @implements ds:global.subcomponent.tile-content
  *
  * DSL anatomy mapping:
- * - layout.type: stack -> display: flex; flex-direction: column
- * - layout.direction: vertical -> flex-direction: column
- * - spacing.internal: spacing/medium -> padding: var(--spacing-medium)
+ * - layout.type: stack, layout.direction: vertical -> flex column
+ * - spacing.padding.top: dimension/100, spacing.padding.bottom: dimension/200,
+ *   spacing.internal.horizontal: dimension/200 -> top 100, bottom 200,
+ *   sides 200. With a header above (padding-bottom 100), the two sections read
+ *   as top 100 / sides 200 / bottom 200 with the sections meeting in between.
  */
+:root {
+  --tile-content-padding-top: var(--dimension-100);
+  --tile-content-padding-bottom: var(--dimension-200);
+  --tile-content-padding-inline: var(--dimension-200);
+  --tile-content-gap: var(--dimension-100);
+}
+
 .ds.tile-content {
-  /* layout.type: stack, layout.direction: vertical */
   display: flex;
   flex-direction: column;
+  gap: var(--tile-content-gap);
 
-  /* spacing.internal: spacing/medium */
-  padding: var(--tile-content-padding, var(--spacing-medium, 1rem));
-  gap: var(--tile-content-gap, var(--spacing-medium, 1rem));
+  padding-block-start: var(--tile-content-padding-top);
+  padding-block-end: var(--tile-content-padding-bottom);
+  padding-inline: var(--tile-content-padding-inline);
 }

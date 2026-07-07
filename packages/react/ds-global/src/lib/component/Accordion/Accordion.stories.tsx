@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import * as decorators from "../../../storybook/decorators.js";
 import Component from "./Accordion.js";
 
 const meta: Meta<typeof Component> = {
@@ -77,62 +78,21 @@ export const Heading: Story = {
  * component is nested inside successive `.surface` containers.
  */
 export const OnSurfaces: Story = {
-  render: () => (
-    // `.surface` re-channels the foreground tokens but does not set its own
-    // background, so each wrapper's background is hard-coded from the matching
-    // layer token. Wrappers pad only on the block axis (no inline padding) so
-    // the nesting reads as stacked surface bands, not nested boxes.
-    <div
-      className="surface"
-      style={{
-        paddingBlock: "var(--dimension-200)",
-        background: "var(--color-background)",
-      }}
-    >
+  parameters: { grid: true },
+  render: () =>
+    // The accordion's header background uses the ghost surface channel, which
+    // steps with each nested surface band. The bands are subgrids, so the
+    // accordion (grid-column: 1 / -1) aligns to the page grid.
+    decorators.surfaces((level) => (
       <Component>
-        <Component.Item heading="On a surface" expanded>
-          <p className="p">Header background at the base surface level.</p>
+        <Component.Item heading={`On surface level ${level + 1}`} expanded>
+          <p className="p">
+            The header background steps with the surface level.
+          </p>
         </Component.Item>
         <Component.Item heading="Second item">
           <p className="p">Content.</p>
         </Component.Item>
       </Component>
-
-      <div
-        className="surface"
-        style={{
-          marginBlockStart: "var(--dimension-200)",
-          paddingBlock: "var(--dimension-200)",
-          background: "var(--color-background-layer2)",
-        }}
-      >
-        <Component>
-          <Component.Item heading="On surface layer 2" expanded>
-            <p className="p">Header background steps to layer 2.</p>
-          </Component.Item>
-          <Component.Item heading="Second item">
-            <p className="p">Content.</p>
-          </Component.Item>
-        </Component>
-
-        <div
-          className="surface"
-          style={{
-            marginBlockStart: "var(--dimension-200)",
-            paddingBlock: "var(--dimension-200)",
-            background: "var(--color-background-layer3)",
-          }}
-        >
-          <Component>
-            <Component.Item heading="On surface layer 3" expanded>
-              <p className="p">Header background steps to layer 3.</p>
-            </Component.Item>
-            <Component.Item heading="Second item">
-              <p className="p">Content.</p>
-            </Component.Item>
-          </Component>
-        </div>
-      </div>
-    </div>
-  ),
+    )),
 };

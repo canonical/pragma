@@ -1,6 +1,6 @@
 /**
  * Card.Header styles
- * @implements dso:global.subcomponent.card-header
+ * @implements ds:global.subcomponent.card-header
  *
  * DSL anatomy: layout.type flow, space-between; title uses font/weight/semibold.
  * A content-bearing section: it pads itself (the card frame applies no general

@@ -1,11 +1,12 @@
 /**
  * Card styles
- * @implements dso:global.component.card
+ * @implements ds:global.component.card
  *
- * The Card establishes its own `.surface` context (applied by the component),
- * so its background reads the surface channel and auto-steps when a card is
- * nested inside another surface or card (surface 1 -> base, 2 -> layer2,
- * 3 -> layer3). Colour tokens follow the Figma spec.
+ * The Card is NOT a surface: it establishes no `.surface` context and sets no
+ * background of its own, so on a surface it takes the same background as its
+ * container (no step) and reads as flush. It stays delimited by its border,
+ * radius, and the dividers between its sections. Colour tokens follow the Figma
+ * spec.
  */
 :root {
   --card-color-border: var(--color-border-muted);
@@ -18,9 +19,8 @@
   display: flex;
   flex-direction: column;
 
-  /* Background from the surface channel (the component adds `.surface`, so the
-     channel is established on this element and steps with nesting). */
-  background: var(--surface-color-background, var(--color-background));
+  /* No background of its own: the card is not a surface, so it inherits its
+     container's background and blends with the surface it sits on. */
 
   border: var(--card-border-width) solid var(--card-color-border);
   border-radius: var(--card-border-radius);

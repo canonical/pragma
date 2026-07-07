@@ -2,7 +2,7 @@ import type { Meta, StoryFn } from "@storybook/react-vite";
 import Component from "./Content.js";
 
 const meta = {
-  title: "_work_in_progress/component/Card/Content",
+  title: "components/Card/Content",
   component: Component,
   tags: ["autodocs"],
   argTypes: {
@@ -29,7 +29,7 @@ export default meta;
 
 export const Default: StoryFn<typeof Component> = (props) => (
   <Component {...props}>
-    <h3>Card content</h3>
+    <h4>Card content</h4>
     <p>This is the main content area of the card.</p>
     <ul>
       <li>First item</li>

@@ -4,7 +4,7 @@ import Component from "./Card.js";
 import type { CardProps } from "./types.js";
 
 const meta = {
-  title: "_work_in_progress/component/Card",
+  title: "components/Card",
   component: Component,
   tags: ["autodocs"],
 } satisfies Meta<typeof Component>;
@@ -12,12 +12,14 @@ const meta = {
 export default meta;
 
 /**
- * The base card. The core api is `Card.Content` — a padded content section.
+ * The base card: a single padded content block. `Card.Content` is the core
+ * API — the header, image, and footer shown in other stories are optional
+ * extras, not part of the base card.
  */
 export const Default: StoryFn<CardProps> = (props) => (
   <Component {...props} style={{ maxWidth: "24rem" }}>
     <Component.Content>
-      <h3>Build a bare-metal cloud on a Raspberry Pi cluster with MAAS</h3>
+      <h4>Build a bare-metal cloud on a Raspberry Pi cluster with MAAS</h4>
       <p className="p">
         The Raspberry Pi 4, with its fast CPU cores, up to 8 GB of RAM and tiny
         footprint, is a great option to run a cluster on. Provisioning is easy
@@ -30,13 +32,13 @@ export const Default: StoryFn<CardProps> = (props) => (
 /**
  * A full-bleed image above the content block.
  *
- * Note: `Card.Image` is not part of the core api.
+ * `Card.Image` is not part of the core API.
  */
 export const WithImage: StoryFn<CardProps> = (props) => (
   <Component {...props} style={{ maxWidth: "24rem" }}>
     <Component.Image src="https://assets.ubuntu.com/v1/5ce214a4-rpi.png" />
     <Component.Content>
-      <h3>Build a bare-metal cloud on a Raspberry Pi cluster with MAAS</h3>
+      <h4>Build a bare-metal cloud on a Raspberry Pi cluster with MAAS</h4>
       <p className="p">
         The Raspberry Pi 4 is a great option to run a cluster on, and
         provisioning is easy with <a href="https://maas.io">MAAS</a>.
@@ -50,13 +52,13 @@ export const WithImage: StoryFn<CardProps> = (props) => (
  * pad themselves; the card frame applies no general padding and the image
  * bleeds edge to edge. Dividers separate adjacent sections.
  *
- * Note: `Card.Header`, `Card.Image` and `Card.Footer` are not part of the core
- * api — the base card only has `Card.Content`.
+ * `Card.Header`, `Card.Image` and `Card.Footer` are **not core API** — the base
+ * card is just `Card.Content`; these are optional sections layered on top.
  */
 export const HeaderContentFooter: StoryFn<CardProps> = (props) => (
   <Component {...props} style={{ maxWidth: "24rem" }}>
     <Component.Header>
-      <h3>Ubuntu 24.04 LTS</h3>
+      <h4>Ubuntu 24.04 LTS</h4>
       <span className="p">Noble Numbat</span>
     </Component.Header>
     <Component.Image src="https://assets.ubuntu.com/v1/08478b35-ubuntu-core-cybersecurity.png" />
@@ -74,29 +76,6 @@ export const HeaderContentFooter: StoryFn<CardProps> = (props) => (
 );
 
 /**
- * A compact horizontal card: a fixed-size thumbnail beside a title and excerpt,
- * as used in blog sidebars and related-content lists.
- *
- * Note: `Card.Thumbnail` is not part of the core api.
- */
-export const WithThumbnail: StoryFn<CardProps> = (props) => (
-  <Component {...props} style={{ maxWidth: "28rem" }}>
-    <Component.Thumbnail
-      imageProps={{
-        src: "https://assets.ubuntu.com/v1/31bd2627-logo-raspberry-pi.svg",
-        alt: "Raspberry Pi logo",
-      }}
-    >
-      <h3>Ubuntu Core on Raspberry Pi</h3>
-      <p className="p">
-        A secure, transactional OS for IoT devices. Ubuntu Core supports both
-        the Pi 2 and Pi 3, with confined snaps and automatic updates.
-      </p>
-    </Component.Thumbnail>
-  </Component>
-);
-
-/**
  * A grid of cards sharing the same structure, so attributes line up and can be
  * scanned across the set — the primary use case for cards over the flexible
  * Tile.
@@ -106,7 +85,7 @@ export const GridLayout: StoryFn<CardProps> = () => (
     <Component>
       <Component.Image src="https://assets.ubuntu.com/v1/0aa26309-maas_banners_leaderboard.png" />
       <Component.Content>
-        <h3>MAAS</h3>
+        <h4>MAAS</h4>
         <p className="p">
           Self-service, remote installation of Windows, CentOS, ESXi and Ubuntu
           on real servers, turning your data centre into a bare-metal cloud.
@@ -119,7 +98,7 @@ export const GridLayout: StoryFn<CardProps> = () => (
     <Component>
       <Component.Image src="https://assets.ubuntu.com/v1/2c7e3fab-juju-header-illustration.svg" />
       <Component.Content>
-        <h3>Juju</h3>
+        <h4>Juju</h4>
         <p className="p">
           An open-source orchestration engine for software operators that
           simplifies deployment, configuration and scaling of applications.
@@ -132,7 +111,7 @@ export const GridLayout: StoryFn<CardProps> = () => (
     <Component>
       <Component.Image src="https://assets.ubuntu.com/v1/20ace314-managed_services.png" />
       <Component.Content>
-        <h3>Landscape</h3>
+        <h4>Landscape</h4>
         <p className="p">
           Systems-management for Ubuntu estates: patching, compliance and
           monitoring across physical, virtual and cloud instances at scale.
@@ -148,52 +127,22 @@ export const GridLayout: StoryFn<CardProps> = () => (
 GridLayout.decorators = [decorators.grid()];
 
 /**
- * The Card establishes its own `.surface`, so its background steps as it is
- * nested inside successive `.surface` contexts (surface 1 -> 2 -> 3). The
- * wrappers set an explicit background from the matching layer token because
- * `.surface` re-channels foreground tokens but sets no background of its own.
+ * The Card is not a surface: it sets no background of its own, so on each
+ * surface it takes the *same* background as its container and reads as flush —
+ * delimited only by its border and radius. Placed on three different surface
+ * levels, the card blends with each rather than stepping to the next layer.
  */
-export const OnSurfaces: StoryFn<CardProps> = () => {
-  const card = (
+export const OnSurfaces: StoryFn<CardProps> = () =>
+  // The card sets no background of its own, so it takes the same background as
+  // the surface band it sits on and blends in (rather than stepping).
+  decorators.surfaces((level) => (
     <Component>
       <Component.Content>
-        <h3>Placeholder content</h3>
-        <p className="p">The card background steps with the surface level.</p>
+        <h4>On surface level {level + 1}</h4>
+        <p className="p">
+          The card takes the same background as the surface it sits on.
+        </p>
       </Component.Content>
     </Component>
-  );
-
-  // Surface wrappers pad only on the block axis (no inline padding), so the
-  // nesting reads as stacked surface bands rather than nested card boxes.
-  return (
-    <div
-      className="surface"
-      style={{
-        paddingBlock: "var(--dimension-200)",
-        background: "var(--color-background)",
-      }}
-    >
-      {card}
-      <div
-        className="surface"
-        style={{
-          marginBlockStart: "var(--dimension-200)",
-          paddingBlock: "var(--dimension-200)",
-          background: "var(--color-background-layer2)",
-        }}
-      >
-        {card}
-        <div
-          className="surface"
-          style={{
-            marginBlockStart: "var(--dimension-200)",
-            paddingBlock: "var(--dimension-200)",
-            background: "var(--color-background-layer3)",
-          }}
-        >
-          {card}
-        </div>
-      </div>
-    </div>
-  );
-};
+  ));
+OnSurfaces.parameters = { grid: true };

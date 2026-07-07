@@ -12,7 +12,7 @@ describe("Tile SSR", () => {
     );
     expect(html).toContain("Header");
     expect(html).toContain("Content");
-    expect(html).toContain('class="ds tile"');
+    expect(html).toContain('class="ds tile surface"');
   });
 
   it("renders subcomponents with correct classes on server", () => {

@@ -1,66 +1,32 @@
 /**
  * Tile styles
- * @implements dso:global.component.tile
+ * @implements ds:global.component.tile
+ *
+ * The Tile always provides a surface: the component adds `.surface`, so the
+ * surface channel is established on this element (and steps when tiles/surfaces
+ * nest). It paints that background so it stands out on the page (dashboards,
+ * bento layouts). It shares the Card radius and has no border of its own. It is
+ * a static container — no cursor, hover, or focus affordance.
  *
  * DSL anatomy mapping:
- * - layout.type: stack -> display: flex; flex-direction: column
- * - layout.direction: vertical -> flex-direction: column
- * - interaction.cursor: pointer -> cursor: pointer
- * - appearance.background: color/surface/tile -> background: var(--color-surface-tile)
- * - appearance.radius: radius/tile -> border-radius: var(--radius-tile)
+ * - layout.type: stack, layout.direction: vertical -> flex column
+ * - appearance.background: color/surface/tile -> the surface background channel
+ * - appearance.radius: radius/card -> shared card radius (--dimension-radius-medium)
  */
+:root {
+  /* Shared with Card. --dimension-radius-medium is currently 0; intended 9. */
+  --tile-border-radius: var(--dimension-radius-medium);
+}
+
 .ds.tile {
-  /* layout.type: stack, layout.direction: vertical */
   display: flex;
   flex-direction: column;
 
-  /* interaction.cursor: pointer */
-  cursor: pointer;
+  /* Tile is a surface: it paints its own background (stands out on the page). */
+  background: var(--surface-color-background, var(--color-background));
 
-  /* appearance.background: color/surface/tile */
-  background: var(
-    --tile-background,
-    var(--color-surface-tile, var(--color-surface, #fff))
-  );
+  border-radius: var(--tile-border-radius);
 
-  /* appearance.radius: radius/tile */
-  border-radius: var(
-    --tile-border-radius,
-    var(--radius-tile, var(--border-radius, 0.5rem))
-  );
-
-  /* Additional styling */
-  border: var(--tile-border-width, 1px) var(--tile-border-style, solid)
-    var(--tile-border-color, var(--color-border, #e0e0e0));
-  box-shadow: var(
-    --tile-box-shadow,
-    var(--shadow-small, 0 1px 3px rgba(0, 0, 0, 0.1))
-  );
-
-  /* Transition for hover effect */
-  transition:
-    box-shadow var(--transition-duration-fast, 150ms)
-    var(--transition-easing-standard, ease-out),
-    border-color var(--transition-duration-fast, 150ms)
-    var(--transition-easing-standard, ease-out);
-
-  /* Prevent overflow */
+  /* Clip section corners (e.g. full-bleed content) to the tile radius. */
   overflow: hidden;
-
-  &:hover {
-    box-shadow: var(
-      --tile-box-shadow-hover,
-      var(--shadow-medium, 0 4px 6px rgba(0, 0, 0, 0.1))
-    );
-    border-color: var(
-      --tile-border-color-hover,
-      var(--color-border-hover, #bdbdbd)
-    );
-  }
-
-  &:focus-visible {
-    outline: var(--focus-outline-width, 2px) solid
-      var(--focus-outline-color, var(--color-focus, #0066cc));
-    outline-offset: var(--focus-outline-offset, 2px);
-  }
 }
