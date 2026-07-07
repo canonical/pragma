@@ -3,7 +3,18 @@
   "description": "Component generators for Summon - React, Svelte and Lit component scaffolding",
   "version": "0.29.0",
   "type": "module",
-  "main": "src/index.ts",
+  "main": "dist/esm/index.js",
+  "module": "dist/esm/index.js",
+  "types": "dist/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/esm/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
   "author": {
     "email": "webteam@canonical.com",
     "name": "Canonical Webteam"
@@ -21,7 +32,7 @@
     "access": "public"
   },
   "scripts": {
-    "build": "echo 'No build needed - runs directly from TypeScript'",
+    "build": "tsc -p tsconfig.build.json && bun ../../../scripts/copy-templates.ts src dist/esm",
     "build:all": "bun run build",
     "check": "bun run check:biome && bun run check:ts && bun run check:webarchitect",
     "check:fix": "bun run check:biome:fix && bun run check:ts",
@@ -47,7 +58,7 @@
     "@canonical/utils": "^0.29.0"
   },
   "peerDependencies": {
-    "@canonical/summon-core": "^0.18.0 || ^0.20.0",
-    "@canonical/task": "^0.18.0 || ^0.20.0"
+    "@canonical/summon-core": "^0.29.0",
+    "@canonical/task": "^0.29.0"
   }
 }

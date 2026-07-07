@@ -289,6 +289,15 @@ For a TypeScript-only tool that runs with Bun (the `tool-ts` ruleset), the packa
 
 The key differences: `module` and `types` point to TypeScript source files, `files` includes `src` instead of `dist`, and `check:webarchitect` uses the `tool-ts` ruleset. The build script does nothing because Bun executes TypeScript directly.
 
+> **Ship-raw-TS only works when the consumer runs Bun.** This pattern is fine for packages
+> consumed inside the monorepo or bundled into a compiled binary. A package that publishes a
+> **node-runnable `bin`** (or is `await import()`-ed at runtime by one) must instead compile to
+> `dist/esm` with `tsc -p tsconfig.build.json`, point `main`/`module`/`exports`/`bin` at the
+> built JS, set `files: ["dist"]`, and use `#!/usr/bin/env node`. Node cannot execute `.ts`,
+> and `__dirname`/`import pkg from "./package.json"` behave differently under Node ESM. See the
+> `@canonical/summon` / `@canonical/summon-application` packages for a worked example, including
+> copying non-`.ts` template assets into `dist` (they are not compiled by `tsc`).
+
 The `bin` field declares the CLI entry point. After installation, users can run the tool by name.
 
 ## Creating a React component package

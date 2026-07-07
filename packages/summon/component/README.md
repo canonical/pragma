@@ -14,23 +14,17 @@ Creating a new component by hand means creating 5-7 files with boilerplate that'
 
 ## Installation
 
-```bash
-bun add @canonical/summon-component
-```
-
-Requires `@canonical/summon` as a peer dependency:
+Install this package alongside the `@canonical/summon` CLI — summon
+auto-discovers it and exposes `summon component react|svelte|lit`:
 
 ```bash
-bun add @canonical/summon
+npm install -g @canonical/summon @canonical/summon-component
+# or: bun add -g @canonical/summon @canonical/summon-component
 ```
 
-Or link globally for use across projects:
-
-```bash
-cd /path/to/summon-component
-bun link        # for bun
-npm link        # for npm
-```
+The CLI runs under plain Node (no Bun required). Install both into the same
+location (both global, or both as project dependencies) so discovery can find the
+generators.
 
 ---
 
@@ -582,18 +576,12 @@ summon
 #   └─ react, svelte, lit
 ```
 
-If not, verify installation:
+If not, verify both the CLI and this generator package are installed **into the
+same location** (both global, or both project dependencies) — summon only
+discovers generators it can resolve:
 
 ```bash
-bun add @canonical/summon-component
-```
-
-### "Cannot find module @canonical/summon"
-
-Install the peer dependency:
-
-```bash
-bun add @canonical/summon
+npm install -g @canonical/summon @canonical/summon-component
 ```
 
 ### Barrel file not updated

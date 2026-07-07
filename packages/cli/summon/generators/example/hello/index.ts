@@ -8,9 +8,13 @@
  */
 
 import * as path from "node:path";
+import { fileURLToPath } from "node:url";
 import type { GeneratorDefinition } from "@canonical/summon-core";
 import { template, withHelpers } from "@canonical/summon-core";
 import { info, mkdir, sequence_, when } from "@canonical/task";
+
+// ESM-safe module dir — `__dirname` is a CommonJS global absent under Node ESM.
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // =============================================================================
 // Types
@@ -21,6 +25,9 @@ interface HelloAnswers {
   description: string;
   greeting: string;
   withReadme: boolean;
+  // Index signature so the answers object is assignable to withHelpers'
+  // Record<string, unknown> parameter.
+  [key: string]: unknown;
 }
 
 // =============================================================================
@@ -30,6 +37,7 @@ interface HelloAnswers {
 export const generator: GeneratorDefinition<HelloAnswers> = {
   meta: {
     name: "hello",
+    displayName: "summon:example/hello",
     description: "A demo generator that creates a simple hello world project",
     version: "0.1.0",
     help: `This generator demonstrates the core features of Summon:

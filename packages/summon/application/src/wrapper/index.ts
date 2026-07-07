@@ -15,7 +15,7 @@ import {
 import { toKebabCase, toPascalCase } from "@canonical/utils";
 import { normalizeCommandPath } from "../shared/casing.js";
 
-interface WrapperAnswers {
+export interface WrapperAnswers {
   readonly wrapperName: string;
 }
 

@@ -24,6 +24,7 @@ interface Answers {
 export const generator: GeneratorDefinition<Answers> = {
   meta: {
     name: "init",
+    displayName: "summon:init",
     description: "Create a new Summon generator",
     version: "0.1.0",
     help: `Scaffold a new generator with templates and tests.

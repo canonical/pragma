@@ -362,7 +362,7 @@ export const generators: Record<string, AnyGenerator> = {
 Users see the hierarchy:
 
 ```bash
-summon component        # lists react, svelte, vue
+summon component        # lists react, svelte, lit
 summon component react  # runs the React generator
 ```
 

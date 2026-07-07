@@ -103,9 +103,11 @@ describe("application/react generator", () => {
       .map((entry) => String(entry).split(path.sep).join("/"))
       .filter((rel) => statSync(path.join(templatesDir, rel)).isFile())
       // `.ejs` templates are emitted at the interpolated dest (suffix stripped).
-      .map((rel) =>
-        rel.endsWith(".ejs") ? rel.slice(0, -".ejs".length) : rel,
-      );
+      .map((rel) => (rel.endsWith(".ejs") ? rel.slice(0, -".ejs".length) : rel))
+      // The dotless `gitignore` template is emitted as `.gitignore` (npm strips
+      // a literal `.gitignore` from tarballs, so it ships dotless — see the
+      // generator). Map it back to its emitted dest for this check.
+      .map((rel) => (rel === "gitignore" ? ".gitignore" : rel));
 
     // Generate with all features on so conditionally-included templates emit.
     const result = dryRun(

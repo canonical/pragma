@@ -3,17 +3,17 @@
   "description": "Summon generators for application scaffolding: domain, route, and wrapper",
   "version": "0.29.0",
   "type": "module",
-  "main": "src/index.ts",
-  "module": "src/index.ts",
-  "types": "src/index.ts",
+  "main": "dist/esm/index.js",
+  "module": "dist/esm/index.js",
+  "types": "dist/types/index.d.ts",
   "exports": {
     ".": {
-      "types": "./src/index.ts",
-      "import": "./src/index.ts"
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/esm/index.js"
     }
   },
   "files": [
-    "src"
+    "dist"
   ],
   "author": {
     "email": "webteam@canonical.com",
@@ -25,9 +25,10 @@
   },
   "license": "GPL-3.0",
   "scripts": {
-    "build": "echo 'No build needed - runs directly from TypeScript'",
+    "build": "tsc -p tsconfig.build.json && bun ../../../scripts/copy-templates.ts src dist/esm",
+    "build:all": "bun run build",
     "check": "bun run check:biome && bun run check:ts && bun run check:webarchitect",
-    "check:webarchitect": "webarchitect tool-ts",
+    "check:webarchitect": "webarchitect library --license GPL-3.0",
     "check:fix": "bun run check:biome:fix && bun run check:ts",
     "check:biome": "biome check",
     "check:biome:fix": "biome check --write",
