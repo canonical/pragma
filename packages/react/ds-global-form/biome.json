@@ -6,7 +6,6 @@
       ".storybook",
       "*.json",
       "vite.config.ts",
-      "vitest.config.ts",
       "vitest.setup.ts",
       "!public/mockServiceWorker.js"
     ]

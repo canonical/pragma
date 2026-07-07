@@ -21,7 +21,6 @@
     "src/**/fixtures.tsx",
     "vite.config.ts",
     "vitest.setup.ts",
-    "vitest.config.ts",
     ".storybook"
   ]
 }
