@@ -61,12 +61,13 @@
      built from two half-width transparent borders; the depth from the coloured
      border on the pointing side. */
   --tooltip-arrow-half-width: calc(var(--tooltip-arrow-width) / 2);
-  /* Centre of the edge. The arrow is a ZERO-width bordered pseudo-element, so
-     its two symmetric half-width borders make the triangle centre land exactly
-     on the box origin — i.e. on `left`/`top` itself. So the centre is plain
-     `50%`; subtracting the half-width (as if positioning a real 14px box) pushes
-     the arrow 7px off-centre. The magnetic offset then shifts from this centre. */
-  --tooltip-arrow-middle: 50%;
+  /* Centre of the edge. `left`/`top` positions the ZERO-width pseudo-element's
+     origin, but its two half-width side borders render the triangle from that
+     origin OUTWARD, so the visible apex sits half-a-width past `left`. To centre
+     the apex on the box we therefore pull the origin back by half-width:
+     `50% - half-width`. (Verified by pixel measurement: plain `50%` renders the
+     apex +7px off-centre.) The magnetic offset then shifts from this centre. */
+  --tooltip-arrow-middle: calc(50% - var(--tooltip-arrow-half-width));
   --tooltip-arrow-edge: calc(-1 * var(--tooltip-arrow-depth));
   --tooltip-arrow-offset-left: 0px;
   --tooltip-arrow-offset-top: 0px;
