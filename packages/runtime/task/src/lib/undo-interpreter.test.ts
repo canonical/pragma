@@ -574,23 +574,25 @@ describe("collectUndos - lazy node handling", () => {
 // =============================================================================
 
 describe("collectUndos - Parallel result threaded to continuation", () => {
-  it("exposes the array of child values to a continuation without crashing", () => {
-    // A continuation that reads the Parallel result (e.g. its length) must see
-    // the array of child forward values, mirroring dryRun — not undefined.
-    let seenLength = -1;
+  it("threads each child's real mocked forward value to a continuation", () => {
+    // The continuation must receive each child's real mocked forward value,
+    // mirroring dryRun: a ReadFile mocks to its content string, a WriteFile to
+    // undefined. Distinct, non-empty values are used deliberately so the
+    // assertion fails against any placeholder shape (e.g. an array of []).
+    let seenResults: unknown[] = [];
     const task = flatMap(
-      parallel([writeFile("/a.txt", "a"), writeFile("/b.txt", "b")]),
+      parallel([readFile("/a.txt"), writeFile("/b.txt", "b")]),
       (results) => {
-        seenLength = (results as unknown[]).length;
+        seenResults = results as unknown[];
         return writeFile("/c.txt", "c");
       },
     );
 
     const undos = collectUndos(task);
 
-    // Two parallel writes + the continuation write, all undoable.
-    expect(undos).toHaveLength(3);
-    // The continuation read the Parallel result as a real 2-element array.
-    expect(seenLength).toBe(2);
+    expect(seenResults).toEqual(["[mock content of /a.txt]", undefined]);
+    // WriteFile /b and the continuation WriteFile /c are undoable; readFile is
+    // not, so exactly two undos are collected.
+    expect(undos).toHaveLength(2);
   });
 });
