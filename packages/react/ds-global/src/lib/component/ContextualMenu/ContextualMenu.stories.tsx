@@ -72,6 +72,30 @@ const rowActions: MenuItem[] = [
 ];
 
 /**
+ * A menu with more items than fit the viewport scrolls inside itself rather than
+ * overflowing off-screen. Open it and arrow down past the fold: the highlighted
+ * item stays focused and is scrolled into view, so no item ever "disappears".
+ */
+const longList: MenuItem[] = [
+  {
+    key: "timezones",
+    items: Array.from({ length: 40 }, (_, i) => ({
+      key: `tz-${i}`,
+      label: `UTC${i - 12 >= 0 ? "+" : ""}${i - 12}:00`,
+      url: `#tz-${i}`,
+    })),
+  },
+];
+
+export const LongScrollable: Story = {
+  args: {
+    trigger: "Timezone",
+    label: "Select a timezone",
+    groups: longList,
+  },
+};
+
+/**
  * A trigger opens the menu on click. In the docs canvas the menus render closed
  * (click a trigger to open one) so they do not stack on top of one another.
  */

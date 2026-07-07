@@ -27,6 +27,13 @@
   z-index: var(--z-index-overlay, 100);
   min-width: var(--contextual-menu-min-width);
   max-width: var(--contextual-menu-max-width);
+  /* A menu (or submenu) taller than the viewport scrolls INSIDE itself instead
+     of overflowing off-screen — otherwise keyboard-navigating to an item below
+     the fold would move the highlight to an item that is not visible. The
+     highlighted item is scrolled into view on keyboard nav (see Item). */
+  max-block-size: calc(100dvh - 2 * var(--dimension-200, 16px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
   /* Read the surface channel directly on this element so the `.modal` surface
      applied here resolves (a :root intermediate would see it unset). */
   background-color: var(--surface-color-background, var(--color-background));

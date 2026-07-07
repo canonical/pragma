@@ -114,6 +114,34 @@ const useContextualMenu = ({
     return () => cancelAnimationFrame(id);
   }, [isOpen, popupRef]);
 
+  // Keep DOM focus on the currently-highlighted item as the keyboard highlight
+  // moves. The tree only updates the roving `tabindex`; without moving focus too
+  // the new item is not scrolled into view — so navigating to an item below a
+  // long menu's fold would move the highlight to an item that stays off-screen.
+  // Focusing it (menu + submenus are portalled, so search the whole document)
+  // scrolls it into view natively. Guarded so it only runs while focus is
+  // already inside a menu (never steals focus when the menu is not in use).
+  // @note Impure — moves DOM focus.
+  const highlightedTail = nav.highlightedItems.at(-1);
+  useEffect(() => {
+    if (typeof window === "undefined" || !isOpen || !highlightedTail) return;
+    const active = document.activeElement;
+    const focusWithinMenu =
+      active instanceof HTMLElement &&
+      active.closest('[role="menu"]') !== null;
+    if (!focusWithinMenu) return;
+    const id = requestAnimationFrame(() => {
+      const item = document.querySelector<HTMLElement>(
+        '[role="menuitem"][tabindex="0"]',
+      );
+      if (item && item !== document.activeElement) {
+        item.focus();
+        item.scrollIntoView({ block: "nearest" });
+      }
+    });
+    return () => cancelAnimationFrame(id);
+  }, [isOpen, highlightedTail]);
+
   // The trigger must drive the DISCLOSURE (the source of truth for open) while
   // keeping the disclosure's click/keyboard handlers. The tree's toggle is not
   // used for open/close here.
