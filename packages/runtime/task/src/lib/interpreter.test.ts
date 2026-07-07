@@ -1768,3 +1768,45 @@ describe("Interpreter - un-recovered effect exceptions reject with a normalised 
     }
   });
 });
+
+// =============================================================================
+// runTask - interruption bypasses recovery
+// =============================================================================
+
+describe("Interpreter - interruption bypasses recovery", () => {
+  it("does not invoke a surrounding recover when a Parallel child is aborted mid-flight", async () => {
+    const controller = new AbortController();
+    let handlerCalls = 0;
+
+    // The child performs a prompt whose handler aborts the signal; the child's
+    // next loop-top guard then raises TASK_INTERRUPTED, which surfaces through
+    // the Parallel aggregator into the recover frame's effect catch.
+    const child = effect<boolean>({
+      _tag: "Prompt",
+      question: { type: "confirm", name: "go", message: "Proceed?" },
+    });
+    const task = recover(
+      effect<unknown[]>({ _tag: "Parallel", tasks: [child] }),
+      () => {
+        handlerCalls += 1;
+        return pure("recovered");
+      },
+    );
+
+    const promptHandler = async () => {
+      controller.abort("stop");
+      return true;
+    };
+
+    try {
+      await runTask(task, { signal: controller.signal, promptHandler });
+      expect.unreachable("should have thrown");
+    } catch (err) {
+      expect(err).toBeInstanceOf(TaskExecutionError);
+      expect((err as TaskExecutionError).code).toBe("TASK_INTERRUPTED");
+    }
+
+    // The interrupt bypassed the recover handler entirely.
+    expect(handlerCalls).toBe(0);
+  });
+});

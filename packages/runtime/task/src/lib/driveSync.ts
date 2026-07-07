@@ -1,14 +1,3 @@
-/**
- * Synchronous Task trampoline.
- *
- * The shared engine behind the preview interpreters (`dryRun`, `dryRunWith`,
- * `collectEffects`) and the undo collector (`collectUndos`). Like the
- * production `runTask` interpreter, it realises bind and error-recovery on an
- * explicit continuation/handler-frame stack rather than by recursing through
- * the task structure, so arbitrarily long `flatMap`/`gen` chains run in
- * constant call-stack depth.
- */
-
 import { TaskExecutionError } from "./interpreter.js";
 import type { Effect, Task, TaskError } from "./types.js";
 
@@ -23,7 +12,12 @@ type SyncFrame =
 
 /**
  * Drive a task to its final value synchronously, resolving each leaf effect
- * through `resolveEffect`.
+ * through `resolveEffect`. This is the shared engine behind the preview
+ * interpreters (`dryRun`, `dryRunWith`, `collectEffects`) and the undo
+ * collector (`collectUndos`): like the production `runTask` interpreter it
+ * realises bind and error-recovery on an explicit continuation/handler-frame
+ * stack rather than by recursing through the task structure, so arbitrarily
+ * long `flatMap`/`gen` chains run in constant call-stack depth.
  *
  * `resolveEffect` returns the value a leaf effect would produce (a mock, a
  * collected placeholder, and so on) and may record effects or mutate caller

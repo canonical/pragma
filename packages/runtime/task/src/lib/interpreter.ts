@@ -462,7 +462,15 @@ export const runTask = async <A>(
           try {
             result = await perform(cur.effect);
           } catch (thrown) {
-            cur = recoverFrom(normalizeThrownError(thrown));
+            const taskError = normalizeThrownError(thrown);
+            // Interruption is not recoverable: an abort surfaced from a
+            // Parallel/Race child (whose own guard fired mid-flight) bypasses
+            // recovery, preserving the invariant that a cancelled task cannot
+            // be resurrected by an enclosing recover/orElse/retry.
+            if (taskError.code === "TASK_INTERRUPTED") {
+              throw thrown;
+            }
+            cur = recoverFrom(taskError);
             break;
           }
           cur = cur.cont(result);
