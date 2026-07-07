@@ -88,6 +88,82 @@ describe("createHeadCollector", () => {
     );
   });
 
+  it("collects meta tags and deduplicates by http-equiv", () => {
+    const collector = createHeadCollector();
+
+    collector.add("shell", {
+      meta: [{ httpEquiv: "content-type", content: "text/html" }],
+    });
+    collector.add("page", {
+      meta: [
+        { httpEquiv: "content-type", content: "text/html; charset=utf-8" },
+      ],
+    });
+
+    const html = collector.toHtml();
+
+    expect(html).toContain('http-equiv="content-type"');
+    expect(html).toContain('content="text/html; charset=utf-8"');
+    expect(html).not.toContain('content="text/html"');
+  });
+
+  it("serializes a content-only meta tag", () => {
+    const collector = createHeadCollector();
+
+    collector.add("page", {
+      meta: [{ content: "no-referrer" }],
+    });
+
+    const html = collector.toHtml();
+
+    expect(html).toBe('<meta content="no-referrer" />');
+  });
+
+  it("deduplicates content-only meta tags by content", () => {
+    const collector = createHeadCollector();
+
+    collector.add("shell", { meta: [{ content: "shell-only" }] });
+    collector.add("page", { meta: [{ content: "page-only" }] });
+
+    const html = collector.toHtml();
+
+    expect(html).toContain('<meta content="shell-only" />');
+    expect(html).toContain('<meta content="page-only" />');
+  });
+
+  it("serializes a link with sizes", () => {
+    const collector = createHeadCollector();
+
+    collector.add("page", {
+      link: [{ rel: "icon", href: "/icon.png", sizes: "32x32" }],
+    });
+
+    const html = collector.toHtml();
+
+    expect(html).toContain('rel="icon"');
+    expect(html).toContain('sizes="32x32"');
+  });
+
+  it("serializes a link with crossorigin", () => {
+    const collector = createHeadCollector();
+
+    collector.add("page", {
+      link: [
+        {
+          rel: "preconnect",
+          href: "https://fonts.example.com",
+          crossOrigin: "anonymous",
+        },
+      ],
+    });
+
+    const html = collector.toHtml();
+
+    expect(html).toContain('rel="preconnect"');
+    expect(html).toContain('href="https://fonts.example.com"');
+    expect(html).toContain('crossorigin="anonymous"');
+  });
+
   it("renders all tag types together", () => {
     const collector = createHeadCollector();
 

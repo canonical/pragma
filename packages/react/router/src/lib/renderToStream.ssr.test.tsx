@@ -43,6 +43,33 @@ describe("renderToStream", () => {
     expect(html).toContain("home-content");
   });
 
+  it("escapes script-breaking characters in the bootstrap payload", async () => {
+    const router = createRouter({
+      home: route({
+        url: "/",
+        content: () => "home",
+      }),
+    });
+    const originalDehydrate = router.dehydrate.bind(router);
+
+    router.dehydrate = () =>
+      ({
+        marker: "</script><b>\u2028\u2029",
+      }) as unknown as ReturnType<typeof originalDehydrate>;
+
+    const result = await renderToStream(router, "/");
+    const html = await readStream(result.stream);
+
+    expect(result.bootstrapScriptContent).toContain("\\u003c");
+    expect(result.bootstrapScriptContent).toContain("\\u003e");
+    expect(result.bootstrapScriptContent).toContain("\\u2028");
+    expect(result.bootstrapScriptContent).toContain("\\u2029");
+    expect(result.bootstrapScriptContent).not.toContain("</script>");
+    expect(html).toContain("home");
+
+    router.dehydrate = originalDehydrate;
+  });
+
   it("returns a null bootstrap script when dehydration is unavailable", async () => {
     const router = createRouter({
       home: route({

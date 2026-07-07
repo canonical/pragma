@@ -1,5 +1,6 @@
 import { render } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
+import createHeadCollector from "./createHeadCollector.js";
 import HeadProvider from "./HeadProvider.js";
 import useHead from "./useHead.js";
 
@@ -109,6 +110,183 @@ describe("useHead (client)", () => {
     );
 
     expect(allDescriptionMetas.length).toBe(1);
+  });
+
+  it("updates a pre-existing meta element from a sibling component", () => {
+    const { unmount } = render(
+      <HeadProvider>
+        <Meta name="description" content="first sibling" />
+        <Meta name="description" content="second sibling" />
+      </HeadProvider>,
+    );
+
+    const metas = document.head.querySelectorAll('meta[name="description"]');
+
+    expect(metas.length).toBe(1);
+    expect(metas[0]?.getAttribute("content")).toBe("second sibling");
+
+    unmount();
+
+    expect(document.head.querySelector('meta[name="description"]')).toBeNull();
+  });
+
+  it("delegates to the collector and removes its entry on unmount", () => {
+    const collector = createHeadCollector();
+
+    const { unmount } = render(
+      <HeadProvider collector={collector}>
+        <Title value="Collected Page" />
+      </HeadProvider>,
+    );
+
+    expect(collector.toHtml()).toContain("<title>Collected Page</title>");
+
+    unmount();
+
+    expect(collector.toHtml()).toBe("");
+  });
+
+  it("appends a property meta tag to document.head", () => {
+    function PropertyMeta() {
+      useHead({
+        meta: [{ property: "og:title", content: "Open Graph Title" }],
+      });
+
+      return null;
+    }
+
+    const { unmount } = render(
+      <HeadProvider>
+        <PropertyMeta />
+      </HeadProvider>,
+    );
+
+    const meta = document.head.querySelector('meta[property="og:title"]');
+
+    expect(meta?.getAttribute("content")).toBe("Open Graph Title");
+
+    unmount();
+
+    expect(document.head.querySelector('meta[property="og:title"]')).toBeNull();
+  });
+
+  it("appends an http-equiv meta tag to document.head", () => {
+    function HttpEquivMeta() {
+      useHead({
+        meta: [{ httpEquiv: "content-type", content: "text/html" }],
+      });
+
+      return null;
+    }
+
+    const { unmount } = render(
+      <HeadProvider>
+        <HttpEquivMeta />
+      </HeadProvider>,
+    );
+
+    const meta = document.head.querySelector('meta[http-equiv="content-type"]');
+
+    expect(meta?.getAttribute("content")).toBe("text/html");
+
+    unmount();
+
+    expect(
+      document.head.querySelector('meta[http-equiv="content-type"]'),
+    ).toBeNull();
+  });
+
+  it("appends a content-only meta tag to document.head", () => {
+    function ContentMeta() {
+      useHead({ meta: [{ content: "no-referrer" }] });
+
+      return null;
+    }
+
+    const { unmount } = render(
+      <HeadProvider>
+        <ContentMeta />
+      </HeadProvider>,
+    );
+
+    const meta = document.head.querySelector('meta[content="no-referrer"]');
+
+    expect(meta).not.toBeNull();
+
+    unmount();
+
+    expect(
+      document.head.querySelector('meta[content="no-referrer"]'),
+    ).toBeNull();
+  });
+
+  it("appends a fully-attributed link tag to document.head", () => {
+    function FullLink() {
+      useHead({
+        link: [
+          {
+            rel: "preload",
+            href: "/font.woff2",
+            type: "font/woff2",
+            sizes: "any",
+            media: "screen",
+            crossOrigin: "anonymous",
+          },
+        ],
+      });
+
+      return null;
+    }
+
+    const { unmount } = render(
+      <HeadProvider>
+        <FullLink />
+      </HeadProvider>,
+    );
+
+    const link = document.head.querySelector('link[rel="preload"]');
+
+    expect(link?.getAttribute("href")).toBe("/font.woff2");
+    expect(link?.getAttribute("type")).toBe("font/woff2");
+    expect(link?.getAttribute("sizes")).toBe("any");
+    expect(link?.getAttribute("media")).toBe("screen");
+    expect(link?.getAttribute("crossorigin")).toBe("anonymous");
+
+    unmount();
+
+    expect(document.head.querySelector('link[rel="preload"]')).toBeNull();
+  });
+
+  it("re-runs the effect when a provided dep changes", () => {
+    function DepMeta({ content }: { content: string }) {
+      useHead({ meta: [{ name: "keywords", content }] }, [content]);
+
+      return null;
+    }
+
+    const { rerender } = render(
+      <HeadProvider>
+        <DepMeta content="first" />
+      </HeadProvider>,
+    );
+
+    expect(
+      document.head
+        .querySelector('meta[name="keywords"]')
+        ?.getAttribute("content"),
+    ).toBe("first");
+
+    rerender(
+      <HeadProvider>
+        <DepMeta content="second" />
+      </HeadProvider>,
+    );
+
+    expect(
+      document.head
+        .querySelector('meta[name="keywords"]')
+        ?.getAttribute("content"),
+    ).toBe("second");
   });
 
   it("allows multiple components to contribute head tags", () => {
