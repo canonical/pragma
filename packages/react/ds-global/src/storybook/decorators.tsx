@@ -55,7 +55,9 @@ const SurfaceBand = ({
   <div
     className="surface"
     style={{
-      background: "var(--surface-color-background)",
+      // Fallback to the base background so the band still paints if the surface
+      // channel isn't set (e.g. a Storybook context without the tokens loaded).
+      background: "var(--surface-color-background, var(--color-background))",
       display: "flex",
       flexDirection: "column",
       alignItems: "stretch",
