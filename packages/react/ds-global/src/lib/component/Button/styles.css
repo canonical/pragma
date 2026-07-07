@@ -14,10 +14,15 @@
   --button-color-text: var(--color-text-onForegroundPrimary);
   --button-color-border: var(--color-border);
 
-  /* Inline padding + gap. Figma: dimension/100 (8px) inline, dimension/200
-     (16px) between the icon and the label. */
-  --button-padding-horizontal: var(--dimension-100);
-  --button-gap: var(--dimension-200);
+  /* Inline padding (Figma):
+     - end (right): always dimension-200 (16px) — the label always sits 16px
+       from the trailing edge.
+     - start (left): dimension-200 (16px) with no icon; dimension-100 (8px) when
+       an icon leads (the icon then sits closer to the edge), with a
+       dimension-100 (8px) gap between the icon and the label. */
+  --button-padding-inline-end: var(--dimension-200);
+  --button-padding-inline-start: var(--dimension-200);
+  --button-gap: var(--dimension-100);
   --button-border-width: var(--dimension-stroke-thickness-medium);
   /* Label weight — the button label is medium, not the `.p` body weight. */
   --button-font-weight: var(--font-weight-medium, var(--font-weight-default));
@@ -65,10 +70,17 @@
      weight and its own inline padding — declaring font-size/line-height/
      padding-block here would bypass the baseline-grid maths. */
   font-weight: var(--button-font-weight);
-  padding-inline: var(--button-padding-horizontal);
+  padding-inline: var(--button-padding-inline-start)
+    var(--button-padding-inline-end);
 
   text-align: center;
   text-decoration: none;
+
+  /* A leading icon tightens the start padding to dimension-100; the gap between
+     the icon and label is already dimension-100. */
+  &:has(> .icon) {
+    --button-padding-inline-start: var(--dimension-100);
+  }
 
   /* State fallbacks resolve to the default (primary) surface states when no
      importance modifier supplies `--modifier-surface-*`. */
