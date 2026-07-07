@@ -99,7 +99,8 @@ describe("canonicalJSON", () => {
           throw new Error("boom");
         },
       };
-      expect(() => canonicalJSON(obj)).toThrow(/boom/);
+      expect(() => canonicalJSON(obj)).toThrow(TypeError);
+      expect(() => canonicalJSON(obj)).toThrow(/reading property "bad" threw/);
     });
 
     it("throws when a property getter throws a non-Error", () => {
@@ -108,7 +109,8 @@ describe("canonicalJSON", () => {
           throw "raw";
         },
       };
-      expect(() => canonicalJSON(obj)).toThrow(/raw/);
+      expect(() => canonicalJSON(obj)).toThrow(TypeError);
+      expect(() => canonicalJSON(obj)).toThrow(/reading property "bad" threw/);
     });
   });
 });
