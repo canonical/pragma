@@ -21,11 +21,22 @@
 }
 
 .ds.spinner {
-  /* A continuous spinner wants a longer, linear cycle than the eased
-     transition tokens describe. `--motion-duration-slow` is the closest
-     ratified value today; expose `--spinner-duration` so a consumer can tune
-     the cycle without overriding the whole animation. */
-  --spinner-duration: var(--motion-duration-slow, 0.4s);
+  /* Sized like an icon: scales with the container `font-size`, so a spinner
+     next to text matches the text height. Consumers override `--spinner-size`
+     (or the surrounding font-size) to resize. */
+  --spinner-size: 1em;
+
+  /* A continuous spinner wants a much longer, linear cycle than the eased
+     transition tokens describe (the fastest of which, `--motion-duration-slow`,
+     is 0.4s — frantic for a loop). One second per turn reads as steady; expose
+     `--spinner-duration` so a consumer can tune it. There is no ratified motion
+     token this long yet, so the default is a literal. */
+  --spinner-duration: 1s;
+
+  display: inline-block;
+  vertical-align: middle;
+  width: var(--spinner-size);
+  height: var(--spinner-size);
 
   animation: ds-spinner-rotate var(--spinner-duration) linear infinite;
 }
