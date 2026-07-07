@@ -202,6 +202,10 @@ const useContextualMenu = ({
     highlightedItems: nav.highlightedItems,
     highlightItem: nav.highlightItem,
     selectItem: nav.selectItem,
+    // `getNodeStatus(P).inHighlightedBranch` is true when the keyboard path
+    // descends through P — i.e. P's submenu is the open one. The render layer
+    // uses it to decide which submenus to show.
+    getNodeStatus: nav.getNodeStatus,
     getTriggerProps,
     getMenuProps,
     getGroupProps,
