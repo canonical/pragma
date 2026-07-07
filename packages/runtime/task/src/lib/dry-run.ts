@@ -5,6 +5,7 @@
  * without actually executing their effects.
  */
 
+import { driveSync } from "./driveSync.js";
 import { TaskExecutionError } from "./interpreter.js";
 import type { DryRunResult, Effect, Task } from "./types.js";
 
@@ -77,98 +78,45 @@ export const mockEffect = (effect: Effect): unknown => {
   }
 };
 
+/**
+ * Mock an effect result while tracking virtual filesystem state, so an
+ * `Exists` check reflects files a preceding effect would have created within
+ * the same dry-run.
+ *
+ * @param effect - The effect to mock.
+ * @param virtualFs - The set of paths created so far during the dry-run.
+ * @returns The mocked result for the effect.
+ * @note Impure — mutates the shared `virtualFs` set.
+ */
+export const mockEffectWithFs = (
+  effect: Effect,
+  virtualFs: Set<string>,
+): unknown => {
+  switch (effect._tag) {
+    case "WriteFile":
+    case "AppendFile":
+    case "TransformFile":
+    case "MakeDir":
+    case "Symlink":
+      virtualFs.add(effect.path);
+      return undefined;
+    case "Exists":
+      return virtualFs.has(effect.path);
+    default:
+      return mockEffect(effect);
+  }
+};
+
 // =============================================================================
 // Dry-Run Interpreter
 // =============================================================================
 
 /**
- * Run a task in dry-run mode, collecting effects without executing them.
- * Tracks virtual filesystem state to properly handle exists() checks.
- */
-export const dryRun = <A>(task: Task<A>): DryRunResult<A> => {
-  const effects: Effect[] = [];
-  // Track files/dirs that would be created during dry-run
-  const virtualFs = new Set<string>();
-
-  const mockEffectWithFs = (effect: Effect): unknown => {
-    switch (effect._tag) {
-      case "WriteFile":
-      case "AppendFile":
-      case "TransformFile":
-        virtualFs.add(effect.path);
-        return undefined;
-      case "MakeDir":
-        virtualFs.add(effect.path);
-        return undefined;
-      case "Symlink":
-        virtualFs.add(effect.path);
-        return undefined;
-      case "Exists":
-        // Check if file was "created" during this dry-run
-        return virtualFs.has(effect.path);
-      default:
-        return mockEffect(effect);
-    }
-  };
-
-  const run = <T>(t: Task<T>): T => {
-    switch (t._tag) {
-      case "Pure":
-        return t.value;
-
-      case "Fail":
-        throw new TaskExecutionError(t.error);
-
-      case "Effect": {
-        const effect = t.effect;
-
-        // Handle Parallel specially - collect effects from all child tasks
-        if (effect._tag === "Parallel") {
-          const results = effect.tasks.map((childTask) => {
-            const childResult = dryRunWithVirtualFs(childTask, virtualFs);
-            effects.push(...childResult.effects);
-            return childResult.value;
-          });
-          return run(t.cont(results) as Task<T>);
-        }
-
-        // Handle Race specially - collect effects from first child task
-        if (effect._tag === "Race") {
-          if (effect.tasks.length > 0) {
-            const childResult = dryRunWithVirtualFs(effect.tasks[0], virtualFs);
-            effects.push(...childResult.effects);
-            return run(t.cont(childResult.value) as Task<T>);
-          }
-          return run(t.cont(undefined) as Task<T>);
-        }
-
-        // Regular effects - add to list and mock
-        effects.push(effect);
-        const mockResult = mockEffectWithFs(effect);
-        return run(t.cont(mockResult) as Task<T>);
-      }
-
-      case "FlatMap":
-        return run(t.f(run(t.inner)) as Task<T>);
-
-      case "Recover":
-        try {
-          return run(t.inner);
-        } catch (error) {
-          if (error instanceof TaskExecutionError) {
-            return run(t.handler(error.taskError));
-          }
-          throw error;
-        }
-    }
-  };
-
-  const value = run(task);
-  return { value, effects };
-};
-
-/**
- * Internal helper: Run dry-run with shared virtual filesystem state.
+ * Run a task in dry-run mode over a shared virtual filesystem, collecting
+ * effects without executing them. `Parallel`/`Race` children are dry-run
+ * against the same `virtualFs` so `Exists` checks stay consistent.
+ *
+ * @note Impure — records effects and mutates the shared `virtualFs` set.
  */
 const dryRunWithVirtualFs = <A>(
   task: Task<A>,
@@ -176,75 +124,39 @@ const dryRunWithVirtualFs = <A>(
 ): DryRunResult<A> => {
   const effects: Effect[] = [];
 
-  const mockEffectWithFs = (effect: Effect): unknown => {
-    switch (effect._tag) {
-      case "WriteFile":
-      case "AppendFile":
-      case "TransformFile":
-        virtualFs.add(effect.path);
-        return undefined;
-      case "MakeDir":
-        virtualFs.add(effect.path);
-        return undefined;
-      case "Exists":
-        return virtualFs.has(effect.path);
-      default:
-        return mockEffect(effect);
+  const resolveEffect = (effect: Effect): unknown => {
+    if (effect._tag === "Parallel") {
+      return effect.tasks.map((child) => {
+        const childResult = dryRunWithVirtualFs(child, virtualFs);
+        effects.push(...childResult.effects);
+        return childResult.value;
+      });
     }
-  };
 
-  const run = <T>(t: Task<T>): T => {
-    switch (t._tag) {
-      case "Pure":
-        return t.value;
-
-      case "Fail":
-        throw new TaskExecutionError(t.error);
-
-      case "Effect": {
-        const effect = t.effect;
-
-        if (effect._tag === "Parallel") {
-          const results = effect.tasks.map((childTask) => {
-            const childResult = dryRunWithVirtualFs(childTask, virtualFs);
-            effects.push(...childResult.effects);
-            return childResult.value;
-          });
-          return run(t.cont(results) as Task<T>);
-        }
-
-        if (effect._tag === "Race") {
-          if (effect.tasks.length > 0) {
-            const childResult = dryRunWithVirtualFs(effect.tasks[0], virtualFs);
-            effects.push(...childResult.effects);
-            return run(t.cont(childResult.value) as Task<T>);
-          }
-          return run(t.cont(undefined) as Task<T>);
-        }
-
-        effects.push(effect);
-        const mockResult = mockEffectWithFs(effect);
-        return run(t.cont(mockResult) as Task<T>);
+    if (effect._tag === "Race") {
+      const first = effect.tasks.at(0);
+      if (first !== undefined) {
+        const childResult = dryRunWithVirtualFs(first, virtualFs);
+        effects.push(...childResult.effects);
+        return childResult.value;
       }
-
-      case "FlatMap":
-        return run(t.f(run(t.inner)) as Task<T>);
-
-      case "Recover":
-        try {
-          return run(t.inner);
-        } catch (error) {
-          if (error instanceof TaskExecutionError) {
-            return run(t.handler(error.taskError));
-          }
-          throw error;
-        }
+      return undefined;
     }
+
+    effects.push(effect);
+    return mockEffectWithFs(effect, virtualFs);
   };
 
-  const value = run(task);
+  const value = driveSync(task as Task<unknown>, resolveEffect) as A;
   return { value, effects };
 };
+
+/**
+ * Run a task in dry-run mode, collecting effects without executing them.
+ * Tracks virtual filesystem state to properly handle exists() checks.
+ */
+export const dryRun = <A>(task: Task<A>): DryRunResult<A> =>
+  dryRunWithVirtualFs(task, new Set());
 
 /**
  * Run a task in dry-run mode with custom mock values.
@@ -255,44 +167,13 @@ export const dryRunWith = <A>(
 ): DryRunResult<A> => {
   const effects: Effect[] = [];
 
-  const getMock = (effect: Effect): unknown => {
+  const resolveEffect = (effect: Effect): unknown => {
+    effects.push(effect);
     const customMock = mocks.get(effect._tag);
-    if (customMock) {
-      return customMock(effect);
-    }
-    return mockEffect(effect);
+    return customMock ? customMock(effect) : mockEffect(effect);
   };
 
-  const run = <T>(t: Task<T>): T => {
-    switch (t._tag) {
-      case "Pure":
-        return t.value;
-
-      case "Fail":
-        throw new TaskExecutionError(t.error);
-
-      case "Effect": {
-        effects.push(t.effect);
-        const mockResult = getMock(t.effect);
-        return run(t.cont(mockResult));
-      }
-
-      case "FlatMap":
-        return run(t.f(run(t.inner)));
-
-      case "Recover":
-        try {
-          return run(t.inner);
-        } catch (error) {
-          if (error instanceof TaskExecutionError) {
-            return run(t.handler(error.taskError));
-          }
-          throw error;
-        }
-    }
-  };
-
-  const value = run(task);
+  const value = driveSync(task as Task<unknown>, resolveEffect) as A;
   return { value, effects };
 };
 
@@ -307,37 +188,15 @@ export const dryRunWith = <A>(
 export const collectEffects = <A>(task: Task<A>): Effect[] => {
   const effects: Effect[] = [];
 
-  const drive = (t: Task<unknown>): unknown => {
-    switch (t._tag) {
-      case "Pure":
-        return t.value;
-
-      case "Fail":
-        throw new TaskExecutionError(t.error);
-
-      case "Effect":
-        effects.push(t.effect);
-        return drive(t.cont(mockEffect(t.effect)));
-
-      case "FlatMap":
-        return drive(t.f(drive(t.inner)));
-
-      case "Recover":
-        try {
-          return drive(t.inner);
-        } catch (error) {
-          if (error instanceof TaskExecutionError) {
-            return drive(t.handler(error.taskError));
-          }
-          throw error;
-        }
-    }
+  const resolveEffect = (effect: Effect): unknown => {
+    effects.push(effect);
+    return mockEffect(effect);
   };
 
   // Walk the task collecting each leaf effect, tolerating an unrecovered
-  // failure (the original short-circuits on a Fail rather than throwing).
+  // failure (a Fail short-circuits the walk rather than propagating).
   try {
-    drive(task as Task<unknown>);
+    driveSync(task as Task<unknown>, resolveEffect);
   } catch (error) {
     if (!(error instanceof TaskExecutionError)) {
       throw error;

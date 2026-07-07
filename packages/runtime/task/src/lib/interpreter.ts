@@ -29,6 +29,36 @@ export class TaskExecutionError extends Error {
   }
 }
 
+/**
+ * Normalise a value thrown while performing an effect into a structured
+ * {@link TaskError}, so a real I/O exception can be routed through the
+ * interpreter's recovery channel rather than escaping it. A
+ * {@link TaskExecutionError} carries its `taskError` through unchanged; a
+ * filesystem `ENOENT` maps to `FILE_NOT_FOUND`; anything else becomes
+ * `INTERNAL`, preserving the original throw as `cause`.
+ *
+ * @param thrown - The value thrown while performing an effect.
+ * @returns The equivalent structured task error.
+ */
+const normalizeThrownError = (thrown: unknown): TaskError => {
+  if (thrown instanceof TaskExecutionError) {
+    return thrown.taskError;
+  }
+
+  const isFileNotFound =
+    typeof thrown === "object" &&
+    thrown !== null &&
+    "code" in thrown &&
+    (thrown as { code: unknown }).code === "ENOENT";
+
+  return {
+    code: isFileNotFound ? "FILE_NOT_FOUND" : "INTERNAL",
+    message: thrown instanceof Error ? thrown.message : String(thrown),
+    cause: thrown,
+    stack: thrown instanceof Error ? thrown.stack : undefined,
+  };
+};
+
 // =============================================================================
 // Effect Executor
 // =============================================================================
@@ -397,6 +427,18 @@ export const runTask = async <A>(
     const stack: Frame[] = [];
     let cur: Task<unknown> = root;
 
+    // Unwind to the nearest recovery frame, discarding pending binds. With no
+    // recovery frame installed the error escapes as a TaskExecutionError.
+    const recoverFrom = (error: TaskError): Task<unknown> => {
+      while (stack.length > 0) {
+        const frame = stack.pop();
+        if (frame?.kind === "recover") {
+          return frame.handler(error);
+        }
+      }
+      throw new TaskExecutionError(error);
+    };
+
     for (;;) {
       checkInterrupted();
 
@@ -412,7 +454,17 @@ export const runTask = async <A>(
           break;
 
         case "Effect": {
-          const result = await perform(cur.effect);
+          // A raw exception from the effect (e.g. ENOENT from a real read, or a
+          // throwing TransformFile transform) is normalised and routed through
+          // the recovery channel, so recover/retry/orElse can see real I/O
+          // failures — not just explicit Fail nodes.
+          let result: unknown;
+          try {
+            result = await perform(cur.effect);
+          } catch (thrown) {
+            cur = recoverFrom(normalizeThrownError(thrown));
+            break;
+          }
           cur = cur.cont(result);
           break;
         }
@@ -435,23 +487,10 @@ export const runTask = async <A>(
           break;
         }
 
-        case "Fail": {
+        case "Fail":
           // Failure: unwind to the nearest recovery frame, discarding binds.
-          const error = cur.error;
-          let resumed = false;
-          while (stack.length > 0) {
-            const frame = stack.pop();
-            if (frame?.kind === "recover") {
-              cur = frame.handler(error);
-              resumed = true;
-              break;
-            }
-          }
-          if (!resumed) {
-            throw new TaskExecutionError(error);
-          }
+          cur = recoverFrom(cur.error);
           break;
-        }
       }
     }
   };

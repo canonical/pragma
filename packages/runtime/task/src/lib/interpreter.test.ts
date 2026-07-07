@@ -1568,3 +1568,145 @@ describe("Interpreter - runTask stack safety", () => {
     expect(await runTask(task)).toBe(N);
   });
 });
+
+// =============================================================================
+// runTask - effect exceptions route through the recovery channel (TASK-1)
+// =============================================================================
+
+describe("Interpreter - effect exceptions route through recovery", () => {
+  it("routes a real ENOENT read into recover as FILE_NOT_FOUND", async () => {
+    const missing = join(tmpdir(), "task-enoent-does-not-exist-xyz");
+    const task = recover(
+      effect<string>({ _tag: "ReadFile", path: missing }),
+      (err) => pure(err.code),
+    );
+
+    expect(await runTask(task)).toBe("FILE_NOT_FOUND");
+  });
+
+  it("routes a throwing Error transform into recover as INTERNAL", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "task-transform-err-"));
+
+    try {
+      const path = join(dir, "f.txt");
+      writeFileSync(path, "original");
+      const task = recover(
+        effect<void>({
+          _tag: "TransformFile",
+          path,
+          transform: () => {
+            throw new Error("boom");
+          },
+        }),
+        (err) => pure(`${err.code}:${err.message}`),
+      );
+
+      expect(await runTask(task)).toBe("INTERNAL:boom");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("normalises a non-Error throw, using String() and no stack", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "task-transform-str-"));
+
+    try {
+      const path = join(dir, "f.txt");
+      writeFileSync(path, "original");
+      const task = recover(
+        effect<void>({
+          _tag: "TransformFile",
+          path,
+          transform: () => {
+            throw "raw-string";
+          },
+        }),
+        (err) => pure(`${err.code}:${err.message}:${err.stack}`),
+      );
+
+      expect(await runTask(task)).toBe("INTERNAL:raw-string:undefined");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("normalises a thrown null as INTERNAL", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "task-transform-null-"));
+
+    try {
+      const path = join(dir, "f.txt");
+      writeFileSync(path, "original");
+      const task = recover(
+        effect<void>({
+          _tag: "TransformFile",
+          path,
+          transform: () => {
+            throw null;
+          },
+        }),
+        (err) => pure(err.code),
+      );
+
+      expect(await runTask(task)).toBe("INTERNAL");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("maps a non-ENOENT coded throw to INTERNAL, not FILE_NOT_FOUND", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "task-transform-eperm-"));
+
+    try {
+      const path = join(dir, "f.txt");
+      writeFileSync(path, "original");
+      const task = recover(
+        effect<void>({
+          _tag: "TransformFile",
+          path,
+          transform: () => {
+            throw { code: "EPERM", message: "denied" };
+          },
+        }),
+        (err) => pure(err.code),
+      );
+
+      expect(await runTask(task)).toBe("INTERNAL");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("passes a TaskExecutionError through recover unchanged", async () => {
+    const task = recover(
+      effect<unknown>({
+        _tag: "Prompt",
+        question: { type: "confirm", name: "ok", message: "Proceed?" },
+      }),
+      (err) => pure(err.code),
+    );
+
+    expect(await runTask(task)).toBe("NO_PROMPT_HANDLER");
+  });
+
+  it("wraps a raw continuation failure in a parallel child as INTERNAL", async () => {
+    const rawChild: Task<number> = {
+      _tag: "Effect",
+      effect: { _tag: "ReadContext", key: "unused" },
+      cont: () => {
+        throw new Error("raw continuation");
+      },
+    };
+    const task = effect<unknown[]>({
+      _tag: "Parallel",
+      tasks: [rawChild, pure(2)],
+    });
+
+    try {
+      await runTask(task);
+      expect.unreachable("should have thrown");
+    } catch (err) {
+      expect(err).toBeInstanceOf(TaskExecutionError);
+      expect((err as TaskExecutionError).code).toBe("INTERNAL");
+    }
+  });
+});
