@@ -1,9 +1,36 @@
-import type { Meta, StoryObj } from "@storybook/react-vite";
+import type { Decorator, Meta, StoryObj } from "@storybook/react-vite";
 import Component from "./Popover.js";
+
+/**
+ * The popover content is `position: fixed`, so it does not contribute to the
+ * story's flow height. Reserve a tall, centred stage — matching the Tooltip and
+ * ContextualMenu stories — so the open popover has room. The `.surface` class
+ * defines the `--surface-color-*` channels and the div paints itself with them
+ * (surfaces consume themselves), framing the popover on a real surface.
+ */
+const stage: Decorator = (Story) => (
+  <div
+    className="surface"
+    style={{
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      inlineSize: "100%",
+      blockSize: "100%",
+      minInlineSize: "min(88vw, 480px)",
+      minBlockSize: "440px",
+      background: "var(--surface-color-background)",
+      color: "var(--surface-color-text)",
+    }}
+  >
+    <Story />
+  </div>
+);
 
 const meta = {
   title: "_work_in_progress/component/Popover",
   component: Component,
+  decorators: [stage],
   tags: ["autodocs"],
   parameters: {
     layout: "centered",

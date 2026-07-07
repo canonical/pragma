@@ -46,7 +46,10 @@
       opacity var(--popover-motion-duration) ease-in-out,
       visibility var(--popover-motion-duration) allow-discrete;
 
-    &[aria-hidden="false"] {
+    /* Visible only when open (aria-hidden="false") AND positioned
+       (data-positioned) — so the content never paints at the unresolved
+       top:0/left:0 fallback, and the fade runs from the anchored position. */
+    &[aria-hidden="false"][data-positioned="true"] {
       opacity: 1;
       visibility: visible;
 

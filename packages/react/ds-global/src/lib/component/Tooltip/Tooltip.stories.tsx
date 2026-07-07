@@ -3,17 +3,24 @@ import { Icon } from "#lib/component/Icon/index.js";
 import Component from "./Tooltip.js";
 
 /**
- * Render on a real surface: `.surface` defines the `--surface-color-*` channels
- * and the div paints itself with them (surfaces consume themselves), so the
- * `.contrasted` tooltip inverts against a genuine surface.
+ * A tall, centred stage on a real surface — matching the TooltipArea, Popover,
+ * and ContextualMenu stories. `.surface` defines the `--surface-color-*`
+ * channels and the div paints itself with them (surfaces consume themselves),
+ * so the `.contrasted` tooltip inverts against a genuine surface.
  */
 const surface: Decorator = (Story) => (
   <div
     className="surface"
     style={{
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      inlineSize: "100%",
+      blockSize: "100%",
+      minInlineSize: "min(88vw, 480px)",
+      minBlockSize: "440px",
       background: "var(--surface-color-background)",
       color: "var(--surface-color-text)",
-      padding: "var(--dimension-300, 24px)",
     }}
   >
     <Story />

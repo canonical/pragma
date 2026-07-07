@@ -104,7 +104,14 @@ const Popover = ({
         id={popupId}
         ref={popupRef}
         role="dialog"
+        // `aria-hidden` reflects the semantic open state (drives the a11y tree).
         aria-hidden={!isOpen}
+        // Visual reveal is gated separately on a resolved position: `isOpen`
+        // flips true on click before `bestPosition` is computed, so without this
+        // the content would flash at the fallback top:0/left:0 for a frame before
+        // snapping into place. The CSS only makes it visible when it is both open
+        // AND positioned, so the open animation runs from the correct spot.
+        data-positioned={bestPosition ? "true" : undefined}
         style={popupPositionStyle}
         onPointerEnter={contentProps.onPointerEnter}
       >

@@ -8,10 +8,15 @@ import Component from "./TooltipArea.js";
 import type { TooltipAreaProps } from "./types.js";
 
 /**
- * All story anchors use the same button style — a plain tertiary — so the
- * stories focus on tooltip behaviour, not button variety.
+ * Most story anchors use a plain tertiary button so the stories focus on tooltip
+ * behaviour, not button variety. The placement demos use a primary constructive
+ * button so the anchors read as clear, prominent targets.
  */
 const anchorButtonProps = { importance: "tertiary" } as const;
+const primaryButtonProps = {
+  importance: "primary",
+  anticipation: "constructive",
+} as const;
 
 /**
  * The tooltip is `position: fixed`, so it does not contribute to the story's
@@ -29,7 +34,11 @@ const stage: Decorator = (Story) => (
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
-      inlineSize: "min(88vw, 640px)",
+      // Fill the canvas (100% on a full-page docs/story canvas) but keep a
+      // narrower floor so a cramped canvas still reserves room for the overlay.
+      inlineSize: "100%",
+      blockSize: "100%",
+      minInlineSize: "min(88vw, 480px)",
       minBlockSize: "440px",
       background: "var(--surface-color-background)",
       color: "var(--surface-color-text)",
@@ -173,7 +182,7 @@ export const AutoFit: StoryFn = () => {
           }
           icon={<Icon icon="information" />}
         >
-          <Button {...anchorButtonProps}>{i + 1}</Button>
+          <Button {...primaryButtonProps}>{i + 1}</Button>
         </Component>
       ))}
     </div>
@@ -294,7 +303,7 @@ export const Changeable: StoryFn = () => {
       preferredDirections={[preferredDirection]}
     >
       <Button
-        {...anchorButtonProps}
+        {...primaryButtonProps}
         onClick={() => setIndex((prev) => prev + 1)}
       >
         Click to change direction
@@ -334,7 +343,7 @@ export const Placements: StoryFn = () => {
           Message={`Opens ${direction}`}
           preferredDirections={[direction]}
         >
-          <Button {...anchorButtonProps}>{label}</Button>
+          <Button {...primaryButtonProps}>{label}</Button>
         </Demo>
       ))}
     </div>
