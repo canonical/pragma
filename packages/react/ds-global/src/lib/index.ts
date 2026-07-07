@@ -1,28 +1,9 @@
-export * from "./_work_in_progress/CategoriesSection/index.js";
-export * from "./_work_in_progress/ChatSection/index.js";
-export * from "./_work_in_progress/DescriptionSection/index.js";
-export * from "./_work_in_progress/grid/index.js";
-export * from "./_work_in_progress/IconSection/index.js";
-export * from "./_work_in_progress/Label/index.js";
-export * from "./_work_in_progress/Link/index.js";
-export * from "./_work_in_progress/Rule/index.js";
-export * from "./_work_in_progress/Section/index.js";
-export * from "./_work_in_progress/SkipLink/index.js";
-export * from "./_work_in_progress/TSection/index.js";
-export * from "./component/Accordion/index.js";
-export * from "./component/Announcement/index.js";
-export * from "./component/Badge/index.js";
-export * from "./component/Breadcrumbs/index.js";
-export * from "./component/Button/index.js";
-export * from "./component/Card/index.js";
-export * from "./component/Chip/index.js";
-export * from "./component/Icon/index.js";
-export * from "./component/InlineCode/index.js";
-export * from "./component/KeyboardKey/index.js";
-export * from "./component/Tabs/index.js";
-export * from "./component/Tile/index.js";
-export * from "./component/Tooltip/index.js";
-export * from "./group/KeyboardKeys/index.js";
-export * from "./pattern/Timeline/index.js";
-export * from "./subcomponent/Spinner/index.js";
+// Public package surface, composed from the per-tier barrels rather than
+// reaching into individual component folders. Each tier's members are
+// enumerated in its own `index.ts`.
+export * from "./_work_in_progress/index.js";
+export * from "./component/index.js";
+export * from "./group/index.js";
+export * from "./pattern/index.js";
+export * from "./subcomponent/index.js";
 export type * from "./types/index.js";
