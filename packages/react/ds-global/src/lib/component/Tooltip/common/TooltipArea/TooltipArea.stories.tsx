@@ -1,10 +1,19 @@
 import type { Decorator, Meta, StoryFn, StoryObj } from "@storybook/react-vite";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Button } from "#lib/component/Button/index.js";
 import { Icon } from "#lib/component/Icon/index.js";
 import type { WindowFitmentDirection } from "#lib/hooks/index.js";
 import Component from "./TooltipArea.js";
+
+/**
+ * All story anchors use the same button style — a constructive tertiary — so the
+ * stories focus on tooltip behaviour, not button variety.
+ */
+const anchorButtonProps = {
+  importance: "tertiary",
+  anticipation: "constructive",
+} as const;
 
 /**
  * The tooltip is `position: fixed`, so it does not contribute to the story's
@@ -50,39 +59,8 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {
   args: {
     Message: "Hello world",
-    children: <Button>Default</Button>,
-  },
-};
-
-export const Top: Story = {
-  args: {
-    Message: "Hello world",
-    preferredDirections: ["top"],
-    children: <Button>Top</Button>,
-  },
-};
-
-export const Left: Story = {
-  args: {
-    Message: "Hello world",
-    preferredDirections: ["left"],
-    children: <Button>Left</Button>,
-  },
-};
-
-export const Right: Story = {
-  args: {
-    Message: "Hello world",
-    preferredDirections: ["right"],
-    children: <Button>Right</Button>,
-  },
-};
-
-export const Bottom: Story = {
-  args: {
-    Message: "Hello world",
-    preferredDirections: ["bottom"],
-    children: <Button>Bottom</Button>,
+    open: true,
+    children: <Button {...anchorButtonProps}>Default</Button>,
   },
 };
 
@@ -98,7 +76,7 @@ export const WithIcon: Story = {
     preferredDirections: ["top"],
     // Forced open so the tooltip (and its arrow) is visible without hovering.
     open: true,
-    children: <Button>Icon tooltip</Button>,
+    children: <Button {...anchorButtonProps}>Icon tooltip</Button>,
   },
 };
 
@@ -113,7 +91,7 @@ export const Multiline: Story = {
       "The standard tooltip explains an icon or control, or adds a short clarification that runs across several lines when the content is long.",
     preferredDirections: ["top"],
     open: true,
-    children: <Button>Long tooltip</Button>,
+    children: <Button {...anchorButtonProps}>Long tooltip</Button>,
   },
 };
 
@@ -135,9 +113,10 @@ export const MaxWidth: StoryFn<{ maxWidth: number }> = ({ maxWidth }) => (
     <Component
       Message="The standard tooltip explains an icon or control, or adds a short clarification that wraps at the configured maximum width."
       preferredDirections={["top"]}
+      open
       messageElementStyle={{ maxWidth }}
     >
-      <Button>Max width: {maxWidth}px</Button>
+      <Button {...anchorButtonProps}>Max width: {maxWidth}px</Button>
     </Component>
   </div>
 );
@@ -173,12 +152,13 @@ export const AutoFit: StoryFn = () => {
           // Prefer bottom-right; auto-fit flips only where there is no room.
           preferredDirections={["right", "bottom"]}
           autoFit
+          open
           Message={
             "The standard tooltip explains an icon or control, or adds a short clarification that runs across several lines."
           }
           icon={<Icon icon="information" />}
         >
-          <Button>{i + 1}</Button>
+          <Button {...anchorButtonProps}>{i + 1}</Button>
         </Component>
       ))}
     </div>
@@ -186,27 +166,29 @@ export const AutoFit: StoryFn = () => {
 };
 
 /**
- * A single anchor you can drive to watch auto-fit flip and the arrow stay
- * pinned. Drag the button anywhere in the stage (or use the X / Y controls), and
- * push it toward an edge to see the tooltip flip to the opposite side while its
- * arrow stays on the anchor. Rendered in its own fixed stage (it opts out of the
- * shared centred decorator so absolute positioning is not re-centred).
+ * A single anchor you can move — drag the button around the stage, or use the
+ * X / Y controls — to watch auto-fit flip and the arrow stay pinned to the
+ * anchor. Push it toward an edge and the tooltip reflows to the opposite side.
+ * Rendered in its own fixed stage (opts out of the shared centred decorator so
+ * the absolute positioning is authoritative).
  */
 export const AutoFitPlayground: StoryFn<{ x: number; y: number }> = ({
   x,
   y,
 }) => {
+  // The controls seed the initial position; dragging then owns it.
   const [pos, setPos] = useState({ x, y });
-  // Keep in sync when the controls change.
   const controlKey = `${x},${y}`;
   const lastControl = useRef(controlKey);
   if (lastControl.current !== controlKey) {
+    // Controls changed → adopt them (setState during render is legitimate for
+    // deriving state from props; React re-renders immediately without painting).
     lastControl.current = controlKey;
     setPos({ x, y });
   }
 
   const stageRef = useRef<HTMLDivElement>(null);
-  const dragging = useRef(false);
+  const [dragging, setDragging] = useState(false);
 
   const moveTo = (clientX: number, clientY: number) => {
     const el = stageRef.current;
@@ -228,11 +210,10 @@ export const AutoFitPlayground: StoryFn<{ x: number; y: number }> = ({
         touchAction: "none",
       }}
       onPointerMove={(e) => {
-        if (dragging.current) moveTo(e.clientX, e.clientY);
+        if (dragging) moveTo(e.clientX, e.clientY);
       }}
-      onPointerUp={() => {
-        dragging.current = false;
-      }}
+      onPointerUp={() => setDragging(false)}
+      onPointerLeave={() => setDragging(false)}
     >
       <div
         style={{
@@ -246,18 +227,20 @@ export const AutoFitPlayground: StoryFn<{ x: number; y: number }> = ({
           Message="I stay on screen and my arrow stays pinned to the anchor."
           preferredDirections={["top"]}
           autoFit
+          open
         >
           <Button
+            {...anchorButtonProps}
             // A move cursor signals the button is draggable; dragging updates
             // the anchor position live.
             style={{ cursor: "move" }}
+            icon={<Icon icon="drag" />}
             onPointerDown={(e) => {
-              dragging.current = true;
+              setDragging(true);
               e.currentTarget.setPointerCapture?.(e.pointerId);
             }}
           >
-            <Icon icon="drag" />
-            &nbsp;Move me
+            Move me
           </Button>
         </Component>
       </div>
@@ -297,7 +280,10 @@ export const Changeable: StoryFn = () => {
         Message={preferredDirection}
         preferredDirections={[preferredDirection]}
       >
-        <Button onClick={() => setIndex((prev) => prev + 1)}>
+        <Button
+          {...anchorButtonProps}
+          onClick={() => setIndex((prev) => prev + 1)}
+        >
           Click to change direction
         </Button>
       </Component>
@@ -338,8 +324,10 @@ export const Placements: StoryFn = () => {
           key={direction}
           Message={`Opens ${direction}`}
           preferredDirections={[direction]}
+          // All four open at once so the placements are visible without hover.
+          open
         >
-          <Button>{label}</Button>
+          <Button {...anchorButtonProps}>{label}</Button>
         </Component>
       ))}
     </div>
