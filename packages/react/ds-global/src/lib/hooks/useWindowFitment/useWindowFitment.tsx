@@ -312,10 +312,20 @@ const useWindowFitment = ({
       !popupSize
     )
       return;
+    // Use the SAME popup dimensions that drove this reposition (popupSize, the
+    // observed size that `bestPosition` was recomputed from), not a fresh live
+    // rect — otherwise the width the arrow centres against can differ from the
+    // width the position was computed against, and the apex drifts a few px.
+    // The width/height are all `computeArrowOffset` reads off the popup rect.
+    const popupRect = {
+      ...bestPosition.position,
+      width: popupSize.width,
+      height: popupSize.height,
+    } as DOMRect;
     return computeArrowOffset(
       bestPosition.positionName,
       targetRef.current.getBoundingClientRect(),
-      popupRef.current.getBoundingClientRect(),
+      popupRect,
       // Authoritative placement — avoids the one-frame lag of the live popup rect.
       bestPosition.position,
     );

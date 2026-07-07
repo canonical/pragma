@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactElement } from "react";
+import { type CSSProperties, type ReactElement, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useDisclosure } from "#lib/hooks/index.js";
 import { Tooltip } from "../../index.js";
@@ -52,6 +52,15 @@ const TooltipArea = ({
   const triggerProps = getToggleProps();
   const contentProps = getContentProps();
 
+  // The message is portalled to the client only. Rendering it on the server (or
+  // on the first client render) would differ from the post-mount portal output
+  // and force a hydration mismatch + full re-mount — which resets the fitment
+  // refs to null and re-triggers the unpositioned first frame. Deferring to a
+  // `mounted` gate makes the server and first client render identical (nothing
+  // at the call site); the tooltip mounts once, cleanly, after hydration.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   // The always-on arrow offset keeps the arrow pointing at the target centre
   // for every placement, not only when auto-fit clamps.
   const arrowStyle: CSSProperties = arrowOffset
@@ -76,7 +85,12 @@ const TooltipArea = ({
         ...popupPositionStyle,
         ...arrowStyle,
       }}
-      isOpen={isOpen}
+      // Reveal only once a position has been resolved. Until `bestPosition`
+      // exists the popup would render at the fallback top:0/left:0 with no
+      // placement class (and so no arrow); gating the reveal on it means that
+      // unpositioned frame stays `visibility:hidden` and never paints — no
+      // visible 0,0 flash, and the open fade always runs from an anchored spot.
+      isOpen={isOpen && Boolean(bestPosition)}
     >
       {Message}
     </Tooltip>
@@ -102,14 +116,13 @@ const TooltipArea = ({
         {children}
       </span>
       {/*
-        Portal can only be rendered on the client
+        The tooltip is portalled out of the flow (so it escapes scrollable or
+        clipping ancestors) and only after mount, so SSR and the first client
+        render agree (both emit nothing here).
       */}
-      {typeof window !== "undefined"
-        ? // Portals allow the tooltip to be rendered outside the parent element
-          // This is helpful when the parent element is a scrollable container or has bounds that may be
-          // overflown by the tooltip message.
-          createPortal(TooltipMessageElement, parentElement || document.body)
-        : TooltipMessageElement}
+      {mounted
+        ? createPortal(TooltipMessageElement, parentElement || document.body)
+        : null}
     </span>
   );
 };

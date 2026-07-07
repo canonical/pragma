@@ -36,10 +36,14 @@ export default function useResizeObserver<TElement extends HTMLElement>(
     const observer = new ResizeObserver(([entry]) => {
       if (entry) {
         const rect = entry.contentRect;
-        setSize({
-          width: rect.width,
-          height: rect.height,
-        });
+        // Skip updates that don't change the dimensions. The observer fires once
+        // immediately on observe() with a fresh object; bailing on equal values
+        // avoids a redundant re-render (and, downstream, a redundant reposition).
+        setSize((prev) =>
+          prev.width === rect.width && prev.height === rect.height
+            ? prev
+            : { width: rect.width, height: rect.height },
+        );
       }
     });
 

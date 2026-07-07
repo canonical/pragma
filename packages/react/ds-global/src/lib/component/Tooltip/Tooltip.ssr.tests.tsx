@@ -12,14 +12,16 @@ describe("TooltipArea SSR", () => {
     expect(html).toContain("Trigger");
   });
 
-  it("renders the tooltip closed (aria-hidden) on the server", () => {
+  it("defers the tooltip message to the client (no SSR message markup)", () => {
     const html = renderToString(
       <TooltipArea Message="Tooltip message">Trigger</TooltipArea>,
     );
 
-    // The overlay renders closed on the server: positioning and open state are
-    // strictly post-hydration, so the tooltip is inert until the client runs.
-    expect(html).toContain('aria-hidden="true"');
-    expect(html).toContain("Tooltip message");
+    // The message is portalled and mounted client-only, so the server and the
+    // first client render agree (nothing at the call site) — no hydration
+    // mismatch, no forced re-mount. The trigger still carries its stable
+    // aria-describedby, and the message appears once the tooltip mounts.
+    expect(html).not.toContain("Tooltip message");
+    expect(html).toContain("aria-describedby");
   });
 });
