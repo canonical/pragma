@@ -1,0 +1,98 @@
+/* RatingInput — a radio group of stars.
+ *
+ * DOM order is natural (star 1 first, left to right), so it matches the visual,
+ * keyboard and screen-reader order. The fill is computed with `:has()` rather
+ * than a reversed layout: a star is filled if it is checked, or if any star
+ * after it is checked.
+ */
+
+.ds.form-rating {
+  display: inline-flex;
+  gap: var(--dimension-025, 0.125rem);
+
+  /* Neutral (unselected) star colour and the filled colour. */
+  --rating-color-empty: var(--color-text-muted, #b0b0b0);
+  --rating-color-filled: var(--color-foreground-primary-warning, #f5a623);
+  --rating-size: var(--rating-size-default, 1.5rem);
+}
+
+.ds.form-rating > .star {
+  display: inline-flex;
+  cursor: pointer;
+  font-size: var(--rating-size);
+  line-height: 1;
+  color: var(--rating-color-empty);
+}
+
+/* The radio itself is visually hidden but stays in the a11y tree and keyboard
+   focus order (so arrow-key selection and focus rings still work). */
+.ds.form-rating .star-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  clip-path: inset(50%);
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.ds.form-rating .star-glyph {
+  display: block;
+}
+
+/* Fill: a star is filled when it is checked, or when any *later* star is
+   checked (so every star up to the selected one is filled). Natural order —
+   no reversed layout needed. */
+.ds.form-rating > .star:has(> .star-input:checked),
+.ds.form-rating > .star:has(~ .star > .star-input:checked) {
+  color: var(--rating-color-filled);
+}
+
+/* Hover preview: hovering a star previews the fill up to it (that star and the
+   ones before it), overriding the checked state until the pointer leaves. */
+@media (hover: hover) {
+  .ds.form-rating:hover > .star {
+    color: var(--rating-color-empty);
+  }
+  .ds.form-rating > .star:hover,
+  .ds.form-rating > .star:has(~ .star:hover) {
+    color: var(--rating-color-filled);
+  }
+}
+
+/* Keyboard focus ring on the star whose radio is focused. */
+.ds.form-rating > .star:has(> .star-input:focus-visible) {
+  outline: var(--focus-outline-width, 2px) solid
+    var(--color-focusRing, currentColor);
+  outline-offset: 2px;
+  border-radius: var(--dimension-radius-small, 2px);
+}
+
+/* Disabled: dim and drop the pointer affordance. */
+.ds.form-rating:has(.star-input:disabled) > .star {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* Half-star steps: the half step is a half-width label that clips the glyph to
+   its leading (left) half, so a half rating fills only the left portion of the
+   star. The following full step overlaps it to complete the star outline. */
+.ds.form-rating.half > .star.star-half {
+  width: 0.5em;
+  overflow: hidden;
+}
+
+/* Local visually-hidden helper for the per-star text label. */
+.ds.form-rating .ds-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  clip-path: inset(50%);
+  overflow: hidden;
+  white-space: nowrap;
+}
