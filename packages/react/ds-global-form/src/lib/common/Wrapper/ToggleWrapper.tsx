@@ -49,15 +49,11 @@ const ToggleWrapper = <ComponentProps extends BaseInputProps>({
   ...otherProps
 }: WrapperProps<ComponentProps>): React.ReactElement => {
   // The inline label (beside the control) always carries the htmlFor binding;
-  // the heading only appears when a distinct controlLabel was supplied.
+  // the heading only appears when a distinct controlLabel was supplied. At
+  // least one of `label`/`controlLabel` is guaranteed by the type of the toggle
+  // field props, so no runtime check is needed here.
   const inlineLabel = controlLabel ?? label;
   const headingLabel = controlLabel && label ? label : undefined;
-
-  if (process.env.NODE_ENV !== "production" && inlineLabel === undefined) {
-    console.warn(
-      `Toggle field "${name}" has no label. Provide \`label\` (and optionally \`controlLabel\`) so the control has an accessible name.`,
-    );
-  }
 
   const { fieldError, isError, ariaProps, registerProps } = useFieldWrapper(
     name,
