@@ -16,8 +16,9 @@ export interface RatingInputProps {
   className?: string;
   style?: React.CSSProperties;
   /**
-   * The radio group name — shared by every star so they form one group. Also
-   * used to derive per-star input ids.
+   * The radio group name — shared by every star so they form one group.
+   * (Per-star input ids are derived from the group `id`, or a generated id when
+   * `id` is omitted.)
    */
   name: string;
   /** How many stars to offer. @default 5 */
