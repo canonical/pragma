@@ -92,11 +92,8 @@ const ToggleWrapper = <ComponentProps extends BaseInputProps>({
         </Label>
       )}
 
-      {description && (
-        <Description {...ariaProps.description}>{description}</Description>
-      )}
-
-      {/* The control and its inline true label, side by side. */}
+      {/* The control and its inline true label, side by side. The label is
+          often a full sentence, so it wraps as prose beside the control. */}
       <div className="field-toggle-control">
         <Component {...componentProps} />
         <Label
@@ -108,6 +105,11 @@ const ToggleWrapper = <ComponentProps extends BaseInputProps>({
           {inlineLabel}
         </Label>
       </div>
+
+      {/* Description sits after the control on toggle fields. */}
+      {description && (
+        <Description {...ariaProps.description}>{description}</Description>
+      )}
 
       {isError && (
         <FieldError {...ariaProps.error}>

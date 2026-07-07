@@ -68,12 +68,24 @@ export const WithHeading: Story = {
   },
 };
 
-/** Heading, description, then the toggle with its inline label. */
+/** Heading, the toggle with its inline label, then the description below. */
 export const WithDescription: Story = {
   args: {
     name: "notifications_described",
     label: "Notifications",
     controlLabel: "Email updates",
     description: "Send me product updates and security alerts.",
+  },
+};
+
+/**
+ * The control label is often a full sentence to click, not a short word. It
+ * wraps as prose beside the toggle, which stays aligned to its first line.
+ */
+export const SentenceLabel: Story = {
+  args: {
+    name: "terms",
+    label:
+      "I agree to the terms of service and acknowledge that my data will be processed in line with the privacy policy.",
   },
 };
