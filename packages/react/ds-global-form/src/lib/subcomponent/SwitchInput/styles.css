@@ -1,0 +1,89 @@
+/* A switch is a checkbox (role="switch") styled as a sliding pill toggle.
+ * The track is the <input> box; the knob is a `::before` pseudo-element that
+ * slides from left (off) to right (on). Colours come from the switch token
+ * channel; the geometry is in baseline multiples. */
+.ds.form-switch {
+  /* Geometry, all derived from the track size and a 1px inset. */
+  --switch-track-width: calc(var(--space-baseline) * 4); /* 32px — 4bU */
+  --switch-track-height: calc(var(--space-baseline) * 2); /* 16px — 2bU */
+  --switch-knob-inset: 1px;
+  --switch-knob-size: calc(
+    var(--switch-track-height) -
+    (var(--switch-knob-inset) * 2)
+  );
+
+  appearance: none;
+  box-sizing: border-box;
+  position: relative;
+
+  /* Align to the field edge like the label, not the input's inner padding. */
+  margin-inline: var(--form-label-padding-inline, 0);
+
+  /* Track: a 2:1 pill. */
+  width: var(--switch-track-width);
+  height: var(--switch-track-height);
+  border: var(--dimension-stroke-thickness-medium) solid transparent;
+  border-radius: var(--dimension-radius-full);
+  background: var(--color-foreground-switch-unselected);
+  cursor: pointer;
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease;
+
+  /* Knob: a circle inset from the track edges, sliding on the inline axis. */
+  &::before {
+    content: "";
+    position: absolute;
+    inset-block: var(--switch-knob-inset);
+    inset-inline-start: var(--switch-knob-inset);
+    width: var(--switch-knob-size);
+    height: var(--switch-knob-size);
+    border-radius: var(--dimension-radius-full);
+    background: var(--color-foreground-switch-knob);
+    transition: translate 150ms ease;
+  }
+
+  &:checked {
+    background: var(--color-foreground-switch-selected);
+
+    &::before {
+      /* Slide to the far edge: the space left over after the knob and both
+         insets are removed from the track width. */
+      translate: calc(
+          var(--switch-track-width) -
+          var(--switch-knob-size) -
+          (var(--switch-knob-inset) * 2)
+        )
+        0;
+    }
+  }
+
+  &:hover:not(:disabled):not(:checked) {
+    background: var(--color-foreground-switch-unselected);
+    filter: brightness(0.95);
+  }
+
+  &:checked:hover:not(:disabled) {
+    background: var(--color-foreground-switch-selected);
+    filter: brightness(0.9);
+  }
+
+  &:focus-visible {
+    outline: none;
+    border-color: var(--color-focusRing);
+    box-shadow: 0 0 0 1px var(--color-focusRing);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    background: var(--color-foreground-switch-unselected-disabled);
+
+    &::before {
+      background: var(--color-foreground-switch-knob-disabled);
+    }
+  }
+
+  &:checked:disabled {
+    background: var(--color-foreground-switch-selected-disabled);
+  }
+}
