@@ -75,7 +75,7 @@ export const SpanFourColumns: Story = {
     name: "ubuntu_version_4col",
     label: "Choose your Ubuntu version (span 4)",
     style: { "--rich-choices-span": "span 4" } as React.CSSProperties,
-    options: Default.args!.options,
+    options: Default.args?.options,
   },
 };
 
