@@ -30,8 +30,10 @@ export const Default: Story = {
 };
 
 /**
- * The spinner scales with the `font-size` of its container (like any icon), so
- * it lines up with adjacent text. Override `--spinner-size` to resize directly.
+ * The spinner's size is consumed from the text: it tracks the `font-size` of
+ * its container, so it lines up with adjacent text at any scale. (Override
+ * `--spinner-size`, or `--icon-size` globally, only when you need a size that
+ * is decoupled from the text.)
  */
 export const Sized: Story = {
   render: (args) => (
@@ -39,10 +41,10 @@ export const Sized: Story = {
       <span style={{ fontSize: "1rem" }}>
         <Component {...args} />
       </span>
-      <span style={{ fontSize: "1.5rem" }}>
+      <span style={{ fontSize: "2rem" }}>
         <Component {...args} />
       </span>
-      <span style={{ fontSize: "2rem" }}>
+      <span style={{ fontSize: "3rem" }}>
         <Component {...args} />
       </span>
     </div>

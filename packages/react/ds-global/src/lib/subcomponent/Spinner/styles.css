@@ -21,24 +21,24 @@
 }
 
 .ds.spinner {
-  /* Sized like an icon: scales with the container `font-size`, so a spinner
-     next to text matches the text height. Consumers override `--spinner-size`
-     (or the surrounding font-size) to resize. */
-  --spinner-size: 1em;
-
-  /* A continuous spinner wants a much longer, linear cycle than the eased
-     transition tokens describe (the fastest of which, `--motion-duration-slow`,
-     is 0.4s — frantic for a loop). One second per turn reads as steady; expose
-     `--spinner-duration` so a consumer can tune it. There is no ratified motion
-     token this long yet, so the default is a literal. */
-  --spinner-duration: 1s;
-
   display: inline-block;
   vertical-align: middle;
-  width: var(--spinner-size);
-  height: var(--spinner-size);
 
-  animation: ds-spinner-rotate var(--spinner-duration) linear infinite;
+  /* Sized from the text: the `1em` base makes the spinner track the container
+     `font-size`, so it matches adjacent text. The cascade is, in order:
+     `--spinner-size` (per-instance override) → `--icon-size` (the shared icon
+     convention, so a global icon-size tweak also sizes spinners) → `1em`. No
+     value is hard-declared here, so `:root`/ancestor overrides win. */
+  width: var(--spinner-size, var(--icon-size, 1em));
+  height: var(--spinner-size, var(--icon-size, 1em));
+
+  /* A continuous spinner wants a much longer, linear cycle than the eased
+     transition tokens describe (the fastest, `--motion-duration-slow`, is 0.4s
+     — frantic for a loop). Default to ~1s/turn via a `var()` fallback (not a
+     hard declaration) so a consumer can retune the cycle from `:root` or an
+     ancestor with `--spinner-duration`. There is no ratified motion token this
+     long yet, hence the literal fallback. */
+  animation: ds-spinner-rotate var(--spinner-duration, 1s) linear infinite;
 }
 
 /* Honour users who have asked for reduced motion: hold the icon still rather
