@@ -2,7 +2,9 @@ import type React from "react";
 import "./styles.css";
 import type { TooltipProps } from "./types.js";
 
-const componentCssClassName = "ds tooltip";
+// The `contrasted` surface makes the tooltip invert against the ambient theme
+// for greater contrast against its context.
+const componentCssClassName = "ds tooltip contrasted";
 
 /**
  * The Tooltip component renders the message part of a tooltip. It has no

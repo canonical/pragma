@@ -1,7 +1,7 @@
 import type { CSSProperties, ReactNode } from "react";
-import type { UsePopupProps } from "../../../../hooks/index.js";
+import type { UseDisclosureProps } from "#lib/hooks/index.js";
 
-export interface TooltipAreaProps extends UsePopupProps {
+export interface TooltipAreaProps extends Omit<UseDisclosureProps, "mode"> {
   /**
    * The target element to which the tooltip should be attached.
    * This can be any valid React element.

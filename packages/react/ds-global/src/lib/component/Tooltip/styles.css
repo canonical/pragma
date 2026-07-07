@@ -1,18 +1,14 @@
 /* Component tokens — sourced from @canonical/design-tokens */
 :root {
   /*
-    TODO the tooltip's color tokens should be inverted from the active color theme.
-        This is to provide greater color contrast against its context.
-        This will be implemented once theming DS-wide is added.
+    The tooltip runs on the `contrasted` surface so its colours invert against
+    the ambient theme (dark chip on a light UI, light chip on a dark UI) for
+    greater contrast against its context. The `.contrasted` class is applied to
+    the tooltip element; the surface populates the `--surface-color-*` channels.
   */
-
-  --tooltip-color-background: var(--color-foreground-ghost);
-  --tooltip-color-background-hover: var(--color-foreground-ghost-hover);
-  --tooltip-color-background-active: var(--color-foreground-ghost-active);
-  --tooltip-color-text: var(--color-text);
-  --tooltip-color-border: var(--color-border-high-contrast);
-  --tooltip-color-border-hover: var(--tooltip-color-border);
-  --tooltip-color-border-active: var(--tooltip-color-border);
+  --tooltip-color-background: var(--surface-color-background);
+  --tooltip-color-text: var(--surface-color-text);
+  --tooltip-color-border: var(--surface-color-background);
 
   --tooltip-border-radius: 0;
   --tooltip-margin-left: 0;
@@ -24,17 +20,17 @@
   --tooltip-font-weight: var(--font-weight-default);
   --tooltip-line-height: var(--line-height-default);
 
+  /* Arrow size is independent of `distance` (the gap between trigger and popup). */
   --tooltip-spacing-arrow-size: 6px;
+
+  /* Duration of the open/close fade. */
+  --tooltip-motion-duration: 0.1s;
 }
 
 /* component variables
     --tooltip-color-background: background color of the tooltip
-    --tooltip-color-background-hover: background color of the tooltip on hover
-    --tooltip-color-background-active: background color of the tooltip on active
     --tooltip-color-text: text color of the tooltip
     --tooltip-color-border: border color of the tooltip
-    --tooltip-color-border-hover: border color of the tooltip on hover
-    --tooltip-color-border-active: border color of the tooltip on active
 
     --tooltip-margin-left: left margin of the tooltip
     --tooltip-margin-bottom: bottom margin of the tooltip
@@ -44,10 +40,10 @@
     --tooltip-font-weight: font weight of the tooltip
     --tooltip-line-height: line height of the tooltip
 
-    --tooltip-spacing-arrow-size: size of the arrow
+    --tooltip-spacing-arrow-size: size of the arrow (independent of `distance`)
 
-    --tooltip-arrow-offset-left: offset of the arrow from the left
-    --tooltip-arrow-offset-top: offset of the arrow from the top
+    --tooltip-arrow-offset-left: offset of the arrow along the x-axis (top/bottom placements)
+    --tooltip-arrow-offset-top: offset of the arrow along the y-axis (left/right placements)
 */
 
 .ds.tooltip {
@@ -57,19 +53,15 @@
     var(--tooltip-color-background);
   --tooltip-border-arrow-hidden: var(--tooltip-spacing-arrow-size) solid
     transparent;
+  --tooltip-arrow-offset-left: 0px;
+  --tooltip-arrow-offset-top: 0px;
 
-  color: var(
-    --modifier-color-text,
-    var(--tooltip-color-text, var(--color-text-default))
-  );
+  color: var(--surface-color-text, var(--tooltip-color-text));
   background-color: var(
-    --modifier-color-foreground-ghost,
-    var(--tooltip-color-background, var(--color-background-default))
+    --surface-color-background,
+    var(--tooltip-color-background)
   );
-  border-color: var(
-    --modifier-color-border,
-    var(--tooltip-color-border, transparent)
-  );
+  border-color: var(--tooltip-color-border, transparent);
   border-style: solid;
   border-radius: var(--tooltip-border-radius);
   border-width: var(--tooltip-border-width, 1px);
@@ -85,9 +77,29 @@
   text-decoration: initial;
   pointer-events: auto;
   display: inline-block;
-  transition: opacity 0.1s ease-in-out;
   position: fixed;
   overflow: auto;
+
+  /*
+    CSS-only enter/exit animation. `allow-discrete` lets `visibility` (a discrete
+    property) transition alongside `opacity`, and `@starting-style` gives the
+    opening frame a starting opacity so the fade-in runs. No JavaScript timing.
+  */
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity var(--tooltip-motion-duration) ease-in-out,
+    visibility var(--tooltip-motion-duration) allow-discrete;
+
+  &[aria-hidden="false"] {
+    opacity: 1;
+    pointer-events: auto;
+    visibility: visible;
+
+    @starting-style {
+      opacity: 0;
+    }
+  }
 
   &[aria-hidden="true"] {
     opacity: 0;
@@ -95,10 +107,8 @@
     visibility: hidden;
   }
 
-  &[aria-hidden="false"] {
-    opacity: 1;
-    pointer-events: auto;
-    visibility: visible;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
   }
 
   /* triangle */
@@ -108,13 +118,12 @@
     height: 0;
     border: var(--tooltip-border-arrow-hidden);
     position: absolute;
-  }
-
-  &.autofit {
-    &::before {
-      transform: translateX(var(--tooltip-arrow-offset-left))
-        translateY(var(--tooltip-arrow-offset-top));
-    }
+    /*
+      Shift the arrow along the placement's cross-axis so it points at the
+      trigger centre for every placement, not only when auto-fit clamps.
+    */
+    transform: translateX(var(--tooltip-arrow-offset-left))
+      translateY(var(--tooltip-arrow-offset-top));
   }
 
   &.top::before {

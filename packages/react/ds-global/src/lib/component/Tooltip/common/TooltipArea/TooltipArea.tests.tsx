@@ -65,7 +65,9 @@ describe("TooltipArea component", () => {
     );
   });
 
-  it("applies distance prop to tooltip style", async () => {
+  it("does not couple the arrow size to the distance prop", async () => {
+    // Arrow size is an independent token; `distance` only drives the gap
+    // between the trigger and the popup, not the arrow geometry.
     const distance = "10px";
     render(
       <Tooltip Message={Message} distance={distance}>
@@ -74,9 +76,17 @@ describe("TooltipArea component", () => {
     );
     const target = screen.getByText("Target Element");
     fireEvent.pointerEnter(target);
-    expect(await screen.findByText(Message)).toHaveStyle({
-      "--tooltip-spacing-arrow-size": distance,
-    });
+    const message = await screen.findByText(Message);
+    expect(message.style.getPropertyValue("--tooltip-spacing-arrow-size")).toBe(
+      "",
+    );
+  });
+
+  it("renders the tooltip on the contrasted surface", async () => {
+    render(<Tooltip Message={Message}>{Children}</Tooltip>);
+    const target = screen.getByText("Target Element");
+    fireEvent.pointerEnter(target);
+    expect(await screen.findByText(Message)).toHaveClass("contrasted");
   });
 
   it("uses createPortal to render tooltip", async () => {

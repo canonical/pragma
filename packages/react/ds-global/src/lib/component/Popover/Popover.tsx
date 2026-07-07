@@ -1,0 +1,107 @@
+import type React from "react";
+import { useCallback } from "react";
+import { useDisclosure } from "#lib/hooks/index.js";
+import type { PopoverProps } from "./types.js";
+import "./styles.css";
+
+const componentCssClassName = "ds popover";
+
+/**
+ * A popover reveals supplementary content anchored to a trigger. It renders as a
+ * native `<details>`/`<summary>` so the toggle works without JavaScript; once
+ * hydrated, positioning, outside-click and Escape dismissal are layered on via
+ * the disclosure hook.
+ *
+ * `import { Popover } from "@canonical/react-ds-global";`
+ *
+ * @implements dso:global.component.popover
+ */
+const Popover = ({
+  trigger,
+  children,
+  className,
+  open,
+  onOpenChange,
+  preferredDirections,
+  distance,
+  gutter,
+  maxWidth,
+  autoFit,
+  closeOnEscape,
+  closeOnOutsideClick,
+  ...props
+}: PopoverProps): React.ReactElement => {
+  const {
+    isOpen,
+    targetRef,
+    popupRef,
+    popupPositionStyle,
+    popupId,
+    bestPosition,
+    getToggleProps,
+    getContentProps,
+  } = useDisclosure({
+    mode: "click",
+    isOpen: open,
+    preferredDirections,
+    distance,
+    gutter,
+    maxWidth,
+    autoFit,
+    closeOnEscape,
+    closeOnOutsideClick,
+    onShow: () => onOpenChange?.(true),
+    onHide: () => onOpenChange?.(false),
+  });
+
+  const toggleProps = getToggleProps();
+  const contentProps = getContentProps();
+
+  // Once hydrated, the disclosure hook owns the toggle: intercept the summary
+  // click so the native <details> toggle does not fight the hook, and drive the
+  // open state from the hook instead. Without JS, the native toggle is the
+  // baseline and this handler never runs.
+  const handleSummaryClick = useCallback(
+    (event: React.MouseEvent) => {
+      event.preventDefault();
+      toggleProps.onClick?.(event);
+    },
+    [toggleProps],
+  );
+
+  return (
+    <details
+      className={[componentCssClassName, bestPosition?.positionName, className]
+        .filter(Boolean)
+        .join(" ")}
+      open={isOpen}
+      ref={targetRef as React.Ref<HTMLDetailsElement>}
+      {...props}
+    >
+      {/* biome-ignore lint/a11y/noStaticElementInteractions: <summary> is natively interactive (it toggles its <details>); the click handler augments that behaviour */}
+      <summary
+        className="trigger"
+        // The native <details open> conveys the expanded state; aria-expanded on
+        // a <summary> is invalid, so only aria-controls is set here.
+        aria-controls={toggleProps["aria-controls"]}
+        onClick={handleSummaryClick}
+        onKeyDown={toggleProps.onKeyDown}
+      >
+        {trigger}
+      </summary>
+      <div
+        className="content"
+        id={popupId}
+        ref={popupRef}
+        role="dialog"
+        aria-hidden={!isOpen}
+        style={popupPositionStyle}
+        onPointerEnter={contentProps.onPointerEnter}
+      >
+        {children}
+      </div>
+    </details>
+  );
+};
+
+export default Popover;

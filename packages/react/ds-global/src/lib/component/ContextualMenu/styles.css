@@ -1,0 +1,60 @@
+/* Component tokens — sourced from @canonical/design-tokens */
+:root {
+  --contextual-menu-color-background: var(
+    --surface-color-background,
+    var(--color-background)
+  );
+  --contextual-menu-color-border: var(--color-border);
+  --contextual-menu-border-width: var(--spacing-border-width);
+  --contextual-menu-border-radius: 0;
+  --contextual-menu-min-width: 12rem;
+  --contextual-menu-max-width: 20rem;
+  --contextual-menu-padding-block: var(--spacing-vertical-small);
+  --contextual-menu-motion-duration: 0.12s;
+}
+
+.ds.contextual-menu {
+  display: inline-block;
+
+  > .trigger {
+    cursor: pointer;
+  }
+}
+
+.ds.contextual-menu__surface {
+  position: fixed;
+  z-index: var(--z-index-overlay, 100);
+  min-width: var(--contextual-menu-min-width);
+  max-width: var(--contextual-menu-max-width);
+  padding-block: var(--contextual-menu-padding-block);
+  background-color: var(--contextual-menu-color-background);
+  border: var(--contextual-menu-border-width, 1px) solid
+    var(--contextual-menu-color-border);
+  border-radius: var(--contextual-menu-border-radius);
+
+  /* CSS-only enter/exit animation. */
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity var(--contextual-menu-motion-duration) ease-in-out,
+    visibility var(--contextual-menu-motion-duration) allow-discrete;
+
+  &[aria-hidden="false"] {
+    opacity: 1;
+    visibility: visible;
+
+    @starting-style {
+      opacity: 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+
+  /* A divider separates one group from the next. */
+  .group + .group {
+    border-block-start: var(--contextual-menu-border-width, 1px) solid
+      var(--contextual-menu-color-border);
+  }
+}

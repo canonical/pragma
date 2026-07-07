@@ -1,10 +1,10 @@
-import type { ReactElement } from "react";
-import { usePopup } from "../../../../hooks/index.js";
+import type { CSSProperties, ReactElement } from "react";
+import { createPortal } from "react-dom";
+import { useDisclosure } from "#lib/hooks/index.js";
 import { Tooltip } from "../../index.js";
 import type { TooltipAreaProps } from "./types.js";
 
 import "./styles.css";
-import { createPortal } from "react-dom";
 
 const componentCssClassName = "ds tooltip-area";
 
@@ -33,36 +33,37 @@ const TooltipArea = ({
     popupPositionStyle,
     popupId,
     isOpen,
-    handleTriggerFocus,
-    handleTriggerBlur,
-    handleTriggerEnter,
-    handleTriggerLeave,
     bestPosition,
-  } = usePopup({ distance, autoFit, ...props });
+    arrowOffset,
+    getToggleProps,
+    getContentProps,
+  } = useDisclosure({ distance, autoFit, ...props, mode: "hover" });
+
+  const triggerProps = getToggleProps();
+  const contentProps = getContentProps();
+
+  // The always-on arrow offset keeps the arrow pointing at the target centre
+  // for every placement, not only when auto-fit clamps.
+  const arrowStyle: CSSProperties = arrowOffset
+    ? {
+        [arrowOffset.axis === "x"
+          ? "--tooltip-arrow-offset-left"
+          : "--tooltip-arrow-offset-top"]: `${arrowOffset.offset}px`,
+      }
+    : {};
 
   const TooltipMessageElement = (
     <Tooltip
       id={popupId}
-      className={[
-        bestPosition?.positionName,
-        messageElementClassName,
-        autoFit && "autofit",
-      ]
+      className={[bestPosition?.positionName, messageElementClassName]
         .filter(Boolean)
         .join(" ")}
-      onPointerEnter={handleTriggerEnter}
-      onFocus={handleTriggerFocus}
+      onPointerEnter={contentProps.onPointerEnter}
       ref={popupRef}
       style={{
         ...messageElementStyle,
         ...popupPositionStyle,
-        // @ts-expect-error allow binding arrow size to distance, as it is needed both in JS and CSS calculations
-        "--tooltip-spacing-arrow-size": distance,
-        ...(autoFit &&
-          bestPosition?.autoFitOffset && {
-            "--tooltip-arrow-offset-top": `${bestPosition?.autoFitOffset.top || 0}px`,
-            "--tooltip-arrow-offset-left": `${bestPosition?.autoFitOffset.left || 0}px`,
-          }),
+        ...arrowStyle,
       }}
       isOpen={isOpen}
     >
@@ -71,14 +72,14 @@ const TooltipArea = ({
   );
 
   return (
-    // biome-ignore lint/a11y/noStaticElementInteractions: TODO this is kept as is to prevent breaking changes
+    // biome-ignore lint/a11y/noStaticElementInteractions: the wrapper forwards pointer/focus to the tooltip trigger
     <span
       className={[componentCssClassName, className].filter(Boolean).join(" ")}
       style={style}
-      onFocus={handleTriggerFocus}
-      onBlur={handleTriggerBlur}
-      onPointerEnter={handleTriggerEnter}
-      onPointerLeave={handleTriggerLeave}
+      onFocus={triggerProps.onFocus}
+      onBlur={triggerProps.onBlur}
+      onPointerEnter={triggerProps.onPointerEnter}
+      onPointerLeave={triggerProps.onPointerLeave}
     >
       <span
         id={targetElementId}

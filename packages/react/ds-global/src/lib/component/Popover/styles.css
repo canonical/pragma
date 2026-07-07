@@ -1,0 +1,64 @@
+/* Component tokens — sourced from @canonical/design-tokens */
+:root {
+  --popover-color-background: var(
+    --surface-color-background,
+    var(--color-background)
+  );
+  --popover-color-text: var(--surface-color-text, var(--color-text));
+  --popover-color-border: var(--color-border);
+  --popover-border-radius: 0;
+  --popover-border-width: var(--spacing-border-width);
+  --popover-padding-vertical: var(--spacing-vertical-medium);
+  --popover-padding-horizontal: var(--spacing-horizontal-large);
+  --popover-motion-duration: 0.12s;
+}
+
+.ds.popover {
+  position: relative;
+  display: inline-block;
+
+  > .trigger {
+    cursor: pointer;
+    list-style: none;
+
+    /* Remove the native disclosure triangle; the trigger content owns the affordance. */
+    &::-webkit-details-marker {
+      display: none;
+    }
+  }
+
+  > .content {
+    position: fixed;
+    z-index: var(--z-index-overlay, 100);
+    background-color: var(--popover-color-background);
+    color: var(--popover-color-text);
+    border: var(--popover-border-width, 1px) solid var(--popover-color-border);
+    border-radius: var(--popover-border-radius);
+    padding-block: var(--popover-padding-vertical);
+    padding-inline: var(--popover-padding-horizontal);
+
+    /*
+      CSS-only enter/exit animation. `allow-discrete` transitions `visibility`
+      (a discrete property) alongside `opacity`; `@starting-style` supplies the
+      opening frame so the fade-in runs. No JavaScript timing.
+    */
+    opacity: 0;
+    visibility: hidden;
+    transition:
+      opacity var(--popover-motion-duration) ease-in-out,
+      visibility var(--popover-motion-duration) allow-discrete;
+
+    &[aria-hidden="false"] {
+      opacity: 1;
+      visibility: visible;
+
+      @starting-style {
+        opacity: 0;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      transition: none;
+    }
+  }
+}
