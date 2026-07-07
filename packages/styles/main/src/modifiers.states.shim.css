@@ -1,0 +1,136 @@
+/* @canonical/styles — Modifier state-channel SHIM (temporary)
+ *
+ * The generated modifier files expose only the ROOT colour channel
+ * (`--modifier-color-foreground-primary`, `--modifier-color-foreground-ghost`);
+ * they do not expose per-STATE channels. The explicit state tokens exist
+ * (`--color-foreground-primary-hover`, `-active`, `-disabled`, and their
+ * anticipation-suffixed variants), but nothing wires them into the channel, so
+ * a component that wants a hover/active/disabled colour has nothing to read —
+ * hover and focus appear to do nothing.
+ *
+ * This shim writes those explicit state tokens into new channel vars:
+ *
+ *   --modifier-color-foreground-primary-hover  / -active / -disabled
+ *   --modifier-color-foreground-ghost-hover    / -active / -disabled
+ *
+ * so a consumer reads the channel uniformly and the states compose with the
+ * anticipation modifier (each anticipation class re-points the channel at its
+ * own `-{anticipation}-{state}` tokens). Neutral defaults live on `:root`; the
+ * anticipation classes override in the `ds.modifiers` layer, imported after the
+ * generated modifiers so they win.
+ *
+ * Remove once the generated modifiers expose state channels upstream.
+ */
+
+@layer ds.modifiers {
+  /* Neutral defaults — the plain (non-anticipation) state tokens. */
+  :root {
+    --modifier-color-foreground-primary-hover: var(
+      --color-foreground-primary-hover
+    );
+    --modifier-color-foreground-primary-active: var(
+      --color-foreground-primary-active
+    );
+    --modifier-color-foreground-primary-disabled: var(
+      --color-foreground-primary-disabled
+    );
+    --modifier-color-foreground-ghost-hover: var(
+      --color-foreground-ghost-hover
+    );
+    --modifier-color-foreground-ghost-active: var(
+      --color-foreground-ghost-active
+    );
+    --modifier-color-foreground-ghost-disabled: var(
+      --color-foreground-ghost-disabled
+    );
+  }
+
+  .constructive {
+    --modifier-color-foreground-primary-hover: var(
+      --color-foreground-primary-constructive-hover
+    );
+    --modifier-color-foreground-primary-active: var(
+      --color-foreground-primary-constructive-active
+    );
+    --modifier-color-foreground-primary-disabled: var(
+      --color-foreground-primary-constructive-disabled
+    );
+    --modifier-color-foreground-ghost-hover: var(
+      --color-foreground-ghost-constructive-hover
+    );
+    --modifier-color-foreground-ghost-active: var(
+      --color-foreground-ghost-constructive-active
+    );
+    --modifier-color-foreground-ghost-disabled: var(
+      --color-foreground-ghost-constructive-disabled
+    );
+  }
+
+  .destructive {
+    --modifier-color-foreground-primary-hover: var(
+      --color-foreground-primary-destructive-hover
+    );
+    --modifier-color-foreground-primary-active: var(
+      --color-foreground-primary-destructive-active
+    );
+    --modifier-color-foreground-primary-disabled: var(
+      --color-foreground-primary-destructive-disabled
+    );
+    --modifier-color-foreground-ghost-hover: var(
+      --color-foreground-ghost-destructive-hover
+    );
+    --modifier-color-foreground-ghost-active: var(
+      --color-foreground-ghost-destructive-active
+    );
+    --modifier-color-foreground-ghost-disabled: var(
+      --color-foreground-ghost-destructive-disabled
+    );
+  }
+
+  /* `caution` uses the `warning` colour ramp. The ghost-warning state tokens do
+     not exist upstream, so those fall back to the root ghost-warning colour. */
+  .caution {
+    --modifier-color-foreground-primary-hover: var(
+      --color-foreground-primary-warning-hover
+    );
+    --modifier-color-foreground-primary-active: var(
+      --color-foreground-primary-warning-active
+    );
+    --modifier-color-foreground-primary-disabled: var(
+      --color-foreground-primary-warning-disabled
+    );
+    --modifier-color-foreground-ghost-hover: var(
+      --color-foreground-ghost-warning-hover,
+      var(--color-foreground-ghost-warning)
+    );
+    --modifier-color-foreground-ghost-active: var(
+      --color-foreground-ghost-warning-active,
+      var(--color-foreground-ghost-warning)
+    );
+    --modifier-color-foreground-ghost-disabled: var(
+      --color-foreground-ghost-warning-disabled,
+      var(--color-foreground-ghost-warning)
+    );
+  }
+
+  .branded {
+    --modifier-color-foreground-primary-hover: var(
+      --color-foreground-primary-branded-hover
+    );
+    --modifier-color-foreground-primary-active: var(
+      --color-foreground-primary-branded-active
+    );
+    --modifier-color-foreground-primary-disabled: var(
+      --color-foreground-primary-branded-disabled
+    );
+    --modifier-color-foreground-ghost-hover: var(
+      --color-foreground-ghost-branded-hover
+    );
+    --modifier-color-foreground-ghost-active: var(
+      --color-foreground-ghost-branded-active
+    );
+    --modifier-color-foreground-ghost-disabled: var(
+      --color-foreground-ghost-branded-disabled
+    );
+  }
+}
