@@ -1,3 +1,4 @@
+import { reactTestConfig } from "@canonical/vitest-config-react";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vitest/config";
 
@@ -9,45 +10,11 @@ export default defineConfig({
   resolve: {
     tsconfigPaths: true,
   },
-  test: {
-    coverage: {
-      provider: "v8",
-      include: ["src/**/*.{ts,tsx}"],
-      exclude: [
-        "**/index.ts",
-        "**/*.test.ts",
-        "**/*.test.tsx",
-        "**/*.ssr.test.tsx",
-        "**/*.d.ts",
-        "**/types.ts",
-      ],
-      thresholds: {
-        branches: 100,
-        functions: 100,
-        lines: 100,
-        statements: 100,
-      },
-    },
-    projects: [
-      {
-        plugins,
-        test: {
-          name: "client",
-          environment: "jsdom",
-          globals: true,
-          setupFiles: ["./vitest.setup.ts"],
-          include: ["src/**/*.test.ts", "src/**/*.test.tsx"],
-          exclude: ["src/**/*.ssr.test.tsx"],
-        },
-      },
-      {
-        plugins,
-        test: {
-          name: "ssr",
-          environment: "node",
-          include: ["src/**/*.ssr.test.tsx"],
-        },
-      },
-    ],
-  },
+  test: reactTestConfig({
+    glob: "test",
+    ssr: true,
+    coverage: true,
+    setupFiles: ["./vitest.setup.ts"],
+    plugins,
+  }),
 });

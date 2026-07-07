@@ -1,19 +1,12 @@
+import { reactTestConfig } from "@canonical/vitest-config-react";
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
-  test: {
+  test: reactTestConfig({
+    glob: "tests",
     environment: "node",
-    include: ["src/**/*.tests.ts"],
     coverage: {
-      provider: "v8",
       include: ["src/lib/**/*.ts"],
-      exclude: ["**/index.ts", "**/*.tests.ts", "**/*.d.ts", "**/types.ts"],
-      thresholds: {
-        lines: 100,
-        branches: 100,
-        functions: 100,
-        statements: 100,
-      },
     },
-  },
+  }),
 });
