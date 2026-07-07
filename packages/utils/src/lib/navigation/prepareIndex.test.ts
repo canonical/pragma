@@ -15,7 +15,7 @@ describe("prepareIndex", () => {
     const root = annotateTree(tree);
     const index = prepareIndex(root);
 
-    expect(index["root"]).toBe(root);
+    expect(index.root).toBe(root);
     expect(index["/a"]?.url).toBe("/a");
     expect(index["/b"]?.url).toBe("/b");
   });
@@ -45,6 +45,6 @@ describe("prepareIndex", () => {
     const index = prepareIndex(root);
 
     expect(Object.keys(index)).toHaveLength(1);
-    expect(index["root"]).toBe(root);
+    expect(index.root).toBe(root);
   });
 });

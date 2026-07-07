@@ -540,7 +540,7 @@ describe("useNavigationTree", () => {
         useNavigationTree({ root: testTree, focus: "roving" }),
       );
 
-      const firstChild = result.current.annotatedRoot.items![0];
+      const firstChild = result.current.annotatedRoot.items?.[0];
       const props = result.current.getItemProps(firstChild);
       expect(props.tabIndex).toBe(0);
     });
@@ -550,7 +550,7 @@ describe("useNavigationTree", () => {
         useNavigationTree({ root: testTree, focus: "roving" }),
       );
 
-      const secondChild = result.current.annotatedRoot.items![1];
+      const secondChild = result.current.annotatedRoot.items?.[1];
       const props = result.current.getItemProps(secondChild);
       expect(props.tabIndex).toBe(-1);
     });
@@ -560,7 +560,7 @@ describe("useNavigationTree", () => {
         useNavigationTree({ root: testTree, focus: "taborder" }),
       );
 
-      const firstChild = result.current.annotatedRoot.items![0];
+      const firstChild = result.current.annotatedRoot.items?.[0];
       const props = result.current.getItemProps(firstChild);
       expect(props.tabIndex).toBeUndefined();
     });

@@ -171,10 +171,10 @@ describe("discoverGeneratorTree", () => {
 
       const root = await discoverGeneratorTree(dir);
       expect(root.children.has("component")).toBe(true);
-      expect(root.children.get("component")!.indexPath).toBe(
+      expect(root.children.get("component")?.indexPath).toBe(
         path.join(dir, "component", "index.ts"),
       );
-      expect(root.children.get("component")!.origin).toBe("local");
+      expect(root.children.get("component")?.origin).toBe("local");
     });
 
     it("discovers nested generators", async () => {
@@ -296,8 +296,8 @@ describe("discoverGeneratorTree", () => {
 
       const comp = root.children.get("component");
       expect(comp).toBeDefined();
-      expect(comp!.children.has("react")).toBe(true);
-      expect(comp!.children.has("svelte")).toBe(true);
+      expect(comp?.children.has("react")).toBe(true);
+      expect(comp?.children.has("svelte")).toBe(true);
 
       expect(generatorCache.has("component/react")).toBe(true);
       expect(generatorCache.has("component/svelte")).toBe(true);
@@ -305,7 +305,7 @@ describe("discoverGeneratorTree", () => {
       expect(generatorCache.has("invalid-entry")).toBe(false);
       expect(generatorCache.has("null-entry")).toBe(false);
 
-      const react = comp!.children.get("react")!;
+      const react = comp?.children.get("react")!;
       expect(react.indexPath).toBe("cache:component/react");
       expect(react.origin).toBe("local");
     });
@@ -326,7 +326,7 @@ describe("discoverGeneratorTree", () => {
       const root = await discoverGeneratorTree(REAL_DEFAULT_PKG_DIR);
       const util = root.children.get("util");
       expect(util).toBeDefined();
-      expect(util!.children.has("helper")).toBe(true);
+      expect(util?.children.has("helper")).toBe(true);
       expect(generatorCache.has("util/helper")).toBe(true);
     });
 
@@ -457,7 +457,7 @@ describe("discoverGeneratorTree", () => {
 
       const root = await discoverGeneratorTree({ builtinDir });
       expect(root.children.has("hello")).toBe(true);
-      expect(root.children.get("hello")!.origin).toBe("builtin");
+      expect(root.children.get("hello")?.origin).toBe("builtin");
     });
 
     it("scans node_modules for unscoped summon-* packages", async () => {

@@ -34,8 +34,8 @@
 
 /* Global slotted h3 */
 ::slotted(h3[slot="item-title"]) {
-  font-size: 1rem !important;
-  font-weight: 550 !important;
+  font-size: 1rem;
+  font-weight: 550;
 }
 
 /* Conditional removal of last HR */

@@ -46,8 +46,8 @@
     padding-bottom: var(--spacing-vertical-xlarge);
 
     & .title h2 {
-      font-size: 2.5rem !important;
-      font-weight: 180 !important;
+      font-size: 2.5rem;
+      font-weight: 180;
       line-height: 3rem;
       margin-top: 0;
     }
