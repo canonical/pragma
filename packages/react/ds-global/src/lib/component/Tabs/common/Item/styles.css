@@ -1,0 +1,75 @@
+/**
+ * Tabs Item styles (internal renderer)
+ *
+ * Figma (node 4388-106316): each tab is text with `--dimension-200` (16px)
+ * horizontal padding, no gap to its neighbours. The tab shows a bottom border
+ * on hover (muted) and when active (highlighted); an inert tab (no url) is
+ * muted with no hover affordance.
+ *
+ * Baseline grid: the tab box snaps to the typographic baseline grid — its
+ * min block-size and vertical padding are whole multiples of --baseline-height
+ * (1bU = 8px), so the strip sits on the same grid as surrounding text.
+ */
+:root {
+  --tabs-tab-border-width: var(--dimension-strokeThickness-large, 2px);
+  --tabs-tab-padding-inline: var(--space-200); /* 16px */
+  /* 5bU = 40px tab height on the 8px baseline grid. */
+  --tabs-tab-min-block-size: calc(var(--baseline-height) * 5);
+}
+
+.ds.tabs-item {
+  display: flex;
+}
+
+.ds.tabs-item .tabs-link {
+  display: inline-flex;
+  align-items: center;
+  box-sizing: border-box;
+  /* Baseline-snapped block size; vertical padding kept to baseline units so the
+     label's line box centres on the grid. */
+  min-block-size: var(--tabs-tab-min-block-size);
+  padding-block: var(--space-100); /* 1bU */
+  padding-inline: var(--tabs-tab-padding-inline);
+  font: var(--typography-text-primary);
+  color: var(--color-text);
+  text-decoration: none;
+  white-space: nowrap;
+
+  /* Transparent underline reserved so the row never shifts when a border
+     appears on hover/active. */
+  border-bottom: var(--tabs-tab-border-width) solid transparent;
+}
+
+/* Hover: a muted bottom border hints the tab is navigable, and settles faster
+   than the active/selection change (below). Not on the active tab (it already
+   shows the highlighted border), nor on inert or disabled tabs (they are not
+   interactive). */
+.ds.tabs-item:not([data-active]):not([data-inert]):not([data-disabled])
+.tabs-link:hover {
+  border-bottom-color: var(--color-border-muted);
+  transition-duration: var(--motion-duration-fast);
+}
+
+/* Active tab: highlighted underline over the strip's muted baseline. */
+.ds.tabs-item[data-active] .tabs-link,
+.ds.tabs-item .tabs-link[aria-current="page"] {
+  border-bottom-color: var(--color-border-highlighted);
+}
+
+/* Inert (no url) or disabled tabs: muted, non-interactive, no hover
+   affordance. */
+.ds.tabs-item[data-inert] .tabs-link,
+.ds.tabs-item[data-disabled] .tabs-link {
+  color: var(--color-text-muted);
+  cursor: default;
+}
+
+/* Motion: the border transitions on the medium duration by default; the hover
+   rule above overrides it to the faster duration, so hover feedback is snappier
+   than the active/selection settle. */
+@media (prefers-reduced-motion: no-preference) {
+  .ds.tabs-item .tabs-link {
+    transition: border-bottom-color var(--motion-duration-medium)
+      var(--motion-easing-standard);
+  }
+}

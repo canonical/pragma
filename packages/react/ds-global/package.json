@@ -10,7 +10,8 @@
       "development": "./src/lib/*",
       "types": "./dist/types/lib/*",
       "default": "./dist/esm/lib/*"
-    }
+    },
+    "#storybook/*": "./src/storybook/*"
   },
   "files": [
     "dist"
@@ -62,6 +63,8 @@
     "@canonical/biome-config": "^0.29.0",
     "@canonical/design-tokens": "^0.6.0",
     "@canonical/ds-types": "^0.29.0",
+    "@canonical/router-core": "^0.29.0",
+    "@canonical/router-react": "^0.29.0",
     "@canonical/storybook-helpers": "^0.29.0",
     "@canonical/typescript-config-react": "^0.29.0",
     "@canonical/webarchitect": "^0.29.0",
