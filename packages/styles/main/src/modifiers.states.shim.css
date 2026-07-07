@@ -23,6 +23,30 @@
  */
 
 @layer ds.modifiers {
+  /* Missing upstream tokens: `caution` uses the `warning` ramp, but the
+     warning ghost tokens (root + states) are not generated. Define plausible
+     values here, mirroring the destructive/constructive ghost pattern (a very
+     light / very dark tint at the ramp's hue — warning hue ≈ 66.86). Remove
+     once the warning ghost tokens are generated upstream. */
+  :root {
+    --color-foreground-ghost-warning: light-dark(
+      var(--color-palette-white),
+      var(--color-palette-gray-990)
+    );
+    --color-foreground-ghost-warning-hover: light-dark(
+      oklch(96% 0.06 66.86),
+      oklch(20% 0.045 66.86)
+    );
+    --color-foreground-ghost-warning-active: light-dark(
+      oklch(93% 0.08 66.86),
+      oklch(24% 0.05 66.86)
+    );
+    --color-foreground-ghost-warning-disabled: light-dark(
+      var(--color-palette-white),
+      oklch(12% 0 0)
+    );
+  }
+
   /* Neutral defaults — the plain (non-anticipation) state tokens. */
   :root {
     --modifier-color-foreground-primary-hover: var(
@@ -90,6 +114,10 @@
   /* `caution` uses the `warning` colour ramp. The ghost-warning state tokens do
      not exist upstream, so those fall back to the root ghost-warning colour. */
   .caution {
+    /* The generated `.caution` modifier omits the ghost root channel that
+       destructive/constructive set — add it so caution ghost importances have a
+       base fill to state from. */
+    --modifier-color-foreground-ghost: var(--color-foreground-ghost-warning);
     --modifier-color-foreground-primary-hover: var(
       --color-foreground-primary-warning-hover
     );
@@ -100,16 +128,13 @@
       --color-foreground-primary-warning-disabled
     );
     --modifier-color-foreground-ghost-hover: var(
-      --color-foreground-ghost-warning-hover,
-      var(--color-foreground-ghost-warning)
+      --color-foreground-ghost-warning-hover
     );
     --modifier-color-foreground-ghost-active: var(
-      --color-foreground-ghost-warning-active,
-      var(--color-foreground-ghost-warning)
+      --color-foreground-ghost-warning-active
     );
     --modifier-color-foreground-ghost-disabled: var(
-      --color-foreground-ghost-warning-disabled,
-      var(--color-foreground-ghost-warning)
+      --color-foreground-ghost-warning-disabled
     );
   }
 
