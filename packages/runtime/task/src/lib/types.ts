@@ -259,6 +259,31 @@ export type Task<A, E = Effect> =
     };
 
 // =============================================================================
+// Effect Identity
+// =============================================================================
+
+/**
+ * A stable identity for a single effect occurrence.
+ *
+ * `kind` and `content` are the content-addressable part — the effect's tag plus
+ * a canonical serialisation of its identity-bearing fields (closures excluded).
+ * `branch` and `seq` are the positional part — the enclosing parallel/race path
+ * and a per-branch occurrence counter — that a journal supplies while walking a
+ * task, so that two effects with identical content at different positions stay
+ * distinct.
+ */
+export interface EffectId {
+  /** The effect's discriminant tag. */
+  kind: Effect["_tag"];
+  /** Canonical serialisation of the effect's identity-bearing content. */
+  content: string;
+  /** Structural path of the enclosing parallel/race branch. */
+  branch: string;
+  /** Per-branch occurrence counter, disambiguating same-content effects. */
+  seq: number;
+}
+
+// =============================================================================
 // Execution Result
 // =============================================================================
 

@@ -14,6 +14,7 @@ export type {
   ConfirmPrompt,
   DryRunResult,
   Effect,
+  EffectId,
   ExecResult,
   LogLevel,
   MultiselectPrompt,
@@ -27,6 +28,17 @@ export type {
   TraceResult,
   TraceSpan,
 } from "./lib/types.js";
+
+// =============================================================================
+// Effect Identity
+// =============================================================================
+
+export { default as canonicalJSON } from "./lib/canonicalJSON.js";
+export {
+  computeEffectId,
+  extractEffectContent,
+  formatEffectId,
+} from "./lib/effectId.js";
 
 // =============================================================================
 // Task Monad
