@@ -10,9 +10,10 @@ const meta = {
   component: Component,
   tags: ["autodocs"],
   argTypes: {
+    // Importance is never blank — primary is the default hierarchy.
     importance: {
       control: "select",
-      options: [undefined, ...MODIFIER_FAMILIES.importance],
+      options: [...MODIFIER_FAMILIES.importance],
     },
     anticipation: {
       control: "select",
@@ -23,7 +24,7 @@ const meta = {
       options: [undefined, "link"],
     },
   },
-  args: { onClick: fn() },
+  args: { onClick: fn(), importance: "primary" },
 } satisfies Meta<typeof Component>;
 
 export default meta;

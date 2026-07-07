@@ -1,12 +1,17 @@
 /* Component tokens — sourced from @canonical/design-tokens */
 :root {
-  /* Fallbacks for the modifier channel, used when no importance modifier is
-     applied (a bare button reads as the ghost/neutral secondary look). */
+  /* Channel fallbacks used when no importance modifier is applied. Primary is
+     the default hierarchy, so a bare `<button class="ds button">` reads as the
+     filled primary look: the primary foreground fills the background and the
+     label takes the on-fill contrast colour. */
   --button-color-background: var(
-    --surface-color-foreground-ghost,
-    var(--color-foreground-ghost)
+    --modifier-color-foreground-primary,
+    var(--color-foreground-primary)
   );
-  --button-color-text: var(--color-text);
+  --button-color-background-hover: var(--hover--color-foreground-primary);
+  --button-color-background-active: var(--active--color-foreground-primary);
+  --button-color-background-disabled: var(--disabled--color-foreground-primary);
+  --button-color-text: var(--color-text-onForegroundPrimary);
   --button-color-border: var(--color-border);
 
   /* Inline padding + gap. Figma: dimension/100 (8px) inline, dimension/200
@@ -65,18 +70,29 @@
   text-align: center;
   text-decoration: none;
 
+  /* State fallbacks resolve to the default (primary) surface states when no
+     importance modifier supplies `--modifier-surface-*`. */
   &:hover:not(:disabled) {
-    background-color: var(--modifier-surface-hover, var(--modifier-surface));
+    background-color: var(
+      --modifier-surface-hover,
+      var(--button-color-background-hover)
+    );
   }
 
   &:active:not(:disabled) {
-    background-color: var(--modifier-surface-active, var(--modifier-surface));
+    background-color: var(
+      --modifier-surface-active,
+      var(--button-color-background-active)
+    );
   }
 
   &:disabled {
     cursor: not-allowed;
-    color: var(--disabled--color-text);
-    background-color: var(--modifier-surface-disabled, transparent);
+    color: var(--disabled--color-text, var(--button-color-text));
+    background-color: var(
+      --modifier-surface-disabled,
+      var(--button-color-background-disabled)
+    );
     border-color: var(--disabled--color-border);
   }
 }
