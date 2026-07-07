@@ -1375,7 +1375,11 @@ describe("Interpreter - executeEffect Log fallback for all levels", () => {
 // =============================================================================
 
 describe("Interpreter - runTask Parallel with raw errors", () => {
-  it("wraps non-TaskExecutionError as INTERNAL code", async () => {
+  it("surfaces a parallel child's ENOENT read as FILE_NOT_FOUND", async () => {
+    // A raw ENOENT from a child effect is now normalised inside the child (like
+    // any effect exception), so the Parallel aggregator sees a structured
+    // FILE_NOT_FOUND rather than an opaque INTERNAL — consistent with a
+    // top-level read of a missing file.
     const throwingTask: Task<number> = {
       _tag: "Effect",
       effect: {
@@ -1395,6 +1399,7 @@ describe("Interpreter - runTask Parallel with raw errors", () => {
       expect.unreachable("should have thrown");
     } catch (err) {
       expect(err).toBeInstanceOf(TaskExecutionError);
+      expect((err as TaskExecutionError).code).toBe("FILE_NOT_FOUND");
     }
   });
 });
@@ -1584,24 +1589,35 @@ describe("Interpreter - effect exceptions route through recovery", () => {
     expect(await runTask(task)).toBe("FILE_NOT_FOUND");
   });
 
-  it("routes a throwing Error transform into recover as INTERNAL", async () => {
+  it("routes a throwing Error transform into recover as INTERNAL, preserving cause and stack", async () => {
     const dir = mkdtempSync(join(tmpdir(), "task-transform-err-"));
 
     try {
       const path = join(dir, "f.txt");
       writeFileSync(path, "original");
+      const thrown = new Error("boom");
+      let captured: TaskError | undefined;
       const task = recover(
         effect<void>({
           _tag: "TransformFile",
           path,
           transform: () => {
-            throw new Error("boom");
+            throw thrown;
           },
         }),
-        (err) => pure(`${err.code}:${err.message}`),
+        (err) => {
+          captured = err;
+          return pure("recovered");
+        },
       );
 
-      expect(await runTask(task)).toBe("INTERNAL:boom");
+      expect(await runTask(task)).toBe("recovered");
+      expect(captured?.code).toBe("INTERNAL");
+      expect(captured?.message).toBe("boom");
+      // The original throw is preserved as cause, and the Error stack carried
+      // through, so a handler can inspect the underlying failure.
+      expect(captured?.cause).toBe(thrown);
+      expect(captured?.stack).toBe(thrown.stack);
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
@@ -1707,6 +1723,48 @@ describe("Interpreter - effect exceptions route through recovery", () => {
     } catch (err) {
       expect(err).toBeInstanceOf(TaskExecutionError);
       expect((err as TaskExecutionError).code).toBe("INTERNAL");
+    }
+  });
+});
+
+// =============================================================================
+// runTask - un-recovered effect exceptions reject with a normalised code
+// =============================================================================
+
+describe("Interpreter - un-recovered effect exceptions reject with a normalised code", () => {
+  it("rejects a missing-file read as TaskExecutionError FILE_NOT_FOUND", async () => {
+    const missing = join(tmpdir(), "task-unrecovered-enoent-xyz");
+
+    try {
+      await runTask(effect<string>({ _tag: "ReadFile", path: missing }));
+      expect.unreachable("should have thrown");
+    } catch (err) {
+      expect(err).toBeInstanceOf(TaskExecutionError);
+      expect((err as TaskExecutionError).code).toBe("FILE_NOT_FOUND");
+    }
+  });
+
+  it("rejects a throwing transform as TaskExecutionError INTERNAL", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "task-unrecovered-internal-"));
+
+    try {
+      const path = join(dir, "f.txt");
+      writeFileSync(path, "original");
+      await runTask(
+        effect<void>({
+          _tag: "TransformFile",
+          path,
+          transform: () => {
+            throw new Error("nope");
+          },
+        }),
+      );
+      expect.unreachable("should have thrown");
+    } catch (err) {
+      expect(err).toBeInstanceOf(TaskExecutionError);
+      expect((err as TaskExecutionError).code).toBe("INTERNAL");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
     }
   });
 });

@@ -568,3 +568,29 @@ describe("collectUndos - lazy node handling", () => {
     ).toThrow("raw");
   });
 });
+
+// =============================================================================
+// collectUndos - Parallel result value is readable by a continuation
+// =============================================================================
+
+describe("collectUndos - Parallel result threaded to continuation", () => {
+  it("exposes the array of child values to a continuation without crashing", () => {
+    // A continuation that reads the Parallel result (e.g. its length) must see
+    // the array of child forward values, mirroring dryRun — not undefined.
+    let seenLength = -1;
+    const task = flatMap(
+      parallel([writeFile("/a.txt", "a"), writeFile("/b.txt", "b")]),
+      (results) => {
+        seenLength = (results as unknown[]).length;
+        return writeFile("/c.txt", "c");
+      },
+    );
+
+    const undos = collectUndos(task);
+
+    // Two parallel writes + the continuation write, all undoable.
+    expect(undos).toHaveLength(3);
+    // The continuation read the Parallel result as a real 2-element array.
+    expect(seenLength).toBe(2);
+  });
+});

@@ -7,8 +7,6 @@
  * explicit continuation/handler-frame stack rather than by recursing through
  * the task structure, so arbitrarily long `flatMap`/`gen` chains run in
  * constant call-stack depth.
- *
- * @packageDocumentation
  */
 
 import { TaskExecutionError } from "./interpreter.js";

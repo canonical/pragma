@@ -1439,3 +1439,20 @@ describe("Dry-Run - mock values for multiselect Prompt in task", () => {
     expect(value).toEqual([]);
   });
 });
+
+// =============================================================================
+// Dry-Run - virtual filesystem across concurrency combinators
+// =============================================================================
+
+describe("Dry-Run - Symlink tracking inside a parallel child", () => {
+  it("tracks a Symlink created in a parallel child for a later Exists", () => {
+    // The Symlink runs inside a Parallel child, and the shared virtual
+    // filesystem carries the created path forward so a subsequent Exists at the
+    // top level reports true.
+    const task = flatMap(parallel([symlink("/target", "/link")]), () =>
+      exists("/link"),
+    );
+
+    expect(dryRun(task).value).toBe(true);
+  });
+});

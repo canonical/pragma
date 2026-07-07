@@ -90,42 +90,46 @@ export const collectUndos = <A>(task: Task<A>): Task<void>[] => {
 /**
  * Walk a task tree with mocked forward effects over a shared virtual
  * filesystem, appending each effect's `undo` task (in forward order) to
- * `undos`. `Parallel`/`Race` children are walked against the same `virtualFs`.
- * The forward walk is trampolined via {@link driveSync}, so deep chains stay
+ * `undos`, and returning the task's mocked forward value. Forward mocking
+ * mirrors `dryRun` exactly — `Parallel` resolves to the array of its children's
+ * mocked values and `Race` to its first child's — so a continuation that reads
+ * a concurrency result sees the same shape it would under `dryRun`.
+ * `Parallel`/`Race` children are walked against the same `virtualFs`, and the
+ * forward walk is trampolined via {@link driveSync}, so deep chains stay
  * stack-safe.
  *
  * @param task - The task to collect undos from.
  * @param virtualFs - Shared set of paths created so far during the walk.
  * @param undos - Accumulator appended in forward execution order.
+ * @returns The task's mocked forward value.
  * @note Impure — mutates the shared `virtualFs` set and `undos` accumulator.
  */
 const collectUndosInto = (
   task: Task<unknown>,
   virtualFs: Set<string>,
   undos: Task<void>[],
-): void => {
+): unknown => {
   const resolveEffect = (effect: Effect): unknown => {
     if ("undo" in effect && effect.undo) {
       undos.push(effect.undo);
     }
 
     if (effect._tag === "Parallel") {
-      return effect.tasks.map((child) => {
-        collectUndosInto(child, virtualFs, undos);
-        return undefined;
-      });
+      return effect.tasks.map((child) =>
+        collectUndosInto(child, virtualFs, undos),
+      );
     }
 
     if (effect._tag === "Race") {
       const first = effect.tasks.at(0);
       if (first !== undefined) {
-        collectUndosInto(first, virtualFs, undos);
+        return collectUndosInto(first, virtualFs, undos);
       }
-      return mockEffectWithFs(effect, virtualFs);
+      return undefined;
     }
 
     return mockEffectWithFs(effect, virtualFs);
   };
 
-  driveSync(task, resolveEffect);
+  return driveSync(task, resolveEffect);
 };
