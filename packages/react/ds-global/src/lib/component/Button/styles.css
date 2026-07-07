@@ -8,9 +8,9 @@
     --modifier-color-foreground-primary,
     var(--color-foreground-primary)
   );
-  --button-color-background-hover: var(--hover--color-foreground-primary);
-  --button-color-background-active: var(--active--color-foreground-primary);
-  --button-color-background-disabled: var(--disabled--color-foreground-primary);
+  --button-color-background-hover: var(--color-foreground-primary-hover);
+  --button-color-background-active: var(--color-foreground-primary-active);
+  --button-color-background-disabled: var(--color-foreground-primary-disabled);
   /* Neutral text is the normal text colour. The filled default reads as
      contrast on the fill because `.primary` (the default importance, applied by
      the component) overrides text/icon to the on-fill contrast tokens; ghost
@@ -110,14 +110,18 @@
     outline-offset: var(--focus-outline-offset, 2px);
   }
 
+  /* Disabled — explicit disabled tokens (not the computed deltas): the surface,
+     text and border each resolve to their `-disabled` token. Primary supplies
+     the on-fill disabled text via `--modifier-color-text-disabled`; ghost
+     importances fall back to the plain disabled text colour. */
   &:disabled {
     cursor: not-allowed;
-    color: var(--disabled--color-text, var(--button-color-text));
+    color: var(--modifier-color-text-disabled, var(--color-text-disabled));
     background-color: var(
       --modifier-surface-disabled,
       var(--button-color-background-disabled)
     );
-    border-color: var(--disabled--color-border);
+    border-color: var(--color-border-disabled);
   }
 }
 

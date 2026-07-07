@@ -39,11 +39,14 @@
       --modifier-color-foreground-primary,
       var(--color-foreground-primary)
     );
-    --modifier-surface-hover: var(--hover--color-foreground-primary);
-    --modifier-surface-active: var(--active--color-foreground-primary);
-    --modifier-surface-disabled: var(--disabled--color-foreground-primary);
+    --modifier-surface-hover: var(--color-foreground-primary-hover);
+    --modifier-surface-active: var(--color-foreground-primary-active);
+    --modifier-surface-disabled: var(--color-foreground-primary-disabled);
     --modifier-outline: 0;
     --modifier-color-text: var(--color-text-onForegroundPrimary);
+    --modifier-color-text-disabled: var(
+      --color-text-onForegroundPrimary-disabled
+    );
     --modifier-color-icon: var(--color-icon-onForegroundPrimary);
   }
 
@@ -54,9 +57,9 @@
       --modifier-color-foreground-ghost,
       var(--surface-color-foreground-ghost, var(--color-foreground-ghost))
     );
-    --modifier-surface-hover: var(--hover--color-foreground-ghost);
-    --modifier-surface-active: var(--active--color-foreground-ghost);
-    --modifier-surface-disabled: var(--disabled--color-foreground-ghost);
+    --modifier-surface-hover: var(--color-foreground-ghost-hover);
+    --modifier-surface-active: var(--color-foreground-ghost-active);
+    --modifier-surface-disabled: var(--color-foreground-ghost-disabled);
     --modifier-outline: 1;
   }
 
@@ -67,9 +70,9 @@
       --modifier-color-foreground-ghost,
       var(--surface-color-foreground-ghost, var(--color-foreground-ghost))
     );
-    --modifier-surface-hover: var(--hover--color-foreground-ghost);
-    --modifier-surface-active: var(--active--color-foreground-ghost);
-    --modifier-surface-disabled: var(--disabled--color-foreground-ghost);
+    --modifier-surface-hover: var(--color-foreground-ghost-hover);
+    --modifier-surface-active: var(--color-foreground-ghost-active);
+    --modifier-surface-disabled: var(--color-foreground-ghost-disabled);
     --modifier-outline: 0;
   }
 }
