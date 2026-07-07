@@ -26,6 +26,7 @@
   "license": "GPL-3.0",
   "scripts": {
     "build": "tsc -p tsconfig.build.json && bun ../../../scripts/copy-templates.ts src dist/esm",
+    "build:all": "bun run build",
     "check": "bun run check:biome && bun run check:ts && bun run check:webarchitect",
     "check:webarchitect": "webarchitect library --license GPL-3.0",
     "check:fix": "bun run check:biome:fix && bun run check:ts",
