@@ -23,4 +23,5 @@ export * from "./component/Tile/index.js";
 export * from "./component/Tooltip/index.js";
 export * from "./group/KeyboardKeys/index.js";
 export * from "./pattern/Timeline/index.js";
+export * from "./subcomponent/Spinner/index.js";
 export type * from "./types/index.js";
