@@ -1,18 +1,13 @@
 import type { IconName } from "@canonical/ds-assets";
 import type { Item } from "@canonical/ds-types";
+// The custom-link contract is shared across every link-injecting component
+// (cs:react.component.link_component); sourced from ds-global so SideNavigation,
+// Breadcrumbs, and Tabs use one interface. Re-exported so this module's existing
+// import sites (Content/Footer/NavTree/Item, the story harness) resolve it here.
+import type { LinkComponentProps } from "@canonical/react-ds-global";
 import type { ComponentType, HTMLAttributes, ReactNode } from "react";
 
-/**
- * Props passed to a custom link component (router integration).
- * Mirrors the contract used by Breadcrumbs so the same router `Link` works for
- * both. Defaults to the intrinsic `"a"` element when not provided.
- */
-export interface LinkComponentProps {
-  href?: string;
-  className?: string;
-  children?: ReactNode;
-  "aria-current"?: HTMLAttributes<HTMLElement>["aria-current"];
-}
+export type { LinkComponentProps };
 
 /**
  * The SideNavigation item — the WD405 `Item` enhanced with the presentational

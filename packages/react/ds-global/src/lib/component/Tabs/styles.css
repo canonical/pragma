@@ -1,0 +1,37 @@
+/**
+ * Tabs styles
+ * @implements dso:global.component.tabs
+ *
+ * DSL anatomy mapping:
+ * - layout.type: stack, layout.direction: horizontal -> flex row of tabs
+ * - edges: tabs-tab (1..*), slot default -> the <li> children of .tabs-list
+ *
+ * Figma (node 4388-106316): a horizontal strip of tabs with no gap between
+ * them, over a full-width muted bottom border; the strip fills its container
+ * and scrolls horizontally on overflow.
+ */
+:root {
+  --tabs-border-width: var(--dimension-strokeThickness-medium, 1px);
+}
+
+.ds.tabs {
+  display: block;
+}
+
+.ds.tabs .tabs-list {
+  display: flex;
+  flex-direction: row;
+  /* No gap between tabs (Figma). */
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  /* Full-width muted baseline; the active tab paints a highlighted segment
+     over it (see Tabs.Tab). */
+  border-bottom: var(--tabs-border-width) solid var(--color-border-muted);
+
+  /* Overflow: the strip scrolls horizontally when the tabs exceed the
+     container width (Figma "Overflow"). */
+  overflow-x: auto;
+}

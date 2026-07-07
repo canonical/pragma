@@ -19,6 +19,7 @@ export * from "./component/Chip/index.js";
 export * from "./component/Icon/index.js";
 export * from "./component/InlineCode/index.js";
 export * from "./component/KeyboardKey/index.js";
+export * from "./component/Tabs/index.js";
 export * from "./component/Tile/index.js";
 export * from "./component/Tooltip/index.js";
 export * from "./group/KeyboardKeys/index.js";
