@@ -1,25 +1,28 @@
 /**
  * Tile.Header styles
- * @implements dso:global.subcomponent.tile-header
+ * @implements ds:global.subcomponent.tile-header
  *
  * DSL anatomy mapping:
- * - layout.type: flow -> display: flex
- * - layout.direction: horizontal -> flex-direction: row
+ * - layout.type: flow, layout.direction: horizontal -> flex row
  * - layout.align: center -> align-items: center
- * - spacing.internal: spacing/medium -> padding: var(--spacing-medium)
+ * - spacing.internal.vertical: dimension/100, spacing.internal.horizontal:
+ *   dimension/200 -> padding 100 (block) / 200 (inline). The header's block
+ *   padding is 100 top and bottom; the content below adds its own top padding.
  */
+:root {
+  --tile-header-padding-block: var(--dimension-100);
+  --tile-header-padding-inline: var(--dimension-200);
+  --tile-header-gap: var(--dimension-100);
+}
+
 .ds.tile-header {
-  /* layout.type: flow, layout.direction: horizontal */
   display: flex;
   flex-direction: row;
-
-  /* layout.align: center */
   align-items: center;
 
-  /* spacing.internal: spacing/medium */
-  padding: var(--tile-header-padding, var(--spacing-medium, 1rem));
-  gap: var(--tile-header-gap, var(--spacing-small, 0.5rem));
+  padding-block: var(--tile-header-padding-block);
+  padding-inline: var(--tile-header-padding-inline);
+  gap: var(--tile-header-gap);
 
-  /* Typography */
-  font-weight: var(--tile-header-font-weight, var(--font-weight-semibold, 600));
+  font-weight: var(--typography-weight-semibold, 600);
 }

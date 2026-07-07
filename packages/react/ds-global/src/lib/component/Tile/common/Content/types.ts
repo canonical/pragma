@@ -3,7 +3,7 @@ import type { HTMLAttributes, ReactNode } from "react";
 /**
  * Props for the Tile.Content subcomponent
  *
- * @implements dso:global.subcomponent.tile-content
+ * @implements ds:global.subcomponent.tile-content
  *
  * Anatomy (from DSL):
  * - layout.type: stack

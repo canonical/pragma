@@ -1,6 +1,6 @@
 /**
  * Card.Footer styles
- * @implements dso:global.subcomponent.card-footer
+ * @implements ds:global.subcomponent.card-footer
  *
  * A content-bearing section: it pads itself (the card frame applies no general
  * padding). Vertical padding is in baseline multiples.

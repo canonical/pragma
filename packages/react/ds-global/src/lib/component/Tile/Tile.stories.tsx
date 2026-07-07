@@ -1,100 +1,68 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { fn } from "storybook/test";
+import * as decorators from "../../../storybook/decorators.js";
 import Component from "./Tile.js";
-import Tile from "./Tile.js";
 
 const meta = {
-  title: "_work_in_progress/component/Tile",
+  title: "components/Tile",
   component: Component,
   tags: ["autodocs"],
-  args: { onClick: fn() },
 } satisfies Meta<typeof Component>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
 /**
- * Default tile with header and content.
+ * Default tile with a header and content.
  */
 export const Default: Story = {
   args: {
     children: [
-      <Tile.Header key="header">Tile Header</Tile.Header>,
-      <Tile.Content key="content">
-        <p>This is the tile content area.</p>
-      </Tile.Content>,
+      <Component.Header key="header">
+        <h4>Tile header</h4>
+      </Component.Header>,
+      <Component.Content key="content">
+        <p className="p">This is the tile content area.</p>
+      </Component.Content>,
     ],
   },
 };
 
 /**
- * Tile with rich content including formatted text.
+ * A tile with content only (the header is optional).
  */
-export const WithRichContent: Story = {
+export const ContentOnly: Story = {
   args: {
-    children: [
-      <Tile.Header key="header">Product Details</Tile.Header>,
-      <Tile.Content key="content">
-        <p>
-          <strong>Price:</strong> $99.00
+    children: (
+      <Component.Content>
+        <p className="p">
+          A tile can hold content without a header — useful for a single metric
+          or a block of rich media.
         </p>
-        <p>
-          <strong>Availability:</strong> In Stock
-        </p>
-        <p>A high-quality product with excellent features.</p>
-      </Tile.Content>,
-    ],
-  },
-};
-
-/**
- * Multiple tiles displayed in a grid layout.
- */
-export const MultipleInGrid: Story = {
-  decorators: [
-    () => (
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(3, 1fr)",
-          gap: "1rem",
-        }}
-      >
-        <Tile>
-          <Tile.Header>Tile 1</Tile.Header>
-          <Tile.Content>Content for tile 1</Tile.Content>
-        </Tile>
-        <Tile>
-          <Tile.Header>Tile 2</Tile.Header>
-          <Tile.Content>Content for tile 2</Tile.Content>
-        </Tile>
-        <Tile>
-          <Tile.Header>Tile 3</Tile.Header>
-          <Tile.Content>Content for tile 3</Tile.Content>
-        </Tile>
-      </div>
+      </Component.Content>
     ),
-  ],
-  args: {
-    children: [
-      <Tile.Header key="header">Placeholder</Tile.Header>,
-      <Tile.Content key="content">Placeholder</Tile.Content>,
-    ],
   },
 };
 
 /**
- * Interactive tile that responds to click and keyboard events.
+ * The Tile always provides a surface, so its background steps as it is nested
+ * inside successive `.surface` contexts (surface 1 -> 2 -> 3) — it stands out
+ * from whatever it sits on, unlike the Card which blends in.
  */
-export const Clickable: Story = {
-  args: {
-    children: [
-      <Tile.Header key="header">Clickable Tile</Tile.Header>,
-      <Tile.Content key="content">
-        Click or press Enter to interact
-      </Tile.Content>,
-    ],
-    role: "button",
-    tabIndex: 0,
-  },
+export const OnSurfaces: Story = {
+  parameters: { grid: true },
+  // `render` builds its own tiles; args are unused but the type requires them.
+  args: { children: <Component.Content>—</Component.Content> },
+  render: () =>
+    // The tile provides its own surface, so its background steps a level above
+    // whatever band it sits on — it stands out rather than blending in.
+    decorators.surfaces((level) => (
+      <Component>
+        <Component.Header>
+          <h4>On surface level {level + 1}</h4>
+        </Component.Header>
+        <Component.Content>
+          <p className="p">The tile background steps above its container.</p>
+        </Component.Content>
+      </Component>
+    )),
 };

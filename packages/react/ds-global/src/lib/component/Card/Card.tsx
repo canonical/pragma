@@ -1,11 +1,13 @@
 import type React from "react";
-import { Content, Footer, Header, Image, Thumbnail } from "./common/index.js";
+import { Content, Footer, Header, Image } from "./common/index.js";
 import type { CardProps } from "./types.js";
 import "./styles.css";
 
-// The Card establishes its own `.surface` context so its background steps when
-// nested inside another surface or card.
-const componentCssClassName = "ds card surface";
+// The Card is NOT a surface: it establishes no `.surface` context of its own,
+// so on a surface it takes the same background (no step) and reads as flush
+// with its container. It stays delimited by its border, radius, and the
+// dividers between its sections.
+const componentCssClassName = "ds card";
 
 /**
  * The card is a container that is designed to represent data objects that share
@@ -14,7 +16,9 @@ const componentCssClassName = "ds card surface";
  * predictable structure that allows the user to compare attributes across data
  * objects.
  *
- * @implements dso:global.component.card
+ * `import { Card } from "@canonical/react-ds-global";`
+ *
+ * @implements ds:global.component.card
  */
 const Card = ({
   className,
@@ -33,6 +37,5 @@ Card.Content = Content;
 Card.Footer = Footer;
 Card.Header = Header;
 Card.Image = Image;
-Card.Thumbnail = Thumbnail;
 
 export default Card;

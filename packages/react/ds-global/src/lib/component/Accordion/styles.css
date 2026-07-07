@@ -1,6 +1,6 @@
 /**
  * Accordion styles
- * @implements dso:global.component.accordion
+ * @implements ds:global.component.accordion
  *
  * DSL anatomy mapping:
  * - layout.type: stack -> display: flex; flex-direction: column
@@ -17,6 +17,10 @@
   /* layout.type: stack, layout.direction: vertical */
   display: flex;
   flex-direction: column;
+
+  /* When placed in a grid, span all columns (inert outside a grid). The
+     accordion is a full-width block, not a grid cell. */
+  grid-column: 1 / -1;
 
   /* The accordion background uses the surface channel, which auto-steps with
      .surface nesting (surface 1 -> base, 2 -> layer2, 3 -> layer3). Referenced

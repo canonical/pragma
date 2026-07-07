@@ -1,6 +1,6 @@
 /**
  * Card.Content styles
- * @implements dso:global.subcomponent.card-content
+ * @implements ds:global.subcomponent.card-content
  *
  * DSL anatomy: layout.type stack, direction vertical.
  * A content-bearing section: it pads itself (the card frame applies no general

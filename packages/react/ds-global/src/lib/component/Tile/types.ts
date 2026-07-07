@@ -5,16 +5,15 @@ import type { HeaderProps } from "./common/Header/types.js";
 /**
  * Props for the Tile component
  *
- * @implements dso:global.component.tile
+ * @implements ds:global.component.tile
  *
  * Anatomy (from DSL):
  * - layout.type: stack
  * - layout.direction: vertical
- * - interaction.cursor: pointer
- * - appearance.background: color/surface/tile
- * - appearance.radius: radius/tile
+ * - appearance.background: color/surface/tile (Tile is a surface)
+ * - appearance.radius: radius/card (shared with Card)
  * - edges:
- *   - [0] tile-header (slotName: header, cardinality: 1)
+ *   - [0] tile-header (slotName: header, cardinality: 0..1)
  *   - [1] tile-content (slotName: default, cardinality: 1)
  */
 export interface TileProps extends HTMLAttributes<HTMLDivElement> {

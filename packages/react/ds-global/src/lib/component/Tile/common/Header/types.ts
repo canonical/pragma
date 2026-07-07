@@ -3,7 +3,7 @@ import type { HTMLAttributes, ReactNode } from "react";
 /**
  * Props for the Tile.Header subcomponent
  *
- * @implements dso:global.subcomponent.tile-header
+ * @implements ds:global.subcomponent.tile-header
  *
  * Anatomy (from DSL):
  * - layout.type: flow
