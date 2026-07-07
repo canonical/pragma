@@ -12,11 +12,10 @@ const meta = {
 export default meta;
 
 /**
- * A typical blog-style card: a full-bleed image above a padded content block.
+ * The base card. The core api is `Card.Content` — a padded content section.
  */
 export const Default: StoryFn<CardProps> = (props) => (
   <Component {...props} style={{ maxWidth: "24rem" }}>
-    <Component.Image src="https://assets.ubuntu.com/v1/5ce214a4-rpi.png" />
     <Component.Content>
       <h3>Build a bare-metal cloud on a Raspberry Pi cluster with MAAS</h3>
       <p className="p">
@@ -29,9 +28,30 @@ export const Default: StoryFn<CardProps> = (props) => (
 );
 
 /**
+ * A full-bleed image above the content block.
+ *
+ * Note: `Card.Image` is not part of the core api.
+ */
+export const WithImage: StoryFn<CardProps> = (props) => (
+  <Component {...props} style={{ maxWidth: "24rem" }}>
+    <Component.Image src="https://assets.ubuntu.com/v1/5ce214a4-rpi.png" />
+    <Component.Content>
+      <h3>Build a bare-metal cloud on a Raspberry Pi cluster with MAAS</h3>
+      <p className="p">
+        The Raspberry Pi 4 is a great option to run a cluster on, and
+        provisioning is easy with <a href="https://maas.io">MAAS</a>.
+      </p>
+    </Component.Content>
+  </Component>
+);
+
+/**
  * A card with a header, content and footer. Only the content-bearing sections
  * pad themselves; the card frame applies no general padding and the image
  * bleeds edge to edge. Dividers separate adjacent sections.
+ *
+ * Note: `Card.Header`, `Card.Image` and `Card.Footer` are not part of the core
+ * api — the base card only has `Card.Content`.
  */
 export const HeaderContentFooter: StoryFn<CardProps> = (props) => (
   <Component {...props} style={{ maxWidth: "24rem" }}>
@@ -56,6 +76,8 @@ export const HeaderContentFooter: StoryFn<CardProps> = (props) => (
 /**
  * A compact horizontal card: a fixed-size thumbnail beside a title and excerpt,
  * as used in blog sidebars and related-content lists.
+ *
+ * Note: `Card.Thumbnail` is not part of the core api.
  */
 export const WithThumbnail: StoryFn<CardProps> = (props) => (
   <Component {...props} style={{ maxWidth: "28rem" }}>
@@ -141,13 +163,23 @@ export const OnSurfaces: StoryFn<CardProps> = () => {
     </Component>
   );
 
+  // Surface wrappers pad only on the block axis (no inline padding), so the
+  // nesting reads as stacked surface bands rather than nested card boxes.
   return (
-    <div style={{ display: "grid", gap: "var(--dimension-300)" }}>
+    <div
+      className="surface"
+      style={{
+        paddingBlock: "var(--dimension-200)",
+        background: "var(--color-background)",
+      }}
+    >
+      {card}
       <div
         className="surface"
         style={{
-          padding: "var(--dimension-200)",
-          background: "var(--color-background)",
+          marginBlockStart: "var(--dimension-200)",
+          paddingBlock: "var(--dimension-200)",
+          background: "var(--color-background-layer2)",
         }}
       >
         {card}
@@ -155,21 +187,11 @@ export const OnSurfaces: StoryFn<CardProps> = () => {
           className="surface"
           style={{
             marginBlockStart: "var(--dimension-200)",
-            padding: "var(--dimension-200)",
-            background: "var(--color-background-layer2)",
+            paddingBlock: "var(--dimension-200)",
+            background: "var(--color-background-layer3)",
           }}
         >
           {card}
-          <div
-            className="surface"
-            style={{
-              marginBlockStart: "var(--dimension-200)",
-              padding: "var(--dimension-200)",
-              background: "var(--color-background-layer3)",
-            }}
-          >
-            {card}
-          </div>
         </div>
       </div>
     </div>

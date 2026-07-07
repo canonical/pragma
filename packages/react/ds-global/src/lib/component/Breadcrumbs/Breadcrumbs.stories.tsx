@@ -53,6 +53,8 @@ export const ManyLevels: Story = {
 
 /**
  * Breadcrumbs using a custom separator character.
+ *
+ * Note: the `separator` prop is not part of the core api.
  */
 export const CustomSeparator: Story = {
   args: {
@@ -81,6 +83,9 @@ export const WithCustomAriaLabel: Story = {
 /**
  * Breadcrumbs with a custom item component.
  * Demonstrates the switch pattern for custom rendering.
+ *
+ * Note: this story is not part of the core api — it illustrates a userland
+ * pattern (rendering items through a custom component), not a supported prop.
  */
 const CustomItem = ({
   label,
