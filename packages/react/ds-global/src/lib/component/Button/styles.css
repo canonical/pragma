@@ -47,9 +47,10 @@
                          border. `.primary` overrides text/icon with the on-fill
                          contrast tokens.
 
-  Interaction states come free from `@canonical/design-tokens/dist/states.css`,
-  which derives `--hover--*` / `--active--*` / `--disabled--*` from whatever the
-  channel resolved to.
+  Interaction states read the per-state surface/text channels supplied by the
+  states shim (`--modifier-surface-{hover,active,disabled}`,
+  `--modifier-color-text-disabled`), which resolve to the explicit state tokens
+  and recolour per anticipation.
 */
 
 .ds.button {
@@ -79,6 +80,12 @@
 
   text-align: center;
   text-decoration: none;
+
+  /* Fast colour transition on state change (hover/active/disabled). */
+  transition:
+    background-color var(--motion-duration-fast) var(--motion-easing-standard),
+    color var(--motion-duration-fast) var(--motion-easing-standard),
+    border-color var(--motion-duration-fast) var(--motion-easing-standard);
 
   /* A leading icon tightens the start padding to dimension-100; the gap between
      the icon and label is already dimension-100. */

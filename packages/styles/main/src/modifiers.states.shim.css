@@ -67,6 +67,7 @@
     --modifier-color-foreground-ghost-disabled: var(
       --color-foreground-ghost-disabled
     );
+    --modifier-color-text-disabled: var(--color-text-disabled);
   }
 
   .constructive {
@@ -88,6 +89,7 @@
     --modifier-color-foreground-ghost-disabled: var(
       --color-foreground-ghost-constructive-disabled
     );
+    --modifier-color-text-disabled: var(--color-text-constructive-disabled);
   }
 
   .destructive {
@@ -109,6 +111,7 @@
     --modifier-color-foreground-ghost-disabled: var(
       --color-foreground-ghost-destructive-disabled
     );
+    --modifier-color-text-disabled: var(--color-text-destructive-disabled);
   }
 
   /* `caution` uses the `warning` colour ramp. The ghost-warning state tokens do
@@ -136,6 +139,7 @@
     --modifier-color-foreground-ghost-disabled: var(
       --color-foreground-ghost-warning-disabled
     );
+    --modifier-color-text-disabled: var(--color-text-warning-disabled);
   }
 
   .branded {
@@ -157,5 +161,6 @@
     --modifier-color-foreground-ghost-disabled: var(
       --color-foreground-ghost-branded-disabled
     );
+    --modifier-color-text-disabled: var(--color-text-branded-disabled);
   }
 }
