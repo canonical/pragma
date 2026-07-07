@@ -115,26 +115,35 @@ export const LinkVariant: Story = {
   },
 };
 
-const TrashIcon = () => (
-  <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+const EditIcon = () => (
+  <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
     <path
-      d="M2 4h12M5 4V2h6v2M6 7v5M10 7v5M4 4l1 10h6l1-10"
+      d="M11.5 2.5l2 2L5 13l-3 1 1-3 8.5-8.5z"
       stroke="currentColor"
       strokeWidth="1.5"
-      fill="none"
+      strokeLinejoin="round"
     />
   </svg>
 );
 
 /**
- * Button with icon and label.
+ * The full matrix with a leading icon in every cell — so the icon colour can be
+ * checked against each importance × anticipation combination (the icon should
+ * follow the label colour: contrast on a filled primary, the modifier colour on
+ * ghost secondary/tertiary).
  */
-export const WithIcon: Story = {
-  args: {
-    children: "Delete",
-    icon: <TrashIcon />,
-    anticipation: "destructive",
-  },
+export const IconMatrix: Story = {
+  render: (args) => <MatrixGrid {...args} />,
+  args: { children: "Button", icon: <EditIcon /> },
+};
+
+/**
+ * The icon matrix in the disabled state — the icon should dim with the label
+ * across every combination.
+ */
+export const DisabledIconMatrix: Story = {
+  render: (args) => <MatrixGrid {...args} />,
+  args: { children: "Button", icon: <EditIcon />, disabled: true },
 };
 
 /**

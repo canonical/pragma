@@ -143,6 +143,15 @@
   flex-shrink: 0;
   width: var(--icon-size, 1em);
   height: var(--icon-size, 1em);
+
+  /* The icon has its own colour channel (distinct from the label text): on a
+     filled primary it is the on-fill contrast icon, on ghost importances the
+     modifier icon colour. Icons drawn with `currentColor` follow this. */
+  color: var(--modifier-color-icon, var(--modifier-color-text, currentColor));
+}
+
+.ds.button:disabled > .icon {
+  color: var(--modifier-color-icon-disabled, var(--color-icon-disabled));
 }
 
 /* ==========================================================================

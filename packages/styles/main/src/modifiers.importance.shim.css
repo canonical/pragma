@@ -50,6 +50,9 @@
       --color-text-onForegroundPrimary-disabled
     );
     --modifier-color-icon: var(--color-icon-onForegroundPrimary);
+    --modifier-color-icon-disabled: var(
+      --color-icon-onForegroundPrimary-disabled
+    );
   }
 
   /* Secondary — outlined: a ghost background with a visible border; text/icon
