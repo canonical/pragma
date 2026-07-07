@@ -21,9 +21,14 @@
 @import url("@canonical/design-tokens/dist/modifiers.criticality.css");
 @import url("@canonical/design-tokens/dist/modifiers.emphasis.css");
 @import url("@canonical/design-tokens/dist/modifiers.importance.css");
-/* TEMP shim: maps the (currently empty) importance modifiers to channel hints
-   so importance-driven components can render their hierarchy. Loaded after the
-   generated file; remove once importance tokens are generated upstream. */
+/* TEMP shims (remove once generated upstream):
+   - states: writes the explicit per-state colour tokens into the modifier
+     channel (the generated modifiers only expose root), so hover/active/
+     disabled compose with anticipation. Imported after the anticipation/
+     emphasis modifiers so the anticipation-class overrides win.
+   - importance: maps the (currently empty) importance modifiers to channel
+     hints so importance-driven components can render their hierarchy. */
+@import url("./modifiers.states.shim.css");
 @import url("./modifiers.importance.shim.css");
 @import url("@canonical/design-tokens/dist/states.css");
 
