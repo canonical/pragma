@@ -1,21 +1,35 @@
 /* Component tokens — sourced from @canonical/design-tokens */
 :root {
-  --button-color-background: var(--color-foreground-secondary);
-  --button-color-background-hover: var(--color-foreground-secondary-hover);
-  --button-color-background-active: var(--color-foreground-secondary-active);
+  /* Channel fallbacks used when no importance modifier is applied. Primary is
+     the default hierarchy, so a bare `<button class="ds button">` reads as the
+     filled primary look: the primary foreground fills the background and the
+     label takes the on-fill contrast colour. */
+  --button-color-background: var(
+    --modifier-color-foreground-primary,
+    var(--color-foreground-primary)
+  );
+  --button-color-background-hover: var(--color-foreground-primary-hover);
+  --button-color-background-active: var(--color-foreground-primary-active);
+  --button-color-background-disabled: var(--color-foreground-primary-disabled);
+  /* Neutral text is the normal text colour. The filled default reads as
+     contrast on the fill because `.primary` (the default importance, applied by
+     the component) overrides text/icon to the on-fill contrast tokens; ghost
+     importances keep this normal colour, so they stay visible. */
   --button-color-text: var(--color-text);
-  --button-color-border: var(--color-border-high-contrast);
-  --button-color-border-hover: var(--button-color-border);
-  --button-color-border-active: var(--button-color-border);
+  --button-color-border: var(--color-border-highlighted, var(--color-border));
 
-  --button-margin-left: var(--spacing-horizontal-large);
-  --button-margin-bottom: var(--spacing-input-margin-bottom);
-  --button-padding-vertical: var(--spacing-input-padding-vertical);
-  --button-padding-horizontal: var(--spacing-horizontal-large);
-  --button-border-width: var(--spacing-border-width);
-  --button-font-size: var(--font-size-default);
-  --button-font-weight: var(--font-weight-default);
-  --button-line-height: var(--line-height-default);
+  /* Inline padding (Figma):
+     - end (right): always dimension-200 (16px) — the label always sits 16px
+       from the trailing edge.
+     - start (left): dimension-200 (16px) with no icon; dimension-100 (8px) when
+       an icon leads (the icon then sits closer to the edge), with a
+       dimension-100 (8px) gap between the icon and the label. */
+  --button-padding-inline-end: var(--dimension-200);
+  --button-padding-inline-start: var(--dimension-200);
+  --button-gap: var(--dimension-100);
+  --button-border-width: var(--dimension-stroke-thickness-medium);
+  /* Label weight — the button label is medium, not the `.p` body weight. */
+  --button-font-weight: var(--font-weight-medium, var(--font-weight-default));
 }
 
 /* ==========================================================================
@@ -23,54 +37,98 @@
    ========================================================================== */
 
 /*
-  Modifier channel variables (from @canonical/design-tokens):
-    --modifier-color-foreground-primary  filled background (constructive, destructive, caution)
-    --modifier-color-text                text colour
-    --modifier-color-border              border colour
-    --modifier-color-icon                icon colour
-    --modifier-color-focusRing           focus ring colour
+  The button reads the modifier CHANNEL generically — it is not aware of any
+  particular importance/anticipation class or combination:
+
+    --modifier-surface   which foreground fills the background (importance:
+                         filled for primary, ghost for secondary/tertiary).
+    --modifier-outline   1 when a border shows, 0 when it does not (importance).
+    --modifier-color-*   the colour itself (anticipation/emphasis): text, icon,
+                         border. `.primary` overrides text/icon with the on-fill
+                         contrast tokens.
+
+  Interaction states read the per-state surface/text channels supplied by the
+  states shim (`--modifier-surface-{hover,active,disabled}`,
+  `--modifier-color-text-disabled`), which resolve to the explicit state tokens
+  and recolour per anticipation.
 */
 
 .ds.button {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: var(--spacing-horizontal-small, 0.5rem);
+  gap: var(--button-gap);
   cursor: pointer;
 
   color: var(--modifier-color-text, var(--button-color-text));
-  background-color: var(
-    --modifier-color-foreground-primary,
-    var(--button-color-background)
-  );
+  background-color: var(--modifier-surface, var(--button-color-background));
   border-color: var(--modifier-color-border, var(--button-color-border));
   border-style: solid;
-  border-width: var(--button-border-width);
+  /* The outline flag (0/1) toggles the border on: multiplying the width means
+     a borderless importance simply resolves to 0 with no separate rule. */
+  border-width: calc(var(--modifier-outline, 0) * var(--button-border-width));
 
-  font-size: var(--button-font-size);
+  /* Typography and block padding come from the `.p` baseline utility on the
+     element (font-size, snapped line-height, and the padding-block nudges that
+     align the box to the baseline grid). The button only overrides the label
+     weight and its own inline padding — declaring font-size/line-height/
+     padding-block here would bypass the baseline-grid maths. */
   font-weight: var(--button-font-weight);
-  line-height: var(--button-line-height);
-  margin-block-end: var(--button-margin-bottom);
-  margin-inline-end: var(--button-margin-left);
-  padding-block: var(--button-padding-vertical);
-  padding-inline: var(--button-padding-horizontal);
+  padding-inline: var(--button-padding-inline-start)
+    var(--button-padding-inline-end);
 
   text-align: center;
   text-decoration: none;
 
+  /* Fast colour transition on state change (hover/active/disabled). */
+  transition:
+    background-color var(--motion-duration-fast) var(--motion-easing-standard),
+    color var(--motion-duration-fast) var(--motion-easing-standard),
+    border-color var(--motion-duration-fast) var(--motion-easing-standard);
+
+  /* A leading icon tightens the start padding to dimension-100; the gap between
+     the icon and label is already dimension-100. */
+  &:has(> .icon) {
+    --button-padding-inline-start: var(--dimension-100);
+  }
+
+  /* State fallbacks resolve to the default (primary) surface states when no
+     importance modifier supplies `--modifier-surface-*`. */
   &:hover:not(:disabled) {
-    background-color: var(--button-color-background-hover);
-    border-color: var(--button-color-border-hover);
+    background-color: var(
+      --modifier-surface-hover,
+      var(--button-color-background-hover)
+    );
   }
 
   &:active:not(:disabled) {
-    background-color: var(--button-color-background-active);
-    border-color: var(--button-color-border-active);
+    background-color: var(
+      --modifier-surface-active,
+      var(--button-color-background-active)
+    );
   }
 
+  /* Keyboard focus ring — driven by the modifier focusRing channel so it
+     recolours per anticipation; falls back to the base focus ring token. */
+  &:focus-visible {
+    outline: var(--focus-outline-width, 2px) solid
+      var(--modifier-color-focusRing, var(--color-focusRing, currentColor));
+    outline-offset: var(--focus-outline-offset, 2px);
+  }
+
+  /* Disabled — explicit disabled tokens (not the computed deltas): the surface,
+     text and border each resolve to their `-disabled` token. Primary supplies
+     the on-fill disabled text via `--modifier-color-text-disabled`; ghost
+     importances fall back to the plain disabled text colour. */
   &:disabled {
     cursor: not-allowed;
-    opacity: 0.5;
+    color: var(--modifier-color-text-disabled, var(--color-text-disabled));
+    background-color: var(
+      --modifier-surface-disabled,
+      var(--button-color-background-disabled)
+    );
+    border-color: var(--color-border-disabled);
   }
 }
 
@@ -85,6 +143,44 @@
   flex-shrink: 0;
   width: var(--icon-size, 1em);
   height: var(--icon-size, 1em);
+
+  /* The icon has its own colour channel (distinct from the label text): on a
+     filled primary it is the on-fill contrast icon, on ghost importances the
+     modifier icon colour. Icons drawn with `currentColor` follow this. */
+  color: var(--modifier-color-icon, var(--modifier-color-text, currentColor));
+}
+
+.ds.button:disabled > .icon {
+  color: var(--modifier-color-icon-disabled, var(--color-icon-disabled));
+}
+
+/* ==========================================================================
+   Loading State
+   ========================================================================== */
+
+/* Loading replaces the label with a Spinner but keeps the button's width: the
+   icon and label stay in the DOM (hidden, so their box still reserves space)
+   and the Spinner is overlaid centred on top. A loading button is disabled (so
+   it can't be re-triggered), but it must not *read* as disabled — it is
+   working, not unavailable — so it keeps the enabled surface, text and border
+   colours, overriding the :disabled greying above. */
+.ds.button.loading {
+  color: var(--modifier-color-text, var(--button-color-text));
+  background-color: var(--modifier-surface, var(--button-color-background));
+  border-color: var(--modifier-color-border, var(--button-color-border));
+
+  & > .icon,
+  & > .label {
+    visibility: hidden;
+  }
+
+  & > .loading-spinner {
+    position: absolute;
+    inset: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
 }
 
 /* ==========================================================================

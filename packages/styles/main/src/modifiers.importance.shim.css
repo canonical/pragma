@@ -1,0 +1,92 @@
+/* @canonical/styles — Importance modifier SHIM (temporary)
+ *
+ * The generated `@canonical/design-tokens/dist/modifiers.importance.css` is
+ * currently EMPTY: the `primary` / `secondary` / `tertiary` importance
+ * modifiers have no token mapping yet. This hand-authored shim provides a
+ * plausible mapping so importance-driven components (notably Button) can render
+ * their hierarchy today. It is expected to be superseded by the generated file
+ * once the importance tokens are ratified upstream — keep it minimal and remove
+ * it when that lands.
+ *
+ * Design contract — components listen to the CHANNEL, never to the class:
+ *   Importance decides HOW colour is applied, not which colour. It exposes two
+ *   channel hints that a consuming component reads generically (it must not key
+ *   off `.primary` / `.secondary` / `.tertiary` directly):
+ *
+ *     --modifier-surface  the foreground channel that fills the background
+ *                         (a filled importance points it at the primary
+ *                         foreground; a ghost importance at the ghost
+ *                         foreground).
+ *     --modifier-outline  1 when the importance shows a border, 0 when it does
+ *                         not. A component multiplies its border width by this.
+ *
+ *   For a FILLED importance the text/icon must read as contrast ON the fill, so
+ *   `.primary` also overrides `--modifier-color-text` / `--modifier-color-icon`
+ *   with the on-foreground contrast tokens. This shim is imported after the
+ *   anticipation/emphasis modifiers in the same `ds.modifiers` layer, so on a
+ *   `.primary.destructive` button the anticipation colour drives the fill while
+ *   this contrast text wins (equal specificity, later source order). For ghost
+ *   importances the text channel is left untouched, so the anticipation colour
+ *   lands on the text — exactly the Figma treatment.
+ */
+
+@layer ds.modifiers {
+  /* Primary — filled: the primary foreground fills the background, no border,
+     and the label reads as contrast on the fill. The surface state variants
+     point at the primary-foreground state deltas from states.css. */
+  .primary {
+    --modifier-surface: var(
+      --modifier-color-foreground-primary,
+      var(--color-foreground-primary)
+    );
+    --modifier-surface-hover: var(--modifier-color-foreground-primary-hover);
+    --modifier-surface-active: var(--modifier-color-foreground-primary-active);
+    --modifier-surface-disabled: var(
+      --modifier-color-foreground-primary-disabled
+    );
+    --modifier-outline: 0;
+    --modifier-color-text: var(--color-text-onForegroundPrimary);
+    --modifier-color-text-disabled: var(
+      --color-text-onForegroundPrimary-disabled
+    );
+    /* The `--color-icon-onForegroundPrimary[-disabled]` tokens are broken
+       upstream (they reference a non-existent `on-foreground-primary` token);
+       use the working camelCase on-fill text tokens — the on-fill icon and
+       text share the same contrast colour. Remove once the icon tokens are
+       fixed upstream. */
+    --modifier-color-icon: var(--color-text-onForegroundPrimary);
+    --modifier-color-icon-disabled: var(
+      --color-text-onForegroundPrimary-disabled
+    );
+  }
+
+  /* Secondary — outlined: a ghost background with a visible border; text/icon
+     keep the modifier colour. */
+  .secondary {
+    --modifier-surface: var(
+      --modifier-color-foreground-ghost,
+      var(--surface-color-foreground-ghost, var(--color-foreground-ghost))
+    );
+    --modifier-surface-hover: var(--modifier-color-foreground-ghost-hover);
+    --modifier-surface-active: var(--modifier-color-foreground-ghost-active);
+    --modifier-surface-disabled: var(
+      --modifier-color-foreground-ghost-disabled
+    );
+    --modifier-outline: 1;
+  }
+
+  /* Tertiary — text: a ghost background, no border; text/icon keep the modifier
+     colour (this is where the anticipation colour shows). */
+  .tertiary {
+    --modifier-surface: var(
+      --modifier-color-foreground-ghost,
+      var(--surface-color-foreground-ghost, var(--color-foreground-ghost))
+    );
+    --modifier-surface-hover: var(--modifier-color-foreground-ghost-hover);
+    --modifier-surface-active: var(--modifier-color-foreground-ghost-active);
+    --modifier-surface-disabled: var(
+      --modifier-color-foreground-ghost-disabled
+    );
+    --modifier-outline: 0;
+  }
+}
