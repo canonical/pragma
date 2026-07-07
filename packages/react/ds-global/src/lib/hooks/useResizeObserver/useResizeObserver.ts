@@ -35,14 +35,26 @@ export default function useResizeObserver<TElement extends HTMLElement>(
 
     const observer = new ResizeObserver(([entry]) => {
       if (entry) {
-        const rect = entry.contentRect;
+        // Report the BORDER-BOX size, to match the layout-effect seed
+        // (getBoundingClientRect is border-box) and the positioning math, which
+        // reads border-box rects everywhere. `entry.contentRect` excludes
+        // padding and border, so using it would report a box narrower by the
+        // horizontal padding — which then miscentres anything derived from the
+        // width (e.g. the arrow offset lands ~half-a-padding off-centre).
+        const border = entry.borderBoxSize?.[0];
+        const size = border
+          ? { width: border.inlineSize, height: border.blockSize }
+          : {
+              width: element.getBoundingClientRect().width,
+              height: element.getBoundingClientRect().height,
+            };
         // Skip updates that don't change the dimensions. The observer fires once
         // immediately on observe() with a fresh object; bailing on equal values
         // avoids a redundant re-render (and, downstream, a redundant reposition).
         setSize((prev) =>
-          prev.width === rect.width && prev.height === rect.height
+          prev.width === size.width && prev.height === size.height
             ? prev
-            : { width: rect.width, height: rect.height },
+            : size,
         );
       }
     });
