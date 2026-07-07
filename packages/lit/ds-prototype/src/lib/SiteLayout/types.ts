@@ -3,4 +3,4 @@
 /**
  * Props for the SiteLayout component.
  */
-export type SiteLayoutProps = {};
+export type SiteLayoutProps = Record<never, never>;

@@ -152,7 +152,7 @@ describe("createTracePlugin", () => {
 
     // bindings should be at most 2 (may be 0 with empty store)
     expect(record.bindings).toBeDefined();
-    expect(record.bindings!.length).toBeLessThanOrEqual(2);
+    expect(record.bindings?.length).toBeLessThanOrEqual(2);
   });
 
   it("generates a session ID when not provided", async () => {

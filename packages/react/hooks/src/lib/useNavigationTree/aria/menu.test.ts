@@ -64,6 +64,10 @@ describe("contextual-menu ARIA helpers", () => {
       role: "group",
       "aria-label": "Edit",
     });
+    expect(getMenuGroupProps(nav, { labelledBy: "heading-id" })).toEqual({
+      role: "group",
+      "aria-labelledby": "heading-id",
+    });
     expect(getMenuGroupProps(nav)).toEqual({ role: "group" });
   });
 

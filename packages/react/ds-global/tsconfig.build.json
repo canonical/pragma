@@ -20,7 +20,6 @@
     "src/storybook",
     "vite.config.ts",
     "vitest.setup.ts",
-    "vitest.config.ts",
     ".storybook"
   ]
 }

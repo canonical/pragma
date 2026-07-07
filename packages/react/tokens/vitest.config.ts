@@ -1,3 +1,4 @@
+import { reactTestConfig } from "@canonical/vitest-config-react";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vitest/config";
 
@@ -9,27 +10,10 @@ export default defineConfig({
   resolve: {
     tsconfigPaths: true,
   },
-  test: {
-    projects: [
-      {
-        plugins,
-        test: {
-          name: "client",
-          environment: "jsdom",
-          globals: true,
-          setupFiles: ["./vitest.setup.ts"],
-          include: ["src/**/*.test.ts", "src/**/*.test.tsx"],
-          exclude: ["src/**/*.ssr.test.tsx"],
-        },
-      },
-      {
-        plugins,
-        test: {
-          name: "ssr",
-          environment: "node",
-          include: ["src/**/*.ssr.test.tsx"],
-        },
-      },
-    ],
-  },
+  test: reactTestConfig({
+    glob: "test",
+    ssr: true,
+    setupFiles: ["./vitest.setup.ts"],
+    plugins,
+  }),
 });

@@ -24,7 +24,7 @@ import {
 } from "./loaders/index.js";
 import { DEFAULT_PACKAGES } from "./packages.js";
 import { PREFIX_MAP } from "./prefixes.js";
-import type { GraphContent, SemanticPackage } from "./semanticPackage.js";
+import type { SemanticPackage } from "./semanticPackage.js";
 import { resolveSemanticPackages } from "./semanticPackage.js";
 
 export interface BootStoreOptions {

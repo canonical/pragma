@@ -5,7 +5,6 @@ import {
 } from "../../shared/loaders/index.js";
 import { DEFAULT_PACKAGES } from "../../shared/packages.js";
 import type { SemanticPackage } from "../../shared/semanticPackage.js";
-import { resolveSemanticPackages } from "../../shared/semanticPackage.js";
 
 /** A resolved skill source directory from an installed package. */
 export interface SkillSource {

@@ -1,4 +1,5 @@
 import { act, renderHook } from "@testing-library/react";
+import type { KeyboardEvent } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   type BestPosition,
@@ -95,11 +96,11 @@ describe("useContextualMenu", () => {
     expect(result.current.highlightedItems.at(-1)?.key).toBe("a2");
 
     // ArrowDown at the group edge should move into group B's first item.
-    // biome-ignore lint/suspicious/noExplicitAny: minimal keyboard event for the menu handler
+    // Minimal keyboard event carrying only what the menu handler reads.
     const arrowDownEvent = {
       key: "ArrowDown",
       preventDefault: () => {},
-    } as any;
+    } as unknown as KeyboardEvent;
     act(() => {
       result.current.getMenuProps().onKeyDown?.(arrowDownEvent);
     });

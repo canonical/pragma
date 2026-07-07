@@ -16,7 +16,6 @@
     "src/**/*.ssr.test.ts",
     "src/**/*.ssr.test.tsx",
     "vite.config.ts",
-    "vitest.setup.ts",
-    "vitest.config.ts"
+    "vitest.setup.ts"
   ]
 }

@@ -146,7 +146,7 @@ describe("createNodeHandler", () => {
     });
 
     const { req, res } = createMockReqRes("/");
-    req.headers = { host: "localhost", "set-cookie": ["a=1", "b=2"] as any };
+    req.headers = { host: "localhost", "set-cookie": ["a=1", "b=2"] };
     await handler(req, res);
     expect(capturedRequest?.headers.get("set-cookie")).toBe("a=1, b=2");
   });
@@ -173,7 +173,7 @@ describe("createNodeHandler", () => {
     });
 
     const { req, res } = createMockReqRes("/");
-    req.headers = { host: "localhost", "x-empty": undefined as any };
+    req.headers = { host: "localhost", "x-empty": undefined };
     await handler(req, res);
     expect(capturedRequest?.headers.has("x-empty")).toBe(false);
   });

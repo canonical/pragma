@@ -274,7 +274,7 @@ describe("createHandler", () => {
   describe("signal forwarding", () => {
     it("passes request signal to renderer", async () => {
       let receivedSignal: AbortSignal | undefined;
-      const factory = (req: Request) => ({
+      const factory = (_req: Request) => ({
         renderToReadableStream: async (signal?: AbortSignal) => {
           receivedSignal = signal;
           return new ReadableStream({

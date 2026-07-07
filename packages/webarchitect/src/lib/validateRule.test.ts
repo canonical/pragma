@@ -2,6 +2,7 @@ import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import type { Rule } from "../types.js";
 import validateRule from "./validateRule.js";
 
 describe("validateRule", () => {
@@ -40,8 +41,8 @@ describe("validateRule", () => {
   });
 
   it("throws for invalid rule type", async () => {
-    await expect(validateRule(tmp, {} as any, "bad-rule")).rejects.toThrow(
-      "Invalid rule type",
-    );
+    await expect(
+      validateRule(tmp, {} as unknown as Rule, "bad-rule"),
+    ).rejects.toThrow("Invalid rule type");
   });
 });

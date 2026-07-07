@@ -1,3 +1,4 @@
+import type { JSONSchema7 } from "json-schema";
 import { describe, expect, it } from "vitest";
 import describeSchema from "./describeSchema.js";
 
@@ -46,7 +47,7 @@ describe("describeSchema", () => {
 
   it("ignores non-string non-array type", () => {
     // type as a non-standard value (neither string nor array) — falls through both if/else-if
-    expect(describeSchema({ type: 42 } as any)).toBe(
+    expect(describeSchema({ type: 42 } as unknown as JSONSchema7)).toBe(
       "validates file content structure",
     );
   });

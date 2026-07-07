@@ -1,7 +1,21 @@
 import { PassThrough } from "node:stream";
 import { describe, expect, it } from "vitest";
 import SitemapRenderer from "./SitemapRenderer.js";
-import type { SitemapConfig, SitemapGetter } from "./types.js";
+import type { SitemapConfig, SitemapGetter, SitemapItem } from "./types.js";
+
+/**
+ * The protected surface of `SitemapRenderer` exercised directly by these unit
+ * tests. Casting through this type keeps the arguments and return values of the
+ * private pipeline methods checked instead of erasing them with `any`.
+ */
+interface SitemapRendererInternals {
+  loadItems(): Promise<SitemapItem[]>;
+  formatItems(items: readonly SitemapItem[]): SitemapItem[];
+  toXml(items: readonly SitemapItem[]): string;
+}
+
+const asInternals = (renderer: SitemapRenderer): SitemapRendererInternals =>
+  renderer as unknown as SitemapRendererInternals;
 
 const BASE_CONFIG: SitemapConfig = {
   baseUrl: "https://example.com",
@@ -47,13 +61,13 @@ describe("SitemapRenderer", () => {
         { loc: "/page3", lastmod: "2024-03-01" },
       ];
       const renderer = new SitemapRenderer([getter1, getter2], BASE_CONFIG);
-      const items = await (renderer as any).loadItems();
+      const items = await asInternals(renderer).loadItems();
       expect(items).toHaveLength(3);
     });
 
     it("handles empty getters array", async () => {
       const renderer = new SitemapRenderer([], BASE_CONFIG);
-      const items = await (renderer as any).loadItems();
+      const items = await asInternals(renderer).loadItems();
       expect(items).toHaveLength(0);
     });
   });
@@ -61,19 +75,19 @@ describe("SitemapRenderer", () => {
   describe("formatItems", () => {
     it("resolves relative URLs against baseUrl", () => {
       const renderer = new SitemapRenderer([], BASE_CONFIG);
-      const items = (renderer as any).formatItems([{ loc: "/about" }]);
+      const items = asInternals(renderer).formatItems([{ loc: "/about" }]);
       expect(items[0].loc).toBe("https://example.com/about");
     });
 
     it("uses baseUrl when loc is empty", () => {
       const renderer = new SitemapRenderer([], BASE_CONFIG);
-      const items = (renderer as any).formatItems([{ loc: "" }]);
+      const items = asInternals(renderer).formatItems([{ loc: "" }]);
       expect(items[0].loc).toBe("https://example.com");
     });
 
     it("formats Date objects to YYYY-MM-DD", () => {
       const renderer = new SitemapRenderer([], BASE_CONFIG);
-      const items = (renderer as any).formatItems([
+      const items = asInternals(renderer).formatItems([
         { loc: "/page", lastmod: new Date("2024-06-15T12:00:00Z") },
       ]);
       expect(items[0].lastmod).toBe("2024-06-15");
@@ -81,7 +95,7 @@ describe("SitemapRenderer", () => {
 
     it("formats ISO string dates to YYYY-MM-DD", () => {
       const renderer = new SitemapRenderer([], BASE_CONFIG);
-      const items = (renderer as any).formatItems([
+      const items = asInternals(renderer).formatItems([
         { loc: "/page", lastmod: "2024-06-15T12:00:00Z" },
       ]);
       expect(items[0].lastmod).toBe("2024-06-15");
@@ -92,7 +106,7 @@ describe("SitemapRenderer", () => {
         ...BASE_CONFIG,
         defaultChangefreq: "weekly",
       });
-      const items = (renderer as any).formatItems([{ loc: "/page" }]);
+      const items = asInternals(renderer).formatItems([{ loc: "/page" }]);
       expect(items[0].changefreq).toBe("weekly");
     });
 
@@ -101,7 +115,7 @@ describe("SitemapRenderer", () => {
         ...BASE_CONFIG,
         defaultPriority: 0.5,
       });
-      const items = (renderer as any).formatItems([{ loc: "/page" }]);
+      const items = asInternals(renderer).formatItems([{ loc: "/page" }]);
       expect(items[0].priority).toBe(0.5);
     });
 
@@ -110,7 +124,7 @@ describe("SitemapRenderer", () => {
         ...BASE_CONFIG,
         defaultChangefreq: "weekly",
       });
-      const items = (renderer as any).formatItems([
+      const items = asInternals(renderer).formatItems([
         { loc: "/page", changefreq: "daily" },
       ]);
       expect(items[0].changefreq).toBe("daily");
@@ -121,7 +135,7 @@ describe("SitemapRenderer", () => {
         ...BASE_CONFIG,
         defaultPriority: 0.5,
       });
-      const items = (renderer as any).formatItems([
+      const items = asInternals(renderer).formatItems([
         { loc: "/page", priority: 1.0 },
       ]);
       expect(items[0].priority).toBe(1.0);
@@ -129,34 +143,34 @@ describe("SitemapRenderer", () => {
 
     it("omits lastmod when not provided", () => {
       const renderer = new SitemapRenderer([], BASE_CONFIG);
-      const items = (renderer as any).formatItems([{ loc: "/page" }]);
+      const items = asInternals(renderer).formatItems([{ loc: "/page" }]);
       expect(items[0].lastmod).toBeUndefined();
     });
   });
 
   describe("escapeXml", () => {
     it("escapes ampersand", () => {
-      expect(SitemapRenderer["escapeXml"]("foo&bar")).toBe("foo&amp;bar");
+      expect(SitemapRenderer.escapeXml("foo&bar")).toBe("foo&amp;bar");
     });
 
     it("escapes less than", () => {
-      expect(SitemapRenderer["escapeXml"]("a<b")).toBe("a&lt;b");
+      expect(SitemapRenderer.escapeXml("a<b")).toBe("a&lt;b");
     });
 
     it("escapes greater than", () => {
-      expect(SitemapRenderer["escapeXml"]("a>b")).toBe("a&gt;b");
+      expect(SitemapRenderer.escapeXml("a>b")).toBe("a&gt;b");
     });
 
     it("escapes double quote", () => {
-      expect(SitemapRenderer["escapeXml"]('a"b')).toBe("a&quot;b");
+      expect(SitemapRenderer.escapeXml('a"b')).toBe("a&quot;b");
     });
 
     it("escapes single quote", () => {
-      expect(SitemapRenderer["escapeXml"]("a'b")).toBe("a&apos;b");
+      expect(SitemapRenderer.escapeXml("a'b")).toBe("a&apos;b");
     });
 
     it("escapes all special characters in a URL", () => {
-      expect(SitemapRenderer["escapeXml"]("/search?q=a&b=<c>")).toBe(
+      expect(SitemapRenderer.escapeXml("/search?q=a&b=<c>")).toBe(
         "/search?q=a&amp;b=&lt;c&gt;",
       );
     });
@@ -164,13 +178,13 @@ describe("SitemapRenderer", () => {
 
   describe("formatDate", () => {
     it("formats a Date object to YYYY-MM-DD", () => {
-      expect(
-        SitemapRenderer["formatDate"](new Date("2024-12-25T10:00:00Z")),
-      ).toBe("2024-12-25");
+      expect(SitemapRenderer.formatDate(new Date("2024-12-25T10:00:00Z"))).toBe(
+        "2024-12-25",
+      );
     });
 
     it("formats an ISO string to YYYY-MM-DD", () => {
-      expect(SitemapRenderer["formatDate"]("2024-01-15T08:30:00Z")).toBe(
+      expect(SitemapRenderer.formatDate("2024-01-15T08:30:00Z")).toBe(
         "2024-01-15",
       );
     });
@@ -179,7 +193,7 @@ describe("SitemapRenderer", () => {
   describe("toXml", () => {
     it("produces valid XML sitemap structure", () => {
       const renderer = new SitemapRenderer([], BASE_CONFIG);
-      const xml = (renderer as any).toXml([
+      const xml = asInternals(renderer).toXml([
         {
           loc: "https://example.com/",
           lastmod: "2024-01-01",
@@ -200,7 +214,9 @@ describe("SitemapRenderer", () => {
 
     it("includes only present optional fields", () => {
       const renderer = new SitemapRenderer([], BASE_CONFIG);
-      const xml = (renderer as any).toXml([{ loc: "https://example.com/" }]);
+      const xml = asInternals(renderer).toXml([
+        { loc: "https://example.com/" },
+      ]);
       expect(xml).toContain("<loc>https://example.com/</loc>");
       expect(xml).not.toContain("<lastmod>");
       expect(xml).not.toContain("<changefreq>");
@@ -209,7 +225,7 @@ describe("SitemapRenderer", () => {
 
     it("escapes XML special characters in URLs", () => {
       const renderer = new SitemapRenderer([], BASE_CONFIG);
-      const xml = (renderer as any).toXml([
+      const xml = asInternals(renderer).toXml([
         { loc: "https://example.com/search?a=1&b=2" },
       ]);
       expect(xml).toContain(
@@ -219,7 +235,7 @@ describe("SitemapRenderer", () => {
 
     it("handles empty items array", () => {
       const renderer = new SitemapRenderer([], BASE_CONFIG);
-      const xml = (renderer as any).toXml([]);
+      const xml = asInternals(renderer).toXml([]);
       expect(xml).toContain("<urlset");
       expect(xml).toContain("</urlset>");
       expect(xml).not.toContain("<url>");
