@@ -1,0 +1,35 @@
+/* Toggle field layout, top to bottom: an optional heading, a control row where
+ * the input sits inline with its label, then the description and any error. */
+.ds.field.field-toggle {
+  display: flex;
+  flex-direction: column;
+  row-gap: var(--form-group-gap);
+
+  /* The heading is a mock label (a <legend>): reset the fieldset default so it
+     flows like the other block children. */
+  & > .field-toggle-heading {
+    padding: 0;
+  }
+
+  /* Control row: the input sits at the start of the label's first line, so a
+     multi-line (sentence) label wraps below the input rather than centring on
+     it. */
+  & > .field-toggle-control {
+    display: flex;
+    flex-direction: row;
+    align-items: baseline;
+    column-gap: var(--form-field-inline-gap);
+
+    /* The control label is often a full clickable sentence, so it reads as
+       regular body prose (not the bold heading weight the field label uses by
+       default): normal weight, left-aligned, pointer cursor, and it takes the
+       remaining width so it wraps beside the control instead of pushing it. */
+    & > .ds.field-label {
+      flex: 1;
+      min-width: 0;
+      font-weight: var(--typography-text-primary-font-weight);
+      text-align: start;
+      cursor: pointer;
+    }
+  }
+}

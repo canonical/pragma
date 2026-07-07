@@ -13,6 +13,7 @@ import type { PhoneFieldProps } from "#lib/component/PhoneField/index.js";
 import type { RangeFieldProps } from "#lib/component/RangeField/index.js";
 import type { RichChoicesFieldProps } from "#lib/component/RichChoicesField/index.js";
 import type { SelectFieldProps } from "#lib/component/SelectField/index.js";
+import type { SwitchFieldProps } from "#lib/component/SwitchField/index.js";
 import type { TextareaFieldProps } from "#lib/component/TextareaField/index.js";
 import type { TextFieldProps } from "#lib/component/TextField/index.js";
 import type { TimeFieldProps } from "#lib/component/TimeField/index.js";
@@ -46,6 +47,7 @@ export type FieldProps =
   | ({ inputType: "password" } & PasswordFieldProps)
   | ({ inputType: "number" } & NumberFieldProps)
   | ({ inputType: "checkbox" } & CheckboxFieldProps)
+  | ({ inputType: "switch" } & SwitchFieldProps)
   | ({ inputType: "hidden" } & HiddenFieldProps)
   | ({ inputType: "range" } & RangeFieldProps)
   | ({ inputType: "select" } & SelectFieldProps)

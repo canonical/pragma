@@ -32,6 +32,8 @@ export type { RangeInputProps } from "./RangeInput/index.js";
 export { RangeInput } from "./RangeInput/index.js";
 export type { SelectInputProps } from "./SelectInput/index.js";
 export { SelectInput } from "./SelectInput/index.js";
+export type { SwitchInputProps } from "./SwitchInput/index.js";
+export { SwitchInput } from "./SwitchInput/index.js";
 export type { TextareaInputProps } from "./TextareaInput/index.js";
 export { TextareaInput } from "./TextareaInput/index.js";
 export type { TextInputProps, TextInputType } from "./TextInput/index.js";

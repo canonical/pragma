@@ -1,14 +1,19 @@
 import bindField from "#lib/common/bindField/index.js";
-import withWrapper from "#lib/common/Wrapper/withWrapper.js";
+import type { InputProps } from "#lib/common/types.js";
+import withToggleWrapper from "#lib/common/Wrapper/withToggleWrapper.js";
+import type { CheckboxInputProps } from "#lib/subcomponent/CheckboxInput/index.js";
 import { CheckboxInput } from "#lib/subcomponent/CheckboxInput/index.js";
-import type { CheckboxFieldProps } from "./types.js";
+
+type CheckboxInputFieldProps = InputProps<CheckboxInputProps>;
 
 /**
- * CheckboxInput bound to react-hook-form, wrapped with field chrome
- * (label, description, error) and middleware/conditional-display support.
+ * CheckboxInput bound to react-hook-form, wrapped with the toggle field chrome
+ * (inline label, optional heading, description, error) and
+ * middleware/conditional-display support. Requires at least one of
+ * `label`/`controlLabel`.
  *
  * `import { CheckboxField } from "@canonical/react-ds-global-form";`
  */
-export default withWrapper<CheckboxFieldProps>(
-  bindField<CheckboxFieldProps>(CheckboxInput, "native"),
+export default withToggleWrapper<CheckboxInputFieldProps>(
+  bindField<CheckboxInputFieldProps>(CheckboxInput, "native"),
 );

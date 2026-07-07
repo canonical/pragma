@@ -23,6 +23,29 @@ export type InputProps<
   AdditionalComponentProps extends Record<string, any> = {},
 > = BaseInputProps & AdditionalComponentProps;
 
+/**
+ * At least one of `label`/`controlLabel` — the toggle-field label requirement,
+ * expressed as a union so a label-less toggle is a compile error rather than a
+ * runtime check.
+ */
+export type ToggleLabelProps =
+  | { label: string; controlLabel?: string }
+  | { label?: string; controlLabel: string };
+
+/**
+ * Props for toggle fields (checkbox, switch), which render the control inline
+ * with its label via the ToggleWrapper. On top of the usual input props they
+ * add `controlLabel` (the inline label beside the control) and require at least
+ * one of `label`/`controlLabel`. `label` alone is the inline label (the
+ * field-map case); `label` + `controlLabel` renders `label` as a heading above
+ * and `controlLabel` inline.
+ */
+export type ToggleFieldProps<
+  // biome-ignore lint/complexity/noBannedTypes: toggle inputs may add no extra props
+  // biome-ignore lint/suspicious/noExplicitAny: presentational prop shapes vary
+  AdditionalComponentProps extends Record<string, any> = {},
+> = InputProps<AdditionalComponentProps> & ToggleLabelProps;
+
 export type BaseWrapperProps<ComponentProps> = BaseProps & {
   /* The input to render */
   Component: React.ComponentType<ComponentProps>;
@@ -34,6 +57,12 @@ export type WrapperProps<ComponentProps> = BaseWrapperProps<ComponentProps> & {
 
   /* The name of input labelled */
   label?: string;
+
+  /* Toggle fields (checkbox, switch) only: the inline label rendered beside the
+   * control, which carries the real `htmlFor` binding. When omitted it falls
+   * back to `label`; when both are set, `label` becomes the heading above and
+   * `controlLabel` the inline control label. */
+  controlLabel?: string;
 
   /* Is the field optional */
   isOptional?: boolean;

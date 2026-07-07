@@ -14,6 +14,7 @@ import { PhoneField } from "#lib/component/PhoneField/index.js";
 import { RangeField } from "#lib/component/RangeField/index.js";
 import { RichChoicesField } from "#lib/component/RichChoicesField/index.js";
 import { SelectField } from "#lib/component/SelectField/index.js";
+import { SwitchField } from "#lib/component/SwitchField/index.js";
 import { TextareaField } from "#lib/component/TextareaField/index.js";
 import { TextField } from "#lib/component/TextField/index.js";
 import { TimeField } from "#lib/component/TimeField/index.js";
@@ -35,6 +36,8 @@ const Field = ({
       return <TextareaField {...props} />;
     case "checkbox":
       return <CheckboxField {...props} />;
+    case "switch":
+      return <SwitchField {...props} />;
     case "range":
       return <RangeField {...props} />;
     case "select":
