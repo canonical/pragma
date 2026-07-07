@@ -20,7 +20,9 @@ import type { Effect, EffectId, PromptQuestion } from "./types.js";
  * of recording and replaying its result.
  *
  * @param effect - The effect to describe.
- * @returns A plain, canonicalisable value identifying the effect.
+ * @returns The effect's identity content. This is canonicalisable for every
+ * tag except `WriteContext`, whose `value` is forwarded verbatim and may be
+ * outside {@link canonicalJSON}'s domain.
  */
 export function extractEffectContent(effect: Effect): unknown {
   switch (effect._tag) {
@@ -74,6 +76,9 @@ export function extractEffectContent(effect: Effect): unknown {
  * @param branch - Structural path of the enclosing parallel/race branch.
  * @param seq - Per-branch occurrence counter.
  * @returns The effect's {@link EffectId}.
+ * @throws TypeError When the effect's identity content is not canonicalisable —
+ * in practice only a `WriteContext` whose `value` is a function, symbol, class
+ * instance, or otherwise outside {@link canonicalJSON}'s domain.
  */
 export function computeEffectId(
   effect: Effect,
@@ -89,14 +94,15 @@ export function computeEffectId(
 }
 
 /**
- * Render an {@link EffectId} to a stable string suitable for equality checks
- * and journal keys.
+ * Render an {@link EffectId} to a stable, injective string suitable for
+ * equality checks and journal keys. The four fields are encoded as a JSON tuple
+ * so a `#` or `:` inside `branch`/`content` can never blur a field boundary.
  *
  * @param id - The effect id to format.
  * @returns A canonical string form of the id.
  */
 export function formatEffectId(id: EffectId): string {
-  return `${id.branch}#${id.seq}:${id.kind}:${id.content}`;
+  return JSON.stringify([id.branch, id.seq, id.kind, id.content]);
 }
 
 /**

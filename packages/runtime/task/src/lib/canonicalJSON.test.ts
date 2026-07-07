@@ -155,3 +155,41 @@ describe("canonicalJSON — injectivity edge cases", () => {
     expect(canonicalJSON(bare)).toBe('{"a":1}');
   });
 });
+
+describe("canonicalJSON — cycles and shared references", () => {
+  it("fails closed on a cyclic object", () => {
+    const a: Record<string, unknown> = {};
+    a.self = a;
+    expect(() => canonicalJSON(a)).toThrow(TypeError);
+  });
+
+  it("fails closed on a cycle through an array", () => {
+    const arr: unknown[] = [];
+    arr.push(arr);
+    expect(() => canonicalJSON(arr)).toThrow(TypeError);
+  });
+
+  it("encodes a value shared across siblings without a false cycle", () => {
+    const shared = { x: 1 };
+    expect(canonicalJSON({ a: shared, b: shared })).toBe(
+      '{"a":{"x":1},"b":{"x":1}}',
+    );
+  });
+});
+
+describe("canonicalJSON — bare-token and byte-order injectivity", () => {
+  it("keeps Infinity, -Infinity, and bigint distinct from their string forms", () => {
+    expect(canonicalJSON(Number.POSITIVE_INFINITY)).not.toBe(
+      canonicalJSON("Infinity"),
+    );
+    expect(canonicalJSON(Number.NEGATIVE_INFINITY)).not.toBe(
+      canonicalJSON("-Infinity"),
+    );
+    expect(canonicalJSON(42n)).not.toBe(canonicalJSON("42n"));
+    expect(canonicalJSON(42n)).not.toBe(canonicalJSON(42));
+  });
+
+  it("encodes a typed array by element values, independent of byte order", () => {
+    expect(canonicalJSON(new Uint16Array([1, 2]))).toBe("Uint16Array(1,2)");
+  });
+});

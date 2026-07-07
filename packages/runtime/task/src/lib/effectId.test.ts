@@ -117,7 +117,7 @@ describe("extractEffectContent", () => {
   it.each(
     cases,
   )("extracts identity content for %s, excluding closures", (_tag, effect, expected) => {
-    expect(extractEffectContent(effect)).toEqual(expected);
+    expect(extractEffectContent(effect)).toStrictEqual(expected);
   });
 
   it.each([
@@ -144,7 +144,7 @@ describe("extractEffectContent", () => {
     ],
   ] as const)("extracts content for a %s prompt", (_type, question) => {
     const effect: Effect = { _tag: "Prompt", question };
-    expect(extractEffectContent(effect)).toEqual(question);
+    expect(extractEffectContent(effect)).toStrictEqual(question);
   });
 });
 
@@ -194,8 +194,53 @@ describe("computeEffectId", () => {
 });
 
 describe("formatEffectId", () => {
-  it("renders a stable string keyed by branch, seq, kind, and content", () => {
+  it("renders a stable JSON-tuple string of branch, seq, kind, and content", () => {
     const id = computeEffectId({ _tag: "ReadFile", path: "/a" }, "0", 2);
-    expect(formatEffectId(id)).toBe('0#2:ReadFile:{"path":"/a"}');
+    expect(formatEffectId(id)).toBe(
+      '["0",2,"ReadFile","{\\"path\\":\\"/a\\"}"]',
+    );
+  });
+
+  it("is injective across delimiter-bearing branch and content", () => {
+    const a = formatEffectId({
+      branch: "a",
+      seq: 0,
+      kind: "Log",
+      content: "a#0:Log:z",
+    });
+    const b = formatEffectId({
+      branch: "a#0:Log:a",
+      seq: 0,
+      kind: "Log",
+      content: "z",
+    });
+    expect(a).not.toBe(b);
+  });
+});
+
+describe("computeEffectId — non-canonicalisable values", () => {
+  it("throws when a WriteContext value is not canonicalisable", () => {
+    expect(() =>
+      computeEffectId(
+        { _tag: "WriteContext", key: "logger", value: () => undefined },
+        "",
+        0,
+      ),
+    ).toThrow(TypeError);
+  });
+});
+
+describe("extractEffectContent — prompt without a default", () => {
+  it("emits an undefined default for a prompt with no default", () => {
+    const effect: Effect = {
+      _tag: "Prompt",
+      question: { type: "text", name: "n", message: "m" },
+    };
+    expect(extractEffectContent(effect)).toStrictEqual({
+      type: "text",
+      name: "n",
+      message: "m",
+      default: undefined,
+    });
   });
 });
