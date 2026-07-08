@@ -364,15 +364,13 @@ const useWindowFitment = ({
           };
         }
 
-        // No side fits naturally → this placement is a fallback candidate. Score
-        // candidates and keep the best, rather than always taking the first:
-        //   1. Least clamping (smallest total auto-fit offset) — the placement
-        //      that overflows the viewport least sits closest to its ideal spot.
-        //   2. Tie-break AGAINST a popup forced taller than it is wide: a tall,
-        //      narrow column reads as cramped, so a placement that keeps the
-        //      popup at least as wide as it is tall is preferred. (The popup's
-        //      own dimensions are placement-invariant here, so this mainly steers
-        //      which clamped candidate wins when overflows are comparable.)
+        // No side fits naturally → this placement is a fallback candidate. Keep
+        // the LEAST-clamped one (smallest total auto-fit offset) rather than
+        // always taking the first: the placement that overflows the viewport
+        // least sits closest to its ideal spot. (Note: this is the only useful
+        // per-candidate signal here — the popup's own dimensions are the same for
+        // every candidate in one pass, so a wide-vs-tall metric would be constant
+        // and cannot break ties.)
         const candidate: BestPosition = {
           positionName: direction,
           align,
@@ -380,13 +378,12 @@ const useWindowFitment = ({
           fits: false,
           autoFitOffset,
         };
-        const clampCost = (p: BestPosition) =>
-          Math.abs(p.autoFitOffset.top) + Math.abs(p.autoFitOffset.left);
-        const tallPenalty = popupRect.height > popupRect.width ? 1 : 0;
-        const score = clampCost(candidate) + tallPenalty;
-        if (!fallbackPosition || score < fallbackScore) {
+        const clampCost =
+          Math.abs(candidate.autoFitOffset.top) +
+          Math.abs(candidate.autoFitOffset.left);
+        if (!fallbackPosition || clampCost < fallbackScore) {
           fallbackPosition = candidate;
-          fallbackScore = score;
+          fallbackScore = clampCost;
         }
       }
 

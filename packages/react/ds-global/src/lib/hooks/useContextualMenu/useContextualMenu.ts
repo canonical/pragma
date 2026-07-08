@@ -189,10 +189,12 @@ const useContextualMenu = ({
         opts?.ref ? { ref: opts.ref } : undefined,
       );
       const treeKeyDown = baseProps.onKeyDown;
+      // No `aria-modal`: it is only valid on modal dialog roles, not `role=
+      // "menu"`. The menu-button pattern (haspopup + expanded + Escape/Tab
+      // dismissal) already conveys the semantics.
       return {
         ...baseProps,
         ...getMenuAriaProps(nav, opts),
-        "aria-modal": true,
         onKeyDown: (event: React.KeyboardEvent) =>
           handleMenuKeyDown(event, treeKeyDown),
       };

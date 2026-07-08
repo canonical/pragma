@@ -150,6 +150,20 @@ MaxWidth.argTypes = {
 };
 
 /**
+ * The tooltip can be aligned along a side, not only centred — the same logical
+ * `align` axis the contextual menu uses. Here it opens to the reading-flow side
+ * (`inline-end`), **top-aligned** to the anchor (`align: "start"`), so the
+ * tooltip's top edge lines up with the button's top rather than centring on it.
+ */
+export const LateralTopAligned: Story = {
+  args: {
+    Message: "Aligned to the top of the anchor, on its trailing side.",
+    preferredDirections: [{ side: "inline-end", align: "start" }],
+    children: <Button {...anchorButtonProps}>Side, top-aligned</Button>,
+  },
+};
+
+/**
  * Auto-fit, shown by a 3×3 grid of the **same** component. Every cell prefers to
  * open its tooltip to the bottom-right; the cells with room do exactly that, but
  * cells near an edge auto-flip to the opposite side. All closed by default —

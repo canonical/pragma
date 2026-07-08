@@ -1,5 +1,11 @@
-import { useLayoutEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import type { UseResizeObserverResult } from "./types.js";
+
+// `useLayoutEffect` logs a warning on the server ("does nothing on the server"),
+// so fall back to `useEffect` there. On the client we keep the pre-paint
+// measurement so the consumer settles in one pass (no mount-at-0×0 flicker).
+const useIsomorphicLayoutEffect =
+  typeof window === "undefined" ? useEffect : useLayoutEffect;
 
 /**
  * Hook to observe the size of an element.
@@ -21,7 +27,7 @@ export default function useResizeObserver<TElement extends HTMLElement>(
   });
   const isServer = typeof window === "undefined";
 
-  useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     if (!element || isServer) return;
 
     // Seed the size synchronously before paint so the first committed frame has

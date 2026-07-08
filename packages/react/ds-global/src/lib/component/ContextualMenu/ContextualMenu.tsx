@@ -108,11 +108,16 @@ const ContextualMenu = ({
     ],
   );
 
+  // With no explicit `label`, the menu is named by its trigger — so the trigger
+  // needs a stable id the menu can point `aria-labelledby` at (pointing at the
+  // menu's own id would leave it unnamed).
+  const triggerId = `${popupId}-trigger`;
+
   // getMenuProps returns a generic prop bag from the headless navigation hook
   // (loose event-handler and ref types); it is spread onto the menu container.
   const menuProps = getMenuProps({
     label,
-    labelledBy: label ? undefined : popupId,
+    labelledBy: label ? undefined : triggerId,
     // Compose the positioning ref with the menu's keyboard ref.
     ref: popupRef,
   }) as React.HTMLAttributes<HTMLDivElement> & {
@@ -158,7 +163,12 @@ const ContextualMenu = ({
       >
         {/* getTriggerProps drives the disclosure (the source of truth for open)
             and carries the menu ARIA wiring. */}
-        <button type="button" className="trigger" {...triggerProps}>
+        <button
+          type="button"
+          id={triggerId}
+          className="trigger"
+          {...triggerProps}
+        >
           {trigger}
         </button>
         {typeof window !== "undefined"

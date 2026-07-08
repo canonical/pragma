@@ -15,7 +15,9 @@ const meta = {
       value: "dark",
     },
   },
-  tags: ["autodocs"],
+  // No `autodocs` tag: the docs page is supplied by withTooltip.mdx
+  // (`<Meta of={Stories} />`). Having both creates two docs pages for the same
+  // component, which Storybook refuses to index.
 } satisfies Meta<TooltipType>;
 
 export default meta;

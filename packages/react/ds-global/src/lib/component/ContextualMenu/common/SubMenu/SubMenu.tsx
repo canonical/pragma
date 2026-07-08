@@ -1,12 +1,7 @@
 import type { _Item } from "@canonical/ds-types";
 import { getItemId } from "@canonical/utils";
-import {
-  type ReactElement,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import type React from "react";
+import { type ReactElement, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { MENU_PLACEMENT, useWindowFitment } from "#lib/hooks/index.js";
 import Item from "../Item/index.js";
@@ -65,8 +60,21 @@ const SubMenuParent = ({ item }: { item: _Item<MenuItem> }): ReactElement => {
   const { targetRef, popupRef, popupPositionStyle, bestPosition } =
     useWindowFitment({ preferredDirections: MENU_PLACEMENT, autoFit: true });
 
-  // The item carries both the roving props and the fitment target ref.
-  const itemProps = { ...getItemProps(item), ref: targetRef };
+  // The item carries both the roving props and the fitment target ref. The
+  // tree's getItemProps already returns a `ref` (it registers the node for
+  // roving focus); COMPOSE ours with it rather than replacing it, or the
+  // submenu parent loses its focus registration.
+  const baseItemProps = getItemProps(item);
+  const navRef = (baseItemProps as { ref?: React.Ref<HTMLElement> }).ref;
+  const itemProps = {
+    ...baseItemProps,
+    ref: (node: HTMLDivElement | null) => {
+      targetRef.current = node;
+      if (typeof navRef === "function") navRef(node);
+      else if (navRef)
+        (navRef as React.RefObject<HTMLElement | null>).current = node;
+    },
+  };
 
   // On keyboard open, move focus to the submenu's roving tab stop (the newly
   // highlighted child the tree already set tabindex=0 on).

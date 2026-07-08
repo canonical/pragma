@@ -77,7 +77,7 @@ The `Message` can be any `ReactNode` — a plain string, a `<span>`, or richer m
 function withTooltip<TProps extends object>(
   Component: ComponentType<TProps>,
   Message: ReactNode,
-  popupProps?: Omit<UseDisclosureProps, "mode">,
+  popupProps?: WithTooltipOptions, // = Omit<TooltipAreaProps, "children" | "Message">
 ): FC<TProps>;
 ```
 
@@ -105,9 +105,9 @@ function withTooltip<TProps extends object>(
     </tr>
     <tr>
       <td><code>popupProps</code></td>
-      <td><code>Omit&lt;UseDisclosureProps, "mode"&gt;</code></td>
+      <td><code>WithTooltipOptions</code></td>
       <td><code>&#123;&#125;</code></td>
-      <td>Positioning, sizing, timing, and lifecycle options, spread onto the underlying <code>TooltipArea</code>. See <a href="#popupprops-options">popupProps options</a>. <code>mode</code> is deliberately excluded — see <a href="#it-is-hover-only--you-cannot-make-it-open-on-click">It is hover-only</a>.</td>
+      <td>Every option <code>TooltipArea</code> accepts except <code>children</code> and <code>Message</code> — positioning, sizing, timing, lifecycle, plus <code>open</code>, <code>icon</code>, and the logical <code>preferredDirections</code>. See <a href="#popupprops-options">popupProps options</a>. Hover is forced (there is no <code>mode</code>) — see <a href="#it-is-hover-only--you-cannot-make-it-open-on-click">It is hover-only</a>.</td>
     </tr>
   </tbody>
 </table>
@@ -116,11 +116,15 @@ The returned component's `displayName` is set to `` `withTooltip(${Component.dis
 
 ## Placement and options
 
-Force the tooltip to prefer one side — here it opens to the right, falling back to the other directions only if the right edge does not fit:
+Force the tooltip to prefer one side. Placements are **logical** — `inline-*`
+follows the reading direction (so `inline-end` is the right edge in LTR, the left
+in RTL) and `block-*` is the vertical axis (`block-start` = top, `block-end` =
+bottom). Here it opens to the reading-flow end, falling back only if that edge
+does not fit:
 
 ```tsx
 const InfoButton = withTooltip(Button, "Opens in a new tab", {
-  preferredDirections: ["right", "top", "bottom", "left"],
+  preferredDirections: ["inline-end", "block-start", "block-end", "inline-start"],
 });
 ```
 
@@ -128,7 +132,7 @@ To pin placement to a single side, pass a one-element array:
 
 ```tsx
 const TopOnly = withTooltip(Button, "Always above", {
-  preferredDirections: ["top"],
+  preferredDirections: ["block-start"],
 });
 ```
 
@@ -156,7 +160,7 @@ const DeliberateTooltip = withTooltip(Button, "Delete permanently", {
 
 ## popupProps options
 
-`popupProps` is `Omit<UseDisclosureProps, "mode">`. `UseDisclosureProps` extends both `UseWindowFitmentProps` (positioning and viewport fitment) and `UseDelayedToggleProps` (open/close timing), so every member below is available. Defaults are those applied by `TooltipArea` and the underlying `useDisclosure` hook. The members you will reach for most:
+`popupProps` is `WithTooltipOptions` — every prop `TooltipArea` accepts except `children` and `Message`. That surface transitively includes `UseWindowFitmentProps` (positioning) and `UseDelayedToggleProps` (open/close timing), plus `open`, `icon`, and `messageElementStyle`. Defaults are those applied by `TooltipArea` and the underlying `useDisclosure` hook. The members you will reach for most:
 
 <table>
   <thead>
@@ -176,9 +180,9 @@ const DeliberateTooltip = withTooltip(Button, "Delete permanently", {
     </tr>
     <tr>
       <td><code>preferredDirections</code></td>
-      <td><code>WindowFitmentDirection[]</code></td>
-      <td><code>["top", "bottom", "left", "right"]</code></td>
-      <td>Placements to try, in order. The first that fits wins. Values: <code>"top" | "bottom" | "left" | "right"</code>.</td>
+      <td><code>(WindowFitmentSide | WindowFitmentPlacement)[]</code></td>
+      <td><code>["block-start", "block-end", "inline-start", "inline-end"]</code></td>
+      <td>Logical placements to try, in order; the first that fits wins. A bare side (<code>"inline-start" | "inline-end" | "block-start" | "block-end"</code>) is centred; a <code>&#123; side, align &#125;</code> pair aligns along the side. <code>inline-*</code> mirrors in RTL.</td>
     </tr>
     <tr>
       <td><code>autoFit</code></td>
@@ -266,7 +270,7 @@ Because `Message` and `popupProps` are captured when you call `withTooltip`, the
 
 ### The ref does not reach the wrapped component
 
-Internally the HOC renders `<Component {...props} ref={ref} />`, where `ref` is the second positional parameter of the wrapper function. But the wrapper is a **plain function component** — `withTooltip` does not wrap it in `forwardRef` — so React never supplies a ref as that second argument. In practice `ref` is always `undefined` at this layer, regardless of whether the wrapped component would forward it. (Even where a ref did arrive, the ds-global `Button` takes no `ref` parameter, so it would land nowhere anyway.)
+Internally the HOC renders `<Component {...props} />` — a **plain function component**, not wrapped in `forwardRef`. So a `ref` you put on the returned component is **not forwarded** to the wrapped `Component`; React consumes it at the HOC boundary and it goes nowhere. (This is by design — the tooltip's positioning anchors on `TooltipArea`'s own wrapper, not the wrapped component, so nothing here needs the ref.)
 
 Crucially, **this does not break the tooltip.** Positioning does not anchor to the wrapped component at all. `TooltipArea` renders its own wrapper `<span class="target">` around your component, carrying `aria-describedby` and the measuring ref, and the bubble is placed relative to _that_ span's bounding box. So a component that never sees a ref still gets a correctly-positioned tooltip.
 
