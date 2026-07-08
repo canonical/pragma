@@ -10,6 +10,7 @@ import {
 import { getContext, readFile, setContext } from "./primitives.js";
 import recordTask from "./recordTask.js";
 import replayTask from "./replayTask.js";
+import serializeJournal from "./serializeJournal.js";
 import { $, gen, pure, recover } from "./task.js";
 
 describe("replayTask", () => {
@@ -89,21 +90,31 @@ describe("replayTask", () => {
     expect(replayed.value).toBe("fallback");
   });
 
-  it("replays a recovered failure with its full error so a cause-inspecting handler agrees", async () => {
+  it("replays a recovered failure consistently, keying on the preserved error code", async () => {
     const missing = join(dir, "cause.txt");
-    // The handler branches on err.cause, which is dropped by a lossy {code,message}
-    // recording — record and replay must still take the same branch.
-    const build = () =>
-      recover(readFile(missing), (err) =>
-        pure(err.cause !== undefined ? "had-cause" : "no-cause"),
-      );
+    // A journaled failure carries its code and message; a handler keying on the
+    // code takes the same branch on record and replay.
+    const build = () => recover(readFile(missing), (err) => pure(err.code));
 
     const recorded = await recordTask(build());
-    expect(recorded.value).toBe("had-cause");
+    expect(recorded.value).toBe("FILE_NOT_FOUND");
 
     writeFileSync(missing, "exists");
     const replayed = await replayTask(build(), recorded.journal);
-    expect(replayed.value).toBe("had-cause");
+    expect(replayed.value).toBe("FILE_NOT_FOUND");
+  });
+
+  it("records a failure as a serialisable {code,message} projection with no cause or stack", async () => {
+    const missing = join(dir, "serialise-fail.txt");
+    const recorded = await recordTask(orElse(readFile(missing), pure("ok")));
+
+    // Exactly code + message — no raw cause or non-deterministic stack — so a
+    // recorded failure can never break serializeJournal.
+    expect(recorded.journal.entries.at(0)?.outcome).toEqual({
+      ok: false,
+      error: { code: "FILE_NOT_FOUND", message: expect.any(String) },
+    });
+    expect(() => serializeJournal(recorded.journal)).not.toThrow();
   });
 
   it("reconstructs in-memory context across a resume so a live read sees a replayed write", async () => {

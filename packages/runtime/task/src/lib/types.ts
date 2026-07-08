@@ -289,11 +289,11 @@ export interface EffectId {
 
 /**
  * The recorded outcome of a single journaled effect: either the value it
- * produced, or the full structured error it raised. Both are replayed verbatim
- * so a recovered failure reproduces the same recovery path — including the
- * error's `cause`, `context`, and `suppressed` — on replay. (A non-serialisable
- * `cause` survives an in-memory replay but degrades through
- * {@link serializeJournal}.)
+ * produced, or the failure it raised. A failure is journaled by its `code` and
+ * `message` — the deterministic, serialisable error fields — and replay hands a
+ * recovery handler exactly that projection, so a recorded run and its replay
+ * take the same branch. The raw `cause` and `stack` are not journaled (they are
+ * non-serialisable and non-deterministic); a handler keys on `code`.
  */
 export type JournalOutcome =
   | { ok: true; value: unknown }

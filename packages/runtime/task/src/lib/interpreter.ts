@@ -71,9 +71,10 @@ const normalizeThrownError = (thrown: unknown): TaskError => {
  * Base class for the failures a {@link Journal} raises. They signal a broken
  * record/replay contract rather than a task-level effect failure, so the
  * interpreter lets them escape recovery instead of routing them to a
- * `recover`/`orElse` handler.
+ * `recover`/`orElse` handler. Never thrown directly — catch it to handle any
+ * journal failure, or a subclass for a specific one.
  */
-export class JournalError extends Error {}
+export abstract class JournalError extends Error {}
 
 /**
  * Raised when a task, replayed against a {@link Journal}, performs an effect
@@ -569,14 +570,18 @@ export const runTask = async <A>(
             journal.entries.push({ id, outcome: { ok: true, value } });
             return value;
           } catch (thrown) {
-            const error = normalizeThrownError(thrown);
+            const raw = normalizeThrownError(thrown);
             // Interruption is not a reproducible effect outcome — leave it
             // unrecorded so a resumed run re-attempts the interrupted effect.
-            if (error.code === "TASK_INTERRUPTED") {
+            if (raw.code === "TASK_INTERRUPTED") {
               throw thrown;
             }
-            // Record the whole structured error so a replayed recovery handler
-            // sees the same cause/context/suppressed the recording run did.
+            // Journal only the deterministic, serialisable error fields — the
+            // raw cause is non-serialisable (a cyclic cause would break
+            // serializeJournal) and the stack is non-deterministic. Re-throw the
+            // same projection so the recording run's recovery handler observes
+            // exactly what a replay will.
+            const error: TaskError = { code: raw.code, message: raw.message };
             journal.entries.push({ id, outcome: { ok: false, error } });
             throw new TaskExecutionError(error);
           }
