@@ -23,6 +23,7 @@ jobs:
           bun-version: ${{ matrix.bun-version }}
           node-version: ${{ matrix.node-version }}
           build-command: bunx nx affected -t build:all --base=origin/${{ github.event.pull_request.base.ref }} --head=HEAD
+          install-playwright: 'true'
 
       - name: Code quality checks
         run: bunx nx affected -t check --base=origin/${{ github.event.pull_request.base.ref }} --head=HEAD

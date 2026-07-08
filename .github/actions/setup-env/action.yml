@@ -12,6 +12,9 @@ inputs:
   build-command:
     default: 'bunx lerna run build:all'
     description: Build command to run. Override with nx affected for PR workflows.
+  install-playwright:
+    default: 'false'
+    description: Install Playwright browsers, required by packages whose tests run in Vitest browser mode. Enable only for jobs that run tests.
 runs:
   using: composite
   steps:
@@ -60,6 +63,21 @@ runs:
     - name: Re-link workspace binaries
       shell: bash
       run: bun install --ignore-scripts
+
+      # Browser binaries are keyed on bun.lock: they only change when the resolved
+      # playwright version changes. On a cache hit, `playwright install` skips the
+      # download and only the (uncacheable) apt system dependencies are installed.
+    - name: Cache Playwright browsers
+      if: ${{ inputs.install-playwright == 'true' }}
+      uses: actions/cache@v5
+      with:
+        path: ~/.cache/ms-playwright
+        key: playwright-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+
+    - name: Install Playwright browsers
+      if: ${{ inputs.install-playwright == 'true' }}
+      shell: bash
+      run: bunx playwright install --with-deps chromium firefox webkit
 
     - name: Start Nx cache server
       shell: bash
