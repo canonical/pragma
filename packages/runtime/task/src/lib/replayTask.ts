@@ -8,7 +8,12 @@ import type { Journal, JournalRun, Task } from "./types.js";
  * I/O; if the task runs past the recorded prefix — a resumed run — the remaining
  * effects execute for real and are appended. The input journal is never mutated:
  * the returned journal is a fresh copy carrying any resumed entries. A structural
- * mismatch against the recording throws `JournalDivergenceError`.
+ * mismatch against the recording throws `JournalDivergenceError`, and a task that
+ * ends before consuming the whole recording throws `JournalIncompleteError`.
+ *
+ * Pass a freshly-built task, not the instance that was recorded: a `gen`-based
+ * task holds a single-use iterator, so replaying an already-run instance would
+ * end early (caught as `JournalIncompleteError`).
  *
  * @typeParam A - The task's result type.
  * @param task - The task to replay.

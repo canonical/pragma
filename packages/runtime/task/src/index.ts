@@ -178,6 +178,9 @@ export type { RunTaskOptions } from "./lib/interpreter.js";
 export {
   executeEffect,
   JournalDivergenceError,
+  JournalError,
+  JournalIncompleteError,
+  JournalUnsupportedEffectError,
   run,
   runTask,
   TaskExecutionError,

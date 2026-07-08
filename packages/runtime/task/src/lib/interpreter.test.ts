@@ -10,15 +10,23 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
-import { orElse, parallel, sequence_ } from "./combinators.js";
+import { orElse, parallel, race, sequence_ } from "./combinators.js";
 import {
   executeEffect,
   JournalDivergenceError,
+  JournalUnsupportedEffectError,
   run,
   runTask,
   TaskExecutionError,
 } from "./interpreter.js";
-import { info, readFile, succeed, warn } from "./primitives.js";
+import {
+  info,
+  promptText,
+  readFile,
+  setContext,
+  succeed,
+  warn,
+} from "./primitives.js";
 import recordTask from "./recordTask.js";
 import replayTask from "./replayTask.js";
 import {
@@ -1829,25 +1837,38 @@ describe("Interpreter - journal seam", () => {
     rmSync(dir, { recursive: true, force: true });
   });
 
-  it("records a Parallel as one opaque entry and replays its composite result without running children", async () => {
-    const a = join(dir, "par-a.txt");
-    const b = join(dir, "par-b.txt");
-    writeFileSync(a, "A");
-    writeFileSync(b, "B");
+  it("rejects a Parallel effect under a journal (composites have no positional identity)", async () => {
+    await expect(
+      recordTask(parallel([succeed("a"), succeed("b")])),
+    ).rejects.toBeInstanceOf(JournalUnsupportedEffectError);
+  });
 
-    const par = parallel([readFile(a), readFile(b)]);
-    const recorded = await recordTask(par);
+  it("rejects a Race effect under a journal", async () => {
+    await expect(recordTask(race([succeed("a")]))).rejects.toBeInstanceOf(
+      JournalUnsupportedEffectError,
+    );
+  });
 
-    expect(recorded.value).toEqual(["A", "B"]);
-    expect(recorded.journal.entries).toHaveLength(1);
-    expect(recorded.journal.entries.at(0)?.id.kind).toBe("Parallel");
+  it("lets a JournalUnsupportedEffectError escape an enclosing recover", async () => {
+    const guarded = orElse(parallel([succeed("a")]), pure("swallowed"));
+    await expect(recordTask(guarded)).rejects.toBeInstanceOf(
+      JournalUnsupportedEffectError,
+    );
+  });
 
-    // Children must not re-run on replay: mutate the files, expect the recorded
-    // composite regardless.
-    writeFileSync(a, "A2");
-    writeFileSync(b, "B2");
-    const replayed = await replayTask(par, recorded.journal);
-    expect(replayed.value).toEqual(["A", "B"]);
+  it("rejects a WriteContext whose value is not canonicalisable, and does not let recover swallow it", async () => {
+    const nonSerialisable = setContext("logger", () => undefined);
+    await expect(recordTask(nonSerialisable)).rejects.toBeInstanceOf(
+      JournalUnsupportedEffectError,
+    );
+
+    const guarded = orElse(
+      setContext("logger", () => undefined),
+      pure("swallowed"),
+    );
+    await expect(recordTask(guarded)).rejects.toBeInstanceOf(
+      JournalUnsupportedEffectError,
+    );
   });
 
   it("lets a JournalDivergenceError escape an enclosing recover instead of being caught", async () => {
@@ -1866,24 +1887,17 @@ describe("Interpreter - journal seam", () => {
     );
   });
 
-  it("does not record an effect interrupted mid-flight during a journaled run", async () => {
-    const controller = new AbortController();
-
-    // A parallel child logs (aborting the run as a side effect) and then reaches
-    // a second effect whose pre-step interrupt check fires. The interruption
-    // surfaces through the Parallel's perform but must leave the journal empty.
-    const child = gen(function* () {
-      yield* $(info("go"));
-      yield* $(info("after"));
-    });
+  it("does not record an effect the prompt handler interrupts during a journaled run", async () => {
     const journal = { entries: [] };
+    const promptHandler = () => {
+      throw new TaskExecutionError({
+        code: "TASK_INTERRUPTED",
+        message: "cancelled",
+      });
+    };
 
     await expect(
-      runTask(parallel([child]), {
-        journal,
-        signal: controller.signal,
-        onLog: () => controller.abort("stop"),
-      }),
+      runTask(promptText("name", "Your name?"), { journal, promptHandler }),
     ).rejects.toMatchObject({ code: "TASK_INTERRUPTED" });
 
     expect(journal.entries).toHaveLength(0);

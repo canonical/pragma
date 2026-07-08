@@ -68,13 +68,21 @@ const normalizeThrownError = (thrown: unknown): TaskError => {
 };
 
 /**
+ * Base class for the failures a {@link Journal} raises. They signal a broken
+ * record/replay contract rather than a task-level effect failure, so the
+ * interpreter lets them escape recovery instead of routing them to a
+ * `recover`/`orElse` handler.
+ */
+export class JournalError extends Error {}
+
+/**
  * Raised when a task, replayed against a {@link Journal}, performs an effect
  * whose identity does not match the entry recorded at that position — the
  * task's shape diverged from the recording (a different prompt answer took a
  * different branch, an input changed). Replay fails closed here rather than
  * returning a stale recorded result for a different effect.
  */
-export class JournalDivergenceError extends Error {
+export class JournalDivergenceError extends JournalError {
   public readonly position: number;
   public readonly expected: EffectId;
   public readonly actual: EffectId;
@@ -89,6 +97,44 @@ export class JournalDivergenceError extends Error {
     this.position = position;
     this.expected = expected;
     this.actual = actual;
+  }
+}
+
+/**
+ * Raised when an effect cannot be journaled: a structural `Parallel`/`Race`
+ * (whose concurrent children have no sound positional identity), or an effect
+ * whose identity content is not canonicalisable (a `WriteContext` carrying a
+ * function, symbol, class instance, or cyclic value). A journal spans sequential
+ * tasks; this fails closed rather than record an effect it cannot replay.
+ */
+export class JournalUnsupportedEffectError extends JournalError {
+  public readonly effectTag: Effect["_tag"];
+
+  constructor(effectTag: Effect["_tag"], reason: string) {
+    super(`Cannot journal a ${effectTag} effect: ${reason}`);
+    this.name = "JournalUnsupportedEffectError";
+    this.effectTag = effectTag;
+  }
+}
+
+/**
+ * Raised when a replayed task completes having consumed fewer effects than the
+ * journal recorded — the task grew shorter than its recording (a diverged
+ * branch, or a single-use `gen` task replayed without being rebuilt). The
+ * unconsumed tail signals a divergence, so replay fails closed rather than
+ * returning a truncated value.
+ */
+export class JournalIncompleteError extends JournalError {
+  public readonly consumed: number;
+  public readonly recorded: number;
+
+  constructor(consumed: number, recorded: number) {
+    super(
+      `Journal replay consumed ${consumed} of ${recorded} recorded effects: the task is shorter than its recording`,
+    );
+    this.name = "JournalIncompleteError";
+    this.consumed = consumed;
+    this.recorded = recorded;
   }
 }
 
@@ -464,18 +510,39 @@ export const runTask = async <A>(
     return result;
   };
 
-  // The journaling seam. With a journal present, each top-level effect either
-  // replays the outcome recorded at the current position (no I/O) or, once past
-  // the recorded prefix, runs for real via performRaw and appends its outcome —
-  // so an empty journal records, a full journal replays, and a partial one
-  // resumes. An effect whose identity disagrees with the recorded entry fails
-  // closed with a JournalDivergenceError.
+  // The journaling seam. With a journal present, each effect either replays the
+  // outcome recorded at the current position (no I/O) or, once past the recorded
+  // prefix, runs for real via performRaw and appends its outcome — so an empty
+  // journal records, a full journal replays, and a partial one resumes. A
+  // journal spans sequential tasks only: a Parallel/Race, or an effect whose
+  // identity is not canonicalisable, fails closed with a
+  // JournalUnsupportedEffectError; an effect whose identity disagrees with the
+  // recorded entry, with a JournalDivergenceError.
   let cursor = 0;
   const perform: (effect: Effect) => Promise<unknown> =
     journal === undefined
       ? performRaw
       : async (effect: Effect): Promise<unknown> => {
-          const id = computeEffectId(effect, "", cursor);
+          if (effect._tag === "Parallel" || effect._tag === "Race") {
+            throw new JournalUnsupportedEffectError(
+              effect._tag,
+              "a journal records a linear sequence and cannot key concurrent children by position",
+            );
+          }
+
+          let id: EffectId;
+          try {
+            id = computeEffectId(effect, "", cursor);
+          } catch {
+            // A non-canonicalisable identity (e.g. a WriteContext value that is a
+            // function or cyclic) can never be matched on replay — fail closed
+            // rather than let it masquerade as a recoverable effect error.
+            throw new JournalUnsupportedEffectError(
+              effect._tag,
+              "its identity content is not canonicalisable",
+            );
+          }
+
           const recorded = journal.entries.at(cursor);
           const position = cursor;
           cursor += 1;
@@ -485,6 +552,13 @@ export const runTask = async <A>(
               throw new JournalDivergenceError(position, recorded.id, id);
             }
             if (recorded.outcome.ok) {
+              // Re-apply an in-memory context write so a later live effect past
+              // the recorded prefix (a resume) observes the reconstructed
+              // context; the durable side effects of I/O effects already
+              // happened on the recorded run.
+              if (effect._tag === "WriteContext") {
+                context.set(effect.key, effect.value);
+              }
               return recorded.outcome.value;
             }
             throw new TaskExecutionError(recorded.outcome.error);
@@ -501,13 +575,9 @@ export const runTask = async <A>(
             if (error.code === "TASK_INTERRUPTED") {
               throw thrown;
             }
-            journal.entries.push({
-              id,
-              outcome: {
-                ok: false,
-                error: { code: error.code, message: error.message },
-              },
-            });
+            // Record the whole structured error so a replayed recovery handler
+            // sees the same cause/context/suppressed the recording run did.
+            journal.entries.push({ id, outcome: { ok: false, error } });
             throw new TaskExecutionError(error);
           }
         };
@@ -558,10 +628,11 @@ export const runTask = async <A>(
           try {
             result = await performEffect(cur.effect);
           } catch (thrown) {
-            // A journal divergence is a structural mismatch, not a recoverable
-            // effect failure — it escapes rather than being caught by an
-            // enclosing recover/orElse/retry.
-            if (thrown instanceof JournalDivergenceError) {
+            // A journal control failure (divergence, an unsupported effect) is a
+            // broken record/replay contract, not a recoverable effect failure —
+            // it escapes rather than being caught by an enclosing
+            // recover/orElse/retry.
+            if (thrown instanceof JournalError) {
               throw thrown;
             }
             const taskError = normalizeThrownError(thrown);
@@ -605,7 +676,17 @@ export const runTask = async <A>(
     }
   };
 
-  return drive(task as Task<unknown>, perform) as Promise<A>;
+  const result = await drive(task as Task<unknown>, perform);
+
+  // A completed replay must have consumed the whole recorded prefix. Fewer
+  // consumed entries means the task grew shorter than its recording (a diverged
+  // branch, or a single-use gen task replayed without being rebuilt) — fail
+  // closed rather than return a truncated value.
+  if (journal !== undefined && cursor < journal.entries.length) {
+    throw new JournalIncompleteError(cursor, journal.entries.length);
+  }
+
+  return result as A;
 };
 
 /**

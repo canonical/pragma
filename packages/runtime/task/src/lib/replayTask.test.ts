@@ -3,11 +3,14 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { orElse } from "./combinators.js";
-import { JournalDivergenceError } from "./interpreter.js";
-import { readFile } from "./primitives.js";
+import {
+  JournalDivergenceError,
+  JournalIncompleteError,
+} from "./interpreter.js";
+import { getContext, readFile, setContext } from "./primitives.js";
 import recordTask from "./recordTask.js";
 import replayTask from "./replayTask.js";
-import { $, gen, pure } from "./task.js";
+import { $, gen, pure, recover } from "./task.js";
 
 describe("replayTask", () => {
   let dir: string;
@@ -84,5 +87,61 @@ describe("replayTask", () => {
     writeFileSync(missing, "now here");
     const replayed = await replayTask(task, recorded.journal);
     expect(replayed.value).toBe("fallback");
+  });
+
+  it("replays a recovered failure with its full error so a cause-inspecting handler agrees", async () => {
+    const missing = join(dir, "cause.txt");
+    // The handler branches on err.cause, which is dropped by a lossy {code,message}
+    // recording — record and replay must still take the same branch.
+    const build = () =>
+      recover(readFile(missing), (err) =>
+        pure(err.cause !== undefined ? "had-cause" : "no-cause"),
+      );
+
+    const recorded = await recordTask(build());
+    expect(recorded.value).toBe("had-cause");
+
+    writeFileSync(missing, "exists");
+    const replayed = await replayTask(build(), recorded.journal);
+    expect(replayed.value).toBe("had-cause");
+  });
+
+  it("reconstructs in-memory context across a resume so a live read sees a replayed write", async () => {
+    const build = () =>
+      gen(function* () {
+        yield* $(setContext("k", "v"));
+        const value = yield* $(getContext<string>("k"));
+        return value;
+      });
+
+    const recorded = await recordTask(build());
+    expect(recorded.value).toBe("v");
+
+    // Truncate to just the WriteContext entry — a crash before the read was
+    // recorded. Resuming replays the write, then reads context live.
+    const partial = { entries: recorded.journal.entries.slice(0, 1) };
+    const resumed = await replayTask(build(), partial);
+    expect(resumed.value).toBe("v");
+  });
+
+  it("fails closed when a single-use gen task is replayed without being rebuilt", async () => {
+    const first = join(dir, "reuse-a.txt");
+    const second = join(dir, "reuse-b.txt");
+    writeFileSync(first, "A");
+    writeFileSync(second, "B");
+
+    const single = gen(function* () {
+      const a = yield* $(readFile(first));
+      const b = yield* $(readFile(second));
+      return `${a}${b}`;
+    });
+
+    const recorded = await recordTask(single);
+    expect(recorded.value).toBe("AB");
+
+    // Reusing the exhausted instance ends after one effect — caught, not silent.
+    await expect(replayTask(single, recorded.journal)).rejects.toBeInstanceOf(
+      JournalIncompleteError,
+    );
   });
 });

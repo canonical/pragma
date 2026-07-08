@@ -26,9 +26,18 @@ describe("serializeJournal", () => {
     expect(deserializeJournal(serializeJournal(journal))).toEqual(journal);
   });
 
-  it("is deterministic for structurally-equal journals", () => {
-    const copy: Journal = { entries: journal.entries.slice() };
-    expect(serializeJournal(copy)).toBe(serializeJournal(journal));
+  it("serialises to a compact JSON encoding of the entries", () => {
+    const one: Journal = {
+      entries: [
+        {
+          id: { kind: "ReadFile", content: "{}", branch: "", seq: 0 },
+          outcome: { ok: true, value: "x" },
+        },
+      ],
+    };
+    expect(serializeJournal(one)).toBe(
+      '{"entries":[{"id":{"kind":"ReadFile","content":"{}","branch":"","seq":0},"outcome":{"ok":true,"value":"x"}}]}',
+    );
   });
 
   it("serialises an empty journal", () => {

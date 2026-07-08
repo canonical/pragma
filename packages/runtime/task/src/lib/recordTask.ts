@@ -7,7 +7,14 @@ import type { Journal, JournalRun, Task } from "./types.js";
  *
  * The journal can be serialised with {@link serializeJournal} for persistence,
  * or handed to {@link replayTask} to reproduce the run — replaying recorded
- * outcomes without performing any I/O.
+ * outcomes without performing any I/O. A journal spans a sequential task; a
+ * `Parallel`/`Race` effect, or a `WriteContext` with a non-canonicalisable
+ * value, fails closed with a `JournalUnsupportedEffectError`. If the task
+ * throws, no journal is returned — drive `runTask` with a caller-owned journal
+ * to keep a partial recording.
+ *
+ * Pass a freshly-built task: a `gen`-based task holds a single-use iterator, so
+ * the same instance must not be reused for a later record or replay.
  *
  * @typeParam A - The task's result type.
  * @param task - The task to run and record.
