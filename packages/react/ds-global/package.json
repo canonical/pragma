@@ -5,14 +5,6 @@
   "main": "dist/esm/index.js",
   "module": "dist/esm/index.js",
   "types": "dist/types/index.d.ts",
-  "imports": {
-    "#lib/*": {
-      "development": "./src/lib/*",
-      "types": "./dist/types/lib/*",
-      "default": "./dist/esm/lib/*"
-    },
-    "#storybook/*": "./src/storybook/*"
-  },
   "files": [
     "dist"
   ],

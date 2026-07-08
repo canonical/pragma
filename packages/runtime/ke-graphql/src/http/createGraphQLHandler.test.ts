@@ -20,9 +20,13 @@ import {
   specifiedDirectives,
 } from "graphql";
 import { afterEach, describe, expect, it } from "vitest";
-import { type CompilerResult, compile, createStoreQueryFn } from "#compiler";
-import type { CompilerContext } from "#shared";
-import { DS_REALISTIC_TTL, MINIMAL_TTL, PREFIXES } from "#testing";
+import {
+  type CompilerResult,
+  compile,
+  createStoreQueryFn,
+} from "../lib/compiler/index.js";
+import type { CompilerContext } from "../lib/shared/index.js";
+import { DS_REALISTIC_TTL, MINIMAL_TTL, PREFIXES } from "../testing/index.js";
 import createGraphQLHandler from "./createGraphQLHandler.js";
 
 type Cleanup = () => void;

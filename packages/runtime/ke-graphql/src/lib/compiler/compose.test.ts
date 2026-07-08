@@ -1,6 +1,11 @@
 import { GraphQLString } from "graphql";
 import { describe, expect, it } from "vitest";
-import type { InterfacePlan, MappedIR, NameMap, TypePlan } from "#shared";
+import type {
+  InterfacePlan,
+  MappedIR,
+  NameMap,
+  TypePlan,
+} from "../shared/index.js";
 import compose from "./compose.js";
 import type { FieldPlan, SchemaPlan } from "./emit.js";
 import type { SchemaExtensionsInput } from "./types.js";

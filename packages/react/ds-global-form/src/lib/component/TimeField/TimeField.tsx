@@ -1,6 +1,6 @@
-import bindField from "#lib/common/bindField/index.js";
-import withWrapper from "#lib/common/Wrapper/withWrapper.js";
-import { TimeInput } from "#lib/subcomponent/TimeInput/index.js";
+import bindField from "../../common/bindField/index.js";
+import withWrapper from "../../common/Wrapper/withWrapper.js";
+import { TimeInput } from "../../subcomponent/TimeInput/index.js";
 import type { TimeFieldProps } from "./types.js";
 
 /**

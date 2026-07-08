@@ -1,5 +1,5 @@
 import type { CSSProperties, ReactNode } from "react";
-import type { UsePopupProps } from "#lib/hooks/index.js";
+import type { UsePopupProps } from "../../../../hooks/index.js";
 
 export interface TooltipAreaProps extends UsePopupProps {
   /**

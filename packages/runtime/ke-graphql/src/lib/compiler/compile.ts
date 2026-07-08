@@ -1,4 +1,4 @@
-import type { QueryFn } from "#shared";
+import type { QueryFn } from "../shared/index.js";
 import extract from "./extract.js";
 import runPasses from "./runPasses.js";
 import type { CompilerResult, SchemaPluginOptions } from "./types.js";

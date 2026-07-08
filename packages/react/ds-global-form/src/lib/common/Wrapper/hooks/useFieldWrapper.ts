@@ -4,7 +4,7 @@ import { type RegisterOptions, useFormContext } from "react-hook-form";
 import {
   useFieldAriaProperties,
   useFieldError,
-} from "#lib/utils/hooks/index.js";
+} from "../../../utils/hooks/index.js";
 import messages from "../messages.js";
 
 type UseFieldWrapperOptions = {

@@ -3,7 +3,7 @@ import type React from "react";
 import { useState } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import { describe, expect, it, vi } from "vitest";
-import { ComboboxField } from "#lib/component/ComboboxField/index.js";
+import { ComboboxField } from "../../component/ComboboxField/index.js";
 import type { Option } from "../types.js";
 import { ComboboxInput } from "./ComboboxInput.js";
 

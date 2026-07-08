@@ -1,4 +1,4 @@
-import type { TabItem } from "#lib/component/Tabs/types.js";
+import type { TabItem } from "../../lib/component/Tabs/types.js";
 
 /**
  * Story fixtures for Tabs. Story-only (this folder is excluded from the package

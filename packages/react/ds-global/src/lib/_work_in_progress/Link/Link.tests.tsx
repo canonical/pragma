@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { Button } from "#lib/component/Button/index.js";
+import { Button } from "../../component/Button/index.js";
 import Component from "./Link.js";
 
 describe("Link component", () => {

@@ -1,6 +1,6 @@
 import { createElement, useEffect, useState } from "react";
-import type { Middleware } from "#lib/common/types.js";
-import type { Option } from "#lib/subcomponent/types.js";
+import type { Middleware } from "../../common/types.js";
+import type { Option } from "../../subcomponent/types.js";
 
 interface OptionsFetchOptions {
   method?: string;

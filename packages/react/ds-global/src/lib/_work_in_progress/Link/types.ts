@@ -1,5 +1,5 @@
 import type { ElementType, ReactNode } from "react";
-import type { PolymorphicComponentProps } from "#lib/index.js";
+import type { PolymorphicComponentProps } from "../../index.js";
 
 interface LinkOwnProps {
   /** Additional CSS classes */

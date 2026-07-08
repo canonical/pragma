@@ -1,6 +1,6 @@
 import type React from "react";
-import type { InputProps } from "#lib/common/types.js";
-import type { BaseProps } from "#lib/subcomponent/types.js";
+import type { InputProps } from "../../common/types.js";
+import type { BaseProps } from "../../subcomponent/types.js";
 
 export type RichChoiceOption = {
   value: string;

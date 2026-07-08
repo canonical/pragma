@@ -39,8 +39,8 @@ import {
   type Diagnostic,
   type EntityValue,
   type PassResult,
-} from "#shared";
-import { buildTBoxSchema } from "#tbox";
+} from "../shared/index.js";
+import { buildTBoxSchema } from "../tbox/index.js";
 import type { FieldPlan, SchemaPlan, TypeRef } from "./emit.js";
 import type { SchemaExtensionsInput } from "./types.js";
 

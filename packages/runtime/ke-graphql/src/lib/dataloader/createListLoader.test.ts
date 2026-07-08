@@ -6,7 +6,7 @@ import {
   type NamespaceInfo,
   type QueryFn,
   RDFS_LABEL,
-} from "#shared";
+} from "../shared/index.js";
 import createListLoader from "./createListLoader.js";
 
 const NS = "https://ds.canonical.com/";

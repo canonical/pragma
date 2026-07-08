@@ -1,10 +1,13 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { flatRoot, maasContentRoot } from "#storybook/navigation/fixtures.js";
+import {
+  flatRoot,
+  maasContentRoot,
+} from "../../../../storybook/navigation/fixtures.js";
 import {
   navDecorators,
   withNavigationRouterProps,
   withSideNavShell,
-} from "#storybook/navigation/story-utils.js";
+} from "../../../../storybook/navigation/story-utils.js";
 import { NavTree } from "./index.js";
 
 const meta: Meta<typeof NavTree> = {

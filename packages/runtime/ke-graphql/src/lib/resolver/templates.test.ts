@@ -7,7 +7,7 @@ import {
   RDF_TYPE,
   type TripleSet,
   type TripleValue,
-} from "#shared";
+} from "../shared/index.js";
 import {
   createDatatypeListResolver,
   createDatatypeResolver,

@@ -11,7 +11,7 @@ import {
   type RawProperty,
   type RawShaclConstraint,
   XSD,
-} from "#shared";
+} from "../shared/index.js";
 import build from "./build.js";
 
 const NS = "http://example.org/";

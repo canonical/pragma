@@ -1,5 +1,5 @@
-import type { ToggleFieldProps } from "#lib/common/types.js";
-import type { CheckboxInputProps } from "#lib/subcomponent/CheckboxInput/index.js";
+import type { ToggleFieldProps } from "../../common/types.js";
+import type { CheckboxInputProps } from "../../subcomponent/CheckboxInput/index.js";
 
 /**
  * Props for the react-hook-form-bound Checkbox field (presentational +

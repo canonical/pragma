@@ -6,15 +6,19 @@
 import { createTestStore } from "@canonical/ke/testing";
 import { type GraphQLSchema, graphql } from "graphql";
 import { afterEach, describe, expect, it } from "vitest";
-import { type CompilerResult, compile, createStoreQueryFn } from "#compiler";
-import type { CompilerContext } from "#shared";
+import {
+  type CompilerResult,
+  compile,
+  createStoreQueryFn,
+} from "../../lib/compiler/index.js";
+import type { CompilerContext } from "../../lib/shared/index.js";
 import {
   BLANK_NODES_TTL,
   DS_REALISTIC_TTL,
   EDGE_CASES_TTL,
   INVERSE_TTL,
   PREFIXES,
-} from "#testing";
+} from "../index.js";
 
 type Cleanup = () => void;
 let cleanups: Cleanup[] = [];

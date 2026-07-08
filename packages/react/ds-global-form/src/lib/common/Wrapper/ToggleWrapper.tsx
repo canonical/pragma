@@ -1,10 +1,10 @@
 import type React from "react";
-import { states } from "#lib/constants.js";
+import { states } from "../../constants.js";
 import {
   Description,
   Error as FieldError,
   Label,
-} from "#lib/subcomponent/Field/index.js";
+} from "../../subcomponent/Field/index.js";
 import type { BaseInputProps, WrapperProps } from "../types.js";
 import { useFieldWrapper } from "./hooks/index.js";
 import "./styles.css";

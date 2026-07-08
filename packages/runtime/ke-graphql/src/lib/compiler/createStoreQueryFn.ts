@@ -1,5 +1,5 @@
 import type { SPARQL, Store } from "@canonical/ke";
-import type { QueryFn } from "#shared";
+import type { QueryFn } from "../shared/index.js";
 
 /**
  * Adapt a ke Store to the QueryFn surface (string → branded SPARQL), for

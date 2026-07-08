@@ -1,6 +1,6 @@
-import bindField from "#lib/common/bindField/index.js";
-import withWrapper from "#lib/common/Wrapper/withWrapper.js";
-import { TextInput } from "#lib/subcomponent/TextInput/index.js";
+import bindField from "../../common/bindField/index.js";
+import withWrapper from "../../common/Wrapper/withWrapper.js";
+import { TextInput } from "../../subcomponent/TextInput/index.js";
 import type { TextFieldProps } from "./types.js";
 
 /**

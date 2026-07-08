@@ -23,7 +23,7 @@ import {
   RESERVED_FIELD_NAMES,
   RESERVED_TYPE_NAMES,
   type ResolverTemplate,
-} from "#shared";
+} from "../shared/index.js";
 import BidirectionalNameMap from "./BidirectionalNameMap.js";
 import {
   camelize,

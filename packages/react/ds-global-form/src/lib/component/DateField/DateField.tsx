@@ -1,6 +1,6 @@
-import bindField from "#lib/common/bindField/index.js";
-import withWrapper from "#lib/common/Wrapper/withWrapper.js";
-import { DateInput } from "#lib/subcomponent/DateInput/index.js";
+import bindField from "../../common/bindField/index.js";
+import withWrapper from "../../common/Wrapper/withWrapper.js";
+import { DateInput } from "../../subcomponent/DateInput/index.js";
 import type { DateFieldProps } from "./types.js";
 
 /**

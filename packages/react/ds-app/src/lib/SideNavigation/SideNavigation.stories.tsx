@@ -4,13 +4,13 @@ import {
   lxdFooterRoot,
   maasContentRoot,
   maasFooterRoot,
-} from "#storybook/navigation/fixtures.js";
+} from "../../storybook/navigation/fixtures.js";
 import {
   CanonicalLogo,
   navDecorators,
   withNavigationRouterProps,
   withNavLayout,
-} from "#storybook/navigation/story-utils.js";
+} from "../../storybook/navigation/story-utils.js";
 import SideNavigation from "./SideNavigation.js";
 
 const meta: Meta<typeof SideNavigation> = {

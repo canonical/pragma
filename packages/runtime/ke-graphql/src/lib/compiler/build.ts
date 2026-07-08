@@ -23,7 +23,7 @@ import {
   type RawUnion,
   XSD,
   XSD_SCALARS,
-} from "#shared";
+} from "../shared/index.js";
 import getNamespace from "./getNamespace.js";
 import isStandardVocab from "./isStandardVocab.js";
 import type { CustomMappings } from "./types.js";

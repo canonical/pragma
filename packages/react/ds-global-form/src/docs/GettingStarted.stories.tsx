@@ -2,8 +2,8 @@ import { Button } from "@canonical/react-ds-global";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
 import { type FieldValues, useForm } from "react-hook-form";
-import Field from "#lib/pattern/Field/Field.js";
-import Form from "#lib/pattern/Form/Form.js";
+import Field from "../lib/pattern/Field/Field.js";
+import Form from "../lib/pattern/Form/Form.js";
 
 const noop = (data: Record<string, unknown>) => console.log(data);
 

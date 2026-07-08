@@ -1,6 +1,6 @@
 import type { QueryResult, Term } from "@canonical/ke";
 import { describe, expect, it, vi } from "vitest";
-import type { MappedIR, NamespaceInfo, QueryFn } from "#shared";
+import type { MappedIR, NamespaceInfo, QueryFn } from "../shared/index.js";
 import createInverseLoader from "./createInverseLoader.js";
 
 const NS = "https://ds.canonical.com/";

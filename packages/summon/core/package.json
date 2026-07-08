@@ -11,12 +11,6 @@
       "import": "./dist/esm/index.js"
     }
   },
-  "imports": {
-    "#types": "./dist/esm/types/index.js",
-    "#stamp": "./dist/esm/stamp/index.js",
-    "#template": "./dist/esm/template/index.js",
-    "#discovery": "./dist/esm/discovery/index.js"
-  },
   "files": [
     "dist"
   ],

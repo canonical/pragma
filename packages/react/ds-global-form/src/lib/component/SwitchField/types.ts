@@ -1,5 +1,5 @@
-import type { ToggleFieldProps } from "#lib/common/types.js";
-import type { SwitchInputProps } from "#lib/subcomponent/SwitchInput/index.js";
+import type { ToggleFieldProps } from "../../common/types.js";
+import type { SwitchInputProps } from "../../subcomponent/SwitchInput/index.js";
 
 /**
  * Props for the react-hook-form-bound Switch field (presentational + binding).

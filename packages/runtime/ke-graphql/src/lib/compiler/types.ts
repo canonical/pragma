@@ -17,7 +17,7 @@ import type {
   NameMap,
   RawExtraction,
   RuntimeWarningHandler,
-} from "#shared";
+} from "../shared/index.js";
 import type { ARTIFACT_VERSION } from "./constants.js";
 
 /**

@@ -11,7 +11,7 @@ import {
   type OntologyIR,
   type PassResult,
   XSD,
-} from "#shared";
+} from "../shared/index.js";
 import isStandardVocab from "./isStandardVocab.js";
 
 const PHASE = "validate";

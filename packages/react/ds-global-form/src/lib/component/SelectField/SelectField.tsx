@@ -1,6 +1,6 @@
-import bindField from "#lib/common/bindField/index.js";
-import withWrapper from "#lib/common/Wrapper/withWrapper.js";
-import { SelectInput } from "#lib/subcomponent/SelectInput/index.js";
+import bindField from "../../common/bindField/index.js";
+import withWrapper from "../../common/Wrapper/withWrapper.js";
+import { SelectInput } from "../../subcomponent/SelectInput/index.js";
 import type { SelectFieldProps } from "./types.js";
 
 /**

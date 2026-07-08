@@ -1,6 +1,9 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { fn } from "storybook/test";
-import { Brand, withSideNavShell } from "#storybook/navigation/story-utils.js";
+import {
+  Brand,
+  withSideNavShell,
+} from "../../../../storybook/navigation/story-utils.js";
 import Header from "./Header.js";
 
 const meta: Meta<typeof Header> = {

@@ -1,6 +1,6 @@
-import bindField from "#lib/common/bindField/index.js";
-import withWrapper from "#lib/common/Wrapper/withWrapper.js";
-import { FileUploadInput } from "#lib/subcomponent/FileUploadInput/index.js";
+import bindField from "../../common/bindField/index.js";
+import withWrapper from "../../common/Wrapper/withWrapper.js";
+import { FileUploadInput } from "../../subcomponent/FileUploadInput/index.js";
 import type { FileUploadFieldProps } from "./types.js";
 
 /**

@@ -8,10 +8,10 @@
 import type { QueryResult, SelectResult, Term } from "@canonical/ke";
 import { createTestStore } from "@canonical/ke/testing";
 import { afterEach, describe, expect, it } from "vitest";
-import { createStoreQueryFn } from "#compiler";
-import type { QueryFn } from "#shared";
-import { MINIMAL_TTL, PREFIXES } from "#testing";
+import { MINIMAL_TTL, PREFIXES } from "../../testing/index.js";
+import type { QueryFn } from "../shared/index.js";
 import extract from "./extract.js";
+import { createStoreQueryFn } from "./index.js";
 
 const OWL = "http://www.w3.org/2002/07/owl#";
 const RDFS = "http://www.w3.org/2000/01/rdf-schema#";

@@ -3,14 +3,17 @@ import {
   createEntityLoader,
   createInverseLoader,
   createListLoader,
-} from "#dataloader";
-import { createBoundedCache, DEFAULT_PROCESS_CACHE_SIZE } from "#hardening";
+} from "../dataloader/index.js";
+import {
+  createBoundedCache,
+  DEFAULT_PROCESS_CACHE_SIZE,
+} from "../hardening/index.js";
 import type {
   EntityValue,
   MappedIR,
   QueryFn,
   RuntimeWarningHandler,
-} from "#shared";
+} from "../shared/index.js";
 import type { ContextFactory, SchemaPluginOptions } from "./types.js";
 
 /**

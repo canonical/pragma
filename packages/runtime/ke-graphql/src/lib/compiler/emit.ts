@@ -16,7 +16,7 @@ import {
   createInverseResolver,
   createObjectListResolver,
   createObjectSingularResolver,
-} from "#resolver";
+} from "../resolver/index.js";
 import type {
   CompilerContext,
   Diagnostic,
@@ -24,7 +24,7 @@ import type {
   MappedField,
   MappedIR,
   PassResult,
-} from "#shared";
+} from "../shared/index.js";
 
 /** A reference to a (possibly not-yet-constructed) GraphQL type. */
 export interface TypeRef {

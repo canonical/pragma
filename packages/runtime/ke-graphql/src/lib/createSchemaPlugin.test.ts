@@ -15,16 +15,16 @@ import { join } from "node:path";
 import { createTestStore } from "@canonical/ke/testing";
 import { GraphQLString, graphql } from "graphql";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { MINIMAL_TTL, PREFIXES } from "../testing/index.js";
 import {
   compile,
   createStoreQueryFn,
   hashSources,
   type SchemaPluginApi,
   serializeExtraction,
-} from "#compiler";
-import type { EntityValue } from "#shared";
-import { MINIMAL_TTL, PREFIXES } from "#testing";
+} from "./compiler/index.js";
 import createSchemaPlugin from "./createSchemaPlugin.js";
+import type { EntityValue } from "./shared/index.js";
 
 // A TTL whose compile emits diagnostics of every severity without failing
 // composition, plus at least one sourceless diagnostic so both arms of the

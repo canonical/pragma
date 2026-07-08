@@ -12,7 +12,18 @@ import {
   graphql,
 } from "graphql";
 import { afterEach, describe, expect, it } from "vitest";
-import { type CompilerResult, compile, createStoreQueryFn } from "#compiler";
+import {
+  DS_REALISTIC_TTL,
+  INHERITANCE_TTL,
+  MINIMAL_TTL,
+  PREFIXES,
+  SHACL_TTL,
+} from "../../testing/index.js";
+import {
+  type CompilerResult,
+  compile,
+  createStoreQueryFn,
+} from "../compiler/index.js";
 import type {
   ClassNode,
   CompilerContext,
@@ -21,14 +32,7 @@ import type {
   OntologyIR,
   PropertyNode,
   RawExtraction,
-} from "#shared";
-import {
-  DS_REALISTIC_TTL,
-  INHERITANCE_TTL,
-  MINIMAL_TTL,
-  PREFIXES,
-  SHACL_TTL,
-} from "#testing";
+} from "../shared/index.js";
 import buildTBoxSchema from "./buildTBoxSchema.js";
 
 type Cleanup = () => void;

@@ -132,24 +132,24 @@ sibling package/domain and match its layout, naming, error handling, and test
 placement — rather than inventing a new pattern. Match the surrounding code's idioms;
 a new file should be indistinguishable in style from its neighbours.
 
-### Subpath imports (`#` aliases)
+### Module imports — use relative paths, not `#` subpath aliases
 
-Packages may define **`#`-prefixed subpath imports** in their `package.json`
-`"imports"` map to avoid brittle deep-relative paths for package-internal modules,
-e.g.:
+Do **not** use `#`-prefixed `package.json` `"imports"` (Node subpath imports) for
+package-internal modules in packages we build and publish with `tsc`. `tsc` never
+rewrites module specifiers, so a `#alias` written in source is emitted **verbatim**
+into `dist`. The published package then leaks its private `imports` map as part of
+its public contract: every consumer's bundler/test-runner has to resolve those `#`
+specifiers itself, and mismatched resolve conditions (for example Vite/Vitest
+activating the `development` condition, which points at unpublished `src`) break the
+build downstream.
 
-```jsonc
-"imports": { "#storybook/*": "./src/storybook/*" }
-```
+Use ordinary relative imports (`../../subcomponent/Spinner/index.js`) with the `.js`
+extension (NodeNext). They need zero config in any consumer and survive `tsc` emit
+unchanged.
 
-then import as `#storybook/navigation/story-utils.js` instead of
-`../../../../storybook/...`. These are a **standard Node.js feature** (not a custom
-build hack), so they resolve everywhere we run code with **zero extra config**:
-TypeScript honours them because the shared config sets `module`/`moduleResolution:
-NodeNext`, and Vite/Storybook/Node read `package.json` `"imports"` natively. The `#`
-prefix marks the path as private to the package (never exposed to consumers). Use the
-`.js` extension in the specifier (NodeNext), and keep the target under a
-build-excluded folder if the alias points at story/dev-only code.
+This applies to every `tsc`-built package (the libraries under `packages/`). Apps
+bundled by Vite (e.g. `apps/*` and scaffolded boilerplates) may still use `#`
+aliases, because the bundler inlines them and nothing is published.
 
 ## PR mechanics
 

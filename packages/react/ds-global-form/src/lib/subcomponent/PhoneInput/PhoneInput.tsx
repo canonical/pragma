@@ -5,7 +5,7 @@ import {
   type CountryData,
   countries as defaultCountries,
   type KnownCountryCode,
-} from "#lib/utils/countries/index.js";
+} from "../../utils/countries/index.js";
 import type { PhoneInputProps, PhoneValue } from "./types.js";
 import "./styles.css";
 

@@ -4,8 +4,8 @@
 // import type { WrapperProps } from './types.js'
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import * as decorators from "storybook/decorators.js";
-import { TextareaInput } from "#lib/subcomponent/TextareaInput/index.js";
-import { TextInput } from "#lib/subcomponent/TextInput/index.js";
+import { TextareaInput } from "../../subcomponent/TextareaInput/index.js";
+import { TextInput } from "../../subcomponent/TextInput/index.js";
 import bindField from "../bindField/index.js";
 import Component from "./Wrapper.js";
 

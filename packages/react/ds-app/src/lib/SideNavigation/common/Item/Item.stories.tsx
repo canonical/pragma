@@ -3,7 +3,7 @@ import {
   HashLink,
   MockBadge,
   withSideNavShell,
-} from "#storybook/navigation/story-utils.js";
+} from "../../../../storybook/navigation/story-utils.js";
 import Item from "./Item.js";
 
 const meta: Meta<typeof Item> = {

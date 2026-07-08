@@ -10,18 +10,18 @@
 // - root query fields: node(id), per-type lookup + listing
 // =============================================================================
 
-import { toFull, toPrefixed } from "#dataloader";
+import { toFull, toPrefixed } from "../dataloader/index.js";
 import {
   connectionFromPage,
   paginateUriWindow,
   unwrapEntities,
-} from "#resolver";
+} from "../resolver/index.js";
 import type {
   CompilerContext,
   Diagnostic,
   EntityValue,
   PassResult,
-} from "#shared";
+} from "../shared/index.js";
 import type { FieldPlan, SchemaPlan } from "./emit.js";
 
 /** Create the Relay global-ID field plan (id: ID!). */

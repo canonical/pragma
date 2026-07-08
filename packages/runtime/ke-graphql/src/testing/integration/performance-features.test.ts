@@ -16,9 +16,9 @@ import {
   hashSources,
   type SchemaPluginApi,
   serializeExtraction,
-} from "#compiler";
-import { DS_REALISTIC_TTL, MINIMAL_TTL, PREFIXES } from "#testing";
+} from "../../lib/compiler/index.js";
 import createSchemaPlugin from "../../lib/createSchemaPlugin.js";
+import { DS_REALISTIC_TTL, MINIMAL_TTL, PREFIXES } from "../index.js";
 
 type Cleanup = () => void;
 let cleanups: Cleanup[] = [];

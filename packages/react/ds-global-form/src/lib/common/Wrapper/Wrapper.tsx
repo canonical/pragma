@@ -1,12 +1,12 @@
 /* @canonical/generator-ds 0.9.0-experimental.4 */
 import type React from "react";
 import { useMemo } from "react";
-import { states } from "#lib/constants.js";
+import { states } from "../../constants.js";
 import {
   Description,
   Error as FieldError,
   Label,
-} from "#lib/subcomponent/Field/index.js";
+} from "../../subcomponent/Field/index.js";
 import type { BaseInputProps, WrapperProps } from "../types.js";
 import "./styles.css";
 import { useFieldWrapper } from "./hooks/index.js";
