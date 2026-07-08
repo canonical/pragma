@@ -63,7 +63,9 @@ export function extractEffectContent(effect: Effect): unknown {
       return { key: effect.key, value: effect.value };
     case "Parallel":
     case "Race":
-      // Children are closures resolved via sub-journals; identity is structural.
+      // Children are nested tasks, not identity-bearing leaf fields; identity is
+      // structural (a journal does not record composites — see the interpreter's
+      // journaling seam — so this coarse descriptor is not used for replay).
       return { taskCount: effect.tasks.length };
   }
 }
