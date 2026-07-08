@@ -33,6 +33,17 @@ const formatJson = (value: Record<string, unknown>): string =>
   `${JSON.stringify(value, null, 2)}\n`;
 
 /**
+ * Coerce a config's server map to a plain record, defaulting a missing or
+ * non-object `mcpServers` (a corrupt config where it is a string/number/array)
+ * to an empty map — so a read honours its `Record` contract and a merge never
+ * mutates a primitive or array.
+ */
+const asServerRecord = (value: unknown): Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+
+/**
  * Fail-closed message for a config a write refuses to overwrite because it is
  * not valid JSON/JSONC — see {@link parseJsonc}.
  */
@@ -68,7 +79,10 @@ export const readMcpConfig = (
     exists(configPath),
     map(readFile(configPath), (content) => {
       const parsed = parseJsonc(content) ?? {};
-      return (parsed[harness.mcpKey] ?? {}) as Record<string, McpServerConfig>;
+      return asServerRecord(parsed[harness.mcpKey]) as Record<
+        string,
+        McpServerConfig
+      >;
     }),
     pure({} as Record<string, McpServerConfig>),
   );
@@ -128,7 +142,7 @@ export const writeMcpConfig = (
       if (parsed === undefined) {
         return unparseableConfig(configPath);
       }
-      const servers = (parsed[harness.mcpKey] ?? {}) as Record<string, unknown>;
+      const servers = asServerRecord(parsed[harness.mcpKey]);
       servers[serverName] = config;
       parsed[harness.mcpKey] = servers;
       return writeFile(configPath, formatJson(parsed), { undo: undoTask });
@@ -178,7 +192,7 @@ export const removeMcpConfig = (
       if (parsed === undefined) {
         return unparseableConfig(configPath);
       }
-      const servers = (parsed[harness.mcpKey] ?? {}) as Record<string, unknown>;
+      const servers = asServerRecord(parsed[harness.mcpKey]);
       delete servers[serverName];
       parsed[harness.mcpKey] = servers;
       return writeFile(configPath, formatJson(parsed));

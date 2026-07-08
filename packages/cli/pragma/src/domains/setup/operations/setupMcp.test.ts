@@ -10,7 +10,12 @@ const mockExists =
 function mocks(
   existsPredicate: (path: string) => boolean,
 ): Map<string, (effect: Effect) => unknown> {
-  return new Map([["Exists", mockExists(existsPredicate)]]);
+  return new Map<string, (effect: Effect) => unknown>([
+    ["Exists", mockExists(existsPredicate)],
+    // An existing config reads back as an empty-but-valid JSON object, so a
+    // write merges into it rather than failing closed on the dry-run placeholder.
+    ["ReadFile", () => "{}"],
+  ]);
 }
 
 describe("setupMcp", () => {

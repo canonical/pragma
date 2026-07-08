@@ -82,5 +82,10 @@ describe("parseJsonc", () => {
     it("rejects an unterminated comment before a would-be closer", () => {
       expect(parseJsonc('{"a":1,/*')).toBeUndefined();
     });
+
+    it("fails closed on an unterminated block comment after otherwise-valid JSON", () => {
+      // Must not silently strip the dangling `/*` and accept `{ "a": 1 }`.
+      expect(parseJsonc('{ "a": 1 }/*')).toBeUndefined();
+    });
   });
 });

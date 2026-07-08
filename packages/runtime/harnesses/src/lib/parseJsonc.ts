@@ -68,14 +68,14 @@ function stripJsonc(input: string): string {
       continue;
     }
     if (char === "/" && input[index + 1] === "*") {
-      index += 2;
-      while (
-        index < input.length &&
-        !(input[index] === "*" && input[index + 1] === "/")
-      ) {
-        index++;
+      const close = input.indexOf("*/", index + 2);
+      if (close === -1) {
+        // Unterminated block comment — malformed. Keep the rest verbatim so
+        // JSON.parse rejects it (fail closed) rather than silently accepting.
+        out += input.slice(index);
+        break;
       }
-      index += 2;
+      index = close + 2;
       continue;
     }
     if (char === "," && isTrailingComma(input, index + 1)) {

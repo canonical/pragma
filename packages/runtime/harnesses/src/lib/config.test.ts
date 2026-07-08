@@ -484,4 +484,35 @@ describe("SEC-1 — non-destructive JSONC handling", () => {
       ),
     ).toThrow(/Refusing to modify/);
   });
+
+  it.each([
+    ["a string", '{"mcpServers":"oops"}'],
+    ["null", '{"mcpServers":null}'],
+    ["an array", '{"mcpServers":[1,2]}'],
+  ])("treats a %s mcpServers as empty on read", (_label, content) => {
+    const result = dryRunWith(
+      readMcpConfig(claude, "/project"),
+      buildMocks({
+        Exists: existsMock(() => true),
+        ReadFile: readFileMock(content),
+      }),
+    );
+    expect(result.value).toEqual({});
+  });
+
+  it("re-initialises a non-object mcpServers on write, keeping other fields", () => {
+    const result = dryRunWith(
+      writeMcpConfig(claude, "/project", "pragma", { command: "pragma" }),
+      buildMocks({
+        Exists: existsMock(() => true),
+        ReadFile: readFileMock('{"mcpServers":"corrupt","otherField":true}'),
+        WriteFile: writeMock,
+      }),
+    );
+
+    const writeEffects = filterEffects(result.effects, "WriteFile");
+    const written = JSON.parse(writeEffects[0].content);
+    expect(written.mcpServers.pragma).toEqual({ command: "pragma" });
+    expect(written.otherField).toBe(true);
+  });
 });
