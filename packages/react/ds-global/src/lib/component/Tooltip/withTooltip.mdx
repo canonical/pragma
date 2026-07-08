@@ -235,7 +235,7 @@ const DeliberateTooltip = withTooltip(Button, "Delete permanently", {
   </tbody>
 </table>
 
-> **Click-only members are inert here.** `UseDisclosureProps` also carries `closeOnOutsideClick` and `returnFocus`, but both are ignored in hover mode — the only mode `withTooltip` runs. Passing them has no effect.
+> **Click-only members are inert here.** `WithTooltipOptions` inherits `closeOnOutsideClick` and `returnFocus` from `UseDisclosureProps` (via `TooltipAreaProps`), but both are ignored in hover mode — the only mode `withTooltip` runs. Passing them has no effect.
 
 ## Pitfalls and behaviour
 
@@ -243,7 +243,7 @@ This primitive has a few sharp edges worth understanding before you rely on it.
 
 ### It is hover-only — you cannot make it open on click
 
-`withTooltip` wraps `TooltipArea`, which hard-codes `useDisclosure({ mode: "hover" })`. That is precisely why `popupProps` is typed `Omit<UseDisclosureProps, "mode">` — the type removes `mode` from the surface so it cannot be passed at all. The overlay opens on pointer-enter and focus, and closes on pointer-leave and blur, each after its delay. There is **no way** to make `withTooltip` toggle on click. If you need a click-triggered overlay — a menu, a popover, a dropdown — that is not a tooltip; use the click-mode primitives built on the same `useDisclosure` hook instead.
+`withTooltip` wraps `TooltipArea`, which hard-codes `useDisclosure({ mode: "hover" })`. That is precisely why `popupProps` is typed `Omit<TooltipAreaProps, "children" | "Message">` — and `TooltipAreaProps` itself already drops `mode` (`extends Omit<UseDisclosureProps, "mode">`), so `mode` never reaches the surface and cannot be passed at all. The overlay opens on pointer-enter and focus, and closes on pointer-leave and blur, each after its delay. There is **no way** to make `withTooltip` toggle on click. If you need a click-triggered overlay — a menu, a popover, a dropdown — that is not a tooltip; use the click-mode primitives built on the same `useDisclosure` hook instead.
 
 ### Define the wrapped component outside render
 
@@ -294,5 +294,5 @@ Two consequences follow. First, the trigger must be reachable and focusable for 
 
 - [TooltipArea](?path=/docs/_work_in_progress-component-tooltip-tooltiparea--docs) — the node/render form. Wrap a one-off JSX fragment, or drive a `Message` that changes at runtime. `withTooltip` is built on it, and it also exposes styling and target hooks (`className`, `targetElementClassName`, `parentElement`, `icon`, …) that the HOC does not surface.
 - [Tooltip](?path=/docs/_work_in_progress-component-tooltip--docs) — the presentational message bubble on its own, with no anchor or positioning logic.
-- `useDisclosure` — the hover/click disclosure hook underpinning every tooltip primitive, and the source of the `popupProps` type (`Omit<UseDisclosureProps, "mode">`).
+- `useDisclosure` — the hover/click disclosure hook underpinning every tooltip primitive. `popupProps` is `Omit<TooltipAreaProps, "children" | "Message">`, and `TooltipAreaProps` in turn extends `Omit<UseDisclosureProps, "mode">`, so the disclosure surface flows through with `mode` removed.
 - [Global Tier — React](?path=/docs/documentation-introduction--docs) — package overview, installation, and the ontology behind these components.
