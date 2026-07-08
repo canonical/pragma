@@ -5,10 +5,12 @@
  * Criticality-wired (this pass). The `criticality` prop applies a modifier
  * class (.information | .success | .warning | .error) from the criticality
  * modifier family (@canonical/design-tokens → modifiers.criticality.css), which
- * remaps the --modifier-color-* channels. This component consumes ONLY those
- * channels — it does not restate any criticality token. The default look comes
- * from the `criticality="information"` prop default, which applies `.information`
- * and supplies the channel values; no class ⇒ no colour, by design.
+ * remaps the --modifier-color-* channels. The criticality tints the SURFACE —
+ * background, side bar, and icon — via those channels; the text stays the
+ * neutral root colour (`--color-text`) on every criticality, per Figma. The
+ * component restates no criticality token; it only reads channels. The default
+ * look comes from the `criticality="information"` prop default, which applies
+ * `.information` and supplies the channel values; no class ⇒ no tint, by design.
  *
  * The icon is driven the same way: `--modifier-icon` (a mask-image, supplied by
  * @canonical/styles' criticality shim) picks the glyph for the type, and
@@ -31,7 +33,10 @@
 
   padding: var(--dimension-100);
 
-  color: var(--modifier-color-text);
+  /* Text is always the root text colour — the criticality tints the icon,
+     side bar and background, but the copy stays neutral (Figma: color/text/root
+     on every criticality). Only the icon reads the criticality colour channel. */
+  color: var(--color-text);
   background-color: var(--modifier-color-foreground-secondary);
 
   /* Icon — a masked box. The glyph shape comes from the criticality modifier's
