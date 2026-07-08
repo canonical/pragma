@@ -143,12 +143,14 @@ const specs: readonly ToolSpec[] = [
 
       // Untrusted agent input: the package name derives the target directory,
       // so jail both the raw name and the unscoped short name the generator
-      // actually builds the path from — `getPackageShortName` strips only the
-      // first scope slash, so "@scope//etc" would otherwise yield an absolute
-      // "/etc" directory the raw check never sees.
+      // actually builds the path from — "@scope//etc" derives an absolute "/etc"
+      // directory the raw check never sees. The short name mirrors
+      // @canonical/summon-package's getPackageShortName exactly (scope stripped
+      // only when a segment follows the slash) so the jail matches its output.
       const rawName = String(params.name);
       assertSafeRelativePath("name", rawName);
-      assertSafeRelativePath("name", rawName.replace(/^@[^/]+\//, ""));
+      const shortNameMatch = rawName.match(/^@[^/]+\/(.+)$/);
+      assertSafeRelativePath("name", shortNameMatch?.[1] ?? rawName);
 
       const gen = packageGenerators.package as AnyGenerator | undefined;
       if (!gen) throw PragmaError.internalError("Package generator not found");
