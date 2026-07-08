@@ -7,6 +7,7 @@
 import { dirname } from "node:path";
 import {
   exists,
+  failWith,
   flatMap,
   ifElseM,
   map,
@@ -16,6 +17,7 @@ import {
   type Task,
   writeFile,
 } from "@canonical/task";
+import parseJsonc from "./parseJsonc.js";
 import {
   mergeTomlSection,
   parseTomlSection,
@@ -25,29 +27,20 @@ import {
 import type { HarnessDefinition, McpServerConfig } from "./types.js";
 
 /**
- * Parse a JSON string into a record, returning an empty object on failure.
- */
-const parseJsonSafe = (content: string): Record<string, unknown> => {
-  try {
-    const parsed: unknown = JSON.parse(content);
-    if (
-      typeof parsed === "object" &&
-      parsed !== null &&
-      !Array.isArray(parsed)
-    ) {
-      return parsed as Record<string, unknown>;
-    }
-    return {};
-  } catch {
-    return {};
-  }
-};
-
-/**
  * Serialize a record to formatted JSON with a trailing newline.
  */
 const formatJson = (value: Record<string, unknown>): string =>
   `${JSON.stringify(value, null, 2)}\n`;
+
+/**
+ * Fail-closed message for a config a write refuses to overwrite because it is
+ * not valid JSON/JSONC — see {@link parseJsonc}.
+ */
+const unparseableConfig = (configPath: string): Task<void> =>
+  failWith(
+    "MCP_CONFIG_UNPARSEABLE",
+    `Refusing to modify ${configPath}: it is not valid JSON/JSONC, so writing would overwrite it. Back it up or fix it, then retry.`,
+  );
 
 /**
  * Read existing MCP server entries from a harness config file.
@@ -74,7 +67,7 @@ export const readMcpConfig = (
   return ifElseM(
     exists(configPath),
     map(readFile(configPath), (content) => {
-      const parsed = parseJsonSafe(content);
+      const parsed = parseJsonc(content) ?? {};
       return (parsed[harness.mcpKey] ?? {}) as Record<string, McpServerConfig>;
     }),
     pure({} as Record<string, McpServerConfig>),
@@ -127,7 +120,10 @@ export const writeMcpConfig = (
   return ifElseM(
     exists(configPath),
     flatMap(readFile(configPath), (content) => {
-      const parsed = parseJsonSafe(content);
+      const parsed = parseJsonc(content);
+      if (parsed === undefined) {
+        return unparseableConfig(configPath);
+      }
       const servers = (parsed[harness.mcpKey] ?? {}) as Record<string, unknown>;
       servers[serverName] = config;
       parsed[harness.mcpKey] = servers;
@@ -171,7 +167,10 @@ export const removeMcpConfig = (
   return ifElseM(
     exists(configPath),
     flatMap(readFile(configPath), (content) => {
-      const parsed = parseJsonSafe(content);
+      const parsed = parseJsonc(content);
+      if (parsed === undefined) {
+        return unparseableConfig(configPath);
+      }
       const servers = (parsed[harness.mcpKey] ?? {}) as Record<string, unknown>;
       delete servers[serverName];
       parsed[harness.mcpKey] = servers;
