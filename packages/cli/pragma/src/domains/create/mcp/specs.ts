@@ -8,6 +8,7 @@ import { generators as packageGenerators } from "@canonical/summon-package";
 import { PragmaError } from "#error";
 import type { ToolSpec } from "../../shared/ToolSpec.js";
 import { COMPONENT_GENERATORS } from "../generators.js";
+import assertSafeRelativePath from "./assertSafeRelativePath.js";
 
 const specs: readonly ToolSpec[] = [
   {
@@ -54,6 +55,9 @@ const specs: readonly ToolSpec[] = [
           verbose: false,
         },
       };
+
+      // Untrusted agent input: refuse a component path that would escape cwd.
+      assertSafeRelativePath("componentPath", String(params.componentPath));
 
       const framework = params.framework as string;
       const gen = COMPONENT_GENERATORS[framework];
@@ -136,6 +140,10 @@ const specs: readonly ToolSpec[] = [
           verbose: false,
         },
       };
+
+      // Untrusted agent input: the package name derives the target directory
+      // (getPackageShortName), so refuse a name that would escape cwd.
+      assertSafeRelativePath("name", String(params.name));
 
       const gen = packageGenerators.package as AnyGenerator | undefined;
       if (!gen) throw PragmaError.internalError("Package generator not found");
