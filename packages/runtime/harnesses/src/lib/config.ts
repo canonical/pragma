@@ -76,11 +76,15 @@ export const readMcpConfig = (
 
 /**
  * Write or merge an MCP server entry into a harness config file.
- * If the file exists, the new entry is merged into existing servers.
- * If the file does not exist, it is created with the entry.
+ * If the file exists, the new entry is merged into existing servers, preserving
+ * every other server. If the file does not exist, it is created with the entry.
+ * A file that is not valid JSON/JSONC fails closed rather than being overwritten.
  *
  * @note This function is impure — it reads and writes the filesystem
  * via Task effects.
+ * @note A JSON merge is written back as formatted JSON, so a JSONC config's
+ * comments and custom formatting are not preserved across the write — only its
+ * server entries are.
  */
 export const writeMcpConfig = (
   harness: HarnessDefinition,
@@ -141,10 +145,13 @@ export const writeMcpConfig = (
 
 /**
  * Remove an MCP server entry from a harness config file.
- * If the file does not exist, this is a no-op.
+ * If the file does not exist, this is a no-op. A file that is not valid
+ * JSON/JSONC fails closed rather than being overwritten.
  *
  * @note This function is impure — it reads and writes the filesystem
  * via Task effects.
+ * @note As with {@link writeMcpConfig}, a JSON rewrite does not preserve a
+ * JSONC config's comments or formatting — only its server entries.
  */
 export const removeMcpConfig = (
   harness: HarnessDefinition,
