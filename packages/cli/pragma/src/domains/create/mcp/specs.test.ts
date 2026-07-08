@@ -39,4 +39,13 @@ describe("create MCP specs — path jail (SEC-2)", () => {
       }),
     ).rejects.toBeInstanceOf(PragmaError);
   });
+
+  it("create_package refuses a double-slash scope that derives an absolute directory", async () => {
+    await expect(
+      bySpec("create_package").execute(rt, {
+        name: "@scope//etc/passwd",
+        type: "library",
+      }),
+    ).rejects.toBeInstanceOf(PragmaError);
+  });
 });

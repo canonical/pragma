@@ -141,9 +141,14 @@ const specs: readonly ToolSpec[] = [
         },
       };
 
-      // Untrusted agent input: the package name derives the target directory
-      // (getPackageShortName), so refuse a name that would escape cwd.
-      assertSafeRelativePath("name", String(params.name));
+      // Untrusted agent input: the package name derives the target directory,
+      // so jail both the raw name and the unscoped short name the generator
+      // actually builds the path from — `getPackageShortName` strips only the
+      // first scope slash, so "@scope//etc" would otherwise yield an absolute
+      // "/etc" directory the raw check never sees.
+      const rawName = String(params.name);
+      assertSafeRelativePath("name", rawName);
+      assertSafeRelativePath("name", rawName.replace(/^@[^/]+\//, ""));
 
       const gen = packageGenerators.package as AnyGenerator | undefined;
       if (!gen) throw PragmaError.internalError("Package generator not found");
