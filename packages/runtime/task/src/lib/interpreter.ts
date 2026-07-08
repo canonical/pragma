@@ -7,7 +7,15 @@
 
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
-import type { Effect, ExecResult, Task, TaskError } from "./types.js";
+import { computeEffectId, formatEffectId } from "./effectId.js";
+import type {
+  Effect,
+  EffectId,
+  ExecResult,
+  Journal,
+  Task,
+  TaskError,
+} from "./types.js";
 
 // =============================================================================
 // Task Execution Error
@@ -58,6 +66,31 @@ const normalizeThrownError = (thrown: unknown): TaskError => {
     stack: thrown instanceof Error ? thrown.stack : undefined,
   };
 };
+
+/**
+ * Raised when a task, replayed against a {@link Journal}, performs an effect
+ * whose identity does not match the entry recorded at that position — the
+ * task's shape diverged from the recording (a different prompt answer took a
+ * different branch, an input changed). Replay fails closed here rather than
+ * returning a stale recorded result for a different effect.
+ */
+export class JournalDivergenceError extends Error {
+  public readonly position: number;
+  public readonly expected: EffectId;
+  public readonly actual: EffectId;
+
+  constructor(position: number, expected: EffectId, actual: EffectId) {
+    super(
+      `Journal divergence at position ${position}: expected ${formatEffectId(
+        expected,
+      )} but the task performed ${formatEffectId(actual)}`,
+    );
+    this.name = "JournalDivergenceError";
+    this.position = position;
+    this.expected = expected;
+    this.actual = actual;
+  }
+}
 
 // =============================================================================
 // Effect Executor
@@ -316,6 +349,13 @@ export interface RunTaskOptions {
   onLog?: (level: "debug" | "info" | "warn" | "error", message: string) => void;
   /** AbortSignal for interrupting task execution */
   signal?: AbortSignal;
+  /**
+   * Journal to record into and/or replay from. An empty journal records every
+   * effect outcome; a populated one replays matching outcomes without I/O and
+   * appends anything performed past its recorded end. Mutated in place as the
+   * run proceeds.
+   */
+  journal?: Journal;
 }
 
 // =============================================================================
@@ -349,6 +389,7 @@ export const runTask = async <A>(
     onEffectComplete,
     onLog,
     signal,
+    journal,
   } = options;
 
   const checkInterrupted = (): void => {
@@ -362,16 +403,18 @@ export const runTask = async <A>(
     }
   };
 
-  // Perform a single effect and return its result. Structural Parallel/Race
-  // effects run their children through a fresh interpreter pass; every other
-  // effect is routed to executeEffect.
-  const perform = async (effect: Effect): Promise<unknown> => {
+  // Perform a single effect for real and return its result. Structural
+  // Parallel/Race effects drive their children through a fresh, non-journaled
+  // pass — so a journal records the whole composite as one opaque entry rather
+  // than interleaving child effects — and every other effect is routed to
+  // executeEffect.
+  const performRaw = async (effect: Effect): Promise<unknown> => {
     if (effect._tag === "Parallel") {
       onEffectStart?.(effect);
       const startTime = performance.now();
 
       const settled = await Promise.allSettled(
-        effect.tasks.map((child) => interpret(child)),
+        effect.tasks.map((child) => drive(child, performRaw)),
       );
 
       const errors: TaskError[] = [];
@@ -407,7 +450,7 @@ export const runTask = async <A>(
       const startTime = performance.now();
 
       const result = await Promise.race(
-        effect.tasks.map((child) => interpret(child)),
+        effect.tasks.map((child) => drive(child, performRaw)),
       );
 
       onEffectComplete?.(effect, performance.now() - startTime);
@@ -421,9 +464,62 @@ export const runTask = async <A>(
     return result;
   };
 
+  // The journaling seam. With a journal present, each top-level effect either
+  // replays the outcome recorded at the current position (no I/O) or, once past
+  // the recorded prefix, runs for real via performRaw and appends its outcome —
+  // so an empty journal records, a full journal replays, and a partial one
+  // resumes. An effect whose identity disagrees with the recorded entry fails
+  // closed with a JournalDivergenceError.
+  let cursor = 0;
+  const perform: (effect: Effect) => Promise<unknown> =
+    journal === undefined
+      ? performRaw
+      : async (effect: Effect): Promise<unknown> => {
+          const id = computeEffectId(effect, "", cursor);
+          const recorded = journal.entries.at(cursor);
+          const position = cursor;
+          cursor += 1;
+
+          if (recorded) {
+            if (formatEffectId(recorded.id) !== formatEffectId(id)) {
+              throw new JournalDivergenceError(position, recorded.id, id);
+            }
+            if (recorded.outcome.ok) {
+              return recorded.outcome.value;
+            }
+            throw new TaskExecutionError(recorded.outcome.error);
+          }
+
+          try {
+            const value = await performRaw(effect);
+            journal.entries.push({ id, outcome: { ok: true, value } });
+            return value;
+          } catch (thrown) {
+            const error = normalizeThrownError(thrown);
+            // Interruption is not a reproducible effect outcome — leave it
+            // unrecorded so a resumed run re-attempts the interrupted effect.
+            if (error.code === "TASK_INTERRUPTED") {
+              throw thrown;
+            }
+            journal.entries.push({
+              id,
+              outcome: {
+                ok: false,
+                error: { code: error.code, message: error.message },
+              },
+            });
+            throw new TaskExecutionError(error);
+          }
+        };
+
   // The trampoline: drive a task to its final value on an explicit stack of
   // bind/recover frames, so no node type recurses through the host call stack.
-  const interpret = async (root: Task<unknown>): Promise<unknown> => {
+  // `performEffect` supplies each leaf effect's result — the raw performer, or
+  // the journaling seam wrapping it.
+  const drive = async (
+    root: Task<unknown>,
+    performEffect: (effect: Effect) => Promise<unknown>,
+  ): Promise<unknown> => {
     const stack: Frame[] = [];
     let cur: Task<unknown> = root;
 
@@ -460,8 +556,14 @@ export const runTask = async <A>(
           // failures — not just explicit Fail nodes.
           let result: unknown;
           try {
-            result = await perform(cur.effect);
+            result = await performEffect(cur.effect);
           } catch (thrown) {
+            // A journal divergence is a structural mismatch, not a recoverable
+            // effect failure — it escapes rather than being caught by an
+            // enclosing recover/orElse/retry.
+            if (thrown instanceof JournalDivergenceError) {
+              throw thrown;
+            }
             const taskError = normalizeThrownError(thrown);
             // Interruption is not recoverable: an abort surfaced from a
             // Parallel/Race child (whose own guard fired mid-flight) bypasses
@@ -503,7 +605,7 @@ export const runTask = async <A>(
     }
   };
 
-  return interpret(task as Task<unknown>) as Promise<A>;
+  return drive(task as Task<unknown>, perform) as Promise<A>;
 };
 
 /**

@@ -284,6 +284,53 @@ export interface EffectId {
 }
 
 // =============================================================================
+// Journal
+// =============================================================================
+
+/**
+ * The recorded outcome of a single journaled effect: either the value it
+ * produced, or the structured error it raised. Both are replayed verbatim so a
+ * recovered failure reproduces the same recovery path on replay.
+ */
+export type JournalOutcome =
+  | { ok: true; value: unknown }
+  | { ok: false; error: TaskError };
+
+/**
+ * One recorded effect occurrence: its stable {@link EffectId} and the
+ * {@link JournalOutcome} to replay at that position.
+ */
+export interface JournalEntry {
+  /** Identity of the effect this entry records. */
+  id: EffectId;
+  /** The outcome to replay when the same effect recurs at this position. */
+  outcome: JournalOutcome;
+}
+
+/**
+ * An ordered log of effect outcomes captured while running a task. An empty
+ * journal records a run; a full journal replays one without any I/O; a partial
+ * journal replays its prefix and resumes live execution past the recorded end.
+ */
+export interface Journal {
+  /** Effect outcomes in the order they were performed. */
+  entries: JournalEntry[];
+}
+
+/**
+ * The value a task produced together with the {@link Journal} a run captured or
+ * extended — the result of {@link recordTask} and {@link replayTask}.
+ *
+ * @typeParam A - The task's result type.
+ */
+export interface JournalRun<A> {
+  /** The task's final value. */
+  value: A;
+  /** The journal captured (record) or extended (resume) by the run. */
+  journal: Journal;
+}
+
+// =============================================================================
 // Execution Result
 // =============================================================================
 

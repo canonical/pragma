@@ -9,15 +9,18 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { describe, expect, it, vi } from "vitest";
-import { parallel, sequence_ } from "./combinators.js";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { orElse, parallel, sequence_ } from "./combinators.js";
 import {
   executeEffect,
+  JournalDivergenceError,
   run,
   runTask,
   TaskExecutionError,
 } from "./interpreter.js";
-import { info, succeed, warn } from "./primitives.js";
+import { info, readFile, succeed, warn } from "./primitives.js";
+import recordTask from "./recordTask.js";
+import replayTask from "./replayTask.js";
 import {
   $,
   effect,
@@ -1808,5 +1811,81 @@ describe("Interpreter - interruption bypasses recovery", () => {
 
     // The interrupt bypassed the recover handler entirely.
     expect(handlerCalls).toBe(0);
+  });
+});
+
+// =============================================================================
+// Journal seam (record / replay in runTask)
+// =============================================================================
+
+describe("Interpreter - journal seam", () => {
+  let dir: string;
+
+  beforeAll(() => {
+    dir = mkdtempSync(join(tmpdir(), "task-journal-seam-"));
+  });
+
+  afterAll(() => {
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it("records a Parallel as one opaque entry and replays its composite result without running children", async () => {
+    const a = join(dir, "par-a.txt");
+    const b = join(dir, "par-b.txt");
+    writeFileSync(a, "A");
+    writeFileSync(b, "B");
+
+    const par = parallel([readFile(a), readFile(b)]);
+    const recorded = await recordTask(par);
+
+    expect(recorded.value).toEqual(["A", "B"]);
+    expect(recorded.journal.entries).toHaveLength(1);
+    expect(recorded.journal.entries.at(0)?.id.kind).toBe("Parallel");
+
+    // Children must not re-run on replay: mutate the files, expect the recorded
+    // composite regardless.
+    writeFileSync(a, "A2");
+    writeFileSync(b, "B2");
+    const replayed = await replayTask(par, recorded.journal);
+    expect(replayed.value).toEqual(["A", "B"]);
+  });
+
+  it("lets a JournalDivergenceError escape an enclosing recover instead of being caught", async () => {
+    const a = join(dir, "esc-a.txt");
+    const b = join(dir, "esc-b.txt");
+    writeFileSync(a, "A");
+    writeFileSync(b, "B");
+
+    const recorded = await recordTask(readFile(a));
+    // The replayed task reads a *different* path under a recover; the divergence
+    // must not be swallowed by the handler.
+    const diverged = orElse(readFile(b), pure("swallowed"));
+
+    await expect(replayTask(diverged, recorded.journal)).rejects.toBeInstanceOf(
+      JournalDivergenceError,
+    );
+  });
+
+  it("does not record an effect interrupted mid-flight during a journaled run", async () => {
+    const controller = new AbortController();
+
+    // A parallel child logs (aborting the run as a side effect) and then reaches
+    // a second effect whose pre-step interrupt check fires. The interruption
+    // surfaces through the Parallel's perform but must leave the journal empty.
+    const child = gen(function* () {
+      yield* $(info("go"));
+      yield* $(info("after"));
+    });
+    const journal = { entries: [] };
+
+    await expect(
+      runTask(parallel([child]), {
+        journal,
+        signal: controller.signal,
+        onLog: () => controller.abort("stop"),
+      }),
+    ).rejects.toMatchObject({ code: "TASK_INTERRUPTED" });
+
+    expect(journal.entries).toHaveLength(0);
   });
 });
