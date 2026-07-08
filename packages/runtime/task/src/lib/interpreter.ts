@@ -7,6 +7,7 @@
 
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
+import canonicalJSON from "./canonicalJSON.js";
 import { computeEffectId, formatEffectId } from "./effectId.js";
 import type {
   Effect,
@@ -65,6 +66,28 @@ const normalizeThrownError = (thrown: unknown): TaskError => {
     cause: thrown,
     stack: thrown instanceof Error ? thrown.stack : undefined,
   };
+};
+
+/**
+ * Test whether an effect result can be journaled — i.e. it survives the JSON
+ * round trip a journal is persisted through. `JSON.stringify` throws on a bigint
+ * or cyclic value and silently mangles a `Date`, `Map`/`Set`, `NaN`/`±Infinity`,
+ * `-0`, or a nested `undefined`; {@link canonicalJSON} is injective over exactly
+ * those, so a canonical form that differs after the round trip means the value
+ * would not replay faithfully. A top-level `undefined` (a void effect's result)
+ * round-trips to `undefined` and is always journalable.
+ */
+const isJournalableValue = (value: unknown): boolean => {
+  if (value === undefined) {
+    return true;
+  }
+  try {
+    return (
+      canonicalJSON(value) === canonicalJSON(JSON.parse(JSON.stringify(value)))
+    );
+  } catch {
+    return false;
+  }
 };
 
 /**
@@ -565,10 +588,9 @@ export const runTask = async <A>(
             throw new TaskExecutionError(recorded.outcome.error);
           }
 
+          let value: unknown;
           try {
-            const value = await performRaw(effect);
-            journal.entries.push({ id, outcome: { ok: true, value } });
-            return value;
+            value = await performRaw(effect);
           } catch (thrown) {
             const raw = normalizeThrownError(thrown);
             // Interruption is not a reproducible effect outcome — leave it
@@ -585,6 +607,19 @@ export const runTask = async <A>(
             journal.entries.push({ id, outcome: { ok: false, error } });
             throw new TaskExecutionError(error);
           }
+
+          // A result that would not survive JSON persistence (a bigint, cyclic
+          // value, Date, Map/Set, …) cannot be replayed faithfully — fail closed
+          // rather than record a value serializeJournal would throw on or
+          // silently corrupt. Thrown outside the try so it escapes recovery.
+          if (!isJournalableValue(value)) {
+            throw new JournalUnsupportedEffectError(
+              effect._tag,
+              "its result is not JSON-serialisable",
+            );
+          }
+          journal.entries.push({ id, outcome: { ok: true, value } });
+          return value;
         };
 
   // The trampoline: drive a task to its final value on an explicit stack of

@@ -14,7 +14,12 @@ import type { Journal, JournalRun, Task } from "./types.js";
  * to keep a partial recording.
  *
  * Pass a freshly-built task: a `gen`-based task holds a single-use iterator, so
- * the same instance must not be reused for a later record or replay.
+ * the same instance must not be reused for a later record or replay. A recorded
+ * result must survive JSON persistence; a non-serialisable one (a bigint,
+ * `Date`, `Map`, cyclic value, …) fails closed. Under a journal a recovery
+ * handler observes only a failure's `code` and `message` (its `cause` and
+ * `stack` are not journaled, so a recording and its replay agree), unlike plain
+ * `runTask` — a handler that branches on `error.cause` must not be journaled.
  *
  * @typeParam A - The task's result type.
  * @param task - The task to run and record.

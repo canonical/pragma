@@ -5,8 +5,9 @@ import type { Journal } from "./types.js";
  *
  * The output is a plain JSON encoding of the ordered entries — each carrying an
  * {@link EffectId} and its recorded outcome — and round-trips through
- * {@link deserializeJournal}. Effect outcomes must be JSON-representable (as the
- * built-in effects' results are); a recorded failure keeps only its `code` and
+ * {@link deserializeJournal}. A journal from {@link recordTask}/{@link replayTask}
+ * is always JSON-representable: a success value that would not survive the round
+ * trip fails closed at record time, and a failure keeps only its `code` and
  * `message`.
  *
  * @param journal - The journal to serialise.

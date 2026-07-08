@@ -13,7 +13,9 @@ import type { Journal, JournalRun, Task } from "./types.js";
  *
  * Pass a freshly-built task, not the instance that was recorded: a `gen`-based
  * task holds a single-use iterator, so replaying an already-run instance would
- * end early (caught as `JournalIncompleteError`).
+ * end early (caught as `JournalIncompleteError`). A replayed failure carries only
+ * its `code` and `message`, so a recovery handler branching on `error.cause`
+ * must not be journaled.
  *
  * @typeParam A - The task's result type.
  * @param task - The task to replay.
