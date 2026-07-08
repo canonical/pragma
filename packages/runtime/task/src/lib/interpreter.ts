@@ -75,7 +75,9 @@ const normalizeThrownError = (thrown: unknown): TaskError => {
  * `-0`, or a nested `undefined`; {@link canonicalJSON} is injective over exactly
  * those, so a canonical form that differs after the round trip means the value
  * would not replay faithfully. A top-level `undefined` (a void effect's result)
- * round-trips to `undefined` and is always journalable.
+ * round-trips to `undefined` and is always journalable. Like `canonicalJSON`'s
+ * injectivity, this excludes non-intrinsic own properties (e.g. an extra keyed
+ * property on an array), which both it and JSON drop.
  */
 const isJournalableValue = (value: unknown): boolean => {
   if (value === undefined) {
