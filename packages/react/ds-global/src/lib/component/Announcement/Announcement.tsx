@@ -1,5 +1,4 @@
 import type React from "react";
-import { Icon } from "#lib/component/Icon/index.js";
 import type { AnnouncementProps } from "./types.js";
 import "./styles.css";
 
@@ -27,12 +26,12 @@ const Announcement = ({
       .join(" ")}
     {...props}
   >
-    {/* Icon — signals the type of announcement. Shimmed to a single glyph for
-        now; per-criticality icons are a later pass. Decorative: the type is
-        already conveyed by the heading/content text, not by icon alone. */}
-    <span className="icon">
-      <Icon icon="information" aria-hidden />
-    </span>
+    {/* Icon — signals the type of announcement. Rendered as a masked glyph from
+        the criticality modifier's `--modifier-icon` channel (see styles.css),
+        so the type drives the icon with no per-criticality markup. Decorative:
+        the type is also conveyed by the heading/content text, not by icon
+        alone, so it is aria-hidden. */}
+    <span className="icon" aria-hidden="true" />
     <span className="text">
       {heading != null && <span className="heading">{heading}</span>}
       <span className="content">{children}</span>

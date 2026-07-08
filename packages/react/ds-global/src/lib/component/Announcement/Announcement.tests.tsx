@@ -32,6 +32,15 @@ describe("Announcement", () => {
     expect(container.querySelector(".ds.announcement")).toHaveClass("error");
   });
 
+  it("renders a decorative icon element", () => {
+    const { container } = render(
+      <Announcement criticality="information">Body</Announcement>,
+    );
+    const icon = container.querySelector(".icon");
+    expect(icon).toBeInTheDocument();
+    expect(icon).toHaveAttribute("aria-hidden", "true");
+  });
+
   it("applies custom className", () => {
     const { container } = render(
       <Announcement criticality="information" className="custom-class">

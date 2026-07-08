@@ -10,6 +10,10 @@
  * from the `criticality="information"` prop default, which applies `.information`
  * and supplies the channel values; no class ⇒ no colour, by design.
  *
+ * The icon is driven the same way: `--modifier-icon` (a mask-image, supplied by
+ * @canonical/styles' criticality shim) picks the glyph for the type, and
+ * `--modifier-color-icon` fills it. No per-criticality markup in the component.
+ *
  * NOTE: full token pairing (spacing, typography, radius) is deferred to ADR-Q02.
  * The values below cover layout + the criticality colour surface + the side bar.
  */
@@ -30,12 +34,23 @@
   color: var(--modifier-color-text);
   background-color: var(--modifier-color-foreground-secondary);
 
+  /* Icon — a masked box. The glyph shape comes from the criticality modifier's
+     --modifier-icon channel; the fill from --modifier-color-icon. Masking (not
+     background-image) so the glyph takes the theme colour — same technique as
+     Accordion's chevron and the form CheckboxInput checkmark. */
   & > .icon {
-    display: flex;
     flex: 0 0 auto;
-    align-items: center;
-    color: var(--modifier-color-icon);
-    font-size: var(--dimension-200);
+    inline-size: var(--dimension-200);
+    block-size: var(--dimension-200);
+    background-color: var(--modifier-color-icon);
+    mask-image: var(--modifier-icon);
+    mask-repeat: no-repeat;
+    mask-position: center;
+    mask-size: contain;
+    -webkit-mask-image: var(--modifier-icon);
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    -webkit-mask-size: contain;
   }
 
   & > .text {
