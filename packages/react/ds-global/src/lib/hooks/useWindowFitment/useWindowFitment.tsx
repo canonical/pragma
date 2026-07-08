@@ -399,6 +399,7 @@ const useWindowFitment = ({
   );
 
   /** The best possible position for the popup. */
+  // biome-ignore lint/correctness/useExhaustiveDependencies: dirVersion is a deliberate re-resolution trigger — the memo reads document.documentElement.dir (not tracked by React), and the <html dir> MutationObserver bumps dirVersion to force a re-read.
   const bestPosition: BestPosition | undefined = useMemo(() => {
     if (
       !isServer &&
@@ -521,6 +522,7 @@ const useWindowFitment = ({
   // The resolved writing direction — the `direction` override, else <html dir>.
   // Exposed so a portalled popup can set `dir` on itself and any CSS keyed on
   // `[dir="rtl"]` (e.g. a mirrored caret) works despite the portal.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: dirVersion is a deliberate re-resolution trigger for the untracked document.documentElement.dir read.
   const direction = useMemo(
     () => directionProp ?? readHtmlDirection(),
     [directionProp, dirVersion],

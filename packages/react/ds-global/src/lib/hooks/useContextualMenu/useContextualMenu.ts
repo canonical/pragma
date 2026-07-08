@@ -127,8 +127,7 @@ const useContextualMenu = ({
     if (typeof window === "undefined" || !isOpen || !highlightedTail) return;
     const active = document.activeElement;
     const focusWithinMenu =
-      active instanceof HTMLElement &&
-      active.closest('[role="menu"]') !== null;
+      active instanceof HTMLElement && active.closest('[role="menu"]') !== null;
     if (!focusWithinMenu) return;
     const id = requestAnimationFrame(() => {
       const item = document.querySelector<HTMLElement>(

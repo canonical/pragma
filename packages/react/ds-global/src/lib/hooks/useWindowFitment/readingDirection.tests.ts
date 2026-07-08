@@ -1,9 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { MENU_PLACEMENT, OVERLAY_PLACEMENT } from "./readingDirection.js";
-import {
-  resolveLogicalPlacement,
-  toPlacement,
-} from "./useWindowFitment.js";
+import { resolveLogicalPlacement, toPlacement } from "./useWindowFitment.js";
 
 describe("toPlacement", () => {
   it("coerces a bare logical side to a centred placement", () => {
@@ -64,7 +61,9 @@ describe("resolveLogicalPlacement", () => {
 
 describe("preset placements", () => {
   const resolve = (
-    placements: readonly Parameters<typeof toPlacement>[0][] | typeof MENU_PLACEMENT,
+    placements:
+      | readonly Parameters<typeof toPlacement>[0][]
+      | typeof MENU_PLACEMENT,
     dir: "ltr" | "rtl",
   ) => placements.map((p) => resolveLogicalPlacement(toPlacement(p), dir));
 

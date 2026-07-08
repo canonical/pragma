@@ -92,9 +92,9 @@ const useDisclosure = ({
     arrowOffset,
     direction,
   } = useWindowFitment({
-      ...props,
-      isOpen,
-    });
+    ...props,
+    isOpen,
+  });
 
   const open = useCallback(() => {
     if (isServer) return;

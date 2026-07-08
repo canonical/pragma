@@ -1,4 +1,9 @@
-import { type CSSProperties, type ReactElement, useEffect, useState } from "react";
+import {
+  type CSSProperties,
+  type ReactElement,
+  useEffect,
+  useState,
+} from "react";
 import { createPortal } from "react-dom";
 import { useDisclosure } from "#lib/hooks/index.js";
 import { Tooltip } from "../../index.js";

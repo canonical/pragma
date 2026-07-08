@@ -4,9 +4,9 @@ import type React from "react";
 import { type ReactElement, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { MENU_PLACEMENT, useWindowFitment } from "#lib/hooks/index.js";
+import type { MenuItem } from "../../types.js";
 import Item from "../Item/index.js";
 import { useMenuContext } from "../MenuContext.js";
-import type { MenuItem } from "../../types.js";
 
 /**
  * One node in a (possibly nested) contextual menu. A leaf renders a plain item;
@@ -138,7 +138,6 @@ const SubMenuParent = ({ item }: { item: _Item<MenuItem> }): ReactElement => {
   ) : null;
 
   return (
-    // biome-ignore lint/a11y/noStaticElementInteractions: the hover wrapper forwards to the item, which carries the menuitem role
     <div
       className="submenu-anchor"
       onPointerEnter={() => setHovered(true)}

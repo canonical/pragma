@@ -248,7 +248,10 @@ describe("createCrossGroupStateReducer", () => {
       const root: Item = {
         key: "root",
         items: [
-          { key: "group-a", items: [{ key: "a1", label: "Alpha", url: "/a1" }] },
+          {
+            key: "group-a",
+            items: [{ key: "a1", label: "Alpha", url: "/a1" }],
+          },
           {
             key: "group-b",
             items: [
@@ -270,7 +273,10 @@ describe("createCrossGroupStateReducer", () => {
       const root: Item = {
         key: "root",
         items: [
-          { key: "group-a", items: [{ key: "a1", label: "Alpha", url: "/a1" }] },
+          {
+            key: "group-a",
+            items: [{ key: "a1", label: "Alpha", url: "/a1" }],
+          },
           // A disabled group and an empty group are both passed over.
           {
             key: "group-dis",
@@ -278,7 +284,10 @@ describe("createCrossGroupStateReducer", () => {
             items: [{ key: "d1", label: "Bad", url: "/d1" }],
           },
           { key: "group-empty" },
-          { key: "group-c", items: [{ key: "c1", label: "Bongo", url: "/c1" }] },
+          {
+            key: "group-c",
+            items: [{ key: "c1", label: "Bongo", url: "/c1" }],
+          },
         ],
       };
       const index = prepareIndex(annotateTree(root));

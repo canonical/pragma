@@ -75,7 +75,9 @@ describe("getFirstEnabledLeaf", () => {
           key: "group-a",
           parentUrl: "root",
           depth: 1,
-          items: [{ url: "/a1", disabled: true, parentUrl: "group-a", depth: 2 }],
+          items: [
+            { url: "/a1", disabled: true, parentUrl: "group-a", depth: 2 },
+          ],
         },
       ],
     };

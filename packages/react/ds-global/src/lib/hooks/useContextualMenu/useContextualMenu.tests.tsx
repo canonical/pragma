@@ -1,5 +1,5 @@
 import { act, renderHook } from "@testing-library/react";
-import type { KeyboardEvent } from "react";
+import type React from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   type BestPosition,
@@ -32,6 +32,7 @@ const menu: MenuItem = {
 describe("useContextualMenu", () => {
   const mockBestPosition: BestPosition = {
     positionName: "bottom",
+    align: "center",
     position: { top: 0, left: 0 },
     fits: true,
     autoFitOffset: { top: 0, left: 0 },
@@ -44,6 +45,7 @@ describe("useContextualMenu", () => {
       bestPosition: mockBestPosition,
       popupPositionStyle: {},
       arrowOffset: { axis: "x", offset: 0 },
+      direction: "ltr",
     });
   });
 

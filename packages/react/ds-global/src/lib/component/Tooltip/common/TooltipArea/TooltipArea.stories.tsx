@@ -192,7 +192,12 @@ export const AutoFit: StoryFn = () => {
           // Prefer right, then bottom, but allow flipping to the opposite side
           // (left/top) so a cell with no room on the right actually flips rather
           // than clamping against the edge.
-          preferredDirections={["inline-end", "block-end", "inline-start", "block-start"]}
+          preferredDirections={[
+            "inline-end",
+            "block-end",
+            "inline-start",
+            "block-start",
+          ]}
           autoFit
           Message={
             "The standard tooltip explains an icon or control, or adds a longer clarification that runs across several lines and is wide enough that a cell near the right edge — like the ninth — has no room on its preferred side and flips to the opposite one."
@@ -269,7 +274,12 @@ export const AutoFitPlayground: StoryFn<{ x: number; y: number }> = ({
           Message="I stay on screen and my arrow stays pinned to the anchor."
           // All four sides, so auto-fit can flip to whichever fits — prefer top,
           // then bottom, then the sides — not just clamp a single direction.
-          preferredDirections={["block-start", "block-end", "inline-end", "inline-start"]}
+          preferredDirections={[
+            "block-start",
+            "block-end",
+            "inline-end",
+            "inline-start",
+          ]}
           autoFit
         >
           <Button
@@ -312,7 +322,8 @@ const changeableOptions: WindowFitmentSide[] = [
 
 export const Changeable: StoryFn = () => {
   const [index, setIndex] = useState(0);
-  const preferredDirection = changeableOptions[index % changeableOptions.length];
+  const preferredDirection =
+    changeableOptions[index % changeableOptions.length];
 
   return (
     <Component
