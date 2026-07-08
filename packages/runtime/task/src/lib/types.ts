@@ -294,9 +294,12 @@ export interface EffectId {
  * recovery handler exactly that projection, so a recorded run and its replay
  * take the same branch. The raw `cause` and `stack` are not journaled (they are
  * non-serialisable and non-deterministic); a handler keys on `code`.
+ *
+ * A success `value` is optional: a void effect's `undefined` result serialises
+ * to no `value` key, so a round-tripped success outcome is `{ ok: true }`.
  */
 export type JournalOutcome =
-  | { ok: true; value: unknown }
+  | { ok: true; value?: unknown }
   | { ok: false; error: TaskError };
 
 /**

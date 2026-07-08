@@ -12,9 +12,19 @@ describe("deserializeJournal", () => {
     });
   });
 
-  it("parses a success entry whose value is absent", () => {
-    const text = wrap({ id: validId, outcome: { ok: true } });
+  it("parses a void-effect success entry whose value is absent", () => {
+    const text = wrap({
+      id: { ...validId, kind: "WriteFile" },
+      outcome: { ok: true },
+    });
     expect(deserializeJournal(text).entries).toHaveLength(1);
+  });
+
+  it("fails closed when an always-valued effect success has no recorded value", () => {
+    // A ReadFile that "succeeded" with no value is corrupt — it would replay as
+    // undefined instead of the file's contents.
+    const text = wrap({ id: validId, outcome: { ok: true } });
+    expect(() => deserializeJournal(text)).toThrow(/not a well-formed journal/);
   });
 
   it("parses a failure entry with a TaskError-shaped error", () => {

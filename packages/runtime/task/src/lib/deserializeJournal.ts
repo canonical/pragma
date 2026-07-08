@@ -1,4 +1,4 @@
-import type { Journal } from "./types.js";
+import type { Effect, EffectId, Journal, JournalOutcome } from "./types.js";
 
 /**
  * Parse a {@link Journal} from the JSON string produced by
@@ -7,10 +7,11 @@ import type { Journal } from "./types.js";
  * replay with garbage entries.
  *
  * Validation is structural and deep: every entry must carry a well-typed
- * {@link EffectId} and an outcome that is either `{ ok: true }` (a success,
- * whose value may be absent when it was `undefined`) or `{ ok: false }` with a
- * `TaskError`-shaped `error`. A shape-valid but semantically malformed entry is
- * rejected here rather than detonating mid-replay.
+ * {@link EffectId} and an outcome that is either `{ ok: true }` (a success) or
+ * `{ ok: false }` with a `TaskError`-shaped `error`. A success `value` may be
+ * absent only for a kind whose result can be `undefined`; a `ReadFile`/`Exec`/
+ * `Exists`/`Glob` success with no recorded value is corrupt and rejected here
+ * rather than replaying silently as `undefined`.
  *
  * @param text - The serialised journal.
  * @returns The parsed journal.
@@ -31,6 +32,19 @@ export default function deserializeJournal(text: string): Journal {
   return parsed;
 }
 
+/**
+ * Effect kinds whose successful result is never `undefined`, so a success entry
+ * for one of them must carry a `value`. Void effects (their result is
+ * `undefined`) and `ReadContext`/`Prompt` (which can legitimately yield
+ * `undefined`) are deliberately absent, so a missing value stays valid for them.
+ */
+const ALWAYS_VALUED: ReadonlySet<Effect["_tag"]> = new Set([
+  "ReadFile",
+  "Exists",
+  "Glob",
+  "Exec",
+]);
+
 /** Narrow an unknown parse result to the {@link Journal} shape replay relies on. */
 function isJournal(value: unknown): value is Journal {
   return (
@@ -42,11 +56,21 @@ function isJournal(value: unknown): value is Journal {
 
 /** Validate one entry: a well-typed effect id plus a discriminated outcome. */
 function isJournalEntry(value: unknown): boolean {
-  return isRecord(value) && isEffectId(value.id) && isOutcome(value.outcome);
+  if (!isRecord(value) || !isEffectId(value.id) || !isOutcome(value.outcome)) {
+    return false;
+  }
+  // A success value that was `undefined` serialises to no `value` key; that is
+  // only legitimate for a kind whose result can be undefined, so an always-valued
+  // kind with no recorded value is corrupt.
+  return !(
+    value.outcome.ok &&
+    !("value" in value.outcome) &&
+    ALWAYS_VALUED.has(value.id.kind)
+  );
 }
 
 /** Validate an {@link EffectId}: the four primitive identity fields. */
-function isEffectId(value: unknown): boolean {
+function isEffectId(value: unknown): value is EffectId {
   return (
     isRecord(value) &&
     typeof value.kind === "string" &&
@@ -59,9 +83,9 @@ function isEffectId(value: unknown): boolean {
 /**
  * Validate a {@link JournalOutcome} discriminant: `ok` must be a boolean, and a
  * failure must carry a `TaskError`-shaped error. A success value may be absent
- * (an `undefined` result serialises to no `value` key), so it is not required.
+ * here; {@link isJournalEntry} enforces its presence for always-valued kinds.
  */
-function isOutcome(value: unknown): boolean {
+function isOutcome(value: unknown): value is JournalOutcome {
   if (!isRecord(value) || typeof value.ok !== "boolean") {
     return false;
   }
