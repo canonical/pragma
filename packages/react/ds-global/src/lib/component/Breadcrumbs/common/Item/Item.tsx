@@ -32,7 +32,12 @@ const Item = ({
 
   return (
     <li
-      className={[componentCssClassName, current && "current", className]
+      className={[
+        componentCssClassName,
+        current && "current",
+        disabled && "disabled",
+        className,
+      ]
         .filter(Boolean)
         .join(" ")}
       {...props}
@@ -46,7 +51,16 @@ const Item = ({
       </span>
       {/* edges[0]: link (cardinality: 1, slotName: default) */}
       {current || disabled ? (
-        <span className="link" aria-current={current ? "page" : undefined}>
+        // `aria-disabled` is only honored by AT on elements with a widget role;
+        // a bare `<span>` has none, so `role="link"` is added when disabled to
+        // give it the role this item represents. This way, the disabled item
+        // is announced as a disabled link.
+        <span
+          className="link"
+          aria-current={current ? "page" : undefined}
+          aria-disabled={disabled ? "true" : undefined}
+          role={disabled ? "link" : undefined}
+        >
           {content}
         </span>
       ) : (

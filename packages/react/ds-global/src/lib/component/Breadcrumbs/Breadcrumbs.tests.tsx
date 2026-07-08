@@ -64,6 +64,24 @@ describe("Breadcrumbs", () => {
     expect(current).toHaveAttribute("aria-current", "page");
   });
 
+  it("renders disabled Item as a non-navigable link marked aria-disabled", () => {
+    render(
+      <Breadcrumbs
+        items={[{ url: "/unavailable", label: "Unavailable", disabled: true }]}
+      />,
+    );
+    const item = screen.getByText("Unavailable");
+    expect(item.tagName).toBe("SPAN");
+    expect(item).toHaveAttribute("aria-disabled", "true");
+    expect(item).not.toHaveAttribute("aria-current");
+    // aria-disabled is only honored by AT on a widget role; role="link"
+    // is what makes it meaningful here (see Item.tsx).
+    expect(screen.getByRole("link", { name: "Unavailable" })).toHaveAttribute(
+      "aria-disabled",
+      "true",
+    );
+  });
+
   it("renders separator between items", () => {
     render(
       <Breadcrumbs

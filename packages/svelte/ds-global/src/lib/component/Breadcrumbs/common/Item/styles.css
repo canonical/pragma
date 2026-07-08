@@ -12,16 +12,16 @@
  * dimension scale (Figma specs 6px, which is not on the scale; the nearest
  * token is dimension-100 = 8px).
  */
-.ds.breadcrumbs-item {
-  /* Component tokens — pure aliases to semantic tokens, component-scoped
-     per cs:styling.tokens.scoping */
+:root {
   --breadcrumbs-item-link-color: var(--color-text-link);
   --breadcrumbs-item-current-color: var(--color-text);
   --breadcrumbs-item-disabled-color: var(--color-text-disabled);
   --breadcrumbs-item-separator-color: var(--color-text);
   --breadcrumbs-item-separator-margin: var(--dimension-100);
   --breadcrumbs-item-focus-color: var(--color-text-link);
+}
 
+.ds.breadcrumbs-item {
   /* layout.type: flow, layout.direction: horizontal */
   display: flex;
   flex-direction: row;
@@ -49,14 +49,13 @@
     }
   }
 
-  /* Separator element — DSL role: separator. Rendered before the link so a
-     wrapped row starts with the slash; hidden on the first item. */
+  /* Separator element — DSL role: separator. Hidden on the last item. */
   & > .separator {
     margin-inline: var(--breadcrumbs-item-separator-margin);
     color: var(--breadcrumbs-item-separator-color);
   }
 
-  &:first-of-type > .separator {
+  &:last-of-type > .separator {
     display: none;
   }
 
