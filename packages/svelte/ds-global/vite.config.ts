@@ -1,4 +1,5 @@
 import { svelte } from "@sveltejs/vite-plugin-svelte";
+import { playwright } from "@vitest/browser-playwright";
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
@@ -7,15 +8,20 @@ export default defineConfig({
     projects: [
       {
         extends: true,
-        resolve: {
-          conditions: ["browser"],
-        },
         test: {
           name: "client",
-          environment: "jsdom",
-          globals: true,
-          setupFiles: ["./vitest.setup.ts"],
-          include: ["src/**/*.svelte.test.ts"],
+          browser: {
+            enabled: true,
+            headless: true,
+            provider: playwright(),
+            instances: [
+              { browser: "chromium" },
+              { browser: "firefox" },
+              { browser: "webkit" },
+            ],
+          },
+          include: ["src/**/*.svelte.test.{js,ts}"],
+          setupFiles: ["./vitest-setup-client.ts"],
         },
       },
       {
@@ -23,7 +29,19 @@ export default defineConfig({
         test: {
           name: "ssr",
           environment: "node",
-          include: ["src/**/*.ssr.test.ts"],
+          include: ["src/**/*.ssr.test.{js,ts}"],
+        },
+      },
+      {
+        extends: true,
+        test: {
+          name: "server",
+          environment: "node",
+          include: ["src/**/*.test.{js,ts}"],
+          exclude: [
+            "src/**/*.svelte.test.{js,ts}",
+            "src/**/*.ssr.test.{js,ts}",
+          ],
         },
       },
     ],

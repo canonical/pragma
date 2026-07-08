@@ -52,8 +52,14 @@ bun run test
 
 Tests run with Vitest and include:
 
-- Client tests in `jsdom`
+- Client tests in real browsers (Chromium, Firefox, WebKit) via Vitest browser mode and Playwright
 - SSR tests in a Node environment
+
+Playwright browsers must be installed once before running client tests:
+
+```bash
+bunx playwright install chromium firefox webkit
+```
 
 Use watch mode during development:
 
