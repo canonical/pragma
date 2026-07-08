@@ -7,6 +7,7 @@
 import { dirname } from "node:path";
 import {
   exists,
+  failWith,
   flatMap,
   ifElseM,
   map,
@@ -16,6 +17,7 @@ import {
   type Task,
   writeFile,
 } from "@canonical/task";
+import parseJsonc from "./parseJsonc.js";
 import {
   mergeTomlSection,
   parseTomlSection,
@@ -25,29 +27,31 @@ import {
 import type { HarnessDefinition, McpServerConfig } from "./types.js";
 
 /**
- * Parse a JSON string into a record, returning an empty object on failure.
- */
-const parseJsonSafe = (content: string): Record<string, unknown> => {
-  try {
-    const parsed: unknown = JSON.parse(content);
-    if (
-      typeof parsed === "object" &&
-      parsed !== null &&
-      !Array.isArray(parsed)
-    ) {
-      return parsed as Record<string, unknown>;
-    }
-    return {};
-  } catch {
-    return {};
-  }
-};
-
-/**
  * Serialize a record to formatted JSON with a trailing newline.
  */
 const formatJson = (value: Record<string, unknown>): string =>
   `${JSON.stringify(value, null, 2)}\n`;
+
+/**
+ * Coerce a config's server map to a plain record, defaulting a missing or
+ * non-object `mcpServers` (a corrupt config where it is a string/number/array)
+ * to an empty map — so a read honours its `Record` contract and a merge never
+ * mutates a primitive or array.
+ */
+const asServerRecord = (value: unknown): Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+
+/**
+ * Fail-closed message for a config a write refuses to overwrite because it is
+ * not valid JSON/JSONC — see {@link parseJsonc}.
+ */
+const unparseableConfig = (configPath: string): Task<void> =>
+  failWith(
+    "MCP_CONFIG_UNPARSEABLE",
+    `Refusing to modify ${configPath}: it is not valid JSON/JSONC, so writing would overwrite it. Back it up or fix it, then retry.`,
+  );
 
 /**
  * Read existing MCP server entries from a harness config file.
@@ -74,8 +78,11 @@ export const readMcpConfig = (
   return ifElseM(
     exists(configPath),
     map(readFile(configPath), (content) => {
-      const parsed = parseJsonSafe(content);
-      return (parsed[harness.mcpKey] ?? {}) as Record<string, McpServerConfig>;
+      const parsed = parseJsonc(content) ?? {};
+      return asServerRecord(parsed[harness.mcpKey]) as Record<
+        string,
+        McpServerConfig
+      >;
     }),
     pure({} as Record<string, McpServerConfig>),
   );
@@ -83,11 +90,15 @@ export const readMcpConfig = (
 
 /**
  * Write or merge an MCP server entry into a harness config file.
- * If the file exists, the new entry is merged into existing servers.
- * If the file does not exist, it is created with the entry.
+ * If the file exists, the new entry is merged into existing servers, preserving
+ * every other server. If the file does not exist, it is created with the entry.
+ * A file that is not valid JSON/JSONC fails closed rather than being overwritten.
  *
  * @note This function is impure — it reads and writes the filesystem
  * via Task effects.
+ * @note A JSON merge is written back as formatted JSON, so a JSONC config's
+ * comments and custom formatting are not preserved across the write — only its
+ * server entries are.
  */
 export const writeMcpConfig = (
   harness: HarnessDefinition,
@@ -127,8 +138,11 @@ export const writeMcpConfig = (
   return ifElseM(
     exists(configPath),
     flatMap(readFile(configPath), (content) => {
-      const parsed = parseJsonSafe(content);
-      const servers = (parsed[harness.mcpKey] ?? {}) as Record<string, unknown>;
+      const parsed = parseJsonc(content);
+      if (parsed === undefined) {
+        return unparseableConfig(configPath);
+      }
+      const servers = asServerRecord(parsed[harness.mcpKey]);
       servers[serverName] = config;
       parsed[harness.mcpKey] = servers;
       return writeFile(configPath, formatJson(parsed), { undo: undoTask });
@@ -145,10 +159,13 @@ export const writeMcpConfig = (
 
 /**
  * Remove an MCP server entry from a harness config file.
- * If the file does not exist, this is a no-op.
+ * If the file does not exist, this is a no-op. A file that is not valid
+ * JSON/JSONC fails closed rather than being overwritten.
  *
  * @note This function is impure — it reads and writes the filesystem
  * via Task effects.
+ * @note As with {@link writeMcpConfig}, a JSON rewrite does not preserve a
+ * JSONC config's comments or formatting — only its server entries.
  */
 export const removeMcpConfig = (
   harness: HarnessDefinition,
@@ -171,8 +188,11 @@ export const removeMcpConfig = (
   return ifElseM(
     exists(configPath),
     flatMap(readFile(configPath), (content) => {
-      const parsed = parseJsonSafe(content);
-      const servers = (parsed[harness.mcpKey] ?? {}) as Record<string, unknown>;
+      const parsed = parseJsonc(content);
+      if (parsed === undefined) {
+        return unparseableConfig(configPath);
+      }
+      const servers = asServerRecord(parsed[harness.mcpKey]);
       delete servers[serverName];
       parsed[harness.mcpKey] = servers;
       return writeFile(configPath, formatJson(parsed));

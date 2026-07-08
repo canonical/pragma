@@ -400,3 +400,119 @@ describe("TOML config (Codex)", () => {
     expect(writeEffects[0].content).not.toContain("[mcp_servers.pragma]");
   });
 });
+
+// SEC-1: a JSONC config (comments, trailing commas — valid in Cursor/VS Code/
+// Windsurf) must be read and merged, never silently overwritten; a config that
+// is not valid JSON/JSONC must fail closed rather than be destroyed.
+describe("SEC-1 — non-destructive JSONC handling", () => {
+  const jsoncConfig = [
+    "{",
+    "  // editor-managed servers",
+    '  "mcpServers": {',
+    '    "figma": { "command": "figma-mcp" },',
+    "  },",
+    "}",
+  ].join("\n");
+
+  it("reads mcpServers from a JSONC config with comments and a trailing comma", () => {
+    const result = dryRunWith(
+      readMcpConfig(claude, "/project"),
+      buildMocks({
+        Exists: existsMock(() => true),
+        ReadFile: readFileMock(jsoncConfig),
+      }),
+    );
+
+    expect(result.value).toEqual({ figma: { command: "figma-mcp" } });
+  });
+
+  it("merges into a JSONC config, preserving the existing server", () => {
+    const result = dryRunWith(
+      writeMcpConfig(claude, "/project", "pragma", { command: "pragma" }),
+      buildMocks({
+        Exists: existsMock(() => true),
+        ReadFile: readFileMock(jsoncConfig),
+        WriteFile: writeMock,
+      }),
+    );
+
+    const writeEffects = filterEffects(result.effects, "WriteFile");
+    expect(writeEffects.length).toBe(1);
+    const written = JSON.parse(writeEffects[0].content);
+    expect(written.mcpServers.figma).toEqual({ command: "figma-mcp" });
+    expect(written.mcpServers.pragma).toEqual({ command: "pragma" });
+  });
+
+  it("adds mcpServers to a valid config that lacks the key, keeping other fields", () => {
+    const result = dryRunWith(
+      writeMcpConfig(claude, "/project", "pragma", { command: "pragma" }),
+      buildMocks({
+        Exists: existsMock(() => true),
+        ReadFile: readFileMock(JSON.stringify({ otherField: true })),
+        WriteFile: writeMock,
+      }),
+    );
+
+    const writeEffects = filterEffects(result.effects, "WriteFile");
+    const written = JSON.parse(writeEffects[0].content);
+    expect(written.mcpServers.pragma).toEqual({ command: "pragma" });
+    expect(written.otherField).toBe(true);
+  });
+
+  it("refuses to write over an unparseable config (fails closed, no WriteFile)", () => {
+    expect(() =>
+      dryRunWith(
+        writeMcpConfig(claude, "/project", "pragma", { command: "pragma" }),
+        buildMocks({
+          Exists: existsMock(() => true),
+          ReadFile: readFileMock("{ this is not valid json"),
+          WriteFile: writeMock,
+        }),
+      ),
+    ).toThrow(/Refusing to modify/);
+  });
+
+  it("refuses to remove from an unparseable config", () => {
+    expect(() =>
+      dryRunWith(
+        removeMcpConfig(claude, "/project", "pragma"),
+        buildMocks({
+          Exists: existsMock(() => true),
+          ReadFile: readFileMock("}}} broken"),
+          WriteFile: writeMock,
+        }),
+      ),
+    ).toThrow(/Refusing to modify/);
+  });
+
+  it.each([
+    ["a string", '{"mcpServers":"oops"}'],
+    ["null", '{"mcpServers":null}'],
+    ["an array", '{"mcpServers":[1,2]}'],
+  ])("treats a %s mcpServers as empty on read", (_label, content) => {
+    const result = dryRunWith(
+      readMcpConfig(claude, "/project"),
+      buildMocks({
+        Exists: existsMock(() => true),
+        ReadFile: readFileMock(content),
+      }),
+    );
+    expect(result.value).toEqual({});
+  });
+
+  it("re-initialises a non-object mcpServers on write, keeping other fields", () => {
+    const result = dryRunWith(
+      writeMcpConfig(claude, "/project", "pragma", { command: "pragma" }),
+      buildMocks({
+        Exists: existsMock(() => true),
+        ReadFile: readFileMock('{"mcpServers":"corrupt","otherField":true}'),
+        WriteFile: writeMock,
+      }),
+    );
+
+    const writeEffects = filterEffects(result.effects, "WriteFile");
+    const written = JSON.parse(writeEffects[0].content);
+    expect(written.mcpServers.pragma).toEqual({ command: "pragma" });
+    expect(written.otherField).toBe(true);
+  });
+});
