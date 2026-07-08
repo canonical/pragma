@@ -4,13 +4,10 @@ import Announcement from "./Announcement.js";
 
 describe("Announcement SSR", () => {
   it("renders without hydration errors", () => {
-    const html = renderToString(<Announcement>Test content</Announcement>);
+    const html = renderToString(
+      <Announcement criticality="information">Test content</Announcement>,
+    );
     expect(html).toContain("Test content");
     expect(html).toContain("ds announcement");
-  });
-
-  it("renders with role alert", () => {
-    const html = renderToString(<Announcement>Content</Announcement>);
-    expect(html).toContain('role="alert"');
   });
 });

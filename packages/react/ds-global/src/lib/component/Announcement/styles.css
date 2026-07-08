@@ -1,48 +1,52 @@
 /**
  * Announcement styles
- * @implements dso:global.announcement
+ * @implements ds:global.component.announcement
  *
- * DSL anatomy mapping:
- * layout.type: flow                        → display: flex
- * layout.direction: horizontal             → flex-direction: row
- * layout.align: center                     → align-items: center
- * layout.justify: center                   → justify-content: center
- * size.width: fill                         → width: 100%
- * spacing.internal: spacing/medium         → gap: var(--spacing-medium)
- * appearance.background: color/surface/announcement → background-color
- * [message] typography.size: font/size/small       → font-size
- * [message] typography.color: color/text/on-announcement → color
+ * Criticality-wired (this pass). The `criticality` prop applies a modifier
+ * class (.information | .success | .warning | .error) from the criticality
+ * modifier family (@canonical/design-tokens → modifiers.criticality.css), which
+ * remaps the --modifier-color-* channels. This component consumes ONLY those
+ * channels — it does not restate any criticality token. The default look comes
+ * from the `criticality="information"` prop default, which applies `.information`
+ * and supplies the channel values; no class ⇒ no colour, by design.
+ *
+ * NOTE: full token pairing (spacing, typography, radius) is deferred to ADR-Q02.
+ * The values below cover layout + the criticality colour surface + the side bar.
  */
-
-:root {
-  --announcement-color-background: var(
-    --color-surface-announcement,
-    var(--color-foreground-ghost)
-  );
-  --announcement-color-text: var(
-    --color-text-on-announcement,
-    var(--color-text)
-  );
-  --announcement-font-size: var(--font-size-small);
-  --announcement-color-border: var(--color-border);
-  --announcement-padding-vertical: var(--spacing-input-padding-vertical);
-  --announcement-padding-horizontal: var(--spacing-horizontal-large);
-  --announcement-border-width: var(--spacing-border-width);
-}
 
 .ds.announcement {
   display: flex;
   flex-direction: row;
-  align-items: center;
-  justify-content: center;
+  align-items: flex-start;
+  gap: var(--dimension-100);
 
-  color: var(--announcement-color-text);
-  background-color: var(--announcement-color-background);
+  /* Side bar (Figma part 4): leading rule carrying the criticality colour. */
+  border-inline-start-style: solid;
+  border-inline-start-width: var(--dimension-stroke-thickness-large);
+  border-inline-start-color: var(--modifier-color-border);
 
-  border-style: solid;
-  border-color: var(--announcement-color-border);
-  border-width: var(--announcement-border-width);
+  padding: var(--dimension-100);
 
-  font-size: var(--announcement-font-size, var(--font-size-small, 0.75rem));
-  padding: var(--announcement-padding, var(--spacing-medium, 1rem));
+  color: var(--modifier-color-text);
+  background-color: var(--modifier-color-foreground-secondary);
+
+  & > .icon {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    color: var(--modifier-color-icon);
+    font-size: var(--dimension-200);
+  }
+
+  & > .text {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: var(--dimension-050);
+    min-width: 0;
+  }
+
+  & .heading {
+    font-weight: var(--typography-text-primary-bold-font-weight);
+  }
 }

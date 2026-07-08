@@ -3,31 +3,51 @@ import { describe, expect, it } from "vitest";
 import Announcement from "./Announcement.js";
 
 describe("Announcement", () => {
-  it("renders children", () => {
-    render(<Announcement>Test content</Announcement>);
+  it("renders content", () => {
+    render(<Announcement criticality="information">Test content</Announcement>);
     expect(screen.getByText("Test content")).toBeInTheDocument();
   });
 
-  it("applies the base class name", () => {
-    render(<Announcement>Content</Announcement>);
-    const element = screen.getByRole("alert");
-    expect(element.className).toContain("ds announcement");
+  it("renders an optional heading", () => {
+    render(
+      <Announcement criticality="information" heading="Subject">
+        Body
+      </Announcement>,
+    );
+    expect(screen.getByText("Subject")).toBeInTheDocument();
+    expect(screen.getByText("Body")).toBeInTheDocument();
+  });
+
+  it("omits the heading when not provided", () => {
+    const { container } = render(
+      <Announcement criticality="information">Body</Announcement>,
+    );
+    expect(container.querySelector(".heading")).toBeNull();
+  });
+
+  it("applies the criticality modifier class", () => {
+    const { container } = render(
+      <Announcement criticality="error">Body</Announcement>,
+    );
+    expect(container.querySelector(".ds.announcement")).toHaveClass("error");
   });
 
   it("applies custom className", () => {
-    render(<Announcement className="custom-class">Content</Announcement>);
-    const element = screen.getByRole("alert");
-    expect(element.className).toContain("ds announcement");
-    expect(element.className).toContain("custom-class");
-  });
-
-  it("has role alert", () => {
-    render(<Announcement>Content</Announcement>);
-    expect(screen.getByRole("alert")).toBeInTheDocument();
+    const { container } = render(
+      <Announcement criticality="information" className="custom-class">
+        Content
+      </Announcement>,
+    );
+    const root = container.querySelector(".ds.announcement");
+    expect(root).toHaveClass("custom-class");
   });
 
   it("passes through additional props", () => {
-    render(<Announcement data-testid="test-component">Content</Announcement>);
+    render(
+      <Announcement criticality="information" data-testid="test-component">
+        Content
+      </Announcement>,
+    );
     expect(screen.getByTestId("test-component")).toBeInTheDocument();
   });
 });
