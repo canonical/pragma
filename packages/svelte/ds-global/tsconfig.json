@@ -7,9 +7,16 @@
   "include": [
     "src/**/*.ts",
     "src/**/*.svelte",
-    "src/**/*.d.ts",
     ".storybook/**/*.ts",
     ".storybook/**/*.svelte",
-    "testing/**/*.ts"
+    "vite.config.ts",
+    "vitest.setup.ts"
+  ],
+  "types": [
+    "node",
+    "svelte",
+    "vitest/globals",
+    "vite/client",
+    "@testing-library/jest-dom"
   ]
 }

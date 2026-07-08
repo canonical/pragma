@@ -1,4 +1,4 @@
-name: "svelte-ds-app-wpe/chromatic"
+name: "svelte-ds-global/chromatic"
 on:
   pull_request:
     types: [opened, synchronize, reopened, labeled, unlabeled]
@@ -8,9 +8,7 @@ on:
       - packages/tokens/**
       - packages/styles/**
       - packages/utils/**
-      # TODO: Uncommment once package consumes ds-global package
-      # - packages/svelte/ds-global/**
-      - packages/svelte/ds-app-wpe/**
+      - packages/svelte/ds-global/**
   push:
     branches:
       - main
@@ -20,17 +18,14 @@ on:
       - packages/tokens/**
       - packages/styles/**
       - packages/utils/**
-      # TODO: Uncommment once package consumes ds-global package
-      # - packages/svelte/ds-global/**
-      - packages/svelte/ds-app-wpe/**
+      - packages/svelte/ds-global/**
 jobs:
   test-compile:
     uses: ./.github/workflows/chromatic._template.yml
     secrets:
-      CHROMATIC_PROJECT_TOKEN: ${{ secrets.CHROMATIC_TOKEN_CANONICAL_SVELTE_DS_APP_WPE }}
+      CHROMATIC_PROJECT_TOKEN: ${{ secrets.CHROMATIC_TOKEN_CANONICAL_SVELTE_DS_GLOBAL }}
     with:
-      working-directory: packages/svelte/ds-app-wpe
-      # TODO: Add packages/svelte/ds-global once package consumes ds-global package
+      working-directory: packages/svelte/ds-global
       externals: '[
         "configs/storybook/**",
         "packages/ds-assets/**",
