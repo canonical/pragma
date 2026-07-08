@@ -19,7 +19,19 @@ const prompt = (question: PromptQuestion): Effect & { _tag: "Prompt" } => ({
 /** Make the mocked readline answer every question with a single line. */
 const answerWith = (line: string): void => {
   createInterfaceMock.mockReturnValue({
+    on: vi.fn(),
     question: (_query: string, cb: (answer: string) => void) => cb(line),
+    close: vi.fn(),
+  });
+};
+
+/** Make the mocked readline reach EOF: 'close' fires with no answer. */
+const answerWithEof = (): void => {
+  createInterfaceMock.mockReturnValue({
+    on: (event: string, handler: () => void) => {
+      if (event === "close") handler();
+    },
+    question: () => {},
     close: vi.fn(),
   });
 };
@@ -205,5 +217,35 @@ describe("interactivePromptHandler", () => {
   it("drops out-of-range tokens in a multiselect answer", async () => {
     answerWith("2,9");
     expect(await interactivePromptHandler(prompt(featureMulti))).toEqual(["b"]);
+  });
+
+  it("takes the multiselect default on an all-invalid answer", async () => {
+    answerWith("nope,zzz");
+    expect(
+      await interactivePromptHandler(
+        prompt({ ...featureMulti, default: ["b"] }),
+      ),
+    ).toEqual(["b"]);
+  });
+
+  // --- EOF / non-interactive stdin -------------------------------------------
+
+  it("falls back to the default on EOF instead of hanging", async () => {
+    answerWithEof();
+    expect(
+      await interactivePromptHandler(
+        prompt({ type: "confirm", name: "ok", message: "Continue?" }),
+      ),
+    ).toBe(true);
+    expect(
+      await interactivePromptHandler(
+        prompt({ type: "text", name: "n", message: "Name?", default: "d" }),
+      ),
+    ).toBe("d");
+    expect(
+      await interactivePromptHandler(
+        prompt({ ...featureMulti, default: ["c"] }),
+      ),
+    ).toEqual(["c"]);
   });
 });

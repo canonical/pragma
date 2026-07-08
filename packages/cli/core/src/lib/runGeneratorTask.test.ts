@@ -37,6 +37,17 @@ describe("runGeneratorTask", () => {
     expect(journal.entries).toHaveLength(1);
   });
 
+  it("does not chdir when the given cwd already equals the process directory", async () => {
+    process.chdir(dir);
+    const { journal } = await runGeneratorTask(writeFile("same.txt", "x"), {
+      cwd: dir,
+    });
+
+    expect(readFileSync(join(dir, "same.txt"), "utf-8")).toBe("x");
+    expect(journal.entries).toHaveLength(1);
+    expect(process.cwd()).toBe(dir);
+  });
+
   it("restores the previous cwd even when the task throws", async () => {
     await expect(
       runGeneratorTask(readFile(join(dir, "absent.txt")), { cwd: dir }),

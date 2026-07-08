@@ -11,7 +11,13 @@
  * no I/O — the determinism guarantee resumable-wizard UX is built on.
  */
 
-import { mkdirSync, mkdtempSync, readdirSync, rmSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  rmSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { runGeneratorTask } from "@canonical/cli-core";
@@ -23,6 +29,7 @@ import {
 } from "@canonical/task";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { COMPONENT_GENERATORS } from "../../domains/create/generators.js";
+import setupMcp from "../../domains/setup/operations/setupMcp.js";
 
 interface Case {
   readonly name: string;
@@ -110,4 +117,31 @@ describe("journaled executor — differential over the real generators", () => {
       expect(countFiles(replayDir)).toBe(0);
     });
   }
+
+  // A real setup task on the rewired production surface. setupMcp in force mode
+  // writes root-relative config (no prompts, no home-dir writes), so it is safe
+  // to record and replay in a sandbox — proving journal-by-default is sound for
+  // the setup path, not only the generators.
+  it("setup/mcp (force) — records a serialisable journal and replays with no I/O", async () => {
+    const config = join(dir, "record", ".cursor", "mcp.json");
+
+    const { journal } = await runGeneratorTask(
+      setupMcp(join(dir, "record"), "cursor"),
+    );
+
+    expect(journal.entries.some((e) => e.id.kind === "WriteFile")).toBe(true);
+    expect(existsSync(config)).toBe(true);
+    expect(deserializeJournal(serializeJournal(journal))).toEqual(journal);
+
+    // Remove what the recorded run wrote, then replay the same task against the
+    // journal. Replay serves recorded outcomes without I/O, so the file is not
+    // recreated.
+    rmSync(join(dir, "record", ".cursor"), { recursive: true, force: true });
+    const persisted = deserializeJournal(serializeJournal(journal));
+    await runGeneratorTask(setupMcp(join(dir, "record"), "cursor"), {
+      journal: persisted,
+    });
+
+    expect(existsSync(config)).toBe(false);
+  });
 });

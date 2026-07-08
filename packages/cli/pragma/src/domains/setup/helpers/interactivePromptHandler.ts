@@ -3,15 +3,20 @@ import type { Effect, PromptQuestion } from "@canonical/task";
 
 /**
  * Read a single trimmed line from stdin, prompting on stderr so the answer
- * stays out of piped stdout.
+ * stays out of piped stdout. On EOF (a closed or non-interactive stdin, e.g.
+ * `< /dev/null`) resolves to an empty string, so every caller falls back to its
+ * default instead of hanging forever.
  *
  * @param query - The prompt text to display.
- * @returns The user's trimmed input.
+ * @returns The user's trimmed input, or `""` on EOF.
  * @note Impure — reads from stdin.
  */
 async function ask(query: string): Promise<string> {
   const rl = createInterface({ input: process.stdin, output: process.stderr });
   const answer = await new Promise<string>((resolve) => {
+    // 'close' with no preceding answer is EOF; on a real answer the question
+    // callback resolves first, so this handler becomes a no-op.
+    rl.on("close", () => resolve(""));
     rl.question(query, (value) => {
       rl.close();
       resolve(value.trim());
@@ -20,7 +25,11 @@ async function ask(query: string): Promise<string> {
   return answer;
 }
 
-/** Resolve a confirm prompt: empty input takes the default, else `y…` is true. */
+/**
+ * Resolve a confirm prompt: empty input takes the default, else `y…` is true.
+ *
+ * @note Impure — reads from stdin.
+ */
 async function askConfirm(
   question: PromptQuestion & { type: "confirm" },
 ): Promise<boolean> {
@@ -32,7 +41,11 @@ async function askConfirm(
   return answer.toLowerCase().startsWith("y");
 }
 
-/** Render a choice list to stderr as a numbered menu. */
+/**
+ * Render a choice list to stderr as a numbered menu.
+ *
+ * @note Impure — writes to stderr.
+ */
 function renderChoices(
   choices: ReadonlyArray<{ label: string; value: string }>,
 ): void {
@@ -50,7 +63,11 @@ function choiceAt(
   return Number.isInteger(index) ? choices[index]?.value : undefined;
 }
 
-/** Resolve a select prompt: pick one choice by number, empty takes the default. */
+/**
+ * Resolve a select prompt: pick one choice by number, empty takes the default.
+ *
+ * @note Impure — reads from stdin and renders a menu to stderr.
+ */
 async function askSelect(
   question: PromptQuestion & { type: "select" },
 ): Promise<string | undefined> {
@@ -67,8 +84,12 @@ async function askSelect(
 }
 
 /**
- * Resolve a multiselect prompt: pick choices by comma-separated numbers; empty
- * input takes the default (or none).
+ * Resolve a multiselect prompt: pick choices by comma-separated numbers. Empty
+ * input, or an answer whose tokens are all out of range, takes the default (or
+ * none) — symmetric with {@link askSelect}, so a fat-fingered answer never
+ * silently collapses to an empty selection.
+ *
+ * @note Impure — reads from stdin and renders a menu to stderr.
  */
 async function askMultiselect(
   question: PromptQuestion & { type: "multiselect" },
@@ -80,7 +101,7 @@ async function askMultiselect(
     .split(",")
     .map((token) => choiceAt(question.choices, token.trim()))
     .filter((value): value is string => value !== undefined);
-  return picked;
+  return picked.length > 0 ? picked : (question.default ?? []);
 }
 
 /**
