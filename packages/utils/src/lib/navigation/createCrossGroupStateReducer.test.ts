@@ -232,7 +232,6 @@ describe("createCrossGroupStateReducer", () => {
     });
 
     it("no-ops when nothing is highlighted", () => {
-      const { index } = buildTree();
       const reducer = createCrossGroupStateReducer();
       const state: NavigationState = {
         selectedItems: [],
