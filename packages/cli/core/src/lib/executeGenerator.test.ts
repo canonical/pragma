@@ -658,6 +658,30 @@ describe("executeGenerator — undo execution", () => {
     }
   });
 
+  it("undoes in cwd without chdir when cwd matches process.cwd()", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "pragma-undo-samecwd-"));
+    const originalCwd = process.cwd();
+    process.chdir(dir);
+
+    try {
+      const gen = makeGen(simplePrompts);
+      await executeGenerator(gen, { name: "Button" }, { ...baseCtx, cwd: dir });
+
+      const result = await executeGenerator(
+        gen,
+        { name: "Button", undo: true, yes: true },
+        { ...baseCtx, cwd: dir },
+      );
+      expect(result.tag).toBe("output");
+      if (result.tag === "output") {
+        expect(result.render.plain(result.value)).toContain("Undo complete");
+      }
+    } finally {
+      process.chdir(originalCwd);
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
   it("pluralizes step count for multi-step undo execution", async () => {
     const dir = mkdtempSync(join(tmpdir(), "pragma-undo-multi-"));
 

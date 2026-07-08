@@ -11,8 +11,8 @@
  * since it runs through the injected `promptHandler` seam.
  */
 
-import { executeGenerator } from "@canonical/cli-core";
 import type { CommandContext, CommandResult } from "@canonical/cli-core";
+import { executeGenerator } from "@canonical/cli-core";
 import { generators as packageGenerators } from "@canonical/summon-package";
 import { describe, expect, it } from "vitest";
 import { COMPONENT_GENERATORS } from "../../domains/create/generators.js";
@@ -88,7 +88,11 @@ describe("golden: executeGenerator — package", () => {
   });
 
   it("library — json plan", async () => {
-    const result = await executeGenerator(gen, { ...packageParams }, ctx("json"));
+    const result = await executeGenerator(
+      gen,
+      { ...packageParams },
+      ctx("json"),
+    );
     expect(plain(result)).toMatchSnapshot();
   });
 });

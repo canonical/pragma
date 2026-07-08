@@ -90,6 +90,8 @@ export {
   promptToParameter,
 } from "./lib/convertGenerator.js";
 export { default as executeGenerator } from "./lib/executeGenerator.js";
+export type { RunGeneratorTaskOptions } from "./lib/runGeneratorTask.js";
+export { default as runGeneratorTask } from "./lib/runGeneratorTask.js";
 
 // =============================================================================
 // Effect Formatting

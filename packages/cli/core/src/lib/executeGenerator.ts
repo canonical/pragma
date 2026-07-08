@@ -1,16 +1,18 @@
 /**
  * Generator execution dispatch: mode routing → CommandResult.
  *
- * Handles LLM mode, JSON mode, dry-run, and interactive fallback.
- * Does NOT call runTask for real execution — the binary handles that
- * via the interactive result's spec.
+ * Handles LLM mode, JSON mode, dry-run, and interactive fallback. Real batch
+ * execution runs through {@link runGeneratorTask} — the single Ink-free
+ * journaled execution core — so a generation is recorded as a replayable
+ * journal; interactive sessions are still handed to the binary via the
+ * interactive result's spec.
  */
 
 import type {
   GeneratorDefinition,
   PromptDefinition,
 } from "@canonical/summon-core";
-import { collectUndos, dryRun, runTask, runUndo } from "@canonical/task";
+import { collectUndos, dryRun, runUndo } from "@canonical/task";
 import createInteractiveResult from "./createInteractiveResult.js";
 import createOutputResult from "./createOutputResult.js";
 import {
@@ -20,6 +22,7 @@ import {
   formatLlmMarkdown,
   isVisibleEffect,
 } from "./formatEffects.js";
+import runGeneratorTask from "./runGeneratorTask.js";
 import type { CommandContext, CommandResult } from "./types.js";
 
 // =============================================================================
@@ -323,12 +326,14 @@ export default async function executeGenerator(
     return createOutputResult(output, { plain: (s) => s });
   }
 
-  // Batch execution with all answers: run the task immediately.
+  // Batch execution with all answers: run the task immediately through the
+  // journaled core. The recorded journal is discarded here — resumable-wizard
+  // UX consumes it downstream — but recording is what makes a run replayable.
   if (hasAllAnswers) {
     const task = gen.generate(answersWithDefaults);
     const preview = dryRun(task);
 
-    await runInCwd(ctx.cwd, () => runTask(task, { onLog: suppressTaskLogs }));
+    await runGeneratorTask(task, { cwd: ctx.cwd, onLog: suppressTaskLogs });
 
     const output = renderEffectsOutput(preview.effects, {
       verbose,
