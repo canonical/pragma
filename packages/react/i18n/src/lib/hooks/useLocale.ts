@@ -5,7 +5,7 @@ import useI18nContext from "./useI18nContext.js";
 
 /**
  * Read and change the active locale. Re-renders the calling component on every
- * locale change — pair it with `LocaleSelector` (or a `<select>`) to switch.
+ * locale change — pair it with any locale-switching control (see the README for a `<select>` recipe).
  */
 export default function useLocale(): UseLocaleResult {
   const { source, config } = useI18nContext();

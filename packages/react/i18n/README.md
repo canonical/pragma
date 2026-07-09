@@ -60,19 +60,30 @@ function Price({ amount }: { amount: number }) {
 
 ## Language switcher
 
-`LocaleSelector` is a ready-made, accessible `<select>`: it lists every
-configured locale by its **endonym** (the language's own name, via
-`Intl.DisplayNames`), tags each `<option lang>` so assistive tech uses the right
-voice, and switches the active locale on change.
+This package deliberately ships no visual components — semantic components
+belong to the design-system tier. Pair `useLocale` with any control; listing
+each locale by its **endonym** (the language's own name) and tagging each
+`<option lang>` keeps the switcher accessible:
 
 ```tsx
-import { LocaleSelector } from "@canonical/i18n-react";
+import { useLocale } from "@canonical/i18n-react";
 
-// endonyms by default; translate aria-label for the active locale
-<LocaleSelector aria-label="Language" />;
-
-// …or override the displayed names
-<LocaleSelector labels={{ en: "English", fr: "Français", ar: "العربية" }} />;
+function LanguageSwitcher() {
+  const { locale, locales, setLocale } = useLocale();
+  return (
+    <select
+      aria-label="Language"
+      value={locale}
+      onChange={(event) => setLocale(event.target.value)}
+    >
+      {locales.map((tag) => (
+        <option key={tag} value={tag} lang={tag}>
+          {new Intl.DisplayNames([tag], { type: "language" }).of(tag)}
+        </option>
+      ))}
+    </select>
+  );
+}
 ```
 
 Changing the locale re-translates and re-formats every subscribed component and,
