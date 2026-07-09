@@ -1,6 +1,6 @@
-import bindField from "#lib/common/bindField/index.js";
-import withWrapper from "#lib/common/Wrapper/withWrapper.js";
-import { RatingInput } from "#lib/subcomponent/RatingInput/index.js";
+import bindField from "../../common/bindField/index.js";
+import withWrapper from "../../common/Wrapper/withWrapper.js";
+import { RatingInput } from "../../subcomponent/RatingInput/index.js";
 import type { RatingFieldProps } from "./types.js";
 
 /**

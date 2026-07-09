@@ -1,6 +1,6 @@
 import type { Store } from "@canonical/ke";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { MappedIR, NameMap, NamespaceInfo } from "#shared";
+import type { MappedIR, NameMap, NamespaceInfo } from "../shared/index.js";
 import createContextFactory from "./createContextFactory.js";
 
 afterEach(() => {

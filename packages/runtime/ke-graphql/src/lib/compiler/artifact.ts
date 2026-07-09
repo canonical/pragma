@@ -9,7 +9,7 @@
 // to a live compile when it no longer matches the loaded sources.
 // =============================================================================
 
-import type { RawExtraction } from "#shared";
+import type { RawExtraction } from "../shared/index.js";
 import { ARTIFACT_VERSION } from "./constants.js";
 import type { SerializedExtraction } from "./types.js";
 

@@ -1,7 +1,7 @@
 import type {
   CountryData,
   KnownCountryCode,
-} from "#lib/utils/countries/index.js";
+} from "../../utils/countries/index.js";
 import type { BaseProps } from "../types.js";
 
 // The country dataset + codes live in `utils/countries`. Re-exported here so
@@ -10,7 +10,7 @@ export type {
   CountryCode,
   CountryData,
   KnownCountryCode,
-} from "#lib/utils/countries/index.js";
+} from "../../utils/countries/index.js";
 
 /** Props for the presentational Phone input (controlled, no react-hook-form). */
 export type PhoneInputProps = BaseProps & {

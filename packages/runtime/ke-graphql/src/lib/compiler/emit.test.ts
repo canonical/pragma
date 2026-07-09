@@ -10,7 +10,7 @@ import type {
   NameMap,
   OntologyIR,
   ResolverTemplate,
-} from "#shared";
+} from "../shared/index.js";
 import emit from "./emit.js";
 
 const nameMap: NameMap = {

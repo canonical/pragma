@@ -24,12 +24,12 @@ import {
   GraphQLObjectType,
   GraphQLString,
 } from "graphql";
-import { toFull, toPrefixed } from "#dataloader";
+import { toFull, toPrefixed } from "../dataloader/index.js";
 import {
   connectionFromPage,
   paginateUriWindow,
   unwrapEntities,
-} from "#resolver";
+} from "../resolver/index.js";
 import {
   type ClassNode,
   CONNECTION_ARGS,
@@ -38,7 +38,7 @@ import {
   type MappedIR,
   type NamespaceInfo,
   type PropertyNode,
-} from "#shared";
+} from "../shared/index.js";
 
 interface ClassPropertyValue {
   propertyUri: string;

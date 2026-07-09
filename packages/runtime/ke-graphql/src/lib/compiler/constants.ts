@@ -9,7 +9,7 @@
 // the consumer registered on the store.
 // =============================================================================
 
-import { OWL, RDF, RDFS, SH, SKOS, XSD } from "#shared";
+import { OWL, RDF, RDFS, SH, SKOS, XSD } from "../shared/index.js";
 
 /** rdf:Property class IRI. */
 export const RDF_PROPERTY = `${RDF}Property`;

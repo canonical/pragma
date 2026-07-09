@@ -5,8 +5,11 @@ import {
   productTabsRoot,
   productTabsWithInertRoot,
   routerTabsRoot,
-} from "#storybook/tabs/fixtures.js";
-import { HashLink, withHashRouter } from "#storybook/tabs/story-utils.js";
+} from "../../../storybook/tabs/fixtures.js";
+import {
+  HashLink,
+  withHashRouter,
+} from "../../../storybook/tabs/story-utils.js";
 import Component from "./Tabs.js";
 
 const meta = {

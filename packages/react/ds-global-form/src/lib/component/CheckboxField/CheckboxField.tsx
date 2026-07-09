@@ -1,8 +1,8 @@
-import bindField from "#lib/common/bindField/index.js";
-import type { InputProps } from "#lib/common/types.js";
-import withToggleWrapper from "#lib/common/Wrapper/withToggleWrapper.js";
-import type { CheckboxInputProps } from "#lib/subcomponent/CheckboxInput/index.js";
-import { CheckboxInput } from "#lib/subcomponent/CheckboxInput/index.js";
+import bindField from "../../common/bindField/index.js";
+import type { InputProps } from "../../common/types.js";
+import withToggleWrapper from "../../common/Wrapper/withToggleWrapper.js";
+import type { CheckboxInputProps } from "../../subcomponent/CheckboxInput/index.js";
+import { CheckboxInput } from "../../subcomponent/CheckboxInput/index.js";
 
 type CheckboxInputFieldProps = InputProps<CheckboxInputProps>;
 

@@ -5,7 +5,7 @@ import type {
   OntologyIR,
   PropertyNode,
   RangeSpec,
-} from "#shared";
+} from "../shared/index.js";
 import validate from "./validate.js";
 
 const classNode = (

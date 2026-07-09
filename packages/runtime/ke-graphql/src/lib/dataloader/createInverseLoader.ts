@@ -5,7 +5,7 @@
 // =============================================================================
 
 import DataLoader from "dataloader";
-import type { MappedIR, QueryFn } from "#shared";
+import type { MappedIR, QueryFn } from "../shared/index.js";
 import { toFull } from "./uris.js";
 
 /** Encode an inverse-loader cache key from its property and object parts. */

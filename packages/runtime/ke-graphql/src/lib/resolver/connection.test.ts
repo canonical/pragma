@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE } from "#hardening";
+import { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE } from "../hardening/index.js";
 import {
   connectionFromPage,
   emptyConnection,

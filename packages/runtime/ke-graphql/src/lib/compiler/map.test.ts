@@ -13,7 +13,7 @@ import {
   type PropertyNode,
   type RawExtraction,
   XSD,
-} from "#shared";
+} from "../shared/index.js";
 import build from "./build.js";
 import map from "./map.js";
 

@@ -5,14 +5,18 @@
 
 import { createTestStore } from "@canonical/ke/testing";
 import { afterEach, describe, expect, it } from "vitest";
-import { type CompilerResult, compile, createStoreQueryFn } from "#compiler";
-import type { CompilerContext } from "#shared";
 import {
   BLANK_NODES_TTL,
   DS_REALISTIC_TTL,
   MINIMAL_TTL,
   PREFIXES,
-} from "#testing";
+} from "../../testing/index.js";
+import {
+  type CompilerResult,
+  compile,
+  createStoreQueryFn,
+} from "../compiler/index.js";
+import type { CompilerContext } from "../shared/index.js";
 import extractStatic from "./extractStatic.js";
 
 type Cleanup = () => void;

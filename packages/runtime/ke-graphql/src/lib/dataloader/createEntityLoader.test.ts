@@ -6,7 +6,7 @@ import {
   type NamespaceInfo,
   type QueryFn,
   RDF_TYPE,
-} from "#shared";
+} from "../shared/index.js";
 import createEntityLoader from "./createEntityLoader.js";
 
 const NS = "https://ds.canonical.com/";

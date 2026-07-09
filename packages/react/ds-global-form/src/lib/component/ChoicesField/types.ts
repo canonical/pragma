@@ -1,7 +1,7 @@
 /* @canonical/generator-ds 0.9.0-experimental.9 */
 
-import type { InputProps } from "#lib/common/types.js";
-import type { BaseProps, OptionsProps } from "#lib/subcomponent/types.js";
+import type { InputProps } from "../../common/types.js";
+import type { BaseProps, OptionsProps } from "../../subcomponent/types.js";
 
 type AdditionalChoicesProps = OptionsProps & {
   /** Field name shared by every option input in the group */

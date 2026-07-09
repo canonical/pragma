@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { NamespaceInfo } from "#shared";
+import type { NamespaceInfo } from "../shared/index.js";
 import { toFull, toPrefixed } from "./uris.js";
 
 const namespaces = new Map<string, NamespaceInfo>([

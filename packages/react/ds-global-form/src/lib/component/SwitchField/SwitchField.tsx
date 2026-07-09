@@ -1,8 +1,8 @@
-import bindField from "#lib/common/bindField/index.js";
-import type { InputProps } from "#lib/common/types.js";
-import withToggleWrapper from "#lib/common/Wrapper/withToggleWrapper.js";
-import type { SwitchInputProps } from "#lib/subcomponent/SwitchInput/index.js";
-import { SwitchInput } from "#lib/subcomponent/SwitchInput/index.js";
+import bindField from "../../common/bindField/index.js";
+import type { InputProps } from "../../common/types.js";
+import withToggleWrapper from "../../common/Wrapper/withToggleWrapper.js";
+import type { SwitchInputProps } from "../../subcomponent/SwitchInput/index.js";
+import { SwitchInput } from "../../subcomponent/SwitchInput/index.js";
 
 type SwitchInputFieldProps = InputProps<SwitchInputProps>;
 

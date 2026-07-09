@@ -5,7 +5,7 @@ import type { IconName } from "@canonical/ds-assets";
 import type React from "react";
 import type { IconSectionProps } from "./types.js";
 import "./styles.css";
-import { Icon } from "#lib/component/Icon/index.js";
+import { Icon } from "../../component/Icon/index.js";
 import { TSection } from "../TSection/index.js";
 
 const componentCssClassName = "ds icon-section";

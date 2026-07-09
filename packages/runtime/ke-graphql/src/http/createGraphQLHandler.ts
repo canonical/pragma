@@ -34,13 +34,13 @@ import {
   isIncrementalResults,
   mergeIncremental,
   relayFormatAdapter,
-} from "#execution";
+} from "../lib/execution/index.js";
 import {
   createDepthLimitRule,
   DEFAULT_MAX_QUERY_DEPTH,
   maskError,
-} from "#hardening";
-import type { CompilerContext } from "#shared";
+} from "../lib/hardening/index.js";
+import type { CompilerContext } from "../lib/shared/index.js";
 import graphiqlHtml from "./graphiqlHtml.js";
 
 /** One executed operation, reported through the onOperation hook. */

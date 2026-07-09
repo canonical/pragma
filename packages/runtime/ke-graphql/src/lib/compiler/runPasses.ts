@@ -1,4 +1,4 @@
-import type { Diagnostic, RawExtraction } from "#shared";
+import type { Diagnostic, RawExtraction } from "../shared/index.js";
 import build from "./build.js";
 import CompilationError from "./CompilationError.js";
 import compose from "./compose.js";

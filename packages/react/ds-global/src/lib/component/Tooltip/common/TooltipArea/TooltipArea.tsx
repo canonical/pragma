@@ -1,5 +1,5 @@
 import type { ReactElement } from "react";
-import { usePopup } from "#lib/hooks/index.js";
+import { usePopup } from "../../../../hooks/index.js";
 import { Tooltip } from "../../index.js";
 import type { TooltipAreaProps } from "./types.js";
 

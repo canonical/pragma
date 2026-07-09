@@ -1,8 +1,11 @@
 import type { Meta, StoryFn, StoryObj } from "@storybook/react-vite";
 
 import { useEffect, useState } from "react";
-import { Button } from "#lib/component/Button/index.js";
-import type { BestPosition, WindowFitmentDirection } from "#lib/hooks/index.js";
+import type {
+  BestPosition,
+  WindowFitmentDirection,
+} from "../../../../hooks/index.js";
+import { Button } from "../../../Button/index.js";
 import Component from "./TooltipArea.js";
 
 const meta = {

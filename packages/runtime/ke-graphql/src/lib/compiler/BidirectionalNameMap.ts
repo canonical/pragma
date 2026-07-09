@@ -1,4 +1,4 @@
-import type { NameMap } from "#shared";
+import type { NameMap } from "../shared/index.js";
 
 /**
  * Bidirectional OWL URI ↔ GraphQL name map. Type names map globally; field

@@ -32,9 +32,8 @@ export default defineConfig({
 ```
 
 The factory owns only the `test` block. `plugins`, `resolve` and `build` stay
-in each package's config, because those legitimately differ (for example, the
-`ds-global*` packages need the `development` resolve condition for `#lib/*`
-self-imports, while the app packages do not).
+in each package's config, because those legitimately differ (for example, some
+packages run in `jsdom` while framework-agnostic/SSR packages run in `node`).
 
 ## Options
 

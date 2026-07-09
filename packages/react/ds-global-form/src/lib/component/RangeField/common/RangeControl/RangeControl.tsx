@@ -6,7 +6,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { NumberInput } from "#lib/subcomponent/NumberInput/index.js";
+import { NumberInput } from "../../../../subcomponent/NumberInput/index.js";
 import type { RangeControlProps } from "./types.js";
 import "./styles.css";
 

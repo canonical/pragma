@@ -1,5 +1,5 @@
 import type { Meta, StoryFn } from "@storybook/react-vite";
-import { KeyboardKey } from "#lib/component/KeyboardKey/index.js";
+import { KeyboardKey } from "../../component/KeyboardKey/index.js";
 import Component from "./KeyboardKeys.js";
 
 const meta = {

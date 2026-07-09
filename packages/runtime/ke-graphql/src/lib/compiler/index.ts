@@ -8,7 +8,7 @@
  * @module compiler
  */
 
-export type * from "#shared";
+export type * from "../shared/index.js";
 export {
   deserializeExtraction,
   hashSources,

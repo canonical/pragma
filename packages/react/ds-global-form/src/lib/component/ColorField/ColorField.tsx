@@ -1,6 +1,6 @@
-import bindField from "#lib/common/bindField/index.js";
-import withWrapper from "#lib/common/Wrapper/withWrapper.js";
-import { ColorInput } from "#lib/subcomponent/ColorInput/index.js";
+import bindField from "../../common/bindField/index.js";
+import withWrapper from "../../common/Wrapper/withWrapper.js";
+import { ColorInput } from "../../subcomponent/ColorInput/index.js";
 import type { ColorFieldProps } from "./types.js";
 
 /**

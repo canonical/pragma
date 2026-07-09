@@ -4,8 +4,7 @@
     "baseUrl": "src",
     "types": ["node", "@types/bun"],
     "resolveJsonModule": true,
-    "skipLibCheck": true,
-    "customConditions": ["development"]
+    "skipLibCheck": true
   },
   "include": ["src/**/*.ts", "demo/**/*.ts"],
   "exclude": ["src/**/*.test.ts"]

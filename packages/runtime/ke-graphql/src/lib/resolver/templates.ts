@@ -7,14 +7,14 @@
 // =============================================================================
 
 import type { GraphQLFieldResolver } from "graphql";
-import { toFull, toPrefixed } from "#dataloader";
+import { toFull, toPrefixed } from "../dataloader/index.js";
 import {
   type CompilerContext,
   type EntityValue,
   type MappedField,
   RDF_TYPE,
   type TripleSet,
-} from "#shared";
+} from "../shared/index.js";
 import { coerce } from "./coerce.js";
 import {
   connectionFromPage,

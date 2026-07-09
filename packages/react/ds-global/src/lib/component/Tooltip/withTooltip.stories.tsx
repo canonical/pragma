@@ -1,6 +1,6 @@
 import type { Meta, StoryFn } from "@storybook/react-vite";
 
-import { Button } from "#lib/component/Button/index.js";
+import { Button } from "../Button/index.js";
 import { withTooltip } from "./index.js";
 
 type TooltipType = ReturnType<typeof withTooltip>;

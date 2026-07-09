@@ -2,7 +2,7 @@ import { createHashRouter, route } from "@canonical/router-core";
 import { RouterProvider } from "@canonical/router-react";
 import type { Decorator } from "@storybook/react-vite";
 import type { ReactNode } from "react";
-import type { LinkComponentProps } from "#lib/types/link.js";
+import type { LinkComponentProps } from "../../lib/types/link.js";
 
 /**
  * Story machinery for Tabs (decorators + the router-Link adapter). Story-only;

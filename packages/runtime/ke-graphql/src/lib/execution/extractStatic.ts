@@ -10,8 +10,8 @@
 // =============================================================================
 
 import type { ExecutionResult, GraphQLSchema } from "graphql";
-import { toPrefixed } from "#dataloader";
-import type { CompilerContext, MappedIR } from "#shared";
+import { toPrefixed } from "../dataloader/index.js";
+import type { CompilerContext, MappedIR } from "../shared/index.js";
 import {
   executeLocal,
   isIncrementalResults,

@@ -12,7 +12,7 @@ import {
   type QueryFn,
   RDF_TYPE,
   RDFS_LABEL,
-} from "#shared";
+} from "../shared/index.js";
 
 /**
  * Resolve the name predicate for a class: a declared property in the class's

@@ -9,7 +9,7 @@ import type {
   NameMap,
   NamespaceInfo,
   TypePlan,
-} from "#shared";
+} from "../shared/index.js";
 import type { FieldPlan, SchemaPlan } from "./emit.js";
 import wireRelay from "./wireRelay.js";
 

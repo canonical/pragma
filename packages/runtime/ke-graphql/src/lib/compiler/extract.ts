@@ -23,7 +23,7 @@ import {
   type RawUnion,
   RDF_TYPE,
   RDFS_LABEL,
-} from "#shared";
+} from "../shared/index.js";
 import {
   OWL_ANNOTATION_PROPERTY,
   OWL_CLASS,

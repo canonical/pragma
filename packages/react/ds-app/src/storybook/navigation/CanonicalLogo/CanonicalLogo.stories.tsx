@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { withSideNavShell } from "#storybook/navigation/story-utils.js";
+import { withSideNavShell } from "../story-utils.js";
 import CanonicalLogo from "./CanonicalLogo.js";
 
 const meta: Meta<typeof CanonicalLogo> = {

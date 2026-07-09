@@ -3,7 +3,7 @@
 //
 // The options and result shapes of the seven-pass pipeline's public entry
 // points (compile, the schema plugin, the artifact codec). The IR/value/
-// context contracts these build on live in the shared leaf (#shared) and are
+// context contracts these build on live in the shared leaf (../shared) and are
 // re-exported from the compiler barrel for the package's public surface.
 // =============================================================================
 
@@ -17,7 +17,7 @@ import type {
   NameMap,
   RawExtraction,
   RuntimeWarningHandler,
-} from "#shared";
+} from "../shared/index.js";
 import type { ARTIFACT_VERSION } from "./constants.js";
 
 /**

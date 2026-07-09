@@ -1,5 +1,5 @@
 import type React from "react";
-import { Spinner } from "#lib/subcomponent/Spinner/index.js";
+import { Spinner } from "../../subcomponent/Spinner/index.js";
 import type Props from "./types.js";
 import "./styles.css";
 

@@ -1,4 +1,4 @@
-import type { Diagnostic } from "#shared";
+import type { Diagnostic } from "../shared/index.js";
 
 /**
  * Thrown only when schema composition fails (C-series errors) — carries the

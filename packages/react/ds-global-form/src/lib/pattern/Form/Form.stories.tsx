@@ -4,8 +4,8 @@ import type React from "react";
 import { useState } from "react";
 import * as decorators from "storybook/decorators.js";
 import * as fieldMaps from "storybook/fixtures.fields.js";
-import { Field } from "#lib/pattern/Field/index.js";
-import type { FieldProps } from "#lib/pattern/Field/types.js";
+import { Field } from "../Field/index.js";
+import type { FieldProps } from "../Field/types.js";
 import Component from "./Form.js";
 
 /**

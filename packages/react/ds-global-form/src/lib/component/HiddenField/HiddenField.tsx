@@ -1,6 +1,6 @@
-import bindField from "#lib/common/bindField/index.js";
-import { InvisibleWrapper, withWrapper } from "#lib/common/Wrapper/index.js";
-import { HiddenInput } from "#lib/subcomponent/HiddenInput/index.js";
+import bindField from "../../common/bindField/index.js";
+import { InvisibleWrapper, withWrapper } from "../../common/Wrapper/index.js";
+import { HiddenInput } from "../../subcomponent/HiddenInput/index.js";
 import type { HiddenFieldProps } from "./types.js";
 
 /**

@@ -3,7 +3,7 @@
 // stripping. Runtime failures go to the context's warning channel.
 // =============================================================================
 
-import { type RuntimeWarningHandler, XSD } from "#shared";
+import { type RuntimeWarningHandler, XSD } from "../shared/index.js";
 import type { ScalarName } from "./types.js";
 
 /**
