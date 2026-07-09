@@ -14,6 +14,7 @@ const baseAnswers: PackageAnswers = {
   withReact: false,
   withStorybook: false,
   withCli: false,
+  withPrTemplate: false,
   runInstall: false,
 };
 
@@ -33,6 +34,15 @@ describe("package generator undo plan", () => {
 
     // CLI adds 1 template = 2 more undos
     expect(with_.length).toBe(without.length + 2);
+  });
+
+  it("produces more undos with the PR template enabled", () => {
+    const withTemplate = { ...baseAnswers, withPrTemplate: true };
+    const without = collectUndos(generator.generate(baseAnswers));
+    const with_ = collectUndos(generator.generate(withTemplate));
+
+    // PR template adds mkdir(.github) + 1 template = 3 more undos
+    expect(with_.length).toBe(without.length + 3);
   });
 
   it("CSS package has different file set", () => {

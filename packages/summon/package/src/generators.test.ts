@@ -33,6 +33,7 @@ describe("package generator", () => {
       withReact: false,
       withStorybook: false,
       withCli: false,
+      withPrTemplate: false,
       runInstall: false,
     };
 
@@ -60,6 +61,7 @@ describe("package generator", () => {
       withReact: false,
       withStorybook: false,
       withCli: true,
+      withPrTemplate: false,
       runInstall: false,
     };
 
@@ -81,6 +83,7 @@ describe("package generator", () => {
       withReact: false,
       withStorybook: false,
       withCli: false,
+      withPrTemplate: false,
       runInstall: false,
     };
 
@@ -108,6 +111,7 @@ describe("package generator", () => {
       withReact: false,
       withStorybook: false,
       withCli: false,
+      withPrTemplate: false,
       runInstall: false,
     };
 

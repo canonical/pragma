@@ -9,6 +9,7 @@ const baseAnswers: PackageAnswers = {
   withReact: false,
   withStorybook: false,
   withCli: false,
+  withPrTemplate: false,
   runInstall: false,
 };
 
