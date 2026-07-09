@@ -27,9 +27,13 @@
      disabled compose with anticipation. Imported after the anticipation/
      emphasis modifiers so the anticipation-class overrides win.
    - importance: maps the (currently empty) importance modifiers to channel
-     hints so importance-driven components can render their hierarchy. */
+     hints so importance-driven components can render their hierarchy.
+   - criticality: adds an icon channel (--modifier-icon) mapping each
+     criticality class to its glyph, so criticality components render the icon
+     from the modifier rather than hard-coding it. */
 @import url("./modifiers.states.shim.css");
 @import url("./modifiers.importance.shim.css");
+@import url("./modifiers.criticality.shim.css");
 @import url("@canonical/design-tokens/dist/states.css");
 
 /* Grid layout presets */

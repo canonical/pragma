@@ -1,0 +1,47 @@
+/* @canonical/styles — Criticality modifier ICON SHIM (temporary)
+ *
+ * The generated `@canonical/design-tokens/dist/modifiers.criticality.css`
+ * exposes the colour channels for each criticality (`--modifier-color-icon`,
+ * `-text`, `-border`, `-foreground-secondary`) but NOT an icon channel: nothing
+ * says *which glyph* signals "information" vs "warning" etc. Criticality-driven
+ * components (Announcement, and future callouts) each hard-code that mapping in
+ * their own markup today.
+ *
+ * This hand-authored shim adds a single channel, keyed off the criticality
+ * class, that carries the glyph as a CSS `mask-image` reference into the
+ * Canonical icon set (served at `/icons/<name>.svg`):
+ *
+ *   --modifier-icon   a `mask-image` value; a component masks a pseudo-element
+ *                     with it and fills it with `--modifier-color-icon`, so the
+ *                     glyph both matches the criticality AND takes its colour.
+ *
+ * Design contract — components listen to the CHANNEL, never to the class. A
+ * consumer must not key off `.information` / `.warning`; it reads
+ * `--modifier-icon` generically, so any criticality gets the right glyph for
+ * free. This mirrors the mask technique used by Accordion's chevron and the
+ * form CheckboxInput's checkmark (mask-image + background-color so the glyph is
+ * recolourable, unlike a background-image SVG).
+ *
+ * Imported into the `ds.modifiers` layer after the generated criticality
+ * modifiers so these class rules compose at equal specificity, later source
+ * order. Remove once an icon channel is generated upstream in the criticality
+ * modifier tokens.
+ */
+
+@layer ds.modifiers {
+  .information {
+    --modifier-icon: url("/icons/information.svg#information");
+  }
+
+  .success {
+    --modifier-icon: url("/icons/success.svg#success");
+  }
+
+  .warning {
+    --modifier-icon: url("/icons/warning.svg#warning");
+  }
+
+  .error {
+    --modifier-icon: url("/icons/error.svg#error");
+  }
+}
