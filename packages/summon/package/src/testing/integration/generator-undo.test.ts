@@ -14,6 +14,7 @@ const baseAnswers: PackageAnswers = {
   withReact: false,
   withStorybook: false,
   withCli: false,
+  withPrTemplate: false,
   runInstall: false,
 };
 
@@ -22,8 +23,8 @@ describe("package generator undo plan", () => {
     const task = generator.generate(baseAnswers);
     const undos = collectUndos(task);
 
-    // 2 mkdirs + 6 templates × 2 + 1 mkdir(.github) = 15
-    expect(undos.length).toBe(15);
+    // 2 mkdirs + 5 templates × 2 = 12
+    expect(undos.length).toBe(12);
   });
 
   it("produces more undos with CLI enabled", () => {
@@ -35,6 +36,15 @@ describe("package generator undo plan", () => {
     expect(with_.length).toBe(without.length + 2);
   });
 
+  it("produces more undos with the PR template enabled", () => {
+    const withTemplate = { ...baseAnswers, withPrTemplate: true };
+    const without = collectUndos(generator.generate(baseAnswers));
+    const with_ = collectUndos(generator.generate(withTemplate));
+
+    // PR template adds mkdir(.github) + 1 template = 3 more undos
+    expect(with_.length).toBe(without.length + 3);
+  });
+
   it("CSS package has different file set", () => {
     const cssAnswers: PackageAnswers = {
       ...baseAnswers,
@@ -43,9 +53,9 @@ describe("package generator undo plan", () => {
     };
     const undos = collectUndos(generator.generate(cssAnswers));
 
-    // CSS: 2 mkdirs + no tsconfig + packageJson + biome + indexCss + readme + mkdir(.github) + pullRequest
-    // = 2 + 5 templates × 2 + 1 = 13
-    expect(undos.length).toBe(13);
+    // CSS: 2 mkdirs + no tsconfig + packageJson + biome + indexCss + readme
+    // = 2 + 4 templates × 2 = 10
+    expect(undos.length).toBe(10);
   });
 
   it("exec effects (runInstall) produce no undos", () => {

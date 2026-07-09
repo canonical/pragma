@@ -15,6 +15,8 @@ export interface PackageAnswers {
   withStorybook: boolean;
   /** Include CLI binary entry point */
   withCli: boolean;
+  /** Emit a .github/PULL_REQUEST_TEMPLATE.md (opt-in; monorepos read only the root template) */
+  withPrTemplate: boolean;
   /** Run package manager install after creation */
   runInstall: boolean;
 }

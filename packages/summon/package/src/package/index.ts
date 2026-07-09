@@ -107,6 +107,13 @@ const prompts: PromptDefinition[] = [
     group: "Options",
   },
   {
+    name: "withPrTemplate",
+    type: "confirm",
+    message: "Include a .github/PULL_REQUEST_TEMPLATE.md?",
+    default: false,
+    group: "Options",
+  },
+  {
     name: "runInstall",
     type: "confirm",
     message: "Run package manager install after creation?",
@@ -145,6 +152,8 @@ OPTIONS:
   --with-react      Add React dependencies and TypeScript React config
   --with-storybook  Add Storybook configuration
   --with-cli        Add CLI binary entry point (src/cli.ts)
+  --with-pr-template  Add .github/PULL_REQUEST_TEMPLATE.md (for standalone
+                      repos; monorepos read only the root template)
 
 The generator auto-detects:
   - Monorepo: Uses lerna.json version when in pragma monorepo
@@ -250,13 +259,17 @@ The generator auto-detects:
           vars: ctx,
         }),
 
-        // Create .github/PULL_REQUEST_TEMPLATE.md
-        mkdir(path.join(packageDir, ".github")),
-        template({
-          source: templates.pullRequestTemplate,
-          dest: path.join(packageDir, ".github", "PULL_REQUEST_TEMPLATE.md"),
-          vars: ctx,
-        }),
+        // Create .github/PULL_REQUEST_TEMPLATE.md (opt-in: monorepos read
+        // only the repo-root template, so per-package copies are dead weight)
+        when(answers.withPrTemplate, mkdir(path.join(packageDir, ".github"))),
+        when(
+          answers.withPrTemplate,
+          template({
+            source: templates.pullRequestTemplate,
+            dest: path.join(packageDir, ".github", "PULL_REQUEST_TEMPLATE.md"),
+            vars: ctx,
+          }),
+        ),
 
         // Create .storybook folder (conditional)
         when(answers.withStorybook, mkdir(path.join(packageDir, ".storybook"))),
