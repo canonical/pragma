@@ -2,7 +2,7 @@ import type { Effect } from "@canonical/task";
 
 /**
  * Resolve a `Prompt` effect to its default without user interaction — the
- * `--yes` path, and the `promptHandler` seam the journaled executor drives when
+ * `--yes` path, and the `promptHandler` seam the shared executor drives when
  * a run is non-interactive.
  *
  * Each prompt type yields the value a non-interactive run should assume: a

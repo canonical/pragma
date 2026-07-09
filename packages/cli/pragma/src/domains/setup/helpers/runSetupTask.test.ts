@@ -10,8 +10,9 @@ const { runGeneratorTaskMock, runUndoMock } = vi.hoisted(() => ({
 }));
 
 // runSetupTask orchestrates: dry-run/undo use real formatting and runUndo,
-// while production runs through the journaled core. Mock only that core and
-// runUndo, so the real prompt handlers and effect formatting stay under test.
+// while production runs through the shared execution core. Mock only that
+// core and runUndo, so the real prompt handlers and effect formatting stay
+// under test.
 vi.mock("@canonical/cli-core", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@canonical/cli-core")>()),
   runGeneratorTask: runGeneratorTaskMock,
@@ -22,13 +23,7 @@ vi.mock("@canonical/task", async (importOriginal) => ({
   runUndo: runUndoMock,
 }));
 
-const succeed = async (): Promise<{
-  value: undefined;
-  journal: { entries: [] };
-}> => ({
-  value: undefined,
-  journal: { entries: [] },
-});
+const succeed = async (): Promise<undefined> => undefined;
 
 describe("runSetupTask", () => {
   let stderrSpy: ReturnType<typeof vi.spyOn>;
@@ -98,10 +93,10 @@ describe("runSetupTask", () => {
   });
 
   // ===========================================================================
-  // Production execution — through the journaled core
+  // Production execution — through the shared execution core
   // ===========================================================================
 
-  it("runs production through the journaled core and returns exit 0", async () => {
+  it("runs production through the shared execution core and returns exit 0", async () => {
     runGeneratorTaskMock.mockImplementation(succeed);
 
     const result = await runSetupTask(writeFile("/tmp/x", "y"), { yes: true });

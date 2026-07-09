@@ -95,10 +95,9 @@ export default function buildSkillsCommand(): CommandDefinition {
         });
       }
 
-      // Run the symlink task through the journaled core, like the other setup
-      // commands; the recorded journal is discarded until resumable setup
-      // consumes it.
-      const { value: result } = await runGeneratorTask(task);
+      // Run the symlink task through the shared execution core, like the
+      // other setup commands.
+      const result = await runGeneratorTask(task);
 
       const output: SetupSkillsOutput = { result, dryRun: false };
 

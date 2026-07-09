@@ -4,11 +4,12 @@
  * (drives `pragma setup`) — across the real generators and setup tasks.
  *
  * These lock the *observable output* of each executor for representative,
- * fully-answered inputs in every non-interactive mode. When the two executors
- * are merged into one journaled executor (4a), the merged path must reproduce
- * these byte-for-byte; the differential test added alongside the merge asserts
- * that. Interactive/interleaved-prompt behavior is characterized separately,
- * since it runs through the injected `promptHandler` seam.
+ * fully-answered inputs in every non-interactive mode. Both executors now run
+ * real execution through the shared UI-free core (`runGeneratorTask`), and the
+ * merged path must keep reproducing these byte-for-byte; the execution
+ * characterization test alongside asserts the real-run path. Interactive
+ * behavior is characterized separately, since it runs through the injected
+ * `promptHandler` seam.
  */
 
 import type { CommandContext, CommandResult } from "@canonical/cli-core";

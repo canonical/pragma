@@ -106,7 +106,7 @@ async function askMultiselect(
 
 /**
  * Resolve a `Prompt` effect interactively over readline — the `promptHandler`
- * seam pragma's terminal wizard injects into the journaled executor.
+ * seam pragma's terminal wizard injects into the shared executor.
  *
  * Every prompt type is answerable from the line editor: a confirm reads `y`/`n`,
  * a text prompt reads a line (empty takes the default), and select/multiselect

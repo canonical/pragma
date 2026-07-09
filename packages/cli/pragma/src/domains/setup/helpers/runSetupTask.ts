@@ -117,8 +117,8 @@ function formatDryRunJson(effects: readonly Effect[]): string {
  * Supports three execution modes:
  * - `--dry-run`: collects effects without executing, formats for display.
  * - `--undo`: walks the task tree, collects undo operations, executes in reverse.
- * - default: journaled execution through {@link runGeneratorTask}, with
- *   readline-based prompts on stderr.
+ * - default: execution through {@link runGeneratorTask}, with readline-based
+ *   prompts on stderr.
  *
  * @param task - The setup Task to execute.
  * @param options - Execution options (dryRun, undo, yes, verbose, llm, format).
@@ -175,8 +175,6 @@ export default async function runSetupTask(
   const onLog = createStderrLogger(verbose);
 
   try {
-    // The journaled core records the run; the journal is discarded here until
-    // resumable setup consumes it, but recording is what makes a run replayable.
     await runGeneratorTask(task, { promptHandler, onLog });
     return createExitResult(0);
   } catch (err) {

@@ -2,10 +2,9 @@
  * Generator execution dispatch: mode routing → CommandResult.
  *
  * Handles LLM mode, JSON mode, dry-run, and interactive fallback. Real batch
- * execution runs through {@link runGeneratorTask} — the single Ink-free
- * journaled execution core — so a generation is recorded as a replayable
- * journal; interactive sessions are still handed to the binary via the
- * interactive result's spec.
+ * execution runs through {@link runGeneratorTask} — the single UI-free
+ * execution core shared with the setup commands; interactive sessions are
+ * still handed to the binary via the interactive result's spec.
  */
 
 import type {
@@ -327,8 +326,7 @@ export default async function executeGenerator(
   }
 
   // Batch execution with all answers: run the task immediately through the
-  // journaled core. The recorded journal is discarded here — resumable-wizard
-  // UX consumes it downstream — but recording is what makes a run replayable.
+  // shared execution core.
   if (hasAllAnswers) {
     const task = gen.generate(answersWithDefaults);
     const preview = dryRun(task);
