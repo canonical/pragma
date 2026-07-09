@@ -32,8 +32,5 @@
   },
   "peerDependencies": {
     "typescript": "^5.9.3"
-  },
-  "exports": {
-    ".": "./tsconfig.json"
   }
 }
