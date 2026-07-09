@@ -108,7 +108,11 @@ const encodeCursor = (index: number): string => `${CURSOR_PREFIX}${index}`;
 /** Decodes a connection cursor back to a catalog index; rejects foreign cursors. */
 const decodeCursor = (cursor: string): number => {
   const index = Number(cursor.slice(CURSOR_PREFIX.length));
-  if (!cursor.startsWith(CURSOR_PREFIX) || !Number.isInteger(index)) {
+  if (
+    !cursor.startsWith(CURSOR_PREFIX) ||
+    !Number.isInteger(index) ||
+    index < 0
+  ) {
     throw new GraphQLError(`Invalid cursor: ${cursor}`);
   }
   return index;

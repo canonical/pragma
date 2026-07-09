@@ -91,6 +91,14 @@ describe("executeLocalOperation", () => {
     expect(result.errors?.[0]?.message).toContain("Invalid cursor");
   });
 
+  it("rejects negative cursor indices that encodeCursor can never produce", async () => {
+    const result = await executeLocalOperation({
+      text: PRODUCTS_QUERY,
+      variables: { first: 1, after: "cursor:-1" },
+    });
+    expect(result.errors?.[0]?.message).toContain("Invalid cursor");
+  });
+
   it("looks up nodes by global ID and misses unknown IDs", async () => {
     const nodeQuery = `
       query SchemaTestsNodeQuery($id: ID!) {
