@@ -81,5 +81,10 @@
   },
   "peerDependencies": {
     "svelte": "^5.47.1"
+  },
+  "nx": {
+    "tags": [
+      "playwright"
+    ]
   }
 }
