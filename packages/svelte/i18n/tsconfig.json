@@ -1,5 +1,5 @@
 {
-  "extends": "@canonical/typescript-config-svelte",
+  "extends": "../../../configs/typescript-svelte/tsconfig.json",
   "compilerOptions": {
     "baseUrl": "src",
     "skipLibCheck": true,

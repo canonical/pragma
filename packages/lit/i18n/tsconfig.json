@@ -1,5 +1,5 @@
 {
-  "extends": "@canonical/typescript-config-lit",
+  "extends": "../../../configs/typescript-lit/tsconfig.json",
   "compilerOptions": {
     "baseUrl": "src",
     "skipLibCheck": true,
