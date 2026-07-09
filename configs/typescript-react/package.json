@@ -35,5 +35,8 @@
   },
   "dependencies": {
     "@canonical/typescript-config": "^0.29.0"
+  },
+  "exports": {
+    ".": "./tsconfig.json"
   }
 }
