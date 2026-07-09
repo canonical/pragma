@@ -4,7 +4,7 @@ import {
   type Locale,
   type Messages,
 } from "@canonical/i18n-core";
-import { render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import useLocale from "../hooks/useLocale.js";
 import useTranslation from "../hooks/useTranslation.js";
@@ -29,6 +29,15 @@ function Greeting(): React.ReactElement {
 function ShowLocale(): React.ReactElement {
   const { locale } = useLocale();
   return <span>{locale}</span>;
+}
+
+function SwitchTo({ locale }: { locale: Locale }): React.ReactElement {
+  const { setLocale } = useLocale();
+  return (
+    <button type="button" onClick={() => setLocale(locale)}>
+      switch-{locale}
+    </button>
+  );
 }
 
 describe("I18nProvider", () => {
@@ -62,5 +71,50 @@ describe("I18nProvider", () => {
       </I18nProvider>,
     );
     expect(screen.getByText("fr")).toBeTruthy();
+  });
+
+  it("keeps a runtime locale switch across provider re-renders", () => {
+    const ui = (locale: Locale): React.ReactElement => (
+      <I18nProvider config={config} catalogs={catalogs} locale={locale}>
+        <Greeting />
+        <ShowLocale />
+        <SwitchTo locale="fr" />
+      </I18nProvider>
+    );
+    const { rerender } = render(ui("en"));
+    fireEvent.click(screen.getByText("switch-fr"));
+    expect(screen.getByText("Bonjour, Ada !")).toBeTruthy();
+
+    // A parent re-render — even one passing a different `locale` prop — must
+    // not clobber the runtime choice: the prop is the SSR-negotiated initial.
+    rerender(ui("ar"));
+    expect(screen.getByText("fr")).toBeTruthy();
+    expect(screen.getByText("Bonjour, Ada !")).toBeTruthy();
+  });
+
+  it("propagates a shared external source switch to every provider tree", () => {
+    const source = createLocaleSource(config, {
+      initial: "en",
+      persist: false,
+      reflect: false,
+    });
+    render(
+      <>
+        <I18nProvider config={config} catalogs={catalogs} source={source}>
+          <Greeting />
+        </I18nProvider>
+        <I18nProvider config={config} catalogs={catalogs} source={source}>
+          <ShowLocale />
+        </I18nProvider>
+      </>,
+    );
+    act(() => source.set("fr"));
+    expect(screen.getByText("Bonjour, Ada !")).toBeTruthy();
+    expect(screen.getByText("fr")).toBeTruthy();
+
+    // …and survives the round-trip back.
+    act(() => source.set("en"));
+    expect(screen.getByText("Hello, Ada!")).toBeTruthy();
+    expect(screen.getByText("en")).toBeTruthy();
   });
 });
