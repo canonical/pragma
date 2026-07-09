@@ -1,0 +1,103 @@
+{
+  "name": "@canonical/storybook-addon-relay",
+  "version": "0.29.1",
+  "type": "module",
+  "files": [
+    "dist"
+  ],
+  "module": "dist/esm/index.js",
+  "types": "dist/types/index.d.ts",
+  "author": {
+    "email": "webteam@canonical.com",
+    "name": "Canonical Webteam"
+  },
+  "description": "Renders React stories that use Relay hooks against a mock Relay environment",
+  "keywords": [
+    "storybook-addons",
+    "relay",
+    "react-relay",
+    "graphql"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/canonical/pragma"
+  },
+  "bugs": {
+    "url": "https://github.com/canonical/pragma/issues"
+  },
+  "license": "LGPL-3.0",
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "default": "./dist/esm/index.js"
+    },
+    "./preview": {
+      "types": "./dist/types/preview.d.ts",
+      "default": "./dist/esm/preview.js"
+    },
+    "./preset": {
+      "types": "./dist/types/preset.d.ts",
+      "default": "./dist/esm/preset.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "bun run build:package",
+    "build:all": "bun run build:package",
+    "build:package": "bun run build:package:tsc",
+    "build:package:tsc": "tsc -p tsconfig.build.json",
+    "check": "bun run check:biome && bun run check:ts && bun run check:webarchitect",
+    "check:fix": "bun run check:biome:fix && bun run check:ts",
+    "check:biome": "biome check",
+    "check:biome:fix": "biome check --write",
+    "check:ts": "tsc --noEmit",
+    "check:webarchitect": "webarchitect library",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
+  },
+  "dependencies": {
+    "relay-test-utils": "^18.2.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.4.9",
+    "@canonical/biome-config": "^0.29.0",
+    "@canonical/typescript-config-react": "^0.29.0",
+    "@canonical/webarchitect": "^0.29.0",
+    "@testing-library/react": "^16.3.2",
+    "@types/node": "^24.12.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@types/react-relay": "^18.2.1",
+    "@types/relay-runtime": "^19.0.3",
+    "@types/relay-test-utils": "^18.0.0",
+    "@vitejs/plugin-react": "^6.0.0",
+    "@vitest/coverage-v8": "^4.0.18",
+    "jsdom": "^28.1.0",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "react-relay": "^18.2.0",
+    "relay-runtime": "^18.2.0",
+    "storybook": "^10.3.1",
+    "typescript": "^5.9.3",
+    "vite": "^8.0.1",
+    "vitest": "^4.0.18"
+  },
+  "peerDependencies": {
+    "react": "^18.0.0 || ^19.0.0",
+    "react-dom": "^18.0.0 || ^19.0.0",
+    "react-relay": ">=18.0.0 <19.0.0",
+    "relay-runtime": ">=18.0.0 <19.0.0",
+    "storybook": "^10.3.1"
+  },
+  "storybook": {
+    "displayName": "Relay",
+    "supportedFrameworks": [
+      "react"
+    ],
+    "icon": "https://relay.dev/img/relay.svg"
+  }
+}
