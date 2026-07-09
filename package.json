@@ -54,6 +54,8 @@
     ]
   },
   "patchedDependencies": {
-    "ejs@5.0.1": "patches/ejs@5.0.1.patch"
+    "ejs@5.0.1": "patches/ejs@5.0.1.patch",
+    "relay-runtime-network@0.1.0": "patches/relay-runtime-network@0.1.0.patch",
+    "react-relay@18.2.0": "patches/react-relay@18.2.0.patch"
   }
 }
