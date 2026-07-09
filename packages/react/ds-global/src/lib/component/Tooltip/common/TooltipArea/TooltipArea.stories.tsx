@@ -81,7 +81,7 @@ const Demo = ({ open, ...props }: TooltipAreaProps) => {
 };
 
 const meta = {
-  title: "_work_in_progress/component/Tooltip/TooltipArea",
+  title: "components/Tooltip/TooltipArea",
   component: Component,
   render: (args) => <Demo {...args} />,
   // `trackViewMode` provides the docs/story flag; `stage` wraps the story.

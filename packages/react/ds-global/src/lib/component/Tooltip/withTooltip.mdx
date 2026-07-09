@@ -5,7 +5,7 @@ import * as Stories from "./withTooltip.stories";
 
 # withTooltip
 
-`withTooltip` is a higher-order component: give it a component type and a message, and it returns a new component that carries a hover tooltip wherever it is rendered. It is the HOC form of the tooltip primitive — sugar over [`TooltipArea`](?path=/docs/_work_in_progress-component-tooltip-tooltiparea--docs), which internally drives `useDisclosure` in `hover` mode.
+`withTooltip` is a higher-order component: give it a component type and a message, and it returns a new component that carries a hover tooltip wherever it is rendered. It is the HOC form of the tooltip primitive — sugar over [`TooltipArea`](?path=/docs/components-tooltip-tooltiparea--docs), which internally drives `useDisclosure` in `hover` mode.
 
 ```tsx
 import { withTooltip, Button } from "@canonical/react-ds-global";
@@ -40,12 +40,12 @@ There are three ways to attach a tooltip in this library, and they differ by _wh
     </tr>
     <tr>
       <td>A one-off <strong>JSX node</strong> to tooltip here and now</td>
-      <td><a href="?path=/docs/_work_in_progress-component-tooltip-tooltiparea--docs">TooltipArea</a></td>
+      <td><a href="?path=/docs/components-tooltip-tooltiparea--docs">TooltipArea</a></td>
       <td>Wrapper element — <code>&lt;TooltipArea Message=&#123;…&#125;&gt;…&lt;/TooltipArea&gt;</code></td>
     </tr>
     <tr>
       <td>Just the floating message bubble</td>
-      <td><a href="?path=/docs/_work_in_progress-component-tooltip--docs">Tooltip</a></td>
+      <td><a href="?path=/docs/components-tooltip--docs">Tooltip</a></td>
       <td>Presentational — renders the message, no anchor or positioning</td>
     </tr>
   </tbody>
@@ -53,7 +53,7 @@ There are three ways to attach a tooltip in this library, and they differ by _wh
 
 Reach for `withTooltip` when the tooltip belongs to the component itself — the same message, every time it is rendered — and you would rather define it once at module scope than repeat a wrapper at each call site. Because it returns an ordinary component, the tooltipped version composes anywhere the original did.
 
-Internally the HOC renders `<TooltipArea Message={Message} {...popupProps}><Component … /></TooltipArea>`, so `withTooltip` is nothing more than `TooltipArea` with a component type curried in. When you instead have a **one-off JSX node** to annotate — a specific `<span>`, an inline element that only needs a tooltip in this one place — reach for [`TooltipArea`](?path=/docs/_work_in_progress-component-tooltip-tooltiparea--docs) and wrap the fragment directly. The two are interchangeable in behaviour; the choice is purely ergonomic. The [`Tooltip`](?path=/docs/_work_in_progress-component-tooltip--docs) component itself is the presentational message bubble and is rarely used on its own.
+Internally the HOC renders `<TooltipArea Message={Message} {...popupProps}><Component … /></TooltipArea>`, so `withTooltip` is nothing more than `TooltipArea` with a component type curried in. When you instead have a **one-off JSX node** to annotate — a specific `<span>`, an inline element that only needs a tooltip in this one place — reach for [`TooltipArea`](?path=/docs/components-tooltip-tooltiparea--docs) and wrap the fragment directly. The two are interchangeable in behaviour; the choice is purely ergonomic. The [`Tooltip`](?path=/docs/components-tooltip--docs) component itself is the presentational message bubble and is rarely used on its own.
 
 ## Basic example
 
@@ -266,7 +266,7 @@ function Bar() {
 }
 ```
 
-Because `Message` and `popupProps` are captured when you call `withTooltip`, they are fixed for that wrapped component. A message that must change at runtime is a sign you want [`TooltipArea`](?path=/docs/_work_in_progress-component-tooltip-tooltiparea--docs) — where `Message` is a live prop — rather than the HOC.
+Because `Message` and `popupProps` are captured when you call `withTooltip`, they are fixed for that wrapped component. A message that must change at runtime is a sign you want [`TooltipArea`](?path=/docs/components-tooltip-tooltiparea--docs) — where `Message` is a live prop — rather than the HOC.
 
 ### The ref does not reach the wrapped component
 
@@ -292,7 +292,7 @@ Two consequences follow. First, the trigger must be reachable and focusable for 
 
 ## Further reading
 
-- [TooltipArea](?path=/docs/_work_in_progress-component-tooltip-tooltiparea--docs) — the node/render form. Wrap a one-off JSX fragment, or drive a `Message` that changes at runtime. `withTooltip` is built on it, and it also exposes styling and target hooks (`className`, `targetElementClassName`, `parentElement`, `icon`, …) that the HOC does not surface.
-- [Tooltip](?path=/docs/_work_in_progress-component-tooltip--docs) — the presentational message bubble on its own, with no anchor or positioning logic.
+- [TooltipArea](?path=/docs/components-tooltip-tooltiparea--docs) — the node/render form. Wrap a one-off JSX fragment, or drive a `Message` that changes at runtime. `withTooltip` is built on it, and it also exposes styling and target hooks (`className`, `targetElementClassName`, `parentElement`, `icon`, …) that the HOC does not surface.
+- [Tooltip](?path=/docs/components-tooltip--docs) — the presentational message bubble on its own, with no anchor or positioning logic.
 - `useDisclosure` — the hover/click disclosure hook underpinning every tooltip primitive. `popupProps` is `Omit<TooltipAreaProps, "children" | "Message">`, and `TooltipAreaProps` in turn extends `Omit<UseDisclosureProps, "mode">`, so the disclosure surface flows through with `mode` removed.
 - [Global Tier — React](?path=/docs/documentation-introduction--docs) — package overview, installation, and the ontology behind these components.

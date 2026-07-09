@@ -28,7 +28,7 @@ const surface: Decorator = (Story) => (
 );
 
 const meta = {
-  title: "_work_in_progress/component/Tooltip",
+  title: "components/Tooltip",
   component: Component,
   decorators: [surface],
   parameters: {

@@ -30,7 +30,7 @@ const stage: Decorator = (Story) => (
 );
 
 const meta = {
-  title: "_work_in_progress/component/ContextualMenu",
+  title: "components/ContextualMenu",
   component: Component,
   decorators: [stage],
   tags: ["autodocs"],
