@@ -57,7 +57,7 @@
   "devDependencies": {
     "@biomejs/biome": "2.4.9",
     "@canonical/biome-config": "^0.29.0",
-    "@canonical/design-tokens": "^0.6.0",
+    "@canonical/design-tokens": "0.6.2-contrasted.0",
     "@canonical/storybook-helpers": "^0.29.0",
     "@canonical/typescript-config-react": "^0.29.0",
     "@canonical/vitest-config-react": "^0.29.0",

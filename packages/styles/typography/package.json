@@ -32,7 +32,7 @@
   },
   "license": "LGPL-3.0",
   "dependencies": {
-    "@canonical/design-tokens": "^0.6.0",
+    "@canonical/design-tokens": "0.6.2-contrasted.0",
     "opentype.js": "^1.3.4"
   },
   "devDependencies": {
