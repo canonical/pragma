@@ -147,9 +147,13 @@ Use ordinary relative imports (`../../subcomponent/Spinner/index.js`) with the `
 extension (NodeNext). They need zero config in any consumer and survive `tsc` emit
 unchanged.
 
-This applies to every `tsc`-built package (the libraries under `packages/`). Apps
-bundled by Vite (e.g. `apps/*` and scaffolded boilerplates) may still use `#`
-aliases, because the bundler inlines them and nothing is published.
+This applies to every **`tsc`-built** package — the discriminator is the build tool,
+not the directory. Most libraries under `packages/` are `tsc`-built and are in scope.
+Code that a **bundler** compiles may still use `#` aliases, because the bundler inlines
+them so nothing is published verbatim: this covers Vite-bundled apps (`apps/*` and
+scaffolded boilerplates) **and** Bun-bundled published packages under `packages/` (e.g.
+the CLI at `packages/cli/pragma`). When unsure, check whether the package's build script
+runs `tsc` or a bundler.
 
 ## PR mechanics
 
