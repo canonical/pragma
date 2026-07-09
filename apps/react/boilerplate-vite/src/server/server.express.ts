@@ -69,8 +69,16 @@ async function start() {
       const { extractPreferences } = await vite.ssrLoadModule(
         "@canonical/react-hooks",
       );
+      const { negotiateLocale } = await vite.ssrLoadModule(
+        "/src/lib/i18n/index.ts",
+      );
 
-      const { theme } = extractPreferences(req.headers.cookie ?? null);
+      const cookie = req.headers.cookie ?? null;
+      const { theme } = extractPreferences(cookie);
+      const locale = negotiateLocale(
+        cookie,
+        req.headers["accept-language"] ?? null,
+      );
       const renderer = new JSXRenderer(
         EntryServer,
         // The cookie is client-controlled, so only the known theme values reach
@@ -79,8 +87,9 @@ async function start() {
         {
           url,
           theme: theme === "light" || theme === "dark" ? theme : undefined,
+          locale,
         },
-        { htmlString: html },
+        { htmlString: html, defaultLocale: locale },
       );
       const result = renderer.renderToPipeableStream();
 

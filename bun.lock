@@ -949,6 +949,18 @@
         "vitest": "^4.0.18",
       },
     },
+    "packages/runtime/i18n": {
+      "name": "@canonical/i18n-core",
+      "version": "0.27.1-experimental.0",
+      "devDependencies": {
+        "@biomejs/biome": "2.4.9",
+        "@canonical/biome-config": "^0.27.1-experimental.0",
+        "@canonical/webarchitect": "^0.27.1-experimental.0",
+        "@types/node": "^24.12.0",
+        "typescript": "^5.9.3",
+        "vitest": "^4.0.18",
+      },
+    },
     "packages/runtime/ke": {
       "name": "@canonical/ke",
       "version": "0.29.0",
@@ -1572,6 +1584,8 @@
     "@canonical/ds-types": ["@canonical/ds-types@workspace:packages/ds-types"],
 
     "@canonical/harnesses": ["@canonical/harnesses@workspace:packages/runtime/harnesses"],
+
+    "@canonical/i18n-core": ["@canonical/i18n-core@workspace:packages/runtime/i18n"],
 
     "@canonical/ke": ["@canonical/ke@workspace:packages/runtime/ke"],
 
