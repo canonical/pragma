@@ -31,6 +31,10 @@ describe("ProductList component", () => {
     expect(
       screen.getByText(new RegExp(`of ${CATALOG_PRODUCTS.length} products`)),
     ).toBeInTheDocument();
+    // Product:3 (Beacon Micro Server) is the first page's out-of-stock,
+    // 4.2-rated product — pins the stock label and the rating formatting.
+    expect(screen.getByText(/out of stock/)).toBeInTheDocument();
+    expect(screen.getByText(/rated 4\.2 \/ 5/)).toBeInTheDocument();
     expect(
       screen.getByText("More products are available."),
     ).toBeInTheDocument();
@@ -68,6 +72,7 @@ describe("ProductList component", () => {
     expect(await screen.findByText("Mocked Product")).toBeInTheDocument();
     expect(screen.getByText("Grace Hopper")).toBeInTheDocument();
     expect(screen.getByText("$125.00", { exact: false })).toBeInTheDocument();
+    expect(screen.getByText(/in stock/)).toBeInTheDocument();
     expect(
       screen.queryByText("More products are available."),
     ).not.toBeInTheDocument();

@@ -73,6 +73,8 @@ export const Default: Story = {
     await expect(
       canvas.getByText(/showing 2 of 5 products/),
     ).toBeInTheDocument();
+    // The Polar Sensor Kit is the story's out-of-stock product.
+    await expect(canvas.getByText(/out of stock/)).toBeInTheDocument();
     await expect(
       canvas.getByText("More products are available."),
     ).toBeInTheDocument();

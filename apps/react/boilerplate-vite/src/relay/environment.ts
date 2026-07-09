@@ -1,5 +1,5 @@
 /**
- * @module Relay environment factory.
+ * Relay environment factory.
  *
  * Builds the app's Relay `Environment` on top of `relay-runtime-network`'s
  * middleware-driven fetch pipeline, in one of two modes:
@@ -28,7 +28,6 @@ import {
   type RelayRuntimeFetch,
   urlMiddleware,
 } from "relay-runtime-network";
-import { executeLocalOperation } from "./schema.js";
 
 /** Options for {@link createEnvironment}. */
 export interface CreateEnvironmentOptions {
@@ -47,18 +46,26 @@ const readConfiguredGraphqlUrl = (): string | undefined => {
     : undefined;
 };
 
-/** Builds the in-process network that executes against the mock schema. */
+/**
+ * Builds the in-process network that executes against the mock schema.
+ *
+ * The schema module (and its `graphql` dependency) is loaded lazily inside
+ * the executor — `execute` already returns a promise, so the dynamic import
+ * adds no async boundary — keeping graphql-js and the mock catalog out of
+ * the main bundle, and unparsed, whenever the endpoint path is taken.
+ */
 const createLocalNetwork = () =>
   createRelayRuntimeNetwork({
     fetch: {
       executor: localGraphExecutor({
-        execute: (context: RelayFetchContext) => {
+        execute: async (context: RelayFetchContext) => {
           const { text } = context.operation;
           if (!text) {
             throw new Error(
               "The local mock schema requires full operation text; persisted queries are not supported.",
             );
           }
+          const { executeLocalOperation } = await import("./schema.js");
           return executeLocalOperation({
             text,
             variables: context.variables,

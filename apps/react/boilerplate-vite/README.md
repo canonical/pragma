@@ -62,6 +62,12 @@ production behaviour.
 - `bun run build:server` — `vite build --ssr src/server/renderer.tsx` →
   `dist/server`. Needed only for `preview:*`; the `preview:*` scripts run it.
 - `bun run build:all` — the client bundle plus the static Storybook.
+- `bun run relay` — `relay-compiler`, regenerating the artifacts in
+  `src/relay/__generated__`. The artifacts are committed (the Vite plugin runs
+  with `codegen: false`), so run this after editing any `graphql` tag or the
+  schema — the build does not regenerate them for you.
+- `bun run relay:watch` — the same, re-running on change; pair it with `dev:*`
+  while working on queries.
 
 ## Testing
 
@@ -91,8 +97,11 @@ src/
 ├── domains/              Feature domains, each owning its routes and pages
 │   ├── marketing/        Home, guides
 │   ├── account/          Account, login
+│   ├── catalog/          Product catalog — the Relay data-layer example
 │   └── contact/          Contact form (present when scaffolded with forms)
 ├── lib/                  Shared components (Navigation, ThemeSelector, …)
+├── relay/                Relay environment factory, executable mock schema,
+│                         and generated artifacts (__generated__/)
 ├── styles/               Application CSS
 ├── assets/               Assets imported in code (bundled and hashed by Vite)
 ├── Application.tsx       Application shell
@@ -107,11 +116,31 @@ files. `src/assets/` and `public/` both ship by default — the former for asset
 referenced in code, the latter for fixed-URL files — and either may be removed if
 an application uses only one.
 
+## Data layer (Relay)
+
+The `catalog` domain demonstrates the app's [Relay](https://relay.dev) data
+layer: `ProductList` fetches a page of products with `useLazyLoadQuery`, and
+each `ProductCard` reads its own colocated `useFragment` — the component owns
+its field selection, the parent query just spreads it.
+
+**By default the app needs no backend.** `createEnvironment`
+(`src/relay/environment.ts`) resolves every GraphQL operation in-process
+against an executable mock schema (`src/relay/schema.ts`, built from the SDL
+in `src/relay/schema.graphql`) backed by a small deterministic catalog. Set
+`VITE_GRAPHQL_URL` (or pass `graphqlUrl` to `createEnvironment`) to switch the
+environment to posting operations to a real GraphQL endpoint instead — no code
+changes needed.
+
+**Generated artifacts are committed.** The Vite plugin runs with
+`codegen: false`, so `src/relay/__generated__/` is not rebuilt on the fly:
+after editing a `graphql` tag or the schema, run `bun run relay` (or keep
+`bun run relay:watch` running) to regenerate the artifacts, and commit them.
+
 ## Conventions
 
-Path aliases (`#lib`, `#domains`, `#styles`) are Node subpath imports declared in
-`package.json`, resolved natively by Vite and TypeScript without a resolver
-plugin. Linting and formatting run through Biome (`bun run check`). The
+Path aliases (`#lib`, `#domains`, `#relay`, `#styles`) are Node subpath
+imports declared in `package.json`, resolved natively by Vite and TypeScript
+without a resolver plugin. Linting and formatting run through Biome (`bun run check`). The
 application is built on `@canonical/react-ds-global`, `@canonical/react-ssr`,
 `@canonical/router-react`, and the shared design tokens — the same packages every
 Canonical application uses, so conventions carry across projects.

@@ -1,6 +1,7 @@
 import { useHead } from "@canonical/react-head";
 import { type ReactElement, Suspense } from "react";
 import { ClientOnly } from "#lib/index.js";
+import ErrorBoundary from "./ErrorBoundary.js";
 import ProductList from "./ProductList.js";
 
 export default function CatalogPage(): ReactElement {
@@ -24,10 +25,25 @@ export default function CatalogPage(): ReactElement {
         then `ClientOnly` keeps the query off the server render path: the
         server streams the fallback and the browser fetches after hydration.
       */}
+      {/*
+        The canonical Relay pairing: Suspense renders the pending state while
+        `useLazyLoadQuery` is in flight, and the ErrorBoundary renders the
+        failure state when the query errors (e.g. an unreachable endpoint in
+        `VITE_GRAPHQL_URL` mode) — without it a thrown query error would
+        unmount the whole tree to a blank page.
+      */}
       <ClientOnly fallback={<p>Loading catalog…</p>}>
-        <Suspense fallback={<p>Loading catalog…</p>}>
-          <ProductList />
-        </Suspense>
+        <ErrorBoundary
+          fallback={
+            <p role="alert">
+              The catalog failed to load. Reload the page to try again.
+            </p>
+          }
+        >
+          <Suspense fallback={<p>Loading catalog…</p>}>
+            <ProductList />
+          </Suspense>
+        </ErrorBoundary>
       </ClientOnly>
     </section>
   );

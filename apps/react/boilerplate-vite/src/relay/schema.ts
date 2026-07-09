@@ -1,5 +1,5 @@
 /**
- * @module Executable mock schema for the Relay data layer.
+ * Executable mock schema for the Relay data layer.
  *
  * Builds the SDL in ./schema.graphql into a graphql-js schema backed by a
  * small, deterministic in-memory catalog, so the app (and its tests and
