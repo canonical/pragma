@@ -9,7 +9,7 @@ import type {
   PartialStoryFn as StoryFunction,
 } from "storybook/internal/types";
 import { describe, expect, it, vi } from "vitest";
-import withRelayEnvironment from "./withRelayEnvironment.js";
+import { withRelayEnvironment } from "./withRelayEnvironment.js";
 
 const viewerField = {
   alias: null,

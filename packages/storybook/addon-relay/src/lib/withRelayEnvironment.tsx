@@ -97,7 +97,7 @@ const MockRelayEnvironmentProvider = ({
  * that automatically resolves every operation the story issues, using the
  * story's `mockResolvers` and/or `generateFunction`.
  */
-const withRelayEnvironment = (
+export const withRelayEnvironment = (
   storyFn: StoryFunction<Renderer>,
   context: StoryContext<Renderer>,
 ): ReturnType<StoryFunction<Renderer>> => {
@@ -115,5 +115,3 @@ const withRelayEnvironment = (
     </MockRelayEnvironmentProvider>
   ) as ReturnType<StoryFunction<Renderer>>;
 };
-
-export default withRelayEnvironment;

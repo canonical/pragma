@@ -1,5 +1,5 @@
 import type { ProjectAnnotations, Renderer } from "storybook/internal/types";
-import withRelayEnvironment from "./lib/withRelayEnvironment.js";
+import { withRelayEnvironment } from "./lib/withRelayEnvironment.js";
 
 /**
  * Storybook preview annotations — registers the `withRelayEnvironment`

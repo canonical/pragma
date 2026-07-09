@@ -27,7 +27,7 @@ export default config;
 If your Storybook config is built with `@canonical/storybook-config`, pass it through `extraAddons`:
 
 ```typescript
-import createConfig from "@canonical/storybook-config";
+import { createConfig } from "@canonical/storybook-config";
 
 export default createConfig("react", {
   extraAddons: ["@canonical/storybook-addon-relay"],
