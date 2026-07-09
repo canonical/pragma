@@ -1,6 +1,6 @@
 import type { _Item } from "@canonical/ds-types";
 import { createContext, useContext } from "react";
-import type { UseContextualMenuResult } from "#lib/hooks/index.js";
+import type { UseContextualMenuResult } from "../../../hooks/index.js";
 import type { MenuItem } from "../types.js";
 
 /**

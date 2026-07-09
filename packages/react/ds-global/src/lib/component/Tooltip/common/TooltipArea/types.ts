@@ -1,5 +1,5 @@
 import type { CSSProperties, ReactNode } from "react";
-import type { UseDisclosureProps } from "#lib/hooks/index.js";
+import type { UseDisclosureProps } from "../../../../hooks/index.js";
 
 export interface TooltipAreaProps extends Omit<UseDisclosureProps, "mode"> {
   /**

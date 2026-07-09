@@ -4,9 +4,9 @@ import type {
   UseContextualMenuProps,
   WindowFitmentPlacement,
   WindowFitmentSide,
-} from "#lib/hooks/index.js";
+} from "../../hooks/index.js";
 
-export type { MenuItem } from "#lib/hooks/index.js";
+export type { MenuItem } from "../../hooks/index.js";
 
 export interface ContextualMenuProps
   extends Omit<HTMLAttributes<HTMLDivElement>, "onSelect">,

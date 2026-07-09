@@ -1,6 +1,6 @@
 import type React from "react";
 import { useCallback } from "react";
-import { OVERLAY_PLACEMENT, useDisclosure } from "#lib/hooks/index.js";
+import { OVERLAY_PLACEMENT, useDisclosure } from "../../hooks/index.js";
 import type { PopoverProps } from "./types.js";
 import "./styles.css";
 

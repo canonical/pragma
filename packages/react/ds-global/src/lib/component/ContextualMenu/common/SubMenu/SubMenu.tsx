@@ -3,7 +3,7 @@ import { getItemId } from "@canonical/utils";
 import type React from "react";
 import { type ReactElement, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { MENU_PLACEMENT, useWindowFitment } from "#lib/hooks/index.js";
+import { MENU_PLACEMENT, useWindowFitment } from "../../../../hooks/index.js";
 import type { MenuItem } from "../../types.js";
 import Item from "../Item/index.js";
 import { useMenuContext } from "../MenuContext.js";

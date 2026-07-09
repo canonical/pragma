@@ -2,7 +2,7 @@ import type { HTMLAttributes, ReactNode } from "react";
 import type {
   UseDisclosureProps,
   WindowFitmentSide,
-} from "#lib/hooks/index.js";
+} from "../../hooks/index.js";
 
 export interface PopoverProps
   extends Omit<HTMLAttributes<HTMLDetailsElement>, "onToggle">,

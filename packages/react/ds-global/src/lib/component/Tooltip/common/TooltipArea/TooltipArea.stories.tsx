@@ -1,9 +1,9 @@
 import type { Decorator, Meta, StoryFn, StoryObj } from "@storybook/react-vite";
 
 import { createContext, useContext, useRef, useState } from "react";
-import { Button } from "#lib/component/Button/index.js";
-import { Icon } from "#lib/component/Icon/index.js";
-import type { WindowFitmentSide } from "#lib/hooks/index.js";
+import { Button } from "../../../../component/Button/index.js";
+import { Icon } from "../../../../component/Icon/index.js";
+import type { WindowFitmentSide } from "../../../../hooks/index.js";
 import Component from "./TooltipArea.js";
 import type { TooltipAreaProps } from "./types.js";
 

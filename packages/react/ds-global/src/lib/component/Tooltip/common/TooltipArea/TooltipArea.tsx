@@ -5,7 +5,7 @@ import {
   useState,
 } from "react";
 import { createPortal } from "react-dom";
-import { useDisclosure } from "#lib/hooks/index.js";
+import { useDisclosure } from "../../../../hooks/index.js";
 import { Tooltip } from "../../index.js";
 import type { TooltipAreaProps } from "./types.js";
 

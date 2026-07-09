@@ -1,5 +1,5 @@
 import type React from "react";
-import { Icon } from "#lib/component/Icon/index.js";
+import { Icon } from "../../../Icon/index.js";
 import type { ItemProps } from "./types.js";
 import "./styles.css";
 

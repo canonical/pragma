@@ -1,5 +1,5 @@
 import type { Decorator, Meta, StoryObj } from "@storybook/react-vite";
-import { Icon } from "#lib/component/Icon/index.js";
+import { Icon } from "../../component/Icon/index.js";
 import Component from "./Tooltip.js";
 
 /**

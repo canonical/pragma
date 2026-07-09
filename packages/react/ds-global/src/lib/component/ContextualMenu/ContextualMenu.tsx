@@ -3,7 +3,7 @@ import { getItemId } from "@canonical/utils";
 import type React from "react";
 import { useMemo } from "react";
 import { createPortal } from "react-dom";
-import { MENU_PLACEMENT, useContextualMenu } from "#lib/hooks/index.js";
+import { MENU_PLACEMENT, useContextualMenu } from "../../hooks/index.js";
 import MenuContext from "./common/MenuContext.js";
 import SubMenu from "./common/SubMenu/index.js";
 import type { ContextualMenuProps, MenuItem } from "./types.js";
