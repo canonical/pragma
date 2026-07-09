@@ -56,12 +56,64 @@ const findAdjacentLanding = <T extends Item = Item>(
  *
  * @returns A `(state, action) => state` reducer to pass as `stateReducer`.
  */
+/**
+ * Type-ahead across group boundaries. The base reducer only searches the
+ * current item's siblings (one group), so typing a letter that matches an item
+ * in ANOTHER group finds nothing. This searches every group's items — from just
+ * after the current item, wrapping — for the first enabled item whose label
+ * matches `keysSoFar`, and moves the highlight there.
+ * @returns The updated state, or the input state if there is no match.
+ */
+const handleCrossGroupTypeAhead = <T extends Item = Item>(
+  state: NavigationState<T>,
+): NavigationState<T> => {
+  const path = state.highlightedItems;
+  const current = path.at(-1);
+  const group = path.at(-2);
+  const root = path.at(-3);
+  if (!current || !group || !root?.items) return state;
+
+  const search = state.keysSoFar.toLowerCase();
+  if (!search) return state;
+
+  // If the current item already matches, the base reducer handled it in-group.
+  if (current.label?.toLowerCase().startsWith(search)) return state;
+
+  // Flatten every group's enabled items into one ordered list, remembering each
+  // item's group so the highlight path can be rebuilt from the tree's instances.
+  const entries: { group: _Item<T>; item: _Item<T> }[] = [];
+  for (const g of root.items) {
+    if (g.disabled) continue;
+    for (const it of g.items ?? []) {
+      if (!it.disabled) entries.push({ group: g, item: it });
+    }
+  }
+
+  const currentIndex = entries.findIndex((e) => e.item === current);
+  const start = currentIndex + 1;
+  for (let i = 0; i < entries.length; i++) {
+    const entry = entries[(start + i) % entries.length];
+    if (entry.item.label?.toLowerCase().startsWith(search)) {
+      return {
+        ...state,
+        highlightedItems: [...path.slice(0, -2), entry.group, entry.item],
+        currentDepth: entry.item.depth,
+      };
+    }
+  }
+  return state;
+};
+
 const createCrossGroupStateReducer =
   <T extends Item = Item>() =>
   (
     state: NavigationState<T>,
     action: NavigationAction<T>,
   ): NavigationState<T> => {
+    if (action.type === NavigationActionType.TYPE_AHEAD) {
+      return handleCrossGroupTypeAhead(state);
+    }
+
     const isDown = action.type === NavigationActionType.ARROW_DOWN;
     const isUp = action.type === NavigationActionType.ARROW_UP;
     if (!isDown && !isUp) return state;

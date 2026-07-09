@@ -17,6 +17,7 @@ describe("useDisclosure", () => {
 
   const mockBestPosition: BestPosition = {
     positionName: "bottom",
+    align: "center",
     position: { top: 10, left: 20 },
     fits: true,
     autoFitOffset: { top: 0, left: 0 },
@@ -39,6 +40,7 @@ describe("useDisclosure", () => {
       popupRef: mockPopupRef,
       bestPosition: mockBestPosition,
       popupPositionStyle: mockPopupPositionStyle,
+      direction: "ltr",
     });
   });
 
@@ -261,9 +263,9 @@ describe("useDisclosure", () => {
   });
 
   it("passes props through to useWindowFitment with the resolved isOpen", () => {
-    renderHook(() => useDisclosure({ preferredDirections: ["top"] }));
+    renderHook(() => useDisclosure({ preferredDirections: ["block-start"] }));
     expect(vi.mocked(useWindowFitment)).toHaveBeenCalledWith({
-      preferredDirections: ["top"],
+      preferredDirections: ["block-start"],
       isOpen: false,
     });
   });

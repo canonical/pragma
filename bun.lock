@@ -645,6 +645,7 @@
       "name": "@canonical/react-ds-global",
       "version": "0.29.1",
       "dependencies": {
+        "@canonical/design-tokens": "0.6.2-contrasted.0",
         "@canonical/ds-assets": "^0.29.0",
         "@canonical/react-hooks": "^0.29.0",
         "@canonical/storybook-config": "^0.29.1",
@@ -656,7 +657,6 @@
       "devDependencies": {
         "@biomejs/biome": "2.4.9",
         "@canonical/biome-config": "^0.29.0",
-        "@canonical/design-tokens": "^0.6.0",
         "@canonical/ds-types": "^0.29.0",
         "@canonical/router-core": "^0.29.0",
         "@canonical/router-react": "^0.29.0",
@@ -1185,7 +1185,7 @@
       "name": "@canonical/styles",
       "version": "0.29.0",
       "dependencies": {
-        "@canonical/design-tokens": "^0.6.0",
+        "@canonical/design-tokens": "0.6.2-contrasted.0",
         "@canonical/styles-typography": "^0.29.0",
         "normalize.css": "^8.0.1",
       },
@@ -3905,6 +3905,8 @@
 
     "@bundled-es-modules/glob/glob": ["glob@10.5.0", "", { "dependencies": { "foreground-child": "^3.1.0", "jackspeak": "^3.1.2", "minimatch": "^9.0.4", "minipass": "^7.1.2", "package-json-from-dist": "^1.0.0", "path-scurry": "^1.11.1" }, "bin": { "glob": "dist/esm/bin.mjs" } }, "sha512-DfXN8DfhJ7NH3Oe7cFmu3NCu1wKbkReJ8TorzSAFbSKrlNaQSKfIzqYqVY8zlbs2NLBbWpRiU52GX2PbaBVNkg=="],
 
+    "@canonical/react-ds-global/@canonical/design-tokens": ["@canonical/design-tokens@0.6.2-contrasted.0", "", { "dependencies": { "@canonical/terrazzo-lsp": "^0.6.0" } }, "sha512-JLzc2tsSbuINFk4adbNGyFhnuKXLiIzE6ntwqigrL4vJoSTuj/OkaJLiLPB12LlQYOT3vnBiL+JmouZgDflNgQ=="],
+
     "@canonical/react-hooks/@canonical/biome-config": ["@canonical/biome-config@0.22.0", "", { "peerDependencies": { "@biomejs/biome": "2.4.9" } }, "sha512-0DRY1gh+FM2CPysbmW6tNWHoctCMDWALcKwivDSIPYVCdz5C+5uZmK26Od2KNQ0jd2HWTVad/EwPebK4IfyOLA=="],
 
     "@canonical/react-hooks/@canonical/typescript-config": ["@canonical/typescript-config@0.22.0", "", { "peerDependencies": { "typescript": "^5.9.3" } }, "sha512-2EaALHQcHELmiuzY4N/BimYDPfLJjmd8LcOOjr+cb8WM0F9MqCGD+huQHtAkw2eM7fRJ2V4Hl0EhTx6oSmVRgg=="],
@@ -3912,6 +3914,8 @@
     "@canonical/react-hooks/@canonical/typescript-config-react": ["@canonical/typescript-config-react@0.22.0", "", { "dependencies": { "@canonical/typescript-config": "^0.22.0" }, "peerDependencies": { "typescript": "^5.9.3" } }, "sha512-K065hSK6nzAPH3iK9MNCxMmzrl/111SdLXOYyeXvquSEDFQqoOtSZAN7yE2fw4vKGBf+5RJvRbkOUXHva0uj/g=="],
 
     "@canonical/react-hooks/@canonical/webarchitect": ["@canonical/webarchitect@0.22.0", "", { "dependencies": { "ajv": "^8.18.0", "chalk": "^5.6.2", "commander": "^14.0.3" }, "bin": { "webarchitect": "src/cli.ts" } }, "sha512-HoiqlMgF9PsVyQCPEvV4gREQEa/SpJeeJxKHglpfEez+pKAkmAlah1i37a55hHUYDAREHguxlktAJ0UYGAiqzQ=="],
+
+    "@canonical/styles/@canonical/design-tokens": ["@canonical/design-tokens@0.6.2-contrasted.0", "", { "dependencies": { "@canonical/terrazzo-lsp": "^0.6.0" } }, "sha512-JLzc2tsSbuINFk4adbNGyFhnuKXLiIzE6ntwqigrL4vJoSTuj/OkaJLiLPB12LlQYOT3vnBiL+JmouZgDflNgQ=="],
 
     "@canonical/svelte-ds-app-wpe/playwright": ["playwright@1.58.2", "", { "dependencies": { "playwright-core": "1.58.2" }, "optionalDependencies": { "fsevents": "2.3.2" }, "bin": { "playwright": "cli.js" } }, "sha512-vA30H8Nvkq/cPBnNw4Q8TWz1EJyqgpuinBcHET0YVJVFldr8JDNiU9LaWAE1KqSkRYazuaBhTpB5ZzShOezQ6A=="],
 

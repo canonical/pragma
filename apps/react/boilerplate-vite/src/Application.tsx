@@ -37,7 +37,7 @@ function App() {
       </Suspense>
       <div className="card">
         <TooltipArea
-          preferredDirections={["right", "bottom"]}
+          preferredDirections={["inline-end", "block-end"]}
           Message={`Increment count to ${count + 1}`}
         >
           <Button onClick={() => setCount((count) => count + 1)}>

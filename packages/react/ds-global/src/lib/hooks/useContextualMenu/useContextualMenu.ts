@@ -5,7 +5,10 @@ import {
   getMenuItemProps,
   useNavigationTree,
 } from "@canonical/react-hooks";
-import { createCrossGroupStateReducer } from "@canonical/utils";
+import {
+  createCrossGroupStateReducer,
+  getFirstEnabledLeaf,
+} from "@canonical/utils";
 import { useCallback, useEffect, useMemo } from "react";
 import { useDisclosure } from "../useDisclosure/index.js";
 import type {
@@ -68,11 +71,75 @@ const useContextualMenu = ({
   });
 
   // The disclosure owns the open state (it drives positioning and dismissal);
-  // mirror it into the navigation tree so roving focus follows open/close.
+  // mirror it into the navigation tree so roving focus follows open/close. On
+  // open, highlight the first enabled LEAF (a real menuitem) rather than letting
+  // the shared reducer's OPEN land on the first child — which, for the menu's
+  // root -> group -> item tree, is a structural GROUP. Without a highlighted
+  // menuitem no item gets the roving `tabindex="0"` and arrow keys have no
+  // current item to move from, so keyboard navigation is dead.
   useEffect(() => {
-    if (isOpen) nav.openMenu();
-    else nav.closeMenu();
-  }, [isOpen, nav.openMenu, nav.closeMenu]);
+    if (isOpen) {
+      nav.openMenu();
+      const firstLeaf = getFirstEnabledLeaf(nav.annotatedRoot);
+      if (firstLeaf) nav.highlightItem(firstLeaf);
+    } else {
+      nav.closeMenu();
+    }
+  }, [
+    isOpen,
+    nav.openMenu,
+    nav.closeMenu,
+    nav.highlightItem,
+    nav.annotatedRoot,
+  ]);
+
+  // Move DOM focus into the menu when it opens so arrow keys reach the roving
+  // keyboard handler (WAI-ARIA menu button: opening focuses the first item).
+  // Fires only on open; the double rAF waits for the popup to render and the
+  // roving `tabindex="0"` to be applied before focus lands.
+  // @note Impure — moves DOM focus.
+  useEffect(() => {
+    if (typeof window === "undefined" || !isOpen) return;
+    const menu = popupRef.current;
+    if (!menu) return;
+    const focusMenu = () => {
+      const firstItem = menu.querySelector<HTMLElement>(
+        '[role="menuitem"]:not([aria-disabled="true"])',
+      );
+      // Prefer the first enabled menuitem; fall back to the menu container,
+      // which carries the keyboard handler.
+      (firstItem ?? menu).focus();
+    };
+    const id = requestAnimationFrame(() => requestAnimationFrame(focusMenu));
+    return () => cancelAnimationFrame(id);
+  }, [isOpen, popupRef]);
+
+  // Keep DOM focus on the currently-highlighted item as the keyboard highlight
+  // moves. The tree only updates the roving `tabindex`; without moving focus too
+  // the new item is not scrolled into view — so navigating to an item below a
+  // long menu's fold would move the highlight to an item that stays off-screen.
+  // Focusing it (menu + submenus are portalled, so search the whole document)
+  // scrolls it into view natively. Guarded so it only runs while focus is
+  // already inside a menu (never steals focus when the menu is not in use).
+  // @note Impure — moves DOM focus.
+  const highlightedTail = nav.highlightedItems.at(-1);
+  useEffect(() => {
+    if (typeof window === "undefined" || !isOpen || !highlightedTail) return;
+    const active = document.activeElement;
+    const focusWithinMenu =
+      active instanceof HTMLElement && active.closest('[role="menu"]') !== null;
+    if (!focusWithinMenu) return;
+    const id = requestAnimationFrame(() => {
+      const item = document.querySelector<HTMLElement>(
+        '[role="menuitem"][tabindex="0"]',
+      );
+      if (item && item !== document.activeElement) {
+        item.focus();
+        item.scrollIntoView({ block: "nearest" });
+      }
+    });
+    return () => cancelAnimationFrame(id);
+  }, [isOpen, highlightedTail]);
 
   // The trigger must drive the DISCLOSURE (the source of truth for open) while
   // keeping the disclosure's click/keyboard handlers. The tree's toggle is not
@@ -87,6 +154,28 @@ const useContextualMenu = ({
     [isOpen, popupId, getDisclosureToggleProps],
   );
 
+  // Bridge the tree's keyboard handling to the disclosure, which owns the open
+  // state. Escape and Tab close the menu and return focus to the trigger (WCAG /
+  // WAI-ARIA menu pattern); every other key (arrows, Home/End, type-ahead,
+  // Enter) is delegated to the navigation tree.
+  const handleMenuKeyDown = useCallback(
+    (
+      event: React.KeyboardEvent,
+      treeKeyDown?: (e: React.KeyboardEvent) => void,
+    ) => {
+      if (event.key === "Escape" || event.key === "Tab") {
+        // Tab must not move focus to the next control while the menu is open.
+        if (event.key === "Tab") event.preventDefault();
+        close();
+        // @note Impure — returns focus to the trigger.
+        targetRef.current?.focus();
+        return;
+      }
+      treeKeyDown?.(event);
+    },
+    [close, targetRef],
+  );
+
   // Menu-role ARIA getters, composing the base navigation prop-getters (for
   // roving tabindex + refs) with the contextual-menu ARIA presets.
   const getMenuProps = useCallback(
@@ -94,12 +183,22 @@ const useContextualMenu = ({
       label?: string;
       labelledBy?: string;
       ref?: React.Ref<HTMLElement>;
-    }) => ({
-      // Compose the positioning ref (if provided) with the navigation menu ref.
-      ...nav.getMenuProps(opts?.ref ? { ref: opts.ref } : undefined),
-      ...getMenuAriaProps(nav, opts),
-    }),
-    [nav],
+    }) => {
+      const baseProps = nav.getMenuProps(
+        opts?.ref ? { ref: opts.ref } : undefined,
+      );
+      const treeKeyDown = baseProps.onKeyDown;
+      // No `aria-modal`: it is only valid on modal dialog roles, not `role=
+      // "menu"`. The menu-button pattern (haspopup + expanded + Escape/Tab
+      // dismissal) already conveys the semantics.
+      return {
+        ...baseProps,
+        ...getMenuAriaProps(nav, opts),
+        onKeyDown: (event: React.KeyboardEvent) =>
+          handleMenuKeyDown(event, treeKeyDown),
+      };
+    },
+    [nav, handleMenuKeyDown],
   );
 
   const getGroupProps = useCallback(
@@ -132,6 +231,10 @@ const useContextualMenu = ({
     highlightedItems: nav.highlightedItems,
     highlightItem: nav.highlightItem,
     selectItem: nav.selectItem,
+    // `getNodeStatus(P).inHighlightedBranch` is true when the keyboard path
+    // descends through P — i.e. P's submenu is the open one. The render layer
+    // uses it to decide which submenus to show.
+    getNodeStatus: nav.getNodeStatus,
     getTriggerProps,
     getMenuProps,
     getGroupProps,

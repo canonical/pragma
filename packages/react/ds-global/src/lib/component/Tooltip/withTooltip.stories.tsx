@@ -6,7 +6,7 @@ import { withTooltip } from "./index.js";
 type TooltipType = ReturnType<typeof withTooltip>;
 
 const meta = {
-  title: "_work_in_progress/component/Tooltip/withTooltip",
+  title: "components/Tooltip/withTooltip",
   parameters: {
     layout: "centered",
   },
@@ -15,7 +15,9 @@ const meta = {
       value: "dark",
     },
   },
-  tags: ["autodocs"],
+  // No `autodocs` tag: the docs page is supplied by withTooltip.mdx
+  // (`<Meta of={Stories} />`). Having both creates two docs pages for the same
+  // component, which Storybook refuses to index.
 } satisfies Meta<TooltipType>;
 
 export default meta;

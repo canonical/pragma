@@ -1,0 +1,86 @@
+/* Component tokens — sourced from @canonical/design-tokens.
+   Mapped strictly to the Figma "Contextual Menu" frame: white background
+   (color-background) on the modal surface, a drop shadow (no border), and a
+   muted 1px divider between groups. */
+:root {
+  --contextual-menu-color-divider: var(--color-border-muted);
+  --contextual-menu-divider-width: var(--dimension-stroke-thickness-medium);
+  --contextual-menu-min-width: 12rem;
+  --contextual-menu-max-width: 20rem;
+  /* Three-layer drop shadow from the Figma effect. */
+  --contextual-menu-shadow:
+    0 1px 1px 0 rgba(0, 0, 0, 0.15), 0 2px 2px -1px rgba(0, 0, 0, 0.15),
+    0 0 3px 0 rgba(0, 0, 0, 0.2);
+  --contextual-menu-motion-duration: 0.12s;
+}
+
+.ds.contextual-menu {
+  display: inline-block;
+
+  > .trigger {
+    cursor: pointer;
+  }
+}
+
+.ds.contextual-menu__surface {
+  position: fixed;
+  z-index: var(--z-index-overlay, 100);
+  min-width: var(--contextual-menu-min-width);
+  max-width: var(--contextual-menu-max-width);
+  /* A menu (or submenu) taller than the viewport scrolls INSIDE itself instead
+     of overflowing off-screen — otherwise keyboard-navigating to an item below
+     the fold would move the highlight to an item that is not visible. The
+     highlighted item is scrolled into view on keyboard nav (see Item). */
+  max-block-size: calc(100dvh - 2 * var(--dimension-200, 16px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  /* Read the surface channel directly on this element so the `.modal` surface
+     applied here resolves (a :root intermediate would see it unset). */
+  background-color: var(--surface-color-background, var(--color-background));
+  box-shadow: var(--contextual-menu-shadow);
+
+  /* CSS-only enter/exit animation. */
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity var(--contextual-menu-motion-duration) ease-in-out,
+    visibility var(--contextual-menu-motion-duration) allow-discrete;
+
+  &[aria-hidden="false"] {
+    opacity: 1;
+    visibility: visible;
+
+    @starting-style {
+      opacity: 0;
+    }
+  }
+
+  /* A submenu mounts on open but is positioned a frame later; keep it hidden
+     until `data-positioned` so it never paints at the fallback top:0/left:0. */
+  &.submenu[aria-hidden="false"]:not([data-positioned="true"]) {
+    opacity: 0;
+    visibility: hidden;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+
+  /* Every group reserves a 1px top border so group heights never shift when a
+     divider is / isn't drawn (no layout drift). It is transparent by default and
+     only coloured between groups, where the muted divider is wanted (Figma:
+     group border-top, color-border-muted, stroke-thickness-medium). */
+  .group {
+    border-block-start: var(--contextual-menu-divider-width, 1px) solid
+      transparent;
+  }
+  .group + .group {
+    border-block-start-color: var(--contextual-menu-color-divider);
+  }
+
+  /* The submenu-anchor wraps a submenu-parent item for hover detection; it must
+     not disturb the vertical item flow, so it lays out like the item it wraps. */
+  .submenu-anchor {
+    display: block;
+  }
+}

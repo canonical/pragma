@@ -77,6 +77,7 @@ export interface UseContextualMenuResult
       | "highlightedItems"
       | "highlightItem"
       | "selectItem"
+      | "getNodeStatus"
     > {
   /**
    * Prop-getter for the menu trigger element. Drives the disclosure (open state,

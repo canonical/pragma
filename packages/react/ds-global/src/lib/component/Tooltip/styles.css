@@ -1,40 +1,38 @@
-/* Component tokens — sourced from @canonical/design-tokens */
+/* Component tokens — sourced from @canonical/design-tokens.
+   The tooltip runs on the `contrasted` surface so its colours invert against
+   the ambient theme (dark chip on a light UI, light chip on a dark UI). The
+   surface channels (--surface-color-*) are read directly on the .contrasted
+   element below, NOT via a :root intermediate (which would see them unset and
+   fall back to the base colour). */
 :root {
-  /*
-    TODO the tooltip's color tokens should be inverted from the active color theme.
-        This is to provide greater color contrast against its context.
-        This will be implemented once theming DS-wide is added.
-  */
-
-  --tooltip-color-background: var(--color-foreground-ghost);
-  --tooltip-color-background-hover: var(--color-foreground-ghost-hover);
-  --tooltip-color-background-active: var(--color-foreground-ghost-active);
-  --tooltip-color-text: var(--color-text);
-  --tooltip-color-border: var(--color-border-high-contrast);
-  --tooltip-color-border-hover: var(--tooltip-color-border);
-  --tooltip-color-border-active: var(--tooltip-color-border);
-
   --tooltip-border-radius: 0;
   --tooltip-margin-left: 0;
   --tooltip-margin-bottom: 0;
-  --tooltip-padding-vertical: var(--spacing-input-padding-vertical);
-  --tooltip-padding-horizontal: var(--spacing-horizontal-large);
-  --tooltip-border-width: var(--spacing-border-width);
-  --tooltip-font-size: var(--font-size-default);
+  /* Figma: py = dimension-100 (8px), px = dimension-200 (16px). */
+  --tooltip-padding-vertical: var(--dimension-100);
+  --tooltip-padding-horizontal: var(--dimension-200);
+  --tooltip-border-width: 0;
+  /* Figma: text-secondary (14px / 20px line-height). */
+  --tooltip-font-size: var(--font-size-small, 14px);
   --tooltip-font-weight: var(--font-weight-default);
-  --tooltip-line-height: var(--line-height-default);
+  --tooltip-line-height: var(--line-height-small, 20px);
+  --tooltip-max-width: 284px;
+  /* Gap between an optional leading icon and the text (dimension-100). */
+  --tooltip-gap: var(--dimension-100);
 
-  --tooltip-spacing-arrow-size: 6px;
+  /* Arrow geometry, independent of `distance` (the gap to the trigger).
+     Figma: 14px base (dimension-175) across the edge, 8px depth pointing out. */
+  --tooltip-arrow-width: var(--dimension-175, 14px);
+  --tooltip-arrow-depth: var(--dimension-100, 8px);
+
+  /* Duration of the open/close fade. */
+  --tooltip-motion-duration: 0.1s;
 }
 
 /* component variables
     --tooltip-color-background: background color of the tooltip
-    --tooltip-color-background-hover: background color of the tooltip on hover
-    --tooltip-color-background-active: background color of the tooltip on active
     --tooltip-color-text: text color of the tooltip
     --tooltip-color-border: border color of the tooltip
-    --tooltip-color-border-hover: border color of the tooltip on hover
-    --tooltip-color-border-active: border color of the tooltip on active
 
     --tooltip-margin-left: left margin of the tooltip
     --tooltip-margin-bottom: bottom margin of the tooltip
@@ -44,32 +42,39 @@
     --tooltip-font-weight: font weight of the tooltip
     --tooltip-line-height: line height of the tooltip
 
-    --tooltip-spacing-arrow-size: size of the arrow
+    --tooltip-spacing-arrow-size: size of the arrow (independent of `distance`)
 
-    --tooltip-arrow-offset-left: offset of the arrow from the left
-    --tooltip-arrow-offset-top: offset of the arrow from the top
+    --tooltip-arrow-offset-left: offset of the arrow along the x-axis (top/bottom placements)
+    --tooltip-arrow-offset-top: offset of the arrow along the y-axis (left/right placements)
 */
 
 .ds.tooltip {
-  --tooltip-spacing-arrow-middle: calc(50% - var(--tooltip-spacing-arrow-size));
-  --tooltip-spacing-arrow-edge: calc(-2 * var(--tooltip-spacing-arrow-size));
-  --tooltip-border-arrow-visible: var(--tooltip-spacing-arrow-size) solid
-    var(--tooltip-color-background);
-  --tooltip-border-arrow-hidden: var(--tooltip-spacing-arrow-size) solid
-    transparent;
+  /* The tooltip's own background colour, read from the contrasted surface on
+     this element (so the arrow, which reuses it, is coloured correctly too). */
+  --tooltip-color-background: var(
+    --surface-color-background,
+    var(--color-background)
+  );
+  --tooltip-color-text: var(--surface-color-text, var(--color-text));
 
-  color: var(
-    --modifier-color-text,
-    var(--tooltip-color-text, var(--color-text-default))
-  );
-  background-color: var(
-    --modifier-color-foreground-ghost,
-    var(--tooltip-color-background, var(--color-background-default))
-  );
-  border-color: var(
-    --modifier-color-border,
-    var(--tooltip-color-border, transparent)
-  );
+  /* Figma arrow: 14px across the edge (base), 8px deep (point). The base is
+     built from two half-width transparent borders; the depth from the coloured
+     border on the pointing side. */
+  --tooltip-arrow-half-width: calc(var(--tooltip-arrow-width) / 2);
+  /* Centre of the edge. `left`/`top` positions the ZERO-width pseudo-element's
+     origin, but its two half-width side borders render the triangle from that
+     origin OUTWARD, so the visible apex sits half-a-width past `left`. To centre
+     the apex on the box we therefore pull the origin back by half-width:
+     `50% - half-width`. (Verified by pixel measurement: plain `50%` renders the
+     apex +7px off-centre.) The magnetic offset then shifts from this centre. */
+  --tooltip-arrow-middle: calc(50% - var(--tooltip-arrow-half-width));
+  --tooltip-arrow-edge: calc(-1 * var(--tooltip-arrow-depth));
+  --tooltip-arrow-offset-left: 0px;
+  --tooltip-arrow-offset-top: 0px;
+
+  color: var(--tooltip-color-text);
+  background-color: var(--tooltip-color-background);
+  border-color: var(--tooltip-color-background);
   border-style: solid;
   border-radius: var(--tooltip-border-radius);
   border-width: var(--tooltip-border-width, 1px);
@@ -80,14 +85,71 @@
   margin-inline-end: var(--tooltip-margin-left, 0);
   padding-block: var(--tooltip-padding-vertical, 5px);
   padding-inline: var(--tooltip-padding-horizontal, 10px);
-  white-space: pre;
   text-align: left;
   text-decoration: initial;
   pointer-events: auto;
+  /* The box stays `inline-block` — it is the positioning context for the arrow
+     `::before`, and its `50%` centring must resolve against this box. The
+     icon+text layout lives in an inner `.content` flex row so the pseudo-element
+     is never a flex item (which would shift the arrow and reserve gap for it). */
   display: inline-block;
-  transition: opacity 0.1s ease-in-out;
+  max-width: var(--tooltip-max-width);
   position: fixed;
-  overflow: auto;
+  /* MUST stay `visible`: the arrow is a `::before` positioned just outside the
+     box (e.g. bottom: -8px). Any `overflow: auto | hidden | clip` clips it and
+     the triangle disappears entirely. */
+  overflow: visible;
+
+  /* Inner row: optional leading icon before the text, top-aligned with the
+     first line (Figma). Without an icon it is just the text. */
+  & > .content {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--tooltip-gap);
+  }
+
+  /* Leading icon: fixed 16px box, top-aligned with the first text line, purely
+     decorative (the text carries the meaning). */
+  & .icon {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    inline-size: var(--dimension-200, 16px);
+    block-size: var(--tooltip-line-height, 20px);
+
+    & > svg {
+      inline-size: var(--dimension-200, 16px);
+      block-size: var(--dimension-200, 16px);
+    }
+  }
+
+  /* The text wraps at max-width (Figma shows multi-line) while honouring any
+     explicit newlines in the message. */
+  & .text {
+    white-space: pre-wrap;
+  }
+
+  /*
+    CSS-only enter/exit animation. `allow-discrete` lets `visibility` (a discrete
+    property) transition alongside `opacity`, and `@starting-style` gives the
+    opening frame a starting opacity so the fade-in runs. No JavaScript timing.
+  */
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity var(--tooltip-motion-duration) ease-in-out,
+    visibility var(--tooltip-motion-duration) allow-discrete;
+
+  &[aria-hidden="false"] {
+    opacity: 1;
+    pointer-events: auto;
+    visibility: visible;
+
+    @starting-style {
+      opacity: 0;
+    }
+  }
 
   &[aria-hidden="true"] {
     opacity: 0;
@@ -95,55 +157,58 @@
     visibility: hidden;
   }
 
-  &[aria-hidden="false"] {
-    opacity: 1;
-    pointer-events: auto;
-    visibility: visible;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
   }
 
-  /* triangle */
+  /*
+    The arrow is a CSS border-triangle: 14px across the edge (two
+    half-width transparent borders) and 8px deep (the coloured border on the
+    pointing side). The always-on offset shifts it along the edge so the tip
+    stays pinned to the trigger centre for every placement — including after a
+    resize or scroll reposition (the offset is recomputed live).
+  */
   &::before {
     content: "";
     width: 0;
     height: 0;
-    border: var(--tooltip-border-arrow-hidden);
     position: absolute;
+    transform: translateX(var(--tooltip-arrow-offset-left))
+      translateY(var(--tooltip-arrow-offset-top));
   }
 
-  &.autofit {
-    &::before {
-      transform: translateX(var(--tooltip-arrow-offset-left))
-        translateY(var(--tooltip-arrow-offset-top));
-    }
-  }
-
+  /* Placed above the trigger → arrow points down, on the tooltip's bottom edge. */
   &.top::before {
-    border-top: var(--tooltip-border-arrow-visible);
-    bottom: var(--tooltip-spacing-arrow-edge);
+    border-inline: var(--tooltip-arrow-half-width) solid transparent;
+    border-top: var(--tooltip-arrow-depth) solid var(--tooltip-color-background);
+    bottom: var(--tooltip-arrow-edge);
+    left: var(--tooltip-arrow-middle);
   }
 
-  &.right::before {
-    border-right: var(--tooltip-border-arrow-visible);
-    left: var(--tooltip-spacing-arrow-edge);
-  }
-
+  /* Placed below → arrow points up, on the top edge. */
   &.bottom::before {
-    border-bottom: var(--tooltip-border-arrow-visible);
-    top: var(--tooltip-spacing-arrow-edge);
+    border-inline: var(--tooltip-arrow-half-width) solid transparent;
+    border-bottom: var(--tooltip-arrow-depth) solid
+      var(--tooltip-color-background);
+    top: var(--tooltip-arrow-edge);
+    left: var(--tooltip-arrow-middle);
   }
 
+  /* Placed left → arrow points right, on the right edge. */
   &.left::before {
-    border-left: var(--tooltip-border-arrow-visible);
-    right: var(--tooltip-spacing-arrow-edge);
+    border-block: var(--tooltip-arrow-half-width) solid transparent;
+    border-left: var(--tooltip-arrow-depth) solid
+      var(--tooltip-color-background);
+    right: var(--tooltip-arrow-edge);
+    top: var(--tooltip-arrow-middle);
   }
 
-  &.top::before,
-  &.bottom::before {
-    left: var(--tooltip-spacing-arrow-middle);
-  }
-
-  &.left::before,
+  /* Placed right → arrow points left, on the left edge. */
   &.right::before {
-    top: var(--tooltip-spacing-arrow-middle);
+    border-block: var(--tooltip-arrow-half-width) solid transparent;
+    border-right: var(--tooltip-arrow-depth) solid
+      var(--tooltip-color-background);
+    left: var(--tooltip-arrow-edge);
+    top: var(--tooltip-arrow-middle);
   }
 }

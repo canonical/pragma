@@ -33,7 +33,7 @@
     "@canonical/biome-config": "^0.29.0"
   },
   "dependencies": {
-    "@canonical/design-tokens": "^0.6.0",
+    "@canonical/design-tokens": "0.6.2-contrasted.0",
     "@canonical/styles-typography": "^0.29.0",
     "normalize.css": "^8.0.1"
   },

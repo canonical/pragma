@@ -84,11 +84,17 @@ const useDisclosure = ({
   // A boolean override makes the hook controlled; otherwise the internal state wins.
   const isOpen = typeof isOpenProp === "boolean" ? isOpenProp : isOpenInternal;
 
-  const { targetRef, popupRef, bestPosition, popupPositionStyle, arrowOffset } =
-    useWindowFitment({
-      ...props,
-      isOpen,
-    });
+  const {
+    targetRef,
+    popupRef,
+    bestPosition,
+    popupPositionStyle,
+    arrowOffset,
+    direction,
+  } = useWindowFitment({
+    ...props,
+    isOpen,
+  });
 
   const open = useCallback(() => {
     if (isServer) return;
@@ -280,6 +286,7 @@ const useDisclosure = ({
     popupId,
     bestPosition,
     arrowOffset,
+    direction,
     getToggleProps,
     getContentProps,
   };

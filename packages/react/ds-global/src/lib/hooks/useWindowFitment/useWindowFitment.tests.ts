@@ -83,4 +83,26 @@ describe("computeArrowOffset", () => {
       offset: 40,
     });
   });
+
+  it("centres the arrow from the authoritative position, not the stale rect", () => {
+    // Regression: when attached to an anchor, the popup's live rect lags one
+    // frame behind the just-computed placement. The rect here still says the
+    // popup is at left=0 (its old spot), but the authoritative position places
+    // it at left=50 (popup centre x = 150, matching the target centre) — so the
+    // offset must be 0, computed from the authoritative position, not -50 from
+    // the stale rect.
+    const target = makeRect(100, 0, 100, 20); // centre x = 150
+    const staleRect = makeRect(0, 30, 200, 40); // stale left → centre x = 100
+    const authoritative = { top: 30, left: 50 }; // real left → centre x = 150
+
+    expect(
+      computeArrowOffset("bottom", target, staleRect, authoritative),
+    ).toEqual({ axis: "x", offset: 0 });
+
+    // Without the authoritative position it would use the stale rect and drift.
+    expect(computeArrowOffset("bottom", target, staleRect)).toEqual({
+      axis: "x",
+      offset: 50,
+    });
+  });
 });

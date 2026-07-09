@@ -1,14 +1,34 @@
 import { MODIFIER_FAMILIES } from "@canonical/ds-types";
-import type { Meta, StoryObj } from "@storybook/react-vite";
+import type { Decorator, Meta, StoryObj } from "@storybook/react-vite";
 import type React from "react";
 import { Fragment } from "react";
 import { fn } from "storybook/test";
 
 import Component from "./Button.js";
 
+/**
+ * Render every story on a real surface: the `.surface` class defines the
+ * `--surface-color-*` channels and the div paints itself with them (surfaces
+ * consume themselves), so buttons sit on the same background they would in an
+ * app rather than the bare Storybook canvas.
+ */
+const surface: Decorator = (Story) => (
+  <div
+    className="surface"
+    style={{
+      background: "var(--surface-color-background)",
+      color: "var(--surface-color-text)",
+      padding: "var(--dimension-300, 24px)",
+    }}
+  >
+    <Story />
+  </div>
+);
+
 const meta = {
   title: "components/Button",
   component: Component,
+  decorators: [surface],
   tags: ["autodocs"],
   argTypes: {
     // Importance is never blank — primary is the default hierarchy.

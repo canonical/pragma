@@ -53,6 +53,14 @@ export default function useWindowDimensions({
     window.addEventListener("resize", handleResize);
     window.addEventListener("scroll", handleScroll);
 
+    // The visual viewport changes on pinch-zoom (and on-screen keyboards) WITHOUT
+    // firing a window `resize`, so anything positioned from viewport bounds would
+    // otherwise go stale on zoom. Its `resize`/`scroll` cover that. (Ctrl +/-
+    // page zoom already fires the window `resize` above, so it is covered too.)
+    const viewport = window.visualViewport;
+    viewport?.addEventListener("resize", handleResize);
+    viewport?.addEventListener("scroll", handleScroll);
+
     // Initial trigger in case the values need to be passed immediately after mount
     void handleResize();
     void handleScroll();
@@ -62,6 +70,8 @@ export default function useWindowDimensions({
       handleScroll.cancel();
       window.removeEventListener("resize", handleResize);
       window.removeEventListener("scroll", handleScroll);
+      viewport?.removeEventListener("resize", handleResize);
+      viewport?.removeEventListener("scroll", handleScroll);
     };
   }, [onResize, onScroll, resizeDelay, scrollDelay, result, isServer]);
 

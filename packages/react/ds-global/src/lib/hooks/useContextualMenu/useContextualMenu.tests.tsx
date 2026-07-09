@@ -1,5 +1,5 @@
 import { act, renderHook } from "@testing-library/react";
-import type { KeyboardEvent } from "react";
+import type React from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   type BestPosition,
@@ -32,6 +32,7 @@ const menu: MenuItem = {
 describe("useContextualMenu", () => {
   const mockBestPosition: BestPosition = {
     positionName: "bottom",
+    align: "center",
     position: { top: 0, left: 0 },
     fits: true,
     autoFitOffset: { top: 0, left: 0 },
@@ -44,6 +45,7 @@ describe("useContextualMenu", () => {
       bestPosition: mockBestPosition,
       popupPositionStyle: {},
       arrowOffset: { axis: "x", offset: 0 },
+      direction: "ltr",
     });
   });
 
@@ -74,12 +76,27 @@ describe("useContextualMenu", () => {
     expect(result.current.isOpen).toBe(false);
   });
 
+  it("highlights the first enabled LEAF item on open, not a group", () => {
+    // Regression: the tree is root -> group -> item, so the shared reducer's
+    // OPEN highlights the first child — a structural GROUP — which leaves no
+    // menuitem as the roving tab stop and kills keyboard navigation. The hook
+    // must descend to the first real item ("a1") on open.
+    const { result } = renderHook(() => useContextualMenu({ root: menu }));
+
+    act(() => result.current.open());
+
+    const highlighted = result.current.highlightedItems.at(-1);
+    expect(highlighted?.key).toBe("a1");
+    // The full path is [root, group, item] — a leaf, not the group itself.
+    expect(result.current.highlightedItems.at(-2)?.key).toBe("group-a");
+  });
+
   it("passes positioning props through to useWindowFitment", () => {
     renderHook(() =>
-      useContextualMenu({ root: menu, preferredDirections: ["bottom"] }),
+      useContextualMenu({ root: menu, preferredDirections: ["block-end"] }),
     );
     expect(vi.mocked(useWindowFitment)).toHaveBeenCalledWith(
-      expect.objectContaining({ preferredDirections: ["bottom"] }),
+      expect.objectContaining({ preferredDirections: ["block-end"] }),
     );
   });
 
@@ -96,14 +113,63 @@ describe("useContextualMenu", () => {
     expect(result.current.highlightedItems.at(-1)?.key).toBe("a2");
 
     // ArrowDown at the group edge should move into group B's first item.
-    // Minimal keyboard event carrying only what the menu handler reads.
     const arrowDownEvent = {
       key: "ArrowDown",
       preventDefault: () => {},
-    } as unknown as KeyboardEvent;
+    } as unknown as React.KeyboardEvent;
     act(() => {
       result.current.getMenuProps().onKeyDown?.(arrowDownEvent);
     });
     expect(result.current.highlightedItems.at(-1)?.key).toBe("b1");
+  });
+
+  it("opens a submenu on ArrowRight and closes it on ArrowLeft", () => {
+    // A menu with a submenu parent ("parent" → "sub1"/"sub2").
+    const withSubmenu: MenuItem = {
+      key: "menu",
+      items: [
+        {
+          key: "group",
+          items: [
+            { key: "first", label: "First", url: "/first" },
+            {
+              key: "parent",
+              label: "Parent",
+              items: [
+                { key: "sub1", label: "Sub one", url: "/sub1" },
+                { key: "sub2", label: "Sub two", url: "/sub2" },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+    const { result } = renderHook(() =>
+      useContextualMenu({ root: withSubmenu }),
+    );
+
+    const parent = result.current.index.parent;
+    if (!parent) throw new Error("parent not found");
+    act(() => result.current.highlightItem(parent));
+
+    // While the parent itself is highlighted the submenu is CLOSED:
+    // inHighlightedBranch is true, but highlighted is also true.
+    expect(result.current.getNodeStatus(parent).inHighlightedBranch).toBe(true);
+    expect(result.current.getNodeStatus(parent).highlighted).toBe(true);
+
+    const key = (k: string) =>
+      ({ key: k, preventDefault: () => {} }) as unknown as React.KeyboardEvent;
+
+    // ArrowRight descends into the submenu → highlight moves to the first child.
+    act(() => result.current.getMenuProps().onKeyDown?.(key("ArrowRight")));
+    expect(result.current.highlightedItems.at(-1)?.key).toBe("sub1");
+    // Now the parent's submenu is OPEN: in the branch, but not the leaf.
+    expect(result.current.getNodeStatus(parent).inHighlightedBranch).toBe(true);
+    expect(result.current.getNodeStatus(parent).highlighted).toBe(false);
+
+    // ArrowLeft returns the highlight to the parent → submenu closes again.
+    act(() => result.current.getMenuProps().onKeyDown?.(key("ArrowLeft")));
+    expect(result.current.highlightedItems.at(-1)?.key).toBe("parent");
+    expect(result.current.getNodeStatus(parent).highlighted).toBe(true);
   });
 });

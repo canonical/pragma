@@ -1,0 +1,93 @@
+/* Component tokens — sourced from @canonical/design-tokens.
+   Mapped strictly to the Figma "Contextual menu item" frame:
+   px = dimension-200 (16px), py = dimension-050 (4px), gap = dimension-050 (4px)
+   between icon<->text and text<->caret, text = color-text (black),
+   fills = color-foreground-ghost/-active, line-height 24px.
+   No min-height — the item is padding + line-height. */
+:root {
+  --contextual-menu-item-color-text: var(--color-text);
+  --contextual-menu-item-color-text-disabled: var(--color-text-disabled);
+  --contextual-menu-item-color-background: var(--color-foreground-ghost);
+  --contextual-menu-item-color-background-hover: var(
+    --color-foreground-ghost-hover
+  );
+  --contextual-menu-item-color-background-active: var(
+    --color-foreground-ghost-active
+  );
+  --contextual-menu-item-padding-block: var(--dimension-050);
+  --contextual-menu-item-padding-inline: var(--dimension-200);
+  /* 4px gap: icon<->text and text<->caret (per the spec). */
+  --contextual-menu-item-gap: var(--dimension-050);
+}
+
+.ds.contextual-menu-item {
+  display: flex;
+  /* Icon and first line of text are centre-aligned (Figma annotation). */
+  align-items: center;
+  gap: var(--contextual-menu-item-gap);
+  padding-block: var(--contextual-menu-item-padding-block);
+  padding-inline: var(--contextual-menu-item-padding-inline);
+  color: var(--contextual-menu-item-color-text);
+  background-color: var(--contextual-menu-item-color-background);
+  line-height: var(--line-height-text, var(--dimension-300));
+  cursor: pointer;
+  user-select: none;
+
+  &:hover {
+    background-color: var(--contextual-menu-item-color-background-hover);
+  }
+
+  /* The highlighted (roving) item shows the active fill — matching the Figma
+     "Active" state — so keyboard focus is visible without a separate outline. */
+  &:focus-visible,
+  &[tabindex="0"] {
+    background-color: var(--contextual-menu-item-color-background-active);
+    outline: none;
+  }
+
+  > .label {
+    flex: 1 1 auto;
+  }
+
+  /* The slot (badge / keyboard shortcut) sits right-aligned. */
+  > .slot {
+    flex: 0 0 auto;
+    margin-inline-start: auto;
+    opacity: 0.7;
+  }
+
+  /* The submenu caret sits on the trailing edge in a fixed icon box (Figma:
+     16px chevron in a 24px-tall wrapper). It always follows the reading
+     direction — chevron-right in LTR, mirrored to point left in RTL — rather
+     than flipping per-item with the side the submenu opens on, so sibling carets
+     stay consistent. */
+  > .caret {
+    flex: 0 0 auto;
+    margin-inline-start: auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    inline-size: var(--dimension-200);
+    block-size: var(--dimension-300);
+
+    & > svg {
+      inline-size: var(--dimension-200, 16px);
+      block-size: var(--dimension-200, 16px);
+    }
+  }
+
+  &.disabled {
+    color: var(--contextual-menu-item-color-text-disabled);
+    background-color: var(--contextual-menu-item-color-background);
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+}
+
+/* Mirror the `›` caret glyph to `‹` for right-to-left reading. Keyed on any
+   `[dir="rtl"]` ANCESTOR of the item — which, because the menu is portalled to
+   the body, must be `<html>` or `<body>` (a wrapper `<div dir>` is escaped by
+   the portal). Set `dir="rtl"` on `<html>` (or `<body>`) and it mirrors. */
+[dir="rtl"] .ds.contextual-menu-item > .caret {
+  transform: scaleX(-1);
+}
