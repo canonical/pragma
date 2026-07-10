@@ -9,6 +9,9 @@ export default function Navigation(): ReactElement {
       <Link params={{ slug: "router-core" }} to="guide">
         Guide
       </Link>
+<% if (relay) { -%>
+      <Link to="catalog">Catalog</Link>
+<% } -%>
 <% if (forms) { -%>
       <Link to="contact">Contact</Link>
 <% } -%>

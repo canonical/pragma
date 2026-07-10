@@ -11,6 +11,7 @@ Scaffolds a complete React application with SSR, routing, Storybook, and two sta
 ```bash
 summon application/react my-app
 summon application/react --forms my-app
+summon application/react --relay my-app
 ```
 
 Produces:
@@ -23,6 +24,7 @@ my-app/
 │   └── decorators/
 │       ├── withRouter.tsx    # Hash-based router decorator
 │       └── index.ts
+├── patches/                  # bun dependency patches (--relay only)
 ├── src/
 │   ├── client/entry.tsx      # Client hydration
 │   ├── server/
@@ -33,23 +35,72 @@ my-app/
 │   ├── domains/
 │   │   ├── marketing/        # HomePage, GuidePage, routes
 │   │   ├── account/          # AccountPage, LoginPage, routes
-│   │   └── contact/          # ContactPage, routes (--forms only)
+│   │   ├── contact/          # ContactPage, routes (--forms only)
+│   │   └── catalog/          # CatalogPage, ProductList, ProductCard (--relay only)
 │   ├── lib/
 │   │   ├── Navigation/
 │   │   ├── ThemeSelector/
 │   │   ├── ExampleComponent/
-│   │   └── LazyComponent/
+│   │   ├── LazyComponent/
+│   │   └── ClientOnly/       # SSR query guard (--relay only)
+│   ├── relay/                # Environment factory, mock schema, __generated__ (--relay only)
 │   ├── styles/
 │   ├── routes.tsx
 │   └── vite-env.d.ts
 ├── biome.json
 ├── index.html
 ├── package.json
+├── relay.config.json         # (--relay only)
 ├── tsconfig.json
 └── vite.config.ts
 ```
 
 The `--forms` flag adds the contact domain with form components and wires `contactRoutes` into `routes.tsx`.
+
+#### `--relay`: Relay (GraphQL) data layer
+
+The `--relay` flag (off by default) mirrors the boilerplate's Relay data layer:
+
+- **`src/relay/`** — a `createEnvironment` factory built on
+  `relay-runtime-network`'s middleware pipeline: by default a local executor
+  resolves every operation in-process against the executable mock catalog
+  schema (`schema.graphql` + `schema.ts`), so the app runs with zero backend;
+  setting `VITE_GRAPHQL_URL` (or passing `graphqlUrl`) switches to posting
+  operations to a real endpoint. The relay-compiler artifacts in
+  `src/relay/__generated__/` are committed — deterministic outputs of the
+  committed schema — and regenerated with `bun run relay` (or `relay:watch`)
+  after any schema or `graphql` tag edit.
+- **`src/domains/catalog/`** — an example domain wiring `useLazyLoadQuery`
+  (`ProductList`) and a colocated `useFragment` (`ProductCard`) behind the
+  canonical Suspense + `ErrorBoundary` pairing, with Storybook stories mocked
+  via `@canonical/storybook-addon-relay` (`parameters.relay` mock resolvers +
+  play tests) and component tests against both the local schema and
+  `relay-test-utils`.
+- **`src/lib/ClientOnly/`** — keeps queries off the server render path until
+  SSR data serialization/hydration is supported: the server streams the
+  fallback and the browser fetches after hydration. It is emitted only with
+  `--relay` because the catalog page is its only consumer today.
+- **`patches/` + `"patchedDependencies"`** — a generated app is standalone and
+  cannot inherit the monorepo's `patches/`, so the two bun patches ship with
+  the scaffold: `react-relay@18.2.0` (cjs-module-lexer export hints so named
+  imports survive Node SSR externalisation) and `relay-runtime-network@0.1.0`
+  (fixes its broken package `imports` map — temporary until the fixed
+  upstream release lands, advl/lit-relay#32, after which the patch and its
+  `patchedDependencies` entry can be dropped).
+- **Wiring** — `RelayEnvironmentProvider` in both entries (one environment
+  per browser session on the client, a fresh one per request on the server),
+  `vite-plugin-relay-lite` in `vite.config.ts` (`codegen: false`; artifacts
+  are committed), the `relay` / `relay:watch` scripts, catalog route, nav
+  link, and sitemap entries, and the relay addon via `extraAddons` in
+  `.storybook/main.ts`.
+
+**Known caveats — not yet on npm.** `@canonical/storybook-addon-relay` and
+the fixed `relay-runtime-network` release have not been published yet. A
+scaffolded app's install currently fails to resolve
+`@canonical/storybook-addon-relay` (404 from the registry), and the
+`relay-runtime-network` patch remains necessary until the fixed upstream
+release lands. The scaffold encodes the intended end state; a `--relay` app's
+install will only fully resolve once those packages publish.
 
 ### `summon domain <name>`
 
@@ -145,12 +196,23 @@ src/
 │   │   ├── AccountPage.tsx
 │   │   ├── LoginPage.tsx
 │   │   └── routes.ts
-│   └── contact/            # When --forms is enabled
-│       ├── ContactPage.tsx
+│   ├── contact/            # When --forms is enabled
+│   │   ├── ContactPage.tsx
+│   │   └── routes.ts
+│   └── catalog/            # When --relay is enabled
+│       ├── CatalogPage.tsx
+│       ├── ProductList.tsx
+│       ├── ProductCard.tsx
+│       ├── ErrorBoundary.tsx
 │       └── routes.ts
 ├── lib/                    # Shared components
 │   ├── Navigation/
 │   └── SidebarLayout/
+├── relay/                  # When --relay is enabled
+│   ├── environment.ts      # Environment factory (local executor / HTTP)
+│   ├── schema.graphql      # Mock SDL (relay-compiler validates against it)
+│   ├── schema.ts           # Executable mock schema (graphql-js)
+│   └── __generated__/      # Committed relay-compiler artifacts
 ├── styles/                 # CSS
 └── routes.tsx              # Root route map, middleware, type registration
 ```

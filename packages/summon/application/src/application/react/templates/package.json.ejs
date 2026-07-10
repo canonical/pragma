@@ -7,6 +7,9 @@
   "imports": {
     "#lib/*": "./src/lib/*",
     "#domains/*": "./src/domains/*",
+<% if (relay) { -%>
+    "#relay/*": "./src/relay/*",
+<% } -%>
     "#styles/*": "./src/styles/*"
   },
   "scripts": {
@@ -26,6 +29,10 @@
     "check:biome": "biome check",
     "check:biome:fix": "biome check --write",
     "check:ts": "tsc --noEmit",
+<% if (relay) { -%>
+    "relay": "relay-compiler",
+    "relay:watch": "relay-compiler --watch",
+<% } -%>
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
@@ -42,11 +49,20 @@
     "@canonical/react-ssr": "<%= pragmaVersion %>",
     "@canonical/router-core": "<%= pragmaVersion %>",
     "@canonical/router-react": "<%= pragmaVersion %>",
+<% if (relay) { -%>
+    "@canonical/storybook-addon-relay": "<%= pragmaVersion %>",
+<% } -%>
     "@canonical/storybook-config": "<%= pragmaVersion %>",
     "@canonical/styles": "<%= pragmaVersion %>",
     "express": "^5.2.1",
+<% if (relay) { -%>
+    "graphql": "^16.11.0",
+<% } -%>
     "react": "^19.2.4",
-    "react-dom": "^19.2.4"
+    "react-dom": "^19.2.4"<% if (relay) { %>,
+    "react-relay": "^18.2.0",
+    "relay-runtime": "^18.2.0",
+    "relay-runtime-network": "^0.1.0"<% } %>
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.9",
@@ -59,14 +75,30 @@
     "@types/node": "^24.12.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
+<% if (relay) { -%>
+    "@types/react-relay": "^18.2.1",
+    "@types/relay-runtime": "^19.0.3",
+    "@types/relay-test-utils": "^18.0.0",
+<% } -%>
     "@vitejs/plugin-react": "^6.0.0",
     "@vitest/coverage-v8": "^4.0.18",
     "bun-types": "^1.3.9",
     "jsdom": "^28.1.0",
+<% if (relay) { -%>
+    "relay-compiler": "^18.2.0",
+    "relay-test-utils": "^18.2.0",
+<% } -%>
     "storybook": "^10.3.1",
     "tsx": "^4.19.0",
     "typescript": "^5.9.3",
     "vite": "^8.0.1",
+<% if (relay) { -%>
+    "vite-plugin-relay-lite": "^0.12.0",
+<% } -%>
     "vitest": "^4.0.18"
-  }
+  }<% if (relay) { %>,
+  "patchedDependencies": {
+    "react-relay@18.2.0": "patches/react-relay@18.2.0.patch",
+    "relay-runtime-network@0.1.0": "patches/relay-runtime-network@0.1.0.patch"
+  }<% } %>
 }
