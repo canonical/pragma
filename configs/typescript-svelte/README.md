@@ -22,9 +22,4 @@ This configuration enables the following behavior:
 1. `svelte` types
 2. `vite/client` types
 3. [`verbatimModuleSyntax`](https://www.typescriptlang.org/tsconfig/#verbatimModuleSyntax): enforces explicit `import type` / `export type` syntax for type-only imports and exports. This is required for Svelte component imports to work correctly with TypeScript 5 — see the [Svelte TypeScript docs](https://svelte.dev/docs/svelte/typescript#tsconfig.json-settings).
-
-### Caveats
-
-#### `moduleResolution` may still need to be set explicitly per-package
-
-This configuration inherits [`"module": "NodeNext"`](https://www.npmjs.com/package/@canonical/typescript-config) from the base configuration, which normally implies `"moduleResolution": "nodenext"` as well. However, `svelte-check` (used by the `check:ts` script in Svelte packages) does not always apply this inference correctly, and can fail to resolve packages that rely on Node's `exports` field (e.g. `vite`, `@storybook/addon-svelte-csf`) unless `"moduleResolution": "nodenext"` is also declared explicitly in the consuming package's own `tsconfig.json`. `tsc` itself does not have this issue. If you see module resolution errors from `svelte-check` that don't reproduce with `tsc --noEmit`, try adding the explicit override to your package's `tsconfig.json`.
+4. `moduleResolution: nodenext`, declared explicitly. The base configuration's [`"module": "NodeNext"`](https://www.npmjs.com/package/@canonical/typescript-config) normally implies this, but `svelte-check` (used by the `check:ts` script in Svelte packages) does not always apply the inference correctly and can then fail to resolve packages that rely on Node's `exports` field (e.g. `vite`, `@storybook/addon-svelte-csf`). Declaring it explicitly here sidesteps the inference, so consuming packages don't need their own override.

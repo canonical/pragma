@@ -6,7 +6,6 @@
     "src/**/*.test.ts",
     "vite.config.ts",
     "vitest.setup.ts",
-    "vitest.config.ts",
     ".storybook"
   ]
 }

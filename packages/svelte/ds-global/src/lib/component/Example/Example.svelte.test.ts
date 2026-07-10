@@ -1,3 +1,4 @@
+import type { RenderResult } from "@testing-library/svelte";
 import { render } from "@testing-library/svelte";
 import type { ComponentProps } from "svelte";
 import { createRawSnippet } from "svelte";
@@ -46,8 +47,6 @@ describe("Example component", () => {
   });
 });
 
-function componentElement(
-  page: ReturnType<typeof render<typeof Component>>,
-): HTMLElement {
+function componentElement(page: RenderResult<typeof Component>): HTMLElement {
   return page.getByTestId("example");
 }

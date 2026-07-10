@@ -8,7 +8,7 @@ on:
       - packages/tokens/**
       - packages/styles/**
       - packages/utils/**
-      # TODO: Uncommment once package consumes ds-global package
+      # TODO: Uncomment once the wpe package consumes ds-global
       # - packages/svelte/ds-global/**
       - packages/svelte/ds-app-wpe/**
   push:
@@ -20,7 +20,7 @@ on:
       - packages/tokens/**
       - packages/styles/**
       - packages/utils/**
-      # TODO: Uncommment once package consumes ds-global package
+      # TODO: Uncomment once the wpe package consumes ds-global
       # - packages/svelte/ds-global/**
       - packages/svelte/ds-app-wpe/**
 jobs:
@@ -30,7 +30,7 @@ jobs:
       CHROMATIC_PROJECT_TOKEN: ${{ secrets.CHROMATIC_TOKEN_CANONICAL_SVELTE_DS_APP_WPE }}
     with:
       working-directory: packages/svelte/ds-app-wpe
-      # TODO: Add packages/svelte/ds-global once package consumes ds-global package
+      # TODO: Add packages/svelte/ds-global once the wpe package consumes ds-global
       externals: '[
         "configs/storybook/**",
         "packages/ds-assets/**",

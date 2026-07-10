@@ -8,7 +8,7 @@ on:
       - packages/tokens/**
       - packages/styles/**
       - packages/utils/**
-      # TODO: Uncommment once lp package consumes ds-global package
+      # TODO: Uncomment once the launchpad package consumes ds-global
       # - packages/svelte/ds-global/**
       - packages/svelte/ds-app-launchpad/**
   push:
@@ -20,7 +20,7 @@ on:
       - packages/tokens/**
       - packages/styles/**
       - packages/utils/**
-      # TODO: Uncommment once lp package consumes ds-global package
+      # TODO: Uncomment once the launchpad package consumes ds-global
       # - packages/svelte/ds-global/**
       - packages/svelte/ds-app-launchpad/**
 jobs:
@@ -30,7 +30,7 @@ jobs:
       CHROMATIC_PROJECT_TOKEN: ${{ secrets.CHROMATIC_TOKEN_CANONICAL_SVELTE_DS_APP_LAUNCHPAD }}
     with:
       working-directory: packages/svelte/ds-app-launchpad
-      # TODO: Add packages/svelte/ds-global once lp package consumes ds-global package
+      # TODO: Add packages/svelte/ds-global once the launchpad package consumes ds-global
       externals: '[
         "configs/storybook/**",
         "packages/ds-assets/**",

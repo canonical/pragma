@@ -2,6 +2,7 @@
   "extends": "@canonical/typescript-config",
   "compilerOptions": {
     "types": ["svelte", "vite/client"],
-    "verbatimModuleSyntax": true
+    "verbatimModuleSyntax": true,
+    "moduleResolution": "nodenext"
   }
 }
