@@ -1,5 +1,6 @@
 import {
   type AnswerablePrompt,
+  createExitResult,
   type InteractiveHandler,
   promptForAnswers,
   runGeneratorTask,
@@ -43,6 +44,13 @@ const runInteractiveCommand: InteractiveHandler = async ({
       ),
       { promptHandler: session.answerPrompt },
     );
+  } catch (error) {
+    // Ctrl-C aborts the wizard — never fall through to executing the command.
+    if (session.wasInterrupted()) {
+      process.exitCode = 130;
+      return createExitResult(130);
+    }
+    throw error;
   } finally {
     session.dispose();
   }

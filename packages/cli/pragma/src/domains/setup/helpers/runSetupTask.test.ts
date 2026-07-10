@@ -32,6 +32,7 @@ vi.mock("@canonical/task", async (importOriginal) => ({
 vi.mock("../../shared/createInteractivePromptSession.js", () => ({
   default: () => ({
     answerPrompt: sessionAnswerMock,
+    wasInterrupted: () => false,
     dispose: sessionDisposeMock,
   }),
 }));

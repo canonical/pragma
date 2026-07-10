@@ -11,8 +11,18 @@ export interface InteractivePromptSession {
   readonly answerPrompt: (
     effect: Effect & { _tag: "Prompt" },
   ) => Promise<unknown>;
+  /** Whether the user interrupted a prompt (Ctrl-C). */
+  readonly wasInterrupted: () => boolean;
   /** Release the underlying readline interface. Safe to call twice. */
   readonly dispose: () => void;
+}
+
+/** Thrown when the user interrupts a prompt — the run must abort, not proceed. */
+export class PromptInterruptedError extends Error {
+  constructor() {
+    super("Prompt interrupted");
+    this.name = "PromptInterruptedError";
+  }
 }
 
 /** Render a choice list to stderr as a numbered menu. */
@@ -67,11 +77,18 @@ function matchChoice(
 export default function createInteractivePromptSession(): InteractivePromptSession {
   let rl: Interface | undefined;
   let ended = process.stdin.readableEnded === true;
+  let interrupted = false;
   let pending: ((value: string) => void) | undefined;
 
   const open = (): Interface => {
     if (rl === undefined) {
       rl = createInterface({ input: process.stdin, output: process.stderr });
+      // Ctrl-C is an abort, not an EOF: proceeding with defaults would run the
+      // very command the user is cancelling. Mark, then close.
+      rl.on("SIGINT", () => {
+        interrupted = true;
+        rl?.close();
+      });
       // EOF with a question outstanding: resolve it to "" so the caller falls
       // back to defaults; every later ask short-circuits on `ended`.
       rl.on("close", () => {
@@ -83,17 +100,24 @@ export default function createInteractivePromptSession(): InteractivePromptSessi
     return rl;
   };
 
-  const ask = (query: string): Promise<string> => {
-    if (ended) {
-      return Promise.resolve("");
+  const ask = async (query: string): Promise<string> => {
+    if (interrupted) {
+      throw new PromptInterruptedError();
     }
-    return new Promise<string>((resolve) => {
+    if (ended) {
+      return "";
+    }
+    const answer = await new Promise<string>((resolve) => {
       pending = resolve;
       open().question(query, (value) => {
         pending = undefined;
         resolve(value.trim());
       });
     });
+    if (interrupted) {
+      throw new PromptInterruptedError();
+    }
+    return answer;
   };
 
   const askText = async (
@@ -139,22 +163,27 @@ export default function createInteractivePromptSession(): InteractivePromptSessi
 
   const askSelect = async (
     question: PromptQuestion & { type: "select" },
-  ): Promise<string | undefined> => {
+  ): Promise<string> => {
     if (question.choices.length === 0) {
-      return question.default;
+      return question.default ?? "";
     }
+    process.stderr.write(`${question.message}\n`);
     renderChoices(question.choices);
     const hint = question.default === undefined ? "" : ` (${question.default})`;
     for (;;) {
-      const answer = await ask(`${question.message}${hint}: `);
+      const answer = await ask(`Choose a value${hint}: `);
       if (answer === "") {
         if (question.default !== undefined) return question.default;
-        if (ended) return question.choices[0]?.value;
+        if (ended) return question.choices[0]?.value ?? "";
         continue;
       }
-      const value = matchChoice(question.choices, answer);
+      // Tolerate a comma-separated answer at a single select: first valid token.
+      const value = answer
+        .split(",")
+        .map((token) => matchChoice(question.choices, token.trim()))
+        .find((match) => match !== undefined);
       if (value !== undefined) return value;
-      if (ended) return question.default ?? question.choices[0]?.value;
+      if (ended) return question.default ?? question.choices[0]?.value ?? "";
     }
   };
 
@@ -164,11 +193,12 @@ export default function createInteractivePromptSession(): InteractivePromptSessi
     if (question.choices.length === 0) {
       return question.default ?? [];
     }
+    process.stderr.write(`${question.message}\n`);
     renderChoices(question.choices);
     const hint =
       question.default === undefined ? "" : ` (${question.default.join(",")})`;
     for (;;) {
-      const answer = await ask(`${question.message}${hint}: `);
+      const answer = await ask(`Choose one or more values${hint}: `);
       if (answer === "") {
         if (question.default !== undefined) return question.default;
         if (ended) return [];
@@ -197,6 +227,7 @@ export default function createInteractivePromptSession(): InteractivePromptSessi
           return askText(question);
       }
     },
+    wasInterrupted: () => interrupted,
     dispose: () => {
       rl?.close();
       rl = undefined;

@@ -30,13 +30,22 @@ export interface SetupTaskOptions {
  */
 function selectPromptHandler(yes: boolean): {
   handler: (effect: Effect & { _tag: "Prompt" }) => Promise<unknown>;
+  wasInterrupted: () => boolean;
   dispose: () => void;
 } {
   if (yes) {
-    return { handler: answerPromptWithDefaults, dispose: () => {} };
+    return {
+      handler: answerPromptWithDefaults,
+      wasInterrupted: () => false,
+      dispose: () => {},
+    };
   }
   const session: InteractivePromptSession = createInteractivePromptSession();
-  return { handler: session.answerPrompt, dispose: session.dispose };
+  return {
+    handler: session.answerPrompt,
+    wasInterrupted: session.wasInterrupted,
+    dispose: session.dispose,
+  };
 }
 
 /**
@@ -158,9 +167,11 @@ export default async function runSetupTask(
 
   // Undo mode: walk the task tree, collect undos, execute in reverse
   if (options.undo) {
-    const { handler: promptHandler, dispose } = selectPromptHandler(
-      options.yes ?? false,
-    );
+    const {
+      handler: promptHandler,
+      wasInterrupted,
+      dispose,
+    } = selectPromptHandler(options.yes ?? false);
     const onLog = createStderrLogger(verbose);
 
     try {
@@ -174,6 +185,9 @@ export default async function runSetupTask(
       }
       return createExitResult(0);
     } catch (err) {
+      if (wasInterrupted()) {
+        return createExitResult(130);
+      }
       const message = err instanceof Error ? err.message : String(err);
       process.stderr.write(`Undo failed: ${message}\n`);
       return createExitResult(1);
@@ -183,15 +197,20 @@ export default async function runSetupTask(
   }
 
   // Production execution
-  const { handler: promptHandler, dispose } = selectPromptHandler(
-    options.yes ?? false,
-  );
+  const {
+    handler: promptHandler,
+    wasInterrupted,
+    dispose,
+  } = selectPromptHandler(options.yes ?? false);
   const onLog = createStderrLogger(verbose);
 
   try {
     await runGeneratorTask(task, { promptHandler, onLog });
     return createExitResult(0);
   } catch (err) {
+    if (wasInterrupted()) {
+      return createExitResult(130);
+    }
     const message = err instanceof Error ? err.message : String(err);
     process.stderr.write(`Setup failed: ${message}\n`);
     return createExitResult(1);

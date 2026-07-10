@@ -108,6 +108,7 @@ describe("promptForAnswers", () => {
       { name: "s2", message: "S2", type: "select" },
       { name: "m", message: "M", type: "multiselect", default: [1, "b"] },
       { name: "m2", message: "M2", type: "multiselect", default: "solo" },
+      { name: "m3", message: "M3", type: "multiselect" },
     ];
 
     await runTask(promptForAnswers(mixed), {
@@ -142,11 +143,18 @@ describe("promptForAnswers", () => {
         choices: [],
         default: ["1", "b"],
       },
-      // A non-array multiselect default is dropped rather than coerced.
+      // A scalar multiselect default is lifted into a one-element list.
       {
         type: "multiselect",
         name: "m2",
         message: "M2",
+        choices: [],
+        default: ["solo"],
+      },
+      {
+        type: "multiselect",
+        name: "m3",
+        message: "M3",
         choices: [],
         default: undefined,
       },

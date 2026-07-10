@@ -23,10 +23,12 @@ const prompt = (question: PromptQuestion): Effect & { _tag: "Prompt" } => ({
  */
 const stubReadline = (lines: string[]) => {
   const closeListeners: Array<() => void> = [];
+  const sigintListeners: Array<() => void> = [];
   const queries: string[] = [];
   const iface = {
     on: (event: string, handler: () => void) => {
       if (event === "close") closeListeners.push(handler);
+      if (event === "SIGINT") sigintListeners.push(handler);
     },
     question: (query: string, cb: (answer: string) => void) => {
       queries.push(query);
@@ -42,7 +44,33 @@ const stubReadline = (lines: string[]) => {
     },
   };
   createInterfaceMock.mockReturnValue(iface);
-  return { queries };
+  return {
+    queries,
+    sigint: () => {
+      for (const handler of sigintListeners) handler();
+    },
+  };
+};
+
+/** A stub whose question never answers — for interrupt-while-pending tests. */
+const stubHangingReadline = () => {
+  const closeListeners: Array<() => void> = [];
+  const sigintListeners: Array<() => void> = [];
+  createInterfaceMock.mockReturnValue({
+    on: (event: string, handler: () => void) => {
+      if (event === "close") closeListeners.push(handler);
+      if (event === "SIGINT") sigintListeners.push(handler);
+    },
+    question: () => {},
+    close: () => {
+      for (const handler of closeListeners) handler();
+    },
+  });
+  return {
+    sigint: () => {
+      for (const handler of sigintListeners) handler();
+    },
+  };
 };
 
 describe("createInteractivePromptSession", () => {
@@ -204,6 +232,7 @@ describe("createInteractivePromptSession", () => {
     expect(await session.answerPrompt(prompt(shellSelect))).toBe("zsh");
     expect(await session.answerPrompt(prompt(shellSelect))).toBe("bash");
     expect(await session.answerPrompt(prompt(shellSelect))).toBe("zsh");
+    expect(writes).toContain("Shell?\n");
     expect(writes).toContain("  1) Bash\n");
     expect(writes).toContain("  2) Zsh\n");
     session.dispose();
@@ -287,6 +316,46 @@ describe("createInteractivePromptSession", () => {
     expect(
       await session.answerPrompt(prompt({ ...featureMulti, choices: [] })),
     ).toEqual([]);
+    session.dispose();
+  });
+
+  it("accepts a comma-separated single-select answer by its first valid token", async () => {
+    stubReadline(["nope,2,1"]);
+    const session = createInteractivePromptSession();
+
+    expect(await session.answerPrompt(prompt(shellSelect))).toBe("zsh");
+    session.dispose();
+  });
+
+  it("resolves a choiceless select with no default to an empty string", async () => {
+    stubReadline([]);
+    const session = createInteractivePromptSession();
+
+    expect(
+      await session.answerPrompt(prompt({ ...shellSelect, choices: [] })),
+    ).toBe("");
+    expect(createInterfaceMock).not.toHaveBeenCalled();
+    session.dispose();
+  });
+
+  // --- interrupt -----------------------------------------------------------
+
+  it("Ctrl-C rejects the pending prompt and marks the session interrupted", async () => {
+    const { sigint } = stubHangingReadline();
+    const session = createInteractivePromptSession();
+
+    const pending = session.answerPrompt(
+      prompt({ type: "confirm", name: "a", message: "A?", default: true }),
+    );
+    sigint();
+
+    await expect(pending).rejects.toThrow("Prompt interrupted");
+    expect(session.wasInterrupted()).toBe(true);
+    await expect(
+      session.answerPrompt(
+        prompt({ type: "text", name: "b", message: "B?", default: "d" }),
+      ),
+    ).rejects.toThrow("Prompt interrupted");
     session.dispose();
   });
 

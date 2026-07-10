@@ -1,14 +1,17 @@
 import type { CommandDefinition, InteractiveSpec } from "@canonical/cli-core";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const { sessionAnswerMock, sessionDisposeMock } = vi.hoisted(() => ({
-  sessionAnswerMock: vi.fn(),
-  sessionDisposeMock: vi.fn(),
-}));
+const { sessionAnswerMock, sessionDisposeMock, sessionInterruptedMock } =
+  vi.hoisted(() => ({
+    sessionAnswerMock: vi.fn(),
+    sessionDisposeMock: vi.fn(),
+    sessionInterruptedMock: vi.fn(() => false),
+  }));
 
 vi.mock("../domains/shared/createInteractivePromptSession.js", () => ({
   default: () => ({
     answerPrompt: sessionAnswerMock,
+    wasInterrupted: sessionInterruptedMock,
     dispose: sessionDisposeMock,
   }),
 }));
@@ -132,6 +135,25 @@ describe("runInteractiveCommand", () => {
       { name: "Card", withTests: true, yes: true },
       ctx,
     );
+  });
+
+  it("aborts with exit code 130 when the user interrupts a prompt", async () => {
+    setTty(true);
+    sessionAnswerMock.mockRejectedValue(new Error("Prompt interrupted"));
+    sessionInterruptedMock.mockReturnValue(true);
+    const execute = vi.fn();
+
+    const result = await runInteractiveCommand({
+      spec,
+      command: makeCommand(execute),
+      params: {},
+      ctx,
+    });
+
+    expect(result).toEqual({ tag: "exit", code: 130 });
+    expect(execute).not.toHaveBeenCalled();
+    expect(sessionDisposeMock).toHaveBeenCalledTimes(1);
+    sessionInterruptedMock.mockReturnValue(false);
   });
 
   it("disposes the session even when a prompt fails", async () => {

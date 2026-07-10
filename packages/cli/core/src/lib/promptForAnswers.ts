@@ -75,7 +75,9 @@ function toQuestion(definition: AnswerablePrompt): PromptQuestion {
         choices: [...(definition.choices ?? [])],
         default: Array.isArray(definition.default)
           ? definition.default.map(String)
-          : undefined,
+          : definition.default === undefined
+            ? undefined
+            : [String(definition.default)],
       };
     default:
       return {
