@@ -1,4 +1,4 @@
-import { writeFile } from "@canonical/task";
+import { pure, type Task, writeFile } from "@canonical/task";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import answerPromptInteractively from "./answerPromptInteractively.js";
 import answerPromptWithDefaults from "./answerPromptWithDefaults.js";
@@ -83,13 +83,16 @@ describe("runSetupTask", () => {
     }
   });
 
-  it("shows no visible effects message for pure dry-run", async () => {
-    const result = await runSetupTask(writeFile("/tmp/x", "y"), {
+  it("shows the no-visible-effects message when a dry-run collects none", async () => {
+    const result = await runSetupTask(pure(undefined) as Task<void>, {
       dryRun: true,
       verbose: false,
     });
-    // A single WriteFile is visible; assert the plain formatter ran.
+
     expect(result.tag).toBe("output");
+    if (result.tag === "output") {
+      expect(result.render.plain(result.value)).toContain("no visible effects");
+    }
   });
 
   // ===========================================================================

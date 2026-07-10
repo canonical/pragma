@@ -33,7 +33,22 @@ export interface RunGeneratorTaskOptions {
 }
 
 /**
+ * The tail of the queue serialising runs that request a working directory.
+ * `process.cwd()` is process-global state, so two concurrent runs with
+ * different `cwd` values would race — one could execute its effects in the
+ * other's directory, or restore the wrong one. Chaining every cwd-requesting
+ * run onto this promise makes them run one at a time; a failed run must not
+ * poison the queue, so the stored tail swallows the rejection (the caller
+ * still receives it).
+ */
+let cwdQueue: Promise<unknown> = Promise.resolve();
+
+/**
  * Run a Task for real in the given working directory and return its value.
+ *
+ * Runs that request a `cwd` are serialised against each other, so concurrent
+ * callers cannot interleave `chdir` calls; runs without a `cwd` execute
+ * immediately in whatever the current process directory is.
  *
  * @typeParam A - The task's result type.
  * @param task - A freshly-built task to run.
@@ -47,16 +62,27 @@ export default async function runGeneratorTask<A>(
 ): Promise<A> {
   const { cwd, ...runOptions } = options;
 
-  const previousCwd = process.cwd();
-  const shouldChdir = cwd !== undefined && cwd !== previousCwd;
-  if (shouldChdir) {
-    process.chdir(cwd);
+  if (cwd === undefined) {
+    return runTask(task, runOptions);
   }
-  try {
-    return await runTask(task, runOptions);
-  } finally {
+
+  const run = cwdQueue.then(async () => {
+    const previousCwd = process.cwd();
+    const shouldChdir = cwd !== previousCwd;
     if (shouldChdir) {
-      process.chdir(previousCwd);
+      process.chdir(cwd);
     }
-  }
+    try {
+      return await runTask(task, runOptions);
+    } finally {
+      if (shouldChdir) {
+        process.chdir(previousCwd);
+      }
+    }
+  });
+  cwdQueue = run.then(
+    () => undefined,
+    () => undefined,
+  );
+  return run;
 }

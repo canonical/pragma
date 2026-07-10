@@ -1,4 +1,10 @@
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { parallel, readFile, writeFile } from "@canonical/task";
@@ -63,5 +69,36 @@ describe("runGeneratorTask", () => {
 
     expect(readFileSync(join(dir, "a.txt"), "utf-8")).toBe("a");
     expect(readFileSync(join(dir, "b.txt"), "utf-8")).toBe("b");
+  });
+
+  it("serialises concurrent runs with different cwds so neither runs in the wrong directory", async () => {
+    const dirA = join(dir, "a");
+    const dirB = join(dir, "b");
+    mkdirSync(dirA);
+    mkdirSync(dirB);
+
+    // Launched together without awaiting: chdir is process-global, so an
+    // unserialised pair could write both files into one directory.
+    await Promise.all([
+      runGeneratorTask(writeFile("from-a.txt", "A"), { cwd: dirA }),
+      runGeneratorTask(writeFile("from-b.txt", "B"), { cwd: dirB }),
+    ]);
+
+    expect(readFileSync(join(dirA, "from-a.txt"), "utf-8")).toBe("A");
+    expect(readFileSync(join(dirB, "from-b.txt"), "utf-8")).toBe("B");
+    expect(existsSync(join(dirA, "from-b.txt"))).toBe(false);
+    expect(process.cwd()).toBe(originalCwd);
+  });
+
+  it("keeps serving queued runs after a failed run", async () => {
+    const [failed, succeeded] = await Promise.allSettled([
+      runGeneratorTask(readFile(join(dir, "absent.txt")), { cwd: dir }),
+      runGeneratorTask(writeFile("after-failure.txt", "ok"), { cwd: dir }),
+    ]);
+
+    expect(failed.status).toBe("rejected");
+    expect(succeeded.status).toBe("fulfilled");
+    expect(readFileSync(join(dir, "after-failure.txt"), "utf-8")).toBe("ok");
+    expect(process.cwd()).toBe(originalCwd);
   });
 });
