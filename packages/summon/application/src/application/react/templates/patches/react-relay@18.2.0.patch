@@ -1,0 +1,52 @@
+diff --git a/index.js b/index.js
+index 5fe5bc4a2adf6210e2dc5f84cc33382f47953384..407b9665ffa3b703f8fb2bfffa843a869b5c0957 100644
+--- a/index.js
++++ b/index.js
+@@ -8,3 +8,47 @@
+  */
+ 
+ module.exports = require('./lib/index.js');
++
++// Patch (pragma): cjs-module-lexer cannot statically detect the exports of
++// ./lib/index.js because they are member expressions inside an object
++// literal, so `import { useFragment } from "react-relay"` fails under Node
++// ESM (and under Vite's dev SSR module runner, which mirrors Node semantics).
++// The dead branch below is the esbuild-style lexer hint: never executed, but
++// statically registers the named exports.
++0 && (module.exports = {
++  ConnectionHandler: null,
++  QueryRenderer: null,
++  LocalQueryRenderer: null,
++  MutationTypes: null,
++  RangeOperations: null,
++  ReactRelayContext: null,
++  applyOptimisticMutation: null,
++  commitLocalUpdate: null,
++  commitMutation: null,
++  createFragmentContainer: null,
++  createPaginationContainer: null,
++  createRefetchContainer: null,
++  fetchQuery_DEPRECATED: null,
++  graphql: null,
++  readInlineData: null,
++  requestSubscription: null,
++  EntryPointContainer: null,
++  RelayEnvironmentProvider: null,
++  ProfilerContext: null,
++  fetchQuery: null,
++  loadQuery: null,
++  loadEntryPoint: null,
++  useClientQuery: null,
++  useFragment: null,
++  useLazyLoadQuery: null,
++  useEntryPointLoader: null,
++  useQueryLoader: null,
++  useMutation: null,
++  usePaginationFragment: null,
++  usePreloadedQuery: null,
++  useRefetchableFragment: null,
++  usePrefetchableForwardPaginationFragment_EXPERIMENTAL: null,
++  useRelayEnvironment: null,
++  useSubscribeToInvalidationState: null,
++  useSubscription: null,
++});

@@ -15,6 +15,9 @@
     "paths": {
       "#lib/*": ["./lib/*"],
       "#domains/*": ["./domains/*"],
+<% if (relay) { -%>
+      "#relay/*": ["./relay/*"],
+<% } -%>
       "#styles/*": ["./styles/*"]
     }
   },
