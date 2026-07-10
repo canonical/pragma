@@ -1,16 +1,16 @@
 import type { Effect, PromptQuestion } from "@canonical/task";
 import { describe, expect, it } from "vitest";
-import autoConfirmHandler from "./autoConfirmHandler.js";
+import answerPromptWithDefaults from "./answerPromptWithDefaults.js";
 
 const prompt = (question: PromptQuestion): Effect & { _tag: "Prompt" } => ({
   _tag: "Prompt",
   question,
 });
 
-describe("autoConfirmHandler", () => {
+describe("answerPromptWithDefaults", () => {
   it("resolves a confirm to its default", async () => {
     expect(
-      await autoConfirmHandler(
+      await answerPromptWithDefaults(
         prompt({ type: "confirm", name: "ok", message: "?", default: false }),
       ),
     ).toBe(false);
@@ -18,7 +18,7 @@ describe("autoConfirmHandler", () => {
 
   it("defaults a confirm to true when unset", async () => {
     expect(
-      await autoConfirmHandler(
+      await answerPromptWithDefaults(
         prompt({ type: "confirm", name: "ok", message: "?" }),
       ),
     ).toBe(true);
@@ -26,7 +26,7 @@ describe("autoConfirmHandler", () => {
 
   it("resolves a select to its default", async () => {
     expect(
-      await autoConfirmHandler(
+      await answerPromptWithDefaults(
         prompt({
           type: "select",
           name: "shell",
@@ -40,7 +40,7 @@ describe("autoConfirmHandler", () => {
 
   it("falls back to the first choice for a select with no default", async () => {
     expect(
-      await autoConfirmHandler(
+      await answerPromptWithDefaults(
         prompt({
           type: "select",
           name: "shell",
@@ -56,7 +56,7 @@ describe("autoConfirmHandler", () => {
 
   it("resolves a multiselect to its default", async () => {
     expect(
-      await autoConfirmHandler(
+      await answerPromptWithDefaults(
         prompt({
           type: "multiselect",
           name: "features",
@@ -70,7 +70,7 @@ describe("autoConfirmHandler", () => {
 
   it("defaults a multiselect to empty", async () => {
     expect(
-      await autoConfirmHandler(
+      await answerPromptWithDefaults(
         prompt({
           type: "multiselect",
           name: "features",
@@ -83,7 +83,7 @@ describe("autoConfirmHandler", () => {
 
   it("resolves a text prompt to its default", async () => {
     expect(
-      await autoConfirmHandler(
+      await answerPromptWithDefaults(
         prompt({ type: "text", name: "name", message: "?", default: "hi" }),
       ),
     ).toBe("hi");
@@ -91,7 +91,7 @@ describe("autoConfirmHandler", () => {
 
   it("defaults a text prompt to an empty string", async () => {
     expect(
-      await autoConfirmHandler(
+      await answerPromptWithDefaults(
         prompt({ type: "text", name: "name", message: "?" }),
       ),
     ).toBe("");

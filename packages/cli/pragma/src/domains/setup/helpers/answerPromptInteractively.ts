@@ -12,14 +12,22 @@ import type { Effect, PromptQuestion } from "@canonical/task";
  * @note Impure — reads from stdin.
  */
 async function ask(query: string): Promise<string> {
+  // Once stdin has ended, a fresh readline interface never emits another
+  // 'close' — a second prompt after EOF would hang forever. Short-circuit to
+  // the default path instead.
+  if (process.stdin.readableEnded) {
+    return "";
+  }
   const rl = createInterface({ input: process.stdin, output: process.stderr });
   const answer = await new Promise<string>((resolve) => {
-    // 'close' with no preceding answer is EOF; on a real answer the question
-    // callback resolves first, so this handler becomes a no-op.
+    // EOF: 'close' fires with no answer, resolving to "". readline emits
+    // 'close' synchronously from rl.close(), so the question callback must
+    // resolve the real answer BEFORE closing — resolution is first-wins, and
+    // resolving after close would hand every answer to this fallback.
     rl.on("close", () => resolve(""));
     rl.question(query, (value) => {
-      rl.close();
       resolve(value.trim());
+      rl.close();
     });
   });
   return answer;
@@ -55,7 +63,7 @@ function renderChoices(
 }
 
 /** Map a 1-based index string to a choice value, or undefined if out of range. */
-function choiceAt(
+function getChoiceAt(
   choices: ReadonlyArray<{ label: string; value: string }>,
   token: string,
 ): string | undefined {
@@ -77,7 +85,7 @@ async function askSelect(
   );
   if (answer === "") return question.default ?? question.choices[0]?.value;
   return (
-    choiceAt(question.choices, answer) ??
+    getChoiceAt(question.choices, answer) ??
     question.default ??
     question.choices[0]?.value
   );
@@ -99,7 +107,7 @@ async function askMultiselect(
   if (answer === "") return question.default ?? [];
   const picked = answer
     .split(",")
-    .map((token) => choiceAt(question.choices, token.trim()))
+    .map((token) => getChoiceAt(question.choices, token.trim()))
     .filter((value): value is string => value !== undefined);
   return picked.length > 0 ? picked : (question.default ?? []);
 }
@@ -117,7 +125,7 @@ async function askMultiselect(
  * @returns The user's answer, typed to match the prompt.
  * @note Impure — reads from stdin and writes menus to stderr.
  */
-export default async function interactivePromptHandler(
+export default async function answerPromptInteractively(
   effect: Effect & { _tag: "Prompt" },
 ): Promise<unknown> {
   const question = effect.question;

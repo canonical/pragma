@@ -1,7 +1,7 @@
 import { writeFile } from "@canonical/task";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import autoConfirmHandler from "./autoConfirmHandler.js";
-import interactivePromptHandler from "./interactivePromptHandler.js";
+import answerPromptInteractively from "./answerPromptInteractively.js";
+import answerPromptWithDefaults from "./answerPromptWithDefaults.js";
 import runSetupTask from "./runSetupTask.js";
 
 const { runGeneratorTaskMock, runUndoMock } = vi.hoisted(() => ({
@@ -108,7 +108,7 @@ describe("runSetupTask", () => {
 
   it("wires the auto-confirm handler in yes mode", async () => {
     runGeneratorTaskMock.mockImplementation(async (_task, options) => {
-      expect(options.promptHandler).toBe(autoConfirmHandler);
+      expect(options.promptHandler).toBe(answerPromptWithDefaults);
       return succeed();
     });
 
@@ -118,7 +118,7 @@ describe("runSetupTask", () => {
 
   it("wires the interactive handler when not in yes mode", async () => {
     runGeneratorTaskMock.mockImplementation(async (_task, options) => {
-      expect(options.promptHandler).toBe(interactivePromptHandler);
+      expect(options.promptHandler).toBe(answerPromptInteractively);
       return succeed();
     });
 

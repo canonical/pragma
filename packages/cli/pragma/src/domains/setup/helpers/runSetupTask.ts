@@ -8,8 +8,8 @@ import {
 } from "@canonical/cli-core";
 import { dryRun, type Effect, runUndo, type Task } from "@canonical/task";
 import type { LogLevel } from "../types.js";
-import autoConfirmHandler from "./autoConfirmHandler.js";
-import interactivePromptHandler from "./interactivePromptHandler.js";
+import answerPromptInteractively from "./answerPromptInteractively.js";
+import answerPromptWithDefaults from "./answerPromptWithDefaults.js";
 
 /** Options controlling how {@link runSetupTask} executes. */
 export interface SetupTaskOptions {
@@ -28,7 +28,7 @@ export interface SetupTaskOptions {
 function selectPromptHandler(
   yes: boolean,
 ): (effect: Effect & { _tag: "Prompt" }) => Promise<unknown> {
-  return yes ? autoConfirmHandler : interactivePromptHandler;
+  return yes ? answerPromptWithDefaults : answerPromptInteractively;
 }
 
 /**

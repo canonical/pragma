@@ -28,12 +28,19 @@ const ctx = (format: "text" | "json", llm = false): CommandContext => ({
   globalFlags: { llm, format, verbose: false },
 });
 
-/** Render an executor result to the plain string a user would see. */
+/**
+ * Render an executor result to the plain string a user would see, with the
+ * running machine's home directory normalised to a stable token — setup paths
+ * (e.g. shell-completion install targets) embed `$HOME`, and a committed
+ * baseline must compare equal on every machine and in CI.
+ */
 const plain = (result: CommandResult): string => {
-  if (result.tag === "output") {
-    return result.render.plain(result.value);
-  }
-  return `[${result.tag}]`;
+  const text =
+    result.tag === "output"
+      ? result.render.plain(result.value)
+      : `[${result.tag}]`;
+  const home = process.env.HOME ?? "";
+  return home === "" ? text : text.split(home).join("<home>");
 };
 
 // =============================================================================

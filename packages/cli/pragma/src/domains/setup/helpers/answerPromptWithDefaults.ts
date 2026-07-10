@@ -12,7 +12,7 @@ import type { Effect } from "@canonical/task";
  * @param effect - A `Prompt` effect to resolve.
  * @returns The default answer for the prompt's type.
  */
-export default function autoConfirmHandler(
+export default function answerPromptWithDefaults(
   effect: Effect & { _tag: "Prompt" },
 ): Promise<unknown> {
   const question = effect.question;
