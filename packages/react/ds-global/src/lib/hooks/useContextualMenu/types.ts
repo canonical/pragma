@@ -26,6 +26,11 @@ export interface MenuItem extends Item {
   items?: MenuItem[];
   /** CSS class name applied to this item, in addition to the base classes. */
   className?: string;
+  /**
+   * Opts this item into rendering via `Component` instead of the default
+   * layout. `"custom"` without a `Component` falls back to the default.
+   */
+  displayItemsType?: "default" | "custom";
   /** Custom component for rendering this item itself, when `displayItemsType` is `"custom"`. */
   Component?: React.ComponentType<{ item: MenuItem }>;
 }

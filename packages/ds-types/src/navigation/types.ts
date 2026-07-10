@@ -39,12 +39,6 @@ export interface Item {
    * e.g. Submenu items under a parent like 'Settings'.
    */
   items?: Item[];
-
-  /**
-   * Enum value determining the type of display for items.
-   * e.g. 'list' for rendering as a simple list.
-   */
-  displayItemsType?: "default" | "custom";
 }
 
 /**
