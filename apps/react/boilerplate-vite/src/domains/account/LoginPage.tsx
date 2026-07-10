@@ -1,3 +1,4 @@
+import { useTranslation } from "@canonical/i18n-react";
 import { useHead } from "@canonical/react-head";
 import type { ReactElement } from "react";
 
@@ -10,18 +11,20 @@ export default function LoginPage({
 }: {
   search: LoginSearch;
 }): ReactElement {
-  useHead({ title: "Login — Boilerplate" });
+  const { t } = useTranslation();
+  useHead({ title: t("login.title") });
 
   return (
     <section aria-labelledby="login-title">
-      <h1 id="login-title">Login</h1>
+      <h1 id="login-title">{t("login.heading")}</h1>
+      {/*
+        The `?auth=1` literal is markup (<code>), which a plain message string
+        cannot carry, so the sentence is catalogued as the fragments around it.
+      */}
       <p>
-        Demo login. Add <code>?auth=1</code> to any protected URL to simulate
-        authentication.
+        {t("login.hintBefore")} <code>?auth=1</code> {t("login.hintAfter")}
       </p>
-      {search.from && (
-        <p>You will be redirected to {search.from} after login.</p>
-      )}
+      {search.from && <p>{t("login.redirect", { from: search.from })}</p>}
     </section>
   );
 }

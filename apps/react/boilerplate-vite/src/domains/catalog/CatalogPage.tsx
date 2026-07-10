@@ -1,3 +1,4 @@
+import { useTranslation } from "@canonical/i18n-react";
 import { useHead } from "@canonical/react-head";
 import { type ReactElement, Suspense } from "react";
 import { ClientOnly } from "#lib/index.js";
@@ -5,11 +6,16 @@ import ErrorBoundary from "./ErrorBoundary.js";
 import ProductList from "./ProductList.js";
 
 export default function CatalogPage(): ReactElement {
-  useHead({ title: "Catalog — Boilerplate" });
+  const { t } = useTranslation();
+  useHead({ title: t("catalog.title") });
 
   return (
     <section aria-labelledby="catalog-title">
-      <h1 id="catalog-title">Catalog</h1>
+      <h1 id="catalog-title">{t("catalog.heading")}</h1>
+      {/*
+        Developer documentation rather than user-facing copy (file names,
+        APIs), so it deliberately stays out of the message catalogs.
+      */}
       <p>
         This page demonstrates the Relay data layer. <code>ProductList</code>{" "}
         issues a <code>useLazyLoadQuery</code>, each <code>ProductCard</code>{" "}
@@ -32,15 +38,9 @@ export default function CatalogPage(): ReactElement {
         `VITE_GRAPHQL_URL` mode) — without it a thrown query error would
         unmount the whole tree to a blank page.
       */}
-      <ClientOnly fallback={<p>Loading catalog…</p>}>
-        <ErrorBoundary
-          fallback={
-            <p role="alert">
-              The catalog failed to load. Reload the page to try again.
-            </p>
-          }
-        >
-          <Suspense fallback={<p>Loading catalog…</p>}>
+      <ClientOnly fallback={<p>{t("catalog.loading")}</p>}>
+        <ErrorBoundary fallback={<p role="alert">{t("catalog.error")}</p>}>
+          <Suspense fallback={<p>{t("catalog.loading")}</p>}>
             <ProductList />
           </Suspense>
         </ErrorBoundary>

@@ -1,3 +1,4 @@
+import { useTranslation } from "@canonical/i18n-react";
 import { Button } from "@canonical/react-ds-global";
 import { Field, Form } from "@canonical/react-ds-global-form";
 import { useHead } from "@canonical/react-head";
@@ -8,36 +9,37 @@ function handleSubmit(data: Record<string, unknown>) {
 }
 
 export default function ContactPage(): ReactElement {
-  useHead({ title: "Contact" });
+  const { t } = useTranslation();
+  useHead({ title: t("contact.title") });
 
   return (
     <section aria-labelledby="contact-title">
-      <h1 id="contact-title">Contact</h1>
+      <h1 id="contact-title">{t("contact.heading")}</h1>
       <Form onSubmit={handleSubmit}>
-        <Field name="name" inputType="text" label="Full name" />
+        <Field name="name" inputType="text" label={t("contact.name")} />
         <Field
           name="email"
           inputType="text"
-          label="Email address"
-          registerProps={{ required: "Email is required" }}
+          label={t("contact.email")}
+          registerProps={{ required: t("contact.emailRequired") }}
         />
         <Field
           name="subject"
           inputType="select"
-          label="Subject"
+          label={t("contact.subject")}
           options={[
-            { value: "general", label: "General enquiry" },
-            { value: "support", label: "Support" },
-            { value: "feedback", label: "Feedback" },
+            { value: "general", label: t("contact.subjectGeneral") },
+            { value: "support", label: t("contact.subjectSupport") },
+            { value: "feedback", label: t("contact.subjectFeedback") },
           ]}
         />
         <Field
           name="message"
           inputType="textarea"
-          label="Message"
-          description="Maximum 500 characters"
+          label={t("contact.message")}
+          description={t("contact.messageHint")}
         />
-        <Button type="submit">Send message</Button>
+        <Button type="submit">{t("contact.send")}</Button>
       </Form>
     </section>
   );

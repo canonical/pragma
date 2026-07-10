@@ -1,3 +1,4 @@
+import { useTranslation } from "@canonical/i18n-react";
 import type { ReactElement } from "react";
 import { graphql, useLazyLoadQuery } from "react-relay";
 import type { ProductListQuery } from "#relay/__generated__/ProductListQuery.graphql.js";
@@ -35,16 +36,26 @@ const productListQuery = graphql`
  * lands, only on the client (see `CatalogPage`).
  */
 export default function ProductList(): ReactElement {
+  const { t } = useTranslation();
   const data = useLazyLoadQuery<ProductListQuery>(productListQuery, {
     count: PAGE_SIZE,
   });
   const { products } = data.viewer;
 
   return (
-    <section aria-label="Product catalog">
+    <section aria-label={t("catalog.listLabel")}>
       <p>
-        Signed in as <strong>{data.viewer.name}</strong> — showing{" "}
-        {products.edges.length} of {products.totalCount} products.
+        {/*
+          `catalog.showing` is a plural entry: `count` (the total) selects the
+          CLDR category via Intl.PluralRules — English has one/other, Arabic
+          all six. The viewer name stays a separate element so it can carry
+          emphasis, which a plain message string cannot.
+        */}
+        {t("catalog.signedInAs")} <strong>{data.viewer.name}</strong>{" "}
+        {t("catalog.showing", {
+          shown: products.edges.length,
+          count: products.totalCount,
+        })}
       </p>
       <ul>
         {products.edges.map(({ node }) => (
@@ -53,7 +64,7 @@ export default function ProductList(): ReactElement {
           </li>
         ))}
       </ul>
-      {products.pageInfo.hasNextPage && <p>More products are available.</p>}
+      {products.pageInfo.hasNextPage && <p>{t("catalog.more")}</p>}
     </section>
   );
 }

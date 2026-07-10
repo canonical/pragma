@@ -15,6 +15,7 @@
     "paths": {
       "#lib/*": ["./lib/*"],
       "#domains/*": ["./domains/*"],
+      "#i18n/*": ["./i18n/*"],
       "#relay/*": ["./relay/*"],
       "#styles/*": ["./styles/*"]
     }
