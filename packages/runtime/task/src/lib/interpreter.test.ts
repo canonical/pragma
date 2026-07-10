@@ -9,22 +9,15 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
-import { orElse, parallel, race, sequence_ } from "./combinators.js";
+import { describe, expect, it, vi } from "vitest";
+import { parallel, sequence_ } from "./combinators.js";
 import {
   executeEffect,
   run,
   runTask,
   TaskExecutionError,
 } from "./interpreter.js";
-import {
-  info,
-  promptText,
-  readFile,
-  setContext,
-  succeed,
-  warn,
-} from "./primitives.js";
+import { info, succeed, warn } from "./primitives.js";
 import {
   $,
   effect,
