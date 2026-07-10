@@ -1,19 +1,15 @@
-import { createInterface } from "node:readline";
 import {
   type CommandResult,
   createExitResult,
   createOutputResult,
   formatEffectLine,
   isVisibleEffect,
+  runGeneratorTask,
 } from "@canonical/cli-core";
-import {
-  dryRun,
-  type Effect,
-  runTask,
-  runUndo,
-  type Task,
-} from "@canonical/task";
+import { dryRun, type Effect, runUndo, type Task } from "@canonical/task";
 import type { LogLevel } from "../types.js";
+import answerPromptInteractively from "./answerPromptInteractively.js";
+import answerPromptWithDefaults from "./answerPromptWithDefaults.js";
 
 /** Options controlling how {@link runSetupTask} executes. */
 export interface SetupTaskOptions {
@@ -26,55 +22,26 @@ export interface SetupTaskOptions {
 }
 
 /**
- * Auto-confirm prompt handler for `--yes` mode.
- *
- * @param effect - A Prompt effect to resolve.
- * @returns The default value for the prompt type.
+ * Pick the prompt handler for a run: auto-confirm defaults under `--yes`, else
+ * prompt the user interactively over readline.
  */
-function autoConfirmHandler(
-  effect: Effect & { _tag: "Prompt" },
-): Promise<unknown> {
-  const q = effect.question;
-  if (q.type === "confirm") return Promise.resolve(q.default ?? true);
-  if (q.type === "select")
-    return Promise.resolve(q.default ?? q.choices[0]?.value);
-  if (q.type === "multiselect") return Promise.resolve(q.default ?? []);
-  return Promise.resolve(q.default ?? "");
+function selectPromptHandler(
+  yes: boolean,
+): (effect: Effect & { _tag: "Prompt" }) => Promise<unknown> {
+  return yes ? answerPromptWithDefaults : answerPromptInteractively;
 }
 
 /**
- * Interactive prompt handler using readline on stdin/stderr.
- * Supports confirm prompts; other types fall back to defaults.
- *
- * @param effect - A Prompt effect to resolve interactively.
- * @returns The user's answer.
+ * Build a task log sink that writes to stderr, hiding debug lines unless
+ * verbose is set.
  */
-async function interactivePromptHandler(
-  effect: Effect & { _tag: "Prompt" },
-): Promise<unknown> {
-  const q = effect.question;
-
-  if (q.type === "confirm") {
-    const defaultYes = q.default !== false;
-    const hint = defaultYes ? "Y/n" : "y/N";
-    const rl = createInterface({
-      input: process.stdin,
-      output: process.stderr,
-    });
-
-    const answer = await new Promise<string>((resolve) => {
-      rl.question(`${q.message} [${hint}] `, (ans) => {
-        rl.close();
-        resolve(ans.trim());
-      });
-    });
-
-    if (answer === "") return defaultYes;
-    return answer.toLowerCase().startsWith("y");
-  }
-
-  // Non-confirm prompts fall back to defaults in D15
-  return q.default;
+function createStderrLogger(
+  verbose: boolean,
+): (level: LogLevel, message: string) => void {
+  return (level, message) => {
+    if (level === "debug" && !verbose) return;
+    process.stderr.write(`${message}\n`);
+  };
 }
 
 /**
@@ -150,7 +117,8 @@ function formatDryRunJson(effects: readonly Effect[]): string {
  * Supports three execution modes:
  * - `--dry-run`: collects effects without executing, formats for display.
  * - `--undo`: walks the task tree, collects undo operations, executes in reverse.
- * - default: interactive execution with readline-based prompts on stderr.
+ * - default: execution through {@link runGeneratorTask}, with readline-based
+ *   prompts on stderr.
  *
  * @param task - The setup Task to execute.
  * @param options - Execution options (dryRun, undo, yes, verbose, llm, format).
@@ -182,14 +150,8 @@ export default async function runSetupTask(
 
   // Undo mode: walk the task tree, collect undos, execute in reverse
   if (options.undo) {
-    const promptHandler = options.yes
-      ? autoConfirmHandler
-      : interactivePromptHandler;
-
-    const onLog = (level: LogLevel, message: string): void => {
-      if (level === "debug" && !verbose) return;
-      process.stderr.write(`${message}\n`);
-    };
+    const promptHandler = selectPromptHandler(options.yes ?? false);
+    const onLog = createStderrLogger(verbose);
 
     try {
       const result = await runUndo(task, { promptHandler, onLog });
@@ -209,17 +171,11 @@ export default async function runSetupTask(
   }
 
   // Production execution
-  const promptHandler = options.yes
-    ? autoConfirmHandler
-    : interactivePromptHandler;
-
-  const onLog = (level: LogLevel, message: string): void => {
-    if (level === "debug" && !verbose) return;
-    process.stderr.write(`${message}\n`);
-  };
+  const promptHandler = selectPromptHandler(options.yes ?? false);
+  const onLog = createStderrLogger(verbose);
 
   try {
-    await runTask(task, { promptHandler, onLog });
+    await runGeneratorTask(task, { promptHandler, onLog });
     return createExitResult(0);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

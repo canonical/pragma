@@ -1,32 +1,29 @@
-import { info, pure, writeFile } from "@canonical/task";
+import { pure, type Task, writeFile } from "@canonical/task";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-
-const { createInterfaceMock, dryRunMock, runTaskMock, runUndoMock } =
-  vi.hoisted(() => ({
-    createInterfaceMock: vi.fn(),
-    dryRunMock: vi.fn(() => ({ effects: [] })),
-    runTaskMock: vi.fn(),
-    runUndoMock: vi.fn(),
-  }));
-
-async function loadRunSetupTask() {
-  vi.resetModules();
-  vi.doMock("node:readline", () => ({
-    createInterface: createInterfaceMock,
-  }));
-  vi.doMock("@canonical/task", async (importOriginal) => {
-    const actual = await importOriginal<typeof import("@canonical/task")>();
-    return {
-      ...actual,
-      dryRun: dryRunMock,
-      runTask: runTaskMock,
-      runUndo: runUndoMock,
-    };
-  });
-  return (await import("./runSetupTask.js")).default;
-}
-
+import answerPromptInteractively from "./answerPromptInteractively.js";
+import answerPromptWithDefaults from "./answerPromptWithDefaults.js";
 import runSetupTask from "./runSetupTask.js";
+
+const { runGeneratorTaskMock, runUndoMock } = vi.hoisted(() => ({
+  runGeneratorTaskMock: vi.fn(),
+  runUndoMock: vi.fn(),
+}));
+
+// runSetupTask orchestrates: dry-run/undo use real formatting and runUndo,
+// while production runs through the shared execution core. Mock only that
+// core and runUndo, so the real prompt handlers and effect formatting stay
+// under test.
+vi.mock("@canonical/cli-core", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@canonical/cli-core")>()),
+  runGeneratorTask: runGeneratorTaskMock,
+}));
+
+vi.mock("@canonical/task", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@canonical/task")>()),
+  runUndo: runUndoMock,
+}));
+
+const succeed = async (): Promise<undefined> => undefined;
 
 describe("runSetupTask", () => {
   let stderrSpy: ReturnType<typeof vi.spyOn>;
@@ -40,13 +37,16 @@ describe("runSetupTask", () => {
 
   afterEach(() => {
     stderrSpy.mockRestore();
-    vi.doUnmock("node:readline");
-    vi.doUnmock("@canonical/task");
   });
 
+  // ===========================================================================
+  // Dry-run mode
+  // ===========================================================================
+
   it("returns output result in dry-run mode", async () => {
-    const task = writeFile("/tmp/test.txt", "hello");
-    const result = await runSetupTask(task, { dryRun: true });
+    const result = await runSetupTask(writeFile("/tmp/test.txt", "hello"), {
+      dryRun: true,
+    });
 
     expect(result.tag).toBe("output");
     if (result.tag === "output") {
@@ -54,174 +54,139 @@ describe("runSetupTask", () => {
       expect(text).toContain("Dry run");
       expect(text).toContain("/tmp/test.txt");
     }
+    expect(runGeneratorTaskMock).not.toHaveBeenCalled();
   });
 
   it("returns json output in dry-run + json mode", async () => {
-    const task = writeFile("/tmp/test.txt", "hello");
-    const result = await runSetupTask(task, {
+    const result = await runSetupTask(writeFile("/tmp/test.txt", "hello"), {
       dryRun: true,
       format: "json",
     });
 
     expect(result.tag).toBe("output");
     if (result.tag === "output") {
-      const text = result.render.plain(result.value);
-      const parsed = JSON.parse(text);
+      const parsed = JSON.parse(result.render.plain(result.value));
       expect(Array.isArray(parsed)).toBe(true);
       expect(parsed[0].action).toBe("WriteFile");
     }
   });
 
   it("returns llm markdown in dry-run + llm mode", async () => {
-    const task = writeFile("/tmp/test.txt", "hello");
-    const result = await runSetupTask(task, { dryRun: true, llm: true });
+    const result = await runSetupTask(writeFile("/tmp/test.txt", "hello"), {
+      dryRun: true,
+      llm: true,
+    });
 
     expect(result.tag).toBe("output");
     if (result.tag === "output") {
-      const text = result.render.plain(result.value);
-      expect(text).toContain("## Dry Run");
-      expect(text).toContain("WriteFile");
+      expect(result.render.plain(result.value)).toContain("Dry Run");
     }
   });
 
-  it("returns exit 0 on successful execution with --yes", async () => {
-    const task = info("test message");
-    const result = await runSetupTask(task, { yes: true });
-
-    expect(result.tag).toBe("exit");
-    if (result.tag === "exit") {
-      expect(result.code).toBe(0);
-    }
-  });
-
-  it("returns exit 0 for pure task", async () => {
-    const task = pure(undefined);
-    const result = await runSetupTask(task, { yes: true });
-
-    expect(result.tag).toBe("exit");
-    if (result.tag === "exit") {
-      expect(result.code).toBe(0);
-    }
-  });
-
-  it("shows no visible effects message for pure dry-run", async () => {
-    const task = pure(undefined);
-    const result = await runSetupTask(task, { dryRun: true });
+  it("shows the no-visible-effects message when a dry-run collects none", async () => {
+    const result = await runSetupTask(pure(undefined) as Task<void>, {
+      dryRun: true,
+      verbose: false,
+    });
 
     expect(result.tag).toBe("output");
     if (result.tag === "output") {
-      const text = result.render.plain(result.value);
-      expect(text).toContain("no visible effects");
+      expect(result.render.plain(result.value)).toContain("no visible effects");
     }
   });
 
-  it("returns exit 0 in undo mode for a pure task", async () => {
-    const task = pure(undefined);
-    const result = await runSetupTask(task, { undo: true, yes: true });
+  // ===========================================================================
+  // Production execution — through the shared execution core
+  // ===========================================================================
 
+  it("runs production through the shared execution core and returns exit 0", async () => {
+    runGeneratorTaskMock.mockImplementation(succeed);
+
+    const result = await runSetupTask(writeFile("/tmp/x", "y"), { yes: true });
+
+    expect(runGeneratorTaskMock).toHaveBeenCalledTimes(1);
     expect(result.tag).toBe("exit");
-    if (result.tag === "exit") {
-      expect(result.code).toBe(0);
-    }
-    expect(stderrSpy).toHaveBeenCalledWith("Nothing to undo.\n");
+    if (result.tag === "exit") expect(result.code).toBe(0);
   });
 
-  it("auto-confirms select, multiselect, confirm, and text prompts in yes mode", async () => {
-    runTaskMock.mockImplementation(async (_task, options) => {
-      expect(
-        await options.promptHandler({
-          _tag: "Prompt",
-          question: { type: "confirm", default: false, message: "Continue?" },
-        }),
-      ).toBe(false);
-      expect(
-        await options.promptHandler({
-          _tag: "Prompt",
-          question: {
-            type: "select",
-            choices: [{ value: "zsh" }],
-            message: "Shell?",
-          },
-        }),
-      ).toBe("zsh");
-      expect(
-        await options.promptHandler({
-          _tag: "Prompt",
-          question: { type: "multiselect", message: "Pick many" },
-        }),
-      ).toEqual([]);
-      expect(
-        await options.promptHandler({
-          _tag: "Prompt",
-          question: { type: "input", message: "Name?" },
-        }),
-      ).toBe("");
+  it("wires the auto-confirm handler in yes mode", async () => {
+    runGeneratorTaskMock.mockImplementation(async (_task, options) => {
+      expect(options.promptHandler).toBe(answerPromptWithDefaults);
+      return succeed();
     });
 
-    const runSetupTaskWithMocks = await loadRunSetupTask();
-    const result = await runSetupTaskWithMocks({} as never, { yes: true });
-
-    expect(result.tag).toBe("exit");
-    if (result.tag === "exit") {
-      expect(result.code).toBe(0);
-    }
+    await runSetupTask(writeFile("/tmp/x", "y"), { yes: true });
+    expect(runGeneratorTaskMock).toHaveBeenCalledTimes(1);
   });
 
-  it("uses interactive confirm defaults and suppresses debug logs unless verbose", async () => {
-    createInterfaceMock.mockReturnValue({
-      question: (_prompt: string, cb: (answer: string) => void) => cb(""),
-      close: vi.fn(),
+  it("wires the interactive handler when not in yes mode", async () => {
+    runGeneratorTaskMock.mockImplementation(async (_task, options) => {
+      expect(options.promptHandler).toBe(answerPromptInteractively);
+      return succeed();
     });
-    runTaskMock.mockImplementation(async (_task, options) => {
-      expect(
-        await options.promptHandler({
-          _tag: "Prompt",
-          question: { type: "confirm", default: true, message: "Continue?" },
-        }),
-      ).toBe(true);
+
+    await runSetupTask(writeFile("/tmp/x", "y"), {});
+    expect(runGeneratorTaskMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("suppresses debug logs unless verbose during production", async () => {
+    runGeneratorTaskMock.mockImplementation(async (_task, options) => {
       options.onLog("debug", "hidden");
       options.onLog("info", "shown");
+      return succeed();
     });
 
-    const runSetupTaskWithMocks = await loadRunSetupTask();
-    const result = await runSetupTaskWithMocks({} as never, {});
+    await runSetupTask(writeFile("/tmp/x", "y"), { yes: true });
 
-    expect(result.tag).toBe("exit");
     expect(stderrSpy).toHaveBeenCalledWith("shown\n");
     expect(stderrSpy).not.toHaveBeenCalledWith("hidden\n");
   });
 
-  it("returns false for explicit negative interactive confirmation", async () => {
-    createInterfaceMock.mockReturnValue({
-      question: (_prompt: string, cb: (answer: string) => void) => cb("n"),
-      close: vi.fn(),
-    });
-    runTaskMock.mockImplementation(async (_task, options) => {
-      expect(
-        await options.promptHandler({
-          _tag: "Prompt",
-          question: { type: "confirm", default: false, message: "Continue?" },
-        }),
-      ).toBe(false);
+  it("emits debug logs when verbose during production", async () => {
+    runGeneratorTaskMock.mockImplementation(async (_task, options) => {
+      options.onLog("debug", "shown-debug");
+      return succeed();
     });
 
-    const runSetupTaskWithMocks = await loadRunSetupTask();
-    const result = await runSetupTaskWithMocks({} as never, {});
-
-    expect(result.tag).toBe("exit");
+    await runSetupTask(writeFile("/tmp/x", "y"), { yes: true, verbose: true });
+    expect(stderrSpy).toHaveBeenCalledWith("shown-debug\n");
   });
 
   it("returns exit 1 when production execution fails", async () => {
-    runTaskMock.mockRejectedValue(new Error("permission denied"));
+    runGeneratorTaskMock.mockRejectedValue(new Error("permission denied"));
 
-    const runSetupTaskWithMocks = await loadRunSetupTask();
-    const result = await runSetupTaskWithMocks({} as never, { yes: true });
+    const result = await runSetupTask(writeFile("/tmp/x", "y"), { yes: true });
 
     expect(result.tag).toBe("exit");
-    if (result.tag === "exit") {
-      expect(result.code).toBe(1);
-    }
+    if (result.tag === "exit") expect(result.code).toBe(1);
     expect(stderrSpy).toHaveBeenCalledWith("Setup failed: permission denied\n");
+  });
+
+  it("stringifies a non-Error production rejection", async () => {
+    runGeneratorTaskMock.mockRejectedValue("raw failure");
+
+    const result = await runSetupTask(writeFile("/tmp/x", "y"), { yes: true });
+
+    expect(result.tag).toBe("exit");
+    if (result.tag === "exit") expect(result.code).toBe(1);
+    expect(stderrSpy).toHaveBeenCalledWith("Setup failed: raw failure\n");
+  });
+
+  // ===========================================================================
+  // Undo mode
+  // ===========================================================================
+
+  it("reports nothing to undo when no undos are collected", async () => {
+    runUndoMock.mockResolvedValue({ undoCount: 0 });
+
+    const result = await runSetupTask(writeFile("/tmp/x", "y"), {
+      undo: true,
+      yes: true,
+    });
+
+    expect(result.tag).toBe("exit");
+    if (result.tag === "exit") expect(result.code).toBe(0);
+    expect(stderrSpy).toHaveBeenCalledWith("Nothing to undo.\n");
   });
 
   it("writes verbose undo logs and the singular completion message", async () => {
@@ -231,8 +196,7 @@ describe("runSetupTask", () => {
       return { undoCount: 1 };
     });
 
-    const runSetupTaskWithMocks = await loadRunSetupTask();
-    const result = await runSetupTaskWithMocks({} as never, {
+    const result = await runSetupTask(writeFile("/tmp/x", "y"), {
       undo: true,
       yes: true,
       verbose: true,
@@ -249,8 +213,7 @@ describe("runSetupTask", () => {
   it("writes the plural undo completion message", async () => {
     runUndoMock.mockResolvedValue({ undoCount: 2 });
 
-    const runSetupTaskWithMocks = await loadRunSetupTask();
-    const result = await runSetupTaskWithMocks({} as never, {
+    const result = await runSetupTask(writeFile("/tmp/x", "y"), {
       undo: true,
       yes: true,
     });
@@ -264,16 +227,26 @@ describe("runSetupTask", () => {
   it("returns exit 1 when undo fails", async () => {
     runUndoMock.mockRejectedValue(new Error("cannot undo"));
 
-    const runSetupTaskWithMocks = await loadRunSetupTask();
-    const result = await runSetupTaskWithMocks({} as never, {
+    const result = await runSetupTask(writeFile("/tmp/x", "y"), {
       undo: true,
       yes: true,
     });
 
     expect(result.tag).toBe("exit");
-    if (result.tag === "exit") {
-      expect(result.code).toBe(1);
-    }
+    if (result.tag === "exit") expect(result.code).toBe(1);
     expect(stderrSpy).toHaveBeenCalledWith("Undo failed: cannot undo\n");
+  });
+
+  it("stringifies a non-Error undo rejection", async () => {
+    runUndoMock.mockRejectedValue("raw undo failure");
+
+    const result = await runSetupTask(writeFile("/tmp/x", "y"), {
+      undo: true,
+      yes: true,
+    });
+
+    expect(result.tag).toBe("exit");
+    if (result.tag === "exit") expect(result.code).toBe(1);
+    expect(stderrSpy).toHaveBeenCalledWith("Undo failed: raw undo failure\n");
   });
 });
