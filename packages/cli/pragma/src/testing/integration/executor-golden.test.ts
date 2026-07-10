@@ -32,17 +32,21 @@ const ctx = (format: "text" | "json", llm = false): CommandContext => ({
 
 /**
  * Render an executor result to the plain string a user would see, with
- * machine-specific prefixes normalised to stable tokens: the repo checkout
- * root (package-generator plans embed absolute template source paths) and the
- * home directory (shell-completion install targets embed `$HOME`). A committed
- * baseline must compare equal on every machine and in CI. The repo root is
- * replaced first — on a dev machine it usually lives under `$HOME`.
+ * environment-specific bytes normalised so a committed baseline compares
+ * equal on every machine and in CI: ANSI color codes are stripped (chalk
+ * enables them under nx's FORCE_COLOR in CI but not in a plain local run),
+ * then the repo checkout root (package-generator plans embed absolute
+ * template source paths) and the home directory (shell-completion install
+ * targets embed `$HOME`) become stable tokens. The repo root is replaced
+ * first — on a dev machine it usually lives under `$HOME`.
  */
 const plain = (result: CommandResult): string => {
   let text =
     result.tag === "output"
       ? result.render.plain(result.value)
       : `[${result.tag}]`;
+  // biome-ignore lint/suspicious/noControlCharactersInRegex: matching the ANSI escape byte is the point
+  text = text.replace(/\u001b\[[0-9;]*m/g, "");
   const repoRoot = resolve(
     dirname(fileURLToPath(import.meta.url)),
     "../../../../../..",
