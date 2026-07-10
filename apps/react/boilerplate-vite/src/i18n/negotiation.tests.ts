@@ -64,7 +64,7 @@ describe("message catalogs", () => {
     }
   });
 
-  it("pluralize the catalog count line per locale", () => {
+  it("pluralizes the catalog count line per locale", () => {
     const english = createTranslator("en", catalogs.en ?? {});
     expect(english("catalog.showing", { shown: 1, count: 1 })).toBe(
       "— showing 1 of 1 product.",

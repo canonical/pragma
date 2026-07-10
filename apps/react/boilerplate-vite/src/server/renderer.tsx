@@ -40,11 +40,13 @@ function cookieHeader(request: Request | IncomingMessage): string | null {
 function acceptLanguageHeader(
   request: Request | IncomingMessage,
 ): string | null {
-  return typeof (request as Request).headers?.get === "function"
-    ? (request as Request).headers.get("accept-language")
-    : (((request as IncomingMessage).headers?.["accept-language"] as
-        | string
-        | undefined) ?? null);
+  if (typeof (request as Request).headers?.get === "function") {
+    return (request as Request).headers.get("accept-language");
+  }
+  const header = (request as IncomingMessage).headers?.["accept-language"];
+  // Node joins repeated header lines for most headers but can surface arrays;
+  // negotiation expects the single comma-separated wire format.
+  return Array.isArray(header) ? header.join(",") : (header ?? null);
 }
 
 /**

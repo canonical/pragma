@@ -14,7 +14,7 @@ function renderSelector() {
 
 afterEach(() => {
   // biome-ignore lint/suspicious/noDocumentCookie: test cleanup
-  document.cookie = "locale=; max-age=0";
+  document.cookie = "locale=; max-age=0; path=/";
   document.documentElement.removeAttribute("lang");
   document.documentElement.removeAttribute("dir");
 });

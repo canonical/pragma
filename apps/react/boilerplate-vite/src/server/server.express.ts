@@ -78,7 +78,9 @@ async function start() {
       const { theme } = extractPreferences(cookie);
       const locale = negotiateLocale(i18nConfig, {
         cookieHeader: cookie,
-        acceptLanguage: req.headers["accept-language"] ?? null,
+        acceptLanguage: Array.isArray(req.headers["accept-language"])
+          ? req.headers["accept-language"].join(",")
+          : (req.headers["accept-language"] ?? null),
       });
       const renderer = new JSXRenderer(
         EntryServer,
