@@ -1,0 +1,9 @@
+{
+  "extends": "../../../configs/typescript-lit/tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": "src",
+    "skipLibCheck": true,
+    "types": ["node"]
+  },
+  "include": ["src/**/*.ts"]
+}
