@@ -99,6 +99,7 @@ src/
 │   ├── account/          Account, login
 │   ├── catalog/          Product catalog — the Relay data-layer example
 │   └── contact/          Contact form (present when scaffolded with forms)
+├── i18n/                 Locale configuration and message catalogs (en/fr/ar)
 ├── lib/                  Shared components (Navigation, ThemeSelector, …)
 ├── relay/                Relay environment factory, executable mock schema,
 │                         and generated artifacts (__generated__/)
@@ -135,6 +136,65 @@ changes needed.
 `codegen: false`, so `src/relay/__generated__/` is not rebuilt on the fly:
 after editing a `graphql` tag or the schema, run `bun run relay` (or keep
 `bun run relay:watch` running) to regenerate the artifacts, and commit them.
+
+## Internationalisation (i18n)
+
+The app is translated through
+[`@canonical/i18n-core`](../../../packages/runtime/i18n) (negotiation,
+catalogs, formatters — framework-agnostic, native `Intl`) and
+[`@canonical/i18n-react`](../../../packages/react/i18n) (the `I18nProvider`
+plus the `useTranslation` / `useLocale` / `useFormatters` hooks). Everything
+app-specific lives in `src/i18n/`:
+
+- `config.ts` — the `I18nConfig`: `locales: ["en", "fr", "ar"]`, default
+  `en`, `rtlLocales: ["ar"]`. Locales are declared, never discovered.
+- `en.ts`, `fr.ts`, `ar.ts` — one message catalog per locale. English is the
+  reference: the other files are typed against its key set
+  (`Record<MessageKey, MessageValue>`), so a missing translation is a compile
+  error. Values support `{placeholder}` interpolation and plural records
+  selected by `vars.count` via `Intl.PluralRules` (see `catalog.showing`,
+  which Arabic spells out across all six CLDR categories).
+- `catalogs.ts` — the `Record<Locale, Messages>` handed to the provider.
+
+**How a request gets its language.** Every server entry (both dev servers and
+the compiled `renderer.tsx`) calls i18n-core's `negotiateLocale(config,
+{ cookieHeader, acceptLanguage })`: an explicit `locale` cookie wins, then
+`Accept-Language` negotiation (exact tag, then base language), then the
+default. The result flows into `EntryServer` through the existing
+`initialData` mechanism, where `documentAttrs` renders the matching
+`<html lang dir>` and the `I18nProvider` receives it as the initial locale.
+The client entry reads the same value back from `window.__INITIAL_DATA__`, so
+the first client render agrees with the server markup; the SPA cells (no SSR)
+run the identical negotiation locally against `document.cookie` and
+`navigator.languages`.
+
+**Switching at runtime.** `LocaleSelector` (`src/lib/LocaleSelector`, built on
+`useLocale`, listing each locale by its `Intl.DisplayNames` endonym) calls
+`setLocale`; the shared locale source re-renders every subscribed component,
+persists the choice to the `locale` cookie — which is what the server reads on
+the next request — and updates `<html lang dir>` live.
+
+**Adding a locale.** Add the tag to `locales` in `src/i18n/config.ts` (and to
+`rtlLocales` if it is right-to-left), create a catalog file typed against
+`MessageKey`, and register it in `catalogs.ts` — the selector, negotiation,
+tests, and the Storybook toolbar list (`.storybook/preview.ts`) pick it up
+from there. The type error you get until the catalog is complete is the point.
+
+**Right-to-left.** `ar` exists to keep the RTL path honest: `directionOf` /
+`documentAttrs` flip `dir` with no app-side branching. Write styles with CSS
+logical properties (`margin-inline-start`, `text-align: start`) so layouts
+mirror structurally.
+
+**What is (and is not) translated.** UI chrome — navigation, selector labels,
+page headings and taglines, the catalog's loading/error/stock/rating strings —
+comes from the catalogs. Product names and taglines are data, not chrome, and
+render untranslated; the identifier-heavy developer prose on the home and
+catalog pages stays in English deliberately. Prices and ratings go through
+`useFormatters`, so the same data renders as `$125.00` in English and
+`125,00 $US` in French.
+
+In Storybook, every story is wrapped in the provider by a `withI18n` decorator
+and the toolbar's Locale menu (globe icon) switches the story's language.
 
 ## Conventions
 

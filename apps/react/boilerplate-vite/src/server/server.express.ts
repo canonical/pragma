@@ -70,15 +70,16 @@ async function start() {
         "@canonical/react-hooks",
       );
       const { negotiateLocale } = await vite.ssrLoadModule(
-        "/src/lib/i18n/index.ts",
+        "@canonical/i18n-core",
       );
+      const { i18nConfig } = await vite.ssrLoadModule("/src/i18n/config.ts");
 
       const cookie = req.headers.cookie ?? null;
       const { theme } = extractPreferences(cookie);
-      const locale = negotiateLocale(
-        cookie,
-        req.headers["accept-language"] ?? null,
-      );
+      const locale = negotiateLocale(i18nConfig, {
+        cookieHeader: cookie,
+        acceptLanguage: req.headers["accept-language"] ?? null,
+      });
       const renderer = new JSXRenderer(
         EntryServer,
         // The cookie is client-controlled, so only the known theme values reach

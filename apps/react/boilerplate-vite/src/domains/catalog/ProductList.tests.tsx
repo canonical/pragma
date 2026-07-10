@@ -1,20 +1,25 @@
+import type { Locale } from "@canonical/i18n-core";
+import { I18nProvider } from "@canonical/i18n-react";
 import { render, screen } from "@testing-library/react";
 import { Suspense } from "react";
 import { RelayEnvironmentProvider } from "react-relay";
 import type { IEnvironment } from "relay-runtime";
 import { createMockEnvironment, MockPayloadGenerator } from "relay-test-utils";
 import { describe, expect, it } from "vitest";
+import { catalogs, i18nConfig } from "#i18n/index.js";
 import { createEnvironment } from "#relay/environment.js";
 import { CATALOG_PRODUCTS } from "#relay/schema.js";
 import ProductList from "./ProductList.js";
 
-const renderProductList = (environment: IEnvironment) =>
+const renderProductList = (environment: IEnvironment, locale: Locale = "en") =>
   render(
-    <RelayEnvironmentProvider environment={environment}>
-      <Suspense fallback={<p>Loading catalog…</p>}>
-        <ProductList />
-      </Suspense>
-    </RelayEnvironmentProvider>,
+    <I18nProvider config={i18nConfig} catalogs={catalogs} locale={locale}>
+      <RelayEnvironmentProvider environment={environment}>
+        <Suspense fallback={<p>Loading catalog…</p>}>
+          <ProductList />
+        </Suspense>
+      </RelayEnvironmentProvider>
+    </I18nProvider>,
   );
 
 describe("ProductList component", () => {
@@ -76,5 +81,26 @@ describe("ProductList component", () => {
     expect(
       screen.queryByText("More products are available."),
     ).not.toBeInTheDocument();
+  });
+
+  it("renders French copy and localized formatting for locale fr", async () => {
+    renderProductList(createEnvironment(), "fr");
+
+    const firstProduct = CATALOG_PRODUCTS[0];
+    expect(
+      await screen.findByRole("article", { name: firstProduct?.name }),
+    ).toBeInTheDocument();
+    // Chrome is translated; product data (names, taglines) is not.
+    expect(
+      screen.getByText(
+        new RegExp(`affichage de 4 sur ${CATALOG_PRODUCTS.length} produits`),
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/en rupture de stock/)).toBeInTheDocument();
+    // French decimal comma via useFormatters — same data, localized rendering.
+    expect(screen.getByText(/noté 4,2 \/ 5/)).toBeInTheDocument();
+    expect(
+      screen.getByText("D'autres produits sont disponibles."),
+    ).toBeInTheDocument();
   });
 });

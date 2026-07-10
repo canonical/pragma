@@ -1,8 +1,10 @@
+import { I18nProvider } from "@canonical/i18n-react";
 import { render, screen } from "@testing-library/react";
 import { Suspense } from "react";
 import { RelayEnvironmentProvider } from "react-relay";
 import { createMockEnvironment } from "relay-test-utils";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { catalogs, i18nConfig } from "#i18n/index.js";
 import ErrorBoundary from "./ErrorBoundary.js";
 import ProductList from "./ProductList.js";
 
@@ -35,16 +37,20 @@ describe("ErrorBoundary component", () => {
       () => new Error("backend unreachable"),
     );
 
+    // ProductList translates its chrome, so it renders inside the provider —
+    // the same shape CatalogPage produces.
     render(
-      <RelayEnvironmentProvider environment={environment}>
-        <ErrorBoundary
-          fallback={<p role="alert">The catalog failed to load.</p>}
-        >
-          <Suspense fallback={<p>Loading catalog…</p>}>
-            <ProductList />
-          </Suspense>
-        </ErrorBoundary>
-      </RelayEnvironmentProvider>,
+      <I18nProvider config={i18nConfig} catalogs={catalogs}>
+        <RelayEnvironmentProvider environment={environment}>
+          <ErrorBoundary
+            fallback={<p role="alert">The catalog failed to load.</p>}
+          >
+            <Suspense fallback={<p>Loading catalog…</p>}>
+              <ProductList />
+            </Suspense>
+          </ErrorBoundary>
+        </RelayEnvironmentProvider>
+      </I18nProvider>,
     );
 
     // The fallback replaces the subtree instead of white-screening.

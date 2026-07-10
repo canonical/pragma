@@ -1,3 +1,4 @@
+import { useTranslation } from "@canonical/i18n-react";
 import {
   type AnyRoute,
   group,
@@ -85,14 +86,20 @@ const publicLayout = wrapper<ReactElement>({
   ),
 });
 
+function NotFoundPage(): ReactElement {
+  const { t } = useTranslation();
+
+  return (
+    <section>
+      <h1>{t("notFound.heading")}</h1>
+      <p>{t("notFound.body")}</p>
+    </section>
+  );
+}
+
 const notFoundRoute = route({
   url: "/not-found",
-  content: () => (
-    <section>
-      <h1>Page not found</h1>
-      <p>The page you are looking for does not exist.</p>
-    </section>
-  ),
+  content: NotFoundPage,
 });
 
 const [guide, home] = group(publicLayout, [

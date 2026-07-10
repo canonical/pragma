@@ -17,10 +17,11 @@
 import fs from "node:fs";
 import type { IncomingMessage } from "node:http";
 import path from "node:path";
+import { negotiateLocale } from "@canonical/i18n-core";
 import { extractPreferences } from "@canonical/react-hooks";
 import { JSXRenderer } from "@canonical/react-ssr/renderer";
 import { getRequestUrl } from "@canonical/react-ssr/server";
-import { negotiateLocale } from "#lib/i18n/index.js";
+import { i18nConfig } from "#i18n/config.js";
 import EntryServer, { type InitialData } from "./entry.js";
 
 const htmlString = fs.readFileSync(
@@ -55,7 +56,10 @@ function acceptLanguageHeader(
 export default function createAppRenderer(request: Request | IncomingMessage) {
   const cookie = cookieHeader(request);
   const { theme } = extractPreferences(cookie);
-  const locale = negotiateLocale(cookie, acceptLanguageHeader(request));
+  const locale = negotiateLocale(i18nConfig, {
+    cookieHeader: cookie,
+    acceptLanguage: acceptLanguageHeader(request),
+  });
   const initialData: InitialData = {
     url: getRequestUrl(request),
     theme: theme === "light" || theme === "dark" ? theme : undefined,
