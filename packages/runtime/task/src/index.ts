@@ -14,12 +14,7 @@ export type {
   ConfirmPrompt,
   DryRunResult,
   Effect,
-  EffectId,
   ExecResult,
-  Journal,
-  JournalEntry,
-  JournalOutcome,
-  JournalRun,
   LogLevel,
   MultiselectPrompt,
   PromptQuestion,
@@ -32,17 +27,6 @@ export type {
   TraceResult,
   TraceSpan,
 } from "./lib/types.js";
-
-// =============================================================================
-// Effect Identity
-// =============================================================================
-
-export { default as canonicalJSON } from "./lib/canonicalJSON.js";
-export {
-  computeEffectId,
-  extractEffectContent,
-  formatEffectId,
-} from "./lib/effectId.js";
 
 // =============================================================================
 // Task Monad
@@ -177,23 +161,10 @@ export {
 export type { RunTaskOptions } from "./lib/interpreter.js";
 export {
   executeEffect,
-  JournalDivergenceError,
-  JournalError,
-  JournalIncompleteError,
-  JournalUnsupportedEffectError,
   run,
   runTask,
   TaskExecutionError,
 } from "./lib/interpreter.js";
-
-// =============================================================================
-// Journal — record / replay
-// =============================================================================
-
-export { default as deserializeJournal } from "./lib/deserializeJournal.js";
-export { default as recordTask } from "./lib/recordTask.js";
-export { default as replayTask } from "./lib/replayTask.js";
-export { default as serializeJournal } from "./lib/serializeJournal.js";
 
 // =============================================================================
 // Dry-Run
