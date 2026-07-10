@@ -1,4 +1,5 @@
 import {
+  answerPromptWithDefaults,
   type CommandResult,
   createExitResult,
   createOutputResult,
@@ -7,7 +8,6 @@ import {
   runGeneratorTask,
 } from "@canonical/cli-core";
 import { dryRun, type Effect, runUndo, type Task } from "@canonical/task";
-import answerPromptWithDefaults from "../../shared/answerPromptWithDefaults.js";
 import createInteractivePromptSession, {
   type InteractivePromptSession,
 } from "../../shared/createInteractivePromptSession.js";

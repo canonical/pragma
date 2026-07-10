@@ -14,6 +14,7 @@ import type {
 import { collectUndos, dryRun, runUndo } from "@canonical/task";
 import createInteractiveResult from "./createInteractiveResult.js";
 import createOutputResult from "./createOutputResult.js";
+import createStampOnEffectStart from "./createStampOnEffectStart.js";
 import {
   formatEffectLine,
   formatEffectWithContent,
@@ -326,12 +327,23 @@ export default async function executeGenerator(
   }
 
   // Batch execution with all answers: run the task immediately through the
-  // shared execution core.
+  // shared execution core, stamping generated files exactly as summon does so
+  // both binaries write byte-identical output.
   if (hasAllAnswers) {
     const task = gen.generate(answersWithDefaults);
     const preview = dryRun(task);
 
-    await runGeneratorTask(task, { cwd: ctx.cwd, onLog: suppressTaskLogs });
+    const stampEnabled = params.generatedStamp !== false;
+    await runGeneratorTask(task, {
+      cwd: ctx.cwd,
+      onLog: suppressTaskLogs,
+      onEffectStart: stampEnabled
+        ? createStampOnEffectStart({
+            generator: gen.meta.name,
+            version: gen.meta.version,
+          })
+        : undefined,
+    });
 
     const output = renderEffectsOutput(preview.effects, {
       verbose,

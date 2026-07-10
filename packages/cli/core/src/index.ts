@@ -85,10 +85,12 @@ export {
 // Generator Bridge
 // =============================================================================
 
+export { default as answerPromptWithDefaults } from "./lib/answerPromptWithDefaults.js";
 export {
   generatorToCommand,
   promptToParameter,
 } from "./lib/convertGenerator.js";
+export { default as createStampOnEffectStart } from "./lib/createStampOnEffectStart.js";
 export { default as executeGenerator } from "./lib/executeGenerator.js";
 export type { AnswerablePrompt } from "./lib/promptForAnswers.js";
 export { default as promptForAnswers } from "./lib/promptForAnswers.js";
