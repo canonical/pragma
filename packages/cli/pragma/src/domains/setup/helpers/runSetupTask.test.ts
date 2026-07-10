@@ -1,18 +1,24 @@
 import { pure, type Task, writeFile } from "@canonical/task";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import answerPromptInteractively from "./answerPromptInteractively.js";
-import answerPromptWithDefaults from "./answerPromptWithDefaults.js";
+import answerPromptWithDefaults from "../../shared/answerPromptWithDefaults.js";
 import runSetupTask from "./runSetupTask.js";
 
-const { runGeneratorTaskMock, runUndoMock } = vi.hoisted(() => ({
+const {
+  runGeneratorTaskMock,
+  runUndoMock,
+  sessionAnswerMock,
+  sessionDisposeMock,
+} = vi.hoisted(() => ({
   runGeneratorTaskMock: vi.fn(),
   runUndoMock: vi.fn(),
+  sessionAnswerMock: vi.fn(),
+  sessionDisposeMock: vi.fn(),
 }));
 
 // runSetupTask orchestrates: dry-run/undo use real formatting and runUndo,
-// while production runs through the shared execution core. Mock only that
-// core and runUndo, so the real prompt handlers and effect formatting stay
-// under test.
+// while production runs through the shared execution core. Mock the core,
+// runUndo, and the interactive prompt session, so the wiring and lifecycle
+// stay under test with real effect formatting.
 vi.mock("@canonical/cli-core", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@canonical/cli-core")>()),
   runGeneratorTask: runGeneratorTaskMock,
@@ -21,6 +27,13 @@ vi.mock("@canonical/cli-core", async (importOriginal) => ({
 vi.mock("@canonical/task", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@canonical/task")>()),
   runUndo: runUndoMock,
+}));
+
+vi.mock("../../shared/createInteractivePromptSession.js", () => ({
+  default: () => ({
+    answerPrompt: sessionAnswerMock,
+    dispose: sessionDisposeMock,
+  }),
 }));
 
 const succeed = async (): Promise<undefined> => undefined;
@@ -119,14 +132,25 @@ describe("runSetupTask", () => {
     expect(runGeneratorTaskMock).toHaveBeenCalledTimes(1);
   });
 
-  it("wires the interactive handler when not in yes mode", async () => {
+  it("wires an interactive prompt session when not in yes mode and disposes it", async () => {
     runGeneratorTaskMock.mockImplementation(async (_task, options) => {
-      expect(options.promptHandler).toBe(answerPromptInteractively);
+      expect(options.promptHandler).toBe(sessionAnswerMock);
+      expect(sessionDisposeMock).not.toHaveBeenCalled();
       return succeed();
     });
 
     await runSetupTask(writeFile("/tmp/x", "y"), {});
     expect(runGeneratorTaskMock).toHaveBeenCalledTimes(1);
+    expect(sessionDisposeMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("disposes the prompt session even when production execution fails", async () => {
+    runGeneratorTaskMock.mockRejectedValue(new Error("boom"));
+
+    const result = await runSetupTask(writeFile("/tmp/x", "y"), {});
+
+    expect(result.tag).toBe("exit");
+    expect(sessionDisposeMock).toHaveBeenCalledTimes(1);
   });
 
   it("suppresses debug logs unless verbose during production", async () => {

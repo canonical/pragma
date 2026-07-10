@@ -1,164 +1,26 @@
-import { stdout as processStdout } from "node:process";
-import { createInterface } from "node:readline/promises";
 import {
-  createExitResult,
+  type AnswerablePrompt,
   type InteractiveHandler,
-  type InteractiveSpec,
+  promptForAnswers,
+  runGeneratorTask,
 } from "@canonical/cli-core";
-
-type PromptWithWhen = InteractiveSpec["generator"]["prompts"][number] & {
-  readonly when?: ((answers: Record<string, unknown>) => boolean) | undefined;
-};
+import createInteractivePromptSession from "../domains/shared/createInteractivePromptSession.js";
 
 const isInteractiveTerminal = (): boolean =>
   process.stdin.isTTY === true && process.stdout.isTTY === true;
 
-const getPromptDefault = (
-  prompt: PromptWithWhen,
-  answers: Record<string, unknown>,
-): unknown => {
-  if (prompt.name in answers) {
-    return answers[prompt.name];
-  }
-  return prompt.default;
-};
-
-async function promptForText(
-  rl: ReturnType<typeof createInterface>,
-  prompt: PromptWithWhen,
-  answers: Record<string, unknown>,
-): Promise<string> {
-  const defaultValue = getPromptDefault(prompt, answers);
-  const defaultSuffix =
-    defaultValue !== undefined ? ` (${String(defaultValue)})` : "";
-
-  while (true) {
-    const response = (
-      await rl.question(`${prompt.message}${defaultSuffix}: `)
-    ).trim();
-    if (response.length > 0) {
-      return response;
-    }
-    if (defaultValue !== undefined) {
-      return String(defaultValue);
-    }
-  }
-}
-
-async function promptForConfirm(
-  rl: ReturnType<typeof createInterface>,
-  prompt: PromptWithWhen,
-  answers: Record<string, unknown>,
-): Promise<boolean> {
-  const defaultValue = getPromptDefault(prompt, answers);
-  const hint =
-    defaultValue === true ? "Y/n" : defaultValue === false ? "y/N" : "y/n";
-
-  while (true) {
-    const response = (await rl.question(`${prompt.message} [${hint}]: `))
-      .trim()
-      .toLowerCase();
-
-    if (response.length === 0 && defaultValue !== undefined) {
-      return Boolean(defaultValue);
-    }
-    if (["y", "yes"].includes(response)) {
-      return true;
-    }
-    if (["n", "no"].includes(response)) {
-      return false;
-    }
-  }
-}
-
-async function promptForSelect(
-  rl: ReturnType<typeof createInterface>,
-  prompt: PromptWithWhen,
-  answers: Record<string, unknown>,
-  multiple: boolean,
-): Promise<string | string[]> {
-  const choices = prompt.choices ?? [];
-  const defaultValue = getPromptDefault(prompt, answers);
-
-  if (choices.length === 0) {
-    return multiple
-      ? Array.isArray(defaultValue)
-        ? defaultValue.map(String)
-        : defaultValue !== undefined
-          ? [String(defaultValue)]
-          : []
-      : String(defaultValue ?? "");
-  }
-
-  processStdout.write(`${prompt.message}\n`);
-  choices.forEach((choice, index) => {
-    processStdout.write(`  ${index + 1}) ${choice.label}\n`);
-  });
-
-  const defaultSuffix =
-    defaultValue === undefined
-      ? ""
-      : ` (${Array.isArray(defaultValue) ? defaultValue.join(",") : String(defaultValue)})`;
-
-  while (true) {
-    const response = (
-      await rl.question(
-        multiple
-          ? `Choose one or more values${defaultSuffix}: `
-          : `Choose a value${defaultSuffix}: `,
-      )
-    ).trim();
-
-    if (response.length === 0 && defaultValue !== undefined) {
-      return multiple
-        ? Array.isArray(defaultValue)
-          ? defaultValue.map(String)
-          : [String(defaultValue)]
-        : String(defaultValue);
-    }
-
-    const parsed = response
-      .split(",")
-      .map((part) => part.trim())
-      .filter((part) => part.length > 0)
-      .map((part) => {
-        const index = Number(part);
-        if (Number.isInteger(index) && index >= 1 && index <= choices.length) {
-          return choices[index - 1]?.value;
-        }
-
-        const matched = choices.find(
-          (choice) => choice.value === part || choice.label === part,
-        );
-        return matched?.value;
-      })
-      .filter((value): value is string => typeof value === "string");
-
-    if (parsed.length === 0) {
-      continue;
-    }
-
-    return multiple ? parsed : (parsed[0] ?? String(defaultValue ?? ""));
-  }
-}
-
-async function promptForValue(
-  rl: ReturnType<typeof createInterface>,
-  prompt: PromptWithWhen,
-  answers: Record<string, unknown>,
-): Promise<unknown> {
-  switch (prompt.type) {
-    case "confirm":
-      return promptForConfirm(rl, prompt, answers);
-    case "select":
-      return promptForSelect(rl, prompt, answers, false);
-    case "multiselect":
-      return promptForSelect(rl, prompt, answers, true);
-    default:
-      return promptForText(rl, prompt, answers);
-  }
-}
-
+/**
+ * Answer a generator's remaining prompts interactively, then execute the
+ * command in batch mode with the collected answers.
+ *
+ * The questions flow as `Prompt` effects through the shared executor's
+ * `promptHandler` seam — the same path `pragma setup` prompts take — answered
+ * by one readline session spanning the whole run. Prompts already provided as
+ * CLI flags are not asked again; `when` conditions are honoured against the
+ * answers collected so far.
+ *
+ * @note Impure — prompts on stderr, reads stdin, then executes the command.
+ */
 const runInteractiveCommand: InteractiveHandler = async ({
   spec,
   command,
@@ -169,27 +31,20 @@ const runInteractiveCommand: InteractiveHandler = async ({
     return null;
   }
 
-  const rl = createInterface({ input: process.stdin, output: process.stdout });
-  const answers: Record<string, unknown> = { ...spec.partialAnswers };
+  const session = createInteractivePromptSession();
+  let answers: Record<string, unknown>;
 
+  process.stderr.write("\n");
   try {
-    processStdout.write("\n");
-
-    for (const prompt of spec.generator.prompts as readonly PromptWithWhen[]) {
-      if (prompt.when && prompt.when(answers) !== true) {
-        continue;
-      }
-
-      answers[prompt.name] = await promptForValue(rl, prompt, answers);
-    }
-  } catch (error) {
-    if (error instanceof Error && error.name === "AbortError") {
-      process.exitCode = 130;
-      return createExitResult(130);
-    }
-    throw error;
+    answers = await runGeneratorTask(
+      promptForAnswers(
+        spec.generator.prompts as readonly AnswerablePrompt[],
+        spec.partialAnswers,
+      ),
+      { promptHandler: session.answerPrompt },
+    );
   } finally {
-    rl.close();
+    session.dispose();
   }
 
   return command.execute({ ...params, ...answers, yes: true }, ctx);
