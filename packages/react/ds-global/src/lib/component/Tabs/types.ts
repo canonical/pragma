@@ -11,12 +11,6 @@ import type { LinkComponent } from "../../types/link.js";
 export interface TabItem extends Item {
   /** CSS class name applied to this tab's `<li>`, in addition to the base classes. */
   className?: string;
-  /**
-   * Child items — narrowed from the base `Item.items` (`Item[]`) so tab
-   * literals under `navigationRoot.items` can set `className` without
-   * failing excess-property checks. Tabs cannot nest, so this is unused.
-   */
-  items?: TabItem[];
 }
 
 /**
