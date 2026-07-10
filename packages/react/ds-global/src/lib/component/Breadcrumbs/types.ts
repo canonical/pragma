@@ -20,6 +20,8 @@ export interface BreadcrumbItem extends Item<ComponentType<any>> {
    * When true, renders as text instead of link.
    */
   current?: boolean;
+  /** CSS class name applied to this item's `<li>`, in addition to the base classes. */
+  className?: string;
 }
 
 /**

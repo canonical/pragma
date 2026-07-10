@@ -39,12 +39,6 @@ export interface Item<C = DefaultComponent> {
   disabled?: boolean;
 
   /**
-   * CSS class name for custom styling of the item.
-   * e.g. 'nav-item-active' to highlight the current page.
-   */
-  className?: string;
-
-  /**
    * Array of child items for nested navigation structures.
    * e.g. Submenu items under a parent like 'Settings'.
    */

@@ -25,6 +25,8 @@ export interface MenuItem
   icon?: React.ReactNode;
   /** Child items — a group's items, or a future submenu's entries. */
   items?: MenuItem[];
+  /** CSS class name applied to this item, in addition to the base classes. */
+  className?: string;
 }
 
 export interface UseContextualMenuProps
