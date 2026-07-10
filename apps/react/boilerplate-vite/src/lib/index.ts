@@ -1,3 +1,4 @@
+export { default as ClientOnly } from "./ClientOnly/index.js";
 export { ExampleComponent } from "./ExampleComponent/index.js";
 export { default as LazyComponent } from "./LazyComponent/index.js";
 export { default as LocaleSelector } from "./LocaleSelector/index.js";

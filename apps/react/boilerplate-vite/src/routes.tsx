@@ -10,6 +10,7 @@ import {
 } from "@canonical/router-core";
 import type { ReactElement, ReactNode } from "react";
 import accountRoutes from "#domains/account/routes.js";
+import catalogRoutes from "#domains/catalog/routes.js";
 import contactRoutes from "#domains/contact/routes.js";
 import marketingRoutes from "#domains/marketing/routes.js";
 import Navigation from "#lib/Navigation/index.js";
@@ -106,12 +107,15 @@ const [account, login] = group(publicLayout, [
 
 const [contact] = group(publicLayout, [contactRoutes.contact] as const);
 
+const [catalog] = group(publicLayout, [catalogRoutes.catalog] as const);
+
 const appRoutes = {
   guide,
   home,
   account,
   login,
   contact,
+  catalog,
 } as const;
 
 export type AppRoutes = typeof appRoutes;
