@@ -12,6 +12,8 @@
  * `promptHandler` seam.
  */
 
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import type { CommandContext, CommandResult } from "@canonical/cli-core";
 import { executeGenerator } from "@canonical/cli-core";
 import { generators as packageGenerators } from "@canonical/summon-package";
@@ -29,16 +31,23 @@ const ctx = (format: "text" | "json", llm = false): CommandContext => ({
 });
 
 /**
- * Render an executor result to the plain string a user would see, with the
- * running machine's home directory normalised to a stable token — setup paths
- * (e.g. shell-completion install targets) embed `$HOME`, and a committed
- * baseline must compare equal on every machine and in CI.
+ * Render an executor result to the plain string a user would see, with
+ * machine-specific prefixes normalised to stable tokens: the repo checkout
+ * root (package-generator plans embed absolute template source paths) and the
+ * home directory (shell-completion install targets embed `$HOME`). A committed
+ * baseline must compare equal on every machine and in CI. The repo root is
+ * replaced first — on a dev machine it usually lives under `$HOME`.
  */
 const plain = (result: CommandResult): string => {
-  const text =
+  let text =
     result.tag === "output"
       ? result.render.plain(result.value)
       : `[${result.tag}]`;
+  const repoRoot = resolve(
+    dirname(fileURLToPath(import.meta.url)),
+    "../../../../../..",
+  );
+  text = text.split(repoRoot).join("<repo>");
   const home = process.env.HOME ?? "";
   return home === "" ? text : text.split(home).join("<home>");
 };

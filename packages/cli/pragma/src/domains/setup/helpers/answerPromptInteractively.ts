@@ -7,6 +7,12 @@ import type { Effect, PromptQuestion } from "@canonical/task";
  * `< /dev/null`) resolves to an empty string, so every caller falls back to its
  * default instead of hanging forever.
  *
+ * Known limitation: each question opens a fresh readline interface, and
+ * closing one discards lines buffered in the same data chunk — piping several
+ * answers at once (`printf "n\nWidget\n" | pragma setup …`) honors only the
+ * first; later prompts fall back to their defaults. Interactive TTY input,
+ * where the user answers one prompt at a time, is unaffected.
+ *
  * @param query - The prompt text to display.
  * @returns The user's trimmed input, or `""` on EOF.
  * @note Impure — reads from stdin.
