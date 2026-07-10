@@ -17,8 +17,7 @@ import type {
  * shortcut) in addition to the base navigation fields. The slot is an optional
  * extension that survives tree annotation.
  */
-export interface MenuItem
-  extends Item<React.ComponentType<{ item: MenuItem }>> {
+export interface MenuItem extends Item {
   /** Content rendered right-aligned within the item, such as a badge or shortcut. */
   slot?: React.ReactNode;
   /** Icon rendered left of the label. */
@@ -27,6 +26,8 @@ export interface MenuItem
   items?: MenuItem[];
   /** CSS class name applied to this item, in addition to the base classes. */
   className?: string;
+  /** Custom component for rendering this item itself, when `displayItemsType` is `"custom"`. */
+  Component?: React.ComponentType<{ item: MenuItem }>;
 }
 
 export interface UseContextualMenuProps

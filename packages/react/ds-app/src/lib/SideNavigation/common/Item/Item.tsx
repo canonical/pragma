@@ -32,7 +32,6 @@ const Item = ({
   key: _key,
   items,
   displayItemsType: _displayItemsType,
-  Component: _Component,
   className,
   ...props
 }: ItemProps): React.ReactElement => {
