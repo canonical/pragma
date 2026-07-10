@@ -186,19 +186,25 @@ await router.prefetch("home");
 
 ```ts
 // Redirect overload (matched first; presence of `redirect` selects it):
-function route<const TPath extends string, TTarget extends string, TWrappers extends readonly AnyWrapper[] = readonly []>(
-  definition: RedirectRouteInput<TPath, TTarget, TWrappers>,
-): RedirectRouteDefinition<TPath, TTarget, TWrappers>;
+function route<
+  const TPath extends string,
+  TTarget extends string,
+  TWrappers extends readonly AnyWrapper[] = readonly [],
+  TParamsSchema extends SchemaLike<unknown> | undefined = undefined,
+>(
+  definition: RedirectRouteInput<TPath, TTarget, TWrappers, TParamsSchema>,
+): RedirectRouteDefinition<TPath, TTarget, TWrappers, TParamsSchema>;
 
 // Data overload:
 function route<
   const TPath extends string,
-  TSearchSchema extends StandardSchemaLike<unknown> | undefined = undefined,
+  TSearchSchema extends SchemaLike<unknown> | undefined = undefined,
   TRendered = unknown,
   TWrappers extends readonly AnyWrapper[] = readonly [],
+  TParamsSchema extends SchemaLike<unknown> | undefined = undefined,
 >(
-  definition: DataRouteInput<TPath, TSearchSchema, TRendered, TWrappers>,
-): DataRouteDefinition<TPath, TSearchSchema, TRendered, TWrappers>;
+  definition: DataRouteInput<TPath, TSearchSchema, TRendered, TWrappers, TParamsSchema>,
+): DataRouteDefinition<TPath, TSearchSchema, TRendered, TWrappers, TParamsSchema>;
 ```
 
 Constructs one flat route and derives its path codec. The returned definition adds `parse(url) → params | null` and `render(params) → string` over the input, and defaults `wrappers` to `[]`. Routes are **flat** — there is no nesting or `children`. Shared layout comes from [`wrapper`](#wrapper) + [`group`](#group); cross-cutting logic from [middleware](#middleware-applymiddleware).
@@ -206,13 +212,14 @@ Constructs one flat route and derives its path codec. The returned definition ad
 #### `DataRouteInput`
 
 ```ts
-interface DataRouteInput<TPath, TSearchSchema, TRendered, TWrappers> {
+interface DataRouteInput<TPath, TSearchSchema, TRendered, TWrappers, TParamsSchema> {
   readonly url: TPath;
-  readonly content: RouteContent<TPath, TSearchSchema, TRendered>;
+  readonly content: RouteContent<TPath, TSearchSchema, TRendered, TParamsSchema>;
   readonly prefetch?: BivariantCallback<
-    [params: RouteParams<TPath>, search: InferSearch<TSearchSchema>, context: NavigationContext],
+    [params: InferParams<TPath, TParamsSchema>, search: InferSearch<TSearchSchema>, context: NavigationContext],
     void | Promise<void>
   >;
+  readonly params?: TParamsSchema;
   readonly search?: TSearchSchema;
   readonly wrappers?: TWrappers;
   readonly meta?: Readonly<Record<string, unknown>>;
@@ -222,7 +229,8 @@ interface DataRouteInput<TPath, TSearchSchema, TRendered, TWrappers> {
 - **`url`** — path pattern. `:param` segments become typed params; modifiers (`?`, `*`, `+`, `(regex)`) are stripped for naming. `RouteParams<TPath>` infers `{ readonly [name]: string }`, or `Record<string, never>` when the path has none.
 - **`content`** — the component, called with `RouteContentProps`. Carries an optional `preload?: () => Promise<RouteModule>` for code-splitting.
 - **`prefetch`** — see [the prefetch hook](#the-prefetch-hook).
-- **`search`** — a [Standard-Schema-like](#search-validation) validator; its `output` type flows to `content`'s `search` prop and the route's `SearchOf`.
+- **`params`** — a [Standard Schema](#params-validation) validator for the path params; its output type replaces `RouteParams<TPath>` everywhere (`content`, `prefetch`, `Link`, `navigate`, `buildPath`). A failed validation makes the URL a **non-match** (404), not an error.
+- **`search`** — a [Standard Schema](#search-validation) validator; its output type flows to `content`'s `search` prop and the route's `SearchOf`. A failed validation throws a 400 `StatusResponse`.
 - **`wrappers`** — layout wrappers (usually applied via `group`, not set by hand).
 - **`meta`** — arbitrary readonly metadata.
 
@@ -240,7 +248,7 @@ Props passed to a route's `content`:
 
 ```ts
 interface RouteContentProps<
-  TParams extends RouteParamValues | Record<string, never> = Record<string, never>,
+  TParams = Record<string, never>,
   TSearch = Record<string, never>,
 > {
   readonly params: TParams;
@@ -260,7 +268,7 @@ function AccountPage({ params, search }: RouteContentProps<{ readonly id: string
 
 ```ts
 readonly prefetch?: (
-  params: RouteParams<TPath>,
+  params: InferParams<TPath, TParamsSchema>,
   search: InferSearch<TSearchSchema>,
   context: NavigationContext,
 ) => void | Promise<void>;
@@ -291,10 +299,11 @@ prefetch: (params, search, context) => {
 ```ts
 type StaticRedirectStatus = 301 | 308;
 
-interface RedirectRouteInput<TPath, TTarget, TWrappers> {
+interface RedirectRouteInput<TPath, TTarget, TWrappers, TParamsSchema> {
   readonly url: TPath;
   readonly redirect: TTarget;       // destination path
   readonly status: StaticRedirectStatus;
+  readonly params?: TParamsSchema;  // optional params schema, gates matching like data routes
   readonly wrappers?: TWrappers;
   readonly meta?: Readonly<Record<string, unknown>>;
 }
@@ -308,14 +317,16 @@ const legacy = route({ url: "/old", redirect: "/new", status: 308 });
 
 #### Definition shapes and codec
 
-`RouteInput = DataRouteInput | RedirectRouteInput` (what `route()` accepts); `RouteDefinition = DataRouteDefinition | RedirectRouteDefinition` (what it returns). Both definitions extend `RouteCodec<TPath>`:
+`RouteInput = DataRouteInput | RedirectRouteInput` (what `route()` accepts); `RouteDefinition = DataRouteDefinition | RedirectRouteDefinition` (what it returns). Both definitions extend `RouteCodec<TPath, TParams>`:
 
 ```ts
-interface RouteCodec<TPath extends string = string> {
-  parse(url: string | URL): RouteParams<TPath> | null;
-  render(params: RouteParams<TPath>): string;
+interface RouteCodec<TPath extends string = string, TParams = RouteParams<TPath>> {
+  parse(url: string | URL): TParams | null;
+  render(params: TParams): string;
 }
 ```
+
+`TParams` is `InferParams<TPath, TParamsSchema>` — the [params schema](#params-validation)'s output when one is declared, otherwise the raw string params inferred from the path. `parse` applies the params schema: a rejected URL returns `null`, exactly like a pattern mismatch. `render` accepts the schema's output values and serializes non-string values (numbers, booleans) with `String()`.
 
 The definition is the input shape with `wrappers` made required (defaulted to `[]`) plus `parse`/`render`. `DataRouteDefinition` keeps the same three-arg `prefetch` signature as the input.
 
@@ -505,11 +516,30 @@ prefetch: async (params) => {
 },
 ```
 
-### Search validation
+### Schema validation
 
-`search` accepts any [Standard Schema](https://github.com/standard-schema/standard-schema)-compatible validator (`StandardSchemaLike`) — Zod, Valibot, ArkType, or a hand-rolled `~standard` object. Its `output` type flows to `content`'s `search` prop and to `SearchOf<TRoute>`.
+Both `params` and `search` accept a `SchemaLike` validator:
 
 ```ts
+type SchemaLike<TOutput = unknown> =
+  | StandardSchemaV1<unknown, TOutput>   // the real spec — Zod (≥3.24), Valibot, ArkType
+  | StandardSchemaLike<TOutput>;         // legacy hand-rolled shape (kept for back-compat)
+
+interface StandardSchemaV1<TInput = unknown, TOutput = TInput> {
+  readonly "~standard": {
+    readonly version: 1;
+    readonly vendor: string;
+    readonly validate: (value: unknown) =>
+      | StandardSchemaResult<TOutput>
+      | Promise<StandardSchemaResult<TOutput>>;   // Promise results are rejected — matching is synchronous
+    readonly types?: { readonly input: TInput; readonly output: TOutput } | undefined;
+  };
+}
+
+type StandardSchemaResult<TOutput> =
+  | { readonly value: TOutput; readonly issues?: undefined }
+  | { readonly issues: ReadonlyArray<StandardSchemaIssue> };
+
 interface StandardSchemaLike<TOutput = unknown> {
   readonly "~standard": {
     readonly output?: TOutput;
@@ -517,6 +547,52 @@ interface StandardSchemaLike<TOutput = unknown> {
   };
 }
 ```
+
+Any [Standard Schema](https://standardschema.dev)-compatible library schema can be passed directly — its output type is inferred from the `types.output` phantom (`InferOutput`). The legacy shape carries its output type on the non-standard `output` phantom instead. Two constraints apply to both:
+
+- **Validation is synchronous.** `match()` is sync, so a validator that returns a `Promise` (e.g. a Zod async refinement) throws at match time with an explanatory error.
+- **Raw values are strings.** Path params and search params arrive as `Record<string, string>`; use coercion (`z.coerce.number()`, `Number(...)`) for anything else.
+
+#### Params validation
+
+`params` validates the path params extracted from the URL. The schema's output type replaces `RouteParams<TPath>` everywhere: `content`'s `params` prop, `prefetch`'s first argument, `ParamsOf<TRoute>`, and the `params` accepted by `Link`, `navigate`, and `buildPath`.
+
+**Failure semantics: a rejected URL is a non-match, not an error.** Matching falls through to the next candidate route and ultimately the `notFound` route (404) — the same behaviour as a pattern mismatch. Use it to reject syntactically invalid resource identifiers before any code runs:
+
+```ts
+const productParamsSchema: StandardSchemaV1<
+  { readonly id: string },
+  { readonly id: number }
+> = {
+  "~standard": {
+    version: 1,
+    vendor: "app",
+    validate(value) {
+      const raw = value as { id?: string };
+      const id = Number(raw.id);
+      return Number.isInteger(id) && id > 0
+        ? { value: { id } }
+        : { issues: [{ message: "id must be a positive integer" }] };
+    },
+  },
+};
+
+const product = route({
+  url: "/products/:id",
+  params: productParamsSchema,   // "/products/abc" → 404; "/products/42" → params.id === 42
+  content: ProductPage,          // ({ params }) — params.id is a number
+});
+
+router.buildPath("product", { params: { id: 42 } });   // "/products/42" — typed, serialized with String()
+```
+
+For *semantic* validation (does the record exist?), keep using `prefetch` + [`StatusResponse`](#statusresponse). For simple syntactic constraints, a `(regex)` modifier in the pattern (`/products/:id(\\d+)`) also works — `params` adds typed coercion on top.
+
+#### Search validation
+
+`search` validates the query string. Its output type flows to `content`'s `search` prop and to `SearchOf<TRoute>`.
+
+**Failure semantics: a rejected query string throws `StatusResponse(400, { issues, message })`.** During `load()`/navigation the router catches it and commits an error result (`result.status === 400`, `result.error instanceof StatusResponse`); under SSR that surfaces as a real 400, and on the client it reaches your error boundary. A shared URL with a garbage query is a *bad request*, not a crash — and for that reason, prefer **normalizing** schemas that supply defaults over rejecting ones (`z.coerce.number().catch(1)` rather than `.int()` alone), reserving hard failure for genuinely unrenderable input.
 
 ```ts
 const accountSearchSchema = {
@@ -529,6 +605,8 @@ const accountSearchSchema = {
   },
 };
 ```
+
+This hand-rolled legacy shape never fails (it normalizes), which makes it a good dependency-free default. A type-only schema (`output` phantom, no `validate`) passes the raw string record through unvalidated.
 
 ### Adapters and low-level helpers
 
@@ -578,6 +656,12 @@ interface MemoryAdapter extends PlatformAdapter {
 | `NavigationIntent` | `{ name; href; params; search; hash? }` (returned by `navigate`) |
 | `TrackedLocation<T>` | proxy over a location; reading a field subscribes to just that field |
 | `Subject<T>` | `{ next(value); subscribe(subscriber) → unsubscribe }` |
+| `SchemaLike<TOutput>` | `StandardSchemaV1<unknown, TOutput> \| StandardSchemaLike<TOutput>` — what `params`/`search` accept |
+| `InferOutput<TSchema>` | a schema's output type (`types.output` phantom, or legacy `output`) |
+| `InferParams<TPath, TParamsSchema>` | params schema output when declared, else `RouteParams<TPath>` |
+| `ParamsOf<TRoute>` | the route's params as seen by `content`/`Link`/`navigate` (schema-aware) |
+| `SearchOf<TRoute>` | the route's validated search shape (schema-aware) |
+| `StandardSchemaIssue` | `{ message; path? }` — one validation issue, per the Standard Schema spec |
 
 ---
 

@@ -1,5 +1,4 @@
-import buildUrl from "./buildUrl.js";
-import { matchPath, renderPattern } from "./pathUtils.js";
+import { createRouteCodec } from "./pathUtils.js";
 import type { AnyRoute, RouteMiddleware } from "./types.js";
 
 /**
@@ -25,12 +24,7 @@ export default function applyMiddleware<TRoutes extends readonly AnyRoute[]>(
 
     return {
       ...transformed,
-      parse(input: string | URL) {
-        return matchPath(transformed.url, buildUrl(input));
-      },
-      render(params: Record<string, string> | Record<string, never>) {
-        return renderPattern(transformed.url, params as Record<string, string>);
-      },
+      ...createRouteCodec(transformed.url, transformed.params),
     };
   }) as unknown as TRoutes;
 }

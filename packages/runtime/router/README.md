@@ -53,6 +53,7 @@ The core package intentionally stops at route matching, state, dehydration, and 
 - **Wrappers are annotations.** Reuse layout with `wrapper()` and `group()`.
 - **Middleware is route-to-route transformation.** Use it to add auth, i18n, metrics, or shared wrapper policy. Middleware runs once, before the router is created.
 - **`prefetch()` is fire-and-forget.** It warms caches, preloads assets, or runs side effects at navigation time. It does not provide data to `content()` — components own their data via their cache library.
+- **URL params are validated by schemas.** Give a route a `params` or `search` [Standard Schema](https://standardschema.dev) validator (Zod, Valibot, ArkType, or hand-rolled) and the validated, typed output flows to `content()`, `prefetch()`, and the typed navigation helpers.
 - **SSR is built in.** `dehydrate()` preserves navigation state across the server/client boundary.
 
 ## Progressive disclosure
@@ -85,6 +86,43 @@ const userRoute = route({
   content: ({ params }) => `User: ${params.id}`,
 });
 ```
+
+### Schema validation for URL params
+
+Routes accept [Standard Schema](https://standardschema.dev) validators for both kinds of URL parameters. Any spec-compliant library schema (Zod ≥3.24, Valibot, ArkType) can be passed directly; raw values always arrive as strings, so use coercion.
+
+**Path params** — the `params` field validates and coerces `:param` segments. A rejected URL is a **non-match**: matching falls through to the next route and ultimately the not-found route (404), exactly like a pattern mismatch.
+
+```tsx
+import { route } from "@canonical/router-core";
+import { z } from "zod";
+
+const productRoute = route({
+  url: "/products/:id",
+  params: z.object({ id: z.coerce.number().int().positive() }),
+  // "/products/abc" → 404; "/products/42" → params.id === 42 (a number)
+  content: ({ params }) => `Product #${params.id}`,
+});
+
+router.buildPath("product", { params: { id: 42 } }); // "/products/42" — fully typed
+```
+
+**Search params** — the `search` field validates the query string. A rejected query throws `StatusResponse(400, { issues, message })`: `load()` commits it as a 400 error result (a real 400 under SSR, an error-boundary render on the client). Prefer normalizing schemas that supply defaults over rejecting ones — a shared URL with a stale query should not crash the page:
+
+```tsx
+const listRoute = route({
+  url: "/products",
+  search: z.object({
+    page: z.coerce.number().int().min(1).catch(1),
+    sort: z.enum(["price", "name"]).catch("name"),
+  }),
+  content: ({ search }) => `page ${search.page}, sorted by ${search.sort}`,
+});
+```
+
+No dependency? Hand-roll the schema — either the Standard Schema v1 shape (`{ "~standard": { version: 1, vendor, validate } }`, annotate with `StandardSchemaV1<In, Out>` for inference) or the legacy type-only shape (`{ "~standard": { output, validate } }`). See the [Router API reference](../../../docs/references/ROUTER_API.md#schema-validation) for both.
+
+Validation runs at match time and is **synchronous** — async validators (e.g. Zod async refinements) throw with an explanatory error. For semantic checks (does the record exist?) use `prefetch` + `StatusResponse`.
 
 ### Wrapper composition
 

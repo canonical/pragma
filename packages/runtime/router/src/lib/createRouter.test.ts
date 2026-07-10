@@ -5,7 +5,7 @@ import group from "./group.js";
 import redirect from "./redirect.js";
 import route from "./route.js";
 import StatusResponse from "./StatusResponse.js";
-import type { AnyRoute, RouteMiddleware } from "./types.js";
+import type { AnyRoute, RouteMiddleware, StandardSchemaV1 } from "./types.js";
 import wrapper from "./wrapper.js";
 
 describe("createRouter", () => {
@@ -1571,7 +1571,7 @@ describe("createRouter", () => {
     expect(router.getState().location.pathname).toBe("/");
   });
 
-  it("throws when search param validation returns issues", () => {
+  it("throws a 400 StatusResponse when search param validation returns issues", () => {
     const failingSchema = {
       "~standard": {
         output: {} as { page: number },
@@ -1589,9 +1589,28 @@ describe("createRouter", () => {
       }),
     });
 
-    expect(() => router.match("/list?page=-1")).toThrow(
+    let thrownError: unknown = null;
+
+    try {
+      router.match("/list?page=-1");
+    } catch (caughtError) {
+      thrownError = caughtError;
+    }
+
+    expect(thrownError).toBeInstanceOf(StatusResponse);
+
+    const statusResponse = thrownError as StatusResponse<{
+      issues: ReadonlyArray<{ message: string }>;
+      message: string;
+    }>;
+
+    expect(statusResponse.status).toBe(400);
+    expect(statusResponse.data.message).toBe(
       "Search param validation failed: page must be positive",
     );
+    expect(statusResponse.data.issues).toEqual([
+      { message: "page must be positive" },
+    ]);
   });
 
   it("uses default message when validation issue has no message", () => {
@@ -1612,9 +1631,18 @@ describe("createRouter", () => {
       }),
     });
 
-    expect(() => router.match("/list?page=-1")).toThrow(
-      "Search param validation failed: Validation error",
-    );
+    let thrownError: unknown = null;
+
+    try {
+      router.match("/list?page=-1");
+    } catch (caughtError) {
+      thrownError = caughtError;
+    }
+
+    expect(thrownError).toBeInstanceOf(StatusResponse);
+    expect(
+      (thrownError as StatusResponse<{ message: string }>).data.message,
+    ).toBe("Search param validation failed: Validation error");
   });
 
   it("unwraps search validation result with value property", () => {
@@ -1820,6 +1848,287 @@ describe("createRouter", () => {
 
     await vi.waitFor(() => {
       expect(adapter.getLocation().pathname).toBe("/login");
+    });
+  });
+
+  describe("params schema validation", () => {
+    const numericIdSchema = {
+      "~standard": {
+        output: {} as { readonly id: number },
+        validate(value: unknown) {
+          const raw = value as { id?: string };
+          const id = Number(raw.id);
+
+          return Number.isInteger(id) && id > 0
+            ? { value: { id } }
+            : { issues: [{ message: "id must be a positive integer" }] };
+        },
+      },
+    };
+
+    it("validates and coerces path params through a params schema", () => {
+      const router = createRouter({
+        user: route({
+          url: "/users/:id",
+          params: numericIdSchema,
+          content: ({ params }) => {
+            expectTypeOf(params).toEqualTypeOf<{ readonly id: number }>();
+
+            return String(params.id);
+          },
+        }),
+      });
+
+      expect(router.match("/users/42")).toMatchObject({
+        kind: "route",
+        name: "user",
+        status: 200,
+        params: { id: 42 },
+      });
+    });
+
+    it("treats a params schema rejection as a non-match and falls through", () => {
+      const router = createRouter(
+        {
+          user: route({
+            url: "/users/:id",
+            params: numericIdSchema,
+            content: ({ params }) => String(params.id),
+          }),
+          catchAll: route({
+            url: "/users/*",
+            content: () => "catch-all",
+          }),
+        },
+        {
+          notFound: route({ url: "/*", content: () => "not-found" }),
+        },
+      );
+
+      // Invalid id falls through to the wildcard sibling.
+      expect(router.match("/users/abc")).toMatchObject({
+        kind: "route",
+        name: "catchAll",
+      });
+    });
+
+    it("resolves to not-found (404) when no other route accepts rejected params", () => {
+      const notFoundRoute = route({ url: "/*", content: () => "not-found" });
+      const router = createRouter(
+        {
+          user: route({
+            url: "/users/:id",
+            params: numericIdSchema,
+            content: ({ params }) => String(params.id),
+          }),
+        },
+        { notFound: notFoundRoute },
+      );
+
+      expect(router.match("/users/abc")).toMatchObject({
+        kind: "not-found",
+        status: 404,
+      });
+    });
+
+    it("returns null for rejected params without a not-found route", () => {
+      const router = createRouter({
+        user: route({
+          url: "/users/:id",
+          params: numericIdSchema,
+          content: ({ params }) => String(params.id),
+        }),
+      });
+
+      expect(router.match("/users/abc")).toBeNull();
+    });
+
+    it("passes validated params to prefetch and builds paths from schema output", async () => {
+      const prefetchSpy = vi.fn();
+      const router = createRouter({
+        user: route({
+          url: "/users/:id",
+          params: numericIdSchema,
+          prefetch: (params, _search, _context) => {
+            expectTypeOf(params).toEqualTypeOf<{ readonly id: number }>();
+            prefetchSpy(params);
+          },
+          content: ({ params }) => String(params.id),
+        }),
+      });
+
+      expect(router.buildPath("user", { params: { id: 42 } })).toBe(
+        "/users/42",
+      );
+
+      const intent = router.navigate("user", { params: { id: 42 } });
+
+      expectTypeOf(intent.params).toEqualTypeOf<{ readonly id: number }>();
+      expect(intent.href).toBe("/users/42");
+
+      await router.load("/users/42");
+
+      expect(prefetchSpy).toHaveBeenCalledWith({ id: 42 });
+    });
+
+    it("gates redirect routes on their params schema", () => {
+      const router = createRouter(
+        {
+          legacyUser: route({
+            url: "/old/:id",
+            redirect: "/users/:id",
+            status: 308,
+            params: numericIdSchema,
+          }),
+          user: route({
+            url: "/users/:id",
+            params: numericIdSchema,
+            content: ({ params }) => String(params.id),
+          }),
+        },
+        {
+          notFound: route({ url: "/*", content: () => "not-found" }),
+        },
+      );
+
+      expect(router.match("/old/7")).toMatchObject({
+        kind: "redirect",
+        redirectTo: "/users/7",
+        status: 308,
+      });
+      expect(router.match("/old/abc")).toMatchObject({
+        kind: "not-found",
+        status: 404,
+      });
+    });
+
+    it("throws a helpful error when a params validator is async", () => {
+      const asyncSchema = {
+        "~standard": {
+          version: 1 as const,
+          vendor: "test",
+          validate: async () => ({ value: { id: 1 } }),
+        },
+      };
+
+      const router = createRouter({
+        user: route({
+          url: "/users/:id",
+          params: asyncSchema,
+          content: () => "user",
+        }),
+      });
+
+      expect(() => router.match("/users/42")).toThrow(
+        "async schema validation is not supported",
+      );
+    });
+  });
+
+  describe("Standard Schema v1 validators", () => {
+    it("infers types and validates through a v1 search schema", () => {
+      const pageSearchSchema: StandardSchemaV1<
+        { readonly page?: string },
+        { readonly page: number }
+      > = {
+        "~standard": {
+          version: 1,
+          vendor: "pragma-test",
+          validate(value) {
+            const raw = value as { page?: string };
+            const page = Number(raw.page ?? "1");
+
+            return Number.isNaN(page)
+              ? { issues: [{ message: "page must be a number" }] }
+              : { value: { page } };
+          },
+        },
+      };
+
+      const router = createRouter({
+        list: route({
+          url: "/list",
+          search: pageSearchSchema,
+          content: ({ search }) => {
+            expectTypeOf(search).toEqualTypeOf<{ readonly page: number }>();
+
+            return String(search.page);
+          },
+        }),
+      });
+
+      expect(router.match("/list?page=2")).toMatchObject({
+        kind: "route",
+        search: { page: 2 },
+      });
+      expect(() => router.match("/list?page=abc")).toThrow();
+    });
+
+    it("infers types and validates through a v1 params schema", () => {
+      const idParamsSchema: StandardSchemaV1<
+        { readonly id: string },
+        { readonly id: number }
+      > = {
+        "~standard": {
+          version: 1,
+          vendor: "pragma-test",
+          validate(value) {
+            const raw = value as { id?: string };
+            const id = Number(raw.id);
+
+            return Number.isInteger(id)
+              ? { value: { id } }
+              : { issues: [{ message: "id must be an integer" }] };
+          },
+        },
+      };
+
+      const router = createRouter({
+        user: route({
+          url: "/users/:id",
+          params: idParamsSchema,
+          content: ({ params }) => {
+            expectTypeOf(params).toEqualTypeOf<{ readonly id: number }>();
+
+            return String(params.id);
+          },
+        }),
+      });
+
+      expect(router.match("/users/42")).toMatchObject({
+        params: { id: 42 },
+      });
+      expect(router.match("/users/abc")).toBeNull();
+    });
+  });
+
+  describe("search validation failure handling in load()", () => {
+    it("commits a 400 error result instead of rejecting the load", async () => {
+      const failingSchema = {
+        "~standard": {
+          output: {} as { page: number },
+          validate() {
+            return { issues: [{ message: "page must be positive" }] };
+          },
+        },
+      };
+
+      const router = createRouter({
+        home: route({ url: "/", content: () => "home" }),
+        list: route({
+          url: "/list",
+          search: failingSchema,
+          content: () => "list",
+        }),
+      });
+
+      const result = await router.load("/list?page=-1");
+
+      expect(result.status).toBe(400);
+      expect(result.match).toBeNull();
+      expect(result.error).toBeInstanceOf(StatusResponse);
+      expect((result.error as StatusResponse<unknown>).status).toBe(400);
+      expect(router.getState().location.status).toBe(400);
     });
   });
 });
