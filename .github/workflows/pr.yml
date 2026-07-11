@@ -52,6 +52,9 @@ jobs:
           # not Storybook builds.
           build-command: bunx nx run-many -t build --projects="$(bun scripts/consumer-smoke/list-publishable.ts)"
 
+      - name: Unit tests for the consumer-smoke scripts
+        run: bun test scripts/consumer-smoke
+
       - name: Static guard — published packages must not depend on private/unpublished packages
         run: bun scripts/consumer-smoke/check-no-private-deps.ts
 

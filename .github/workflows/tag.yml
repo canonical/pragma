@@ -110,6 +110,15 @@ jobs:
       - name: Setup Environment
         uses: ./.github/actions/setup-env
 
+      # setup-env's default build (`lerna run build:all`) silently skips
+      # packages that only define a `build` script (e.g.
+      # @canonical/pragma-cli), leaving their dist/ absent and tripping the
+      # smoke's unbuilt check. Build the publishable set with the `build`
+      # target — the same way the PR consumer-smoke job builds — so every
+      # dist-shipping package is built before packing.
+      - name: Build publishable packages
+        run: bunx nx run-many -t build --projects="$(bun scripts/consumer-smoke/list-publishable.ts)"
+
       # Pre-publish consumer smoke: proves the tarballs we are about to
       # publish are installable and usable by an external npm consumer.
       # Unlike the advisory PR job, a failure here blocks the publish.

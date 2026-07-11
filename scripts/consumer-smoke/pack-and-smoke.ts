@@ -38,6 +38,7 @@
 import { existsSync, mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { packFilename } from "./npm-pack.ts";
 import { getPublishablePackages, type WorkspacePackage } from "./workspace.ts";
 
 const PUBLINT_VERSION = "0.3.21";
@@ -54,6 +55,9 @@ const skipAdvisory = process.argv.includes("--skip-advisory");
 
 interface RunResult {
   code: number;
+  stdout: string;
+  stderr: string;
+  /** stdout + stderr merged, for human-readable logs — never parse this. */
   output: string;
 }
 
@@ -75,7 +79,7 @@ async function run(
   const output = [stdout.trimEnd(), stderr.trimEnd()]
     .filter(Boolean)
     .join("\n");
-  return { code, output };
+  return { code, stdout, stderr, output };
 }
 
 async function mapLimit<T, R>(
@@ -176,14 +180,9 @@ await mapLimit(packages, PACK_CONCURRENCY, async (pkg: WorkspacePackage) => {
     return;
   }
   try {
-    // stdout may carry npm notices; the JSON array is the last chunk.
-    const jsonStart = result.output.indexOf("[");
-    const parsed = JSON.parse(result.output.slice(jsonStart)) as Array<{
-      filename?: string;
-    }>;
-    const filename = parsed[0]?.filename;
-    if (!filename) throw new Error("npm pack --json returned no filename");
-    tarballs.set(pkg.name, join(tarballDir, filename));
+    // Parse stdout ONLY — stderr carries npm warnings/lifecycle output and
+    // must never reach the JSON parser (see npm-pack.ts).
+    tarballs.set(pkg.name, join(tarballDir, packFilename(result)));
   } catch (error) {
     packFailures.push(`${pkg.name}: could not parse npm pack output (${error})`);
   }
