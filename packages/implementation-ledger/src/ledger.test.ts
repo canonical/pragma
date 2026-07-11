@@ -69,6 +69,20 @@ describe("serialize/parse roundtrip", () => {
     expect(parsed[1]).toEqual(otherEntry);
   });
 
+  it("parses CRLF line endings (e.g. git autocrlf checkouts)", () => {
+    const content =
+      serializePreamble(prefix) +
+      serializeEntry(entry, prefix, "git abc1234 (2026-07-08)") +
+      "\n" +
+      serializeEntry(otherEntry, prefix);
+
+    const parsed = parseLedger(content.replace(/\n/g, "\r\n"), prefix);
+
+    expect(parsed).toHaveLength(2);
+    expect(parsed[0]).toEqual(entry);
+    expect(parsed[1]).toEqual(otherEntry);
+  });
+
   it("escapes and unescapes quotes in literals", () => {
     const parsed = parseLedger(
       serializePreamble(prefix) + serializeEntry(entry, prefix),

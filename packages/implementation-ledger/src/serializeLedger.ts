@@ -24,8 +24,12 @@ export function unescapeLiteral(value: string): string {
 
 /**
  * Slug used in entry subject URIs: npm scope is stripped (matching the
- * convention of `data/implementations.ttl`) and characters outside
- * [a-z0-9.-] are folded to "-".
+ * convention of `data/implementations.ttl`) and each run of characters
+ * outside [a-z0-9] — including "." — is folded to a single "-". This keeps
+ * the package slug free of dots, the separator used between the segments of
+ * {@link entrySubjectLocalName}. Changing this mapping would change the
+ * subjects of entries already recorded in the append-only ledger, so it must
+ * stay stable.
  */
 export function slugifyPackageName(name: string): string {
   return name

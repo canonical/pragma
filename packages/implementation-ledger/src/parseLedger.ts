@@ -189,7 +189,11 @@ export function parseLedger(
 ): LedgerEntry[] {
   const p = prefix.short;
   const cursor: LineCursor = {
-    lines: content.split("\n"),
+    // Split on \r?\n so CRLF checkouts (e.g. git autocrlf on Windows) don't
+    // leave a trailing \r that breaks the strict ^...$ line matches. Literal
+    // CRs inside values are escaped as \r by the serializer, so a raw \r can
+    // only ever be a line ending.
+    lines: content.split(/\r?\n/),
     index: 0,
   };
 

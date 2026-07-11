@@ -26,91 +26,28 @@ import {
 import { withFileLock } from "./fileLock.js";
 import { gitProvenance } from "./gitProvenance.js";
 import { appendEntries, describeMismatch, entryKey } from "./ledger.js";
+import { type CliOptions, HELP, parseArgs, UsageError } from "./parseArgs.js";
 import type { LedgerEntry } from "./types.js";
 
 /** Thrown after mismatch details have been printed; carries only a summary. */
 class IntegrityViolationError extends Error {}
 
-const HELP = `
-Usage: implementation-ledger collect [options]
-
-Records what each annotated package version makes available in the
-append-only ledger at <monorepo root>/data/implementation-versions.ttl.
-
-Options:
-  --package <path>   Only collect the package at <path> (e.g. "." from a
-                     package's own directory)
-  --ledger <path>    Ledger file path (default: <root>/data/implementation-versions.ttl)
-  --dry-run          Compute and report, but do not write
-  --quiet            Only print appended entries, warnings, and errors
-  --tolerate-drift   Downgrade recorded-content mismatches from errors to
-                     warnings (local development escape hatch; never used by
-                     the repo's build or release wiring)
-  --help, -h         Show this help message
-`;
-
-interface CliOptions {
-  packageFilter?: string;
-  ledgerPath?: string;
-  dryRun: boolean;
-  quiet: boolean;
-  tolerateDrift: boolean;
-}
-
-function parseArgs(argv: string[]): CliOptions {
-  const options: CliOptions = {
-    dryRun: false,
-    quiet: false,
-    tolerateDrift: false,
-  };
-
-  const positional: string[] = [];
-  for (let i = 0; i < argv.length; i += 1) {
-    const arg = argv[i];
-    switch (arg) {
-      case "--help":
-      case "-h":
-        console.log(HELP);
-        process.exit(0);
-        break;
-      case "--package":
-        options.packageFilter = argv[++i];
-        break;
-      case "--ledger":
-        options.ledgerPath = argv[++i];
-        break;
-      case "--dry-run":
-        options.dryRun = true;
-        break;
-      case "--quiet":
-        options.quiet = true;
-        break;
-      case "--tolerate-drift":
-        options.tolerateDrift = true;
-        break;
-      default:
-        positional.push(arg);
-    }
-  }
-
-  if (positional.length !== 1 || positional[0] !== "collect") {
-    console.error(`Unknown command: ${positional.join(" ") || "(none)"}`);
-    console.error(HELP);
-    process.exit(1);
-  }
-  if (
-    (options.packageFilter === undefined && argv.includes("--package")) ||
-    (options.ledgerPath === undefined && argv.includes("--ledger"))
-  ) {
-    console.error("Missing value for --package/--ledger");
-    process.exit(1);
-  }
-
-  return options;
-}
-
 async function main(): Promise<void> {
-  const options = parseArgs(process.argv.slice(2));
+  let options: CliOptions;
+  try {
+    options = parseArgs(process.argv.slice(2));
+  } catch (error) {
+    if (error instanceof UsageError) {
+      console.error(error.message);
+      console.error(HELP);
+      process.exit(1);
+    }
+    throw error;
+  }
+  if (options.help) {
+    console.log(HELP);
+    return;
+  }
 
   const rootDir = await findRootDir(process.cwd());
   const rootConfig = await loadRootConfig(rootDir);
