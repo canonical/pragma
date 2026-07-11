@@ -13,7 +13,8 @@ describe("SettingsView", () => {
 
   it("applies custom className", () => {
     render(<SettingsView className="custom-class">Content</SettingsView>);
-    const element = screen.getByText("Content");
+    // The root element carries the classes; children may render in a descendant.
+    const element = document.querySelector(".custom-class") as HTMLElement;
     expect(element).toHaveClass("settings-view");
     expect(element).toHaveClass("custom-class");
   });

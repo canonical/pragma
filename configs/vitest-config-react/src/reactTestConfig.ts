@@ -13,9 +13,11 @@ type CoverageConfig = NonNullable<TestConfig["coverage"]>;
 
 /**
  * The two test-file glob conventions in use across the React packages. This is
- * a REQUIRED option with no default: `.test.` and `.tests.` are load-bearing
- * (each package uses exactly one), and a wrong choice silently matches zero
- * files — a green run that ran nothing. See pragma-adrs (Track: unified config).
+ * a REQUIRED option with no default: `.test.` and `.tests.` are load-bearing,
+ * and a wrong choice silently matches zero files — a green run that ran
+ * nothing. Packages whose files are split between the two conventions pass
+ * both as an array until the repo-wide naming unification lands. See
+ * pragma-adrs (Track: unified config).
  */
 export type TestGlob = "test" | "tests";
 
@@ -36,8 +38,12 @@ export type CoverageOption =
 export interface ReactTestConfigOptions {
   /**
    * Test-file glob convention. REQUIRED — no default; see {@link TestGlob}.
+   *
+   * Pass an array to run BOTH conventions (e.g. `["test", "tests"]`) in a
+   * package whose files are mid-migration between the two. This is an interim
+   * escape hatch until the repo-wide naming unification lands — see the README.
    */
-  glob: TestGlob;
+  glob: TestGlob | TestGlob[];
   /**
    * Test environment. `"jsdom"` (default) for DOM component tests, `"node"`
    * for framework-agnostic / SSR-only packages.
@@ -94,15 +100,15 @@ const FULL_THRESHOLDS = {
  */
 const buildCoverage = (
   coverage: Exclude<CoverageOption, false>,
-  glob: TestGlob,
+  globs: readonly TestGlob[],
 ): CoverageConfig => {
   const overrides = coverage === true ? {} : coverage;
-  const testExclude = [
+  const testExclude = globs.flatMap((glob) => [
     `**/*.${glob}.ts`,
     `**/*.${glob}.tsx`,
     `**/*.ssr.${glob}.ts`,
     `**/*.ssr.${glob}.tsx`,
-  ];
+  ]);
   return {
     provider: "v8",
     include: overrides.include ?? ["src/**/*.{ts,tsx}"],
@@ -147,6 +153,9 @@ export const reactTestConfig = ({
   plugins,
 }: ReactTestConfigOptions): TestConfig => {
   const hasSetup = setupFiles !== undefined && setupFiles.length > 0;
+  // Normalise to an array: a single convention is the common case, the array
+  // form covers packages whose files are split between `.test.` and `.tests.`.
+  const globs = Array.isArray(glob) ? glob : [glob];
 
   // The client project: DOM (or node) tests, excluding the `.ssr.` variants
   // when an ssr project will pick them up.
@@ -155,12 +164,12 @@ export const reactTestConfig = ({
     environment,
     globals: true,
     ...(hasSetup ? { setupFiles } : {}),
-    include: [`src/**/*.${glob}.ts`, `src/**/*.${glob}.tsx`],
-    ...(ssr ? { exclude: [`src/**/*.ssr.${glob}.tsx`] } : {}),
+    include: globs.flatMap((g) => [`src/**/*.${g}.ts`, `src/**/*.${g}.tsx`]),
+    ...(ssr ? { exclude: globs.map((g) => `src/**/*.ssr.${g}.tsx`) } : {}),
   };
 
   const coverageBlock =
-    coverage === false ? {} : { coverage: buildCoverage(coverage, glob) };
+    coverage === false ? {} : { coverage: buildCoverage(coverage, globs) };
 
   // No split: return a flat single-project test block (the common case).
   if (!ssr) {
@@ -175,7 +184,7 @@ export const reactTestConfig = ({
   const ssrTest: TestConfig = {
     name: "ssr",
     environment: "node",
-    include: [`src/**/*.ssr.${glob}.tsx`],
+    include: globs.map((g) => `src/**/*.ssr.${g}.tsx`),
   };
 
   return {
