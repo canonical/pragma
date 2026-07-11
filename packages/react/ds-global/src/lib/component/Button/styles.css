@@ -29,7 +29,20 @@
   --button-gap: var(--dimension-100);
   --button-border-width: var(--dimension-stroke-thickness-medium);
   /* Label weight — the button label is medium, not the `.p` body weight. */
-  --button-font-weight: var(--font-weight-medium, var(--font-weight-default));
+  --button-font-weight: var(--typography-weight-medium);
+  /* Label size — the button label is the text-secondary tier (14px), not the
+     `.p` text-primary tier (16px). The line-height snaps up to the baseline
+     grid exactly as the typography mapper does, so the box stays 32px tall
+     (24px line + 8px of baseline nudges) around 14px text. */
+  --button-font-size: var(--typography-text-secondary-font-size);
+  --button-line-height: round(
+    up,
+    calc(
+      var(--button-font-size) *
+      var(--typography-text-secondary-line-height)
+    ),
+    var(--baseline-height)
+  );
 }
 
 /* ==========================================================================
@@ -70,10 +83,14 @@
   border-width: calc(var(--modifier-outline, 0) * var(--button-border-width));
 
   /* Typography and block padding come from the `.p` baseline utility on the
-     element (font-size, snapped line-height, and the padding-block nudges that
-     align the box to the baseline grid). The button only overrides the label
-     weight and its own inline padding — declaring font-size/line-height/
-     padding-block here would bypass the baseline-grid maths. */
+     element (font-family and the padding-block nudges that align the box to
+     the baseline grid). The button re-points the engine's --font-size/
+     --line-height variables at its text-secondary component tokens —
+     `.ds.button` (0,2,0) outranks `.p` (0,1,0) on the same element — so the
+     label is 14px while the baseline-grid maths stay intact. Declaring
+     font-size/line-height/padding-block directly would bypass the engine. */
+  --font-size: var(--button-font-size);
+  --line-height: var(--button-line-height);
   font-weight: var(--button-font-weight);
   padding-inline: var(--button-padding-inline-start)
     var(--button-padding-inline-end);

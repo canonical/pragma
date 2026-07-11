@@ -7,7 +7,9 @@
  * spec: header interactive background uses the ghost surface channel (which
  * auto-steps on nested .surface contexts to layer2/layer3), text uses
  * color-text, the chevron uses color-icon, and dividers use color-border-muted.
- * Vertical padding is expressed in baseline multiples.
+ * Content vertical padding is expressed in baseline multiples; header block
+ * padding is 6px so the collapsed item meets the Figma element size (36px in
+ * sites, 32px in apps).
  */
 :root {
   --accordion-item-color-text: var(--color-text);
@@ -34,8 +36,12 @@
     --color-foreground-ghost-active
   );
 
-  --accordion-item-header-gap: var(--dimension-100);
-  --accordion-item-header-padding-block: var(--dimension-100);
+  --accordion-item-header-gap: var(--dimension-200);
+  /* 6px block padding: padding + line box + the item's 1px block-end divider
+     lands the collapsed item border-box at the Figma element size — 36px in
+     sites, 32px in apps. No 6px token exists in the built scale (there is no
+     --dimension-075), so halve --dimension-150 (12px). */
+  --accordion-item-header-padding-block: calc(var(--dimension-150) / 2);
   --accordion-item-header-padding-inline: var(--dimension-200);
 
   --accordion-item-content-padding-inline: var(--dimension-200);
@@ -119,10 +125,19 @@
   line-height: var(--typography-text-primary-line-height);
   letter-spacing: var(--typography-text-primary-letter-spacing);
 
+  /* The header owns vertical rhythm: zero the baseline engine's padding-block
+     nudges on every heading element so the header height stays padding-driven
+     and the flex centring keeps the chevron aligned with the heading text. */
+  & :is(h1, h2, h3, h4, h5, h6) {
+    padding-block: 0;
+  }
+
   /* Normalise every heading element except <h6> down to the inherited body
-     tier. <h6> is left untouched so the base h6 tier from
-     @canonical/styles-typography applies (correct heading-6 tokens, including
-     the baseline-snapped line-height) — no heading-6 tokens are restated here. */
+     tier. <h6> keeps the base h6 tier from @canonical/styles-typography
+     (correct heading-6 tokens), but its engine --line-height is unsnapped to
+     the raw font-size x ratio product so the h6 line box matches the
+     plain-text header line box per context (24px sites / 20px apps) instead
+     of the baseline-rounded 24px everywhere. */
   & :is(h1, h2, h3, h4, h5) {
     margin: 0;
     font: inherit;
@@ -130,6 +145,11 @@
   }
 
   & h6 {
+    --line-height: calc(
+      var(--typography-heading-6-font-size) *
+      var(--typography-heading-6-line-height)
+    );
+
     margin: 0;
   }
 }
@@ -187,10 +207,11 @@
   padding-inline-end: var(--accordion-item-content-padding-inline);
 }
 
-/* 1px divider baseline compensation: subtract the divider thickness from the
-   block-end padding of whichever element sits directly above the item's
-   block-end border, so the item's border-box height stays a baseline multiple
-   (no drift down the list) without pulling the content up in the process.
+/* 1px divider compensation: subtract the divider thickness from the block-end
+   padding of whichever element sits directly above the item's block-end
+   border, so the divider fits inside the item's target border-box height
+   (collapsed: the 36/32 element size; expanded: a baseline multiple, so no
+   drift down the list) without pulling the content up in the process.
    - collapsed: only the header is shown -> compensate the header
    - expanded:  the content is at the bottom -> compensate the content */
 .ds.accordion-item:not([open]) > .header {

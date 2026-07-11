@@ -1,5 +1,10 @@
 import type { Decorator } from "@storybook/react-vite";
-import type { ElementType, ReactElement, ReactNode } from "react";
+import type {
+  CSSProperties,
+  ElementType,
+  ReactElement,
+  ReactNode,
+} from "react";
 
 export const rtl = () => (Story: ElementType) => (
   <div dir="rtl">
@@ -107,13 +112,20 @@ export const surfaces = (
   </div>
 );
 
+/**
+ * Wraps a story in the design system's bare `.grid` preset ("bring your own
+ * columns"): the template is supplied via the preset's `--modifier-grid-template`
+ * knob, while both row and column gaps resolve from the grid gutter token chain
+ * (`--grid-gutter`) instead of ad-hoc literals.
+ */
 export const grid = () => (Story: ElementType) => (
   <div
-    style={{
-      display: "grid",
-      gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
-      gap: "1em",
-    }}
+    className="grid"
+    style={
+      {
+        "--modifier-grid-template": "repeat(auto-fit, minmax(300px, 1fr))",
+      } as CSSProperties
+    }
   >
     <Story />
   </div>
