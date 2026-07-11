@@ -7,9 +7,11 @@ import {
   runGeneratorTask,
 } from "@canonical/cli-core";
 import { dryRun, type Effect, runUndo, type Task } from "@canonical/task";
+import answerPromptWithDefaults from "../../shared/answerPromptWithDefaults.js";
+import createInteractivePromptSession, {
+  type InteractivePromptSession,
+} from "../../shared/createInteractivePromptSession.js";
 import type { LogLevel } from "../types.js";
-import answerPromptInteractively from "./answerPromptInteractively.js";
-import answerPromptWithDefaults from "./answerPromptWithDefaults.js";
 
 /** Options controlling how {@link runSetupTask} executes. */
 export interface SetupTaskOptions {
@@ -23,12 +25,27 @@ export interface SetupTaskOptions {
 
 /**
  * Pick the prompt handler for a run: auto-confirm defaults under `--yes`, else
- * prompt the user interactively over readline.
+ * an interactive readline session (whose lifetime the caller owns via the
+ * returned `dispose`).
  */
-function selectPromptHandler(
-  yes: boolean,
-): (effect: Effect & { _tag: "Prompt" }) => Promise<unknown> {
-  return yes ? answerPromptWithDefaults : answerPromptInteractively;
+function selectPromptHandler(yes: boolean): {
+  handler: (effect: Effect & { _tag: "Prompt" }) => Promise<unknown>;
+  wasInterrupted: () => boolean;
+  dispose: () => void;
+} {
+  if (yes) {
+    return {
+      handler: answerPromptWithDefaults,
+      wasInterrupted: () => false,
+      dispose: () => {},
+    };
+  }
+  const session: InteractivePromptSession = createInteractivePromptSession();
+  return {
+    handler: session.answerPrompt,
+    wasInterrupted: session.wasInterrupted,
+    dispose: session.dispose,
+  };
 }
 
 /**
@@ -150,7 +167,11 @@ export default async function runSetupTask(
 
   // Undo mode: walk the task tree, collect undos, execute in reverse
   if (options.undo) {
-    const promptHandler = selectPromptHandler(options.yes ?? false);
+    const {
+      handler: promptHandler,
+      wasInterrupted,
+      dispose,
+    } = selectPromptHandler(options.yes ?? false);
     const onLog = createStderrLogger(verbose);
 
     try {
@@ -164,22 +185,36 @@ export default async function runSetupTask(
       }
       return createExitResult(0);
     } catch (err) {
+      if (wasInterrupted()) {
+        return createExitResult(130);
+      }
       const message = err instanceof Error ? err.message : String(err);
       process.stderr.write(`Undo failed: ${message}\n`);
       return createExitResult(1);
+    } finally {
+      dispose();
     }
   }
 
   // Production execution
-  const promptHandler = selectPromptHandler(options.yes ?? false);
+  const {
+    handler: promptHandler,
+    wasInterrupted,
+    dispose,
+  } = selectPromptHandler(options.yes ?? false);
   const onLog = createStderrLogger(verbose);
 
   try {
     await runGeneratorTask(task, { promptHandler, onLog });
     return createExitResult(0);
   } catch (err) {
+    if (wasInterrupted()) {
+      return createExitResult(130);
+    }
     const message = err instanceof Error ? err.message : String(err);
     process.stderr.write(`Setup failed: ${message}\n`);
     return createExitResult(1);
+  } finally {
+    dispose();
   }
 }
