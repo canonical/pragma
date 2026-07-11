@@ -142,7 +142,7 @@ Button/
 
 The component file imports its types and styles, then exports a function component. Props interfaces extend the appropriate HTML attributes interface (e.g., `ButtonHTMLAttributes<HTMLButtonElement>`) to ensure all native attributes pass through correctly.
 
-Styles use a `ds` namespace class combined with the component name and modifier props: `className={["ds button", importance, className].filter(Boolean).join(" ")}`. This pattern allows modifier classes to apply directly while preserving any custom classes passed by consumers.
+Styles use a `ds` namespace class combined with the component name, baseline utilities, modifier props, and state classes. Button, for example, composes `className={["ds button", "p", importance, anticipation, variant, loading && "loading", className].filter(Boolean).join(" ")}` — the `p` baseline utility, the `importance`/`anticipation`/`variant` modifiers, and a `loading` state class. This pattern allows modifier classes to apply directly while preserving any custom classes passed by consumers.
 
 The barrel export in `index.ts` explicitly names every export rather than using `export *`. This makes the public API visible at a glance and enables precise tree-shaking.
 
@@ -199,7 +199,7 @@ The following tables list all workspace packages with their location and purpose
 
 | Package | Path | Description |
 |---------|------|-------------|
-| `@canonical/react-ds-global` | `packages/react/ds-global` | Global tier components: Accordion, Announcement, Badge, Breadcrumbs, Button, Card, Chip, ContextualMenu, Heading, Icon, InlineCode, KeyboardKey(s), Popover, Tabs, Tile, Timeline, Tooltip |
+| `@canonical/react-ds-global` | `packages/react/ds-global` | Global tier components: Accordion, Announcement, Badge, Breadcrumbs, Button, Card, Chip, ContextualMenu, Heading, Icon, InlineCode, KeyboardKey, KeyboardKeys, Popover, Tabs, Tile, Timeline, Tooltip |
 | `@canonical/react-ds-global-form` | `packages/react/ds-global-form` | Form components with react-hook-form integration. See [README](packages/react/ds-global-form/README.md) for guides |
 | `@canonical/react-ds-app` | `packages/react/ds-app` | Application tier components: ApplicationLayout, ContentLayout, SideNavigation, ViewLayout |
 | `@canonical/react-ds-app-anbox` | `packages/react/ds-app-anbox` | Anbox-specific components |

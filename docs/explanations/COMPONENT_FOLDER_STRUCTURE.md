@@ -78,6 +78,8 @@ const Button = ({
   children,
   style,
   appearance,
+  icon,
+  loading = false,
   ...props
 }: Props): React.ReactElement => {
   // Booleans and nullish children render nothing; everything else (including
@@ -85,15 +87,18 @@ const Button = ({
   const hasVisibleChildren =
     children != null && typeof children !== "boolean" && children !== "";
 
+  // Icon-only states (an icon, or a loading spinner in its place) render no
+  // visible text, so the accessible name must be supplied explicitly.
   if (
     typeof process !== "undefined" &&
     process.env.NODE_ENV !== "production" &&
+    (icon || loading) &&
     !hasVisibleChildren &&
     !props["aria-label"] &&
     !props["aria-labelledby"]
   ) {
     console.warn(
-      "Button: buttons without visible text need an explicit `aria-label` or `aria-labelledby` to be accessible.",
+      "Button: icon-only buttons need an explicit `aria-label` or `aria-labelledby` to be accessible.",
     );
   }
 
@@ -106,6 +111,7 @@ const Button = ({
       style={style}
       {...props}
     >
+      {icon && <span className="icon">{icon}</span>}
       {children}
     </button>
   );
@@ -116,7 +122,7 @@ export default Button;
 
 Several patterns appear consistently across all components. The type import uses `.js` extension because TypeScript compilation produces JavaScript files with those extensions. The CSS import has no specifier because it triggers a side effect (loading styles) rather than providing a value. The component uses default export because the barrel file will re-export it with a named export.
 
-The component never fabricates an accessible name from its children. Stringifying an arbitrary React node produces garbage like `[object Object]`, and visible text is already read by screen readers, so a synthesized `aria-label` would at best be redundant and at worst wrong. Instead, the component guards accessibility with a development-only warning: when the button renders no visible text and the consumer supplied neither `aria-label` nor `aria-labelledby`, it warns so the missing name is caught during development rather than shipped.
+The component never fabricates an accessible name from its children. Stringifying an arbitrary React node produces garbage like `[object Object]`, and visible text is already read by screen readers, so a synthesized `aria-label` would at best be redundant and at worst wrong. Instead, the component guards accessibility with a development-only warning scoped to icon-only states: when the button has an `icon` (or is `loading`, which puts a spinner in the icon's place), renders no visible text children, and the consumer supplied neither `aria-label` nor `aria-labelledby`, it warns so the missing name is caught during development rather than shipped.
 
 The className construction follows a standard pattern. The array `["ds", "button", appearance, className]` contains the namespace (`ds`), the component class (`button`), any modifier props (`appearance`), and any consumer-provided classes (`className`). The `filter(Boolean)` removes falsy values like `undefined` when no appearance is specified. The `join(" ")` produces the final class string.
 
@@ -135,6 +141,8 @@ export interface BaseProps {
   className?: string;
   children: ReactNode;
   appearance?: ModifierFamily<"severity"> | "base" | "link";
+  icon?: ReactNode;
+  loading?: boolean;
 }
 
 type Props = BaseProps & ButtonHTMLAttributes<HTMLButtonElement>;
