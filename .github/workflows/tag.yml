@@ -117,4 +117,21 @@ jobs:
           registry-url: https://registry.npmjs.org
 
       - name: Publish packages
-        run: lerna publish --yes --no-private from-package
+        # Route pre-releases to a dist-tag named after their pre-release
+        # identifier (e.g. 0.30.0-experimental.1 -> "experimental") so they
+        # never take over npm's `latest`; stable releases go to `latest`.
+        env:
+          VERSION: ${{ needs.version.outputs.VERSION }}
+        run: |
+          if [[ -z "$VERSION" ]]; then
+            echo "Error: VERSION output from the version job is empty; refusing to publish."
+            exit 1
+          fi
+          if [[ "$VERSION" == *-* ]]; then
+            PRERELEASE="${VERSION#*-}"
+            DIST_TAG="${PRERELEASE%%.*}"
+          else
+            DIST_TAG="latest"
+          fi
+          echo "Publishing $VERSION to dist-tag '$DIST_TAG'"
+          lerna publish --yes --no-private --dist-tag "$DIST_TAG" from-package
