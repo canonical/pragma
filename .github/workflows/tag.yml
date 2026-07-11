@@ -117,17 +117,30 @@ jobs:
       # target — the same way the PR consumer-smoke job builds — so every
       # dist-shipping package is built before packing.
       - name: Build publishable packages
-        run: bunx nx run-many -t build --projects="$(bun scripts/consumer-smoke/list-publishable.ts)"
+        # This job has id-token: write, so the runner env carries the OIDC
+        # trusted-publishing credentials. The build (nx/tsc/lifecycle
+        # scripts) must not see them — mask them for this step; only the
+        # `lerna publish` step below needs them.
+        env:
+          ACTIONS_ID_TOKEN_REQUEST_TOKEN: ""
+          ACTIONS_ID_TOKEN_REQUEST_URL: ""
+        run: bunx nx run-many -t build --projects="$(bun packages/consumer-smoke/src/list-publishable.ts)"
 
       # Pre-publish consumer smoke: proves the tarballs we are about to
       # publish are installable and usable by an external npm consumer.
       # Unlike the advisory PR job, a failure here blocks the publish.
       # --mode=publish tolerates first-time packages (published later in
       # this run by `lerna publish from-package`).
+      # The tooling additionally scrubs token/secret-shaped env vars from
+      # every child process it spawns (see packages/consumer-smoke/src/env.ts);
+      # the step-level mask is belt-and-braces.
       - name: Consumer smoke (pre-publish gate)
+        env:
+          ACTIONS_ID_TOKEN_REQUEST_TOKEN: ""
+          ACTIONS_ID_TOKEN_REQUEST_URL: ""
         run: |
-          bun scripts/consumer-smoke/check-no-private-deps.ts --mode=publish
-          bun scripts/consumer-smoke/pack-and-smoke.ts
+          bun packages/consumer-smoke/src/check-no-private-deps.ts --mode=publish
+          bun packages/consumer-smoke/src/pack-and-smoke.ts
 
       - name: Setup Node, authenticate with NPM registry
         uses: actions/setup-node@v6

@@ -2,11 +2,11 @@
  * Regression tests for npm-pack.ts: `npm pack --json` parsing must read
  * stdout only and survive noise on either stream. Run with:
  *
- *   bun test scripts/consumer-smoke
+ *   bun run test   (vitest, from packages/consumer-smoke)
  */
 
-import { describe, expect, test } from "bun:test";
-import { packFilename, parsePackJson } from "./npm-pack.ts";
+import { describe, expect, test } from "vitest";
+import { packFilename, parsePackJson } from "./npm-pack.js";
 
 const PACK_JSON = JSON.stringify([
   {

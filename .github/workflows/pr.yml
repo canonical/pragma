@@ -50,18 +50,18 @@ jobs:
         with:
           # Lighter than build:all — the smoke only needs package dists,
           # not Storybook builds.
-          build-command: bunx nx run-many -t build --projects="$(bun scripts/consumer-smoke/list-publishable.ts)"
+          build-command: bunx nx run-many -t build --projects="$(bun packages/consumer-smoke/src/list-publishable.ts)"
 
-      - name: Unit tests for the consumer-smoke scripts
-        run: bun test scripts/consumer-smoke
+      - name: Unit tests for @canonical/consumer-smoke
+        run: bun run --filter @canonical/consumer-smoke test
 
-      - name: Static guard — published packages must not depend on private/unpublished packages
-        run: bun scripts/consumer-smoke/check-no-private-deps.ts
+      - name: Static guard — private/unpublished deps + unpublished inventory
+        run: bun packages/consumer-smoke/src/check-no-private-deps.ts
 
       - name: Pack, install, and exercise packages in an external consumer app
         # Keep the smoke signal visible even when the static guard is red.
         if: ${{ !cancelled() }}
-        run: bun scripts/consumer-smoke/pack-and-smoke.ts
+        run: bun packages/consumer-smoke/src/pack-and-smoke.ts
 
   build-gate:
     runs-on: ubuntu-latest

@@ -25,21 +25,29 @@
  * any FAILING tier fails.
  *
  * Usage:
- *   bun scripts/consumer-smoke/pack-and-smoke.ts [--keep] [--skip-advisory]
+ *   bun packages/consumer-smoke/src/pack-and-smoke.ts [--keep] [--skip-advisory]
  *
  * Env:
  *   CONSUMER_SMOKE_DIR  work dir override (default: mkdtemp under os.tmpdir(),
  *                       i.e. always outside the workspace)
  *
  * Prerequisite: the publishable set is built, e.g.
- *   bunx nx run-many -t build --projects="$(bun scripts/consumer-smoke/list-publishable.ts)"
+ *   bunx nx run-many -t build --projects="$(bun packages/consumer-smoke/src/list-publishable.ts)"
  */
 
 import { existsSync, mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { packFilename } from "./npm-pack.ts";
-import { getPublishablePackages, type WorkspacePackage } from "./workspace.ts";
+import { scrubbedEnv, scrubProcessEnv } from "./env.js";
+import { packFilename } from "./npm-pack.js";
+import { getPublishablePackages, type WorkspacePackage } from "./workspace.js";
+
+// This script spawns a large third-party surface (npm install of external
+// dependencies, vite, tsc, publint, attw, node). None of it needs any
+// credential — in tag.yml's publish job the runner env carries the OIDC
+// trusted-publishing token vars, which must not leak into that surface.
+// Scrub our own env first (covers anything spawned indirectly) …
+scrubProcessEnv();
 
 const PUBLINT_VERSION = "0.3.21";
 const ATTW_VERSION = "0.18.5";
@@ -67,7 +75,10 @@ async function run(
 ): Promise<RunResult> {
   const proc = Bun.spawn(cmd, {
     cwd: opts.cwd,
-    env: { ...process.env, ...opts.env },
+    // … and give every child an explicitly scrubbed env (never spread
+    // process.env back in): no token/secret-shaped variable reaches a
+    // spawned process.
+    env: scrubbedEnv(opts.env),
     stdout: "pipe",
     stderr: "pipe",
   });
@@ -146,7 +157,9 @@ if (unbuilt.length > 0) {
   console.error(
     `These packages ship dist/ but are not built: ${unbuilt
       .map((pkg) => pkg.name)
-      .join(", ")}\nRun: bunx nx run-many -t build --projects="$(bun scripts/consumer-smoke/list-publishable.ts)"`,
+      .join(
+        ", ",
+      )}\nRun: bunx nx run-many -t build --projects="$(bun packages/consumer-smoke/src/list-publishable.ts)"`,
   );
   process.exit(2);
 }
@@ -184,7 +197,9 @@ await mapLimit(packages, PACK_CONCURRENCY, async (pkg: WorkspacePackage) => {
     // must never reach the JSON parser (see npm-pack.ts).
     tarballs.set(pkg.name, join(tarballDir, packFilename(result)));
   } catch (error) {
-    packFailures.push(`${pkg.name}: could not parse npm pack output (${error})`);
+    packFailures.push(
+      `${pkg.name}: could not parse npm pack output (${error})`,
+    );
   }
 });
 
@@ -467,9 +482,12 @@ if (install.code === 0) {
 
   // (c) FAILING — tsc --noEmit under NodeNext
   console.log("\n--- (c) tsc --noEmit (NodeNext) ---");
-  const tsc = await run([join(appDir, "node_modules", ".bin", "tsc"), "--noEmit"], {
-    cwd: appDir,
-  });
+  const tsc = await run(
+    [join(appDir, "node_modules", ".bin", "tsc"), "--noEmit"],
+    {
+      cwd: appDir,
+    },
+  );
   record({
     name: "tsc --noEmit (NodeNext)",
     tier: "FAILING",
@@ -560,9 +578,12 @@ if (!skipAdvisory) {
     LINT_CONCURRENCY,
     async ([name, tarball]) => ({
       name,
-      result: await run(["bunx", `publint@${PUBLINT_VERSION}`, "run", tarball], {
-        cwd: smokeRoot,
-      }),
+      result: await run(
+        ["bunx", `publint@${PUBLINT_VERSION}`, "run", tarball],
+        {
+          cwd: smokeRoot,
+        },
+      ),
     }),
   );
   const publintFailures = publintResults.filter(

@@ -7,7 +7,12 @@
  * whether the latest published version carries an npm provenance attestation
  * (i.e. was published via OIDC trusted publishing with `--provenance`).
  *
- * All data comes from the public registry (`npm view`), so no login is required.
+ * All data comes from the shared registry-status client in
+ * @canonical/consumer-smoke (packages/consumer-smoke) — one `npm view
+ * <pkg> --json` per package, run as parallel @canonical/task effects, no
+ * login required. This script is only the table renderer; do not grow a
+ * second registry client here.
+ *
  * Note: npm exposes no public API for whether a *trusted publisher* is
  * configured on a package; provenance on the latest version is the closest
  * public, scriptable signal that OIDC publishing is actually in effect.
@@ -15,40 +20,16 @@
  * Usage: bun scripts/publish-status.ts
  */
 
-import { readFileSync } from "node:fs";
-import { join, resolve } from "node:path";
+// Relative import (not the bare "@canonical/consumer-smoke" specifier):
+// this repo links workspace deps per-package, and the root has no dependency
+// on the tool package, so bare resolution is not available from scripts/.
+import {
+  fetchRegistryStatuses,
+  getWorkspacePackages,
+  type RegistryStatus,
+} from "../packages/consumer-smoke/src/index.ts";
 
-const root = resolve(import.meta.dirname, "..");
-const rootPkg = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
-const patterns: string[] = rootPkg.workspaces ?? [];
-
-// -------------------------------------------------------------------
-// Collect workspace packages via Bun.Glob
-// -------------------------------------------------------------------
-
-interface PackageMeta {
-  name: string;
-  version: string;
-  private: boolean;
-}
-
-const packages: PackageMeta[] = [];
-
-for (const pattern of patterns) {
-  const parentGlob = new Bun.Glob(pattern);
-  for (const match of parentGlob.scanSync({ cwd: root, onlyFiles: false })) {
-    try {
-      const pkg = JSON.parse(readFileSync(join(root, match, "package.json"), "utf8"));
-      if (pkg.name) {
-        packages.push({ name: pkg.name, version: pkg.version, private: pkg.private === true });
-      }
-    } catch {
-      // Not a package directory
-    }
-  }
-}
-
-packages.sort((a, b) => a.name.localeCompare(b.name));
+const packages = getWorkspacePackages();
 
 // -------------------------------------------------------------------
 // Output
@@ -89,45 +70,14 @@ let publishedCount = 0;
 let outdatedCount = 0;
 let newCount = 0;
 let privateCount = 0;
+let unknownCount = 0;
 let provenanceCount = 0;
 
-// What the public registry reports for a package's latest version.
-interface RegistryInfo {
-  version: string | null;
-  /** True when the latest version carries an npm provenance attestation. */
-  hasProvenance: boolean;
-}
-
-// Query npm registry in parallel for all public packages. A single `npm view
-// <pkg> --json` returns both the version and `dist.attestations` (provenance).
-const publicPackages = packages.filter((p) => !p.private);
-const registryInfos = await Promise.all(
-  publicPackages.map(async (pkg): Promise<RegistryInfo> => {
-    try {
-      const proc = Bun.spawn(
-        ["npm", "view", pkg.name, "--json", "--prefer-online"],
-        { stdout: "pipe", stderr: "ignore" },
-      );
-      const output = await new Response(proc.stdout).text();
-      const code = await proc.exited;
-      if (code !== 0) return { version: null, hasProvenance: false };
-      const data = JSON.parse(output.trim());
-      // For a published package, `npm view --json` returns the latest version's
-      // manifest. `dist.attestations.provenance` is present only when the
-      // version was published with OIDC `--provenance`.
-      const version = typeof data?.version === "string" ? data.version : null;
-      const hasProvenance = Boolean(data?.dist?.attestations?.provenance);
-      return { version, hasProvenance };
-    } catch {
-      return { version: null, hasProvenance: false };
-    }
-  }),
+// One parallel, deduplicated batch for every public package.
+const publicPackages = packages.filter((pkg) => !pkg.private);
+const statuses = await fetchRegistryStatuses(
+  publicPackages.map((pkg) => pkg.name),
 );
-
-const registryMap = new Map<string, RegistryInfo>();
-publicPackages.forEach((pkg, i) => {
-  registryMap.set(pkg.name, registryInfos[i]);
-});
 
 for (const pkg of packages) {
   if (pkg.private) {
@@ -144,14 +94,17 @@ for (const pkg of packages) {
     continue;
   }
 
-  const info = registryMap.get(pkg.name) ?? {
-    version: null,
-    hasProvenance: false,
+  const status: RegistryStatus = statuses.get(pkg.name) ?? {
+    state: "unknown",
+    reason: "no lookup performed",
   };
-  const registryVersion = info.version;
+  const registryVersion = status.state === "published" ? status.latest : null;
   let statusLabel: string;
 
-  if (!registryVersion) {
+  if (status.state === "unknown") {
+    unknownCount++;
+    statusLabel = YELLOW + col("unknown", STATUS_W) + RESET;
+  } else if (status.state === "absent") {
     newCount++;
     statusLabel = RED + col("new", STATUS_W) + RESET;
   } else if (registryVersion === pkg.version) {
@@ -164,9 +117,9 @@ for (const pkg of packages) {
 
   // Provenance is only meaningful for an actually-published version.
   let provLabel: string;
-  if (!registryVersion) {
+  if (status.state !== "published" || !registryVersion) {
     provLabel = DIM + col("—", PROV_W) + RESET;
-  } else if (info.hasProvenance) {
+  } else if (status.hasProvenance) {
     provenanceCount++;
     provLabel = GREEN + col("provenance ✓", PROV_W) + RESET;
   } else {
@@ -191,5 +144,6 @@ console.log(
   `${YELLOW}${outdatedCount} outdated${RESET}  ` +
   `${RED}${newCount} new${RESET}  ` +
   `${DIM}${privateCount} private${RESET}  ` +
+  (unknownCount > 0 ? `${YELLOW}${unknownCount} unknown${RESET}  ` : "") +
   `${GREEN}${provenanceCount} with provenance${RESET}\n`,
 );
