@@ -77,8 +77,6 @@ static/js/modules
 # NX cache
 .nx/
 
-sem.toml
-sem_modules/
 .claude/
 .kg/
 node_modules

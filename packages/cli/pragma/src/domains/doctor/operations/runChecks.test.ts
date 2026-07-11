@@ -8,12 +8,14 @@ vi.mock("./checks/index.js", () => ({
   checkKeStore: vi.fn(),
   checkShellCompletions: vi.fn(),
   checkMcpConfigured: vi.fn(),
+  checkMcpCommands: vi.fn(),
   checkSkillsSymlinked: vi.fn(),
 }));
 
 import {
   checkConfigFile,
   checkKeStore,
+  checkMcpCommands,
   checkMcpConfigured,
   checkNodeVersion,
   checkPackageRefs,
@@ -50,13 +52,14 @@ describe("runChecks", () => {
     vi.mocked(checkKeStore).mockResolvedValue(pass("store"));
     vi.mocked(checkShellCompletions).mockResolvedValue(pass("completions"));
     vi.mocked(checkMcpConfigured).mockResolvedValue(pass("mcp"));
+    vi.mocked(checkMcpCommands).mockResolvedValue(pass("mcp commands"));
     vi.mocked(checkSkillsSymlinked).mockResolvedValue(pass("skills"));
 
     const data = await runChecks({ cwd: "/test" });
-    expect(data.passed).toBe(8);
+    expect(data.passed).toBe(9);
     expect(data.failed).toBe(0);
     expect(data.skipped).toBe(0);
-    expect(data.checks).toHaveLength(8);
+    expect(data.checks).toHaveLength(9);
   });
 
   it("counts failures and skips correctly", async () => {
@@ -67,10 +70,11 @@ describe("runChecks", () => {
     vi.mocked(checkKeStore).mockResolvedValue(fail("store"));
     vi.mocked(checkShellCompletions).mockResolvedValue(fail("completions"));
     vi.mocked(checkMcpConfigured).mockResolvedValue(pass("mcp"));
+    vi.mocked(checkMcpCommands).mockResolvedValue(pass("mcp commands"));
     vi.mocked(checkSkillsSymlinked).mockResolvedValue(skip("skills"));
 
     const data = await runChecks({ cwd: "/test" });
-    expect(data.passed).toBe(4);
+    expect(data.passed).toBe(5);
     expect(data.failed).toBe(3);
     expect(data.skipped).toBe(1);
   });
@@ -83,6 +87,7 @@ describe("runChecks", () => {
     vi.mocked(checkKeStore).mockResolvedValue(pass("store"));
     vi.mocked(checkShellCompletions).mockResolvedValue(pass("completions"));
     vi.mocked(checkMcpConfigured).mockResolvedValue(pass("mcp"));
+    vi.mocked(checkMcpCommands).mockResolvedValue(pass("mcp commands"));
     vi.mocked(checkSkillsSymlinked).mockResolvedValue(pass("skills"));
 
     const data = await runChecks({ cwd: "/test" });
@@ -91,7 +96,7 @@ describe("runChecks", () => {
     expect(data.checks[2].name).toBe("config");
     expect(data.checks[3].name).toBe("refs");
     expect(data.checks[4].name).toBe("store");
-    expect(data.checks[7].name).toBe("skills");
+    expect(data.checks[8].name).toBe("skills");
   });
 
   it("preserves order even when checks resolve out of order", async () => {
@@ -109,6 +114,7 @@ describe("runChecks", () => {
     vi.mocked(checkKeStore).mockResolvedValue(pass("store"));
     vi.mocked(checkShellCompletions).mockResolvedValue(pass("completions"));
     vi.mocked(checkMcpConfigured).mockResolvedValue(pass("mcp"));
+    vi.mocked(checkMcpCommands).mockResolvedValue(pass("mcp commands"));
     vi.mocked(checkSkillsSymlinked).mockReturnValue(delayed(pass("skills"), 0));
 
     const data = await runChecks({ cwd: "/test" });
@@ -120,6 +126,7 @@ describe("runChecks", () => {
       "store",
       "completions",
       "mcp",
+      "mcp commands",
       "skills",
     ]);
   });
@@ -132,13 +139,14 @@ describe("runChecks", () => {
     vi.mocked(checkKeStore).mockResolvedValue(pass("store"));
     vi.mocked(checkShellCompletions).mockResolvedValue(pass("completions"));
     vi.mocked(checkMcpConfigured).mockResolvedValue(pass("mcp"));
+    vi.mocked(checkMcpCommands).mockResolvedValue(pass("mcp commands"));
     vi.mocked(checkSkillsSymlinked).mockResolvedValue(pass("skills"));
 
     const data = await runChecks({ cwd: "/test" });
 
     // The whole run still completes; the thrown check becomes a fail in place.
-    expect(data.checks).toHaveLength(8);
-    expect(data.passed).toBe(7);
+    expect(data.checks).toHaveLength(9);
+    expect(data.passed).toBe(8);
     expect(data.failed).toBe(1);
     const failed = data.checks[2];
     expect(failed.status).toBe("fail");
@@ -157,6 +165,7 @@ describe("runChecks", () => {
     vi.mocked(checkKeStore).mockRejectedValue("string failure");
     vi.mocked(checkShellCompletions).mockResolvedValue(pass("completions"));
     vi.mocked(checkMcpConfigured).mockResolvedValue(pass("mcp"));
+    vi.mocked(checkMcpCommands).mockResolvedValue(pass("mcp commands"));
     vi.mocked(checkSkillsSymlinked).mockResolvedValue(pass("skills"));
 
     const data = await runChecks({ cwd: "/test" });
