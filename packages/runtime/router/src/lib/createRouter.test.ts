@@ -2002,6 +2002,39 @@ describe("createRouter", () => {
       });
     });
 
+    it("passes raw string params to wrapper prefetch, validated params to route prefetch", async () => {
+      const wrapperSpy = vi.fn();
+      const routeSpy = vi.fn();
+
+      const shell = wrapper({
+        id: "raw-params-shell",
+        component: ({ children }) => children,
+        prefetch: (params) => {
+          wrapperSpy(params);
+        },
+      });
+
+      const [userRoute] = group(shell, [
+        route({
+          url: "/users/:id",
+          params: numericIdSchema,
+          prefetch: (params) => {
+            routeSpy(params);
+          },
+          content: ({ params }) => String(params.id),
+        }),
+      ] as const);
+
+      const router = createRouter({ user: userRoute });
+
+      await router.load("/users/42");
+
+      // Wrappers are shared across routes and typed as RouteParamValues:
+      // they get the raw URL strings, untouched by the route's params schema.
+      expect(wrapperSpy).toHaveBeenCalledWith({ id: "42" });
+      expect(routeSpy).toHaveBeenCalledWith({ id: 42 });
+    });
+
     it("throws a helpful error when a params validator is async", () => {
       const asyncSchema = {
         "~standard": {

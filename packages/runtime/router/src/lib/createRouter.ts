@@ -699,12 +699,17 @@ export default function createRouter<
     // Wrapper prefetches run for all wrappers (no caching/reuse).
     // Route prefetch runs if defined. None block rendering.
     if (nextRoute) {
+      // Wrappers are shared across routes and typed as RouteParamValues, so
+      // they receive the raw string params extracted from the URL — a route's
+      // params schema only transforms what the route's own hooks receive.
+      const rawWrapperParams = (
+        currentMatch ? (matchPath(nextRoute.url, currentMatch.url) ?? {}) : {}
+      ) as RouteParamValues;
+
       for (const currentWrapper of nextRoute.wrappers) {
         if (currentWrapper.prefetch) {
-          const currentParams = currentMatch?.params as RouteParamValues;
-
           void Promise.resolve(
-            currentWrapper.prefetch(currentParams, { signal }),
+            currentWrapper.prefetch(rawWrapperParams, { signal }),
           ).catch(ignoreScheduledLoadError);
         }
       }

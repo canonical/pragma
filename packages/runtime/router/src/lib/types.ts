@@ -12,9 +12,15 @@ export interface StandardSchemaLike<TOutput = unknown> {
   };
 }
 
-/** A single validation issue, as defined by the Standard Schema spec. */
+/**
+ * A single validation issue, as defined by the Standard Schema spec.
+ *
+ * The spec requires `message`, but it is optional here because the router
+ * also tolerates legacy hand-rolled validators that omit it (a default
+ * message is substituted when formatting).
+ */
 export interface StandardSchemaIssue {
-  readonly message: string;
+  readonly message?: string;
   readonly path?:
     | ReadonlyArray<PropertyKey | { readonly key: PropertyKey }>
     | undefined;

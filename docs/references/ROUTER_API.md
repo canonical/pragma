@@ -356,7 +356,7 @@ interface WrapperComponentProps<TRendered = unknown> {
 }
 ```
 
-Note the wrapper `prefetch` takes **two** args `(params, context)` — no `search`, unlike route `prefetch`. Wrapper prefetches are fire-and-forget and not cached.
+Note the wrapper `prefetch` takes **two** args `(params, context)` — no `search`, unlike route `prefetch`. Wrapper prefetches are fire-and-forget and not cached. Wrappers are shared across routes, so `params` is always the **raw string params** extracted from the URL (`RouteParamValues`) — a route's [params schema](#params-validation) only transforms what the route's own hooks receive.
 
 ```ts
 const publicLayout = wrapper<ReactElement>({
@@ -661,7 +661,7 @@ interface MemoryAdapter extends PlatformAdapter {
 | `InferParams<TPath, TParamsSchema>` | params schema output when declared, else `RouteParams<TPath>` |
 | `ParamsOf<TRoute>` | the route's params as seen by `content`/`Link`/`navigate` (schema-aware) |
 | `SearchOf<TRoute>` | the route's validated search shape (schema-aware) |
-| `StandardSchemaIssue` | `{ message; path? }` — one validation issue, per the Standard Schema spec |
+| `StandardSchemaIssue` | `{ message?; path? }` — one validation issue; `message` optional to tolerate legacy validators |
 
 ---
 

@@ -85,7 +85,7 @@ describe("formatIssues", () => {
     expect(
       formatIssues([
         { message: "a is required" },
-        {} as { message: string },
+        {},
         { message: "b must be a number" },
       ]),
     ).toBe("a is required, Validation error, b must be a number");
