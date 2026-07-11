@@ -1,6 +1,6 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:recommended"],
+  "extends": ["config:recommended", "helpers:pinGitHubActionDigests"],
   "schedule": ["before 9am on monday"],
   "labels": ["Maintenance 🔨"],
   "semanticCommits": "enabled",
@@ -12,45 +12,41 @@
     },
     {
       "description": "Group TypeScript toolchain",
-      "matchPackageNames": ["typescript"],
-      "matchPackagePrefixes": ["@canonical/typescript-config-"],
+      "matchPackageNames": ["typescript", "@canonical/typescript-config-{/,}**"],
       "groupName": "typescript"
     },
     {
       "description": "Group Vitest ecosystem",
-      "matchPackageNames": ["vitest"],
-      "matchPackagePrefixes": ["@vitest/"],
+      "matchPackageNames": ["vitest", "@vitest/{/,}**"],
       "groupName": "vitest"
     },
     {
       "description": "Group Lerna + Nx orchestration",
-      "matchPackageNames": ["lerna", "nx"],
-      "matchPackagePrefixes": ["@nx/"],
+      "matchPackageNames": ["lerna", "nx", "@nx/{/,}**"],
       "groupName": "lerna-nx"
     },
     {
       "description": "Group Canonical internal packages",
-      "matchPackagePrefixes": ["@canonical/"],
-      "groupName": "canonical",
-      "excludePackageNames": ["@canonical/biome-config"],
-      "excludePackagePrefixes": ["@canonical/typescript-config-"]
+      "matchPackageNames": [
+        "@canonical/{/,}**",
+        "!@canonical/biome-config",
+        "!@canonical/typescript-config-{/,}**"
+      ],
+      "groupName": "canonical"
     },
     {
       "description": "Group Lit ecosystem",
-      "matchPackageNames": ["lit"],
-      "matchPackagePrefixes": ["@lit/", "@lit-labs/"],
+      "matchPackageNames": ["lit", "@lit/{/,}**", "@lit-labs/{/,}**"],
       "groupName": "lit"
     },
     {
       "description": "Group Storybook ecosystem",
-      "matchPackageNames": ["storybook"],
-      "matchPackagePrefixes": ["@storybook/"],
+      "matchPackageNames": ["storybook", "@storybook/{/,}**"],
       "groupName": "storybook"
     },
     {
       "description": "Group React ecosystem",
-      "matchPackageNames": ["react", "react-dom"],
-      "matchPackagePrefixes": ["@types/react"],
+      "matchPackageNames": ["react", "react-dom", "@types/react{/,}**"],
       "groupName": "react"
     },
     {
