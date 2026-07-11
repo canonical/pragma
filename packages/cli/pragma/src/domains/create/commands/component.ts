@@ -90,7 +90,7 @@ export default function buildComponentCommand(): CommandDefinition {
           validOptions: ["react", "svelte", "lit"],
           recovery: {
             message: "Provide a framework for component generation.",
-            cli: "pragma create component react --component-path src/components/Button",
+            cli: "pragma create component react src/components/Button",
           },
         });
       }
@@ -109,10 +109,10 @@ export default function buildComponentCommand(): CommandDefinition {
     },
     meta: {
       examples: [
-        "pragma create component react --component-path src/components/Button",
-        "pragma create component svelte --component-path src/lib/components/Toggle",
-        "pragma create component lit --component-path src/lib/Accordion",
-        "pragma create component react --component-path src/components/Button --dry-run",
+        "pragma create component react src/components/Button",
+        "pragma create component svelte src/lib/components/Toggle",
+        "pragma create component lit src/lib/Accordion",
+        "pragma create component react src/components/Button --dry-run",
       ],
     },
     parameterGroups: {
