@@ -1,0 +1,55 @@
+{
+  "name": "@canonical/implementation-ledger",
+  "description": "Append-only ledger tool recording which design system blocks each published package version makes available.",
+  "version": "0.29.1",
+  "type": "module",
+  "module": "src/index.ts",
+  "types": "src/index.ts",
+  "bin": {
+    "implementation-ledger": "src/cli.ts"
+  },
+  "files": [
+    "src"
+  ],
+  "author": {
+    "email": "webteam@canonical.com",
+    "name": "Canonical Webteam"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/canonical/pragma"
+  },
+  "license": "GPL-3.0",
+  "bugs": {
+    "url": "https://github.com/canonical/pragma/issues"
+  },
+  "homepage": "https://github.com/canonical/pragma#readme",
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "echo 'No build needed - runs directly from TypeScript'",
+    "build:all": "bun run build",
+    "check": "bun run check:biome && bun run check:ts && bun run check:webarchitect",
+    "check:webarchitect": "webarchitect tool-ts",
+    "check:fix": "bun run check:biome:fix && bun run check:ts",
+    "check:biome": "biome check",
+    "check:biome:fix": "biome check --write",
+    "check:ts": "tsc --noEmit",
+    "test": "vitest run",
+    "test:vitest": "vitest run",
+    "test:vitest:watch": "vitest"
+  },
+  "dependencies": {
+    "tinyglobby": "^0.2.15"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.4.9",
+    "@canonical/biome-config": "^0.29.0",
+    "@canonical/typescript-config": "^0.29.0",
+    "@canonical/webarchitect": "^0.29.0",
+    "@types/node": "^24.12.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18"
+  }
+}

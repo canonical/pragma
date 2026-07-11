@@ -33,6 +33,7 @@
   ],
   "scripts": {
     "collect": "bun scripts/collect-implementations.ts",
+    "collect:versions": "bun packages/implementation-ledger/src/cli.ts collect",
     "build": "lerna run build",
     "prepare": "bun run build",
     "lerna": "lerna",
