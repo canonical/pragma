@@ -72,18 +72,23 @@ function expandWorkspacePattern(root: string, pattern: string): string[] {
   return dirs;
 }
 
-/** All workspace packages, sorted by name. */
-export function getWorkspacePackages(): WorkspacePackage[] {
+/**
+ * All workspace packages, sorted by name. `root` defaults to this repo's
+ * root; tests pass a fixture directory instead.
+ */
+export function getWorkspacePackages(
+  root: string = repoRoot,
+): WorkspacePackage[] {
   const rootManifest = JSON.parse(
-    readFileSync(join(repoRoot, "package.json"), "utf8"),
+    readFileSync(join(root, "package.json"), "utf8"),
   );
   const patterns: string[] = rootManifest.workspaces ?? [];
   const packages: WorkspacePackage[] = [];
   const seen = new Set<string>();
 
   for (const pattern of patterns) {
-    for (const dir of expandWorkspacePattern(repoRoot, pattern)) {
-      const relDir = relative(repoRoot, dir).split(sep).join("/");
+    for (const dir of expandWorkspacePattern(root, pattern)) {
+      const relDir = relative(root, dir).split(sep).join("/");
       if (seen.has(relDir)) continue;
       seen.add(relDir);
       let manifest: Record<string, unknown>;
@@ -109,6 +114,8 @@ export function getWorkspacePackages(): WorkspacePackage[] {
 }
 
 /** Workspace packages that Lerna would publish (`private` is not `true`). */
-export function getPublishablePackages(): WorkspacePackage[] {
-  return getWorkspacePackages().filter((pkg) => !pkg.private);
+export function getPublishablePackages(
+  root: string = repoRoot,
+): WorkspacePackage[] {
+  return getWorkspacePackages(root).filter((pkg) => !pkg.private);
 }

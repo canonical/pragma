@@ -454,7 +454,9 @@ if (install.code === 0) {
   });
   const reactPaths = [
     ...new Set(
-      lsReact.output
+      // `npm ls --parseable` writes the paths to stdout; `output` is the
+      // merged human-readable log and must never be parsed.
+      lsReact.stdout
         .split("\n")
         .map((line) => line.trim())
         .filter((line) => /node_modules[\\/]react$/.test(line)),

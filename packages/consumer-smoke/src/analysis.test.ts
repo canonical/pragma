@@ -15,12 +15,15 @@ function pkg(
     version?: string;
     dependencies?: Record<string, string>;
     peerDependencies?: Record<string, string>;
+    optionalDependencies?: Record<string, string>;
   } = {},
 ): WorkspacePackage {
   const manifest: Record<string, unknown> = { name };
   if (options.dependencies) manifest.dependencies = options.dependencies;
   if (options.peerDependencies)
     manifest.peerDependencies = options.peerDependencies;
+  if (options.optionalDependencies)
+    manifest.optionalDependencies = options.optionalDependencies;
   return {
     name,
     dir: `/repo/packages/${name.replace("@canonical/", "")}`,
@@ -97,6 +100,27 @@ describe("analyze — dependency edges", () => {
     expect(edgeFindings).toHaveLength(1);
     expect(edgeFindings[0].level).toBe("warn");
     expect(edgeFindings[0].message).toContain("publish mode");
+  });
+
+  test("never-published OPTIONAL dep is a WARN, not an error — npm skips failed optional deps", () => {
+    const packages = [
+      pkg("@canonical/a", {
+        optionalDependencies: { "@canonical/extra": "^0.29.0" },
+      }),
+      pkg("@canonical/extra"),
+    ];
+    const statuses = new Map<string, RegistryStatus>([
+      ["@canonical/a", published(["0.29.0"])],
+      ["@canonical/extra", ABSENT],
+    ]);
+    for (const mode of ["pr", "publish"] as const) {
+      const { findings } = analyze({ packages, statuses, mode });
+      const edge = findings.find((finding) => finding.message.includes("→"));
+      expect(edge?.level).toBe("warn");
+      expect(edge?.message).toContain("optional");
+      expect(edge?.message).toContain("still succeeds");
+      expect(edge?.message).not.toContain("fails today");
+    }
   });
 
   test("private workspace dep and workspace: protocol stay hard errors", () => {

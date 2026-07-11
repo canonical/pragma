@@ -85,7 +85,9 @@ for (const pkg of packages) {
     console.log(
       [
         DIM + col(pkg.name, NAME_W),
-        col(pkg.version ?? "—", LOCAL_W),
+        // getWorkspacePackages coerces a missing version to "" — never
+        // nullish — so the em-dash fallback must be || not ??.
+        col(pkg.version || "—", LOCAL_W),
         col("private", STATUS_W),
         col("—", NPM_W),
         col("—", PROV_W) + RESET,
@@ -129,7 +131,7 @@ for (const pkg of packages) {
   console.log(
     [
       col(pkg.name, NAME_W),
-      col(pkg.version ?? "—", LOCAL_W),
+      col(pkg.version || "—", LOCAL_W),
       statusLabel,
       CYAN + col(registryVersion ?? "—", NPM_W) + RESET,
       provLabel,

@@ -122,6 +122,16 @@ export function analyze({ packages, statuses, mode }: AnalyzeInput): Analysis {
         }
 
         if (status.state === "absent") {
+          if (field === "optionalDependencies") {
+            // npm treats a failed OPTIONAL dependency as non-fatal: the
+            // install completes without it. Degraded, not broken — never a
+            // hard error, and never claim the install fails.
+            findings.push({
+              level: "warn",
+              message: `${context}: optional workspace package ${depName} has never been published to npm — npm skips a failed optional dependency, so \`npm install ${pkg.name}\` still succeeds, just without it`,
+            });
+            continue;
+          }
           const message = `${context}: workspace package ${depName} has never been published to npm — an external \`npm install ${pkg.name}\` fails today`;
           if (mode === "publish") {
             findings.push({
