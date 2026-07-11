@@ -53,8 +53,7 @@ per-type contracts below:
 
 ## Contract: `react-lib`
 
-Publishable React packages with no CSS: `packages/react/{head,hooks,i18n,router}`
-(and, temporarily, `packages/storybook/helpers` — see the storybook wave note).
+Publishable React packages with no CSS: `packages/react/{head,hooks,i18n,router}`.
 
 Enforced by the [`package-react-lib`](../../packages/webarchitect/rulesets/package-react-lib.ruleset.json)
 ruleset (extends `package`); bind it with
@@ -77,7 +76,8 @@ ruleset (extends `package`); bind it with
 ## Contract: `react-components`
 
 React component packages that ship per-component CSS:
-`packages/react/{ds-global,ds-global-form,ds-app,ds-app-anbox,ds-app-landscape,ds-app-launchpad,ds-app-lxd,ds-app-portal,tokens}`.
+`packages/react/{ds-global,ds-global-form,ds-app,ds-app-anbox,ds-app-landscape,ds-app-launchpad,ds-app-lxd,ds-app-portal,tokens}`
+(and, temporarily, `packages/storybook/helpers` — see the storybook wave note).
 
 Enforced by the [`package-react-components`](../../packages/webarchitect/rulesets/package-react-components.ruleset.json)
 ruleset (extends `package-react-lib`, so everything above applies unless
@@ -115,10 +115,12 @@ Storybook addons and helpers: `packages/storybook/*`.
 - React 19 peers + dev mirrors, same as `react-lib`.
 - Storybook packages depend on Storybook APIs; their peer/dev split for
   `storybook` itself is defined in the storybook wave.
-- Until then, `@canonical/storybook-helpers` is bound to `package-react-lib`
-  (it is a React library from the manifest's point of view); the storybook
-  wave gives these packages their own ruleset, including a CSS-aware
-  `sideEffects` value where an addon ships styles.
+- Until then, `@canonical/storybook-helpers` is bound to
+  `package-react-components`: it ships per-component CSS (`PackageInfo.css`,
+  `ModifierMatrix.css`, copied to `dist/esm` and imported as side effects),
+  so it needs `"sideEffects": ["**/*.css"]` — `sideEffects: false` would let
+  consuming bundlers tree-shake those CSS imports and render the helpers
+  unstyled. The storybook wave gives these packages their own ruleset.
 
 ## Contract: `tool` (tools wave — not yet enforced)
 
@@ -155,7 +157,7 @@ Ruleset bindings after the react wave:
 | --- | --- |
 | `react/head`, `react/hooks`, `react/i18n`, `react/router` | `package-react-lib` |
 | `react/ds-global`, `react/ds-global-form`, `react/ds-app*` (6), `react/tokens` | `package-react-components` |
-| `storybook/helpers` | `package-react-lib` (interim; refined in storybook wave) |
+| `storybook/helpers` | `package-react-components` (interim — it ships CSS; refined in storybook wave) |
 | other libraries | `library` |
 | tools | `tool-ts` |
 
@@ -173,7 +175,8 @@ together so the rulesets are green from the moment they exist:
    rulesets, removal of the legacy `package-react` ruleset (which required the
    `dependencies.react` anti-pattern), summon generator alignment.
 2. **storybook wave:** `storybook-addon` contract and ruleset;
-   `storybook/helpers` moves off its interim `package-react-lib` binding.
+   `storybook/helpers` moves off its interim `package-react-components`
+   binding.
 3. **styles/assets wave:** `styles` contract; `ds-assets` `./fonts` +
    `./icons` subpaths.
 4. **tools wave:** `tool` and `config` contracts.

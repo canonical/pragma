@@ -12,7 +12,9 @@
     },
     "./package.json": "./package.json"
   },
-  "sideEffects": false,
+  "sideEffects": [
+    "**/*.css"
+  ],
   "files": [
     "dist"
   ],
@@ -42,7 +44,7 @@
     "check:biome": "biome check",
     "check:biome:fix": "biome check --write",
     "check:ts": "tsc --noEmit",
-    "check:webarchitect": "webarchitect package-react-lib",
+    "check:webarchitect": "webarchitect package-react-components",
     "test": "vitest run"
   },
   "devDependencies": {
