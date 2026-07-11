@@ -17,6 +17,9 @@
     flex-direction: row;
     flex-wrap: wrap;
 
+    /* Guidelines: 4px vertical distance between wrapped rows */
+    row-gap: var(--dimension-050);
+
     /* layout.align: center */
     align-items: center;
 

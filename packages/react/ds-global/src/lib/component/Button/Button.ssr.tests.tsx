@@ -59,11 +59,10 @@ describe("Button SSR", () => {
     expect(html).toContain("link");
   });
 
-  it("renders icon with icon class", () => {
-    const html = renderToString(
-      <Component icon={<span>+</span>}>Add</Component>,
-    );
+  it("renders the named design-system icon inside the icon slot", () => {
+    const html = renderToString(<Component icon="edit">Add</Component>);
     expect(html).toContain('class="icon"');
-    expect(html).toContain(">+<");
+    expect(html).toContain("ds icon");
+    expect(html).toContain("/icons/edit.svg#edit");
   });
 });

@@ -27,6 +27,11 @@ export interface ItemProps extends HTMLAttributes<HTMLLIElement>, Item {
   current?: boolean;
   /**
    * Custom separator character or element
+   *
+   * @remarks
+   * For external (non-Canonical) products only. Not designed/approved for
+   * Canonical products; Canonical products must use the default "/"
+   * separator.
    * @default "/"
    */
   separator?: ReactNode;

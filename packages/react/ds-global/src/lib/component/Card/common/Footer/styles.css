@@ -3,7 +3,8 @@
  * @implements ds:global.subcomponent.card-footer
  *
  * A content-bearing section: it pads itself (the card frame applies no general
- * padding). Vertical padding is in baseline multiples.
+ * padding). Vertical padding is in baseline multiples. Holds tags and labels,
+ * which flow in a wrapping row.
  */
 :root {
   --card-footer-gap: var(--dimension-100);
@@ -13,7 +14,8 @@
 
 .ds.card-footer {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  flex-wrap: wrap;
   gap: var(--card-footer-gap);
 
   padding-block: var(--card-footer-padding-block);

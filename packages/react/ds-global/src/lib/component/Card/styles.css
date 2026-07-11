@@ -38,11 +38,16 @@
   /* Section separators: a divider between adjacent sections. The card frame
      already provides the outer border, so the last section has none. The card
      itself applies NO general padding — only the content-bearing sections
-     (Content, Header, Footer) pad themselves; media (Image) stays full-bleed. */
-  &
-    > :is(.card-header, .card-content, .card-footer, .card-image):not(
-      :last-child
-    ) {
+     (Content, Header, Footer) pad themselves; media (Image) stays full-bleed.
+     The header is NOT a separate visual section: no divider is drawn under it
+     and it merges with the content that follows. */
+  & > :is(.card-content, .card-footer, .card-image):not(:last-child) {
     border-block-end: var(--card-border-width) solid var(--card-color-border);
+  }
+
+  /* Collapse the header/content seam so title and content read as one region
+     (raw 0: unthemable by design). */
+  & > .card-header:has(+ .card-content) {
+    padding-block-end: 0;
   }
 }

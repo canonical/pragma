@@ -21,6 +21,12 @@
   /* De-emphasised slot text (badge / shortcut) — muted, matching
      KeyboardKey / Tabs. */
   --contextual-menu-item-slot-color: var(--color-text-muted);
+  /* Keyboard focus ring (Button precedent) — the semantic focus-ring colour,
+     with a currentColor backstop should the theme layer not be loaded. */
+  --contextual-menu-item-focus-ring-color: var(--color-focusRing, currentColor);
+  --contextual-menu-item-focus-ring-width: var(
+    --dimension-stroke-thickness-large
+  );
 }
 
 .ds.contextual-menu-item {
@@ -43,11 +49,23 @@
   }
 
   /* The highlighted (roving) item shows the active fill — matching the Figma
-     "Active" state — so keyboard focus is visible without a separate outline. */
+     "Active" state. */
   &:focus-visible,
   &[tabindex="0"] {
     background-color: var(--contextual-menu-item-color-background-active);
     outline: none;
+  }
+
+  /* The active fill alone is ~1.2:1 against the resting item — below the 3:1
+     non-text minimum — so keyboard focus additionally draws a ring (WCAG
+     1.4.11 / 2.4.13). Inset (negative offset) so the popup surface's
+     `overflow-y: auto` never clips it; :focus-visible only, so pointer users
+     keep the quiet Figma look. Deliberately diverges from the Figma "Active"
+     state, which fails WCAG. */
+  &:focus-visible {
+    outline: var(--contextual-menu-item-focus-ring-width) solid
+      var(--contextual-menu-item-focus-ring-color);
+    outline-offset: calc(-1 * var(--contextual-menu-item-focus-ring-width));
   }
 
   > .label {

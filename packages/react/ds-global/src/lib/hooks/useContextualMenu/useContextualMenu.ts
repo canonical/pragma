@@ -194,6 +194,12 @@ const useContextualMenu = ({
       return {
         ...baseProps,
         ...getMenuAriaProps(nav, opts),
+        // The tree's default menu props dispatch CLOSE on mouse-leave, wiping
+        // the keyboard highlight (and collapsing keyboard-opened submenus)
+        // while the popup stays visually open — a pointer grazing off the
+        // surface would destroy a keyboard user's position. The DISCLOSURE
+        // owns open/close for a contextual menu, so neutralise it.
+        onMouseLeave: undefined,
         onKeyDown: (event: React.KeyboardEvent) =>
           handleMenuKeyDown(event, treeKeyDown),
       };

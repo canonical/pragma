@@ -1,3 +1,4 @@
+import type { IconName } from "@canonical/ds-assets";
 import type { ModifierFamily } from "@canonical/ds-types";
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 
@@ -34,11 +35,12 @@ export interface BaseProps {
    */
   variant?: "link";
   /**
-   * Icon element to display before the label. The button has a single,
-   * leading icon slot — the right-side icon was removed when the select and
-   * dropdown affordances became their own components.
+   * Name of the design-system icon to display before the label, rendered via
+   * the `Icon` component (an `@canonical/ds-assets` sprite). The button has a
+   * single, leading icon slot — the right-side icon was removed when the
+   * select and dropdown affordances became their own components.
    */
-  icon?: ReactNode;
+  icon?: IconName;
   /**
    * Whether the button is in a loading (busy) state. Replaces the leading icon
    * with a Spinner, marks the button `aria-busy`, and disables interaction so

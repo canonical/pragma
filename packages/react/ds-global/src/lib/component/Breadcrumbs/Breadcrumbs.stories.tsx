@@ -52,9 +52,35 @@ export const ManyLevels: Story = {
 };
 
 /**
+ * Breadcrumbs wrapping in a constrained container. On overflow each separator
+ * wraps together with its following link, so the slash starts the second line
+ * (and does not trail the first), with a 4px vertical distance between rows.
+ */
+export const Overflow: Story = {
+  decorators: [
+    (Story) => (
+      <div style={{ maxWidth: "18rem" }}>
+        <Story />
+      </div>
+    ),
+  ],
+  args: {
+    items: [
+      { url: "/", label: "Ubuntu" },
+      { url: "/server", label: "Server" },
+      { url: "/server/docs", label: "Documentation" },
+      { url: "/server/docs/installation", label: "Installation" },
+      { url: "/server/docs/installation/advanced", label: "Advanced" },
+      { key: "autoinstall", label: "Autoinstall", current: true },
+    ],
+  },
+};
+
+/**
  * Breadcrumbs using a custom separator character.
  *
- * Note: the `separator` prop is not part of the core api.
+ * For external (non-Canonical) products only. Not designed or approved for
+ * Canonical products; Canonical products must use the default "/" separator.
  */
 export const CustomSeparator: Story = {
   args: {
@@ -84,8 +110,13 @@ export const WithCustomAriaLabel: Story = {
  * Breadcrumbs with a custom item component.
  * Demonstrates the switch pattern for custom rendering.
  *
- * Note: this story is not part of the core api — it illustrates a userland
- * pattern (rendering items through a custom component), not a supported prop.
+ * For external (non-Canonical) products only. Not designed or approved for
+ * Canonical products; Canonical products must use the default
+ * Breadcrumbs.Item.
+ *
+ * Custom components must render the separator BEFORE the link so that on
+ * wrap the separator starts the new line (it is hidden on the first item
+ * via CSS).
  */
 const CustomItem = ({
   label,
@@ -94,6 +125,9 @@ const CustomItem = ({
   separator,
 }: BreadcrumbItem & { separator?: React.ReactNode }) => (
   <li className="ds breadcrumbs-item custom">
+    <span className="separator" aria-hidden="true">
+      {separator}
+    </span>
     {current ? (
       <strong className="link" aria-current="page">
         {label}
@@ -103,12 +137,16 @@ const CustomItem = ({
         {label}
       </a>
     )}
-    <span className="separator" aria-hidden="true">
-      {separator}
-    </span>
   </li>
 );
 
+/**
+ * Breadcrumbs rendering items through a custom per-item Component.
+ *
+ * For external (non-Canonical) products only. Not designed or approved for
+ * Canonical products; Canonical products must use the default
+ * Breadcrumbs.Item.
+ */
 export const WithCustomComponent: Story = {
   args: {
     items: [

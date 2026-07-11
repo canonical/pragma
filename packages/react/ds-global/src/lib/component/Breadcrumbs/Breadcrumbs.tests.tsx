@@ -74,7 +74,7 @@ describe("Breadcrumbs", () => {
       />,
     );
     const separators = screen.getAllByText("/");
-    // Both items have separators, last one hidden via CSS
+    // Both items have separators, first one hidden via CSS
     expect(separators[0]).toHaveAttribute("aria-hidden", "true");
   });
 
@@ -91,7 +91,7 @@ describe("Breadcrumbs", () => {
     expect(screen.getAllByText("›")).toHaveLength(2);
   });
 
-  it("maintains DOM order: link before separator", () => {
+  it("maintains DOM order: separator before link, so wrapped rows start with the separator", () => {
     render(
       <Breadcrumbs
         items={[{ url: "/", label: "Home", className: "test-item" }]}
@@ -99,8 +99,8 @@ describe("Breadcrumbs", () => {
     );
     const item = document.querySelector(".test-item");
     const children = item?.children;
-    expect(children?.[0]).toHaveClass("link");
-    expect(children?.[1]).toHaveClass("separator");
+    expect(children?.[0]).toHaveClass("separator");
+    expect(children?.[1]).toHaveClass("link");
   });
 
   it("uses custom LinkComponent", () => {
