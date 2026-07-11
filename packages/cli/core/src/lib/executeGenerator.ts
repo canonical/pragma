@@ -351,9 +351,7 @@ export default async function executeGenerator(
 
   // Interactive result — binary decides how to render
   const stampEnabled = params.generatedStamp !== false;
-  const stamp = stampEnabled
-    ? createGeneratorStamp(gen)
-    : undefined;
+  const stamp = stampEnabled ? createGeneratorStamp(gen) : undefined;
 
   return createInteractiveResult({
     generator: gen,
