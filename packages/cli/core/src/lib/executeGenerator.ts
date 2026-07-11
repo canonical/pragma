@@ -1,10 +1,16 @@
 /**
  * Generator execution dispatch: mode routing → CommandResult.
  *
- * Handles LLM mode, JSON mode, dry-run, and interactive fallback. Real batch
- * execution runs through {@link runGeneratorTask} — the single UI-free
- * execution core shared with the setup commands; interactive sessions are
- * still handed to the binary via the interactive result's spec.
+ * Handles LLM mode, JSON mode, dry-run, and interactive execution. The mode
+ * ladder collapses to preview modes (llm/json/dry-run/undo) × execution: real
+ * runs go through {@link runGeneratorTask} — the single UI-free execution core
+ * shared with the setup commands. When interaction is preferred (an
+ * interactive terminal, no `--yes`), the generator's remaining prompts are
+ * collected through a caller-injected {@link PromptSession} (from
+ * `ctx.promptSession`) and the run then executes in batch — cli-core never
+ * owns a UI toolkit. A non-interactive terminal with missing required answers
+ * reports the missing flags and exits 3 rather than generating from bare
+ * defaults.
  */
 
 import type {
@@ -12,8 +18,9 @@ import type {
   PromptDefinition,
 } from "@canonical/summon-core";
 import { collectUndos, dryRun, runUndo } from "@canonical/task";
+import { convertCamelToKebab } from "./convertCase.js";
+import createExitResult from "./createExitResult.js";
 import createGeneratorStamp from "./createGeneratorStamp.js";
-import createInteractiveResult from "./createInteractiveResult.js";
 import createOutputResult from "./createOutputResult.js";
 import createStampOnEffectStart from "./createStampOnEffectStart.js";
 import {
@@ -23,6 +30,8 @@ import {
   formatLlmMarkdown,
   isVisibleEffect,
 } from "./formatEffects.js";
+import type { AnswerablePrompt } from "./promptForAnswers.js";
+import promptForAnswers from "./promptForAnswers.js";
 import runGeneratorTask from "./runGeneratorTask.js";
 import type { CommandContext, CommandResult } from "./types.js";
 
@@ -172,6 +181,93 @@ const suppressTaskLogs = (): void => {
 };
 /* v8 ignore stop */
 
+/** Whether both stdin and stdout are attached to an interactive terminal. */
+const isInteractiveTerminal = (): boolean =>
+  process.stdin.isTTY === true && process.stdout.isTTY === true;
+
+/** Format a single missing prompt as its CLI flag usage. */
+const formatMissingFlag = (prompt: PromptDefinition): string => {
+  const flag = `--${convertCamelToKebab(prompt.name)}`;
+  switch (prompt.type) {
+    case "confirm":
+      return flag;
+    case "multiselect":
+      return `${flag} <values...>`;
+    default:
+      return `${flag} <value>`;
+  }
+};
+
+/**
+ * Build the message shown when interaction is impossible — a non-interactive
+ * stdin/stdout, or no session injected — yet answers are still needed.
+ */
+const formatInteractiveUnavailable = (
+  prompts: readonly PromptDefinition[],
+  provided: Readonly<Record<string, unknown>>,
+): string => {
+  const missing = prompts.filter(
+    (prompt) =>
+      prompt.default === undefined &&
+      !prompt.when &&
+      !(prompt.name in provided),
+  );
+  const header =
+    "Interactive mode is not available on a non-interactive terminal.";
+  if (missing.length === 0) {
+    return `${header} Provide all required flags.`;
+  }
+  return [
+    header,
+    "Provide the missing required flags:",
+    ...missing.map((prompt) => `  ${formatMissingFlag(prompt)}`),
+  ].join("\n");
+};
+
+/**
+ * Collect the generator's remaining answers through the caller-injected prompt
+ * session, then execute in batch with them. When no interactive session is
+ * available — a non-interactive terminal, or a caller that injects none —
+ * report the missing required flags and exit 3 rather than generating from
+ * bare defaults, preserving the pre-collapse non-interactive behavior.
+ *
+ * @note Impure — writes prompts/diagnostics to stderr, reads stdin, and on
+ * success performs the generator's effects via the batch re-dispatch.
+ */
+const runInteractiveExecution = async (
+  gen: GeneratorDefinition,
+  cliAnswers: Record<string, unknown>,
+  params: Record<string, unknown>,
+  ctx: CommandContext,
+): Promise<CommandResult> => {
+  const session = ctx.promptSession?.();
+  if (session === undefined || !isInteractiveTerminal()) {
+    process.stderr.write(
+      `${formatInteractiveUnavailable(gen.prompts, cliAnswers)}\n`,
+    );
+    return createExitResult(3);
+  }
+
+  let answers: Record<string, unknown>;
+  process.stderr.write("\n");
+  try {
+    answers = await runGeneratorTask(
+      promptForAnswers(gen.prompts as readonly AnswerablePrompt[], cliAnswers),
+      { promptHandler: session.answerPrompt },
+    );
+  } catch (error) {
+    // Ctrl-C aborts the wizard — never fall through to executing the command.
+    if (session.wasInterrupted()) {
+      return createExitResult(130);
+    }
+    throw error;
+  } finally {
+    session.dispose();
+  }
+
+  return executeGenerator(gen, { ...params, ...answers, yes: true }, ctx);
+};
+
 // =============================================================================
 // Main dispatch
 // =============================================================================
@@ -182,9 +278,11 @@ const suppressTaskLogs = (): void => {
  * Mode priority:
  * 1. LLM mode (--llm or globalFlags.llm) → dry-run + markdown output
  * 2. JSON mode (--format json or globalFlags.format=json) → dry-run + JSON output
- * 3. Dry-run with all answers → formatted effect output
- * 4. Interactive TTY session with no explicit generator answers → interactive result
- * 5. Otherwise → batch execution or interactive fallback
+ * 3. Undo (dry-run/execution) with all answers → undo output
+ * 4. Interactive terminal, no --yes → prompt then execute via the session seam
+ * 5. Dry-run with all answers → formatted effect output
+ * 6. Batch execution with all answers → run through the shared core
+ * 7. Otherwise → prompt then execute (interactive) or exit 3 (non-interactive)
  */
 export default async function executeGenerator(
   gen: GeneratorDefinition,
@@ -292,23 +390,11 @@ export default async function executeGenerator(
     }
   }
 
-  // Interactive TTY session: prefer prompting/previews over silently
-  // accepting defaults or auto-confirming the plan.
+  // Interactive terminal (no --yes): prefer prompting over silently accepting
+  // defaults or auto-confirming the plan. Answers flow through the injected
+  // session; execution then re-dispatches in batch.
   if (shouldPreferInteractive) {
-    const stampEnabled = params.generatedStamp !== false;
-    const stamp = stampEnabled ? createGeneratorStamp(gen) : undefined;
-
-    return createInteractiveResult({
-      generator: gen,
-      partialAnswers: cliAnswers,
-      options: {
-        dryRunOnly: false,
-        undo: false,
-        verbose,
-        stamp,
-        preview: params.preview !== false,
-      },
-    });
+    return runInteractiveExecution(gen, cliAnswers, params, ctx);
   }
 
   // Dry-run with all answers: formatted effect lines
@@ -349,19 +435,8 @@ export default async function executeGenerator(
     return createOutputResult(output, { plain: (s) => s });
   }
 
-  // Interactive result — binary decides how to render
-  const stampEnabled = params.generatedStamp !== false;
-  const stamp = stampEnabled ? createGeneratorStamp(gen) : undefined;
-
-  return createInteractiveResult({
-    generator: gen,
-    partialAnswers: cliAnswers,
-    options: {
-      dryRunOnly: isDryRun,
-      undo: isUndo,
-      verbose,
-      stamp,
-      preview: params.preview !== false,
-    },
-  });
+  // Missing required answers on a path that did not prefer interaction (e.g.
+  // --yes, or a non-interactive terminal): prompt through the session when one
+  // is available, else report the missing flags and exit 3.
+  return runInteractiveExecution(gen, cliAnswers, params, ctx);
 }
