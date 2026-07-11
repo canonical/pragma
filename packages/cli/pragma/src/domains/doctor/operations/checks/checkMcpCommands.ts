@@ -1,4 +1,4 @@
-import { existsSync } from "node:fs";
+import { accessSync, constants } from "node:fs";
 import { delimiter, isAbsolute, join } from "node:path";
 import type { DetectedHarness } from "@canonical/harnesses";
 import { detectHarnesses, readMcpConfig } from "@canonical/harnesses";
@@ -25,24 +25,44 @@ function commandOf(entry: unknown): string | undefined {
 }
 
 /**
+ * Check whether a path points to something executable.
+ *
+ * Uses `X_OK`, which on Windows degrades to an existence check (Node treats
+ * it as `F_OK` there) — matching how Windows itself decides executability
+ * by extension rather than permission bits.
+ *
+ * @param path - Absolute or cwd-resolved candidate path.
+ * @returns Whether the path exists and is executable by this process.
+ * @note Impure — reads the filesystem.
+ */
+function isExecutable(path: string): boolean {
+  try {
+    accessSync(path, constants.X_OK);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Resolve a command the way a shell would: entries containing a path
  * separator are checked as file paths (relative to the project root),
  * bare names are searched across `PATH`.
  *
  * @param command - Command string from an MCP server entry.
  * @param cwd - Project root for resolving relative paths.
- * @returns Whether the command resolves to an existing file.
+ * @returns Whether the command resolves to an executable file.
  * @note Impure — reads `process.env.PATH` and the filesystem.
  */
 function commandResolves(command: string, cwd: string): boolean {
   if (command.includes("/") || command.includes("\\")) {
-    return existsSync(isAbsolute(command) ? command : join(cwd, command));
+    return isExecutable(isAbsolute(command) ? command : join(cwd, command));
   }
 
   return (process.env.PATH ?? "")
     .split(delimiter)
     .filter((dir) => dir.length > 0)
-    .some((dir) => existsSync(join(dir, command)));
+    .some((dir) => isExecutable(join(dir, command)));
 }
 
 /**
@@ -98,7 +118,7 @@ export default async function checkMcpCommands(
       checked += 1;
       if (!commandResolves(command, ctx.cwd)) {
         broken.push(
-          `"${serverName}" ("${command}" not found, ${d.configPath})`,
+          `"${serverName}" ("${command}" not found or not executable, ${d.configPath})`,
         );
       }
     }
@@ -116,7 +136,7 @@ export default async function checkMcpCommands(
     return {
       name: NAME,
       status: "pass",
-      detail: `${checked} command${checked === 1 ? "" : "s"} resolve on PATH`,
+      detail: `${checked} command${checked === 1 ? "" : "s"} resolve${checked === 1 ? "s" : ""} to an executable`,
     };
   }
 

@@ -231,6 +231,48 @@ describe("checkMcpCommands", () => {
     expect(result.remedy).toBeDefined();
   });
 
+  it.skipIf(process.platform === "win32")(
+    "fails when the command exists on PATH but is not executable",
+    async () => {
+      const binDir = mkdtempSync(join(tmpdir(), "pragma-doctor-noexec-"));
+      writeFileSync(join(binDir, "sem"), "#!/bin/sh\n", { mode: 0o644 });
+      vi.stubEnv("PATH", binDir);
+
+      vi.mocked(detectHarnesses).mockReturnValue(
+        Promise.resolve([detected]) as never,
+      );
+      vi.mocked(readMcpConfig).mockReturnValue(
+        Promise.resolve({
+          sem: { command: "sem", args: ["mcp"] },
+        }) as never,
+      );
+
+      const result = await checkMcpCommands(ctx);
+      expect(result.status).toBe("fail");
+      expect(result.detail).toContain('"sem"');
+      expect(result.detail).toContain("not executable");
+    },
+  );
+
+  it("passes when a path-based command points at an executable file", async () => {
+    const projectDir = mkdtempSync(join(tmpdir(), "pragma-doctor-rel-"));
+    writeFileSync(join(projectDir, "server.sh"), "#!/bin/sh\n", {
+      mode: 0o755,
+    });
+
+    vi.mocked(detectHarnesses).mockReturnValue(
+      Promise.resolve([detected]) as never,
+    );
+    vi.mocked(readMcpConfig).mockReturnValue(
+      Promise.resolve({
+        local: { command: "./server.sh" },
+      }) as never,
+    );
+
+    const result = await checkMcpCommands({ cwd: projectDir });
+    expect(result.status).toBe("pass");
+  });
+
   it("flags only the broken entry among several", async () => {
     const binDir = mkdtempSync(join(tmpdir(), "pragma-doctor-mixed-"));
     writeFileSync(join(binDir, "pragma"), "#!/bin/sh\n", { mode: 0o755 });

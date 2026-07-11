@@ -53,6 +53,28 @@ describe("lookupMany", () => {
     expect(result.meta).toEqual({ internalErrorCount: 1 });
   });
 
+  it("collects synchronous throws as INTERNAL_ERROR entries instead of rejecting", async () => {
+    const lookup = (q: string): Promise<string> => {
+      if (q === "sync-boom") {
+        // Throws before ever returning a promise — must not escape the batch.
+        throw new Error("sync failure before promise");
+      }
+      return Promise.resolve(q.toUpperCase());
+    };
+
+    const result = await lookupMany(["a", "sync-boom", "c"], lookup);
+
+    expect(result.results).toEqual(["A", "C"]);
+    expect(result.errors).toEqual([
+      {
+        query: "sync-boom",
+        code: "INTERNAL_ERROR",
+        message: "Internal error: sync failure before promise",
+      },
+    ]);
+    expect(result.meta).toEqual({ internalErrorCount: 1 });
+  });
+
   it("stringifies non-Error rejection values", async () => {
     const result = await lookupMany(["a"], async () => {
       throw "string failure";

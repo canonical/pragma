@@ -10,7 +10,10 @@ import type { LookupResult } from "./contracts.js";
  * The collection loop never rejects: a `PragmaError` becomes an error entry
  * with its own code, and any other thrown value becomes an `INTERNAL_ERROR`
  * entry — so one poisoned query cannot discard the other queries' results.
- * `meta.internalErrorCount` reports how many entries are internal errors.
+ * Each lookup is invoked inside an `async` wrapper so even a *synchronous*
+ * throw (before a promise is returned) is captured as a rejection rather
+ * than escaping the batch. `meta.internalErrorCount` reports how many
+ * entries are internal errors.
  */
 export default async function lookupMany<TResult>(
   queries: readonly string[],
@@ -23,7 +26,9 @@ export default async function lookupMany<TResult>(
     suggestions?: readonly string[];
   }> = [];
   const settled = await Promise.allSettled(
-    queries.map((query) => lookup(query)),
+    // The `async` wrapper turns synchronous throws from `lookup` into
+    // rejections, so they settle as errors instead of escaping the batch.
+    queries.map(async (query) => lookup(query)),
   );
   const results: TResult[] = [];
   let internalErrorCount = 0;
