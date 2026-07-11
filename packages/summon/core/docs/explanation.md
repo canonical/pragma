@@ -244,6 +244,46 @@ These are just function calls that return Tasks. No async/await ceremony. No cal
 
 ---
 
+## One Interpreter, Every Binary
+
+Effects-as-data pays off most when more than one program interprets the same
+Task. Summon generators are consumed by two front-ends — the `summon` CLI and
+pragma's `create`/`setup` commands — and both run generators through a **single
+shared production interpreter** (`runGeneratorTask`, in `@canonical/cli-core`)
+rather than each re-implementing execution.
+
+Because the interpreter owns execution and the binaries only decorate it, the
+same generator invoked with the same answers writes **byte-identical output**
+through either front-end — generated-file stamps included. That equivalence is
+not a convention anyone has to maintain by hand; a cross-binary differential
+test generates with both paths and asserts the trees match, so a drift between
+them fails CI.
+
+The interpreter exposes a small set of **seams** the front-ends plug into
+without forking execution:
+
+- a **prompt handler** that answers `Prompt` effects — an interactive session
+  (readline for pragma, Ink for summon) or a defaults resolver for
+  non-interactive runs;
+- **effect lifecycle hooks** (`onEffectStart` / `onEffectComplete`) that drive
+  progress display and apply the generated-file stamp as a content transform, so
+  stamping is identical everywhere rather than bolted onto one binary;
+- a **log sink** and an abort **signal**.
+
+This is the payoff of the interpreter pattern taken one step further: not just
+"same generator, different interpreters," but *one* interpreter shared across
+every binary, with the UI held at the edges.
+
+A note on prompting today: form-first generators (a static `prompts` list plus
+`generate(answers)`) have their answers gathered up front — summon's Ink wizard,
+pragma's readline session — and any `Prompt` effect raised *during* execution
+resolves to its default. The Task alphabet already carries `Prompt` as a
+first-class effect, so a generator that asks a question mid-run is expressible;
+wiring the execution-phase handler to an interactive UI is the remaining step to
+make mid-run questions fully interactive.
+
+---
+
 ## The Functional Programming Heritage
 
 Summon's approach comes from a long tradition in functional programming:
