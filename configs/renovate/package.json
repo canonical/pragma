@@ -24,8 +24,11 @@
   "scripts": {
     "check": "bun run check:renovate",
     "check:fix": "bun run check:renovate",
-    "check:renovate": "npx --yes --package renovate -- renovate-config-validator --strict default.json ../../renovate.json",
+    "check:renovate": "renovate-config-validator --strict default.json ../../renovate.json",
     "test": "bun run check:renovate"
+  },
+  "devDependencies": {
+    "renovate": "43.258.1"
   },
   "renovate-config": {
     "default": {

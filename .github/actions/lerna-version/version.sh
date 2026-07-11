@@ -99,7 +99,10 @@ guard_registry_not_ahead() {
     return 0
   fi
 
-  registry_max=$(printf '%s' "$all_versions" | node "$SCRIPT_DIR/semver.cjs" max)
+  if ! registry_max=$(printf '%s' "$all_versions" | node "$SCRIPT_DIR/semver.cjs" max) || [ -z "$registry_max" ]; then
+    echo "Error: could not determine the highest published version from the npm registry data. Refusing to release without a valid registry comparison."
+    return 1
+  fi
   if ! semver_gt "$new_version" "$registry_max"; then
     echo "Error: new version $new_version is not strictly greater than the highest version already published to npm ($registry_max). Refusing to release a version that is already taken or would move the registry backwards."
     return 1
@@ -120,6 +123,10 @@ main() {
   local OLD_VERSION NEW_VERSION VERSION_ARGS
 
   OLD_VERSION=$(jq -r '.version' lerna.json)
+  if [ -z "$OLD_VERSION" ] || [ "$OLD_VERSION" == "null" ]; then
+    echo "Error: could not read the current version from lerna.json. Aborting release."
+    exit 1
+  fi
 
   # If a stable prerelease identifier is given, graduate the version to stable
   if [ "$release_type" == "stable" ]; then
@@ -134,8 +141,17 @@ main() {
   # Do not commit or tag as we need to re-format the package files before committing
   # shellcheck disable=SC2086 # VERSION_ARGS is intentionally word-split into multiple flags
   bun run lerna version --conventional-commits $VERSION_ARGS --no-git-tag-version --no-push --yes
+  local lerna_status=$?
+  if [ "$lerna_status" -ne 0 ]; then
+    echo "Error: lerna version failed with exit status $lerna_status. Aborting release."
+    exit 1
+  fi
 
   NEW_VERSION=$(jq -r '.version' lerna.json)
+  if [ -z "$NEW_VERSION" ] || [ "$NEW_VERSION" == "null" ]; then
+    echo "Error: could not read the new version from lerna.json after the bump. Aborting release."
+    exit 1
+  fi
 
   if [ "$OLD_VERSION" == "$NEW_VERSION" ]; then
     echo "No version changes detected. Exiting."
