@@ -28,6 +28,13 @@
   /* Clip section corners (e.g. full-bleed images) to the card radius. */
   overflow: hidden;
 
+  /* When a layout (e.g. a grid row) stretches cards to equal frame heights,
+     the single content section absorbs the surplus, pinning the footer to the
+     block end so footers align across the row. */
+  & > .card-content {
+    flex-grow: 1;
+  }
+
   /* Section separators: a divider between adjacent sections. The card frame
      already provides the outer border, so the last section has none. The card
      itself applies NO general padding — only the content-bearing sections
