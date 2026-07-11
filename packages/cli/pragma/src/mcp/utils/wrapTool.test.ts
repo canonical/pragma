@@ -85,6 +85,27 @@ describe("wrapTool", () => {
     expect(envelope.error.suggestions).toEqual(["Button"]);
   });
 
+  it("serializes an UNSAFE_PATH generator rejection as invalid input", async () => {
+    const handler = wrapTool(stubRuntime, async () => {
+      const err = new Error(
+        'componentPath must not escape the working directory with "..": "../x".',
+      );
+      (err as { code?: string }).code = "UNSAFE_PATH";
+      throw err;
+    });
+
+    const result = await handler({});
+    expect(result.isError).toBe(true);
+
+    const envelope = parseEnvelope(result) as {
+      ok: boolean;
+      error: Record<string, unknown>;
+    };
+    expect(envelope.ok).toBe(false);
+    expect(envelope.error.code).toBe("INVALID_INPUT");
+    expect(envelope.error.message).toContain("must not escape");
+  });
+
   it("rethrows unknown errors", async () => {
     const handler = wrapTool(stubRuntime, async () => {
       throw new TypeError("unexpected");

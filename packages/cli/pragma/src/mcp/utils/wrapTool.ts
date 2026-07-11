@@ -12,9 +12,10 @@ import type { ToolPayload } from "../types.js";
  * `{ ok, condensed, text, tokens }` condensed responses, and
  * `{ ok: false, error }` error responses across all tools.
  *
- * The returned handler catches `PragmaError` instances and serializes them
- * as `{ ok: false, error }` responses. Unknown errors propagate to the MCP
- * SDK's transport-level error handling (JSON-RPC -32603).
+ * The returned handler catches `PragmaError` instances — and generator
+ * path-safety rejections tagged with `code === "UNSAFE_PATH"` — and serializes
+ * them as `{ ok: false, error }` responses. Other unknown errors propagate to
+ * the MCP SDK's transport-level error handling (JSON-RPC -32603).
  *
  * @param runtime - The pragma runtime providing store, config, and cwd.
  * @param fn - The tool implementation. Receives runtime and parsed params,
@@ -61,14 +62,24 @@ export default function wrapTool(
         ],
       };
     } catch (error) {
-      if (error instanceof PragmaError) {
+      // A generator's path jail tags rejections with code "UNSAFE_PATH";
+      // present them as structured invalid-input (mirroring the CLI) rather
+      // than letting them surface as an opaque JSON-RPC internal error.
+      const pragmaError =
+        error instanceof PragmaError
+          ? error
+          : error instanceof Error &&
+              (error as { code?: string }).code === "UNSAFE_PATH"
+            ? PragmaError.unsafePath(error.message)
+            : undefined;
+      if (pragmaError) {
         return {
           content: [
             {
               type: "text",
               text: JSON.stringify({
                 ok: false,
-                error: serializeErrorPayload(error),
+                error: serializeErrorPayload(pragmaError),
               }),
             },
           ],
