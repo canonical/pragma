@@ -19,7 +19,11 @@
 
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
-import { type GeneratorDefinition, template } from "@canonical/summon-core";
+import {
+  assertSafeRelativePath,
+  type GeneratorDefinition,
+  template,
+} from "@canonical/summon-core";
 import { debug, info, mkdir, sequence_, when } from "@canonical/task";
 
 import {
@@ -114,6 +118,7 @@ with the custom element tag 'button'.`,
   prompts: [createComponentPathPrompt("lit"), ...litPrompts],
 
   generate: (answers) => {
+    assertSafeRelativePath(answers.componentPath, "componentPath");
     const componentName = getComponentName(answers.componentPath);
     const componentDir = answers.componentPath;
     const parentDir = getParentDir(answers.componentPath);

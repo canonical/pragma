@@ -160,6 +160,24 @@ class PragmaError extends Error {
   }
 
   /**
+   * Factory: a generator refused a filesystem path that would escape the
+   * working directory. Presented as invalid input (exit 3), not an internal
+   * bug — the caller passed a bad path and can correct it.
+   *
+   * @param reason - The generator's rejection message.
+   * @returns PragmaError with code `INVALID_INPUT`.
+   */
+  static unsafePath(reason: string): PragmaError {
+    return new PragmaError({
+      code: "INVALID_INPUT",
+      message: reason,
+      recovery: {
+        message: "Provide a path inside the project directory.",
+      },
+    });
+  }
+
+  /**
    * Factory: unexpected internal failure (bug).
    *
    * @param reason - Description of the internal error.

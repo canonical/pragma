@@ -342,6 +342,55 @@ describe("runCli orchestration", () => {
     stderrSpy.mockRestore();
   });
 
+  it("presents a generator path-safety rejection as invalid input, not a bug", async () => {
+    const chunks: string[] = [];
+    const stderrSpy = vi
+      .spyOn(process.stderr, "write")
+      .mockImplementation((chunk) => {
+        chunks.push(String(chunk));
+        return true;
+      });
+    const dispose = vi.fn();
+    const runtime = {
+      store: {},
+      config: { tier: undefined, channel: "normal" },
+      cwd: "/tmp",
+      dispose,
+    };
+    // A generator's path jail tags its rejection with code "UNSAFE_PATH".
+    const unsafe = new Error(
+      'componentPath must not escape the working directory with "..": "../../etc/Button".',
+    );
+    (unsafe as { code?: string }).code = "UNSAFE_PATH";
+    const parseAsync = vi.fn(async () => {
+      throw unsafe;
+    });
+
+    resolveCommandKindMock.mockReturnValue({ kind: "store-required" });
+    bootPragmaMock.mockResolvedValue(runtime);
+    collectCommandsMock.mockReturnValue([] as CommandDefinition[]);
+    createProgramMock.mockReturnValue({ parseAsync });
+
+    const { default: runCli } = await import("./runCli.js");
+    await runCli([
+      "node",
+      "pragma",
+      "create",
+      "component",
+      "react",
+      "../../etc/Button",
+    ]);
+
+    // Routed through invalid-input mapping, not the internal-error fallback.
+    expect(mapExitCodeMock).toHaveBeenCalledWith("INVALID_INPUT");
+    expect(dispose).toHaveBeenCalledTimes(1);
+    const out = chunks.join("");
+    expect(out).toContain("must not escape the working directory");
+    expect(out).not.toContain("Please report this issue.");
+
+    stderrSpy.mockRestore();
+  });
+
   it("renders boot errors in json mode", async () => {
     const stderrSpy = vi
       .spyOn(process.stderr, "write")

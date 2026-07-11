@@ -7,6 +7,7 @@
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
+  assertSafeRelativePath,
   type GeneratorDefinition,
   type PromptDefinition,
   template,
@@ -170,7 +171,11 @@ The generator auto-detects:
   prompts,
 
   generate: (answers) => {
+    // Guard the *derived* directory: getPackageShortName strips only the first
+    // scope slash, so a crafted name like "@scope//etc" yields an absolute
+    // "/etc" that the raw name never reveals.
     const packageDir = getPackageShortName(answers.name);
+    assertSafeRelativePath(packageDir, "name");
     const cwd = process.cwd();
     const isCss = answers.type === "css";
     const needsTs = !isCss;

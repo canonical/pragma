@@ -48,6 +48,34 @@ describe("generators barrel", () => {
   });
 });
 
+describe("componentPath traversal jail", () => {
+  // Every component generator must refuse a path that escapes the working
+  // directory before it builds a task — including on the batch/MCP path, where
+  // the prompt validator is bypassed. The guard runs inside generate(), so a
+  // bad value throws rather than yielding effects that write outside the root.
+  const frameworks = [
+    "component/react",
+    "component/svelte",
+    "component/lit",
+  ] as const;
+  const escapes = ["../../etc/Button", "/etc/Button", "..\\..\\etc"];
+
+  for (const framework of frameworks) {
+    // The guard runs before any other answer field is read, so a minimal
+    // `{ componentPath }` exercises it regardless of the framework's answer type.
+    const gen = generators[framework] as unknown as {
+      generate: (a: { componentPath: string }) => unknown;
+    };
+    for (const componentPath of escapes) {
+      it(`${framework} rejects "${componentPath}"`, () => {
+        expect(() => gen.generate({ componentPath })).toThrow(
+          /relative path|escape the working directory/,
+        );
+      });
+    }
+  }
+});
+
 describe("component/react generator", () => {
   const generator = generators["component/react"];
 

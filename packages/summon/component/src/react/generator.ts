@@ -15,7 +15,11 @@
 
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
-import { type GeneratorDefinition, template } from "@canonical/summon-core";
+import {
+  assertSafeRelativePath,
+  type GeneratorDefinition,
+  template,
+} from "@canonical/summon-core";
 import { debug, info, mkdir, sequence_, when } from "@canonical/task";
 
 import {
@@ -89,6 +93,7 @@ For example, 'src/components/Button' creates a 'Button' component.`,
   prompts: [createComponentPathPrompt("react"), ...sharedPrompts],
 
   generate: (answers) => {
+    assertSafeRelativePath(answers.componentPath, "componentPath");
     const componentName = getComponentName(answers.componentPath);
     const componentDir = answers.componentPath;
     const parentDir = getParentDir(answers.componentPath);

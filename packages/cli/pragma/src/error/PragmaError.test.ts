@@ -111,6 +111,18 @@ describe("PragmaError", () => {
         message: "Please report this issue.",
       });
     });
+
+    it("creates an INVALID_INPUT error for an unsafe path", () => {
+      const err = PragmaError.unsafePath(
+        'componentPath must not escape the working directory with "..": "../x".',
+      );
+
+      expect(err.code).toBe("INVALID_INPUT");
+      expect(err.message).toContain("must not escape the working directory");
+      expect(err.recovery).toEqual({
+        message: "Provide a path inside the project directory.",
+      });
+    });
   });
 
   it("is an instance of Error", () => {

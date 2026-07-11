@@ -25,6 +25,35 @@ describe("package generator", () => {
     expect(promptNames).toContain("runInstall");
   });
 
+  describe("name traversal jail", () => {
+    const base = {
+      type: "tool-ts",
+      description: "x",
+      withReact: false,
+      withStorybook: false,
+      withCli: false,
+      withPrTemplate: false,
+      runInstall: false,
+    } as const;
+
+    // The guard runs on the *derived* directory, so a scope that absorbs into
+    // an absolute path is caught where the raw name would not reveal it.
+    const escapes = [
+      "../../etc", // bare traversal
+      "@canonical/../../etc", // traversal after scope strip
+      "@scope//etc", // getPackageShortName → "/etc" (absolute)
+      "/etc/passwd", // absolute
+    ];
+
+    for (const name of escapes) {
+      it(`rejects "${name}"`, () => {
+        expect(() =>
+          generator.generate({ ...base, name } as PackageAnswers),
+        ).toThrow(/relative path|escape the working directory/);
+      });
+    }
+  });
+
   it("generates expected files for tool-ts package", () => {
     const answers: PackageAnswers = {
       name: "@canonical/my-tool",

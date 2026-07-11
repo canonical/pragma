@@ -181,6 +181,18 @@ function handleProgramError(err: unknown, globalFlags: GlobalFlags): void {
     return;
   }
 
+  // A generator's path-safety guard (`@canonical/summon-core`) tags rejections
+  // with `code === "UNSAFE_PATH"`. Present those as invalid input, not a bug.
+  if (
+    err instanceof Error &&
+    (err as { code?: string }).code === "UNSAFE_PATH"
+  ) {
+    const unsafe = PragmaError.unsafePath(err.message);
+    process.stderr.write(`${renderError(unsafe, globalFlags)}\n`);
+    process.exitCode = mapExitCode(unsafe.code);
+    return;
+  }
+
   const wrapped = PragmaError.internalError(
     err instanceof Error ? err.message : String(err),
   );
