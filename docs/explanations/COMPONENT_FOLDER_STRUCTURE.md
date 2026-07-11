@@ -80,6 +80,23 @@ const Button = ({
   appearance,
   ...props
 }: Props): React.ReactElement => {
+  // Booleans and nullish children render nothing; everything else (including
+  // the number 0) produces visible text that names the button.
+  const hasVisibleChildren =
+    children != null && typeof children !== "boolean" && children !== "";
+
+  if (
+    typeof process !== "undefined" &&
+    process.env.NODE_ENV !== "production" &&
+    !hasVisibleChildren &&
+    !props["aria-label"] &&
+    !props["aria-labelledby"]
+  ) {
+    console.warn(
+      "Button: buttons without visible text need an explicit `aria-label` or `aria-labelledby` to be accessible.",
+    );
+  }
+
   return (
     <button
       id={id}
@@ -87,7 +104,6 @@ const Button = ({
         .filter(Boolean)
         .join(" ")}
       style={style}
-      aria-label={props["aria-label"] || children?.toString()}
       {...props}
     >
       {children}
@@ -99,6 +115,8 @@ export default Button;
 ```
 
 Several patterns appear consistently across all components. The type import uses `.js` extension because TypeScript compilation produces JavaScript files with those extensions. The CSS import has no specifier because it triggers a side effect (loading styles) rather than providing a value. The component uses default export because the barrel file will re-export it with a named export.
+
+The component never fabricates an accessible name from its children. Stringifying an arbitrary React node produces garbage like `[object Object]`, and visible text is already read by screen readers, so a synthesized `aria-label` would at best be redundant and at worst wrong. Instead, the component guards accessibility with a development-only warning: when the button renders no visible text and the consumer supplied neither `aria-label` nor `aria-labelledby`, it warns so the missing name is caught during development rather than shipped.
 
 The className construction follows a standard pattern. The array `["ds", "button", appearance, className]` contains the namespace (`ds`), the component class (`button`), any modifier props (`appearance`), and any consumer-provided classes (`className`). The `filter(Boolean)` removes falsy values like `undefined` when no appearance is specified. The `join(" ")` produces the final class string.
 

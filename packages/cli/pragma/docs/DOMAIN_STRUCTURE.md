@@ -6,9 +6,9 @@ Canonical structure for all command and operation domains in `@canonical/pragma-
 
 ## Two domain tiers
 
-**CLI domains** have commands, operations, formatters, and optionally helpers. Six exist today: `component`, `config`, `modifier`, `standard`, `tier`, `token`.
+**CLI domains** have commands, operations, formatters, and optionally helpers. Seventeen exist today — every directory under `src/domains/` except `shared/`, which holds cross-domain infrastructure: `block`, `config`, `create`, `doctor`, `graph`, `graphql`, `info`, `llm`, `modifier`, `ontology`, `refs`, `setup`, `skill`, `standard`, `tier`, `token`, `trace`.
 
-**Operations-only domains** expose operations consumed by the MCP adapter but have no CLI commands. Two exist today: `graph`, `ontology`.
+**Operations-only domains** expose operations consumed by the MCP adapter but have no CLI commands. None exist today (`graph` and `ontology` have since gained CLI commands), but the tier remains available for future domains.
 
 ---
 
@@ -124,16 +124,16 @@ The domain barrel is the domain's public API. It exports:
 2. Re-exports of operations for the package barrel and MCP adapter
 
 ```typescript
-// domains/component/index.ts
+// domains/block/index.ts
 import type { CommandDefinition } from "@canonical/cli-core";
 import type { PragmaContext } from "../shared/context.js";
-import { getCommand, listCommand } from "./commands/index.js";
+import { listCommand, lookupCommand } from "./commands/index.js";
 
 export function commands(ctx: PragmaContext): CommandDefinition[] {
-  return [listCommand(ctx), getCommand(ctx)];
+  return [listCommand(ctx), lookupCommand(ctx)];
 }
 
-export { getComponent, listComponents } from "./operations/index.js";
+export { listBlocks, lookupBlock } from "./operations/index.js";
 ```
 
 ---
@@ -224,20 +224,20 @@ interface ComponentGetInput {
 
 ---
 
-## Command collection in runCli.ts
+## Command collection in collectCommands.ts
 
-Each CLI domain exports `commands(ctx)`. `runCli.ts` spreads them:
+Each CLI domain exports `commands(ctx)`. `pipeline/collectCommands.ts` spreads them:
 
 ```typescript
-import { commands as componentCommands } from "../domains/component/index.js";
+import { commands as blockCommands } from "../domains/block/index.js";
 import { commands as configCommands } from "../domains/config/index.js";
 import { commands as standardCommands } from "../domains/standard/index.js";
 
-function collectCommands(ctx: PragmaContext): CommandDefinition[] {
+export default function collectCommands(ctx: PragmaContext): CommandDefinition[] {
   return [
     ...configCommands(ctx),
     ...standardCommands(ctx),
-    ...componentCommands(ctx),
+    ...blockCommands(ctx),
   ];
 }
 ```
@@ -252,7 +252,7 @@ function collectCommands(ctx: PragmaContext): CommandDefinition[] {
 4. Write commands in `commands/` using `PragmaContext` + `selectFormatter`
 5. Create barrels in each subfolder
 6. Create domain `index.ts` with `commands(ctx)` + operation re-exports
-7. Add `...{name}Commands(ctx)` to `collectCommands()` in `runCli.ts`
+7. Add `...{name}Commands(ctx)` to `collectCommands()` in `pipeline/collectCommands.ts`
 8. Add operation re-exports to `src/index.ts` package barrel
 
 ## Adding a new operations-only domain
