@@ -51,15 +51,15 @@ const cases: Case[] = [
   },
 ];
 
-/** Collect every file under root as relative path → content bytes. */
-const readTree = (root: string, dir = root): Map<string, string> => {
-  const files = new Map<string, string>();
+/** Collect every file under root as relative path → raw content bytes. */
+const readTree = (root: string, dir = root): Map<string, Buffer> => {
+  const files = new Map<string, Buffer>();
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     const full = join(dir, entry.name);
     if (entry.isDirectory()) {
       for (const [k, v] of readTree(root, full)) files.set(k, v);
     } else {
-      files.set(relative(root, full), readFileSync(full, "utf-8"));
+      files.set(relative(root, full), readFileSync(full));
     }
   }
   return files;
@@ -121,7 +121,7 @@ describe("cross-binary byte equality — pragma create ≡ summon", () => {
         [...summonTree.keys()].sort(),
       );
       for (const [path, content] of pragmaTree) {
-        expect(summonTree.get(path), path).toBe(content);
+        expect(summonTree.get(path)?.equals(content), path).toBe(true);
       }
       expect(pragmaTree.size).toBeGreaterThan(0);
     });
