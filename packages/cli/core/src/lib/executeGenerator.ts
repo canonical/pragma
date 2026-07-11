@@ -199,12 +199,15 @@ const formatMissingFlag = (prompt: PromptDefinition): string => {
 };
 
 /**
- * Build the message shown when interaction is impossible — a non-interactive
- * stdin/stdout, or no session injected — yet answers are still needed.
+ * Build the message shown when interaction is impossible yet answers are still
+ * needed. The two failure modes get distinct headers: a non-interactive
+ * stdin/stdout (`onTty` false), versus an interactive terminal whose caller
+ * injected no prompt session (`onTty` true).
  */
 const formatInteractiveUnavailable = (
   prompts: readonly PromptDefinition[],
   provided: Readonly<Record<string, unknown>>,
+  onTty: boolean,
 ): string => {
   const missing = prompts.filter(
     (prompt) =>
@@ -212,8 +215,9 @@ const formatInteractiveUnavailable = (
       !prompt.when &&
       !(prompt.name in provided),
   );
-  const header =
-    "Interactive mode is not available on a non-interactive terminal.";
+  const header = onTty
+    ? "No interactive prompt session is available."
+    : "Interactive mode is not available on a non-interactive terminal.";
   if (missing.length === 0) {
     return `${header} Provide all required flags.`;
   }
@@ -240,10 +244,13 @@ const runInteractiveExecution = async (
   params: Record<string, unknown>,
   ctx: CommandContext,
 ): Promise<CommandResult> => {
-  const session = ctx.promptSession?.();
-  if (session === undefined || !isInteractiveTerminal()) {
+  // Only construct a session on an interactive terminal — building one eagerly
+  // on a non-TTY would open (and leak) a readline handle we immediately discard.
+  const onTty = isInteractiveTerminal();
+  const session = onTty ? ctx.promptSession?.() : undefined;
+  if (session === undefined) {
     process.stderr.write(
-      `${formatInteractiveUnavailable(gen.prompts, cliAnswers)}\n`,
+      `${formatInteractiveUnavailable(gen.prompts, cliAnswers, onTty)}\n`,
     );
     return createExitResult(3);
   }

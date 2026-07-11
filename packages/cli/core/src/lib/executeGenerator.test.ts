@@ -132,12 +132,14 @@ const scriptSession = (
   mode: "ok" | "interrupt" | "fail" = "ok",
 ): {
   asked: string[];
+  construct: ReturnType<typeof vi.fn>;
   dispose: ReturnType<typeof vi.fn>;
   factory: () => PromptSession;
 } => {
   const asked: string[] = [];
   let interrupted = false;
   const dispose = vi.fn();
+  const construct = vi.fn();
   const session: PromptSession = {
     answerPrompt: (effect) => {
       asked.push(effect.question.name);
@@ -153,7 +155,11 @@ const scriptSession = (
     wasInterrupted: () => interrupted,
     dispose,
   };
-  return { asked, dispose, factory: () => session };
+  const factory = () => {
+    construct();
+    return session;
+  };
+  return { asked, construct, dispose, factory };
 };
 
 /** Collect everything written to `process.stderr` during a test. */
@@ -386,9 +392,10 @@ describe("executeGenerator — interactive execution", () => {
     }
   });
 
-  it("shows the generic message when nothing is missing but no session is available", async () => {
+  it("reports the no-session header on a TTY when nothing is missing but no session is available", async () => {
     // All prompts default → nothing missing; a TTY prefers interaction, but with
-    // no injected session the run cannot prompt.
+    // no injected session the run cannot prompt. The header must name the real
+    // cause (no session) rather than falsely claiming a non-interactive terminal.
     const gen = makeGen([
       { name: "name", message: "Name", type: "text", default: "Button" },
     ]);
@@ -398,15 +405,19 @@ describe("executeGenerator — interactive execution", () => {
         const result = await executeGenerator(gen, {}, baseCtx);
         expect(result).toEqual({ tag: "exit", code: 3 });
       });
+      expect(stderr.text()).toContain(
+        "No interactive prompt session is available.",
+      );
       expect(stderr.text()).toContain("Provide all required flags.");
+      expect(stderr.text()).not.toContain("non-interactive terminal");
     } finally {
       stderr.restore();
     }
   });
 
-  it("exits 3 when a session is injected but the terminal is non-interactive", async () => {
+  it("exits 3 without constructing a session on a non-interactive terminal", async () => {
     const gen = makeGen(simplePrompts);
-    const { factory, dispose } = scriptSession({ name: "Button" });
+    const { factory, construct, dispose } = scriptSession({ name: "Button" });
     const stderr = captureStderr();
     try {
       const result = await executeGenerator(
@@ -418,7 +429,11 @@ describe("executeGenerator — interactive execution", () => {
         },
       );
       expect(result).toEqual({ tag: "exit", code: 3 });
+      // The factory is never invoked off a TTY — no readline handle is opened
+      // and then leaked.
+      expect(construct).not.toHaveBeenCalled();
       expect(dispose).not.toHaveBeenCalled();
+      expect(stderr.text()).toContain("non-interactive terminal");
     } finally {
       stderr.restore();
     }
