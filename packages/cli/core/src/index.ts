@@ -90,6 +90,7 @@ export {
   generatorToCommand,
   promptToParameter,
 } from "./lib/convertGenerator.js";
+export { default as createGeneratorStamp } from "./lib/createGeneratorStamp.js";
 export { default as createStampOnEffectStart } from "./lib/createStampOnEffectStart.js";
 export { default as executeGenerator } from "./lib/executeGenerator.js";
 export type { AnswerablePrompt } from "./lib/promptForAnswers.js";

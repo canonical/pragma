@@ -12,6 +12,7 @@ import type {
   PromptDefinition,
 } from "@canonical/summon-core";
 import { collectUndos, dryRun, runUndo } from "@canonical/task";
+import createGeneratorStamp from "./createGeneratorStamp.js";
 import createInteractiveResult from "./createInteractiveResult.js";
 import createOutputResult from "./createOutputResult.js";
 import createStampOnEffectStart from "./createStampOnEffectStart.js";
@@ -295,9 +296,7 @@ export default async function executeGenerator(
   // accepting defaults or auto-confirming the plan.
   if (shouldPreferInteractive) {
     const stampEnabled = params.generatedStamp !== false;
-    const stamp = stampEnabled
-      ? { generator: gen.meta.name, version: gen.meta.version }
-      : undefined;
+    const stamp = stampEnabled ? createGeneratorStamp(gen) : undefined;
 
     return createInteractiveResult({
       generator: gen,
@@ -338,10 +337,7 @@ export default async function executeGenerator(
       cwd: ctx.cwd,
       onLog: suppressTaskLogs,
       onEffectStart: stampEnabled
-        ? createStampOnEffectStart({
-            generator: gen.meta.name,
-            version: gen.meta.version,
-          })
+        ? createStampOnEffectStart(createGeneratorStamp(gen))
         : undefined,
     });
 
@@ -356,7 +352,7 @@ export default async function executeGenerator(
   // Interactive result — binary decides how to render
   const stampEnabled = params.generatedStamp !== false;
   const stamp = stampEnabled
-    ? { generator: gen.meta.name, version: gen.meta.version }
+    ? createGeneratorStamp(gen)
     : undefined;
 
   return createInteractiveResult({

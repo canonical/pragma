@@ -22,6 +22,7 @@ import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
 import {
   answerPromptWithDefaults,
+  createGeneratorStamp,
   createStampOnEffectStart,
   executeGenerator,
   runGeneratorTask,
@@ -108,10 +109,9 @@ describe("cross-binary byte equality — pragma create ≡ summon", () => {
       await runGeneratorTask(testCase.gen.generate(answers), {
         cwd: summonDir,
         promptHandler: answerPromptWithDefaults,
-        onEffectStart: createStampOnEffectStart({
-          generator: testCase.gen.meta.name,
-          version: testCase.gen.meta.version,
-        }),
+        onEffectStart: createStampOnEffectStart(
+          createGeneratorStamp(testCase.gen),
+        ),
       });
 
       const pragmaTree = readTree(pragmaDir);

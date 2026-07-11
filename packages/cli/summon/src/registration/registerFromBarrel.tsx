@@ -8,6 +8,7 @@
  */
 
 import {
+  createGeneratorStamp,
   formatEffectLine,
   formatEffectWithContent,
   formatLlmJson,
@@ -353,10 +354,7 @@ const configureGeneratorCommand = (
       // Build stamp config if stamps are enabled (default: enabled)
       const stampEnabled = actualOptions.generatedStamp !== false;
       const stamp: StampConfig | undefined = stampEnabled
-        ? {
-            generator: generator.meta.displayName,
-            version: generator.meta.version,
-          }
+        ? createGeneratorStamp(generator)
         : undefined;
 
       // Undo mode (non-interactive batch)
