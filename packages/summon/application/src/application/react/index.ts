@@ -242,6 +242,10 @@ Requires both --ssr and --router flags.`,
         // literal `.gitignore` from published tarballs, so we ship it dotless and
         // restore the dot at write time.
         copyFile(src("gitignore"), dest(".gitignore")),
+        // The app's browser floor, read by vite.config.ts to derive Lightning
+        // CSS targets. Unlike `.gitignore` above, npm does not strip
+        // `.browserslistrc` from tarballs, so the template keeps its dot.
+        copy(".browserslistrc"),
 
         // E2e tests (the 2×3 server matrix + its spawn/teardown harness)
         copy("test/e2e/serverHarness.ts"),

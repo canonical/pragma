@@ -52,6 +52,7 @@ describe("application/react generator", () => {
     expect(filePaths).toContain("my-app/biome.json");
     expect(filePaths).toContain("my-app/index.html");
     expect(filePaths).toContain("my-app/.gitignore");
+    expect(filePaths).toContain("my-app/.browserslistrc");
     expect(filePaths).toContain("my-app/src/client/entry.tsx");
     expect(filePaths).toContain("my-app/src/server/entry.tsx");
     expect(filePaths).toContain("my-app/src/server/renderer.tsx");
