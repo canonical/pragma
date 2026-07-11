@@ -5,6 +5,18 @@
   "module": "dist/esm/index.js",
   "types": "dist/types/index.d.ts",
   "style": "dist/esm/index.css",
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/esm/index.js"
+    },
+    "./styles.css": "./dist/esm/index.css",
+    "./dist/esm/index.css": "./dist/esm/index.css",
+    "./package.json": "./package.json"
+  },
+  "sideEffects": [
+    "**/*.css"
+  ],
   "files": [
     "dist"
   ],
@@ -32,7 +44,7 @@
     "build:package:copycss": "copyfiles -u 1 'src/**/*.css' dist/esm",
     "build:package:tsc": "tsc -p tsconfig.build.json",
     "check": "bun run check:biome && bun run check:ts && bun run check:webarchitect",
-    "check:webarchitect": "webarchitect library",
+    "check:webarchitect": "webarchitect package-react-components",
     "check:fix": "bun run check:biome:fix && bun run check:ts",
     "check:biome": "biome check",
     "check:biome:fix": "biome check --write",
@@ -44,13 +56,14 @@
   },
   "dependencies": {
     "@canonical/react-ds-global": "^0.29.1",
-    "@canonical/storybook-config": "^0.29.1",
     "@canonical/styles": "^0.29.0",
     "@canonical/utils": "^0.29.0",
     "downshift": "^9.3.2",
-    "react": "^19.2.4",
-    "react-dom": "^19.2.4",
     "react-hook-form": "^7.71.2"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.9",
@@ -58,6 +71,7 @@
     "@canonical/design-tokens": "0.6.2-contrasted.0",
     "@canonical/storybook-addon-form-state": "^0.29.0",
     "@canonical/storybook-addon-msw": "^0.29.0",
+    "@canonical/storybook-config": "^0.29.1",
     "@canonical/storybook-helpers": "^0.29.0",
     "@canonical/typescript-config-react": "^0.29.0",
     "@canonical/vitest-config-react": "^0.29.0",
@@ -76,6 +90,8 @@
     "globals": "^17.4.0",
     "jsdom": "^28.1.0",
     "msw": "^2.12.10",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
     "storybook": "^10.3.1",
     "typescript": "^5.9.3",
     "vite": "^8.0.1",

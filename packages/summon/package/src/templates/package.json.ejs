@@ -12,6 +12,16 @@
   "module": "dist/esm/index.js",
   "types": "dist/types/index.d.ts",
 <% } -%>
+<% if (withReact && type !== 'css') { -%>
+  "exports": {
+    ".": {
+      "types": "./<%= types %>",
+      "import": "./<%= module %>"
+    },
+    "./package.json": "./package.json"
+  },
+  "sideEffects": ["**/*.css"],
+<% } -%>
 <% if (withCli && type !== 'css') { -%>
   "bin": {
     "<%= shortName %>": "src/cli.ts"
@@ -75,6 +85,9 @@
   "devDependencies": {
     "@biomejs/biome": "2.4.6",
     "@canonical/biome-config": "^<%= monorepoVersion || '0.1.0' %>",
+<% if (withStorybook) { -%>
+    "@canonical/storybook-config": "^<%= monorepoVersion || '0.1.0' %>",
+<% } -%>
 <% if (withReact) { -%>
     "@canonical/typescript-config-react": "^<%= monorepoVersion || '0.1.0' %>",
 <% } else { -%>
@@ -88,21 +101,24 @@
     "@types/react-dom": "^19.0.0",
 <% } -%>
     "bun-types": "^1.0.0",
+<% if (withReact) { -%>
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+<% } -%>
 <% if (withStorybook) { -%>
     "storybook": "^10.1.11",
 <% } -%>
     "typescript": "^5.9.3",
     "vitest": "^3.2.4"
-  },
-  "dependencies": {
-<% if (withStorybook) { -%>
-    "@canonical/storybook-config": "^<%= monorepoVersion || '0.1.0' %>",
-<% } -%>
 <% if (withReact) { -%>
+  },
+  "peerDependencies": {
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
-<% } -%>
   }
+<% } else { -%>
+  }
+<% } -%>
 <% } else { -%>
   "devDependencies": {
     "@biomejs/biome": "2.4.6",

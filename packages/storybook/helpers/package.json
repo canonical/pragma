@@ -5,6 +5,14 @@
   "type": "module",
   "module": "dist/esm/index.js",
   "types": "dist/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/esm/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "sideEffects": false,
   "files": [
     "dist"
   ],
@@ -34,7 +42,7 @@
     "check:biome": "biome check",
     "check:biome:fix": "biome check --write",
     "check:ts": "tsc --noEmit",
-    "check:webarchitect": "webarchitect package-react",
+    "check:webarchitect": "webarchitect package-react-lib",
     "test": "vitest run"
   },
   "devDependencies": {
@@ -49,13 +57,17 @@
     "@vitejs/plugin-react": "^6.0.0",
     "copyfiles": "^2.4.1",
     "jsdom": "^28.1.0",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
     "typescript": "^5.9.3",
     "vite": "^8.0.1",
     "vitest": "^4.0.18"
   },
   "dependencies": {
-    "@canonical/ds-types": "^0.29.0",
-    "react": "^19.2.4",
-    "react-dom": "^19.2.4"
+    "@canonical/ds-types": "^0.29.0"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
   }
 }

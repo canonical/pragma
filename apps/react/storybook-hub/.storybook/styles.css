@@ -1,5 +1,5 @@
 @import url("@canonical/styles");
-@import url("@canonical/react-ds-global-form/src/index.css");
+@import url("@canonical/react-ds-global-form/dist/esm/index.css");
 
 :root {
   --baseline-grid-color: orange;
