@@ -25,8 +25,10 @@
  *   with the on-foreground contrast tokens. This shim is imported after the
  *   anticipation/emphasis modifiers in the same `ds.modifiers` layer, so on a
  *   `.primary.destructive` button the anticipation colour drives the fill while
- *   this contrast text wins (equal specificity, later source order). For ghost
- *   importances the text channel is left untouched, so the anticipation colour
+ *   this contrast text wins (equal specificity, later source order).
+ *   `.secondary` pins its text to the root text colour by the same mechanism —
+ *   per design, the secondary label never takes the anticipation colour. Only
+ *   `.tertiary` leaves the text channel untouched, so the anticipation colour
  *   lands on the text — exactly the Figma treatment.
  */
 
@@ -60,8 +62,9 @@
     );
   }
 
-  /* Secondary — outlined: a ghost background with a visible border; text/icon
-     keep the modifier colour. */
+  /* Secondary — outlined: a ghost background with a visible border; the icon
+     keeps the modifier colour, but the label is pinned to the root text colour
+     (the anticipation colour shows on the border/fill states, not the text). */
   .secondary {
     --modifier-surface: var(
       --modifier-color-foreground-ghost,
@@ -73,6 +76,10 @@
       --modifier-color-foreground-ghost-disabled
     );
     --modifier-outline: 1;
+    /* `color/text/root` compiles to the bare `--color-text` var; re-point at a
+       dedicated `button.secondary` semantic token once ratified upstream. */
+    --modifier-color-text: var(--color-text);
+    --modifier-color-text-disabled: var(--color-text-disabled);
   }
 
   /* Tertiary — text: a ghost background, no border; text/icon keep the modifier

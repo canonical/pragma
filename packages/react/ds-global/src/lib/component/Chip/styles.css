@@ -99,6 +99,9 @@
 
   /* Context-specific styling for badges within chips */
   & .ds.badge {
+    /** Pull the badge closer to the edge of a chip */
+    --badge-chip-margin-tweak: var(--dimension-025);
+
     align-self: center;
     margin-left: var(--spacing-horizontal-small);
     margin-right: var(--badge-chip-margin-tweak);
