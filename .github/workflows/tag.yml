@@ -110,6 +110,16 @@ jobs:
       - name: Setup Environment
         uses: ./.github/actions/setup-env
 
+      # Pre-publish consumer smoke: proves the tarballs we are about to
+      # publish are installable and usable by an external npm consumer.
+      # Unlike the advisory PR job, a failure here blocks the publish.
+      # --mode=publish tolerates first-time packages (published later in
+      # this run by `lerna publish from-package`).
+      - name: Consumer smoke (pre-publish gate)
+        run: |
+          bun scripts/consumer-smoke/check-no-private-deps.ts --mode=publish
+          bun scripts/consumer-smoke/pack-and-smoke.ts
+
       - name: Setup Node, authenticate with NPM registry
         uses: actions/setup-node@v6
         with:
