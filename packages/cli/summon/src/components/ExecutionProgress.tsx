@@ -4,7 +4,12 @@
  * Displays the progress of task execution with effect-by-effect feedback.
  */
 
-import { runTaskWithStamp, type StampConfig } from "@canonical/summon-core";
+import {
+  answerPromptWithDefaults,
+  createStampOnEffectStart,
+  runGeneratorTask,
+} from "@canonical/cli-core";
+import type { StampConfig } from "@canonical/summon-core";
 import {
   describeEffect,
   type Effect,
@@ -93,15 +98,23 @@ export const ExecutionProgress: React.FC<ExecutionProgressProps> = ({
 
     const executeWithProgress = async () => {
       try {
-        await runTaskWithStamp(task, {
-          stamp,
-          onEffectStart: (effect) => {
-            // Skip showing duplicate MakeDir in spinner
-            if (effect._tag === "MakeDir" && seenDirPaths.has(effect.path)) {
-              return;
-            }
-            setCurrentEffect(effect);
-          },
+        const showEffectStart = (effect: Effect): void => {
+          // Skip showing duplicate MakeDir in spinner
+          if (effect._tag === "MakeDir" && seenDirPaths.has(effect.path)) {
+            return;
+          }
+          setCurrentEffect(effect);
+        };
+
+        // Execute through the shared UI-free core — the same composition
+        // pragma's batch path uses, so both binaries write identical bytes.
+        // Interleaved Prompt effects resolve to their defaults until a
+        // dialog-first generator exists to consume an Ink prompt bridge.
+        await runGeneratorTask(task, {
+          promptHandler: answerPromptWithDefaults,
+          onEffectStart: stamp
+            ? createStampOnEffectStart(stamp, showEffectStart)
+            : showEffectStart,
           onEffectComplete: (effect, duration) => {
             const id = effectId++;
             const timestamp = performance.now() - startTime;

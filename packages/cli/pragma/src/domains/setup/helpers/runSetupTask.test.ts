@@ -1,6 +1,6 @@
+import { answerPromptWithDefaults } from "@canonical/cli-core";
 import { pure, type Task, writeFile } from "@canonical/task";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import answerPromptWithDefaults from "../../shared/answerPromptWithDefaults.js";
 import runSetupTask from "./runSetupTask.js";
 
 const {
