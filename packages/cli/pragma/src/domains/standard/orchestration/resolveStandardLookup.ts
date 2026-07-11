@@ -18,11 +18,12 @@ export default async function resolveStandardLookup(
   const lookupResult: LookupResult<StandardDetailed> =
     names.length > 0
       ? await lookupMany(names, (query) => lookupStandard(store, query))
-      : { results: [], errors: [] };
+      : { results: [], errors: [], meta: { internalErrorCount: 0 } };
 
   const result: LookupResult<StandardDetailed> = {
     results: lookupResult.results,
     errors: [...lookupResult.errors, ...globErrors],
+    meta: lookupResult.meta ?? { internalErrorCount: 0 },
   };
 
   return {

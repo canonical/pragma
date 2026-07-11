@@ -5,6 +5,7 @@
  * converts these into registered MCP tools via `registerFromSpec()`.
  */
 
+import { lookupToolMeta } from "../../shared/lookupMany.js";
 import type { ToolSpec } from "../../shared/ToolSpec.js";
 import {
   listFormatters as blockListFmt,
@@ -189,11 +190,14 @@ const specs: readonly ToolSpec[] = [
             results: summaries,
             errors: result.errors,
           },
-          meta: { count: summaries.length },
+          meta: lookupToolMeta(result),
         };
       }
 
-      return { data: result, meta: { count: result.results.length } };
+      return {
+        data: { results: result.results, errors: result.errors },
+        meta: lookupToolMeta(result),
+      };
     },
   },
   {

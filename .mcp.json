@@ -22,12 +22,6 @@
       "args": [
         "mcp"
       ]
-    },
-    "sem": {
-      "args": [
-        "mcp"
-      ],
-      "command": "sem"
     }
   }
 }

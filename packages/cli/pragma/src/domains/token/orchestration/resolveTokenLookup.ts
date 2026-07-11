@@ -18,11 +18,12 @@ export default async function resolveTokenLookup(
   const lookupResult: LookupResult<TokenDetailed> =
     names.length > 0
       ? await lookupMany(names, (query) => lookupToken(store, query))
-      : { results: [], errors: [] };
+      : { results: [], errors: [], meta: { internalErrorCount: 0 } };
 
   const result: LookupResult<TokenDetailed> = {
     results: lookupResult.results,
     errors: [...lookupResult.errors, ...globErrors],
+    meta: lookupResult.meta ?? { internalErrorCount: 0 },
   };
 
   return {

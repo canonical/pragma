@@ -18,11 +18,12 @@ export default async function resolveModifierLookup(
   const lookupResult: LookupResult<ModifierFamily> =
     names.length > 0
       ? await lookupMany(names, (query) => lookupModifier(store, query))
-      : { results: [], errors: [] };
+      : { results: [], errors: [], meta: { internalErrorCount: 0 } };
 
   const result: LookupResult<ModifierFamily> = {
     results: lookupResult.results,
     errors: [...lookupResult.errors, ...globErrors],
+    meta: lookupResult.meta ?? { internalErrorCount: 0 },
   };
 
   return {

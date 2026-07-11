@@ -1,4 +1,7 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("#config", async (importOriginal) => ({
   ...(await importOriginal<typeof import("#config")>()),
@@ -25,6 +28,7 @@ import { bootStore } from "../../shared/bootStore.js";
 import {
   checkConfigFile,
   checkKeStore,
+  checkMcpCommands,
   checkMcpConfigured,
   checkNodeVersion,
   checkPragmaVersion,
@@ -142,6 +146,111 @@ describe("checkMcpConfigured", () => {
     const result = await checkMcpConfigured(ctx);
     expect(result.status).toBe("pass");
     expect(result.detail).toContain("Claude Code");
+  });
+});
+
+describe("checkMcpCommands", () => {
+  const harness = {
+    id: "claude-code",
+    name: "Claude Code",
+    configPath: () => "/test/.mcp.json",
+    skillsPath: () => "/test/.claude/skills",
+    detect: [],
+    version: "*",
+    configFormat: "json" as const,
+    mcpKey: "mcpServers",
+  };
+  const detected = {
+    harness,
+    confidence: "high" as const,
+    configExists: true,
+    configPath: "/test/.mcp.json",
+  };
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("skips when no harnesses detected", async () => {
+    vi.mocked(detectHarnesses).mockReturnValue(Promise.resolve([]) as never);
+    const result = await checkMcpCommands(ctx);
+    expect(result.status).toBe("skip");
+  });
+
+  it("skips when only URL-based servers are configured", async () => {
+    vi.mocked(detectHarnesses).mockReturnValue(
+      Promise.resolve([detected]) as never,
+    );
+    vi.mocked(readMcpConfig).mockReturnValue(
+      Promise.resolve({
+        figma: { type: "http", url: "https://mcp.figma.com/mcp" },
+      }) as never,
+    );
+
+    const result = await checkMcpCommands(ctx);
+    expect(result.status).toBe("skip");
+    expect(result.detail).toContain("no command-based");
+  });
+
+  it("passes when every configured command resolves on PATH", async () => {
+    const binDir = mkdtempSync(join(tmpdir(), "pragma-doctor-"));
+    writeFileSync(join(binDir, "pragma"), "#!/bin/sh\n", { mode: 0o755 });
+    vi.stubEnv("PATH", binDir);
+
+    vi.mocked(detectHarnesses).mockReturnValue(
+      Promise.resolve([detected]) as never,
+    );
+    vi.mocked(readMcpConfig).mockReturnValue(
+      Promise.resolve({
+        pragma: { command: "pragma", args: ["mcp"] },
+      }) as never,
+    );
+
+    const result = await checkMcpCommands(ctx);
+    expect(result.status).toBe("pass");
+    expect(result.detail).toContain("1 command");
+  });
+
+  it("fails and names the entry whose command does not resolve", async () => {
+    const emptyDir = mkdtempSync(join(tmpdir(), "pragma-doctor-empty-"));
+    vi.stubEnv("PATH", emptyDir);
+
+    vi.mocked(detectHarnesses).mockReturnValue(
+      Promise.resolve([detected]) as never,
+    );
+    vi.mocked(readMcpConfig).mockReturnValue(
+      Promise.resolve({
+        sem: { command: "sem", args: ["mcp"] },
+      }) as never,
+    );
+
+    const result = await checkMcpCommands(ctx);
+    expect(result.status).toBe("fail");
+    expect(result.detail).toContain('"sem"');
+    expect(result.detail).toContain("/test/.mcp.json");
+    expect(result.remedy).toBeDefined();
+  });
+
+  it("flags only the broken entry among several", async () => {
+    const binDir = mkdtempSync(join(tmpdir(), "pragma-doctor-mixed-"));
+    writeFileSync(join(binDir, "pragma"), "#!/bin/sh\n", { mode: 0o755 });
+    vi.stubEnv("PATH", binDir);
+
+    vi.mocked(detectHarnesses).mockReturnValue(
+      Promise.resolve([detected]) as never,
+    );
+    vi.mocked(readMcpConfig).mockReturnValue(
+      Promise.resolve({
+        pragma: { command: "pragma", args: ["mcp"] },
+        sem: { command: "sem", args: ["mcp"] },
+        figma: { type: "http", url: "https://mcp.figma.com/mcp" },
+      }) as never,
+    );
+
+    const result = await checkMcpCommands(ctx);
+    expect(result.status).toBe("fail");
+    expect(result.detail).toContain('"sem"');
+    expect(result.detail).not.toContain('"pragma"');
   });
 });
 
