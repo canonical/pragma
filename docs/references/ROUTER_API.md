@@ -207,7 +207,7 @@ function route<
 ): DataRouteDefinition<TPath, TSearchSchema, TRendered, TWrappers, TParamsSchema>;
 ```
 
-Constructs one flat route and derives its path codec. The returned definition adds `parse(url) → params | null` and `render(params) → string` over the input, and defaults `wrappers` to `[]`. Routes are **flat** — there is no nesting or `children`. Shared layout comes from [`wrapper`](#wrapper) + [`group`](#group); cross-cutting logic from [middleware](#middleware-applymiddleware).
+Constructs one flat route and derives its path codec. The returned definition adds `parse(url) → params | null` and `render(params) → string` over the input, and defaults `wrappers` to `[]`. Routes are **flat** — there is no nesting or `children`. Shared layout comes from [`wrapper`](#wrapper) + [`group`](#group); cross-cutting logic from [middleware](#middleware--applymiddleware).
 
 #### `DataRouteInput`
 
@@ -282,7 +282,7 @@ interface NavigationContext {
 }
 ```
 
-Throwing inside `prefetch` is meaningful: throw a [`StatusResponse`](#statusresponse) for an HTTP-like error, or call [`redirect()`](#redirect-redirect-routeredirect) to short-circuit navigation. Both propagate to standard React error boundaries on the client and to the server handler under SSR.
+Throwing inside `prefetch` is meaningful: throw a [`StatusResponse`](#statusresponse) for an HTTP-like error, or call [`redirect()`](#runtime-redirects--redirect-redirect-routeredirect) to short-circuit navigation. Both propagate to standard React error boundaries on the client and to the server handler under SSR.
 
 ```ts
 prefetch: (params, search, context) => {
@@ -309,7 +309,7 @@ interface RedirectRouteInput<TPath, TTarget, TWrappers, TParamsSchema> {
 }
 ```
 
-A route with no `content`. The `status` is restricted to permanent redirects (`301 | 308`) — distinct from the runtime [`redirect()`](#redirect-redirect-routeredirect) helper's wider union. Matched ahead of data routes by the presence of `redirect`.
+A route with no `content`. The `status` is restricted to permanent redirects (`301 | 308`) — distinct from the runtime [`redirect()`](#runtime-redirects--redirect-redirect-routeredirect) helper's wider union. Matched ahead of data routes by the presence of `redirect`.
 
 ```ts
 const legacy = route({ url: "/old", redirect: "/new", status: 308 });
@@ -743,7 +743,7 @@ Renders the matched route subtree (route content wrapped by its wrappers). Reren
 
 ### Hooks
 
-All default their generics to `RegisteredRouteMap` / `RegisteredNotFound` (see [`register`](#register)), so once you register your routes no generics are needed. Each subscribes to the narrowest channel it needs.
+All default their generics to `RegisteredRouteMap` / `RegisteredNotFound` (see [`register`](#register--typed-routing-without-generics)), so once you register your routes no generics are needed. Each subscribes to the narrowest channel it needs.
 
 #### `useRouter`
 

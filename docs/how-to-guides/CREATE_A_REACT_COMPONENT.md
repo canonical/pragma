@@ -37,7 +37,7 @@ To create a subcomponent, follow the following steps:
 
 1. Create a folder `common` inside a component's directory. 
 2. Set your active directory to `common`. 
-3. Use the generator as in step #3 of the [getting started section](#getting-started) to generate a subcomponent. Per the [React standards](https://github.com/canonical/code-standards), subcomponent names should not be prefixed with their parent component name. For example, if your parent component is called `Button`, you might name a subcomponent `Icon` instead of `ButtonIcon`.
+3. Use the generator as in step #3 of the [getting started section](#3-getting-started) to generate a subcomponent. Per the [React standards](https://github.com/canonical/code-standards), subcomponent names should not be prefixed with their parent component name. For example, if your parent component is called `Button`, you might name a subcomponent `Icon` instead of `ButtonIcon`.
 4. The generator should create `common/index.ts` which re-exports each subcomponent. This will the top-level component (or other subcomponents) to import subcomponents from `common/index.js`. If you would also like to expose the subcomponents outside of the component, you can either re-export `common/index.js` from `index.ts`, or re-export only the subcomponents that you'd like to expose.
 
 ### 5 State
@@ -51,7 +51,7 @@ The decisions and steps to create hooks and context providers are explored below
 
 #### 5.1 Hooks
 Hooks are a great way to encapsulate state management and logic that is reusable across multiple components.
-If your component provides context that should be accessible by child components (such as a toast component which provides a notification context), you should consider creating a [context provider](#context-providers).
+If your component provides context that should be accessible by child components (such as a toast component which provides a notification context), you should consider creating a [context provider](#52-context-providers).
 
 _Note: hook creation is not yet supported by the generator, but this is planned functionality._
 
@@ -71,6 +71,6 @@ _Note: context provider creation is not yet supported by the generator, but this
 
 1. Create a `types.ts` file inside the component directory. Create a `ContextOptions` type that describes the state that will be provided to context consumers. See [example](../../apps/react/demo/src/ui/Showcase/common/Example/types.ts).
 2. Create a `Context.tsx` file inside the component directory. This file should create an empty context using `createContext`, and bind the context to the type from `types.ts`. See [example](../../apps/react/demo/src/ui/Showcase/common/Example/Context.tsx).
-3. Use [custom hooks](#hooks) to encapsulate the context state. Create a `common/hooks/<hookName>.ts` file inside the component directory. This file should create a custom hook that uses `useContext` to access the context and return the context value. See [example](../../apps/react/demo/src/ui/Showcase/common/Example/hooks/useProviderState.ts).
+3. Use [custom hooks](#51-hooks) to encapsulate the context state. Create a `common/hooks/<hookName>.ts` file inside the component directory. This file should create a custom hook that uses `useContext` to access the context and return the context value. See [example](../../apps/react/demo/src/ui/Showcase/common/Example/hooks/useProviderState.ts).
 4. Create a `Provider.tsx` file inside the component directory. This file should create a simple component that accepts the props of your custom hooks, invokes the custom hooks to get the current state, and wraps a child component with the current context. See [example](../../apps/react/demo/src/ui/Showcase/common/Example/Provider.tsx).
 5. Create an `index.ts` file inside the component directory. This file serves as the publicly consumed API for the component. It should export the Provider component, but also export any subcomponents that consume the context within the index component scope. See [example](../../apps/react/demo/src/ui/Showcase/common/Example/index.ts).

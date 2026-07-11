@@ -4,7 +4,7 @@ This package provides an overview of the contribution process for the React Core
 
 ## 1. Getting Started
 
-Follow the [repository setup](../../../guides/CONTRIBUTING.md) guide to set up your development environment.
+Follow the [repository setup](../../../README.md#quick-start) guide to set up your development environment.
 
 Once the repository is set up, navigate to the `packages/react/ds-core` package directory and run `bun run storybook` to
 start
@@ -17,12 +17,10 @@ Storybook will automatically reload when you make changes to the components, usi
 
 ### 1.1 Building a component
 
-The [react component generator](../../generator-ds/src/component/README.md) provides a CLI to generate new components.
-To create a new component, [install Yeoman](../../generator-ds/README.md), then navigate to the component root directory
-`src/ui`.
-Run `yo @canonical/ds:component MyNewComponent` to generate a new component.
-You can also run `yo @canonical/ds:component --help` to see more available options, such as generating a component with
-a story and/or CSS file included.
+The [component generator](../../summon/component/README.md) scaffolds new components.
+Install the Summon CLI and generator (`npm install -g @canonical/summon @canonical/summon-component`), then run
+`summon component react src/lib/MyNewComponent` from the package root to generate a new component.
+You can also run `summon component react --help` to see more available options.
 
 Components should follow this basic structure:
 
