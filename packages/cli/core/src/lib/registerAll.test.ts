@@ -388,6 +388,34 @@ describe("registerAll", () => {
       expect(chunks.join("")).toContain("hello");
     });
 
+    it("propagates a non-zero exit result to process.exitCode", async () => {
+      // The exit tag is the sole channel through which executeGenerator's
+      // exit 3 (non-interactive, missing flags) and exit 130 (Ctrl-C) reach
+      // the process status. Assert the dispatcher actually applies the code,
+      // not just that the command returns it.
+      const commands: CommandDefinition[] = [
+        {
+          path: ["fail"],
+          description: "Exits non-zero",
+          parameters: [],
+          execute: async () => createExitResult(3),
+        },
+      ];
+
+      const program = new Command();
+      program.exitOverride();
+      registerAll(program, commands, testCtx);
+
+      const originalExitCode = process.exitCode;
+      process.exitCode = 0;
+      try {
+        await program.parseAsync(["fail"], { from: "user" });
+        expect(process.exitCode).toBe(3);
+      } finally {
+        process.exitCode = originalExitCode;
+      }
+    });
+
     it("accepts multiple positional args for trailing multiselect params", async () => {
       let captured: Record<string, unknown> = {};
 
