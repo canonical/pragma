@@ -9,8 +9,6 @@ import registerAll, {
 import type {
   CommandContext,
   CommandDefinition,
-  CommandResult,
-  InteractiveSpec,
   ParameterDefinition,
 } from "./types.js";
 
@@ -390,55 +388,32 @@ describe("registerAll", () => {
       expect(chunks.join("")).toContain("hello");
     });
 
-    it("delegates interactive results to the context interactive handler", async () => {
+    it("propagates a non-zero exit result to process.exitCode", async () => {
+      // The exit tag is the sole channel through which executeGenerator's
+      // exit 3 (non-interactive, missing flags) and exit 130 (Ctrl-C) reach
+      // the process status. Assert the dispatcher actually applies the code,
+      // not just that the command returns it.
       const commands: CommandDefinition[] = [
         {
-          path: ["scaffold"],
-          description: "Scaffold something",
+          path: ["fail"],
+          description: "Exits non-zero",
           parameters: [],
-          execute: async () => ({
-            tag: "interactive",
-            spec: {
-              generator: {
-                meta: { name: "gen", version: "1.0.0" },
-                prompts: [],
-                generate: () => undefined,
-              },
-              partialAnswers: {},
-              options: {
-                dryRunOnly: false,
-                undo: false,
-                verbose: false,
-                stamp: undefined,
-                preview: true,
-              },
-            },
-          }),
+          execute: async () => createExitResult(3),
         },
       ];
 
       const program = new Command();
       program.exitOverride();
-      registerAll(program, commands, {
-        ...testCtx,
-        interactive: async () =>
-          createOutputResult("interactive handled", { plain: (s) => s }),
-      });
+      registerAll(program, commands, testCtx);
 
-      const chunks: string[] = [];
-      const originalWrite = process.stdout.write;
-      process.stdout.write = ((chunk: string) => {
-        chunks.push(chunk);
-        return true;
-      }) as typeof process.stdout.write;
-
+      const originalExitCode = process.exitCode;
+      process.exitCode = 0;
       try {
-        await program.parseAsync(["scaffold"], { from: "user" });
+        await program.parseAsync(["fail"], { from: "user" });
+        expect(process.exitCode).toBe(3);
       } finally {
-        process.stdout.write = originalWrite;
+        process.exitCode = originalExitCode;
       }
-
-      expect(chunks.join("")).toContain("interactive handled");
     });
 
     it("accepts multiple positional args for trailing multiselect params", async () => {
@@ -570,621 +545,6 @@ describe("registerAll", () => {
       expect(inkCalled).toBe(true);
     });
 
-    it("writes stderr and sets exit code 3 when interactive handler is unavailable", async () => {
-      const spec: InteractiveSpec = {
-        generator: {
-          meta: { name: "gen", version: "1.0.0" },
-          prompts: [
-            {
-              name: "componentPath",
-              type: "text",
-              message: "Path?",
-            },
-          ],
-          generate: () => undefined,
-        },
-        partialAnswers: {},
-        options: {
-          dryRunOnly: false,
-          undo: false,
-          verbose: false,
-          stamp: undefined,
-          preview: true,
-        },
-      };
-
-      const commands: CommandDefinition[] = [
-        {
-          path: ["scaffold"],
-          description: "Scaffold",
-          parameters: [
-            {
-              name: "componentPath",
-              description: "Path",
-              type: "string",
-              required: true,
-            },
-          ],
-          execute: async () => ({ tag: "interactive" as const, spec }),
-        },
-      ];
-
-      const program = new Command();
-      program.exitOverride();
-      // No interactive handler → unavailable path
-      registerAll(program, commands, testCtx);
-
-      const stderrChunks: string[] = [];
-      const originalStderr = process.stderr.write;
-      const originalExitCode = process.exitCode;
-      process.stderr.write = ((chunk: string) => {
-        stderrChunks.push(chunk);
-        return true;
-      }) as typeof process.stderr.write;
-
-      try {
-        await program.parseAsync(["scaffold"], { from: "user" });
-      } finally {
-        process.stderr.write = originalStderr;
-      }
-
-      expect(stderrChunks.join("")).toContain("Interactive mode not available");
-      expect(stderrChunks.join("")).toContain("--component-path");
-      expect(stderrChunks.join("")).toContain("src/components/Button");
-      expect(process.exitCode).toBe(3);
-      process.exitCode = originalExitCode;
-    });
-
-    it("writes stderr when interactive handler returns null", async () => {
-      const spec: InteractiveSpec = {
-        generator: {
-          meta: { name: "gen", version: "1.0.0" },
-          prompts: [],
-          generate: () => undefined,
-        },
-        partialAnswers: {},
-        options: {
-          dryRunOnly: false,
-          undo: false,
-          verbose: false,
-          stamp: undefined,
-          preview: true,
-        },
-      };
-
-      const commands: CommandDefinition[] = [
-        {
-          path: ["scaffold-null"],
-          description: "Scaffold",
-          parameters: [],
-          execute: async () => ({ tag: "interactive" as const, spec }),
-        },
-      ];
-
-      const program = new Command();
-      program.exitOverride();
-      registerAll(program, commands, {
-        ...testCtx,
-        interactive: async () => null as unknown as CommandResult,
-      });
-
-      const stderrChunks: string[] = [];
-      const originalStderr = process.stderr.write;
-      const originalExitCode = process.exitCode;
-      process.stderr.write = ((chunk: string) => {
-        stderrChunks.push(chunk);
-        return true;
-      }) as typeof process.stderr.write;
-
-      try {
-        await program.parseAsync(["scaffold-null"], { from: "user" });
-      } finally {
-        process.stderr.write = originalStderr;
-      }
-
-      expect(stderrChunks.join("")).toContain("Interactive mode not available");
-      expect(process.exitCode).toBe(3);
-      process.exitCode = originalExitCode;
-    });
-
-    it("inferExampleScalar uses name-specific values", async () => {
-      const spec: InteractiveSpec = {
-        generator: {
-          meta: { name: "gen", version: "1.0.0" },
-          prompts: [
-            { name: "name", type: "text", message: "Name?" },
-            { name: "description", type: "text", message: "Description?" },
-            { name: "type", type: "text", message: "Type?" },
-            { name: "unknown", type: "text", message: "Unknown?" },
-          ],
-          generate: () => undefined,
-        },
-        partialAnswers: {},
-        options: {
-          dryRunOnly: false,
-          undo: false,
-          verbose: false,
-          stamp: undefined,
-          preview: true,
-        },
-      };
-
-      const commands: CommandDefinition[] = [
-        {
-          path: ["scaffold-examples"],
-          description: "Scaffold examples",
-          parameters: [
-            {
-              name: "name",
-              description: "Name",
-              type: "string",
-              required: true,
-            },
-            {
-              name: "description",
-              description: "Desc",
-              type: "string",
-              required: true,
-            },
-            {
-              name: "type",
-              description: "Type",
-              type: "string",
-              required: true,
-            },
-            {
-              name: "unknown",
-              description: "Other",
-              type: "string",
-              required: true,
-            },
-          ],
-          execute: async () => ({ tag: "interactive" as const, spec }),
-        },
-      ];
-
-      const program = new Command();
-      program.exitOverride();
-      registerAll(program, commands, testCtx);
-
-      const stderrChunks: string[] = [];
-      const originalStderr = process.stderr.write;
-      const originalExitCode = process.exitCode;
-      process.stderr.write = ((chunk: string) => {
-        stderrChunks.push(chunk);
-        return true;
-      }) as typeof process.stderr.write;
-
-      try {
-        await program.parseAsync(["scaffold-examples"], { from: "user" });
-      } finally {
-        process.stderr.write = originalStderr;
-      }
-
-      const output = stderrChunks.join("");
-      expect(output).toContain("@canonical/example-package");
-      expect(output).toContain("Example package");
-      expect(output).toContain("tool-ts");
-      expect(output).toContain("<unknown>");
-      process.exitCode = originalExitCode;
-    });
-
-    it("inferExampleValue for multiselect produces array", async () => {
-      const spec: InteractiveSpec = {
-        generator: {
-          meta: { name: "gen", version: "1.0.0" },
-          prompts: [
-            {
-              name: "items",
-              type: "multiselect",
-              message: "Items?",
-              choices: [
-                { label: "A", value: "a" },
-                { label: "B", value: "b" },
-              ],
-            },
-          ],
-          generate: () => undefined,
-        },
-        partialAnswers: {},
-        options: {
-          dryRunOnly: false,
-          undo: false,
-          verbose: false,
-          stamp: undefined,
-          preview: true,
-        },
-      };
-
-      const commands: CommandDefinition[] = [
-        {
-          path: ["scaffold-multi"],
-          description: "Scaffold multi",
-          parameters: [
-            {
-              name: "items",
-              description: "Items",
-              type: "multiselect",
-              required: true,
-            },
-          ],
-          execute: async () => ({ tag: "interactive" as const, spec }),
-        },
-      ];
-
-      const program = new Command();
-      program.exitOverride();
-      registerAll(program, commands, testCtx);
-
-      const stderrChunks: string[] = [];
-      const originalStderr = process.stderr.write;
-      const originalExitCode = process.exitCode;
-      process.stderr.write = ((chunk: string) => {
-        stderrChunks.push(chunk);
-        return true;
-      }) as typeof process.stderr.write;
-
-      try {
-        await program.parseAsync(["scaffold-multi"], { from: "user" });
-      } finally {
-        process.stderr.write = originalStderr;
-      }
-
-      const output = stderrChunks.join("");
-      expect(output).toContain("--items");
-      process.exitCode = originalExitCode;
-    });
-
-    it("inferExampleValue for boolean in non-positional uses flag", async () => {
-      const spec: InteractiveSpec = {
-        generator: {
-          meta: { name: "gen", version: "1.0.0" },
-          prompts: [{ name: "confirm", type: "confirm", message: "Continue?" }],
-          generate: () => undefined,
-        },
-        partialAnswers: {},
-        options: {
-          dryRunOnly: false,
-          undo: false,
-          verbose: false,
-          stamp: undefined,
-          preview: true,
-        },
-      };
-
-      const commands: CommandDefinition[] = [
-        {
-          path: ["scaffold-bool"],
-          description: "Scaffold bool",
-          parameters: [
-            {
-              name: "confirm",
-              description: "Continue?",
-              type: "boolean",
-              required: true,
-            },
-          ],
-          execute: async () => ({ tag: "interactive" as const, spec }),
-        },
-      ];
-
-      const program = new Command();
-      program.exitOverride();
-      registerAll(program, commands, testCtx);
-
-      const stderrChunks: string[] = [];
-      const originalStderr = process.stderr.write;
-      const originalExitCode = process.exitCode;
-      process.stderr.write = ((chunk: string) => {
-        stderrChunks.push(chunk);
-        return true;
-      }) as typeof process.stderr.write;
-
-      try {
-        await program.parseAsync(["scaffold-bool"], { from: "user" });
-      } finally {
-        process.stderr.write = originalStderr;
-      }
-
-      const output = stderrChunks.join("");
-      expect(output).toContain("--confirm");
-      process.exitCode = originalExitCode;
-    });
-
-    it("interactive unavailable with no missing params shows generic message", async () => {
-      const spec: InteractiveSpec = {
-        generator: {
-          meta: { name: "gen", version: "1.0.0" },
-          prompts: [
-            { name: "x", type: "text", message: "X?", default: "default" },
-          ],
-          generate: () => undefined,
-        },
-        partialAnswers: {},
-        options: {
-          dryRunOnly: false,
-          undo: false,
-          verbose: false,
-          stamp: undefined,
-          preview: true,
-        },
-      };
-
-      const commands: CommandDefinition[] = [
-        {
-          path: ["scaffold-defaults"],
-          description: "Scaffold defaults",
-          parameters: [],
-          execute: async () => ({ tag: "interactive" as const, spec }),
-        },
-      ];
-
-      const program = new Command();
-      program.exitOverride();
-      registerAll(program, commands, testCtx);
-
-      const stderrChunks: string[] = [];
-      const originalStderr = process.stderr.write;
-      const originalExitCode = process.exitCode;
-      process.stderr.write = ((chunk: string) => {
-        stderrChunks.push(chunk);
-        return true;
-      }) as typeof process.stderr.write;
-
-      try {
-        await program.parseAsync(["scaffold-defaults"], { from: "user" });
-      } finally {
-        process.stderr.write = originalStderr;
-      }
-
-      expect(stderrChunks.join("")).toContain("Provide all required flags");
-      process.exitCode = originalExitCode;
-    });
-
-    it("interactive shows partial answers in example", async () => {
-      const spec: InteractiveSpec = {
-        generator: {
-          meta: { name: "gen", version: "1.0.0" },
-          prompts: [
-            { name: "name", type: "text", message: "Name?" },
-            { name: "type", type: "text", message: "Type?" },
-          ],
-          generate: () => undefined,
-        },
-        partialAnswers: { name: "my-component" },
-        options: {
-          dryRunOnly: false,
-          undo: false,
-          verbose: false,
-          stamp: undefined,
-          preview: true,
-        },
-      };
-
-      const commands: CommandDefinition[] = [
-        {
-          path: ["scaffold-partial"],
-          description: "Scaffold",
-          parameters: [
-            { name: "name", description: "Name", type: "string" },
-            {
-              name: "type",
-              description: "Type",
-              type: "string",
-              required: true,
-            },
-          ],
-          execute: async () => ({ tag: "interactive" as const, spec }),
-        },
-      ];
-
-      const program = new Command();
-      program.exitOverride();
-      registerAll(program, commands, testCtx);
-
-      const stderrChunks: string[] = [];
-      const originalStderr = process.stderr.write;
-      const originalExitCode = process.exitCode;
-      process.stderr.write = ((chunk: string) => {
-        stderrChunks.push(chunk);
-        return true;
-      }) as typeof process.stderr.write;
-
-      try {
-        await program.parseAsync(["scaffold-partial"], { from: "user" });
-      } finally {
-        process.stderr.write = originalStderr;
-      }
-
-      const output = stderrChunks.join("");
-      expect(output).toContain("--name");
-      expect(output).toContain("my-component");
-      process.exitCode = originalExitCode;
-    });
-
-    it("interactive shows positional parameter usage in missing flags", async () => {
-      const spec: InteractiveSpec = {
-        generator: {
-          meta: { name: "gen", version: "1.0.0" },
-          prompts: [{ name: "name", type: "text", message: "Name?" }],
-          generate: () => undefined,
-        },
-        partialAnswers: {},
-        options: {
-          dryRunOnly: false,
-          undo: false,
-          verbose: false,
-          stamp: undefined,
-          preview: true,
-        },
-      };
-
-      const commands: CommandDefinition[] = [
-        {
-          path: ["scaffold-pos"],
-          description: "Scaffold",
-          parameters: [
-            {
-              name: "name",
-              description: "Name",
-              type: "string",
-              positional: true,
-            },
-          ],
-          execute: async () => ({ tag: "interactive" as const, spec }),
-        },
-      ];
-
-      const program = new Command();
-      program.exitOverride();
-      registerAll(program, commands, testCtx);
-
-      const stderrChunks: string[] = [];
-      const originalStderr = process.stderr.write;
-      const originalExitCode = process.exitCode;
-      process.stderr.write = ((chunk: string) => {
-        stderrChunks.push(chunk);
-        return true;
-      }) as typeof process.stderr.write;
-
-      try {
-        await program.parseAsync(["scaffold-pos"], { from: "user" });
-      } finally {
-        process.stderr.write = originalStderr;
-      }
-
-      const output = stderrChunks.join("");
-      expect(output).toContain("[name]");
-      expect(output).toContain("@canonical/example-package");
-      process.exitCode = originalExitCode;
-    });
-
-    it("handles missing positional boolean parameter in example (true+positional)", async () => {
-      const spec: InteractiveSpec = {
-        generator: {
-          meta: { name: "gen", version: "1.0.0" },
-          prompts: [
-            { name: "flag", type: "confirm", message: "Flag?" },
-            { name: "name", type: "text", message: "Name?" },
-          ],
-          generate: () => undefined,
-        },
-        partialAnswers: {},
-        options: {
-          dryRunOnly: false,
-          undo: false,
-          verbose: false,
-          stamp: undefined,
-          preview: true,
-        },
-      };
-
-      const commands: CommandDefinition[] = [
-        {
-          path: ["scaffold-posbool-missing"],
-          description: "Scaffold",
-          parameters: [
-            {
-              name: "flag",
-              description: "Flag",
-              type: "boolean",
-              positional: true,
-            },
-            {
-              name: "name",
-              description: "Name",
-              type: "string",
-              required: true,
-            },
-          ],
-          execute: async () => ({ tag: "interactive" as const, spec }),
-        },
-      ];
-
-      const program = new Command();
-      program.exitOverride();
-      registerAll(program, commands, testCtx);
-
-      const stderrChunks: string[] = [];
-      const originalStderr = process.stderr.write;
-      const originalExitCode = process.exitCode;
-      process.stderr.write = ((chunk: string) => {
-        stderrChunks.push(chunk);
-        return true;
-      }) as typeof process.stderr.write;
-
-      try {
-        await program.parseAsync(["scaffold-posbool-missing"], {
-          from: "user",
-        });
-      } finally {
-        process.stderr.write = originalStderr;
-      }
-
-      const output = stderrChunks.join("");
-      // boolean true + positional → inferExampleValue returns true, but
-      // formatParameterExample returns [] for boolean positional with value=true
-      expect(output).toContain("Missing required flags");
-      expect(output).toContain("--name");
-      process.exitCode = originalExitCode;
-    });
-
-    it("handles positional boolean parameter in example", async () => {
-      const spec: InteractiveSpec = {
-        generator: {
-          meta: { name: "gen", version: "1.0.0" },
-          prompts: [{ name: "flag", type: "confirm", message: "Flag?" }],
-          generate: () => undefined,
-        },
-        partialAnswers: { flag: false },
-        options: {
-          dryRunOnly: false,
-          undo: false,
-          verbose: false,
-          stamp: undefined,
-          preview: true,
-        },
-      };
-
-      const commands: CommandDefinition[] = [
-        {
-          path: ["scaffold-posbool"],
-          description: "Scaffold",
-          parameters: [
-            {
-              name: "flag",
-              description: "Flag",
-              type: "boolean",
-              positional: true,
-            },
-          ],
-          execute: async () => ({ tag: "interactive" as const, spec }),
-        },
-      ];
-
-      const program = new Command();
-      program.exitOverride();
-      registerAll(program, commands, testCtx);
-
-      const stderrChunks: string[] = [];
-      const originalStderr = process.stderr.write;
-      const originalExitCode = process.exitCode;
-      process.stderr.write = ((chunk: string) => {
-        stderrChunks.push(chunk);
-        return true;
-      }) as typeof process.stderr.write;
-
-      try {
-        await program.parseAsync(["scaffold-posbool"], { from: "user" });
-      } finally {
-        process.stderr.write = originalStderr;
-      }
-
-      // boolean false + positional → no args generated
-      expect(stderrChunks.join("")).toContain("Provide all required flags");
-      process.exitCode = originalExitCode;
-    });
-
     it("renders noun-level help when --help is passed for a noun", async () => {
       const commands: CommandDefinition[] = [
         {
@@ -1299,121 +659,6 @@ describe("registerAll", () => {
       expect(captured).toEqual({ name: "Button" });
     });
 
-    it("formatInteractiveUnavailableMessage with no cmd returns generic message", async () => {
-      const spec: InteractiveSpec = {
-        generator: {
-          meta: { name: "gen", version: "1.0.0" },
-          prompts: [{ name: "name", type: "text", message: "Name?" }],
-          generate: () => undefined,
-        },
-        partialAnswers: {},
-        options: {
-          dryRunOnly: false,
-          undo: false,
-          verbose: false,
-          stamp: undefined,
-          preview: true,
-        },
-      };
-
-      // cmd=undefined, ctx has no interactive handler, and handleResult's
-      // cmd parameter is undefined → exercises findMissingInteractiveParameters(!cmd)
-      const commands: CommandDefinition[] = [
-        {
-          path: ["scaffold-nocmd"],
-          description: "Scaffold",
-          parameters: [],
-          execute: async () => ({ tag: "interactive" as const, spec }),
-        },
-      ];
-
-      const program = new Command();
-      program.exitOverride();
-      registerAll(program, commands, testCtx);
-
-      const stderrChunks: string[] = [];
-      const originalStderr = process.stderr.write;
-      const originalExitCode = process.exitCode;
-      process.stderr.write = ((chunk: string) => {
-        stderrChunks.push(chunk);
-        return true;
-      }) as typeof process.stderr.write;
-
-      try {
-        await program.parseAsync(["scaffold-nocmd"], { from: "user" });
-      } finally {
-        process.stderr.write = originalStderr;
-      }
-
-      const output = stderrChunks.join("");
-      // The spec has a prompt "name" but the command has no parameters matching it,
-      // so findMissingInteractiveParameters returns [] (prompt doesn't match any parameter)
-      // and missing.length === 0 → generic "Provide all required flags" message
-      expect(output).toContain("Provide all required flags");
-      process.exitCode = originalExitCode;
-    });
-
-    it("interactive skips prompts that do not match any command parameter", async () => {
-      const spec: InteractiveSpec = {
-        generator: {
-          meta: { name: "gen", version: "1.0.0" },
-          prompts: [
-            { name: "unknownParam", type: "text", message: "Unknown?" },
-          ],
-          generate: () => undefined,
-        },
-        partialAnswers: {},
-        options: {
-          dryRunOnly: false,
-          undo: false,
-          verbose: false,
-          stamp: undefined,
-          preview: true,
-        },
-      };
-
-      const commands: CommandDefinition[] = [
-        {
-          path: ["scaffold-unknown"],
-          description: "Scaffold",
-          parameters: [
-            {
-              name: "realParam",
-              description: "Real",
-              type: "string",
-              required: true,
-            },
-          ],
-          execute: async () => ({ tag: "interactive" as const, spec }),
-        },
-      ];
-
-      const program = new Command();
-      program.exitOverride();
-      registerAll(program, commands, testCtx);
-
-      const stderrChunks: string[] = [];
-      const originalStderr = process.stderr.write;
-      const originalExitCode = process.exitCode;
-      process.stderr.write = ((chunk: string) => {
-        stderrChunks.push(chunk);
-        return true;
-      }) as typeof process.stderr.write;
-
-      try {
-        await program.parseAsync(["scaffold-unknown"], { from: "user" });
-      } finally {
-        process.stderr.write = originalStderr;
-      }
-
-      const output = stderrChunks.join("");
-      // Prompt "unknownParam" doesn't match any command parameter →
-      // parameter is undefined → returns [] from flatMap, so missing is empty.
-      // This triggers the generic message since missing.length === 0
-      expect(output).toContain("Provide all required flags");
-      process.exitCode = originalExitCode;
-    });
-
     it("handles options with defaults", async () => {
       let captured: Record<string, unknown> = {};
 
@@ -1442,6 +687,70 @@ describe("registerAll", () => {
 
       await program.parseAsync(["defaulted"], { from: "user" });
       expect(captured).toEqual({ count: "10" });
+    });
+
+    it("invokes an action with an optional positional and a flag", async () => {
+      let captured: Record<string, unknown> = {};
+
+      const commands: CommandDefinition[] = [
+        {
+          path: ["make"],
+          description: "Make a thing",
+          parameters: [
+            {
+              name: "target",
+              description: "Target",
+              type: "string",
+              positional: true,
+            },
+            { name: "loud", description: "Loud", type: "boolean" },
+          ],
+          execute: async (params) => {
+            captured = params;
+            return createExitResult(0);
+          },
+        },
+      ];
+
+      const program = new Command();
+      program.exitOverride();
+      registerAll(program, commands, testCtx);
+
+      await program.parseAsync(["make", "widget", "--loud"], { from: "user" });
+      expect(captured).toEqual({ target: "widget", loud: true });
+    });
+
+    it("skips an omitted optional positional argument in the action", async () => {
+      let captured: Record<string, unknown> | undefined;
+
+      const commands: CommandDefinition[] = [
+        {
+          path: ["make"],
+          description: "Make a thing",
+          parameters: [
+            {
+              name: "target",
+              description: "Target",
+              type: "string",
+              positional: true,
+            },
+          ],
+          execute: async (params) => {
+            captured = params;
+            return createExitResult(0);
+          },
+        },
+      ];
+
+      const program = new Command();
+      program.exitOverride();
+      registerAll(program, commands, testCtx);
+
+      // Omitting the optional positional passes `undefined` to the action,
+      // which the arg loop skips (it is neither string, array, Command, nor
+      // a non-null object).
+      await program.parseAsync(["make"], { from: "user" });
+      expect(captured).toEqual({});
     });
   });
 });

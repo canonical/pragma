@@ -8,6 +8,8 @@
  * @packageDocumentation
  */
 
+import type { Effect } from "@canonical/task";
+
 // =============================================================================
 // Command Context
 // =============================================================================
@@ -20,9 +22,42 @@ export interface CommandContext {
   readonly cwd: string;
   /** Global flags parsed from the CLI invocation */
   readonly globalFlags: GlobalFlags;
-  /** Optional binary-specific interactive renderer/runner */
-  readonly interactive?: InteractiveHandler | undefined;
+  /**
+   * Optional factory for an interactive prompt session. When a generator needs
+   * answers on an interactive terminal, the executor opens one of these to ask
+   * the user, then executes with the collected answers. cli-core never
+   * constructs a session itself — the binary injects the readline/Ink
+   * implementation here, keeping the core UI-free.
+   */
+  readonly promptSession?: PromptSessionFactory | undefined;
 }
+
+// =============================================================================
+// Prompt Session
+// =============================================================================
+
+/**
+ * A prompt-answering session: the `promptHandler` seam a terminal front-end
+ * injects into the executor, plus its lifecycle. One session spans a whole
+ * command run (`create → answer* → dispose`), so buffered piped answers survive
+ * across questions.
+ */
+export interface PromptSession {
+  /** Resolve a `Prompt` effect — ask the user, or fall back to a default. */
+  readonly answerPrompt: (
+    effect: Effect & { _tag: "Prompt" },
+  ) => Promise<unknown>;
+  /** Whether the user interrupted a prompt (Ctrl-C) — the run must abort. */
+  readonly wasInterrupted: () => boolean;
+  /** Release any underlying resources. Safe to call more than once. */
+  readonly dispose: () => void;
+}
+
+/**
+ * Factory the caller injects so the executor can open a {@link PromptSession}
+ * on demand, exactly once per interactive run.
+ */
+export type PromptSessionFactory = () => PromptSession;
 
 /**
  * Global flags available on every command.
@@ -99,94 +134,20 @@ export interface RenderPair<T> {
 }
 
 // =============================================================================
-// Interactive Spec
-// =============================================================================
-
-/**
- * Data-only specification for interactive command results.
- *
- * When a command returns an `interactive` result, the binary (summon or pragma)
- * decides how to render the interaction. This spec carries the data needed
- * to drive that interaction — no callbacks or runners.
- *
- * - Summon renders via Ink `<App>` with full prompt UI
- * - Pragma v0.1 applies batch fallback (defaults + exit code 3 for missing)
- * - Pragma future may render its own interactive component
- */
-export interface InteractiveSpec {
-  /** The generator definition to execute interactively */
-  readonly generator: InteractiveGenerator;
-  /** Answers already provided via CLI flags */
-  readonly partialAnswers: Readonly<Record<string, unknown>>;
-  /** Execution options */
-  readonly options: InteractiveOptions;
-}
-
-/**
- * Minimal generator interface for InteractiveSpec.
- * Avoids importing @canonical/summon-core as a dependency.
- */
-export interface InteractiveGenerator {
-  readonly meta: { readonly name: string; readonly version: string };
-  readonly prompts: ReadonlyArray<{
-    readonly name: string;
-    readonly message: string;
-    readonly type: "text" | "confirm" | "select" | "multiselect";
-    readonly default?: unknown;
-    readonly choices?: ReadonlyArray<{
-      readonly label: string;
-      readonly value: string;
-    }>;
-  }>;
-  readonly generate: (answers: Record<string, unknown>) => unknown;
-}
-
-/**
- * Options for interactive execution.
- */
-export interface InteractiveOptions {
-  /** Only show what would happen, don't write files */
-  readonly dryRunOnly: boolean;
-  /** Reverse a previously executed generator */
-  readonly undo: boolean;
-  /** Show detailed output */
-  readonly verbose: boolean;
-  /** Stamp configuration for generated files */
-  readonly stamp:
-    | { readonly generator: string; readonly version: string }
-    | undefined;
-  /** Preview generated files before writing */
-  readonly preview: boolean;
-}
-
-/** Context passed to an interactive handler implementation. */
-export interface InteractiveHandlerRequest {
-  readonly spec: InteractiveSpec;
-  readonly command: CommandDefinition;
-  readonly params: Readonly<Record<string, unknown>>;
-  readonly ctx: CommandContext;
-}
-
-/** Binary-specific interactive runner for shared command registration. */
-export type InteractiveHandler = (
-  request: InteractiveHandlerRequest,
-) => Promise<CommandResult | null | undefined>;
-
-// =============================================================================
 // Command Result
 // =============================================================================
 
 /**
- * The three-variant result type for command execution.
+ * The result type for command execution.
  *
  * - `output`: Data to display via a RenderPair (plain or ink mode)
- * - `interactive`: User interaction needed; the binary decides how to render
  * - `exit`: No output, just exit with a code
+ *
+ * Interactive prompting is no longer a result variant: the executor drives the
+ * wizard in place through an injected {@link PromptSession} and returns the
+ * resulting `output`/`exit` directly.
  */
-export type CommandResult =
-  | CommandOutputResult
-  | CommandInteractiveResult
-  | CommandExitResult;
+export type CommandResult = CommandOutputResult | CommandExitResult;
 
 /** Data to render via a RenderPair */
 export interface CommandOutputResult {
@@ -194,12 +155,6 @@ export interface CommandOutputResult {
   readonly value: unknown;
   // biome-ignore lint/suspicious/noExplicitAny: RenderPair accepts any data shape from execute
   readonly render: RenderPair<any>;
-}
-
-/** Interactive mode needed — spec carries data, not behavior */
-export interface CommandInteractiveResult {
-  readonly tag: "interactive";
-  readonly spec: InteractiveSpec;
 }
 
 /** Exit with code, no output */

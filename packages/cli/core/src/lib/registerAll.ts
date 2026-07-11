@@ -13,7 +13,6 @@ import type {
   CommandDefinition,
   CommandResult,
   HandleResultOptions,
-  InteractiveSpec,
   ParameterDefinition,
 } from "./types.js";
 
@@ -205,7 +204,7 @@ function attachCommand(
 
     const params = extractParams(opts, positionalArgs, cmd.parameters);
     const result = await cmd.execute(params, ctx);
-    await handleResult(result, cmd, ctx, params, resultOptions);
+    await handleResult(result, resultOptions);
   });
 }
 
@@ -213,18 +212,15 @@ function attachCommand(
  * Dispatch a command result to the appropriate output channel.
  *
  * For output results: uses the ink renderer when available and mode is "ink",
- * otherwise falls back to plain text via stdout. For interactive results:
- * delegates to the binary's interactive handler when available, otherwise
- * writes an unavailable message to stderr. For exit results: sets the exit code.
+ * otherwise falls back to plain text via stdout. For exit results: sets the
+ * exit code. Interactive prompting is handled inside the executor, so it never
+ * reaches this dispatcher.
  *
- * @note Impure — writes to process.stdout/stderr, sets process.exitCode,
- * and may invoke the Ink renderer or interactive handler.
+ * @note Impure — writes to process.stdout, sets process.exitCode, and may
+ * invoke the Ink renderer.
  */
 async function handleResult(
   result: CommandResult,
-  cmd?: CommandDefinition,
-  ctx?: CommandContext,
-  params?: Record<string, unknown>,
   options?: HandleResultOptions,
 ): Promise<void> {
   switch (result.tag) {
@@ -240,164 +236,10 @@ async function handleResult(
       }
       break;
     }
-    case "interactive": {
-      if (cmd && ctx && params && ctx.interactive) {
-        const rerunResult = await ctx.interactive({
-          spec: result.spec,
-          command: cmd,
-          params,
-          ctx,
-        });
-
-        if (rerunResult) {
-          await handleResult(rerunResult, cmd, ctx, params, options);
-          break;
-        }
-      }
-
-      const message = formatInteractiveUnavailableMessage(result.spec, cmd);
-      process.stderr.write(`${message}\n`);
-      process.exitCode = 3;
-      break;
-    }
     case "exit": {
       process.exitCode = result.code;
       break;
     }
-  }
-}
-
-function formatInteractiveUnavailableMessage(
-  spec: InteractiveSpec,
-  cmd?: CommandDefinition,
-): string {
-  const lines = ["Interactive mode not available in this binary."];
-
-  /* v8 ignore next — optional `cmd` parameter guard (function signature allows undefined) */
-  if (!cmd) {
-    lines.push("Provide all required flags.");
-    return lines.join(" ");
-  }
-
-  const missing = findMissingInteractiveParameters(spec, cmd);
-
-  if (missing.length === 0) {
-    lines.push("Provide all required flags.");
-    return lines.join(" ");
-  }
-
-  lines.push("Missing required flags:");
-  lines.push(
-    ...missing.map((parameter) => `  ${formatParameterUsage(parameter)}`),
-  );
-
-  const example = buildInteractiveExample(spec, cmd, missing);
-  lines.push("Example:");
-  lines.push(`  ${example}`);
-
-  return lines.join("\n");
-}
-
-function findMissingInteractiveParameters(
-  spec: InteractiveSpec,
-  cmd: CommandDefinition,
-): ParameterDefinition[] {
-  return spec.generator.prompts.flatMap((prompt) => {
-    if (prompt.default !== undefined || prompt.name in spec.partialAnswers) {
-      return [];
-    }
-
-    const parameter = cmd.parameters.find(
-      (entry) => entry.name === prompt.name,
-    );
-    return parameter ? [parameter] : [];
-  });
-}
-
-function buildInteractiveExample(
-  spec: InteractiveSpec,
-  cmd: CommandDefinition,
-  missing: readonly ParameterDefinition[],
-): string {
-  const commandPath = cmd.path.join(" ");
-  const providedArgs = cmd.parameters.flatMap((parameter) => {
-    const value = spec.partialAnswers[parameter.name];
-    if (value === undefined) {
-      return [];
-    }
-
-    return formatParameterExample(parameter, value);
-  });
-
-  const missingArgs = missing.flatMap((parameter) =>
-    formatParameterExample(parameter, inferExampleValue(parameter)),
-  );
-
-  return ["pragma", commandPath, ...providedArgs, ...missingArgs].join(" ");
-}
-
-function formatParameterUsage(parameter: ParameterDefinition): string {
-  if (parameter.positional) {
-    return formatPositionalParam(parameter);
-  }
-
-  const flag = `--${convertCamelToKebab(parameter.name)}`;
-  switch (parameter.type) {
-    case "boolean":
-      return flag;
-    case "multiselect":
-      return `${flag} <values...>`;
-    default:
-      return `${flag} <value>`;
-  }
-}
-
-function formatParameterExample(
-  parameter: ParameterDefinition,
-  value: unknown,
-): string[] {
-  if (parameter.type === "boolean") {
-    return value === true && !parameter.positional
-      ? [`--${convertCamelToKebab(parameter.name)}`]
-      : [];
-  }
-
-  const values = Array.isArray(value) ? value.map(String) : [String(value)];
-  if (parameter.positional) {
-    return values;
-  }
-
-  return [`--${convertCamelToKebab(parameter.name)}`, ...values];
-}
-
-function inferExampleValue(
-  parameter: ParameterDefinition,
-): string | string[] | boolean {
-  switch (parameter.type) {
-    case "boolean":
-      return true;
-    case "multiselect":
-      return [
-        inferExampleScalar(parameter.name),
-        `${inferExampleScalar(parameter.name)}-2`,
-      ];
-    default:
-      return inferExampleScalar(parameter.name);
-  }
-}
-
-function inferExampleScalar(name: string): string {
-  switch (name) {
-    case "componentPath":
-      return "src/components/Button";
-    case "name":
-      return "@canonical/example-package";
-    case "description":
-      return "Example package";
-    case "type":
-      return "tool-ts";
-    default:
-      return `<${convertCamelToKebab(name)}>`;
   }
 }
 

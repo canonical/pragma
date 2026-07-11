@@ -7,10 +7,10 @@
  * cli-core remains unaware of Store or FilterConfig.
  */
 
-import type { GlobalFlags, InteractiveHandler } from "@canonical/cli-core";
+import type { GlobalFlags, PromptSessionFactory } from "@canonical/cli-core";
 import type { PragmaRuntime } from "./types/index.js";
 
 export interface PragmaContext extends PragmaRuntime {
   readonly globalFlags: GlobalFlags;
-  readonly interactive?: InteractiveHandler | undefined;
+  readonly promptSession?: PromptSessionFactory | undefined;
 }

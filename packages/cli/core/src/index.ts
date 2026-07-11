@@ -16,7 +16,6 @@ export type {
   CommandContext,
   CommandDefinition,
   CommandExitResult,
-  CommandInteractiveResult,
   CommandMeta,
   CommandOutputResult,
   CommandResult,
@@ -25,13 +24,10 @@ export type {
   CompletionTree,
   GlobalFlags,
   HandleResultOptions,
-  InteractiveGenerator,
-  InteractiveHandler,
-  InteractiveHandlerRequest,
-  InteractiveOptions,
-  InteractiveSpec,
   OutputAdapter,
   ParameterDefinition,
+  PromptSession,
+  PromptSessionFactory,
   RenderMode,
   RenderPair,
   VerbCompletions,
@@ -42,7 +38,6 @@ export type {
 // =============================================================================
 
 export { default as createExitResult } from "./lib/createExitResult.js";
-export { default as createInteractiveResult } from "./lib/createInteractiveResult.js";
 export { default as createOutputResult } from "./lib/createOutputResult.js";
 
 // =============================================================================

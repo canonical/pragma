@@ -5,6 +5,7 @@ import { buildCapabilitiesCommand } from "../domains/llm/index.js";
 import { commands as refsCommands } from "../domains/refs/index.js";
 import { commands as setupCommands } from "../domains/setup/index.js";
 import type { PragmaContext } from "../domains/shared/context.js";
+import createInteractivePromptSession from "../domains/shared/createInteractivePromptSession.js";
 import type { PragmaRuntime } from "../domains/shared/runtime.js";
 import { bootPragma } from "../domains/shared/runtime.js";
 import { commands as traceCommands } from "../domains/trace/index.js";
@@ -19,7 +20,6 @@ import {
   renderErrorPlain,
 } from "./renderError.js";
 import resolveCommandKind from "./resolveCommandKind.js";
-import runInteractiveCommand from "./runInteractiveCommand.js";
 
 function hasCommandArg(argv: readonly string[]): boolean {
   const args = argv.slice(2);
@@ -84,7 +84,7 @@ async function handleRootHelp(globalFlags: GlobalFlags): Promise<void> {
     packages: [],
     dispose: () => {},
     globalFlags,
-    interactive: runInteractiveCommand,
+    promptSession: createInteractivePromptSession,
   };
   const commands = collectCommands(stubCtx);
   const program = createProgram(commands, stubCtx);
@@ -121,7 +121,7 @@ async function bootAndRun(
     const ctx: PragmaContext = {
       ...runtime,
       globalFlags,
-      interactive: runInteractiveCommand,
+      promptSession: createInteractivePromptSession,
     };
     const commands = collectCommands(ctx);
     const program = createProgram(commands, ctx);
@@ -144,7 +144,7 @@ async function runStoreSkip(
     packages: [],
     dispose: () => {},
     globalFlags,
-    interactive: runInteractiveCommand,
+    promptSession: createInteractivePromptSession,
   };
   const commands = [
     ...setupCommands(),
