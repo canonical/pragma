@@ -1,4 +1,6 @@
 import react from "@vitejs/plugin-react";
+import browserslist from "browserslist";
+import { browserslistToTargets } from "lightningcss";
 import { defineConfig } from "vite";
 import relay from "vite-plugin-relay-lite";
 
@@ -27,8 +29,24 @@ export default defineConfig(({ mode }) => ({
   // — including the SSR ones, which already read PORT — respond to it uniformly.
   server: { port: PORT },
   preview: { port: PORT },
-  build:
-    mode === "server"
+  // CSS delivery is the app's job, not the libraries': @canonical/* packages
+  // deliberately ship modern, uncompiled per-component CSS and take no stance
+  // on browser support. Lightning CSS (already bundled with Vite 8) compiles
+  // that CSS down to this app's declared browser floor — the browserslist
+  // query in .browserslistrc, which is the one knob to turn when support
+  // requirements change. Not everything can be downleveled: math functions
+  // like `mod()` (used by the typography baseline grid) have no polyfillable
+  // form, so that feature's effective Chromium ≥ 125 floor is unchanged.
+  css: {
+    transformer: "lightningcss",
+    lightningcss: { targets: browserslistToTargets(browserslist()) },
+  },
+  build: {
+    // Minify CSS with Lightning CSS too (instead of the esbuild default), so
+    // a single tool owns both downleveling and minification — in the client
+    // build and the server build alike.
+    cssMinify: "lightningcss",
+    ...(mode === "server"
       ? {
           ssr: true,
           outDir: "dist/server",
@@ -39,7 +57,8 @@ export default defineConfig(({ mode }) => ({
             },
           },
         }
-      : undefined,
+      : undefined),
+  },
   ssr: {
     // Bundle @canonical/* for SSR rather than externalising them, for two
     // reasons: (1) some packages declare only a "module" entry (no
