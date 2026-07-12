@@ -8,6 +8,8 @@ import {
   parsePackageEntry,
   type RawPackageEntry,
 } from "../domains/refs/operations/parseRef.js";
+import type { StoryPackDefinition } from "../domains/shared/stories/pack/types.js";
+import validateStoryPackDefinition from "../domains/shared/stories/pack/validateStoryPackDefinition.js";
 import { PragmaError } from "../error/PragmaError.js";
 import type { ConfigFileValues } from "./types.js";
 
@@ -88,6 +90,8 @@ export default function parseConfigValues(
   }
 
   const packages = parsePackagesField(parsed.packages);
+  const stories = parseStoriesField(parsed.stories, sourcePath);
+  const prefixes = parsePrefixesField(parsed.prefixes);
 
   return {
     ...(tier !== undefined ? { tier } : {}),
@@ -95,7 +99,56 @@ export default function parseConfigValues(
     ...(packages ? { packages } : {}),
     ...(trace !== undefined ? { trace } : {}),
     ...(framework !== undefined ? { framework } : {}),
+    ...(stories ? { stories } : {}),
+    ...(prefixes ? { prefixes } : {}),
   };
+}
+
+/**
+ * Validate and parse the experimental `stories` config field.
+ *
+ * @returns The validated definitions, or `undefined` when absent.
+ * @throws PragmaError if the field is present but malformed.
+ */
+function parseStoriesField(
+  raw: unknown,
+  sourcePath: string,
+): ReadonlyArray<StoryPackDefinition> | undefined {
+  if (raw === undefined || raw === null) return undefined;
+  if (!Array.isArray(raw)) {
+    throw PragmaError.configError(
+      '"stories" must be an array of story-pack definitions.',
+    );
+  }
+  return raw.map((entry, index) =>
+    validateStoryPackDefinition(entry, `${sourcePath} (stories[${index}])`),
+  );
+}
+
+/**
+ * Validate and parse the `prefixes` config field.
+ *
+ * @returns The prefix map, or `undefined` when absent.
+ * @throws PragmaError if the field is present but malformed.
+ */
+function parsePrefixesField(
+  raw: unknown,
+): Readonly<Record<string, string>> | undefined {
+  if (raw === undefined || raw === null) return undefined;
+  if (typeof raw !== "object" || Array.isArray(raw)) {
+    throw PragmaError.configError(
+      '"prefixes" must be an object mapping prefix to namespace IRI.',
+    );
+  }
+  const entries = Object.entries(raw as Record<string, unknown>);
+  for (const [prefix, namespace] of entries) {
+    if (typeof namespace !== "string" || !namespace.includes("://")) {
+      throw PragmaError.configError(
+        `Invalid namespace for prefix "${prefix}": expected an absolute IRI.`,
+      );
+    }
+  }
+  return Object.fromEntries(entries) as Record<string, string>;
 }
 
 // ---------------------------------------------------------------------------

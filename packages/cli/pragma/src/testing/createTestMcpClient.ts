@@ -31,7 +31,10 @@ export default async function createTestMcpClient(options?: {
   };
   const cwd = options?.cwd ?? process.cwd();
 
-  const { store, cleanup: cleanupStore } = await createTestStore({ ttl });
+  const { store, cleanup: cleanupStore } = await createTestStore({
+    ttl,
+    prefixes: config.prefixes,
+  });
 
   const runtime: PragmaRuntime = {
     store,

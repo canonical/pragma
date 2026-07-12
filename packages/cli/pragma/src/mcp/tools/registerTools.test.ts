@@ -9,7 +9,12 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { createTestMcpClient } from "#testing";
+import {
+  createTestMcpClient,
+  RECIPE_PREFIXES,
+  RECIPE_STORY,
+  RECIPE_TTL,
+} from "#testing";
 import type { McpErrorPayload } from "../types.js";
 
 let client: Client;
@@ -973,6 +978,48 @@ describe("graph_inspect", () => {
 // =============================================================================
 // Skill tools
 // =============================================================================
+
+describe("story-pack tools", () => {
+  it("registers <noun>_list and <noun>_lookup from a stories config", async () => {
+    const scoped = await createTestMcpClient({
+      ttl: RECIPE_TTL,
+      config: {
+        tier: undefined,
+        channel: "normal",
+        stories: [RECIPE_STORY],
+        prefixes: RECIPE_PREFIXES,
+      },
+    });
+
+    try {
+      const tools = (await scoped.client.listTools()).tools.map(
+        (tool) => tool.name,
+      );
+      expect(tools).toHaveLength(32);
+      expect(tools).toContain("recipe_list");
+      expect(tools).toContain("recipe_lookup");
+
+      const listResult = await scoped.client.callTool({
+        name: "recipe_list",
+        arguments: {},
+      });
+      const rows = parseData(listResult) as { name: string }[];
+      expect(rows.map((row) => row.name)).toEqual(["Gazpacho", "Pancakes"]);
+
+      const lookupResult = await scoped.client.callTool({
+        name: "recipe_lookup",
+        arguments: { names: ["pancakes"] },
+      });
+      const data = parseData(lookupResult) as {
+        results: { name: string; instructions: string }[];
+      };
+      expect(data.results.at(0)?.name).toBe("Pancakes");
+      expect(data.results.at(0)?.instructions).toBe("Mix, fry, flip.");
+    } finally {
+      await scoped.cleanup();
+    }
+  });
+});
 
 describe("skill_list", () => {
   it("returns skills data", async () => {

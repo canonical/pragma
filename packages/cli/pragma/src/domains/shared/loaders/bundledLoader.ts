@@ -99,6 +99,7 @@ export default function createBundledLoader(): PackageLoader {
         source: "bundled",
         graphs,
         skills: [],
+        stories: [],
       };
 
       return cached;

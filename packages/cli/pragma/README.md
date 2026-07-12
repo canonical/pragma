@@ -297,14 +297,58 @@ Every subject URI in the ke graph is exposed as a discoverable MCP resource via 
 
 ## Configuration
 
-Create a `pragma.config.toml` in your project root:
+Configuration is layered: built-in defaults, then the global file at
+`$XDG_CONFIG_HOME/pragma/config.json` (default `~/.config/pragma/config.json`),
+then the nearest `pragma.config.json` at or above the current directory —
+each field won by the most specific layer that sets it. Install pragma
+globally, configure once, and override per project:
 
-```toml
-tier = "apps/lxd"
-channel = "normal"    # normal | experimental | prerelease
+```json
+{
+  "tier": "apps/lxd",
+  "channel": "normal"
+}
 ```
 
-When no config file is present, pragma defaults to no tier and `normal` channel.
+`pragma config tier|channel|framework|trace` writes to the nearest existing
+project file, or to the global file when no project is configured; pass
+`--local` or `--global` to pick the layer explicitly. Every write echoes the
+file it wrote, and `pragma config show` reports which layer supplied each
+value.
+
+### Custom read stories (experimental)
+
+A config (or a semantic package, via `stories/*.json`) can declare
+declarative read stories — any ontology loaded through `packages` gets
+`pragma <noun> list` / `<noun> lookup` on both the CLI and MCP:
+
+```json
+{
+  "prefixes": { "ex": "http://example.org/recipes/" },
+  "packages": [{ "name": "my-recipes", "source": "file:///data/recipes" }],
+  "stories": [
+    {
+      "noun": "recipe",
+      "description": "List recipes",
+      "list": {
+        "query": "SELECT ?uri ?name ?category WHERE { ?uri a ex:Recipe ; ex:name ?name ; ex:category ?category } ORDER BY ?name",
+        "columns": [{ "field": "name" }, { "field": "category" }]
+      },
+      "lookup": {
+        "type": "ex:Recipe",
+        "by": "ex:name",
+        "fields": [{ "name": "category", "property": "ex:category" }],
+        "sections": [{ "name": "instructions", "property": "ex:instructions" }]
+      }
+    }
+  ]
+}
+```
+
+The lookup query is generated (user input is escaped, never interpolated by
+the pack), the store stays read-only, and config-declared stories override
+package-shipped ones on noun collisions. The format is experimental and may
+change.
 
 ## Error Handling
 

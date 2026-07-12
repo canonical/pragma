@@ -42,6 +42,8 @@ describe("readConfigLayers", () => {
       packages: "default",
       trace: "default",
       framework: "default",
+      stories: "default",
+      prefixes: "default",
     });
     expect(layers.global.exists).toBe(false);
     expect(layers.project.exists).toBe(false);
@@ -73,6 +75,8 @@ describe("readConfigLayers", () => {
       packages: "default",
       trace: "global",
       framework: "default",
+      stories: "default",
+      prefixes: "default",
     });
   });
 

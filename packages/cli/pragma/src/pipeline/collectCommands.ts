@@ -14,6 +14,7 @@ import { commands as modifierCommands } from "../domains/modifier/index.js";
 import { commands as ontologyCommands } from "../domains/ontology/index.js";
 import { commands as setupCommands } from "../domains/setup/index.js";
 import type { PragmaContext } from "../domains/shared/context.js";
+import { compilePackCommands } from "../domains/shared/stories/pack/index.js";
 import { commands as skillCommands } from "../domains/skill/index.js";
 import { commands as standardCommands } from "../domains/standard/index.js";
 import { commands as tierCommands } from "../domains/tier/index.js";
@@ -31,7 +32,7 @@ import { commands as tokenCommands } from "../domains/token/index.js";
 export default function collectCommands(
   ctx: PragmaContext,
 ): CommandDefinition[] {
-  return [
+  const builtIn: CommandDefinition[] = [
     ...configCommands(ctx),
     ...createCommands(),
     ...setupCommands(),
@@ -50,4 +51,10 @@ export default function collectCommands(
     buildLlmCommand(ctx),
     buildCapabilitiesCommand(),
   ];
+
+  // Story packs project onto the same surface; built-in nouns are reserved.
+  const reservedNouns = new Set(
+    builtIn.map((command) => command.path.at(0) ?? ""),
+  );
+  return [...builtIn, ...compilePackCommands(ctx, reservedNouns)];
 }
