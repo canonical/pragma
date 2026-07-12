@@ -117,7 +117,9 @@ async function resolveHelpConfig(): Promise<
     const { createGitLoader, createLocalLoader } = await import(
       "../domains/shared/loaders/index.js"
     );
-    const { mergeAndParseRefs } = await import("../domains/shared/runtime.js");
+    const { mergeAndParseRefs } = await import(
+      "../domains/shared/mergeAndParseRefs.js"
+    );
     const packages = await resolveSemanticPackages(
       mergeAndParseRefs(config.packages),
       [createLocalLoader(), createGitLoader()],

@@ -11,7 +11,7 @@ import {
   createGitLoader,
   createLocalLoader,
 } from "../../../shared/loaders/index.js";
-import { mergeAndParseRefs } from "../../../shared/runtime.js";
+import { mergeAndParseRefs } from "../../../shared/mergeAndParseRefs.js";
 import { resolveSemanticPackages } from "../../../shared/semanticPackage.js";
 import type { CheckContext, CheckResult } from "../types.js";
 
