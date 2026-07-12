@@ -1,0 +1,70 @@
+{
+  "$schema": "https://raw.githubusercontent.com/canonical/pragma/refs/heads/main/packages/webarchitect/src/schema.json",
+  "name": "package-react-lib",
+  "extends": ["package"],
+  "package-react-peers": {
+    "file": {
+      "name": "package.json",
+      "contains": {
+        "type": "object",
+        "properties": {
+          "peerDependencies": {
+            "type": "object",
+            "properties": {
+              "react": {
+                "type": "string",
+                "pattern": "^(\\^|~|>=)?19\\."
+              },
+              "react-dom": {
+                "type": "string",
+                "pattern": "^(\\^|~|>=)?19\\."
+              }
+            },
+            "required": ["react", "react-dom"]
+          },
+          "dependencies": {
+            "type": "object",
+            "not": {
+              "anyOf": [
+                { "required": ["react"] },
+                { "required": ["react-dom"] }
+              ]
+            },
+            "description": "react and react-dom must be peerDependencies, never dependencies"
+          }
+        },
+        "required": ["peerDependencies"]
+      }
+    }
+  },
+  "package-react-exports": {
+    "file": {
+      "name": "package.json",
+      "contains": {
+        "type": "object",
+        "properties": {
+          "exports": {
+            "type": "object",
+            "description": "An explicit exports map is required so published subpaths are intentional"
+          }
+        },
+        "required": ["exports"]
+      }
+    }
+  },
+  "package-react-side-effects": {
+    "file": {
+      "name": "package.json",
+      "contains": {
+        "type": "object",
+        "properties": {
+          "sideEffects": {
+            "const": false,
+            "description": "Pure libraries must be fully tree-shakeable"
+          }
+        },
+        "required": ["sideEffects"]
+      }
+    }
+  }
+}

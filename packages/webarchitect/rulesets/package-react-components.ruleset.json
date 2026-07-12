@@ -1,0 +1,35 @@
+{
+  "$schema": "https://raw.githubusercontent.com/canonical/pragma/refs/heads/main/packages/webarchitect/src/schema.json",
+  "name": "package-react-components",
+  "extends": ["package-react-lib"],
+  "package-react-side-effects": {
+    "file": {
+      "name": "package.json",
+      "contains": {
+        "type": "object",
+        "properties": {
+          "sideEffects": {
+            "const": ["**/*.css"],
+            "description": "Component packages ship per-component CSS; bundlers must keep CSS imports"
+          }
+        },
+        "required": ["sideEffects"]
+      }
+    }
+  },
+  "package-react-components-dependencies": {
+    "file": {
+      "name": "package.json",
+      "contains": {
+        "type": "object",
+        "properties": {
+          "dependencies": {
+            "type": "object",
+            "not": { "required": ["@canonical/storybook-config"] },
+            "description": "@canonical/storybook-config is build-time only and must be a devDependency"
+          }
+        }
+      }
+    }
+  }
+}

@@ -104,13 +104,15 @@ Webarchitect comes with several built-in rulesets that cover common project patt
 
 - `base-package`: Extends the base ruleset with comprehensive package requirements. This ruleset validates that your package.json contains required fields like name, version, type, and scripts, ensures consistent module structure with specific entry points, validates biome.json configuration for code formatting and linting, and enforces the use of ES modules and TypeScript.
 
-- `package-react`: - Extends base-package with React-specific requirements. This ruleset includes all the base package validations plus verification that React 19 or higher is specified as a dependency, ensuring your React projects use compatible versions. 
+- `package-react-lib`: Extends `package` with the React library contract. React packages must declare `react` and `react-dom` as `peerDependencies` on React 19 (never as `dependencies`), publish an explicit `exports` map, and declare `"sideEffects": false` so bundlers can tree-shake them fully.
+
+- `package-react-components`: Extends `package-react-lib` for component packages that ship per-component CSS. It overrides the side-effects contract to require `"sideEffects": ["**/*.css"]` (so bundlers keep CSS imports) and forbids `@canonical/storybook-config` in `dependencies` (it is build-time only and belongs in `devDependencies`).
 
 - `package-svelte`: Extends the `package` ruleset for Svelte packages by redirecting output to a `dist/` folder built via **`svelte-package`** (necessary to compile components into valid JavaScript with the correct export conditions for bundlers) and requiring `check:ts` to run **`svelte-check`** (essential to leverage Svelte's additional type inference and specific validation logic that standard `tsc` does not provide).
 
 ### Ruleset Inheritance
 
-Rulesets can extend other rulesets, creating a hierarchy of validation requirements. For example, package-react extends base-package, which extends base. This means when you validate against package-react, you're actually running all three sets of rules. This inheritance model allows you to build complex validation requirements while keeping individual rulesets focused and maintainable.
+Rulesets can extend other rulesets, creating a hierarchy of validation requirements. For example, package-react-components extends package-react-lib, which extends package, which extends base. This means when you validate against package-react-components, you're actually running all four sets of rules. A child ruleset can also override a rule block inherited from its parent by redeclaring a block with the same name, which is how package-react-components replaces the `sideEffects: false` requirement of package-react-lib with `sideEffects: ["**/*.css"]`. This inheritance model allows you to build complex validation requirements while keeping individual rulesets focused and maintainable.
 
 ### Creating Custom Rulesets
 
@@ -145,7 +147,7 @@ webarchitect <ruleset> [options]
 
 Rulesets can declare **template variables** so a single ruleset can be reused across organizations or relaxed per-project without duplicating it. Variables are declared under a top-level `variables` block, referenced as `${name}` anywhere inside a rule, and overridden at the command line with `--var`/`--prefix`.
 
-The built-in rulesets use this to enforce the package-name prefix: `package` and `tool-ts` declare a `prefix` variable, and `library`, `tool`, `package-react`, and `package-svelte` inherit it via `extends`. The declaration looks like:
+The built-in rulesets use this to enforce the package-name prefix: `package` and `tool-ts` declare a `prefix` variable, and `library`, `tool`, `package-react-lib`, `package-react-components`, and `package-svelte` inherit it via `extends`. The declaration looks like:
 
 ```jsonc
 {
@@ -193,7 +195,7 @@ The `<ruleset>` parameter follows a specific resolution order that determines wh
 
 1. **Local Files First** - Webarchitect first checks the current directory for a file matching your ruleset name. If you specify `my-rules`, it looks for `my-rules.json` in the current directory. This allows you to override built-in rulesets or use project-specific validation rules.
 
-2. **Bundled Rulesets Second** - If no local file is found, webarchitect searches its internal collection of built-in rulesets. These include `base`, `base-package`, and `package-react`. Built-in rulesets are distributed with the tool and provide standard validation patterns for common project types.
+2. **Bundled Rulesets Second** - If no local file is found, webarchitect searches its internal collection of built-in rulesets. These include `base`, `package`, `library`, `package-react-lib`, and `package-react-components`. Built-in rulesets are distributed with the tool and provide standard validation patterns for common project types.
 
 3. **Remote URLs** - You can also specify a complete URL (starting with `http://` or `https://`) to fetch rulesets from remote locations. Remote rulesets must end with `.json` and be accessible via standard HTTP requests. This enables sharing rulesets across organizations or using centrally managed validation rules.
 

@@ -2,9 +2,9 @@ import { describe, expect, it } from "vitest";
 import getRuleset from "./getRuleset.js";
 
 describe("getRuleset", () => {
-  it("returns package-react when withReact is true", () => {
-    expect(getRuleset("tool-ts", true)).toBe("package-react");
-    expect(getRuleset("library", true)).toBe("package-react");
+  it("returns package-react-components when withReact is true", () => {
+    expect(getRuleset("tool-ts", true)).toBe("package-react-components");
+    expect(getRuleset("library", true)).toBe("package-react-components");
   });
 
   it("returns package type when withReact is false", () => {

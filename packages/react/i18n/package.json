@@ -10,8 +10,10 @@
       "types": "./dist/types/index.d.ts",
       "import": "./dist/esm/index.js",
       "default": "./dist/esm/index.js"
-    }
+    },
+    "./package.json": "./package.json"
   },
+  "sideEffects": false,
   "files": [
     "dist"
   ],
@@ -35,7 +37,7 @@
     "build": "tsc -p tsconfig.build.json",
     "build:all": "bun run build",
     "check": "bun run check:biome && bun run check:ts && bun run check:webarchitect",
-    "check:webarchitect": "webarchitect package-react",
+    "check:webarchitect": "webarchitect package-react-lib",
     "check:fix": "bun run check:biome:fix && bun run check:ts",
     "check:biome": "biome check",
     "check:biome:fix": "biome check --write",
@@ -45,15 +47,17 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "@canonical/i18n-core": "^0.27.1-experimental.0",
-    "react": "^19.2.4",
-    "react-dom": "^19.2.4"
+    "@canonical/i18n-core": "^0.27.1-experimental.0"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.9",
     "@canonical/biome-config": "^0.27.1-experimental.0",
     "@canonical/typescript-config-react": "^0.27.1-experimental.0",
-    "@canonical/webarchitect": "^0.27.1-experimental.0",
+    "@canonical/webarchitect": "^0.29.0",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@types/node": "^24.12.0",
@@ -62,6 +66,8 @@
     "@vitejs/plugin-react": "^6.0.0",
     "@vitest/coverage-v8": "^4.0.18",
     "jsdom": "^28.1.0",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
     "typescript": "^5.9.3",
     "vite": "^8.0.1",
     "vitest": "^4.0.18"

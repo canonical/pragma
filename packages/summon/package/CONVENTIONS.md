@@ -112,7 +112,7 @@
 | P7.1 | `@canonical/webarchitect` enforces package structure | webarchitect in devDeps |
 | P7.2 | Library packages use `library` ruleset | ruleset = library |
 | P7.3 | Tool packages use `tool-ts` ruleset | ruleset = tool-ts |
-| P7.4 | React packages use `package-react` ruleset | ruleset = package-react |
+| P7.4 | React packages use `package-react-components` ruleset | ruleset = package-react-components |
 | P7.5 | Asset packages use `assets` ruleset | ruleset = assets |
 | P7.6 | Minimal validation uses `base` ruleset | ruleset = base |
 
