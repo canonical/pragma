@@ -3,9 +3,11 @@
  *
  * Sourced from the declarative built-in defaults document
  * (`src/config/defaults.json`) — pragma core carries no hardcoded
- * knowledge of specific design-system packages. Loaded when no config
- * layer or global refs declare packages; global `refs.json` entries
- * merge over these by package name (see `mergeAndParseRefs`).
+ * knowledge of specific design-system packages. These form the base
+ * package set whenever a config layer does not declare a non-empty
+ * `packages` list; global `refs.json` entries then merge over them by
+ * package name, and a non-empty config list replaces them entirely
+ * (see `mergeAndParseRefs`).
  *
  * Resolution is handled by the loader chain in `loaders/`.
  */
