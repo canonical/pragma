@@ -312,7 +312,7 @@ export default async function extract(
   // not bleed into a single over-broad enumeration. The key uses the named
   // targetClass + path (no blank-node identity to match across queries).
   const shInKey = (targetClass: string, path: string): string =>
-    `${targetClass} ${path}`;
+    `${targetClass}\u0000${path}`;
   const shIn = new Map<string, string[]>();
   const inListRows = await select(
     query,
