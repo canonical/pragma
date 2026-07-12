@@ -7,38 +7,72 @@ import discoverSkills from "./discover.js";
 
 const TMP_ROOT = join(tmpdir(), `pragma-skill-discover-${Date.now()}`);
 
-/** Test skill sources that mirror the real package layout. */
+/**
+ * Test skill sources that mirror the real loader granularity: each source
+ * is one skill directory (`<package>/skills/<name>`) containing SKILL.md,
+ * as produced by `readPackageDir`.
+ */
 const TEST_SOURCES: SkillSource[] = [
   {
-    dir: join(TMP_ROOT, "node_modules/@canonical/design-system/skills"),
+    dir: join(
+      TMP_ROOT,
+      "node_modules/@canonical/design-system/skills/design-audit",
+    ),
     packageName: "@canonical/design-system",
   },
   {
-    dir: join(TMP_ROOT, "node_modules/@canonical/anatomy-dsl/skills"),
+    dir: join(
+      TMP_ROOT,
+      "node_modules/@canonical/design-system/skills/ds-review",
+    ),
+    packageName: "@canonical/design-system",
+  },
+  {
+    dir: join(
+      TMP_ROOT,
+      "node_modules/@canonical/anatomy-dsl/skills/anatomy-author",
+    ),
     packageName: "@canonical/anatomy-dsl",
   },
   {
-    dir: join(TMP_ROOT, "node_modules/@canonical/pragma-cli/skills"),
+    dir: join(
+      TMP_ROOT,
+      "node_modules/@canonical/pragma-cli/skills/scaffold-story",
+    ),
     packageName: "@canonical/pragma-cli",
+  },
+  {
+    dir: join(
+      TMP_ROOT,
+      "node_modules/@canonical/pragma-cli/skills/broken-skill",
+    ),
+    packageName: "@canonical/pragma-cli",
+  },
+  {
+    dir: join(
+      TMP_ROOT,
+      "node_modules/@canonical/design-system/skills/no-skill-md",
+    ),
+    packageName: "@canonical/design-system",
   },
 ];
 
-function writeSkillMd(
-  source: SkillSource,
-  skillName: string,
-  content: string,
-): void {
-  const dir = join(source.dir, skillName);
-  mkdirSync(dir, { recursive: true });
-  writeFileSync(join(dir, "SKILL.md"), content);
+function writeSkillMd(source: SkillSource, content: string): void {
+  mkdirSync(source.dir, { recursive: true });
+  writeFileSync(join(source.dir, "SKILL.md"), content);
+}
+
+function sourceAt(index: number): SkillSource {
+  const source = TEST_SOURCES.at(index);
+  if (!source) throw new Error(`no test source at index ${index}`);
+  return source;
 }
 
 beforeAll(() => {
   mkdirSync(TMP_ROOT, { recursive: true });
 
   writeSkillMd(
-    TEST_SOURCES[0],
-    "design-audit",
+    sourceAt(0),
     `---
 name: design-audit
 description: Audit a component against DS specs
@@ -51,8 +85,7 @@ metadata:
   );
 
   writeSkillMd(
-    TEST_SOURCES[0],
-    "ds-review",
+    sourceAt(1),
     `---
 name: ds-review
 description: Review a PR for DS compliance
@@ -61,8 +94,7 @@ description: Review a PR for DS compliance
   );
 
   writeSkillMd(
-    TEST_SOURCES[2],
-    "scaffold-story",
+    sourceAt(3),
     `---
 name: scaffold-story
 description: Generate a Storybook story from anatomy
@@ -70,20 +102,19 @@ description: Generate a Storybook story from anatomy
 `,
   );
 
-  // Invalid frontmatter — should be skipped with warning
+  // Invalid frontmatter (missing description) — should be skipped with warning
   writeSkillMd(
-    TEST_SOURCES[2],
-    "broken-skill",
+    sourceAt(4),
     `---
 name: broken-skill
 ---
 `,
   );
 
-  // File without SKILL.md — should be skipped
-  const noSkillDir = join(TEST_SOURCES[0].dir, "no-skill-md");
-  mkdirSync(noSkillDir, { recursive: true });
-  writeFileSync(join(noSkillDir, "README.md"), "Not a skill");
+  // Source directory without a SKILL.md — should be skipped
+  const noSkillMd = sourceAt(5);
+  mkdirSync(noSkillMd.dir, { recursive: true });
+  writeFileSync(join(noSkillMd.dir, "README.md"), "Not a skill");
 });
 
 afterAll(() => {
@@ -100,15 +131,15 @@ describe("discoverSkills", () => {
   });
 
   it("skips missing source directories", async () => {
-    // TEST_SOURCES[1] (anatomy-dsl) was not created
+    // TEST_SOURCES[2] (anatomy-dsl) was never created on disk
     const skills = await discoverSkills(TMP_ROOT, TEST_SOURCES);
     const packages = [...new Set(skills.map((s) => s.sourcePackage))];
     expect(packages).not.toContain("@canonical/anatomy-dsl");
   });
 
-  it("skips folders without SKILL.md", async () => {
+  it("skips source directories without SKILL.md", async () => {
     const skills = await discoverSkills(TMP_ROOT, TEST_SOURCES);
-    const names = skills.map((s) => s.name);
+    const names = skills.map((s) => s.folderName);
     expect(names).not.toContain("no-skill-md");
   });
 
@@ -123,7 +154,7 @@ describe("discoverSkills", () => {
     const audit = skills.find((s) => s.name === "design-audit");
     expect(audit?.sourcePackage).toBe("@canonical/design-system");
     expect(audit?.folderName).toBe("design-audit");
-    expect(audit?.sourcePath).toBe(join(TEST_SOURCES[0].dir, "design-audit"));
+    expect(audit?.sourcePath).toBe(sourceAt(0).dir);
   });
 
   it("preserves frontmatter metadata", async () => {
@@ -135,7 +166,7 @@ describe("discoverSkills", () => {
   it("returns empty array when no sources available", async () => {
     const emptySources: SkillSource[] = [
       {
-        dir: "/nonexistent/path/skills",
+        dir: "/nonexistent/path/skills/some-skill",
         packageName: "@canonical/nope",
       },
     ];

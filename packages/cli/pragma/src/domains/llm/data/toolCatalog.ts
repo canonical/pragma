@@ -101,6 +101,12 @@ export const TOOL_CATALOG: readonly ToolEntry[] = [
     use_when: "Discovering agent skills provided by installed packages",
   },
   {
+    name: "skill_lookup",
+    category: "read",
+    use_when:
+      "Loading full SKILL.md instructions for a specific agent skill by name",
+  },
+  {
     name: "block_sample",
     category: "read",
     use_when:

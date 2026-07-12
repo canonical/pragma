@@ -1,2 +1,4 @@
-/** @module Skill command definitions for `pragma skill`. */
+/** @module Re-exports skill command builders (`list`, `lookup`). */
+
 export { default as listCommand } from "./list.js";
+export { default as lookupCommand } from "./lookup.js";

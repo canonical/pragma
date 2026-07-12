@@ -1,69 +1,11 @@
-import {
-  type CommandDefinition,
-  type CommandResult,
-  createOutputResult,
-} from "@canonical/cli-core";
-import { PragmaError } from "#error";
+import type { CommandDefinition } from "@canonical/cli-core";
 import type { PragmaContext } from "../../shared/context.js";
-import { selectFormatter } from "../../shared/formatters.js";
-import { listFormatters } from "../formatters/index.js";
-import type { SkillListInput } from "../formatters/types.js";
-import { listSkills } from "../operations/index.js";
+import { compileReadCommand } from "../../shared/stories/index.js";
+import { skillListStory } from "../stories.js";
 
-/**
- * Build the `pragma skill list` command definition.
- *
- * Discovers skills from installed packages and formats the result.
- * Throws when no skills are found, with a recovery hint.
- *
- * @param ctx - Pragma context providing cwd and formatter selection.
- * @returns The command definition for `pragma skill list`.
- * @note Impure
- */
+/** Wire the `pragma skill list` CLI command from the skill list story. */
 export default function buildListCommand(
   ctx: PragmaContext,
 ): CommandDefinition {
-  return {
-    path: ["skill", "list"],
-    description: "List available agent skills from design system packages",
-    parameters: [
-      {
-        name: "detailed",
-        description: "Show full metadata for each skill",
-        type: "boolean",
-        default: false,
-      },
-    ],
-    meta: {
-      examples: [
-        "pragma skill list",
-        "pragma skill list --detailed",
-        "pragma skill list --llm",
-        "pragma skill list --format json",
-      ],
-    },
-    execute: async (
-      params: Record<string, unknown>,
-    ): Promise<CommandResult> => {
-      const detailed = params.detailed === true;
-      const { skills, sources } = await listSkills(ctx.cwd);
-
-      if (skills.length === 0) {
-        const allUnavailable = sources.every((s) => !s.available);
-        throw PragmaError.emptyResults("skill", {
-          recovery: {
-            message: allUnavailable
-              ? "Install @canonical packages first"
-              : "No SKILL.md files found in source packages",
-          },
-        });
-      }
-
-      const input: SkillListInput = { skills, sources, detailed };
-
-      return createOutputResult(input, {
-        plain: selectFormatter(ctx, listFormatters),
-      });
-    },
-  };
+  return compileReadCommand(ctx, skillListStory);
 }

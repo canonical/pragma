@@ -217,6 +217,14 @@ List discovered agent skills from installed design system packages.
 Parameters:
 - `condensed` (boolean, optional) — return token-optimized Markdown
 
+#### `skill_lookup`
+
+Get full skill instructions (SKILL.md content) for one or more agent skills by name.
+
+Parameters:
+- `names` (string[], required) — skill names to look up (e.g., `["design-auditor"]`)
+- `condensed` (boolean, optional) — return token-optimized Markdown
+
 ### Write Tools
 
 #### `config_tier`

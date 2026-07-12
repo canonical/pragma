@@ -1,5 +1,8 @@
 import chalk from "chalk";
-import { formatHeading, formatSection } from "#pipeline";
+import {
+  formatHeading,
+  formatSection,
+} from "../../../pipeline/formatTerminal.js";
 import compactUri from "../../shared/compactUri.js";
 import type { Formatters } from "../../shared/formatters.js";
 import { PREFIX_MAP } from "../../shared/prefixes.js";

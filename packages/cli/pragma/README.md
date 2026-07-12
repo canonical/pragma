@@ -87,6 +87,7 @@ pragma organizes commands into 17 domains — counting every directory under `sr
 | Command | Description |
 |---------|-------------|
 | `pragma skill list` | List discovered agent skills from installed packages |
+| `pragma skill lookup <name...>` | Show full SKILL.md instructions for skills by name |
 
 ### LLM
 
@@ -173,11 +174,11 @@ Or add manually to your `.mcp.json`:
 }
 ```
 
-### MCP Tools (29)
+### MCP Tools (30)
 
 All tools return a consistent envelope: `{ ok: true, data, meta }` for success, `{ ok: true, condensed: true, text, tokens }` for condensed mode, or `{ ok: false, error }` with structured recovery on failure.
 
-#### Read Tools (20)
+#### Read Tools (21)
 
 | Tool | Description |
 |------|-------------|
@@ -201,6 +202,7 @@ All tools return a consistent envelope: `{ ok: true, data, meta }` for success, 
 | `graph_query` | Execute raw SPARQL against the ke store |
 | `graph_inspect` | Inspect all triples for a URI |
 | `skill_list` | List discovered agent skills |
+| `skill_lookup` | Get full SKILL.md content for skills by name |
 
 #### Write Tools (5)
 

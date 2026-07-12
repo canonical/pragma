@@ -52,9 +52,9 @@ function parseData(result: Record<string, unknown>): unknown {
 // =============================================================================
 
 describe("tool listing", () => {
-  it("registers 29 tools", async () => {
+  it("registers 30 tools", async () => {
     const { tools } = await client.listTools();
-    expect(tools).toHaveLength(29);
+    expect(tools).toHaveLength(30);
   });
 
   it("all tools have descriptions", async () => {
@@ -1048,7 +1048,7 @@ describe("capabilities", () => {
     expect(toolNames).toContain("block_list");
     expect(toolNames).toContain("capabilities");
     expect(data.tools.every((t) => t.use_when.length > 0)).toBe(true);
-    expect(data.counts.total).toBe(29);
+    expect(data.counts.total).toBe(30);
     expect(data.counts.read).toBeGreaterThan(0);
     expect(data.counts.write).toBe(5);
     expect(data.counts.orientation).toBe(2);
