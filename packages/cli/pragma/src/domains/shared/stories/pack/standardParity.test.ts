@@ -73,7 +73,7 @@ beforeAll(async () => {
   packLookup = lookup;
 });
 
-afterAll(() => store.dispose());
+afterAll(() => store?.dispose());
 
 /** Resolve one name through the built-in lookup story. */
 async function lookupBuiltin(name: string): Promise<StandardDetailed> {
@@ -140,12 +140,13 @@ describe("standard pack definition", () => {
 });
 
 describe("standard list parity", () => {
+  let builtinResolution: Awaited<ReturnType<typeof standardListStory.resolve>>;
   let builtinOutput: StandardListOutput;
   let packRows: Record<string, string>[];
 
   beforeAll(async () => {
-    const resolution = await standardListStory.resolve(rt, {});
-    builtinOutput = standardListStory.toOutput(resolution, {});
+    builtinResolution = await standardListStory.resolve(rt, {});
+    builtinOutput = standardListStory.toOutput(builtinResolution, {});
     packRows = await packList.resolve(rt, {});
   });
 
@@ -160,10 +161,9 @@ describe("standard list parity", () => {
     expect(packJson).toBe(builtinJson);
   });
 
-  it("MCP envelope matches the built-in summary envelope", async () => {
-    const resolution = await standardListStory.resolve(rt, {});
+  it("MCP envelope matches the built-in summary envelope", () => {
     expect(packList.toEnvelope(packRows)).toEqual(
-      standardListStory.toEnvelope(resolution),
+      standardListStory.toEnvelope(builtinResolution),
     );
   });
 
