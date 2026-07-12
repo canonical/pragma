@@ -18,4 +18,15 @@ describe("compactUri", () => {
       "https://example.com/thing",
     );
   });
+
+  it("picks the longest matching namespace when namespaces overlap", () => {
+    const overlapping = {
+      base: "https://ex.org/",
+      sub: "https://ex.org/sub/",
+    } as const;
+    // Both `base` and `sub` are prefixes of the URI; the longer wins.
+    expect(compactUri("https://ex.org/sub/Thing", overlapping)).toBe(
+      "sub:Thing",
+    );
+  });
 });
