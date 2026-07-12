@@ -119,6 +119,13 @@ function parsePackagesField(
     );
   }
 
+  // An explicitly empty list means "not configured": ref resolution falls
+  // back to global refs/defaults for an empty list (see mergeAndParseRefs),
+  // so dropping the field here keeps provenance in config show/doctor/info
+  // consistent with the behavior instead of reporting a project/global
+  // origin that resolution then ignores.
+  if (raw.length === 0) return undefined;
+
   const entries: RawPackageEntry[] = [];
   for (const item of raw) {
     if (typeof item === "string") {

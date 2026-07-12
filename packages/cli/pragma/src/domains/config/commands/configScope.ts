@@ -10,7 +10,8 @@ import type { ConfigScope } from "../../../config/index.js";
 export const SCOPE_PARAMETERS: readonly ParameterDefinition[] = [
   {
     name: "global",
-    description: "Write to the global config (~/.config/pragma/config.json)",
+    description:
+      "Write to the global config ($XDG_CONFIG_HOME/pragma/config.json, default ~/.config/pragma/config.json)",
     type: "boolean",
     default: false,
   },

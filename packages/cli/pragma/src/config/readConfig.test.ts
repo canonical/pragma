@@ -319,3 +319,19 @@ describe("writeConfig", () => {
     });
   });
 });
+
+describe("readConfig — empty packages normalization", () => {
+  it("treats an explicitly empty packages list as not configured", () => {
+    const dir = mkdtempSync(join(tmpdir(), "pragma-empty-pkgs-"));
+    mkdirSync(join(dir, ".git"), { recursive: true });
+    writeFileSync(
+      join(dir, "pragma.config.json"),
+      JSON.stringify({ channel: "normal", packages: [] }),
+    );
+    const config = readConfig(dir);
+    // The field is dropped at parse time so provenance matches the ref
+    // resolution behavior (empty list falls back to defaults/global refs).
+    expect(config.packages).toBeUndefined();
+    rmSync(dir, { recursive: true, force: true });
+  });
+});
