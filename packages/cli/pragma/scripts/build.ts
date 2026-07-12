@@ -5,6 +5,9 @@
  * embedding all non-JS assets that the binary needs at runtime:
  * - TTL graph files from semantic packages (definitions + data)
  * - Skill markdown files from semantic packages
+ * - Story-pack JSON files from semantic packages (`stories/*.json`,
+ *   forced to file assets by the story-assets plugin so they surface
+ *   in `Bun.embeddedFiles` instead of compiling into JSON modules)
  * - Package.json files for version detection
  * - EJS templates from summon packages (component/package generators)
  *
@@ -12,6 +15,7 @@
  */
 
 import { Glob } from "bun";
+import createStoryAssetsPlugin from "../src/domains/shared/loaders/storyAssetsPlugin.js";
 
 // ---------------------------------------------------------------------------
 // Asset discovery
@@ -19,16 +23,20 @@ import { Glob } from "bun";
 
 /** Glob patterns for files to embed from node_modules. */
 const EMBED_PATTERNS = [
-  // Semantic graph packages — TTL definitions, data, skills, and package.json
+  // Semantic graph packages — TTL definitions, data, skills, stories,
+  // and package.json
   "node_modules/@canonical/design-system/definitions/**/*.ttl",
   "node_modules/@canonical/design-system/data/**/*.ttl",
   "node_modules/@canonical/design-system/skills/**/*.md",
+  "node_modules/@canonical/design-system/stories/*.json",
   "node_modules/@canonical/design-system/package.json",
   "node_modules/@canonical/code-standards/definitions/**/*.ttl",
   "node_modules/@canonical/code-standards/data/**/*.ttl",
   "node_modules/@canonical/code-standards/skills/**/*.md",
+  "node_modules/@canonical/code-standards/stories/*.json",
   "node_modules/@canonical/code-standards/package.json",
   "node_modules/@canonical/anatomy-dsl/definitions/**/*.ttl",
+  "node_modules/@canonical/anatomy-dsl/stories/*.json",
   "node_modules/@canonical/anatomy-dsl/package.json",
   // Summon templates — EJS files for component/package generators
   "node_modules/@canonical/summon-component/src/templates/**/*.ejs",
@@ -56,6 +64,7 @@ console.log(`Embedding ${assets.length} assets`);
 const result = await Bun.build({
   entrypoints: ["src/bin.ts", ...assets],
   minify: true,
+  plugins: [createStoryAssetsPlugin()],
   compile: {
     target: "bun-linux-x64",
     outfile: "dist/pragma",

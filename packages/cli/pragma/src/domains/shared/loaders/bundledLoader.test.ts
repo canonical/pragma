@@ -105,6 +105,86 @@ describe("createBundledLoader", () => {
     expect(stderrText()).toContain("embedded blob unreadable");
   });
 
+  it("serves embedded story JSON as story-file entries", async () => {
+    stubEmbeddedFiles([
+      blob("button-a1b2c3d4.ttl", TTL),
+      blob("package-a1b2c3d4.json", JSON.stringify({ version: "1.2.3" })),
+      blob("colors-fyskc7pf.json", JSON.stringify({ noun: "color" })),
+    ]);
+
+    const resolved = await createBundledLoader().resolve(ref);
+
+    expect(resolved?.stories).toEqual([
+      {
+        path: "(bundled)/colors-fyskc7pf.json",
+        definition: { noun: "color" },
+      },
+    ]);
+    expect(resolved?.version).toBe("1.2.3");
+  });
+
+  it("does not serve package manifests as stories", async () => {
+    stubEmbeddedFiles([
+      blob("button.ttl", TTL),
+      blob("package.json", JSON.stringify({ version: "2.0.0" })),
+      blob("package-deadbeef.json", JSON.stringify({ version: "3.0.0" })),
+    ]);
+
+    const resolved = await createBundledLoader().resolve(ref);
+
+    expect(resolved?.stories).toEqual([]);
+  });
+
+  it("warns and skips a story blob with invalid JSON instead of crashing", async () => {
+    stubEmbeddedFiles([
+      blob("button.ttl", TTL),
+      blob("good-a1b2c3d4.json", JSON.stringify({ noun: "color" })),
+      blob("broken-a1b2c3d4.json", "{ not json"),
+    ]);
+
+    const resolved = await createBundledLoader().resolve(ref);
+
+    expect(resolved?.stories).toHaveLength(1);
+    expect(resolved?.stories.at(0)?.definition).toEqual({ noun: "color" });
+    expect(stderrText()).toContain("broken-a1b2c3d4.json");
+  });
+
+  it("warns and skips an unreadable story blob", async () => {
+    stubEmbeddedFiles([
+      blob("button.ttl", TTL),
+      corruptBlob("story-a1b2c3d4.json"),
+    ]);
+
+    const resolved = await createBundledLoader().resolve(ref);
+
+    expect(resolved?.stories).toEqual([]);
+    expect(stderrText()).toContain("story-a1b2c3d4.json");
+    expect(stderrText()).toContain("embedded blob unreadable");
+  });
+
+  it("resolves a stories-only bundle with no TTL graphs", async () => {
+    stubEmbeddedFiles([
+      blob("colors-fyskc7pf.json", JSON.stringify({ noun: "color" })),
+    ]);
+
+    const resolved = await createBundledLoader().resolve(ref);
+
+    expect(resolved).toBeDefined();
+    expect(resolved?.graphs).toEqual([]);
+    expect(resolved?.stories).toHaveLength(1);
+  });
+
+  it("returns undefined when no TTL or story content is embedded", async () => {
+    stubEmbeddedFiles([
+      blob("template-a1b2c3d4.ejs", "<%= name %>"),
+      blob("skill-a1b2c3d4.md", "# Skill"),
+    ]);
+
+    const resolved = await createBundledLoader().resolve(ref);
+
+    expect(resolved).toBeUndefined();
+  });
+
   it("warns on a corrupt package manifest and falls back to 0.0.0", async () => {
     stubEmbeddedFiles([
       blob("button.ttl", TTL),
