@@ -9,6 +9,10 @@
     ".": {
       "types": "./dist/types/index.d.ts",
       "import": "./dist/esm/index.js"
+    },
+    "./kernel": {
+      "types": "./dist/types/kernel.d.ts",
+      "import": "./dist/esm/kernel.js"
     }
   },
   "files": [
