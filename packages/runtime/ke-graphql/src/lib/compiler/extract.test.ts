@@ -295,14 +295,26 @@ describe("extract — SHACL direct constraints", () => {
         ]),
       ],
       [
-        "?path ?value WHERE",
+        "?targetClass ?path ?value WHERE",
         select([
-          // guard: missing path skipped
+          // guard: missing targetClass/path skipped
           { value: literal("x") },
           // guard: value neither literal nor NamedNode (blank) skipped
-          { path: named(`${EX}mode`), value: blank("_:b") },
-          { path: named(`${EX}mode`), value: literal("fast") },
-          { path: named(`${EX}mode`), value: named(`${EX}slow`) },
+          {
+            targetClass: named(`${EX}C`),
+            path: named(`${EX}mode`),
+            value: blank("_:b"),
+          },
+          {
+            targetClass: named(`${EX}C`),
+            path: named(`${EX}mode`),
+            value: literal("fast"),
+          },
+          {
+            targetClass: named(`${EX}C`),
+            path: named(`${EX}mode`),
+            value: named(`${EX}slow`),
+          },
         ]),
       ],
     ]);
@@ -313,6 +325,61 @@ describe("extract — SHACL direct constraints", () => {
     // non-numeric maxCount parses to undefined
     expect(c?.maxCount).toBeUndefined();
     expect(c?.inValues).toEqual(["fast", `${EX}slow`]);
+  });
+
+  it("scopes sh:in per (targetClass, property), not globally by path", async () => {
+    // A and B both constrain :status, with different sh:in lists. Keying by
+    // path alone merged them into one over-broad enum; keying by
+    // (targetClass, path) keeps each shape's enumeration its own.
+    const query = router([
+      [
+        "?targetClass ?path ?minCount ?maxCount ?inList",
+        select([
+          {
+            targetClass: named(`${EX}A`),
+            path: named(`${EX}status`),
+            inList: blank("_:la"),
+          },
+          {
+            targetClass: named(`${EX}B`),
+            path: named(`${EX}status`),
+            inList: blank("_:lb"),
+          },
+        ]),
+      ],
+      [
+        "?targetClass ?path ?value WHERE",
+        select([
+          {
+            targetClass: named(`${EX}A`),
+            path: named(`${EX}status`),
+            value: literal("active"),
+          },
+          {
+            targetClass: named(`${EX}A`),
+            path: named(`${EX}status`),
+            value: literal("inactive"),
+          },
+          {
+            targetClass: named(`${EX}B`),
+            path: named(`${EX}status`),
+            value: literal("open"),
+          },
+          {
+            targetClass: named(`${EX}B`),
+            path: named(`${EX}status`),
+            value: literal("closed"),
+          },
+        ]),
+      ],
+    ]);
+    const { output } = await extract(query, PREFIXES);
+    const byClass = (tc: string) =>
+      output.shaclConstraints.find(
+        (constraint) => constraint.targetClass === tc,
+      );
+    expect(byClass(`${EX}A`)?.inValues).toEqual(["active", "inactive"]);
+    expect(byClass(`${EX}B`)?.inValues).toEqual(["open", "closed"]);
   });
 
   it("omits inValues when no sh:in list is present", async () => {
