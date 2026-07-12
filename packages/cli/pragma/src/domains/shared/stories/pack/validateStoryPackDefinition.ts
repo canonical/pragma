@@ -3,6 +3,7 @@ import type {
   StoryPackColumn,
   StoryPackDefinition,
   StoryPackField,
+  StoryPackFilter,
   StoryPackLookup,
   StoryPackSection,
 } from "./types.js";
@@ -14,6 +15,33 @@ const PREFIXED_NAME_PATTERN = /^[A-Za-z][\w-]*:[^/<>"\s]+$/;
 
 /** An absolute IRI that can be safely embedded as `<iri>` in SPARQL. */
 const EMBEDDABLE_IRI_PATTERN = /^[A-Za-z][\w+.-]*:\/\/[^<>"\s]+$/;
+
+/**
+ * A filter parameter name: a single lowercase word.
+ *
+ * Deliberately stricter than a noun (no hyphens): the name is used
+ * verbatim as the CLI flag, the Commander result key, and the MCP
+ * parameter key. A hyphenated name would register as `--meal-type` but
+ * be read back by Commander under the camelCased `mealType`, so the
+ * filter would silently never apply on the CLI while working on MCP.
+ * Restricting to one lowercase word keeps all three identical.
+ */
+const FILTER_PARAM_PATTERN = /^[a-z][a-z0-9]*$/;
+
+/**
+ * Parameter names taken by global flags or parameters the kernel appends
+ * to every read story — `condensed` is added to every MCP list tool, and
+ * `detailed` to every lookup — so a filter may not reuse them.
+ */
+const RESERVED_FILTER_PARAMS = new Set([
+  "llm",
+  "format",
+  "verbose",
+  "detailed",
+  "condensed",
+  "names",
+  "help",
+]);
 
 /**
  * Validate one raw story-pack definition.
@@ -91,7 +119,114 @@ function validateList(
     validateColumn(column, `list.columns[${index}]`, source),
   );
 
-  return { query, columns };
+  const filters = validateFilterArray(obj.filters, source);
+  for (const filter of filters ?? []) {
+    if (!referencesVariable(query, filter.variable)) {
+      throw buildStoryConfigError(
+        source,
+        `filter variable "?${filter.variable}" does not appear in "list.query".`,
+      );
+    }
+  }
+
+  return { query, columns, ...(filters ? { filters } : {}) };
+}
+
+/**
+ * Check that the query mentions the variable (`?name` or `$name`).
+ *
+ * A textual check, not a SPARQL parse — it exists to fail typos at boot
+ * instead of silently filtering every row out at first use.
+ */
+function referencesVariable(query: string, variable: string): boolean {
+  const pattern = new RegExp(`[?$]${variable}\\b`);
+  return pattern.test(query);
+}
+
+function validateFilterArray(
+  raw: unknown,
+  source: string,
+): readonly StoryPackFilter[] | undefined {
+  if (raw === undefined) return undefined;
+  if (!Array.isArray(raw) || raw.length === 0) {
+    throw buildStoryConfigError(
+      source,
+      '"list.filters" must be a non-empty array.',
+    );
+  }
+  const filters = raw.map((entry, index) =>
+    validateFilter(entry, `list.filters[${index}]`, source),
+  );
+  const seen = new Set<string>();
+  for (const filter of filters) {
+    if (seen.has(filter.param)) {
+      throw buildStoryConfigError(
+        source,
+        `duplicate filter param "${filter.param}".`,
+      );
+    }
+    seen.add(filter.param);
+  }
+  return filters;
+}
+
+function validateFilter(
+  raw: unknown,
+  where: string,
+  source: string,
+): StoryPackFilter {
+  const obj = requireObject(raw, where, source);
+  const param = requireString(obj.param, `${where}.param`, source);
+  if (!FILTER_PARAM_PATTERN.test(param)) {
+    throw buildStoryConfigError(
+      source,
+      `"${where}.param" must be a single lowercase word (letters and digits, no hyphens), got "${param}".`,
+    );
+  }
+  if (RESERVED_FILTER_PARAMS.has(param)) {
+    throw buildStoryConfigError(
+      source,
+      `"${where}.param" "${param}" is a reserved name.`,
+    );
+  }
+  const variable = requireString(obj.variable, `${where}.variable`, source);
+  if (!FIELD_PATTERN.test(variable)) {
+    throw buildStoryConfigError(
+      source,
+      `"${where}.variable" must name a SELECT variable.`,
+    );
+  }
+  if (!Array.isArray(obj.values) || obj.values.length === 0) {
+    throw buildStoryConfigError(
+      source,
+      `"${where}.values" must be a non-empty array.`,
+    );
+  }
+  const values = obj.values.map((value, index) =>
+    requireString(value, `${where}.values[${index}]`, source),
+  );
+  const lowered = new Set<string>();
+  for (const value of values) {
+    const key = value.toLowerCase();
+    if (lowered.has(key)) {
+      throw buildStoryConfigError(
+        source,
+        `"${where}.values" contains duplicate value "${value}" ` +
+          "(values must be unique, case-insensitively).",
+      );
+    }
+    lowered.add(key);
+  }
+  const description =
+    obj.description === undefined
+      ? undefined
+      : requireString(obj.description, `${where}.description`, source);
+  return {
+    param,
+    variable,
+    values,
+    ...(description !== undefined ? { description } : {}),
+  };
 }
 
 function validateColumn(

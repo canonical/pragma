@@ -138,3 +138,103 @@ describe("validateStoryPackDefinition — term and query hardening", () => {
     ).toThrow(/must be a SPARQL SELECT/);
   });
 });
+
+describe("validateStoryPackDefinition — list filters", () => {
+  const base = JSON.parse(JSON.stringify(RECIPE_STORY)) as Record<
+    string,
+    unknown
+  >;
+
+  function withFilters(filters: unknown): unknown {
+    const list = { ...(base.list as Record<string, unknown>), filters };
+    return { ...base, list };
+  }
+
+  it("accepts declared filters", () => {
+    const validated = validateStoryPackDefinition(
+      withFilters([
+        { param: "category", variable: "category", values: ["soup"] },
+      ]),
+      "test",
+    );
+    expect(validated.list.filters?.at(0)?.param).toBe("category");
+  });
+
+  it("rejects an empty filters array", () => {
+    expect(() => validateStoryPackDefinition(withFilters([]), "test")).toThrow(
+      /list.filters/,
+    );
+  });
+
+  it("rejects reserved parameter names", () => {
+    expect(() =>
+      validateStoryPackDefinition(
+        withFilters([{ param: "format", variable: "category", values: ["x"] }]),
+        "test",
+      ),
+    ).toThrow(/reserved/);
+  });
+
+  it("rejects the MCP-appended condensed parameter name", () => {
+    expect(() =>
+      validateStoryPackDefinition(
+        withFilters([
+          { param: "condensed", variable: "category", values: ["x"] },
+        ]),
+        "test",
+      ),
+    ).toThrow(/reserved/);
+  });
+
+  it("rejects a hyphenated parameter name that breaks CLI readback", () => {
+    expect(() =>
+      validateStoryPackDefinition(
+        withFilters([
+          { param: "meal-type", variable: "category", values: ["x"] },
+        ]),
+        "test",
+      ),
+    ).toThrow(/single lowercase word/);
+  });
+
+  it("rejects duplicate parameter names", () => {
+    expect(() =>
+      validateStoryPackDefinition(
+        withFilters([
+          { param: "category", variable: "category", values: ["x"] },
+          { param: "category", variable: "name", values: ["y"] },
+        ]),
+        "test",
+      ),
+    ).toThrow(/duplicate filter param/);
+  });
+
+  it("rejects a filter variable the query never mentions", () => {
+    expect(() =>
+      validateStoryPackDefinition(
+        withFilters([{ param: "season", variable: "season", values: ["x"] }]),
+        "test",
+      ),
+    ).toThrow(/does not appear in "list.query"/);
+  });
+
+  it("rejects case-insensitive duplicate values", () => {
+    expect(() =>
+      validateStoryPackDefinition(
+        withFilters([
+          { param: "category", variable: "category", values: ["Soup", "soup"] },
+        ]),
+        "test",
+      ),
+    ).toThrow(/duplicate value/);
+  });
+
+  it("rejects empty values arrays", () => {
+    expect(() =>
+      validateStoryPackDefinition(
+        withFilters([{ param: "category", variable: "category", values: [] }]),
+        "test",
+      ),
+    ).toThrow(/values/);
+  });
+});

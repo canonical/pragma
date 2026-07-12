@@ -36,12 +36,36 @@ export interface StoryPackSection extends StoryPackField {
   readonly kind?: "field" | "code";
 }
 
+/**
+ * A declarative list filter: a CLI/MCP parameter constraining one SELECT
+ * variable to a declared value set.
+ *
+ * Filters are row predicates applied AFTER the author query runs — the
+ * query text is never modified, so filter input cannot inject SPARQL,
+ * and the author's ORDER BY is preserved.
+ */
+export interface StoryPackFilter {
+  /**
+   * Parameter name — a single lowercase word, exposed as `--param` on the
+   * CLI and as the parameter key on the MCP tool.
+   */
+  readonly param: string;
+  /** SELECT variable the filter constrains (without `?`). */
+  readonly variable: string;
+  /** Allowed values; anything else is rejected with INVALID_INPUT. */
+  readonly values: readonly string[];
+  /** Help text (defaults to a generated description). */
+  readonly description?: string;
+}
+
 /** The list half of a story pack. */
 export interface StoryPackList {
   /** SPARQL SELECT producing one row per item. */
   readonly query: string;
   /** Columns to render, referencing SELECT variables. */
   readonly columns: readonly StoryPackColumn[];
+  /** Declarative filters projected to CLI flags and MCP parameters. */
+  readonly filters?: readonly StoryPackFilter[];
 }
 
 /**

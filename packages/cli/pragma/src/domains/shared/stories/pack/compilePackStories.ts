@@ -17,10 +17,15 @@ import {
 } from "../../renderers.js";
 import { suggestNames } from "../../suggestions/index.js";
 import requirePragmaContext from "../requirePragmaContext.js";
-import type { LookupStory, ReadStory } from "../types.js";
+import type { LookupStory, ReadStory, StoryParam } from "../types.js";
+import applyPackFilters from "./applyPackFilters.js";
 import buildLookupQuery, { buildLookupNamesQuery } from "./buildLookupQuery.js";
 import runSelectQuery from "./runSelectQuery.js";
-import type { StoryPackDefinition, StoryPackLookup } from "./types.js";
+import type {
+  StoryPackDefinition,
+  StoryPackFilter,
+  StoryPackLookup,
+} from "./types.js";
 
 /** A pack entity/row: SELECT variable name → string value. */
 type PackRow = Record<string, string>;
@@ -70,15 +75,30 @@ export default function compilePackStories(
     json: (rows) => JSON.stringify(rows, null, 2),
   };
 
+  const filters = definition.list.filters;
+  const filterExample = filters?.at(0);
   const list: ReadStory<PackRow[], PackRow[]> = {
     noun,
     verb: "list",
     description,
     toolDescription:
       definition.toolDescription ?? `${description} (story pack: ${source}).`,
-    params: [],
-    examples: [`pragma ${noun} list`, `pragma ${noun} list --llm`],
-    resolve: (rt) => runSelectQuery(rt.store, definition.list.query, source),
+    params: projectFilterParams(filters),
+    examples: [
+      `pragma ${noun} list`,
+      ...(filterExample
+        ? [
+            `pragma ${noun} list --${filterExample.param} ${quoteExampleValue(filterExample.values.at(0) ?? "")}`,
+          ]
+        : []),
+      `pragma ${noun} list --llm`,
+    ],
+    resolve: async (rt, params) =>
+      applyPackFilters(
+        await runSelectQuery(rt.store, definition.list.query, source),
+        filters,
+        params,
+      ),
     toOutput: (rows) => rows,
     formatters: listFormatters,
     toEnvelope: (rows) => ({ data: rows, meta: { count: rows.length } }),
@@ -196,6 +216,36 @@ async function listEntityNames(
     source,
   );
   return rows.map((row) => row.name ?? "").filter((name) => name !== "");
+}
+
+/**
+ * Quote a filter value for a shell help example when it is not a bare word.
+ *
+ * Values with whitespace or shell-sensitive characters are double-quoted
+ * so the generated `pragma … list --flag value` example stays valid to
+ * copy-paste; simple tokens render unquoted.
+ */
+function quoteExampleValue(value: string): string {
+  return /^[\w.-]+$/.test(value) ? value : JSON.stringify(value);
+}
+
+/**
+ * Project declared pack filters onto kernel story parameters.
+ *
+ * The declared value set becomes the parameter's enum, which the kernel
+ * projects to CLI select choices and an MCP enum schema.
+ */
+function projectFilterParams(
+  filters: readonly StoryPackFilter[] | undefined,
+): StoryParam[] {
+  return (filters ?? []).map((filter) => ({
+    name: filter.param,
+    type: "string",
+    description:
+      filter.description ??
+      `Filter by ${filter.variable} (${filter.values.join(", ")})`,
+    enum: filter.values,
+  }));
 }
 
 function capitalize(value: string): string {
