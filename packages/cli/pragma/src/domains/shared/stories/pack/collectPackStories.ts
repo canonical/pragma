@@ -48,7 +48,7 @@ export default function collectPackStories(
       );
     }
     taken.add(definition.noun);
-    entries.push({ definition, source: "pragma.config.json" });
+    entries.push({ definition, source: "config" });
   }
 
   for (const pkg of packages) {

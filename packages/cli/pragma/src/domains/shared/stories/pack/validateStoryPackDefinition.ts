@@ -10,7 +10,10 @@ import type {
 const NOUN_PATTERN = /^[a-z][a-z0-9-]*$/;
 const FIELD_PATTERN = /^[A-Za-z_][A-Za-z0-9_]*$/;
 /** A prefixed name (`ex:Recipe`) — prefix + local part, no path slashes. */
-const PREFIXED_NAME_PATTERN = /^[A-Za-z][\w-]*:[^/<>"\s][^<>"\s]*$/;
+const PREFIXED_NAME_PATTERN = /^[A-Za-z][\w-]*:[^/<>"\s]+$/;
+
+/** An absolute IRI that can be safely embedded as `<iri>` in SPARQL. */
+const EMBEDDABLE_IRI_PATTERN = /^[A-Za-z][\w+.-]*:\/\/[^<>"\s]+$/;
 
 /**
  * Validate one raw story-pack definition.
@@ -31,7 +34,10 @@ export default function validateStoryPackDefinition(
 
   const noun = requireString(obj.noun, "noun", source);
   if (!NOUN_PATTERN.test(noun)) {
-    throw invalid(source, `"noun" must be kebab-case, got "${noun}".`);
+    throw buildStoryConfigError(
+      source,
+      `"noun" must be kebab-case, got "${noun}".`,
+    );
   }
 
   const description =
@@ -62,12 +68,24 @@ function validateList(
 ): StoryPackDefinition["list"] {
   const obj = requireObject(raw, "list", source);
   const query = requireString(obj.query, "list.query", source);
-  if (!/^\s*(PREFIX\s|SELECT\s)/i.test(query)) {
-    throw invalid(source, '"list.query" must be a SPARQL SELECT query.');
+  // Strip leading PREFIX declarations so the real query verb is checked —
+  // "PREFIX ex: <…> CONSTRUCT {…}" must fail here, not at first use.
+  const afterPrefixes = query.replace(
+    /^(\s*PREFIX\s+[A-Za-z][\w-]*:\s*<[^>]*>)+/i,
+    "",
+  );
+  if (!/^\s*SELECT\s/i.test(afterPrefixes)) {
+    throw buildStoryConfigError(
+      source,
+      '"list.query" must be a SPARQL SELECT query.',
+    );
   }
 
   if (!Array.isArray(obj.columns) || obj.columns.length === 0) {
-    throw invalid(source, '"list.columns" must be a non-empty array.');
+    throw buildStoryConfigError(
+      source,
+      '"list.columns" must be a non-empty array.',
+    );
   }
   const columns = obj.columns.map((column, index) =>
     validateColumn(column, `list.columns[${index}]`, source),
@@ -84,7 +102,10 @@ function validateColumn(
   const obj = requireObject(raw, where, source);
   const field = requireString(obj.field, `${where}.field`, source);
   if (!FIELD_PATTERN.test(field)) {
-    throw invalid(source, `"${where}.field" must name a SELECT variable.`);
+    throw buildStoryConfigError(
+      source,
+      `"${where}.field" must name a SELECT variable.`,
+    );
   }
   const label =
     obj.label === undefined
@@ -95,7 +116,7 @@ function validateColumn(
 
 function validateLookup(raw: unknown, source: string): StoryPackLookup {
   const obj = requireObject(raw, "lookup", source);
-  const by = requireTerm(obj.by, "lookup.by", source);
+  const by = requirePredicateTerm(obj.by, "lookup.by", source);
   const type =
     obj.type === undefined
       ? undefined
@@ -123,7 +144,7 @@ function validateFieldArray(
 ): readonly StoryPackField[] | undefined {
   if (raw === undefined) return undefined;
   if (!Array.isArray(raw)) {
-    throw invalid(source, `"${where}" must be an array.`);
+    throw buildStoryConfigError(source, `"${where}" must be an array.`);
   }
   return raw.map((entry, index) =>
     validateField(entry, `${where}[${index}]`, source),
@@ -137,13 +158,13 @@ function validateSectionArray(
 ): readonly StoryPackSection[] | undefined {
   if (raw === undefined) return undefined;
   if (!Array.isArray(raw)) {
-    throw invalid(source, `"${where}" must be an array.`);
+    throw buildStoryConfigError(source, `"${where}" must be an array.`);
   }
   return raw.map((entry, index) => {
     const base = validateField(entry, `${where}[${index}]`, source);
     const obj = entry as Record<string, unknown>;
     if (obj.kind !== undefined && obj.kind !== "field" && obj.kind !== "code") {
-      throw invalid(
+      throw buildStoryConfigError(
         source,
         `"${where}[${index}].kind" must be "field" or "code".`,
       );
@@ -163,9 +184,16 @@ function validateField(
   const obj = requireObject(raw, where, source);
   const name = requireString(obj.name, `${where}.name`, source);
   if (!FIELD_PATTERN.test(name)) {
-    throw invalid(source, `"${where}.name" must be a simple identifier.`);
+    throw buildStoryConfigError(
+      source,
+      `"${where}.name" must be a simple identifier.`,
+    );
   }
-  const property = requireTerm(obj.property, `${where}.property`, source);
+  const property = requirePredicateTerm(
+    obj.property,
+    `${where}.property`,
+    source,
+  );
   const label =
     obj.label === undefined
       ? undefined
@@ -179,29 +207,67 @@ function requireObject(
   source: string,
 ): Record<string, unknown> {
   if (typeof raw !== "object" || raw === null || Array.isArray(raw)) {
-    throw invalid(source, `"${where}" must be an object.`);
+    throw buildStoryConfigError(source, `"${where}" must be an object.`);
   }
   return raw as Record<string, unknown>;
 }
 
 function requireString(raw: unknown, where: string, source: string): string {
   if (typeof raw !== "string" || raw.trim() === "") {
-    throw invalid(source, `"${where}" must be a non-empty string.`);
+    throw buildStoryConfigError(
+      source,
+      `"${where}" must be a non-empty string.`,
+    );
   }
   return raw;
 }
 
-/** Require a prefixed name (`ex:Recipe`) or an absolute IRI. */
+/** Require a prefixed name (`ex:Recipe`) or an embeddable absolute IRI. */
 function requireTerm(raw: unknown, where: string, source: string): string {
   const value = requireString(raw, where, source);
-  if (value.includes("://")) return value;
+  if (value.includes("://")) {
+    if (EMBEDDABLE_IRI_PATTERN.test(value)) return value;
+    throw buildStoryConfigError(
+      source,
+      `"${where}" is not a valid IRI (no whitespace or <>" characters).`,
+    );
+  }
   if (PREFIXED_NAME_PATTERN.test(value)) return value;
-  throw invalid(
+  throw buildStoryConfigError(
     source,
     `"${where}" must be a prefixed name (ex:Recipe) or an absolute IRI.`,
   );
 }
 
-function invalid(source: string, message: string): PragmaError {
+/**
+ * Require a predicate term: a single term or a slash-separated SPARQL
+ * property path of prefixed names (`cs:hasCategory/cs:slug`).
+ *
+ * Paths are only meaningful in predicate position (`lookup.by` and
+ * `fields[].property`/`sections[].property`); class terms go through
+ * `requireTerm` and reject paths.
+ */
+function requirePredicateTerm(
+  raw: unknown,
+  where: string,
+  source: string,
+): string {
+  const value = requireString(raw, where, source);
+  if (value.includes("://") || !value.includes("/")) {
+    return requireTerm(value, where, source);
+  }
+  const segments = value.split("/");
+  for (const segment of segments) {
+    if (!PREFIXED_NAME_PATTERN.test(segment)) {
+      throw buildStoryConfigError(
+        source,
+        `"${where}" property path segment "${segment}" must be a prefixed name.`,
+      );
+    }
+  }
+  return value;
+}
+
+function buildStoryConfigError(source: string, message: string): PragmaError {
   return PragmaError.configError(`Invalid story in ${source}: ${message}`);
 }

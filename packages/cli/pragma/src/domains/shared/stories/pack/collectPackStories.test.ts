@@ -45,7 +45,7 @@ describe("collectPackStories", () => {
       "recipe",
       "other",
     ]);
-    expect(entries.at(0)?.source).toBe("pragma.config.json");
+    expect(entries.at(0)?.source).toBe("config");
     expect(entries.at(1)?.source).toBe("/pkg/stories/other.json");
   });
 
@@ -60,7 +60,7 @@ describe("collectPackStories", () => {
       new Set(),
     );
     expect(entries).toHaveLength(1);
-    expect(entries.at(0)?.source).toBe("pragma.config.json");
+    expect(entries.at(0)?.source).toBe("config");
     expect(warn).toHaveBeenCalledWith(expect.stringContaining("already taken"));
   });
 

@@ -99,7 +99,9 @@ function readStories(dir: string): StoryFileEntry[] {
 
   const stories: StoryFileEntry[] = [];
   try {
-    for (const entry of readdirSync(storiesDir)) {
+    // Sorted: readdir order is filesystem-dependent, and story collision
+    // resolution must be deterministic across platforms.
+    for (const entry of [...readdirSync(storiesDir)].sort()) {
       if (!entry.endsWith(".json")) continue;
       const entryPath = join(storiesDir, entry);
       try {
