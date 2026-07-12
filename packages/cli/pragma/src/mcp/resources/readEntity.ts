@@ -10,6 +10,7 @@ import {
   resolveLabelPredicates,
 } from "./displayPredicates.js";
 import pickFirstValue from "./pickFirstValue.js";
+import pickPrimaryType from "./pickPrimaryType.js";
 import type {
   GraphIndex,
   PropertyGroup,
@@ -156,15 +157,11 @@ export default async function readEntity(
   }
 
   if (classification.category === "individual") {
-    const primaryTypeFull = [...fullTypes]
-      .sort((a, b) => a.localeCompare(b))
-      .at(0);
+    const primaryTypeFull = pickPrimaryType(fullTypes);
     return {
       ...base,
       instanceOf:
-        primaryTypeFull === undefined
-          ? null
-          : compactUri(primaryTypeFull, prefixes),
+        primaryTypeFull === null ? null : compactUri(primaryTypeFull, prefixes),
     };
   }
 

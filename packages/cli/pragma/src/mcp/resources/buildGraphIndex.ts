@@ -12,6 +12,7 @@ import {
   resolveLabelPredicates,
 } from "./displayPredicates.js";
 import pickFirstValue from "./pickFirstValue.js";
+import pickPrimaryType from "./pickPrimaryType.js";
 import type { GraphEntity, GraphIndex } from "./types.js";
 
 /** A per-subject map of predicate URI → asserted lexical values. */
@@ -55,12 +56,6 @@ async function fetchValuesBySubject(
     bySubject.set(subject, byPredicate);
   }
   return bySubject;
-}
-
-/** Choose the individual's grouping type: first non-schema type, sorted. */
-function pickPrimaryType(fullTypes: readonly string[]): string | null {
-  const sorted = [...fullTypes].sort((a, b) => a.localeCompare(b));
-  return sorted.at(0) ?? null;
 }
 
 /**

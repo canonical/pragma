@@ -38,6 +38,22 @@ export const PROPERTY_TYPE_URIS: readonly string[] = [
 ];
 
 /**
+ * `rdf:type` objects that never make a meaningful grouping or `instanceOf`
+ * pointer for an individual: the schema-construct meta-types plus the
+ * top/individual meta-types (`owl:NamedIndividual`, `owl:Thing`,
+ * `rdfs:Resource`). An individual typed `[ds:Component, owl:NamedIndividual]`
+ * must group under `ds:Component`, so these are filtered out before a
+ * primary type is chosen.
+ */
+export const NON_GROUPING_TYPE_URIS: readonly string[] = [
+  ...CLASS_TYPE_URIS,
+  ...PROPERTY_TYPE_URIS,
+  `${PREFIX_MAP.owl}NamedIndividual`,
+  `${PREFIX_MAP.owl}Thing`,
+  `${PREFIX_MAP.rdfs}Resource`,
+];
+
+/**
  * Generic label predicates tried after a namespace's `PROPERTY_MAP` label,
  * in priority order. Lets foreign ontologies resolve a name.
  */
