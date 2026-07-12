@@ -6,14 +6,12 @@
  */
 
 import { readConfig } from "#config";
-import { parsePackageEntry } from "../../../refs/operations/parseRef.js";
-import readGlobalRefs from "../../../refs/operations/readGlobalRefs.js";
 import {
   createBundledLoader,
   createGitLoader,
   createLocalLoader,
 } from "../../../shared/loaders/index.js";
-import { DEFAULT_PACKAGES } from "../../../shared/packages.js";
+import { mergeAndParseRefs } from "../../../shared/runtime.js";
 import { resolveSemanticPackages } from "../../../shared/semanticPackage.js";
 import type { CheckContext, CheckResult } from "../types.js";
 
@@ -21,17 +19,7 @@ export default async function checkPackageRefs(
   ctx: CheckContext,
 ): Promise<CheckResult> {
   const config = readConfig(ctx.cwd);
-  const globalEntries = readGlobalRefs();
-
-  const projectRefs = config.packages;
-  const rawEntries =
-    projectRefs && projectRefs.length > 0
-      ? projectRefs
-      : globalEntries.length > 0
-        ? globalEntries
-        : DEFAULT_PACKAGES;
-
-  const refs = [...rawEntries].map(parsePackageEntry);
+  const refs = mergeAndParseRefs(config.packages);
   const loaders = [
     createLocalLoader(),
     createGitLoader(),

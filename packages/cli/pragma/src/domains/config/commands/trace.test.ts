@@ -1,4 +1,10 @@
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { Store } from "@canonical/ke";
@@ -18,13 +24,24 @@ function makeCtx(cwd: string): PragmaContext {
 
 describe("config trace command", () => {
   let dir: string;
+  let xdgDir: string;
+  let originalXdg: string | undefined;
 
   beforeEach(() => {
     dir = mkdtempSync(join(tmpdir(), "pragma-cmd-trace-"));
+    // Bound the config walk at the fixture root, seed an empty project
+    // file so writes stay local, and isolate the global XDG layer.
+    mkdirSync(join(dir, ".git"));
+    writeFileSync(join(dir, "pragma.config.json"), "{}");
+    originalXdg = process.env.XDG_CONFIG_HOME;
+    xdgDir = mkdtempSync(join(tmpdir(), "pragma-cmd-trace-xdg-"));
+    process.env.XDG_CONFIG_HOME = xdgDir;
   });
 
   afterEach(() => {
+    process.env.XDG_CONFIG_HOME = originalXdg;
     rmSync(dir, { recursive: true, force: true });
+    rmSync(xdgDir, { recursive: true, force: true });
   });
 
   it("enables tracing", async () => {
@@ -54,7 +71,7 @@ describe("config trace command", () => {
 
     expect(result.tag).toBe("output");
     if (result.tag === "output") {
-      expect(result.render.plain(result.value)).toBe("Tracing enabled.");
+      expect(result.render.plain(result.value)).toContain("Tracing enabled.");
     }
   });
 

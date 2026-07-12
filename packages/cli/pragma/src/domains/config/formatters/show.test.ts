@@ -11,6 +11,15 @@ const WITH_TIER: ConfigShowData = {
   installSource: "bun (global)",
   configFilePath: "/project/pragma.config.json",
   configFileExists: true,
+  globalConfigPath: "/home/u/.config/pragma/config.json",
+  globalConfigExists: false,
+  origins: {
+    tier: "project",
+    channel: "project",
+    packages: "default",
+    trace: "default",
+    framework: "default",
+  },
 };
 
 const WITHOUT_TIER: ConfigShowData = {
@@ -22,6 +31,15 @@ const WITHOUT_TIER: ConfigShowData = {
   installSource: "bun (local)",
   configFilePath: "/project/pragma.config.json",
   configFileExists: false,
+  globalConfigPath: "/home/u/.config/pragma/config.json",
+  globalConfigExists: false,
+  origins: {
+    tier: "project",
+    channel: "project",
+    packages: "default",
+    trace: "default",
+    framework: "default",
+  },
 };
 
 const PRERELEASE: ConfigShowData = {
@@ -33,6 +51,15 @@ const PRERELEASE: ConfigShowData = {
   installSource: "pnpm (global)",
   configFilePath: "/project/pragma.config.json",
   configFileExists: true,
+  globalConfigPath: "/home/u/.config/pragma/config.json",
+  globalConfigExists: false,
+  origins: {
+    tier: "project",
+    channel: "project",
+    packages: "default",
+    trace: "default",
+    framework: "default",
+  },
 };
 
 describe("formatters.plain", () => {

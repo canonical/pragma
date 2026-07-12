@@ -10,6 +10,7 @@ import type { PragmaContext } from "../../shared/context.js";
 import { selectFormatter } from "../../shared/formatters.js";
 import { traceFormatters } from "../formatters/index.js";
 import { setTraceTask } from "../tasks/index.js";
+import { resolveConfigScope, SCOPE_PARAMETERS } from "./configScope.js";
 
 /**
  * Build the `pragma config trace` command definition.
@@ -30,6 +31,7 @@ export default function buildTraceCommand(
         type: "string",
         positional: true,
       },
+      ...SCOPE_PARAMETERS,
     ],
     meta: {
       examples: [
@@ -43,6 +45,7 @@ export default function buildTraceCommand(
     execute: async (
       params: Record<string, unknown>,
     ): Promise<CommandResult> => {
+      const scope = resolveConfigScope(params);
       const value = params.value as string | undefined;
 
       // Query mode — no argument
@@ -68,11 +71,11 @@ export default function buildTraceCommand(
 
       // Set mode
       const enabled = value === "on";
-      await runTask(setTraceTask(ctx.cwd, enabled));
+      const result = await runTask(setTraceTask(ctx.cwd, enabled, scope));
 
       const format = selectFormatter(ctx, traceFormatters.set);
       return createOutputResult(
-        { field: "trace", value: enabled },
+        { field: "trace", value: enabled, path: result.path },
         { plain: format },
       );
     },

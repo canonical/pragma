@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const readConfigMock = vi.fn();
+const readConfigLayersMock = vi.fn();
 const detectInstallSourceMock = vi.fn();
 const bootStoreMock = vi.fn();
 const checkRegistryVersionMock = vi.fn();
@@ -8,7 +8,7 @@ const collectStoreSummaryMock = vi.fn();
 
 vi.mock("#config", async (importOriginal) => ({
   ...(await importOriginal<typeof import("#config")>()),
-  readConfig: readConfigMock,
+  readConfigLayers: readConfigLayersMock,
 }));
 
 vi.mock("#package-manager", async (importOriginal) => {
@@ -46,7 +46,18 @@ describe("collectInfo", () => {
       scope: "global",
       label: "bun (global)",
     });
-    readConfigMock.mockReturnValue({ tier: "apps/lxd", channel: "normal" });
+    readConfigLayersMock.mockReturnValue({
+      config: { tier: "apps/lxd", channel: "normal" },
+      origins: {
+        tier: "project",
+        channel: "default",
+        packages: "default",
+        trace: "default",
+        framework: "default",
+      },
+      global: { path: "/home/u/.config/pragma/config.json", exists: false },
+      project: { path: "/repo/pragma.config.json", exists: true },
+    });
   });
 
   it("includes update information and store summary when available", async () => {

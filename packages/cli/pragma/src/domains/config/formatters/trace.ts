@@ -8,13 +8,13 @@ import type { Formatters } from "../../shared/formatters.js";
  */
 const traceFormatters = {
   set: {
-    plain: (d: { field: string; value: boolean }) =>
-      d.value ? "Tracing enabled." : "Tracing disabled.",
-    llm: (d: { field: string; value: boolean }) =>
-      d.value ? "Tracing enabled." : "Tracing disabled.",
-    json: (d: { field: string; value: boolean }) =>
-      JSON.stringify({ field: d.field, value: d.value }),
-  } satisfies Formatters<{ field: string; value: boolean }>,
+    plain: (d: { field: string; value: boolean; path: string }) =>
+      `${d.value ? "Tracing enabled." : "Tracing disabled."}\nWrote ${d.path}`,
+    llm: (d: { field: string; value: boolean; path: string }) =>
+      `${d.value ? "Tracing enabled." : "Tracing disabled."}\nWrote ${d.path}`,
+    json: (d: { field: string; value: boolean; path: string }) =>
+      JSON.stringify({ field: d.field, value: d.value, path: d.path }),
+  } satisfies Formatters<{ field: string; value: boolean; path: string }>,
 
   query: {
     plain: (status: string) => status,

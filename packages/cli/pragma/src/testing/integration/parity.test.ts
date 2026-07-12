@@ -10,7 +10,7 @@
 import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 // ---- Shared utilities ----
-import { configExists, readConfig, resolveConfigPath } from "#config";
+import { readConfigLayers } from "#config";
 import { VERSION } from "#constants";
 import { detectInstallSource } from "#package-manager";
 // ---- Formatters ----
@@ -445,12 +445,16 @@ describe("config parity", () => {
   // story, so parity is asserted against the real config path/existence
   // (the MCP tool previously hardcoded "pragma.config.json" / true).
   function resolveExpectedConfigShow() {
+    const layers = readConfigLayers(rt.cwd);
     const install = detectInstallSource();
-    return resolveConfigShow(readConfig(rt.cwd), {
+    return resolveConfigShow(layers.config, {
       packageManager: install.packageManager,
       installSource: install.label,
-      configFilePath: resolveConfigPath(rt.cwd),
-      configFileExists: configExists(rt.cwd),
+      configFilePath: layers.project.path,
+      configFileExists: layers.project.exists,
+      globalConfigPath: layers.global.path,
+      globalConfigExists: layers.global.exists,
+      origins: layers.origins,
     });
   }
 

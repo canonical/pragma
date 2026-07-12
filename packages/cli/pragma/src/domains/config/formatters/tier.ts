@@ -1,5 +1,12 @@
 import type { Formatters } from "../../shared/formatters.js";
 
+/** Payload for a persisted config write, including the file written. */
+interface TierWrite {
+  readonly field: string;
+  readonly value: string;
+  readonly path: string;
+}
+
 /**
  * Formatter sets for `pragma config tier` output, grouped by branch:
  *
@@ -9,19 +16,20 @@ import type { Formatters } from "../../shared/formatters.js";
  */
 const tierFormatters = {
   set: {
-    plain: (d: { field: string; value: string }) =>
-      `Set ${d.field} to "${d.value}".`,
-    llm: (d: { field: string; value: string }) =>
-      `Set ${d.field} to "${d.value}".`,
-    json: (d: { field: string; value: string }) =>
-      JSON.stringify({ field: d.field, value: d.value }),
-  } satisfies Formatters<{ field: string; value: string }>,
+    plain: (d: TierWrite) => `Set ${d.field} to "${d.value}".\nWrote ${d.path}`,
+    llm: (d: TierWrite) => `Set ${d.field} to "${d.value}".\nWrote ${d.path}`,
+    json: (d: TierWrite) =>
+      JSON.stringify({ field: d.field, value: d.value, path: d.path }),
+  } satisfies Formatters<TierWrite>,
 
   reset: {
-    plain: () => "Reset tier to default.",
-    llm: () => "Reset tier to default.",
-    json: () => JSON.stringify({ field: "tier", reset: true }),
-  } satisfies Formatters<string>,
+    plain: (d: { field: string; path: string }) =>
+      `Reset tier to default.\nWrote ${d.path}`,
+    llm: (d: { field: string; path: string }) =>
+      `Reset tier to default.\nWrote ${d.path}`,
+    json: (d: { field: string; path: string }) =>
+      JSON.stringify({ field: "tier", reset: true, path: d.path }),
+  } satisfies Formatters<{ field: string; path: string }>,
 
   query: {
     plain: (tier: string | undefined) =>

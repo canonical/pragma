@@ -30,18 +30,25 @@ const specs: readonly ToolSpec[] = [
         description: "Reset tier to default",
         optional: true,
       },
+      global: {
+        type: "boolean",
+        description: "Write to the global config instead of the project file",
+        optional: true,
+      },
     },
     readOnly: false,
-    async execute(rt, { path, reset }) {
+    async execute(rt, { path, reset, global: globalScope }) {
+      const scope = globalScope === true ? "global" : undefined;
+
       if (reset) {
-        writeConfig(rt.cwd, { tier: undefined });
-        return { data: { tier: null, action: "reset" } };
+        const written = writeConfig(rt.cwd, { tier: undefined }, scope);
+        return { data: { tier: null, action: "reset", path: written } };
       }
 
       if (path) {
         await validateTier(rt.store, path as string);
-        writeConfig(rt.cwd, { tier: path as string });
-        return { data: { tier: path, action: "set" } };
+        const written = writeConfig(rt.cwd, { tier: path as string }, scope);
+        return { data: { tier: path, action: "set", path: written } };
       }
 
       const config = readConfig(rt.cwd);
@@ -63,18 +70,25 @@ const specs: readonly ToolSpec[] = [
         description: "Reset channel to normal",
         optional: true,
       },
+      global: {
+        type: "boolean",
+        description: "Write to the global config instead of the project file",
+        optional: true,
+      },
     },
     readOnly: false,
-    async execute(rt, { value, reset }) {
+    async execute(rt, { value, reset, global: globalScope }) {
+      const scope = globalScope === true ? "global" : undefined;
+
       if (reset) {
-        writeConfig(rt.cwd, { channel: undefined });
-        return { data: { channel: "normal", action: "reset" } };
+        const written = writeConfig(rt.cwd, { channel: undefined }, scope);
+        return { data: { channel: "normal", action: "reset", path: written } };
       }
 
       if (value) {
         const channel = validateChannel(value as string);
-        writeConfig(rt.cwd, { channel });
-        return { data: { channel, action: "set" } };
+        const written = writeConfig(rt.cwd, { channel }, scope);
+        return { data: { channel, action: "set", path: written } };
       }
 
       const config = readConfig(rt.cwd);

@@ -1,67 +1,37 @@
-import { readFileSync, renameSync, writeFileSync } from "node:fs";
-import resolveConfigPath from "./resolveConfigPath.js";
-import type { ConfigUpdate } from "./types.js";
+import { mkdirSync, renameSync, writeFileSync } from "node:fs";
+import { dirname } from "node:path";
+import mergeConfigFileUpdate from "./mergeConfigFileUpdate.js";
+import resolveWriteConfigPath from "./resolveWriteConfigPath.js";
+import type { ConfigScope, ConfigUpdate } from "./types.js";
 
 /**
- * Write config updates to pragma.config.json.
+ * Write config updates to the resolved target layer.
  *
- * Merges updates into existing JSON. A field set to `undefined` removes it.
- * Creates the file if it doesn't exist.
+ * The target follows the global-first write rule (see
+ * `resolveWriteConfigPath`): an explicit scope wins, else the nearest
+ * existing project file, else the global XDG file. Merges updates into
+ * that file's own contents — a field set to `undefined` removes it —
+ * creating the file (and its directory) if needed, atomically via a
+ * temp file rename.
  *
- * @param cwd - Directory containing (or to contain) pragma.config.json.
+ * @param cwd - Directory the project layer is resolved from.
  * @param update - Fields to set or remove.
+ * @param scope - Optional explicit target layer (`"global"` | `"local"`).
+ * @returns Absolute path of the file that was written.
  *
  * @note Impure — writes to the filesystem.
  */
-export default function writeConfig(cwd: string, update: ConfigUpdate): void {
-  const configPath = resolveConfigPath(cwd);
+export default function writeConfig(
+  cwd: string,
+  update: ConfigUpdate,
+  scope?: ConfigScope,
+): string {
+  const configPath = resolveWriteConfigPath(cwd, scope);
   const tempPath = `${configPath}.tmp`;
+  const content = mergeConfigFileUpdate(configPath, update);
 
-  let existing: Record<string, unknown> = {};
-  try {
-    const raw = readFileSync(configPath, "utf-8");
-    existing = JSON.parse(raw) as Record<string, unknown>;
-  } catch (err: unknown) {
-    // Only swallow "file not found" — surface parse or permission errors.
-    const isNotFound =
-      err instanceof Error &&
-      "code" in err &&
-      (err as NodeJS.ErrnoException).code === "ENOENT";
-    if (!isNotFound) {
-      throw err;
-    }
-  }
-
-  if (update.tier !== undefined) {
-    existing.tier = update.tier;
-  } else if ("tier" in update) {
-    delete existing.tier;
-  }
-
-  if (update.channel !== undefined) {
-    existing.channel = update.channel;
-  } else if ("channel" in update) {
-    delete existing.channel;
-  }
-
-  if (update.packages !== undefined) {
-    existing.packages = update.packages;
-  } else if ("packages" in update) {
-    delete existing.packages;
-  }
-
-  if (update.trace !== undefined) {
-    existing.trace = update.trace;
-  } else if ("trace" in update) {
-    delete existing.trace;
-  }
-
-  if (update.framework !== undefined) {
-    existing.framework = update.framework;
-  } else if ("framework" in update) {
-    delete existing.framework;
-  }
-
-  writeFileSync(tempPath, `${JSON.stringify(existing, null, 2)}\n`);
+  mkdirSync(dirname(configPath), { recursive: true });
+  writeFileSync(tempPath, content);
   renameSync(tempPath, configPath);
+  return configPath;
 }
