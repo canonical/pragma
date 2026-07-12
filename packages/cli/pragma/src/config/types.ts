@@ -43,4 +43,63 @@ interface ConfigUpdate {
   framework?: Framework | undefined;
 }
 
-export type { ConfigUpdate, PragmaConfig };
+/**
+ * Values a single config file declares. A key is present only when the
+ * file sets it — presence drives which layer wins during merging.
+ */
+interface ConfigFileValues {
+  readonly tier?: string;
+  readonly channel?: Channel;
+  readonly packages?: ReadonlyArray<RawPackageEntry>;
+  readonly trace?: boolean;
+  readonly framework?: Framework;
+}
+
+/** Which config layer supplied an effective field value. */
+type ConfigOrigin = "default" | "global" | "project";
+
+/** Per-field provenance for the effective merged config. */
+interface ConfigOrigins {
+  readonly tier: ConfigOrigin;
+  readonly channel: ConfigOrigin;
+  readonly packages: ConfigOrigin;
+  readonly trace: ConfigOrigin;
+  readonly framework: ConfigOrigin;
+}
+
+/** A resolved config file layer. */
+interface ConfigLayer {
+  /** Absolute path of the layer's config file (existing or would-be). */
+  readonly path: string;
+  /** Whether the file exists and was readable. */
+  readonly exists: boolean;
+}
+
+/** Layered config resolution result with per-field provenance. */
+interface ConfigLayers {
+  /** The effective merged configuration (defaults < global < project). */
+  readonly config: PragmaConfig;
+  /** Which layer supplied each effective field. */
+  readonly origins: ConfigOrigins;
+  /** The global XDG layer (`$XDG_CONFIG_HOME/pragma/config.json`). */
+  readonly global: ConfigLayer;
+  /**
+   * The project layer: the nearest `pragma.config.json` up the tree, or
+   * the would-be path at `cwd` when none exists.
+   */
+  readonly project: ConfigLayer;
+}
+
+/** Target layer selector for config writes. */
+type ConfigScope = "global" | "local";
+
+export type {
+  ConfigFileValues,
+  ConfigLayer,
+  ConfigLayers,
+  ConfigOrigin,
+  ConfigOrigins,
+  ConfigScope,
+  ConfigUpdate,
+  PragmaConfig,
+};

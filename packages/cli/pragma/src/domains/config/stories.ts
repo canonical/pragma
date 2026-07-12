@@ -7,7 +7,7 @@
  * `pragma.config.json` / `true` regardless of the working directory).
  */
 
-import { configExists, readConfig, resolveConfigPath } from "#config";
+import { readConfigLayers } from "#config";
 import { detectInstallSource } from "#package-manager";
 import type { ReadStory } from "../shared/stories/index.js";
 import { showFormatters } from "./formatters/index.js";
@@ -24,13 +24,16 @@ export const configShowStory: ReadStory<ConfigShowData, ConfigShowData> = {
   params: [],
   examples: ["pragma config show"],
   resolve: async (rt) => {
-    const config = readConfig(rt.cwd);
+    const layers = readConfigLayers(rt.cwd);
     const install = detectInstallSource();
-    return resolveConfigShow(config, {
+    return resolveConfigShow(layers.config, {
       packageManager: install.packageManager,
       installSource: install.label,
-      configFilePath: resolveConfigPath(rt.cwd),
-      configFileExists: configExists(rt.cwd),
+      configFilePath: layers.project.path,
+      configFileExists: layers.project.exists,
+      globalConfigPath: layers.global.path,
+      globalConfigExists: layers.global.exists,
+      origins: layers.origins,
     });
   },
   toOutput: (data) => data,

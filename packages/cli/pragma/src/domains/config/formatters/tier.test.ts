@@ -2,36 +2,52 @@ import { describe, expect, it } from "vitest";
 import formatters from "./tier.js";
 
 describe("tierFormatters.set", () => {
-  const data = { field: "tier", value: "apps/lxd" };
+  const data = {
+    field: "tier",
+    value: "apps/lxd",
+    path: "/repo/pragma.config.json",
+  };
 
-  it("plain renders set message", () => {
-    expect(formatters.set.plain(data)).toBe('Set tier to "apps/lxd".');
+  it("plain renders set message with the written path", () => {
+    expect(formatters.set.plain(data)).toBe(
+      'Set tier to "apps/lxd".\nWrote /repo/pragma.config.json',
+    );
   });
 
-  it("llm renders set message", () => {
-    expect(formatters.set.llm(data)).toBe('Set tier to "apps/lxd".');
+  it("llm renders set message with the written path", () => {
+    expect(formatters.set.llm(data)).toBe(
+      'Set tier to "apps/lxd".\nWrote /repo/pragma.config.json',
+    );
   });
 
   it("json returns valid JSON", () => {
     const parsed = JSON.parse(formatters.set.json(data));
     expect(parsed.field).toBe("tier");
     expect(parsed.value).toBe("apps/lxd");
+    expect(parsed.path).toBe("/repo/pragma.config.json");
   });
 });
 
 describe("tierFormatters.reset", () => {
-  it("plain renders reset message", () => {
-    expect(formatters.reset.plain("")).toBe("Reset tier to default.");
+  const data = { field: "tier", path: "/repo/pragma.config.json" };
+
+  it("plain renders reset message with the written path", () => {
+    expect(formatters.reset.plain(data)).toBe(
+      "Reset tier to default.\nWrote /repo/pragma.config.json",
+    );
   });
 
-  it("llm renders reset message", () => {
-    expect(formatters.reset.llm("")).toBe("Reset tier to default.");
+  it("llm renders reset message with the written path", () => {
+    expect(formatters.reset.llm(data)).toBe(
+      "Reset tier to default.\nWrote /repo/pragma.config.json",
+    );
   });
 
   it("json returns valid JSON", () => {
-    const parsed = JSON.parse(formatters.reset.json(""));
+    const parsed = JSON.parse(formatters.reset.json(data));
     expect(parsed.field).toBe("tier");
     expect(parsed.reset).toBe(true);
+    expect(parsed.path).toBe("/repo/pragma.config.json");
   });
 });
 

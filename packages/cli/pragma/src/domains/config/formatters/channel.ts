@@ -9,19 +9,22 @@ import type { Formatters } from "../../shared/formatters.js";
  */
 const channelFormatters = {
   set: {
-    plain: (d: { field: string; value: string }) =>
-      `Set ${d.field} to "${d.value}".`,
-    llm: (d: { field: string; value: string }) =>
-      `Set ${d.field} to "${d.value}".`,
-    json: (d: { field: string; value: string }) =>
-      JSON.stringify({ field: d.field, value: d.value }),
-  } satisfies Formatters<{ field: string; value: string }>,
+    plain: (d: { field: string; value: string; path: string }) =>
+      `Set ${d.field} to "${d.value}".\nWrote ${d.path}`,
+    llm: (d: { field: string; value: string; path: string }) =>
+      `Set ${d.field} to "${d.value}".\nWrote ${d.path}`,
+    json: (d: { field: string; value: string; path: string }) =>
+      JSON.stringify({ field: d.field, value: d.value, path: d.path }),
+  } satisfies Formatters<{ field: string; value: string; path: string }>,
 
   reset: {
-    plain: () => "Reset channel to default.",
-    llm: () => "Reset channel to default.",
-    json: () => JSON.stringify({ field: "channel", reset: true }),
-  } satisfies Formatters<string>,
+    plain: (d: { field: string; path: string }) =>
+      `Reset channel to default.\nWrote ${d.path}`,
+    llm: (d: { field: string; path: string }) =>
+      `Reset channel to default.\nWrote ${d.path}`,
+    json: (d: { field: string; path: string }) =>
+      JSON.stringify({ field: "channel", reset: true, path: d.path }),
+  } satisfies Formatters<{ field: string; path: string }>,
 
   query: {
     plain: (channel: string) => `Current channel: ${channel}`,

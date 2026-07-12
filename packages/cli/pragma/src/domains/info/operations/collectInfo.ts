@@ -1,4 +1,4 @@
-import { readConfig } from "#config";
+import { readConfigLayers } from "#config";
 import { VERSION } from "#constants";
 import { detectInstallSource, PM_COMMANDS } from "#package-manager";
 import {
@@ -28,7 +28,8 @@ import { collectStoreSummary } from "./collectStoreSummary.js";
 export default async function collectInfo(cwd: string): Promise<InfoData> {
   const install = detectInstallSource();
   const pm = install.packageManager;
-  const config = readConfig(cwd);
+  const layers = readConfigLayers(cwd);
+  const config = layers.config;
   const tierChain = resolveTierChain(config.tier);
   const channelReleases = CHANNEL_RELEASES[config.channel];
 
@@ -65,7 +66,9 @@ export default async function collectInfo(cwd: string): Promise<InfoData> {
     version: VERSION,
     pm,
     installSource: install.label,
-    configPath: "pragma.config.json",
+    configPath: layers.project.exists
+      ? layers.project.path
+      : layers.global.path,
     tier: config.tier,
     tierChain,
     channel: config.channel,

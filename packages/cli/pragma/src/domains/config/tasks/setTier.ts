@@ -1,39 +1,20 @@
-import { $, gen, type Task, writeFile } from "@canonical/task";
-import { readConfig } from "../../../config/index.js";
-import resolveConfigPath from "../../../config/resolveConfigPath.js";
+import type { Task } from "@canonical/task";
+import type { ConfigScope } from "../../../config/index.js";
+import writeConfigField from "./writeConfigField.js";
 
 /**
  * Build a config-write task for setting or resetting the active tier.
  *
- * @param cwd - Working directory containing pragma.config.json.
+ * @param cwd - Working directory the target config layer is resolved from.
  * @param tier - Tier path to persist, or `undefined` to reset.
- * @returns Task yielding the persisted field/value payload.
- * @note - Impure — reads config and writes to the file system.
+ * @param scope - Optional explicit target layer (`"global"` | `"local"`).
+ * @returns Task yielding the persisted field/value payload and target path.
+ * @note - Impure — reads and writes the target config file.
  */
 export default function setTier(
   cwd: string,
   tier: string | undefined,
-): Task<{
-  field: "tier";
-  value: string | undefined;
-}> {
-  return gen(function* () {
-    // Merge onto the full existing config so other fields (e.g. `packages`,
-    // `trace`) survive. `readConfig` normalises defaults (tier: undefined,
-    // channel: "normal"); strip those to keep the file minimal, then apply
-    // the tier change (`undefined` resets it).
-    const current = readConfig(cwd);
-    const { tier: _current, channel, ...rest } = current;
-    const next = {
-      ...rest,
-      ...(tier !== undefined ? { tier } : {}),
-      ...(channel !== "normal" ? { channel } : {}),
-    };
-
-    yield* $(
-      writeFile(resolveConfigPath(cwd), `${JSON.stringify(next, null, 2)}\n`),
-    );
-
-    return { field: "tier", value: tier };
-  });
+  scope?: ConfigScope,
+): Task<{ field: "tier"; value: string | undefined; path: string }> {
+  return writeConfigField(cwd, "tier", tier, scope);
 }
