@@ -10,6 +10,15 @@ Tasks are pure descriptions of computations — they don't execute until interpr
 bun add @canonical/task
 ```
 
+## Entry points
+
+The package ships two entries:
+
+- **`@canonical/task`** — everything: the task algebra plus the interpreters (`runTask`, dry-run, undo). The production interpreter executes filesystem, exec, and prompt effects, so this entry imports Node builtins (`node:fs/promises`, `node:path`, and `node:child_process` for `exec`) and is Node-only.
+- **`@canonical/task/kernel`** — the node-free algebra: core types, the task monad, effect constructors, primitives, and combinators. No Node builtin is reachable from this entry's import graph (pinned by a closure-walking test), so it bundles cleanly for browser and edge targets. Use it anywhere tasks are constructed, composed, or inspected but interpreted elsewhere.
+
+Bundlers targeting the browser must import from `@canonical/task/kernel`. Module resolution happens before tree-shaking, so importing even a single pure function from the root entry pulls the interpreter's `node:` imports into the module graph and fails the build — regardless of what the bundle actually uses.
+
 ## Quick Start
 
 ```typescript
