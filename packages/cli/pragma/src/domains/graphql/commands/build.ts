@@ -8,13 +8,11 @@ import {
 } from "@canonical/cli-core";
 import { serializeExtraction } from "@canonical/ke-graphql";
 import { selectFormatter } from "../../shared/formatters.js";
+import { DEFAULT_EXTRACTION_PATH, DEFAULT_SDL_PATH } from "../constants.js";
 import { reportFormatters } from "../formatters/index.js";
 import { gatherSources, parsePrefixes } from "../helpers/index.js";
 import { compileSchema } from "../operations/index.js";
 import type { GraphqlCompileReport } from "../types.js";
-
-const DEFAULT_SDL_PATH = "./schema.graphql";
-const DEFAULT_EXTRACTION_PATH = "./extraction.json";
 
 /** Narrow an unknown param to a string array. */
 function readStringArray(value: unknown): string[] {

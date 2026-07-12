@@ -4,13 +4,12 @@ import {
   createOutputResult,
 } from "@canonical/cli-core";
 import { PragmaError } from "#error";
+import { DEFAULT_PORT } from "../constants.js";
 import { gatherSources, parsePrefixes } from "../helpers/index.js";
 import routeGraphql from "../helpers/routeGraphql.js";
 import createSchemaServer, {
   type SchemaServer,
 } from "../operations/createSchemaServer.js";
-
-const DEFAULT_PORT = 4000;
 
 /** Narrow an unknown param to a string array. */
 function readStringArray(value: unknown): string[] {
