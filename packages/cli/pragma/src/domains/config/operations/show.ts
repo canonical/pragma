@@ -1,4 +1,4 @@
-import type { PragmaConfig } from "#config";
+import type { ConfigOrigins, PragmaConfig } from "#config";
 import { CHANNEL_RELEASES } from "../../shared/filters/buildChannelFilter.js";
 import { resolveTierChain } from "../../shared/filters/buildTierFilter.js";
 import type { ConfigShowData } from "./types.js";
@@ -20,6 +20,9 @@ export default function resolveConfigShow(
     installSource: string;
     configFilePath: string;
     configFileExists: boolean;
+    globalConfigPath: string;
+    globalConfigExists: boolean;
+    origins: ConfigOrigins;
   },
 ): ConfigShowData {
   // Don't throw for stale config — show always displays what's configured.
@@ -38,5 +41,8 @@ export default function resolveConfigShow(
     installSource: opts.installSource,
     configFilePath: opts.configFilePath,
     configFileExists: opts.configFileExists,
+    globalConfigPath: opts.globalConfigPath,
+    globalConfigExists: opts.globalConfigExists,
+    origins: opts.origins,
   };
 }

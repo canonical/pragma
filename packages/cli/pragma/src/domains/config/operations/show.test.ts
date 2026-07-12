@@ -1,5 +1,20 @@
 import { describe, expect, it } from "vitest";
+import type { ConfigOrigins } from "#config";
 import resolveConfigShow from "./show.js";
+
+const PROJECT_ORIGINS: ConfigOrigins = {
+  tier: "project",
+  channel: "project",
+  packages: "default",
+  trace: "default",
+  framework: "default",
+};
+
+const PROVENANCE = {
+  globalConfigPath: "/home/u/.config/pragma/config.json",
+  globalConfigExists: false,
+  origins: PROJECT_ORIGINS,
+};
 
 describe("resolveConfigShow", () => {
   it("resolves tier chain and included releases", () => {
@@ -10,6 +25,7 @@ describe("resolveConfigShow", () => {
         installSource: "bun (global)",
         configFilePath: "/tmp/pragma.config.json",
         configFileExists: true,
+        ...PROVENANCE,
       },
     );
 
@@ -30,6 +46,7 @@ describe("resolveConfigShow", () => {
         installSource: "bun (local)",
         configFilePath: "/tmp/pragma.config.json",
         configFileExists: false,
+        ...PROVENANCE,
       },
     );
 
@@ -47,6 +64,7 @@ describe("resolveConfigShow", () => {
         installSource: "pnpm (global)",
         configFilePath: "/tmp/pragma.config.json",
         configFileExists: true,
+        ...PROVENANCE,
       },
     );
 

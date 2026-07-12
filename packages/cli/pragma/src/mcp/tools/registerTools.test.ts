@@ -508,6 +508,8 @@ describe("config_show", () => {
 describe("config_tier", () => {
   it("sets, queries, and resets tier in workspace config", async () => {
     const dir = mkdtempSync(join(tmpdir(), "pragma-mcp-tier-"));
+    // Seed a project file so global-first writes stay in this workspace.
+    writeFileSync(join(dir, "pragma.config.json"), "{}");
 
     try {
       const scoped = await createTestMcpClient({ cwd: dir });
@@ -517,7 +519,10 @@ describe("config_tier", () => {
           name: "config_tier",
           arguments: { path: "global" },
         });
-        expect(parseData(setResult)).toEqual({ tier: "global", action: "set" });
+        expect(parseData(setResult)).toMatchObject({
+          tier: "global",
+          action: "set",
+        });
 
         const queryResult = await scoped.client.callTool({
           name: "config_tier",
@@ -532,7 +537,10 @@ describe("config_tier", () => {
           name: "config_tier",
           arguments: { reset: true },
         });
-        expect(parseData(resetResult)).toEqual({ tier: null, action: "reset" });
+        expect(parseData(resetResult)).toMatchObject({
+          tier: null,
+          action: "reset",
+        });
 
         const queriedAfterReset = await scoped.client.callTool({
           name: "config_tier",
@@ -554,6 +562,8 @@ describe("config_tier", () => {
 describe("config_channel", () => {
   it("sets, queries, and resets channel in workspace config", async () => {
     const dir = mkdtempSync(join(tmpdir(), "pragma-mcp-channel-"));
+    // Seed a project file so global-first writes stay in this workspace.
+    writeFileSync(join(dir, "pragma.config.json"), "{}");
 
     try {
       const scoped = await createTestMcpClient({ cwd: dir });
@@ -563,7 +573,7 @@ describe("config_channel", () => {
           name: "config_channel",
           arguments: { value: "experimental" },
         });
-        expect(parseData(setResult)).toEqual({
+        expect(parseData(setResult)).toMatchObject({
           channel: "experimental",
           action: "set",
         });
@@ -581,7 +591,7 @@ describe("config_channel", () => {
           name: "config_channel",
           arguments: { reset: true },
         });
-        expect(parseData(resetResult)).toEqual({
+        expect(parseData(resetResult)).toMatchObject({
           channel: "normal",
           action: "reset",
         });

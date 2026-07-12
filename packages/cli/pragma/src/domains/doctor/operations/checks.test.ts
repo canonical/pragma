@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("#config", async (importOriginal) => ({
   ...(await importOriginal<typeof import("#config")>()),
   configExists: vi.fn(),
+  readConfigLayers: vi.fn(),
 }));
 vi.mock("../../shared/bootStore.js", () => ({
   bootStore: vi.fn(),
@@ -22,7 +23,7 @@ vi.mock("@canonical/task", () => ({
 }));
 
 import { detectHarnesses, readMcpConfig } from "@canonical/harnesses";
-import { configExists } from "#config";
+import { configExists, readConfigLayers } from "#config";
 import { collectStoreSummary } from "../../info/operations/index.js";
 import { bootStore } from "../../shared/bootStore.js";
 import {
@@ -59,14 +60,55 @@ describe("checkPragmaVersion", () => {
 });
 
 describe("checkConfigFile", () => {
-  it("passes when config exists", async () => {
-    vi.mocked(configExists).mockReturnValue(true);
+  it("passes when a project config exists", async () => {
+    vi.mocked(readConfigLayers).mockReturnValue({
+      config: { tier: undefined, channel: "normal" },
+      origins: {
+        tier: "default",
+        channel: "default",
+        packages: "default",
+        trace: "default",
+        framework: "default",
+      },
+      global: { path: "/home/u/.config/pragma/config.json", exists: false },
+      project: { path: "/repo/pragma.config.json", exists: true },
+    });
     const result = await checkConfigFile(ctx);
     expect(result.status).toBe("pass");
+    expect(result.detail).toContain("/repo/pragma.config.json");
   });
 
-  it("fails with remedy when config missing", async () => {
-    vi.mocked(configExists).mockReturnValue(false);
+  it("passes when only the global config exists", async () => {
+    vi.mocked(readConfigLayers).mockReturnValue({
+      config: { tier: undefined, channel: "normal" },
+      origins: {
+        tier: "default",
+        channel: "default",
+        packages: "default",
+        trace: "default",
+        framework: "default",
+      },
+      global: { path: "/home/u/.config/pragma/config.json", exists: true },
+      project: { path: "/repo/pragma.config.json", exists: false },
+    });
+    const result = await checkConfigFile(ctx);
+    expect(result.status).toBe("pass");
+    expect(result.detail).toContain("global config active");
+  });
+
+  it("fails with remedy when neither layer exists", async () => {
+    vi.mocked(readConfigLayers).mockReturnValue({
+      config: { tier: undefined, channel: "normal" },
+      origins: {
+        tier: "default",
+        channel: "default",
+        packages: "default",
+        trace: "default",
+        framework: "default",
+      },
+      global: { path: "/home/u/.config/pragma/config.json", exists: false },
+      project: { path: "/repo/pragma.config.json", exists: false },
+    });
     const result = await checkConfigFile(ctx);
     expect(result.status).toBe("fail");
     expect(result.remedy).toBeDefined();
