@@ -1,9 +1,9 @@
 /**
  * Bundled package loader for compiled binaries.
  *
- * Resolves semantic content from `Bun.embeddedFiles` — TTL, story-pack
- * JSON, and skill files embedded into the compiled binary via the build
- * command.
+ * Resolves semantic content from `Bun.embeddedFiles` — the TTL graphs
+ * and story-pack JSON embedded into the compiled binary via the build
+ * command. Skills are not embedded; this loader reports `skills: []`.
  *
  * Blob names are hashed by bun (e.g. `button-a1b2c3d4.ttl`), losing
  * directory and package association. The loader therefore returns a
