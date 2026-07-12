@@ -18,6 +18,7 @@ import { specs as orientationSpecs } from "../../domains/llm/mcp/index.js";
 import { specs as modifierSpecs } from "../../domains/modifier/mcp/index.js";
 import { specs as ontologySpecs } from "../../domains/ontology/mcp/index.js";
 import type { PragmaRuntime } from "../../domains/shared/runtime.js";
+import { compilePackToolSpecs } from "../../domains/shared/stories/pack/index.js";
 import type { ToolSpec } from "../../domains/shared/ToolSpec.js";
 import { specs as skillSpecs } from "../../domains/skill/mcp/index.js";
 import { specs as standardSpecs } from "../../domains/standard/mcp/index.js";
@@ -52,6 +53,14 @@ export default function registerAllTools(
   runtime: PragmaRuntime,
 ): void {
   for (const spec of allSpecs) {
+    registerFromSpec(server, runtime, spec);
+  }
+
+  // Story packs project onto the same surface; built-in nouns are reserved.
+  const reservedNouns = new Set(
+    allSpecs.map((spec) => spec.name.split("_").at(0) ?? ""),
+  );
+  for (const spec of compilePackToolSpecs(runtime, reservedNouns)) {
     registerFromSpec(server, runtime, spec);
   }
 }

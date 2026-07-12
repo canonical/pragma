@@ -16,7 +16,11 @@ import {
   statSync,
 } from "node:fs";
 import { join } from "node:path";
-import type { GraphContent, SkillEntry } from "../semanticPackage.js";
+import type {
+  GraphContent,
+  SkillEntry,
+  StoryFileEntry,
+} from "../semanticPackage.js";
 
 // ---------------------------------------------------------------------------
 // TTL discovery convention
@@ -35,6 +39,7 @@ export interface PackageDirContents {
   readonly version: string;
   readonly graphs: GraphContent[];
   readonly skills: SkillEntry[];
+  readonly stories: StoryFileEntry[];
 }
 
 /**
@@ -48,6 +53,7 @@ export default function readPackageDir(dir: string): PackageDirContents {
     version: readVersion(dir),
     graphs: readGraphs(dir),
     skills: readSkills(dir),
+    stories: readStories(dir),
   };
 }
 
@@ -85,6 +91,33 @@ function readGraphs(dir: string): GraphContent[] {
   }
 
   return graphs;
+}
+
+function readStories(dir: string): StoryFileEntry[] {
+  const storiesDir = join(dir, "stories");
+  if (!existsSync(storiesDir)) return [];
+
+  const stories: StoryFileEntry[] = [];
+  try {
+    for (const entry of readdirSync(storiesDir)) {
+      if (!entry.endsWith(".json")) continue;
+      const entryPath = join(storiesDir, entry);
+      try {
+        stories.push({
+          path: entryPath,
+          definition: JSON.parse(readFileSync(entryPath, "utf-8")),
+        });
+      } catch {
+        process.stderr.write(
+          `Warning: invalid JSON in story file ${entryPath}\n`,
+        );
+      }
+    }
+  } catch {
+    // readdir failed — no stories
+  }
+
+  return stories;
 }
 
 function readSkills(dir: string): SkillEntry[] {

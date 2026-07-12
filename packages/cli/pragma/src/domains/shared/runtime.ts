@@ -48,6 +48,7 @@ export async function bootPragma(options?: {
     sources: options?.sources,
     refs,
     trace: config.trace,
+    prefixes: config.prefixes,
   });
 
   return {

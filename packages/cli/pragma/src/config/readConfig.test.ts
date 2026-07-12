@@ -191,6 +191,64 @@ describe("readConfig", () => {
   });
 });
 
+describe("readConfig — stories and prefixes fields", () => {
+  let dir: string;
+
+  beforeEach(() => {
+    dir = mkdtempSync(join(tmpdir(), "pragma-config-stories-"));
+    mkdirSync(join(dir, ".git"));
+  });
+
+  afterEach(() => {
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it("parses a valid stories array and prefixes map", () => {
+    writeFileSync(
+      join(dir, "pragma.config.json"),
+      JSON.stringify({
+        prefixes: { ex: "http://example.org/" },
+        stories: [
+          {
+            noun: "recipe",
+            list: {
+              query: "SELECT ?uri WHERE { ?uri a ex:Recipe }",
+              columns: [{ field: "uri" }],
+            },
+          },
+        ],
+      }),
+    );
+    const config = readConfig(dir);
+    expect(config.prefixes).toEqual({ ex: "http://example.org/" });
+    expect(config.stories?.at(0)?.noun).toBe("recipe");
+  });
+
+  it("throws on a non-array stories field", () => {
+    writeFileSync(
+      join(dir, "pragma.config.json"),
+      '{"stories": {"noun": "x"}}',
+    );
+    expect(() => readConfig(dir)).toThrow(/stories/);
+  });
+
+  it("throws on an invalid story definition", () => {
+    writeFileSync(
+      join(dir, "pragma.config.json"),
+      '{"stories": [{"noun": "Bad Noun"}]}',
+    );
+    expect(() => readConfig(dir)).toThrow(PragmaError);
+  });
+
+  it("throws on a prefixes value that is not an IRI", () => {
+    writeFileSync(
+      join(dir, "pragma.config.json"),
+      '{"prefixes": {"ex": "not-an-iri"}}',
+    );
+    expect(() => readConfig(dir)).toThrow(/prefix/);
+  });
+});
+
 describe("writeConfig", () => {
   let dir: string;
 
