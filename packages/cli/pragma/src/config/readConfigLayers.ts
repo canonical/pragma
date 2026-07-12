@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { DEFAULT_CONFIG } from "./defaultConfig.js";
 import findProjectConfigPath from "./findProjectConfigPath.js";
 import parseConfigValues from "./parseConfigValues.js";
 import resolveConfigPath from "./resolveConfigPath.js";
@@ -9,6 +10,18 @@ import type {
   ConfigOrigin,
   PragmaConfig,
 } from "./types.js";
+
+/**
+ * Fields the built-in defaults document contributes to the layer merge.
+ *
+ * `packages` is deliberately absent: it reaches the ref merge through
+ * `DEFAULT_PACKAGES` instead, so global `refs.json` entries keep merging
+ * over the default packages by name. Surfacing it here would make the
+ * defaults look user-declared and replace the merged set wholesale.
+ */
+const DEFAULT_LAYER: ConfigFileValues = {
+  channel: DEFAULT_CONFIG.channel,
+};
 
 /**
  * Resolve the layered configuration with per-field provenance.
@@ -42,6 +55,9 @@ export default function readConfigLayers(
     if (field in globalFile.values) {
       return { value: globalFile.values[field], origin: "global" };
     }
+    if (field in DEFAULT_LAYER) {
+      return { value: DEFAULT_LAYER[field], origin: "default" };
+    }
     return { value: undefined, origin: "default" };
   };
 
@@ -55,7 +71,7 @@ export default function readConfigLayers(
 
   const config: PragmaConfig = {
     tier: tier.value,
-    channel: channel.value ?? "normal",
+    channel: channel.value ?? DEFAULT_CONFIG.channel,
     ...(packages.value ? { packages: packages.value } : {}),
     ...(trace.value !== undefined ? { trace: trace.value } : {}),
     ...(framework.value !== undefined ? { framework: framework.value } : {}),
