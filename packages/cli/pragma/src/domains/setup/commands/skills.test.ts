@@ -7,9 +7,13 @@ import buildSkillsCommand from "./skills.js";
 
 const TMP_ROOT = join(tmpdir(), `pragma-setup-cmd-${Date.now()}`);
 
+/** One source per skill directory, matching the loader granularity. */
 const TEST_SOURCES = [
   {
-    dir: join(TMP_ROOT, "node_modules/@canonical/design-system/skills"),
+    dir: join(
+      TMP_ROOT,
+      "node_modules/@canonical/design-system/skills/design-audit",
+    ),
     packageName: "@canonical/design-system",
   },
 ];
@@ -21,7 +25,7 @@ vi.mock("../../skill/helpers/resolveSkillSources.js", () => ({
 beforeAll(() => {
   mkdirSync(TMP_ROOT, { recursive: true });
 
-  const dir = join(TEST_SOURCES[0].dir, "design-audit");
+  const dir = TEST_SOURCES.at(0)?.dir ?? "";
   mkdirSync(dir, { recursive: true });
   writeFileSync(
     join(dir, "SKILL.md"),

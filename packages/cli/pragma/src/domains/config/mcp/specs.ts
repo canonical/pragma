@@ -1,54 +1,20 @@
 /**
- * MCP tool specs for the config domain.
+ * MCP tool specs for the config domain — config_show, config_tier,
+ * config_channel.
  *
- * config_show uses the shared resolveConfigShow() operation so that
- * MCP data matches what the CLI produces (tierChain, includedReleases, etc.).
+ * config_show is compiled from the config read story in `../stories.ts`
+ * so both surfaces share resolution and formatters; the mutating tier and
+ * channel tools are spec'd by hand.
  */
 
 import { readConfig, writeConfig } from "#config";
-import { detectInstallSource } from "#package-manager";
+import { compileReadTool } from "../../shared/stories/index.js";
 import type { ToolSpec } from "../../shared/ToolSpec.js";
-import { showFormatters } from "../formatters/index.js";
-import {
-  resolveConfigShow,
-  validateChannel,
-  validateTier,
-} from "../operations/index.js";
+import { validateChannel, validateTier } from "../operations/index.js";
+import { configShowStory } from "../stories.js";
 
 const specs: readonly ToolSpec[] = [
-  {
-    name: "config_show",
-    description:
-      "Show current pragma configuration (tier and channel settings).",
-    params: {
-      condensed: {
-        type: "boolean",
-        description: "Token-optimized output",
-        optional: true,
-      },
-    },
-    readOnly: true,
-    async execute(rt, { condensed }) {
-      const install = detectInstallSource();
-      const data = resolveConfigShow(rt.config, {
-        packageManager: install.packageManager,
-        installSource: install.label,
-        configFilePath: "pragma.config.json",
-        configFileExists: true,
-      });
-
-      if (condensed) {
-        const text = showFormatters.llm(data);
-        return {
-          condensed: true,
-          text,
-          tokens: `~${Math.ceil(text.length / 4)}`,
-        };
-      }
-
-      return { data };
-    },
-  },
+  compileReadTool(configShowStory),
   {
     name: "config_tier",
     description:

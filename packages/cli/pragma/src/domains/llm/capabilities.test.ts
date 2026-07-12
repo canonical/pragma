@@ -26,10 +26,10 @@ describe("buildCapabilitiesData", () => {
     expect(data.discovery_sequence[2]?.tool).toBe("domain tools");
   });
 
-  it("includes all 29 tools from TOOL_CATALOG", () => {
+  it("includes every tool from TOOL_CATALOG", () => {
     const data = buildCapabilitiesData();
     expect(data.tools).toHaveLength(TOOL_CATALOG.length);
-    expect(data.tools).toHaveLength(29);
+    expect(data.tools).toHaveLength(30);
   });
 
   it("every tool has a non-empty use_when", () => {
@@ -41,7 +41,7 @@ describe("buildCapabilitiesData", () => {
 
   it("counts match tool catalog category lengths", () => {
     const data = buildCapabilitiesData();
-    expect(data.counts.total).toBe(29);
+    expect(data.counts.total).toBe(30);
     expect(data.counts.read).toBe(
       TOOL_CATALOG.filter((t) => t.category === "read").length,
     );
@@ -79,7 +79,7 @@ describe("buildCapabilitiesCommand", () => {
     expect(text).toContain("Discovery Sequence");
     expect(text).toContain("block_list");
     expect(text).toContain("read");
-    expect(text).toContain("29 tools");
+    expect(text).toContain("30 tools");
   });
 
   it("does not require a store or runtime", async () => {

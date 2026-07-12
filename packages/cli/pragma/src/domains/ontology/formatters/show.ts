@@ -1,5 +1,11 @@
 import chalk from "chalk";
-import { formatHeading, formatSection } from "#pipeline";
+// Deep import, not #pipeline: the barrel re-exports collectCommands, which
+// imports every domain barrel — including this one — so #pipeline here forms
+// a module cycle that evaluates this domain's stories as undefined at load.
+import {
+  formatHeading,
+  formatSection,
+} from "../../../pipeline/formatTerminal.js";
 import compactUri from "../../shared/compactUri.js";
 import type { Formatters } from "../../shared/formatters.js";
 import { PREFIX_MAP } from "../../shared/prefixes.js";

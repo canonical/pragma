@@ -7,25 +7,33 @@ import listSkills from "./list.js";
 
 const TMP_ROOT = join(tmpdir(), `pragma-skill-list-${Date.now()}`);
 
+/** Each source is one skill directory, matching the loader granularity. */
 const TEST_SOURCES: SkillSource[] = [
   {
-    dir: join(TMP_ROOT, "node_modules/@canonical/design-system/skills"),
+    dir: join(
+      TMP_ROOT,
+      "node_modules/@canonical/design-system/skills/design-audit",
+    ),
     packageName: "@canonical/design-system",
   },
   {
-    dir: join(TMP_ROOT, "node_modules/@canonical/anatomy-dsl/skills"),
+    dir: join(
+      TMP_ROOT,
+      "node_modules/@canonical/anatomy-dsl/skills/anatomy-author",
+    ),
     packageName: "@canonical/anatomy-dsl",
   },
   {
-    dir: join(TMP_ROOT, "node_modules/@canonical/pragma-cli/skills"),
+    dir: join(
+      TMP_ROOT,
+      "node_modules/@canonical/pragma-cli/skills/scaffold-story",
+    ),
     packageName: "@canonical/pragma-cli",
   },
 ];
 
 beforeAll(() => {
-  mkdirSync(TMP_ROOT, { recursive: true });
-
-  const skillDir = join(TEST_SOURCES[0].dir, "design-audit");
+  const skillDir = TEST_SOURCES.at(0)?.dir ?? "";
   mkdirSync(skillDir, { recursive: true });
   writeFileSync(
     join(skillDir, "SKILL.md"),
@@ -45,7 +53,7 @@ describe("listSkills", () => {
   it("returns discovered skills", async () => {
     const { skills } = await listSkills(TMP_ROOT, TEST_SOURCES);
     expect(skills).toHaveLength(1);
-    expect(skills[0].name).toBe("design-audit");
+    expect(skills.at(0)?.name).toBe("design-audit");
   });
 
   it("reports source availability", async () => {
