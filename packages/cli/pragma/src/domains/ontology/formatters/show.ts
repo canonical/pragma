@@ -1,4 +1,7 @@
 import chalk from "chalk";
+// Deep import, not #pipeline: the barrel re-exports collectCommands, which
+// imports every domain barrel — including this one — so #pipeline here forms
+// a module cycle that evaluates this domain's stories as undefined at load.
 import {
   formatHeading,
   formatSection,

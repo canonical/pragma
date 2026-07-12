@@ -26,7 +26,7 @@ describe("buildCapabilitiesData", () => {
     expect(data.discovery_sequence[2]?.tool).toBe("domain tools");
   });
 
-  it("includes all 29 tools from TOOL_CATALOG", () => {
+  it("includes every tool from TOOL_CATALOG", () => {
     const data = buildCapabilitiesData();
     expect(data.tools).toHaveLength(TOOL_CATALOG.length);
     expect(data.tools).toHaveLength(30);
