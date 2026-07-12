@@ -53,6 +53,41 @@ describe("compilePackStories — list", () => {
   });
 });
 
+describe("compilePackStories — list filters", () => {
+  it("projects declared filters as enum story parameters", () => {
+    const { list } = compilePackStories(RECIPE_STORY, "test", PREFIXES);
+    const param = list.params.at(0);
+    expect(param?.name).toBe("category");
+    expect(param?.type).toBe("string");
+    expect(param?.enum).toEqual(["breakfast", "soup"]);
+  });
+
+  it("filters resolved rows by the provided value", async () => {
+    const { list } = compilePackStories(RECIPE_STORY, "test", PREFIXES);
+    const rows = await list.resolve(rt, { category: "soup" });
+    expect(rows.map((row) => row.name)).toEqual(["Gazpacho"]);
+    expect(list.toEnvelope(rows).meta).toEqual({ count: 1 });
+  });
+
+  it("canonicalizes case-insensitive input through resolve", async () => {
+    const { list } = compilePackStories(RECIPE_STORY, "test", PREFIXES);
+    const rows = await list.resolve(rt, { category: "SOUP" });
+    expect(rows.map((row) => row.name)).toEqual(["Gazpacho"]);
+  });
+
+  it("rejects a value outside the declared set with INVALID_INPUT", async () => {
+    const { list } = compilePackStories(RECIPE_STORY, "test", PREFIXES);
+    await expect(
+      list.resolve(rt, { category: "dinner" }),
+    ).rejects.toMatchObject({ code: "INVALID_INPUT" });
+  });
+
+  it("mentions the first filter in the examples", () => {
+    const { list } = compilePackStories(RECIPE_STORY, "test", PREFIXES);
+    expect(list.examples).toContain("pragma recipe list --category breakfast");
+  });
+});
+
 describe("compilePackStories — lookup", () => {
   it("looks an entity up by name, case-insensitively", async () => {
     const { lookup } = compilePackStories(RECIPE_STORY, "test", PREFIXES);

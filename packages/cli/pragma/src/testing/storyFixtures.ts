@@ -44,6 +44,13 @@ export const RECIPE_STORY: StoryPackDefinition = {
       { field: "category" },
       { field: "uri", label: "IRI" },
     ],
+    filters: [
+      {
+        param: "category",
+        variable: "category",
+        values: ["breakfast", "soup"],
+      },
+    ],
   },
   lookup: {
     type: "ex:Recipe",

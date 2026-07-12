@@ -332,7 +332,10 @@ declarative read stories — any ontology loaded through `packages` gets
       "description": "List recipes",
       "list": {
         "query": "SELECT ?uri ?name ?category WHERE { ?uri a ex:Recipe ; ex:name ?name ; ex:category ?category } ORDER BY ?name",
-        "columns": [{ "field": "name" }, { "field": "category" }]
+        "columns": [{ "field": "name" }, { "field": "category" }],
+        "filters": [
+          { "param": "category", "variable": "category", "values": ["breakfast", "soup"] }
+        ]
       },
       "lookup": {
         "type": "ex:Recipe",
@@ -347,8 +350,11 @@ declarative read stories — any ontology loaded through `packages` gets
 
 The lookup query is generated (user input is escaped, never interpolated by
 the pack), the store stays read-only, and config-declared stories override
-package-shipped ones on noun collisions. The format is experimental and may
-change.
+package-shipped ones on noun collisions. Declared `filters` become
+`pragma recipe list --category soup` on the CLI and an enum parameter on the
+MCP tool; they are row predicates applied after the query runs, so filter
+input can never inject SPARQL and the query's ordering is preserved. The
+format is experimental and may change.
 
 ## Error Handling
 
