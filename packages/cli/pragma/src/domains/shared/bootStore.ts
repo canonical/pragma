@@ -38,6 +38,8 @@ export interface BootStoreOptions {
   refs?: ReadonlyArray<PackageRef>;
   /** Enable query tracing (from config). Env var PRAGMA_TRACE=1 overrides. */
   trace?: boolean;
+  /** Additional namespace prefixes merged over the built-in prefix map. */
+  prefixes?: Readonly<Record<string, string>>;
 }
 
 export interface BootResult {
@@ -59,12 +61,13 @@ export interface BootResult {
 export async function bootStore(
   options: BootStoreOptions = {},
 ): Promise<BootResult> {
+  const prefixes = { ...PREFIX_MAP, ...options.prefixes };
   try {
     // Testing/programmatic override — use explicit sources
     if (options.sources) {
       const store = await createStore({
         sources: options.sources,
-        prefixes: PREFIX_MAP,
+        prefixes,
         cache: options.cache,
         cwd: options.cwd,
       });
@@ -110,7 +113,7 @@ export async function bootStore(
 
     const store = await createStore({
       sources: [],
-      prefixes: PREFIX_MAP,
+      prefixes,
       cache: options.cache,
       cwd: options.cwd,
       plugins,

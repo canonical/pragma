@@ -50,6 +50,8 @@ export default function readConfigLayers(
   const packages = pick("packages");
   const trace = pick("trace");
   const framework = pick("framework");
+  const stories = pick("stories");
+  const prefixes = pick("prefixes");
 
   const config: PragmaConfig = {
     tier: tier.value,
@@ -57,6 +59,8 @@ export default function readConfigLayers(
     ...(packages.value ? { packages: packages.value } : {}),
     ...(trace.value !== undefined ? { trace: trace.value } : {}),
     ...(framework.value !== undefined ? { framework: framework.value } : {}),
+    ...(stories.value ? { stories: stories.value } : {}),
+    ...(prefixes.value ? { prefixes: prefixes.value } : {}),
   };
 
   return {
@@ -67,6 +71,8 @@ export default function readConfigLayers(
       packages: packages.origin,
       trace: trace.origin,
       framework: framework.origin,
+      stories: stories.origin,
+      prefixes: prefixes.origin,
     },
     global: { path: globalPath, exists: globalFile.exists },
     project: { path: projectPath, exists: projectFile.exists },

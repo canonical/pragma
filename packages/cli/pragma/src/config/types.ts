@@ -7,6 +7,7 @@
 
 import type { Channel, Framework } from "../constants.js";
 import type { RawPackageEntry } from "../domains/refs/operations/parseRef.js";
+import type { StoryPackDefinition } from "../domains/shared/stories/pack/types.js";
 
 /** Parsed contents of pragma.config.json. */
 interface PragmaConfig {
@@ -27,6 +28,17 @@ interface PragmaConfig {
    * only — no behaviour reads it yet; reserved for future framework defaulting.
    */
   framework?: Framework | undefined;
+  /**
+   * Declarative read stories compiled into CLI commands and MCP tools at
+   * boot.
+   * @experimental Story packs (v0) are experimental — the format may change.
+   */
+  stories?: ReadonlyArray<StoryPackDefinition> | undefined;
+  /**
+   * Additional namespace prefixes merged over the built-in prefix map —
+   * registered on the store (usable in queries) and used for display.
+   */
+  prefixes?: Readonly<Record<string, string>> | undefined;
 }
 
 /** Partial update payload for writing config changes. */
@@ -53,6 +65,8 @@ interface ConfigFileValues {
   readonly packages?: ReadonlyArray<RawPackageEntry>;
   readonly trace?: boolean;
   readonly framework?: Framework;
+  readonly stories?: ReadonlyArray<StoryPackDefinition>;
+  readonly prefixes?: Readonly<Record<string, string>>;
 }
 
 /** Which config layer supplied an effective field value. */
@@ -65,6 +79,8 @@ interface ConfigOrigins {
   readonly packages: ConfigOrigin;
   readonly trace: ConfigOrigin;
   readonly framework: ConfigOrigin;
+  readonly stories: ConfigOrigin;
+  readonly prefixes: ConfigOrigin;
 }
 
 /** A resolved config file layer. */
