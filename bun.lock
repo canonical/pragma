@@ -397,6 +397,25 @@
         "typescript": "^5.9.3",
       },
     },
+    "packages/implementation-ledger": {
+      "name": "@canonical/implementation-ledger",
+      "version": "0.29.1",
+      "bin": {
+        "implementation-ledger": "src/cli.ts",
+      },
+      "dependencies": {
+        "tinyglobby": "^0.2.15",
+      },
+      "devDependencies": {
+        "@biomejs/biome": "2.4.9",
+        "@canonical/biome-config": "^0.29.0",
+        "@canonical/typescript-config": "^0.29.0",
+        "@canonical/webarchitect": "^0.29.0",
+        "@types/node": "^24.12.0",
+        "typescript": "^5.9.3",
+        "vitest": "^4.0.18",
+      },
+    },
     "packages/lit/ds-prototype": {
       "name": "@canonical/lit-ds-prototype",
       "version": "0.29.1",
@@ -408,6 +427,7 @@
         "@biomejs/biome": "2.4.9",
         "@canonical/biome-config": "^0.29.0",
         "@canonical/ds-types": "^0.29.0",
+        "@canonical/implementation-ledger": "^0.29.1",
         "@canonical/styles": "^0.29.0",
         "@canonical/typescript-config-lit": "^0.29.0",
         "@canonical/webarchitect": "^0.29.0",
@@ -439,6 +459,7 @@
         "@biomejs/biome": "2.4.9",
         "@canonical/biome-config": "^0.29.0",
         "@canonical/design-tokens": "0.6.2-contrasted.0",
+        "@canonical/implementation-ledger": "^0.29.1",
         "@canonical/router-core": "^0.29.0",
         "@canonical/router-react": "^0.29.0",
         "@canonical/storybook-addon-utils": "^0.29.0",
@@ -486,6 +507,7 @@
         "@biomejs/biome": "2.4.9",
         "@canonical/biome-config": "^0.29.0",
         "@canonical/design-tokens": "0.6.2-contrasted.0",
+        "@canonical/implementation-ledger": "^0.29.1",
         "@canonical/storybook-helpers": "^0.29.0",
         "@canonical/typescript-config-react": "^0.29.0",
         "@canonical/vitest-config-react": "^0.29.0",
@@ -522,6 +544,7 @@
         "@biomejs/biome": "2.4.9",
         "@canonical/biome-config": "^0.29.0",
         "@canonical/design-tokens": "0.6.2-contrasted.0",
+        "@canonical/implementation-ledger": "^0.29.1",
         "@canonical/storybook-helpers": "^0.29.0",
         "@canonical/typescript-config-react": "^0.29.0",
         "@canonical/vitest-config-react": "^0.29.0",
@@ -564,6 +587,7 @@
         "@biomejs/biome": "2.4.9",
         "@canonical/biome-config": "^0.29.0",
         "@canonical/design-tokens": "0.6.2-contrasted.0",
+        "@canonical/implementation-ledger": "^0.29.1",
         "@canonical/storybook-helpers": "^0.29.0",
         "@canonical/typescript-config-react": "^0.29.0",
         "@canonical/vitest-config-react": "^0.29.0",
@@ -601,6 +625,7 @@
         "@biomejs/biome": "2.4.9",
         "@canonical/biome-config": "^0.29.0",
         "@canonical/design-tokens": "0.6.2-contrasted.0",
+        "@canonical/implementation-ledger": "^0.29.1",
         "@canonical/storybook-helpers": "^0.29.0",
         "@canonical/typescript-config-react": "^0.29.0",
         "@canonical/vitest-config-react": "^0.29.0",
@@ -637,6 +662,7 @@
         "@biomejs/biome": "2.4.9",
         "@canonical/biome-config": "^0.29.0",
         "@canonical/design-tokens": "0.6.2-contrasted.0",
+        "@canonical/implementation-ledger": "^0.29.1",
         "@canonical/storybook-helpers": "^0.29.0",
         "@canonical/typescript-config-react": "^0.29.0",
         "@canonical/vitest-config-react": "^0.29.0",
@@ -676,6 +702,7 @@
         "@biomejs/biome": "2.4.9",
         "@canonical/biome-config": "^0.29.0",
         "@canonical/ds-types": "^0.29.0",
+        "@canonical/implementation-ledger": "^0.29.1",
         "@canonical/router-core": "^0.29.0",
         "@canonical/router-react": "^0.29.0",
         "@canonical/storybook-helpers": "^0.29.0",
@@ -717,6 +744,7 @@
         "@biomejs/biome": "2.4.9",
         "@canonical/biome-config": "^0.29.0",
         "@canonical/design-tokens": "0.6.2-contrasted.0",
+        "@canonical/implementation-ledger": "^0.29.1",
         "@canonical/storybook-addon-form-state": "^0.29.0",
         "@canonical/storybook-addon-msw": "^0.29.0",
         "@canonical/storybook-helpers": "^0.29.0",
@@ -955,6 +983,7 @@
         "@canonical/biome-config": "^0.29.0",
         "@canonical/design-tokens": "0.6.2-contrasted.0",
         "@canonical/ds-types": "^0.29.0",
+        "@canonical/implementation-ledger": "^0.29.1",
         "@canonical/typescript-config-react": "^0.29.0",
         "@canonical/vitest-config-react": "^0.29.0",
         "@canonical/webarchitect": "^0.29.0",
@@ -1414,6 +1443,7 @@
         "@biomejs/biome": "2.4.9",
         "@canonical/biome-config": "^0.29.0",
         "@canonical/design-tokens": "0.6.2-contrasted.0",
+        "@canonical/implementation-ledger": "^0.29.1",
         "@canonical/storybook-config": "^0.29.1",
         "@canonical/storybook-helpers": "^0.29.0",
         "@canonical/svelte-ssr-test": "^0.29.0",
@@ -1445,6 +1475,7 @@
         "@biomejs/biome": "2.4.9",
         "@canonical/biome-config": "^0.29.0",
         "@canonical/ds-types": "^0.29.0",
+        "@canonical/implementation-ledger": "^0.29.1",
         "@canonical/storybook-config": "^0.29.1",
         "@canonical/storybook-helpers": "^0.29.0",
         "@canonical/styles": "^0.29.0",
@@ -1482,6 +1513,7 @@
         "@canonical/biome-config": "^0.28.0",
         "@canonical/design-tokens": "0.6.2-contrasted.0",
         "@canonical/ds-types": "^0.29.0-experimental.0",
+        "@canonical/implementation-ledger": "^0.29.1",
         "@canonical/storybook-config": "^0.29.0-experimental.0",
         "@canonical/storybook-helpers": "^0.29.0-experimental.0",
         "@canonical/svelte-ssr-test": "^0.28.0",
@@ -1750,6 +1782,8 @@
     "@canonical/i18n-core": ["@canonical/i18n-core@workspace:packages/runtime/i18n"],
 
     "@canonical/i18n-react": ["@canonical/i18n-react@workspace:packages/react/i18n"],
+
+    "@canonical/implementation-ledger": ["@canonical/implementation-ledger@workspace:packages/implementation-ledger"],
 
     "@canonical/ke": ["@canonical/ke@workspace:packages/runtime/ke"],
 
@@ -4347,7 +4381,7 @@
 
     "tinyexec": ["tinyexec@1.0.4", "", {}, "sha512-u9r3uZC0bdpGOXtlxUIdwf9pkmvhqJdrVCH9fapQtgy/OeTTMZ1nqH7agtvEfmGui6e1XxjcdrlxvxJvc3sMqw=="],
 
-    "tinyglobby": ["tinyglobby@0.2.12", "", { "dependencies": { "fdir": "^6.4.3", "picomatch": "^4.0.2" } }, "sha512-qkf4trmKSIiMTs/E63cxH+ojC2unam7rJ0WrauAzpT3ECNTxGRMlaXxVbfxMUC/w0LaYk6jQ4y/nGR9uBO3tww=="],
+    "tinyglobby": ["tinyglobby@0.2.15", "", { "dependencies": { "fdir": "^6.5.0", "picomatch": "^4.0.3" } }, "sha512-j2Zq4NyQYG5XMST4cbs02Ak8iJUdxRM0XI5QyxXuZOzKOINmWurp3smXu3y5wDcJrptwpSjgXHzIQxR0omXljQ=="],
 
     "tinylogic": ["tinylogic@2.0.0", "", {}, "sha512-dljTkiLLITtsjqBvTA1MRZQK/sGP4kI3UJKc3yA9fMzYbMF2RhcN04SeROVqJBIYYOoJMM8u0WDnhFwMSFQotw=="],
 
@@ -4891,6 +4925,8 @@
 
     "lerna/chalk": ["chalk@4.1.0", "", { "dependencies": { "ansi-styles": "^4.1.0", "supports-color": "^7.1.0" } }, "sha512-qwx12AxXe2Q5xQ43Ac//I6v5aXTipYrSESdOgzrN+9XjgEpyjpKuvSGaN4qE93f7TQTlerQQ8S+EQ0EyDoVL1A=="],
 
+    "lerna/tinyglobby": ["tinyglobby@0.2.12", "", { "dependencies": { "fdir": "^6.4.3", "picomatch": "^4.0.2" } }, "sha512-qkf4trmKSIiMTs/E63cxH+ojC2unam7rJ0WrauAzpT3ECNTxGRMlaXxVbfxMUC/w0LaYk6jQ4y/nGR9uBO3tww=="],
+
     "libnpmpublish/semver": ["semver@7.7.4", "", { "bin": { "semver": "bin/semver.js" } }, "sha512-vFKC2IEtQnVhpT78h1Yp8wzwrf8CM+MzKMHGJZfBtzhZNycRFnXsHk6E5TxIkkMsgNS7mdX3AGB7x2QM2di4lA=="],
 
     "load-json-file/type-fest": ["type-fest@0.6.0", "", {}, "sha512-q+MB8nYR1KDLrgr4G5yemftpMC7/QLqVndBmEEdqzmNj5dcFOO4Oo8qlwZE3ULT3+Zim1F8Kq4cBnikNhlCMlg=="],
@@ -4940,8 +4976,6 @@
     "node-gyp/proc-log": ["proc-log@6.1.0", "", {}, "sha512-iG+GYldRf2BQ0UDUAd6JQ/RwzaQy6mXmsk/IzlYyal4A4SNFw54MeH4/tLkF4I5WoWG9SQwuqWzS99jaFQHBuQ=="],
 
     "node-gyp/semver": ["semver@7.7.4", "", { "bin": { "semver": "bin/semver.js" } }, "sha512-vFKC2IEtQnVhpT78h1Yp8wzwrf8CM+MzKMHGJZfBtzhZNycRFnXsHk6E5TxIkkMsgNS7mdX3AGB7x2QM2di4lA=="],
-
-    "node-gyp/tinyglobby": ["tinyglobby@0.2.15", "", { "dependencies": { "fdir": "^6.5.0", "picomatch": "^4.0.3" } }, "sha512-j2Zq4NyQYG5XMST4cbs02Ak8iJUdxRM0XI5QyxXuZOzKOINmWurp3smXu3y5wDcJrptwpSjgXHzIQxR0omXljQ=="],
 
     "noms/readable-stream": ["readable-stream@1.0.34", "", { "dependencies": { "core-util-is": "~1.0.0", "inherits": "~2.0.1", "isarray": "0.0.1", "string_decoder": "~0.10.x" } }, "sha512-ok1qVCJuRkNmvebYikljxJA/UEsKwLl2nI1OmaqAu4/UE+h0wKCHok4XkL/gvi39OacXvw59RJUOFUkDib2rHg=="],
 
@@ -5139,15 +5173,11 @@
 
     "url/punycode": ["punycode@1.4.1", "", {}, "sha512-jmYNElW7yvO7TV33CjSmvSiE2yco3bV2czu/OzDKdMNVZQWfxCblURLhf+47syQRBntjfLdd/H0egrzIG+oaFQ=="],
 
-    "vite/tinyglobby": ["tinyglobby@0.2.15", "", { "dependencies": { "fdir": "^6.5.0", "picomatch": "^4.0.3" } }, "sha512-j2Zq4NyQYG5XMST4cbs02Ak8iJUdxRM0XI5QyxXuZOzKOINmWurp3smXu3y5wDcJrptwpSjgXHzIQxR0omXljQ=="],
-
     "vite-plugin-relay-lite/graphql": ["graphql@16.13.1", "", {}, "sha512-gGgrVCoDKlIZ8fIqXBBb0pPKqDgki0Z/FSKNiQzSGj2uEYHr1tq5wmBegGwJx6QB5S5cM0khSBpi/JFHMCvsmQ=="],
 
     "vite-plugin-relay-lite/vite": ["vite@7.3.1", "", { "dependencies": { "esbuild": "^0.27.0", "fdir": "^6.5.0", "picomatch": "^4.0.3", "postcss": "^8.5.6", "rollup": "^4.43.0", "tinyglobby": "^0.2.15" }, "optionalDependencies": { "fsevents": "~2.3.3" }, "peerDependencies": { "@types/node": "^20.19.0 || >=22.12.0", "jiti": ">=1.21.0", "less": "^4.0.0", "lightningcss": "^1.21.0", "sass": "^1.70.0", "sass-embedded": "^1.70.0", "stylus": ">=0.54.8", "sugarss": "^5.0.0", "terser": "^5.16.0", "tsx": "^4.8.1", "yaml": "^2.4.2" }, "optionalPeers": ["@types/node", "jiti", "less", "lightningcss", "sass", "sass-embedded", "stylus", "sugarss", "terser", "tsx", "yaml"], "bin": { "vite": "bin/vite.js" } }, "sha512-w+N7Hifpc3gRjZ63vYBXA56dvvRlNWRczTdmCBBa+CotUzAPf5b7YMdMR/8CQoeYE5LX3W4wj6RYTgonm1b9DA=="],
 
     "vitest/@vitest/utils": ["@vitest/utils@4.1.2", "", { "dependencies": { "@vitest/pretty-format": "4.1.2", "convert-source-map": "^2.0.0", "tinyrainbow": "^3.1.0" } }, "sha512-xw2/TiX82lQHA06cgbqRKFb5lCAy3axQ4H4SoUFhUsg+wztiet+co86IAMDtF6Vm1hc7J6j09oh/rgDn+JdKIQ=="],
-
-    "vitest/tinyglobby": ["tinyglobby@0.2.15", "", { "dependencies": { "fdir": "^6.5.0", "picomatch": "^4.0.3" } }, "sha512-j2Zq4NyQYG5XMST4cbs02Ak8iJUdxRM0XI5QyxXuZOzKOINmWurp3smXu3y5wDcJrptwpSjgXHzIQxR0omXljQ=="],
 
     "widest-line/string-width": ["string-width@8.2.0", "", { "dependencies": { "get-east-asian-width": "^1.5.0", "strip-ansi": "^7.1.2" } }, "sha512-6hJPQ8N0V0P3SNmP6h2J99RLuzrWz2gvT7VnK5tKvrNqJoyS9W4/Fb8mo31UiPvy00z7DQXkP2hnKBVav76thw=="],
 
@@ -5182,8 +5212,6 @@
     "@inquirer/core/wrap-ansi/strip-ansi": ["strip-ansi@6.0.1", "", { "dependencies": { "ansi-regex": "^5.0.1" } }, "sha512-Y38VPSHcqkFrCpFnQ9vuSXmquuv5oXOKpGeT6aGrr3o3Gc9AlVa6JBfUSOCnbxGGZF+/0ooI7KrPuUSztUdU5A=="],
 
     "@joshwooding/vite-plugin-react-docgen-typescript/glob/minimatch": ["minimatch@10.2.4", "", { "dependencies": { "brace-expansion": "^5.0.2" } }, "sha512-oRjTw/97aTBN0RHbYCdtF1MQfvusSIBQM0IZEgzl6426+8jSC0nF1a/GmnVLpfB9yyr6g6FTqWqiZVbxrtaCIg=="],
-
-    "@joshwooding/vite-plugin-react-docgen-typescript/vite/tinyglobby": ["tinyglobby@0.2.15", "", { "dependencies": { "fdir": "^6.5.0", "picomatch": "^4.0.3" } }, "sha512-j2Zq4NyQYG5XMST4cbs02Ak8iJUdxRM0XI5QyxXuZOzKOINmWurp3smXu3y5wDcJrptwpSjgXHzIQxR0omXljQ=="],
 
     "@jsonjoy.com/fs-snapshot/@jsonjoy.com/json-pack/@jsonjoy.com/base64": ["@jsonjoy.com/base64@17.67.0", "", { "peerDependencies": { "tslib": "2" } }, "sha512-5SEsJGsm15aP8TQGkDfJvz9axgPwAEm98S5DxOuYe8e1EbfajcDmgeXXzccEjh+mLnjqEKrkBdjHWS5vFNwDdw=="],
 
@@ -5268,8 +5296,6 @@
     "@vitest/coverage-v8/vitest/@vitest/snapshot": ["@vitest/snapshot@4.1.0", "", { "dependencies": { "@vitest/pretty-format": "4.1.0", "@vitest/utils": "4.1.0", "magic-string": "^0.30.21", "pathe": "^2.0.3" } }, "sha512-0Vy9euT1kgsnj1CHttwi9i9o+4rRLEaPRSOJ5gyv579GJkNpgJK+B4HSv/rAWixx2wdAFci1X4CEPjiu2bXIMg=="],
 
     "@vitest/coverage-v8/vitest/@vitest/spy": ["@vitest/spy@4.1.0", "", {}, "sha512-pz77k+PgNpyMDv2FV6qmk5ZVau6c3R8HC8v342T2xlFxQKTrSeYw9waIJG8KgV9fFwAtTu4ceRzMivPTH6wSxw=="],
-
-    "@vitest/coverage-v8/vitest/tinyglobby": ["tinyglobby@0.2.15", "", { "dependencies": { "fdir": "^6.5.0", "picomatch": "^4.0.3" } }, "sha512-j2Zq4NyQYG5XMST4cbs02Ak8iJUdxRM0XI5QyxXuZOzKOINmWurp3smXu3y5wDcJrptwpSjgXHzIQxR0omXljQ=="],
 
     "@vitest/coverage-v8/vitest/vite": ["vite@7.3.1", "", { "dependencies": { "esbuild": "^0.27.0", "fdir": "^6.5.0", "picomatch": "^4.0.3", "postcss": "^8.5.6", "rollup": "^4.43.0", "tinyglobby": "^0.2.15" }, "optionalDependencies": { "fsevents": "~2.3.3" }, "peerDependencies": { "@types/node": "^20.19.0 || >=22.12.0", "jiti": ">=1.21.0", "less": "^4.0.0", "lightningcss": "^1.21.0", "sass": "^1.70.0", "sass-embedded": "^1.70.0", "stylus": ">=0.54.8", "sugarss": "^5.0.0", "terser": "^5.16.0", "tsx": "^4.8.1", "yaml": "^2.4.2" }, "optionalPeers": ["@types/node", "jiti", "less", "lightningcss", "sass", "sass-embedded", "stylus", "sugarss", "terser", "tsx", "yaml"], "bin": { "vite": "bin/vite.js" } }, "sha512-w+N7Hifpc3gRjZ63vYBXA56dvvRlNWRczTdmCBBa+CotUzAPf5b7YMdMR/8CQoeYE5LX3W4wj6RYTgonm1b9DA=="],
 
@@ -5550,8 +5576,6 @@
     "tuf-js/make-fetch-happen/proc-log": ["proc-log@6.1.0", "", {}, "sha512-iG+GYldRf2BQ0UDUAd6JQ/RwzaQy6mXmsk/IzlYyal4A4SNFw54MeH4/tLkF4I5WoWG9SQwuqWzS99jaFQHBuQ=="],
 
     "tuf-js/make-fetch-happen/ssri": ["ssri@13.0.1", "", { "dependencies": { "minipass": "^7.0.3" } }, "sha512-QUiRf1+u9wPTL/76GTYlKttDEBWV1ga9ZXW8BG6kfdeyyM8LGPix9gROyg9V2+P0xNyF3X2Go526xKFdMZrHSQ=="],
-
-    "vite-plugin-relay-lite/vite/tinyglobby": ["tinyglobby@0.2.15", "", { "dependencies": { "fdir": "^6.5.0", "picomatch": "^4.0.3" } }, "sha512-j2Zq4NyQYG5XMST4cbs02Ak8iJUdxRM0XI5QyxXuZOzKOINmWurp3smXu3y5wDcJrptwpSjgXHzIQxR0omXljQ=="],
 
     "wrap-ansi-cjs/strip-ansi/ansi-regex": ["ansi-regex@5.0.1", "", {}, "sha512-quJQXlTSUGL2LH9SUXo8VwsY4soanhgo6LNSm84E1LBcE8s3O0wpdiRzyR9z/ZZJMlMWv37qOOb9pdJlMUEKFQ=="],
 

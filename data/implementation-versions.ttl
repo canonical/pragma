@@ -1,0 +1,268 @@
+# Pragma implementation-version ledger
+#
+# APPEND-ONLY: this file grows like a changelog. Existing entries are
+# never modified, reordered, or deleted; new entries are appended by
+# @canonical/implementation-ledger (packages/implementation-ledger).
+#
+# Each entry records what one published (npm package, version) pair makes
+# available: the implemented design system blocks, each block's version,
+# and the import statement a consumer would use.
+
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>.
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>.
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#>.
+@prefix ds: <https://ds.canonical.com/>.
+
+# ---- @canonical/ds-types@0.29.0 ----
+# recorded: git cdc725d (2026-07-10)
+ds:implementation.version.ds-types.0.29.0
+    a ds:ImplementationVersion;
+    ds:package "@canonical/ds-types";
+    ds:packageVersion "0.29.0";
+    ds:makesAvailable [
+        a ds:AvailableImplementation;
+        ds:implementsBlock ds:global.modifier_family.anticipation;
+        ds:blockVersion "0.29.0";
+        ds:exportedSymbol "MODIFIER_FAMILIES";
+        ds:importStatement "import { MODIFIER_FAMILIES } from \"@canonical/ds-types\";";
+        ds:importVerified true
+    ], [
+        a ds:AvailableImplementation;
+        ds:implementsBlock ds:global.modifier_family.criticality;
+        ds:blockVersion "0.29.0";
+        ds:exportedSymbol "MODIFIER_FAMILIES";
+        ds:importStatement "import { MODIFIER_FAMILIES } from \"@canonical/ds-types\";";
+        ds:importVerified true
+    ], [
+        a ds:AvailableImplementation;
+        ds:implementsBlock ds:global.modifier_family.density;
+        ds:blockVersion "0.29.0";
+        ds:exportedSymbol "MODIFIER_FAMILIES";
+        ds:importStatement "import { MODIFIER_FAMILIES } from \"@canonical/ds-types\";";
+        ds:importVerified true
+    ], [
+        a ds:AvailableImplementation;
+        ds:implementsBlock ds:global.modifier_family.emphasis;
+        ds:blockVersion "0.29.0";
+        ds:exportedSymbol "MODIFIER_FAMILIES";
+        ds:importStatement "import { MODIFIER_FAMILIES } from \"@canonical/ds-types\";";
+        ds:importVerified true
+    ], [
+        a ds:AvailableImplementation;
+        ds:implementsBlock ds:global.modifier_family.importance;
+        ds:blockVersion "0.29.0";
+        ds:exportedSymbol "MODIFIER_FAMILIES";
+        ds:importStatement "import { MODIFIER_FAMILIES } from \"@canonical/ds-types\";";
+        ds:importVerified true
+    ], [
+        a ds:AvailableImplementation;
+        ds:implementsBlock ds:global.modifier_family.lifecycle;
+        ds:blockVersion "0.29.0";
+        ds:exportedSymbol "MODIFIER_FAMILIES";
+        ds:importStatement "import { MODIFIER_FAMILIES } from \"@canonical/ds-types\";";
+        ds:importVerified true
+    ], [
+        a ds:AvailableImplementation;
+        ds:implementsBlock ds:global.modifier_family.release;
+        ds:blockVersion "0.29.0";
+        ds:exportedSymbol "MODIFIER_FAMILIES";
+        ds:importStatement "import { MODIFIER_FAMILIES } from \"@canonical/ds-types\";";
+        ds:importVerified true
+    ], [
+        a ds:AvailableImplementation;
+        ds:implementsBlock ds:global.modifier_family.severity;
+        ds:blockVersion "0.29.0";
+        ds:exportedSymbol "MODIFIER_FAMILIES";
+        ds:importStatement "import { MODIFIER_FAMILIES } from \"@canonical/ds-types\";";
+        ds:importVerified true
+    ].
+
+# ---- @canonical/react-ds-global@0.29.1 ----
+# recorded: git cdc725d (2026-07-10)
+ds:implementation.version.react-ds-global.0.29.1
+    a ds:ImplementationVersion;
+    ds:package "@canonical/react-ds-global";
+    ds:packageVersion "0.29.1";
+    ds:makesAvailable [
+        a ds:AvailableImplementation;
+        ds:implementsBlock ds:global.component.announcement;
+        ds:blockVersion "0.29.1";
+        ds:exportedSymbol "Announcement";
+        ds:importStatement "import { Announcement } from \"@canonical/react-ds-global\";";
+        ds:importVerified true
+    ], [
+        a ds:AvailableImplementation;
+        ds:implementsBlock ds:global.component.badge;
+        ds:blockVersion "0.29.1";
+        ds:exportedSymbol "Badge";
+        ds:importStatement "import { Badge } from \"@canonical/react-ds-global\";";
+        ds:importVerified true
+    ], [
+        a ds:AvailableImplementation;
+        ds:implementsBlock ds:global.component.button;
+        ds:blockVersion "0.29.1";
+        ds:exportedSymbol "Button";
+        ds:importStatement "import { Button } from \"@canonical/react-ds-global\";";
+        ds:importVerified true
+    ], [
+        a ds:AvailableImplementation;
+        ds:implementsBlock ds:global.component.card;
+        ds:blockVersion "0.29.1";
+        ds:exportedSymbol "Card";
+        ds:importStatement "import { Card } from \"@canonical/react-ds-global\";";
+        ds:importVerified true
+    ], [
+        a ds:AvailableImplementation;
+        ds:implementsBlock ds:global.component.chip;
+        ds:blockVersion "0.29.1";
+        ds:exportedSymbol "Chip";
+        ds:importStatement "import { Chip } from \"@canonical/react-ds-global\";";
+        ds:importVerified true
+    ], [
+        a ds:AvailableImplementation;
+        ds:implementsBlock ds:global.component.heading;
+        ds:blockVersion "0.29.1";
+        ds:exportedSymbol "Heading";
+        ds:importStatement "import { Heading } from \"@canonical/react-ds-global\";";
+        ds:importVerified false
+    ], [
+        a ds:AvailableImplementation;
+        ds:implementsBlock ds:global.component.icon;
+        ds:blockVersion "0.29.1";
+        ds:exportedSymbol "Icon";
+        ds:importStatement "import { Icon } from \"@canonical/react-ds-global\";";
+        ds:importVerified true
+    ], [
+        a ds:AvailableImplementation;
+        ds:implementsBlock ds:global.component.label;
+        ds:blockVersion "0.29.1";
+        ds:exportedSymbol "Label";
+        ds:importStatement "import { Label } from \"@canonical/react-ds-global\";";
+        ds:importVerified true
+    ], [
+        a ds:AvailableImplementation;
+        ds:implementsBlock ds:global.component.link;
+        ds:blockVersion "0.29.1";
+        ds:exportedSymbol "Link";
+        ds:importStatement "import { Link } from \"@canonical/react-ds-global\";";
+        ds:importVerified true
+    ], [
+        a ds:AvailableImplementation;
+        ds:implementsBlock ds:global.component.tile;
+        ds:blockVersion "0.29.1";
+        ds:exportedSymbol "Tile";
+        ds:importStatement "import { Tile } from \"@canonical/react-ds-global\";";
+        ds:importVerified true
+    ], [
+        a ds:AvailableImplementation;
+        ds:implementsBlock ds:global.component.tooltip;
+        ds:blockVersion "0.29.1";
+        ds:exportedSymbol "Tooltip";
+        ds:importStatement "import { Tooltip } from \"@canonical/react-ds-global\";";
+        ds:importVerified true
+    ], [
+        a ds:AvailableImplementation;
+        ds:implementsBlock ds:global.pattern.breadcrumbs;
+        ds:blockVersion "0.29.1";
+        ds:exportedSymbol "Breadcrumbs";
+        ds:importStatement "import { Breadcrumbs } from \"@canonical/react-ds-global\";";
+        ds:importVerified true
+    ], [
+        a ds:AvailableImplementation;
+        ds:implementsBlock ds:global.pattern.timeline;
+        ds:blockVersion "0.29.1";
+        ds:exportedSymbol "Timeline";
+        ds:importStatement "import { Timeline } from \"@canonical/react-ds-global\";";
+        ds:importVerified true
+    ], [
+        a ds:AvailableImplementation;
+        ds:implementsBlock ds:global.subcomponent.breadcrumbs-item;
+        ds:blockVersion "0.29.1";
+        ds:exportedSymbol "Item";
+        ds:importStatement "import { Item } from \"@canonical/react-ds-global\";";
+        ds:importVerified false
+    ], [
+        a ds:AvailableImplementation;
+        ds:implementsBlock ds:global.subcomponent.card-content;
+        ds:blockVersion "0.29.1";
+        ds:exportedSymbol "Content";
+        ds:importStatement "import { Content } from \"@canonical/react-ds-global\";";
+        ds:importVerified false
+    ], [
+        a ds:AvailableImplementation;
+        ds:implementsBlock ds:global.subcomponent.card-footer;
+        ds:blockVersion "0.29.1";
+        ds:exportedSymbol "Footer";
+        ds:importStatement "import { Footer } from \"@canonical/react-ds-global\";";
+        ds:importVerified false
+    ], [
+        a ds:AvailableImplementation;
+        ds:implementsBlock ds:global.subcomponent.card-header;
+        ds:blockVersion "0.29.1";
+        ds:exportedSymbol "Header";
+        ds:importStatement "import { Header } from \"@canonical/react-ds-global\";";
+        ds:importVerified false
+    ], [
+        a ds:AvailableImplementation;
+        ds:implementsBlock ds:global.subcomponent.card-image;
+        ds:blockVersion "0.29.1";
+        ds:exportedSymbol "Image";
+        ds:importStatement "import { Image } from \"@canonical/react-ds-global\";";
+        ds:importVerified false
+    ], [
+        a ds:AvailableImplementation;
+        ds:implementsBlock ds:global.subcomponent.spinner;
+        ds:blockVersion "0.29.1";
+        ds:exportedSymbol "Spinner";
+        ds:importStatement "import { Spinner } from \"@canonical/react-ds-global\";";
+        ds:importVerified true
+    ], [
+        a ds:AvailableImplementation;
+        ds:implementsBlock ds:global.subcomponent.tile-content;
+        ds:blockVersion "0.29.1";
+        ds:exportedSymbol "Content";
+        ds:importStatement "import { Content } from \"@canonical/react-ds-global\";";
+        ds:importVerified false
+    ], [
+        a ds:AvailableImplementation;
+        ds:implementsBlock ds:global.subcomponent.tile-header;
+        ds:blockVersion "0.29.1";
+        ds:exportedSymbol "Header";
+        ds:importStatement "import { Header } from \"@canonical/react-ds-global\";";
+        ds:importVerified false
+    ], [
+        a ds:AvailableImplementation;
+        ds:implementsBlock ds:global.subcomponent.timeline-content;
+        ds:blockVersion "0.29.1";
+        ds:exportedSymbol "Content";
+        ds:importStatement "import { Content } from \"@canonical/react-ds-global\";";
+        ds:importVerified false
+    ], [
+        a ds:AvailableImplementation;
+        ds:implementsBlock ds:global.subcomponent.timeline-event;
+        ds:blockVersion "0.29.1";
+        ds:exportedSymbol "Event";
+        ds:importStatement "import { Event } from \"@canonical/react-ds-global\";";
+        ds:importVerified false
+    ], [
+        a ds:AvailableImplementation;
+        ds:implementsBlock ds:site.component.rule;
+        ds:blockVersion "0.29.1";
+        ds:exportedSymbol "Rule";
+        ds:importStatement "import { Rule } from \"@canonical/react-ds-global\";";
+        ds:importVerified true
+    ], [
+        a ds:AvailableImplementation;
+        ds:implementsBlock ds:site.component.section;
+        ds:blockVersion "0.29.1";
+        ds:exportedSymbol "Section";
+        ds:importStatement "import { Section } from \"@canonical/react-ds-global\";";
+        ds:importVerified true
+    ], [
+        a ds:AvailableImplementation;
+        ds:implementsBlock ds:site.pattern.skip_link;
+        ds:blockVersion "0.29.1";
+        ds:exportedSymbol "SkipLink";
+        ds:importStatement "import { SkipLink } from \"@canonical/react-ds-global\";";
+        ds:importVerified true
+    ].

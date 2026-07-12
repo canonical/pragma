@@ -32,6 +32,13 @@ runs:
       shell: bash
       run: bun run check:fix
 
+      # Append the freshly bumped (package, version) pairs to the append-only
+      # implementation-version ledger (data/implementation-versions.ttl) so the
+      # release commit records what each new version makes available.
+    - name: Record bumped versions in the implementation ledger
+      shell: bash
+      run: bun run collect:versions
+
     - name: Setup Git CLI
       uses: ./.github/actions/setup-git
       with:
