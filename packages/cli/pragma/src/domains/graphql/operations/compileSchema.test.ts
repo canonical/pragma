@@ -1,8 +1,5 @@
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
 import { hashSources } from "@canonical/ke-graphql";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
   EX_NAMESPACE,
   GRAPHQL_CLEAN_TTL,
@@ -14,60 +11,47 @@ import compileSchema from "./compileSchema.js";
 
 const PREFIXES = { ...PREFIX_MAP, ex: EX_NAMESPACE };
 
+const inline = (content: string, path: string) => ({
+  content,
+  format: "turtle" as const,
+  path,
+});
+
 describe("compileSchema", () => {
-  let dir: string;
-
-  beforeEach(() => {
-    dir = mkdtempSync(join(tmpdir(), "pragma-graphql-compile-"));
-    writeFileSync(join(dir, "clean.ttl"), GRAPHQL_CLEAN_TTL);
-    writeFileSync(join(dir, "error.ttl"), GRAPHQL_ERROR_TTL);
-    writeFileSync(join(dir, "fatal.ttl"), GRAPHQL_FATAL_TTL);
-  });
-
-  afterEach(() => {
-    rmSync(dir, { recursive: true, force: true });
-  });
-
   it("compiles a clean ontology into SDL", async () => {
     const outcome = await compileSchema({
-      sources: ["clean.ttl"],
+      sources: [inline(GRAPHQL_CLEAN_TTL, "clean.ttl")],
       prefixes: PREFIXES,
-      cwd: dir,
     });
 
     expect(outcome.status).toBe("ok");
     expect(outcome.compiled?.sdl).toContain("type Thing");
     expect(outcome.diagnostics).toEqual([]);
-    expect(outcome.files).toEqual([join(dir, "clean.ttl")]);
+    expect(outcome.files).toEqual(["clean.ttl"]);
   });
 
-  it("hashes the exact raw file contents", async () => {
+  it("hashes the exact raw source contents", async () => {
     const outcome = await compileSchema({
-      sources: ["clean.ttl"],
+      sources: [inline(GRAPHQL_CLEAN_TTL, "clean.ttl")],
       prefixes: PREFIXES,
-      cwd: dir,
     });
 
-    const raw = readFileSync(join(dir, "clean.ttl"), "utf-8");
-    expect(outcome.sourcesHash).toBe(hashSources([raw]));
+    expect(outcome.sourcesHash).toBe(hashSources([GRAPHQL_CLEAN_TTL]));
   });
 
-  it("resolves glob patterns to source files", async () => {
+  it("labels a source without a path as 'inline'", async () => {
     const outcome = await compileSchema({
-      sources: ["clean*.ttl"],
+      sources: [{ content: GRAPHQL_CLEAN_TTL, format: "turtle" }],
       prefixes: PREFIXES,
-      cwd: dir,
     });
 
-    expect(outcome.status).toBe("ok");
-    expect(outcome.files).toEqual([join(dir, "clean.ttl")]);
+    expect(outcome.files).toEqual(["inline"]);
   });
 
   it("surfaces error diagnostics without failing the compile", async () => {
     const outcome = await compileSchema({
-      sources: ["error.ttl"],
+      sources: [inline(GRAPHQL_ERROR_TTL, "error.ttl")],
       prefixes: PREFIXES,
-      cwd: dir,
     });
 
     expect(outcome.status).toBe("ok");
@@ -81,9 +65,8 @@ describe("compileSchema", () => {
 
   it("converts CompilationError into a failed result with diagnostics", async () => {
     const outcome = await compileSchema({
-      sources: ["fatal.ttl"],
+      sources: [inline(GRAPHQL_FATAL_TTL, "fatal.ttl")],
       prefixes: PREFIXES,
-      cwd: dir,
     });
 
     expect(outcome.status).toBe("failed");
@@ -95,24 +78,17 @@ describe("compileSchema", () => {
     ).toBe(true);
   });
 
-  it("throws structured error when no sources resolve", async () => {
+  it("throws a structured error when given no sources", async () => {
     await expect(
-      compileSchema({
-        sources: ["missing.ttl"],
-        prefixes: PREFIXES,
-        cwd: dir,
-      }),
+      compileSchema({ sources: [], prefixes: PREFIXES }),
     ).rejects.toMatchObject({ code: "INVALID_INPUT" });
   });
 
-  it("throws structured error on invalid TTL syntax", async () => {
-    writeFileSync(join(dir, "broken.ttl"), "this is not turtle .");
-
+  it("throws a structured error on invalid TTL syntax", async () => {
     await expect(
       compileSchema({
-        sources: ["broken.ttl"],
+        sources: [inline("this is not turtle .", "broken.ttl")],
         prefixes: PREFIXES,
-        cwd: dir,
       }),
     ).rejects.toMatchObject({ code: "STORE_ERROR" });
   });

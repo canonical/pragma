@@ -126,13 +126,15 @@ describe("graphql check command", () => {
     expect(parsed.artifacts).toBeUndefined();
   });
 
-  it("throws structured error when sources are missing", async () => {
+  it("throws a structured error when explicit sources match nothing", async () => {
     const ctx = makeCtx();
 
-    await expect(checkCommand.execute({}, ctx)).rejects.toMatchObject({
+    await expect(
+      checkCommand.execute({ sources: ["no-such-*.ttl"] }, ctx),
+    ).rejects.toMatchObject({
       code: "INVALID_INPUT",
       recovery: {
-        message: "Provide at least one TTL file or glob pattern.",
+        message: "No files matched the given paths or glob patterns.",
       },
     });
   });
