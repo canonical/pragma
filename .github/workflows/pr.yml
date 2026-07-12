@@ -30,8 +30,43 @@ jobs:
       - name: Test
         run: bunx nx affected -t test --base=origin/${{ github.event.pull_request.base.ref }} --head=HEAD
 
+  # ADVISORY (non-blocking) for now: this job has no `needs:` and build-gate
+  # does not depend on it, so a red consumer-smoke cannot block a merge yet.
+  # It proves the published packages are installable and usable by an
+  # EXTERNAL npm consumer (pack -> install -> tsc -> vite build -> SSR
+  # render/hydrate). Once it is reliably green on main it flips to required
+  # by adding it to build-gate's `needs:`.
+  consumer-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+
+      - name: Setup environment
+        uses: ./.github/actions/setup-env
+        with:
+          # Lighter than build:all — the smoke only needs package dists,
+          # not Storybook builds.
+          build-command: bunx nx run-many -t build --projects="$(bun packages/consumer-smoke/src/list-publishable.ts)"
+
+      - name: Unit tests for @canonical/consumer-smoke
+        run: bun run --filter @canonical/consumer-smoke test
+
+      - name: Static guard — private/unpublished deps + unpublished inventory
+        run: bun packages/consumer-smoke/src/check-no-private-deps.ts
+
+      - name: Pack, install, and exercise packages in an external consumer app
+        # Keep the smoke signal visible even when the static guard is red.
+        if: ${{ !cancelled() }}
+        run: bun packages/consumer-smoke/src/pack-and-smoke.ts
+
   build-gate:
     runs-on: ubuntu-latest
+    # NOTE: consumer-smoke is intentionally NOT in `needs:` while it is
+    # advisory. Flipping it to required means adding it here.
     needs: build-matrix
     if: ${{ success() }}
     steps:
