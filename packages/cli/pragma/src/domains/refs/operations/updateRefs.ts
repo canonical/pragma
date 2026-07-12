@@ -8,7 +8,7 @@
 import { existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { readConfig } from "#config";
-import { mergeAndParseRefs } from "../../shared/runtime.js";
+import { mergeAndParseRefs } from "../../shared/mergeAndParseRefs.js";
 import { cloneRef, fetchRef, pruneCache } from "./gitOps.js";
 import type { PackageRef, RawPackageEntry } from "./parseRef.js";
 import { parsePackageEntry } from "./parseRef.js";
