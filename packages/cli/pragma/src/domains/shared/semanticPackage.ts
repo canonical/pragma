@@ -24,9 +24,13 @@ export interface GraphContent {
   readonly format: "turtle";
 }
 
-/** A discovered skill directory with its filesystem path. */
+/** A discovered story-pack JSON file with its content. */
 export interface StoryFileEntry {
-  /** Absolute path of the story JSON file. */
+  /**
+   * Original file path, or a virtual identifier for embedded sources
+   * (e.g. `(bundled)/…`) — for provenance/debugging, not guaranteed to
+   * exist on disk.
+   */
   readonly path: string;
   /** The file's parsed JSON — validated by the story-pack compiler. */
   readonly definition: unknown;
