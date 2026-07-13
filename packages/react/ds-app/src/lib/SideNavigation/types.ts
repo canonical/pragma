@@ -28,6 +28,8 @@ export interface NavItem extends Omit<Item, "items"> {
   slot?: ReactNode;
   /** Subitems. Presence drives the disclosure caret (vs the leaf `slot`). */
   items?: NavItem[];
+  /** CSS class name applied to this item's row, in addition to the base classes. */
+  className?: string;
 }
 
 export interface SideNavigationProps extends HTMLAttributes<HTMLDivElement> {

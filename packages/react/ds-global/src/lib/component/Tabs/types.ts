@@ -8,7 +8,10 @@ import type { LinkComponent } from "../../types/link.js";
  * `label` (visible text), `key` (identity when there is no url), and
  * `disabled`. Nested `items` are ignored (tabs cannot nest).
  */
-export type TabItem = Item;
+export interface TabItem extends Item {
+  /** CSS class name applied to this tab's `<li>`, in addition to the base classes. */
+  className?: string;
+}
 
 /**
  * Props for the Tabs component
