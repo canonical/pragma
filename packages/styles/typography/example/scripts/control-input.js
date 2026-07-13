@@ -19,7 +19,8 @@ class ControlInput extends HTMLElement {
     const raw = getComputedStyle(el).getPropertyValue(cssVariable).trim();
     if (!raw) return null;
     // Drop the unit suffix (e.g. "0.25rem" -> "0.25") so it fits a number input.
-    const stripped = unit && raw.endsWith(unit) ? raw.slice(0, -unit.length) : raw;
+    const stripped =
+      unit && raw.endsWith(unit) ? raw.slice(0, -unit.length) : raw;
     const n = Number.parseFloat(stripped);
     return Number.isNaN(n) ? null : String(n);
   }
