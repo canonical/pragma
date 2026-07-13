@@ -1,4 +1,4 @@
-import type { RunTaskOptions } from "@canonical/task";
+import type { RunTaskOptions } from "@canonical/task/node";
 import type StampConfig from "../types/StampConfig.js";
 
 export interface RunTaskWithStampOptions extends RunTaskOptions {

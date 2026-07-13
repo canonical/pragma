@@ -17,7 +17,8 @@ import type {
   GeneratorDefinition,
   PromptDefinition,
 } from "@canonical/summon-core";
-import { collectUndos, dryRun, runUndo } from "@canonical/task";
+import { collectUndos, dryRun } from "@canonical/task";
+import { runUndo } from "@canonical/task/node";
 import { convertCamelToKebab } from "./convertCase.js";
 import createExitResult from "./createExitResult.js";
 import createGeneratorStamp from "./createGeneratorStamp.js";

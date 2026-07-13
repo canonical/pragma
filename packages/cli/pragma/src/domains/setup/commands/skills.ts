@@ -5,7 +5,8 @@ import {
   runGeneratorTask,
 } from "@canonical/cli-core";
 import { detectHarnesses } from "@canonical/harnesses";
-import { collectEffects, runTask } from "@canonical/task";
+import { collectEffects } from "@canonical/task";
+import { runTask } from "@canonical/task/node";
 import { PragmaError } from "#error";
 import type { PragmaContext } from "../../shared/context.js";
 import { selectFormatter } from "../../shared/formatters.js";

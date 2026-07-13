@@ -29,7 +29,7 @@ import {
   zip3,
 } from "./combinators.js";
 import { dryRun, dryRunWith } from "./dry-run.js";
-import type { TaskExecutionError } from "./interpreter.js";
+import type { TaskExecutionError } from "./errors.js";
 import { info, mkdir, writeFile } from "./primitives.js";
 import { effect, fail, flatMap, map, pure } from "./task.js";
 import type { Effect, Task, TaskError } from "./types.js";

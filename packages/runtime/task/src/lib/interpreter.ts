@@ -7,27 +7,10 @@
 
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
+import { TaskExecutionError } from "./errors.js";
 import type { Effect, ExecResult, Task, TaskError } from "./types.js";
 
-// =============================================================================
-// Task Execution Error
-// =============================================================================
-
-export class TaskExecutionError extends Error {
-  public readonly code: string;
-  public readonly taskError: TaskError;
-
-  constructor(error: TaskError) {
-    super(error.message);
-    this.name = "TaskExecutionError";
-    this.code = error.code;
-    this.taskError = error;
-
-    if (error.stack) {
-      this.stack = error.stack;
-    }
-  }
-}
+export { TaskExecutionError } from "./errors.js";
 
 /**
  * Normalise a value thrown while performing an effect into a structured
