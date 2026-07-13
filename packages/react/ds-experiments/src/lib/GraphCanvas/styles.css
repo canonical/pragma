@@ -1,0 +1,32 @@
+/* ==========================================================================
+   Graph canvas — the container React Flow renders into
+   ========================================================================== */
+.ds.graph-canvas {
+  position: relative;
+  inline-size: 100%;
+  border: var(--spacing-border-width, 1px) solid
+    var(--color-border-low-contrast, #e5e5e5);
+  border-radius: var(--spacing-border-radius, 0.25rem);
+  background-color: var(--color-background-alt, #f7f7f7);
+  overflow: hidden;
+}
+
+/* The marker host carries only <defs>; it must occupy no layout space. */
+.ds.graph-markers {
+  position: absolute;
+  inline-size: 0;
+  block-size: 0;
+  overflow: hidden;
+}
+
+/* Filled associative arrowhead (uses / governs / refines). */
+.ds.relation-arrow {
+  fill: var(--color-border-high-contrast, #666);
+}
+
+/* Hollow taxonomic arrowhead — the UML generalisation triangle (is a). */
+.ds.subclass-arrow {
+  fill: var(--color-background-default, #fff);
+  stroke: var(--relation-accent-subclass, var(--color-text, #111));
+  stroke-width: 1.5;
+}

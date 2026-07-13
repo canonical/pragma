@@ -1,0 +1,75 @@
+/* ==========================================================================
+   Graph palette — entity accents
+   Mirrored in GraphLegend's stylesheet so a standalone legend renders the same
+   colours; `resolveEntityAppearance` is the single source of truth for which
+   token a category maps to. Keep the two in sync.
+   ========================================================================== */
+:root {
+  --entity-accent-component: var(--color-feedback-information, #0066cc);
+  --entity-accent-token: var(--color-feedback-positive, #0e8420);
+  --entity-accent-standard: var(--color-feedback-caution, #f99b11);
+  --entity-accent-concept: var(--color-accent, #7764d8);
+  --entity-accent-unknown: var(--color-border-high-contrast, #666);
+
+  --entity-node-width: 12rem;
+  --entity-node-radius: var(--spacing-border-radius, 0.25rem);
+  --entity-node-padding: var(--spacing-horizontal-small, 0.5rem);
+}
+
+/* ==========================================================================
+   Entity node card
+   ========================================================================== */
+.ds.entity-node {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  inline-size: var(--entity-node-width);
+  padding: var(--entity-node-padding);
+  border: var(--spacing-border-width, 1px) solid
+    var(--color-border-high-contrast, #cdcdcd);
+  border-inline-start: 3px solid var(--entity-accent, currentColor);
+  border-radius: var(--entity-node-radius);
+  background-color: var(--color-background-default, #fff);
+  color: var(--color-text, #111);
+  font-size: var(--font-size-default, 0.875rem);
+  line-height: var(--line-height-default, 1.5);
+}
+
+.ds.entity-node.is-selected {
+  outline: 2px solid var(--entity-accent, currentColor);
+  outline-offset: 1px;
+}
+
+.ds.entity-node .entity-node-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.ds.entity-node .entity-node-kind {
+  font-size: var(--font-size-caption, 0.75rem);
+  font-weight: var(--font-weight-bold, 550);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--entity-accent, currentColor);
+}
+
+.ds.entity-node .entity-node-tier {
+  font-size: var(--font-size-caption, 0.75rem);
+  padding-inline: 0.375rem;
+  border-radius: 999px;
+  background-color: var(--color-background-hover, #f2f2f2);
+  color: var(--color-text-muted, #666);
+}
+
+.ds.entity-node .entity-node-label {
+  margin: 0;
+  font-weight: var(--font-weight-bold, 550);
+}
+
+.ds.entity-node .entity-node-summary {
+  margin: 0;
+  font-size: var(--font-size-caption, 0.75rem);
+  color: var(--color-text-muted, #666);
+}

@@ -1,0 +1,82 @@
+{
+  "name": "@canonical/react-ds-experiments",
+  "version": "0.29.1",
+  "private": true,
+  "type": "module",
+  "main": "dist/esm/index.js",
+  "module": "dist/esm/index.js",
+  "types": "dist/types/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "author": {
+    "email": "webteam@canonical.com",
+    "name": "Canonical Webteam"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/canonical/pragma"
+  },
+  "license": "LGPL-3.0",
+  "bugs": {
+    "url": "https://github.com/canonical/pragma/issues"
+  },
+  "homepage": "https://github.com/canonical/pragma#readme",
+  "scripts": {
+    "build": "bun run build:package",
+    "build:all": "bun run build:package && bun run build:storybook",
+    "build:storybook": "storybook build",
+    "build:package": "bun run build:package:tsc && bun run build:package:copycss",
+    "build:package:copycss": "copyfiles -u 1 'src/lib/{,**/}*.css' dist/esm",
+    "build:package:tsc": "tsc -p tsconfig.build.json",
+    "check": "bun run check:biome && bun run check:ts",
+    "check:fix": "bun run check:biome:fix && bun run check:ts",
+    "check:biome": "biome check",
+    "check:biome:fix": "biome check --write",
+    "check:ts": "tsc --noEmit",
+    "relay": "relay-compiler",
+    "relay:watch": "relay-compiler --watch",
+    "storybook": "storybook dev -p 6011 --no-open --host 0.0.0.0",
+    "test": "bun run test:vitest",
+    "test:vitest": "vitest run",
+    "test:vitest:watch": "vitest"
+  },
+  "dependencies": {
+    "@canonical/react-ds-global": "^0.29.1",
+    "@canonical/styles": "^0.29.0",
+    "@xyflow/react": "^12.11.2",
+    "graphql": "^16.11.0",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "react-relay": "^18.2.0",
+    "relay-runtime": "^18.2.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.4.9",
+    "@canonical/biome-config": "^0.29.0",
+    "@canonical/storybook-addon-relay": "^0.29.1",
+    "@canonical/storybook-config": "^0.29.1",
+    "@canonical/typescript-config-react": "^0.29.0",
+    "@chromatic-com/storybook": "^5.0.1",
+    "@storybook/addon-docs": "^10.3.1",
+    "@storybook/react-vite": "^10.3.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@types/node": "^24.12.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@types/react-relay": "^18.2.1",
+    "@types/relay-runtime": "^19.0.3",
+    "@types/relay-test-utils": "^18.0.0",
+    "@vitejs/plugin-react": "^6.0.0",
+    "copyfiles": "^2.4.1",
+    "jsdom": "^28.1.0",
+    "relay-compiler": "^18.2.0",
+    "relay-test-utils": "^18.2.0",
+    "storybook": "^10.3.1",
+    "typescript": "^5.9.3",
+    "vite": "^8.0.1",
+    "vite-plugin-relay-lite": "^0.12.0",
+    "vitest": "^4.0.18"
+  }
+}
