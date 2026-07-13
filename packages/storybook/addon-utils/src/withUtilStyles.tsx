@@ -33,8 +33,21 @@ export const withUtilStyles = (
       ? rawScheme
       : ((context.parameters?.scheme as SchemeMode) ?? "none");
 
-  const baseline: boolean = globals[KEY_BASELINE] ?? false;
-  const outlines: boolean = globals[KEY_OUTLINES] ?? false;
+  // undefined = user hasn't touched the toolbar toggle → fall back to the story's
+  // parameters so a story can opt into the baseline grid / outlines declaratively
+  // (`parameters: { baseline: true }`) without anyone flipping the toolbar. An
+  // explicit toolbar choice (true/false) always wins over the parameter.
+  const rawBaseline = globals[KEY_BASELINE] as boolean | undefined;
+  const baseline: boolean =
+    rawBaseline !== undefined
+      ? rawBaseline
+      : ((context.parameters?.baseline as boolean) ?? false);
+
+  const rawOutlines = globals[KEY_OUTLINES] as boolean | undefined;
+  const outlines: boolean =
+    rawOutlines !== undefined
+      ? rawOutlines
+      : ((context.parameters?.outlines as boolean) ?? false);
 
   useEffect(() => {
     const root = document.getElementById("storybook-root");
