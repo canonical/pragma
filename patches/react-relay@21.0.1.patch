@@ -1,10 +1,10 @@
 diff --git a/index.js b/index.js
-index 5fe5bc4a2adf6210e2dc5f84cc33382f47953384..407b9665ffa3b703f8fb2bfffa843a869b5c0957 100644
+index fec955baf6b7659b1365c9f6be3696ae30bd59a4..9976682e603b4680352f4d84c28467b703a07122 100644
 --- a/index.js
 +++ b/index.js
-@@ -8,3 +8,47 @@
+@@ -8,3 +8,48 @@
   */
- 
+
  module.exports = require('./lib/index.js');
 +
 +// Patch (pragma): cjs-module-lexer cannot statically detect the exports of
@@ -42,10 +42,11 @@ index 5fe5bc4a2adf6210e2dc5f84cc33382f47953384..407b9665ffa3b703f8fb2bfffa843a86
 +  useEntryPointLoader: null,
 +  useQueryLoader: null,
 +  useMutation: null,
++  useMutationAction_EXPERIMENTAL: null,
 +  usePaginationFragment: null,
 +  usePreloadedQuery: null,
 +  useRefetchableFragment: null,
-+  usePrefetchableForwardPaginationFragment_EXPERIMENTAL: null,
++  usePrefetchableForwardPaginationFragment: null,
 +  useRelayEnvironment: null,
 +  useSubscribeToInvalidationState: null,
 +  useSubscription: null,
