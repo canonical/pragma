@@ -39,7 +39,11 @@ const Line = ({
   lead,
   anchored,
   children,
-}: { lead: string; anchored?: boolean; children: ReactNode }) => (
+}: {
+  lead: string;
+  anchored?: boolean;
+  children: ReactNode;
+}) => (
   <div className="density-testbed">
     <div
       className={[

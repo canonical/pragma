@@ -23,13 +23,36 @@
     var(--addon-baseline-levels)
   ); /* 5 × 4px = 20px */
 
-  --addon-baseline-hue: var(--baseline-grid-color, var(--color-border-branded, oklch(64.05% 0.1941 37.76)));
+  --addon-baseline-hue: var(
+    --baseline-grid-color,
+    var(--color-border-branded, oklch(64.05% 0.1941 37.76))
+  );
   /* Five stepped tints, faint (level 1) → strong (level 5). Hard steps. */
-  --addon-baseline-l1: color-mix(in oklch, var(--addon-baseline-hue) 8%, transparent);
-  --addon-baseline-l2: color-mix(in oklch, var(--addon-baseline-hue) 14%, transparent);
-  --addon-baseline-l3: color-mix(in oklch, var(--addon-baseline-hue) 20%, transparent);
-  --addon-baseline-l4: color-mix(in oklch, var(--addon-baseline-hue) 28%, transparent);
-  --addon-baseline-l5: color-mix(in oklch, var(--addon-baseline-hue) 38%, transparent);
+  --addon-baseline-l1: color-mix(
+    in oklch,
+    var(--addon-baseline-hue) 8%,
+    transparent
+  );
+  --addon-baseline-l2: color-mix(
+    in oklch,
+    var(--addon-baseline-hue) 14%,
+    transparent
+  );
+  --addon-baseline-l3: color-mix(
+    in oklch,
+    var(--addon-baseline-hue) 20%,
+    transparent
+  );
+  --addon-baseline-l4: color-mix(
+    in oklch,
+    var(--addon-baseline-hue) 28%,
+    transparent
+  );
+  --addon-baseline-l5: color-mix(
+    in oklch,
+    var(--addon-baseline-hue) 38%,
+    transparent
+  );
 
   --addon-baseline-shift: var(--baseline-shift, 0);
 

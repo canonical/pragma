@@ -24,7 +24,11 @@ export const SpikeBox = ({
 }): React.ReactElement => {
   const Tag = as;
   return (
-    <Tag className="spike-box" role={role} type={as === "button" ? "button" : undefined}>
+    <Tag
+      className="spike-box"
+      role={role}
+      type={as === "button" ? "button" : undefined}
+    >
       <span className="seat p">{children}</span>
     </Tag>
   );
@@ -33,9 +37,7 @@ export const SpikeBox = ({
 /** A run of boxed cells sharing one border — the list/table-row case, laid out
  *  inline on the bucket line (the CSS collapses the between-borders). Exercises
  *  how per-cell external margin interacts with a shared border. */
-export const SpikeRows = ({
-  rows,
-}: { rows: string[] }): React.ReactElement => (
+export const SpikeRows = ({ rows }: { rows: string[] }): React.ReactElement => (
   <div className="spike-rows">
     {rows.map((r) => (
       <SpikeBox key={r}>{r}</SpikeBox>

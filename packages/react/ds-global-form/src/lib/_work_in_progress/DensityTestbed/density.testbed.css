@@ -72,16 +72,19 @@
 /* The real Field wraps its input in a subgrid Wrapper that wants a grid parent
    and spans full width — which breaks it onto its own line. On the testbed line
    we only want the input control, inline, so we flatten the Wrapper to an inline
-   box and let the input size to content. (Scoped to the testbed only.) */
-.density-testbed .ds.form,
-.density-testbed :where(.ds.field, .wrapper) {
-  display: inline-flex !important;
-  grid-template-columns: none !important;
-  inline-size: auto !important;
+   box and let the input size to content. (Scoped to the testbed only.)
+   Selectors are deliberately compound (.density-testbed__line .ds.field, not
+   :where()) so they out-specify the Wrapper's own grid rule without !important. */
+.density-testbed__line .ds.form,
+.density-testbed__line .ds.field,
+.density-testbed__line .ds.field .wrapper {
+  display: inline-flex;
+  grid-template-columns: none;
+  inline-size: auto;
   vertical-align: baseline;
 }
-.density-testbed :where(.ds.field, .wrapper) .payload {
-  display: inline-flex !important;
+.density-testbed__line .ds.field .payload {
+  display: inline-flex;
 }
 
 /* ───────────────────────────────────────────────────────────────────────────
