@@ -10,7 +10,7 @@
  * added without touching the callers.
  */
 
-import { type Task } from "@canonical/task";
+import type { Task } from "@canonical/task";
 import { type RunTaskOptions, runTask } from "@canonical/task/node";
 
 /** Options controlling how {@link runGeneratorTask} executes a task. */

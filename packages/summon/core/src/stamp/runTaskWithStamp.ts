@@ -1,4 +1,4 @@
-import { type Effect, type Task } from "@canonical/task";
+import type { Effect, Task } from "@canonical/task";
 import { runTask } from "@canonical/task/node";
 import applyStamp from "./applyStamp.js";
 import type { RunTaskWithStampOptions } from "./types.js";
