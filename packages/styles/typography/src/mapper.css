@@ -63,7 +63,15 @@
   /* ── Line height shims ────────────────────────────────────────── *
    * number.tokens.json defines these as $type:"number" but the
    * terrazzo plugin does not emit them in sets.primitive.css.
-   * Hardcoded here until the build pipeline includes number tokens. */
+   * Hardcoded here until the build pipeline includes number tokens.
+   *
+   * These are unitless RATIOS (font-size × ratio = target line-height). The
+   * engine then does round(up, font-size × ratio, --baseline-height), which
+   * snaps the result onto the grid. So the 4px baseline needs NO change here:
+   * a 1rem × 1.5 = 24px line snaps to 24px at both 8px (3 units) and 4px
+   * (6 units) — the px is identical, only the unit COUNT differs. (An earlier
+   * pass wrongly doubled these, which doubled the actual line-height and drifted
+   * from the controls; reverted to the design-token ratios.) */
   --number-line-height-250: 1.3333;
   --number-line-height-300: 1.4286;
   --number-line-height-350: 1.5;

@@ -7,5 +7,9 @@
  *   - baseline-cap.css      — Uses the CSS `cap` unit (no extraction needed) [default]
  *   - baseline-metrics.css  — Uses extracted font metrics (ascender/descender/unitsPerEm)
  *   - baseline-trim.css     — Uses text-box-trim + cap unit hybrid
+ *
+ * Each engine registers the --baseline-height 4px shim itself (see the
+ * `@property` at the top of each), so importing any single engine — as the
+ * typography example does — carries the fallback with no consumer hardcoding.
  */
 @import url("./baseline-cap.css");

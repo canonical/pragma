@@ -15,6 +15,9 @@
  *   (fallback: --line-height-multiplier: <number> if --line-height is unset)
  */
 
+/* Baseline unit shim (--baseline-height 4px fallback) */
+@import url("./baseline-shim.css");
+
 /* Typography scale tokens from design-tokens */
 @import url("@canonical/design-tokens/dist/modifiers.typography.css");
 
