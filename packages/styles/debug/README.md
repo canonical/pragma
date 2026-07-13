@@ -30,17 +30,22 @@ import "@canonical/styles-debug"; // import all debug styles
 
 The baseline grid utility allows you to visualize the baseline grid in your application.
 To use it, add the `with-baseline-grid` class to any element.
-This will add a background color to the element and its children, allowing you to see the baseline grid in action.
+Each baseline row is painted as an alternating tinted / clear band (rather than a
+single hairline), which stays readable at the 4px grid; a stronger solid line is
+drawn every Nth baseline so groups can be counted.
 
 ##### Customization
 
 This utility can be customized by setting the following CSS variables:
 
-| Variable                | Description                           | Default Value          |
-|-------------------------|---------------------------------------|------------------------|
-| `--baseline-grid-color` | The color of the baseline grid lines  | `rgba(255, 0, 0, 0.2)` |
-| `--baseline-height`     | The height of the baseline grid       | `0.5rem`               |
-| `--baseline-shift`      | The offset shift of the baseline grid | `0`                    |
+| Variable                       | Description                                            | Default Value                  |
+|--------------------------------|--------------------------------------------------------|--------------------------------|
+| `--baseline-grid-color`        | Tint of the alternating baseline bands                 | branded border @ 22% (opaque)  |
+| `--baseline-grid-major-color`  | Colour of the major (every-Nth) line                   | branded border @ 70% (opaque)  |
+| `--baseline-grid-major-every`  | How many baselines between major lines                 | `4`                            |
+| `--baseline-height`            | The height of one baseline unit                        | `0.25rem` (4px)                |
+| `--baseline-grid-height`       | Fallback baseline height if `--baseline-height` unset  | `0.25rem` (4px)                |
+| `--baseline-shift`             | The offset shift of the baseline grid                  | `0`                            |
 
 ##### Example
 

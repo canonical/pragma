@@ -1,0 +1,241 @@
+/**
+ * Baseline-alignment spike — testbed stylesheet (WORK IN PROGRESS)
+ *
+ * This is a SPIKE surface, not shipping CSS. Everything is scoped under
+ * `.density-testbed` so nothing leaks into the global engine. Two things are
+ * being explored here:
+ *
+ *   1. A 4px baseline grid (down from the shipped 8px) with an alternating,
+ *      colour-banded overlay so the denser grid stays readable.
+ *
+ *   2. An ALTERNATIVE baseline-alignment model for boxed controls (buttons,
+ *      inputs, nav items, list/table rows). The shipped engine forces BOTH the
+ *      top and bottom borders onto the grid, which can push text down while the
+ *      box height is fixed → visibly asymmetric internal spacing. The proposed
+ *      model instead:
+ *        · aligns the TOP border to the grid,
+ *        · applies the existing top nudge to seat the text baseline,
+ *        · mirrors that SAME nudge below the text (symmetric interior),
+ *        · does NOT force the bottom border onto the grid,
+ *        · adds external margin-block-end so the TOTAL occupied height
+ *          (box + margin) is a whole 4px multiple, restoring layout rhythm.
+ *
+ * Both models are available as classes (`.model-current`, `.model-proposed`)
+ * so the demo can show them side by side on the same grid.
+ */
+
+/* ───────────────────────────────────────────────────────────────────────────
+ * 1. 4px baseline — now the shared default
+ *
+ * --baseline-height is 4px globally (set in @canonical/styles' spacing.css, no
+ * longer read from the 8px design token). Nothing to override here: the
+ * typography engine (baseline-cap.css) reads it live via mod()/1cap, so nudges
+ * are already on the 4px grid. This block is intentionally empty of a baseline
+ * override — kept as a marker of where the local override used to live.
+ * ─────────────────────────────────────────────────────────────────────────── */
+
+/* ───────────────────────────────────────────────────────────────────────────
+ * 2. Baseline overlay — provided by the shared helper, applied automatically
+ *
+ * The grid is NOT drawn here. The story sets `parameters: { baseline: true }`,
+ * and @canonical/storybook-addon-utils applies the shared `.with-baseline-grid`
+ * overlay (styles-debug, now 4px + alternating bands) to the story root. One
+ * grid, one source of truth — nothing to stack. The testbed only needs to keep
+ * its own --baseline-height in step (4px) so content and grid share the rhythm.
+ * ─────────────────────────────────────────────────────────────────────────── */
+
+/* ───────────────────────────────────────────────────────────────────────────
+ * 3. Baseline-alignment models for boxed controls
+ *
+ * A "boxed control" here is `.spike-box`: a box whose interior is a single line
+ * of `.p`-tier text (button label, input value, nav-item text, table cell). The
+ * text seat is driven by the engine's --start-nudge / --end-nudge (computed on
+ * the .p element inside). We expose two box models over that.
+ *
+ * Shared control metrics (borders count toward the grid math).
+ * ─────────────────────────────────────────────────────────────────────────── */
+.density-testbed .spike-box {
+  --box-border-width: 1px;
+  --box-padding-inline: var(--density-padding-inline, 0.75rem);
+
+  display: inline-flex;
+  align-items: stretch;
+  box-sizing: border-box;
+  border: var(--box-border-width) solid var(--color-border, #b3b3b3);
+  border-radius: var(--dimension-radius-100, 0.25rem);
+  padding-inline: var(--box-padding-inline);
+  background: var(--color-background, #fff);
+}
+
+/* The text seat inside every boxed control. `.p` gives it the body tier +
+   the engine's --start-nudge / --end-nudge as padding-block. */
+.density-testbed .spike-box > .seat {
+  display: block;
+  inline-size: 100%;
+  white-space: nowrap;
+}
+
+/* Shared-border stack (list/table rows). Rows collapse their between-borders so
+   the group reads as one ruled list — this is where per-row external margin in
+   the proposed model interacts with a shared border (see report §risks). */
+.density-testbed .spike-rows {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  inline-size: 100%;
+}
+.density-testbed .spike-rows > .spike-box {
+  display: flex;
+  border-radius: 0;
+}
+.density-testbed .spike-rows > .spike-box + .spike-box {
+  border-block-start: none;
+}
+
+/* ── 3a. CURRENT model ──────────────────────────────────────────────────────
+ * The seat keeps the engine's asymmetric nudges (start-nudge on top, end-nudge
+ * = baseline − start-nudge on the bottom). Both borders land on the grid, but
+ * top interior ≠ bottom interior whenever start-nudge ≠ end-nudge. No external
+ * margin. This mirrors what ships today. */
+.density-testbed .model-current .spike-box > .seat {
+  padding-block-start: var(--start-nudge);
+  padding-block-end: var(--end-nudge);
+}
+.density-testbed .model-current .spike-box {
+  margin-block-end: 0;
+}
+
+/* ── 3b. PROPOSED model ─────────────────────────────────────────────────────
+ * Mirror the top nudge below the text (symmetric interior), then push the
+ * leftover onto external margin so total occupied height is a grid multiple.
+ *
+ * Interior symmetric height (border-box, excl. external margin):
+ *   visible = 2·border + 2·start-nudge + line-height
+ * The grid target is the next 4px multiple at or above `visible`:
+ *   target  = round(up, visible, baseline)
+ * Compensation lives OUTSIDE the box so the visible control is untouched:
+ *   margin-block-end = target − visible
+ *
+ * round(up, …) keeps the compensation in [0, baseline). CSS computes it live, so
+ * it self-corrects across font sizes / control heights. */
+.density-testbed .model-proposed .spike-box > .seat {
+  padding-block-start: var(--start-nudge);
+  padding-block-end: var(--start-nudge); /* mirror the TOP nudge, not end-nudge */
+}
+.density-testbed .model-proposed .spike-box {
+  --visible-height: calc(
+    (2 * var(--box-border-width)) +
+    (2 * var(--start-nudge)) +
+    var(--computed-line-height)
+  );
+  --grid-target: round(up, var(--visible-height), var(--baseline-height));
+  margin-block-end: calc(var(--grid-target) - var(--visible-height));
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+ * 4. Testbed chrome — aligned to the 4px grid
+ *
+ * The toolbar, bucket titles and captions are themselves snapped to the grid
+ * (heights / gaps as 4px multiples) so the eye has a clean reference and the
+ * chrome does not fight the components under inspection.
+ * ─────────────────────────────────────────────────────────────────────────── */
+.density-testbed {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--baseline-height) * 4); /* 16px */
+  max-width: 60rem;
+}
+
+.density-testbed__toolbar {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--baseline-height) * 3); /* 12px */
+  min-block-size: calc(var(--baseline-height) * 8); /* 32px */
+  padding-inline: calc(var(--baseline-height) * 3);
+  border: 1px solid var(--color-border, #d9d9d9);
+  border-radius: var(--dimension-radius-100, 0.25rem);
+  position: sticky;
+  top: 0;
+  z-index: 210; /* above the grid overlay */
+  background: var(--color-background, #fff);
+}
+
+.density-testbed__toolbar-label {
+  font-weight: 600;
+}
+
+.density-testbed__controls {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--baseline-height) * 2);
+  margin-inline-start: auto;
+}
+
+.density-testbed__bucket {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--baseline-height) * 3); /* 12px */
+  padding: calc(var(--baseline-height) * 4); /* 16px */
+  border: 1px solid var(--color-border, #e6e6e6);
+  border-radius: var(--dimension-radius-100, 0.25rem);
+}
+
+.density-testbed__bucket-title {
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: calc(var(--baseline-height) * 4); /* 16px — 4 baselines */
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted, #6b6b6b);
+}
+
+/* Each bucket = a narrow text column beside the components:
+ *   · left  — a NARROW, non-flex column of short baseline-aligned words (the
+ *             prose reference). Just enough text to read the grid rhythm.
+ *   · right — the components sitting SIDE BY SIDE, each flex-grow:1, so their
+ *             text baselines can be compared against the words on the left and
+ *             against each other on the same grid.
+ * The whole row is baseline-aligned so the first text line of every component
+ * sits on the reference line. */
+.density-testbed__compare {
+  display: flex;
+  align-items: baseline;
+  gap: calc(var(--baseline-height) * 4); /* 16px */
+}
+
+/* Narrow, fixed reference column — not flex, does not grow. */
+.density-testbed__ref {
+  flex: 0 0 auto;
+  inline-size: 6rem;
+  color: var(--color-text, #1a1a1a);
+}
+.density-testbed__ref > .p {
+  margin: 0;
+}
+
+/* Components share the remaining width, each growing equally, side by side. */
+.density-testbed__row {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: baseline;
+  gap: calc(var(--baseline-height) * 3); /* 12px */
+  min-width: 0;
+}
+.density-testbed__row > * {
+  flex: 1 1 0; /* each component grows equally */
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+ * 5. Density channels (retained from the density spike, still relevant since
+ *    inline padding is a density lever independent of the vertical model).
+ * ─────────────────────────────────────────────────────────────────────────── */
+.density-comfortable {
+  --density-padding-block: calc(var(--baseline-height) * 2);
+  --density-padding-inline: 0.75rem;
+  --density-inline-gap: 0.5rem;
+}
+.density-dense {
+  --density-padding-block: var(--baseline-height);
+  --density-padding-inline: 0.5rem;
+  --density-inline-gap: 0.25rem;
+}

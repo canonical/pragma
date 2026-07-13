@@ -1,25 +1,30 @@
 .with-baseline-grid {
-  /* Lines are partly transparent so content reads through the grid. */
-  --addon-baseline-grid-color: var(
+  /* Baseline unit. Default is 4px to match the current grid; a consumer that
+     still runs an 8px grid can override --baseline-height (or set
+     --baseline-grid-height) and the overlay follows. */
+  --addon-baseline-height: var(--baseline-height, var(--baseline-grid-height, 0.25rem));
+
+  /* Alternating BANDS (not hairlines): at 4px, a line-per-baseline overlay is
+     too noisy to read, so each baseline row is painted as a filled stripe that
+     alternates tinted / clear. The tint is deliberately more visible than the
+     old hairline so the rhythm is legible against real content. */
+  --addon-baseline-band-color: var(
     --baseline-grid-color,
     color-mix(
       in oklch,
-      var(--color-border-branded, oklch(64.05% 0.1941 37.76)) 35%,
+      var(--color-border-branded, oklch(64.05% 0.1941 37.76)) 22%,
       transparent
     )
   );
-  /* Every Nth line (see --baseline-grid-major-every) — a distinct, stronger
-     (but still translucent) tint so groups are countable. */
+  /* Every Nth baseline gets a stronger solid line so groups stay countable. */
   --addon-baseline-grid-major-color: var(
     --baseline-grid-major-color,
     color-mix(
       in oklch,
-      var(--color-border-branded, oklch(64.05% 0.1941 37.76)) 60%,
+      var(--color-border-branded, oklch(64.05% 0.1941 37.76)) 70%,
       transparent
     )
   );
-  --addon-baseline-height: var(--baseline-height, 0.5rem);
-  /* Major line every Nth baseline (configurable; default every 4). */
   --addon-baseline-major-every: var(--baseline-grid-major-every, 4);
   --addon-baseline-major: calc(
     var(--addon-baseline-height) *
@@ -37,9 +42,9 @@
    * the pseudo stretches over the whole content height rather than clipping at
    * the fold.
    *
-   * Two layers: a minor line every baseline unit, and a major (different colour)
-   * line every Nth unit (--baseline-grid-major-every), listed first so it paints
-   * on top where they coincide.
+   * Two layers:
+   *   1. a MAJOR solid line every Nth unit (listed first → paints on top),
+   *   2. alternating BANDS: one tinted baseline, one clear (a 2×baseline repeat).
    */
   &::after {
     content: "";
@@ -51,22 +56,22 @@
     z-index: 200;
     background-image:
       linear-gradient(
-        to top,
+        to bottom,
         var(--addon-baseline-grid-major-color),
         var(--addon-baseline-grid-major-color) 1px,
         transparent 1px,
         transparent
       ),
-      linear-gradient(
-        to top,
-        var(--addon-baseline-grid-color),
-        var(--addon-baseline-grid-color) 1px,
-        transparent 1px,
-        transparent
+      repeating-linear-gradient(
+        to bottom,
+        var(--addon-baseline-band-color) 0,
+        var(--addon-baseline-band-color) var(--addon-baseline-height),
+        transparent var(--addon-baseline-height),
+        transparent calc(var(--addon-baseline-height) * 2)
       );
     background-size:
       100% var(--addon-baseline-major),
-      100% var(--addon-baseline-height);
+      100% calc(var(--addon-baseline-height) * 2);
     background-position: 0 var(--addon-baseline-shift);
     background-repeat: repeat;
   }
