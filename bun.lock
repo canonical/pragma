@@ -51,8 +51,8 @@
         "graphql": "^16.11.0",
         "react": "^19.2.4",
         "react-dom": "^19.2.4",
-        "react-relay": "^18.2.0",
-        "relay-runtime": "^18.2.0",
+        "react-relay": "^21.0.1",
+        "relay-runtime": "^21.0.1",
         "relay-runtime-network": "^0.1.0",
       },
       "devDependencies": {
@@ -68,16 +68,16 @@
         "@types/react": "^19.2.14",
         "@types/react-dom": "^19.2.3",
         "@types/react-relay": "^18.2.1",
-        "@types/relay-runtime": "^19.0.3",
-        "@types/relay-test-utils": "^18.0.0",
+        "@types/relay-runtime": "^20.1.1",
+        "@types/relay-test-utils": "^19.0.0",
         "@vitejs/plugin-react": "^6.0.0",
         "@vitest/coverage-v8": "^4.0.18",
         "browserslist": "^4.28.1",
         "bun-types": "^1.3.9",
         "jsdom": "^28.1.0",
         "lightningcss": "^1.32.0",
-        "relay-compiler": "^18.2.0",
-        "relay-test-utils": "^18.2.0",
+        "relay-compiler": "^21.0.1",
+        "relay-test-utils": "^21.0.1",
         "storybook": "^10.3.1",
         "tsx": "^4.19.0",
         "typescript": "^5.9.3",
@@ -1146,7 +1146,7 @@
       "name": "@canonical/storybook-addon-relay",
       "version": "0.29.1",
       "dependencies": {
-        "relay-test-utils": "^18.2.0",
+        "relay-test-utils": "^21.0.1",
       },
       "devDependencies": {
         "@biomejs/biome": "2.4.9",
@@ -1158,15 +1158,15 @@
         "@types/react": "^19.2.14",
         "@types/react-dom": "^19.2.3",
         "@types/react-relay": "^18.2.1",
-        "@types/relay-runtime": "^19.0.3",
-        "@types/relay-test-utils": "^18.0.0",
+        "@types/relay-runtime": "^20.1.1",
+        "@types/relay-test-utils": "^19.0.0",
         "@vitejs/plugin-react": "^6.0.0",
         "@vitest/coverage-v8": "^4.0.18",
         "jsdom": "^28.1.0",
         "react": "^19.2.4",
         "react-dom": "^19.2.4",
-        "react-relay": "^18.2.0",
-        "relay-runtime": "^18.2.0",
+        "react-relay": "^21.0.1",
+        "relay-runtime": "^21.0.1",
         "storybook": "^10.3.1",
         "typescript": "^5.9.3",
         "vite": "^8.0.1",
@@ -1175,8 +1175,8 @@
       "peerDependencies": {
         "react": "^18.0.0 || ^19.0.0",
         "react-dom": "^18.0.0 || ^19.0.0",
-        "react-relay": ">=18.0.0 <19.0.0",
-        "relay-runtime": ">=18.0.0 <19.0.0",
+        "react-relay": ">=18.0.0 <22.0.0",
+        "relay-runtime": ">=18.0.0 <22.0.0",
         "storybook": "^10.3.1",
       },
     },
@@ -1569,8 +1569,8 @@
     },
   },
   "patchedDependencies": {
-    "react-relay@18.2.0": "patches/react-relay@18.2.0.patch",
     "relay-runtime-network@0.1.0": "patches/relay-runtime-network@0.1.0.patch",
+    "react-relay@21.0.1": "patches/react-relay@21.0.1.patch",
     "ejs@5.0.1": "patches/ejs@5.0.1.patch",
   },
   "packages": {
@@ -2582,9 +2582,9 @@
 
     "@types/react-relay": ["@types/react-relay@18.2.1", "", { "dependencies": { "@types/react": "*", "@types/relay-runtime": "*" } }, "sha512-KgmFapsxAylhxcFfaAv5GZZJhTHnDvV8IDZVsUm5afpJUvgZC1Y68ssfOGsFfiFY/2EhxHM/YPfpdKbfmF3Ecg=="],
 
-    "@types/relay-runtime": ["@types/relay-runtime@19.0.3", "", {}, "sha512-pvpWWQq5e9KeESF8klQaP2igLLhr2bRd3XxVCxNpGElsPQiP6Mejr59RT9/OGY3O3i8jAGGQsshVe0QCQDbxNg=="],
+    "@types/relay-runtime": ["@types/relay-runtime@20.1.1", "", {}, "sha512-loM2iJteknnJcsxrynmBVb7pIDkSkJUuCMnAa/oDFcrvaxkDvq8iy0J2UshMdDy14iJJocDblXeAu7c6Q1+Ucw=="],
 
-    "@types/relay-test-utils": ["@types/relay-test-utils@18.0.0", "", { "dependencies": { "@types/react": "*", "@types/react-relay": "*", "@types/relay-runtime": "*" } }, "sha512-sg++buiunZkj0MkL1/Q6w4p19ut3USC5BQnWJ1D4Bp4pNOrck4nhVDIyklm/ilVyM0wCbvROa5wL+nsYVo4Frw=="],
+    "@types/relay-test-utils": ["@types/relay-test-utils@19.0.0", "", { "dependencies": { "@types/react": "*", "@types/react-relay": "*", "@types/relay-runtime": "*" } }, "sha512-yC/wVgDetV+88HrHLKlesIfju3RGsp32vLs0IiwBPKD0npQSTrFddcP3FNPe5Kkk4/Y/kgY3oR/DA8g8Bmmppw=="],
 
     "@types/resolve": ["@types/resolve@1.20.6", "", {}, "sha512-A4STmOXPhMUtHH+S6ymgE2GiBSMqf4oTvcQZMcHzokuTLVYzXTB8ttjcgxOVaAp2lGwEdzZ0J+cRbbeevQj1UQ=="],
 
@@ -4056,7 +4056,7 @@
 
     "react-reconciler": ["react-reconciler@0.33.0", "", { "dependencies": { "scheduler": "^0.27.0" }, "peerDependencies": { "react": "^19.2.0" } }, "sha512-KetWRytFv1epdpJc3J4G75I4WrplZE5jOL7Yq0p34+OVOKF4Se7WrdIdVC45XsSSmUTlht2FM/fM1FZb1mfQeA=="],
 
-    "react-relay": ["react-relay@18.2.0", "", { "dependencies": { "@babel/runtime": "^7.25.0", "fbjs": "^3.0.2", "invariant": "^2.2.4", "nullthrows": "^1.1.1", "relay-runtime": "18.2.0" }, "peerDependencies": { "react": "^16.9.0 || ^17 || ^18" } }, "sha512-/yHlv4pj3IQQPtDzYLfVk6P4wrOSvYPu/5ySPcRp4xV3pn9xoVOHVczSLcZkRVf72lJu8CIjoT8rn3roaGoFyQ=="],
+    "react-relay": ["react-relay@21.0.1", "", { "dependencies": { "@babel/runtime": "^7.25.0", "fbjs": "^3.0.2", "invariant": "^2.2.4", "nullthrows": "^1.1.1", "relay-runtime": "21.0.1" }, "peerDependencies": { "react": "^16.9.0 || ^17 || ^18 || ^19" } }, "sha512-08BBmpdolP8vslClnszG+g4vkcbVHvaoR0BDHyhicwpCfbtnVGe73/MfPja/xj30eLWSP5WPYNqZupTdEPZvtw=="],
 
     "react-shadow": ["react-shadow@20.6.0", "", { "dependencies": { "humps": "^2.0.1" }, "peerDependencies": { "prop-types": "^15.0.0", "react": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react-dom": "^16.0.0 || ^17.0.0 || ^18.0.0 || ^19.0.0" } }, "sha512-kY+w4OMNZ8Nj9YI9eiTgvvJ/wYO7XyX1D/LYhvwQZv5vw69iCiDtGB0BX/2U8gLUuZAMN+x/7rHJKqHh8wXFHQ=="],
 
@@ -4082,13 +4082,13 @@
 
     "rehype-sanitize": ["rehype-sanitize@6.0.0", "", { "dependencies": { "@types/hast": "^3.0.0", "hast-util-sanitize": "^5.0.0" } }, "sha512-CsnhKNsyI8Tub6L4sm5ZFsme4puGfc6pYylvXo1AeqaGbjOYyzNv3qZPwvs0oMJ39eryyeOdmxwUIo94IpEhqg=="],
 
-    "relay-compiler": ["relay-compiler@18.2.0", "", { "bin": { "relay-compiler": "cli.js" } }, "sha512-P3o5/Gv/oLC9hckUaz/a+KvDgbFERpjtz5lgsJSIQILg9paaF3k1yaX9qSxErGuU4icZvjoK5G82a/bfPgGZpA=="],
+    "relay-compiler": ["relay-compiler@21.0.1", "", { "bin": { "relay-compiler": "cli.js" } }, "sha512-Wqlg3MtHyBlAYByVo24Wy9H3n2bAw991gPmzdo3XfNv+TzhI8zuGogtiae+7NORI7zhghgZaHC7Sp8S8ZPRYEA=="],
 
-    "relay-runtime": ["relay-runtime@18.2.0", "", { "dependencies": { "@babel/runtime": "^7.25.0", "fbjs": "^3.0.2", "invariant": "^2.2.4" } }, "sha512-r4FYWlx1dPwFW+KQnuF1ugwVKR4toIFduCGheEf2paRc6nEEcCIgd2p2Jx2gRF+4niO3mCbRZvqdCoKaznUDzg=="],
+    "relay-runtime": ["relay-runtime@21.0.1", "", { "dependencies": { "@babel/runtime": "^7.25.0", "fbjs": "^3.0.2", "invariant": "^2.2.4" } }, "sha512-OS+We56sp6gkGVEcce9VCNOeg/sMbxT9unEoerQPgNAICHowSWrXNc6LJxF2OqjypxYF7kaLDSPPiaPii2Pw1g=="],
 
     "relay-runtime-network": ["relay-runtime-network@0.1.0", "", { "peerDependencies": { "relay-runtime": ">=16.0.0" } }, "sha512-TN7/X24Io1Ln7vl+ENAqVZoLLyLKgk9kQEi15I12Hi7P6xVTYV7g0cF8Pr1fRHK7UTs1qzAo0CYkvAYxl2FZ3w=="],
 
-    "relay-test-utils": ["relay-test-utils@18.2.0", "", { "dependencies": { "@babel/runtime": "^7.25.0", "fbjs": "^3.0.2", "invariant": "^2.2.4", "relay-runtime": "18.2.0" } }, "sha512-CfhZ/E9yUqdHnTLk8n9fnd0j1dz2dsLpTL6nnvvrmk8YyMJ5qKvoskVQiWyeSYFfHCfrzmWNPmNiXbxq6optqw=="],
+    "relay-test-utils": ["relay-test-utils@21.0.1", "", { "dependencies": { "@babel/runtime": "^7.25.0", "fbjs": "^3.0.2", "invariant": "^2.2.4", "relay-runtime": "21.0.1" } }, "sha512-Or9qrzdGpiNMMXCZ/eKbVeMiBNijILdyFIuf2/FYnV+7YvDkxFq+oE/g4/gZhYqd1G5/Cejjjavv/xqs86MrzA=="],
 
     "remark": ["remark@15.0.1", "", { "dependencies": { "@types/mdast": "^4.0.0", "remark-parse": "^11.0.0", "remark-stringify": "^11.0.0", "unified": "^11.0.0" } }, "sha512-Eht5w30ruCXgFmxVUSlNWQ9iiimq07URKeFS3hNc8cUWy1llX4KDWfyEDZRycMc+znsN9Ux5/tJ/BFdgdOwA3A=="],
 
@@ -4731,6 +4731,8 @@
     "@tufjs/models/minimatch": ["minimatch@10.2.4", "", { "dependencies": { "brace-expansion": "^5.0.2" } }, "sha512-oRjTw/97aTBN0RHbYCdtF1MQfvusSIBQM0IZEgzl6426+8jSC0nF1a/GmnVLpfB9yyr6g6FTqWqiZVbxrtaCIg=="],
 
     "@types/jsdom/undici-types": ["undici-types@7.24.4", "", {}, "sha512-cRaY9PagdEZoRmcwzk3tUV3SVGrVQkR6bcSilav/A0vXsfpW4Lvd0BvgRMwTEDTLLGN+QdyBTG+nnvTgJhdt6w=="],
+
+    "@types/react-relay/@types/relay-runtime": ["@types/relay-runtime@19.0.3", "", {}, "sha512-pvpWWQq5e9KeESF8klQaP2igLLhr2bRd3XxVCxNpGElsPQiP6Mejr59RT9/OGY3O3i8jAGGQsshVe0QCQDbxNg=="],
 
     "@vitest/browser/@vitest/utils": ["@vitest/utils@4.1.2", "", { "dependencies": { "@vitest/pretty-format": "4.1.2", "convert-source-map": "^2.0.0", "tinyrainbow": "^3.1.0" } }, "sha512-xw2/TiX82lQHA06cgbqRKFb5lCAy3axQ4H4SoUFhUsg+wztiet+co86IAMDtF6Vm1hc7J6j09oh/rgDn+JdKIQ=="],
 
