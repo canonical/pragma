@@ -10,7 +10,7 @@ import * as path from "node:path";
 import { TaskExecutionError } from "./errors.js";
 import type { Effect, ExecResult, Task, TaskError } from "./types.js";
 
-export { TaskExecutionError } from "./errors.js";
+export { TaskExecutionError };
 
 /**
  * Normalise a value thrown while performing an effect into a structured
