@@ -24,7 +24,6 @@ const Item = ({
   // Destructure Item props we don't spread to DOM
   key: _key,
   items: _items,
-  displayItemsType: _displayItemsType,
   Component: _Component,
   ...props
 }: ItemProps): React.ReactElement => {

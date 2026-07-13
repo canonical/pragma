@@ -74,15 +74,18 @@ describe("annotateTree", () => {
   });
 
   it("preserves extra properties on items", () => {
-    const root: Item = {
+    interface EnhancedItem extends Item {
+      icon?: string;
+    }
+    const root: EnhancedItem = {
       url: "/home",
       label: "Home",
-      className: "active",
+      icon: "home",
       disabled: true,
     };
     const result = annotateTree(root);
 
-    expect(result.className).toBe("active");
+    expect(result.icon).toBe("home");
     expect(result.disabled).toBe(true);
   });
 

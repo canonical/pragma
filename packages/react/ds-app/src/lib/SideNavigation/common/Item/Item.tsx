@@ -31,8 +31,6 @@ const Item = ({
   // NavItem fields not spread to the DOM.
   key: _key,
   items,
-  displayItemsType: _displayItemsType,
-  Component: _Component,
   className,
   ...props
 }: ItemProps): React.ReactElement => {
