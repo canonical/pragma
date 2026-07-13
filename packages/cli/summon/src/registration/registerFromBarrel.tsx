@@ -20,7 +20,8 @@ import type {
   PromptDefinition,
   StampConfig,
 } from "@canonical/summon-core";
-import { dryRun, runUndo } from "@canonical/task";
+import { dryRun } from "@canonical/task";
+import { runUndo } from "@canonical/task/node";
 import chalk from "chalk";
 import type { Command } from "commander";
 import { render } from "ink";

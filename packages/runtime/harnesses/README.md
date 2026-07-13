@@ -4,7 +4,7 @@ Detects AI harnesses (Claude Code, Cursor, Windsurf, Cline, Roo Code) and reads/
 
 ```typescript
 import { detectHarnesses, writeMcpConfig } from "@canonical/harnesses";
-import { runTask } from "@canonical/task";
+import { runTask } from "@canonical/task/node";
 
 const detected = await runTask(detectHarnesses("/my/project"));
 // [{ harness: { id: "claude-code", ... }, confidence: "high", configPath: "/my/project/.mcp.json" }]
@@ -24,7 +24,7 @@ Requires `@canonical/task` as a peer dependency.
 
 ```typescript
 import { detectHarnesses } from "@canonical/harnesses";
-import { runTask } from "@canonical/task";
+import { runTask } from "@canonical/task/node";
 
 const detected = await runTask(detectHarnesses("/my/project"));
 
@@ -51,7 +51,7 @@ Read, write, and remove MCP server entries from harness config files:
 
 ```typescript
 import { findHarnessById, readMcpConfig, writeMcpConfig, removeMcpConfig } from "@canonical/harnesses";
-import { runTask } from "@canonical/task";
+import { runTask } from "@canonical/task/node";
 
 const claude = findHarnessById("claude-code")!;
 

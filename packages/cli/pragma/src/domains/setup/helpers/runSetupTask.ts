@@ -7,7 +7,8 @@ import {
   isVisibleEffect,
   runGeneratorTask,
 } from "@canonical/cli-core";
-import { dryRun, type Effect, runUndo, type Task } from "@canonical/task";
+import { dryRun, type Effect, type Task } from "@canonical/task";
+import { runUndo } from "@canonical/task/node";
 import createInteractivePromptSession, {
   type InteractivePromptSession,
 } from "../../shared/createInteractivePromptSession.js";

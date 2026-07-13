@@ -3,7 +3,7 @@ import {
   type CommandResult,
   createOutputResult,
 } from "@canonical/cli-core";
-import { runTask } from "@canonical/task";
+import { runTask } from "@canonical/task/node";
 import { readConfig } from "#config";
 import { PragmaError } from "#error";
 import type { PragmaContext } from "../../shared/context.js";

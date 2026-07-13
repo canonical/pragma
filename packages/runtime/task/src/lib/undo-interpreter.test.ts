@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { parallel, sequence_, when } from "./combinators.js";
 import { dryRun } from "./dry-run.js";
-import { TaskExecutionError } from "./interpreter.js";
+import { TaskExecutionError } from "./errors.js";
 import {
   appendFile,
   copyDirectory,
@@ -19,7 +19,8 @@ import {
 } from "./primitives.js";
 import { $, effect, fail, flatMap, gen, map, pure, recover } from "./task.js";
 import type { Task } from "./types.js";
-import { collectUndos, runUndo } from "./undo-interpreter.js";
+import { collectUndos } from "./undo.js";
+import { runUndo } from "./undo-interpreter.js";
 
 // =============================================================================
 // collectUndos

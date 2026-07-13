@@ -1,5 +1,5 @@
 import type { Effect } from "@canonical/task";
-import { runTask } from "@canonical/task";
+import { runTask } from "@canonical/task/node";
 import { describe, expect, it } from "vitest";
 import promptForAnswers, { type AnswerablePrompt } from "./promptForAnswers.js";
 

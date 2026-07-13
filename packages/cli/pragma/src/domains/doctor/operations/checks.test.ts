@@ -18,7 +18,7 @@ vi.mock("@canonical/harnesses", () => ({
   detectHarnesses: vi.fn(),
   readMcpConfig: vi.fn(),
 }));
-vi.mock("@canonical/task", () => ({
+vi.mock("@canonical/task/node", () => ({
   runTask: vi.fn((task: unknown) => task),
 }));
 

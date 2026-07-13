@@ -6,7 +6,7 @@
  */
 
 import driveSync from "./driveSync.js";
-import { TaskExecutionError } from "./interpreter.js";
+import { TaskExecutionError } from "./errors.js";
 import type { DryRunResult, Effect, Task } from "./types.js";
 
 // =============================================================================

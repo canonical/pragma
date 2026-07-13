@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import driveSync from "./driveSync.js";
-import { TaskExecutionError } from "./interpreter.js";
+import { TaskExecutionError } from "./errors.js";
 import { effect, fail, flatMap, pure, recover } from "./task.js";
 import type { Effect, Task } from "./types.js";
 

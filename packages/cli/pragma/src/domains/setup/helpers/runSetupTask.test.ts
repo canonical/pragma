@@ -24,8 +24,8 @@ vi.mock("@canonical/cli-core", async (importOriginal) => ({
   runGeneratorTask: runGeneratorTaskMock,
 }));
 
-vi.mock("@canonical/task", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@canonical/task")>()),
+vi.mock("@canonical/task/node", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@canonical/task/node")>()),
   runUndo: runUndoMock,
 }));
 
