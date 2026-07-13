@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
-import * as kernel from "./kernel.js";
+import * as base from "./index.js";
 
 /**
  * Collect every import/export specifier reachable from a source file by
@@ -38,8 +38,8 @@ const walkImportClosure = (
   return { visited, external };
 };
 
-describe("kernel entry", () => {
-  const entry = resolve(import.meta.dirname, "kernel.ts");
+describe("base entry (@canonical/task)", () => {
+  const entry = resolve(import.meta.dirname, "index.ts");
   const closure = walkImportClosure(entry);
 
   it("reaches no node: builtin anywhere in its import closure", () => {
@@ -49,17 +49,20 @@ describe("kernel entry", () => {
     expect(nodeSpecifiers).toEqual([]);
   });
 
-  it("never resolves the execution machinery modules", () => {
+  it("never resolves the node-touching interpreter modules", () => {
     const machinery = [...closure.visited].filter((file) =>
-      /(?:interpreter|dry-run|driveSync)\.ts$/.test(file),
+      /(?:^|\/)(?:interpreter|undo-interpreter)\.ts$/.test(file),
     );
     expect(machinery).toEqual([]);
   });
 
-  it("exposes the task monad and effect constructors at runtime", () => {
-    expect(typeof kernel.task).toBe("function");
-    expect(typeof kernel.effect).toBe("function");
-    expect(typeof kernel.readFileEffect).toBe("function");
-    expect(typeof kernel.sequence).toBe("function");
+  it("carries the node-free testing surface: monad, effects, dry-run, undo collection", () => {
+    expect(typeof base.task).toBe("function");
+    expect(typeof base.effect).toBe("function");
+    expect(typeof base.readFileEffect).toBe("function");
+    expect(typeof base.sequence).toBe("function");
+    expect(typeof base.dryRun).toBe("function");
+    expect(typeof base.collectUndos).toBe("function");
+    expect(typeof base.TaskExecutionError).toBe("function");
   });
 });

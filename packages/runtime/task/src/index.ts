@@ -155,19 +155,7 @@ export {
 } from "./lib/combinators.js";
 
 // =============================================================================
-// Interpreter
-// =============================================================================
-
-export type { RunTaskOptions } from "./lib/interpreter.js";
-export {
-  executeEffect,
-  run,
-  runTask,
-  TaskExecutionError,
-} from "./lib/interpreter.js";
-
-// =============================================================================
-// Dry-Run
+// Dry-Run (node-free testing interpreters)
 // =============================================================================
 
 export {
@@ -185,11 +173,18 @@ export {
 } from "./lib/dry-run.js";
 
 // =============================================================================
-// Undo Interpreter
+// Undo collection (node-free — walks the tree with mocked effects; executing
+// the collected undos is `runUndo`'s job, in `@canonical/task/node`)
 // =============================================================================
 
-export type { UndoResult } from "./lib/undo-interpreter.js";
-export { collectUndos, runUndo } from "./lib/undo-interpreter.js";
+export { collectUndos } from "./lib/undo.js";
+
+// =============================================================================
+// Execution error (thrown by the interpreters; node-free, so it lives here in
+// the base — catch it whether you run tasks or dry-run them)
+// =============================================================================
+
+export { TaskExecutionError } from "./lib/errors.js";
 
 // =============================================================================
 // Undo Options (re-exported from effect for convenience)

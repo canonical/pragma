@@ -10,13 +10,8 @@ import type {
   PromptDefinition,
   StampConfig,
 } from "@canonical/summon-core";
-import {
-  dryRun,
-  type Effect,
-  runUndo,
-  type Task,
-  type TaskError,
-} from "@canonical/task";
+import { dryRun, type Effect, type Task, type TaskError } from "@canonical/task";
+import { runUndo } from "@canonical/task/node";
 import { Box, Text, useApp, useInput } from "ink";
 import { useCallback, useEffect, useState } from "react";
 import { ExecutionProgress, type TimedEffect } from "./ExecutionProgress.js";

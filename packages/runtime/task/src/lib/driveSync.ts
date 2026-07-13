@@ -1,4 +1,4 @@
-import { TaskExecutionError } from "./interpreter.js";
+import { TaskExecutionError } from "./errors.js";
 import type { Effect, Task, TaskError } from "./types.js";
 
 /**
