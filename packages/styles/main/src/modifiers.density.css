@@ -1,0 +1,112 @@
+/* @canonical/styles — Density modifier family
+ *
+ * A composed 2×3 modifier family that sizes controls and seats their text on the
+ * 4px baseline grid, applied as classes on an ancestor (an app root, or a section):
+ *
+ *   CONTEXT  .app / .site / .docs  — the surface. Sets the comfortable/dense
+ *            PAIR for every density primitive. `.docs` shares `.site`'s values.
+ *   DENSITY  .comfortable / .dense — picks within the context pair.
+ *
+ * This is the LOWEST layer of the density system, and it lives in @canonical/styles
+ * so EVERY package can read it (ds-global, ds-global-form, and any future consumer)
+ * — the primitives were previously in ds-global-form, out of reach of ds-global.
+ *
+ * Design contract — components listen to the CHANNEL, never to the class. This
+ * file exposes only GENERIC, domain-neutral primitives; it knows nothing about
+ * forms, fields, buttons, accordions, or any component. A consumer reads the
+ * `--density-*` outputs and applies them to its own box/tokens (see the seating
+ * guides shipped by ds-global-form):
+ *
+ *     --density-line-height            the control-height / line unit for a cell
+ *     --density-line-height-effective  the same, with the full fallback chain
+ *     --density-target-baseline-px     the grid line a control's baseline lands on
+ *     --density-padding-inline         inline padding for a cell
+ *     --density-space-sm / -md / -lg   three vertical spacing rungs for a cell
+ *
+ * Every value is a WHOLE multiple of --baseline-height (from spacing.css), so
+ * vertical rhythm holds in all four cells. Sites/docs run one baseline looser than
+ * apps on the height (+4px) and on each rung, so the looser surface breathes.
+ *
+ *                    app                 site / docs
+ *                    comfy   dense       comfy   dense
+ *   line-height      32 (8)  24 (6)      36 (9)  28 (7)
+ *   padding-inline   16 (4)   8 (2)      16 (4)  12 (3)
+ *   space-lg         24 (6)  16 (4)      28 (7)  20 (5)
+ *   space-md         16 (4)   8 (2)      20 (5)  12 (3)
+ *   space-sm          8 (2)   4 (1)       8 (2)   8 (2)
+ *   (parenthesised = baseline units; 1 bU = --baseline-height = 4px)
+ */
+
+/* ── Context family: the comfortable/dense PAIR per surface ────────────────── */
+.app {
+  --lh-comfy: calc(var(--baseline-height) * 8); /* 32px */
+  --lh-dense: calc(var(--baseline-height) * 6); /* 24px */
+  --pad-inline-comfy: calc(var(--baseline-height) * 4); /* 16px */
+  --pad-inline-dense: calc(var(--baseline-height) * 2); /*  8px */
+  --space-lg-comfy: calc(var(--baseline-height) * 6); /* 24px */
+  --space-lg-dense: calc(var(--baseline-height) * 4); /* 16px */
+  --space-md-comfy: calc(var(--baseline-height) * 4); /* 16px */
+  --space-md-dense: calc(var(--baseline-height) * 2); /*  8px */
+  --space-sm-comfy: calc(var(--baseline-height) * 2); /*  8px */
+  --space-sm-dense: calc(var(--baseline-height) * 1); /*  4px */
+}
+.site,
+.docs {
+  --lh-comfy: calc(var(--baseline-height) * 9); /* 36px */
+  --lh-dense: calc(var(--baseline-height) * 7); /* 28px */
+  --pad-inline-comfy: calc(var(--baseline-height) * 4); /* 16px */
+  --pad-inline-dense: calc(var(--baseline-height) * 3); /* 12px */
+  --space-lg-comfy: calc(var(--baseline-height) * 7); /* 28px */
+  --space-lg-dense: calc(var(--baseline-height) * 5); /* 20px */
+  --space-md-comfy: calc(var(--baseline-height) * 5); /* 20px */
+  --space-md-dense: calc(var(--baseline-height) * 3); /* 12px */
+  --space-sm-comfy: calc(var(--baseline-height) * 2); /*  8px */
+  --space-sm-dense: calc(var(--baseline-height) * 2); /*  8px */
+}
+
+/* ── Density family: pick within the context pair ────────────────────────────
+ * Each density tier resolves every GENERIC primitive from the context's
+ * *-comfy / *-dense pair. Fallbacks cover the app-comfortable defaults when no
+ * context class is present (a plain `.comfortable` still works). */
+.comfortable {
+  --density-line-height: var(--lh-comfy, calc(var(--baseline-height) * 8));
+  --density-padding-inline: var(
+    --pad-inline-comfy,
+    calc(var(--baseline-height) * 4)
+  );
+  --density-space-lg: var(--space-lg-comfy, calc(var(--baseline-height) * 6));
+  --density-space-md: var(--space-md-comfy, calc(var(--baseline-height) * 4));
+  --density-space-sm: var(--space-sm-comfy, calc(var(--baseline-height) * 2));
+}
+.dense {
+  --density-line-height: var(--lh-dense, calc(var(--baseline-height) * 6));
+  --density-padding-inline: var(
+    --pad-inline-dense,
+    calc(var(--baseline-height) * 2)
+  );
+  --density-space-lg: var(--space-lg-dense, calc(var(--baseline-height) * 4));
+  --density-space-md: var(--space-md-dense, calc(var(--baseline-height) * 2));
+  --density-space-sm: var(--space-sm-dense, calc(var(--baseline-height) * 1));
+}
+
+/* ── Target baseline = round(up, height × 2/3) ──────────────────────────────
+ * Snapped UP so fractional cases lift (apps-comfy 5.33→6) while exact multiples
+ * stay (apps-dense 4.0, sites-comfy 6.0). Matches: apps 32→6th/24→4th,
+ * sites 36→6th/28→5th. */
+:where(.comfortable, .dense, .app, .site, .docs) {
+  /* Effective line-height with the SAME fallback chain a control box uses
+     (--density-line-height → context --lh-comfy → apps-comfy literal). Without
+     this fallback, a bare context class (.app/.site/.docs applied with no density
+     class — the documented "no class = comfortable" case) leaves
+     --density-line-height unset, the round(calc(var(--density-line-height)…))
+     becomes invalid, the target resolves to 0, and controls lose their seating. */
+  --density-line-height-effective: var(
+    --density-line-height,
+    var(--lh-comfy, calc(var(--baseline-height) * 8))
+  );
+  --density-target-baseline-px: round(
+    up,
+    calc(var(--density-line-height-effective) * 2 / 3),
+    var(--baseline-height)
+  );
+}

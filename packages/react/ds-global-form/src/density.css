@@ -1,125 +1,21 @@
-/* @canonical/react-ds-global-form — density & baseline alignment
+/* @canonical/react-ds-global-form — density & baseline alignment (FORM APPLICATION)
  *
- * Two composed modifier families that size controls and seat their text on the
- * 4px baseline grid. Applied as classes on an ancestor (e.g. the app root, or the
- * Storybook root via the DS-utils toolbar):
+ * The GENERIC density primitives — the context/density modifier families
+ * (.app/.site/.docs × .comfortable/.dense) and their --density-* outputs
+ * (--density-line-height(-effective), --density-target-baseline-px,
+ * --density-padding-inline, --density-space-sm/-md/-lg) — now live in
+ * @canonical/styles (`modifiers.density.css`), so EVERY package can read them
+ * (ds-global's Accordion as well as this form package). See that file for the
+ * 2×3 matrix and the value table.
  *
- *   CONTEXT  .app / .site / .docs  — the surface. Sets the comfortable/dense
- *            control height PAIR. Default (no class) = apps.
- *   DENSITY  .comfortable / .dense — picks within the context pair. Default
- *            (no class) = comfortable.
+ * THIS file is the FORM APPLICATION layer: it applies those primitives to the
+ * form's own controls (`.ds.button`, `.ds.input`, `.ds.field-label/description/
+ * error`, the textarea) — sizing their boxes to the density cell and seating
+ * their text on the 4px grid. The --form-* token mapping lives in index.css.
  *
- * Control height (a whole 4px multiple), context × density:
- *                comfortable   dense
- *     apps          32px        24px
- *     sites/docs    36px        28px
- *
- * The text baseline sits round(up, height × 2/3) baselines down the box, so every
- * control — button, input, and inline text — shares one baseline. Zero-JS
- * (cap-unit approximation); alignment holds to the cap tolerance (~±1px).
+ * Text baseline sits round(up, height × 2/3) down the box, so every control shares
+ * one baseline. Zero-JS (cap-unit approximation); holds to the cap tolerance.
  */
-
-/* ── Context family: the comfortable/dense PAIR per surface ──────────────────
- * The density model is a 2×3 matrix — density (comfortable/dense) × context (app /
- * site / docs), where DOCS = SITE (they share a pair). Context sets the pair for
- * every DENSITY primitive (control height, inline padding, and three neutral
- * vertical spacing rungs sm/md/lg); density (below) picks within it. Sites/docs
- * run one baseline looser than apps on the height (+4px) and each rung, so the
- * looser surface breathes. Every value is a WHOLE baseline multiple, so vertical
- * rhythm holds in all four cells.
- *
- * LAYERING: this file is the LOWER layer. It exposes only GENERIC, domain-neutral
- * primitives (--density-*) — a line-height, an inline padding, and a three-rung
- * vertical spacing scale (--density-space-sm/-md/-lg). It knows NOTHING about the
- * form or its fields. The FORM layer (index.css) maps its own --form-field-*
- * tokens onto these rungs. Never name a field concept here.
- *
- *                    app                 site / docs
- *                    comfy   dense       comfy   dense
- *   line-height      32 (8)  24 (6)      36 (9)  28 (7)
- *   padding-inline   16 (4)   8 (2)      16 (4)  12 (3)
- *   space-lg         24 (6)  16 (4)      28 (7)  20 (5)
- *   space-md         16 (4)   8 (2)      20 (5)  12 (3)
- *   space-sm          8 (2)   4 (1)       8 (2)   8 (2)
- *   (parenthesised = baseline units; 1 bU = --baseline-height = 4px)
- */
-.app {
-  --lh-comfy: calc(var(--baseline-height) * 8); /* 32px */
-  --lh-dense: calc(var(--baseline-height) * 6); /* 24px */
-  --pad-inline-comfy: calc(var(--baseline-height) * 4); /* 16px */
-  --pad-inline-dense: calc(var(--baseline-height) * 2); /*  8px */
-  --space-lg-comfy: calc(var(--baseline-height) * 6); /* 24px */
-  --space-lg-dense: calc(var(--baseline-height) * 4); /* 16px */
-  --space-md-comfy: calc(var(--baseline-height) * 4); /* 16px */
-  --space-md-dense: calc(var(--baseline-height) * 2); /*  8px */
-  --space-sm-comfy: calc(var(--baseline-height) * 2); /*  8px */
-  --space-sm-dense: calc(var(--baseline-height) * 1); /*  4px */
-}
-.site,
-.docs {
-  --lh-comfy: calc(var(--baseline-height) * 9); /* 36px */
-  --lh-dense: calc(var(--baseline-height) * 7); /* 28px */
-  --pad-inline-comfy: calc(var(--baseline-height) * 4); /* 16px */
-  --pad-inline-dense: calc(var(--baseline-height) * 3); /* 12px */
-  --space-lg-comfy: calc(var(--baseline-height) * 7); /* 28px */
-  --space-lg-dense: calc(var(--baseline-height) * 5); /* 20px */
-  --space-md-comfy: calc(var(--baseline-height) * 5); /* 20px */
-  --space-md-dense: calc(var(--baseline-height) * 3); /* 12px */
-  --space-sm-comfy: calc(var(--baseline-height) * 2); /*  8px */
-  --space-sm-dense: calc(var(--baseline-height) * 2); /*  8px */
-}
-
-/* ── Density family: pick within the context pair ────────────────────────────
- * Each density tier resolves every GENERIC primitive from the context's
- * *-comfy / *-dense pair. Fallbacks cover the app-comfortable defaults when no
- * context class is present (a plain `.comfortable` still works). Output is the
- * neutral --density-* surface the form layer consumes — no field names here. */
-.comfortable {
-  --density-line-height: var(--lh-comfy, calc(var(--baseline-height) * 8));
-  --density-padding-inline: var(
-    --pad-inline-comfy,
-    calc(var(--baseline-height) * 4)
-  );
-  --density-space-lg: var(--space-lg-comfy, calc(var(--baseline-height) * 6));
-  --density-space-md: var(--space-md-comfy, calc(var(--baseline-height) * 4));
-  --density-space-sm: var(--space-sm-comfy, calc(var(--baseline-height) * 2));
-}
-.dense {
-  --density-line-height: var(--lh-dense, calc(var(--baseline-height) * 6));
-  --density-padding-inline: var(
-    --pad-inline-dense,
-    calc(var(--baseline-height) * 2)
-  );
-  --density-space-lg: var(--space-lg-dense, calc(var(--baseline-height) * 4));
-  --density-space-md: var(--space-md-dense, calc(var(--baseline-height) * 2));
-  --density-space-sm: var(--space-sm-dense, calc(var(--baseline-height) * 1));
-}
-
-/* ── Target baseline = round(up, height × 2/3) ──────────────────────────────
- * Snapped UP so fractional cases lift (apps-comfy 5.33→6) while exact multiples
- * stay (apps-dense 4.0, sites-comfy 6.0). Matches: apps 32→6th/24→4th,
- * sites 36→6th/28→5th. */
-:where(.comfortable, .dense, .app, .site, .docs) {
-  /* Effective line-height with the SAME fallback chain the control box uses
-     (--density-line-height → context --lh-comfy → apps-comfy literal). Without
-     this fallback, a bare context class (.app/.site/.docs applied with no density
-     class — the documented "no class = comfortable" case) leaves
-     --density-line-height unset, the round(calc(var(--density-line-height)…))
-     becomes invalid, the target resolves to 0, and controls lose their seating. */
-  --density-line-height-effective: var(
-    --density-line-height,
-    var(--lh-comfy, calc(var(--baseline-height) * 8))
-  );
-  --density-target-baseline-px: round(
-    up,
-    calc(var(--density-line-height-effective) * 2 / 3),
-    var(--baseline-height)
-  );
-}
-
-/* The FORM layer's mapping of these generic --density-* primitives onto its own
- * --form-field-* tokens lives in index.css (the form owns that knowledge, not the
- * density layer). This file stops at exposing the primitives. */
 
 /* ── Controls consume the density box ───────────────────────────────────────
  * A control is a FIXED grid-multiple height with border-box so its border is
