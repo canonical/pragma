@@ -184,10 +184,16 @@
  *     padding-block-start = bl-start-nudge + space-before − border-top
  *     space-before = round(up, target − bl-start-nudge − border-top, baseline)
  *
- * Applies to the button, the input, the field label/description/error, and inline
- * text (p / h1–h6). None need a `.p` class — the density system positions them
- * directly. `:is()` (not `:where()`) gives this the specificity to beat the base
- * `.p` engine rule. */
+ * Applies to the button, the input, and the field label/description/error — i.e.
+ * CONTROL-like text only. Bare prose (p / .p / h1–h6) is DELIBERATELY NOT here:
+ * running text belongs to the typography engine, which already seats it on the
+ * grid (snapped --computed-line-height + --start/--end-nudge) and lets `.editorial`
+ * add its inter-block margins. Density crushing prose to line-height:1 fought that
+ * engine (and only ever put the FIRST line on-grid — wrapped lines drifted). By
+ * partitioning prose OUT, density and the engine write to disjoint element sets,
+ * so `.editorial` composes with density with no specificity war. `:is()` (not
+ * `:where()`) still gives the control seat the specificity to beat a control's own
+ * centring (e.g. the Button's `align-items: center`). */
 /* Body font tier for the field label/description/error, which lost `.p`. Scoped
    to just these (NOT the headings, which keep their own tier). */
 :is(.comfortable, .dense, .app, .site, .docs)
@@ -199,9 +205,7 @@
 :is(.comfortable, .dense, .app, .site, .docs) .ds.button,
 :is(.comfortable, .dense, .app, .site, .docs) .ds.input > input,
 :is(.comfortable, .dense, .app, .site, .docs)
-  :is(.ds.field-label, .ds.field-description, .ds.field-error),
-:is(.comfortable, .dense, .app, .site, .docs)
-  :is(p, .p, h1, h2, h3, h4, h5, h6) {
+  :is(.ds.field-label, .ds.field-description, .ds.field-error) {
   line-height: 1;
   /* Baseline within a line-height:1 box (font-relative cap approximation). */
   --natural-baseline: calc((1em + 1cap) / 2);
@@ -261,23 +265,23 @@
   );
 }
 
-/* ── Bottom rhythm: unbordered flow text only ────────────────────────────────
+/* ── Bottom rhythm: density-seated flow text only (NOT prose) ─────────────────
  * A BORDERED control (button, input wrapper) has a fixed `block-size` that is
  * already a whole baseline multiple, so its bottom rhythm is the box height —
  * no bottom padding needed (and it would be inert against the fixed height).
  *
- * UNBORDERED flow text (label, description, error, p, h*) has NO fixed height:
- * with `padding-block-end: 0` its box ends at the text descender, so a following
- * grid/flow sibling (e.g. the textarea below a field label) resumes off-grid —
- * "the label has no bottom padding, which lifts and drifts what follows". Fill
- * the box out to a whole density line-height so the box bottom lands on a grid
- * line and the next element resumes on the grid. Content box is 1em tall
- * (line-height:1); pad the remainder up to the density line-height, less the top
- * space we already added. */
+ * The field label/description/error are density-seated with line-height:1, so
+ * their box ends at the text descender; with `padding-block-end: 0` a following
+ * grid/flow sibling (e.g. the textarea below a field label) resumes off-grid.
+ * Fill the box out to a whole density line-height so its bottom lands on a grid
+ * line. The `- 1em` term is correct precisely because these are line-height:1.
+ *
+ * Bare prose (p / .p / h1–h6) is NOT here: it is no longer density-seated (see the
+ * partition above), so its box is its OWN snapped line-height and the engine's
+ * --end-nudge already lands its bottom on the grid. Adding a density fill on top
+ * would double-pad. Prose bottom rhythm belongs to the engine / `.editorial`. */
 :is(.comfortable, .dense, .app, .site, .docs)
-  :is(.ds.field-label, .ds.field-description, .ds.field-error),
-:is(.comfortable, .dense, .app, .site, .docs)
-  :is(p, .p, h1, h2, h3, h4, h5, h6) {
+  :is(.ds.field-label, .ds.field-description, .ds.field-error) {
   padding-block-end: max(
     0px,
     calc(

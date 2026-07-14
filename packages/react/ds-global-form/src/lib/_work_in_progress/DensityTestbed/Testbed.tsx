@@ -23,7 +23,13 @@ import "./baseline-system.css";
 const Line = ({ lead, children }: { lead: string; children: ReactNode }) => (
   <div className="density-testbed">
     <div className="density-testbed__row">
-      <p className="p">{lead}</p>
+      {/* The lead is a REFERENCE marker meant to sit on the controls' baseline.
+          Prose is no longer density-seated (Stage A: the engine owns running
+          text, seated to the NEAREST grid line — a different line from the
+          controls' density TARGET). So this testbed-only class re-seats the lead
+          to the density target, purely so the reference agrees with the controls
+          it is measuring against. Not a change to the shipping model. */}
+      <p className="p density-testbed__lead">{lead}</p>
       {children}
     </div>
   </div>

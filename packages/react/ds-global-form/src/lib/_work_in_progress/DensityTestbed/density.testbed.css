@@ -52,6 +52,24 @@
   margin: 0;
 }
 
+/* Re-seat the reference LEAD to the density target (TESTBED ONLY) ──────────────
+ * Prose is engine-seated now (Stage A), which lands it on the NEAREST grid line —
+ * one baseline off from the controls' density TARGET line. The lead only exists to
+ * be read against the controls, so here (and only here) we opt it back into the
+ * exact density seat the controls use: crush to line-height 1, then pad the top by
+ * the same `target − (1em+1cap)/2` the shipping controls use. This is calibration
+ * of a measuring stick, NOT a change to how prose ships. */
+.density-testbed__row > .density-testbed__lead.p {
+  line-height: 1;
+  padding-block-start: max(
+    0px,
+    calc(
+      var(--density-target-baseline-px, 0px) - calc((1em + 1cap) / 2)
+    )
+  );
+  padding-block-end: 0;
+}
+
 /* ───────────────────────────────────────────────────────────────────────────
  * Boxed controls — the two alignment models
  *
