@@ -30,17 +30,26 @@ import "@canonical/styles-debug"; // import all debug styles
 
 The baseline grid utility allows you to visualize the baseline grid in your application.
 To use it, add the `with-baseline-grid` class to any element.
-This will add a background color to the element and its children, allowing you to see the baseline grid in action.
+It paints five strict, hard-edged bands per cycle — each baseline row a flat 4px
+step up in tint, from faint (level 1) to strong (level 5), repeating every five
+baselines (20px at the 4px default) — so the rhythm and position-within-cycle
+read at a glance.
+
+The baseline height is shimmed to 4px in the tool itself and is deliberately not
+read from `--baseline-height` (which the typography engine derives from the
+design tokens, currently still 8px). Override `--baseline-grid-height` to change
+it, or set `--baseline-grid-height: var(--baseline-height)` to follow the app's
+live grid.
 
 ##### Customization
 
 This utility can be customized by setting the following CSS variables:
 
-| Variable                | Description                           | Default Value          |
-|-------------------------|---------------------------------------|------------------------|
-| `--baseline-grid-color` | The color of the baseline grid lines  | `rgba(255, 0, 0, 0.2)` |
-| `--baseline-height`     | The height of the baseline grid       | `0.5rem`               |
-| `--baseline-shift`      | The offset shift of the baseline grid | `0`                    |
+| Variable                    | Description                                              | Default Value                 |
+|-----------------------------|----------------------------------------------------------|-------------------------------|
+| `--baseline-grid-color`     | Base hue the wave tints are derived from                | branded border colour         |
+| `--baseline-grid-height`    | Height of one baseline row                              | `0.25rem` (4px)               |
+| `--baseline-shift`          | Vertical offset of the grid                             | `0`                           |
 
 ##### Example
 

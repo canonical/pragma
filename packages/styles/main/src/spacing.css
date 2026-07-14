@@ -16,10 +16,11 @@
 
 :root {
   /* ── Baseline grid ──────────────────────────────────────────────── */
-  --space-baseline: var(
-    --dimension-size-height-baseline,
-    0.5rem
-  ); /* 8px — bU */
+  /* SPIKE: the baseline unit is 4px (down from 8px). Set here in styles, NOT in
+     the design token — the token (--dimension-size-height-baseline) is left at
+     8px and intentionally no longer consumed, so this is the single place the
+     4px grid lives until it is promoted into design-tokens via its own PR. */
+  --space-baseline: 0.25rem; /* 4px — bU (was the 8px --dimension-size-height-baseline token) */
   --baseline-height: var(
     --space-baseline
   ); /* alias consumed by typography engine */
