@@ -124,7 +124,7 @@ export const TypographyLine = () => (
 /** Deliberately off-scale sizes — none is a tier. Each is only a `.baseline`
  *  element with an inline font-size; if they all seat on the grid, `.baseline`
  *  is genuinely size-agnostic (DS.01). */
-const OFF_SCALE = [13, 19, 23, 29, 37, 41];
+const OFF_SCALE = [19, 27, 35, 43, 53, 61];
 
 /**
  * DS.01 proof — the size-agnostic `.baseline` class. A row of arbitrary,
@@ -144,8 +144,9 @@ export const BaselineProofLine = () => (
   </div>
 );
 
-/** Mixed sizes in the bottom-referenced fixed box, at both densities. */
-const BOXED_SIZES = [12, 14, 16, 20];
+/** Mixed sizes in the density box, at both densities. Kept within what a dense
+ *  (24px) / comfortable (32px) line-height can hold without clipping. */
+const BOXED_SIZES = [16, 18, 20, 22];
 
 /**
  * DS.02 proof — `.spike-baseline-boxed` (PROTOTYPE, not core API). Two density

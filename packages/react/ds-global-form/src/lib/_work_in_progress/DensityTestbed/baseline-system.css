@@ -107,10 +107,16 @@
   margin-block: calc(var(--baseline-height) * 2);
 }
 .boxed-proof > .spike-baseline-boxed {
-  border: 1px solid var(--color-border, #b3b3b3);
+  /* Outline, not border: a border adds 1px above the content box and pushes the
+     text off the grid (the nudge assumes the content-top is on a grid line).
+     Outline draws the frame without affecting layout, so the baseline maths hold. */
+  outline: 1px solid var(--color-border, #b3b3b3);
+  outline-offset: -1px;
   border-radius: var(--dimension-radius-100, 0.25rem);
   padding-inline: calc(var(--baseline-height) * 2);
-  background: var(--color-background, #fff);
+  /* Transparent, NOT a solid fill — a solid box would hide the grid overlay
+     behind it, making it impossible to see whether the content sits on the grid. */
+  background: transparent;
 }
 /* Provisional density targets on the row (DS.03 formalises these as .dense /
    .comfortable scale-map classes). Density chooses only the LINE-HEIGHT; the
