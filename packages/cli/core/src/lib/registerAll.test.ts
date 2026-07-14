@@ -28,6 +28,26 @@ describe("registerAll", () => {
       expect(convertParameterToFlag(param)).toBe("--detailed");
     });
 
+    it("produces --flag for a boolean defaulting to false", () => {
+      const param: ParameterDefinition = {
+        name: "detailed",
+        description: "Details",
+        type: "boolean",
+        default: false,
+      };
+      expect(convertParameterToFlag(param)).toBe("--detailed");
+    });
+
+    it("produces --no-flag for a boolean defaulting to true", () => {
+      const param: ParameterDefinition = {
+        name: "withStyles",
+        description: "Include styles",
+        type: "boolean",
+        default: true,
+      };
+      expect(convertParameterToFlag(param)).toBe("--no-with-styles");
+    });
+
     it("produces --flag <value> for string", () => {
       const param: ParameterDefinition = {
         name: "category",
