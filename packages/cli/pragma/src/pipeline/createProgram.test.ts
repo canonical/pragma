@@ -37,8 +37,9 @@ describe("createProgram", () => {
     )._events.beforeAllHelp({ command: program, write });
 
     expect(write).toHaveBeenCalledWith(
-      expect.stringContaining("Usage: pragma <command> [options]"),
+      expect.stringContaining("Usage: pragma"),
     );
+    expect(write).toHaveBeenCalledWith(expect.stringContaining("Global flags"));
   });
 
   it("uses llm root help when llm is enabled", async () => {

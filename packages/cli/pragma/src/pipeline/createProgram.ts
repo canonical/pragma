@@ -1,7 +1,6 @@
 import {
   type CommandDefinition,
   detectRenderMode,
-  formatHelp,
   formatLlmHelp,
   type HandleResultOptions,
   registerAll,
@@ -9,6 +8,7 @@ import {
 import { Command } from "commander";
 import { PROGRAM_DESCRIPTION, PROGRAM_NAME, VERSION } from "../constants.js";
 import type { PragmaContext } from "../domains/shared/context.js";
+import formatRootHelp from "./rootHelp.js";
 
 /**
  * Build and configure the top-level Commander program.
@@ -57,7 +57,7 @@ export default function createProgram(
     if (ctx.globalFlags.llm) {
       return formatLlmHelp(PROGRAM_NAME, commands);
     }
-    return formatHelp(PROGRAM_NAME, PROGRAM_DESCRIPTION, commands);
+    return formatRootHelp(PROGRAM_NAME, PROGRAM_DESCRIPTION, commands);
   });
 
   program.helpOption("-h, --help", "Show help");
