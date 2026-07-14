@@ -12,6 +12,9 @@
       "svelte": "./dist/index.js"
     }
   },
+  "imports": {
+    "#storybook/*": "./src/storybook/*"
+  },
   "files": [
     "dist",
     "!dist/**/*.test.*",

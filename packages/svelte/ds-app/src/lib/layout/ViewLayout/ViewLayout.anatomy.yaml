@@ -1,0 +1,24 @@
+---
+# ViewLayout — apps-tier layout: a single view within the application shell.
+# Divides its space between the view content (default slot, 1fr column) and
+# an optional contextual aside (named slot, min-content column) — a detail
+# panel, filters, help. The column template is recorded on the ontology
+# instance (apps.layout.view_layout, ds:grid "1fr min-content"); the anatomy
+# records structure. Slot-agnostic: the aside accepts any component.
+node:
+  uri: apps.layout.view_layout
+  styles:
+    layout.type: grid
+    size.height: fill
+    spacing.gap: container/gap/default
+  edges:
+    - node:
+        role: content region
+      relation:
+        cardinality: "1"
+        slotName: default
+    - node:
+        role: aside region
+      relation:
+        cardinality: "0..1"
+        slotName: aside
