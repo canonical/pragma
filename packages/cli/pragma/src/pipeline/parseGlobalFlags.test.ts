@@ -32,6 +32,20 @@ describe("parseGlobalFlags", () => {
     expect(flags.format).toBe("text");
   });
 
+  it("accepts the --format=json equals form", () => {
+    const flags = parseGlobalFlags(["node", "pragma", "info", "--format=json"]);
+    expect(flags.format).toBe("json");
+  });
+
+  it("treats an unknown --format value as text", () => {
+    expect(
+      parseGlobalFlags(["node", "pragma", "info", "--format", "xml"]).format,
+    ).toBe("text");
+    expect(
+      parseGlobalFlags(["node", "pragma", "info", "--format=xml"]).format,
+    ).toBe("text");
+  });
+
   it("extracts --verbose", () => {
     const flags = parseGlobalFlags([
       "node",
@@ -91,6 +105,34 @@ describe("stripGlobalFlags", () => {
       "block",
       "list",
     ]);
+  });
+
+  it("removes the equals form of every global flag", () => {
+    expect(
+      stripGlobalFlags([
+        "node",
+        "pragma",
+        "--llm=",
+        "--verbose=",
+        "--format=json",
+        "block",
+        "list",
+      ]),
+    ).toEqual(["node", "pragma", "block", "list"]);
+  });
+});
+
+describe("readRawFormat", () => {
+  it("reads the space form", () => {
+    expect(readRawFormat(["node", "pragma", "--format", "json"])).toBe("json");
+  });
+
+  it("reads the equals form", () => {
+    expect(readRawFormat(["node", "pragma", "--format=xml"])).toBe("xml");
+  });
+
+  it("returns undefined when --format is absent", () => {
+    expect(readRawFormat(["node", "pragma", "info"])).toBeUndefined();
   });
 });
 
