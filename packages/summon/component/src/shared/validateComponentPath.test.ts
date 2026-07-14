@@ -37,4 +37,16 @@ describe("validateComponentPath", () => {
     const result = validateComponentPath("src/components/myButton");
     expect(result).not.toBe(true);
   });
+
+  it("rejects an absolute path (out-of-tree write)", () => {
+    const result = validateComponentPath("/tmp/Evil");
+    expect(result).not.toBe(true);
+    expect(result).toContain("absolute");
+  });
+
+  it("rejects a path escaping the project via ..", () => {
+    const result = validateComponentPath("../../../etc/Foo");
+    expect(result).not.toBe(true);
+    expect(result).toContain("..");
+  });
 });

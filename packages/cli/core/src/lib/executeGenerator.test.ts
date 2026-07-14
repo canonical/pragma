@@ -939,3 +939,63 @@ describe("executeGenerator — undo execution", () => {
     }
   });
 });
+
+// =============================================================================
+// Answer validation
+// =============================================================================
+
+describe("executeGenerator — answer validation", () => {
+  const selectPrompts: PromptDefinition[] = [
+    {
+      name: "kind",
+      message: "Kind",
+      type: "select",
+      choices: [
+        { label: "Library", value: "library" },
+        { label: "Tool", value: "tool-ts" },
+      ],
+    },
+  ];
+
+  const validatedPrompts: PromptDefinition[] = [
+    {
+      name: "target",
+      message: "Target",
+      type: "text",
+      validate: (value) =>
+        typeof value === "string" && value.length > 0
+          ? true
+          : "Target is required",
+    },
+  ];
+
+  it("rejects a select value outside its choices and exits 3", async () => {
+    const gen = makeGen(selectPrompts);
+    const result = await executeGenerator(
+      gen,
+      { kind: "bogus", yes: true },
+      llmCtx,
+    );
+    expect(result).toEqual({ tag: "exit", code: 3 });
+  });
+
+  it("accepts a valid select value", async () => {
+    const gen = makeGen(selectPrompts);
+    const result = await executeGenerator(
+      gen,
+      { kind: "library", yes: true },
+      llmCtx,
+    );
+    expect(result.tag).toBe("output");
+  });
+
+  it("rejects a value its prompt validator refuses and exits 3", async () => {
+    const gen = makeGen(validatedPrompts);
+    const result = await executeGenerator(
+      gen,
+      { target: "", yes: true },
+      llmCtx,
+    );
+    expect(result).toEqual({ tag: "exit", code: 3 });
+  });
+});
