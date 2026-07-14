@@ -2,7 +2,6 @@
   "extends": "@canonical/typescript-config-svelte",
   "compilerOptions": {
     "skipLibCheck": true,
-    "moduleResolution": "nodenext",
     "types": ["node", "svelte", "vitest/globals", "vite/client"]
   },
   "include": [
