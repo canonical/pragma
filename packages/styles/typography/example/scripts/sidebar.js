@@ -169,6 +169,21 @@ class SettingsSidebar extends HTMLElement {
           <select id="content-select">${contentOptions}</select>
         </fieldset>
 
+        <!-- Global root font size (defines the rem unit) -->
+        <fieldset>
+          <legend>Global</legend>
+          <control-input
+            label="Root font size"
+            min="8"
+            max="32"
+            step="1"
+            value="16"
+            target-selector="html"
+            css-variable="--font-size"
+            unit="px"
+          ></control-input>
+        </fieldset>
+
         <!-- Baseline height -->
         <fieldset>
           <legend>Baseline grid</legend>
@@ -177,7 +192,7 @@ class SettingsSidebar extends HTMLElement {
             min="0.1"
             max="2"
             step="0.05"
-            value="0.5"
+            value="0.25"
             target-selector=":root"
             css-variable="--baseline-height"
             unit="rem"

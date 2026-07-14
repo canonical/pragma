@@ -1,0 +1,18 @@
+/* @canonical/styles-typography — baseline unit shim
+ *
+ * The engine only CONSUMES --baseline-height; the value normally comes from
+ * @canonical/styles (spacing.css). A consumer that loads an engine without
+ * styles-main — or before it — would leave --baseline-height unset and every
+ * nudge would break. Registering the property with an initial-value makes 4px
+ * the fallback whenever nothing else sets it, while any real declaration
+ * (spacing.css, a theme, the testbed) still wins, regardless of load order.
+ *
+ * Single source for the 4px shim, imported by every engine so importing any one
+ * of them carries the fallback. Consumers no longer hardcode --baseline-height
+ * to keep the engine working.
+ */
+@property --baseline-height {
+  syntax: "<length>";
+  inherits: true;
+  initial-value: 0.25rem;
+}

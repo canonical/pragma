@@ -9,7 +9,8 @@
     <link id="engine-metrics" rel="stylesheet" href="../src/baseline-metrics.css" disabled />
     <link id="engine-trim"    rel="stylesheet" href="../src/baseline-trim.css" disabled />
 
-    <!-- Example layout & debug styles -->
+    <!-- Example layout & debug styles. The baseline grid overlay lives in
+         layout.css (driven by --baseline-height, wired to the sidebar input). -->
     <link rel="stylesheet" href="./styles/layout.css" />
     <link rel="stylesheet" href="./styles/demo.css" />
 
@@ -20,54 +21,61 @@
        * src/index.css reads them to compute nudges.
        * Keep in sync with the input defaults in sidebar.js.
        *
-       * Baseline = 0.5rem
+       * Baseline = 4px. Set here as the initial value and driven live by the
+       * sidebar "Baseline grid → Height" input (which writes --baseline-height
+       * on :root); the overlay bands in layout.css read the same variable, so
+       * moving the input resizes both the grid and the type nudges together.
+       *
        * LH multiplier = lineHeight / baseline
        * space-after  = spaceAfter / baseline
        */
 
       :root {
-        --baseline-height: 0.5rem;
+        --baseline-height: 0.25rem;
       }
 
+      /* Line-height multipliers DOUBLED for the 4px baseline: a line that was N
+         8px-units tall is 2N 4px-units, so the multipliers double to keep the
+         same visual line-height. --space-after left as-is per instruction. */
       h1 {
         --font-size: 2.625rem;
-        --line-height-multiplier: 6;
+        --line-height-multiplier: 12;
         --space-after: 2;
       }
 
       h2 {
         --font-size: 2.625rem;
-        --line-height-multiplier: 6;
+        --line-height-multiplier: 12;
         --space-after: 2;
       }
 
       h3 {
         --font-size: 1.5rem;
-        --line-height-multiplier: 4;
+        --line-height-multiplier: 8;
         --space-after: 2;
       }
 
       h4 {
         --font-size: 1.5rem;
-        --line-height-multiplier: 4;
+        --line-height-multiplier: 8;
         --space-after: 2;
       }
 
       h5 {
         --font-size: 1rem;
-        --line-height-multiplier: 3;
+        --line-height-multiplier: 6;
         --space-after: 2;
       }
 
       h6 {
         --font-size: 1rem;
-        --line-height-multiplier: 3;
+        --line-height-multiplier: 6;
         --space-after: 2;
       }
 
       p {
         --font-size: 1rem;
-        --line-height-multiplier: 3;
+        --line-height-multiplier: 6;
         --space-after: 2;
       }
     </style>
