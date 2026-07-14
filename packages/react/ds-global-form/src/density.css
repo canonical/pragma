@@ -58,7 +58,10 @@
  *
  * Controls no longer carry `.p` — the density system supplies the body font tier
  * (font-size / weight / family) here, and the baseline placement below. */
-:where(.comfortable, .dense, .app, .site, .docs) :where(.ds.button, .ds.input) {
+/* `:is()` on the density scope (0,1,0) so `:is(...) .ds.button` (0,2,0) beats the
+ * Button's own `.ds.button { align-items: center }` (0,1,0) — otherwise the label
+ * stays flex-CENTRED and the padding-based baseline placement can't govern. */
+:is(.comfortable, .dense, .app, .site, .docs) :is(.ds.button, .ds.input) {
   box-sizing: border-box;
   --density-box-height: var(
     --density-line-height,
