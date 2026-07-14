@@ -4,6 +4,7 @@ import { FormProvider, useForm } from "react-hook-form";
 import Field from "../../pattern/Field/Field.js";
 import { SpikeBox, SpikeRows } from "./mocks.js";
 import "./density.testbed.css";
+import "./baseline-system.css";
 
 /**
  * Baseline-alignment spike harness (WORK IN PROGRESS)
@@ -115,6 +116,29 @@ export const TypographyLine = () => (
     <div className="density-testbed__prose">
       {TIERS.map((Tag) => (
         <Tag key={Tag}>{PROSE}</Tag>
+      ))}
+    </div>
+  </div>
+);
+
+/** Deliberately off-scale sizes — none is a tier. Each is only a `.baseline`
+ *  element with an inline font-size; if they all seat on the grid, `.baseline`
+ *  is genuinely size-agnostic (DS.01). */
+const OFF_SCALE = [13, 19, 23, 29, 37, 41];
+
+/**
+ * DS.01 proof — the size-agnostic `.baseline` class. A row of arbitrary,
+ * off-scale font sizes, each snapped to the 4px grid by `.baseline` alone (no
+ * tier, no engine size class). The tags h1..h6/p are untouched and still nudge
+ * by default — this is additive.
+ */
+export const BaselineProofLine = () => (
+  <div className="density-testbed">
+    <div className="baseline-proof">
+      {OFF_SCALE.map((px) => (
+        <span key={px} className="baseline" style={{ fontSize: `${px}px` }}>
+          {px}px
+        </span>
       ))}
     </div>
   </div>

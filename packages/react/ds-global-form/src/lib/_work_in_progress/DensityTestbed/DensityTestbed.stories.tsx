@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import {
+  BaselineProofLine,
   ControlsLine,
   ListsLine,
   NavigationLine,
@@ -41,3 +42,10 @@ export const Lists: Story = { render: () => <ListsLine /> };
 
 /** Typography — real paragraph text at several sizes; witness the 4px baseline. */
 export const Typography: Story = { render: () => <TypographyLine /> };
+
+/**
+ * DS.01 — the size-agnostic `.baseline` class. Arbitrary off-scale font sizes,
+ * each snapped to the grid by `.baseline` alone (no tier). Proves the alignment
+ * machinery is decoupled from any particular font size.
+ */
+export const BaselineClass: Story = { render: () => <BaselineProofLine /> };

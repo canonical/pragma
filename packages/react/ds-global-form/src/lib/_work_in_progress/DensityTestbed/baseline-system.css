@@ -1,0 +1,70 @@
+/**
+ * Baseline-system prototype (WORK IN PROGRESS) — session S / S.03
+ *
+ * Proposed improvements to the baseline engine, prototyped in the testbed. Opt-in,
+ * zero-JS (cap-unit approximation), scoped here — the shipped engine is untouched.
+ *
+ *   DS.01  .baseline        — a font-size-AGNOSTIC alignment class (this file).
+ *   DS.02  .baseline-boxed  — bottom-referenced fixed box (added later).
+ *   DS.03  .dense/.comfortable — swappable size maps (added later).
+ *
+ * The bare tags h1..h6 / p keep their DEFAULT nudging from the shipped engine;
+ * `.baseline` is additive — for off-tier sizes and non-typographic elements the
+ * tags do not cover.
+ */
+
+/* ── DS.01 — .baseline: snap any element to the grid, whatever its size ──────
+ *
+ * Reads whatever --font-size / --line-height is present (or inherited) and
+ * computes the same start/end nudges the engine uses on h1..h6/p — but without
+ * assigning any tier or font-size. The maths is font-relative (1cap + the
+ * computed line-height), so it holds at ANY size: 19px, 23px, 41px all snap.
+ *
+ * `--line-height` may be an explicit length; if absent it falls back to
+ * baseline-height × --line-height-multiplier (same contract as the engine).
+ */
+.baseline {
+  /* Line-height, snapped to the grid. If an explicit --line-height (length) is
+     given, use it; otherwise derive one from the font-size: font-size × ratio,
+     rounded UP to the next whole baseline. This font-relative default is what
+     lets a bare `.baseline` at ANY font-size get a sensible, grid-snapped line
+     box (the same round-up-to-grid the tiers do). */
+  --bl-line-height-ratio: var(--line-height-ratio, 1.4);
+  --bl-computed-line-height: var(
+    --line-height,
+    round(up, calc(1em * var(--bl-line-height-ratio)), var(--baseline-height))
+  );
+  line-height: var(--bl-computed-line-height);
+
+  /* First-baseline position within the line box (cap-unit approximation). */
+  --bl-baseline-position: calc((var(--bl-computed-line-height) + 1cap) / 2);
+  --bl-start-nudge: calc(
+    var(--baseline-height) -
+    mod(var(--bl-baseline-position), var(--baseline-height))
+  );
+  --bl-end-nudge: calc(var(--baseline-height) - var(--bl-start-nudge));
+
+  /* Padding (not margin) so the border-box stays grid-correct in flex/grid. */
+  padding-block-start: var(--bl-start-nudge);
+  padding-block-end: var(--bl-end-nudge);
+
+  /* No margins of its own — inter-block spacing is the editorial/space-after
+     concern (DS.04), orthogonal to alignment. */
+  margin-block: 0;
+}
+
+/* ── Testbed proof surface for DS.01 ────────────────────────────────────────
+ * A row of DELIBERATELY off-scale sizes, each only a `.baseline` element with an
+ * inline --font-size. If every one seats on the grid, the class is genuinely
+ * size-agnostic (not circularly tied to sizes it also sets). */
+.baseline-proof {
+  display: flex;
+  align-items: flex-start;
+  gap: calc(var(--baseline-height) * 4);
+  overflow-x: auto;
+  white-space: nowrap;
+}
+.baseline-proof > .baseline {
+  /* each item carries its own --font-size inline in the story */
+  font-family: inherit;
+}
