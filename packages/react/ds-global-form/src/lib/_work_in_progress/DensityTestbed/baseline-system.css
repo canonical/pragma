@@ -273,6 +273,21 @@
   padding-block: 0; /* kill UA padding-block (the <button>'s 1px) */
 }
 
+/* The <input> is content-box with its own intrinsic height, so it does NOT
+   behave like the border-box boxes. Normalise it (border-box, no intrinsic
+   min-height, top-aligned) so space-before positions it like every control.
+   REMAINING QUIRK: with identical CSS an <input> renders its text ~1px lower than
+   a <span> (browser-intrinsic form-control text positioning — the same class of
+   quirk as the <button>'s UA padding). One small lift corrects it; this is the
+   single documented form-control exception. */
+:is(.comfortable, .dense, .app, .site, .docs) .ds.input > input {
+  box-sizing: border-box;
+  min-block-size: 0;
+  block-size: auto;
+  margin-block-start: -1px; /* form-control intrinsic text offset */
+  margin-block-end: 0;
+}
+
 /* (2) One space-before on every text carrier: control seats, the button label
  * (button has .p itself), paragraphs, headings, and the input element. */
 .boxed-nudge,
