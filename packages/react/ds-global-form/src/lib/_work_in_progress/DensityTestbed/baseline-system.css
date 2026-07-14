@@ -198,14 +198,16 @@
   --density-line-height: var(--lh-dense, calc(var(--baseline-height) * 6));
 }
 
-/* ── Target baseline = round(box × 2/3) ──────────────────────────────────────
- * The text baseline sits about TWO-THIRDS down the box, snapped to a grid line:
- *   target = round(nearest, --density-line-height × 2/3, --baseline-height)
- * One formula for every context×density (verified: 32→5th, 24→4th, 36→6th,
- * 28→5th baseline). Set wherever --density-line-height is defined. */
+/* ── Target baseline = round(UP, box × 2/3) ──────────────────────────────────
+ * The text baseline sits about TWO-THIRDS down the box, snapped UP to a grid line:
+ *   target = round(up, --density-line-height × 2/3, --baseline-height)
+ * One formula for every context×density (verified against the authoritative
+ * targets: apps 32→6th, 24→4th; sites 36→6th, 28→5th). round(UP), not nearest —
+ * that's what makes apps-comfy 5.33→6 while apps-dense 4.0 and sites-comfy 6.0
+ * (exact multiples) stay put. Set wherever --density-line-height is defined. */
 :where(.comfortable, .dense, .app, .site, .docs) {
   --density-target-baseline-px: round(
-    nearest,
+    up,
     calc(var(--density-line-height) * 2 / 3),
     var(--baseline-height)
   );
@@ -246,35 +248,44 @@
   align-items: flex-start;
 }
 
-/* ── Boxed nudge — nudge + space-before (target baseline) − top border ───────
+/* ── UNIFIED space-before — one model for every text element ─────────────────
  *
- * padding-block-start pushes the text baseline to the TARGET line inside the box:
+ * The whack-a-mole (Sa 1px, input 1px, label 1px) came from each element type
+ * carrying different UA padding / borders. This block handles them ALL uniformly:
  *
- *   --space-before = target − one baseline
- *       target = --density-target-baseline-px (= round(box × 2/3))
- *       the un-pushed baseline sits ~1 baseline from the top (the start-nudge
- *       seats the FIRST grid line), so we add the remaining (target − 1 baseline).
- *   padding-block-start = max(0, start-nudge + space-before − border-top)
- *   padding-block-end   = 0  (the box is fixed height; the remainder is below)
+ * 1. NORMALISE every density box + text element: reset UA padding-block to 0 and
+ *    top-reference the content (align-items/justify-content: flex-start), so
+ *    nothing but our space-before positions the text. This alone removes the
+ *    per-type 1px UA-padding differences (e.g. the <button>'s default padding).
+ * 2. ONE space-before formula on every text carrier: line-height:1, then push the
+ *    baseline to the shared target. The target is measured from the BORDER-BOX
+ *    top; a box's own border sits above the content, so subtract it once via
+ *    --border-top-width (0 by default; 1px where the box has a border).
  *
- * --space-before is a DENSITY-ALIGNMENT lever (not editorial). It moves the text
- * DOWN; because the box height is fixed, the space below shrinks by the same
- * amount — no separate space-after reduction is needed here (the fixed box IS the
- * total). `.boxed-nudge` is the standalone utility; the density controls reuse
- * the declarations, differing only in --border-top-width. */
+ * --natural-baseline = (1em + 1cap)/2 — purely font-relative so it scales across
+ * sizes (no fixed-baseline fudge). Cap approximation → ±cap tolerance (DS.06). */
+
+/* (1) Normalise the box containers. */
+:is(.comfortable, .dense, .app, .site, .docs)
+  :is(.ds.button, .spike-box, .ds.input) {
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding-block: 0; /* kill UA padding-block (the <button>'s 1px) */
+}
+
+/* (2) One space-before on every text carrier: control seats, the button label
+ * (button has .p itself), paragraphs, headings, and the input element. */
 .boxed-nudge,
-:where(.comfortable, .dense, .app, .site, .docs) .ds.button.p,
-:where(.comfortable, .dense, .app, .site, .docs) .spike-box > .seat.p {
-  /* Collapse the line box to the font (line-height:1) so the baseline sits at a
-     known, small offset (the cap midpoint) from the content top; then pad the top
-     to place it at the shared target. */
+:is(.comfortable, .dense, .app, .site, .docs) .ds.button.p,
+:is(.comfortable, .dense, .app, .site, .docs) .spike-box > .seat.p,
+:is(.comfortable, .dense, .app, .site, .docs) .ds.input > input,
+:is(.comfortable, .dense, .app, .site, .docs)
+  :is(p, .p, h1, h2, h3, h4, h5, h6) {
   line-height: 1;
-  /* Where the baseline sits inside a line-height:1 box (cap-unit approximation).
-     Empirically the baseline of the collapsed line sits ~1 baseline lower than
-     (1em+1cap)/2 would predict, so subtract one baseline to land on target. */
-  --natural-baseline: calc(((1em + 1cap) / 2) - var(--baseline-height));
-  /* space-before = target − natural baseline − top border (the border sits above
-     the content box, so it counts toward reaching the target). */
+  --natural-baseline: calc((1em + 1cap) / 2);
+  /* The box's top border, if any, sits above the content box and counts toward
+     the target. Boxes with a border set --border-top-width: 1px on their text
+     carrier (below); everything else defaults to 0. */
   --space-before: max(
     0px,
     calc(
@@ -286,19 +297,14 @@
   padding-block-start: var(--space-before);
   padding-block-end: 0;
 }
-/* Real Button: it flex-CENTRES its label (align-items/justify-content: center),
- * which floats the text independently of the grid. In the density context we
- * top-reference it so the boxed-nudge padding governs the baseline. We also stop
- * the button's own border adding to the nudge via --border-top-width. Specificity
- * `.ds.button.p` (0,3,0) beats the Button's own `.ds.button` (0,2,0). */
-:where(.comfortable, .dense, .app, .site, .docs) .ds.button.p {
+
+/* Bordered boxes: tell their text carrier the 1px border to compensate. The
+ * primary Button is borderless (--button-border-width 0); secondary/outlined and
+ * the spike-boxes and the input wrapper are 1px. */
+:is(.comfortable, .dense, .app, .site, .docs) .ds.button.p {
   --border-top-width: var(--button-border-width, 0px);
-  align-items: flex-start;
-  justify-content: flex-start;
 }
-:where(.comfortable, .dense, .app, .site, .docs) .spike-box {
-  align-items: flex-start;
-}
-:where(.comfortable, .dense, .app, .site, .docs) .spike-box > .seat.p {
+:is(.comfortable, .dense, .app, .site, .docs) .spike-box > .seat.p,
+:is(.comfortable, .dense, .app, .site, .docs) .ds.input > input {
   --border-top-width: 1px;
 }
