@@ -111,7 +111,7 @@ async function handleRootHelp(globalFlags: GlobalFlags): Promise<void> {
   try {
     await program.parseAsync(["node", "pragma", "--help"]);
   } catch (err) {
-    handleProgramError(err, globalFlags);
+    await handleProgramError(err, globalFlags, ["node", "pragma", "--help"]);
   }
 }
 
@@ -181,7 +181,7 @@ async function bootAndRun(
     const program = createProgram(commands, ctx);
     await program.parseAsync(stripGlobalFlags(argv));
   } catch (err) {
-    handleProgramError(err, globalFlags);
+    await handleProgramError(err, globalFlags, argv);
   } finally {
     runtime.dispose();
   }
@@ -213,11 +213,53 @@ async function runStoreSkip(
   try {
     await program.parseAsync(stripGlobalFlags(argv));
   } catch (err) {
-    handleProgramError(err, globalFlags);
+    await handleProgramError(err, globalFlags, argv);
   }
 }
 
-function handleProgramError(err: unknown, globalFlags: GlobalFlags): void {
+/**
+ * First non-flag token in argv — the command noun, if any.
+ *
+ * Global flags are stripped first so a flag *value* (e.g. the `json` in
+ * `--format json`) is never mistaken for the noun; otherwise
+ * `pragma --format json standard frobnicate` would scan `json` and fail to
+ * suggest `standard`'s verbs.
+ */
+function findNoun(argv: readonly string[]): string | undefined {
+  return stripGlobalFlags(argv)
+    .slice(2)
+    .find((arg) => !arg.startsWith("-"));
+}
+
+/**
+ * When an unknown command/verb is entered under a known noun, print that noun's
+ * valid verbs so the user can recover — "defer to the category that exists".
+ *
+ * @note Impure — writes the noun's verb list to stderr.
+ */
+async function suggestNounVerbs(argv: readonly string[]): Promise<void> {
+  const noun = findNoun(argv);
+  if (!noun) return;
+  const stubCtx: PragmaContext = {
+    store: {} as PragmaRuntime["store"],
+    ...(await resolveHelpConfig()),
+    cwd: process.cwd(),
+    dispose: () => {},
+    globalFlags: { llm: false, autoLlm: false, format: "text", verbose: false },
+    promptSession: createInteractivePromptSession,
+  };
+  const commands = collectCommands(stubCtx);
+  const hasNoun = commands.some((cmd) => cmd.path.at(0) === noun);
+  if (!hasNoun) return;
+  const { formatNounHelp } = await import("@canonical/cli-core");
+  process.stderr.write(`\n${formatNounHelp(PROGRAM_NAME, noun, commands)}\n`);
+}
+
+async function handleProgramError(
+  err: unknown,
+  globalFlags: GlobalFlags,
+  argv: readonly string[],
+): Promise<void> {
   if (err instanceof CommanderError) {
     if (
       err.code === "commander.helpDisplayed" ||
@@ -225,6 +267,9 @@ function handleProgramError(err: unknown, globalFlags: GlobalFlags): void {
     ) {
       process.exitCode = 0;
       return;
+    }
+    if (err.code === "commander.unknownCommand") {
+      await suggestNounVerbs(argv);
     }
     process.exitCode = err.exitCode;
     return;
