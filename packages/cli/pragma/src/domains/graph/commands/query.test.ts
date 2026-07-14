@@ -58,15 +58,17 @@ describe("graph query command", () => {
     expect(text).toContain("n");
   });
 
-  it("renders llm output", async () => {
+  it("renders llm output as a Markdown table for SELECT", async () => {
     const ctx = makeCtx({
       globalFlags: { llm: true, format: "text" as const, verbose: false },
     });
     const cmd = buildQueryCommand(ctx);
     const { text } = await executeOutput(cmd, { sparql }, ctx);
 
-    const parsed = JSON.parse(text) as QueryResult;
-    expect(parsed.type).toBe("select");
+    // Condensed Markdown, not a raw JSON dump.
+    expect(text).toContain("| n |");
+    expect(text).toContain("| --- |");
+    expect(() => JSON.parse(text)).toThrow();
   });
 
   it("renders json output", async () => {
