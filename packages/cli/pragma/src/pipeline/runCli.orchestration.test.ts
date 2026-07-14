@@ -33,6 +33,7 @@ vi.mock("./mapExitCode.js", () => ({
 vi.mock("./parseGlobalFlags.js", () => ({
   default: parseGlobalFlagsMock,
   stripGlobalFlags: (argv: readonly string[]) => [...argv],
+  readRawFormat: () => undefined,
 }));
 
 vi.mock("./resolveCommandKind.js", () => ({
@@ -109,10 +110,14 @@ describe("runCli orchestration", () => {
     collectCommandsMock.mockReturnValue([] as CommandDefinition[]);
     createProgramMock.mockReturnValue({ parseAsync });
 
+    // Completion queries are classified before the root-help shortcut, so
+    // resolveCommandKind runs first; a non-completion result still falls
+    // through to root help without booting the store.
+    resolveCommandKindMock.mockReturnValue({ kind: "store-required" });
+
     const { default: runCli } = await import("./runCli.js");
     await runCli(["node", "pragma", "--verbose"]);
 
-    expect(resolveCommandKindMock).not.toHaveBeenCalled();
     expect(bootPragmaMock).not.toHaveBeenCalled();
     expect(parseAsync).toHaveBeenCalledWith(["node", "pragma", "--help"]);
   });

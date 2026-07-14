@@ -1,5 +1,6 @@
 import type { GlobalFlags } from "@canonical/cli-core";
 import { CommanderError } from "commander";
+import { PROGRAM_NAME } from "../constants.js";
 import { commands as createCommands } from "../domains/create/index.js";
 import { commands as graphqlCommands } from "../domains/graphql/index.js";
 import { buildCapabilitiesCommand } from "../domains/llm/index.js";
@@ -71,8 +72,23 @@ async function handleCompletionsServer(): Promise<void> {
   await startCompletionsServer();
 }
 
-async function handleDoctor(globalFlags: GlobalFlags): Promise<void> {
+async function handleDoctor(
+  argv: readonly string[],
+  globalFlags: GlobalFlags,
+): Promise<void> {
   const { doctorCommand } = await import("../domains/doctor/commands/index.js");
+
+  // `doctor` runs before Commander, so honour --help/-h here rather than
+  // executing the health check when the user only asked for usage.
+  const wantsHelp = argv
+    .slice(2)
+    .some((arg) => arg === "--help" || arg === "-h");
+  if (wantsHelp) {
+    const { formatVerbHelp } = await import("@canonical/cli-core");
+    process.stdout.write(`${formatVerbHelp(PROGRAM_NAME, doctorCommand)}\n`);
+    return;
+  }
+
   const ctx = { cwd: process.cwd(), globalFlags };
   const result = await doctorCommand.execute({}, ctx);
   if (result.tag === "output") {
@@ -284,7 +300,7 @@ export default async function runCli(argv: readonly string[]): Promise<void> {
 
   switch (commandKind.kind) {
     case "doctor":
-      return handleDoctor(globalFlags);
+      return handleDoctor(argv, globalFlags);
     case "store-skip":
       return runStoreSkip(argv, globalFlags);
     case "store-required":

@@ -31,7 +31,11 @@ export default function buildLlmCommand(ctx: PragmaContext): CommandDefinition {
         decisionTrees: DECISION_TREES,
         commandReference: COMMAND_REFERENCE,
       };
-      return createOutputResult(data, { plain: renderLlmOrientation });
+      const asJson = ctx?.globalFlags?.format === "json";
+      return createOutputResult(data, {
+        plain: (value) =>
+          asJson ? JSON.stringify(value, null, 2) : renderLlmOrientation(value),
+      });
     },
   };
 }
