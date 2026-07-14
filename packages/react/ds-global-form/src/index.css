@@ -99,7 +99,8 @@
 
   /* ── Label ──────────────────────────────────────────────────────── */
 
-  --form-label-font-weight: var(--typography-text-primary-bold-font-weight);
+  /* Field labels use regular paragraph weight, not bold (per design review). */
+  --form-label-font-weight: var(--typography-text-primary-font-weight);
   --form-label-font-size: var(--typography-text-primary-font-size);
   --form-label-color: var(--color-text);
   /* --form-label-padding-block:  … ; */ /* block padding for label  */
