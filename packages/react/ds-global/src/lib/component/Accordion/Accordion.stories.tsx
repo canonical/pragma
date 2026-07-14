@@ -73,6 +73,34 @@ export const Heading: Story = {
 };
 
 /**
+ * A header whose text is long enough to WRAP onto a second line. Under a density
+ * scope each header line must stay on the 4px baseline grid, and a two-line header
+ * grows in whole baseline rows rather than clipping — this story is the check for
+ * the multi-line case. Rendered narrow so the headings wrap.
+ */
+export const MultiLineHeading: Story = {
+  render: () => (
+    <div style={{ maxWidth: "22rem" }}>
+      <Component>
+        <Component.Item heading="A rather long accordion heading that wraps onto a second line">
+          <p className="p">
+            The header above spans two lines; both lines should sit on the
+            baseline grid, and the collapsed item should be a whole number of
+            baseline rows tall.
+          </p>
+        </Component.Item>
+        <Component.Item heading="A short one">
+          <p className="p">A single-line header for comparison.</p>
+        </Component.Item>
+        <Component.Item heading="Another long heading that also needs to wrap across two lines here">
+          <p className="p">Two long headers in a row to check for drift.</p>
+        </Component.Item>
+      </Component>
+    </div>
+  ),
+};
+
+/**
  * The accordion adapts to nested `.surface` contexts: its header background
  * uses the ghost surface channel, which steps to layer 2 and layer 3 as the
  * component is nested inside successive `.surface` containers.

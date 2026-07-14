@@ -42,6 +42,10 @@
 /* Spacing architecture tokens */
 @import url("./spacing.css");
 
+/* Density modifier family (context × density → control height + baseline).
+ * After spacing.css, which supplies the --baseline-height these primitives use. */
+@import url("./modifiers.density.css");
+
 /* Scroll overflow affordance tokens */
 @import url("./overflow.css");
 
