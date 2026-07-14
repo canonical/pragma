@@ -24,7 +24,7 @@ import {
 } from "./loaders/index.js";
 import { DEFAULT_PACKAGES } from "./packages.js";
 import { PREFIX_MAP } from "./prefixes.js";
-import type { SemanticPackage } from "./semanticPackage.js";
+import type { GraphContent, SemanticPackage } from "./semanticPackage.js";
 import { resolveSemanticPackages } from "./semanticPackage.js";
 
 export interface BootStoreOptions {
@@ -143,7 +143,7 @@ export async function bootStore(
  * @note Impure — writes warnings to stderr on parse failure.
  */
 export function createGraphLoaderPlugin(
-  graphs: readonly { path: string; content: string; format: "turtle" }[],
+  graphs: readonly GraphContent[],
 ): Plugin {
   return definePlugin({
     name: "pragma-graph-loader",
