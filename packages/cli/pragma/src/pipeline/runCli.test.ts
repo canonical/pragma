@@ -4,8 +4,11 @@ import createProgram from "./createProgram.js";
 import parseGlobalFlags from "./parseGlobalFlags.js";
 
 describe("parseGlobalFlags", () => {
-  it("parses defaults", () => {
-    const flags = parseGlobalFlags(["node", "pragma"]);
+  it("parses defaults on an interactive terminal", () => {
+    const flags = parseGlobalFlags(["node", "pragma"], {
+      isTty: true,
+      noAutoLlm: false,
+    });
     expect(flags).toEqual({ llm: false, format: "text", verbose: false });
   });
 
