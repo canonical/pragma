@@ -18,15 +18,25 @@ function readStringArray(value: unknown): string[] {
     : [];
 }
 
-/** Parse the --port flag, falling back to the default on anything invalid. */
+/**
+ * Parse the `--port` flag. A missing flag uses the default; a provided value
+ * must be a valid port (1–65535), otherwise it is rejected rather than
+ * silently falling back and masking the user's mistake.
+ *
+ * @throws PragmaError INVALID_INPUT when a provided `--port` is not a valid port.
+ */
 export function readPort(value: unknown): number {
-  if (typeof value !== "string") {
+  if (value === undefined || value === null || value === "") {
     return DEFAULT_PORT;
   }
-  const port = Number.parseInt(value, 10);
-  return Number.isInteger(port) && port > 0 && port < 65536
-    ? port
-    : DEFAULT_PORT;
+  const text = String(value).trim();
+  const port = Number(text);
+  if (!/^\d+$/.test(text) || port < 1 || port > 65535) {
+    throw PragmaError.invalidInput("port", String(value), {
+      recovery: { message: "Provide a port between 1 and 65535." },
+    });
+  }
+  return port;
 }
 
 /**

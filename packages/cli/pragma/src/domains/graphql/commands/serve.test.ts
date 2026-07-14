@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
+import { PragmaError } from "#error";
 import type { PragmaContext } from "../../shared/context.js";
 import serveCommand, { readPort } from "./serve.js";
 
@@ -7,15 +8,20 @@ describe("readPort", () => {
     expect(readPort("4001")).toBe(4001);
   });
 
-  it("falls back to the default for non-string values", () => {
+  it("uses the default when the flag is absent", () => {
     expect(readPort(undefined)).toBe(4000);
-    expect(readPort(4001)).toBe(4000);
+    expect(readPort("")).toBe(4000);
   });
 
-  it("falls back to the default for out-of-range or unparseable values", () => {
-    expect(readPort("0")).toBe(4000);
-    expect(readPort("70000")).toBe(4000);
-    expect(readPort("not-a-port")).toBe(4000);
+  it("rejects an out-of-range or unparseable provided port", () => {
+    for (const value of ["0", "70000", "not-a-port"]) {
+      expect(() => readPort(value)).toThrowError(PragmaError);
+      try {
+        readPort(value);
+      } catch (error) {
+        expect((error as PragmaError).code).toBe("INVALID_INPUT");
+      }
+    }
   });
 });
 
