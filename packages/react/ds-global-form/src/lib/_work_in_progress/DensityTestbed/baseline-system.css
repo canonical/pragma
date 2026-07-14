@@ -276,15 +276,17 @@
 /* The <input> is content-box with its own intrinsic height, so it does NOT
    behave like the border-box boxes. Normalise it (border-box, no intrinsic
    min-height, top-aligned) so space-before positions it like every control.
-   REMAINING QUIRK: with identical CSS an <input> renders its text ~1px lower than
-   a <span> (browser-intrinsic form-control text positioning — the same class of
-   quirk as the <button>'s UA padding). One small lift corrects it; this is the
-   single documented form-control exception. */
+   REMAINING QUIRK: with identical CSS an <input> renders its text a couple of px
+   lower than a <span> (browser-intrinsic form-control text positioning — the same
+   class of quirk as the <button>'s UA padding). Corrected via a NAMED knob, not a
+   magic number: `--input-text-offset` (default −2px), the input analogue of how
+   the button reads --button-border-width. A theme/consumer can override it, and
+   it is the single place to promote to a token later. */
 :is(.comfortable, .dense, .app, .site, .docs) .ds.input > input {
   box-sizing: border-box;
   min-block-size: 0;
   block-size: auto;
-  margin-block-start: -1px; /* form-control intrinsic text offset */
+  margin-block-start: var(--input-text-offset, -2px);
   margin-block-end: 0;
 }
 
