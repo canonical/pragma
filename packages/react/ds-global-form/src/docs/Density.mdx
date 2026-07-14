@@ -1,0 +1,125 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+
+<Meta title="Documentation/Guides/Density & the Form Channel" />
+
+# Density & the Form Channel
+
+Density controls how tightly a form is packed: the height of its controls, the
+padding inside them, and the gaps between fields. It is a small, composable
+model — two class families on an ancestor — that resolves to a set of generic
+spacing primitives, which the form then maps onto its own tokens. Everything it
+produces is a whole baseline multiple, so a denser form is still on the grid.
+
+For the underlying grid and how text seats on it, read
+[The Baseline Grid](?path=/docs/documentation-guides-the-baseline-grid--docs)
+first.
+
+## The 2×3 matrix
+
+Density is a matrix of two axes:
+
+- **Context** — `.app` / `.site` / `.docs` — the _surface_. `docs` shares its
+  values with `site`. A site or docs surface runs one baseline looser than an
+  app surface.
+- **Density** — `.comfortable` / `.dense` — the _tightness_ within a context.
+
+Apply one class from each axis on an ancestor (the app root, or the Storybook
+toolbar in this workspace). With no class, a form keeps its plain defaults.
+
+The matrix, in baseline units (1 bU = 4px):
+
+```
+                   app                 site / docs
+                   comfy   dense       comfy   dense
+  line-height      32 (8)  24 (6)      36 (9)  28 (7)
+  padding-inline   16 (4)   8 (2)      16 (4)  12 (3)
+  space-lg         24 (6)  16 (4)      28 (7)  20 (5)   ← between fields
+  space-md         16 (4)   8 (2)      20 (5)  12 (3)   ← label → control
+  space-sm          8 (2)   4 (1)       8 (2)   8 (2)   ← desc/error → input
+```
+
+Context sets the `*-comfy` / `*-dense` pair for every value; density picks within
+it. Every cell is a whole baseline multiple, so vertical rhythm holds in all four
+combinations.
+
+## How density flows to the form
+
+The model is layered so each layer knows only about the one below it:
+
+1. **Context classes** set raw pairs — `--lh-comfy` / `--lh-dense`,
+   `--pad-inline-comfy` / `--pad-inline-dense`, and the three vertical rungs
+   `--space-{sm,md,lg}-comfy` / `-dense`.
+2. **Density classes** pick within each pair and expose _generic, domain-neutral_
+   primitives: `--density-line-height`, `--density-padding-inline`, and
+   `--density-space-{sm,md,lg}`. This layer knows nothing about "form" or
+   "field".
+3. **The form** maps its own tokens onto those primitives — this is the only
+   place a field concept meets a density value:
+
+```
+--form-input-padding-inline: var(--density-padding-inline);   /* inline */
+--form-field-inline-gap:     var(--density-padding-inline);   /* inline */
+--form-field-block-gap:      var(--density-space-lg);         /* between fields   */
+--form-field-label-gap:      var(--density-space-md);         /* label → control  */
+--form-group-gap:            var(--density-space-sm);         /* desc/error → input */
+```
+
+The direction matters: density is the lower layer and never references a
+`--form-*` token. If you need a new density-driven spacing, add a primitive to
+the density layer and map it here — do not reach upward from density.
+
+## Gaps are split by axis
+
+The form's gap tokens are separated by direction so a density tier can tune each
+axis independently, and so a token's name never lies about its axis:
+
+- **Block (vertical):** `--form-field-block-gap`, `--form-field-label-gap`,
+  `--form-group-gap`.
+- **Inline (horizontal):** `--form-field-inline-gap`.
+
+`--form-field-inline-gap` is horizontal only. The vertical label-to-control gap
+is `--form-field-label-gap` — a dedicated block token, not the inline one. (An
+earlier version overloaded the inline token onto a vertical `row-gap`; retuning it
+then moved both axes at once. The split removes that trap.)
+
+## Control height
+
+A density control is a fixed grid-multiple box: `block-size` is the density
+line-height, with `box-sizing: border-box` so a bordered and a borderless control
+of the same density are the same height. The control is top-referenced, and its
+label is seated to the density _target_ baseline —
+`round(up, height × 2/3, --baseline-height)` — so text at any font size lands on
+the grid. A borderless importance (e.g. a primary button) and a bordered one seat
+identically, because the seat is computed against the box, not the border.
+
+## Composition: density and running prose
+
+Density seats **controls**. It does not touch **running prose** — bare `p`,
+`h1`–`h6`, or anything in an `.editorial` context. Those keep their engine-owned
+snapped line-height and inter-block margins.
+
+This is the rule that lets a density scope and `.editorial` prose _nest_ without
+conflict — for example a density-sized header above an `.editorial` content
+panel. Because density and the typography engine write to disjoint element sets,
+there is no specificity war and no override: each system owns its own elements.
+
+Practically:
+
+- Put controls (buttons, inputs, field labels) inside a density scope — they size
+  and seat to the density.
+- Let running prose be plain `p` / `h*` or wrap it in `.editorial` — it keeps its
+  reading rhythm and stays on the grid, whether or not it sits inside a density
+  scope.
+- Do **not** try to make density seat a paragraph. If you need a text reference
+  to line up with controls (as the spike testbed does for its measuring lead),
+  seat that one element explicitly; do not change how prose ships.
+
+## Known rough edge
+
+Native form controls (`<input>`, `<textarea>`) render their text a couple of
+pixels lower than a `<span>` at identical CSS — a browser metrics quirk of
+editable controls, not captured by the cap approximation. The model lifts them
+with a single, deliberately-named knob, `--control-text-drift-AVOID-USAGE`
+(currently 2px). The name is a warning: it is an empirical constant, may vary by
+browser and font, and is tracked for a structural fix. Never reach for it in
+application code.

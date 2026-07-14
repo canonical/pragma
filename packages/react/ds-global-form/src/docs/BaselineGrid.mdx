@@ -1,0 +1,113 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+
+<Meta title="Documentation/Guides/The Baseline Grid" />
+
+# The Baseline Grid
+
+Every piece of text in the form system seats itself on a shared 4px baseline
+grid. A control's label, an input's value, and a paragraph of running prose all
+land their baselines on the same set of horizontal lines, so a form reads as one
+continuous rhythm rather than a stack of independently-spaced boxes. This guide
+explains what the grid is, how text is placed on it, and why the placement holds
+at any font size without per-element tuning.
+
+For how to _apply_ densities and drive the form's spacing from them, see
+[Density & the Form Channel](?path=/docs/documentation-guides-density--docs).
+
+## The grid unit
+
+The grid is defined by a single custom property, `--baseline-height`, which the
+typography engine sets to **4px** (`0.25rem`). Everything vertical is expressed
+as a whole multiple of this unit — a control height, a gap between fields, the
+padding that seats a line of text. Because the unit is a variable, the whole
+system re-flows if it changes; nothing hard-codes `4px`.
+
+Throughout this documentation, spacing is quoted in **baseline units** (bU): 1 bU
+= `--baseline-height` = 4px. A 32px control is "8 bU"; a 24px gap is "6 bU".
+
+## How a line of text seats on the grid
+
+A font does not place its baseline at the top or bottom of its line box — it sits
+some fraction of the way down, determined by the font's metrics. To land that
+baseline on a grid line, the system adds a calculated top padding.
+
+The distance from the top of a `line-height: 1` box to the text baseline is
+approximated, font-relatively, as:
+
+```
+--natural-baseline: calc((1em + 1cap) / 2);
+```
+
+`1cap` is the cap height of the current font, `1em` its size. The average of the
+two is a close, size-independent stand-in for where the alphabetic baseline sits
+— no magic pixel constant, and correct at any font size because both terms scale
+with the font.
+
+The text is then seated on a chosen grid line — the **target baseline** — by
+padding the top with the remaining distance:
+
+```
+--space-before: max(0px, calc(target − --natural-baseline − border-top));
+padding-block-start: var(--space-before);
+```
+
+The result: the first baseline lands exactly on `target`, which is always a whole
+baseline multiple, so the text is on the grid.
+
+## The whole-multiple invariant
+
+The single rule that keeps _multi-line_ content on the grid:
+
+> A line-height that must stay on the grid has to be a whole multiple of
+> `--baseline-height`.
+
+The first line seats on the grid via `--space-before` (above). Each subsequent
+line advances by exactly one `line-height`. So every wrapped line lands on a grid
+line **if and only if** the line-height is itself a whole baseline multiple. A
+single-line control can use any line-height (only its first baseline matters); a
+paragraph or a textarea cannot — its line-height must be snapped to the grid.
+
+The typography engine already guarantees this for prose: it computes each tier's
+line-height as `round(up, font-size × ratio, --baseline-height)`, a snapped
+value. That is why running text stays on the grid line after line, and why the
+form system leaves prose to the engine (see the composition rule in the density
+guide).
+
+## Two ways text reaches the grid
+
+The system seats text through two distinct mechanisms, applied to two disjoint
+sets of elements. Knowing which owns a given element is the key to the whole
+model.
+
+- **Controls** — a button label, an input's text, a field label / description /
+  error. These are seated by the **density model**: crushed to `line-height: 1`,
+  then padded so their single baseline lands on the density _target_ line (a
+  fraction of the control's height, `round(up, height × 2/3, baseline)`). This
+  is what makes a 32px button's label and a 32px input's value share one line.
+
+- **Running prose** — bare `p`, `h1`–`h6`, and anything in an `.editorial`
+  context. These are seated by the **typography engine**: each keeps its tier's
+  snapped natural line-height and is nudged onto the _nearest_ grid line, so
+  multi-line reading rhythm is preserved and every wrapped line stays on-grid.
+
+The two never fight over the same element. Density seats controls; the engine
+seats prose. A paragraph placed next to a control will sit on _a_ grid line, but
+not necessarily the control's target line — controls and prose answer to
+different seating rules by design.
+
+## Why not just set `line-height: 1` everywhere?
+
+Crushing everything to `line-height: 1` seats the _first_ line of any element on
+the grid, which is why an earlier iteration did exactly that. But it breaks
+running prose two ways: it removes the leading that makes multi-line text
+readable, and — because a crushed line-height is not a whole baseline multiple —
+it lets every _wrapped_ line drift off the grid. The current model keeps
+`line-height: 1` only where it is safe (single-line controls) and hands prose to
+the engine, which snaps the line-height and keeps every line on the grid.
+
+## The debug overlay
+
+The Storybook baseline overlay (the stepped pink bands) is driven by the same
+`--baseline-height`, so it always draws the real grid. Turn it on to read any
+element against the grid: a correctly-seated baseline sits on a band boundary.
+The overlay is a measuring tool only — it is never part of a shipped component.
