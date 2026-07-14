@@ -29,7 +29,7 @@
     padding-inline: var(--form-field-inline-gap);
     border: none;
     background: transparent;
-    color: var(--color-text-muted);
+    color: var(--color-icon);
     cursor: pointer;
 
     & > .reveal-icon {
@@ -54,9 +54,8 @@
       }
     }
 
-    &:hover:not(:disabled) {
-      color: var(--color-text);
-    }
+    /* No hover colour change: the reveal toggle keeps `--color-icon` in all
+     * pointer states (per design review). */
 
     &:focus-visible {
       outline: none;

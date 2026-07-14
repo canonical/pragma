@@ -47,10 +47,10 @@
                          border. `.primary` overrides text/icon with the on-fill
                          contrast tokens.
 
-  Interaction states read the per-state surface/text channels supplied by the
-  states shim (`--modifier-surface-{hover,active,disabled}`,
-  `--modifier-color-text-disabled`), which resolve to the explicit state tokens
-  and recolour per anticipation.
+  Interaction states read the per-state surface/text/border channels supplied
+  by the states shim (`--modifier-surface-{hover,active,disabled}`,
+  `--modifier-color-text-disabled`, `--modifier-color-border-disabled`), which
+  resolve to the explicit state tokens and recolour per anticipation.
 */
 
 .ds.button {
@@ -120,7 +120,9 @@
   /* Disabled — explicit disabled tokens (not the computed deltas): the surface,
      text and border each resolve to their `-disabled` token. Primary supplies
      the on-fill disabled text via `--modifier-color-text-disabled`; ghost
-     importances fall back to the plain disabled text colour. */
+     importances fall back to the plain disabled text colour. The border reads
+     the disabled border channel, so it stays on the same highlighted ramp as
+     the enabled border and recolours per anticipation. */
   &:disabled {
     cursor: not-allowed;
     color: var(--modifier-color-text-disabled, var(--color-text-disabled));
@@ -128,7 +130,10 @@
       --modifier-surface-disabled,
       var(--button-color-background-disabled)
     );
-    border-color: var(--color-border-disabled);
+    border-color: var(
+      --modifier-color-border-disabled,
+      var(--color-border-highlighted-disabled)
+    );
   }
 }
 

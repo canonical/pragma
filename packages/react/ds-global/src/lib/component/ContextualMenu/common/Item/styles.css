@@ -18,6 +18,9 @@
   --contextual-menu-item-padding-inline: var(--dimension-200);
   /* 4px gap: icon<->text and text<->caret (per the spec). */
   --contextual-menu-item-gap: var(--dimension-050);
+  /* De-emphasised slot text (badge / shortcut) — muted, matching
+     KeyboardKey / Tabs. */
+  --contextual-menu-item-slot-color: var(--color-text-muted);
 }
 
 .ds.contextual-menu-item {
@@ -29,7 +32,9 @@
   padding-inline: var(--contextual-menu-item-padding-inline);
   color: var(--contextual-menu-item-color-text);
   background-color: var(--contextual-menu-item-color-background);
-  line-height: var(--line-height-text, var(--dimension-300));
+  /* The --dimension-300 (24px) fallback is load-bearing: the typography var's
+     --number-line-height-* reference is unresolved in the built tokens. */
+  line-height: var(--typography-text-primary-line-height, var(--dimension-300));
   cursor: pointer;
   user-select: none;
 
@@ -53,7 +58,7 @@
   > .slot {
     flex: 0 0 auto;
     margin-inline-start: auto;
-    opacity: 0.7;
+    color: var(--contextual-menu-item-slot-color);
   }
 
   /* The submenu caret sits on the trailing edge in a fixed icon box (Figma:
@@ -81,6 +86,11 @@
     background-color: var(--contextual-menu-item-color-background);
     cursor: not-allowed;
     pointer-events: none;
+
+    /* The slot follows the disabled text colour instead of staying muted. */
+    > .slot {
+      color: inherit;
+    }
   }
 }
 

@@ -69,6 +69,10 @@
     );
     --modifier-color-text-disabled: var(--color-text-disabled);
     --modifier-color-icon-disabled: var(--color-icon-disabled);
+    /* The disabled border tracks the highlighted ramp the enabled border uses
+       (it matches the disabled-text tone), not the much fainter plain
+       border-disabled ramp. */
+    --modifier-color-border-disabled: var(--color-border-highlighted-disabled);
   }
 
   .constructive {
@@ -92,6 +96,7 @@
     );
     --modifier-color-text-disabled: var(--color-text-constructive-disabled);
     --modifier-color-icon-disabled: var(--color-icon-constructive-disabled);
+    --modifier-color-border-disabled: var(--color-border-constructive-disabled);
   }
 
   .destructive {
@@ -115,6 +120,7 @@
     );
     --modifier-color-text-disabled: var(--color-text-destructive-disabled);
     --modifier-color-icon-disabled: var(--color-icon-destructive-disabled);
+    --modifier-color-border-disabled: var(--color-border-destructive-disabled);
   }
 
   /* `caution` uses the `warning` colour ramp. The ghost-warning state tokens do
@@ -144,6 +150,7 @@
     );
     --modifier-color-text-disabled: var(--color-text-warning-disabled);
     --modifier-color-icon-disabled: var(--color-icon-warning-disabled);
+    --modifier-color-border-disabled: var(--color-border-warning-disabled);
   }
 
   .branded {
@@ -167,5 +174,6 @@
     );
     --modifier-color-text-disabled: var(--color-text-branded-disabled);
     --modifier-color-icon-disabled: var(--color-icon-branded-disabled);
+    --modifier-color-border-disabled: var(--color-border-branded-disabled);
   }
 }

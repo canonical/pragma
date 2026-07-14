@@ -12,4 +12,12 @@
   &::-webkit-inner-spin-button {
     display: none;
   }
+
+  /* NOTE (design review — "suggested" format text → muted): NOT implementable in
+   * pure CSS on a native <input type="date">. It has no placeholder attribute
+   * (so `:placeholder-shown` never matches), and `::-webkit-datetime-edit`
+   * colours the whole edit region — mask AND typed value — with no selector for
+   * the empty state, and Firefox ignores it entirely. A muted-only-when-empty
+   * hint needs a custom (non-native) date control or a JS empty-state hook.
+   * Parked for Diana. */
 }

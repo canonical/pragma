@@ -1,5 +1,5 @@
 .ds.field-label {
-  font-weight: var(--form-label-font-weight, bold);
+  font-weight: var(--form-label-font-weight, normal);
   color: var(--form-label-color);
   /* No side padding by default — the label aligns to the field edge, not the
    * input's inner padding. Overridable via the variable. */
@@ -18,9 +18,8 @@
   }
 
   /* The "(optional)" suffix is a muted hint, visually subordinate to the label
-   * (which is bold) — not the same weight/colour as the label text. */
+   * — distinguished by colour (the label now uses regular paragraph weight too). */
   & > .optional {
-    font-weight: var(--typography-text-primary-font-weight, normal);
     color: var(--color-text-muted);
   }
 }
