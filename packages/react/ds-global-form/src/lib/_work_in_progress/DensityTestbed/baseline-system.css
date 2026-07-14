@@ -73,9 +73,35 @@
  * calculation's behaviour, kept strictly as-is.
  *
  * Density (DS.03) supplies --density-line-height, fed into the existing maths.
+ *
+ * FIXED single-line control height, two tiers:
+ *
+ * 1. FALLBACK (all browsers) — pin block-size to the density value directly. That
+ *    value (--density-line-height) is ALREADY a whole grid multiple (24/32px), so
+ *    no snapping is needed for a fixed single-line control; with border-box the
+ *    1px border is absorbed INTO that height (never adding past it). This is what
+ *    runs where calc-size is unsupported (e.g. older Chromium) and is exact on its
+ *    own — the box is 24/32px, border and all.
+ *
+ * 2. MODERN (@supports calc-size) — instead of the fixed value, snap the box's
+ *    own INTRINSIC height up to the grid, so the box fits arbitrary content and
+ *    still lands on-grid (not just the known fixed value):
+ *      block-size: calc-size(min-content, round(up, size, --baseline-height));
+ *    `calc-size(min-content, …)` binds the intrinsic height to `size` so round()
+ *    can snap it (`round(min-content, …)` alone is illegal). Chrome 130+ only.
  */
 .spike-baseline-boxed {
   --line-height: var(--density-line-height, calc(var(--baseline-height) * 6));
+  box-sizing: border-box; /* border absorbed inside the box in both tiers */
+  /* Fallback: fixed grid-multiple height (border-box absorbs the border). */
+  block-size: var(--density-line-height, calc(var(--baseline-height) * 6));
+}
+
+/* Modern enhancement: intrinsic height snapped to the grid (fits any content). */
+@supports (block-size: calc-size(min-content, size)) {
+  .spike-baseline-boxed {
+    block-size: calc-size(min-content, round(up, size, var(--baseline-height)));
+  }
 }
 
 /* ── Testbed proof surface for DS.01 ────────────────────────────────────────
@@ -107,11 +133,10 @@
   margin-block: calc(var(--baseline-height) * 2);
 }
 .boxed-proof > .spike-baseline-boxed {
-  /* Outline, not border: a border adds 1px above the content box and pushes the
-     text off the grid (the nudge assumes the content-top is on a grid line).
-     Outline draws the frame without affecting layout, so the baseline maths hold. */
-  outline: 1px solid var(--color-border, #b3b3b3);
-  outline-offset: -1px;
+  /* Real BORDER, absorbed by the calc-size border-box height — no outline hack,
+     no calc-minus. The border is inside the grid-snapped box, so it doesn't push
+     content off-grid. */
+  border: 1px solid var(--color-border, #b3b3b3);
   border-radius: var(--dimension-radius-100, 0.25rem);
   padding-inline: calc(var(--baseline-height) * 2);
   /* Transparent, NOT a solid fill — a solid box would hide the grid overlay

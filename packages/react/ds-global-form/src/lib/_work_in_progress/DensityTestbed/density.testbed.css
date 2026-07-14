@@ -57,13 +57,19 @@
    (reduced type + tighter padding) so the paragraph — not a control — sets the
    line's height; items are topped to the line start (`align-items: flex-start`)
    so their boxes are read from the top edge. */
+/* Tighten inline padding on all anchored controls (incl. the button). */
 .density-testbed__line--anchored .spike-box,
 .density-testbed__line--anchored .ds.button,
 .density-testbed__line--anchored .ds.input {
-  font-size: 0.8125rem; /* smaller than the 1rem `.p` lead */
   --button-padding-inline-start: var(--baseline-height);
   --button-padding-inline-end: var(--baseline-height);
   --box-padding-inline: var(--baseline-height);
+}
+/* Shrink font-size only on the spike stand-ins and the input — the real Button
+   keeps its DEFAULT font-size (do not override it). */
+.density-testbed__line--anchored .spike-box,
+.density-testbed__line--anchored .ds.input {
+  font-size: 0.8125rem; /* smaller than the 1rem `.p` lead */
 }
 .density-testbed__line--anchored .spike-box > .seat {
   line-height: 1;
