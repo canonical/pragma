@@ -1,0 +1,81 @@
+/**
+ * Testbed chrome for the baseline/density spike (WORK IN PROGRESS).
+ *
+ * The density + baseline MODEL now lives in the package: src/density.css
+ * (imported by src/index.css), so real components consume it by default. This
+ * file keeps only the TESTBED-ONLY helpers: the size-agnostic `.baseline` proof
+ * class and the `.spike-baseline-boxed` prototype + their proof surfaces.
+ */
+
+/* ── DS.01 — .baseline: snap any element to the grid, whatever its size ──────
+ * Reads whatever --font-size / --line-height is present and computes the same
+ * cap-unit nudges the engine uses on h1..h6/p, without assigning a tier. The
+ * maths is font-relative, so it holds at any size. */
+.baseline {
+  --bl-line-height-ratio: var(--line-height-ratio, 1.4);
+  --bl-computed-line-height: var(
+    --line-height,
+    round(up, calc(1em * var(--bl-line-height-ratio)), var(--baseline-height))
+  );
+  line-height: var(--bl-computed-line-height);
+
+  --bl-baseline-position: calc((var(--bl-computed-line-height) + 1cap) / 2);
+  --bl-start-nudge: calc(
+    var(--baseline-height) -
+    mod(var(--bl-baseline-position), var(--baseline-height))
+  );
+  --bl-end-nudge: calc(var(--baseline-height) - var(--bl-start-nudge));
+
+  padding-block-start: var(--bl-start-nudge);
+  padding-block-end: var(--bl-end-nudge);
+  margin-block: 0;
+}
+
+/* ── DS.02 — .spike-baseline-boxed: PROTOTYPE ONLY, NOT CORE API ─────────────
+ * `.baseline` with a density-chosen line-height; the box height is snapped to the
+ * grid (intrinsic snap via calc-size where supported, fixed grid-multiple
+ * fallback). Testbed only; never export. */
+.spike-baseline-boxed {
+  --line-height: var(--density-line-height, calc(var(--baseline-height) * 6));
+  box-sizing: border-box;
+  block-size: var(--density-line-height, calc(var(--baseline-height) * 6));
+}
+@supports (block-size: calc-size(min-content, size)) {
+  .spike-baseline-boxed {
+    block-size: calc-size(min-content, round(up, size, var(--baseline-height)));
+  }
+}
+
+/* ── Proof surface for .baseline (DS.01) — off-scale sizes on one line ─────── */
+.baseline-proof {
+  display: flex;
+  align-items: flex-start;
+  gap: calc(var(--baseline-height) * 4);
+  overflow-x: auto;
+  white-space: nowrap;
+}
+.baseline-proof > .baseline {
+  font-family: inherit;
+}
+
+/* ── Proof surface for .spike-baseline-boxed (DS.02) — mixed sizes, 2 densities ── */
+.boxed-proof {
+  display: flex;
+  align-items: flex-start;
+  gap: calc(var(--baseline-height) * 3);
+  overflow-x: auto;
+  white-space: nowrap;
+  margin-block: calc(var(--baseline-height) * 2);
+}
+.boxed-proof > .spike-baseline-boxed {
+  border: 1px solid var(--color-border, #b3b3b3);
+  border-radius: var(--dimension-radius-100, 0.25rem);
+  padding-inline: calc(var(--baseline-height) * 2);
+  background: transparent; /* let the grid overlay show through */
+}
+.boxed-proof.is-dense {
+  --density-line-height: calc(var(--baseline-height) * 6); /* 24px */
+}
+.boxed-proof.is-comfortable {
+  --density-line-height: calc(var(--baseline-height) * 8); /* 32px */
+}
