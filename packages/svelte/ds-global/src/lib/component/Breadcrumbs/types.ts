@@ -1,6 +1,6 @@
 import type { Item } from "@canonical/ds-types";
 import type { Snippet } from "svelte";
-import type { SvelteHTMLElements } from "svelte/elements";
+import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 import type { ItemAnchorProps } from "./common/Item/types.js";
 
 /**
@@ -24,7 +24,7 @@ export interface BreadcrumbItem extends ItemAnchorProps, Omit<Item, "items"> {
    */
   current?: boolean;
   /** CSS class applied to this item's `<li>`, in addition to the base classes. */
-  class?: string;
+  class?: ClassValue;
 }
 
 type BaseProps = SvelteHTMLElements["nav"];

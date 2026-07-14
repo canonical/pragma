@@ -1,6 +1,6 @@
 import type { Item } from "@canonical/ds-types";
 import type { Snippet } from "svelte";
-import type { SvelteHTMLElements } from "svelte/elements";
+import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 
 /**
  * Native anchor attributes, forwarded to the rendered link (or the
@@ -32,7 +32,7 @@ export interface ItemProps extends ItemAnchorProps, Omit<Item, "items"> {
    */
   current?: boolean;
   /** CSS class applied to this item's `<li>`, in addition to the base classes. */
-  class?: string;
+  class?: ClassValue;
   /**
    * Custom separator character or snippet
    * @default "/"
