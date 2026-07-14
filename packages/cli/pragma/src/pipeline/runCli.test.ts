@@ -9,7 +9,12 @@ describe("parseGlobalFlags", () => {
       isTty: true,
       noAutoLlm: false,
     });
-    expect(flags).toEqual({ llm: false, format: "text", verbose: false });
+    expect(flags).toEqual({
+      llm: false,
+      autoLlm: false,
+      format: "text",
+      verbose: false,
+    });
   });
 
   it("parses --llm", () => {
@@ -36,7 +41,12 @@ describe("parseGlobalFlags", () => {
       "json",
       "--verbose",
     ]);
-    expect(flags).toEqual({ llm: true, format: "json", verbose: true });
+    expect(flags).toEqual({
+      llm: true,
+      autoLlm: false,
+      format: "json",
+      verbose: true,
+    });
   });
 });
 
