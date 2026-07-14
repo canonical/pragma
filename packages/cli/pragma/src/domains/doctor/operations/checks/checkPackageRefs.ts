@@ -13,7 +13,12 @@ import {
 } from "../../../shared/loaders/index.js";
 import { mergeAndParseRefs } from "../../../shared/mergeAndParseRefs.js";
 import { resolveSemanticPackages } from "../../../shared/semanticPackage.js";
-import type { CheckContext, CheckResult } from "../types.js";
+import type { CheckContext, CheckItem, CheckResult } from "../types.js";
+
+/** Pluralize a count, e.g. `1 graph` / `2 graphs`. */
+function count(n: number, unit: string): string {
+  return `${n} ${unit}${n === 1 ? "" : "s"}`;
+}
 
 export default async function checkPackageRefs(
   ctx: CheckContext,
@@ -27,32 +32,45 @@ export default async function checkPackageRefs(
   ];
   const packages = await resolveSemanticPackages(refs, loaders);
 
-  const details: string[] = [];
-  let hasIssue = false;
+  const items: CheckItem[] = [];
+  let unresolved = 0;
 
   for (const ref of refs) {
     const resolved = packages.find((p) => p.name === ref.pkg);
 
     if (resolved) {
-      details.push(
-        `${ref.pkg}: ${resolved.source} v${resolved.version} (${resolved.graphs.length} graphs, ${resolved.skills.length} skills)`,
-      );
+      items.push({
+        label: ref.pkg,
+        status: "pass",
+        detail: `${resolved.source} v${resolved.version} · ${count(resolved.graphs.length, "graph")}, ${count(resolved.skills.length, "skill")}`,
+      });
     } else {
       // Check if covered by bundled fallback
       const bundled = packages.find((p) => p.name === "(bundled)");
       if (bundled) {
-        details.push(`${ref.pkg}: bundled v${bundled.version}`);
+        items.push({
+          label: ref.pkg,
+          status: "pass",
+          detail: `bundled fallback v${bundled.version}`,
+        });
       } else {
-        details.push(`${ref.pkg}: NOT RESOLVED`);
-        hasIssue = true;
+        items.push({ label: ref.pkg, status: "fail", detail: "not resolved" });
+        unresolved += 1;
       }
     }
   }
 
+  const total = refs.length;
+  const detail =
+    unresolved > 0
+      ? `${unresolved} of ${count(total, "package")} not resolved`
+      : `${count(total, "package")} resolved`;
+
   return {
     name: "package refs",
-    status: hasIssue ? "fail" : "pass",
-    detail: details.join("; "),
-    ...(hasIssue ? { remedy: "pragma update-refs" } : {}),
+    status: unresolved > 0 ? "fail" : "pass",
+    detail,
+    items,
+    ...(unresolved > 0 ? { remedy: "pragma update-refs" } : {}),
   };
 }

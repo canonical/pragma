@@ -3,7 +3,7 @@ import { delimiter, isAbsolute, join } from "node:path";
 import type { DetectedHarness } from "@canonical/harnesses";
 import { detectHarnesses, readMcpConfig } from "@canonical/harnesses";
 import { runTask } from "@canonical/task/node";
-import type { CheckContext, CheckResult } from "../types.js";
+import type { CheckContext, CheckItem, CheckResult } from "../types.js";
 
 const NAME = "MCP commands";
 
@@ -79,7 +79,7 @@ export default async function checkMcpCommands(
     };
   }
 
-  const broken: string[] = [];
+  const broken: CheckItem[] = [];
   let checked = 0;
 
   for (const d of withConfig) {
@@ -97,9 +97,11 @@ export default async function checkMcpCommands(
 
       checked += 1;
       if (!commandResolves(command, ctx.cwd)) {
-        broken.push(
-          `"${serverName}" ("${command}" not found, ${d.configPath})`,
-        );
+        broken.push({
+          label: `"${serverName}"`,
+          status: "fail",
+          detail: `"${command}" not found · ${d.configPath}`,
+        });
       }
     }
   }
@@ -123,7 +125,8 @@ export default async function checkMcpCommands(
   return {
     name: NAME,
     status: "fail",
-    detail: `unresolvable: ${broken.join("; ")}`,
+    detail: `${broken.length} of ${checked} unresolvable`,
+    items: broken,
     remedy:
       "Install the missing command or remove the entry from the MCP config — every agent session tries and fails to boot it.",
   };
