@@ -9,8 +9,16 @@ export const KEY_OUTLINES = "outlines";
 export const KEY_DENSITY = "density";
 export const KEY_CONTEXT = "context";
 
-export type GridMode = "none" | "intrinsic" | "responsive";
-export const GRID_MODES: GridMode[] = ["none", "intrinsic", "responsive"];
+// "showcase" is a presentation-only mode (not a design-system grid preset): a
+// single clamped, centred column in a tall canvas, for showing one component off
+// on its own story/doc without it stretching to fill the preview.
+export type GridMode = "none" | "intrinsic" | "responsive" | "showcase";
+export const GRID_MODES: GridMode[] = [
+  "none",
+  "intrinsic",
+  "responsive",
+  "showcase",
+];
 
 export type SchemeMode = "none" | "light" | "dark";
 export const SCHEME_MODES: SchemeMode[] = ["none", "light", "dark"];
@@ -45,10 +53,15 @@ export const DENSITY_CLASSES: Record<DensityMode, string | null> = {
   dense: "dense",
 };
 
+// Maps a grid mode → the design-system grid preset class it applies (on top of
+// the base `.grid`). `null` = no preset class: "none" is not a grid at all, and
+// "showcase" is a grid whose track/centering come from inline styles in
+// `withUtilStyles`, not a shared class.
 export const GRID_CLASSES: Record<GridMode, string | null> = {
   none: null,
   intrinsic: "intrinsic",
   responsive: "responsive",
+  showcase: null,
 };
 
 export const CONTEXT_CLASSES: Record<ContextMode, string | null> = {

@@ -121,12 +121,34 @@ export const withUtilStyles = (
     applyModifierClass(document.documentElement, SCHEME_CLASSES, scheme);
   }, [scheme]);
 
-  // `display: contents` so the wrapper carries the classes without introducing a
-  // box of its own — until a grid is active, when it must be a real grid element.
-  // `align-content: start` keeps grid rows at their natural height (the wrapper
-  // fills the preview, so a stretched single row would look vertically centred).
-  const wrapperStyle: CSSProperties =
-    gridMode === "none" ? { display: "contents" } : { alignContent: "start" };
+  // The wrapper's own layout, by mode:
+  //  - "none":     `display: contents` — carries the classes but generates no box,
+  //                so a story that brings its own layout is untouched.
+  //  - "showcase": a single clamped column, centred in a tall canvas — for showing
+  //                one component off on its own without it stretching to fill the
+  //                preview. It IS the (only) grid, so a subgrid child binds to it.
+  //                Track width / canvas height / column count are overridable per
+  //                story via the CSS vars below.
+  //  - other grids: a real `.grid.<preset>`; `align-content: start` keeps rows at
+  //                their natural height (the wrapper fills the preview, so a
+  //                stretched single row would read as vertically centred).
+  let wrapperStyle: CSSProperties;
+  if (gridMode === "none") {
+    wrapperStyle = { display: "contents" };
+  } else if (gridMode === "showcase") {
+    wrapperStyle = {
+      display: "grid",
+      // A single column clamped to --showcase-width (default 22rem), centred.
+      gridTemplateColumns: "minmax(0, var(--showcase-width, 22rem))",
+      justifyContent: "center",
+      // The canvas: a min height so the item sits mid-frame; content at its
+      // intrinsic height, vertically centred.
+      minBlockSize: "var(--showcase-min-height, 60vh)",
+      alignContent: "center",
+    };
+  } else {
+    wrapperStyle = { alignContent: "start" };
+  }
 
   return createElement(
     "div",
