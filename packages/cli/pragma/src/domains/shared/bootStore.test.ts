@@ -20,19 +20,23 @@ const badGraph = (path: string) => ({
 
 async function countTriples(
   graphs: readonly ReturnType<typeof goodGraph>[],
-): Promise<{ count: number; store: Awaited<ReturnType<typeof createStore>> }> {
+): Promise<number> {
   const store = await createStore({
     sources: [],
     prefixes: PREFIXES,
     plugins: [createGraphLoaderPlugin(graphs)],
   });
-  const result = await store.query(
-    "SELECT (COUNT(*) AS ?n) WHERE { ?s ?p ?o }",
-  );
-  const count = Number(
-    result.type === "select" ? (result.bindings[0]?.n ?? "0") : "0",
-  );
-  return { count, store };
+  // Always dispose the WASM-backed store so it can't leak across tests.
+  try {
+    const result = await store.query(
+      "SELECT (COUNT(*) AS ?n) WHERE { ?s ?p ?o }",
+    );
+    return Number(
+      result.type === "select" ? (result.bindings[0]?.n ?? "0") : "0",
+    );
+  } finally {
+    store.dispose();
+  }
 }
 
 let stderrSpy: ReturnType<typeof vi.spyOn>;
@@ -50,7 +54,7 @@ const stderrText = (): string =>
 
 describe("createGraphLoaderPlugin", () => {
   it("loads every graph when all are well-formed", async () => {
-    const { count } = await countTriples([
+    const count = await countTriples([
       goodGraph("a.ttl", "global.component.a"),
       goodGraph("b.ttl", "global.component.b"),
     ]);
@@ -59,7 +63,7 @@ describe("createGraphLoaderPlugin", () => {
   });
 
   it("skips a malformed graph but still boots and loads the good ones", async () => {
-    const { count } = await countTriples([
+    const count = await countTriples([
       goodGraph("a.ttl", "global.component.a"),
       badGraph("data/global/component/broken.ttl"),
       goodGraph("b.ttl", "global.component.b"),

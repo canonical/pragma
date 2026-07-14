@@ -90,7 +90,10 @@ export async function bootStore(
     // Collect all graph content from resolved packages
     const allGraphs = packages.flatMap((pkg) => pkg.graphs);
 
-    // biome-ignore lint: Plugin generic variance requires explicit unknown
+    // `Plugin<T>` is invariant in its API type and createStore expects
+    // `Plugin<void>[]`, so heterogeneous plugins (graph loader + trace) can only
+    // share an array via `any`. `unknown` does not satisfy `Plugin<void>`.
+    // biome-ignore lint/suspicious/noExplicitAny: intentional — see above
     const plugins: Plugin<any>[] = [createGraphLoaderPlugin(allGraphs)];
     const traceEnabled =
       process.env.PRAGMA_TRACE === "1" || options.trace === true;
