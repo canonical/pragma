@@ -9,6 +9,9 @@
  *   inline = horizontal axis (inline-start = left in LTR, right in RTL)
  */
 
+/* Density & baseline alignment (context × density → control height + baseline). */
+@import url("./density.css");
+
 :root {
   /* ── Form grid layout ───────────────────────────────────────────── */
   /* Forms are subgrids: they inherit columns from a parent .grid      */

@@ -1,34 +1,17 @@
 /**
- * Baseline-system prototype (WORK IN PROGRESS) — session S / S.03
+ * Testbed chrome for the baseline/density spike (WORK IN PROGRESS).
  *
- * Proposed improvements to the baseline engine, prototyped in the testbed. Opt-in,
- * zero-JS (cap-unit approximation), scoped here — the shipped engine is untouched.
- *
- *   DS.01  .baseline        — a font-size-AGNOSTIC alignment class (this file).
- *   DS.02  .baseline-boxed  — bottom-referenced fixed box (added later).
- *   DS.03  .dense/.comfortable — swappable size maps (added later).
- *
- * The bare tags h1..h6 / p keep their DEFAULT nudging from the shipped engine;
- * `.baseline` is additive — for off-tier sizes and non-typographic elements the
- * tags do not cover.
+ * The density + baseline MODEL now lives in the package: src/density.css
+ * (imported by src/index.css), so real components consume it by default. This
+ * file keeps only the TESTBED-ONLY helpers: the size-agnostic `.baseline` proof
+ * class and the `.spike-baseline-boxed` prototype + their proof surfaces.
  */
 
 /* ── DS.01 — .baseline: snap any element to the grid, whatever its size ──────
- *
- * Reads whatever --font-size / --line-height is present (or inherited) and
- * computes the same start/end nudges the engine uses on h1..h6/p — but without
- * assigning any tier or font-size. The maths is font-relative (1cap + the
- * computed line-height), so it holds at ANY size: 19px, 23px, 41px all snap.
- *
- * `--line-height` may be an explicit length; if absent it falls back to
- * baseline-height × --line-height-multiplier (same contract as the engine).
- */
+ * Reads whatever --font-size / --line-height is present and computes the same
+ * cap-unit nudges the engine uses on h1..h6/p, without assigning a tier. The
+ * maths is font-relative, so it holds at any size. */
 .baseline {
-  /* Line-height, snapped to the grid. If an explicit --line-height (length) is
-     given, use it; otherwise derive one from the font-size: font-size × ratio,
-     rounded UP to the next whole baseline. This font-relative default is what
-     lets a bare `.baseline` at ANY font-size get a sensible, grid-snapped line
-     box (the same round-up-to-grid the tiers do). */
   --bl-line-height-ratio: var(--line-height-ratio, 1.4);
   --bl-computed-line-height: var(
     --line-height,
@@ -36,7 +19,6 @@
   );
   line-height: var(--bl-computed-line-height);
 
-  /* First-baseline position within the line box (cap-unit approximation). */
   --bl-baseline-position: calc((var(--bl-computed-line-height) + 1cap) / 2);
   --bl-start-nudge: calc(
     var(--baseline-height) -
@@ -44,70 +26,27 @@
   );
   --bl-end-nudge: calc(var(--baseline-height) - var(--bl-start-nudge));
 
-  /* Padding (not margin) so the border-box stays grid-correct in flex/grid. */
   padding-block-start: var(--bl-start-nudge);
   padding-block-end: var(--bl-end-nudge);
-
-  /* No margins of its own — inter-block spacing is the editorial/space-after
-     concern (DS.04), orthogonal to alignment. */
   margin-block: 0;
 }
 
 /* ── DS.02 — .spike-baseline-boxed: PROTOTYPE ONLY, NOT CORE API ─────────────
- *
- * ⚠ SPIKE / TESTBED ONLY. This class is a prototype for exploring density-sized
- * boxes. It is NOT part of the baseline core API, does NOT touch the shipped
- * engine, and must never be exported or referenced outside this testbed. The
- * `spike-` prefix marks it as throwaway.
- *
- * It is NOT a new alignment model — it is `.baseline` with a density-chosen
- * LINE-HEIGHT: the density modifier picks the line-height, the SAME cap-unit
- * --start-nudge / --end-nudge then snap the box onto the grid, top-referenced,
- * exactly as they do for h1..h6/p. No new method (no text-box-trim, no descender
- * guess, no bottom-reference).
- *
- * Note (decided): the box is TOP-REFERENCED. The first baseline is seated from
- * the top and the remainder fills to a grid line — so a fixed "N px above the
- * bottom" is NOT what this produces (below-baseline space varies with the font;
- * box height = line-height + nudges, a grid multiple). That is the existing
- * calculation's behaviour, kept strictly as-is.
- *
- * Density (DS.03) supplies --density-line-height, fed into the existing maths.
- *
- * FIXED single-line control height, two tiers:
- *
- * 1. FALLBACK (all browsers) — pin block-size to the density value directly. That
- *    value (--density-line-height) is ALREADY a whole grid multiple (24/32px), so
- *    no snapping is needed for a fixed single-line control; with border-box the
- *    1px border is absorbed INTO that height (never adding past it). This is what
- *    runs where calc-size is unsupported (e.g. older Chromium) and is exact on its
- *    own — the box is 24/32px, border and all.
- *
- * 2. MODERN (@supports calc-size) — instead of the fixed value, snap the box's
- *    own INTRINSIC height up to the grid, so the box fits arbitrary content and
- *    still lands on-grid (not just the known fixed value):
- *      block-size: calc-size(min-content, round(up, size, --baseline-height));
- *    `calc-size(min-content, …)` binds the intrinsic height to `size` so round()
- *    can snap it (`round(min-content, …)` alone is illegal). Chrome 130+ only.
- */
+ * `.baseline` with a density-chosen line-height; the box height is snapped to the
+ * grid (intrinsic snap via calc-size where supported, fixed grid-multiple
+ * fallback). Testbed only; never export. */
 .spike-baseline-boxed {
   --line-height: var(--density-line-height, calc(var(--baseline-height) * 6));
-  box-sizing: border-box; /* border absorbed inside the box in both tiers */
-  /* Fallback: fixed grid-multiple height (border-box absorbs the border). */
+  box-sizing: border-box;
   block-size: var(--density-line-height, calc(var(--baseline-height) * 6));
 }
-
-/* Modern enhancement: intrinsic height snapped to the grid (fits any content). */
 @supports (block-size: calc-size(min-content, size)) {
   .spike-baseline-boxed {
     block-size: calc-size(min-content, round(up, size, var(--baseline-height)));
   }
 }
 
-/* ── Testbed proof surface for DS.01 ────────────────────────────────────────
- * A row of DELIBERATELY off-scale sizes, each only a `.baseline` element with an
- * inline --font-size. If every one seats on the grid, the class is genuinely
- * size-agnostic (not circularly tied to sizes it also sets). */
+/* ── Proof surface for .baseline (DS.01) — off-scale sizes on one line ─────── */
 .baseline-proof {
   display: flex;
   align-items: flex-start;
@@ -116,14 +55,10 @@
   white-space: nowrap;
 }
 .baseline-proof > .baseline {
-  /* each item carries its own --font-size inline in the story */
   font-family: inherit;
 }
 
-/* ── Testbed proof surface for DS.02 (prototype) ────────────────────────────
- * Mixed sizes at two density line-heights. Each box snaps to the grid via the
- * existing start/end nudge (box = line-height + nudges). Top-referenced, so the
- * boxes share the TOP rhythm, not a bottom baseline. */
+/* ── Proof surface for .spike-baseline-boxed (DS.02) — mixed sizes, 2 densities ── */
 .boxed-proof {
   display: flex;
   align-items: flex-start;
@@ -133,195 +68,14 @@
   margin-block: calc(var(--baseline-height) * 2);
 }
 .boxed-proof > .spike-baseline-boxed {
-  /* Real BORDER, absorbed by the calc-size border-box height — no outline hack,
-     no calc-minus. The border is inside the grid-snapped box, so it doesn't push
-     content off-grid. */
   border: 1px solid var(--color-border, #b3b3b3);
   border-radius: var(--dimension-radius-100, 0.25rem);
   padding-inline: calc(var(--baseline-height) * 2);
-  /* Transparent, NOT a solid fill — a solid box would hide the grid overlay
-     behind it, making it impossible to see whether the content sits on the grid. */
-  background: transparent;
+  background: transparent; /* let the grid overlay show through */
 }
-/* Provisional density targets on the row (superseded by the .dense /
-   .comfortable classes below; kept so the DS.02 boxed-proof story still forces
-   both densities without the toolbar). */
 .boxed-proof.is-dense {
   --density-line-height: calc(var(--baseline-height) * 6); /* 24px */
 }
 .boxed-proof.is-comfortable {
   --density-line-height: calc(var(--baseline-height) * 8); /* 32px */
-}
-
-/* ───────────────────────────────────────────────────────────────────────────
- * DS.03 — two composed modifier families: CONTEXT × DENSITY
- *
- * Both are addon toolbar switches on #storybook-root (or `parameters`).
- *   CONTEXT (.app / .site / .docs) — the surface. Sets the comfortable/dense
- *     line-height PAIR for that surface. Default context = apps.
- *   DENSITY (.comfortable / .dense) — picks WITHIN the context's pair. Default
- *     density = comfortable.
- *
- * The control line-height is a 2D lookup, context × density:
- *              comfortable   dense
- *     apps        32px        24px
- *     sites       40px        28px
- *     docs        40px        28px   (docs = sites)
- *
- * Structure (explicit 2D pairs, no arithmetic): each context sets --lh-comfy /
- * --lh-dense; each density class reads the matching one into
- * --density-line-height. A missing context defaults to apps; missing density
- * defaults to comfortable. */
-
-/* Context family — each surface only sets the comfortable/dense BOX HEIGHT.
-   The target baseline is a FORMULA (below), not a per-cell value.
-                  comfy   dense
-     apps          32px    24px
-     sites/docs    36px    28px
-   Only the context classes set the pairs, so a context class on an ancestor is
-   never clobbered by the inner .density-testbed. */
-.app {
-  --lh-comfy: calc(var(--baseline-height) * 8); /* 32px */
-  --lh-dense: calc(var(--baseline-height) * 6); /* 24px */
-}
-.site,
-.docs {
-  --lh-comfy: calc(var(--baseline-height) * 9); /* 36px */
-  --lh-dense: calc(var(--baseline-height) * 7); /* 28px */
-}
-
-/* Density family — pick the box height. Fallbacks default to apps + comfortable. */
-.comfortable {
-  --density-line-height: var(--lh-comfy, calc(var(--baseline-height) * 8));
-}
-.dense {
-  --density-line-height: var(--lh-dense, calc(var(--baseline-height) * 6));
-}
-
-/* ── Target baseline = round(UP, box × 2/3) ──────────────────────────────────
- * The text baseline sits about TWO-THIRDS down the box, snapped UP to a grid line:
- *   target = round(up, --density-line-height × 2/3, --baseline-height)
- * One formula for every context×density (verified against the authoritative
- * targets: apps 32→6th, 24→4th; sites 36→6th, 28→5th). round(UP), not nearest —
- * that's what makes apps-comfy 5.33→6 while apps-dense 4.0 and sites-comfy 6.0
- * (exact multiples) stay put. Set wherever --density-line-height is defined. */
-:where(.comfortable, .dense, .app, .site, .docs) {
-  --density-target-baseline-px: round(
-    up,
-    calc(var(--density-line-height) * 2 / 3),
-    var(--baseline-height)
-  );
-}
-
-/* ── Components consume the density box ──────────────────────────────────────
- * A density control is a FIXED height — exactly --density-line-height, a whole
- * grid multiple — with border-box so the border is absorbed INTO that height (not
- * added past it). This makes the real Button (Re/Se), the inputs, and the spike
- * stand-ins all the SAME density height regardless of their own border (fixing Se
- * being 2px taller than Re), dense 24 / comfortable 32. Scoped to the testbed.
- *
- * NOTE: this uses a fixed block-size, NOT calc-size(min-content, …). calc-size
- * snaps a control UP to its intrinsic content (so a 28px-content button stays 28,
- * never shrinking to a 24px dense box) — right for the arbitrary-content spike
- * boxes, wrong for a fixed-density CONTROL, which must be exactly the density
- * height. So the control rule is the plain fixed height and needs no @supports.
- *
- * TEXT ALIGNMENT: top-align the text and apply the baseline nudge MINUS the
- * top border, so the 1px border (present on Se, absent on Re) does not push the
- * baseline off the grid. The nudge seats the baseline relative to the CONTENT
- * box top; the border sits above that, so we subtract --box-border-top from the
- * nudge. This makes Re (no border) and Se (1px border) seat their text on the
- * same grid line. */
-:where(.comfortable, .dense, .app, .site, .docs)
-  :where(.ds.button, .ds.input, .spike-box) {
-  box-sizing: border-box;
-  /* --density-line-height is set by the density class; when only a context class
-     is present (no density), default to the comfy value of that context. */
-  --density-box-height: var(
-    --density-line-height,
-    var(--lh-comfy, calc(var(--baseline-height) * 8))
-  );
-  block-size: var(--density-box-height);
-  min-block-size: var(--density-box-height);
-  /* Top-reference the content so the nudge governs its position, not flex
-     stretch/centre. */
-  align-items: flex-start;
-}
-
-/* ── UNIFIED space-before — one model for every text element ─────────────────
- *
- * The whack-a-mole (Sa 1px, input 1px, label 1px) came from each element type
- * carrying different UA padding / borders. This block handles them ALL uniformly:
- *
- * 1. NORMALISE every density box + text element: reset UA padding-block to 0 and
- *    top-reference the content (align-items/justify-content: flex-start), so
- *    nothing but our space-before positions the text. This alone removes the
- *    per-type 1px UA-padding differences (e.g. the <button>'s default padding).
- * 2. ONE space-before formula on every text carrier: line-height:1, then push the
- *    baseline to the shared target. The target is measured from the BORDER-BOX
- *    top; a box's own border sits above the content, so subtract it once via
- *    --border-top-width (0 by default; 1px where the box has a border).
- *
- * --natural-baseline = (1em + 1cap)/2 — purely font-relative so it scales across
- * sizes (no fixed-baseline fudge). Cap approximation → ±cap tolerance (DS.06). */
-
-/* (1) Normalise the box containers. */
-:is(.comfortable, .dense, .app, .site, .docs)
-  :is(.ds.button, .spike-box, .ds.input) {
-  align-items: flex-start;
-  justify-content: flex-start;
-  padding-block: 0; /* kill UA padding-block (the <button>'s 1px) */
-}
-
-/* The <input> is content-box with its own intrinsic height, so it does NOT
-   behave like the border-box boxes. Normalise it (border-box, no intrinsic
-   min-height, top-aligned) so space-before positions it like every control.
-   REMAINING QUIRK: with identical CSS an <input> renders its text a couple of px
-   lower than a <span> (browser-intrinsic form-control text positioning — the same
-   class of quirk as the <button>'s UA padding). Corrected via a NAMED knob, not a
-   magic number: `--input-text-offset` (default −2px), the input analogue of how
-   the button reads --button-border-width. A theme/consumer can override it, and
-   it is the single place to promote to a token later. */
-:is(.comfortable, .dense, .app, .site, .docs) .ds.input > input {
-  box-sizing: border-box;
-  min-block-size: 0;
-  block-size: auto;
-  margin-block-start: var(--input-text-offset, -2px);
-  margin-block-end: 0;
-}
-
-/* (2) One space-before on every text carrier: control seats, the button label
- * (button has .p itself), paragraphs, headings, and the input element. */
-.boxed-nudge,
-:is(.comfortable, .dense, .app, .site, .docs) .ds.button.p,
-:is(.comfortable, .dense, .app, .site, .docs) .spike-box > .seat.p,
-:is(.comfortable, .dense, .app, .site, .docs) .ds.input > input,
-:is(.comfortable, .dense, .app, .site, .docs)
-  :is(p, .p, h1, h2, h3, h4, h5, h6) {
-  line-height: 1;
-  --natural-baseline: calc((1em + 1cap) / 2);
-  /* The box's top border, if any, sits above the content box and counts toward
-     the target. Boxes with a border set --border-top-width: 1px on their text
-     carrier (below); everything else defaults to 0. */
-  --space-before: max(
-    0px,
-    calc(
-      var(--density-target-baseline-px, 0px) -
-      var(--natural-baseline) -
-      var(--border-top-width, 0px)
-    )
-  );
-  padding-block-start: var(--space-before);
-  padding-block-end: 0;
-}
-
-/* Bordered boxes: tell their text carrier the 1px border to compensate. The
- * primary Button is borderless (--button-border-width 0); secondary/outlined and
- * the spike-boxes and the input wrapper are 1px. */
-:is(.comfortable, .dense, .app, .site, .docs) .ds.button.p {
-  --border-top-width: var(--button-border-width, 0px);
-}
-:is(.comfortable, .dense, .app, .site, .docs) .spike-box > .seat.p,
-:is(.comfortable, .dense, .app, .site, .docs) .ds.input > input {
-  --border-top-width: 1px;
 }

@@ -8,6 +8,7 @@ import {
   CONTEXT_CLASSES,
   type ContextMode,
   DEFAULT_CONTEXT,
+  DEFAULT_DENSITY,
   DENSITY_CLASSES,
   type DensityMode,
   GRID_CLASSES,
@@ -79,7 +80,7 @@ export const withUtilStyles = (
   const density: DensityMode =
     rawDensity !== undefined
       ? rawDensity
-      : ((context.parameters?.density as DensityMode) ?? "none");
+      : ((context.parameters?.density as DensityMode) ?? DEFAULT_DENSITY);
 
   const rawContext = globals[KEY_CONTEXT] as ContextMode | undefined;
   const surface: ContextMode =

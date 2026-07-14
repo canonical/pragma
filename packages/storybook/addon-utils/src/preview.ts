@@ -7,6 +7,7 @@ import "./forceLightDocs.js";
 
 import {
   DEFAULT_CONTEXT,
+  DEFAULT_DENSITY,
   KEY_BASELINE,
   KEY_CONTEXT,
   KEY_DENSITY,
@@ -25,7 +26,7 @@ const preview: ProjectAnnotations<Renderer> = {
     [KEY_SCHEME]: undefined,
     [KEY_BASELINE]: undefined,
     [KEY_OUTLINES]: undefined,
-    [KEY_DENSITY]: undefined,
+    [KEY_DENSITY]: DEFAULT_DENSITY,
     // Context defaults to "apps" (the base surface), not undefined.
     [KEY_CONTEXT]: DEFAULT_CONTEXT,
   },

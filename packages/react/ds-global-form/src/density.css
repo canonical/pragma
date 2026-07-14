@@ -1,0 +1,117 @@
+/* @canonical/react-ds-global-form — density & baseline alignment
+ *
+ * Two composed modifier families that size controls and seat their text on the
+ * 4px baseline grid. Applied as classes on an ancestor (e.g. the app root, or the
+ * Storybook root via the DS-utils toolbar):
+ *
+ *   CONTEXT  .app / .site / .docs  — the surface. Sets the comfortable/dense
+ *            control height PAIR. Default (no class) = apps.
+ *   DENSITY  .comfortable / .dense — picks within the context pair. Default
+ *            (no class) = comfortable.
+ *
+ * Control height (a whole 4px multiple), context × density:
+ *                comfortable   dense
+ *     apps          32px        24px
+ *     sites/docs    36px        28px
+ *
+ * The text baseline sits round(up, height × 2/3) baselines down the box, so every
+ * control — button, input, and inline text — shares one baseline. Zero-JS
+ * (cap-unit approximation); alignment holds to the cap tolerance (~±1px).
+ */
+
+/* ── Context family: the comfortable/dense height pair per surface ──────────── */
+.app {
+  --lh-comfy: calc(var(--baseline-height) * 8); /* 32px */
+  --lh-dense: calc(var(--baseline-height) * 6); /* 24px */
+}
+.site,
+.docs {
+  --lh-comfy: calc(var(--baseline-height) * 9); /* 36px */
+  --lh-dense: calc(var(--baseline-height) * 7); /* 28px */
+}
+
+/* ── Density family: pick within the pair (fallbacks → apps / comfortable) ──── */
+.comfortable {
+  --density-line-height: var(--lh-comfy, calc(var(--baseline-height) * 8));
+}
+.dense {
+  --density-line-height: var(--lh-dense, calc(var(--baseline-height) * 6));
+}
+
+/* ── Target baseline = round(up, height × 2/3) ──────────────────────────────
+ * Snapped UP so fractional cases lift (apps-comfy 5.33→6) while exact multiples
+ * stay (apps-dense 4.0, sites-comfy 6.0). Matches: apps 32→6th/24→4th,
+ * sites 36→6th/28→5th. */
+:where(.comfortable, .dense, .app, .site, .docs) {
+  --density-target-baseline-px: round(
+    up,
+    calc(var(--density-line-height) * 2 / 3),
+    var(--baseline-height)
+  );
+}
+
+/* ── Controls consume the density box ───────────────────────────────────────
+ * A control is a FIXED grid-multiple height with border-box so its border is
+ * absorbed into that height (not added past it) — so a bordered and a borderless
+ * control of the same density are the same height. Top-referenced so the
+ * space-before below (not flex centre/stretch) governs the text. */
+:where(.comfortable, .dense, .app, .site, .docs) :where(.ds.button, .ds.input) {
+  box-sizing: border-box;
+  --density-box-height: var(
+    --density-line-height,
+    var(--lh-comfy, calc(var(--baseline-height) * 8))
+  );
+  block-size: var(--density-box-height);
+  min-block-size: var(--density-box-height);
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding-block: 0; /* drop UA padding-block (e.g. the <button>'s default) */
+}
+
+/* The <input> is content-box with an intrinsic height; normalise it so only the
+ * space-before positions its text, like every other control. */
+:where(.comfortable, .dense, .app, .site, .docs) .ds.input > input {
+  box-sizing: border-box;
+  min-block-size: 0;
+  block-size: auto;
+  margin-block: 0;
+}
+
+/* ── Baseline placement: one space-before for every text carrier ────────────
+ * The text sits on the shared target line. `line-height: 1` collapses the line
+ * box; the baseline within it is ≈ (1em + 1cap)/2 (font-relative, so it scales);
+ * space-before pushes it down to the target, less the box's own top border.
+ *
+ * Applies to the button label, the input, and inline text (p / h1–h6). Inputs and
+ * the button do NOT need a `.p` class — the density system positions them
+ * directly. */
+/* `:is()` (not `:where()`) on the density scope AND the element so this rule
+ * out-specifies the base `.p` engine rule (`h1..h6, p, .p` = 0,1,0) and wins;
+ * `:where` would be 0,0,0 and lose, leaving `.p`'s own nudge in place. */
+:is(.comfortable, .dense, .app, .site, .docs) .ds.button,
+:is(.comfortable, .dense, .app, .site, .docs) .ds.input > input,
+:is(.comfortable, .dense, .app, .site, .docs)
+  :is(p, .p, h1, h2, h3, h4, h5, h6) {
+  line-height: 1;
+  --natural-baseline: calc((1em + 1cap) / 2);
+  --space-before: max(
+    0px,
+    calc(
+      var(--density-target-baseline-px, 0px) -
+      var(--natural-baseline) -
+      var(--border-top-width, 0px)
+    )
+  );
+  padding-block-start: var(--space-before);
+  padding-block-end: 0;
+}
+
+/* The box's top border sits above the content and counts toward the target, so
+ * subtract it once. Primary button is borderless (--button-border-width 0);
+ * bordered controls (secondary button, input) are 1px. */
+:where(.comfortable, .dense, .app, .site, .docs) .ds.button {
+  --border-top-width: var(--button-border-width, 0px);
+}
+:where(.comfortable, .dense, .app, .site, .docs) .ds.input > input {
+  --border-top-width: 1px;
+}

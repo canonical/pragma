@@ -15,9 +15,11 @@ export const GRID_MODES: GridMode[] = ["none", "intrinsic", "responsive"];
 export type SchemeMode = "none" | "light" | "dark";
 export const SCHEME_MODES: SchemeMode[] = ["none", "light", "dark"];
 
-// Density modifier. "none" = Default (no density class → the base rhythm).
-export type DensityMode = "none" | "comfortable" | "dense";
-export const DENSITY_MODES: DensityMode[] = ["none", "comfortable", "dense"];
+// Density modifier. Defaults to "comfortable" — a control always has a density;
+// there is no "none".
+export type DensityMode = "comfortable" | "dense";
+export const DENSITY_MODES: DensityMode[] = ["comfortable", "dense"];
+export const DEFAULT_DENSITY: DensityMode = "comfortable";
 
 // Context (surface) modifier. Defaults to "app" (the base surface); there is no
 // "none" — a surface is always one of app/site/docs.
@@ -39,7 +41,6 @@ export const SCHEME_CLASSES: Record<SchemeMode, string | null> = {
 };
 
 export const DENSITY_CLASSES: Record<DensityMode, string | null> = {
-  none: null,
   comfortable: "comfortable",
   dense: "dense",
 };

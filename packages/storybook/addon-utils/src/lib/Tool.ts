@@ -14,6 +14,7 @@ import {
   CONTEXT_MODES,
   type ContextMode,
   DEFAULT_CONTEXT,
+  DEFAULT_DENSITY,
   DENSITY_MODES,
   type DensityMode,
   GRID_MODES,
@@ -70,7 +71,7 @@ export const Tool: FC<{ api: API }> = memo(function UtilsToolbar({ api }) {
   const scheme: SchemeMode =
     rawScheme !== undefined ? rawScheme : (paramScheme ?? "none");
   const density: DensityMode =
-    rawDensity !== undefined ? rawDensity : (paramDensity ?? "none");
+    rawDensity !== undefined ? rawDensity : (paramDensity ?? DEFAULT_DENSITY);
   const surface: ContextMode =
     rawContext !== undefined ? rawContext : (paramContext ?? DEFAULT_CONTEXT);
 
@@ -221,9 +222,7 @@ export const Tool: FC<{ api: API }> = memo(function UtilsToolbar({ api }) {
         options: densityOptions,
         onSelect: (value) => setDensity(value as DensityMode),
       },
-      density !== "none"
-        ? densityOptions.find((o) => o.value === density)?.title
-        : null,
+      densityOptions.find((o) => o.value === density)?.title,
     ),
 
     // Baseline toggle
