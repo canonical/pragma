@@ -1,0 +1,92 @@
+import { Meta, Canvas } from "@storybook/addon-docs/blocks";
+import * as Stories from "./Surfaces.stories";
+
+<Meta title="Documentation/Surfaces" />
+
+# Surfaces
+
+Form controls are **surface-aware**. Rather than painting one fixed colour on
+every background, the checkbox, radio and switch read their colours from the
+design system's `--surface-color-foreground-*` channels, so a control recolours
+to suit the surface it sits on.
+
+Surfaces step by **nesting**, not by a prop: a `.surface` element is level 1, a
+`.surface` inside another `.surface` is level 2, and a third level of nesting is
+level 3. Each level resolves the surface channels to its own tone, and any
+control inside inherits it automatically.
+
+<table>
+  <thead>
+    <tr>
+      <th>Level</th>
+      <th>Selector</th>
+      <th>Tone</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>1</td>
+      <td><code>.surface</code></td>
+      <td>base foreground</td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td><code>.surface .surface</code></td>
+      <td>stepped</td>
+    </tr>
+    <tr>
+      <td>3</td>
+      <td><code>.surface .surface .surface</code></td>
+      <td>stepped again</td>
+    </tr>
+  </tbody>
+</table>
+
+## Every control at each level
+
+Selected fills, radio dots and switch tracks step with the band; the switch knob
+and the masked checkmark read their own surface channels too, so they stay
+legible against the stepping fill.
+
+<Canvas of={Stories.Controls} />
+
+## Checkbox
+
+The box fill and the masked checkmark both resolve per surface, including the
+indeterminate state.
+
+<Canvas of={Stories.Checkbox} />
+
+## Switch
+
+The track (selected and unselected) steps with the surface, while the knob reads
+its own channel so it keeps contrast against the track at every level.
+
+<Canvas of={Stories.Switch} />
+
+## What the control CSS reads
+
+Each control names the surface channel with a flat fallback, so it works whether
+or not a surface context is present:
+
+```css
+.ds.form-checkbox:checked {
+  background: var(
+    --surface-color-foreground-checkbox-selected,
+    var(--color-foreground-checkbox-selected)
+  );
+}
+```
+
+Hover on a selected control shifts **only** the fill/track — via the
+`--hover--color-foreground-*-selected` channels — never the checkmark glyph or
+the switch knob. This replaced an earlier whole-element `filter: brightness()`
+that dimmed the glyph along with the fill.
+
+### Upstream note
+
+The design tokens currently provide surface channels for the controls' unselected
+and checkmark/knob colours. The `-selected` surface channels (and the switch's
+unselected track) are supplied by a temporary shim in `@canonical/styles`
+(`controls.hover.shim.css`) until they are generated upstream; the components
+already read them, so no component change is needed when they land.

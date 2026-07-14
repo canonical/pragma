@@ -100,6 +100,7 @@
   &:checked:hover:not(:disabled),
   &:indeterminate:hover:not(:disabled) {
     background-color: var(--hover--color-foreground-checkbox-selected);
+    border-color: var(--hover--color-foreground-checkbox-selected);
   }
 
   &:focus-visible {
