@@ -1,3 +1,4 @@
+import { createElement, useRef } from "react";
 import { useEffect, useGlobals } from "storybook/internal/preview-api";
 import type {
   Renderer,
@@ -88,24 +89,31 @@ export const withUtilStyles = (
       ? rawContext
       : ((context.parameters?.context as ContextMode) ?? DEFAULT_CONTEXT);
 
+  // Story-scoped modifiers are applied to a wrapper element this decorator owns,
+  // NOT `#storybook-root`. `#storybook-root` only exists on the single-story
+  // canvas — in the autodocs page each story renders in its own container — so
+  // targeting a wrapper makes the grid/density/context/overlays work in BOTH
+  // views, and avoids stacking with any real `.grid` a story brings itself.
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
-    const root = document.getElementById("storybook-root");
+    const root = wrapperRef.current;
     if (!root) return;
     root.classList.toggle("with-baseline-grid", baseline);
     root.classList.toggle("with-debug-outlines", outlines);
   }, [baseline, outlines]);
 
   useEffect(() => {
-    const root = document.getElementById("storybook-root");
+    const root = wrapperRef.current;
     if (!root) return;
     // The grid classes come from GRID_CLASSES; the "grid" marker + align-content
     // are grid-specific extras layered on top.
     applyModifierClass(root, GRID_CLASSES, gridMode);
     if (gridMode !== "none") {
       root.classList.add("grid");
-      // The story root fills the preview height, so a grid there would stretch
-      // its (single) row and the story looks vertically centred. Top-align so
-      // rows take their natural height instead.
+      // The wrapper fills the preview height, so a grid there would stretch its
+      // (single) row and the story looks vertically centred. Top-align so rows
+      // take their natural height instead.
       root.style.alignContent = "start";
     } else {
       root.classList.remove("grid");
@@ -113,23 +121,31 @@ export const withUtilStyles = (
     }
   }, [gridMode]);
 
+  // Scheme is a page-level concern (light/dark), kept on the document element.
   useEffect(() => {
     applyModifierClass(document.documentElement, SCHEME_CLASSES, scheme);
   }, [scheme]);
 
   useEffect(() => {
-    // Density on the story root (same node as the grid/baseline overlays).
-    const root = document.getElementById("storybook-root");
+    const root = wrapperRef.current;
     if (!root) return;
     applyModifierClass(root, DENSITY_CLASSES, density);
   }, [density]);
 
   useEffect(() => {
-    // Context (surface) on the story root, composes with density.
-    const root = document.getElementById("storybook-root");
+    const root = wrapperRef.current;
     if (!root) return;
     applyModifierClass(root, CONTEXT_CLASSES, surface);
   }, [surface]);
 
-  return StoryFn();
+  // `display: contents` so the wrapper carries the classes without introducing a
+  // box of its own — until a grid is active, when it must be a real grid element.
+  return createElement(
+    "div",
+    {
+      ref: wrapperRef,
+      style: gridMode === "none" ? { display: "contents" } : undefined,
+    },
+    StoryFn(),
+  );
 };

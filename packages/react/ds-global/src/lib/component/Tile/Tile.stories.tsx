@@ -49,7 +49,7 @@ export const ContentOnly: Story = {
  * from whatever it sits on, unlike the Card which blends in.
  */
 export const OnSurfaces: Story = {
-  parameters: { grid: true },
+  parameters: { grid: "responsive" },
   // `render` builds its own tiles; args are unused but the type requires them.
   args: { children: <Component.Content>—</Component.Content> },
   render: () =>

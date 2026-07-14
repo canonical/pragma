@@ -78,7 +78,7 @@ export const Heading: Story = {
  * component is nested inside successive `.surface` containers.
  */
 export const OnSurfaces: Story = {
-  parameters: { grid: true },
+  parameters: { grid: "responsive" },
   render: () =>
     // The accordion's header background uses the ghost surface channel, which
     // steps with each nested surface band. The bands are subgrids, so the

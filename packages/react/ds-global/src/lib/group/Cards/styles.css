@@ -1,0 +1,52 @@
+/**
+ * Cards — a group that lays out `Card`s on a shared grid so their sections line
+ * up ACROSS the row, not just within each card.
+ *
+ * ── How the alignment works ─────────────────────────────────────────────────
+ * A plain grid of cards only matches heights by luck — a two-line card and a
+ * one-line card end up different heights. `Cards` fixes that: it defines FOUR
+ * shared section row tracks (image / header / content / footer), and each `Card`
+ * is a ROW SUBGRID that spans those four tracks (its own grid logic — see the
+ * Card styles). So the tallest section in a track sizes it for every card on the
+ * band, and footers pin to a common bottom line. The four-track vocabulary is
+ * fixed because a Card only ever has those four section types; a card missing a
+ * section just leaves that track empty for itself.
+ *
+ * Cards are single grid items (each spans `--card-span` columns × 4 rows) and
+ * auto-place in DOM order, so they tile into columns and wrap to a fresh
+ * four-row band when the row is full — no overlap.
+ *
+ * ── Requires a top-level grid ───────────────────────────────────────────────
+ * `Cards` is a `.subgrid`: it inherits the column tracks of the nearest parent
+ * `.grid` (via the `grid` story param / addon). Outside a grid it degrades to a
+ * plain block.
+ *
+ * ── --card-span (columns per card) ──────────────────────────────────────────
+ * `--card-span` (the `cardSpan` prop) is the NUMBER OF PARENT COLUMNS each card
+ * spans — not a pixel width. `1` (default) packs the most cards per row; use 2
+ * or 4 for fewer, wider cards on the 4/8/12-column responsive grid.
+ */
+
+.ds.cards {
+  display: grid;
+  grid-template-columns: subgrid;
+  grid-column: var(--cards-span, 1 / -1);
+
+  /* The four shared section tracks (image / header / content / footer), repeated
+   * for every wrapped band via `grid-auto-rows`. `content` is `1fr` so it
+   * are ALL `auto`, so each track sizes to the tallest of that section across
+   * the row — every card takes its intrinsic height plus only the extra needed
+   * to align with the tallest card on the band (no `1fr`, which would stretch a
+   * card to fill surplus container height). Cards each `span 4` rows and
+   * auto-place across the columns (DOM order), wrapping to the next band. */
+  grid-auto-flow: row;
+  grid-auto-rows: auto;
+
+  /* Bands take their intrinsic height and pack to the top — never stretch to
+   * fill a taller container. */
+  align-self: start;
+  align-content: start;
+
+  gap: var(--grid-row-gap, var(--grid-gutter))
+    var(--grid-column-gap, var(--grid-gutter));
+}
