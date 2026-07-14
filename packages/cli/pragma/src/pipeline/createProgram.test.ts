@@ -36,9 +36,10 @@ describe("createProgram", () => {
       }
     )._events.beforeAllHelp({ command: program, write });
 
-    expect(write).toHaveBeenCalledWith(
-      expect.stringContaining("Usage: pragma"),
-    );
+    // Assert on single-chalk-span strings so the check is robust whether or
+    // not color is enabled (CI renders with color; ANSI resets would otherwise
+    // split a multi-word phrase like "Usage: pragma").
+    expect(write).toHaveBeenCalledWith(expect.stringContaining("For AI agents"));
     expect(write).toHaveBeenCalledWith(expect.stringContaining("Global flags"));
   });
 
