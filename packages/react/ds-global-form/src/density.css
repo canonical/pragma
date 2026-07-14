@@ -157,7 +157,12 @@
   --border-top-width: var(--button-border-width, 0px);
 }
 :where(.comfortable, .dense, .app, .site, .docs) .ds.input > input {
-  /* 1px wrapper border + ~1px the <input> renders its text below a <span>. Named
-     knob, overridable; the single place to tune the form-control text offset. */
+  /* 🔴 TODO(baseline-drift): --input-text-offset (2px) is a BAND-AID, not a fix.
+     The <input> — and likewise <button> label and <label> — renders its text a
+     couple of px lower than a <span> with IDENTICAL css. We do not yet know the
+     ROOT CAUSE of this per-element drift (form-control intrinsic metrics? line-box
+     rounding? the wrapper border? cap approximation?). This hardcoded lift makes
+     it LOOK right but will break at other sizes/fonts. FIND the source and remove
+     this offset. Tracked in pragma-adrs session S (S.03 DS.06). */
   --border-top-width: var(--input-text-offset, 2px);
 }
