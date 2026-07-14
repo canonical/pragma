@@ -1,0 +1,56 @@
+/* A temporary solution to avoid importing the entire @canonical/styles package
+ * see: packages/styles/main/src/index.css
+ * That one imports normalize.css and the typography baseline engine,
+ * which restyles every un-migrated component. Once the last component is migrated,
+ * delete this file and move the import to ds-app-launchpad/src/lib/index.css */
+
+@import "@canonical/design-tokens/dist/sets.primitive.css";
+@import "@canonical/design-tokens/dist/modifiers.theme.css";
+@import "@canonical/design-tokens/dist/modifiers.surfaces.css";
+@import "@canonical/design-tokens/dist/modifiers.typography.css";
+@import "@canonical/design-tokens/dist/modifiers.criticality.css";
+@import "@canonical/design-tokens/dist/modifiers.anticipation.css";
+@import "@canonical/design-tokens/dist/modifiers.emphasis.css";
+@import "@canonical/design-tokens/dist/modifiers.importance.css";
+@import "@canonical/design-tokens/dist/modifiers.lifecycle.css";
+@import "@canonical/design-tokens/dist/modifiers.release.css";
+@import "@canonical/design-tokens/dist/states.css";
+@import "@canonical/design-tokens/dist/sets.semantic.css";
+
+/* Verbatim :root shim from packages/styles/typography/src/mapper.css
+ * (@canonical/styles-typography) avoiding h1-h6/p element selectors
+ * 
+ * modifiers.typography.css references
+ * kebab-case names that sets.primitive.css only defines in camelCase, and
+ * the --number-line-height-* ratios are not emitted as CSS at all, so
+ * without this block the DS typography longhands do not resolve. Keep in
+ * sync with mapper.css until the naming is fixed upstream in design-tokens. */
+:root {
+  --typography-font-family-default: var(--typography-fontFamily-default);
+  --typography-font-family-code: var(--typography-fontFamily-code);
+  --typography-font-family-sans-serif: var(--typography-fontFamily-sansSerif);
+  --typography-font-family-monospace: var(--typography-fontFamily-monospace);
+
+  --typography-weight-semi-bold: var(--typography-weight-semiBold);
+  --typography-weight-extra-bold: var(--typography-weight-extraBold);
+  --typography-weight-extra-light: var(--typography-weight-extraLight);
+
+  --dimension-size-font-size-250: var(--dimension-size-fontSize-250);
+  --dimension-size-font-size-300: var(--dimension-size-fontSize-300);
+  --dimension-size-font-size-350: var(--dimension-size-fontSize-350);
+  --dimension-size-font-size-400: var(--dimension-size-fontSize-400);
+  --dimension-size-font-size-500: var(--dimension-size-fontSize-500);
+  --dimension-size-font-size-600: var(--dimension-size-fontSize-600);
+  --dimension-size-font-size-700: var(--dimension-size-fontSize-700);
+
+  --dimension-letter-spacing-default: var(--dimension-letterSpacing-default);
+  --dimension-letter-spacing-wide: var(--dimension-letterSpacing-wide);
+
+  --number-line-height-250: 1.3333;
+  --number-line-height-300: 1.4286;
+  --number-line-height-350: 1.5;
+  --number-line-height-400: 1.3333;
+  --number-line-height-500: 1.3333;
+  --number-line-height-600: 1.25;
+  --number-line-height-700: 1.1429;
+}
