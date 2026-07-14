@@ -95,6 +95,7 @@ export default function parseGlobalFlags(
     !explicitLlm && !formatRequested && !env.isTty && !env.noAutoLlm;
   return {
     llm: explicitLlm || autoLlm,
+    autoLlm,
     format,
     verbose: argv.includes("--verbose"),
   };

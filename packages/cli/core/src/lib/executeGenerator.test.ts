@@ -188,6 +188,37 @@ describe("executeGenerator — LLM mode", () => {
     }
   });
 
+  it("does NOT enter preview mode for auto-inferred llm (still generates)", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "pragma-exec-autollm-"));
+    try {
+      const gen = makeGen(simplePrompts);
+      const autoLlmCtx: CommandContext = {
+        cwd: dir,
+        globalFlags: {
+          llm: true,
+          autoLlm: true,
+          format: "text",
+          verbose: false,
+        },
+      };
+      const result = await executeGenerator(
+        gen,
+        { name: "Button" },
+        autoLlmCtx,
+      );
+      expect(result.tag).toBe("output");
+      if (result.tag === "output") {
+        expect(result.render.plain(result.value)).toContain(
+          "Generation complete.",
+        );
+      }
+      // Auto-LLM must not turn generation into a dry-run preview.
+      expect(existsSync(join(dir, "src", "Button.ts"))).toBe(true);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
   it("returns output result with markdown string via params.llm", async () => {
     const gen = makeGen(simplePrompts);
     const result = await executeGenerator(

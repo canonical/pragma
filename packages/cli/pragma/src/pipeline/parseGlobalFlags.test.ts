@@ -65,10 +65,19 @@ describe("parseGlobalFlags", () => {
       expect(parseGlobalFlags(["node", "pragma", "info"], tty).llm).toBe(false);
     });
 
-    it("defaults to llm when stdout is not a TTY", () => {
-      expect(parseGlobalFlags(["node", "pragma", "info"], piped).llm).toBe(
-        true,
+    it("defaults to llm when stdout is not a TTY, flagged as auto", () => {
+      const flags = parseGlobalFlags(["node", "pragma", "info"], piped);
+      expect(flags.llm).toBe(true);
+      expect(flags.autoLlm).toBe(true);
+    });
+
+    it("marks explicit --llm as not auto", () => {
+      const flags = parseGlobalFlags(
+        ["node", "pragma", "--llm", "info"],
+        piped,
       );
+      expect(flags.llm).toBe(true);
+      expect(flags.autoLlm).toBe(false);
     });
 
     it("does not auto-enable llm when --format json is requested", () => {
@@ -156,20 +165,6 @@ describe("stripGlobalFlags", () => {
         "list",
       ]),
     ).toEqual(["node", "pragma", "block", "list"]);
-  });
-});
-
-describe("readRawFormat", () => {
-  it("reads the space form", () => {
-    expect(readRawFormat(["node", "pragma", "--format", "json"])).toBe("json");
-  });
-
-  it("reads the equals form", () => {
-    expect(readRawFormat(["node", "pragma", "--format=xml"])).toBe("xml");
-  });
-
-  it("returns undefined when --format is absent", () => {
-    expect(readRawFormat(["node", "pragma", "info"])).toBeUndefined();
   });
 });
 

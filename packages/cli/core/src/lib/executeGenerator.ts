@@ -337,8 +337,11 @@ export default async function executeGenerator(
   params: Record<string, unknown>,
   ctx: CommandContext,
 ): Promise<CommandResult> {
-  // Expand --llm: set dryRun, showFiles, yes, no stamp
-  const isLlm = params.llm === true || ctx.globalFlags.llm;
+  // Expand --llm: set dryRun, showFiles, yes, no stamp. Auto-inferred LLM mode
+  // (non-interactive stdout, no explicit --llm) must NOT flip a generator into
+  // preview — a script running `create` off-TTY still expects files written.
+  const isLlm =
+    params.llm === true || (ctx.globalFlags.llm && !ctx.globalFlags.autoLlm);
   if (isLlm) {
     params.dryRun = true;
     params.showFiles = true;

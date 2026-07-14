@@ -65,6 +65,14 @@ export type PromptSessionFactory = () => PromptSession;
 export interface GlobalFlags {
   /** Condensed Markdown output for LLM consumption */
   readonly llm: boolean;
+  /**
+   * True when `llm` was inferred from a non-interactive stdout rather than
+   * requested explicitly (via `--llm`). Auto-inferred LLM mode should only
+   * shape output *formatting* — it must not switch generators into
+   * preview/dry-run mode, since a script running `create` off-TTY still
+   * expects files to be written.
+   */
+  readonly autoLlm?: boolean;
   /** JSON output format */
   readonly format: "text" | "json";
   /** Diagnostic output to stderr */
