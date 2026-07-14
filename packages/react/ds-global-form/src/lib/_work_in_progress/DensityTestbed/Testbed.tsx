@@ -148,10 +148,10 @@ export const BaselineProofLine = () => (
 const BOXED_SIZES = [12, 14, 16, 20];
 
 /**
- * DS.02 proof — `.baseline-boxed` bottom-referenced fixed box. Two rows: dense
- * (24px boxes, baseline 8px from bottom) and comfortable (32px, 12px). Within a
- * row every box is the same height and every text baseline sits the same
- * distance up from the bottom, so mixed sizes share a baseline.
+ * DS.02 proof — `.spike-baseline-boxed` (PROTOTYPE, not core API). Two density
+ * line-heights: dense (24px) and comfortable (32px). Each box snaps to the grid
+ * via the existing start/end nudge; top-referenced, so the boxes share the top
+ * rhythm (a fixed baseline-from-bottom is NOT what the existing calc produces).
  */
 export const BoxedProofLine = () => (
   <div className="density-testbed">
@@ -160,7 +160,7 @@ export const BoxedProofLine = () => (
         {BOXED_SIZES.map((px) => (
           <span
             key={px}
-            className="baseline-boxed"
+            className="baseline spike-baseline-boxed"
             style={{ fontSize: `${px}px` }}
           >
             {px}

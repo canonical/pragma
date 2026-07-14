@@ -53,45 +53,29 @@
   margin-block: 0;
 }
 
-/* ── DS.02 — .baseline-boxed: bottom-referenced fixed box ────────────────────
+/* ── DS.02 — .spike-baseline-boxed: PROTOTYPE ONLY, NOT CORE API ─────────────
  *
- * Instead of seating the FIRST baseline on the grid and letting the box grow
- * (the .baseline / engine model), fix the box HEIGHT and place the text baseline
- * a fixed number of grid units up from the BOX BOTTOM. This is what a control
- * row wants: every control is the same height, and mixed sizes share a bottom
- * baseline.
+ * ⚠ SPIKE / TESTBED ONLY. This class is a prototype for exploring density-sized
+ * boxes. It is NOT part of the baseline core API, does NOT touch the shipped
+ * engine, and must never be exported or referenced outside this testbed. The
+ * `spike-` prefix marks it as throwaway.
  *
- * Targets come from the density modifier (DS.03):
- *   --density-box              box height (a whole grid multiple, e.g. 24/32px)
- *   --density-baseline-offset  baseline distance up from the bottom (2/3 bU)
+ * It is NOT a new alignment model — it is `.baseline` with a density-chosen
+ * LINE-HEIGHT: the density modifier picks the line-height, the SAME cap-unit
+ * --start-nudge / --end-nudge then snap the box onto the grid, top-referenced,
+ * exactly as they do for h1..h6/p. No new method (no text-box-trim, no descender
+ * guess, no bottom-reference).
  *
- * Exact baseline via text-box-trim: `text-box: trim-both cap alphabetic` trims
- * the line box to the cap-top and the ALPHABETIC BASELINE, so the element's
- * content-box bottom edge IS the baseline. Then padding-block-end places that
- * baseline exactly --density-baseline-offset up from the box bottom — for EVERY
- * font size, no descender guessing. (This is why the offset holds constant where
- * the cap-only approximation drifts.) Support: Chrome 133+, Safari 18.2+; where
- * absent, the box height still holds and the baseline is approximate.
+ * Note (decided): the box is TOP-REFERENCED. The first baseline is seated from
+ * the top and the remainder fills to a grid line — so a fixed "N px above the
+ * bottom" is NOT what this produces (below-baseline space varies with the font;
+ * box height = line-height + nudges, a grid multiple). That is the existing
+ * calculation's behaviour, kept strictly as-is.
+ *
+ * Density (DS.03) supplies --density-line-height, fed into the existing maths.
  */
-.baseline-boxed {
-  display: inline-flex;
-  align-items: flex-end; /* trimmed text sits at the bottom; padding lifts it */
-  justify-content: flex-start;
-  box-sizing: border-box;
-  block-size: var(
-    --density-box,
-    calc(var(--baseline-height) * 6)
-  ); /* 24px default */
-
-  line-height: 1;
-  /* Trim to cap-top / alphabetic-baseline: the box bottom becomes the baseline. */
-  text-box: trim-both cap alphabetic;
-
-  /* Baseline sits --density-baseline-offset up from the box bottom. */
-  padding-block-end: var(
-    --density-baseline-offset,
-    calc(var(--baseline-height) * 2)
-  );
+.spike-baseline-boxed {
+  --line-height: var(--density-line-height, calc(var(--baseline-height) * 6));
 }
 
 /* ── Testbed proof surface for DS.01 ────────────────────────────────────────
@@ -110,10 +94,10 @@
   font-family: inherit;
 }
 
-/* ── Testbed proof surface for DS.02 ────────────────────────────────────────
- * Mixed sizes in fixed boxes at two densities. Each box should be exactly its
- * --density-box tall, and every text baseline should land --density-baseline-
- * offset up from the box bottom — so all the boxes on a row share a baseline. */
+/* ── Testbed proof surface for DS.02 (prototype) ────────────────────────────
+ * Mixed sizes at two density line-heights. Each box snaps to the grid via the
+ * existing start/end nudge (box = line-height + nudges). Top-referenced, so the
+ * boxes share the TOP rhythm, not a bottom baseline. */
 .boxed-proof {
   display: flex;
   align-items: flex-start;
@@ -122,19 +106,18 @@
   white-space: nowrap;
   margin-block: calc(var(--baseline-height) * 2);
 }
-.boxed-proof > .baseline-boxed {
+.boxed-proof > .spike-baseline-boxed {
   border: 1px solid var(--color-border, #b3b3b3);
   border-radius: var(--dimension-radius-100, 0.25rem);
   padding-inline: calc(var(--baseline-height) * 2);
   background: var(--color-background, #fff);
 }
 /* Provisional density targets on the row (DS.03 formalises these as .dense /
-   .comfortable scale-map classes). */
+   .comfortable scale-map classes). Density chooses only the LINE-HEIGHT; the
+   existing baseline calculation snaps the box from there. */
 .boxed-proof.is-dense {
-  --density-box: calc(var(--baseline-height) * 6); /* 24px */
-  --density-baseline-offset: calc(var(--baseline-height) * 2); /* 8px = 2bU */
+  --density-line-height: calc(var(--baseline-height) * 6); /* 24px */
 }
 .boxed-proof.is-comfortable {
-  --density-box: calc(var(--baseline-height) * 8); /* 32px */
-  --density-baseline-offset: calc(var(--baseline-height) * 3); /* 12px = 3bU */
+  --density-line-height: calc(var(--baseline-height) * 8); /* 32px */
 }
