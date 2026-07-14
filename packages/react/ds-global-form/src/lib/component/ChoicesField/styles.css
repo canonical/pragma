@@ -162,6 +162,7 @@
       /* Hover shifts only the fill (channel shade), not the masked checkmark. */
       &:checked:hover:not(:disabled) {
         background-color: var(--hover--color-foreground-checkbox-selected);
+        border-color: var(--hover--color-foreground-checkbox-selected);
       }
 
       &:focus-visible {

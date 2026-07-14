@@ -31,28 +31,32 @@
  * base lightness by the per-family `--delta-hover-*` step. Because Part 1 defines
  * the surface tokens, these hovers are surface-correct too.
  *
- * Components read the CHANNELS, never re-derive the maths. Remove each block once
- * generated upstream. Imported into `ds.modifiers` after the generated tokens.
+ * Components read the CHANNELS, never re-derive the maths. Part 1 is zero-
+ * specificity (`:where()`) so it self-upgrades when upstream lands; Part 2 can be
+ * dropped once the `--hover--…-selected` tokens are generated. Imported into
+ * `ds.modifiers` after the generated tokens.
  */
 
 @layer ds.modifiers {
   /* Part 1 — surface-provided selected tokens, per surface level (mirrors
    * modifiers.surfaces.css). No -selected-layerN primitives exist yet, so each
-   * level aliases the flat base; swap in real per-layer tokens upstream.
+   * level aliases the flat base.
    *
-   * UPGRADE / REMOVAL (important): the component seam auto-upgrades for free —
-   * controls read `var(--surface-color-foreground-*-selected, <flat>)`, so
-   * whatever defines the surface token wins. But THIS block also defines those
-   * same tokens, in the same `ds.modifiers` layer, imported AFTER the generated
-   * modifiers.surfaces.css. So once upstream generates the real per-level
-   * `-selected` values, this Part 1 block will SHADOW them (later source order
-   * wins at equal specificity) and pin them flat. When upstream lands, DELETE
-   * this block — do not leave it, or surface stepping silently stays flat. */
-  .surface,
-  .surface .surface,
-  .surface .surface .surface,
-  .contrasted,
-  .modal {
+   * SELF-UPGRADING (no manual removal): the selectors are wrapped in `:where()`,
+   * so this block has ZERO specificity. The generated `modifiers.surfaces.css`
+   * rules use normal `.surface` selectors (specificity 0,1,0), so the moment
+   * upstream defines the real per-level `-selected` values they WIN over this
+   * fallback automatically — even though this shim is imported later in the same
+   * layer. The shim can stay indefinitely; it only ever supplies a value when
+   * upstream has none. (Removing it once upstream lands is still tidy, but no
+   * longer load-bearing.) */
+  :where(
+      .surface,
+      .surface .surface,
+      .surface .surface .surface,
+      .contrasted,
+      .modal
+    ) {
     --surface-color-foreground-checkbox-selected: var(
       --color-foreground-checkbox-selected
     );
