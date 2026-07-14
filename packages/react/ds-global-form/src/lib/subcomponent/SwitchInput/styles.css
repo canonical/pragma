@@ -26,7 +26,10 @@
   width: var(--switch-track-width);
   height: var(--switch-track-height);
   border-radius: var(--dimension-radius-full);
-  background: var(--color-foreground-switch-unselected);
+  background: var(
+    --surface-color-foreground-switch-unselected,
+    var(--color-foreground-switch-unselected)
+  );
   cursor: pointer;
   transition: background-color 150ms ease;
 
@@ -39,12 +42,20 @@
     width: var(--switch-knob-size);
     height: var(--switch-knob-size);
     border-radius: var(--dimension-radius-full);
-    background: var(--color-foreground-switch-knob);
+    /* Knob reads its surface-provided token (flat fallback) for OnSurface. */
+    background: var(
+      --surface-color-foreground-switch-knob,
+      var(--color-foreground-switch-knob)
+    );
     transition: translate 150ms ease;
   }
 
   &:checked {
-    background: var(--color-foreground-switch-selected);
+    /* Selected track reads the surface-provided token (flat fallback). */
+    background: var(
+      --surface-color-foreground-switch-selected,
+      var(--color-foreground-switch-selected)
+    );
 
     &::before {
       /* Slide to the far edge: the space left over after the knob and both
@@ -58,14 +69,17 @@
     }
   }
 
+  /* Hover shifts ONLY the track background, not the knob (per design review):
+   * the track swaps to the hovered shade while the `::before` knob keeps its
+   * colour. Shades come from the `--hover--…` channels (criticality-style OKLCH
+   * delta shim), replacing the old whole-element `filter: brightness()` that
+   * also dimmed the knob. */
   &:hover:not(:disabled):not(:checked) {
-    background: var(--color-foreground-switch-unselected);
-    filter: brightness(0.95);
+    background: var(--hover--color-foreground-switch-unselected);
   }
 
   &:checked:hover:not(:disabled) {
-    background: var(--color-foreground-switch-selected);
-    filter: brightness(0.9);
+    background: var(--hover--color-foreground-switch-selected);
   }
 
   &:focus-visible {

@@ -5,7 +5,9 @@
   margin: 0;
   display: flex;
   flex-wrap: wrap;
-  gap: 0 var(--container-gap-loose);
+  /* Row gap gives stacked/wrapped options vertical breathing room (was 0, so
+   * stacked items touched); column gap is the inline separation (per review). */
+  gap: var(--form-group-gap) var(--container-gap-loose);
 
   /* Stacked: one option per line */
   &.stacked {
@@ -43,17 +45,31 @@
       height: calc(var(--space-baseline) * 2); /* 16px — 2bU */
       border: var(--dimension-stroke-thickness-medium) solid var(--color-border);
       border-radius: 50%;
-      background-color: var(--color-foreground-radio-unselected);
+      background-color: var(
+        --surface-color-foreground-radio-unselected,
+        var(--color-foreground-radio-unselected)
+      );
       cursor: inherit;
       transition:
         background-color 150ms ease,
         border-color 150ms ease;
 
       &:checked {
-        border-color: var(--color-foreground-radio-selected);
+        border-color: var(
+          --surface-color-foreground-radio-selected,
+          var(--color-foreground-radio-selected)
+        );
         background: radial-gradient(
-          var(--color-foreground-radio-selected) 40%,
-          var(--color-foreground-radio-unselected) 41%
+          var(
+              --surface-color-foreground-radio-selected,
+              var(--color-foreground-radio-selected)
+            )
+            40%,
+          var(
+              --surface-color-foreground-radio-unselected,
+              var(--color-foreground-radio-unselected)
+            )
+            41%
         );
       }
 
@@ -61,8 +77,18 @@
         background-color: var(--color-foreground-radio-unselected-hover);
       }
 
+      /* Hover shifts only the dot's fill (channel shade), not a whole-element
+       * brightness filter that would also dim the ring. */
       &:checked:hover:not(:disabled) {
-        filter: brightness(0.9);
+        border-color: var(--hover--color-foreground-radio-selected);
+        background: radial-gradient(
+          var(--hover--color-foreground-radio-selected) 40%,
+          var(
+              --surface-color-foreground-radio-unselected,
+              var(--color-foreground-radio-unselected)
+            )
+            41%
+        );
       }
 
       &:focus-visible {
@@ -85,7 +111,10 @@
       height: calc(var(--space-baseline) * 2); /* 16px — 2bU */
       border: var(--dimension-stroke-thickness-medium) solid var(--color-border);
       border-radius: var(--dimension-radius-small);
-      background-color: var(--color-foreground-checkbox-unselected);
+      background-color: var(
+        --surface-color-foreground-checkbox-unselected,
+        var(--color-foreground-checkbox-unselected)
+      );
       cursor: inherit;
       transition:
         background-color 150ms ease,
@@ -107,11 +136,20 @@
       }
 
       &:checked {
-        background: var(--color-foreground-checkbox-selected);
-        border-color: var(--color-foreground-checkbox-selected);
+        background: var(
+          --surface-color-foreground-checkbox-selected,
+          var(--color-foreground-checkbox-selected)
+        );
+        border-color: var(
+          --surface-color-foreground-checkbox-selected,
+          var(--color-foreground-checkbox-selected)
+        );
 
         &::before {
-          background-color: var(--color-foreground-checkbox-checkmark);
+          background-color: var(
+            --surface-color-foreground-checkbox-checkmark,
+            var(--color-foreground-checkbox-checkmark)
+          );
           mask-image: url("/icons/checkmark.svg#checkmark");
           -webkit-mask-image: url("/icons/checkmark.svg#checkmark");
         }
@@ -121,8 +159,9 @@
         background-color: var(--color-foreground-checkbox-unselected-hover);
       }
 
+      /* Hover shifts only the fill (channel shade), not the masked checkmark. */
       &:checked:hover:not(:disabled) {
-        filter: brightness(0.9);
+        background-color: var(--hover--color-foreground-checkbox-selected);
       }
 
       &:focus-visible {

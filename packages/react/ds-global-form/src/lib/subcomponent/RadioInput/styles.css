@@ -10,17 +10,33 @@
   height: calc(var(--space-baseline) * 2); /* 16px — 2bU */
   border: var(--dimension-stroke-thickness-medium) solid var(--color-border);
   border-radius: 50%;
-  background-color: var(--color-foreground-radio-unselected);
+  background-color: var(
+    --surface-color-foreground-radio-unselected,
+    var(--color-foreground-radio-unselected)
+  );
   cursor: pointer;
   transition:
     background-color 150ms ease,
     border-color 150ms ease;
 
   &:checked {
-    border-color: var(--color-foreground-radio-selected);
+    /* Dot = selected token, ring fill = unselected token; both surface-provided
+     * (flat fallback) so the control adapts to OnSurface stepping. */
+    border-color: var(
+      --surface-color-foreground-radio-selected,
+      var(--color-foreground-radio-selected)
+    );
     background: radial-gradient(
-      var(--color-foreground-radio-selected) 40%,
-      var(--color-foreground-radio-unselected) 41%
+      var(
+          --surface-color-foreground-radio-selected,
+          var(--color-foreground-radio-selected)
+        )
+        40%,
+      var(
+          --surface-color-foreground-radio-unselected,
+          var(--color-foreground-radio-unselected)
+        )
+        41%
     );
   }
 
@@ -28,8 +44,19 @@
     background-color: var(--color-foreground-radio-unselected-hover);
   }
 
+  /* Hover on a selected radio shifts only the dot's fill, not via a whole-element
+   * brightness filter (which would also dim the ring). Re-paint the gradient with
+   * the hovered selected shade from the `--hover--…-selected` channel. */
   &:checked:hover:not(:disabled) {
-    filter: brightness(0.9);
+    border-color: var(--hover--color-foreground-radio-selected);
+    background: radial-gradient(
+      var(--hover--color-foreground-radio-selected) 40%,
+      var(
+          --surface-color-foreground-radio-unselected,
+          var(--color-foreground-radio-unselected)
+        )
+        41%
+    );
   }
 
   &:focus-visible {
