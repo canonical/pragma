@@ -6,8 +6,6 @@ import "@canonical/styles-debug";
 import "./forceLightDocs.js";
 
 import {
-  DEFAULT_CONTEXT,
-  DEFAULT_DENSITY,
   KEY_BASELINE,
   KEY_CONTEXT,
   KEY_DENSITY,
@@ -21,14 +19,17 @@ const preview: ProjectAnnotations<Renderer> = {
   decorators: [withUtilStyles],
   initialGlobals: {
     // All undefined so `withUtilStyles` falls back to each story's parameters
-    // (e.g. `parameters: { baseline: true }`) until the user picks in the toolbar.
+    // (e.g. `parameters: { baseline: true }`), then to the resolver's own default,
+    // until the user picks in the toolbar. Density/context are undefined here too
+    // (like grid/scheme): a control ALWAYS has a density, but that default lives in
+    // withUtilStyles (fallback to DEFAULT_DENSITY / DEFAULT_CONTEXT), so a story can
+    // still set `parameters: { density, context }` and have it take effect.
     [KEY_GRID]: undefined,
     [KEY_SCHEME]: undefined,
     [KEY_BASELINE]: undefined,
     [KEY_OUTLINES]: undefined,
-    [KEY_DENSITY]: DEFAULT_DENSITY,
-    // Context defaults to "apps" (the base surface), not undefined.
-    [KEY_CONTEXT]: DEFAULT_CONTEXT,
+    [KEY_DENSITY]: undefined,
+    [KEY_CONTEXT]: undefined,
   },
 };
 

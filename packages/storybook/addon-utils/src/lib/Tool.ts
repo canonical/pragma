@@ -43,7 +43,7 @@ const schemeOptions = SCHEME_MODES.map((mode) => ({
 
 const densityOptions = DENSITY_MODES.map((mode) => ({
   value: mode,
-  title: { none: "Default", comfortable: "Comfortable", dense: "Dense" }[mode],
+  title: { comfortable: "Comfortable", dense: "Dense" }[mode],
 }));
 
 const contextOptions = CONTEXT_MODES.map((mode) => ({
@@ -59,6 +59,8 @@ export const Tool: FC<{ api: API }> = memo(function UtilsToolbar({ api }) {
   const paramScheme = useParameter<SchemeMode>(KEY_SCHEME);
   const paramDensity = useParameter<DensityMode>(KEY_DENSITY);
   const paramContext = useParameter<ContextMode>(KEY_CONTEXT);
+  const paramBaseline = useParameter<boolean>(KEY_BASELINE);
+  const paramOutlines = useParameter<boolean>(KEY_OUTLINES);
 
   // undefined = user hasn't touched → fall back to story parameter
   // any string (including "none") = user explicitly chose
@@ -75,8 +77,16 @@ export const Tool: FC<{ api: API }> = memo(function UtilsToolbar({ api }) {
   const surface: ContextMode =
     rawContext !== undefined ? rawContext : (paramContext ?? DEFAULT_CONTEXT);
 
-  const baseline: boolean = globals[KEY_BASELINE] ?? false;
-  const outlines: boolean = globals[KEY_OUTLINES] ?? false;
+  // Resolve like grid/scheme: an explicit global wins; otherwise fall back to the
+  // story parameter (so `parameters: { baseline: true }` keeps the toggle in sync),
+  // then to off. Reading globals alone left the UI out of step with a
+  // parameter-enabled overlay and needed two clicks to turn off.
+  const rawBaseline = globals[KEY_BASELINE] as boolean | undefined;
+  const rawOutlines = globals[KEY_OUTLINES] as boolean | undefined;
+  const baseline: boolean =
+    rawBaseline !== undefined ? rawBaseline : (paramBaseline ?? false);
+  const outlines: boolean =
+    rawOutlines !== undefined ? rawOutlines : (paramOutlines ?? false);
 
   const setGrid = useCallback(
     (mode: GridMode) => updateGlobals({ [KEY_GRID]: mode }),
@@ -197,7 +207,8 @@ export const Tool: FC<{ api: API }> = memo(function UtilsToolbar({ api }) {
         : null,
     ),
 
-    // Context (surface) select — sets the density pair; composes with Density.
+    // Context (surface) select — picks the surface (apps / sites / docs);
+    // composes with Density, which picks the tightness within that surface.
     createElement(
       Select,
       {
