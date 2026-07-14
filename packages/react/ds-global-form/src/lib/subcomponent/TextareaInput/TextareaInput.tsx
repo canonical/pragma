@@ -24,9 +24,7 @@ export const TextareaInput = forwardRef<
     <textarea
       id={id}
       style={style}
-      className={[componentCssClassName, "p", className]
-        .filter(Boolean)
-        .join(" ")}
+      className={[componentCssClassName, className].filter(Boolean).join(" ")}
       ref={ref}
       {...nativeProps}
     />

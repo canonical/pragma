@@ -3,15 +3,10 @@
    * (`.ds.input.chrome` provides only the block padding). */
   padding-inline: var(--form-input-padding-inline);
 
-  /* Combine chrome padding with baseline engine nudges */
-  padding-block-start: calc(
-    var(--form-input-padding-block) +
-    var(--start-nudge, 0px)
-  );
-  padding-block-end: calc(
-    var(--form-input-padding-block) +
-    var(--end-nudge, 0px)
-  );
+  /* Block placement is supplied by density.css (baseline-grid seating of the
+     first line + grid-multiple line-height). The chrome contributes only its
+     block padding as the box's own inset; the baseline nudge lives in density. */
+  padding-block: var(--form-input-padding-block);
   min-height: calc(5lh + var(--form-input-padding-block) * 2);
   resize: vertical;
 }

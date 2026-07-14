@@ -1,0 +1,153 @@
+/**
+ * Baseline-alignment spike — testbed stylesheet (WORK IN PROGRESS)
+ *
+ * SPIKE surface, not shipping CSS. Scoped under `.density-testbed`.
+ *
+ * Layout philosophy (per session S TODOs 2–4, 7):
+ *   · No cards, no field labels — zero chrome noise.
+ *   · LINE-BASED: each bucket is ONE horizontal line of inline-block elements.
+ *     Overflow-x scroll is fine; we are reading vertical alignment, not layout.
+ *   · One bucket per story.
+ *   · Every line starts with a few letters of paragraph-style text (the `.p`
+ *     reference), so controls can be read against prose on the same baseline.
+ *
+ * The baseline grid overlay comes from the styles-debug plugin (story
+ * `parameters.baseline`); the box seat uses the shipped engine model (the
+ * alternative top-align + external-margin model lives in SPIKE.md).
+ */
+
+/* ── The testbed root ── */
+.density-testbed {
+  /* --baseline-height is 4px. Source of truth, in order:
+     1. @canonical/styles-typography's baseline-shim.css registers it via
+        `@property … initial-value: 0.25rem`, so the engine ALWAYS has 4px even
+        if styles-main did not load (order-independent — learned from the
+        typography example, which loads an engine standalone). Then
+     2. @canonical/styles' spacing.css sets it explicitly to 0.25rem when present.
+     The literal fallback below is belt-and-suspenders; the @property makes it
+     redundant. Nothing to override here. */
+  padding: 0 var(--baseline-height, 0.25rem);
+  color: var(--color-text, #1a1a1a);
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+ * Bucket row — REGULAR component layout, no flattening or overrides
+ *
+ * A simple inline row: a short prose lead, then the components in their NORMAL
+ * structure laid inline. Controls are top-referenced density boxes (the density
+ * system seats each one's text on the grid INTERNALLY), so the row aligns the
+ * boxes by their TOPS. No block padding — the row must sit at the canvas origin
+ * so what we read is the density system's own grid registration, not a nudge. */
+.density-testbed__row {
+  display: flex;
+  flex-wrap: nowrap; /* one horizontal line — overflow scrolls, never wraps */
+  align-items: flex-start;
+  gap: calc(var(--baseline-height) * 3); /* 12px */
+  overflow-x: auto;
+}
+.density-testbed__row > * {
+  flex: 0 0 auto; /* natural width, don't grow/shrink; the row scrolls instead */
+}
+.density-testbed__row > .p {
+  margin: 0;
+}
+
+/* Re-seat the reference LEAD to the density target (TESTBED ONLY) ──────────────
+ * Prose is engine-seated now (Stage A), which lands it on the NEAREST grid line —
+ * one baseline off from the controls' density TARGET line. The lead only exists to
+ * be read against the controls, so here (and only here) we opt it back into the
+ * exact density seat the controls use: crush to line-height 1, then pad the top by
+ * the same `target − (1em+1cap)/2` the shipping controls use. This is calibration
+ * of a measuring stick, NOT a change to how prose ships. */
+.density-testbed__row > .density-testbed__lead.p {
+  line-height: 1;
+  padding-block-start: max(
+    0px,
+    calc(var(--density-target-baseline-px, 0px) - calc((1em + 1cap) / 2))
+  );
+  padding-block-end: 0;
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+ * Boxed controls — the two alignment models
+ *
+ * `.spike-box` is a bordered box whose interior is a single line of `.p` text
+ * (button label, input value, nav item, table cell). Inline-block so it sits on
+ * the line. The text seat reads the engine's --start-nudge / --end-nudge.
+ * ─────────────────────────────────────────────────────────────────────────── */
+.density-testbed .spike-box {
+  --box-border-width: 1px;
+  --box-padding-inline: var(--density-padding-inline, 0.75rem);
+
+  display: inline-flex;
+  align-items: stretch;
+  box-sizing: border-box;
+  vertical-align: baseline;
+  border: var(--box-border-width) solid var(--color-border, #b3b3b3);
+  border-radius: var(--dimension-radius-100, 0.25rem);
+  padding-inline: var(--box-padding-inline);
+  background: var(--color-background, #fff);
+}
+
+.density-testbed .spike-box > .seat {
+  display: block;
+  white-space: nowrap;
+}
+
+/* Shared-border stack (list/table rows) — laid horizontally on the line here,
+   each cell a box; the shared-border collapse is between inline siblings. */
+.density-testbed .spike-rows {
+  display: inline-flex;
+  vertical-align: baseline;
+}
+.density-testbed .spike-rows > .spike-box {
+  border-radius: 0;
+}
+.density-testbed .spike-rows > .spike-box + .spike-box {
+  border-inline-start: none;
+}
+
+/* Box seat — the shipped engine model: engine's asymmetric nudges, both borders
+ * on the grid. (The current/proposed model toggle was removed; the alternative
+ * top-align + external-margin model is documented in SPIKE.md.) */
+.density-testbed .spike-box > .seat {
+  padding-block-start: var(--start-nudge);
+  padding-block-end: var(--end-nudge);
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+ * Typography bucket (TODO 5) — real paragraph text at several sizes on one line,
+ * to witness how the 4px baseline affects cap-based nudges (TODO 6). Inline so
+ * the sizes sit next to each other and can be read against the grid together.
+ * ─────────────────────────────────────────────────────────────────────────── */
+.density-testbed__type {
+  display: flex;
+  align-items: flex-start;
+  gap: calc(var(--baseline-height) * 4);
+  overflow-x: auto;
+  white-space: nowrap;
+  padding-block: calc(var(--baseline-height) * 2);
+}
+
+/* Stacked full paragraphs of each tier, one after another, below the inline
+   row — so a real prose BLOCK of each tier can be read against the grid. */
+.density-testbed__prose {
+  max-width: 40rem;
+  margin-top: calc(var(--baseline-height) * 4);
+}
+
+/* Both sections use the package's own tags (h1..h6, p). The engine sizes each
+   tier; we only reset the demo margins so the grid reading is clean. No custom
+   size classes — each tag IS its tier. */
+.density-testbed__type > :where(h1, h2, h3, h4, h5, h6, p),
+.density-testbed__prose > :where(h1, h2, h3, h4, h5, h6, p) {
+  margin: 0;
+}
+
+/* ── Density inline lever (retained) ── */
+.density-comfortable {
+  --density-padding-inline: 0.75rem;
+}
+.density-dense {
+  --density-padding-inline: 0.5rem;
+}

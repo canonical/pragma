@@ -44,9 +44,7 @@ const Label = ({
       style={style}
       htmlFor={Element === "label" ? htmlFor : undefined}
       data-required={markRequired || undefined}
-      className={[componentCssClassName, "p", className]
-        .filter(Boolean)
-        .join(" ")}
+      className={[componentCssClassName, className].filter(Boolean).join(" ")}
     >
       {children || name}
       {showOptionalSuffix && (

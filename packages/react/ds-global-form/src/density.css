@@ -1,0 +1,349 @@
+/* @canonical/react-ds-global-form — density & baseline alignment
+ *
+ * Two composed modifier families that size controls and seat their text on the
+ * 4px baseline grid. Applied as classes on an ancestor (e.g. the app root, or the
+ * Storybook root via the DS-utils toolbar):
+ *
+ *   CONTEXT  .app / .site / .docs  — the surface. Sets the comfortable/dense
+ *            control height PAIR. Default (no class) = apps.
+ *   DENSITY  .comfortable / .dense — picks within the context pair. Default
+ *            (no class) = comfortable.
+ *
+ * Control height (a whole 4px multiple), context × density:
+ *                comfortable   dense
+ *     apps          32px        24px
+ *     sites/docs    36px        28px
+ *
+ * The text baseline sits round(up, height × 2/3) baselines down the box, so every
+ * control — button, input, and inline text — shares one baseline. Zero-JS
+ * (cap-unit approximation); alignment holds to the cap tolerance (~±1px).
+ */
+
+/* ── Context family: the comfortable/dense PAIR per surface ──────────────────
+ * The density model is a 2×3 matrix — density (comfortable/dense) × context (app /
+ * site / docs), where DOCS = SITE (they share a pair). Context sets the pair for
+ * every DENSITY primitive (control height, inline padding, and three neutral
+ * vertical spacing rungs sm/md/lg); density (below) picks within it. Sites/docs
+ * run one baseline looser than apps on the height (+4px) and each rung, so the
+ * looser surface breathes. Every value is a WHOLE baseline multiple, so vertical
+ * rhythm holds in all four cells.
+ *
+ * LAYERING: this file is the LOWER layer. It exposes only GENERIC, domain-neutral
+ * primitives (--density-*) — a line-height, an inline padding, and a three-rung
+ * vertical spacing scale (--density-space-sm/-md/-lg). It knows NOTHING about the
+ * form or its fields. The FORM layer (index.css) maps its own --form-field-*
+ * tokens onto these rungs. Never name a field concept here.
+ *
+ *                    app                 site / docs
+ *                    comfy   dense       comfy   dense
+ *   line-height      32 (8)  24 (6)      36 (9)  28 (7)
+ *   padding-inline   16 (4)   8 (2)      16 (4)  12 (3)
+ *   space-lg         24 (6)  16 (4)      28 (7)  20 (5)
+ *   space-md         16 (4)   8 (2)      20 (5)  12 (3)
+ *   space-sm          8 (2)   4 (1)       8 (2)   8 (2)
+ *   (parenthesised = baseline units; 1 bU = --baseline-height = 4px)
+ */
+.app {
+  --lh-comfy: calc(var(--baseline-height) * 8); /* 32px */
+  --lh-dense: calc(var(--baseline-height) * 6); /* 24px */
+  --pad-inline-comfy: calc(var(--baseline-height) * 4); /* 16px */
+  --pad-inline-dense: calc(var(--baseline-height) * 2); /*  8px */
+  --space-lg-comfy: calc(var(--baseline-height) * 6); /* 24px */
+  --space-lg-dense: calc(var(--baseline-height) * 4); /* 16px */
+  --space-md-comfy: calc(var(--baseline-height) * 4); /* 16px */
+  --space-md-dense: calc(var(--baseline-height) * 2); /*  8px */
+  --space-sm-comfy: calc(var(--baseline-height) * 2); /*  8px */
+  --space-sm-dense: calc(var(--baseline-height) * 1); /*  4px */
+}
+.site,
+.docs {
+  --lh-comfy: calc(var(--baseline-height) * 9); /* 36px */
+  --lh-dense: calc(var(--baseline-height) * 7); /* 28px */
+  --pad-inline-comfy: calc(var(--baseline-height) * 4); /* 16px */
+  --pad-inline-dense: calc(var(--baseline-height) * 3); /* 12px */
+  --space-lg-comfy: calc(var(--baseline-height) * 7); /* 28px */
+  --space-lg-dense: calc(var(--baseline-height) * 5); /* 20px */
+  --space-md-comfy: calc(var(--baseline-height) * 5); /* 20px */
+  --space-md-dense: calc(var(--baseline-height) * 3); /* 12px */
+  --space-sm-comfy: calc(var(--baseline-height) * 2); /*  8px */
+  --space-sm-dense: calc(var(--baseline-height) * 2); /*  8px */
+}
+
+/* ── Density family: pick within the context pair ────────────────────────────
+ * Each density tier resolves every GENERIC primitive from the context's
+ * *-comfy / *-dense pair. Fallbacks cover the app-comfortable defaults when no
+ * context class is present (a plain `.comfortable` still works). Output is the
+ * neutral --density-* surface the form layer consumes — no field names here. */
+.comfortable {
+  --density-line-height: var(--lh-comfy, calc(var(--baseline-height) * 8));
+  --density-padding-inline: var(
+    --pad-inline-comfy,
+    calc(var(--baseline-height) * 4)
+  );
+  --density-space-lg: var(--space-lg-comfy, calc(var(--baseline-height) * 6));
+  --density-space-md: var(--space-md-comfy, calc(var(--baseline-height) * 4));
+  --density-space-sm: var(--space-sm-comfy, calc(var(--baseline-height) * 2));
+}
+.dense {
+  --density-line-height: var(--lh-dense, calc(var(--baseline-height) * 6));
+  --density-padding-inline: var(
+    --pad-inline-dense,
+    calc(var(--baseline-height) * 2)
+  );
+  --density-space-lg: var(--space-lg-dense, calc(var(--baseline-height) * 4));
+  --density-space-md: var(--space-md-dense, calc(var(--baseline-height) * 2));
+  --density-space-sm: var(--space-sm-dense, calc(var(--baseline-height) * 1));
+}
+
+/* ── Target baseline = round(up, height × 2/3) ──────────────────────────────
+ * Snapped UP so fractional cases lift (apps-comfy 5.33→6) while exact multiples
+ * stay (apps-dense 4.0, sites-comfy 6.0). Matches: apps 32→6th/24→4th,
+ * sites 36→6th/28→5th. */
+:where(.comfortable, .dense, .app, .site, .docs) {
+  /* Effective line-height with the SAME fallback chain the control box uses
+     (--density-line-height → context --lh-comfy → apps-comfy literal). Without
+     this fallback, a bare context class (.app/.site/.docs applied with no density
+     class — the documented "no class = comfortable" case) leaves
+     --density-line-height unset, the round(calc(var(--density-line-height)…))
+     becomes invalid, the target resolves to 0, and controls lose their seating. */
+  --density-line-height-effective: var(
+    --density-line-height,
+    var(--lh-comfy, calc(var(--baseline-height) * 8))
+  );
+  --density-target-baseline-px: round(
+    up,
+    calc(var(--density-line-height-effective) * 2 / 3),
+    var(--baseline-height)
+  );
+}
+
+/* The FORM layer's mapping of these generic --density-* primitives onto its own
+ * --form-field-* tokens lives in index.css (the form owns that knowledge, not the
+ * density layer). This file stops at exposing the primitives. */
+
+/* ── Controls consume the density box ───────────────────────────────────────
+ * A control is a FIXED grid-multiple height with border-box so its border is
+ * absorbed into that height (not added past it) — so a bordered and a borderless
+ * control of the same density are the same height. Top-referenced so the
+ * space-before below (not flex centre/stretch) governs the text.
+ *
+ * Controls no longer carry `.p` — the density system supplies the body font tier
+ * (font-size / weight / family) here, and the baseline placement below. */
+/* `:is()` on the density scope (0,1,0) so `:is(...) .ds.button` (0,2,0) beats the
+ * Button's own `.ds.button { align-items: center }` (0,1,0) — otherwise the label
+ * stays flex-CENTRED and the padding-based baseline placement can't govern. */
+/* NB `.ds.input.textarea` is EXCLUDED: a textarea is a multi-line control whose
+ * height is intrinsic (its `min-height: 5lh`), not a single density line — the
+ * single-line crush below would flatten it. It gets its own placement further
+ * down (grid-multiple line-height so every row sits on the grid). */
+:is(.comfortable, .dense, .app, .site, .docs)
+  :is(.ds.button, .ds.input:not(.textarea)) {
+  box-sizing: border-box;
+  /* Same effective line-height the target-baseline uses (single source of the
+     fallback chain), so a bare context class keeps a valid box height too. */
+  --density-box-height: var(--density-line-height-effective);
+  block-size: var(--density-box-height);
+  min-block-size: var(--density-box-height);
+  align-items: flex-start;
+  justify-content: flex-start;
+  /* Kill the UA BOTTOM padding only. Do NOT zero padding-block-start here: this
+     selector is more specific (0,4,0) than the placement rule below (0,2,0), so a
+     `padding-block: 0` shorthand would out-specify and WIPE the placement's
+     `padding-block-start: var(--space-before)` — leaving the label pinned to the
+     box top (off the baseline). The placement rule owns the start. */
+  padding-block-end: 0;
+
+  /* Body font tier — what `.p` used to supply. */
+  font-size: var(--typography-text-primary-font-size);
+  font-family: var(--typography-text-primary-font-family);
+}
+
+/* The input WRAPPER is the box (like the button element): don't stretch its
+ * child, top-reference it so the input's own space-before governs. Needs to beat
+ * the TextInput's `.ds.input.text { align-items: stretch }` (0,3,0). */
+:is(.comfortable, .dense, .app, .site, .docs) .ds.input.text,
+:is(.comfortable, .dense, .app, .site, .docs) .ds.input {
+  align-items: flex-start;
+}
+
+/* The <input> is the text carrier — treat it exactly like the button label:
+ * same body font tier, and normalised so only the space-before (below) positions
+ * its text. (It's content-box with an intrinsic height, so reset that.) */
+:is(.comfortable, .dense, .app, .site, .docs) .ds.input > input {
+  box-sizing: border-box;
+  min-block-size: 0;
+  block-size: auto;
+  margin-block: 0;
+  font-size: var(--typography-text-primary-font-size);
+  font-family: var(--typography-text-primary-font-family);
+}
+
+/* ── Baseline placement: `.baseline` nudge + `--space-before` ───────────────
+ * Two parts, the combination that put controls ON the grid:
+ *
+ *  1. NUDGE (the DS.01 `.baseline` mechanism): --bl-start-nudge snaps the text's
+ *     first baseline onto the NEAREST grid line, computed from the element's own
+ *     font (1cap + line-height) — font-relative, so it's exact at any size and
+ *     needs no per-element fudge. This is what lands text exactly on a line.
+ *
+ *  2. --space-before: whole baselines added to move that snapped baseline DOWN to
+ *     the density TARGET line (round-up of the remaining distance), less the box's
+ *     own top border.
+ *
+ *     padding-block-start = bl-start-nudge + space-before − border-top
+ *     space-before = round(up, target − bl-start-nudge − border-top, baseline)
+ *
+ * Applies to the button, the input, and the field label/description/error — i.e.
+ * CONTROL-like text only. Bare prose (p / .p / h1–h6) is DELIBERATELY NOT here:
+ * running text belongs to the typography engine, which already seats it on the
+ * grid (snapped --computed-line-height + --start/--end-nudge) and lets `.editorial`
+ * add its inter-block margins. Density crushing prose to line-height:1 fought that
+ * engine (and only ever put the FIRST line on-grid — wrapped lines drifted). By
+ * partitioning prose OUT, density and the engine write to disjoint element sets,
+ * so `.editorial` composes with density with no specificity war. `:is()` (not
+ * `:where()`) still gives the control seat the specificity to beat a control's own
+ * centring (e.g. the Button's `align-items: center`). */
+/* Body font tier for the field label/description/error, which lost `.p`. Scoped
+   to just these (NOT the headings, which keep their own tier). */
+:is(.comfortable, .dense, .app, .site, .docs)
+  :is(.ds.field-label, .ds.field-description, .ds.field-error) {
+  font-size: var(--typography-text-primary-font-size);
+  font-family: var(--typography-text-primary-font-family);
+}
+
+:is(.comfortable, .dense, .app, .site, .docs) .ds.button,
+:is(.comfortable, .dense, .app, .site, .docs) .ds.input > input,
+:is(.comfortable, .dense, .app, .site, .docs)
+  :is(.ds.field-label, .ds.field-description, .ds.field-error) {
+  line-height: 1;
+  /* Baseline within a line-height:1 box (font-relative cap approximation). */
+  --natural-baseline: calc((1em + 1cap) / 2);
+  /* Pad the top so the baseline lands at the density target, less the box's own
+     top border. */
+  --space-before: max(
+    0px,
+    calc(
+      var(--density-target-baseline-px, 0px) -
+      var(--natural-baseline) -
+      var(--border-top-width, 0px)
+    )
+  );
+  padding-block-start: var(--space-before);
+  padding-block-end: 0;
+}
+
+/* ── Textarea: a multi-line control on the grid ──────────────────────────────
+ * Unlike the single-line input, a textarea has MANY text rows, so it needs a
+ * line-height that is itself a whole baseline multiple — then EVERY row sits on
+ * a grid line, not just the first. It's excluded from the single-line box crush
+ * (keeps its intrinsic `5lh` height) and from the `line-height: 1` placement
+ * above; here it gets its own placement:
+ *   · line-height = the density line-height (a whole baseline multiple), so rows
+ *     advance one grid interval each.
+ *   · the FIRST row is seated on the density target the same way as everything
+ *     else: nudge onto the nearest grid line, then space-before to the target,
+ *     less the border (0 — border is on the chrome box) and the drift knob.
+ * The chrome supplies the box's own block padding; we ADD the seating on top. */
+:is(.comfortable, .dense, .app, .site, .docs) .ds.input.textarea {
+  --td-line-height: var(
+    --density-line-height,
+    var(--lh-comfy, calc(var(--baseline-height) * 8))
+  );
+  line-height: var(--td-line-height);
+  font-size: var(--typography-text-primary-font-size);
+  font-family: var(--typography-text-primary-font-family);
+
+  /* Same form-control drift as the single-line input (see the knob's KLAXON note
+     below). Set locally so this stays self-contained — the button path is never
+     touched. */
+  --control-text-drift-AVOID-USAGE: 2px;
+  /* First row's baseline within its own line-box, then lift to the target. */
+  --natural-baseline: calc((var(--td-line-height) + 1cap) / 2);
+  /* Unlike the single-line input (a borderless inner <input> inside a bordered
+     wrapper), the textarea IS the chrome: it carries `.ds.input.chrome`, whose
+     top border-width occupies layout space above the text even when the top
+     border colour is transparent. So subtract that top border — exactly as the
+     button subtracts its own — or the first row seats ~1px low versus the
+     button/input target. */
+  --td-border-top: var(
+    --form-input-border-width-top,
+    var(--form-input-border-width, 0px)
+  );
+  --td-space-before: max(
+    0px,
+    calc(
+      var(--density-target-baseline-px, 0px) -
+      var(--natural-baseline) -
+      var(--td-border-top) -
+      var(--control-text-drift-AVOID-USAGE, 0px)
+    )
+  );
+  /* Seat the first row ON TOP OF the chrome's block padding (don't replace it —
+     that padding is the box inset; this is the grid seating). */
+  padding-block-start: calc(
+    var(--form-input-padding-block, 0px) +
+    var(--td-space-before)
+  );
+}
+
+/* ── Bottom rhythm: density-seated flow text only (NOT prose) ─────────────────
+ * A BORDERED control (button, input wrapper) has a fixed `block-size` that is
+ * already a whole baseline multiple, so its bottom rhythm is the box height —
+ * no bottom padding needed (and it would be inert against the fixed height).
+ *
+ * The field label/description/error are density-seated with line-height:1, so
+ * their box ends at the text descender; with `padding-block-end: 0` a following
+ * grid/flow sibling (e.g. the textarea below a field label) resumes off-grid.
+ * Fill the box out to a whole density line-height so its bottom lands on a grid
+ * line. The `- 1em` term is correct precisely because these are line-height:1.
+ *
+ * Bare prose (p / .p / h1–h6) is NOT here: it is no longer density-seated (see the
+ * partition above), so its box is its OWN snapped line-height and the engine's
+ * --end-nudge already lands its bottom on the grid. Adding a density fill on top
+ * would double-pad. Prose bottom rhythm belongs to the engine / `.editorial`. */
+:is(.comfortable, .dense, .app, .site, .docs)
+  :is(.ds.field-label, .ds.field-description, .ds.field-error) {
+  padding-block-end: max(
+    0px,
+    calc(
+      var(
+        --density-line-height,
+        var(--lh-comfy, calc(var(--baseline-height) * 8))
+      ) -
+      var(--space-before) -
+      1em
+    )
+  );
+}
+
+/* The box's top border sits above the content and counts toward the target, so
+ * subtract it once. The NOMINAL --button-border-width (1px) is what put the button
+ * ON the baseline — subtract it for BOTH importances. The primary's 0-outline
+ * (borderless) is handled by the grid maths, NOT by zeroing this term: switching
+ * to `calc(--modifier-outline × width)` lifts the primary a pixel and breaks the
+ * alignment (regression found & reverted). Leave the nominal term alone. */
+:where(.comfortable, .dense, .app, .site, .docs) .ds.button {
+  --border-top-width: var(--button-border-width, 0px);
+}
+
+/* ── --control-text-drift-AVOID-USAGE — the one honest patch ──────────────────
+ * A native form control (<input>, <textarea>) renders its text a couple of px
+ * LOWER than a <span>/<button> label at byte-identical CSS — a UA metrics quirk
+ * of editable controls, NOT a border and NOT captured by the cap-unit maths. The
+ * cap approximation is exact for real text runs but optimistic for a form
+ * control's internal text box, so the leaf needs a small lift to share the grid
+ * line with the button/label.
+ *
+ * The name is a deliberate KLAXON: this is empirical (calibrated by eye, may vary
+ * by browser/font), never a knob to reach for in app code. 🔴 TODO(#15): find the
+ * structural cause (line-box rounding? UA control metrics?) and delete it.
+ *
+ * It feeds the SAME `--border-top-width` term the shared placement formula reads
+ * (a larger subtraction ⇒ less space-before ⇒ text lifts UP). Doing it this way —
+ * rather than adding a separate term to the shared formula — keeps the BUTTON's
+ * placement byte-identical to its known-good state: the button never sets this
+ * knob, so its `--border-top-width` stays the pure border calc above. */
+:where(.comfortable, .dense, .app, .site, .docs) .ds.input > input {
+  --control-text-drift-AVOID-USAGE: 2px;
+  --border-top-width: var(--control-text-drift-AVOID-USAGE);
+}
