@@ -9,6 +9,9 @@
  *   inline = horizontal axis (inline-start = left in LTR, right in RTL)
  */
 
+/* Density & baseline alignment (context × density → control height + baseline). */
+@import url("./density.css");
+
 :root {
   /* ── Form grid layout ───────────────────────────────────────────── */
   /* Forms are subgrids: they inherit columns from a parent .grid      */
@@ -32,15 +35,22 @@
   /* ── Field layout spacing ───────────────────────────────────────── */
   /* Container-owned: the form/field wrapper controls all spacing.     */
 
+  /* Gaps are split by AXIS so no token spans both directions (a density tier can
+     then tune each axis independently, and the names stay honest):
+       BLOCK (vertical):  field-block-gap · field-label-gap · group-gap
+       INLINE (horizontal): field-inline-gap                                    */
   --form-field-block-gap: var(
     --container-gap-loose
-  ); /* 24px — block-direction (vertical) gap between fields */
-  --form-field-inline-gap: var(
+  ); /* 24px — block: gap BETWEEN fields */
+  --form-field-label-gap: var(
     --container-gap-default
-  ); /* 16px — inline-direction (horizontal) gap: label ↔ input */
+  ); /* 16px — block: gap from a field's LABEL down to its control */
   --form-group-gap: var(
     --space-100
-  ); /* 8px — block-direction gap: desc/error ↔ input */
+  ); /* 8px — block: gap from desc/error to the input */
+  --form-field-inline-gap: var(
+    --container-gap-default
+  ); /* 16px — inline: label↔input, prefix/suffix (HORIZONTAL only) */
 
   /* ── Input chrome ───────────────────────────────────────────────── */
   /* Component-owned: internal padding regardless of context.           */
@@ -134,6 +144,37 @@
   --form-focus-ring-color-error: var(--color-focusRing-error);
   /* --form-focus-ring-width:  … ; */ /* focus ring thickness (default: 1px via box-shadow) */
   /* --form-focus-ring-offset: … ; */ /* focus ring offset from border */
+}
+
+/* ── Density → form channel mapping ──────────────────────────────────────────
+ * The FORM layer decides which generic density primitive (density.css exposes
+ * --density-line-height, --density-padding-inline, and the neutral vertical rungs
+ * --density-space-sm/-md/-lg) each of its own tokens follows. Density knows
+ * nothing about "field"; this is where the form makes that choice.
+ *
+ * Scoped to the density classes so a plain form (no density class) keeps the
+ * :root defaults above. The var() fallbacks keep values sane if only a CONTEXT
+ * class (.app/.site/.docs) is present without a density class.
+ *
+ *   INLINE (horizontal): control padding + label↔input / prefix-suffix gap
+ *     → --density-padding-inline
+ *   BLOCK (vertical), by magnitude:
+ *     between-fields   → --density-space-lg   (widest structural gap)
+ *     label → control  → --density-space-md   (label to its own control)
+ *     desc/error → input → --density-space-sm (tight annotation gap)
+ *   All rungs are whole baseline multiples, so vertical rhythm holds. */
+:where(.comfortable, .dense, .app, .site, .docs) {
+  --form-input-padding-inline: var(--density-padding-inline, var(--space-200));
+  --form-field-inline-gap: var(--density-padding-inline, var(--space-200));
+  --form-field-block-gap: var(
+    --density-space-lg,
+    calc(var(--baseline-height) * 6)
+  );
+  --form-field-label-gap: var(
+    --density-space-md,
+    calc(var(--baseline-height) * 4)
+  );
+  --form-group-gap: var(--density-space-sm, calc(var(--baseline-height) * 2));
 }
 
 /* ── .ds.input.chrome — shared input chrome ─────────────────────────

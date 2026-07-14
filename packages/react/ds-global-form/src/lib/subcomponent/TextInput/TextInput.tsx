@@ -33,7 +33,7 @@ export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(
         className={[componentCssClassName, className].filter(Boolean).join(" ")}
       >
         {prefix && <span className="prefix">{prefix}</span>}
-        <input className="p" type={inputType} ref={ref} {...nativeProps} />
+        <input type={inputType} ref={ref} {...nativeProps} />
         {suffix && <span className="suffix">{suffix}</span>}
       </div>
     );

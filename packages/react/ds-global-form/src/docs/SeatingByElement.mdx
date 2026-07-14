@@ -1,0 +1,200 @@
+import { Meta, Canvas } from "@storybook/addon-docs/blocks";
+import * as Examples from "./examples/DensityExamples.stories";
+
+<Meta title="Documentation/Guides/Seating by Element Type" />
+
+# Seating by Element Type
+
+The baseline grid is one idea, but three kinds of element reach it by three
+different routes: **default text** (prose), **buttons**, and **inputs**. Each has a
+different box, different metrics, and a different set of things that had to be
+tried and discarded before it sat cleanly on the grid. This guide is the technical
+record of how each is seated, what was considered, and what was dropped — so the
+next person to touch the model knows which choices are load-bearing and which were
+dead ends.
+
+Read [The Baseline Grid](?path=/docs/documentation-guides-the-baseline-grid--docs)
+and [Density & the Form Channel](?path=/docs/documentation-guides-density--docs)
+first; this guide assumes the seating formula and the density matrix.
+
+## The one rule that governs all three
+
+Every element is seated by the same two-part expression:
+
+```css
+--natural-baseline: calc((1em + 1cap) / 2);   /* baseline offset in a lh:1 box */
+--space-before: max(0px, calc(target − --natural-baseline − border-top));
+padding-block-start: var(--space-before);
+```
+
+The three element types differ only in **what plays the part of `target`,
+`border-top`, and the box** — and in one case, whether this expression governs at
+all. Everything below is a variation on this.
+
+---
+
+## Default text and prose
+
+**Route: the typography engine, not the density model.**
+
+Bare `p`, `.p`, and `h1`–`h6` — and anything inside an `.editorial` context — are
+**not** seated by the density system at all. They are left to the typography
+engine, which gives each tier a line-height snapped to the grid
+(`round(up, font-size × ratio, --baseline-height)`) and nudges the first line onto
+the nearest grid line. Because the snapped line-height is a whole baseline
+multiple, every wrapped line stays on the grid too.
+
+### What was considered and dropped
+
+An earlier iteration seated **everything** — prose included — by crushing it to
+`line-height: 1` and running the density formula on it. It was dropped for two
+reasons, both instructive:
+
+- **Readability.** Crushing prose to `line-height: 1` removes the leading that
+  makes multi-line text readable. Body copy became a dense slab.
+- **Wrapped-line drift.** A crushed line-height is **not** a whole baseline
+  multiple, so only the *first* line of a paragraph landed on the grid; every
+  wrapped line drifted. The crush that was meant to align text actually
+  mis-aligned all but the first line.
+
+The fix — internally called the *prose partition* — was to make the density
+selectors and the engine selectors **disjoint**: density seats controls, the
+engine seats prose. Two systems, two element sets, no overlap. The payoff beyond
+readability: because they never touch the same element, `.editorial` prose can
+nest inside a density scope (a density-sized header above an editorial content
+panel) with **no specificity war** — there is nothing to out-specify.
+
+The lesson worth carrying: _do not try to make the density model seat a
+paragraph._ If a single text reference needs to line up with controls (as the
+spike testbed's measuring lead does), seat that one element explicitly; do not
+reach for the global prose tags.
+
+---
+
+## Buttons
+
+**Route: the density box, seated against the box.**
+
+A button is a fixed grid-multiple box: its `block-size` is the density
+line-height, `box-sizing: border-box`, top-referenced (`align-items: flex-start`),
+and its label is the text run seated by the formula. `target` is the density
+target line, `round(up, height × 2/3, --baseline-height)`.
+
+<Canvas of={Examples.BorderlessAndBordered} />
+
+### The border term, and the bug that taught us how it works
+
+The subtle part of a button is the `border-top` term. A button's border and its
+label live on the **same element**, so a top border pushes the label down and must
+be subtracted from `--space-before`. The instinct was to subtract the button's
+*actual* rendered border:
+
+```css
+/* The tempting version — and the bug. */
+--border-top-width: calc(var(--modifier-outline, 0) * var(--button-border-width));
+```
+
+This looks correct — a borderless importance (`--modifier-outline: 0`) subtracts 0,
+a bordered one subtracts its 1px. But it made the **borderless primary button sit
+one pixel higher** than the bordered secondary beside it. The two no longer shared
+a baseline.
+
+The reason: the density `target` is measured from the top of the *box*, and the
+box is `border-box`, so the border is already absorbed into the fixed height. The
+label's seat should be computed **against the box, not against whether a border
+happens to render**. The version that works subtracts a **nominal** border for
+both importances and lets the grid maths place them identically:
+
+```css
+/* The version that ships. */
+--border-top-width: var(--button-border-width, 0px);   /* nominal, both importances */
+```
+
+So a borderless primary and a bordered secondary contribute the same amount to the
+seat: the secondary as 1px of real border, the primary as 1px more padding. They
+share the line. The `modifier-outline` version was reverted; the nominal term is
+load-bearing and should be left alone.
+
+### A related trap: the box padding shorthand
+
+The box rule sets the control height; the placement rule sets
+`padding-block-start`. When the box rule used the `padding-block: 0` **shorthand**,
+a specificity quirk let it out-specify the placement rule's `padding-block-start`
+and wipe the seat, pinning the label to the box top. The box rule now clears only
+`padding-block-end`; the placement rule owns the start. If a control's label ever
+jumps to the top of its box, this shorthand-vs-longhand interaction is the first
+thing to check.
+
+---
+
+## Inputs
+
+**Route: the chrome box is the density box; the text leaf is seated inside it.**
+
+An input is not one element but two: the **chrome** (the bordered box —
+`.ds.input.text` wrapper for a text input, or the `<textarea>`/`<select>` element
+itself) and the **text leaf** (the inner `<input>`, or the textarea's own text).
+The chrome is the density box (fixed height, border-box, border absorbed); the
+leaf is the text run seated inside it. So unlike the button, the input's
+`border-top` term is a **true 0** — the border lives on the chrome, not on the leaf
+that carries the text.
+
+<Canvas of={Examples.ButtonAndInput} />
+
+### The single-line input and the drift knob
+
+With the border accounted for by the chrome, a text input's inner `<input>` should
+seat exactly like a button label. It nearly does — but a native `<input>` renders
+its text roughly **2px lower** than a `<span>` at byte-identical CSS. This is a
+user-agent metrics quirk of editable controls, not a border and not something the
+cap approximation predicts.
+
+The considered options, and what was chosen:
+
+- **Rejected — fold it into the border term.** The first attempt expressed the 2px
+  as a fake `border-top-width` on the input. It worked but lied: the input has no
+  such border, and the number would not generalise to the textarea.
+- **Rejected — a metrics engine / text-box-trim.** A precise fix would measure the
+  control's actual text box. This was explicitly out of scope: the whole model is a
+  zero-JS cap approximation, and swapping the seating method for form controls
+  alone would fork it.
+- **Chosen — one honest, self-shaming knob.** The lift is applied through
+  `--control-text-drift-AVOID-USAGE` (currently 2px), set only on the input and
+  textarea paths. The name is the documentation: it is empirical, may vary by
+  browser and font, is never for app code, and is tracked for a structural fix. It
+  is a calibrated constant, deliberately quarantined, not a design lever.
+
+### The textarea: many rows, so the invariant bites
+
+A single-line input only has to seat its first baseline. A `<textarea>` has many
+rows, so the whole-multiple invariant applies: **every** row must land on a grid
+line, not just the first. That forces two departures from the single-line path:
+
+- It is **excluded from the single-line box crush** — it keeps its intrinsic
+  `min-height: 5lh` rather than being flattened to one density line.
+- It is seated with a **grid-multiple line-height** (the density line-height)
+  rather than `line-height: 1`, so each successive row advances by exactly one grid
+  interval. Its first row is placed on the density target on top of the chrome's
+  own block padding; the rest follow the grid for free.
+
+The textarea is where the generalised form of the seating formula first appeared —
+`(--seat-line-height + 1cap) / 2` instead of `(1em + 1cap) / 2` — because its
+line-height is not 1. That generalisation is the seed of a possible future unifying
+of all three routes under one formula, but it is deliberately not taken further
+yet: the single-line controls stay on the exact `1em` form so their pixel-tuned
+seating is not disturbed.
+
+---
+
+## Summary
+
+| Element | Box | `target` | `border-top` | Notable |
+| --- | --- | --- | --- | --- |
+| Prose / `.editorial` | — (engine-owned) | nearest grid line | — | Not density-seated; snapped line-height keeps every wrapped line on-grid |
+| Button | the button element | `round(up, h × 2/3)` | nominal `--button-border-width` (both importances) | Seat is against the box, not the rendered border |
+| Input (single-line) | chrome wrapper | `round(up, h × 2/3)` | 0 (border on the chrome) | `--control-text-drift-AVOID-USAGE` lifts the ~2px UA quirk |
+| Textarea | the element (chrome + leaf) | first row on target | 0 | Grid-multiple line-height so every row seats; generalised formula |
+
+The through-line: **seat against the box, keep the line-height a whole baseline
+multiple wherever more than one line matters, and give each element type only the
+compensation its own metrics genuinely need — no more.**

@@ -52,10 +52,6 @@ const Button = ({
       id={id}
       className={[
         componentCssClassName,
-        // The `.p` baseline utility supplies the body-text tier (font, snapped
-        // line-height) and the padding-block nudges that align the button box
-        // to the baseline grid — so the box height tracks the text inside.
-        "p",
         importance,
         anticipation,
         variant,
