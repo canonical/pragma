@@ -13,11 +13,19 @@
 }
 
 .ds.card-footer {
+  /* Inline flow: badges, chips and inline text sit on a line and wrap. Children
+   * keep their natural width (`flex: 0 0 auto` — no grow, no shrink) and are
+   * vertically centred, so a Badge is not stretched to the footer width. */
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
+  align-items: center;
   gap: var(--card-footer-gap);
 
   padding-block: var(--card-footer-padding-block);
   padding-inline: var(--card-footer-padding-inline);
+
+  & > * {
+    flex: 0 0 auto;
+  }
 }

@@ -5,16 +5,19 @@ import Component from "./Card.js";
 import type { CardProps } from "./types.js";
 
 /**
- * Neutral placeholder (grey 16:9 SVG data URI) for card media in stories,
- * pending on-brand assets nominated by design.
+ * A Card is a subgrid, so it needs a grid parent. That parent is supplied by the
+ * addon's `grid` story param — the single grid mechanism — NOT a local grid
+ * decorator, which would nest a second grid inside the addon's and crush the card
+ * into one column. `"showcase"` frames a lone card the way it should read: a
+ * single ~22rem column, centred in a tall canvas, at its intrinsic height. It
+ * works identically on the story canvas and the autodocs page (switch it from the
+ * toolbar). Stories that want a different layout (surfaces) override per-story.
  */
-const placeholderImageSrc =
-  "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='800'%20height='450'%3E%3Crect%20width='100%25'%20height='100%25'%20fill='%23d9d9d9'/%3E%3C/svg%3E";
-
 const meta = {
   title: "components/Card",
   component: Component,
   tags: ["autodocs"],
+  parameters: { grid: "showcase" },
 } satisfies Meta<typeof Component>;
 
 export default meta;
@@ -25,7 +28,7 @@ export default meta;
  * extras, not part of the base card.
  */
 export const Default: StoryFn<CardProps> = (props) => (
-  <Component {...props} style={{ maxWidth: "24rem" }}>
+  <Component {...props}>
     <Component.Content>
       <h4>Build a bare-metal cloud on a Raspberry Pi cluster with MAAS</h4>
       <p className="p">
@@ -43,7 +46,7 @@ export const Default: StoryFn<CardProps> = (props) => (
  * `Card.Image` is not part of the core API.
  */
 export const WithImage: StoryFn<CardProps> = (props) => (
-  <Component {...props} style={{ maxWidth: "24rem" }}>
+  <Component {...props}>
     <Component.Image src="https://assets.ubuntu.com/v1/5ce214a4-rpi.png" />
     <Component.Content>
       <h4>Build a bare-metal cloud on a Raspberry Pi cluster with MAAS</h4>
@@ -67,7 +70,7 @@ export const WithImage: StoryFn<CardProps> = (props) => (
  * card is just `Card.Content`; these are optional sections layered on top.
  */
 export const HeaderContentFooter: StoryFn<CardProps> = (props) => (
-  <Component {...props} style={{ maxWidth: "24rem" }}>
+  <Component {...props}>
     <Component.Image src="https://assets.ubuntu.com/v1/5ce214a4-rpi.png" />
     <Component.Header>
       <h4>Ubuntu 24.04 LTS</h4>
@@ -89,65 +92,9 @@ export const HeaderContentFooter: StoryFn<CardProps> = (props) => (
   </Component>
 );
 
-/**
- * A grid of cards sharing the same structure, so attributes line up and can be
- * scanned across the set — the primary use case for cards over the flexible
- * Tile. Footers carry tags and labels; links live in the content.
- */
-export const GridLayout: StoryFn<CardProps> = () => (
-  <>
-    <Component>
-      <Component.Image src={placeholderImageSrc} />
-      <Component.Content>
-        <h4>
-          <a href="https://maas.io">MAAS</a>
-        </h4>
-        <p className="p">
-          Self-service, remote installation of Windows, CentOS, ESXi and Ubuntu
-          on real servers, turning your data centre into a bare-metal cloud.
-        </p>
-      </Component.Content>
-      <Component.Footer>
-        <Chip value="bare metal" />
-        <Chip value="provisioning" />
-      </Component.Footer>
-    </Component>
-    <Component>
-      <Component.Image src={placeholderImageSrc} />
-      <Component.Content>
-        <h4>
-          <a href="https://juju.is">Juju</a>
-        </h4>
-        <p className="p">
-          An open-source orchestration engine for software operators that
-          simplifies deployment, configuration and scaling of applications.
-        </p>
-      </Component.Content>
-      <Component.Footer>
-        <Chip value="orchestration" />
-        <Chip value="operations" />
-      </Component.Footer>
-    </Component>
-    <Component>
-      <Component.Image src={placeholderImageSrc} />
-      <Component.Content>
-        <h4>
-          <a href="https://ubuntu.com/landscape">Landscape</a>
-        </h4>
-        <p className="p">
-          Systems-management for Ubuntu estates: patching, compliance and
-          monitoring across physical, virtual and cloud instances at scale.
-        </p>
-      </Component.Content>
-      <Component.Footer>
-        <Chip value="management" />
-        <Chip value="compliance" />
-      </Component.Footer>
-    </Component>
-  </>
-);
-
-GridLayout.decorators = [decorators.grid()];
+/* NOTE: the old `GridLayout` story (a grid of cards) has moved to the dedicated
+ * `Cards` group component (`groups/Cards`), which lays cards out on a shared
+ * subgrid so their sections align across the row. See `lib/group/Cards`. */
 
 /**
  * The Card is not a surface: it sets no background of its own, so on each
@@ -168,4 +115,4 @@ export const OnSurfaces: StoryFn<CardProps> = () =>
       </Component.Content>
     </Component>
   ));
-OnSurfaces.parameters = { grid: true };
+OnSurfaces.parameters = { grid: "responsive" };

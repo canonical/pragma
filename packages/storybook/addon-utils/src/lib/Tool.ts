@@ -31,9 +31,12 @@ import {
 
 const gridOptions = GRID_MODES.map((mode) => ({
   value: mode,
-  title: { none: "Off", intrinsic: "Intrinsic", responsive: "Responsive" }[
-    mode
-  ],
+  title: {
+    none: "Off",
+    intrinsic: "Intrinsic",
+    responsive: "Responsive",
+    showcase: "Showcase",
+  }[mode],
 }));
 
 const schemeOptions = SCHEME_MODES.map((mode) => ({

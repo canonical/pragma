@@ -7,6 +7,15 @@
  * container (no step) and reads as flush. It stays delimited by its border,
  * radius, and the dividers between its sections. Colour tokens follow the Figma
  * spec.
+ *
+ * ── A Card is a grid participant ────────────────────────────────────────────
+ * A Card always lives inside a grid (standalone: wrap it in a `.grid`; in bulk:
+ * use the `Cards` group). It carries all of its OWN grid logic here. The card is
+ * a ROW SUBGRID spanning FOUR section tracks — image / header / content / footer
+ * — inheriting them from the parent so several cards can line their sections up
+ * across a row. A card that omits a section simply leaves that track empty for
+ * itself; the four-track vocabulary is fixed because a Card only ever has those
+ * four section types. `Cards` supplies the shared tracks and the column flow.
  */
 :root {
   --card-color-border: var(--color-border-muted);
@@ -16,38 +25,55 @@
 }
 
 .ds.card {
-  display: flex;
-  flex-direction: column;
+  /* One grid item spanning `--card-span` parent columns and its four section
+   * rows; a ROW subgrid so its sections snap to the parent's four shared tracks
+   * (that is the cross-card alignment). The parent (a `.grid` or the `Cards`
+   * group) owns the four row tracks. */
+  grid-column: span var(--card-span, 1);
+  grid-row: span 4;
+  display: grid;
+  grid-template-rows: subgrid;
+  grid-template-columns: minmax(0, 1fr);
 
   /* No background of its own: the card is not a surface, so it inherits its
      container's background and blends with the surface it sits on. */
-
   border: var(--card-border-width) solid var(--card-color-border);
   border-radius: var(--card-border-radius);
-
   /* Clip section corners (e.g. full-bleed images) to the card radius. */
   overflow: hidden;
+}
 
-  /* When a layout (e.g. a grid row) stretches cards to equal frame heights,
-     the single content section absorbs the surplus, pinning the footer to the
-     block end so footers align across the row. */
-  & > .card-content {
-    flex-grow: 1;
-  }
+/* Place each section on its fixed row track, spanning the card's single column.
+ * DOM order matches track order: image (1) / header (2) / content (3) /
+ * footer (4). An absent section leaves its track empty for this card only. */
+.ds.card > .card-image {
+  grid-row: 1;
+  grid-column: 1 / -1;
+}
+.ds.card > .card-header {
+  grid-row: 2;
+  grid-column: 1 / -1;
+}
+.ds.card > .card-content {
+  grid-row: 3;
+  grid-column: 1 / -1;
+}
+.ds.card > .card-footer {
+  grid-row: 4;
+  grid-column: 1 / -1;
+}
 
-  /* Section separators: a divider between adjacent sections. The card frame
-     already provides the outer border, so the last section has none. The card
-     itself applies NO general padding — only the content-bearing sections
-     (Content, Header, Footer) pad themselves; media (Image) stays full-bleed.
-     The header is NOT a separate visual section: no divider is drawn under it
-     and it merges with the content that follows. */
-  & > :is(.card-content, .card-footer, .card-image):not(:last-child) {
-    border-block-end: var(--card-border-width) solid var(--card-color-border);
-  }
+/* Section separators: a divider between adjacent sections. The card frame
+ * provides the outer border, so the last section has none. The header is NOT a
+ * separate visual section — no divider is drawn under it and it merges with the
+ * content that follows. Media (Image) stays full-bleed; the content-bearing
+ * sections pad themselves. */
+.ds.card > :is(.card-content, .card-footer, .card-image):not(:last-child) {
+  border-block-end: var(--card-border-width) solid var(--card-color-border);
+}
 
-  /* Collapse the header/content seam so title and content read as one region
-     (raw 0: unthemable by design). */
-  & > .card-header:has(+ .card-content) {
-    padding-block-end: 0;
-  }
+/* Collapse the header/content seam so title and content read as one region
+   (raw 0: unthemable by design). */
+.ds.card > .card-header:has(+ .card-content) {
+  padding-block-end: 0;
 }

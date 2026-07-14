@@ -16,6 +16,13 @@ const componentCssClassName = "ds card";
  * predictable structure that allows the user to compare attributes across data
  * objects.
  *
+ * A Card is always a grid participant: `.ds.card` is a ROW SUBGRID that spans
+ * four fixed section tracks (image / header / content / footer), inheriting them
+ * from its parent grid. Standalone (wrapped in a `.grid`) it lays its own
+ * sections out on those tracks; inside a `Cards` group it shares the group's
+ * tracks so the same sections line up across every card in the row. See the
+ * `Cards` group component for the full layout model.
+ *
  * `import { Card } from "@canonical/react-ds-global";`
  *
  * @implements ds:global.component.card

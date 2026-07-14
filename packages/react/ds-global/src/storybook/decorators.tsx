@@ -1,4 +1,3 @@
-import type { Decorator } from "@storybook/react-vite";
 import type {
   CSSProperties,
   ElementType,
@@ -12,22 +11,9 @@ export const rtl = () => (Story: ElementType) => (
   </div>
 );
 
-/**
- * Global decorator: when a story sets `parameters.grid: true`, wrap it in the
- * design system's responsive 12-column `.grid`. Components (or the `surfaces`
- * helper) that should span the whole grid set `grid-column: 1 / -1`.
- *
- * Applied globally in `preview.ts`, so it is a no-op for stories that do not
- * opt in.
- */
-export const withGrid: Decorator = (Story, context) =>
-  context.parameters?.grid ? (
-    <div className="grid responsive">
-      <Story />
-    </div>
-  ) : (
-    <Story />
-  );
+/* Grid is provided by @canonical/storybook-addon-utils via `parameters.grid`
+ * (a GridMode: "intrinsic" | "responsive" | "none"), which toggles the `.grid`
+ * classes on the story root. There is no local grid decorator. */
 
 /** Span the full width of the enclosing `.grid` (all columns). */
 export const gridSpanAll = { gridColumn: "1 / -1" } as const;
