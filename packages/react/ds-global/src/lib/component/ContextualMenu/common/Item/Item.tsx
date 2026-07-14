@@ -28,11 +28,35 @@ const Item = ({ item, itemProps, onSelect }: ItemProps): React.ReactElement => {
   // An item with children is a submenu trigger; it shows a trailing caret.
   const hasSubmenu = !!items?.length;
 
+  // A submenu parent is NOT selectable — activating it opens its submenu
+  // (handled by the navigation hook's ArrowRight/click), it does not fire
+  // `onSelect` like a leaf. Only enabled leaves select.
+  const isSelectable = !disabled && !hasSubmenu;
+
   const handleKeyDown = (event: React.KeyboardEvent) => {
     if (event.key === "Enter" || event.key === " ") {
-      event.preventDefault();
-      if (!disabled) onSelect();
+      // Stop the Space/Enter from also reaching the menu container's key handler
+      // (where a bare Space would otherwise start a typeahead search).
+      event.stopPropagation();
+      if (isSelectable) {
+        event.preventDefault();
+        onSelect();
+      }
     }
+  };
+
+  // Selecting a LEAF fires `onSelect` in addition to the navigation state update
+  // already wired by `itemProps.onClick` (which highlights the item / opens a
+  // submenu on hover). A submenu parent is not choosable, so it only runs the
+  // navigation handler — clicking/hovering it highlights it and shows its
+  // submenu, but it never fires `onSelect`. `itemProps` is loosely typed
+  // (`Record<string, unknown>`), so narrow its click handler before calling.
+  const navOnClick = itemProps?.onClick as
+    | ((event: React.MouseEvent) => void)
+    | undefined;
+  const handleClick = (event: React.MouseEvent) => {
+    navOnClick?.(event);
+    if (isSelectable) onSelect();
   };
 
   const content =
@@ -62,7 +86,7 @@ const Item = ({ item, itemProps, onSelect }: ItemProps): React.ReactElement => {
         .filter(Boolean)
         .join(" ")}
       {...itemProps}
-      onClick={disabled ? undefined : onSelect}
+      onClick={handleClick}
       onKeyDown={handleKeyDown}
     >
       {content}

@@ -160,7 +160,7 @@ describe("ContextualMenu", () => {
       // reporting true for a merely-highlighted parent whose popup is not even
       // mounted (WCAG 4.1.2 name/role/value).
       const { menu, parent } = openSubmenuMenu();
-      expect(parent).toHaveAttribute("aria-haspopup", "true");
+      expect(parent).toHaveAttribute("aria-haspopup", "menu");
       expect(parent).toHaveAttribute("aria-expanded", "false");
 
       // ArrowDown highlights the parent itself — the popup stays unmounted, so
@@ -196,5 +196,99 @@ describe("ContextualMenu", () => {
       // Closed popup: no dangling aria-controls IDREF.
       expect(parent).not.toHaveAttribute("aria-controls");
     });
+  });
+
+  describe("selection semantics", () => {
+    const parentGroups: MenuItem[] = [
+      {
+        key: "group",
+        items: [
+          { key: "leaf", label: "Leaf", url: "#leaf" },
+          { key: "off", label: "Disabled", url: "#off", disabled: true },
+          {
+            key: "parent",
+            label: "Parent",
+            items: [{ key: "sub", label: "Sub", url: "#sub" }],
+          },
+        ],
+      },
+    ];
+
+    const openMenu = (onSelect?: (item: MenuItem) => void) => {
+      render(
+        <ContextualMenu
+          trigger="Actions"
+          groups={parentGroups}
+          onSelect={onSelect}
+        />,
+      );
+      fireEvent.click(screen.getByRole("button", { name: "Actions" }));
+    };
+
+    it("does not fire onSelect for a submenu parent (opens its submenu instead)", () => {
+      // A parent is a submenu trigger, not a choosable leaf: activating it must
+      // open the submenu and never call onSelect (WAI-ARIA menu pattern).
+      const onSelect = vi.fn();
+      openMenu(onSelect);
+      fireEvent.click(screen.getByRole("menuitem", { name: "Parent" }));
+      expect(onSelect).not.toHaveBeenCalled();
+      // The menu stays open (a parent click does not dismiss like a leaf).
+      expect(screen.getByRole("menu")).toHaveAttribute("aria-hidden", "false");
+    });
+
+    it("does not fire onSelect for a disabled item", () => {
+      const onSelect = vi.fn();
+      openMenu(onSelect);
+      fireEvent.click(screen.getByRole("menuitem", { name: "Disabled" }));
+      expect(onSelect).not.toHaveBeenCalled();
+    });
+
+    it("marks a disabled item aria-disabled", () => {
+      openMenu();
+      expect(
+        screen.getByRole("menuitem", { name: "Disabled" }),
+      ).toHaveAttribute("aria-disabled", "true");
+    });
+
+    it("activates a leaf on Space, firing onSelect", () => {
+      const onSelect = vi.fn();
+      openMenu(onSelect);
+      fireEvent.keyDown(screen.getByRole("menuitem", { name: "Leaf" }), {
+        key: " ",
+      });
+      expect(onSelect).toHaveBeenCalledWith(
+        expect.objectContaining({ key: "leaf" }),
+      );
+    });
+
+    it("activates a leaf on Enter, firing onSelect", () => {
+      const onSelect = vi.fn();
+      openMenu(onSelect);
+      fireEvent.keyDown(screen.getByRole("menuitem", { name: "Leaf" }), {
+        key: "Enter",
+      });
+      expect(onSelect).toHaveBeenCalledWith(
+        expect.objectContaining({ key: "leaf" }),
+      );
+    });
+
+    it("does not fire onSelect on Space/Enter over a submenu parent", () => {
+      const onSelect = vi.fn();
+      openMenu(onSelect);
+      const parent = screen.getByRole("menuitem", { name: "Parent" });
+      fireEvent.keyDown(parent, { key: " " });
+      fireEvent.keyDown(parent, { key: "Enter" });
+      expect(onSelect).not.toHaveBeenCalled();
+    });
+  });
+
+  it("marks the menu vertical with aria-orientation", () => {
+    renderMenu();
+    // ARIA defaults `menu` to vertical, but declaring it is explicit and
+    // documents the Up/Down arrow model.
+    expect(screen.getByRole("menu", { hidden: true })).toHaveAttribute(
+      "aria-orientation",
+      "vertical",
+    );
   });
 });

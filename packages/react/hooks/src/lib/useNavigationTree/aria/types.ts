@@ -20,6 +20,7 @@ export interface MenubarListItemPropsResult {
 /** Props returned by the contextual-menu container helper */
 export interface MenuPropsResult {
   role: "menu";
+  "aria-orientation"?: "vertical" | "horizontal";
   "aria-label"?: string;
   "aria-labelledby"?: string;
 }
@@ -34,7 +35,7 @@ export interface MenuGroupPropsResult {
 /** Props returned by the contextual-menu item helper */
 export interface MenuItemPropsResult {
   role: "menuitem";
-  "aria-haspopup"?: true;
+  "aria-haspopup"?: "menu";
   "aria-expanded"?: boolean;
   "aria-disabled"?: true;
   tabIndex: 0 | -1;
