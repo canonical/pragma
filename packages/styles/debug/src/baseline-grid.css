@@ -1,30 +1,59 @@
 .with-baseline-grid {
-  /* Lines are partly transparent so content reads through the grid. */
-  --addon-baseline-grid-color: var(
-    --baseline-grid-color,
-    color-mix(
-      in oklch,
-      var(--color-border-branded, oklch(64.05% 0.1941 37.76)) 35%,
-      transparent
-    )
-  );
-  /* Every Nth line (see --baseline-grid-major-every) — a distinct, stronger
-     (but still translucent) tint so groups are countable. */
-  --addon-baseline-grid-major-color: var(
-    --baseline-grid-major-color,
-    color-mix(
-      in oklch,
-      var(--color-border-branded, oklch(64.05% 0.1941 37.76)) 60%,
-      transparent
-    )
-  );
-  --addon-baseline-height: var(--baseline-height, 0.5rem);
-  /* Major line every Nth baseline (configurable; default every 4). */
-  --addon-baseline-major-every: var(--baseline-grid-major-every, 4);
-  --addon-baseline-major: calc(
+  /* Baseline unit — 4px, SHIMMED here in the debug tool.
+   *
+   * The real --baseline-height comes from the typography engine, which derives
+   * it from the design-tokens repo (--dimension-size-height-baseline), currently
+   * still 8px there. The debug overlay must not inherit that stale 8px, and it
+   * cannot depend on @canonical/styles' 4px override having loaded first (the
+   * addon may load this CSS in isolation). So the tool owns its own default:
+   *   1. --baseline-grid-height — explicit override for this tool (wins), else
+   *   2. 0.25rem (4px) — the shimmed default, NOT read from --baseline-height.
+   * To pin the overlay to whatever the app's live grid is, a consumer sets
+   * --baseline-grid-height: var(--baseline-height) explicitly. */
+  --addon-baseline-height: var(--baseline-grid-height, 0.25rem);
+
+  /* Overlay reads as STRICT BANDS — five hard-edged 4px steps per cycle, each a
+     step up in tint (not a smooth gradient). One cycle is 5 baselines
+     (5 × 4px = 20px), then repeats. Hard edges between bands let the eye count
+     position-within-cycle (level 1..5) exactly; the strongest band marks the
+     cycle. Tint derives from one branded hue at stepped opacities. */
+  --addon-baseline-levels: var(--baseline-grid-levels, 5);
+  --addon-baseline-cycle: calc(
     var(--addon-baseline-height) *
-    var(--addon-baseline-major-every)
+    var(--addon-baseline-levels)
+  ); /* 5 × 4px = 20px */
+
+  --addon-baseline-hue: var(
+    --baseline-grid-color,
+    var(--color-border-branded, oklch(64.05% 0.1941 37.76))
   );
+  /* Five stepped tints, faint (level 1) → strong (level 5). Hard steps. */
+  --addon-baseline-l1: color-mix(
+    in oklch,
+    var(--addon-baseline-hue) 8%,
+    transparent
+  );
+  --addon-baseline-l2: color-mix(
+    in oklch,
+    var(--addon-baseline-hue) 14%,
+    transparent
+  );
+  --addon-baseline-l3: color-mix(
+    in oklch,
+    var(--addon-baseline-hue) 20%,
+    transparent
+  );
+  --addon-baseline-l4: color-mix(
+    in oklch,
+    var(--addon-baseline-hue) 28%,
+    transparent
+  );
+  --addon-baseline-l5: color-mix(
+    in oklch,
+    var(--addon-baseline-hue) 38%,
+    transparent
+  );
+
   --addon-baseline-shift: var(--baseline-shift, 0);
 
   position: relative;
@@ -33,40 +62,36 @@
    * The grid is an ::after overlay (kept so it paints ON TOP and can cover the
    * full page, not just behind content). To survive content TALLER than 100%
    * (overflowing children), the pseudo grows with the host: min-block-size:100%
-   * fills the box, and because the host is position:relative and content-sized,
-   * the pseudo stretches over the whole content height rather than clipping at
-   * the fold.
+   * fills the box.
    *
-   * Two layers: a minor line every baseline unit, and a major (different colour)
-   * line every Nth unit (--baseline-grid-major-every), listed first so it paints
-   * on top where they coincide.
+   * One gradient, but with hard stops so it renders as five STRICT bands: each
+   * `color N, color N+1baseline` pair is a flat 4px step with no interpolation,
+   * and the next step starts exactly where the previous ends. 5 steps = a 20px
+   * cycle, repeated.
    */
   &::after {
     content: "";
+    display: block;
     position: absolute;
     inset: 0;
     block-size: 100%;
     min-block-size: 100%;
     pointer-events: none;
     z-index: 200;
-    background-image:
-      linear-gradient(
-        to top,
-        var(--addon-baseline-grid-major-color),
-        var(--addon-baseline-grid-major-color) 1px,
-        transparent 1px,
-        transparent
-      ),
-      linear-gradient(
-        to top,
-        var(--addon-baseline-grid-color),
-        var(--addon-baseline-grid-color) 1px,
-        transparent 1px,
-        transparent
-      );
-    background-size:
-      100% var(--addon-baseline-major),
-      100% var(--addon-baseline-height);
+    background-image: linear-gradient(
+      to bottom,
+      var(--addon-baseline-l1) 0,
+      var(--addon-baseline-l1) var(--addon-baseline-height),
+      var(--addon-baseline-l2) var(--addon-baseline-height),
+      var(--addon-baseline-l2) calc(var(--addon-baseline-height) * 2),
+      var(--addon-baseline-l3) calc(var(--addon-baseline-height) * 2),
+      var(--addon-baseline-l3) calc(var(--addon-baseline-height) * 3),
+      var(--addon-baseline-l4) calc(var(--addon-baseline-height) * 3),
+      var(--addon-baseline-l4) calc(var(--addon-baseline-height) * 4),
+      var(--addon-baseline-l5) calc(var(--addon-baseline-height) * 4),
+      var(--addon-baseline-l5) var(--addon-baseline-cycle)
+    );
+    background-size: 100% var(--addon-baseline-cycle);
     background-position: 0 var(--addon-baseline-shift);
     background-repeat: repeat;
   }
