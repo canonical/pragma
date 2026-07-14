@@ -40,6 +40,18 @@ describe("resolveCommandKind", () => {
     expect(result).toEqual({ kind: "store-skip", command: "mcp" });
   });
 
+  it("detects store-skip for create (pure scaffolding, no store)", () => {
+    const result = resolveCommandKind([
+      "node",
+      "pragma",
+      "create",
+      "component",
+      "react",
+      "Accordion2",
+    ]);
+    expect(result).toEqual({ kind: "store-skip", command: "create" });
+  });
+
   it("defaults to store-required for regular commands", () => {
     const result = resolveCommandKind(["node", "pragma", "component", "list"]);
     expect(result).toEqual({ kind: "store-required" });
