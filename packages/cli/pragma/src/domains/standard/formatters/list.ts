@@ -24,6 +24,27 @@ function truncate(text: string, max: number): string {
   return oneLine.length <= max ? oneLine : `${oneLine.slice(0, max - 1)}…`;
 }
 
+/**
+ * Render a standard's description for a given disclosure level.
+ *
+ * The default (summary) list keeps one row per standard, so multi-paragraph
+ * descriptions are collapsed to a single line; digest and detailed views show
+ * the full description since the user opted into more depth.
+ *
+ * @param description - The raw standard description (may span lines).
+ * @param level - The active disclosure level.
+ * @returns The description shaped for the level.
+ */
+function describeForLevel(
+  description: string,
+  level: StandardListOutput["disclosure"]["level"],
+): string {
+  if (level === "summary") {
+    return description.replace(/\s*\n\s*/g, " ").trim();
+  }
+  return description;
+}
+
 function firstDoExample(
   detail: StandardDetailed | null | undefined,
   maxLen: number,
@@ -122,7 +143,10 @@ function formatPlainRow(
   row: StandardListRow,
   level: StandardListOutput["disclosure"]["level"],
 ): string {
-  const lines = [formatHeading(row), `  ${row.description}`];
+  const lines = [
+    formatHeading(row),
+    `  ${describeForLevel(row.description, level)}`,
+  ];
 
   if (row.extends) {
     lines.push(`  Extends: ${row.extends}`);
@@ -154,7 +178,7 @@ function formatLlmRow(
   const lines = [
     `- **${row.name}**${row.category ? ` [${row.category}]` : ""}`,
   ];
-  lines.push(`  ${row.description}`);
+  lines.push(`  ${describeForLevel(row.description, level)}`);
 
   if (row.extends) {
     lines.push(`  Extends: ${row.extends}`);
