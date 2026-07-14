@@ -107,8 +107,9 @@
 }
 
 /* The box's top border sits above the content and counts toward the target, so
- * subtract it once. Primary button is borderless (--button-border-width 0);
- * bordered controls (secondary button, input) are 1px. */
+ * subtract it once. The nominal --button-border-width (1px) matches what put the
+ * button ON the baseline previously; the primary's 0-outline is handled by the
+ * grid math, not by zeroing this term. Input is 1px. */
 :where(.comfortable, .dense, .app, .site, .docs) .ds.button {
   --border-top-width: var(--button-border-width, 0px);
 }
