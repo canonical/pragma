@@ -211,7 +211,14 @@
  * snaps a control UP to its intrinsic content (so a 28px-content button stays 28,
  * never shrinking to a 24px dense box) — right for the arbitrary-content spike
  * boxes, wrong for a fixed-density CONTROL, which must be exactly the density
- * height. So the control rule is the plain fixed height and needs no @supports. */
+ * height. So the control rule is the plain fixed height and needs no @supports.
+ *
+ * TEXT ALIGNMENT: top-align the text and apply the baseline nudge MINUS the
+ * top border, so the 1px border (present on Se, absent on Re) does not push the
+ * baseline off the grid. The nudge seats the baseline relative to the CONTENT
+ * box top; the border sits above that, so we subtract --box-border-top from the
+ * nudge. This makes Re (no border) and Se (1px border) seat their text on the
+ * same grid line. */
 :where(.comfortable, .dense, .app, .site, .docs)
   :where(.ds.button, .ds.input, .spike-box) {
   box-sizing: border-box;
@@ -223,4 +230,47 @@
   );
   block-size: var(--density-box-height);
   min-block-size: var(--density-box-height);
+  /* Top-reference the content so the nudge governs its position, not flex
+     stretch/centre. */
+  align-items: flex-start;
+}
+
+/* ── Boxed nudge — a reusable "nudge minus the top border" ───────────────────
+ *
+ * The plain baseline nudge (--start-nudge) seats the baseline relative to the
+ * CONTENT-box top. Inside a bordered box the border sits ABOVE the content box,
+ * shifting the baseline down by its width. The boxed nudge re-applies the nudge
+ * MINUS the top border, parameterised by `--border-top-width` (default 0):
+ *
+ *     padding-block-start = max(0, --start-nudge − --border-top-width)
+ *
+ * `.boxed-nudge` is the standalone utility (put it on the element that carries
+ * `.p`/--start-nudge, set --border-top-width to its border). The density-control
+ * rules below reuse the SAME declarations, differing only in --border-top-width:
+ *   · Real Button: has `.p` itself; border = --button-border-width (0 primary).
+ *   · Spike-box: nudge on inner `.seat.p`; border = 1px. */
+.boxed-nudge,
+:where(.comfortable, .dense, .app, .site, .docs) .ds.button.p,
+:where(.comfortable, .dense, .app, .site, .docs) .spike-box > .seat.p {
+  padding-block-start: max(
+    0px,
+    calc(var(--start-nudge, 0px) - var(--border-top-width, 0px))
+  );
+  padding-block-end: 0;
+}
+/* Real Button: it flex-CENTRES its label (align-items/justify-content: center),
+ * which floats the text independently of the grid. In the density context we
+ * top-reference it so the boxed-nudge padding governs the baseline. We also stop
+ * the button's own border adding to the nudge via --border-top-width. Specificity
+ * `.ds.button.p` (0,3,0) beats the Button's own `.ds.button` (0,2,0). */
+:where(.comfortable, .dense, .app, .site, .docs) .ds.button.p {
+  --border-top-width: var(--button-border-width, 0px);
+  align-items: flex-start;
+  justify-content: flex-start;
+}
+:where(.comfortable, .dense, .app, .site, .docs) .spike-box {
+  align-items: flex-start;
+}
+:where(.comfortable, .dense, .app, .site, .docs) .spike-box > .seat.p {
+  --border-top-width: 1px;
 }
