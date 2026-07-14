@@ -97,11 +97,10 @@ export default function buildComponentCommand(): CommandDefinition {
 
       const gen = COMPONENT_GENERATORS[framework];
       if (!gen) {
+        // validOptions already renders the valid frameworks; a recovery message
+        // repeating them would print the list twice.
         throw PragmaError.invalidInput("framework", framework, {
           validOptions: Object.keys(COMPONENT_GENERATORS),
-          recovery: {
-            message: `Valid frameworks: ${Object.keys(COMPONENT_GENERATORS).join(", ")}`,
-          },
         });
       }
 
