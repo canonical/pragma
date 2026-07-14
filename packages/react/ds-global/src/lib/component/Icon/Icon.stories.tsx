@@ -1,4 +1,4 @@
-import { ICON_NAMES } from "@canonical/ds-assets/src/index.js";
+import { ICON_NAMES } from "@canonical/ds-assets";
 import type { Meta, StoryFn, StoryObj } from "@storybook/react-vite";
 import Component from "./Icon.js";
 

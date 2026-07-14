@@ -1,3 +1,4 @@
+import { ICON_NAMES } from "@canonical/ds-assets";
 import { MODIFIER_FAMILIES } from "@canonical/ds-types";
 import type { Decorator, Meta, StoryObj } from "@storybook/react-vite";
 import type React from "react";
@@ -43,6 +44,12 @@ const meta = {
     variant: {
       control: "select",
       options: [undefined, "link"],
+    },
+    // Icon is a design-system icon NAME (not arbitrary markup): a select over the
+    // ds-assets icon set, with `undefined` = no icon (the default).
+    icon: {
+      control: "select",
+      options: [undefined, ...ICON_NAMES],
     },
   },
   args: { onClick: fn(), importance: "primary" },
