@@ -1,4 +1,10 @@
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -6,11 +12,22 @@ import { PragmaError } from "../error/PragmaError.js";
 import readConfig from "./readConfig.js";
 import writeConfig from "./writeConfig.js";
 
+/** Write to `<dir>/pragma.config.json` — these tests pin file mechanics. */
+function writeConfigLocal(
+  dir: string,
+  update: Parameters<typeof writeConfig>[1],
+): string {
+  return writeConfig(dir, update, "local");
+}
+
 describe("readConfig", () => {
   let dir: string;
 
   beforeEach(() => {
     dir = mkdtempSync(join(tmpdir(), "pragma-config-"));
+    // Bound the project-config walk at this fixture root so a stray
+    // pragma.config.json in an ancestor directory can never leak in.
+    mkdirSync(join(dir, ".git"));
   });
 
   afterEach(() => {
@@ -174,6 +191,64 @@ describe("readConfig", () => {
   });
 });
 
+describe("readConfig — stories and prefixes fields", () => {
+  let dir: string;
+
+  beforeEach(() => {
+    dir = mkdtempSync(join(tmpdir(), "pragma-config-stories-"));
+    mkdirSync(join(dir, ".git"));
+  });
+
+  afterEach(() => {
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it("parses a valid stories array and prefixes map", () => {
+    writeFileSync(
+      join(dir, "pragma.config.json"),
+      JSON.stringify({
+        prefixes: { ex: "http://example.org/" },
+        stories: [
+          {
+            noun: "recipe",
+            list: {
+              query: "SELECT ?uri WHERE { ?uri a ex:Recipe }",
+              columns: [{ field: "uri" }],
+            },
+          },
+        ],
+      }),
+    );
+    const config = readConfig(dir);
+    expect(config.prefixes).toEqual({ ex: "http://example.org/" });
+    expect(config.stories?.at(0)?.noun).toBe("recipe");
+  });
+
+  it("throws on a non-array stories field", () => {
+    writeFileSync(
+      join(dir, "pragma.config.json"),
+      '{"stories": {"noun": "x"}}',
+    );
+    expect(() => readConfig(dir)).toThrow(/stories/);
+  });
+
+  it("throws on an invalid story definition", () => {
+    writeFileSync(
+      join(dir, "pragma.config.json"),
+      '{"stories": [{"noun": "Bad Noun"}]}',
+    );
+    expect(() => readConfig(dir)).toThrow(PragmaError);
+  });
+
+  it("throws on a prefixes value that is not an IRI", () => {
+    writeFileSync(
+      join(dir, "pragma.config.json"),
+      '{"prefixes": {"ex": "not-an-iri"}}',
+    );
+    expect(() => readConfig(dir)).toThrow(/prefix/);
+  });
+});
+
 describe("writeConfig", () => {
   let dir: string;
 
@@ -186,14 +261,14 @@ describe("writeConfig", () => {
   });
 
   it("creates a new config file with tier", () => {
-    writeConfig(dir, { tier: "apps/lxd" });
+    writeConfigLocal(dir, { tier: "apps/lxd" });
     const config = readConfig(dir);
     expect(config.tier).toBe("apps/lxd");
     expect(config.channel).toBe("normal");
   });
 
   it("creates a new config file with channel", () => {
-    writeConfig(dir, { channel: "experimental" });
+    writeConfigLocal(dir, { channel: "experimental" });
     const config = readConfig(dir);
     expect(config.channel).toBe("experimental");
     expect(config.tier).toBeUndefined();
@@ -201,7 +276,7 @@ describe("writeConfig", () => {
 
   it("merges tier into existing config", () => {
     writeFileSync(join(dir, "pragma.config.json"), '{"channel":"prerelease"}');
-    writeConfig(dir, { tier: "global" });
+    writeConfigLocal(dir, { tier: "global" });
     const config = readConfig(dir);
     expect(config.tier).toBe("global");
     expect(config.channel).toBe("prerelease");
@@ -212,7 +287,7 @@ describe("writeConfig", () => {
       join(dir, "pragma.config.json"),
       '{"tier":"apps","channel":"normal"}',
     );
-    writeConfig(dir, { tier: undefined });
+    writeConfigLocal(dir, { tier: undefined });
     const config = readConfig(dir);
     expect(config.tier).toBeUndefined();
     expect(config.channel).toBe("normal");
@@ -223,7 +298,7 @@ describe("writeConfig", () => {
       join(dir, "pragma.config.json"),
       '{"tier":"apps","channel":"experimental"}',
     );
-    writeConfig(dir, { channel: undefined });
+    writeConfigLocal(dir, { channel: undefined });
     const config = readConfig(dir);
     expect(config.tier).toBe("apps");
     // Channel defaults to "normal" when absent from file
@@ -231,7 +306,7 @@ describe("writeConfig", () => {
   });
 
   it("round-trips tier and channel through write then read", () => {
-    writeConfig(dir, { tier: "apps/lxd", channel: "prerelease" });
+    writeConfigLocal(dir, { tier: "apps/lxd", channel: "prerelease" });
     const config = readConfig(dir);
     expect(config.tier).toBe("apps/lxd");
     expect(config.channel).toBe("prerelease");
@@ -239,19 +314,19 @@ describe("writeConfig", () => {
 
   it("writes valid empty JSON when all fields removed", () => {
     writeFileSync(join(dir, "pragma.config.json"), '{"tier":"apps"}');
-    writeConfig(dir, { tier: undefined });
+    writeConfigLocal(dir, { tier: undefined });
     const raw = readFileSync(join(dir, "pragma.config.json"), "utf-8");
     expect(raw).toBe("{}\n");
   });
 
   it("throws on unparseable existing config instead of silently overwriting", () => {
     writeFileSync(join(dir, "pragma.config.json"), "{invalid json");
-    expect(() => writeConfig(dir, { tier: "apps" })).toThrow();
+    expect(() => writeConfigLocal(dir, { tier: "apps" })).toThrow();
   });
 
   describe("packages field", () => {
     it("writes packages array", () => {
-      writeConfig(dir, {
+      writeConfigLocal(dir, {
         packages: [
           "@canonical/design-system",
           {
@@ -272,7 +347,7 @@ describe("writeConfig", () => {
 
     it("merges packages into existing config without touching tier", () => {
       writeFileSync(join(dir, "pragma.config.json"), '{"tier":"global"}');
-      writeConfig(dir, { packages: ["@canonical/design-system"] });
+      writeConfigLocal(dir, { packages: ["@canonical/design-system"] });
       const config = readConfig(dir);
       expect(config.tier).toBe("global");
       expect(config.packages).toEqual(["@canonical/design-system"]);
@@ -283,7 +358,7 @@ describe("writeConfig", () => {
         join(dir, "pragma.config.json"),
         JSON.stringify({ packages: ["@canonical/design-system"] }),
       );
-      writeConfig(dir, { packages: undefined });
+      writeConfigLocal(dir, { packages: undefined });
       const config = readConfig(dir);
       expect(config.packages).toBeUndefined();
     });
@@ -296,9 +371,25 @@ describe("writeConfig", () => {
           source: "git+https://github.com/canonical/anatomy-dsl.git#main",
         },
       ];
-      writeConfig(dir, { packages });
+      writeConfigLocal(dir, { packages });
       const config = readConfig(dir);
       expect(config.packages).toEqual(packages);
     });
+  });
+});
+
+describe("readConfig — empty packages normalization", () => {
+  it("treats an explicitly empty packages list as not configured", () => {
+    const dir = mkdtempSync(join(tmpdir(), "pragma-empty-pkgs-"));
+    mkdirSync(join(dir, ".git"), { recursive: true });
+    writeFileSync(
+      join(dir, "pragma.config.json"),
+      JSON.stringify({ channel: "normal", packages: [] }),
+    );
+    const config = readConfig(dir);
+    // The field is dropped at parse time so provenance matches the ref
+    // resolution behavior (empty list falls back to defaults/global refs).
+    expect(config.packages).toBeUndefined();
+    rmSync(dir, { recursive: true, force: true });
   });
 });

@@ -3,6 +3,24 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.30.0](https://github.com/canonical/pragma/compare/v0.29.1...v0.30.0) (2026-07-14)
+
+
+### Bug Fixes
+
+* **deps:** unify @canonical/design-tokens pin to 0.6.2-contrasted.0 ([#748](https://github.com/canonical/pragma/issues/748)) ([cf607d7](https://github.com/canonical/pragma/commit/cf607d7ae40f8044208e1e502c8d92178261e73c)), closes [#731](https://github.com/canonical/pragma/issues/731) [#89](https://github.com/canonical/pragma/issues/89)
+* **ds-global-form:** clear all selections on multiple-combobox reset ([#724](https://github.com/canonical/pragma/issues/724)) ([ff5c972](https://github.com/canonical/pragma/commit/ff5c9729adaba2ea032ae8c7830757dfee15e8a6))
+
+
+### Features
+
+* **ds-global-form:** add RatingInput (work in progress) ([#735](https://github.com/canonical/pragma/issues/735)) ([35f0736](https://github.com/canonical/pragma/commit/35f073619a414d5ff60d66d3fe2be9b25015c9b1))
+* **ds-global-form:** SwitchInput + SwitchField ([#722](https://github.com/canonical/pragma/issues/722)) ([4047696](https://github.com/canonical/pragma/commit/4047696371de06f850f7287e225de096a8e80bd1))
+
+
+
+
+
 ## [0.29.1](https://github.com/canonical/pragma/compare/v0.29.0...v0.29.1) (2026-07-03)
 
 

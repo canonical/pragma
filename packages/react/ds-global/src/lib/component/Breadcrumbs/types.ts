@@ -13,13 +13,20 @@ import type { ItemProps, LinkComponentProps } from "./common/Item/types.js";
  * Adds breadcrumb-specific properties while maintaining
  * compatibility with the unified navigation type.
  */
-// biome-ignore lint/suspicious/noExplicitAny: Component accepts any props
-export interface BreadcrumbItem extends Item<ComponentType<any>> {
+export interface BreadcrumbItem extends Item {
   /**
    * Whether this is the current page.
    * When true, renders as text instead of link.
    */
   current?: boolean;
+  /** CSS class name applied to this item's `<li>`, in addition to the base classes. */
+  className?: string;
+  /**
+   * Custom component for rendering this item itself.
+   * e.g. A specialized renderer for complex items.
+   */
+  // biome-ignore lint/suspicious/noExplicitAny: Component accepts any props
+  Component?: ComponentType<any>;
 }
 
 /**

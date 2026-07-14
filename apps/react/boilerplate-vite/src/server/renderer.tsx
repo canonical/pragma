@@ -17,10 +17,11 @@
 import fs from "node:fs";
 import type { IncomingMessage } from "node:http";
 import path from "node:path";
+import { negotiateLocale } from "@canonical/i18n-core";
 import { extractPreferences } from "@canonical/react-hooks";
 import { JSXRenderer } from "@canonical/react-ssr/renderer";
 import { getRequestUrl } from "@canonical/react-ssr/server";
-import { negotiateLocale } from "#lib/i18n/index.js";
+import { i18nConfig } from "#i18n/config.js";
 import EntryServer, { type InitialData } from "./entry.js";
 
 const htmlString = fs.readFileSync(
@@ -39,11 +40,13 @@ function cookieHeader(request: Request | IncomingMessage): string | null {
 function acceptLanguageHeader(
   request: Request | IncomingMessage,
 ): string | null {
-  return typeof (request as Request).headers?.get === "function"
-    ? (request as Request).headers.get("accept-language")
-    : (((request as IncomingMessage).headers?.["accept-language"] as
-        | string
-        | undefined) ?? null);
+  if (typeof (request as Request).headers?.get === "function") {
+    return (request as Request).headers.get("accept-language");
+  }
+  const header = (request as IncomingMessage).headers?.["accept-language"];
+  // Node joins repeated header lines for most headers but can surface arrays;
+  // negotiation expects the single comma-separated wire format.
+  return Array.isArray(header) ? header.join(",") : (header ?? null);
 }
 
 /**
@@ -55,7 +58,10 @@ function acceptLanguageHeader(
 export default function createAppRenderer(request: Request | IncomingMessage) {
   const cookie = cookieHeader(request);
   const { theme } = extractPreferences(cookie);
-  const locale = negotiateLocale(cookie, acceptLanguageHeader(request));
+  const locale = negotiateLocale(i18nConfig, {
+    cookieHeader: cookie,
+    acceptLanguage: acceptLanguageHeader(request),
+  });
   const initialData: InitialData = {
     url: getRequestUrl(request),
     theme: theme === "light" || theme === "dark" ? theme : undefined,

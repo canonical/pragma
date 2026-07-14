@@ -26,7 +26,7 @@ export function annotateTree<T extends Item = Item>(
   } as _Item<T>;
   if (items) {
     // The tree is homogeneous: every node is the same item type `T`. The base
-    // `Item<C>.items` is typed `Item<C>[]`, so narrow children back to `T`
+    // `Item.items` is typed `Item[]`, so narrow children back to `T`
     // (enhanced item types like `NavItem` already declare `items?: NavItem[]`).
     annotated.items = (items as T[]).map((child) =>
       annotateTree<T>(child, getItemId(root), depth + 1),

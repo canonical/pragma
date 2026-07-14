@@ -92,7 +92,7 @@ locales — all via the shared `@canonical/i18n-core` source.
 
 For a correct first paint, set `<html lang dir>` on the server from the
 negotiated locale with `documentAttrs` (see the
-[`@canonical/i18n-core` README](../../runtime/i18n#server-side-rendering)).
+[`@canonical/i18n-core` README](../../runtime/i18n/README.md#server-side-rendering)).
 
 ## License
 

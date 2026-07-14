@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { dryRun, dryRunWith } from "./dry-run.js";
 import { readFileEffect, writeFileEffect } from "./effect.js";
-import type { TaskExecutionError } from "./interpreter.js";
+import type { TaskExecutionError } from "./errors.js";
 import {
   $,
   ap,

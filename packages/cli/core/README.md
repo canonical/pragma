@@ -58,10 +58,9 @@ interface CommandDefinition {
 
 ## CommandResult
 
-Three-variant tagged union:
+Two-variant tagged union:
 
 - **output** — data to render via a `RenderPair` (plain text or Ink)
-- **interactive** — user interaction needed (spec is data-only, binary decides rendering)
 - **exit** — exit with code, no output
 
 ## Completions

@@ -19,12 +19,13 @@ export default async function resolveBlockLookup(
   const nested: LookupResult<BlockDetailed[]> =
     names.length > 0
       ? await lookupMany(names, (query) => lookupBlock(store, query, filters))
-      : { results: [], errors: [] };
+      : { results: [], errors: [], meta: { internalErrorCount: 0 } };
 
   // lookupBlock returns BlockDetailed[] (multiple matches per name) — flatten
   const result: LookupResult<BlockDetailed> = {
     results: nested.results.flat(),
     errors: [...nested.errors, ...globErrors],
+    meta: nested.meta ?? { internalErrorCount: 0 },
   };
 
   return {

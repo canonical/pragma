@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.30.0](https://github.com/canonical/pragma/compare/v0.29.1...v0.30.0) (2026-07-14)
+
+
+### Bug Fixes
+
+* **summon-package:** make the per-package PR template opt-in ([#749](https://github.com/canonical/pragma/issues/749)) ([4847e38](https://github.com/canonical/pragma/commit/4847e38d9f4993f60577330c445ba45ddbb6b79f)), closes [canonical/pragma#684](https://github.com/canonical/pragma/issues/684) [#686](https://github.com/canonical/pragma/issues/686) [canonical/pragma#684](https://github.com/canonical/pragma/issues/684)
+
+
+
+
+
 # [0.29.0](https://github.com/canonical/pragma/compare/v0.29.0-experimental.0...v0.29.0) (2026-07-03)
 
 **Note:** Version bump only for package @canonical/summon-package

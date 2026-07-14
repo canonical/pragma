@@ -2,9 +2,11 @@ import {
   type CommandDefinition,
   type CommandResult,
   createOutputResult,
+  runGeneratorTask,
 } from "@canonical/cli-core";
 import { detectHarnesses } from "@canonical/harnesses";
-import { collectEffects, runTask } from "@canonical/task";
+import { collectEffects } from "@canonical/task";
+import { runTask } from "@canonical/task/node";
 import { PragmaError } from "#error";
 import type { PragmaContext } from "../../shared/context.js";
 import { selectFormatter } from "../../shared/formatters.js";
@@ -94,7 +96,9 @@ export default function buildSkillsCommand(): CommandDefinition {
         });
       }
 
-      const result = await runTask(task);
+      // Run the symlink task through the shared execution core, like the
+      // other setup commands.
+      const result = await runGeneratorTask(task);
 
       const output: SetupSkillsOutput = { result, dryRun: false };
 

@@ -3,13 +3,14 @@ import {
   type CommandResult,
   createOutputResult,
 } from "@canonical/cli-core";
-import { runTask } from "@canonical/task";
+import { runTask } from "@canonical/task/node";
 import { readConfig } from "#config";
 import type { PragmaContext } from "../../shared/context.js";
 import { selectFormatter } from "../../shared/formatters.js";
 import { channelFormatters } from "../formatters/index.js";
 import { validateChannel } from "../operations/index.js";
 import { setChannelTask } from "../tasks/index.js";
+import { resolveConfigScope, SCOPE_PARAMETERS } from "./configScope.js";
 
 /**
  * Build the `pragma config channel` command definition.
@@ -40,6 +41,7 @@ export default function buildChannelCommand(
         type: "boolean",
         default: false,
       },
+      ...SCOPE_PARAMETERS,
     ],
     meta: {
       examples: [
@@ -50,15 +52,17 @@ export default function buildChannelCommand(
     execute: async (
       params: Record<string, unknown>,
     ): Promise<CommandResult> => {
+      const scope = resolveConfigScope(params);
       const reset = params.reset === true;
       const value = params.value as string | undefined;
 
       if (reset) {
-        await runTask(setChannelTask(ctx.cwd, undefined));
+        const result = await runTask(setChannelTask(ctx.cwd, undefined, scope));
         const format = selectFormatter(ctx, channelFormatters.reset);
-        return createOutputResult("Reset channel to default.", {
-          plain: format,
-        });
+        return createOutputResult(
+          { field: "channel", path: result.path },
+          { plain: format },
+        );
       }
 
       if (!value) {
@@ -71,10 +75,10 @@ export default function buildChannelCommand(
 
       const channel = validateChannel(value);
 
-      await runTask(setChannelTask(ctx.cwd, channel));
+      const result = await runTask(setChannelTask(ctx.cwd, channel, scope));
       const format = selectFormatter(ctx, channelFormatters.set);
       return createOutputResult(
-        { field: "channel", value: channel },
+        { field: "channel", value: channel, path: result.path },
         { plain: format },
       );
     },

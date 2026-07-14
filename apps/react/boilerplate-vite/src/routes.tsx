@@ -1,3 +1,4 @@
+import { useTranslation } from "@canonical/i18n-react";
 import {
   type AnyRoute,
   group,
@@ -10,6 +11,7 @@ import {
 } from "@canonical/router-core";
 import type { ReactElement, ReactNode } from "react";
 import accountRoutes from "#domains/account/routes.js";
+import catalogRoutes from "#domains/catalog/routes.js";
 import contactRoutes from "#domains/contact/routes.js";
 import marketingRoutes from "#domains/marketing/routes.js";
 import Navigation from "#lib/Navigation/index.js";
@@ -84,14 +86,20 @@ const publicLayout = wrapper<ReactElement>({
   ),
 });
 
+function NotFoundPage(): ReactElement {
+  const { t } = useTranslation();
+
+  return (
+    <section>
+      <h1>{t("notFound.heading")}</h1>
+      <p>{t("notFound.body")}</p>
+    </section>
+  );
+}
+
 const notFoundRoute = route({
   url: "/not-found",
-  content: () => (
-    <section>
-      <h1>Page not found</h1>
-      <p>The page you are looking for does not exist.</p>
-    </section>
-  ),
+  content: NotFoundPage,
 });
 
 const [guide, home] = group(publicLayout, [
@@ -106,12 +114,15 @@ const [account, login] = group(publicLayout, [
 
 const [contact] = group(publicLayout, [contactRoutes.contact] as const);
 
+const [catalog] = group(publicLayout, [catalogRoutes.catalog] as const);
+
 const appRoutes = {
   guide,
   home,
   account,
   login,
   contact,
+  catalog,
 } as const;
 
 export type AppRoutes = typeof appRoutes;

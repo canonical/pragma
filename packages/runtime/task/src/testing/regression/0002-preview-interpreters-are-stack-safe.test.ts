@@ -12,7 +12,7 @@ import { collectEffects, dryRun } from "../../lib/dry-run.js";
 import { writeFile } from "../../lib/primitives.js";
 import { flatMap, pure } from "../../lib/task.js";
 import type { Task } from "../../lib/types.js";
-import { collectUndos } from "../../lib/undo-interpreter.js";
+import { collectUndos } from "../../lib/undo.js";
 
 // A depth well beyond the native call-stack limit (~10k frames), so a recursive
 // walk would overflow while a trampolined one completes.

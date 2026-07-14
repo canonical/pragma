@@ -51,6 +51,8 @@ package-lock.json
 *.egg-info
 .snapcraft/
 *.snap
+# vitest snapshot baselines are source, not snapcraft artifacts
+!**/__snapshots__/*.snap
 _site/
 *.*.map
 dist/
@@ -77,8 +79,6 @@ static/js/modules
 # NX cache
 .nx/
 
-sem.toml
-sem_modules/
 .claude/
 .kg/
 node_modules

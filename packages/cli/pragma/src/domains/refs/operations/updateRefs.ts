@@ -8,12 +8,11 @@
 import { existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { readConfig } from "#config";
-import { DEFAULT_PACKAGES } from "../../shared/packages.js";
+import { mergeAndParseRefs } from "../../shared/mergeAndParseRefs.js";
 import { cloneRef, fetchRef, pruneCache } from "./gitOps.js";
 import type { PackageRef, RawPackageEntry } from "./parseRef.js";
 import { parsePackageEntry } from "./parseRef.js";
 import { cacheRoot, gitCacheDir } from "./paths.js";
-import readGlobalRefs from "./readGlobalRefs.js";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -56,7 +55,7 @@ export default async function updateRefs(
   options: UpdateRefsOptions,
 ): Promise<UpdateResult[]> {
   const config = readConfig(options.cwd);
-  const refs = mergeEntries(config.packages);
+  const refs = mergeAndParseRefs(config.packages);
   const results: UpdateResult[] = [];
 
   for (const ref of refs) {
@@ -136,40 +135,6 @@ export default async function updateRefs(
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-/** Merge global + project entries, parse into PackageRef[]. */
-function mergeEntries(
-  projectPackages?: ReadonlyArray<RawPackageEntry>,
-): PackageRef[] {
-  const globalEntries = readGlobalRefs();
-
-  if (
-    (!projectPackages || projectPackages.length === 0) &&
-    globalEntries.length === 0
-  ) {
-    return DEFAULT_PACKAGES.map((pkg) => parsePackageEntry(pkg));
-  }
-
-  const merged = new Map<string, RawPackageEntry>();
-
-  for (const entry of DEFAULT_PACKAGES) {
-    const name = typeof entry === "string" ? entry : entry.name;
-    merged.set(name, entry);
-  }
-  for (const entry of globalEntries) {
-    const name = typeof entry === "string" ? entry : entry.name;
-    merged.set(name, entry);
-  }
-  if (projectPackages) {
-    merged.clear();
-    for (const entry of projectPackages) {
-      const name = typeof entry === "string" ? entry : entry.name;
-      merged.set(name, entry);
-    }
-  }
-
-  return [...merged.values()].map(parsePackageEntry);
-}
 
 /**
  * Remove cache directories that don't match any configured git ref.

@@ -3,6 +3,19 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.30.0](https://github.com/canonical/pragma/compare/v0.29.1...v0.30.0) (2026-07-14)
+
+
+### Features
+
+* **ds-global:** implement Announcement with criticality variants ([#746](https://github.com/canonical/pragma/issues/746)) ([8e26c95](https://github.com/canonical/pragma/commit/8e26c950a7feea87e65f7a4bb1772cb656b116ce))
+* **ds-global:** overlay components — Tooltip, Popover, ContextualMenu (+ submenus, logical placement, RTL) ([#731](https://github.com/canonical/pragma/issues/731)) ([4012a46](https://github.com/canonical/pragma/commit/4012a4630e18c02759a154232baec33850902916)), closes [#89](https://github.com/canonical/pragma/issues/89) [post-#745](https://github.com/post-/issues/745) [#745](https://github.com/canonical/pragma/issues/745)
+* **ds-global:** reconcile + fully style Button (re-target to main) ([#734](https://github.com/canonical/pragma/issues/734)) ([8e4cdbc](https://github.com/canonical/pragma/commit/8e4cdbc7052ae5e899ecb6d98090d45b6391b79a))
+
+
+
+
+
 # [0.29.0](https://github.com/canonical/pragma/compare/v0.29.0-experimental.0...v0.29.0) (2026-07-03)
 
 **Note:** Version bump only for package @canonical/styles

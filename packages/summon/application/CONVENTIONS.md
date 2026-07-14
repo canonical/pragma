@@ -1,7 +1,7 @@
 # Application Conventions
 
-> From `@canonical/summon-application` v0.25.0
-> Last updated: 2026-04-24
+> From `@canonical/summon-application` v0.29.0
+> Last updated: 2026-07-10
 
 ## Taxonomy Key
 
@@ -17,6 +17,7 @@
 | `A8` | Head | Document head management |
 | `A9` | Navigation | Client-side navigation |
 | `A10` | Types | Type registration and safety |
+| `A11` | Data | Relay (GraphQL) data layer (when `--relay` is enabled) |
 
 ---
 
@@ -252,6 +253,42 @@ const [invoices, payments] = group(sidebarWrapper, [
 | A10.2 | `AppRoutes` type exported from `routes.tsx` | type export present |
 | A10.3 | No `as` casts in route or page code | zero cast count |
 | A10.4 | No `@ts-ignore` or `@ts-expect-error` in generated code | zero suppression count |
+
+---
+
+## A11 — Data (Relay)
+
+Present only when the application is scaffolded with `--relay`.
+
+| ID | Rule | Gate |
+|----|------|------|
+| A11.1 | The Relay layer lives in `src/relay/` (environment factory, mock schema, artifacts) | `src/relay/environment.ts` exists |
+| A11.2 | The environment factory defaults to the local in-process mock schema; `VITE_GRAPHQL_URL` (or an explicit URL) switches to an HTTP executor | `createEnvironment` branches on the URL |
+| A11.3 | Compiler artifacts in `src/relay/__generated__/` are committed, never rebuilt by the app build (`codegen: false`); regenerate explicitly with the `relay` script after any schema or `graphql` tag edit | committed artifacts match schema |
+| A11.4 | Data requirements are colocated: containers use `useLazyLoadQuery`, leaf components own their `useFragment`, parents just spread it | fragment per component |
+| A11.5 | Query subtrees pair `Suspense` (pending state) with an `ErrorBoundary` (failure state) | both boundaries wrap the subtree |
+| A11.6 | Query subtrees render inside `ClientOnly` until SSR data serialization/hydration is supported | `ClientOnly` wraps query subtrees |
+| A11.7 | One Relay environment per browser session (module scope in the client entry); a fresh environment per request in the server entry | environment creation sites |
+
+### ClientOnly (pending SSR data support)
+
+`src/lib/ClientOnly/` is emitted (and exported from the lib barrel) only when
+`--relay` is enabled: the catalog page is its only consumer today. It defers
+`children` until after hydration, so `useLazyLoadQuery` — which fetches and
+suspends during render — never runs on the server, where there is no way yet
+to serialize the fetched store for the client. The server streams the
+fallback; the browser fetches after hydration. The server entry still
+provides a fresh per-request `RelayEnvironmentProvider`, so any component
+touching Relay context renders without branching on runtime. Once SSR data
+serialization/hydration lands, the guard is removed rather than generalised.
+
+### Committed artifacts
+
+`src/relay/__generated__/` ships with the scaffold as the deterministic
+relay-compiler output of the committed `schema.graphql` and the catalog
+queries. The Vite plugin runs with `codegen: false`, so the artifacts are a
+source-of-truth input to the build, not a build product — edit a query or the
+schema, run the `relay` script, and commit the regenerated artifacts.
 
 ---
 

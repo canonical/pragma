@@ -28,6 +28,7 @@ describe("application/react generator", () => {
         ssr: true,
         router: true,
         forms: false,
+        relay: false,
         runInstall: false,
       }),
     );
@@ -51,6 +52,7 @@ describe("application/react generator", () => {
     expect(filePaths).toContain("my-app/biome.json");
     expect(filePaths).toContain("my-app/index.html");
     expect(filePaths).toContain("my-app/.gitignore");
+    expect(filePaths).toContain("my-app/.browserslistrc");
     expect(filePaths).toContain("my-app/src/client/entry.tsx");
     expect(filePaths).toContain("my-app/src/server/entry.tsx");
     expect(filePaths).toContain("my-app/src/server/renderer.tsx");
@@ -116,6 +118,7 @@ describe("application/react generator", () => {
         ssr: true,
         router: true,
         forms: true,
+        relay: true,
         runInstall: false,
       }),
     );
@@ -143,6 +146,7 @@ describe("application/react generator", () => {
         ssr: true,
         router: true,
         forms: true,
+        relay: false,
         runInstall: false,
       }),
     );
@@ -176,6 +180,7 @@ describe("application/react generator", () => {
         ssr: true,
         router: true,
         forms: false,
+        relay: false,
         runInstall: false,
       }),
     );
@@ -194,6 +199,107 @@ describe("application/react generator", () => {
     expect(filePaths).not.toContain("my-app/src/domains/contact/routes.ts");
   });
 
+  it("includes the relay layer, catalog domain, and patches when relay=true", () => {
+    const result = dryRun(
+      generators["application/react"].generate({
+        appPath: "my-app",
+        ssr: true,
+        router: true,
+        forms: false,
+        relay: true,
+        runInstall: false,
+      }),
+    );
+
+    const filePaths = result.effects
+      .filter((e) => e._tag === "WriteFile" || e._tag === "CopyFile")
+      .map(
+        (e) =>
+          (e as { path?: string; dest?: string }).path ??
+          (e as { dest?: string }).dest,
+      );
+
+    // Relay layer: compiler config, environment factory, executable mock
+    // schema, and the committed compiler artifacts.
+    expect(filePaths).toContain("my-app/relay.config.json");
+    expect(filePaths).toContain("my-app/src/relay/schema.graphql");
+    expect(filePaths).toContain("my-app/src/relay/schema.ts");
+    expect(filePaths).toContain("my-app/src/relay/schema.tests.ts");
+    expect(filePaths).toContain("my-app/src/relay/environment.ts");
+    expect(filePaths).toContain("my-app/src/relay/environment.tests.ts");
+    expect(filePaths).toContain(
+      "my-app/src/relay/__generated__/ProductCard_product.graphql.ts",
+    );
+    expect(filePaths).toContain(
+      "my-app/src/relay/__generated__/ProductListQuery.graphql.ts",
+    );
+
+    // Catalog example domain
+    expect(filePaths).toContain("my-app/src/domains/catalog/CatalogPage.tsx");
+    expect(filePaths).toContain("my-app/src/domains/catalog/ProductList.tsx");
+    expect(filePaths).toContain(
+      "my-app/src/domains/catalog/ProductList.stories.tsx",
+    );
+    expect(filePaths).toContain(
+      "my-app/src/domains/catalog/ProductList.tests.tsx",
+    );
+    expect(filePaths).toContain("my-app/src/domains/catalog/ProductCard.tsx");
+    expect(filePaths).toContain("my-app/src/domains/catalog/ErrorBoundary.tsx");
+    expect(filePaths).toContain(
+      "my-app/src/domains/catalog/ErrorBoundary.tests.tsx",
+    );
+    expect(filePaths).toContain("my-app/src/domains/catalog/routes.ts");
+
+    // ClientOnly SSR guard (relay is its only consumer today)
+    expect(filePaths).toContain("my-app/src/lib/ClientOnly/ClientOnly.tsx");
+    expect(filePaths).toContain(
+      "my-app/src/lib/ClientOnly/ClientOnly.tests.tsx",
+    );
+    expect(filePaths).toContain("my-app/src/lib/ClientOnly/index.ts");
+
+    // Standalone dependency patches applied via patchedDependencies
+    expect(filePaths).toContain("my-app/patches/react-relay@18.2.0.patch");
+    expect(filePaths).toContain(
+      "my-app/patches/relay-runtime-network@0.1.0.patch",
+    );
+  });
+
+  it("excludes the relay layer, catalog domain, and patches when relay=false", () => {
+    const result = dryRun(
+      generators["application/react"].generate({
+        appPath: "my-app",
+        ssr: true,
+        router: true,
+        forms: true,
+        relay: false,
+        runInstall: false,
+      }),
+    );
+
+    const filePaths = result.effects
+      .filter((e) => e._tag === "WriteFile" || e._tag === "CopyFile")
+      .map(
+        (e) =>
+          (e as { path?: string; dest?: string }).path ??
+          (e as { dest?: string }).dest,
+      );
+
+    // No src/relay/, no catalog domain, no ClientOnly, no patches.
+    expect(filePaths.filter((p) => p?.startsWith("my-app/src/relay/"))).toEqual(
+      [],
+    );
+    expect(
+      filePaths.filter((p) => p?.startsWith("my-app/src/domains/catalog/")),
+    ).toEqual([]);
+    expect(
+      filePaths.filter((p) => p?.startsWith("my-app/src/lib/ClientOnly/")),
+    ).toEqual([]);
+    expect(filePaths.filter((p) => p?.startsWith("my-app/patches/"))).toEqual(
+      [],
+    );
+    expect(filePaths).not.toContain("my-app/relay.config.json");
+  });
+
   it("uses the appPath in file paths", () => {
     const result = dryRun(
       generators["application/react"].generate({
@@ -201,6 +307,7 @@ describe("application/react generator", () => {
         ssr: true,
         router: true,
         forms: false,
+        relay: false,
         runInstall: false,
       }),
     );
@@ -225,6 +332,7 @@ describe("application/react generator", () => {
           ssr: false,
           router: true,
           forms: false,
+          relay: false,
           runInstall: false,
         }),
       ),
@@ -239,6 +347,7 @@ describe("application/react generator", () => {
           ssr: true,
           router: false,
           forms: false,
+          relay: false,
           runInstall: false,
         }),
       ),

@@ -1,6 +1,10 @@
 {
   "extends": ["@canonical/biome-config"],
   "files": {
-    "includes": ["src", "*.json"]
+    "includes": [
+      "src",
+      "*.json",
+      "!src/application/react/templates/src/relay/__generated__"
+    ]
   }
 }

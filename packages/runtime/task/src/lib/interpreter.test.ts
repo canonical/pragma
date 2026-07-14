@@ -9,26 +9,15 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
-import { orElse, parallel, race, sequence_ } from "./combinators.js";
+import { describe, expect, it, vi } from "vitest";
+import { parallel, sequence_ } from "./combinators.js";
 import {
   executeEffect,
-  JournalDivergenceError,
-  JournalUnsupportedEffectError,
   run,
   runTask,
   TaskExecutionError,
 } from "./interpreter.js";
-import {
-  info,
-  promptText,
-  readFile,
-  setContext,
-  succeed,
-  warn,
-} from "./primitives.js";
-import recordTask from "./recordTask.js";
-import replayTask from "./replayTask.js";
+import { info, succeed, warn } from "./primitives.js";
 import {
   $,
   effect,
@@ -1819,87 +1808,5 @@ describe("Interpreter - interruption bypasses recovery", () => {
 
     // The interrupt bypassed the recover handler entirely.
     expect(handlerCalls).toBe(0);
-  });
-});
-
-// =============================================================================
-// Journal seam (record / replay in runTask)
-// =============================================================================
-
-describe("Interpreter - journal seam", () => {
-  let dir: string;
-
-  beforeAll(() => {
-    dir = mkdtempSync(join(tmpdir(), "task-journal-seam-"));
-  });
-
-  afterAll(() => {
-    rmSync(dir, { recursive: true, force: true });
-  });
-
-  it("rejects a Parallel effect under a journal (composites have no positional identity)", async () => {
-    await expect(
-      recordTask(parallel([succeed("a"), succeed("b")])),
-    ).rejects.toBeInstanceOf(JournalUnsupportedEffectError);
-  });
-
-  it("rejects a Race effect under a journal", async () => {
-    await expect(recordTask(race([succeed("a")]))).rejects.toBeInstanceOf(
-      JournalUnsupportedEffectError,
-    );
-  });
-
-  it("lets a JournalUnsupportedEffectError escape an enclosing recover", async () => {
-    const guarded = orElse(parallel([succeed("a")]), pure("swallowed"));
-    await expect(recordTask(guarded)).rejects.toBeInstanceOf(
-      JournalUnsupportedEffectError,
-    );
-  });
-
-  it("rejects a WriteContext whose value is not canonicalisable, and does not let recover swallow it", async () => {
-    const nonSerialisable = setContext("logger", () => undefined);
-    await expect(recordTask(nonSerialisable)).rejects.toBeInstanceOf(
-      JournalUnsupportedEffectError,
-    );
-
-    const guarded = orElse(
-      setContext("logger", () => undefined),
-      pure("swallowed"),
-    );
-    await expect(recordTask(guarded)).rejects.toBeInstanceOf(
-      JournalUnsupportedEffectError,
-    );
-  });
-
-  it("lets a JournalDivergenceError escape an enclosing recover instead of being caught", async () => {
-    const a = join(dir, "esc-a.txt");
-    const b = join(dir, "esc-b.txt");
-    writeFileSync(a, "A");
-    writeFileSync(b, "B");
-
-    const recorded = await recordTask(readFile(a));
-    // The replayed task reads a *different* path under a recover; the divergence
-    // must not be swallowed by the handler.
-    const diverged = orElse(readFile(b), pure("swallowed"));
-
-    await expect(replayTask(diverged, recorded.journal)).rejects.toBeInstanceOf(
-      JournalDivergenceError,
-    );
-  });
-
-  it("does not record an effect the prompt handler interrupts during a journaled run", async () => {
-    const journal = { entries: [] };
-    const promptHandler = () => {
-      throw new TaskExecutionError({
-        code: "TASK_INTERRUPTED",
-        message: "cancelled",
-      });
-    };
-
-    await expect(
-      runTask(promptText("name", "Your name?"), { journal, promptHandler }),
-    ).rejects.toMatchObject({ code: "TASK_INTERRUPTED" });
-
-    expect(journal.entries).toHaveLength(0);
   });
 });

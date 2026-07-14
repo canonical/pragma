@@ -10,6 +10,9 @@ import {
 } from "@canonical/router-core";
 import type { ReactElement, ReactNode } from "react";
 import accountRoutes from "#domains/account/routes.js";
+<% if (relay) { -%>
+import catalogRoutes from "#domains/catalog/routes.js";
+<% } -%>
 <% if (forms) { -%>
 import contactRoutes from "#domains/contact/routes.js";
 <% } -%>
@@ -106,6 +109,10 @@ const [account, login] = group(publicLayout, [
 const [contact] = group(publicLayout, [contactRoutes.contact] as const);
 
 <% } -%>
+<% if (relay) { -%>
+const [catalog] = group(publicLayout, [catalogRoutes.catalog] as const);
+
+<% } -%>
 const appRoutes = {
   guide,
   home,
@@ -113,6 +120,9 @@ const appRoutes = {
   login,
 <% if (forms) { -%>
   contact,
+<% } -%>
+<% if (relay) { -%>
+  catalog,
 <% } -%>
 } as const;
 

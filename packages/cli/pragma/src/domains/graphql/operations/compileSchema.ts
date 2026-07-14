@@ -1,5 +1,4 @@
-import { readFileSync } from "node:fs";
-import { createStore } from "@canonical/ke";
+import { createStore, type InlineSource } from "@canonical/ke";
 import {
   CompilationError,
   type CompilerResult,
@@ -9,15 +8,14 @@ import {
   hashSources,
 } from "@canonical/ke-graphql";
 import { PragmaError } from "#error";
-import { resolveSourceFiles } from "../helpers/index.js";
 
 export interface CompileSchemaOptions {
-  /** TTL file paths or glob patterns, resolved from `cwd`. */
-  readonly sources: readonly string[];
+  /** In-memory TTL sources (content + provenance path) to compile. */
+  readonly sources: readonly InlineSource[];
   /** Prefix map handed to both the ke store and the compiler. */
   readonly prefixes: Readonly<Record<string, string>>;
-  /** Working directory for resolving relative source paths. */
-  readonly cwd: string;
+  /** Working directory, passed through to the store (unused for inline). */
+  readonly cwd?: string;
 }
 
 export interface CompileSchemaResult {
@@ -25,7 +23,7 @@ export interface CompileSchemaResult {
   readonly status: "ok" | "failed";
   /** All compiler diagnostics, including those carried by a CompilationError. */
   readonly diagnostics: readonly Diagnostic[];
-  /** Resolved absolute TTL file paths that were loaded. */
+  /** Provenance paths of the sources that were loaded. */
   readonly files: readonly string[];
   /** Fingerprint of the raw source contents (matches ke's onLoad hashing). */
   readonly sourcesHash: string;
@@ -34,42 +32,42 @@ export interface CompileSchemaResult {
 }
 
 /**
- * Compile TTL sources into a GraphQL schema via the ke-graphql pipeline.
+ * Compile in-memory TTL sources into a GraphQL schema via the ke-graphql
+ * pipeline.
  *
- * Resolves source patterns, hashes the raw file contents (the exact bytes
- * ke loads, so the artifact's `sourcesHash` matches what
- * `createSchemaPlugin` computes from ke's onLoad), boots a throwaway ke
- * store, and runs the compiler. A {@link CompilationError} (schema
- * composition failed) is converted into a `"failed"` result carrying its
- * diagnostics; the store is always disposed.
+ * Hashes the raw source contents (the exact bytes ke loads, so the
+ * artifact's `sourcesHash` matches what `createSchemaPlugin` computes from
+ * ke's onLoad), boots a throwaway ke store, and runs the compiler. A
+ * {@link CompilationError} (schema composition failed) is converted into a
+ * `"failed"` result carrying its diagnostics; the store is always disposed.
  *
- * @note Impure — reads filesystem and boots a ke store (WASM + TTL).
+ * @note Impure — boots a ke store (WASM + TTL).
  *
- * @param options - Sources, prefixes, and working directory.
+ * @param options - In-memory sources and prefixes.
  * @returns The compile outcome with diagnostics, files, and sources hash.
- * @throws PragmaError with code `INVALID_INPUT` when no sources resolve.
+ * @throws PragmaError with code `INVALID_INPUT` when given no sources.
  * @throws PragmaError with code `STORE_ERROR` when the store fails to load.
  */
 export default async function compileSchema(
   options: CompileSchemaOptions,
 ): Promise<CompileSchemaResult> {
-  const files = resolveSourceFiles(options.sources, options.cwd);
+  const { sources } = options;
 
-  if (files.length === 0) {
-    throw PragmaError.invalidInput("sources", options.sources.join(", "), {
+  if (sources.length === 0) {
+    throw PragmaError.invalidInput("sources", "(empty)", {
       recovery: {
-        message: "Provide at least one existing TTL file or glob pattern.",
+        message: "Provide at least one TTL source.",
       },
     });
   }
 
-  const contents = files.map((file) => readFileSync(file, "utf-8"));
-  const sourcesHash = hashSources(contents);
+  const sourcesHash = hashSources(sources.map((source) => source.content));
+  const files = sources.map((source) => source.path ?? "inline");
 
   let store: Awaited<ReturnType<typeof createStore>>;
   try {
     store = await createStore({
-      sources: [...files],
+      sources: [...sources],
       prefixes: options.prefixes,
       cwd: options.cwd,
     });

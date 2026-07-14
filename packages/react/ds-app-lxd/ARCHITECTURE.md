@@ -25,7 +25,7 @@ Our architecture is driven by several core goals and design principles:
 
 ### 1.2 Tooling Choices
 
-On top of the [root-level architecture](../../../guides/ARCHITECTURE.md), this package leverages a modern React
+On top of the [root-level architecture](../../../docs/explanations/ARCHITECTURE.md), this package leverages a modern React
 toolchain to achieve its goals:
 
 | Tool(s)                                | Enables                                                                     | Benefits                                                                              |

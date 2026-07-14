@@ -75,15 +75,16 @@ Bun.serve({
         "@canonical/react-hooks",
       );
       const { negotiateLocale } = await vite.ssrLoadModule(
-        "/src/lib/i18n/index.ts",
+        "@canonical/i18n-core",
       );
+      const { i18nConfig } = await vite.ssrLoadModule("/src/i18n/config.ts");
 
       const cookie = req.headers.get("cookie");
       const { theme } = extractPreferences(cookie);
-      const locale = negotiateLocale(
-        cookie,
-        req.headers.get("accept-language"),
-      );
+      const locale = negotiateLocale(i18nConfig, {
+        cookieHeader: cookie,
+        acceptLanguage: req.headers.get("accept-language"),
+      });
       const renderer = new JSXRenderer(
         EntryServer,
         // The cookie is client-controlled, so only the known theme values reach

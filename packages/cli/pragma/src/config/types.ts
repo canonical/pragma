@@ -7,6 +7,7 @@
 
 import type { Channel, Framework } from "../constants.js";
 import type { RawPackageEntry } from "../domains/refs/operations/parseRef.js";
+import type { StoryPackDefinition } from "../domains/shared/stories/pack/types.js";
 
 /** Parsed contents of pragma.config.json. */
 interface PragmaConfig {
@@ -27,6 +28,17 @@ interface PragmaConfig {
    * only — no behaviour reads it yet; reserved for future framework defaulting.
    */
   framework?: Framework | undefined;
+  /**
+   * Declarative read stories compiled into CLI commands and MCP tools at
+   * boot.
+   * @experimental Story packs (v0) are experimental — the format may change.
+   */
+  stories?: ReadonlyArray<StoryPackDefinition> | undefined;
+  /**
+   * Additional namespace prefixes merged over the built-in prefix map —
+   * registered on the store (usable in queries) and used for display.
+   */
+  prefixes?: Readonly<Record<string, string>> | undefined;
 }
 
 /** Partial update payload for writing config changes. */
@@ -43,4 +55,67 @@ interface ConfigUpdate {
   framework?: Framework | undefined;
 }
 
-export type { ConfigUpdate, PragmaConfig };
+/**
+ * Values a single config file declares. A key is present only when the
+ * file sets it — presence drives which layer wins during merging.
+ */
+interface ConfigFileValues {
+  readonly tier?: string;
+  readonly channel?: Channel;
+  readonly packages?: ReadonlyArray<RawPackageEntry>;
+  readonly trace?: boolean;
+  readonly framework?: Framework;
+  readonly stories?: ReadonlyArray<StoryPackDefinition>;
+  readonly prefixes?: Readonly<Record<string, string>>;
+}
+
+/** Which config layer supplied an effective field value. */
+type ConfigOrigin = "default" | "global" | "project";
+
+/** Per-field provenance for the effective merged config. */
+interface ConfigOrigins {
+  readonly tier: ConfigOrigin;
+  readonly channel: ConfigOrigin;
+  readonly packages: ConfigOrigin;
+  readonly trace: ConfigOrigin;
+  readonly framework: ConfigOrigin;
+  readonly stories: ConfigOrigin;
+  readonly prefixes: ConfigOrigin;
+}
+
+/** A resolved config file layer. */
+interface ConfigLayer {
+  /** Absolute path of the layer's config file (existing or would-be). */
+  readonly path: string;
+  /** Whether the file exists and was readable. */
+  readonly exists: boolean;
+}
+
+/** Layered config resolution result with per-field provenance. */
+interface ConfigLayers {
+  /** The effective merged configuration (defaults < global < project). */
+  readonly config: PragmaConfig;
+  /** Which layer supplied each effective field. */
+  readonly origins: ConfigOrigins;
+  /** The global XDG layer (`$XDG_CONFIG_HOME/pragma/config.json`). */
+  readonly global: ConfigLayer;
+  /**
+   * The project layer: the nearest `pragma.config.json` up the tree, or
+   * the would-be path at `cwd` when none exists.
+   */
+  readonly project: ConfigLayer;
+}
+
+/** Target layer selector for config writes. */
+type ConfigScope = "global" | "local";
+
+export type {
+  ConfigFileValues,
+  ConfigLayer,
+  ConfigLayers,
+  ConfigOrigin,
+  ConfigOrigins,
+  ConfigScope,
+  ConfigUpdate,
+  PragmaConfig,
+};

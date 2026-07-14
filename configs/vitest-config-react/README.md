@@ -39,7 +39,7 @@ packages run in `jsdom` while framework-agnostic/SSR packages run in `node`).
 
 | Option        | Type                              | Default   | Notes                                                                                          |
 | ------------- | --------------------------------- | --------- | ---------------------------------------------------------------------------------------------- |
-| `glob`        | `"test" \| "tests"`               | —         | **Required.** The test-file suffix convention. See the caveat below.                           |
+| `glob`        | `"test" \| "tests"`, or an array of those | — | **Required.** The test-file suffix convention(s). See the caveat below.                        |
 | `environment` | `"jsdom" \| "node"`               | `"jsdom"` | `"node"` for framework-agnostic / SSR-only packages.                                           |
 | `ssr`         | `boolean`                         | `false`   | Adds a second `node` project running `**/*.ssr.<glob>.tsx` (the client project excludes them). |
 | `coverage`    | `boolean \| { … }`                | `false`   | `true` enables v8 coverage with 100% thresholds; pass an object to override.                   |
@@ -67,9 +67,25 @@ reactTestConfig({ glob: "tests", environment: "node", coverage: { include: ["src
 ## Caveat: `glob` is load-bearing
 
 `glob` has no default because `.test.` and `.tests.` are **not**
-interchangeable: each package uses exactly one convention, and choosing the
-wrong one silently matches zero files — a green run that ran nothing. Always
-pass the convention the package's test files actually use.
+interchangeable: choosing the wrong convention silently matches zero files — a
+green run that ran nothing. Always pass the convention(s) the package's test
+files actually use.
+
+### Interim: running both conventions
+
+A package whose test files are split between `.test.` and `.tests.` (for
+example `react-ds-global`, whose `_work_in_progress` scaffolds use `.test.`
+while the promoted components use `.tests.`) can pass both:
+
+```typescript
+reactTestConfig({ glob: ["test", "tests"], ssr: true });
+```
+
+Both conventions are then matched by the client project and, with `ssr: true`,
+by the SSR project (`**/*.ssr.test.tsx` and `**/*.ssr.tests.tsx`); coverage
+excludes test files of both conventions. This is an **interim** escape hatch:
+once the repo-wide test-file naming unification lands, packages should return
+to a single convention and the array form should disappear.
 
 ## Roadmap: browser mode
 

@@ -1,0 +1,240 @@
+import { describe, expect, it } from "vitest";
+import { PragmaError } from "#error";
+import { RECIPE_STORY } from "#testing";
+import validateStoryPackDefinition from "./validateStoryPackDefinition.js";
+
+describe("validateStoryPackDefinition", () => {
+  it("accepts a valid definition and round-trips it", () => {
+    const validated = validateStoryPackDefinition(
+      JSON.parse(JSON.stringify(RECIPE_STORY)),
+      "test",
+    );
+    expect(validated).toEqual(RECIPE_STORY);
+  });
+
+  it("rejects a non-kebab noun", () => {
+    expect(() =>
+      validateStoryPackDefinition({ ...RECIPE_STORY, noun: "Recipe" }, "test"),
+    ).toThrow(PragmaError);
+  });
+
+  it("rejects a list without a SELECT query", () => {
+    expect(() =>
+      validateStoryPackDefinition(
+        {
+          ...RECIPE_STORY,
+          list: { ...RECIPE_STORY.list, query: "DELETE WHERE { ?s ?p ?o }" },
+        },
+        "test",
+      ),
+    ).toThrow(/SELECT/);
+  });
+
+  it("rejects empty columns", () => {
+    expect(() =>
+      validateStoryPackDefinition(
+        { ...RECIPE_STORY, list: { ...RECIPE_STORY.list, columns: [] } },
+        "test",
+      ),
+    ).toThrow(/columns/);
+  });
+
+  it("rejects a lookup term that is neither prefixed nor an IRI", () => {
+    expect(() =>
+      validateStoryPackDefinition(
+        {
+          ...RECIPE_STORY,
+          lookup: { by: "just a name" },
+        },
+        "test",
+      ),
+    ).toThrow(/prefixed name/);
+  });
+
+  it("rejects an unknown section kind", () => {
+    expect(() =>
+      validateStoryPackDefinition(
+        {
+          ...RECIPE_STORY,
+          lookup: {
+            by: "ex:name",
+            sections: [{ name: "x", property: "ex:x", kind: "table" }],
+          },
+        },
+        "test",
+      ),
+    ).toThrow(/kind/);
+  });
+
+  it("names the source in errors", () => {
+    try {
+      validateStoryPackDefinition({}, "/pkg/stories/broken.json");
+      expect.unreachable("should have thrown");
+    } catch (error) {
+      expect(error).toBeInstanceOf(PragmaError);
+      expect((error as PragmaError).message).toContain(
+        "/pkg/stories/broken.json",
+      );
+    }
+  });
+});
+
+describe("validateStoryPackDefinition — term and query hardening", () => {
+  function withLookup(lookup: Record<string, unknown>): unknown {
+    const base = JSON.parse(JSON.stringify(RECIPE_STORY)) as Record<
+      string,
+      unknown
+    >;
+    return { ...base, lookup: { ...(base.lookup as object), ...lookup } };
+  }
+
+  it("rejects a slashed prefixed name in class position", () => {
+    expect(() =>
+      validateStoryPackDefinition(
+        withLookup({ type: "ex:Recipe/Sub" }),
+        "test",
+      ),
+    ).toThrow(/must be a prefixed name/);
+  });
+
+  it("accepts a property path in predicate position", () => {
+    const validated = validateStoryPackDefinition(
+      withLookup({ by: "ex:hasName/ex:value" }),
+      "test",
+    );
+    expect(validated.lookup?.by).toBe("ex:hasName/ex:value");
+  });
+
+  it("rejects a property path with a malformed segment", () => {
+    expect(() =>
+      validateStoryPackDefinition(
+        withLookup({ by: "ex:hasName/not a name" }),
+        "test",
+      ),
+    ).toThrow(/property path segment/);
+  });
+
+  it("rejects an IRI that cannot embed in SPARQL", () => {
+    expect(() =>
+      validateStoryPackDefinition(
+        withLookup({ type: "https://example.org/a b>c" }),
+        "test",
+      ),
+    ).toThrow(/not a valid IRI/);
+  });
+
+  it("rejects a PREFIX-led non-SELECT list query", () => {
+    const base = JSON.parse(JSON.stringify(RECIPE_STORY)) as Record<
+      string,
+      unknown
+    >;
+    const list = {
+      ...(base.list as Record<string, unknown>),
+      query:
+        "PREFIX ex: <http://example.org/> CONSTRUCT { ?s ?p ?o } WHERE { ?s ?p ?o }",
+    };
+    expect(() =>
+      validateStoryPackDefinition({ ...base, list }, "test"),
+    ).toThrow(/must be a SPARQL SELECT/);
+  });
+});
+
+describe("validateStoryPackDefinition — list filters", () => {
+  const base = JSON.parse(JSON.stringify(RECIPE_STORY)) as Record<
+    string,
+    unknown
+  >;
+
+  function withFilters(filters: unknown): unknown {
+    const list = { ...(base.list as Record<string, unknown>), filters };
+    return { ...base, list };
+  }
+
+  it("accepts declared filters", () => {
+    const validated = validateStoryPackDefinition(
+      withFilters([
+        { param: "category", variable: "category", values: ["soup"] },
+      ]),
+      "test",
+    );
+    expect(validated.list.filters?.at(0)?.param).toBe("category");
+  });
+
+  it("rejects an empty filters array", () => {
+    expect(() => validateStoryPackDefinition(withFilters([]), "test")).toThrow(
+      /list.filters/,
+    );
+  });
+
+  it("rejects reserved parameter names", () => {
+    expect(() =>
+      validateStoryPackDefinition(
+        withFilters([{ param: "format", variable: "category", values: ["x"] }]),
+        "test",
+      ),
+    ).toThrow(/reserved/);
+  });
+
+  it("rejects the MCP-appended condensed parameter name", () => {
+    expect(() =>
+      validateStoryPackDefinition(
+        withFilters([
+          { param: "condensed", variable: "category", values: ["x"] },
+        ]),
+        "test",
+      ),
+    ).toThrow(/reserved/);
+  });
+
+  it("rejects a hyphenated parameter name that breaks CLI readback", () => {
+    expect(() =>
+      validateStoryPackDefinition(
+        withFilters([
+          { param: "meal-type", variable: "category", values: ["x"] },
+        ]),
+        "test",
+      ),
+    ).toThrow(/single lowercase word/);
+  });
+
+  it("rejects duplicate parameter names", () => {
+    expect(() =>
+      validateStoryPackDefinition(
+        withFilters([
+          { param: "category", variable: "category", values: ["x"] },
+          { param: "category", variable: "name", values: ["y"] },
+        ]),
+        "test",
+      ),
+    ).toThrow(/duplicate filter param/);
+  });
+
+  it("rejects a filter variable the query never mentions", () => {
+    expect(() =>
+      validateStoryPackDefinition(
+        withFilters([{ param: "season", variable: "season", values: ["x"] }]),
+        "test",
+      ),
+    ).toThrow(/does not appear in "list.query"/);
+  });
+
+  it("rejects case-insensitive duplicate values", () => {
+    expect(() =>
+      validateStoryPackDefinition(
+        withFilters([
+          { param: "category", variable: "category", values: ["Soup", "soup"] },
+        ]),
+        "test",
+      ),
+    ).toThrow(/duplicate value/);
+  });
+
+  it("rejects empty values arrays", () => {
+    expect(() =>
+      validateStoryPackDefinition(
+        withFilters([{ param: "category", variable: "category", values: [] }]),
+        "test",
+      ),
+    ).toThrow(/values/);
+  });
+});

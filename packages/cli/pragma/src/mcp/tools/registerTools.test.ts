@@ -9,7 +9,12 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { createTestMcpClient } from "#testing";
+import {
+  createTestMcpClient,
+  RECIPE_PREFIXES,
+  RECIPE_STORY,
+  RECIPE_TTL,
+} from "#testing";
 import type { McpErrorPayload } from "../types.js";
 
 let client: Client;
@@ -52,9 +57,9 @@ function parseData(result: Record<string, unknown>): unknown {
 // =============================================================================
 
 describe("tool listing", () => {
-  it("registers 29 tools", async () => {
+  it("registers 30 tools", async () => {
     const { tools } = await client.listTools();
-    expect(tools).toHaveLength(29);
+    expect(tools).toHaveLength(30);
   });
 
   it("all tools have descriptions", async () => {
@@ -508,6 +513,8 @@ describe("config_show", () => {
 describe("config_tier", () => {
   it("sets, queries, and resets tier in workspace config", async () => {
     const dir = mkdtempSync(join(tmpdir(), "pragma-mcp-tier-"));
+    // Seed a project file so global-first writes stay in this workspace.
+    writeFileSync(join(dir, "pragma.config.json"), "{}");
 
     try {
       const scoped = await createTestMcpClient({ cwd: dir });
@@ -517,7 +524,10 @@ describe("config_tier", () => {
           name: "config_tier",
           arguments: { path: "global" },
         });
-        expect(parseData(setResult)).toEqual({ tier: "global", action: "set" });
+        expect(parseData(setResult)).toMatchObject({
+          tier: "global",
+          action: "set",
+        });
 
         const queryResult = await scoped.client.callTool({
           name: "config_tier",
@@ -532,7 +542,10 @@ describe("config_tier", () => {
           name: "config_tier",
           arguments: { reset: true },
         });
-        expect(parseData(resetResult)).toEqual({ tier: null, action: "reset" });
+        expect(parseData(resetResult)).toMatchObject({
+          tier: null,
+          action: "reset",
+        });
 
         const queriedAfterReset = await scoped.client.callTool({
           name: "config_tier",
@@ -554,6 +567,8 @@ describe("config_tier", () => {
 describe("config_channel", () => {
   it("sets, queries, and resets channel in workspace config", async () => {
     const dir = mkdtempSync(join(tmpdir(), "pragma-mcp-channel-"));
+    // Seed a project file so global-first writes stay in this workspace.
+    writeFileSync(join(dir, "pragma.config.json"), "{}");
 
     try {
       const scoped = await createTestMcpClient({ cwd: dir });
@@ -563,7 +578,7 @@ describe("config_channel", () => {
           name: "config_channel",
           arguments: { value: "experimental" },
         });
-        expect(parseData(setResult)).toEqual({
+        expect(parseData(setResult)).toMatchObject({
           channel: "experimental",
           action: "set",
         });
@@ -581,7 +596,7 @@ describe("config_channel", () => {
           name: "config_channel",
           arguments: { reset: true },
         });
-        expect(parseData(resetResult)).toEqual({
+        expect(parseData(resetResult)).toMatchObject({
           channel: "normal",
           action: "reset",
         });
@@ -964,6 +979,48 @@ describe("graph_inspect", () => {
 // Skill tools
 // =============================================================================
 
+describe("story-pack tools", () => {
+  it("registers <noun>_list and <noun>_lookup from a stories config", async () => {
+    const scoped = await createTestMcpClient({
+      ttl: RECIPE_TTL,
+      config: {
+        tier: undefined,
+        channel: "normal",
+        stories: [RECIPE_STORY],
+        prefixes: RECIPE_PREFIXES,
+      },
+    });
+
+    try {
+      const tools = (await scoped.client.listTools()).tools.map(
+        (tool) => tool.name,
+      );
+      expect(tools).toHaveLength(32);
+      expect(tools).toContain("recipe_list");
+      expect(tools).toContain("recipe_lookup");
+
+      const listResult = await scoped.client.callTool({
+        name: "recipe_list",
+        arguments: {},
+      });
+      const rows = parseData(listResult) as { name: string }[];
+      expect(rows.map((row) => row.name)).toEqual(["Gazpacho", "Pancakes"]);
+
+      const lookupResult = await scoped.client.callTool({
+        name: "recipe_lookup",
+        arguments: { names: ["pancakes"] },
+      });
+      const data = parseData(lookupResult) as {
+        results: { name: string; instructions: string }[];
+      };
+      expect(data.results.at(0)?.name).toBe("Pancakes");
+      expect(data.results.at(0)?.instructions).toBe("Mix, fry, flip.");
+    } finally {
+      await scoped.cleanup();
+    }
+  });
+});
+
 describe("skill_list", () => {
   it("returns skills data", async () => {
     const result = await client.callTool({
@@ -1048,7 +1105,7 @@ describe("capabilities", () => {
     expect(toolNames).toContain("block_list");
     expect(toolNames).toContain("capabilities");
     expect(data.tools.every((t) => t.use_when.length > 0)).toBe(true);
-    expect(data.counts.total).toBe(29);
+    expect(data.counts.total).toBe(30);
     expect(data.counts.read).toBeGreaterThan(0);
     expect(data.counts.write).toBe(5);
     expect(data.counts.orientation).toBe(2);

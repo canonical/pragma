@@ -4,9 +4,15 @@ import ScrollManager from "../a11y/ScrollManager.js";
 import ViewTransitionManager from "../a11y/ViewTransitionManager.js";
 import buildUrl from "./buildUrl.js";
 import createRouterStore from "./createRouterStore.js";
-import { matchPath, renderPattern, splitPathSegments } from "./pathUtils.js";
+import {
+  createRouteCodec,
+  matchPath,
+  renderPattern,
+  splitPathSegments,
+} from "./pathUtils.js";
 import RouteRedirect from "./RouteRedirect.js";
 import StatusResponse from "./StatusResponse.js";
+import { formatIssues, runSchema } from "./schemaUtils.js";
 import type {
   AnyRoute,
   BuildPathFn,
@@ -23,6 +29,7 @@ import type {
   RouteModule,
   RouteName,
   RouteOf,
+  RouteParamValues,
   Router,
   RouterAccessibilityContext,
   RouterAccessibilityDocumentLike,
@@ -32,6 +39,7 @@ import type {
   RouterMatch,
   RouterOptions,
   SearchOf,
+  StandardSchemaIssue,
 } from "./types.js";
 
 type NavigationMode = "initial" | "none" | "pop" | "push";
@@ -207,6 +215,12 @@ function readSearchParams(
   return rawSearch;
 }
 
+/** The `data` payload of the `StatusResponse` thrown on search failure. */
+export interface SearchValidationFailure {
+  readonly issues: ReadonlyArray<StandardSchemaIssue>;
+  readonly message: string;
+}
+
 function validateSearch<TRoute extends AnyRoute>(
   route: TRoute,
   url: URL,
@@ -216,33 +230,48 @@ function validateSearch<TRoute extends AnyRoute>(
   }
 
   const rawSearch = readSearchParams(url.searchParams);
-  const validator = route.search["~standard"].validate;
+  const outcome = runSchema(
+    route.search,
+    rawSearch,
+    `Route '${route.url}' search`,
+  );
 
-  if (!validator) {
-    return rawSearch as SearchOf<TRoute>;
+  if (outcome.issues) {
+    throw new StatusResponse<SearchValidationFailure>(400, {
+      issues: outcome.issues,
+      message: `Search param validation failed: ${formatIssues(outcome.issues)}`,
+    });
   }
 
-  const result = validator(rawSearch);
+  return outcome.value as SearchOf<TRoute>;
+}
 
-  if (
-    typeof result === "object" &&
-    result !== null &&
-    "issues" in result &&
-    Array.isArray((result as { issues: unknown }).issues)
-  ) {
-    const issues = (result as { issues: ReadonlyArray<{ message?: string }> })
-      .issues;
-    const messages = issues
-      .map((issue) => issue.message ?? "Validation error")
-      .join(", ");
-    throw new Error(`Search param validation failed: ${messages}`);
+/**
+ * Validate raw path params against the route's optional `params` schema.
+ *
+ * Returns `null` when the schema rejects the values: the URL does not
+ * identify this route, so matching falls through to the next candidate
+ * (and ultimately the not-found route) — a 404, not an error.
+ */
+function validateParams<TRoute extends AnyRoute>(
+  route: TRoute,
+  rawParams: Record<string, string>,
+): ParamsOf<TRoute> | null {
+  if (!route.params) {
+    return rawParams as ParamsOf<TRoute>;
   }
 
-  if (typeof result === "object" && result !== null && "value" in result) {
-    return (result as { value: unknown }).value as SearchOf<TRoute>;
+  const outcome = runSchema(
+    route.params,
+    rawParams,
+    `Route '${route.url}' params`,
+  );
+
+  if (outcome.issues) {
+    return null;
   }
 
-  return result as SearchOf<TRoute>;
+  return outcome.value as ParamsOf<TRoute>;
 }
 
 function buildHash(hash?: string): string {
@@ -371,15 +400,7 @@ function applyRouteMapMiddleware<TRoutes extends RouteMap>(
         routeName,
         {
           ...transformedRoute,
-          parse(input: string | URL) {
-            return matchPath(transformedRoute.url, buildUrl(input));
-          },
-          render(params: Record<string, string> | Record<string, never>) {
-            return renderPattern(
-              transformedRoute.url,
-              params as Record<string, string>,
-            );
-          },
+          ...createRouteCodec(transformedRoute.url, transformedRoute.params),
         },
       ];
     }),
@@ -407,7 +428,7 @@ function createRouteMatch<
       pathname: url.pathname,
       redirectTo: renderPattern(
         route.redirect as string,
-        params as Record<string, string>,
+        params as Readonly<Record<string, unknown>>,
       ),
       status: route.status,
       url,
@@ -678,12 +699,17 @@ export default function createRouter<
     // Wrapper prefetches run for all wrappers (no caching/reuse).
     // Route prefetch runs if defined. None block rendering.
     if (nextRoute) {
+      // Wrappers are shared across routes and typed as RouteParamValues, so
+      // they receive the raw string params extracted from the URL — a route's
+      // params schema only transforms what the route's own hooks receive.
+      const rawWrapperParams = (
+        currentMatch ? (matchPath(nextRoute.url, currentMatch.url) ?? {}) : {}
+      ) as RouteParamValues;
+
       for (const currentWrapper of nextRoute.wrappers) {
         if (currentWrapper.prefetch) {
-          const currentParams = currentMatch?.params as ParamsOf<AnyRoute>;
-
           void Promise.resolve(
-            currentWrapper.prefetch(currentParams, { signal }),
+            currentWrapper.prefetch(rawWrapperParams, { signal }),
           ).catch(ignoreScheduledLoadError);
         }
       }
@@ -959,9 +985,15 @@ export default function createRouter<
     const url = buildUrl(input);
 
     for (const [name, currentRoute] of sortedRoutes) {
-      const params = matchPath(currentRoute.url, url);
+      const rawParams = matchPath(currentRoute.url, url);
 
-      if (!params) {
+      if (!rawParams) {
+        continue;
+      }
+
+      const params = validateParams(currentRoute, rawParams);
+
+      if (params === null) {
         continue;
       }
 
@@ -1009,7 +1041,32 @@ export default function createRouter<
       hydratedHref = null;
     }
 
-    const currentMatch = match(url);
+    // Matching can throw (a search schema rejecting the query string). Commit
+    // the failure as an error result — a shareable URL with a bad query is a
+    // 400 response, not an unhandled rejection.
+    let currentMatch: RouterMatch<TRoutes, TNotFound> | null;
+
+    try {
+      currentMatch = match(url);
+    } catch (thrownError) {
+      const status = getErrorStatus(thrownError);
+      let result!: RouterLoadResult<TRoutes, TNotFound>;
+
+      await runNavigationUpdate(mode, () => {
+        result = createLoadResult<TRoutes, TNotFound>({
+          error: thrownError,
+          location: store.commit(url, null, status).location,
+          match: null,
+          status,
+        });
+
+        currentLoadResult = result;
+      });
+      scheduleAccessibilityEffects(result, mode);
+
+      return result;
+    }
+
     const redirectMatch = currentMatch as unknown;
 
     if (isRedirectMatch(redirectMatch)) {
@@ -1220,7 +1277,7 @@ export default function createRouter<
         });
       },
       currentRoute.content({
-        params: result.match.params,
+        params: result.match.params as RouteParamValues,
         search: result.match.search,
       }),
     );

@@ -16,7 +16,6 @@ export type {
   CommandContext,
   CommandDefinition,
   CommandExitResult,
-  CommandInteractiveResult,
   CommandMeta,
   CommandOutputResult,
   CommandResult,
@@ -25,13 +24,10 @@ export type {
   CompletionTree,
   GlobalFlags,
   HandleResultOptions,
-  InteractiveGenerator,
-  InteractiveHandler,
-  InteractiveHandlerRequest,
-  InteractiveOptions,
-  InteractiveSpec,
   OutputAdapter,
   ParameterDefinition,
+  PromptSession,
+  PromptSessionFactory,
   RenderMode,
   RenderPair,
   VerbCompletions,
@@ -42,7 +38,6 @@ export type {
 // =============================================================================
 
 export { default as createExitResult } from "./lib/createExitResult.js";
-export { default as createInteractiveResult } from "./lib/createInteractiveResult.js";
 export { default as createOutputResult } from "./lib/createOutputResult.js";
 
 // =============================================================================
@@ -85,11 +80,18 @@ export {
 // Generator Bridge
 // =============================================================================
 
+export { default as answerPromptWithDefaults } from "./lib/answerPromptWithDefaults.js";
 export {
   generatorToCommand,
   promptToParameter,
 } from "./lib/convertGenerator.js";
+export { default as createGeneratorStamp } from "./lib/createGeneratorStamp.js";
+export { default as createStampOnEffectStart } from "./lib/createStampOnEffectStart.js";
 export { default as executeGenerator } from "./lib/executeGenerator.js";
+export type { AnswerablePrompt } from "./lib/promptForAnswers.js";
+export { default as promptForAnswers } from "./lib/promptForAnswers.js";
+export type { RunGeneratorTaskOptions } from "./lib/runGeneratorTask.js";
+export { default as runGeneratorTask } from "./lib/runGeneratorTask.js";
 
 // =============================================================================
 // Effect Formatting

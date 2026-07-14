@@ -1,9 +1,89 @@
+/**
+ * Legacy hand-rolled schema shape, kept for backwards compatibility.
+ *
+ * Prefer a real Standard Schema v1 validator ({@link StandardSchemaV1});
+ * this shape predates the router's spec alignment and carries its output
+ * type on a non-standard `output` phantom property.
+ */
 export interface StandardSchemaLike<TOutput = unknown> {
   readonly "~standard": {
     readonly output?: TOutput;
     readonly validate?: (value: unknown) => unknown;
   };
 }
+
+/**
+ * A single validation issue, as defined by the Standard Schema spec.
+ *
+ * The spec requires `message`, but it is optional here because the router
+ * also tolerates legacy hand-rolled validators that omit it (a default
+ * message is substituted when formatting).
+ */
+export interface StandardSchemaIssue {
+  readonly message?: string;
+  readonly path?:
+    | ReadonlyArray<PropertyKey | { readonly key: PropertyKey }>
+    | undefined;
+}
+
+/** The result union a Standard Schema v1 `validate` call resolves to. */
+export type StandardSchemaResult<TOutput = unknown> =
+  | { readonly value: TOutput; readonly issues?: undefined }
+  | { readonly issues: ReadonlyArray<StandardSchemaIssue> };
+
+/**
+ * A Standard Schema v1 validator (https://standardschema.dev).
+ *
+ * Zod (≥3.24), Valibot, and ArkType all implement this interface, so their
+ * schemas can be passed directly to a route's `params`/`search` fields.
+ * The router matches synchronously: validators that resolve to a `Promise`
+ * are rejected at match time.
+ */
+export interface StandardSchemaV1<TInput = unknown, TOutput = TInput> {
+  readonly "~standard": {
+    readonly version: 1;
+    readonly vendor: string;
+    readonly validate: (
+      value: unknown,
+    ) => StandardSchemaResult<TOutput> | Promise<StandardSchemaResult<TOutput>>;
+    readonly types?:
+      | { readonly input: TInput; readonly output: TOutput }
+      | undefined;
+  };
+}
+
+/**
+ * Any schema the router accepts: a Standard Schema v1 validator or the
+ * legacy hand-rolled shape.
+ */
+export type SchemaLike<TOutput = unknown> =
+  | StandardSchemaV1<unknown, TOutput>
+  | StandardSchemaLike<TOutput>;
+
+type InferLegacyOutput<TSchema> =
+  TSchema extends StandardSchemaLike<infer TLegacyOutput>
+    ? TLegacyOutput
+    : Record<string, never>;
+
+/**
+ * Infer a schema's output type.
+ *
+ * Standard Schema v1 carries it on the `types.output` phantom property
+ * (discriminated by the required `version`/`vendor` members); the legacy
+ * shape carries it on `output`. Falls back to an empty record when neither
+ * is present.
+ */
+export type InferOutput<TSchema> = TSchema extends {
+  readonly "~standard": {
+    readonly version: 1;
+    readonly vendor: string;
+    readonly types?: infer TTypes;
+  };
+}
+  ? [NonNullable<TTypes>] extends [{ readonly output: infer TOutput }]
+    ? TOutput
+    : InferLegacyOutput<TSchema>
+  : InferLegacyOutput<TSchema>;
 
 export type BivariantCallback<TArgs extends readonly unknown[], TResult> = {
   bivarianceHack(...args: TArgs): TResult;
@@ -37,10 +117,24 @@ export type RouteParams<TPath extends string> = [ParamNames<TPath>] extends [
 
 export type RouteParamValues = Readonly<Record<string, string>>;
 
-export type InferSearch<TSchema> =
-  TSchema extends StandardSchemaLike<infer TOutput>
-    ? TOutput
-    : Record<string, never>;
+export type InferSearch<TSchema> = InferOutput<TSchema>;
+
+/**
+ * The params a route's `content`/`prefetch` receive: the params schema's
+ * output when one is declared, otherwise the raw string params inferred
+ * from the path pattern.
+ */
+export type InferParams<TPath extends string, TParamsSchema> = [
+  Exclude<TParamsSchema, undefined>,
+] extends [never]
+  ? RouteParams<TPath>
+  : [Exclude<TParamsSchema, undefined>] extends [SchemaLike<unknown>]
+    ? unknown extends InferOutput<Exclude<TParamsSchema, undefined>>
+      ? // The schema's output is unknowable (e.g. a widened `SchemaLike`
+        // from contextual inference) — fall back to the path-derived params.
+        RouteParams<TPath>
+      : InferOutput<Exclude<TParamsSchema, undefined>>
+    : RouteParams<TPath>;
 
 export interface NavigationContext {
   readonly signal: AbortSignal;
@@ -49,10 +143,7 @@ export interface NavigationContext {
 export type RouteModule = object;
 
 export interface RouteContentProps<
-  TParams extends RouteParamValues | Record<string, never> = Record<
-    string,
-    never
-  >,
+  TParams = Record<string, never>,
   TSearch = Record<string, never>,
 > {
   readonly params: TParams;
@@ -75,26 +166,35 @@ export interface WrapperDefinition<TRendered = unknown> {
   >;
 }
 
-export interface RouteCodec<TPath extends string = string> {
-  parse(url: string | URL): RouteParams<TPath> | null;
-  render(params: RouteParams<TPath>): string;
+export interface RouteCodec<
+  TPath extends string = string,
+  TParams = RouteParams<TPath>,
+> {
+  parse(url: string | URL): TParams | null;
+  render(params: TParams): string;
 }
 
 export type AnyWrapper = WrapperDefinition<unknown>;
 
 export type RouteContent<
   TPath extends string = string,
-  TSearchSchema extends StandardSchemaLike<unknown> | undefined = undefined,
+  TSearchSchema extends SchemaLike<unknown> | undefined = undefined,
   TRendered = unknown,
+  TParamsSchema extends SchemaLike<unknown> | undefined = undefined,
 > = BivariantCallback<
-  [props: RouteContentProps<RouteParams<TPath>, InferSearch<TSearchSchema>>],
+  [
+    props: RouteContentProps<
+      InferParams<TPath, TParamsSchema>,
+      InferSearch<TSearchSchema>
+    >,
+  ],
   TRendered
 > & {
   preload?: () => Promise<RouteModule>;
 };
 
 export type AnyRouteContent = BivariantCallback<
-  [props: RouteContentProps<RouteParamValues, unknown>],
+  [props: RouteContentProps<Readonly<Record<string, unknown>>, unknown>],
   unknown
 > & {
   preload?: () => Promise<RouteModule>;
@@ -102,20 +202,27 @@ export type AnyRouteContent = BivariantCallback<
 
 export interface DataRouteInput<
   TPath extends string = string,
-  TSearchSchema extends StandardSchemaLike<unknown> | undefined = undefined,
+  TSearchSchema extends SchemaLike<unknown> | undefined = undefined,
   TRendered = unknown,
   TWrappers extends readonly AnyWrapper[] = readonly [],
+  TParamsSchema extends SchemaLike<unknown> | undefined = undefined,
 > {
   readonly url: TPath;
-  readonly content: RouteContent<TPath, TSearchSchema, TRendered>;
+  readonly content: RouteContent<
+    TPath,
+    TSearchSchema,
+    TRendered,
+    TParamsSchema
+  >;
   readonly prefetch?: BivariantCallback<
     [
-      params: RouteParams<TPath>,
+      params: InferParams<TPath, TParamsSchema>,
       search: InferSearch<TSearchSchema>,
       context: NavigationContext,
     ],
     void | Promise<void>
   >;
+  readonly params?: TParamsSchema;
   readonly search?: TSearchSchema;
   readonly wrappers?: TWrappers;
   readonly meta?: Readonly<Record<string, unknown>>;
@@ -127,39 +234,49 @@ export interface RedirectRouteInput<
   TPath extends string = string,
   TTarget extends string = string,
   TWrappers extends readonly AnyWrapper[] = readonly [],
+  TParamsSchema extends SchemaLike<unknown> | undefined = undefined,
 > {
   readonly url: TPath;
   readonly redirect: TTarget;
   readonly status: StaticRedirectStatus;
+  readonly params?: TParamsSchema;
   readonly wrappers?: TWrappers;
   readonly meta?: Readonly<Record<string, unknown>>;
 }
 
 export type RouteInput<
   TPath extends string = string,
-  TSearchSchema extends StandardSchemaLike<unknown> | undefined = undefined,
+  TSearchSchema extends SchemaLike<unknown> | undefined = undefined,
   TRendered = unknown,
   TWrappers extends readonly AnyWrapper[] = readonly [],
+  TParamsSchema extends SchemaLike<unknown> | undefined = undefined,
 > =
-  | DataRouteInput<TPath, TSearchSchema, TRendered, TWrappers>
-  | RedirectRouteInput<TPath, string, TWrappers>;
+  | DataRouteInput<TPath, TSearchSchema, TRendered, TWrappers, TParamsSchema>
+  | RedirectRouteInput<TPath, string, TWrappers, TParamsSchema>;
 
 export interface DataRouteDefinition<
   TPath extends string = string,
-  TSearchSchema extends StandardSchemaLike<unknown> | undefined = undefined,
+  TSearchSchema extends SchemaLike<unknown> | undefined = undefined,
   TRendered = unknown,
   TWrappers extends readonly AnyWrapper[] = readonly [],
-> extends RouteCodec<TPath> {
+  TParamsSchema extends SchemaLike<unknown> | undefined = undefined,
+> extends RouteCodec<TPath, InferParams<TPath, TParamsSchema>> {
   readonly url: TPath;
-  readonly content: RouteContent<TPath, TSearchSchema, TRendered>;
+  readonly content: RouteContent<
+    TPath,
+    TSearchSchema,
+    TRendered,
+    TParamsSchema
+  >;
   readonly prefetch?: BivariantCallback<
     [
-      params: RouteParams<TPath>,
+      params: InferParams<TPath, TParamsSchema>,
       search: InferSearch<TSearchSchema>,
       context: NavigationContext,
     ],
     void | Promise<void>
   >;
+  readonly params?: TParamsSchema;
   readonly search?: TSearchSchema;
   readonly wrappers: TWrappers;
   readonly meta?: Readonly<Record<string, unknown>>;
@@ -169,22 +286,31 @@ export interface RedirectRouteDefinition<
   TPath extends string = string,
   TTarget extends string = string,
   TWrappers extends readonly AnyWrapper[] = readonly [],
-> extends RouteCodec<TPath> {
+  TParamsSchema extends SchemaLike<unknown> | undefined = undefined,
+> extends RouteCodec<TPath, InferParams<TPath, TParamsSchema>> {
   readonly url: TPath;
   readonly redirect: TTarget;
   readonly status: StaticRedirectStatus;
+  readonly params?: TParamsSchema;
   readonly wrappers: TWrappers;
   readonly meta?: Readonly<Record<string, unknown>>;
 }
 
 export type RouteDefinition<
   TPath extends string = string,
-  TSearchSchema extends StandardSchemaLike<unknown> | undefined = undefined,
+  TSearchSchema extends SchemaLike<unknown> | undefined = undefined,
   TRendered = unknown,
   TWrappers extends readonly AnyWrapper[] = readonly [],
+  TParamsSchema extends SchemaLike<unknown> | undefined = undefined,
 > =
-  | DataRouteDefinition<TPath, TSearchSchema, TRendered, TWrappers>
-  | RedirectRouteDefinition<TPath, string, TWrappers>;
+  | DataRouteDefinition<
+      TPath,
+      TSearchSchema,
+      TRendered,
+      TWrappers,
+      TParamsSchema
+    >
+  | RedirectRouteDefinition<TPath, string, TWrappers, TParamsSchema>;
 
 export interface AnyRoute {
   readonly url: string;
@@ -193,13 +319,14 @@ export interface AnyRoute {
     [params: unknown, search: unknown, context: NavigationContext],
     void | Promise<void>
   >;
-  readonly search?: StandardSchemaLike<unknown>;
+  readonly params?: SchemaLike<unknown>;
+  readonly search?: SchemaLike<unknown>;
   readonly redirect?: string;
   readonly status?: number;
   readonly wrappers: readonly AnyWrapper[];
   readonly meta?: Readonly<Record<string, unknown>>;
-  parse(url: string | URL): RouteParamValues | Record<string, never> | null;
-  render(params: RouteParamValues | Record<string, never>): string;
+  parse(url: string | URL): Readonly<Record<string, unknown>> | null;
+  render(params: Readonly<Record<string, unknown>>): string;
 }
 
 export type PrependWrapper<
@@ -287,19 +414,18 @@ export type PrefetchFn<TRoutes extends RouteMap> = UnionToIntersection<
 
 export type ParamsOf<TRoute extends AnyRoute> = TRoute extends {
   readonly url: infer TPath extends string;
+  readonly params?: infer TParamsSchema;
 }
-  ? RouteParams<TPath>
+  ? InferParams<TPath, TParamsSchema>
   : Record<string, never>;
 
-export type SearchOf<TRoute extends AnyRoute> =
-  TRoute extends DataRouteDefinition<
-    string,
-    infer TSearchSchema,
-    unknown,
-    readonly AnyWrapper[]
-  >
-    ? InferSearch<TSearchSchema>
-    : Record<string, never>;
+export type SearchOf<TRoute extends AnyRoute> = TRoute extends {
+  readonly search?: infer TSearchSchema;
+}
+  ? [Exclude<TSearchSchema, undefined>] extends [never]
+    ? Record<string, never>
+    : InferOutput<Exclude<TSearchSchema, undefined>>
+  : Record<string, never>;
 
 export type HasParams<TRoute extends AnyRoute> = TRoute extends {
   readonly url: infer TPath extends string;

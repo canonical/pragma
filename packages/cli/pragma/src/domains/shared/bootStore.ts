@@ -38,6 +38,8 @@ export interface BootStoreOptions {
   refs?: ReadonlyArray<PackageRef>;
   /** Enable query tracing (from config). Env var PRAGMA_TRACE=1 overrides. */
   trace?: boolean;
+  /** Additional namespace prefixes merged over the built-in prefix map. */
+  prefixes?: Readonly<Record<string, string>>;
 }
 
 export interface BootResult {
@@ -59,12 +61,13 @@ export interface BootResult {
 export async function bootStore(
   options: BootStoreOptions = {},
 ): Promise<BootResult> {
+  const prefixes = { ...PREFIX_MAP, ...options.prefixes };
   try {
     // Testing/programmatic override — use explicit sources
     if (options.sources) {
       const store = await createStore({
         sources: options.sources,
-        prefixes: PREFIX_MAP,
+        prefixes,
         cache: options.cache,
         cwd: options.cwd,
       });
@@ -87,19 +90,11 @@ export async function bootStore(
     // Collect all graph content from resolved packages
     const allGraphs = packages.flatMap((pkg) => pkg.graphs);
 
-    // Use a ke plugin to load graph content during store creation.
-    // The onReady hook has access to ctx.load() which loads raw content.
-    const graphLoaderPlugin = definePlugin({
-      name: "pragma-graph-loader",
-      onReady(ctx) {
-        for (const graph of allGraphs) {
-          ctx.load(graph.content, { format: graph.format });
-        }
-      },
-    });
-
-    // biome-ignore lint: Plugin generic variance requires explicit unknown
-    const plugins: Plugin<any>[] = [graphLoaderPlugin];
+    // `Plugin<T>` is invariant in its API type and createStore expects
+    // `Plugin<void>[]`, so heterogeneous plugins (graph loader + trace) can only
+    // share an array via `any`. `unknown` does not satisfy `Plugin<void>`.
+    // biome-ignore lint/suspicious/noExplicitAny: intentional — see above
+    const plugins: Plugin<any>[] = [createGraphLoaderPlugin(allGraphs)];
     const traceEnabled =
       process.env.PRAGMA_TRACE === "1" || options.trace === true;
     if (traceEnabled) {
@@ -110,7 +105,7 @@ export async function bootStore(
 
     const store = await createStore({
       sources: [],
-      prefixes: PREFIX_MAP,
+      prefixes,
       cache: options.cache,
       cwd: options.cwd,
       plugins,
@@ -124,9 +119,49 @@ export async function bootStore(
       {
         recovery: {
           message:
-            "Ensure design system packages are installed: bun add -D @canonical/design-system @canonical/code-standards @canonical/anatomy-dsl",
+            "If this is a parser error, check the TTL syntax of the source graphs " +
+            "(the message above names the line and column). Otherwise ensure design " +
+            "system packages are installed: bun add -D @canonical/design-system " +
+            "@canonical/code-standards @canonical/anatomy-dsl",
         },
       },
     );
   }
+}
+
+/**
+ * Build the ke plugin that loads resolved graph content into the store.
+ *
+ * Each graph is loaded independently inside its own try/catch: a single
+ * malformed TTL file (e.g. invalid Turtle emitted by an upstream authoring
+ * tool) must not abort the entire boot and take the whole CLI down with it.
+ * Failed graphs are skipped and surfaced as warnings, mirroring the
+ * resilience the story loader already provides ("one bad file cannot break
+ * boot"). A store built from N-1 good graphs is far more useful than a store
+ * that refuses to boot because of one bad graph.
+ *
+ * @note Impure — writes warnings to stderr on parse failure.
+ */
+export function createGraphLoaderPlugin(
+  graphs: readonly { path: string; content: string; format: "turtle" }[],
+): Plugin {
+  return definePlugin({
+    name: "pragma-graph-loader",
+    onReady(ctx) {
+      for (const graph of graphs) {
+        try {
+          ctx.load(graph.content, { format: graph.format });
+        } catch (error) {
+          const reason = error instanceof Error ? error.message : String(error);
+          // Name the offending file and the parse error, and point at the fix.
+          // The store still boots from the remaining graphs, so this is a
+          // warning, not a fatal error.
+          process.stderr.write(
+            `Warning: skipping malformed graph "${graph.path}" — ${reason}. ` +
+              "Check the TTL syntax of this source file; the remaining graphs still load.\n",
+          );
+        }
+      }
+    },
+  });
 }

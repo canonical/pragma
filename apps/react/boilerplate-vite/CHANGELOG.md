@@ -3,6 +3,22 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.30.0](https://github.com/canonical/pragma/compare/v0.29.1...v0.30.0) (2026-07-14)
+
+
+### Features
+
+* **boilerplate:** app-level CSS compilation via Lightning CSS + declared browser floor ([#769](https://github.com/canonical/pragma/issues/769)) ([98281ba](https://github.com/canonical/pragma/commit/98281bace083fd841af0d52c0baf37bc2dd77fd1))
+* **ds-global:** overlay components — Tooltip, Popover, ContextualMenu (+ submenus, logical placement, RTL) ([#731](https://github.com/canonical/pragma/issues/731)) ([4012a46](https://github.com/canonical/pragma/commit/4012a4630e18c02759a154232baec33850902916)), closes [#89](https://github.com/canonical/pragma/issues/89) [post-#745](https://github.com/post-/issues/745) [#745](https://github.com/canonical/pragma/issues/745)
+* **i18n-core:** native-Intl framework-agnostic i18n core ([#684](https://github.com/canonical/pragma/issues/684)) ([62f3f36](https://github.com/canonical/pragma/commit/62f3f36fed5f689ae72ff66a600a5ca5daecdf8c))
+* **react-boilerplate-vite:** Relay data layer (CSR) with local mock schema and storybook mocking ([#751](https://github.com/canonical/pragma/issues/751)) ([15c918c](https://github.com/canonical/pragma/commit/15c918c2939447b675ce6854ec3f6e2a5c02cd03))
+* **react-boilerplate-vite:** working multi-language messages via @canonical/i18n-react ([#752](https://github.com/canonical/pragma/issues/752)) ([b16e17f](https://github.com/canonical/pragma/commit/b16e17f82d67bc55887142f6b675d820a94978c8))
+* **router-core:** schema validation for URL params via Standard Schema v1 ([#760](https://github.com/canonical/pragma/issues/760)) ([eb6398f](https://github.com/canonical/pragma/commit/eb6398f16a91ae51f977c442a4baa50657bd2dd1))
+
+
+
+
+
 ## [0.29.1](https://github.com/canonical/pragma/compare/v0.29.0...v0.29.1) (2026-07-03)
 
 **Note:** Version bump only for package @canonical/react-boilerplate-vite

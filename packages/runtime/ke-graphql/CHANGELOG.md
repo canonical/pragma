@@ -3,6 +3,18 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.30.0](https://github.com/canonical/pragma/compare/v0.29.1...v0.30.0) (2026-07-14)
+
+
+### Bug Fixes
+
+* **ke-graphql:** latent compiler correctness fixes (ancestor ordering + sh:in scoping) ([#683](https://github.com/canonical/pragma/issues/683)) ([17916b5](https://github.com/canonical/pragma/commit/17916b54fac3d5a634a8eff784549e8df6b0162d))
+* **ke-graphql:** peer @canonical/ke range follows the stable release line ([#775](https://github.com/canonical/pragma/issues/775)) ([80de54e](https://github.com/canonical/pragma/commit/80de54eafa4711ac22d00bccdcf5adf602d1da53))
+
+
+
+
+
 # [0.29.0](https://github.com/canonical/pragma/compare/v0.29.0-experimental.0...v0.29.0) (2026-07-03)
 
 **Note:** Version bump only for package @canonical/ke-graphql

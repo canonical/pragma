@@ -217,6 +217,22 @@ List discovered agent skills from installed design system packages.
 Parameters:
 - `condensed` (boolean, optional) — return token-optimized Markdown
 
+#### `skill_lookup`
+
+Get full skill instructions (SKILL.md content) for one or more agent skills by name.
+
+Parameters:
+- `names` (string[], required) — skill names to look up (e.g., `["design-auditor"]`)
+- `condensed` (boolean, optional) — return token-optimized Markdown
+
+#### Story-pack tools (experimental)
+
+Declarative read stories from `pragma.config.json` (`stories`) or semantic
+packages (`stories/*.json`) register additional `<noun>_list` /
+`<noun>_lookup` tools at boot — the same envelope, condensed mode, and
+batch-error semantics as the built-in read tools. See the README's
+"Custom read stories" section for the format.
+
 ### Write Tools
 
 #### `config_tier`

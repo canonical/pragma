@@ -23,3 +23,11 @@ export interface SkillSource {
   readonly packageName: string;
   readonly available: boolean;
 }
+
+/** A discovered skill enriched with its full SKILL.md content and companion files. */
+export interface SkillDetailed extends DiscoveredSkill {
+  /** Full SKILL.md text, frontmatter included. */
+  readonly content: string;
+  /** Companion file names shipped next to SKILL.md (e.g. spec documents). */
+  readonly files: readonly string[];
+}

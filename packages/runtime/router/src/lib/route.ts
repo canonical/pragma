@@ -1,14 +1,14 @@
-import buildUrl from "./buildUrl.js";
-import { matchPath, renderPattern } from "./pathUtils.js";
+import { createRouteCodec } from "./pathUtils.js";
 import type {
   AnyWrapper,
   DataRouteDefinition,
   DataRouteInput,
+  InferParams,
   RedirectRouteDefinition,
   RedirectRouteInput,
   RouteDefinition,
   RouteInput,
-  RouteParams,
+  SchemaLike,
 } from "./types.js";
 
 function isRedirectRouteInput<
@@ -25,29 +25,48 @@ export default function route<
   const TPath extends string,
   TTarget extends string,
   TWrappers extends readonly AnyWrapper[] = readonly [],
+  TParamsSchema extends SchemaLike<unknown> | undefined = undefined,
 >(
-  definition: RedirectRouteInput<TPath, TTarget, TWrappers>,
-): RedirectRouteDefinition<TPath, TTarget, TWrappers>;
+  definition: RedirectRouteInput<TPath, TTarget, TWrappers, TParamsSchema>,
+): RedirectRouteDefinition<TPath, TTarget, TWrappers, TParamsSchema>;
 export default function route<
   const TPath extends string,
-  TSearchSchema extends
-    | { readonly "~standard": { readonly output?: unknown } }
-    | undefined = undefined,
+  TSearchSchema extends SchemaLike<unknown> | undefined = undefined,
   TRendered = unknown,
   TWrappers extends readonly AnyWrapper[] = readonly [],
+  TParamsSchema extends SchemaLike<unknown> | undefined = undefined,
 >(
-  definition: DataRouteInput<TPath, TSearchSchema, TRendered, TWrappers>,
-): DataRouteDefinition<TPath, TSearchSchema, TRendered, TWrappers>;
+  definition: DataRouteInput<
+    TPath,
+    TSearchSchema,
+    TRendered,
+    TWrappers,
+    TParamsSchema
+  >,
+): DataRouteDefinition<
+  TPath,
+  TSearchSchema,
+  TRendered,
+  TWrappers,
+  TParamsSchema
+>;
 export default function route<
   const TPath extends string,
-  TSearchSchema extends
-    | { readonly "~standard": { readonly output?: unknown } }
-    | undefined = undefined,
+  TSearchSchema extends SchemaLike<unknown> | undefined = undefined,
   TRendered = unknown,
   TWrappers extends readonly AnyWrapper[] = readonly [],
+  TParamsSchema extends SchemaLike<unknown> | undefined = undefined,
 >(
-  definition: RouteInput<TPath, TSearchSchema, TRendered, TWrappers>,
-): RouteDefinition<TPath, TSearchSchema, TRendered, TWrappers> {
+  definition: RouteInput<
+    TPath,
+    TSearchSchema,
+    TRendered,
+    TWrappers,
+    TParamsSchema
+  >,
+): RouteDefinition<TPath, TSearchSchema, TRendered, TWrappers, TParamsSchema> {
+  const codec = createRouteCodec(definition.url, definition.params);
+
   if (
     isRedirectRouteInput(
       definition as RouteInput<TPath, undefined, unknown, TWrappers>,
@@ -57,13 +76,10 @@ export default function route<
       ...definition,
       wrappers: (definition.wrappers ?? []) as TWrappers,
       parse(input: string | URL) {
-        return matchPath(
-          definition.url,
-          buildUrl(input),
-        ) as RouteParams<TPath> | null;
+        return codec.parse(input) as InferParams<TPath, TParamsSchema> | null;
       },
-      render(params: RouteParams<TPath>) {
-        return renderPattern(definition.url, params as Record<string, string>);
+      render(params: InferParams<TPath, TParamsSchema>) {
+        return codec.render(params as Readonly<Record<string, unknown>>);
       },
     };
   }
@@ -72,13 +88,10 @@ export default function route<
     ...definition,
     wrappers: (definition.wrappers ?? []) as TWrappers,
     parse(input: string | URL) {
-      return matchPath(
-        definition.url,
-        buildUrl(input),
-      ) as RouteParams<TPath> | null;
+      return codec.parse(input) as InferParams<TPath, TParamsSchema> | null;
     },
-    render(params: RouteParams<TPath>) {
-      return renderPattern(definition.url, params as Record<string, string>);
+    render(params: InferParams<TPath, TParamsSchema>) {
+      return codec.render(params as Readonly<Record<string, unknown>>);
     },
   };
 }

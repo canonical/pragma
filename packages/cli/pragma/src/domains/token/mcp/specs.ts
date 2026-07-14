@@ -7,6 +7,7 @@
 
 import { writeFileSync } from "node:fs";
 import { PragmaError } from "#error";
+import { lookupToolMeta } from "../../shared/lookupMany.js";
 import type { ToolSpec } from "../../shared/ToolSpec.js";
 import {
   createLookupFormatters as createTokenLookupFmt,
@@ -101,7 +102,10 @@ const specs: readonly ToolSpec[] = [
         };
       }
 
-      return { data: result, meta: { count: result.results.length } };
+      return {
+        data: { results: result.results, errors: result.errors },
+        meta: lookupToolMeta(result),
+      };
     },
   },
 

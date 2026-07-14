@@ -1,8 +1,9 @@
-import type { RenderResult } from "@testing-library/svelte";
-import { render } from "@testing-library/svelte";
 import type { ComponentProps } from "svelte";
 import { createRawSnippet } from "svelte";
 import { describe, expect, it } from "vitest";
+import type { Locator } from "vitest/browser";
+import type { RenderResult } from "vitest-browser-svelte";
+import { render } from "vitest-browser-svelte";
 import Component from "./Example.svelte";
 
 describe("Example component", () => {
@@ -14,39 +15,40 @@ describe("Example component", () => {
 
   it("renders", async () => {
     const page = render(Component, { ...baseProps });
-    expect(componentElement(page)).toBeInTheDocument();
-    expect(page.getByText("Example")).toBeVisible();
+    await expect.element(componentLocator(page)).toBeInTheDocument();
+    await expect.element(page.getByText("Example")).toBeVisible();
   });
 
   describe("attributes", () => {
     it.each([
       ["id", "test-id"],
       ["aria-label", "test-aria-label"],
-    ])("applies %s", (attribute, expected) => {
+    ])("applies %s", async (attribute, expected) => {
       const page = render(Component, { ...baseProps, [attribute]: expected });
-      expect(componentElement(page)).toHaveAttribute(attribute, expected);
+      await expect
+        .element(componentLocator(page))
+        .toHaveAttribute(attribute, expected);
     });
 
-    it("applies classes", () => {
+    it("applies classes", async () => {
       const page = render(Component, { ...baseProps, class: "test-class" });
-      expect(componentElement(page)).toHaveClass("test-class");
-      expect(componentElement(page)).toHaveClass("ds");
-      expect(componentElement(page)).toHaveClass("example");
+      await expect.element(componentLocator(page)).toHaveClass("test-class");
+      await expect.element(componentLocator(page)).toHaveClass("ds");
+      await expect.element(componentLocator(page)).toHaveClass("example");
     });
 
-    it("applies style", () => {
+    it("applies style", async () => {
       const page = render(Component, {
         ...baseProps,
         style: "color: orange;",
       });
-      expect(componentElement(page)).toHaveAttribute(
-        "style",
-        expect.stringContaining("color: orange"),
-      );
+      await expect
+        .element(componentLocator(page))
+        .toHaveAttribute("style", expect.stringContaining("color: orange"));
     });
   });
 });
 
-function componentElement(page: RenderResult<typeof Component>): HTMLElement {
+function componentLocator(page: RenderResult<typeof Component>): Locator {
   return page.getByTestId("example");
 }

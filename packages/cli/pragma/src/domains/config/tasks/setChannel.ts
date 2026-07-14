@@ -1,36 +1,21 @@
-import { $, gen, type Task, writeFile } from "@canonical/task";
-import { readConfig } from "../../../config/index.js";
-import resolveConfigPath from "../../../config/resolveConfigPath.js";
+import type { Task } from "@canonical/task";
+import type { ConfigScope } from "../../../config/index.js";
+import type { Channel } from "../../../constants.js";
+import writeConfigField from "./writeConfigField.js";
 
 /**
  * Build a config-write task for setting or resetting the release channel.
  *
- * @param cwd - Working directory containing pragma.config.json.
- * @param channel - Channel value to persist, or `undefined` to reset.
- * @returns Task yielding the persisted field/value payload.
- * @note - Impure — reads config and writes to the file system.
+ * @param cwd - Working directory the target config layer is resolved from.
+ * @param channel - Channel to persist, or `undefined` to reset.
+ * @param scope - Optional explicit target layer (`"global"` | `"local"`).
+ * @returns Task yielding the persisted field/value payload and target path.
+ * @note - Impure — reads and writes the target config file.
  */
 export default function setChannel(
   cwd: string,
-  channel: string | undefined,
-): Task<{ field: "channel"; value: string | undefined }> {
-  return gen(function* () {
-    // Merge onto the full existing config so other fields (e.g. `packages`,
-    // `trace`) survive. `readConfig` normalises defaults (tier: undefined,
-    // channel: "normal"); strip those to keep the file minimal, then apply
-    // the channel change (`undefined` resets it).
-    const current = readConfig(cwd);
-    const { tier, channel: _current, ...rest } = current;
-    const next = {
-      ...rest,
-      ...(tier !== undefined ? { tier } : {}),
-      ...(channel !== undefined ? { channel } : {}),
-    };
-
-    yield* $(
-      writeFile(resolveConfigPath(cwd), `${JSON.stringify(next, null, 2)}\n`),
-    );
-
-    return { field: "channel", value: channel };
-  });
+  channel: Channel | undefined,
+  scope?: ConfigScope,
+): Task<{ field: "channel"; value: Channel | undefined; path: string }> {
+  return writeConfigField(cwd, "channel", channel, scope);
 }

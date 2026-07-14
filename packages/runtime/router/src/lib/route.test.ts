@@ -90,4 +90,33 @@ describe("route", () => {
 
     expect(legacyRoute.wrappers).toEqual([]);
   });
+
+  it("applies a params schema in parse and serializes its output in render", () => {
+    const numericIdSchema = {
+      "~standard": {
+        output: {} as { readonly id: number },
+        validate(value: unknown) {
+          const raw = value as { id?: string };
+          const id = Number(raw.id);
+
+          return Number.isInteger(id)
+            ? { value: { id } }
+            : { issues: [{ message: "id must be an integer" }] };
+        },
+      },
+    };
+
+    const userRoute = route({
+      url: "/users/:id",
+      params: numericIdSchema,
+      content: ({ params }) => String(params.id),
+    });
+
+    // parse validates and coerces; rejection is a non-match, not an error.
+    expect(userRoute.parse("/users/42")).toEqual({ id: 42 });
+    expect(userRoute.parse("/users/abc")).toBeNull();
+
+    // render serializes the schema's output values back into the pattern.
+    expect(userRoute.render({ id: 42 })).toBe("/users/42");
+  });
 });

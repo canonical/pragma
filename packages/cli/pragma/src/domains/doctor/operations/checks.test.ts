@@ -1,8 +1,12 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("#config", async (importOriginal) => ({
   ...(await importOriginal<typeof import("#config")>()),
   configExists: vi.fn(),
+  readConfigLayers: vi.fn(),
 }));
 vi.mock("../../shared/bootStore.js", () => ({
   bootStore: vi.fn(),
@@ -14,17 +18,18 @@ vi.mock("@canonical/harnesses", () => ({
   detectHarnesses: vi.fn(),
   readMcpConfig: vi.fn(),
 }));
-vi.mock("@canonical/task", () => ({
+vi.mock("@canonical/task/node", () => ({
   runTask: vi.fn((task: unknown) => task),
 }));
 
 import { detectHarnesses, readMcpConfig } from "@canonical/harnesses";
-import { configExists } from "#config";
+import { configExists, readConfigLayers } from "#config";
 import { collectStoreSummary } from "../../info/operations/index.js";
 import { bootStore } from "../../shared/bootStore.js";
 import {
   checkConfigFile,
   checkKeStore,
+  checkMcpCommands,
   checkMcpConfigured,
   checkNodeVersion,
   checkPragmaVersion,
@@ -55,14 +60,55 @@ describe("checkPragmaVersion", () => {
 });
 
 describe("checkConfigFile", () => {
-  it("passes when config exists", async () => {
-    vi.mocked(configExists).mockReturnValue(true);
+  it("passes when a project config exists", async () => {
+    vi.mocked(readConfigLayers).mockReturnValue({
+      config: { tier: undefined, channel: "normal" },
+      origins: {
+        tier: "default",
+        channel: "default",
+        packages: "default",
+        trace: "default",
+        framework: "default",
+      },
+      global: { path: "/home/u/.config/pragma/config.json", exists: false },
+      project: { path: "/repo/pragma.config.json", exists: true },
+    });
     const result = await checkConfigFile(ctx);
     expect(result.status).toBe("pass");
+    expect(result.detail).toContain("/repo/pragma.config.json");
   });
 
-  it("fails with remedy when config missing", async () => {
-    vi.mocked(configExists).mockReturnValue(false);
+  it("passes when only the global config exists", async () => {
+    vi.mocked(readConfigLayers).mockReturnValue({
+      config: { tier: undefined, channel: "normal" },
+      origins: {
+        tier: "default",
+        channel: "default",
+        packages: "default",
+        trace: "default",
+        framework: "default",
+      },
+      global: { path: "/home/u/.config/pragma/config.json", exists: true },
+      project: { path: "/repo/pragma.config.json", exists: false },
+    });
+    const result = await checkConfigFile(ctx);
+    expect(result.status).toBe("pass");
+    expect(result.detail).toContain("global config active");
+  });
+
+  it("fails with remedy when neither layer exists", async () => {
+    vi.mocked(readConfigLayers).mockReturnValue({
+      config: { tier: undefined, channel: "normal" },
+      origins: {
+        tier: "default",
+        channel: "default",
+        packages: "default",
+        trace: "default",
+        framework: "default",
+      },
+      global: { path: "/home/u/.config/pragma/config.json", exists: false },
+      project: { path: "/repo/pragma.config.json", exists: false },
+    });
     const result = await checkConfigFile(ctx);
     expect(result.status).toBe("fail");
     expect(result.remedy).toBeDefined();
@@ -142,6 +188,111 @@ describe("checkMcpConfigured", () => {
     const result = await checkMcpConfigured(ctx);
     expect(result.status).toBe("pass");
     expect(result.detail).toContain("Claude Code");
+  });
+});
+
+describe("checkMcpCommands", () => {
+  const harness = {
+    id: "claude-code",
+    name: "Claude Code",
+    configPath: () => "/test/.mcp.json",
+    skillsPath: () => "/test/.claude/skills",
+    detect: [],
+    version: "*",
+    configFormat: "json" as const,
+    mcpKey: "mcpServers",
+  };
+  const detected = {
+    harness,
+    confidence: "high" as const,
+    configExists: true,
+    configPath: "/test/.mcp.json",
+  };
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("skips when no harnesses detected", async () => {
+    vi.mocked(detectHarnesses).mockReturnValue(Promise.resolve([]) as never);
+    const result = await checkMcpCommands(ctx);
+    expect(result.status).toBe("skip");
+  });
+
+  it("skips when only URL-based servers are configured", async () => {
+    vi.mocked(detectHarnesses).mockReturnValue(
+      Promise.resolve([detected]) as never,
+    );
+    vi.mocked(readMcpConfig).mockReturnValue(
+      Promise.resolve({
+        figma: { type: "http", url: "https://mcp.figma.com/mcp" },
+      }) as never,
+    );
+
+    const result = await checkMcpCommands(ctx);
+    expect(result.status).toBe("skip");
+    expect(result.detail).toContain("no command-based");
+  });
+
+  it("passes when every configured command resolves on PATH", async () => {
+    const binDir = mkdtempSync(join(tmpdir(), "pragma-doctor-"));
+    writeFileSync(join(binDir, "pragma"), "#!/bin/sh\n", { mode: 0o755 });
+    vi.stubEnv("PATH", binDir);
+
+    vi.mocked(detectHarnesses).mockReturnValue(
+      Promise.resolve([detected]) as never,
+    );
+    vi.mocked(readMcpConfig).mockReturnValue(
+      Promise.resolve({
+        pragma: { command: "pragma", args: ["mcp"] },
+      }) as never,
+    );
+
+    const result = await checkMcpCommands(ctx);
+    expect(result.status).toBe("pass");
+    expect(result.detail).toContain("1 command");
+  });
+
+  it("fails and names the entry whose command does not resolve", async () => {
+    const emptyDir = mkdtempSync(join(tmpdir(), "pragma-doctor-empty-"));
+    vi.stubEnv("PATH", emptyDir);
+
+    vi.mocked(detectHarnesses).mockReturnValue(
+      Promise.resolve([detected]) as never,
+    );
+    vi.mocked(readMcpConfig).mockReturnValue(
+      Promise.resolve({
+        sem: { command: "sem", args: ["mcp"] },
+      }) as never,
+    );
+
+    const result = await checkMcpCommands(ctx);
+    expect(result.status).toBe("fail");
+    expect(result.detail).toContain('"sem"');
+    expect(result.detail).toContain("/test/.mcp.json");
+    expect(result.remedy).toBeDefined();
+  });
+
+  it("flags only the broken entry among several", async () => {
+    const binDir = mkdtempSync(join(tmpdir(), "pragma-doctor-mixed-"));
+    writeFileSync(join(binDir, "pragma"), "#!/bin/sh\n", { mode: 0o755 });
+    vi.stubEnv("PATH", binDir);
+
+    vi.mocked(detectHarnesses).mockReturnValue(
+      Promise.resolve([detected]) as never,
+    );
+    vi.mocked(readMcpConfig).mockReturnValue(
+      Promise.resolve({
+        pragma: { command: "pragma", args: ["mcp"] },
+        sem: { command: "sem", args: ["mcp"] },
+        figma: { type: "http", url: "https://mcp.figma.com/mcp" },
+      }) as never,
+    );
+
+    const result = await checkMcpCommands(ctx);
+    expect(result.status).toBe("fail");
+    expect(result.detail).toContain('"sem"');
+    expect(result.detail).not.toContain('"pragma"');
   });
 });
 

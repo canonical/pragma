@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { Store } from "@canonical/ke";
@@ -18,13 +18,24 @@ function makeCtx(cwd: string): PragmaContext {
 
 describe("config channel command", () => {
   let dir: string;
+  let xdgDir: string;
+  let originalXdg: string | undefined;
 
   beforeEach(() => {
     dir = mkdtempSync(join(tmpdir(), "pragma-cmd-channel-"));
+    // Bound the config walk at the fixture root, seed an empty project
+    // file so writes stay local, and isolate the global XDG layer.
+    mkdirSync(join(dir, ".git"));
+    writeFileSync(join(dir, "pragma.config.json"), "{}");
+    originalXdg = process.env.XDG_CONFIG_HOME;
+    xdgDir = mkdtempSync(join(tmpdir(), "pragma-cmd-channel-xdg-"));
+    process.env.XDG_CONFIG_HOME = xdgDir;
   });
 
   afterEach(() => {
+    process.env.XDG_CONFIG_HOME = originalXdg;
     rmSync(dir, { recursive: true, force: true });
+    rmSync(xdgDir, { recursive: true, force: true });
   });
 
   it("sets channel to experimental", async () => {
@@ -45,7 +56,7 @@ describe("config channel command", () => {
     expect(result.tag).toBe("output");
     if (result.tag === "output") {
       const text = result.render.plain(result.value);
-      expect(text).toBe('Set channel to "prerelease".');
+      expect(text).toContain('Set channel to "prerelease".');
     }
   });
 
@@ -72,7 +83,7 @@ describe("config channel command", () => {
     expect(result.tag).toBe("output");
     if (result.tag === "output") {
       const text = result.render.plain(result.value);
-      expect(text).toBe("Reset channel to default.");
+      expect(text).toContain("Reset channel to default.");
     }
   });
 

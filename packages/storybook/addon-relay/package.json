@@ -1,6 +1,6 @@
 {
   "name": "@canonical/storybook-addon-relay",
-  "version": "0.29.1",
+  "version": "0.30.0",
   "type": "module",
   "files": [
     "dist"
@@ -60,27 +60,27 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "relay-test-utils": "^18.2.0"
+    "relay-test-utils": "^21.0.1"
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.9",
-    "@canonical/biome-config": "^0.29.0",
-    "@canonical/typescript-config-react": "^0.29.0",
-    "@canonical/webarchitect": "^0.29.0",
+    "@canonical/biome-config": "^0.30.0",
+    "@canonical/typescript-config-react": "^0.30.0",
+    "@canonical/webarchitect": "^0.30.0",
     "@testing-library/react": "^16.3.2",
     "@types/node": "^24.12.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@types/react-relay": "^18.2.1",
-    "@types/relay-runtime": "^19.0.3",
-    "@types/relay-test-utils": "^18.0.0",
+    "@types/relay-runtime": "^20.1.1",
+    "@types/relay-test-utils": "^19.0.0",
     "@vitejs/plugin-react": "^6.0.0",
     "@vitest/coverage-v8": "^4.0.18",
     "jsdom": "^28.1.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
-    "react-relay": "^18.2.0",
-    "relay-runtime": "^18.2.0",
+    "react-relay": "^21.0.1",
+    "relay-runtime": "^21.0.1",
     "storybook": "^10.3.1",
     "typescript": "^5.9.3",
     "vite": "^8.0.1",
@@ -89,8 +89,8 @@
   "peerDependencies": {
     "react": "^18.0.0 || ^19.0.0",
     "react-dom": "^18.0.0 || ^19.0.0",
-    "react-relay": ">=18.0.0 <19.0.0",
-    "relay-runtime": ">=18.0.0 <19.0.0",
+    "react-relay": ">=18.0.0 <22.0.0",
+    "relay-runtime": ">=18.0.0 <22.0.0",
     "storybook": "^10.3.1"
   },
   "storybook": {

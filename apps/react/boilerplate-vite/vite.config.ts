@@ -1,5 +1,8 @@
 import react from "@vitejs/plugin-react";
+import browserslist from "browserslist";
+import { browserslistToTargets } from "lightningcss";
 import { defineConfig } from "vite";
+import relay from "vite-plugin-relay-lite";
 
 // Path aliases (#lib, #domains, #styles) are declared as Node subpath imports
 // in package.json "imports" and resolved natively by Vite — no resolver plugin.
@@ -13,13 +16,37 @@ const PORT = Number(process.env.PORT) || undefined;
 // (`dev`, `build:client`, `preview`) uses the default mode and the SPA client
 // build (`--ssrManifest --outDir dist/client`).
 export default defineConfig(({ mode }) => ({
-  plugins: [react()],
+  // Relay's `graphql\`...\`` tags must be rewritten into imports of the
+  // compiler-generated artifacts. `@vitejs/plugin-react` v6 is OXC-based (no
+  // Babel), so the classic `babel-plugin-relay` route would need the
+  // `@rolldown/plugin-babel` escape hatch; `vite-plugin-relay-lite` does the
+  // same rewrite with its own parser and no Babel, and works on Vite 8 /
+  // rolldown despite its peer range stopping at Vite 7 (bun installs it with
+  // only a peer-version warning). `codegen: false` because artifacts are
+  // committed and regenerated explicitly via `bun run relay` / `relay:watch`.
+  plugins: [relay({ codegen: false }), react()],
   // Honour the PORT env var for `dev` (SPA) and `preview` so all server scripts
   // — including the SSR ones, which already read PORT — respond to it uniformly.
   server: { port: PORT },
   preview: { port: PORT },
-  build:
-    mode === "server"
+  // CSS delivery is the app's job, not the libraries': @canonical/* packages
+  // deliberately ship modern, uncompiled per-component CSS and take no stance
+  // on browser support. Lightning CSS (already bundled with Vite 8) compiles
+  // that CSS down to this app's declared browser floor — the browserslist
+  // query in .browserslistrc, which is the one knob to turn when support
+  // requirements change. Not everything can be downleveled: math functions
+  // like `mod()` (used by the typography baseline grid) have no polyfillable
+  // form, so that feature's effective Chromium ≥ 125 floor is unchanged.
+  css: {
+    transformer: "lightningcss",
+    lightningcss: { targets: browserslistToTargets(browserslist()) },
+  },
+  build: {
+    // Minify CSS with Lightning CSS too (instead of the esbuild default), so
+    // a single tool owns both downleveling and minification — in the client
+    // build and the server build alike.
+    cssMinify: "lightningcss",
+    ...(mode === "server"
       ? {
           ssr: true,
           outDir: "dist/server",
@@ -30,7 +57,8 @@ export default defineConfig(({ mode }) => ({
             },
           },
         }
-      : undefined,
+      : undefined),
+  },
   ssr: {
     // Bundle @canonical/* for SSR rather than externalising them, for two
     // reasons: (1) some packages declare only a "module" entry (no
@@ -40,6 +68,15 @@ export default defineConfig(({ mode }) => ({
     // which Node cannot load (ERR_UNKNOWN_FILE_EXTENSION) but Vite's SSR
     // transform no-ops. The regex covers the whole scope so any current or
     // future @canonical dependency is handled.
+    //
+    // The Relay packages (react-relay, relay-runtime, relay-runtime-network,
+    // graphql) stay externalised like react itself. Two packaging defects
+    // made that possible and are fixed via `patchedDependencies` (see
+    // patches/ at the repo root): react-relay's CJS exports are member
+    // expressions cjs-module-lexer cannot detect (breaking named imports
+    // under Node SSR and Vite's dev module runner), and
+    // relay-runtime-network@0.1.0 ships an `imports` map pointing at its
+    // unpublished src/ directory.
     noExternal: [/^@canonical\//],
   },
 }));

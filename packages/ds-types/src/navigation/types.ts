@@ -1,19 +1,15 @@
 /**
- * Default component type for navigation items.
- * Framework-agnostic — consumers supply a concrete type
- * (e.g. React.ComponentType) via the generic parameter.
- */
-export type DefaultComponent = unknown;
-
-/**
  * Navigation item - Public API (WD405)
  *
  * A unified type for navigation items across the design system.
  * Used by Breadcrumbs, SiteNavigation, FileTree, MegaMenu, etc.
  *
- * @template C - Custom component type for rendering the item
+ * Only fields consumed by the shared navigation utilities belong here.
+ * Styling and rendering customization (CSS classes, custom renderers)
+ * belong on the item types that components declare by extending this
+ * one (e.g. BreadcrumbItem, MenuItem), using each framework's own idioms.
  */
-export interface Item<C = DefaultComponent> {
+export interface Item {
   /**
    * Unique identifier for the item when a URL is not provided.
    * e.g. 'section-header' for a non-navigable grouping item.
@@ -39,28 +35,10 @@ export interface Item<C = DefaultComponent> {
   disabled?: boolean;
 
   /**
-   * CSS class name for custom styling of the item.
-   * e.g. 'nav-item-active' to highlight the current page.
-   */
-  className?: string;
-
-  /**
    * Array of child items for nested navigation structures.
    * e.g. Submenu items under a parent like 'Settings'.
    */
-  items?: Item<C>[];
-
-  /**
-   * Enum value determining the type of display for items.
-   * e.g. 'list' for rendering as a simple list.
-   */
-  displayItemsType?: "default" | "custom";
-
-  /**
-   * Custom component for rendering the item itself.
-   * e.g. A specialized renderer for complex items.
-   */
-  Component?: C;
+  items?: Item[];
 }
 
 /**
@@ -71,8 +49,7 @@ export interface Item<C = DefaultComponent> {
  *
  * Generic over the **whole item type** `T` it annotates, so an enhanced item
  * (extra fields beyond the base WD405 `Item`, e.g. `icon`/`slot`) survives
- * annotation with its fields intact and fully typed. `T` may itself carry a
- * custom component type (`Item<C>`).
+ * annotation with its fields intact and fully typed.
  *
  * @template T - The item type being annotated (defaults to the base `Item`)
  */

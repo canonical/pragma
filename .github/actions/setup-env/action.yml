@@ -61,6 +61,34 @@ runs:
       shell: bash
       run: bun install --ignore-scripts
 
+      # Workflows that test only affected packages (e.g. pr.yml, via `nx affected -t test`)
+      # only need Playwright if an affected package requires it. Workflows that run the
+      # full test suite regardless of what changed (e.g. push.yml, tag.yml, via `bun run
+      # test`) need to check every project, since a playwright-tagged package doesn't
+      # have to be "affected" to be tested.
+    - name: Check for Specific Tag in Affected Packages
+      shell: bash
+      id: check_playwright
+      env:
+        EVENT_NAME: ${{ github.event_name }}
+        BASE_REF: ${{ github.event.pull_request.base.ref }}
+      run: bash ${{ github.action_path }}/check-playwright.sh
+
+      # Browser binaries are keyed on bun.lock: they only change when the resolved
+      # playwright version changes. On a cache hit, `playwright install` skips the
+      # download and only the (uncacheable) apt system dependencies are installed.
+    - name: Cache Playwright browsers
+      if: ${{ steps.check_playwright.outputs.PLAYWRIGHT_REQUIRED == 'true' }}
+      uses: actions/cache@v5
+      with:
+        path: ~/.cache/ms-playwright
+        key: playwright-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+
+    - name: Install Playwright browsers
+      if: ${{ steps.check_playwright.outputs.PLAYWRIGHT_REQUIRED == 'true' }}
+      shell: bash
+      run: bunx playwright install --with-deps chromium firefox webkit
+
     - name: Start Nx cache server
       shell: bash
       run: |

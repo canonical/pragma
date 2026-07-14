@@ -8,6 +8,7 @@
  */
 
 import {
+  createGeneratorStamp,
   formatEffectLine,
   formatEffectWithContent,
   formatLlmJson,
@@ -19,7 +20,8 @@ import type {
   PromptDefinition,
   StampConfig,
 } from "@canonical/summon-core";
-import { dryRun, runUndo } from "@canonical/task";
+import { dryRun } from "@canonical/task";
+import { runUndo } from "@canonical/task/node";
 import chalk from "chalk";
 import type { Command } from "commander";
 import { render } from "ink";
@@ -353,10 +355,7 @@ const configureGeneratorCommand = (
       // Build stamp config if stamps are enabled (default: enabled)
       const stampEnabled = actualOptions.generatedStamp !== false;
       const stamp: StampConfig | undefined = stampEnabled
-        ? {
-            generator: generator.meta.displayName,
-            version: generator.meta.version,
-          }
+        ? createGeneratorStamp(generator)
         : undefined;
 
       // Undo mode (non-interactive batch)

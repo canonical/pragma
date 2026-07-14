@@ -1,6 +1,6 @@
 import type { DetectedHarness } from "@canonical/harnesses";
 import { detectHarnesses, readMcpConfig } from "@canonical/harnesses";
-import { runTask } from "@canonical/task";
+import { runTask } from "@canonical/task/node";
 import type { CheckContext, CheckResult } from "../types.js";
 
 /**

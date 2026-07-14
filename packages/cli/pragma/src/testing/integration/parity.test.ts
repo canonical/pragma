@@ -10,6 +10,7 @@
 import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 // ---- Shared utilities ----
+import { readConfigLayers } from "#config";
 import { VERSION } from "#constants";
 import { detectInstallSource } from "#package-manager";
 // ---- Formatters ----
@@ -440,14 +441,25 @@ describe("ontology parity", () => {
 // ---------------------------------------------------------------------------
 
 describe("config parity", () => {
-  it("config_show: data matches resolveConfigShow", async () => {
+  // Both surfaces resolve from the filesystem via the shared config show
+  // story, so parity is asserted against the real config path/existence
+  // (the MCP tool previously hardcoded "pragma.config.json" / true).
+  function resolveExpectedConfigShow() {
+    const layers = readConfigLayers(rt.cwd);
     const install = detectInstallSource();
-    const opResult = resolveConfigShow(rt.config, {
+    return resolveConfigShow(layers.config, {
       packageManager: install.packageManager,
       installSource: install.label,
-      configFilePath: "pragma.config.json",
-      configFileExists: true,
+      configFilePath: layers.project.path,
+      configFileExists: layers.project.exists,
+      globalConfigPath: layers.global.path,
+      globalConfigExists: layers.global.exists,
+      origins: layers.origins,
     });
+  }
+
+  it("config_show: data matches resolveConfigShow", async () => {
+    const opResult = resolveExpectedConfigShow();
 
     const mcpRes = await client.callTool({
       name: "config_show",
@@ -458,14 +470,7 @@ describe("config parity", () => {
   });
 
   it("config_show condensed: matches llm formatter", async () => {
-    const install = detectInstallSource();
-    const opResult = resolveConfigShow(rt.config, {
-      packageManager: install.packageManager,
-      installSource: install.label,
-      configFilePath: "pragma.config.json",
-      configFileExists: true,
-    });
-    const expectedText = configShowFmt.llm(opResult);
+    const expectedText = configShowFmt.llm(resolveExpectedConfigShow());
 
     const mcpRes = await client.callTool({
       name: "config_show",

@@ -24,9 +24,6 @@ describe("createOutputResult", () => {
       case "output":
         expect(result.render.plain("test")).toBe("test");
         break;
-      case "interactive":
-        expect.unreachable("Should be output");
-        break;
       case "exit":
         expect.unreachable("Should be output");
         break;

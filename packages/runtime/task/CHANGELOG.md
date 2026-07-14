@@ -3,6 +3,40 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.30.0](https://github.com/canonical/pragma/compare/v0.29.1...v0.30.0) (2026-07-14)
+
+
+### Bug Fixes
+
+* **task:** route effect exceptions through recovery and trampoline preview/undo interpreters ([#740](https://github.com/canonical/pragma/issues/740)) ([6ad8b65](https://github.com/canonical/pragma/commit/6ad8b6518134f259f12acf76b21e1ce985e75403))
+
+
+* refactor(task)!: scope @canonical/task to its consumer-used surface (#755) ([cdc725d](https://github.com/canonical/pragma/commit/cdc725d481d24ede55fc2f5b82cfad9b7dc088bc)), closes [#755](https://github.com/canonical/pragma/issues/755) [#741](https://github.com/canonical/pragma/issues/741) [#742](https://github.com/canonical/pragma/issues/742)
+
+
+### Features
+
+* **task:** content-addressable effect identity — canonicalJSON, EffectId, per-tag descriptors ([#741](https://github.com/canonical/pragma/issues/741)) ([f1a3a0b](https://github.com/canonical/pragma/commit/f1a3a0bacb607b51d89cf8f7d206a8252b7842bf))
+* **task:** journal record/replay for deterministic effect execution ([#742](https://github.com/canonical/pragma/issues/742)) ([703db92](https://github.com/canonical/pragma/commit/703db927cf0bf9f937948817a2a2f7ba5cd1f87a))
+
+
+### BREAKING CHANGES
+
+* the journal/effect-identity exports are gone from
+@canonical/task; RunTaskOptions no longer accepts `journal`.
+
+Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01DF9ExVCukzqpe1Fus9V1no
+
+* chore(task): drop imports orphaned by the journal-seam test removal
+
+Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01DF9ExVCukzqpe1Fus9V1no
+
+
+
+
+
 # [0.29.0](https://github.com/canonical/pragma/compare/v0.29.0-experimental.0...v0.29.0) (2026-07-03)
 
 **Note:** Version bump only for package @canonical/task

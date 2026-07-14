@@ -65,8 +65,10 @@ describe("build — class graph", () => {
     expect(output.classes.get(uri("B"))?.ancestors).toContain(uri("A"));
   });
 
-  it("dedupes a diamond hierarchy's shared ancestor", () => {
-    // A → {B, C}; both B and C → D. D must appear once in A's closure.
+  it("orders a diamond's closure most specific first, deduped", () => {
+    // A → {B, C}; both B and C → D. D (distance 2) appears once, and after
+    // the distance-1 parents B and C — the pre-order DFS would interleave it
+    // as [B, D, C], violating the "most specific first" ancestor contract.
     const extraction = makeExtraction({
       classes: [
         { uri: uri("A"), superclasses: [uri("B"), uri("C")] },
@@ -78,7 +80,31 @@ describe("build — class graph", () => {
     const { output } = build(extraction);
     const ancestors = output.classes.get(uri("A"))?.ancestors ?? [];
     expect(ancestors.filter((a) => a === uri("D"))).toHaveLength(1);
-    expect([...ancestors].sort()).toEqual([uri("B"), uri("C"), uri("D")]);
+    expect(ancestors).toEqual([uri("B"), uri("C"), uri("D")]);
+  });
+
+  it("orders a deeper diamond by ascending distance across two levels", () => {
+    // A → {B, C}; B → D; C → E; D,E → F. Distance-1 {B,C} precede
+    // distance-2 {D,E}, which precede distance-3 {F}; F is deduped.
+    const extraction = makeExtraction({
+      classes: [
+        { uri: uri("A"), superclasses: [uri("B"), uri("C")] },
+        { uri: uri("B"), superclasses: [uri("D")] },
+        { uri: uri("C"), superclasses: [uri("E")] },
+        { uri: uri("D"), superclasses: [uri("F")] },
+        { uri: uri("E"), superclasses: [uri("F")] },
+        { uri: uri("F"), superclasses: [] },
+      ],
+    });
+    const { output } = build(extraction);
+    const ancestors = output.classes.get(uri("A"))?.ancestors ?? [];
+    expect(ancestors).toEqual([
+      uri("B"),
+      uri("C"),
+      uri("D"),
+      uri("E"),
+      uri("F"),
+    ]);
   });
 
   it("dedupes a directly-repeated superclass", () => {

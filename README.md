@@ -80,7 +80,7 @@ The server starts at http://localhost:6006. Each component package has its own S
 
 ## Repository Structure
 
-The monorepo uses Lerna for versioning and publishing, with Nx providing task caching and dependency-aware execution. All packages share a single version number (currently 0.11.0) to eliminate compatibility matrices between internal dependencies.
+The monorepo uses Lerna for versioning and publishing, with Nx providing task caching and dependency-aware execution. Lerna keeps package versions in lockstep (currently the 0.29.x line, tracked in [`lerna.json`](lerna.json)) to eliminate compatibility matrices between internal dependencies.
 
 A guiding principle throughout the codebase is that structure should be discoverable by both humans and machines. This means explicit conventions rather than hidden magic, schema-validated configurations, and specifications expressed as queryable data where possible.
 
@@ -90,10 +90,10 @@ React components are organised into tiers based on their scope of applicability.
 
 | Tier | Package | Scope |
 |------|---------|-------|
-| Global | `@canonical/react-ds-global` | Universal components like Button, Badge, Card, and Chip that apply across all contexts. Components are grouped by maturity: **Stable** (production-ready), **Beta** (API may change), and **Experimental** (early-stage). |
+| Global | `@canonical/react-ds-global` | Universal components like Button, Badge, Card, and Chip that apply across all contexts. Production-ready components live under `src/lib/component`, `src/lib/group`, and `src/lib/pattern`; early-stage work sits in `src/lib/_work_in_progress`. |
 | Global Form | `@canonical/react-ds-global-form` | Form controls including Input, Select, and Checkbox, along with validation patterns. See the [package README](packages/react/ds-global-form/README.md) for usage and guides. |
-| Apps | `@canonical/react-ds-app` | Application-level UI such as Navigation and Toolbar, suited for internal tools. |
-| Apps/WPE | `@canonical/react-ds-app-launchpad` | Components specific to Launchpad and Workplace Engineering applications. |
+| Apps | `@canonical/react-ds-app` | Application-level UI such as ApplicationLayout, SideNavigation, and ContentLayout, suited for internal tools. |
+| Apps (product-specific) | `@canonical/react-ds-app-*` | Components specific to a single product: Launchpad (`-launchpad`), LXD (`-lxd`), Anbox (`-anbox`), Landscape (`-landscape`), and Portal (`-portal`). |
 
 The tiers correspond to the [Design System Ontology](https://github.com/canonical/design-system), which models the design system as structured, queryable data. Each component has a formal specification including usage guidelines, modifier families, and anatomy definitions. This semantic approach enables tooling to understand design intent, not just implementation details.
 
@@ -103,7 +103,7 @@ Three packages provide the foundation that component packages build upon.
 
 **@canonical/ds-types** defines TypeScript types for modifier families. A modifier family is a set of related visual variants that components can support. For example, the `severity` modifier family includes `neutral`, `positive`, `negative`, `caution`, and `information`. The `ModifierFamily<'severity'>` type resolves to a union of these string literals, ensuring type safety when applying modifiers to components.
 
-**@canonical/ds-assets** contains icons and shared visual assets. Icons use a consistent 16x16 viewBox with `currentColor` for fill, allowing them to inherit text colour from their context.
+**@canonical/ds-assets** contains icons and shared visual assets. Icons use `currentColor` for fill, allowing them to inherit text colour from their context, and a 16x16 viewBox as the standard size.
 
 **@canonical/utils** provides battle-tested utility functions like `debounce` and `throttle`. Functions only enter this package after proving useful across multiple packages; premature abstraction is actively avoided.
 
@@ -111,19 +111,19 @@ Three packages provide the foundation that component packages build upon.
 
 Pragma uses pure CSS with no preprocessors, no CSS-in-JS, and no build-time transformations beyond standard bundling. The stylesheets you write are the stylesheets that ship. This decision keeps the styling system understandable to anyone who knows CSS, eliminates runtime overhead from style injection, and ensures styles work correctly during server-side rendering without hydration concerns.
 
-The CSS architecture uses layered packages rather than a monolithic stylesheet. **@canonical/styles** is the aggregator package that imports all style layers in the correct order. Applications typically import only this package.
+The CSS architecture uses layered imports rather than a monolithic stylesheet. **@canonical/styles** (at `packages/styles/main`) is the aggregator package that imports all style layers in the correct order. Applications typically import only this package.
 
-The layers build upon each other: **styles-primitives-canonical** defines raw design tokens as CSS custom properties, **styles-elements** provides base HTML element styling (built on normalize.css), and the **styles-modes-*** packages handle theming concerns like colour modes, density variants, and motion preferences.
+The layers build upon each other: normalize.css provides the reset, **@canonical/styles-typography** supplies the baseline-grid alignment engine and typography scale tokens, and generated tokens from `@canonical/design-tokens` define colour, spacing, surface, and state custom properties, followed by grid, spacing, overflow, and motion tokens. **@canonical/styles-debug** offers opt-in development aids such as a baseline grid overlay.
 
 Component styles live with their components rather than in the styles packages. Each component imports its own `styles.css` file, which uses CSS custom properties that reference the design tokens. This co-location keeps styles maintainable and allows tree-shaking of unused component styles. The Button component, for example, defines its colours through custom properties like `--button-color-background` that can be overridden by consumers or themed through modifier classes.
 
 ### Developer Tooling
 
-**@canonical/webarchitect** validates that packages conform to architectural standards. Rather than enforcing conventions through runtime magic, it uses JSON Schema-based rulesets to verify package.json structure, TypeScript configuration, Biome setup, and license compliance. Every package runs `bun run check:webarchitect` as part of its check script. The schemas serve as executable documentation: they describe what valid structure looks like while simultaneously enforcing it.
+**@canonical/webarchitect** validates that packages conform to architectural standards. Rather than enforcing conventions through runtime magic, it uses JSON Schema-based rulesets to verify package.json structure, TypeScript configuration, Biome setup, and license compliance. Most packages run `bun run check:webarchitect` as part of their check script. The schemas serve as executable documentation: they describe what valid structure looks like while simultaneously enforcing it.
 
-Three rulesets cover the common cases. The `library` ruleset enforces LGPL-3.0 licensing for reusable packages. The `tool` ruleset enforces GPL-3.0 for CLI tools and applications. The `tool-ts` ruleset handles TypeScript-only tools that run directly with Bun without a build step.
+Three rulesets cover the common cases. The `library` ruleset targets reusable packages (LGPL-3.0 licensing by default). The `tool` ruleset targets CLI tools and applications (GPL-3.0). The `tool-ts` ruleset handles TypeScript-only tools that run directly with Bun without a build step. Further rulesets (`base`, `package`, `package-react`, `package-svelte`, `assets`) cover specialised cases; see [`packages/webarchitect/rulesets`](packages/webarchitect/rulesets).
 
-**@canonical/generator-ds** scaffolds new components using Yeoman. Install it globally with `npm install -g yo @canonical/generator-ds`, then run `yo @canonical/ds:component src/MyComponent` from within a package directory. The generator creates the component file, types, styles, stories, unit tests, and SSR tests following the [standard structure](docs/explanations/COMPONENT_FOLDER_STRUCTURE.md).
+**Summon** scaffolds new code. The `@canonical/summon` CLI (at `packages/cli/summon`) is a small framework that discovers generator packages installed alongside it: `@canonical/summon-component` scaffolds React, Svelte, and Lit components (`summon component react src/lib/MyComponent`), `@canonical/summon-package` scaffolds monorepo packages, `@canonical/summon-application` scaffolds applications, domains, routes, and wrappers, and `@canonical/summon-monorepo` scaffolds entire monorepos — all built on the `@canonical/summon-core` framework (`packages/summon/*`). The component generator creates the component file, types, styles, stories, unit tests, and SSR tests following the [standard structure](docs/explanations/COMPONENT_FOLDER_STRUCTURE.md). The `pragma` CLI wraps the component and package generators as `pragma create component` and `pragma create package`, adding `--undo` support to reverse a scaffold. See the [Prerequisites](#prerequisites) section for installation.
 
 ## Component Structure
 
@@ -142,7 +142,7 @@ Button/
 
 The component file imports its types and styles, then exports a function component. Props interfaces extend the appropriate HTML attributes interface (e.g., `ButtonHTMLAttributes<HTMLButtonElement>`) to ensure all native attributes pass through correctly.
 
-Styles use a `ds` namespace class combined with the component name: `className={["ds", "button", appearance, className].filter(Boolean).join(" ")}`. This pattern allows modifier classes to apply directly while preserving any custom classes passed by consumers.
+Styles use a `ds` namespace class combined with the component name, baseline utilities, modifier props, and state classes. Button, for example, composes `className={["ds button", "p", importance, anticipation, variant, loading && "loading", className].filter(Boolean).join(" ")}` — the `p` baseline utility, the `importance`/`anticipation`/`variant` modifiers, and a `loading` state class. This pattern allows modifier classes to apply directly while preserving any custom classes passed by consumers.
 
 The barrel export in `index.ts` explicitly names every export rather than using `export *`. This makes the public API visible at a glance and enables precise tree-shaking.
 
@@ -193,30 +193,68 @@ The `docs/` folder contains guides for working with the monorepo:
 
 ## Package Reference
 
-The following table lists all packages in the monorepo with their location and purpose.
+The following tables list all workspace packages with their location and purpose. Packages marked **internal** have `"private": true` in their package.json and are not published to npm.
 
 ### React Components
 
 | Package | Path | Description |
 |---------|------|-------------|
-| `@canonical/react-ds-global` | `packages/react/ds-global` | Global tier components grouped by maturity: **Stable** (Accordion, Breadcrumbs, Card, Icon, Timeline), **Beta** (Button, Label, Tile), **Experimental** (Badge, Chip, Link, Rule, Section, SkipLink, Tooltip) |
+| `@canonical/react-ds-global` | `packages/react/ds-global` | Global tier components: Accordion, Announcement, Badge, Breadcrumbs, Button, Card, Chip, ContextualMenu, Heading, Icon, InlineCode, KeyboardKey, KeyboardKeys, Popover, Tabs, Tile, Timeline, Tooltip |
 | `@canonical/react-ds-global-form` | `packages/react/ds-global-form` | Form components with react-hook-form integration. See [README](packages/react/ds-global-form/README.md) for guides |
-| `@canonical/react-ds-app` | `packages/react/ds-app` | Application tier components: Navigation, Toolbar |
-| `@canonical/react-ds-app-launchpad` | `packages/react/ds-app-launchpad` | Launchpad-specific: Markdown renderer, Tooltip variants |
+| `@canonical/react-ds-app` | `packages/react/ds-app` | Application tier components: ApplicationLayout, ContentLayout, SideNavigation, ViewLayout |
+| `@canonical/react-ds-app-anbox` | `packages/react/ds-app-anbox` | Anbox-specific components |
+| `@canonical/react-ds-app-landscape` | `packages/react/ds-app-landscape` | Landscape-specific components |
+| `@canonical/react-ds-app-launchpad` | `packages/react/ds-app-launchpad` | Launchpad-specific components: GitDiffViewer, MarkdownEditor, FileTree, EditableBlock, RelativeTime, DiffChangeMarker |
+| `@canonical/react-ds-app-lxd` | `packages/react/ds-app-lxd` | LXD-specific components |
+| `@canonical/react-ds-app-portal` | `packages/react/ds-app-portal` | Portal-specific components |
+
+### React Utilities
+
+| Package | Path | Description |
+|---------|------|-------------|
 | `@canonical/react-ssr` | `packages/react/ssr` | Server-side rendering utilities |
+| `@canonical/ssr-adapter-cloudflare` | `packages/react/ssr-adapter-cloudflare` | Cloudflare Workers adapter for `@canonical/react-ssr` (**internal**) |
+| `@canonical/ssr-adapter-deno` | `packages/react/ssr-adapter-deno` | Deno Deploy adapter for `@canonical/react-ssr` (**internal**) |
+| `@canonical/ssr-adapter-vercel` | `packages/react/ssr-adapter-vercel` | Vercel deployment adapter for `@canonical/react-ssr` (**internal**) |
+| `@canonical/react-head` | `packages/react/head` | Declarative head management for React with SSR collection |
+| `@canonical/react-hooks` | `packages/react/hooks` | Shared React hooks: preferences, navigation tree |
+| `@canonical/i18n-react` | `packages/react/i18n` | React bindings for `@canonical/i18n-core`: I18nProvider plus useTranslation, useLocale, and useFormatters hooks |
+| `@canonical/router-react` | `packages/react/router` | React bindings for `@canonical/router-core` |
+| `@canonical/react-tokens` | `packages/react/tokens` | Token explorer components (TokenTable, TokenSwatch) for browsing design tokens in Storybook |
+
+### Svelte Components
+
+| Package | Path | Description |
+|---------|------|-------------|
+| `@canonical/svelte-ds-global` | `packages/svelte/ds-global` | Global components for Svelte 5 |
+| `@canonical/svelte-ds-app-launchpad` | `packages/svelte/ds-app-launchpad` | Launchpad-specific Svelte components |
+| `@canonical/svelte-ds-app-wpe` | `packages/svelte/ds-app-wpe` | WPE-specific Svelte components |
+| `@canonical/svelte-ssr-test` | `packages/svelte/ssr-test` | Test package for Svelte SSR testing |
+
+### Web Components
+
+| Package | Path | Description |
+|---------|------|-------------|
+| `@canonical/lit-ds-prototype` | `packages/lit/ds-prototype` | Prototype Web Components built with Lit |
 
 ### Styles
 
 | Package | Path | Description |
 |---------|------|-------------|
-| `@canonical/styles` | `packages/styles/main/canonical` | Aggregator importing all style layers |
-| `@canonical/styles-primitives-canonical` | `packages/styles/primitives/canonical` | Design tokens as CSS custom properties |
-| `@canonical/styles-elements` | `packages/styles/elements` | Base HTML element styling (extends normalize.css) |
-| `@canonical/styles-modes-canonical` | `packages/styles/modes/canonical` | Canonical colour theme |
-| `@canonical/styles-modes-density` | `packages/styles/modes/density` | Density variants (compact, comfortable) |
-| `@canonical/styles-modes-intents` | `packages/styles/modes/intents` | Intent modifiers (positive, negative, caution) |
-| `@canonical/styles-modes-motion` | `packages/styles/modes/motion` | Motion and animation preferences |
+| `@canonical/styles` | `packages/styles/main` | Global stylesheet aggregating normalize.css, typography, and design tokens |
+| `@canonical/styles-typography` | `packages/styles/typography` | Typography baseline alignment engines and scale tokens |
 | `@canonical/styles-debug` | `packages/styles/debug` | Development aids including baseline grid overlay |
+
+### Runtime
+
+| Package | Path | Description |
+|---------|------|-------------|
+| `@canonical/ke` | `packages/runtime/ke` | Headless triple store runtime built on Oxigraph WASM |
+| `@canonical/ke-graphql` | `packages/runtime/ke-graphql` | OWL to GraphQL compiler for the ke triple store |
+| `@canonical/router-core` | `packages/runtime/router` | Framework-agnostic router core built on flat route triplets |
+| `@canonical/i18n-core` | `packages/runtime/i18n` | Framework-agnostic internationalization core built on native Intl |
+| `@canonical/task` | `packages/runtime/task` | Monadic effect framework for composable, testable, dry-runnable CLI operations |
+| `@canonical/harnesses` | `packages/runtime/harnesses` | AI harness detection and MCP config read/write (Claude Code, Cursor, Windsurf, Cline, Roo Code) |
 
 ### Core Infrastructure
 
@@ -224,26 +262,56 @@ The following table lists all packages in the monorepo with their location and p
 |---------|------|-------------|
 | `@canonical/ds-types` | `packages/ds-types` | TypeScript types for modifier families and component props |
 | `@canonical/ds-assets` | `packages/ds-assets` | Icons and shared visual assets |
-| `@canonical/utils` | `packages/utils` | Utility functions: debounce, throttle |
-| `@canonical/styles-typography` | `packages/styles/typography` | Baseline grid alignment engines, typography scale tokens, and font metric extraction |
+| `@canonical/utils` | `packages/utils` | Utility functions: debounce, throttle, casing, pluralize, and more |
 
 ### Developer Tooling
 
 | Package | Path | Description |
 |---------|------|-------------|
 | `@canonical/webarchitect` | `packages/webarchitect` | Architecture validation CLI with JSON Schema rulesets |
-| `@canonical/generator-ds` | `packages/generator-ds` | Yeoman generator for scaffolding components |
+| `@canonical/pragma-cli` | `packages/cli/pragma` | CLI and MCP server for querying the design system |
+| `@canonical/cli-core` | `packages/cli/core` | Shared CLI machinery: command definitions, registration, completions, output adapters |
+| `@canonical/summon` | `packages/cli/summon` | Interactive code generator CLI with Ink UI and shell completion |
+| `@canonical/summon-core` | `packages/summon/core` | Code generation framework: generator definitions, templates, discovery |
+| `@canonical/summon-component` | `packages/summon/component` | React, Svelte, and Lit component generators |
+| `@canonical/summon-package` | `packages/summon/package` | Package generator for scaffolding npm packages |
+| `@canonical/summon-application` | `packages/summon/application` | Application scaffolding generators: application, domain, route, wrapper |
+| `@canonical/summon-monorepo` | `packages/summon/monorepo` | Monorepo generator: Bun + Lerna monorepos with CI and shared config |
+
+### Storybook
+
+| Package | Path | Description |
+|---------|------|-------------|
 | `@canonical/storybook-addon-msw` | `packages/storybook/addon-msw` | Mock Service Worker integration for Storybook |
 | `@canonical/storybook-addon-utils` | `packages/storybook/addon-utils` | Debug and layout utilities: grid mode, color scheme, baseline grid, outlines |
+| `@canonical/storybook-addon-form-state` | `packages/storybook/addon-form-state` | Panel displaying live react-hook-form state |
+| `@canonical/storybook-addon-relay` | `packages/storybook/addon-relay` | Renders stories that use Relay hooks against a mock Relay environment |
+| `@canonical/storybook-addon-shell-theme` | `packages/storybook/addon-canonical-shell-theme` | Applies the Canonical shell theme with light and dark modes |
+| `@canonical/storybook-helpers` | `packages/storybook/helpers` | Shared Storybook utilities and helper components |
 
 ### Configuration
 
 | Package | Path | Description |
 |---------|------|-------------|
-| `@canonical/biome-config` | `configs/biome-config` | Shared Biome configuration for linting and formatting |
-| `@canonical/typescript-config` | `configs/typescript-config` | Base TypeScript configuration |
-| `@canonical/typescript-config-react` | `configs/typescript-config-react` | TypeScript configuration extending base with React settings |
-| `@canonical/storybook-config` | `configs/storybook-config` | Shared Storybook configuration factory |
+| `@canonical/biome-config` | `configs/biome` | Shared Biome configuration for linting and formatting |
+| `@canonical/renovate-config` | `configs/renovate` | Shared Renovate configuration for Canonical monorepos |
+| `@canonical/typescript-config` | `configs/typescript` | Base TypeScript configuration |
+| `@canonical/typescript-config-react` | `configs/typescript-react` | TypeScript configuration extending base with React settings |
+| `@canonical/typescript-config-lit` | `configs/typescript-lit` | TypeScript configuration for Lit Web Components projects |
+| `@canonical/typescript-config-svelte` | `configs/typescript-svelte` | TypeScript configuration for Svelte projects |
+| `@canonical/storybook-config` | `configs/storybook` | Shared Storybook configuration factory |
+| `@canonical/vitest-config-react` | `configs/vitest-config-react` | Shared Vitest configuration factory for React packages |
+
+### Apps (internal)
+
+These workspace apps are development and demo surfaces; none are published.
+
+| Package | Path | Description |
+|---------|------|-------------|
+| `@canonical/ds-demo-site` | `apps/react/demo` | Design system demo site |
+| `@canonical/react-boilerplate-vite` | `apps/react/boilerplate-vite` | React application scaffold with SSR on Canonical's shared packages |
+| `@canonical/storybook-hub` | `apps/react/storybook-hub` | Aggregated Storybook hub |
+| `@canonical/lit-demo` | `apps/lit/demo` | Minimal SSR demo for the Lit prototype |
 
 ## Acknowledgements
 

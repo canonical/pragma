@@ -1,15 +1,14 @@
-import { readConfig } from "#config";
+import { readConfigLayers } from "#config";
 import { VERSION } from "#constants";
 import { detectInstallSource, PM_COMMANDS } from "#package-manager";
-import {
-  type PackageRef,
-  parsePackageEntry,
+import type {
+  PackageRef,
+  RawPackageEntry,
 } from "../../refs/operations/parseRef.js";
-import readGlobalRefs from "../../refs/operations/readGlobalRefs.js";
 import { bootStore } from "../../shared/bootStore.js";
 import { CHANNEL_RELEASES } from "../../shared/filters/buildChannelFilter.js";
 import { resolveTierChain } from "../../shared/filters/buildTierFilter.js";
-import { DEFAULT_PACKAGES } from "../../shared/packages.js";
+import { mergeAndParseRefs } from "../../shared/mergeAndParseRefs.js";
 import type { InfoData, PackageRefSummary } from "../types.js";
 import checkRegistryVersion from "./checkRegistryVersion.js";
 import { collectStoreSummary } from "./collectStoreSummary.js";
@@ -28,7 +27,8 @@ import { collectStoreSummary } from "./collectStoreSummary.js";
 export default async function collectInfo(cwd: string): Promise<InfoData> {
   const install = detectInstallSource();
   const pm = install.packageManager;
-  const config = readConfig(cwd);
+  const layers = readConfigLayers(cwd);
+  const config = layers.config;
   const tierChain = resolveTierChain(config.tier);
   const channelReleases = CHANNEL_RELEASES[config.channel];
 
@@ -65,7 +65,9 @@ export default async function collectInfo(cwd: string): Promise<InfoData> {
     version: VERSION,
     pm,
     installSource: install.label,
-    configPath: "pragma.config.json",
+    configPath: layers.project.exists
+      ? layers.project.path
+      : layers.global.path,
     tier: config.tier,
     tierChain,
     channel: config.channel,
@@ -78,14 +80,9 @@ export default async function collectInfo(cwd: string): Promise<InfoData> {
 }
 
 function collectPackageRefSummaries(
-  projectPackages?: ReadonlyArray<
-    string | { readonly name: string; readonly source?: string }
-  >,
+  configPackages?: ReadonlyArray<RawPackageEntry>,
 ): PackageRefSummary[] {
-  const entries = projectPackages ?? readGlobalRefs();
-  const raw = entries.length > 0 ? entries : DEFAULT_PACKAGES.map((pkg) => pkg);
-
-  return raw.map((entry) => refToSummary(parsePackageEntry(entry)));
+  return mergeAndParseRefs(configPackages).map(refToSummary);
 }
 
 function refToSummary(ref: PackageRef): PackageRefSummary {

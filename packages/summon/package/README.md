@@ -488,8 +488,8 @@ After generating a package:
 
 ## Related
 
-- **[@canonical/summon](../summon/)** — The generator framework (required peer dependency)
-- **[@canonical/summon-component](../summon-component/)** — Component scaffolding
+- **[@canonical/summon-core](../core/)** — The generator framework (required peer dependency)
+- **[@canonical/summon-component](../component/)** — Component scaffolding
 
 ## License
 

@@ -3,13 +3,14 @@ import {
   type CommandResult,
   createOutputResult,
 } from "@canonical/cli-core";
-import { runTask } from "@canonical/task";
+import { runTask } from "@canonical/task/node";
 import { readConfig } from "#config";
 import type { PragmaContext } from "../../shared/context.js";
 import { selectFormatter } from "../../shared/formatters.js";
 import { tierFormatters } from "../formatters/index.js";
 import { validateTier } from "../operations/index.js";
 import { setTierTask } from "../tasks/index.js";
+import { resolveConfigScope, SCOPE_PARAMETERS } from "./configScope.js";
 
 /**
  * Build the `pragma config tier` command definition.
@@ -40,6 +41,7 @@ export default function buildTierCommand(
         type: "boolean",
         default: false,
       },
+      ...SCOPE_PARAMETERS,
     ],
     meta: {
       examples: ["pragma config tier apps/lxd", "pragma config tier --reset"],
@@ -47,15 +49,17 @@ export default function buildTierCommand(
     execute: async (
       params: Record<string, unknown>,
     ): Promise<CommandResult> => {
+      const scope = resolveConfigScope(params);
       const reset = params.reset === true;
       const tierPath = params.path as string | undefined;
 
       if (reset) {
-        await runTask(setTierTask(ctx.cwd, undefined));
+        const result = await runTask(setTierTask(ctx.cwd, undefined, scope));
         const format = selectFormatter(ctx, tierFormatters.reset);
-        return createOutputResult("Reset tier to default.", {
-          plain: format,
-        });
+        return createOutputResult(
+          { field: "tier", path: result.path },
+          { plain: format },
+        );
       }
 
       if (!tierPath) {
@@ -69,10 +73,10 @@ export default function buildTierCommand(
       // Validate tier against ontology
       await validateTier(ctx.store, tierPath);
 
-      await runTask(setTierTask(ctx.cwd, tierPath));
+      const result = await runTask(setTierTask(ctx.cwd, tierPath, scope));
       const format = selectFormatter(ctx, tierFormatters.set);
       return createOutputResult(
-        { field: "tier", value: tierPath },
+        { field: "tier", value: tierPath, path: result.path },
         { plain: format },
       );
     },

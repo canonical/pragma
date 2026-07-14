@@ -3,13 +3,14 @@ import {
   type CommandResult,
   createOutputResult,
 } from "@canonical/cli-core";
-import { runTask } from "@canonical/task";
+import { runTask } from "@canonical/task/node";
 import { readConfig } from "#config";
 import type { PragmaContext } from "../../shared/context.js";
 import { selectFormatter } from "../../shared/formatters.js";
 import { frameworkFormatters } from "../formatters/index.js";
 import { validateFramework } from "../operations/index.js";
 import { setFrameworkTask } from "../tasks/index.js";
+import { resolveConfigScope, SCOPE_PARAMETERS } from "./configScope.js";
 
 /**
  * Build the `pragma config framework` command definition.
@@ -41,6 +42,7 @@ export default function buildFrameworkCommand(
         type: "boolean",
         default: false,
       },
+      ...SCOPE_PARAMETERS,
     ],
     meta: {
       examples: [
@@ -53,15 +55,19 @@ export default function buildFrameworkCommand(
     execute: async (
       params: Record<string, unknown>,
     ): Promise<CommandResult> => {
+      const scope = resolveConfigScope(params);
       const reset = params.reset === true;
       const value = params.value as string | undefined;
 
       if (reset) {
-        await runTask(setFrameworkTask(ctx.cwd, undefined));
+        const result = await runTask(
+          setFrameworkTask(ctx.cwd, undefined, scope),
+        );
         const format = selectFormatter(ctx, frameworkFormatters.reset);
-        return createOutputResult("Reset framework to default.", {
-          plain: format,
-        });
+        return createOutputResult(
+          { field: "framework", path: result.path },
+          { plain: format },
+        );
       }
 
       if (!value) {
@@ -74,10 +80,10 @@ export default function buildFrameworkCommand(
 
       const framework = validateFramework(value);
 
-      await runTask(setFrameworkTask(ctx.cwd, framework));
+      const result = await runTask(setFrameworkTask(ctx.cwd, framework, scope));
       const format = selectFormatter(ctx, frameworkFormatters.set);
       return createOutputResult(
-        { field: "framework", value: framework },
+        { field: "framework", value: framework, path: result.path },
         { plain: format },
       );
     },

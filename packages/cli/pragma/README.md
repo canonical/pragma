@@ -22,7 +22,7 @@ See [docs/getting-started.md](docs/getting-started.md) for a full walkthrough.
 
 ## CLI Commands
 
-pragma organizes commands into 14 domains. Every command supports three output modes: plain text (default), `--llm` (condensed Markdown), and `--format json` (structured JSON).
+pragma organizes commands into 17 domains — counting every directory under `src/domains/` except `shared/`, which holds cross-domain infrastructure rather than commands. The 14 day-to-day domains are documented below; the remaining three are specialised: `graphql` (compile TTL ontologies into GraphQL schema artifacts), `refs` (`pragma update-refs`, package reference data), and `trace` (query access tracing). Every command supports three output modes: plain text (default), `--llm` (condensed Markdown), and `--format json` (structured JSON).
 
 ### Block
 
@@ -87,6 +87,7 @@ pragma organizes commands into 14 domains. Every command supports three output m
 | Command | Description |
 |---------|-------------|
 | `pragma skill list` | List discovered agent skills from installed packages |
+| `pragma skill lookup <name...>` | Show full SKILL.md instructions for skills by name |
 
 ### LLM
 
@@ -173,11 +174,11 @@ Or add manually to your `.mcp.json`:
 }
 ```
 
-### MCP Tools (29)
+### MCP Tools (30)
 
 All tools return a consistent envelope: `{ ok: true, data, meta }` for success, `{ ok: true, condensed: true, text, tokens }` for condensed mode, or `{ ok: false, error }` with structured recovery on failure.
 
-#### Read Tools (20)
+#### Read Tools (21)
 
 | Tool | Description |
 |------|-------------|
@@ -201,6 +202,7 @@ All tools return a consistent envelope: `{ ok: true, data, meta }` for success, 
 | `graph_query` | Execute raw SPARQL against the ke store |
 | `graph_inspect` | Inspect all triples for a URI |
 | `skill_list` | List discovered agent skills |
+| `skill_lookup` | Get full SKILL.md content for skills by name |
 
 #### Write Tools (5)
 
@@ -295,14 +297,64 @@ Every subject URI in the ke graph is exposed as a discoverable MCP resource via 
 
 ## Configuration
 
-Create a `pragma.config.toml` in your project root:
+Configuration is layered: built-in defaults, then the global file at
+`$XDG_CONFIG_HOME/pragma/config.json` (default `~/.config/pragma/config.json`),
+then the nearest `pragma.config.json` at or above the current directory —
+each field won by the most specific layer that sets it. Install pragma
+globally, configure once, and override per project:
 
-```toml
-tier = "apps/lxd"
-channel = "normal"    # normal | experimental | prerelease
+```json
+{
+  "tier": "apps/lxd",
+  "channel": "normal"
+}
 ```
 
-When no config file is present, pragma defaults to no tier and `normal` channel.
+`pragma config tier|channel|framework|trace` writes to the nearest existing
+project file, or to the global file when no project is configured; pass
+`--local` or `--global` to pick the layer explicitly. Every write echoes the
+file it wrote, and `pragma config show` reports which layer supplied each
+value.
+
+### Custom read stories (experimental)
+
+A config (or a semantic package, via `stories/*.json`) can declare
+declarative read stories — any ontology loaded through `packages` gets
+`pragma <noun> list` / `<noun> lookup` on both the CLI and MCP:
+
+```json
+{
+  "prefixes": { "ex": "http://example.org/recipes/" },
+  "packages": [{ "name": "my-recipes", "source": "file:///data/recipes" }],
+  "stories": [
+    {
+      "noun": "recipe",
+      "description": "List recipes",
+      "list": {
+        "query": "SELECT ?uri ?name ?category WHERE { ?uri a ex:Recipe ; ex:name ?name ; ex:category ?category } ORDER BY ?name",
+        "columns": [{ "field": "name" }, { "field": "category" }],
+        "filters": [
+          { "param": "category", "variable": "category", "values": ["breakfast", "soup"] }
+        ]
+      },
+      "lookup": {
+        "type": "ex:Recipe",
+        "by": "ex:name",
+        "fields": [{ "name": "category", "property": "ex:category" }],
+        "sections": [{ "name": "instructions", "property": "ex:instructions" }]
+      }
+    }
+  ]
+}
+```
+
+The lookup query is generated (user input is escaped, never interpolated by
+the pack), the store stays read-only, and config-declared stories override
+package-shipped ones on noun collisions. Declared `filters` become
+`pragma recipe list --category soup` on the CLI and an enum parameter on the
+MCP tool; they are row predicates applied after the query runs, so filter
+input can never inject SPARQL and the query's ordering is preserved. The
+format is experimental and may change.
 
 ## Error Handling
 
@@ -336,7 +388,7 @@ With `--format json`, errors are returned as structured JSON with error code, su
 
 pragma is structured as a domain-driven application using the federation pattern from `@canonical/cli-core`:
 
-1. **Domains** — 14 domain modules (block, standard, modifier, token, tier, ontology, graph, config, skill, llm, setup, create, doctor, info), each exporting `CommandDefinition[]`
+1. **Domains** — 17 domain modules (block, config, create, doctor, graph, graphql, info, llm, modifier, ontology, refs, setup, skill, standard, tier, token, trace — every directory under `src/domains/` except the `shared/` infrastructure folder), each contributing `CommandDefinition`s
 2. **Operations** — data retrieval functions that query the ke triple store via SPARQL
 3. **Formatters** — three-mode output adapters (plain/llm/json) for each operation
 4. **Commands** — thin wiring layer connecting Commander.js parameters to operations + formatters
@@ -364,13 +416,13 @@ bun build --compile --minify src/bin.ts --outfile dist/pragma
 
 ## Dependencies
 
-- [`@canonical/ke`](../runtime/ke/) — triple store runtime (Oxigraph WASM)
+- [`@canonical/ke`](../../runtime/ke/) — triple store runtime (Oxigraph WASM)
 - [`@canonical/cli-core`](../core/) — shared CLI machinery (Commander.js registration, help formatting)
-- [`@canonical/task`](../../lib/task/) — reversible task trees for setup/create with undo support
-- [`@canonical/harnesses`](../../lib/harnesses/) — AI harness detection (Claude Code, Cursor, Windsurf)
-- [`@canonical/summon-core`](../../lib/summon-core/) — code generation runtime
-- [`@canonical/summon-component`](../../lib/summon-component/) — component generator
-- [`@canonical/summon-package`](../../lib/summon-package/) — package generator
+- [`@canonical/task`](../../runtime/task/) — reversible task trees for setup/create with undo support
+- [`@canonical/harnesses`](../../runtime/harnesses/) — AI harness detection (Claude Code, Cursor, Windsurf)
+- [`@canonical/summon-core`](../../summon/core/) — code generation runtime
+- [`@canonical/summon-component`](../../summon/component/) — component generator
+- [`@canonical/summon-package`](../../summon/package/) — package generator
 
 ## License
 

@@ -89,6 +89,28 @@ describe("server matrix (2×3) serves correctly", () => {
             expect(xml).toContain("<urlset");
             expect(xml).toContain("<loc>");
           }
+
+          // 5. SSR cells negotiate the locale per request (i18n-core:
+          //    cookie > Accept-Language > default) and render the translated
+          //    document server-side: `<html lang dir>` plus the localized
+          //    navigation chrome, before any client JavaScript runs.
+          if (cell.ssr) {
+            const french = await fetch(`${server.base}/`, {
+              headers: { cookie: "locale=fr" },
+            });
+            const frenchHtml = await french.text();
+            expect(frenchHtml).toContain('lang="fr"');
+            expect(frenchHtml).toContain('dir="ltr"');
+            expect(frenchHtml).toContain("Accueil");
+
+            const arabic = await fetch(`${server.base}/`, {
+              headers: { "accept-language": "ar-EG,ar;q=0.9,en;q=0.5" },
+            });
+            const arabicHtml = await arabic.text();
+            expect(arabicHtml).toContain('lang="ar"');
+            expect(arabicHtml).toContain('dir="rtl"');
+            expect(arabicHtml).toContain("الرئيسية");
+          }
         } finally {
           await server.stop();
         }

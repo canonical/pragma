@@ -24,7 +24,18 @@ export interface GraphContent {
   readonly format: "turtle";
 }
 
-/** A discovered skill directory with its filesystem path. */
+/** A discovered story-pack JSON file with its content. */
+export interface StoryFileEntry {
+  /**
+   * Original file path, or a virtual identifier for embedded sources
+   * (e.g. `(bundled)/…`) — for provenance/debugging, not guaranteed to
+   * exist on disk.
+   */
+  readonly path: string;
+  /** The file's parsed JSON — validated by the story-pack compiler. */
+  readonly definition: unknown;
+}
+
 export interface SkillEntry {
   /** Absolute path to the skill directory (must exist on disk for symlinking). */
   readonly dir: string;
@@ -44,6 +55,11 @@ export interface SemanticPackage {
   readonly graphs: GraphContent[];
   /** Skills available in this package. */
   readonly skills: SkillEntry[];
+  /**
+   * Raw story-pack files shipped by this package (`stories/*.json`).
+   * Parsed JSON, validated at compile time so one bad file cannot break boot.
+   */
+  readonly stories: StoryFileEntry[];
 }
 
 /**

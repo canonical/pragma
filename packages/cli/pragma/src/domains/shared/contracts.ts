@@ -50,6 +50,15 @@ export interface ListResult<T> {
     | { readonly level: "detailed" };
 }
 
+/** Aggregate metadata about a multi-query lookup. */
+export interface LookupResultMeta {
+  /**
+   * Number of queries that failed with an unexpected (non-Pragma) error.
+   * Each such failure is also present in `errors` with code `INTERNAL_ERROR`.
+   */
+  readonly internalErrorCount: number;
+}
+
 export interface LookupResult<T> {
   readonly results: readonly T[];
   readonly errors: readonly {
@@ -58,6 +67,8 @@ export interface LookupResult<T> {
     message: string;
     suggestions?: readonly string[];
   }[];
+  /** Populated by `lookupMany`; may be absent on hand-built results. */
+  readonly meta?: LookupResultMeta;
 }
 
 export interface ShowContract<T> {

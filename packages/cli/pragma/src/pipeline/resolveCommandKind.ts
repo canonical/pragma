@@ -15,6 +15,10 @@ const STORE_SKIP_COMMANDS = new Set([
   "capabilities",
   "trace",
   "graphql",
+  // `create` is pure scaffolding (summon generators) — it never queries the
+  // design-system graph, so booting the shared store just couples it to the
+  // installed packages and makes it fail when they are missing or malformed.
+  "create",
 ]);
 
 function findCommandArg(argv: readonly string[]): string | undefined {

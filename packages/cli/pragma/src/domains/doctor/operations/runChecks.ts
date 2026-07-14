@@ -1,6 +1,7 @@
 import {
   checkConfigFile,
   checkKeStore,
+  checkMcpCommands,
   checkMcpConfigured,
   checkNodeVersion,
   checkPackageRefs,
@@ -28,6 +29,7 @@ function buildChecks(
     ["ke store", checkKeStore(ctx)],
     ["Shell completions", checkShellCompletions()],
     ["MCP configured", checkMcpConfigured(ctx)],
+    ["MCP commands", checkMcpCommands(ctx)],
     ["Skills symlinked", checkSkillsSymlinked(ctx)],
   ];
 }

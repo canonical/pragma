@@ -2,13 +2,7 @@
   "extends": "@canonical/typescript-config-svelte",
   "compilerOptions": {
     "skipLibCheck": true,
-    "types": [
-      "node",
-      "svelte",
-      "vitest/globals",
-      "vite/client",
-      "@testing-library/jest-dom"
-    ]
+    "types": ["node", "svelte", "vitest/globals", "vite/client"]
   },
   "include": [
     "src/**/*.ts",
@@ -16,6 +10,6 @@
     ".storybook/**/*.ts",
     ".storybook/**/*.svelte",
     "vite.config.ts",
-    "vitest.setup.ts"
+    "vitest-setup-client.ts"
   ]
 }

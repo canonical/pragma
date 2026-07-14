@@ -14,12 +14,7 @@ export type {
   ConfirmPrompt,
   DryRunResult,
   Effect,
-  EffectId,
   ExecResult,
-  Journal,
-  JournalEntry,
-  JournalOutcome,
-  JournalRun,
   LogLevel,
   MultiselectPrompt,
   PromptQuestion,
@@ -32,17 +27,6 @@ export type {
   TraceResult,
   TraceSpan,
 } from "./lib/types.js";
-
-// =============================================================================
-// Effect Identity
-// =============================================================================
-
-export { default as canonicalJSON } from "./lib/canonicalJSON.js";
-export {
-  computeEffectId,
-  extractEffectContent,
-  formatEffectId,
-} from "./lib/effectId.js";
 
 // =============================================================================
 // Task Monad
@@ -171,32 +155,7 @@ export {
 } from "./lib/combinators.js";
 
 // =============================================================================
-// Interpreter
-// =============================================================================
-
-export type { RunTaskOptions } from "./lib/interpreter.js";
-export {
-  executeEffect,
-  JournalDivergenceError,
-  JournalError,
-  JournalIncompleteError,
-  JournalUnsupportedEffectError,
-  run,
-  runTask,
-  TaskExecutionError,
-} from "./lib/interpreter.js";
-
-// =============================================================================
-// Journal — record / replay
-// =============================================================================
-
-export { default as deserializeJournal } from "./lib/deserializeJournal.js";
-export { default as recordTask } from "./lib/recordTask.js";
-export { default as replayTask } from "./lib/replayTask.js";
-export { default as serializeJournal } from "./lib/serializeJournal.js";
-
-// =============================================================================
-// Dry-Run
+// Dry-Run (node-free testing interpreters)
 // =============================================================================
 
 export {
@@ -214,11 +173,18 @@ export {
 } from "./lib/dry-run.js";
 
 // =============================================================================
-// Undo Interpreter
+// Undo collection (node-free — walks the tree with mocked effects; executing
+// the collected undos is `runUndo`'s job, in `@canonical/task/node`)
 // =============================================================================
 
-export type { UndoResult } from "./lib/undo-interpreter.js";
-export { collectUndos, runUndo } from "./lib/undo-interpreter.js";
+export { collectUndos } from "./lib/undo.js";
+
+// =============================================================================
+// Execution error (thrown by the interpreters; node-free, so it lives here in
+// the base — catch it whether you run tasks or dry-run them)
+// =============================================================================
+
+export { TaskExecutionError } from "./lib/errors.js";
 
 // =============================================================================
 // Undo Options (re-exported from effect for convenience)

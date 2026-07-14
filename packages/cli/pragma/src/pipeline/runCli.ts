@@ -1,10 +1,12 @@
 import type { GlobalFlags } from "@canonical/cli-core";
 import { CommanderError } from "commander";
+import { commands as createCommands } from "../domains/create/index.js";
 import { commands as graphqlCommands } from "../domains/graphql/index.js";
 import { buildCapabilitiesCommand } from "../domains/llm/index.js";
 import { commands as refsCommands } from "../domains/refs/index.js";
 import { commands as setupCommands } from "../domains/setup/index.js";
 import type { PragmaContext } from "../domains/shared/context.js";
+import createInteractivePromptSession from "../domains/shared/createInteractivePromptSession.js";
 import type { PragmaRuntime } from "../domains/shared/runtime.js";
 import { bootPragma } from "../domains/shared/runtime.js";
 import { commands as traceCommands } from "../domains/trace/index.js";
@@ -19,7 +21,6 @@ import {
   renderErrorPlain,
 } from "./renderError.js";
 import resolveCommandKind from "./resolveCommandKind.js";
-import runInteractiveCommand from "./runInteractiveCommand.js";
 
 function hasCommandArg(argv: readonly string[]): boolean {
   const args = argv.slice(2);
@@ -79,12 +80,11 @@ async function handleDoctor(globalFlags: GlobalFlags): Promise<void> {
 async function handleRootHelp(globalFlags: GlobalFlags): Promise<void> {
   const stubCtx: PragmaContext = {
     store: {} as PragmaRuntime["store"],
-    config: { tier: undefined, channel: "normal" },
+    ...(await resolveHelpConfig()),
     cwd: process.cwd(),
-    packages: [],
     dispose: () => {},
     globalFlags,
-    interactive: runInteractiveCommand,
+    promptSession: createInteractivePromptSession,
   };
   const commands = collectCommands(stubCtx);
   const program = createProgram(commands, stubCtx);
@@ -93,6 +93,41 @@ async function handleRootHelp(globalFlags: GlobalFlags): Promise<void> {
     await program.parseAsync(["node", "pragma", "--help"]);
   } catch (err) {
     handleProgramError(err, globalFlags);
+  }
+}
+
+/**
+ * Resolve config and packages for root help without booting the store.
+ *
+ * Story-pack nouns come from config and package files, so bare
+ * `pragma --help` reads them via the filesystem loaders only. Help must
+ * never fail on a broken config — errors fall back to the empty stub and
+ * surface on the next real command instead.
+ *
+ * @note Impure — reads config and resolves packages from disk.
+ */
+async function resolveHelpConfig(): Promise<
+  Pick<PragmaRuntime, "config" | "packages">
+> {
+  try {
+    const { readConfig } = await import("#config");
+    const config = readConfig(process.cwd());
+    const { resolveSemanticPackages } = await import(
+      "../domains/shared/semanticPackage.js"
+    );
+    const { createGitLoader, createLocalLoader } = await import(
+      "../domains/shared/loaders/index.js"
+    );
+    const { mergeAndParseRefs } = await import(
+      "../domains/shared/mergeAndParseRefs.js"
+    );
+    const packages = await resolveSemanticPackages(
+      mergeAndParseRefs(config.packages),
+      [createLocalLoader(), createGitLoader()],
+    );
+    return { config, packages };
+  } catch {
+    return { config: { tier: undefined, channel: "normal" }, packages: [] };
   }
 }
 
@@ -121,7 +156,7 @@ async function bootAndRun(
     const ctx: PragmaContext = {
       ...runtime,
       globalFlags,
-      interactive: runInteractiveCommand,
+      promptSession: createInteractivePromptSession,
     };
     const commands = collectCommands(ctx);
     const program = createProgram(commands, ctx);
@@ -144,13 +179,14 @@ async function runStoreSkip(
     packages: [],
     dispose: () => {},
     globalFlags,
-    interactive: runInteractiveCommand,
+    promptSession: createInteractivePromptSession,
   };
   const commands = [
     ...setupCommands(),
     ...refsCommands(),
     ...traceCommands(),
     ...graphqlCommands(),
+    ...createCommands(),
     buildCapabilitiesCommand(),
   ];
   const program = createProgram(commands, stubCtx);

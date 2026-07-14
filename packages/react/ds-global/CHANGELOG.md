@@ -3,6 +3,29 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.30.0](https://github.com/canonical/pragma/compare/v0.29.1...v0.30.0) (2026-07-14)
+
+
+### Bug Fixes
+
+* **ds-global:** story polish — accordion heading/caret, surface stories, core-api notes ([#723](https://github.com/canonical/pragma/issues/723)) ([9a148a7](https://github.com/canonical/pragma/commit/9a148a790aa253a7a2f5cbe45317b232a864b037))
+* **react:** SSR-safe useHead and resurrect silently-skipped ds-global tests ([#759](https://github.com/canonical/pragma/issues/759)) ([0bcae12](https://github.com/canonical/pragma/commit/0bcae12008e14f8564f55426424a7fa1fdf60468)), closes [#663](https://github.com/canonical/pragma/issues/663) [#663](https://github.com/canonical/pragma/issues/663) [#663](https://github.com/canonical/pragma/issues/663) [post-#715](https://github.com/post-/issues/715) [#662](https://github.com/canonical/pragma/issues/662) [#662](https://github.com/canonical/pragma/issues/662) [#663](https://github.com/canonical/pragma/issues/663) [#731](https://github.com/canonical/pragma/issues/731)
+
+
+### Features
+
+* **ds-global:** add navigational Tabs + hoist shared LinkComponentProps ([#730](https://github.com/canonical/pragma/issues/730)) ([7f8937c](https://github.com/canonical/pragma/commit/7f8937cb242d47ba8fcc4aaa87c7d3d47a9e43df)), closes [#17](https://github.com/canonical/pragma/issues/17)
+* **ds-global:** add Spinner subcomponent ([#726](https://github.com/canonical/pragma/issues/726)) ([1c307db](https://github.com/canonical/pragma/commit/1c307dbf857bde68883155364869b87ba03437f5))
+* **ds-global:** implement Announcement with criticality variants ([#746](https://github.com/canonical/pragma/issues/746)) ([8e26c95](https://github.com/canonical/pragma/commit/8e26c950a7feea87e65f7a4bb1772cb656b116ce))
+* **ds-global:** overlay components — Tooltip, Popover, ContextualMenu (+ submenus, logical placement, RTL) ([#731](https://github.com/canonical/pragma/issues/731)) ([4012a46](https://github.com/canonical/pragma/commit/4012a4630e18c02759a154232baec33850902916)), closes [#89](https://github.com/canonical/pragma/issues/89) [post-#745](https://github.com/post-/issues/745) [#745](https://github.com/canonical/pragma/issues/745)
+* **ds-global:** overlay hooks — useDisclosure, useContextualMenu, arrow offset ([#727](https://github.com/canonical/pragma/issues/727)) ([4a8562e](https://github.com/canonical/pragma/commit/4a8562e585641a37b493685b6e0b27b1699b0cf2))
+* **ds-global:** reconcile + fully style Button (re-target to main) ([#734](https://github.com/canonical/pragma/issues/734)) ([8e4cdbc](https://github.com/canonical/pragma/commit/8e4cdbc7052ae5e899ecb6d98090d45b6391b79a))
+* **ds-global:** reconcile + promote Card and Tile ([#736](https://github.com/canonical/pragma/issues/736)) ([2213c47](https://github.com/canonical/pragma/commit/2213c47272989ef05ff8842127ded37f91ea3566)), closes [#723](https://github.com/canonical/pragma/issues/723) [#730](https://github.com/canonical/pragma/issues/730) [#723](https://github.com/canonical/pragma/issues/723)
+
+
+
+
+
 ## [0.29.1](https://github.com/canonical/pragma/compare/v0.29.0...v0.29.1) (2026-07-03)
 
 

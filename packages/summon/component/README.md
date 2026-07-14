@@ -592,8 +592,8 @@ The generator appends to `{parentDir}/index.ts`. If your project uses a differen
 
 ## Related
 
-- **[@canonical/summon](../summon/)** — The generator framework (required peer dependency)
-- **[@canonical/summon-package](../summon-package/)** — Package scaffolding for the monorepo
+- **[@canonical/summon-core](../core/)** — The generator framework (required peer dependency)
+- **[@canonical/summon-package](../package/)** — Package scaffolding for the monorepo
 
 ---
 
@@ -633,7 +633,7 @@ Generated templates use generic patterns. For project-specific standards (CSS na
 
 ### Non-Interactive Environments
 
-See [Summon How-To: Non-Interactive Usage](/packages/summon/docs/how-to.md#non-interactive--llm-usage) for CI/LLM usage patterns.
+See [Summon How-To: Non-Interactive Usage](../core/docs/how-to.md#non-interactive--llm-usage) for CI/LLM usage patterns.
 
 ## License
 

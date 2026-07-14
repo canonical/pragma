@@ -13,7 +13,8 @@ describe("InnerGridDemo", () => {
 
   it("applies custom className", () => {
     render(<InnerGridDemo className="custom-class">Content</InnerGridDemo>);
-    const element = screen.getByText("Content");
+    // The root element carries the classes; children may render in a descendant.
+    const element = document.querySelector(".custom-class") as HTMLElement;
     expect(element).toHaveClass("grid-demo");
     expect(element).toHaveClass("custom-class");
   });

@@ -3,6 +3,114 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.30.0](https://github.com/canonical/pragma/compare/v0.29.1...v0.30.0) (2026-07-14)
+
+
+### Bug Fixes
+
+* **ci:** publish version guards + dist-tag routing; migrate Renovate config ([#762](https://github.com/canonical/pragma/issues/762)) ([772700a](https://github.com/canonical/pragma/commit/772700a67d0690208590cd0c48330c5b173de92a)), closes [#575](https://github.com/canonical/pragma/issues/575)
+* **cli:** partial-failure-safe lookupMany, bundledLoader hardening, remove dead sem MCP server ([#763](https://github.com/canonical/pragma/issues/763)) ([e85cf27](https://github.com/canonical/pragma/commit/e85cf275e20ce5d12c9f6aa6787e22fb63d6deb1))
+* **deps:** unify @canonical/design-tokens pin to 0.6.2-contrasted.0 ([#748](https://github.com/canonical/pragma/issues/748)) ([cf607d7](https://github.com/canonical/pragma/commit/cf607d7ae40f8044208e1e502c8d92178261e73c)), closes [#731](https://github.com/canonical/pragma/issues/731) [#89](https://github.com/canonical/pragma/issues/89)
+* **ds-global-form:** clear all selections on multiple-combobox reset ([#724](https://github.com/canonical/pragma/issues/724)) ([ff5c972](https://github.com/canonical/pragma/commit/ff5c9729adaba2ea032ae8c7830757dfee15e8a6))
+* **ds-global:** story polish — accordion heading/caret, surface stories, core-api notes ([#723](https://github.com/canonical/pragma/issues/723)) ([9a148a7](https://github.com/canonical/pragma/commit/9a148a790aa253a7a2f5cbe45317b232a864b037))
+* **harnesses:** stop setup mcp from destroying valid JSONC configs (SEC-1) ([#743](https://github.com/canonical/pragma/issues/743)) ([1cf47a2](https://github.com/canonical/pragma/commit/1cf47a20889f1f25208110550398990bc11067e5))
+* **ke-graphql:** latent compiler correctness fixes (ancestor ordering + sh:in scoping) ([#683](https://github.com/canonical/pragma/issues/683)) ([17916b5](https://github.com/canonical/pragma/commit/17916b54fac3d5a634a8eff784549e8df6b0162d))
+* **ke-graphql:** peer @canonical/ke range follows the stable release line ([#775](https://github.com/canonical/pragma/issues/775)) ([80de54e](https://github.com/canonical/pragma/commit/80de54eafa4711ac22d00bccdcf5adf602d1da53))
+* **react:** SSR-safe useHead and resurrect silently-skipped ds-global tests ([#759](https://github.com/canonical/pragma/issues/759)) ([0bcae12](https://github.com/canonical/pragma/commit/0bcae12008e14f8564f55426424a7fa1fdf60468)), closes [#663](https://github.com/canonical/pragma/issues/663) [#663](https://github.com/canonical/pragma/issues/663) [#663](https://github.com/canonical/pragma/issues/663) [post-#715](https://github.com/post-/issues/715) [#662](https://github.com/canonical/pragma/issues/662) [#662](https://github.com/canonical/pragma/issues/662) [#663](https://github.com/canonical/pragma/issues/663) [#731](https://github.com/canonical/pragma/issues/731)
+* **summon-package:** make the per-package PR template opt-in ([#749](https://github.com/canonical/pragma/issues/749)) ([4847e38](https://github.com/canonical/pragma/commit/4847e38d9f4993f60577330c445ba45ddbb6b79f)), closes [canonical/pragma#684](https://github.com/canonical/pragma/issues/684) [#686](https://github.com/canonical/pragma/issues/686) [canonical/pragma#684](https://github.com/canonical/pragma/issues/684)
+* **summon:** run under plain Node + fix publish-time breakages ([#721](https://github.com/canonical/pragma/issues/721)) ([c24295f](https://github.com/canonical/pragma/commit/c24295f7c67f5d3577d77f0abad818073871bd2e))
+* **task:** route effect exceptions through recovery and trampoline preview/undo interpreters ([#740](https://github.com/canonical/pragma/issues/740)) ([6ad8b65](https://github.com/canonical/pragma/commit/6ad8b6518134f259f12acf76b21e1ce985e75403))
+
+
+* refactor(cli)!: collapse the executor mode ladder; retire the interactive handoff (#772) ([34eb691](https://github.com/canonical/pragma/commit/34eb6916852ffd98670e4375a3692a90bb8443f9)), closes [#772](https://github.com/canonical/pragma/issues/772)
+* refactor(task)!: scope @canonical/task to its consumer-used surface (#755) ([cdc725d](https://github.com/canonical/pragma/commit/cdc725d481d24ede55fc2f5b82cfad9b7dc088bc)), closes [#755](https://github.com/canonical/pragma/issues/755) [#741](https://github.com/canonical/pragma/issues/741) [#742](https://github.com/canonical/pragma/issues/742)
+
+
+### Features
+
+* **boilerplate:** app-level CSS compilation via Lightning CSS + declared browser floor ([#769](https://github.com/canonical/pragma/issues/769)) ([98281ba](https://github.com/canonical/pragma/commit/98281bace083fd841af0d52c0baf37bc2dd77fd1))
+* **cli:** bundled loader serves embedded story definitions ([#781](https://github.com/canonical/pragma/issues/781)) ([511328a](https://github.com/canonical/pragma/commit/511328a4ca5e987f2f73e108a305848a65d6f03a))
+* **cli:** byte-identical output for pragma create and summon; summon on the shared core ([#761](https://github.com/canonical/pragma/issues/761)) ([c10e133](https://github.com/canonical/pragma/commit/c10e1332e3a1f7e4f815da7cc40ecb4f95fbb045))
+* **cli:** declarative list filters for story packs ([#780](https://github.com/canonical/pragma/issues/780)) ([87e0b0d](https://github.com/canonical/pragma/commit/87e0b0d9f86548da34d8bb1d7f0423b9904a6d45))
+* **cli:** one prompting model — dialog-first prompts through the executor seam ([#758](https://github.com/canonical/pragma/issues/758)) ([ace9246](https://github.com/canonical/pragma/commit/ace9246de5e5e72231b2637b69443d55d9d0cfb8))
+* **cli:** redesign MCP resources — TBox/ABox grouping, autocomplete, correctness fixes ([#784](https://github.com/canonical/pragma/issues/784)) ([7d08aec](https://github.com/canonical/pragma/commit/7d08aec79f54ea8a768f8d76e0f2cbe71be33c99))
+* **cli:** story packs — declarative read stories for any ontology (experimental) ([#778](https://github.com/canonical/pragma/issues/778)) ([23f1227](https://github.com/canonical/pragma/commit/23f122701a88668dba8bee6d0652d40417d5dbf5))
+* **ds-global-form:** add RatingInput (work in progress) ([#735](https://github.com/canonical/pragma/issues/735)) ([35f0736](https://github.com/canonical/pragma/commit/35f073619a414d5ff60d66d3fe2be9b25015c9b1))
+* **ds-global-form:** SwitchInput + SwitchField ([#722](https://github.com/canonical/pragma/issues/722)) ([4047696](https://github.com/canonical/pragma/commit/4047696371de06f850f7287e225de096a8e80bd1))
+* **ds-global:** add navigational Tabs + hoist shared LinkComponentProps ([#730](https://github.com/canonical/pragma/issues/730)) ([7f8937c](https://github.com/canonical/pragma/commit/7f8937cb242d47ba8fcc4aaa87c7d3d47a9e43df)), closes [#17](https://github.com/canonical/pragma/issues/17)
+* **ds-global:** add Spinner subcomponent ([#726](https://github.com/canonical/pragma/issues/726)) ([1c307db](https://github.com/canonical/pragma/commit/1c307dbf857bde68883155364869b87ba03437f5))
+* **ds-global:** implement Announcement with criticality variants ([#746](https://github.com/canonical/pragma/issues/746)) ([8e26c95](https://github.com/canonical/pragma/commit/8e26c950a7feea87e65f7a4bb1772cb656b116ce))
+* **ds-global:** overlay components — Tooltip, Popover, ContextualMenu (+ submenus, logical placement, RTL) ([#731](https://github.com/canonical/pragma/issues/731)) ([4012a46](https://github.com/canonical/pragma/commit/4012a4630e18c02759a154232baec33850902916)), closes [#89](https://github.com/canonical/pragma/issues/89) [post-#745](https://github.com/post-/issues/745) [#745](https://github.com/canonical/pragma/issues/745)
+* **ds-global:** overlay hooks — useDisclosure, useContextualMenu, arrow offset ([#727](https://github.com/canonical/pragma/issues/727)) ([4a8562e](https://github.com/canonical/pragma/commit/4a8562e585641a37b493685b6e0b27b1699b0cf2))
+* **ds-global:** reconcile + fully style Button (re-target to main) ([#734](https://github.com/canonical/pragma/issues/734)) ([8e4cdbc](https://github.com/canonical/pragma/commit/8e4cdbc7052ae5e899ecb6d98090d45b6391b79a))
+* **ds-global:** reconcile + promote Card and Tile ([#736](https://github.com/canonical/pragma/issues/736)) ([2213c47](https://github.com/canonical/pragma/commit/2213c47272989ef05ff8842127ded37f91ea3566)), closes [#723](https://github.com/canonical/pragma/issues/723) [#730](https://github.com/canonical/pragma/issues/730) [#723](https://github.com/canonical/pragma/issues/723)
+* **i18n-core:** native-Intl framework-agnostic i18n core ([#684](https://github.com/canonical/pragma/issues/684)) ([62f3f36](https://github.com/canonical/pragma/commit/62f3f36fed5f689ae72ff66a600a5ca5daecdf8c))
+* **i18n-react:** React bindings for @canonical/i18n-core ([#685](https://github.com/canonical/pragma/issues/685)) ([47b3be9](https://github.com/canonical/pragma/commit/47b3be9fde607b86ae88ef9e842b455aca2a3cf1)), closes [#684](https://github.com/canonical/pragma/issues/684) [#749](https://github.com/canonical/pragma/issues/749)
+* **pragma-cli:** graphql serve + config-driven build/check over semantic packages ([#682](https://github.com/canonical/pragma/issues/682)) ([d3a09f5](https://github.com/canonical/pragma/commit/d3a09f56b113bad0adc63158c38715c7eb39ec1f))
+* **react-boilerplate-vite:** Relay data layer (CSR) with local mock schema and storybook mocking ([#751](https://github.com/canonical/pragma/issues/751)) ([15c918c](https://github.com/canonical/pragma/commit/15c918c2939447b675ce6854ec3f6e2a5c02cd03))
+* **react-boilerplate-vite:** working multi-language messages via @canonical/i18n-react ([#752](https://github.com/canonical/pragma/issues/752)) ([b16e17f](https://github.com/canonical/pragma/commit/b16e17f82d67bc55887142f6b675d820a94978c8))
+* **router-core:** schema validation for URL params via Standard Schema v1 ([#760](https://github.com/canonical/pragma/issues/760)) ([eb6398f](https://github.com/canonical/pragma/commit/eb6398f16a91ae51f977c442a4baa50657bd2dd1))
+* **storybook-addon-relay:** mock Relay environments for React stories ([#750](https://github.com/canonical/pragma/issues/750)) ([283cfce](https://github.com/canonical/pragma/commit/283cfce433fa3186022638ecec93caaa72cf802e))
+* **summon-application:** opt-in Relay data layer for generated apps (--relay) ([#753](https://github.com/canonical/pragma/issues/753)) ([b64f51c](https://github.com/canonical/pragma/commit/b64f51cbac49c790828a73d6601e1a87fcba6b5f)), closes [#751](https://github.com/canonical/pragma/issues/751) [advl/lit-relay#32](https://github.com/advl/lit-relay/issues/32)
+* **task:** content-addressable effect identity — canonicalJSON, EffectId, per-tag descriptors ([#741](https://github.com/canonical/pragma/issues/741)) ([f1a3a0b](https://github.com/canonical/pragma/commit/f1a3a0bacb607b51d89cf8f7d206a8252b7842bf))
+* **task:** journal record/replay for deterministic effect execution ([#742](https://github.com/canonical/pragma/issues/742)) ([703db92](https://github.com/canonical/pragma/commit/703db927cf0bf9f937948817a2a2f7ba5cd1f87a))
+
+
+### BREAKING CHANGES
+
+* cli-core no longer exports InteractiveSpec, InteractiveHandler,
+createInteractiveResult, or the "interactive" CommandResult variant; consumers
+inject a PromptSession via CommandContext.promptSession instead.
+
+Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01DF9ExVCukzqpe1Fus9V1no
+
+* test(cli): assert exit-code propagation; fix stale CommandResult docs
+
+Adversarial review of the mode-ladder collapse surfaced two gaps:
+
+- registerAll.handleResult's exit branch is the sole path by which
+  executeGenerator's exit 3 (non-interactive, missing flags) and exit
+  130 (Ctrl-C) reach process.exitCode, yet every test drove it with
+  code 0 — a mutation to that assignment would have gone unnoticed. Add
+  a regression test that dispatches a non-zero exit result and asserts
+  process.exitCode.
+- cli-core's README still described CommandResult as a three-variant
+  union listing the retired "interactive" variant. Update it to the
+  two-variant (output | exit) union the type now defines.
+
+Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01DF9ExVCukzqpe1Fus9V1no
+
+* fix(cli): don't construct a prompt session off a TTY; distinct headers
+
+runInteractiveExecution called the injected promptSession factory before
+checking the terminal, so a non-interactive run with a no-default
+required prompt would open a readline handle and discard it undisposed.
+Construct the session only on an interactive terminal.
+
+Also give the two "interaction unavailable" failure modes accurate
+headers: a non-interactive stdin/stdout versus an interactive terminal
+with no injected session — the latter previously misreported itself as a
+non-interactive terminal.
+
+Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01DF9ExVCukzqpe1Fus9V1no
+* the journal/effect-identity exports are gone from
+@canonical/task; RunTaskOptions no longer accepts `journal`.
+
+Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01DF9ExVCukzqpe1Fus9V1no
+
+* chore(task): drop imports orphaned by the journal-seam test removal
+
+Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01DF9ExVCukzqpe1Fus9V1no
+
+
+
+
+
 ## [0.29.1](https://github.com/canonical/pragma/compare/v0.29.0...v0.29.1) (2026-07-03)
 
 

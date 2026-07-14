@@ -25,6 +25,8 @@ export type ToolPayload =
       readonly meta?: {
         readonly count?: number;
         readonly filters?: Record<string, string>;
+        /** Queries that failed unexpectedly (surfaced only when > 0). */
+        readonly internalErrorCount?: number;
       };
     }
   | {
@@ -47,6 +49,8 @@ export interface ToolResponse<T = unknown> {
   readonly meta: {
     readonly count?: number;
     readonly filters?: Record<string, string>;
+    /** Queries that failed unexpectedly (surfaced only when > 0). */
+    readonly internalErrorCount?: number;
   };
 }
 

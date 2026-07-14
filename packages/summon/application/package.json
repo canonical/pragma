@@ -1,7 +1,7 @@
 {
   "name": "@canonical/summon-application",
   "description": "Summon generators for application scaffolding: domain, route, and wrapper",
-  "version": "0.29.0",
+  "version": "0.30.0",
   "type": "module",
   "main": "dist/esm/index.js",
   "module": "dist/esm/index.js",
@@ -36,15 +36,15 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@canonical/summon-core": "^0.29.0",
-    "@canonical/task": "^0.29.0",
-    "@canonical/utils": "^0.29.0",
+    "@canonical/summon-core": "^0.30.0",
+    "@canonical/task": "^0.30.0",
+    "@canonical/utils": "^0.30.0",
     "typescript": "^5.9.3"
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.9",
-    "@canonical/biome-config": "^0.29.0",
-    "@canonical/webarchitect": "^0.29.0",
+    "@canonical/biome-config": "^0.30.0",
+    "@canonical/webarchitect": "^0.30.0",
     "@types/node": "^24.12.0",
     "vitest": "^4.0.18"
   }

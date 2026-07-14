@@ -24,6 +24,7 @@ export interface ApplicationReactAnswers {
   readonly ssr: boolean;
   readonly router: boolean;
   readonly forms: boolean;
+  readonly relay: boolean;
   readonly runInstall: boolean;
 }
 
@@ -58,6 +59,13 @@ const prompts: PromptDefinition[] = [
     group: "Application",
   },
   {
+    name: "relay",
+    type: "confirm",
+    message: "Include a Relay (GraphQL) data layer with a local mock schema?",
+    default: false,
+    group: "Application",
+  },
+  {
     name: "runInstall",
     type: "confirm",
     message: "Install dependencies now?",
@@ -85,6 +93,8 @@ export const generator: GeneratorDefinition<ApplicationReactAnswers> = {
   - Head management with @canonical/react-head
   - Two domains (marketing + account) with pages
   - Contact domain with form components (when --forms is enabled)
+  - Relay (GraphQL) data layer with a local mock schema, catalog example
+    domain, and Storybook mocking (when --relay is enabled)
   - Navigation, ThemeSelector, ExampleComponent
   - Storybook with router decorator
   - Biome + TypeScript configuration
@@ -93,7 +103,8 @@ Requires both --ssr and --router flags.`,
     examples: [
       "summon application/react my-app",
       "summon application/react --forms my-app",
-      "summon application/react --ssr --router --forms my-app",
+      "summon application/react --relay my-app",
+      "summon application/react --ssr --router --forms --relay my-app",
     ],
   },
 
@@ -140,6 +151,7 @@ Requires both --ssr and --router flags.`,
       const vars = withHelpers({
         name,
         forms: answers.forms,
+        relay: answers.relay,
         pragmaVersion,
       });
 
@@ -198,11 +210,28 @@ Requires both --ssr and --router flags.`,
         }),
 
         // Root config
-        copy("tsconfig.json"),
-        copy("vite.config.ts"),
+        // tsconfig (EJS — #relay path alias only when --relay)
+        template({
+          source: src("tsconfig.json.ejs"),
+          dest: dest("tsconfig.json"),
+          vars,
+        }),
+        // vite config (EJS — vite-plugin-relay-lite only when --relay)
+        template({
+          source: src("vite.config.ts.ejs"),
+          dest: dest("vite.config.ts"),
+          vars,
+        }),
         copy("vitest.config.ts"),
-        copy("vitest.setup.ts"),
+        // vitest setup (EJS — relay-test-utils' jest→vi alias only when --relay)
+        template({
+          source: src("vitest.setup.ts.ejs"),
+          dest: dest("vitest.setup.ts"),
+          vars,
+        }),
         copy("vitest.e2e.config.ts"),
+        // Relay compiler config (validates queries against the mock SDL)
+        when(answers.relay, copy("relay.config.json")),
         // index.html (EJS — <title> uses the app name)
         template({
           source: src("index.html.ejs"),
@@ -213,6 +242,10 @@ Requires both --ssr and --router flags.`,
         // literal `.gitignore` from published tarballs, so we ship it dotless and
         // restore the dot at write time.
         copyFile(src("gitignore"), dest(".gitignore")),
+        // The app's browser floor, read by vite.config.ts to derive Lightning
+        // CSS targets. Unlike `.gitignore` above, npm does not strip
+        // `.browserslistrc` from tarballs, so the template keeps its dot.
+        copy(".browserslistrc"),
 
         // E2e tests (the 2×3 server matrix + its spawn/teardown harness)
         copy("test/e2e/serverHarness.ts"),
@@ -227,12 +260,21 @@ Requires both --ssr and --router flags.`,
         }),
         copy("src/styles/app.css"),
 
-        // Client
-        copy("src/client/entry.tsx"),
+        // Client (EJS — RelayEnvironmentProvider only when --relay)
+        template({
+          source: src("src/client/entry.tsx.ejs"),
+          dest: dest("src/client/entry.tsx"),
+          vars,
+        }),
 
         // Server — dev (Vite + HMR) and preview (compiled) servers each route
         // between the app + sitemap renderers; the renderers stay routing-agnostic.
-        copy("src/server/entry.tsx"),
+        // Server entry (EJS — a per-request RelayEnvironmentProvider only when --relay)
+        template({
+          source: src("src/server/entry.tsx.ejs"),
+          dest: dest("src/server/entry.tsx"),
+          vars,
+        }),
         copy("src/server/renderer.tsx"),
         copy("src/server/server.express.ts"),
         copy("src/server/server.bun.ts"),
@@ -241,7 +283,8 @@ Requires both --ssr and --router flags.`,
 
         // Sitemap (rendered route at /sitemap.xml)
         copy("src/sitemap/renderer.ts"),
-        // sitemap getters (EJS — /contact entry only when --forms)
+        // sitemap getters (EJS — /contact entry only when --forms, /catalog
+        // entry only when --relay)
         template({
           source: src("src/sitemap/getSitemapItems.ts.ejs"),
           dest: dest("src/sitemap/getSitemapItems.ts"),
@@ -262,14 +305,62 @@ Requires both --ssr and --router flags.`,
         when(answers.forms, copy("src/domains/contact/ContactPage.tsx")),
         when(answers.forms, copy("src/domains/contact/routes.ts")),
 
-        // Routes (EJS — conditionally includes contact domain)
+        // Relay data layer (when --relay is enabled): environment factory +
+        // executable mock schema, the catalog example domain, and the
+        // ClientOnly SSR guard (whose only consumer today is the catalog page).
+        when(answers.relay, copy("src/relay/schema.graphql")),
+        when(answers.relay, copy("src/relay/schema.ts")),
+        when(answers.relay, copy("src/relay/schema.tests.ts")),
+        when(answers.relay, copy("src/relay/environment.ts")),
+        when(answers.relay, copy("src/relay/environment.tests.ts")),
+        // Committed relay-compiler artifacts — deterministic outputs of the
+        // committed schema + the catalog queries; `bun run relay` regenerates
+        // them in the scaffolded app after any schema or graphql-tag edit.
+        when(
+          answers.relay,
+          copy("src/relay/__generated__/ProductCard_product.graphql.ts"),
+        ),
+        when(
+          answers.relay,
+          copy("src/relay/__generated__/ProductListQuery.graphql.ts"),
+        ),
+
+        // Domain: catalog (when --relay is enabled)
+        when(answers.relay, copy("src/domains/catalog/CatalogPage.tsx")),
+        when(answers.relay, copy("src/domains/catalog/ProductList.tsx")),
+        when(
+          answers.relay,
+          copy("src/domains/catalog/ProductList.stories.tsx"),
+        ),
+        when(answers.relay, copy("src/domains/catalog/ProductList.tests.tsx")),
+        when(answers.relay, copy("src/domains/catalog/ProductCard.tsx")),
+        when(answers.relay, copy("src/domains/catalog/ErrorBoundary.tsx")),
+        when(
+          answers.relay,
+          copy("src/domains/catalog/ErrorBoundary.tests.tsx"),
+        ),
+        when(answers.relay, copy("src/domains/catalog/routes.ts")),
+
+        // Standalone dependency patches (when --relay is enabled): a generated
+        // app cannot inherit the monorepo's patches/, so they ship with the
+        // scaffold and are applied via "patchedDependencies" in package.json.
+        // react-relay: cjs-module-lexer export hints so named imports survive
+        // Node SSR externalisation.
+        when(answers.relay, copy("patches/react-relay@18.2.0.patch")),
+        // relay-runtime-network: fixes the broken package `imports` map.
+        // Temporary until the fixed upstream release lands (advl/lit-relay#32);
+        // then this patch and its patchedDependencies entry can be dropped.
+        when(answers.relay, copy("patches/relay-runtime-network@0.1.0.patch")),
+
+        // Routes (EJS — conditionally includes contact + catalog domains)
         template({
           source: src("src/routes.tsx.ejs"),
           dest: dest("src/routes.tsx"),
           vars,
         }),
 
-        // Lib: Navigation (EJS — contact link only when --forms)
+        // Lib: Navigation (EJS — contact link only when --forms, catalog
+        // link only when --relay)
         template({
           source: src("src/lib/Navigation/Navigation.tsx.ejs"),
           dest: dest("src/lib/Navigation/Navigation.tsx"),
@@ -294,14 +385,30 @@ Requires both --ssr and --router flags.`,
         copy("src/lib/LazyComponent/LazyComponent.stories.tsx"),
         copy("src/lib/LazyComponent/index.ts"),
 
-        // Lib barrel
-        copy("src/lib/index.ts"),
+        // Lib: ClientOnly (when --relay is enabled — the catalog page is its
+        // only consumer, keeping Relay queries off the server render until
+        // SSR data serialization/hydration is supported)
+        when(answers.relay, copy("src/lib/ClientOnly/ClientOnly.tsx")),
+        when(answers.relay, copy("src/lib/ClientOnly/ClientOnly.tests.tsx")),
+        when(answers.relay, copy("src/lib/ClientOnly/index.ts")),
+
+        // Lib barrel (EJS — ClientOnly export only when --relay)
+        template({
+          source: src("src/lib/index.ts.ejs"),
+          dest: dest("src/lib/index.ts"),
+          vars,
+        }),
 
         // Vite types
         copy("src/vite-env.d.ts"),
 
         // Storybook
-        copy(".storybook/main.ts"),
+        // main config (EJS — the relay mocking addon only when --relay)
+        template({
+          source: src(".storybook/main.ts.ejs"),
+          dest: dest(".storybook/main.ts"),
+          vars,
+        }),
         copy(".storybook/preview.ts"),
         copy(".storybook/decorators/withRouter.tsx"),
         copy(".storybook/decorators/index.ts"),

@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.30.0](https://github.com/canonical/pragma/compare/v0.29.1...v0.30.0) (2026-07-14)
+
+
+### Bug Fixes
+
+* **ci:** publish version guards + dist-tag routing; migrate Renovate config ([#762](https://github.com/canonical/pragma/issues/762)) ([772700a](https://github.com/canonical/pragma/commit/772700a67d0690208590cd0c48330c5b173de92a)), closes [#575](https://github.com/canonical/pragma/issues/575)
+
+
+
+
+
 # [0.29.0](https://github.com/canonical/pragma/compare/v0.29.0-experimental.0...v0.29.0) (2026-07-03)
 
 **Note:** Version bump only for package @canonical/renovate-config

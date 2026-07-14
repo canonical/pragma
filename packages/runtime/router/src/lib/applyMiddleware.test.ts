@@ -97,4 +97,39 @@ describe("applyMiddleware", () => {
 
     expect(unchangedRoute).toBe(baseRoute);
   });
+
+  it("preserves params schema validation in rebuilt codecs", () => {
+    const numericIdSchema = {
+      "~standard": {
+        output: {} as { readonly id: number },
+        validate(value: unknown) {
+          const raw = value as { id?: string };
+          const id = Number(raw.id);
+
+          return Number.isInteger(id)
+            ? { value: { id } }
+            : { issues: [{ message: "id must be an integer" }] };
+        },
+      },
+    };
+
+    const baseRoute = route({
+      url: "/users/:id",
+      params: numericIdSchema,
+      content: ({ params }) => String(params.id),
+    });
+
+    const prefixer = ((currentRoute: typeof baseRoute) => {
+      return {
+        ...currentRoute,
+        url: `/api${currentRoute.url}`,
+      };
+    }) as RouteMiddleware;
+
+    const [enhanced] = applyMiddleware([baseRoute] as const, [prefixer]);
+
+    expect(enhanced.parse("/api/users/42")).toEqual({ id: 42 });
+    expect(enhanced.parse("/api/users/abc")).toBeNull();
+    expect(enhanced.render({ id: 42 })).toBe("/api/users/42");
+  });
 });

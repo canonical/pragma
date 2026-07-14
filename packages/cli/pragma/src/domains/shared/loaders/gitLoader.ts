@@ -24,8 +24,8 @@ export default function createGitLoader(): PackageLoader {
       const dir = gitCacheDir(ref.pkg, ref.ref);
       if (!existsSync(dir)) return undefined;
 
-      const { version, graphs, skills } = readPackageDir(dir);
-      return { name: ref.pkg, version, source: "git", graphs, skills };
+      const { version, graphs, skills, stories } = readPackageDir(dir);
+      return { name: ref.pkg, version, source: "git", graphs, skills, stories };
     },
   };
 }
