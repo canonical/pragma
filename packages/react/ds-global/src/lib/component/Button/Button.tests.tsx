@@ -88,12 +88,11 @@ describe("Button component", () => {
   });
 
   describe("icon prop", () => {
-    it("renders icon at start position by default", () => {
-      const icon = <span data-testid="icon">+</span>;
-      render(<Component icon={icon}>Add</Component>);
+    it("renders the design-system Icon at the start position by default", () => {
+      const { container } = render(<Component icon="edit">Add</Component>);
 
       const button = screen.getByRole("button");
-      const iconElement = screen.getByTestId("icon");
+      const iconElement = container.querySelector<SVGSVGElement>("svg.ds.icon");
       const labelElement = screen.getByText("Add");
 
       // Icon should come before label in DOM order
@@ -101,19 +100,33 @@ describe("Button component", () => {
       expect(labelElement).toBeInTheDocument();
     });
 
-    it("renders icon-only button", () => {
-      const icon = <span data-testid="icon">×</span>;
-      render(<Component icon={icon} aria-label="Close" />);
+    it("maps the icon name to the ds-assets sprite", () => {
+      const { container } = render(<Component icon="edit">Edit</Component>);
 
-      expect(screen.getByTestId("icon")).toBeInTheDocument();
+      const use = container.querySelector("svg.ds.icon use");
+      expect(use).toHaveAttribute("href", "/icons/edit.svg#edit");
+    });
+
+    it("renders the icon decoratively (hidden from assistive technology)", () => {
+      const { container } = render(<Component icon="edit">Edit</Component>);
+
+      const iconElement = container.querySelector("svg.ds.icon");
+      expect(iconElement).toHaveAttribute("aria-hidden", "true");
+    });
+
+    it("renders icon-only button", () => {
+      const { container } = render(
+        <Component icon="close" aria-label="Close" />,
+      );
+
+      expect(container.querySelector("svg.ds.icon")).toBeInTheDocument();
       expect(screen.getByRole("button")).toHaveAttribute("aria-label", "Close");
     });
 
-    it("wraps icon in icon class", () => {
-      const icon = <span data-testid="icon">+</span>;
-      render(<Component icon={icon}>Add</Component>);
+    it("wraps the Icon in the icon slot class", () => {
+      const { container } = render(<Component icon="edit">Add</Component>);
 
-      const iconWrapper = screen.getByTestId("icon").parentElement;
+      const iconWrapper = container.querySelector("svg.ds.icon")?.parentElement;
       expect(iconWrapper).toHaveClass("icon");
     });
   });
@@ -149,7 +162,7 @@ describe("Button component", () => {
 
     it("warns in development for icon-only buttons without an accessible name", () => {
       const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-      render(<Component icon={<span>+</span>} />);
+      render(<Component icon="plus" />);
       expect(warn).toHaveBeenCalledWith(
         expect.stringContaining("icon-only buttons"),
       );
@@ -157,19 +170,19 @@ describe("Button component", () => {
 
     it("does not warn when an icon-only button has an aria-label", () => {
       const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-      render(<Component icon={<span>+</span>} aria-label="Add" />);
+      render(<Component icon="plus" aria-label="Add" />);
       expect(warn).not.toHaveBeenCalled();
     });
 
     it("does not warn when an icon button has visible text", () => {
       const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-      render(<Component icon={<span>+</span>}>Add</Component>);
+      render(<Component icon="plus">Add</Component>);
       expect(warn).not.toHaveBeenCalled();
     });
 
     it("does not warn when children is the number 0", () => {
       const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-      render(<Component icon={<span>#</span>}>{0}</Component>);
+      render(<Component icon="plus">{0}</Component>);
       expect(warn).not.toHaveBeenCalled();
     });
   });
@@ -204,12 +217,12 @@ describe("Button component", () => {
 
     it("keeps the consumer icon in the DOM but adds the Spinner overlay", () => {
       const { container } = render(
-        <Component loading icon={<span data-testid="icon">+</span>}>
+        <Component loading icon="edit">
           Saving
         </Component>,
       );
       // The icon remains (hidden via CSS), and the Spinner is overlaid on top.
-      expect(screen.getByTestId("icon")).toBeInTheDocument();
+      expect(container.querySelector(".icon svg.ds.icon")).toBeInTheDocument();
       expect(
         container.querySelector(".loading-spinner .ds.spinner"),
       ).toBeInTheDocument();

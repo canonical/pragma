@@ -37,6 +37,13 @@ const Item = ({
         .join(" ")}
       {...props}
     >
+      {/* edges[1]: separator - rendered before the link (inverting the
+          anatomy-DSL edge order) so that on wrap the slash starts the new
+          line rather than trailing the previous one; hidden on the first
+          item via CSS */}
+      <span className="separator" aria-hidden="true">
+        {separator}
+      </span>
       {/* edges[0]: link (cardinality: 1, slotName: default) */}
       {current || disabled ? (
         <span className="link" aria-current={current ? "page" : undefined}>
@@ -47,10 +54,6 @@ const Item = ({
           {content}
         </Link>
       )}
-      {/* edges[1]: separator - hidden on last item via CSS */}
-      <span className="separator" aria-hidden="true">
-        {separator}
-      </span>
     </li>
   );
 };

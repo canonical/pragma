@@ -1,3 +1,4 @@
+import { ICON_NAMES } from "@canonical/ds-assets";
 import { MODIFIER_FAMILIES } from "@canonical/ds-types";
 import type { Decorator, Meta, StoryObj } from "@storybook/react-vite";
 import type React from "react";
@@ -43,6 +44,12 @@ const meta = {
     variant: {
       control: "select",
       options: [undefined, "link"],
+    },
+    // Icon is a design-system icon NAME (not arbitrary markup): a select over the
+    // ds-assets icon set, with `undefined` = no icon (the default).
+    icon: {
+      control: "select",
+      options: [undefined, ...ICON_NAMES],
     },
   },
   args: { onClick: fn(), importance: "primary" },
@@ -135,26 +142,16 @@ export const LinkVariant: Story = {
   },
 };
 
-const EditIcon = () => (
-  <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
-    <path
-      d="M11.5 2.5l2 2L5 13l-3 1 1-3 8.5-8.5z"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinejoin="round"
-    />
-  </svg>
-);
-
 /**
  * The full matrix with a leading icon in every cell — so the icon colour can be
  * checked against each importance × anticipation combination (the icon should
  * follow the label colour: contrast on a filled primary, the modifier colour on
- * ghost secondary/tertiary).
+ * ghost secondary/tertiary). The `icon` prop takes a design-system icon name;
+ * the sprite is served from the `@canonical/ds-assets` staticDir at `/icons`.
  */
 export const IconMatrix: Story = {
   render: (args) => <MatrixGrid {...args} />,
-  args: { children: "Button", icon: <EditIcon /> },
+  args: { children: "Button", icon: "edit" },
 };
 
 /**
@@ -163,7 +160,7 @@ export const IconMatrix: Story = {
  */
 export const DisabledIconMatrix: Story = {
   render: (args) => <MatrixGrid {...args} />,
-  args: { children: "Button", icon: <EditIcon />, disabled: true },
+  args: { children: "Button", icon: "edit", disabled: true },
 };
 
 /**

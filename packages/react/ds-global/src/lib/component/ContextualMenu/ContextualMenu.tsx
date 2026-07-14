@@ -158,15 +158,20 @@ const ContextualMenu = ({
     <MenuContext.Provider value={menuContextValue}>
       <div
         className={[componentCssClassName, className].filter(Boolean).join(" ")}
-        ref={targetRef}
         {...props}
       >
         {/* getTriggerProps drives the disclosure (the source of truth for open)
-            and carries the menu ARIA wiring. */}
+            and carries the menu ARIA wiring. The disclosure's target ref sits on
+            the BUTTON, not the wrapper: closing returns focus via
+            `targetRef.current?.focus()`, and `focus()` on a non-focusable div is
+            a no-op — focus would silently fall to <body> (WCAG 2.4.3). The
+            fitment hook types its anchor as a div; the button anchors the same
+            rect, so cast (Popover precedent). */}
         <button
           type="button"
           id={triggerId}
           className="trigger"
+          ref={targetRef as React.Ref<HTMLButtonElement>}
           {...triggerProps}
         >
           {trigger}

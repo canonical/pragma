@@ -1,5 +1,6 @@
 import type React from "react";
 import { Spinner } from "../../subcomponent/Spinner/index.js";
+import { Icon } from "../Icon/index.js";
 import type Props from "./types.js";
 import "./styles.css";
 
@@ -45,7 +46,13 @@ const Button = ({
     );
   }
 
-  const iconElement = icon && <span className="icon">{icon}</span>;
+  // The icon slot only accepts a design-system icon name; the Icon component
+  // maps it to the @canonical/ds-assets sprite (decorative by default).
+  const iconElement = icon && (
+    <span className="icon">
+      <Icon icon={icon} />
+    </span>
+  );
 
   return (
     <button

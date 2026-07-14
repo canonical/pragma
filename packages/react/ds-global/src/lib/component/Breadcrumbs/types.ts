@@ -12,6 +12,11 @@ import type { ItemProps, LinkComponentProps } from "./common/Item/types.js";
  *
  * Adds breadcrumb-specific properties while maintaining
  * compatibility with the unified navigation type.
+ *
+ * @remarks
+ * The per-item `Component` substitution is for external (non-Canonical)
+ * products only. Not designed/approved for Canonical products; Canonical
+ * products must use the default Breadcrumbs.Item.
  */
 export interface BreadcrumbItem extends Item {
   /**
@@ -38,10 +43,20 @@ export interface BreadcrumbsProps extends HTMLAttributes<HTMLElement> {
   /**
    * Navigation items to display (WD405 Item type)
    * Each item is spread onto Breadcrumbs.Item or custom Component
+   *
+   * @remarks
+   * Per-item `Component` substitution is for external (non-Canonical)
+   * products only. Not designed/approved for Canonical products; Canonical
+   * products must use the default Breadcrumbs.Item.
    */
   items: BreadcrumbItem[];
   /**
    * Custom separator between items
+   *
+   * @remarks
+   * For external (non-Canonical) products only. Not designed/approved for
+   * Canonical products; Canonical products must use the default "/"
+   * separator.
    * @default "/"
    */
   separator?: ReactNode;

@@ -48,13 +48,14 @@
     }
   }
 
-  /* Separator element — DSL role: separator. Hidden on the last item. */
+  /* Separator element — DSL role: separator. Rendered before the link so a
+     wrapped row starts with the slash; hidden on the first item. */
   & > .separator {
     margin-inline: var(--breadcrumbs-item-separator-margin);
     color: var(--breadcrumbs-item-separator-color);
   }
 
-  &:last-of-type > .separator {
+  &:first-of-type > .separator {
     display: none;
   }
 

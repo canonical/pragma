@@ -1,7 +1,7 @@
 import type { _Item } from "@canonical/ds-types";
 import { getItemId } from "@canonical/utils";
 import type React from "react";
-import { type ReactElement, useEffect, useRef, useState } from "react";
+import { type ReactElement, useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { MENU_PLACEMENT, useWindowFitment } from "../../../../hooks/index.js";
 import type { MenuItem } from "../../types.js";
@@ -60,6 +60,11 @@ const SubMenuParent = ({ item }: { item: _Item<MenuItem> }): ReactElement => {
   const { targetRef, popupRef, popupPositionStyle, bestPosition } =
     useWindowFitment({ preferredDirections: MENU_PLACEMENT, autoFit: true });
 
+  // A stable, instance-unique id for the submenu surface so the parent item
+  // can reference the popup it controls (item keys are only unique within one
+  // menu, so useId rather than the item id).
+  const submenuId = useId();
+
   // The item carries both the roving props and the fitment target ref. The
   // tree's getItemProps already returns a `ref` (it registers the node for
   // roving focus); COMPOSE ours with it rather than replacing it, or the
@@ -68,6 +73,14 @@ const SubMenuParent = ({ item }: { item: _Item<MenuItem> }): ReactElement => {
   const navRef = (baseItemProps as { ref?: React.Ref<HTMLElement> }).ref;
   const itemProps = {
     ...baseItemProps,
+    // The composed `aria-expanded` (from getMenuItemProps) tracks only the
+    // keyboard highlight branch: it reports false for a HOVER-opened submenu
+    // and true for a merely-highlighted parent whose popup is not even
+    // mounted. Override with the REAL open state (WCAG 4.1.2 name/role/value).
+    "aria-expanded": open,
+    // Point at the popup only while it exists — the surface is unmounted when
+    // closed, and a dangling IDREF is invalid ARIA.
+    "aria-controls": open ? submenuId : undefined,
     ref: (node: HTMLDivElement | null) => {
       targetRef.current = node;
       if (typeof navRef === "function") navRef(node);
@@ -116,19 +129,23 @@ const SubMenuParent = ({ item }: { item: _Item<MenuItem> }): ReactElement => {
       ]
         .filter(Boolean)
         .join(" ")}
+      id={submenuId}
       aria-hidden={false}
       // Reveal visually only once positioned. The submenu mounts on open but
       // `bestPosition` resolves a frame later; without this gate it paints for a
       // frame at the fallback top:0/left:0 before snapping to the anchor.
       data-positioned={bestPosition ? "true" : undefined}
       style={popupPositionStyle}
+      {...menuProps}
+      // After the spread so this composing callback wins over menuProps.ref
+      // (later JSX props override earlier ones): it captures the surface for
+      // the keyboard-open focus effect AND forwards to the tree's ref.
       ref={(el) => {
         surfaceRef.current = el;
         if (typeof menuProps.ref === "function") menuProps.ref(el);
         else if (menuProps.ref)
           (menuProps.ref as React.RefObject<HTMLElement | null>).current = el;
       }}
-      {...menuProps}
     >
       {children.map((child) => (
         // Recurse: a submenu child may itself be a submenu parent.

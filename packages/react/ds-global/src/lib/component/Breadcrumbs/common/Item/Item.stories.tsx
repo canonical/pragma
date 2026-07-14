@@ -34,7 +34,8 @@ const meta = {
     },
     separator: {
       control: { type: "text" },
-      description: "Custom separator character or element.",
+      description:
+        'Custom separator character or element. For external (non-Canonical) products only. Not designed or approved for Canonical products; Canonical products must use the default "/" separator.',
     },
   },
   decorators: [
@@ -93,6 +94,9 @@ export const Disabled: Story = {
 
 /**
  * Breadcrumb item with custom separator.
+ *
+ * For external (non-Canonical) products only. Not designed or approved for
+ * Canonical products; Canonical products must use the default "/" separator.
  */
 export const CustomSeparator: Story = {
   args: {

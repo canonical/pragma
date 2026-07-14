@@ -123,6 +123,37 @@ describe("useContextualMenu", () => {
     expect(result.current.highlightedItems.at(-1)?.key).toBe("b1");
   });
 
+  it("keeps the keyboard highlight when the pointer leaves the menu", () => {
+    // Regression: the tree's default menu props dispatch CLOSE on mouse-leave,
+    // wiping highlightedItems while the disclosure keeps the popup open — a
+    // pointer grazing off the surface destroyed a keyboard user's position.
+    // The composed getMenuProps must neutralise that handler.
+    const { result } = renderHook(() => useContextualMenu({ root: menu }));
+
+    act(() => result.current.open());
+    const key = (k: string) =>
+      ({ key: k, preventDefault: () => {} }) as unknown as React.KeyboardEvent;
+
+    // Open highlights "a1"; ArrowDown crosses into group B ("b1").
+    act(() => result.current.getMenuProps().onKeyDown?.(key("ArrowDown")));
+    expect(result.current.highlightedItems.at(-1)?.key).toBe("b1");
+
+    // The surface carries no tree mouse-leave handler; simulate the leave
+    // anyway (optional call) — the highlight must survive it.
+    const menuProps = result.current.getMenuProps();
+    expect(menuProps.onMouseLeave).toBeUndefined();
+    act(() => {
+      menuProps.onMouseLeave?.({} as React.SyntheticEvent);
+    });
+    expect(result.current.isOpen).toBe(true);
+    expect(result.current.highlightedItems.at(-1)?.key).toBe("b1");
+
+    // Arrow keys continue from where they were (back up into group A's last
+    // item), not from a reset state.
+    act(() => result.current.getMenuProps().onKeyDown?.(key("ArrowUp")));
+    expect(result.current.highlightedItems.at(-1)?.key).toBe("a2");
+  });
+
   it("opens a submenu on ArrowRight and closes it on ArrowLeft", () => {
     // A menu with a submenu parent ("parent" → "sub1"/"sub2").
     const withSubmenu: MenuItem = {

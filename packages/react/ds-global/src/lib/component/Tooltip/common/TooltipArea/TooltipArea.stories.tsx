@@ -292,7 +292,7 @@ export const AutoFitPlayground: StoryFn<{ x: number; y: number }> = ({
               inlineSize: "9rem",
               justifyContent: "center",
             }}
-            icon={<Icon icon="drag" />}
+            icon="drag"
             onPointerDown={(e) => {
               setDragging(true);
               e.currentTarget.setPointerCapture?.(e.pointerId);

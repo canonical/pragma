@@ -109,4 +109,92 @@ describe("ContextualMenu", () => {
       "true",
     );
   });
+
+  it("returns focus to the trigger on Escape", () => {
+    // Regression: the disclosure's focus-return ref sat on the non-focusable
+    // wrapper div, so `focus()` was a no-op and focus fell to <body>.
+    renderMenu();
+    const trigger = screen.getByRole("button", { name: "Actions" });
+    fireEvent.click(trigger);
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(trigger).toHaveFocus();
+  });
+
+  it("returns focus to the trigger when an item is selected", () => {
+    renderMenu();
+    const trigger = screen.getByRole("button", { name: "Actions" });
+    fireEvent.click(trigger);
+    fireEvent.click(screen.getByText("Copy"));
+    expect(trigger).toHaveFocus();
+  });
+
+  describe("submenu ARIA state", () => {
+    const submenuGroups: MenuItem[] = [
+      {
+        key: "group",
+        items: [
+          { key: "first", label: "First", url: "#first" },
+          {
+            key: "parent",
+            label: "Parent",
+            items: [
+              { key: "sub1", label: "Sub one", url: "#sub1" },
+              { key: "sub2", label: "Sub two", url: "#sub2" },
+            ],
+          },
+        ],
+      },
+    ];
+
+    const openSubmenuMenu = () => {
+      render(<ContextualMenu trigger="Actions" groups={submenuGroups} />);
+      fireEvent.click(screen.getByRole("button", { name: "Actions" }));
+      return {
+        menu: screen.getByRole("menu"),
+        parent: screen.getByRole("menuitem", { name: "Parent" }),
+      };
+    };
+
+    it("reflects the real popup state on aria-expanded (keyboard path)", () => {
+      // Regression: aria-expanded was computed from the highlight branch alone,
+      // reporting true for a merely-highlighted parent whose popup is not even
+      // mounted (WCAG 4.1.2 name/role/value).
+      const { menu, parent } = openSubmenuMenu();
+      expect(parent).toHaveAttribute("aria-haspopup", "true");
+      expect(parent).toHaveAttribute("aria-expanded", "false");
+
+      // ArrowDown highlights the parent itself — the popup stays unmounted, so
+      // it must still report closed.
+      fireEvent.keyDown(menu, { key: "ArrowDown" });
+      expect(screen.queryByText("Sub one")).not.toBeInTheDocument();
+      expect(parent).toHaveAttribute("aria-expanded", "false");
+
+      // ArrowRight descends into the submenu — now it is genuinely open, and
+      // the parent points at the popup it controls.
+      fireEvent.keyDown(menu, { key: "ArrowRight" });
+      const submenu = screen.getByText("Sub one").closest('[role="menu"]');
+      expect(submenu).not.toBeNull();
+      expect(parent).toHaveAttribute("aria-expanded", "true");
+      expect(parent).toHaveAttribute("aria-controls", submenu?.id);
+    });
+
+    it("reflects a hover-opened popup on aria-expanded", () => {
+      // Regression: hover-open is local state invisible to the navigation
+      // tree, so a hover-opened submenu reported aria-expanded="false".
+      const { parent } = openSubmenuMenu();
+      const anchor = parent.closest(".submenu-anchor");
+      expect(anchor).not.toBeNull();
+      expect(parent).toHaveAttribute("aria-expanded", "false");
+
+      fireEvent.pointerEnter(anchor as HTMLElement);
+      expect(screen.getByText("Sub one")).toBeInTheDocument();
+      expect(parent).toHaveAttribute("aria-expanded", "true");
+
+      fireEvent.pointerLeave(anchor as HTMLElement);
+      expect(screen.queryByText("Sub one")).not.toBeInTheDocument();
+      expect(parent).toHaveAttribute("aria-expanded", "false");
+      // Closed popup: no dangling aria-controls IDREF.
+      expect(parent).not.toHaveAttribute("aria-controls");
+    });
+  });
 });
