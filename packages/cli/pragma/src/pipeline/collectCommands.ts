@@ -15,8 +15,8 @@ import { commands as ontologyCommands } from "../domains/ontology/index.js";
 import { commands as setupCommands } from "../domains/setup/index.js";
 import type { PragmaContext } from "../domains/shared/context.js";
 import {
-  buildReservedVerbs,
   compilePackCommands,
+  deriveReservedVerbs,
   nounVerbFromPath,
 } from "../domains/shared/stories/pack/index.js";
 import { commands as skillCommands } from "../domains/skill/index.js";
@@ -56,9 +56,10 @@ export default function collectCommands(
     buildCapabilitiesCommand(),
   ];
 
-  // Story packs project onto the same surface; each built-in (noun, verb)
-  // is reserved, so a pack can only add a verb no built-in noun owns.
-  const reserved = buildReservedVerbs(
+  // Story packs project onto the same surface. Leaf read nouns reserve only
+  // the (noun, verb) pairs they own, so a pack can add a verb no built-in
+  // owns; operational nouns (config, graph, setup, …) stay reserved wholesale.
+  const reserved = deriveReservedVerbs(
     builtIn.map((command) => nounVerbFromPath(command.path)),
   );
   return [...builtIn, ...compilePackCommands(ctx, reserved)];

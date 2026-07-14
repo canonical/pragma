@@ -113,44 +113,44 @@ describe("tool listing", () => {
     }
   });
 
-  // Golden surface: the full built-in tool set with no story packs. The
-  // per-(noun, verb) reserved-guard flip must leave this byte-identical.
+  // Golden surface: the full built-in tool set with no story packs, in
+  // registration order. The per-(noun, verb) reserved-guard flip must leave
+  // this byte-identical AND order-identical — registration order is the tool
+  // surface a client sees.
   it("has a stable built-in tool surface", async () => {
-    const names = (await client.listTools()).tools
-      .map((tool) => tool.name)
-      .sort();
+    const names = (await client.listTools()).tools.map((tool) => tool.name);
 
     expect(names).toEqual([
       "block_list",
       "block_lookup",
       "block_sample",
-      "capabilities",
-      "config_channel",
-      "config_show",
-      "config_tier",
-      "create_component",
-      "create_package",
-      "doctor",
-      "graph_inspect",
-      "graph_query",
-      "info",
-      "llm",
+      "standard_list",
+      "standard_lookup",
+      "standard_categories",
+      "standard_sample",
       "modifier_list",
       "modifier_lookup",
       "modifier_sample",
-      "ontology_list",
-      "ontology_show",
-      "skill_list",
-      "skill_lookup",
-      "standard_categories",
-      "standard_list",
-      "standard_lookup",
-      "standard_sample",
-      "tier_list",
       "token_list",
       "token_lookup",
-      "token_sample",
       "tokens_add_config",
+      "token_sample",
+      "tier_list",
+      "config_show",
+      "config_tier",
+      "config_channel",
+      "ontology_list",
+      "ontology_show",
+      "graph_query",
+      "graph_inspect",
+      "skill_list",
+      "skill_lookup",
+      "doctor",
+      "info",
+      "capabilities",
+      "llm",
+      "create_component",
+      "create_package",
     ]);
   });
 });

@@ -3,7 +3,11 @@ import { PragmaError } from "#error";
 import { RECIPE_STORY } from "#testing";
 import type { SemanticPackage } from "../../semanticPackage.js";
 import collectPackStories from "./collectPackStories.js";
-import { buildReservedVerbs } from "./reservedVerbs.js";
+import {
+  buildReservedVerbs,
+  deriveReservedVerbs,
+  isReserved,
+} from "./reservedVerbs.js";
 
 function makePackage(stories: SemanticPackage["stories"]): SemanticPackage {
   return {
@@ -17,6 +21,45 @@ function makePackage(stories: SemanticPackage["stories"]): SemanticPackage {
 }
 
 const CONFIG = { tier: undefined, channel: "normal" as const };
+
+// A representative slice of the real built-in surface: leaf read nouns that
+// own `list`/`lookup`, plus operational nouns (graph, config, create, graphql,
+// setup, tokens) that own neither and so must be reserved wholesale.
+const BUILTIN_PAIRS: readonly (readonly [string, string | undefined])[] = [
+  ["standard", "list"],
+  ["standard", "lookup"],
+  ["standard", "categories"],
+  ["standard", "sample"],
+  ["block", "list"],
+  ["block", "lookup"],
+  ["token", "list"],
+  ["token", "lookup"],
+  ["tier", "list"],
+  ["config", "show"],
+  ["config", "tier"],
+  ["config", "channel"],
+  ["graph", "query"],
+  ["graph", "inspect"],
+  ["create", "component"],
+  ["create", "package"],
+  ["graphql", "build"],
+  ["graphql", "check"],
+  ["graphql", "serve"],
+  ["setup", "all"],
+  ["setup", "lsp"],
+  ["tokens", "add-config"],
+  ["info", undefined],
+];
+
+/** Run a thunk and return the error it throws (or `undefined`). */
+function caught(run: () => unknown): unknown {
+  try {
+    run();
+  } catch (error) {
+    return error;
+  }
+  return undefined;
+}
 
 describe("collectPackStories", () => {
   let warn: ReturnType<typeof vi.spyOn>;
@@ -138,5 +181,118 @@ describe("collectPackStories", () => {
 
     expect(entries.map((entry) => entry.definition.noun)).toEqual(["standard"]);
     expect(warn).toHaveBeenCalledWith(expect.stringContaining("already taken"));
+  });
+
+  // Regression restoration (FIX 1): operational nouns own no list/lookup, so
+  // deriveReservedVerbs promotes them to a whole-noun reservation. Since a
+  // pack always emits `list`, a pack targeting an operational namespace must
+  // stay BLOCKED — this is the load-bearing proof that the per-verb flip did
+  // not silently open pragma's core operational namespaces to packs.
+  describe("operational nouns stay reserved wholesale", () => {
+    const reserved = deriveReservedVerbs(BUILTIN_PAIRS);
+
+    it("promotes every operational noun to a whole-noun reservation", () => {
+      for (const noun of ["config", "graph", "create", "graphql", "setup"]) {
+        expect(isReserved(reserved, noun, "list")).toBe(true);
+      }
+      // `tokens` (the plural add-config noun) owns only `add-config`.
+      expect(isReserved(reserved, "tokens", "list")).toBe(true);
+    });
+
+    it("throws a config error when a config story shadows an operational noun", () => {
+      const error = caught(() =>
+        collectPackStories(
+          { ...CONFIG, stories: [{ ...RECIPE_STORY, noun: "graph" }] },
+          [],
+          reserved,
+        ),
+      );
+      expect(error).toBeInstanceOf(PragmaError);
+      expect((error as PragmaError).code).toBe("CONFIG_ERROR");
+    });
+
+    it("skips a package story that shadows an operational noun", () => {
+      const entries = collectPackStories(
+        CONFIG,
+        [
+          makePackage([
+            {
+              path: "/pkg/stories/graph.json",
+              definition: { ...RECIPE_STORY, noun: "graph" },
+            },
+          ]),
+        ],
+        reserved,
+      );
+      expect(entries).toHaveLength(0);
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining("already taken"),
+      );
+    });
+  });
+
+  // Keystone incremental window (FIX 3): `standard`'s `list` wrapper is
+  // deleted but `lookup` is still built-in (alongside categories/sample).
+  describe("incremental leaf cutover window", () => {
+    const reserved = deriveReservedVerbs([
+      ["standard", "lookup"],
+      ["standard", "categories"],
+      ["standard", "sample"],
+      ["info", undefined],
+    ]);
+
+    it("keeps `standard` per-verb because it still owns lookup (not promoted)", () => {
+      // Disjointness check: the noun retains a read verb, so it must NOT be
+      // wholesale-promoted — otherwise `list` could never be freed.
+      expect(isReserved(reserved, "standard", "list")).toBe(false);
+      expect(isReserved(reserved, "standard", "lookup")).toBe(true);
+    });
+
+    it("admits a standard pack that declares only list", () => {
+      const listOnly = { ...RECIPE_STORY, noun: "standard", lookup: undefined };
+      const entries = collectPackStories(
+        CONFIG,
+        [
+          makePackage([
+            { path: "/pkg/stories/standard.json", definition: listOnly },
+          ]),
+        ],
+        reserved,
+      );
+      expect(entries.map((entry) => entry.definition.noun)).toEqual([
+        "standard",
+      ]);
+    });
+
+    it("rejects a standard pack that also declares lookup (config throws)", () => {
+      const error = caught(() =>
+        collectPackStories(
+          { ...CONFIG, stories: [{ ...RECIPE_STORY, noun: "standard" }] },
+          [],
+          reserved,
+        ),
+      );
+      expect(error).toBeInstanceOf(PragmaError);
+      expect((error as PragmaError).code).toBe("CONFIG_ERROR");
+    });
+
+    it("rejects a standard pack that also declares lookup (package skips)", () => {
+      const entries = collectPackStories(
+        CONFIG,
+        [
+          makePackage([
+            {
+              path: "/pkg/stories/standard.json",
+              definition: { ...RECIPE_STORY, noun: "standard" },
+            },
+          ]),
+        ],
+        reserved,
+      );
+      expect(entries).toHaveLength(0);
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining("already taken"),
+      );
+    });
   });
 });

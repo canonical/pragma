@@ -18,6 +18,7 @@ export { default as compilePackToolSpecs } from "./compilePackToolSpecs.js";
 export type { ReservedVerbs } from "./reservedVerbs.js";
 export {
   buildReservedVerbs,
+  deriveReservedVerbs,
   isReserved,
   nounVerbFromPath,
   nounVerbFromToolName,

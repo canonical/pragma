@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildReservedVerbs,
+  deriveReservedVerbs,
   isReserved,
   nounVerbFromPath,
   nounVerbFromToolName,
@@ -117,6 +118,9 @@ describe("buildReservedVerbs", () => {
 });
 
 describe("isReserved", () => {
+  // Raw grouping (buildReservedVerbs, no promotion): a partially reserved
+  // noun like `config` keeps only its concrete verbs. The policy-applied
+  // promotion of operational nouns is exercised under `deriveReservedVerbs`.
   const reserved = buildReservedVerbs(
     (
       [
@@ -142,11 +146,68 @@ describe("isReserved", () => {
     expect(isReserved(reserved, "info", "list")).toBe(true);
   });
 
-  it("does not reserve an unowned verb of a partially reserved noun", () => {
+  it("does not reserve an unowned verb of a partially reserved noun (raw map)", () => {
+    // buildReservedVerbs alone does NOT promote `config`; deriveReservedVerbs
+    // does (asserted below). This pins the pure-grouping behavior.
     expect(isReserved(reserved, "config", "list")).toBe(false);
   });
 
   it("does not reserve a noun with no built-in", () => {
     expect(isReserved(reserved, "recipe", "list")).toBe(false);
+  });
+});
+
+describe("deriveReservedVerbs", () => {
+  // Mirrors the real built-in surface: leaf read nouns that own list/lookup
+  // plus operational nouns that own neither.
+  const PAIRS: readonly (readonly [string, string | undefined])[] = [
+    ["standard", "list"],
+    ["standard", "lookup"],
+    ["standard", "categories"],
+    ["standard", "sample"],
+    ["config", "show"],
+    ["config", "tier"],
+    ["config", "channel"],
+    ["graph", "query"],
+    ["graph", "inspect"],
+    ["create", "component"],
+    ["create", "package"],
+    ["graphql", "build"],
+    ["setup", "all"],
+    ["tokens", "add-config"],
+    ["info", undefined],
+  ];
+  const derived = deriveReservedVerbs(PAIRS);
+
+  it("promotes operational nouns (no list/lookup) to a whole-noun reservation", () => {
+    for (const noun of ["config", "graph", "create", "graphql", "setup"]) {
+      expect(isReserved(derived, noun, "list")).toBe(true);
+      // Whole-noun means every verb is reserved, not just list.
+      expect(isReserved(derived, noun, "anything")).toBe(true);
+    }
+    // The plural add-config noun owns only a non-read verb, so it too promotes.
+    expect(isReserved(derived, "tokens", "list")).toBe(true);
+    // The promoted set is exactly the whole-noun sentinel.
+    expect(derived.get("config")).toEqual(new Set(["*"]));
+  });
+
+  it("keeps leaf read nouns per-verb (does not promote `standard`)", () => {
+    expect(isReserved(derived, "standard", "list")).toBe(true);
+    expect(isReserved(derived, "standard", "lookup")).toBe(true);
+    // A verb the built-in noun does not own stays admissible.
+    expect(isReserved(derived, "standard", "foo")).toBe(false);
+    // Untouched: the per-verb set is preserved verbatim.
+    expect(derived.get("standard")).toEqual(
+      new Set(["list", "lookup", "categories", "sample"]),
+    );
+  });
+
+  it("leaves a bare whole-noun reservation idempotent", () => {
+    expect(derived.get("info")).toEqual(new Set(["*"]));
+    expect(isReserved(derived, "info", "list")).toBe(true);
+  });
+
+  it("does not reserve a noun with no built-in", () => {
+    expect(isReserved(derived, "recipe", "list")).toBe(false);
   });
 });

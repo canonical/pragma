@@ -31,13 +31,18 @@ async function countRows(store: Store, query: string): Promise<number> {
  * Each `COUNT` reproduces the row cardinality of the matching leaf list
  * operation, so the results equal `(await listX(...)).length` exactly:
  *
- * - **blocks** group by `?component` (like `listBlocks`), so
- *   `COUNT(DISTINCT ?component)`; the `?name`/`?tier` patterns and
- *   `buildFilters` mirror `listBlocks` for identical tier/channel scoping.
+ * - **blocks** count the distinct `(?component, ?type, ?name, ?tier)` groups
+ *   `listBlocks` emits via `GROUP BY ?component ?type ?name ?tier`, so a
+ *   `COUNT(*)` over a `SELECT DISTINCT` of that exact grain (incl.
+ *   `buildFilters` for identical tier/channel scoping). This stays exact even
+ *   for a block asserted as several types or tiers, which would fan a
+ *   single-variable `COUNT(DISTINCT ?component)` short of the grouped rows.
+ * - **modifier families** count the distinct `(?family, ?name)` groups
+ *   `listModifiers` emits via `GROUP BY ?family ?name`, so a `COUNT(*)` over a
+ *   `SELECT DISTINCT` of that grain — exact even for a family with two names.
  * - **standards** and **tokens** have no `GROUP BY` and an `OPTIONAL` that
- *   fans rows out, so `COUNT(*)` over the identical `WHERE`.
- * - **modifier families** group by `?family` (like `listModifiers`), so
- *   `COUNT(DISTINCT ?family)`.
+ *   fans rows out, so `COUNT(*)` over the identical `WHERE` matches row for
+ *   row (including the fan-out).
  *
  * @note Queries ke store
  *
@@ -55,13 +60,16 @@ async function collectEntityCounts(
     countRows(
       store,
       `
-      SELECT (COUNT(DISTINCT ?component) AS ?count)
+      SELECT (COUNT(*) AS ?count)
       WHERE {
-        VALUES ?type { ${P.ds}Component ${P.ds}Pattern ${P.ds}Layout ${P.ds}Subcomponent }
-        ?component a ?type ;
-                   ${P.ds}name ?name ;
-                   ${P.ds}tier ?tier .
-        ${filterClauses}
+        SELECT DISTINCT ?component ?type ?name ?tier
+        WHERE {
+          VALUES ?type { ${P.ds}Component ${P.ds}Pattern ${P.ds}Layout ${P.ds}Subcomponent }
+          ?component a ?type ;
+                     ${P.ds}name ?name ;
+                     ${P.ds}tier ?tier .
+          ${filterClauses}
+        }
       }
     `,
     ),
@@ -83,10 +91,13 @@ async function collectEntityCounts(
     countRows(
       store,
       `
-      SELECT (COUNT(DISTINCT ?family) AS ?count)
+      SELECT (COUNT(*) AS ?count)
       WHERE {
-        ?family a ${P.ds}ModifierFamily ;
-                ${P.ds}name ?name .
+        SELECT DISTINCT ?family ?name
+        WHERE {
+          ?family a ${P.ds}ModifierFamily ;
+                  ${P.ds}name ?name .
+        }
       }
     `,
     ),
