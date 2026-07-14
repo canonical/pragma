@@ -1,4 +1,4 @@
-import { createElement, useRef } from "react";
+import { type CSSProperties, createElement } from "react";
 import { useEffect, useGlobals } from "storybook/internal/preview-api";
 import type {
   Renderer,
@@ -94,58 +94,43 @@ export const withUtilStyles = (
   // canvas — in the autodocs page each story renders in its own container — so
   // targeting a wrapper makes the grid/density/context/overlays work in BOTH
   // views, and avoids stacking with any real `.grid` a story brings itself.
-  const wrapperRef = useRef<HTMLDivElement>(null);
+  //
+  // Every wrapper-scoped class is computed HERE, at render, and passed to the
+  // element — not toggled in a post-paint useEffect. Applying them after the
+  // first paint made the story flash its un-gridded layout, then reflow once the
+  // grid class landed (e.g. a lone card briefly full-width, then crushed). A
+  // render-time className has the grid present on the very first paint.
+  const gridClass = gridMode === "none" ? null : GRID_CLASSES[gridMode];
+  const wrapperClass = [
+    // The "grid" marker turns the preset (`.responsive`/`.intrinsic`) into a real
+    // grid box; without a grid the wrapper carries no grid class at all.
+    gridMode !== "none" ? "grid" : null,
+    gridClass,
+    DENSITY_CLASSES[density],
+    CONTEXT_CLASSES[surface],
+    baseline ? "with-baseline-grid" : null,
+    outlines ? "with-debug-outlines" : null,
+  ]
+    .filter(Boolean)
+    .join(" ");
 
-  useEffect(() => {
-    const root = wrapperRef.current;
-    if (!root) return;
-    root.classList.toggle("with-baseline-grid", baseline);
-    root.classList.toggle("with-debug-outlines", outlines);
-  }, [baseline, outlines]);
-
-  useEffect(() => {
-    const root = wrapperRef.current;
-    if (!root) return;
-    // The grid classes come from GRID_CLASSES; the "grid" marker + align-content
-    // are grid-specific extras layered on top.
-    applyModifierClass(root, GRID_CLASSES, gridMode);
-    if (gridMode !== "none") {
-      root.classList.add("grid");
-      // The wrapper fills the preview height, so a grid there would stretch its
-      // (single) row and the story looks vertically centred. Top-align so rows
-      // take their natural height instead.
-      root.style.alignContent = "start";
-    } else {
-      root.classList.remove("grid");
-      root.style.removeProperty("align-content");
-    }
-  }, [gridMode]);
-
-  // Scheme is a page-level concern (light/dark), kept on the document element.
+  // Scheme is a page-level concern (light/dark), kept on the document element so
+  // it spans the canvas AND the autodocs page (which share one document) — the
+  // one modifier that must NOT live on the per-story wrapper.
   useEffect(() => {
     applyModifierClass(document.documentElement, SCHEME_CLASSES, scheme);
   }, [scheme]);
 
-  useEffect(() => {
-    const root = wrapperRef.current;
-    if (!root) return;
-    applyModifierClass(root, DENSITY_CLASSES, density);
-  }, [density]);
-
-  useEffect(() => {
-    const root = wrapperRef.current;
-    if (!root) return;
-    applyModifierClass(root, CONTEXT_CLASSES, surface);
-  }, [surface]);
-
   // `display: contents` so the wrapper carries the classes without introducing a
   // box of its own — until a grid is active, when it must be a real grid element.
+  // `align-content: start` keeps grid rows at their natural height (the wrapper
+  // fills the preview, so a stretched single row would look vertically centred).
+  const wrapperStyle: CSSProperties =
+    gridMode === "none" ? { display: "contents" } : { alignContent: "start" };
+
   return createElement(
     "div",
-    {
-      ref: wrapperRef,
-      style: gridMode === "none" ? { display: "contents" } : undefined,
-    },
+    { className: wrapperClass || undefined, style: wrapperStyle },
     StoryFn(),
   );
 };

@@ -30,15 +30,18 @@
 .ds.cards {
   display: grid;
   grid-template-columns: subgrid;
-  grid-column: var(--cards-span, 1 / -1);
+  /* The Cards container itself always spans the full master grid; `--card-span`
+   * (the per-card column span) inherits down to each Card, it is NOT the
+   * container's own span. */
+  grid-column: 1 / -1;
 
   /* The four shared section tracks (image / header / content / footer), repeated
-   * for every wrapped band via `grid-auto-rows`. `content` is `1fr` so it
-   * are ALL `auto`, so each track sizes to the tallest of that section across
-   * the row — every card takes its intrinsic height plus only the extra needed
-   * to align with the tallest card on the band (no `1fr`, which would stretch a
-   * card to fill surplus container height). Cards each `span 4` rows and
-   * auto-place across the columns (DOM order), wrapping to the next band. */
+   * for every wrapped band via `grid-auto-rows`. They are ALL `auto`, so each
+   * track sizes to the tallest of that section across the row — every card takes
+   * its intrinsic height plus only the extra needed to align with the tallest
+   * card on the band (no `1fr`, which would stretch a card to fill surplus
+   * container height). Cards each `span 4` rows and auto-place across the columns
+   * (DOM order), wrapping to the next band. */
   grid-auto-flow: row;
   grid-auto-rows: auto;
 

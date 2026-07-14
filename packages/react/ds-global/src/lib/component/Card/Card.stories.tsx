@@ -1,4 +1,4 @@
-import type { Decorator, Meta, StoryFn } from "@storybook/react-vite";
+import type { Meta, StoryFn } from "@storybook/react-vite";
 import type { CSSProperties } from "react";
 import * as decorators from "../../../storybook/decorators.js";
 import { Chip } from "../Chip/index.js";
@@ -6,34 +6,29 @@ import Component from "./Card.js";
 import type { CardProps } from "./types.js";
 
 /**
- * A single Card needs a grid parent (it is a subgrid). Wrap it in a centred,
- * one-column grid with a clamped, comfortable width so a lone card reads well.
- * `align-content: start` keeps the card at its intrinsic height (the grid does
- * not stretch it to fill the preview). Applied per single-card story (not meta),
- * so surface/grid stories that bring their own layout are unaffected.
+ * A Card is a subgrid, so it needs a grid parent. That parent is supplied by the
+ * addon's `grid` story param — the single grid mechanism — NOT a local grid
+ * decorator, which would nest a second grid inside the addon's and crush the card
+ * into one column. `"intrinsic"` gives the wrapper the auto-fill column grid on
+ * both the story canvas and the autodocs page (switch it from the toolbar).
+ * Stories that want a different layout (surfaces) override per-story.
  */
-const centeredCard: Decorator = (Story) => (
-  <div
-    className="grid"
-    style={
-      {
-        "--modifier-grid-template": "minmax(0, 22rem)",
-        justifyContent: "center",
-        alignContent: "start",
-      } as CSSProperties
-    }
-  >
-    <Story />
-  </div>
-);
-
 const meta = {
   title: "components/Card",
   component: Component,
   tags: ["autodocs"],
+  parameters: { grid: "intrinsic" },
 } satisfies Meta<typeof Component>;
 
 export default meta;
+
+/**
+ * A lone card spans the whole intrinsic grid so it fills the preview width
+ * (`span` clamps to however many auto-fill columns exist). Applied inline rather
+ * than via a wrapping decorator so the card binds to the addon's grid directly —
+ * no second nested grid, which is what crushed the card into one column before.
+ */
+const spanAll: CSSProperties = { "--card-span": 999 } as CSSProperties;
 
 /**
  * The base card: a single padded content block. `Card.Content` is the core
@@ -41,7 +36,7 @@ export default meta;
  * extras, not part of the base card.
  */
 export const Default: StoryFn<CardProps> = (props) => (
-  <Component {...props}>
+  <Component {...props} style={{ ...spanAll, ...props.style }}>
     <Component.Content>
       <h4>Build a bare-metal cloud on a Raspberry Pi cluster with MAAS</h4>
       <p className="p">
@@ -52,7 +47,6 @@ export const Default: StoryFn<CardProps> = (props) => (
     </Component.Content>
   </Component>
 );
-Default.decorators = [centeredCard];
 
 /**
  * A full-bleed image above the content block.
@@ -60,7 +54,7 @@ Default.decorators = [centeredCard];
  * `Card.Image` is not part of the core API.
  */
 export const WithImage: StoryFn<CardProps> = (props) => (
-  <Component {...props}>
+  <Component {...props} style={{ ...spanAll, ...props.style }}>
     <Component.Image src="https://assets.ubuntu.com/v1/5ce214a4-rpi.png" />
     <Component.Content>
       <h4>Build a bare-metal cloud on a Raspberry Pi cluster with MAAS</h4>
@@ -71,7 +65,6 @@ export const WithImage: StoryFn<CardProps> = (props) => (
     </Component.Content>
   </Component>
 );
-WithImage.decorators = [centeredCard];
 
 /**
  * A card with a header, content and footer. Only the content-bearing sections
@@ -85,7 +78,7 @@ WithImage.decorators = [centeredCard];
  * card is just `Card.Content`; these are optional sections layered on top.
  */
 export const HeaderContentFooter: StoryFn<CardProps> = (props) => (
-  <Component {...props}>
+  <Component {...props} style={{ ...spanAll, ...props.style }}>
     <Component.Image src="https://assets.ubuntu.com/v1/5ce214a4-rpi.png" />
     <Component.Header>
       <h4>Ubuntu 24.04 LTS</h4>
@@ -106,7 +99,6 @@ export const HeaderContentFooter: StoryFn<CardProps> = (props) => (
     </Component.Footer>
   </Component>
 );
-HeaderContentFooter.decorators = [centeredCard];
 
 /* NOTE: the old `GridLayout` story (a grid of cards) has moved to the dedicated
  * `Cards` group component (`groups/Cards`), which lays cards out on a shared
