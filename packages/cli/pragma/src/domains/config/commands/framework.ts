@@ -5,6 +5,7 @@ import {
 } from "@canonical/cli-core";
 import { runTask } from "@canonical/task/node";
 import { readConfig } from "#config";
+import { PragmaError } from "#error";
 import type { PragmaContext } from "../../shared/context.js";
 import { selectFormatter } from "../../shared/formatters.js";
 import { frameworkFormatters } from "../formatters/index.js";
@@ -59,6 +60,16 @@ export default function buildFrameworkCommand(
       const reset = params.reset === true;
       const value = params.value as string | undefined;
 
+      // Contradictory input: a value AND --reset. Reject rather than silently
+      // letting one win.
+      if (reset && value !== undefined) {
+        throw PragmaError.invalidInput("framework", value, {
+          recovery: {
+            message: "Pass either a framework value or --reset, not both.",
+          },
+        });
+      }
+
       if (reset) {
         const result = await runTask(
           setFrameworkTask(ctx.cwd, undefined, scope),
@@ -70,7 +81,8 @@ export default function buildFrameworkCommand(
         );
       }
 
-      if (!value) {
+      // No value at all → query. An explicit empty string is invalid input.
+      if (value === undefined) {
         const config = readConfig(ctx.cwd);
         const format = selectFormatter(ctx, frameworkFormatters.query);
         return createOutputResult(config.framework ?? "none", {
