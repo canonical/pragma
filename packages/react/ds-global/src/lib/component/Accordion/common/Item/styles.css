@@ -84,7 +84,15 @@
   align-items: center;
   gap: var(--accordion-item-header-gap);
 
-  padding-block: var(--accordion-item-header-padding-block);
+  /* Block padding is 0 under a density scope (--accordion-item-header-pad-block set
+     there) so the ITEM's density height governs; if the padding stayed at 1 bU the
+     header content (snapped line-height + 2×padding) would exceed the tighter cells
+     (dense 24/28) and the min-block-size could not pin the height. Natural 1 bU
+     padding with no density scope, unchanged. */
+  padding-block: var(
+    --accordion-item-header-pad-block,
+    var(--accordion-item-header-padding-block)
+  );
   padding-inline: var(--accordion-item-header-padding-inline);
 
   color: var(--accordion-item-color-text);
@@ -288,6 +296,13 @@
 .docs .ds.accordion-item {
   box-sizing: border-box;
   min-block-size: var(--density-line-height-effective);
+}
+/* Collapse the header block padding under density so the item's density height
+   governs (dense cells 24/28 are tighter than snapped-line-height + 2×padding). */
+.app .ds.accordion-item > .header,
+.site .ds.accordion-item > .header,
+.docs .ds.accordion-item > .header {
+  --accordion-item-header-pad-block: 0px;
 }
 .app .ds.accordion-item > .header > .heading,
 .site .ds.accordion-item > .header > .heading,
