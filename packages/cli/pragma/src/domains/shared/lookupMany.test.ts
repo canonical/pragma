@@ -88,6 +88,21 @@ describe("lookupMany", () => {
     ]);
     expect(result.meta).toEqual({ internalErrorCount: 2 });
   });
+
+  it("reclassifies a rejected SPARQL value as INVALID_INPUT, not internal", async () => {
+    const result = await lookupMany(["}; DROP"], async (q) => {
+      throw new Error(
+        `Potentially dangerous SPARQL value rejected: ${JSON.stringify(q)}`,
+      );
+    });
+
+    expect(result.results).toEqual([]);
+    expect(result.errors).toHaveLength(1);
+    expect(result.errors.at(0)?.code).toBe("INVALID_INPUT");
+    expect(result.errors.at(0)?.message).not.toContain("Internal error");
+    // A rejected value is user input, so it is not counted as an internal fault.
+    expect(result.meta).toEqual({ internalErrorCount: 0 });
+  });
 });
 
 describe("lookupToolMeta", () => {

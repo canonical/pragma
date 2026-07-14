@@ -122,4 +122,12 @@ describe("token lookup command", () => {
     expect(text).toContain("color.primary");
     expect(text).toContain("spacing.sm");
   });
+
+  it("rejects an empty names list with INVALID_INPUT", async () => {
+    const ctx = makeCtx();
+    const cmd = lookupCommand(ctx);
+    await expect(cmd.execute({ names: [] }, ctx)).rejects.toMatchObject({
+      code: "INVALID_INPUT",
+    });
+  });
 });

@@ -998,4 +998,65 @@ describe("executeGenerator — answer validation", () => {
     );
     expect(result).toEqual({ tag: "exit", code: 3 });
   });
+
+  it("uses a generic message when the validator returns a non-string falsy verdict", async () => {
+    const gen = makeGen([
+      {
+        name: "target",
+        message: "Target",
+        type: "text",
+        validate: () => false,
+      },
+    ]);
+    const stderr = vi.spyOn(process.stderr, "write").mockReturnValue(true);
+    try {
+      const result = await executeGenerator(
+        gen,
+        { target: "anything", yes: true },
+        llmCtx,
+      );
+      expect(result).toEqual({ tag: "exit", code: 3 });
+      expect(stderr).toHaveBeenCalledWith(
+        expect.stringContaining("invalid value"),
+      );
+    } finally {
+      stderr.mockRestore();
+    }
+  });
+
+  it("passes a valid answer through its prompt validator", async () => {
+    const gen = makeGen(validatedPrompts);
+    const result = await executeGenerator(
+      gen,
+      { target: "ok", yes: true },
+      llmCtx,
+    );
+    expect(result.tag).toBe("output");
+  });
+
+  it("skips validation for a when-gated prompt whose gate is off", async () => {
+    const gen = makeGen([
+      {
+        name: "advanced",
+        message: "Advanced?",
+        type: "confirm",
+        default: false,
+      },
+      {
+        name: "level",
+        message: "Level",
+        type: "select",
+        choices: [{ label: "High", value: "high" }],
+        when: (a) => a.advanced === true,
+      },
+    ]);
+    // `level` carries an out-of-choices value but its gate is off, so it must
+    // not be validated.
+    const result = await executeGenerator(
+      gen,
+      { advanced: false, level: "bogus", yes: true },
+      llmCtx,
+    );
+    expect(result.tag).toBe("output");
+  });
 });

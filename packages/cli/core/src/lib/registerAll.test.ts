@@ -436,6 +436,64 @@ describe("registerAll", () => {
       }
     });
 
+    it("applies a non-zero exitCode carried on an output result", async () => {
+      // An output result can both render and signal failure (e.g. an
+      // all-not-found lookup that prints its errors inline yet exits 1).
+      const commands: CommandDefinition[] = [
+        {
+          path: ["miss"],
+          description: "Renders then fails",
+          parameters: [],
+          execute: async () =>
+            createOutputResult("not found", { plain: (s) => s }, 1),
+        },
+      ];
+
+      const program = new Command();
+      program.exitOverride();
+      registerAll(program, commands, testCtx);
+
+      const originalExitCode = process.exitCode;
+      const originalWrite = process.stdout.write;
+      process.exitCode = 0;
+      process.stdout.write = (() => true) as typeof process.stdout.write;
+      try {
+        await program.parseAsync(["miss"], { from: "user" });
+        expect(process.exitCode).toBe(1);
+      } finally {
+        process.stdout.write = originalWrite;
+        process.exitCode = originalExitCode;
+      }
+    });
+
+    it("leaves process.exitCode untouched for a zero-code output result", async () => {
+      const commands: CommandDefinition[] = [
+        {
+          path: ["okcode"],
+          description: "Explicit zero exit code",
+          parameters: [],
+          execute: async () =>
+            createOutputResult("fine", { plain: (s) => s }, 0),
+        },
+      ];
+
+      const program = new Command();
+      program.exitOverride();
+      registerAll(program, commands, testCtx);
+
+      const originalExitCode = process.exitCode;
+      const originalWrite = process.stdout.write;
+      process.exitCode = 0;
+      process.stdout.write = (() => true) as typeof process.stdout.write;
+      try {
+        await program.parseAsync(["okcode"], { from: "user" });
+        expect(process.exitCode).toBe(0);
+      } finally {
+        process.stdout.write = originalWrite;
+        process.exitCode = originalExitCode;
+      }
+    });
+
     it("accepts multiple positional args for trailing multiselect params", async () => {
       let captured: Record<string, unknown> = {};
 
