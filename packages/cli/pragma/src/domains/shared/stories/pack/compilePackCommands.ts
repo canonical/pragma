@@ -5,6 +5,7 @@ import compileLookupCommand from "../compileLookupCommand.js";
 import compileReadCommand from "../compileReadCommand.js";
 import collectPackStories from "./collectPackStories.js";
 import compilePackStories from "./compilePackStories.js";
+import type { ReservedVerbs } from "./reservedVerbs.js";
 
 /**
  * Compile every active story pack into CLI command definitions.
@@ -15,15 +16,15 @@ import compilePackStories from "./compilePackStories.js";
  * the built-in read stories, so completions and help come for free.
  *
  * @param ctx - Pragma context carrying config, packages, and the store.
- * @param reservedNouns - Built-in nouns packs must not shadow.
+ * @param reserved - Built-in `(noun, verb)` reservations packs must not shadow.
  * @returns Command definitions for every pack story.
  */
 export default function compilePackCommands(
   ctx: PragmaContext,
-  reservedNouns: ReadonlySet<string>,
+  reserved: ReservedVerbs,
 ): CommandDefinition[] {
   const prefixes = { ...PREFIX_MAP, ...ctx.config.prefixes };
-  const entries = collectPackStories(ctx.config, ctx.packages, reservedNouns);
+  const entries = collectPackStories(ctx.config, ctx.packages, reserved);
 
   return entries.flatMap((entry) => {
     const compiled = compilePackStories(

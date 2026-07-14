@@ -52,3 +52,16 @@ export interface StoreSummary {
   readonly tripleCount: number;
   readonly graphNames: readonly string[];
 }
+
+/**
+ * Entity counts for the `pragma llm` orientation summary.
+ *
+ * Mirrors the row cardinality of the four leaf list operations
+ * (`listBlocks`, `listStandards`, `listModifiers`, `listTokens`).
+ */
+export interface EntityCounts {
+  readonly blocks: number;
+  readonly standards: number;
+  readonly modifierFamilies: number;
+  readonly tokens: number;
+}

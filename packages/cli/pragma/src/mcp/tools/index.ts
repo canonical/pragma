@@ -18,7 +18,11 @@ import { specs as orientationSpecs } from "../../domains/llm/mcp/index.js";
 import { specs as modifierSpecs } from "../../domains/modifier/mcp/index.js";
 import { specs as ontologySpecs } from "../../domains/ontology/mcp/index.js";
 import type { PragmaRuntime } from "../../domains/shared/runtime.js";
-import { compilePackToolSpecs } from "../../domains/shared/stories/pack/index.js";
+import {
+  compilePackToolSpecs,
+  deriveReservedVerbs,
+  nounVerbFromToolName,
+} from "../../domains/shared/stories/pack/index.js";
 import type { ToolSpec } from "../../domains/shared/ToolSpec.js";
 import { specs as skillSpecs } from "../../domains/skill/mcp/index.js";
 import { specs as standardSpecs } from "../../domains/standard/mcp/index.js";
@@ -26,7 +30,13 @@ import { specs as tierSpecs } from "../../domains/tier/mcp/index.js";
 import { specs as tokenSpecs } from "../../domains/token/mcp/index.js";
 import registerFromSpec from "./registerFromSpec.js";
 
-const allSpecs: readonly ToolSpec[] = [
+/**
+ * The full built-in MCP tool surface, in registration order.
+ *
+ * Exported so tests can derive the reserved-verb map from the identical
+ * array production consumes (see the cross-surface reservation invariant).
+ */
+export const allSpecs: readonly ToolSpec[] = [
   ...blockSpecs,
   ...standardSpecs,
   ...modifierSpecs,
@@ -56,11 +66,13 @@ export default function registerAllTools(
     registerFromSpec(server, runtime, spec);
   }
 
-  // Story packs project onto the same surface; built-in nouns are reserved.
-  const reservedNouns = new Set(
-    allSpecs.map((spec) => spec.name.split("_").at(0) ?? ""),
+  // Story packs project onto the same surface. Leaf read nouns reserve only
+  // the (noun, verb) pairs they own, so a pack can add a verb no built-in
+  // owns; operational nouns (config, graph, …) stay reserved wholesale.
+  const reserved = deriveReservedVerbs(
+    allSpecs.map((spec) => nounVerbFromToolName(spec.name)),
   );
-  for (const spec of compilePackToolSpecs(runtime, reservedNouns)) {
+  for (const spec of compilePackToolSpecs(runtime, reserved)) {
     registerFromSpec(server, runtime, spec);
   }
 }

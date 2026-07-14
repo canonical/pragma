@@ -88,5 +88,5 @@ export const PARITY_GAPS: readonly string[] = [
   "lookup descriptions and examples: the pack lookup CLI description, tool description, names description, and examples are generated from the noun; the built-in curates all of them (e.g. `Look up detailed information for a standard by name or IRI`)",
   "ink renderers: the built-in stories declare renderInk TUI views; the pack format has none",
   "extra verbs: the standard noun also ships `categories` and `sample` commands; v0 packs compile only list and lookup",
-  "noun cutover: a pack story cannot register the noun `standard` while the built-in exists (reserved-noun guard in collectPackStories), so cutover must remove the built-in stories in the same release",
+  "noun cutover: cutover is per-verb, not same-release-atomic — the reserved guard in collectPackStories reserves `standard` per (noun, verb), so a pack may claim a built-in read verb (`list`/`lookup`) as soon as that specific built-in wrapper is deleted, independently of the noun's other verbs (`categories`/`sample` may stay); a pack is blocked only while it would emit a verb the built-in still owns",
 ];
