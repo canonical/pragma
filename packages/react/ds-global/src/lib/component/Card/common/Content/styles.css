@@ -4,11 +4,14 @@
  *
  * DSL anatomy: layout.type stack, direction vertical.
  * A content-bearing section: it pads itself (the card frame applies no general
- * padding). Vertical padding is in baseline multiples.
+ * padding). Vertical padding is in baseline multiples, asymmetric per the
+ * Figma styling frame: one baseline on top, two below (top 100 / bottom 200 /
+ * sides 200).
  */
 :root {
   --card-content-gap: var(--dimension-100);
-  --card-content-padding-block: var(--dimension-200);
+  --card-content-padding-block-start: var(--dimension-100);
+  --card-content-padding-block-end: var(--dimension-200);
   --card-content-padding-inline: var(--dimension-200);
 }
 
@@ -17,6 +20,7 @@
   flex-direction: column;
   gap: var(--card-content-gap);
 
-  padding-block: var(--card-content-padding-block);
+  padding-block-start: var(--card-content-padding-block-start);
+  padding-block-end: var(--card-content-padding-block-end);
   padding-inline: var(--card-content-padding-inline);
 }

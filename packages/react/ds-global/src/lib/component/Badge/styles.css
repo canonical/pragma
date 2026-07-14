@@ -14,11 +14,7 @@
   --badge-padding-horizontal: var(--dimension-050);
   --badge-margin-bottom: 0;
 
-  --badge-max-width: 4ch;
-  --badge-min-width: calc(
-    var(--badge-line-height) -
-    (2 * var(--badge-padding-horizontal))
-  );
+  --badge-min-width: calc(var(--badge-line-height) * 1em);
 
   /* Base badge styles using tokens */
   background-color: var(
@@ -26,7 +22,7 @@
     var(--badge-color-background)
   );
   border-radius: var(--badge-border-radius);
-  box-sizing: content-box;
+  box-sizing: border-box;
   /* Label sits on the badge's own (criticality) surface, so it reads the
    * on-surface text channel — NOT --modifier-color-text (the standalone
    * criticality text colour), which would render same-hue-on-same-hue with
@@ -43,9 +39,7 @@
   letter-spacing: var(--badge-letter-spacing);
   line-height: var(--badge-line-height);
   margin-bottom: var(--badge-margin-bottom);
-  max-width: var(--badge-max-width);
   min-width: var(--badge-min-width);
-  overflow: hidden;
   padding: var(--badge-padding-vertical) var(--badge-padding-horizontal);
   text-align: center;
 }

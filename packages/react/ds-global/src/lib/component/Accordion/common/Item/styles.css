@@ -8,6 +8,11 @@
  * auto-steps on nested .surface contexts to layer2/layer3), text uses
  * color-text, the chevron uses color-icon, and dividers use color-border-muted.
  * Vertical padding is expressed in baseline multiples.
+ *
+ * NOTE: the apps/sites element-size sizing (collapsed item at 36px sites / 32px
+ * apps, and the matching h6 line box) is intentionally NOT set here — control
+ * heights across apps vs sites are owned by the density/height bucket, not this
+ * design-review geometry pass.
  */
 :root {
   --accordion-item-color-text: var(--color-text);
@@ -34,7 +39,9 @@
     --color-foreground-ghost-active
   );
 
-  --accordion-item-header-gap: var(--dimension-100);
+  --accordion-item-header-gap: var(--dimension-200);
+  /* Header block padding in baseline multiples (dimension-100 = 1 bU). The
+     apps/sites element-size sizing (6px → 36/32) is owned by the height bucket. */
   --accordion-item-header-padding-block: var(--dimension-100);
   --accordion-item-header-padding-inline: var(--dimension-200);
 
@@ -120,9 +127,12 @@
   letter-spacing: var(--typography-text-primary-letter-spacing);
 
   /* Normalise every heading element except <h6> down to the inherited body
-     tier. <h6> is left untouched so the base h6 tier from
-     @canonical/styles-typography applies (correct heading-6 tokens, including
-     the baseline-snapped line-height) — no heading-6 tokens are restated here. */
+     tier. <h6> keeps the base h6 tier from @canonical/styles-typography
+     (correct heading-6 tokens, including the baseline-snapped line-height) — no
+     heading-6 tokens are restated here.
+     NOTE: the per-context h6 line box (24px sites / 20px apps) and zeroing the
+     heading padding-block nudges to make the header height padding-driven are
+     part of the apps/sites height bucket, not this pass. */
   & :is(h1, h2, h3, h4, h5) {
     margin: 0;
     font: inherit;

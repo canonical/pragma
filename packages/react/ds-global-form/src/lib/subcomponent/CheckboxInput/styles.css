@@ -10,7 +10,10 @@
   height: calc(var(--space-baseline) * 2); /* 16px — 2bU */
   border: var(--dimension-stroke-thickness-medium) solid var(--color-border);
   border-radius: var(--dimension-radius-small);
-  background: var(--color-foreground-checkbox-unselected);
+  background: var(
+    --surface-color-foreground-checkbox-unselected,
+    var(--color-foreground-checkbox-unselected)
+  );
   cursor: pointer;
   transition:
     background-color 150ms ease,
@@ -42,11 +45,22 @@
 
   &:checked {
     position: relative;
-    background: var(--color-foreground-checkbox-selected);
-    border-color: var(--color-foreground-checkbox-selected);
+    /* Selected fill + checkmark read the surface-provided tokens (with a flat
+     * fallback) so the control adapts to OnSurface stepping. */
+    background: var(
+      --surface-color-foreground-checkbox-selected,
+      var(--color-foreground-checkbox-selected)
+    );
+    border-color: var(
+      --surface-color-foreground-checkbox-selected,
+      var(--color-foreground-checkbox-selected)
+    );
 
     &::before {
-      background-color: var(--color-foreground-checkbox-checkmark);
+      background-color: var(
+        --surface-color-foreground-checkbox-checkmark,
+        var(--color-foreground-checkbox-checkmark)
+      );
       mask-image: url("/icons/checkmark.svg#checkmark");
       -webkit-mask-image: url("/icons/checkmark.svg#checkmark");
     }
@@ -54,11 +68,20 @@
 
   &:indeterminate {
     position: relative;
-    background: var(--color-foreground-checkbox-selected);
-    border-color: var(--color-foreground-checkbox-selected);
+    background: var(
+      --surface-color-foreground-checkbox-selected,
+      var(--color-foreground-checkbox-selected)
+    );
+    border-color: var(
+      --surface-color-foreground-checkbox-selected,
+      var(--color-foreground-checkbox-selected)
+    );
 
     &::before {
-      background-color: var(--color-foreground-checkbox-checkmark);
+      background-color: var(
+        --surface-color-foreground-checkbox-checkmark,
+        var(--color-foreground-checkbox-checkmark)
+      );
       mask-image: url("/icons/minus.svg#minus");
       -webkit-mask-image: url("/icons/minus.svg#minus");
     }
@@ -68,14 +91,16 @@
     background: var(--color-foreground-checkbox-unselected-hover);
   }
 
-  &:checked:hover:not(:disabled) {
-    background-color: var(--color-foreground-checkbox-selected);
-    filter: brightness(0.9);
-  }
-
+  /* Hover on a selected/indeterminate box shifts ONLY the fill, not the
+   * checkmark/minus glyph (per design review): the background swaps to the
+   * hovered selected shade while `::before` keeps its own colour. The hover
+   * shade comes from the `--hover--…-selected` channel (criticality-style OKLCH
+   * delta shim), replacing the old whole-element `filter: brightness()` that
+   * also dimmed the glyph. */
+  &:checked:hover:not(:disabled),
   &:indeterminate:hover:not(:disabled) {
-    background-color: var(--color-foreground-checkbox-selected);
-    filter: brightness(0.9);
+    background-color: var(--hover--color-foreground-checkbox-selected);
+    border-color: var(--hover--color-foreground-checkbox-selected);
   }
 
   &:focus-visible {

@@ -23,7 +23,7 @@ const Option = ({
   const ariaProps = useOptionAriaProperties(name, option.value);
   return (
     <div
-      className={[componentCssClassName, "grid", disabled && "disabled"]
+      className={[componentCssClassName, disabled && "disabled"]
         .filter(Boolean)
         .join(" ")}
     >
