@@ -48,7 +48,6 @@ This utility can be customized by setting the following CSS variables:
 | Variable                    | Description                                              | Default Value                 |
 |-----------------------------|----------------------------------------------------------|-------------------------------|
 | `--baseline-grid-color`     | Base hue the wave tints are derived from                | branded border colour         |
-| `--baseline-grid-levels`    | Baselines per gradient cycle                            | `5` (→ 20px cycle at 4px)     |
 | `--baseline-grid-height`    | Height of one baseline row                              | `0.25rem` (4px)               |
 | `--baseline-shift`          | Vertical offset of the grid                             | `0`                           |
 

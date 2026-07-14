@@ -12,16 +12,20 @@
    * --baseline-grid-height: var(--baseline-height) explicitly. */
   --addon-baseline-height: var(--baseline-grid-height, 0.25rem);
 
-  /* Overlay reads as STRICT BANDS — five hard-edged 4px steps per cycle, each a
-     step up in tint (not a smooth gradient). One cycle is 5 baselines
-     (5 × 4px = 20px), then repeats. Hard edges between bands let the eye count
-     position-within-cycle (level 1..5) exactly; the strongest band marks the
-     cycle. Tint derives from one branded hue at stepped opacities. */
-  --addon-baseline-levels: var(--baseline-grid-levels, 5);
+  /* Overlay reads as STRICT BANDS — five hard-edged baseline-height steps per
+   * cycle, each a step up in tint (not a smooth gradient). One cycle is 5
+   * baselines, then repeats. Hard edges between bands let the eye count
+   * position-within-cycle (level 1..5) exactly; the strongest band marks the
+   * cycle. Tint derives from one branded hue at stepped opacities.
+   *
+   * The cycle is FIXED at 5 levels: the tint stops below (--addon-baseline-l1..l5)
+   * are hard-coded, so the count is not a knob — a different value would leave the
+   * five stops crammed into a mis-sized cycle. Only the baseline HEIGHT is
+   * customisable (--baseline-grid-height); the level count is intrinsic. */
   --addon-baseline-cycle: calc(
     var(--addon-baseline-height) *
-    var(--addon-baseline-levels)
-  ); /* 5 × 4px = 20px */
+    5
+  ); /* 5 baselines per cycle */
 
   --addon-baseline-hue: var(
     --baseline-grid-color,
