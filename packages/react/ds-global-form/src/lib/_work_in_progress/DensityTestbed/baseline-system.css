@@ -173,31 +173,42 @@
  * --density-line-height. A missing context defaults to apps; missing density
  * defaults to comfortable. */
 
-/* Context family — the comfortable/dense line-height PAIR per surface. Only the
-   context classes set these; NOTHING defines them on .density-testbed, so a
-   context class on an ancestor is never clobbered by the inner testbed div. The
-   apps values are the fallback via var() at the point of use (see below). */
+/* Context family — each surface only sets the comfortable/dense BOX HEIGHT.
+   The target baseline is a FORMULA (below), not a per-cell value.
+                  comfy   dense
+     apps          32px    24px
+     sites/docs    36px    28px
+   Only the context classes set the pairs, so a context class on an ancestor is
+   never clobbered by the inner .density-testbed. */
 .app {
   --lh-comfy: calc(var(--baseline-height) * 8); /* 32px */
   --lh-dense: calc(var(--baseline-height) * 6); /* 24px */
 }
 .site,
 .docs {
-  --lh-comfy: calc(var(--baseline-height) * 10); /* 40px */
+  --lh-comfy: calc(var(--baseline-height) * 9); /* 36px */
   --lh-dense: calc(var(--baseline-height) * 7); /* 28px */
 }
 
-/* Density family — pick within the context pair. Fallbacks make "apps" and
-   "comfortable" the defaults when the respective class is absent:
-     --lh-comfy / --lh-dense default to the apps values (32 / 24);
-     --density-line-height defaults to the comfy value. */
+/* Density family — pick the box height. Fallbacks default to apps + comfortable. */
 .comfortable {
   --density-line-height: var(--lh-comfy, calc(var(--baseline-height) * 8));
-  --density-space-after: 2; /* baseline units */
 }
 .dense {
   --density-line-height: var(--lh-dense, calc(var(--baseline-height) * 6));
-  --density-space-after: 1;
+}
+
+/* ── Target baseline = round(box × 2/3) ──────────────────────────────────────
+ * The text baseline sits about TWO-THIRDS down the box, snapped to a grid line:
+ *   target = round(nearest, --density-line-height × 2/3, --baseline-height)
+ * One formula for every context×density (verified: 32→5th, 24→4th, 36→6th,
+ * 28→5th baseline). Set wherever --density-line-height is defined. */
+:where(.comfortable, .dense, .app, .site, .docs) {
+  --density-target-baseline-px: round(
+    nearest,
+    calc(var(--density-line-height) * 2 / 3),
+    var(--baseline-height)
+  );
 }
 
 /* ── Components consume the density box ──────────────────────────────────────
@@ -235,27 +246,44 @@
   align-items: flex-start;
 }
 
-/* ── Boxed nudge — a reusable "nudge minus the top border" ───────────────────
+/* ── Boxed nudge — nudge + space-before (target baseline) − top border ───────
  *
- * The plain baseline nudge (--start-nudge) seats the baseline relative to the
- * CONTENT-box top. Inside a bordered box the border sits ABOVE the content box,
- * shifting the baseline down by its width. The boxed nudge re-applies the nudge
- * MINUS the top border, parameterised by `--border-top-width` (default 0):
+ * padding-block-start pushes the text baseline to the TARGET line inside the box:
  *
- *     padding-block-start = max(0, --start-nudge − --border-top-width)
+ *   --space-before = target − one baseline
+ *       target = --density-target-baseline-px (= round(box × 2/3))
+ *       the un-pushed baseline sits ~1 baseline from the top (the start-nudge
+ *       seats the FIRST grid line), so we add the remaining (target − 1 baseline).
+ *   padding-block-start = max(0, start-nudge + space-before − border-top)
+ *   padding-block-end   = 0  (the box is fixed height; the remainder is below)
  *
- * `.boxed-nudge` is the standalone utility (put it on the element that carries
- * `.p`/--start-nudge, set --border-top-width to its border). The density-control
- * rules below reuse the SAME declarations, differing only in --border-top-width:
- *   · Real Button: has `.p` itself; border = --button-border-width (0 primary).
- *   · Spike-box: nudge on inner `.seat.p`; border = 1px. */
+ * --space-before is a DENSITY-ALIGNMENT lever (not editorial). It moves the text
+ * DOWN; because the box height is fixed, the space below shrinks by the same
+ * amount — no separate space-after reduction is needed here (the fixed box IS the
+ * total). `.boxed-nudge` is the standalone utility; the density controls reuse
+ * the declarations, differing only in --border-top-width. */
 .boxed-nudge,
 :where(.comfortable, .dense, .app, .site, .docs) .ds.button.p,
 :where(.comfortable, .dense, .app, .site, .docs) .spike-box > .seat.p {
-  padding-block-start: max(
+  /* Collapse the line box to the font (line-height:1) so the baseline sits at a
+     known, small offset (the cap midpoint) from the content top; then pad the top
+     to place it at the shared target. */
+  line-height: 1;
+  /* Where the baseline sits inside a line-height:1 box (cap-unit approximation).
+     Empirically the baseline of the collapsed line sits ~1 baseline lower than
+     (1em+1cap)/2 would predict, so subtract one baseline to land on target. */
+  --natural-baseline: calc(((1em + 1cap) / 2) - var(--baseline-height));
+  /* space-before = target − natural baseline − top border (the border sits above
+     the content box, so it counts toward reaching the target). */
+  --space-before: max(
     0px,
-    calc(var(--start-nudge, 0px) - var(--border-top-width, 0px))
+    calc(
+      var(--density-target-baseline-px, 0px) -
+      var(--natural-baseline) -
+      var(--border-top-width, 0px)
+    )
   );
+  padding-block-start: var(--space-before);
   padding-block-end: 0;
 }
 /* Real Button: it flex-CENTRES its label (align-items/justify-content: center),
