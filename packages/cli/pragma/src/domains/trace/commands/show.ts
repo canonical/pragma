@@ -9,6 +9,7 @@ import {
   type CommandDefinition,
   createOutputResult,
 } from "@canonical/cli-core";
+import { PragmaError } from "#error";
 import { traceDir } from "../../refs/operations/paths.js";
 import { selectFormatter } from "../../shared/formatters.js";
 import {
@@ -21,6 +22,30 @@ import {
   listSessions,
   readTraceLog,
 } from "../operations/index.js";
+
+/** Number of trace records shown when `--limit` is omitted. */
+const DEFAULT_TRACE_LIMIT = 50;
+
+/**
+ * Resolve the `--limit` value into a positive integer record count.
+ *
+ * @param raw - The raw param value.
+ * @returns The default when absent, else the validated positive integer.
+ * @throws PragmaError INVALID_INPUT when present but not a positive integer.
+ */
+export function resolveTraceLimit(raw: unknown): number {
+  if (raw === undefined || raw === null || raw === "") {
+    return DEFAULT_TRACE_LIMIT;
+  }
+  const text = String(raw).trim();
+  const parsed = Number(text);
+  if (!/^\d+$/.test(text) || parsed < 1) {
+    throw PragmaError.invalidInput("limit", String(raw), {
+      recovery: { message: "Provide a positive integer." },
+    });
+  }
+  return parsed;
+}
 
 function formatOneLine(r: import("../types.js").TraceRecord): string {
   const d = new Date(r.ts);
@@ -81,6 +106,10 @@ const showCommand: CommandDefinition = {
     ],
   },
   async execute(params, ctx) {
+    // Validate --limit up front so a bad value is rejected regardless of
+    // whether any sessions exist.
+    const limit = resolveTraceLimit(params.limit);
+
     const dir = traceDir();
     const sessions = listSessions(dir);
 
@@ -129,10 +158,7 @@ const showCommand: CommandDefinition = {
       return createOutputResult("", { plain: () => "" });
     }
 
-    // Normal mode — read and format
-    const limit =
-      typeof params.limit === "string" ? Number.parseInt(params.limit, 10) : 50;
-
+    // Normal mode — read and format (limit validated at the top of execute).
     const records = readTraceLog({ path: target.path, limit });
     const data = { sessionId: target.sessionId, records };
 
