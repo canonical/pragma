@@ -27,7 +27,15 @@
   );
   border-radius: var(--badge-border-radius);
   box-sizing: content-box;
-  color: var(--modifier-color-text, var(--badge-color-text));
+  /* Label sits on the badge's own (criticality) surface, so it reads the
+   * on-surface text channel — NOT --modifier-color-text (the standalone
+   * criticality text colour), which would render same-hue-on-same-hue with
+   * failing contrast. Falls back to the neutral on-surface token for the
+   * default (no-criticality) badge. */
+  color: var(
+    --modifier-color-text-onForegroundSecondary,
+    var(--badge-color-text)
+  );
   display: inline-block;
   font-family: var(--badge-font-family);
   font-size: var(--badge-font-size);

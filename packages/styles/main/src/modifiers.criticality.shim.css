@@ -1,47 +1,71 @@
-/* @canonical/styles — Criticality modifier ICON SHIM (temporary)
+/* @canonical/styles — Criticality modifier SHIM (temporary)
  *
  * The generated `@canonical/design-tokens/dist/modifiers.criticality.css`
  * exposes the colour channels for each criticality (`--modifier-color-icon`,
- * `-text`, `-border`, `-foreground-secondary`) but NOT an icon channel: nothing
- * says *which glyph* signals "information" vs "warning" etc. Criticality-driven
- * components (Announcement, and future callouts) each hard-code that mapping in
- * their own markup today.
+ * `-text`, `-border`, `-foreground-secondary`) but is missing two channels this
+ * shim fills in, keyed off the criticality class. Remove each block once its
+ * channel is generated upstream in the criticality modifier tokens.
  *
- * This hand-authored shim adds a single channel, keyed off the criticality
- * class, that carries the glyph as a CSS `mask-image` reference into the
- * Canonical icon set (served at `/icons/<name>.svg`):
+ * Design contract — components listen to the CHANNEL, never to the class. A
+ * consumer must not key off `.information` / `.warning`; it reads the generic
+ * channel, so any criticality gets the right value for free.
+ *
+ * ── 1. Icon channel (--modifier-icon) ──────────────────────────────────────
+ * Nothing upstream says *which glyph* signals "information" vs "warning" etc.
+ * Criticality-driven components (Announcement, and future callouts) each
+ * hard-code that mapping in their own markup today. This adds a channel that
+ * carries the glyph as a CSS `mask-image` reference into the Canonical icon set
+ * (served at `/icons/<name>.svg`):
  *
  *   --modifier-icon   a `mask-image` value; a component masks a pseudo-element
  *                     with it and fills it with `--modifier-color-icon`, so the
  *                     glyph both matches the criticality AND takes its colour.
  *
- * Design contract — components listen to the CHANNEL, never to the class. A
- * consumer must not key off `.information` / `.warning`; it reads
- * `--modifier-icon` generically, so any criticality gets the right glyph for
- * free. This mirrors the mask technique used by Accordion's chevron and the
- * form CheckboxInput's checkmark (mask-image + background-color so the glyph is
+ * This mirrors the mask technique used by Accordion's chevron and the form
+ * CheckboxInput's checkmark (mask-image + background-color so the glyph is
  * recolourable, unlike a background-image SVG).
+ *
+ * ── 2. On-surface text channel (--modifier-color-text-onForegroundSecondary) ─
+ * The generated `--modifier-color-text` is the *standalone* criticality text
+ * colour (e.g. green text on the page background). Components that place text on
+ * the criticality's own coloured surface — Badge sits its label on
+ * `--modifier-color-foreground-secondary` — need the *on-surface* pairing
+ * instead, or they render same-hue-on-same-hue with failing contrast. The
+ * design-tokens build already defines `--color-text-onForegroundSecondary-*`
+ * per criticality; it just isn't wired into the modifier family. This exposes
+ * it as a channel so on-surface criticality components read it generically.
  *
  * Imported into the `ds.modifiers` layer after the generated criticality
  * modifiers so these class rules compose at equal specificity, later source
- * order. Remove once an icon channel is generated upstream in the criticality
- * modifier tokens.
+ * order.
  */
 
 @layer ds.modifiers {
   .information {
     --modifier-icon: url("/icons/information.svg#information");
+    --modifier-color-text-onForegroundSecondary: var(
+      --color-text-onForegroundSecondary-information
+    );
   }
 
   .success {
     --modifier-icon: url("/icons/success.svg#success");
+    --modifier-color-text-onForegroundSecondary: var(
+      --color-text-onForegroundSecondary-success
+    );
   }
 
   .warning {
     --modifier-icon: url("/icons/warning.svg#warning");
+    --modifier-color-text-onForegroundSecondary: var(
+      --color-text-onForegroundSecondary-warning
+    );
   }
 
   .error {
     --modifier-icon: url("/icons/error.svg#error");
+    --modifier-color-text-onForegroundSecondary: var(
+      --color-text-onForegroundSecondary-error
+    );
   }
 }
