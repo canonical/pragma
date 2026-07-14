@@ -6,7 +6,10 @@ import "@canonical/styles-debug";
 import "./forceLightDocs.js";
 
 import {
+  DEFAULT_CONTEXT,
   KEY_BASELINE,
+  KEY_CONTEXT,
+  KEY_DENSITY,
   KEY_GRID,
   KEY_OUTLINES,
   KEY_SCHEME,
@@ -22,6 +25,9 @@ const preview: ProjectAnnotations<Renderer> = {
     [KEY_SCHEME]: undefined,
     [KEY_BASELINE]: undefined,
     [KEY_OUTLINES]: undefined,
+    [KEY_DENSITY]: undefined,
+    // Context defaults to "apps" (the base surface), not undefined.
+    [KEY_CONTEXT]: DEFAULT_CONTEXT,
   },
 };
 

@@ -1,4 +1,6 @@
 import {
+  BookIcon,
+  ComponentIcon,
   ContrastIcon,
   GridIcon,
   OutlineIcon,
@@ -9,9 +11,16 @@ import { Select, ToggleButton } from "storybook/internal/components";
 import { type API, useGlobals, useParameter } from "storybook/manager-api";
 import {
   ADDON_ID,
+  CONTEXT_MODES,
+  type ContextMode,
+  DEFAULT_CONTEXT,
+  DENSITY_MODES,
+  type DensityMode,
   GRID_MODES,
   type GridMode,
   KEY_BASELINE,
+  KEY_CONTEXT,
+  KEY_DENSITY,
   KEY_GRID,
   KEY_OUTLINES,
   KEY_SCHEME,
@@ -31,21 +40,39 @@ const schemeOptions = SCHEME_MODES.map((mode) => ({
   title: { none: "System", light: "Light", dark: "Dark" }[mode],
 }));
 
+const densityOptions = DENSITY_MODES.map((mode) => ({
+  value: mode,
+  title: { none: "Default", comfortable: "Comfortable", dense: "Dense" }[mode],
+}));
+
+const contextOptions = CONTEXT_MODES.map((mode) => ({
+  value: mode,
+  title: { app: "Apps", site: "Sites", docs: "Docs" }[mode],
+}));
+
 export const Tool: FC<{ api: API }> = memo(function UtilsToolbar({ api }) {
   const [globals, updateGlobals] = useGlobals();
 
   // Read story-level parameter defaults
   const paramGrid = useParameter<GridMode>(KEY_GRID);
   const paramScheme = useParameter<SchemeMode>(KEY_SCHEME);
+  const paramDensity = useParameter<DensityMode>(KEY_DENSITY);
+  const paramContext = useParameter<ContextMode>(KEY_CONTEXT);
 
   // undefined = user hasn't touched → fall back to story parameter
   // any string (including "none") = user explicitly chose
   const rawGrid = globals[KEY_GRID] as GridMode | undefined;
   const rawScheme = globals[KEY_SCHEME] as SchemeMode | undefined;
+  const rawDensity = globals[KEY_DENSITY] as DensityMode | undefined;
+  const rawContext = globals[KEY_CONTEXT] as ContextMode | undefined;
   const gridMode: GridMode =
     rawGrid !== undefined ? rawGrid : (paramGrid ?? "none");
   const scheme: SchemeMode =
     rawScheme !== undefined ? rawScheme : (paramScheme ?? "none");
+  const density: DensityMode =
+    rawDensity !== undefined ? rawDensity : (paramDensity ?? "none");
+  const surface: ContextMode =
+    rawContext !== undefined ? rawContext : (paramContext ?? DEFAULT_CONTEXT);
 
   const baseline: boolean = globals[KEY_BASELINE] ?? false;
   const outlines: boolean = globals[KEY_OUTLINES] ?? false;
@@ -57,6 +84,16 @@ export const Tool: FC<{ api: API }> = memo(function UtilsToolbar({ api }) {
 
   const setScheme = useCallback(
     (mode: SchemeMode) => updateGlobals({ [KEY_SCHEME]: mode }),
+    [updateGlobals],
+  );
+
+  const setDensity = useCallback(
+    (mode: DensityMode) => updateGlobals({ [KEY_DENSITY]: mode }),
+    [updateGlobals],
+  );
+
+  const setContext = useCallback(
+    (mode: ContextMode) => updateGlobals({ [KEY_CONTEXT]: mode }),
     [updateGlobals],
   );
 
@@ -156,6 +193,36 @@ export const Tool: FC<{ api: API }> = memo(function UtilsToolbar({ api }) {
       },
       scheme !== "none"
         ? schemeOptions.find((o) => o.value === scheme)?.title
+        : null,
+    ),
+
+    // Context (surface) select — sets the density pair; composes with Density.
+    createElement(
+      Select,
+      {
+        ariaLabel: "Context",
+        tooltip: "Context (surface)",
+        icon: createElement(BookIcon),
+        defaultOptions: surface,
+        options: contextOptions,
+        onSelect: (value) => setContext(value as ContextMode),
+      },
+      contextOptions.find((o) => o.value === surface)?.title,
+    ),
+
+    // Density select
+    createElement(
+      Select,
+      {
+        ariaLabel: "Density",
+        tooltip: "Density",
+        icon: createElement(ComponentIcon),
+        defaultOptions: density,
+        options: densityOptions,
+        onSelect: (value) => setDensity(value as DensityMode),
+      },
+      density !== "none"
+        ? densityOptions.find((o) => o.value === density)?.title
         : null,
     ),
 

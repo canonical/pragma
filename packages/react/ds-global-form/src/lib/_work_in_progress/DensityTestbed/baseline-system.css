@@ -143,12 +143,84 @@
      behind it, making it impossible to see whether the content sits on the grid. */
   background: transparent;
 }
-/* Provisional density targets on the row (DS.03 formalises these as .dense /
-   .comfortable scale-map classes). Density chooses only the LINE-HEIGHT; the
-   existing baseline calculation snaps the box from there. */
+/* Provisional density targets on the row (superseded by the .dense /
+   .comfortable classes below; kept so the DS.02 boxed-proof story still forces
+   both densities without the toolbar). */
 .boxed-proof.is-dense {
   --density-line-height: calc(var(--baseline-height) * 6); /* 24px */
 }
 .boxed-proof.is-comfortable {
   --density-line-height: calc(var(--baseline-height) * 8); /* 32px */
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+ * DS.03 — two composed modifier families: CONTEXT × DENSITY
+ *
+ * Both are addon toolbar switches on #storybook-root (or `parameters`).
+ *   CONTEXT (.app / .site / .docs) — the surface. Sets the comfortable/dense
+ *     line-height PAIR for that surface. Default context = apps.
+ *   DENSITY (.comfortable / .dense) — picks WITHIN the context's pair. Default
+ *     density = comfortable.
+ *
+ * The control line-height is a 2D lookup, context × density:
+ *              comfortable   dense
+ *     apps        32px        24px
+ *     sites       40px        28px
+ *     docs        40px        28px   (docs = sites)
+ *
+ * Structure (explicit 2D pairs, no arithmetic): each context sets --lh-comfy /
+ * --lh-dense; each density class reads the matching one into
+ * --density-line-height. A missing context defaults to apps; missing density
+ * defaults to comfortable. */
+
+/* Context family — the comfortable/dense line-height PAIR per surface. Only the
+   context classes set these; NOTHING defines them on .density-testbed, so a
+   context class on an ancestor is never clobbered by the inner testbed div. The
+   apps values are the fallback via var() at the point of use (see below). */
+.app {
+  --lh-comfy: calc(var(--baseline-height) * 8); /* 32px */
+  --lh-dense: calc(var(--baseline-height) * 6); /* 24px */
+}
+.site,
+.docs {
+  --lh-comfy: calc(var(--baseline-height) * 10); /* 40px */
+  --lh-dense: calc(var(--baseline-height) * 7); /* 28px */
+}
+
+/* Density family — pick within the context pair. Fallbacks make "apps" and
+   "comfortable" the defaults when the respective class is absent:
+     --lh-comfy / --lh-dense default to the apps values (32 / 24);
+     --density-line-height defaults to the comfy value. */
+.comfortable {
+  --density-line-height: var(--lh-comfy, calc(var(--baseline-height) * 8));
+  --density-space-after: 2; /* baseline units */
+}
+.dense {
+  --density-line-height: var(--lh-dense, calc(var(--baseline-height) * 6));
+  --density-space-after: 1;
+}
+
+/* ── Components consume the density box ──────────────────────────────────────
+ * A density control is a FIXED height — exactly --density-line-height, a whole
+ * grid multiple — with border-box so the border is absorbed INTO that height (not
+ * added past it). This makes the real Button (Re/Se), the inputs, and the spike
+ * stand-ins all the SAME density height regardless of their own border (fixing Se
+ * being 2px taller than Re), dense 24 / comfortable 32. Scoped to the testbed.
+ *
+ * NOTE: this uses a fixed block-size, NOT calc-size(min-content, …). calc-size
+ * snaps a control UP to its intrinsic content (so a 28px-content button stays 28,
+ * never shrinking to a 24px dense box) — right for the arbitrary-content spike
+ * boxes, wrong for a fixed-density CONTROL, which must be exactly the density
+ * height. So the control rule is the plain fixed height and needs no @supports. */
+:where(.comfortable, .dense, .app, .site, .docs)
+  :where(.ds.button, .ds.input, .spike-box) {
+  box-sizing: border-box;
+  /* --density-line-height is set by the density class; when only a context class
+     is present (no density), default to the comfy value of that context. */
+  --density-box-height: var(
+    --density-line-height,
+    var(--lh-comfy, calc(var(--baseline-height) * 8))
+  );
+  block-size: var(--density-box-height);
+  min-block-size: var(--density-box-height);
 }
