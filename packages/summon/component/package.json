@@ -58,7 +58,7 @@
     "@canonical/utils": "^0.30.0"
   },
   "peerDependencies": {
-    "@canonical/summon-core": "^0.29.0",
-    "@canonical/task": "^0.29.0"
+    "@canonical/summon-core": "^0.30.0",
+    "@canonical/task": "^0.30.0"
   }
 }
