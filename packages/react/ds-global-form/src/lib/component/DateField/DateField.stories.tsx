@@ -22,13 +22,42 @@ export const Default: Story = {
   },
 };
 
+/** Helper text via the `description` prop, rendered under the label. */
+export const WithDescription: Story = {
+  args: {
+    name: "birthday_desc",
+    label: "Birthday",
+    description: "We use this to send you a discount on your birthday.",
+  },
+};
+
 export const WithMinMax: Story = {
   args: {
     name: "appointment",
     label: "Appointment date",
+    description: "Choose a date between 1 Jan 2024 and 31 Dec 2025.",
     min: "2024-01-01",
     max: "2025-12-31",
   },
+};
+
+/**
+ * A value outside the min/max range now reports an inline error — the `min`/
+ * `max` props are wired as react-hook-form rules, not just native attributes.
+ */
+export const OutOfRange: Story = {
+  args: {
+    name: "appointment_oor",
+    label: "Appointment date",
+    min: "2024-01-01",
+    max: "2025-12-31",
+  },
+  decorators: [
+    decorators.form({
+      defaultValues: { appointment_oor: "2030-06-15" },
+      touchedFields: ["appointment_oor"],
+    }),
+  ],
 };
 
 export const Disabled: Story = {

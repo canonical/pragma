@@ -12,4 +12,12 @@
   &::-webkit-inner-spin-button {
     display: none;
   }
+
+  /* NOTE (design review — clock indicator → pragma icon): parked. There is no
+   * clock/time glyph in @canonical/ds-assets to mask onto
+   * `::-webkit-calendar-picker-indicator`, and that pseudo-element is
+   * WebKit/Chromium-only (Firefox renders its own picker button that CSS cannot
+   * target), so a custom icon can't be made consistent across browsers on a
+   * native <input type="time">. Needs a new ds-assets glyph + accepting
+   * Chrome/Safari-only styling, or a custom (non-native) control. */
 }

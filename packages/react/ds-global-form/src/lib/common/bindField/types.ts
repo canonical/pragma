@@ -15,12 +15,23 @@ export interface BindFieldOptions {
    */
   defaultValue?: unknown;
   /**
-   * Base `register()` options merged UNDER the consumer's `registerProps` (the
-   * consumer wins on conflict). Lets a field set input-type defaults — e.g.
-   * Number passing `{ valueAsNumber: true }` so RHF stores a number, not the
-   * string the native `<input type="number">` reports.
+   * Extra `register()` options merged UNDER the consumer's `registerProps` (the
+   * consumer always wins on conflict). Accepts either:
+   *
+   * - a **static** `RegisterOptions` object — for input-type defaults that don't
+   *   depend on props, e.g. Number's `{ valueAsNumber: true }`; or
+   * - a **function of the component's own props** `(props) => RegisterOptions` —
+   *   for prop-driven rules, e.g. a Date field turning its `min`/`max` props into
+   *   RHF min/max rules, or a FileUpload field turning `maxFiles`/`maxSize` into a
+   *   `validate` rule. Runs at render with the live props.
+   *
+   * The props are still forwarded to the input, so native constraints (picker,
+   * spinner, `accept`) are unaffected — this only adds the RHF-visible rules that
+   * surface an inline field error.
    */
-  registerDefaults?: RegisterOptions;
+  additionalRegisterProps?:
+    | RegisterOptions
+    | ((props: Record<string, unknown>) => RegisterOptions);
 }
 
 export type FieldBindingProps = {

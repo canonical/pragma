@@ -13,11 +13,16 @@
     display: none;
   }
 
-  /* NOTE (design review — "suggested" format text → muted): NOT implementable in
-   * pure CSS on a native <input type="datetime-local">. It has no placeholder
-   * attribute (so `:placeholder-shown` never matches), and
-   * `::-webkit-datetime-edit` colours the whole edit region — mask AND typed
-   * value — with no selector for the empty state, and Firefox ignores it
-   * entirely. A muted-only-when-empty hint needs a custom (non-native) control
-   * or a JS empty-state hook. Parked for Diana. */
+  /* NOTE (design review) — two native-<input type="datetime-local"> limits
+   * parked for Diana:
+   * 1. "Suggested" format text → muted: NOT implementable in pure CSS. No
+   *    placeholder attribute (so `:placeholder-shown` never matches), and
+   *    `::-webkit-datetime-edit` colours the whole edit region — mask AND typed
+   *    value — with no empty-state selector, and Firefox ignores it. Needs a
+   *    custom (non-native) control or a JS empty-state hook.
+   * 2. Calendar/clock indicator → pragma icon: no calendar/clock glyph exists in
+   *    @canonical/ds-assets to mask onto `::-webkit-calendar-picker-indicator`,
+   *    and that pseudo-element is WebKit/Chromium-only (Firefox draws its own,
+   *    unstyleable). Needs a new ds-assets glyph + Chrome/Safari-only styling, or
+   *    a custom control. */
 }
