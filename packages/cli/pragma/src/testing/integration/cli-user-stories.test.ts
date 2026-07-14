@@ -196,6 +196,17 @@ describe("CLI user stories", () => {
     expect(readFileSync(indexFile, "utf-8")).toContain("./MySth");
   }, 20_000);
 
+  it("story: --version works at the root, noun, and verb levels", () => {
+    const workspace = createWorkspace();
+    const root = runCommand(["--version"], workspace);
+    const verb = runCommand(["block", "list", "--version"], workspace);
+
+    expectSuccess(root);
+    expectSuccess(verb);
+    expect(root.stdout.trim()).toBe(verb.stdout.trim());
+    expect(root.stdout.trim()).toMatch(/^\d+\.\d+\.\d+/);
+  }, 20_000);
+
   it("story: an unknown verb under a known noun lists that noun's verbs", () => {
     const workspace = createWorkspace();
 

@@ -1,6 +1,6 @@
 import type { GlobalFlags } from "@canonical/cli-core";
 import { CommanderError } from "commander";
-import { PROGRAM_NAME } from "../constants.js";
+import { PROGRAM_NAME, VERSION } from "../constants.js";
 import { commands as createCommands } from "../domains/create/index.js";
 import { commands as graphqlCommands } from "../domains/graphql/index.js";
 import { buildCapabilitiesCommand } from "../domains/llm/index.js";
@@ -320,20 +320,24 @@ export default async function runCli(argv: readonly string[]): Promise<void> {
     return handleCompletionsServer();
   }
 
-  const explicitHelpOrVersion = argv
-    .slice(2)
-    .some(
-      (arg) =>
-        arg === "--help" || arg === "-h" || arg === "--version" || arg === "-V",
-    );
+  // `--version`/`-V` is a global flag: print the version and exit regardless
+  // of where it appears (root or after a command/verb), so `block list -V`
+  // behaves like the root `pragma --version` instead of erroring.
+  if (argv.slice(2).some((arg) => arg === "--version" || arg === "-V")) {
+    process.stdout.write(`${VERSION}\n`);
+    return;
+  }
 
-  // Reject an unknown --format value early (completion queries are exempt
-  // above, so tab-completion never errors). Skip when the user asked for help
-  // or version — those should print regardless of a bad --format. Only
-  // text/json are supported.
+  const explicitHelp = argv
+    .slice(2)
+    .some((arg) => arg === "--help" || arg === "-h");
+
+  // Reject an unknown --format value early (completion queries and --version
+  // are handled above, so neither errors). Skip when the user asked for help —
+  // it should print regardless of a bad --format. Only text/json are supported.
   const rawFormat = readRawFormat(argv);
   if (
-    !explicitHelpOrVersion &&
+    !explicitHelp &&
     rawFormat !== undefined &&
     rawFormat !== "text" &&
     rawFormat !== "json"
@@ -346,7 +350,7 @@ export default async function runCli(argv: readonly string[]): Promise<void> {
     return;
   }
 
-  if (!hasCommandArg(argv) && !explicitHelpOrVersion) {
+  if (!hasCommandArg(argv) && !explicitHelp) {
     return handleRootHelp(globalFlags);
   }
 
