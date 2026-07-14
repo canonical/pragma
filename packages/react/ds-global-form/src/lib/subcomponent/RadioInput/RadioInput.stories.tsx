@@ -30,7 +30,7 @@ export const Disabled: Story = {
  * context. A single radio control has no error border of its own — the error is
  * conveyed by the `FieldError` message (radio groups signal validity at the
  * group/message level, not per control). For the react-hook-form-driven error
- * on a radio group see ChoicesField / SimpleChoicesField's `WithError`.
+ * on a radio group see ChoicesField's `WithError`.
  */
 export const ErrorState: Story = {
   decorators: [decorators.danger()],
