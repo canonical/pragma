@@ -6,7 +6,11 @@ import "@canonical/styles-debug";
 import "./forceLightDocs.js";
 
 import {
+  DEFAULT_CONTEXT,
+  DEFAULT_DENSITY,
   KEY_BASELINE,
+  KEY_CONTEXT,
+  KEY_DENSITY,
   KEY_GRID,
   KEY_OUTLINES,
   KEY_SCHEME,
@@ -16,10 +20,15 @@ import { withUtilStyles } from "./withUtilStyles.js";
 const preview: ProjectAnnotations<Renderer> = {
   decorators: [withUtilStyles],
   initialGlobals: {
+    // All undefined so `withUtilStyles` falls back to each story's parameters
+    // (e.g. `parameters: { baseline: true }`) until the user picks in the toolbar.
     [KEY_GRID]: undefined,
     [KEY_SCHEME]: undefined,
-    [KEY_BASELINE]: false,
-    [KEY_OUTLINES]: false,
+    [KEY_BASELINE]: undefined,
+    [KEY_OUTLINES]: undefined,
+    [KEY_DENSITY]: DEFAULT_DENSITY,
+    // Context defaults to "apps" (the base surface), not undefined.
+    [KEY_CONTEXT]: DEFAULT_CONTEXT,
   },
 };
 
