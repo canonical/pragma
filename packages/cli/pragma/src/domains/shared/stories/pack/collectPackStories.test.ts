@@ -3,6 +3,7 @@ import { PragmaError } from "#error";
 import { RECIPE_STORY } from "#testing";
 import type { SemanticPackage } from "../../semanticPackage.js";
 import collectPackStories from "./collectPackStories.js";
+import { buildReservedVerbs } from "./reservedVerbs.js";
 
 function makePackage(stories: SemanticPackage["stories"]): SemanticPackage {
   return {
@@ -39,7 +40,7 @@ describe("collectPackStories", () => {
           },
         ]),
       ],
-      new Set(["block"]),
+      buildReservedVerbs([["block", undefined]]),
     );
     expect(entries.map((entry) => entry.definition.noun)).toEqual([
       "recipe",
@@ -57,7 +58,7 @@ describe("collectPackStories", () => {
           { path: "/pkg/stories/recipe.json", definition: RECIPE_STORY },
         ]),
       ],
-      new Set(),
+      buildReservedVerbs([]),
     );
     expect(entries).toHaveLength(1);
     expect(entries.at(0)?.source).toBe("config");
@@ -72,7 +73,7 @@ describe("collectPackStories", () => {
           { path: "/pkg/stories/broken.json", definition: { nope: true } },
         ]),
       ],
-      new Set(),
+      buildReservedVerbs([]),
     );
     expect(entries).toHaveLength(0);
     expect(warn).toHaveBeenCalledWith(
@@ -85,7 +86,7 @@ describe("collectPackStories", () => {
       collectPackStories(
         { ...CONFIG, stories: [{ ...RECIPE_STORY, noun: "block" }] },
         [],
-        new Set(["block"]),
+        buildReservedVerbs([["block", undefined]]),
       ),
     ).toThrow(PragmaError);
   });
@@ -101,8 +102,41 @@ describe("collectPackStories", () => {
           },
         ]),
       ],
-      new Set(["block"]),
+      buildReservedVerbs([["block", undefined]]),
     );
     expect(entries).toHaveLength(0);
+  });
+
+  it("admits a pack once its noun's verbs leave the reserved map", () => {
+    // Post-migration simulation: `standard`'s list/lookup wrappers are gone,
+    // so only categories/sample remain reserved — a `standard` pack (which
+    // emits list + lookup) is now admissible. `info` is a bare (whole-noun)
+    // built-in, so an `info` pack stays blocked. This is the keystone: the
+    // per-verb guard makes the leaf cutover incremental.
+    const reserved = buildReservedVerbs([
+      ["standard", "categories"],
+      ["standard", "sample"],
+      ["info", undefined],
+    ]);
+
+    const entries = collectPackStories(
+      CONFIG,
+      [
+        makePackage([
+          {
+            path: "/pkg/stories/standard.json",
+            definition: { ...RECIPE_STORY, noun: "standard" },
+          },
+          {
+            path: "/pkg/stories/info.json",
+            definition: { ...RECIPE_STORY, noun: "info" },
+          },
+        ]),
+      ],
+      reserved,
+    );
+
+    expect(entries.map((entry) => entry.definition.noun)).toEqual(["standard"]);
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("already taken"));
   });
 });

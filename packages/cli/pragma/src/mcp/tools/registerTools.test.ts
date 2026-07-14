@@ -112,6 +112,47 @@ describe("tool listing", () => {
       expect(tool.name).not.toMatch(/^pragma_/);
     }
   });
+
+  // Golden surface: the full built-in tool set with no story packs. The
+  // per-(noun, verb) reserved-guard flip must leave this byte-identical.
+  it("has a stable built-in tool surface", async () => {
+    const names = (await client.listTools()).tools
+      .map((tool) => tool.name)
+      .sort();
+
+    expect(names).toEqual([
+      "block_list",
+      "block_lookup",
+      "block_sample",
+      "capabilities",
+      "config_channel",
+      "config_show",
+      "config_tier",
+      "create_component",
+      "create_package",
+      "doctor",
+      "graph_inspect",
+      "graph_query",
+      "info",
+      "llm",
+      "modifier_list",
+      "modifier_lookup",
+      "modifier_sample",
+      "ontology_list",
+      "ontology_show",
+      "skill_list",
+      "skill_lookup",
+      "standard_categories",
+      "standard_list",
+      "standard_lookup",
+      "standard_sample",
+      "tier_list",
+      "token_list",
+      "token_lookup",
+      "token_sample",
+      "tokens_add_config",
+    ]);
+  });
 });
 
 // =============================================================================

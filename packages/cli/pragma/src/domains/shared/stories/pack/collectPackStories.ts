@@ -1,6 +1,7 @@
 import type { PragmaConfig } from "#config";
 import { PragmaError } from "#error";
 import type { SemanticPackage } from "../../semanticPackage.js";
+import { isReserved, type ReservedVerbs } from "./reservedVerbs.js";
 import type { StoryPackDefinition } from "./types.js";
 import validateStoryPackDefinition from "./validateStoryPackDefinition.js";
 
@@ -8,6 +9,14 @@ import validateStoryPackDefinition from "./validateStoryPackDefinition.js";
 export interface PackStoryEntry {
   readonly definition: StoryPackDefinition;
   readonly source: string;
+}
+
+/**
+ * The verbs a pack definition compiles to — mirrors `compilePackStories`,
+ * which always emits `list` and adds `lookup` only when declared.
+ */
+function emittedVerbs(definition: StoryPackDefinition): string[] {
+  return ["list", ...(definition.lookup ? ["lookup"] : [])];
 }
 
 /**
@@ -22,22 +31,27 @@ export interface PackStoryEntry {
  *
  * @param config - The effective merged configuration.
  * @param packages - Resolved semantic packages (may ship `stories/*.json`).
- * @param reservedNouns - Built-in nouns story packs must not shadow.
+ * @param reserved - Built-in `(noun, verb)` reservations packs must not
+ *   shadow; a pack collides only when it emits a reserved verb.
  * @returns Validated, collision-free story entries.
  * @throws PragmaError with code `CONFIG_ERROR` when a config story shadows
- *   a reserved noun.
+ *   a reserved built-in verb.
  * @note Impure — warns on stderr for skipped package stories.
  */
 export default function collectPackStories(
   config: PragmaConfig,
   packages: readonly SemanticPackage[],
-  reservedNouns: ReadonlySet<string>,
+  reserved: ReservedVerbs,
 ): PackStoryEntry[] {
   const entries: PackStoryEntry[] = [];
   const taken = new Set<string>();
 
   for (const definition of config.stories ?? []) {
-    if (reservedNouns.has(definition.noun)) {
+    if (
+      emittedVerbs(definition).some((verb) =>
+        isReserved(reserved, definition.noun, verb),
+      )
+    ) {
       throw PragmaError.configError(
         `Story noun "${definition.noun}" shadows a built-in command.`,
       );
@@ -61,7 +75,12 @@ export default function collectPackStories(
         process.stderr.write(`Warning: skipping story — ${reason}\n`);
         continue;
       }
-      if (reservedNouns.has(definition.noun) || taken.has(definition.noun)) {
+      if (
+        emittedVerbs(definition).some((verb) =>
+          isReserved(reserved, definition.noun, verb),
+        ) ||
+        taken.has(definition.noun)
+      ) {
         process.stderr.write(
           `Warning: skipping story "${definition.noun}" from ${file.path} — the noun is already taken.\n`,
         );

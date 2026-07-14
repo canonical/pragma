@@ -34,4 +34,58 @@ describe("collectCommands", () => {
     expect(paths).toContain("graph query");
     expect(paths).toContain("graph inspect");
   });
+
+  // Golden surface: the full built-in command set under default config (no
+  // packs). The per-(noun, verb) reserved-guard flip must not add, drop, or
+  // rename a single built-in command, so this list is byte-identical to the
+  // pre-flip surface.
+  it("has a stable built-in command surface", () => {
+    const paths = collectCommands(makeCtx())
+      .map((command) => command.path.join(" "))
+      .sort();
+
+    expect(paths).toEqual([
+      "block list",
+      "block lookup",
+      "block sample",
+      "capabilities",
+      "config channel",
+      "config framework",
+      "config show",
+      "config tier",
+      "config trace",
+      "create component",
+      "create package",
+      "doctor",
+      "graph inspect",
+      "graph query",
+      "graphql build",
+      "graphql check",
+      "graphql serve",
+      "info",
+      "llm",
+      "modifier list",
+      "modifier lookup",
+      "modifier sample",
+      "ontology list",
+      "ontology show",
+      "setup all",
+      "setup completions",
+      "setup lsp",
+      "setup mcp",
+      "setup skills",
+      "skill list",
+      "skill lookup",
+      "standard categories",
+      "standard list",
+      "standard lookup",
+      "standard sample",
+      "tier list",
+      "token list",
+      "token lookup",
+      "token sample",
+      "tokens add-config",
+      "upgrade",
+    ]);
+  });
 });

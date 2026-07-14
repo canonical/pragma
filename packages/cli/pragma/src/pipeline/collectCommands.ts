@@ -14,7 +14,11 @@ import { commands as modifierCommands } from "../domains/modifier/index.js";
 import { commands as ontologyCommands } from "../domains/ontology/index.js";
 import { commands as setupCommands } from "../domains/setup/index.js";
 import type { PragmaContext } from "../domains/shared/context.js";
-import { compilePackCommands } from "../domains/shared/stories/pack/index.js";
+import {
+  buildReservedVerbs,
+  compilePackCommands,
+  nounVerbFromPath,
+} from "../domains/shared/stories/pack/index.js";
 import { commands as skillCommands } from "../domains/skill/index.js";
 import { commands as standardCommands } from "../domains/standard/index.js";
 import { commands as tierCommands } from "../domains/tier/index.js";
@@ -52,9 +56,10 @@ export default function collectCommands(
     buildCapabilitiesCommand(),
   ];
 
-  // Story packs project onto the same surface; built-in nouns are reserved.
-  const reservedNouns = new Set(
-    builtIn.map((command) => command.path.at(0) ?? ""),
+  // Story packs project onto the same surface; each built-in (noun, verb)
+  // is reserved, so a pack can only add a verb no built-in noun owns.
+  const reserved = buildReservedVerbs(
+    builtIn.map((command) => nounVerbFromPath(command.path)),
   );
-  return [...builtIn, ...compilePackCommands(ctx, reservedNouns)];
+  return [...builtIn, ...compilePackCommands(ctx, reserved)];
 }
